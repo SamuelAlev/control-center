@@ -124,9 +124,10 @@ class _RemoteSpaceFoldersListState
         if (question.workspaceId == widget.workspaceId)
           ?question.message.spaceId,
     };
-    final readAt =
-        ref.watch(remoteSpaceReadProvider(widget.workspaceId)).value ??
-        const <String, FeedPosition>{};
+    // Null while loading, so cards do not flash a dot on connect.
+    final reads = ref
+        .watch(remoteConversationReadsProvider(widget.workspaceId))
+        .value;
     final running =
         ref.watch(remoteRunningSpacesProvider(widget.workspaceId)).value ??
         const <String>{};
@@ -218,10 +219,8 @@ class _RemoteSpaceFoldersListState
                         lastActivityAt: activities[space.id]?.lastMessageAt,
                         unread:
                             !running.contains(space.id) &&
-                            (activities[space.id]?.unreadAfter(
-                                  readAt[space.id],
-                                ) ??
-                                false),
+                            reads != null &&
+                            (activities[space.id]?.unreadFor(reads) ?? false),
                         space: space,
                         inFolder: row.parentId != null,
                         onMove: () =>

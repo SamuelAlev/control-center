@@ -1,0 +1,110 @@
+---
+title: Programaciones y reactivaciones
+description: Reactiva a un agente más tarde, según una programación o cuando pase algo, mira lo que espera y qué pasa en un reinicio o en un límite de uso.
+slug: es-ES/manual/guias/programaciones-reactivaciones
+sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+---
+
+Un agente no duerme ni consulta en bucle mientras espera. Él, o tú, configura una **reactivación**: una petición duradera para iniciar o continuar la ejecución del agente en una conversación en un momento dado o cuando pase algo. Toda ejecución que el servidor inicia sin que alguien escriba empieza como una reactivación: el siguiente segmento de un objetivo, una programación, una vigilancia, una respuesta de otro agente, un trabajo delegado terminado, el fin de un límite de uso o el trabajo pendiente tras un reinicio. Las reactivaciones se guardan en la base de datos del espacio de trabajo, así que sobreviven a un reinicio.
+
+## Programar un agente tú mismo
+
+Escribe una de estas en el redactor de una conversación:
+
+```text
+/loop every 30m --days 3 check the deploy and fix what broke
+/loop keep the flaky tests green
+/schedule in 2h look at the overnight benchmark
+/schedule at 09:00 summarize what changed overnight
+/schedule cron "0 9 * * 1-5" --max 20 triage new tickets
+```
+
+| Comando | Qué hace |
+| --- | --- |
+| `/loop every <interval> <prompt>` | Reactiva al agente con el prompt ahora y luego cada intervalo (con al menos 60 segundos entre cada uno) |
+| `/loop <prompt>` | Un bucle con ritmo propio: reactiva al agente ahora, y tras cada ejecución el agente elige la siguiente demora, de 1 a 60 minutos (20 por defecto) |
+| `/schedule in <duration> <prompt>` | Reactiva al agente una vez, tras la demora |
+| `/schedule at <HH:MM or ISO time> <prompt>` | Reactiva al agente una vez. `HH:MM` es la siguiente hora de ese tipo en la zona horaria del espacio de trabajo; una hora ISO sin desfase es UTC |
+| `/schedule cron "<expression>" <prompt>` | Reactiva al agente según un cron de cinco campos, leído en la zona horaria del espacio de trabajo. Las comillas son opcionales |
+
+- `--max <N>` limita las ejecuciones, `--days <N>` termina la programación tras esos días (30 por defecto, 365 como máximo), y `--budget <dollars>` limita lo que la programación puede gastar en total (por defecto, el del espacio de trabajo, 50 dólares al principio).
+- `/loop` lanza su primera ejecución de inmediato. `/schedule` espera a su hora.
+- Las duraciones usan `s`, `m`, `h` y `d`, como `90s`, `20m` o `1h30m`.
+- Estos comandos solo se leen en un mensaje que escribes tú.
+
+El compositor te ayuda a escribirlos. Después de `/loop` o `/schedule` y un espacio, la lista de sugerencias ofrece cuándo se activa y se reduce a medida que escribes; escribe `--` después de la hora para los límites. Intro o Tab elige una fila y no envía nada. Una línea encima de tu texto muestra entonces el comando: cuándo se activa, cuándo termina y qué falta. Si pulsas Intro en un comando que no se puede leer, esa línea indica qué falla y tu borrador se conserva.
+
+También puedes crear una programación desde la página **Programaciones** con **Nueva programación**: elige el espacio, la conversación y el agente, cuándo se activa, desde qué empieza cada ejecución, un fin, un límite de ejecuciones y un límite de coste. **Si el agente está ocupado** elige entre saltar esa activación o esperar a que el agente quede libre. **En cada activación** elige entre iniciar una ejecución o solo avisarte con la nota.
+
+## Lo que configuran los agentes
+
+Los agentes usan la herramienta `wake_me` para lo mismo, y para las vigilancias:
+
+| Vigilancia | Se activa cuando |
+| --- | --- |
+| `on:pr_checks` | Terminan las comprobaciones de la pull request del espacio |
+| `on:pr_review` | La pull request del espacio recibe una revisión o una respuesta |
+| `on:pr_merged` | La pull request del espacio se fusiona |
+| `on:environment` | Una tarea del entorno del espacio termina, o el entorno pasa a estar listo |
+| `on:ticket:<id>` | Un ticket llega a su estado final |
+| `on:pipeline_run:<id>` | Termina una ejecución de pipeline |
+
+- Una vigilancia de pull request escucha la pull request propia del espacio, o una pull request concreta que nombra (`on:pr_checks:acme/shop-ui#12`). Una vigilancia sobre algo que la persona en cuyo nombre actúa no puede leer se rechaza.
+- Las acciones propias del agente no activan sus vigilancias. Un evento que llega mientras el agente trabaja no se pierde: espera a que termine la ejecución, y los eventos posteriores se agrupan en la misma reactivación.
+- La programación de un agente debe tener un límite de ejecuciones o un fin. Termina a los 7 días por defecto y 30 como máximo. Una vigilancia se ejecuta 10 veces por defecto.
+- Una programación que un agente configura en una ejecución iniciada por una de sus propias programaciones comparte el fin, el límite de ejecuciones y el límite de coste de la primera, así que una cadena de programaciones de un agente no puede sobrevivir a la primera. Eliminar la primera programación termina toda la cadena; pausarla pausa solo esa programación. Las ejecuciones que la cadena inicia a través de otros agentes cuentan contra el mismo límite de coste. Una programación que tú creas no inicia ninguna cadena: lo que un agente configura en sus ejecuciones está limitado como cualquier cosa que configure tras un mensaje tuyo.
+- Un agente ve lo que tiene en espera con `list_wakes`, y cancela lo que él mismo configuró con `cancel_wake`. No puede cancelar lo que configuraste tú.
+
+## Ver lo que espera
+
+**Encima del redactor.** Cuando hay reactivaciones en espera para un agente de la conversación, una franja las muestra: **N reactivaciones en espera**, de dónde viene cada una (**Objetivo**, **Programación**, **Vigilancia**, **Respuesta de** un agente, **Límite restablecido**, **Recuperación**, …), cuándo vence y por qué está retenida.
+
+| Botón | Qué hace | Quién puede |
+| --- | --- | --- |
+| **Entregar ahora** | Entrega una reactivación pendiente de inmediato | Solo la persona en cuyo nombre actúa la reactivación |
+| **Reanudar** | Libera una reactivación retenida | Solo la persona en cuyo nombre actúa la reactivación |
+| **Cancelar reactivación** | La cancela | Cualquiera con acceso al espacio |
+
+Una reactivación que no se entregó deja una fila en la conversación que dice por qué, como **El agente está en pausa.** o **Un presupuesto bloquea una ejecución.**
+
+**La página Programaciones.** Barra lateral → **Programaciones** lista cada programación y vigilancia que puedes ver, agrupadas por estado; una programación cron muestra sus próximas tres horas en tu zona horaria. Ábrela para ver su nota, su propietario, las próximas activaciones, las ejecuciones, los saltos, el gasto y el fin, y **Reactivaciones y ejecuciones recientes**. Cada programación tiene su propia dirección (`/workspaces/<workspace>/schedules/<id>`).
+
+| Acción | Quién puede |
+| --- | --- |
+| **Pausar**, **Eliminar** | Cualquiera con acceso al espacio |
+| **Reanudar**, **Ampliar** | Solo su propietario (un admin del espacio de trabajo para una programación que un agente creó sin una persona) |
+
+Cuando alguien que no es el propietario de una programación la pausa, la conversación muestra una fila con el nombre de esa persona.
+
+En el teléfono, **Repetir** en la pantalla de objetivos inicia una petición que se repite (cada cierto número de minutos u horas, o con ritmo propio) con un límite de coste y un fin, y la pantalla **Programaciones** pausa, reanuda y elimina programaciones. La vista de progreso de una conversación muestra lo que espera, incluidas las pausas por límite de uso (**Reanudar ahora**, **Cancelar**) y el trabajo pendiente tras una parada del servidor.
+
+## Cómo se ejecuta una programación
+
+- Cada ejecución de una programación o vigilancia se limita a 5 dólares, o a lo que le quede a la programación cuando eso sea menos, y la programación se detiene en su límite de coste.
+- Una hora de cron que se salta al adelantar los relojes se ejecuta una hora más tarde ese día (02:30 se ejecuta a las 03:30). Una hora que se repite al atrasar los relojes se ejecuta una sola vez.
+- La ejecución de una programación nunca se une a una ejecución que ya está en marcha. Si el agente está ocupado cuando se activa una programación con hora, esa activación se salta en silencio, salvo que la programación espere a que el agente quede libre.
+- Una ejecución que una programación o vigilancia inició y que termina sin problemas no te avisa, salvo que mencione a alguien. Cuando una programación termina, la campana dice por qué (**Agotó sus ejecuciones.**, **Llegó a su fecha de fin.**, …) sin sonido.
+- Como máximo 30 ejecuciones por hora empiezan desde reactivaciones en una conversación, y 300 en un espacio de trabajo.
+- Cuando la persona en cuyo nombre actúa una programación sale del espacio de trabajo, la programación termina. Todo lo demás que actuaba en su nombre también se detiene: sus reactivaciones en espera se cancelan, sus mensajes en cola y retenidos se eliminan, y sus agentes en ejecución se detienen.
+
+## Parada, reinicio y límites de uso
+
+- **Detener.** Pulsar **Detener** en la ejecución de un agente retiene sus reactivaciones pendientes (las que no pertenecen a un objetivo) y los mensajes que le encolaste. Esperan a **Reanudar** o a **Enviar mensajes retenidos**. Cada persona envía sus propios mensajes retenidos; nadie envía los de otra persona.
+- **Un reinicio del servidor.** Las reactivaciones y las programaciones sobreviven. Una ejecución que una reactivación inició se reanuda tras el reinicio, con 3 intentos como máximo. Una ejecución que iniciaste tú mismo no vuelve a ejecutarse sola: deja una reactivación de **Recuperación** retenida, y continúa cuando pulses **Reanudar**. Una programación con hora que perdió sus turnos mientras el servidor estaba caído se activa tarde solo dentro de un margen corto (la mitad de su intervalo, 10 minutos como máximo; 24 horas para una de una sola vez); si no, registra un único salto: **Perdida mientras el servidor estaba caído.**
+- **Un límite de uso del proveedor.** Cuando una ejecución se detiene en el límite de uso de un proveedor y el proveedor indica cuándo se restablece (en 7 días como máximo), la ejecución queda en pausa. Una ejecución que inició el servidor, como un segmento de un objetivo o la ejecución de una programación, se reanuda sola 30 segundos después del restablecimiento. Una ejecución que tú iniciaste espera por ti: la conversación muestra **En pausa en** el **límite de uso del proveedor. El límite se restablece a las** y la hora, con **Reanudar** (solo tú) y **Cancelar** (cualquiera del espacio). Tras **Reanudar**, continúa una vez restablecido el límite. Una pausa que no reanudas caduca 7 días después del restablecimiento. Los mensajes que encolaste en el límite se envían a la ejecución reanudada; si la ejecución no espera al restablecimiento, o la pausa se cancela o caduca, quedan retenidos para ti en **Enviar mensajes retenidos**. Los mensajes en cola de otras personas se retienen para ellas de inmediato. La siguiente activación de una programación espera hasta que la ejecución en pausa se reanude. Los agentes ACP no informan de restablecimiento, así que sus ejecuciones no esperan.
+
+## Límites del espacio de trabajo
+
+Un admin del espacio de trabajo fija los límites en **Ajustes → Espacio de trabajo → Programaciones**:
+
+- **Límites de programaciones**: cuántas programaciones activas o en pausa puede tener un agente en una conversación (10), en el conjunto del espacio de trabajo (50) y en todo el espacio de trabajo (500); el límite de coste por defecto de una programación (50 dólares); y la zona horaria que usan las programaciones cron y el resumen diario (UTC al principio).
+- **Cuando nadie responde**: cuánto espera una ejecución que inició el servidor a la respuesta o aprobación de una persona (72 horas por defecto, de 1 hora a 7 días) antes de que una aprobación cuente como denegada y una pregunta como sin respuesta (después de eso, cualquier otra cosa que la misma ejecución pregunte se rechaza de inmediato), y la hora del resumen diario de lo que te espera en objetivos, programaciones y otras ejecuciones que inició el servidor.
+
+Los miembros ven la página en solo lectura.
+
+## Véase también
+
+- [Perseguir un objetivo](/es-ES/manual/guias/perseguir-objetivo/)
+- [Agentes que trabajan juntos](/es-ES/manual/guias/agentes-juntos/)
+- [Comandos slash](/es-ES/manual/referencia/comandos-slash/)
+- [Herramientas de reactivación y objetivos](/es-ES/manual/referencia/herramientas-mcp/#herramientas-de-reactivación-y-objetivos)

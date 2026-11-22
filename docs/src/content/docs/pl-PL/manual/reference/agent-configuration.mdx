@@ -2,7 +2,7 @@
 title: Konfiguracja agentów
 description: Każde pole encji agenta oraz używane przez nią typy wyliczeniowe.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/konfiguracja-agentow
-sourceHash: e77edc905bed16d2f7d5bcd19a62541d885f6aab
+sourceHash: 708808ecdf4d2fc769600241c46f85db411550a8
 ---
 
 Niniejsza dokumentacja referencyjna wymienia każde pole encji agenta oraz używane przez nią typy wyliczeniowe i flagi. Instrukcję krok po kroku tworzenia i edytowania agenta w aplikacji znajdziesz w sekcji [Utwórz i skonfiguruj agenta](/pl-PL/podrecznik/poradniki/tworzenie-agenta/).
@@ -81,7 +81,7 @@ Niezmienny zestaw identyfikatorów skillów, w którym wielkość liter nie ma z
 
 ## Haki powłoki
 
-Haki powłoki pozwalają właścicielowi serwera uruchamiać własne skrypty wokół uruchomienia wbudowanego harnessu: raz na starcie sesji, przed każdym wywołaniem narzędzia i po każdym wywołaniu narzędzia. Hak to dowolny kod, więc haki są konfiguracją hosta. Ustawia je wyłącznie właściciel serwera, ręcznie, na maszynie serwera. Nie ma żadnego ustawienia w aplikacji ani operacji, która je zapisuje.
+Haki powłoki pozwalają właścicielowi serwera uruchamiać własne skrypty wokół uruchomienia agenta: raz na starcie sesji, przed każdym wywołaniem narzędzia, po każdym wywołaniu narzędzia, gdy agent miałby zakończyć turę, oraz przed kompaktowaniem. Hak to dowolny kod, więc haki są konfiguracją hosta. Ustawia je wyłącznie właściciel serwera, ręcznie, na maszynie serwera. Nie ma żadnego ustawienia w aplikacji ani operacji, która je zapisuje.
 
 Dla agenta haki leżą w jego własnym folderze w katalogu danych serwera:
 
@@ -91,22 +91,31 @@ Dla agenta haki leżą w jego własnym folderze w katalogu danych serwera:
 
 `<agent slug>` to nazwa folderu agenta w obszarze roboczym (`agents/<slug>/`). Ten folder leży poza pamięcią każdego obszaru roboczego, a każda piaskownica ukrywa katalog danych, więc żaden członek, uruchomienie ani terminal nie może go zapisać.
 
-`hooks.json` przypisuje każdemu z trzech kluczy skrypt, podając ścieżkę względną do folderu haka:
+`hooks.json` przypisuje każdemu z pięciu kluczy skrypt, podając ścieżkę względną do folderu haka:
 
 | Klucz          | Kiedy działa                       | Co oznacza kod wyjścia                                  |
 | -------------- | ---------------------------------- | ------------------------------------------------------- |
 | `sessionStart` | Raz, gdy uruchomienie się zaczyna  | Nic; hak tylko obserwuje                                |
 | `preTool`      | Przed każdym wywołaniem narzędzia  | `0` zezwala na wywołanie; cokolwiek innego je odrzuca   |
 | `postTool`     | Po każdym wywołaniu narzędzia      | Nic; hak tylko obserwuje                                |
+| `stop` | Gdy agent miałby zakończyć turę | `2` z tekstem na stdout podtrzymuje uruchomienie z tym tekstem; cokolwiek innego pozwala turze się zakończyć |
+| `preCompact` | Przed kompaktowaniem | `0`: jego stdout jest dodawany do tego, co podsumowanie ma zachować |
 
 - Każdy skrypt jest uruchamiany jako osobny plik wykonywalny, bez powłoki i bez argumentów, więc musi mieć uprawnienie do wykonania i zaczynać się od linii shebang. Otrzymuje zdarzenie jako JSON na stdin: nazwę zdarzenia, a dla haków narzędzi nazwę narzędzia wraz z jego argumentami (`preTool`) albo wynikiem (`postTool`).
 - Hak działa jako jeden z procesów narzędzi uruchomienia, w katalogu agenta dla tego uruchomienia. Gdy serwer uruchamia agentów w piaskownicy, działa wewnątrz piaskownicy uruchomienia. Dostaje minimalne środowisko i żadne poświadczenia uruchomienia: ani tokenu forge czy dostawcy, ani dostępu do bramy.
-- Każdy hak ma 30 sekund. Jego wyjście jest odczytywane i odrzucane.
+- Każdy hak ma 30 sekund. Wyjście `sessionStart`, `preTool` i `postTool` jest odczytywane i odrzucane.
 - `preTool` działa w trybie zamkniętym: kod wyjścia inny niż zero, przekroczenie czasu albo skrypt, którego nie da się uruchomić, odrzucają wywołanie narzędzia.
 - Ścieżka bezwzględna, nieistniejąca albo wychodząca poza folder haka (po rozwiązaniu dowiązań) jest odrzucana, a dziennik uruchomienia mówi, który hak został odrzucony i dlaczego. Odrzucony albo nieczytelny hak `preTool` odrzuca każde wywołanie narzędzia, dopóki nie zostanie naprawiony.
 - Blok `hooks` w `.agents/harness.json`, czy to w repozytorium, czy we własnym folderze agenta, jest ignorowany. Repozytorium to często cudzy kod, a folder agenta mogą zapisywać członkowie i uruchomienia. Dziennik uruchomienia mówi, że blok został zignorowany i skąd zamiast tego czytane są haki.
 
-Haki powłoki dotyczą wyłącznie wbudowanego harnessu. Skonfigurowany hak `preTool` albo `postTool` powoduje, że uruchomienie wywołuje swoje narzędzia po jednym naraz.
+### Haki stop i preCompact
+
+- `stop` otrzymuje `event: "stop"`, ostatnią wiadomość agenta (`last_message`), `stop_hook_active` (true, gdy to zatrzymanie następuje po kontynuacji, którą wywołał hak) oraz `block_count` (ile razy dotąd podtrzymał uruchomienie, od 0). Aby podtrzymać uruchomienie, kończy się kodem `2` i wypisuje, co agent ma zrobić dalej. Tekst, obcięty do 2 000 znaków, trafia do agenta jako wiadomość systemowa.
+- Hak `stop` podtrzymuje uruchomienie co najwyżej 3 razy w jednym uruchomieniu. Potem nie jest już uruchamiany i tura się kończy.
+- `stop` zawodzi otwarcie. Przekroczenie czasu, skrypt, którego nie da się uruchomić, dowolny kod wyjścia inny niż `2` albo kod `2` przy pustym stdout pozwala turze się zakończyć, więc uszkodzony hak nie może utrzymać uruchomienia otwartego.
+- `preCompact` otrzymuje `event: "pre_compact"`. Jego stdout, obcięty do 1 000 znaków, jest dodawany do skupienia kompaktowania. Skrypt, który zawiedzie, nic nie dodaje.
+
+Haki powłoki dotyczą wbudowanego harnessu. W Claude Code działają także haki `stop` i `preCompact`: własne haki `Stop` i `PreCompact` Claude Code pytają serwer, a serwer uruchamia skrypty właściciela w ten sam sposób. Pozostałe trzy klucze dotyczą wyłącznie wbudowanego harnessu. Skonfigurowany hak `preTool` albo `postTool` powoduje, że uruchomienie wywołuje swoje narzędzia po jednym naraz.
 
 ## AgentLiveState (pochodny)
 

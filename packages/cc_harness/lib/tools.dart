@@ -6,14 +6,18 @@ library;
 // contract — re-exported here so a tool author needs one import, not two.
 export 'src/messages.dart' show HarnessImageBlock;
 export 'src/tools/action_class.dart';
+export 'src/tools/background_commands.dart';
+export 'src/tools/background_notify.dart';
 export 'src/tools/call_description.dart';
 export 'src/tools/command_runner.dart';
 export 'src/tools/file_search_port.dart';
+export 'src/tools/notify_pattern.dart';
 export 'src/tools/staged_edit.dart';
 export 'src/tools/subagent_profile.dart';
 export 'src/tools/subagent_spawner.dart';
 export 'src/tools/tool.dart';
 export 'src/tools/tool_output_read_tool.dart';
+export 'src/tools/tool_reentry.dart';
 export 'src/tools/tool_registry.dart';
 export 'src/tools/tool_residency.dart';
 export 'src/tools/tool_surface.dart';

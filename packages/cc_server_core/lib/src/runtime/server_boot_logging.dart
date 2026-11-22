@@ -227,7 +227,7 @@ void _configureBootLogging(CcServerConfig config) {
   // for a bit and (piped, block-buffered stdout aside) that used to read as a
   // hung start. Emitted directly, bypassing the level filter (and its `[level]`
   // prefix): the lifecycle lines always print, whatever `--log-level` says.
-  _emitLog(false, 'cc_server: booting (data: ${config.dataDir})…');
+  _emitLog(false, bootingLine(config.dataDir));
 }
 
 /// Runs a boot phase, announcing it before and timing it after.
@@ -434,4 +434,17 @@ void _modelLog(ModelLogLevel level, String what, String message) =>
 /// of a `runZonedGuarded` around the server run.
 void recordUncaughtServerError(Object error, StackTrace stack) {
   _emitLog(true, 'cc_server: uncaught error: $error', stack);
+}
+
+/// Records a boot that failed before the server was ready: [error] and
+/// [stack] go to the rotating on-disk log when it is open by then, and
+/// nowhere else, since the terminal gets one line (`bin/cc_server.dart`).
+/// Returns whether a log file took them.
+bool recordBootFailure(Object error, StackTrace stack) {
+  final sink = _fileSink;
+  if (sink == null) {
+    return false;
+  }
+  sink.write(redactSecrets('cc_server: the boot failed: $error\n  $stack'));
+  return true;
 }

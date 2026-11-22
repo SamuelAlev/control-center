@@ -2,7 +2,7 @@
 title: Modalità
 description: Perché è uno spazio, non un agente, a portare una modalità; che cosa garantisce ciascuna delle quattro modalità; e dove quella garanzia è strutturale anziché solo dichiarata nel prompt.
 slug: it-IT/manuale/concetti/modalita
-sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
+sourceHash: 4450ebc86d95efb0366bc3f0ab4ddebc6d3a3adb
 ---
 
 ## Che cos'è una modalità
@@ -41,7 +41,7 @@ Un'esecuzione che termina senza il suo piano viene comunque registrata con stato
 
 Esiste una seconda via d'uscita, separata: `exit_plan_mode`. È un gate di approvazione rigido, non un verbo di output — un agente che la chiama invece di `submit_plan` non ha consegnato nulla. La prima chiamata apre un'approvazione durevole `plan_exit` e restituisce `pending`, e lo spazio resta di sola lettura; le chiamate ripetute restano `pending` invece di aprire un secondo gate. Solo una volta concessa l'approvazione una chiamata successiva riporta lo spazio alla modalità chat. Un rifiuto permette all'agente di aprire una nuova richiesta per un piano rivisto.
 
-Per uscire tu stesso dalla modalità Piano, cambia il menu a discesa della modalità nel composer (oppure premi Shift+Tab). `exit_plan_mode` viene decisa con lo strumento MCP `decide_approval`. Le righe «approvazione dell'agente» della posta in arrivo sono un'altra cosa: richieste di conferma per singolo turno provenienti da un agente in esecuzione.
+Per uscire tu stesso dalla modalità Piano, cambia il menu a discesa della modalità nel composer (oppure premi Shift+Tab). `exit_plan_mode` viene decisa da un'esecuzione di agente con lo strumento MCP `decide_approval`. Le righe «approvazione dell'agente» della posta in arrivo sono un'altra cosa: richieste di conferma per singolo turno provenienti da un agente in esecuzione.
 
 ### Revisione — sola lettura, nessun contratto
 
@@ -65,6 +65,8 @@ Nulla nella proposta viene eseguito finché non la approvi. All'approvazione un 
 
 **Le modalità di sola lettura non negano l'accesso alla rete né ai segreti.** Le classi di effetto che Revisione, Piano e Orchestrazione rifiutano sono quelle che cambiano il mondo: eliminazione di file, scritture fuori dal worktree, commit, push, creazione e pubblicazione di PR, scritture di sincronizzazione dei fornitori, installazione di pacchetti, avvio di processi, mutazione dello spazio di lavoro e controllo dei recinti. L'egress di rete e l'accesso ai segreti restano ai valori predefiniti di proposito — la ricerca è l'intero scopo di una modalità di sola lettura.
 
+**La modalità codice non amplia mai una modalità.** Prima si applica il filtro di strumenti della modalità, e uno script `repl` della [modalità codice](/it-IT/manuale/concetti/modalita-codice/) può chiamare solo gli strumenti che restano dopo di esso, attraverso lo stesso gate di una chiamata diretta. I verbi fissati della modalità (il suo verbo di output, `exit_plan_mode`, `ask_user`) e il suo ciclo proprio (i verbi dei nodi di revisione in modalità revisione) vengono sempre chiamati direttamente, così un'esecuzione non deve mai scrivere uno script per consegnare il proprio deliverable o per porre una domanda. In [modalità vibe](/it-IT/manuale/guide/dirigi-worker-in-background/) l'esecuzione che dirige mantiene solo gli strumenti di lettura e nessuno strumento solo da script, quindi i suoi script raggiungono solo quelli.
+
 ## Scegliere e cambiare una modalità
 
 Il menu a discesa della modalità nel composer offre **tre** opzioni: Agente (chat), Piano e Orchestrazione. `review` **non è selezionabile dall'utente** — viene impostata dal sistema quando si crea uno spazio per la revisione di una PR e dai passaggi di pipeline.
@@ -87,4 +89,5 @@ Le liste di autorizzazione vincolano gli strumenti di livello scrittura e superi
 - [Il modello degli agenti](/it-IT/manuale/concetti/modello-agenti/): quali trasporti possono applicare una modalità
 - [Guardrail](/it-IT/manuale/concetti/guardrail/): la policy delle classi di effetto in cui confluisce la preimpostazione di una modalità
 - [Orchestrazione](/it-IT/manuale/concetti/orchestrazione/): che cosa fa una proposta di orchestrazione approvata
+- [Modalità codice](/it-IT/manuale/concetti/modalita-codice/): script che chiamano gli strumenti della modalità
 - [Usa la modalità piano](/it-IT/manuale/guide/modalita-piano/): la guida pratica passo passo

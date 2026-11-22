@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_server_core/src/remote_rpc_catalog.dart';
@@ -44,6 +45,7 @@ ReviewDispatchFn buildReviewFixDispatch({
       // The human who sent the findings to the fix agent: co-authors the
       // agent's commits and selects their own GitHub token when stored.
       requestedByUserId: requestedByUserId,
+      wakeContext: const WakeContext.userMessage(),
     );
   };
 }

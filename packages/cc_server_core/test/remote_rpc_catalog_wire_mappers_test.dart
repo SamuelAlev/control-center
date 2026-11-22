@@ -1,16 +1,19 @@
-import 'package:cc_domain/cc_domain.dart' show RepoDto;
+import 'package:cc_domain/cc_domain.dart' show PrCodeReviewCommentDto, RepoDto;
 import 'package:cc_domain/core/domain/entities/active_process_info.dart';
 import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/ports/database_backup_port.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
-import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_domain/features/calendar/domain/entities/calendar_event.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_goal_run.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_goal_status.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/goal_contract.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/goal_hold.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/goal_unattended_policy.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/goal_verification.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/commit_status.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
@@ -78,9 +81,8 @@ void main() {
           conversationId: 'c-1',
           agentId: 'a-1',
           userText: 'keep polishing until done',
-          kind: AgentGoalKind.loop,
           status: AgentGoalStatus.budgetExhausted,
-          deadlineAt: DateTime(2026, 8, 1, 12),
+          deadlineAt: DateTime.utc(2026, 8, 1, 12),
           costCapMicros: 50000000,
           costMicros: 1250000,
           maxRuns: 100,
@@ -89,9 +91,27 @@ void main() {
           activeRunId: 'run-9',
           requestedByUserId: 'user-1',
           summary: 'all done',
-          createdAt: DateTime(2026, 7, 1, 9),
-          updatedAt: DateTime(2026, 7, 1, 10),
+          contract: GoalContract(criteria: const ['tests pass']),
+          hold: GoalHold.limit,
+          holdUntil: DateTime.utc(2026, 7, 2),
+          holdDetail: 'anthropic',
+          noProgressStreak: 1,
+          verificationRounds: 2,
+          lastFingerprint: 'fp',
+          parkCount: 3,
+          fresh: true,
+          unattended: GoalUnattendedPolicy.assume,
+          checkerAgentId: 'a-2',
+          verification: GoalVerification(
+            round: 2,
+            claimSummary: 'done',
+            at: DateTime.utc(2026, 7, 1, 11),
+          ),
+          createdAt: DateTime.utc(2026, 7, 1, 9),
+          updatedAt: DateTime.utc(2026, 7, 1, 10),
         ),
+        canResume: true,
+        canApprove: false,
       );
       expect(w['id'], 'g-1');
       expect(w['workspace_id'], 'ws-1');
@@ -99,9 +119,9 @@ void main() {
       expect(w['conversation_id'], 'c-1');
       expect(w['agent_id'], 'a-1');
       expect(w['user_text'], 'keep polishing until done');
-      expect(w['kind'], 'loop');
+      expect(w.containsKey('kind'), isFalse);
       expect(w['status'], 'budget_exhausted');
-      expect(w['deadline_at'], '2026-08-01T12:00:00.000');
+      expect(w['deadline_at'], '2026-08-01T12:00:00.000Z');
       expect(w['cost_cap_micros'], 50000000);
       expect(w['cost_micros'], 1250000);
       expect(w['max_runs'], 100);
@@ -110,8 +130,63 @@ void main() {
       expect(w['active_run_id'], 'run-9');
       expect(w['requested_by_user_id'], 'user-1');
       expect(w['summary'], 'all done');
-      expect(w['created_at'], '2026-07-01T09:00:00.000');
-      expect(w['updated_at'], '2026-07-01T10:00:00.000');
+      expect(w['contract'], {
+        'criteria': ['tests pass'],
+        'checks': <Object?>[],
+      });
+      expect(w['hold'], 'limit');
+      expect(w['hold_until'], '2026-07-02T00:00:00.000Z');
+      expect(w['hold_detail'], 'anthropic');
+      expect(w['no_progress_streak'], 1);
+      expect(w['verification_rounds'], 2);
+      expect(w['last_fingerprint'], 'fp');
+      expect(w['park_count'], 3);
+      expect(w['fresh'], isTrue);
+      expect(w['unattended'], 'assume');
+      expect(w['checker_agent_id'], 'a-2');
+      expect((w['verification'] as Map)['round'], 2);
+      expect(w['can_resume'], isTrue);
+      expect(w['can_approve'], isFalse);
+      expect(w['created_at'], '2026-07-01T09:00:00.000Z');
+      expect(w['updated_at'], '2026-07-01T10:00:00.000Z');
+    });
+
+    test('every goal time on the wire is UTC with a Z, whatever the '
+        'zone it was made in', () {
+      final local = DateTime(2026, 7, 1, 9, 30, 15, 250);
+      final w = agentGoalRunToWire(
+        AgentGoalRun(
+          id: 'g-3',
+          workspaceId: 'ws-1',
+          spaceId: 'ch-1',
+          conversationId: 'c-1',
+          agentId: 'a-1',
+          userText: 'x',
+          deadlineAt: local,
+          costCapMicros: 1,
+          holdUntil: local,
+          createdAt: local,
+          updatedAt: local,
+        ),
+        canResume: false,
+        canApprove: true,
+      );
+      for (final key in [
+        'deadline_at',
+        'hold_until',
+        'created_at',
+        'updated_at',
+      ]) {
+        final text = w[key] as String;
+        expect(text, endsWith('Z'), reason: key);
+        expect(
+          DateTime.parse(text).isAtSameMomentAs(
+            local.subtract(const Duration(milliseconds: 250)),
+          ),
+          isTrue,
+          reason: key,
+        );
+      }
     });
 
     test('agentGoalRunToWire omits null optional fields', () {
@@ -123,21 +198,27 @@ void main() {
           conversationId: 'c-1',
           agentId: 'a-1',
           userText: 'finish the migration',
-          kind: AgentGoalKind.goal,
-          deadlineAt: DateTime(2026, 8, 1),
+          deadlineAt: DateTime.utc(2026, 8, 1),
           costCapMicros: 50000000,
           maxRuns: 100,
-          createdAt: DateTime(2026, 7, 1, 9),
-          updatedAt: DateTime(2026, 7, 1, 10),
+          createdAt: DateTime.utc(2026, 7, 1, 9),
+          updatedAt: DateTime.utc(2026, 7, 1, 10),
         ),
+        canResume: false,
+        canApprove: true,
       );
-      expect(w['kind'], 'goal');
       expect(w['status'], 'active');
+      expect(w['can_resume'], isFalse);
       expect(w['cost_micros'], 0);
       expect(w['run_count'], 0);
       expect(w.containsKey('active_run_id'), isFalse);
       expect(w.containsKey('requested_by_user_id'), isFalse);
       expect(w.containsKey('summary'), isFalse);
+      expect(w.containsKey('contract'), isFalse);
+      expect(w.containsKey('hold'), isFalse);
+      expect(w.containsKey('verification'), isFalse);
+      expect(w['unattended'], 'wait');
+      expect(w['fresh'], isFalse);
     });
 
     test('repoToWire maps every field', () {
@@ -229,19 +310,6 @@ void main() {
         expect(restored.hasForgeRemote, isTrue);
       },
     );
-
-    test('spaceReadToWire includes last_read only when set', () {
-      expect(spaceReadToWire('c-1', null), {'space_id': 'c-1'});
-      final withRead = spaceReadToWire(
-        'c-1',
-        FeedPosition(at: DateTime.utc(2026, 7, 1, 9), seq: 12),
-      );
-      expect(withRead['space_id'], 'c-1');
-      expect(withRead['last_read'], {
-        'at': '2026-07-01T09:00:00.000Z',
-        'seq': 12,
-      });
-    });
 
     test('agentRunLogToWire flattens cost into token columns', () {
       final w = agentRunLogToWire(
@@ -565,6 +633,21 @@ void main() {
         );
       },
     );
+
+    test('a file-level comment reaches the client as file-level', () {
+      final c = PrCodeReviewComment(
+        id: 10,
+        body: 'why the move?',
+        user: const PrUser(login: 'octocat', avatarUrl: ''),
+        path: 'lib/moved.dart',
+        position: null,
+        createdAt: DateTime(2026, 11, 17),
+        isFileLevel: true,
+      );
+      final dto = PrCodeReviewCommentDto.fromJson(prCodeReviewCommentToWire(c));
+      expect(dto.isFileLevel, isTrue);
+      expect(dto.line, isNull);
+    });
   });
 
   group('prCountsTowardNeedsMyReview', () {

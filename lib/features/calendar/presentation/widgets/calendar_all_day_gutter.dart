@@ -6,11 +6,8 @@ import 'package:flutter/widgets.dart';
 /// The timeline-gutter cell that sits beside the week view's all-day strip,
 /// where the hour labels would be if the strip were part of the timed grid.
 ///
-/// It answers the question the strip otherwise leaves open — "what is this band
-/// above the grid?" — and, once the band has anything in it, doubles as the
-/// control that folds it away. An empty band is labelled rather than blank; a
-/// populated one is a toggle, because at that point the label is redundant and
-/// the affordance is not.
+/// It holds the control that folds the strip away. Only built for a week that
+/// has all-day events: an empty week has no strip, so no cell beside it.
 ///
 /// Rendered by `CalendarKalenderHost` through kalender's `weekNumberBuilder`
 /// (the week header's leading slot). kalender lays the leading out beside the
@@ -23,7 +20,6 @@ class CalendarAllDayGutter extends StatelessWidget {
     required this.topInset,
     required this.laneHeight,
     required this.rowHeight,
-    required this.collapsible,
     required this.collapsed,
     required this.onToggle,
   });
@@ -37,18 +33,15 @@ class CalendarAllDayGutter extends StatelessWidget {
   /// fit a taller leading.
   final double laneHeight;
 
-  /// Height of one strip row. The label / toggle occupies the first row and the
-  /// rest of [laneHeight] stays empty, so the cell tracks the strip's top edge
-  /// however tall the strip grows.
+  /// Height of one strip row. The toggle occupies the first row and the rest of
+  /// [laneHeight] stays empty, so the cell tracks the strip's top edge however
+  /// tall the strip grows.
   final double rowHeight;
-
-  /// Whether the strip has anything to fold away. False renders the label.
-  final bool collapsible;
 
   /// Whether the strip is currently folded to its one-row summary.
   final bool collapsed;
 
-  /// Toggles [collapsed]. Only reachable when [collapsible].
+  /// Toggles [collapsed].
   final VoidCallback onToggle;
 
   @override
@@ -68,40 +61,9 @@ class CalendarAllDayGutter extends StatelessWidget {
             left: 0,
             right: 0,
             height: rowHeight,
-            child: Center(
-              child: collapsible ? _toggle(context) : _label(context),
-            ),
+            child: Center(child: _toggle(context)),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _label(BuildContext context) {
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    final l10n = AppLocalizations.of(context);
-    // The gutter is only as wide as an hour label, so it gets the short form of
-    // the term and the tooltip (and the Semantics label) carries the full one.
-    // Nothing is lost; the gutter just stays the width the grid needs it to be.
-    return CcTooltip(
-      message: l10n.calendarAllDay,
-      child: Semantics(
-        label: l10n.calendarAllDay,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 3),
-          child: Text(
-            l10n.calendarAllDayGutter,
-            maxLines: 1,
-            textAlign: TextAlign.center,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 10,
-              height: 1.1,
-              fontWeight: FontWeight.w500,
-              color: t.textTertiary,
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -110,7 +72,9 @@ class CalendarAllDayGutter extends StatelessWidget {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final tokens = CcButtonTokens.ghost(t);
     final l10n = AppLocalizations.of(context);
-    final label = collapsed ? l10n.calendarExpandAllDay : l10n.calendarCollapseAllDay;
+    final label = collapsed
+        ? l10n.calendarExpandAllDay
+        : l10n.calendarCollapseAllDay;
     return CcTooltip(
       message: label,
       child: CcTappable(

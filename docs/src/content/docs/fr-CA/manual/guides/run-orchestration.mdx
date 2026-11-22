@@ -2,7 +2,7 @@
 title: Lancer une orchestration
 description: Demandez un plan à un orchestrateur, révisez-le et modifiez-le dans Plan Studio, approuvez-le une seule fois et laissez un pipeline généré faire le travail.
 slug: fr-CA/manuel/guides/lancer-orchestration
-sourceHash: 086301be6c1957f6336294720967813c3050ed25
+sourceHash: cc4390cbac6c2122dd24c23bcef20693f40121bb
 ---
 
 Ce guide explique comment transformer un seul grand objectif en un plan pour
@@ -69,23 +69,13 @@ coût, de durée et de rayon d’impact avant de vous engager. Voir
 [Travailler dans Plan Studio](/fr-CA/manuel/guides/plan-studio/) pour l’éditeur
 complet.
 
-:::note[Le budget n’est pas un plafond de dépenses]
-Le budget d’une proposition est comparé à l’_estimation_ de la barre
-d’approbation : lorsque le haut de la fourchette de l’estimation le dépasse, le
-total devient rouge avec un avertissement de dépassement de budget. Rien ne
-vérifie les dépenses pendant l’exécution du plan ; il n’arrêtera donc pas une
-exécution et ne la fera pas échouer. Pour un véritable arrêt des dépenses,
-utilisez les politiques de budget par agent — voir
-[Gérer les coûts](/fr-CA/manuel/guides/gerer-couts/).
+:::note[Le budget retient l’exécution]
+Le budget d’une proposition est comparé à l’_estimation_ de la barre d’approbation : lorsque le haut de la fourchette de l’estimation le dépasse, le total devient rouge avec un avertissement de dépassement de budget. Pendant l’exécution du plan, le serveur vérifie les dépenses avant chaque nouvelle étape. Au budget, l’exécution est retenue et rien de nouveau ne démarre ; les étapes déjà en cours se terminent. Quiconque a demandé l’exécution reçoit une notification et appuie sur **Relever le plafond** sur la page de l’exécution du pipeline pour continuer. Voir [Gérer les coûts](/fr-CA/manuel/guides/gerer-couts/).
 :::
 
 ## Étape 3 : Approuver
 
-Approuvez le plan, depuis la carte dans le clavardage ou depuis la barre
-d’approbation de Plan Studio. **C’est la seule décision que vous prenez.**
-L’approbation est réservée aux opérateurs — il n’existe aucun outil MCP pour
-cela, donc un agent peut proposer et réviser, mais jamais approuver son propre
-plan.
+Approuvez le plan, depuis la carte dans le clavardage ou depuis la barre d’approbation de Plan Studio. **C’est la seule décision que vous prenez.** L’approbation est réservée aux opérateurs — il n’existe aucun outil MCP pour cela, donc un agent peut proposer et réviser, mais jamais approuver son propre plan. L’approbation exige un accès en écriture aux dépôts de l’espace, et l’exécution agit ensuite pour la personne qui a approuvé.
 
 À partir de là, un matérialisateur déterministe (une fonction pure, sans LLM)
 transforme la proposition en un véritable
@@ -124,13 +114,7 @@ Appuyez sur **Annuler l’orchestration** sur la carte dans le clavardage, ou su
 **Annuler l’exécution** dans la barre d’approbation de Plan Studio. L’annulation
 démonte le travail en cours.
 
-Une orchestration échoue lorsque la matérialisation échoue, ou lorsque
-l’exécution du pipeline généré échoue (recherche, discussion, synthèse ou
-persistance — ces étapes ne poursuivent pas en cas d’échec). Les étapes de
-**travail** générées, elles, poursuivent toujours en cas d’échec, de sorte qu’un
-sous-ticket en échec ne fait pas échouer l’exécution. Il n’existe aucun chemin
-d’échec pour un dépassement de budget ni de seuil « tous les sous-tickets ont
-échoué ».
+Une orchestration échoue lorsque la matérialisation échoue, ou lorsque l’exécution du pipeline généré échoue (recherche, discussion, synthèse ou persistance — ces étapes ne poursuivent pas en cas d’échec). Les étapes de **travail** générées, elles, poursuivent toujours en cas d’échec, de sorte qu’un sous-ticket en échec ne fait pas échouer l’exécution. Atteindre le budget retient l’exécution au lieu de la faire échouer, et il n’existe aucun seuil « tous les sous-tickets ont échoué ».
 
 ## Guides connexes
 

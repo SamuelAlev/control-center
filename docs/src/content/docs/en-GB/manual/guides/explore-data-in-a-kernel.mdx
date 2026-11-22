@@ -1,8 +1,8 @@
 ---
 title: Explore data in a persistent kernel
-description: Give an agent a Python or JavaScript interpreter that keeps its variables between calls, draws charts into the chat, and can call your own tools from inside a cell.
+description: Give an agent a Python or JavaScript interpreter that keeps its variables between calls and draws charts into the chat.
 slug: en-GB/manual/guides/explore-data-in-a-kernel
-sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
+sourceHash: 8fcd77019bfae5088223822a12ef91c8a6879c5d
 ---
 
 This guide shows you how to have an agent load something expensive once and then ask several questions of it, rather than paying the load on every question.
@@ -62,22 +62,9 @@ These are rewritten into plain code rather than erroring:
 
 The `%pip` cache eviction is the one that matters: installing into a live interpreter does nothing for a module that was already imported, so without it the version you just installed is not the one running.
 
-## Calling your own tools from inside a cell
+## Calling tools from code
 
-```python
-paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
-for path in paths.splitlines()[:100]:
-    contents = tool("read", {"path": path})
-    ...
-```
-
-`tool(name, args)` re-enters the agent's own tool registry. That means a cell can fan out over a hundred files, or delegate through `task`, without the model spending a turn per item.
-
-:::caution[The bridge does not go round your guardrails]
-A bridged call resolves against the **same** tool registry a model-issued call does, so `ActionClass` policy, approval prompts and every wrapper apply identically. A bridge that reached past the registry would be a hole shaped exactly like "write a Python one-liner".
-:::
-
-A bridged call **suspends the cell's timeout** while it is outstanding. The budget measures inactivity, not wall clock — a cell that fans out to subagents and waits four minutes is not hung, and killing it mid-fanout would lose the whole kernel's state.
+A cell cannot call the agent's tools. To loop over tools in code, the agent writes a [`repl`](/en-GB/manual/concepts/code-mode/) script instead. A script cannot call `eval` either: the agent calls it directly.
 
 ## Starting over
 

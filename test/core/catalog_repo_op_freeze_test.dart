@@ -8,8 +8,21 @@ import 'package:test/test.dart';
 /// does not grow. Lower the freeze when a pack is extracted.
 void main() {
   test('remote_rpc_catalog.dart does not gain RepoOp literals', () {
-    // Lowered 2026-11-10: the rig ops moved to catalog/rig_ops.dart.
-    const freeze = 392;
+    // Lowered 2026-11-18: the workspace settings ops moved to
+    // catalog/workspace_settings_ops.dart.
+    // Lowered 2026-11-19: the client write surface of the run log was
+    // removed (only agent_run_log.stop remains, in its own pack).
+    // Lowered 2026-11-20: the space read cursor became per-conversation
+    // cursors (catalog/conversation_read_ops.dart).
+    // Lowered 2026-11-20: orchestration.update moved to the cap pack
+    // (catalog/orchestration_cap_ops.dart), then it and
+    // orchestration.insert were deleted (no client wrote orchestrations).
+    // Lowered 2026-11-20: the orchestration ops moved to their pack
+    // (catalog/orchestration_ops.dart), behind the orchestration's space.
+    // Lowered 2026-11-20: agents.killProcesses moved to the stop pack
+    // (catalog/agent_run_log_write_ops.dart), behind the run's space; the
+    // floor also takes the steering and goal ops removed the same day.
+    const freeze = 370;
     final root = _repoRoot();
     final file = File(
       '$root/packages/cc_server_core/lib/src/remote_rpc_catalog.dart',

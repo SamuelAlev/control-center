@@ -201,6 +201,65 @@ class SkillEvaluationSnapshotStore {
     return captured;
   }
 
+  /// Stores [skillMd] as a revision of the workspace skill [slug] beside
+  /// its history, without touching the live installation: the files of
+  /// [base] (its live revision) with `SKILL.md` replaced, or `SKILL.md`
+  /// alone for a new skill. Scanned like a capture; [previous] loads it.
+  Future<AdmittedSkillEvaluationSnapshot> stage({
+    required String workspaceId,
+    required String slug,
+    required AdmittedSkillEvaluationSnapshot? base,
+    required String skillMd,
+  }) async {
+    validateSlug(slug);
+    if (base != null &&
+        (base.skillKey != 'workspace:$slug' || base.package.slug != slug)) {
+      throw ArgumentError('The base is another skill');
+    }
+    final files = <String, List<int>>{
+      ...?base?.package.files,
+      'SKILL.md': utf8.encode(skillMd),
+    };
+    _validateFiles(files);
+    final scan = await _scan(
+      workspaceId,
+      slug,
+      files,
+      SkillTrustTier.workspace,
+    );
+    final staged = AdmittedSkillEvaluationSnapshot(
+      skillKey: 'workspace:$slug',
+      package: SkillPackageSnapshot(
+        slug: slug,
+        packageHash: packageHash(files),
+        files: files,
+        origin: base?.package.origin ?? 'workspace',
+        repoId: null,
+        sourceCommit: base?.package.sourceCommit,
+        scanRulesVersion: scan.rulesVersion.toString(),
+      ),
+      scan: scan,
+    );
+    await _save(workspaceId, staged);
+    return staged;
+  }
+
+  /// Deletes the stored revision [hash] of [skillKey] (a dropped stage).
+  /// Nothing else stored, and nothing live, is touched.
+  Future<void> discard({
+    required String workspaceId,
+    required String skillKey,
+    required String hash,
+  }) async {
+    if (!_hash.hasMatch(hash)) {
+      throw ArgumentError('Invalid revision hash');
+    }
+    final file = _file(workspaceId, skillKey, hash);
+    if (file.existsSync()) {
+      await file.delete();
+    }
+  }
+
   /// Loads only a previously captured revision of this exact workspace/scope.
   /// It is rescanned under current rules; past admission never bypasses a gate.
   Future<AdmittedSkillEvaluationSnapshot?> previous({

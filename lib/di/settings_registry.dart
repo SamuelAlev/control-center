@@ -1,8 +1,10 @@
 import 'package:control_center/features/agents/presentation/settings_contributions.dart';
 import 'package:control_center/features/calendar/presentation/settings_contributions.dart';
 import 'package:control_center/features/chat_bridges/presentation/settings_contributions.dart';
+import 'package:control_center/features/code_mode/presentation/settings_contributions.dart';
 import 'package:control_center/features/connect/presentation/settings_contributions.dart';
 import 'package:control_center/features/desktop_app/presentation/settings_contributions.dart';
+import 'package:control_center/features/dispatch/presentation/settings_contributions.dart';
 import 'package:control_center/features/environments/presentation/settings_contributions.dart';
 import 'package:control_center/features/forge/presentation/settings_contributions.dart';
 import 'package:control_center/features/meetings/presentation/settings_contributions.dart';
@@ -37,7 +39,9 @@ final settingsRegistryProvider = Provider<SettingsRegistry>(
     ],
     bodies: [
       ...agentsSettingsBodies,
+      ...codeModeSettingsBodies,
       ...desktopAppSettingsBodies,
+      ...dispatchSettingsBodies,
       ...environmentsSettingsBodies,
       ...meetingsSettingsBodies,
       ...newsfeedSettingsBodies,

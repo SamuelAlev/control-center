@@ -2,7 +2,7 @@
 title: Monitora le esecuzioni delle pipeline
 description: Gestisci la coda delle esecuzioni, leggi il diagramma a cascata e il pannello dei passaggi di un'esecuzione e recupera un passaggio non riuscito o bloccato.
 slug: it-IT/manuale/guide/monitora-pipeline
-sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
+sourceHash: 48d44ae3ca3e23c1123ef282ccffece35b542b96
 ---
 
 Questa pagina copre tutto ciò che viene dopo l'avvio di un'esecuzione:
@@ -75,6 +75,8 @@ salvaguardia del motore fanno fallire l'intera esecuzione invece di
 riprenderla: un passaggio sospeso da più di 24 ore (`extras.awaitApproval` — il
 corpo `orchestration.awaitApproval` — è esente; `human.gate` non lo è) e un
 passaggio non idempotente che era in corso quando il server si è fermato.
+
+Anche un passaggio **Pursue a goal** è esente dal limite di sicurezza di 24 ore: resta sospeso mentre il suo obiettivo lavora, e la sua pagina rimanda all'obiettivo. Un'intera esecuzione può anche essere **Suspended** perché la sua orchestrazione ha raggiunto il limite di spesa; la pagina dell'esecuzione mostra allora quanto è stato speso del limite e, al richiedente dell'esecuzione, **Alza limite**.
 
 ## Ispeziona un passaggio
 

@@ -8,11 +8,13 @@ import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/transcript/util/clamp_text.dart';
 import 'package:control_center/shared/widgets/transcript/util/line_diff.dart';
+import 'package:control_center/shared/widgets/transcript/util/nested_calls.dart';
 import 'package:control_center/shared/widgets/transcript/util/read_output_parser.dart';
 import 'package:control_center/shared/widgets/transcript/widgets/code_preview.dart';
 import 'package:control_center/shared/widgets/transcript/widgets/file_change_body.dart';
 import 'package:control_center/shared/widgets/transcript/widgets/grep_result_body.dart';
 import 'package:control_center/shared/widgets/transcript/widgets/read_media_body.dart';
+import 'package:control_center/shared/widgets/transcript/widgets/script_body.dart';
 import 'package:control_center/shared/widgets/transcript/widgets/tool_image_strip.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -183,20 +185,40 @@ final _mediaMarker = RegExp(r'\[(?:image|video|audio|document)\]');
 /// Read → media/document preview or highlighted code; Edit → inline diff; Write → highlighted new
 /// file; Grep/Search → match list grouped by file; Bash → terminal; everything
 /// else → pretty-printed JSON input/output.
+///
+/// [nestedCalls] lists the calls a script made from this call. A `repl` body
+/// places them between its script and its output; any other tool that runs
+/// code (`eval`) shows them after its own body.
 Widget buildToolBody(
   BuildContext context, {
   required ToolSegment seg,
   required String codeFont,
   required DesignSystemTokens tokens,
   String? workspaceId,
+  Widget? nestedCalls,
 }) {
-  final body = _buildToolBodyContent(
-    context,
-    seg: seg,
-    codeFont: codeFont,
-    tokens: tokens,
-    workspaceId: workspaceId,
-  );
+  final repl = isReplTool(seg.toolName);
+  Widget body = repl
+      ? ScriptToolBody(
+          seg: seg,
+          codeFont: codeFont,
+          tokens: tokens,
+          nestedCalls: nestedCalls,
+        )
+      : _buildToolBodyContent(
+          context,
+          seg: seg,
+          codeFont: codeFont,
+          tokens: tokens,
+          workspaceId: workspaceId,
+        );
+  if (!repl && nestedCalls != null) {
+    body = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [body, nestedCalls],
+    );
+  }
   // Images are ORTHOGONAL to the tool kind: `browser_use` returns a screenshot
   // alongside its text, and so could any future tool. Compose them after the
   // kind-specific body rather than adding an image branch to the switch, so a
@@ -348,6 +370,23 @@ Widget _jsonBody(
     ],
   );
 }
+
+/// A labelled, bounded, selectable mono block (`Output`), clamped before
+/// layout behind a "Show full output" expander: the block every JSON-shaped
+/// tool body uses, for bodies outside this file.
+Widget buildLabeledToolBlock(
+  BuildContext context, {
+  required String label,
+  required String body,
+  required String codeFont,
+  required DesignSystemTokens tokens,
+}) => _LabeledBlock(
+  label: label,
+  body: body,
+  codeFont: codeFont,
+  tokens: tokens,
+  theme: Theme.of(context),
+);
 
 String _prettyMaybeJson(String raw) {
   // Giant-content guard: decoding + re-encoding hundreds of KB of JSON just to

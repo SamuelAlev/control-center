@@ -2,7 +2,7 @@
 title: Glossar
 description: Definitionen der zentralen Begriffe in Control Center.
 slug: de-DE/handbuch/referenz/glossar
-sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
+sourceHash: ba09880357171a4fcbb82201798578de3856cbe6
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -36,7 +36,13 @@ export const glossaryTerms = [
 ['Rig', 'Eine Wegwerfmaschine, die ein Agent in Echtzeit steuert: ein gekapselter Browser oder Linux-Desktop, ein vom Host verwalteter Android-Emulator oder iOS-Simulator, oder ein gekapseltes Terminal. Live beobachtet über eine eigene Spur in voller Auflösung, mit serverseitig erzwungener Übernahme. An eine Unterhaltung gebunden, sodass der Tab des Menschen und das Werkzeug des Agenten eine Maschine ansprechen.'],
 ['Kapsel', 'Die stärkere Isolation, die Rigs auf einer VM haben: eine Kernel-Grenze, eine Wegwerf-Overlay-Platte, ein Netz-Tor, das standardmäßig verweigert, und ein Zugangsdaten-Broker. Android- und iOS-Rigs sind Wegwerfmaschinen, nutzen aber vom Host verwaltetes Netz und beanspruchen diese Grenze nicht. Jedes Rig zu steuern nutzt die Schutzregel-Klasse enclosureControl.'],
 ['RunCost', 'Token- und Kostenaufstellung (Eingabe-Token, Ausgabe-Token, geschätzte Kosten in Mikrodollar) für einen einzelnen Agentenlauf.'],
-['WakeReason', 'Warum ein Agent gestartet wurde. Sechs Werte: Nutzernachricht, Ticketzuweisung, erneute Ausführung durch die Wiederherstellung nach einem Fehler, abgeschlossenes untergeordnetes Ticket, geplanter Folge-Heartbeat und Pipeline-Schritt.'],
+['WakeReason', 'Der Grund, warum ein Agentenlauf existiert. Eine Nachricht einer Person, eine Ticket-Zuweisung oder ein Pipeline-Schritt; oder, bei einem Lauf, den der Server von selbst startet, der Grund seines Weckrufs: ein Zeitplan, eine Überwachung, ein Abschnitt, eine Prüfung oder ein Review eines Ziels, eine Nachricht oder Antwort eines anderen Agenten, abgeschlossene untergeordnete Arbeit, ein zurückgesetztes Nutzungslimit, ein Verbesserungs-Review oder die Wiederherstellung nach einem Neustart.'],
+['Weckruf', 'Eine dauerhafte Anfrage, in der Datenbank des Arbeitsbereichs gespeichert, den Lauf eines Agenten in einer Unterhaltung zu starten oder fortzusetzen, mit einem Grund und der Person, in deren Auftrag sie handelt. Jeder Lauf, den der Server startet, ohne dass jemand tippt, beginnt als Weckruf; Weckrufe überstehen einen Neustart.'],
+['Ziel', 'Arbeit, an der ein Agent in Abschnitten dranbleibt, bis der Server verifiziert, dass „was fertig heißt“ erfüllt ist, oder eine Person das Ziel abschließt. Wird mit /goal gestartet; pro Agent gleichzeitig nur eines. Der Agent behauptet, es sei fertig; Prüfungen und ein nur lesendes Review entscheiden.'],
+['Zeitplan', 'Eine Regel, die einen Agenten zu einer Zeit, in einem Intervall, per Cron oder im eigenen Tempo des Agenten weckt, mit einem Ende, einer Obergrenze für Läufe und einer Kostenobergrenze. Erstellt mit /loop, /schedule, der Seite Zeitpläne oder dem Tool wake_me des Agenten.'],
+['Überwachung', 'Eine Regel, die einen Agenten weckt, wenn etwas passiert: Die Prüfungen eines Pull Requests sind abgeschlossen, er bekommt ein Review oder wird gemergt, eine Umgebungsaufgabe endet, ein Ticket wird erledigt oder ein Pipeline-Lauf endet.'],
+['Anfrage', 'Die Frage eines Agenten an einen anderen, aufgezeichnet, bevor sie zugestellt wird. Der Fragende wird einmal mit der Antwort geweckt oder mit dem Grund, warum es keine gibt.'],
+['Verbesserungsvorschlag', 'Eine Änderung an Speicher, einer Richtlinie, einer Agentennotiz oder einem Skill, die ein Review nach einem verifizierten Ziel oder bei /refine vorschlägt. Sie ändert nichts, bis eine Person sie annimmt; eine Skill-Änderung wird zuerst ausgewertet.'],
 ['SandboxPort', 'Steuert den Lebenszyklus der Sandbox (probe, launch, events, exec, destroy).'],
 ['CredentialBrokerPort', 'Stellt begrenzte Zugangsdaten für den Start der Sandbox aus (ein Token für ein einzelnes Repository für die Umgebung eines Agenten, Schreiben nur für den Push-Pfad auf dem Server) und gibt sie beim Aufräumen frei.'],
 ['GitRepoInspectorPort', 'Liest Metadaten (Owner, Repo, Branch) aus einem lokalen Git-Repo-Pfad.'],
@@ -94,6 +100,11 @@ export const glossaryTerms = [
 ['Installations-ID', 'Die Identität eines Servers gegenüber einer Connect-Adresse, abgeleitet aus seinem Installationsschlüssel. Connect lässt Server anhand der Installations-ID zu; das Rotieren des Schlüssels ändert sie und meldet alle von den Connect-Spuren ab.'],
 ['Installationsbindung', 'Der Eintrag bei Connect, an welchen einen Server ein Slack-Team gebunden ist. GitHub-Installationen haben keinen: Jeder Server, auf dem sich ein Mitglied anmeldet, kann sie nutzen.'],
 ['Anmeldespur', 'Die Anmeldung im Browser bei einem Anbieter: github, google, linear, linear_app oder slack. Bei eigenen Apps läuft eine Spur über die eigene App, wenn sie vollständig konfiguriert ist, sonst ist sie nicht verfügbar; mit gewähltem Connect betreibt Connect sie. Keins von beiden fällt auf das andere zurück.'],
+['Code-Modus', 'Das repl-Tool, das ein JavaScript-Skript ausführt, das die übrigen Tools des Laufs aufruft. Jeder Lauf hat es, wenn der Server Skripte ausführen kann; es gibt keine Einstellung dafür.'],
+['Direktes Tool', 'Ein Tool, das ein Lauf beim Namen aufruft, mit seinem Schema in jeder Anfrage, ob mit repl oder ohne: die Datei- und Shell-Tools, ask_user, task, die Aufgabenliste, die Gedächtnissuche, send_message und die eigenen Verben des Modus.'],
+['Nur-Skript-Tool', 'Ein Tool außerhalb der direkten Menge, das ein Lauf mit repl nur aus einem Skript aufrufen kann, bis der Server die Skripte des Laufs nicht mehr ausführen kann und es stattdessen beim ersten Gebrauch geladen wird. Bis dahin erreicht seine Beschreibung das Modell nie.'],
+['Code-Modus-Runner', 'cc_codemode, das mitgelieferte Programm, das ein Skript in der QuickJS-NG-Engine ausführt, nachdem es sich mit den Kontrollen des Betriebssystems abgeschirmt hat. Ohne es startet der Server nicht, und er führt ein Skript nur aus, wenn es ein Release-Build ist und seine Abschirmung vollständig ist.'],
+['Code-Ausführung', 'Die Aufzeichnung eines Skripts: sein Quelltext, seine Ausgabe, seine Grenzwerte und jeder Tool-Aufruf, den es gemacht hat, im Arbeitsbereich gespeichert und unter Observability → Code-Ausführungen aufgelistet.'],
 ];
 
 <StructuredData
@@ -157,7 +168,19 @@ export const glossaryTerms = [
 
 **RunCost**: Token- und Kostenaufstellung (Eingabe-Token, Ausgabe-Token, geschätzte Kosten in Mikrodollar) für einen einzelnen Agentenlauf.
 
-**WakeReason**: Warum ein Agent gestartet wurde. Sechs Werte: Nutzernachricht, Ticketzuweisung, erneute Ausführung durch die Wiederherstellung nach einem Fehler, abgeschlossenes untergeordnetes Ticket, geplanter Folge-Heartbeat und Pipeline-Schritt.
+**WakeReason**: Der Grund, warum ein Agentenlauf existiert. Eine Nachricht einer Person, eine Ticket-Zuweisung oder ein Pipeline-Schritt; oder, bei einem Lauf, den der Server von selbst startet, der Grund seines Weckrufs: ein Zeitplan, eine Überwachung, ein Abschnitt, eine Prüfung oder ein Review eines Ziels, eine Nachricht oder Antwort eines anderen Agenten, abgeschlossene untergeordnete Arbeit, ein zurückgesetztes Nutzungslimit, ein Verbesserungs-Review oder die Wiederherstellung nach einem Neustart.
+
+**Weckruf**: Eine dauerhafte Anfrage, in der Datenbank des Arbeitsbereichs gespeichert, den Lauf eines Agenten in einer Unterhaltung zu starten oder fortzusetzen, mit einem Grund und der Person, in deren Auftrag sie handelt. Jeder Lauf, den der Server startet, ohne dass jemand tippt, beginnt als Weckruf; Weckrufe überstehen einen Neustart.
+
+**Ziel**: Arbeit, an der ein Agent in Abschnitten dranbleibt, bis der Server verifiziert, dass „was fertig heißt“ erfüllt ist, oder eine Person das Ziel abschließt. Wird mit `/goal` gestartet; pro Agent gleichzeitig nur eines. Der Agent behauptet, es sei fertig; Prüfungen und ein nur lesendes Review entscheiden.
+
+**Zeitplan**: Eine Regel, die einen Agenten zu einer Zeit, in einem Intervall, per Cron oder im eigenen Tempo des Agenten weckt, mit einem Ende, einer Obergrenze für Läufe und einer Kostenobergrenze. Erstellt mit `/loop`, `/schedule`, der Seite Zeitpläne oder dem Tool `wake_me` des Agenten.
+
+**Überwachung**: Eine Regel, die einen Agenten weckt, wenn etwas passiert: Die Prüfungen eines Pull Requests sind abgeschlossen, er bekommt ein Review oder wird gemergt, eine Umgebungsaufgabe endet, ein Ticket wird erledigt oder ein Pipeline-Lauf endet.
+
+**Anfrage**: Die Frage eines Agenten an einen anderen, aufgezeichnet, bevor sie zugestellt wird. Der Fragende wird einmal mit der Antwort geweckt oder mit dem Grund, warum es keine gibt.
+
+**Verbesserungsvorschlag**: Eine Änderung an Speicher, einer Richtlinie, einer Agentennotiz oder einem Skill, die ein Review nach einem verifizierten Ziel oder bei `/refine` vorschlägt. Sie ändert nichts, bis eine Person sie annimmt; eine Skill-Änderung wird zuerst ausgewertet.
 
 ## Ports
 
@@ -258,6 +281,20 @@ export const glossaryTerms = [
 **Review-Achse**: Eine von fünf Wertungsspuren je Review: `correctness`, `security` und `testGap` aus den Befunden der Reviewer; `visual` und `apiContract` deterministisch. Gegatete Achsen gehen ins Verdikt ein und können es nur strenger machen. Ein Gate `partial` oder `unavailable` hält das Verdikt an, statt es durchzulassen.
 
 **Review-Verdikt**: `ship`, `hold` oder `block`. Jeder Befund P0 mit einer Konfidenz ≥ 0,7 ergibt **Block**; jedes andere P0 oder jedes P1 ergibt **Hold**; sonst **Ship**. Eine gegatete Achse, die fehlschlägt, erzwingt **Block** und lässt sich von Befunden nicht überstimmen.
+
+## Code-Modus
+
+**Code-Modus**: Das `repl`-Tool, das ein JavaScript-Skript ausführt, das die übrigen Tools des Laufs aufruft und nur zurückgibt, was der Agent braucht. Jeder Lauf hat es, wenn der Server Skripte ausführen kann; es gibt keine Einstellung dafür. **Einstellungen → Arbeitsbereich → Code-Modus** zeigt, ob dieser Server Skripte ausführt, und legt die Grenzwerte fest, unter denen ein Skript läuft. Siehe [Code-Modus](/de-DE/handbuch/konzepte/code-modus/).
+
+**Direktes Tool**: Ein Tool, das ein Lauf beim Namen aufruft, mit seinem Schema in jeder Anfrage, ob mit `repl` oder ohne: die Datei- und Shell-Tools, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` und die eigenen Verben des Modus.
+
+**Nur-Skript-Tool**: Ein Tool außerhalb der direkten Menge, das ein Lauf mit `repl` nur aus einem Skript aufrufen kann, bis der Server die Skripte des Laufs nicht mehr ausführen kann und es stattdessen beim ersten Gebrauch geladen wird ([Wenn Skripte nicht laufen können](/de-DE/handbuch/konzepte/code-modus/#wenn-skripte-nicht-laufen-können)). Bis dahin erreicht seine Beschreibung das Modell nie, und ein direkter Aufruf wird mit dem Hinweis beantwortet, wie man es aus einem Skript aufruft. Ein Tool, das ein Skript nicht aufrufen darf, ist nie nur aus einem Skript aufrufbar: Es wird beim ersten Gebrauch geladen.
+
+**Verschachtelter Aufruf**: Ein Tool-Aufruf, den ein Skript macht. Er durchläuft denselben Modus-Filter, dieselben Schutzregeln und dieselbe Genehmigung wie ein direkter Aufruf.
+
+**Code-Modus-Runner**: `cc_codemode`, das mitgelieferte Programm, das ein Skript in der QuickJS-NG-Engine ausführt, nachdem es sich abgeschirmt hat (seine **Abschirmung**). Ohne es startet der Server nicht, und er führt ein Skript nur aus, wenn es ein Release-Build ist und seine Abschirmung vollständig ist.
+
+**Code-Ausführung**: Die Aufzeichnung eines Skripts: sein Quelltext, seine Ausgabe, seine Grenzwerte und jeder Tool-Aufruf, den es gemacht hat, im Arbeitsbereich gespeichert und unter **Observability → Code-Ausführungen** aufgelistet.
 
 ## Fleet und Evals
 

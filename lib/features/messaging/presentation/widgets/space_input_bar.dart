@@ -2,9 +2,13 @@ import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/composer/messaging_mention_sources.dart';
+import 'package:control_center/features/messaging/presentation/widgets/composer/messaging_slash_commands.dart';
 import 'package:control_center/features/messaging/presentation/widgets/composer/space_message_composer.dart';
+import 'package:control_center/features/messaging/presentation/widgets/composer/wake_command_sources.dart';
 import 'package:control_center/features/messaging/presentation/widgets/mode_dropdown.dart';
 import 'package:control_center/features/messaging/presentation/widgets/mode_enforcement_badge.dart';
+import 'package:control_center/features/messaging/presentation/widgets/work/work_text.dart';
+import 'package:control_center/features/messaging/providers/composer_command_refusal.dart';
 import 'package:control_center/features/messaging/providers/conversation_agent_gate.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/messaging/providers/space_composer_draft_provider.dart';
@@ -106,11 +110,21 @@ class _SpaceInputBarState extends ConsumerState<SpaceInputBar> {
       _draft = draft;
       draft.controller.addListener(_onDraftChanged);
     }
-    final sources = buildMessagingMentionSources(
-      ref,
-      workspaceId,
-      spaceId: spaceId,
-    );
+    final sources = [
+      ...buildMessagingMentionSources(
+        ref,
+        workspaceId,
+        spaceId: spaceId,
+        commandHints: workCommandHints(l10n),
+      ),
+      // /loop and /schedule go on, in the same list, to when they fire and
+      // their limits.
+      WakeArgumentSource.when(
+        l10n: l10n,
+        timeLabel: (at) => workTimeLabel(context, at),
+      ),
+      WakeArgumentSource.option(l10n: l10n),
+    ];
     final currentMode = ref.watch(activeSpaceModeProvider);
 
     // Live agent runs in THIS conversation — a run log id equals its agent
@@ -181,9 +195,18 @@ class _SpaceInputBarState extends ConsumerState<SpaceInputBar> {
           : needsAgent
           ? l10n.conversationNeedsAgent
           : l10n.messagePlaceholder,
-      submitGuard: needsAgent
-          ? (submission) => _reachesAnAgent(submission, workspaceId)
-          : null,
+      // A /goal, /loop or /schedule the server could not read either stays
+      // in the draft; the composer's command strip says what it needs.
+      submitGuard: (submission) =>
+          ref
+              .read(
+                composerCommandRefusalProvider((
+                  spaceId: spaceId,
+                  conversationId: conversationId,
+                )).notifier,
+              )
+              .check(submission.text) &&
+          (!needsAgent || _reachesAnAgent(submission, workspaceId)),
       minLines: 2,
       maxInputHeight: widget.maxInputHeight,
       history: historyAsync.value,

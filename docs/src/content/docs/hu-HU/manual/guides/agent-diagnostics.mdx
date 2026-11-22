@@ -2,7 +2,7 @@
 title: Ügynök diagnosztizálása
 description: Járja körbe a futtatási naplót, az adapterpróbát, a szerver állapotát és a gazdagép diagnosztikáját, amikor egy ügynök nem produkál futtatásokat.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-diagnosztizalasa
-sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
+sourceHash: 8cd7078bacfbfcd18d90512974eff3539366883c
 ---
 
 Ez az útmutató bemutatja, hogyan derítheti ki, miért nem készít futtatásokat egy ügynök.
@@ -90,7 +90,13 @@ Ellenőrizze a **Beállítások → Szerver → Diagnosztika és adatvédelem �
 
 ### A szerver egyáltalán nem indul el
 
-Natív könyvtárakra van szükség, és nincs csökkentett mód. Egy hiányzó dylib miatt a `cc_server` megtagadja az indulást, és a hibában megnevezi a hiányzó fájlt. Készítse elő a natívokat a `scripts/natives/build_natives.sh` szkripttel, és építse újra a szerver binárist.
+Natív könyvtárakra van szükség, és nincs csökkentett mód. Egy hiányzó dylib vagy egy hiányzó kódmód-futtató (`bin/codemode/cc_codemode`) miatt a `cc_server` megtagadja az indulást, és a hibában megnevezi a hiányzó fájlt. Készítse elő a natívokat a `scripts/natives/build_natives.sh` szkripttel, és építse újra a szerver binárist a `scripts/build_server.sh` szkripttel.
+
+### A szkript hibázott, vagy nem kínálkozik kódmód
+
+Ha meg szeretné nézni, mit csinált egy [kódmód](/hu-HU/kezikonyv/fogalmak/kodmod/) szkript, nyissa meg a szkript felvételét a beszélgetésben lévő során a **Felvétel megnyitása** gombbal, vagy a **Megfigyelhetőség → Kódfuttatások** menüpontból. A felvétel közérthetően írja le, hogyan ért véget a szkript (lejárt az ideje, elfogyott a processzoridője, elérte a memória-korlátját, hibát dobott), és felsorolja az összes eszközhívását azzal, hogy a korlátok engedélyezték-e, egy személy jóváhagyta-e, vagy megtagadták.
+
+Ha az ügynöknek egyáltalán nincs `repl` eszköze, nyissa meg a **Beállítások → Munkaterület → Kódmód** menüpontot. Az **Állapot** alatt az **Ezen a szerveren** sor **Elérhető** vagy **Nem elérhető** értéket mutat; a **Nem elérhető** azt jelenti, hogy a szerver nem tudja lezárni a szkriptfuttatót a gazdagépén, és az oldal idézi az okot. A szerver indítási naplója ugyanezt a sort tartalmazza (`code_mode=…`). Egy futtatás munkaterület nélkül, olyan munkaterületen, amelynek korlátait nem lehetett beolvasni, vagy amelynek futási naplóját nem lehetett megírni, szintén nem kap `repl`-t, és az eszközeit közvetlenül hívja.
 
 ### Egy művelet csendben elutasításra kerül
 

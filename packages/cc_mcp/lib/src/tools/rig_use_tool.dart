@@ -81,6 +81,17 @@ abstract class RigUseTool extends McpTool {
     ActionClass.processSpawn,
   };
 
+  /// The argv of an Android `shell` or an iOS `spawn` action, as its JSON
+  /// list. Every other action drives the screen or a page, or installs,
+  /// starts or opens what it names, and runs nothing it is handed.
+  @override
+  String? executedContent(Map<String, dynamic> arguments) =>
+      switch (parseAction(arguments)) {
+        RigActionParsed(action: MobileShell(:final argv)) ||
+        RigActionParsed(action: IosSpawn(:final argv)) => jsonEncode(argv),
+        _ => null,
+      };
+
   /// The run's own space and agent, never the model's: a run reaches only
   /// the rigs of the space its lease names ([rigOfRunSpace]).
   @override

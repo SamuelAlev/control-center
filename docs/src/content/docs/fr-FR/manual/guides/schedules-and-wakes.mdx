@@ -1,0 +1,110 @@
+---
+title: Planifications et relances
+description: Relancer un agent plus tard, selon une planification ou quand quelque chose se produit, voir ce qui attend, et ce qui se passe au redémarrage ou à une limite d’utilisation.
+slug: fr-FR/manuel/guides/planifications-relances
+sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+---
+
+Un agent ne dort pas et n’interroge pas en boucle pendant qu’il attend. Lui, ou vous, met en place une **relance** : une demande durable de démarrer ou de poursuivre l’exécution de l’agent dans une conversation, à un moment donné ou lorsqu’un événement survient. Toute exécution que le serveur démarre sans qu’une personne tape quoi que ce soit commence comme une relance : le segment suivant d’un objectif, une planification, une surveillance, une réponse d’un autre agent, un travail délégué terminé, la fin d’une limite d’utilisation, le travail restant après un redémarrage. Les relances sont conservées dans la base de données de l’espace de travail, elles survivent donc à un redémarrage.
+
+## Planifier un agent vous-même
+
+Tapez l’une de ces commandes dans la zone de saisie d’une conversation :
+
+```text
+/loop every 30m --days 3 check the deploy and fix what broke
+/loop keep the flaky tests green
+/schedule in 2h look at the overnight benchmark
+/schedule at 09:00 summarize what changed overnight
+/schedule cron "0 9 * * 1-5" --max 20 triage new tickets
+```
+
+| Commande | Effet |
+| --- | --- |
+| `/loop every <interval> <prompt>` | Relance l’agent avec l’invite maintenant, puis à intervalles réguliers de l’intervalle indiqué (au moins 60 secondes d’écart) |
+| `/loop <prompt>` | Une boucle à rythme libre : relance l’agent maintenant, puis après chaque exécution l’agent choisit le délai suivant, de 1 à 60 minutes (20 par défaut) |
+| `/schedule in <duration> <prompt>` | Relance l’agent une seule fois, après le délai |
+| `/schedule at <HH:MM or ISO time> <prompt>` | Relance l’agent une seule fois. `HH:MM` désigne la prochaine occurrence de cette heure dans le fuseau horaire de l’espace de travail ; une heure ISO sans décalage est en UTC |
+| `/schedule cron "<expression>" <prompt>` | Relance l’agent selon un cron à cinq champs, lu dans le fuseau horaire de l’espace de travail. Les guillemets sont facultatifs |
+
+- `--max <N>` limite le nombre d’exécutions, `--days <N>` met fin à la planification après ce nombre de jours (30 par défaut, 365 au maximum), et `--budget <dollars>` limite ce que la planification peut dépenser au total (le budget par défaut de l’espace de travail sinon, 50 dollars au départ).
+- `/loop` lance sa première exécution immédiatement. `/schedule` attend son heure.
+- Les durées utilisent `s`, `m`, `h` et `d`, par exemple `90s`, `20m` ou `1h30m`.
+- Ces commandes ne sont lues que dans un message que vous tapez vous-même.
+
+Le compositeur vous aide à les écrire. Après `/loop` ou `/schedule` et un espace, la liste de suggestions propose quand la relance se déclenche et se resserre à mesure que vous tapez ; tapez `--` après l’heure pour les limites. Entrée ou Tab choisit une ligne et n’envoie rien. Une ligne au-dessus de votre texte relit alors la commande : quand elle se déclenche, quand elle se termine, et ce qui manque encore. Si vous appuyez sur Entrée sur une commande illisible, cette ligne indique ce qui ne va pas et votre brouillon reste.
+
+Vous pouvez aussi créer une planification depuis la page **Planifications** avec **Nouvelle planification** : choisissez l’espace, la conversation et l’agent, quand elle se déclenche, le point de départ de chaque exécution, une fin, un plafond d’exécutions et un plafond de coût. **Si l'agent est occupé** choisit entre ignorer ce déclenchement et attendre que l’agent soit libre. **À chaque déclenchement** choisit entre démarrer une exécution et seulement vous avertir avec la note.
+
+## Ce que les agents planifient
+
+Les agents utilisent l’outil `wake_me` pour les mêmes usages, ainsi que pour les surveillances :
+
+| Surveillance | Se déclenche quand |
+| --- | --- |
+| `on:pr_checks` | Les vérifications de la pull request de l’espace se terminent |
+| `on:pr_review` | La pull request de l’espace reçoit une revue ou une réponse |
+| `on:pr_merged` | La pull request de l’espace est fusionnée |
+| `on:environment` | Une tâche de l’environnement de l’espace se termine, ou l’environnement devient prêt |
+| `on:ticket:<id>` | Un ticket est réglé |
+| `on:pipeline_run:<id>` | Une exécution de pipeline se termine |
+
+- Une surveillance de pull request écoute la pull request de l’espace, ou une pull request qu’elle désigne (`on:pr_checks:acme/shop-ui#12`). Une surveillance sur quelque chose que sa personne ne peut pas lire est refusée.
+- Les propres actions de l’agent ne déclenchent pas ses surveillances. Un événement qui arrive pendant que l’agent travaille n’est pas perdu : il attend la fin de l’exécution, et les événements suivants sont regroupés dans la même relance.
+- La planification d’un agent doit avoir un plafond d’exécutions ou une fin. Elle se termine après 7 jours par défaut et 30 au maximum. Une surveillance s’exécute 10 fois par défaut.
+- Une planification qu’un agent définit dans une exécution démarrée par une de ses propres planifications partage la fin, le plafond d’exécutions et le plafond de coût de la première planification : une chaîne de planifications d’un agent ne peut donc pas survivre à la première. Supprimer la première planification met fin à toute la chaîne ; la mettre en pause ne met en pause que cette planification. Les exécutions que la chaîne démarre par d’autres agents comptent dans le même plafond de coût. Une planification que vous avez créée ne démarre aucune chaîne : ce qu’un agent planifie dans ses exécutions est limité comme tout ce qu’il met en place à la suite d’un message de vous.
+- Un agent liste ce qui l’attend avec `list_wakes`, et annule ce qu’il a lui-même mis en place avec `cancel_wake`. Il ne peut pas annuler ce que vous avez mis en place.
+
+## Voir ce qui attend
+
+**Au-dessus de la zone de saisie.** Quand des relances attendent un agent dans la conversation, une bande les affiche : **N relances en attente**, d’où vient chacune (**Objectif**, **Planification**, **Surveillance**, **Réponse de** l’agent, **Limite réinitialisée**, **Reprise**, …), quand elle est due, et pourquoi elle est retenue.
+
+| Bouton | Effet | Qui peut |
+| --- | --- | --- |
+| **Livrer maintenant** | Livre immédiatement une relance en attente | Seule la personne pour laquelle agit la relance |
+| **Reprendre** | Libère une relance retenue | Seule la personne pour laquelle agit la relance |
+| **Annuler la relance** | L’annule | Toute personne ayant accès à l’espace |
+
+Une relance non livrée laisse une ligne dans la conversation qui indique pourquoi, par exemple **L'agent est en pause.** ou **Un budget bloque une exécution.**
+
+**La page Planifications.** Barre latérale → **Planifications** liste chaque planification et surveillance que vous voyez, regroupées par statut ; une planification cron affiche ses trois prochaines occurrences dans votre fuseau horaire. Ouvrez-en une pour voir sa note, son propriétaire, les prochains déclenchements, les exécutions, les déclenchements ignorés, la dépense et la fin, ainsi que **Relances et exécutions récentes**. Chaque planification a sa propre adresse (`/workspaces/<workspace>/schedules/<id>`).
+
+| Action | Qui peut |
+| --- | --- |
+| **Pause**, **Supprimer** | Toute personne ayant accès à l’espace |
+| **Reprendre**, **Prolonger** | Seul son propriétaire (un admin de l’espace de travail pour une planification qu’un agent a créée sans personne) |
+
+Lorsqu’une personne autre que le propriétaire d’une planification la met en pause, la conversation affiche une ligne qui la nomme.
+
+Sur téléphone, **Répéter** sur l’écran des objectifs lance une invite répétée (toutes les N minutes ou heures, ou à rythme libre) avec un plafond de coût et une fin, et l’écran **Planifications** met en pause, reprend et supprime les planifications. La vue d’avancement d’une conversation montre ce qui attend, y compris les pauses à la limite d’utilisation (**Reprendre maintenant**, **Annuler**) et le travail restant après un arrêt du serveur.
+
+## Comment une planification s’exécute
+
+- Chaque exécution d’une planification ou d’une surveillance est plafonnée à 5 dollars, ou à ce qui reste à la planification lorsque c’est moins, et la planification s’arrête à son plafond de coût.
+- Une heure de cron tombant dans l’heure sautée lorsque les horloges avancent s’exécute une heure plus tard ce jour-là (02:30 s’exécute à 03:30). Une heure tombant dans l’heure qui se répète lorsque les horloges reculent ne s’exécute qu’une fois.
+- L’exécution d’une planification ne rejoint jamais une exécution déjà en cours. Si l’agent est occupé quand une planification temporisée se déclenche, ce déclenchement est ignoré discrètement, sauf si la planification attend que l’agent soit libre.
+- Une exécution lancée par une planification ou une surveillance qui se termine sans problème ne vous notifie pas, sauf si elle mentionne quelqu’un. Quand une planification se termine, la cloche indique pourquoi (**Elle a utilisé ses exécutions.**, **Elle a atteint sa date de fin.**, …) sans son.
+- Au plus 30 exécutions par heure démarrent à partir de relances dans une même conversation, et 300 dans un espace de travail.
+- Lorsque la personne pour laquelle agit une planification quitte l’espace de travail, la planification se termine. Tout ce qui agissait aussi pour elle s’arrête également : ses relances en attente sont annulées, ses messages en file et retenus sont supprimés, et ses agents en cours d’exécution sont arrêtés.
+
+## Arrêt, redémarrage et limites d’utilisation
+
+- **Arrêt.** Appuyer sur **Arrêter** sur l’exécution d’un agent retient ses relances en attente (celles qui n’appartiennent pas à un objectif) et les messages que vous avez mis en file d’attente pour lui. Elles attendent **Reprendre** ou **Envoyer les messages retenus**. Chaque personne envoie ses propres messages retenus ; personne n’envoie ceux d’une autre.
+- **Un redémarrage du serveur.** Les relances et les planifications survivent. Une exécution démarrée par une relance reprend après le redémarrage, avec 3 tentatives au maximum. Une exécution que vous avez lancée vous-même n’est pas relancée d’elle-même : elle laisse une relance **Reprise** retenue, et elle continue quand vous appuyez sur **Reprendre**. Une planification temporisée qui a manqué ses créneaux pendant l’arrêt du serveur ne se déclenche en retard que dans une courte tolérance (la moitié de son intervalle, 10 minutes au maximum ; 24 heures pour une planification ponctuelle), sinon elle enregistre une seule omission : **Manquée pendant l’arrêt du serveur.**
+- **Une limite d’utilisation du fournisseur.** Quand une exécution s’arrête à la limite d’utilisation d’un fournisseur et que le fournisseur indique quand elle se réinitialise (dans les 7 jours), l’exécution est mise en pause. Une exécution que le serveur a lancée, comme le segment d’un objectif ou l’exécution d’une planification, reprend d’elle-même 30 secondes après la réinitialisation. Une exécution que vous avez lancée vous attend : la conversation affiche **Mis en pause à** la **limite d’utilisation du fournisseur. La limite se réinitialise à** et l’heure, avec **Reprendre** (vous seul) et **Annuler** (toute personne de l’espace). Après **Reprendre**, elle continue une fois la limite réinitialisée. Une pause que vous ne reprenez pas expire 7 jours après la réinitialisation. Les messages mis en file au moment de la limite sont envoyés dans l’exécution reprise ; si l’exécution n’attend pas la réinitialisation, ou si la pause est annulée ou expire, ils sont retenus pour vous sous **Envoyer les messages retenus**. Les messages en file d’autres personnes sont retenus pour elles immédiatement. Le prochain déclenchement d’une planification attend que l’exécution en pause reprenne. Les agents ACP ne signalent aucune réinitialisation : leurs exécutions n’attendent donc pas.
+
+## Limites de l’espace de travail
+
+Un admin de l’espace de travail règle les limites dans **Paramètres → Espace de travail → Planifications** :
+
+- **Limites des planifications** : combien de planifications actives ou en pause un agent peut détenir dans une conversation (10), dans tout l’espace de travail (50), et au total dans l’espace de travail (500) ; le plafond de coût par défaut d’une planification (50 dollars) ; et le fuseau horaire qu’utilisent les planifications cron et le récapitulatif quotidien (UTC au départ).
+- **Quand personne ne répond** : combien de temps une exécution que le serveur a lancée attend la réponse ou l’approbation d’une personne (72 heures par défaut, de 1 heure à 7 jours) avant qu’une approbation soit comptée comme refusée et une question comme sans réponse (après cela, toute autre demande de la même exécution est refusée immédiatement), et l’heure du récapitulatif quotidien de ce qui vous attend dans les objectifs, les planifications et les autres exécutions lancées par le serveur.
+
+Les membres voient la page en lecture seule.
+
+## Voir aussi
+
+- [Poursuivre un objectif](/fr-FR/manuel/guides/poursuivre-objectif/)
+- [Agents qui collaborent](/fr-FR/manuel/guides/agents-collaborent/)
+- [Commandes slash](/fr-FR/manuel/reference/commandes-slash/)
+- [Outils de relance et d’objectif](/fr-FR/manuel/reference/outils-mcp/#outils-de-relance-et-dobjectif)

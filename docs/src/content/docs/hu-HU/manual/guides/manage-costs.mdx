@@ -2,7 +2,7 @@
 title: Költségek kezelése
 description: Nézze meg, mennyit költenek az ügynökei, korlátozza egy autonóm futtatás költését és csökkentse a tokenfelhasználást.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/koltsegek-kezelese
-sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
+sourceHash: 040176a3840653a57c823ce4ff7e3ed9cf071c07
 ---
 
 Ez az útmutató megmutatja, hogyan láthatja, mennyibe kerülnek az ügynökfuttatások, és hogyan korlátozhatja egy autonóm futtatás költését.
@@ -40,21 +40,30 @@ Az ezen az oldalon található **Használat és költség** kártya egyetlen dol
 
 ## Egy autonóm futtatás korlátozása
 
-Két, egy tér beviteli mezőjébe beírt slash-parancs az egyetlen olyan futtatás, amelynek költési felső korlátja van:
+Ezeknek a futtatásoknak van költési plafonjuk. Az a futtatás, amelyet üzenet küldésével indít, nincs.
 
 ```
 /goal ship the auth refactor --budget 20
-/loop keep the flaky tests green
+/loop every 1h --budget 10 keep the flaky tests green
 ```
 
-- Egy `/goal` vagy `/loop` futtatás minden szegmense leáll, amikor az árazott költése eléri az **500 centet ($5.00)**. Ennek 80%-ánál a ciklus előbb arra tereli a modellt, hogy fejezze be és hagyjon tiszta átadást, így nem hal el a feladat közepén.
-- Egy teljes tartós cél felső korlátja **5000 cent ($50.00)**, hacsak nem adja át a `--budget <dollars>` kapcsolót. A felügyelő a cél _fennmaradó_ költségvetését fűzi át minden szegmensbe, így egy explicit költségvetést soha nem lép túl egy teljes szegmenssel.
-- A `--days N` falórai határidőt, a `--max N` pedig futtatásszám-plafont ad. Mindkettő opcionális; nélkülük a célt csak a költség korlátozza.
-- A cél, amely eléri a falát, `budgetExhausted` állapotban áll le, és csak a költségvetés megemelésével folytatható.
+| Futtatás | Plafon |
+| --- | --- |
+| Egy cél szakasza | 5 dollár, vagy a cél költségkeretének maradéka, ha az kevesebb |
+| Egy cél | 50 dollár, hacsak meg nem adja a `--budget <dollars>` kapcsolót |
+| Egy cél átnézése | 2 dollár, vagy ami maradt, a cél terhére |
+| Egy ütemezés vagy figyelő által indított futtatás | 5 dollár; az ütemezés a saját költési plafonjánál áll meg (50 dollár, hacsak nem adja meg a `--budget` kapcsolót, vagy a munkaterület alapértelmezése) |
+| Egy cél utáni átnézés, vagy a `/refine` | 1 dollár |
 
-Mivel a korlát árazott, egy olyan modell, amelyet a katalógus nem tud beárazni, soha nem éri el azt. Az ilyen futtatást ehelyett a végtelen ciklus elleni ismétlésvédelem, a felügyelő három egymást követő hiba utáni feladása és ön korlátozza.
+- Egy plafonnal korlátozott futtatás leáll, amikor az árazott költése eléri a plafont, a beépített harnessen, a Claude Code-on és az ACP-ügynökökön. A beépített harness és a Claude Code a plafon 90%-ánál először arra tereli az ügynököt, hogy fejezze be és hagyjon tiszta átadást, így nem hal el a feladat közepén. Az ACP-ügynököt a plafonnál megszakítjuk.
+- A cél _fennmaradó_ költségvetését fűzi át minden szegmensbe, így egy explicit költségvetést soha nem lép túl egy teljes szegmenssel.
+- A `--days N` határidőt, a `--max N` pedig szakaszplafont ad. Mindkettő opcionális; nélkülük a célt a költség és az előrehaladás hiányára adott leállás korlátozza.
+- A cél, amely eléri a költségkeretét, a **Költségkeret kimerítve** állapotban áll le, és csak magasabb költségkerettel folytatódik, amit csak az adhat meg, aki elindította.
+- Egy orkesztrációs plafonnál visszatartott pipeline-futtatás addig vár, amíg a kérője meg nem nyomja a **Plafon emelése** gombot a pipeline-futtatás oldalán. Az új plafonnak a régi és az elköltött összeg felett kell lennie, legfeljebb 1 000 dollár, és a plafont sosem távolítjuk el.
 
-Egy térben lévő üzenetnek, egy @-említésnek vagy egy pipeline-lépésnek nincs költési korlátja. A futtatás akkor ér véget, amikor a modell leáll, amikor ön leállítja, vagy amikor a végtelen ciklus védelme más irányba tereli.
+Mivel a korlát árazott, egy olyan modell, amelyet a katalógus nem tud beárazni, soha nem éri el azt. Az ilyen futtatást ehelyett a végtelen ciklus elleni ismétlésvédelem, a cél előrehaladás hiányára adott leállása, három egymást követő hiba utáni feladása, és ön korlátozza.
+
+Egy térben lévő üzenetnek, egy @-említésnek vagy egy plafonnal korlátozott orkesztráción kívüli pipeline-lépésnek nincs saját költési plafonja. A futtatás akkor ér véget, amikor a modell leáll, amikor ön leállítja, vagy amikor a végtelen ciklus védelme más irányba tereli.
 
 ## A tokenfelhasználás csökkentése
 

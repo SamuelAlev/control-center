@@ -12,8 +12,7 @@ import '../helpers/windows_safe_delete.dart';
 ///
 /// The magics transform is pure and pinned separately; this pins the claims
 /// only a live interpreter can settle — that state survives between cells, that
-/// a figure comes back as an image, that a bridged tool call re-enters the
-/// harness, and that the inactivity budget does not kill a cell waiting on one.
+/// a figure comes back as an image, and that a cell has no way to call tools.
 void main() {
   final python = _resolve('python3');
 
@@ -87,17 +86,15 @@ void main() {
         await deleteDirBestEffort(root);
       });
 
-      EvalKernel build({KernelToolBridge? bridge, Duration? timeout}) =>
-          kernel = EvalKernel(
-            language: KernelLanguage.python,
-            launcher: HostKernelLauncher(
-              workingDirectory: root.path,
-              processes: const HostToolProcessLauncher(),
-              pythonExecutable: python,
-            ),
-            bridge: bridge,
-            inactivityTimeout: timeout ?? const Duration(seconds: 30),
-          );
+      EvalKernel build({Duration? timeout}) => kernel = EvalKernel(
+        language: KernelLanguage.python,
+        launcher: HostKernelLauncher(
+          workingDirectory: root.path,
+          processes: const HostToolProcessLauncher(),
+          pythonExecutable: python,
+        ),
+        inactivityTimeout: timeout ?? const Duration(seconds: 30),
+      );
 
       String textOf(KernelRunOutcome outcome) =>
           outcome.outputs.whereType<KernelText>().map((o) => o.text).join();
@@ -156,70 +153,24 @@ void main() {
           final outcome = await k.run(
             'for i in range(5000):\n    print("x" * 40)',
           );
-          expect(textOf(outcome), contains('output truncated'));
+          // The head and the last quarter, with the count dropped between
+          // (eval_kernel_bounds_test.dart pins the shape).
+          expect(textOf(outcome), contains('characters (UTF-16 units) of text'));
           expect(textOf(outcome).length, lessThan(2000));
         },
       );
 
-      test(
-        'a bridged call re-enters the harness and returns its result',
-        () async {
-          final calls = <String>[];
-          final k = build(
-            bridge: (name, arguments) async {
-              calls.add('$name:${arguments['path']}');
-              return (content: 'file contents here', isError: false);
-            },
-          );
-          final outcome = await k.run(
-            'print(tool("read", {"path": "lib/a.dart"}))',
-          );
-          expect(calls, ['read:lib/a.dart']);
-          expect(textOf(outcome), contains('file contents here'));
-        },
-      );
-
-      test('a bridged call SUSPENDS the inactivity budget', () async {
-        // The bug this prevents: a cell that fans out to subagents and waits
-        // four minutes is not hung, but a wall-clock timeout cannot tell the
-        // difference and kills it mid-fanout, losing the kernel's state.
-        final k = build(
-          timeout: const Duration(milliseconds: 400),
-          bridge: (name, arguments) async {
-            await Future<void>.delayed(const Duration(milliseconds: 1200));
-            return (content: 'slow but fine', isError: false);
-          },
-        );
-        final outcome = await k.run('print(tool("task", {}))');
-        expect(
-          outcome.timedOut,
-          isFalse,
-          reason: 'the budget must not run while a bridged call is in flight',
-        );
-        expect(textOf(outcome), contains('slow but fine'));
-      });
-
-      test('a bridge error becomes a Python exception', () async {
-        final k = build(
-          bridge: (name, arguments) async =>
-              (content: 'not allowed', isError: true),
-        );
-        final outcome = await k.run('tool("write", {})');
-        expect(outcome.isError, isTrue);
-        expect(outcome.error, contains('not allowed'));
-      });
-
-      test('a cell with no bridge wired gets a clear error', () async {
+      test('a cell has no tool function: tool(...) is a NameError', () async {
         final outcome = await build().run('tool("read", {})');
         expect(outcome.isError, isTrue);
-        expect(outcome.error, contains('no tool bridge'));
+        expect(
+          outcome.error,
+          contains("NameError: name 'tool' is not defined"),
+        );
       });
 
       test('reset drops the state', () async {
-        final tool = EvalTool(
-          kernelFor: (_) => kernel,
-          hostConfined: true,
-        );
+        final tool = EvalTool(kernelFor: (_) => kernel, hostConfined: true);
         build();
         await kernel.run('marker = 1');
         final after = await tool.execute({
@@ -231,10 +182,7 @@ void main() {
       });
 
       test('the tool surfaces an empty cell honestly', () async {
-        final tool = EvalTool(
-          kernelFor: (_) => build(),
-          hostConfined: true,
-        );
+        final tool = EvalTool(kernelFor: (_) => build(), hostConfined: true);
         final result = await tool.execute({
           'code': 'x = 1',
           'description': 'Assign a variable',
@@ -243,11 +191,9 @@ void main() {
         expect(result.content, contains('no output'));
       });
 
-      test('is exec tier and not parallel-safe', () {
-        final tool = EvalTool(
-          kernelFor: (_) => build(),
-          hostConfined: true,
-        );
+      test('is exec tier, not parallel-safe, not for scripts, and states the '
+          'cell it runs', () {
+        final tool = EvalTool(kernelFor: (_) => build(), hostConfined: true);
         expect(tool.approvalTier, ToolApprovalTier.exec);
         expect(tool.actionClasses, contains(ActionClass.processSpawn));
         expect(
@@ -257,6 +203,9 @@ void main() {
               'two cells racing in one interpreter is two halves of two '
               'programs interleaved in one namespace',
         );
+        expect(tool.scriptCallable, isFalse);
+        // A direct cell is still audited whole.
+        expect(tool.executedContent({'code': 'print(1)'}), 'print(1)');
       });
     },
     skip: python == null ? 'python3 is not on PATH' : null,
@@ -276,17 +225,20 @@ void main() {
       expect((schema['properties'] as Map).containsKey('description'), isTrue);
     });
 
-    test('rejects a call without a description before touching a kernel', () async {
-      final tool = EvalTool(
-        kernelFor: (_) => fail('the kernel must not be resolved'),
-        hostConfined: true,
-      );
-      final result = await tool.execute({
-        'code': 'x = 1',
-      }, const HarnessToolContext(workingDirectory: '/repo'));
-      expect(result.isError, isTrue);
-      expect(result.content, contains('description'));
-    });
+    test(
+      'rejects a call without a description before touching a kernel',
+      () async {
+        final tool = EvalTool(
+          kernelFor: (_) => fail('the kernel must not be resolved'),
+          hostConfined: true,
+        );
+        final result = await tool.execute({
+          'code': 'x = 1',
+        }, const HarnessToolContext(workingDirectory: '/repo'));
+        expect(result.isError, isTrue);
+        expect(result.content, contains('description'));
+      },
+    );
   });
 }
 

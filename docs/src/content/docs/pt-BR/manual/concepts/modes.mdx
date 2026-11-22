@@ -2,7 +2,7 @@
 title: Modos
 description: Por que um espaço, e não um agente, carrega um modo; o que cada um dos quatro modos garante; e onde essa garantia é estrutural, em vez de apenas sugerida no prompt.
 slug: pt-BR/manual/conceitos/modos
-sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
+sourceHash: 4450ebc86d95efb0366bc3f0ab4ddebc6d3a3adb
 ---
 
 ## O que é um modo
@@ -41,7 +41,7 @@ Uma execução que termina sem o seu plano ainda é registrada com o status `com
 
 Há uma segunda saída, separada: `exit_plan_mode`. Ela é um portão de aprovação rígido, não um verbo de saída — um agente que a chama em vez de `submit_plan` não entregou nada. A primeira chamada abre uma aprovação durável `plan_exit` e retorna `pending`, e o espaço continua somente leitura; chamadas repetidas continuam em `pending` em vez de abrir um segundo portão. Só depois que a aprovação é concedida é que uma chamada seguinte alterna o espaço para chat. Uma rejeição permite que o agente abra uma nova solicitação com um plano revisado.
 
-Para sair do modo plano você mesmo, alterne o seletor de modo do composer (ou use Shift+Tab). `exit_plan_mode` é decidido com a ferramenta MCP `decide_approval`. As linhas de "aprovação de agente" da Caixa de entrada são outra coisa: prompts de confirmação por turno de um agente em execução.
+Para sair do modo plano você mesmo, alterne o seletor de modo do composer (ou use Shift+Tab). `exit_plan_mode` é decidido por uma execução de agente com a ferramenta MCP `decide_approval`. As linhas de "aprovação de agente" da Caixa de entrada são outra coisa: prompts de confirmação por turno de um agente em execução.
 
 ### Revisão — somente leitura, sem contrato
 
@@ -65,6 +65,8 @@ Nada da proposta é executado até você aprová-la. Na aprovação, um material
 
 **Modos somente leitura não negam acesso à rede nem a segredos.** As classes de efeito que revisão, plano e orquestração recusam são as que mudam o mundo: exclusão de arquivos, gravações fora da worktree, commits, pushes, criação e publicação de PR, gravações de sincronização com fornecedores, instalação de pacotes, criação de processos, mutação do espaço de trabalho e controle de recintos. A saída de rede e o acesso a segredos ficam nos valores padrão de propósito — a pesquisa é justamente o objetivo de um modo somente leitura.
 
+**O modo de código nunca amplia um modo.** O filtro de ferramentas do modo é aplicado primeiro, e um script `repl` do [modo de código](/pt-BR/manual/conceitos/modo-de-codigo/) só pode chamar as ferramentas que sobram depois dele, pelo mesmo gate de uma chamada direta. Os verbos fixados do modo (o verbo de saída, `exit_plan_mode`, `ask_user`) e o próprio laço dele (os verbos dos nós de revisão no modo de revisão) são sempre chamados diretamente, então uma execução nunca precisa escrever um script para entregar o resultado ou fazer uma pergunta. No [modo vibe](/pt-BR/manual/guias/dirigir-workers-em-segundo-plano/), a execução que dirige mantém apenas ferramentas de leitura e nenhuma ferramenta somente de script, então os scripts dela alcançam apenas essas.
+
 ## Escolher e trocar de modo
 
 O seletor de modo do composer oferece **três** opções: Agent (chat), Plan e Orchestrate. `review` **não é selecionável pelo usuário** — ele é definido pelo sistema quando um espaço de revisão de PR é criado e pelas etapas de pipeline.
@@ -87,4 +89,5 @@ As listas de permissões restringem as ferramentas de nível de escrita e acima.
 - [O modelo de agentes](/pt-BR/manual/conceitos/modelo-de-agentes/): quais transportes podem aplicar um modo
 - [Barreiras](/pt-BR/manual/conceitos/barreiras/): a política de classes de efeito em que a predefinição de um modo desemboca
 - [Orquestração](/pt-BR/manual/conceitos/orquestracao/): o que uma proposta de orquestração aprovada faz
+- [Modo de código](/pt-BR/manual/conceitos/modo-de-codigo/): scripts que chamam as ferramentas do modo
 - [Usar o modo plano](/pt-BR/manual/guias/modo-plano/): o passo a passo prático

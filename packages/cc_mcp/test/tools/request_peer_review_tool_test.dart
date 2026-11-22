@@ -1,17 +1,32 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
+import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
+import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
+import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/peer_ask_values.dart';
+import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space_participant.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_domain/features/messaging/domain/services/peer_delegation_guards.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/message_page.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dart';
+import 'package:cc_domain/features/ticketing/domain/repositories/ticket_repository.dart';
+import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_service.dart';
 import 'package:cc_mcp/src/tools/request_peer_review_tool.dart';
 import 'package:test/test.dart';
+
+import 'peer_tool_kit.dart';
+
+/// The kit the current test delivers through.
+late PeerKit _kit;
 
 class _FakeMessagingRepository implements MessagingRepository {
   @override
@@ -76,7 +91,21 @@ class _FakeMessagingRepository implements MessagingRepository {
     // Threading removed: the discussion link now rides message metadata.
     lastParentMessageId = metadata?['reviewNodeId'] as String?;
     sendMessageCallCount++;
-    return '';
+    final messageId = id ?? 'm-$sendMessageCallCount';
+    if (spaceId.isNotEmpty) {
+      _kit.conversation('c-$spaceId', spaceId: spaceId, workspaceId: workspaceId);
+      _kit.messages[messageId] = Message(
+        id: messageId,
+        spaceId: spaceId,
+        conversationId: 'c-$spaceId',
+        senderId: senderId,
+        senderType: SenderType.agent,
+        content: content,
+        messageType: MessageType.text,
+        createdAt: _kit.now,
+      );
+    }
+    return messageId;
   }
 
   // ── Stubs for remaining methods ──
@@ -122,7 +151,7 @@ class _FakeMessagingRepository implements MessagingRepository {
 
   @override
   Future<Message?> getMessageById(String workspaceId, String messageId) async =>
-      null;
+      _kit.messages[messageId];
 
   @override
   Future<MessagePage> getMessagePage(
@@ -278,9 +307,58 @@ void main() {
     late _FakeMessagingRepository messaging;
     late RequestPeerReviewTool tool;
 
-    setUp(() {
+    setUp(() async {
+      _kit = PeerKit()
+        ..agent('agent-a', 'Ada')
+        ..agent('agent-b', 'reviewer')
+        ..conversation('c-sp-a', spaceId: 'sp-a');
       messaging = _FakeMessagingRepository();
-      tool = RequestPeerReviewTool(messaging: messaging);
+      tool = _InRun(
+        agents: _OneAgent(),
+        messaging: messaging,
+        service: _openGate(),
+        peerAsks: _kit.service,
+        rateLimiter: PairRateLimiter(),
+      );
+      await _kit.start();
+    });
+
+    test('a review wakes the reviewer, then its answer wakes the '
+        'requester', () async {
+      _kit.run(
+        'run-a',
+        agentId: 'agent-a',
+        conversationId: 'c-sp-a',
+        requester: 'user-1',
+      );
+      final result = await tool.run({
+        'workspace_id': 'ws-1',
+        'space_id': 'ch-1',
+        'node_message_id': 'node-1',
+        'requester_id': 'agent-a',
+        'target_agent_id': 'agent-b',
+        'question': 'Is the retry bounded?',
+      });
+      expect(result.isError, isFalse);
+      final body = jsonDecode(result.content.first.text) as Map<String, dynamic>;
+      expect(body['status'], 'pending');
+      final reviewer = _kit.dispatched.single;
+      expect(reviewer.agentId, 'agent-b');
+      expect(reviewer.conversationId, 'c-ch-1');
+      expect(reviewer.wakeContext.wakeReason, WakeReason.peerMessage);
+      expect(reviewer.requestedByUserId, isNull);
+      final ask = _kit.asks.all('ws-1').single;
+      expect(ask.kind, PeerAskKind.review);
+
+      await _kit.finish('run-1', answer: 'Bounded at five tries.');
+      await _kit.deliver();
+
+      final requester = _kit.dispatched.last;
+      expect(requester.agentId, 'agent-a');
+      expect(requester.conversationId, 'c-sp-a');
+      expect(requester.wakeContext.wakeReason, WakeReason.peerReply);
+      expect(requester.requestedByUserId, 'user-1');
+      expect(_kit.asks.all('ws-1').single.status, PeerAskStatus.answered);
     });
 
     test('missing or foreign space does not request review', () async {
@@ -713,7 +791,7 @@ void main() {
 
     // ── Edge cases ──
 
-    test('Empty string space_id → allowed (passed through)', () async {
+    test('Empty string space_id → posted, but nobody is woken', () async {
       final result = await tool.run({
         'workspace_id': 'ws-1',
         'space_id': '',
@@ -722,8 +800,10 @@ void main() {
         'target_agent_id': 'agent-b',
         'question': 'What do you think?',
       });
-      expect(result.isError, isFalse);
+      expect(result.isError, isTrue);
+      expect(result.content.first.text, contains('could not be read'));
       expect(messaging.lastSpaceId, '');
+      expect(_kit.dispatched, isEmpty);
     });
 
     test('Empty string question → allowed, content is @target ', () async {
@@ -768,4 +848,74 @@ void main() {
       expect(messaging.sendMessageCallCount, 1);
     });
   });
+}
+
+/// A gate that admits every hand-off: both agents act with approval, no
+/// budget stop. Gate refusals are covered in `peer_tools_gate_test.dart`.
+TicketWorkflowService _openGate() => TicketWorkflowService(
+  repository: _NoTickets(),
+  eventBus: DomainEventBus(),
+  resolveEffectiveAutonomy:
+      ({required workspaceId, required agentId, spaceId}) async =>
+          AutonomyLevel.actWithApproval,
+  resolveRemainingBudgetMicros:
+      ({required workspaceId, required agentId}) async => null,
+);
+
+class _NoTickets implements TicketRepository {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// The tool as an agent run calls it: the requester's run `run-a` in
+/// conversation `c-sp-a`, attested.
+class _InRun extends RequestPeerReviewTool {
+  _InRun({
+    required super.agents,
+    required super.messaging,
+    required super.service,
+    required super.peerAsks,
+    required super.rateLimiter,
+  });
+
+  @override
+  Future<CallResult> run(Map<String, dynamic> arguments) {
+    final requester = arguments['requester_id'];
+    if (requester is! String || requester.isEmpty) {
+      return super.run(arguments);
+    }
+    return callForRun(
+      arguments,
+      runScope(
+        agentId: requester,
+        runId: 'run-a',
+        conversationId: 'c-sp-a',
+        workspaceId: 'ws-1',
+      ),
+    );
+  }
+}
+
+/// The review target every case names: `agent-b` of `ws-1`.
+class _OneAgent implements AgentRepository {
+  @override
+  Stream<List<Agent>> watchByWorkspace(String workspaceId) => Stream.value([
+    if (workspaceId == 'ws-1')
+      Agent(
+        id: 'agent-b',
+        name: 'reviewer',
+        title: 'Reviewer',
+        agentMdPath: 'ws-1/agents/reviewer/AGENTS.md',
+        workspaceId: 'ws-1',
+        skills: AgentSkills(const []),
+        createdAt: DateTime(2025),
+      ),
+  ]);
+
+  @override
+  Future<Agent?> getById(String workspaceId, String id) async =>
+      _kit.agents[id]?.workspaceId == workspaceId ? _kit.agents[id] : null;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

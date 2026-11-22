@@ -2,7 +2,7 @@
 title: Thuật ngữ
 description: Định nghĩa các thuật ngữ then chốt được dùng xuyên suốt Control Center.
 slug: vi-VN/so-tay/tham-chieu/thuat-ngu
-sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
+sourceHash: ba09880357171a4fcbb82201798578de3856cbe6
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -36,7 +36,13 @@ export const glossaryTerms = [
 ['Rig', 'Một cỗ máy dùng một lần do agent điều khiển trong thời gian thực: một trình duyệt hoặc desktop Linux khép kín, một trình giả lập Android hoặc Simulator iOS do máy chủ quản lý, hoặc một terminal khép kín. Được xem trực tiếp qua làn riêng ở độ phân giải đầy đủ, với việc giành quyền điều khiển được thực thi phía máy chủ. Có phạm vi theo một cuộc hội thoại để tab của người và công cụ của agent cùng nhắm tới một cỗ máy.'],
 ['Môi trường cách ly', 'Thuộc tính cô lập mạnh hơn dành cho các rig chạy trên VM: một ranh giới kernel, đĩa overlay dùng một lần, cổng mạng từ chối theo mặc định và bộ môi giới thông tin xác thực. Rig Android và iOS là dùng một lần nhưng dùng mạng do máy chủ quản lý, nên chúng không tuyên bố ranh giới này. Việc điều khiển bất kỳ rig nào đều dùng lớp rào chắn enclosureControl.'],
 ['RunCost', 'Bản tổng hợp token/chi phí (token đầu vào, token đầu ra, chi phí ước tính theo micro-đô la) cho một lượt chạy agent.'],
-['WakeReason', 'Lý do một agent được điều phối. Sáu giá trị: tin nhắn người dùng, giao phiếu, điều phối lại để phục hồi sau lỗi, phiếu con hoàn tất, nhịp theo dõi đã lên lịch và bước quy trình.'],
+['WakeReason', 'Lý do một lượt chạy agent tồn tại. Tin nhắn của một người, một phân công phiếu hoặc một bước quy trình; hoặc, với lượt chạy do máy chủ tự khởi động, lý do của lượt đánh thức của nó: một lịch, một watch, một segment, kiểm chứng hoặc đánh giá của mục tiêu, tin nhắn hoặc phản hồi của agent khác, công việc con đã xong, một giới hạn sử dụng đã đặt lại, một đánh giá cải tiến, hoặc khôi phục sau khi khởi động lại.'],
+['Lượt đánh thức', 'Một yêu cầu bền vững, được lưu trong cơ sở dữ liệu của không gian làm việc, để khởi động hoặc tiếp tục lượt chạy của một agent trong một cuộc hội thoại, kèm lý do và người mà nó thay mặt. Mọi lượt chạy do máy chủ khởi động mà không có ai gõ đều bắt đầu như một lượt đánh thức; lượt đánh thức tồn tại qua khởi động lại.'],
+['Mục tiêu', 'Công việc mà một agent theo đuổi, theo từng segment, cho đến khi máy chủ xác minh rằng tiêu chí “hoàn thành khi” đã đạt hoặc một người đóng nó. Bắt đầu bằng /goal; mỗi agent một mục tiêu tại một thời điểm. Agent tuyên bố mình đã xong; kiểm chứng và một đánh giá chỉ đọc quyết định.'],
+['Lịch', 'Quy tắc đánh thức một agent vào một thời điểm, theo khoảng, theo cron hoặc theo nhịp riêng của agent, có kết thúc, giới hạn số lần chạy và trần chi phí. Tạo bằng /loop, /schedule, trang Lịch hoặc công cụ wake_me của agent.'],
+['Theo dõi', 'Quy tắc đánh thức một agent khi có điều gì đó xảy ra: kiểm chứng của một pull request hoàn tất, nó nhận được đánh giá hoặc được merge, một tác vụ môi trường thoát, một phiếu được giải quyết hoặc một lần chạy pipeline kết thúc.'],
+['Yêu cầu', 'Một câu hỏi của agent này gửi cho agent khác, được ghi lại trước khi được chuyển đi. Người hỏi được đánh thức một lần với câu trả lời, hoặc với lý do không có câu trả lời.'],
+['Đề xuất cải tiến', 'Một thay đổi đối với bộ nhớ, chính sách, ghi chú của agent hoặc một kỹ năng mà một đánh giá đề xuất sau một mục tiêu đã được kiểm chứng hoặc khi dùng /refine. Nó không thay đổi gì cho đến khi một người chấp nhận; thay đổi kỹ năng được đánh giá trước.'],
 ['SandboxPort', 'Quản lý vòng đời sandbox (probe, launch, events, exec, destroy).'],
 ['CredentialBrokerPort', 'Cấp thông tin xác thực có phạm vi giới hạn cho việc khởi chạy sandbox (một token cho đúng một kho mã cho môi trường của agent, quyền ghi chỉ dành cho đường push phía máy chủ), rồi giải phóng chúng khi dỡ bỏ.'],
 ['GitRepoInspectorPort', 'Trích xuất siêu dữ liệu (chủ sở hữu, kho mã, nhánh) từ một đường dẫn kho mã Git cục bộ.'],
@@ -94,6 +100,11 @@ export const glossaryTerms = [
 ['Id cài đặt', 'Danh tính của một máy chủ đối với một địa chỉ Connect, được suy ra từ khóa cài đặt của nó. Connect cho phép máy chủ theo id cài đặt; xoay khóa sẽ đổi id và đăng xuất mọi người khỏi các làn Connect.'],
 ['Ràng buộc cài đặt', 'Bản ghi của Connect về máy chủ duy nhất mà một đội Slack được gắn với. Cài đặt GitHub không có bản ghi này: mọi máy chủ mà một thành viên đăng nhập đều có thể dùng chúng.'],
 ['Làn đăng nhập', 'Đăng nhập trình duyệt của một nhà cung cấp: `github`, `google`, `linear`, `linear_app` hoặc `slack`. Theo ứng dụng riêng, một làn chạy trên ứng dụng riêng khi ứng dụng đó được cấu hình đầy đủ, nếu không thì không khả dụng; khi đã chọn Connect thì Connect chạy nó. Không bên nào rơi về bên kia.'],
+['Chế độ code', 'Công cụ repl, chạy một tập lệnh JavaScript gọi các công cụ khác của lần chạy. Mọi lần chạy đều có nó khi máy chủ có thể chạy tập lệnh; không có cài đặt nào.'],
+['Công cụ trực tiếp', 'Công cụ mà một lần chạy gọi bằng tên, với lược đồ của nó trong mọi yêu cầu, dù có repl hay không: các công cụ tệp và shell, ask_user, task, danh sách việc cần làm, tìm kiếm bộ nhớ, send_message và các động từ của chính chế độ.'],
+['Công cụ chỉ dành cho tập lệnh', 'Một công cụ nằm ngoài tập công cụ trực tiếp mà một lần chạy có repl chỉ có thể gọi từ một tập lệnh, cho đến khi máy chủ không thể chạy tập lệnh của lần chạy và công cụ đó được nạp khi dùng lần đầu thay thế. Cho đến lúc đó, mô tả của nó không bao giờ đến được mô hình.'],
+['Trình chạy chế độ code', 'cc_codemode, chương trình đi kèm máy chủ để chạy một tập lệnh trong động cơ QuickJS-NG sau khi tự khóa bằng các cơ chế của hệ điều hành. Máy chủ không khởi động nếu thiếu nó, và không chạy tập lệnh nào trừ khi nó là bản dựng phát hành và việc khóa đã hoàn tất.'],
+['Thực thi code', 'Bản ghi của một tập lệnh: mã nguồn, đầu ra, giới hạn và mọi lệnh gọi công cụ nó đã thực hiện, được lưu trong không gian làm việc của nó và liệt kê dưới Quan sát → Thực thi code.'],
 ];
 
 <StructuredData
@@ -157,7 +168,19 @@ export const glossaryTerms = [
 
 **RunCost**: Bản tổng hợp token/chi phí (token đầu vào, token đầu ra, chi phí ước tính theo micro-đô la) cho một lượt chạy agent.
 
-**WakeReason**: Lý do một agent được điều phối. Sáu giá trị: tin nhắn người dùng, giao phiếu, điều phối lại để phục hồi sau lỗi, phiếu con hoàn tất, nhịp theo dõi đã lên lịch và bước quy trình.
+**WakeReason**: Lý do một lượt chạy agent tồn tại. Tin nhắn của một người, một phân công phiếu hoặc một bước quy trình; hoặc, với lượt chạy do máy chủ tự khởi động, lý do của lượt đánh thức của nó: một lịch, một watch, một segment, kiểm chứng hoặc đánh giá của mục tiêu, tin nhắn hoặc phản hồi của agent khác, công việc con đã xong, một giới hạn sử dụng đã đặt lại, một đánh giá cải tiến, hoặc khôi phục sau khi khởi động lại.
+
+**Lượt đánh thức**: Một yêu cầu bền vững, được lưu trong cơ sở dữ liệu của không gian làm việc, để khởi động hoặc tiếp tục lượt chạy của một agent trong một cuộc hội thoại, kèm lý do và người mà nó thay mặt. Mọi lượt chạy do máy chủ khởi động mà không có ai gõ đều bắt đầu như một lượt đánh thức; lượt đánh thức tồn tại qua khởi động lại.
+
+**Mục tiêu**: Công việc mà một agent theo đuổi, theo từng segment, cho đến khi máy chủ xác minh rằng tiêu chí “hoàn thành khi” đã đạt hoặc một người đóng nó. Bắt đầu bằng `/goal`; mỗi agent một mục tiêu tại một thời điểm. Agent tuyên bố mình đã xong; kiểm chứng và một đánh giá chỉ đọc quyết định.
+
+**Lịch**: Quy tắc đánh thức một agent vào một thời điểm, theo khoảng, theo cron hoặc theo nhịp riêng của agent, có kết thúc, giới hạn số lần chạy và trần chi phí. Tạo bằng `/loop`, `/schedule`, trang Lịch hoặc công cụ `wake_me` của agent.
+
+**Theo dõi**: Quy tắc đánh thức một agent khi có điều gì đó xảy ra: kiểm chứng của một pull request hoàn tất, nó nhận được đánh giá hoặc được merge, một tác vụ môi trường thoát, một phiếu được giải quyết hoặc một lần chạy pipeline kết thúc.
+
+**Yêu cầu**: Một câu hỏi của agent này gửi cho agent khác, được ghi lại trước khi được chuyển đi. Người hỏi được đánh thức một lần với câu trả lời, hoặc với lý do không có câu trả lời.
+
+**Đề xuất cải tiến**: Một thay đổi đối với bộ nhớ, chính sách, ghi chú của agent hoặc một kỹ năng mà một đánh giá đề xuất sau một mục tiêu đã được kiểm chứng hoặc khi dùng `/refine`. Nó không thay đổi gì cho đến khi một người chấp nhận; thay đổi kỹ năng được đánh giá trước.
 
 ## Cổng
 
@@ -258,6 +281,20 @@ export const glossaryTerms = [
 **Trục đánh giá**: Một trong năm làn chấm điểm theo từng lượt đánh giá: `correctness`, `security` và `testGap` lấy từ các phát hiện của người đánh giá; `visual` và `apiContract` mang tính tất định. Các trục có cổng được gộp vào kết luận và chỉ có thể khiến nó nghiêm trọng hơn — một cổng `partial` hoặc `unavailable` giữ kết luận lại thay vì cho qua.
 
 **Kết luận đánh giá**: `ship`, `hold` hoặc `block`. Bất kỳ phát hiện P0 nào có độ tin cậy ≥ 0.7 đều block; bất kỳ P0 khác hoặc bất kỳ P1 nào thì hold; còn lại là ship. Một trục có cổng bị lỗi buộc phải block và không thể bị các phát hiện ghi đè.
+
+## Chế độ code
+
+**Chế độ code**: Công cụ `repl`, chạy một tập lệnh JavaScript gọi các công cụ khác của lần chạy và chỉ trả về những gì agent cần. Mọi lần chạy đều có nó khi máy chủ có thể chạy tập lệnh; không có cài đặt nào. **Cài đặt → Không gian làm việc → Chế độ code** cho biết máy chủ này có chạy tập lệnh hay không và đặt các giới hạn mà một tập lệnh chạy theo. Xem [Chế độ code](/vi-VN/so-tay/khai-niem/che-do-code/).
+
+**Công cụ trực tiếp**: Công cụ mà một lần chạy gọi bằng tên, với lược đồ của nó trong mọi yêu cầu, dù có `repl` hay không: các công cụ tệp và shell, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` và các động từ của chính chế độ.
+
+**Công cụ chỉ dành cho tập lệnh**: Một công cụ nằm ngoài tập công cụ trực tiếp mà một lần chạy có `repl` chỉ có thể gọi từ một tập lệnh, cho đến khi máy chủ không thể chạy tập lệnh của lần chạy và công cụ đó được nạp khi dùng lần đầu thay thế ([Khi không thể chạy tập lệnh](/vi-VN/so-tay/khai-niem/che-do-code/#khi-không-thể-chạy-tập-lệnh)). Cho đến lúc đó, mô tả của nó không bao giờ đến được mô hình, và một lệnh gọi trực tiếp nhận được câu trả lời chỉ cách gọi nó từ một tập lệnh. Một công cụ mà tập lệnh không được gọi thì không bao giờ là công cụ chỉ dành cho tập lệnh: nó được nạp khi dùng lần đầu.
+
+**Lệnh gọi lồng**: Một lệnh gọi công cụ mà một tập lệnh thực hiện. Nó đi qua cùng bộ lọc chế độ, rào chắn và phê duyệt như lệnh gọi trực tiếp.
+
+**Trình chạy chế độ code**: `cc_codemode`, chương trình đi kèm máy chủ để chạy một tập lệnh trong động cơ QuickJS-NG sau khi tự khóa bằng **cơ chế khóa** của nó. Máy chủ không khởi động nếu thiếu nó, và không chạy tập lệnh nào trừ khi nó là bản dựng phát hành và việc khóa đã hoàn tất.
+
+**Thực thi code**: Bản ghi của một tập lệnh: mã nguồn, đầu ra, giới hạn và mọi lệnh gọi công cụ nó đã thực hiện, được lưu trong không gian làm việc của nó và được liệt kê dưới **Quan sát → Thực thi code**.
 
 ## Đội máy và đánh giá
 

@@ -2,7 +2,7 @@
 title: Szójegyzék
 description: A Control Centerben használt kulcsfontosságú kifejezések meghatározásai.
 slug: hu-HU/kezikonyv/referencia/szojegyzek
-sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
+sourceHash: ba09880357171a4fcbb82201798578de3856cbe6
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -36,7 +36,13 @@ export const glossaryTerms = [
 ['Rig', 'Egy eldobható gép, amelyet egy ügynök valós időben vezet: elzárt böngésző vagy Linux asztal, gazdagép által kezelt Android-emulátor vagy iOS-szimulátor, vagy elzárt terminál. Élőben figyelhető a saját teljes felbontású sávján, a szerveroldalon kikényszerített átvétellel. Egy beszélgetéshez kötött, így az emberi fül és az ügynök eszköze egy gépet címez meg.'],
 ['Elszigetelt környezet', 'A VM-alapú állomások számára elérhető erősebb elszigetelési tulajdonság: kernelhatár, eldobható overlay-lemez, alapértelmezésben elzáró hálózati kapu és hitelesítőadat-ügynök. Az Android- és iOS-állomások eldobhatók, de gazdagép által kezelt hálózatot használnak, ezért nem tartanak igényt erre a határra. Bármely állomás vezetése az enclosureControl korlátosztályt használja.'],
 ['RunCost', 'Token- és költségkimutatás (bemeneti tokenek, kimeneti tokenek, becsült költség mikrodollárban) egyetlen ügynökfutásra.'],
-['WakeReason', 'Miért indult el egy ügynök. Hat érték: felhasználói üzenet, jegy-hozzárendelés, helyreállítási újraindítás hiba után, gyermekjegy befejeződött, ütemezett utánkövető szívverés és pipeline-lépés.'],
+['WakeReason', 'Az, hogy miért létezik egy ügynökfuttatás. Egy személy üzenete, egy jegyhozzárendelés vagy egy pipeline-lépés; vagy, egy olyan futtatásnál, amelyet a szerver magától indít, az ébresztésének oka: egy ütemezés, egy figyelő, egy cél szakasza, ellenőrzése vagy átnézése, egy másik ügynök üzenete vagy válasza, befejezett gyermekmunka, egy visszaállt használati korlát, egy fejlesztési átnézés, vagy egy újraindítás utáni helyreállítás.'],
+['Ébresztő', 'Egy tartós kérés, amelyet a munkaterület adatbázisa őriz, hogy elindítson vagy folytasson egy ügynök futtatását egy beszélgetésben, megadott okkal és azzal a személlyel, akiért cselekszik. Minden olyan futtatás, amelyet a szerver úgy indít, hogy senki nem gépel, ébresztőként kezdődik; az ébresztők túlélik az újraindítást.'],
+['Cél', 'Munka, amelyen az ügynök szakaszokban dolgozik, amíg a szerver ellenőrzi, hogy a „mit jelent a kész” teljesül, vagy egy személy le nem zárja. A /goal paranccsal indul; ügynökönként egyszerre egy. Az ügynök állítja, hogy kész; az ellenőrzések és egy csak olvasható átnézés dönt.'],
+['Ütemezés', 'Szabály, amely időpontban, intervallumonként, cronra vagy az ügynök saját ütemében ébreszti az ügynököt, lezáró dátummal, futtatási korláttal és költségkorláttal. A /loop, a /schedule parancs, az Ütemezések oldal vagy az ügynök wake_me eszköze hozza létre.'],
+['Figyelő', 'Szabály, amely akkor ébreszti az ügynököt, amikor valami történik: egy pull request ellenőrzései befejeződnek, átnézést kap vagy összevonják, egy környezeti feladat kilép, egy jegy lezárul vagy egy pipeline-futtatás véget ér.'],
+['Kérdés', 'Egy ügynök kérdése egy másiknak, még a kézbesítés előtt rögzítve. A kérdező egyszer kap ébresztést a válasszal, vagy azzal, miért nincs válasz.'],
+['Fejlesztési javaslat', 'Változtatás a memóriában, egy szabályzatban, egy ügynökjegyzetben vagy egy képességben, amelyet egy átnézés javasol egy ellenőrzött cél után vagy a /refine parancsnál. Semmit sem változtat, amíg egy személy el nem fogadja; a képességváltozást előbb kiértékelik.'],
 ['SandboxPort', 'A homokozó életciklusát kezeli (probe, launch, events, exec, destroy).'],
 ['CredentialBrokerPort', 'Hatáskörrel ellátott hitelesítő adatokat bocsát ki a homokozó indításához (egyetlen repóra szóló tokent az ügynök környezetébe, írásra csak a szerveroldali push-útvonal számára), és felszabadítja őket a lebontáskor.'],
 ['GitRepoInspectorPort', 'Metaadatokat (owner, repo, branch) nyer ki egy helyi Git-repó útvonalából.'],
@@ -94,6 +100,11 @@ export const glossaryTerms = [
 ['Telepítési azonosító', 'Egy szerver identitása egy adott Connect-cím felé, a telepítési kulcsából származtatva. A Connect telepítési azonosító alapján engedélyezi a szervereket; a kulcs cseréje megváltoztatja, és mindenkit kijelentkeztet a Connect-sávokból.'],
 ['Telepítési kötés', 'A Connect nyilvántartása (install_binding) arról, melyik egyetlen szerverhez kötődik egy Slack-csapat. A GitHub-telepítéseknek nincs ilyen: bármely szerver, amelyre egy tag bejelentkezik, használhatja őket.'],
 ['Bejelentkezési sáv', 'Egy szolgáltató böngészős bejelentkezése: github, google, linear, linear_app vagy slack. Saját alkalmazásokkal a sáv a saját alkalmazáson fut, ha az teljesen be van állítva, egyébként nem érhető el; ha a Connect van kiválasztva, a Connect futtatja. Egyik sem esik vissza a másikra.'],
+['Kódmód', 'A repl eszköz, amely a futtatás többi eszközét hívó JavaScript-szkriptet futtat. Minden futtatásnak megvan, ha a szerver tud szkripteket futtatni; nincs hozzá beállítás.'],
+['Közvetlen eszköz', 'Olyan eszköz, amelyet a futtatás név szerint hív, a sémájával minden kérésben, függetlenül attól, van-e repl: a fájl- és shell-eszközök, az ask_user, a task, a feladatlista, a memóriakeresés, a send_message és a mód saját igéi.'],
+['Csak szkriptből hívható eszköz', 'Olyan eszköz, amely nem tartozik a közvetlen készletbe, és amelyet a repl-lel rendelkező futtatás csak szkriptből hívhat, amíg a szerver nem tudja futtatni a futtatás szkriptjeit, és akkor helyette első használatkor töltődik be. Addig a leírása soha nem jut el a modellhez.'],
+['Kódmód-futtató', 'A cc_codemode, a szerverrel együtt szállított program, amely egy szkriptet futtat a QuickJS-NG motorban, miután az operációs rendszer vezérlőivel lezárta magát. A szerver nem indul el nélküle, és csak akkor futtat szkriptet, ha kiadási build, és a zárolása teljes.'],
+['Kódfuttatás', 'Egy szkript felvétele: a forrása, a kimenete, a korlátai és az általa indított összes eszközhívás; a munkaterületében tárolják, és a Megfigyelhetőség → Kódfuttatások alatt listázzák.'],
 ];
 
 <StructuredData
@@ -157,7 +168,19 @@ export const glossaryTerms = [
 
 **RunCost**: Token- és költségkimutatás (bemeneti tokenek, kimeneti tokenek, becsült költség mikrodollárban) egyetlen ügynökfutásra.
 
-**WakeReason**: Miért indult el egy ügynök. Hat érték: felhasználói üzenet, jegy-hozzárendelés, helyreállítási újraindítás hiba után, gyermekjegy befejeződött, ütemezett utánkövető szívverés és pipeline-lépés.
+**WakeReason**: Az, hogy miért létezik egy ügynökfuttatás. Egy személy üzenete, egy jegyhozzárendelés vagy egy pipeline-lépés; vagy, egy olyan futtatásnál, amelyet a szerver magától indít, az ébresztésének oka: egy ütemezés, egy figyelő, egy cél szakasza, ellenőrzése vagy átnézése, egy másik ügynök üzenete vagy válasza, befejezett gyermekmunka, egy visszaállt használati korlát, egy fejlesztési átnézés, vagy egy újraindítás utáni helyreállítás.
+
+**Ébresztő**: Egy tartós kérés, amelyet a munkaterület adatbázisa őriz, hogy elindítson vagy folytasson egy ügynök futtatását egy beszélgetésben, megadott okkal és azzal a személlyel, akiért cselekszik. Minden olyan futtatás, amelyet a szerver úgy indít, hogy senki nem gépel, ébresztőként kezdődik; az ébresztők túlélik az újraindítást.
+
+**Cél**: Munka, amelyen az ügynök szakaszokban dolgozik, amíg a szerver ellenőrzi, hogy a „mit jelent a kész” teljesül, vagy egy személy le nem zárja. A `/goal` paranccsal indul; ügynökönként egyszerre egy. Az ügynök állítja, hogy kész; az ellenőrzések és egy csak olvasható átnézés dönt.
+
+**Ütemezés**: Szabály, amely időpontban, intervallumonként, cronra vagy az ügynök saját ütemében ébreszti az ügynököt, lezáró dátummal, futtatási korláttal és költségkorláttal. A `/loop`, a `/schedule` parancs, az Ütemezések oldal vagy az ügynök `wake_me` eszköze hozza létre.
+
+**Figyelő**: Szabály, amely akkor ébreszti az ügynököt, amikor valami történik: egy pull request ellenőrzései befejeződnek, átnézést kap vagy összevonják, egy környezeti feladat kilép, egy jegy lezárul vagy egy pipeline-futtatás véget ér.
+
+**Kérdés**: Egy ügynök kérdése egy másiknak, még a kézbesítés előtt rögzítve. A kérdező egyszer kap ébresztést a válasszal, vagy azzal, miért nincs válasz.
+
+**Fejlesztési javaslat**: Változtatás a memóriában, egy szabályzatban, egy ügynökjegyzetben vagy egy képességben, amelyet egy átnézés javasol egy ellenőrzött cél után vagy a `/refine` parancsnál. Semmit sem változtat, amíg egy személy el nem fogadja; a képességváltozást előbb kiértékelik.
 
 ## Portok
 
@@ -258,6 +281,20 @@ export const glossaryTerms = [
 **Átnézési tengely**: Öt átnézésenkénti pontozósáv egyike: a `correctness`, a `security` és a `testGap` az átnézői megállapításokból származik; a `visual` és az `apiContract` determinisztikus. A kapuzott tengelyek behajlanak az ítéletbe, és csak súlyosabbá tehetik — egy `partial` vagy `unavailable` kapu visszatartja az ítéletet, ahelyett hogy átengedné.
 
 **Átnézési ítélet**: `ship`, `hold` vagy `block`. Bármely P0 megállapítás ≥ 0,7 bizonyossággal blockot ad; bármely más P0 vagy bármely P1 holdot; egyébként ship az ítélet. Egy kapuzott, megbukó tengely blockot kényszerít, és a megállapítások nem szavazhatják felül.
+
+## Kódmód
+
+**Kódmód**: A `repl` eszköz, amely a futtatás többi eszközét hívó JavaScript-szkriptet futtat, és csak azt adja vissza, amire az ügynöknek szüksége van. Minden futtatásnak megvan, ha a szerver tud szkripteket futtatni; nincs hozzá beállítás. A **Beállítások → Munkaterület → Kódmód** oldal mutatja, hogy ez a szerver futtat-e szkripteket, és beállítja a korlátokat, amelyek közt egy szkript fut. Lásd: [Kódmód](/hu-HU/kezikonyv/fogalmak/kodmod/).
+
+**Közvetlen eszköz**: Olyan eszköz, amelyet a futtatás név szerint hív, a sémájával minden kérésben, függetlenül attól, van-e `repl`: a fájl- és shell-eszközök, az `ask_user`, a `task`, a `todo_write`, a `search_memory`, a `send_message` és a mód saját igéi.
+
+**Csak szkriptből hívható eszköz**: Olyan eszköz, amely nem tartozik a közvetlen készletbe, és amelyet a `repl`-lel rendelkező futtatás csak szkriptből hívhat, amíg a szerver nem tudja futtatni a futtatás szkriptjeit, és akkor helyette első használatkor töltődik be ([Amikor a szkriptek nem futtathatók](/hu-HU/kezikonyv/fogalmak/kodmod/#amikor-a-szkriptek-nem-futtathatók)). Addig a leírása soha nem jut el a modellhez, a közvetlen hívásra pedig a válasz megmondja, hogyan hívja meg szkriptből. Olyan eszköz, amelyet a szkript nem hívhat, soha nem csak szkriptből hívható: első használatkor töltődik be.
+
+**Beágyazott hívás**: Egy szkript által indított eszközhívás. Ugyanazt a módszűrőt, korlátokat és jóváhagyást kapja, mint a közvetlen hívás.
+
+**Kódmód-futtató**: a `cc_codemode`, a szerverrel együtt szállított program, amely egy szkriptet futtat a QuickJS-NG motorban, miután lezárta magát (a **zárolása**). A szerver nem indul el nélküle, és csak akkor futtat szkriptet, ha kiadási build, és a zárolás teljes.
+
+**Kódfuttatás**: Egy szkript felvétele: a forrása, a kimenete, a korlátai és az általa indított összes eszközhívás; a munkaterületében tárolják, és a **Megfigyelhetőség → Kódfuttatások** alatt listázzák.
 
 ## Flotta és kiértékelések
 

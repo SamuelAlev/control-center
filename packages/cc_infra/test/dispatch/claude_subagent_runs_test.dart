@@ -6,6 +6,7 @@ import 'package:cc_domain/core/domain/repositories/run_transcript_repository.dar
 import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_run_role.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
 import 'package:cc_infra/src/dispatch/claude_subagent_runs.dart';
 import 'package:cc_infra/src/messaging/run_transcript_recorder.dart';
 import 'package:cc_infra/src/sandboxing/claude_stream_json.dart';
@@ -17,6 +18,20 @@ class _RunLogs implements AgentRunLogRepository {
 
   @override
   Future<void> upsert(AgentRunLog log) async => rows[log.id] = log;
+
+  /// Like the real store: ends a row once, with its end reason.
+  @override
+  Future<bool> completeIfActive(
+    AgentRunLog completed, {
+    bool writeCost = true,
+  }) async {
+    final row = rows[completed.id];
+    if (row == null || row.completedAt != null) {
+      return false;
+    }
+    rows[completed.id] = completed;
+    return true;
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -169,10 +184,31 @@ void main() {
 
   test('closeAll interrupts what never returned', () async {
     runs.onEvent(const ClaudeSubagentStarted('tu_a'));
-    await runs.closeAll();
+    await runs.closeAll(endReason: RunEndReason.error);
     final row = logs.rows['run-1-sub-tu_a']!;
     expect(row.status, RunStatus.error);
     expect(registry.isActive(row.id), isFalse);
+  });
+
+  test("a child ends through the settlement, with its parent's end reason "
+      'when the parent cut it short', () async {
+    runs.onEvent(const ClaudeSubagentStarted('tu_a'));
+    await settle();
+    await runs.closeAll(endReason: RunEndReason.stoppedByUser);
+
+    final row = logs.rows['run-1-sub-tu_a']!;
+    expect(row.status, RunStatus.error);
+    expect(row.endReason, RunEndReason.stoppedByUser);
+  });
+
+  test('a child that finished on its own ends with that reason', () async {
+    runs.onEvent(const ClaudeSubagentStarted('tu_a'));
+    await settle();
+    await runs.complete(const ClaudeToolResult(id: 'tu_a', outputs: 'done'));
+
+    final row = logs.rows['run-1-sub-tu_a']!;
+    expect(row.status, RunStatus.completed);
+    expect(row.endReason, RunEndReason.completed);
   });
 
   test('a background task notification completes its recorded run', () async {
@@ -220,7 +256,7 @@ void main() {
         ],
       },
     });
-    await runs.closeAll();
+    await runs.closeAll(endReason: RunEndReason.error);
     expect(logs.rows[row.id]!.status, RunStatus.completed);
     expect(registry.isActive(row.id), isFalse);
   });
@@ -278,7 +314,7 @@ void main() {
       'patch': {'status': 'completed'},
     });
     // Parent shutdown must wait for an already-closing child's final writes.
-    await runs.closeAll();
+    await runs.closeAll(endReason: RunEndReason.error);
     expect(logs.rows['run-1-sub-tu_a']!.status, RunStatus.completed);
     expect(registry.isActive('run-1-sub-tu_a'), isFalse);
   });
@@ -338,7 +374,7 @@ void main() {
     await settle();
     expect(logs.rows[innerId]!.status, RunStatus.completed);
     expect(logs.rows['run-1-sub-tu_outer']!.status, RunStatus.running);
-    await runs.closeAll();
+    await runs.closeAll(endReason: RunEndReason.error);
   });
 
   test('a late notification cannot finish a resumed task run', () async {
@@ -377,7 +413,7 @@ void main() {
       'run_id': 'r2',
       'status': 'completed',
     });
-    await runs.closeAll();
+    await runs.closeAll(endReason: RunEndReason.error);
     expect(logs.rows['run-1-sub-tu_new']!.status, RunStatus.completed);
   });
 
@@ -400,7 +436,7 @@ void main() {
         'tool_use_id': 'tu_bash',
         'status': 'completed',
       });
-    await runs.closeAll();
+    await runs.closeAll(endReason: RunEndReason.error);
     expect(logs.rows, isEmpty);
   });
 
@@ -445,7 +481,7 @@ void main() {
             'task_id': 'task-a',
             'status': status,
           });
-        await recorded.closeAll();
+        await recorded.closeAll(endReason: RunEndReason.error);
         expect(transcripts.outcomes['run-2-sub-tu_a'], outcome);
         expect(registry.isActive('run-2-sub-tu_a'), isFalse);
       });

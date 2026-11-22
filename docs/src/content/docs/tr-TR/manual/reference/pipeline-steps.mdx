@@ -2,7 +2,7 @@
 title: Pipeline adımları
 description: Pipeline adım türleri, adım gövdesi anahtarları, bunların yapılandırması ve adım sonuçları için referans.
 slug: tr-TR/kilavuz/referans/pipeline-adimlari
-sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
+sourceHash: 0d2876bc1ac359f4d2cfe94902bd5f924d19d5d5
 ---
 
 Bir pipeline adımının birbirinden bağımsız iki ekseni vardır:
@@ -58,6 +58,31 @@ Genel istem ve gönderim düğümü: istemi işler, ajanı bir konuşmaya gönde
 | `extras.spaceId`         | İçinde çalışılacak mevcut konuşma (varsayılan: gizli bir konuşma) |
 | `extras.conversationTitle` | O alan içindeki adlandırılmış akış (isteğe bağlı)       |
 | `extras.mode`            | Burada değil, odayı *açan* düğümde (`messaging.createSpace`) okunur. Varsayılan `review`. |
+
+### `goal.pursue`
+
+Dayanıklı bir hedef başlatır (bkz. [Bir hedefi yürütme](/tr-TR/kilavuz/nasil-yapilir/hedef-yurutme/)) ve hedef bitene kadar askıya alınır. Düzenleyici bunu **Pursue a goal** olarak gösterir. Yukarıdaki 25 hazır gövdeden biri değildir; onların yanına kaydedilir.
+
+| Yapılandırma alanı | Açıklama |
+| ---------------------- | ----------- |
+| `agentId` | Hedefi süren ajan (zorunlu) |
+| `prompt` | Amaç; `{{key}}` yerine koymayı destekler (zorunlu) |
+| `outputKey` | Sonuç için durum anahtarı (zorunlu) |
+| `extras.spaceId` | Hedefin çalıştığı oda (zorunlu, her ajan adımı gibi) |
+| `extras.budgetMicros` | Hedefin mikro dolar cinsinden bütçesi, 1 ila 1.000.000.000 (zorunlu) |
+| `extras.maxRuns` | Bir bölüm sınırı, 1 ila 1.000 (isteğe bağlı) |
+| `extras.deadlineHours` | Adımın hedefi başlattığı andan itibaren saat, 1 ila 2.160 (isteğe bağlı) |
+| `extras.contract` | Tamamlanmanın ne anlama geldiği: ölçütler ve kontroller (isteğe bağlı) |
+
+`outputKey` altındaki sonuç `{summary, verdict}` biçimindedir; burada `verdict`, inceleyicinin maddeleri ve endişeleriyle birlikte kararıdır ya da null.
+
+| Hedef | Adım |
+| -------- | -------- |
+| tamamlandı | tamamlanır |
+| başarısız, iptal edildi ya da bütçe tükendi | başarısız olur (`retry` ve `continueOnFail` uygulanır); yeniden denenen bir adım yeni bir hedef başlatır |
+| duraklatıldı, bir kişinin incelemesini beklemek dahil | askıda kalır, 24 saatlik canlılık taramasından muaftır |
+
+Bir pipeline çalıştırması tarafından başlatılan bir hedef, o çalıştırmanın orkestrasyonuna yazılır; incelemesi de dahil. Hedef çalışırken pipeline çalıştırması iptal edilir, başarısız olur ya da tamamlanırsa hedef iptal edilir.
 
 ### `pipeline.condition`
 

@@ -158,4 +158,96 @@ void main() {
     final bold = children.firstWhere((c) => c.text == 'now');
     expect(bold.style?.fontWeight, FontWeight.w600);
   });
+
+  group('leading slash command', () {
+    /// The text of every run painted in the accent, in order.
+    List<String> accentRuns(TextSpan span) {
+      final accent = DesignSystemTokens.light().accent;
+      final out = <String>[];
+      span.visitChildren((child) {
+        if (child is TextSpan &&
+            child.text != null &&
+            child.style?.color == accent &&
+            child.style?.backgroundColor == null) {
+          out.add(child.text!);
+        }
+        return true;
+      });
+      return out;
+    }
+
+    testWidgets('is plain unless the host takes slash commands', (
+      tester,
+    ) async {
+      controller.text = '/plan the migration';
+      final span = await spanOf(tester);
+      expect(span.toPlainText(), controller.text);
+      expect(accentRuns(span), isEmpty);
+    });
+
+    testWidgets('paints the command, and only the command, in the accent', (
+      tester,
+    ) async {
+      controller
+        ..paintsCommand = true
+        ..text = '/plan the migration';
+      final span = await spanOf(tester);
+      expect(span.toPlainText(), controller.text);
+      expect(accentRuns(span), ['/plan']);
+    });
+
+    testWidgets('paints a command still being typed, and a skill by name', (
+      tester,
+    ) async {
+      controller
+        ..paintsCommand = true
+        ..text = '/sch';
+      expect(accentRuns(await spanOf(tester)), ['/sch']);
+
+      // One token: the underscores are not emphasis delimiters.
+      controller.text = '/skill:shop-ui:release_notes_draft for v2';
+      final span = await spanOf(tester);
+      expect(span.toPlainText(), controller.text);
+      expect(accentRuns(span), ['/skill:shop-ui:release_notes_draft']);
+    });
+
+    testWidgets('leaves a path, a mid-line slash and a bare slash plain', (
+      tester,
+    ) async {
+      controller.paintsCommand = true;
+      for (final text in [
+        '/usr/bin/env node',
+        'run /plan later',
+        '/',
+        '/ plan',
+        'first line\n/plan',
+      ]) {
+        controller.text = text;
+        final span = await spanOf(tester);
+        expect(span.toPlainText(), text);
+        expect(accentRuns(span), isEmpty, reason: text);
+      }
+    });
+
+    testWidgets('follows the switch without a text change', (tester) async {
+      controller
+        ..paintsCommand = true
+        ..text = '/goal ship it';
+      expect(accentRuns(await spanOf(tester)), ['/goal']);
+      controller.paintsCommand = false;
+      expect(accentRuns(await spanOf(tester)), isEmpty);
+    });
+
+    test('commandRange finds the token after leading whitespace', () {
+      expect(ComposerTextController.commandRange('  /loop 5m x'), (
+        start: 2,
+        end: 7,
+      ));
+      expect(ComposerTextController.commandRange('/todo append x'), (
+        start: 0,
+        end: 5,
+      ));
+      expect(ComposerTextController.commandRange('hello'), isNull);
+    });
+  });
 }

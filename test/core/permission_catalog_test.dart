@@ -33,8 +33,11 @@ void main() {
     'agents', 'approval_routing', 'approvals', 'autonomy',
     'blob', 'cache', 'calendar', 'changelog', 'chat',
     'checker', 'claude', 'claude_accounts', 'codeGraph', 'codeServer',
+    // Code mode: its status, settings and execution records.
+    'codeMode',
     'confirmation', 'connect', 'connection', 'connectivity', 'context',
-    'conversation', 'credential_gate', 'credentials', 'demo',
+    'conversation', 'conversation_read', 'credential_gate', 'credentials',
+    'demo',
     'dictation', 'dispatch', 'evals', 'files', 'fleet',
     'fonts', 'forge', 'fs', 'gif',
     'github', 'goals', 'ide', 'identity',
@@ -53,11 +56,21 @@ void main() {
     // Space environments and their definitions.
     'environment', 'environments',
     'rig', 'sandbox', 'server', 'server_settings',
-    'serviceStatus', 'skills', 'soundscape', 'space_read',
+    'serviceStatus', 'skills', 'soundscape',
     'sso', 'stack', 'steering', 'subscriptions',
     'takeover', 'team', 'telemetry', 'terminal', 'ticket_link',
     'ticket_sync', 'ticketing', 'tickets', 'todos',
-    'usage', 'users', 'voice_profile', 'weather',
+    'usage', 'users', 'voice_profile',
+    // The asks an agent waits on in a conversation, and a person's cancel.
+    'peerAsks',
+    // Improvement proposals and a person's decisions on them.
+    'improvements',
+    // A conversation's waiting wakes: watch, cancel, release, deliver now.
+    'wakes',
+    // Schedules, loops and watches: a person's controls and the Schedules
+    // screen's reads.
+    'wakeRules',
+    'weather',
     'workProduct', 'workspace', 'workspaceConnect', 'workspaceGitHub',
     'workspaceProviderApps', 'workspace_settings',
     'worktree',

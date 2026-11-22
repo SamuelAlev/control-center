@@ -2,7 +2,7 @@
 title: Pantau larian pipeline
 description: Kendalikan barisan larian, baca waterfall dan panel langkah sesuatu larian serta pulihkan daripada langkah yang gagal atau tersekat.
 slug: ms-MY/manual-pengguna/panduan-cara/pantau-pipeline
-sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
+sourceHash: 48d44ae3ca3e23c1123ef282ccffece35b542b96
 ---
 
 Halaman ini merangkumi segala-galanya selepas sesuatu larian bermula: mencarinya,
@@ -73,6 +73,8 @@ bukannya menyambung semula: langkah yang digantung lebih lama daripada 24 jam
 (`extras.awaitApproval` — badan `orchestration.awaitApproval` — dikecualikan;
 `human.gate` tidak) dan langkah tidak idempoten yang berada di pertengahan
 pelaksanaan apabila pelayan berhenti.
+
+Langkah **Pursue a goal** juga dikecualikan daripada had 24 jam: ia kekal digantung semasa matlamatnya berfungsi, dan halaman langkahnya memautkan ke matlamat itu. Keseluruhan larian juga boleh **Digantung** kerana orkestrasinya mencapai had kosnya; halaman larian kemudian menunjukkan jumlah yang telah dibelanjakan daripada had itu dan, kepada pemohon larian, **Naikkan had**.
 
 ## Periksa langkah
 

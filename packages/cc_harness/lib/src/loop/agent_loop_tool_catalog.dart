@@ -7,17 +7,31 @@ part of 'agent_loop_runner.dart';
 /// withheld. Keeping them in [byName] is what makes a direct call to a name the
 /// model saw in the prompt index work in one step instead of costing an
 /// "unknown tool" round trip.
+///
+/// Script-only tools are a third set: callable through a [ToolReentry] and
+/// nothing else. They are never in [byName], never sent to the provider and
+/// never activated, so a direct call to one falls through every lane to the
+/// gate, which answers it with directions to call it from a script.
 class _ToolCatalog {
   _ToolCatalog({
     required List<HarnessTool> tools,
     required this.deferredTools,
+    required List<HarnessTool> scriptTools,
     required this.nativeDeferral,
   }) : byName = {
          for (final t in tools) t.name: t,
          for (final t in deferredTools) t.name: t,
        },
        deferredByName = {for (final t in deferredTools) t.name: t},
+       scriptOnlyByName = {for (final t in scriptTools) t.name: t},
        residentSchemas = tools.map((t) => t.toSchema()).toList() {
+    admitted = Map.unmodifiable({...scriptOnlyByName, ...byName});
+    callable = Map.unmodifiable({
+      for (final entry in admitted.entries)
+        if (entry.value.scriptCallable &&
+            !harnessControlToolNames.contains(entry.key))
+          entry.key: entry.value,
+    });
     deferredSchemas = nativeDeferral
         ? {
             for (final tool in deferredTools)
@@ -35,6 +49,59 @@ class _ToolCatalog {
   final bool nativeDeferral;
   final Map<String, HarnessTool> byName;
   final Map<String, HarnessTool> deferredByName;
+
+  /// Tools callable only through a [ToolReentry], until [withdrawScripts].
+  final Map<String, HarnessTool> scriptOnlyByName;
+
+  /// Whether [withdrawScripts] ran: the run's scripts can no longer run.
+  bool scriptsWithdrawn = false;
+
+  /// The script-only tools [withdrawScripts] made deferred, in order.
+  final List<HarnessTool> _withdrawn = [];
+
+  /// Makes the run's script-only tools callable directly, for the rest of
+  /// the run, because its scripts can no longer run
+  /// ([HarnessToolResult.withdrawsScripts]): each becomes a deferred tool,
+  /// callable by name and loaded on first use or by a search, exactly like
+  /// the tools that were deferred from the start. Nothing else changes:
+  /// [admitted] and [callable] already held them, so the mode's filter and
+  /// the gate see the same tools. Runs once; later calls do nothing.
+  void withdrawScripts() {
+    scriptsWithdrawn = true;
+    final fresh = [
+      for (final tool in scriptOnlyByName.values)
+        if (!byName.containsKey(tool.name)) tool,
+    ];
+    if (fresh.isEmpty) {
+      return;
+    }
+    final declared = <LlmToolSchema>[];
+    for (final tool in fresh) {
+      byName[tool.name] = tool;
+      deferredByName[tool.name] = tool;
+      _withdrawn.add(tool);
+      if (nativeDeferral) {
+        final schema = tool.toSchema().copyWith(deferLoading: true);
+        deferredSchemas[tool.name] = schema;
+        declared.add(schema);
+      }
+    }
+    // Natively deferred tools are declared up front, deferred; elsewhere a
+    // schema joins the request when the tool is first used.
+    if (declared.isNotEmpty) {
+      schemas = [...schemas, ...declared];
+    }
+  }
+
+  /// Every tool on the run's surface: resident, deferred and script-only. A
+  /// name in both a model-facing list and the script-only list is the
+  /// model-facing tool.
+  late final Map<String, HarnessTool> admitted;
+
+  /// What a nested call may reach: [admitted] minus the tools a script may
+  /// not call ([HarnessTool.scriptCallable], the loop-handled tools). Never
+  /// the raw registry: a tool the mode removed is not here.
+  late final Map<String, HarnessTool> callable;
   final List<LlmToolSchema> residentSchemas;
   late final Map<String, LlmToolSchema> deferredSchemas;
 
@@ -89,7 +156,7 @@ class _ToolCatalog {
     final carried = _carriedOnlyActivations(history);
     schemas = <LlmToolSchema>[
       ...residentSchemas,
-      for (final tool in deferredTools)
+      for (final tool in [...deferredTools, ..._withdrawn])
         carried.contains(tool.name)
             ? tool.toSchema()
             : deferredSchemas[tool.name]!,

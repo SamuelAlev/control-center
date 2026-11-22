@@ -54,35 +54,68 @@ class FeedTurnState {
   /// Hover across the turn's rows.
   final TurnHover hover = TurnHover();
 
+  /// Whether this turn streamed live while the feed held it. Its settled
+  /// transcript then starts as the relay's last snapshot, which is provisional:
+  /// the persisted transcript can carry text the stream never delivered, so
+  /// the feed confirms it with a read (see [transcriptFor]'s `confirmed`).
+  bool get sawLive => _sawLive;
+  bool _sawLive = false;
+
+  /// Whether the server's transcript of the finished turn has been seen. The
+  /// feed then stops reading it and holds that transcript until the
+  /// message's content changes.
+  bool get confirmed => _knownConfirmed != null;
+
   List<TranscriptSegment>? _known;
   Message? _knownFor;
+  List<TranscriptSegment>? _knownConfirmed;
+  String? _confirmedContent;
 
   /// The transcript the feed lays [message] out from, or null while it is not
   /// known (the turn then renders as one row that loads it).
   ///
   /// Live: the registry snapshot. Settled: the message's own segments, else
-  /// [cached] (the transcript memo a read filled). A transcript found once is
-  /// held for as long as the message is unchanged, so an eviction from the
-  /// shared memo does not fold a turn on screen back into a single row.
+  /// [confirmed] (the server's read of the finished message), else [cached]
+  /// (the transcript memo the relay or a read filled). A transcript found once
+  /// is held for as long as the message and the confirmed read are unchanged,
+  /// so an eviction from the shared memo does not fold a turn on screen back
+  /// into a single row.
   TurnTranscript? transcriptFor(
     Message message, {
     required List<TranscriptSegment>? Function() cached,
+    List<TranscriptSegment>? confirmed,
   }) {
     if (live.isLive && !message.isStreamingComplete) {
       final snapshot = live.snapshot;
       if (snapshot == null || snapshot.isEmpty) {
         return null;
       }
+      _sawLive = true;
       return (segments: snapshot, isLive: true);
     }
-    if (!identical(_knownFor, message)) {
+    // An edit makes the confirmed read stale: read the turn again.
+    if (_confirmedContent != null && _confirmedContent != message.content) {
+      _knownConfirmed = null;
+      _confirmedContent = null;
+    }
+    final fresh =
+        confirmed != null &&
+        confirmed.isNotEmpty &&
+        !identical(confirmed, _knownConfirmed);
+    if (fresh) {
+      _knownConfirmed = confirmed;
+      _confirmedContent = message.content;
+    }
+    // Only a new confirmed read replaces the held transcript. Once the feed
+    // stops reading (it passes null again) the confirmed one stays.
+    if (!identical(_knownFor, message) || fresh) {
       _known = null;
       _knownFor = message;
     }
     var segments = _known;
     if (segments == null) {
       final own = message.transcript;
-      segments = own.isNotEmpty ? own : cached();
+      segments = own.isNotEmpty ? own : _knownConfirmed ?? cached();
       if (segments != null && segments.isNotEmpty) {
         _known = segments;
       }

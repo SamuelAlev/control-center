@@ -38,13 +38,24 @@ class McpToolBridge extends HarnessTool {
   /// model-facing schema. The caller passes only the ones the run's context can
   /// actually supply — hiding a parameter nothing fills would leave the tool
   /// unable to receive it at all.
-  McpToolBridge(this.mcpTool, {this.hiddenScopeParams = const {}});
+  ///
+  /// [runLogId] is the run these calls are made for (its run-log row), set in
+  /// the attested scope so a tool that must know which run is calling
+  /// (`complete_goal`) can tell. Null outside a run.
+  McpToolBridge(
+    this.mcpTool, {
+    this.hiddenScopeParams = const {},
+    this.runLogId,
+  });
 
   /// The wrapped Control Center MCP tool.
   final McpTool mcpTool;
 
   /// Context-injected argument names hidden from the model-facing schema.
   final Set<String> hiddenScopeParams;
+
+  /// The run-log id of the run whose calls this bridge carries.
+  final String? runLogId;
 
   Map<String, dynamic>? _cachedSchema;
 
@@ -99,6 +110,36 @@ class McpToolBridge extends HarnessTool {
   @override
   Set<ActionClass> get actionClasses => mcpTool.actionClasses;
 
+  /// The wrapped tool's result schema, so a code mode script's
+  /// `describeTool` shows what the call resolves to.
+  @override
+  Map<String, dynamic>? get outputSchema => mcpTool.outputSchema;
+
+  /// The wrapped tool's own note ([McpTool.resultNote]): a script on either
+  /// surface receives the same value.
+  @override
+  String? get resultNote => mcpTool.resultNote;
+
+  @override
+  bool get waitsOnPerson => mcpTool.waitsOnPerson;
+
+  /// The wrapped tool's own answer ([McpTool.scriptCallable]), so both
+  /// surfaces keep the same tools from scripts.
+  @override
+  bool get scriptCallable => mcpTool.scriptCallable;
+
+  /// The wrapped tool's own rule ([McpTool.scriptArgumentRefusal]), so a
+  /// script on either surface is refused the same arguments.
+  @override
+  String? scriptArgumentRefusal(Map<String, dynamic> args) =>
+      mcpTool.scriptArgumentRefusal(args);
+
+  /// The wrapped tool's own answer ([McpTool.executedContent]), so both
+  /// surfaces audit and bound the same content.
+  @override
+  String? executedContent(Map<String, dynamic> args) =>
+      mcpTool.executedContent(args);
+
   @override
   Future<HarnessToolResult> execute(
     Map<String, dynamic> args,
@@ -111,6 +152,7 @@ class McpToolBridge extends HarnessTool {
       conversationId: context.conversationId,
       spaceId: context.spaceId,
       attested: true,
+      runLogId: runLogId,
     );
     final missingScope = scope.firstMissing(mcpTool.requiredScopeKeys);
     if (missingScope != null) {
@@ -120,8 +162,9 @@ class McpToolBridge extends HarnessTool {
       );
     }
     final scoped = _withScope(args, scope);
-    final result = await mcpTool.call(
+    final result = await mcpTool.callForRun(
       scoped,
+      scope,
       abandoned: context.cancel?.whenCancelled,
     );
     final text = result.content
@@ -171,6 +214,9 @@ class McpToolBridge extends HarnessTool {
       content: '$text$notice',
       isError: result.isError,
       images: images,
+      // A script's call resolves to this when present; the model reads the
+      // text above, which carries the same content.
+      structured: result.structured,
     );
   }
 

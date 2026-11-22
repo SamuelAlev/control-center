@@ -1,6 +1,6 @@
 {
-  "id": "cc-representative-v3",
-  "notes": "Control Center corpus: nine synthetic smoke tasks and seven authentic-source repository tasks (two seeded code changes and five source-pinned workflow tasks). The repository tasks record original source paths and SHA-256 hashes in their notes; inline source snapshots and protected files are immutable fixtures. Acceptance uses trusted verifier programs outside the candidate workspace, plus protected-file hash checks from effectiveVerifiers. Source-only review and exploration have limited claims about completeness; the verifier checks explicit findings, not subjective quality. A grader verdict is advisory, not authoritative.",
+  "id": "cc-representative-v4",
+  "notes": "Control Center corpus: nine synthetic smoke tasks, seven authentic-source repository tasks and six goal-shaped campaign tasks (three guided goal bodies whose ## Checks section is weaker than the hidden check, tag goal_verification; three checklists worked one item per segment, tag goal_segments) (two seeded code changes and five source-pinned workflow tasks). The repository tasks record original source paths and SHA-256 hashes in their notes; inline source snapshots and protected files are immutable fixtures. Acceptance uses trusted verifier programs outside the candidate workspace, plus protected-file hash checks from effectiveVerifiers. Source-only review and exploration have limited claims about completeness; the verifier checks explicit findings, not subjective quality. A grader verdict is advisory, not authoritative.",
   "tasks": [
     {
       "id": "bugfix-off-by-one",
@@ -891,6 +891,277 @@
         "observable_correction"
       ],
       "notes": "Unmodified repository source snapshots (SHA-256): packages/cc_infra/lib/src/evaluation/backends/builtin_evaluation_backend.dart=ff8286f2e0e67a9690e3edeb286306fae7cadacb3e1e1103822b286f3521ef88, packages/cc_infra/lib/src/evaluation/controlled_file_tools.dart=d165e0fb6f0dbca3ac2197fa521349f7753e690330d996cc2a2ed60426b54278. Review/exploration correctness also has a human-review caveat for any subjective completeness or severity judgment."
+    },
+    {
+      "id": "goal-verify-duration",
+      "kind": "bugfix",
+      "title": "Accept combined durations in src/duration.sh",
+      "prompt": "src/duration.sh prints the number of seconds in a duration, but it only understands a single unit. Make it accept combined durations.\n\n## Success criteria\n- Any of h, m and s, in that order and each at most once, is accepted (1h30m, 2m5s, 1h2m3s, 7h) and the total seconds are printed.\n- Anything else (a bare number, an unknown unit, units out of order or repeated, an empty argument) prints an error to stderr and exits 1.\n\n## Checks\n- `bash check.sh` (60 s)",
+      "inlineFiles": {
+        "src/duration.sh": "#!/usr/bin/env bash\n# Print the number of seconds in a duration such as 1h30m or 45s.\nset -euo pipefail\nd=$1\ncase \"$d\" in\n  *h) echo $(( ${d%h} * 3600 )) ;;\n  *m) echo $(( ${d%m} * 60 )) ;;\n  *s) echo \"${d%s}\" ;;\n  *) echo \"bad duration: $d\" >&2; exit 1 ;;\nesac\n",
+        "check.sh": "#!/usr/bin/env bash\n# The goal's check: two of the cases the goal names.\nset -euo pipefail\ncd \"$(dirname \"$0\")\"\n[ \"$(bash src/duration.sh 1h30m)\" = 5400 ]\n[ \"$(bash src/duration.sh 45s)\" = 45 ]\necho ok\n"
+      },
+      "verifiers": [
+        {
+          "id": "hidden_duration",
+          "kind": "tests",
+          "params": {
+            "trustedScript": "#!/usr/bin/env bash\nset -euo pipefail\ncd \"$CC_EVAL_WORKSPACE\"\nok() { [ \"$(bash src/duration.sh \"$1\" 2>/dev/null)\" = \"$2\" ] || { echo \"$1 should be $2\"; exit 1; }; }\nbad() { if bash src/duration.sh \"$1\" >/dev/null 2>&1; then echo \"$1 should be refused\"; exit 1; fi; }\nok 1h30m 5400\nok 2m5s 125\nok 1h2m3s 3723\nok 7h 25200\nok 0s 0\nok 10m 600\nok 1h5s 3605\nbad abc\nbad 5x\nbad 1m1h\nbad 1h1h\nbad 90\nbad \"\"\necho ok\n",
+            "expectExit": [
+              0
+            ],
+            "timeoutSeconds": 60
+          },
+          "description": "Every success criterion, beyond the two cases the goal's check covers (a trusted program outside the workspace)."
+        }
+      ],
+      "graders": [
+        {
+          "type": "outcome_success",
+          "id": "completed"
+        },
+        {
+          "type": "max_turns",
+          "id": "within_turns",
+          "params": {
+            "maxTurns": 30
+          }
+        }
+      ],
+      "defaultRepetitions": 3,
+      "tags": [
+        "goal_verification",
+        "bugfix"
+      ],
+      "notes": "Goal-shaped: the prompt is a guided goal body whose ## Checks section is the visible check (check.sh, two cases). The hidden check covers every criterion, so a claim the visible check accepts can still be a false completion."
+    },
+    {
+      "id": "goal-verify-slug",
+      "kind": "bugfix",
+      "title": "Make src/slug.sh produce clean URL slugs",
+      "prompt": "src/slug.sh prints the URL slug of its argument, but it only replaces spaces. Make it produce clean slugs.\n\n## Success criteria\n- Letters are lower-cased; letters and digits are kept.\n- Every run of other characters becomes a single dash.\n- The slug never starts or ends with a dash; an argument with no letter or digit prints an empty line.\n\n## Checks\n- `bash check.sh` (60 s)",
+      "inlineFiles": {
+        "src/slug.sh": "#!/usr/bin/env bash\n# Print the URL slug of the first argument.\nset -euo pipefail\nprintf '%s\\n' \"$1\" | tr 'A-Z ' 'a-z-'\n",
+        "check.sh": "#!/usr/bin/env bash\n# The goal's check: one of the cases the goal names.\nset -euo pipefail\ncd \"$(dirname \"$0\")\"\n[ \"$(bash src/slug.sh 'Hello, World')\" = hello-world ]\necho ok\n"
+      },
+      "verifiers": [
+        {
+          "id": "hidden_slug",
+          "kind": "tests",
+          "params": {
+            "trustedScript": "#!/usr/bin/env bash\nset -euo pipefail\ncd \"$CC_EVAL_WORKSPACE\"\nok() { [ \"$(bash src/slug.sh \"$1\")\" = \"$2\" ] || { echo \"'$1' should be '$2'\"; exit 1; }; }\nok 'Hello, World' hello-world\nok '  Hello,   World!  ' hello-world\nok 'C++ & Rust' c-rust\nok 'Already-slug' already-slug\nok 'a--b' a-b\nok '123 Go' 123-go\nok '---' ''\necho ok\n",
+            "expectExit": [
+              0
+            ],
+            "timeoutSeconds": 60
+          },
+          "description": "Every success criterion on seven inputs (a trusted program outside the workspace)."
+        }
+      ],
+      "graders": [
+        {
+          "type": "outcome_success",
+          "id": "completed"
+        },
+        {
+          "type": "max_turns",
+          "id": "within_turns",
+          "params": {
+            "maxTurns": 30
+          }
+        }
+      ],
+      "defaultRepetitions": 3,
+      "tags": [
+        "goal_verification",
+        "bugfix"
+      ],
+      "notes": "Goal-shaped: the visible check covers one input; the hidden check covers runs of punctuation, edge dashes and the empty slug."
+    },
+    {
+      "id": "goal-verify-total",
+      "kind": "multifile_feature",
+      "title": "Sum the amount column wherever it is",
+      "prompt": "src/total.sh prints the sum of the amount column of a CSV file, using col_of from src/csv.sh to find the column. It assumes the second column. Make it work for any CSV file whose header names an amount column.\n\n## Success criteria\n- The amount column is found from the header, in any position.\n- Blank lines are ignored and negative amounts are summed.\n- A file with a header and no rows prints 0.\n\n## Checks\n- `bash check.sh` (60 s)",
+      "inlineFiles": {
+        "src/csv.sh": "#!/usr/bin/env bash\n# col_of <header line> <name>: print the 1-based column of <name>.\ncol_of() {\n  echo 2\n}\n",
+        "src/total.sh": "#!/usr/bin/env bash\n# Print the sum of the amount column of a CSV file.\nset -euo pipefail\nhere=$(cd \"$(dirname \"$0\")\" && pwd)\nsource \"$here/csv.sh\"\nfile=$1\ncol=$(col_of \"$(head -n1 \"$file\")\" amount)\nawk -F, -v c=\"$col\" 'NR>1 {s+=$c} END {print s}' \"$file\"\n",
+        "data/sample.csv": "amount,id\n5,a\n7,b\n",
+        "check.sh": "#!/usr/bin/env bash\n# The goal's check: the sample file.\nset -euo pipefail\ncd \"$(dirname \"$0\")\"\n[ \"$(bash src/total.sh data/sample.csv)\" = 12 ]\necho ok\n"
+      },
+      "verifiers": [
+        {
+          "id": "hidden_total",
+          "kind": "tests",
+          "params": {
+            "trustedScript": "#!/usr/bin/env bash\nset -euo pipefail\ncd \"$CC_EVAL_WORKSPACE\"\ntmp=$(mktemp -d)\ntrap 'rm -rf \"$tmp\"' EXIT\nprintf 'note,id,amount\\nrent,1,-40\\n\\nfood,2,15\\n\\nfee,3,3\\n' > \"$tmp/a.csv\"\nprintf 'id,amount\\n' > \"$tmp/b.csv\"\nprintf 'amount\\n4\\n6\\n' > \"$tmp/c.csv\"\n[ \"$(bash src/total.sh \"$tmp/a.csv\")\" = -22 ] || { echo \"third column with blanks and negatives\"; exit 1; }\n[ \"$(bash src/total.sh \"$tmp/b.csv\")\" = 0 ] || { echo \"a header alone sums to 0\"; exit 1; }\n[ \"$(bash src/total.sh \"$tmp/c.csv\")\" = 10 ] || { echo \"a one-column file\"; exit 1; }\n[ \"$(bash src/total.sh data/sample.csv)\" = 12 ] || { echo \"the sample\"; exit 1; }\necho ok\n",
+            "expectExit": [
+              0
+            ],
+            "timeoutSeconds": 60
+          },
+          "description": "Every success criterion on four files (a trusted program outside the workspace)."
+        }
+      ],
+      "graders": [
+        {
+          "type": "outcome_success",
+          "id": "completed"
+        },
+        {
+          "type": "max_turns",
+          "id": "within_turns",
+          "params": {
+            "maxTurns": 30
+          }
+        }
+      ],
+      "defaultRepetitions": 3,
+      "tags": [
+        "goal_verification",
+        "multifile"
+      ],
+      "notes": "Goal-shaped: the visible check covers the sample file; the hidden check covers another column position, blank lines, negative amounts and a header with no rows (which must print 0, not an empty line)."
+    },
+    {
+      "id": "goal-segments-greet",
+      "kind": "long_context",
+      "title": "Finish a three-item goal checklist, one item per segment",
+      "prompt": "Goal: complete every item of TODO.md and mark each finished item [x]. The goal runs in segments: in this segment do only the first unchecked item, mark it, then stop.",
+      "followUps": [
+        "Goal: complete every item of TODO.md and mark each finished item [x]. This is a new segment: do only the next unchecked item, mark it, then stop.",
+        "Goal: complete every item of TODO.md and mark each finished item [x]. This is a new segment: do only the next unchecked item, mark it, then stop."
+      ],
+      "inlineFiles": {
+        "TODO.md": "# Goal checklist\n\n- [ ] 1. src/greet.sh prints \"hello, NAME\" for its first argument NAME.\n- [ ] 2. src/greet.sh prints \"hello, world\" when it gets no argument.\n- [ ] 3. src/shout.sh prints what src/greet.sh prints for the same arguments, in upper case, by calling src/greet.sh.\n",
+        "src/greet.sh": "#!/usr/bin/env bash\n# Greets someone. Not written yet.\nexit 1\n"
+      },
+      "verifiers": [
+        {
+          "id": "hidden_greet",
+          "kind": "tests",
+          "params": {
+            "trustedScript": "#!/usr/bin/env bash\nset -euo pipefail\ncd \"$CC_EVAL_WORKSPACE\"\n[ \"$(bash src/greet.sh ada)\" = \"hello, ada\" ] || { echo \"item 1\"; exit 1; }\n[ \"$(bash src/greet.sh)\" = \"hello, world\" ] || { echo \"item 2\"; exit 1; }\n[ \"$(bash src/shout.sh ada)\" = \"HELLO, ADA\" ] || { echo \"item 3\"; exit 1; }\n[ \"$(bash src/shout.sh)\" = \"HELLO, WORLD\" ] || { echo \"item 3, no argument\"; exit 1; }\ngrep -q 'greet.sh' src/shout.sh || { echo 'shout.sh must call greet.sh'; exit 1; }\ngrep -q '^- \\[ \\]' TODO.md && { echo 'TODO.md has an unchecked item'; exit 1; }\n[ \"$(grep -c '^- \\[x\\]' TODO.md)\" -eq 3 ] || { echo 'TODO.md must keep its three items, checked'; exit 1; }\necho ok\n",
+            "expectExit": [
+              0
+            ],
+            "timeoutSeconds": 60
+          },
+          "description": "All three items work and are checked (a trusted program outside the workspace)."
+        }
+      ],
+      "graders": [
+        {
+          "type": "outcome_success",
+          "id": "completed"
+        },
+        {
+          "type": "max_turns",
+          "id": "within_turns",
+          "params": {
+            "maxTurns": 30
+          }
+        }
+      ],
+      "defaultRepetitions": 3,
+      "tags": [
+        "goal_segments"
+      ],
+      "notes": "Goal-shaped segments: every turn restates the goal, as a goal segment's goal block does, and asks for the next unchecked item. With history the agent knows what it did; with history_none it must recover it from TODO.md and the files (re-reads measure that)."
+    },
+    {
+      "id": "goal-segments-rename",
+      "kind": "long_context",
+      "title": "Rename a configuration key across three files, one per segment",
+      "prompt": "Goal: complete every item of TODO.md and mark each finished item [x]. The goal runs in segments: in this segment do only the first unchecked item, mark it, then stop.",
+      "followUps": [
+        "Goal: complete every item of TODO.md and mark each finished item [x]. This is a new segment: do only the next unchecked item, mark it, then stop.",
+        "Goal: complete every item of TODO.md and mark each finished item [x]. This is a new segment: do only the next unchecked item, mark it, then stop."
+      ],
+      "inlineFiles": {
+        "TODO.md": "# Goal checklist\n\n- [ ] 1. In config/app.env, rename DB_HOST to DATABASE_HOST, keeping its value.\n- [ ] 2. Make src/start.sh read DATABASE_HOST instead of DB_HOST.\n- [ ] 3. Add the line \"- Renamed DB_HOST to DATABASE_HOST.\" under \"## Unreleased\" in CHANGELOG.md.\n",
+        "config/app.env": "APP_PORT=8080\nDB_HOST=db.internal\nDB_PORT=5432\n",
+        "src/start.sh": "#!/usr/bin/env bash\nset -euo pipefail\nhere=$(cd \"$(dirname \"$0\")\" && pwd)\nsource \"$here/../config/app.env\"\necho \"connecting to $DB_HOST:$DB_PORT\"\n",
+        "CHANGELOG.md": "# Changelog\n\n## Unreleased\n\n## 1.0.0\n\n- First release.\n"
+      },
+      "verifiers": [
+        {
+          "id": "hidden_rename",
+          "kind": "tests",
+          "params": {
+            "trustedScript": "#!/usr/bin/env bash\nset -euo pipefail\ncd \"$CC_EVAL_WORKSPACE\"\ngrep -qx 'DATABASE_HOST=db.internal' config/app.env || { echo 'item 1'; exit 1; }\ngrep -q '^DB_HOST=' config/app.env && { echo 'item 1: DB_HOST is still set'; exit 1; }\ngrep -qx 'DB_PORT=5432' config/app.env || { echo 'item 1: DB_PORT must stay'; exit 1; }\n[ \"$(env -u DB_HOST bash src/start.sh)\" = \"connecting to db.internal:5432\" ] || { echo \"item 2\"; exit 1; }\ngrep -q 'DB_HOST' src/start.sh && { echo 'item 2: start.sh still reads DB_HOST'; exit 1; }\nawk '/^## Unreleased/{u=1; next} /^## /{u=0} u && /^- Renamed DB_HOST to DATABASE_HOST\\.$/{f=1} END{exit !f}' CHANGELOG.md || { echo 'item 3'; exit 1; }\ngrep -q '^- \\[ \\]' TODO.md && { echo 'TODO.md has an unchecked item'; exit 1; }\n[ \"$(grep -c '^- \\[x\\]' TODO.md)\" -eq 3 ] || { echo 'TODO.md must keep its three items, checked'; exit 1; }\necho ok\n",
+            "expectExit": [
+              0
+            ],
+            "timeoutSeconds": 60
+          },
+          "description": "The key is renamed everywhere, start.sh runs with the new key alone, the changelog line is under Unreleased, and the checklist is checked."
+        }
+      ],
+      "graders": [
+        {
+          "type": "outcome_success",
+          "id": "completed"
+        },
+        {
+          "type": "max_turns",
+          "id": "within_turns",
+          "params": {
+            "maxTurns": 30
+          }
+        }
+      ],
+      "defaultRepetitions": 3,
+      "tags": [
+        "goal_segments"
+      ],
+      "notes": "Goal-shaped segments over three files; item 2 depends on item 1, so a segment that lost the earlier rename must re-read it."
+    },
+    {
+      "id": "goal-segments-count",
+      "kind": "long_context",
+      "title": "Extend a counting script and its test, one item per segment",
+      "prompt": "Goal: complete every item of TODO.md and mark each finished item [x]. The goal runs in segments: in this segment do only the first unchecked item, mark it, then stop.",
+      "followUps": [
+        "Goal: complete every item of TODO.md and mark each finished item [x]. This is a new segment: do only the next unchecked item, mark it, then stop.",
+        "Goal: complete every item of TODO.md and mark each finished item [x]. This is a new segment: do only the next unchecked item, mark it, then stop."
+      ],
+      "inlineFiles": {
+        "TODO.md": "# Goal checklist\n\n- [ ] 1. src/count.sh FILE prints the number of non-empty lines of FILE (today it counts every line).\n- [ ] 2. src/count.sh -w FILE prints the number of words of FILE.\n- [ ] 3. tests/count_test.sh checks both behaviours on a file it creates and exits 0 when they hold.\n",
+        "src/count.sh": "#!/usr/bin/env bash\n# Count lines of a file.\nset -euo pipefail\nwc -l < \"$1\" | tr -d ' '\n"
+      },
+      "verifiers": [
+        {
+          "id": "hidden_count",
+          "kind": "tests",
+          "params": {
+            "trustedScript": "#!/usr/bin/env bash\nset -euo pipefail\ncd \"$CC_EVAL_WORKSPACE\"\ntmp=$(mktemp -d)\ntrap 'rm -rf \"$tmp\"' EXIT\nprintf 'one two\\n\\n\\nthree four five\\nsix\\n' > \"$tmp/f\"\n[ \"$(bash src/count.sh \"$tmp/f\")\" = 3 ] || { echo \"item 1\"; exit 1; }\n[ \"$(bash src/count.sh -w \"$tmp/f\")\" = 6 ] || { echo \"item 2\"; exit 1; }\n[ -f tests/count_test.sh ] || { echo \"item 3: no tests/count_test.sh\"; exit 1; }\nbash tests/count_test.sh >/dev/null 2>&1 || { echo \"item 3: the test fails on the finished script\"; exit 1; }\ngrep -q '^- \\[ \\]' TODO.md && { echo 'TODO.md has an unchecked item'; exit 1; }\n[ \"$(grep -c '^- \\[x\\]' TODO.md)\" -eq 3 ] || { echo 'TODO.md must keep its three items, checked'; exit 1; }\necho ok\n",
+            "expectExit": [
+              0
+            ],
+            "timeoutSeconds": 60
+          },
+          "description": "Non-empty line and word counts are right, the written test passes, and the checklist is checked."
+        }
+      ],
+      "graders": [
+        {
+          "type": "outcome_success",
+          "id": "completed"
+        },
+        {
+          "type": "max_turns",
+          "id": "within_turns",
+          "params": {
+            "maxTurns": 30
+          }
+        }
+      ],
+      "defaultRepetitions": 3,
+      "tags": [
+        "goal_segments"
+      ],
+      "notes": "Goal-shaped segments; the last item tests the first two, so it needs what the earlier segments built."
     }
   ]
 }

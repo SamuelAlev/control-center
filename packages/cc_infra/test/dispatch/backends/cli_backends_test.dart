@@ -227,6 +227,70 @@ void main() {
       });
     });
 
+    group('the appended prompt with Control Center tools', () {
+      final prompt = ClaudeCliBackend.appendedSystemPrompt(
+        hasControlCenterMcp: true,
+      );
+
+      // A script-only tool is not listed to a run with repl, so Claude Code's
+      // tool search cannot find it: an instruction to load one that way is
+      // what made a run report its tools missing.
+      test('sends no tool to tool search by name', () {
+        expect(prompt, isNot(contains('tool search to load')));
+        expect(prompt, isNot(contains('loaded with tool search')));
+        expect(prompt, isNot(contains('mcp__control-center__render_media')));
+        for (final name in ClaudeCliBackend.controlCenterToolNames) {
+          expect(
+            prompt,
+            isNot(contains('mcp__control-center__$name')),
+            reason: name,
+          );
+        }
+      });
+
+      test('states once how a Control Center tool is reached', () {
+        expect(prompt, contains('mcp__control-center__NAME'));
+        expect(prompt, contains('callable only from a script given to repl'));
+        expect(prompt, contains('await tools.NAME'));
+        expect(prompt, contains('is never reported as missing'));
+        expect(
+          prompt.indexOf('mcp__control-center__NAME'),
+          lessThan(prompt.indexOf('render_media')),
+        );
+      });
+
+      test('names each of its tools, and no tool it does not list', () {
+        for (final name in ClaudeCliBackend.controlCenterToolNames) {
+          expect(RegExp('\\b$name\\b').hasMatch(prompt), isTrue, reason: name);
+        }
+        // Every snake_case word in it is one of them (`in_progress` is a
+        // checklist status).
+        final named = {
+          for (final m in RegExp(r'\b[a-z]+(?:_[a-z]+)+\b').allMatches(prompt))
+            m.group(0)!,
+        }..remove('in_progress');
+        expect(
+          named.difference(ClaudeCliBackend.controlCenterToolNames.toSet()),
+          isEmpty,
+        );
+      });
+
+      test('keeps its rules', () {
+        for (final rule in [
+          'you MUST use the Control Center checklist',
+          'native task tools are disabled',
+          'push with git push',
+          'gh pr create cannot open pull requests',
+          'never gh pr comment',
+          'Respect a denial',
+          'A network denial is also a boundary',
+          'Do not ask the user to install FFmpeg',
+        ]) {
+          expect(prompt, contains(rule), reason: rule);
+        }
+      });
+    });
+
     group('buildClaudeArgs effort', () {
       test('omits --effort when no effort is configured', () {
         expect(ClaudeCliBackend.buildClaudeArgs(), isNot(contains('--effort')));

@@ -2,7 +2,7 @@
 title: Zarządzaj kosztami
 description: Zobacz, ile wydają Twoi agenci, ogranicz autonomiczne uruchomienie i zmniejsz zużycie tokenów.
 slug: pl-PL/podrecznik/poradniki/zarzadzanie-kosztami
-sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
+sourceHash: 040176a3840653a57c823ce4ff7e3ed9cf071c07
 ---
 
 Ten poradnik pokazuje, jak sprawdzić, ile kosztują uruchomienia agentów, i jak ograniczyć autonomiczne uruchomienie.
@@ -40,21 +40,30 @@ Karta **Użycie i koszt** na tej stronie pokazuje wydatki zaobserwowane w ostatn
 
 ## Ustaw limit autonomicznego uruchomienia
 
-Dwa polecenia slash, wpisywane w kompozytorze przestrzeni, to jedyne uruchomienia z limitem wydatków:
+Te uruchomienia mają limit wydatków. Uruchomienie, które zaczynasz wysłaniem wiadomości, nie ma.
 
 ```
 /goal ship the auth refactor --budget 20
-/loop keep the flaky tests green
+/loop every 1h --budget 10 keep the flaky tests green
 ```
 
-- Każdy segment uruchomienia `/goal` lub `/loop` zatrzymuje się, gdy jego wyceniony wydatek osiągnie **500 centów (5,00 USD)**. Przy 80% tej kwoty pętla najpierw nakierowuje model, by domknął pracę i zostawił czyste przekazanie, żeby nie zginął w połowie zadania.
-- Cały trwały cel ma limit **5000 centów (50,00 USD)**, chyba że podasz `--budget <dollars>`. Nadzorca przekazuje _pozostały_ budżet celu do każdego segmentu, więc jawny budżet nigdy nie zostaje przekroczony o cały segment.
-- `--days N` dodaje termin zegarowy, a `--max N` pułap liczby uruchomień. Oba są opcjonalne; bez nich cel ogranicza wyłącznie koszt.
-- Cel, który osiągnie swój limit, zatrzymuje się na `budgetExhausted` i można go wznowić wyłącznie przez podniesienie budżetu.
+| Uruchomienie | Limit |
+| --- | --- |
+| Segment celu | 5 dolarów albo to, co zostało z budżetu celu, jeśli to mniej |
+| Cel | 50 dolarów, chyba że podasz `--budget <dollars>` |
+| Recenzja celu | 2 dolary albo to, co zostało, obciążane celowi |
+| Uruchomienie, które startuje harmonogram albo obserwacja | 5 dolarów; harmonogram zatrzymuje się na własnym limicie kosztów (50 dolarów, chyba że podasz `--budget`, albo domyślny limit obszaru roboczego) |
+| Recenzja po celu albo `/refine` | 1 dolar |
 
-Ponieważ limit opiera się na wycenie, model, którego katalog nie potrafi wycenić, nigdy go nie osiągnie. Takie uruchomienie ogranicza zamiast tego zabezpieczenie przed powtarzaniem w pętli zagłady, rezygnacja nadzorcy po trzech kolejnych niepowodzeniach oraz Ty.
+- Uruchomienie z limitem zatrzymuje się, gdy jego wyceniony wydatek osiągnie limit, w wbudowanym harnessie, w Claude Code i w agentach ACP. Przy 90% wbudowany harness i Claude Code najpierw nakierowują agenta, by domknął pracę i zostawił czyste przekazanie, żeby nie zginął w połowie zadania. Agent ACP jest anulowany po osiągnięciu limitu.
+- _Pozostały_ budżet celu jest przekazywany do każdego segmentu, więc jawny budżet nigdy nie zostaje przekroczony o cały segment.
+- `--days N` dodaje termin, a `--max N` pułap liczby segmentów. Oba są opcjonalne; bez nich cel ogranicza koszt i zatrzymanie przy braku postępu.
+- Cel, który osiągnie swój budżet, zatrzymuje się na **Budżet wyczerpany** i wznawia się tylko z wyższym budżetem, który może nadać wyłącznie osoba, która go rozpoczęła.
+- Uruchomienie potoku wstrzymane na limicie orkiestracji czeka, aż jego zlecający naciśnie **Podnieś limit** na stronie uruchomienia potoku. Nowy limit musi być wyższy niż stary i niż to, co wydano, najwyżej 1,000 dolarów, a limit nigdy nie jest usuwany.
 
-Wiadomość w przestrzeni, wzmianka przez @ albo krok potoku nie mają limitu wydatków. Uruchomienie kończy się, gdy model się zatrzyma, gdy je zatrzymasz albo gdy zabezpieczenie przed pętlą zagłady je nakieruje.
+Ponieważ limit opiera się na wycenie, model, którego katalog nie potrafi wycenić, nigdy go nie osiągnie. Takie uruchomienie ogranicza zamiast tego zabezpieczenie przed powtarzaniem w pętli zagłady, zatrzymanie celu przy braku postępu, jego rezygnacja po trzech kolejnych niepowodzeniach oraz Ty.
+
+Wiadomość w przestrzeni, wzmianka przez @ albo krok potoku spoza ograniczonej orkiestracji nie mają własnego limitu wydatków. Uruchomienie kończy się, gdy model się zatrzyma, gdy je zatrzymasz albo gdy zabezpieczenie przed pętlą zagłady je nakieruje.
 
 ## Ogranicz zużycie tokenów
 

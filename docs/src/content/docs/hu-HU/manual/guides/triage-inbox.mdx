@@ -2,7 +2,7 @@
 title: Beérkezett üzenetek triázsolása
 description: Dolgozzon az egységes Beérkezettel — tisztázza, mi blokkolja, nézze át, mi vár Önre, és kövesse a saját PR-jeit.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/beerkezett-uzenetek-triazsolasa
-sourceHash: 8b1cedaef10bca4c784509cf67c82493c1baab35
+sourceHash: 78a60272d46bc865d25bd7bc98796a89978e3e7c
 ---
 
 Ez az útmutató bemutatja, hogyan dolgozhat a Beérkezettel: ez az az egyetlen
@@ -80,8 +80,9 @@ A sáv minden kártyájához egyetlen következő művelet tartozik:
    sorozatát és a legutóbbi eredményt. A Beérkezettben szállítónként csak a
    legutóbbi hiba jelenik meg, így egy helyreállt szinkronizálás eltünteti a
    kártyát.
-3. A kártyák maguktól eltűnnek, amint a mögöttes állapot megoldódik (az ügynök
-   választ kap, a szinkronizálás helyreáll) — nincs mit kézzel elvetni.
+3. Ha egy kártyán ez szerepel: **A cél átnézésre vár** vagy **A célnak szüksége van Önre**, kattintson az **Átnézés** gombra — a cél oldalára jut, ahol jóváhagyhatja, folytathatja vagy megválaszolhatja, amire vár. A folytatás annak a személynek a joga, aki a célt indította. Pipeline által indított cél jóváhagyása annak a személynek a joga, aki az adott futtatást indította (lásd: [Cél követése](/hu-HU/kezikonyv/gyakorlati-utmutatok/cel-kovetese/)). Csak azok a célok látszanak, amelyeket Ön intézhet: az átnézésre váró cél, vagy az, amelyet Ön indított és amelyhez személy kell.
+4. Ha egy kártyán **Fejlesztés javasolva** szerepel, kattintson az **Átnézés** gombra — a javaslathoz jut, ahol elfogadhatja vagy elutasíthatja.
+3. A kártyák maguktól eltűnnek, amint a mögöttes állapot megoldódik (az ügynök választ kap, a szinkronizálás helyreáll, a cél továbblép, a javaslatról döntés születik) — nincs mit kézzel elvetni.
 
 :::note[Ezek körönkénti megerősítések, nem irányítási jóváhagyások]
 Az „ügynök-jóváhagyás” kártya egy futó ügynök, amely megáll, hogy engedélyt

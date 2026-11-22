@@ -5,6 +5,7 @@ import 'package:control_center/features/desktop_app/presentation/tray/tray_panel
 import 'package:control_center/features/desktop_app/presentation/tray/tray_panel_rows.dart';
 import 'package:control_center/features/desktop_app/providers/tray_status_providers.dart';
 import 'package:control_center/features/messaging/presentation/utils/conversation_display_name.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_pr_subtitle.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row_adornments.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
@@ -222,22 +223,17 @@ class _SpaceItem extends ConsumerWidget implements CcFluidHoverTarget {
         !stale && !unreadShownBelow && ref.watch(spaceUnreadProvider(space.id));
     ref.watch(_captionClockProvider);
     final at = lastActiveAt;
+    final prs = ref.watch(spaceRowPrsProvider(space.id));
     return SpaceRow(
-      leading: SpaceLeadingIcon(
-        spaceId: space.id,
+      signal: spaceRowSignal(
         running: running,
+        attention: unread || status == SpaceStatus.needsInput,
         selected: false,
-        absent: const SpaceStatusMark(),
-        unreadConversationCount: stale
-            ? 0
-            : ref.watch(spaceUnreadConversationCountProvider(space.id)),
       ),
       label: space.name.isNotEmpty ? space.name : l10n.spaceLabel,
+      subtitle: prs.isEmpty ? null : SpacePrSubtitle(prs: prs, selected: false),
       selected: false,
-      status: status,
-      unread: unread,
       muted: stale,
-      leadingHandlesRunning: true,
       trailingLabel: at == null ? null : formatCompactAge(context, at),
       onPress: () => actions.openRoute(spaceRoute(workspaceId, space.id)),
     );
@@ -270,21 +266,15 @@ class _ConversationItem extends ConsumerWidget implements CcFluidHoverTarget {
     ref.watch(_captionClockProvider);
     final running = runningSince != null;
     return SpaceRow(
-      indent: kSpaceSidebarMarkSlot + kSpaceSidebarMarkGap,
-      markSlot: kConversationMarkSlot,
-      markGap: kConversationMarkGap,
       labelFontSize: kConversationLabelFontSize,
       extent: kConversationRowExtent,
-      leading: conversationActivityMark(running: running, unread: unread),
+      signal: conversationActivityMark(running: running, attention: unread),
       label: conversationDisplayName(conversation, l10n),
       trailingLabel: formatCompactAge(
         context,
         runningSince ?? conversation.updatedAt,
       ),
       selected: false,
-      status: running ? SpaceStatus.running : SpaceStatus.idle,
-      unread: false,
-      leadingHandlesRunning: true,
       onPress: () => actions.openRoute(
         spaceRoute(
           workspaceId,

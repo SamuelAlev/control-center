@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
 import 'package:cc_infra/cc_infra.dart'
     show
         ClaudeIdleCompactor,
@@ -14,6 +15,9 @@ typedef ClaudeRunDispatcher =
       required String spaceId,
       required String agentId,
       required String prompt,
+      required WakeContext wakeContext,
+      required bool freshHistory,
+      required bool readOnly,
       String? conversationId,
       String? requestedByUserId,
     });
@@ -52,14 +56,28 @@ class ClaudeSessionRuntime {
   /// Compactions go through the ordinary run path, not a side channel: one only
   /// hits the prompt cache when it resumes with the same tools and system
   /// prompt the turn ran with, and it is real spend the run log has to show.
+  ///
+  /// `/compact` is a command, and only a signed-in person's run carries one:
+  /// the compaction continues that person's turn. A turn that ran for nobody
+  /// (a bot run) is not compacted.
   void compactThrough(ClaudeRunDispatcher dispatch) {
-    compactor.compact = (turn) => dispatch(
-      workspaceId: turn.workspaceId,
-      spaceId: turn.spaceId,
-      agentId: turn.agentId,
-      prompt: kClaudeIdleCompactionPrompt,
-      conversationId: turn.conversationId,
-      requestedByUserId: turn.requestedByUserId,
-    );
+    compactor.compact = (turn) async {
+      final person = turn.requestedByUserId;
+      if (person == null || person.isEmpty) {
+        return null;
+      }
+      return dispatch(
+        workspaceId: turn.workspaceId,
+        spaceId: turn.spaceId,
+        agentId: turn.agentId,
+        prompt: kClaudeIdleCompactionPrompt,
+        wakeContext: const WakeContext.userMessage(),
+        // It continues the session's own history and may write its state.
+        freshHistory: false,
+        readOnly: false,
+        conversationId: turn.conversationId,
+        requestedByUserId: person,
+      );
+    };
   }
 }

@@ -51,6 +51,34 @@ void main() {
   late String workspaceDir;
   late String secret;
 
+  // A live run row, written the way the server's dispatch does: straight to
+  // the workspace's database, since no op writes a run log.
+  Future<void> seedRun(
+    String workspace, {
+    required String id,
+    required String agentId,
+    int? pid,
+  }) async {
+    final seed = openSeedDatabases(tmp.path);
+    try {
+      final db = seed.workspaces.of(workspace);
+      await db
+          .into(db.agentRunLogsTable)
+          .insert(
+            AgentRunLogsTableCompanion.insert(
+              id: id,
+              agentId: agentId,
+              workspaceId: workspace,
+              startedAt: Value(DateTime.now().toUtc()),
+              status: const Value('running'),
+              pid: Value(pid),
+            ),
+          );
+    } finally {
+      await seed.close();
+    }
+  }
+
   setUpAll(() async {
     tmp = Directory.systemTemp.createTempSync('cc_host_path_ops');
     await stageServerNatives(tmp.path);
@@ -292,7 +320,8 @@ void main() {
     );
   });
 
-  test('the run viewer never opens a log path a caller wrote', () async {
+  test('the run viewer never opens a log path a caller wrote: no op writes '
+      'a run log', () async {
     final foreign = p.join(tmp.path, 'foreign.ndjson');
     File(foreign).writeAsStringSync('{"type":"stolen"}\n');
     final agent =
@@ -302,22 +331,29 @@ void main() {
               'title': 'Engineer',
             }))['agent']
             as Map;
-    await owner.call('agent_run_log.upsert', {
-      'workspace_id': workspaceId,
-      'log': {
-        'id': 'run-1',
-        'agent_id': agent['id'],
-        'workspace_id': workspaceId,
-        'started_at': DateTime.utc(2026).toIso8601String(),
-        'status': 'running',
-        'log_path': foreign,
-      },
-    });
-    await owner.call('agent_run_log.updateRuntime', {
-      'workspace_id': workspaceId,
-      'run_id': 'run-1',
-      'log_path': foreign,
-    });
+    await seedRun(workspaceId, id: 'run-1', agentId: agent['id'] as String);
+    for (final (op, args) in <(String, Map<String, dynamic>)>[
+      (
+        'agent_run_log.upsert',
+        {
+          'log': {
+            'id': 'run-1',
+            'agent_id': agent['id'],
+            'workspace_id': workspaceId,
+            'started_at': DateTime.utc(2026).toIso8601String(),
+            'status': 'running',
+            'log_path': foreign,
+          },
+        },
+      ),
+      ('agent_run_log.updateRuntime', {'run_id': 'run-1', 'log_path': foreign}),
+    ]) {
+      await expectLater(
+        owner.call(op, {'workspace_id': workspaceId, ...args}),
+        throwsA(isA<RemoteRpcException>()),
+        reason: op,
+      );
+    }
     final stored = await owner.call('agent_run_log.get', {
       'workspace_id': workspaceId,
       'id': 'run-1',
@@ -365,17 +401,12 @@ void main() {
                 'title': 'Engineer',
               }))['agent']
               as Map;
-      await owner.call('agent_run_log.upsert', {
-        'workspace_id': workspace,
-        'log': {
-          'id': 'run-$agentName',
-          'agent_id': agent['id'],
-          'workspace_id': workspace,
-          'started_at': DateTime.now().toUtc().toIso8601String(),
-          'status': 'running',
-          'pid': child.pid,
-        },
-      });
+      await seedRun(
+        workspace,
+        id: 'run-$agentName',
+        agentId: agent['id'] as String,
+        pid: child.pid,
+      );
       return child;
     }
 
@@ -426,6 +457,64 @@ void main() {
 
       await admin.call('process.kill', {'pid': mine.pid});
       await mine.exitCode.timeout(const Duration(seconds: 10));
+      await owner.call('process.kill', {'pid': theirs.pid});
+      await theirs.exitCode.timeout(const Duration(seconds: 10));
+    });
+
+    test('a member stops one run of their own workspace, and it settles as a '
+        "person's stop; no one stops another workspace's run", () async {
+      final other =
+          ((await owner.call('workspace.create', const {
+                    'name': 'Elsewhere',
+                  }))['workspace']
+                  as Map)['id']
+              as String;
+      final mine = await runIn(workspaceId, 'StopMine');
+      final theirs = await runIn(other, 'StopTheirs');
+
+      // Another workspace's run, named in the caller's own workspace, is not
+      // found; named in its own, the admin is no member there.
+      await expectLater(
+        admin.call('agent_run_log.stop', {
+          'workspace_id': workspaceId,
+          'run_id': 'run-StopTheirs',
+        }),
+        refused(RpcErrorCodes.notFound),
+      );
+      await expectLater(
+        admin.call('agent_run_log.stop', {
+          'workspace_id': other,
+          'run_id': 'run-StopTheirs',
+        }),
+        refused(RpcErrorCodes.unauthorized),
+      );
+      // A companion phone is no full client.
+      await expectLater(
+        phone.call('agent_run_log.stop', {
+          'workspace_id': workspaceId,
+          'run_id': 'run-StopMine',
+        }),
+        refused(RpcErrorCodes.unauthorized),
+      );
+      expect(alive(theirs.pid), isTrue);
+      expect(alive(mine.pid), isTrue);
+
+      await admin.call('agent_run_log.stop', {
+        'workspace_id': workspaceId,
+        'run_id': 'run-StopMine',
+      });
+      await mine.exitCode.timeout(const Duration(seconds: 10));
+      final stopped =
+          (await admin.call('agent_run_log.get', {
+                'workspace_id': workspaceId,
+                'id': 'run-StopMine',
+              }))['log']
+              as Map;
+      expect(stopped['status'], 'error');
+      expect(stopped['summary'], 'Killed by user');
+      expect(stopped['end_reason'], 'stopped_by_user');
+      expect(stopped['completed_at'], isNotNull);
+
       await owner.call('process.kill', {'pid': theirs.pid});
       await theirs.exitCode.timeout(const Duration(seconds: 10));
     });

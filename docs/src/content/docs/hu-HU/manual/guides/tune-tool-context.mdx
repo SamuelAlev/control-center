@@ -2,7 +2,7 @@
 title: Ügynök eszközkontextusának hangolása
 description: Nézze meg, mit küld valójában egy futás, változtassa meg, mely eszközök töltődnek be előre, és derítse ki, hogy egy rossz eszközválasztás visszakeresési kihagyás vagy promptprobléma volt-e.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/eszkozkontextus-hangolasa
-sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
+sourceHash: 22a4306a97aa8da0332f8e3e20e06ed86119f1d5
 ---
 
 Ez az útmutató a kétszintű eszközfelület körüli gyakorlati munkát járja körül: hogyan látható, mit küld egy futás, hogyan változtatható meg, és hogyan diagnosztizálható egy ügynök, amely rossz eszközhöz nyúlt. Hogy miért működik így, arról az [Eszközkontextus és promptgyorsítótár](/hu-HU/kezikonyv/fogalmak/eszkozkontextus) oldalon olvashat.
@@ -13,25 +13,26 @@ Nyisson meg egy beszélgetést, és koppintson a beszélgetés fejlécében lév
 
 Itt két szegmens számít:
 
-- **Eszközdefiníciók** és **MCP- és dinamikus eszközök** — a rezidens készlet, az egyes eszközök valódi tokenköltségével.
+- **Eszközdefiníciók** és **MCP- és dinamikus eszközök** — a közvetlen készlet, az egyes eszközök valódi tokenköltségével.
 - **Igény szerint betöltött eszközök** — a halasztott index. Minden bejegyzésnél csak a név kerül felszámításra, mert a kérésben csak a név utazik; egy elem megnyitása azonban a teljes leírást és sémát mutatja, így láthatja, mennyibe *kerülne*, ha a futás behúzná.
+
+A `repl`-es futtatásban a szkriptek által elért eszközök a rendszerpromptban vannak megnevezve, és egyik szegmensben sem jelennek meg.
 
 Ha a halasztott szegmens üres, a halasztás ki van kapcsolva ennél a szervernél. Ellenőrizze a `--tool-deferral` kapcsolót a [`cc_server` CLI](/hu-HU/kezikonyv/referencia/cc-server-cli) oldalon.
 
 ## Változtassa meg, mely eszközök töltődnek be előre
 
-A rezidens készlet szabályzat, nem konfiguráció — a `ModeToolPolicy`-ban él (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`), és minden futásra érvényes:
+A közvetlen készlet szabályzat, nem konfiguráció — a `ModeToolPolicy`-ban él (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`), és minden futásra érvényes:
 
-- `residentBuiltins` — a fájl- és shell-szókincs.
-- `residentDiscovery` — a `search_tools` és a `list_my_tools`. Ne távolítsa el őket; ezeken keresztül ér el az ügynök minden mást.
-- `residentMcpTools` — az a néhány Control Center-eszköz, amely megéri a sémáját minden kérésben.
-- Egy módonkénti blokk azoknak az eszközöknek, amelyeket egy adott [mód](/hu-HU/kezikonyv/fogalmak/modok) szinte minden körben használ.
+- `directTools` — az a tizenkét eszköz, amelyet minden futtatás közvetlenül hív: `read`, `write`, `edit`, `search`, `find`, `bash` és `read_output`; `ask_user` és `task`; `todo_write`, `search_memory` és `send_message`.
+- `residentDiscovery` — a `search_tools` és a `list_my_tools`. Ne távolítsa el őket; ezeken keresztül ér el az ügynök minden mást. Egy `repl`-es futtatás akkor kapja meg a `search_tools`-t, ha bármelyik eszköz első használatkor töltődik be, a `list_my_tools` nélkül.
+- `directNamesFor(mode)` — az eszközök, amelyeket egy adott [módhoz](/hu-HU/kezikonyv/fogalmak/modok/) a saját ciklusához ad: az átnézési igék átnézés módban, a `submit_plan` tervmódban, a `propose_orchestration` pedig orchestrálás módban.
 
 Két szabály a szerkesztésekor:
 
-**Csak akkor vegyen fel egy eszközt, ha a futások többsége használja.** Minden név a sémájával együtt minden futás minden kérésében fizetendő, a végtelenségig. Egy eszköz, amely használatkor fontos, de összességében ritka, a halasztott felébe való — az ügynök így is megtalálja.
+**Csak akkor vegyen fel egy eszközt, ha a futások többsége használja.** Minden név a sémájával együtt minden futás minden kérésében fizetendő, a végtelenségig. Egy eszköz, amely használatkor fontos, de összességében ritka, a közvetlen készleten kívülre való — az ügynök így is eléri, szkriptből vagy első használatkor való betöltéssel.
 
-**Az eszköz valódi nevét használja.** Egy rezidens név, amely egyetlen eszközzel sem egyezik, hatástalan: nincs hiba, nincs figyelmeztetés, az eszköz egyszerűen halasztott marad. A `test/tooling/resident_tool_names_test.dart` ezt elkapja, és emellett módonként 40 rezidens eszköz alatt tartja a készletet, ami épp a gyakorlat lényege — azon a sávon túl az eszközválasztás mérhetően romlik.
+**Az eszköz valódi nevét használja.** Egy közvetlen név, amely egyetlen eszközzel sem egyezik, hatástalan: nincs hiba, nincs figyelmeztetés, az eszköz egyszerűen a közvetlen készleten kívül marad. A `test/tooling/resident_tool_names_test.dart` ezt elkapja, a módonkénti közvetlen készletet legfeljebb 20 eszközre korlátozza, és módonként legfeljebb 40 előre elküldött eszközt enged meg, ami épp a gyakorlat lényege — azon a sávon túl az eszközválasztás mérhetően romlik.
 
 Egy mód kötelező és beékelt igéit a rendszer automatikusan hozzáadja, így soha nem kell felsorolnia egy mód saját kimeneti igéjét.
 
@@ -73,4 +74,4 @@ A gyakori okok, valószínűség szerinti sorrendben:
 - **Modell- vagy erőfeszítésváltás a beszélgetés közben.** Mindkettő megváltoztatja a prefixumot. Az alügynököknél ezt különösen könnyű elrontani: ha a gyermekeket alacsonyabb erőfeszítéssel futtatja a pénz megtakarítása érdekében, az az elveszett gyorsítótár-megosztás miatt többbe kerülhet, mint amennyit megtakarít.
 - **Gyakori tömörítés.** A tömörítés tervezésénél fogva újraírja az előzményeket, így a költsége valódi; a megoldás az, hogy ritkán és mélyen tömörítsen, ne gyakran és sekélyen.
 
-A halasztás kikapcsolása a `--tool-deferral=off` kapcsolóval érvényes A/B-vizsgálat annak elkülönítésére, hogy egy viselkedésváltozás a kétszintű felülettől ered-e. Pontosan a halasztás előtti kérést állítja elő, így ha a viselkedés kikapcsolt állapotban is fennmarad, a felület nem az oka.
+A halasztás kikapcsolása a `--tool-deferral=off` kapcsolóval érvényes A/B-vizsgálat annak elkülönítésére, hogy egy viselkedésváltozás a kétszintű felülettől ered-e. Kikapcsolt állapotban a futás minden megengedett eszköz definícióját elküldi, azzal a különbséggel, hogy a `repl`-es futtatás továbbra is szkriptből hívja azokat az eszközöket, amelyeket a szkript hívhat, így ha a viselkedés kikapcsolt állapotban is fennmarad, a halasztás nem az oka.

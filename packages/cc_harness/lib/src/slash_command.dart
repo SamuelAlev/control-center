@@ -32,7 +32,9 @@ class ParsedSlashCommand {
 /// The built-in harness commands with runtime effects (anything else is a user
 /// command, or a skill under [skillCommandPrefix]). `compact` never reaches the harness: it is handled by the
 /// messaging layer (a forced compaction pass, no turn dispatched).
-const Set<String> harnessBuiltinCommands = {'plan', 'goal', 'loop', 'compact'};
+/// `/goal` is not one: the server starts a goal from a person's message
+/// before any run (the composer lists it among its own commands).
+const Set<String> harnessBuiltinCommands = {'plan', 'compact'};
 
 /// The namespace every skill invocation carries: `/skill:<name>` or
 /// `/skill:<repo>:<name>`.

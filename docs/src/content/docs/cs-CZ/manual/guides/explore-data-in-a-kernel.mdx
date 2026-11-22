@@ -1,8 +1,8 @@
 ---
 title: Prozkoumejte data v persistentním kernelu
-description: Dej agentovi interpret Pythonu nebo JavaScriptu, který si mezi voláními drží proměnné, kreslí grafy do chatu a z buňky umí volat tvoje vlastní nástroje.
+description: Dej agentovi interpret Pythonu nebo JavaScriptu, který si mezi voláními drží proměnné a kreslí grafy do chatu.
 slug: cs-CZ/prirucka/navody/pruzkum-dat-v-kernelu
-sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
+sourceHash: 8fcd77019bfae5088223822a12ef91c8a6879c5d
 ---
 
 Tenhle návod ukazuje, jak nechat agenta načíst něco drahého jednou a pak se toho ptát několikrát, místo aby načtení platil u každé otázky.
@@ -62,22 +62,9 @@ Přepíšou se na obyčejný kód, místo aby skončily chybou:
 
 Vyklizení cache u `%pip` je to jediné, na čem záleží: instalace do živého interpretu s už importovaným modulem nic nezmění, takže bez něj neběží verze, kterou jsi právě nainstaloval.
 
-## Volání vlastních nástrojů z buňky
+## Volání nástrojů z kódu
 
-```python
-paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
-for path in paths.splitlines()[:100]:
-    contents = tool("read", {"path": path})
-    ...
-```
-
-`tool(name, args)` znovu vstoupí do vlastního registru nástrojů agenta. Buňka tak může rozvětvit práci přes stovku souborů, nebo ji přes `task` delegovat, aniž by model za každou položku utrácel tah.
-
-:::caution[Most neobchází tvoje guardraily]
-Volání přes most se vyřeší proti **stejnému** registru nástrojů jako volání, které vydal model, takže politika `ActionClass`, výzvy ke schválení i každý obal platí stejně. Most, který by sáhl za registr, by byl dírou přesně ve tvaru „napiš to jedním řádkem Pythonu“.
-:::
-
-Volání přes most **pozastaví časový limit buňky**, dokud není vyřízené. Rozpočet měří nečinnost, ne reálný čas — buňka, která se rozvětví na podagenty a čtyři minuty čeká, není zaseknutá, a její zabití uprostřed rozvětvení by přišlo o stav celého kernelu.
+Buňka nemůže volat nástroje agenta. Aby agent procházel nástroje smyčkou v kódu, napíše místo toho skript [`repl`](/cs-CZ/prirucka/koncepty/rezim-kodu/). Skript také nemůže volat `eval`: volá ho agent přímo.
 
 ## Začít znovu
 

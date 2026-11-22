@@ -1038,9 +1038,6 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get calendarAllDayGutter => 'Tüm gün';
-
-  @override
   String calendarAllDayEventCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -2510,9 +2507,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get activityBackedUpServer => 'Sunucu verisini yedekledi';
-
-  @override
-  String get activityMarkedSpaceRead => 'Alanı okundu olarak işaretledi';
 
   @override
   String get activityRespondedToInvitation => 'Etkinlik davetine yanıt verdi';
@@ -13464,6 +13458,17 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String diffFileUnresolvedConversations(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count çözülmemiş konuşma',
+      one: '1 çözülmemiş konuşma',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get pendingReview => 'İnceleme bekliyor';
 
   @override
@@ -13822,9 +13827,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get spaceKeepAfterMergeHint =>
       'Bu çalışma alanı için tekrar sorulmayacak.';
-
-  @override
-  String get spaceAllPrsMergedLabel => 'Tüm çekme istekleri birleştirildi';
 
   @override
   String get archiveSpace => 'Çalışma alanını arşivle';
@@ -15384,7 +15386,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get skillEvalIncomplete => 'Eksik';
 
   @override
-  String get skillEvalInconclusive => 'Sonuç belirsiz';
+  String get skillEvalInconclusive => 'Karar yok (kanıt yetersiz)';
 
   @override
   String get skillEvalInferred => 'Çıkarımla belirlendi';
@@ -18937,4 +18939,2929 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get mcpServerNotFound =>
       'Bu sunucu artık yok. Biri kaldırmış olabilir.';
+
+  @override
+  String get scriptToolCalls => 'Araç çağrıları';
+
+  @override
+  String scriptCallCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count çağrı',
+      one: '1 çağrı',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scriptCallsRunning(int count) {
+    return '$count çalışıyor';
+  }
+
+  @override
+  String scriptCallsOk(int count) {
+    return '$count başarılı';
+  }
+
+  @override
+  String scriptCallsFailed(int count) {
+    return '$count başarısız';
+  }
+
+  @override
+  String scriptCallsDenied(int count) {
+    return '$count reddedildi';
+  }
+
+  @override
+  String scriptCallsCancelled(int count) {
+    return '$count iptal edildi';
+  }
+
+  @override
+  String scriptCallsQueued(int count) {
+    return '$count kuyrukta';
+  }
+
+  @override
+  String scriptCallsSkipped(int count) {
+    return '$count atlandı';
+  }
+
+  @override
+  String get scriptStepQueued => 'Kuyrukta';
+
+  @override
+  String get scriptStepSkipped => 'Atlandı';
+
+  @override
+  String get scriptGroupLoop => 'Döngü';
+
+  @override
+  String get scriptGroupEach => 'Her biri için';
+
+  @override
+  String get scriptGroupParallel => 'Paralel';
+
+  @override
+  String get scriptGroupFunction => 'İşlev';
+
+  @override
+  String scriptCallsHidden(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count çağrı daha göster',
+      one: '1 çağrı daha göster',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptCallsUnplaced => 'Betikte yeri belirlenemeyen çağrılar';
+
+  @override
+  String get scriptToolComputed => 'Araç';
+
+  @override
+  String scriptStepSemantics(String subject, String state) {
+    return '$subject, $state';
+  }
+
+  @override
+  String get scriptSourceLabel => 'Betik';
+
+  @override
+  String scriptSourceLines(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count satır',
+      one: '1 satır',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptStateRunning => 'Çalışıyor';
+
+  @override
+  String get scriptStateCompleted => 'Tamamlandı';
+
+  @override
+  String get scriptStateFailed => 'Başarısız';
+
+  @override
+  String get scriptStateTimedOut => 'Süre doldu';
+
+  @override
+  String get scriptStateCancelled => 'İptal edildi';
+
+  @override
+  String get scriptStateMemoryExceeded => 'Bellek yetersiz';
+
+  @override
+  String get scriptStateOutputExceeded => 'Çıktı çok fazla';
+
+  @override
+  String get scriptStateSandboxError => 'Sandbox hatası';
+
+  @override
+  String get scriptStateRefused => 'Reddedildi';
+
+  @override
+  String get transcriptToolDenied => 'Reddedildi';
+
+  @override
+  String get transcriptStatusRunningScript => 'Bir betik çalıştırılıyor…';
+
+  @override
+  String get scriptOriginLine => 'Ajanın çalıştırdığı bir betikten';
+
+  @override
+  String get scriptOriginShow => 'Betiği göster';
+
+  @override
+  String get codeModeTitle => 'Kod modu';
+
+  @override
+  String get codeModeSubtitle =>
+      'Ajanlar, araçlarını tek tek çağırmak yerine onları çağıran kısa bir betik yazabilir.';
+
+  @override
+  String get codeModeStatusLabel => 'Durum';
+
+  @override
+  String get codeModeFactAvailability => 'Bu sunucuda';
+
+  @override
+  String get codeModeAvailable => 'Kullanılabilir';
+
+  @override
+  String get codeModeUnavailable => 'Kullanılamıyor';
+
+  @override
+  String get codeModeFactRunner => 'Runner';
+
+  @override
+  String codeModeUnavailableNote(String reason) {
+    return 'Bu sunucu betik çalıştıramaz, bu yüzden buradaki ajanlar araçlarını tek tek çağırır. Sunucunun açıklaması: $reason';
+  }
+
+  @override
+  String get codeModeNoReason => 'bir neden belirtilmedi.';
+
+  @override
+  String get codeModeViewExecutions => 'Kod çalıştırmalarını görüntüle';
+
+  @override
+  String get codeModeLimitsLabel => 'Sınırlar';
+
+  @override
+  String get codeModeLimitsSubtitle =>
+      'Bir betik ne kadar süre ve ne kadar ileri gidebilir. Varsayılanlar çoğu çalışma alanı için uygundur.';
+
+  @override
+  String get codeModeLimitsDisclosure => 'Sınırları ayarla';
+
+  @override
+  String get codeModeLimitsAtDefaults => 'Varsayılanlar';
+
+  @override
+  String codeModeLimitsChangedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count değişti',
+      one: '1 değişti',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeModeLimitsUseDefaults => 'Varsayılanları kullan';
+
+  @override
+  String get codeModeLimitWallClock => 'Betik başına süre';
+
+  @override
+  String get codeModeLimitWallClockHelp =>
+      'Bir kişinin yanıtını beklemek için harcanan süre sayılmaz.';
+
+  @override
+  String get codeModeLimitCpu => 'İşlemci süresi';
+
+  @override
+  String get codeModeLimitCpuHelp =>
+      'Betiğin kendisinin hesaplama için harcadığı süre.';
+
+  @override
+  String get codeModeLimitHeap => 'Bellek';
+
+  @override
+  String get codeModeLimitHeapHelp =>
+      'Betiğin çalışırken kullanabileceği bellek.';
+
+  @override
+  String get codeModeLimitNestedCalls => 'Betik başına araç çağrısı';
+
+  @override
+  String get codeModeLimitNestedCallsHelp =>
+      'Bu sınırın üzerindeki çağrılar reddedilir ve betiğe nedeni bildirilir.';
+
+  @override
+  String get codeModeLimitInFlight => 'Aynı anda çağrı';
+
+  @override
+  String get codeModeLimitInFlightHelp =>
+      'Bir betiğin aynı anda çalışır durumda olabileceği çağrı sayısı.';
+
+  @override
+  String get codeModeLimitOutputTokens => 'Ajanın okuduğu çıktı';
+
+  @override
+  String get codeModeLimitOutputTokensHelp =>
+      'Uzun çıktı kısaltılır; ajan kalanını istek üzerine okuyabilir.';
+
+  @override
+  String codeModeLimitRange(String defaultValue, String min, String max) {
+    return 'Varsayılan $defaultValue. $min ile $max arası.';
+  }
+
+  @override
+  String codeModeLimitOutOfRange(String min, String max) {
+    return '$min ile $max arasında bir tam sayı girin.';
+  }
+
+  @override
+  String get codeModeSuffixSeconds => 'sn';
+
+  @override
+  String get codeModeSuffixMebibytes => 'MiB';
+
+  @override
+  String get codeModeSuffixCalls => 'çağrı';
+
+  @override
+  String get codeModeSuffixTokens => 'token';
+
+  @override
+  String codeModeServerCap(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Bu sunucu, tüm çalışma alanlarında aynı anda en fazla $count betik çalıştırır.',
+      one:
+          'Bu sunucu, tüm çalışma alanlarında aynı anda en fazla 1 betik çalıştırır.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String codeModeUnitMilliseconds(String value) {
+    return '$value ms';
+  }
+
+  @override
+  String codeModeUnitSeconds(String value) {
+    return '$value sn';
+  }
+
+  @override
+  String codeModeUnitMinutesSeconds(String minutes, String seconds) {
+    return '$minutes dk $seconds sn';
+  }
+
+  @override
+  String get codeModeRefusedLimitUnknown =>
+      'Sunucu bu sınırlardan birini tanımıyor.';
+
+  @override
+  String get codeModeRefusedLimitOutOfRange =>
+      'Bu sınırlardan biri sunucunun izin verdiği aralığın dışında.';
+
+  @override
+  String get codeModeRefusedUnknownSetting => 'Sunucu bu ayarı tanımadı.';
+
+  @override
+  String get codeExecutionsTitle => 'Kod çalıştırmaları';
+
+  @override
+  String get codeExecutionsSubtitle =>
+      'Ajanların bu çalışma alanında çalıştırdığı betikler ve yaptıkları her araç çağrısı.';
+
+  @override
+  String get codeExecutionsEmpty => 'Burada henüz betik çalıştırılmadı.';
+
+  @override
+  String get codeExecutionsEmptyFiltered => 'Bu filtrelerle eşleşen betik yok.';
+
+  @override
+  String get codeExecutionsStatusFilter => 'Sonuç';
+
+  @override
+  String get codeExecutionsAllOutcomes => 'Tüm sonuçlar';
+
+  @override
+  String codeExecutionsOutcomeCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sonuç',
+      one: '1 sonuç',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionsScopeRun => 'Tek bir çalıştırmadan betikler';
+
+  @override
+  String get codeExecutionsScopeConversation => 'Tek bir konuşmadan betikler';
+
+  @override
+  String get codeExecutionsScopeAgent => 'Tek bir ajanın betikleri';
+
+  @override
+  String get codeExecutionsShowAll => 'Tümünü göster';
+
+  @override
+  String get codeExecutionUntitled => 'Adsız betik';
+
+  @override
+  String get codeExecutionRecord => 'Kayıt';
+
+  @override
+  String get codeExecutionBackToList => 'Kod çalıştırmalarına dön';
+
+  @override
+  String get codeExecutionNotFound =>
+      'Bu kod çalıştırması bu çalışma alanında değil. Çalıştırmasıyla birlikte kaldırılmış olabilir.';
+
+  @override
+  String get codeExecutionRefusedSpace =>
+      'Bu betik açamayacağınız bir alanda çalıştı, bu yüzden kaydı gizli kalır.';
+
+  @override
+  String get codeExecutionOpenRecord => 'Kaydı aç';
+
+  @override
+  String get codeExecutionFactStarted => 'Başladı';
+
+  @override
+  String get codeExecutionFactDuration => 'Süre';
+
+  @override
+  String get codeExecutionFactCalls => 'Araç çağrıları';
+
+  @override
+  String get codeExecutionFactAgent => 'Ajan';
+
+  @override
+  String get codeExecutionFactSurface => 'Şuradan çalıştırıldı';
+
+  @override
+  String get codeExecutionSurfaceHarness => 'Yerleşik ajan';
+
+  @override
+  String get codeExecutionSurfaceMcp => 'Harici ajan';
+
+  @override
+  String get codeExecutionFactCpu => 'İşlemci süresi';
+
+  @override
+  String get codeExecutionFactMemory => 'En yüksek bellek';
+
+  @override
+  String get codeExecutionOpenConversation => 'Konuşmayı aç';
+
+  @override
+  String get codeExecutionRunScripts => 'Bu çalıştırmadaki betikler';
+
+  @override
+  String get codeExecutionAgentScripts => 'Bu ajanın betikleri';
+
+  @override
+  String get codeExecutionScript => 'Betik';
+
+  @override
+  String get codeExecutionConsole => 'Konsol';
+
+  @override
+  String get codeExecutionOutputTruncated =>
+      'Çıktı, tutulan kapasiteye sığması için kesildi.';
+
+  @override
+  String get codeExecutionNoPayload => 'Betik ve çıktısı artık tutulmuyor.';
+
+  @override
+  String codeExecutionCallsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count araç çağrısı',
+      one: '1 araç çağrısı',
+      zero: 'Araç çağrıları',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionNoCalls => 'Betik hiçbir araç çağırmadı.';
+
+  @override
+  String get codeExecutionCallCompleted => 'Tamamlandı';
+
+  @override
+  String get codeExecutionCallFailed => 'Başarısız';
+
+  @override
+  String get codeExecutionCallDenied => 'Reddedildi';
+
+  @override
+  String get codeExecutionCallCancelled => 'İptal edildi';
+
+  @override
+  String get codeExecutionCallTimedOut => 'Süre doldu';
+
+  @override
+  String get codeExecutionCallUnknownTool => 'Bilinmeyen araç';
+
+  @override
+  String get codeExecutionCallInvalidArgs => 'Geçersiz bağımsız değişkenler';
+
+  @override
+  String get codeExecutionGateAllowed => 'İzinli';
+
+  @override
+  String get codeExecutionGateApproved => 'Bir kişi onayladı';
+
+  @override
+  String get codeExecutionGateDenied => 'Reddedildi';
+
+  @override
+  String get codeExecutionGateNotReached => 'Denetlenmedi';
+
+  @override
+  String codeExecutionCallWaited(String duration) {
+    return 'Bir kişi için $duration beklendi';
+  }
+
+  @override
+  String get codeExecutionCallArguments => 'Bağımsız değişkenler';
+
+  @override
+  String get codeExecutionCallResult => 'Sonuç';
+
+  @override
+  String codeExecutionCallResultSize(String size) {
+    return '$size döndürdü';
+  }
+
+  @override
+  String codeExecutionBytes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bayt',
+      one: '1 bayt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionEndedScriptError =>
+      'Betik bir hata fırlattı ve bunu yakalayan olmadı.';
+
+  @override
+  String codeExecutionEndedScriptErrorNamed(String name) {
+    return 'Betik $name fırlattı ve bunu yakalayan olmadı.';
+  }
+
+  @override
+  String get codeExecutionEndedStalled =>
+      'Betik hiçbir zaman tamamlanamayacak bir şeyi bekledi.';
+
+  @override
+  String get codeExecutionEndedCpu => 'Betik işlemci süresini tüketti.';
+
+  @override
+  String get codeExecutionEndedHeap => 'Betik bellek sınırına ulaştı.';
+
+  @override
+  String get codeExecutionEndedOutput =>
+      'Betik, bir betiğin izin verilenden fazla çıktı yazdı.';
+
+  @override
+  String get codeExecutionEndedDeadline => 'Betiğin süresi doldu.';
+
+  @override
+  String get codeExecutionEndedCancelled => 'Betik bitmeden iptal edildi.';
+
+  @override
+  String get codeExecutionEndedShutdown => 'Betik çalışırken sunucu kapandı.';
+
+  @override
+  String get codeExecutionEndedServerStopped =>
+      'Betik çalışırken sunucu durdu. Sunucu yeniden başladığında kayıt kapatıldı.';
+
+  @override
+  String get codeExecutionEndedInternal =>
+      'Betikleri çalıştıran program kendi kendine başarısız oldu.';
+
+  @override
+  String get codeExecutionEndedStart =>
+      'Betikleri çalıştıran program başlatılamadı.';
+
+  @override
+  String get codeExecutionEndedLockdown =>
+      'Betikleri çalıştıran program kendini kilitleyemedi, bu yüzden betik çalıştırılmadı.';
+
+  @override
+  String get codeExecutionEndedExited =>
+      'Betikleri çalıştıran program, betik bitmeden durdu.';
+
+  @override
+  String get codeExecutionEndedRunnerBrokeRules =>
+      'Betikleri çalıştıran program, çalıştığı kuralları ihlal etti ve durduruldu.';
+
+  @override
+  String get codeExecutionEndedUnresponsive =>
+      'Betikleri çalıştıran program yanıt vermeyi kesti ve durduruldu.';
+
+  @override
+  String get codeExecutionEndedHostError =>
+      'Betiği çalıştırırken sunucu bir hatayla karşılaştı.';
+
+  @override
+  String get codeExecutionRunningNote =>
+      'Hâlâ çalışıyor. Araç çağrıları bittikçe burada görünür, sonuç ise bittiğinde görünür.';
+
+  @override
+  String codeModeServerWorkspaceShare(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Bir çalışma alanının betikleri en fazla $count tanesini kullanabilir.',
+      one: 'Bir çalışma alanının betikleri en fazla 1 tanesini kullanabilir.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get wakeOriginGoal => 'Hedef';
+
+  @override
+  String get wakeOriginGoalCheck => 'Hedef kontrolü';
+
+  @override
+  String get wakeOriginGoalReview => 'Hedef incelemesi';
+
+  @override
+  String get wakeOriginSchedule => 'Zamanlama';
+
+  @override
+  String get wakeOriginWatch => 'İzleme';
+
+  @override
+  String wakeOriginReplyFrom(String agent) {
+    return '$agent yanıtı';
+  }
+
+  @override
+  String get wakeOriginReply => 'Yanıt';
+
+  @override
+  String wakeOriginMessageFrom(String agent) {
+    return '$agent iletisi';
+  }
+
+  @override
+  String get wakeOriginMessage => 'İleti';
+
+  @override
+  String wakeOriginWorkFinishedBy(String agent) {
+    return '$agent tarafından tamamlanan iş';
+  }
+
+  @override
+  String get wakeOriginWorkFinished => 'Tamamlanan iş';
+
+  @override
+  String get wakeOriginLimitReset => 'Sınır sıfırlandı';
+
+  @override
+  String get wakeOriginRecovery => 'Kurtarma';
+
+  @override
+  String get wakeOriginAssignment => 'Atama';
+
+  @override
+  String get wakeOriginPipelineStep => 'Pipeline adımı';
+
+  @override
+  String get wakeOriginImprovementReview => 'İyileştirme incelemesi';
+
+  @override
+  String get wakeKindStopped =>
+      'Bir kişi çalıştırmayı durdurduğu için tutuldu.';
+
+  @override
+  String get wakeKindAttempts => 'Teslimat üç kez başarısız oldu.';
+
+  @override
+  String get wakeKindAgentDeleted => 'Bu ajan artık yok.';
+
+  @override
+  String get wakeKindAgentNotDispatchable => 'Ajan kullanımdan kaldırıldı.';
+
+  @override
+  String get wakeKindAgentPaused => 'Ajan duraklatıldı.';
+
+  @override
+  String get wakeKindPersonRemoved =>
+      'Adına hareket ettiği kişi çalışma alanından ayrıldı.';
+
+  @override
+  String get wakeKindBudgetBlocked => 'Bir bütçe çalıştırmayı engelliyor.';
+
+  @override
+  String get wakeKindTakeOver => 'Bir kişi çalışma ağacını devraldı.';
+
+  @override
+  String get wakeKindRateCapConversation =>
+      'Bu konuşma son bir saatte uyandırmalardan 30 çalıştırma başlattı.';
+
+  @override
+  String get wakeKindRateCapWorkspace =>
+      'Bu çalışma alanı son bir saatte uyandırmalardan 300 çalıştırma başlattı.';
+
+  @override
+  String get wakeKindLiveRunNoInput =>
+      'Ajanın buradaki canlı çalıştırması girdi kabul etmiyor.';
+
+  @override
+  String get wakeKindLiveRunOtherOptions =>
+      'Ajanın buradaki canlı çalıştırması farklı çalışıyor, bu yüzden bu, ondan sonra kendi çalıştırmasını başlatır.';
+
+  @override
+  String get wakeKindLiveRunOtherPerson =>
+      'Ajanın buradaki canlı çalıştırması başka birine adına çalışıyor, bu yüzden bu, ondan sonra kendi çalıştırmasını başlatır.';
+
+  @override
+  String get wakeKindDispatchRefused => 'Çalıştırma başlatılamadı.';
+
+  @override
+  String get wakeKindSandboxUnavailable =>
+      'Salt okunur bir çalıştırma için sandbox kullanılamıyor.';
+
+  @override
+  String get wakeKindReadOnlyUnavailable =>
+      'Bu ajanın arka ucu bir çalıştırmayı salt okunur tutamıyor.';
+
+  @override
+  String get wakeKindServerStopped =>
+      'Bir sunucu yeniden başlatması çalıştırmayı durdurdu.';
+
+  @override
+  String get wakeKindServerRestarted =>
+      'Sunucu bir kişinin çalıştırması sırasında yeniden başlatıldı.';
+
+  @override
+  String get wakeKindGuardFailed =>
+      'Teslimattan önceki bir kontrol başarısız oldu.';
+
+  @override
+  String get wakeKindLimit =>
+      'Sağlayıcının kullanım sınırının sıfırlanması bekleniyor.';
+
+  @override
+  String get wakeKindLimitRunLive =>
+      'Kullanım sınırındaki çalıştırmanın bitmesi bekleniyor.';
+
+  @override
+  String get wakeKindWakeMissed => 'Sunucu kapalıyken kaçırıldı.';
+
+  @override
+  String get wakeKindPipelineRunEnded => 'Pipeline çalıştırması bitti.';
+
+  @override
+  String get wakeKindGoalEnded => 'Hedefi sona erdi.';
+
+  @override
+  String get wakeKindGoalBudgetExhausted => 'Hedef bütçesini tüketti.';
+
+  @override
+  String get wakeKindGoalReviewStale =>
+      'Bu inceleme istendikten sonra hedef değişti.';
+
+  @override
+  String get wakeKindGoalPaused => 'Hedef duraklatıldı.';
+
+  @override
+  String get wakeKindGoalHeld => 'Hedef tutuluyor.';
+
+  @override
+  String get wakeKindGoalStopped => 'Hedef durduruldu.';
+
+  @override
+  String get wakeKindAskSettled => 'Yanıtladığı soru zaten sonuçlandı.';
+
+  @override
+  String get wakeKindRuleEnded => 'Zamanlaması sona erdi.';
+
+  @override
+  String get wakeKindUnknown => 'Bu sürümün adlandırmadığı bir neden:';
+
+  @override
+  String wakeStripHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count uyandırma bekliyor',
+      one: '1 uyandırma bekliyor',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String wakeStripDue(String time) {
+    return 'Zamanı $time';
+  }
+
+  @override
+  String get wakeStripDueNow => 'Şimdi zamanı geldi';
+
+  @override
+  String get wakeStripHeld => 'Tutuldu';
+
+  @override
+  String wakeStripExpires(String time) {
+    return 'Sona erer: $time';
+  }
+
+  @override
+  String wakeStripAttempt(int attempt) {
+    return 'Deneme $attempt';
+  }
+
+  @override
+  String get wakeStripCancel => 'Uyandırmayı iptal et';
+
+  @override
+  String get wakeStripDeliverNow => 'Şimdi teslim et';
+
+  @override
+  String get wakeStripResume => 'Sürdür';
+
+  @override
+  String get wakeStripDismiss => 'Yoksay';
+
+  @override
+  String get wakeStripResumeAll => 'Tümünü sürdür';
+
+  @override
+  String get wakeStripResumeOnlyTheirs =>
+      'Yalnızca bu çalıştırması kendisine ait olan kişi sürdürebilir.';
+
+  @override
+  String get wakeReceiptStarted => 'Bir çalıştırma başlattı.';
+
+  @override
+  String get wakeReceiptPushed => 'Canlı çalıştırmaya aktarıldı.';
+
+  @override
+  String wakeReceiptWaiting(String reason) {
+    return 'Hâlâ bekliyor. $reason';
+  }
+
+  @override
+  String wakeReceiptSkipped(String reason) {
+    return 'Teslim edilmedi. $reason';
+  }
+
+  @override
+  String get wakeReceiptDuplicate => 'Zaten teslim edildi.';
+
+  @override
+  String wakeReleased(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count uyandırma sürdürüldü.',
+      one: '1 uyandırma sürdürüldü.',
+      zero: 'Hiçbir şey sürdürülmedi.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get wakeRefusalNotYours =>
+      'Bu uyandırma başka bir kişi adına hareket ediyor. Yalnızca onlar teslim edebilir veya sürdürebilir.';
+
+  @override
+  String get wakeRefusalSettled => 'Bu uyandırma zaten sonuçlandı.';
+
+  @override
+  String heldSteeringHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tutulan ileti',
+      one: '1 tutulan ileti',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get heldSteeringResume => 'Tutulan iletileri gönder';
+
+  @override
+  String get heldSteeringDelete => 'Tutulan iletiyi sil';
+
+  @override
+  String heldSteeringReleased(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tutulan ileti gönderildi.',
+      one: '1 tutulan ileti gönderildi.',
+      zero: 'Hiçbir şey tutulmadı.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get workAgentUnknown => 'bir ajan';
+
+  @override
+  String workFeedWoke(int count, String agent) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bekleyen öğe için $agent uyandırıldı',
+      one: '$agent uyandırıldı',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String workFeedWakeSkipped(String agent) {
+    return '$agent için bir uyandırma teslim edilmedi.';
+  }
+
+  @override
+  String workFeedWakeMissed(String agent) {
+    return '$agent için bir uyandırma sunucu kapalıyken kaçırıldı.';
+  }
+
+  @override
+  String workFeedScheduleCreated(String agent) {
+    return '$agent için zamanlama ayarlandı.';
+  }
+
+  @override
+  String workFeedScheduleEnded(String agent) {
+    return '$agent için zamanlama sona erdi.';
+  }
+
+  @override
+  String get workFeedOpenSchedule => 'Zamanlamayı aç';
+
+  @override
+  String workFeedNoteFromAgent(String agent) {
+    return '$agent, kendi sözleriyle kendisi için bu notu bıraktı:';
+  }
+
+  @override
+  String get workFeedNoteFromPerson => 'Bir kişinin ayarladığı hatırlatma:';
+
+  @override
+  String workFeedLimitParkHeld(String provider, String time) {
+    return '$provider kullanım sınırında duraklatıldı. Sınır $time saatinde sıfırlanır.';
+  }
+
+  @override
+  String workFeedLimitParkPending(String provider, String time) {
+    return '$provider kullanım sınırında duraklatıldı. $time saatinde sürdürülecek.';
+  }
+
+  @override
+  String workFeedLimitParkResumed(String provider) {
+    return '$provider kullanım sınırından sonra sürdürüldü.';
+  }
+
+  @override
+  String workFeedLimitParkGone(String provider) {
+    return 'Artık $provider kullanım sınırında beklemiyor.';
+  }
+
+  @override
+  String get workFeedLimitParkResume => 'Sürdür';
+
+  @override
+  String get workFeedLimitParkCancel => 'İptal';
+
+  @override
+  String workFeedStillInFlight(String agent) {
+    return 'Konuşma sıkıştırıldıktan sonra $agent ajanına aktarılan durum';
+  }
+
+  @override
+  String get workFeedShowDetails => 'Ayrıntıları göster';
+
+  @override
+  String get workFeedHideDetails => 'Ayrıntıları gizle';
+
+  @override
+  String get workFeedCommandRefused => 'Komut reddedildi.';
+
+  @override
+  String get wakeRuleEndFired => 'Tek seferlik çalıştırmasını yaptı.';
+
+  @override
+  String get wakeRuleEndExpired => 'Bitiş tarihine ulaştı.';
+
+  @override
+  String get wakeRuleEndRunCap => 'Çalıştırma hakkını kullandı.';
+
+  @override
+  String get wakeRuleEndCostCap => 'Maliyet sınırına ulaştı.';
+
+  @override
+  String get wakeRuleEndGoalEnded => 'Hedefi bitti.';
+
+  @override
+  String get wakeRuleEndCancelled => 'İptal edildi.';
+
+  @override
+  String get wakeRuleEndMemberRemoved =>
+      'Adına hareket ettiği kişi çalışma alanından ayrıldı.';
+
+  @override
+  String get wakeRuleEndInvalidRow => 'Kayıtlı ayarları okunamadı.';
+
+  @override
+  String get wakeRuleRefusalIntervalTooShort =>
+      'Aralık çok kısa. Daha uzun bir aralık seçin.';
+
+  @override
+  String get wakeRuleRefusalTooSoon =>
+      'Bu zaman çok yakın. Daha sonraki bir zaman seçin.';
+
+  @override
+  String get wakeRuleRefusalLineageEnded =>
+      'Bu uyandırma zinciri çalıştırma hakkını veya süresini kullandı.';
+
+  @override
+  String get wakeRuleRefusalWatchTargetUnreadable =>
+      'Bunun izleyeceği şeyi göremezsiniz.';
+
+  @override
+  String get wakeRuleRefusalExpiryRequired =>
+      'Bir bitiş verin, örneğin --days 3.';
+
+  @override
+  String get wakeRuleRefusalLimitReached =>
+      'Bu konuşmada zaten izin verilen kadar zamanlama var.';
+
+  @override
+  String get wakeRuleRefusalInvalidWhen => 'Zaman okunamıyor.';
+
+  @override
+  String get wakeRuleRefusalNoteTooLong => 'Not çok uzun.';
+
+  @override
+  String get wakeRuleRefusalExpiryTooLong => 'Bitiş çok uzakta.';
+
+  @override
+  String get wakeRuleRefusalLimitOutOfRange =>
+      'Çalıştırma, gün veya bütçe sınırı aralığın dışında.';
+
+  @override
+  String get wakeRuleRefusalNextOutsideLoop =>
+      'Yalnızca bir döngü kendi sonraki zamanını seçebilir.';
+
+  @override
+  String get wakeRuleRefusalWatchRefused => 'Bu izlenemez.';
+
+  @override
+  String get wakeRuleRefusalRuleEnded => 'Bu zamanlama zaten sona erdi.';
+
+  @override
+  String get wakeRuleRefusalNotYours => 'Bu zamanlama başka birine ait.';
+
+  @override
+  String get workRefusalUnknown => 'Sunucu bunu reddetti:';
+
+  @override
+  String get goalRefusalAlreadyActive =>
+      'Bu konuşmanın zaten etkin bir hedefi var.';
+
+  @override
+  String get goalRefusalNotInReview => 'Bu hedef inceleme beklemiyor.';
+
+  @override
+  String get goalRefusalEvidenceIncomplete => 'Hedefin kanıtı eksik.';
+
+  @override
+  String get goalRefusalClaimPending =>
+      'Tamamlandığına dair iddia hâlâ kontrol ediliyor.';
+
+  @override
+  String get goalRefusalNotActiveSegment => 'Bu hedefte çalışan bir bölüm yok.';
+
+  @override
+  String get goalRefusalNotYours =>
+      'Bunu yalnızca bu hedefi başlatan kişi yapabilir.';
+
+  @override
+  String get goalRefusalNotPaused => 'Önce hedefi duraklatın.';
+
+  @override
+  String get goalRefusalContractInvalid => 'Hedefin sözleşmesi okunamıyor.';
+
+  @override
+  String get goalRefusalCheckerUnknown => 'Bu ada sahip bir ajan yok.';
+
+  @override
+  String get goalRefusalCheckerAmbiguous =>
+      'Bu ada sahip birden fazla ajan var. Kimliğini kullanın.';
+
+  @override
+  String get goalRefusalCheckerIsGoalAgent =>
+      'Denetleyici, işi yapan ajandan farklı bir ajan olmalı.';
+
+  @override
+  String get goalRefusalCommandInvalid => 'Bu /goal komutu okunamıyor.';
+
+  @override
+  String goalCardWorking(int segment) {
+    return 'Çalışıyor · bölüm $segment';
+  }
+
+  @override
+  String get goalCardWaiting => 'Bir sonraki uyandırmasını bekliyor';
+
+  @override
+  String get goalCardVerifying => 'Bitip bitmediği kontrol ediliyor';
+
+  @override
+  String goalCardLimitUntil(String time) {
+    return 'Kullanım sınırında duraklatıldı · $time saatinde sürdürülecek';
+  }
+
+  @override
+  String get goalCardLimit => 'Kullanım sınırında duraklatıldı';
+
+  @override
+  String get goalCardPerson => 'Bir kişiye ihtiyaç var';
+
+  @override
+  String get goalCardByPerson => 'Bir kişi tarafından duraklatıldı';
+
+  @override
+  String get goalCardNeedsReview =>
+      'İnceleme bekliyor: tamamlandığını söylüyor, ama hiçbir şey bunu doğrulamadı';
+
+  @override
+  String goalCardSegments(int run, int max) {
+    return 'Bölüm $run / $max';
+  }
+
+  @override
+  String goalCardSegmentsNoCap(int run) {
+    return 'Bölüm $run';
+  }
+
+  @override
+  String goalCardMoney(String spent, String cap) {
+    return '$spent / $cap';
+  }
+
+  @override
+  String goalCardTimeLeft(String time) {
+    return '$time kaldı';
+  }
+
+  @override
+  String get goalCardOverdue => 'Son tarihi geçti';
+
+  @override
+  String get goalCardDoneMeans => 'Tamamlanma ölçütleri';
+
+  @override
+  String get goalCardChecks => 'Kontroller';
+
+  @override
+  String get goalCardCheckPassed => 'Geçti';
+
+  @override
+  String goalCardCheckFailed(int code) {
+    return 'Başarısız · çıkış $code';
+  }
+
+  @override
+  String get goalCardCheckTimedOut => 'Süre doldu';
+
+  @override
+  String get goalCardCheckNotRerun =>
+      'Yeniden çalıştırılmadı: hiçbir şey değişmedi';
+
+  @override
+  String get goalCardCheckBroken => 'Çalıştırılamıyor';
+
+  @override
+  String get goalCardCheckNotRun => 'Henüz çalıştırılmadı';
+
+  @override
+  String get goalCardCriterionMet => 'Karşılandı';
+
+  @override
+  String get goalCardCriterionUnmet => 'Karşılanmadı';
+
+  @override
+  String get goalCardCriterionCannotTell => 'Anlaşılamıyor';
+
+  @override
+  String get goalCardVerdictPass => 'Son kontrol: tamamlandı';
+
+  @override
+  String get goalCardVerdictFail => 'Son kontrol: tamamlanmadı';
+
+  @override
+  String get goalCardVerdictCannotVerify => 'Son kontrol: karar verilemedi';
+
+  @override
+  String get goalCardConcerns => 'Endişeler';
+
+  @override
+  String goalCardVerifiedBy(String agent) {
+    return 'Doğrulayan: $agent';
+  }
+
+  @override
+  String get goalCardVerifiedBySelf =>
+      'Kendisi doğruladı (ayrı denetleyici yok)';
+
+  @override
+  String get goalCardClosedByPerson =>
+      'Geçen bir kontrol olmadan bir kişi tarafından kapatıldı';
+
+  @override
+  String get goalCardNoMachineCheck => 'Makine kontrolü yok';
+
+  @override
+  String get goalCardAddCheck => 'Kontrol ekle';
+
+  @override
+  String get goalCardOpen => 'Hedefi aç';
+
+  @override
+  String get goalCardApprove => 'Tamamlanmayı onayla';
+
+  @override
+  String get goalCardApproveTitle =>
+      'Bu hedef tamamlandı olarak kapatılsın mı?';
+
+  @override
+  String get goalCardApproveBody =>
+      'Hiçbir kontrol bunu doğrulamadı. Hedefi kendi sözünüze dayanarak kapatırsınız ve hedef, bir kişinin bunu doğrulanmadan kapattığını kaydeder.';
+
+  @override
+  String get goalCardApproveConfirm => 'Tamamlandı olarak kapat';
+
+  @override
+  String get goalCardResumeNotYours =>
+      'Sürdürmek veya bütçesini artırmak, hedefi başlatan kişiye aittir.';
+
+  @override
+  String get goalHoldDetailStalled => 'Son bölümlerinde ilerleme yok.';
+
+  @override
+  String get goalHoldDetailStalledWaiting =>
+      'Bölümlerde ilerleme olmadan beklemede.';
+
+  @override
+  String get goalHoldDetailVerificationFailed => 'Son kontrol başarısız oldu.';
+
+  @override
+  String get goalHoldDetailCannotVerify =>
+      'Denetleyici, bitip bitmediğini anlayamadı.';
+
+  @override
+  String get goalHoldDetailSandboxUnavailable =>
+      'Kontrollerini çalıştırmak için sandbox kullanılamıyor.';
+
+  @override
+  String get goalHoldDetailCheckerUnavailable =>
+      'Denetleyici ajanı kullanılamıyor. Başka bir denetleyici seçin, sonra sürdürün.';
+
+  @override
+  String get goalHoldDetailCheckBroken => 'Bu kontrol çalıştırılamıyor:';
+
+  @override
+  String get goalHoldDetailWakeSkipped => 'Uyandırması teslim edilmedi.';
+
+  @override
+  String get goalHoldDetailClaimPending =>
+      'Tamamlandığına dair iddiası bir kontrolü bekliyor.';
+
+  @override
+  String get goalHoldDetailUnanswered =>
+      'Bir kişiye sorulan soru veya onay isteği yanıtsız kaldı.';
+
+  @override
+  String get goalHoldDetailLimitParks =>
+      'Kullanım sınırlarına çok sık takıldı. Gözden geçirin, sonra sürdürün.';
+
+  @override
+  String get goalHoldDetailInput => 'Konuşmada bir yanıt bekleniyor.';
+
+  @override
+  String get peerAsksSection => 'Sorular';
+
+  @override
+  String peerAskTo(String agent) {
+    return '$agent ajanına';
+  }
+
+  @override
+  String get peerAskKindAsk => 'Soru';
+
+  @override
+  String get peerAskKindConsult => 'Danışma';
+
+  @override
+  String get peerAskKindReview => 'İnceleme';
+
+  @override
+  String get peerAskStatusPending => 'Bekliyor';
+
+  @override
+  String get peerAskStatusAnswered => 'Yanıtlandı';
+
+  @override
+  String get peerAskStatusFailed => 'Başarısız';
+
+  @override
+  String get peerAskStatusExpired => 'Süresi doldu';
+
+  @override
+  String get peerAskStatusCancelled => 'İptal edildi';
+
+  @override
+  String peerAskAsked(String time) {
+    return 'Soruldu $time';
+  }
+
+  @override
+  String peerAskExpires(String time) {
+    return 'Sona erer: $time';
+  }
+
+  @override
+  String get peerAskPromised => 'Yanıt vereceğini söyledi';
+
+  @override
+  String get peerAskBackground => 'Arka planda';
+
+  @override
+  String get peerAskCancel => 'Soruyu iptal et';
+
+  @override
+  String get peerAskAlreadySettled => 'Bu soru zaten sonuçlandı.';
+
+  @override
+  String get slashHintGoal =>
+      'Bitene kadar bir hedefe doğru çalışın. Bayraklar: --check, --checker, --fresh, --unattended';
+
+  @override
+  String get slashHintLoop =>
+      'Bir görevi her aralıkta veya ajanın hızında tekrarlayın';
+
+  @override
+  String get slashHintSchedule =>
+      'Bir görevi sonra çalıştırın: in 2h, at 09:00 veya cron ile';
+
+  @override
+  String get slashHintRefine =>
+      'Bu konuşmadaki işi inceleyin ve iyileştirmeler önerin';
+
+  @override
+  String get notifGoalCompleted => 'Hedef tamamlandı';
+
+  @override
+  String get notifGoalFailed => 'Hedef başarısız oldu';
+
+  @override
+  String get notifGoalCancelled => 'Hedef iptal edildi';
+
+  @override
+  String get notifGoalBudgetExhausted => 'Hedef bütçesini tüketti';
+
+  @override
+  String get notifGoalNeedsReview => 'Bir hedef incelemenizi bekliyor';
+
+  @override
+  String get notifGoalNeedsPerson => 'Bir hedefe sizin ilginiz gerekiyor';
+
+  @override
+  String get notifGoalOnHold => 'Bir hedef tutuluyor';
+
+  @override
+  String get notifWakeRuleEnded => 'Bir zamanlama sona erdi';
+
+  @override
+  String notifWaitingDigest(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count şey sizi bekliyor',
+      one: '1 şey sizi bekliyor',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notifImprovementProposed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count iyileştirme önerildi',
+      one: 'Bir iyileştirme önerildi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notifPipelineRunHeld =>
+      'Bir pipeline çalıştırması bütçesinde tutuluyor';
+
+  @override
+  String notifPipelineRunHeldBody(String spent, String cap) {
+    return '$cap sınırından $spent harcandı';
+  }
+
+  @override
+  String get inboxGoalNeedsReview => 'Hedef incelemeyi bekliyor';
+
+  @override
+  String get inboxGoalNeedsPerson => 'Hedefe sizin ilginiz gerekiyor';
+
+  @override
+  String get inboxImprovementProposed => 'İyileştirme önerildi';
+
+  @override
+  String get improvementRefusalAlreadyDecided =>
+      'Bu öneri hakkında biri zaten karar verdi.';
+
+  @override
+  String get improvementRefusalCampaignRequired =>
+      'Bu değişiklik, mevcut beceriye karşı geçen bir değerlendirmeden geçmedi ya da beceri ölçüldükten sonra değişti. Değerlendirmeyi yeniden çalıştırın.';
+
+  @override
+  String get improvementRefusalChangedSince =>
+      'Hedef, bu önerildikten sonra değişti. Reddedin ve ajanın yeniden önermesine izin verin.';
+
+  @override
+  String get improvementRefusalTargetMissing =>
+      'Bu önerinin değiştirdiği şey artık yok.';
+
+  @override
+  String get improvementRefusalCampaignState =>
+      'Değerlendirme, mevcut durumunda başlayamaz veya bitemez.';
+
+  @override
+  String get improvementRefusalReviewCooldown =>
+      'Bu konuşma yakın zamanda incelendi. Daha sonra yeniden deneyin.';
+
+  @override
+  String get improvementRefusalAdminRequired =>
+      'Bu öneri hakkında yalnızca bir çalışma alanı yöneticisi karar verebilir.';
+
+  @override
+  String get improvementKindMemoryFact => 'Bellek bilgisi';
+
+  @override
+  String get improvementKindPolicy => 'Politika';
+
+  @override
+  String get improvementKindAgentNote => 'Ajan notu';
+
+  @override
+  String get improvementKindSkillEdit => 'Beceri değişikliği';
+
+  @override
+  String get improvementKindSkillNew => 'Yeni beceri';
+
+  @override
+  String get improvementScopeAgent => 'Bu ajan';
+
+  @override
+  String get improvementScopeRepository => 'Bu depo';
+
+  @override
+  String get improvementScopeWorkspace => 'Tüm çalışma alanı';
+
+  @override
+  String get improvementStatusProposed => 'Önerildi';
+
+  @override
+  String get improvementStatusAccepted => 'Kabul edildi';
+
+  @override
+  String get improvementStatusRejected => 'Reddedildi';
+
+  @override
+  String get improvementStatusRolledBack => 'Geri alındı';
+
+  @override
+  String get improvementStatusExpired => 'Süresi doldu';
+
+  @override
+  String get improvementOperationAdd => 'Ekler';
+
+  @override
+  String get improvementOperationReplace => 'Değiştirir';
+
+  @override
+  String get improvementOperationRemove => 'Kaldırır';
+
+  @override
+  String scheduleTriggerOnce(String time) {
+    return 'Bir kez, $time';
+  }
+
+  @override
+  String scheduleTriggerEvery(String interval) {
+    return 'Her $interval';
+  }
+
+  @override
+  String scheduleTriggerCron(String cron, String zone) {
+    return '$cron zamanlamasına göre ($zone)';
+  }
+
+  @override
+  String get scheduleTriggerSelfPaced =>
+      'Ajan seçtiğinde, 1 ila 60 dakika arayla';
+
+  @override
+  String get scheduleTriggerPrChecks =>
+      'Pull request’in kontrolleri bittiğinde';
+
+  @override
+  String scheduleTriggerPrChecksOf(String pr) {
+    return '$pr kontrolleri bittiğinde';
+  }
+
+  @override
+  String get scheduleTriggerPrReview =>
+      'Pull request bir inceleme veya yanıt aldığında';
+
+  @override
+  String scheduleTriggerPrReviewOf(String pr) {
+    return '$pr bir inceleme veya yanıt aldığında';
+  }
+
+  @override
+  String get scheduleTriggerPrMerged => 'Pull request birleştirildiğinde';
+
+  @override
+  String scheduleTriggerPrMergedOf(String pr) {
+    return '$pr birleştirildiğinde';
+  }
+
+  @override
+  String get scheduleTriggerEnvironment =>
+      'Ortamın bir görevi çıktığında veya hazır olduğunda';
+
+  @override
+  String scheduleTriggerTicket(String id) {
+    return '$id bileti sonuçlandığında';
+  }
+
+  @override
+  String scheduleTriggerPipelineRun(String id) {
+    return '$id pipeline çalıştırması bittiğinde';
+  }
+
+  @override
+  String get goalNextWaiting => 'Beklediği şey geldiğinde devam eder.';
+
+  @override
+  String get goalNextVerifying =>
+      'Kontroller ve inceleme bittiğinde tamamlanır veya çalışmaya devam eder.';
+
+  @override
+  String get goalNextLimit => 'Kullanım sınırı sıfırlandığında sürdürülür.';
+
+  @override
+  String get goalNextPerson =>
+      'Bir kişi sorusunu veya onay isteğini yanıtladığında devam eder.';
+
+  @override
+  String get goalNextByPerson =>
+      'Bir kişi sürdürene kadar duraklatılmış kalır.';
+
+  @override
+  String get goalNextNeedsReview =>
+      'Tamamlandı olarak onaylayın veya çalışmaya devam etmesi için sürdürün.';
+
+  @override
+  String get goalNextWorking =>
+      'Tamamlanana veya bir sınıra ulaşana kadar, bir bölüm bir seferde çalışmaya devam eder.';
+
+  @override
+  String get goalContractAddCheck => 'Kontrol ekle';
+
+  @override
+  String goalContractChecksFull(int max) {
+    return 'Bir hedefte en fazla $max kontrol olabilir.';
+  }
+
+  @override
+  String goalContractChecksCount(int count, int max) {
+    return '$count / $max kontrol';
+  }
+
+  @override
+  String get goalContractCheckTaskHint => 'Ortam görevi adı, örneğin test';
+
+  @override
+  String get goalContractCheckCommandHint => 'Komut, örneğin make test';
+
+  @override
+  String get goalContractCheckWhere => 'Nerede çalışır';
+
+  @override
+  String get goalContractCheckInWorktree => 'Çalışma ağacında';
+
+  @override
+  String get goalContractCheckInEnvironment => 'Ortam görevi';
+
+  @override
+  String get goalContractSecondsSuffix => 'sn';
+
+  @override
+  String goalContractTimeoutRange(int max) {
+    return '1 ile $max saniye arası';
+  }
+
+  @override
+  String get goalContractRemoveCheck => 'Kontrolü kaldır';
+
+  @override
+  String get goalContractDoneMeans => 'Tamamlanma ölçütleri';
+
+  @override
+  String get goalContractDoneMeansHelp =>
+      'Her ölçüt, bir denetleyicinin onaylayabileceği tek bir şeydir.';
+
+  @override
+  String get goalContractCriterionHint =>
+      'Sürüm notları birleştirilen her değişikliği listeler';
+
+  @override
+  String goalContractCriterionTooLong(int max) {
+    return 'En fazla $max karakter.';
+  }
+
+  @override
+  String get goalContractRemoveCriterion => 'Ölçütü kaldır';
+
+  @override
+  String get goalContractAddCriterion => 'Ölçüt ekle';
+
+  @override
+  String goalContractCriteriaFull(int max) {
+    return 'Bir hedefte en fazla $max ölçüt olabilir.';
+  }
+
+  @override
+  String goalContractCriteriaCount(int count, int max) {
+    return '$count / $max ölçüt';
+  }
+
+  @override
+  String get goalContractChecks => 'Kontroller';
+
+  @override
+  String get goalContractChecksHelp =>
+      'Ajan tamamlandığını söylediğinde sunucu bunları çalıştırır. Kontrolü olmayan bir hedef yalnızca incelemeye dayanır.';
+
+  @override
+  String get goalContractBoundaries => 'Sınırlar';
+
+  @override
+  String get goalContractBoundariesHint => 'Genel API’yi değiştirmeyin';
+
+  @override
+  String get goalContractStopWhen => 'Şu durumda durup sorun';
+
+  @override
+  String get goalContractStopWhenHint => 'Bir taşıma verileri silerdi';
+
+  @override
+  String get goalContractEditTitle =>
+      'Tamamlanmanın ne anlama geldiğini düzenle';
+
+  @override
+  String get goalCheckerTitle => 'Bu hedefi kim denetler';
+
+  @override
+  String get goalCheckerLabel => 'Denetleyici';
+
+  @override
+  String get goalCheckerNone => 'Ayrı denetleyici yok';
+
+  @override
+  String get goalCheckerNoneWeaker =>
+      'Ayrı bir denetleyici olmadan ajan kendi işini inceler; bu daha az şey yakalar.';
+
+  @override
+  String goalCheckerRecommend(String agent) {
+    return 'Örneğin $agent: farklı bir sağlayıcıdaki bir denetleyici, aynı kör noktaları paylaşma olasılığı daha düşüktür.';
+  }
+
+  @override
+  String get goalCheckerRecommendGeneric =>
+      'Hedef ajanından farklı bir sağlayıcıdaki bir denetleyici, onun kör noktalarını paylaşma olasılığı daha düşüktür.';
+
+  @override
+  String raiseCapSpentOf(String spent, String cap) {
+    return '$cap sınırından $spent harcandı.';
+  }
+
+  @override
+  String get raiseCapNewCap => 'Dolar cinsinden yeni sınır';
+
+  @override
+  String raiseCapMustExceed(String cap) {
+    return '$cap değerinden büyük bir değer girin.';
+  }
+
+  @override
+  String get raiseCapConfirm => 'Sınırı artır';
+
+  @override
+  String get goalsBackToList => 'Tüm hedefler';
+
+  @override
+  String goalPursuedBy(String agent) {
+    return 'Üzerinde çalışan: $agent';
+  }
+
+  @override
+  String get goalOpenConversation => 'Konuşmayı aç';
+
+  @override
+  String goalStarted(String time) {
+    return 'Başladı $time';
+  }
+
+  @override
+  String get goalStopTitle => 'Bu hedef durdurulsun mu?';
+
+  @override
+  String get goalStopBody =>
+      'Ajan üzerinde kalıcı olarak çalışmayı bırakır. Şimdiye kadarki işi konuşmada kalır.';
+
+  @override
+  String get goalRaiseBudgetTitle => 'Bütçeyi artırın ve sürdürün';
+
+  @override
+  String get goalRaiseBudgetAction => 'Bütçeyi artır';
+
+  @override
+  String get goalSectionNow => 'Şimdi';
+
+  @override
+  String get goalFactSegments => 'Bölümler';
+
+  @override
+  String get goalFactMoney => 'Harcanan';
+
+  @override
+  String get goalFactDeadline => 'Son tarih';
+
+  @override
+  String get goalFactNoProgress => 'İlerleme yok';
+
+  @override
+  String get goalNoDeadline => 'Yok';
+
+  @override
+  String goalDeadlineWithLeft(String time, String left) {
+    return '$time, $left kaldı';
+  }
+
+  @override
+  String goalNoProgressCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Son $count bölümde ilerleme olmadı',
+      one: 'Son bölümde ilerleme olmadı',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get goalObjective => 'Amaç';
+
+  @override
+  String get goalSectionContract => 'Tamamlanmanın ne anlama geldiği';
+
+  @override
+  String get goalContractPauseFirst =>
+      'Tamamlanmanın ne anlama geldiğini veya kimin denetlediğini değiştirmek için hedefi duraklatın.';
+
+  @override
+  String get goalContractEdit => 'Düzenle';
+
+  @override
+  String get goalCheckerChange => 'Denetleyiciyi değiştir';
+
+  @override
+  String get goalContractNone =>
+      'Henüz bir şey yazılmadı. Tamamlandığına ajan karar verir.';
+
+  @override
+  String get goalCheckerSelf =>
+      'Ayrı denetleyici yok: ajan kendi işini doğrular.';
+
+  @override
+  String goalCheckerIs(String agent) {
+    return 'Denetleyen: $agent';
+  }
+
+  @override
+  String goalCheckWorktree(int seconds) {
+    return 'Çalışma ağacında, en fazla $seconds sn';
+  }
+
+  @override
+  String goalCheckEnvironmentTask(int seconds) {
+    return 'Ortam görevi, en fazla $seconds sn';
+  }
+
+  @override
+  String get goalSectionVerification => 'Doğrulama';
+
+  @override
+  String get goalNotVerifiedYet =>
+      'Henüz doğrulanmadı. Ajan tamamlandığını söylemedi.';
+
+  @override
+  String goalVerificationRound(int round, int total, String time) {
+    return 'Tur $round / $total, $time';
+  }
+
+  @override
+  String get goalVerificationClaim => 'Ajanın iddiası';
+
+  @override
+  String get goalCheckOutputTail => 'Çıktı (son satırlar)';
+
+  @override
+  String goalCheckExitCode(int code) {
+    return 'Geçti · çıkış $code';
+  }
+
+  @override
+  String get goalVerificationReview => 'İnceleme';
+
+  @override
+  String get goalVerificationNoVerdict => 'Henüz inceleme yok.';
+
+  @override
+  String goalVerdictItem(String criterion, String state) {
+    return '$criterion · $state';
+  }
+
+  @override
+  String get goalSectionSchedules => 'Zamanlamalar ve uyandırmalar';
+
+  @override
+  String get goalNoSchedules => 'Zamanlama veya bekleyen uyandırma yok.';
+
+  @override
+  String get goalPendingWakes => 'Bekleyen uyandırmalar';
+
+  @override
+  String workListGroup(String label, int count) {
+    return '$label · $count';
+  }
+
+  @override
+  String get goalNotFound => 'Bu hedef yok veya açamayacağınız bir space’te.';
+
+  @override
+  String get goalsTitle => 'Hedefler';
+
+  @override
+  String get goalsSubtitle =>
+      'Bir ajanın, tamamlanma ölçütleri karşılanana kadar üzerinde çalıştığı işler.';
+
+  @override
+  String get goalsEmpty => 'Henüz hedef yok';
+
+  @override
+  String get goalsEmptyHint => 'Bir konuşmada /goal ile bir tane başlatın.';
+
+  @override
+  String get goalsGroupReview => 'İnceleme bekliyor';
+
+  @override
+  String get goalsGroupOpen => 'Açık';
+
+  @override
+  String get goalsGroupEnded => 'Sona erdi';
+
+  @override
+  String get scheduleStatusActive => 'Etkin';
+
+  @override
+  String get scheduleStatusPaused => 'Duraklatıldı';
+
+  @override
+  String get scheduleStatusEnded => 'Sona erdi';
+
+  @override
+  String get scheduleWhenBusySkip => 'Ajan meşgulken bir tetiklemeyi atlar';
+
+  @override
+  String get scheduleWhenBusyQueue => 'Ajan boşalana kadar bekler';
+
+  @override
+  String get scheduleDeliverRun => 'Bir çalıştırma başlatır';
+
+  @override
+  String get scheduleDeliverNotify => 'Yalnızca bildirir';
+
+  @override
+  String get scheduleNew => 'Yeni zamanlama';
+
+  @override
+  String get schedulesEmpty => 'Zamanlama veya izleme yok';
+
+  @override
+  String get schedulesEmptyHint =>
+      'Ajanlar bunları /loop ve /schedule ile ayarlar, ya da siz bir tane oluşturabilirsiniz.';
+
+  @override
+  String scheduleOwnedBy(String name) {
+    return 'Sorumlu: $name';
+  }
+
+  @override
+  String scheduleRunsSkips(int runs, int skips) {
+    String _temp0 = intl.Intl.pluralLogic(
+      runs,
+      locale: localeName,
+      other: '$runs çalıştırma',
+      one: '1 çalıştırma',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      skips,
+      locale: localeName,
+      other: '$skips atlama',
+      one: '1 atlama',
+      zero: 'atlama yok',
+    );
+    return '$_temp0, $_temp1';
+  }
+
+  @override
+  String scheduleExpires(String time) {
+    return 'Biter $time';
+  }
+
+  @override
+  String scheduleNextFires(String times) {
+    return 'Sonraki: $times';
+  }
+
+  @override
+  String get schedulesTitle => 'Zamanlamalar';
+
+  @override
+  String get schedulesSubtitle =>
+      'Ajanları uyandıran zamanlamalar, döngüler ve izlemeler.';
+
+  @override
+  String get scheduleWhenLabel => 'Ne zaman tetiklenir';
+
+  @override
+  String get scheduleWhenEvery => 'Tekrar tekrar, her…';
+
+  @override
+  String get scheduleWhenCron => 'Cron zamanlamasına göre';
+
+  @override
+  String get scheduleWhenOnceIn => 'Bir kez, … sonra';
+
+  @override
+  String get scheduleWhenOnceAt => 'Bir kez, bir sonraki … de';
+
+  @override
+  String get scheduleDurationLabel => 'Aralık';
+
+  @override
+  String get scheduleDurationHelp =>
+      's, m, h veya d kullanın, örneğin 30m veya 1h30m. Tekrarlar en az 60 sn arayla olur.';
+
+  @override
+  String get scheduleDurationInvalid =>
+      'Bu bir süre değil. 30m veya 2h gibi yazın.';
+
+  @override
+  String get scheduleHour => 'Saat';
+
+  @override
+  String get scheduleMinute => 'Dakika';
+
+  @override
+  String get scheduleCronLabel => 'Cron (dakika saat gün ay haftanın günü)';
+
+  @override
+  String get scheduleCronInvalid => 'Tetiklenen beş alanlı bir cron değil.';
+
+  @override
+  String get scheduleTimeInvalid =>
+      'Bu, 09:00 veya 2026-11-21T09:00Z gibi ileride bir zaman değil.';
+
+  @override
+  String scheduleDaysRange(int max) {
+    return '1 ile $max gün arası.';
+  }
+
+  @override
+  String scheduleOptionUnknown(String option) {
+    return '$option bir seçenek değil.';
+  }
+
+  @override
+  String get scheduleLimits => 'Sınırlar';
+
+  @override
+  String get schedulePresetWeekdays => 'Hafta içi 09:00\'da';
+
+  @override
+  String get schedulePresetDaily => 'Her gün 09:00\'da';
+
+  @override
+  String get schedulePresetHourly => 'Her saat, tam saatte';
+
+  @override
+  String get scheduleZoneLabel => 'Saat dilimi';
+
+  @override
+  String get scheduleZoneHelp =>
+      'Boş bırakılırsa çalışma alanının saat dilimi kullanılır.';
+
+  @override
+  String get scheduleZoneInvalid =>
+      'Bu bir saat dilimi değil. Europe/Berlin gibi yazın.';
+
+  @override
+  String get scheduleCreateTitle => 'Yeni zamanlama';
+
+  @override
+  String get scheduleSpaceLabel => 'Space';
+
+  @override
+  String get scheduleSpaceHint => 'Bir space seçin';
+
+  @override
+  String get scheduleConversationLabel => 'Konuşma';
+
+  @override
+  String get scheduleConversationHint => 'Bir konuşma seçin';
+
+  @override
+  String get scheduleAgentLabel => 'Ajan';
+
+  @override
+  String get scheduleAgentHint => 'Kimin uyanacağını seçin';
+
+  @override
+  String get scheduleNoteLabel => 'Her çalıştırma neyle başlar';
+
+  @override
+  String get scheduleNoteHint =>
+      'Gece neyin değiştiğini özetleyin ve engellenen her şeyi işaretleyin.';
+
+  @override
+  String get scheduleExpiresInDays => 'Bitiş (gün sonra)';
+
+  @override
+  String get scheduleExpiresInDaysHelp => 'Boş: 30 gün, en fazla 365.';
+
+  @override
+  String get scheduleMaxRuns => 'Çalıştırma sınırı';
+
+  @override
+  String scheduleMaxRunsHelp(int max) {
+    return 'Boş: sınır yok, en fazla $max.';
+  }
+
+  @override
+  String get scheduleCostCap => 'Maliyet sınırı (dolar)';
+
+  @override
+  String get scheduleCostCapHelp => 'Boş: çalışma alanının varsayılanı.';
+
+  @override
+  String get scheduleWhenBusyLabel => 'Ajan meşgulse';
+
+  @override
+  String get scheduleWhenBusyDefault => 'Bu tür için varsayılan';
+
+  @override
+  String get scheduleDeliverLabel => 'Her tetikleme';
+
+  @override
+  String get scheduleCreate => 'Zamanlamayı oluştur';
+
+  @override
+  String get scheduleExtendTitle => 'Bu zamanlamayı uzat';
+
+  @override
+  String scheduleExtendNow(String current, String latest) {
+    return '$current tarihinde bitiyor. En geç $latest tarihine kadar yaşayabilir.';
+  }
+
+  @override
+  String get scheduleExtendDays => 'Gün ekle';
+
+  @override
+  String scheduleExtendTooLong(String latest) {
+    return 'En geç $latest tarihinde bitebilir.';
+  }
+
+  @override
+  String scheduleMaxRunsRange(int max) {
+    return '1 ile $max çalıştırma arası.';
+  }
+
+  @override
+  String scheduleCostCapRange(String max) {
+    return 'En az 1 dolar, en fazla $max.';
+  }
+
+  @override
+  String get scheduleExtend => 'Uzat';
+
+  @override
+  String get scheduleRemoveTitle => 'Bu zamanlama kaldırılsın mı?';
+
+  @override
+  String get scheduleDeleteTitle => 'Bu zamanlama silinsin mi?';
+
+  @override
+  String get scheduleRemoveBody =>
+      'Listeden kalkar. Çalıştırmaları konuşmada kalır.';
+
+  @override
+  String get scheduleDeleteBody =>
+      'Kalıcı olarak tetiklenmeyi durdurur. Çalıştırmaları konuşmada kalır.';
+
+  @override
+  String get scheduleRemove => 'Kaldır';
+
+  @override
+  String get scheduleDelete => 'Sil';
+
+  @override
+  String get scheduleOwnerOnly =>
+      'Sürdürmeyi veya uzatmayı yalnızca sahibi yapabilir.';
+
+  @override
+  String get schedulesBackToList => 'Tüm zamanlamalar';
+
+  @override
+  String get scheduleNoteByAgent => 'Ajanın yazdığı not';
+
+  @override
+  String get scheduleNoteByPerson => 'Bir kişinin yazdığı not';
+
+  @override
+  String scheduleNoteEditedBy(String name) {
+    return 'Not, son olarak $name tarafından düzenlendi';
+  }
+
+  @override
+  String get scheduleNoNote => 'Not yok.';
+
+  @override
+  String get schedulePause => 'Duraklat';
+
+  @override
+  String get scheduleResume => 'Sürdür';
+
+  @override
+  String get scheduleOpenChainRoot => 'Bu zincirin ilk zamanlamasını aç';
+
+  @override
+  String get scheduleSectionFacts => 'Ayrıntılar';
+
+  @override
+  String get scheduleFactAgent => 'Uyandırdığı';
+
+  @override
+  String get scheduleFactConversation => 'Konum';
+
+  @override
+  String get scheduleConversationUnknown => 'Göremeyebileceğiniz bir konuşma';
+
+  @override
+  String get scheduleFactOwner => 'Sorumlu';
+
+  @override
+  String get scheduleNoOwner => 'Kimse';
+
+  @override
+  String get scheduleFactNextFires => 'Sonraki tetiklemeler';
+
+  @override
+  String get scheduleFactNext => 'Sonraki tetikleme';
+
+  @override
+  String get scheduleFactLast => 'Son tetikleme';
+
+  @override
+  String get scheduleFactRuns => 'Çalıştırmalar';
+
+  @override
+  String scheduleRunsNoCap(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count çalıştırma, sınır yok',
+      one: '1 çalıştırma, sınır yok',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleRunsOfCap(int count, int max) {
+    return '$max çalıştırmadan $count';
+  }
+
+  @override
+  String get scheduleFactSkips => 'Atlamalar';
+
+  @override
+  String scheduleSkips(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tetikleme atlandı',
+      one: '1 tetikleme atlandı',
+      zero: 'Yok',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scheduleFactSpent => 'Harcanan';
+
+  @override
+  String get scheduleFactEnds => 'Bitiş';
+
+  @override
+  String get scheduleFactWhenBusy => 'Ajan meşgulse';
+
+  @override
+  String get scheduleFactDeliver => 'Her tetikleme';
+
+  @override
+  String get scheduleFactChain => 'Zincir';
+
+  @override
+  String scheduleChainLeft(int runs, String time) {
+    String _temp0 = intl.Intl.pluralLogic(
+      runs,
+      locale: localeName,
+      other: '$runs çalıştırma kaldı',
+      one: '1 çalıştırma kaldı',
+    );
+    return 'Zincirde $_temp0, zincir $time tarihinde biter';
+  }
+
+  @override
+  String get scheduleFactCreated => 'Oluşturuldu';
+
+  @override
+  String get scheduleSectionHistory => 'Son uyandırmalar ve çalıştırmalar';
+
+  @override
+  String get scheduleNoRuns => 'Henüz çalıştırma yok.';
+
+  @override
+  String scheduleRunLine(String status, String cost) {
+    return '$status · $cost';
+  }
+
+  @override
+  String get scheduleRunPending => 'Başlamayı bekliyor';
+
+  @override
+  String get scheduleRunRunning => 'Çalışıyor';
+
+  @override
+  String get scheduleRunCompleted => 'Bitti';
+
+  @override
+  String get scheduleRunFailed => 'Başarısız';
+
+  @override
+  String get scheduleNotFound =>
+      'Bu zamanlama yok veya açamayacağınız bir space’te.';
+
+  @override
+  String get improvementCampaignTitle => 'Bir değerlendirme çalıştırın';
+
+  @override
+  String improvementCampaignCost(int repetitions, String budget) {
+    String _temp0 = intl.Intl.pluralLogic(
+      repetitions,
+      locale: localeName,
+      other: 'Her görev $repetitions kez çalışır',
+      one: 'Her görev bir kez çalışır',
+    );
+    return '$_temp0, mevcut beceri ve değişiklikle birlikte. En fazla $budget harcar, bu çalışma alanına yazılır.';
+  }
+
+  @override
+  String get improvementCampaignCostUnknown =>
+      'Değerlendirme, ayarladığınız bütçeye kadar derlemi mevcut beceri ve değişiklikle birlikte çalıştırır.';
+
+  @override
+  String get improvementCampaignUnavailable =>
+      'Değerlendirmeler şu anda bu sunucuda çalıştırılamaz.';
+
+  @override
+  String get improvementCampaignCorpus => 'Derlem';
+
+  @override
+  String get improvementCampaignProvider => 'Sağlayıcı';
+
+  @override
+  String get improvementCampaignModel => 'Model';
+
+  @override
+  String get improvementCampaignRepetitions => 'Görev başına çalıştırma';
+
+  @override
+  String get improvementCampaignBudget => 'Bütçe (dolar)';
+
+  @override
+  String improvementCampaignRange(int max) {
+    return '1 ile $max arası.';
+  }
+
+  @override
+  String get improvementCampaignStart => 'Değerlendirmeyi başlat';
+
+  @override
+  String get improvementRollbackTitle => 'Bu değişiklik geri alınsın mı?';
+
+  @override
+  String get improvementRollbackBody =>
+      'Değiştirdiği metin geri gelir, yeter ki o zamandan beri kimse değiştirmemiş olsun.';
+
+  @override
+  String get improvementRollback => 'Geri al';
+
+  @override
+  String get improvementRolledBackDone => 'Geri alındı.';
+
+  @override
+  String get improvementNeedsAdmin =>
+      'Bu öneriye yalnızca bir çalışma alanı yöneticisi karar verebilir: tüm çalışma alanı için bir beceriyi veya politikayı değiştirir.';
+
+  @override
+  String get improvementAdminDecides =>
+      'Yönetici olarak bu öneriye siz karar verirsiniz: tüm çalışma alanı için bir beceriyi veya politikayı değiştirir.';
+
+  @override
+  String get improvementNeedsCampaign =>
+      'Bu beceri değişikliğini kabul etmeden önce geçen bir değerlendirme çalıştırın.';
+
+  @override
+  String get improvementsBackToList => 'Tüm iyileştirmeler';
+
+  @override
+  String improvementMeta(String kind, String scope, String agent) {
+    return '$kind · $scope · öneren: $agent';
+  }
+
+  @override
+  String get improvementAccept => 'Kabul et';
+
+  @override
+  String get improvementAcceptedDone => 'Kabul edildi.';
+
+  @override
+  String get improvementReject => 'Reddet';
+
+  @override
+  String get improvementRejectedDone => 'Reddedildi.';
+
+  @override
+  String get improvementRunEvaluation => 'Değerlendirme çalıştır';
+
+  @override
+  String get improvementSectionChange => 'Neyin değiştiği';
+
+  @override
+  String get improvementTarget => 'Hedef';
+
+  @override
+  String improvementScopeLine(String scope) {
+    return 'Geçerli olduğu yer: $scope';
+  }
+
+  @override
+  String get improvementNewText => 'Yeni metin';
+
+  @override
+  String get improvementRemovedText => 'Kaldırılan metin';
+
+  @override
+  String get improvementExpected => 'Beklenen etki';
+
+  @override
+  String get improvementSectionEvidence => 'Kanıt ve karar';
+
+  @override
+  String get improvementNoEvidence => 'Eklenmiş kanıt yok.';
+
+  @override
+  String get improvementEvidenceRuns => 'Çalıştırmalar';
+
+  @override
+  String get improvementEvidenceMessages => 'İletiler';
+
+  @override
+  String improvementOpenMessage(int index) {
+    return 'İleti $index';
+  }
+
+  @override
+  String get improvementEvidenceChecks => 'Kontrol sonuçları';
+
+  @override
+  String get improvementEvaluation => 'Değerlendirme';
+
+  @override
+  String get improvementCampaignNone => 'Henüz değerlendirilmedi.';
+
+  @override
+  String get improvementCampaignRunning => 'Değerlendirme çalışıyor.';
+
+  @override
+  String get improvementCampaignPassed =>
+      'Değerlendirme geçti: tam olarak çalıştı ve değişiklik, mevcut becerinin çözdüğü kadar en az çalıştırmayı çözdü. Bu, daha iyi olduğunu kanıtlamaz. Kabul edilebilir.';
+
+  @override
+  String get improvementCampaignFailed =>
+      'Değerlendirme geçmedi ya da beceri ölçüldükten sonra değişti. Yeniden çalıştırın veya değişikliği reddedin.';
+
+  @override
+  String improvementDecided(String status, String name, String time) {
+    return '$status, $name tarafından, $time';
+  }
+
+  @override
+  String get improvementSomeone => 'birisi';
+
+  @override
+  String improvementExpires(String time) {
+    return 'Biri karar vermezse $time tarihinde sona erer.';
+  }
+
+  @override
+  String get improvementOpenApplied => 'Değiştirdiğini aç';
+
+  @override
+  String get improvementsTitle => 'İyileştirmeler';
+
+  @override
+  String get improvementsSubtitle =>
+      'Ajanların belleklerine, notlarına, politikalarına ve becerilerine önerdiği değişiklikler.';
+
+  @override
+  String get improvementsEmpty => 'Öneri yok';
+
+  @override
+  String get improvementsEmptyHint =>
+      'Ajanlar işlerini inceledikten sonra iyileştirme önerir, örneğin /refine ile.';
+
+  @override
+  String get improvementRowNeedsAdmin => 'Bir yönetici karar verir';
+
+  @override
+  String get improvementNotFound =>
+      'Bu öneri yok veya açamayacağınız bir space’te.';
+
+  @override
+  String get dispatchSettingsTitle => 'Zamanlamalar';
+
+  @override
+  String get dispatchSettingsSubtitle =>
+      'Zamanlamalar ve izlemeler için sınırlar ve kimsenin yanıtlamadığı isteklere ne olacağı.';
+
+  @override
+  String get dispatchLimitsLabel => 'Zamanlama sınırları';
+
+  @override
+  String get dispatchLimitsSubtitle =>
+      'Ajanların tutabileceği zamanlama ve izleme sayısı için sınırlar ve varsayılanlar.';
+
+  @override
+  String dispatchLimitRange(int max) {
+    return '1 ile $max arası';
+  }
+
+  @override
+  String get dispatchLimitPerConversation => 'Konuşmada ajan başına';
+
+  @override
+  String get dispatchLimitPerConversationHelp =>
+      'Bir konuşmada bir ajanın tutabileceği etkin veya duraklatılmış zamanlamalar.';
+
+  @override
+  String get dispatchLimitPerAgent => 'Ajan başına';
+
+  @override
+  String get dispatchLimitPerAgentHelp =>
+      'Bir ajanın çalışma alanı genelinde tutabileceği etkin veya duraklatılmış zamanlamalar.';
+
+  @override
+  String get dispatchLimitPerWorkspace => 'Çalışma alanında';
+
+  @override
+  String get dispatchLimitPerWorkspaceHelp =>
+      'Tüm çalışma alanında etkin veya duraklatılmış zamanlamalar.';
+
+  @override
+  String get dispatchLimitCostCap => 'Varsayılan maliyet sınırı (dolar)';
+
+  @override
+  String get dispatchLimitCostCapHelp =>
+      'Kendi sınırını belirtmeyen bir zamanlamanın toplamda harcayabileceği tutar.';
+
+  @override
+  String get dispatchLimitZone => 'Saat dilimi';
+
+  @override
+  String get dispatchLimitZoneHelp =>
+      'Cron zamanlamalarının saati belirtilmediğinde okunduğu dilim ve günlük özetin dilimi.';
+
+  @override
+  String get dispatchUnattendedLabel => 'Kimse yanıtlamadığında';
+
+  @override
+  String get dispatchUnattendedSubtitle =>
+      'Sunucunun başlattığı bir çalıştırmanın bir kişiyi ne kadar bekleyeceği ve bekleyenlerin günlük özetinin ne zaman gideceği.';
+
+  @override
+  String get dispatchUnattendedExpiry => 'İstekler ne kadar beklesin (saat)';
+
+  @override
+  String get dispatchUnattendedExpiryHelp =>
+      'Bu süreden sonra bir onay reddedilmiş, bir soru yanıtsız sayılır. Kendi sorularını yanıtlaması ayarlanan hedefler 10 dakika sonra bunları kendisi yanıtlar.';
+
+  @override
+  String dispatchUnattendedExpiryRange(int min, int max) {
+    return '$min ile $max saat arası';
+  }
+
+  @override
+  String get dispatchDigestHour => 'Günlük özet saati';
+
+  @override
+  String dispatchDigestHourHelp(String zone) {
+    return '$zone dilimine göre, yukarıdaki saat dilimi.';
+  }
+
+  @override
+  String get dispatchDigestHourRange => '0 ile 23 arası';
+
+  @override
+  String get goalRecordCrumb => 'Hedef';
+
+  @override
+  String get scheduleRecordCrumb => 'Zamanlama';
+
+  @override
+  String get improvementRecordCrumb => 'Öneri';
+
+  @override
+  String get goalNodeNeedsAgent => 'Hedefi yürütecek ajanı seçin.';
+
+  @override
+  String get goalNodeNeedsObjective => 'Amacı yazın.';
+
+  @override
+  String get goalNodeContractInvalid =>
+      'Sözleşmede bir alan sınırını aşıyor; düzeltilene kadar kaydedilmez.';
+
+  @override
+  String get goalNodeBudget => 'Bütçe (dolar)';
+
+  @override
+  String get goalNodeBudgetHelp =>
+      'Hedefin harcayabileceği en yüksek tutar. Tükenirse hedef bir kişi için tutulur.';
+
+  @override
+  String goalNodeBudgetRange(int max) {
+    return 'Zorunlu: 0’dan büyük, en fazla $max.';
+  }
+
+  @override
+  String get goalNodeMaxRuns => 'Bölüm sınırı';
+
+  @override
+  String get goalNodeMaxRunsHelp =>
+      'İsteğe bağlı. Hedefin alabileceği en fazla bölüm (ajan çalıştırması).';
+
+  @override
+  String get goalNodeDeadline => 'Son tarih (saat)';
+
+  @override
+  String get goalNodeDeadlineHelp =>
+      'İsteğe bağlı. Adım hedefi başlattığı andan itibaren saat.';
+
+  @override
+  String goalNodeRange(int max) {
+    return '1 ile $max arası veya boş.';
+  }
+
+  @override
+  String get goalNodeContract => 'Sözleşme';
+
+  @override
+  String get goalNodeContractHelp =>
+      'Tamamlanmanın ne anlama geldiği: denetleyicinin kontrol ettiği ölçütler ve geçmesi gereken komutlar.';
+
+  @override
+  String get nodeConfigObjective => 'Amaç';
+
+  @override
+  String pipelineRunGoalStep(String step) {
+    return '$step adımı bir hedef üzerinde çalışıyor';
+  }
+
+  @override
+  String get pipelineRunOpenGoal => 'Hedefi aç';
+
+  @override
+  String get pipelineRunHeldBudget =>
+      'Bu çalıştırma tutuluyor: yürütmesi maliyet sınırına ulaştı.';
+
+  @override
+  String pipelineRunHeldOther(String reason) {
+    return 'Bu çalıştırma tutuluyor ($reason).';
+  }
+
+  @override
+  String pipelineRunHeldSpent(String spent, String cap) {
+    return '$cap sınırından $spent harcandı. Sınırı artırın, çalıştırma devam eder.';
+  }
+
+  @override
+  String get pipelineRunRaiseCap => 'Sınırı artır';
+
+  @override
+  String get pipelineRunRaiseCapTitle => 'Yürütme sınırını artırın';
+
+  @override
+  String get pipelineRunCapRaised =>
+      'Sınır artırıldı. Çalıştırma kısa süre içinde devam eder.';
+
+  @override
+  String get goalLaunchChecks => 'Kontroller';
+
+  @override
+  String get goalLaunchChecksHelp =>
+      'Hedef bitmeden önce geçmesi gereken komutlar. İsteğe bağlı.';
+
+  @override
+  String get goalLaunchFresh => 'Her bölümü baştan başlat';
+
+  @override
+  String get goalLaunchFreshHelp =>
+      'Her çalıştırma, konuşma geçmişi olmadan, yalnızca hedef ve notlarından başlar.';
+
+  @override
+  String get goalLaunchAssume =>
+      'Kimse yanıtlamadığında kendi sorularını yanıtlasın';
+
+  @override
+  String get goalLaunchAssumeHelp =>
+      '10 dakika yanıtsız kalırsa ajan varsayımını belirtir ve durdurma koşulları izin veriyorsa devam eder.';
+
+  @override
+  String workFeedLimitParkOutcomeResumed(String provider, String time) {
+    return '$provider kullanım sınırından sonra $time saatinde sürdürüldü.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeCancelled(String provider, String time) {
+    return '$time saatinde iptal edildi. $provider kullanım sınırından sonra sürdürülmedi.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeExpired(String provider, String time) {
+    return '$time saatinde, $provider kullanım sınırından sonra sürdürülmeden süresi doldu.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeSkipped(String provider, String time) {
+    return '$provider kullanım sınırından sonra sürdürülmedi ($time).';
+  }
+
+  @override
+  String workFeedCommandRefusedNamed(String command) {
+    return '/$command komutu reddedildi.';
+  }
+
+  @override
+  String get improvementRefusalQueued =>
+      'Bu konuşmanın bir incelemesi zaten çalışmayı bekliyor.';
+
+  @override
+  String get improvementRefusalAgentNotFound =>
+      'Bu ajan bu çalışma alanının bir ajanı değil.';
+
+  @override
+  String get workRefusalWakeQueueFull =>
+      'Burada zaten çok fazla uyandırma bekliyor. Birkaçı çalıştıktan sonra yeniden deneyin.';
+
+  @override
+  String get orchestrationRefusalNotYours =>
+      'Bunu yalnızca çalışmanın adına hareket ettiği kişi değiştirebilir.';
+
+  @override
+  String get orchestrationRefusalCapInvalid =>
+      'Yeni sınır, mevcut sınırdan ve harcananın üstünde olmalı ve en fazla 1.000 \$ olabilir.';
+
+  @override
+  String get orchestrationRefusalCapChanged =>
+      'Sınırı bir başkası önce artırdı. Yeni sınırı kontrol edip yeniden deneyin.';
+
+  @override
+  String workFeedCapRaised(String person, String oldCap, String newCap) {
+    return '$person, çalıştırmanın sınırını $oldCap değerinden $newCap değerine çıkardı.';
+  }
+
+  @override
+  String get workFeedPersonUnknown => 'Bir kişi';
+
+  @override
+  String workFeedApplyIncomplete(String skill) {
+    return '$skill becerisindeki kabul edilmiş bir değişiklik, beceri bu arada değiştiği için tamamlanamadı. Öneri geri alındı.';
+  }
+
+  @override
+  String get workFeedOpenImprovement => 'İyileştirmeyi aç';
+
+  @override
+  String get peerAskFailNoOutput => 'Bir yanıt olmadan bitti.';
+
+  @override
+  String get peerAskFailRunFailed => 'Çalıştırması başarısız oldu.';
+
+  @override
+  String get peerAskFailStoppedByPerson => 'Bir kişi çalıştırmasını durdurdu.';
+
+  @override
+  String get peerAskFailBudget => 'Çalıştırması bütçesine ulaştı.';
+
+  @override
+  String get peerAskFailSilence => 'Çalıştırması sessizleşti ve durduruldu.';
+
+  @override
+  String get peerAskFailUsageLimit =>
+      'Çalıştırması sağlayıcının kullanım sınırında durdu.';
+
+  @override
+  String get peerAskFailNotDelivered => 'Soru hiç teslim edilmedi.';
+
+  @override
+  String heldSteeringLimitHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Kullanım sınırında tutulan $count ileti',
+      one: 'Kullanım sınırında tutulan 1 ileti',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get heldSteeringLimitNote =>
+      'Bunlar, çalışmanın adına hareket ettiği kişi çalışmayı sürdürdüğünde gönderilir. Sıfırlanmadan sonraki 7 gün içinde sürdürülmezse, bu kişi için tutulmaya devam eder.';
+
+  @override
+  String get wakeKindRuleFolded => 'Daha sonraki bir olay onun yerini aldı.';
+
+  @override
+  String goalCardWaitingNext(String time) {
+    return 'Kurduğu işi bekliyor · $time saatinde tekrar bakar';
+  }
+
+  @override
+  String raiseCapAtMost(String max) {
+    return 'En fazla $max girin.';
+  }
+
+  @override
+  String raiseCapNowAt(String cap) {
+    return 'Sınır artık $cap.';
+  }
+
+  @override
+  String get scheduleWakeReasonSchedule => 'Zamanlandı';
+
+  @override
+  String get scheduleWakeReasonWatch => 'İzleme';
+
+  @override
+  String get scheduleWakeReasonLimitReset =>
+      'Kullanım sınırı sıfırlandıktan sonra';
+
+  @override
+  String get scheduleWakeStatePending => 'Bekliyor';
+
+  @override
+  String get scheduleWakeStateHeld => 'Tutuldu';
+
+  @override
+  String get scheduleWakeStateClaimed => 'Başlıyor';
+
+  @override
+  String get scheduleWakeStateDelivered => 'Teslim edildi';
+
+  @override
+  String get scheduleWakeStateSkipped => 'Atlandı';
+
+  @override
+  String get scheduleWakeStateExpired => 'Süresi doldu';
+
+  @override
+  String get scheduleWakeStateCancelled => 'İptal edildi';
+
+  @override
+  String scheduleWakeLine(String reason, String state) {
+    return '$reason · $state';
+  }
+
+  @override
+  String scheduleWakeExit(int code) {
+    return 'çıkış $code';
+  }
+
+  @override
+  String scheduleWakeEvents(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count olay',
+      one: '1 olay',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scheduleWakesNone => 'Henüz uyandırma yok.';
+
+  @override
+  String get scheduleWakesOlder => 'Daha eskileri göster';
+
+  @override
+  String get improvementCandidateStaged =>
+      'Önerilen beceri ayrı bir revizyon olarak saklanır. Değerlendirmek canlı beceriyi değiştirmez; beceri yalnızca öneri kabul edildiğinde değişir.';
+
+  @override
+  String goalNextWaitingFallback(String time) {
+    return 'Beklediği iş geldiğinde devam eder; hiçbir şey gelmezse $time saatinde tekrar bakar.';
+  }
+
+  @override
+  String get steeringRefusalHeldByLimit =>
+      'Kullanım sınırı duraklatmasının tuttuğu iletiler beklerken elle gönderilemez.';
+
+  @override
+  String steeringRefusalHeldByLimitAt(String time) {
+    return 'Kullanım sınırı duraklatmasının tuttuğu iletiler beklerken elle gönderilemez. Sınır $time saatinde sıfırlanır.';
+  }
+
+  @override
+  String heldSteeringLimitResetsAt(String time) {
+    return 'Limit $time itibarıyla sıfırlanır. Bunlar, çalışmanın adına hareket ettiği kişi çalışmayı sürdürdüğünde gönderilir.';
+  }
+
+  @override
+  String heldSteeringFromPerson(String name) {
+    return 'Gönderen: $name';
+  }
+
+  @override
+  String get heldSteeringFromSomeoneElse => 'Başka birinden';
+
+  @override
+  String get heldSteeringOnlyWriterSends =>
+      'Tutulan bir iletiyi yalnızca onu yazan kişi gönderebilir.';
+
+  @override
+  String get steeringRefusalNotYours =>
+      'Bu tutulan iletiler başkasına ait. Yalnızca onları yazan kişi gönderebilir.';
+
+  @override
+  String improvementEvaluationSolved(
+    int pairedRuns,
+    int candidateSolved,
+    int baselineSolved,
+  ) {
+    String _temp0 = intl.Intl.pluralLogic(
+      pairedRuns,
+      locale: localeName,
+      other: '$pairedRuns eşleştirilmiş çalıştırmada',
+      one: '1 eşleştirilmiş çalıştırmada',
+    );
+    return '$_temp0, değişiklik $candidateSolved çalıştırmayı, mevcut beceri $baselineSolved çalıştırmayı çözdü.';
+  }
+
+  @override
+  String improvementEvaluationWorse(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count görev değişiklikle daha kötü sonuçlandı.',
+      one: '1 görev değişiklikle daha kötü sonuçlandı.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String improvementEvaluationCostlier(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count görev değişiklikle daha pahalıya geldi.',
+      one: '1 görev değişiklikle daha pahalıya geldi.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String improvementEvaluationHarnessErrors(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count çalıştırma harness hatasına çarptı.',
+      one: '1 çalıştırma harness hatasına çarptı.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get improvementEvaluationIncomplete =>
+      'Değerlendirme tam olarak çalışmadı.';
+
+  @override
+  String workFeedLimitParkExpires(String time) {
+    return 'Sona erer: $time';
+  }
+
+  @override
+  String workFeedSchedulePaused(String person, String agent) {
+    return '$person, $agent için zamanlamayı duraklattı.';
+  }
+
+  @override
+  String get goalCardApproveNotYours =>
+      'Bu hedefin tamamlanmasını yalnızca pipeline çalıştırmasını başlatan kişi onaylayabilir.';
+
+  @override
+  String get goalCardObjective => 'Amaç';
+
+  @override
+  String get planNeedsWrite =>
+      'Bu planı onaylamak veya değiştirmek, bu Space\'teki her depoya yazma erişimi gerektirir. Bir çalışma alanı yöneticisi bu erişimi verebilir.';
+
+  @override
+  String scheduleSpentWithChain(String spent, String cap) {
+    return '$cap sınırından $spent, zincirindeki her zamanlama dahil';
+  }
 }

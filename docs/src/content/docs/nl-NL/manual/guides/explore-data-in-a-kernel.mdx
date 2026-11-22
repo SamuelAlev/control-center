@@ -1,8 +1,8 @@
 ---
 title: Data verkennen in een persistente kernel
-description: Geef een agent een Python- of JavaScript-interpreter die zijn variabelen tussen aanroepen behoudt, grafieken in de chat tekent en je eigen tools vanuit een cel kan aanroepen.
+description: Geef een agent een Python- of JavaScript-interpreter die zijn variabelen tussen aanroepen behoudt en grafieken in de chat tekent.
 slug: nl-NL/handleiding/gidsen/data-verkennen-in-kernel
-sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
+sourceHash: 8fcd77019bfae5088223822a12ef91c8a6879c5d
 ---
 
 Deze gids laat zien hoe je een agent iets duurs één keer laat laden en er daarna meerdere vragen over laat stellen, in plaats van de laadtijd bij elke vraag opnieuw te betalen.
@@ -62,22 +62,9 @@ Deze worden herschreven naar gewone code in plaats van een fout te geven:
 
 Het leegmaken van de `%pip`-cache is degene die ertoe doet: installeren in een levende interpreter doet niets voor een module die al is geïmporteerd, dus zonder dat is de versie die je net hebt geïnstalleerd niet de versie die draait.
 
-## Je eigen tools aanroepen vanuit een cel
+## Tools vanuit code aanroepen
 
-```python
-paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
-for path in paths.splitlines()[:100]:
-    contents = tool("read", {"path": path})
-    ...
-```
-
-`tool(name, args)` gaat weer het eigen toolregister van de agent binnen. Dat betekent dat een cel kan uitwaaieren over honderd bestanden, of kan delegeren via `task`, zonder dat het model per item een beurt hoeft te besteden.
-
-:::caution[De brug gaat niet om je beveiligingen heen]
-Een aanroep via de brug wordt afgehandeld tegen **hetzelfde** toolregister als een aanroep die het model zelf doet, dus het `ActionClass`-beleid, goedkeuringsprompts en elke wrapper gelden identiek. Een brug die langs het register heen reikte, zou een gat zijn met precies de vorm van "schrijf een Python-one-liner".
-:::
-
-Een aanroep via de brug **pauzeert de time-out van de cel** zolang hij loopt. Het budget meet inactiviteit, niet kloktijd — een cel die uitwaaiert naar subagenten en vier minuten wacht, is niet vastgelopen, en hem midden in die uitwaaiering doden zou de volledige toestand van de kernel verliezen.
+Een cel kan de tools van de agent niet aanroepen. Om in code over tools te lussen, schrijft de agent in plaats daarvan een [`repl`](/nl-NL/handleiding/concepten/codemodus/)-script. Een script kan ook `eval` niet aanroepen: de agent roept die direct aan.
 
 ## Opnieuw beginnen
 

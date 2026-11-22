@@ -1,0 +1,56 @@
+{
+  "id": "campaign-goal-verification",
+  "seed": 2001,
+  "arms": [
+    {
+      "id": "claim-only",
+      "axis": "baseline",
+      "goalVerification": "claim_only",
+      "label": "The claim is the completion (the product before goal verification)"
+    },
+    {
+      "id": "checks-review",
+      "axis": "goal_verification",
+      "goalVerification": "checks_review",
+      "label": "The product's GoalVerifier decides: the contract's checks, then the read-only review; a failed round goes back to the agent"
+    }
+  ],
+  "strata": [
+    {
+      "stratum": "cold",
+      "repetitions": 1
+    },
+    {
+      "stratum": "warm",
+      "repetitions": 2
+    }
+  ],
+  "randomizedOrder": true,
+  "hypothesis": "superiority",
+  "primaryOutcome": "false_completion",
+  "minTasks": 10,
+  "alpha": 0.05,
+  "maxCostRatio": 3.0,
+  "caveats": [
+    {
+      "code": "same_goal_text_in_both_arms",
+      "message": "Both arms see the goal block and complete_goal result this build writes, which say the claim is verified. The baseline therefore measures an agent told it will be checked whose claim is not, not the older goal text."
+    },
+    {
+      "code": "no_supervisor",
+      "message": "The goal supervisor does not run: no wakes are queued, and a segment that ends without a claim ends the attempt (the product would start another segment). Verification follows the product's GoalVerifier, GoalCheckRunner and GoalTurnTexts."
+    },
+    {
+      "code": "checks_in_the_evaluation_boundary",
+      "message": "The contract's checks run in the task workspace the way the evaluation's own bash tool runs commands (on the host, in a throwaway copy), as the product runs them where the owner turned the sandbox off, not in a sandbox over a worktree."
+    },
+    {
+      "code": "review_on_the_evaluation_surface",
+      "message": "The review is a fresh run on the same backend with the evaluation's system prompt, the read tools a read-only run is admitted and submit_output; the product's review runs in review mode with its own prompt."
+    }
+  ],
+  "taskTags": [
+    "goal_verification"
+  ],
+  "notes": "Plan section 20, campaign 1 (work package 4): false completions with and without goal verification. Each task prompt is a guided goal body whose ## Checks section is the visible check; the hidden check is stricter. A false completion is a completion the arm accepted whose hidden check fails; the report prints the rate per arm beside the gate's verdict, with each goal attempt's claims, acceptance, verification result and failed rounds. The question is superiority on false completions per attempt (baseline rate minus treatment rate): it measures a feature that ships and changes no default. The cost ceiling 3.0 allows for the review runs. The margin and the cost ceiling are the owner's to change. minTasks is 10: with the 3 to 5 tasks its tag selects today the verdict reads \"No decision\" with the reason \"N tasks, 10 needed\", which is the honest state until the task set grows."
+}

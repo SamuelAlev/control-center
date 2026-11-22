@@ -121,6 +121,9 @@ extension _UnifiedDiffSliverPainting on RenderUnifiedDiffSliver {
       case DiffSlotKind.composer:
         final int f = slot.fileIndex;
         final int d = slot.anchorDisplayLine;
+        if (d == kFileLevelAnchor) {
+          return _fileLevelSlotOffset(index);
+        }
         double y =
             _document.offsetOfLine(f, d) +
             _document.visualRowsOf(f, d) * _document.lineHeight;
@@ -136,6 +139,27 @@ extension _UnifiedDiffSliverPainting on RenderUnifiedDiffSliver {
         }
         return y;
     }
+  }
+
+  /// A file-level block stacks under the header (or the file's preview) and
+  /// under the file-level blocks emitted before it, in the host's order.
+  double _fileLevelSlotOffset(int index) {
+    final f = slots[index].fileIndex;
+    var y = _document.offsetOfFile(f) + _document.headerHeight;
+    if (_document.isPreviewing(f)) {
+      y += _document.previewHeightOf(f);
+    }
+    for (var j = index - 1; j >= 0; j--) {
+      final prev = slots[j];
+      if (prev.fileIndex != f ||
+          prev.anchorDisplayLine != kFileLevelAnchor ||
+          (prev.kind != DiffSlotKind.comment &&
+              prev.kind != DiffSlotKind.composer)) {
+        break;
+      }
+      y += prev.height;
+    }
+    return y;
   }
 
   BoxConstraints constraintsFor(int index, double crossAxisExtent) {

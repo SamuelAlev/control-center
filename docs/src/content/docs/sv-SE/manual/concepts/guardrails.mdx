@@ -2,7 +2,7 @@
 title: Räcken – en policy för varje muterande åtgärd
 description: Varför Control Center leder varje sidoeffekt från en agent genom en enda motor för tillåt/fråga/neka, hur ActionClass-taxonomin medvetet hålls liten och vad autonomireglaget verkligen ändrar.
 slug: sv-SE/handbok/koncept/racken
-sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
+sourceHash: bb98b2ca26ae104ab7701d4d381cd5c41d25d32f
 ---
 
 Agenter i Control Center kan ta bort filer, pusha grenar, publicera pull
@@ -31,6 +31,17 @@ sandlådan för alla med `--sandbox off`. För varje körning som startar utan
 sandlåda är räckena det yttersta verkställighetslagret i stället för en policy
 ovanpå ett golv, vilket är värt att veta när du bestämmer hur tillåtande du vill
 vara.
+
+### Anrop som ett skript gör
+
+[Kodläge](/sv-SE/handbok/koncept/kodlage/)-skript anropar verktyg i kod, många åt gången, men varje anrop är ett separat verktygsanrop till räckesmotorn. Det passerar samma harness-grind eller MCP-dispatcherns grind som ett direkt anrop, med samma regler, samma godkännandefråga och samma granskningspost. Inget det gör godkänns bara för att `repl`-anropet som startade det var godkänt.
+
+Två extra regler gäller för anrop från ett skript, eftersom ett enda skript kan göra hundratals anrop och fånga varje avslag:
+
+- högst 10 av dess anrop når en person för godkännande; senare anrop som skulle kräva en person nekas utan ett kort;
+- när en person nekar ett av dess anrop, nekas resten av dess anrop som kräver godkännande utan att fråga.
+
+Ett kort som tas upp av ett skript säger det och låter dig öppna skriptet. Om skriptet slutar medan kortet är öppet dras kortet tillbaka, och ett svar som kommer efter det registreras som ett avslag och godkänner ingenting.
 
 ## ActionClass: en medvetet sluten taxonomi
 
@@ -256,5 +267,6 @@ kommer att få.
 ## Relaterade koncept
 
 - [Sandlåda och säkerhet](/sv-SE/handbok/koncept/sandlada-och-sakerhet/): vad som faktiskt begränsar en agentkörning och hur långt OS-golvet under den här motorn når
+- [Kodläge](/sv-SE/handbok/koncept/kodlage/): skript vars varje verktygsanrop passerar den här räckesmotorn
 - [Multiplayer – identitet, medlemskap och närvaro](/sv-SE/handbok/koncept/multiplayer/): ytor, principaler och var autonomireglaget finns
 - [Konfigurera räcken](/sv-SE/handbok/how-to-guider/konfigurera-racken/): att skriva och testa regler i praktiken

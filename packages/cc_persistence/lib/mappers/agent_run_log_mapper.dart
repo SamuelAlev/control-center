@@ -5,6 +5,8 @@ import 'package:cc_domain/core/domain/value_objects/agent_run_role.dart';
 import 'package:cc_domain/core/domain/value_objects/output_contract_mode.dart';
 import 'package:cc_domain/core/domain/value_objects/retry_meta.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
+import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
 import 'package:cc_domain/features/observability/domain/run_stage.dart';
 import 'package:cc_domain/features/observability/domain/run_verification.dart';
 import 'package:cc_persistence/database/daos/agent_dao.dart';
@@ -90,7 +92,31 @@ class AgentRunLogMapper {
       ),
       parentRunId: row.parentRunId,
       spawnToolCallId: row.spawnToolCallId,
+      endReason: RunEndReasonWire.tryParse(row.endReason),
+      wakeIds: decodeWakeIds(row.wakeIds),
+      // An empty value reads as no requester rather than failing the row.
+      requestedByUserId: (row.requestedByUserId?.isEmpty ?? true)
+          ? null
+          : row.requestedByUserId,
+      wakeReason: WakeReasonWire.tryParse(row.wakeReason),
+      startedByRunId: (row.startedByRunId?.isEmpty ?? true)
+          ? null
+          : row.startedByRunId,
     );
+  }
+
+  /// The wake ids stored in `agent_run_logs.wake_ids`. A malformed value, or
+  /// an element that is not a non-empty string, never fails the row read: it
+  /// is dropped, and a value that is not an array reads as no wakes.
+  static List<String> decodeWakeIds(String raw) {
+    final decoded = _decodeJsonOrNull(raw);
+    if (decoded is! List) {
+      return const [];
+    }
+    return [
+      for (final id in decoded)
+        if (id is String && id.isNotEmpty) id,
+    ];
   }
 
   /// Converts a run-log row read with its payload into a full [AgentRunLog].

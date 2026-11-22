@@ -2,7 +2,7 @@
 title: Perintah slash
 description: Semua perintah yang dapat Anda ketik di composer, apa fungsinya, dan di mana perintah itu berjalan.
 slug: id-ID/panduan-pengguna/referensi/perintah-slash
-sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
+sourceHash: 38430a6315b112c92a7806d1c28dff8a0285e363
 ---
 
 Perintah yang diketik di composer sebuah space. Perintah-perintah ini terbagi menjadi tiga kelompok berdasarkan tempat pengaruhnya, dan perbedaannya penting: perintah **lokal** tidak pernah terkirim sebagai pesan, sehingga ia tidak muncul di transkrip dan tidak menjangkau agen.
@@ -21,23 +21,35 @@ Perintah yang diketik di composer sebuah space. Perintah-perintah ini terbagi me
 
 **Lokal → pengiriman.** Mengaktifkan mode rencana pada percakapan: worktree yang sepenuhnya hanya baca dan permukaan alat yang dibatasi pada `read`. Hasil kerja agen adalah rencana, bukan pengeditan. `/plan` saja hanya membalik mode dan tidak pernah terkirim sebagai pesan; dengan sebuah prompt, sisa baris itulah yang memulai run.
 
-### `/goal <objective>`
+### `/goal [flags] <objective>`
 
-**Pengiriman.** Memulai tujuan otonom yang dikirim ulang oleh supervisor tujuan lintas segmen dan restart.
+**Pengiriman.** Memulai tujuan yang tahan lama: agen mengerjakan sasaran dalam segmen, melintasi restart, sampai server memverifikasi bahwa sasaran itu selesai, seseorang menutupnya, atau ia mencapai batas. Lihat [Kejar tujuan](/id-ID/panduan-pengguna/panduan-praktis/kejar-tujuan/).
 
-Mengetik `/goal` beserta teksnya lebih dulu membuka **wawancara tujuan** — proses singkat yang menolak menerima draf sampai kelima hal berikut lengkap: kriteria keberhasilan yang dapat diputuskan evaluator tanpa penilaian subjektif, perintah verifikasi yang persis, batas percobaan, batas cakupan, dan kondisi berhenti. Setiap langkah menawarkan *Lewati dan jalankan apa adanya*: wawancara ini adalah default, bukan gerbang.
+Mengetik `/goal` beserta teksnya lebih dulu membuka **wawancara tujuan** — proses singkat yang meminta kriteria keberhasilan yang dapat diputuskan evaluator tanpa penilaian subjektif, pemeriksaan yang harus lolos, batas cakupan, dan kondisi berhenti, lalu menawarkan pemeriksa terpisah, segmen baru, dan opsi agar agen menjawab pertanyaannya sendiri. Setiap langkah menawarkan *Lewati dan jalankan apa adanya*: wawancara ini adalah default, bukan gerbang.
 
-`/goal pause`, `/goal resume`, dan `/goal drop` bukan perintah slash. Jeda, lanjutkan, dan hentikan ada di daftar tujuan percakapan di sidebar. Flag awal pada tujuan itu sendiri adalah `--budget <dollars>`, `--max <N>` (anggaran run), dan `--days <N>` (tenggat). Tujuan yang mencapai batas biayanya hanya dapat dilanjutkan dengan menaikkan batas itu, dari kontrol sidebar yang sama.
+Flag boleh berada di mana saja dalam pesan: `--budget <dollars>` (anggaran tujuan, 50 secara default), `--max <N>` (batas segmen), `--days <N>` (tenggat), `--check "<command>"` (hingga 5), `--checker <agent>`, `--fresh` dan `--unattended wait|assume`. Flag yang tidak dikenal atau yang diulang ditolak dan draf tetap ada di penyusun pesan. Angka di awal sasaran adalah bagian dari sasaran. Bagian `## Success criteria`, `## Boundaries`, `## Stop conditions` dan `## Checks` menjadi kontrak tujuan.
+
+`/goal pause`, `/goal resume`, dan `/goal drop` bukan perintah slash. Jeda, lanjutkan, dan hentikan ada di kartu tujuan di panel **Umum** percakapan dan di halaman tujuan (sidebar → **Tujuan**). Melanjutkan, dan menaikkan anggaran, menjadi milik orang yang memulai tujuan.
 
 :::note[Mengapa ini menyela sama sekali]
 Tujuan otonom adalah satu-satunya tempat di mana arahan yang kabur benar-benar mahal. Run bekerja berjam-jam atas tujuan yang "selesai"-nya tidak pernah didefinisikan siapa pun, lalu melaporkan keberhasilan dengan ukurannya sendiri. Lima pertanyaan lebih murah daripada satu run sepanjang malam yang berakhir kapan pun ia merasa sudah berakhir.
 :::
 
-### `/loop [budget] [task]`
+### `/loop [every <interval>] [flags] <prompt>`
 
-**Pengiriman.** Bekerja secara iteratif sampai selesai. Menerima batas: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**Pengiriman.** Membuat jadwal yang membangunkan agen dengan prompt sekarang dan kemudian lagi: setiap interval (minimal 60 detik), atau, tanpa `every`, setelah jeda yang dipilih agen setiap kali (1 hingga 60 menit). `--max <N>` membatasi run, `--days <N>` mengakhirinya (30 hari secara default), `--budget <dollars>` membatasi pengeluarannya. Lihat [Jadwal dan pengingat](/id-ID/panduan-pengguna/panduan-praktis/jadwal-dan-pengingat/).
 
-Token yang *terlihat* seperti batas (dimulai dengan angka atau tanda) tetapi gagal diuraikan adalah kesalahan keras. Prosa hanyalah prosa, jadi `/loop keep going until the tests pass` adalah loop tanpa batas dengan prompt inline, bukan salah urai.
+`/loop` tidak lagi memulai tujuan, dan angka di awal bukan jumlah run.
+
+### `/schedule <when> [flags] <prompt>`
+
+**Pengiriman.** Membuat jadwal yang membangunkan agen nanti: `in 2h`, `at 09:00` (waktu berikutnya di zona waktu ruang kerja), `at <ISO time>` atau `cron "0 9 * * 1-5"` (tanda kutip boleh dihilangkan). Menerima `--max`, `--days` dan `--budget` yang sama seperti `/loop`. Ia menunggu waktu pertamanya.
+
+### `/refine`
+
+**Pengiriman.** Meminta tinjauan singkat hanya-baca atas pekerjaan percakapan, yang dapat mengusulkan perbaikan untuk memori, kebijakan, catatan agen, atau skill. Usulan menunggu di halaman **Perbaikan** sampai seseorang menerimanya. Paling banyak satu tinjauan per percakapan setiap 20 menit.
+
+`/goal`, `/loop`, `/schedule` dan `/refine` hanya bertindak pada pesan yang Anda ketik sendiri; dari agen, pipeline, atau pengingat, teks yang sama adalah pesan biasa. Perintah `/goal`, `/loop` atau `/schedule` yang tidak dapat dibaca tetap menyimpan draf Anda, dan sebuah baris di atas teks di composer menjelaskan apa yang salah.
 
 ### `/vibe [task]`
 

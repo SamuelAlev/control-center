@@ -30,6 +30,7 @@ class PipelineRunDto {
     this.totalCostMicros = 0,
     this.totalTokens = 0,
     this.dryRun = false,
+    this.canRaiseCap,
   }) : state = state ?? <String, dynamic>{};
 
   factory PipelineRunDto.fromJson(Map<String, dynamic> json) => PipelineRunDto(
@@ -61,6 +62,7 @@ class PipelineRunDto {
     totalCostMicros: (json['total_cost_micros'] as num?)?.toInt() ?? 0,
     totalTokens: (json['total_tokens'] as num?)?.toInt() ?? 0,
     dryRun: json['dry_run'] as bool? ?? false,
+    canRaiseCap: json['can_raise_cap'] as bool?,
   );
 
   final String id;
@@ -90,6 +92,11 @@ class PipelineRunDto {
   final int totalTokens;
   final bool dryRun;
 
+  /// Whether the viewer may raise the cap a held run waits on
+  /// (`can_raise_cap`): computed per caller by the server, present only on a
+  /// run held at its orchestration's budget.
+  final bool? canRaiseCap;
+
   Map<String, dynamic> toJson() => {
     'id': id,
     'template_id': templateId,
@@ -115,6 +122,7 @@ class PipelineRunDto {
     'total_cost_micros': totalCostMicros,
     'total_tokens': totalTokens,
     'dry_run': dryRun,
+    'can_raise_cap': ?canRaiseCap,
   };
 }
 

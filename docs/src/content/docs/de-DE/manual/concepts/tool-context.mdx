@@ -2,29 +2,45 @@
 title: Tool-Kontext und Prompt-Caching
 description: Warum ein Agent eine kleine Menge Tools sieht statt aller, wie er an den Rest kommt und welche Regeln den Prompt-Cache des Anbieters über einen Lauf hinweg warm halten.
 slug: de-DE/handbuch/konzepte/tool-kontext
-sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
+sourceHash: 74ad7fcb903772d007ba9bd7ec85153fcf668335
 ---
 
 Zweierlei stimmt für jede Anfrage, die der eingebaute Harness stellt: Die Tool-Definitionen sind darin der größte feste Kostenblock, und fast keine davon wird benutzt. Diese Seite erklärt, was Control Center dagegen tut, und warum die Antwort nicht einfach „schicke weniger Tools“ lautet.
 
 ## Das Problem ist die Aufmerksamkeit, nicht die Bytes
 
-Control Center registriert etwa 126 Tools. Vollständig geschickt kosten ihre Definitionen grob **23.000 Token bei jeder Anfrage** — Kosten, an die keine Verdichtung herankommt, weil die Tool-Definitionen in einem anderen Teil der Anfrage reisen als die Unterhaltung.
+Control Center hat etwa 160 eigene Tools. Vollständig geschickt würden ihre Definitionen bei **jeder Anfrage** mitlaufen — eine Kostenposition, an die keine Verdichtung herankommt, weil Tool-Definitionen in einem anderen Teil der Anfrage reisen als die Unterhaltung.
 
 Die Tokenrechnung ist der naheliegende Einwand. Mit Prompt-Caching ist sie der kleinere. Die eigentlichen Kosten sind die **Auswahlgenauigkeit**. Veröffentlichte Auswertungen zum Tool-Aufruf kommen überein: Modelle wählen das richtige Tool zuverlässig, solange irgendwo bei etwa 30–50 Tools im Kontext stehen, und werden darüber hinaus stetig schlechter. Als Ursache gilt die **semantische Überlappung**, nicht die Tokenzahl. Sobald ein Katalog mehrere Tools enthält, deren Beschreibungen sich ähnlich lesen, wählt das Modell zwischen Doppelgängern, statt sich an eine Fähigkeit zu erinnern.
 
-Bei 126 Tools liegt ein Agent bei jedem einzelnen Turn weit jenseits dieses Bandes — auch in den vielen Turns, in denen er nur eine Datei lesen musste.
+Bei etwa 160 Tools liegt ein Agent bei jedem einzelnen Turn weit jenseits dieses Bandes — auch in den vielen Turns, in denen er nur eine Datei lesen musste.
 
-## Die zweistufige Oberfläche
+## Eine kleine direkte Menge
 
 Ein Lauf bekommt deshalb zwei Dinge zu sehen:
 
-- eine **residente** Menge — grob zwei Dutzend Tools, bei jeder Anfrage mit vollem Schema geschickt;
+- eine **direkte** Menge von etwa fünfzehn Tools, bei jeder Anfrage mit vollem Schema geschickt;
 - einen **Namensindex** von allem anderen, gruppiert unter Überschriften wie „Tickets and projects“ oder „Memory and knowledge“, der für den ganzen Katalog ein paar hundert Token kostet.
 
-Am aktuellen Katalog gemessen schrumpft der Tool-Block damit von **~23,1k Token auf ~5,0k, etwa 78 % kleiner**, und die immer sichtbare Menge liegt in dem Band, in dem die Auswahl zuverlässig ist.
+Gemessen an der Registrierung, die die Tests aufbauen, kommen die Standard-Chat-Tools des eingebauten Agenten auf 14 Tool-Definitionen und etwa 16,5 KB mit `repl`, davon etwa 4 KB für `repl` (seine Definition darf 4.096 Byte nicht überschreiten), und auf 14 Definitionen und etwa 13 KB auf einem Server, der keine Skripte ausführen kann. Das ist eine Messung einer Oberfläche, nicht jeder Installation. Jedes andere Tool wird aus einem Skript erreicht oder beim ersten Gebrauch geladen.
 
-Die residente Menge sind die Tools, die ein Lauf in den *meisten* Läufen braucht: das Datei- und Shell-Vokabular (`read`, `write`, `edit`, `search`, `bash`, …), die Discovery-Tools, die Aufgaben-Checkliste, die Gedächtnissuche und das Verb, das der aktuelle [Modus](/de-DE/handbuch/konzepte/modi/) aufrufen muss, um sein Ergebnis zu liefern. Das eigene Ausgabe-Verb eines Modus ist immer resident — ein Lauf darf nie erst nach dem einen Aufruf suchen müssen, der sein Lieferergebnis erzeugt.
+Die direkte Menge sind die Tools, die die meisten Läufe in ihren ersten Turns verwenden, und diejenigen, die ein Lauf nie erst suchen muss: `read`, `write`, `edit`, `search`, `find`, `bash` und `read_output`; `ask_user` und `task`; `todo_write`, `search_memory` und `send_message`; und das Verb, das der aktuelle [Modus](/de-DE/handbuch/konzepte/modi/) aufrufen muss, um seine Ausgabe zu liefern. Das eigene Ausgabe-Verb eines Modus ist immer direkt: Ein Lauf darf nie erst nach dem einen Aufruf suchen müssen, der sein Lieferergebnis erzeugt. Ein Tool verdient sich einen Platz dadurch, dass es in den meisten Läufen verwendet wird, nicht dadurch, dass es wichtig ist, wenn es verwendet wird: Jeder Name in der Menge ist bei jedem Turn jedes Laufs eine Definition.
+
+### Skripte erreichen den Rest
+
+Wenn der Server Skripte ausführen kann, hat jeder Lauf außerdem [`repl`](/de-DE/handbuch/konzepte/code-modus/), an erster Stelle in der Liste. Die Regel für den Rest des Katalogs lautet dann:
+
+- ein Tool, das ein Skript aufrufen darf, ist **nur aus einem Skript** erreichbar: Es steht im Namensindex, und ein `repl`-Skript ruft es als `tools.<name>(args)` auf, nachdem es mit `searchTools()` oder `describeTool()` nachgeschlagen wurde, bis der Server die Skripte des Laufs nicht mehr ausführen kann und es stattdessen beim ersten Gebrauch geladen wird ([Wenn Skripte nicht laufen können](/de-DE/handbuch/konzepte/code-modus/#wenn-skripte-nicht-laufen-können));
+- ein Tool, das ein Skript nicht aufrufen darf (`eval`, `task`, Genehmigungen, Delegation und einige andere), wird **zurückgestellt**: Es wird bei der ersten Verwendung geladen, wie unten beschrieben;
+- `search_tools` wird hinzugefügt, sobald etwas zurückgestellt ist.
+
+Ein Lauf ohne `repl` erhält dieselbe direkte Menge, und alles Übrige wird zurückgestellt.
+
+Die direkte Menge ist mit oder ohne `repl` dieselbe, mit Absicht. Der Agent lernt eine Oberfläche, der Anfang jeder Anfrage enthält dieselben Tools in derselben Reihenfolge, und das Hinzufügen von `repl` ändert nichts, worauf sich der Agent bereits verlassen hat.
+
+Was es spart: Das Schema eines nur aus Skripten aufrufbaren Tools wird nie an den Anbieter gesendet, daher kosten die hundert oder so Tools außerhalb der direkten Menge nur ihre Namen. Ein Skript, das zehn davon braucht, bezahlt für keines ihrer Schemas, und seine Zwischenergebnisse gelangen nie in den Kontext.
+
+Was es kostet: Ein Tool außerhalb der direkten Menge braucht ein Skript, um aufgerufen zu werden, und das Skript muss zuerst die Argumente des Tools nachschlagen. Für einen schnellen Einzelaufruf ist das ein zusätzlicher Schritt, den ein direkter Aufruf nicht bräuchte. Deshalb bleiben die Tools, die die meisten Läufe in ihren ersten Turns aufrufen, direkt.
 
 ### Zurückgestellt heißt nicht unerreichbar
 
@@ -32,19 +48,21 @@ Das ist der Teil, der den Entwurf sicher macht und nicht nur billig. **Ein zurü
 
 Der Agent sieht den Namen in seinem Prompt. Ruft er diesen Namen direkt auf, lädt der Harness das Schema und führt das Tool im selben Schritt aus — kein Fehler, kein Roundtrip. Das Modell muss nicht wissen, dass das Tool je „entladen“ war.
 
-Kennt der Agent die Aufgabe, aber nicht den Namen, nimmt `search_tools` eine Beschreibung in Alltagssprache („ein Ticket jemandem zuweisen“), reiht die ganze Oberfläche des Laufs und liefert die Treffer *mit bereits geladenen Schemas*, sodass der nächste Turn eines davon aufrufen kann. Findet eine Suche nichts, sagt sie das klar und schlägt eine andere Formulierung oder eine breitere Suche vor — absichtlich, denn ein Agent, der eine leere Suche als „diese Fähigkeit gibt es nicht“ liest, erfindet einen Ersatz, statt noch einmal nachzusehen.
+Kennt der Agent die Aufgabe, aber nicht den Namen, nimmt `search_tools` eine Beschreibung in Alltagssprache („ein Ticket jemandem zuweisen“), reiht die ganze Oberfläche des Laufs und liefert die Treffer *mit bereits geladenen Schemas*, sodass der nächste Turn eines davon aufrufen kann. Ein Treffer, der nur aus einem Skript aufrufbar ist, wird mit dem Hinweis zurückgegeben, wie man ihn aus einem Skript aufruft, außer die Skripte des Laufs können nicht mehr laufen: Dann wird er wie jeder andere Treffer geladen. Findet eine Suche nichts, sagt sie das klar und schlägt eine andere Formulierung oder eine breitere Suche vor — absichtlich, denn ein Agent, der eine leere Suche als „diese Fähigkeit gibt es nicht“ liest, erfindet einen Ersatz, statt noch einmal nachzusehen.
 
 `search_tools` gibt es nur im eingebauten Harness. Externe MCP-Clients haben stattdessen `search_tool_bm25`, das denselben Index reiht, Treffer aber nur beschreibt — diese Clients haben jedes Schema schon über `tools/list` bekommen, geladen werden muss also nichts.
 
-### Was die Zurückstellung nie tut
+### Was die Oberfläche nie tut
 
-Die Zurückstellung greift **nach** dem Tool-Filter des Modus, nie an seiner Stelle. Sie versteckt ein Schema. Ein Tool, das der Modus verweigert hat, kann sie nicht hervorholen. Ein aktiviertes Tool durchläuft die Freigabeaufforderung und die [Aktions-Schutzregeln](/de-DE/handbuch/konzepte/schutzregeln/) genauso wie ein residentes, und ein Tool kann keinen Namen laden, der von Anfang an nicht auf der Oberfläche des Laufs stand.
+Zurückstellung und Skripte werden **nach** dem Tool-Filter des Modus angewendet, nie an seiner Stelle. Sie verbergen ein Schema; sie können kein Tool aufdecken, das der Modus verweigert hat. Ein geladenes Tool und ein Aufruf aus einem Skript durchlaufen die Freigabeaufforderung und die [Aktions-Schutzregeln](/de-DE/handbuch/konzepte/schutzregeln/) genauso wie ein direkter Aufruf, und keines von beiden kann einen Namen erreichen, der von Anfang an nicht auf der Oberfläche des Laufs stand.
 
-Die MCP-Oberfläche, die externe Clients sehen, bleibt **unangetastet**. `tools/list` liefert weiter den vollständigen Katalog. Ein früherer Versuch, ihn zu stutzen, hat Agenten komplett außer Gefecht gesetzt: MCP-Clients prüfen Tool-Namen gegen ihre eigene gecachte Liste und lehnen alles ab, was nicht darauf steht, ohne den Server je zu fragen. Ein Tool „versteckt, aber aufrufbar“ war damit schlicht unerreichbar. Die Zurückstellung sitzt im Harness, und dort kann er ein Tool mitten im Lauf tatsächlich laden.
+Die MCP-Oberfläche, die externe Clients sehen, ist **nicht** zurückgestellt. `tools/list` liefert den vollständigen Katalog, weil MCP-Clients Tool-Namen gegen ihre eigene zwischengespeicherte Liste prüfen und alles ablehnen, was dort nicht steht, ohne den Server je zu fragen; ein Tool „versteckt, aber aufrufbar“ wäre also schlicht unerreichbar. Die Zurückstellung sitzt im Harness, wo das Laden eines Tools mitten im Lauf tatsächlich möglich ist.
 
-### Ausschalten
+Ein Agentenlauf, der über den MCP-Endpunkt auf Control Center zugreift, während der Server Skripte ausführen kann, ist die einzige Ausnahme. Seine `tools/list` enthält `repl`, die direkten Tools und jedes Tool, das ein Skript nicht aufrufen darf, und den Rest ruft er aus Skripten auf. Ein direkter Aufruf eines dieser Tools wird mit dem Hinweis beantwortet, wie man es aus einem Skript aufruft.
 
-`--tool-deferral=off` (oder `CC_SERVER_TOOL_DEFERRAL=off`) macht jedes zugelassene Tool wieder resident und erzeugt genau die Anfragen, die der Server stellte, bevor es die Zurückstellung gab. Siehe die Referenz zur [`cc_server` CLI](/de-DE/handbuch/referenz/cc-server-cli/).
+### Zurückstellung ausschalten
+
+`--tool-deferral=off` (oder `CC_SERVER_TOOL_DEFERRAL=off`) schaltet die Zurückstellung aus: Ein Lauf ohne `repl` erhält jedes zugelassene Tool vollständig, und ein Lauf mit `repl` erhält die Tools, die ein Skript nicht aufrufen darf, vollständig, während der Rest nur aus einem Skript aufrufbar bleibt. Siehe die Referenz zur [`cc_server` CLI](/de-DE/handbuch/referenz/cc-server-cli/).
 
 ## Prompt-Caching
 
@@ -66,7 +84,7 @@ Ein Anbieter lässt nur eine begrenzte Zahl von Cache-Markern zu, und Control Ce
 
 | Marker                      | Deckt                           | Lebensdauer |
 | --------------------------- | ------------------------------- | ----------- |
-| Letztes **residentes** Tool | Der Tool-Block                  | 1 Stunde    |
+| Letztes **direktes** Tool   | Der Tool-Block                  | 1 Stunde    |
 | Letzter Systemblock         | Tools + System-Prompt           | 1 Stunde    |
 | Ende des vorigen Turns      | Verlauf bis zur letzten Anfrage | 5 Min.      |
 | Ende des aktuellen Turns    | Der vollständige Verlauf        | 5 Min.      |
@@ -79,12 +97,12 @@ Das Präfix aus Tools und System bekommt die lange Lebensdauer, weil es über de
 
 Subagenten desselben Typs erzeugen bytegleiche Prompt-Präfixe. Sie sollen deshalb einen Cache-Eintrag lesen, statt dass jeder seinen eigenen schreibt. Lesbar wird ein Eintrag erst, wenn die Anfrage, die ihn geschrieben hat, zu antworten beginnt. Startet ein Fan-out auf einmal, zahlt jedes Kind den Aufpreis für ein Präfix, das sie alle teilen.
 
-Der Harness lässt das erste Kind einer Form starten und gibt die Geschwister frei, sobald es zu streamen beginnt. Die Wartezeit ist begrenzt: Ein langsames erstes Kind kostet einen Cache-Treffer, den Fan-out selbst nie. Aus demselben Grund bekommt jeder Subagent dieselbe residente Tool-Menge, unabhängig vom Profil. Sie je Profil zu variieren würde das gemeinsame Präfix ohne Gewinn zerlegen, denn das Profil hat schon entschieden, was das Kind aufrufen darf.
+Der Harness lässt das erste Kind einer Form starten und gibt die Geschwister frei, sobald es zu streamen beginnt. Die Wartezeit ist begrenzt: Ein langsames erstes Kind kostet einen Cache-Treffer, den Fan-out selbst nie. Aus demselben Grund bekommt jeder Subagent dieselbe direkte Tool-Menge, unabhängig vom Profil. Sie je Profil zu variieren würde das gemeinsame Präfix ohne Gewinn zerlegen, denn das Profil hat schon entschieden, was das Kind aufrufen darf.
 
 ## Zusehen, wie es arbeitet
 
 Beide Hälften lassen sich beobachten:
 
-- **Kontext** in einer Unterhaltung zeigt die residenten Tools, den zurückgestellten Index und, was jedes zurückgehaltene Schema *kosten würde*, aufgebaut aus demselben Codepfad, den ein echter Lauf benutzt.
+- **Kontext** in einer Unterhaltung zeigt die direkten Tools, den zurückgestellten Index und, was jedes zurückgehaltene Schema *kosten würde*, aufgebaut aus demselben Codepfad, den ein echter Lauf benutzt.
 - Jeder Lauf zeichnet auf, welche zurückgestellten Tools er geladen hat und was das ausgelöst hat. Eine Suche ohne Treffer bleibt so als Fehltreffer beim Nachschlagen sichtbar, statt in einem Agenten zu verschwinden, der still etwas Benachbartes tut.
 - Observability meldet die **Cache-Rate** als Cache-Lesezugriffe geteilt durch alle verarbeiteten Prompt-Token, Schreibzugriffe eingeschlossen. Ein Lauf, der sein Präfix immer wieder neu aufbaut, liegt niedrig, und nicht wie einer, der nie einen Cache gebraucht hat.

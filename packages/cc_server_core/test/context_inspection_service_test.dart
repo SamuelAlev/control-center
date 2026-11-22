@@ -9,6 +9,8 @@ import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_grant_level.dart';
+import 'package:cc_domain/features/code_mode/domain/value_objects/code_mode.dart';
+import 'package:cc_domain/features/code_mode/domain/value_objects/code_mode_limits.dart';
 import 'package:cc_domain/features/dispatch/domain/context/context_inspection.dart';
 import 'package:cc_domain/features/dispatch/domain/usecases/build_conversation_context_use_case.dart';
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
@@ -62,6 +64,9 @@ void main() {
     BuildConversationContextUseCase? history,
     int? Function(String qualifiedModel)? modelWindowOf,
     Future<int?> Function(String? modelId)? claudeCodeWindowOf,
+    CodeRunnerAvailability scripts = const CodeRunnerAvailability.unavailable(
+      'not under test',
+    ),
   }) => ContextInspectionService(
     agentRepository: agents,
     conversationRepository: conversations,
@@ -70,6 +75,8 @@ void main() {
     filesystem: filesystem,
     mcpRegistry: mcpRegistry,
     fileSearch: _FakeFileSearch(),
+    codeRunnerAvailability: () => scripts,
+    codeModeLimits: (_) async => CodeModeLimits.defaults,
     conversationContextUseCase: history,
     modelWindowOf: modelWindowOf,
     claudeCodeWindowOf: claudeCodeWindowOf,
@@ -196,6 +203,161 @@ void main() {
       );
     },
   );
+
+  group('code mode', () {
+    const unavailable = CodeRunnerAvailability.unavailable(
+      'the script runner is unavailable on this server',
+    );
+
+    Future<ContextInspection> inspectUnder(CodeRunnerAvailability scripts) =>
+        buildService(scripts: scripts).inspect(
+          workspaceId: workspaceId,
+          spaceId: spaceId,
+          conversationId: conversationId,
+          agentId: agentId,
+          includeContent: true,
+        );
+
+    List<String> resident(ContextInspection inspection) => [
+      for (final kind in [
+        ContextSegmentKind.toolDefinitions,
+        ContextSegmentKind.mcpTools,
+      ])
+        for (final part
+            in inspection.segmentFor(kind)?.parts ?? const <ContextPart>[])
+          part.title,
+    ];
+
+    ContextPart preamblePart(ContextInspection inspection) => inspection
+        .segmentFor(ContextSegmentKind.systemPrompt)!
+        .parts
+        .singleWhere((p) => p.id == 'system:capability-preamble');
+
+    String preamble(ContextInspection inspection) =>
+        preamblePart(inspection).content!;
+
+    test('a server without scripts sends no repl, defers the rest, and the '
+        'preamble says why', () async {
+      final none = await inspectUnder(unavailable);
+      expect(resident(none), isNot(contains('repl')));
+      expect(
+        none
+            .segmentFor(ContextSegmentKind.deferredTools)!
+            .parts
+            .map((p) => p.title),
+        contains('recall_facts'),
+      );
+      expect(
+        preamblePart(none).subtitle,
+        'mode: chat · scripts: no (the script runner is unavailable on this '
+        'server)',
+      );
+    });
+
+    test('with scripts, repl comes first, the direct set beside it, and a '
+        'script reaches the rest', () async {
+      final none = await inspectUnder(unavailable);
+      final withRepl = await inspectUnder(
+        const CodeRunnerAvailability.available(),
+      );
+      final tools = withRepl.segmentFor(ContextSegmentKind.toolDefinitions)!;
+      expect(tools.parts.first.title, 'repl');
+      expect(resident(withRepl), contains('task'));
+      expect(resident(withRepl), isNot(contains('recall_facts')));
+      expect(resident(withRepl), isNot(contains('list_my_tools')));
+      // The same direct set as a run without scripts.
+      expect(
+        resident(withRepl).where((n) => n != 'repl' && n != 'search_tools'),
+        resident(
+          none,
+        ).where((n) => n != 'search_tools' && n != 'list_my_tools'),
+      );
+      final repl = tools.parts.first;
+      expect(repl.subtitle, contains('script-only tools'));
+      // The description counts the script-only tools; the prompt's index
+      // names them.
+      expect(repl.content, contains('- control-center ('));
+      expect(repl.content, isNot(contains('recall_facts')));
+      expect(preamble(withRepl), contains('`recall_facts`'));
+      expect(preamble(withRepl), contains('repl'));
+      expect(preamblePart(withRepl).subtitle, 'mode: chat · scripts: yes');
+    });
+
+    test('a tool a script may not call stays deferred, listed with the '
+        'deferred tools', () async {
+      mcpRegistry = McpToolRegistry([
+        _FakeMcpTool('recall_facts'),
+        _FakeMcpTool('hand_off', scriptCallable: false),
+      ]);
+      final inspection = await inspectUnder(
+        const CodeRunnerAvailability.available(),
+      );
+      final deferred = inspection
+          .segmentFor(ContextSegmentKind.deferredTools)!
+          .parts
+          .map((p) => p.title);
+      expect(deferred, contains('hand_off'));
+      expect(deferred, isNot(contains('recall_facts')));
+      final names = resident(inspection);
+      expect(names.take(2), ['repl', 'search_tools']);
+      expect(names, isNot(contains('hand_off')));
+      final repl = inspection
+          .segmentFor(ContextSegmentKind.toolDefinitions)!
+          .parts
+          .first;
+      expect(repl.content, contains('- control-center (1 tool)'));
+      expect(preamble(inspection), contains('callable from `repl`'));
+      expect(preamble(inspection), contains('`recall_facts`'));
+      expect(preamble(inspection), contains('not loaded yet'));
+    });
+
+    test('a bridged MCP tool named repl is never the script tool', () async {
+      mcpRegistry = McpToolRegistry([
+        _FakeMcpTool('recall_facts'),
+        _FakeMcpTool('repl'),
+      ]);
+      final none = await inspectUnder(unavailable);
+      expect(resident(none), isNot(contains('repl')));
+      final withRepl = await inspectUnder(
+        const CodeRunnerAvailability.available(),
+      );
+      final repl = withRepl
+          .segmentFor(ContextSegmentKind.toolDefinitions)!
+          .parts
+          .first;
+      expect(repl.title, 'repl');
+      expect(repl.content, isNot(contains('Fake repl tool')));
+      expect(withRepl.segmentFor(ContextSegmentKind.mcpTools)?.parts ?? [], [
+        for (final p
+            in withRepl.segmentFor(ContextSegmentKind.mcpTools)?.parts ??
+                const <ContextPart>[])
+          if (p.title != 'repl') p,
+      ]);
+    });
+
+    test('an answer that cannot be read is no scripts, as it is for a '
+        'run', () async {
+      final service = ContextInspectionService(
+        agentRepository: agents,
+        conversationRepository: conversations,
+        messagingRepository: spaces,
+        modeResolver: _FakeModeResolver(),
+        filesystem: filesystem,
+        mcpRegistry: mcpRegistry,
+        fileSearch: _FakeFileSearch(),
+        codeRunnerAvailability: () => throw StateError('db closed'),
+        codeModeLimits: (_) async => CodeModeLimits.defaults,
+      );
+      final inspection = await service.inspect(
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+        conversationId: conversationId,
+        agentId: agentId,
+        includeContent: true,
+      );
+      expect(resident(inspection), isNot(contains('repl')));
+    });
+  });
 
   group('window', () {
     test('the harness runs the model window, capped by the setting', () async {
@@ -797,12 +959,15 @@ class _FakeFileSearch implements FileSearchPort {
 }
 
 class _FakeMcpTool extends McpTool {
-  _FakeMcpTool(this._name);
+  _FakeMcpTool(this._name, {this.scriptCallable = true});
 
   final String _name;
 
   @override
   String get name => _name;
+
+  @override
+  final bool scriptCallable;
 
   @override
   String get description => 'Fake $_name tool for tests.';

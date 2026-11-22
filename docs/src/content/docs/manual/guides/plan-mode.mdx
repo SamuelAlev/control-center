@@ -105,8 +105,8 @@ to agent mode and unlocks its mutating tools. A rejection lets it open a fresh
 request against a revised plan.
 
 To leave plan mode, switch the composer dropdown (or Shift+Tab), or approve the
-submitted plan. `exit_plan_mode` opens a durable approval decided with the
-`decide_approval` MCP tool. The guardrail overlay for blocked tool calls is a
+submitted plan. `exit_plan_mode` opens a durable approval, which an agent run decides
+with the `decide_approval` MCP tool. The guardrail overlay for blocked tool calls is a
 different, in-memory queue and does not carry plan-exit requests.
 
 ## Plan mode in a pipeline step

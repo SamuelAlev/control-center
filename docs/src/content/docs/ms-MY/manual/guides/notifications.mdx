@@ -2,7 +2,7 @@
 title: Konfigurasikan pemberitahuan
 description: Hidupkan atau matikan kategori, tetapkan waktu senyap dan bunyi, serta ketahui pemberitahuan mana yang sampai kepada anda dan di mana.
 slug: ms-MY/manual-pengguna/panduan-cara/pemberitahuan
-sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
+sourceHash: b1e5bb3b8a13bbbbd169916ab8e7cd7bdd403c1a
 ---
 
 Panduan ini menunjukkan cara mengkonfigurasi pemberitahuan dan perkara yang
@@ -48,6 +48,8 @@ langsung tiada permukaan pemberitahuan.
 
 Apa-apa di luar senarai ini tidak boleh dimaklumkan atau ditapis — tiada
 kategori "segala-galanya yang lain".
+
+Kerja jangka panjang menggunakan dua kategori pertama. Matlamat yang tamat dan jadual yang tamat dikira sebagai **Ejen selesai**; matlamat yang menunggu kajian anda, cadangan penambahbaikan, larian pipeline yang ditahan pada had kosnya dan ringkasan harian tentang apa yang menunggu anda dikira sebagai **Ejen menunggu anda**. Setiap satu sampai kepada orang yang berkenaan: sesiapa yang memulakan matlamat, jadual atau larian itu.
 
 **Ejen menunggu anda** dicetuskan apabila sesuatu penantian bermula: kelulusan yang belum selesai (termasuk geran exec kotak
 pasir dan kelulusan alat Claude Code), soalan `ask_user`, atau larian yang
@@ -121,6 +123,8 @@ Pemberitahuan digugurkan, secara senyap, apabila mana-mana perkara ini benar:
 Pemeriksaan itu terpakai pada toast OS. Loceng tahan lama masih merekodkan
 peristiwa itu.
 
+Sesetengah pemberitahuan ialah **senyap**: pelayan menandakannya supaya ia sampai ke loceng tanpa toast, bunyi atau push telefon yang kuat. Jadual yang tamat dan matlamat yang tamat ialah senyap. Matlamat yang menunggu kajian anda tidak.
+
 Dua lagi sebab pemberitahuan ditahan terletak lebih awal dalam rantaian, iaitu
 pada apa yang dihantar oleh pelayan sama sekali:
 
@@ -131,10 +135,7 @@ pada apa yang dihantar oleh pelayan sama sekali:
 - Ruang antara ejen dibisukan dalam bar sisi, jadi ia tidak pernah menambah
   lencana belum dibaca untuk manusia
 
-Dalam sesuatu ruang tiada sudut yang sunyi: setiap perbualan memberi pemberitahuan
-secara sama rata, termasuk benang. Status baca terikat pada ruang, jadi bilangan
-belum dibaca terhimpun merentas semua perbualan sesuatu ruang dan bukan dijejaki
-bagi setiap perbualan.
+Dalam sesuatu ruang tiada sudut yang sunyi: setiap perbualan memberi pemberitahuan secara sama rata, termasuk benang. Status baca dijejaki bagi setiap perbualan, dan sesebuah ruang kekal belum dibaca selagi mana-mana perbualannya belum dibaca.
 
 ## Baca dan kosongkan pusat pemberitahuan
 
@@ -187,6 +188,8 @@ Periksa sama ada anda tidak sudah berada dalam ruang tempatnya berlaku — lalua
 yang aktif menahan toast OS-nya sendiri. Dalam ruang kongsi, larian yang dimulakan
 oleh orang lain memberitahu orang itu, bukan anda. Giliran yang berakhir tanpa
 balasan dan tanpa ralat tidak menghantar apa-apa.
+
+Larian yang dimulakan oleh jadual atau pantauan dan tamat tanpa masalah tidak menghantar apa-apa melainkan ia menyebut seseorang. Matlamat yang selesai atau jadual yang tamat pergi ke loceng tanpa toast.
 
 ## Panduan berkaitan
 

@@ -2,7 +2,7 @@
 title: Gestisci i costi
 description: Scopri quanto spendono i tuoi agenti, imponi un limite a un'esecuzione autonoma e riduci l'uso dei token.
 slug: it-IT/manuale/guide/gestisci-costi
-sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
+sourceHash: 040176a3840653a57c823ce4ff7e3ed9cf071c07
 ---
 
 Questa guida mostra come capire quanto costano le esecuzioni degli agenti e come imporre un limite a un'esecuzione autonoma.
@@ -40,21 +40,30 @@ Il riquadro **Utilizzo e costo** di questa pagina mostra la spesa osservata negl
 
 ## Imponi un limite a un'esecuzione autonoma
 
-Due comandi slash, digitati nel compositore di uno spazio, sono le uniche esecuzioni con un limite di spesa:
+Queste esecuzioni hanno un limite di spesa. Un'esecuzione che avvii inviando un messaggio non ne ha.
 
 ```
 /goal ship the auth refactor --budget 20
-/loop keep the flaky tests green
+/loop every 1h --budget 10 keep the flaky tests green
 ```
 
-- Ogni segmento di un'esecuzione `/goal` o `/loop` si ferma quando la sua spesa valorizzata raggiunge **500 centesimi ($5.00)**. All'80% di quella soglia il loop indirizza prima il modello a concludere e a lasciare un passaggio di consegne pulito, così non muore a metà attività.
-- Un intero obiettivo durevole è limitato a **5000 centesimi ($50.00)** a meno che tu non passi `--budget <dollars>`. Il supervisore propaga il budget _rimanente_ dell'obiettivo a ogni segmento, così un budget esplicito non viene mai superato di un segmento intero.
-- `--days N` aggiunge una scadenza a orologio e `--max N` un tetto al numero di esecuzioni. Entrambi sono facoltativi; senza di essi l'obiettivo è limitato solo dal costo.
-- Un obiettivo che tocca il suo muro si ferma in `budgetExhausted` e può essere ripreso solo aumentando il budget.
+| Esecuzione | Limite |
+| --- | --- |
+| Un segmento di un obiettivo | 5 dollari, o quanto resta del budget dell'obiettivo se è meno |
+| Un obiettivo | 50 dollari, a meno che tu non passi `--budget <dollars>` |
+| La revisione di un obiettivo | 2 dollari, o quanto resta, addebitati all'obiettivo |
+| Un'esecuzione avviata da una pianificazione o da un monitoraggio | 5 dollari; la pianificazione si ferma al proprio limite di spesa (50 dollari a meno che tu non passi `--budget`, o il valore predefinito dello spazio di lavoro) |
+| La revisione dopo un obiettivo, o `/refine` | 1 dollaro |
 
-Poiché il limite si basa sul prezzo, un modello che il catalogo non riesce a prezzare non lo raggiunge mai. Un'esecuzione di questo tipo è limitata invece dalla protezione contro le ripetizioni in doom-loop, dalla resa del supervisore dopo tre errori consecutivi e da te.
+- Un'esecuzione con limite si ferma quando la sua spesa valorizzata raggiunge il limite, nell'harness integrato, in Claude Code e negli agenti ACP. Al 90% l'harness integrato e Claude Code indirizzano prima l'agente a concludere e a lasciare un passaggio di consegne pulito, così non muore a metà attività. Un agente ACP viene annullato al limite.
+- Il budget _rimanente_ dell'obiettivo viene propagato a ogni segmento, così un budget esplicito non viene mai superato di un segmento intero.
+- `--days N` aggiunge una scadenza e `--max N` un tetto al numero di segmenti. Entrambi sono facoltativi; senza di essi l'obiettivo è limitato dal costo e dall'arresto per mancanza di progressi.
+- Un obiettivo che raggiunge il suo budget si ferma su **Budget esaurito** e riprende solo con un budget più alto, che può dare soltanto la persona che lo ha avviato.
+- Un'esecuzione di pipeline trattenuta al limite della sua orchestrazione attende finché il suo richiedente non preme **Alza limite** nella pagina dell'esecuzione della pipeline. Il nuovo limite deve essere superiore a quello vecchio e a quanto speso, al massimo 1.000 dollari, e un limite non viene mai rimosso.
 
-Un messaggio in uno spazio, una menzione con @ o un passaggio di pipeline non hanno alcun limite di spesa. L'esecuzione termina quando il modello si ferma, quando la fermi tu o quando la protezione doom-loop la reindirizza.
+Poiché il limite si basa sul prezzo, un modello che il catalogo non riesce a prezzare non lo raggiunge mai. Un'esecuzione di questo tipo è limitata invece dalla protezione contro le ripetizioni in doom-loop, dall'arresto di un obiettivo per mancanza di progressi, dalla sua resa dopo tre errori consecutivi e da te.
+
+Un messaggio in uno spazio, una menzione con @ o un passaggio di pipeline fuori da un'orchestrazione con limite non hanno un limite di spesa proprio. L'esecuzione termina quando il modello si ferma, quando la fermi tu o quando la protezione doom-loop la reindirizza.
 
 ## Riduci l'uso dei token
 

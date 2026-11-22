@@ -56,8 +56,16 @@ class _Orchestrations implements OrchestrationRepository {
       rows[orchestration.id] = orchestration;
 
   @override
-  Future<void> update(Orchestration orchestration) async =>
-      rows[orchestration.id] = orchestration;
+  Future<bool> update(Orchestration next, {required Orchestration read}) async {
+    final stored = rows[next.id];
+    if (stored == null ||
+        stored.revision != read.revision ||
+        stored.status != read.status) {
+      return false;
+    }
+    rows[next.id] = next;
+    return true;
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

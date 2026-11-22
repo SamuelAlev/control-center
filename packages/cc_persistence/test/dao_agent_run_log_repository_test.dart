@@ -1,6 +1,7 @@
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/value_objects/retry_meta.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
 import 'package:cc_domain/features/observability/domain/run_stage.dart';
 import 'package:cc_domain/features/observability/domain/run_verification.dart';
 import 'package:cc_persistence/cc_persistence.dart';
@@ -1142,6 +1143,171 @@ void main() {
         );
       },
     );
+  });
+
+  // ── end reason and wake ids ─────────────────────────────────────────────
+
+  group('end reason and wake ids', () {
+    test('the requester is recorded and survives a write without it', () async {
+      await repo.upsert(
+        _makeLog(
+          id: 'asked',
+          status: RunStatus.running,
+        ).copyWith(requestedByUserId: 'user-1'),
+      );
+      expect(
+        (await repo.getById('ws-1', 'asked'))!.requestedByUserId,
+        'user-1',
+      );
+
+      // A later write built without it never turns the run into a bot run.
+      await repo.upsert(_makeLog(id: 'asked', status: RunStatus.running));
+      await repo.completeIfActive(
+        _makeLog(
+          id: 'asked',
+          status: RunStatus.completed,
+          completedAt: DateTime(2025, 6, 1, 1),
+        ),
+      );
+      final fetched = await repo.getById('ws-1', 'asked');
+      expect(fetched!.requestedByUserId, 'user-1');
+      expect(fetched.status, RunStatus.completed);
+
+      await repo.upsert(_makeLog(id: 'bot'));
+      expect((await repo.getById('ws-1', 'bot'))!.requestedByUserId, isNull);
+    });
+
+    test('a run started by wakes keeps their ids, in order', () async {
+      await repo.upsert(
+        _makeLog(
+          id: 'woken',
+          status: RunStatus.running,
+        ).copyWith(wakeIds: ['wake-b', 'wake-a']),
+      );
+
+      final fetched = await repo.getById('ws-1', 'woken');
+      expect(fetched!.wakeIds, ['wake-b', 'wake-a']);
+      expect(fetched.endReason, isNull);
+      // A list read carries them too: they live on the run-log row.
+      final listed = await repo.watchByAgent('ws-1', 'agent-1').first;
+      expect(listed.single.wakeIds, ['wake-b', 'wake-a']);
+    });
+
+    test('a run nothing woke stores an empty array', () async {
+      await repo.upsert(_makeLog(id: 'plain'));
+
+      final raw = await dbs
+          .of('ws-1')
+          .customSelect("SELECT wake_ids FROM agent_run_logs WHERE id = 'plain'")
+          .getSingle();
+      expect(raw.read<String>('wake_ids'), '[]');
+      expect((await repo.getById('ws-1', 'plain'))!.wakeIds, isEmpty);
+    });
+
+    test('a later write without wake ids keeps the ones recorded', () async {
+      await repo.upsert(
+        _makeLog(
+          id: 'kept',
+          status: RunStatus.running,
+        ).copyWith(wakeIds: ['wake-1']),
+      );
+      await repo.upsert(_makeLog(id: 'kept', status: RunStatus.running));
+
+      expect((await repo.getById('ws-1', 'kept'))!.wakeIds, ['wake-1']);
+    });
+
+    test('the terminal write records the end reason', () async {
+      await repo.upsert(
+        _makeLog(
+          id: 'ending',
+          status: RunStatus.running,
+        ).copyWith(wakeIds: ['wake-1']),
+      );
+
+      final settled = await repo.completeIfActive(
+        _makeLog(
+          id: 'ending',
+          status: RunStatus.error,
+          completedAt: DateTime(2025, 6, 1, 1),
+        ).copyWith(endReason: RunEndReason.usageLimit),
+      );
+
+      expect(settled, isTrue);
+      final fetched = await repo.getById('ws-1', 'ending');
+      expect(fetched!.endReason, RunEndReason.usageLimit);
+      expect(fetched.wakeIds, ['wake-1']);
+    });
+
+    test('a terminal write without a reason keeps one an earlier write '
+        'recorded', () async {
+      await repo.upsert(
+        _makeLog(
+          id: 'stopped',
+          status: RunStatus.running,
+        ).copyWith(endReason: RunEndReason.stoppedByUser),
+      );
+
+      await repo.completeIfActive(
+        _makeLog(
+          id: 'stopped',
+          status: RunStatus.error,
+          completedAt: DateTime(2025, 6, 1, 1),
+        ),
+      );
+
+      expect(
+        (await repo.getById('ws-1', 'stopped'))!.endReason,
+        RunEndReason.stoppedByUser,
+      );
+    });
+
+    test('every end reason round-trips', () async {
+      for (final reason in RunEndReason.values) {
+        final id = 'reason-${reason.name}';
+        await repo.upsert(_makeLog(id: id).copyWith(endReason: reason));
+        expect((await repo.getById('ws-1', id))!.endReason, reason);
+      }
+    });
+
+    test('the stored-value checks refuse an unknown reason and a wake list '
+        'that is not an array', () async {
+      await repo.upsert(_makeLog(id: 'checked'));
+      final db = dbs.of('ws-1');
+
+      await expectLater(
+        db.customStatement(
+          "UPDATE agent_run_logs SET end_reason = 'gave_up' "
+          "WHERE id = 'checked'",
+        ),
+        throwsA(anything),
+      );
+      await expectLater(
+        db.customStatement(
+          "UPDATE agent_run_logs SET wake_ids = '{}' WHERE id = 'checked'",
+        ),
+        throwsA(anything),
+      );
+      await expectLater(
+        db.customStatement(
+          "UPDATE agent_run_logs SET wake_ids = 'not json' "
+          "WHERE id = 'checked'",
+        ),
+        throwsA(anything),
+      );
+    });
+
+    test('a malformed element of a stored wake list is dropped, not '
+        'fatal', () async {
+      await repo.upsert(_makeLog(id: 'odd'));
+      await dbs
+          .of('ws-1')
+          .customStatement(
+            "UPDATE agent_run_logs SET wake_ids = '[\"w1\", 7, \"\", null]' "
+            "WHERE id = 'odd'",
+          );
+
+      expect((await repo.getById('ws-1', 'odd'))!.wakeIds, ['w1']);
+    });
   });
 
   // ── run status helpers on entity ────────────────────────────────────────

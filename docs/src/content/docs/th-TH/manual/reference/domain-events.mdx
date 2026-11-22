@@ -2,7 +2,7 @@
 title: เหตุการณ์โดเมน
 description: แค็ตตาล็อกฉบับสมบูรณ์ของเหตุการณ์โดเมนทั้ง 54 รายการ เพย์โหลดของแต่ละรายการ และผู้สมัครรับฝั่งเซิร์ฟเวอร์ที่บริโภคเหตุการณ์เหล่านี้
 slug: th-TH/คู่มือ/อ้างอิง/เหตุการณ์โดเมน
-sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
+sourceHash: f58123448c0f31c95774bbaebee89f1509940896
 ---
 
 ## บัสเหตุการณ์
@@ -24,7 +24,10 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 | เหตุการณ์               | เพย์โหลด                                                | เกิดเมื่อ                                              |
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | เวิร์กสเปซถูกสร้าง                                    |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | เอเจนต์จบการรันหนึ่งครั้ง (สำเร็จหรือล้มเหลว)               |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | สตรีมของโปรเซสของเอเจนต์สิ้นสุดลง ก่อนที่สถานะสุดท้ายจะถูกเขียน เก็บไว้สำหรับสะพานการสนทนาของ PR และการวิเคราะห์เท่านั้น |
+| `AgentRunSettled` | `agentId`, `workspaceId`, `runId`, `status`, `endReason`, `costMicros`, `wakeIds`, `spaceId?`, `conversationId?`, `limitResetsAt?`, `requestedByUserId?`, `wakeReason?` | สถานะสุดท้ายของการรันถูกเขียนแล้ว เผยแพร่เพียงหนึ่งครั้งต่อการรัน `endReason` คือ `completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` หรือ `serverStopped` การรันของเอเจนต์ย่อยจะไม่เผยแพร่อะไรเลย |
+| `GoalSettled` | `goalId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `status`, `hold?`, `summary?`, `requestedByUserId?` | เป้าหมายสิ้นสุด หรือเริ่มรอการรีวิวของบุคคล |
+| `WakeRuleEnded` | `ruleId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `reason`, `requestedByUserId?` | ตารางเวลาหรือการเฝ้าดูสิ้นสุด (ทำงานครั้งเดียวตามที่ตั้งไว้แล้ว หมดอายุ ใช้จำนวนการรันหรือค่าใช้จ่ายครบแล้ว ถูกยกเลิก เป้าหมายของมันสิ้นสุด หรือบุคคลของมันออกไป) |
 | `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | เอเจนต์เริ่มรอมนุษย์: การอนุมัติ คำถาม `ask_user` หรือการรันที่ถูกพักไว้เพราะข้อมูลรับรอง (`kind` คือ `approval`, `question` หรือ `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | รีโปถูกขึ้นทะเบียน; ทริกเกอร์การทำดัชนีโค้ดเบื้องหลัง |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | สกิลถูกติดตั้งหรืออัปเดต พร้อมพกคำตัดสินจากการสแกนห่วงโซ่อุปทานของมันมา |
@@ -57,6 +60,16 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 | `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | มีคนกล่าวถึงคุณในคอมเมนต์ของ PR หรือคอมเมนต์รีวิว          |
 | `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | มีคนตอบกลับในเธรดรีวิวที่คุณอยู่                                 |
 | `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | มีคนปิดเธรดรีวิวที่คุณอยู่                                   |
+
+### การเฝ้าดู pull request
+
+เผยแพร่โดยตัวสำรวจ pull request ที่เปิดอยู่สำหรับทุก pull request ที่มันสำรวจ ไม่ว่าใครจะเป็นผู้เขียน สำหรับการเฝ้าดู `on:pr_*` ของเอเจนต์ ทั้งสามรายการมี `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `headRef` และ `authorLogin`
+
+| เหตุการณ์ | เพย์โหลดเพิ่มเติม | เกิดเมื่อ |
+| ----------------------- | ----------------------------------------------- | ---------- |
+| `PrWatchChecksSettled` | `passing`, `failedChecks`, `failedCheckUrl?` | ทุกการตรวจสอบของ head ของ pull request เสร็จสิ้น |
+| `PrWatchReviewActivity` | `decision`, `decisionChanged`, `newComments` | pull request ได้รับการรีวิวหรือความคิดเห็นใหม่ |
+| `PrWatchClosed` | `merged` | pull request ถูกรวมหรือปิด |
 
 ## เหตุการณ์การรับส่งข้อความ
 
@@ -167,14 +180,20 @@ enum `TaskPhase` มีสมาชิก `queued` ด้วย แต่ไม�
 | การจัดเตรียมสเปซแชท (อินไลน์)    | `SpaceCreated`                                                                                       |
 | `PipelineTriggerDispatcher`         | ทุก `DomainEvent`; ทริกเกอร์ที่เปิดใช้แต่ละตัวกรองหาเฉพาะชนิดของตัวเอง                                   |
 | `SubPipelineResumeListener`         | `PipelineRunCompleted`, `PipelineRunFailed`                                                          |
-| `PipelineCostRollupListener`        | `AgentRunCompleted`                                                                                  |
-| `BudgetEvaluationListener`          | `AgentRunCompleted`                                                                                  |
+| `PipelineCostRollupListener`        | `AgentRunSettled`                                                                                    |
+| `BudgetEvaluationListener`          | `AgentRunSettled`                                                                                    |
 | `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (เฉพาะการรัน `meeting_summary`)    |
-| `PipelineStepResumeListener`        | `AgentRunCompleted`                                                                                  |
-| `AgentRunTaskCompleter`             | `AgentRunCompleted`                                                                                  |
-| `GoalSupervisor`                    | `AgentRunCompleted`                                                                                  |
-| `CheckerDispatchListener`           | `AgentRunCompleted`                                                                                  |
-| `TeamRoutingService`                | `AgentRunCompleted`, `TicketAssigned`                                                                |
+| `PipelineStepResumeListener`        | `AgentRunSettled`                                                                                    |
+| `AgentRunTaskCompleter`             | `AgentRunSettled`                                                                                    |
+| `GoalSupervisor`                    | `AgentRunSettled` — ตัดสินขั้นตอนถัดไปของเป้าหมาย                                                    |
+| `CheckerDispatchListener`           | `AgentRunSettled` — ใส่ตัวตรวจเข้าคิวเป็นการปลุก และข้ามช่วงและการรีวิวของเป้าหมาย                   |
+| `TeamRoutingService`                | `AgentRunSettled`, `TicketAssigned`                                                                  |
+| `WakeQueueService` | `AgentRunSettled` — ส่งการปลุกที่รอให้การรันสิ้นสุด |
+| `WakeRuleService` | `AgentRunSettled` (ลูปที่กำหนดจังหวะเอง), `GoalSettled` (จบตารางเวลาของเป้าหมาย), `PrWatch*`, `EnvironmentProcessExited`, `EnvironmentReady`, การสิ้นสุดของตั๋วงานและการรันไปป์ไลน์ (การเฝ้าดู), `WorkspaceMemberRemoved` (จบตารางเวลาของบุคคลนั้น) |
+| `PeerAskService` | `AgentRunSettled` — ปิดคำถามที่เอเจนต์ถามกันและปลุกผู้ถาม |
+| `LimitParkService` | `AgentRunSettled` ที่มี `usageLimit` — รอการรีเซ็ตของผู้ให้บริการ |
+| `ImprovementReviewService` | `GoalSettled` (เป้าหมายที่ตรวจสอบแล้ว) และ `AgentRunSettled` — ใส่การรีวิวการปรับปรุงเข้าคิวและอ่านผลลัพธ์ |
+| ขั้นตอนเป้าหมายของไปป์ไลน์ (`goal.pursue`) | `GoalSettled`, `AgentRunSettled`, `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` — ทำขั้นตอนต่อ คิดต้นทุนให้การประสานงาน และติดตามการรันไปป์ไลน์ |
 | `OrchestrationRunListener`          | `PipelineRunCancelled`, `PipelineRunFailed`                                                          |
 | `MultiVendorTicketSyncCoordinator`  | `TicketCreated`, `TicketAssigned`, `TicketReassigned`, `TicketStatusChanged`, `TicketDetailsUpdated` |
 | `WorktreeGcListener`                | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`         |
@@ -227,6 +246,8 @@ enum `TaskPhase` มีสมาชิก `queued` ด้วย แต่ไม�
 `AgentAwaitingInput` เผยแพร่โดย `AgentAwaitingInputPublisher` ซึ่งเฝ้าดูรายการใหม่ในรีจิสทรีการอนุมัติและรีจิสทรีการบล็อกจากข้อมูลรับรอง และได้รับแจ้งเรื่องคำถาม `ask_user` แต่ละข้อจาก `AgentQuestionService` การรอหนึ่งครั้งคือเหตุการณ์หนึ่งรายการ และไม่มีการเผยแพร่สิ่งใดเมื่อการรอสิ้นสุดลง
 
 หมวดหมู่ PR ที่คุณเป็นผู้เขียนทั้งห้าหมวดพก `forUserId` จึงไปถึงผู้เขียนแทนที่จะไปถึงทุกคนในเวิร์กสเปซ
+
+ห้าเฟรมสำหรับงานที่ใช้เวลานาน แต่ละเฟรมส่งถึงบุคคลที่เกี่ยวข้อง (`for_user_id`): `notifications/goal_settled` (จาก `GoalSettled`), `notifications/wake_rule_ended` (จาก `WakeRuleEnded`), `notifications/improvement_proposed`, `notifications/pipeline_run_held` (การรันไปป์ไลน์ที่ถูกพักไว้ที่เพดานค่าใช้จ่ายของการประสานงาน) และ `notifications/waiting_digest` (วันละครั้ง สิ่งที่รอบุคคล) แต่ละเฟรมมี `notification_kind`: `notify` แมปไปยัง `agentRunCompleted` ส่วน `question` และ `review` แมปไปยัง `agentAwaitingInput` เฟรมที่แจ้งเตือนทุกเฟรมตอนนี้มี `notification_kind` และเฟรมที่มี `quiet: true` (ตารางเวลาที่สิ้นสุด เป้าหมายที่สิ้นสุด) จะไปยังศูนย์การแจ้งเตือนโดยไม่มีทอสต์ เสียง หรือการพุชแบบดัง
 
 `RemoteEventForwarder` ส่งต่อ `TicketReassigned` เพิ่มเติมเป็น `notifications/ticket_reassigned` และทุก `TaskLifecycleEvent` เป็น `notifications/task_<phase>` ทั้งสองอย่างไม่แมปไปยังหมวดหมู่การแจ้งเตือน — มันขับ UI แบบสด ไม่ใช่ศูนย์การแจ้งเตือน เหตุการณ์สมาชิกภาพไม่ถูกส่งต่อเป็นเฟรม: มันทำให้แคชของตัวส่งต่อเป็นโมฆะ และโฮสต์เซสชันจะทิ้งการสมัครรับเวิร์กสเปซของสมาชิกที่ถูกลบ
 

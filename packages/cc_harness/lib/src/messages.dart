@@ -29,6 +29,45 @@ enum HarnessRole {
   tool,
 }
 
+/// Where a [HarnessMessage]'s text came from, when the role alone cannot
+/// tell: the person, or text that is data to the model (a server notice, a
+/// wake frame, another agent's message).
+///
+/// The compaction serializer keys on it: a person's message is pinned
+/// verbatim across every compaction, while a notice, a wake frame or a peer's
+/// text is summarised or dropped like tool output, whatever role carries it.
+/// Null means the loop or the server wrote the message itself (its own
+/// steering, a summary, a snapshot page), or it predates the tag.
+enum HarnessMessageOrigin {
+  /// The person wrote it: a run's request, a steering message sent mid-run, a
+  /// queued follow-up.
+  person,
+
+  /// The server's notice about background work (a command's exit, its
+  /// `notify` lines, the context-use line): last-observed state, an
+  /// observation.
+  notice,
+
+  /// A wake frame: why the agent was woken, with its payload as data.
+  wake,
+
+  /// Another agent's message or other passive context from the aside lane.
+  peer;
+
+  /// The persisted form ([name]).
+  String get wire => name;
+
+  /// The origin persisted as [wire], or null for an absent or unknown value.
+  static HarnessMessageOrigin? fromWire(Object? wire) {
+    for (final origin in values) {
+      if (origin.name == wire) {
+        return origin;
+      }
+    }
+    return null;
+  }
+}
+
 /// A single content block inside a [HarnessMessage].
 ///
 /// A message is a list of blocks because an assistant turn can interleave
@@ -78,6 +117,11 @@ sealed class HarnessContentBlock {
           toolReferences: [
             for (final raw in (json['tool_references'] as List?) ?? const [])
               if (raw is String) raw,
+          ],
+          nestedCalls: [
+            for (final raw in (json['nested_calls'] as List?) ?? const [])
+              if (raw is Map)
+                HarnessNestedToolCall.fromJson(raw.cast<String, dynamic>()),
           ],
         );
       case 'image':
@@ -182,6 +226,7 @@ class HarnessToolResultBlock extends HarnessContentBlock {
     this.images = const [],
     this.outputReference,
     this.toolReferences = const [],
+    this.nestedCalls = const [],
   });
 
   /// The [HarnessToolUseBlock.id] this result answers.
@@ -222,6 +267,16 @@ class HarnessToolResultBlock extends HarnessContentBlock {
   /// then find.
   final List<String> toolReferences;
 
+  /// The calls this tool made through its reentry, in call order, bounded to
+  /// [harnessNestedCallDigestBytes] in total.
+  ///
+  /// A script's edits happen in nested calls, which have no tool-use block of
+  /// their own. Without this record compaction evidence, stale-observation
+  /// masking and active-edit tracking could not tell which files a script
+  /// touched. Internal metadata: persisted with the block, never put on a
+  /// provider wire (each provider builds its own request JSON).
+  final List<HarnessNestedToolCall> nestedCalls;
+
   /// Returns a copy with selected fields overridden.
   ///
   /// [outputReference] and [toolReferences] are replaced when supplied — a
@@ -234,6 +289,7 @@ class HarnessToolResultBlock extends HarnessContentBlock {
     List<HarnessImageBlock>? images,
     ToolOutputReference? outputReference,
     List<String>? toolReferences,
+    List<HarnessNestedToolCall>? nestedCalls,
   }) => HarnessToolResultBlock(
     toolUseId: toolUseId,
     content: content ?? this.content,
@@ -241,6 +297,7 @@ class HarnessToolResultBlock extends HarnessContentBlock {
     images: images ?? this.images,
     outputReference: outputReference ?? this.outputReference,
     toolReferences: toolReferences ?? this.toolReferences,
+    nestedCalls: nestedCalls ?? this.nestedCalls,
   );
 
   /// [content] plus, when tools were activated, a plain-text note naming them.
@@ -268,6 +325,8 @@ class HarnessToolResultBlock extends HarnessContentBlock {
     if (images.isNotEmpty) 'images': [for (final i in images) i.toJson()],
     if (outputReference != null) 'output_reference': outputReference!.toJson(),
     if (toolReferences.isNotEmpty) 'tool_references': toolReferences,
+    if (nestedCalls.isNotEmpty)
+      'nested_calls': [for (final c in nestedCalls) c.toJson()],
   };
 
   @override
@@ -279,7 +338,8 @@ class HarnessToolResultBlock extends HarnessContentBlock {
           other.isError == isError &&
           other.outputReference == outputReference &&
           _sameStrings(other.toolReferences, toolReferences) &&
-          _sameImages(other.images, images);
+          _sameImages(other.images, images) &&
+          _sameNested(other.nestedCalls, nestedCalls);
 
   @override
   int get hashCode => Object.hash(
@@ -289,7 +349,23 @@ class HarnessToolResultBlock extends HarnessContentBlock {
     outputReference,
     Object.hashAll(toolReferences),
     Object.hashAll(images),
+    Object.hashAll(nestedCalls),
   );
+
+  static bool _sameNested(
+    List<HarnessNestedToolCall> a,
+    List<HarnessNestedToolCall> b,
+  ) {
+    if (a.length != b.length) {
+      return false;
+    }
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   static bool _sameStrings(List<String> a, List<String> b) {
     if (a.length != b.length) {
@@ -317,6 +393,61 @@ class HarnessToolResultBlock extends HarnessContentBlock {
     }
     return true;
   }
+}
+
+/// The most a [HarnessToolResultBlock.nestedCalls] record may hold, counted
+/// as the UTF-16 length of each entry's JSON encoding.
+const int harnessNestedCallDigestBytes = 32 * 1024;
+
+/// One call a tool made through its reentry, as recorded on the result block
+/// of the model-issued call that made it.
+///
+/// [args] holds only the arguments that identify what the call touched (paths,
+/// commands, URLs, queries), clipped: enough for evidence, not a copy of the
+/// payload.
+class HarnessNestedToolCall {
+  /// Creates a record.
+  const HarnessNestedToolCall({
+    required this.name,
+    this.args = const {},
+    this.isError = false,
+  });
+
+  /// Rebuilds a record from [toJson]'s output.
+  factory HarnessNestedToolCall.fromJson(Map<String, dynamic> json) =>
+      HarnessNestedToolCall(
+        name: json['name'] as String? ?? '',
+        args: (json['args'] as Map?)?.cast<String, Object?>() ?? const {},
+        isError: json['is_error'] == true,
+      );
+
+  /// The tool the nested call asked for.
+  final String name;
+
+  /// The identifying arguments of the call.
+  final Map<String, Object?> args;
+
+  /// Whether the call ended without a successful result (failed, denied,
+  /// cancelled or timed out).
+  final bool isError;
+
+  /// JSON form for persistence.
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    if (args.isNotEmpty) 'args': args,
+    if (isError) 'is_error': true,
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is HarnessNestedToolCall &&
+          other.name == name &&
+          other.isError == isError &&
+          jsonEncode(other.args) == jsonEncode(args);
+
+  @override
+  int get hashCode => Object.hash(name, isError, jsonEncode(args));
 }
 
 /// An image supplied to the model (user/tool content), carried as base64.
@@ -410,23 +541,29 @@ class HarnessMessage {
     required this.content,
     this.activatedToolNames = const [],
     this.isSnapshotCarrier = false,
+    this.origin,
+    this.carriedPersonTexts = const [],
   });
 
   /// Convenience: a single-text user turn.
   factory HarnessMessage.user(
     String text, {
     List<String> activatedToolNames = const [],
+    HarnessMessageOrigin? origin,
   }) => HarnessMessage(
     role: HarnessRole.user,
     content: [HarnessTextBlock(text)],
     activatedToolNames: activatedToolNames,
+    origin: origin,
   );
 
   /// Convenience: a single-text system turn.
-  factory HarnessMessage.system(String text) => HarnessMessage(
-    role: HarnessRole.system,
-    content: [HarnessTextBlock(text)],
-  );
+  factory HarnessMessage.system(String text, {HarnessMessageOrigin? origin}) =>
+      HarnessMessage(
+        role: HarnessRole.system,
+        content: [HarnessTextBlock(text)],
+        origin: origin,
+      );
 
   /// Convenience: a single-text assistant turn.
   factory HarnessMessage.assistant(String text) => HarnessMessage(
@@ -470,6 +607,11 @@ class HarnessMessage {
         if (raw is String) raw,
     ],
     isSnapshotCarrier: json['snapshot_carrier'] == true,
+    origin: HarnessMessageOrigin.fromWire(json['origin']),
+    carriedPersonTexts: [
+      for (final raw in (json['carried_person_texts'] as List?) ?? const [])
+        if (raw is String) raw,
+    ],
   );
 
   /// Author of the message.
@@ -512,6 +654,22 @@ class HarnessMessage {
   /// rehydration builds a plain text message and therefore drops the marker,
   /// which is what tells the kernel the page is gone).
   final bool isSnapshotCarrier;
+
+  /// Where the text came from ([HarnessMessageOrigin]); null when the loop or
+  /// the server wrote it. Set where the message enters the history: the
+  /// loop's run start and its steering, follow-up and notice drains.
+  ///
+  /// Internal metadata: persisted with the message, never sent to a provider.
+  final HarnessMessageOrigin? origin;
+
+  /// The person's messages, verbatim and in order, that a snapshot page drew
+  /// into its images: set by the snapshot compactor on the page and kept when
+  /// the page is restored to text, so a later compaction still pins them
+  /// as the person's words ([HarnessMessageOrigin.person]).
+  ///
+  /// Internal metadata: persisted with the message, never sent to a provider
+  /// (the page shows the same texts in its own text block).
+  final List<String> carriedPersonTexts;
 
   /// [activatedToolNames] in a stable order, memoized.
   ///
@@ -584,11 +742,14 @@ class HarnessMessage {
     List<HarnessContentBlock>? content,
     List<String>? activatedToolNames,
     bool? isSnapshotCarrier,
+    List<String>? carriedPersonTexts,
   }) => HarnessMessage(
     role: role ?? this.role,
     content: content ?? this.content,
     activatedToolNames: activatedToolNames ?? this.activatedToolNames,
     isSnapshotCarrier: isSnapshotCarrier ?? this.isSnapshotCarrier,
+    origin: origin,
+    carriedPersonTexts: carriedPersonTexts ?? this.carriedPersonTexts,
   );
 
   /// JSON form for persistence / debugging.
@@ -598,6 +759,9 @@ class HarnessMessage {
     if (activatedToolNames.isNotEmpty)
       'activated_tool_names': activatedToolNames,
     if (isSnapshotCarrier) 'snapshot_carrier': true,
+    if (origin != null) 'origin': origin!.wire,
+    if (carriedPersonTexts.isNotEmpty)
+      'carried_person_texts': carriedPersonTexts,
   };
 
   /// Value equality over the role, every block in order, and the activation
@@ -618,8 +782,15 @@ class HarnessMessage {
     if (other is! HarnessMessage ||
         other.role != role ||
         other.content.length != content.length ||
-        other.isSnapshotCarrier != isSnapshotCarrier) {
+        other.isSnapshotCarrier != isSnapshotCarrier ||
+        other.origin != origin ||
+        other.carriedPersonTexts.length != carriedPersonTexts.length) {
       return false;
+    }
+    for (var i = 0; i < carriedPersonTexts.length; i++) {
+      if (other.carriedPersonTexts[i] != carriedPersonTexts[i]) {
+        return false;
+      }
     }
     final mine = normalizedActivatedToolNames;
     final theirs = other.normalizedActivatedToolNames;
@@ -645,5 +816,7 @@ class HarnessMessage {
     Object.hashAll(content),
     Object.hashAll(normalizedActivatedToolNames),
     isSnapshotCarrier,
+    origin,
+    Object.hashAll(carriedPersonTexts),
   );
 }

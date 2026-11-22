@@ -146,12 +146,14 @@ class _FakeTicketWorkflowService extends TicketWorkflowService {
     String? createdById,
     String? assignedTeamId,
     String? delegatedByAgentId,
+    String? delegatedFromConversationId,
     int delegationDepth = 0,
     String? delegationRootTicketId,
     String? parentTicketId,
     String? projectId,
     String? spaceId,
     Map<String, String> providerExtras = const {},
+    Map<String, dynamic> metadata = const {},
   }) async {
     createCalls.add(
       _CreateTicketCall(
@@ -193,12 +195,14 @@ class _BlockingFakeWorkflowService extends _FakeTicketWorkflowService {
     String? createdById,
     String? assignedTeamId,
     String? delegatedByAgentId,
+    String? delegatedFromConversationId,
     int delegationDepth = 0,
     String? delegationRootTicketId,
     String? parentTicketId,
     String? projectId,
     String? spaceId,
     Map<String, String> providerExtras = const {},
+    Map<String, dynamic> metadata = const {},
   }) async {
     createCalls.add(
       _CreateTicketCall(

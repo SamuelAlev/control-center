@@ -2,7 +2,7 @@
 title: Polecenia slash
 description: Wszystkie polecenia, które możesz wpisać w kompozytorze — co robią i gdzie działają.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/polecenia-slash
-sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
+sourceHash: 38430a6315b112c92a7806d1c28dff8a0285e363
 ---
 
 Polecenia wpisywane w kompozytorze przestrzeni. Dzielą się na trzy grupy według tego, gdzie działają, a ta różnica ma znaczenie: polecenie **lokalne** nigdy nie wędruje jako wiadomość, więc nie pojawia się w transkrypcie ani nie dociera do agenta.
@@ -21,23 +21,35 @@ Polecenia wpisywane w kompozytorze przestrzeni. Dzielą się na trzy grupy wedł
 
 **Lokalne → wysyłka.** Uzbraja tryb planu w rozmowie: worktree działające w pełni w trybie tylko do odczytu i powierzchnia narzędzi ograniczona do `read`. Rezultatem agenta jest plan, a nie edycja. Samo `/plan` tylko przełącza tryb i nigdy nie wędruje jako wiadomość; z promptem to reszta wiersza rozpoczyna uruchomienie.
 
-### `/goal <objective>`
+### `/goal [flags] <objective>`
 
-**Wysyłka.** Uruchamia autonomiczny cel, który nadzorca celów ponownie wysyła w kolejnych segmentach i wznawia.
+**Wysyłka.** Rozpoczyna trwały cel: agent pracuje nad celem w segmentach, przez restarty, aż serwer zweryfikuje, że jest gotowy, osoba go zamknie albo osiągnie on limit. Zobacz [Realizuj cel](/pl-PL/podrecznik/poradniki/realizuj-cel/).
 
-Wpisanie `/goal` z tekstem otwiera najpierw **wywiad dotyczący celu** — krótkie przejście, które nie przyjmie szkicu, dopóki nie zbierze wszystkich pięciu elementów: kryteriów sukcesu, które oceniający rozstrzygnie bez własnego osądu, dokładnego polecenia weryfikacji, limitu prób, granic zakresu i warunków zatrzymania. Każdy krok oferuje *Pomiń i uruchom jak napisano*: wywiad jest ustawieniem domyślnym, a nie bramką.
+Wpisanie `/goal` z tekstem otwiera najpierw **wywiad dotyczący celu** — krótkie przejście, które pyta o kryteria sukcesu, które oceniający rozstrzygnie bez własnego osądu, o sprawdzenia, które muszą przejść, o granice zakresu i warunki zatrzymania, a potem proponuje osobnego kontrolera, świeże segmenty i odpowiadanie na własne pytania. Każdy krok oferuje *Pomiń i uruchom jak napisano*: wywiad jest ustawieniem domyślnym, a nie bramką.
 
-`/goal pause`, `/goal resume` i `/goal drop` nie są poleceniami slash. Pauza, wznowienie i zatrzymanie znajdują się na liście celów rozmowy w pasku bocznym. Flagami startowymi samego celu są `--budget <dollars>`, `--max <N>` (budżet uruchomienia) i `--days <N>` (termin). Cel, który osiągnął limit kosztów, wznawia się tylko przez podniesienie tego limitu, z tego samego elementu sterowania w pasku bocznym.
+Flagi mogą stać w dowolnym miejscu wiadomości: `--budget <dollars>` (budżet celu, domyślnie 50), `--max <N>` (limit segmentów), `--days <N>` (termin), `--check "<command>"` (do 5), `--checker <agent>`, `--fresh` i `--unattended wait|assume`. Nieznana albo powtórzona flaga jest odrzucana, a szkic zostaje w polu wiadomości. Liczba na początku celu jest częścią celu. Sekcje `## Success criteria`, `## Boundaries`, `## Stop conditions` i `## Checks` stają się kontraktem celu.
+
+`/goal pause`, `/goal resume` i `/goal drop` nie są poleceniami slash. Pauza, wznowienie i zatrzymanie znajdują się na karcie celu w panelu **Ogólne** rozmowy oraz na stronie celu (pasek boczny → **Cele**). Wznawianie i podnoszenie budżetu należą do osoby, która uruchomiła cel.
 
 :::note[Dlaczego w ogóle przerywa]
 Autonomiczny cel to jedyne miejsce, w którym niejasne zlecenie naprawdę dużo kosztuje. Uruchomienie pracuje godzinami nad celem, którego „gotowe” nikt nie zdefiniował, a potem melduje sukces według własnych kryteriów. Pięć pytań kosztuje mniej niż jedno nocne uruchomienie, które skończyło się wtedy, kiedy uznało, że już się skończyło.
 :::
 
-### `/loop [budget] [task]`
+### `/loop [every <interval>] [flags] <prompt>`
 
-**Wysyłka.** Pracuje iteracyjnie, aż zadanie zostanie ukończone. Przyjmuje ograniczenie: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**Wysyłka.** Tworzy harmonogram, który budzi agenta z promptem teraz, a potem znowu: co interwał (co najmniej 60 sekund) albo, bez `every`, po opóźnieniu, które agent wybiera za każdym razem (od 1 do 60 minut). `--max <N>` ogranicza uruchomienia, `--days <N>` kończy go (domyślnie 30 dni), `--budget <dollars>` ogranicza jego wydatki. Zobacz [Harmonogramy i wybudzenia](/pl-PL/podrecznik/poradniki/harmonogramy-i-wybudzenia/).
 
-Token, który *wygląda* jak limit (zaczyna się od cyfry lub znaku) i nie daje się sparsować, to twardy błąd. Proza pozostaje prozą, więc `/loop keep going until the tests pass` to nieograniczona pętla z promptem w tej samej linii, a nie błędne sparsowanie.
+`/loop` nie rozpoczyna już celu, a wiodąca liczba nie jest liczbą uruchomień.
+
+### `/schedule <when> [flags] <prompt>`
+
+**Wysyłka.** Tworzy harmonogram, który budzi agenta później: `in 2h`, `at 09:00` (najbliższa taka godzina w strefie czasowej obszaru roboczego), `at <ISO time>` albo `cron "0 9 * * 1-5"` (cudzysłowy są opcjonalne). Przyjmuje te same `--max`, `--days` i `--budget` co `/loop`. Czeka na swój pierwszy termin.
+
+### `/refine`
+
+**Wysyłka.** Prosi o krótką recenzję tylko do odczytu pracy w rozmowie, która może zaproponować usprawnienia pamięci, polityk, notatek agentów lub umiejętności. Propozycje czekają na stronie **Usprawnienia**, aż ktoś je zaakceptuje. Co najwyżej jedna recenzja na rozmowę co 20 minut.
+
+`/goal`, `/loop`, `/schedule` i `/refine` działają tylko w wiadomości, którą sam wpisujesz; od agenta, potoku albo wybudzenia ten sam tekst jest zwykłą wiadomością. Polecenie `/goal`, `/loop` lub `/schedule`, którego nie można odczytać, zachowuje twój szkic, a wiersz nad tekstem w kompozytorze mówi, co jest nie tak.
 
 ### `/vibe [task]`
 

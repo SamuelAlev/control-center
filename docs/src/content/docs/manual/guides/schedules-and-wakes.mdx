@@ -1,0 +1,108 @@
+---
+title: Schedules and wakes
+description: Wake an agent later, on a schedule or when something happens, see what is waiting, and what happens on a restart or a usage limit.
+---
+
+An agent does not sleep or poll while it waits. It, or you, sets up a **wake**: a durable request to start or continue the agent's run in a conversation at a time or when something happens. Every run the server starts without someone typing begins as a wake: a goal's next segment, a schedule, a watch, a reply from another agent, finished delegated work, the end of a usage limit, the work left over after a restart. Wakes are kept in the workspace's database, so they survive a restart.
+
+## Schedule an agent yourself
+
+Type one of these in a conversation's composer:
+
+```text
+/loop every 30m --days 3 check the deploy and fix what broke
+/loop keep the flaky tests green
+/schedule in 2h look at the overnight benchmark
+/schedule at 09:00 summarize what changed overnight
+/schedule cron "0 9 * * 1-5" --max 20 triage new tickets
+```
+
+| Command | What it does |
+| --- | --- |
+| `/loop every <interval> <prompt>` | Wakes the agent with the prompt now and then every interval (at least 60 seconds apart) |
+| `/loop <prompt>` | A self-paced loop: wakes the agent now, and after each run the agent picks the next delay, 1 to 60 minutes (20 by default) |
+| `/schedule in <duration> <prompt>` | Wakes the agent once, after the delay |
+| `/schedule at <HH:MM or ISO time> <prompt>` | Wakes the agent once. `HH:MM` is the next such time in the workspace's time zone; an ISO time without an offset is UTC |
+| `/schedule cron "<expression>" <prompt>` | Wakes the agent on a five-field cron, read in the workspace's time zone. The quotes are optional |
+
+- `--max <N>` caps the runs, `--days <N>` ends the schedule after that many days (30 by default, 365 at most), and `--budget <dollars>` caps what the schedule may spend in all (the workspace's default otherwise, 50 dollars to start with).
+- `/loop` fires its first run at once. `/schedule` waits for its time.
+- Durations use `s`, `m`, `h` and `d`, such as `90s`, `20m` or `1h30m`.
+- These commands are read only in a message you type yourself.
+
+The composer helps you write them. After `/loop` or `/schedule` and a space, the suggestion list offers when it fires and narrows as you type; type `--` after the time for the limits. Enter or Tab takes a row and sends nothing. A line above your text then reads the command back: when it fires, when it ends, and what is still missing. If you press Enter on a command that cannot be read, that line says what is wrong and your draft stays.
+
+You can also create a schedule from the **Schedules** page with **New schedule**: pick the space, conversation and agent, when it fires, what each run starts from, an end, a run cap and a cost cap. **If the agent is busy** chooses between skipping that fire and waiting until the agent is free. **Each fire** chooses between starting a run and only notifying you with the note.
+
+## What agents set up
+
+Agents use the `wake_me` tool for the same things, and for watches:
+
+| Watch | Fires when |
+| --- | --- |
+| `on:pr_checks` | The checks of the space's pull request finish |
+| `on:pr_review` | The space's pull request gets a review or a reply |
+| `on:pr_merged` | The space's pull request merges |
+| `on:environment` | A task of the space's environment exits, or the environment becomes ready |
+| `on:ticket:<id>` | A ticket settles |
+| `on:pipeline_run:<id>` | A pipeline run ends |
+
+- A pull request watch hears the space's own pull request, or one pull request it names (`on:pr_checks:acme/shop-ui#12`). A watch on something its person cannot read is refused.
+- The agent's own actions do not fire its watches. An event that arrives while the agent is working is not lost: it waits until the run ends, and later events are folded into the same wake.
+- An agent's schedule must have a run cap or an end. It ends after 7 days by default and 30 at most. A watch runs 10 times by default.
+- A schedule an agent sets in a run that one of its own schedules started shares the first schedule's end, run cap and cost cap, so a chain of an agent's schedules cannot outlive the first. Deleting the first schedule ends the whole chain; pausing it pauses only that schedule. Runs the chain starts through other agents count against the same cost cap. A schedule you made starts no chain: what an agent sets in its runs is limited like anything it sets after a message of yours.
+- An agent lists what it has waiting with `list_wakes`, and cancels what it set itself with `cancel_wake`. It cannot cancel what you set.
+
+## See what is waiting
+
+**Above the composer.** When wakes wait for an agent in the conversation, a strip shows them: **N wakes waiting**, where each comes from (**Goal**, **Schedule**, **Watch**, **Reply from** an agent, **Limit reset**, **Recovery**, …), when it is due, and why it is held.
+
+| Button | What it does | Who can |
+| --- | --- | --- |
+| **Deliver now** | Delivers a pending wake at once | Only the person the wake acts for |
+| **Resume** | Releases a held wake | Only the person the wake acts for |
+| **Cancel wake** | Cancels it | Anyone with access to the space |
+
+A wake that was not delivered leaves one row in the conversation saying why, such as **The agent is paused.** or **A budget blocks a run.**
+
+**The Schedules page.** Sidebar → **Schedules** lists every schedule and watch you can see, grouped by status; a cron schedule shows its next three times in your time zone. Open one to see its note, owner, next fires, runs, skips, spend and end, and **Recent wakes and runs**. Each schedule has its own address (`/workspaces/<workspace>/schedules/<id>`).
+
+| Action | Who can |
+| --- | --- |
+| **Pause**, **Delete** | Anyone with access to the space |
+| **Resume**, **Extend** | Only its owner (a workspace admin for a schedule an agent made without a person) |
+
+When someone other than a schedule's owner pauses it, the conversation shows a row that names them.
+
+On the phone, **Repeat** on the goals screen starts a repeating prompt (every so many minutes or hours, or self-paced) with a cost cap and an end, and the **Schedules** screen pauses, resumes and deletes schedules. A conversation's progress view shows what waits, including usage-limit pauses (**Resume now**, **Cancel**) and work left after a server stop.
+
+## How a schedule runs
+
+- Each run of a schedule or watch is capped at 5 dollars, or at what the schedule has left when that is less, and the schedule stops at its cost cap.
+- A cron time in the hour that is skipped when clocks go forward runs an hour later that day (02:30 runs at 03:30). A time in the hour that repeats when clocks go back runs once.
+- A schedule's run never joins a run that is already going. If the agent is busy when a timed schedule fires, that fire is skipped quietly, unless the schedule waits until the agent is free.
+- A run a schedule or watch started that ends without trouble does not notify you, unless it mentions someone. When a schedule ends, the bell says why (**It used its runs.**, **It reached its end date.**, …) without a sound.
+- At most 30 runs an hour start from wakes in one conversation, and 300 in a workspace.
+- When the person a schedule acts for leaves the workspace, the schedule ends. Everything else that acted for them stops as well: their waiting wakes are cancelled, their queued and held messages are deleted, and their running agents are stopped.
+
+## Stop, restart and usage limits
+
+- **Stop.** Pressing **Stop** on an agent's run holds its pending wakes (those that do not belong to a goal) and the messages you queued for it. They wait for **Resume** or **Send held messages**. Each person sends their own held messages; nobody sends another person's.
+- **A server restart.** Wakes and schedules survive. A run a wake started resumes after the restart, with at most 3 attempts. A run you started yourself is not run again by itself: it leaves a held **Recovery** wake, and it continues when you press **Resume**. A timed schedule that missed its slots while the server was down fires late only within a short grace (half its interval, at most 10 minutes; 24 hours for a one-off), otherwise it records one skip: **Missed while the server was down.**
+- **A provider usage limit.** When a run stops at a provider's usage limit and the provider says when it resets (within 7 days), the run is paused. A run the server started, such as a goal's segment or a schedule's run, resumes by itself 30 seconds after the reset. A run you started waits for you: the conversation shows **Paused at** the provider's **usage limit. The limit resets at** a time, with **Resume** (only you) and **Cancel** (anyone in the space). After **Resume** it continues once the limit has reset. A pause you do not resume expires 7 days after the reset. Messages you queued at the limit are sent into the resumed run; if the run does not wait for the reset, or the pause is cancelled or expires, they are held for you under **Send held messages** instead. Other people's queued messages are held for them at once. A schedule's next fire waits until the paused run resumes. ACP agents report no reset, so their runs do not wait.
+
+## Workspace limits
+
+A workspace admin sets the limits under **Settings → Workspace → Schedules**:
+
+- **Schedule limits**: how many active or paused schedules one agent may hold in one conversation (10), across the workspace (50), and in the whole workspace (500); the default cost cap of a schedule (50 dollars); and the time zone cron schedules and the daily digest use (UTC to start with).
+- **When nobody answers**: how long a run the server started waits for a person's answer or approval (72 hours by default, 1 hour to 7 days) before an approval counts as denied and a question as unanswered (after that, anything else the same run asks is refused at once), and the hour of the daily digest of what waits for you in goals, schedules and other runs the server started.
+
+Members see the page read-only.
+
+## See also
+
+- [Pursue a goal](/manual/guides/pursue-a-goal/)
+- [Agents working together](/manual/guides/agents-working-together/)
+- [Slash commands](/manual/reference/slash-commands/)
+- [Agent tools on MCP](/manual/reference/mcp-tools/#wake-and-goal-tools)

@@ -2,7 +2,7 @@
 title: Értesítések konfigurálása
 description: Kapcsolja be vagy ki a kategóriákat, állítson be csendes órákat és hangot, és tudja meg, mely értesítések érkeznek meg Önhöz és hol.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/ertesitesek
-sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
+sourceHash: b1e5bb3b8a13bbbbd169916ab8e7cd7bdd403c1a
 ---
 
 Ez az útmutató bemutatja, hogyan konfigurálhatja az értesítéseket, és mit
@@ -48,6 +48,8 @@ telefonos kliensnek egyáltalán nincs értesítési felülete.
 
 Az ezen a listán kívül eső eseményekről nem lehet értesítést kapni vagy azokat
 szűrni — nincs „minden más” kategória.
+
+A hosszú futású munka az első két kategóriát használja. Egy befejezett cél és egy befejezett ütemezés **Ügynök befejezte** kategóriát kap; egy átnézésre váró cél, egy fejlesztési javaslat, egy költségplafonnál visszatartott pipeline-futtatás és az Önre váró dolgok napi összesítője pedig **Egy ügynök Önre vár** kategóriát. Mindegyik azt a személyt éri el, akihez tartozik: aki a célt, az ütemezést vagy a futtatást indította.
 
 Az **Egy ügynök Önre vár** kategória akkor jelez, amikor egy várakozás
 elkezdődik: függőben lévő jóváhagyásnál (beleértve a homokozó
@@ -123,6 +125,8 @@ Egy értesítés csendben elmarad, ha az alábbiak bármelyike igaz:
 Ezek az ellenőrzések az OS-toastokra vonatkoznak. A tartós harang ettől
 függetlenül rögzíti az eseményt.
 
+Egyes értesítések **csendesek**: a szerver úgy jelöli őket, hogy eljussanak a harangig az OS-toastok, hang vagy hangos telefonos értesítés nélkül. Egy befejezett ütemezés és egy befejezett cél csendes. Az átnézésre váró cél nem az.
+
 Két további kihagyás történik feljebb, abban, amit a szerver egyáltalán elküld:
 
 - Egy nem említett üzenet egy másik **embertől** soha nem válik értesítéssé
@@ -131,9 +135,7 @@ Két további kihagyás történik feljebb, abban, amit a szerver egyáltalán e
 - Az ügynök–ügynök terek némítva vannak az oldalsávban, így soha nem növelik az
   emberi olvasatlan-jelvényt
 
-Egy téren belül nincs csendes zug: minden beszélgetés egyformán jelez, a szálakkal
-együtt. Az olvasottsági állapot a tér szintjén értelmezett, így az olvasatlan egy
-tér beszélgetésein át összesítve jelenik meg, nem beszélgetésenként követve.
+Egy téren belül nincs csendes zug: minden beszélgetés egyformán jelez, a szálakkal együtt. Az olvasottsági állapot beszélgetésenként követett, és egy tér olvasatlan, amíg valamelyik beszélgetése az.
 
 ## Az értesítési központ olvasása és törlése
 
@@ -187,6 +189,8 @@ Ellenőrizze, hogy nem tartózkodott-e már abban a térben, ahol ez történt �
 aktív útvonal elnyomja a saját OS-toastját. Egy megosztott térben a más által
 indított futás őt értesíti, nem Önt. Az a kör, amely válasz és hiba nélkül ért
 véget, semmit sem küld.
+
+Az ütemezés vagy figyelő által indított futtatás, amely hiba nélkül ér véget, nem küld semmit, hacsak nem említ meg valakit. Egy befejezett cél vagy egy véget ért ütemezés toast nélkül a harangba kerül.
 
 ## Kapcsolódó útmutatók
 

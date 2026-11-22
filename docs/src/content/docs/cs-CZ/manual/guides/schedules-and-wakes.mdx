@@ -1,0 +1,110 @@
+---
+title: Plány a probuzení
+description: Probuďte agenta později, podle plánu nebo ve chvíli, kdy se něco stane, sledujte, co čeká, a zjistěte, co se stane při restartu nebo na limitu využití.
+slug: cs-CZ/prirucka/navody/plany-a-probuzeni
+sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+---
+
+Agent během čekání nespí ani se neptá dokola. Agent nebo vy nastavíte **probuzení**: trvalý požadavek na spuštění nebo pokračování běhu agenta v konverzaci v daný čas nebo ve chvíli, kdy se něco stane. Každý běh, který server spustí bez toho, aby někdo něco psal, začíná jako probuzení: další segment cíle, plán, sledování, odpověď od jiného agenta, dokončená delegovaná práce, konec limitu využití, práce zbylá po restartu. Probuzení se uchovávají v databázi pracovního prostoru, takže restart přežijí.
+
+## Naplánujte agenta sami
+
+V poli pro psaní zprávy v konverzaci napište jeden z těchto příkazů:
+
+```text
+/loop every 30m --days 3 check the deploy and fix what broke
+/loop keep the flaky tests green
+/schedule in 2h look at the overnight benchmark
+/schedule at 09:00 summarize what changed overnight
+/schedule cron "0 9 * * 1-5" --max 20 triage new tickets
+```
+
+| Příkaz | Co dělá |
+| --- | --- |
+| `/loop every <interval> <prompt>` | Probudí agenta s promptem hned a potom v každém intervalu (od sebe nejméně 60 sekund) |
+| `/loop <prompt>` | Smyčka s vlastním tempem: probudí agenta hned a po každém běhu si agent zvolí další prodlevu, 1 až 60 minut (ve výchozím nastavení 20) |
+| `/schedule in <duration> <prompt>` | Probudí agenta jednou, po uplynutí prodlevy |
+| `/schedule at <HH:MM or ISO time> <prompt>` | Probudí agenta jednou. `HH:MM` je nejbližší takový čas v časovém pásmu pracovního prostoru; ISO čas bez posunu je UTC |
+| `/schedule cron "<expression>" <prompt>` | Probudí agenta podle pětipolního cronu, čteného v časovém pásmu pracovního prostoru. Uvozovky jsou volitelné |
+
+- `--max <N>` omezuje počet běhů, `--days <N>` ukončí plán po tolika dnech (ve výchozím nastavení 30, nejvýše 365) a `--budget <dollars>` omezuje, kolik smí plán celkem utratit (jinak výchozí hodnota pracovního prostoru, zpočátku 50 dolarů).
+- `/loop` spustí první běh hned. `/schedule` počká na svůj čas.
+- Délky používají `s`, `m`, `h` a `d`, například `90s`, `20m` nebo `1h30m`.
+- Tyto příkazy se čtou jen ve zprávě, kterou napíšete sami.
+
+Editor vám s nimi pomůže. Po `/loop` nebo `/schedule` a mezeře nabídne seznam návrhů, kdy se spustí, a při psaní se zúží; za časem napište `--` pro limity. Enter nebo Tab vybere řádek a nic neodešle. Řádek nad textem pak přečte příkaz zpět: kdy se spustí, kdy skončí a co ještě chybí. Když stisknete Enter u příkazu, který nelze přečíst, ten řádek řekne, co je špatně, a váš návrh zůstane.
+
+Plán můžete vytvořit také na stránce **Plány** tlačítkem **Nový plán**: vyberete prostor, konverzaci a agenta, kdy se spustí, z čeho každý běh začíná, konec, limit běhů a limit nákladů. **Pokud je agent zaneprázdněn** určuje, zda se dané spuštění přeskočí, nebo se čeká, až bude agent volný. **Každé spuštění** určuje, zda se spustí běh, nebo vám jen přijde oznámení s poznámkou.
+
+## Co nastavují agenti
+
+Agenti používají nástroj `wake_me` pro tytéž věci a pro sledování:
+
+| Sledování | Spustí se, když |
+| --- | --- |
+| `on:pr_checks` | Dokončí se kontroly pull requestu prostoru |
+| `on:pr_review` | Pull request prostoru dostane recenzi nebo odpověď |
+| `on:pr_merged` | Pull request prostoru se sloučí |
+| `on:environment` | Skončí úloha prostředí prostoru, nebo se prostředí připraví |
+| `on:ticket:<id>` | Ticket se dořeší |
+| `on:pipeline_run:<id>` | Běh pipeline skončí |
+
+- Sledování pull requestu slyší pull request prostoru, nebo jeden pull request, který pojmenuje (`on:pr_checks:acme/shop-ui#12`). Sledování něčeho, co jeho osoba nemůže číst, se odmítne.
+- Vlastní akce agenta nespouštějí jeho sledování. Událost, která přijde, když agent pracuje, se neztratí: počká, až běh skončí, a další události se sloučí do stejného probuzení.
+- Plán, který agent nastaví, musí mít limit běhů nebo konec. Ve výchozím nastavení končí po 7 dnech, nejvýše po 30. Sledování běží ve výchozím nastavení 10krát.
+- Plán, který agent nastaví v běhu, jenž spustil jeden z jeho vlastních plánů, sdílí konec, limit běhů a limit nákladů prvního plánu, takže řetěz plánů agenta nemůže přežít první. Smazání prvního plánu ukončí celý řetěz; jeho pozastavení pozastaví jen tento plán. Běhy, které řetěz spustí přes jiné agenty, se počítají do stejného limitu nákladů. Plán, který jste vytvořili vy, žádný řetěz nezačíná: to, co agent nastaví ve svých bězích, je omezeno stejně jako cokoli, co nastaví po vaší zprávě.
+- Agent vypíše, co má čekající, pomocí `list_wakes`, a zruší to, co nastavil sám, pomocí `cancel_wake`. Co nastavili vy, zrušit nemůže.
+
+## Podívejte se, co čeká
+
+**Nad vstupním polem.** Když pro agenta v konverzaci čekají probuzení, pás je ukazuje: **N probuzení čeká**, odkud každé pochází (**Cíl**, **Plán**, **Sledování**, **Odpověď od** agenta, **Obnovení limitu**, **Obnovení**, …), kdy je na řadě a proč je podržené.
+
+| Tlačítko | Co dělá | Kdo může |
+| --- | --- | --- |
+| **Doručit hned** | Okamžitě doručí čekající probuzení | Jen osoba, za kterou probuzení jedná |
+| **Pokračovat** | Uvolní podržené probuzení | Jen osoba, za kterou probuzení jedná |
+| **Zrušit probuzení** | Zruší ho | Kdokoli s přístupem k prostoru |
+
+Probuzení, které nebylo doručeno, zanechá v konverzaci jeden řádek s důvodem, například **Agent je pozastaven.** nebo **Rozpočet blokuje běh.**
+
+**Stránka Plány.** Postranní panel → **Plány** vypíše každý plán a sledování, které vidíte, seskupené podle stavu; plán s cronem ukazuje svá další tři spuštění ve vašem časovém pásmu. Otevřete jeden a uvidíte jeho poznámku, vlastníka, další spuštění, běhy, přeskočení, výdaje a konec, a **Nedávná probuzení a běhy**. Každý plán má vlastní adresu (`/workspaces/<workspace>/schedules/<id>`).
+
+| Akce | Kdo může |
+| --- | --- |
+| **Pozastavit**, **Smazat** | Kdokoli s přístupem k prostoru |
+| **Pokračovat**, **Prodloužit** | Jen její vlastník (u plánu, který vytvořil agent bez osoby, správce pracovního prostoru) |
+
+Když někdo jiný než vlastník plánu ho pozastaví, konverzace ukáže řádek, který ho jmenuje.
+
+V telefonu **Opakovat** na obrazovce cílů spustí opakovaný prompt (každých tolik minut nebo hodin, nebo s vlastním tempem) s limitem nákladů a koncem a na obrazovce **Plány** se plány pozastavují, obnovují a mažou. Přehled postupu konverzace ukazuje, co čeká, včetně pozastavení na limitu využití (**Pokračovat hned**, **Zrušit**) a práce zbylé po zastavení serveru.
+
+## Jak plán běží
+
+- Každý běh plánu nebo sledování je omezen na 5 dolarů, nebo na to, co plánu zbývá, pokud je to méně, a plán se zastaví na svém limitu nákladů.
+- Čas v hodině, která se při přechodu na letní čas přeskočí, proběhne ten den o hodinu později (02:30 proběhne v 03:30). Čas v hodině, která se při přechodu na zimní čas opakuje, proběhne jednou.
+- Běh plánu se nikdy nepřipojí k běhu, který už běží. Pokud je agent zaneprázdněn, když se časovaný plán spustí, dané spuštění se tiše přeskočí, pokud plán nečeká, až bude agent volný.
+- Běh, který plán nebo sledování spustilo a který skončí bez potíží, vás neupozorní, pokud nikoho nezmíní. Když plán skončí, zvonek řekne proč (**Vyčerpal své běhy.**, **Dosáhl data konce.**, …) bez zvuku.
+- Nejvýše 30 běhů za hodinu začíná z probuzení v jedné konverzaci a 300 v pracovním prostoru.
+- Když osoba, za kterou plán jedná, opustí pracovní prostor, plán skončí. Zastaví se i všechno ostatní, co jednalo za ni: její čekající probuzení se zruší, její zařazené a podržené zprávy se smažou a její běžící agenti se zastaví.
+
+## Zastavení, restart a limity využití
+
+- **Zastavení.** Stisknutí **Zastavit** u běhu agenta podrží jeho čekající probuzení (ta, která nepatří k cíli) a zprávy, které jste pro něj zařadili do fronty. Čekají na **Pokračovat** nebo **Odeslat podržené zprávy**. Každý člověk odesílá své vlastní podržené zprávy; nikdo neodesílá cizí.
+- **Restart serveru.** Probuzení a plány přežijí. Běh, který probuzení spustilo, pokračuje po restartu, nejvýše ve 3 pokusech. Běh, který jste spustili sami, se sám znovu nespustí: zanechá podržené probuzení **Obnovení** a pokračuje, až stisknete **Pokračovat**. Časovaný plán, který během výpadku serveru zmeškal své termíny, se spustí pozdě jen v krátké toleranci (polovina jeho intervalu, nejvýše 10 minut; 24 hodin u jednorázového), jinak zaznamená jedno přeskočení: **Zmeškáno, když byl server vypnutý.**
+- **Limit využití u poskytovatele.** Když běh skončí na limitu využití u poskytovatele a poskytovatel řekne, kdy se limit resetuje (do 7 dnů), běh je pozastaven. Běh, který spustil server, například segment cíle nebo běh plánu, se sám obnoví 30 sekund po resetu. Běh, který jste spustili vy, čeká na vás: konverzace ukazuje **Pozastaveno na limitu využití u** poskytovatele. **Limit se obnoví v** a čas, s tlačítkem **Pokračovat** (jen vy) a **Zrušit** (kdokoli v prostoru). Po **Pokračovat** běh pokračuje, jakmile se limit resetoval. Pozastavení, které neobnovíte, vyprší 7 dnů po resetu. Zprávy, které jste zařadili do fronty na limitu, se odešlou do obnoveného běhu; pokud běh nečeká na reset, nebo se pozastavení zruší či vyprší, podrží se pro vás pod **Odeslat podržené zprávy**. Zprávy ostatních lidí ve frontě se jim hned podrží. Další spuštění plánu čeká, dokud se pozastavený běh neobnoví. Agenti ACP reset nehlásí, takže jejich běhy nečekají.
+
+## Limity pracovního prostoru
+
+Správce pracovního prostoru nastaví limity v **Nastavení → Pracovní prostor → Plány**:
+
+- **Limity plánů**: kolik aktivních nebo pozastavených plánů smí jeden agent držet v jedné konverzaci (10), napříč pracovním prostorem (50) a v celém pracovním prostoru (500); výchozí limit nákladů plánu (50 dolarů); a časové pásmo, které používají plány s cronem a denní přehled (zpočátku UTC).
+- **Když nikdo neodpoví**: jak dlouho čeká běh, který spustil server, na odpověď nebo schválení osoby (ve výchozím nastavení 72 hodin, 1 hodina až 7 dní), než se schválení počítá jako zamítnuté a otázka jako nezodpovězená (poté se každá další otázka nebo žádost stejného běhu hned odmítne), a hodina denního přehledu toho, co na vás čeká v cílech, plánech a dalších bězích, které spustil server.
+
+Členové vidí stránku jen pro čtení.
+
+## Viz také
+
+- [Usilujte o cíl](/cs-CZ/prirucka/navody/usilujte-o-cil/)
+- [Agenti spolupracují](/cs-CZ/prirucka/navody/agenti-spolupracuji/)
+- [Slash příkazy](/cs-CZ/prirucka/referencni-prirucka/slash-prikazy/)
+- [Nástroje pro probuzení a cíle](/cs-CZ/prirucka/referencni-prirucka/nastroje-mcp/#nástroje-pro-probuzení-a-cíle)

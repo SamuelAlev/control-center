@@ -1,6 +1,5 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row.dart';
-import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:flutter/widgets.dart';
 
 /// A panel row that is not a space (approvals, all spaces) on the space
@@ -41,9 +40,6 @@ class TrayPanelLinkRow extends StatelessWidget implements CcFluidHoverTarget {
       leading: Icon(icon, size: 16, color: iconColor ?? t.textSecondary),
       label: label,
       selected: false,
-      status: SpaceStatus.idle,
-      unread: false,
-      leadingHandlesRunning: true,
       trailingLabel: trailingLabel,
       onPress: onPress,
     );

@@ -7601,6 +7601,17 @@ class $TicketsTableTable extends TicketsTable
           'REFERENCES tickets (id) ON DELETE SET NULL',
         ),
       );
+  static const VerificationMeta _delegatedFromConversationIdMeta =
+      const VerificationMeta('delegatedFromConversationId');
+  @override
+  late final GeneratedColumn<String> delegatedFromConversationId =
+      GeneratedColumn<String>(
+        'delegated_from_conversation_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _spaceIdMeta = const VerificationMeta(
     'spaceId',
   );
@@ -7780,6 +7791,7 @@ class $TicketsTableTable extends TicketsTable
     delegatedByAgentId,
     delegationDepth,
     delegationRootTicketId,
+    delegatedFromConversationId,
     spaceId,
     errorMessage,
     linkedPrIds,
@@ -7980,6 +7992,15 @@ class $TicketsTableTable extends TicketsTable
         ),
       );
     }
+    if (data.containsKey('delegated_from_conversation_id')) {
+      context.handle(
+        _delegatedFromConversationIdMeta,
+        delegatedFromConversationId.isAcceptableOrUnknown(
+          data['delegated_from_conversation_id']!,
+          _delegatedFromConversationIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('space_id')) {
       context.handle(
         _spaceIdMeta,
@@ -8167,6 +8188,10 @@ class $TicketsTableTable extends TicketsTable
         DriftSqlType.string,
         data['${effectivePrefix}delegation_root_ticket_id'],
       ),
+      delegatedFromConversationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}delegated_from_conversation_id'],
+      ),
       spaceId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}space_id'],
@@ -8317,6 +8342,11 @@ class TicketsTableData extends DataClass
   /// leaves on every descendant when the root ticket is deleted.
   final String? delegationRootTicketId;
 
+  /// The conversation the delegating agent delegated from: where the
+  /// completion wake goes when the ticket settles. A value, not a key: a
+  /// wake to a deleted conversation is dropped by the wake queue.
+  final String? delegatedFromConversationId;
+
   /// Linked discussion space. `SET NULL`: the ticket outlives the space.
   final String? spaceId;
 
@@ -8378,6 +8408,7 @@ class TicketsTableData extends DataClass
     this.delegatedByAgentId,
     required this.delegationDepth,
     this.delegationRootTicketId,
+    this.delegatedFromConversationId,
     this.spaceId,
     this.errorMessage,
     required this.linkedPrIds,
@@ -8441,6 +8472,11 @@ class TicketsTableData extends DataClass
     if (!nullToAbsent || delegationRootTicketId != null) {
       map['delegation_root_ticket_id'] = Variable<String>(
         delegationRootTicketId,
+      );
+    }
+    if (!nullToAbsent || delegatedFromConversationId != null) {
+      map['delegated_from_conversation_id'] = Variable<String>(
+        delegatedFromConversationId,
       );
     }
     if (!nullToAbsent || spaceId != null) {
@@ -8519,6 +8555,10 @@ class TicketsTableData extends DataClass
       delegationRootTicketId: delegationRootTicketId == null && nullToAbsent
           ? const Value.absent()
           : Value(delegationRootTicketId),
+      delegatedFromConversationId:
+          delegatedFromConversationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(delegatedFromConversationId),
       spaceId: spaceId == null && nullToAbsent
           ? const Value.absent()
           : Value(spaceId),
@@ -8583,6 +8623,9 @@ class TicketsTableData extends DataClass
       delegationRootTicketId: serializer.fromJson<String?>(
         json['delegationRootTicketId'],
       ),
+      delegatedFromConversationId: serializer.fromJson<String?>(
+        json['delegatedFromConversationId'],
+      ),
       spaceId: serializer.fromJson<String?>(json['spaceId']),
       errorMessage: serializer.fromJson<String?>(json['errorMessage']),
       linkedPrIds: serializer.fromJson<String>(json['linkedPrIds']),
@@ -8626,6 +8669,9 @@ class TicketsTableData extends DataClass
       'delegationRootTicketId': serializer.toJson<String?>(
         delegationRootTicketId,
       ),
+      'delegatedFromConversationId': serializer.toJson<String?>(
+        delegatedFromConversationId,
+      ),
       'spaceId': serializer.toJson<String?>(spaceId),
       'errorMessage': serializer.toJson<String?>(errorMessage),
       'linkedPrIds': serializer.toJson<String>(linkedPrIds),
@@ -8665,6 +8711,7 @@ class TicketsTableData extends DataClass
     Value<String?> delegatedByAgentId = const Value.absent(),
     int? delegationDepth,
     Value<String?> delegationRootTicketId = const Value.absent(),
+    Value<String?> delegatedFromConversationId = const Value.absent(),
     Value<String?> spaceId = const Value.absent(),
     Value<String?> errorMessage = const Value.absent(),
     String? linkedPrIds,
@@ -8713,6 +8760,9 @@ class TicketsTableData extends DataClass
     delegationRootTicketId: delegationRootTicketId.present
         ? delegationRootTicketId.value
         : this.delegationRootTicketId,
+    delegatedFromConversationId: delegatedFromConversationId.present
+        ? delegatedFromConversationId.value
+        : this.delegatedFromConversationId,
     spaceId: spaceId.present ? spaceId.value : this.spaceId,
     errorMessage: errorMessage.present ? errorMessage.value : this.errorMessage,
     linkedPrIds: linkedPrIds ?? this.linkedPrIds,
@@ -8777,6 +8827,9 @@ class TicketsTableData extends DataClass
       delegationRootTicketId: data.delegationRootTicketId.present
           ? data.delegationRootTicketId.value
           : this.delegationRootTicketId,
+      delegatedFromConversationId: data.delegatedFromConversationId.present
+          ? data.delegatedFromConversationId.value
+          : this.delegatedFromConversationId,
       spaceId: data.spaceId.present ? data.spaceId.value : this.spaceId,
       errorMessage: data.errorMessage.present
           ? data.errorMessage.value
@@ -8830,6 +8883,7 @@ class TicketsTableData extends DataClass
           ..write('delegatedByAgentId: $delegatedByAgentId, ')
           ..write('delegationDepth: $delegationDepth, ')
           ..write('delegationRootTicketId: $delegationRootTicketId, ')
+          ..write('delegatedFromConversationId: $delegatedFromConversationId, ')
           ..write('spaceId: $spaceId, ')
           ..write('errorMessage: $errorMessage, ')
           ..write('linkedPrIds: $linkedPrIds, ')
@@ -8871,6 +8925,7 @@ class TicketsTableData extends DataClass
     delegatedByAgentId,
     delegationDepth,
     delegationRootTicketId,
+    delegatedFromConversationId,
     spaceId,
     errorMessage,
     linkedPrIds,
@@ -8911,6 +8966,8 @@ class TicketsTableData extends DataClass
           other.delegatedByAgentId == this.delegatedByAgentId &&
           other.delegationDepth == this.delegationDepth &&
           other.delegationRootTicketId == this.delegationRootTicketId &&
+          other.delegatedFromConversationId ==
+              this.delegatedFromConversationId &&
           other.spaceId == this.spaceId &&
           other.errorMessage == this.errorMessage &&
           other.linkedPrIds == this.linkedPrIds &&
@@ -8949,6 +9006,7 @@ class TicketsTableCompanion extends UpdateCompanion<TicketsTableData> {
   final Value<String?> delegatedByAgentId;
   final Value<int> delegationDepth;
   final Value<String?> delegationRootTicketId;
+  final Value<String?> delegatedFromConversationId;
   final Value<String?> spaceId;
   final Value<String?> errorMessage;
   final Value<String> linkedPrIds;
@@ -8986,6 +9044,7 @@ class TicketsTableCompanion extends UpdateCompanion<TicketsTableData> {
     this.delegatedByAgentId = const Value.absent(),
     this.delegationDepth = const Value.absent(),
     this.delegationRootTicketId = const Value.absent(),
+    this.delegatedFromConversationId = const Value.absent(),
     this.spaceId = const Value.absent(),
     this.errorMessage = const Value.absent(),
     this.linkedPrIds = const Value.absent(),
@@ -9024,6 +9083,7 @@ class TicketsTableCompanion extends UpdateCompanion<TicketsTableData> {
     this.delegatedByAgentId = const Value.absent(),
     this.delegationDepth = const Value.absent(),
     this.delegationRootTicketId = const Value.absent(),
+    this.delegatedFromConversationId = const Value.absent(),
     this.spaceId = const Value.absent(),
     this.errorMessage = const Value.absent(),
     this.linkedPrIds = const Value.absent(),
@@ -9064,6 +9124,7 @@ class TicketsTableCompanion extends UpdateCompanion<TicketsTableData> {
     Expression<String>? delegatedByAgentId,
     Expression<int>? delegationDepth,
     Expression<String>? delegationRootTicketId,
+    Expression<String>? delegatedFromConversationId,
     Expression<String>? spaceId,
     Expression<String>? errorMessage,
     Expression<String>? linkedPrIds,
@@ -9104,6 +9165,8 @@ class TicketsTableCompanion extends UpdateCompanion<TicketsTableData> {
       if (delegationDepth != null) 'delegation_depth': delegationDepth,
       if (delegationRootTicketId != null)
         'delegation_root_ticket_id': delegationRootTicketId,
+      if (delegatedFromConversationId != null)
+        'delegated_from_conversation_id': delegatedFromConversationId,
       if (spaceId != null) 'space_id': spaceId,
       if (errorMessage != null) 'error_message': errorMessage,
       if (linkedPrIds != null) 'linked_pr_ids': linkedPrIds,
@@ -9144,6 +9207,7 @@ class TicketsTableCompanion extends UpdateCompanion<TicketsTableData> {
     Value<String?>? delegatedByAgentId,
     Value<int>? delegationDepth,
     Value<String?>? delegationRootTicketId,
+    Value<String?>? delegatedFromConversationId,
     Value<String?>? spaceId,
     Value<String?>? errorMessage,
     Value<String>? linkedPrIds,
@@ -9183,6 +9247,8 @@ class TicketsTableCompanion extends UpdateCompanion<TicketsTableData> {
       delegationDepth: delegationDepth ?? this.delegationDepth,
       delegationRootTicketId:
           delegationRootTicketId ?? this.delegationRootTicketId,
+      delegatedFromConversationId:
+          delegatedFromConversationId ?? this.delegatedFromConversationId,
       spaceId: spaceId ?? this.spaceId,
       errorMessage: errorMessage ?? this.errorMessage,
       linkedPrIds: linkedPrIds ?? this.linkedPrIds,
@@ -9271,6 +9337,11 @@ class TicketsTableCompanion extends UpdateCompanion<TicketsTableData> {
         delegationRootTicketId.value,
       );
     }
+    if (delegatedFromConversationId.present) {
+      map['delegated_from_conversation_id'] = Variable<String>(
+        delegatedFromConversationId.value,
+      );
+    }
     if (spaceId.present) {
       map['space_id'] = Variable<String>(spaceId.value);
     }
@@ -9341,6 +9412,7 @@ class TicketsTableCompanion extends UpdateCompanion<TicketsTableData> {
           ..write('delegatedByAgentId: $delegatedByAgentId, ')
           ..write('delegationDepth: $delegationDepth, ')
           ..write('delegationRootTicketId: $delegationRootTicketId, ')
+          ..write('delegatedFromConversationId: $delegatedFromConversationId, ')
           ..write('spaceId: $spaceId, ')
           ..write('errorMessage: $errorMessage, ')
           ..write('linkedPrIds: $linkedPrIds, ')
@@ -9912,6 +9984,66 @@ class $AgentRunLogsTableTable extends AgentRunLogsTable
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _endReasonMeta = const VerificationMeta(
+    'endReason',
+  );
+  @override
+  late final GeneratedColumn<String> endReason = GeneratedColumn<String>(
+    'end_reason',
+    aliasedName,
+    true,
+    check: () => endReason.isIn(AgentsStoredValues.runEndReason),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _wakeIdsMeta = const VerificationMeta(
+    'wakeIds',
+  );
+  @override
+  late final GeneratedColumn<String> wakeIds = GeneratedColumn<String>(
+    'wake_ids',
+    aliasedName,
+    false,
+    check: () => isJsonArray(wakeIds),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  static const VerificationMeta _requestedByUserIdMeta = const VerificationMeta(
+    'requestedByUserId',
+  );
+  @override
+  late final GeneratedColumn<String> requestedByUserId =
+      GeneratedColumn<String>(
+        'requested_by_user_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _wakeReasonMeta = const VerificationMeta(
+    'wakeReason',
+  );
+  @override
+  late final GeneratedColumn<String> wakeReason = GeneratedColumn<String>(
+    'wake_reason',
+    aliasedName,
+    true,
+    check: () => wakeReason.isIn(AgentsStoredValues.wakeReason),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _startedByRunIdMeta = const VerificationMeta(
+    'startedByRunId',
+  );
+  @override
+  late final GeneratedColumn<String> startedByRunId = GeneratedColumn<String>(
+    'started_by_run_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -9960,6 +10092,11 @@ class $AgentRunLogsTableTable extends AgentRunLogsTable
     retryAttempt,
     parentRunId,
     spawnToolCallId,
+    endReason,
+    wakeIds,
+    requestedByUserId,
+    wakeReason,
+    startedByRunId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -10336,6 +10473,42 @@ class $AgentRunLogsTableTable extends AgentRunLogsTable
         ),
       );
     }
+    if (data.containsKey('end_reason')) {
+      context.handle(
+        _endReasonMeta,
+        endReason.isAcceptableOrUnknown(data['end_reason']!, _endReasonMeta),
+      );
+    }
+    if (data.containsKey('wake_ids')) {
+      context.handle(
+        _wakeIdsMeta,
+        wakeIds.isAcceptableOrUnknown(data['wake_ids']!, _wakeIdsMeta),
+      );
+    }
+    if (data.containsKey('requested_by_user_id')) {
+      context.handle(
+        _requestedByUserIdMeta,
+        requestedByUserId.isAcceptableOrUnknown(
+          data['requested_by_user_id']!,
+          _requestedByUserIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('wake_reason')) {
+      context.handle(
+        _wakeReasonMeta,
+        wakeReason.isAcceptableOrUnknown(data['wake_reason']!, _wakeReasonMeta),
+      );
+    }
+    if (data.containsKey('started_by_run_id')) {
+      context.handle(
+        _startedByRunIdMeta,
+        startedByRunId.isAcceptableOrUnknown(
+          data['started_by_run_id']!,
+          _startedByRunIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -10528,6 +10701,26 @@ class $AgentRunLogsTableTable extends AgentRunLogsTable
       spawnToolCallId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}spawn_tool_call_id'],
+      ),
+      endReason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}end_reason'],
+      ),
+      wakeIds: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}wake_ids'],
+      )!,
+      requestedByUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}requested_by_user_id'],
+      ),
+      wakeReason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}wake_reason'],
+      ),
+      startedByRunId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}started_by_run_id'],
       ),
     );
   }
@@ -10731,6 +10924,36 @@ class AgentRunLogsTableData extends DataClass
   /// time instead would mis-link concurrent `task` calls. No foreign key: a
   /// tool call id is not a row.
   final String? spawnToolCallId;
+
+  /// Why the run ended: a `RunEndReason` wire name, written with the
+  /// terminal row. Null while the run is live and for a run that ended
+  /// before end reasons were recorded.
+  final String? endReason;
+
+  /// JSON array of the ids of the wakes (`agent_wakes.id`) this run was
+  /// started to deliver, in delivery order; `[]` for a run nothing woke. No
+  /// foreign key: a wake row is deleted by retention long before its run.
+  final String wakeIds;
+
+  /// The person the run acts for, written with the run row; null for a run
+  /// the server started on its own. No foreign key: users live in the global
+  /// database.
+  final String? requestedByUserId;
+
+  /// Why the run was started: the wire name of the dispatch-time
+  /// `WakeContext.wakeReason` (`user_message` for a person's own message),
+  /// written with the run row and never changed. Null for a run started
+  /// without one (a subagent).
+  final String? wakeReason;
+
+  /// The run whose tool call started this run by a direct dispatch (a
+  /// reviewer `dispatch_reviewers` started, a team leader an agent's
+  /// `assign_ticket` routed to): written with the run row and never
+  /// changed. Null for every other run (a person's operation, a pipeline
+  /// step, a wake). Not a parent link: it nests nothing, changes no cost
+  /// rollup, and the run settles like any other. No foreign key: the
+  /// starting run's row is retained on its own schedule.
+  final String? startedByRunId;
   const AgentRunLogsTableData({
     required this.id,
     required this.agentId,
@@ -10778,6 +11001,11 @@ class AgentRunLogsTableData extends DataClass
     required this.retryAttempt,
     this.parentRunId,
     this.spawnToolCallId,
+    this.endReason,
+    required this.wakeIds,
+    this.requestedByUserId,
+    this.wakeReason,
+    this.startedByRunId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -10884,6 +11112,19 @@ class AgentRunLogsTableData extends DataClass
     if (!nullToAbsent || spawnToolCallId != null) {
       map['spawn_tool_call_id'] = Variable<String>(spawnToolCallId);
     }
+    if (!nullToAbsent || endReason != null) {
+      map['end_reason'] = Variable<String>(endReason);
+    }
+    map['wake_ids'] = Variable<String>(wakeIds);
+    if (!nullToAbsent || requestedByUserId != null) {
+      map['requested_by_user_id'] = Variable<String>(requestedByUserId);
+    }
+    if (!nullToAbsent || wakeReason != null) {
+      map['wake_reason'] = Variable<String>(wakeReason);
+    }
+    if (!nullToAbsent || startedByRunId != null) {
+      map['started_by_run_id'] = Variable<String>(startedByRunId);
+    }
     return map;
   }
 
@@ -10989,6 +11230,19 @@ class AgentRunLogsTableData extends DataClass
       spawnToolCallId: spawnToolCallId == null && nullToAbsent
           ? const Value.absent()
           : Value(spawnToolCallId),
+      endReason: endReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(endReason),
+      wakeIds: Value(wakeIds),
+      requestedByUserId: requestedByUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(requestedByUserId),
+      wakeReason: wakeReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(wakeReason),
+      startedByRunId: startedByRunId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(startedByRunId),
     );
   }
 
@@ -11050,6 +11304,13 @@ class AgentRunLogsTableData extends DataClass
       retryAttempt: serializer.fromJson<int>(json['retryAttempt']),
       parentRunId: serializer.fromJson<String?>(json['parentRunId']),
       spawnToolCallId: serializer.fromJson<String?>(json['spawnToolCallId']),
+      endReason: serializer.fromJson<String?>(json['endReason']),
+      wakeIds: serializer.fromJson<String>(json['wakeIds']),
+      requestedByUserId: serializer.fromJson<String?>(
+        json['requestedByUserId'],
+      ),
+      wakeReason: serializer.fromJson<String?>(json['wakeReason']),
+      startedByRunId: serializer.fromJson<String?>(json['startedByRunId']),
     );
   }
   @override
@@ -11102,6 +11363,11 @@ class AgentRunLogsTableData extends DataClass
       'retryAttempt': serializer.toJson<int>(retryAttempt),
       'parentRunId': serializer.toJson<String?>(parentRunId),
       'spawnToolCallId': serializer.toJson<String?>(spawnToolCallId),
+      'endReason': serializer.toJson<String?>(endReason),
+      'wakeIds': serializer.toJson<String>(wakeIds),
+      'requestedByUserId': serializer.toJson<String?>(requestedByUserId),
+      'wakeReason': serializer.toJson<String?>(wakeReason),
+      'startedByRunId': serializer.toJson<String?>(startedByRunId),
     };
   }
 
@@ -11152,6 +11418,11 @@ class AgentRunLogsTableData extends DataClass
     int? retryAttempt,
     Value<String?> parentRunId = const Value.absent(),
     Value<String?> spawnToolCallId = const Value.absent(),
+    Value<String?> endReason = const Value.absent(),
+    String? wakeIds,
+    Value<String?> requestedByUserId = const Value.absent(),
+    Value<String?> wakeReason = const Value.absent(),
+    Value<String?> startedByRunId = const Value.absent(),
   }) => AgentRunLogsTableData(
     id: id ?? this.id,
     agentId: agentId ?? this.agentId,
@@ -11217,6 +11488,15 @@ class AgentRunLogsTableData extends DataClass
     spawnToolCallId: spawnToolCallId.present
         ? spawnToolCallId.value
         : this.spawnToolCallId,
+    endReason: endReason.present ? endReason.value : this.endReason,
+    wakeIds: wakeIds ?? this.wakeIds,
+    requestedByUserId: requestedByUserId.present
+        ? requestedByUserId.value
+        : this.requestedByUserId,
+    wakeReason: wakeReason.present ? wakeReason.value : this.wakeReason,
+    startedByRunId: startedByRunId.present
+        ? startedByRunId.value
+        : this.startedByRunId,
   );
   AgentRunLogsTableData copyWithCompanion(AgentRunLogsTableCompanion data) {
     return AgentRunLogsTableData(
@@ -11328,6 +11608,17 @@ class AgentRunLogsTableData extends DataClass
       spawnToolCallId: data.spawnToolCallId.present
           ? data.spawnToolCallId.value
           : this.spawnToolCallId,
+      endReason: data.endReason.present ? data.endReason.value : this.endReason,
+      wakeIds: data.wakeIds.present ? data.wakeIds.value : this.wakeIds,
+      requestedByUserId: data.requestedByUserId.present
+          ? data.requestedByUserId.value
+          : this.requestedByUserId,
+      wakeReason: data.wakeReason.present
+          ? data.wakeReason.value
+          : this.wakeReason,
+      startedByRunId: data.startedByRunId.present
+          ? data.startedByRunId.value
+          : this.startedByRunId,
     );
   }
 
@@ -11379,7 +11670,12 @@ class AgentRunLogsTableData extends DataClass
           ..write('retryOfRunId: $retryOfRunId, ')
           ..write('retryAttempt: $retryAttempt, ')
           ..write('parentRunId: $parentRunId, ')
-          ..write('spawnToolCallId: $spawnToolCallId')
+          ..write('spawnToolCallId: $spawnToolCallId, ')
+          ..write('endReason: $endReason, ')
+          ..write('wakeIds: $wakeIds, ')
+          ..write('requestedByUserId: $requestedByUserId, ')
+          ..write('wakeReason: $wakeReason, ')
+          ..write('startedByRunId: $startedByRunId')
           ..write(')'))
         .toString();
   }
@@ -11432,6 +11728,11 @@ class AgentRunLogsTableData extends DataClass
     retryAttempt,
     parentRunId,
     spawnToolCallId,
+    endReason,
+    wakeIds,
+    requestedByUserId,
+    wakeReason,
+    startedByRunId,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -11482,7 +11783,12 @@ class AgentRunLogsTableData extends DataClass
           other.retryOfRunId == this.retryOfRunId &&
           other.retryAttempt == this.retryAttempt &&
           other.parentRunId == this.parentRunId &&
-          other.spawnToolCallId == this.spawnToolCallId);
+          other.spawnToolCallId == this.spawnToolCallId &&
+          other.endReason == this.endReason &&
+          other.wakeIds == this.wakeIds &&
+          other.requestedByUserId == this.requestedByUserId &&
+          other.wakeReason == this.wakeReason &&
+          other.startedByRunId == this.startedByRunId);
 }
 
 class AgentRunLogsTableCompanion
@@ -11533,6 +11839,11 @@ class AgentRunLogsTableCompanion
   final Value<int> retryAttempt;
   final Value<String?> parentRunId;
   final Value<String?> spawnToolCallId;
+  final Value<String?> endReason;
+  final Value<String> wakeIds;
+  final Value<String?> requestedByUserId;
+  final Value<String?> wakeReason;
+  final Value<String?> startedByRunId;
   final Value<int> rowid;
   const AgentRunLogsTableCompanion({
     this.id = const Value.absent(),
@@ -11581,6 +11892,11 @@ class AgentRunLogsTableCompanion
     this.retryAttempt = const Value.absent(),
     this.parentRunId = const Value.absent(),
     this.spawnToolCallId = const Value.absent(),
+    this.endReason = const Value.absent(),
+    this.wakeIds = const Value.absent(),
+    this.requestedByUserId = const Value.absent(),
+    this.wakeReason = const Value.absent(),
+    this.startedByRunId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   AgentRunLogsTableCompanion.insert({
@@ -11630,6 +11946,11 @@ class AgentRunLogsTableCompanion
     this.retryAttempt = const Value.absent(),
     this.parentRunId = const Value.absent(),
     this.spawnToolCallId = const Value.absent(),
+    this.endReason = const Value.absent(),
+    this.wakeIds = const Value.absent(),
+    this.requestedByUserId = const Value.absent(),
+    this.wakeReason = const Value.absent(),
+    this.startedByRunId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        agentId = Value(agentId),
@@ -11681,6 +12002,11 @@ class AgentRunLogsTableCompanion
     Expression<int>? retryAttempt,
     Expression<String>? parentRunId,
     Expression<String>? spawnToolCallId,
+    Expression<String>? endReason,
+    Expression<String>? wakeIds,
+    Expression<String>? requestedByUserId,
+    Expression<String>? wakeReason,
+    Expression<String>? startedByRunId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -11733,6 +12059,11 @@ class AgentRunLogsTableCompanion
       if (retryAttempt != null) 'retry_attempt': retryAttempt,
       if (parentRunId != null) 'parent_run_id': parentRunId,
       if (spawnToolCallId != null) 'spawn_tool_call_id': spawnToolCallId,
+      if (endReason != null) 'end_reason': endReason,
+      if (wakeIds != null) 'wake_ids': wakeIds,
+      if (requestedByUserId != null) 'requested_by_user_id': requestedByUserId,
+      if (wakeReason != null) 'wake_reason': wakeReason,
+      if (startedByRunId != null) 'started_by_run_id': startedByRunId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -11784,6 +12115,11 @@ class AgentRunLogsTableCompanion
     Value<int>? retryAttempt,
     Value<String?>? parentRunId,
     Value<String?>? spawnToolCallId,
+    Value<String?>? endReason,
+    Value<String>? wakeIds,
+    Value<String?>? requestedByUserId,
+    Value<String?>? wakeReason,
+    Value<String?>? startedByRunId,
     Value<int>? rowid,
   }) {
     return AgentRunLogsTableCompanion(
@@ -11833,6 +12169,11 @@ class AgentRunLogsTableCompanion
       retryAttempt: retryAttempt ?? this.retryAttempt,
       parentRunId: parentRunId ?? this.parentRunId,
       spawnToolCallId: spawnToolCallId ?? this.spawnToolCallId,
+      endReason: endReason ?? this.endReason,
+      wakeIds: wakeIds ?? this.wakeIds,
+      requestedByUserId: requestedByUserId ?? this.requestedByUserId,
+      wakeReason: wakeReason ?? this.wakeReason,
+      startedByRunId: startedByRunId ?? this.startedByRunId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -11980,6 +12321,21 @@ class AgentRunLogsTableCompanion
     if (spawnToolCallId.present) {
       map['spawn_tool_call_id'] = Variable<String>(spawnToolCallId.value);
     }
+    if (endReason.present) {
+      map['end_reason'] = Variable<String>(endReason.value);
+    }
+    if (wakeIds.present) {
+      map['wake_ids'] = Variable<String>(wakeIds.value);
+    }
+    if (requestedByUserId.present) {
+      map['requested_by_user_id'] = Variable<String>(requestedByUserId.value);
+    }
+    if (wakeReason.present) {
+      map['wake_reason'] = Variable<String>(wakeReason.value);
+    }
+    if (startedByRunId.present) {
+      map['started_by_run_id'] = Variable<String>(startedByRunId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -12035,6 +12391,11 @@ class AgentRunLogsTableCompanion
           ..write('retryAttempt: $retryAttempt, ')
           ..write('parentRunId: $parentRunId, ')
           ..write('spawnToolCallId: $spawnToolCallId, ')
+          ..write('endReason: $endReason, ')
+          ..write('wakeIds: $wakeIds, ')
+          ..write('requestedByUserId: $requestedByUserId, ')
+          ..write('wakeReason: $wakeReason, ')
+          ..write('startedByRunId: $startedByRunId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -12558,16 +12919,6 @@ class $AgentGoalRunsTableTable extends AgentGoalRunsTable
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
-  @override
-  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
-    'kind',
-    aliasedName,
-    false,
-    check: () => kind.isIn(AgentsStoredValues.agentGoalKind),
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
   static const VerificationMeta _statusMeta = const VerificationMeta('status');
   @override
   late final GeneratedColumn<String> status = GeneratedColumn<String>(
@@ -12685,6 +13036,202 @@ class $AgentGoalRunsTableTable extends AgentGoalRunsTable
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _contractMeta = const VerificationMeta(
+    'contract',
+  );
+  @override
+  late final GeneratedColumn<String> contract = GeneratedColumn<String>(
+    'contract',
+    aliasedName,
+    true,
+    check: () => isJsonObject(contract),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _holdMeta = const VerificationMeta('hold');
+  @override
+  late final GeneratedColumn<String> hold = GeneratedColumn<String>(
+    'hold',
+    aliasedName,
+    true,
+    check: () => hold.isIn(AgentsStoredValues.goalHold),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _holdUntilMeta = const VerificationMeta(
+    'holdUntil',
+  );
+  @override
+  late final GeneratedColumn<DateTime> holdUntil = GeneratedColumn<DateTime>(
+    'hold_until',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _holdDetailMeta = const VerificationMeta(
+    'holdDetail',
+  );
+  @override
+  late final GeneratedColumn<String> holdDetail = GeneratedColumn<String>(
+    'hold_detail',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _noProgressStreakMeta = const VerificationMeta(
+    'noProgressStreak',
+  );
+  @override
+  late final GeneratedColumn<int> noProgressStreak = GeneratedColumn<int>(
+    'no_progress_streak',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _verificationRoundsMeta =
+      const VerificationMeta('verificationRounds');
+  @override
+  late final GeneratedColumn<int> verificationRounds = GeneratedColumn<int>(
+    'verification_rounds',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _lastFingerprintMeta = const VerificationMeta(
+    'lastFingerprint',
+  );
+  @override
+  late final GeneratedColumn<String> lastFingerprint = GeneratedColumn<String>(
+    'last_fingerprint',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastActivityDigestMeta =
+      const VerificationMeta('lastActivityDigest');
+  @override
+  late final GeneratedColumn<String> lastActivityDigest =
+      GeneratedColumn<String>(
+        'last_activity_digest',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _startRefMeta = const VerificationMeta(
+    'startRef',
+  );
+  @override
+  late final GeneratedColumn<String> startRef = GeneratedColumn<String>(
+    'start_ref',
+    aliasedName,
+    true,
+    check: () => isJsonObject(startRef),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _parkCountMeta = const VerificationMeta(
+    'parkCount',
+  );
+  @override
+  late final GeneratedColumn<int> parkCount = GeneratedColumn<int>(
+    'park_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _freshMeta = const VerificationMeta('fresh');
+  @override
+  late final GeneratedColumn<bool> fresh = GeneratedColumn<bool>(
+    'fresh',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("fresh" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _unattendedMeta = const VerificationMeta(
+    'unattended',
+  );
+  @override
+  late final GeneratedColumn<String> unattended = GeneratedColumn<String>(
+    'unattended',
+    aliasedName,
+    false,
+    check: () => unattended.isIn(AgentsStoredValues.goalUnattendedPolicy),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('wait'),
+  );
+  static const VerificationMeta _checkerAgentIdMeta = const VerificationMeta(
+    'checkerAgentId',
+  );
+  @override
+  late final GeneratedColumn<String> checkerAgentId = GeneratedColumn<String>(
+    'checker_agent_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _verificationMeta = const VerificationMeta(
+    'verification',
+  );
+  @override
+  late final GeneratedColumn<String> verification = GeneratedColumn<String>(
+    'verification',
+    aliasedName,
+    true,
+    check: () => isJsonObject(verification),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _pipelineRunIdMeta = const VerificationMeta(
+    'pipelineRunId',
+  );
+  @override
+  late final GeneratedColumn<String> pipelineRunId = GeneratedColumn<String>(
+    'pipeline_run_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _pipelineStepIdMeta = const VerificationMeta(
+    'pipelineStepId',
+  );
+  @override
+  late final GeneratedColumn<String> pipelineStepId = GeneratedColumn<String>(
+    'pipeline_step_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _progressMarksMeta = const VerificationMeta(
+    'progressMarks',
+  );
+  @override
+  late final GeneratedColumn<String> progressMarks = GeneratedColumn<String>(
+    'progress_marks',
+    aliasedName,
+    true,
+    check: () => isJson(progressMarks),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -12717,7 +13264,6 @@ class $AgentGoalRunsTableTable extends AgentGoalRunsTable
     conversationId,
     agentId,
     userText,
-    kind,
     status,
     deadlineAt,
     costCapMicros,
@@ -12728,6 +13274,23 @@ class $AgentGoalRunsTableTable extends AgentGoalRunsTable
     consecutiveFailures,
     requestedByUserId,
     summary,
+    contract,
+    hold,
+    holdUntil,
+    holdDetail,
+    noProgressStreak,
+    verificationRounds,
+    lastFingerprint,
+    lastActivityDigest,
+    startRef,
+    parkCount,
+    fresh,
+    unattended,
+    checkerAgentId,
+    verification,
+    pipelineRunId,
+    pipelineStepId,
+    progressMarks,
     createdAt,
     updatedAt,
   ];
@@ -12793,14 +13356,6 @@ class $AgentGoalRunsTableTable extends AgentGoalRunsTable
       );
     } else if (isInserting) {
       context.missing(_userTextMeta);
-    }
-    if (data.containsKey('kind')) {
-      context.handle(
-        _kindMeta,
-        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_kindMeta);
     }
     if (data.containsKey('status')) {
       context.handle(
@@ -12874,6 +13429,135 @@ class $AgentGoalRunsTableTable extends AgentGoalRunsTable
         summary.isAcceptableOrUnknown(data['summary']!, _summaryMeta),
       );
     }
+    if (data.containsKey('contract')) {
+      context.handle(
+        _contractMeta,
+        contract.isAcceptableOrUnknown(data['contract']!, _contractMeta),
+      );
+    }
+    if (data.containsKey('hold')) {
+      context.handle(
+        _holdMeta,
+        hold.isAcceptableOrUnknown(data['hold']!, _holdMeta),
+      );
+    }
+    if (data.containsKey('hold_until')) {
+      context.handle(
+        _holdUntilMeta,
+        holdUntil.isAcceptableOrUnknown(data['hold_until']!, _holdUntilMeta),
+      );
+    }
+    if (data.containsKey('hold_detail')) {
+      context.handle(
+        _holdDetailMeta,
+        holdDetail.isAcceptableOrUnknown(data['hold_detail']!, _holdDetailMeta),
+      );
+    }
+    if (data.containsKey('no_progress_streak')) {
+      context.handle(
+        _noProgressStreakMeta,
+        noProgressStreak.isAcceptableOrUnknown(
+          data['no_progress_streak']!,
+          _noProgressStreakMeta,
+        ),
+      );
+    }
+    if (data.containsKey('verification_rounds')) {
+      context.handle(
+        _verificationRoundsMeta,
+        verificationRounds.isAcceptableOrUnknown(
+          data['verification_rounds']!,
+          _verificationRoundsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_fingerprint')) {
+      context.handle(
+        _lastFingerprintMeta,
+        lastFingerprint.isAcceptableOrUnknown(
+          data['last_fingerprint']!,
+          _lastFingerprintMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_activity_digest')) {
+      context.handle(
+        _lastActivityDigestMeta,
+        lastActivityDigest.isAcceptableOrUnknown(
+          data['last_activity_digest']!,
+          _lastActivityDigestMeta,
+        ),
+      );
+    }
+    if (data.containsKey('start_ref')) {
+      context.handle(
+        _startRefMeta,
+        startRef.isAcceptableOrUnknown(data['start_ref']!, _startRefMeta),
+      );
+    }
+    if (data.containsKey('park_count')) {
+      context.handle(
+        _parkCountMeta,
+        parkCount.isAcceptableOrUnknown(data['park_count']!, _parkCountMeta),
+      );
+    }
+    if (data.containsKey('fresh')) {
+      context.handle(
+        _freshMeta,
+        fresh.isAcceptableOrUnknown(data['fresh']!, _freshMeta),
+      );
+    }
+    if (data.containsKey('unattended')) {
+      context.handle(
+        _unattendedMeta,
+        unattended.isAcceptableOrUnknown(data['unattended']!, _unattendedMeta),
+      );
+    }
+    if (data.containsKey('checker_agent_id')) {
+      context.handle(
+        _checkerAgentIdMeta,
+        checkerAgentId.isAcceptableOrUnknown(
+          data['checker_agent_id']!,
+          _checkerAgentIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('verification')) {
+      context.handle(
+        _verificationMeta,
+        verification.isAcceptableOrUnknown(
+          data['verification']!,
+          _verificationMeta,
+        ),
+      );
+    }
+    if (data.containsKey('pipeline_run_id')) {
+      context.handle(
+        _pipelineRunIdMeta,
+        pipelineRunId.isAcceptableOrUnknown(
+          data['pipeline_run_id']!,
+          _pipelineRunIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('pipeline_step_id')) {
+      context.handle(
+        _pipelineStepIdMeta,
+        pipelineStepId.isAcceptableOrUnknown(
+          data['pipeline_step_id']!,
+          _pipelineStepIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('progress_marks')) {
+      context.handle(
+        _progressMarksMeta,
+        progressMarks.isAcceptableOrUnknown(
+          data['progress_marks']!,
+          _progressMarksMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -12919,10 +13603,6 @@ class $AgentGoalRunsTableTable extends AgentGoalRunsTable
         DriftSqlType.string,
         data['${effectivePrefix}user_text'],
       )!,
-      kind: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}kind'],
-      )!,
       status: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}status'],
@@ -12963,6 +13643,74 @@ class $AgentGoalRunsTableTable extends AgentGoalRunsTable
         DriftSqlType.string,
         data['${effectivePrefix}summary'],
       ),
+      contract: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}contract'],
+      ),
+      hold: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}hold'],
+      ),
+      holdUntil: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}hold_until'],
+      ),
+      holdDetail: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}hold_detail'],
+      ),
+      noProgressStreak: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}no_progress_streak'],
+      )!,
+      verificationRounds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}verification_rounds'],
+      )!,
+      lastFingerprint: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_fingerprint'],
+      ),
+      lastActivityDigest: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_activity_digest'],
+      ),
+      startRef: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}start_ref'],
+      ),
+      parkCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}park_count'],
+      )!,
+      fresh: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}fresh'],
+      )!,
+      unattended: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}unattended'],
+      )!,
+      checkerAgentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}checker_agent_id'],
+      ),
+      verification: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}verification'],
+      ),
+      pipelineRunId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}pipeline_run_id'],
+      ),
+      pipelineStepId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}pipeline_step_id'],
+      ),
+      progressMarks: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}progress_marks'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -12997,11 +13745,8 @@ class AgentGoalRunsTableData extends DataClass
   /// Agent pursuing the goal.
   final String agentId;
 
-  /// The objective, verbatim (the `/goal` or `/loop` body).
+  /// The objective, verbatim (the `/goal` body).
   final String userText;
-
-  /// Which command spawned the goal: an `AgentGoalKind` wire name.
-  final String kind;
 
   /// Lifecycle status: an `AgentGoalStatus` wire name.
   final String status;
@@ -13045,6 +13790,68 @@ class AgentGoalRunsTableData extends DataClass
   /// The agent's completion summary (set when status becomes completed).
   final String? summary;
 
+  /// `GoalContract` as a JSON object (criteria, checks, boundaries,
+  /// stopWhen); null for a goal started without one.
+  final String? contract;
+
+  /// What an active or paused goal is waiting on: a `GoalHold` wire name;
+  /// null when nothing is held.
+  final String? hold;
+
+  /// When the hold lifts by itself, when it does.
+  final DateTime? holdUntil;
+
+  /// A short explanation of the hold.
+  final String? holdDetail;
+
+  /// Consecutive segments without observed progress.
+  final int noProgressStreak;
+
+  /// Verification rounds that failed.
+  final int verificationRounds;
+
+  /// The worktree fingerprint after the previous segment.
+  final String? lastFingerprint;
+
+  /// A digest of what the previous segment did (at most 128 characters,
+  /// enforced by the entity).
+  final String? lastActivityDigest;
+
+  /// `GoalStartRefs` as a JSON object: the commit each checkout of the
+  /// conversation was at when the goal started. Null on a goal started
+  /// before it was recorded.
+  final String? startRef;
+
+  /// How many times the goal parked on a provider limit.
+  final int parkCount;
+
+  /// Whether every segment starts without the conversation's history.
+  final bool fresh;
+
+  /// What a segment's unanswered question does: a `GoalUnattendedPolicy`
+  /// wire name.
+  final String unattended;
+
+  /// The agent that reviews completion claims; null for the space's checker
+  /// or the goal's own agent. A value, not a key: a removed checker falls
+  /// back to those.
+  final String? checkerAgentId;
+
+  /// The last verification (`GoalVerification`) as a JSON object.
+  final String? verification;
+
+  /// The pipeline run whose `goal.pursue` step started the goal; null for a
+  /// goal a person or an agent started. A value, not a key: the goal reads
+  /// a run it no longer finds as ended (`GoalPipelineLink`).
+  final String? pipelineRunId;
+
+  /// The `goal.pursue` step of [pipelineRunId]; set with it.
+  final String? pipelineStepId;
+
+  /// The progress marks the goal has already seen (JSON); a mark seen
+  /// before is not progress. Null on a goal that has none yet.
+  final String? progressMarks;
+
   /// When the goal was created.
   final DateTime createdAt;
 
@@ -13057,7 +13864,6 @@ class AgentGoalRunsTableData extends DataClass
     required this.conversationId,
     required this.agentId,
     required this.userText,
-    required this.kind,
     required this.status,
     this.deadlineAt,
     required this.costCapMicros,
@@ -13068,6 +13874,23 @@ class AgentGoalRunsTableData extends DataClass
     required this.consecutiveFailures,
     this.requestedByUserId,
     this.summary,
+    this.contract,
+    this.hold,
+    this.holdUntil,
+    this.holdDetail,
+    required this.noProgressStreak,
+    required this.verificationRounds,
+    this.lastFingerprint,
+    this.lastActivityDigest,
+    this.startRef,
+    required this.parkCount,
+    required this.fresh,
+    required this.unattended,
+    this.checkerAgentId,
+    this.verification,
+    this.pipelineRunId,
+    this.pipelineStepId,
+    this.progressMarks,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -13080,7 +13903,6 @@ class AgentGoalRunsTableData extends DataClass
     map['conversation_id'] = Variable<String>(conversationId);
     map['agent_id'] = Variable<String>(agentId);
     map['user_text'] = Variable<String>(userText);
-    map['kind'] = Variable<String>(kind);
     map['status'] = Variable<String>(status);
     if (!nullToAbsent || deadlineAt != null) {
       map['deadline_at'] = Variable<DateTime>(deadlineAt);
@@ -13101,6 +13923,47 @@ class AgentGoalRunsTableData extends DataClass
     if (!nullToAbsent || summary != null) {
       map['summary'] = Variable<String>(summary);
     }
+    if (!nullToAbsent || contract != null) {
+      map['contract'] = Variable<String>(contract);
+    }
+    if (!nullToAbsent || hold != null) {
+      map['hold'] = Variable<String>(hold);
+    }
+    if (!nullToAbsent || holdUntil != null) {
+      map['hold_until'] = Variable<DateTime>(holdUntil);
+    }
+    if (!nullToAbsent || holdDetail != null) {
+      map['hold_detail'] = Variable<String>(holdDetail);
+    }
+    map['no_progress_streak'] = Variable<int>(noProgressStreak);
+    map['verification_rounds'] = Variable<int>(verificationRounds);
+    if (!nullToAbsent || lastFingerprint != null) {
+      map['last_fingerprint'] = Variable<String>(lastFingerprint);
+    }
+    if (!nullToAbsent || lastActivityDigest != null) {
+      map['last_activity_digest'] = Variable<String>(lastActivityDigest);
+    }
+    if (!nullToAbsent || startRef != null) {
+      map['start_ref'] = Variable<String>(startRef);
+    }
+    map['park_count'] = Variable<int>(parkCount);
+    map['fresh'] = Variable<bool>(fresh);
+    map['unattended'] = Variable<String>(unattended);
+    if (!nullToAbsent || checkerAgentId != null) {
+      map['checker_agent_id'] = Variable<String>(checkerAgentId);
+    }
+    if (!nullToAbsent || verification != null) {
+      map['verification'] = Variable<String>(verification);
+    }
+    if (!nullToAbsent || pipelineRunId != null) {
+      map['pipeline_run_id'] = Variable<String>(pipelineRunId);
+    }
+    if (!nullToAbsent || pipelineStepId != null) {
+      map['pipeline_step_id'] = Variable<String>(pipelineStepId);
+    }
+    if (!nullToAbsent || progressMarks != null) {
+      map['progress_marks'] = Variable<String>(progressMarks);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -13114,7 +13977,6 @@ class AgentGoalRunsTableData extends DataClass
       conversationId: Value(conversationId),
       agentId: Value(agentId),
       userText: Value(userText),
-      kind: Value(kind),
       status: Value(status),
       deadlineAt: deadlineAt == null && nullToAbsent
           ? const Value.absent()
@@ -13135,6 +13997,45 @@ class AgentGoalRunsTableData extends DataClass
       summary: summary == null && nullToAbsent
           ? const Value.absent()
           : Value(summary),
+      contract: contract == null && nullToAbsent
+          ? const Value.absent()
+          : Value(contract),
+      hold: hold == null && nullToAbsent ? const Value.absent() : Value(hold),
+      holdUntil: holdUntil == null && nullToAbsent
+          ? const Value.absent()
+          : Value(holdUntil),
+      holdDetail: holdDetail == null && nullToAbsent
+          ? const Value.absent()
+          : Value(holdDetail),
+      noProgressStreak: Value(noProgressStreak),
+      verificationRounds: Value(verificationRounds),
+      lastFingerprint: lastFingerprint == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastFingerprint),
+      lastActivityDigest: lastActivityDigest == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastActivityDigest),
+      startRef: startRef == null && nullToAbsent
+          ? const Value.absent()
+          : Value(startRef),
+      parkCount: Value(parkCount),
+      fresh: Value(fresh),
+      unattended: Value(unattended),
+      checkerAgentId: checkerAgentId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(checkerAgentId),
+      verification: verification == null && nullToAbsent
+          ? const Value.absent()
+          : Value(verification),
+      pipelineRunId: pipelineRunId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pipelineRunId),
+      pipelineStepId: pipelineStepId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pipelineStepId),
+      progressMarks: progressMarks == null && nullToAbsent
+          ? const Value.absent()
+          : Value(progressMarks),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -13152,7 +14053,6 @@ class AgentGoalRunsTableData extends DataClass
       conversationId: serializer.fromJson<String>(json['conversationId']),
       agentId: serializer.fromJson<String>(json['agentId']),
       userText: serializer.fromJson<String>(json['userText']),
-      kind: serializer.fromJson<String>(json['kind']),
       status: serializer.fromJson<String>(json['status']),
       deadlineAt: serializer.fromJson<DateTime?>(json['deadlineAt']),
       costCapMicros: serializer.fromJson<int>(json['costCapMicros']),
@@ -13167,6 +14067,25 @@ class AgentGoalRunsTableData extends DataClass
         json['requestedByUserId'],
       ),
       summary: serializer.fromJson<String?>(json['summary']),
+      contract: serializer.fromJson<String?>(json['contract']),
+      hold: serializer.fromJson<String?>(json['hold']),
+      holdUntil: serializer.fromJson<DateTime?>(json['holdUntil']),
+      holdDetail: serializer.fromJson<String?>(json['holdDetail']),
+      noProgressStreak: serializer.fromJson<int>(json['noProgressStreak']),
+      verificationRounds: serializer.fromJson<int>(json['verificationRounds']),
+      lastFingerprint: serializer.fromJson<String?>(json['lastFingerprint']),
+      lastActivityDigest: serializer.fromJson<String?>(
+        json['lastActivityDigest'],
+      ),
+      startRef: serializer.fromJson<String?>(json['startRef']),
+      parkCount: serializer.fromJson<int>(json['parkCount']),
+      fresh: serializer.fromJson<bool>(json['fresh']),
+      unattended: serializer.fromJson<String>(json['unattended']),
+      checkerAgentId: serializer.fromJson<String?>(json['checkerAgentId']),
+      verification: serializer.fromJson<String?>(json['verification']),
+      pipelineRunId: serializer.fromJson<String?>(json['pipelineRunId']),
+      pipelineStepId: serializer.fromJson<String?>(json['pipelineStepId']),
+      progressMarks: serializer.fromJson<String?>(json['progressMarks']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -13181,7 +14100,6 @@ class AgentGoalRunsTableData extends DataClass
       'conversationId': serializer.toJson<String>(conversationId),
       'agentId': serializer.toJson<String>(agentId),
       'userText': serializer.toJson<String>(userText),
-      'kind': serializer.toJson<String>(kind),
       'status': serializer.toJson<String>(status),
       'deadlineAt': serializer.toJson<DateTime?>(deadlineAt),
       'costCapMicros': serializer.toJson<int>(costCapMicros),
@@ -13192,6 +14110,23 @@ class AgentGoalRunsTableData extends DataClass
       'consecutiveFailures': serializer.toJson<int>(consecutiveFailures),
       'requestedByUserId': serializer.toJson<String?>(requestedByUserId),
       'summary': serializer.toJson<String?>(summary),
+      'contract': serializer.toJson<String?>(contract),
+      'hold': serializer.toJson<String?>(hold),
+      'holdUntil': serializer.toJson<DateTime?>(holdUntil),
+      'holdDetail': serializer.toJson<String?>(holdDetail),
+      'noProgressStreak': serializer.toJson<int>(noProgressStreak),
+      'verificationRounds': serializer.toJson<int>(verificationRounds),
+      'lastFingerprint': serializer.toJson<String?>(lastFingerprint),
+      'lastActivityDigest': serializer.toJson<String?>(lastActivityDigest),
+      'startRef': serializer.toJson<String?>(startRef),
+      'parkCount': serializer.toJson<int>(parkCount),
+      'fresh': serializer.toJson<bool>(fresh),
+      'unattended': serializer.toJson<String>(unattended),
+      'checkerAgentId': serializer.toJson<String?>(checkerAgentId),
+      'verification': serializer.toJson<String?>(verification),
+      'pipelineRunId': serializer.toJson<String?>(pipelineRunId),
+      'pipelineStepId': serializer.toJson<String?>(pipelineStepId),
+      'progressMarks': serializer.toJson<String?>(progressMarks),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -13204,7 +14139,6 @@ class AgentGoalRunsTableData extends DataClass
     String? conversationId,
     String? agentId,
     String? userText,
-    String? kind,
     String? status,
     Value<DateTime?> deadlineAt = const Value.absent(),
     int? costCapMicros,
@@ -13215,6 +14149,23 @@ class AgentGoalRunsTableData extends DataClass
     int? consecutiveFailures,
     Value<String?> requestedByUserId = const Value.absent(),
     Value<String?> summary = const Value.absent(),
+    Value<String?> contract = const Value.absent(),
+    Value<String?> hold = const Value.absent(),
+    Value<DateTime?> holdUntil = const Value.absent(),
+    Value<String?> holdDetail = const Value.absent(),
+    int? noProgressStreak,
+    int? verificationRounds,
+    Value<String?> lastFingerprint = const Value.absent(),
+    Value<String?> lastActivityDigest = const Value.absent(),
+    Value<String?> startRef = const Value.absent(),
+    int? parkCount,
+    bool? fresh,
+    String? unattended,
+    Value<String?> checkerAgentId = const Value.absent(),
+    Value<String?> verification = const Value.absent(),
+    Value<String?> pipelineRunId = const Value.absent(),
+    Value<String?> pipelineStepId = const Value.absent(),
+    Value<String?> progressMarks = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => AgentGoalRunsTableData(
@@ -13224,7 +14175,6 @@ class AgentGoalRunsTableData extends DataClass
     conversationId: conversationId ?? this.conversationId,
     agentId: agentId ?? this.agentId,
     userText: userText ?? this.userText,
-    kind: kind ?? this.kind,
     status: status ?? this.status,
     deadlineAt: deadlineAt.present ? deadlineAt.value : this.deadlineAt,
     costCapMicros: costCapMicros ?? this.costCapMicros,
@@ -13237,6 +14187,35 @@ class AgentGoalRunsTableData extends DataClass
         ? requestedByUserId.value
         : this.requestedByUserId,
     summary: summary.present ? summary.value : this.summary,
+    contract: contract.present ? contract.value : this.contract,
+    hold: hold.present ? hold.value : this.hold,
+    holdUntil: holdUntil.present ? holdUntil.value : this.holdUntil,
+    holdDetail: holdDetail.present ? holdDetail.value : this.holdDetail,
+    noProgressStreak: noProgressStreak ?? this.noProgressStreak,
+    verificationRounds: verificationRounds ?? this.verificationRounds,
+    lastFingerprint: lastFingerprint.present
+        ? lastFingerprint.value
+        : this.lastFingerprint,
+    lastActivityDigest: lastActivityDigest.present
+        ? lastActivityDigest.value
+        : this.lastActivityDigest,
+    startRef: startRef.present ? startRef.value : this.startRef,
+    parkCount: parkCount ?? this.parkCount,
+    fresh: fresh ?? this.fresh,
+    unattended: unattended ?? this.unattended,
+    checkerAgentId: checkerAgentId.present
+        ? checkerAgentId.value
+        : this.checkerAgentId,
+    verification: verification.present ? verification.value : this.verification,
+    pipelineRunId: pipelineRunId.present
+        ? pipelineRunId.value
+        : this.pipelineRunId,
+    pipelineStepId: pipelineStepId.present
+        ? pipelineStepId.value
+        : this.pipelineStepId,
+    progressMarks: progressMarks.present
+        ? progressMarks.value
+        : this.progressMarks,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -13252,7 +14231,6 @@ class AgentGoalRunsTableData extends DataClass
           : this.conversationId,
       agentId: data.agentId.present ? data.agentId.value : this.agentId,
       userText: data.userText.present ? data.userText.value : this.userText,
-      kind: data.kind.present ? data.kind.value : this.kind,
       status: data.status.present ? data.status.value : this.status,
       deadlineAt: data.deadlineAt.present
           ? data.deadlineAt.value
@@ -13275,6 +14253,45 @@ class AgentGoalRunsTableData extends DataClass
           ? data.requestedByUserId.value
           : this.requestedByUserId,
       summary: data.summary.present ? data.summary.value : this.summary,
+      contract: data.contract.present ? data.contract.value : this.contract,
+      hold: data.hold.present ? data.hold.value : this.hold,
+      holdUntil: data.holdUntil.present ? data.holdUntil.value : this.holdUntil,
+      holdDetail: data.holdDetail.present
+          ? data.holdDetail.value
+          : this.holdDetail,
+      noProgressStreak: data.noProgressStreak.present
+          ? data.noProgressStreak.value
+          : this.noProgressStreak,
+      verificationRounds: data.verificationRounds.present
+          ? data.verificationRounds.value
+          : this.verificationRounds,
+      lastFingerprint: data.lastFingerprint.present
+          ? data.lastFingerprint.value
+          : this.lastFingerprint,
+      lastActivityDigest: data.lastActivityDigest.present
+          ? data.lastActivityDigest.value
+          : this.lastActivityDigest,
+      startRef: data.startRef.present ? data.startRef.value : this.startRef,
+      parkCount: data.parkCount.present ? data.parkCount.value : this.parkCount,
+      fresh: data.fresh.present ? data.fresh.value : this.fresh,
+      unattended: data.unattended.present
+          ? data.unattended.value
+          : this.unattended,
+      checkerAgentId: data.checkerAgentId.present
+          ? data.checkerAgentId.value
+          : this.checkerAgentId,
+      verification: data.verification.present
+          ? data.verification.value
+          : this.verification,
+      pipelineRunId: data.pipelineRunId.present
+          ? data.pipelineRunId.value
+          : this.pipelineRunId,
+      pipelineStepId: data.pipelineStepId.present
+          ? data.pipelineStepId.value
+          : this.pipelineStepId,
+      progressMarks: data.progressMarks.present
+          ? data.progressMarks.value
+          : this.progressMarks,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -13289,7 +14306,6 @@ class AgentGoalRunsTableData extends DataClass
           ..write('conversationId: $conversationId, ')
           ..write('agentId: $agentId, ')
           ..write('userText: $userText, ')
-          ..write('kind: $kind, ')
           ..write('status: $status, ')
           ..write('deadlineAt: $deadlineAt, ')
           ..write('costCapMicros: $costCapMicros, ')
@@ -13300,6 +14316,23 @@ class AgentGoalRunsTableData extends DataClass
           ..write('consecutiveFailures: $consecutiveFailures, ')
           ..write('requestedByUserId: $requestedByUserId, ')
           ..write('summary: $summary, ')
+          ..write('contract: $contract, ')
+          ..write('hold: $hold, ')
+          ..write('holdUntil: $holdUntil, ')
+          ..write('holdDetail: $holdDetail, ')
+          ..write('noProgressStreak: $noProgressStreak, ')
+          ..write('verificationRounds: $verificationRounds, ')
+          ..write('lastFingerprint: $lastFingerprint, ')
+          ..write('lastActivityDigest: $lastActivityDigest, ')
+          ..write('startRef: $startRef, ')
+          ..write('parkCount: $parkCount, ')
+          ..write('fresh: $fresh, ')
+          ..write('unattended: $unattended, ')
+          ..write('checkerAgentId: $checkerAgentId, ')
+          ..write('verification: $verification, ')
+          ..write('pipelineRunId: $pipelineRunId, ')
+          ..write('pipelineStepId: $pipelineStepId, ')
+          ..write('progressMarks: $progressMarks, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -13307,14 +14340,13 @@ class AgentGoalRunsTableData extends DataClass
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     workspaceId,
     spaceId,
     conversationId,
     agentId,
     userText,
-    kind,
     status,
     deadlineAt,
     costCapMicros,
@@ -13325,9 +14357,26 @@ class AgentGoalRunsTableData extends DataClass
     consecutiveFailures,
     requestedByUserId,
     summary,
+    contract,
+    hold,
+    holdUntil,
+    holdDetail,
+    noProgressStreak,
+    verificationRounds,
+    lastFingerprint,
+    lastActivityDigest,
+    startRef,
+    parkCount,
+    fresh,
+    unattended,
+    checkerAgentId,
+    verification,
+    pipelineRunId,
+    pipelineStepId,
+    progressMarks,
     createdAt,
     updatedAt,
-  );
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -13338,7 +14387,6 @@ class AgentGoalRunsTableData extends DataClass
           other.conversationId == this.conversationId &&
           other.agentId == this.agentId &&
           other.userText == this.userText &&
-          other.kind == this.kind &&
           other.status == this.status &&
           other.deadlineAt == this.deadlineAt &&
           other.costCapMicros == this.costCapMicros &&
@@ -13349,6 +14397,23 @@ class AgentGoalRunsTableData extends DataClass
           other.consecutiveFailures == this.consecutiveFailures &&
           other.requestedByUserId == this.requestedByUserId &&
           other.summary == this.summary &&
+          other.contract == this.contract &&
+          other.hold == this.hold &&
+          other.holdUntil == this.holdUntil &&
+          other.holdDetail == this.holdDetail &&
+          other.noProgressStreak == this.noProgressStreak &&
+          other.verificationRounds == this.verificationRounds &&
+          other.lastFingerprint == this.lastFingerprint &&
+          other.lastActivityDigest == this.lastActivityDigest &&
+          other.startRef == this.startRef &&
+          other.parkCount == this.parkCount &&
+          other.fresh == this.fresh &&
+          other.unattended == this.unattended &&
+          other.checkerAgentId == this.checkerAgentId &&
+          other.verification == this.verification &&
+          other.pipelineRunId == this.pipelineRunId &&
+          other.pipelineStepId == this.pipelineStepId &&
+          other.progressMarks == this.progressMarks &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -13361,7 +14426,6 @@ class AgentGoalRunsTableCompanion
   final Value<String> conversationId;
   final Value<String> agentId;
   final Value<String> userText;
-  final Value<String> kind;
   final Value<String> status;
   final Value<DateTime?> deadlineAt;
   final Value<int> costCapMicros;
@@ -13372,6 +14436,23 @@ class AgentGoalRunsTableCompanion
   final Value<int> consecutiveFailures;
   final Value<String?> requestedByUserId;
   final Value<String?> summary;
+  final Value<String?> contract;
+  final Value<String?> hold;
+  final Value<DateTime?> holdUntil;
+  final Value<String?> holdDetail;
+  final Value<int> noProgressStreak;
+  final Value<int> verificationRounds;
+  final Value<String?> lastFingerprint;
+  final Value<String?> lastActivityDigest;
+  final Value<String?> startRef;
+  final Value<int> parkCount;
+  final Value<bool> fresh;
+  final Value<String> unattended;
+  final Value<String?> checkerAgentId;
+  final Value<String?> verification;
+  final Value<String?> pipelineRunId;
+  final Value<String?> pipelineStepId;
+  final Value<String?> progressMarks;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -13382,7 +14463,6 @@ class AgentGoalRunsTableCompanion
     this.conversationId = const Value.absent(),
     this.agentId = const Value.absent(),
     this.userText = const Value.absent(),
-    this.kind = const Value.absent(),
     this.status = const Value.absent(),
     this.deadlineAt = const Value.absent(),
     this.costCapMicros = const Value.absent(),
@@ -13393,6 +14473,23 @@ class AgentGoalRunsTableCompanion
     this.consecutiveFailures = const Value.absent(),
     this.requestedByUserId = const Value.absent(),
     this.summary = const Value.absent(),
+    this.contract = const Value.absent(),
+    this.hold = const Value.absent(),
+    this.holdUntil = const Value.absent(),
+    this.holdDetail = const Value.absent(),
+    this.noProgressStreak = const Value.absent(),
+    this.verificationRounds = const Value.absent(),
+    this.lastFingerprint = const Value.absent(),
+    this.lastActivityDigest = const Value.absent(),
+    this.startRef = const Value.absent(),
+    this.parkCount = const Value.absent(),
+    this.fresh = const Value.absent(),
+    this.unattended = const Value.absent(),
+    this.checkerAgentId = const Value.absent(),
+    this.verification = const Value.absent(),
+    this.pipelineRunId = const Value.absent(),
+    this.pipelineStepId = const Value.absent(),
+    this.progressMarks = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -13404,7 +14501,6 @@ class AgentGoalRunsTableCompanion
     required String conversationId,
     required String agentId,
     required String userText,
-    required String kind,
     this.status = const Value.absent(),
     this.deadlineAt = const Value.absent(),
     this.costCapMicros = const Value.absent(),
@@ -13415,6 +14511,23 @@ class AgentGoalRunsTableCompanion
     this.consecutiveFailures = const Value.absent(),
     this.requestedByUserId = const Value.absent(),
     this.summary = const Value.absent(),
+    this.contract = const Value.absent(),
+    this.hold = const Value.absent(),
+    this.holdUntil = const Value.absent(),
+    this.holdDetail = const Value.absent(),
+    this.noProgressStreak = const Value.absent(),
+    this.verificationRounds = const Value.absent(),
+    this.lastFingerprint = const Value.absent(),
+    this.lastActivityDigest = const Value.absent(),
+    this.startRef = const Value.absent(),
+    this.parkCount = const Value.absent(),
+    this.fresh = const Value.absent(),
+    this.unattended = const Value.absent(),
+    this.checkerAgentId = const Value.absent(),
+    this.verification = const Value.absent(),
+    this.pipelineRunId = const Value.absent(),
+    this.pipelineStepId = const Value.absent(),
+    this.progressMarks = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -13423,8 +14536,7 @@ class AgentGoalRunsTableCompanion
        spaceId = Value(spaceId),
        conversationId = Value(conversationId),
        agentId = Value(agentId),
-       userText = Value(userText),
-       kind = Value(kind);
+       userText = Value(userText);
   static Insertable<AgentGoalRunsTableData> custom({
     Expression<String>? id,
     Expression<String>? workspaceId,
@@ -13432,7 +14544,6 @@ class AgentGoalRunsTableCompanion
     Expression<String>? conversationId,
     Expression<String>? agentId,
     Expression<String>? userText,
-    Expression<String>? kind,
     Expression<String>? status,
     Expression<DateTime>? deadlineAt,
     Expression<int>? costCapMicros,
@@ -13443,6 +14554,23 @@ class AgentGoalRunsTableCompanion
     Expression<int>? consecutiveFailures,
     Expression<String>? requestedByUserId,
     Expression<String>? summary,
+    Expression<String>? contract,
+    Expression<String>? hold,
+    Expression<DateTime>? holdUntil,
+    Expression<String>? holdDetail,
+    Expression<int>? noProgressStreak,
+    Expression<int>? verificationRounds,
+    Expression<String>? lastFingerprint,
+    Expression<String>? lastActivityDigest,
+    Expression<String>? startRef,
+    Expression<int>? parkCount,
+    Expression<bool>? fresh,
+    Expression<String>? unattended,
+    Expression<String>? checkerAgentId,
+    Expression<String>? verification,
+    Expression<String>? pipelineRunId,
+    Expression<String>? pipelineStepId,
+    Expression<String>? progressMarks,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -13454,7 +14582,6 @@ class AgentGoalRunsTableCompanion
       if (conversationId != null) 'conversation_id': conversationId,
       if (agentId != null) 'agent_id': agentId,
       if (userText != null) 'user_text': userText,
-      if (kind != null) 'kind': kind,
       if (status != null) 'status': status,
       if (deadlineAt != null) 'deadline_at': deadlineAt,
       if (costCapMicros != null) 'cost_cap_micros': costCapMicros,
@@ -13466,6 +14593,24 @@ class AgentGoalRunsTableCompanion
         'consecutive_failures': consecutiveFailures,
       if (requestedByUserId != null) 'requested_by_user_id': requestedByUserId,
       if (summary != null) 'summary': summary,
+      if (contract != null) 'contract': contract,
+      if (hold != null) 'hold': hold,
+      if (holdUntil != null) 'hold_until': holdUntil,
+      if (holdDetail != null) 'hold_detail': holdDetail,
+      if (noProgressStreak != null) 'no_progress_streak': noProgressStreak,
+      if (verificationRounds != null) 'verification_rounds': verificationRounds,
+      if (lastFingerprint != null) 'last_fingerprint': lastFingerprint,
+      if (lastActivityDigest != null)
+        'last_activity_digest': lastActivityDigest,
+      if (startRef != null) 'start_ref': startRef,
+      if (parkCount != null) 'park_count': parkCount,
+      if (fresh != null) 'fresh': fresh,
+      if (unattended != null) 'unattended': unattended,
+      if (checkerAgentId != null) 'checker_agent_id': checkerAgentId,
+      if (verification != null) 'verification': verification,
+      if (pipelineRunId != null) 'pipeline_run_id': pipelineRunId,
+      if (pipelineStepId != null) 'pipeline_step_id': pipelineStepId,
+      if (progressMarks != null) 'progress_marks': progressMarks,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -13479,7 +14624,6 @@ class AgentGoalRunsTableCompanion
     Value<String>? conversationId,
     Value<String>? agentId,
     Value<String>? userText,
-    Value<String>? kind,
     Value<String>? status,
     Value<DateTime?>? deadlineAt,
     Value<int>? costCapMicros,
@@ -13490,6 +14634,23 @@ class AgentGoalRunsTableCompanion
     Value<int>? consecutiveFailures,
     Value<String?>? requestedByUserId,
     Value<String?>? summary,
+    Value<String?>? contract,
+    Value<String?>? hold,
+    Value<DateTime?>? holdUntil,
+    Value<String?>? holdDetail,
+    Value<int>? noProgressStreak,
+    Value<int>? verificationRounds,
+    Value<String?>? lastFingerprint,
+    Value<String?>? lastActivityDigest,
+    Value<String?>? startRef,
+    Value<int>? parkCount,
+    Value<bool>? fresh,
+    Value<String>? unattended,
+    Value<String?>? checkerAgentId,
+    Value<String?>? verification,
+    Value<String?>? pipelineRunId,
+    Value<String?>? pipelineStepId,
+    Value<String?>? progressMarks,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
@@ -13501,7 +14662,6 @@ class AgentGoalRunsTableCompanion
       conversationId: conversationId ?? this.conversationId,
       agentId: agentId ?? this.agentId,
       userText: userText ?? this.userText,
-      kind: kind ?? this.kind,
       status: status ?? this.status,
       deadlineAt: deadlineAt ?? this.deadlineAt,
       costCapMicros: costCapMicros ?? this.costCapMicros,
@@ -13512,6 +14672,23 @@ class AgentGoalRunsTableCompanion
       consecutiveFailures: consecutiveFailures ?? this.consecutiveFailures,
       requestedByUserId: requestedByUserId ?? this.requestedByUserId,
       summary: summary ?? this.summary,
+      contract: contract ?? this.contract,
+      hold: hold ?? this.hold,
+      holdUntil: holdUntil ?? this.holdUntil,
+      holdDetail: holdDetail ?? this.holdDetail,
+      noProgressStreak: noProgressStreak ?? this.noProgressStreak,
+      verificationRounds: verificationRounds ?? this.verificationRounds,
+      lastFingerprint: lastFingerprint ?? this.lastFingerprint,
+      lastActivityDigest: lastActivityDigest ?? this.lastActivityDigest,
+      startRef: startRef ?? this.startRef,
+      parkCount: parkCount ?? this.parkCount,
+      fresh: fresh ?? this.fresh,
+      unattended: unattended ?? this.unattended,
+      checkerAgentId: checkerAgentId ?? this.checkerAgentId,
+      verification: verification ?? this.verification,
+      pipelineRunId: pipelineRunId ?? this.pipelineRunId,
+      pipelineStepId: pipelineStepId ?? this.pipelineStepId,
+      progressMarks: progressMarks ?? this.progressMarks,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -13538,9 +14715,6 @@ class AgentGoalRunsTableCompanion
     }
     if (userText.present) {
       map['user_text'] = Variable<String>(userText.value);
-    }
-    if (kind.present) {
-      map['kind'] = Variable<String>(kind.value);
     }
     if (status.present) {
       map['status'] = Variable<String>(status.value);
@@ -13572,6 +14746,57 @@ class AgentGoalRunsTableCompanion
     if (summary.present) {
       map['summary'] = Variable<String>(summary.value);
     }
+    if (contract.present) {
+      map['contract'] = Variable<String>(contract.value);
+    }
+    if (hold.present) {
+      map['hold'] = Variable<String>(hold.value);
+    }
+    if (holdUntil.present) {
+      map['hold_until'] = Variable<DateTime>(holdUntil.value);
+    }
+    if (holdDetail.present) {
+      map['hold_detail'] = Variable<String>(holdDetail.value);
+    }
+    if (noProgressStreak.present) {
+      map['no_progress_streak'] = Variable<int>(noProgressStreak.value);
+    }
+    if (verificationRounds.present) {
+      map['verification_rounds'] = Variable<int>(verificationRounds.value);
+    }
+    if (lastFingerprint.present) {
+      map['last_fingerprint'] = Variable<String>(lastFingerprint.value);
+    }
+    if (lastActivityDigest.present) {
+      map['last_activity_digest'] = Variable<String>(lastActivityDigest.value);
+    }
+    if (startRef.present) {
+      map['start_ref'] = Variable<String>(startRef.value);
+    }
+    if (parkCount.present) {
+      map['park_count'] = Variable<int>(parkCount.value);
+    }
+    if (fresh.present) {
+      map['fresh'] = Variable<bool>(fresh.value);
+    }
+    if (unattended.present) {
+      map['unattended'] = Variable<String>(unattended.value);
+    }
+    if (checkerAgentId.present) {
+      map['checker_agent_id'] = Variable<String>(checkerAgentId.value);
+    }
+    if (verification.present) {
+      map['verification'] = Variable<String>(verification.value);
+    }
+    if (pipelineRunId.present) {
+      map['pipeline_run_id'] = Variable<String>(pipelineRunId.value);
+    }
+    if (pipelineStepId.present) {
+      map['pipeline_step_id'] = Variable<String>(pipelineStepId.value);
+    }
+    if (progressMarks.present) {
+      map['progress_marks'] = Variable<String>(progressMarks.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -13593,7 +14818,6 @@ class AgentGoalRunsTableCompanion
           ..write('conversationId: $conversationId, ')
           ..write('agentId: $agentId, ')
           ..write('userText: $userText, ')
-          ..write('kind: $kind, ')
           ..write('status: $status, ')
           ..write('deadlineAt: $deadlineAt, ')
           ..write('costCapMicros: $costCapMicros, ')
@@ -13604,6 +14828,23 @@ class AgentGoalRunsTableCompanion
           ..write('consecutiveFailures: $consecutiveFailures, ')
           ..write('requestedByUserId: $requestedByUserId, ')
           ..write('summary: $summary, ')
+          ..write('contract: $contract, ')
+          ..write('hold: $hold, ')
+          ..write('holdUntil: $holdUntil, ')
+          ..write('holdDetail: $holdDetail, ')
+          ..write('noProgressStreak: $noProgressStreak, ')
+          ..write('verificationRounds: $verificationRounds, ')
+          ..write('lastFingerprint: $lastFingerprint, ')
+          ..write('lastActivityDigest: $lastActivityDigest, ')
+          ..write('startRef: $startRef, ')
+          ..write('parkCount: $parkCount, ')
+          ..write('fresh: $fresh, ')
+          ..write('unattended: $unattended, ')
+          ..write('checkerAgentId: $checkerAgentId, ')
+          ..write('verification: $verification, ')
+          ..write('pipelineRunId: $pipelineRunId, ')
+          ..write('pipelineStepId: $pipelineStepId, ')
+          ..write('progressMarks: $progressMarks, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -15165,29 +16406,6 @@ class $SpaceParticipantsTableTable extends SpaceParticipantsTable
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
-  static const VerificationMeta _lastReadAtMeta = const VerificationMeta(
-    'lastReadAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> lastReadAt = GeneratedColumn<DateTime>(
-    'last_read_at',
-    aliasedName,
-    true,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _lastReadSeqMeta = const VerificationMeta(
-    'lastReadSeq',
-  );
-  @override
-  late final GeneratedColumn<int> lastReadSeq = GeneratedColumn<int>(
-    'last_read_seq',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(0),
-  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -15196,8 +16414,6 @@ class $SpaceParticipantsTableTable extends SpaceParticipantsTable
     participantType,
     role,
     joinedAt,
-    lastReadAt,
-    lastReadSeq,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -15256,24 +16472,6 @@ class $SpaceParticipantsTableTable extends SpaceParticipantsTable
         joinedAt.isAcceptableOrUnknown(data['joined_at']!, _joinedAtMeta),
       );
     }
-    if (data.containsKey('last_read_at')) {
-      context.handle(
-        _lastReadAtMeta,
-        lastReadAt.isAcceptableOrUnknown(
-          data['last_read_at']!,
-          _lastReadAtMeta,
-        ),
-      );
-    }
-    if (data.containsKey('last_read_seq')) {
-      context.handle(
-        _lastReadSeqMeta,
-        lastReadSeq.isAcceptableOrUnknown(
-          data['last_read_seq']!,
-          _lastReadSeqMeta,
-        ),
-      );
-    }
     return context;
   }
 
@@ -15310,14 +16508,6 @@ class $SpaceParticipantsTableTable extends SpaceParticipantsTable
         DriftSqlType.dateTime,
         data['${effectivePrefix}joined_at'],
       )!,
-      lastReadAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}last_read_at'],
-      ),
-      lastReadSeq: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}last_read_seq'],
-      )!,
     );
   }
 
@@ -15351,21 +16541,6 @@ class SpaceParticipantsTableData extends DataClass
 
   /// Joined at.
   final DateTime joinedAt;
-
-  /// `created_at` of the newest message the participant had seen when they
-  /// last read the space (their read cursor). Null until the space is first
-  /// opened under this participant, which is treated as "nothing unseen yet"
-  /// rather than "everything unseen".
-  ///
-  /// Drives the sidebar's unread indicator: an agent message after the
-  /// cursor (while no run is in flight) surfaces a notification dot.
-  final DateTime? lastReadAt;
-
-  /// `rowid` of that message (0 when the space had none), so the cursor is
-  /// the pair `(lastReadAt, lastReadSeq)`. `created_at` has whole-second
-  /// resolution: a message landing later in the same second as the read
-  /// compares after it by this column, not before.
-  final int lastReadSeq;
   const SpaceParticipantsTableData({
     required this.id,
     required this.spaceId,
@@ -15373,8 +16548,6 @@ class SpaceParticipantsTableData extends DataClass
     required this.participantType,
     required this.role,
     required this.joinedAt,
-    this.lastReadAt,
-    required this.lastReadSeq,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -15385,10 +16558,6 @@ class SpaceParticipantsTableData extends DataClass
     map['participant_type'] = Variable<String>(participantType);
     map['role'] = Variable<String>(role);
     map['joined_at'] = Variable<DateTime>(joinedAt);
-    if (!nullToAbsent || lastReadAt != null) {
-      map['last_read_at'] = Variable<DateTime>(lastReadAt);
-    }
-    map['last_read_seq'] = Variable<int>(lastReadSeq);
     return map;
   }
 
@@ -15400,10 +16569,6 @@ class SpaceParticipantsTableData extends DataClass
       participantType: Value(participantType),
       role: Value(role),
       joinedAt: Value(joinedAt),
-      lastReadAt: lastReadAt == null && nullToAbsent
-          ? const Value.absent()
-          : Value(lastReadAt),
-      lastReadSeq: Value(lastReadSeq),
     );
   }
 
@@ -15419,8 +16584,6 @@ class SpaceParticipantsTableData extends DataClass
       participantType: serializer.fromJson<String>(json['participantType']),
       role: serializer.fromJson<String>(json['role']),
       joinedAt: serializer.fromJson<DateTime>(json['joinedAt']),
-      lastReadAt: serializer.fromJson<DateTime?>(json['lastReadAt']),
-      lastReadSeq: serializer.fromJson<int>(json['lastReadSeq']),
     );
   }
   @override
@@ -15433,8 +16596,6 @@ class SpaceParticipantsTableData extends DataClass
       'participantType': serializer.toJson<String>(participantType),
       'role': serializer.toJson<String>(role),
       'joinedAt': serializer.toJson<DateTime>(joinedAt),
-      'lastReadAt': serializer.toJson<DateTime?>(lastReadAt),
-      'lastReadSeq': serializer.toJson<int>(lastReadSeq),
     };
   }
 
@@ -15445,8 +16606,6 @@ class SpaceParticipantsTableData extends DataClass
     String? participantType,
     String? role,
     DateTime? joinedAt,
-    Value<DateTime?> lastReadAt = const Value.absent(),
-    int? lastReadSeq,
   }) => SpaceParticipantsTableData(
     id: id ?? this.id,
     spaceId: spaceId ?? this.spaceId,
@@ -15454,8 +16613,6 @@ class SpaceParticipantsTableData extends DataClass
     participantType: participantType ?? this.participantType,
     role: role ?? this.role,
     joinedAt: joinedAt ?? this.joinedAt,
-    lastReadAt: lastReadAt.present ? lastReadAt.value : this.lastReadAt,
-    lastReadSeq: lastReadSeq ?? this.lastReadSeq,
   );
   SpaceParticipantsTableData copyWithCompanion(
     SpaceParticipantsTableCompanion data,
@@ -15471,12 +16628,6 @@ class SpaceParticipantsTableData extends DataClass
           : this.participantType,
       role: data.role.present ? data.role.value : this.role,
       joinedAt: data.joinedAt.present ? data.joinedAt.value : this.joinedAt,
-      lastReadAt: data.lastReadAt.present
-          ? data.lastReadAt.value
-          : this.lastReadAt,
-      lastReadSeq: data.lastReadSeq.present
-          ? data.lastReadSeq.value
-          : this.lastReadSeq,
     );
   }
 
@@ -15488,24 +16639,14 @@ class SpaceParticipantsTableData extends DataClass
           ..write('principalId: $principalId, ')
           ..write('participantType: $participantType, ')
           ..write('role: $role, ')
-          ..write('joinedAt: $joinedAt, ')
-          ..write('lastReadAt: $lastReadAt, ')
-          ..write('lastReadSeq: $lastReadSeq')
+          ..write('joinedAt: $joinedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
-    id,
-    spaceId,
-    principalId,
-    participantType,
-    role,
-    joinedAt,
-    lastReadAt,
-    lastReadSeq,
-  );
+  int get hashCode =>
+      Object.hash(id, spaceId, principalId, participantType, role, joinedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -15515,9 +16656,7 @@ class SpaceParticipantsTableData extends DataClass
           other.principalId == this.principalId &&
           other.participantType == this.participantType &&
           other.role == this.role &&
-          other.joinedAt == this.joinedAt &&
-          other.lastReadAt == this.lastReadAt &&
-          other.lastReadSeq == this.lastReadSeq);
+          other.joinedAt == this.joinedAt);
 }
 
 class SpaceParticipantsTableCompanion
@@ -15528,8 +16667,6 @@ class SpaceParticipantsTableCompanion
   final Value<String> participantType;
   final Value<String> role;
   final Value<DateTime> joinedAt;
-  final Value<DateTime?> lastReadAt;
-  final Value<int> lastReadSeq;
   final Value<int> rowid;
   const SpaceParticipantsTableCompanion({
     this.id = const Value.absent(),
@@ -15538,8 +16675,6 @@ class SpaceParticipantsTableCompanion
     this.participantType = const Value.absent(),
     this.role = const Value.absent(),
     this.joinedAt = const Value.absent(),
-    this.lastReadAt = const Value.absent(),
-    this.lastReadSeq = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   SpaceParticipantsTableCompanion.insert({
@@ -15549,8 +16684,6 @@ class SpaceParticipantsTableCompanion
     this.participantType = const Value.absent(),
     this.role = const Value.absent(),
     this.joinedAt = const Value.absent(),
-    this.lastReadAt = const Value.absent(),
-    this.lastReadSeq = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        spaceId = Value(spaceId),
@@ -15562,8 +16695,6 @@ class SpaceParticipantsTableCompanion
     Expression<String>? participantType,
     Expression<String>? role,
     Expression<DateTime>? joinedAt,
-    Expression<DateTime>? lastReadAt,
-    Expression<int>? lastReadSeq,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -15573,8 +16704,6 @@ class SpaceParticipantsTableCompanion
       if (participantType != null) 'participant_type': participantType,
       if (role != null) 'role': role,
       if (joinedAt != null) 'joined_at': joinedAt,
-      if (lastReadAt != null) 'last_read_at': lastReadAt,
-      if (lastReadSeq != null) 'last_read_seq': lastReadSeq,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -15586,8 +16715,6 @@ class SpaceParticipantsTableCompanion
     Value<String>? participantType,
     Value<String>? role,
     Value<DateTime>? joinedAt,
-    Value<DateTime?>? lastReadAt,
-    Value<int>? lastReadSeq,
     Value<int>? rowid,
   }) {
     return SpaceParticipantsTableCompanion(
@@ -15597,8 +16724,6 @@ class SpaceParticipantsTableCompanion
       participantType: participantType ?? this.participantType,
       role: role ?? this.role,
       joinedAt: joinedAt ?? this.joinedAt,
-      lastReadAt: lastReadAt ?? this.lastReadAt,
-      lastReadSeq: lastReadSeq ?? this.lastReadSeq,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -15624,12 +16749,6 @@ class SpaceParticipantsTableCompanion
     if (joinedAt.present) {
       map['joined_at'] = Variable<DateTime>(joinedAt.value);
     }
-    if (lastReadAt.present) {
-      map['last_read_at'] = Variable<DateTime>(lastReadAt.value);
-    }
-    if (lastReadSeq.present) {
-      map['last_read_seq'] = Variable<int>(lastReadSeq.value);
-    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -15645,8 +16764,6 @@ class SpaceParticipantsTableCompanion
           ..write('participantType: $participantType, ')
           ..write('role: $role, ')
           ..write('joinedAt: $joinedAt, ')
-          ..write('lastReadAt: $lastReadAt, ')
-          ..write('lastReadSeq: $lastReadSeq, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -20440,6 +21557,359 @@ class ConversationActivityTableCompanion
           ..write('lastAgentMessageAt: $lastAgentMessageAt, ')
           ..write('lastAgentMessageSeq: $lastAgentMessageSeq, ')
           ..write('openQuestionCount: $openQuestionCount, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ConversationReadsTableTable extends ConversationReadsTable
+    with TableInfo<$ConversationReadsTableTable, ConversationReadsTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ConversationReadsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _conversationIdMeta = const VerificationMeta(
+    'conversationId',
+  );
+  @override
+  late final GeneratedColumn<String> conversationId = GeneratedColumn<String>(
+    'conversation_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints:
+        'NOT NULL REFERENCES conversations (id) ON DELETE CASCADE',
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastReadAtMeta = const VerificationMeta(
+    'lastReadAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastReadAt = GeneratedColumn<DateTime>(
+    'last_read_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastReadSeqMeta = const VerificationMeta(
+    'lastReadSeq',
+  );
+  @override
+  late final GeneratedColumn<int> lastReadSeq = GeneratedColumn<int>(
+    'last_read_seq',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    conversationId,
+    userId,
+    lastReadAt,
+    lastReadSeq,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'conversation_reads';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ConversationReadsTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('conversation_id')) {
+      context.handle(
+        _conversationIdMeta,
+        conversationId.isAcceptableOrUnknown(
+          data['conversation_id']!,
+          _conversationIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_conversationIdMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('last_read_at')) {
+      context.handle(
+        _lastReadAtMeta,
+        lastReadAt.isAcceptableOrUnknown(
+          data['last_read_at']!,
+          _lastReadAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lastReadAtMeta);
+    }
+    if (data.containsKey('last_read_seq')) {
+      context.handle(
+        _lastReadSeqMeta,
+        lastReadSeq.isAcceptableOrUnknown(
+          data['last_read_seq']!,
+          _lastReadSeqMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lastReadSeqMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {conversationId, userId};
+  @override
+  ConversationReadsTableData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ConversationReadsTableData(
+      conversationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}conversation_id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      lastReadAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_read_at'],
+      )!,
+      lastReadSeq: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_read_seq'],
+      )!,
+    );
+  }
+
+  @override
+  $ConversationReadsTableTable createAlias(String alias) {
+    return $ConversationReadsTableTable(attachedDatabase, alias);
+  }
+}
+
+class ConversationReadsTableData extends DataClass
+    implements Insertable<ConversationReadsTableData> {
+  /// The conversation this cursor reads.
+  final String conversationId;
+
+  /// The person whose cursor this is.
+  final String userId;
+
+  /// `created_at` of the newest message they had seen.
+  final DateTime lastReadAt;
+
+  /// `rowid` of that message (0 when the conversation had none), so the
+  /// cursor is the pair `(lastReadAt, lastReadSeq)`. `created_at` has
+  /// whole-second resolution: a message landing later in the same second
+  /// as the read compares after it by this column, not before.
+  final int lastReadSeq;
+  const ConversationReadsTableData({
+    required this.conversationId,
+    required this.userId,
+    required this.lastReadAt,
+    required this.lastReadSeq,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['conversation_id'] = Variable<String>(conversationId);
+    map['user_id'] = Variable<String>(userId);
+    map['last_read_at'] = Variable<DateTime>(lastReadAt);
+    map['last_read_seq'] = Variable<int>(lastReadSeq);
+    return map;
+  }
+
+  ConversationReadsTableCompanion toCompanion(bool nullToAbsent) {
+    return ConversationReadsTableCompanion(
+      conversationId: Value(conversationId),
+      userId: Value(userId),
+      lastReadAt: Value(lastReadAt),
+      lastReadSeq: Value(lastReadSeq),
+    );
+  }
+
+  factory ConversationReadsTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ConversationReadsTableData(
+      conversationId: serializer.fromJson<String>(json['conversationId']),
+      userId: serializer.fromJson<String>(json['userId']),
+      lastReadAt: serializer.fromJson<DateTime>(json['lastReadAt']),
+      lastReadSeq: serializer.fromJson<int>(json['lastReadSeq']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'conversationId': serializer.toJson<String>(conversationId),
+      'userId': serializer.toJson<String>(userId),
+      'lastReadAt': serializer.toJson<DateTime>(lastReadAt),
+      'lastReadSeq': serializer.toJson<int>(lastReadSeq),
+    };
+  }
+
+  ConversationReadsTableData copyWith({
+    String? conversationId,
+    String? userId,
+    DateTime? lastReadAt,
+    int? lastReadSeq,
+  }) => ConversationReadsTableData(
+    conversationId: conversationId ?? this.conversationId,
+    userId: userId ?? this.userId,
+    lastReadAt: lastReadAt ?? this.lastReadAt,
+    lastReadSeq: lastReadSeq ?? this.lastReadSeq,
+  );
+  ConversationReadsTableData copyWithCompanion(
+    ConversationReadsTableCompanion data,
+  ) {
+    return ConversationReadsTableData(
+      conversationId: data.conversationId.present
+          ? data.conversationId.value
+          : this.conversationId,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      lastReadAt: data.lastReadAt.present
+          ? data.lastReadAt.value
+          : this.lastReadAt,
+      lastReadSeq: data.lastReadSeq.present
+          ? data.lastReadSeq.value
+          : this.lastReadSeq,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ConversationReadsTableData(')
+          ..write('conversationId: $conversationId, ')
+          ..write('userId: $userId, ')
+          ..write('lastReadAt: $lastReadAt, ')
+          ..write('lastReadSeq: $lastReadSeq')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(conversationId, userId, lastReadAt, lastReadSeq);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ConversationReadsTableData &&
+          other.conversationId == this.conversationId &&
+          other.userId == this.userId &&
+          other.lastReadAt == this.lastReadAt &&
+          other.lastReadSeq == this.lastReadSeq);
+}
+
+class ConversationReadsTableCompanion
+    extends UpdateCompanion<ConversationReadsTableData> {
+  final Value<String> conversationId;
+  final Value<String> userId;
+  final Value<DateTime> lastReadAt;
+  final Value<int> lastReadSeq;
+  final Value<int> rowid;
+  const ConversationReadsTableCompanion({
+    this.conversationId = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.lastReadAt = const Value.absent(),
+    this.lastReadSeq = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ConversationReadsTableCompanion.insert({
+    required String conversationId,
+    required String userId,
+    required DateTime lastReadAt,
+    required int lastReadSeq,
+    this.rowid = const Value.absent(),
+  }) : conversationId = Value(conversationId),
+       userId = Value(userId),
+       lastReadAt = Value(lastReadAt),
+       lastReadSeq = Value(lastReadSeq);
+  static Insertable<ConversationReadsTableData> custom({
+    Expression<String>? conversationId,
+    Expression<String>? userId,
+    Expression<DateTime>? lastReadAt,
+    Expression<int>? lastReadSeq,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (conversationId != null) 'conversation_id': conversationId,
+      if (userId != null) 'user_id': userId,
+      if (lastReadAt != null) 'last_read_at': lastReadAt,
+      if (lastReadSeq != null) 'last_read_seq': lastReadSeq,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ConversationReadsTableCompanion copyWith({
+    Value<String>? conversationId,
+    Value<String>? userId,
+    Value<DateTime>? lastReadAt,
+    Value<int>? lastReadSeq,
+    Value<int>? rowid,
+  }) {
+    return ConversationReadsTableCompanion(
+      conversationId: conversationId ?? this.conversationId,
+      userId: userId ?? this.userId,
+      lastReadAt: lastReadAt ?? this.lastReadAt,
+      lastReadSeq: lastReadSeq ?? this.lastReadSeq,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (conversationId.present) {
+      map['conversation_id'] = Variable<String>(conversationId.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (lastReadAt.present) {
+      map['last_read_at'] = Variable<DateTime>(lastReadAt.value);
+    }
+    if (lastReadSeq.present) {
+      map['last_read_seq'] = Variable<int>(lastReadSeq.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ConversationReadsTableCompanion(')
+          ..write('conversationId: $conversationId, ')
+          ..write('userId: $userId, ')
+          ..write('lastReadAt: $lastReadAt, ')
+          ..write('lastReadSeq: $lastReadSeq, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -67852,6 +69322,21 @@ class $GuardDecisionsTableTable extends GuardDecisionsTable
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _unansweredMeta = const VerificationMeta(
+    'unanswered',
+  );
+  @override
+  late final GeneratedColumn<bool> unanswered = GeneratedColumn<bool>(
+    'unanswered',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("unanswered" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _responderUserIdMeta = const VerificationMeta(
     'responderUserId',
   );
@@ -67944,6 +69429,7 @@ class $GuardDecisionsTableTable extends GuardDecisionsTable
     sourceScope,
     ruleId,
     prompted,
+    unanswered,
     responderUserId,
     overrideReason,
     correlationId,
@@ -68143,6 +69629,12 @@ class $GuardDecisionsTableTable extends GuardDecisionsTable
         prompted.isAcceptableOrUnknown(data['prompted']!, _promptedMeta),
       );
     }
+    if (data.containsKey('unanswered')) {
+      context.handle(
+        _unansweredMeta,
+        unanswered.isAcceptableOrUnknown(data['unanswered']!, _unansweredMeta),
+      );
+    }
     if (data.containsKey('responder_user_id')) {
       context.handle(
         _responderUserIdMeta,
@@ -68304,6 +69796,10 @@ class $GuardDecisionsTableTable extends GuardDecisionsTable
         DriftSqlType.bool,
         data['${effectivePrefix}prompted'],
       )!,
+      unanswered: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}unanswered'],
+      )!,
       responderUserId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}responder_user_id'],
@@ -68422,6 +69918,10 @@ class GuardDecisionsTableData extends DataClass
   /// Whether a human was asked (a `prompt` that reached a responder).
   final bool prompted;
 
+  /// Whether the prompt came down with nobody's answer (its deadline, an
+  /// expiry, a withdrawal, a shutdown): a `deny` that no person decided.
+  final bool unanswered;
+
   /// The human who answered a prompt (approve or deny).
   final String? responderUserId;
 
@@ -68468,6 +69968,7 @@ class GuardDecisionsTableData extends DataClass
     this.sourceScope,
     this.ruleId,
     required this.prompted,
+    required this.unanswered,
     this.responderUserId,
     this.overrideReason,
     this.correlationId,
@@ -68528,6 +70029,7 @@ class GuardDecisionsTableData extends DataClass
       map['rule_id'] = Variable<String>(ruleId);
     }
     map['prompted'] = Variable<bool>(prompted);
+    map['unanswered'] = Variable<bool>(unanswered);
     if (!nullToAbsent || responderUserId != null) {
       map['responder_user_id'] = Variable<String>(responderUserId);
     }
@@ -68593,6 +70095,7 @@ class GuardDecisionsTableData extends DataClass
           ? const Value.absent()
           : Value(ruleId),
       prompted: Value(prompted),
+      unanswered: Value(unanswered),
       responderUserId: responderUserId == null && nullToAbsent
           ? const Value.absent()
           : Value(responderUserId),
@@ -68642,6 +70145,7 @@ class GuardDecisionsTableData extends DataClass
       sourceScope: serializer.fromJson<String?>(json['sourceScope']),
       ruleId: serializer.fromJson<String?>(json['ruleId']),
       prompted: serializer.fromJson<bool>(json['prompted']),
+      unanswered: serializer.fromJson<bool>(json['unanswered']),
       responderUserId: serializer.fromJson<String?>(json['responderUserId']),
       overrideReason: serializer.fromJson<String?>(json['overrideReason']),
       correlationId: serializer.fromJson<String?>(json['correlationId']),
@@ -68678,6 +70182,7 @@ class GuardDecisionsTableData extends DataClass
       'sourceScope': serializer.toJson<String?>(sourceScope),
       'ruleId': serializer.toJson<String?>(ruleId),
       'prompted': serializer.toJson<bool>(prompted),
+      'unanswered': serializer.toJson<bool>(unanswered),
       'responderUserId': serializer.toJson<String?>(responderUserId),
       'overrideReason': serializer.toJson<String?>(overrideReason),
       'correlationId': serializer.toJson<String?>(correlationId),
@@ -68712,6 +70217,7 @@ class GuardDecisionsTableData extends DataClass
     Value<String?> sourceScope = const Value.absent(),
     Value<String?> ruleId = const Value.absent(),
     bool? prompted,
+    bool? unanswered,
     Value<String?> responderUserId = const Value.absent(),
     Value<String?> overrideReason = const Value.absent(),
     Value<String?> correlationId = const Value.absent(),
@@ -68751,6 +70257,7 @@ class GuardDecisionsTableData extends DataClass
     sourceScope: sourceScope.present ? sourceScope.value : this.sourceScope,
     ruleId: ruleId.present ? ruleId.value : this.ruleId,
     prompted: prompted ?? this.prompted,
+    unanswered: unanswered ?? this.unanswered,
     responderUserId: responderUserId.present
         ? responderUserId.value
         : this.responderUserId,
@@ -68814,6 +70321,9 @@ class GuardDecisionsTableData extends DataClass
           : this.sourceScope,
       ruleId: data.ruleId.present ? data.ruleId.value : this.ruleId,
       prompted: data.prompted.present ? data.prompted.value : this.prompted,
+      unanswered: data.unanswered.present
+          ? data.unanswered.value
+          : this.unanswered,
       responderUserId: data.responderUserId.present
           ? data.responderUserId.value
           : this.responderUserId,
@@ -68856,6 +70366,7 @@ class GuardDecisionsTableData extends DataClass
           ..write('sourceScope: $sourceScope, ')
           ..write('ruleId: $ruleId, ')
           ..write('prompted: $prompted, ')
+          ..write('unanswered: $unanswered, ')
           ..write('responderUserId: $responderUserId, ')
           ..write('overrideReason: $overrideReason, ')
           ..write('correlationId: $correlationId, ')
@@ -68892,6 +70403,7 @@ class GuardDecisionsTableData extends DataClass
     sourceScope,
     ruleId,
     prompted,
+    unanswered,
     responderUserId,
     overrideReason,
     correlationId,
@@ -68927,6 +70439,7 @@ class GuardDecisionsTableData extends DataClass
           other.sourceScope == this.sourceScope &&
           other.ruleId == this.ruleId &&
           other.prompted == this.prompted &&
+          other.unanswered == this.unanswered &&
           other.responderUserId == this.responderUserId &&
           other.overrideReason == this.overrideReason &&
           other.correlationId == this.correlationId &&
@@ -68961,6 +70474,7 @@ class GuardDecisionsTableCompanion
   final Value<String?> sourceScope;
   final Value<String?> ruleId;
   final Value<bool> prompted;
+  final Value<bool> unanswered;
   final Value<String?> responderUserId;
   final Value<String?> overrideReason;
   final Value<String?> correlationId;
@@ -68993,6 +70507,7 @@ class GuardDecisionsTableCompanion
     this.sourceScope = const Value.absent(),
     this.ruleId = const Value.absent(),
     this.prompted = const Value.absent(),
+    this.unanswered = const Value.absent(),
     this.responderUserId = const Value.absent(),
     this.overrideReason = const Value.absent(),
     this.correlationId = const Value.absent(),
@@ -69026,6 +70541,7 @@ class GuardDecisionsTableCompanion
     this.sourceScope = const Value.absent(),
     this.ruleId = const Value.absent(),
     this.prompted = const Value.absent(),
+    this.unanswered = const Value.absent(),
     this.responderUserId = const Value.absent(),
     this.overrideReason = const Value.absent(),
     this.correlationId = const Value.absent(),
@@ -69069,6 +70585,7 @@ class GuardDecisionsTableCompanion
     Expression<String>? sourceScope,
     Expression<String>? ruleId,
     Expression<bool>? prompted,
+    Expression<bool>? unanswered,
     Expression<String>? responderUserId,
     Expression<String>? overrideReason,
     Expression<String>? correlationId,
@@ -69102,6 +70619,7 @@ class GuardDecisionsTableCompanion
       if (sourceScope != null) 'source_scope': sourceScope,
       if (ruleId != null) 'rule_id': ruleId,
       if (prompted != null) 'prompted': prompted,
+      if (unanswered != null) 'unanswered': unanswered,
       if (responderUserId != null) 'responder_user_id': responderUserId,
       if (overrideReason != null) 'override_reason': overrideReason,
       if (correlationId != null) 'correlation_id': correlationId,
@@ -69137,6 +70655,7 @@ class GuardDecisionsTableCompanion
     Value<String?>? sourceScope,
     Value<String?>? ruleId,
     Value<bool>? prompted,
+    Value<bool>? unanswered,
     Value<String?>? responderUserId,
     Value<String?>? overrideReason,
     Value<String?>? correlationId,
@@ -69170,6 +70689,7 @@ class GuardDecisionsTableCompanion
       sourceScope: sourceScope ?? this.sourceScope,
       ruleId: ruleId ?? this.ruleId,
       prompted: prompted ?? this.prompted,
+      unanswered: unanswered ?? this.unanswered,
       responderUserId: responderUserId ?? this.responderUserId,
       overrideReason: overrideReason ?? this.overrideReason,
       correlationId: correlationId ?? this.correlationId,
@@ -69255,6 +70775,9 @@ class GuardDecisionsTableCompanion
     if (prompted.present) {
       map['prompted'] = Variable<bool>(prompted.value);
     }
+    if (unanswered.present) {
+      map['unanswered'] = Variable<bool>(unanswered.value);
+    }
     if (responderUserId.present) {
       map['responder_user_id'] = Variable<String>(responderUserId.value);
     }
@@ -69306,6 +70829,7 @@ class GuardDecisionsTableCompanion
           ..write('sourceScope: $sourceScope, ')
           ..write('ruleId: $ruleId, ')
           ..write('prompted: $prompted, ')
+          ..write('unanswered: $unanswered, ')
           ..write('responderUserId: $responderUserId, ')
           ..write('overrideReason: $overrideReason, ')
           ..write('correlationId: $correlationId, ')
@@ -84696,6 +86220,9852 @@ class McpServersTableCompanion extends UpdateCompanion<McpServersTableData> {
   }
 }
 
+class $CodeExecutionsTableTable extends CodeExecutionsTable
+    with TableInfo<$CodeExecutionsTableTable, CodeExecutionsTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CodeExecutionsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _runIdMeta = const VerificationMeta('runId');
+  @override
+  late final GeneratedColumn<String> runId = GeneratedColumn<String>(
+    'run_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES agent_run_logs (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _toolCallIdMeta = const VerificationMeta(
+    'toolCallId',
+  );
+  @override
+  late final GeneratedColumn<String> toolCallId = GeneratedColumn<String>(
+    'tool_call_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _idSuffixMeta = const VerificationMeta(
+    'idSuffix',
+  );
+  @override
+  late final GeneratedColumn<int> idSuffix = GeneratedColumn<int>(
+    'id_suffix',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _surfaceMeta = const VerificationMeta(
+    'surface',
+  );
+  @override
+  late final GeneratedColumn<String> surface = GeneratedColumn<String>(
+    'surface',
+    aliasedName,
+    false,
+    check: () => surface.isIn(AgentsStoredValues.codeExecutionSurface),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _conversationIdMeta = const VerificationMeta(
+    'conversationId',
+  );
+  @override
+  late final GeneratedColumn<String> conversationId = GeneratedColumn<String>(
+    'conversation_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES conversations (id) ON DELETE SET NULL',
+    ),
+  );
+  static const VerificationMeta _agentIdMeta = const VerificationMeta(
+    'agentId',
+  );
+  @override
+  late final GeneratedColumn<String> agentId = GeneratedColumn<String>(
+    'agent_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES agents (id) ON DELETE SET NULL',
+    ),
+  );
+  static const VerificationMeta _spaceIdMeta = const VerificationMeta(
+    'spaceId',
+  );
+  @override
+  late final GeneratedColumn<String> spaceId = GeneratedColumn<String>(
+    'space_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES spaces (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _startedAtMsMeta = const VerificationMeta(
+    'startedAtMs',
+  );
+  @override
+  late final GeneratedColumn<int> startedAtMs = GeneratedColumn<int>(
+    'started_at_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _durationMsMeta = const VerificationMeta(
+    'durationMs',
+  );
+  @override
+  late final GeneratedColumn<int> durationMs = GeneratedColumn<int>(
+    'duration_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    check: () => status.isIn(AgentsStoredValues.codeExecutionStatus),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _errorKindMeta = const VerificationMeta(
+    'errorKind',
+  );
+  @override
+  late final GeneratedColumn<String> errorKind = GeneratedColumn<String>(
+    'error_kind',
+    aliasedName,
+    true,
+    check: () => errorKind.isIn(AgentsStoredValues.codeExecutionErrorKind),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sourceHashMeta = const VerificationMeta(
+    'sourceHash',
+  );
+  @override
+  late final GeneratedColumn<String> sourceHash = GeneratedColumn<String>(
+    'source_hash',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceBytesMeta = const VerificationMeta(
+    'sourceBytes',
+  );
+  @override
+  late final GeneratedColumn<int> sourceBytes = GeneratedColumn<int>(
+    'source_bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _cpuMsMeta = const VerificationMeta('cpuMs');
+  @override
+  late final GeneratedColumn<int> cpuMs = GeneratedColumn<int>(
+    'cpu_ms',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _peakHeapBytesMeta = const VerificationMeta(
+    'peakHeapBytes',
+  );
+  @override
+  late final GeneratedColumn<int> peakHeapBytes = GeneratedColumn<int>(
+    'peak_heap_bytes',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _callsCompletedMeta = const VerificationMeta(
+    'callsCompleted',
+  );
+  @override
+  late final GeneratedColumn<int> callsCompleted = GeneratedColumn<int>(
+    'calls_completed',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _callsFailedMeta = const VerificationMeta(
+    'callsFailed',
+  );
+  @override
+  late final GeneratedColumn<int> callsFailed = GeneratedColumn<int>(
+    'calls_failed',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _callsDeniedMeta = const VerificationMeta(
+    'callsDenied',
+  );
+  @override
+  late final GeneratedColumn<int> callsDenied = GeneratedColumn<int>(
+    'calls_denied',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _callsCancelledMeta = const VerificationMeta(
+    'callsCancelled',
+  );
+  @override
+  late final GeneratedColumn<int> callsCancelled = GeneratedColumn<int>(
+    'calls_cancelled',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _callsTimedOutMeta = const VerificationMeta(
+    'callsTimedOut',
+  );
+  @override
+  late final GeneratedColumn<int> callsTimedOut = GeneratedColumn<int>(
+    'calls_timed_out',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _callsUnknownToolMeta = const VerificationMeta(
+    'callsUnknownTool',
+  );
+  @override
+  late final GeneratedColumn<int> callsUnknownTool = GeneratedColumn<int>(
+    'calls_unknown_tool',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _callsInvalidArgsMeta = const VerificationMeta(
+    'callsInvalidArgs',
+  );
+  @override
+  late final GeneratedColumn<int> callsInvalidArgs = GeneratedColumn<int>(
+    'calls_invalid_args',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _questionCountMeta = const VerificationMeta(
+    'questionCount',
+  );
+  @override
+  late final GeneratedColumn<int> questionCount = GeneratedColumn<int>(
+    'question_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _outputBytesMeta = const VerificationMeta(
+    'outputBytes',
+  );
+  @override
+  late final GeneratedColumn<int> outputBytes = GeneratedColumn<int>(
+    'output_bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _outputTruncatedMeta = const VerificationMeta(
+    'outputTruncated',
+  );
+  @override
+  late final GeneratedColumn<bool> outputTruncated = GeneratedColumn<bool>(
+    'output_truncated',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("output_truncated" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _engineVersionMeta = const VerificationMeta(
+    'engineVersion',
+  );
+  @override
+  late final GeneratedColumn<String> engineVersion = GeneratedColumn<String>(
+    'engine_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lockdownJsonMeta = const VerificationMeta(
+    'lockdownJson',
+  );
+  @override
+  late final GeneratedColumn<String> lockdownJson = GeneratedColumn<String>(
+    'lockdown_json',
+    aliasedName,
+    true,
+    check: () => isJsonObject(lockdownJson),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _limitsJsonMeta = const VerificationMeta(
+    'limitsJson',
+  );
+  @override
+  late final GeneratedColumn<String> limitsJson = GeneratedColumn<String>(
+    'limits_json',
+    aliasedName,
+    false,
+    check: () => isJsonObject(limitsJson),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    runId,
+    toolCallId,
+    idSuffix,
+    surface,
+    conversationId,
+    agentId,
+    spaceId,
+    description,
+    startedAtMs,
+    durationMs,
+    status,
+    errorKind,
+    sourceHash,
+    sourceBytes,
+    cpuMs,
+    peakHeapBytes,
+    callsCompleted,
+    callsFailed,
+    callsDenied,
+    callsCancelled,
+    callsTimedOut,
+    callsUnknownTool,
+    callsInvalidArgs,
+    questionCount,
+    outputBytes,
+    outputTruncated,
+    engineVersion,
+    lockdownJson,
+    limitsJson,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'code_executions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CodeExecutionsTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('run_id')) {
+      context.handle(
+        _runIdMeta,
+        runId.isAcceptableOrUnknown(data['run_id']!, _runIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_runIdMeta);
+    }
+    if (data.containsKey('tool_call_id')) {
+      context.handle(
+        _toolCallIdMeta,
+        toolCallId.isAcceptableOrUnknown(
+          data['tool_call_id']!,
+          _toolCallIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_toolCallIdMeta);
+    }
+    if (data.containsKey('id_suffix')) {
+      context.handle(
+        _idSuffixMeta,
+        idSuffix.isAcceptableOrUnknown(data['id_suffix']!, _idSuffixMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_idSuffixMeta);
+    }
+    if (data.containsKey('surface')) {
+      context.handle(
+        _surfaceMeta,
+        surface.isAcceptableOrUnknown(data['surface']!, _surfaceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_surfaceMeta);
+    }
+    if (data.containsKey('conversation_id')) {
+      context.handle(
+        _conversationIdMeta,
+        conversationId.isAcceptableOrUnknown(
+          data['conversation_id']!,
+          _conversationIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('agent_id')) {
+      context.handle(
+        _agentIdMeta,
+        agentId.isAcceptableOrUnknown(data['agent_id']!, _agentIdMeta),
+      );
+    }
+    if (data.containsKey('space_id')) {
+      context.handle(
+        _spaceIdMeta,
+        spaceId.isAcceptableOrUnknown(data['space_id']!, _spaceIdMeta),
+      );
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('started_at_ms')) {
+      context.handle(
+        _startedAtMsMeta,
+        startedAtMs.isAcceptableOrUnknown(
+          data['started_at_ms']!,
+          _startedAtMsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_startedAtMsMeta);
+    }
+    if (data.containsKey('duration_ms')) {
+      context.handle(
+        _durationMsMeta,
+        durationMs.isAcceptableOrUnknown(data['duration_ms']!, _durationMsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_durationMsMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('error_kind')) {
+      context.handle(
+        _errorKindMeta,
+        errorKind.isAcceptableOrUnknown(data['error_kind']!, _errorKindMeta),
+      );
+    }
+    if (data.containsKey('source_hash')) {
+      context.handle(
+        _sourceHashMeta,
+        sourceHash.isAcceptableOrUnknown(data['source_hash']!, _sourceHashMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceHashMeta);
+    }
+    if (data.containsKey('source_bytes')) {
+      context.handle(
+        _sourceBytesMeta,
+        sourceBytes.isAcceptableOrUnknown(
+          data['source_bytes']!,
+          _sourceBytesMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceBytesMeta);
+    }
+    if (data.containsKey('cpu_ms')) {
+      context.handle(
+        _cpuMsMeta,
+        cpuMs.isAcceptableOrUnknown(data['cpu_ms']!, _cpuMsMeta),
+      );
+    }
+    if (data.containsKey('peak_heap_bytes')) {
+      context.handle(
+        _peakHeapBytesMeta,
+        peakHeapBytes.isAcceptableOrUnknown(
+          data['peak_heap_bytes']!,
+          _peakHeapBytesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('calls_completed')) {
+      context.handle(
+        _callsCompletedMeta,
+        callsCompleted.isAcceptableOrUnknown(
+          data['calls_completed']!,
+          _callsCompletedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('calls_failed')) {
+      context.handle(
+        _callsFailedMeta,
+        callsFailed.isAcceptableOrUnknown(
+          data['calls_failed']!,
+          _callsFailedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('calls_denied')) {
+      context.handle(
+        _callsDeniedMeta,
+        callsDenied.isAcceptableOrUnknown(
+          data['calls_denied']!,
+          _callsDeniedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('calls_cancelled')) {
+      context.handle(
+        _callsCancelledMeta,
+        callsCancelled.isAcceptableOrUnknown(
+          data['calls_cancelled']!,
+          _callsCancelledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('calls_timed_out')) {
+      context.handle(
+        _callsTimedOutMeta,
+        callsTimedOut.isAcceptableOrUnknown(
+          data['calls_timed_out']!,
+          _callsTimedOutMeta,
+        ),
+      );
+    }
+    if (data.containsKey('calls_unknown_tool')) {
+      context.handle(
+        _callsUnknownToolMeta,
+        callsUnknownTool.isAcceptableOrUnknown(
+          data['calls_unknown_tool']!,
+          _callsUnknownToolMeta,
+        ),
+      );
+    }
+    if (data.containsKey('calls_invalid_args')) {
+      context.handle(
+        _callsInvalidArgsMeta,
+        callsInvalidArgs.isAcceptableOrUnknown(
+          data['calls_invalid_args']!,
+          _callsInvalidArgsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('question_count')) {
+      context.handle(
+        _questionCountMeta,
+        questionCount.isAcceptableOrUnknown(
+          data['question_count']!,
+          _questionCountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('output_bytes')) {
+      context.handle(
+        _outputBytesMeta,
+        outputBytes.isAcceptableOrUnknown(
+          data['output_bytes']!,
+          _outputBytesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('output_truncated')) {
+      context.handle(
+        _outputTruncatedMeta,
+        outputTruncated.isAcceptableOrUnknown(
+          data['output_truncated']!,
+          _outputTruncatedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('engine_version')) {
+      context.handle(
+        _engineVersionMeta,
+        engineVersion.isAcceptableOrUnknown(
+          data['engine_version']!,
+          _engineVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('lockdown_json')) {
+      context.handle(
+        _lockdownJsonMeta,
+        lockdownJson.isAcceptableOrUnknown(
+          data['lockdown_json']!,
+          _lockdownJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('limits_json')) {
+      context.handle(
+        _limitsJsonMeta,
+        limitsJson.isAcceptableOrUnknown(data['limits_json']!, _limitsJsonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_limitsJsonMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CodeExecutionsTableData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CodeExecutionsTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      runId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}run_id'],
+      )!,
+      toolCallId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tool_call_id'],
+      )!,
+      idSuffix: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id_suffix'],
+      )!,
+      surface: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}surface'],
+      )!,
+      conversationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}conversation_id'],
+      ),
+      agentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}agent_id'],
+      ),
+      spaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}space_id'],
+      ),
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      )!,
+      startedAtMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}started_at_ms'],
+      )!,
+      durationMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}duration_ms'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      errorKind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}error_kind'],
+      ),
+      sourceHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_hash'],
+      )!,
+      sourceBytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}source_bytes'],
+      )!,
+      cpuMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}cpu_ms'],
+      ),
+      peakHeapBytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}peak_heap_bytes'],
+      ),
+      callsCompleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}calls_completed'],
+      )!,
+      callsFailed: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}calls_failed'],
+      )!,
+      callsDenied: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}calls_denied'],
+      )!,
+      callsCancelled: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}calls_cancelled'],
+      )!,
+      callsTimedOut: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}calls_timed_out'],
+      )!,
+      callsUnknownTool: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}calls_unknown_tool'],
+      )!,
+      callsInvalidArgs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}calls_invalid_args'],
+      )!,
+      questionCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}question_count'],
+      )!,
+      outputBytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}output_bytes'],
+      )!,
+      outputTruncated: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}output_truncated'],
+      )!,
+      engineVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}engine_version'],
+      ),
+      lockdownJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lockdown_json'],
+      ),
+      limitsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}limits_json'],
+      )!,
+    );
+  }
+
+  @override
+  $CodeExecutionsTableTable createAlias(String alias) {
+    return $CodeExecutionsTableTable(attachedDatabase, alias);
+  }
+}
+
+class CodeExecutionsTableData extends DataClass
+    implements Insertable<CodeExecutionsTableData> {
+  /// The execution id (`CodeExecution.id`).
+  final String id;
+
+  /// The run (`agent_run_logs.id`) the script belongs to. `CASCADE`: an
+  /// execution is part of its run and follows the run log's retention.
+  final String runId;
+
+  /// The `repl` tool call's id. Not a row: a tool call id lives in the
+  /// transcript.
+  final String toolCallId;
+
+  /// Which execution of the `repl` call [toolCallId] in run [runId] this is:
+  /// 1 for the id `<run>/<call>`, n for `<run>/<call>#<n>`. A tool call id can
+  /// repeat within a run, so the next id is the highest suffix plus one, read
+  /// from the index in one query.
+  final int idSuffix;
+
+  /// Which surface ran the script: a `CodeExecutionSurface` wire name.
+  final String surface;
+
+  /// The conversation, when the run has one. `SET NULL`: the record
+  /// outlives the conversation while its run is kept.
+  final String? conversationId;
+
+  /// The agent, when the run has one. `SET NULL` for the row's own sake; in
+  /// practice deleting an agent deletes its runs, and these rows with them.
+  final String? agentId;
+
+  /// The space, when the run has one: what the read gate checks before
+  /// showing source or output. `CASCADE`: the record is the space's content
+  /// and is deleted with it.
+  final String? spaceId;
+
+  /// The one-line description the model gave the call, at most 200
+  /// characters (`CodeExecution.boundDescription`).
+  final String description;
+
+  /// When the host admitted the call, in epoch milliseconds (UTC).
+  final int startedAtMs;
+
+  /// Wall-clock milliseconds from admission to the result, waits included.
+  /// Zero while running.
+  final int durationMs;
+
+  /// `running` until the script ends, then how it ended: a
+  /// `CodeExecutionStatus` wire name.
+  final String status;
+
+  /// Why a script that did not complete ended: a `CodeExecutionErrorKind`
+  /// value, chosen by the host. The script's own error name is in the
+  /// payload.
+  final String? errorKind;
+
+  /// SHA-256 of the source, lowercase hex: groups reruns of one script.
+  final String sourceHash;
+
+  /// Size of the source in UTF-8 bytes.
+  final int sourceBytes;
+
+  /// Interpreter CPU milliseconds, when the runner reported them.
+  final int? cpuMs;
+
+  /// Peak interpreter heap in bytes, when the runner reported it.
+  final int? peakHeapBytes;
+
+  /// Nested calls that completed.
+  final int callsCompleted;
+
+  /// Nested calls whose tool returned an error.
+  final int callsFailed;
+
+  /// Nested calls the gate refused.
+  final int callsDenied;
+
+  /// Nested calls cancelled before they settled.
+  final int callsCancelled;
+
+  /// Nested calls whose own deadline ran out.
+  final int callsTimedOut;
+
+  /// Nested calls naming a tool outside the run's callable set.
+  final int callsUnknownTool;
+
+  /// Nested calls with unusable arguments.
+  final int callsInvalidArgs;
+
+  /// Questions the script asked a person.
+  final int questionCount;
+
+  /// Size of the script's output in UTF-8 bytes, before it was cut for the
+  /// model.
+  final int outputBytes;
+
+  /// Whether the model read a head-and-tail cut of the output.
+  final bool outputTruncated;
+
+  /// The runner's engine and version, when it started. Open set: engine
+  /// version strings.
+  final String? engineVersion;
+
+  /// The lockdown the runner reported in its first frame, as a JSON object.
+  /// Null when no runner started.
+  final String? lockdownJson;
+
+  /// The limits the script ran under (`CodeModeLimits.toJson`), as a JSON
+  /// object.
+  final String limitsJson;
+  const CodeExecutionsTableData({
+    required this.id,
+    required this.runId,
+    required this.toolCallId,
+    required this.idSuffix,
+    required this.surface,
+    this.conversationId,
+    this.agentId,
+    this.spaceId,
+    required this.description,
+    required this.startedAtMs,
+    required this.durationMs,
+    required this.status,
+    this.errorKind,
+    required this.sourceHash,
+    required this.sourceBytes,
+    this.cpuMs,
+    this.peakHeapBytes,
+    required this.callsCompleted,
+    required this.callsFailed,
+    required this.callsDenied,
+    required this.callsCancelled,
+    required this.callsTimedOut,
+    required this.callsUnknownTool,
+    required this.callsInvalidArgs,
+    required this.questionCount,
+    required this.outputBytes,
+    required this.outputTruncated,
+    this.engineVersion,
+    this.lockdownJson,
+    required this.limitsJson,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['run_id'] = Variable<String>(runId);
+    map['tool_call_id'] = Variable<String>(toolCallId);
+    map['id_suffix'] = Variable<int>(idSuffix);
+    map['surface'] = Variable<String>(surface);
+    if (!nullToAbsent || conversationId != null) {
+      map['conversation_id'] = Variable<String>(conversationId);
+    }
+    if (!nullToAbsent || agentId != null) {
+      map['agent_id'] = Variable<String>(agentId);
+    }
+    if (!nullToAbsent || spaceId != null) {
+      map['space_id'] = Variable<String>(spaceId);
+    }
+    map['description'] = Variable<String>(description);
+    map['started_at_ms'] = Variable<int>(startedAtMs);
+    map['duration_ms'] = Variable<int>(durationMs);
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || errorKind != null) {
+      map['error_kind'] = Variable<String>(errorKind);
+    }
+    map['source_hash'] = Variable<String>(sourceHash);
+    map['source_bytes'] = Variable<int>(sourceBytes);
+    if (!nullToAbsent || cpuMs != null) {
+      map['cpu_ms'] = Variable<int>(cpuMs);
+    }
+    if (!nullToAbsent || peakHeapBytes != null) {
+      map['peak_heap_bytes'] = Variable<int>(peakHeapBytes);
+    }
+    map['calls_completed'] = Variable<int>(callsCompleted);
+    map['calls_failed'] = Variable<int>(callsFailed);
+    map['calls_denied'] = Variable<int>(callsDenied);
+    map['calls_cancelled'] = Variable<int>(callsCancelled);
+    map['calls_timed_out'] = Variable<int>(callsTimedOut);
+    map['calls_unknown_tool'] = Variable<int>(callsUnknownTool);
+    map['calls_invalid_args'] = Variable<int>(callsInvalidArgs);
+    map['question_count'] = Variable<int>(questionCount);
+    map['output_bytes'] = Variable<int>(outputBytes);
+    map['output_truncated'] = Variable<bool>(outputTruncated);
+    if (!nullToAbsent || engineVersion != null) {
+      map['engine_version'] = Variable<String>(engineVersion);
+    }
+    if (!nullToAbsent || lockdownJson != null) {
+      map['lockdown_json'] = Variable<String>(lockdownJson);
+    }
+    map['limits_json'] = Variable<String>(limitsJson);
+    return map;
+  }
+
+  CodeExecutionsTableCompanion toCompanion(bool nullToAbsent) {
+    return CodeExecutionsTableCompanion(
+      id: Value(id),
+      runId: Value(runId),
+      toolCallId: Value(toolCallId),
+      idSuffix: Value(idSuffix),
+      surface: Value(surface),
+      conversationId: conversationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(conversationId),
+      agentId: agentId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(agentId),
+      spaceId: spaceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(spaceId),
+      description: Value(description),
+      startedAtMs: Value(startedAtMs),
+      durationMs: Value(durationMs),
+      status: Value(status),
+      errorKind: errorKind == null && nullToAbsent
+          ? const Value.absent()
+          : Value(errorKind),
+      sourceHash: Value(sourceHash),
+      sourceBytes: Value(sourceBytes),
+      cpuMs: cpuMs == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cpuMs),
+      peakHeapBytes: peakHeapBytes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(peakHeapBytes),
+      callsCompleted: Value(callsCompleted),
+      callsFailed: Value(callsFailed),
+      callsDenied: Value(callsDenied),
+      callsCancelled: Value(callsCancelled),
+      callsTimedOut: Value(callsTimedOut),
+      callsUnknownTool: Value(callsUnknownTool),
+      callsInvalidArgs: Value(callsInvalidArgs),
+      questionCount: Value(questionCount),
+      outputBytes: Value(outputBytes),
+      outputTruncated: Value(outputTruncated),
+      engineVersion: engineVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(engineVersion),
+      lockdownJson: lockdownJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lockdownJson),
+      limitsJson: Value(limitsJson),
+    );
+  }
+
+  factory CodeExecutionsTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CodeExecutionsTableData(
+      id: serializer.fromJson<String>(json['id']),
+      runId: serializer.fromJson<String>(json['runId']),
+      toolCallId: serializer.fromJson<String>(json['toolCallId']),
+      idSuffix: serializer.fromJson<int>(json['idSuffix']),
+      surface: serializer.fromJson<String>(json['surface']),
+      conversationId: serializer.fromJson<String?>(json['conversationId']),
+      agentId: serializer.fromJson<String?>(json['agentId']),
+      spaceId: serializer.fromJson<String?>(json['spaceId']),
+      description: serializer.fromJson<String>(json['description']),
+      startedAtMs: serializer.fromJson<int>(json['startedAtMs']),
+      durationMs: serializer.fromJson<int>(json['durationMs']),
+      status: serializer.fromJson<String>(json['status']),
+      errorKind: serializer.fromJson<String?>(json['errorKind']),
+      sourceHash: serializer.fromJson<String>(json['sourceHash']),
+      sourceBytes: serializer.fromJson<int>(json['sourceBytes']),
+      cpuMs: serializer.fromJson<int?>(json['cpuMs']),
+      peakHeapBytes: serializer.fromJson<int?>(json['peakHeapBytes']),
+      callsCompleted: serializer.fromJson<int>(json['callsCompleted']),
+      callsFailed: serializer.fromJson<int>(json['callsFailed']),
+      callsDenied: serializer.fromJson<int>(json['callsDenied']),
+      callsCancelled: serializer.fromJson<int>(json['callsCancelled']),
+      callsTimedOut: serializer.fromJson<int>(json['callsTimedOut']),
+      callsUnknownTool: serializer.fromJson<int>(json['callsUnknownTool']),
+      callsInvalidArgs: serializer.fromJson<int>(json['callsInvalidArgs']),
+      questionCount: serializer.fromJson<int>(json['questionCount']),
+      outputBytes: serializer.fromJson<int>(json['outputBytes']),
+      outputTruncated: serializer.fromJson<bool>(json['outputTruncated']),
+      engineVersion: serializer.fromJson<String?>(json['engineVersion']),
+      lockdownJson: serializer.fromJson<String?>(json['lockdownJson']),
+      limitsJson: serializer.fromJson<String>(json['limitsJson']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'runId': serializer.toJson<String>(runId),
+      'toolCallId': serializer.toJson<String>(toolCallId),
+      'idSuffix': serializer.toJson<int>(idSuffix),
+      'surface': serializer.toJson<String>(surface),
+      'conversationId': serializer.toJson<String?>(conversationId),
+      'agentId': serializer.toJson<String?>(agentId),
+      'spaceId': serializer.toJson<String?>(spaceId),
+      'description': serializer.toJson<String>(description),
+      'startedAtMs': serializer.toJson<int>(startedAtMs),
+      'durationMs': serializer.toJson<int>(durationMs),
+      'status': serializer.toJson<String>(status),
+      'errorKind': serializer.toJson<String?>(errorKind),
+      'sourceHash': serializer.toJson<String>(sourceHash),
+      'sourceBytes': serializer.toJson<int>(sourceBytes),
+      'cpuMs': serializer.toJson<int?>(cpuMs),
+      'peakHeapBytes': serializer.toJson<int?>(peakHeapBytes),
+      'callsCompleted': serializer.toJson<int>(callsCompleted),
+      'callsFailed': serializer.toJson<int>(callsFailed),
+      'callsDenied': serializer.toJson<int>(callsDenied),
+      'callsCancelled': serializer.toJson<int>(callsCancelled),
+      'callsTimedOut': serializer.toJson<int>(callsTimedOut),
+      'callsUnknownTool': serializer.toJson<int>(callsUnknownTool),
+      'callsInvalidArgs': serializer.toJson<int>(callsInvalidArgs),
+      'questionCount': serializer.toJson<int>(questionCount),
+      'outputBytes': serializer.toJson<int>(outputBytes),
+      'outputTruncated': serializer.toJson<bool>(outputTruncated),
+      'engineVersion': serializer.toJson<String?>(engineVersion),
+      'lockdownJson': serializer.toJson<String?>(lockdownJson),
+      'limitsJson': serializer.toJson<String>(limitsJson),
+    };
+  }
+
+  CodeExecutionsTableData copyWith({
+    String? id,
+    String? runId,
+    String? toolCallId,
+    int? idSuffix,
+    String? surface,
+    Value<String?> conversationId = const Value.absent(),
+    Value<String?> agentId = const Value.absent(),
+    Value<String?> spaceId = const Value.absent(),
+    String? description,
+    int? startedAtMs,
+    int? durationMs,
+    String? status,
+    Value<String?> errorKind = const Value.absent(),
+    String? sourceHash,
+    int? sourceBytes,
+    Value<int?> cpuMs = const Value.absent(),
+    Value<int?> peakHeapBytes = const Value.absent(),
+    int? callsCompleted,
+    int? callsFailed,
+    int? callsDenied,
+    int? callsCancelled,
+    int? callsTimedOut,
+    int? callsUnknownTool,
+    int? callsInvalidArgs,
+    int? questionCount,
+    int? outputBytes,
+    bool? outputTruncated,
+    Value<String?> engineVersion = const Value.absent(),
+    Value<String?> lockdownJson = const Value.absent(),
+    String? limitsJson,
+  }) => CodeExecutionsTableData(
+    id: id ?? this.id,
+    runId: runId ?? this.runId,
+    toolCallId: toolCallId ?? this.toolCallId,
+    idSuffix: idSuffix ?? this.idSuffix,
+    surface: surface ?? this.surface,
+    conversationId: conversationId.present
+        ? conversationId.value
+        : this.conversationId,
+    agentId: agentId.present ? agentId.value : this.agentId,
+    spaceId: spaceId.present ? spaceId.value : this.spaceId,
+    description: description ?? this.description,
+    startedAtMs: startedAtMs ?? this.startedAtMs,
+    durationMs: durationMs ?? this.durationMs,
+    status: status ?? this.status,
+    errorKind: errorKind.present ? errorKind.value : this.errorKind,
+    sourceHash: sourceHash ?? this.sourceHash,
+    sourceBytes: sourceBytes ?? this.sourceBytes,
+    cpuMs: cpuMs.present ? cpuMs.value : this.cpuMs,
+    peakHeapBytes: peakHeapBytes.present
+        ? peakHeapBytes.value
+        : this.peakHeapBytes,
+    callsCompleted: callsCompleted ?? this.callsCompleted,
+    callsFailed: callsFailed ?? this.callsFailed,
+    callsDenied: callsDenied ?? this.callsDenied,
+    callsCancelled: callsCancelled ?? this.callsCancelled,
+    callsTimedOut: callsTimedOut ?? this.callsTimedOut,
+    callsUnknownTool: callsUnknownTool ?? this.callsUnknownTool,
+    callsInvalidArgs: callsInvalidArgs ?? this.callsInvalidArgs,
+    questionCount: questionCount ?? this.questionCount,
+    outputBytes: outputBytes ?? this.outputBytes,
+    outputTruncated: outputTruncated ?? this.outputTruncated,
+    engineVersion: engineVersion.present
+        ? engineVersion.value
+        : this.engineVersion,
+    lockdownJson: lockdownJson.present ? lockdownJson.value : this.lockdownJson,
+    limitsJson: limitsJson ?? this.limitsJson,
+  );
+  CodeExecutionsTableData copyWithCompanion(CodeExecutionsTableCompanion data) {
+    return CodeExecutionsTableData(
+      id: data.id.present ? data.id.value : this.id,
+      runId: data.runId.present ? data.runId.value : this.runId,
+      toolCallId: data.toolCallId.present
+          ? data.toolCallId.value
+          : this.toolCallId,
+      idSuffix: data.idSuffix.present ? data.idSuffix.value : this.idSuffix,
+      surface: data.surface.present ? data.surface.value : this.surface,
+      conversationId: data.conversationId.present
+          ? data.conversationId.value
+          : this.conversationId,
+      agentId: data.agentId.present ? data.agentId.value : this.agentId,
+      spaceId: data.spaceId.present ? data.spaceId.value : this.spaceId,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      startedAtMs: data.startedAtMs.present
+          ? data.startedAtMs.value
+          : this.startedAtMs,
+      durationMs: data.durationMs.present
+          ? data.durationMs.value
+          : this.durationMs,
+      status: data.status.present ? data.status.value : this.status,
+      errorKind: data.errorKind.present ? data.errorKind.value : this.errorKind,
+      sourceHash: data.sourceHash.present
+          ? data.sourceHash.value
+          : this.sourceHash,
+      sourceBytes: data.sourceBytes.present
+          ? data.sourceBytes.value
+          : this.sourceBytes,
+      cpuMs: data.cpuMs.present ? data.cpuMs.value : this.cpuMs,
+      peakHeapBytes: data.peakHeapBytes.present
+          ? data.peakHeapBytes.value
+          : this.peakHeapBytes,
+      callsCompleted: data.callsCompleted.present
+          ? data.callsCompleted.value
+          : this.callsCompleted,
+      callsFailed: data.callsFailed.present
+          ? data.callsFailed.value
+          : this.callsFailed,
+      callsDenied: data.callsDenied.present
+          ? data.callsDenied.value
+          : this.callsDenied,
+      callsCancelled: data.callsCancelled.present
+          ? data.callsCancelled.value
+          : this.callsCancelled,
+      callsTimedOut: data.callsTimedOut.present
+          ? data.callsTimedOut.value
+          : this.callsTimedOut,
+      callsUnknownTool: data.callsUnknownTool.present
+          ? data.callsUnknownTool.value
+          : this.callsUnknownTool,
+      callsInvalidArgs: data.callsInvalidArgs.present
+          ? data.callsInvalidArgs.value
+          : this.callsInvalidArgs,
+      questionCount: data.questionCount.present
+          ? data.questionCount.value
+          : this.questionCount,
+      outputBytes: data.outputBytes.present
+          ? data.outputBytes.value
+          : this.outputBytes,
+      outputTruncated: data.outputTruncated.present
+          ? data.outputTruncated.value
+          : this.outputTruncated,
+      engineVersion: data.engineVersion.present
+          ? data.engineVersion.value
+          : this.engineVersion,
+      lockdownJson: data.lockdownJson.present
+          ? data.lockdownJson.value
+          : this.lockdownJson,
+      limitsJson: data.limitsJson.present
+          ? data.limitsJson.value
+          : this.limitsJson,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CodeExecutionsTableData(')
+          ..write('id: $id, ')
+          ..write('runId: $runId, ')
+          ..write('toolCallId: $toolCallId, ')
+          ..write('idSuffix: $idSuffix, ')
+          ..write('surface: $surface, ')
+          ..write('conversationId: $conversationId, ')
+          ..write('agentId: $agentId, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('description: $description, ')
+          ..write('startedAtMs: $startedAtMs, ')
+          ..write('durationMs: $durationMs, ')
+          ..write('status: $status, ')
+          ..write('errorKind: $errorKind, ')
+          ..write('sourceHash: $sourceHash, ')
+          ..write('sourceBytes: $sourceBytes, ')
+          ..write('cpuMs: $cpuMs, ')
+          ..write('peakHeapBytes: $peakHeapBytes, ')
+          ..write('callsCompleted: $callsCompleted, ')
+          ..write('callsFailed: $callsFailed, ')
+          ..write('callsDenied: $callsDenied, ')
+          ..write('callsCancelled: $callsCancelled, ')
+          ..write('callsTimedOut: $callsTimedOut, ')
+          ..write('callsUnknownTool: $callsUnknownTool, ')
+          ..write('callsInvalidArgs: $callsInvalidArgs, ')
+          ..write('questionCount: $questionCount, ')
+          ..write('outputBytes: $outputBytes, ')
+          ..write('outputTruncated: $outputTruncated, ')
+          ..write('engineVersion: $engineVersion, ')
+          ..write('lockdownJson: $lockdownJson, ')
+          ..write('limitsJson: $limitsJson')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    id,
+    runId,
+    toolCallId,
+    idSuffix,
+    surface,
+    conversationId,
+    agentId,
+    spaceId,
+    description,
+    startedAtMs,
+    durationMs,
+    status,
+    errorKind,
+    sourceHash,
+    sourceBytes,
+    cpuMs,
+    peakHeapBytes,
+    callsCompleted,
+    callsFailed,
+    callsDenied,
+    callsCancelled,
+    callsTimedOut,
+    callsUnknownTool,
+    callsInvalidArgs,
+    questionCount,
+    outputBytes,
+    outputTruncated,
+    engineVersion,
+    lockdownJson,
+    limitsJson,
+  ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CodeExecutionsTableData &&
+          other.id == this.id &&
+          other.runId == this.runId &&
+          other.toolCallId == this.toolCallId &&
+          other.idSuffix == this.idSuffix &&
+          other.surface == this.surface &&
+          other.conversationId == this.conversationId &&
+          other.agentId == this.agentId &&
+          other.spaceId == this.spaceId &&
+          other.description == this.description &&
+          other.startedAtMs == this.startedAtMs &&
+          other.durationMs == this.durationMs &&
+          other.status == this.status &&
+          other.errorKind == this.errorKind &&
+          other.sourceHash == this.sourceHash &&
+          other.sourceBytes == this.sourceBytes &&
+          other.cpuMs == this.cpuMs &&
+          other.peakHeapBytes == this.peakHeapBytes &&
+          other.callsCompleted == this.callsCompleted &&
+          other.callsFailed == this.callsFailed &&
+          other.callsDenied == this.callsDenied &&
+          other.callsCancelled == this.callsCancelled &&
+          other.callsTimedOut == this.callsTimedOut &&
+          other.callsUnknownTool == this.callsUnknownTool &&
+          other.callsInvalidArgs == this.callsInvalidArgs &&
+          other.questionCount == this.questionCount &&
+          other.outputBytes == this.outputBytes &&
+          other.outputTruncated == this.outputTruncated &&
+          other.engineVersion == this.engineVersion &&
+          other.lockdownJson == this.lockdownJson &&
+          other.limitsJson == this.limitsJson);
+}
+
+class CodeExecutionsTableCompanion
+    extends UpdateCompanion<CodeExecutionsTableData> {
+  final Value<String> id;
+  final Value<String> runId;
+  final Value<String> toolCallId;
+  final Value<int> idSuffix;
+  final Value<String> surface;
+  final Value<String?> conversationId;
+  final Value<String?> agentId;
+  final Value<String?> spaceId;
+  final Value<String> description;
+  final Value<int> startedAtMs;
+  final Value<int> durationMs;
+  final Value<String> status;
+  final Value<String?> errorKind;
+  final Value<String> sourceHash;
+  final Value<int> sourceBytes;
+  final Value<int?> cpuMs;
+  final Value<int?> peakHeapBytes;
+  final Value<int> callsCompleted;
+  final Value<int> callsFailed;
+  final Value<int> callsDenied;
+  final Value<int> callsCancelled;
+  final Value<int> callsTimedOut;
+  final Value<int> callsUnknownTool;
+  final Value<int> callsInvalidArgs;
+  final Value<int> questionCount;
+  final Value<int> outputBytes;
+  final Value<bool> outputTruncated;
+  final Value<String?> engineVersion;
+  final Value<String?> lockdownJson;
+  final Value<String> limitsJson;
+  final Value<int> rowid;
+  const CodeExecutionsTableCompanion({
+    this.id = const Value.absent(),
+    this.runId = const Value.absent(),
+    this.toolCallId = const Value.absent(),
+    this.idSuffix = const Value.absent(),
+    this.surface = const Value.absent(),
+    this.conversationId = const Value.absent(),
+    this.agentId = const Value.absent(),
+    this.spaceId = const Value.absent(),
+    this.description = const Value.absent(),
+    this.startedAtMs = const Value.absent(),
+    this.durationMs = const Value.absent(),
+    this.status = const Value.absent(),
+    this.errorKind = const Value.absent(),
+    this.sourceHash = const Value.absent(),
+    this.sourceBytes = const Value.absent(),
+    this.cpuMs = const Value.absent(),
+    this.peakHeapBytes = const Value.absent(),
+    this.callsCompleted = const Value.absent(),
+    this.callsFailed = const Value.absent(),
+    this.callsDenied = const Value.absent(),
+    this.callsCancelled = const Value.absent(),
+    this.callsTimedOut = const Value.absent(),
+    this.callsUnknownTool = const Value.absent(),
+    this.callsInvalidArgs = const Value.absent(),
+    this.questionCount = const Value.absent(),
+    this.outputBytes = const Value.absent(),
+    this.outputTruncated = const Value.absent(),
+    this.engineVersion = const Value.absent(),
+    this.lockdownJson = const Value.absent(),
+    this.limitsJson = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CodeExecutionsTableCompanion.insert({
+    required String id,
+    required String runId,
+    required String toolCallId,
+    required int idSuffix,
+    required String surface,
+    this.conversationId = const Value.absent(),
+    this.agentId = const Value.absent(),
+    this.spaceId = const Value.absent(),
+    this.description = const Value.absent(),
+    required int startedAtMs,
+    required int durationMs,
+    required String status,
+    this.errorKind = const Value.absent(),
+    required String sourceHash,
+    required int sourceBytes,
+    this.cpuMs = const Value.absent(),
+    this.peakHeapBytes = const Value.absent(),
+    this.callsCompleted = const Value.absent(),
+    this.callsFailed = const Value.absent(),
+    this.callsDenied = const Value.absent(),
+    this.callsCancelled = const Value.absent(),
+    this.callsTimedOut = const Value.absent(),
+    this.callsUnknownTool = const Value.absent(),
+    this.callsInvalidArgs = const Value.absent(),
+    this.questionCount = const Value.absent(),
+    this.outputBytes = const Value.absent(),
+    this.outputTruncated = const Value.absent(),
+    this.engineVersion = const Value.absent(),
+    this.lockdownJson = const Value.absent(),
+    required String limitsJson,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       runId = Value(runId),
+       toolCallId = Value(toolCallId),
+       idSuffix = Value(idSuffix),
+       surface = Value(surface),
+       startedAtMs = Value(startedAtMs),
+       durationMs = Value(durationMs),
+       status = Value(status),
+       sourceHash = Value(sourceHash),
+       sourceBytes = Value(sourceBytes),
+       limitsJson = Value(limitsJson);
+  static Insertable<CodeExecutionsTableData> custom({
+    Expression<String>? id,
+    Expression<String>? runId,
+    Expression<String>? toolCallId,
+    Expression<int>? idSuffix,
+    Expression<String>? surface,
+    Expression<String>? conversationId,
+    Expression<String>? agentId,
+    Expression<String>? spaceId,
+    Expression<String>? description,
+    Expression<int>? startedAtMs,
+    Expression<int>? durationMs,
+    Expression<String>? status,
+    Expression<String>? errorKind,
+    Expression<String>? sourceHash,
+    Expression<int>? sourceBytes,
+    Expression<int>? cpuMs,
+    Expression<int>? peakHeapBytes,
+    Expression<int>? callsCompleted,
+    Expression<int>? callsFailed,
+    Expression<int>? callsDenied,
+    Expression<int>? callsCancelled,
+    Expression<int>? callsTimedOut,
+    Expression<int>? callsUnknownTool,
+    Expression<int>? callsInvalidArgs,
+    Expression<int>? questionCount,
+    Expression<int>? outputBytes,
+    Expression<bool>? outputTruncated,
+    Expression<String>? engineVersion,
+    Expression<String>? lockdownJson,
+    Expression<String>? limitsJson,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (runId != null) 'run_id': runId,
+      if (toolCallId != null) 'tool_call_id': toolCallId,
+      if (idSuffix != null) 'id_suffix': idSuffix,
+      if (surface != null) 'surface': surface,
+      if (conversationId != null) 'conversation_id': conversationId,
+      if (agentId != null) 'agent_id': agentId,
+      if (spaceId != null) 'space_id': spaceId,
+      if (description != null) 'description': description,
+      if (startedAtMs != null) 'started_at_ms': startedAtMs,
+      if (durationMs != null) 'duration_ms': durationMs,
+      if (status != null) 'status': status,
+      if (errorKind != null) 'error_kind': errorKind,
+      if (sourceHash != null) 'source_hash': sourceHash,
+      if (sourceBytes != null) 'source_bytes': sourceBytes,
+      if (cpuMs != null) 'cpu_ms': cpuMs,
+      if (peakHeapBytes != null) 'peak_heap_bytes': peakHeapBytes,
+      if (callsCompleted != null) 'calls_completed': callsCompleted,
+      if (callsFailed != null) 'calls_failed': callsFailed,
+      if (callsDenied != null) 'calls_denied': callsDenied,
+      if (callsCancelled != null) 'calls_cancelled': callsCancelled,
+      if (callsTimedOut != null) 'calls_timed_out': callsTimedOut,
+      if (callsUnknownTool != null) 'calls_unknown_tool': callsUnknownTool,
+      if (callsInvalidArgs != null) 'calls_invalid_args': callsInvalidArgs,
+      if (questionCount != null) 'question_count': questionCount,
+      if (outputBytes != null) 'output_bytes': outputBytes,
+      if (outputTruncated != null) 'output_truncated': outputTruncated,
+      if (engineVersion != null) 'engine_version': engineVersion,
+      if (lockdownJson != null) 'lockdown_json': lockdownJson,
+      if (limitsJson != null) 'limits_json': limitsJson,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CodeExecutionsTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? runId,
+    Value<String>? toolCallId,
+    Value<int>? idSuffix,
+    Value<String>? surface,
+    Value<String?>? conversationId,
+    Value<String?>? agentId,
+    Value<String?>? spaceId,
+    Value<String>? description,
+    Value<int>? startedAtMs,
+    Value<int>? durationMs,
+    Value<String>? status,
+    Value<String?>? errorKind,
+    Value<String>? sourceHash,
+    Value<int>? sourceBytes,
+    Value<int?>? cpuMs,
+    Value<int?>? peakHeapBytes,
+    Value<int>? callsCompleted,
+    Value<int>? callsFailed,
+    Value<int>? callsDenied,
+    Value<int>? callsCancelled,
+    Value<int>? callsTimedOut,
+    Value<int>? callsUnknownTool,
+    Value<int>? callsInvalidArgs,
+    Value<int>? questionCount,
+    Value<int>? outputBytes,
+    Value<bool>? outputTruncated,
+    Value<String?>? engineVersion,
+    Value<String?>? lockdownJson,
+    Value<String>? limitsJson,
+    Value<int>? rowid,
+  }) {
+    return CodeExecutionsTableCompanion(
+      id: id ?? this.id,
+      runId: runId ?? this.runId,
+      toolCallId: toolCallId ?? this.toolCallId,
+      idSuffix: idSuffix ?? this.idSuffix,
+      surface: surface ?? this.surface,
+      conversationId: conversationId ?? this.conversationId,
+      agentId: agentId ?? this.agentId,
+      spaceId: spaceId ?? this.spaceId,
+      description: description ?? this.description,
+      startedAtMs: startedAtMs ?? this.startedAtMs,
+      durationMs: durationMs ?? this.durationMs,
+      status: status ?? this.status,
+      errorKind: errorKind ?? this.errorKind,
+      sourceHash: sourceHash ?? this.sourceHash,
+      sourceBytes: sourceBytes ?? this.sourceBytes,
+      cpuMs: cpuMs ?? this.cpuMs,
+      peakHeapBytes: peakHeapBytes ?? this.peakHeapBytes,
+      callsCompleted: callsCompleted ?? this.callsCompleted,
+      callsFailed: callsFailed ?? this.callsFailed,
+      callsDenied: callsDenied ?? this.callsDenied,
+      callsCancelled: callsCancelled ?? this.callsCancelled,
+      callsTimedOut: callsTimedOut ?? this.callsTimedOut,
+      callsUnknownTool: callsUnknownTool ?? this.callsUnknownTool,
+      callsInvalidArgs: callsInvalidArgs ?? this.callsInvalidArgs,
+      questionCount: questionCount ?? this.questionCount,
+      outputBytes: outputBytes ?? this.outputBytes,
+      outputTruncated: outputTruncated ?? this.outputTruncated,
+      engineVersion: engineVersion ?? this.engineVersion,
+      lockdownJson: lockdownJson ?? this.lockdownJson,
+      limitsJson: limitsJson ?? this.limitsJson,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (runId.present) {
+      map['run_id'] = Variable<String>(runId.value);
+    }
+    if (toolCallId.present) {
+      map['tool_call_id'] = Variable<String>(toolCallId.value);
+    }
+    if (idSuffix.present) {
+      map['id_suffix'] = Variable<int>(idSuffix.value);
+    }
+    if (surface.present) {
+      map['surface'] = Variable<String>(surface.value);
+    }
+    if (conversationId.present) {
+      map['conversation_id'] = Variable<String>(conversationId.value);
+    }
+    if (agentId.present) {
+      map['agent_id'] = Variable<String>(agentId.value);
+    }
+    if (spaceId.present) {
+      map['space_id'] = Variable<String>(spaceId.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (startedAtMs.present) {
+      map['started_at_ms'] = Variable<int>(startedAtMs.value);
+    }
+    if (durationMs.present) {
+      map['duration_ms'] = Variable<int>(durationMs.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (errorKind.present) {
+      map['error_kind'] = Variable<String>(errorKind.value);
+    }
+    if (sourceHash.present) {
+      map['source_hash'] = Variable<String>(sourceHash.value);
+    }
+    if (sourceBytes.present) {
+      map['source_bytes'] = Variable<int>(sourceBytes.value);
+    }
+    if (cpuMs.present) {
+      map['cpu_ms'] = Variable<int>(cpuMs.value);
+    }
+    if (peakHeapBytes.present) {
+      map['peak_heap_bytes'] = Variable<int>(peakHeapBytes.value);
+    }
+    if (callsCompleted.present) {
+      map['calls_completed'] = Variable<int>(callsCompleted.value);
+    }
+    if (callsFailed.present) {
+      map['calls_failed'] = Variable<int>(callsFailed.value);
+    }
+    if (callsDenied.present) {
+      map['calls_denied'] = Variable<int>(callsDenied.value);
+    }
+    if (callsCancelled.present) {
+      map['calls_cancelled'] = Variable<int>(callsCancelled.value);
+    }
+    if (callsTimedOut.present) {
+      map['calls_timed_out'] = Variable<int>(callsTimedOut.value);
+    }
+    if (callsUnknownTool.present) {
+      map['calls_unknown_tool'] = Variable<int>(callsUnknownTool.value);
+    }
+    if (callsInvalidArgs.present) {
+      map['calls_invalid_args'] = Variable<int>(callsInvalidArgs.value);
+    }
+    if (questionCount.present) {
+      map['question_count'] = Variable<int>(questionCount.value);
+    }
+    if (outputBytes.present) {
+      map['output_bytes'] = Variable<int>(outputBytes.value);
+    }
+    if (outputTruncated.present) {
+      map['output_truncated'] = Variable<bool>(outputTruncated.value);
+    }
+    if (engineVersion.present) {
+      map['engine_version'] = Variable<String>(engineVersion.value);
+    }
+    if (lockdownJson.present) {
+      map['lockdown_json'] = Variable<String>(lockdownJson.value);
+    }
+    if (limitsJson.present) {
+      map['limits_json'] = Variable<String>(limitsJson.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CodeExecutionsTableCompanion(')
+          ..write('id: $id, ')
+          ..write('runId: $runId, ')
+          ..write('toolCallId: $toolCallId, ')
+          ..write('idSuffix: $idSuffix, ')
+          ..write('surface: $surface, ')
+          ..write('conversationId: $conversationId, ')
+          ..write('agentId: $agentId, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('description: $description, ')
+          ..write('startedAtMs: $startedAtMs, ')
+          ..write('durationMs: $durationMs, ')
+          ..write('status: $status, ')
+          ..write('errorKind: $errorKind, ')
+          ..write('sourceHash: $sourceHash, ')
+          ..write('sourceBytes: $sourceBytes, ')
+          ..write('cpuMs: $cpuMs, ')
+          ..write('peakHeapBytes: $peakHeapBytes, ')
+          ..write('callsCompleted: $callsCompleted, ')
+          ..write('callsFailed: $callsFailed, ')
+          ..write('callsDenied: $callsDenied, ')
+          ..write('callsCancelled: $callsCancelled, ')
+          ..write('callsTimedOut: $callsTimedOut, ')
+          ..write('callsUnknownTool: $callsUnknownTool, ')
+          ..write('callsInvalidArgs: $callsInvalidArgs, ')
+          ..write('questionCount: $questionCount, ')
+          ..write('outputBytes: $outputBytes, ')
+          ..write('outputTruncated: $outputTruncated, ')
+          ..write('engineVersion: $engineVersion, ')
+          ..write('lockdownJson: $lockdownJson, ')
+          ..write('limitsJson: $limitsJson, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CodeExecutionPayloadsTableTable extends CodeExecutionPayloadsTable
+    with
+        TableInfo<
+          $CodeExecutionPayloadsTableTable,
+          CodeExecutionPayloadsTableData
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CodeExecutionPayloadsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _executionIdMeta = const VerificationMeta(
+    'executionId',
+  );
+  @override
+  late final GeneratedColumn<String> executionId = GeneratedColumn<String>(
+    'execution_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES code_executions (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _outputMeta = const VerificationMeta('output');
+  @override
+  late final GeneratedColumn<String> output = GeneratedColumn<String>(
+    'output',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _consoleMeta = const VerificationMeta(
+    'console',
+  );
+  @override
+  late final GeneratedColumn<String> console = GeneratedColumn<String>(
+    'console',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _errorNameMeta = const VerificationMeta(
+    'errorName',
+  );
+  @override
+  late final GeneratedColumn<String> errorName = GeneratedColumn<String>(
+    'error_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    executionId,
+    source,
+    output,
+    console,
+    errorName,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'code_execution_payloads';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CodeExecutionPayloadsTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('execution_id')) {
+      context.handle(
+        _executionIdMeta,
+        executionId.isAcceptableOrUnknown(
+          data['execution_id']!,
+          _executionIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_executionIdMeta);
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('output')) {
+      context.handle(
+        _outputMeta,
+        output.isAcceptableOrUnknown(data['output']!, _outputMeta),
+      );
+    }
+    if (data.containsKey('console')) {
+      context.handle(
+        _consoleMeta,
+        console.isAcceptableOrUnknown(data['console']!, _consoleMeta),
+      );
+    }
+    if (data.containsKey('error_name')) {
+      context.handle(
+        _errorNameMeta,
+        errorName.isAcceptableOrUnknown(data['error_name']!, _errorNameMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {executionId};
+  @override
+  CodeExecutionPayloadsTableData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CodeExecutionPayloadsTableData(
+      executionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}execution_id'],
+      )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      output: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}output'],
+      )!,
+      console: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}console'],
+      )!,
+      errorName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}error_name'],
+      ),
+    );
+  }
+
+  @override
+  $CodeExecutionPayloadsTableTable createAlias(String alias) {
+    return $CodeExecutionPayloadsTableTable(attachedDatabase, alias);
+  }
+}
+
+class CodeExecutionPayloadsTableData extends DataClass
+    implements Insertable<CodeExecutionPayloadsTableData> {
+  /// The execution these belong to. `CASCADE`: part of the execution.
+  final String executionId;
+
+  /// The script as the model wrote it.
+  final String source;
+
+  /// The result text the model read.
+  final String output;
+
+  /// The script's `console.*` lines, in order, one per line with its level.
+  final String console;
+
+  /// The name of the error a failed script threw, as the script set it, cut
+  /// to one line of 100 characters. Display text, never a filter.
+  final String? errorName;
+  const CodeExecutionPayloadsTableData({
+    required this.executionId,
+    required this.source,
+    required this.output,
+    required this.console,
+    this.errorName,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['execution_id'] = Variable<String>(executionId);
+    map['source'] = Variable<String>(source);
+    map['output'] = Variable<String>(output);
+    map['console'] = Variable<String>(console);
+    if (!nullToAbsent || errorName != null) {
+      map['error_name'] = Variable<String>(errorName);
+    }
+    return map;
+  }
+
+  CodeExecutionPayloadsTableCompanion toCompanion(bool nullToAbsent) {
+    return CodeExecutionPayloadsTableCompanion(
+      executionId: Value(executionId),
+      source: Value(source),
+      output: Value(output),
+      console: Value(console),
+      errorName: errorName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(errorName),
+    );
+  }
+
+  factory CodeExecutionPayloadsTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CodeExecutionPayloadsTableData(
+      executionId: serializer.fromJson<String>(json['executionId']),
+      source: serializer.fromJson<String>(json['source']),
+      output: serializer.fromJson<String>(json['output']),
+      console: serializer.fromJson<String>(json['console']),
+      errorName: serializer.fromJson<String?>(json['errorName']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'executionId': serializer.toJson<String>(executionId),
+      'source': serializer.toJson<String>(source),
+      'output': serializer.toJson<String>(output),
+      'console': serializer.toJson<String>(console),
+      'errorName': serializer.toJson<String?>(errorName),
+    };
+  }
+
+  CodeExecutionPayloadsTableData copyWith({
+    String? executionId,
+    String? source,
+    String? output,
+    String? console,
+    Value<String?> errorName = const Value.absent(),
+  }) => CodeExecutionPayloadsTableData(
+    executionId: executionId ?? this.executionId,
+    source: source ?? this.source,
+    output: output ?? this.output,
+    console: console ?? this.console,
+    errorName: errorName.present ? errorName.value : this.errorName,
+  );
+  CodeExecutionPayloadsTableData copyWithCompanion(
+    CodeExecutionPayloadsTableCompanion data,
+  ) {
+    return CodeExecutionPayloadsTableData(
+      executionId: data.executionId.present
+          ? data.executionId.value
+          : this.executionId,
+      source: data.source.present ? data.source.value : this.source,
+      output: data.output.present ? data.output.value : this.output,
+      console: data.console.present ? data.console.value : this.console,
+      errorName: data.errorName.present ? data.errorName.value : this.errorName,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CodeExecutionPayloadsTableData(')
+          ..write('executionId: $executionId, ')
+          ..write('source: $source, ')
+          ..write('output: $output, ')
+          ..write('console: $console, ')
+          ..write('errorName: $errorName')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(executionId, source, output, console, errorName);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CodeExecutionPayloadsTableData &&
+          other.executionId == this.executionId &&
+          other.source == this.source &&
+          other.output == this.output &&
+          other.console == this.console &&
+          other.errorName == this.errorName);
+}
+
+class CodeExecutionPayloadsTableCompanion
+    extends UpdateCompanion<CodeExecutionPayloadsTableData> {
+  final Value<String> executionId;
+  final Value<String> source;
+  final Value<String> output;
+  final Value<String> console;
+  final Value<String?> errorName;
+  final Value<int> rowid;
+  const CodeExecutionPayloadsTableCompanion({
+    this.executionId = const Value.absent(),
+    this.source = const Value.absent(),
+    this.output = const Value.absent(),
+    this.console = const Value.absent(),
+    this.errorName = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CodeExecutionPayloadsTableCompanion.insert({
+    required String executionId,
+    required String source,
+    this.output = const Value.absent(),
+    this.console = const Value.absent(),
+    this.errorName = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : executionId = Value(executionId),
+       source = Value(source);
+  static Insertable<CodeExecutionPayloadsTableData> custom({
+    Expression<String>? executionId,
+    Expression<String>? source,
+    Expression<String>? output,
+    Expression<String>? console,
+    Expression<String>? errorName,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (executionId != null) 'execution_id': executionId,
+      if (source != null) 'source': source,
+      if (output != null) 'output': output,
+      if (console != null) 'console': console,
+      if (errorName != null) 'error_name': errorName,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CodeExecutionPayloadsTableCompanion copyWith({
+    Value<String>? executionId,
+    Value<String>? source,
+    Value<String>? output,
+    Value<String>? console,
+    Value<String?>? errorName,
+    Value<int>? rowid,
+  }) {
+    return CodeExecutionPayloadsTableCompanion(
+      executionId: executionId ?? this.executionId,
+      source: source ?? this.source,
+      output: output ?? this.output,
+      console: console ?? this.console,
+      errorName: errorName ?? this.errorName,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (executionId.present) {
+      map['execution_id'] = Variable<String>(executionId.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (output.present) {
+      map['output'] = Variable<String>(output.value);
+    }
+    if (console.present) {
+      map['console'] = Variable<String>(console.value);
+    }
+    if (errorName.present) {
+      map['error_name'] = Variable<String>(errorName.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CodeExecutionPayloadsTableCompanion(')
+          ..write('executionId: $executionId, ')
+          ..write('source: $source, ')
+          ..write('output: $output, ')
+          ..write('console: $console, ')
+          ..write('errorName: $errorName, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CodeExecutionCallsTableTable extends CodeExecutionCallsTable
+    with TableInfo<$CodeExecutionCallsTableTable, CodeExecutionCallsTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CodeExecutionCallsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _executionIdMeta = const VerificationMeta(
+    'executionId',
+  );
+  @override
+  late final GeneratedColumn<String> executionId = GeneratedColumn<String>(
+    'execution_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES code_executions (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _sequenceMeta = const VerificationMeta(
+    'sequence',
+  );
+  @override
+  late final GeneratedColumn<int> sequence = GeneratedColumn<int>(
+    'sequence',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _toolCallIdMeta = const VerificationMeta(
+    'toolCallId',
+  );
+  @override
+  late final GeneratedColumn<String> toolCallId = GeneratedColumn<String>(
+    'tool_call_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _toolNameMeta = const VerificationMeta(
+    'toolName',
+  );
+  @override
+  late final GeneratedColumn<String> toolName = GeneratedColumn<String>(
+    'tool_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _startOffsetMsMeta = const VerificationMeta(
+    'startOffsetMs',
+  );
+  @override
+  late final GeneratedColumn<int> startOffsetMs = GeneratedColumn<int>(
+    'start_offset_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _durationMsMeta = const VerificationMeta(
+    'durationMs',
+  );
+  @override
+  late final GeneratedColumn<int> durationMs = GeneratedColumn<int>(
+    'duration_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    check: () => status.isIn(AgentsStoredValues.nestedCallStatus),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _gateDecisionMeta = const VerificationMeta(
+    'gateDecision',
+  );
+  @override
+  late final GeneratedColumn<String> gateDecision = GeneratedColumn<String>(
+    'gate_decision',
+    aliasedName,
+    true,
+    check: () => gateDecision.isIn(AgentsStoredValues.nestedCallGateDecision),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _approvalWaitMsMeta = const VerificationMeta(
+    'approvalWaitMs',
+  );
+  @override
+  late final GeneratedColumn<int> approvalWaitMs = GeneratedColumn<int>(
+    'approval_wait_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _argumentBytesMeta = const VerificationMeta(
+    'argumentBytes',
+  );
+  @override
+  late final GeneratedColumn<int> argumentBytes = GeneratedColumn<int>(
+    'argument_bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _resultBytesMeta = const VerificationMeta(
+    'resultBytes',
+  );
+  @override
+  late final GeneratedColumn<int> resultBytes = GeneratedColumn<int>(
+    'result_bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _argumentsMeta = const VerificationMeta(
+    'arguments',
+  );
+  @override
+  late final GeneratedColumn<String> arguments = GeneratedColumn<String>(
+    'arguments',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('{}'),
+  );
+  static const VerificationMeta _errorMeta = const VerificationMeta('error');
+  @override
+  late final GeneratedColumn<String> error = GeneratedColumn<String>(
+    'error',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _siteLineMeta = const VerificationMeta(
+    'siteLine',
+  );
+  @override
+  late final GeneratedColumn<int> siteLine = GeneratedColumn<int>(
+    'site_line',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _siteColumnMeta = const VerificationMeta(
+    'siteColumn',
+  );
+  @override
+  late final GeneratedColumn<int> siteColumn = GeneratedColumn<int>(
+    'site_column',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    executionId,
+    sequence,
+    toolCallId,
+    toolName,
+    startOffsetMs,
+    durationMs,
+    status,
+    gateDecision,
+    approvalWaitMs,
+    argumentBytes,
+    resultBytes,
+    arguments,
+    error,
+    siteLine,
+    siteColumn,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'code_execution_calls';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CodeExecutionCallsTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('execution_id')) {
+      context.handle(
+        _executionIdMeta,
+        executionId.isAcceptableOrUnknown(
+          data['execution_id']!,
+          _executionIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_executionIdMeta);
+    }
+    if (data.containsKey('sequence')) {
+      context.handle(
+        _sequenceMeta,
+        sequence.isAcceptableOrUnknown(data['sequence']!, _sequenceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sequenceMeta);
+    }
+    if (data.containsKey('tool_call_id')) {
+      context.handle(
+        _toolCallIdMeta,
+        toolCallId.isAcceptableOrUnknown(
+          data['tool_call_id']!,
+          _toolCallIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_toolCallIdMeta);
+    }
+    if (data.containsKey('tool_name')) {
+      context.handle(
+        _toolNameMeta,
+        toolName.isAcceptableOrUnknown(data['tool_name']!, _toolNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_toolNameMeta);
+    }
+    if (data.containsKey('start_offset_ms')) {
+      context.handle(
+        _startOffsetMsMeta,
+        startOffsetMs.isAcceptableOrUnknown(
+          data['start_offset_ms']!,
+          _startOffsetMsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_startOffsetMsMeta);
+    }
+    if (data.containsKey('duration_ms')) {
+      context.handle(
+        _durationMsMeta,
+        durationMs.isAcceptableOrUnknown(data['duration_ms']!, _durationMsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_durationMsMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('gate_decision')) {
+      context.handle(
+        _gateDecisionMeta,
+        gateDecision.isAcceptableOrUnknown(
+          data['gate_decision']!,
+          _gateDecisionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('approval_wait_ms')) {
+      context.handle(
+        _approvalWaitMsMeta,
+        approvalWaitMs.isAcceptableOrUnknown(
+          data['approval_wait_ms']!,
+          _approvalWaitMsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('argument_bytes')) {
+      context.handle(
+        _argumentBytesMeta,
+        argumentBytes.isAcceptableOrUnknown(
+          data['argument_bytes']!,
+          _argumentBytesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('result_bytes')) {
+      context.handle(
+        _resultBytesMeta,
+        resultBytes.isAcceptableOrUnknown(
+          data['result_bytes']!,
+          _resultBytesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('arguments')) {
+      context.handle(
+        _argumentsMeta,
+        arguments.isAcceptableOrUnknown(data['arguments']!, _argumentsMeta),
+      );
+    }
+    if (data.containsKey('error')) {
+      context.handle(
+        _errorMeta,
+        error.isAcceptableOrUnknown(data['error']!, _errorMeta),
+      );
+    }
+    if (data.containsKey('site_line')) {
+      context.handle(
+        _siteLineMeta,
+        siteLine.isAcceptableOrUnknown(data['site_line']!, _siteLineMeta),
+      );
+    }
+    if (data.containsKey('site_column')) {
+      context.handle(
+        _siteColumnMeta,
+        siteColumn.isAcceptableOrUnknown(data['site_column']!, _siteColumnMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {executionId, sequence};
+  @override
+  CodeExecutionCallsTableData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CodeExecutionCallsTableData(
+      executionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}execution_id'],
+      )!,
+      sequence: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sequence'],
+      )!,
+      toolCallId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tool_call_id'],
+      )!,
+      toolName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tool_name'],
+      )!,
+      startOffsetMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}start_offset_ms'],
+      )!,
+      durationMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}duration_ms'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      gateDecision: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gate_decision'],
+      ),
+      approvalWaitMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}approval_wait_ms'],
+      )!,
+      argumentBytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}argument_bytes'],
+      )!,
+      resultBytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}result_bytes'],
+      )!,
+      arguments: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}arguments'],
+      )!,
+      error: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}error'],
+      ),
+      siteLine: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}site_line'],
+      ),
+      siteColumn: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}site_column'],
+      ),
+    );
+  }
+
+  @override
+  $CodeExecutionCallsTableTable createAlias(String alias) {
+    return $CodeExecutionCallsTableTable(attachedDatabase, alias);
+  }
+}
+
+class CodeExecutionCallsTableData extends DataClass
+    implements Insertable<CodeExecutionCallsTableData> {
+  /// The execution that made the call. `CASCADE`: part of the execution.
+  final String executionId;
+
+  /// One-based position in call order.
+  final int sequence;
+
+  /// The nested transcript id (`<replToolCallId>/<sequence>`). Not a row.
+  final String toolCallId;
+
+  /// The tool's registered name. Open set: tool names.
+  final String toolName;
+
+  /// Milliseconds from the script's start to this call's start.
+  final int startOffsetMs;
+
+  /// Milliseconds from start to settle, waits included.
+  final int durationMs;
+
+  /// How the call ended: a `NestedCallStatus` wire name.
+  final String status;
+
+  /// What the gate decided: a `NestedCallGateDecision` wire name. Null when
+  /// the call never reached the gate.
+  final String? gateDecision;
+
+  /// Milliseconds spent waiting on a person, part of [durationMs].
+  final int approvalWaitMs;
+
+  /// Size of the arguments the script sent, in UTF-8 bytes, before
+  /// redaction.
+  final int argumentBytes;
+
+  /// Size of the result handed back to the script, in UTF-8 bytes.
+  final int resultBytes;
+
+  /// The redacted arguments, at most 8 KiB.
+  ///
+  /// Display text, not a JSON column: arguments over the cap are cut with a
+  /// marker (`CodeExecutionCall.boundArguments`), which leaves text that no
+  /// longer parses, so the column carries no `json_valid` check and its name
+  /// no `_json` suffix.
+  final String arguments;
+
+  /// The error message of a call that did not complete, at most 500
+  /// characters.
+  final String? error;
+
+  /// The 1-based line in the script the call was made from
+  /// (`ScriptCallSite.line`), or null when the runner reported none.
+  ///
+  /// A display hint the runner reported: the runner executes model-written
+  /// code, so nothing that decides reads it.
+  final int? siteLine;
+
+  /// The 1-based column in the script the call was made from
+  /// (`ScriptCallSite.column`), null exactly when [siteLine] is.
+  final int? siteColumn;
+  const CodeExecutionCallsTableData({
+    required this.executionId,
+    required this.sequence,
+    required this.toolCallId,
+    required this.toolName,
+    required this.startOffsetMs,
+    required this.durationMs,
+    required this.status,
+    this.gateDecision,
+    required this.approvalWaitMs,
+    required this.argumentBytes,
+    required this.resultBytes,
+    required this.arguments,
+    this.error,
+    this.siteLine,
+    this.siteColumn,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['execution_id'] = Variable<String>(executionId);
+    map['sequence'] = Variable<int>(sequence);
+    map['tool_call_id'] = Variable<String>(toolCallId);
+    map['tool_name'] = Variable<String>(toolName);
+    map['start_offset_ms'] = Variable<int>(startOffsetMs);
+    map['duration_ms'] = Variable<int>(durationMs);
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || gateDecision != null) {
+      map['gate_decision'] = Variable<String>(gateDecision);
+    }
+    map['approval_wait_ms'] = Variable<int>(approvalWaitMs);
+    map['argument_bytes'] = Variable<int>(argumentBytes);
+    map['result_bytes'] = Variable<int>(resultBytes);
+    map['arguments'] = Variable<String>(arguments);
+    if (!nullToAbsent || error != null) {
+      map['error'] = Variable<String>(error);
+    }
+    if (!nullToAbsent || siteLine != null) {
+      map['site_line'] = Variable<int>(siteLine);
+    }
+    if (!nullToAbsent || siteColumn != null) {
+      map['site_column'] = Variable<int>(siteColumn);
+    }
+    return map;
+  }
+
+  CodeExecutionCallsTableCompanion toCompanion(bool nullToAbsent) {
+    return CodeExecutionCallsTableCompanion(
+      executionId: Value(executionId),
+      sequence: Value(sequence),
+      toolCallId: Value(toolCallId),
+      toolName: Value(toolName),
+      startOffsetMs: Value(startOffsetMs),
+      durationMs: Value(durationMs),
+      status: Value(status),
+      gateDecision: gateDecision == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gateDecision),
+      approvalWaitMs: Value(approvalWaitMs),
+      argumentBytes: Value(argumentBytes),
+      resultBytes: Value(resultBytes),
+      arguments: Value(arguments),
+      error: error == null && nullToAbsent
+          ? const Value.absent()
+          : Value(error),
+      siteLine: siteLine == null && nullToAbsent
+          ? const Value.absent()
+          : Value(siteLine),
+      siteColumn: siteColumn == null && nullToAbsent
+          ? const Value.absent()
+          : Value(siteColumn),
+    );
+  }
+
+  factory CodeExecutionCallsTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CodeExecutionCallsTableData(
+      executionId: serializer.fromJson<String>(json['executionId']),
+      sequence: serializer.fromJson<int>(json['sequence']),
+      toolCallId: serializer.fromJson<String>(json['toolCallId']),
+      toolName: serializer.fromJson<String>(json['toolName']),
+      startOffsetMs: serializer.fromJson<int>(json['startOffsetMs']),
+      durationMs: serializer.fromJson<int>(json['durationMs']),
+      status: serializer.fromJson<String>(json['status']),
+      gateDecision: serializer.fromJson<String?>(json['gateDecision']),
+      approvalWaitMs: serializer.fromJson<int>(json['approvalWaitMs']),
+      argumentBytes: serializer.fromJson<int>(json['argumentBytes']),
+      resultBytes: serializer.fromJson<int>(json['resultBytes']),
+      arguments: serializer.fromJson<String>(json['arguments']),
+      error: serializer.fromJson<String?>(json['error']),
+      siteLine: serializer.fromJson<int?>(json['siteLine']),
+      siteColumn: serializer.fromJson<int?>(json['siteColumn']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'executionId': serializer.toJson<String>(executionId),
+      'sequence': serializer.toJson<int>(sequence),
+      'toolCallId': serializer.toJson<String>(toolCallId),
+      'toolName': serializer.toJson<String>(toolName),
+      'startOffsetMs': serializer.toJson<int>(startOffsetMs),
+      'durationMs': serializer.toJson<int>(durationMs),
+      'status': serializer.toJson<String>(status),
+      'gateDecision': serializer.toJson<String?>(gateDecision),
+      'approvalWaitMs': serializer.toJson<int>(approvalWaitMs),
+      'argumentBytes': serializer.toJson<int>(argumentBytes),
+      'resultBytes': serializer.toJson<int>(resultBytes),
+      'arguments': serializer.toJson<String>(arguments),
+      'error': serializer.toJson<String?>(error),
+      'siteLine': serializer.toJson<int?>(siteLine),
+      'siteColumn': serializer.toJson<int?>(siteColumn),
+    };
+  }
+
+  CodeExecutionCallsTableData copyWith({
+    String? executionId,
+    int? sequence,
+    String? toolCallId,
+    String? toolName,
+    int? startOffsetMs,
+    int? durationMs,
+    String? status,
+    Value<String?> gateDecision = const Value.absent(),
+    int? approvalWaitMs,
+    int? argumentBytes,
+    int? resultBytes,
+    String? arguments,
+    Value<String?> error = const Value.absent(),
+    Value<int?> siteLine = const Value.absent(),
+    Value<int?> siteColumn = const Value.absent(),
+  }) => CodeExecutionCallsTableData(
+    executionId: executionId ?? this.executionId,
+    sequence: sequence ?? this.sequence,
+    toolCallId: toolCallId ?? this.toolCallId,
+    toolName: toolName ?? this.toolName,
+    startOffsetMs: startOffsetMs ?? this.startOffsetMs,
+    durationMs: durationMs ?? this.durationMs,
+    status: status ?? this.status,
+    gateDecision: gateDecision.present ? gateDecision.value : this.gateDecision,
+    approvalWaitMs: approvalWaitMs ?? this.approvalWaitMs,
+    argumentBytes: argumentBytes ?? this.argumentBytes,
+    resultBytes: resultBytes ?? this.resultBytes,
+    arguments: arguments ?? this.arguments,
+    error: error.present ? error.value : this.error,
+    siteLine: siteLine.present ? siteLine.value : this.siteLine,
+    siteColumn: siteColumn.present ? siteColumn.value : this.siteColumn,
+  );
+  CodeExecutionCallsTableData copyWithCompanion(
+    CodeExecutionCallsTableCompanion data,
+  ) {
+    return CodeExecutionCallsTableData(
+      executionId: data.executionId.present
+          ? data.executionId.value
+          : this.executionId,
+      sequence: data.sequence.present ? data.sequence.value : this.sequence,
+      toolCallId: data.toolCallId.present
+          ? data.toolCallId.value
+          : this.toolCallId,
+      toolName: data.toolName.present ? data.toolName.value : this.toolName,
+      startOffsetMs: data.startOffsetMs.present
+          ? data.startOffsetMs.value
+          : this.startOffsetMs,
+      durationMs: data.durationMs.present
+          ? data.durationMs.value
+          : this.durationMs,
+      status: data.status.present ? data.status.value : this.status,
+      gateDecision: data.gateDecision.present
+          ? data.gateDecision.value
+          : this.gateDecision,
+      approvalWaitMs: data.approvalWaitMs.present
+          ? data.approvalWaitMs.value
+          : this.approvalWaitMs,
+      argumentBytes: data.argumentBytes.present
+          ? data.argumentBytes.value
+          : this.argumentBytes,
+      resultBytes: data.resultBytes.present
+          ? data.resultBytes.value
+          : this.resultBytes,
+      arguments: data.arguments.present ? data.arguments.value : this.arguments,
+      error: data.error.present ? data.error.value : this.error,
+      siteLine: data.siteLine.present ? data.siteLine.value : this.siteLine,
+      siteColumn: data.siteColumn.present
+          ? data.siteColumn.value
+          : this.siteColumn,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CodeExecutionCallsTableData(')
+          ..write('executionId: $executionId, ')
+          ..write('sequence: $sequence, ')
+          ..write('toolCallId: $toolCallId, ')
+          ..write('toolName: $toolName, ')
+          ..write('startOffsetMs: $startOffsetMs, ')
+          ..write('durationMs: $durationMs, ')
+          ..write('status: $status, ')
+          ..write('gateDecision: $gateDecision, ')
+          ..write('approvalWaitMs: $approvalWaitMs, ')
+          ..write('argumentBytes: $argumentBytes, ')
+          ..write('resultBytes: $resultBytes, ')
+          ..write('arguments: $arguments, ')
+          ..write('error: $error, ')
+          ..write('siteLine: $siteLine, ')
+          ..write('siteColumn: $siteColumn')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    executionId,
+    sequence,
+    toolCallId,
+    toolName,
+    startOffsetMs,
+    durationMs,
+    status,
+    gateDecision,
+    approvalWaitMs,
+    argumentBytes,
+    resultBytes,
+    arguments,
+    error,
+    siteLine,
+    siteColumn,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CodeExecutionCallsTableData &&
+          other.executionId == this.executionId &&
+          other.sequence == this.sequence &&
+          other.toolCallId == this.toolCallId &&
+          other.toolName == this.toolName &&
+          other.startOffsetMs == this.startOffsetMs &&
+          other.durationMs == this.durationMs &&
+          other.status == this.status &&
+          other.gateDecision == this.gateDecision &&
+          other.approvalWaitMs == this.approvalWaitMs &&
+          other.argumentBytes == this.argumentBytes &&
+          other.resultBytes == this.resultBytes &&
+          other.arguments == this.arguments &&
+          other.error == this.error &&
+          other.siteLine == this.siteLine &&
+          other.siteColumn == this.siteColumn);
+}
+
+class CodeExecutionCallsTableCompanion
+    extends UpdateCompanion<CodeExecutionCallsTableData> {
+  final Value<String> executionId;
+  final Value<int> sequence;
+  final Value<String> toolCallId;
+  final Value<String> toolName;
+  final Value<int> startOffsetMs;
+  final Value<int> durationMs;
+  final Value<String> status;
+  final Value<String?> gateDecision;
+  final Value<int> approvalWaitMs;
+  final Value<int> argumentBytes;
+  final Value<int> resultBytes;
+  final Value<String> arguments;
+  final Value<String?> error;
+  final Value<int?> siteLine;
+  final Value<int?> siteColumn;
+  final Value<int> rowid;
+  const CodeExecutionCallsTableCompanion({
+    this.executionId = const Value.absent(),
+    this.sequence = const Value.absent(),
+    this.toolCallId = const Value.absent(),
+    this.toolName = const Value.absent(),
+    this.startOffsetMs = const Value.absent(),
+    this.durationMs = const Value.absent(),
+    this.status = const Value.absent(),
+    this.gateDecision = const Value.absent(),
+    this.approvalWaitMs = const Value.absent(),
+    this.argumentBytes = const Value.absent(),
+    this.resultBytes = const Value.absent(),
+    this.arguments = const Value.absent(),
+    this.error = const Value.absent(),
+    this.siteLine = const Value.absent(),
+    this.siteColumn = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CodeExecutionCallsTableCompanion.insert({
+    required String executionId,
+    required int sequence,
+    required String toolCallId,
+    required String toolName,
+    required int startOffsetMs,
+    required int durationMs,
+    required String status,
+    this.gateDecision = const Value.absent(),
+    this.approvalWaitMs = const Value.absent(),
+    this.argumentBytes = const Value.absent(),
+    this.resultBytes = const Value.absent(),
+    this.arguments = const Value.absent(),
+    this.error = const Value.absent(),
+    this.siteLine = const Value.absent(),
+    this.siteColumn = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : executionId = Value(executionId),
+       sequence = Value(sequence),
+       toolCallId = Value(toolCallId),
+       toolName = Value(toolName),
+       startOffsetMs = Value(startOffsetMs),
+       durationMs = Value(durationMs),
+       status = Value(status);
+  static Insertable<CodeExecutionCallsTableData> custom({
+    Expression<String>? executionId,
+    Expression<int>? sequence,
+    Expression<String>? toolCallId,
+    Expression<String>? toolName,
+    Expression<int>? startOffsetMs,
+    Expression<int>? durationMs,
+    Expression<String>? status,
+    Expression<String>? gateDecision,
+    Expression<int>? approvalWaitMs,
+    Expression<int>? argumentBytes,
+    Expression<int>? resultBytes,
+    Expression<String>? arguments,
+    Expression<String>? error,
+    Expression<int>? siteLine,
+    Expression<int>? siteColumn,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (executionId != null) 'execution_id': executionId,
+      if (sequence != null) 'sequence': sequence,
+      if (toolCallId != null) 'tool_call_id': toolCallId,
+      if (toolName != null) 'tool_name': toolName,
+      if (startOffsetMs != null) 'start_offset_ms': startOffsetMs,
+      if (durationMs != null) 'duration_ms': durationMs,
+      if (status != null) 'status': status,
+      if (gateDecision != null) 'gate_decision': gateDecision,
+      if (approvalWaitMs != null) 'approval_wait_ms': approvalWaitMs,
+      if (argumentBytes != null) 'argument_bytes': argumentBytes,
+      if (resultBytes != null) 'result_bytes': resultBytes,
+      if (arguments != null) 'arguments': arguments,
+      if (error != null) 'error': error,
+      if (siteLine != null) 'site_line': siteLine,
+      if (siteColumn != null) 'site_column': siteColumn,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CodeExecutionCallsTableCompanion copyWith({
+    Value<String>? executionId,
+    Value<int>? sequence,
+    Value<String>? toolCallId,
+    Value<String>? toolName,
+    Value<int>? startOffsetMs,
+    Value<int>? durationMs,
+    Value<String>? status,
+    Value<String?>? gateDecision,
+    Value<int>? approvalWaitMs,
+    Value<int>? argumentBytes,
+    Value<int>? resultBytes,
+    Value<String>? arguments,
+    Value<String?>? error,
+    Value<int?>? siteLine,
+    Value<int?>? siteColumn,
+    Value<int>? rowid,
+  }) {
+    return CodeExecutionCallsTableCompanion(
+      executionId: executionId ?? this.executionId,
+      sequence: sequence ?? this.sequence,
+      toolCallId: toolCallId ?? this.toolCallId,
+      toolName: toolName ?? this.toolName,
+      startOffsetMs: startOffsetMs ?? this.startOffsetMs,
+      durationMs: durationMs ?? this.durationMs,
+      status: status ?? this.status,
+      gateDecision: gateDecision ?? this.gateDecision,
+      approvalWaitMs: approvalWaitMs ?? this.approvalWaitMs,
+      argumentBytes: argumentBytes ?? this.argumentBytes,
+      resultBytes: resultBytes ?? this.resultBytes,
+      arguments: arguments ?? this.arguments,
+      error: error ?? this.error,
+      siteLine: siteLine ?? this.siteLine,
+      siteColumn: siteColumn ?? this.siteColumn,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (executionId.present) {
+      map['execution_id'] = Variable<String>(executionId.value);
+    }
+    if (sequence.present) {
+      map['sequence'] = Variable<int>(sequence.value);
+    }
+    if (toolCallId.present) {
+      map['tool_call_id'] = Variable<String>(toolCallId.value);
+    }
+    if (toolName.present) {
+      map['tool_name'] = Variable<String>(toolName.value);
+    }
+    if (startOffsetMs.present) {
+      map['start_offset_ms'] = Variable<int>(startOffsetMs.value);
+    }
+    if (durationMs.present) {
+      map['duration_ms'] = Variable<int>(durationMs.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (gateDecision.present) {
+      map['gate_decision'] = Variable<String>(gateDecision.value);
+    }
+    if (approvalWaitMs.present) {
+      map['approval_wait_ms'] = Variable<int>(approvalWaitMs.value);
+    }
+    if (argumentBytes.present) {
+      map['argument_bytes'] = Variable<int>(argumentBytes.value);
+    }
+    if (resultBytes.present) {
+      map['result_bytes'] = Variable<int>(resultBytes.value);
+    }
+    if (arguments.present) {
+      map['arguments'] = Variable<String>(arguments.value);
+    }
+    if (error.present) {
+      map['error'] = Variable<String>(error.value);
+    }
+    if (siteLine.present) {
+      map['site_line'] = Variable<int>(siteLine.value);
+    }
+    if (siteColumn.present) {
+      map['site_column'] = Variable<int>(siteColumn.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CodeExecutionCallsTableCompanion(')
+          ..write('executionId: $executionId, ')
+          ..write('sequence: $sequence, ')
+          ..write('toolCallId: $toolCallId, ')
+          ..write('toolName: $toolName, ')
+          ..write('startOffsetMs: $startOffsetMs, ')
+          ..write('durationMs: $durationMs, ')
+          ..write('status: $status, ')
+          ..write('gateDecision: $gateDecision, ')
+          ..write('approvalWaitMs: $approvalWaitMs, ')
+          ..write('argumentBytes: $argumentBytes, ')
+          ..write('resultBytes: $resultBytes, ')
+          ..write('arguments: $arguments, ')
+          ..write('error: $error, ')
+          ..write('siteLine: $siteLine, ')
+          ..write('siteColumn: $siteColumn, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CodeModeStoreTableTable extends CodeModeStoreTable
+    with TableInfo<$CodeModeStoreTableTable, CodeModeStoreTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CodeModeStoreTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _conversationIdMeta = const VerificationMeta(
+    'conversationId',
+  );
+  @override
+  late final GeneratedColumn<String> conversationId = GeneratedColumn<String>(
+    'conversation_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES conversations (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _agentIdMeta = const VerificationMeta(
+    'agentId',
+  );
+  @override
+  late final GeneratedColumn<String> agentId = GeneratedColumn<String>(
+    'agent_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES agents (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _keyMeta = const VerificationMeta('key');
+  @override
+  late final GeneratedColumn<String> key = GeneratedColumn<String>(
+    'key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _valueJsonMeta = const VerificationMeta(
+    'valueJson',
+  );
+  @override
+  late final GeneratedColumn<String> valueJson = GeneratedColumn<String>(
+    'value_json',
+    aliasedName,
+    false,
+    check: () => isJson(valueJson),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    conversationId,
+    agentId,
+    key,
+    valueJson,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'code_mode_store';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CodeModeStoreTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('conversation_id')) {
+      context.handle(
+        _conversationIdMeta,
+        conversationId.isAcceptableOrUnknown(
+          data['conversation_id']!,
+          _conversationIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_conversationIdMeta);
+    }
+    if (data.containsKey('agent_id')) {
+      context.handle(
+        _agentIdMeta,
+        agentId.isAcceptableOrUnknown(data['agent_id']!, _agentIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_agentIdMeta);
+    }
+    if (data.containsKey('key')) {
+      context.handle(
+        _keyMeta,
+        key.isAcceptableOrUnknown(data['key']!, _keyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_keyMeta);
+    }
+    if (data.containsKey('value_json')) {
+      context.handle(
+        _valueJsonMeta,
+        valueJson.isAcceptableOrUnknown(data['value_json']!, _valueJsonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_valueJsonMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {conversationId, agentId, key};
+  @override
+  CodeModeStoreTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CodeModeStoreTableData(
+      conversationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}conversation_id'],
+      )!,
+      agentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}agent_id'],
+      )!,
+      key: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}key'],
+      )!,
+      valueJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}value_json'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $CodeModeStoreTableTable createAlias(String alias) {
+    return $CodeModeStoreTableTable(attachedDatabase, alias);
+  }
+}
+
+class CodeModeStoreTableData extends DataClass
+    implements Insertable<CodeModeStoreTableData> {
+  /// The conversation the values belong to. `CASCADE`.
+  final String conversationId;
+
+  /// The agent the values belong to. `CASCADE`.
+  final String agentId;
+
+  /// The key the script named.
+  final String key;
+
+  /// The value as JSON text.
+  final String valueJson;
+
+  /// When the value was last written.
+  final DateTime updatedAt;
+  const CodeModeStoreTableData({
+    required this.conversationId,
+    required this.agentId,
+    required this.key,
+    required this.valueJson,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['conversation_id'] = Variable<String>(conversationId);
+    map['agent_id'] = Variable<String>(agentId);
+    map['key'] = Variable<String>(key);
+    map['value_json'] = Variable<String>(valueJson);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  CodeModeStoreTableCompanion toCompanion(bool nullToAbsent) {
+    return CodeModeStoreTableCompanion(
+      conversationId: Value(conversationId),
+      agentId: Value(agentId),
+      key: Value(key),
+      valueJson: Value(valueJson),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory CodeModeStoreTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CodeModeStoreTableData(
+      conversationId: serializer.fromJson<String>(json['conversationId']),
+      agentId: serializer.fromJson<String>(json['agentId']),
+      key: serializer.fromJson<String>(json['key']),
+      valueJson: serializer.fromJson<String>(json['valueJson']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'conversationId': serializer.toJson<String>(conversationId),
+      'agentId': serializer.toJson<String>(agentId),
+      'key': serializer.toJson<String>(key),
+      'valueJson': serializer.toJson<String>(valueJson),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  CodeModeStoreTableData copyWith({
+    String? conversationId,
+    String? agentId,
+    String? key,
+    String? valueJson,
+    DateTime? updatedAt,
+  }) => CodeModeStoreTableData(
+    conversationId: conversationId ?? this.conversationId,
+    agentId: agentId ?? this.agentId,
+    key: key ?? this.key,
+    valueJson: valueJson ?? this.valueJson,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  CodeModeStoreTableData copyWithCompanion(CodeModeStoreTableCompanion data) {
+    return CodeModeStoreTableData(
+      conversationId: data.conversationId.present
+          ? data.conversationId.value
+          : this.conversationId,
+      agentId: data.agentId.present ? data.agentId.value : this.agentId,
+      key: data.key.present ? data.key.value : this.key,
+      valueJson: data.valueJson.present ? data.valueJson.value : this.valueJson,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CodeModeStoreTableData(')
+          ..write('conversationId: $conversationId, ')
+          ..write('agentId: $agentId, ')
+          ..write('key: $key, ')
+          ..write('valueJson: $valueJson, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(conversationId, agentId, key, valueJson, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CodeModeStoreTableData &&
+          other.conversationId == this.conversationId &&
+          other.agentId == this.agentId &&
+          other.key == this.key &&
+          other.valueJson == this.valueJson &&
+          other.updatedAt == this.updatedAt);
+}
+
+class CodeModeStoreTableCompanion
+    extends UpdateCompanion<CodeModeStoreTableData> {
+  final Value<String> conversationId;
+  final Value<String> agentId;
+  final Value<String> key;
+  final Value<String> valueJson;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const CodeModeStoreTableCompanion({
+    this.conversationId = const Value.absent(),
+    this.agentId = const Value.absent(),
+    this.key = const Value.absent(),
+    this.valueJson = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CodeModeStoreTableCompanion.insert({
+    required String conversationId,
+    required String agentId,
+    required String key,
+    required String valueJson,
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : conversationId = Value(conversationId),
+       agentId = Value(agentId),
+       key = Value(key),
+       valueJson = Value(valueJson);
+  static Insertable<CodeModeStoreTableData> custom({
+    Expression<String>? conversationId,
+    Expression<String>? agentId,
+    Expression<String>? key,
+    Expression<String>? valueJson,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (conversationId != null) 'conversation_id': conversationId,
+      if (agentId != null) 'agent_id': agentId,
+      if (key != null) 'key': key,
+      if (valueJson != null) 'value_json': valueJson,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CodeModeStoreTableCompanion copyWith({
+    Value<String>? conversationId,
+    Value<String>? agentId,
+    Value<String>? key,
+    Value<String>? valueJson,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return CodeModeStoreTableCompanion(
+      conversationId: conversationId ?? this.conversationId,
+      agentId: agentId ?? this.agentId,
+      key: key ?? this.key,
+      valueJson: valueJson ?? this.valueJson,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (conversationId.present) {
+      map['conversation_id'] = Variable<String>(conversationId.value);
+    }
+    if (agentId.present) {
+      map['agent_id'] = Variable<String>(agentId.value);
+    }
+    if (key.present) {
+      map['key'] = Variable<String>(key.value);
+    }
+    if (valueJson.present) {
+      map['value_json'] = Variable<String>(valueJson.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CodeModeStoreTableCompanion(')
+          ..write('conversationId: $conversationId, ')
+          ..write('agentId: $agentId, ')
+          ..write('key: $key, ')
+          ..write('valueJson: $valueJson, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AgentWakesTableTable extends AgentWakesTable
+    with TableInfo<$AgentWakesTableTable, AgentWakesTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AgentWakesTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _workspaceIdMeta = const VerificationMeta(
+    'workspaceId',
+  );
+  @override
+  late final GeneratedColumn<String> workspaceId = GeneratedColumn<String>(
+    'workspace_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _spaceIdMeta = const VerificationMeta(
+    'spaceId',
+  );
+  @override
+  late final GeneratedColumn<String> spaceId = GeneratedColumn<String>(
+    'space_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _conversationIdMeta = const VerificationMeta(
+    'conversationId',
+  );
+  @override
+  late final GeneratedColumn<String> conversationId = GeneratedColumn<String>(
+    'conversation_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES conversations (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _agentIdMeta = const VerificationMeta(
+    'agentId',
+  );
+  @override
+  late final GeneratedColumn<String> agentId = GeneratedColumn<String>(
+    'agent_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES agents (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _reasonMeta = const VerificationMeta('reason');
+  @override
+  late final GeneratedColumn<String> reason = GeneratedColumn<String>(
+    'reason',
+    aliasedName,
+    false,
+    check: () => reason.isIn(AgentsStoredValues.wakeReason),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _laneMeta = const VerificationMeta('lane');
+  @override
+  late final GeneratedColumn<String> lane = GeneratedColumn<String>(
+    'lane',
+    aliasedName,
+    false,
+    check: () => lane.isIn(AgentsStoredValues.wakeLane),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('aside'),
+  );
+  static const VerificationMeta _payloadMeta = const VerificationMeta(
+    'payload',
+  );
+  @override
+  late final GeneratedColumn<String> payload = GeneratedColumn<String>(
+    'payload',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _detailMeta = const VerificationMeta('detail');
+  @override
+  late final GeneratedColumn<String> detail = GeneratedColumn<String>(
+    'detail',
+    aliasedName,
+    false,
+    check: () => isJsonObject(detail),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('{}'),
+  );
+  static const VerificationMeta _runOptionsMeta = const VerificationMeta(
+    'runOptions',
+  );
+  @override
+  late final GeneratedColumn<String> runOptions = GeneratedColumn<String>(
+    'run_options',
+    aliasedName,
+    true,
+    check: () => isJsonObject(runOptions),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _dedupKeyMeta = const VerificationMeta(
+    'dedupKey',
+  );
+  @override
+  late final GeneratedColumn<String> dedupKey = GeneratedColumn<String>(
+    'dedup_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _notBeforeMeta = const VerificationMeta(
+    'notBefore',
+  );
+  @override
+  late final GeneratedColumn<DateTime> notBefore = GeneratedColumn<DateTime>(
+    'not_before',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _expiresAtMeta = const VerificationMeta(
+    'expiresAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> expiresAt = GeneratedColumn<DateTime>(
+    'expires_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _requestedByUserIdMeta = const VerificationMeta(
+    'requestedByUserId',
+  );
+  @override
+  late final GeneratedColumn<String> requestedByUserId =
+      GeneratedColumn<String>(
+        'requested_by_user_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _chainMeta = const VerificationMeta('chain');
+  @override
+  late final GeneratedColumn<String> chain = GeneratedColumn<String>(
+    'chain',
+    aliasedName,
+    false,
+    check: () => isJsonArray(chain),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  static const VerificationMeta _expectsReplyMeta = const VerificationMeta(
+    'expectsReply',
+  );
+  @override
+  late final GeneratedColumn<bool> expectsReply = GeneratedColumn<bool>(
+    'expects_reply',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("expects_reply" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _stateMeta = const VerificationMeta('state');
+  @override
+  late final GeneratedColumn<String> state = GeneratedColumn<String>(
+    'state',
+    aliasedName,
+    false,
+    check: () => state.isIn(AgentsStoredValues.wakeState),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _stateReasonMeta = const VerificationMeta(
+    'stateReason',
+  );
+  @override
+  late final GeneratedColumn<String> stateReason = GeneratedColumn<String>(
+    'state_reason',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deliveredRunIdMeta = const VerificationMeta(
+    'deliveredRunId',
+  );
+  @override
+  late final GeneratedColumn<String> deliveredRunId = GeneratedColumn<String>(
+    'delivered_run_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _attemptMeta = const VerificationMeta(
+    'attempt',
+  );
+  @override
+  late final GeneratedColumn<int> attempt = GeneratedColumn<int>(
+    'attempt',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _claimedAtMeta = const VerificationMeta(
+    'claimedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> claimedAt = GeneratedColumn<DateTime>(
+    'claimed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _settledAtMeta = const VerificationMeta(
+    'settledAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> settledAt = GeneratedColumn<DateTime>(
+    'settled_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    workspaceId,
+    spaceId,
+    conversationId,
+    agentId,
+    reason,
+    lane,
+    payload,
+    detail,
+    runOptions,
+    dedupKey,
+    notBefore,
+    expiresAt,
+    requestedByUserId,
+    chain,
+    expectsReply,
+    state,
+    stateReason,
+    deliveredRunId,
+    attempt,
+    createdAt,
+    claimedAt,
+    settledAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'agent_wakes';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AgentWakesTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('workspace_id')) {
+      context.handle(
+        _workspaceIdMeta,
+        workspaceId.isAcceptableOrUnknown(
+          data['workspace_id']!,
+          _workspaceIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_workspaceIdMeta);
+    }
+    if (data.containsKey('space_id')) {
+      context.handle(
+        _spaceIdMeta,
+        spaceId.isAcceptableOrUnknown(data['space_id']!, _spaceIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_spaceIdMeta);
+    }
+    if (data.containsKey('conversation_id')) {
+      context.handle(
+        _conversationIdMeta,
+        conversationId.isAcceptableOrUnknown(
+          data['conversation_id']!,
+          _conversationIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_conversationIdMeta);
+    }
+    if (data.containsKey('agent_id')) {
+      context.handle(
+        _agentIdMeta,
+        agentId.isAcceptableOrUnknown(data['agent_id']!, _agentIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_agentIdMeta);
+    }
+    if (data.containsKey('reason')) {
+      context.handle(
+        _reasonMeta,
+        reason.isAcceptableOrUnknown(data['reason']!, _reasonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_reasonMeta);
+    }
+    if (data.containsKey('lane')) {
+      context.handle(
+        _laneMeta,
+        lane.isAcceptableOrUnknown(data['lane']!, _laneMeta),
+      );
+    }
+    if (data.containsKey('payload')) {
+      context.handle(
+        _payloadMeta,
+        payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_payloadMeta);
+    }
+    if (data.containsKey('detail')) {
+      context.handle(
+        _detailMeta,
+        detail.isAcceptableOrUnknown(data['detail']!, _detailMeta),
+      );
+    }
+    if (data.containsKey('run_options')) {
+      context.handle(
+        _runOptionsMeta,
+        runOptions.isAcceptableOrUnknown(data['run_options']!, _runOptionsMeta),
+      );
+    }
+    if (data.containsKey('dedup_key')) {
+      context.handle(
+        _dedupKeyMeta,
+        dedupKey.isAcceptableOrUnknown(data['dedup_key']!, _dedupKeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dedupKeyMeta);
+    }
+    if (data.containsKey('not_before')) {
+      context.handle(
+        _notBeforeMeta,
+        notBefore.isAcceptableOrUnknown(data['not_before']!, _notBeforeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_notBeforeMeta);
+    }
+    if (data.containsKey('expires_at')) {
+      context.handle(
+        _expiresAtMeta,
+        expiresAt.isAcceptableOrUnknown(data['expires_at']!, _expiresAtMeta),
+      );
+    }
+    if (data.containsKey('requested_by_user_id')) {
+      context.handle(
+        _requestedByUserIdMeta,
+        requestedByUserId.isAcceptableOrUnknown(
+          data['requested_by_user_id']!,
+          _requestedByUserIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('chain')) {
+      context.handle(
+        _chainMeta,
+        chain.isAcceptableOrUnknown(data['chain']!, _chainMeta),
+      );
+    }
+    if (data.containsKey('expects_reply')) {
+      context.handle(
+        _expectsReplyMeta,
+        expectsReply.isAcceptableOrUnknown(
+          data['expects_reply']!,
+          _expectsReplyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('state')) {
+      context.handle(
+        _stateMeta,
+        state.isAcceptableOrUnknown(data['state']!, _stateMeta),
+      );
+    }
+    if (data.containsKey('state_reason')) {
+      context.handle(
+        _stateReasonMeta,
+        stateReason.isAcceptableOrUnknown(
+          data['state_reason']!,
+          _stateReasonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('delivered_run_id')) {
+      context.handle(
+        _deliveredRunIdMeta,
+        deliveredRunId.isAcceptableOrUnknown(
+          data['delivered_run_id']!,
+          _deliveredRunIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('attempt')) {
+      context.handle(
+        _attemptMeta,
+        attempt.isAcceptableOrUnknown(data['attempt']!, _attemptMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('claimed_at')) {
+      context.handle(
+        _claimedAtMeta,
+        claimedAt.isAcceptableOrUnknown(data['claimed_at']!, _claimedAtMeta),
+      );
+    }
+    if (data.containsKey('settled_at')) {
+      context.handle(
+        _settledAtMeta,
+        settledAt.isAcceptableOrUnknown(data['settled_at']!, _settledAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AgentWakesTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AgentWakesTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      workspaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}workspace_id'],
+      )!,
+      spaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}space_id'],
+      )!,
+      conversationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}conversation_id'],
+      )!,
+      agentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}agent_id'],
+      )!,
+      reason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reason'],
+      )!,
+      lane: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lane'],
+      )!,
+      payload: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload'],
+      )!,
+      detail: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}detail'],
+      )!,
+      runOptions: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}run_options'],
+      ),
+      dedupKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}dedup_key'],
+      )!,
+      notBefore: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}not_before'],
+      )!,
+      expiresAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}expires_at'],
+      ),
+      requestedByUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}requested_by_user_id'],
+      ),
+      chain: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}chain'],
+      )!,
+      expectsReply: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}expects_reply'],
+      )!,
+      state: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}state'],
+      )!,
+      stateReason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}state_reason'],
+      ),
+      deliveredRunId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}delivered_run_id'],
+      ),
+      attempt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}attempt'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      claimedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}claimed_at'],
+      ),
+      settledAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}settled_at'],
+      ),
+    );
+  }
+
+  @override
+  $AgentWakesTableTable createAlias(String alias) {
+    return $AgentWakesTableTable(attachedDatabase, alias);
+  }
+}
+
+class AgentWakesTableData extends DataClass
+    implements Insertable<AgentWakesTableData> {
+  /// Unique wake id.
+  final String id;
+
+  /// Owning workspace (this file's workspace).
+  final String workspaceId;
+
+  /// Space of the target conversation. Not a key: the conversation goes with
+  /// its space, and the wake with the conversation.
+  final String spaceId;
+
+  /// Target conversation. `CASCADE`: a wake means nothing without it.
+  final String conversationId;
+
+  /// Target agent. `CASCADE`: a wake means nothing without it.
+  final String agentId;
+
+  /// Why the agent is woken: a `WakeReason` wire name.
+  final String reason;
+
+  /// How it enters a live run: a `WakeLane` wire name.
+  final String lane;
+
+  /// Text for the agent: data, at most 4,000 characters (checked by the
+  /// entity).
+  final String payload;
+
+  /// `WakeDetail` as a JSON object: goal, rule and slot, ask, ticket, source,
+  /// event. Producers cancel by its `goalId`, `ruleId` and `askId` keys.
+  final String detail;
+
+  /// `WakeRunOptions` as a JSON object; null for the defaults.
+  final String? runOptions;
+
+  /// The idempotency key (`goal:<id>:<runCount>`, `rule:<id>:<slot>`, …).
+  final String dedupKey;
+
+  /// When it may be delivered.
+  final DateTime notBefore;
+
+  /// When it stops mattering; null for never.
+  final DateTime? expiresAt;
+
+  /// The accountable person, or null for the bot. No key: users live in
+  /// `global.db`.
+  final String? requestedByUserId;
+
+  /// JSON array of the agent ids that led here, oldest first.
+  final String chain;
+
+  /// Whether the source is told when the work this wake starts settles.
+  final bool expectsReply;
+
+  /// Where it is: a `WakeState` wire name.
+  final String state;
+
+  /// A short machine kind saying why it was skipped, held or cancelled.
+  final String? stateReason;
+
+  /// The run it was delivered to. A value, not a key.
+  final String? deliveredRunId;
+
+  /// How many times it was claimed for a dispatch.
+  final int attempt;
+
+  /// When it was written.
+  final DateTime createdAt;
+
+  /// When it was last claimed.
+  final DateTime? claimedAt;
+
+  /// When it settled (retention deletes settled wakes by this).
+  final DateTime? settledAt;
+  const AgentWakesTableData({
+    required this.id,
+    required this.workspaceId,
+    required this.spaceId,
+    required this.conversationId,
+    required this.agentId,
+    required this.reason,
+    required this.lane,
+    required this.payload,
+    required this.detail,
+    this.runOptions,
+    required this.dedupKey,
+    required this.notBefore,
+    this.expiresAt,
+    this.requestedByUserId,
+    required this.chain,
+    required this.expectsReply,
+    required this.state,
+    this.stateReason,
+    this.deliveredRunId,
+    required this.attempt,
+    required this.createdAt,
+    this.claimedAt,
+    this.settledAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['workspace_id'] = Variable<String>(workspaceId);
+    map['space_id'] = Variable<String>(spaceId);
+    map['conversation_id'] = Variable<String>(conversationId);
+    map['agent_id'] = Variable<String>(agentId);
+    map['reason'] = Variable<String>(reason);
+    map['lane'] = Variable<String>(lane);
+    map['payload'] = Variable<String>(payload);
+    map['detail'] = Variable<String>(detail);
+    if (!nullToAbsent || runOptions != null) {
+      map['run_options'] = Variable<String>(runOptions);
+    }
+    map['dedup_key'] = Variable<String>(dedupKey);
+    map['not_before'] = Variable<DateTime>(notBefore);
+    if (!nullToAbsent || expiresAt != null) {
+      map['expires_at'] = Variable<DateTime>(expiresAt);
+    }
+    if (!nullToAbsent || requestedByUserId != null) {
+      map['requested_by_user_id'] = Variable<String>(requestedByUserId);
+    }
+    map['chain'] = Variable<String>(chain);
+    map['expects_reply'] = Variable<bool>(expectsReply);
+    map['state'] = Variable<String>(state);
+    if (!nullToAbsent || stateReason != null) {
+      map['state_reason'] = Variable<String>(stateReason);
+    }
+    if (!nullToAbsent || deliveredRunId != null) {
+      map['delivered_run_id'] = Variable<String>(deliveredRunId);
+    }
+    map['attempt'] = Variable<int>(attempt);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || claimedAt != null) {
+      map['claimed_at'] = Variable<DateTime>(claimedAt);
+    }
+    if (!nullToAbsent || settledAt != null) {
+      map['settled_at'] = Variable<DateTime>(settledAt);
+    }
+    return map;
+  }
+
+  AgentWakesTableCompanion toCompanion(bool nullToAbsent) {
+    return AgentWakesTableCompanion(
+      id: Value(id),
+      workspaceId: Value(workspaceId),
+      spaceId: Value(spaceId),
+      conversationId: Value(conversationId),
+      agentId: Value(agentId),
+      reason: Value(reason),
+      lane: Value(lane),
+      payload: Value(payload),
+      detail: Value(detail),
+      runOptions: runOptions == null && nullToAbsent
+          ? const Value.absent()
+          : Value(runOptions),
+      dedupKey: Value(dedupKey),
+      notBefore: Value(notBefore),
+      expiresAt: expiresAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(expiresAt),
+      requestedByUserId: requestedByUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(requestedByUserId),
+      chain: Value(chain),
+      expectsReply: Value(expectsReply),
+      state: Value(state),
+      stateReason: stateReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(stateReason),
+      deliveredRunId: deliveredRunId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deliveredRunId),
+      attempt: Value(attempt),
+      createdAt: Value(createdAt),
+      claimedAt: claimedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(claimedAt),
+      settledAt: settledAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(settledAt),
+    );
+  }
+
+  factory AgentWakesTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AgentWakesTableData(
+      id: serializer.fromJson<String>(json['id']),
+      workspaceId: serializer.fromJson<String>(json['workspaceId']),
+      spaceId: serializer.fromJson<String>(json['spaceId']),
+      conversationId: serializer.fromJson<String>(json['conversationId']),
+      agentId: serializer.fromJson<String>(json['agentId']),
+      reason: serializer.fromJson<String>(json['reason']),
+      lane: serializer.fromJson<String>(json['lane']),
+      payload: serializer.fromJson<String>(json['payload']),
+      detail: serializer.fromJson<String>(json['detail']),
+      runOptions: serializer.fromJson<String?>(json['runOptions']),
+      dedupKey: serializer.fromJson<String>(json['dedupKey']),
+      notBefore: serializer.fromJson<DateTime>(json['notBefore']),
+      expiresAt: serializer.fromJson<DateTime?>(json['expiresAt']),
+      requestedByUserId: serializer.fromJson<String?>(
+        json['requestedByUserId'],
+      ),
+      chain: serializer.fromJson<String>(json['chain']),
+      expectsReply: serializer.fromJson<bool>(json['expectsReply']),
+      state: serializer.fromJson<String>(json['state']),
+      stateReason: serializer.fromJson<String?>(json['stateReason']),
+      deliveredRunId: serializer.fromJson<String?>(json['deliveredRunId']),
+      attempt: serializer.fromJson<int>(json['attempt']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      claimedAt: serializer.fromJson<DateTime?>(json['claimedAt']),
+      settledAt: serializer.fromJson<DateTime?>(json['settledAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'workspaceId': serializer.toJson<String>(workspaceId),
+      'spaceId': serializer.toJson<String>(spaceId),
+      'conversationId': serializer.toJson<String>(conversationId),
+      'agentId': serializer.toJson<String>(agentId),
+      'reason': serializer.toJson<String>(reason),
+      'lane': serializer.toJson<String>(lane),
+      'payload': serializer.toJson<String>(payload),
+      'detail': serializer.toJson<String>(detail),
+      'runOptions': serializer.toJson<String?>(runOptions),
+      'dedupKey': serializer.toJson<String>(dedupKey),
+      'notBefore': serializer.toJson<DateTime>(notBefore),
+      'expiresAt': serializer.toJson<DateTime?>(expiresAt),
+      'requestedByUserId': serializer.toJson<String?>(requestedByUserId),
+      'chain': serializer.toJson<String>(chain),
+      'expectsReply': serializer.toJson<bool>(expectsReply),
+      'state': serializer.toJson<String>(state),
+      'stateReason': serializer.toJson<String?>(stateReason),
+      'deliveredRunId': serializer.toJson<String?>(deliveredRunId),
+      'attempt': serializer.toJson<int>(attempt),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'claimedAt': serializer.toJson<DateTime?>(claimedAt),
+      'settledAt': serializer.toJson<DateTime?>(settledAt),
+    };
+  }
+
+  AgentWakesTableData copyWith({
+    String? id,
+    String? workspaceId,
+    String? spaceId,
+    String? conversationId,
+    String? agentId,
+    String? reason,
+    String? lane,
+    String? payload,
+    String? detail,
+    Value<String?> runOptions = const Value.absent(),
+    String? dedupKey,
+    DateTime? notBefore,
+    Value<DateTime?> expiresAt = const Value.absent(),
+    Value<String?> requestedByUserId = const Value.absent(),
+    String? chain,
+    bool? expectsReply,
+    String? state,
+    Value<String?> stateReason = const Value.absent(),
+    Value<String?> deliveredRunId = const Value.absent(),
+    int? attempt,
+    DateTime? createdAt,
+    Value<DateTime?> claimedAt = const Value.absent(),
+    Value<DateTime?> settledAt = const Value.absent(),
+  }) => AgentWakesTableData(
+    id: id ?? this.id,
+    workspaceId: workspaceId ?? this.workspaceId,
+    spaceId: spaceId ?? this.spaceId,
+    conversationId: conversationId ?? this.conversationId,
+    agentId: agentId ?? this.agentId,
+    reason: reason ?? this.reason,
+    lane: lane ?? this.lane,
+    payload: payload ?? this.payload,
+    detail: detail ?? this.detail,
+    runOptions: runOptions.present ? runOptions.value : this.runOptions,
+    dedupKey: dedupKey ?? this.dedupKey,
+    notBefore: notBefore ?? this.notBefore,
+    expiresAt: expiresAt.present ? expiresAt.value : this.expiresAt,
+    requestedByUserId: requestedByUserId.present
+        ? requestedByUserId.value
+        : this.requestedByUserId,
+    chain: chain ?? this.chain,
+    expectsReply: expectsReply ?? this.expectsReply,
+    state: state ?? this.state,
+    stateReason: stateReason.present ? stateReason.value : this.stateReason,
+    deliveredRunId: deliveredRunId.present
+        ? deliveredRunId.value
+        : this.deliveredRunId,
+    attempt: attempt ?? this.attempt,
+    createdAt: createdAt ?? this.createdAt,
+    claimedAt: claimedAt.present ? claimedAt.value : this.claimedAt,
+    settledAt: settledAt.present ? settledAt.value : this.settledAt,
+  );
+  AgentWakesTableData copyWithCompanion(AgentWakesTableCompanion data) {
+    return AgentWakesTableData(
+      id: data.id.present ? data.id.value : this.id,
+      workspaceId: data.workspaceId.present
+          ? data.workspaceId.value
+          : this.workspaceId,
+      spaceId: data.spaceId.present ? data.spaceId.value : this.spaceId,
+      conversationId: data.conversationId.present
+          ? data.conversationId.value
+          : this.conversationId,
+      agentId: data.agentId.present ? data.agentId.value : this.agentId,
+      reason: data.reason.present ? data.reason.value : this.reason,
+      lane: data.lane.present ? data.lane.value : this.lane,
+      payload: data.payload.present ? data.payload.value : this.payload,
+      detail: data.detail.present ? data.detail.value : this.detail,
+      runOptions: data.runOptions.present
+          ? data.runOptions.value
+          : this.runOptions,
+      dedupKey: data.dedupKey.present ? data.dedupKey.value : this.dedupKey,
+      notBefore: data.notBefore.present ? data.notBefore.value : this.notBefore,
+      expiresAt: data.expiresAt.present ? data.expiresAt.value : this.expiresAt,
+      requestedByUserId: data.requestedByUserId.present
+          ? data.requestedByUserId.value
+          : this.requestedByUserId,
+      chain: data.chain.present ? data.chain.value : this.chain,
+      expectsReply: data.expectsReply.present
+          ? data.expectsReply.value
+          : this.expectsReply,
+      state: data.state.present ? data.state.value : this.state,
+      stateReason: data.stateReason.present
+          ? data.stateReason.value
+          : this.stateReason,
+      deliveredRunId: data.deliveredRunId.present
+          ? data.deliveredRunId.value
+          : this.deliveredRunId,
+      attempt: data.attempt.present ? data.attempt.value : this.attempt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      claimedAt: data.claimedAt.present ? data.claimedAt.value : this.claimedAt,
+      settledAt: data.settledAt.present ? data.settledAt.value : this.settledAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AgentWakesTableData(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('conversationId: $conversationId, ')
+          ..write('agentId: $agentId, ')
+          ..write('reason: $reason, ')
+          ..write('lane: $lane, ')
+          ..write('payload: $payload, ')
+          ..write('detail: $detail, ')
+          ..write('runOptions: $runOptions, ')
+          ..write('dedupKey: $dedupKey, ')
+          ..write('notBefore: $notBefore, ')
+          ..write('expiresAt: $expiresAt, ')
+          ..write('requestedByUserId: $requestedByUserId, ')
+          ..write('chain: $chain, ')
+          ..write('expectsReply: $expectsReply, ')
+          ..write('state: $state, ')
+          ..write('stateReason: $stateReason, ')
+          ..write('deliveredRunId: $deliveredRunId, ')
+          ..write('attempt: $attempt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('claimedAt: $claimedAt, ')
+          ..write('settledAt: $settledAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    id,
+    workspaceId,
+    spaceId,
+    conversationId,
+    agentId,
+    reason,
+    lane,
+    payload,
+    detail,
+    runOptions,
+    dedupKey,
+    notBefore,
+    expiresAt,
+    requestedByUserId,
+    chain,
+    expectsReply,
+    state,
+    stateReason,
+    deliveredRunId,
+    attempt,
+    createdAt,
+    claimedAt,
+    settledAt,
+  ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AgentWakesTableData &&
+          other.id == this.id &&
+          other.workspaceId == this.workspaceId &&
+          other.spaceId == this.spaceId &&
+          other.conversationId == this.conversationId &&
+          other.agentId == this.agentId &&
+          other.reason == this.reason &&
+          other.lane == this.lane &&
+          other.payload == this.payload &&
+          other.detail == this.detail &&
+          other.runOptions == this.runOptions &&
+          other.dedupKey == this.dedupKey &&
+          other.notBefore == this.notBefore &&
+          other.expiresAt == this.expiresAt &&
+          other.requestedByUserId == this.requestedByUserId &&
+          other.chain == this.chain &&
+          other.expectsReply == this.expectsReply &&
+          other.state == this.state &&
+          other.stateReason == this.stateReason &&
+          other.deliveredRunId == this.deliveredRunId &&
+          other.attempt == this.attempt &&
+          other.createdAt == this.createdAt &&
+          other.claimedAt == this.claimedAt &&
+          other.settledAt == this.settledAt);
+}
+
+class AgentWakesTableCompanion extends UpdateCompanion<AgentWakesTableData> {
+  final Value<String> id;
+  final Value<String> workspaceId;
+  final Value<String> spaceId;
+  final Value<String> conversationId;
+  final Value<String> agentId;
+  final Value<String> reason;
+  final Value<String> lane;
+  final Value<String> payload;
+  final Value<String> detail;
+  final Value<String?> runOptions;
+  final Value<String> dedupKey;
+  final Value<DateTime> notBefore;
+  final Value<DateTime?> expiresAt;
+  final Value<String?> requestedByUserId;
+  final Value<String> chain;
+  final Value<bool> expectsReply;
+  final Value<String> state;
+  final Value<String?> stateReason;
+  final Value<String?> deliveredRunId;
+  final Value<int> attempt;
+  final Value<DateTime> createdAt;
+  final Value<DateTime?> claimedAt;
+  final Value<DateTime?> settledAt;
+  final Value<int> rowid;
+  const AgentWakesTableCompanion({
+    this.id = const Value.absent(),
+    this.workspaceId = const Value.absent(),
+    this.spaceId = const Value.absent(),
+    this.conversationId = const Value.absent(),
+    this.agentId = const Value.absent(),
+    this.reason = const Value.absent(),
+    this.lane = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.detail = const Value.absent(),
+    this.runOptions = const Value.absent(),
+    this.dedupKey = const Value.absent(),
+    this.notBefore = const Value.absent(),
+    this.expiresAt = const Value.absent(),
+    this.requestedByUserId = const Value.absent(),
+    this.chain = const Value.absent(),
+    this.expectsReply = const Value.absent(),
+    this.state = const Value.absent(),
+    this.stateReason = const Value.absent(),
+    this.deliveredRunId = const Value.absent(),
+    this.attempt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.claimedAt = const Value.absent(),
+    this.settledAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AgentWakesTableCompanion.insert({
+    required String id,
+    required String workspaceId,
+    required String spaceId,
+    required String conversationId,
+    required String agentId,
+    required String reason,
+    this.lane = const Value.absent(),
+    required String payload,
+    this.detail = const Value.absent(),
+    this.runOptions = const Value.absent(),
+    required String dedupKey,
+    required DateTime notBefore,
+    this.expiresAt = const Value.absent(),
+    this.requestedByUserId = const Value.absent(),
+    this.chain = const Value.absent(),
+    this.expectsReply = const Value.absent(),
+    this.state = const Value.absent(),
+    this.stateReason = const Value.absent(),
+    this.deliveredRunId = const Value.absent(),
+    this.attempt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.claimedAt = const Value.absent(),
+    this.settledAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       workspaceId = Value(workspaceId),
+       spaceId = Value(spaceId),
+       conversationId = Value(conversationId),
+       agentId = Value(agentId),
+       reason = Value(reason),
+       payload = Value(payload),
+       dedupKey = Value(dedupKey),
+       notBefore = Value(notBefore);
+  static Insertable<AgentWakesTableData> custom({
+    Expression<String>? id,
+    Expression<String>? workspaceId,
+    Expression<String>? spaceId,
+    Expression<String>? conversationId,
+    Expression<String>? agentId,
+    Expression<String>? reason,
+    Expression<String>? lane,
+    Expression<String>? payload,
+    Expression<String>? detail,
+    Expression<String>? runOptions,
+    Expression<String>? dedupKey,
+    Expression<DateTime>? notBefore,
+    Expression<DateTime>? expiresAt,
+    Expression<String>? requestedByUserId,
+    Expression<String>? chain,
+    Expression<bool>? expectsReply,
+    Expression<String>? state,
+    Expression<String>? stateReason,
+    Expression<String>? deliveredRunId,
+    Expression<int>? attempt,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? claimedAt,
+    Expression<DateTime>? settledAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (workspaceId != null) 'workspace_id': workspaceId,
+      if (spaceId != null) 'space_id': spaceId,
+      if (conversationId != null) 'conversation_id': conversationId,
+      if (agentId != null) 'agent_id': agentId,
+      if (reason != null) 'reason': reason,
+      if (lane != null) 'lane': lane,
+      if (payload != null) 'payload': payload,
+      if (detail != null) 'detail': detail,
+      if (runOptions != null) 'run_options': runOptions,
+      if (dedupKey != null) 'dedup_key': dedupKey,
+      if (notBefore != null) 'not_before': notBefore,
+      if (expiresAt != null) 'expires_at': expiresAt,
+      if (requestedByUserId != null) 'requested_by_user_id': requestedByUserId,
+      if (chain != null) 'chain': chain,
+      if (expectsReply != null) 'expects_reply': expectsReply,
+      if (state != null) 'state': state,
+      if (stateReason != null) 'state_reason': stateReason,
+      if (deliveredRunId != null) 'delivered_run_id': deliveredRunId,
+      if (attempt != null) 'attempt': attempt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (claimedAt != null) 'claimed_at': claimedAt,
+      if (settledAt != null) 'settled_at': settledAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AgentWakesTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? workspaceId,
+    Value<String>? spaceId,
+    Value<String>? conversationId,
+    Value<String>? agentId,
+    Value<String>? reason,
+    Value<String>? lane,
+    Value<String>? payload,
+    Value<String>? detail,
+    Value<String?>? runOptions,
+    Value<String>? dedupKey,
+    Value<DateTime>? notBefore,
+    Value<DateTime?>? expiresAt,
+    Value<String?>? requestedByUserId,
+    Value<String>? chain,
+    Value<bool>? expectsReply,
+    Value<String>? state,
+    Value<String?>? stateReason,
+    Value<String?>? deliveredRunId,
+    Value<int>? attempt,
+    Value<DateTime>? createdAt,
+    Value<DateTime?>? claimedAt,
+    Value<DateTime?>? settledAt,
+    Value<int>? rowid,
+  }) {
+    return AgentWakesTableCompanion(
+      id: id ?? this.id,
+      workspaceId: workspaceId ?? this.workspaceId,
+      spaceId: spaceId ?? this.spaceId,
+      conversationId: conversationId ?? this.conversationId,
+      agentId: agentId ?? this.agentId,
+      reason: reason ?? this.reason,
+      lane: lane ?? this.lane,
+      payload: payload ?? this.payload,
+      detail: detail ?? this.detail,
+      runOptions: runOptions ?? this.runOptions,
+      dedupKey: dedupKey ?? this.dedupKey,
+      notBefore: notBefore ?? this.notBefore,
+      expiresAt: expiresAt ?? this.expiresAt,
+      requestedByUserId: requestedByUserId ?? this.requestedByUserId,
+      chain: chain ?? this.chain,
+      expectsReply: expectsReply ?? this.expectsReply,
+      state: state ?? this.state,
+      stateReason: stateReason ?? this.stateReason,
+      deliveredRunId: deliveredRunId ?? this.deliveredRunId,
+      attempt: attempt ?? this.attempt,
+      createdAt: createdAt ?? this.createdAt,
+      claimedAt: claimedAt ?? this.claimedAt,
+      settledAt: settledAt ?? this.settledAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (workspaceId.present) {
+      map['workspace_id'] = Variable<String>(workspaceId.value);
+    }
+    if (spaceId.present) {
+      map['space_id'] = Variable<String>(spaceId.value);
+    }
+    if (conversationId.present) {
+      map['conversation_id'] = Variable<String>(conversationId.value);
+    }
+    if (agentId.present) {
+      map['agent_id'] = Variable<String>(agentId.value);
+    }
+    if (reason.present) {
+      map['reason'] = Variable<String>(reason.value);
+    }
+    if (lane.present) {
+      map['lane'] = Variable<String>(lane.value);
+    }
+    if (payload.present) {
+      map['payload'] = Variable<String>(payload.value);
+    }
+    if (detail.present) {
+      map['detail'] = Variable<String>(detail.value);
+    }
+    if (runOptions.present) {
+      map['run_options'] = Variable<String>(runOptions.value);
+    }
+    if (dedupKey.present) {
+      map['dedup_key'] = Variable<String>(dedupKey.value);
+    }
+    if (notBefore.present) {
+      map['not_before'] = Variable<DateTime>(notBefore.value);
+    }
+    if (expiresAt.present) {
+      map['expires_at'] = Variable<DateTime>(expiresAt.value);
+    }
+    if (requestedByUserId.present) {
+      map['requested_by_user_id'] = Variable<String>(requestedByUserId.value);
+    }
+    if (chain.present) {
+      map['chain'] = Variable<String>(chain.value);
+    }
+    if (expectsReply.present) {
+      map['expects_reply'] = Variable<bool>(expectsReply.value);
+    }
+    if (state.present) {
+      map['state'] = Variable<String>(state.value);
+    }
+    if (stateReason.present) {
+      map['state_reason'] = Variable<String>(stateReason.value);
+    }
+    if (deliveredRunId.present) {
+      map['delivered_run_id'] = Variable<String>(deliveredRunId.value);
+    }
+    if (attempt.present) {
+      map['attempt'] = Variable<int>(attempt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (claimedAt.present) {
+      map['claimed_at'] = Variable<DateTime>(claimedAt.value);
+    }
+    if (settledAt.present) {
+      map['settled_at'] = Variable<DateTime>(settledAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AgentWakesTableCompanion(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('conversationId: $conversationId, ')
+          ..write('agentId: $agentId, ')
+          ..write('reason: $reason, ')
+          ..write('lane: $lane, ')
+          ..write('payload: $payload, ')
+          ..write('detail: $detail, ')
+          ..write('runOptions: $runOptions, ')
+          ..write('dedupKey: $dedupKey, ')
+          ..write('notBefore: $notBefore, ')
+          ..write('expiresAt: $expiresAt, ')
+          ..write('requestedByUserId: $requestedByUserId, ')
+          ..write('chain: $chain, ')
+          ..write('expectsReply: $expectsReply, ')
+          ..write('state: $state, ')
+          ..write('stateReason: $stateReason, ')
+          ..write('deliveredRunId: $deliveredRunId, ')
+          ..write('attempt: $attempt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('claimedAt: $claimedAt, ')
+          ..write('settledAt: $settledAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $WakeRulesTableTable extends WakeRulesTable
+    with TableInfo<$WakeRulesTableTable, WakeRulesTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $WakeRulesTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _workspaceIdMeta = const VerificationMeta(
+    'workspaceId',
+  );
+  @override
+  late final GeneratedColumn<String> workspaceId = GeneratedColumn<String>(
+    'workspace_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _spaceIdMeta = const VerificationMeta(
+    'spaceId',
+  );
+  @override
+  late final GeneratedColumn<String> spaceId = GeneratedColumn<String>(
+    'space_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _conversationIdMeta = const VerificationMeta(
+    'conversationId',
+  );
+  @override
+  late final GeneratedColumn<String> conversationId = GeneratedColumn<String>(
+    'conversation_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES conversations (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _agentIdMeta = const VerificationMeta(
+    'agentId',
+  );
+  @override
+  late final GeneratedColumn<String> agentId = GeneratedColumn<String>(
+    'agent_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES agents (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _triggerKindMeta = const VerificationMeta(
+    'triggerKind',
+  );
+  @override
+  late final GeneratedColumn<String> triggerKind = GeneratedColumn<String>(
+    'trigger_kind',
+    aliasedName,
+    false,
+    check: () => triggerKind.isIn(AgentsStoredValues.wakeTriggerKind),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _triggerAtMeta = const VerificationMeta(
+    'triggerAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> triggerAt = GeneratedColumn<DateTime>(
+    'trigger_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _intervalSecondsMeta = const VerificationMeta(
+    'intervalSeconds',
+  );
+  @override
+  late final GeneratedColumn<int> intervalSeconds = GeneratedColumn<int>(
+    'interval_seconds',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _cronExpressionMeta = const VerificationMeta(
+    'cronExpression',
+  );
+  @override
+  late final GeneratedColumn<String> cronExpression = GeneratedColumn<String>(
+    'cron_expression',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _timeZoneMeta = const VerificationMeta(
+    'timeZone',
+  );
+  @override
+  late final GeneratedColumn<String> timeZone = GeneratedColumn<String>(
+    'time_zone',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _eventKindMeta = const VerificationMeta(
+    'eventKind',
+  );
+  @override
+  late final GeneratedColumn<String> eventKind = GeneratedColumn<String>(
+    'event_kind',
+    aliasedName,
+    true,
+    check: () => eventKind.isIn(AgentsStoredValues.wakeEventKind),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _eventTargetIdMeta = const VerificationMeta(
+    'eventTargetId',
+  );
+  @override
+  late final GeneratedColumn<String> eventTargetId = GeneratedColumn<String>(
+    'event_target_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _noteEditedByUserIdMeta =
+      const VerificationMeta('noteEditedByUserId');
+  @override
+  late final GeneratedColumn<String> noteEditedByUserId =
+      GeneratedColumn<String>(
+        'note_edited_by_user_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _rootRuleIdMeta = const VerificationMeta(
+    'rootRuleId',
+  );
+  @override
+  late final GeneratedColumn<String> rootRuleId = GeneratedColumn<String>(
+    'root_rule_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deliverMeta = const VerificationMeta(
+    'deliver',
+  );
+  @override
+  late final GeneratedColumn<String> deliver = GeneratedColumn<String>(
+    'deliver',
+    aliasedName,
+    false,
+    check: () => deliver.isIn(AgentsStoredValues.wakeDeliver),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('run'),
+  );
+  static const VerificationMeta _whenBusyMeta = const VerificationMeta(
+    'whenBusy',
+  );
+  @override
+  late final GeneratedColumn<String> whenBusy = GeneratedColumn<String>(
+    'when_busy',
+    aliasedName,
+    false,
+    check: () => whenBusy.isIn(AgentsStoredValues.wakeWhenBusy),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('skip'),
+  );
+  static const VerificationMeta _maxRunsMeta = const VerificationMeta(
+    'maxRuns',
+  );
+  @override
+  late final GeneratedColumn<int> maxRuns = GeneratedColumn<int>(
+    'max_runs',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _costCapMicrosMeta = const VerificationMeta(
+    'costCapMicros',
+  );
+  @override
+  late final GeneratedColumn<int> costCapMicros = GeneratedColumn<int>(
+    'cost_cap_micros',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _expiresAtMeta = const VerificationMeta(
+    'expiresAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> expiresAt = GeneratedColumn<DateTime>(
+    'expires_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _runCountMeta = const VerificationMeta(
+    'runCount',
+  );
+  @override
+  late final GeneratedColumn<int> runCount = GeneratedColumn<int>(
+    'run_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _skipCountMeta = const VerificationMeta(
+    'skipCount',
+  );
+  @override
+  late final GeneratedColumn<int> skipCount = GeneratedColumn<int>(
+    'skip_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _costMicrosMeta = const VerificationMeta(
+    'costMicros',
+  );
+  @override
+  late final GeneratedColumn<int> costMicros = GeneratedColumn<int>(
+    'cost_micros',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _lastFiredAtMeta = const VerificationMeta(
+    'lastFiredAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastFiredAt = GeneratedColumn<DateTime>(
+    'last_fired_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _nextFireAtMeta = const VerificationMeta(
+    'nextFireAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> nextFireAt = GeneratedColumn<DateTime>(
+    'next_fire_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _nextDelaySecondsMeta = const VerificationMeta(
+    'nextDelaySeconds',
+  );
+  @override
+  late final GeneratedColumn<int> nextDelaySeconds = GeneratedColumn<int>(
+    'next_delay_seconds',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _goalIdMeta = const VerificationMeta('goalId');
+  @override
+  late final GeneratedColumn<String> goalId = GeneratedColumn<String>(
+    'goal_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES agent_goal_runs (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _originMeta = const VerificationMeta('origin');
+  @override
+  late final GeneratedColumn<String> origin = GeneratedColumn<String>(
+    'origin',
+    aliasedName,
+    false,
+    check: () => origin.isIn(AgentsStoredValues.wakeRuleOrigin),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdByRunIdMeta = const VerificationMeta(
+    'createdByRunId',
+  );
+  @override
+  late final GeneratedColumn<String> createdByRunId = GeneratedColumn<String>(
+    'created_by_run_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdByUserIdMeta = const VerificationMeta(
+    'createdByUserId',
+  );
+  @override
+  late final GeneratedColumn<String> createdByUserId = GeneratedColumn<String>(
+    'created_by_user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _requestedByUserIdMeta = const VerificationMeta(
+    'requestedByUserId',
+  );
+  @override
+  late final GeneratedColumn<String> requestedByUserId =
+      GeneratedColumn<String>(
+        'requested_by_user_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    check: () => status.isIn(AgentsStoredValues.wakeRuleStatus),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('active'),
+  );
+  static const VerificationMeta _endReasonMeta = const VerificationMeta(
+    'endReason',
+  );
+  @override
+  late final GeneratedColumn<String> endReason = GeneratedColumn<String>(
+    'end_reason',
+    aliasedName,
+    true,
+    check: () => endReason.isIn(AgentsStoredValues.wakeRuleEndReason),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    workspaceId,
+    spaceId,
+    conversationId,
+    agentId,
+    triggerKind,
+    triggerAt,
+    intervalSeconds,
+    cronExpression,
+    timeZone,
+    eventKind,
+    eventTargetId,
+    note,
+    noteEditedByUserId,
+    rootRuleId,
+    deliver,
+    whenBusy,
+    maxRuns,
+    costCapMicros,
+    expiresAt,
+    runCount,
+    skipCount,
+    costMicros,
+    lastFiredAt,
+    nextFireAt,
+    nextDelaySeconds,
+    goalId,
+    origin,
+    createdByRunId,
+    createdByUserId,
+    requestedByUserId,
+    status,
+    endReason,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'wake_rules';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<WakeRulesTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('workspace_id')) {
+      context.handle(
+        _workspaceIdMeta,
+        workspaceId.isAcceptableOrUnknown(
+          data['workspace_id']!,
+          _workspaceIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_workspaceIdMeta);
+    }
+    if (data.containsKey('space_id')) {
+      context.handle(
+        _spaceIdMeta,
+        spaceId.isAcceptableOrUnknown(data['space_id']!, _spaceIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_spaceIdMeta);
+    }
+    if (data.containsKey('conversation_id')) {
+      context.handle(
+        _conversationIdMeta,
+        conversationId.isAcceptableOrUnknown(
+          data['conversation_id']!,
+          _conversationIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_conversationIdMeta);
+    }
+    if (data.containsKey('agent_id')) {
+      context.handle(
+        _agentIdMeta,
+        agentId.isAcceptableOrUnknown(data['agent_id']!, _agentIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_agentIdMeta);
+    }
+    if (data.containsKey('trigger_kind')) {
+      context.handle(
+        _triggerKindMeta,
+        triggerKind.isAcceptableOrUnknown(
+          data['trigger_kind']!,
+          _triggerKindMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_triggerKindMeta);
+    }
+    if (data.containsKey('trigger_at')) {
+      context.handle(
+        _triggerAtMeta,
+        triggerAt.isAcceptableOrUnknown(data['trigger_at']!, _triggerAtMeta),
+      );
+    }
+    if (data.containsKey('interval_seconds')) {
+      context.handle(
+        _intervalSecondsMeta,
+        intervalSeconds.isAcceptableOrUnknown(
+          data['interval_seconds']!,
+          _intervalSecondsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('cron_expression')) {
+      context.handle(
+        _cronExpressionMeta,
+        cronExpression.isAcceptableOrUnknown(
+          data['cron_expression']!,
+          _cronExpressionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('time_zone')) {
+      context.handle(
+        _timeZoneMeta,
+        timeZone.isAcceptableOrUnknown(data['time_zone']!, _timeZoneMeta),
+      );
+    }
+    if (data.containsKey('event_kind')) {
+      context.handle(
+        _eventKindMeta,
+        eventKind.isAcceptableOrUnknown(data['event_kind']!, _eventKindMeta),
+      );
+    }
+    if (data.containsKey('event_target_id')) {
+      context.handle(
+        _eventTargetIdMeta,
+        eventTargetId.isAcceptableOrUnknown(
+          data['event_target_id']!,
+          _eventTargetIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_noteMeta);
+    }
+    if (data.containsKey('note_edited_by_user_id')) {
+      context.handle(
+        _noteEditedByUserIdMeta,
+        noteEditedByUserId.isAcceptableOrUnknown(
+          data['note_edited_by_user_id']!,
+          _noteEditedByUserIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('root_rule_id')) {
+      context.handle(
+        _rootRuleIdMeta,
+        rootRuleId.isAcceptableOrUnknown(
+          data['root_rule_id']!,
+          _rootRuleIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('deliver')) {
+      context.handle(
+        _deliverMeta,
+        deliver.isAcceptableOrUnknown(data['deliver']!, _deliverMeta),
+      );
+    }
+    if (data.containsKey('when_busy')) {
+      context.handle(
+        _whenBusyMeta,
+        whenBusy.isAcceptableOrUnknown(data['when_busy']!, _whenBusyMeta),
+      );
+    }
+    if (data.containsKey('max_runs')) {
+      context.handle(
+        _maxRunsMeta,
+        maxRuns.isAcceptableOrUnknown(data['max_runs']!, _maxRunsMeta),
+      );
+    }
+    if (data.containsKey('cost_cap_micros')) {
+      context.handle(
+        _costCapMicrosMeta,
+        costCapMicros.isAcceptableOrUnknown(
+          data['cost_cap_micros']!,
+          _costCapMicrosMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_costCapMicrosMeta);
+    }
+    if (data.containsKey('expires_at')) {
+      context.handle(
+        _expiresAtMeta,
+        expiresAt.isAcceptableOrUnknown(data['expires_at']!, _expiresAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_expiresAtMeta);
+    }
+    if (data.containsKey('run_count')) {
+      context.handle(
+        _runCountMeta,
+        runCount.isAcceptableOrUnknown(data['run_count']!, _runCountMeta),
+      );
+    }
+    if (data.containsKey('skip_count')) {
+      context.handle(
+        _skipCountMeta,
+        skipCount.isAcceptableOrUnknown(data['skip_count']!, _skipCountMeta),
+      );
+    }
+    if (data.containsKey('cost_micros')) {
+      context.handle(
+        _costMicrosMeta,
+        costMicros.isAcceptableOrUnknown(data['cost_micros']!, _costMicrosMeta),
+      );
+    }
+    if (data.containsKey('last_fired_at')) {
+      context.handle(
+        _lastFiredAtMeta,
+        lastFiredAt.isAcceptableOrUnknown(
+          data['last_fired_at']!,
+          _lastFiredAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('next_fire_at')) {
+      context.handle(
+        _nextFireAtMeta,
+        nextFireAt.isAcceptableOrUnknown(
+          data['next_fire_at']!,
+          _nextFireAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('next_delay_seconds')) {
+      context.handle(
+        _nextDelaySecondsMeta,
+        nextDelaySeconds.isAcceptableOrUnknown(
+          data['next_delay_seconds']!,
+          _nextDelaySecondsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('goal_id')) {
+      context.handle(
+        _goalIdMeta,
+        goalId.isAcceptableOrUnknown(data['goal_id']!, _goalIdMeta),
+      );
+    }
+    if (data.containsKey('origin')) {
+      context.handle(
+        _originMeta,
+        origin.isAcceptableOrUnknown(data['origin']!, _originMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_originMeta);
+    }
+    if (data.containsKey('created_by_run_id')) {
+      context.handle(
+        _createdByRunIdMeta,
+        createdByRunId.isAcceptableOrUnknown(
+          data['created_by_run_id']!,
+          _createdByRunIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_by_user_id')) {
+      context.handle(
+        _createdByUserIdMeta,
+        createdByUserId.isAcceptableOrUnknown(
+          data['created_by_user_id']!,
+          _createdByUserIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('requested_by_user_id')) {
+      context.handle(
+        _requestedByUserIdMeta,
+        requestedByUserId.isAcceptableOrUnknown(
+          data['requested_by_user_id']!,
+          _requestedByUserIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('end_reason')) {
+      context.handle(
+        _endReasonMeta,
+        endReason.isAcceptableOrUnknown(data['end_reason']!, _endReasonMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  WakeRulesTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return WakeRulesTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      workspaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}workspace_id'],
+      )!,
+      spaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}space_id'],
+      )!,
+      conversationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}conversation_id'],
+      )!,
+      agentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}agent_id'],
+      )!,
+      triggerKind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}trigger_kind'],
+      )!,
+      triggerAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}trigger_at'],
+      ),
+      intervalSeconds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}interval_seconds'],
+      ),
+      cronExpression: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cron_expression'],
+      ),
+      timeZone: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}time_zone'],
+      ),
+      eventKind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}event_kind'],
+      ),
+      eventTargetId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}event_target_id'],
+      ),
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      )!,
+      noteEditedByUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note_edited_by_user_id'],
+      ),
+      rootRuleId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}root_rule_id'],
+      ),
+      deliver: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}deliver'],
+      )!,
+      whenBusy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}when_busy'],
+      )!,
+      maxRuns: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}max_runs'],
+      ),
+      costCapMicros: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}cost_cap_micros'],
+      )!,
+      expiresAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}expires_at'],
+      )!,
+      runCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}run_count'],
+      )!,
+      skipCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}skip_count'],
+      )!,
+      costMicros: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}cost_micros'],
+      )!,
+      lastFiredAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_fired_at'],
+      ),
+      nextFireAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}next_fire_at'],
+      ),
+      nextDelaySeconds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}next_delay_seconds'],
+      ),
+      goalId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}goal_id'],
+      ),
+      origin: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}origin'],
+      )!,
+      createdByRunId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_by_run_id'],
+      ),
+      createdByUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_by_user_id'],
+      ),
+      requestedByUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}requested_by_user_id'],
+      ),
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      endReason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}end_reason'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $WakeRulesTableTable createAlias(String alias) {
+    return $WakeRulesTableTable(attachedDatabase, alias);
+  }
+}
+
+class WakeRulesTableData extends DataClass
+    implements Insertable<WakeRulesTableData> {
+  /// Unique rule id.
+  final String id;
+
+  /// Owning workspace (this file's workspace).
+  final String workspaceId;
+
+  /// Space of the target conversation. Not a key, as on `agent_wakes`.
+  final String spaceId;
+
+  /// Target conversation. `CASCADE`.
+  final String conversationId;
+
+  /// Target agent. `CASCADE`.
+  final String agentId;
+
+  /// The trigger's kind: `at`, `every`, `cron`, `self_paced` or `event`.
+  final String triggerKind;
+
+  /// When a one-off (`at`) rule fires.
+  final DateTime? triggerAt;
+
+  /// An `every` rule's interval, in seconds (60 or more).
+  final int? intervalSeconds;
+
+  /// A `cron` rule's five-field expression.
+  final String? cronExpression;
+
+  /// A `cron` rule's IANA time zone.
+  final String? timeZone;
+
+  /// An `event` rule's watched event: a `WakeEventKind` wire name.
+  final String? eventKind;
+
+  /// The ticket or pipeline run a `ticket` or `pipeline_run` watch names. A
+  /// value, not a key.
+  final String? eventTargetId;
+
+  /// What the agent's future self needs (at most 4,000 characters, checked
+  /// by the entity).
+  final String note;
+
+  /// The person who last changed [note]; null while it is the creator's
+  /// words. No foreign key: users live in `global.db`.
+  final String? noteEditedByUserId;
+
+  /// The rule this one continues (the first of its line); null for a rule
+  /// that is its own root. A value, not a key.
+  final String? rootRuleId;
+
+  /// `run` or `notify`: a `WakeDeliver` wire name.
+  final String deliver;
+
+  /// `skip` or `queue`: a `WakeWhenBusy` wire name.
+  final String whenBusy;
+
+  /// The most runs it may start; null for no run cap.
+  final int? maxRuns;
+
+  /// The total its runs may spend, in micro-dollars.
+  final int costCapMicros;
+
+  /// When it ends by itself.
+  final DateTime expiresAt;
+
+  /// Runs it started.
+  final int runCount;
+
+  /// Slots it skipped.
+  final int skipCount;
+
+  /// What its runs spent, in micro-dollars.
+  final int costMicros;
+
+  /// When it last fired.
+  final DateTime? lastFiredAt;
+
+  /// When it fires next.
+  final DateTime? nextFireAt;
+
+  /// The delay a self-paced rule's agent chose for its next fire, in
+  /// seconds.
+  final int? nextDelaySeconds;
+
+  /// The goal it is bound to. `CASCADE`: it ends with the goal.
+  final String? goalId;
+
+  /// `agent` or `person`: a `WakeRuleOrigin` wire name.
+  final String origin;
+
+  /// The run in which an agent created it. A value, not a key.
+  final String? createdByRunId;
+
+  /// The person who created it. No key: users live in `global.db`.
+  final String? createdByUserId;
+
+  /// The accountable person, or null for the bot.
+  final String? requestedByUserId;
+
+  /// `active`, `paused` or `ended`: a `WakeRuleStatus` wire name.
+  final String status;
+
+  /// Why it ended: a `WakeRuleEndReason` wire name, set exactly when it
+  /// ended.
+  final String? endReason;
+
+  /// When it was created.
+  final DateTime createdAt;
+
+  /// When it was last changed.
+  final DateTime updatedAt;
+  const WakeRulesTableData({
+    required this.id,
+    required this.workspaceId,
+    required this.spaceId,
+    required this.conversationId,
+    required this.agentId,
+    required this.triggerKind,
+    this.triggerAt,
+    this.intervalSeconds,
+    this.cronExpression,
+    this.timeZone,
+    this.eventKind,
+    this.eventTargetId,
+    required this.note,
+    this.noteEditedByUserId,
+    this.rootRuleId,
+    required this.deliver,
+    required this.whenBusy,
+    this.maxRuns,
+    required this.costCapMicros,
+    required this.expiresAt,
+    required this.runCount,
+    required this.skipCount,
+    required this.costMicros,
+    this.lastFiredAt,
+    this.nextFireAt,
+    this.nextDelaySeconds,
+    this.goalId,
+    required this.origin,
+    this.createdByRunId,
+    this.createdByUserId,
+    this.requestedByUserId,
+    required this.status,
+    this.endReason,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['workspace_id'] = Variable<String>(workspaceId);
+    map['space_id'] = Variable<String>(spaceId);
+    map['conversation_id'] = Variable<String>(conversationId);
+    map['agent_id'] = Variable<String>(agentId);
+    map['trigger_kind'] = Variable<String>(triggerKind);
+    if (!nullToAbsent || triggerAt != null) {
+      map['trigger_at'] = Variable<DateTime>(triggerAt);
+    }
+    if (!nullToAbsent || intervalSeconds != null) {
+      map['interval_seconds'] = Variable<int>(intervalSeconds);
+    }
+    if (!nullToAbsent || cronExpression != null) {
+      map['cron_expression'] = Variable<String>(cronExpression);
+    }
+    if (!nullToAbsent || timeZone != null) {
+      map['time_zone'] = Variable<String>(timeZone);
+    }
+    if (!nullToAbsent || eventKind != null) {
+      map['event_kind'] = Variable<String>(eventKind);
+    }
+    if (!nullToAbsent || eventTargetId != null) {
+      map['event_target_id'] = Variable<String>(eventTargetId);
+    }
+    map['note'] = Variable<String>(note);
+    if (!nullToAbsent || noteEditedByUserId != null) {
+      map['note_edited_by_user_id'] = Variable<String>(noteEditedByUserId);
+    }
+    if (!nullToAbsent || rootRuleId != null) {
+      map['root_rule_id'] = Variable<String>(rootRuleId);
+    }
+    map['deliver'] = Variable<String>(deliver);
+    map['when_busy'] = Variable<String>(whenBusy);
+    if (!nullToAbsent || maxRuns != null) {
+      map['max_runs'] = Variable<int>(maxRuns);
+    }
+    map['cost_cap_micros'] = Variable<int>(costCapMicros);
+    map['expires_at'] = Variable<DateTime>(expiresAt);
+    map['run_count'] = Variable<int>(runCount);
+    map['skip_count'] = Variable<int>(skipCount);
+    map['cost_micros'] = Variable<int>(costMicros);
+    if (!nullToAbsent || lastFiredAt != null) {
+      map['last_fired_at'] = Variable<DateTime>(lastFiredAt);
+    }
+    if (!nullToAbsent || nextFireAt != null) {
+      map['next_fire_at'] = Variable<DateTime>(nextFireAt);
+    }
+    if (!nullToAbsent || nextDelaySeconds != null) {
+      map['next_delay_seconds'] = Variable<int>(nextDelaySeconds);
+    }
+    if (!nullToAbsent || goalId != null) {
+      map['goal_id'] = Variable<String>(goalId);
+    }
+    map['origin'] = Variable<String>(origin);
+    if (!nullToAbsent || createdByRunId != null) {
+      map['created_by_run_id'] = Variable<String>(createdByRunId);
+    }
+    if (!nullToAbsent || createdByUserId != null) {
+      map['created_by_user_id'] = Variable<String>(createdByUserId);
+    }
+    if (!nullToAbsent || requestedByUserId != null) {
+      map['requested_by_user_id'] = Variable<String>(requestedByUserId);
+    }
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || endReason != null) {
+      map['end_reason'] = Variable<String>(endReason);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  WakeRulesTableCompanion toCompanion(bool nullToAbsent) {
+    return WakeRulesTableCompanion(
+      id: Value(id),
+      workspaceId: Value(workspaceId),
+      spaceId: Value(spaceId),
+      conversationId: Value(conversationId),
+      agentId: Value(agentId),
+      triggerKind: Value(triggerKind),
+      triggerAt: triggerAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(triggerAt),
+      intervalSeconds: intervalSeconds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(intervalSeconds),
+      cronExpression: cronExpression == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cronExpression),
+      timeZone: timeZone == null && nullToAbsent
+          ? const Value.absent()
+          : Value(timeZone),
+      eventKind: eventKind == null && nullToAbsent
+          ? const Value.absent()
+          : Value(eventKind),
+      eventTargetId: eventTargetId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(eventTargetId),
+      note: Value(note),
+      noteEditedByUserId: noteEditedByUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(noteEditedByUserId),
+      rootRuleId: rootRuleId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(rootRuleId),
+      deliver: Value(deliver),
+      whenBusy: Value(whenBusy),
+      maxRuns: maxRuns == null && nullToAbsent
+          ? const Value.absent()
+          : Value(maxRuns),
+      costCapMicros: Value(costCapMicros),
+      expiresAt: Value(expiresAt),
+      runCount: Value(runCount),
+      skipCount: Value(skipCount),
+      costMicros: Value(costMicros),
+      lastFiredAt: lastFiredAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastFiredAt),
+      nextFireAt: nextFireAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nextFireAt),
+      nextDelaySeconds: nextDelaySeconds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nextDelaySeconds),
+      goalId: goalId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(goalId),
+      origin: Value(origin),
+      createdByRunId: createdByRunId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdByRunId),
+      createdByUserId: createdByUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdByUserId),
+      requestedByUserId: requestedByUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(requestedByUserId),
+      status: Value(status),
+      endReason: endReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(endReason),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory WakeRulesTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return WakeRulesTableData(
+      id: serializer.fromJson<String>(json['id']),
+      workspaceId: serializer.fromJson<String>(json['workspaceId']),
+      spaceId: serializer.fromJson<String>(json['spaceId']),
+      conversationId: serializer.fromJson<String>(json['conversationId']),
+      agentId: serializer.fromJson<String>(json['agentId']),
+      triggerKind: serializer.fromJson<String>(json['triggerKind']),
+      triggerAt: serializer.fromJson<DateTime?>(json['triggerAt']),
+      intervalSeconds: serializer.fromJson<int?>(json['intervalSeconds']),
+      cronExpression: serializer.fromJson<String?>(json['cronExpression']),
+      timeZone: serializer.fromJson<String?>(json['timeZone']),
+      eventKind: serializer.fromJson<String?>(json['eventKind']),
+      eventTargetId: serializer.fromJson<String?>(json['eventTargetId']),
+      note: serializer.fromJson<String>(json['note']),
+      noteEditedByUserId: serializer.fromJson<String?>(
+        json['noteEditedByUserId'],
+      ),
+      rootRuleId: serializer.fromJson<String?>(json['rootRuleId']),
+      deliver: serializer.fromJson<String>(json['deliver']),
+      whenBusy: serializer.fromJson<String>(json['whenBusy']),
+      maxRuns: serializer.fromJson<int?>(json['maxRuns']),
+      costCapMicros: serializer.fromJson<int>(json['costCapMicros']),
+      expiresAt: serializer.fromJson<DateTime>(json['expiresAt']),
+      runCount: serializer.fromJson<int>(json['runCount']),
+      skipCount: serializer.fromJson<int>(json['skipCount']),
+      costMicros: serializer.fromJson<int>(json['costMicros']),
+      lastFiredAt: serializer.fromJson<DateTime?>(json['lastFiredAt']),
+      nextFireAt: serializer.fromJson<DateTime?>(json['nextFireAt']),
+      nextDelaySeconds: serializer.fromJson<int?>(json['nextDelaySeconds']),
+      goalId: serializer.fromJson<String?>(json['goalId']),
+      origin: serializer.fromJson<String>(json['origin']),
+      createdByRunId: serializer.fromJson<String?>(json['createdByRunId']),
+      createdByUserId: serializer.fromJson<String?>(json['createdByUserId']),
+      requestedByUserId: serializer.fromJson<String?>(
+        json['requestedByUserId'],
+      ),
+      status: serializer.fromJson<String>(json['status']),
+      endReason: serializer.fromJson<String?>(json['endReason']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'workspaceId': serializer.toJson<String>(workspaceId),
+      'spaceId': serializer.toJson<String>(spaceId),
+      'conversationId': serializer.toJson<String>(conversationId),
+      'agentId': serializer.toJson<String>(agentId),
+      'triggerKind': serializer.toJson<String>(triggerKind),
+      'triggerAt': serializer.toJson<DateTime?>(triggerAt),
+      'intervalSeconds': serializer.toJson<int?>(intervalSeconds),
+      'cronExpression': serializer.toJson<String?>(cronExpression),
+      'timeZone': serializer.toJson<String?>(timeZone),
+      'eventKind': serializer.toJson<String?>(eventKind),
+      'eventTargetId': serializer.toJson<String?>(eventTargetId),
+      'note': serializer.toJson<String>(note),
+      'noteEditedByUserId': serializer.toJson<String?>(noteEditedByUserId),
+      'rootRuleId': serializer.toJson<String?>(rootRuleId),
+      'deliver': serializer.toJson<String>(deliver),
+      'whenBusy': serializer.toJson<String>(whenBusy),
+      'maxRuns': serializer.toJson<int?>(maxRuns),
+      'costCapMicros': serializer.toJson<int>(costCapMicros),
+      'expiresAt': serializer.toJson<DateTime>(expiresAt),
+      'runCount': serializer.toJson<int>(runCount),
+      'skipCount': serializer.toJson<int>(skipCount),
+      'costMicros': serializer.toJson<int>(costMicros),
+      'lastFiredAt': serializer.toJson<DateTime?>(lastFiredAt),
+      'nextFireAt': serializer.toJson<DateTime?>(nextFireAt),
+      'nextDelaySeconds': serializer.toJson<int?>(nextDelaySeconds),
+      'goalId': serializer.toJson<String?>(goalId),
+      'origin': serializer.toJson<String>(origin),
+      'createdByRunId': serializer.toJson<String?>(createdByRunId),
+      'createdByUserId': serializer.toJson<String?>(createdByUserId),
+      'requestedByUserId': serializer.toJson<String?>(requestedByUserId),
+      'status': serializer.toJson<String>(status),
+      'endReason': serializer.toJson<String?>(endReason),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  WakeRulesTableData copyWith({
+    String? id,
+    String? workspaceId,
+    String? spaceId,
+    String? conversationId,
+    String? agentId,
+    String? triggerKind,
+    Value<DateTime?> triggerAt = const Value.absent(),
+    Value<int?> intervalSeconds = const Value.absent(),
+    Value<String?> cronExpression = const Value.absent(),
+    Value<String?> timeZone = const Value.absent(),
+    Value<String?> eventKind = const Value.absent(),
+    Value<String?> eventTargetId = const Value.absent(),
+    String? note,
+    Value<String?> noteEditedByUserId = const Value.absent(),
+    Value<String?> rootRuleId = const Value.absent(),
+    String? deliver,
+    String? whenBusy,
+    Value<int?> maxRuns = const Value.absent(),
+    int? costCapMicros,
+    DateTime? expiresAt,
+    int? runCount,
+    int? skipCount,
+    int? costMicros,
+    Value<DateTime?> lastFiredAt = const Value.absent(),
+    Value<DateTime?> nextFireAt = const Value.absent(),
+    Value<int?> nextDelaySeconds = const Value.absent(),
+    Value<String?> goalId = const Value.absent(),
+    String? origin,
+    Value<String?> createdByRunId = const Value.absent(),
+    Value<String?> createdByUserId = const Value.absent(),
+    Value<String?> requestedByUserId = const Value.absent(),
+    String? status,
+    Value<String?> endReason = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => WakeRulesTableData(
+    id: id ?? this.id,
+    workspaceId: workspaceId ?? this.workspaceId,
+    spaceId: spaceId ?? this.spaceId,
+    conversationId: conversationId ?? this.conversationId,
+    agentId: agentId ?? this.agentId,
+    triggerKind: triggerKind ?? this.triggerKind,
+    triggerAt: triggerAt.present ? triggerAt.value : this.triggerAt,
+    intervalSeconds: intervalSeconds.present
+        ? intervalSeconds.value
+        : this.intervalSeconds,
+    cronExpression: cronExpression.present
+        ? cronExpression.value
+        : this.cronExpression,
+    timeZone: timeZone.present ? timeZone.value : this.timeZone,
+    eventKind: eventKind.present ? eventKind.value : this.eventKind,
+    eventTargetId: eventTargetId.present
+        ? eventTargetId.value
+        : this.eventTargetId,
+    note: note ?? this.note,
+    noteEditedByUserId: noteEditedByUserId.present
+        ? noteEditedByUserId.value
+        : this.noteEditedByUserId,
+    rootRuleId: rootRuleId.present ? rootRuleId.value : this.rootRuleId,
+    deliver: deliver ?? this.deliver,
+    whenBusy: whenBusy ?? this.whenBusy,
+    maxRuns: maxRuns.present ? maxRuns.value : this.maxRuns,
+    costCapMicros: costCapMicros ?? this.costCapMicros,
+    expiresAt: expiresAt ?? this.expiresAt,
+    runCount: runCount ?? this.runCount,
+    skipCount: skipCount ?? this.skipCount,
+    costMicros: costMicros ?? this.costMicros,
+    lastFiredAt: lastFiredAt.present ? lastFiredAt.value : this.lastFiredAt,
+    nextFireAt: nextFireAt.present ? nextFireAt.value : this.nextFireAt,
+    nextDelaySeconds: nextDelaySeconds.present
+        ? nextDelaySeconds.value
+        : this.nextDelaySeconds,
+    goalId: goalId.present ? goalId.value : this.goalId,
+    origin: origin ?? this.origin,
+    createdByRunId: createdByRunId.present
+        ? createdByRunId.value
+        : this.createdByRunId,
+    createdByUserId: createdByUserId.present
+        ? createdByUserId.value
+        : this.createdByUserId,
+    requestedByUserId: requestedByUserId.present
+        ? requestedByUserId.value
+        : this.requestedByUserId,
+    status: status ?? this.status,
+    endReason: endReason.present ? endReason.value : this.endReason,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  WakeRulesTableData copyWithCompanion(WakeRulesTableCompanion data) {
+    return WakeRulesTableData(
+      id: data.id.present ? data.id.value : this.id,
+      workspaceId: data.workspaceId.present
+          ? data.workspaceId.value
+          : this.workspaceId,
+      spaceId: data.spaceId.present ? data.spaceId.value : this.spaceId,
+      conversationId: data.conversationId.present
+          ? data.conversationId.value
+          : this.conversationId,
+      agentId: data.agentId.present ? data.agentId.value : this.agentId,
+      triggerKind: data.triggerKind.present
+          ? data.triggerKind.value
+          : this.triggerKind,
+      triggerAt: data.triggerAt.present ? data.triggerAt.value : this.triggerAt,
+      intervalSeconds: data.intervalSeconds.present
+          ? data.intervalSeconds.value
+          : this.intervalSeconds,
+      cronExpression: data.cronExpression.present
+          ? data.cronExpression.value
+          : this.cronExpression,
+      timeZone: data.timeZone.present ? data.timeZone.value : this.timeZone,
+      eventKind: data.eventKind.present ? data.eventKind.value : this.eventKind,
+      eventTargetId: data.eventTargetId.present
+          ? data.eventTargetId.value
+          : this.eventTargetId,
+      note: data.note.present ? data.note.value : this.note,
+      noteEditedByUserId: data.noteEditedByUserId.present
+          ? data.noteEditedByUserId.value
+          : this.noteEditedByUserId,
+      rootRuleId: data.rootRuleId.present
+          ? data.rootRuleId.value
+          : this.rootRuleId,
+      deliver: data.deliver.present ? data.deliver.value : this.deliver,
+      whenBusy: data.whenBusy.present ? data.whenBusy.value : this.whenBusy,
+      maxRuns: data.maxRuns.present ? data.maxRuns.value : this.maxRuns,
+      costCapMicros: data.costCapMicros.present
+          ? data.costCapMicros.value
+          : this.costCapMicros,
+      expiresAt: data.expiresAt.present ? data.expiresAt.value : this.expiresAt,
+      runCount: data.runCount.present ? data.runCount.value : this.runCount,
+      skipCount: data.skipCount.present ? data.skipCount.value : this.skipCount,
+      costMicros: data.costMicros.present
+          ? data.costMicros.value
+          : this.costMicros,
+      lastFiredAt: data.lastFiredAt.present
+          ? data.lastFiredAt.value
+          : this.lastFiredAt,
+      nextFireAt: data.nextFireAt.present
+          ? data.nextFireAt.value
+          : this.nextFireAt,
+      nextDelaySeconds: data.nextDelaySeconds.present
+          ? data.nextDelaySeconds.value
+          : this.nextDelaySeconds,
+      goalId: data.goalId.present ? data.goalId.value : this.goalId,
+      origin: data.origin.present ? data.origin.value : this.origin,
+      createdByRunId: data.createdByRunId.present
+          ? data.createdByRunId.value
+          : this.createdByRunId,
+      createdByUserId: data.createdByUserId.present
+          ? data.createdByUserId.value
+          : this.createdByUserId,
+      requestedByUserId: data.requestedByUserId.present
+          ? data.requestedByUserId.value
+          : this.requestedByUserId,
+      status: data.status.present ? data.status.value : this.status,
+      endReason: data.endReason.present ? data.endReason.value : this.endReason,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WakeRulesTableData(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('conversationId: $conversationId, ')
+          ..write('agentId: $agentId, ')
+          ..write('triggerKind: $triggerKind, ')
+          ..write('triggerAt: $triggerAt, ')
+          ..write('intervalSeconds: $intervalSeconds, ')
+          ..write('cronExpression: $cronExpression, ')
+          ..write('timeZone: $timeZone, ')
+          ..write('eventKind: $eventKind, ')
+          ..write('eventTargetId: $eventTargetId, ')
+          ..write('note: $note, ')
+          ..write('noteEditedByUserId: $noteEditedByUserId, ')
+          ..write('rootRuleId: $rootRuleId, ')
+          ..write('deliver: $deliver, ')
+          ..write('whenBusy: $whenBusy, ')
+          ..write('maxRuns: $maxRuns, ')
+          ..write('costCapMicros: $costCapMicros, ')
+          ..write('expiresAt: $expiresAt, ')
+          ..write('runCount: $runCount, ')
+          ..write('skipCount: $skipCount, ')
+          ..write('costMicros: $costMicros, ')
+          ..write('lastFiredAt: $lastFiredAt, ')
+          ..write('nextFireAt: $nextFireAt, ')
+          ..write('nextDelaySeconds: $nextDelaySeconds, ')
+          ..write('goalId: $goalId, ')
+          ..write('origin: $origin, ')
+          ..write('createdByRunId: $createdByRunId, ')
+          ..write('createdByUserId: $createdByUserId, ')
+          ..write('requestedByUserId: $requestedByUserId, ')
+          ..write('status: $status, ')
+          ..write('endReason: $endReason, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    id,
+    workspaceId,
+    spaceId,
+    conversationId,
+    agentId,
+    triggerKind,
+    triggerAt,
+    intervalSeconds,
+    cronExpression,
+    timeZone,
+    eventKind,
+    eventTargetId,
+    note,
+    noteEditedByUserId,
+    rootRuleId,
+    deliver,
+    whenBusy,
+    maxRuns,
+    costCapMicros,
+    expiresAt,
+    runCount,
+    skipCount,
+    costMicros,
+    lastFiredAt,
+    nextFireAt,
+    nextDelaySeconds,
+    goalId,
+    origin,
+    createdByRunId,
+    createdByUserId,
+    requestedByUserId,
+    status,
+    endReason,
+    createdAt,
+    updatedAt,
+  ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is WakeRulesTableData &&
+          other.id == this.id &&
+          other.workspaceId == this.workspaceId &&
+          other.spaceId == this.spaceId &&
+          other.conversationId == this.conversationId &&
+          other.agentId == this.agentId &&
+          other.triggerKind == this.triggerKind &&
+          other.triggerAt == this.triggerAt &&
+          other.intervalSeconds == this.intervalSeconds &&
+          other.cronExpression == this.cronExpression &&
+          other.timeZone == this.timeZone &&
+          other.eventKind == this.eventKind &&
+          other.eventTargetId == this.eventTargetId &&
+          other.note == this.note &&
+          other.noteEditedByUserId == this.noteEditedByUserId &&
+          other.rootRuleId == this.rootRuleId &&
+          other.deliver == this.deliver &&
+          other.whenBusy == this.whenBusy &&
+          other.maxRuns == this.maxRuns &&
+          other.costCapMicros == this.costCapMicros &&
+          other.expiresAt == this.expiresAt &&
+          other.runCount == this.runCount &&
+          other.skipCount == this.skipCount &&
+          other.costMicros == this.costMicros &&
+          other.lastFiredAt == this.lastFiredAt &&
+          other.nextFireAt == this.nextFireAt &&
+          other.nextDelaySeconds == this.nextDelaySeconds &&
+          other.goalId == this.goalId &&
+          other.origin == this.origin &&
+          other.createdByRunId == this.createdByRunId &&
+          other.createdByUserId == this.createdByUserId &&
+          other.requestedByUserId == this.requestedByUserId &&
+          other.status == this.status &&
+          other.endReason == this.endReason &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class WakeRulesTableCompanion extends UpdateCompanion<WakeRulesTableData> {
+  final Value<String> id;
+  final Value<String> workspaceId;
+  final Value<String> spaceId;
+  final Value<String> conversationId;
+  final Value<String> agentId;
+  final Value<String> triggerKind;
+  final Value<DateTime?> triggerAt;
+  final Value<int?> intervalSeconds;
+  final Value<String?> cronExpression;
+  final Value<String?> timeZone;
+  final Value<String?> eventKind;
+  final Value<String?> eventTargetId;
+  final Value<String> note;
+  final Value<String?> noteEditedByUserId;
+  final Value<String?> rootRuleId;
+  final Value<String> deliver;
+  final Value<String> whenBusy;
+  final Value<int?> maxRuns;
+  final Value<int> costCapMicros;
+  final Value<DateTime> expiresAt;
+  final Value<int> runCount;
+  final Value<int> skipCount;
+  final Value<int> costMicros;
+  final Value<DateTime?> lastFiredAt;
+  final Value<DateTime?> nextFireAt;
+  final Value<int?> nextDelaySeconds;
+  final Value<String?> goalId;
+  final Value<String> origin;
+  final Value<String?> createdByRunId;
+  final Value<String?> createdByUserId;
+  final Value<String?> requestedByUserId;
+  final Value<String> status;
+  final Value<String?> endReason;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const WakeRulesTableCompanion({
+    this.id = const Value.absent(),
+    this.workspaceId = const Value.absent(),
+    this.spaceId = const Value.absent(),
+    this.conversationId = const Value.absent(),
+    this.agentId = const Value.absent(),
+    this.triggerKind = const Value.absent(),
+    this.triggerAt = const Value.absent(),
+    this.intervalSeconds = const Value.absent(),
+    this.cronExpression = const Value.absent(),
+    this.timeZone = const Value.absent(),
+    this.eventKind = const Value.absent(),
+    this.eventTargetId = const Value.absent(),
+    this.note = const Value.absent(),
+    this.noteEditedByUserId = const Value.absent(),
+    this.rootRuleId = const Value.absent(),
+    this.deliver = const Value.absent(),
+    this.whenBusy = const Value.absent(),
+    this.maxRuns = const Value.absent(),
+    this.costCapMicros = const Value.absent(),
+    this.expiresAt = const Value.absent(),
+    this.runCount = const Value.absent(),
+    this.skipCount = const Value.absent(),
+    this.costMicros = const Value.absent(),
+    this.lastFiredAt = const Value.absent(),
+    this.nextFireAt = const Value.absent(),
+    this.nextDelaySeconds = const Value.absent(),
+    this.goalId = const Value.absent(),
+    this.origin = const Value.absent(),
+    this.createdByRunId = const Value.absent(),
+    this.createdByUserId = const Value.absent(),
+    this.requestedByUserId = const Value.absent(),
+    this.status = const Value.absent(),
+    this.endReason = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  WakeRulesTableCompanion.insert({
+    required String id,
+    required String workspaceId,
+    required String spaceId,
+    required String conversationId,
+    required String agentId,
+    required String triggerKind,
+    this.triggerAt = const Value.absent(),
+    this.intervalSeconds = const Value.absent(),
+    this.cronExpression = const Value.absent(),
+    this.timeZone = const Value.absent(),
+    this.eventKind = const Value.absent(),
+    this.eventTargetId = const Value.absent(),
+    required String note,
+    this.noteEditedByUserId = const Value.absent(),
+    this.rootRuleId = const Value.absent(),
+    this.deliver = const Value.absent(),
+    this.whenBusy = const Value.absent(),
+    this.maxRuns = const Value.absent(),
+    required int costCapMicros,
+    required DateTime expiresAt,
+    this.runCount = const Value.absent(),
+    this.skipCount = const Value.absent(),
+    this.costMicros = const Value.absent(),
+    this.lastFiredAt = const Value.absent(),
+    this.nextFireAt = const Value.absent(),
+    this.nextDelaySeconds = const Value.absent(),
+    this.goalId = const Value.absent(),
+    required String origin,
+    this.createdByRunId = const Value.absent(),
+    this.createdByUserId = const Value.absent(),
+    this.requestedByUserId = const Value.absent(),
+    this.status = const Value.absent(),
+    this.endReason = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       workspaceId = Value(workspaceId),
+       spaceId = Value(spaceId),
+       conversationId = Value(conversationId),
+       agentId = Value(agentId),
+       triggerKind = Value(triggerKind),
+       note = Value(note),
+       costCapMicros = Value(costCapMicros),
+       expiresAt = Value(expiresAt),
+       origin = Value(origin);
+  static Insertable<WakeRulesTableData> custom({
+    Expression<String>? id,
+    Expression<String>? workspaceId,
+    Expression<String>? spaceId,
+    Expression<String>? conversationId,
+    Expression<String>? agentId,
+    Expression<String>? triggerKind,
+    Expression<DateTime>? triggerAt,
+    Expression<int>? intervalSeconds,
+    Expression<String>? cronExpression,
+    Expression<String>? timeZone,
+    Expression<String>? eventKind,
+    Expression<String>? eventTargetId,
+    Expression<String>? note,
+    Expression<String>? noteEditedByUserId,
+    Expression<String>? rootRuleId,
+    Expression<String>? deliver,
+    Expression<String>? whenBusy,
+    Expression<int>? maxRuns,
+    Expression<int>? costCapMicros,
+    Expression<DateTime>? expiresAt,
+    Expression<int>? runCount,
+    Expression<int>? skipCount,
+    Expression<int>? costMicros,
+    Expression<DateTime>? lastFiredAt,
+    Expression<DateTime>? nextFireAt,
+    Expression<int>? nextDelaySeconds,
+    Expression<String>? goalId,
+    Expression<String>? origin,
+    Expression<String>? createdByRunId,
+    Expression<String>? createdByUserId,
+    Expression<String>? requestedByUserId,
+    Expression<String>? status,
+    Expression<String>? endReason,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (workspaceId != null) 'workspace_id': workspaceId,
+      if (spaceId != null) 'space_id': spaceId,
+      if (conversationId != null) 'conversation_id': conversationId,
+      if (agentId != null) 'agent_id': agentId,
+      if (triggerKind != null) 'trigger_kind': triggerKind,
+      if (triggerAt != null) 'trigger_at': triggerAt,
+      if (intervalSeconds != null) 'interval_seconds': intervalSeconds,
+      if (cronExpression != null) 'cron_expression': cronExpression,
+      if (timeZone != null) 'time_zone': timeZone,
+      if (eventKind != null) 'event_kind': eventKind,
+      if (eventTargetId != null) 'event_target_id': eventTargetId,
+      if (note != null) 'note': note,
+      if (noteEditedByUserId != null)
+        'note_edited_by_user_id': noteEditedByUserId,
+      if (rootRuleId != null) 'root_rule_id': rootRuleId,
+      if (deliver != null) 'deliver': deliver,
+      if (whenBusy != null) 'when_busy': whenBusy,
+      if (maxRuns != null) 'max_runs': maxRuns,
+      if (costCapMicros != null) 'cost_cap_micros': costCapMicros,
+      if (expiresAt != null) 'expires_at': expiresAt,
+      if (runCount != null) 'run_count': runCount,
+      if (skipCount != null) 'skip_count': skipCount,
+      if (costMicros != null) 'cost_micros': costMicros,
+      if (lastFiredAt != null) 'last_fired_at': lastFiredAt,
+      if (nextFireAt != null) 'next_fire_at': nextFireAt,
+      if (nextDelaySeconds != null) 'next_delay_seconds': nextDelaySeconds,
+      if (goalId != null) 'goal_id': goalId,
+      if (origin != null) 'origin': origin,
+      if (createdByRunId != null) 'created_by_run_id': createdByRunId,
+      if (createdByUserId != null) 'created_by_user_id': createdByUserId,
+      if (requestedByUserId != null) 'requested_by_user_id': requestedByUserId,
+      if (status != null) 'status': status,
+      if (endReason != null) 'end_reason': endReason,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  WakeRulesTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? workspaceId,
+    Value<String>? spaceId,
+    Value<String>? conversationId,
+    Value<String>? agentId,
+    Value<String>? triggerKind,
+    Value<DateTime?>? triggerAt,
+    Value<int?>? intervalSeconds,
+    Value<String?>? cronExpression,
+    Value<String?>? timeZone,
+    Value<String?>? eventKind,
+    Value<String?>? eventTargetId,
+    Value<String>? note,
+    Value<String?>? noteEditedByUserId,
+    Value<String?>? rootRuleId,
+    Value<String>? deliver,
+    Value<String>? whenBusy,
+    Value<int?>? maxRuns,
+    Value<int>? costCapMicros,
+    Value<DateTime>? expiresAt,
+    Value<int>? runCount,
+    Value<int>? skipCount,
+    Value<int>? costMicros,
+    Value<DateTime?>? lastFiredAt,
+    Value<DateTime?>? nextFireAt,
+    Value<int?>? nextDelaySeconds,
+    Value<String?>? goalId,
+    Value<String>? origin,
+    Value<String?>? createdByRunId,
+    Value<String?>? createdByUserId,
+    Value<String?>? requestedByUserId,
+    Value<String>? status,
+    Value<String?>? endReason,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return WakeRulesTableCompanion(
+      id: id ?? this.id,
+      workspaceId: workspaceId ?? this.workspaceId,
+      spaceId: spaceId ?? this.spaceId,
+      conversationId: conversationId ?? this.conversationId,
+      agentId: agentId ?? this.agentId,
+      triggerKind: triggerKind ?? this.triggerKind,
+      triggerAt: triggerAt ?? this.triggerAt,
+      intervalSeconds: intervalSeconds ?? this.intervalSeconds,
+      cronExpression: cronExpression ?? this.cronExpression,
+      timeZone: timeZone ?? this.timeZone,
+      eventKind: eventKind ?? this.eventKind,
+      eventTargetId: eventTargetId ?? this.eventTargetId,
+      note: note ?? this.note,
+      noteEditedByUserId: noteEditedByUserId ?? this.noteEditedByUserId,
+      rootRuleId: rootRuleId ?? this.rootRuleId,
+      deliver: deliver ?? this.deliver,
+      whenBusy: whenBusy ?? this.whenBusy,
+      maxRuns: maxRuns ?? this.maxRuns,
+      costCapMicros: costCapMicros ?? this.costCapMicros,
+      expiresAt: expiresAt ?? this.expiresAt,
+      runCount: runCount ?? this.runCount,
+      skipCount: skipCount ?? this.skipCount,
+      costMicros: costMicros ?? this.costMicros,
+      lastFiredAt: lastFiredAt ?? this.lastFiredAt,
+      nextFireAt: nextFireAt ?? this.nextFireAt,
+      nextDelaySeconds: nextDelaySeconds ?? this.nextDelaySeconds,
+      goalId: goalId ?? this.goalId,
+      origin: origin ?? this.origin,
+      createdByRunId: createdByRunId ?? this.createdByRunId,
+      createdByUserId: createdByUserId ?? this.createdByUserId,
+      requestedByUserId: requestedByUserId ?? this.requestedByUserId,
+      status: status ?? this.status,
+      endReason: endReason ?? this.endReason,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (workspaceId.present) {
+      map['workspace_id'] = Variable<String>(workspaceId.value);
+    }
+    if (spaceId.present) {
+      map['space_id'] = Variable<String>(spaceId.value);
+    }
+    if (conversationId.present) {
+      map['conversation_id'] = Variable<String>(conversationId.value);
+    }
+    if (agentId.present) {
+      map['agent_id'] = Variable<String>(agentId.value);
+    }
+    if (triggerKind.present) {
+      map['trigger_kind'] = Variable<String>(triggerKind.value);
+    }
+    if (triggerAt.present) {
+      map['trigger_at'] = Variable<DateTime>(triggerAt.value);
+    }
+    if (intervalSeconds.present) {
+      map['interval_seconds'] = Variable<int>(intervalSeconds.value);
+    }
+    if (cronExpression.present) {
+      map['cron_expression'] = Variable<String>(cronExpression.value);
+    }
+    if (timeZone.present) {
+      map['time_zone'] = Variable<String>(timeZone.value);
+    }
+    if (eventKind.present) {
+      map['event_kind'] = Variable<String>(eventKind.value);
+    }
+    if (eventTargetId.present) {
+      map['event_target_id'] = Variable<String>(eventTargetId.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (noteEditedByUserId.present) {
+      map['note_edited_by_user_id'] = Variable<String>(
+        noteEditedByUserId.value,
+      );
+    }
+    if (rootRuleId.present) {
+      map['root_rule_id'] = Variable<String>(rootRuleId.value);
+    }
+    if (deliver.present) {
+      map['deliver'] = Variable<String>(deliver.value);
+    }
+    if (whenBusy.present) {
+      map['when_busy'] = Variable<String>(whenBusy.value);
+    }
+    if (maxRuns.present) {
+      map['max_runs'] = Variable<int>(maxRuns.value);
+    }
+    if (costCapMicros.present) {
+      map['cost_cap_micros'] = Variable<int>(costCapMicros.value);
+    }
+    if (expiresAt.present) {
+      map['expires_at'] = Variable<DateTime>(expiresAt.value);
+    }
+    if (runCount.present) {
+      map['run_count'] = Variable<int>(runCount.value);
+    }
+    if (skipCount.present) {
+      map['skip_count'] = Variable<int>(skipCount.value);
+    }
+    if (costMicros.present) {
+      map['cost_micros'] = Variable<int>(costMicros.value);
+    }
+    if (lastFiredAt.present) {
+      map['last_fired_at'] = Variable<DateTime>(lastFiredAt.value);
+    }
+    if (nextFireAt.present) {
+      map['next_fire_at'] = Variable<DateTime>(nextFireAt.value);
+    }
+    if (nextDelaySeconds.present) {
+      map['next_delay_seconds'] = Variable<int>(nextDelaySeconds.value);
+    }
+    if (goalId.present) {
+      map['goal_id'] = Variable<String>(goalId.value);
+    }
+    if (origin.present) {
+      map['origin'] = Variable<String>(origin.value);
+    }
+    if (createdByRunId.present) {
+      map['created_by_run_id'] = Variable<String>(createdByRunId.value);
+    }
+    if (createdByUserId.present) {
+      map['created_by_user_id'] = Variable<String>(createdByUserId.value);
+    }
+    if (requestedByUserId.present) {
+      map['requested_by_user_id'] = Variable<String>(requestedByUserId.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (endReason.present) {
+      map['end_reason'] = Variable<String>(endReason.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WakeRulesTableCompanion(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('conversationId: $conversationId, ')
+          ..write('agentId: $agentId, ')
+          ..write('triggerKind: $triggerKind, ')
+          ..write('triggerAt: $triggerAt, ')
+          ..write('intervalSeconds: $intervalSeconds, ')
+          ..write('cronExpression: $cronExpression, ')
+          ..write('timeZone: $timeZone, ')
+          ..write('eventKind: $eventKind, ')
+          ..write('eventTargetId: $eventTargetId, ')
+          ..write('note: $note, ')
+          ..write('noteEditedByUserId: $noteEditedByUserId, ')
+          ..write('rootRuleId: $rootRuleId, ')
+          ..write('deliver: $deliver, ')
+          ..write('whenBusy: $whenBusy, ')
+          ..write('maxRuns: $maxRuns, ')
+          ..write('costCapMicros: $costCapMicros, ')
+          ..write('expiresAt: $expiresAt, ')
+          ..write('runCount: $runCount, ')
+          ..write('skipCount: $skipCount, ')
+          ..write('costMicros: $costMicros, ')
+          ..write('lastFiredAt: $lastFiredAt, ')
+          ..write('nextFireAt: $nextFireAt, ')
+          ..write('nextDelaySeconds: $nextDelaySeconds, ')
+          ..write('goalId: $goalId, ')
+          ..write('origin: $origin, ')
+          ..write('createdByRunId: $createdByRunId, ')
+          ..write('createdByUserId: $createdByUserId, ')
+          ..write('requestedByUserId: $requestedByUserId, ')
+          ..write('status: $status, ')
+          ..write('endReason: $endReason, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PeerAsksTableTable extends PeerAsksTable
+    with TableInfo<$PeerAsksTableTable, PeerAsksTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PeerAsksTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _workspaceIdMeta = const VerificationMeta(
+    'workspaceId',
+  );
+  @override
+  late final GeneratedColumn<String> workspaceId = GeneratedColumn<String>(
+    'workspace_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    check: () => kind.isIn(AgentsStoredValues.peerAskKind),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('ask'),
+  );
+  static const VerificationMeta _modeMeta = const VerificationMeta('mode');
+  @override
+  late final GeneratedColumn<String> mode = GeneratedColumn<String>(
+    'mode',
+    aliasedName,
+    false,
+    check: () => mode.isIn(AgentsStoredValues.peerAskMode),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('wait'),
+  );
+  static const VerificationMeta _askerAgentIdMeta = const VerificationMeta(
+    'askerAgentId',
+  );
+  @override
+  late final GeneratedColumn<String> askerAgentId = GeneratedColumn<String>(
+    'asker_agent_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES agents (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _askerRunIdMeta = const VerificationMeta(
+    'askerRunId',
+  );
+  @override
+  late final GeneratedColumn<String> askerRunId = GeneratedColumn<String>(
+    'asker_run_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _askerConversationIdMeta =
+      const VerificationMeta('askerConversationId');
+  @override
+  late final GeneratedColumn<String> askerConversationId =
+      GeneratedColumn<String>(
+        'asker_conversation_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES conversations (id) ON DELETE CASCADE',
+        ),
+      );
+  static const VerificationMeta _askerSpaceIdMeta = const VerificationMeta(
+    'askerSpaceId',
+  );
+  @override
+  late final GeneratedColumn<String> askerSpaceId = GeneratedColumn<String>(
+    'asker_space_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _recipientAgentIdMeta = const VerificationMeta(
+    'recipientAgentId',
+  );
+  @override
+  late final GeneratedColumn<String> recipientAgentId = GeneratedColumn<String>(
+    'recipient_agent_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES agents (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _recipientConversationIdMeta =
+      const VerificationMeta('recipientConversationId');
+  @override
+  late final GeneratedColumn<String> recipientConversationId =
+      GeneratedColumn<String>(
+        'recipient_conversation_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _recipientSpaceIdMeta = const VerificationMeta(
+    'recipientSpaceId',
+  );
+  @override
+  late final GeneratedColumn<String> recipientSpaceId = GeneratedColumn<String>(
+    'recipient_space_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _questionMessageIdMeta = const VerificationMeta(
+    'questionMessageId',
+  );
+  @override
+  late final GeneratedColumn<String> questionMessageId =
+      GeneratedColumn<String>(
+        'question_message_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _questionHashMeta = const VerificationMeta(
+    'questionHash',
+  );
+  @override
+  late final GeneratedColumn<String> questionHash = GeneratedColumn<String>(
+    'question_hash',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _dispatchedRunIdMeta = const VerificationMeta(
+    'dispatchedRunId',
+  );
+  @override
+  late final GeneratedColumn<String> dispatchedRunId = GeneratedColumn<String>(
+    'dispatched_run_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _chainMeta = const VerificationMeta('chain');
+  @override
+  late final GeneratedColumn<String> chain = GeneratedColumn<String>(
+    'chain',
+    aliasedName,
+    false,
+    check: () => isJsonArray(chain),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    check: () => status.isIn(AgentsStoredValues.peerAskStatus),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _replyMessageIdMeta = const VerificationMeta(
+    'replyMessageId',
+  );
+  @override
+  late final GeneratedColumn<String> replyMessageId = GeneratedColumn<String>(
+    'reply_message_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _replyInlineMeta = const VerificationMeta(
+    'replyInline',
+  );
+  @override
+  late final GeneratedColumn<bool> replyInline = GeneratedColumn<bool>(
+    'reply_inline',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("reply_inline" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _errorMeta = const VerificationMeta('error');
+  @override
+  late final GeneratedColumn<String> error = GeneratedColumn<String>(
+    'error',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _requestedByUserIdMeta = const VerificationMeta(
+    'requestedByUserId',
+  );
+  @override
+  late final GeneratedColumn<String> requestedByUserId =
+      GeneratedColumn<String>(
+        'requested_by_user_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _expiresAtMeta = const VerificationMeta(
+    'expiresAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> expiresAt = GeneratedColumn<DateTime>(
+    'expires_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _settledAtMeta = const VerificationMeta(
+    'settledAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> settledAt = GeneratedColumn<DateTime>(
+    'settled_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _promisedAtMeta = const VerificationMeta(
+    'promisedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> promisedAt = GeneratedColumn<DateTime>(
+    'promised_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _blockedNoticedAtMeta = const VerificationMeta(
+    'blockedNoticedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> blockedNoticedAt =
+      GeneratedColumn<DateTime>(
+        'blocked_noticed_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _stallNoticedRunIdMeta = const VerificationMeta(
+    'stallNoticedRunId',
+  );
+  @override
+  late final GeneratedColumn<String> stallNoticedRunId =
+      GeneratedColumn<String>(
+        'stall_noticed_run_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    workspaceId,
+    kind,
+    mode,
+    askerAgentId,
+    askerRunId,
+    askerConversationId,
+    askerSpaceId,
+    recipientAgentId,
+    recipientConversationId,
+    recipientSpaceId,
+    questionMessageId,
+    questionHash,
+    dispatchedRunId,
+    chain,
+    status,
+    replyMessageId,
+    replyInline,
+    error,
+    requestedByUserId,
+    createdAt,
+    expiresAt,
+    settledAt,
+    promisedAt,
+    blockedNoticedAt,
+    stallNoticedRunId,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'peer_asks';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PeerAsksTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('workspace_id')) {
+      context.handle(
+        _workspaceIdMeta,
+        workspaceId.isAcceptableOrUnknown(
+          data['workspace_id']!,
+          _workspaceIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_workspaceIdMeta);
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    }
+    if (data.containsKey('mode')) {
+      context.handle(
+        _modeMeta,
+        mode.isAcceptableOrUnknown(data['mode']!, _modeMeta),
+      );
+    }
+    if (data.containsKey('asker_agent_id')) {
+      context.handle(
+        _askerAgentIdMeta,
+        askerAgentId.isAcceptableOrUnknown(
+          data['asker_agent_id']!,
+          _askerAgentIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_askerAgentIdMeta);
+    }
+    if (data.containsKey('asker_run_id')) {
+      context.handle(
+        _askerRunIdMeta,
+        askerRunId.isAcceptableOrUnknown(
+          data['asker_run_id']!,
+          _askerRunIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('asker_conversation_id')) {
+      context.handle(
+        _askerConversationIdMeta,
+        askerConversationId.isAcceptableOrUnknown(
+          data['asker_conversation_id']!,
+          _askerConversationIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_askerConversationIdMeta);
+    }
+    if (data.containsKey('asker_space_id')) {
+      context.handle(
+        _askerSpaceIdMeta,
+        askerSpaceId.isAcceptableOrUnknown(
+          data['asker_space_id']!,
+          _askerSpaceIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_askerSpaceIdMeta);
+    }
+    if (data.containsKey('recipient_agent_id')) {
+      context.handle(
+        _recipientAgentIdMeta,
+        recipientAgentId.isAcceptableOrUnknown(
+          data['recipient_agent_id']!,
+          _recipientAgentIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_recipientAgentIdMeta);
+    }
+    if (data.containsKey('recipient_conversation_id')) {
+      context.handle(
+        _recipientConversationIdMeta,
+        recipientConversationId.isAcceptableOrUnknown(
+          data['recipient_conversation_id']!,
+          _recipientConversationIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('recipient_space_id')) {
+      context.handle(
+        _recipientSpaceIdMeta,
+        recipientSpaceId.isAcceptableOrUnknown(
+          data['recipient_space_id']!,
+          _recipientSpaceIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('question_message_id')) {
+      context.handle(
+        _questionMessageIdMeta,
+        questionMessageId.isAcceptableOrUnknown(
+          data['question_message_id']!,
+          _questionMessageIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('question_hash')) {
+      context.handle(
+        _questionHashMeta,
+        questionHash.isAcceptableOrUnknown(
+          data['question_hash']!,
+          _questionHashMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_questionHashMeta);
+    }
+    if (data.containsKey('dispatched_run_id')) {
+      context.handle(
+        _dispatchedRunIdMeta,
+        dispatchedRunId.isAcceptableOrUnknown(
+          data['dispatched_run_id']!,
+          _dispatchedRunIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('chain')) {
+      context.handle(
+        _chainMeta,
+        chain.isAcceptableOrUnknown(data['chain']!, _chainMeta),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('reply_message_id')) {
+      context.handle(
+        _replyMessageIdMeta,
+        replyMessageId.isAcceptableOrUnknown(
+          data['reply_message_id']!,
+          _replyMessageIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reply_inline')) {
+      context.handle(
+        _replyInlineMeta,
+        replyInline.isAcceptableOrUnknown(
+          data['reply_inline']!,
+          _replyInlineMeta,
+        ),
+      );
+    }
+    if (data.containsKey('error')) {
+      context.handle(
+        _errorMeta,
+        error.isAcceptableOrUnknown(data['error']!, _errorMeta),
+      );
+    }
+    if (data.containsKey('requested_by_user_id')) {
+      context.handle(
+        _requestedByUserIdMeta,
+        requestedByUserId.isAcceptableOrUnknown(
+          data['requested_by_user_id']!,
+          _requestedByUserIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('expires_at')) {
+      context.handle(
+        _expiresAtMeta,
+        expiresAt.isAcceptableOrUnknown(data['expires_at']!, _expiresAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_expiresAtMeta);
+    }
+    if (data.containsKey('settled_at')) {
+      context.handle(
+        _settledAtMeta,
+        settledAt.isAcceptableOrUnknown(data['settled_at']!, _settledAtMeta),
+      );
+    }
+    if (data.containsKey('promised_at')) {
+      context.handle(
+        _promisedAtMeta,
+        promisedAt.isAcceptableOrUnknown(data['promised_at']!, _promisedAtMeta),
+      );
+    }
+    if (data.containsKey('blocked_noticed_at')) {
+      context.handle(
+        _blockedNoticedAtMeta,
+        blockedNoticedAt.isAcceptableOrUnknown(
+          data['blocked_noticed_at']!,
+          _blockedNoticedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('stall_noticed_run_id')) {
+      context.handle(
+        _stallNoticedRunIdMeta,
+        stallNoticedRunId.isAcceptableOrUnknown(
+          data['stall_noticed_run_id']!,
+          _stallNoticedRunIdMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PeerAsksTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PeerAsksTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      workspaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}workspace_id'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      mode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mode'],
+      )!,
+      askerAgentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}asker_agent_id'],
+      )!,
+      askerRunId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}asker_run_id'],
+      ),
+      askerConversationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}asker_conversation_id'],
+      )!,
+      askerSpaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}asker_space_id'],
+      )!,
+      recipientAgentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recipient_agent_id'],
+      )!,
+      recipientConversationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recipient_conversation_id'],
+      ),
+      recipientSpaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recipient_space_id'],
+      ),
+      questionMessageId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}question_message_id'],
+      ),
+      questionHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}question_hash'],
+      )!,
+      dispatchedRunId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}dispatched_run_id'],
+      ),
+      chain: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}chain'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      replyMessageId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reply_message_id'],
+      ),
+      replyInline: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}reply_inline'],
+      )!,
+      error: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}error'],
+      ),
+      requestedByUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}requested_by_user_id'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      expiresAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}expires_at'],
+      )!,
+      settledAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}settled_at'],
+      ),
+      promisedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}promised_at'],
+      ),
+      blockedNoticedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}blocked_noticed_at'],
+      ),
+      stallNoticedRunId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}stall_noticed_run_id'],
+      ),
+    );
+  }
+
+  @override
+  $PeerAsksTableTable createAlias(String alias) {
+    return $PeerAsksTableTable(attachedDatabase, alias);
+  }
+}
+
+class PeerAsksTableData extends DataClass
+    implements Insertable<PeerAsksTableData> {
+  /// Unique ask id.
+  final String id;
+
+  /// Owning workspace (this file's workspace).
+  final String workspaceId;
+
+  /// `ask`, `consult` or `review`: a `PeerAskKind` wire name.
+  final String kind;
+
+  /// `wait` or `background`: a `PeerAskMode` wire name.
+  final String mode;
+
+  /// The asking agent. `CASCADE`.
+  final String askerAgentId;
+
+  /// The asking agent's run. A value, not a key.
+  final String? askerRunId;
+
+  /// The conversation the asker asked from; the reply wake goes here.
+  /// `CASCADE`.
+  final String askerConversationId;
+
+  /// That conversation's space. Not a key: the conversation goes with it.
+  final String askerSpaceId;
+
+  /// The agent asked. `CASCADE`.
+  final String recipientAgentId;
+
+  /// The conversation the recipient answers in, once known. A value.
+  final String? recipientConversationId;
+
+  /// That conversation's space, once known. A value.
+  final String? recipientSpaceId;
+
+  /// The question's message id. A value.
+  final String? questionMessageId;
+
+  /// A hash of the question text (the 10-minute repeat refusal).
+  final String questionHash;
+
+  /// The recipient's run that answers. A value.
+  final String? dispatchedRunId;
+
+  /// JSON array of the agent ids that led to this ask, oldest first.
+  final String chain;
+
+  /// Where it is: a `PeerAskStatus` wire name.
+  final String status;
+
+  /// The recipient's final message (the answer). A value.
+  final String? replyMessageId;
+
+  /// Whether the blocking call already returned the reply, so no wake is
+  /// owed.
+  final bool replyInline;
+
+  /// Why it failed.
+  final String? error;
+
+  /// The accountable person, or null for the bot.
+  final String? requestedByUserId;
+
+  /// When it was written.
+  final DateTime createdAt;
+
+  /// When it expires if nothing came back.
+  final DateTime expiresAt;
+
+  /// When it settled.
+  final DateTime? settledAt;
+
+  /// When the recipient ended a run without the answer but with a wake set
+  /// (set once, while pending).
+  final DateTime? promisedAt;
+
+  /// When the asker was told the recipient waits on a person (set once,
+  /// while pending).
+  final DateTime? blockedNoticedAt;
+
+  /// The recipient's run that was reminded that somebody waits for its
+  /// answer (set once, while pending). No foreign key: a run id is a value.
+  final String? stallNoticedRunId;
+  const PeerAsksTableData({
+    required this.id,
+    required this.workspaceId,
+    required this.kind,
+    required this.mode,
+    required this.askerAgentId,
+    this.askerRunId,
+    required this.askerConversationId,
+    required this.askerSpaceId,
+    required this.recipientAgentId,
+    this.recipientConversationId,
+    this.recipientSpaceId,
+    this.questionMessageId,
+    required this.questionHash,
+    this.dispatchedRunId,
+    required this.chain,
+    required this.status,
+    this.replyMessageId,
+    required this.replyInline,
+    this.error,
+    this.requestedByUserId,
+    required this.createdAt,
+    required this.expiresAt,
+    this.settledAt,
+    this.promisedAt,
+    this.blockedNoticedAt,
+    this.stallNoticedRunId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['workspace_id'] = Variable<String>(workspaceId);
+    map['kind'] = Variable<String>(kind);
+    map['mode'] = Variable<String>(mode);
+    map['asker_agent_id'] = Variable<String>(askerAgentId);
+    if (!nullToAbsent || askerRunId != null) {
+      map['asker_run_id'] = Variable<String>(askerRunId);
+    }
+    map['asker_conversation_id'] = Variable<String>(askerConversationId);
+    map['asker_space_id'] = Variable<String>(askerSpaceId);
+    map['recipient_agent_id'] = Variable<String>(recipientAgentId);
+    if (!nullToAbsent || recipientConversationId != null) {
+      map['recipient_conversation_id'] = Variable<String>(
+        recipientConversationId,
+      );
+    }
+    if (!nullToAbsent || recipientSpaceId != null) {
+      map['recipient_space_id'] = Variable<String>(recipientSpaceId);
+    }
+    if (!nullToAbsent || questionMessageId != null) {
+      map['question_message_id'] = Variable<String>(questionMessageId);
+    }
+    map['question_hash'] = Variable<String>(questionHash);
+    if (!nullToAbsent || dispatchedRunId != null) {
+      map['dispatched_run_id'] = Variable<String>(dispatchedRunId);
+    }
+    map['chain'] = Variable<String>(chain);
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || replyMessageId != null) {
+      map['reply_message_id'] = Variable<String>(replyMessageId);
+    }
+    map['reply_inline'] = Variable<bool>(replyInline);
+    if (!nullToAbsent || error != null) {
+      map['error'] = Variable<String>(error);
+    }
+    if (!nullToAbsent || requestedByUserId != null) {
+      map['requested_by_user_id'] = Variable<String>(requestedByUserId);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['expires_at'] = Variable<DateTime>(expiresAt);
+    if (!nullToAbsent || settledAt != null) {
+      map['settled_at'] = Variable<DateTime>(settledAt);
+    }
+    if (!nullToAbsent || promisedAt != null) {
+      map['promised_at'] = Variable<DateTime>(promisedAt);
+    }
+    if (!nullToAbsent || blockedNoticedAt != null) {
+      map['blocked_noticed_at'] = Variable<DateTime>(blockedNoticedAt);
+    }
+    if (!nullToAbsent || stallNoticedRunId != null) {
+      map['stall_noticed_run_id'] = Variable<String>(stallNoticedRunId);
+    }
+    return map;
+  }
+
+  PeerAsksTableCompanion toCompanion(bool nullToAbsent) {
+    return PeerAsksTableCompanion(
+      id: Value(id),
+      workspaceId: Value(workspaceId),
+      kind: Value(kind),
+      mode: Value(mode),
+      askerAgentId: Value(askerAgentId),
+      askerRunId: askerRunId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(askerRunId),
+      askerConversationId: Value(askerConversationId),
+      askerSpaceId: Value(askerSpaceId),
+      recipientAgentId: Value(recipientAgentId),
+      recipientConversationId: recipientConversationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(recipientConversationId),
+      recipientSpaceId: recipientSpaceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(recipientSpaceId),
+      questionMessageId: questionMessageId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(questionMessageId),
+      questionHash: Value(questionHash),
+      dispatchedRunId: dispatchedRunId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dispatchedRunId),
+      chain: Value(chain),
+      status: Value(status),
+      replyMessageId: replyMessageId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(replyMessageId),
+      replyInline: Value(replyInline),
+      error: error == null && nullToAbsent
+          ? const Value.absent()
+          : Value(error),
+      requestedByUserId: requestedByUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(requestedByUserId),
+      createdAt: Value(createdAt),
+      expiresAt: Value(expiresAt),
+      settledAt: settledAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(settledAt),
+      promisedAt: promisedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(promisedAt),
+      blockedNoticedAt: blockedNoticedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(blockedNoticedAt),
+      stallNoticedRunId: stallNoticedRunId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(stallNoticedRunId),
+    );
+  }
+
+  factory PeerAsksTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PeerAsksTableData(
+      id: serializer.fromJson<String>(json['id']),
+      workspaceId: serializer.fromJson<String>(json['workspaceId']),
+      kind: serializer.fromJson<String>(json['kind']),
+      mode: serializer.fromJson<String>(json['mode']),
+      askerAgentId: serializer.fromJson<String>(json['askerAgentId']),
+      askerRunId: serializer.fromJson<String?>(json['askerRunId']),
+      askerConversationId: serializer.fromJson<String>(
+        json['askerConversationId'],
+      ),
+      askerSpaceId: serializer.fromJson<String>(json['askerSpaceId']),
+      recipientAgentId: serializer.fromJson<String>(json['recipientAgentId']),
+      recipientConversationId: serializer.fromJson<String?>(
+        json['recipientConversationId'],
+      ),
+      recipientSpaceId: serializer.fromJson<String?>(json['recipientSpaceId']),
+      questionMessageId: serializer.fromJson<String?>(
+        json['questionMessageId'],
+      ),
+      questionHash: serializer.fromJson<String>(json['questionHash']),
+      dispatchedRunId: serializer.fromJson<String?>(json['dispatchedRunId']),
+      chain: serializer.fromJson<String>(json['chain']),
+      status: serializer.fromJson<String>(json['status']),
+      replyMessageId: serializer.fromJson<String?>(json['replyMessageId']),
+      replyInline: serializer.fromJson<bool>(json['replyInline']),
+      error: serializer.fromJson<String?>(json['error']),
+      requestedByUserId: serializer.fromJson<String?>(
+        json['requestedByUserId'],
+      ),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      expiresAt: serializer.fromJson<DateTime>(json['expiresAt']),
+      settledAt: serializer.fromJson<DateTime?>(json['settledAt']),
+      promisedAt: serializer.fromJson<DateTime?>(json['promisedAt']),
+      blockedNoticedAt: serializer.fromJson<DateTime?>(
+        json['blockedNoticedAt'],
+      ),
+      stallNoticedRunId: serializer.fromJson<String?>(
+        json['stallNoticedRunId'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'workspaceId': serializer.toJson<String>(workspaceId),
+      'kind': serializer.toJson<String>(kind),
+      'mode': serializer.toJson<String>(mode),
+      'askerAgentId': serializer.toJson<String>(askerAgentId),
+      'askerRunId': serializer.toJson<String?>(askerRunId),
+      'askerConversationId': serializer.toJson<String>(askerConversationId),
+      'askerSpaceId': serializer.toJson<String>(askerSpaceId),
+      'recipientAgentId': serializer.toJson<String>(recipientAgentId),
+      'recipientConversationId': serializer.toJson<String?>(
+        recipientConversationId,
+      ),
+      'recipientSpaceId': serializer.toJson<String?>(recipientSpaceId),
+      'questionMessageId': serializer.toJson<String?>(questionMessageId),
+      'questionHash': serializer.toJson<String>(questionHash),
+      'dispatchedRunId': serializer.toJson<String?>(dispatchedRunId),
+      'chain': serializer.toJson<String>(chain),
+      'status': serializer.toJson<String>(status),
+      'replyMessageId': serializer.toJson<String?>(replyMessageId),
+      'replyInline': serializer.toJson<bool>(replyInline),
+      'error': serializer.toJson<String?>(error),
+      'requestedByUserId': serializer.toJson<String?>(requestedByUserId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'expiresAt': serializer.toJson<DateTime>(expiresAt),
+      'settledAt': serializer.toJson<DateTime?>(settledAt),
+      'promisedAt': serializer.toJson<DateTime?>(promisedAt),
+      'blockedNoticedAt': serializer.toJson<DateTime?>(blockedNoticedAt),
+      'stallNoticedRunId': serializer.toJson<String?>(stallNoticedRunId),
+    };
+  }
+
+  PeerAsksTableData copyWith({
+    String? id,
+    String? workspaceId,
+    String? kind,
+    String? mode,
+    String? askerAgentId,
+    Value<String?> askerRunId = const Value.absent(),
+    String? askerConversationId,
+    String? askerSpaceId,
+    String? recipientAgentId,
+    Value<String?> recipientConversationId = const Value.absent(),
+    Value<String?> recipientSpaceId = const Value.absent(),
+    Value<String?> questionMessageId = const Value.absent(),
+    String? questionHash,
+    Value<String?> dispatchedRunId = const Value.absent(),
+    String? chain,
+    String? status,
+    Value<String?> replyMessageId = const Value.absent(),
+    bool? replyInline,
+    Value<String?> error = const Value.absent(),
+    Value<String?> requestedByUserId = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? expiresAt,
+    Value<DateTime?> settledAt = const Value.absent(),
+    Value<DateTime?> promisedAt = const Value.absent(),
+    Value<DateTime?> blockedNoticedAt = const Value.absent(),
+    Value<String?> stallNoticedRunId = const Value.absent(),
+  }) => PeerAsksTableData(
+    id: id ?? this.id,
+    workspaceId: workspaceId ?? this.workspaceId,
+    kind: kind ?? this.kind,
+    mode: mode ?? this.mode,
+    askerAgentId: askerAgentId ?? this.askerAgentId,
+    askerRunId: askerRunId.present ? askerRunId.value : this.askerRunId,
+    askerConversationId: askerConversationId ?? this.askerConversationId,
+    askerSpaceId: askerSpaceId ?? this.askerSpaceId,
+    recipientAgentId: recipientAgentId ?? this.recipientAgentId,
+    recipientConversationId: recipientConversationId.present
+        ? recipientConversationId.value
+        : this.recipientConversationId,
+    recipientSpaceId: recipientSpaceId.present
+        ? recipientSpaceId.value
+        : this.recipientSpaceId,
+    questionMessageId: questionMessageId.present
+        ? questionMessageId.value
+        : this.questionMessageId,
+    questionHash: questionHash ?? this.questionHash,
+    dispatchedRunId: dispatchedRunId.present
+        ? dispatchedRunId.value
+        : this.dispatchedRunId,
+    chain: chain ?? this.chain,
+    status: status ?? this.status,
+    replyMessageId: replyMessageId.present
+        ? replyMessageId.value
+        : this.replyMessageId,
+    replyInline: replyInline ?? this.replyInline,
+    error: error.present ? error.value : this.error,
+    requestedByUserId: requestedByUserId.present
+        ? requestedByUserId.value
+        : this.requestedByUserId,
+    createdAt: createdAt ?? this.createdAt,
+    expiresAt: expiresAt ?? this.expiresAt,
+    settledAt: settledAt.present ? settledAt.value : this.settledAt,
+    promisedAt: promisedAt.present ? promisedAt.value : this.promisedAt,
+    blockedNoticedAt: blockedNoticedAt.present
+        ? blockedNoticedAt.value
+        : this.blockedNoticedAt,
+    stallNoticedRunId: stallNoticedRunId.present
+        ? stallNoticedRunId.value
+        : this.stallNoticedRunId,
+  );
+  PeerAsksTableData copyWithCompanion(PeerAsksTableCompanion data) {
+    return PeerAsksTableData(
+      id: data.id.present ? data.id.value : this.id,
+      workspaceId: data.workspaceId.present
+          ? data.workspaceId.value
+          : this.workspaceId,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      mode: data.mode.present ? data.mode.value : this.mode,
+      askerAgentId: data.askerAgentId.present
+          ? data.askerAgentId.value
+          : this.askerAgentId,
+      askerRunId: data.askerRunId.present
+          ? data.askerRunId.value
+          : this.askerRunId,
+      askerConversationId: data.askerConversationId.present
+          ? data.askerConversationId.value
+          : this.askerConversationId,
+      askerSpaceId: data.askerSpaceId.present
+          ? data.askerSpaceId.value
+          : this.askerSpaceId,
+      recipientAgentId: data.recipientAgentId.present
+          ? data.recipientAgentId.value
+          : this.recipientAgentId,
+      recipientConversationId: data.recipientConversationId.present
+          ? data.recipientConversationId.value
+          : this.recipientConversationId,
+      recipientSpaceId: data.recipientSpaceId.present
+          ? data.recipientSpaceId.value
+          : this.recipientSpaceId,
+      questionMessageId: data.questionMessageId.present
+          ? data.questionMessageId.value
+          : this.questionMessageId,
+      questionHash: data.questionHash.present
+          ? data.questionHash.value
+          : this.questionHash,
+      dispatchedRunId: data.dispatchedRunId.present
+          ? data.dispatchedRunId.value
+          : this.dispatchedRunId,
+      chain: data.chain.present ? data.chain.value : this.chain,
+      status: data.status.present ? data.status.value : this.status,
+      replyMessageId: data.replyMessageId.present
+          ? data.replyMessageId.value
+          : this.replyMessageId,
+      replyInline: data.replyInline.present
+          ? data.replyInline.value
+          : this.replyInline,
+      error: data.error.present ? data.error.value : this.error,
+      requestedByUserId: data.requestedByUserId.present
+          ? data.requestedByUserId.value
+          : this.requestedByUserId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      expiresAt: data.expiresAt.present ? data.expiresAt.value : this.expiresAt,
+      settledAt: data.settledAt.present ? data.settledAt.value : this.settledAt,
+      promisedAt: data.promisedAt.present
+          ? data.promisedAt.value
+          : this.promisedAt,
+      blockedNoticedAt: data.blockedNoticedAt.present
+          ? data.blockedNoticedAt.value
+          : this.blockedNoticedAt,
+      stallNoticedRunId: data.stallNoticedRunId.present
+          ? data.stallNoticedRunId.value
+          : this.stallNoticedRunId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PeerAsksTableData(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('kind: $kind, ')
+          ..write('mode: $mode, ')
+          ..write('askerAgentId: $askerAgentId, ')
+          ..write('askerRunId: $askerRunId, ')
+          ..write('askerConversationId: $askerConversationId, ')
+          ..write('askerSpaceId: $askerSpaceId, ')
+          ..write('recipientAgentId: $recipientAgentId, ')
+          ..write('recipientConversationId: $recipientConversationId, ')
+          ..write('recipientSpaceId: $recipientSpaceId, ')
+          ..write('questionMessageId: $questionMessageId, ')
+          ..write('questionHash: $questionHash, ')
+          ..write('dispatchedRunId: $dispatchedRunId, ')
+          ..write('chain: $chain, ')
+          ..write('status: $status, ')
+          ..write('replyMessageId: $replyMessageId, ')
+          ..write('replyInline: $replyInline, ')
+          ..write('error: $error, ')
+          ..write('requestedByUserId: $requestedByUserId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('expiresAt: $expiresAt, ')
+          ..write('settledAt: $settledAt, ')
+          ..write('promisedAt: $promisedAt, ')
+          ..write('blockedNoticedAt: $blockedNoticedAt, ')
+          ..write('stallNoticedRunId: $stallNoticedRunId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    id,
+    workspaceId,
+    kind,
+    mode,
+    askerAgentId,
+    askerRunId,
+    askerConversationId,
+    askerSpaceId,
+    recipientAgentId,
+    recipientConversationId,
+    recipientSpaceId,
+    questionMessageId,
+    questionHash,
+    dispatchedRunId,
+    chain,
+    status,
+    replyMessageId,
+    replyInline,
+    error,
+    requestedByUserId,
+    createdAt,
+    expiresAt,
+    settledAt,
+    promisedAt,
+    blockedNoticedAt,
+    stallNoticedRunId,
+  ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PeerAsksTableData &&
+          other.id == this.id &&
+          other.workspaceId == this.workspaceId &&
+          other.kind == this.kind &&
+          other.mode == this.mode &&
+          other.askerAgentId == this.askerAgentId &&
+          other.askerRunId == this.askerRunId &&
+          other.askerConversationId == this.askerConversationId &&
+          other.askerSpaceId == this.askerSpaceId &&
+          other.recipientAgentId == this.recipientAgentId &&
+          other.recipientConversationId == this.recipientConversationId &&
+          other.recipientSpaceId == this.recipientSpaceId &&
+          other.questionMessageId == this.questionMessageId &&
+          other.questionHash == this.questionHash &&
+          other.dispatchedRunId == this.dispatchedRunId &&
+          other.chain == this.chain &&
+          other.status == this.status &&
+          other.replyMessageId == this.replyMessageId &&
+          other.replyInline == this.replyInline &&
+          other.error == this.error &&
+          other.requestedByUserId == this.requestedByUserId &&
+          other.createdAt == this.createdAt &&
+          other.expiresAt == this.expiresAt &&
+          other.settledAt == this.settledAt &&
+          other.promisedAt == this.promisedAt &&
+          other.blockedNoticedAt == this.blockedNoticedAt &&
+          other.stallNoticedRunId == this.stallNoticedRunId);
+}
+
+class PeerAsksTableCompanion extends UpdateCompanion<PeerAsksTableData> {
+  final Value<String> id;
+  final Value<String> workspaceId;
+  final Value<String> kind;
+  final Value<String> mode;
+  final Value<String> askerAgentId;
+  final Value<String?> askerRunId;
+  final Value<String> askerConversationId;
+  final Value<String> askerSpaceId;
+  final Value<String> recipientAgentId;
+  final Value<String?> recipientConversationId;
+  final Value<String?> recipientSpaceId;
+  final Value<String?> questionMessageId;
+  final Value<String> questionHash;
+  final Value<String?> dispatchedRunId;
+  final Value<String> chain;
+  final Value<String> status;
+  final Value<String?> replyMessageId;
+  final Value<bool> replyInline;
+  final Value<String?> error;
+  final Value<String?> requestedByUserId;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> expiresAt;
+  final Value<DateTime?> settledAt;
+  final Value<DateTime?> promisedAt;
+  final Value<DateTime?> blockedNoticedAt;
+  final Value<String?> stallNoticedRunId;
+  final Value<int> rowid;
+  const PeerAsksTableCompanion({
+    this.id = const Value.absent(),
+    this.workspaceId = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.mode = const Value.absent(),
+    this.askerAgentId = const Value.absent(),
+    this.askerRunId = const Value.absent(),
+    this.askerConversationId = const Value.absent(),
+    this.askerSpaceId = const Value.absent(),
+    this.recipientAgentId = const Value.absent(),
+    this.recipientConversationId = const Value.absent(),
+    this.recipientSpaceId = const Value.absent(),
+    this.questionMessageId = const Value.absent(),
+    this.questionHash = const Value.absent(),
+    this.dispatchedRunId = const Value.absent(),
+    this.chain = const Value.absent(),
+    this.status = const Value.absent(),
+    this.replyMessageId = const Value.absent(),
+    this.replyInline = const Value.absent(),
+    this.error = const Value.absent(),
+    this.requestedByUserId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.expiresAt = const Value.absent(),
+    this.settledAt = const Value.absent(),
+    this.promisedAt = const Value.absent(),
+    this.blockedNoticedAt = const Value.absent(),
+    this.stallNoticedRunId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PeerAsksTableCompanion.insert({
+    required String id,
+    required String workspaceId,
+    this.kind = const Value.absent(),
+    this.mode = const Value.absent(),
+    required String askerAgentId,
+    this.askerRunId = const Value.absent(),
+    required String askerConversationId,
+    required String askerSpaceId,
+    required String recipientAgentId,
+    this.recipientConversationId = const Value.absent(),
+    this.recipientSpaceId = const Value.absent(),
+    this.questionMessageId = const Value.absent(),
+    required String questionHash,
+    this.dispatchedRunId = const Value.absent(),
+    this.chain = const Value.absent(),
+    this.status = const Value.absent(),
+    this.replyMessageId = const Value.absent(),
+    this.replyInline = const Value.absent(),
+    this.error = const Value.absent(),
+    this.requestedByUserId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    required DateTime expiresAt,
+    this.settledAt = const Value.absent(),
+    this.promisedAt = const Value.absent(),
+    this.blockedNoticedAt = const Value.absent(),
+    this.stallNoticedRunId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       workspaceId = Value(workspaceId),
+       askerAgentId = Value(askerAgentId),
+       askerConversationId = Value(askerConversationId),
+       askerSpaceId = Value(askerSpaceId),
+       recipientAgentId = Value(recipientAgentId),
+       questionHash = Value(questionHash),
+       expiresAt = Value(expiresAt);
+  static Insertable<PeerAsksTableData> custom({
+    Expression<String>? id,
+    Expression<String>? workspaceId,
+    Expression<String>? kind,
+    Expression<String>? mode,
+    Expression<String>? askerAgentId,
+    Expression<String>? askerRunId,
+    Expression<String>? askerConversationId,
+    Expression<String>? askerSpaceId,
+    Expression<String>? recipientAgentId,
+    Expression<String>? recipientConversationId,
+    Expression<String>? recipientSpaceId,
+    Expression<String>? questionMessageId,
+    Expression<String>? questionHash,
+    Expression<String>? dispatchedRunId,
+    Expression<String>? chain,
+    Expression<String>? status,
+    Expression<String>? replyMessageId,
+    Expression<bool>? replyInline,
+    Expression<String>? error,
+    Expression<String>? requestedByUserId,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? expiresAt,
+    Expression<DateTime>? settledAt,
+    Expression<DateTime>? promisedAt,
+    Expression<DateTime>? blockedNoticedAt,
+    Expression<String>? stallNoticedRunId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (workspaceId != null) 'workspace_id': workspaceId,
+      if (kind != null) 'kind': kind,
+      if (mode != null) 'mode': mode,
+      if (askerAgentId != null) 'asker_agent_id': askerAgentId,
+      if (askerRunId != null) 'asker_run_id': askerRunId,
+      if (askerConversationId != null)
+        'asker_conversation_id': askerConversationId,
+      if (askerSpaceId != null) 'asker_space_id': askerSpaceId,
+      if (recipientAgentId != null) 'recipient_agent_id': recipientAgentId,
+      if (recipientConversationId != null)
+        'recipient_conversation_id': recipientConversationId,
+      if (recipientSpaceId != null) 'recipient_space_id': recipientSpaceId,
+      if (questionMessageId != null) 'question_message_id': questionMessageId,
+      if (questionHash != null) 'question_hash': questionHash,
+      if (dispatchedRunId != null) 'dispatched_run_id': dispatchedRunId,
+      if (chain != null) 'chain': chain,
+      if (status != null) 'status': status,
+      if (replyMessageId != null) 'reply_message_id': replyMessageId,
+      if (replyInline != null) 'reply_inline': replyInline,
+      if (error != null) 'error': error,
+      if (requestedByUserId != null) 'requested_by_user_id': requestedByUserId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (expiresAt != null) 'expires_at': expiresAt,
+      if (settledAt != null) 'settled_at': settledAt,
+      if (promisedAt != null) 'promised_at': promisedAt,
+      if (blockedNoticedAt != null) 'blocked_noticed_at': blockedNoticedAt,
+      if (stallNoticedRunId != null) 'stall_noticed_run_id': stallNoticedRunId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PeerAsksTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? workspaceId,
+    Value<String>? kind,
+    Value<String>? mode,
+    Value<String>? askerAgentId,
+    Value<String?>? askerRunId,
+    Value<String>? askerConversationId,
+    Value<String>? askerSpaceId,
+    Value<String>? recipientAgentId,
+    Value<String?>? recipientConversationId,
+    Value<String?>? recipientSpaceId,
+    Value<String?>? questionMessageId,
+    Value<String>? questionHash,
+    Value<String?>? dispatchedRunId,
+    Value<String>? chain,
+    Value<String>? status,
+    Value<String?>? replyMessageId,
+    Value<bool>? replyInline,
+    Value<String?>? error,
+    Value<String?>? requestedByUserId,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? expiresAt,
+    Value<DateTime?>? settledAt,
+    Value<DateTime?>? promisedAt,
+    Value<DateTime?>? blockedNoticedAt,
+    Value<String?>? stallNoticedRunId,
+    Value<int>? rowid,
+  }) {
+    return PeerAsksTableCompanion(
+      id: id ?? this.id,
+      workspaceId: workspaceId ?? this.workspaceId,
+      kind: kind ?? this.kind,
+      mode: mode ?? this.mode,
+      askerAgentId: askerAgentId ?? this.askerAgentId,
+      askerRunId: askerRunId ?? this.askerRunId,
+      askerConversationId: askerConversationId ?? this.askerConversationId,
+      askerSpaceId: askerSpaceId ?? this.askerSpaceId,
+      recipientAgentId: recipientAgentId ?? this.recipientAgentId,
+      recipientConversationId:
+          recipientConversationId ?? this.recipientConversationId,
+      recipientSpaceId: recipientSpaceId ?? this.recipientSpaceId,
+      questionMessageId: questionMessageId ?? this.questionMessageId,
+      questionHash: questionHash ?? this.questionHash,
+      dispatchedRunId: dispatchedRunId ?? this.dispatchedRunId,
+      chain: chain ?? this.chain,
+      status: status ?? this.status,
+      replyMessageId: replyMessageId ?? this.replyMessageId,
+      replyInline: replyInline ?? this.replyInline,
+      error: error ?? this.error,
+      requestedByUserId: requestedByUserId ?? this.requestedByUserId,
+      createdAt: createdAt ?? this.createdAt,
+      expiresAt: expiresAt ?? this.expiresAt,
+      settledAt: settledAt ?? this.settledAt,
+      promisedAt: promisedAt ?? this.promisedAt,
+      blockedNoticedAt: blockedNoticedAt ?? this.blockedNoticedAt,
+      stallNoticedRunId: stallNoticedRunId ?? this.stallNoticedRunId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (workspaceId.present) {
+      map['workspace_id'] = Variable<String>(workspaceId.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (mode.present) {
+      map['mode'] = Variable<String>(mode.value);
+    }
+    if (askerAgentId.present) {
+      map['asker_agent_id'] = Variable<String>(askerAgentId.value);
+    }
+    if (askerRunId.present) {
+      map['asker_run_id'] = Variable<String>(askerRunId.value);
+    }
+    if (askerConversationId.present) {
+      map['asker_conversation_id'] = Variable<String>(
+        askerConversationId.value,
+      );
+    }
+    if (askerSpaceId.present) {
+      map['asker_space_id'] = Variable<String>(askerSpaceId.value);
+    }
+    if (recipientAgentId.present) {
+      map['recipient_agent_id'] = Variable<String>(recipientAgentId.value);
+    }
+    if (recipientConversationId.present) {
+      map['recipient_conversation_id'] = Variable<String>(
+        recipientConversationId.value,
+      );
+    }
+    if (recipientSpaceId.present) {
+      map['recipient_space_id'] = Variable<String>(recipientSpaceId.value);
+    }
+    if (questionMessageId.present) {
+      map['question_message_id'] = Variable<String>(questionMessageId.value);
+    }
+    if (questionHash.present) {
+      map['question_hash'] = Variable<String>(questionHash.value);
+    }
+    if (dispatchedRunId.present) {
+      map['dispatched_run_id'] = Variable<String>(dispatchedRunId.value);
+    }
+    if (chain.present) {
+      map['chain'] = Variable<String>(chain.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (replyMessageId.present) {
+      map['reply_message_id'] = Variable<String>(replyMessageId.value);
+    }
+    if (replyInline.present) {
+      map['reply_inline'] = Variable<bool>(replyInline.value);
+    }
+    if (error.present) {
+      map['error'] = Variable<String>(error.value);
+    }
+    if (requestedByUserId.present) {
+      map['requested_by_user_id'] = Variable<String>(requestedByUserId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (expiresAt.present) {
+      map['expires_at'] = Variable<DateTime>(expiresAt.value);
+    }
+    if (settledAt.present) {
+      map['settled_at'] = Variable<DateTime>(settledAt.value);
+    }
+    if (promisedAt.present) {
+      map['promised_at'] = Variable<DateTime>(promisedAt.value);
+    }
+    if (blockedNoticedAt.present) {
+      map['blocked_noticed_at'] = Variable<DateTime>(blockedNoticedAt.value);
+    }
+    if (stallNoticedRunId.present) {
+      map['stall_noticed_run_id'] = Variable<String>(stallNoticedRunId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PeerAsksTableCompanion(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('kind: $kind, ')
+          ..write('mode: $mode, ')
+          ..write('askerAgentId: $askerAgentId, ')
+          ..write('askerRunId: $askerRunId, ')
+          ..write('askerConversationId: $askerConversationId, ')
+          ..write('askerSpaceId: $askerSpaceId, ')
+          ..write('recipientAgentId: $recipientAgentId, ')
+          ..write('recipientConversationId: $recipientConversationId, ')
+          ..write('recipientSpaceId: $recipientSpaceId, ')
+          ..write('questionMessageId: $questionMessageId, ')
+          ..write('questionHash: $questionHash, ')
+          ..write('dispatchedRunId: $dispatchedRunId, ')
+          ..write('chain: $chain, ')
+          ..write('status: $status, ')
+          ..write('replyMessageId: $replyMessageId, ')
+          ..write('replyInline: $replyInline, ')
+          ..write('error: $error, ')
+          ..write('requestedByUserId: $requestedByUserId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('expiresAt: $expiresAt, ')
+          ..write('settledAt: $settledAt, ')
+          ..write('promisedAt: $promisedAt, ')
+          ..write('blockedNoticedAt: $blockedNoticedAt, ')
+          ..write('stallNoticedRunId: $stallNoticedRunId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ImprovementProposalsTableTable extends ImprovementProposalsTable
+    with
+        TableInfo<
+          $ImprovementProposalsTableTable,
+          ImprovementProposalsTableData
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ImprovementProposalsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _workspaceIdMeta = const VerificationMeta(
+    'workspaceId',
+  );
+  @override
+  late final GeneratedColumn<String> workspaceId = GeneratedColumn<String>(
+    'workspace_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _agentIdMeta = const VerificationMeta(
+    'agentId',
+  );
+  @override
+  late final GeneratedColumn<String> agentId = GeneratedColumn<String>(
+    'agent_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES agents (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _spaceIdMeta = const VerificationMeta(
+    'spaceId',
+  );
+  @override
+  late final GeneratedColumn<String> spaceId = GeneratedColumn<String>(
+    'space_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _conversationIdMeta = const VerificationMeta(
+    'conversationId',
+  );
+  @override
+  late final GeneratedColumn<String> conversationId = GeneratedColumn<String>(
+    'conversation_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES conversations (id) ON DELETE SET NULL',
+    ),
+  );
+  static const VerificationMeta _goalIdMeta = const VerificationMeta('goalId');
+  @override
+  late final GeneratedColumn<String> goalId = GeneratedColumn<String>(
+    'goal_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES agent_goal_runs (id) ON DELETE SET NULL',
+    ),
+  );
+  static const VerificationMeta _reviewRunIdMeta = const VerificationMeta(
+    'reviewRunId',
+  );
+  @override
+  late final GeneratedColumn<String> reviewRunId = GeneratedColumn<String>(
+    'review_run_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    check: () => kind.isIn(AgentsStoredValues.improvementKind),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _scopeMeta = const VerificationMeta('scope');
+  @override
+  late final GeneratedColumn<String> scope = GeneratedColumn<String>(
+    'scope',
+    aliasedName,
+    false,
+    check: () => scope.isIn(AgentsStoredValues.improvementScope),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _scopeRefIdMeta = const VerificationMeta(
+    'scopeRefId',
+  );
+  @override
+  late final GeneratedColumn<String> scopeRefId = GeneratedColumn<String>(
+    'scope_ref_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _operationMeta = const VerificationMeta(
+    'operation',
+  );
+  @override
+  late final GeneratedColumn<String> operation = GeneratedColumn<String>(
+    'operation',
+    aliasedName,
+    false,
+    check: () => operation.isIn(AgentsStoredValues.improvementOperation),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _targetRefMeta = const VerificationMeta(
+    'targetRef',
+  );
+  @override
+  late final GeneratedColumn<String> targetRef = GeneratedColumn<String>(
+    'target_ref',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _changeMeta = const VerificationMeta('change');
+  @override
+  late final GeneratedColumn<String> change = GeneratedColumn<String>(
+    'change',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _evidenceMeta = const VerificationMeta(
+    'evidence',
+  );
+  @override
+  late final GeneratedColumn<String> evidence = GeneratedColumn<String>(
+    'evidence',
+    aliasedName,
+    false,
+    check: () => isJsonObject(evidence),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('{}'),
+  );
+  static const VerificationMeta _expectedMeta = const VerificationMeta(
+    'expected',
+  );
+  @override
+  late final GeneratedColumn<String> expected = GeneratedColumn<String>(
+    'expected',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    check: () => status.isIn(AgentsStoredValues.improvementStatus),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('proposed'),
+  );
+  static const VerificationMeta _beforeTextMeta = const VerificationMeta(
+    'beforeText',
+  );
+  @override
+  late final GeneratedColumn<String> beforeText = GeneratedColumn<String>(
+    'before_text',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _afterTextMeta = const VerificationMeta(
+    'afterText',
+  );
+  @override
+  late final GeneratedColumn<String> afterText = GeneratedColumn<String>(
+    'after_text',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _appliedRefMeta = const VerificationMeta(
+    'appliedRef',
+  );
+  @override
+  late final GeneratedColumn<String> appliedRef = GeneratedColumn<String>(
+    'applied_ref',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _candidateRevisionIdMeta =
+      const VerificationMeta('candidateRevisionId');
+  @override
+  late final GeneratedColumn<String> candidateRevisionId =
+      GeneratedColumn<String>(
+        'candidate_revision_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _campaignIdMeta = const VerificationMeta(
+    'campaignId',
+  );
+  @override
+  late final GeneratedColumn<String> campaignId = GeneratedColumn<String>(
+    'campaign_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _campaignStateMeta = const VerificationMeta(
+    'campaignState',
+  );
+  @override
+  late final GeneratedColumn<String> campaignState = GeneratedColumn<String>(
+    'campaign_state',
+    aliasedName,
+    false,
+    check: () =>
+        campaignState.isIn(AgentsStoredValues.improvementCampaignState),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('none'),
+  );
+  static const VerificationMeta _decidedByUserIdMeta = const VerificationMeta(
+    'decidedByUserId',
+  );
+  @override
+  late final GeneratedColumn<String> decidedByUserId = GeneratedColumn<String>(
+    'decided_by_user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _decidedAtMeta = const VerificationMeta(
+    'decidedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> decidedAt = GeneratedColumn<DateTime>(
+    'decided_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _expiresAtMeta = const VerificationMeta(
+    'expiresAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> expiresAt = GeneratedColumn<DateTime>(
+    'expires_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    workspaceId,
+    agentId,
+    spaceId,
+    conversationId,
+    goalId,
+    reviewRunId,
+    kind,
+    scope,
+    scopeRefId,
+    operation,
+    targetRef,
+    change,
+    evidence,
+    expected,
+    status,
+    beforeText,
+    afterText,
+    appliedRef,
+    candidateRevisionId,
+    campaignId,
+    campaignState,
+    decidedByUserId,
+    decidedAt,
+    createdAt,
+    expiresAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'improvement_proposals';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ImprovementProposalsTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('workspace_id')) {
+      context.handle(
+        _workspaceIdMeta,
+        workspaceId.isAcceptableOrUnknown(
+          data['workspace_id']!,
+          _workspaceIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_workspaceIdMeta);
+    }
+    if (data.containsKey('agent_id')) {
+      context.handle(
+        _agentIdMeta,
+        agentId.isAcceptableOrUnknown(data['agent_id']!, _agentIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_agentIdMeta);
+    }
+    if (data.containsKey('space_id')) {
+      context.handle(
+        _spaceIdMeta,
+        spaceId.isAcceptableOrUnknown(data['space_id']!, _spaceIdMeta),
+      );
+    }
+    if (data.containsKey('conversation_id')) {
+      context.handle(
+        _conversationIdMeta,
+        conversationId.isAcceptableOrUnknown(
+          data['conversation_id']!,
+          _conversationIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('goal_id')) {
+      context.handle(
+        _goalIdMeta,
+        goalId.isAcceptableOrUnknown(data['goal_id']!, _goalIdMeta),
+      );
+    }
+    if (data.containsKey('review_run_id')) {
+      context.handle(
+        _reviewRunIdMeta,
+        reviewRunId.isAcceptableOrUnknown(
+          data['review_run_id']!,
+          _reviewRunIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('scope')) {
+      context.handle(
+        _scopeMeta,
+        scope.isAcceptableOrUnknown(data['scope']!, _scopeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_scopeMeta);
+    }
+    if (data.containsKey('scope_ref_id')) {
+      context.handle(
+        _scopeRefIdMeta,
+        scopeRefId.isAcceptableOrUnknown(
+          data['scope_ref_id']!,
+          _scopeRefIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('operation')) {
+      context.handle(
+        _operationMeta,
+        operation.isAcceptableOrUnknown(data['operation']!, _operationMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_operationMeta);
+    }
+    if (data.containsKey('target_ref')) {
+      context.handle(
+        _targetRefMeta,
+        targetRef.isAcceptableOrUnknown(data['target_ref']!, _targetRefMeta),
+      );
+    }
+    if (data.containsKey('change')) {
+      context.handle(
+        _changeMeta,
+        change.isAcceptableOrUnknown(data['change']!, _changeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_changeMeta);
+    }
+    if (data.containsKey('evidence')) {
+      context.handle(
+        _evidenceMeta,
+        evidence.isAcceptableOrUnknown(data['evidence']!, _evidenceMeta),
+      );
+    }
+    if (data.containsKey('expected')) {
+      context.handle(
+        _expectedMeta,
+        expected.isAcceptableOrUnknown(data['expected']!, _expectedMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_expectedMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('before_text')) {
+      context.handle(
+        _beforeTextMeta,
+        beforeText.isAcceptableOrUnknown(data['before_text']!, _beforeTextMeta),
+      );
+    }
+    if (data.containsKey('after_text')) {
+      context.handle(
+        _afterTextMeta,
+        afterText.isAcceptableOrUnknown(data['after_text']!, _afterTextMeta),
+      );
+    }
+    if (data.containsKey('applied_ref')) {
+      context.handle(
+        _appliedRefMeta,
+        appliedRef.isAcceptableOrUnknown(data['applied_ref']!, _appliedRefMeta),
+      );
+    }
+    if (data.containsKey('candidate_revision_id')) {
+      context.handle(
+        _candidateRevisionIdMeta,
+        candidateRevisionId.isAcceptableOrUnknown(
+          data['candidate_revision_id']!,
+          _candidateRevisionIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('campaign_id')) {
+      context.handle(
+        _campaignIdMeta,
+        campaignId.isAcceptableOrUnknown(data['campaign_id']!, _campaignIdMeta),
+      );
+    }
+    if (data.containsKey('campaign_state')) {
+      context.handle(
+        _campaignStateMeta,
+        campaignState.isAcceptableOrUnknown(
+          data['campaign_state']!,
+          _campaignStateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('decided_by_user_id')) {
+      context.handle(
+        _decidedByUserIdMeta,
+        decidedByUserId.isAcceptableOrUnknown(
+          data['decided_by_user_id']!,
+          _decidedByUserIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('decided_at')) {
+      context.handle(
+        _decidedAtMeta,
+        decidedAt.isAcceptableOrUnknown(data['decided_at']!, _decidedAtMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('expires_at')) {
+      context.handle(
+        _expiresAtMeta,
+        expiresAt.isAcceptableOrUnknown(data['expires_at']!, _expiresAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_expiresAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ImprovementProposalsTableData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ImprovementProposalsTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      workspaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}workspace_id'],
+      )!,
+      agentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}agent_id'],
+      )!,
+      spaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}space_id'],
+      ),
+      conversationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}conversation_id'],
+      ),
+      goalId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}goal_id'],
+      ),
+      reviewRunId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}review_run_id'],
+      ),
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      scope: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}scope'],
+      )!,
+      scopeRefId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}scope_ref_id'],
+      ),
+      operation: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}operation'],
+      )!,
+      targetRef: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_ref'],
+      ),
+      change: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}change'],
+      )!,
+      evidence: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}evidence'],
+      )!,
+      expected: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}expected'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      beforeText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}before_text'],
+      ),
+      afterText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}after_text'],
+      ),
+      appliedRef: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}applied_ref'],
+      ),
+      candidateRevisionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}candidate_revision_id'],
+      ),
+      campaignId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}campaign_id'],
+      ),
+      campaignState: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}campaign_state'],
+      )!,
+      decidedByUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}decided_by_user_id'],
+      ),
+      decidedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}decided_at'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      expiresAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}expires_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ImprovementProposalsTableTable createAlias(String alias) {
+    return $ImprovementProposalsTableTable(attachedDatabase, alias);
+  }
+}
+
+class ImprovementProposalsTableData extends DataClass
+    implements Insertable<ImprovementProposalsTableData> {
+  /// Unique proposal id.
+  final String id;
+
+  /// Owning workspace (this file's workspace).
+  final String workspaceId;
+
+  /// The agent whose work was reviewed. `CASCADE`.
+  final String agentId;
+
+  /// The space the work happened in. A value.
+  final String? spaceId;
+
+  /// The conversation the work happened in. `SET NULL`.
+  final String? conversationId;
+
+  /// The goal that passed verification. `SET NULL`.
+  final String? goalId;
+
+  /// The review run that proposed it. A value.
+  final String? reviewRunId;
+
+  /// What it would change: an `ImprovementKind` wire name.
+  final String kind;
+
+  /// Where it applies: an `ImprovementScope` wire name.
+  final String scope;
+
+  /// The repository id for a repository scope. A value.
+  final String? scopeRefId;
+
+  /// `add`, `replace` or `remove`: an `ImprovementOperation` wire name.
+  final String operation;
+
+  /// The id or name of what a replace or remove changes.
+  final String? targetRef;
+
+  /// The one change (at most 600 characters, checked by the entity).
+  final String change;
+
+  /// `ImprovementEvidence` as a JSON object (`runIds`, `messageIds`,
+  /// `checkResults`).
+  final String evidence;
+
+  /// What should be different next time.
+  final String expected;
+
+  /// Where it is: an `ImprovementStatus` wire name.
+  final String status;
+
+  /// The text before acceptance.
+  final String? beforeText;
+
+  /// The text acceptance wrote.
+  final String? afterText;
+
+  /// The id of what acceptance wrote. A value.
+  final String? appliedRef;
+
+  /// The candidate skill revision of a skill change. A value.
+  final String? candidateRevisionId;
+
+  /// The evaluation campaign that gates a skill change. A value.
+  final String? campaignId;
+
+  /// Where that campaign is: an `ImprovementCampaignState` wire name.
+  final String campaignState;
+
+  /// The person who decided. No key: users live in `global.db`.
+  final String? decidedByUserId;
+
+  /// When they decided.
+  final DateTime? decidedAt;
+
+  /// When it was proposed.
+  final DateTime createdAt;
+
+  /// When it expires if nobody decides.
+  final DateTime expiresAt;
+  const ImprovementProposalsTableData({
+    required this.id,
+    required this.workspaceId,
+    required this.agentId,
+    this.spaceId,
+    this.conversationId,
+    this.goalId,
+    this.reviewRunId,
+    required this.kind,
+    required this.scope,
+    this.scopeRefId,
+    required this.operation,
+    this.targetRef,
+    required this.change,
+    required this.evidence,
+    required this.expected,
+    required this.status,
+    this.beforeText,
+    this.afterText,
+    this.appliedRef,
+    this.candidateRevisionId,
+    this.campaignId,
+    required this.campaignState,
+    this.decidedByUserId,
+    this.decidedAt,
+    required this.createdAt,
+    required this.expiresAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['workspace_id'] = Variable<String>(workspaceId);
+    map['agent_id'] = Variable<String>(agentId);
+    if (!nullToAbsent || spaceId != null) {
+      map['space_id'] = Variable<String>(spaceId);
+    }
+    if (!nullToAbsent || conversationId != null) {
+      map['conversation_id'] = Variable<String>(conversationId);
+    }
+    if (!nullToAbsent || goalId != null) {
+      map['goal_id'] = Variable<String>(goalId);
+    }
+    if (!nullToAbsent || reviewRunId != null) {
+      map['review_run_id'] = Variable<String>(reviewRunId);
+    }
+    map['kind'] = Variable<String>(kind);
+    map['scope'] = Variable<String>(scope);
+    if (!nullToAbsent || scopeRefId != null) {
+      map['scope_ref_id'] = Variable<String>(scopeRefId);
+    }
+    map['operation'] = Variable<String>(operation);
+    if (!nullToAbsent || targetRef != null) {
+      map['target_ref'] = Variable<String>(targetRef);
+    }
+    map['change'] = Variable<String>(change);
+    map['evidence'] = Variable<String>(evidence);
+    map['expected'] = Variable<String>(expected);
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || beforeText != null) {
+      map['before_text'] = Variable<String>(beforeText);
+    }
+    if (!nullToAbsent || afterText != null) {
+      map['after_text'] = Variable<String>(afterText);
+    }
+    if (!nullToAbsent || appliedRef != null) {
+      map['applied_ref'] = Variable<String>(appliedRef);
+    }
+    if (!nullToAbsent || candidateRevisionId != null) {
+      map['candidate_revision_id'] = Variable<String>(candidateRevisionId);
+    }
+    if (!nullToAbsent || campaignId != null) {
+      map['campaign_id'] = Variable<String>(campaignId);
+    }
+    map['campaign_state'] = Variable<String>(campaignState);
+    if (!nullToAbsent || decidedByUserId != null) {
+      map['decided_by_user_id'] = Variable<String>(decidedByUserId);
+    }
+    if (!nullToAbsent || decidedAt != null) {
+      map['decided_at'] = Variable<DateTime>(decidedAt);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['expires_at'] = Variable<DateTime>(expiresAt);
+    return map;
+  }
+
+  ImprovementProposalsTableCompanion toCompanion(bool nullToAbsent) {
+    return ImprovementProposalsTableCompanion(
+      id: Value(id),
+      workspaceId: Value(workspaceId),
+      agentId: Value(agentId),
+      spaceId: spaceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(spaceId),
+      conversationId: conversationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(conversationId),
+      goalId: goalId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(goalId),
+      reviewRunId: reviewRunId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reviewRunId),
+      kind: Value(kind),
+      scope: Value(scope),
+      scopeRefId: scopeRefId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(scopeRefId),
+      operation: Value(operation),
+      targetRef: targetRef == null && nullToAbsent
+          ? const Value.absent()
+          : Value(targetRef),
+      change: Value(change),
+      evidence: Value(evidence),
+      expected: Value(expected),
+      status: Value(status),
+      beforeText: beforeText == null && nullToAbsent
+          ? const Value.absent()
+          : Value(beforeText),
+      afterText: afterText == null && nullToAbsent
+          ? const Value.absent()
+          : Value(afterText),
+      appliedRef: appliedRef == null && nullToAbsent
+          ? const Value.absent()
+          : Value(appliedRef),
+      candidateRevisionId: candidateRevisionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(candidateRevisionId),
+      campaignId: campaignId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(campaignId),
+      campaignState: Value(campaignState),
+      decidedByUserId: decidedByUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(decidedByUserId),
+      decidedAt: decidedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(decidedAt),
+      createdAt: Value(createdAt),
+      expiresAt: Value(expiresAt),
+    );
+  }
+
+  factory ImprovementProposalsTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ImprovementProposalsTableData(
+      id: serializer.fromJson<String>(json['id']),
+      workspaceId: serializer.fromJson<String>(json['workspaceId']),
+      agentId: serializer.fromJson<String>(json['agentId']),
+      spaceId: serializer.fromJson<String?>(json['spaceId']),
+      conversationId: serializer.fromJson<String?>(json['conversationId']),
+      goalId: serializer.fromJson<String?>(json['goalId']),
+      reviewRunId: serializer.fromJson<String?>(json['reviewRunId']),
+      kind: serializer.fromJson<String>(json['kind']),
+      scope: serializer.fromJson<String>(json['scope']),
+      scopeRefId: serializer.fromJson<String?>(json['scopeRefId']),
+      operation: serializer.fromJson<String>(json['operation']),
+      targetRef: serializer.fromJson<String?>(json['targetRef']),
+      change: serializer.fromJson<String>(json['change']),
+      evidence: serializer.fromJson<String>(json['evidence']),
+      expected: serializer.fromJson<String>(json['expected']),
+      status: serializer.fromJson<String>(json['status']),
+      beforeText: serializer.fromJson<String?>(json['beforeText']),
+      afterText: serializer.fromJson<String?>(json['afterText']),
+      appliedRef: serializer.fromJson<String?>(json['appliedRef']),
+      candidateRevisionId: serializer.fromJson<String?>(
+        json['candidateRevisionId'],
+      ),
+      campaignId: serializer.fromJson<String?>(json['campaignId']),
+      campaignState: serializer.fromJson<String>(json['campaignState']),
+      decidedByUserId: serializer.fromJson<String?>(json['decidedByUserId']),
+      decidedAt: serializer.fromJson<DateTime?>(json['decidedAt']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      expiresAt: serializer.fromJson<DateTime>(json['expiresAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'workspaceId': serializer.toJson<String>(workspaceId),
+      'agentId': serializer.toJson<String>(agentId),
+      'spaceId': serializer.toJson<String?>(spaceId),
+      'conversationId': serializer.toJson<String?>(conversationId),
+      'goalId': serializer.toJson<String?>(goalId),
+      'reviewRunId': serializer.toJson<String?>(reviewRunId),
+      'kind': serializer.toJson<String>(kind),
+      'scope': serializer.toJson<String>(scope),
+      'scopeRefId': serializer.toJson<String?>(scopeRefId),
+      'operation': serializer.toJson<String>(operation),
+      'targetRef': serializer.toJson<String?>(targetRef),
+      'change': serializer.toJson<String>(change),
+      'evidence': serializer.toJson<String>(evidence),
+      'expected': serializer.toJson<String>(expected),
+      'status': serializer.toJson<String>(status),
+      'beforeText': serializer.toJson<String?>(beforeText),
+      'afterText': serializer.toJson<String?>(afterText),
+      'appliedRef': serializer.toJson<String?>(appliedRef),
+      'candidateRevisionId': serializer.toJson<String?>(candidateRevisionId),
+      'campaignId': serializer.toJson<String?>(campaignId),
+      'campaignState': serializer.toJson<String>(campaignState),
+      'decidedByUserId': serializer.toJson<String?>(decidedByUserId),
+      'decidedAt': serializer.toJson<DateTime?>(decidedAt),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'expiresAt': serializer.toJson<DateTime>(expiresAt),
+    };
+  }
+
+  ImprovementProposalsTableData copyWith({
+    String? id,
+    String? workspaceId,
+    String? agentId,
+    Value<String?> spaceId = const Value.absent(),
+    Value<String?> conversationId = const Value.absent(),
+    Value<String?> goalId = const Value.absent(),
+    Value<String?> reviewRunId = const Value.absent(),
+    String? kind,
+    String? scope,
+    Value<String?> scopeRefId = const Value.absent(),
+    String? operation,
+    Value<String?> targetRef = const Value.absent(),
+    String? change,
+    String? evidence,
+    String? expected,
+    String? status,
+    Value<String?> beforeText = const Value.absent(),
+    Value<String?> afterText = const Value.absent(),
+    Value<String?> appliedRef = const Value.absent(),
+    Value<String?> candidateRevisionId = const Value.absent(),
+    Value<String?> campaignId = const Value.absent(),
+    String? campaignState,
+    Value<String?> decidedByUserId = const Value.absent(),
+    Value<DateTime?> decidedAt = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? expiresAt,
+  }) => ImprovementProposalsTableData(
+    id: id ?? this.id,
+    workspaceId: workspaceId ?? this.workspaceId,
+    agentId: agentId ?? this.agentId,
+    spaceId: spaceId.present ? spaceId.value : this.spaceId,
+    conversationId: conversationId.present
+        ? conversationId.value
+        : this.conversationId,
+    goalId: goalId.present ? goalId.value : this.goalId,
+    reviewRunId: reviewRunId.present ? reviewRunId.value : this.reviewRunId,
+    kind: kind ?? this.kind,
+    scope: scope ?? this.scope,
+    scopeRefId: scopeRefId.present ? scopeRefId.value : this.scopeRefId,
+    operation: operation ?? this.operation,
+    targetRef: targetRef.present ? targetRef.value : this.targetRef,
+    change: change ?? this.change,
+    evidence: evidence ?? this.evidence,
+    expected: expected ?? this.expected,
+    status: status ?? this.status,
+    beforeText: beforeText.present ? beforeText.value : this.beforeText,
+    afterText: afterText.present ? afterText.value : this.afterText,
+    appliedRef: appliedRef.present ? appliedRef.value : this.appliedRef,
+    candidateRevisionId: candidateRevisionId.present
+        ? candidateRevisionId.value
+        : this.candidateRevisionId,
+    campaignId: campaignId.present ? campaignId.value : this.campaignId,
+    campaignState: campaignState ?? this.campaignState,
+    decidedByUserId: decidedByUserId.present
+        ? decidedByUserId.value
+        : this.decidedByUserId,
+    decidedAt: decidedAt.present ? decidedAt.value : this.decidedAt,
+    createdAt: createdAt ?? this.createdAt,
+    expiresAt: expiresAt ?? this.expiresAt,
+  );
+  ImprovementProposalsTableData copyWithCompanion(
+    ImprovementProposalsTableCompanion data,
+  ) {
+    return ImprovementProposalsTableData(
+      id: data.id.present ? data.id.value : this.id,
+      workspaceId: data.workspaceId.present
+          ? data.workspaceId.value
+          : this.workspaceId,
+      agentId: data.agentId.present ? data.agentId.value : this.agentId,
+      spaceId: data.spaceId.present ? data.spaceId.value : this.spaceId,
+      conversationId: data.conversationId.present
+          ? data.conversationId.value
+          : this.conversationId,
+      goalId: data.goalId.present ? data.goalId.value : this.goalId,
+      reviewRunId: data.reviewRunId.present
+          ? data.reviewRunId.value
+          : this.reviewRunId,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      scope: data.scope.present ? data.scope.value : this.scope,
+      scopeRefId: data.scopeRefId.present
+          ? data.scopeRefId.value
+          : this.scopeRefId,
+      operation: data.operation.present ? data.operation.value : this.operation,
+      targetRef: data.targetRef.present ? data.targetRef.value : this.targetRef,
+      change: data.change.present ? data.change.value : this.change,
+      evidence: data.evidence.present ? data.evidence.value : this.evidence,
+      expected: data.expected.present ? data.expected.value : this.expected,
+      status: data.status.present ? data.status.value : this.status,
+      beforeText: data.beforeText.present
+          ? data.beforeText.value
+          : this.beforeText,
+      afterText: data.afterText.present ? data.afterText.value : this.afterText,
+      appliedRef: data.appliedRef.present
+          ? data.appliedRef.value
+          : this.appliedRef,
+      candidateRevisionId: data.candidateRevisionId.present
+          ? data.candidateRevisionId.value
+          : this.candidateRevisionId,
+      campaignId: data.campaignId.present
+          ? data.campaignId.value
+          : this.campaignId,
+      campaignState: data.campaignState.present
+          ? data.campaignState.value
+          : this.campaignState,
+      decidedByUserId: data.decidedByUserId.present
+          ? data.decidedByUserId.value
+          : this.decidedByUserId,
+      decidedAt: data.decidedAt.present ? data.decidedAt.value : this.decidedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      expiresAt: data.expiresAt.present ? data.expiresAt.value : this.expiresAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ImprovementProposalsTableData(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('agentId: $agentId, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('conversationId: $conversationId, ')
+          ..write('goalId: $goalId, ')
+          ..write('reviewRunId: $reviewRunId, ')
+          ..write('kind: $kind, ')
+          ..write('scope: $scope, ')
+          ..write('scopeRefId: $scopeRefId, ')
+          ..write('operation: $operation, ')
+          ..write('targetRef: $targetRef, ')
+          ..write('change: $change, ')
+          ..write('evidence: $evidence, ')
+          ..write('expected: $expected, ')
+          ..write('status: $status, ')
+          ..write('beforeText: $beforeText, ')
+          ..write('afterText: $afterText, ')
+          ..write('appliedRef: $appliedRef, ')
+          ..write('candidateRevisionId: $candidateRevisionId, ')
+          ..write('campaignId: $campaignId, ')
+          ..write('campaignState: $campaignState, ')
+          ..write('decidedByUserId: $decidedByUserId, ')
+          ..write('decidedAt: $decidedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('expiresAt: $expiresAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    id,
+    workspaceId,
+    agentId,
+    spaceId,
+    conversationId,
+    goalId,
+    reviewRunId,
+    kind,
+    scope,
+    scopeRefId,
+    operation,
+    targetRef,
+    change,
+    evidence,
+    expected,
+    status,
+    beforeText,
+    afterText,
+    appliedRef,
+    candidateRevisionId,
+    campaignId,
+    campaignState,
+    decidedByUserId,
+    decidedAt,
+    createdAt,
+    expiresAt,
+  ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ImprovementProposalsTableData &&
+          other.id == this.id &&
+          other.workspaceId == this.workspaceId &&
+          other.agentId == this.agentId &&
+          other.spaceId == this.spaceId &&
+          other.conversationId == this.conversationId &&
+          other.goalId == this.goalId &&
+          other.reviewRunId == this.reviewRunId &&
+          other.kind == this.kind &&
+          other.scope == this.scope &&
+          other.scopeRefId == this.scopeRefId &&
+          other.operation == this.operation &&
+          other.targetRef == this.targetRef &&
+          other.change == this.change &&
+          other.evidence == this.evidence &&
+          other.expected == this.expected &&
+          other.status == this.status &&
+          other.beforeText == this.beforeText &&
+          other.afterText == this.afterText &&
+          other.appliedRef == this.appliedRef &&
+          other.candidateRevisionId == this.candidateRevisionId &&
+          other.campaignId == this.campaignId &&
+          other.campaignState == this.campaignState &&
+          other.decidedByUserId == this.decidedByUserId &&
+          other.decidedAt == this.decidedAt &&
+          other.createdAt == this.createdAt &&
+          other.expiresAt == this.expiresAt);
+}
+
+class ImprovementProposalsTableCompanion
+    extends UpdateCompanion<ImprovementProposalsTableData> {
+  final Value<String> id;
+  final Value<String> workspaceId;
+  final Value<String> agentId;
+  final Value<String?> spaceId;
+  final Value<String?> conversationId;
+  final Value<String?> goalId;
+  final Value<String?> reviewRunId;
+  final Value<String> kind;
+  final Value<String> scope;
+  final Value<String?> scopeRefId;
+  final Value<String> operation;
+  final Value<String?> targetRef;
+  final Value<String> change;
+  final Value<String> evidence;
+  final Value<String> expected;
+  final Value<String> status;
+  final Value<String?> beforeText;
+  final Value<String?> afterText;
+  final Value<String?> appliedRef;
+  final Value<String?> candidateRevisionId;
+  final Value<String?> campaignId;
+  final Value<String> campaignState;
+  final Value<String?> decidedByUserId;
+  final Value<DateTime?> decidedAt;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> expiresAt;
+  final Value<int> rowid;
+  const ImprovementProposalsTableCompanion({
+    this.id = const Value.absent(),
+    this.workspaceId = const Value.absent(),
+    this.agentId = const Value.absent(),
+    this.spaceId = const Value.absent(),
+    this.conversationId = const Value.absent(),
+    this.goalId = const Value.absent(),
+    this.reviewRunId = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.scope = const Value.absent(),
+    this.scopeRefId = const Value.absent(),
+    this.operation = const Value.absent(),
+    this.targetRef = const Value.absent(),
+    this.change = const Value.absent(),
+    this.evidence = const Value.absent(),
+    this.expected = const Value.absent(),
+    this.status = const Value.absent(),
+    this.beforeText = const Value.absent(),
+    this.afterText = const Value.absent(),
+    this.appliedRef = const Value.absent(),
+    this.candidateRevisionId = const Value.absent(),
+    this.campaignId = const Value.absent(),
+    this.campaignState = const Value.absent(),
+    this.decidedByUserId = const Value.absent(),
+    this.decidedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.expiresAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ImprovementProposalsTableCompanion.insert({
+    required String id,
+    required String workspaceId,
+    required String agentId,
+    this.spaceId = const Value.absent(),
+    this.conversationId = const Value.absent(),
+    this.goalId = const Value.absent(),
+    this.reviewRunId = const Value.absent(),
+    required String kind,
+    required String scope,
+    this.scopeRefId = const Value.absent(),
+    required String operation,
+    this.targetRef = const Value.absent(),
+    required String change,
+    this.evidence = const Value.absent(),
+    required String expected,
+    this.status = const Value.absent(),
+    this.beforeText = const Value.absent(),
+    this.afterText = const Value.absent(),
+    this.appliedRef = const Value.absent(),
+    this.candidateRevisionId = const Value.absent(),
+    this.campaignId = const Value.absent(),
+    this.campaignState = const Value.absent(),
+    this.decidedByUserId = const Value.absent(),
+    this.decidedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    required DateTime expiresAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       workspaceId = Value(workspaceId),
+       agentId = Value(agentId),
+       kind = Value(kind),
+       scope = Value(scope),
+       operation = Value(operation),
+       change = Value(change),
+       expected = Value(expected),
+       expiresAt = Value(expiresAt);
+  static Insertable<ImprovementProposalsTableData> custom({
+    Expression<String>? id,
+    Expression<String>? workspaceId,
+    Expression<String>? agentId,
+    Expression<String>? spaceId,
+    Expression<String>? conversationId,
+    Expression<String>? goalId,
+    Expression<String>? reviewRunId,
+    Expression<String>? kind,
+    Expression<String>? scope,
+    Expression<String>? scopeRefId,
+    Expression<String>? operation,
+    Expression<String>? targetRef,
+    Expression<String>? change,
+    Expression<String>? evidence,
+    Expression<String>? expected,
+    Expression<String>? status,
+    Expression<String>? beforeText,
+    Expression<String>? afterText,
+    Expression<String>? appliedRef,
+    Expression<String>? candidateRevisionId,
+    Expression<String>? campaignId,
+    Expression<String>? campaignState,
+    Expression<String>? decidedByUserId,
+    Expression<DateTime>? decidedAt,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? expiresAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (workspaceId != null) 'workspace_id': workspaceId,
+      if (agentId != null) 'agent_id': agentId,
+      if (spaceId != null) 'space_id': spaceId,
+      if (conversationId != null) 'conversation_id': conversationId,
+      if (goalId != null) 'goal_id': goalId,
+      if (reviewRunId != null) 'review_run_id': reviewRunId,
+      if (kind != null) 'kind': kind,
+      if (scope != null) 'scope': scope,
+      if (scopeRefId != null) 'scope_ref_id': scopeRefId,
+      if (operation != null) 'operation': operation,
+      if (targetRef != null) 'target_ref': targetRef,
+      if (change != null) 'change': change,
+      if (evidence != null) 'evidence': evidence,
+      if (expected != null) 'expected': expected,
+      if (status != null) 'status': status,
+      if (beforeText != null) 'before_text': beforeText,
+      if (afterText != null) 'after_text': afterText,
+      if (appliedRef != null) 'applied_ref': appliedRef,
+      if (candidateRevisionId != null)
+        'candidate_revision_id': candidateRevisionId,
+      if (campaignId != null) 'campaign_id': campaignId,
+      if (campaignState != null) 'campaign_state': campaignState,
+      if (decidedByUserId != null) 'decided_by_user_id': decidedByUserId,
+      if (decidedAt != null) 'decided_at': decidedAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (expiresAt != null) 'expires_at': expiresAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ImprovementProposalsTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? workspaceId,
+    Value<String>? agentId,
+    Value<String?>? spaceId,
+    Value<String?>? conversationId,
+    Value<String?>? goalId,
+    Value<String?>? reviewRunId,
+    Value<String>? kind,
+    Value<String>? scope,
+    Value<String?>? scopeRefId,
+    Value<String>? operation,
+    Value<String?>? targetRef,
+    Value<String>? change,
+    Value<String>? evidence,
+    Value<String>? expected,
+    Value<String>? status,
+    Value<String?>? beforeText,
+    Value<String?>? afterText,
+    Value<String?>? appliedRef,
+    Value<String?>? candidateRevisionId,
+    Value<String?>? campaignId,
+    Value<String>? campaignState,
+    Value<String?>? decidedByUserId,
+    Value<DateTime?>? decidedAt,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? expiresAt,
+    Value<int>? rowid,
+  }) {
+    return ImprovementProposalsTableCompanion(
+      id: id ?? this.id,
+      workspaceId: workspaceId ?? this.workspaceId,
+      agentId: agentId ?? this.agentId,
+      spaceId: spaceId ?? this.spaceId,
+      conversationId: conversationId ?? this.conversationId,
+      goalId: goalId ?? this.goalId,
+      reviewRunId: reviewRunId ?? this.reviewRunId,
+      kind: kind ?? this.kind,
+      scope: scope ?? this.scope,
+      scopeRefId: scopeRefId ?? this.scopeRefId,
+      operation: operation ?? this.operation,
+      targetRef: targetRef ?? this.targetRef,
+      change: change ?? this.change,
+      evidence: evidence ?? this.evidence,
+      expected: expected ?? this.expected,
+      status: status ?? this.status,
+      beforeText: beforeText ?? this.beforeText,
+      afterText: afterText ?? this.afterText,
+      appliedRef: appliedRef ?? this.appliedRef,
+      candidateRevisionId: candidateRevisionId ?? this.candidateRevisionId,
+      campaignId: campaignId ?? this.campaignId,
+      campaignState: campaignState ?? this.campaignState,
+      decidedByUserId: decidedByUserId ?? this.decidedByUserId,
+      decidedAt: decidedAt ?? this.decidedAt,
+      createdAt: createdAt ?? this.createdAt,
+      expiresAt: expiresAt ?? this.expiresAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (workspaceId.present) {
+      map['workspace_id'] = Variable<String>(workspaceId.value);
+    }
+    if (agentId.present) {
+      map['agent_id'] = Variable<String>(agentId.value);
+    }
+    if (spaceId.present) {
+      map['space_id'] = Variable<String>(spaceId.value);
+    }
+    if (conversationId.present) {
+      map['conversation_id'] = Variable<String>(conversationId.value);
+    }
+    if (goalId.present) {
+      map['goal_id'] = Variable<String>(goalId.value);
+    }
+    if (reviewRunId.present) {
+      map['review_run_id'] = Variable<String>(reviewRunId.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (scope.present) {
+      map['scope'] = Variable<String>(scope.value);
+    }
+    if (scopeRefId.present) {
+      map['scope_ref_id'] = Variable<String>(scopeRefId.value);
+    }
+    if (operation.present) {
+      map['operation'] = Variable<String>(operation.value);
+    }
+    if (targetRef.present) {
+      map['target_ref'] = Variable<String>(targetRef.value);
+    }
+    if (change.present) {
+      map['change'] = Variable<String>(change.value);
+    }
+    if (evidence.present) {
+      map['evidence'] = Variable<String>(evidence.value);
+    }
+    if (expected.present) {
+      map['expected'] = Variable<String>(expected.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (beforeText.present) {
+      map['before_text'] = Variable<String>(beforeText.value);
+    }
+    if (afterText.present) {
+      map['after_text'] = Variable<String>(afterText.value);
+    }
+    if (appliedRef.present) {
+      map['applied_ref'] = Variable<String>(appliedRef.value);
+    }
+    if (candidateRevisionId.present) {
+      map['candidate_revision_id'] = Variable<String>(
+        candidateRevisionId.value,
+      );
+    }
+    if (campaignId.present) {
+      map['campaign_id'] = Variable<String>(campaignId.value);
+    }
+    if (campaignState.present) {
+      map['campaign_state'] = Variable<String>(campaignState.value);
+    }
+    if (decidedByUserId.present) {
+      map['decided_by_user_id'] = Variable<String>(decidedByUserId.value);
+    }
+    if (decidedAt.present) {
+      map['decided_at'] = Variable<DateTime>(decidedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (expiresAt.present) {
+      map['expires_at'] = Variable<DateTime>(expiresAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ImprovementProposalsTableCompanion(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('agentId: $agentId, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('conversationId: $conversationId, ')
+          ..write('goalId: $goalId, ')
+          ..write('reviewRunId: $reviewRunId, ')
+          ..write('kind: $kind, ')
+          ..write('scope: $scope, ')
+          ..write('scopeRefId: $scopeRefId, ')
+          ..write('operation: $operation, ')
+          ..write('targetRef: $targetRef, ')
+          ..write('change: $change, ')
+          ..write('evidence: $evidence, ')
+          ..write('expected: $expected, ')
+          ..write('status: $status, ')
+          ..write('beforeText: $beforeText, ')
+          ..write('afterText: $afterText, ')
+          ..write('appliedRef: $appliedRef, ')
+          ..write('candidateRevisionId: $candidateRevisionId, ')
+          ..write('campaignId: $campaignId, ')
+          ..write('campaignState: $campaignState, ')
+          ..write('decidedByUserId: $decidedByUserId, ')
+          ..write('decidedAt: $decidedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('expiresAt: $expiresAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$WorkspaceDatabase extends GeneratedDatabase {
   _$WorkspaceDatabase(QueryExecutor e) : super(e);
   $WorkspaceDatabaseManager get managers => $WorkspaceDatabaseManager(this);
@@ -84745,6 +96115,8 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
   );
   late final $ConversationActivityTableTable conversationActivityTable =
       $ConversationActivityTableTable(this);
+  late final $ConversationReadsTableTable conversationReadsTable =
+      $ConversationReadsTableTable(this);
   late final $ReviewSpacesTableTable reviewSpacesTable =
       $ReviewSpacesTableTable(this);
   late final $ActivityLogTableTable activityLogTable = $ActivityLogTableTable(
@@ -84954,6 +96326,21 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
   late final $McpServersTableTable mcpServersTable = $McpServersTableTable(
     this,
   );
+  late final $CodeExecutionsTableTable codeExecutionsTable =
+      $CodeExecutionsTableTable(this);
+  late final $CodeExecutionPayloadsTableTable codeExecutionPayloadsTable =
+      $CodeExecutionPayloadsTableTable(this);
+  late final $CodeExecutionCallsTableTable codeExecutionCallsTable =
+      $CodeExecutionCallsTableTable(this);
+  late final $CodeModeStoreTableTable codeModeStoreTable =
+      $CodeModeStoreTableTable(this);
+  late final $AgentWakesTableTable agentWakesTable = $AgentWakesTableTable(
+    this,
+  );
+  late final $WakeRulesTableTable wakeRulesTable = $WakeRulesTableTable(this);
+  late final $PeerAsksTableTable peerAsksTable = $PeerAsksTableTable(this);
+  late final $ImprovementProposalsTableTable improvementProposalsTable =
+      $ImprovementProposalsTableTable(this);
   late final Index uqReposPath = Index(
     'uq_repos_path',
     'CREATE UNIQUE INDEX uq_repos_path ON repos (path)',
@@ -85037,6 +96424,14 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
   late final Index idxAgentGoalRunsActiveRun = Index(
     'idx_agent_goal_runs_active_run',
     'CREATE INDEX idx_agent_goal_runs_active_run ON agent_goal_runs (active_run_id)',
+  );
+  late final Index idxAgentGoalRunsPipelineRun = Index(
+    'idx_agent_goal_runs_pipeline_run',
+    'CREATE INDEX idx_agent_goal_runs_pipeline_run ON agent_goal_runs (pipeline_run_id)',
+  );
+  late final Index uqAgentGoalRunsActiveAgent = Index(
+    'uq_agent_goal_runs_active_agent',
+    'CREATE UNIQUE INDEX uq_agent_goal_runs_active_agent ON agent_goal_runs (agent_id) WHERE status = \'active\'',
   );
   late final Index idxPullRequestsWsCreated = Index(
     'idx_pull_requests_ws_created',
@@ -85133,6 +96528,10 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
   late final Index idxConversationActivitySpaceId = Index(
     'idx_conversation_activity_spaceId',
     'CREATE INDEX idx_conversation_activity_spaceId ON conversation_activity (space_id)',
+  );
+  late final Index idxConversationReadsUserId = Index(
+    'idx_conversation_reads_userId',
+    'CREATE INDEX idx_conversation_reads_userId ON conversation_reads (user_id)',
   );
   late final Index idxReviewSpacesPrExternalId = Index(
     'idx_review_spaces_prExternalId',
@@ -85782,6 +97181,114 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     'idx_space_checkers_agent',
     'CREATE INDEX idx_space_checkers_agent ON space_checkers (agent_id)',
   );
+  late final Index idxCodeExecutionsStarted = Index(
+    'idx_code_executions_started',
+    'CREATE INDEX idx_code_executions_started ON code_executions (started_at_ms, id)',
+  );
+  late final Index idxCodeExecutionsRunStarted = Index(
+    'idx_code_executions_run_started',
+    'CREATE INDEX idx_code_executions_run_started ON code_executions (run_id, started_at_ms, id)',
+  );
+  late final Index idxCodeExecutionsConversationStarted = Index(
+    'idx_code_executions_conversation_started',
+    'CREATE INDEX idx_code_executions_conversation_started ON code_executions (conversation_id, started_at_ms, id)',
+  );
+  late final Index idxCodeExecutionsAgentStarted = Index(
+    'idx_code_executions_agent_started',
+    'CREATE INDEX idx_code_executions_agent_started ON code_executions (agent_id, started_at_ms, id)',
+  );
+  late final Index idxCodeExecutionsSpaceStarted = Index(
+    'idx_code_executions_space_started',
+    'CREATE INDEX idx_code_executions_space_started ON code_executions (space_id, started_at_ms, id)',
+  );
+  late final Index idxCodeExecutionsStatusStarted = Index(
+    'idx_code_executions_status_started',
+    'CREATE INDEX idx_code_executions_status_started ON code_executions (status, started_at_ms, id)',
+  );
+  late final Index idxCodeExecutionsToolCallStarted = Index(
+    'idx_code_executions_tool_call_started',
+    'CREATE INDEX idx_code_executions_tool_call_started ON code_executions (tool_call_id, started_at_ms, id)',
+  );
+  late final Index idxCodeExecutionsRunToolCallSuffix = Index(
+    'idx_code_executions_run_tool_call_suffix',
+    'CREATE INDEX idx_code_executions_run_tool_call_suffix ON code_executions (run_id, tool_call_id, id_suffix)',
+  );
+  late final Index idxCodeModeStoreAgent = Index(
+    'idx_code_mode_store_agent',
+    'CREATE INDEX idx_code_mode_store_agent ON code_mode_store (agent_id)',
+  );
+  late final Index uqAgentWakesDedupKey = Index(
+    'uq_agent_wakes_dedup_key',
+    'CREATE UNIQUE INDEX uq_agent_wakes_dedup_key ON agent_wakes (dedup_key)',
+  );
+  late final Index idxAgentWakesStateNotBefore = Index(
+    'idx_agent_wakes_state_not_before',
+    'CREATE INDEX idx_agent_wakes_state_not_before ON agent_wakes (state, not_before)',
+  );
+  late final Index idxAgentWakesConversationAgentState = Index(
+    'idx_agent_wakes_conversation_agent_state',
+    'CREATE INDEX idx_agent_wakes_conversation_agent_state ON agent_wakes (conversation_id, agent_id, state)',
+  );
+  late final Index idxAgentWakesAgentState = Index(
+    'idx_agent_wakes_agent_state',
+    'CREATE INDEX idx_agent_wakes_agent_state ON agent_wakes (agent_id, state)',
+  );
+  late final Index idxWakeRulesConversationAgentStatus = Index(
+    'idx_wake_rules_conversation_agent_status',
+    'CREATE INDEX idx_wake_rules_conversation_agent_status ON wake_rules (conversation_id, agent_id, status)',
+  );
+  late final Index idxWakeRulesAgentStatus = Index(
+    'idx_wake_rules_agent_status',
+    'CREATE INDEX idx_wake_rules_agent_status ON wake_rules (agent_id, status)',
+  );
+  late final Index idxWakeRulesStatusEventKind = Index(
+    'idx_wake_rules_status_event_kind',
+    'CREATE INDEX idx_wake_rules_status_event_kind ON wake_rules (status, event_kind)',
+  );
+  late final Index idxWakeRulesGoal = Index(
+    'idx_wake_rules_goal',
+    'CREATE INDEX idx_wake_rules_goal ON wake_rules (goal_id)',
+  );
+  late final Index idxWakeRulesRootRule = Index(
+    'idx_wake_rules_root_rule',
+    'CREATE INDEX idx_wake_rules_root_rule ON wake_rules (root_rule_id)',
+  );
+  late final Index idxPeerAsksRecipientStatus = Index(
+    'idx_peer_asks_recipient_status',
+    'CREATE INDEX idx_peer_asks_recipient_status ON peer_asks (recipient_agent_id, status)',
+  );
+  late final Index idxPeerAsksAskerStatus = Index(
+    'idx_peer_asks_asker_status',
+    'CREATE INDEX idx_peer_asks_asker_status ON peer_asks (asker_agent_id, status)',
+  );
+  late final Index idxPeerAsksDispatchedRun = Index(
+    'idx_peer_asks_dispatched_run',
+    'CREATE INDEX idx_peer_asks_dispatched_run ON peer_asks (dispatched_run_id)',
+  );
+  late final Index idxPeerAsksAskerConversationStatus = Index(
+    'idx_peer_asks_asker_conversation_status',
+    'CREATE INDEX idx_peer_asks_asker_conversation_status ON peer_asks (asker_conversation_id, status)',
+  );
+  late final Index idxPeerAsksStatusExpires = Index(
+    'idx_peer_asks_status_expires',
+    'CREATE INDEX idx_peer_asks_status_expires ON peer_asks (status, expires_at)',
+  );
+  late final Index idxImprovementProposalsStatusCreated = Index(
+    'idx_improvement_proposals_status_created',
+    'CREATE INDEX idx_improvement_proposals_status_created ON improvement_proposals (status, created_at)',
+  );
+  late final Index idxImprovementProposalsGoal = Index(
+    'idx_improvement_proposals_goal',
+    'CREATE INDEX idx_improvement_proposals_goal ON improvement_proposals (goal_id)',
+  );
+  late final Index idxImprovementProposalsConversation = Index(
+    'idx_improvement_proposals_conversation',
+    'CREATE INDEX idx_improvement_proposals_conversation ON improvement_proposals (conversation_id)',
+  );
+  late final Index idxImprovementProposalsAgentStatus = Index(
+    'idx_improvement_proposals_agent_status',
+    'CREATE INDEX idx_improvement_proposals_agent_status ON improvement_proposals (agent_id, status)',
+  );
   late final WorkspaceSettingDao workspaceSettingDao = WorkspaceSettingDao(
     this as WorkspaceDatabase,
   );
@@ -85955,6 +97462,12 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
   late final McpServerDao mcpServerDao = McpServerDao(
     this as WorkspaceDatabase,
   );
+  late final CodeModeDao codeModeDao = CodeModeDao(this as WorkspaceDatabase);
+  late final WakeDao wakeDao = WakeDao(this as WorkspaceDatabase);
+  late final WakeRuleDao wakeRuleDao = WakeRuleDao(this as WorkspaceDatabase);
+  late final PeerAskDao peerAskDao = PeerAskDao(this as WorkspaceDatabase);
+  late final ImprovementProposalDao improvementProposalDao =
+      ImprovementProposalDao(this as WorkspaceDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -85985,6 +97498,7 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     messageReactionsTable,
     conversationMessageEmbeddingsTable,
     conversationActivityTable,
+    conversationReadsTable,
     reviewSpacesTable,
     activityLogTable,
     agentWorkingMemoryTable,
@@ -86088,6 +97602,14 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     approvalEscalationsTable,
     planDivergencesTable,
     mcpServersTable,
+    codeExecutionsTable,
+    codeExecutionPayloadsTable,
+    codeExecutionCallsTable,
+    codeModeStoreTable,
+    agentWakesTable,
+    wakeRulesTable,
+    peerAsksTable,
+    improvementProposalsTable,
     uqReposPath,
     uqAgentsName,
     idxAgentsReportsTo,
@@ -86109,6 +97631,8 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     idxAgentGoalRunsSpace,
     idxAgentGoalRunsConversation,
     idxAgentGoalRunsActiveRun,
+    idxAgentGoalRunsPipelineRun,
+    uqAgentGoalRunsActiveAgent,
     idxPullRequestsWsCreated,
     idxCachesKindUpdated,
     idxSpacesPipelineRunId,
@@ -86133,6 +97657,7 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     idxConversationMessagesOutline,
     idxConversationMessagesQueuedSteering,
     idxConversationActivitySpaceId,
+    idxConversationReadsUserId,
     idxReviewSpacesPrExternalId,
     idxReviewSpacesSpace,
     idxActivityLogAgent,
@@ -86295,6 +97820,33 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     idxEnvironmentRunsEnvironment,
     idxEnvironmentRunsRepo,
     idxSpaceCheckersAgent,
+    idxCodeExecutionsStarted,
+    idxCodeExecutionsRunStarted,
+    idxCodeExecutionsConversationStarted,
+    idxCodeExecutionsAgentStarted,
+    idxCodeExecutionsSpaceStarted,
+    idxCodeExecutionsStatusStarted,
+    idxCodeExecutionsToolCallStarted,
+    idxCodeExecutionsRunToolCallSuffix,
+    idxCodeModeStoreAgent,
+    uqAgentWakesDedupKey,
+    idxAgentWakesStateNotBefore,
+    idxAgentWakesConversationAgentState,
+    idxAgentWakesAgentState,
+    idxWakeRulesConversationAgentStatus,
+    idxWakeRulesAgentStatus,
+    idxWakeRulesStatusEventKind,
+    idxWakeRulesGoal,
+    idxWakeRulesRootRule,
+    idxPeerAsksRecipientStatus,
+    idxPeerAsksAskerStatus,
+    idxPeerAsksDispatchedRun,
+    idxPeerAsksAskerConversationStatus,
+    idxPeerAsksStatusExpires,
+    idxImprovementProposalsStatusCreated,
+    idxImprovementProposalsGoal,
+    idxImprovementProposalsConversation,
+    idxImprovementProposalsAgentStatus,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -87168,6 +98720,139 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('plan_divergences', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'agent_run_logs',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('code_executions', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'conversations',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('code_executions', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'agents',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('code_executions', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'spaces',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('code_executions', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'code_executions',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('code_execution_payloads', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'code_executions',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('code_execution_calls', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'conversations',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('code_mode_store', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'agents',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('code_mode_store', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'conversations',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('agent_wakes', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'agents',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('agent_wakes', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'conversations',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('wake_rules', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'agents',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('wake_rules', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'agent_goal_runs',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('wake_rules', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'agents',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('peer_asks', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'conversations',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('peer_asks', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'agents',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('peer_asks', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'agents',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('improvement_proposals', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'conversations',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('improvement_proposals', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'agent_goal_runs',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('improvement_proposals', kind: UpdateKind.update)],
     ),
   ]);
 }
@@ -89622,6 +101307,156 @@ final class $$AgentsTableTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $CodeExecutionsTableTable,
+    List<CodeExecutionsTableData>
+  >
+  _codeExecutionsTableRefsTable(_$WorkspaceDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.codeExecutionsTable,
+        aliasName: 'agents__id__code_executions__agent_id',
+      );
+
+  $$CodeExecutionsTableTableProcessedTableManager get codeExecutionsTableRefs {
+    final manager = $$CodeExecutionsTableTableTableManager(
+      $_db,
+      $_db.codeExecutionsTable,
+    ).filter((f) => f.agentId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _codeExecutionsTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $CodeModeStoreTableTable,
+    List<CodeModeStoreTableData>
+  >
+  _codeModeStoreTableRefsTable(_$WorkspaceDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.codeModeStoreTable,
+        aliasName: 'agents__id__code_mode_store__agent_id',
+      );
+
+  $$CodeModeStoreTableTableProcessedTableManager get codeModeStoreTableRefs {
+    final manager = $$CodeModeStoreTableTableTableManager(
+      $_db,
+      $_db.codeModeStoreTable,
+    ).filter((f) => f.agentId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _codeModeStoreTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$AgentWakesTableTable, List<AgentWakesTableData>>
+  _agentWakesTableRefsTable(_$WorkspaceDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.agentWakesTable,
+        aliasName: 'agents__id__agent_wakes__agent_id',
+      );
+
+  $$AgentWakesTableTableProcessedTableManager get agentWakesTableRefs {
+    final manager = $$AgentWakesTableTableTableManager(
+      $_db,
+      $_db.agentWakesTable,
+    ).filter((f) => f.agentId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _agentWakesTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$WakeRulesTableTable, List<WakeRulesTableData>>
+  _wakeRulesTableRefsTable(_$WorkspaceDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.wakeRulesTable,
+        aliasName: 'agents__id__wake_rules__agent_id',
+      );
+
+  $$WakeRulesTableTableProcessedTableManager get wakeRulesTableRefs {
+    final manager = $$WakeRulesTableTableTableManager(
+      $_db,
+      $_db.wakeRulesTable,
+    ).filter((f) => f.agentId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_wakeRulesTableRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$PeerAsksTableTable, List<PeerAsksTableData>>
+  _peerAsksMadeTable(_$WorkspaceDatabase db) => MultiTypedResultKey.fromTable(
+    db.peerAsksTable,
+    aliasName: 'agents__id__peer_asks__asker_agent_id',
+  );
+
+  $$PeerAsksTableTableProcessedTableManager get peerAsksMade {
+    final manager = $$PeerAsksTableTableTableManager(
+      $_db,
+      $_db.peerAsksTable,
+    ).filter((f) => f.askerAgentId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_peerAsksMadeTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$PeerAsksTableTable, List<PeerAsksTableData>>
+  _peerAsksReceivedTable(_$WorkspaceDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.peerAsksTable,
+        aliasName: 'agents__id__peer_asks__recipient_agent_id',
+      );
+
+  $$PeerAsksTableTableProcessedTableManager get peerAsksReceived {
+    final manager = $$PeerAsksTableTableTableManager($_db, $_db.peerAsksTable)
+        .filter(
+          (f) => f.recipientAgentId.id.sqlEquals($_itemColumn<String>('id')!),
+        );
+
+    final cache = $_typedResult.readTableOrNull(_peerAsksReceivedTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $ImprovementProposalsTableTable,
+    List<ImprovementProposalsTableData>
+  >
+  _improvementProposalsTableRefsTable(_$WorkspaceDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.improvementProposalsTable,
+        aliasName: 'agents__id__improvement_proposals__agent_id',
+      );
+
+  $$ImprovementProposalsTableTableProcessedTableManager
+  get improvementProposalsTableRefs {
+    final manager = $$ImprovementProposalsTableTableTableManager(
+      $_db,
+      $_db.improvementProposalsTable,
+    ).filter((f) => f.agentId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _improvementProposalsTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$AgentsTableTableFilterComposer
@@ -90309,6 +102144,183 @@ class $$AgentsTableTableFilterComposer
                 $removeJoinBuilderFromRootComposer,
           ),
     );
+    return f(composer);
+  }
+
+  Expression<bool> codeExecutionsTableRefs(
+    Expression<bool> Function($$CodeExecutionsTableTableFilterComposer f) f,
+  ) {
+    final $$CodeExecutionsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.codeExecutionsTable,
+      getReferencedColumn: (t) => t.agentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CodeExecutionsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.codeExecutionsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> codeModeStoreTableRefs(
+    Expression<bool> Function($$CodeModeStoreTableTableFilterComposer f) f,
+  ) {
+    final $$CodeModeStoreTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.codeModeStoreTable,
+      getReferencedColumn: (t) => t.agentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CodeModeStoreTableTableFilterComposer(
+            $db: $db,
+            $table: $db.codeModeStoreTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> agentWakesTableRefs(
+    Expression<bool> Function($$AgentWakesTableTableFilterComposer f) f,
+  ) {
+    final $$AgentWakesTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.agentWakesTable,
+      getReferencedColumn: (t) => t.agentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentWakesTableTableFilterComposer(
+            $db: $db,
+            $table: $db.agentWakesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> wakeRulesTableRefs(
+    Expression<bool> Function($$WakeRulesTableTableFilterComposer f) f,
+  ) {
+    final $$WakeRulesTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.wakeRulesTable,
+      getReferencedColumn: (t) => t.agentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WakeRulesTableTableFilterComposer(
+            $db: $db,
+            $table: $db.wakeRulesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> peerAsksMade(
+    Expression<bool> Function($$PeerAsksTableTableFilterComposer f) f,
+  ) {
+    final $$PeerAsksTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.peerAsksTable,
+      getReferencedColumn: (t) => t.askerAgentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PeerAsksTableTableFilterComposer(
+            $db: $db,
+            $table: $db.peerAsksTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> peerAsksReceived(
+    Expression<bool> Function($$PeerAsksTableTableFilterComposer f) f,
+  ) {
+    final $$PeerAsksTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.peerAsksTable,
+      getReferencedColumn: (t) => t.recipientAgentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PeerAsksTableTableFilterComposer(
+            $db: $db,
+            $table: $db.peerAsksTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> improvementProposalsTableRefs(
+    Expression<bool> Function($$ImprovementProposalsTableTableFilterComposer f)
+    f,
+  ) {
+    final $$ImprovementProposalsTableTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.improvementProposalsTable,
+          getReferencedColumn: (t) => t.agentId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ImprovementProposalsTableTableFilterComposer(
+                $db: $db,
+                $table: $db.improvementProposalsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 }
@@ -91171,6 +103183,185 @@ class $$AgentsTableTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> codeExecutionsTableRefs<T extends Object>(
+    Expression<T> Function($$CodeExecutionsTableTableAnnotationComposer a) f,
+  ) {
+    final $$CodeExecutionsTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.codeExecutionsTable,
+          getReferencedColumn: (t) => t.agentId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CodeExecutionsTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.codeExecutionsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> codeModeStoreTableRefs<T extends Object>(
+    Expression<T> Function($$CodeModeStoreTableTableAnnotationComposer a) f,
+  ) {
+    final $$CodeModeStoreTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.codeModeStoreTable,
+          getReferencedColumn: (t) => t.agentId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CodeModeStoreTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.codeModeStoreTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> agentWakesTableRefs<T extends Object>(
+    Expression<T> Function($$AgentWakesTableTableAnnotationComposer a) f,
+  ) {
+    final $$AgentWakesTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.agentWakesTable,
+      getReferencedColumn: (t) => t.agentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentWakesTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.agentWakesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> wakeRulesTableRefs<T extends Object>(
+    Expression<T> Function($$WakeRulesTableTableAnnotationComposer a) f,
+  ) {
+    final $$WakeRulesTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.wakeRulesTable,
+      getReferencedColumn: (t) => t.agentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WakeRulesTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.wakeRulesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> peerAsksMade<T extends Object>(
+    Expression<T> Function($$PeerAsksTableTableAnnotationComposer a) f,
+  ) {
+    final $$PeerAsksTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.peerAsksTable,
+      getReferencedColumn: (t) => t.askerAgentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PeerAsksTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.peerAsksTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> peerAsksReceived<T extends Object>(
+    Expression<T> Function($$PeerAsksTableTableAnnotationComposer a) f,
+  ) {
+    final $$PeerAsksTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.peerAsksTable,
+      getReferencedColumn: (t) => t.recipientAgentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PeerAsksTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.peerAsksTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> improvementProposalsTableRefs<T extends Object>(
+    Expression<T> Function($$ImprovementProposalsTableTableAnnotationComposer a)
+    f,
+  ) {
+    final $$ImprovementProposalsTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.improvementProposalsTable,
+          getReferencedColumn: (t) => t.agentId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ImprovementProposalsTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.improvementProposalsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$AgentsTableTableTableManager
@@ -91210,6 +103401,13 @@ class $$AgentsTableTableTableManager
             bool agentConfigVersionsTableRefs,
             bool rigSessionsTableRefs,
             bool spaceCheckersTableRefs,
+            bool codeExecutionsTableRefs,
+            bool codeModeStoreTableRefs,
+            bool agentWakesTableRefs,
+            bool wakeRulesTableRefs,
+            bool peerAsksMade,
+            bool peerAsksReceived,
+            bool improvementProposalsTableRefs,
           })
         > {
   $$AgentsTableTableTableManager(
@@ -91362,6 +103560,13 @@ class $$AgentsTableTableTableManager
                 agentConfigVersionsTableRefs = false,
                 rigSessionsTableRefs = false,
                 spaceCheckersTableRefs = false,
+                codeExecutionsTableRefs = false,
+                codeModeStoreTableRefs = false,
+                agentWakesTableRefs = false,
+                wakeRulesTableRefs = false,
+                peerAsksMade = false,
+                peerAsksReceived = false,
+                improvementProposalsTableRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -91388,6 +103593,14 @@ class $$AgentsTableTableTableManager
                       db.agentConfigVersionsTable,
                     if (rigSessionsTableRefs) db.rigSessionsTable,
                     if (spaceCheckersTableRefs) db.spaceCheckersTable,
+                    if (codeExecutionsTableRefs) db.codeExecutionsTable,
+                    if (codeModeStoreTableRefs) db.codeModeStoreTable,
+                    if (agentWakesTableRefs) db.agentWakesTable,
+                    if (wakeRulesTableRefs) db.wakeRulesTable,
+                    if (peerAsksMade) db.peerAsksTable,
+                    if (peerAsksReceived) db.peerAsksTable,
+                    if (improvementProposalsTableRefs)
+                      db.improvementProposalsTable,
                   ],
                   addJoins:
                       <
@@ -91875,6 +104088,153 @@ class $$AgentsTableTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (codeExecutionsTableRefs)
+                        await $_getPrefetchedData<
+                          AgentsTableData,
+                          $AgentsTableTable,
+                          CodeExecutionsTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$AgentsTableTableReferences
+                              ._codeExecutionsTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$AgentsTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).codeExecutionsTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.agentId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (codeModeStoreTableRefs)
+                        await $_getPrefetchedData<
+                          AgentsTableData,
+                          $AgentsTableTable,
+                          CodeModeStoreTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$AgentsTableTableReferences
+                              ._codeModeStoreTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$AgentsTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).codeModeStoreTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.agentId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (agentWakesTableRefs)
+                        await $_getPrefetchedData<
+                          AgentsTableData,
+                          $AgentsTableTable,
+                          AgentWakesTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$AgentsTableTableReferences
+                              ._agentWakesTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$AgentsTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).agentWakesTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.agentId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (wakeRulesTableRefs)
+                        await $_getPrefetchedData<
+                          AgentsTableData,
+                          $AgentsTableTable,
+                          WakeRulesTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$AgentsTableTableReferences
+                              ._wakeRulesTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$AgentsTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).wakeRulesTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.agentId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (peerAsksMade)
+                        await $_getPrefetchedData<
+                          AgentsTableData,
+                          $AgentsTableTable,
+                          PeerAsksTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$AgentsTableTableReferences
+                              ._peerAsksMadeTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$AgentsTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).peerAsksMade,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.askerAgentId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (peerAsksReceived)
+                        await $_getPrefetchedData<
+                          AgentsTableData,
+                          $AgentsTableTable,
+                          PeerAsksTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$AgentsTableTableReferences
+                              ._peerAsksReceivedTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$AgentsTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).peerAsksReceived,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.recipientAgentId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (improvementProposalsTableRefs)
+                        await $_getPrefetchedData<
+                          AgentsTableData,
+                          $AgentsTableTable,
+                          ImprovementProposalsTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$AgentsTableTableReferences
+                              ._improvementProposalsTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$AgentsTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).improvementProposalsTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.agentId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -91919,6 +104279,13 @@ typedef $$AgentsTableTableProcessedTableManager =
         bool agentConfigVersionsTableRefs,
         bool rigSessionsTableRefs,
         bool spaceCheckersTableRefs,
+        bool codeExecutionsTableRefs,
+        bool codeModeStoreTableRefs,
+        bool agentWakesTableRefs,
+        bool wakeRulesTableRefs,
+        bool peerAsksMade,
+        bool peerAsksReceived,
+        bool improvementProposalsTableRefs,
       })
     >;
 typedef $$PipelineRunsTableTableCreateCompanionBuilder =
@@ -93612,6 +105979,30 @@ final class $$SpacesTableTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $CodeExecutionsTableTable,
+    List<CodeExecutionsTableData>
+  >
+  _codeExecutionsTableRefsTable(_$WorkspaceDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.codeExecutionsTable,
+        aliasName: 'spaces__id__code_executions__space_id',
+      );
+
+  $$CodeExecutionsTableTableProcessedTableManager get codeExecutionsTableRefs {
+    final manager = $$CodeExecutionsTableTableTableManager(
+      $_db,
+      $_db.codeExecutionsTable,
+    ).filter((f) => f.spaceId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _codeExecutionsTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$SpacesTableTableFilterComposer
@@ -94020,6 +106411,31 @@ class $$SpacesTableTableFilterComposer
           }) => $$SpaceCheckersTableTableFilterComposer(
             $db: $db,
             $table: $db.spaceCheckersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> codeExecutionsTableRefs(
+    Expression<bool> Function($$CodeExecutionsTableTableFilterComposer f) f,
+  ) {
+    final $$CodeExecutionsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.codeExecutionsTable,
+      getReferencedColumn: (t) => t.spaceId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CodeExecutionsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.codeExecutionsTable,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -94528,6 +106944,32 @@ class $$SpacesTableTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> codeExecutionsTableRefs<T extends Object>(
+    Expression<T> Function($$CodeExecutionsTableTableAnnotationComposer a) f,
+  ) {
+    final $$CodeExecutionsTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.codeExecutionsTable,
+          getReferencedColumn: (t) => t.spaceId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CodeExecutionsTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.codeExecutionsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$SpacesTableTableTableManager
@@ -94558,6 +107000,7 @@ class $$SpacesTableTableTableManager
             bool environmentRunsTableRefs,
             bool spaceTakeoversTableRefs,
             bool spaceCheckersTableRefs,
+            bool codeExecutionsTableRefs,
           })
         > {
   $$SpacesTableTableTableManager(
@@ -94657,6 +107100,7 @@ class $$SpacesTableTableTableManager
                 environmentRunsTableRefs = false,
                 spaceTakeoversTableRefs = false,
                 spaceCheckersTableRefs = false,
+                codeExecutionsTableRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -94674,6 +107118,7 @@ class $$SpacesTableTableTableManager
                     if (environmentRunsTableRefs) db.environmentRunsTable,
                     if (spaceTakeoversTableRefs) db.spaceTakeoversTable,
                     if (spaceCheckersTableRefs) db.spaceCheckersTable,
+                    if (codeExecutionsTableRefs) db.codeExecutionsTable,
                   ],
                   addJoins:
                       <
@@ -94984,6 +107429,27 @@ class $$SpacesTableTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (codeExecutionsTableRefs)
+                        await $_getPrefetchedData<
+                          SpacesTableData,
+                          $SpacesTableTable,
+                          CodeExecutionsTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$SpacesTableTableReferences
+                              ._codeExecutionsTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$SpacesTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).codeExecutionsTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.spaceId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -95019,6 +107485,7 @@ typedef $$SpacesTableTableProcessedTableManager =
         bool environmentRunsTableRefs,
         bool spaceTakeoversTableRefs,
         bool spaceCheckersTableRefs,
+        bool codeExecutionsTableRefs,
       })
     >;
 typedef $$ConversationsTableTableCreateCompanionBuilder =
@@ -95213,6 +107680,139 @@ final class $$ConversationsTableTableReferences
 
     final cache = $_typedResult.readTableOrNull(
       _runCallUsagesTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $CodeExecutionsTableTable,
+    List<CodeExecutionsTableData>
+  >
+  _codeExecutionsTableRefsTable(_$WorkspaceDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.codeExecutionsTable,
+        aliasName: 'conversations__id__code_executions__conversation_id',
+      );
+
+  $$CodeExecutionsTableTableProcessedTableManager get codeExecutionsTableRefs {
+    final manager = $$CodeExecutionsTableTableTableManager(
+      $_db,
+      $_db.codeExecutionsTable,
+    ).filter((f) => f.conversationId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _codeExecutionsTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $CodeModeStoreTableTable,
+    List<CodeModeStoreTableData>
+  >
+  _codeModeStoreTableRefsTable(_$WorkspaceDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.codeModeStoreTable,
+        aliasName: 'conversations__id__code_mode_store__conversation_id',
+      );
+
+  $$CodeModeStoreTableTableProcessedTableManager get codeModeStoreTableRefs {
+    final manager = $$CodeModeStoreTableTableTableManager(
+      $_db,
+      $_db.codeModeStoreTable,
+    ).filter((f) => f.conversationId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _codeModeStoreTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$AgentWakesTableTable, List<AgentWakesTableData>>
+  _agentWakesTableRefsTable(_$WorkspaceDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.agentWakesTable,
+        aliasName: 'conversations__id__agent_wakes__conversation_id',
+      );
+
+  $$AgentWakesTableTableProcessedTableManager get agentWakesTableRefs {
+    final manager = $$AgentWakesTableTableTableManager(
+      $_db,
+      $_db.agentWakesTable,
+    ).filter((f) => f.conversationId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _agentWakesTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$WakeRulesTableTable, List<WakeRulesTableData>>
+  _wakeRulesTableRefsTable(_$WorkspaceDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.wakeRulesTable,
+        aliasName: 'conversations__id__wake_rules__conversation_id',
+      );
+
+  $$WakeRulesTableTableProcessedTableManager get wakeRulesTableRefs {
+    final manager = $$WakeRulesTableTableTableManager(
+      $_db,
+      $_db.wakeRulesTable,
+    ).filter((f) => f.conversationId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_wakeRulesTableRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$PeerAsksTableTable, List<PeerAsksTableData>>
+  _peerAsksTableRefsTable(_$WorkspaceDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.peerAsksTable,
+        aliasName: 'conversations__id__peer_asks__asker_conversation_id',
+      );
+
+  $$PeerAsksTableTableProcessedTableManager get peerAsksTableRefs {
+    final manager = $$PeerAsksTableTableTableManager($_db, $_db.peerAsksTable)
+        .filter(
+          (f) =>
+              f.askerConversationId.id.sqlEquals($_itemColumn<String>('id')!),
+        );
+
+    final cache = $_typedResult.readTableOrNull(_peerAsksTableRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $ImprovementProposalsTableTable,
+    List<ImprovementProposalsTableData>
+  >
+  _improvementProposalsTableRefsTable(_$WorkspaceDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.improvementProposalsTable,
+        aliasName: 'conversations__id__improvement_proposals__conversation_id',
+      );
+
+  $$ImprovementProposalsTableTableProcessedTableManager
+  get improvementProposalsTableRefs {
+    final manager = $$ImprovementProposalsTableTableTableManager(
+      $_db,
+      $_db.improvementProposalsTable,
+    ).filter((f) => f.conversationId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _improvementProposalsTableRefsTable($_db),
     );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
@@ -95445,6 +108045,158 @@ class $$ConversationsTableTableFilterComposer
                 $removeJoinBuilderFromRootComposer,
           ),
     );
+    return f(composer);
+  }
+
+  Expression<bool> codeExecutionsTableRefs(
+    Expression<bool> Function($$CodeExecutionsTableTableFilterComposer f) f,
+  ) {
+    final $$CodeExecutionsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.codeExecutionsTable,
+      getReferencedColumn: (t) => t.conversationId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CodeExecutionsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.codeExecutionsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> codeModeStoreTableRefs(
+    Expression<bool> Function($$CodeModeStoreTableTableFilterComposer f) f,
+  ) {
+    final $$CodeModeStoreTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.codeModeStoreTable,
+      getReferencedColumn: (t) => t.conversationId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CodeModeStoreTableTableFilterComposer(
+            $db: $db,
+            $table: $db.codeModeStoreTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> agentWakesTableRefs(
+    Expression<bool> Function($$AgentWakesTableTableFilterComposer f) f,
+  ) {
+    final $$AgentWakesTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.agentWakesTable,
+      getReferencedColumn: (t) => t.conversationId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentWakesTableTableFilterComposer(
+            $db: $db,
+            $table: $db.agentWakesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> wakeRulesTableRefs(
+    Expression<bool> Function($$WakeRulesTableTableFilterComposer f) f,
+  ) {
+    final $$WakeRulesTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.wakeRulesTable,
+      getReferencedColumn: (t) => t.conversationId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WakeRulesTableTableFilterComposer(
+            $db: $db,
+            $table: $db.wakeRulesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> peerAsksTableRefs(
+    Expression<bool> Function($$PeerAsksTableTableFilterComposer f) f,
+  ) {
+    final $$PeerAsksTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.peerAsksTable,
+      getReferencedColumn: (t) => t.askerConversationId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PeerAsksTableTableFilterComposer(
+            $db: $db,
+            $table: $db.peerAsksTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> improvementProposalsTableRefs(
+    Expression<bool> Function($$ImprovementProposalsTableTableFilterComposer f)
+    f,
+  ) {
+    final $$ImprovementProposalsTableTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.improvementProposalsTable,
+          getReferencedColumn: (t) => t.conversationId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ImprovementProposalsTableTableFilterComposer(
+                $db: $db,
+                $table: $db.improvementProposalsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 }
@@ -95748,6 +108500,160 @@ class $$ConversationsTableTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> codeExecutionsTableRefs<T extends Object>(
+    Expression<T> Function($$CodeExecutionsTableTableAnnotationComposer a) f,
+  ) {
+    final $$CodeExecutionsTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.codeExecutionsTable,
+          getReferencedColumn: (t) => t.conversationId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CodeExecutionsTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.codeExecutionsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> codeModeStoreTableRefs<T extends Object>(
+    Expression<T> Function($$CodeModeStoreTableTableAnnotationComposer a) f,
+  ) {
+    final $$CodeModeStoreTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.codeModeStoreTable,
+          getReferencedColumn: (t) => t.conversationId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CodeModeStoreTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.codeModeStoreTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> agentWakesTableRefs<T extends Object>(
+    Expression<T> Function($$AgentWakesTableTableAnnotationComposer a) f,
+  ) {
+    final $$AgentWakesTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.agentWakesTable,
+      getReferencedColumn: (t) => t.conversationId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentWakesTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.agentWakesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> wakeRulesTableRefs<T extends Object>(
+    Expression<T> Function($$WakeRulesTableTableAnnotationComposer a) f,
+  ) {
+    final $$WakeRulesTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.wakeRulesTable,
+      getReferencedColumn: (t) => t.conversationId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WakeRulesTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.wakeRulesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> peerAsksTableRefs<T extends Object>(
+    Expression<T> Function($$PeerAsksTableTableAnnotationComposer a) f,
+  ) {
+    final $$PeerAsksTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.peerAsksTable,
+      getReferencedColumn: (t) => t.askerConversationId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PeerAsksTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.peerAsksTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> improvementProposalsTableRefs<T extends Object>(
+    Expression<T> Function($$ImprovementProposalsTableTableAnnotationComposer a)
+    f,
+  ) {
+    final $$ImprovementProposalsTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.improvementProposalsTable,
+          getReferencedColumn: (t) => t.conversationId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ImprovementProposalsTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.improvementProposalsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$ConversationsTableTableTableManager
@@ -95771,6 +108677,12 @@ class $$ConversationsTableTableTableManager
             bool todosTableRefs,
             bool conversationGoalsTableRefs,
             bool runCallUsagesTableRefs,
+            bool codeExecutionsTableRefs,
+            bool codeModeStoreTableRefs,
+            bool agentWakesTableRefs,
+            bool wakeRulesTableRefs,
+            bool peerAsksTableRefs,
+            bool improvementProposalsTableRefs,
           })
         > {
   $$ConversationsTableTableTableManager(
@@ -95860,6 +108772,12 @@ class $$ConversationsTableTableTableManager
                 todosTableRefs = false,
                 conversationGoalsTableRefs = false,
                 runCallUsagesTableRefs = false,
+                codeExecutionsTableRefs = false,
+                codeModeStoreTableRefs = false,
+                agentWakesTableRefs = false,
+                wakeRulesTableRefs = false,
+                peerAsksTableRefs = false,
+                improvementProposalsTableRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -95870,6 +108788,13 @@ class $$ConversationsTableTableTableManager
                     if (todosTableRefs) db.todosTable,
                     if (conversationGoalsTableRefs) db.conversationGoalsTable,
                     if (runCallUsagesTableRefs) db.runCallUsagesTable,
+                    if (codeExecutionsTableRefs) db.codeExecutionsTable,
+                    if (codeModeStoreTableRefs) db.codeModeStoreTable,
+                    if (agentWakesTableRefs) db.agentWakesTable,
+                    if (wakeRulesTableRefs) db.wakeRulesTable,
+                    if (peerAsksTableRefs) db.peerAsksTable,
+                    if (improvementProposalsTableRefs)
+                      db.improvementProposalsTable,
                   ],
                   addJoins:
                       <
@@ -96033,6 +108958,132 @@ class $$ConversationsTableTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (codeExecutionsTableRefs)
+                        await $_getPrefetchedData<
+                          ConversationsTableData,
+                          $ConversationsTableTable,
+                          CodeExecutionsTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ConversationsTableTableReferences
+                              ._codeExecutionsTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ConversationsTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).codeExecutionsTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.conversationId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (codeModeStoreTableRefs)
+                        await $_getPrefetchedData<
+                          ConversationsTableData,
+                          $ConversationsTableTable,
+                          CodeModeStoreTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ConversationsTableTableReferences
+                              ._codeModeStoreTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ConversationsTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).codeModeStoreTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.conversationId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (agentWakesTableRefs)
+                        await $_getPrefetchedData<
+                          ConversationsTableData,
+                          $ConversationsTableTable,
+                          AgentWakesTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ConversationsTableTableReferences
+                              ._agentWakesTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ConversationsTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).agentWakesTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.conversationId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (wakeRulesTableRefs)
+                        await $_getPrefetchedData<
+                          ConversationsTableData,
+                          $ConversationsTableTable,
+                          WakeRulesTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ConversationsTableTableReferences
+                              ._wakeRulesTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ConversationsTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).wakeRulesTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.conversationId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (peerAsksTableRefs)
+                        await $_getPrefetchedData<
+                          ConversationsTableData,
+                          $ConversationsTableTable,
+                          PeerAsksTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ConversationsTableTableReferences
+                              ._peerAsksTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ConversationsTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).peerAsksTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.askerConversationId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (improvementProposalsTableRefs)
+                        await $_getPrefetchedData<
+                          ConversationsTableData,
+                          $ConversationsTableTable,
+                          ImprovementProposalsTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ConversationsTableTableReferences
+                              ._improvementProposalsTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ConversationsTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).improvementProposalsTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.conversationId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -96061,6 +109112,12 @@ typedef $$ConversationsTableTableProcessedTableManager =
         bool todosTableRefs,
         bool conversationGoalsTableRefs,
         bool runCallUsagesTableRefs,
+        bool codeExecutionsTableRefs,
+        bool codeModeStoreTableRefs,
+        bool agentWakesTableRefs,
+        bool wakeRulesTableRefs,
+        bool peerAsksTableRefs,
+        bool improvementProposalsTableRefs,
       })
     >;
 typedef $$ProjectsTableTableCreateCompanionBuilder =
@@ -97425,6 +110482,7 @@ typedef $$TicketsTableTableCreateCompanionBuilder =
       Value<String?> delegatedByAgentId,
       Value<int> delegationDepth,
       Value<String?> delegationRootTicketId,
+      Value<String?> delegatedFromConversationId,
       Value<String?> spaceId,
       Value<String?> errorMessage,
       Value<String> linkedPrIds,
@@ -97464,6 +110522,7 @@ typedef $$TicketsTableTableUpdateCompanionBuilder =
       Value<String?> delegatedByAgentId,
       Value<int> delegationDepth,
       Value<String?> delegationRootTicketId,
+      Value<String?> delegatedFromConversationId,
       Value<String?> spaceId,
       Value<String?> errorMessage,
       Value<String> linkedPrIds,
@@ -97851,6 +110910,11 @@ class $$TicketsTableTableFilterComposer
 
   ColumnFilters<int> get delegationDepth => $composableBuilder(
     column: $table.delegationDepth,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get delegatedFromConversationId => $composableBuilder(
+    column: $table.delegatedFromConversationId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -98322,6 +111386,11 @@ class $$TicketsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get delegatedFromConversationId => $composableBuilder(
+    column: $table.delegatedFromConversationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get errorMessage => $composableBuilder(
     column: $table.errorMessage,
     builder: (column) => ColumnOrderings(column),
@@ -98596,6 +111665,11 @@ class $$TicketsTableTableAnnotationComposer
 
   GeneratedColumn<int> get delegationDepth => $composableBuilder(
     column: $table.delegationDepth,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get delegatedFromConversationId => $composableBuilder(
+    column: $table.delegatedFromConversationId,
     builder: (column) => column,
   );
 
@@ -99033,6 +112107,8 @@ class $$TicketsTableTableTableManager
                 Value<String?> delegatedByAgentId = const Value.absent(),
                 Value<int> delegationDepth = const Value.absent(),
                 Value<String?> delegationRootTicketId = const Value.absent(),
+                Value<String?> delegatedFromConversationId =
+                    const Value.absent(),
                 Value<String?> spaceId = const Value.absent(),
                 Value<String?> errorMessage = const Value.absent(),
                 Value<String> linkedPrIds = const Value.absent(),
@@ -99070,6 +112146,7 @@ class $$TicketsTableTableTableManager
                 delegatedByAgentId: delegatedByAgentId,
                 delegationDepth: delegationDepth,
                 delegationRootTicketId: delegationRootTicketId,
+                delegatedFromConversationId: delegatedFromConversationId,
                 spaceId: spaceId,
                 errorMessage: errorMessage,
                 linkedPrIds: linkedPrIds,
@@ -99109,6 +112186,8 @@ class $$TicketsTableTableTableManager
                 Value<String?> delegatedByAgentId = const Value.absent(),
                 Value<int> delegationDepth = const Value.absent(),
                 Value<String?> delegationRootTicketId = const Value.absent(),
+                Value<String?> delegatedFromConversationId =
+                    const Value.absent(),
                 Value<String?> spaceId = const Value.absent(),
                 Value<String?> errorMessage = const Value.absent(),
                 Value<String> linkedPrIds = const Value.absent(),
@@ -99146,6 +112225,7 @@ class $$TicketsTableTableTableManager
                 delegatedByAgentId: delegatedByAgentId,
                 delegationDepth: delegationDepth,
                 delegationRootTicketId: delegationRootTicketId,
+                delegatedFromConversationId: delegatedFromConversationId,
                 spaceId: spaceId,
                 errorMessage: errorMessage,
                 linkedPrIds: linkedPrIds,
@@ -99538,6 +112618,11 @@ typedef $$AgentRunLogsTableTableCreateCompanionBuilder =
       Value<int> retryAttempt,
       Value<String?> parentRunId,
       Value<String?> spawnToolCallId,
+      Value<String?> endReason,
+      Value<String> wakeIds,
+      Value<String?> requestedByUserId,
+      Value<String?> wakeReason,
+      Value<String?> startedByRunId,
       Value<int> rowid,
     });
 typedef $$AgentRunLogsTableTableUpdateCompanionBuilder =
@@ -99588,6 +112673,11 @@ typedef $$AgentRunLogsTableTableUpdateCompanionBuilder =
       Value<int> retryAttempt,
       Value<String?> parentRunId,
       Value<String?> spawnToolCallId,
+      Value<String?> endReason,
+      Value<String> wakeIds,
+      Value<String?> requestedByUserId,
+      Value<String?> wakeReason,
+      Value<String?> startedByRunId,
       Value<int> rowid,
     });
 
@@ -99920,6 +113010,30 @@ final class $$AgentRunLogsTableTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $CodeExecutionsTableTable,
+    List<CodeExecutionsTableData>
+  >
+  _codeExecutionsTableRefsTable(_$WorkspaceDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.codeExecutionsTable,
+        aliasName: 'agent_run_logs__id__code_executions__run_id',
+      );
+
+  $$CodeExecutionsTableTableProcessedTableManager get codeExecutionsTableRefs {
+    final manager = $$CodeExecutionsTableTableTableManager(
+      $_db,
+      $_db.codeExecutionsTable,
+    ).filter((f) => f.runId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _codeExecutionsTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$AgentRunLogsTableTableFilterComposer
@@ -100123,6 +113237,31 @@ class $$AgentRunLogsTableTableFilterComposer
 
   ColumnFilters<String> get spawnToolCallId => $composableBuilder(
     column: $table.spawnToolCallId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get endReason => $composableBuilder(
+    column: $table.endReason,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get wakeIds => $composableBuilder(
+    column: $table.wakeIds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get requestedByUserId => $composableBuilder(
+    column: $table.requestedByUserId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get wakeReason => $composableBuilder(
+    column: $table.wakeReason,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get startedByRunId => $composableBuilder(
+    column: $table.startedByRunId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -100490,6 +113629,31 @@ class $$AgentRunLogsTableTableFilterComposer
         );
     return f(composer);
   }
+
+  Expression<bool> codeExecutionsTableRefs(
+    Expression<bool> Function($$CodeExecutionsTableTableFilterComposer f) f,
+  ) {
+    final $$CodeExecutionsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.codeExecutionsTable,
+      getReferencedColumn: (t) => t.runId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CodeExecutionsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.codeExecutionsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$AgentRunLogsTableTableOrderingComposer
@@ -100693,6 +113857,31 @@ class $$AgentRunLogsTableTableOrderingComposer
 
   ColumnOrderings<String> get spawnToolCallId => $composableBuilder(
     column: $table.spawnToolCallId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get endReason => $composableBuilder(
+    column: $table.endReason,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get wakeIds => $composableBuilder(
+    column: $table.wakeIds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get requestedByUserId => $composableBuilder(
+    column: $table.requestedByUserId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get wakeReason => $composableBuilder(
+    column: $table.wakeReason,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get startedByRunId => $composableBuilder(
+    column: $table.startedByRunId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -101035,6 +114224,27 @@ class $$AgentRunLogsTableTableAnnotationComposer
 
   GeneratedColumn<String> get spawnToolCallId => $composableBuilder(
     column: $table.spawnToolCallId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get endReason =>
+      $composableBuilder(column: $table.endReason, builder: (column) => column);
+
+  GeneratedColumn<String> get wakeIds =>
+      $composableBuilder(column: $table.wakeIds, builder: (column) => column);
+
+  GeneratedColumn<String> get requestedByUserId => $composableBuilder(
+    column: $table.requestedByUserId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get wakeReason => $composableBuilder(
+    column: $table.wakeReason,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get startedByRunId => $composableBuilder(
+    column: $table.startedByRunId,
     builder: (column) => column,
   );
 
@@ -101408,6 +114618,32 @@ class $$AgentRunLogsTableTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> codeExecutionsTableRefs<T extends Object>(
+    Expression<T> Function($$CodeExecutionsTableTableAnnotationComposer a) f,
+  ) {
+    final $$CodeExecutionsTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.codeExecutionsTable,
+          getReferencedColumn: (t) => t.runId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CodeExecutionsTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.codeExecutionsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$AgentRunLogsTableTableTableManager
@@ -101439,6 +114675,7 @@ class $$AgentRunLogsTableTableTableManager
             bool transcriptsTableRefs,
             bool runCallUsagesTableRefs,
             bool pendingPrRepliesTableRefs,
+            bool codeExecutionsTableRefs,
           })
         > {
   $$AgentRunLogsTableTableTableManager(
@@ -101505,6 +114742,11 @@ class $$AgentRunLogsTableTableTableManager
                 Value<int> retryAttempt = const Value.absent(),
                 Value<String?> parentRunId = const Value.absent(),
                 Value<String?> spawnToolCallId = const Value.absent(),
+                Value<String?> endReason = const Value.absent(),
+                Value<String> wakeIds = const Value.absent(),
+                Value<String?> requestedByUserId = const Value.absent(),
+                Value<String?> wakeReason = const Value.absent(),
+                Value<String?> startedByRunId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AgentRunLogsTableCompanion(
                 id: id,
@@ -101553,6 +114795,11 @@ class $$AgentRunLogsTableTableTableManager
                 retryAttempt: retryAttempt,
                 parentRunId: parentRunId,
                 spawnToolCallId: spawnToolCallId,
+                endReason: endReason,
+                wakeIds: wakeIds,
+                requestedByUserId: requestedByUserId,
+                wakeReason: wakeReason,
+                startedByRunId: startedByRunId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -101603,6 +114850,11 @@ class $$AgentRunLogsTableTableTableManager
                 Value<int> retryAttempt = const Value.absent(),
                 Value<String?> parentRunId = const Value.absent(),
                 Value<String?> spawnToolCallId = const Value.absent(),
+                Value<String?> endReason = const Value.absent(),
+                Value<String> wakeIds = const Value.absent(),
+                Value<String?> requestedByUserId = const Value.absent(),
+                Value<String?> wakeReason = const Value.absent(),
+                Value<String?> startedByRunId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AgentRunLogsTableCompanion.insert(
                 id: id,
@@ -101651,6 +114903,11 @@ class $$AgentRunLogsTableTableTableManager
                 retryAttempt: retryAttempt,
                 parentRunId: parentRunId,
                 spawnToolCallId: spawnToolCallId,
+                endReason: endReason,
+                wakeIds: wakeIds,
+                requestedByUserId: requestedByUserId,
+                wakeReason: wakeReason,
+                startedByRunId: startedByRunId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -101680,6 +114937,7 @@ class $$AgentRunLogsTableTableTableManager
                 transcriptsTableRefs = false,
                 runCallUsagesTableRefs = false,
                 pendingPrRepliesTableRefs = false,
+                codeExecutionsTableRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -101692,6 +114950,7 @@ class $$AgentRunLogsTableTableTableManager
                     if (transcriptsTableRefs) db.transcriptsTable,
                     if (runCallUsagesTableRefs) db.runCallUsagesTable,
                     if (pendingPrRepliesTableRefs) db.pendingPrRepliesTable,
+                    if (codeExecutionsTableRefs) db.codeExecutionsTable,
                   ],
                   addJoins:
                       <
@@ -101987,6 +115246,27 @@ class $$AgentRunLogsTableTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (codeExecutionsTableRefs)
+                        await $_getPrefetchedData<
+                          AgentRunLogsTableData,
+                          $AgentRunLogsTableTable,
+                          CodeExecutionsTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$AgentRunLogsTableTableReferences
+                              ._codeExecutionsTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$AgentRunLogsTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).codeExecutionsTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.runId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -102023,6 +115303,7 @@ typedef $$AgentRunLogsTableTableProcessedTableManager =
         bool transcriptsTableRefs,
         bool runCallUsagesTableRefs,
         bool pendingPrRepliesTableRefs,
+        bool codeExecutionsTableRefs,
       })
     >;
 typedef $$AgentRunPayloadsTableTableCreateCompanionBuilder =
@@ -102385,7 +115666,6 @@ typedef $$AgentGoalRunsTableTableCreateCompanionBuilder =
       required String conversationId,
       required String agentId,
       required String userText,
-      required String kind,
       Value<String> status,
       Value<DateTime?> deadlineAt,
       Value<int> costCapMicros,
@@ -102396,6 +115676,23 @@ typedef $$AgentGoalRunsTableTableCreateCompanionBuilder =
       Value<int> consecutiveFailures,
       Value<String?> requestedByUserId,
       Value<String?> summary,
+      Value<String?> contract,
+      Value<String?> hold,
+      Value<DateTime?> holdUntil,
+      Value<String?> holdDetail,
+      Value<int> noProgressStreak,
+      Value<int> verificationRounds,
+      Value<String?> lastFingerprint,
+      Value<String?> lastActivityDigest,
+      Value<String?> startRef,
+      Value<int> parkCount,
+      Value<bool> fresh,
+      Value<String> unattended,
+      Value<String?> checkerAgentId,
+      Value<String?> verification,
+      Value<String?> pipelineRunId,
+      Value<String?> pipelineStepId,
+      Value<String?> progressMarks,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
@@ -102408,7 +115705,6 @@ typedef $$AgentGoalRunsTableTableUpdateCompanionBuilder =
       Value<String> conversationId,
       Value<String> agentId,
       Value<String> userText,
-      Value<String> kind,
       Value<String> status,
       Value<DateTime?> deadlineAt,
       Value<int> costCapMicros,
@@ -102419,6 +115715,23 @@ typedef $$AgentGoalRunsTableTableUpdateCompanionBuilder =
       Value<int> consecutiveFailures,
       Value<String?> requestedByUserId,
       Value<String?> summary,
+      Value<String?> contract,
+      Value<String?> hold,
+      Value<DateTime?> holdUntil,
+      Value<String?> holdDetail,
+      Value<int> noProgressStreak,
+      Value<int> verificationRounds,
+      Value<String?> lastFingerprint,
+      Value<String?> lastActivityDigest,
+      Value<String?> startRef,
+      Value<int> parkCount,
+      Value<bool> fresh,
+      Value<String> unattended,
+      Value<String?> checkerAgentId,
+      Value<String?> verification,
+      Value<String?> pipelineRunId,
+      Value<String?> pipelineStepId,
+      Value<String?> progressMarks,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
@@ -102508,6 +115821,50 @@ final class $$AgentGoalRunsTableTableReferences
       manager.$state.copyWith(prefetchedData: [item]),
     );
   }
+
+  static MultiTypedResultKey<$WakeRulesTableTable, List<WakeRulesTableData>>
+  _wakeRulesTableRefsTable(_$WorkspaceDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.wakeRulesTable,
+        aliasName: 'agent_goal_runs__id__wake_rules__goal_id',
+      );
+
+  $$WakeRulesTableTableProcessedTableManager get wakeRulesTableRefs {
+    final manager = $$WakeRulesTableTableTableManager(
+      $_db,
+      $_db.wakeRulesTable,
+    ).filter((f) => f.goalId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_wakeRulesTableRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $ImprovementProposalsTableTable,
+    List<ImprovementProposalsTableData>
+  >
+  _improvementProposalsTableRefsTable(_$WorkspaceDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.improvementProposalsTable,
+        aliasName: 'agent_goal_runs__id__improvement_proposals__goal_id',
+      );
+
+  $$ImprovementProposalsTableTableProcessedTableManager
+  get improvementProposalsTableRefs {
+    final manager = $$ImprovementProposalsTableTableTableManager(
+      $_db,
+      $_db.improvementProposalsTable,
+    ).filter((f) => f.goalId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _improvementProposalsTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$AgentGoalRunsTableTableFilterComposer
@@ -102531,11 +115888,6 @@ class $$AgentGoalRunsTableTableFilterComposer
 
   ColumnFilters<String> get userText => $composableBuilder(
     column: $table.userText,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get kind => $composableBuilder(
-    column: $table.kind,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -102581,6 +115933,91 @@ class $$AgentGoalRunsTableTableFilterComposer
 
   ColumnFilters<String> get summary => $composableBuilder(
     column: $table.summary,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get contract => $composableBuilder(
+    column: $table.contract,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get hold => $composableBuilder(
+    column: $table.hold,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get holdUntil => $composableBuilder(
+    column: $table.holdUntil,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get holdDetail => $composableBuilder(
+    column: $table.holdDetail,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get noProgressStreak => $composableBuilder(
+    column: $table.noProgressStreak,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get verificationRounds => $composableBuilder(
+    column: $table.verificationRounds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastFingerprint => $composableBuilder(
+    column: $table.lastFingerprint,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastActivityDigest => $composableBuilder(
+    column: $table.lastActivityDigest,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get startRef => $composableBuilder(
+    column: $table.startRef,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get parkCount => $composableBuilder(
+    column: $table.parkCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get fresh => $composableBuilder(
+    column: $table.fresh,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get unattended => $composableBuilder(
+    column: $table.unattended,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get checkerAgentId => $composableBuilder(
+    column: $table.checkerAgentId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get verification => $composableBuilder(
+    column: $table.verification,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get pipelineRunId => $composableBuilder(
+    column: $table.pipelineRunId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get pipelineStepId => $composableBuilder(
+    column: $table.pipelineStepId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get progressMarks => $composableBuilder(
+    column: $table.progressMarks,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -102685,6 +116122,58 @@ class $$AgentGoalRunsTableTableFilterComposer
     );
     return composer;
   }
+
+  Expression<bool> wakeRulesTableRefs(
+    Expression<bool> Function($$WakeRulesTableTableFilterComposer f) f,
+  ) {
+    final $$WakeRulesTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.wakeRulesTable,
+      getReferencedColumn: (t) => t.goalId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WakeRulesTableTableFilterComposer(
+            $db: $db,
+            $table: $db.wakeRulesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> improvementProposalsTableRefs(
+    Expression<bool> Function($$ImprovementProposalsTableTableFilterComposer f)
+    f,
+  ) {
+    final $$ImprovementProposalsTableTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.improvementProposalsTable,
+          getReferencedColumn: (t) => t.goalId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ImprovementProposalsTableTableFilterComposer(
+                $db: $db,
+                $table: $db.improvementProposalsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$AgentGoalRunsTableTableOrderingComposer
@@ -102708,11 +116197,6 @@ class $$AgentGoalRunsTableTableOrderingComposer
 
   ColumnOrderings<String> get userText => $composableBuilder(
     column: $table.userText,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get kind => $composableBuilder(
-    column: $table.kind,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -102758,6 +116242,91 @@ class $$AgentGoalRunsTableTableOrderingComposer
 
   ColumnOrderings<String> get summary => $composableBuilder(
     column: $table.summary,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get contract => $composableBuilder(
+    column: $table.contract,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get hold => $composableBuilder(
+    column: $table.hold,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get holdUntil => $composableBuilder(
+    column: $table.holdUntil,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get holdDetail => $composableBuilder(
+    column: $table.holdDetail,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get noProgressStreak => $composableBuilder(
+    column: $table.noProgressStreak,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get verificationRounds => $composableBuilder(
+    column: $table.verificationRounds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastFingerprint => $composableBuilder(
+    column: $table.lastFingerprint,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastActivityDigest => $composableBuilder(
+    column: $table.lastActivityDigest,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get startRef => $composableBuilder(
+    column: $table.startRef,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get parkCount => $composableBuilder(
+    column: $table.parkCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get fresh => $composableBuilder(
+    column: $table.fresh,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get unattended => $composableBuilder(
+    column: $table.unattended,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get checkerAgentId => $composableBuilder(
+    column: $table.checkerAgentId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get verification => $composableBuilder(
+    column: $table.verification,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get pipelineRunId => $composableBuilder(
+    column: $table.pipelineRunId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get pipelineStepId => $composableBuilder(
+    column: $table.pipelineStepId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get progressMarks => $composableBuilder(
+    column: $table.progressMarks,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -102884,9 +116453,6 @@ class $$AgentGoalRunsTableTableAnnotationComposer
   GeneratedColumn<String> get userText =>
       $composableBuilder(column: $table.userText, builder: (column) => column);
 
-  GeneratedColumn<String> get kind =>
-      $composableBuilder(column: $table.kind, builder: (column) => column);
-
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
 
@@ -102923,6 +116489,79 @@ class $$AgentGoalRunsTableTableAnnotationComposer
 
   GeneratedColumn<String> get summary =>
       $composableBuilder(column: $table.summary, builder: (column) => column);
+
+  GeneratedColumn<String> get contract =>
+      $composableBuilder(column: $table.contract, builder: (column) => column);
+
+  GeneratedColumn<String> get hold =>
+      $composableBuilder(column: $table.hold, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get holdUntil =>
+      $composableBuilder(column: $table.holdUntil, builder: (column) => column);
+
+  GeneratedColumn<String> get holdDetail => $composableBuilder(
+    column: $table.holdDetail,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get noProgressStreak => $composableBuilder(
+    column: $table.noProgressStreak,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get verificationRounds => $composableBuilder(
+    column: $table.verificationRounds,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get lastFingerprint => $composableBuilder(
+    column: $table.lastFingerprint,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get lastActivityDigest => $composableBuilder(
+    column: $table.lastActivityDigest,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get startRef =>
+      $composableBuilder(column: $table.startRef, builder: (column) => column);
+
+  GeneratedColumn<int> get parkCount =>
+      $composableBuilder(column: $table.parkCount, builder: (column) => column);
+
+  GeneratedColumn<bool> get fresh =>
+      $composableBuilder(column: $table.fresh, builder: (column) => column);
+
+  GeneratedColumn<String> get unattended => $composableBuilder(
+    column: $table.unattended,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get checkerAgentId => $composableBuilder(
+    column: $table.checkerAgentId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get verification => $composableBuilder(
+    column: $table.verification,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get pipelineRunId => $composableBuilder(
+    column: $table.pipelineRunId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get pipelineStepId => $composableBuilder(
+    column: $table.pipelineStepId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get progressMarks => $composableBuilder(
+    column: $table.progressMarks,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -103023,6 +116662,58 @@ class $$AgentGoalRunsTableTableAnnotationComposer
         );
     return composer;
   }
+
+  Expression<T> wakeRulesTableRefs<T extends Object>(
+    Expression<T> Function($$WakeRulesTableTableAnnotationComposer a) f,
+  ) {
+    final $$WakeRulesTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.wakeRulesTable,
+      getReferencedColumn: (t) => t.goalId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WakeRulesTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.wakeRulesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> improvementProposalsTableRefs<T extends Object>(
+    Expression<T> Function($$ImprovementProposalsTableTableAnnotationComposer a)
+    f,
+  ) {
+    final $$ImprovementProposalsTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.improvementProposalsTable,
+          getReferencedColumn: (t) => t.goalId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ImprovementProposalsTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.improvementProposalsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$AgentGoalRunsTableTableTableManager
@@ -103043,6 +116734,8 @@ class $$AgentGoalRunsTableTableTableManager
             bool conversationId,
             bool agentId,
             bool activeRunId,
+            bool wakeRulesTableRefs,
+            bool improvementProposalsTableRefs,
           })
         > {
   $$AgentGoalRunsTableTableTableManager(
@@ -103069,7 +116762,6 @@ class $$AgentGoalRunsTableTableTableManager
                 Value<String> conversationId = const Value.absent(),
                 Value<String> agentId = const Value.absent(),
                 Value<String> userText = const Value.absent(),
-                Value<String> kind = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<DateTime?> deadlineAt = const Value.absent(),
                 Value<int> costCapMicros = const Value.absent(),
@@ -103080,6 +116772,23 @@ class $$AgentGoalRunsTableTableTableManager
                 Value<int> consecutiveFailures = const Value.absent(),
                 Value<String?> requestedByUserId = const Value.absent(),
                 Value<String?> summary = const Value.absent(),
+                Value<String?> contract = const Value.absent(),
+                Value<String?> hold = const Value.absent(),
+                Value<DateTime?> holdUntil = const Value.absent(),
+                Value<String?> holdDetail = const Value.absent(),
+                Value<int> noProgressStreak = const Value.absent(),
+                Value<int> verificationRounds = const Value.absent(),
+                Value<String?> lastFingerprint = const Value.absent(),
+                Value<String?> lastActivityDigest = const Value.absent(),
+                Value<String?> startRef = const Value.absent(),
+                Value<int> parkCount = const Value.absent(),
+                Value<bool> fresh = const Value.absent(),
+                Value<String> unattended = const Value.absent(),
+                Value<String?> checkerAgentId = const Value.absent(),
+                Value<String?> verification = const Value.absent(),
+                Value<String?> pipelineRunId = const Value.absent(),
+                Value<String?> pipelineStepId = const Value.absent(),
+                Value<String?> progressMarks = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -103090,7 +116799,6 @@ class $$AgentGoalRunsTableTableTableManager
                 conversationId: conversationId,
                 agentId: agentId,
                 userText: userText,
-                kind: kind,
                 status: status,
                 deadlineAt: deadlineAt,
                 costCapMicros: costCapMicros,
@@ -103101,6 +116809,23 @@ class $$AgentGoalRunsTableTableTableManager
                 consecutiveFailures: consecutiveFailures,
                 requestedByUserId: requestedByUserId,
                 summary: summary,
+                contract: contract,
+                hold: hold,
+                holdUntil: holdUntil,
+                holdDetail: holdDetail,
+                noProgressStreak: noProgressStreak,
+                verificationRounds: verificationRounds,
+                lastFingerprint: lastFingerprint,
+                lastActivityDigest: lastActivityDigest,
+                startRef: startRef,
+                parkCount: parkCount,
+                fresh: fresh,
+                unattended: unattended,
+                checkerAgentId: checkerAgentId,
+                verification: verification,
+                pipelineRunId: pipelineRunId,
+                pipelineStepId: pipelineStepId,
+                progressMarks: progressMarks,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -103113,7 +116838,6 @@ class $$AgentGoalRunsTableTableTableManager
                 required String conversationId,
                 required String agentId,
                 required String userText,
-                required String kind,
                 Value<String> status = const Value.absent(),
                 Value<DateTime?> deadlineAt = const Value.absent(),
                 Value<int> costCapMicros = const Value.absent(),
@@ -103124,6 +116848,23 @@ class $$AgentGoalRunsTableTableTableManager
                 Value<int> consecutiveFailures = const Value.absent(),
                 Value<String?> requestedByUserId = const Value.absent(),
                 Value<String?> summary = const Value.absent(),
+                Value<String?> contract = const Value.absent(),
+                Value<String?> hold = const Value.absent(),
+                Value<DateTime?> holdUntil = const Value.absent(),
+                Value<String?> holdDetail = const Value.absent(),
+                Value<int> noProgressStreak = const Value.absent(),
+                Value<int> verificationRounds = const Value.absent(),
+                Value<String?> lastFingerprint = const Value.absent(),
+                Value<String?> lastActivityDigest = const Value.absent(),
+                Value<String?> startRef = const Value.absent(),
+                Value<int> parkCount = const Value.absent(),
+                Value<bool> fresh = const Value.absent(),
+                Value<String> unattended = const Value.absent(),
+                Value<String?> checkerAgentId = const Value.absent(),
+                Value<String?> verification = const Value.absent(),
+                Value<String?> pipelineRunId = const Value.absent(),
+                Value<String?> pipelineStepId = const Value.absent(),
+                Value<String?> progressMarks = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -103134,7 +116875,6 @@ class $$AgentGoalRunsTableTableTableManager
                 conversationId: conversationId,
                 agentId: agentId,
                 userText: userText,
-                kind: kind,
                 status: status,
                 deadlineAt: deadlineAt,
                 costCapMicros: costCapMicros,
@@ -103145,6 +116885,23 @@ class $$AgentGoalRunsTableTableTableManager
                 consecutiveFailures: consecutiveFailures,
                 requestedByUserId: requestedByUserId,
                 summary: summary,
+                contract: contract,
+                hold: hold,
+                holdUntil: holdUntil,
+                holdDetail: holdDetail,
+                noProgressStreak: noProgressStreak,
+                verificationRounds: verificationRounds,
+                lastFingerprint: lastFingerprint,
+                lastActivityDigest: lastActivityDigest,
+                startRef: startRef,
+                parkCount: parkCount,
+                fresh: fresh,
+                unattended: unattended,
+                checkerAgentId: checkerAgentId,
+                verification: verification,
+                pipelineRunId: pipelineRunId,
+                pipelineStepId: pipelineStepId,
+                progressMarks: progressMarks,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -103165,10 +116922,16 @@ class $$AgentGoalRunsTableTableTableManager
                 conversationId = false,
                 agentId = false,
                 activeRunId = false,
+                wakeRulesTableRefs = false,
+                improvementProposalsTableRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
-                  explicitlyWatchedTables: [],
+                  explicitlyWatchedTables: [
+                    if (wakeRulesTableRefs) db.wakeRulesTable,
+                    if (improvementProposalsTableRefs)
+                      db.improvementProposalsTable,
+                  ],
                   addJoins:
                       <
                         T extends TableManagerState<
@@ -103249,7 +117012,50 @@ class $$AgentGoalRunsTableTableTableManager
                         return state;
                       },
                   getPrefetchedDataCallback: (items) async {
-                    return [];
+                    return [
+                      if (wakeRulesTableRefs)
+                        await $_getPrefetchedData<
+                          AgentGoalRunsTableData,
+                          $AgentGoalRunsTableTable,
+                          WakeRulesTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$AgentGoalRunsTableTableReferences
+                              ._wakeRulesTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$AgentGoalRunsTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).wakeRulesTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.goalId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (improvementProposalsTableRefs)
+                        await $_getPrefetchedData<
+                          AgentGoalRunsTableData,
+                          $AgentGoalRunsTableTable,
+                          ImprovementProposalsTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$AgentGoalRunsTableTableReferences
+                              ._improvementProposalsTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$AgentGoalRunsTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).improvementProposalsTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.goalId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
                   },
                 );
               },
@@ -103274,6 +117080,8 @@ typedef $$AgentGoalRunsTableTableProcessedTableManager =
         bool conversationId,
         bool agentId,
         bool activeRunId,
+        bool wakeRulesTableRefs,
+        bool improvementProposalsTableRefs,
       })
     >;
 typedef $$PullRequestsTableTableCreateCompanionBuilder =
@@ -104079,8 +117887,6 @@ typedef $$SpaceParticipantsTableTableCreateCompanionBuilder =
       Value<String> participantType,
       Value<String> role,
       Value<DateTime> joinedAt,
-      Value<DateTime?> lastReadAt,
-      Value<int> lastReadSeq,
       Value<int> rowid,
     });
 typedef $$SpaceParticipantsTableTableUpdateCompanionBuilder =
@@ -104091,8 +117897,6 @@ typedef $$SpaceParticipantsTableTableUpdateCompanionBuilder =
       Value<String> participantType,
       Value<String> role,
       Value<DateTime> joinedAt,
-      Value<DateTime?> lastReadAt,
-      Value<int> lastReadSeq,
       Value<int> rowid,
     });
 
@@ -104132,16 +117936,6 @@ class $$SpaceParticipantsTableTableFilterComposer
 
   ColumnFilters<DateTime> get joinedAt => $composableBuilder(
     column: $table.joinedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get lastReadAt => $composableBuilder(
-    column: $table.lastReadAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get lastReadSeq => $composableBuilder(
-    column: $table.lastReadSeq,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -104184,16 +117978,6 @@ class $$SpaceParticipantsTableTableOrderingComposer
     column: $table.joinedAt,
     builder: (column) => ColumnOrderings(column),
   );
-
-  ColumnOrderings<DateTime> get lastReadAt => $composableBuilder(
-    column: $table.lastReadAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get lastReadSeq => $composableBuilder(
-    column: $table.lastReadSeq,
-    builder: (column) => ColumnOrderings(column),
-  );
 }
 
 class $$SpaceParticipantsTableTableAnnotationComposer
@@ -104226,16 +118010,6 @@ class $$SpaceParticipantsTableTableAnnotationComposer
 
   GeneratedColumn<DateTime> get joinedAt =>
       $composableBuilder(column: $table.joinedAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get lastReadAt => $composableBuilder(
-    column: $table.lastReadAt,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get lastReadSeq => $composableBuilder(
-    column: $table.lastReadSeq,
-    builder: (column) => column,
-  );
 }
 
 class $$SpaceParticipantsTableTableTableManager
@@ -104290,8 +118064,6 @@ class $$SpaceParticipantsTableTableTableManager
                 Value<String> participantType = const Value.absent(),
                 Value<String> role = const Value.absent(),
                 Value<DateTime> joinedAt = const Value.absent(),
-                Value<DateTime?> lastReadAt = const Value.absent(),
-                Value<int> lastReadSeq = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SpaceParticipantsTableCompanion(
                 id: id,
@@ -104300,8 +118072,6 @@ class $$SpaceParticipantsTableTableTableManager
                 participantType: participantType,
                 role: role,
                 joinedAt: joinedAt,
-                lastReadAt: lastReadAt,
-                lastReadSeq: lastReadSeq,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -104312,8 +118082,6 @@ class $$SpaceParticipantsTableTableTableManager
                 Value<String> participantType = const Value.absent(),
                 Value<String> role = const Value.absent(),
                 Value<DateTime> joinedAt = const Value.absent(),
-                Value<DateTime?> lastReadAt = const Value.absent(),
-                Value<int> lastReadSeq = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SpaceParticipantsTableCompanion.insert(
                 id: id,
@@ -104322,8 +118090,6 @@ class $$SpaceParticipantsTableTableTableManager
                 participantType: participantType,
                 role: role,
                 joinedAt: joinedAt,
-                lastReadAt: lastReadAt,
-                lastReadSeq: lastReadSeq,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -108106,6 +121872,224 @@ typedef $$ConversationActivityTableTableProcessedTableManager =
         >,
       ),
       ConversationActivityTableData,
+      PrefetchHooks Function()
+    >;
+typedef $$ConversationReadsTableTableCreateCompanionBuilder =
+    ConversationReadsTableCompanion Function({
+      required String conversationId,
+      required String userId,
+      required DateTime lastReadAt,
+      required int lastReadSeq,
+      Value<int> rowid,
+    });
+typedef $$ConversationReadsTableTableUpdateCompanionBuilder =
+    ConversationReadsTableCompanion Function({
+      Value<String> conversationId,
+      Value<String> userId,
+      Value<DateTime> lastReadAt,
+      Value<int> lastReadSeq,
+      Value<int> rowid,
+    });
+
+class $$ConversationReadsTableTableFilterComposer
+    extends Composer<_$WorkspaceDatabase, $ConversationReadsTableTable> {
+  $$ConversationReadsTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get conversationId => $composableBuilder(
+    column: $table.conversationId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastReadAt => $composableBuilder(
+    column: $table.lastReadAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lastReadSeq => $composableBuilder(
+    column: $table.lastReadSeq,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ConversationReadsTableTableOrderingComposer
+    extends Composer<_$WorkspaceDatabase, $ConversationReadsTableTable> {
+  $$ConversationReadsTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get conversationId => $composableBuilder(
+    column: $table.conversationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastReadAt => $composableBuilder(
+    column: $table.lastReadAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lastReadSeq => $composableBuilder(
+    column: $table.lastReadSeq,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ConversationReadsTableTableAnnotationComposer
+    extends Composer<_$WorkspaceDatabase, $ConversationReadsTableTable> {
+  $$ConversationReadsTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get conversationId => $composableBuilder(
+    column: $table.conversationId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastReadAt => $composableBuilder(
+    column: $table.lastReadAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get lastReadSeq => $composableBuilder(
+    column: $table.lastReadSeq,
+    builder: (column) => column,
+  );
+}
+
+class $$ConversationReadsTableTableTableManager
+    extends
+        RootTableManager<
+          _$WorkspaceDatabase,
+          $ConversationReadsTableTable,
+          ConversationReadsTableData,
+          $$ConversationReadsTableTableFilterComposer,
+          $$ConversationReadsTableTableOrderingComposer,
+          $$ConversationReadsTableTableAnnotationComposer,
+          $$ConversationReadsTableTableCreateCompanionBuilder,
+          $$ConversationReadsTableTableUpdateCompanionBuilder,
+          (
+            ConversationReadsTableData,
+            BaseReferences<
+              _$WorkspaceDatabase,
+              $ConversationReadsTableTable,
+              ConversationReadsTableData
+            >,
+          ),
+          ConversationReadsTableData,
+          PrefetchHooks Function()
+        > {
+  $$ConversationReadsTableTableTableManager(
+    _$WorkspaceDatabase db,
+    $ConversationReadsTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ConversationReadsTableTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$ConversationReadsTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$ConversationReadsTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> conversationId = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<DateTime> lastReadAt = const Value.absent(),
+                Value<int> lastReadSeq = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ConversationReadsTableCompanion(
+                conversationId: conversationId,
+                userId: userId,
+                lastReadAt: lastReadAt,
+                lastReadSeq: lastReadSeq,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String conversationId,
+                required String userId,
+                required DateTime lastReadAt,
+                required int lastReadSeq,
+                Value<int> rowid = const Value.absent(),
+              }) => ConversationReadsTableCompanion.insert(
+                conversationId: conversationId,
+                userId: userId,
+                lastReadAt: lastReadAt,
+                lastReadSeq: lastReadSeq,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $ConversationReadsTableTable,
+                    ConversationReadsTableData
+                  >(table),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $ConversationReadsTableTable,
+                    ConversationReadsTableData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ConversationReadsTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WorkspaceDatabase,
+      $ConversationReadsTableTable,
+      ConversationReadsTableData,
+      $$ConversationReadsTableTableFilterComposer,
+      $$ConversationReadsTableTableOrderingComposer,
+      $$ConversationReadsTableTableAnnotationComposer,
+      $$ConversationReadsTableTableCreateCompanionBuilder,
+      $$ConversationReadsTableTableUpdateCompanionBuilder,
+      (
+        ConversationReadsTableData,
+        BaseReferences<
+          _$WorkspaceDatabase,
+          $ConversationReadsTableTable,
+          ConversationReadsTableData
+        >,
+      ),
+      ConversationReadsTableData,
       PrefetchHooks Function()
     >;
 typedef $$ReviewSpacesTableTableCreateCompanionBuilder =
@@ -142309,6 +156293,7 @@ typedef $$GuardDecisionsTableTableCreateCompanionBuilder =
       Value<String?> sourceScope,
       Value<String?> ruleId,
       Value<bool> prompted,
+      Value<bool> unanswered,
       Value<String?> responderUserId,
       Value<String?> overrideReason,
       Value<String?> correlationId,
@@ -142343,6 +156328,7 @@ typedef $$GuardDecisionsTableTableUpdateCompanionBuilder =
       Value<String?> sourceScope,
       Value<String?> ruleId,
       Value<bool> prompted,
+      Value<bool> unanswered,
       Value<String?> responderUserId,
       Value<String?> overrideReason,
       Value<String?> correlationId,
@@ -142478,6 +156464,11 @@ class $$GuardDecisionsTableTableFilterComposer
 
   ColumnFilters<bool> get prompted => $composableBuilder(
     column: $table.prompted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get unanswered => $composableBuilder(
+    column: $table.unanswered,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -142641,6 +156632,11 @@ class $$GuardDecisionsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get unanswered => $composableBuilder(
+    column: $table.unanswered,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get responderUserId => $composableBuilder(
     column: $table.responderUserId,
     builder: (column) => ColumnOrderings(column),
@@ -142777,6 +156773,11 @@ class $$GuardDecisionsTableTableAnnotationComposer
   GeneratedColumn<bool> get prompted =>
       $composableBuilder(column: $table.prompted, builder: (column) => column);
 
+  GeneratedColumn<bool> get unanswered => $composableBuilder(
+    column: $table.unanswered,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get responderUserId => $composableBuilder(
     column: $table.responderUserId,
     builder: (column) => column,
@@ -142869,6 +156870,7 @@ class $$GuardDecisionsTableTableTableManager
                 Value<String?> sourceScope = const Value.absent(),
                 Value<String?> ruleId = const Value.absent(),
                 Value<bool> prompted = const Value.absent(),
+                Value<bool> unanswered = const Value.absent(),
                 Value<String?> responderUserId = const Value.absent(),
                 Value<String?> overrideReason = const Value.absent(),
                 Value<String?> correlationId = const Value.absent(),
@@ -142901,6 +156903,7 @@ class $$GuardDecisionsTableTableTableManager
                 sourceScope: sourceScope,
                 ruleId: ruleId,
                 prompted: prompted,
+                unanswered: unanswered,
                 responderUserId: responderUserId,
                 overrideReason: overrideReason,
                 correlationId: correlationId,
@@ -142935,6 +156938,7 @@ class $$GuardDecisionsTableTableTableManager
                 Value<String?> sourceScope = const Value.absent(),
                 Value<String?> ruleId = const Value.absent(),
                 Value<bool> prompted = const Value.absent(),
+                Value<bool> unanswered = const Value.absent(),
                 Value<String?> responderUserId = const Value.absent(),
                 Value<String?> overrideReason = const Value.absent(),
                 Value<String?> correlationId = const Value.absent(),
@@ -142967,6 +156971,7 @@ class $$GuardDecisionsTableTableTableManager
                 sourceScope: sourceScope,
                 ruleId: ruleId,
                 prompted: prompted,
+                unanswered: unanswered,
                 responderUserId: responderUserId,
                 overrideReason: overrideReason,
                 correlationId: correlationId,
@@ -154176,6 +168181,6489 @@ typedef $$McpServersTableTableProcessedTableManager =
       McpServersTableData,
       PrefetchHooks Function()
     >;
+typedef $$CodeExecutionsTableTableCreateCompanionBuilder =
+    CodeExecutionsTableCompanion Function({
+      required String id,
+      required String runId,
+      required String toolCallId,
+      required int idSuffix,
+      required String surface,
+      Value<String?> conversationId,
+      Value<String?> agentId,
+      Value<String?> spaceId,
+      Value<String> description,
+      required int startedAtMs,
+      required int durationMs,
+      required String status,
+      Value<String?> errorKind,
+      required String sourceHash,
+      required int sourceBytes,
+      Value<int?> cpuMs,
+      Value<int?> peakHeapBytes,
+      Value<int> callsCompleted,
+      Value<int> callsFailed,
+      Value<int> callsDenied,
+      Value<int> callsCancelled,
+      Value<int> callsTimedOut,
+      Value<int> callsUnknownTool,
+      Value<int> callsInvalidArgs,
+      Value<int> questionCount,
+      Value<int> outputBytes,
+      Value<bool> outputTruncated,
+      Value<String?> engineVersion,
+      Value<String?> lockdownJson,
+      required String limitsJson,
+      Value<int> rowid,
+    });
+typedef $$CodeExecutionsTableTableUpdateCompanionBuilder =
+    CodeExecutionsTableCompanion Function({
+      Value<String> id,
+      Value<String> runId,
+      Value<String> toolCallId,
+      Value<int> idSuffix,
+      Value<String> surface,
+      Value<String?> conversationId,
+      Value<String?> agentId,
+      Value<String?> spaceId,
+      Value<String> description,
+      Value<int> startedAtMs,
+      Value<int> durationMs,
+      Value<String> status,
+      Value<String?> errorKind,
+      Value<String> sourceHash,
+      Value<int> sourceBytes,
+      Value<int?> cpuMs,
+      Value<int?> peakHeapBytes,
+      Value<int> callsCompleted,
+      Value<int> callsFailed,
+      Value<int> callsDenied,
+      Value<int> callsCancelled,
+      Value<int> callsTimedOut,
+      Value<int> callsUnknownTool,
+      Value<int> callsInvalidArgs,
+      Value<int> questionCount,
+      Value<int> outputBytes,
+      Value<bool> outputTruncated,
+      Value<String?> engineVersion,
+      Value<String?> lockdownJson,
+      Value<String> limitsJson,
+      Value<int> rowid,
+    });
+
+final class $$CodeExecutionsTableTableReferences
+    extends
+        BaseReferences<
+          _$WorkspaceDatabase,
+          $CodeExecutionsTableTable,
+          CodeExecutionsTableData
+        > {
+  $$CodeExecutionsTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $AgentRunLogsTableTable _runIdTable(_$WorkspaceDatabase db) => db
+      .agentRunLogsTable
+      .createAlias('code_executions__run_id__agent_run_logs__id');
+
+  $$AgentRunLogsTableTableProcessedTableManager get runId {
+    final $_column = $_itemColumn<String>('run_id')!;
+
+    final manager = $$AgentRunLogsTableTableTableManager(
+      $_db,
+      $_db.agentRunLogsTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_runIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ConversationsTableTable _conversationIdTable(
+    _$WorkspaceDatabase db,
+  ) => db.conversationsTable.createAlias(
+    'code_executions__conversation_id__conversations__id',
+  );
+
+  $$ConversationsTableTableProcessedTableManager? get conversationId {
+    final $_column = $_itemColumn<String>('conversation_id');
+    if ($_column == null) return null;
+    final manager = $$ConversationsTableTableTableManager(
+      $_db,
+      $_db.conversationsTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_conversationIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $AgentsTableTable _agentIdTable(_$WorkspaceDatabase db) =>
+      db.agentsTable.createAlias('code_executions__agent_id__agents__id');
+
+  $$AgentsTableTableProcessedTableManager? get agentId {
+    final $_column = $_itemColumn<String>('agent_id');
+    if ($_column == null) return null;
+    final manager = $$AgentsTableTableTableManager(
+      $_db,
+      $_db.agentsTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_agentIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $SpacesTableTable _spaceIdTable(_$WorkspaceDatabase db) =>
+      db.spacesTable.createAlias('code_executions__space_id__spaces__id');
+
+  $$SpacesTableTableProcessedTableManager? get spaceId {
+    final $_column = $_itemColumn<String>('space_id');
+    if ($_column == null) return null;
+    final manager = $$SpacesTableTableTableManager(
+      $_db,
+      $_db.spacesTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_spaceIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $CodeExecutionPayloadsTableTable,
+    List<CodeExecutionPayloadsTableData>
+  >
+  _codeExecutionPayloadsTableRefsTable(_$WorkspaceDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.codeExecutionPayloadsTable,
+        aliasName: 'code_executions__id__code_execution_payloads__execution_id',
+      );
+
+  $$CodeExecutionPayloadsTableTableProcessedTableManager
+  get codeExecutionPayloadsTableRefs {
+    final manager = $$CodeExecutionPayloadsTableTableTableManager(
+      $_db,
+      $_db.codeExecutionPayloadsTable,
+    ).filter((f) => f.executionId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _codeExecutionPayloadsTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $CodeExecutionCallsTableTable,
+    List<CodeExecutionCallsTableData>
+  >
+  _codeExecutionCallsTableRefsTable(_$WorkspaceDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.codeExecutionCallsTable,
+        aliasName: 'code_executions__id__code_execution_calls__execution_id',
+      );
+
+  $$CodeExecutionCallsTableTableProcessedTableManager
+  get codeExecutionCallsTableRefs {
+    final manager = $$CodeExecutionCallsTableTableTableManager(
+      $_db,
+      $_db.codeExecutionCallsTable,
+    ).filter((f) => f.executionId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _codeExecutionCallsTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$CodeExecutionsTableTableFilterComposer
+    extends Composer<_$WorkspaceDatabase, $CodeExecutionsTableTable> {
+  $$CodeExecutionsTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get toolCallId => $composableBuilder(
+    column: $table.toolCallId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get idSuffix => $composableBuilder(
+    column: $table.idSuffix,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get surface => $composableBuilder(
+    column: $table.surface,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get startedAtMs => $composableBuilder(
+    column: $table.startedAtMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get durationMs => $composableBuilder(
+    column: $table.durationMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get errorKind => $composableBuilder(
+    column: $table.errorKind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceHash => $composableBuilder(
+    column: $table.sourceHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sourceBytes => $composableBuilder(
+    column: $table.sourceBytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get cpuMs => $composableBuilder(
+    column: $table.cpuMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get peakHeapBytes => $composableBuilder(
+    column: $table.peakHeapBytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get callsCompleted => $composableBuilder(
+    column: $table.callsCompleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get callsFailed => $composableBuilder(
+    column: $table.callsFailed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get callsDenied => $composableBuilder(
+    column: $table.callsDenied,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get callsCancelled => $composableBuilder(
+    column: $table.callsCancelled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get callsTimedOut => $composableBuilder(
+    column: $table.callsTimedOut,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get callsUnknownTool => $composableBuilder(
+    column: $table.callsUnknownTool,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get callsInvalidArgs => $composableBuilder(
+    column: $table.callsInvalidArgs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get questionCount => $composableBuilder(
+    column: $table.questionCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get outputBytes => $composableBuilder(
+    column: $table.outputBytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get outputTruncated => $composableBuilder(
+    column: $table.outputTruncated,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get engineVersion => $composableBuilder(
+    column: $table.engineVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lockdownJson => $composableBuilder(
+    column: $table.lockdownJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get limitsJson => $composableBuilder(
+    column: $table.limitsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$AgentRunLogsTableTableFilterComposer get runId {
+    final $$AgentRunLogsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.runId,
+      referencedTable: $db.agentRunLogsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentRunLogsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.agentRunLogsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ConversationsTableTableFilterComposer get conversationId {
+    final $$ConversationsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.conversationId,
+      referencedTable: $db.conversationsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ConversationsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.conversationsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AgentsTableTableFilterComposer get agentId {
+    final $$AgentsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.agentId,
+      referencedTable: $db.agentsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.agentsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$SpacesTableTableFilterComposer get spaceId {
+    final $$SpacesTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.spaceId,
+      referencedTable: $db.spacesTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SpacesTableTableFilterComposer(
+            $db: $db,
+            $table: $db.spacesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> codeExecutionPayloadsTableRefs(
+    Expression<bool> Function($$CodeExecutionPayloadsTableTableFilterComposer f)
+    f,
+  ) {
+    final $$CodeExecutionPayloadsTableTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.codeExecutionPayloadsTable,
+          getReferencedColumn: (t) => t.executionId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CodeExecutionPayloadsTableTableFilterComposer(
+                $db: $db,
+                $table: $db.codeExecutionPayloadsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> codeExecutionCallsTableRefs(
+    Expression<bool> Function($$CodeExecutionCallsTableTableFilterComposer f) f,
+  ) {
+    final $$CodeExecutionCallsTableTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.codeExecutionCallsTable,
+          getReferencedColumn: (t) => t.executionId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CodeExecutionCallsTableTableFilterComposer(
+                $db: $db,
+                $table: $db.codeExecutionCallsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$CodeExecutionsTableTableOrderingComposer
+    extends Composer<_$WorkspaceDatabase, $CodeExecutionsTableTable> {
+  $$CodeExecutionsTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get toolCallId => $composableBuilder(
+    column: $table.toolCallId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get idSuffix => $composableBuilder(
+    column: $table.idSuffix,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get surface => $composableBuilder(
+    column: $table.surface,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get startedAtMs => $composableBuilder(
+    column: $table.startedAtMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get durationMs => $composableBuilder(
+    column: $table.durationMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get errorKind => $composableBuilder(
+    column: $table.errorKind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceHash => $composableBuilder(
+    column: $table.sourceHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sourceBytes => $composableBuilder(
+    column: $table.sourceBytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get cpuMs => $composableBuilder(
+    column: $table.cpuMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get peakHeapBytes => $composableBuilder(
+    column: $table.peakHeapBytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get callsCompleted => $composableBuilder(
+    column: $table.callsCompleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get callsFailed => $composableBuilder(
+    column: $table.callsFailed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get callsDenied => $composableBuilder(
+    column: $table.callsDenied,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get callsCancelled => $composableBuilder(
+    column: $table.callsCancelled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get callsTimedOut => $composableBuilder(
+    column: $table.callsTimedOut,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get callsUnknownTool => $composableBuilder(
+    column: $table.callsUnknownTool,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get callsInvalidArgs => $composableBuilder(
+    column: $table.callsInvalidArgs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get questionCount => $composableBuilder(
+    column: $table.questionCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get outputBytes => $composableBuilder(
+    column: $table.outputBytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get outputTruncated => $composableBuilder(
+    column: $table.outputTruncated,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get engineVersion => $composableBuilder(
+    column: $table.engineVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lockdownJson => $composableBuilder(
+    column: $table.lockdownJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get limitsJson => $composableBuilder(
+    column: $table.limitsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$AgentRunLogsTableTableOrderingComposer get runId {
+    final $$AgentRunLogsTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.runId,
+      referencedTable: $db.agentRunLogsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentRunLogsTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.agentRunLogsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ConversationsTableTableOrderingComposer get conversationId {
+    final $$ConversationsTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.conversationId,
+      referencedTable: $db.conversationsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ConversationsTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.conversationsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AgentsTableTableOrderingComposer get agentId {
+    final $$AgentsTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.agentId,
+      referencedTable: $db.agentsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentsTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.agentsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$SpacesTableTableOrderingComposer get spaceId {
+    final $$SpacesTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.spaceId,
+      referencedTable: $db.spacesTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SpacesTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.spacesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CodeExecutionsTableTableAnnotationComposer
+    extends Composer<_$WorkspaceDatabase, $CodeExecutionsTableTable> {
+  $$CodeExecutionsTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get toolCallId => $composableBuilder(
+    column: $table.toolCallId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get idSuffix =>
+      $composableBuilder(column: $table.idSuffix, builder: (column) => column);
+
+  GeneratedColumn<String> get surface =>
+      $composableBuilder(column: $table.surface, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get startedAtMs => $composableBuilder(
+    column: $table.startedAtMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get durationMs => $composableBuilder(
+    column: $table.durationMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get errorKind =>
+      $composableBuilder(column: $table.errorKind, builder: (column) => column);
+
+  GeneratedColumn<String> get sourceHash => $composableBuilder(
+    column: $table.sourceHash,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get sourceBytes => $composableBuilder(
+    column: $table.sourceBytes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get cpuMs =>
+      $composableBuilder(column: $table.cpuMs, builder: (column) => column);
+
+  GeneratedColumn<int> get peakHeapBytes => $composableBuilder(
+    column: $table.peakHeapBytes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get callsCompleted => $composableBuilder(
+    column: $table.callsCompleted,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get callsFailed => $composableBuilder(
+    column: $table.callsFailed,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get callsDenied => $composableBuilder(
+    column: $table.callsDenied,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get callsCancelled => $composableBuilder(
+    column: $table.callsCancelled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get callsTimedOut => $composableBuilder(
+    column: $table.callsTimedOut,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get callsUnknownTool => $composableBuilder(
+    column: $table.callsUnknownTool,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get callsInvalidArgs => $composableBuilder(
+    column: $table.callsInvalidArgs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get questionCount => $composableBuilder(
+    column: $table.questionCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get outputBytes => $composableBuilder(
+    column: $table.outputBytes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get outputTruncated => $composableBuilder(
+    column: $table.outputTruncated,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get engineVersion => $composableBuilder(
+    column: $table.engineVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get lockdownJson => $composableBuilder(
+    column: $table.lockdownJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get limitsJson => $composableBuilder(
+    column: $table.limitsJson,
+    builder: (column) => column,
+  );
+
+  $$AgentRunLogsTableTableAnnotationComposer get runId {
+    final $$AgentRunLogsTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.runId,
+          referencedTable: $db.agentRunLogsTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$AgentRunLogsTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.agentRunLogsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+
+  $$ConversationsTableTableAnnotationComposer get conversationId {
+    final $$ConversationsTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.conversationId,
+          referencedTable: $db.conversationsTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ConversationsTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.conversationsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+
+  $$AgentsTableTableAnnotationComposer get agentId {
+    final $$AgentsTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.agentId,
+      referencedTable: $db.agentsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentsTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.agentsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$SpacesTableTableAnnotationComposer get spaceId {
+    final $$SpacesTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.spaceId,
+      referencedTable: $db.spacesTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SpacesTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.spacesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> codeExecutionPayloadsTableRefs<T extends Object>(
+    Expression<T> Function(
+      $$CodeExecutionPayloadsTableTableAnnotationComposer a,
+    )
+    f,
+  ) {
+    final $$CodeExecutionPayloadsTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.codeExecutionPayloadsTable,
+          getReferencedColumn: (t) => t.executionId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CodeExecutionPayloadsTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.codeExecutionPayloadsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> codeExecutionCallsTableRefs<T extends Object>(
+    Expression<T> Function($$CodeExecutionCallsTableTableAnnotationComposer a)
+    f,
+  ) {
+    final $$CodeExecutionCallsTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.codeExecutionCallsTable,
+          getReferencedColumn: (t) => t.executionId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CodeExecutionCallsTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.codeExecutionCallsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$CodeExecutionsTableTableTableManager
+    extends
+        RootTableManager<
+          _$WorkspaceDatabase,
+          $CodeExecutionsTableTable,
+          CodeExecutionsTableData,
+          $$CodeExecutionsTableTableFilterComposer,
+          $$CodeExecutionsTableTableOrderingComposer,
+          $$CodeExecutionsTableTableAnnotationComposer,
+          $$CodeExecutionsTableTableCreateCompanionBuilder,
+          $$CodeExecutionsTableTableUpdateCompanionBuilder,
+          (CodeExecutionsTableData, $$CodeExecutionsTableTableReferences),
+          CodeExecutionsTableData,
+          PrefetchHooks Function({
+            bool runId,
+            bool conversationId,
+            bool agentId,
+            bool spaceId,
+            bool codeExecutionPayloadsTableRefs,
+            bool codeExecutionCallsTableRefs,
+          })
+        > {
+  $$CodeExecutionsTableTableTableManager(
+    _$WorkspaceDatabase db,
+    $CodeExecutionsTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CodeExecutionsTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CodeExecutionsTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$CodeExecutionsTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> runId = const Value.absent(),
+                Value<String> toolCallId = const Value.absent(),
+                Value<int> idSuffix = const Value.absent(),
+                Value<String> surface = const Value.absent(),
+                Value<String?> conversationId = const Value.absent(),
+                Value<String?> agentId = const Value.absent(),
+                Value<String?> spaceId = const Value.absent(),
+                Value<String> description = const Value.absent(),
+                Value<int> startedAtMs = const Value.absent(),
+                Value<int> durationMs = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String?> errorKind = const Value.absent(),
+                Value<String> sourceHash = const Value.absent(),
+                Value<int> sourceBytes = const Value.absent(),
+                Value<int?> cpuMs = const Value.absent(),
+                Value<int?> peakHeapBytes = const Value.absent(),
+                Value<int> callsCompleted = const Value.absent(),
+                Value<int> callsFailed = const Value.absent(),
+                Value<int> callsDenied = const Value.absent(),
+                Value<int> callsCancelled = const Value.absent(),
+                Value<int> callsTimedOut = const Value.absent(),
+                Value<int> callsUnknownTool = const Value.absent(),
+                Value<int> callsInvalidArgs = const Value.absent(),
+                Value<int> questionCount = const Value.absent(),
+                Value<int> outputBytes = const Value.absent(),
+                Value<bool> outputTruncated = const Value.absent(),
+                Value<String?> engineVersion = const Value.absent(),
+                Value<String?> lockdownJson = const Value.absent(),
+                Value<String> limitsJson = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CodeExecutionsTableCompanion(
+                id: id,
+                runId: runId,
+                toolCallId: toolCallId,
+                idSuffix: idSuffix,
+                surface: surface,
+                conversationId: conversationId,
+                agentId: agentId,
+                spaceId: spaceId,
+                description: description,
+                startedAtMs: startedAtMs,
+                durationMs: durationMs,
+                status: status,
+                errorKind: errorKind,
+                sourceHash: sourceHash,
+                sourceBytes: sourceBytes,
+                cpuMs: cpuMs,
+                peakHeapBytes: peakHeapBytes,
+                callsCompleted: callsCompleted,
+                callsFailed: callsFailed,
+                callsDenied: callsDenied,
+                callsCancelled: callsCancelled,
+                callsTimedOut: callsTimedOut,
+                callsUnknownTool: callsUnknownTool,
+                callsInvalidArgs: callsInvalidArgs,
+                questionCount: questionCount,
+                outputBytes: outputBytes,
+                outputTruncated: outputTruncated,
+                engineVersion: engineVersion,
+                lockdownJson: lockdownJson,
+                limitsJson: limitsJson,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String runId,
+                required String toolCallId,
+                required int idSuffix,
+                required String surface,
+                Value<String?> conversationId = const Value.absent(),
+                Value<String?> agentId = const Value.absent(),
+                Value<String?> spaceId = const Value.absent(),
+                Value<String> description = const Value.absent(),
+                required int startedAtMs,
+                required int durationMs,
+                required String status,
+                Value<String?> errorKind = const Value.absent(),
+                required String sourceHash,
+                required int sourceBytes,
+                Value<int?> cpuMs = const Value.absent(),
+                Value<int?> peakHeapBytes = const Value.absent(),
+                Value<int> callsCompleted = const Value.absent(),
+                Value<int> callsFailed = const Value.absent(),
+                Value<int> callsDenied = const Value.absent(),
+                Value<int> callsCancelled = const Value.absent(),
+                Value<int> callsTimedOut = const Value.absent(),
+                Value<int> callsUnknownTool = const Value.absent(),
+                Value<int> callsInvalidArgs = const Value.absent(),
+                Value<int> questionCount = const Value.absent(),
+                Value<int> outputBytes = const Value.absent(),
+                Value<bool> outputTruncated = const Value.absent(),
+                Value<String?> engineVersion = const Value.absent(),
+                Value<String?> lockdownJson = const Value.absent(),
+                required String limitsJson,
+                Value<int> rowid = const Value.absent(),
+              }) => CodeExecutionsTableCompanion.insert(
+                id: id,
+                runId: runId,
+                toolCallId: toolCallId,
+                idSuffix: idSuffix,
+                surface: surface,
+                conversationId: conversationId,
+                agentId: agentId,
+                spaceId: spaceId,
+                description: description,
+                startedAtMs: startedAtMs,
+                durationMs: durationMs,
+                status: status,
+                errorKind: errorKind,
+                sourceHash: sourceHash,
+                sourceBytes: sourceBytes,
+                cpuMs: cpuMs,
+                peakHeapBytes: peakHeapBytes,
+                callsCompleted: callsCompleted,
+                callsFailed: callsFailed,
+                callsDenied: callsDenied,
+                callsCancelled: callsCancelled,
+                callsTimedOut: callsTimedOut,
+                callsUnknownTool: callsUnknownTool,
+                callsInvalidArgs: callsInvalidArgs,
+                questionCount: questionCount,
+                outputBytes: outputBytes,
+                outputTruncated: outputTruncated,
+                engineVersion: engineVersion,
+                lockdownJson: lockdownJson,
+                limitsJson: limitsJson,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $CodeExecutionsTableTable,
+                    CodeExecutionsTableData
+                  >(table),
+                  $$CodeExecutionsTableTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({
+                runId = false,
+                conversationId = false,
+                agentId = false,
+                spaceId = false,
+                codeExecutionPayloadsTableRefs = false,
+                codeExecutionCallsTableRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (codeExecutionPayloadsTableRefs)
+                      db.codeExecutionPayloadsTable,
+                    if (codeExecutionCallsTableRefs) db.codeExecutionCallsTable,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (runId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.runId,
+                                    referencedTable:
+                                        $$CodeExecutionsTableTableReferences
+                                            ._runIdTable(db),
+                                    referencedColumn:
+                                        $$CodeExecutionsTableTableReferences
+                                            ._runIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (conversationId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.conversationId,
+                                    referencedTable:
+                                        $$CodeExecutionsTableTableReferences
+                                            ._conversationIdTable(db),
+                                    referencedColumn:
+                                        $$CodeExecutionsTableTableReferences
+                                            ._conversationIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (agentId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.agentId,
+                                    referencedTable:
+                                        $$CodeExecutionsTableTableReferences
+                                            ._agentIdTable(db),
+                                    referencedColumn:
+                                        $$CodeExecutionsTableTableReferences
+                                            ._agentIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (spaceId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.spaceId,
+                                    referencedTable:
+                                        $$CodeExecutionsTableTableReferences
+                                            ._spaceIdTable(db),
+                                    referencedColumn:
+                                        $$CodeExecutionsTableTableReferences
+                                            ._spaceIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (codeExecutionPayloadsTableRefs)
+                        await $_getPrefetchedData<
+                          CodeExecutionsTableData,
+                          $CodeExecutionsTableTable,
+                          CodeExecutionPayloadsTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$CodeExecutionsTableTableReferences
+                              ._codeExecutionPayloadsTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CodeExecutionsTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).codeExecutionPayloadsTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.executionId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (codeExecutionCallsTableRefs)
+                        await $_getPrefetchedData<
+                          CodeExecutionsTableData,
+                          $CodeExecutionsTableTable,
+                          CodeExecutionCallsTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$CodeExecutionsTableTableReferences
+                              ._codeExecutionCallsTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CodeExecutionsTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).codeExecutionCallsTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.executionId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$CodeExecutionsTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WorkspaceDatabase,
+      $CodeExecutionsTableTable,
+      CodeExecutionsTableData,
+      $$CodeExecutionsTableTableFilterComposer,
+      $$CodeExecutionsTableTableOrderingComposer,
+      $$CodeExecutionsTableTableAnnotationComposer,
+      $$CodeExecutionsTableTableCreateCompanionBuilder,
+      $$CodeExecutionsTableTableUpdateCompanionBuilder,
+      (CodeExecutionsTableData, $$CodeExecutionsTableTableReferences),
+      CodeExecutionsTableData,
+      PrefetchHooks Function({
+        bool runId,
+        bool conversationId,
+        bool agentId,
+        bool spaceId,
+        bool codeExecutionPayloadsTableRefs,
+        bool codeExecutionCallsTableRefs,
+      })
+    >;
+typedef $$CodeExecutionPayloadsTableTableCreateCompanionBuilder =
+    CodeExecutionPayloadsTableCompanion Function({
+      required String executionId,
+      required String source,
+      Value<String> output,
+      Value<String> console,
+      Value<String?> errorName,
+      Value<int> rowid,
+    });
+typedef $$CodeExecutionPayloadsTableTableUpdateCompanionBuilder =
+    CodeExecutionPayloadsTableCompanion Function({
+      Value<String> executionId,
+      Value<String> source,
+      Value<String> output,
+      Value<String> console,
+      Value<String?> errorName,
+      Value<int> rowid,
+    });
+
+final class $$CodeExecutionPayloadsTableTableReferences
+    extends
+        BaseReferences<
+          _$WorkspaceDatabase,
+          $CodeExecutionPayloadsTableTable,
+          CodeExecutionPayloadsTableData
+        > {
+  $$CodeExecutionPayloadsTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $CodeExecutionsTableTable _executionIdTable(_$WorkspaceDatabase db) =>
+      db.codeExecutionsTable.createAlias(
+        'code_execution_payloads__execution_id__code_executions__id',
+      );
+
+  $$CodeExecutionsTableTableProcessedTableManager get executionId {
+    final $_column = $_itemColumn<String>('execution_id')!;
+
+    final manager = $$CodeExecutionsTableTableTableManager(
+      $_db,
+      $_db.codeExecutionsTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_executionIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$CodeExecutionPayloadsTableTableFilterComposer
+    extends Composer<_$WorkspaceDatabase, $CodeExecutionPayloadsTableTable> {
+  $$CodeExecutionPayloadsTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get output => $composableBuilder(
+    column: $table.output,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get console => $composableBuilder(
+    column: $table.console,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get errorName => $composableBuilder(
+    column: $table.errorName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$CodeExecutionsTableTableFilterComposer get executionId {
+    final $$CodeExecutionsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.executionId,
+      referencedTable: $db.codeExecutionsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CodeExecutionsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.codeExecutionsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CodeExecutionPayloadsTableTableOrderingComposer
+    extends Composer<_$WorkspaceDatabase, $CodeExecutionPayloadsTableTable> {
+  $$CodeExecutionPayloadsTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get output => $composableBuilder(
+    column: $table.output,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get console => $composableBuilder(
+    column: $table.console,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get errorName => $composableBuilder(
+    column: $table.errorName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$CodeExecutionsTableTableOrderingComposer get executionId {
+    final $$CodeExecutionsTableTableOrderingComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.executionId,
+          referencedTable: $db.codeExecutionsTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CodeExecutionsTableTableOrderingComposer(
+                $db: $db,
+                $table: $db.codeExecutionsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$CodeExecutionPayloadsTableTableAnnotationComposer
+    extends Composer<_$WorkspaceDatabase, $CodeExecutionPayloadsTableTable> {
+  $$CodeExecutionPayloadsTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<String> get output =>
+      $composableBuilder(column: $table.output, builder: (column) => column);
+
+  GeneratedColumn<String> get console =>
+      $composableBuilder(column: $table.console, builder: (column) => column);
+
+  GeneratedColumn<String> get errorName =>
+      $composableBuilder(column: $table.errorName, builder: (column) => column);
+
+  $$CodeExecutionsTableTableAnnotationComposer get executionId {
+    final $$CodeExecutionsTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.executionId,
+          referencedTable: $db.codeExecutionsTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CodeExecutionsTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.codeExecutionsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$CodeExecutionPayloadsTableTableTableManager
+    extends
+        RootTableManager<
+          _$WorkspaceDatabase,
+          $CodeExecutionPayloadsTableTable,
+          CodeExecutionPayloadsTableData,
+          $$CodeExecutionPayloadsTableTableFilterComposer,
+          $$CodeExecutionPayloadsTableTableOrderingComposer,
+          $$CodeExecutionPayloadsTableTableAnnotationComposer,
+          $$CodeExecutionPayloadsTableTableCreateCompanionBuilder,
+          $$CodeExecutionPayloadsTableTableUpdateCompanionBuilder,
+          (
+            CodeExecutionPayloadsTableData,
+            $$CodeExecutionPayloadsTableTableReferences,
+          ),
+          CodeExecutionPayloadsTableData,
+          PrefetchHooks Function({bool executionId})
+        > {
+  $$CodeExecutionPayloadsTableTableTableManager(
+    _$WorkspaceDatabase db,
+    $CodeExecutionPayloadsTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CodeExecutionPayloadsTableTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$CodeExecutionPayloadsTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$CodeExecutionPayloadsTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> executionId = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<String> output = const Value.absent(),
+                Value<String> console = const Value.absent(),
+                Value<String?> errorName = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CodeExecutionPayloadsTableCompanion(
+                executionId: executionId,
+                source: source,
+                output: output,
+                console: console,
+                errorName: errorName,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String executionId,
+                required String source,
+                Value<String> output = const Value.absent(),
+                Value<String> console = const Value.absent(),
+                Value<String?> errorName = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CodeExecutionPayloadsTableCompanion.insert(
+                executionId: executionId,
+                source: source,
+                output: output,
+                console: console,
+                errorName: errorName,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $CodeExecutionPayloadsTableTable,
+                    CodeExecutionPayloadsTableData
+                  >(table),
+                  $$CodeExecutionPayloadsTableTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({executionId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (executionId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.executionId,
+                                referencedTable:
+                                    $$CodeExecutionPayloadsTableTableReferences
+                                        ._executionIdTable(db),
+                                referencedColumn:
+                                    $$CodeExecutionPayloadsTableTableReferences
+                                        ._executionIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$CodeExecutionPayloadsTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WorkspaceDatabase,
+      $CodeExecutionPayloadsTableTable,
+      CodeExecutionPayloadsTableData,
+      $$CodeExecutionPayloadsTableTableFilterComposer,
+      $$CodeExecutionPayloadsTableTableOrderingComposer,
+      $$CodeExecutionPayloadsTableTableAnnotationComposer,
+      $$CodeExecutionPayloadsTableTableCreateCompanionBuilder,
+      $$CodeExecutionPayloadsTableTableUpdateCompanionBuilder,
+      (
+        CodeExecutionPayloadsTableData,
+        $$CodeExecutionPayloadsTableTableReferences,
+      ),
+      CodeExecutionPayloadsTableData,
+      PrefetchHooks Function({bool executionId})
+    >;
+typedef $$CodeExecutionCallsTableTableCreateCompanionBuilder =
+    CodeExecutionCallsTableCompanion Function({
+      required String executionId,
+      required int sequence,
+      required String toolCallId,
+      required String toolName,
+      required int startOffsetMs,
+      required int durationMs,
+      required String status,
+      Value<String?> gateDecision,
+      Value<int> approvalWaitMs,
+      Value<int> argumentBytes,
+      Value<int> resultBytes,
+      Value<String> arguments,
+      Value<String?> error,
+      Value<int?> siteLine,
+      Value<int?> siteColumn,
+      Value<int> rowid,
+    });
+typedef $$CodeExecutionCallsTableTableUpdateCompanionBuilder =
+    CodeExecutionCallsTableCompanion Function({
+      Value<String> executionId,
+      Value<int> sequence,
+      Value<String> toolCallId,
+      Value<String> toolName,
+      Value<int> startOffsetMs,
+      Value<int> durationMs,
+      Value<String> status,
+      Value<String?> gateDecision,
+      Value<int> approvalWaitMs,
+      Value<int> argumentBytes,
+      Value<int> resultBytes,
+      Value<String> arguments,
+      Value<String?> error,
+      Value<int?> siteLine,
+      Value<int?> siteColumn,
+      Value<int> rowid,
+    });
+
+final class $$CodeExecutionCallsTableTableReferences
+    extends
+        BaseReferences<
+          _$WorkspaceDatabase,
+          $CodeExecutionCallsTableTable,
+          CodeExecutionCallsTableData
+        > {
+  $$CodeExecutionCallsTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $CodeExecutionsTableTable _executionIdTable(_$WorkspaceDatabase db) =>
+      db.codeExecutionsTable.createAlias(
+        'code_execution_calls__execution_id__code_executions__id',
+      );
+
+  $$CodeExecutionsTableTableProcessedTableManager get executionId {
+    final $_column = $_itemColumn<String>('execution_id')!;
+
+    final manager = $$CodeExecutionsTableTableTableManager(
+      $_db,
+      $_db.codeExecutionsTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_executionIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$CodeExecutionCallsTableTableFilterComposer
+    extends Composer<_$WorkspaceDatabase, $CodeExecutionCallsTableTable> {
+  $$CodeExecutionCallsTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get sequence => $composableBuilder(
+    column: $table.sequence,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get toolCallId => $composableBuilder(
+    column: $table.toolCallId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get toolName => $composableBuilder(
+    column: $table.toolName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get startOffsetMs => $composableBuilder(
+    column: $table.startOffsetMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get durationMs => $composableBuilder(
+    column: $table.durationMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gateDecision => $composableBuilder(
+    column: $table.gateDecision,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get approvalWaitMs => $composableBuilder(
+    column: $table.approvalWaitMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get argumentBytes => $composableBuilder(
+    column: $table.argumentBytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get resultBytes => $composableBuilder(
+    column: $table.resultBytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get arguments => $composableBuilder(
+    column: $table.arguments,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get error => $composableBuilder(
+    column: $table.error,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get siteLine => $composableBuilder(
+    column: $table.siteLine,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get siteColumn => $composableBuilder(
+    column: $table.siteColumn,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$CodeExecutionsTableTableFilterComposer get executionId {
+    final $$CodeExecutionsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.executionId,
+      referencedTable: $db.codeExecutionsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CodeExecutionsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.codeExecutionsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CodeExecutionCallsTableTableOrderingComposer
+    extends Composer<_$WorkspaceDatabase, $CodeExecutionCallsTableTable> {
+  $$CodeExecutionCallsTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get sequence => $composableBuilder(
+    column: $table.sequence,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get toolCallId => $composableBuilder(
+    column: $table.toolCallId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get toolName => $composableBuilder(
+    column: $table.toolName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get startOffsetMs => $composableBuilder(
+    column: $table.startOffsetMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get durationMs => $composableBuilder(
+    column: $table.durationMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gateDecision => $composableBuilder(
+    column: $table.gateDecision,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get approvalWaitMs => $composableBuilder(
+    column: $table.approvalWaitMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get argumentBytes => $composableBuilder(
+    column: $table.argumentBytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get resultBytes => $composableBuilder(
+    column: $table.resultBytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get arguments => $composableBuilder(
+    column: $table.arguments,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get error => $composableBuilder(
+    column: $table.error,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get siteLine => $composableBuilder(
+    column: $table.siteLine,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get siteColumn => $composableBuilder(
+    column: $table.siteColumn,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$CodeExecutionsTableTableOrderingComposer get executionId {
+    final $$CodeExecutionsTableTableOrderingComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.executionId,
+          referencedTable: $db.codeExecutionsTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CodeExecutionsTableTableOrderingComposer(
+                $db: $db,
+                $table: $db.codeExecutionsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$CodeExecutionCallsTableTableAnnotationComposer
+    extends Composer<_$WorkspaceDatabase, $CodeExecutionCallsTableTable> {
+  $$CodeExecutionCallsTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get sequence =>
+      $composableBuilder(column: $table.sequence, builder: (column) => column);
+
+  GeneratedColumn<String> get toolCallId => $composableBuilder(
+    column: $table.toolCallId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get toolName =>
+      $composableBuilder(column: $table.toolName, builder: (column) => column);
+
+  GeneratedColumn<int> get startOffsetMs => $composableBuilder(
+    column: $table.startOffsetMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get durationMs => $composableBuilder(
+    column: $table.durationMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get gateDecision => $composableBuilder(
+    column: $table.gateDecision,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get approvalWaitMs => $composableBuilder(
+    column: $table.approvalWaitMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get argumentBytes => $composableBuilder(
+    column: $table.argumentBytes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get resultBytes => $composableBuilder(
+    column: $table.resultBytes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get arguments =>
+      $composableBuilder(column: $table.arguments, builder: (column) => column);
+
+  GeneratedColumn<String> get error =>
+      $composableBuilder(column: $table.error, builder: (column) => column);
+
+  GeneratedColumn<int> get siteLine =>
+      $composableBuilder(column: $table.siteLine, builder: (column) => column);
+
+  GeneratedColumn<int> get siteColumn => $composableBuilder(
+    column: $table.siteColumn,
+    builder: (column) => column,
+  );
+
+  $$CodeExecutionsTableTableAnnotationComposer get executionId {
+    final $$CodeExecutionsTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.executionId,
+          referencedTable: $db.codeExecutionsTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CodeExecutionsTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.codeExecutionsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$CodeExecutionCallsTableTableTableManager
+    extends
+        RootTableManager<
+          _$WorkspaceDatabase,
+          $CodeExecutionCallsTableTable,
+          CodeExecutionCallsTableData,
+          $$CodeExecutionCallsTableTableFilterComposer,
+          $$CodeExecutionCallsTableTableOrderingComposer,
+          $$CodeExecutionCallsTableTableAnnotationComposer,
+          $$CodeExecutionCallsTableTableCreateCompanionBuilder,
+          $$CodeExecutionCallsTableTableUpdateCompanionBuilder,
+          (
+            CodeExecutionCallsTableData,
+            $$CodeExecutionCallsTableTableReferences,
+          ),
+          CodeExecutionCallsTableData,
+          PrefetchHooks Function({bool executionId})
+        > {
+  $$CodeExecutionCallsTableTableTableManager(
+    _$WorkspaceDatabase db,
+    $CodeExecutionCallsTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CodeExecutionCallsTableTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$CodeExecutionCallsTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$CodeExecutionCallsTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> executionId = const Value.absent(),
+                Value<int> sequence = const Value.absent(),
+                Value<String> toolCallId = const Value.absent(),
+                Value<String> toolName = const Value.absent(),
+                Value<int> startOffsetMs = const Value.absent(),
+                Value<int> durationMs = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String?> gateDecision = const Value.absent(),
+                Value<int> approvalWaitMs = const Value.absent(),
+                Value<int> argumentBytes = const Value.absent(),
+                Value<int> resultBytes = const Value.absent(),
+                Value<String> arguments = const Value.absent(),
+                Value<String?> error = const Value.absent(),
+                Value<int?> siteLine = const Value.absent(),
+                Value<int?> siteColumn = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CodeExecutionCallsTableCompanion(
+                executionId: executionId,
+                sequence: sequence,
+                toolCallId: toolCallId,
+                toolName: toolName,
+                startOffsetMs: startOffsetMs,
+                durationMs: durationMs,
+                status: status,
+                gateDecision: gateDecision,
+                approvalWaitMs: approvalWaitMs,
+                argumentBytes: argumentBytes,
+                resultBytes: resultBytes,
+                arguments: arguments,
+                error: error,
+                siteLine: siteLine,
+                siteColumn: siteColumn,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String executionId,
+                required int sequence,
+                required String toolCallId,
+                required String toolName,
+                required int startOffsetMs,
+                required int durationMs,
+                required String status,
+                Value<String?> gateDecision = const Value.absent(),
+                Value<int> approvalWaitMs = const Value.absent(),
+                Value<int> argumentBytes = const Value.absent(),
+                Value<int> resultBytes = const Value.absent(),
+                Value<String> arguments = const Value.absent(),
+                Value<String?> error = const Value.absent(),
+                Value<int?> siteLine = const Value.absent(),
+                Value<int?> siteColumn = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CodeExecutionCallsTableCompanion.insert(
+                executionId: executionId,
+                sequence: sequence,
+                toolCallId: toolCallId,
+                toolName: toolName,
+                startOffsetMs: startOffsetMs,
+                durationMs: durationMs,
+                status: status,
+                gateDecision: gateDecision,
+                approvalWaitMs: approvalWaitMs,
+                argumentBytes: argumentBytes,
+                resultBytes: resultBytes,
+                arguments: arguments,
+                error: error,
+                siteLine: siteLine,
+                siteColumn: siteColumn,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $CodeExecutionCallsTableTable,
+                    CodeExecutionCallsTableData
+                  >(table),
+                  $$CodeExecutionCallsTableTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({executionId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (executionId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.executionId,
+                                referencedTable:
+                                    $$CodeExecutionCallsTableTableReferences
+                                        ._executionIdTable(db),
+                                referencedColumn:
+                                    $$CodeExecutionCallsTableTableReferences
+                                        ._executionIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$CodeExecutionCallsTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WorkspaceDatabase,
+      $CodeExecutionCallsTableTable,
+      CodeExecutionCallsTableData,
+      $$CodeExecutionCallsTableTableFilterComposer,
+      $$CodeExecutionCallsTableTableOrderingComposer,
+      $$CodeExecutionCallsTableTableAnnotationComposer,
+      $$CodeExecutionCallsTableTableCreateCompanionBuilder,
+      $$CodeExecutionCallsTableTableUpdateCompanionBuilder,
+      (CodeExecutionCallsTableData, $$CodeExecutionCallsTableTableReferences),
+      CodeExecutionCallsTableData,
+      PrefetchHooks Function({bool executionId})
+    >;
+typedef $$CodeModeStoreTableTableCreateCompanionBuilder =
+    CodeModeStoreTableCompanion Function({
+      required String conversationId,
+      required String agentId,
+      required String key,
+      required String valueJson,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$CodeModeStoreTableTableUpdateCompanionBuilder =
+    CodeModeStoreTableCompanion Function({
+      Value<String> conversationId,
+      Value<String> agentId,
+      Value<String> key,
+      Value<String> valueJson,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+final class $$CodeModeStoreTableTableReferences
+    extends
+        BaseReferences<
+          _$WorkspaceDatabase,
+          $CodeModeStoreTableTable,
+          CodeModeStoreTableData
+        > {
+  $$CodeModeStoreTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ConversationsTableTable _conversationIdTable(
+    _$WorkspaceDatabase db,
+  ) => db.conversationsTable.createAlias(
+    'code_mode_store__conversation_id__conversations__id',
+  );
+
+  $$ConversationsTableTableProcessedTableManager get conversationId {
+    final $_column = $_itemColumn<String>('conversation_id')!;
+
+    final manager = $$ConversationsTableTableTableManager(
+      $_db,
+      $_db.conversationsTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_conversationIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $AgentsTableTable _agentIdTable(_$WorkspaceDatabase db) =>
+      db.agentsTable.createAlias('code_mode_store__agent_id__agents__id');
+
+  $$AgentsTableTableProcessedTableManager get agentId {
+    final $_column = $_itemColumn<String>('agent_id')!;
+
+    final manager = $$AgentsTableTableTableManager(
+      $_db,
+      $_db.agentsTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_agentIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$CodeModeStoreTableTableFilterComposer
+    extends Composer<_$WorkspaceDatabase, $CodeModeStoreTableTable> {
+  $$CodeModeStoreTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get key => $composableBuilder(
+    column: $table.key,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get valueJson => $composableBuilder(
+    column: $table.valueJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ConversationsTableTableFilterComposer get conversationId {
+    final $$ConversationsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.conversationId,
+      referencedTable: $db.conversationsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ConversationsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.conversationsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AgentsTableTableFilterComposer get agentId {
+    final $$AgentsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.agentId,
+      referencedTable: $db.agentsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.agentsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CodeModeStoreTableTableOrderingComposer
+    extends Composer<_$WorkspaceDatabase, $CodeModeStoreTableTable> {
+  $$CodeModeStoreTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get key => $composableBuilder(
+    column: $table.key,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get valueJson => $composableBuilder(
+    column: $table.valueJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ConversationsTableTableOrderingComposer get conversationId {
+    final $$ConversationsTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.conversationId,
+      referencedTable: $db.conversationsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ConversationsTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.conversationsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AgentsTableTableOrderingComposer get agentId {
+    final $$AgentsTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.agentId,
+      referencedTable: $db.agentsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentsTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.agentsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CodeModeStoreTableTableAnnotationComposer
+    extends Composer<_$WorkspaceDatabase, $CodeModeStoreTableTable> {
+  $$CodeModeStoreTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get key =>
+      $composableBuilder(column: $table.key, builder: (column) => column);
+
+  GeneratedColumn<String> get valueJson =>
+      $composableBuilder(column: $table.valueJson, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$ConversationsTableTableAnnotationComposer get conversationId {
+    final $$ConversationsTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.conversationId,
+          referencedTable: $db.conversationsTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ConversationsTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.conversationsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+
+  $$AgentsTableTableAnnotationComposer get agentId {
+    final $$AgentsTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.agentId,
+      referencedTable: $db.agentsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentsTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.agentsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CodeModeStoreTableTableTableManager
+    extends
+        RootTableManager<
+          _$WorkspaceDatabase,
+          $CodeModeStoreTableTable,
+          CodeModeStoreTableData,
+          $$CodeModeStoreTableTableFilterComposer,
+          $$CodeModeStoreTableTableOrderingComposer,
+          $$CodeModeStoreTableTableAnnotationComposer,
+          $$CodeModeStoreTableTableCreateCompanionBuilder,
+          $$CodeModeStoreTableTableUpdateCompanionBuilder,
+          (CodeModeStoreTableData, $$CodeModeStoreTableTableReferences),
+          CodeModeStoreTableData,
+          PrefetchHooks Function({bool conversationId, bool agentId})
+        > {
+  $$CodeModeStoreTableTableTableManager(
+    _$WorkspaceDatabase db,
+    $CodeModeStoreTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CodeModeStoreTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CodeModeStoreTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CodeModeStoreTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> conversationId = const Value.absent(),
+                Value<String> agentId = const Value.absent(),
+                Value<String> key = const Value.absent(),
+                Value<String> valueJson = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CodeModeStoreTableCompanion(
+                conversationId: conversationId,
+                agentId: agentId,
+                key: key,
+                valueJson: valueJson,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String conversationId,
+                required String agentId,
+                required String key,
+                required String valueJson,
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CodeModeStoreTableCompanion.insert(
+                conversationId: conversationId,
+                agentId: agentId,
+                key: key,
+                valueJson: valueJson,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$CodeModeStoreTableTable, CodeModeStoreTableData>(
+                    table,
+                  ),
+                  $$CodeModeStoreTableTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({conversationId = false, agentId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (conversationId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.conversationId,
+                                referencedTable:
+                                    $$CodeModeStoreTableTableReferences
+                                        ._conversationIdTable(db),
+                                referencedColumn:
+                                    $$CodeModeStoreTableTableReferences
+                                        ._conversationIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+                    if (agentId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.agentId,
+                                referencedTable:
+                                    $$CodeModeStoreTableTableReferences
+                                        ._agentIdTable(db),
+                                referencedColumn:
+                                    $$CodeModeStoreTableTableReferences
+                                        ._agentIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$CodeModeStoreTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WorkspaceDatabase,
+      $CodeModeStoreTableTable,
+      CodeModeStoreTableData,
+      $$CodeModeStoreTableTableFilterComposer,
+      $$CodeModeStoreTableTableOrderingComposer,
+      $$CodeModeStoreTableTableAnnotationComposer,
+      $$CodeModeStoreTableTableCreateCompanionBuilder,
+      $$CodeModeStoreTableTableUpdateCompanionBuilder,
+      (CodeModeStoreTableData, $$CodeModeStoreTableTableReferences),
+      CodeModeStoreTableData,
+      PrefetchHooks Function({bool conversationId, bool agentId})
+    >;
+typedef $$AgentWakesTableTableCreateCompanionBuilder =
+    AgentWakesTableCompanion Function({
+      required String id,
+      required String workspaceId,
+      required String spaceId,
+      required String conversationId,
+      required String agentId,
+      required String reason,
+      Value<String> lane,
+      required String payload,
+      Value<String> detail,
+      Value<String?> runOptions,
+      required String dedupKey,
+      required DateTime notBefore,
+      Value<DateTime?> expiresAt,
+      Value<String?> requestedByUserId,
+      Value<String> chain,
+      Value<bool> expectsReply,
+      Value<String> state,
+      Value<String?> stateReason,
+      Value<String?> deliveredRunId,
+      Value<int> attempt,
+      Value<DateTime> createdAt,
+      Value<DateTime?> claimedAt,
+      Value<DateTime?> settledAt,
+      Value<int> rowid,
+    });
+typedef $$AgentWakesTableTableUpdateCompanionBuilder =
+    AgentWakesTableCompanion Function({
+      Value<String> id,
+      Value<String> workspaceId,
+      Value<String> spaceId,
+      Value<String> conversationId,
+      Value<String> agentId,
+      Value<String> reason,
+      Value<String> lane,
+      Value<String> payload,
+      Value<String> detail,
+      Value<String?> runOptions,
+      Value<String> dedupKey,
+      Value<DateTime> notBefore,
+      Value<DateTime?> expiresAt,
+      Value<String?> requestedByUserId,
+      Value<String> chain,
+      Value<bool> expectsReply,
+      Value<String> state,
+      Value<String?> stateReason,
+      Value<String?> deliveredRunId,
+      Value<int> attempt,
+      Value<DateTime> createdAt,
+      Value<DateTime?> claimedAt,
+      Value<DateTime?> settledAt,
+      Value<int> rowid,
+    });
+
+final class $$AgentWakesTableTableReferences
+    extends
+        BaseReferences<
+          _$WorkspaceDatabase,
+          $AgentWakesTableTable,
+          AgentWakesTableData
+        > {
+  $$AgentWakesTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ConversationsTableTable _conversationIdTable(
+    _$WorkspaceDatabase db,
+  ) => db.conversationsTable.createAlias(
+    'agent_wakes__conversation_id__conversations__id',
+  );
+
+  $$ConversationsTableTableProcessedTableManager get conversationId {
+    final $_column = $_itemColumn<String>('conversation_id')!;
+
+    final manager = $$ConversationsTableTableTableManager(
+      $_db,
+      $_db.conversationsTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_conversationIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $AgentsTableTable _agentIdTable(_$WorkspaceDatabase db) =>
+      db.agentsTable.createAlias('agent_wakes__agent_id__agents__id');
+
+  $$AgentsTableTableProcessedTableManager get agentId {
+    final $_column = $_itemColumn<String>('agent_id')!;
+
+    final manager = $$AgentsTableTableTableManager(
+      $_db,
+      $_db.agentsTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_agentIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$AgentWakesTableTableFilterComposer
+    extends Composer<_$WorkspaceDatabase, $AgentWakesTableTable> {
+  $$AgentWakesTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reason => $composableBuilder(
+    column: $table.reason,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lane => $composableBuilder(
+    column: $table.lane,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get detail => $composableBuilder(
+    column: $table.detail,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get runOptions => $composableBuilder(
+    column: $table.runOptions,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get dedupKey => $composableBuilder(
+    column: $table.dedupKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get notBefore => $composableBuilder(
+    column: $table.notBefore,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get expiresAt => $composableBuilder(
+    column: $table.expiresAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get requestedByUserId => $composableBuilder(
+    column: $table.requestedByUserId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get chain => $composableBuilder(
+    column: $table.chain,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get expectsReply => $composableBuilder(
+    column: $table.expectsReply,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get state => $composableBuilder(
+    column: $table.state,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get stateReason => $composableBuilder(
+    column: $table.stateReason,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get deliveredRunId => $composableBuilder(
+    column: $table.deliveredRunId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get attempt => $composableBuilder(
+    column: $table.attempt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get claimedAt => $composableBuilder(
+    column: $table.claimedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get settledAt => $composableBuilder(
+    column: $table.settledAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ConversationsTableTableFilterComposer get conversationId {
+    final $$ConversationsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.conversationId,
+      referencedTable: $db.conversationsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ConversationsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.conversationsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AgentsTableTableFilterComposer get agentId {
+    final $$AgentsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.agentId,
+      referencedTable: $db.agentsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.agentsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AgentWakesTableTableOrderingComposer
+    extends Composer<_$WorkspaceDatabase, $AgentWakesTableTable> {
+  $$AgentWakesTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get reason => $composableBuilder(
+    column: $table.reason,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lane => $composableBuilder(
+    column: $table.lane,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get detail => $composableBuilder(
+    column: $table.detail,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get runOptions => $composableBuilder(
+    column: $table.runOptions,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get dedupKey => $composableBuilder(
+    column: $table.dedupKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get notBefore => $composableBuilder(
+    column: $table.notBefore,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get expiresAt => $composableBuilder(
+    column: $table.expiresAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get requestedByUserId => $composableBuilder(
+    column: $table.requestedByUserId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get chain => $composableBuilder(
+    column: $table.chain,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get expectsReply => $composableBuilder(
+    column: $table.expectsReply,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get state => $composableBuilder(
+    column: $table.state,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get stateReason => $composableBuilder(
+    column: $table.stateReason,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get deliveredRunId => $composableBuilder(
+    column: $table.deliveredRunId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get attempt => $composableBuilder(
+    column: $table.attempt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get claimedAt => $composableBuilder(
+    column: $table.claimedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get settledAt => $composableBuilder(
+    column: $table.settledAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ConversationsTableTableOrderingComposer get conversationId {
+    final $$ConversationsTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.conversationId,
+      referencedTable: $db.conversationsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ConversationsTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.conversationsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AgentsTableTableOrderingComposer get agentId {
+    final $$AgentsTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.agentId,
+      referencedTable: $db.agentsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentsTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.agentsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AgentWakesTableTableAnnotationComposer
+    extends Composer<_$WorkspaceDatabase, $AgentWakesTableTable> {
+  $$AgentWakesTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get spaceId =>
+      $composableBuilder(column: $table.spaceId, builder: (column) => column);
+
+  GeneratedColumn<String> get reason =>
+      $composableBuilder(column: $table.reason, builder: (column) => column);
+
+  GeneratedColumn<String> get lane =>
+      $composableBuilder(column: $table.lane, builder: (column) => column);
+
+  GeneratedColumn<String> get payload =>
+      $composableBuilder(column: $table.payload, builder: (column) => column);
+
+  GeneratedColumn<String> get detail =>
+      $composableBuilder(column: $table.detail, builder: (column) => column);
+
+  GeneratedColumn<String> get runOptions => $composableBuilder(
+    column: $table.runOptions,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get dedupKey =>
+      $composableBuilder(column: $table.dedupKey, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get notBefore =>
+      $composableBuilder(column: $table.notBefore, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get expiresAt =>
+      $composableBuilder(column: $table.expiresAt, builder: (column) => column);
+
+  GeneratedColumn<String> get requestedByUserId => $composableBuilder(
+    column: $table.requestedByUserId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get chain =>
+      $composableBuilder(column: $table.chain, builder: (column) => column);
+
+  GeneratedColumn<bool> get expectsReply => $composableBuilder(
+    column: $table.expectsReply,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get state =>
+      $composableBuilder(column: $table.state, builder: (column) => column);
+
+  GeneratedColumn<String> get stateReason => $composableBuilder(
+    column: $table.stateReason,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get deliveredRunId => $composableBuilder(
+    column: $table.deliveredRunId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get attempt =>
+      $composableBuilder(column: $table.attempt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get claimedAt =>
+      $composableBuilder(column: $table.claimedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get settledAt =>
+      $composableBuilder(column: $table.settledAt, builder: (column) => column);
+
+  $$ConversationsTableTableAnnotationComposer get conversationId {
+    final $$ConversationsTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.conversationId,
+          referencedTable: $db.conversationsTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ConversationsTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.conversationsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+
+  $$AgentsTableTableAnnotationComposer get agentId {
+    final $$AgentsTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.agentId,
+      referencedTable: $db.agentsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentsTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.agentsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AgentWakesTableTableTableManager
+    extends
+        RootTableManager<
+          _$WorkspaceDatabase,
+          $AgentWakesTableTable,
+          AgentWakesTableData,
+          $$AgentWakesTableTableFilterComposer,
+          $$AgentWakesTableTableOrderingComposer,
+          $$AgentWakesTableTableAnnotationComposer,
+          $$AgentWakesTableTableCreateCompanionBuilder,
+          $$AgentWakesTableTableUpdateCompanionBuilder,
+          (AgentWakesTableData, $$AgentWakesTableTableReferences),
+          AgentWakesTableData,
+          PrefetchHooks Function({bool conversationId, bool agentId})
+        > {
+  $$AgentWakesTableTableTableManager(
+    _$WorkspaceDatabase db,
+    $AgentWakesTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AgentWakesTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AgentWakesTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AgentWakesTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> workspaceId = const Value.absent(),
+                Value<String> spaceId = const Value.absent(),
+                Value<String> conversationId = const Value.absent(),
+                Value<String> agentId = const Value.absent(),
+                Value<String> reason = const Value.absent(),
+                Value<String> lane = const Value.absent(),
+                Value<String> payload = const Value.absent(),
+                Value<String> detail = const Value.absent(),
+                Value<String?> runOptions = const Value.absent(),
+                Value<String> dedupKey = const Value.absent(),
+                Value<DateTime> notBefore = const Value.absent(),
+                Value<DateTime?> expiresAt = const Value.absent(),
+                Value<String?> requestedByUserId = const Value.absent(),
+                Value<String> chain = const Value.absent(),
+                Value<bool> expectsReply = const Value.absent(),
+                Value<String> state = const Value.absent(),
+                Value<String?> stateReason = const Value.absent(),
+                Value<String?> deliveredRunId = const Value.absent(),
+                Value<int> attempt = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> claimedAt = const Value.absent(),
+                Value<DateTime?> settledAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AgentWakesTableCompanion(
+                id: id,
+                workspaceId: workspaceId,
+                spaceId: spaceId,
+                conversationId: conversationId,
+                agentId: agentId,
+                reason: reason,
+                lane: lane,
+                payload: payload,
+                detail: detail,
+                runOptions: runOptions,
+                dedupKey: dedupKey,
+                notBefore: notBefore,
+                expiresAt: expiresAt,
+                requestedByUserId: requestedByUserId,
+                chain: chain,
+                expectsReply: expectsReply,
+                state: state,
+                stateReason: stateReason,
+                deliveredRunId: deliveredRunId,
+                attempt: attempt,
+                createdAt: createdAt,
+                claimedAt: claimedAt,
+                settledAt: settledAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String workspaceId,
+                required String spaceId,
+                required String conversationId,
+                required String agentId,
+                required String reason,
+                Value<String> lane = const Value.absent(),
+                required String payload,
+                Value<String> detail = const Value.absent(),
+                Value<String?> runOptions = const Value.absent(),
+                required String dedupKey,
+                required DateTime notBefore,
+                Value<DateTime?> expiresAt = const Value.absent(),
+                Value<String?> requestedByUserId = const Value.absent(),
+                Value<String> chain = const Value.absent(),
+                Value<bool> expectsReply = const Value.absent(),
+                Value<String> state = const Value.absent(),
+                Value<String?> stateReason = const Value.absent(),
+                Value<String?> deliveredRunId = const Value.absent(),
+                Value<int> attempt = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> claimedAt = const Value.absent(),
+                Value<DateTime?> settledAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AgentWakesTableCompanion.insert(
+                id: id,
+                workspaceId: workspaceId,
+                spaceId: spaceId,
+                conversationId: conversationId,
+                agentId: agentId,
+                reason: reason,
+                lane: lane,
+                payload: payload,
+                detail: detail,
+                runOptions: runOptions,
+                dedupKey: dedupKey,
+                notBefore: notBefore,
+                expiresAt: expiresAt,
+                requestedByUserId: requestedByUserId,
+                chain: chain,
+                expectsReply: expectsReply,
+                state: state,
+                stateReason: stateReason,
+                deliveredRunId: deliveredRunId,
+                attempt: attempt,
+                createdAt: createdAt,
+                claimedAt: claimedAt,
+                settledAt: settledAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$AgentWakesTableTable, AgentWakesTableData>(
+                    table,
+                  ),
+                  $$AgentWakesTableTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({conversationId = false, agentId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (conversationId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.conversationId,
+                                referencedTable:
+                                    $$AgentWakesTableTableReferences
+                                        ._conversationIdTable(db),
+                                referencedColumn:
+                                    $$AgentWakesTableTableReferences
+                                        ._conversationIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+                    if (agentId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.agentId,
+                                referencedTable:
+                                    $$AgentWakesTableTableReferences
+                                        ._agentIdTable(db),
+                                referencedColumn:
+                                    $$AgentWakesTableTableReferences
+                                        ._agentIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$AgentWakesTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WorkspaceDatabase,
+      $AgentWakesTableTable,
+      AgentWakesTableData,
+      $$AgentWakesTableTableFilterComposer,
+      $$AgentWakesTableTableOrderingComposer,
+      $$AgentWakesTableTableAnnotationComposer,
+      $$AgentWakesTableTableCreateCompanionBuilder,
+      $$AgentWakesTableTableUpdateCompanionBuilder,
+      (AgentWakesTableData, $$AgentWakesTableTableReferences),
+      AgentWakesTableData,
+      PrefetchHooks Function({bool conversationId, bool agentId})
+    >;
+typedef $$WakeRulesTableTableCreateCompanionBuilder =
+    WakeRulesTableCompanion Function({
+      required String id,
+      required String workspaceId,
+      required String spaceId,
+      required String conversationId,
+      required String agentId,
+      required String triggerKind,
+      Value<DateTime?> triggerAt,
+      Value<int?> intervalSeconds,
+      Value<String?> cronExpression,
+      Value<String?> timeZone,
+      Value<String?> eventKind,
+      Value<String?> eventTargetId,
+      required String note,
+      Value<String?> noteEditedByUserId,
+      Value<String?> rootRuleId,
+      Value<String> deliver,
+      Value<String> whenBusy,
+      Value<int?> maxRuns,
+      required int costCapMicros,
+      required DateTime expiresAt,
+      Value<int> runCount,
+      Value<int> skipCount,
+      Value<int> costMicros,
+      Value<DateTime?> lastFiredAt,
+      Value<DateTime?> nextFireAt,
+      Value<int?> nextDelaySeconds,
+      Value<String?> goalId,
+      required String origin,
+      Value<String?> createdByRunId,
+      Value<String?> createdByUserId,
+      Value<String?> requestedByUserId,
+      Value<String> status,
+      Value<String?> endReason,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$WakeRulesTableTableUpdateCompanionBuilder =
+    WakeRulesTableCompanion Function({
+      Value<String> id,
+      Value<String> workspaceId,
+      Value<String> spaceId,
+      Value<String> conversationId,
+      Value<String> agentId,
+      Value<String> triggerKind,
+      Value<DateTime?> triggerAt,
+      Value<int?> intervalSeconds,
+      Value<String?> cronExpression,
+      Value<String?> timeZone,
+      Value<String?> eventKind,
+      Value<String?> eventTargetId,
+      Value<String> note,
+      Value<String?> noteEditedByUserId,
+      Value<String?> rootRuleId,
+      Value<String> deliver,
+      Value<String> whenBusy,
+      Value<int?> maxRuns,
+      Value<int> costCapMicros,
+      Value<DateTime> expiresAt,
+      Value<int> runCount,
+      Value<int> skipCount,
+      Value<int> costMicros,
+      Value<DateTime?> lastFiredAt,
+      Value<DateTime?> nextFireAt,
+      Value<int?> nextDelaySeconds,
+      Value<String?> goalId,
+      Value<String> origin,
+      Value<String?> createdByRunId,
+      Value<String?> createdByUserId,
+      Value<String?> requestedByUserId,
+      Value<String> status,
+      Value<String?> endReason,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+final class $$WakeRulesTableTableReferences
+    extends
+        BaseReferences<
+          _$WorkspaceDatabase,
+          $WakeRulesTableTable,
+          WakeRulesTableData
+        > {
+  $$WakeRulesTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ConversationsTableTable _conversationIdTable(
+    _$WorkspaceDatabase db,
+  ) => db.conversationsTable.createAlias(
+    'wake_rules__conversation_id__conversations__id',
+  );
+
+  $$ConversationsTableTableProcessedTableManager get conversationId {
+    final $_column = $_itemColumn<String>('conversation_id')!;
+
+    final manager = $$ConversationsTableTableTableManager(
+      $_db,
+      $_db.conversationsTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_conversationIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $AgentsTableTable _agentIdTable(_$WorkspaceDatabase db) =>
+      db.agentsTable.createAlias('wake_rules__agent_id__agents__id');
+
+  $$AgentsTableTableProcessedTableManager get agentId {
+    final $_column = $_itemColumn<String>('agent_id')!;
+
+    final manager = $$AgentsTableTableTableManager(
+      $_db,
+      $_db.agentsTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_agentIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $AgentGoalRunsTableTable _goalIdTable(_$WorkspaceDatabase db) => db
+      .agentGoalRunsTable
+      .createAlias('wake_rules__goal_id__agent_goal_runs__id');
+
+  $$AgentGoalRunsTableTableProcessedTableManager? get goalId {
+    final $_column = $_itemColumn<String>('goal_id');
+    if ($_column == null) return null;
+    final manager = $$AgentGoalRunsTableTableTableManager(
+      $_db,
+      $_db.agentGoalRunsTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_goalIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$WakeRulesTableTableFilterComposer
+    extends Composer<_$WorkspaceDatabase, $WakeRulesTableTable> {
+  $$WakeRulesTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get triggerKind => $composableBuilder(
+    column: $table.triggerKind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get triggerAt => $composableBuilder(
+    column: $table.triggerAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get intervalSeconds => $composableBuilder(
+    column: $table.intervalSeconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cronExpression => $composableBuilder(
+    column: $table.cronExpression,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get timeZone => $composableBuilder(
+    column: $table.timeZone,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get eventKind => $composableBuilder(
+    column: $table.eventKind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get eventTargetId => $composableBuilder(
+    column: $table.eventTargetId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get noteEditedByUserId => $composableBuilder(
+    column: $table.noteEditedByUserId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get rootRuleId => $composableBuilder(
+    column: $table.rootRuleId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get deliver => $composableBuilder(
+    column: $table.deliver,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get whenBusy => $composableBuilder(
+    column: $table.whenBusy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get maxRuns => $composableBuilder(
+    column: $table.maxRuns,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get costCapMicros => $composableBuilder(
+    column: $table.costCapMicros,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get expiresAt => $composableBuilder(
+    column: $table.expiresAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get runCount => $composableBuilder(
+    column: $table.runCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get skipCount => $composableBuilder(
+    column: $table.skipCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get costMicros => $composableBuilder(
+    column: $table.costMicros,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastFiredAt => $composableBuilder(
+    column: $table.lastFiredAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get nextFireAt => $composableBuilder(
+    column: $table.nextFireAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get nextDelaySeconds => $composableBuilder(
+    column: $table.nextDelaySeconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get origin => $composableBuilder(
+    column: $table.origin,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdByRunId => $composableBuilder(
+    column: $table.createdByRunId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdByUserId => $composableBuilder(
+    column: $table.createdByUserId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get requestedByUserId => $composableBuilder(
+    column: $table.requestedByUserId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get endReason => $composableBuilder(
+    column: $table.endReason,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ConversationsTableTableFilterComposer get conversationId {
+    final $$ConversationsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.conversationId,
+      referencedTable: $db.conversationsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ConversationsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.conversationsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AgentsTableTableFilterComposer get agentId {
+    final $$AgentsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.agentId,
+      referencedTable: $db.agentsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.agentsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AgentGoalRunsTableTableFilterComposer get goalId {
+    final $$AgentGoalRunsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.goalId,
+      referencedTable: $db.agentGoalRunsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentGoalRunsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.agentGoalRunsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$WakeRulesTableTableOrderingComposer
+    extends Composer<_$WorkspaceDatabase, $WakeRulesTableTable> {
+  $$WakeRulesTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get triggerKind => $composableBuilder(
+    column: $table.triggerKind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get triggerAt => $composableBuilder(
+    column: $table.triggerAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get intervalSeconds => $composableBuilder(
+    column: $table.intervalSeconds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cronExpression => $composableBuilder(
+    column: $table.cronExpression,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get timeZone => $composableBuilder(
+    column: $table.timeZone,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get eventKind => $composableBuilder(
+    column: $table.eventKind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get eventTargetId => $composableBuilder(
+    column: $table.eventTargetId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get noteEditedByUserId => $composableBuilder(
+    column: $table.noteEditedByUserId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get rootRuleId => $composableBuilder(
+    column: $table.rootRuleId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get deliver => $composableBuilder(
+    column: $table.deliver,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get whenBusy => $composableBuilder(
+    column: $table.whenBusy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get maxRuns => $composableBuilder(
+    column: $table.maxRuns,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get costCapMicros => $composableBuilder(
+    column: $table.costCapMicros,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get expiresAt => $composableBuilder(
+    column: $table.expiresAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get runCount => $composableBuilder(
+    column: $table.runCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get skipCount => $composableBuilder(
+    column: $table.skipCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get costMicros => $composableBuilder(
+    column: $table.costMicros,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastFiredAt => $composableBuilder(
+    column: $table.lastFiredAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get nextFireAt => $composableBuilder(
+    column: $table.nextFireAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get nextDelaySeconds => $composableBuilder(
+    column: $table.nextDelaySeconds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get origin => $composableBuilder(
+    column: $table.origin,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdByRunId => $composableBuilder(
+    column: $table.createdByRunId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdByUserId => $composableBuilder(
+    column: $table.createdByUserId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get requestedByUserId => $composableBuilder(
+    column: $table.requestedByUserId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get endReason => $composableBuilder(
+    column: $table.endReason,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ConversationsTableTableOrderingComposer get conversationId {
+    final $$ConversationsTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.conversationId,
+      referencedTable: $db.conversationsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ConversationsTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.conversationsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AgentsTableTableOrderingComposer get agentId {
+    final $$AgentsTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.agentId,
+      referencedTable: $db.agentsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentsTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.agentsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AgentGoalRunsTableTableOrderingComposer get goalId {
+    final $$AgentGoalRunsTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.goalId,
+      referencedTable: $db.agentGoalRunsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentGoalRunsTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.agentGoalRunsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$WakeRulesTableTableAnnotationComposer
+    extends Composer<_$WorkspaceDatabase, $WakeRulesTableTable> {
+  $$WakeRulesTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get spaceId =>
+      $composableBuilder(column: $table.spaceId, builder: (column) => column);
+
+  GeneratedColumn<String> get triggerKind => $composableBuilder(
+    column: $table.triggerKind,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get triggerAt =>
+      $composableBuilder(column: $table.triggerAt, builder: (column) => column);
+
+  GeneratedColumn<int> get intervalSeconds => $composableBuilder(
+    column: $table.intervalSeconds,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get cronExpression => $composableBuilder(
+    column: $table.cronExpression,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get timeZone =>
+      $composableBuilder(column: $table.timeZone, builder: (column) => column);
+
+  GeneratedColumn<String> get eventKind =>
+      $composableBuilder(column: $table.eventKind, builder: (column) => column);
+
+  GeneratedColumn<String> get eventTargetId => $composableBuilder(
+    column: $table.eventTargetId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<String> get noteEditedByUserId => $composableBuilder(
+    column: $table.noteEditedByUserId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get rootRuleId => $composableBuilder(
+    column: $table.rootRuleId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get deliver =>
+      $composableBuilder(column: $table.deliver, builder: (column) => column);
+
+  GeneratedColumn<String> get whenBusy =>
+      $composableBuilder(column: $table.whenBusy, builder: (column) => column);
+
+  GeneratedColumn<int> get maxRuns =>
+      $composableBuilder(column: $table.maxRuns, builder: (column) => column);
+
+  GeneratedColumn<int> get costCapMicros => $composableBuilder(
+    column: $table.costCapMicros,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get expiresAt =>
+      $composableBuilder(column: $table.expiresAt, builder: (column) => column);
+
+  GeneratedColumn<int> get runCount =>
+      $composableBuilder(column: $table.runCount, builder: (column) => column);
+
+  GeneratedColumn<int> get skipCount =>
+      $composableBuilder(column: $table.skipCount, builder: (column) => column);
+
+  GeneratedColumn<int> get costMicros => $composableBuilder(
+    column: $table.costMicros,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get lastFiredAt => $composableBuilder(
+    column: $table.lastFiredAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get nextFireAt => $composableBuilder(
+    column: $table.nextFireAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get nextDelaySeconds => $composableBuilder(
+    column: $table.nextDelaySeconds,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get origin =>
+      $composableBuilder(column: $table.origin, builder: (column) => column);
+
+  GeneratedColumn<String> get createdByRunId => $composableBuilder(
+    column: $table.createdByRunId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get createdByUserId => $composableBuilder(
+    column: $table.createdByUserId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get requestedByUserId => $composableBuilder(
+    column: $table.requestedByUserId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get endReason =>
+      $composableBuilder(column: $table.endReason, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$ConversationsTableTableAnnotationComposer get conversationId {
+    final $$ConversationsTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.conversationId,
+          referencedTable: $db.conversationsTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ConversationsTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.conversationsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+
+  $$AgentsTableTableAnnotationComposer get agentId {
+    final $$AgentsTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.agentId,
+      referencedTable: $db.agentsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentsTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.agentsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AgentGoalRunsTableTableAnnotationComposer get goalId {
+    final $$AgentGoalRunsTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.goalId,
+          referencedTable: $db.agentGoalRunsTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$AgentGoalRunsTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.agentGoalRunsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$WakeRulesTableTableTableManager
+    extends
+        RootTableManager<
+          _$WorkspaceDatabase,
+          $WakeRulesTableTable,
+          WakeRulesTableData,
+          $$WakeRulesTableTableFilterComposer,
+          $$WakeRulesTableTableOrderingComposer,
+          $$WakeRulesTableTableAnnotationComposer,
+          $$WakeRulesTableTableCreateCompanionBuilder,
+          $$WakeRulesTableTableUpdateCompanionBuilder,
+          (WakeRulesTableData, $$WakeRulesTableTableReferences),
+          WakeRulesTableData,
+          PrefetchHooks Function({
+            bool conversationId,
+            bool agentId,
+            bool goalId,
+          })
+        > {
+  $$WakeRulesTableTableTableManager(
+    _$WorkspaceDatabase db,
+    $WakeRulesTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$WakeRulesTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$WakeRulesTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$WakeRulesTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> workspaceId = const Value.absent(),
+                Value<String> spaceId = const Value.absent(),
+                Value<String> conversationId = const Value.absent(),
+                Value<String> agentId = const Value.absent(),
+                Value<String> triggerKind = const Value.absent(),
+                Value<DateTime?> triggerAt = const Value.absent(),
+                Value<int?> intervalSeconds = const Value.absent(),
+                Value<String?> cronExpression = const Value.absent(),
+                Value<String?> timeZone = const Value.absent(),
+                Value<String?> eventKind = const Value.absent(),
+                Value<String?> eventTargetId = const Value.absent(),
+                Value<String> note = const Value.absent(),
+                Value<String?> noteEditedByUserId = const Value.absent(),
+                Value<String?> rootRuleId = const Value.absent(),
+                Value<String> deliver = const Value.absent(),
+                Value<String> whenBusy = const Value.absent(),
+                Value<int?> maxRuns = const Value.absent(),
+                Value<int> costCapMicros = const Value.absent(),
+                Value<DateTime> expiresAt = const Value.absent(),
+                Value<int> runCount = const Value.absent(),
+                Value<int> skipCount = const Value.absent(),
+                Value<int> costMicros = const Value.absent(),
+                Value<DateTime?> lastFiredAt = const Value.absent(),
+                Value<DateTime?> nextFireAt = const Value.absent(),
+                Value<int?> nextDelaySeconds = const Value.absent(),
+                Value<String?> goalId = const Value.absent(),
+                Value<String> origin = const Value.absent(),
+                Value<String?> createdByRunId = const Value.absent(),
+                Value<String?> createdByUserId = const Value.absent(),
+                Value<String?> requestedByUserId = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String?> endReason = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => WakeRulesTableCompanion(
+                id: id,
+                workspaceId: workspaceId,
+                spaceId: spaceId,
+                conversationId: conversationId,
+                agentId: agentId,
+                triggerKind: triggerKind,
+                triggerAt: triggerAt,
+                intervalSeconds: intervalSeconds,
+                cronExpression: cronExpression,
+                timeZone: timeZone,
+                eventKind: eventKind,
+                eventTargetId: eventTargetId,
+                note: note,
+                noteEditedByUserId: noteEditedByUserId,
+                rootRuleId: rootRuleId,
+                deliver: deliver,
+                whenBusy: whenBusy,
+                maxRuns: maxRuns,
+                costCapMicros: costCapMicros,
+                expiresAt: expiresAt,
+                runCount: runCount,
+                skipCount: skipCount,
+                costMicros: costMicros,
+                lastFiredAt: lastFiredAt,
+                nextFireAt: nextFireAt,
+                nextDelaySeconds: nextDelaySeconds,
+                goalId: goalId,
+                origin: origin,
+                createdByRunId: createdByRunId,
+                createdByUserId: createdByUserId,
+                requestedByUserId: requestedByUserId,
+                status: status,
+                endReason: endReason,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String workspaceId,
+                required String spaceId,
+                required String conversationId,
+                required String agentId,
+                required String triggerKind,
+                Value<DateTime?> triggerAt = const Value.absent(),
+                Value<int?> intervalSeconds = const Value.absent(),
+                Value<String?> cronExpression = const Value.absent(),
+                Value<String?> timeZone = const Value.absent(),
+                Value<String?> eventKind = const Value.absent(),
+                Value<String?> eventTargetId = const Value.absent(),
+                required String note,
+                Value<String?> noteEditedByUserId = const Value.absent(),
+                Value<String?> rootRuleId = const Value.absent(),
+                Value<String> deliver = const Value.absent(),
+                Value<String> whenBusy = const Value.absent(),
+                Value<int?> maxRuns = const Value.absent(),
+                required int costCapMicros,
+                required DateTime expiresAt,
+                Value<int> runCount = const Value.absent(),
+                Value<int> skipCount = const Value.absent(),
+                Value<int> costMicros = const Value.absent(),
+                Value<DateTime?> lastFiredAt = const Value.absent(),
+                Value<DateTime?> nextFireAt = const Value.absent(),
+                Value<int?> nextDelaySeconds = const Value.absent(),
+                Value<String?> goalId = const Value.absent(),
+                required String origin,
+                Value<String?> createdByRunId = const Value.absent(),
+                Value<String?> createdByUserId = const Value.absent(),
+                Value<String?> requestedByUserId = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String?> endReason = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => WakeRulesTableCompanion.insert(
+                id: id,
+                workspaceId: workspaceId,
+                spaceId: spaceId,
+                conversationId: conversationId,
+                agentId: agentId,
+                triggerKind: triggerKind,
+                triggerAt: triggerAt,
+                intervalSeconds: intervalSeconds,
+                cronExpression: cronExpression,
+                timeZone: timeZone,
+                eventKind: eventKind,
+                eventTargetId: eventTargetId,
+                note: note,
+                noteEditedByUserId: noteEditedByUserId,
+                rootRuleId: rootRuleId,
+                deliver: deliver,
+                whenBusy: whenBusy,
+                maxRuns: maxRuns,
+                costCapMicros: costCapMicros,
+                expiresAt: expiresAt,
+                runCount: runCount,
+                skipCount: skipCount,
+                costMicros: costMicros,
+                lastFiredAt: lastFiredAt,
+                nextFireAt: nextFireAt,
+                nextDelaySeconds: nextDelaySeconds,
+                goalId: goalId,
+                origin: origin,
+                createdByRunId: createdByRunId,
+                createdByUserId: createdByUserId,
+                requestedByUserId: requestedByUserId,
+                status: status,
+                endReason: endReason,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$WakeRulesTableTable, WakeRulesTableData>(table),
+                  $$WakeRulesTableTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({conversationId = false, agentId = false, goalId = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (conversationId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.conversationId,
+                                    referencedTable:
+                                        $$WakeRulesTableTableReferences
+                                            ._conversationIdTable(db),
+                                    referencedColumn:
+                                        $$WakeRulesTableTableReferences
+                                            ._conversationIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (agentId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.agentId,
+                                    referencedTable:
+                                        $$WakeRulesTableTableReferences
+                                            ._agentIdTable(db),
+                                    referencedColumn:
+                                        $$WakeRulesTableTableReferences
+                                            ._agentIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (goalId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.goalId,
+                                    referencedTable:
+                                        $$WakeRulesTableTableReferences
+                                            ._goalIdTable(db),
+                                    referencedColumn:
+                                        $$WakeRulesTableTableReferences
+                                            ._goalIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$WakeRulesTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WorkspaceDatabase,
+      $WakeRulesTableTable,
+      WakeRulesTableData,
+      $$WakeRulesTableTableFilterComposer,
+      $$WakeRulesTableTableOrderingComposer,
+      $$WakeRulesTableTableAnnotationComposer,
+      $$WakeRulesTableTableCreateCompanionBuilder,
+      $$WakeRulesTableTableUpdateCompanionBuilder,
+      (WakeRulesTableData, $$WakeRulesTableTableReferences),
+      WakeRulesTableData,
+      PrefetchHooks Function({bool conversationId, bool agentId, bool goalId})
+    >;
+typedef $$PeerAsksTableTableCreateCompanionBuilder =
+    PeerAsksTableCompanion Function({
+      required String id,
+      required String workspaceId,
+      Value<String> kind,
+      Value<String> mode,
+      required String askerAgentId,
+      Value<String?> askerRunId,
+      required String askerConversationId,
+      required String askerSpaceId,
+      required String recipientAgentId,
+      Value<String?> recipientConversationId,
+      Value<String?> recipientSpaceId,
+      Value<String?> questionMessageId,
+      required String questionHash,
+      Value<String?> dispatchedRunId,
+      Value<String> chain,
+      Value<String> status,
+      Value<String?> replyMessageId,
+      Value<bool> replyInline,
+      Value<String?> error,
+      Value<String?> requestedByUserId,
+      Value<DateTime> createdAt,
+      required DateTime expiresAt,
+      Value<DateTime?> settledAt,
+      Value<DateTime?> promisedAt,
+      Value<DateTime?> blockedNoticedAt,
+      Value<String?> stallNoticedRunId,
+      Value<int> rowid,
+    });
+typedef $$PeerAsksTableTableUpdateCompanionBuilder =
+    PeerAsksTableCompanion Function({
+      Value<String> id,
+      Value<String> workspaceId,
+      Value<String> kind,
+      Value<String> mode,
+      Value<String> askerAgentId,
+      Value<String?> askerRunId,
+      Value<String> askerConversationId,
+      Value<String> askerSpaceId,
+      Value<String> recipientAgentId,
+      Value<String?> recipientConversationId,
+      Value<String?> recipientSpaceId,
+      Value<String?> questionMessageId,
+      Value<String> questionHash,
+      Value<String?> dispatchedRunId,
+      Value<String> chain,
+      Value<String> status,
+      Value<String?> replyMessageId,
+      Value<bool> replyInline,
+      Value<String?> error,
+      Value<String?> requestedByUserId,
+      Value<DateTime> createdAt,
+      Value<DateTime> expiresAt,
+      Value<DateTime?> settledAt,
+      Value<DateTime?> promisedAt,
+      Value<DateTime?> blockedNoticedAt,
+      Value<String?> stallNoticedRunId,
+      Value<int> rowid,
+    });
+
+final class $$PeerAsksTableTableReferences
+    extends
+        BaseReferences<
+          _$WorkspaceDatabase,
+          $PeerAsksTableTable,
+          PeerAsksTableData
+        > {
+  $$PeerAsksTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $AgentsTableTable _askerAgentIdTable(_$WorkspaceDatabase db) =>
+      db.agentsTable.createAlias('peer_asks__asker_agent_id__agents__id');
+
+  $$AgentsTableTableProcessedTableManager get askerAgentId {
+    final $_column = $_itemColumn<String>('asker_agent_id')!;
+
+    final manager = $$AgentsTableTableTableManager(
+      $_db,
+      $_db.agentsTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_askerAgentIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ConversationsTableTable _askerConversationIdTable(
+    _$WorkspaceDatabase db,
+  ) => db.conversationsTable.createAlias(
+    'peer_asks__asker_conversation_id__conversations__id',
+  );
+
+  $$ConversationsTableTableProcessedTableManager get askerConversationId {
+    final $_column = $_itemColumn<String>('asker_conversation_id')!;
+
+    final manager = $$ConversationsTableTableTableManager(
+      $_db,
+      $_db.conversationsTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_askerConversationIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $AgentsTableTable _recipientAgentIdTable(_$WorkspaceDatabase db) =>
+      db.agentsTable.createAlias('peer_asks__recipient_agent_id__agents__id');
+
+  $$AgentsTableTableProcessedTableManager get recipientAgentId {
+    final $_column = $_itemColumn<String>('recipient_agent_id')!;
+
+    final manager = $$AgentsTableTableTableManager(
+      $_db,
+      $_db.agentsTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_recipientAgentIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$PeerAsksTableTableFilterComposer
+    extends Composer<_$WorkspaceDatabase, $PeerAsksTableTable> {
+  $$PeerAsksTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mode => $composableBuilder(
+    column: $table.mode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get askerRunId => $composableBuilder(
+    column: $table.askerRunId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get askerSpaceId => $composableBuilder(
+    column: $table.askerSpaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get recipientConversationId => $composableBuilder(
+    column: $table.recipientConversationId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get recipientSpaceId => $composableBuilder(
+    column: $table.recipientSpaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get questionMessageId => $composableBuilder(
+    column: $table.questionMessageId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get questionHash => $composableBuilder(
+    column: $table.questionHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get dispatchedRunId => $composableBuilder(
+    column: $table.dispatchedRunId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get chain => $composableBuilder(
+    column: $table.chain,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get replyMessageId => $composableBuilder(
+    column: $table.replyMessageId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get replyInline => $composableBuilder(
+    column: $table.replyInline,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get error => $composableBuilder(
+    column: $table.error,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get requestedByUserId => $composableBuilder(
+    column: $table.requestedByUserId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get expiresAt => $composableBuilder(
+    column: $table.expiresAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get settledAt => $composableBuilder(
+    column: $table.settledAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get promisedAt => $composableBuilder(
+    column: $table.promisedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get blockedNoticedAt => $composableBuilder(
+    column: $table.blockedNoticedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get stallNoticedRunId => $composableBuilder(
+    column: $table.stallNoticedRunId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$AgentsTableTableFilterComposer get askerAgentId {
+    final $$AgentsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.askerAgentId,
+      referencedTable: $db.agentsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.agentsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ConversationsTableTableFilterComposer get askerConversationId {
+    final $$ConversationsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.askerConversationId,
+      referencedTable: $db.conversationsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ConversationsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.conversationsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AgentsTableTableFilterComposer get recipientAgentId {
+    final $$AgentsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.recipientAgentId,
+      referencedTable: $db.agentsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.agentsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PeerAsksTableTableOrderingComposer
+    extends Composer<_$WorkspaceDatabase, $PeerAsksTableTable> {
+  $$PeerAsksTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mode => $composableBuilder(
+    column: $table.mode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get askerRunId => $composableBuilder(
+    column: $table.askerRunId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get askerSpaceId => $composableBuilder(
+    column: $table.askerSpaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get recipientConversationId => $composableBuilder(
+    column: $table.recipientConversationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get recipientSpaceId => $composableBuilder(
+    column: $table.recipientSpaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get questionMessageId => $composableBuilder(
+    column: $table.questionMessageId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get questionHash => $composableBuilder(
+    column: $table.questionHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get dispatchedRunId => $composableBuilder(
+    column: $table.dispatchedRunId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get chain => $composableBuilder(
+    column: $table.chain,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get replyMessageId => $composableBuilder(
+    column: $table.replyMessageId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get replyInline => $composableBuilder(
+    column: $table.replyInline,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get error => $composableBuilder(
+    column: $table.error,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get requestedByUserId => $composableBuilder(
+    column: $table.requestedByUserId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get expiresAt => $composableBuilder(
+    column: $table.expiresAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get settledAt => $composableBuilder(
+    column: $table.settledAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get promisedAt => $composableBuilder(
+    column: $table.promisedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get blockedNoticedAt => $composableBuilder(
+    column: $table.blockedNoticedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get stallNoticedRunId => $composableBuilder(
+    column: $table.stallNoticedRunId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$AgentsTableTableOrderingComposer get askerAgentId {
+    final $$AgentsTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.askerAgentId,
+      referencedTable: $db.agentsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentsTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.agentsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ConversationsTableTableOrderingComposer get askerConversationId {
+    final $$ConversationsTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.askerConversationId,
+      referencedTable: $db.conversationsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ConversationsTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.conversationsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AgentsTableTableOrderingComposer get recipientAgentId {
+    final $$AgentsTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.recipientAgentId,
+      referencedTable: $db.agentsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentsTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.agentsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PeerAsksTableTableAnnotationComposer
+    extends Composer<_$WorkspaceDatabase, $PeerAsksTableTable> {
+  $$PeerAsksTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get mode =>
+      $composableBuilder(column: $table.mode, builder: (column) => column);
+
+  GeneratedColumn<String> get askerRunId => $composableBuilder(
+    column: $table.askerRunId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get askerSpaceId => $composableBuilder(
+    column: $table.askerSpaceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get recipientConversationId => $composableBuilder(
+    column: $table.recipientConversationId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get recipientSpaceId => $composableBuilder(
+    column: $table.recipientSpaceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get questionMessageId => $composableBuilder(
+    column: $table.questionMessageId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get questionHash => $composableBuilder(
+    column: $table.questionHash,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get dispatchedRunId => $composableBuilder(
+    column: $table.dispatchedRunId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get chain =>
+      $composableBuilder(column: $table.chain, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get replyMessageId => $composableBuilder(
+    column: $table.replyMessageId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get replyInline => $composableBuilder(
+    column: $table.replyInline,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get error =>
+      $composableBuilder(column: $table.error, builder: (column) => column);
+
+  GeneratedColumn<String> get requestedByUserId => $composableBuilder(
+    column: $table.requestedByUserId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get expiresAt =>
+      $composableBuilder(column: $table.expiresAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get settledAt =>
+      $composableBuilder(column: $table.settledAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get promisedAt => $composableBuilder(
+    column: $table.promisedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get blockedNoticedAt => $composableBuilder(
+    column: $table.blockedNoticedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get stallNoticedRunId => $composableBuilder(
+    column: $table.stallNoticedRunId,
+    builder: (column) => column,
+  );
+
+  $$AgentsTableTableAnnotationComposer get askerAgentId {
+    final $$AgentsTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.askerAgentId,
+      referencedTable: $db.agentsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentsTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.agentsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ConversationsTableTableAnnotationComposer get askerConversationId {
+    final $$ConversationsTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.askerConversationId,
+          referencedTable: $db.conversationsTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ConversationsTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.conversationsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+
+  $$AgentsTableTableAnnotationComposer get recipientAgentId {
+    final $$AgentsTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.recipientAgentId,
+      referencedTable: $db.agentsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentsTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.agentsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PeerAsksTableTableTableManager
+    extends
+        RootTableManager<
+          _$WorkspaceDatabase,
+          $PeerAsksTableTable,
+          PeerAsksTableData,
+          $$PeerAsksTableTableFilterComposer,
+          $$PeerAsksTableTableOrderingComposer,
+          $$PeerAsksTableTableAnnotationComposer,
+          $$PeerAsksTableTableCreateCompanionBuilder,
+          $$PeerAsksTableTableUpdateCompanionBuilder,
+          (PeerAsksTableData, $$PeerAsksTableTableReferences),
+          PeerAsksTableData,
+          PrefetchHooks Function({
+            bool askerAgentId,
+            bool askerConversationId,
+            bool recipientAgentId,
+          })
+        > {
+  $$PeerAsksTableTableTableManager(
+    _$WorkspaceDatabase db,
+    $PeerAsksTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PeerAsksTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PeerAsksTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PeerAsksTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> workspaceId = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<String> mode = const Value.absent(),
+                Value<String> askerAgentId = const Value.absent(),
+                Value<String?> askerRunId = const Value.absent(),
+                Value<String> askerConversationId = const Value.absent(),
+                Value<String> askerSpaceId = const Value.absent(),
+                Value<String> recipientAgentId = const Value.absent(),
+                Value<String?> recipientConversationId = const Value.absent(),
+                Value<String?> recipientSpaceId = const Value.absent(),
+                Value<String?> questionMessageId = const Value.absent(),
+                Value<String> questionHash = const Value.absent(),
+                Value<String?> dispatchedRunId = const Value.absent(),
+                Value<String> chain = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String?> replyMessageId = const Value.absent(),
+                Value<bool> replyInline = const Value.absent(),
+                Value<String?> error = const Value.absent(),
+                Value<String?> requestedByUserId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> expiresAt = const Value.absent(),
+                Value<DateTime?> settledAt = const Value.absent(),
+                Value<DateTime?> promisedAt = const Value.absent(),
+                Value<DateTime?> blockedNoticedAt = const Value.absent(),
+                Value<String?> stallNoticedRunId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PeerAsksTableCompanion(
+                id: id,
+                workspaceId: workspaceId,
+                kind: kind,
+                mode: mode,
+                askerAgentId: askerAgentId,
+                askerRunId: askerRunId,
+                askerConversationId: askerConversationId,
+                askerSpaceId: askerSpaceId,
+                recipientAgentId: recipientAgentId,
+                recipientConversationId: recipientConversationId,
+                recipientSpaceId: recipientSpaceId,
+                questionMessageId: questionMessageId,
+                questionHash: questionHash,
+                dispatchedRunId: dispatchedRunId,
+                chain: chain,
+                status: status,
+                replyMessageId: replyMessageId,
+                replyInline: replyInline,
+                error: error,
+                requestedByUserId: requestedByUserId,
+                createdAt: createdAt,
+                expiresAt: expiresAt,
+                settledAt: settledAt,
+                promisedAt: promisedAt,
+                blockedNoticedAt: blockedNoticedAt,
+                stallNoticedRunId: stallNoticedRunId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String workspaceId,
+                Value<String> kind = const Value.absent(),
+                Value<String> mode = const Value.absent(),
+                required String askerAgentId,
+                Value<String?> askerRunId = const Value.absent(),
+                required String askerConversationId,
+                required String askerSpaceId,
+                required String recipientAgentId,
+                Value<String?> recipientConversationId = const Value.absent(),
+                Value<String?> recipientSpaceId = const Value.absent(),
+                Value<String?> questionMessageId = const Value.absent(),
+                required String questionHash,
+                Value<String?> dispatchedRunId = const Value.absent(),
+                Value<String> chain = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String?> replyMessageId = const Value.absent(),
+                Value<bool> replyInline = const Value.absent(),
+                Value<String?> error = const Value.absent(),
+                Value<String?> requestedByUserId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                required DateTime expiresAt,
+                Value<DateTime?> settledAt = const Value.absent(),
+                Value<DateTime?> promisedAt = const Value.absent(),
+                Value<DateTime?> blockedNoticedAt = const Value.absent(),
+                Value<String?> stallNoticedRunId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PeerAsksTableCompanion.insert(
+                id: id,
+                workspaceId: workspaceId,
+                kind: kind,
+                mode: mode,
+                askerAgentId: askerAgentId,
+                askerRunId: askerRunId,
+                askerConversationId: askerConversationId,
+                askerSpaceId: askerSpaceId,
+                recipientAgentId: recipientAgentId,
+                recipientConversationId: recipientConversationId,
+                recipientSpaceId: recipientSpaceId,
+                questionMessageId: questionMessageId,
+                questionHash: questionHash,
+                dispatchedRunId: dispatchedRunId,
+                chain: chain,
+                status: status,
+                replyMessageId: replyMessageId,
+                replyInline: replyInline,
+                error: error,
+                requestedByUserId: requestedByUserId,
+                createdAt: createdAt,
+                expiresAt: expiresAt,
+                settledAt: settledAt,
+                promisedAt: promisedAt,
+                blockedNoticedAt: blockedNoticedAt,
+                stallNoticedRunId: stallNoticedRunId,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$PeerAsksTableTable, PeerAsksTableData>(table),
+                  $$PeerAsksTableTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({
+                askerAgentId = false,
+                askerConversationId = false,
+                recipientAgentId = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (askerAgentId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.askerAgentId,
+                                    referencedTable:
+                                        $$PeerAsksTableTableReferences
+                                            ._askerAgentIdTable(db),
+                                    referencedColumn:
+                                        $$PeerAsksTableTableReferences
+                                            ._askerAgentIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (askerConversationId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.askerConversationId,
+                                    referencedTable:
+                                        $$PeerAsksTableTableReferences
+                                            ._askerConversationIdTable(db),
+                                    referencedColumn:
+                                        $$PeerAsksTableTableReferences
+                                            ._askerConversationIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (recipientAgentId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.recipientAgentId,
+                                    referencedTable:
+                                        $$PeerAsksTableTableReferences
+                                            ._recipientAgentIdTable(db),
+                                    referencedColumn:
+                                        $$PeerAsksTableTableReferences
+                                            ._recipientAgentIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$PeerAsksTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WorkspaceDatabase,
+      $PeerAsksTableTable,
+      PeerAsksTableData,
+      $$PeerAsksTableTableFilterComposer,
+      $$PeerAsksTableTableOrderingComposer,
+      $$PeerAsksTableTableAnnotationComposer,
+      $$PeerAsksTableTableCreateCompanionBuilder,
+      $$PeerAsksTableTableUpdateCompanionBuilder,
+      (PeerAsksTableData, $$PeerAsksTableTableReferences),
+      PeerAsksTableData,
+      PrefetchHooks Function({
+        bool askerAgentId,
+        bool askerConversationId,
+        bool recipientAgentId,
+      })
+    >;
+typedef $$ImprovementProposalsTableTableCreateCompanionBuilder =
+    ImprovementProposalsTableCompanion Function({
+      required String id,
+      required String workspaceId,
+      required String agentId,
+      Value<String?> spaceId,
+      Value<String?> conversationId,
+      Value<String?> goalId,
+      Value<String?> reviewRunId,
+      required String kind,
+      required String scope,
+      Value<String?> scopeRefId,
+      required String operation,
+      Value<String?> targetRef,
+      required String change,
+      Value<String> evidence,
+      required String expected,
+      Value<String> status,
+      Value<String?> beforeText,
+      Value<String?> afterText,
+      Value<String?> appliedRef,
+      Value<String?> candidateRevisionId,
+      Value<String?> campaignId,
+      Value<String> campaignState,
+      Value<String?> decidedByUserId,
+      Value<DateTime?> decidedAt,
+      Value<DateTime> createdAt,
+      required DateTime expiresAt,
+      Value<int> rowid,
+    });
+typedef $$ImprovementProposalsTableTableUpdateCompanionBuilder =
+    ImprovementProposalsTableCompanion Function({
+      Value<String> id,
+      Value<String> workspaceId,
+      Value<String> agentId,
+      Value<String?> spaceId,
+      Value<String?> conversationId,
+      Value<String?> goalId,
+      Value<String?> reviewRunId,
+      Value<String> kind,
+      Value<String> scope,
+      Value<String?> scopeRefId,
+      Value<String> operation,
+      Value<String?> targetRef,
+      Value<String> change,
+      Value<String> evidence,
+      Value<String> expected,
+      Value<String> status,
+      Value<String?> beforeText,
+      Value<String?> afterText,
+      Value<String?> appliedRef,
+      Value<String?> candidateRevisionId,
+      Value<String?> campaignId,
+      Value<String> campaignState,
+      Value<String?> decidedByUserId,
+      Value<DateTime?> decidedAt,
+      Value<DateTime> createdAt,
+      Value<DateTime> expiresAt,
+      Value<int> rowid,
+    });
+
+final class $$ImprovementProposalsTableTableReferences
+    extends
+        BaseReferences<
+          _$WorkspaceDatabase,
+          $ImprovementProposalsTableTable,
+          ImprovementProposalsTableData
+        > {
+  $$ImprovementProposalsTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $AgentsTableTable _agentIdTable(_$WorkspaceDatabase db) =>
+      db.agentsTable.createAlias('improvement_proposals__agent_id__agents__id');
+
+  $$AgentsTableTableProcessedTableManager get agentId {
+    final $_column = $_itemColumn<String>('agent_id')!;
+
+    final manager = $$AgentsTableTableTableManager(
+      $_db,
+      $_db.agentsTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_agentIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ConversationsTableTable _conversationIdTable(
+    _$WorkspaceDatabase db,
+  ) => db.conversationsTable.createAlias(
+    'improvement_proposals__conversation_id__conversations__id',
+  );
+
+  $$ConversationsTableTableProcessedTableManager? get conversationId {
+    final $_column = $_itemColumn<String>('conversation_id');
+    if ($_column == null) return null;
+    final manager = $$ConversationsTableTableTableManager(
+      $_db,
+      $_db.conversationsTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_conversationIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $AgentGoalRunsTableTable _goalIdTable(_$WorkspaceDatabase db) => db
+      .agentGoalRunsTable
+      .createAlias('improvement_proposals__goal_id__agent_goal_runs__id');
+
+  $$AgentGoalRunsTableTableProcessedTableManager? get goalId {
+    final $_column = $_itemColumn<String>('goal_id');
+    if ($_column == null) return null;
+    final manager = $$AgentGoalRunsTableTableTableManager(
+      $_db,
+      $_db.agentGoalRunsTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_goalIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ImprovementProposalsTableTableFilterComposer
+    extends Composer<_$WorkspaceDatabase, $ImprovementProposalsTableTable> {
+  $$ImprovementProposalsTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reviewRunId => $composableBuilder(
+    column: $table.reviewRunId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get scope => $composableBuilder(
+    column: $table.scope,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get scopeRefId => $composableBuilder(
+    column: $table.scopeRefId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get operation => $composableBuilder(
+    column: $table.operation,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get targetRef => $composableBuilder(
+    column: $table.targetRef,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get change => $composableBuilder(
+    column: $table.change,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get evidence => $composableBuilder(
+    column: $table.evidence,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get expected => $composableBuilder(
+    column: $table.expected,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get beforeText => $composableBuilder(
+    column: $table.beforeText,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get afterText => $composableBuilder(
+    column: $table.afterText,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get appliedRef => $composableBuilder(
+    column: $table.appliedRef,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get candidateRevisionId => $composableBuilder(
+    column: $table.candidateRevisionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get campaignId => $composableBuilder(
+    column: $table.campaignId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get campaignState => $composableBuilder(
+    column: $table.campaignState,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get decidedByUserId => $composableBuilder(
+    column: $table.decidedByUserId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get decidedAt => $composableBuilder(
+    column: $table.decidedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get expiresAt => $composableBuilder(
+    column: $table.expiresAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$AgentsTableTableFilterComposer get agentId {
+    final $$AgentsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.agentId,
+      referencedTable: $db.agentsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.agentsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ConversationsTableTableFilterComposer get conversationId {
+    final $$ConversationsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.conversationId,
+      referencedTable: $db.conversationsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ConversationsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.conversationsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AgentGoalRunsTableTableFilterComposer get goalId {
+    final $$AgentGoalRunsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.goalId,
+      referencedTable: $db.agentGoalRunsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentGoalRunsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.agentGoalRunsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ImprovementProposalsTableTableOrderingComposer
+    extends Composer<_$WorkspaceDatabase, $ImprovementProposalsTableTable> {
+  $$ImprovementProposalsTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get reviewRunId => $composableBuilder(
+    column: $table.reviewRunId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get scope => $composableBuilder(
+    column: $table.scope,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get scopeRefId => $composableBuilder(
+    column: $table.scopeRefId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get operation => $composableBuilder(
+    column: $table.operation,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get targetRef => $composableBuilder(
+    column: $table.targetRef,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get change => $composableBuilder(
+    column: $table.change,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get evidence => $composableBuilder(
+    column: $table.evidence,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get expected => $composableBuilder(
+    column: $table.expected,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get beforeText => $composableBuilder(
+    column: $table.beforeText,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get afterText => $composableBuilder(
+    column: $table.afterText,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get appliedRef => $composableBuilder(
+    column: $table.appliedRef,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get candidateRevisionId => $composableBuilder(
+    column: $table.candidateRevisionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get campaignId => $composableBuilder(
+    column: $table.campaignId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get campaignState => $composableBuilder(
+    column: $table.campaignState,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get decidedByUserId => $composableBuilder(
+    column: $table.decidedByUserId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get decidedAt => $composableBuilder(
+    column: $table.decidedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get expiresAt => $composableBuilder(
+    column: $table.expiresAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$AgentsTableTableOrderingComposer get agentId {
+    final $$AgentsTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.agentId,
+      referencedTable: $db.agentsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentsTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.agentsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ConversationsTableTableOrderingComposer get conversationId {
+    final $$ConversationsTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.conversationId,
+      referencedTable: $db.conversationsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ConversationsTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.conversationsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AgentGoalRunsTableTableOrderingComposer get goalId {
+    final $$AgentGoalRunsTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.goalId,
+      referencedTable: $db.agentGoalRunsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentGoalRunsTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.agentGoalRunsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ImprovementProposalsTableTableAnnotationComposer
+    extends Composer<_$WorkspaceDatabase, $ImprovementProposalsTableTable> {
+  $$ImprovementProposalsTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get spaceId =>
+      $composableBuilder(column: $table.spaceId, builder: (column) => column);
+
+  GeneratedColumn<String> get reviewRunId => $composableBuilder(
+    column: $table.reviewRunId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get scope =>
+      $composableBuilder(column: $table.scope, builder: (column) => column);
+
+  GeneratedColumn<String> get scopeRefId => $composableBuilder(
+    column: $table.scopeRefId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get operation =>
+      $composableBuilder(column: $table.operation, builder: (column) => column);
+
+  GeneratedColumn<String> get targetRef =>
+      $composableBuilder(column: $table.targetRef, builder: (column) => column);
+
+  GeneratedColumn<String> get change =>
+      $composableBuilder(column: $table.change, builder: (column) => column);
+
+  GeneratedColumn<String> get evidence =>
+      $composableBuilder(column: $table.evidence, builder: (column) => column);
+
+  GeneratedColumn<String> get expected =>
+      $composableBuilder(column: $table.expected, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get beforeText => $composableBuilder(
+    column: $table.beforeText,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get afterText =>
+      $composableBuilder(column: $table.afterText, builder: (column) => column);
+
+  GeneratedColumn<String> get appliedRef => $composableBuilder(
+    column: $table.appliedRef,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get candidateRevisionId => $composableBuilder(
+    column: $table.candidateRevisionId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get campaignId => $composableBuilder(
+    column: $table.campaignId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get campaignState => $composableBuilder(
+    column: $table.campaignState,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get decidedByUserId => $composableBuilder(
+    column: $table.decidedByUserId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get decidedAt =>
+      $composableBuilder(column: $table.decidedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get expiresAt =>
+      $composableBuilder(column: $table.expiresAt, builder: (column) => column);
+
+  $$AgentsTableTableAnnotationComposer get agentId {
+    final $$AgentsTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.agentId,
+      referencedTable: $db.agentsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AgentsTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.agentsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ConversationsTableTableAnnotationComposer get conversationId {
+    final $$ConversationsTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.conversationId,
+          referencedTable: $db.conversationsTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ConversationsTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.conversationsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+
+  $$AgentGoalRunsTableTableAnnotationComposer get goalId {
+    final $$AgentGoalRunsTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.goalId,
+          referencedTable: $db.agentGoalRunsTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$AgentGoalRunsTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.agentGoalRunsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$ImprovementProposalsTableTableTableManager
+    extends
+        RootTableManager<
+          _$WorkspaceDatabase,
+          $ImprovementProposalsTableTable,
+          ImprovementProposalsTableData,
+          $$ImprovementProposalsTableTableFilterComposer,
+          $$ImprovementProposalsTableTableOrderingComposer,
+          $$ImprovementProposalsTableTableAnnotationComposer,
+          $$ImprovementProposalsTableTableCreateCompanionBuilder,
+          $$ImprovementProposalsTableTableUpdateCompanionBuilder,
+          (
+            ImprovementProposalsTableData,
+            $$ImprovementProposalsTableTableReferences,
+          ),
+          ImprovementProposalsTableData,
+          PrefetchHooks Function({
+            bool agentId,
+            bool conversationId,
+            bool goalId,
+          })
+        > {
+  $$ImprovementProposalsTableTableTableManager(
+    _$WorkspaceDatabase db,
+    $ImprovementProposalsTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ImprovementProposalsTableTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$ImprovementProposalsTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$ImprovementProposalsTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> workspaceId = const Value.absent(),
+                Value<String> agentId = const Value.absent(),
+                Value<String?> spaceId = const Value.absent(),
+                Value<String?> conversationId = const Value.absent(),
+                Value<String?> goalId = const Value.absent(),
+                Value<String?> reviewRunId = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<String> scope = const Value.absent(),
+                Value<String?> scopeRefId = const Value.absent(),
+                Value<String> operation = const Value.absent(),
+                Value<String?> targetRef = const Value.absent(),
+                Value<String> change = const Value.absent(),
+                Value<String> evidence = const Value.absent(),
+                Value<String> expected = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String?> beforeText = const Value.absent(),
+                Value<String?> afterText = const Value.absent(),
+                Value<String?> appliedRef = const Value.absent(),
+                Value<String?> candidateRevisionId = const Value.absent(),
+                Value<String?> campaignId = const Value.absent(),
+                Value<String> campaignState = const Value.absent(),
+                Value<String?> decidedByUserId = const Value.absent(),
+                Value<DateTime?> decidedAt = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> expiresAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ImprovementProposalsTableCompanion(
+                id: id,
+                workspaceId: workspaceId,
+                agentId: agentId,
+                spaceId: spaceId,
+                conversationId: conversationId,
+                goalId: goalId,
+                reviewRunId: reviewRunId,
+                kind: kind,
+                scope: scope,
+                scopeRefId: scopeRefId,
+                operation: operation,
+                targetRef: targetRef,
+                change: change,
+                evidence: evidence,
+                expected: expected,
+                status: status,
+                beforeText: beforeText,
+                afterText: afterText,
+                appliedRef: appliedRef,
+                candidateRevisionId: candidateRevisionId,
+                campaignId: campaignId,
+                campaignState: campaignState,
+                decidedByUserId: decidedByUserId,
+                decidedAt: decidedAt,
+                createdAt: createdAt,
+                expiresAt: expiresAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String workspaceId,
+                required String agentId,
+                Value<String?> spaceId = const Value.absent(),
+                Value<String?> conversationId = const Value.absent(),
+                Value<String?> goalId = const Value.absent(),
+                Value<String?> reviewRunId = const Value.absent(),
+                required String kind,
+                required String scope,
+                Value<String?> scopeRefId = const Value.absent(),
+                required String operation,
+                Value<String?> targetRef = const Value.absent(),
+                required String change,
+                Value<String> evidence = const Value.absent(),
+                required String expected,
+                Value<String> status = const Value.absent(),
+                Value<String?> beforeText = const Value.absent(),
+                Value<String?> afterText = const Value.absent(),
+                Value<String?> appliedRef = const Value.absent(),
+                Value<String?> candidateRevisionId = const Value.absent(),
+                Value<String?> campaignId = const Value.absent(),
+                Value<String> campaignState = const Value.absent(),
+                Value<String?> decidedByUserId = const Value.absent(),
+                Value<DateTime?> decidedAt = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                required DateTime expiresAt,
+                Value<int> rowid = const Value.absent(),
+              }) => ImprovementProposalsTableCompanion.insert(
+                id: id,
+                workspaceId: workspaceId,
+                agentId: agentId,
+                spaceId: spaceId,
+                conversationId: conversationId,
+                goalId: goalId,
+                reviewRunId: reviewRunId,
+                kind: kind,
+                scope: scope,
+                scopeRefId: scopeRefId,
+                operation: operation,
+                targetRef: targetRef,
+                change: change,
+                evidence: evidence,
+                expected: expected,
+                status: status,
+                beforeText: beforeText,
+                afterText: afterText,
+                appliedRef: appliedRef,
+                candidateRevisionId: candidateRevisionId,
+                campaignId: campaignId,
+                campaignState: campaignState,
+                decidedByUserId: decidedByUserId,
+                decidedAt: decidedAt,
+                createdAt: createdAt,
+                expiresAt: expiresAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $ImprovementProposalsTableTable,
+                    ImprovementProposalsTableData
+                  >(table),
+                  $$ImprovementProposalsTableTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({agentId = false, conversationId = false, goalId = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (agentId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.agentId,
+                                    referencedTable:
+                                        $$ImprovementProposalsTableTableReferences
+                                            ._agentIdTable(db),
+                                    referencedColumn:
+                                        $$ImprovementProposalsTableTableReferences
+                                            ._agentIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (conversationId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.conversationId,
+                                    referencedTable:
+                                        $$ImprovementProposalsTableTableReferences
+                                            ._conversationIdTable(db),
+                                    referencedColumn:
+                                        $$ImprovementProposalsTableTableReferences
+                                            ._conversationIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (goalId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.goalId,
+                                    referencedTable:
+                                        $$ImprovementProposalsTableTableReferences
+                                            ._goalIdTable(db),
+                                    referencedColumn:
+                                        $$ImprovementProposalsTableTableReferences
+                                            ._goalIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$ImprovementProposalsTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WorkspaceDatabase,
+      $ImprovementProposalsTableTable,
+      ImprovementProposalsTableData,
+      $$ImprovementProposalsTableTableFilterComposer,
+      $$ImprovementProposalsTableTableOrderingComposer,
+      $$ImprovementProposalsTableTableAnnotationComposer,
+      $$ImprovementProposalsTableTableCreateCompanionBuilder,
+      $$ImprovementProposalsTableTableUpdateCompanionBuilder,
+      (
+        ImprovementProposalsTableData,
+        $$ImprovementProposalsTableTableReferences,
+      ),
+      ImprovementProposalsTableData,
+      PrefetchHooks Function({bool agentId, bool conversationId, bool goalId})
+    >;
 
 class $WorkspaceDatabaseManager {
   final _$WorkspaceDatabase _db;
@@ -154242,6 +174730,11 @@ class $WorkspaceDatabaseManager {
       $$ConversationActivityTableTableTableManager(
         _db,
         _db.conversationActivityTable,
+      );
+  $$ConversationReadsTableTableTableManager get conversationReadsTable =>
+      $$ConversationReadsTableTableTableManager(
+        _db,
+        _db.conversationReadsTable,
       );
   $$ReviewSpacesTableTableTableManager get reviewSpacesTable =>
       $$ReviewSpacesTableTableTableManager(_db, _db.reviewSpacesTable);
@@ -154582,4 +175075,30 @@ class $WorkspaceDatabaseManager {
       $$PlanDivergencesTableTableTableManager(_db, _db.planDivergencesTable);
   $$McpServersTableTableTableManager get mcpServersTable =>
       $$McpServersTableTableTableManager(_db, _db.mcpServersTable);
+  $$CodeExecutionsTableTableTableManager get codeExecutionsTable =>
+      $$CodeExecutionsTableTableTableManager(_db, _db.codeExecutionsTable);
+  $$CodeExecutionPayloadsTableTableTableManager
+  get codeExecutionPayloadsTable =>
+      $$CodeExecutionPayloadsTableTableTableManager(
+        _db,
+        _db.codeExecutionPayloadsTable,
+      );
+  $$CodeExecutionCallsTableTableTableManager get codeExecutionCallsTable =>
+      $$CodeExecutionCallsTableTableTableManager(
+        _db,
+        _db.codeExecutionCallsTable,
+      );
+  $$CodeModeStoreTableTableTableManager get codeModeStoreTable =>
+      $$CodeModeStoreTableTableTableManager(_db, _db.codeModeStoreTable);
+  $$AgentWakesTableTableTableManager get agentWakesTable =>
+      $$AgentWakesTableTableTableManager(_db, _db.agentWakesTable);
+  $$WakeRulesTableTableTableManager get wakeRulesTable =>
+      $$WakeRulesTableTableTableManager(_db, _db.wakeRulesTable);
+  $$PeerAsksTableTableTableManager get peerAsksTable =>
+      $$PeerAsksTableTableTableManager(_db, _db.peerAsksTable);
+  $$ImprovementProposalsTableTableTableManager get improvementProposalsTable =>
+      $$ImprovementProposalsTableTableTableManager(
+        _db,
+        _db.improvementProposalsTable,
+      );
 }

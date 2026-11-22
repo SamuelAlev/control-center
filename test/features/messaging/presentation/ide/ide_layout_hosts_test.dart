@@ -100,6 +100,49 @@ void main() {
     });
   });
 
+  group('conversationTabOrders', () {
+    test('lists each space\'s conversations in tab order, the no-arg tab as '
+        'the open space\'s standing conversation', () {
+      final orders = conversationTabOrders(
+        [
+          MessagingIdeTabs.chat('space', conversationId: 'b'),
+          MessagingIdeTabs.newTerminal(),
+          MessagingIdeTabs.chat('space'),
+          MessagingIdeTabs.chat('space', conversationId: 'a'),
+          MessagingIdeTabs.chat('space', conversationId: 'b'),
+        ],
+        openSpaceId: 'space',
+        standingId: 'standing',
+      );
+
+      expect(orders, {
+        'space': ['b', 'standing', 'a'],
+      });
+    });
+
+    test('a no-arg tab of another space, or before the standing id is known, '
+        'is left out', () {
+      final tabs = [
+        MessagingIdeTabs.chat('other'),
+        MessagingIdeTabs.chat('space'),
+        MessagingIdeTabs.chat('space', conversationId: 'a'),
+      ];
+
+      expect(
+        conversationTabOrders(tabs, openSpaceId: 'space', standingId: 's'),
+        {
+          'space': ['s', 'a'],
+        },
+      );
+      expect(
+        conversationTabOrders(tabs, openSpaceId: 'space', standingId: null),
+        {
+          'space': ['a'],
+        },
+      );
+    });
+  });
+
   group('IdeConversationView', () {
     test('a no-arg chat tab names the standing conversation', () {
       final view = IdeConversationView(

@@ -2,7 +2,7 @@
 title: Sự kiện miền
 description: Danh mục đầy đủ của 54 sự kiện miền, dữ liệu tải của chúng và những bên đăng ký phía máy chủ tiêu thụ chúng.
 slug: vi-VN/so-tay/tham-chieu/su-kien-mien
-sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
+sourceHash: f58123448c0f31c95774bbaebee89f1509940896
 ---
 
 ## Bus sự kiện
@@ -24,7 +24,10 @@ Mọi sự kiện trong danh mục dưới đây đều nằm trong một thư m
 | Sự kiện             | Dữ liệu tải                                            | Kích hoạt khi                                           |
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | Không gian làm việc được tạo                             |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Agent kết thúc một lượt chạy (thành công hay thất bại)   |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Luồng tiến trình của agent kết thúc, trước khi trạng thái cuối được ghi. Chỉ giữ lại cho cầu nối cuộc hội thoại PR và phân tích |
+| `AgentRunSettled` | `agentId`, `workspaceId`, `runId`, `status`, `endReason`, `costMicros`, `wakeIds`, `spaceId?`, `conversationId?`, `limitResetsAt?`, `requestedByUserId?`, `wakeReason?` | Trạng thái cuối của lượt chạy được ghi; được phát đúng một lần cho mỗi lần chạy. `endReason` là `completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` hoặc `serverStopped`. Lần chạy của một subagent không phát sự kiện nào |
+| `GoalSettled` | `goalId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `status`, `hold?`, `summary?`, `requestedByUserId?` | Một mục tiêu kết thúc, hoặc bắt đầu chờ người đánh giá |
+| `WakeRuleEnded` | `ruleId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `reason`, `requestedByUserId?` | Một lịch hoặc watch kết thúc (đã kích hoạt đúng một lần, hết hạn, đã dùng hết số lần chạy hoặc chi phí, bị hủy, mục tiêu của nó đã kết thúc, hoặc người sở hữu đã rời đi) |
 | `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | Một agent bắt đầu chờ con người: một yêu cầu phê duyệt, một câu hỏi `ask_user` hoặc một lượt chạy bị giữ lại vì thông tin xác thực (`kind` là `approval`, `question` hoặc `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Một kho mã được đăng ký; kích hoạt việc lập chỉ mục mã chạy nền |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Một skill được cài đặt hoặc cập nhật, kèm theo kết luận quét chuỗi cung ứng của nó |
@@ -57,6 +60,16 @@ Cả sáu sự kiện đều mang `workspaceId`, `repoOwner`, `repoName`, `prNum
 | `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | Ai đó nhắc tên bạn trong một bình luận PR hoặc bình luận đánh giá     |
 | `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | Ai đó trả lời trong một luồng đánh giá mà bạn tham gia                           |
 | `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | Ai đó giải quyết một luồng đánh giá mà bạn tham gia                              |
+
+### Watch pull request
+
+Được phát bởi bộ thăm dò pull request đang mở cho mọi pull request nó thăm dò, bất kể ai là tác giả, phục vụ các watch `on:pr_*` của agent. Cả ba đều mang `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `headRef` và `authorLogin`.
+
+| Sự kiện | Dữ liệu tải bổ sung | Kích hoạt khi |
+| ----------------------- | ----------------------------------------------- | ---------- |
+| `PrWatchChecksSettled` | `passing`, `failedChecks`, `failedCheckUrl?` | Mọi kiểm tra của đầu (head) pull request đã hoàn tất |
+| `PrWatchReviewActivity` | `decision`, `decisionChanged`, `newComments` | Pull request nhận được một đánh giá hoặc bình luận mới |
+| `PrWatchClosed` | `merged` | Pull request đã được merge hoặc đóng |
 
 ## Sự kiện nhắn tin
 
@@ -167,14 +180,20 @@ Mọi bên đăng ký dưới đây đều được khởi tạo bên trong `run
 | Cấp phát space chat (nội tuyến)     | `SpaceCreated`                                                                                       |
 | `PipelineTriggerDispatcher`         | Mọi `DomainEvent`; mỗi trình kích hoạt đang bật tự lọc theo loại của nó                              |
 | `SubPipelineResumeListener`         | `PipelineRunCompleted`, `PipelineRunFailed`                                                          |
-| `PipelineCostRollupListener`        | `AgentRunCompleted`                                                                                  |
-| `BudgetEvaluationListener`          | `AgentRunCompleted`                                                                                  |
+| `PipelineCostRollupListener`        | `AgentRunSettled`                                                                                    |
+| `BudgetEvaluationListener`          | `AgentRunSettled`                                                                                    |
 | `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (chỉ các lượt chạy `meeting_summary`) |
-| `PipelineStepResumeListener`        | `AgentRunCompleted`                                                                                  |
-| `AgentRunTaskCompleter`             | `AgentRunCompleted`                                                                                  |
-| `GoalSupervisor`                    | `AgentRunCompleted`                                                                                  |
-| `CheckerDispatchListener`           | `AgentRunCompleted`                                                                                  |
-| `TeamRoutingService`                | `AgentRunCompleted`, `TicketAssigned`                                                                |
+| `PipelineStepResumeListener`        | `AgentRunSettled`                                                                                    |
+| `AgentRunTaskCompleter`             | `AgentRunSettled`                                                                                    |
+| `GoalSupervisor`                    | `AgentRunSettled` — quyết định bước tiếp theo của mục tiêu                                           |
+| `CheckerDispatchListener`           | `AgentRunSettled` — xếp bộ kiểm tra thành một lượt đánh thức; bỏ qua các segment và đánh giá của mục tiêu |
+| `TeamRoutingService`                | `AgentRunSettled`, `TicketAssigned`                                                                  |
+| `WakeQueueService` | `AgentRunSettled` — gửi các lượt đánh thức đã chờ lần chạy kết thúc |
+| `WakeRuleService` | `AgentRunSettled` (vòng lặp tự nhịp), `GoalSettled` (kết thúc lịch của mục tiêu), `PrWatch*`, `EnvironmentProcessExited`, `EnvironmentReady`, các trạng thái kết thúc của phiếu và lần chạy pipeline (watch), `WorkspaceMemberRemoved` (kết thúc các lịch của người đó) |
+| `PeerAskService` | `AgentRunSettled` — giải quyết các câu hỏi mà agent đã hỏi nhau và đánh thức người hỏi |
+| `LimitParkService` | `AgentRunSettled` với `usageLimit` — chờ nhà cung cấp đặt lại |
+| `ImprovementReviewService` | `GoalSettled` (một mục tiêu đã được kiểm chứng) và `AgentRunSettled` — xếp đánh giá cải tiến và đọc kết quả của nó |
+| Bước mục tiêu của quy trình (`goal.pursue`) | `GoalSettled`, `AgentRunSettled`, `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` — tiếp tục bước, tính chi phí vào điều phối và theo dõi lần chạy quy trình |
 | `OrchestrationRunListener`          | `PipelineRunCancelled`, `PipelineRunFailed`                                                          |
 | `MultiVendorTicketSyncCoordinator`  | `TicketCreated`, `TicketAssigned`, `TicketReassigned`, `TicketStatusChanged`, `TicketDetailsUpdated` |
 | `WorktreeGcListener`                | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`         |
@@ -230,6 +249,8 @@ yêu cầu, hoặc đã được khung thu hồi bao phủ.
 `AgentAwaitingInput` do `AgentAwaitingInputPublisher` phát ra. Thành phần này theo dõi các mục mới trong sổ đăng ký phê duyệt và sổ đăng ký chặn do thông tin xác thực, đồng thời được `AgentQuestionService` báo về từng câu hỏi `ask_user`. Mỗi lần chờ là một sự kiện; không có gì được phát khi việc chờ kết thúc.
 
 Năm danh mục dành cho PR do mình tạo đều mang `forUserId`, nên chúng đến với tác giả thay vì mọi người trong không gian làm việc.
+
+Năm khung cho công việc chạy dài, mỗi khung gửi đến người liên quan (`for_user_id`): `notifications/goal_settled` (từ `GoalSettled`), `notifications/wake_rule_ended` (từ `WakeRuleEnded`), `notifications/improvement_proposed`, `notifications/pipeline_run_held` (một lần chạy quy trình bị giữ ở trần chi phí của điều phối) và `notifications/waiting_digest` (mỗi ngày một lần, những gì đang chờ một người). Mỗi khung mang `notification_kind`: `notify` ánh xạ sang `agentRunCompleted`, `question` và `review` sang `agentAwaitingInput`. Mọi khung có thông báo giờ đều mang `notification_kind`, và một khung có `quiet: true` (một lịch đã kết thúc, một mục tiêu đã kết thúc) đi đến trung tâm thông báo mà không có toast, âm thanh hay thông báo đẩy lớn.
 
 `RemoteEventForwarder` còn chuyển tiếp `TicketReassigned` dưới dạng `notifications/ticket_reassigned` và mọi `TaskLifecycleEvent` dưới dạng `notifications/task_<phase>`. Cả hai đều không ánh xạ tới một danh mục thông báo nào — chúng điều khiển giao diện trực tiếp, không phải trung tâm thông báo. Các sự kiện tư cách thành viên không được chuyển tiếp dưới dạng khung: chúng vô hiệu hóa bộ nhớ đệm của bộ chuyển tiếp, và các máy chủ phiên loại bỏ những đăng ký không gian làm việc của thành viên đã bị xóa.
 

@@ -1,0 +1,143 @@
+---
+title: Een doel nastreven
+description: Geef een agent een doel waar hij over runs en herstarts heen aan blijft werken, bepaal wat klaar betekent en bepaal wanneer het af is.
+slug: nl-NL/handleiding/gidsen/doel-nastreven
+sourceHash: 0ea77964bd9e3044e168624bc67325de0fd1d1e5
+---
+
+Een doel is werk waar een agent aan blijft werken totdat aan wat klaar betekent is voldaan. De agent werkt in **segmenten**: begrensde runs die de server na elkaar start, ook over herstarts heen, totdat het doel is geverifieerd, een persoon het sluit of het een limiet bereikt. De agent kan een doel niet sluiten door te zeggen dat het klaar is. De server voert de controles van het doel uit en een reviewer kijkt eerst naar het resultaat.
+
+## Een doel starten
+
+Typ `/goal` en het doel in het invoerveld van een gesprek:
+
+```text
+/goal --budget 20 --days 2 --check "make test" make the importer handle files over 2 GB
+```
+
+Als een bericht begint met `/goal` gevolgd door tekst, opent het de doelinterview. Die vraagt naar succescriteria, de controles die moeten slagen, grenzen en stopvoorwaarden, en biedt een aparte checker, het elk segment opnieuw laten beginnen en het beantwoorden van de eigen vragen aan. Elke stap kan worden overgeslagen.
+
+| Vlag | Betekenis |
+| --- | --- |
+| `--budget <dollars>` | Hoeveel het hele doel mag uitgeven. Standaard 50 dollar |
+| `--max <N>` | Het grootste aantal segmenten dat het doel mag nemen. Standaard geen limiet |
+| `--days <N>` | Een deadline, zoveel dagen vanaf nu |
+| `--check "<command>"` | Een commando dat moet slagen voordat het doel af kan zijn, uitgevoerd in de worktree. Herhaal voor meer, maximaal 5 |
+| `--checker <agent>` | Een andere agent die de bewering controleert dat het doel klaar is, op naam of id |
+| `--fresh` | Start elk segment zonder de geschiedenis van het gesprek, alleen vanuit het doel en de notities erbij |
+| `--unattended wait` of `--unattended assume` | Wat er met de vragen van de agent gebeurt als niemand antwoordt (zie [Als niemand antwoordt](#als-niemand-antwoordt)) |
+
+- Vlaggen kunnen overal in het bericht staan. Een onbekende vlag, een herhaalde vlag, een ongeldige waarde en meer dan 5 controles worden geweigerd, en je concept blijft in het invoerveld staan met de reden eronder.
+- Een getal aan het begin van het doel hoort bij het doel. Om segmenten te begrenzen gebruik je `--max`.
+- `/goal` wordt alleen gelezen in een bericht dat je zelf typt. Dezelfde tekst van een agent, een pipeline of een wekbeurt is een gewoon bericht.
+- Een agent werkt in een werkruimte aan één doel tegelijk. Een tweede `/goal` voor dezelfde agent wordt geweigerd zolang het eerste actief is.
+
+### Wat klaar betekent
+
+Het doel kan secties bevatten die het contract van het doel worden:
+
+```text
+/goal make the importer handle files over 2 GB
+
+## Success criteria
+- A 3 GB fixture imports without running out of memory
+- The progress bar reaches 100%
+
+## Boundaries
+- Don't change the public API
+
+## Stop conditions
+- A migration would drop data
+
+## Checks
+- `make test` (300 s)
+- environment task `test` (600 s)
+```
+
+- **Succescriteria**: maximaal 12, elk maximaal 300 tekens. Elk is iets wat een reviewer kan bevestigen.
+- **Controles**: maximaal 5. Een controle draait in de worktree of als benoemde taak van de [omgeving](/nl-NL/handleiding/gidsen/omgevingen/) van de space. Elke controle heeft standaard 300 seconden en maximaal 1.800.
+- Een sectie die over de limiet gaat wordt geweigerd, nooit ingekort.
+
+Een doel zonder criteria laat de agent beslissen wanneer het klaar is, en een doel zonder controle vertrouwt alleen op review. De doelpagina zegt dat.
+
+## Hoe een doel doorgaat
+
+Elk segment is een run die is begrensd op 5 dollar of op wat er van het budget over is, afhankelijk van wat lager is. Na elk segment bepaalt de server wat er daarna komt, op basis van wat het segment heeft gedaan:
+
+- **Het heeft voortgang geboekt.** Het volgende segment begint.
+- **Het wacht op iets dat het zelf heeft opgezet**: een schema, een bewaking, een vraag aan een andere agent of een gedelegeerd ticket. Het doel wacht erop. Als er niets binnenkomt, kijkt de server na 20 minuten opnieuw, daarna na 40, 80, 160 en vervolgens elke 240 minuten. De kaart toont **Wacht op wat het heeft opgezet · kijkt weer om** een tijdstip.
+- **Het heeft geen voortgang geboekt.** Voortgang betekent dat de worktree is veranderd door het eigen werk van het segment, dat de checklist is veranderd, of dat de agent iets nieuws heeft gedaan. Na 3 segmenten zonder voortgang pauzeert het doel: **Geen voortgang in de laatste segmenten.**
+- **Het heeft te lang gewacht.** Na 24 uur wachten, of na 6 keer wachten op nieuwe dingen die het heeft opgezet zonder voortgang ertussen, pauzeert het doel: **Gewacht na segmenten zonder voortgang.**
+- **Het is mislukt.** De server probeert het opnieuw na 30 seconden, daarna langer, tot 15 minuten. Na 3 mislukkingen achter elkaar mislukt het doel.
+- **Het heeft een persoon iets gevraagd.** Het doel blijft staan tot iemand antwoordt: **Heeft een persoon nodig**.
+
+Het doel stopt ook bij zijn budget (**Budget uitgeput**), zijn segmentlimiet of zijn deadline.
+
+## Wanneer de agent zegt dat het klaar is
+
+De agent beweert dat het doel klaar is, met bewijs voor elk criterium. Daarna:
+
+1. **De server voert de controles uit** in een sandbox, nooit rechtstreeks op de machine van de server. Een controle die met een andere waarde dan nul afsluit, faalt. Een controle die helemaal niet kan draaien (commando niet gevonden, niet uitvoerbaar, een omgevingstaak die niet bestaat) is kapot: het doel stopt voor een persoon met **Deze controle kan niet draaien:** en het commando. Zonder sandbox op de server stopt het doel met **Er is geen sandbox beschikbaar om de controles uit te voeren.** (Een server waarvan de eigenaar sandboxing voor elke run heeft uitgeschakeld is de uitzondering: controles draaien daar zoals de eigen commando's van de agent.) Als er in de worktree niets is veranderd sinds een controle faalde, wordt die niet opnieuw uitgevoerd.
+2. **Een reviewer kijkt naar het resultaat**, wanneer alle controles zijn geslaagd of er geen zijn. De reviewer is de checker van het doel, anders de checker van de space, anders de eigen agent van het doel. Hij draait alleen-lezen zonder gespreksgeschiedenis: hij kan bestanden en de uitvoer van de controles lezen, maar niets wijzigen, geen commando's draaien en geen andere agenten wekken. Hij krijgt ook de volledige diff van de tests en controlescripts die de agent heeft gewijzigd, en hij behandelt wat de agent in het gesprek en in zijn notities heeft geschreven als claims, niet als bewijs. Voor een doel zonder criteria beoordeelt hij de doelstelling als geheel. Hij antwoordt dat het doel klaar is, niet klaar is, of dat hij het niet kan zeggen.
+3. **Klaar**: het doel is voltooid. **Niet klaar**: de agent krijgt de bevindingen van de reviewer en werkt door. Na 3 rondes die niet klaar zijn, of wanneer de reviewer het niet kan zeggen, wacht het doel op jou: **Wacht op review: het zegt dat het klaar is, en niets heeft dat bevestigd**.
+
+Een bericht dat je typt terwijl de reviewer draait, wordt niet aan de reviewer gegeven en niet verzonden wanneer de review eindigt. Het blijft in de wachtrij staan voor het volgende segment van de agent. Als er geen segment volgt, wordt het voor jou vastgehouden onder **Vastgehouden berichten verzenden**.
+
+Een reviewer die niet kan draaien (verwijderd, of op een adapter die een run niet alleen-lezen kan houden, zoals een ACP-agent) pauzeert het doel: **De checker-agent is niet beschikbaar. Kies een andere checker en hervat daarna.** Geen andere agent springt zonder jou in.
+
+Een checker bij een andere provider dan de agent van het doel deelt minder waarschijnlijk zijn blinde vlekken. Zonder aparte checker beoordeelt de agent zijn eigen werk, en het doel noteert **Zelf geverifieerd (geen aparte checker)**.
+
+## Een doel volgen
+
+- **In het gesprek**: de doelkaart in het paneel **Algemeen** toont de wachtstand, het segment, de uitgaven ten opzichte van het budget, de resterende tijd, wat klaar betekent, de controles en het laatste oordeel.
+- **De pagina Doelen**: zijbalk → **Doelen**. Doelen zijn gegroepeerd als **Wacht op review**, **Open** en **Beëindigd**.
+- **De doelpagina**: open een doel om **Nu** te zien (segmenten, uitgaven, deadline, het aantal keer zonder voortgang en wat er daarna gebeurt), **Wat klaar betekent**, **Verificatie** (de laatste ronde: de bewering, elke controle met zijn uitvoer, de review per criterium) en **Schema's en wekbeurten**. Elk doel heeft een eigen adres (`/workspaces/<workspace>/goals/<goal id>`), zodat je een link kunt delen.
+
+Op de telefoon start het doelenscherm een doel met controles en een segmentlimiet, en toont het dezelfde doelen en wachtstanden.
+
+## Een doel wijzigen of stoppen
+
+| Actie | Wie kan |
+| --- | --- |
+| **Doel pauzeren**, **Doel stoppen** | Iedereen met toegang tot de space |
+| **Doel hervatten**, **Budget verhogen** | Alleen de persoon die het doel is gestart (een werkruimtebeheerder voor een doel dat niemand heeft gestart) |
+| **Bewerken** van wat klaar betekent, **Checker wijzigen** | Alleen de persoon die het doel is gestart (een werkruimtebeheerder voor een doel dat niemand heeft gestart), met schrijfrechten op de repositories van de space, zolang het doel gepauzeerd is |
+| **Afronden goedkeuren** | Iedereen met toegang tot de space, zolang het doel op review wacht. Een doel dat een pipeline is gestart: alleen de persoon die die run is gestart (een werkruimtebeheerder wanneer niemand dat deed) |
+
+- Op **Stoppen** drukken bij de run van de agent pauzeert het doel (**Gepauzeerd door een persoon**). De wekbeurten die nog niet zijn afgeleverd, wachten tot je het hervat.
+- **Afronden goedkeuren** sluit het doel als klaar op jouw woord. Het doel noteert **Gesloten door een persoon zonder geslaagde controle**.
+- Een doel dat zijn budget heeft opgemaakt, hervat alleen met een hoger budget.
+- Wanneer de persoon die een doel is gestart de werkruimte verlaat, pauzeert het doel meteen voor review en wordt de agent die er op dat moment aan werkt gestopt. Niemand kan het hervatten; iedereen met toegang tot de space kan het stoppen. Het dagelijkse overzicht toont het aan de werkruimtebeheerders.
+
+## Als niemand antwoordt
+
+Wanneer een segment een persoon een vraag stelt of om een goedkeuring vraagt en niemand antwoordt, wacht het verzoek standaard 72 uur. Daarna telt een goedkeuring als geweigerd, een vraag als onbeantwoord, en pauzeert het doel: **Een vraag of goedkeuringsverzoek aan een persoon is onbeantwoord.** De run die vroeg krijgt geen verdere antwoorden: alles wat hij nog meer vraagt wordt meteen geweigerd, en hij maakt af wat hij kan. Een werkruimtebeheerder stelt de tijd in (1 uur tot 7 dagen) onder **Instellingen → Werkruimte → Schema's → Als niemand antwoordt**. Eén keer per dag, op het daar ingestelde uur, krijg je één overzicht van alles wat op jou wacht.
+
+Met `--unattended assume` zegt de agent zijn aanname en gaat door na 10 minuten zonder antwoord, wanneer zijn stopvoorwaarden dat toestaan. Dit geldt alleen voor vragen. Een goedkeuring wordt nooit aangenomen, en een review neemt nooit iets aan.
+
+## Gebruikslimieten en herstarts
+
+- **Een gebruikslimiet van de provider.** Wanneer een segment stopt bij de gebruikslimiet van een provider en de provider zegt wanneer die wordt gereset (binnen 7 dagen), pauzeert het doel zonder strafpunt: **Gepauzeerd bij de gebruikslimiet · wordt hervat** om een tijdstip. Het gaat door 30 seconden na de reset. Na 8 van zulke pauzes wacht het doel op jou: **Het liep te vaak tegen gebruikslimieten aan. Bekijk het en hervat daarna.** Elke hervatting begint de telling opnieuw. ACP-agents melden geen reset, dus hun doelen wachten niet bij een limiet.
+- **Een herstart van de server.** Een doel overleeft een herstart. Een segment dat de herstart onderbrak, wordt opnieuw gestart, en de schema's en wachtende wekbeurten van het doel blijven bewaard.
+
+## Verbeteringen na een doel
+
+Nadat een doel de verificatie is doorgekomen, kan een korte alleen-lezen review (maximaal 1 dollar) verbeteringen voorstellen: een feit voor het geheugen, een beleid, een notitie over de agent of een wijziging in een skill. Typ `/refine` om dezelfde review van het werk in het gesprek te vragen. Er draait hooguit één review per gesprek elke 20 minuten.
+
+Voorstellen verschijnen op de pagina **Verbeteringen** (zijbalk → **Verbeteringen**). Open er een om te zien wat het wijzigt, het bewijs, en **Accepteren**, **Afwijzen** of **Terugdraaien**.
+
+- Een voorstel verandert niets totdat iemand het accepteert. Het verloopt na 30 dagen.
+- Een wijziging aan een skill, of aan een beleid voor de hele werkruimte, heeft een werkruimtebeheerder nodig (**Een beheerder beslist**).
+- Een wijziging van een skill wordt bewaard als een aparte revisie. Druk op **Evaluatie uitvoeren** om haar te vergelijken met de huidige skill; **Accepteren** kan pas nadat een evaluatie is geslaagd. Een evaluatie slaagt wanneer ze volledig is gedraaid en de agent met de wijziging minstens evenveel runs heeft opgelost als met de huidige skill; de pagina toont beide aantallen. Verandert de skill na de evaluatie, draai hem dan opnieuw.
+- **Terugdraaien** herstelt de eerdere tekst, zolang niemand die sindsdien heeft gewijzigd.
+
+## In een pipeline
+
+Een pipeline kan een doel starten met de stap **Pursue a goal** (`goal.pursue`). De stap wacht tot het doel eindigt en geeft de samenvatting en het oordeel door. Zie [Pipeline-stapsoorten](/nl-NL/handleiding/referentie/pipeline-stappen/).
+
+## Zie ook
+
+- [Schema's en wekbeurten](/nl-NL/handleiding/gidsen/schemas-en-wekbeurten/)
+- [Agents laten samenwerken](/nl-NL/handleiding/gidsen/agents-laten-samenwerken/)
+- [Kosten beheren](/nl-NL/handleiding/gidsen/kosten-beheren/)
+- [Slash-commando's](/nl-NL/handleiding/referentie/slash-commandos/)

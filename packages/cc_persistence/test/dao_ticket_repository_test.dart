@@ -525,4 +525,72 @@ void main() {
       expect(await repo.getById('ws-1', 'child'), isNotNull);
     });
   });
+
+  group('openDelegatedFrom', () {
+    Ticket delegated(
+      String id, {
+      String workspaceId = 'ws-1',
+      String agent = 'agent-1',
+      String conversation = 'conv-1',
+      TicketStatus status = TicketStatus.open,
+    }) => _ticket(id: id, workspaceId: workspaceId, status: status).copyWith(
+      delegatedByAgentId: agent,
+      delegatedFromConversationId: conversation,
+    );
+
+    test('lists the agent\'s unfinished delegations from the conversation, '
+        'in its own workspace only', () async {
+      // `delegated_by_agent_id` references the workspace's agents.
+      for (final ws in ['ws-1', 'ws-2']) {
+        final db = dbs.of(ws);
+        for (final agent in ['agent-1', 'agent-2']) {
+          await db
+              .into(db.agentsTable)
+              .insert(
+                AgentsTableCompanion.insert(
+                  id: agent,
+                  name: agent,
+                  title: 'Engineer',
+                  agentMdPath: '/a/$agent.md',
+                  workspaceId: ws,
+                  skills: '',
+                ),
+              );
+        }
+      }
+      await repo.insert(delegated('open'));
+      await repo.insert(delegated('blocked', status: TicketStatus.blocked));
+      await repo.insert(delegated('done', status: TicketStatus.done));
+      await repo.insert(delegated('cancelled', status: TicketStatus.cancelled));
+      await repo.insert(delegated('other-agent', agent: 'agent-2'));
+      await repo.insert(delegated('other-conv', conversation: 'conv-2'));
+      await repo.insert(_ticket(id: 'not-delegated'));
+      await repo.insert(delegated('elsewhere', workspaceId: 'ws-2'));
+
+      expect(
+        await repo.openDelegatedFrom(
+          'ws-1',
+          conversationId: 'conv-1',
+          agentId: 'agent-1',
+        ),
+        ['blocked', 'open'],
+      );
+      expect(
+        await repo.openDelegatedFrom(
+          'ws-2',
+          conversationId: 'conv-1',
+          agentId: 'agent-1',
+        ),
+        ['elsewhere'],
+      );
+      expect(
+        await repo.openDelegatedFrom(
+          'ws-1',
+          conversationId: 'conv-9',
+          agentId: 'agent-1',
+        ),
+        isEmpty,
+      );
+    });
+  });
 }

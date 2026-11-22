@@ -54,7 +54,11 @@ class InboxScreen extends ConsumerStatefulWidget {
 }
 
 class _InboxScreenState extends ConsumerState<InboxScreen> {
-  final ScrollController _scrollController = ScrollController();
+  /// Starts at the offset remembered for this workspace, so going back from
+  /// a pull request lands where the operator left the list.
+  late final ScrollController _scrollController;
+  late final InboxScrollOffsets _scrollOffsets;
+  late final String? _workspaceId;
   final Map<PrInboxSection, GlobalKey> _sectionKeys = {
     for (final s in PrInboxSection.values) s: GlobalKey(),
   };
@@ -109,10 +113,27 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
   @override
   void initState() {
     super.initState();
+    _workspaceId = ref.read(activeWorkspaceIdProvider);
+    _scrollOffsets = ref.read(inboxScrollOffsetsProvider);
+    _scrollController = ScrollController(
+      initialScrollOffset: _scrollOffsets.of(_workspaceId),
+    );
     // The rail highlight tracks scroll position (scrollspy). A post-frame
     // sync sets the initial highlight once the list is laid out.
     _scrollController.addListener(_syncRailToScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncRailToScroll());
+  }
+
+  /// Saves the offset here rather than in [dispose]: children unmount first,
+  /// so by then the scroll view has detached its position from the
+  /// controller and there is no offset left to read.
+  @override
+  void deactivate() {
+    final workspaceId = _workspaceId;
+    if (workspaceId != null && _scrollController.hasClients) {
+      _scrollOffsets.remember(workspaceId, _scrollController.offset);
+    }
+    super.deactivate();
   }
 
   @override
@@ -414,9 +435,10 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                             child: CcScrollArea(
                               fadeStart: false,
                               child: CustomScrollView(
-                                // Exact scroll restoration (PRD 19 §8): the
-                                // offset is restored when the operator navigates
-                                // back to the inbox.
+                                // Exact scroll restoration (PRD 19 §8) comes
+                                // from the controller's initial offset (see
+                                // [inboxScrollOffsetsProvider]); this key only
+                                // covers rebuilds within one inbox route.
                                 key: const PageStorageKey('inbox-sections'),
                                 controller: _scrollController,
                                 // Every section is a pinned header plus an atomic

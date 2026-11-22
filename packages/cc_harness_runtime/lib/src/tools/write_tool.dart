@@ -16,6 +16,9 @@ class WriteTool extends HarnessTool {
   String get name => 'write';
 
   @override
+  String get resultNote => 'Text: `Created <path> (N lines).` or `Updated …`.';
+
+  @override
   String get description =>
       'Write content to a file in the workspace, creating it (and any parent '
       'directories) if needed. Overwrites existing content.';

@@ -2,7 +2,7 @@
 title: Commandes slash
 description: Toutes les commandes que vous pouvez saisir dans le compositeur, ce qu’elles font et où elles s’exécutent.
 slug: fr-FR/manuel/reference/commandes-slash
-sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
+sourceHash: 38430a6315b112c92a7806d1c28dff8a0285e363
 ---
 
 Commandes saisies dans le compositeur d’un espace. Elles se répartissent en trois groupes selon l’endroit où elles prennent effet, et cette différence compte : une commande **locale** ne circule jamais comme message, si bien qu’elle n’apparaît pas dans la transcription et n’atteint aucun agent.
@@ -21,23 +21,35 @@ Commandes saisies dans le compositeur d’un espace. Elles se répartissent en t
 
 **Local → lancement.** Arme le mode plan sur la conversation : un arbre de travail entièrement en lecture seule et une surface d’outils plafonnée à `read`. Le livrable de l’agent est un plan, pas une modification. Un `/plan` seul ne fait que basculer le mode et ne circule jamais comme message ; avec un prompt, c’est le reste de la ligne qui démarre l’exécution.
 
-### `/goal <objective>`
+### `/goal [flags] <objective>`
 
-**Lancement.** Démarre un objectif autonome que le superviseur d’objectifs relance au fil des segments et des redémarrages.
+**Lancement.** Lance un objectif durable : l’agent travaille sur l’objectif par segments, à travers les redémarrages, jusqu’à ce que le serveur vérifie qu’il est terminé, qu’une personne le clôt ou qu’il atteigne une limite. Voir [Poursuivre un objectif](/fr-FR/manuel/guides/poursuivre-objectif/).
 
-Saisir `/goal` avec du texte ouvre d’abord l’**entretien d’objectif** — une courte passe qui refuse de valider un brouillon tant qu’il ne réunit pas les cinq éléments suivants : des critères de réussite qu’un évaluateur peut trancher sans jugement, une commande de vérification exacte, un plafond de tentatives, les limites du périmètre et les conditions d’arrêt. Chaque étape propose *Ignorer et lancer tel quel* : l’entretien est une valeur par défaut, non un passage obligé.
+Saisir `/goal` avec du texte ouvre d’abord l’**entretien d’objectif** — une courte passe qui demande des critères de réussite qu’un évaluateur peut trancher sans jugement, les vérifications qui doivent réussir, les limites du périmètre et les conditions d’arrêt, puis propose un vérificateur distinct, des segments neufs et la réponse à ses propres questions. Chaque étape propose *Ignorer et lancer tel quel* : l’entretien est une valeur par défaut, non un passage obligé.
 
-`/goal pause`, `/goal resume` et `/goal drop` ne sont pas des commandes slash. La pause, la reprise et l’arrêt se trouvent dans la liste des objectifs de la conversation, dans la barre latérale. Les options de démarrage de l’objectif lui-même sont `--budget <dollars>`, `--max <N>` (budget d’exécution) et `--days <N>` (échéance). Un objectif qui a atteint son plafond de coûts ne reprend que si vous relevez ce plafond, depuis le même contrôle de la barre latérale.
+Les options peuvent figurer n’importe où dans le message : `--budget <dollars>` (le budget de l’objectif, 50 par défaut), `--max <N>` (un plafond de segments), `--days <N>` (une échéance), `--check "<command>"` (jusqu’à 5), `--checker <agent>`, `--fresh` et `--unattended wait|assume`. Une option inconnue ou répétée est refusée et le brouillon reste dans la zone de saisie. Un nombre au début de l’objectif fait partie de l’objectif. Les sections `## Success criteria`, `## Boundaries`, `## Stop conditions` et `## Checks` deviennent le contrat de l’objectif.
+
+`/goal pause`, `/goal resume` et `/goal drop` ne sont pas des commandes slash. La pause, la reprise et l’arrêt se trouvent sur la carte de l’objectif dans le panneau **Général** de la conversation, et sur la page de l’objectif (barre latérale → **Objectifs**). La reprise, ainsi que le relèvement du budget, reviennent à la personne qui a lancé l’objectif.
 
 :::note[Pourquoi interrompre, au fond]
 Un objectif autonome est le seul endroit où un brief vague coûte vraiment cher. L’exécution travaille pendant des heures sur un objectif dont personne n’a défini le « terminé », puis annonce une réussite selon ses propres critères. Cinq questions coûtent moins cher qu’une exécution nocturne qui s’est terminée quand bon lui semblait.
 :::
 
-### `/loop [budget] [task]`
+### `/loop [every <interval>] [flags] <prompt>`
 
-**Lancement.** Travaille par itérations jusqu’à ce que tout soit terminé. Accepte une borne : `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**Lancement.** Crée une planification qui réveille l’agent avec le prompt maintenant, puis à nouveau : à chaque intervalle (60 secondes au minimum), ou, sans `every`, après un délai que l’agent choisit à chaque fois (1 à 60 minutes). `--max <N>` plafonne les exécutions, `--days <N>` la termine (30 jours par défaut), `--budget <dollars>` plafonne sa dépense. Voir [Planifications et relances](/fr-FR/manuel/guides/planifications-relances/).
 
-Un jeton qui *ressemble* à une limite (qui commence par un chiffre ou un signe) et qui ne peut pas être analysé est une erreur fatale. La prose reste de la prose, donc `/loop keep going until the tests pass` est une boucle non bornée dont le prompt tient sur la même ligne, et non une analyse erronée.
+`/loop` ne lance plus d’objectif, et un nombre en tête n’est pas un nombre d’exécutions.
+
+### `/schedule <when> [flags] <prompt>`
+
+**Lancement.** Crée une planification qui réveille l’agent plus tard : `in 2h`, `at 09:00` (la prochaine occurrence dans le fuseau horaire de l’espace de travail), `at <ISO time>` ou `cron "0 9 * * 1-5"` (les guillemets sont facultatifs). Accepte les mêmes `--max`, `--days` et `--budget` que `/loop`. Elle attend son premier déclenchement.
+
+### `/refine`
+
+**Lancement.** Demande une courte revue en lecture seule du travail de la conversation, qui peut proposer des améliorations de la mémoire, des politiques, des notes d’agent ou des compétences. Les propositions attendent sur la page **Améliorations** jusqu’à ce que quelqu’un les accepte. Au plus une revue par conversation toutes les 20 minutes.
+
+`/goal`, `/loop`, `/schedule` et `/refine` n’agissent que dans un message que vous tapez vous-même ; depuis un agent, un pipeline ou une relance, le même texte est un message ordinaire. Un `/goal`, `/loop` ou `/schedule` qui ne peut pas être lu conserve votre brouillon, et une ligne au-dessus du texte dans la zone de saisie indique ce qui ne va pas.
 
 ### `/vibe [task]`
 

@@ -12,16 +12,24 @@ import 'package:cc_domain/core/domain/repositories/user_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_invite_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_membership_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
+import 'package:cc_domain/core/domain/value_objects/script_call_origin.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_domain/features/calendar/domain/repositories/calendar_repository.dart';
+import 'package:cc_domain/features/code_mode/domain/ports/code_execution_port.dart';
+import 'package:cc_domain/features/code_mode/domain/value_objects/code_execution_status.dart';
+import 'package:cc_domain/features/code_mode/domain/value_objects/script_approval_budget.dart';
 import 'package:cc_domain/features/dispatch/domain/repositories/agent_goal_run_repository.dart';
 import 'package:cc_domain/features/governance/domain/repositories/approval_repository.dart';
 import 'package:cc_domain/features/governance/domain/repositories/goal_repository.dart';
 import 'package:cc_domain/features/governance/domain/services/agent_presence_service.dart';
 import 'package:cc_domain/features/guardrails/domain/entities/action_policy_rule.dart';
 import 'package:cc_domain/features/guardrails/domain/repositories/action_policy_repository.dart';
+import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_constraint.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
+import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
+import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
+import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
 import 'package:cc_domain/features/meetings/domain/repositories/meeting_repository.dart';
 import 'package:cc_domain/features/meetings/domain/repositories/voice_profile_repository.dart';
 import 'package:cc_domain/features/memory/domain/repositories/agent_working_memory_repository.dart';
@@ -31,7 +39,6 @@ import 'package:cc_domain/features/memory/domain/repositories/memory_fact_reposi
 import 'package:cc_domain/features/memory/domain/repositories/memory_policy_repository.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
-import 'package:cc_domain/features/messaging/domain/repositories/space_read_repository.dart';
 import 'package:cc_domain/features/newsfeed/domain/repositories/newsfeed_repository.dart';
 import 'package:cc_domain/features/notifications/domain/repositories/notification_feed_repository.dart';
 import 'package:cc_domain/features/orchestration/domain/repositories/orchestration_repository.dart';
@@ -46,9 +53,11 @@ import 'package:cc_domain/features/ticketing/domain/repositories/ticket_link_rep
 import 'package:cc_domain/features/ticketing/domain/repositories/ticket_repository.dart';
 import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_service.dart';
 import 'package:cc_domain/features/todos/domain/repositories/todo_repository.dart';
+import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/tools.dart' show ActionClass;
 import 'package:cc_host/cc_host.dart';
 import 'package:cc_infra/cc_infra.dart' show GoalSupervisor;
+import 'package:cc_mcp/cc_mcp.dart' show McpToolDispatcher;
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_server_core/src/catalog/space_repo_access.dart';
 import 'package:cc_server_core/src/identity/workspace_invite_service.dart';
@@ -214,6 +223,132 @@ void main() {
     expect(ids, hasLength(3));
   });
 
+  group('a card a script\'s call raised', () {
+    // End to end through the real registry and `confirmation.respond`: the
+    // script ends while its call waits, the card comes down, and an answer
+    // that arrives afterwards changes nothing.
+    late List<GuardAudit> audits;
+    late _Push push;
+    late McpToolDispatcher tools;
+    final origin = ScriptCallOrigin(
+      parentToolCallId: 'toolu_repl',
+      executionId: 'log-1/toolu_repl',
+    );
+    const scope = McpCallScope(
+      workspaceId: 'ws-1',
+      agentId: 'agent-1',
+      conversationId: 'conv-1',
+      spaceId: 'space-1',
+      attested: true,
+      runId: 'dispatch-1',
+      runLogId: 'log-1',
+    );
+
+    setUp(() {
+      audits = [];
+      push = _Push();
+      final port = RemoteConfirmationPort(registry);
+      policies.list.add(
+        ActionPolicyRule(
+          id: 'ask-push',
+          workspaceId: 'ws-1',
+          scopeType: ActionScopeType.workspace,
+          scopeId: '',
+          actionClass: ActionClass.gitPush,
+          decision: ActionDecision.prompt,
+          createdAt: DateTime.utc(2026),
+          updatedAt: DateTime.utc(2026),
+        ),
+      );
+      tools = McpToolDispatcher(
+        registry: McpToolRegistry([push]),
+        confirmationPort: port,
+        actionGuard: ActionGuardService(
+          repository: policies,
+          confirmationPort: port,
+          onAudit: audits.add,
+        ),
+      );
+    });
+
+    /// Starts the script's push and waits until its card is up.
+    Future<({Future<NestedCallOutcome> outcome, String cardId})> raise(
+      CancellationToken cancel,
+    ) async {
+      final outcome = tools.callNested(
+        scope,
+        NestedCallRequest(
+          sequence: 1,
+          toolCallId: 'toolu_repl/1',
+          name: 'push_branch',
+          arguments: const {'ref': 'feature/a'},
+          origin: origin,
+          deadline: const Duration(seconds: 30),
+          site: null,
+          cancel: cancel,
+        ),
+        approvals: ScriptApprovalBudget(),
+      );
+      while (registry.snapshot.isEmpty) {
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+      }
+      final card = registry.snapshot.single;
+      expect(card.request.origin, origin);
+      return (outcome: outcome, cardId: card.id);
+    }
+
+    Future<Map<String, dynamic>> respond(String id) => dispatcher.call(
+      id: 1,
+      params: {
+        'op': 'confirmation.respond',
+        'args': {
+          'id': id,
+          'approved': true,
+          'remember': {'scope': 'space', 'ttl_seconds': 8 * 60 * 60},
+        },
+      },
+      deviceId: 'device-$member',
+      userId: member,
+      sessionCapability: SessionCapability.fullClient,
+    );
+
+    test('answered in time, it runs the call and may be remembered', () async {
+      final raised = await raise(CancellationToken.none);
+      final reply = await respond(raised.cardId);
+
+      expect((reply['result'] as Map)['data'], {'ok': true});
+      expect((await raised.outcome).status, NestedCallStatus.completed);
+      expect(push.runs, 1);
+      expect(
+        policies.list.where((r) => r.provenance == 'remembered'),
+        hasLength(1),
+      );
+    });
+
+    test('is withdrawn when the script ends; a late approve approves '
+        'nothing, writes nothing and is audited as a denial', () async {
+      final scriptEnd = CancellationTokenSource();
+      final raised = await raise(scriptEnd.token);
+
+      scriptEnd.cancel('The script ended.');
+      final outcome = await raised.outcome;
+      expect(outcome.status, NestedCallStatus.cancelled);
+      expect(registry.snapshot, isEmpty, reason: 'the card came down');
+      expect(registry.pendingById(raised.cardId), isNull);
+
+      final reply = await respond(raised.cardId);
+      // Let anything the answer could have started settle.
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect((reply['result'] as Map)['data'], {'ok': false});
+      expect(push.runs, 0);
+      expect(policies.list.where((r) => r.provenance == 'remembered'), isEmpty);
+      final audit = audits.single;
+      expect(audit.decision, ActionDecision.deny);
+      expect(audit.prompted, isTrue);
+    });
+  });
+
   test('a failed prune does not fail the answer', () async {
     policies.failReads = true;
     final reply = await answer(member, card());
@@ -245,6 +380,32 @@ class _Policies with _Unused implements ActionPolicyRepository {
   @override
   Future<void> deleteRule(String workspaceId, String id) async =>
       list.removeWhere((r) => r.workspaceId == workspaceId && r.id == id);
+}
+
+/// A push tool a script calls; counts the times it ran.
+class _Push extends McpTool {
+  int runs = 0;
+
+  @override
+  String get name => 'push_branch';
+  @override
+  String get description => 'Pushes a branch.';
+  @override
+  Map<String, dynamic> get inputSchema => const {
+    'type': 'object',
+    'properties': {
+      'workspace_id': {'type': 'string'},
+      'ref': {'type': 'string'},
+    },
+  };
+  @override
+  Set<ActionClass> get actionClasses => const {ActionClass.gitPush};
+
+  @override
+  Future<CallResult> run(Map<String, dynamic> arguments) async {
+    runs++;
+    return CallResult.success('pushed');
+  }
 }
 
 /// Unused: no op here dispatches a run.
@@ -306,7 +467,6 @@ RemoteRpcCatalog _catalog(
     forgeRead:
         ({required workspaceId, required userId, required repoId}) async {},
   ),
-  spaceReadRepository: _SpaceReads(),
   memoryDomainRepository: _MemoryDomains(),
   memoryAccessGrantRepository: _MemoryGrants(),
   agentWorkingMemoryRepository: _WorkingMemory(),
@@ -370,8 +530,6 @@ class _Newsfeed with _Unused implements NewsfeedRepository {}
 class _Agents with _Unused implements AgentRepository {}
 
 class _Repos with _Unused implements RepoRepository {}
-
-class _SpaceReads with _Unused implements SpaceReadRepository {}
 
 class _MemoryDomains with _Unused implements MemoryDomainRepository {}
 

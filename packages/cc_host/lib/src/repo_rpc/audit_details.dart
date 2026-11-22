@@ -59,6 +59,9 @@ const Set<String> kAuditResultContextKeys = {
   'name',
   'title',
   'reason',
+  // A changed amount's before and after (`orchestration.raiseCap`).
+  'old_micros',
+  'new_micros',
 };
 
 const int _maxValueChars = 200;

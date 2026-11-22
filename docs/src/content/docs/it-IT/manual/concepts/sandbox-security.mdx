@@ -2,7 +2,7 @@
 title: Sandbox e sicurezza
 description: Cosa vincola davvero un agente in Control Center oggi, fin dove arriva il sandbox del sistema operativo e quali confini tengono su un host privo di backend.
 slug: it-IT/manuale/concetti/sandbox-e-sicurezza
-sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
+sourceHash: 7644c97911f685ef5084875fb16f1006f21ea940
 ---
 
 :::note[Dove arriva e dove non arriva il sandbox del sistema operativo]
@@ -56,6 +56,8 @@ La stessa regola vale per le piccole cose che avviano un processo per tuo conto:
 - **Piccoli aiutanti che passano da una CLI ACP**: titoli delle conversazioni, `/btw`, `/handoff` e `/goal`. Quando il server incapsula gli agenti, girano dentro il sandbox, in una sessione propria. Con `--sandbox off` girano senza confinamento. Senza alcun sandbox disponibile girano solo per le richieste di cui è responsabile il proprietario del server; per tutti gli altri vengono saltati: non viene generato alcun titolo, e una domanda laterale segnala che il Content synthesizer non ha un runner funzionante. Gli aiutanti che non avviano alcuno strumento non sono interessati.
 - **I test golden di una pull request** nel controllo visivo di Review Studio seguono la stessa regola.
 - **I processi degli strumenti e `bash`** in un'esecuzione non ricadono mai sull'host. Se il server è impostato per incapsulare gli agenti ma non ha un sandbox da dare a un'esecuzione, quest'ultima viene rifiutata.
+- **I controlli di un obiettivo** vengono eseguiti in una sandbox monouso sul worktree della conversazione, confinati come il `bash` dell'agente. Senza sandbox non vengono eseguiti e l'obiettivo si ferma in attesa di una persona; con `--sandbox off` vengono eseguiti come il `bash` dell'agente.
+- **La revisione di un obiettivo** viene eseguita in sola lettura su ogni adapter: solo letture, worktree montati in sola lettura, niente `bash`, niente subagenti, niente web. Un adapter che non può mantenere un'esecuzione in sola lettura (un agente ACP) non viene usato come revisore.
 
 ## Cosa vincola davvero un agente
 
@@ -307,6 +309,24 @@ una syscall negata compare nella trascrizione anziché solo in un log. La teleme
 esiste solo mentre un sandbox nativo sta effettivamente incapsulando il processo — su
 un host senza backend non c'è nulla da osservare. È anche estranea ai guardrail: una violazione deriva da una syscall negata, mai dalla consultazione di una regola.
 
+## Script in modalità codice
+
+Gli script della [modalità codice](/it-IT/manuale/concetti/modalita-codice/) sono un caso a sé e non dipendono affatto dal sandbox dell'agente. Uno script non viene mai eseguito all'interno del server né nel sandbox dell'agente. Viene eseguito nel proprio processo, `cc_codemode`, un programma incluso nel server, che si isola prima di leggere lo script e riferisce fino a dove è arrivato l'isolamento. Il server invia lo script solo quando l'isolamento è completo.
+
+| Host | Ciò che il runner applica a sé stesso |
+| --- | --- |
+| Linux | Una lista di chiamate di sistema consentite (seccomp) che gli lascia poco più della lettura del suo input, la scrittura del suo output, la gestione della propria memoria, la lettura degli orologi e l'uscita; nessun nuovo privilegio e nessuna capability; nessun core dump; nessuna scrittura su file, nessun nuovo processo e al massimo tre file aperti; 3 GiB di spazio di indirizzi; un limite rigido al tempo di processore. Landlock viene aggiunto dove il kernel lo supporta. |
+| macOS | Un profilo di sandbox che nega tutto per impostazione predefinita e che rifiuta anche le informazioni sui processi, i controlli di esistenza dei file, le informazioni su sistema e hardware e le chiamate di kernel correlate; nessun core dump, nessuna scrittura su file e un limite rigido al tempo di processore. |
+| Windows | Un nuovo AppContainer per ogni script, in un job che consente un solo processo, 3 GiB di memoria e nessuna interfaccia utente, con codice dinamico, processi figli e chiamate win32k disabilitati. **Non ancora eseguito su Windows.** |
+
+Il runner parte senza variabili d'ambiente, senza file aperti oltre al suo input e al suo output, e senza credenziali. Tutto ciò che può fare al di fuori della propria memoria è chiedere al server di eseguire uno strumento, e il server esegue quella chiamata attraverso lo stesso filtro di modalità, gli [guardrail](/it-IT/manuale/concetti/guardrail/) e le approvazioni di una chiamata diretta.
+
+Il server verifica tutto questo all'avvio: esegue l'autotest del runner, che applica l'isolamento, tenta di leggere e creare file, aprire una connessione di rete e avviare un processo (e altro su ogni sistema), ed esegue script reali sotto di esso. Se qualcosa non viene negato, il server non esegue alcuno script su quella macchina: nessuna esecuzione riceve `repl`, e il server lo dice all'avvio e nella pagina delle impostazioni della modalità codice. Un runner che non è una build di rilascio viene rifiutato allo stesso modo. Non esiste un ripiego più debole.
+
+Il runner indica anche dove nello script è stata fatta ogni chiamata, così la conversazione può mostrare la struttura dello script. Il server controlla quella posizione rispetto allo script e la usa solo per la visualizzazione: non decide mai se una chiamata è consentita, e non compare nell'audit dei guardrail.
+
+Ciò che questo non copre: uno script può comunque fare tutto ciò che consentono gli strumenti della run, perché le sue chiamate sono chiamate reali; su macOS può ancora scoprire se un id di processo esiste; e un difetto del motore JavaScript o del kernel viene contenuto dall'isolamento, non escluso da esso.
+
 ## Le conferme vengono dai guardrail, non dal sandbox
 
 Il sandbox non ha alcun percorso di approvazione. Si avvia, esegue, emette eventi e si
@@ -327,6 +347,7 @@ l'unico posto che dichiara cosa si può controllare a mano.
 
 ## Concetti correlati
 
+- [Modalità codice](/it-IT/manuale/concetti/modalita-codice/): script che chiamano strumenti, e il runner che li isola
 - [Rig e recinti](/it-IT/manuale/concetti/rig/): il gradino sopra il sandbox — quando il lavoro richiede un'intera macchina usa e getta con un confine del kernel, non un processo incapsulato
 - [Guardrail](/it-IT/manuale/concetti/guardrail/): lo strato di policy sopra il pavimento del sistema operativo e da dove vengono davvero le approvazioni
 - [Ciclo di vita dell'invio degli agenti](/it-IT/manuale/concetti/ciclo-di-vita-invio/): dove si colloca l'isolamento nel flusso di invio

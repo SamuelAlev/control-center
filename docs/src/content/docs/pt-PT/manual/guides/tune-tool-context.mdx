@@ -2,7 +2,7 @@
 title: Ajustar o contexto de ferramentas de um agente
 description: Inspecione o que uma execução envia de facto, altere que ferramentas são carregadas de antemão e determine se uma má escolha de ferramenta foi uma falha de recuperação ou um problema de prompt.
 slug: pt-PT/manual/guias/ajustar-contexto-de-ferramentas
-sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
+sourceHash: 22a4306a97aa8da0332f8e3e20e06ed86119f1d5
 ---
 
 Este guia aborda o trabalho prático em torno da superfície de ferramentas em dois níveis: ver o que uma execução envia, alterá-la e diagnosticar um agente que recorreu à ferramenta errada. Para saber porque funciona assim, leia [Contexto de ferramentas e cache de prompts](/pt-PT/manual/conceitos/contexto-de-ferramentas).
@@ -13,25 +13,26 @@ Abra uma conversa e toque no indicador de utilização de contexto no cabeçalho
 
 Dois segmentos interessam aqui:
 
-- **Definições de ferramentas** e **MCP e ferramentas dinâmicas** — o conjunto residente, com o custo real em tokens de cada ferramenta.
+- **Definições de ferramentas** e **MCP e ferramentas dinâmicas** — o conjunto direto, com o custo real em tokens de cada ferramenta.
 - **Ferramentas carregadas a pedido** — o índice diferido. A cada entrada só é cobrado o nome, porque é tudo o que o pedido transporta; abrir uma mostra ainda a descrição e o esquema completos, para que possa ver o que *custaria* se a execução a fosse buscar.
+
+No modo com `repl`, as ferramentas que um script alcança estão indicadas no prompt de sistema e não aparecem em nenhum dos dois segmentos.
 
 Se o segmento diferido estiver vazio, o diferimento está desativado neste servidor. Verifique `--tool-deferral` na [CLI do `cc_server`](/pt-PT/manual/referencia/cc-server-cli).
 
 ## Alterar que ferramentas são carregadas de antemão
 
-O conjunto residente é política, não configuração — vive em `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) e aplica-se a todas as execuções:
+O conjunto direto é política, não configuração — vive em `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) e aplica-se a todas as execuções:
 
-- `residentBuiltins` — o vocabulário de ficheiros e shell.
-- `residentDiscovery` — `search_tools` e `list_my_tools`. Não as remova; são a forma como um agente chega a tudo o resto.
-- `residentMcpTools` — o punhado de ferramentas do Control Center que valem o seu esquema em cada pedido.
-- Um bloco por modo, para as ferramentas que um determinado [modo](/pt-PT/manual/conceitos/modos) usa em quase todos os turnos.
+- `directTools` — as doze ferramentas que cada execução chama diretamente: `read`, `write`, `edit`, `search`, `find`, `bash` e `read_output`; `ask_user` e `task`; `todo_write`, `search_memory` e `send_message`.
+- `residentDiscovery` — `search_tools` e `list_my_tools`. Não as remova; são a forma como um agente chega a tudo o resto. Uma execução com `repl` recebe `search_tools` quando alguma ferramenta é carregada na primeira utilização, e não recebe `list_my_tools`.
+- `directNamesFor(mode)` — as ferramentas que um determinado [modo](/pt-PT/manual/conceitos/modos/) acrescenta ao seu próprio ciclo: os verbos de revisão no modo de revisão, `submit_plan` no modo de plano e `propose_orchestration` no modo de orquestração.
 
 Duas regras ao editá-lo:
 
-**Adicione uma ferramenta apenas se a maioria das execuções a utilizar.** Cada nome custa o seu esquema em todos os pedidos de todas as execuções, para sempre. Uma ferramenta que é importante quando é usada, mas rara no conjunto, pertence à metade diferida — o agente continuará a encontrá-la.
+**Adicione uma ferramenta apenas se a maioria das execuções a utilizar.** Cada nome custa o seu esquema em todos os pedidos de todas as execuções, para sempre. Uma ferramenta que é importante quando é usada, mas rara no conjunto, fica fora do conjunto direto — o agente continuará a conseguir alcançá-la, a partir de um script ou carregando-a na primeira utilização.
 
-**Use o nome real da ferramenta.** Um nome residente que não corresponde a nenhuma ferramenta é inerte: sem erro, sem aviso, a ferramenta fica simplesmente diferida. `test/tooling/resident_tool_names_test.dart` deteta isto e mantém ainda cada modo abaixo das 40 ferramentas residentes, que é o objetivo do exercício — acima dessa faixa, a seleção de ferramentas degrada-se de forma mensurável.
+**Use o nome real da ferramenta.** Um nome direto que não corresponde a nenhuma ferramenta é inerte: sem erro, sem aviso, a ferramenta simplesmente fica fora do conjunto direto. `test/tooling/resident_tool_names_test.dart` deteta isto, mantém o conjunto direto de cada modo em no máximo 20 ferramentas e mantém cada modo em no máximo 40 ferramentas enviadas à partida, que é o objetivo do exercício — acima dessa faixa, a seleção de ferramentas degrada-se de forma mensurável.
 
 Os verbos obrigatórios e fixados de um modo são adicionados automaticamente, pelo que nunca precisa de listar o próprio verbo de saída de um modo.
 
@@ -73,4 +74,4 @@ Causas comuns, por ordem de probabilidade:
 - **Uma mudança de modelo ou de esforço a meio da conversa.** Ambas alteram o prefixo. Os subagentes são especialmente fáceis de errar aqui: executar os filhos com um esforço mais baixo para poupar dinheiro pode custar mais em partilha de cache perdida do que aquilo que poupa.
 - **Compactação frequente.** A compactação reescreve o histórico por conceção, pelo que o seu custo é real; a solução é compactar raramente e em profundidade, em vez de frequentemente e superficialmente.
 
-Desativar o diferimento com `--tool-deferral=off` é um teste A/B válido para isolar se uma mudança de comportamento veio da superfície em dois níveis. Reproduz exatamente o pedido anterior ao diferimento, pelo que, se o comportamento persistir com o diferimento desativado, a superfície não é a causa.
+Desativar o diferimento com `--tool-deferral=off` é um teste A/B válido para isolar se uma mudança de comportamento veio da superfície em dois níveis. Com ele desativado, uma execução envia a definição de cada ferramenta admitida, exceto que uma execução com `repl` continua a chamar a partir de scripts as ferramentas que um script pode chamar; por isso, se o comportamento persistir com ele desativado, o diferimento não é a causa.

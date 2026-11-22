@@ -115,13 +115,20 @@ class _ToolCallingLoop implements AgentLoop {
     required String userMessage,
     required List<HarnessTool> tools,
     List<HarnessTool> deferredTools = const [],
+    List<HarnessTool> scriptTools = const [],
     required LlmProviderPort provider,
     HarnessToolContext? context,
     AgentLoopConfig config = const AgentLoopConfig(),
     CancellationToken? cancel,
     List<HarnessImageBlock> userImages = const [],
   }) async* {
-    HarnessTool named(String name) => tools.firstWhere((t) => t.name == name);
+    // `lsp` is not direct: it is script-only with `repl` and deferred
+    // without, so it is looked up in every list the run gets.
+    HarnessTool named(String name) => [
+      ...tools,
+      ...deferredTools,
+      ...scriptTools,
+    ].firstWhere((t) => t.name == name);
     final ctx = HarnessToolContext(workingDirectory: workdir);
     final echoed = await named(
       'bash',
@@ -152,6 +159,8 @@ void main() {
     addTearDown(lsp.dispose);
     final loop = _ToolCallingLoop(manager, tempDir.path);
     final session = DispatchSession(
+      freshHistory: false,
+      readOnly: false,
       deps: SandboxDispatchDeps(
         hostExecution: const HostExecutionGate(
           posture: HostExecutionPosture.sandboxed,

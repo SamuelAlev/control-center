@@ -324,7 +324,143 @@ void main() {
           'bump the pin and the patch together',
     );
   });
+
+  group('code mode runner', () {
+    // cc_codemode is built from source with `cargo --locked`, so Cargo.lock is
+    // what ships. The pin file repeats the engine versions for the two
+    // consumers that cannot read Cargo.lock: the licence notices and
+    // scripts/lib/codemode.sh, which holds `cc_codemode --version` to the
+    // QuickJS-NG pin at packaging time. These tests keep the copies together.
+    const crate = 'packages/cc_natives/native/codemode';
+    final locked = _cargoLockPackages(
+      File('$root/$crate/Cargo.lock').readAsStringSync(),
+    );
+
+    test('the rquickjs pin matches Cargo.lock and the manifest', () {
+      final pin = values['CODEMODE_RQUICKJS_VERSION'];
+      expect(pin, isNotNull, reason: 'CODEMODE_RQUICKJS_VERSION is not pinned');
+      for (final name in const ['rquickjs', 'rquickjs-core', 'rquickjs-sys']) {
+        expect(
+          locked[name],
+          pin,
+          reason:
+              '$crate/Cargo.lock locks $name ${locked[name]}, but '
+              'native_pins.env pins CODEMODE_RQUICKJS_VERSION=$pin',
+        );
+      }
+      expect(
+        File('$root/$crate/runner/Cargo.toml').readAsStringSync(),
+        contains('rquickjs = { version = "=$pin"'),
+        reason: 'the runner manifest must pin rquickjs exactly (=$pin)',
+      );
+    });
+
+    test('the QuickJS-NG pin matches the recorded provenance', () {
+      // rquickjs-sys vendors the C sources, so the engine version is only
+      // visible in PROVENANCE.md (read from the crate at the locked version)
+      // and in the built binary's --version, which codemode.sh checks.
+      final pin = values['CODEMODE_QUICKJS_NG_VERSION'];
+      expect(
+        pin,
+        isNotNull,
+        reason: 'CODEMODE_QUICKJS_NG_VERSION is not pinned',
+      );
+      final provenance = File('$root/$crate/PROVENANCE.md').readAsStringSync();
+      expect(
+        RegExp(
+          r'^\| QuickJS-NG [^|]*\| ' + RegExp.escape(pin!) + r' \|',
+          multiLine: true,
+        ).hasMatch(provenance),
+        isTrue,
+        reason:
+            'PROVENANCE.md does not record QuickJS-NG $pin; a rquickjs bump '
+            'that moves the vendored engine updates both',
+      );
+      expect(
+        File('$root/scripts/lib/codemode.sh').readAsStringSync(),
+        contains(r'quickjs-ng $CODEMODE_QUICKJS_NG_VERSION protocol'),
+        reason: 'packaging no longer checks the built engine against the pin',
+      );
+    });
+
+    test('every crate compiled into the runner is attributed', () {
+      // A crate added to Cargo.lock ships inside bin/codemode/cc_codemode. It
+      // needs a row in scripts/lib/third_party.sh at its locked version, or
+      // a stated reason it is not redistributed.
+      const notShipped = <String, String>{
+        'cc_codemode': 'first party',
+        'cc_codemode_lockdown': 'first party',
+        'cc': 'build only',
+        'find-msvc-tools': 'build only',
+        'shlex': 'build only',
+        // serde_json declares these behind cfg(any()); never compiled.
+        'serde': 'never compiled',
+        'serde_derive': 'never compiled',
+        'proc-macro2': 'never compiled',
+        'quote': 'never compiled',
+        'syn': 'never compiled',
+        'unicode-ident': 'never compiled',
+        // rquickjs-core's optional module loader, not enabled.
+        'relative-path': 'never compiled',
+      };
+      const coveredBy = <String, String>{
+        'rquickjs-core': 'rquickjs',
+        'rquickjs-sys': 'rquickjs',
+        'windows-link': 'windows-sys',
+      };
+      final table = File('$root/scripts/lib/third_party.sh').readAsStringSync();
+      final rows = <String, String>{
+        for (final m in RegExp(
+          r'^\s*"([^ |]+) \(Rust crate\)\|([^|]+)\|',
+          multiLine: true,
+        ).allMatches(table))
+          m.group(1)!: m.group(2)!,
+      };
+      expect(
+        table,
+        contains('"rquickjs (code mode runner)|@CODEMODE_RQUICKJS_VERSION|'),
+      );
+      expect(
+        table,
+        contains(
+          '"QuickJS-NG (code mode runner)|@CODEMODE_QUICKJS_NG_VERSION|',
+        ),
+      );
+      final problems = <String>[];
+      for (final MapEntry(key: name, value: version) in locked.entries) {
+        if (notShipped.containsKey(name) || name == 'rquickjs') {
+          continue;
+        }
+        final row = coveredBy[name] ?? name;
+        if (row == 'rquickjs') {
+          continue;
+        }
+        if (!rows.containsKey(row)) {
+          problems.add('$name $version has no "$row (Rust crate)" row');
+        } else if (coveredBy[name] == null && rows[row] != version) {
+          problems.add(
+            '$name is locked at $version but attributed at ${rows[row]}',
+          );
+        }
+      }
+      for (final name in rows.keys) {
+        if (!locked.containsKey(name)) {
+          problems.add('"$name (Rust crate)" is not in $crate/Cargo.lock');
+        }
+      }
+      expect(problems, isEmpty, reason: problems.join('\n'));
+    });
+  });
 }
+
+/// `name → version` for every `[[package]]` in a Cargo.lock.
+Map<String, String> _cargoLockPackages(String lock) => {
+  for (final m in RegExp(
+    r'^\[\[package\]\]\nname = "([^"]+)"\nversion = "([^"]+)"',
+    multiLine: true,
+  ).allMatches(lock))
+    m.group(1)!: m.group(2)!,
+};
 
 const _temporaryFfmpegRelease = 'autobuild-2026-10-15-13-03';
 final _ffmpegBaseline = DateTime.utc(2026, 10, 31);

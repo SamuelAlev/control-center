@@ -2,23 +2,33 @@
 title: Kitaran hayat penghantaran ejen
 description: Apa yang berlaku antara ketibaan mesej dan penutupan log larian — pemasangan prompt, worktree, identiti, apa yang membatasi larian dan bagaimana hasilnya direkodkan secara jujur.
 slug: ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran
-sourceHash: 13e7fe3ed86c8659c5fec818e0b89737241e2b9d
+sourceHash: 07c46e22e30f1a10e64b7fb949c78bdae9747efa
 ---
 
 ## Apakah itu penghantaran
 
 Penghantaran ialah satu larian bagi satu ejen, dalam satu perbualan, pada satu penyesuai. Segala-galanya mengenainya berlaku pada `cc_server`: klien menghantar mesej dan kemudian memerhati peristiwa distrim kembali. Tiada laluan penghantaran dalam mana-mana klien.
 
-Ejen dibangunkan atas enam sebab, yang dibawa oleh larian sebagai **konteks kebangkitan**nya supaya ejen tahu _mengapa_ ia bangun:
+Setiap larian membawa **konteks kebangkitan** yang menyatakan _mengapa_ ejen itu bangun. Larian yang anda mulakan dengan menghantar mesej ialah `userMessage`; setiap larian yang dimulakan oleh pelayan sendiri bermula sebagai **panggilan bangun** yang tahan lama dalam baris gilir ruang kerja dan membawa sebab panggilan bangun itu (lihat [Jadual dan panggilan bangun](/ms-MY/manual-pengguna/panduan-cara/jadual-panggilan-bangun/)):
 
 | Sebab kebangkitan | Pencetus                                                     |
-| ----------------- | ------------------------------------------------------------ |
-| `userMessage`     | Seseorang menghantar mesej dalam ruang, atau menyebut ejen  |
+| -------------------- | ------- |
+| `userMessage`     | Seseorang menghantar mesej dalam ruang                      |
 | `assignment`      | Tiket ditugaskan kepada ejen                                 |
 | `pipelineStep`    | Langkah pipeline menghantarnya                               |
-| `childCompleted`  | Tiket anak selesai                                           |
-| `followUp`        | Denyut susulan berjadual                                     |
-| `recovery`        | Laluan pemulihan menghantar semula selepas kegagalan         |
+| `childCompleted`  | Tiket yang diwakilkan atau tiket anak selesai, atau larian ahli pasukan tamat |
+| `schedule` | Jadual atau gelung dicetuskan |
+| `watch` | Sesuatu yang didengar oleh pantauan telah berlaku (semakan permintaan tarik, kajian, persekitaran, tiket, atau larian pipeline) |
+| `goalContinuation` | Segmen seterusnya bagi sesuatu matlamat |
+| `goalVerification` | Semakan atau kajian matlamat mendapati ia belum siap lagi |
+| `goalReview` | Kajian baca sahaja terhadap dakwaan sesuatu matlamat bahawa ia telah siap |
+| `peerMessage` | Ejen lain menghantar mesej atau soalan kepadanya, atau ia disebut dengan @, atau ia ialah penyemak ruang itu |
+| `peerReply`       | Jawapan kepada soalan yang ditanyanya kepada ejen lain       |
+| `limitReset` | Had penggunaan penyedia yang ia berhenti padanya telah ditetapkan semula |
+| `improvementReview` | Kajian selepas matlamat yang disahkan, atau `/refine` |
+| `recovery` | Kerja yang diganggu oleh pemulaan semula pelayan atau kegagalan |
+
+Panggilan bangun dihantar ke dalam larian hidup ejen dalam perbualan itu apabila larian itu menerima input dan bertindak untuk orang yang sama; jika tidak, ia menunggu larian itu tamat dan memulakan larian sendiri. Arahan slash hanya dibaca dalam mesej yang ditaip oleh seseorang; dalam mana-mana larian lain, teks yang sama ialah mesej biasa.
 
 Konteks kebangkitan membawa id yang sepadan dengan sebab itu — tiket, ruang, mesej, larian pipeline — dan ia disuntik ke dalam persekitaran dan prompt ejen.
 
@@ -104,17 +114,17 @@ Secara sengaja **tiada siling pusingan di mana-mana**. Kiraan lelaran keras memb
 - **model berhenti** dengan sendirinya;
 - **manusia menghentikannya**, atau mengambil alih perbualan (yang menjeda harness terbina pada sempadan pusingan bersih seterusnya — larian Claude Code, yang tiada sempadan selamat, dihentikan sebaliknya);
 - **pengawas senyap tercetus.** Tiada output untuk tempoh ambang dan sesi itu ditamatkan dengan kegagalan `silentRun`. Lalai ialah 15 minit, turun kepada 10 dalam modus yang banyak membaca (semakan dan pelan); ejen boleh mengatasinya antara 1 dan 240 minit. Pengawas itu bersedia apabila proses anak melaporkan PID-nya, jadi ia meliputi CLI Claude Code — **bukan** harness terbina, yang tidak melahirkan apa-apa;
-- **had kos tercetus** — tetapi hanya untuk perintah autonomi.
+- **had kos tercetus** — pada segmen matlamat dan kajian, larian jadual dan pantauan, kajian penambahbaikan, dan larian pipeline di bawah orkestrasi yang dihadkan.
 
 Pengawal gelung malapetaka bukan penamat: tiga panggilan alat yang sama berturut-turut dan gelung itu _mengemudi_ ejen untuk menukar pendekatan.
 
 :::note[Pusingan biasa tiada had kos]
-Pengawal kos dalam sesi hanya disambung untuk `/goal` dan `/loop`; setiap larian lain tidak melepasi sebarang belanjawan. Untuk perintah tersebut, satu segmen tanpa pengawasan boleh membelanjakan 500 sen ($5.00) secara lalai, dengan kemudi lembut pada 80% yang meminta ejen menamatkan kerja dengan bersih sebelum hentian keras dan belanjawan matlamat tahan lama sebanyak 5000 sen ($50.00) merentas segmen. `/goal --budget` yang eksplisit tidak pernah dilampaui oleh keseluruhan segmen.
+Larian yang anda mulakan dengan mesej tidak membawa bajet. Segmen matlamat boleh membelanjakan 5 dolar, atau baki bajet matlamat (50 dolar secara lalai) jika itu kurang; kajian matlamat 2 dolar; larian yang dimulakan oleh jadual atau pantauan 5 dolar; kajian penambahbaikan 1 dolar. Pada 90%, harness terbina dan Claude Code mengarahkan ejen untuk menamatkan kerja dengan kemas sebelum had keras; ejen ACP dibatalkan pada had. Lihat [Urus kos](/ms-MY/manual-pengguna/panduan-cara/urus-kos/#hadkan-larian-autonomi).
 :::
 
 Secara keseluruhannya, pusingan interaktif biasa pada harness terbina tiada siling pusingan, tiada had kos dan tiada pengawas senyap. Ia tamat apabila model berhenti atau apabila anda menghentikannya. Itu pertukaran yang disengajakan — semua alternatif membunuh kerja panjang yang sah — tetapi ia memang bermakna larian interaktif tanpa pengawasan hanya dibatasi oleh pertimbangan model itu sendiri.
 
-Semasa larian, mesej yang dihantar kepada ejen yang sedang berjalan dibariskan sebagai **pemanduan** dan dialirkan keluar pada sempadan pusingan seterusnya, jadi anda boleh menggesa larian tanpa membunuhnya. Pemanduan, penjedaan, subejen dan kontrak penyiapan ialah ciri harness terbina; Claude Code tiada satu pun daripadanya.
+Semasa larian, mesej yang dihantar kepada ejen yang sedang berjalan dibariskan sebagai **pemanduan** dan dialirkan keluar pada sempadan pusingan seterusnya, jadi anda boleh menggesa larian tanpa membunuhnya. Larian baca-sahaja, seperti kajian matlamat, tidak menerima apa-apa semasa ia berjalan, dan menggesa larian yang bekerja untuk orang lain memerlukan akses tulis kepada repositori ruang. Pemanduan, penjedaan, subejen dan kontrak penyiapan ialah ciri harness terbina; Claude Code tiada satu pun daripadanya.
 
 ## Bagaimana larian direkodkan
 
@@ -130,11 +140,11 @@ Apabila larian tamat tanpa hasil serahan yang diperlukan oleh modusnya — laria
 Ini disengajakan. Menukar status akan menggerakkan mesin keadaan tiket dan pipeline yang tiada kaitan dengan artifak yang hilang itu. Ia juga bermakna "status: completed" sahaja tidak pernah mencukupi untuk menyimpulkan bahawa larian berjaya — bacalah ringkasannya.
 :::
 
-Menutup larian menerbitkan `AgentRunCompleted` dan banyak yang bergantung padanya: penghimpunan kos pipeline, menyambung semula langkah pipeline yang menunggu larian, menyempurnakan tiket penyokong, memetakan orkestrasi kepada keadaan terminal, keputusan terus-atau-berhenti penyelia matlamat, peranan penyemak dan penilaian belanjawan selepas larian. Senarai kehadiran menyusul secara berasingan, dengan memerhati log larian terkini dan bukannya peristiwa itu. Pemberitahuan "ejen selesai" tiada dalam senarai itu: peristiwa tersebut dicetuskan apabila aliran proses tamat, sebelum balasan ditulis, jadi pemberitahuannya ialah `MessageReceived` giliran itu, yang diterbitkan sebaik sahaja mesej disimpan.
+Sebaik sahaja keadaan akhir larian ditulis, pelayan menerbitkan `AgentRunSettled` tepat sekali, dengan sebab larian itu tamat (`completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` atau `serverStopped`), dan banyak perkara bergantung padanya: penghimpunan kos pipeline, menyambung semula langkah pipeline yang menunggu larian itu, menyempurnakan tiket penyokong, memetakan orkestrasi kepada keadaan terminal, keputusan terus-atau-berhenti penyelia matlamat, jawapan kepada soalan yang ditanya oleh ejen lain, giliran seterusnya bagi gelung yang dijadualkan sendiri, jeda had penggunaan, peranan penyemak dan penilaian belanjawan selepas larian. Larian yang diganggu oleh pemberhentian pelayan (`serverStopped`) tidak sekali-kali dianggap sebagai kegagalan; kerja disambung semula selepas pemulaan semula. `AgentRunCompleted` masih diterbitkan, lebih awal, untuk jambatan permintaan tarik dan analitik sahaja. Senarai kehadiran menyusul secara berasingan, dengan memerhati log larian terkini dan bukannya peristiwa itu. Pemberitahuan "ejen selesai" tiada dalam senarai itu: peristiwa tersebut dicetuskan apabila aliran proses tamat, sebelum balasan ditulis, jadi pemberitahuannya ialah `MessageReceived` giliran itu, yang diterbitkan sebaik sahaja mesej disimpan.
 
 ## Belanjawan, selepas kejadian
 
-Penguatkuasaan belanjawan ialah _reaksi_, bukan gerbang. Apabila larian selesai, penilai membandingkan perbelanjaan bulan semasa ejen dengan siling berkesannya (polisi belanjawan berpaut jika ada, jika tidak angka bulanan ejen itu sendiri; sifar bermakna tanpa had). Melangkaui ambang lembut merekodkan insiden amaran; menghabiskan belanjawan merekodkan insiden keras dan menukar status kitaran hayat ejen kepada `paused` pada carta organisasi. Penghantaran masih menerima kerja daripada ejen itu. Pencetus pipeline `BudgetThresholdCrossed` boleh memulakan kerja susulan daripada peristiwa yang sama.
+Penguatkuasaan belanjawan ialah _reaksi_, bukan gerbang. Apabila larian selesai, penilai membandingkan perbelanjaan bulan semasa ejen dengan siling berkesannya (polisi belanjawan berpaut jika ada, jika tidak angka bulanan ejen itu sendiri; sifar bermakna tanpa had). Melangkaui ambang lembut merekodkan insiden amaran; menghabiskan belanjawan merekodkan insiden keras dan menukar status kitaran hayat ejen kepada `paused` pada carta organisasi. Penghantaran masih menerima kerja yang anda hantar kepada ejen itu, tetapi panggilan bangun untuknya (jadual, segmen matlamat, balasan) menunggu semasa ia dijeda, selama paling lama 7 hari. Pencetus pipeline `BudgetThresholdCrossed` boleh memulakan kerja susulan daripada peristiwa yang sama.
 
 ## Salasilah cuba semula
 
@@ -147,4 +157,5 @@ Setiap log larian boleh membawa salasilah cuba semula — id larian induk, pembi
 - [Guardrail](/ms-MY/manual-pengguna/konsep/guardrail/): polisi kelas kesan yang dilalui setiap panggilan berpagar
 - [Kotak pasir dan keselamatan](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/): kisah pengasingan sepenuhnya
 - [Multipemain](/ms-MY/manual-pengguna/konsep/multipemain/): pemanduan, pengambilalihan dan dail autonomi
-- [Acara domain](/ms-MY/manual-pengguna/konsep/acara-domain/): apa yang dicetuskan oleh `AgentRunCompleted`
+- [Acara domain](/ms-MY/manual-pengguna/konsep/acara-domain/): apa yang dicetuskan oleh `AgentRunSettled`
+- [Kejar matlamat](/ms-MY/manual-pengguna/panduan-cara/kejar-matlamat/) dan [Jadual dan panggilan bangun](/ms-MY/manual-pengguna/panduan-cara/jadual-panggilan-bangun/): larian yang dimulakan oleh pelayan sendiri

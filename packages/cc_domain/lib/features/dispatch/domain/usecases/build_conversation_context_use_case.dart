@@ -11,6 +11,7 @@ import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart'
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/conversation_context_history.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/still_in_flight_row.dart';
 
 /// Builds conversation context for an agent dispatch by gathering recent
 /// messages, summaries and semantically-relevant history from a space.
@@ -213,6 +214,9 @@ class BuildConversationContextUseCase {
     }
 
     final built = buildConversationContextParts(
+      // The server's newest "Still in flight" block for this agent: a system
+      // row the window leaves out like every other, placed where it sits.
+      stillInFlight: newestStillInFlightRow(allMessages, selfAgentId),
       spaceId: spaceId,
       selfAgentId: selfAgentId,
       selfAgentName: selfAgentName,
@@ -348,6 +352,7 @@ ConversationContextParts buildConversationContextParts({
   required List<Message> summaries,
   required List<Message> semanticHits,
   String lastRunDigest = '',
+  Message? stillInFlight,
 }) {
   final blocks = <String>[];
   final entries = <PromptConversationEntry>[];
@@ -410,9 +415,31 @@ ConversationContextParts buildConversationContextParts({
     blocks.add(buf.toString().trimRight());
   }
 
-  if (verbatimWindow.isNotEmpty) {
+  // The "Still in flight" block is a hand-over at a compaction: it stays
+  // where its row sits (after the compaction it belongs to), so later
+  // messages follow it, never re-appended as the newest entry.
+  final inFlightText = stillInFlight?.content.trim() ?? '';
+  var inFlightPlaced = inFlightText.isEmpty;
+  void placeInFlight(StringBuffer buf) {
+    inFlightPlaced = true;
+    buf.writeln(inFlightText);
+    entries.add(
+      PromptConversationEntry(
+        key:
+            'inflight:${stillInFlight!.id}#'
+            '${PromptBuilder.promptRevisionOf(inFlightText)}',
+        text: inFlightText,
+        provenance: PromptConversationProvenance.system,
+      ),
+    );
+  }
+
+  if (verbatimWindow.isNotEmpty || !inFlightPlaced) {
     final buf = StringBuffer('### Recent messages\n');
     for (final m in verbatimWindow) {
+      if (!inFlightPlaced && m.createdAt.isAfter(stillInFlight!.createdAt)) {
+        placeInFlight(buf);
+      }
       final line =
           '- [${_senderLabel(m, selfAgentId, selfAgentName)} · ${_fmtTime(m.createdAt)}] ${m.content.trimRight()}';
       buf.writeln(line);
@@ -424,6 +451,9 @@ ConversationContextParts buildConversationContextParts({
           runId: runIdOf(m),
         ),
       );
+    }
+    if (!inFlightPlaced) {
+      placeInFlight(buf);
     }
     blocks.add(buf.toString().trimRight());
   }

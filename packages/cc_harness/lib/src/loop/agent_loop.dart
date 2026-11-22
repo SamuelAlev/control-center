@@ -1,5 +1,6 @@
 import 'package:cc_harness/src/cancellation_token.dart';
 import 'package:cc_harness/src/context/harness_compaction.dart';
+import 'package:cc_harness/src/context/still_in_flight.dart';
 import 'package:cc_harness/src/context/token_calibration.dart';
 import 'package:cc_harness/src/context/tool_observation.dart';
 import 'package:cc_harness/src/loop/advisor.dart';
@@ -14,6 +15,7 @@ import 'package:cc_harness/src/provider/llm_call_ledger.dart';
 import 'package:cc_harness/src/provider/llm_provider_port.dart';
 import 'package:cc_harness/src/provider/reasoning_effort.dart';
 import 'package:cc_harness/src/tools/tool.dart';
+import 'package:cc_harness/src/tools/tool_reentry.dart';
 
 /// Events emitted by the agent loop as it runs.
 ///
@@ -50,6 +52,8 @@ class LoopToolCallStart extends AgentLoopEvent {
     required this.toolName,
     required this.toolUseId,
     required this.args,
+    this.parentToolUseId,
+    this.callSite,
   });
 
   /// Name of the tool being called.
@@ -60,6 +64,20 @@ class LoopToolCallStart extends AgentLoopEvent {
 
   /// Decoded arguments.
   final Map<String, dynamic> args;
+
+  /// The model-issued call this one was made from through its
+  /// [ToolReentry], or null for a call the model made itself.
+  ///
+  /// A nested call's events always arrive between its parent's start and
+  /// result events.
+  final String? parentToolUseId;
+
+  /// Where in the parent's script a nested call was made (1-based line and
+  /// column), as [ToolReentry.call] was given it; null for a call the model
+  /// made and for a nested call without a position. A display hint for the
+  /// call's transcript row only. Optional, like [parentToolUseId], because
+  /// a call the model made has none.
+  final ({int line, int column})? callSite;
 }
 
 /// A tool finished executing.
@@ -69,6 +87,7 @@ class LoopToolCallResult extends AgentLoopEvent {
     required this.toolName,
     required this.toolUseId,
     required this.result,
+    this.parentToolUseId,
   });
 
   /// Name of the tool that ran.
@@ -79,6 +98,10 @@ class LoopToolCallResult extends AgentLoopEvent {
 
   /// The tool result.
   final HarnessToolResult result;
+
+  /// The model-issued call this one was made from, or null for a call the
+  /// model made itself (see [LoopToolCallStart.parentToolUseId]).
+  final String? parentToolUseId;
 }
 
 /// A full assistant turn has been assembled and appended to history.
@@ -186,6 +209,34 @@ class LoopCompaction extends AgentLoopEvent {
   final int tokensAfter;
 }
 
+/// A compaction that writes a summary started, or ended (whether or not it
+/// changed the history). Only a pass that summarizes is announced: the
+/// per-turn threshold check is not. A summary can take a while; a watcher
+/// (`agent_activity`) reports the run as compacting in between.
+class LoopCompacting extends AgentLoopEvent {
+  /// Creates a compacting event.
+  const LoopCompacting({required this.started});
+
+  /// True when the summary starts, false when the pass returned.
+  final bool started;
+}
+
+/// The run parked, or stopped parking: the model would have ended its turn
+/// but something it is owed is not done yet (a live background command, a
+/// [WouldStopPark] from the turn hooks). No model call happens while
+/// [parked]; a host shows the run as waiting and does not count the time as
+/// silence.
+class LoopPark extends AgentLoopEvent {
+  /// Creates a park event.
+  const LoopPark({required this.parked, required this.reason});
+
+  /// True when the park starts, false when it ends.
+  final bool parked;
+
+  /// What the run waits for.
+  final String reason;
+}
+
 /// The loop finished.
 class LoopDone extends AgentLoopEvent {
   /// Creates a done event.
@@ -250,7 +301,7 @@ enum LoopDoneReason {
 
 /// Tool names the loop handles ITSELF (context control), rather than dispatching
 /// to a tool's `execute` — they manipulate the loop's own history.
-const Set<String> harnessControlToolNames = {'checkpoint', 'rewind'};
+const Set<String> harnessControlToolNames = {'checkpoint', 'rewind', 'compact'};
 
 /// The outcome of gating a tool call, with the reason attached.
 ///
@@ -260,18 +311,27 @@ const Set<String> harnessControlToolNames = {'checkpoint', 'rewind'};
 /// a policy denial from a human one. Carrying the reason is the difference
 /// between an agent that adapts and one that narrates giving up.
 class ToolGateDecision {
-  /// Allows the call.
-  const ToolGateDecision.allow()
+  /// Allows the call. [askedPerson] says a person was asked and approved it,
+  /// rather than policy allowing it on its own.
+  const ToolGateDecision.allow({this.askedPerson = false})
     : allowed = true,
       reason = '',
       remediation = null;
 
   /// Denies the call, optionally explaining why and what to do instead.
-  const ToolGateDecision.deny({this.reason = '', this.remediation})
-    : allowed = false;
+  /// [askedPerson] says a person was asked and declined.
+  const ToolGateDecision.deny({
+    this.reason = '',
+    this.remediation,
+    this.askedPerson = false,
+  }) : allowed = false;
 
   /// Whether the call may proceed.
   final bool allowed;
+
+  /// Whether a person answered: the record of a nested call tells "approved
+  /// by a person" from "allowed by policy" by this flag alone.
+  final bool askedPerson;
 
   /// Why the call was denied. Empty renders `Denied by user.`.
   final String reason;
@@ -291,13 +351,86 @@ class ToolGateDecision {
   }
 }
 
+/// Where a gated call came from: the model directly, or a tool the model
+/// called through its [ToolReentry].
+///
+/// Handed to the approval callback so the product layer can say on the card
+/// that a script asked, and link the parent call's transcript row.
+class ToolCallOrigin {
+  /// Creates an origin.
+  const ToolCallOrigin({required this.toolCallId, this.parentToolUseId});
+
+  /// The call's own id: the provider's id for a direct call,
+  /// `<parentToolUseId>/<n>` for a nested one.
+  final String toolCallId;
+
+  /// The model-issued call that made this one, or null for a direct call.
+  final String? parentToolUseId;
+
+  /// Whether a tool made this call through its reentry.
+  bool get isNested => parentToolUseId != null;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ToolCallOrigin &&
+      other.toolCallId == toolCallId &&
+      other.parentToolUseId == parentToolUseId;
+
+  @override
+  int get hashCode => Object.hash(toolCallId, parentToolUseId);
+}
+
+/// One call the gate asks its [ToolApprovalCallback] about: the call itself,
+/// and the two signals the host needs around a person's answer.
+///
+/// [withdrawn] is how a card leaves the screen when nobody waits for its
+/// answer any more: a script that ended, a nested call that was cancelled or
+/// timed out, a run that was stopped. A card left up after that is one a
+/// person can still answer, and an approval of work that is no longer
+/// waiting would be recorded as an action a person allowed. [onPersonWait]
+/// is how the gate learns that a person, not a policy lookup, is what the
+/// call is waiting on: only that time stops the caller's clocks.
+class ToolApprovalRequest {
+  /// Creates a request.
+  const ToolApprovalRequest({
+    required this.tool,
+    required this.args,
+    required this.origin,
+    required this.withdrawn,
+    required this.onPersonWait,
+  });
+
+  /// The tool the call names.
+  final HarnessTool tool;
+
+  /// The call's arguments.
+  final Map<String, dynamic> args;
+
+  /// Which call is asking, and whether a tool made it on the model's behalf.
+  final ToolCallOrigin origin;
+
+  /// Cancelled when the call stops waiting for this decision: for a nested
+  /// call its own cancellation (its script ended, it was cancelled or timed
+  /// out), for a direct call the run's. A host takes any card it raised down
+  /// then, and records no answer that arrives afterwards as a person's.
+  final CancellationToken withdrawn;
+
+  /// Called with `true` just before a person is asked and with `false` once
+  /// they answered or the card was withdrawn. Never called for a decision
+  /// policy makes on its own, so a policy lookup is never counted as a wait.
+  final PersonWaitListener onPersonWait;
+}
+
 /// Called before a non-read tool runs. Wired by the dispatch layer to the
 /// confirmation flow + action guard.
 typedef ToolApprovalCallback =
-    Future<ToolGateDecision> Function(
-      HarnessTool tool,
-      Map<String, dynamic> args,
-    );
+    Future<ToolGateDecision> Function(ToolApprovalRequest request);
+
+/// Why a call a tool made through its [ToolReentry] (a script's) is refused
+/// outright, or null to let it on to the pre-tool hook and the approval gate.
+/// Asked before either, so a refused call reaches neither.
+typedef NestedCallRefusal =
+    String? Function(HarnessTool tool, Map<String, dynamic> args);
 
 /// Optional token + wall-clock budget for goal-directed runs.
 ///
@@ -430,8 +563,10 @@ class LoopToolConfig {
   /// Creates the tools part of an [AgentLoopConfig].
   const LoopToolConfig({
     this.approvalCallback,
+    this.nestedCallRefusal,
     this.autoApprove = true,
     this.maxParallelToolCalls = 4,
+    this.maxParallelNestedCalls = 8,
     this.overlapReadOnlyTools = false,
     this.toolTimeout,
     this.observationIngest,
@@ -439,6 +574,11 @@ class LoopToolConfig {
 
   /// Confirmation gate for write / exec tools.
   final ToolApprovalCallback? approvalCallback;
+
+  /// Refuses a nested call before the pre-tool hook, the approval callback
+  /// and the tool, whatever the tool's tier: the refusal is the call's
+  /// result, denied. A direct call is never asked.
+  final NestedCallRefusal? nestedCallRefusal;
 
   /// Policy when a write/exec tool needs approval but [approvalCallback] is
   /// null. When true (the low-level default) the tool runs ungated; when false
@@ -453,6 +593,14 @@ class LoopToolConfig {
   /// enter model history in their original call order. Values below one are
   /// treated as one (fully sequential).
   final int maxParallelToolCalls;
+
+  /// How many parallel-safe calls ONE tool may have running at a time through
+  /// its [ToolReentry]. Everything else a tool calls (write and exec tiers,
+  /// anything that needs approval or waits on a person, every call while a
+  /// hook intercepts tools) takes one serial lane in call order, so a person
+  /// sees one approval card or question at a time. Values below one are
+  /// treated as one.
+  final int maxParallelNestedCalls;
 
   /// Experimental overlap of explicitly safe read-only tools with the
   /// remainder of a streaming model response. Off unless requested.
@@ -550,6 +698,8 @@ class LoopCompactionConfig {
     this.compactor,
     this.tokenCalibration,
     this.selfAgentName = 'assistant',
+    this.inFlightLines,
+    this.clock,
   });
 
   /// The model's context window in tokens. Null disables compaction.
@@ -564,6 +714,17 @@ class LoopCompactionConfig {
 
   /// Display name used to label the agent's turns in compaction summaries.
   final String selfAgentName;
+
+  /// Lines the host adds to the "Still in flight" block written after each
+  /// compaction (the goal, wakes, asks, stored keys), already rendered, one
+  /// per kind, without the leading `- `, each ending with the call that
+  /// refreshes it. Called at compaction time with a short timeout; a throw
+  /// or a timeout counts as no lines. Null adds none.
+  final InFlightLines? inFlightLines;
+
+  /// The clock the "Still in flight" heading reads its time from. Null reads
+  /// the wall clock.
+  final DateTime Function()? clock;
 }
 
 /// What can redirect a run while it works: lifecycle hooks, stream rules,
@@ -572,16 +733,23 @@ class LoopSteeringConfig {
   /// Creates the steering part of an [AgentLoopConfig].
   const LoopSteeringConfig({
     this.hooks,
+    this.turnHooks,
     this.streamRules = const [],
     this.advisor,
     this.advisorEveryTurns = 3,
     this.checklistStaleAfterTurns = 4,
     this.queue,
     this.pauseGate,
+    this.requestOrigin = HarnessMessageOrigin.person,
   });
 
   /// Optional lifecycle hooks (start/end + pre/post-tool gate). Null = none.
   final AgentLoopHooks? hooks;
+
+  /// Asked when the model would end its turn and before a compaction
+  /// summarizes ([AgentLoopTurnHooks]). Null = the turn ends when the model
+  /// is done (after the loop's own park on live background commands).
+  final AgentLoopTurnHooks? turnHooks;
 
   /// Course-correction rules matched against streamed output. Empty = none.
   final List<StreamRule> streamRules;
@@ -615,6 +783,13 @@ class LoopSteeringConfig {
   /// Pauses the loop at the next clean turn boundary (take-over, PRD 16 §8).
   /// Null = never pauses.
   final PauseGate? pauseGate;
+
+  /// Where the run's own request (the user message it starts with) came
+  /// from: [HarnessMessageOrigin.person] when a person wrote it, which pins
+  /// it across every compaction; [HarnessMessageOrigin.wake] or
+  /// [HarnessMessageOrigin.peer] for a run a wake or another agent started,
+  /// whose text is data and is never pinned.
+  final HarnessMessageOrigin requestOrigin;
 }
 
 /// Where the run persists its history, and what a resumed run restores.
@@ -687,13 +862,17 @@ abstract interface class AgentLoop {
   ///
   /// [userImages] attach to the user turn but stay separate from [userMessage]
   /// text. [deferredTools] schemas withhold until first use / activateTools;
-  /// activation only APPENDS (cache-prefix safe).
+  /// activation only APPENDS (cache-prefix safe). [scriptTools] are callable
+  /// only through a [ToolReentry]: never sent to the provider, never
+  /// activated, and a direct call to one is answered with directions to call
+  /// it from a script.
   Stream<AgentLoopEvent> run({
     required List<HarnessMessage> history,
     required String userMessage,
     required List<HarnessTool> tools,
     required LlmProviderPort provider,
     List<HarnessTool> deferredTools,
+    List<HarnessTool> scriptTools,
     HarnessToolContext? context,
     AgentLoopConfig config = const AgentLoopConfig(),
     CancellationToken? cancel,

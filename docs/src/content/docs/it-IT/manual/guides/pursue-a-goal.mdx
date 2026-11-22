@@ -1,0 +1,143 @@
+---
+title: Persegui un obiettivo
+description: Dai a un agente un obiettivo su cui continua a lavorare tra esecuzioni e riavvii, definisci cosa significa completato e decidi quando è terminato.
+slug: it-IT/manuale/guide/persegui-obiettivo
+sourceHash: 0ea77964bd9e3044e168624bc67325de0fd1d1e5
+---
+
+Un obiettivo è un lavoro su cui un agente continua a lavorare finché non è soddisfatto ciò che significa completato. L'agente lavora in **segmenti**: esecuzioni limitate che il server avvia una dopo l'altra, anche attraverso i riavvii, finché l'obiettivo non viene verificato, una persona non lo chiude o non raggiunge un limite. L'agente non può chiudere un obiettivo dichiarando di aver finito. Il server esegue i controlli dell'obiettivo e un revisore esamina prima il risultato.
+
+## Avviare un obiettivo
+
+Scrivi `/goal` e l'obiettivo nel compositore di una conversazione:
+
+```text
+/goal --budget 20 --days 2 --check "make test" make the importer handle files over 2 GB
+```
+
+Digitando `/goal` seguito subito da testo si apre l'intervista sull'obiettivo. Chiede i criteri di successo, i controlli che devono superarsi, i confini e le condizioni di arresto, e propone un checker separato, di avviare ogni segmento da zero e di far rispondere l'agente alle proprie domande. Ogni passo può essere saltato.
+
+| Opzione | Significato |
+| --- | --- |
+| `--budget <dollars>` | Quanto può spendere l'obiettivo in totale. Di default 50 dollari |
+| `--max <N>` | Il numero massimo di segmenti che l'obiettivo può fare. Di default nessun limite |
+| `--days <N>` | Una scadenza, tra quel numero di giorni da adesso |
+| `--check "<command>"` | Un comando che deve superarsi prima che l'obiettivo possa terminare, eseguito nel worktree. Ripeti per averne altri, al massimo 5 |
+| `--checker <agent>` | Un altro agente che esamina l'affermazione che l'obiettivo è completato, per nome o id |
+| `--fresh` | Avvia ogni segmento senza la cronologia della conversazione, solo dall'obiettivo e dalle sue note |
+| `--unattended wait` o `--unattended assume` | Cosa succede alle domande dell'agente quando nessuno risponde (vedi [Quando nessuno risponde](#quando-nessuno-risponde)) |
+
+- Le opzioni possono stare in qualsiasi punto del messaggio. Un'opzione sconosciuta, ripetuta, un valore non valido e più di 5 controlli vengono rifiutati, e la bozza resta nel compositore con il motivo sotto.
+- Un numero all'inizio dell'obiettivo fa parte dell'obiettivo. Per limitare i segmenti, usa `--max`.
+- `/goal` viene letto solo in un messaggio che scrivi tu. Lo stesso testo da un agente, una pipeline o un risveglio è un messaggio normale.
+- Un agente persegue un obiettivo alla volta in uno spazio di lavoro. Un secondo `/goal` per lo stesso agente viene rifiutato finché il primo è attivo.
+
+### Cosa significa completato
+
+L'obiettivo può contenere sezioni che diventano il contratto dell'obiettivo:
+
+```text
+/goal make the importer handle files over 2 GB
+
+## Success criteria
+- A 3 GB fixture imports without running out of memory
+- The progress bar reaches 100%
+
+## Boundaries
+- Don't change the public API
+
+## Stop conditions
+- A migration would drop data
+
+## Checks
+- `make test` (300 s)
+- environment task `test` (600 s)
+```
+
+- **Criteri di successo**: al massimo 12, ciascuno di al massimo 300 caratteri. Ognuno è una cosa che un revisore può confermare.
+- **Controlli**: al massimo 5. Un controllo viene eseguito nel worktree o come attività con nome dell'[ambiente](/it-IT/manuale/guide/ambienti/) dello spazio. Ognuno ha 300 secondi per impostazione predefinita e al massimo 1.800.
+- Una sezione oltre il suo limite viene rifiutata, mai tagliata.
+
+Un obiettivo senza criteri lascia all'agente la decisione su quando è completato, e un obiettivo senza controlli si affida alla sola revisione. La pagina dell'obiettivo lo indica.
+
+## Come prosegue un obiettivo
+
+Ogni segmento è un'esecuzione limitata a 5 dollari o a quanto resta del budget, se è meno. Dopo ogni segmento il server decide cosa viene dopo, in base a ciò che il segmento ha fatto:
+
+- **Ha fatto progressi.** Parte il segmento successivo.
+- **Sta aspettando qualcosa che ha predisposto**: una pianificazione, un monitoraggio, una domanda a un altro agente o un ticket delegato. L'obiettivo attende. Se non arriva nulla, il server ricontrolla dopo 20 minuti, poi dopo 40, 80, 160 e ogni 240 minuti. La scheda riporta **In attesa di ciò che ha predisposto · controlla di nuovo entro** seguito da un orario.
+- **Non ha fatto progressi.** Un progresso significa che il worktree è cambiato per effetto del lavoro del segmento, che la checklist è cambiata, o che l'agente ha fatto qualcosa di nuovo. Dopo 3 segmenti senza progressi l'obiettivo va in pausa: **Nessun progresso negli ultimi segmenti.**
+- **Ha aspettato troppo.** Dopo 24 ore di attesa, o dopo 6 attese su nuove cose che ha predisposto senza progressi in mezzo, l'obiettivo va in pausa: **In attesa, dopo segmenti senza progresso.**
+- **Non è riuscito.** Il server riprova dopo 30 secondi, poi con attese più lunghe, fino a 15 minuti. Dopo 3 errori di seguito l'obiettivo fallisce.
+- **Ha fatto una domanda a una persona.** L'obiettivo resta in attesa finché qualcuno non risponde: **Serve una persona**.
+
+L'obiettivo si ferma anche al suo budget (**Budget esaurito**), al limite di segmenti o alla scadenza.
+
+## Quando l'agente dichiara di aver finito
+
+L'agente dichiara l'obiettivo completato, con le prove per ciascun criterio. Poi:
+
+1. **Il server esegue i controlli** in una sandbox, mai direttamente sulla macchina del server. Un controllo che termina con un codice diverso da zero fallisce. Un controllo che non può essere eseguito affatto (comando non trovato, non eseguibile, un'attività dell'ambiente che non esiste) è rotto: l'obiettivo si ferma per una persona con **Questo controllo non può essere eseguito:** e il comando. Senza una sandbox sul server, l'obiettivo si ferma con **Nessuna sandbox è disponibile per eseguire i suoi controlli.** (Fa eccezione un server il cui proprietario ha disattivato la sandbox per ogni esecuzione: lì i controlli vengono eseguiti come i comandi propri dell'agente.) Quando nulla nel worktree è cambiato dopo che un controllo è fallito, non viene rieseguito.
+2. **Un revisore esamina il risultato**, quando tutti i controlli sono superati o non ce ne sono. Il revisore è il checker dell'obiettivo, altrimenti il checker dello spazio, altrimenti l'agente stesso dell'obiettivo. Viene eseguito in sola lettura senza cronologia della conversazione: può leggere i file e l'output dei controlli, ma non può modificare nulla, eseguire comandi o risvegliare altri agenti. Riceve anche il diff completo dei test e degli script di controllo che l'agente ha modificato, e tratta ciò che l'agente ha scritto nella conversazione e nei suoi appunti come affermazioni, non come prove. Per un obiettivo senza criteri, giudica l'obiettivo nel suo insieme. Risponde che l'obiettivo è completato, non completato, oppure che non può dirlo.
+3. **Completato**: l'obiettivo si chiude. **Non completato**: l'agente riceve i rilievi del revisore e continua a lavorare. Dopo 3 round non completati, o quando il revisore non può dirlo, l'obiettivo attende te: **In attesa di revisione: dichiara di essere completato, ma nulla lo ha confermato**.
+
+Un messaggio che scrivi mentre il revisore è in esecuzione non viene dato al revisore e non viene inviato quando la revisione termina. Resta in coda per il prossimo segmento dell'agente. Se non segue alcun segmento, viene trattenuto per te sotto **Invia i messaggi trattenuti**.
+
+Un revisore che non può essere eseguito (eliminato, o su un adapter che non può tenere l'esecuzione in sola lettura, come un agente ACP) mette in pausa l'obiettivo: **Il suo agente checker non è disponibile. Scegline un altro, poi riprendi.** Nessun altro agente interviene al posto suo senza di te.
+
+Un checker di un provider diverso da quello dell'agente dell'obiettivo ha meno probabilità di condividere i suoi punti ciechi. Senza un checker separato l'agente esamina il proprio lavoro e l'obiettivo registra **Verificato dall'agente stesso (nessun checker separato)**.
+
+## Seguire un obiettivo
+
+- **Nella conversazione**: la scheda dell'obiettivo nel pannello **Generale** mostra il trattenimento, il segmento, la spesa rispetto al budget, il tempo restante, cosa significa completato, i controlli e l'ultimo verdetto.
+- **La pagina Obiettivi**: barra laterale → **Obiettivi**. Gli obiettivi sono raggruppati in **In attesa di revisione**, **Aperti** e **Terminati**.
+- **La pagina dell'obiettivo**: apri un obiettivo per vedere **Adesso** (segmenti, spesa, scadenza, conteggio senza progressi e cosa succede dopo), **Cosa significa completato**, **Verifica** (l'ultimo round: l'affermazione, ciascun controllo con il suo output, la revisione per ciascun criterio) e **Pianificazioni e risvegli**. Ogni obiettivo ha un proprio indirizzo (`/workspaces/<workspace>/goals/<goal id>`), così puoi condividere un link.
+
+Sul telefono, la schermata degli obiettivi avvia un obiettivo con controlli e un limite di segmenti, e mostra gli stessi obiettivi e gli stessi elementi trattenuti.
+
+## Modificare o fermare un obiettivo
+
+| Azione | Chi può |
+| --- | --- |
+| **Metti in pausa l'obiettivo**, **Ferma l'obiettivo** | Chiunque abbia accesso allo spazio |
+| **Riprendi l'obiettivo**, **Aumenta budget** | Solo chi ha avviato l'obiettivo (un admin dello spazio di lavoro per un obiettivo che nessuno ha avviato) |
+| **Modifica** cosa significa completato, **Cambia checker** | Solo la persona che ha avviato l'obiettivo (un admin dello spazio di lavoro per un obiettivo che nessuno ha avviato), con accesso in scrittura ai repository dello spazio, mentre l'obiettivo è in pausa |
+| **Approva completamento** | Chiunque abbia accesso allo spazio, mentre l'obiettivo attende la revisione. Un obiettivo avviato da una pipeline: solo la persona che ha avviato quell'esecuzione (un admin dello spazio di lavoro quando nessuno l'ha avviata) |
+
+- Premere **Ferma** sull'esecuzione dell'agente mette in pausa l'obiettivo (**In pausa per decisione di una persona**). I suoi risvegli in attesa restano fermi finché non lo riprendi.
+- **Approva completamento** chiude l'obiettivo come completato sulla tua parola. L'obiettivo registra **Chiuso da una persona senza un controllo superato**.
+- Un obiettivo che ha esaurito il budget riprende solo con un budget più alto.
+- Quando la persona che ha avviato un obiettivo lascia lo spazio di lavoro, l'obiettivo va subito in pausa in attesa di revisione e il suo agente in esecuzione viene fermato. Nessuno può riprenderlo; chiunque abbia accesso allo spazio può fermarlo. Il riepilogo giornaliero lo elenca per gli admin dello spazio di lavoro.
+
+## Quando nessuno risponde
+
+Quando un segmento fa una domanda a una persona o chiede un'approvazione e nessuno risponde, la richiesta attende 72 ore per impostazione predefinita. Poi un'approvazione conta come negata, una domanda come senza risposta, e l'obiettivo va in pausa: **Una domanda o una richiesta di approvazione a una persona è rimasta senza risposta.** L'esecuzione che ha fatto la domanda non riceve altre risposte: qualsiasi altra cosa chieda viene subito rifiutata, e completa ciò che può. Un admin dello spazio di lavoro imposta il tempo (da 1 ora a 7 giorni) in **Impostazioni → Spazio di lavoro → Pianificazioni → Quando nessuno risponde**. Una volta al giorno, all'ora impostata lì, ricevi un unico riepilogo di tutto ciò che ti attende.
+
+Con `--unattended assume`, l'agente dichiara la sua ipotesi e prosegue dopo 10 minuti senza risposta, quando le sue condizioni di arresto lo consentono. Questo vale solo per le domande. Un'approvazione non viene mai presunta, e una revisione non presume mai nulla.
+
+## Limiti di utilizzo e riavvii
+
+- **Un limite di utilizzo del provider.** Quando un segmento si ferma al limite di utilizzo di un provider e il provider indica quando si ripristina (entro 7 giorni), l'obiettivo va in pausa senza contare come errore: **In pausa al limite di utilizzo · riprende alle** un orario. Riprende 30 secondi dopo il ripristino. Dopo 8 pause di questo tipo l'obiettivo attende te: **Ha raggiunto i limiti di utilizzo troppo spesso. Controllalo, poi riprendi.** Ogni ripresa riparte il conteggio. Gli agenti ACP non comunicano alcun ripristino, quindi i loro obiettivi non attendono a un limite.
+- **Un riavvio del server.** Un obiettivo sopravvive a un riavvio. Un segmento interrotto dal riavvio viene avviato di nuovo, e le pianificazioni e i risvegli in attesa dell'obiettivo vengono conservati.
+
+## Miglioramenti dopo un obiettivo
+
+Dopo che un obiettivo supera la verifica, una breve revisione in sola lettura (al massimo 1 dollaro) può proporre miglioramenti: un fatto di memoria, una policy, una nota sull'agente o una modifica a una skill. Digita `/refine` per chiedere la stessa revisione del lavoro della conversazione. Al massimo una revisione viene eseguita per conversazione ogni 20 minuti.
+
+Le proposte compaiono nella pagina **Miglioramenti** (barra laterale → **Miglioramenti**). Apri una proposta per vedere cosa modifica, le prove e **Accetta**, **Rifiuta** o **Ripristina**.
+
+- Una proposta non cambia nulla finché qualcuno non la accetta. Scade dopo 30 giorni.
+- Una modifica a una skill, o a una policy per l'intero spazio di lavoro, richiede un admin dello spazio di lavoro (**Decide un admin**).
+- Una modifica a una skill viene salvata come revisione separata. Premi **Esegui valutazione** per confrontarla con la skill attuale; **Accetta** è possibile solo dopo una valutazione superata. Una valutazione è superata quando è stata eseguita per intero e l'agente ha risolto almeno tante esecuzioni con la modifica quante con la skill attuale; la pagina mostra entrambi i numeri. Se la skill cambia dopo la valutazione, eseguila di nuovo.
+- **Ripristina** riporta il testo precedente, purché nessuno lo abbia modificato da allora.
+
+## In una pipeline
+
+Una pipeline può avviare un obiettivo con il passaggio **Pursue a goal** (`goal.pursue`). Il passaggio attende la fine dell'obiettivo e passa il suo riepilogo e il verdetto. Vedi [Passaggi delle pipeline](/it-IT/manuale/riferimento/passaggi-pipeline/).
+
+## Vedi anche
+
+- [Pianificazioni e risvegli](/it-IT/manuale/guide/pianificazioni-risvegli/)
+- [Agenti che lavorano insieme](/it-IT/manuale/guide/agenti-insieme/)
+- [Gestisci i costi](/it-IT/manuale/guide/gestisci-costi/)
+- [Comandi slash](/it-IT/manuale/riferimento/comandi-slash/)

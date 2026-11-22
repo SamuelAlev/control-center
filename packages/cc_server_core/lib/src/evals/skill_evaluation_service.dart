@@ -76,6 +76,7 @@ class SkillEvaluationSettings {
     required this.budgetMicros,
     this.adapter = 'builtin',
     this.baselineHash,
+    this.candidateHash,
     this.repoId,
     this.skillPath,
     this.ambientSkillSlugs = const [],
@@ -109,6 +110,14 @@ class SkillEvaluationSettings {
         baselineHash == null) {
       throw ArgumentError(
         'Previous revision comparison requires baseline_hash',
+      );
+    }
+    if (candidateHash != null &&
+        (repoId != null ||
+            comparison == SkillEvaluationComparison.composition)) {
+      throw ArgumentError(
+        'A staged candidate is a workspace skill compared with its live '
+        'revision or its absence',
       );
     }
     if (comparison == SkillEvaluationComparison.composition &&
@@ -161,6 +170,12 @@ class SkillEvaluationSettings {
   /// Optional baseline revision and repository-scoped skill identity.
   final String? baselineHash, repoId, skillPath;
 
+  /// A staged candidate: a stored revision measured as the treatment while
+  /// the live skill stays the baseline (an improvement proposal's skill
+  /// change, which is never live before a person accepts it). Set by the
+  /// server only: [SkillEvaluationSettings.fromJson] never reads it.
+  final String? candidateHash;
+
   /// Fixed neighboring skill slugs for composition comparisons.
   final List<String> ambientSkillSlugs;
 
@@ -179,6 +194,7 @@ class SkillEvaluationSettings {
     'repetitions': repetitions,
     'budgetMicros': budgetMicros,
     'baselineHash': baselineHash,
+    'candidateHash': ?candidateHash,
     'repoId': repoId,
     'skillPath': skillPath,
     'ambientSkillSlugs': ambientSkillSlugs,
@@ -362,12 +378,20 @@ class SkillEvaluationService {
     if (corpus == null) {
       throw ArgumentError('Unknown trusted skill evaluation corpus');
     }
-    final candidate = await snapshots.capture(
-      workspaceId: workspaceId,
-      slug: settings.skillSlug,
-      repoId: settings.repoId,
-      skillPath: settings.skillPath,
-    );
+    final staged = settings.candidateHash;
+    final candidate = staged == null
+        ? await snapshots.capture(
+            workspaceId: workspaceId,
+            slug: settings.skillSlug,
+            repoId: settings.repoId,
+            skillPath: settings.skillPath,
+          )
+        : await snapshots.previous(
+                workspaceId: workspaceId,
+                skillKey: settings.skillKey,
+                hash: staged,
+              ) ??
+              (throw StateError('The staged candidate is not stored'));
     final previous = settings.comparison == SkillEvaluationComparison.previous
         ? await snapshots.previous(
             workspaceId: workspaceId,
@@ -451,7 +475,12 @@ class SkillEvaluationService {
     await repository.upsertSkillCampaign(campaign);
     // A watcher may have finished invalidating an older capture before this
     // row existed. Recheck after insertion so that race cannot bless stale data.
-    await _checkCapturedRevisions(campaign, [candidate, ...ambient]);
+    // A staged candidate is not live: what must still be current is the
+    // live baseline it is compared against (nothing, for a new skill).
+    await _checkCapturedRevisions(campaign, [
+      if (staged == null) candidate else ?previous,
+      ...ambient,
+    ]);
     if (_stopping) {
       return _change(
         workspaceId,
@@ -632,7 +661,26 @@ class SkillEvaluationService {
     Principal actor,
     String id,
   ) async {
-    final current = await get(workspaceId, actor, id, write: true);
+    return _cancel(await get(workspaceId, actor, id, write: true));
+  }
+
+  /// Cancels campaign [id] of [workspaceId] on the server's own authority,
+  /// for a caller that already decided who may stop it (an improvement
+  /// proposal's reject, expiry or failed start stops its campaign whoever
+  /// started it). Null for an unknown campaign.
+  Future<SkillEvaluationCampaign?> cancelAsServer(
+    String workspaceId,
+    String id,
+  ) async {
+    final current = await repository.skillCampaignById(workspaceId, id);
+    return current == null ? null : _cancel(current);
+  }
+
+  Future<SkillEvaluationCampaign> _cancel(
+    SkillEvaluationCampaign current,
+  ) async {
+    final workspaceId = current.workspaceId;
+    final id = current.id;
     if (current.isTerminal) {
       return current;
     }
@@ -1041,7 +1089,11 @@ class SkillEvaluationService {
 
   static Map<String, String> _dependencies(SkillEvaluationCampaign campaign) =>
       {
-        campaign.skillKey: campaign.skillHash,
+        // A staged campaign depends on the live baseline, not its candidate.
+        if (campaign.configuration['candidateHash'] == null)
+          campaign.skillKey: campaign.skillHash
+        else
+          campaign.skillKey: ?campaign.baselineHash,
         for (final identity
             in campaign.configuration['ambient'] as List? ?? const [])
           if (identity is Map &&

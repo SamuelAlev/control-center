@@ -127,7 +127,8 @@ class GitLabNotePosition {
   /// Path after the change.
   final String newPath;
 
-  /// `text` for a line comment, `image` for an image comment.
+  /// `text` for a line comment, `image` for an image comment, `file` for a
+  /// comment on the whole file.
   final String positionType;
 
   /// Anchored line in the pre-image. Set for a left-side comment.

@@ -81,7 +81,12 @@ class ReadMediaCapture {
   void add(AgentProcessEvent event) {
     _ReadSource? source;
     if (store != null && workspaceId != null && workspaceId!.isNotEmpty) {
-      if (event is ToolCallEvent && event.toolName.toLowerCase() == 'read') {
+      // A script's reads are not captured: their rows keep no media
+      // (NestedCallRows), and a script could otherwise store one blob per
+      // call.
+      if (event is ToolCallEvent &&
+          event.parentToolCallId == null &&
+          event.toolName.toLowerCase() == 'read') {
         final inputs = event.inputs;
         final raw =
             inputs?['file_path'] ?? inputs?['path'] ?? inputs?['filename'];
@@ -239,6 +244,8 @@ class ReadMediaCapture {
         isError: event.isError,
         isPartial: event.isPartial,
         timestamp: event.timestamp,
+        parentToolCallId: event.parentToolCallId,
+        outcome: event.outcome,
         images: images,
         attachments: [
           MessageAttachment(

@@ -2,7 +2,7 @@
 title: Use plan mode
 description: Switch a space into plan mode, get a typed plan and approve it into running work.
 slug: en-GB/manual/guides/plan-mode
-sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
+sourceHash: accf49606e5e8597d3ea76e3274f08d3854996dc
 ---
 
 This guide shows you how to get a structured plan out of an agent before it writes
@@ -106,10 +106,7 @@ approved, the agent's next `exit_plan_mode` call flips the space from plan
 to agent mode and unlocks its mutating tools. A rejection lets it open a fresh
 request against a revised plan.
 
-To leave plan mode, switch the composer dropdown (or Shift+Tab), or approve the
-submitted plan. `exit_plan_mode` opens a durable approval decided with the
-`decide_approval` MCP tool. The guardrail overlay for blocked tool calls is a
-different, in-memory queue and does not carry plan-exit requests.
+To leave plan mode, switch the composer dropdown (or Shift+Tab), or approve the submitted plan. `exit_plan_mode` opens a durable approval, which an agent run decides with the `decide_approval` MCP tool. The guardrail overlay for blocked tool calls is a different, in-memory queue and does not carry plan-exit requests.
 
 ## Plan mode in a pipeline step
 

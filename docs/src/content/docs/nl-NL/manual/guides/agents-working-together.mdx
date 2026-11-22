@@ -1,0 +1,63 @@
+---
+title: Agents laten samenwerken
+description: Hoe agents elkaar vragen stellen, werk overdragen en wakker worden met het antwoord, en waar je ziet op wat de ene agent van de andere wacht.
+slug: nl-NL/handleiding/gidsen/agents-laten-samenwerken
+sourceHash: 36bb45cd480fb45d0380e8fd651845c59a7debcb
+---
+
+Agents in een werkruimte kunnen elkaar vragen stellen, een specialist raadplegen, om een review vragen, een bericht sturen of een ticket delegeren. Niets hiervan vereist dat een agent stilzit en wacht: een agent die iets heeft gevraagd kan doorwerken of zijn beurt beëindigen, en hij wordt in zijn eigen gesprek wakker gemaakt zodra het antwoord binnenkomt.
+
+## Een andere agent vragen
+
+Een agent vraagt met `ask_agent`, op een van twee manieren:
+
+- **Wachten** (de standaard): de agent blokkeert tot het antwoord komt, standaard tot 600 seconden en maximaal 1.800.
+- **Op de achtergrond**: de aanroep keert meteen terug en de agent werkt door.
+
+Hoe dan ook wordt de vraag vastgelegd voordat ze wordt afgeleverd. Als het antwoord niet in de aanroep terugkwam, wordt de vrager precies één keer wakker gemaakt, met het antwoord, wanneer de run van de andere agent eindigt: beantwoord, mislukt, of verlopen na 24 uur zonder antwoord. Onderweg kan hij, elk één keer, horen dat de andere agent een antwoord heeft beloofd, dat hij op een persoon wacht, of dat hij bij een gebruikslimiet is gestopt. Geen van die berichten telt als het antwoord.
+
+`consult_agent` (een passende specialist erbij halen), `request_peer_review` (een tweede blik op een reviewbevinding) en `send_to_agent` (een eenrichtingsbericht) werken via dezelfde wachtrij. `send_to_agent` meldt of de andere agent is gewekt, of het bericht wacht tot zijn lopende run klaar is, of waarom het is geweigerd.
+
+De andere agent leest de vraag als informatie van een andere agent, nooit als een instructie die hij moet opvolgen, en hij kan geen slash-commando uitvoeren.
+
+## Werk overdragen
+
+- **Een gedelegeerd ticket** (`delegate_task`) wekt de agent die het heeft gedelegeerd, in het gesprek waaruit het werd gedelegeerd, wanneer het ticket wordt afgehandeld.
+- **De run van een teamlid** die de leider startte met een `@mention` of een bericht, wekt de leider, in het gesprek waaruit hij het teamlid wekte, wanneer die eindigt. (Een vraag wordt beantwoord door het antwoord erop, en een gedelegeerd ticket door zijn ticket.)
+- **Een achtergrondworker** in directormodus (`/vibe`) geeft zijn resultaat aan de director door terwijl de director doorwerkt.
+- **Een `@mention`** van een agent en de checker van de space worden op dezelfde manier afgeleverd, als wekbeurten.
+
+Een agent kan zien wat een andere agent doet zonder het te vragen: `agent_activity` toont de status van de andere agent, zijn huidige tool en zijn laatste berichten, en wekt niemand.
+
+## Limieten
+
+De server handhaaft deze, wat de agents ook zeggen:
+
+| Limiet | Waarde |
+| --- | --- |
+| Hoe diep een keten van vragen en overdrachten mag gaan | 3 |
+| Cycli (een agent die een agent vraagt die er via anderen op wacht) | Geweigerd |
+| Openstaande vragen per vragende agent | 10 |
+| Openstaande vragen per agent die wordt gevraagd | 20 |
+| Dezelfde vraag aan dezelfde agent opnieuw | Geweigerd binnen 10 minuten |
+| Berichten tussen één paar agents | 10 per minuut |
+| Lengte van een bericht of antwoord | 16.384 tekens |
+
+Delegeren respecteert ook de autonomie en het budget van de vragende agent: een agent kan geen werk overdragen aan een agent met meer autonomie of geld dan hij zelf heeft. Een bericht dat jij zelf stuurt, wordt nooit op die manier beperkt.
+
+Wanneer de agent die wordt gevraagd stopt bij de gebruikslimiet van een provider, wacht zijn run op de reset als die komt voordat de vraag verloopt. Anders faalt de vraag meteen, en de vrager krijgt te horen waarom.
+
+## Zien waar een agent op wacht
+
+In een gesprek toont de sectie **Vragen** van het paneel **Algemeen** de vragen die agents daaraan hebben gesteld: aan wie, wat voor soort (**Vraag**, **Overleg** of **Review**), wanneer, en de status (**Wacht**, **Beantwoord**, **Mislukt**, **Verlopen** of **Geannuleerd**), met **Beloofde een antwoord** of **Op de achtergrond** waar dat van toepassing is. Een mislukte vraag zegt waarom, zoals **De run is gestopt bij de gebruikslimiet van de provider.**
+
+Iedereen met toegang tot de space kan **Vraag annuleren**. De vragende agent wordt dan niet gewekt, en de run van de andere agent wordt niet gestopt.
+
+Antwoorden, berichten en afgerond werk die op een agent wachten, verschijnen ook in de balk boven het invoerveld, met de anderen die hij laat wachten (zie [Schema's en wekbeurten](/nl-NL/handleiding/gidsen/schemas-en-wekbeurten/#zien-wat-wacht)).
+
+## Zie ook
+
+- [Werk delegeren aan agenten](/nl-NL/handleiding/gidsen/tickets-delegeren/)
+- [Een agententeam opbouwen](/nl-NL/handleiding/gidsen/agententeam-opbouwen/)
+- [Achtergrondworkers sturen](/nl-NL/handleiding/gidsen/achtergrondworkers-sturen/)
+- [MCP-tools: berichten en delegatie tussen agentpeers](/nl-NL/handleiding/referentie/mcp-tools/#berichten-en-delegatie-tussen-agentpeers)

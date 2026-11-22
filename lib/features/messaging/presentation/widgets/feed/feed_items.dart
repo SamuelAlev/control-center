@@ -1,5 +1,6 @@
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/features/messaging/domain/services/agent_turn_retry_policy.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/still_in_flight_row.dart';
 
 /// One rendered row in the feed: a message (with optional paired thinking),
 /// a day separator, or the unread divider.
@@ -97,9 +98,15 @@ List<FeedItem> buildFeedItems(
   final unreadCount = messages.where(isUnread).length;
 
   for (final display in messages) {
-    // Pending questions stay standalone; queued steering stays in the composer.
-    // Resolved interactions belong inside their loaded turn, not below it.
-    if (display.isSteeringQueued || inlineIds.contains(display.id)) {
+    // Pending questions stay standalone; queued and held steering stay in
+    // the strips above the composer. Resolved interactions belong inside
+    // their loaded turn, not below it. A still-in-flight hand-off that a
+    // later compaction replaced is history the agent no longer holds.
+    if (display.isSteeringQueued ||
+        display.isSteeringHeld ||
+        inlineIds.contains(display.id) ||
+        (display.compacted &&
+            display.metadata?[stillInFlightRowKey] is String)) {
       continue;
     }
     final day = DateTime(

@@ -2,7 +2,7 @@
 title: Slash commands
 description: Every command you can type in the composer, what it does and where it runs.
 slug: en-GB/manual/reference/slash-commands
-sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
+sourceHash: 38430a6315b112c92a7806d1c28dff8a0285e363
 ---
 
 Commands typed in a space's composer. They fall into three groups by where they take effect, and the difference matters: a **local** command never travels as a message, so it neither appears in the transcript nor reaches an agent.
@@ -21,23 +21,35 @@ Commands typed in a space's composer. They fall into three groups by where they 
 
 **Local → dispatch.** Arms plan mode on the conversation: a fully read-only worktree and a tool surface capped at `read`. The agent's deliverable is a plan, not an edit. A bare `/plan` only flips the mode and never travels as a message; with a prompt, the rest of the line is what starts the run.
 
-### `/goal <objective>`
+### `/goal [flags] <objective>`
 
-**Dispatch.** Starts an autonomous objective the goal supervisor redispatches across segments and restarts.
+**Dispatch.** Starts a durable goal: the agent works on the objective in segments, across restarts, until the server verifies it is done, a person closes it, or it reaches a limit. See [Pursue a goal](/en-GB/manual/guides/pursue-a-goal/).
 
-Typing `/goal` with text first opens the **objective interview** — a short pass that refuses to accept a draft until it has all five of: success criteria an evaluator can settle without judgement, an exact verification command, an attempt cap, scope boundaries, and stop conditions. Every step offers *Skip and run as written*: the interview is a default, not a gate.
+Typing `/goal` with text first opens the **objective interview** — a short pass that asks for success criteria an evaluator can settle without judgement, the checks that must pass, scope boundaries and stop conditions, then offers a separate checker, fresh segments and answering its own questions. Every step offers *Skip and run as written*: the interview is a default, not a gate.
 
-`/goal pause`, `/goal resume` and `/goal drop` are not slash commands. Pause, resume and stop live on the conversation's goals list in the sidebar. Starting flags on the objective itself are `--budget <dollars>`, `--max <N>` (run budget) and `--days <N>` (deadline). A goal that hit its cost cap resumes only by raising that cap, from the same sidebar control.
+Flags may stand anywhere in the message: `--budget <dollars>` (the goal's budget, 50 by default), `--max <N>` (a segment cap), `--days <N>` (a deadline), `--check "<command>"` (up to 5), `--checker <agent>`, `--fresh` and `--unattended wait|assume`. An unknown or repeated flag is refused and the draft stays in the composer. A number at the start of the objective is part of the objective. The sections `## Success criteria`, `## Boundaries`, `## Stop conditions` and `## Checks` become the goal's contract.
+
+`/goal pause`, `/goal resume` and `/goal drop` are not slash commands. Pause, resume and stop live on the goal card in the conversation's **General** panel and on the goal's page (sidebar → **Goals**). Resuming, and raising the budget, belong to the person who started the goal.
 
 :::note[Why it interrupts at all]
 An autonomous goal is the one place a vague brief is genuinely expensive. The run works for hours on an objective whose "done" nobody defined, then reports success on its own terms. Five questions are cheaper than one overnight run that finished whenever it felt finished.
 :::
 
-### `/loop [budget] [task]`
+### `/loop [every <interval>] [flags] <prompt>`
 
-**Dispatch.** Works iteratively until complete. Accepts a bound: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**Dispatch.** Creates a schedule that wakes the agent with the prompt now and then again: every interval (at least 60 seconds), or, without `every`, after a delay the agent picks each time (1 to 60 minutes). `--max <N>` caps the runs, `--days <N>` ends it (30 days by default), `--budget <dollars>` caps its spend. See [Schedules and wakes](/en-GB/manual/guides/schedules-and-wakes/).
 
-A token that *looks* like a limit (starts with a digit or a sign) and fails to parse is a hard error. Prose is just prose, so `/loop keep going until the tests pass` is an unbounded loop with an inline prompt rather than a misparse.
+`/loop` no longer starts a goal, and a leading number is not a run count.
+
+### `/schedule <when> [flags] <prompt>`
+
+**Dispatch.** Creates a schedule that wakes the agent later: `in 2h`, `at 09:00` (the next such time in the workspace's time zone), `at <ISO time>` or `cron "0 9 * * 1-5"` (the quotes are optional). Takes the same `--max`, `--days` and `--budget` as `/loop`. It waits for its first time.
+
+### `/refine`
+
+**Dispatch.** Asks for a short read-only review of the conversation's work, which may propose improvements to memory, policies, agent notes or skills. Proposals wait on the **Improvements** page until someone accepts them. At most one review per conversation every 20 minutes.
+
+`/goal`, `/loop`, `/schedule` and `/refine` act only in a message you type yourself; from an agent, a pipeline or a wake the same text is an ordinary message. A `/goal`, `/loop` or `/schedule` that cannot be read keeps your draft, and a line above the text in the composer says what is wrong.
 
 ### `/vibe [task]`
 

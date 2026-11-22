@@ -89,6 +89,11 @@ abstract final class AppIcons {
     fontFamily: _family,
     fontPackage: _package,
   );
+  static const IconData circleDashed = IconData(
+    0xe602,
+    fontFamily: _family,
+    fontPackage: _package,
+  );
   static const IconData circleDot = IconData(
     0xe3ee,
     fontFamily: _family,
@@ -113,6 +118,22 @@ abstract final class AppIcons {
     0xe1b6,
     fontFamily: _family,
     fontPackage: _package,
+  );
+  static const IconData code = IconData(
+    0xe1bc,
+    fontFamily: _family,
+    fontPackage: _package,
+  );
+  static const IconData columns3 = IconData(
+    0xe546,
+    fontFamily: _family,
+    fontPackage: _package,
+  );
+  static const IconData cornerDownLeft = IconData(
+    0xe044,
+    fontFamily: _family,
+    fontPackage: _package,
+    matchTextDirection: true,
   );
   static const IconData externalLink = IconData(
     0xe5de,
@@ -199,6 +220,11 @@ abstract final class AppIcons {
     fontFamily: _family,
     fontPackage: _package,
   );
+  static const IconData list = IconData(
+    0xe2f0,
+    fontFamily: _family,
+    fontPackage: _package,
+  );
   static const IconData listFilter = IconData(
     0xe266,
     fontFamily: _family,
@@ -235,6 +261,11 @@ abstract final class AppIcons {
     fontFamily: _family,
     fontPackage: _package,
   );
+  static const IconData minusCircle = IconData(
+    0xe32c,
+    fontFamily: _family,
+    fontPackage: _package,
+  );
   static const IconData monitor = IconData(
     0xe32e,
     fontFamily: _family,
@@ -267,6 +298,11 @@ abstract final class AppIcons {
   );
   static const IconData refreshCw = IconData(
     0xe036,
+    fontFamily: _family,
+    fontPackage: _package,
+  );
+  static const IconData repeat = IconData(
+    0xe3f6,
     fontFamily: _family,
     fontPackage: _package,
   );

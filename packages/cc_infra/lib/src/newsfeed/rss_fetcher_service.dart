@@ -8,6 +8,7 @@ import 'package:cc_domain/features/newsfeed/domain/entities/rss_article.dart';
 import 'package:cc_domain/features/newsfeed/domain/social_media_url_transformer.dart';
 import 'package:cc_domain/features/newsfeed/domain/tracking_param_stripper.dart';
 import 'package:cc_infra/src/network/app_network.dart';
+import 'package:cc_infra/src/newsfeed/summary_text.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:rhttp/rhttp.dart';
 import 'package:rss_dart/dart_rss.dart';
@@ -573,7 +574,7 @@ class RssFetcherService {
     // HN's description it empty, we drop it.
     final summary = isHackerNews
         ? ''
-        : decodeHtmlEntities(_stripHtml(summaryHtml));
+        : decodeHtmlEntities(summaryTextFromHtml(summaryHtml));
     final image = _firstImage(
       mediaThumbnailUrl: item.media?.thumbnails.firstOrNull?.url,
       mediaContentUrl: item.media?.contents.firstOrNull?.url,
@@ -617,7 +618,7 @@ class RssFetcherService {
     }
     final guid = (item.id ?? '').trim().isNotEmpty ? item.id!.trim() : link;
     final summaryHtml = item.content ?? item.summary ?? '';
-    final summary = decodeHtmlEntities(_stripHtml(summaryHtml));
+    final summary = decodeHtmlEntities(summaryTextFromHtml(summaryHtml));
     final image = _firstImage(
       mediaThumbnailUrl: item.media?.thumbnails.firstOrNull?.url,
       mediaContentUrl: item.media?.contents.firstOrNull?.url,
@@ -742,17 +743,5 @@ class RssFetcherService {
       // Fall through to null.
     }
     return null;
-  }
-
-  String _stripHtml(String html) {
-    if (html.isEmpty) {
-      return '';
-    }
-    try {
-      final doc = html_parser.parse(html);
-      return doc.body?.text.trim() ?? '';
-    } on Object catch (_) {
-      return html.replaceAll(RegExp(r'<[^>]+>'), ' ').trim();
-    }
   }
 }

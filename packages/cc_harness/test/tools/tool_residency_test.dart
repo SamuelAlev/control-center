@@ -216,7 +216,8 @@ void main() {
             .run(
               history: [],
               userMessage: 'go',
-              tools: [_EchoTool('read')],
+              // The message names a discovery tool only when the run has it.
+              tools: [_EchoTool('read'), _EchoTool('search_tools')],
               deferredTools: [_EchoTool('rare_tool')],
               provider: provider,
             )
@@ -225,6 +226,7 @@ void main() {
         final result = events.whereType<LoopToolCallResult>().single.result;
         expect(result.isError, isTrue);
         expect(result.content, contains('search_tools'));
+        expect(result.content, isNot(contains('list_my_tools')));
         // Reprinting the catalogue into a tool result is the context cost
         // deferral exists to remove.
         expect(result.content, isNot(contains('rare_tool')));

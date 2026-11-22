@@ -209,12 +209,25 @@ class CustomSubagentProfile {
       return byTier;
     }
     final allowed = toolAllowlist.map((t) => t.toLowerCase()).toSet();
+    // The tools that follow `bash` come with it: the handles a `bash` call
+    // returns (a background command, a stored long output) are read and
+    // stopped through them.
+    if (allowed.contains('bash')) {
+      allowed.addAll(bashCompanionTools);
+    }
     return [
       for (final t in byTier)
         if (allowed.contains(t.name.toLowerCase())) t,
     ];
   }
 }
+
+/// The tools an allowlist that names `bash` admits with it.
+const Set<String> bashCompanionTools = {
+  'bash_output',
+  'bash_kill',
+  'read_output',
+};
 
 /// The subagent types available to one run: the three built-ins plus whatever
 /// was discovered on disk.

@@ -18,6 +18,7 @@ import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.
 import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
 import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
 import 'package:cc_domain/features/sandboxing/domain/host_execution_posture.dart';
 import 'package:cc_domain/features/settings/domain/entities/claude_session_settings.dart';
 import 'package:cc_domain/features/subscriptions/subscriptions.dart';
@@ -297,6 +298,8 @@ void main() {
       claudeSessionSettings: settings == null ? null : () => settings,
     );
     final session = DispatchSession(
+      freshHistory: false,
+      readOnly: false,
       deps: deps,
       onResolveHandle:
           ({
@@ -315,6 +318,8 @@ void main() {
       dispatchId: 'd-claude',
       cliName: 'claude',
       prompt: promptParts?.userText ?? 'hello',
+      // A person's message, as the dispatch passes it (`/compact` included).
+      userText: promptParts?.userText ?? 'hello',
       promptParts: promptParts,
       agentDirHostPath: temp.path,
       modelId: null,
@@ -517,6 +522,12 @@ void main() {
       );
       expect(all.whereType<UsageEvent>(), isNotEmpty);
       expect(run.sandbox.destroyed, isTrue);
+      // A person's stop: the run ends as stoppedByUser, whatever the CLI's
+      // last frame said.
+      expect(
+        all.whereType<DoneEvent>().single.endReason,
+        RunEndReason.stoppedByUser,
+      );
     });
 
     test('a CLI that ignores it is killed after the grace period', () async {

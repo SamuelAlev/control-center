@@ -2,7 +2,7 @@
 title: Sandbox i bezpieczeństwo
 description: Co dziś realnie ogranicza agenta w Control Center, jak daleko sięga sandbox systemowy i które granice utrzymują się na hoście bez backendu.
 slug: pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo
-sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
+sourceHash: 7644c97911f685ef5084875fb16f1006f21ea940
 ---
 
 :::note[Gdzie sandbox systemowy sięga, a gdzie nie]
@@ -52,6 +52,8 @@ Ta sama zasada obejmuje mniejsze rzeczy, które za Ciebie uruchamiają procesy:
 - **Szybkie pomocniki uruchamiane przez CLI ACP**: tytuły rozmów, `/btw`, `/handoff` i `/goal`. Gdy serwer opakowuje agentów w sandbox, działają wewnątrz sandboxa, we własnej sesji. Przy `--sandbox off` działają bez ograniczeń. Bez dostępnego sandboxa działają tylko dla żądań, za które odpowiada właściciel serwera; dla innych są pomijane: tytuł nie jest generowany, a pytanie poboczne dostaje odpowiedź, że Content synthesizer nie ma działającego runnera. Pomocniki, które nie uruchamiają żadnego narzędzia, nie są objęte tą regułą.
 - **Testy golden sprawdzenia wizualnego** w Review Studio dla pull requesta podlegają tej samej regule.
 - **Procesy narzędzi i `bash`** w uruchomieniu nigdy nie przechodzą na host. Jeśli serwer ma opakować agentów w sandbox, a nie ma sandboxa do przydzielenia uruchomieniu, są odrzucane.
+- **Sprawdzenia celu** działają w jednorazowym sandboxie nad worktree rozmowy, ograniczone tak jak `bash` samego agenta. Bez sandboxa nie działają, a cel zatrzymuje się dla osoby; przy `--sandbox off` działają tak jak `bash` agenta.
+- **Recenzja celu** działa tylko do odczytu na każdym adapterze: same odczyty, worktree montowane tylko do odczytu, bez `bash`, bez subagentów, bez sieci. Adapter, którego nie da się utrzymać w trybie tylko do odczytu (agent ACP), nie jest używany jako recenzent.
 
 ## Co faktycznie ogranicza agenta
 
@@ -301,6 +303,24 @@ w transkrypcie, a nie tylko w logu. Telemetria istnieje tylko wtedy, gdy
 natywny sandbox faktycznie opakowuje proces — na hoście bez backendu nie ma
 czego obserwować. Nie ma też związku z guardrailami: naruszenie pochodzi z odrzuconego wywołania systemowego, nigdy ze sprawdzenia reguły.
 
+## Skrypty w trybie kodu
+
+Skrypty [trybu kodu](/pl-PL/podrecznik/koncepcje/tryb-kodu/) stanowią osobny przypadek i w ogóle nie zależą od sandboxa agenta. Skrypt nigdy nie działa wewnątrz serwera ani w sandboxie agenta. Działa we własnym procesie, `cc_codemode`, programie dołączonym do serwera, który blokuje się sam, zanim odczyta skrypt, i zgłasza, które kroki blokady zostały zastosowane. Serwer wysyła skrypt tylko wtedy, gdy blokada jest kompletna.
+
+| Host | Co runner stosuje do siebie |
+| --- | --- |
+| Linux | Lista dozwolonych wywołań systemowych (seccomp), która pozwala mu niewiele więcej niż czytać swoje wejście, pisać wyjście, zarządzać własną pamięcią, czytać zegary i kończyć działanie; bez nowych uprawnień i bez capabilities; bez zrzutów pamięci; bez zapisu do plików, bez nowych procesów i najwyżej trzy otwarte pliki; 3 GiB przestrzeni adresowej; twardy limit czasu procesora. Landlock jest dodawany tam, gdzie jądro go obsługuje. |
+| macOS | Profil sandboxa odmawiający domyślnie, który dodatkowo odmawia informacji o procesach, sprawdzania istnienia plików, informacji o systemie i sprzęcie oraz powiązanych wywołań jądra; bez zrzutów pamięci, bez zapisu do plików i z twardym limitem czasu procesora. |
+| Windows | Nowy AppContainer dla każdego skryptu, w obiekcie job, który pozwala na jeden proces, 3 GiB pamięci i brak interfejsu użytkownika, z wyłączonym dynamicznym kodem, procesami potomnymi i wywołaniami win32k. **Jeszcze nieuruchomione na Windows.** |
+
+Runner startuje bez zmiennych środowiskowych, bez otwartych plików poza wejściem i wyjściem oraz bez poświadczeń. Wszystko, co może zrobić poza własną pamięcią, to poprosić serwer o wywołanie narzędzia, a serwer wykonuje to wywołanie przez ten sam filtr trybu, [guardraile](/pl-PL/podrecznik/koncepcje/guardraile/) i zatwierdzenia co wywołanie bezpośrednie.
+
+Serwer sprawdza to wszystko przy starcie: uruchamia autotest runnera, który stosuje blokadę, próbuje czytać i tworzyć pliki, otwierać połączenie sieciowe i uruchamiać proces (oraz więcej na każdym systemie) i uruchamia pod nią prawdziwe skrypty. Jeśli cokolwiek nie zostanie odrzucone, serwer nie uruchamia na tej maszynie żadnych skryptów: żadne uruchomienie nie dostaje `repl`, a serwer mówi dlaczego przy starcie i na stronie ustawień trybu kodu. Runner, który nie jest buildem wydaniowym, jest odrzucany w ten sam sposób. Nie ma słabszego trybu awaryjnego.
+
+Runner podaje też, w którym miejscu skryptu wykonano każde wywołanie, dzięki czemu rozmowa może pokazać strukturę skryptu. Serwer sprawdza tę pozycję względem skryptu i używa jej tylko do wyświetlania: nigdy nie decyduje, czy wywołanie jest dozwolone, i nie znajduje się w audycie guardraili.
+
+Czego to nie obejmuje: skrypt może nadal zrobić wszystko, na co pozwalają narzędzia uruchomienia, bo jego wywołania są prawdziwymi wywołaniami narzędzi; na macOS może nadal sprawdzić, czy istnieje dany identyfikator procesu; a błąd w silniku JavaScript lub w jądrze jest powstrzymywany przez blokadę, ale nie zostaje przez nią wykluczony.
+
 ## Potwierdzenia pochodzą od guardraili, a nie od sandboxa
 
 Sandbox nie ma ścieżki zatwierdzania. Uruchamia, wykonuje, emituje zdarzenia i
@@ -322,6 +342,7 @@ to jedyne miejsce, które opisuje, co można sprawdzić ręcznie.
 
 ## Powiązane koncepcje
 
+- [Tryb kodu](/pl-PL/podrecznik/koncepcje/tryb-kodu/): skrypty wywołujące narzędzia i runner, który je ogranicza
 - [Rigi i izolacje](/pl-PL/podrecznik/koncepcje/rigi/): krok ponad sandboxem — gdy praca potrzebuje całej jednorazowej maszyny z granicą jądra, a nie opakowanego procesu
 - [Guardraile](/pl-PL/podrecznik/koncepcje/guardraile/): warstwa polityk ponad systemowym poziomem bazowym i prawdziwe źródło zatwierdzeń
 - [Cykl życia wysyłania agentów](/pl-PL/podrecznik/koncepcje/cykl-zycia-wysylania/): gdzie w przepływie wysyłania mieści się izolacja

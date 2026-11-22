@@ -2,7 +2,7 @@
 title: Alat MCP
 description: Katalog lengkap alat MCP yang didaftarkan oleh cc_server, mengikut keluarga.
 slug: ms-MY/manual-pengguna/rujukan/alat-mcp
-sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
+sourceHash: 0ef9efd386b57c3a254e7f637b0436d9baff1719
 ---
 
 `cc_server` mengehoskan satu daftar alat MCP (JSON-RPC 2.0), disajikan pada port pelayan utama (lalai `9030`) di `POST /mcp` dan `GET /sse`, versi protokol `2024-11-05`. Setiap klien mencapai daftar yang sama: desktop, binaan web, klien MCP luaran dan masa jalan ejen terbina. Pelayan MCP luaran dijembatani ke dalam daftar yang sama dalam lapisannya sendiri: satu bagi setiap ruang kerja untuk pelayan yang dikonfigurasi oleh adminnya, dan satu untuk pelayan peribadi pemilik pelayan. Titik akhir ini hanya menyenaraikan, memanggil dan mencarinya untuk larian ejen: pelayan ruang kerja tersebut sendiri, serta pelayan peribadi apabila pemilik pelayan bertanggungjawab ke atas larian itu. Token MCP dan peranti yang dipasangkan tidak pernah melihatnya (lihat [Pelayan MCP yang digunakan oleh ejen anda](/ms-MY/manual-pengguna/panduan-cara/pelayan-mcp/#pelayan-mcp-yang-digunakan-oleh-ejen-anda)).
@@ -11,21 +11,22 @@ sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
 
 | Ukuran                                                                   | Kiraan |
 | ------------------------------------------------------------------------ | ------ |
-| Alat yang didaftarkan oleh `cc_server`                                    | 110    |
-| Daripada `packages/cc_mcp`                                                | 108    |
+| Alat yang didaftarkan oleh `cc_server`                                    | 116    |
+| Daripada `packages/cc_mcp`                                                | 114    |
 | Daripada `packages/cc_mcp_client` (penemuan alat)                         | 2      |
-| Didaftarkan dalam daftar asas (`server_mcp_registry.dart`)                | 63     |
-| Didaftarkan selepas boot apabila perkhidmatannya muncul (`cc_server_runtime.dart`) | 47 |
-| Daripada 63 dalam daftar asas, bersyarat pada repositori graf kod         | 5      |
+| Didaftarkan dalam daftar asas (`server_mcp_registry.dart`)                | 64     |
+| Didaftarkan selepas boot apabila perkhidmatannya muncul (`cc_server_runtime.dart`) | 52 |
+| Daripada 64 dalam daftar asas, bersyarat pada repositori graf kod         | 5      |
+| Daripada 64 pendaftaran asas, bersyarat kepada pelari mod kod (`repl`) | 1 |
 
-Kelima-limanya alat graf kod didaftarkan hanya apabila hos menghantar repositori graf kod kepada `buildServerMcpRegistry`. `cc_server` sentiasa menghantar satu, jadi kesemua 110 itu hidup dalam binari yang dibundelkan.
+Kelima-limanya alat graf kod didaftarkan hanya apabila hos menghantar repositori graf kod kepada `buildServerMcpRegistry`, dan `repl` hanya apabila ia menghantar pelari mod kod. `cc_server` sentiasa menghantar kedua-duanya (ia tidak bermula tanpa pelari), jadi kesemua 111 didaftarkan dalam binari yang dihantar; pelayan demo awam tidak mendaftarkan `repl`.
 
-Daftar penuh diiklankan dalam `tools/list` tanpa pengawalan penemuan. Suntingan tiket ialah alat bertaip.
+Daftar penuh diiklankan dalam `tools/list` tanpa pengawalan penemuan, kecuali larian ejen yang boleh menjalankan skrip (di bawah). Suntingan tiket ialah alat bertaip.
 
 :::note[Klien luaran sentiasa melihat keseluruhan katalog]
-`tools/list` tidak pernah dipangkas, kecuali pelayan MCP peribadi pemilik pelayan, yang tidak pernah dibawanya. Klien MCP mengesahkan nama alat terhadap salinan senarai itu yang dicache sendiri dan menolak apa-apa yang tidak tersenarai tanpa bertanya kepada pelayan, jadi alat yang tersembunyi di situ tidak dapat dicapai dan bukan sekadar senyap.
+`tools/list` tidak pernah dipangkas, kecuali pelayan MCP peribadi pemilik pelayan, yang tidak pernah dibawanya, dan [mod kod](/ms-MY/manual-pengguna/konsep/mod-kod/): `repl` disenaraikan hanya kepada larian ejen pada pelayan yang boleh menjalankan skrip, dan larian itu disenaraikan `repl`, alat langsung (`read`, `write`, `edit`, `search`, `find`, `bash`, `read_output`, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` dan kata kerja modus sendiri, di mana pendaftaran mempunyainya) dan alat yang tidak boleh dipanggil oleh skrip. Ia memanggil selebihnya daripada skrip; panggilan langsung kepada salah satu daripadanya dijawab dengan cara memanggilnya daripada `repl`. Klien MCP mengesahkan nama alat terhadap salinan senarai itu yang dicache sendiri dan menolak apa-apa yang tidak tersenarai tanpa bertanya kepada pelayan, jadi alat yang tersembunyi di situ tidak dapat dicapai dan bukan sekadar senyap.
 
-**Harness terbina** berbeza: ia memuatkan hanya subset takrifan yang residen bagi setiap permintaan dan menarik masuk selebihnya pada penggunaan pertama, iaitu tingkah laku di sisi harness dan tidak mengubah daftar ini. Lihat [Konteks alat dan caching prompt](/ms-MY/manual-pengguna/konsep/konteks-alat).
+**Harness terbina** berbeza: ia memuatkan hanya set langsung takrifan bagi setiap permintaan dan mencapai selebihnya daripada skrip atau memuatkannya pada penggunaan pertama, iaitu tingkah laku di sisi harness dan tidak mengubah daftar ini. Lihat [Konteks alat dan caching prompt](/ms-MY/manual-pengguna/konsep/konteks-alat/).
 :::
 
 :::note[Setiap kelas alat didaftarkan]
@@ -51,6 +52,14 @@ Kedua-duanya datang daripada `cc_mcp_client`, bukan `cc_mcp`, dan kedua-duanya m
 
 Alat penemuan ketiga, **`search_tools`**, wujud hanya di dalam harness terbina dan bukan sebahagian daripada daftar MCP ini. Ia menyusun kedudukan permukaan alat larian itu sendiri dan, tidak seperti `search_tool_bm25`, **memuatkan** skema apa yang ditemuinya supaya ejen boleh memanggil padanan pada giliran seterusnya. Ejen pada harness wajar mengutamakannya; klien MCP mempunyai `search_tool_bm25`.
 
+## Mod kod
+
+| Alat | Huraian |
+| ------ | ----------- |
+| `repl` | Jalankan skrip JavaScript yang memanggil alat lain larian sebagai `tools.<id>(args)` dan memulangkan hanya apa yang diperlukan. Disenaraikan hanya kepada larian ejen pada pelayan yang boleh menjalankan skrip [mod kod](/ms-MY/manual-pengguna/konsep/mod-kod/). Setiap panggilan bersarang melalui gate yang sama seperti `tools/call`. Menerima `code`, `description`, `timeout_ms?`, `max_output_tokens?`         |
+
+Skrip tidak boleh memanggil `repl`, `search_tool_bm25`, `list_my_tools`, atau mana-mana alat yang memulakan atau menghantar mesej kepada larian ejen lain, menugaskan atau mengulas tiket, menghantar mesej, mencipta, memutuskan atau mengulas kelulusan, mencadang atau menukar polisi, memasang atau menukar kemahiran, mencipta profil masa jalan, menghantar pelan atau keluar daripada mod pelan, melengkapkan matlamat perbualan atau menghantar output larian saluran paip. Alat-alat itu mengisytiharkan `scriptCallable` sebagai false dan sentiasa dipanggil secara langsung; dalam harness terbina, alat di luar set langsung dimuatkan pada penggunaan pertama. `create_ticket` hanya boleh dipanggil daripada skrip tanpa `assignee`.
+
 ## Alat ejen
 
 | Alat          | Huraian                                   |
@@ -59,15 +68,29 @@ Alat penemuan ketiga, **`search_tools`**, wujud hanya di dalam harness terbina d
 
 ## Pemesejan rakan sebaya dan perwakilan ejen
 
-Ejen bercakap sesama sendiri melalui ruang (tahan lama, kelihatan dalam senarai nama). `ask_agent` ialah permintaan/balasan dengan tamat masa yang wajib; `delegate_task` dikawal di sisi pelayan oleh had kedalaman, pengesanan kitaran, sampul belanjawan dan siling autonomi.
+Ejen bercakap antara satu sama lain melalui ruang (tahan lama, kelihatan pada senarai). `ask_agent` sama ada menunggu balasan (`mode: wait`, 600 saat secara lalai, 1,800 paling tinggi) atau kembali serta-merta (`mode: background`); dalam kedua-dua keadaan, penanya dibangunkan sekali dengan jawapan apabila ia tidak kembali secara sebaris. `send_to_agent`, `ask_agent`, `consult_agent`, `request_peer_review` dan `delegate_task` melalui pintu pelayan yang sama: kedalaman (3), pengesanan kitaran, sampul bajet, siling autonomi, dan had kadar bagi setiap pasangan ejen. Identiti penghantar sentiasa datang daripada larian yang memanggil. Lihat [Ejen bekerja bersama](/ms-MY/manual-pengguna/panduan-cara/ejen-bekerja-bersama/).
 
 | Alat            | Huraian                                                                                        |
 | --------------- | ---------------------------------------------------------------------------------------------- |
-| `send_to_agent` | Hantar mesej sehala kepada ejen lain, dialamatkan melalui `to_agent_id` atau `to_agent_name` yang tepat |
-| `ask_agent`     | Tanyakan soalan kepada ejen lain dan tunggu balasannya, atau tamat masa                        |
+| `send_to_agent` | Hantar mesej sehala kepada ejen lain, dialamatkan melalui `to_agent_id` atau `to_agent_name` yang tepat; jawapannya `delivery_status` ialah `woken`, `queued_behind_run` atau `refused` |
+| `ask_agent`     | Tanyakan soalan kepada ejen lain; tunggu balasan atau teruskan dan dibangunkan apabila ia tiba |
 | `delegate_task` | Wakilkan tugasan kepada ejen lain sebagai tiket anak yang dijejaki                              |
 | `consult_agent` | Tambahkan pakar yang paling sepadan mengikut kemahiran ke ruang itu dan hantarkannya dengan taklimat yang berfokus |
 | `todo_read`     | Baca senarai semak tugasan yang dikekalkan bagi perbualan ini                                   |
+| `agent_activity` | Baca apa yang sedang dilakukan ejen lain sekarang dan apa yang dilakukannya tadi (status, alat semasa, mesej terakhir), tanpa membangunkannya |
+
+## Alat panggilan bangun dan matlamat
+
+Ejen menggunakan ini dan bukannya tidur atau meninjau. Setiap satu bertindak hanya untuk ejen yang memanggil dalam perbualannya sendiri; ejen tidak pernah menjadi argumen. Lihat [Jadual dan panggilan bangun](/ms-MY/manual-pengguna/panduan-cara/jadual-panggilan-bangun/) dan [Kejar matlamat](/ms-MY/manual-pengguna/panduan-cara/kejar-matlamat/).
+
+| Alat | Huraian |
+| ------------- | ----------- |
+| `wake_me` | Atur untuk dibangunkan kemudian: pada masa (`in:20m`, `at:<ISO time>`), pada sela (`every:30m`), pada cron (`cron:0 9 * * 1-5`, dengan `tz`), pada kadar sendiri dalam gelung dijadualkan sendiri (`next`, dengan `delay` dari 1 hingga 60 minit), atau apabila sesuatu berlaku (`on:pr_checks`, `on:pr_review`, `on:pr_merged`, `on:environment`, `on:ticket:<id>`, `on:pipeline_run:<id>`). Pilihan `note`, `max_runs`, `expires_in`, `when_busy` (`skip` atau `queue`) dan `deliver` (`run` atau `notify`) |
+| `list_wakes` | Senaraikan apa yang ejen tunggu dalam perbualan ini: jadual, pantauan, panggilan bangun yang menunggu dan soalan yang belum dijawab |
+| `cancel_wake` | Batalkan jadual atau pantauan yang ditetapkan ejen untuk dirinya, mengikut id-nya |
+| `goal_status` | Baca matlamat aktif ejen: kontrak, segmen, perbelanjaan dan baki bajet, amaran tiada kemajuan, tahanan, pengesahan terakhir dan panggilan bangun matlamat yang menunggu |
+
+`complete_goal` (di bawah [Alat pelan, buku panduan dan artifak](#alat-pelan-buku-panduan-dan-artifak)) ialah satu-satunya cara ejen menyatakan matlamat telah siap, dan ia ialah dakwaan, bukan penyiapan.
 
 ## Alat kemahiran
 
@@ -94,7 +117,7 @@ Setiap pemasangan dan kemas kini melalui get imbasan yang gagal secara tertutup 
 | `revise_artifact`  | Gantikan kandungan artifak yang telah diterbitkan                                                                      |
 | `list_artifacts`   | Senaraikan artifak ruang kerja                                                                                         |
 | `get_artifact`     | Baca satu artifak                                                                                                      |
-| `complete_goal`    | Isytiharkan matlamat tahan lama aktif perbualan ini (yang dimulakan dengan `/goal` atau `/loop`) sebagai tercapai      |
+| `complete_goal` | Dakwa matlamat aktif ejen telah dicapai, dengan bukti bagi setiap kriteria; pelayan kemudian menjalankan semakan dan kajian |
 
 ## Alat ruang kerja
 
@@ -162,10 +185,10 @@ Setiap pemasangan dan kemas kini melalui get imbasan yang gagal secara tertutup 
 | `create_goal`                | Cipta matlamat organisasi (peringkat syarikat, pasukan, ejen atau tugasan)                            |
 | `list_goals`                 | Senaraikan matlamat berserta peringkat, status dan kemajuan terkumpul                                 |
 | `update_goal_progress`       | Tetapkan kemajuan sesuatu matlamat                                                                    |
-| `create_approval`            | Buka kelulusan lembaga untuk tindakan yang ditadbir (keluar pelan, cantum, keluaran, ambil pekerja, tersuai) |
+| `create_approval`            | Buka kelulusan lembaga untuk tindakan yang ditadbir (keluar pelan, cantum, keluaran, ambil pekerja, tersuai) atas nama ejen yang memanggil. Hanya larian ejen |
 | `list_approvals`             | Senaraikan kelulusan, dengan penapisan pilihan mengikut status                                        |
-| `decide_approval`            | Rekod keputusan: luluskan, tolak, minta semakan semula atau hantar semula                             |
-| `comment_approval`           | Komen pada kelulusan lembaga                                                                          |
+| `decide_approval`            | Rekod keputusan ejen yang memanggil: luluskan, tolak, minta semakan semula atau hantar semula. Hanya larian ejen |
+| `comment_approval`           | Komen pada kelulusan lembaga sebagai ejen yang memanggil. Hanya larian ejen                           |
 | `exit_plan_mode`             | Buka (dan, setelah diluluskan, gunakan) kelulusan `plan_exit`, menukar perbualan keluar daripada modus pelan |
 | `agent_heartbeat`            | Laporkan keadaan hidup (hidup, melahu, tersekat); mendiamkan diri menukar kesihatan masa jalan kepada baru hilang, kemudian luar talian |
 | `list_runtime_health`        | Senaraikan kesihatan masa jalan setiap ejen                                                           |

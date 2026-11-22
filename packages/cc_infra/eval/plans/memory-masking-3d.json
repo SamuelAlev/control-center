@@ -25,17 +25,21 @@
     }
   ],
   "randomizedOrder": true,
-  "minPairs": 8,
+  "hypothesis": "non_inferiority",
+  "primaryOutcome": "verified_success",
+  "minTasks": 10,
   "alpha": 0.05,
-  "nonInferiorityMargin": 0.05,
+  "nonInferiorityMargin": 0.1,
   "maxCostRatio": 1.0,
   "contextWindowTokens": 6000,
   "memoryExperiment": {
     "id": "observation-masking",
     "enabled": true,
-    "mode": "masking",
+    "modes": [
+      "masking"
+    ],
     "requireRecoverableReferences": true,
     "notes": "Report 3D. Masking must keep every masked observation recoverable; the long-context task is the fidelity canary because its last turn depends on facts from its first."
   },
-  "notes": "Compares the current policy against batched masking on the same tasks. Masking+structured summarization is the next experiment to declare once its own wrapper (and fidelity checks) exist: an arm whose policy has no matching enabled experiment would be rejected as an unattributed deviation."
+  "notes": "Compares the current policy against batched masking on the same tasks. Masking+structured summarization is the next experiment to declare once its own wrapper (and fidelity checks) exist: an arm whose policy has no matching enabled experiment would be rejected as an unattributed deviation. Non-inferiority on verified success with an absolute margin of 0.10 (10 points); the margin and the cost ceiling are the owner's to change."
 }

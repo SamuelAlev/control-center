@@ -1,0 +1,63 @@
+---
+title: Các agent phối hợp
+description: Cách các agent hỏi nhau, bàn giao công việc và được đánh thức cùng câu trả lời, và nơi bạn thấy một agent đang chờ điều gì từ agent khác.
+slug: vi-VN/so-tay/huong-dan-thuc-hanh/agent-phoi-hop
+sourceHash: 36bb45cd480fb45d0380e8fd651845c59a7debcb
+---
+
+Các agent trong một không gian làm việc có thể hỏi nhau, tham vấn một chuyên gia, yêu cầu đánh giá, gửi tin nhắn hoặc ủy thác một ticket. Không cần agent nào ngồi chờ: một agent đã hỏi có thể tiếp tục làm việc, hoặc kết thúc lượt của nó, và được đánh thức trong cuộc trò chuyện của chính nó khi câu trả lời đến.
+
+## Hỏi một agent khác
+
+Một agent hỏi bằng `ask_agent`, theo một trong hai cách:
+
+- **Chờ** (mặc định): agent bị chặn cho đến khi có câu trả lời, mặc định tối đa 600 giây và tối đa 1.800 giây.
+- **Chạy nền**: lệnh gọi trả về ngay và agent tiếp tục làm việc.
+
+Dù theo cách nào, câu hỏi cũng được ghi lại trước khi được gửi đi. Khi câu trả lời không quay về trong lệnh gọi, người hỏi được đánh thức đúng một lần, kèm câu trả lời, khi lần chạy của agent kia kết thúc: đã trả lời, thất bại, hoặc hết hạn sau 24 giờ không có câu trả lời. Trên đường đi, người hỏi có thể nghe, mỗi thông điệp một lần, rằng agent kia đã hứa sẽ trả lời, rằng nó đang chờ một người, hoặc rằng nó đã dừng ở giới hạn sử dụng. Không thông điệp nào trong số đó được tính là câu trả lời.
+
+`consult_agent` (đưa vào chuyên gia phù hợp nhất), `request_peer_review` (một lần xem lại một phát hiện đánh giá) và `send_to_agent` (một tin nhắn một chiều) đi qua cùng một hàng đợi. `send_to_agent` cho biết agent kia có được đánh thức không, tin nhắn có đang chờ sau lần chạy hiện tại không, hoặc vì sao nó bị từ chối.
+
+Agent kia đọc câu hỏi như thông tin từ một agent khác, không bao giờ là một chỉ dẫn phải làm theo, và nó không thể chạy lệnh slash.
+
+## Bàn giao công việc
+
+- **Một ticket đã ủy thác** (`delegate_task`) đánh thức agent đã ủy thác nó, trong cuộc trò chuyện mà nó đã ủy thác từ đó, khi ticket được xử lý xong.
+- **Lần chạy của một thành viên nhóm** mà trưởng nhóm bắt đầu bằng `@mention` hoặc một tin nhắn sẽ đánh thức trưởng nhóm, trong cuộc trò chuyện mà từ đó nó đã đánh thức thành viên, khi lần chạy kết thúc. (Một câu hỏi được trả lời bằng phản hồi của nó, và một ticket đã ủy thác được trả lời bằng ticket của nó.)
+- **Một worker nền** ở chế độ đạo diễn (`/vibe`) chuyển kết quả của nó cho đạo diễn trong khi đạo diễn vẫn tiếp tục làm việc.
+- **Một `@mention`** của một agent, và bộ kiểm tra của không gian, được gửi theo cùng một cách, dưới dạng lượt đánh thức.
+
+Một agent có thể xem một agent khác đang làm gì mà không cần hỏi: `agent_activity` hiển thị trạng thái của agent kia, công cụ hiện tại và các tin nhắn gần nhất của nó, và không đánh thức ai.
+
+## Giới hạn
+
+Máy chủ thực thi các giới hạn này, bất kể các agent nói gì:
+
+| Giới hạn | Giá trị |
+| --- | --- |
+| Một chuỗi hỏi và bàn giao có thể sâu đến đâu | 3 |
+| Vòng lặp (một agent hỏi một agent mà, qua những agent khác, đang chờ nó) | Bị từ chối |
+| Số câu hỏi đang chờ trên mỗi agent hỏi | 10 |
+| Số câu hỏi đang chờ trên mỗi agent được hỏi | 20 |
+| Cùng một câu hỏi gửi lại cho cùng một agent | Bị từ chối trong vòng 10 phút |
+| Tin nhắn giữa một cặp agent | 10 tin mỗi phút |
+| Độ dài của một tin nhắn hoặc câu trả lời | 16.384 ký tự |
+
+Việc ủy thác cũng tôn trọng quyền tự chủ và ngân sách của agent đang hỏi: một agent không thể giao công việc cho agent khác có nhiều quyền tự chủ hoặc nhiều tiền hơn nó có. Một tin nhắn do chính bạn gửi không bao giờ bị giới hạn theo cách này.
+
+Khi agent được hỏi dừng ở giới hạn sử dụng của nhà cung cấp, lần chạy của nó chờ việc đặt lại nếu việc đặt lại đến trước khi câu hỏi hết hạn. Nếu không, câu hỏi thất bại ngay, và người hỏi được cho biết vì sao.
+
+## Xem một agent đang chờ điều gì
+
+Trong một cuộc trò chuyện, phần **Yêu cầu** của bảng **Chung** liệt kê các câu hỏi mà các agent đã hỏi từ cuộc trò chuyện đó: hỏi ai, loại nào (**Câu hỏi**, **Tham vấn** hoặc **Đánh giá**), khi nào, và trạng thái của nó (**Đang chờ**, **Đã trả lời**, **Thất bại**, **Đã hết hạn** hoặc **Đã hủy**), kèm **Đã hứa sẽ trả lời** hoặc **Chạy nền** khi áp dụng. Một yêu cầu thất bại sẽ nói vì sao, chẳng hạn **Lần chạy của nó đã dừng ở giới hạn sử dụng của nhà cung cấp.**
+
+Bất kỳ ai có quyền truy cập không gian đều có thể **Hủy yêu cầu**. Khi đó agent hỏi không được đánh thức, và lần chạy của agent kia không bị dừng.
+
+Các phản hồi, tin nhắn và công việc đã xong đang chờ một agent cũng xuất hiện trong dải phía trên ô soạn, cùng với những agent khác mà nó đang chờ (xem [Lịch và lượt đánh thức](/vi-VN/so-tay/huong-dan-thuc-hanh/lich-va-danh-thuc/#xem-những-gì-đang-chờ)).
+
+## Xem thêm
+
+- [Ủy thác công việc cho agent](/vi-VN/so-tay/huong-dan-thuc-hanh/uy-thac-phieu/)
+- [Xây dựng một nhóm agent](/vi-VN/so-tay/huong-dan-thuc-hanh/xay-dung-doi-agent/)
+- [Điều khiển worker nền](/vi-VN/so-tay/huong-dan-thuc-hanh/dieu-khien-worker-nen/)
+- [Công cụ MCP: nhắn tin và ủy thác giữa các agent](/vi-VN/so-tay/tham-chieu/cong-cu-mcp/#nhắn-tin-và-ủy-thác-giữa-các-agent)

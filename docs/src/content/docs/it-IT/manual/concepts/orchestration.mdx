@@ -2,7 +2,7 @@
 title: Orchestrazione
 description: Come una "grande richiesta" diventa un piano per tutto il team che approvi una volta sola, e poi una pipeline generata che lo esegue.
 slug: it-IT/manuale/concetti/orchestrazione
-sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
+sourceHash: db1bbceaba025b64539588004eebb65d944d5933
 ---
 
 Un singolo agente è bravo in una cosa sola. Alcune richieste sono più grandi di
@@ -39,13 +39,8 @@ convalidare ed eseguire, invece che prosa libera. Una proposta contiene:
 - **Sintesi**: il passo finale che produce il risultato.
 - **Budget**: un tetto di costo dichiarato.
 
-:::caution[Il budget è indicativo]
-Il tetto di costo della proposta viene confrontato con il totale stimato del
-piano e segnala un piano fuori budget nella barra di approvazione _prima_ che tu
-approvi. Nessuno lo legge dopo l'avvio dell'esecuzione, quindi non ferma né fa
-fallire un'orchestrazione che sfora. Le policy di budget per agente e per spazio
-di lavoro sono un meccanismo separato, e sono ciò che mette davvero in pausa la
-spesa.
+:::caution[Il budget trattiene l'esecuzione, non la termina]
+Il tetto di costo della proposta viene confrontato con il totale stimato del piano e segnala un piano fuori budget nella barra di approvazione _prima_ che tu approvi. Una volta avviata l'esecuzione, il server controlla quanto ha speso prima di ogni nuovo passaggio: al tetto l'esecuzione della pipeline viene trattenuta (`suspended`, motivo `orchestration_budget`) e non parte nulla di nuovo, mentre i passaggi già in corso terminano. Chi ha richiesto l'esecuzione viene avvisato e la riprende con **Alza limite** nella pagina dell'esecuzione della pipeline (un admin dello spazio di lavoro quando nessuno l'ha richiesta). Un aumento deve essere superiore al vecchio tetto e a quanto speso, al massimo 1.000 dollari, e un tetto non viene mai rimosso. Gli obiettivi che l'esecuzione persegue contano su di esso, comprese le loro revisioni. Le policy di budget per agente e per spazio di lavoro sono un meccanismo separato.
 :::
 
 ## Dove la rivedi

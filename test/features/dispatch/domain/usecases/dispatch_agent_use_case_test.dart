@@ -4,6 +4,7 @@ import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
+import 'package:cc_domain/features/dispatch/domain/entities/wake.dart';
 import 'package:cc_domain/features/dispatch/domain/usecases/build_conversation_context_use_case.dart';
 import 'package:cc_domain/features/dispatch/domain/usecases/build_memory_context_use_case.dart';
 import 'package:cc_domain/features/dispatch/domain/usecases/dispatch_agent_use_case.dart';
@@ -208,6 +209,8 @@ void main() {
     _FakeModeResolver? resolver,
   }) {
     return DispatchAgentUseCase(
+      codeExecutions: null,
+      goalTurnText: null,
       agentRepo: agentRepo,
       memoryContextUseCase: memory,
       conversationContextUseCase: conversation,
@@ -224,6 +227,8 @@ void main() {
 
       final useCase = createUseCase();
       final result = await useCase.execute(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
         workspaceId: _ws,
         agentId: agent.id,
         prompt: 'Do something',
@@ -245,6 +250,8 @@ void main() {
 
       final useCase = createUseCase();
       final result = await useCase.execute(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
         workspaceId: _ws,
         agentId: 'agent-1',
         prompt: 'test',
@@ -260,6 +267,8 @@ void main() {
 
       final useCase = createUseCase();
       final result = await useCase.execute(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
         workspaceId: _ws,
         agentId: 'agent-1',
         prompt: 'test',
@@ -277,6 +286,8 @@ void main() {
 
         final useCase = createUseCase();
         final result = await useCase.execute(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
           workspaceId: _ws,
           agentId: agent.id,
           prompt: 'test',
@@ -293,6 +304,8 @@ void main() {
 
       final useCase = createUseCase();
       final result = await useCase.execute(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
         workspaceId: _ws,
         agentId: agent.id,
         prompt: 'test',
@@ -308,6 +321,8 @@ void main() {
 
       final useCase = createUseCase();
       final result = await useCase.execute(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
         workspaceId: _ws,
         agentId: 'agent-1',
         prompt: 'test',
@@ -327,6 +342,8 @@ void main() {
 
       final useCase = createUseCase(resolver: modeResolver);
       final result = await useCase.execute(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
         workspaceId: _ws,
         agentId: 'agent-1',
         prompt: 'Design a system',
@@ -347,21 +364,31 @@ void main() {
       agentRepo.addAgent(_testAgent());
 
       final useCase = createUseCase();
-      const wake = WakeContext(
-        runId: 'run-1',
-        agentId: 'agent-1',
-        workspaceId: 'ws-1',
-        wakeReason: WakeReason.userMessage,
-      );
+      final wake = WakeContext.fromWakes([
+        Wake(
+          id: 'wk-1',
+          workspaceId: _ws,
+          spaceId: 'sp-1',
+          conversationId: 'conv-1',
+          agentId: 'agent-1',
+          reason: WakeReason.peerMessage,
+          payload: 'wake-payload-unique',
+          dedupKey: 'peer:wk-1',
+          notBefore: DateTime.utc(2026),
+          createdAt: DateTime.utc(2026),
+        ),
+      ], nonce: 'abcde123');
       final result = await useCase.execute(
+        freshHistory: false,
         workspaceId: _ws,
         agentId: 'agent-1',
         prompt: 'test',
         wakeContext: wake,
       );
 
-      // wakeContext text is incorporated by prompt builder
-      expect(result.effectivePrompt, isNotEmpty);
+      // The wake is framed in the per-turn half of the prompt.
+      expect(result.effectivePrompt, contains('wake-payload-unique'));
+      expect(result.effectivePrompt, contains('<wake-data id="abcde123">'));
     });
 
     test('passes mentionContext through to prompt builder', () async {
@@ -379,6 +406,8 @@ void main() {
         ],
       );
       final result = await useCase.execute(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
         workspaceId: _ws,
         agentId: 'agent-1',
         prompt: 'test',
@@ -398,6 +427,8 @@ void main() {
 
       final useCase = createUseCase(memory: null);
       final result = await useCase.execute(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
         workspaceId: _ws,
         agentId: 'agent-1',
         prompt: 'test',
@@ -419,6 +450,8 @@ void main() {
 
       final useCase = createUseCase(memory: memoryUseCase);
       final result = await useCase.execute(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
         workspaceId: _ws,
         agentId: 'nonexistent',
         prompt: 'test',
@@ -441,6 +474,8 @@ void main() {
 
       final useCase = createUseCase(memory: memoryUseCase);
       final result = await useCase.execute(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
         workspaceId: _ws,
         agentId: agent.id,
         prompt: 'Write a function',
@@ -470,6 +505,8 @@ void main() {
 
       final useCase = createUseCase(memory: memoryUseCase);
       await useCase.execute(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
         workspaceId: 'ws-5',
         agentId: agent.id,
         prompt: 'Fix the bug',
@@ -492,6 +529,8 @@ void main() {
 
       final useCase = createUseCase(memory: memoryUseCase);
       final result = await useCase.execute(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
         workspaceId: _ws,
         agentId: agent.id,
         prompt: 'test',
@@ -511,6 +550,8 @@ void main() {
       final useCase = createUseCase(memory: memoryUseCase);
       // Should not throw
       final result = await useCase.execute(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
         workspaceId: _ws,
         agentId: 'agent-1',
         prompt: 'test',
@@ -530,6 +571,8 @@ void main() {
 
       final useCase = createUseCase(memory: memoryUseCase);
       final result = await useCase.execute(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
         workspaceId: _ws,
         agentId: 'agent-1',
         prompt: 'test',
@@ -547,6 +590,8 @@ void main() {
 
       final useCase = createUseCase(conversation: null);
       final result = await useCase.execute(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
         workspaceId: _ws,
         agentId: 'agent-1',
         prompt: 'test',
@@ -569,6 +614,8 @@ void main() {
 
       final useCase = createUseCase(conversation: conversationUseCase);
       final result = await useCase.execute(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
         workspaceId: _ws,
         agentId: 'agent-1',
         prompt: 'test',
@@ -589,6 +636,8 @@ void main() {
 
       final useCase = createUseCase(conversation: conversationUseCase);
       final result = await useCase.execute(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
         workspaceId: _ws,
         agentId: 'nonexistent',
         prompt: 'test',
@@ -614,6 +663,8 @@ void main() {
 
         final useCase = createUseCase(conversation: conversationUseCase);
         final result = await useCase.execute(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
           workspaceId: _ws,
           agentId: agent.id,
           prompt: 'test',
@@ -646,6 +697,8 @@ void main() {
 
       final useCase = createUseCase(conversation: conversationUseCase);
       await useCase.execute(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
         workspaceId: _ws,
         agentId: agent.id,
         prompt: 'test',
@@ -675,6 +728,8 @@ void main() {
 
       final useCase = createUseCase(conversation: conversationUseCase);
       await useCase.execute(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
         workspaceId: _ws,
         agentId: agent.id,
         prompt: 'test',
@@ -704,6 +759,8 @@ void main() {
 
       final useCase = createUseCase(conversation: conversationUseCase);
       await useCase.execute(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
         workspaceId: _ws,
         agentId: agent.id,
         prompt: 'test',
@@ -720,6 +777,8 @@ void main() {
 
       final useCase = createUseCase(conversation: conversationUseCase);
       final result = await useCase.execute(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
         workspaceId: _ws,
         agentId: 'agent-1',
         prompt: 'test',
@@ -738,6 +797,8 @@ void main() {
 
       final useCase = createUseCase(resolver: null);
       final result = await useCase.execute(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
         workspaceId: _ws,
         agentId: 'agent-1',
         prompt: 'test',
@@ -753,6 +814,8 @@ void main() {
 
       final useCase = createUseCase(resolver: modeResolver);
       final result = await useCase.execute(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
         workspaceId: _ws,
         agentId: 'agent-1',
         prompt: 'Review PR #42',
@@ -771,8 +834,14 @@ void main() {
     test('works with all optional dependencies null', () async {
       agentRepo.addAgent(_testAgent());
 
-      final useCase = DispatchAgentUseCase(agentRepo: agentRepo);
+      final useCase = DispatchAgentUseCase(
+        codeExecutions: null,
+        goalTurnText: null,
+        agentRepo: agentRepo,
+      );
       final result = await useCase.execute(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
         workspaceId: _ws,
         agentId: 'agent-1',
         prompt: 'Hello',
@@ -792,6 +861,8 @@ void main() {
     test('returns PreparedDispatch with null agent', () async {
       final useCase = createUseCase();
       final result = await useCase.execute(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
         workspaceId: _ws,
         agentId: 'nonexistent',
         prompt: 'test',
@@ -812,6 +883,8 @@ void main() {
       () async {
         final useCase = createUseCase();
         final result = await useCase.execute(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
           workspaceId: _ws,
           agentId: 'nonexistent',
           prompt: 'test',
@@ -834,6 +907,8 @@ void main() {
       final useCase = createUseCase(memory: memoryUseCase);
 
       final result = await useCase.execute(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
         workspaceId: _ws,
         agentId: 'nonexistent',
         prompt: 'test',
@@ -851,7 +926,13 @@ void main() {
       final useCase = createUseCase();
 
       await expectLater(
-        () => useCase.execute(workspaceId: _ws, agentId: 'any', prompt: 'test'),
+        () => useCase.execute(
+          wakeContext: const WakeContext.userMessage(),
+          workspaceId: _ws,
+          agentId: 'any',
+          prompt: 'test',
+          freshHistory: false,
+        ),
         throwsA(
           isA<Exception>().having(
             (e) => '$e',

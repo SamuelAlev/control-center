@@ -2,7 +2,7 @@
 title: Laras konteks alat ejen
 description: Periksa apa yang sebenarnya dihantar oleh sesuatu larian, ubah alat mana yang dimuatkan lebih awal, dan tentukan sama ada pilihan alat yang lemah ialah kegagalan pengambilan atau masalah prompt.
 slug: ms-MY/manual-pengguna/panduan-cara/laras-konteks-alat
-sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
+sourceHash: 22a4306a97aa8da0332f8e3e20e06ed86119f1d5
 ---
 
 Panduan ini merangkumi kerja praktikal di sekeliling permukaan alat dua peringkat: melihat apa yang dihantar oleh sesuatu larian, mengubahnya, dan mendiagnosis ejen yang memilih alat yang salah. Untuk mengetahui mengapa ia berfungsi begini, baca [Konteks alat dan caching prompt](/ms-MY/manual-pengguna/konsep/konteks-alat).
@@ -13,25 +13,26 @@ Buka sesuatu perbualan dan ketik penunjuk penggunaan konteks pada pengepala perb
 
 Dua segmen penting di sini:
 
-- **Takrifan alat** dan **Alat MCP & dinamik** — set residen, dengan kos token sebenar setiap alat.
+- **Takrifan alat** dan **Alat MCP & dinamik** — set langsung, dengan kos token sebenar setiap alat.
 - **Alat dimuatkan atas permintaan** — indeks tertunda. Setiap entri hanya dicaj pada namanya, kerana nama itulah sahaja yang dibawa oleh permintaan; membuka satu entri masih menunjukkan huraian dan skema penuhnya, jadi anda boleh melihat apa yang *akan* dikenakannya jika larian itu menariknya masuk.
+
+Dalam larian dengan `repl`, alat yang dicapai oleh skrip dinamakan dalam arahan sistem dan tidak muncul dalam mana-mana segmen.
 
 Jika segmen tertunda kosong, penundaan dimatikan untuk pelayan ini. Semak `--tool-deferral` pada [CLI `cc_server`](/ms-MY/manual-pengguna/rujukan/cli-cc-server).
 
 ## Ubah alat mana yang dimuatkan lebih awal
 
-Set residen ialah polisi, bukan konfigurasi — ia terletak dalam `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) dan terpakai pada setiap larian:
+Set langsung ialah polisi, bukan konfigurasi — ia terletak dalam `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) dan terpakai pada setiap larian:
 
-- `residentBuiltins` — perbendaharaan kata fail dan shell.
-- `residentDiscovery` — `search_tools` dan `list_my_tools`. Jangan buang ini; inilah cara ejen mencapai semua yang lain.
-- `residentMcpTools` — segelintir alat Control Center yang berbaloi menanggung skemanya pada setiap permintaan.
-- Blok mengikut modus, untuk alat yang digunakan oleh [modus](/ms-MY/manual-pengguna/konsep/modus) tertentu hampir pada setiap pusingan.
+- `directTools` — dua belas alat yang dipanggil secara langsung oleh setiap larian: `read`, `write`, `edit`, `search`, `find`, `bash` dan `read_output`; `ask_user` dan `task`; `todo_write`, `search_memory` dan `send_message`.
+- `residentDiscovery` — `search_tools` dan `list_my_tools`. Jangan buang ini; inilah cara ejen mencapai semua yang lain. Larian dengan `repl` mendapat `search_tools` apabila sesuatu alat dimuatkan pada penggunaan pertama, dan tidak mendapat `list_my_tools`.
+- `directNamesFor(mode)` — alat yang ditambah oleh [modus](/ms-MY/manual-pengguna/konsep/modus/) tertentu untuk gelungnya sendiri: kata kerja semakan dalam modus semakan, `submit_plan` dalam modus pelan dan `propose_orchestration` dalam modus orkestrasi.
 
 Dua peraturan semasa menyuntingnya:
 
-**Tambah alat hanya jika kebanyakan larian menggunakannya.** Setiap nama menanggung kos skemanya pada setiap permintaan bagi setiap larian, selamanya. Alat yang penting apabila digunakan tetapi jarang secara keseluruhan tergolong dalam bahagian tertunda — ejen tetap akan menemukannya.
+**Tambah alat hanya jika kebanyakan larian menggunakannya.** Setiap nama menanggung kos skemanya pada setiap permintaan bagi setiap larian, selamanya. Alat yang penting apabila digunakan tetapi jarang secara keseluruhan tergolong di luar set langsung — ejen tetap akan mencapainya, daripada skrip atau dengan memuatkannya pada penggunaan pertama.
 
-**Gunakan nama sebenar alat itu.** Nama residen yang tidak sepadan dengan mana-mana alat bersifat lengai: tiada ralat, tiada amaran, alat itu hanya ditunda. `test/tooling/resident_tool_names_test.dart` menangkap perkara ini dan juga mengekalkan setiap modus di bawah 40 alat residen, dan itulah tujuan latihan ini — melepasi julat itu, pemilihan alat merosot secara boleh diukur.
+**Gunakan nama sebenar alat itu.** Nama langsung yang tidak sepadan dengan mana-mana alat bersifat lengai: tiada ralat, tiada amaran, alat itu hanya kekal di luar set langsung. `test/tooling/resident_tool_names_test.dart` menangkap perkara ini, mengekalkan set langsung bagi setiap modus pada paling banyak 20 alat dan mengekalkan setiap modus pada paling banyak 40 alat yang dihantar terlebih dahulu, dan itulah tujuan latihan ini — melepasi julat itu, pemilihan alat merosot secara boleh diukur.
 
 Kata kerja yang diperlukan dan yang dipin bagi sesuatu modus ditambah secara automatik, jadi anda tidak pernah perlu menyenaraikan kata kerja output modus itu sendiri.
 
@@ -73,4 +74,4 @@ Punca biasa, mengikut susunan kebarangkalian:
 - **Perubahan model atau usaha pada pertengahan perbualan.** Kedua-duanya mengubah awalan. Subejen amat mudah tersalah di sini: menjalankan anak pada usaha yang lebih rendah untuk menjimatkan wang boleh menelan kos yang lebih tinggi daripada penjimatan melalui perkongsian cache yang hilang.
 - **Pemampatan yang kerap.** Pemampatan menulis semula sejarah secara reka bentuk, jadi kosnya nyata; penyelesaiannya ialah memampatkan secara jarang dan mendalam, bukan kerap dan cetek.
 
-Mematikan penundaan dengan `--tool-deferral=off` ialah ujian A/B yang sah untuk mengasingkan sama ada sesuatu perubahan tingkah laku datang daripada permukaan dua peringkat. Ia menghasilkan semula permintaan sebelum penundaan dengan tepat, jadi jika tingkah laku itu berterusan apabila ia dimatikan, permukaan itu bukan puncanya.
+Mematikan penundaan dengan `--tool-deferral=off` ialah ujian A/B yang sah untuk mengasingkan sama ada sesuatu perubahan tingkah laku datang daripada permukaan dua peringkat. Dengan ia dimatikan, larian menghantar takrifan setiap alat yang diterima, kecuali bahawa larian dengan `repl` masih memanggil daripada skrip alat yang boleh dipanggil oleh skrip, jadi jika tingkah laku itu berterusan apabila ia dimatikan, penundaan bukan puncanya.

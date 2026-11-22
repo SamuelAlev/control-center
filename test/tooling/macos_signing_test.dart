@@ -199,6 +199,80 @@ void main() {
     });
   });
 
+  group('code mode runner', () {
+    // bin/codemode/cc_codemode is a nested executable like the media helpers:
+    // Developer ID, hardened runtime, secure timestamp. It confines itself
+    // with a deny-default Seatbelt profile at run time and needs NO
+    // entitlement. Handing it cc_server's allow-unsigned-executable-memory or
+    // code-server's JIT and library-validation exceptions would only weaken
+    // the hardened runtime around model-written code.
+    final desktop = File(
+      '$root/scripts/release/macos_package.sh',
+    ).readAsStringSync();
+    final standalone = File(
+      '$root/scripts/release/cc_server_package.sh',
+    ).readAsStringSync();
+    const runner = 'cc_server/bin/codemode/cc_codemode';
+
+    test('the desktop packager signs it bare, with the hardened runtime', () {
+      expect(
+        desktop,
+        contains('sign "\$APP/Contents/Resources/$runner"'),
+        reason: 'macos_package.sh no longer signs the code mode runner',
+      );
+      // `sign` is the hardened-runtime, no-entitlements helper.
+      expect(
+        desktop,
+        contains(
+          'codesign --force --options runtime --timestamp -s "\$IDENTITY" "\$@"',
+        ),
+      );
+      for (final line in desktop.split('\n')) {
+        if (line.contains('--entitlements')) {
+          expect(
+            line,
+            isNot(contains('codemode')),
+            reason: 'the code mode runner must not be signed with entitlements',
+          );
+        }
+      }
+    });
+
+    test('the standalone packager gives entitlements only to node and '
+        'cc_server', () {
+      // Its signing pass enumerates every Mach-O, so the runner is reached by
+      // the bare `sign` branch; only these two paths take an entitlements file.
+      final entitled = RegExp(
+        r'sign_entitled "\$([A-Z_]+)"',
+      ).allMatches(standalone).map((m) => m.group(1)).toSet();
+      expect(entitled, {'CS_ENTITLEMENTS', 'CC_ENTITLEMENTS'});
+      expect(standalone, contains('bin/code-server/*)'));
+      expect(
+        standalone,
+        contains(r'sign_entitled "$CC_ENTITLEMENTS" "$DIST/bin/cc_server"'),
+      );
+    });
+
+    test('both packagers re-run its self-test after signing', () {
+      // The pre-notarization sweep checks signature flags, not that the
+      // hardened, Developer-ID-signed runner still locks itself down.
+      final signed = desktop.indexOf('sign "\$APP/Contents/Resources/$runner"');
+      final rechecked = desktop.lastIndexOf(
+        r'cc_codemode_verify "$APP/Contents/Resources/cc_server/bin/codemode" macos',
+      );
+      expect(signed, isNot(-1));
+      expect(rechecked, greaterThan(signed));
+      final sweep = standalone.indexOf(
+        'All Mach-Os in the archive are Developer-ID signed + hardened',
+      );
+      final standaloneCheck = standalone.indexOf(
+        r'cc_codemode_verify "$DIST/bin/codemode" macos',
+      );
+      expect(sweep, isNot(-1));
+      expect(standaloneCheck, greaterThan(sweep));
+    });
+  });
+
   test('Debug keeps Apple Development signing for local development', () {
     // Contributors sign with their own (possibly free) Apple team so the
     // data-protection keychain works — see RELEASING.md, "Local development

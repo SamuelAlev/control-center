@@ -9,21 +9,22 @@ description: Complete catalog of the MCP tools cc_server registers, by family.
 
 | Measure                                                                   | Count |
 | ------------------------------------------------------------------------- | ----- |
-| Tools registered by `cc_server`                                           | 110   |
-| From `packages/cc_mcp`                                                    | 108   |
+| Tools registered by `cc_server`                                           | 116   |
+| From `packages/cc_mcp`                                                    | 114   |
 | From `packages/cc_mcp_client` (tool discovery)                            | 2     |
-| Registered in the base registry (`server_mcp_registry.dart`)              | 63    |
-| Registered post-boot as their services come up (`cc_server_runtime.dart`) | 47    |
-| Of the base registry's 63, conditional on a code-graph repository         | 5     |
+| Registered in the base registry (`server_mcp_registry.dart`)              | 64    |
+| Registered post-boot as their services come up (`cc_server_runtime.dart`) | 52    |
+| Of the base registry's 64, conditional on a code-graph repository         | 5     |
+| Of the base registry's 64, conditional on the code mode runner (`repl`)   | 1     |
 
-The five code-graph tools are registered only when the host passes a code-graph repository to `buildServerMcpRegistry`. `cc_server` always passes one, so all 110 are live in the shipped binary.
+The five code-graph tools are registered only when the host passes a code-graph repository to `buildServerMcpRegistry`, and `repl` only when it passes the code mode runner. `cc_server` always passes both (it does not start without the runner), so all 111 are registered in the shipped binary; the public demo server registers no `repl`.
 
-The full registry is advertised in `tools/list` with no discovery gating. Ticket edits are typed tools.
+The full registry is advertised in `tools/list` with no discovery gating, apart from an agent run that can run scripts (below). Ticket edits are typed tools.
 
 :::note[External clients always see the whole catalogue]
-`tools/list` is never trimmed, apart from the server owner's personal MCP servers, which it never carries. MCP clients validate tool names against their own cached copy of that list and refuse anything unlisted without asking the server, so a tool hidden there is unreachable rather than merely quiet.
+`tools/list` is never trimmed, apart from the server owner's personal MCP servers, which it never carries, and [code mode](/manual/concepts/code-mode/): `repl` is listed only to an agent run on a server that can run scripts, and that run is listed `repl`, the direct tools (`read`, `write`, `edit`, `search`, `find`, `bash`, `read_output`, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` and its mode's own verbs, where the registry has them) and the tools a script may not call. It calls the rest from a script; a direct call to one is answered with how to call it from `repl`. MCP clients validate tool names against their own cached copy of that list and refuse anything unlisted without asking the server, so a tool hidden there is unreachable rather than merely quiet.
 
-The **built-in harness** is different: it loads only a resident subset of definitions per request and pulls the rest in on first use, which is a harness-side behaviour and does not change this registry. See [Tool context and prompt caching](/manual/concepts/tool-context).
+The **built-in harness** is different: it loads only a small direct set of definitions per request and reaches the rest from scripts or loads them on first use, which is a harness-side behaviour and does not change this registry. See [Tool context and prompt caching](/manual/concepts/tool-context).
 :::
 
 :::note[Every tool class is registered]
@@ -49,6 +50,14 @@ Both come from `cc_mcp_client`, not `cc_mcp` and both consult the mode guard so 
 
 A third discovery tool, **`search_tools`**, exists only inside the built-in harness and is not part of this MCP registry. It ranks the run's own tool surface and, unlike `search_tool_bm25`, **loads** the schemas of what it finds so the agent can call a match on its next turn. Agents on the harness should prefer it; MCP clients have `search_tool_bm25`.
 
+## Code mode
+
+| Tool   | Description |
+| ------ | ----------- |
+| `repl` | Run a JavaScript script that calls the run's other tools as `tools.<id>(args)` and returns only what it needs. Listed only to an agent run on a server that can run [code mode](/manual/concepts/code-mode/) scripts. Each nested call passes the same gate as a `tools/call`. Takes `code`, `description`, `timeout_ms?`, `max_output_tokens?` |
+
+A script cannot call `repl`, `search_tool_bm25`, `list_my_tools`, or any tool that starts or messages another agent run, assigns or comments on a ticket, sends a message, creates, decides or comments on an approval, proposes or changes policy, installs or changes skills, creates a runtime profile, submits a plan or leaves plan mode, completes the conversation's goal or submits a pipeline run's output. Those tools declare `scriptCallable` false and are always called directly; in the built-in harness one outside the direct set loads on first use. `create_ticket` is callable from a script only without an `assignee`.
+
 ## Agent tools
 
 | Tool          | Description                               |
@@ -57,15 +66,29 @@ A third discovery tool, **`search_tools`**, exists only inside the built-in harn
 
 ## Agent peer messaging and delegation
 
-Agents talk to each other over spaces (durable, roster-visible). `ask_agent` is request/reply with a mandatory timeout; `delegate_task` is guarded server-side by depth cap, cycle detection, budget envelope and autonomy ceiling.
+Agents talk to each other over spaces (durable, roster-visible). `ask_agent` either waits for the reply (`mode: wait`, 600 seconds by default, 1,800 at most) or returns at once (`mode: background`); either way the asker is woken once with the answer when it did not come back inline. `send_to_agent`, `ask_agent`, `consult_agent`, `request_peer_review` and `delegate_task` pass the same server-side gate: depth (3), cycle detection, budget envelope, autonomy ceiling, and a rate limit per pair of agents. The sender's identity always comes from the calling run. See [Agents working together](/manual/guides/agents-working-together/).
 
 | Tool            | Description                                                                                    |
 | --------------- | ---------------------------------------------------------------------------------------------- |
-| `send_to_agent` | Send a one-way message to another agent, addressed by `to_agent_id` or exact `to_agent_name`   |
-| `ask_agent`     | Ask another agent a question and wait for its reply, or time out                               |
+| `send_to_agent` | Send a one-way message to another agent, addressed by `to_agent_id` or exact `to_agent_name`; answers `delivery_status` `woken`, `queued_behind_run` or `refused` |
+| `ask_agent`     | Ask another agent a question; wait for the reply or continue and be woken when it arrives      |
 | `delegate_task` | Delegate a task to another agent as a tracked child ticket                                     |
 | `consult_agent` | Add the best-matching specialist by skills to the space and dispatch it with a focused brief |
 | `todo_read`     | Read this conversation's persisted task checklist                                              |
+| `agent_activity` | Read what another agent is doing now and did last (status, current tool, last messages), without waking it |
+
+## Wake and goal tools
+
+An agent uses these instead of sleeping or polling. Each acts only for the calling agent in its own conversation; the agent is never an argument. See [Schedules and wakes](/manual/guides/schedules-and-wakes/) and [Pursue a goal](/manual/guides/pursue-a-goal/).
+
+| Tool          | Description |
+| ------------- | ----------- |
+| `wake_me`     | Arrange to be woken later: at a time (`in:20m`, `at:<ISO time>`), on an interval (`every:30m`), on a cron (`cron:0 9 * * 1-5`, with `tz`), at its own pace inside a self-paced loop (`next`, with `delay` from 1 to 60 minutes), or when something happens (`on:pr_checks`, `on:pr_review`, `on:pr_merged`, `on:environment`, `on:ticket:<id>`, `on:pipeline_run:<id>`). Optional `note`, `max_runs`, `expires_in`, `when_busy` (`skip` or `queue`) and `deliver` (`run` or `notify`) |
+| `list_wakes`  | List what the agent has waiting in this conversation: schedules, watches, pending wakes and unanswered asks |
+| `cancel_wake` | Cancel a schedule or watch the agent set itself, by its id |
+| `goal_status` | Read the agent's active goal: contract, segment, spend and budget left, no-progress strikes, hold, last verification and pending goal wakes |
+
+`complete_goal` (under [Plan, playbook and artifact tools](#plan-playbook-and-artifact-tools)) is the only way an agent says a goal is done, and it is a claim, not a completion.
 
 ## Skill tools
 
@@ -92,7 +115,7 @@ Every install and update passes through a fail-closed scan gate before any skill
 | `revise_artifact`  | Replace a published artifact's content                                                                                |
 | `list_artifacts`   | List the workspace's artifacts                                                                                        |
 | `get_artifact`     | Read one artifact                                                                                                     |
-| `complete_goal`    | Declare the conversation's active durable goal (started with `/goal` or `/loop`) achieved                             |
+| `complete_goal`    | Claim the agent's active goal is achieved, with evidence for every criterion; the server then runs the checks and a review |
 
 ## Workspace tools
 
@@ -160,10 +183,10 @@ Every install and update passes through a fail-closed scan gate before any skill
 | `create_goal`                | Create an organizational goal (company, team, agent, or task level)                                   |
 | `list_goals`                 | List goals with level, status and aggregated progress                                                 |
 | `update_goal_progress`       | Set a goal's progress                                                                                 |
-| `create_approval`            | Open a board approval for a governed action (plan exit, merge, release, hire, custom)                 |
+| `create_approval`            | Open a board approval for a governed action (plan exit, merge, release, hire, custom) in the calling agent's name. Agent runs only |
 | `list_approvals`             | List approvals, optionally filtered by status                                                         |
-| `decide_approval`            | Record a decision: approve, reject, request revision, or resubmit                                     |
-| `comment_approval`           | Comment on a board approval                                                                           |
+| `decide_approval`            | Record the calling agent's decision: approve, reject, request revision, or resubmit. Agent runs only  |
+| `comment_approval`           | Comment on a board approval as the calling agent. Agent runs only                                     |
 | `exit_plan_mode`             | Open (and, once approved, consume) a `plan_exit` approval, flipping the conversation out of plan mode |
 | `agent_heartbeat`            | Report liveness (alive, idle, stuck); going quiet flips runtime health to recently-lost, then offline |
 | `list_runtime_health`        | List each agent's runtime health                                                                      |

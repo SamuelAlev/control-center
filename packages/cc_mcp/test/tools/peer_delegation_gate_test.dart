@@ -1,17 +1,19 @@
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
+import 'package:cc_domain/features/dispatch/domain/services/peer_ask_text.dart';
 import 'package:cc_domain/features/messaging/domain/services/peer_delegation_guards.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_status.dart';
 import 'package:cc_domain/features/ticketing/domain/repositories/ticket_repository.dart';
 import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_service.dart';
+import 'package:cc_infra/cc_infra.dart' show PeerAskRefusal, PeerChain;
 import 'package:cc_mcp/src/tools/peer_delegation_gate.dart';
-import 'package:cc_mcp/src/tools/pending_delegation_hops.dart';
 import 'package:test/test.dart';
 
 const _ws = 'ws-1';
 
 void main() {
-  late PendingDelegationHops hops;
+  /// No agent above the sender, none waiting on it.
+  final none = PeerChain.none;
   late AutonomyLevel delegatorAutonomy;
   late AutonomyLevel recipientAutonomy;
   int? remainingBudget;
@@ -28,11 +30,9 @@ void main() {
           ? ({required workspaceId, required agentId}) async => remainingBudget
           : null,
     ),
-    pendingHops: hops,
   );
 
   setUp(() {
-    hops = PendingDelegationHops();
     delegatorAutonomy = AutonomyLevel.actWithApproval;
     recipientAutonomy = AutonomyLevel.actWithApproval;
     remainingBudget = null;
@@ -43,6 +43,7 @@ void main() {
       workspaceId: _ws,
       fromAgentId: 'agent-a',
       recipientId: 'agent-b',
+    chain: none,
     );
     expect(refusal, isNull);
   });
@@ -54,8 +55,9 @@ void main() {
         workspaceId: _ws,
         fromAgentId: 'agent-a',
         recipientId: 'agent-b',
+      chain: none,
       );
-      expect(refusal, contains('not configured'));
+      expect(refusal?.message, contains('not configured'));
     },
   );
 
@@ -65,8 +67,9 @@ void main() {
       workspaceId: _ws,
       fromAgentId: 'agent-a',
       recipientId: 'agent-b',
+    chain: none,
     );
-    expect(refusal, contains('ceiling'));
+    expect(refusal?.message, contains('ceiling'));
   });
 
   test('refuses on an exhausted budget envelope', () async {
@@ -75,8 +78,9 @@ void main() {
       workspaceId: _ws,
       fromAgentId: 'agent-a',
       recipientId: 'agent-b',
+    chain: none,
     );
-    expect(refusal, contains('budget'));
+    expect(refusal?.message, contains('budget'));
   });
 
   test('refuses a parent ticket outside the workspace', () async {
@@ -84,9 +88,10 @@ void main() {
       workspaceId: _ws,
       fromAgentId: 'agent-a',
       recipientId: 'agent-b',
+      chain: none,
       parentTicketId: 'missing',
     );
-    expect(refusal, contains('does not exist in this workspace'));
+    expect(refusal?.message, contains('does not exist in this workspace'));
   });
 
   test('a ticket hand-off does not need the parent assigned to the caller, '
@@ -113,13 +118,14 @@ void main() {
           ({required workspaceId, required agentId}) async => null,
     );
     // One in-flight ask above agent-a: an ask counts it, a ticket does not.
-    hops.enter(_ws, 'agent-x', 'agent-a');
-    final gate = PeerDelegationGate(service: service, pendingHops: hops);
+    final above = PeerChain(lineage: const ['agent-x'], waiting: const {});
+    final gate = PeerDelegationGate(service: service);
     expect(
       await gate.refusal(
         workspaceId: _ws,
         fromAgentId: 'agent-a',
         recipientId: 'agent-b',
+        chain: above,
         handOff: PeerHandOff.ticket,
         parentTicketId: 'parent',
       ),
@@ -130,44 +136,72 @@ void main() {
         workspaceId: _ws,
         fromAgentId: 'agent-a',
         recipientId: 'agent-b',
+        chain: above,
         parentTicketId: 'parent',
       ),
-      contains('not assigned to the asker'),
+      _message(contains('not assigned to the asker')),
     );
   });
 
-  test(
-    'refuses a hop back to an agent already waiting on the sender',
-    () async {
-      hops.enter(_ws, 'agent-b', 'agent-a');
-      final refusal = await gate().refusal(
-        workspaceId: _ws,
+  test('refuses a hop back to an agent already waiting on the sender, '
+      'with the cycle kind', () async {
+    final waiting = PeerChain(lineage: const [], waiting: const {'agent-b'});
+    final refusal = await gate().refusal(
+      workspaceId: _ws,
+      fromAgentId: 'agent-a',
+      recipientId: 'agent-b',
+      chain: waiting,
+    );
+    expect(refusal?.kind, PeerAskRefusals.cycle);
+    expect(refusal?.message, contains('cycle'));
+    expect(
+      PeerDelegationGate.cycleRefusal(
         fromAgentId: 'agent-a',
         recipientId: 'agent-b',
-      );
-      expect(refusal, contains('cycle'));
-      expect(
-        PeerDelegationGate.cycleRefusalIn(
-          hops,
-          workspaceId: _ws,
-          fromAgentId: 'agent-a',
-          recipientId: 'agent-b',
-        ),
-        contains('agent-b'),
-      );
-      // Another workspace's hops never block this one.
-      expect(
-        PeerDelegationGate.cycleRefusalIn(
-          hops,
-          workspaceId: 'ws-2',
-          fromAgentId: 'agent-a',
-          recipientId: 'agent-b',
-        ),
-        isNull,
-      );
-    },
-  );
+        chain: waiting,
+      )?.message,
+      contains('agent-b'),
+    );
+    // An agent above the sender is a cycle too; a stranger is not.
+    final above = PeerChain(lineage: const ['agent-b'], waiting: const {});
+    expect(
+      PeerDelegationGate.cycleRefusal(
+        fromAgentId: 'agent-a',
+        recipientId: 'agent-b',
+        chain: above,
+      )?.kind,
+      PeerAskRefusals.cycle,
+    );
+    expect(
+      PeerDelegationGate.cycleRefusal(
+        fromAgentId: 'agent-a',
+        recipientId: 'agent-c',
+        chain: above,
+      ),
+      isNull,
+    );
+  });
+
+  test('a chain three deep refuses an ask with the depth kind', () async {
+    final deep = PeerChain(
+      lineage: const ['agent-x', 'agent-y', 'agent-z'],
+      waiting: const {},
+    );
+    final refusal = await gate().refusal(
+      workspaceId: _ws,
+      fromAgentId: 'agent-a',
+      recipientId: 'agent-b',
+      chain: deep,
+    );
+    expect(refusal?.kind, PeerAskRefusals.depth);
+  });
 }
+
+Matcher _message(Matcher inner) => isA<PeerAskRefusal>().having(
+  (r) => r.message,
+  'message',
+  inner,
+);
 
 class _OneTicket implements TicketRepository {
   _OneTicket(this.ticket);

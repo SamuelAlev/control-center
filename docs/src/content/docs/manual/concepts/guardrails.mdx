@@ -30,6 +30,26 @@ everyone with `--sandbox off`. For any run that starts without a sandbox, the
 guardrails are the outermost enforcement layer rather than a policy sitting
 on top of a floor, which is worth knowing when you decide how permissive to be.
 
+### Calls a script makes
+
+A [code mode](/manual/concepts/code-mode/) script calls tools in code, many at a
+time, but each of its calls is a separate tool call to the engine. It passes the
+same harness gate or MCP dispatcher gate as a direct call, with the same rules,
+the same approval prompt and the same audit entry, and nothing it does is
+approved because the `repl` call that started it was.
+
+Two extra rules apply to calls from a script, because one script can make
+hundreds of calls and catch every refusal:
+
+- at most 10 of its calls reach a person for approval; later ones that would
+  need a person are refused without a card;
+- once a person declines one of its calls, the rest of its calls that need
+  approval are refused without asking.
+
+A card raised by a script says so and lets you open the script. If the script
+ends while the card is open, the card is withdrawn, and an answer that arrives
+after that is recorded as a denial and approves nothing.
+
 ## ActionClass: a deliberately closed taxonomy
 
 Every mutating tool declares which **ActionClasses** it belongs to, from a
@@ -271,5 +291,6 @@ get.
 ## Related concepts
 
 - [Sandbox and security](/manual/concepts/sandbox-security/): what actually constrains an agent run and how far the OS floor beneath this engine reaches
+- [Code mode](/manual/concepts/code-mode/): scripts whose every tool call passes this engine
 - [Multiplayer — identity, membership and presence](/manual/concepts/multiplayer/): spaces, principals and where the autonomy dial lives
 - [Configure guardrails](/manual/guides/configure-guardrails/): writing and testing rules in practice

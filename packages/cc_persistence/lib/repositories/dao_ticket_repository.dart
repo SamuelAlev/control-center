@@ -28,6 +28,23 @@ class DaoTicketRepository implements TicketRepository {
 
   TicketDao _dao(String workspaceId) => _dbs.of(workspaceId).ticketDao;
 
+  /// The ids of the tickets [agentId] delegated from [conversationId] of
+  /// [workspaceId] that are not finished yet (a status that is not
+  /// terminal): work a goal of that agent is owed in that conversation.
+  Future<List<String>> openDelegatedFrom(
+    String workspaceId, {
+    required String conversationId,
+    required String agentId,
+  }) => _dao(workspaceId).openDelegatedFrom(
+    workspaceId,
+    conversationId: conversationId,
+    delegatedByAgentId: agentId,
+    terminalStatuses: [
+      for (final status in TicketStatus.values)
+        if (status.isTerminal) status.toStorageString(),
+    ],
+  );
+
   /// The routing key for a mirrored ticket: `provider:externalKey`.
   static String _externalRouteKey(String provider, String externalKey) =>
       '$provider:$externalKey';

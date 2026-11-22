@@ -98,6 +98,7 @@ class _ScriptedLoop implements AgentLoop {
     required String userMessage,
     required List<HarnessTool> tools,
     List<HarnessTool> deferredTools = const [],
+    List<HarnessTool> scriptTools = const [],
     required LlmProviderPort provider,
     HarnessToolContext? context,
     AgentLoopConfig config = const AgentLoopConfig(),
@@ -134,6 +135,8 @@ void main() {
       agentLoop: _ScriptedLoop(const [LoopDone(LoopDoneReason.completed)]),
     );
     final session = DispatchSession(
+      freshHistory: false,
+      readOnly: false,
       deps: deps,
       onResolveHandle:
           ({
@@ -170,7 +173,7 @@ void main() {
       // The exact shape of the regression: the session EXISTS (a live dispatch,
       // as far as the adapter's map is concerned) but no harness loop is
       // driving it — the external-CLI transport state.
-      final accepted = session.steer('nudge');
+      final accepted = session.steer('nudge', source: null);
       expect(accepted, isFalse);
       expect(session.steeringQueue.isEmpty, isTrue);
     },
@@ -180,7 +183,7 @@ void main() {
     var midRunAccepted = true;
     final session = buildSession();
     session.onHarnessStarted = () {
-      midRunAccepted = session.steer('   ');
+      midRunAccepted = session.steer('   ', source: null);
     };
     await session.run();
     expect(midRunAccepted, isFalse);
@@ -193,7 +196,7 @@ void main() {
     final session = buildSession();
     session.onHarnessStarted = () {
       midRunHarnessActive = session.isHarnessActive;
-      midRunAccepted = session.steer('nudge');
+      midRunAccepted = session.steer('nudge', source: null);
     };
     await session.run();
     expect(midRunHarnessActive, isTrue);

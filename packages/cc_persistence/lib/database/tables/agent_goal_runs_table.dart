@@ -1,14 +1,15 @@
 import 'package:cc_persistence/database/tables/agent_run_logs.dart';
 import 'package:cc_persistence/database/tables/agents.dart';
+import 'package:cc_persistence/database/tables/checks/column_checks.dart';
 import 'package:cc_persistence/database/tables/checks/stored_values_agents.dart';
 import 'package:cc_persistence/database/tables/conversations.dart';
 import 'package:cc_persistence/database/tables/spaces.dart';
 import 'package:drift/drift.dart';
 
-/// Drift table for durable supervised goals (`/goal` and `/loop`).
+/// Drift table for durable supervised goals (`/goal`).
 ///
 /// Each row is one objective the goal supervisor keeps dispatching bounded
-/// runs for until the agent declares it complete, a human stops it, or a
+/// runs (segments) for until verification passes, a person stops it, or a
 /// budget wall (deadline / cost cap / run budget) is hit. Persisted so the
 /// objective survives server restarts — the startup reconciler re-dispatches
 /// every row still `active`.
@@ -31,6 +32,17 @@ import 'package:drift/drift.dart';
   columns: {#conversationId},
 )
 @TableIndex(name: 'idx_agent_goal_runs_active_run', columns: {#activeRunId})
+@TableIndex(
+  name: 'idx_agent_goal_runs_pipeline_run',
+  columns: {#pipelineRunId},
+)
+// One active goal per agent: each workspace has its own file, so this is one
+// per agent per workspace. The repository turns a violation into
+// `GoalAlreadyActiveException`.
+@TableIndex.sql(
+  'CREATE UNIQUE INDEX uq_agent_goal_runs_active_agent '
+  "ON agent_goal_runs (agent_id) WHERE status = 'active'",
+)
 class AgentGoalRunsTable extends Table {
   /// Unique goal identifier.
   TextColumn get id => text()();
@@ -50,14 +62,8 @@ class AgentGoalRunsTable extends Table {
   TextColumn get agentId =>
       text().references(AgentsTable, #id, onDelete: KeyAction.cascade)();
 
-  /// The objective, verbatim (the `/goal` or `/loop` body).
+  /// The objective, verbatim (the `/goal` body).
   TextColumn get userText => text()();
-
-  /// Which command spawned the goal: an `AgentGoalKind` wire name.
-  TextColumn get kind => text().check(
-    // ignore: recursive_getters
-    kind.isIn(AgentsStoredValues.agentGoalKind),
-  )();
 
   /// Lifecycle status: an `AgentGoalStatus` wire name.
   TextColumn get status => text()
@@ -111,6 +117,89 @@ class AgentGoalRunsTable extends Table {
 
   /// The agent's completion summary (set when status becomes completed).
   TextColumn get summary => text().nullable()();
+
+  /// `GoalContract` as a JSON object (criteria, checks, boundaries,
+  /// stopWhen); null for a goal started without one.
+  TextColumn get contract =>
+      text().nullable()
+      // ignore: recursive_getters
+      .check(isJsonObject(contract))();
+
+  /// What an active or paused goal is waiting on: a `GoalHold` wire name;
+  /// null when nothing is held.
+  TextColumn get hold =>
+      text().nullable()
+      // ignore: recursive_getters
+      .check(hold.isIn(AgentsStoredValues.goalHold))();
+
+  /// When the hold lifts by itself, when it does.
+  DateTimeColumn get holdUntil => dateTime().nullable()();
+
+  /// A short explanation of the hold.
+  TextColumn get holdDetail => text().nullable()();
+
+  /// Consecutive segments without observed progress.
+  IntColumn get noProgressStreak => integer().withDefault(const Constant(0))();
+
+  /// Verification rounds that failed.
+  IntColumn get verificationRounds =>
+      integer().withDefault(const Constant(0))();
+
+  /// The worktree fingerprint after the previous segment.
+  TextColumn get lastFingerprint => text().nullable()();
+
+  /// A digest of what the previous segment did (at most 128 characters,
+  /// enforced by the entity).
+  TextColumn get lastActivityDigest => text().nullable()();
+
+  /// `GoalStartRefs` as a JSON object: the commit each checkout of the
+  /// conversation was at when the goal started. Null on a goal started
+  /// before it was recorded.
+  TextColumn get startRef =>
+      text().nullable()
+      // ignore: recursive_getters
+      .check(isJsonObject(startRef))();
+
+  /// How many times the goal parked on a provider limit.
+  IntColumn get parkCount => integer().withDefault(const Constant(0))();
+
+  /// Whether every segment starts without the conversation's history.
+  BoolColumn get fresh => boolean().withDefault(const Constant(false))();
+
+  /// What a segment's unanswered question does: a `GoalUnattendedPolicy`
+  /// wire name.
+  TextColumn get unattended => text()
+      .check(
+        // ignore: recursive_getters
+        unattended.isIn(AgentsStoredValues.goalUnattendedPolicy),
+      )
+      .withDefault(const Constant('wait'))();
+
+  /// The agent that reviews completion claims; null for the space's checker
+  /// or the goal's own agent. A value, not a key: a removed checker falls
+  /// back to those.
+  TextColumn get checkerAgentId => text().nullable()();
+
+  /// The last verification (`GoalVerification`) as a JSON object.
+  TextColumn get verification =>
+      text().nullable()
+      // ignore: recursive_getters
+      .check(isJsonObject(verification))();
+
+  /// The pipeline run whose `goal.pursue` step started the goal; null for a
+  /// goal a person or an agent started. A value, not a key: the goal reads
+  /// a run it no longer finds as ended (`GoalPipelineLink`).
+  TextColumn get pipelineRunId => text().nullable()();
+
+  /// The `goal.pursue` step of [pipelineRunId]; set with it.
+  TextColumn get pipelineStepId => text().nullable()();
+
+  /// The progress marks the goal has already seen (JSON); a mark seen
+  /// before is not progress. Null on a goal that has none yet.
+  TextColumn get progressMarks =>
+      text().nullable()
+      // ignore: recursive_getters
+      .check(isJson(progressMarks))();
 
   /// When the goal was created.
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();

@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:cc_domain/core/domain/value_objects/usage_scope.dart';
+import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_infra/src/dispatch/acp/acp_client.dart';
 import 'package:test/test.dart';
 
@@ -127,4 +129,45 @@ void main() {
       unawaited(without.close());
     },
   );
+
+  test('a usage update in dollars is the run cost so far', () async {
+    final c = client();
+    final events = <AgentProcessEvent>[];
+    final sub = c.events.listen(events.add);
+    for (final cost in [
+      {'amount': 0.42, 'currency': 'USD'},
+      {'amount': 9, 'currency': 'EUR'},
+    ]) {
+      c.feedLine(
+        jsonEncode({
+          'jsonrpc': '2.0',
+          'method': 'session/update',
+          'params': {
+            'sessionId': 's',
+            'update': {'sessionUpdate': 'usage_update', 'cost': cost},
+          },
+        }),
+      );
+    }
+    await Future<void>.delayed(Duration.zero);
+
+    final usage = events.whereType<UsageEvent>().single;
+    expect(usage.scope, UsageScope.runCumulative);
+    expect(usage.usage.costMicros, 420000);
+    await sub.cancel();
+    await c.close();
+  });
+
+  test('cancel is a session/cancel notification for the session', () async {
+    final c = client();
+
+    c.sessionCancel('sess-9');
+
+    expect(sent.single, {
+      'jsonrpc': '2.0',
+      'method': 'session/cancel',
+      'params': {'sessionId': 'sess-9'},
+    });
+    await c.close();
+  });
 }

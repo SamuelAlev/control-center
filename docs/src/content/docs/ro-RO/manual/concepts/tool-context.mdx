@@ -2,29 +2,45 @@
 title: Contextul instrumentelor și cache-ul prompturilor
 description: De ce unui agent i se arată un set mic de instrumente, nu toate, cum ajunge la restul și regulile care țin cache-ul de prompturi al providerului cald de-a lungul unei rulări.
 slug: ro-RO/manual/concepte/contextul-instrumentelor
-sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
+sourceHash: 74ad7fcb903772d007ba9bd7ec85153fcf668335
 ---
 
 Două lucruri sunt adevărate pentru fiecare cerere pe care o face harness-ul integrat: definițiile de instrumente sunt cel mai mare cost fix din ea și aproape niciuna dintre ele nu va fi folosită. Această pagină explică ce face Control Center în privința asta și de ce răspunsul nu este pur și simplu „trimite mai puține instrumente”.
 
 ## Problema este atenția, nu octeții
 
-Control Center înregistrează aproximativ 126 de instrumente. Trimise integral, definițiile lor costă aproximativ **23.000 de tokeni la fiecare cerere** — un cost pe care nicio compactare nu îl poate atinge, pentru că definițiile de instrumente călătoresc într-o parte separată a cererii față de conversație.
+Control Center are aproximativ 160 de instrumente proprii. Trimise integral, definițiile lor ar călători pe **fiecare cerere** — un cost pe care nicio compactare nu îl poate atinge, pentru că definițiile de instrumente călătoresc într-o parte separată a cererii față de conversație.
 
 Factura de tokeni este nemulțumirea evidentă și, odată cu cache-ul de prompturi, este și cea mai mică. Costul real este **acuratețea selecției**. Evaluările publicate privind apelarea instrumentelor confirmă că modelele aleg instrumentul potrivit în mod fiabil până la aproximativ 30–50 de instrumente în context, iar dincolo de acest prag se înrăutățesc progresiv. Cauza numită nu este numărul de tokeni, ci **suprapunerea semantică**: odată ce un catalog conține mai multe instrumente ale căror descrieri se citesc la fel, modelul alege între instrumente care seamănă, în loc să-și amintească o capacitate.
 
-Cu 126 de instrumente, un agent este cu mult peste acest interval la fiecare tură, inclusiv în numeroasele ture în care avea nevoie doar să citească un fișier.
+La aproximativ 160 de instrumente, un agent este cu mult peste acest interval la fiecare tură, inclusiv în numeroasele ture în care avea nevoie doar să citească un fișier.
 
-## Suprafața pe două niveluri
+## Un set direct mic
 
 O rulare vede, așadar, două lucruri:
 
-- un set **rezident** — aproximativ două duzini de instrumente, trimise cu scheme complete la fiecare cerere;
+- un **set direct** de aproximativ cincisprezece instrumente, trimise cu scheme complete la fiecare cerere;
 - un **index de nume** cu tot restul, grupat sub titluri precum „Tichete și proiecte” sau „Memorie și cunoștințe”, care costă câteva sute de tokeni pentru întregul catalog.
 
-Măsurat pe catalogul actual, asta duce blocul de instrumente de la **~23,1k tokeni la ~5,0k, cu aproximativ 78% mai puțin**, și aduce setul mereu vizibil în intervalul în care selecția este fiabilă.
+Măsurat pe registrul pe care îl construiesc testele, instrumentele standard de chat ale agentului integrat ajung la 14 definiții de instrumente și aproximativ 16,5 KB cu `repl`, dintre care aproximativ 4 KB sunt ale lui `repl` (definiția lui nu poate depăși 4.096 de octeți), și la 14 definiții și aproximativ 13 KB pe un server care nu poate rula scripturi. Aceasta este o măsurătoare a unei singure suprafețe, nu a fiecărei instalări. Fiecare alt instrument este apelat dintr-un script sau se încarcă la prima utilizare.
 
-Setul rezident este format din instrumentele pe care o rulare le folosește în *majoritatea* rulărilor: vocabularul de fișiere și shell (`read`, `write`, `edit`, `search`, `bash`, …), instrumentele de descoperire, lista de verificare a sarcinilor, căutarea în memorie și orice verb pe care [modul](/ro-RO/manual/concepte/moduri) curent trebuie să îl apeleze pentru a-și livra rezultatul. Verbul de ieșire propriu al unui mod este întotdeauna rezident — o rulare nu trebuie niciodată să caute apelul care îi produce livrabilul.
+Setul direct este format din instrumentele pe care le folosesc majoritatea rulărilor în primele lor ture și din cele pe care o rulare nu trebuie niciodată să le caute: `read`, `write`, `edit`, `search`, `find`, `bash` și `read_output`; `ask_user` și `task`; `todo_write`, `search_memory` și `send_message`; și orice verb pe care [modul](/ro-RO/manual/concepte/moduri/) curent trebuie să îl apeleze pentru a-și livra rezultatul. Verbul de ieșire propriu al unui mod este întotdeauna direct — o rulare nu trebuie niciodată să caute apelul care îi produce livrabilul. Un instrument câștigă un loc prin faptul că este folosit în majoritatea rulărilor, nu prin faptul că este important atunci când este folosit: fiecare nume din set este o definiție în fiecare tură a fiecărei rulări.
+
+### Scripturile ajung la rest
+
+Când serverul poate rula scripturi, fiecare rulare are și [`repl`](/ro-RO/manual/concepte/mod-cod/), primul în listă. Regula pentru restul catalogului este atunci următoarea:
+
+- un instrument pe care un script îl poate apela este accesibil **doar dintr-un script**: apare în indexul de nume, iar un script `repl` îl apelează ca `tools.<name>(args)` după ce îl caută cu `searchTools()` sau `describeTool()`, până când serverul nu poate rula scripturile rulării și atunci se încarcă la prima utilizare în schimb ([Când scripturile nu pot rula](/ro-RO/manual/concepte/mod-cod/#când-scripturile-nu-pot-rula));
+- un instrument pe care un script nu îl poate apela (`eval`, `task`, aprobările, delegarea și câteva altele) este **amânat**: se încarcă la prima utilizare, așa cum este descris mai jos;
+- `search_tools` este adăugat când ceva este amânat.
+
+O rulare fără `repl` primește același set direct, iar tot restul este amânat.
+
+Setul direct este același cu sau fără `repl`, intenționat. Agentul învață o singură suprafață, începutul fiecărei cereri conține aceleași instrumente în aceeași ordine, iar adăugarea lui `repl` nu schimbă nimic de care agentul se baza deja.
+
+Ce economisește: schema unui instrument disponibil doar din script nu este trimisă niciodată furnizorului, deci cele vreo sută de instrumente din afara setului direct costă doar numele lor. Un script care are nevoie de zece dintre ele nu plătește pentru niciuna dintre schemele lor, iar rezultatele sale intermediare nu intră niciodată în context.
+
+Ce costă: un instrument din afara setului direct necesită un script pentru a fi apelat, iar scriptul trebuie să caute mai întâi argumentele instrumentului. Pentru un apel rapid, acesta este un pas în plus pe care un apel direct nu l-ar avea nevoie. De aceea instrumentele pe care le apelează majoritatea rulărilor în primele lor ture rămân directe.
 
 ### Amânat nu înseamnă indisponibil
 
@@ -32,19 +48,21 @@ Aceasta este partea care face proiectarea sigură, nu doar ieftină. **Un instru
 
 Agentul vede numele în promptul său. Dacă apelează direct acel nume, harness-ul încarcă schema și rulează instrumentul în același pas — fără eroare, fără dus-întors. Modelul nu trebuie să știe că instrumentul a fost vreodată „descărcat”.
 
-Când agentul știe sarcina, dar nu știe numele, `search_tools` preia o descriere în limbaj natural („atribuie un tichet cuiva”), clasează întreaga suprafață a rulării și returnează potrivirile *cu schemele lor deja încărcate*, astfel încât chiar următoarea tură să poată apela una dintre ele. Dacă o căutare nu găsește nimic, spune asta direct și sugerează o formulare diferită sau o căutare mai largă — în mod deliberat, pentru că un agent care citește o căutare goală drept „această capacitate nu există” va inventa un substitut în loc să caute din nou.
+Când agentul știe sarcina, dar nu știe numele, `search_tools` preia o descriere în limbaj natural („atribuie un tichet cuiva”), clasează întreaga suprafață a rulării și returnează potrivirile *cu schemele lor deja încărcate*, astfel încât chiar următoarea tură să poată apela una dintre ele. O potrivire care poate fi apelată doar dintr-un script este returnată cu modul în care poate fi apelată dintr-un script, decât dacă scripturile rulării nu mai pot rula: atunci se încarcă ca orice altă potrivire. Dacă o căutare nu găsește nimic, spune asta direct și sugerează o formulare diferită sau o căutare mai largă — în mod deliberat, pentru că un agent care citește o căutare goală drept „această capacitate nu există” va inventa un substitut în loc să caute din nou.
 
 `search_tools` există doar în harness-ul integrat. Clienții MCP externi au în schimb `search_tool_bm25`, care clasează același index, dar doar descrie potrivirile — acei clienți au primit deja fiecare schemă din `tools/list`, așa că nu este nimic de încărcat.
 
-### Ce nu face niciodată amânarea
+### Ce nu face niciodată suprafața
 
-Amânarea se aplică **după** filtrul de instrumente al modului, niciodată în locul lui. Ascunde o schemă; nu poate dezvălui un instrument pe care modul l-a refuzat. Un instrument activat trece în continuare prin solicitarea de aprobare și prin [guardrail-urile de acțiune](/ro-RO/manual/concepte/guardrail-uri) exact ca unul rezident, iar un instrument nu poate încărca un nume care nu se afla de la început pe suprafața rulării.
+Amânarea și scripturile se aplică **după** filtrul de instrumente al modului, niciodată în locul lui. Ele ascund o schemă; nu pot dezvălui un instrument pe care modul l-a refuzat. Un instrument încărcat și un apel făcut de un script trec în continuare prin solicitarea de aprobare și prin [guardrail-urile de acțiune](/ro-RO/manual/concepte/guardrail-uri/) exact ca un apel direct, iar niciunul nu poate ajunge la un nume care nu era de la început pe suprafața rulării.
 
-Suprafața MCP pe care o văd clienții externi **nu** este afectată. `tools/list` returnează în continuare catalogul complet. O încercare anterioară de a-l reduce a stricat agenții de-a dreptul: clienții MCP validează numele instrumentelor față de propria listă memorată în cache și refuză orice nu apare în ea fără să întrebe vreodată serverul, așa că un instrument „ascuns, dar apelabil” era pur și simplu inaccesibil. Amânarea trăiește în harness, unde încărcarea unui instrument la mijlocul rulării este ceva ce harness-ul poate face cu adevărat.
+Suprafața MCP pe care o văd clienții externi **nu** este amânată. `tools/list` returnează catalogul complet, deoarece clienții MCP validează numele instrumentelor față de propria listă din cache și refuză orice nu apare în ea fără să întrebe vreodată serverul, astfel încât un instrument „ascuns, dar apelabil” ar fi pur și simplu inaccesibil. Amânarea trăiește în harness, unde încărcarea unui instrument la mijlocul rulării este ceva ce harness-ul poate face cu adevărat.
 
-### Dezactivarea
+O rulare de agent care ajunge la Control Center prin endpoint-ul său MCP, cât timp serverul poate rula scripturi, este singura excepție. `tools/list` ei conține `repl`, instrumentele directe și fiecare instrument pe care un script nu îl poate apela, iar restul le apelează din scripturi. Un apel direct către unul dintre acestea primește ca răspuns cum poate fi făcut dintr-un script.
 
-`--tool-deferral=off` (sau `CC_SERVER_TOOL_DEFERRAL=off`) face ca fiecare instrument admis să redevină rezident, producând exact cererile pe care le făcea serverul înainte să existe amânarea. Vezi [referința CLI `cc_server`](/ro-RO/manual/referinta/cc-server-cli).
+### Dezactivarea amânării
+
+`--tool-deferral=off` (sau `CC_SERVER_TOOL_DEFERRAL=off`) oprește amânarea: o rulare fără `repl` primește fiecare instrument admis complet, iar o rulare cu `repl` primește complet instrumentele pe care un script nu le poate apela, în timp ce restul rămân disponibile doar din script. Vezi [referința CLI `cc_server`](/ro-RO/manual/referinta/cc-server-cli/).
 
 ## Cache-ul prompturilor
 
@@ -64,7 +82,7 @@ Un provider permite un număr limitat de marcaje de cache, iar Control Center le
 
 | Marcaj                       | Acoperă                            | Durată de viață |
 | ---------------------------- | ---------------------------------- | --------------- |
-| Ultimul instrument **rezident** | Blocul de instrumente           | 1 oră           |
+| Ultimul instrument **direct**   | Blocul de instrumente           | 1 oră           |
 | Ultimul bloc de sistem       | Instrumente + prompt de sistem     | 1 oră           |
 | Coada turei precedente       | Istoricul până la ultima cerere    | 5 min           |
 | Coada turei curente          | Istoricul complet                  | 5 min           |
@@ -77,12 +95,12 @@ Prefixul de instrumente și sistem primește durata lungă de viață pentru că
 
 Subagenții de același tip produc prefixe de prompt identice octet cu octet, așa că ar trebui să citească o singură intrare de cache în loc să scrie fiecare a sa. Dar o intrare devine citibilă abia când cererea care a scris-o începe să răspundă, așa că un fan-out lansat dintr-o dată face ca fiecare copil să plătească suprataxa pentru un prefix pe care îl împart toți.
 
-Harness-ul lasă primul copil de o anumită formă să pornească, apoi îi eliberează pe frații lui imediat ce începe să transmită în flux. Așteptarea este limitată: un prim copil lent costă o potrivire în cache, niciodată fan-out-ul în sine. Din același motiv, fiecare subagent primește același set rezident de instrumente indiferent de profilul său — varierea lui pe profil ar fragmenta prefixul partajat fără niciun câștig, întrucât profilul a decis deja ce poate apela copilul.
+Harness-ul lasă primul copil de o anumită formă să pornească, apoi îi eliberează pe frații lui imediat ce începe să transmită în flux. Așteptarea este limitată: un prim copil lent costă o potrivire în cache, niciodată fan-out-ul în sine. Din același motiv, fiecare subagent primește același set direct de instrumente indiferent de profilul său — varierea lui pe profil ar fragmenta prefixul partajat fără niciun câștig, întrucât profilul a decis deja ce poate apela copilul.
 
 ## Cum se vede că funcționează
 
 Ambele jumătăți sunt observabile, nu presupuse:
 
-- **Exploratorul de context** al unei conversații raportează instrumentele rezidente, indexul amânat și cât *ar* costa fiecare schemă reținută, construite pe aceeași cale de cod pe care o folosește o rulare reală.
+- **Exploratorul de context** al unei conversații raportează instrumentele directe, indexul amânat și cât *ar* costa fiecare schemă reținută, construite pe aceeași cale de cod pe care o folosește o rulare reală.
 - Fiecare rulare consemnează ce instrumente amânate a încărcat și ce a declanșat asta, așa că o căutare care nu găsește nimic este vizibilă ca o ratare de recuperare, în loc să dispară într-un agent care face în tăcere ceva apropiat.
 - Observabilitate raportează **Rată cache** ca citiri din cache raportate la toți tokenii de prompt procesați, inclusiv scrierile în cache — o rulare care își reconstruiește mereu prefixul obține un scor mic, în loc să aibă unul ca o rulare care nu a avut niciodată nevoie de cache.

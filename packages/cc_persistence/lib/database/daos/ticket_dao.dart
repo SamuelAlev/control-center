@@ -155,6 +155,32 @@ class TicketDao extends DatabaseAccessor<WorkspaceDatabase>
             ..orderBy([(t) => OrderingTerm.desc(t.updatedAt)]))
           .watch();
 
+  /// The ids of the tickets of [workspaceId] that [delegatedByAgentId]
+  /// delegated from [conversationId] and that are not finished yet (status
+  /// not in [terminalStatuses]): work the agent is owed in that
+  /// conversation, sorted.
+  Future<List<String>> openDelegatedFrom(
+    String workspaceId, {
+    required String conversationId,
+    required String delegatedByAgentId,
+    required List<String> terminalStatuses,
+  }) async {
+    final rows =
+        await (selectOnly(ticketsTable)
+              ..addColumns([ticketsTable.id])
+              ..where(
+                ticketsTable.workspaceId.equals(workspaceId) &
+                    ticketsTable.delegatedFromConversationId.equals(
+                      conversationId,
+                    ) &
+                    ticketsTable.delegatedByAgentId.equals(delegatedByAgentId) &
+                    ticketsTable.status.isNotIn(terminalStatuses),
+              )
+              ..orderBy([OrderingTerm.asc(ticketsTable.id)]))
+            .get();
+    return [for (final row in rows) row.read(ticketsTable.id)!];
+  }
+
   /// Watches tickets in a workspace filtered by status.
   Stream<List<TicketsTableData>> watchByStatus(
     String workspaceId,

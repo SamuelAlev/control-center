@@ -146,6 +146,17 @@ print(json.dumps({
 </plist>
 ''');
     File('$scaffoldRoot/dsa_pub.pem').writeAsStringSync(dsaPubPem);
+    // The site changelog entry the update dialog links to.
+    File('$scaffoldRoot/docs/src/data/changelog.ts')
+      ..createSync(recursive: true)
+      ..writeAsStringSync('''
+export const releases = [
+  {
+    id: "v1-2-3",
+    version: "v1.2.3",
+  },
+];
+''');
   });
 
   tearDown(() {
@@ -192,6 +203,36 @@ print(json.dumps({
       '${tmp.path}/appcast-windows-arm64.xml',
     ).readAsStringSync();
     expect(arm, contains('sparkle:dsaSignature="'));
+  }, skip: skip);
+
+  test('every feed links its release notes to the site changelog entry', () async {
+    expect((await runScript()).exitCode, 0);
+
+    for (final feed in const [
+      'appcast.xml',
+      'appcast-windows.xml',
+      'appcast-windows-arm64.xml',
+    ]) {
+      final xml = File('${tmp.path}/$feed').readAsStringSync();
+      expect(
+        xml,
+        contains(
+          '<sparkle:releaseNotesLink>https://usectrl.dev/changelog#v1-2-3</sparkle:releaseNotesLink>',
+        ),
+        reason: feed,
+      );
+    }
+  }, skip: skip);
+
+  test('refuses when the site changelog has no entry for the version', () async {
+    File('$scaffoldRoot/docs/src/data/changelog.ts').writeAsStringSync('''
+export const releases = [{ id: "v1-2-2", version: "v1.2.2" }];
+''');
+    final result = await runScript();
+
+    expect(result.exitCode, isNot(0));
+    expect(result.stderr, contains('no changelog entry "v1-2-3"'));
+    expect(File('${tmp.path}/appcast.xml').existsSync(), isFalse);
   }, skip: skip);
 
   test('macOS stable releases are visible to the default Sparkle channel', () async {

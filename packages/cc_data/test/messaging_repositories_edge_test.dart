@@ -435,7 +435,6 @@ void main() {
         'spaces': [
           {
             'space_id': 'c1',
-            'last_agent_message': position,
             'conversations': [
               {'conversation_id': 'conv-a', 'last_agent_message': position},
               {'conversation_id': 'conv-b'},
@@ -448,19 +447,18 @@ void main() {
       ).watchSpaceActivity(_ws).first;
       final activity = list.single;
       expect(activity.lastAgentMessageByConversation.keys, ['conv-a']);
-      expect(
-        activity.lastAgentMessage,
-        FeedPosition(at: DateTime.utc(2026, 1, 2), seq: 41),
-      );
+      final newest = FeedPosition(at: DateTime.utc(2026, 1, 2), seq: 41);
+      expect(activity.lastAgentMessageByConversation['conv-a'], newest);
       // A read cursor in the same second but before the message leaves it
       // unread; one at the message itself does not.
       expect(
-        activity.unreadAfter(
+        activity.conversationUnread(
+          'conv-a',
           FeedPosition(at: DateTime.utc(2026, 1, 2), seq: 40),
         ),
         isTrue,
       );
-      expect(activity.unreadAfter(activity.lastAgentMessage), isFalse);
+      expect(activity.conversationUnread('conv-a', newest), isFalse);
     });
 
     test('getMessagePage delegates the window to the server', () async {

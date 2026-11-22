@@ -101,27 +101,6 @@ def _capture_figures():
         pass
 
 
-def _bridge(name, arguments=None):
-    """Calls one of the agent's own tools from inside a cell.
-
-    Rides the SAME pipe the cell results travel on rather than a loopback
-    socket: no port to open, no secret to mint, no egress rule to widen, and
-    the channel is authenticated by being the channel. The host pauses the
-    cell's inactivity timeout while this is outstanding.
-    """
-    _emit({"type": "bridge_call", "name": name, "arguments": arguments or {}})
-    line = sys.stdin.readline()
-    if not line:
-        raise RuntimeError("the host closed the bridge")
-    reply = json.loads(line)
-    if reply.get("is_error"):
-        raise RuntimeError(reply.get("content", "tool call failed"))
-    return reply.get("content", "")
-
-
-_state["tool"] = _bridge
-
-
 def _run(code):
     """Executes a cell, echoing its trailing expression like a notebook."""
     import ast

@@ -1,5 +1,6 @@
 import 'package:cc_domain/features/sandboxing/domain/host_execution_posture.dart';
 import 'package:cc_server_core/src/cc_server_config.dart';
+import 'package:cc_server_core/src/server_boot_refusal.dart';
 
 /// The startup line that states how far this server can be reached and who
 /// operates it, so an operator sees it without reading the configuration.
@@ -23,7 +24,10 @@ String describeServerExposure(
       : config.bindAny
       ? 'off (plaintext; a TLS proxy must front it)'
       : 'off';
-  final relay = config.signalingUrl.isEmpty ? 'off' : config.signalingUrl;
+  // The relay URL is the operator's text: shown printable.
+  final relay = config.signalingUrl.isEmpty
+      ? 'off'
+      : printableText(config.signalingUrl, max: 1024);
   final owner = ownerUserId == null || ownerUserId.isEmpty
       ? 'none'
       : 'recorded ($ownerUserId)';

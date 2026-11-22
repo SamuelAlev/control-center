@@ -286,6 +286,18 @@ const List<SettingsNavGroup> kSettingsNav = [
         route: settingsGuardrailsRoute,
       ),
       SettingsNavItem(
+        id: 'workspace.code_mode',
+        icon: AppIcons.code,
+        label: _codeModeLabel,
+        route: settingsCodeModeRoute,
+      ),
+      SettingsNavItem(
+        id: 'workspace.schedules',
+        icon: AppIcons.calendarClock,
+        label: _schedulesLabel,
+        route: settingsSchedulesRoute,
+      ),
+      SettingsNavItem(
         id: 'workspace.pipelines',
         icon: AppIcons.workflow,
         label: _pipelinesLabel,
@@ -423,6 +435,8 @@ String _environmentsLabel(AppLocalizations l) => l.environmentsTitle;
 String _skillsLabel(AppLocalizations l) => l.skills;
 String _memoryLabel(AppLocalizations l) => l.navMemory;
 String _permissionsLabel(AppLocalizations l) => l.agentPermissions;
+String _codeModeLabel(AppLocalizations l) => l.codeModeTitle;
+String _schedulesLabel(AppLocalizations l) => l.dispatchSettingsTitle;
 String _pipelinesLabel(AppLocalizations l) => l.pipelineTemplatesNav;
 
 String _connectionLabel(AppLocalizations l) => l.settingsServerConnection;

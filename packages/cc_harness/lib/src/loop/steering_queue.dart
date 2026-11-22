@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cc_harness/src/loop/steering_message.dart';
 
 /// In-memory three-lane FIFO for agent-loop injection. Steering/aside differ in
@@ -38,6 +40,37 @@ class SteeringQueue {
   /// arrive instead of waiting for a loop to ask.
   void Function()? onEnqueued;
 
+  final List<Completer<void>> _arrivalWaiters = [];
+
+  /// Completes when the next message enters any lane.
+  ///
+  /// For a loop that waits with no turn to run (parked on a background
+  /// command): a message a person or the server sends meanwhile ends the
+  /// wait. Unlike [onEnqueued] it has any number of listeners, each heard
+  /// once.
+  Future<void> nextArrival() {
+    final waiter = Completer<void>();
+    _arrivalWaiters.add(waiter);
+    return waiter.future;
+  }
+
+  void _arrived() {
+    onEnqueued?.call();
+    if (_arrivalWaiters.isEmpty) {
+      return;
+    }
+    final waiters = List<Completer<void>>.of(_arrivalWaiters);
+    _arrivalWaiters.clear();
+    for (final waiter in waiters) {
+      waiter.complete();
+    }
+  }
+
+  /// Whether this is a nested run's view of a parent's queue
+  /// ([nestedView]). A nested run's own notices must not go through a view:
+  /// what is enqueued there lands in the parent's lanes.
+  bool get isNestedView => false;
+
   /// Routes [message] into the lane named by its [SteeringMessage.channel].
   void enqueue(SteeringMessage message) {
     switch (message.channel) {
@@ -48,7 +81,7 @@ class SteeringQueue {
       case SteeringChannel.followUp:
         _push(_followUp, message);
     }
-    onEnqueued?.call();
+    _arrived();
   }
 
   /// Enqueues [message] at the FRONT of its lane, ahead of anything already
@@ -70,7 +103,7 @@ class SteeringQueue {
         _followUp.insert(0, message);
         _cap(_followUp);
     }
-    onEnqueued?.call();
+    _arrived();
   }
 
   /// Removes the first message (searching the steering lane, then aside, then
@@ -259,6 +292,12 @@ class _NestedSteeringView extends SteeringQueue {
     for (final message in _parent.peek(channel))
       if (_seen.add(message)) message,
   ];
+
+  @override
+  bool get isNestedView => true;
+
+  @override
+  Future<void> nextArrival() => _parent.nextArrival();
 
   @override
   void enqueue(SteeringMessage message) => _parent.enqueue(message);

@@ -2,7 +2,7 @@
 title: Skråstrekkommandoer
 description: Alle kommandoene du kan skrive i skrivefeltet, hva de gjør, og hvor de kjører.
 slug: nb-NO/handbok/referanse/skrastrekkommandoer
-sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
+sourceHash: 38430a6315b112c92a7806d1c28dff8a0285e363
 ---
 
 Kommandoer du skriver i skrivefeltet til et område. De faller i tre grupper etter hvor de virker, og forskjellen betyr noe: en **lokal** kommando reiser aldri som en melding, så den verken vises i transkriptet eller når fram til en agent.
@@ -21,23 +21,35 @@ Kommandoer du skriver i skrivefeltet til et område. De faller i tre grupper ett
 
 **Lokal → utsending.** Armer planmodus på samtalen: et fullt skrivebeskyttet worktree og en verktøyflate begrenset til `read`. Leveransen fra agenten er en plan, ikke en redigering. En bar `/plan` vipper bare modusen og reiser aldri som en melding; med en prompt er resten av linjen det som starter kjøringen.
 
-### `/goal <objective>`
+### `/goal [flags] <objective>`
 
-**Utsending.** Starter et autonomt mål som målsupervisoren sender ut på nytt på tvers av segmenter og omstarter.
+**Utsending.** Starter et varig mål: agenten arbeider med målet i segmenter, på tvers av omstarter, til serveren verifiserer at det er ferdig, en person lukker det, eller det når en grense. Se [Forfølg et mål](/nb-NO/handbok/slik-gjor-du/forfolg-et-mal/).
 
-Å skrive `/goal` med tekst først åpner **objektivintervjuet** — en kort runde som nekter å godta et utkast før det har alle fem: suksesskriterier en evaluator kan avgjøre uten skjønn, en eksakt verifiseringskommando, et tak på antall forsøk, omfangsgrenser og stoppbetingelser. Hvert steg tilbyr *Hopp over og kjør som skrevet*: intervjuet er en standard, ikke en sperre.
+Å skrive `/goal` med tekst først åpner **objektivintervjuet** — en kort runde som spør etter suksesskriterier en evaluator kan avgjøre uten skjønn, sjekkene som må bestå, omfangsgrenser og stoppbetingelser, og deretter tilbyr en egen kontrollagent, nye segmenter og å svare på sine egne spørsmål. Hvert steg tilbyr *Hopp over og kjør som skrevet*: intervjuet er en standard, ikke en sperre.
 
-`/goal pause`, `/goal resume` og `/goal drop` er ikke skråstrekkommandoer. Pause, fortsett og stopp finnes i samtalens målliste i sidepanelet. Startflaggene på selve målet er `--budget <dollars>`, `--max <N>` (kjøringsbudsjett) og `--days <N>` (frist). Et mål som har nådd kostnadstaket, gjenopptas bare ved å heve taket, fra den samme kontrollen i sidepanelet.
+Flagg kan stå hvor som helst i meldingen: `--budget <dollars>` (målets budsjett, 50 som standard), `--max <N>` (et segmenttak), `--days <N>` (en frist), `--check "<command>"` (opptil 5), `--checker <agent>`, `--fresh` og `--unattended wait|assume`. Et ukjent eller gjentatt flagg avvises, og utkastet blir liggende i skriveboksen. Et tall først i målet er en del av målet. Seksjonene `## Success criteria`, `## Boundaries`, `## Stop conditions` og `## Checks` blir målets kontrakt.
+
+`/goal pause`, `/goal resume` og `/goal drop` er ikke skråstrekkommandoer. Pause, fortsett og stopp finnes på målkortet i samtalens **Generelt**-panel og på målets side (sidepanel → **Mål**). Å fortsette, og å heve budsjettet, tilhører personen som startet målet.
 
 :::note[Hvorfor den i det hele tatt avbryter]
 Et autonomt mål er det ene stedet der en vag oppdragsbeskrivelse virkelig koster. Kjøringen jobber i timevis med et mål der ingen har definert «ferdig», og rapporterer så suksess på egne premisser. Fem spørsmål er billigere enn én nattlig kjøring som ble ferdig når den selv følte seg ferdig.
 :::
 
-### `/loop [budget] [task]`
+### `/loop [every <interval>] [flags] <prompt>`
 
-**Utsending.** Jobber iterativt til den er ferdig. Godtar et tak: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**Utsending.** Lager en tidsplan som vekker agenten med ledeteksten nå og så igjen: hvert intervall (minst 60 sekunder), eller, uten `every`, etter en forsinkelse agenten velger hver gang (1 til 60 minutter). `--max <N>` begrenser kjøringene, `--days <N>` avslutter den (30 dager som standard), `--budget <dollars>` begrenser forbruket. Se [Tidsplaner og vekkinger](/nb-NO/handbok/slik-gjor-du/tidsplaner-vekkinger/).
 
-Et token som *ser ut* som en grense (starter med et siffer eller et fortegn) og ikke lar seg tolke, er en hard feil. Prosa er bare prosa, så `/loop keep going until the tests pass` er en ubegrenset løkke med en prompt på samme linje i stedet for en feiltolkning.
+`/loop` starter ikke et mål, og et tall først er ikke et antall kjøringer.
+
+### `/schedule <when> [flags] <prompt>`
+
+**Utsending.** Lager en tidsplan som vekker agenten senere: `in 2h`, `at 09:00` (neste slike tidspunkt i arbeidsområdets tidssone), `at <ISO time>` eller `cron "0 9 * * 1-5"` (anførselstegnene er valgfrie). Tar imot de samme `--max`, `--days` og `--budget` som `/loop`. Den venter på sitt første tidspunkt.
+
+### `/refine`
+
+**Utsending.** Ber om en kort, skrivebeskyttet gjennomgang av samtalens arbeid, som kan foreslå forbedringer i minne, policyer, agentnotater eller ferdigheter. Forslagene venter på siden **Forbedringer** til noen godtar dem. Høyst én gjennomgang per samtale hvert 20. minutt.
+
+`/goal`, `/loop`, `/schedule` og `/refine` virker bare i en melding du skriver selv; fra en agent, et pipeline eller en vekking er den samme teksten en vanlig melding. En `/goal`, `/loop` eller `/schedule` som ikke kan leses, beholder utkastet ditt, og en linje over teksten i skriveboksen sier hva som er galt.
 
 ### `/vibe [task]`
 

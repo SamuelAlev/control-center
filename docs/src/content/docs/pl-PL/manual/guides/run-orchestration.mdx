@@ -2,7 +2,7 @@
 title: Uruchom orkiestrację
 description: Poproś orkiestratora o plan, przejrzyj i edytuj go w Plan Studio, zatwierdź raz i pozwól wygenerowanemu potokowi wykonać pracę.
 slug: pl-PL/podrecznik/poradniki/uruchamianie-orkiestracji
-sourceHash: 086301be6c1957f6336294720967813c3050ed25
+sourceHash: cc4390cbac6c2122dd24c23bcef20693f40121bb
 ---
 
 Ten poradnik pokazuje, jak zamienić jeden duży cel w plan całego zespołu, który
@@ -61,21 +61,13 @@ Zanim zatwierdzisz, naciśnij **Oszacuj** na pasku zatwierdzania, aby poznać za
 kosztu, czasu trwania i zasięgu zmian. Pełny opis edytora znajdziesz w
 [Pracuj w Plan Studio](/pl-PL/podrecznik/poradniki/plan-studio/).
 
-:::note[Budżet nie jest limitem wydatków]
-Budżet propozycji jest porównywany z _szacunkiem_ na pasku zatwierdzania: gdy górna
-granica szacunku go przekracza, suma zmienia kolor na czerwony wraz z ostrzeżeniem o
-przekroczeniu budżetu. Podczas wykonywania planu nic nie sprawdza wydatków, więc nie
-zatrzyma ani nie unieważni uruchomienia. Aby faktycznie wstrzymać wydatki, użyj polityk
-budżetu dla poszczególnych agentów — zobacz
-[Zarządzaj kosztami](/pl-PL/podrecznik/poradniki/zarzadzanie-kosztami/).
+:::note[Budżet wstrzymuje uruchomienie]
+Budżet propozycji jest porównywany z _szacunkiem_ na pasku zatwierdzania: gdy górna granica szacunku go przekracza, suma zmienia kolor na czerwony wraz z ostrzeżeniem o przekroczeniu budżetu. Podczas wykonywania planu serwer sprawdza wydatki przed każdym nowym krokiem. Po osiągnięciu budżetu uruchomienie jest wstrzymywane i nic nowego nie startuje; kroki już działające kończą się. Osoba, która zażądała uruchomienia, dostaje powiadomienie i naciska **Podnieś limit** na stronie uruchomienia potoku, aby kontynuować. Zobacz [Zarządzaj kosztami](/pl-PL/podrecznik/poradniki/zarzadzanie-kosztami/).
 :::
 
 ## Krok 3: Zatwierdź
 
-Zatwierdź plan z karty w rozmowie albo z paska zatwierdzania w Plan Studio. **To
-jedyna decyzja, jaką podejmujesz.** Zatwierdzanie należy wyłącznie do operatora — nie
-ma do niego narzędzia MCP, więc agent może proponować i poprawiać plan, ale nigdy nie
-zatwierdzi własnego.
+Zatwierdź plan z karty w rozmowie albo z paska zatwierdzania w Plan Studio. **To jedyna decyzja, jaką podejmujesz.** Zatwierdzanie należy wyłącznie do operatora — nie ma do niego narzędzia MCP, więc agent może proponować i poprawiać plan, ale nigdy nie zatwierdzi własnego. Zatwierdzanie wymaga dostępu do zapisu do repozytoriów przestrzeni, a uruchomienie działa wtedy w imieniu osoby, która je zatwierdziła.
 
 Od tego momentu deterministyczny materializator (czysta funkcja, bez LLM) zamienia
 propozycję w prawdziwy [potok](/pl-PL/podrecznik/koncepcje/potoki/) i tworzy
@@ -113,12 +105,7 @@ zgłoszenie nadrzędne zostaje oznaczone jako ukończone — następnie status z
 Naciśnij **Anuluj orkiestrację** na karcie w rozmowie albo **Anuluj uruchomienie** na
 pasku zatwierdzania w Plan Studio. Anulowanie usuwa wykonywaną w danym momencie pracę.
 
-Orkiestracja kończy się niepowodzeniem, gdy nie powiedzie się materializacja albo gdy
-nie powiedzie się uruchomienie wygenerowanego potoku (badanie, dyskusja, synteza lub
-utrwalenie — te kroki nie kontynuują po błędzie). Wygenerowane kroki **pracy** zawsze
-kontynuują po błędzie, więc jedno nieudane zgłoszenie podrzędne nie powoduje
-niepowodzenia uruchomienia. Nie istnieje ścieżka niepowodzenia z powodu przekroczenia
-budżetu ani próg „wszystkie zgłoszenia podrzędne zawiodły”.
+Orkiestracja kończy się niepowodzeniem, gdy nie powiedzie się materializacja albo gdy nie powiedzie się uruchomienie wygenerowanego potoku (badanie, dyskusja, synteza lub utrwalenie — te kroki nie kontynuują po błędzie). Wygenerowane kroki **pracy** zawsze kontynuują po błędzie, więc jedno nieudane zgłoszenie podrzędne nie powoduje niepowodzenia uruchomienia. Osiągnięcie budżetu wstrzymuje uruchomienie zamiast je kończyć niepowodzeniem, i nie istnieje próg „wszystkie zgłoszenia podrzędne zawiodły”.
 
 ## Powiązane poradniki
 

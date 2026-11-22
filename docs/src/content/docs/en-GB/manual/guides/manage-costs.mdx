@@ -2,7 +2,7 @@
 title: Manage costs
 description: See what your agents are spending, cap an autonomous run and cut token use.
 slug: en-GB/manual/guides/manage-costs
-sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
+sourceHash: 040176a3840653a57c823ce4ff7e3ed9cf071c07
 ---
 
 This guide shows you how to see what agent runs cost and how to cap an autonomous run.
@@ -40,21 +40,30 @@ The **Usage & cost** card on this page shows the last seven days of observed spe
 
 ## Cap an autonomous run
 
-Two slash commands, typed in a space's composer, are the only runs with a spend cap:
+These runs have a spend cap. A run you start by sending a message does not.
 
 ```
 /goal ship the auth refactor --budget 20
-/loop keep the flaky tests green
+/loop every 1h --budget 10 keep the flaky tests green
 ```
 
-- Each segment of a `/goal` or `/loop` run stops when its priced spend reaches **500 cents ($5.00)**. At 80% of that the loop first steers the model to wrap up and leave a clean handoff, so it does not die mid-task.
-- A whole durable goal is capped at **5000 cents ($50.00)** unless you pass `--budget <dollars>`. The supervisor threads the goal's _remaining_ budget into each segment, so an explicit budget is never overshot by a whole segment.
-- `--days N` adds a wall-clock deadline and `--max N` a run-count ceiling. Both are opt-in; without them the goal is bounded only by cost.
-- A goal that hits its wall stops at `budgetExhausted` and can only be resumed by raising the budget.
+| Run | Cap |
+| --- | --- |
+| A goal's segment | 5 dollars, or what is left of the goal's budget if that is less |
+| A goal | 50 dollars unless you pass `--budget <dollars>` |
+| A goal's review | 2 dollars, or what is left, charged to the goal |
+| A run a schedule or watch starts | 5 dollars; the schedule stops at its own cost cap (50 dollars unless you pass `--budget`, or the workspace's default) |
+| The review after a goal, or `/refine` | 1 dollar |
 
-Because the cap is priced, a model the catalogue cannot price never reaches it. Such a run is bounded instead by the doom-loop repetition guard, the supervisor's give-up after three consecutive failures and you.
+- A capped run stops when its priced spend reaches the cap, on the built-in harness, Claude Code and ACP agents. At 90% the built-in harness and Claude Code first steer the agent to wrap up and leave a clean handoff, so it does not die mid-task. An ACP agent is cancelled at the cap.
+- The goal's _remaining_ budget is threaded into each segment, so an explicit budget is never overshot by a whole segment.
+- `--days N` adds a deadline and `--max N` a segment ceiling. Both are opt-in; without them the goal is bounded by cost and by its no-progress stop.
+- A goal that hits its budget stops at **Budget exhausted** and resumes only with a higher budget, which only the person who started it can give.
+- A pipeline run held at its orchestration's cap waits until its requester presses **Raise cap** on the pipeline run's page. The new cap must be above the old one and what was spent, at most 1,000 dollars, and a cap is never removed.
 
-A message in a space, an @-mention, or a pipeline step has no spend cap. The run ends when the model stops, when you stop it, or when the doom-loop guard steers it.
+Because the cap is priced, a model the catalogue cannot price never reaches it. Such a run is bounded instead by the doom-loop repetition guard, a goal's no-progress stop and its give-up after three consecutive failures, and you.
+
+A message in a space, an @-mention, or a pipeline step outside a capped orchestration has no spend cap of its own. The run ends when the model stops, when you stop it, or when the doom-loop guard steers it.
 
 ## Cut token use
 

@@ -2,7 +2,7 @@
 title: Triar sua caixa de entrada
 description: Trabalhe na caixa de entrada unificada — resolva o que bloqueia você, revise o que espera por você e acompanhe suas próprias PRs.
 slug: pt-BR/manual/guias/triar-caixa-de-entrada
-sourceHash: 8b1cedaef10bca4c784509cf67c82493c1baab35
+sourceHash: 78a60272d46bc865d25bd7bc98796a89978e3e7c
 ---
 
 Este guia mostra como trabalhar na caixa de entrada: a superfície única que
@@ -79,9 +79,9 @@ Cada cartão da faixa tem uma única próxima ação:
    conexão, a sequência de falhas consecutivas e o último resultado. Só a falha
    mais recente por fornecedor aparece na caixa de entrada, então uma
    sincronização recuperada limpa o cartão.
-3. Os cartões desaparecem sozinhos quando o estado subjacente se resolve (o
-   agente é respondido, a sincronização se recupera) — não há nada para
-   dispensar manualmente.
+3. Se um cartão disser **Objetivo aguarda revisão** ou **Objetivo precisa de você**, clique em **Revisar** — você chega à página do objetivo, onde aprova, retoma ou responde ao que ele aguarda. Retomar é para a pessoa que iniciou o objetivo. Aprovar um objetivo que um pipeline iniciou é para a pessoa que iniciou essa execução (veja [Perseguir um objetivo](/pt-BR/manual/guias/perseguir-objetivo/)). Só aparecem objetivos em que você pode agir: um objetivo aguardando revisão, ou um que você iniciou e que precisa de uma pessoa.
+4. Se um cartão disser **Melhoria proposta**, clique em **Revisar** — você chega à proposta, onde aceita ou rejeita a melhoria.
+3. Os cartões desaparecem sozinhos quando o estado subjacente se resolve (o agente é respondido, a sincronização se recupera, o objetivo avança, a proposta é decidida) — não há nada para dispensar manualmente.
 
 :::note[Estas são confirmações por turno, não aprovações de governança]
 Um cartão de "aprovação de agente" é um agente em execução que pausa para pedir

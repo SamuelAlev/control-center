@@ -84,6 +84,16 @@ class ModeToolPolicy {
     // Claude and Pi. Omitting it is how a run reported the tool missing and
     // guessed instead of asking.
     'ask_user',
+    // Code mode's script tool. It has no effects of its own: every effect is
+    // a nested call the gate checks under its own name, against this same
+    // allow-list, so admitting it in every mode widens nothing.
+    'repl',
+    // Waiting instead of polling, in every mode: a wake starts a later run of
+    // the same agent in the same conversation, under that conversation's
+    // mode, and touches nothing else.
+    'wake_me',
+    'list_wakes',
+    'cancel_wake',
   };
 
   /// Tools available to any participant in a review-mode conversation.
@@ -107,6 +117,7 @@ class ModeToolPolicy {
     // Communication
     'send_message',
     'get_messages',
+    'agent_activity',
     'consult_agent',
     // Context gathering (read-only)
     'list_repos',
@@ -153,6 +164,7 @@ class ModeToolPolicy {
     // Communication
     'send_message',
     'get_messages',
+    'agent_activity',
     'consult_agent',
     // Read-only context
     'list_repos',
@@ -196,6 +208,7 @@ class ModeToolPolicy {
     'run_playbook',
     'send_message',
     'get_messages',
+    'agent_activity',
     'consult_agent',
     'list_repos',
     'list_agents',
@@ -222,82 +235,64 @@ class ModeToolPolicy {
     Mode.orchestrate => orchestrateAllowed,
   };
 
-  /// The loop's own working vocabulary: the built-in tools every run reaches
-  /// for regardless of what it is doing.
+  /// The tools a run calls directly, with their definitions in every request,
+  /// whether or not it has `repl`. Every other admitted tool is reached from
+  /// a script when a script may call it, and is deferred (found through
+  /// `search_tools`, loaded on first use) when it may not.
   ///
-  /// These stay resident because they are the ones a run uses in its first few
-  /// turns, and because they are cheap — the ~24k the tool block used to cost
-  /// was almost entirely the ~110 bridged MCP tools, not these. Names that a
-  /// given run never materializes (no project root ⇒ no `lsp`, no space ⇒ no
-  /// `ask_user`) are simply inert here.
-  static const Set<String> residentBuiltins = {
+  /// Kept to what most runs use in their first turns and what must never need
+  /// a script: the file and shell loop, talking to a person and delegating,
+  /// the checklist, recall and reporting back. Every name here is a
+  /// definition on every turn of every run, and selection measurably degrades
+  /// past 30 to 50 definitions, so a tool earns its place by being used in
+  /// most runs, not by being important when it is used. Names a run never
+  /// materializes (no space means no `ask_user`) are inert.
+  ///
+  /// `todo_read` is not here: `todo_write` already returns the whole list,
+  /// which is all the next `todo_write` needs (an item is updated by sending
+  /// its content unchanged), so reading it back is the occasional call after
+  /// a context reset.
+  static const Set<String> directTools = {
+    // The file and shell loop.
     'read',
     'write',
     'edit',
-    'apply_patch',
     'search',
     'find',
-    // The fff-backed fuzzy file finder. Its tool is named `search_files`, not
-    // `file_search` — a resident name that matches nothing is inert, so the
-    // typo silently deferred a core built-in.
-    'search_files',
     'bash',
-    'web_fetch',
-    'web_search',
-    'checkpoint',
-    'rewind',
-    'ask_user',
-    'lsp',
-    'lsp_rename',
-    'ast_grep',
-    'ast_edit',
-    'resolve',
     'read_output',
+    // People and delegation.
+    'ask_user',
     'task',
+    // Used by most runs.
+    'todo_write',
+    'search_memory',
+    'send_message',
   };
 
-  /// How an agent finds the tools that are not resident.
+  /// How an agent finds the tools that are deferred.
   ///
   /// `search_tools` is the harness's own search-AND-load verb; `list_my_tools`
-  /// browses the whole surface. Both MUST be resident: a deferred surface whose
-  /// only way in is itself deferred is a surface with no way in.
+  /// browses the whole surface. Neither may itself be deferred: a deferred
+  /// surface whose only way in is itself deferred is a surface with no way in.
+  /// A run with `repl` gets `search_tools` when something is deferred and no
+  /// `list_my_tools`: its scripts' `ALL_TOOLS` and the name index in its
+  /// prompt replace it.
   static const Set<String> residentDiscovery = {
     'search_tools',
     'list_my_tools',
   };
 
-  /// The handful of bridged MCP tools worth their schema on every request.
-  ///
-  /// Kept deliberately short. Every name added here is ~200 tokens on every
-  /// turn of every run forever, and the point of the resident set is to stay
-  /// under the 30-50 tool band where selection accuracy is measurably best —
-  /// so a tool earns a place by being used in MOST runs, not by being
-  /// important when it is used.
-  ///
-  /// `todo_write`/`todo_read` are here because the system prompt instructs
-  /// checklist hygiene on every multi-step run, so a deferred checklist would
-  /// be discovered on essentially every run anyway; `search_memory` because
-  /// recall is a standard opening move; `send_message` because a run in a
-  /// space reports back through it.
-  static const Set<String> residentMcpTools = {
-    'todo_write',
-    'todo_read',
-    'search_memory',
-    'send_message',
-  };
-
-  /// Tool names sent to the model up front in [mode]. Everything else the mode
-  /// admits stays callable but carries no schema until first use.
+  /// The tools a run in [mode] calls directly: [directTools] and the mode's
+  /// own loop. Everything else the mode admits is script-only or deferred.
   ///
   /// A mode's own required and pinned verbs are NOT listed here — dispatch
   /// unions them in from the mode's capability profile, because a run must
   /// never have to discover the one call that delivers its deliverable.
-  static Set<String> residentNamesFor(Mode mode) => {
-    ...residentBuiltins,
-    ...residentDiscovery,
-    ...residentMcpTools,
-    // A mode's core loop is resident IN that mode and deferred everywhere
-    // else. `add_review_node` is the heaviest definition in the catalogue and
+  static Set<String> directNamesFor(Mode mode) => {
+    ...directTools,
+    // A mode's core loop is direct IN that mode and script-only or
+    // deferred everywhere else. `add_review_node` is the heaviest definition in the catalogue and
     // a review agent calls it on nearly every turn, so it belongs in exactly
     // one mode's resident set rather than in all four or in none.
     ...switch (mode) {

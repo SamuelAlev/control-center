@@ -1,23 +1,41 @@
 import 'dart:convert';
 
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
+import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
 import 'package:cc_domain/features/pipelines/domain/ports/dispatch_reviewers_port.dart';
 import 'package:cc_harness/tools.dart';
+import 'package:cc_mcp/src/mcp_scoped_tool.dart';
 
 /// Fans out a list of reviewer specs to matching agents in parallel.
 ///
-/// Thin adapter over [DispatchReviewersPort]. Both this MCP tool and the
-/// `pr_review` pipeline step body invoke the same service so dispatch logic
-/// (skill matching, concurrency, space participant management) lives in
-/// exactly one place.
-class DispatchReviewersTool extends McpTool {
+/// Thin adapter over [DispatchReviewersPort], which owns the dispatch logic
+/// (skill matching, concurrency, space participant management). An attested
+/// run's call passes that run as the reviewers' starter
+/// (`DispatchReviewersPort.dispatch`'s `startedByRunId`), so their runs stay
+/// in the calling run's chain of wakes; a caller that proved no run passes
+/// none.
+class DispatchReviewersTool extends McpScopedTool {
   /// Creates a new [DispatchReviewersTool].
   DispatchReviewersTool({required this._service});
 
   final DispatchReviewersPort _service;
 
+  /// The in-process harness's call carries its run's attested scope.
+  @override
+  Future<CallResult> callForRun(
+    Map<String, dynamic> arguments,
+    McpCallScope scope, {
+    Future<void>? abandoned,
+  }) =>
+      callScoped(arguments, McpCallContext(scope: scope), abandoned: abandoned);
+
   @override
   String get name => 'dispatch_reviewers';
+
+  /// Not for scripts: it starts reviewer agent runs (see
+  /// [McpTool.scriptCallable]).
+  @override
+  bool get scriptCallable => false;
   @override
   Set<ActionClass> get actionClasses => const {ActionClass.processSpawn};
 
@@ -77,7 +95,11 @@ class DispatchReviewersTool extends McpTool {
   };
 
   @override
-  Future<CallResult> run(Map<String, dynamic> arguments) async {
+  Future<CallResult> runScoped(
+    Map<String, dynamic> arguments,
+    McpCallContext context, {
+    Future<void>? abandoned,
+  }) async {
     final spaceId = arguments['space_id'];
     if (spaceId is! String) {
       return CallResult.error(
@@ -101,9 +123,13 @@ class DispatchReviewersTool extends McpTool {
       );
     }
 
+    final scope = context.scope;
     final result = await _service.dispatch(
       spaceId: spaceId,
       workspaceId: workspaceId,
+      startedByRunId: scope != null && scope.attested
+          ? scope.runLogId
+          : null,
       reviewers: reviewers
           .whereType<Map>()
           .map((m) => m.cast<String, dynamic>())

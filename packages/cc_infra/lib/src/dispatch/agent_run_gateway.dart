@@ -9,6 +9,8 @@ import 'package:cc_domain/core/domain/entities/git_repo_info.dart'
 import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
+import 'package:cc_domain/features/code_mode/domain/value_objects/script_approval_budget.dart';
+import 'package:cc_domain/features/dispatch/domain/modes/read_only_run_profile.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/commit_signing_port.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
@@ -23,10 +25,14 @@ import 'package:cc_domain/features/pr_review/domain/ports/agent_pull_request_por
     show kAgentShellPrCreateRefusal;
 import 'package:cc_domain/features/sandboxing/domain/network_baseline.dart'
     show kBaselineAllowedDomains;
-import 'package:cc_harness/tools.dart' show ActionClass;
+import 'package:cc_harness/tools.dart' show ActionClass, PersonWaitListener;
 import 'package:cc_infra/src/dispatch/agent_environment_gateway.dart';
 import 'package:cc_infra/src/dispatch/pushed_commit_inspector.dart';
 import 'package:cc_infra/src/dispatch/read_only_worktrees.dart';
+import 'package:cc_infra/src/harness/harness_command_runner.dart'
+    show CommandWait, CommandWaitRelay;
+import 'package:cc_infra/src/harness/script_approval_check.dart'
+    show checkWithinScriptApprovals;
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/network/forge_git_auth.dart'
     show forgeGitBasicAuthorization;
@@ -38,132 +44,24 @@ part 'agent_run_git_objects.dart';
 part 'agent_run_native_tools.dart';
 part 'agent_run_signing.dart';
 part 'agent_run_tool_hooks.dart';
+part 'agent_run_call_waits.dart';
+part 'agent_run_environment_commands.dart';
 part 'agent_run_fetch.dart';
 part 'agent_run_view.dart';
-
-/// Who a registered agent run is, as the action policy needs to know it.
-class AgentRunGrant {
-  /// Creates an [AgentRunGrant].
-  const AgentRunGrant({
-    required this.workspaceId,
-    required this.conversationId,
-    this.agentId,
-    this.spaceId,
-    this.mode = Mode.chat,
-    this.actingUserId,
-    this.runId,
-    this.repos = const [],
-    this.identity,
-    this.signProgram,
-    this.worktreeRoot,
-    this.sharedWorktreeRoots = const [],
-    this.readOnlyWorktrees = const [],
-    this.runnerStateDirs = const [],
-    this.autonomy,
-    this.personalMcp = false,
-  });
-
-  /// Workspace the run belongs to — every rule is resolved against it.
-  final String workspaceId;
-
-  /// Conversation the run serves; names minted credentials.
-  final String conversationId;
-
-  /// The agent, for agent-scoped rules.
-  final String? agentId;
-
-  /// The space, for space-scoped rules and the approval prompt's target.
-  final String? spaceId;
-
-  /// The run's mode: read-only modes deny pushes outright.
-  final Mode mode;
-
-  /// The member the run acts for; bounds the forge credential to their reach.
-  final String? actingUserId;
-
-  /// Whether the run may use the server owner's personal MCP servers through
-  /// the Control Center MCP endpoint: decided once, when the run starts, from
-  /// whether the owner is accountable for it (`HostExecutionGate`).
-  final bool personalMcp;
-
-  /// The dispatch id, threaded into the audit trail.
-  final String? runId;
-
-  /// The repositories the run works on, on every forge: its space's
-  /// checkouts, or the checkout it started in. It fetches these through the
-  /// gateway on a credential the server keeps ([AgentRunLease.fetchGitConfig]),
-  /// its `gh` reads the GitHub ones ([AgentRunForgeTokens]), and a push is
-  /// held to the same repo check wherever it goes.
-  final List<ForgeRemote> repos;
-
-  /// [owner]/[name] on [forge] as the run's own repository spells it, or null
-  /// when the run does not work on it. Forge paths are case-insensitive.
-  ForgeRemote? repoOn(ForgeHost forge, String owner, String name) {
-    for (final repo in repos) {
-      if (repo.forge == forge &&
-          repo.owner.toLowerCase() == owner.toLowerCase() &&
-          repo.name.toLowerCase() == name.toLowerCase()) {
-        return repo;
-      }
-    }
-    return null;
-  }
-
-  /// The run's GitHub repositories: what its `gh` may read.
-  List<ForgeRemote> get gitHubRepos => [
-    for (final repo in repos)
-      if (repo.forge == ForgeHost.github) repo,
-  ];
-
-  /// The run's one GitHub repository, when it works on exactly one: what
-  /// "this run's repository" means to `gh` and `open_pull_request` when they
-  /// were not told which.
-  ForgeRemote? get soleGitHubRepo {
-    final github = gitHubRepos;
-    return github.length == 1 ? github.single : null;
-  }
-
-  /// Who the run's commits name, whom they credit and which key signs them.
-  /// Every pushed commit must match it, and only commits that do are signed;
-  /// null pushes no commits and signs nothing.
-  final AgentCommitIdentity? identity;
-
-  /// The program the run's git signs with ([AgentRunSigning.shim], written
-  /// where the run can execute it). Set exactly when [identity] has a
-  /// signing key: the run's commits are then signed through the gateway.
-  final String? signProgram;
-
-  /// The run's working tree. A native write inside it is the agent's own work.
-  final String? worktreeRoot;
-
-  /// The space's shared worktrees the run's overlay links to (`repos/`).
-  ///
-  /// A write through the overlay's `repos` symlink resolves to these, outside
-  /// [worktreeRoot] — so without them every edit of a checked-out repo was
-  /// classed as a write outside the worktree and asked about.
-  final List<String> sharedWorktreeRoots;
-
-  /// The worktrees in [sharedWorktreeRoots] the person this run acts for may
-  /// not change ([ReadOnlyWorktrees]). Claude Code's own write tools are
-  /// refused there before any policy check.
-  final List<String> readOnlyWorktrees;
-
-  /// Reads the run's space autonomy dial, per decision (the operator can turn
-  /// it mid-run). Null applies the policy alone.
-  final Future<AutonomyLevel?> Function()? autonomy;
-
-  /// Directories the runner keeps its own state in, such as a Claude account's
-  /// config dir. Plan mode writes its plan file there.
-  final List<String> runnerStateDirs;
-}
+part 'agent_run_grant.dart';
 
 /// A registered run's handle on the gateway: what to put in its environment
 /// and how to point Claude Code's hooks at it.
-class AgentRunLease {
+///
+/// It is also where a harness `bash` command registers its tool call's
+/// person-wait listener ([register]), so a push the gateway holds for
+/// approval stops that call's clocks instead of running them down.
+class AgentRunLease implements CommandWaitRelay {
   AgentRunLease._(
     this.secret,
     this.base,
     this.client, {
+    required this._gateway,
     this.repos = const [],
     this.signingKey,
     this.signProgram,
@@ -174,6 +72,18 @@ class AgentRunLease {
 
   /// Header the gateway authenticates a run by.
   static const String tokenHeader = McpCallScope.runGrantHeader;
+
+  /// Env var carrying one command's call token ([register]) to the processes
+  /// that command starts. The agent run client sends it as [callTokenHeader].
+  static const String callTokenEnvKey = 'CC_AGENT_CALL_TOKEN';
+
+  /// Header naming the command a request comes from, so the gateway can tell
+  /// that command's tool call when it asks a person about the request. It
+  /// authenticates nothing: [tokenHeader] does, and a missing, unknown or
+  /// foreign call token changes nothing about what is decided.
+  static const String callTokenHeader = 'X-CC-Agent-Call';
+
+  final AgentRunGateway _gateway;
 
   /// Env var carrying [base] to the agent process, for the run's shims.
   static const String gatewayEnvKey = 'CC_AGENT_GATEWAY';
@@ -252,9 +162,12 @@ class AgentRunLease {
       'ssh://git@github.com/',
     ])
       ('url.${_gitBase}github.com/.pushInsteadOf', origin),
-    ('http.$_gitBase.extraHeader', '$tokenHeader: $secret'),
+    (_gatewayHeaderKey, '$tokenHeader: $secret'),
     ...AgentRunSigning.gitConfig(signingKey, signProgram),
   ];
+
+  /// The git setting whose values git sends as headers to the gateway only.
+  String get _gatewayHeaderKey => 'http.$_gitBase.extraHeader';
 
   /// `git -c` pairs that send the run's fetches of the repositories it works
   /// on through the gateway, on every forge.
@@ -280,6 +193,27 @@ class AgentRunLease {
         ])
           ('url.$_gitBase${repo.forge.gitHost}/$path.insteadOf', origin),
   ];
+
+  /// Registers [listener] for one command of this run, which runs with
+  /// [env] (this lease's [environment] among it).
+  ///
+  /// The registration lasts until [CommandWait.release]. While it does, a
+  /// request carrying its token on this run's secret that the gateway asks a
+  /// person about tells [listener] `true` when the ask starts and `false`
+  /// when it ends, and [decided] hears what the gateway decided about it
+  /// ([CommandWaitRelay.register]). A closed lease registers nothing.
+  @override
+  CommandWait register(
+    PersonWaitListener listener,
+    Map<String, String> env, {
+    required void Function(bool approved) decided,
+  }) => _gateway._registerCallWait(this, listener, env, decided);
+
+  /// Holds a running script's [approvals] against every card the gateway
+  /// raises for this run. See [CommandWaitRelay.holdScriptApprovals].
+  @override
+  void Function() holdScriptApprovals(ScriptApprovalBudget approvals) =>
+      _gateway._holdScriptApprovals(secret, approvals);
 
   /// Environment for the agent process: the secret plus [gitConfig] and
   /// [fetchGitConfig] appended to whatever `GIT_CONFIG_*` entries [env]
@@ -314,7 +248,14 @@ class AgentRunLease {
   /// A missing lease installs a blocking hook, never an unguarded Bash tool.
   /// Only Bash: the file and web tools stay usable, because the OS sandbox
   /// bounds them without help from the gateway and Bash it cannot.
-  static String claudeHookSettings(AgentRunLease? lease) {
+  ///
+  /// A [readOnly] run's hook matches every tool, so the gateway admits only
+  /// what `ReadOnlyRunProfile.admitsClaudeTool` passes; without a lease
+  /// that hook blocks every tool.
+  static String claudeHookSettings(
+    AgentRunLease? lease, {
+    required bool readOnly,
+  }) {
     final command = lease == null
         ? "printf '%s\\n' 'Control Center permission gateway is unavailable.' >&2; exit 2"
         : '''
@@ -326,12 +267,35 @@ esac
 printf '%s\\n' '$_checkFailed' >&2
 exit 2
 ''';
+    final turnHooks = lease == null
+        ? null
+        : lease._gateway._grants[lease.secret]?.claudeTurnHooks;
+    // The owner's `stop` and `preCompact` scripts, through the gateway like
+    // PreToolUse (the scripts live on the host). Neither fails closed: a
+    // client that cannot reach the gateway exits 0, which lets the turn end
+    // and the compaction run without extra instructions.
+    Map<String, Object?> turnHook(String verb) => {
+      'hooks': [
+        {
+          'type': 'command',
+          'command':
+              '$gatewayEnvKey='
+              '${AgentRunClientLauncher.shellQuote('${lease!.base}')} '
+              '${lease.client.shellCommand} $verb',
+          'timeout': AgentRunGateway.turnHookTimeout.inSeconds,
+        },
+      ],
+    };
     return jsonEncode({
       'disableAllHooks': false,
       'hooks': {
         'PreToolUse': [
           {
-            'matcher': lease == null ? 'Bash' : guardedClaudeTools,
+            'matcher': readOnly
+                ? '*'
+                : lease == null
+                ? 'Bash'
+                : guardedClaudeTools,
             'hooks': [
               {
                 'type': 'command',
@@ -341,6 +305,9 @@ exit 2
             ],
           },
         ],
+        if (turnHooks?.hasStop ?? false) 'Stop': [turnHook('stop')],
+        if (turnHooks?.hasPreCompact ?? false)
+          'PreCompact': [turnHook('pre-compact')],
       },
     });
   }
@@ -491,6 +458,10 @@ class AgentRunGateway {
   /// Control Center Connect lane, a member without push, no GitHub App.
   final Map<String, Map<_ForgeTokenKey, String>> _tokenRefusals = {};
 
+  /// secret → the routes whose refusal of a run that may not use them was
+  /// already logged ([_ToolHooks._logRouteRefusal]): once per run and route.
+  final Map<String, Set<String>> _routeRefusalsLogged = {};
+
   /// secret → withdrawals of approvals still waiting on a human, completed
   /// when the run's lease closes so its prompts come down with it.
   final Map<String, Set<Completer<void>>> _pendingAsks = {};
@@ -499,6 +470,14 @@ class AgentRunGateway {
   /// repository: what "the run's own branch" means when it asks the server
   /// to open a pull request.
   final Map<String, Set<AgentRunPushedBranch>> _pushedBranches = {};
+
+  /// secret → call token → the person-wait listener of the command that
+  /// token was handed to ([AgentRunLease.register]), while it runs.
+  final Map<String, Map<String, _CallWait>> _callWaits = {};
+
+  /// secret → the approval budgets of the run's code mode scripts in flight
+  /// ([AgentRunLease.holdScriptApprovals]).
+  final Map<String, List<ScriptApprovalBudget>> _scriptApprovals = {};
 
   static final Random _random = Random.secure();
 
@@ -529,6 +508,7 @@ class AgentRunGateway {
       secret,
       base,
       client,
+      gateway: this,
       repos: grant.repos,
       signingKey: signingKey,
       signProgram: grant.signProgram,
@@ -536,9 +516,15 @@ class AgentRunGateway {
   }
 
   /// The MCP scope [secret] proves, or null when it names no open run.
+  /// A run whose agent does not call the MCP endpoint
+  /// ([AgentRunGrant.mcpEndpoint]) proves none, and the refusal is logged
+  /// once for the run.
   McpCallScope? mcpScopeFor(String secret) {
     final grant = _grants[secret];
-    return grant == null
+    if (grant != null && !grant.mcpEndpoint) {
+      _logRouteRefusal(secret, grant, '/mcp');
+    }
+    return grant == null || !grant.mcpEndpoint
         ? null
         : McpCallScope(
             workspaceId: grant.workspaceId,
@@ -547,6 +533,9 @@ class AgentRunGateway {
             spaceId: grant.spaceId,
             attested: true,
             personalMcp: grant.personalMcp,
+            runId: grant.runId,
+            runLogId: grant.runLogId,
+            readOnly: grant.readOnly,
           );
   }
 
@@ -584,6 +573,12 @@ class AgentRunGateway {
     _signatures.remove(lease.secret);
     _tokenMints.remove(lease.secret);
     _tokenRefusals.remove(lease.secret);
+    _routeRefusalsLogged.remove(lease.secret);
+    for (final wait
+        in _callWaits.remove(lease.secret)?.values ?? const <_CallWait>[]) {
+      wait.release();
+    }
+    _scriptApprovals.remove(lease.secret);
     for (final ask
         in _pendingAsks.remove(lease.secret) ?? const <Completer<void>>{}) {
       if (!ask.isCompleted) {
@@ -604,6 +599,20 @@ class AgentRunGateway {
   /// run's identity keeps its signing key only when it does.
   bool get signs => _signing != null;
 
+  /// Claude Code's PreToolUse hook ([AgentRunGrant.claudeHook]).
+  static const String hookPath = '/agent/hooks/pre-tool-use';
+
+  /// Claude Code's Stop hook ([AgentRunGrant.claudeTurnHooks]).
+  static const String stopHookPath = '/agent/hooks/stop';
+
+  /// Claude Code's PreCompact hook ([AgentRunGrant.claudeTurnHooks]).
+  static const String preCompactHookPath = '/agent/hooks/pre-compact';
+
+  /// How long Claude Code waits for the `Stop` and `PreCompact` hooks: the
+  /// owner's script has 30 seconds, and the agent run client gives up a
+  /// little before this.
+  static const Duration turnHookTimeout = Duration(seconds: 90);
+
   /// Whether [path] is one this gateway serves.
   static bool owns(String path) => path.startsWith('/agent/');
 
@@ -621,8 +630,14 @@ class AgentRunGateway {
     }
     final path = request.uri.path;
     try {
-      if (path == '/agent/hooks/pre-tool-use' && request.method == 'POST') {
+      if (path == hookPath && request.method == 'POST') {
         return await _preToolUse(request, grant, secret);
+      }
+      if (path == stopHookPath && request.method == 'POST') {
+        return await _stopHook(request, grant, secret);
+      }
+      if (path == preCompactHookPath && request.method == 'POST') {
+        return await _preCompactHook(request, grant, secret);
       }
       if (path == AgentRunSigning.path && request.method == 'POST') {
         return await _sign(request, grant, secret);
@@ -634,7 +649,7 @@ class AgentRunGateway {
         return await _forgeToken(request, grant, secret);
       }
       if (path == envPath && request.method == 'POST') {
-        return await _environmentCommand(request, grant);
+        return await _environmentCommand(request, grant, secret);
       }
       return await _plain(request, HttpStatus.notFound, 'Not found.');
     } on Object catch (e, st) {
@@ -662,63 +677,6 @@ class AgentRunGateway {
 
   /// Serves environment commands. Set once the environment service exists.
   AgentEnvironmentGateway? environments;
-
-  Future<void> _environmentCommand(
-    HttpRequest request,
-    AgentRunGrant grant,
-  ) async {
-    final environments = this.environments;
-    final spaceId = grant.spaceId;
-    final tool = request.headers.value('X-CC-Env-Tool');
-    if (environments == null || spaceId == null || tool == null) {
-      return _plain(
-        request,
-        HttpStatus.notFound,
-        'This run has no environment.',
-      );
-    }
-    final body = await _readCapped(request, _maxEnvBodyBytes);
-    if (body == null) {
-      return _plain(
-        request,
-        HttpStatus.requestEntityTooLarge,
-        'Command too long.',
-      );
-    }
-    final text = utf8.decode(body, allowMalformed: true);
-    final arguments = text.isEmpty
-        ? const <String>[]
-        : (text.split('\u0000')..removeLast());
-    final result = await environments.handle(
-      AgentEnvironmentCaller(
-        workspaceId: grant.workspaceId,
-        spaceId: spaceId,
-        conversationId: grant.conversationId,
-        runId: grant.runId,
-        agentId: grant.agentId,
-        mode: grant.mode,
-        actingUserId: grant.actingUserId,
-        autonomy: await _autonomyOf(grant),
-      ),
-      tool,
-      arguments,
-    );
-    final stderr = utf8.encode(result.stderr);
-    // Headers are bounded, and stderr's tail is the useful part.
-    final tail = stderr.length > _maxEnvStderrBytes
-        ? stderr.sublist(stderr.length - _maxEnvStderrBytes)
-        : stderr;
-    request.response
-      ..statusCode = HttpStatus.ok
-      ..headers.set('X-CC-Exit-Code', '${result.exitCode}')
-      ..headers.set('X-CC-Stderr', base64.encode(tail))
-      ..headers.contentType = ContentType.text
-      ..write(result.stdout);
-    await request.response.close();
-  }
-
-  static const int _maxEnvBodyBytes = 1024 * 1024;
-  static const int _maxEnvStderrBytes = 6 * 1024;
 
   /// The run's autonomy dial, or null when it has none or the read failed
   /// (the policy alone then decides, which is the fail-closed default).
@@ -801,7 +759,7 @@ class AgentRunGateway {
           spaceId: grant.spaceId,
           actionSummary: 'git push to $owner/$name',
           onBehalfOfUserId: grant.actingUserId,
-          runId: grant.runId,
+          runId: grant.runLogId,
         );
         return _plain(
           request,
@@ -886,19 +844,7 @@ class AgentRunGateway {
       final verdict =
           await _answeredAtShell(grant, secret, refs, pushRequest, summary)
           ? const GuardVerdict.allow(prompted: true)
-          : await _guard.check(
-              workspaceId: grant.workspaceId,
-              classes: const {ActionClass.gitPush},
-              spaceId: grant.spaceId,
-              conversationId: grant.conversationId,
-              agentId: grant.agentId,
-              mode: grant.mode,
-              actionSummary: summary,
-              onBehalfOfUserId: grant.actingUserId,
-              runId: grant.runId,
-              request: pushRequest,
-              autonomy: await _autonomyOf(grant),
-            );
+          : await _pushVerdict(grant, secret, request, pushRequest, summary);
       if (!verdict.allowed) {
         // Drain what git is still sending before answering, so it reads the
         // rejection instead of a reset connection.
@@ -1103,9 +1049,8 @@ class AgentRunGateway {
   ///
   /// Only an ask is answered: a deny still denies. An approval that named its
   /// branches covers pushes to exactly those. One that could not name them
-  /// ("destination branch not specified") covers only the general push ask —
-  /// a branch-specific rule (e.g. "ask before pushing to `main`") still asks,
-  /// because the operator never saw that branch.
+  /// ("destination branch not specified") covers only the general push ask:
+  /// a rule on a branch (`main`) still asks, as the operator never saw it.
   Future<bool> _answeredAtShell(
     AgentRunGrant grant,
     String secret,
@@ -1145,7 +1090,8 @@ class AgentRunGateway {
       actionSummary: '$summary (approved at the shell prompt)',
       prompted: true,
       onBehalfOfUserId: grant.actingUserId,
-      runId: grant.runId,
+      runId: grant.runLogId,
+      command: summary,
     );
     return true;
   }

@@ -2,7 +2,7 @@
 title: Använd planläge
 description: Växla en yta till planläge, få en typad plan och godkänn den till arbete som körs.
 slug: sv-SE/handbok/how-to-guider/planlage
-sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
+sourceHash: accf49606e5e8597d3ea76e3274f08d3854996dc
 ---
 
 Den här guiden visar hur du får fram en strukturerad plan från en agent innan
@@ -110,10 +110,7 @@ planläge och agenten får inte agera. När begäran har godkänts växlar agent
 `exit_plan_mode`-anrop ytan från planläge till agentläge och låser upp dess muterande
 verktyg. En avvisning låter den öppna en ny begäran mot en reviderad plan.
 
-För att lämna planläget växlar du composerns dropdown-meny (eller Shift+Tab), eller
-godkänner den inskickade planen. `exit_plan_mode` öppnar ett varaktigt godkännande
-som avgörs med MCP-verktyget `decide_approval`. Överlägget för räcken för blockerade
-verktygsanrop är en annan kö i minnet och bär inte planutgångsbegäranden.
+För att lämna planläget växlar du composerns dropdown-meny (eller Shift+Tab), eller godkänner den inskickade planen. `exit_plan_mode` öppnar ett varaktigt godkännande, som en agentkörning avgör med MCP-verktyget `decide_approval`. Överlägget för räcken för blockerade verktygsanrop är en annan kö i minnet och bär inte planutgångsbegäranden.
 
 ## Planläge i ett pipelinesteg
 

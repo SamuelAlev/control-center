@@ -38,6 +38,12 @@ Paths below omit the `/workspaces/:workspaceId` prefix.
 | `/pipelines`                            | —                                         | Pipeline run list                                                                                                                                                        |
 | `/pipelines/run`                        | `?templateId=<id>`                        | Manual run launcher                                                                                                                                                      |
 | `/pipelines/:runId`                     | —                                         | Pipeline run detail (step timeline)                                                                                                                                      |
+| `/goals` | — | Goals list, grouped as waiting for review, open and ended |
+| `/goals/:goalId` | `?edit=contract` | One goal: now, what done means, verification, schedules and wakes; `edit=contract` opens the contract editor on a paused goal |
+| `/schedules` | — | Schedules and watches, grouped by status, with **New schedule** |
+| `/schedules/:ruleId` | — | One schedule: note, details, recent wakes and runs |
+| `/improvements` | — | Improvement proposals, grouped by status |
+| `/improvements/:proposalId` | — | One proposal: what changes, evidence, evaluation and decision |
 | `/plans`                                | —                                         | Plan Studio hub: active plans, plan documents, playbooks                                                                                                                 |
 | `/plans/:kind/:id`                      | —                                         | Plan Studio for one plan; `kind` is `orchestration` or `document`                                                                                                        |
 | `/meetings`                             | —                                         | Meetings list                                                                                                                                                            |
@@ -97,6 +103,7 @@ Settings paths are namespaced by **scope** — `you/`, `workspace/`, `server/` �
 | `/settings/workspace/skills`       | Skill configuration                                                                                 |
 | `/settings/memory`                 | Workspace memory: facts, policies, knowledge graph                                                  |
 | `/settings/workspace/permissions`  | Agent permissions: guardrail matrix and what-if probe                                               |
+| `/settings/workspace/schedules`    | Schedule limits, the time zone for cron schedules and the digest, and how long server-started runs wait for an answer (admins edit; members read) |
 | `/settings/pipelines`              | Pipeline templates                                                                                  |
 | `/settings/pipelines/:templateId`  | Pipeline template editor (drag-and-drop canvas)                                                     |
 

@@ -377,6 +377,8 @@ class _FolderRowState extends ConsumerState<_FolderRow> {
                 CcSidebarItem(
                   icon: widget.expanded ? AppIcons.folderOpen : AppIcons.folder,
                   label: folder.name,
+                  // As tall as the space cards it holds.
+                  extent: kCcSidebarItemExtent + 2 * kSpaceSidebarCardInset,
                   onPressed: widget.onToggle,
                   badge: Padding(
                     padding: const EdgeInsetsDirectional.only(

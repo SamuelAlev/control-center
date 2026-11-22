@@ -2,23 +2,33 @@
 title: Cykl życia wysyłania agentów
 description: Co dzieje się między nadejściem wiadomości a zamknięciem dziennika uruchomienia — składanie promptu, drzewa robocze, tożsamość, co ogranicza uruchomienie i jak jego wynik jest zapisywany rzetelnie.
 slug: pl-PL/podrecznik/koncepcje/cykl-zycia-wysylania
-sourceHash: 13e7fe3ed86c8659c5fec818e0b89737241e2b9d
+sourceHash: 07c46e22e30f1a10e64b7fb949c78bdae9747efa
 ---
 
 ## Czym jest wysłanie
 
 Wysłanie to jedno uruchomienie jednego agenta, w jednej rozmowie, na jednym adapterze. Wszystko, co się z nim wiąże, dzieje się na `cc_server`: klient wysyła wiadomość, a potem obserwuje, jak napływają zdarzenia. Żaden klient nie ma własnej ścieżki wysyłania.
 
-Agenci są budzeni z sześciu powodów, które uruchomienie niesie jako swój **kontekst wybudzenia**, dzięki czemu agent wie, _dlaczego_ został obudzony:
+Każde uruchomienie niesie **kontekst wybudzenia**, który mówi _dlaczego_ agent się budzi. Uruchomienie, które zaczynasz, wysyłając wiadomość, to `userMessage`; każde uruchomienie, które serwer zaczyna sam, zaczyna się jako trwałe **wybudzenie** w kolejce obszaru roboczego i niesie powód wybudzenia (zob. [Harmonogramy i wybudzenia](/pl-PL/podrecznik/poradniki/harmonogramy-i-wybudzenia/)):
 
 | Powód wybudzenia | Wyzwalacz                                                    |
-| ---------------- | ------------------------------------------------------------ |
-| `userMessage`    | Ktoś wysłał wiadomość w przestrzeni lub wspomniał agenta     |
+| -------------------- | ------- |
+| `userMessage`    | Ktoś wysłał wiadomość w przestrzeni                          |
 | `assignment`     | Zgłoszenie zostało przypisane do agenta                      |
 | `pipelineStep`   | Krok potoku je wysłał                                        |
-| `childCompleted` | Zgłoszenie podrzędne zostało ukończone                       |
-| `followUp`       | Zaplanowane przypomnienie o kontynuacji                      |
-| `recovery`       | Ścieżka odzyskiwania wysłała ponownie po awarii              |
+| `childCompleted` | Zdelegowane lub podrzędne zgłoszenie zostało ukończone albo zakończyło się uruchomienie członka zespołu |
+| `schedule` | Uruchomił się harmonogram lub pętla |
+| `watch` | Coś, na co nasłuchuje obserwacja, się wydarzyło (sprawdzenia pull requestu, recenzja, środowisko, zgłoszenie, uruchomienie potoku) |
+| `goalContinuation` | Następny segment celu |
+| `goalVerification` | Sprawdzenia lub recenzja celu uznały, że cel nie jest jeszcze gotowy |
+| `goalReview` | Tylko do odczytu recenzja twierdzenia celu, że jest gotowy |
+| `peerMessage` | Inny agent wysłał mu wiadomość lub pytanie, został @-wspomniany albo jest kontrolerem przestrzeni |
+| `peerReply`      | Odpowiedź na pytanie, które zadał innemu agentowi            |
+| `limitReset` | Limit użycia dostawcy, na którym się zatrzymał, został zresetowany |
+| `improvementReview` | Recenzja po zweryfikowanym celu albo `/refine` |
+| `recovery` | Praca, którą przerwał restart serwera lub awaria |
+
+Wybudzenie trafia do żywego uruchomienia agenta w tej rozmowie, gdy uruchomienie przyjmuje dane wejściowe i działa w imieniu tej samej osoby; w przeciwnym razie czeka, aż to uruchomienie się zakończy, i zaczyna własne. Polecenia slash są odczytywane tylko w wiadomości wpisanej przez osobę; w każdym innym uruchomieniu ten sam tekst jest zwykłą wiadomością.
 
 Kontekst wybudzenia niesie identyfikatory związane z powodem — zgłoszenie, przestrzeń, wiadomość, uruchomienie potoku — i są one wstrzykiwane do środowiska i promptu agenta.
 
@@ -104,17 +114,17 @@ Celowo **nigdzie nie ma limitu tur**. Twardy limit iteracji zabija uzasadnioną 
 - **model sam się zatrzyma**;
 - **człowiek go zatrzyma** albo przejmie rozmowę (co wstrzymuje wbudowany harness na następnej czystej granicy tury — uruchomienie Claude Code, które nie ma bezpiecznej granicy, zostaje zamiast tego zatrzymane);
 - **zadziała watchdog ciszy.** Brak danych wyjściowych przez próg czasu i sesja jest kończona niepowodzeniem `silentRun`. Domyślnie 15 minut, w trybach z przewagą odczytu (przegląd i plan) spada do 10; agent może go nadpisać w zakresie od 1 do 240 minut. Watchdog jest uzbrajany, gdy proces potomny zgłosi swój PID, więc obejmuje CLI Claude Code — **nie** wbudowany harness, który niczego nie uruchamia;
-- **zadziała limit kosztów** — ale tylko dla poleceń autonomicznych.
+- **zadziała limit kosztów** — w segmentach celu i recenzjach, uruchomieniach harmonogramów i obserwacji, recenzji usprawnienia oraz uruchomieniach potoku w orkiestracji z limitem.
 
 Zabezpieczenie przed pętlą zagłady nie kończy uruchomienia: trzy identyczne wywołania narzędzi pod rząd i pętla _kieruje_ agenta ku zmianie podejścia.
 
 :::note[Zwykła tura nie ma limitu kosztów]
-Guardrail kosztów w ramach sesji jest podłączony tylko dla `/goal` i `/loop`; każde inne uruchomienie nie przekazuje żadnego budżetu. Dla tych poleceń jeden segment bez nadzoru może domyślnie spalić 500 centów (5,00 USD), z miękkim nakierowaniem przy 80%, proszącym agenta o czyste domknięcie przed twardym zatrzymaniem, oraz trwałym budżetem celu wynoszącym 5000 centów (50,00 USD) w skali segmentów. Jawny `/goal --budget` nigdy nie zostaje przekroczony o cały segment.
+Uruchomienie, które zaczynasz wiadomością, nie ma żadnego budżetu. Segment celu może wydać 5 dolarów albo tyle, ile zostało z budżetu celu (domyślnie 50 dolarów), jeśli to mniej; recenzja celu 2 dolary; uruchomienie, które rozpoczął harmonogram lub obserwacja, 5 dolarów; recenzja usprawnienia 1 dolar. Przy 90% wbudowany harness i Claude Code kierują agenta do czystego zakończenia przed twardym zatrzymaniem; agent ACP jest anulowany przy limicie. Zobacz [Zarządzaj kosztami](/pl-PL/podrecznik/poradniki/zarzadzanie-kosztami/#ustaw-limit-autonomicznego-uruchomienia).
 :::
 
 Podsumowując: zwykła interaktywna tura we wbudowanym harnessie nie ma limitu tur, limitu kosztów ani watchdoga ciszy. Kończy się, gdy model się zatrzyma albo gdy zatrzyma go człowiek. To świadomy kompromis — alternatywy zabijają uzasadnioną długą pracę — ale oznacza to, że interaktywne uruchomienie bez nadzoru ogranicza wyłącznie osąd samego modelu.
 
-W trakcie uruchomienia wiadomość wysłana do działającego agenta trafia do kolejki jako **sterowanie** i jest opróżniana na następnej granicy tury, więc możesz nakierować uruchomienie bez zabijania go. Sterowanie, wstrzymywanie, podagenci i kontrakt wykonania to funkcje wbudowanego harnessu; Claude Code nie ma żadnej z nich.
+W trakcie uruchomienia wiadomość wysłana do działającego agenta trafia do kolejki jako **sterowanie** i jest opróżniana na następnej granicy tury, więc możesz nakierować uruchomienie bez zabijania go. Uruchomienie tylko do odczytu, na przykład przegląd celu, nie przyjmuje żadnego sterowania w czasie pracy, a sterowanie uruchomieniem wykonywanym dla kogoś innego wymaga dostępu do zapisu do repozytoriów przestrzeni. Sterowanie, wstrzymywanie, podagenci i kontrakt wykonania to funkcje wbudowanego harnessu; Claude Code nie ma żadnej z nich.
 
 ## Jak rejestrowane jest uruchomienie
 
@@ -130,11 +140,11 @@ Gdy uruchomienie kończy się bez rezultatu wymaganego przez jego tryb — uruch
 Jest to celowe. Zmiana statusu poruszyłaby maszyny stanów zgłoszeń i potoków, które nie mają nic wspólnego z brakującym artefaktem. Oznacza to też, że sam zapis „status: completed” nigdy nie wystarcza, by uznać uruchomienie za udane — czytaj podsumowanie.
 :::
 
-Zamknięcie uruchomienia publikuje `AgentRunCompleted` i wiele od niego zależy: sumowanie kosztów potoku, wznowienie kroku potoku, który czekał na to uruchomienie, ukończenie powiązanego zgłoszenia, zmapowanie orkiestracji na stan końcowy, decyzja nadzorcy celu o kontynuacji lub zatrzymaniu, rola kontrolera i ocena budżetu po uruchomieniu. Lista obecności pojawia się osobno, obserwując ostatnie dzienniki uruchomień, a nie samo zdarzenie. Powiadomienia „agent ukończył pracę” nie ma na tej liście: zdarzenie pojawia się, gdy kończy się strumień procesu, zanim odpowiedź zostanie zapisana, więc powiadomieniem jest `MessageReceived` danej tury, publikowane po utrwaleniu wiadomości.
+Gdy końcowy stan uruchomienia zostanie zapisany, serwer publikuje `AgentRunSettled` dokładnie raz, z podaniem, dlaczego uruchomienie się zakończyło (`completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` lub `serverStopped`), i wiele rzeczy od tego zależy: sumowanie kosztów potoku, wznowienie kroku potoku, który czekał na to uruchomienie, ukończenie powiązanego zgłoszenia, zmapowanie orkiestracji na stan końcowy, decyzja nadzorcy celu o kontynuacji lub zatrzymaniu, odpowiedź na pytanie, które zadał inny agent, następne uruchomienie pętli z samodzielnym tempem, wstrzymanie przy limicie użycia, rola kontrolera i ocena budżetu po uruchomieniu. Uruchomienie przerwane przez zatrzymanie serwera (`serverStopped`) nigdy nie jest traktowane jako błąd; praca wznawia się po restarcie. `AgentRunCompleted` nadal jest publikowane, wcześniej, tylko dla mostu pull requestów i analityki. Lista obecności pojawia się osobno, obserwując ostatnie dzienniki uruchomień, a nie samo zdarzenie. Powiadomienia „agent ukończył pracę” nie ma na tej liście: zdarzenie pojawia się, gdy kończy się strumień procesu, zanim odpowiedź zostanie zapisana, więc powiadomieniem jest `MessageReceived` danej tury, publikowane po utrwaleniu wiadomości.
 
 ## Budżety, po fakcie
 
-Egzekwowanie budżetu jest _reakcją_, a nie bramką. Gdy uruchomienie się zakończy, ewaluator porównuje wydatki agenta od początku miesiąca z jego obowiązującym pułapem (powiązana polityka budżetowa, jeśli istnieje, w przeciwnym razie własna miesięczna kwota agenta; zero oznacza brak limitu). Przekroczenie miękkiego progu zapisuje incydent ostrzegawczy; wyczerpanie budżetu zapisuje incydent krytyczny i przełącza status cyklu życia agenta na `paused` na schemacie organizacyjnym. Wysyłanie nadal przyjmuje pracę od tego agenta. Wyzwalacz potoku `BudgetThresholdCrossed` może rozpocząć dalszą pracę na podstawie tego samego zdarzenia.
+Egzekwowanie budżetu jest _reakcją_, a nie bramką. Gdy uruchomienie się zakończy, ewaluator porównuje wydatki agenta od początku miesiąca z jego obowiązującym pułapem (powiązana polityka budżetowa, jeśli istnieje, w przeciwnym razie własna miesięczna kwota agenta; zero oznacza brak limitu). Przekroczenie miękkiego progu zapisuje incydent ostrzegawczy; wyczerpanie budżetu zapisuje incydent krytyczny i przełącza status cyklu życia agenta na `paused` na schemacie organizacyjnym. Wysyłanie nadal przyjmuje pracę, którą wysyłasz do tego agenta, ale wybudzenia dla niego (harmonogramy, segmenty celów, odpowiedzi) czekają, gdy jest wstrzymany, najdłużej 7 dni. Wyzwalacz potoku `BudgetThresholdCrossed` może rozpocząć dalszą pracę na podstawie tego samego zdarzenia.
 
 ## Rodowód ponowień
 
@@ -147,4 +157,5 @@ Każdy dziennik uruchomienia może nieść rodowód ponowień — identyfikator 
 - [Guardraile](/pl-PL/podrecznik/koncepcje/guardraile/): polityka klas efektów, przez którą przechodzi każde bramkowane wywołanie
 - [Sandbox i bezpieczeństwo](/pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo/): pełna historia izolacji
 - [Wieloosobowość](/pl-PL/podrecznik/koncepcje/wieloosobowosc/): sterowanie, przejmowanie i suwak autonomii
-- [Zdarzenia domenowe](/pl-PL/podrecznik/koncepcje/zdarzenia-domenowe/): co uruchamia `AgentRunCompleted`
+- [Zdarzenia domenowe](/pl-PL/podrecznik/koncepcje/zdarzenia-domenowe/): co uruchamia `AgentRunSettled`
+- [Realizuj cel](/pl-PL/podrecznik/poradniki/realizuj-cel/) i [Harmonogramy i wybudzenia](/pl-PL/podrecznik/poradniki/harmonogramy-i-wybudzenia/): uruchomienia, które serwer zaczyna sam

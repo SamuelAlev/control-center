@@ -2,10 +2,10 @@
 title: Beépített ügynökeszközök
 description: Az az eszközfelület, amelyet a beépített harness ad egy ügynöknek – nyelvi szerver, strukturális keresés, hibakereső, kernelek és worker-vezérlés –, minden művelettel és annak argumentumaival.
 slug: hu-HU/kezikonyv/referencia/ugynokeszkozok
-sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
+sourceHash: e99183fd4b257a60f94444101e1d39a7d6c77249
 ---
 
-Ezek azok a **szerverhez kötött** eszközök, amelyeket a beépített ügynök-futtatókörnyezet közvetlenül regisztrál – nyelvi szerver, strukturális keresés, hibakereső, kernelek, kérdések és worker-vezérlés –, szemben az általa behidalazott [MCP-eszközökkel](/hu-HU/kezikonyv/referencia/mcp-eszkozok/) és a harness futtatókörnyezetéből származó általános fájl-, kereső- és shelleszközökkel. Ezek nincsenek benne az MCP-jegyzékben: egy külső MCP-kliens nem látja őket, mert mindegyik egy élő szerveroldali erőforráshoz van kötve – egy nyelviszerver-folyamathoz, egy hibakereső adapterhez, egy értelmezőhöz –, amely egyetlen futtatáshoz tartozik.
+Ezek azok a **szerverhez kötött** eszközök, amelyeket a beépített ügynök-futtatókörnyezet közvetlenül regisztrál – nyelvi szerver, strukturális keresés, hibakereső, kernelek, kódmód-szkriptek, kérdések és worker-vezérlés –, szemben az általa behidalazott [MCP-eszközökkel](/hu-HU/kezikonyv/referencia/mcp-eszkozok/) és a harness futtatókörnyezetéből származó általános fájl-, kereső- és shelleszközökkel. Ezek nincsenek benne az MCP-jegyzékben: egy külső MCP-kliens nem látja őket, mert mindegyik egy élő szerveroldali erőforráshoz van kötve – egy nyelviszerver-folyamathoz, egy hibakereső adapterhez, egy értelmezőhöz –, amely egyetlen futtatáshoz tartozik.
 
 Az itteni eszközök csak akkor kerülnek regisztrálásra, ha a mögöttes erőforrásuk be van kötve a futtatáshoz – egy nyelviszerver- vagy hibakereső-felügyelő, egy tree-sitter-parser, egy kernelgyár, egy kérdésport, egy vibe-névsor. Az, hogy *ebben a checkoutban* észlelhető-e nyelvi szerver vagy hibakereső adapter, külön, későbbi ellenőrzés (`status` / `adapters`): ezek az eszközök a felületen maradnak, hogy az ügynök megkérdezhesse, miért nem használható semmi, ahelyett hogy találgatna.
 
@@ -15,9 +15,23 @@ Minden eszköz deklarál egy szintet, és a szint dönti el, **mely felületek l
 
 | Szint   | Jelentés                               | Eszközök itt                                       |
 | ------- | -------------------------------------- | -------------------------------------------------- |
-| `read`  | Nincs mellékhatás                      | `lsp`, `ast_grep`, `ask_user`, az öt `vibe_*`      |
+| `read`  | Nincs mellékhatás                      | `lsp`, `ast_grep`, `ask_user`, `repl`, az öt `vibe_*` |
 | `write` | Fájlokat módosít                       | `lsp_rename`, `ast_edit`, `resolve`                |
 | `exec`  | Elindít vagy vezérel egy folyamatot     | `debug`, `eval`                                    |
+
+## Közvetlen, csak szkriptből vagy első használatkor betöltve
+
+Ha a szerver tud szkripteket futtatni, a futtatás néhány eszközt közvetlenül hív, a többit pedig egy [`repl`](#repl--szkript-futtatása-amely-hívja-az-eszközeit) szkriptből éri el; a teljes szabályért lásd: [Kódmód](/hu-HU/kezikonyv/fogalmak/kodmod/#mely-eszközöket-hívja-az-ügynök-közvetlenül). Az ezen az oldalon szereplő eszközöknél:
+
+| Eszköz | `repl`-lel | `repl` nélkül |
+| ---- | ----------- | -------------- |
+| `repl` | Közvetlen | Nincs jelen |
+| `ask_user` | Közvetlen | Közvetlen |
+| `lsp`, `lsp_rename`, `ast_grep`, `ast_edit`, `resolve`, `debug` | Csak szkriptből | Első használatkor töltődik be |
+| `eval` | Első használatkor töltődik be (a szkript nem hívhatja) | Első használatkor töltődik be |
+| `vibe_*` | Közvetlen vibe módban, soha nem szkriptből | Közvetlen vibe módban |
+
+A „Csak szkriptből” jelöléssel ellátott eszköz első használatkor töltődik be, amint a szerver nem tudja futtatni a futtatás szkriptjeit ([Amikor a szkriptek nem futtathatók](/hu-HU/kezikonyv/fogalmak/kodmod/#amikor-a-szkriptek-nem-futtathatók)).
 
 ---
 
@@ -152,9 +166,49 @@ A `debugpy` a projekt helyi `.venv/bin` vagy `venv/bin` könyvtárát előnyben 
 
 ---
 
+## `repl` — szkript futtatása, amely hívja az eszközeit
+
+Minden futtatásban jelen van, ha a szerver tud szkripteket futtatni ([Mikor van egy futtatásnak `repl`-je](/hu-HU/kezikonyv/fogalmak/kodmod/#mikor-van-egy-futtatásnak-repl-je)). A szkript sima JavaScript, egy async függvény törzse, és egy friss, lezárt értelmezőben fut a saját folyamatában: nincs fájlrendszer-, hálózati, folyamat- vagy modulhozzáférése. A `repl` maga is a `read` szinthez tartozik, és őrzi magát, mert a szkript minden eszközhívását külön ellenőrzik. Az MCP-végponton is elérhető, az olyan ügynökfuttatásoknak, amelyeknél a szerver tud szkripteket futtatni.
+
+| Argumentum | Jelentés |
+| ------------------- | --------------------------------------------------------------------------------------------- |
+| `code` | A szkript. Legfeljebb 256 KiB |
+| `description` | Kötelező. Rövid címke a beszélgetés sorához |
+| `timeout_ms` | Opcionális. Rövidebb időkorlát, mint a munkaterületé; soha nem hosszabb |
+| `max_output_tokens` | Opcionális. Kisebb kimeneti keret, mint a munkaterületé; soha nem nagyobb |
+
+```js
+// Read three files together and report only which ones failed.
+const paths = ["lib/a.dart", "lib/b.dart", "lib/c.dart"];
+const results = await Promise.allSettled(paths.map((path) => tools.read({ path })));
+return results
+  .map((r, i) => (r.status === "rejected" ? `${paths[i]}: ${r.reason.message}` : null))
+  .filter(Boolean);
+```
+
+A `repl` leírása ezt mondja az ügynöknek: „Olyan eszköznek, amely nem a közvetlen eszközei közül való, nincs definíciója ebben a kérésben. Az első hívása előtt keresse meg a `describeTool(name)` vagy a `searchTools(query)` segítségével, hacsak a pontos hívási alakját nem mutatták meg neki ebben a beszélgetésben.”
+
+A `describeTool(name)` visszaadja az eszköz leírását, deklarációját, bemeneti és kimeneti sémáját, valamint az eredménnyel kapcsolatos megjegyzését, ha van ilyen: azt, amit a szkript a befejezett hívásból kap, az eszköz saját szavaival. A `repl` leírása felsorolja a közvetlen eszközök megjegyzéseit, amelyeket a szkript hívhat. Ha az eredmény JSON-szöveg, már feldolgozva érkezik, hacsak nem tartalmaz 131 072-nél több értéket; ekkor szövegként érkezik, és a szkript a `JSON.parse`-szal dolgozza fel. A külső MCP-szerver egyik eszközének eredményszövege 262 144 karakternél csonkul, a csonkolt szöveg pedig már nem értelmezhető JSON-ként.
+
+- A `tools.<name>(args)` ugyanazon a szűrőn, korláton és jóváhagyáson keresztül hív egy eszközt, mint a közvetlen hívás, és hibával utasítódik el, ha megtagadják vagy meghiúsul. A csak olvasó hívások futhatnak egyszerre; a módosító hívások egyesével futnak, abban a sorrendben, ahogy a szkript kiadta őket. Amíg az egyik hívása személyre vár, a szkript nem indít el más hívást.
+- Az `ALL_TOOLS`, a `searchTools(query, { limit, namespace })`, a `describeTool(name)` és a `describeNamespace(name)` megtalálják az eszközöket, a csatlakoztatott MCP-kiszolgálók eszközeit is beleértve. A közvetlen készleten kívüli, szkriptből hívható eszköz csak szkriptből hívható; egy közvetlen hívás visszaadja, hogyan hívja meg `repl`-ből. Amint a szerver nem tudja futtatni a futtatás szkriptjeit, az ilyen eszköz helyette első használatkor töltődik be.
+- A keresések korlátozottak: a lekérdezés legfeljebb 1 024 karakter, a név vagy névtér legfeljebb 256, a `limit` 0 és 50 között lehet, és szkriptenként összesen legfeljebb 200 keresés, amely összesen 2 másodpercnyi szerveridőt vesz igénybe, miközben egy munkaterület összes szkriptje közösen osztozik 2 másodpercnyi keresési időn, amelyet másodpercenként negyed másodperc ad vissza; bármelyik határ elérése után a további keresések hibával térnek vissza. Nagyon nagy katalógusban az `ALL_TOOLS` leírásai egyenlően osztoznak nagyjából egymillió karakteren, a csonka leírás pedig `…`-val végződik; a `describeTool` mindig a teljes leírást adja vissza. Ha egy típus túl nagy a megjelenítéshez, `unknown /* too large to show */` jelenik meg, az ismeretlen nevet pedig a legközelebbi nevekkel válaszolja meg.
+- Az eszközök névterekbe vannak csoportosítva: `builtin` (a harness saját eszközei), `control-center` (a Control Center eszközei), és minden csatlakoztatott MCP-kiszolgálóhoz egy, annak neve szerint. Az a kiszolgáló, amelynek neve `builtin`, `control-center` vagy `script`, vagy amelynek neve `external-`-ral kezdődik — bármilyen nagybetű-kombinációban, és szóközökkel vagy szóközök nélkül —, `external-` előtaggal, a nevével együtt szerepel, és egyetlen eszköz sem kerül a `script` névtérbe.
+- Csak az jut vissza az ügynökhöz, amit a szkript visszaad, vagy átad a `text()`, `image()` vagy `console.*` függvénynek. A keretet meghaladó kimenet eleje és vége megmarad, a többit a `read_output` olvassa.
+- A `store(key, value)` / `load(key)` JSON-értékeket őriz meg ugyanazon beszélgetés és ügynök későbbi szkriptjei számára, és csak akkor menti, amikor a szkript befejeződik. Az al-ügynök szkriptjeinek nincs tárolójuk.
+- Az `await tools.ask_user(...)` kérdést tesz fel; a válasz az eredményhez is hozzáadódik. Elérhető még a `sleep(ms)`, a `setTimeout`, a `limits()` és a `models.embed` / `rank` / `classify` (helyi beágyazások) is.
+- A `describeTool(name)` és a `searchTools(query)` a szkript saját függvényeire is válaszol, amelyek nem eszközök: `text`, `image`, `store`, `load`, `sleep`, `setTimeout`, `clearTimeout`, `limits`, `exit` és `models.*`, a `script` névtér alatt.
+- Szkriptből nem hívható: a `repl`, az `eval`, a `task`, a `checkpoint`, a `rewind`, a `compact`, a `search_tools` és a `vibe_*` igék.
+- Egy szkript a saját futtatása múltját olvassa: a `history({start, role, tool, limit})` a beszélgetés átiratát lapozza (hívásonként legfeljebb 50 sor; az előző oldal `next_start` értékét adja át `start`-ként), az `outputs()` felsorolja a beszélgetéshez és ügynökhöz tárolt eszközkimeneteket, a `loadOutput(handle)` pedig egy kimenet 16 384 karakterét olvassa be. A `storedKeys()` a tárolt kulcsokat sorolja fel a méretükkel. A `keep(value, label)` egy nagy értéket kimenetként tárol, amelyet egy későbbi szkript vagy a `read_output` olvashat; ez csak akkor mentődik el, ha a szkript lefut (értékenként 1 MiB, futtatásonként 64 érték és 16 MiB). A `limits().returnBudgetChars` megmutatja, mennyi kimeneti keret maradt. Csak olvasható futtatás (egy célátnézés) olvashat, de nem tárolhat, és nem menthet. Claude Code-on és ACP-n a `history()` működik, az `outputs()`, a `loadOutput()` és a `keep()` pedig visszautasítódik, mert a Control Center nem tart meg ilyen futtatásoknál eszközkimeneteket.
+- Az időtúllépés, a kimenet-túlcsordulás vagy a hívási korlát okozta hiba megmondja, hogyan javítható.
+
+Egy futtatás egyszerre egy szkriptet futtat. A korlátok és az egyes korlátoknál történő teendők a [kódmód](/hu-HU/kezikonyv/fogalmak/kodmod/#korlátok) oldalon találhatók; minden szkript a **Megfigyelhetőség → Kódfuttatások** alatt kerül rögzítésre.
+
+---
+
 ## `eval` – tartós értelmezők
 
-Egy Python- vagy JavaScript-cella, amelynek változói, importjai és betöltött adatai megmaradnak a hívások között. `exec` szint; párhuzamosan nem biztonságos.
+Egy Python- vagy JavaScript-cella, amelynek változói, importjai és betöltött adatai megmaradnak a hívások között. `exec` szint; párhuzamosan nem biztonságos. A `repl` szkriptből nem hívható, a cella pedig nem hívhatja a futtatás eszközeit: eszközöket kódból a [`repl`](#repl--szkript-futtatása-amely-hívja-az-eszközeit) használatával hívhat.
 
 | Argumentum    | Jelentés                                          |
 | ------------- | ------------------------------------------------ |
@@ -166,20 +220,34 @@ Egy Python- vagy JavaScript-cella, amelynek változói, importjai és betöltöt
 - Az utolsó kifejezés ugyanúgy visszhangzik, ahogy egy notebook teszi.
 - A `display()` működik, a pandas frame táblázatként renderelődik, és egy matplotlib ábra egy **képként jön vissza, amelyet az átirat megjelenít**.
 - Azokat az IPython-idómákat, amelyeket az ember reflexből beír – `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` –, egyszerű kódra írják át. A `%pip` emellett kiüríti a `sys.modules`-t, így a következő `import` látja, mit telepítettek éppen.
-
-### Saját eszközök hívása a cellán belülről
-
-```python
-contents = tool("read", {"path": "lib/auth.dart"})
-```
-
-A híd **visszalép a harness eszközregiszterébe**, így a korlátok, a jóváhagyás és minden burkoló pontosan úgy érvényesül, ahogy egy modell által kiadott hívásnál. A kernel saját csövén utazik, nem egy loopback-socketen: nincs port, nincs titok, nincs kimenőforgalmi szabály.
-
-A cella időtúllépése egy *tétlenségi* keret (alapértelmezés: 5 perc), és **felfüggesztésre kerül**, amíg egy hídon átmenő hívás függőben van, így az a cella, amely alügynökökre ágazik szét, nem kerül leállításra a szétágazás közben.
+- Az a cella, amely a kimeneti keretét meghaladóan ír ki, az első háromnegyedét és az utolsó negyedét tartja meg, egy sorban megmondva, hány karaktert és képet dobott el.
+- Ha a tolmács kérés nélkül állt le, a következő cella egyszer értesül róla, hogy a korábbi változói eltűntek.
 
 :::note[Hol fut a kernel]
 A beszélgetés elszigetelt környezetében, ha van neki ilyen, egyébként a futtatás operációs rendszer szintű homokozójában a gazdagépen. Homokozó kikapcsolása vagy hiánya esetén homokozó nélkül fut, és az `eval` gazdagépi végrehajtási jóváhagyást kér. Ehhez nem indít elszigetelt környezetet – ugyanaz a szabály, amely megakadályozza, hogy egy állomásfül automatikusan elinduljon.
 :::
+
+---
+
+## `bash` háttérben
+
+A `run_in_background: true` beállítású `bash` elindítja a parancsot, és azonnal visszatér egy azonosítóval (`b1`, `b2`, …) ahelyett, hogy várna. Az ügynök tovább dolgozik, vagy befejezi a körét, és a parancs kilépésekor felébresztik.
+
+| Argumentum | Jelentés |
+| ------------------- | ------- |
+| `run_in_background` | `true`: azonnal elindítja és visszatér |
+| `timeout_seconds` | Másodpercek, amíg a parancsot leállítják: alapértelmezés szerint 600, legfeljebb 3 600 |
+| `notify` | Opcionális. Egyszerű minta; a parancs futása közben minden illeszkedő kimenetsort elküld az ügynöknek (például `listening on\|FAILED`) |
+
+- Egy futtatásban egyszerre legfeljebb 4 háttérparancs fut. Mindegyiket leállítják az időtúllépésénél és a futtatás végén, az általa indított összes folyamattal együtt.
+- Amikor egy parancs kilép, az ügynök egy értesítést kap a kilépési kóddal, a kimenet utolsó 2 000 karakterével és egy `read_output` azonosítóval a többihez.
+- Az az ügynök, amelynek már csak háttérparancs maradt hátra, a modell hívása nélkül vár, és a futtatás csendfigyelője a várakozás alatt szünetel.
+- A `bash_output(handle)` a parancs állapotát és a legutóbbi kimenetét olvassa; a `bash_kill(handle)` leállítja. Mindkettő jelzi, ha az eredményt már kézbesítették.
+- Szkript nem indíthat háttérparancsot. A Claude Code-nak saját háttér-Bash-e van; a Control Center azt a futtatást legfeljebb 10 percig nyitva tartja, azután, hogy az a kör, amely feladatot hagyott futni, véget ért.
+
+## `compact` — szabad hely a kontextusablakban
+
+Tömöríti a beszélgetés régebbi kontextusát a következő modellhívás előtt, megtartva azt, amit a `focus` megnevez (legfeljebb 1 000 karakter). A legújabb körök szó szerint maradnak. Az ügynök körönkénti költségkeret-sora 70, 80 és 90%-nál mutatja a kontextushasználatot, és az eszköz érdemes meghívni körülbelül 70% fölött, egy hosszú új munkafázis előtt. A szerver tulajdonosának `preCompact` hookja hozzáadhat a fókuszhoz ([Shell-hookok](/hu-HU/kezikonyv/referencia/ugynokkonfiguracio/#shell-hookok)). Tömörítés után a szerver hozzáad egy „Still in flight” blokkot: a célt, a függőben lévő ébresztőket, a nyitott kérdéseket, a háttérparancsokat, az ellenőrzőlistát és a tárolt kulcsokat, mindegyik mellett azzal a hívással, amely visszaállítja.
 
 ---
 

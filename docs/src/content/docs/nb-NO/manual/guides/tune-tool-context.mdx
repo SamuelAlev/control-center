@@ -2,7 +2,7 @@
 title: Juster verktøykonteksten til en agent
 description: Se hva en kjøring faktisk sender, endre hvilke verktøy som lastes på forhånd, og finn ut om et dårlig verktøyvalg var et gjenfinningsbom eller et promptproblem.
 slug: nb-NO/handbok/slik-gjor-du/juster-verktoykontekst
-sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
+sourceHash: 22a4306a97aa8da0332f8e3e20e06ed86119f1d5
 ---
 
 Denne veiledningen dekker det praktiske arbeidet rundt verktøyflaten med to nivåer: å se hva en kjøring sender, å endre det, og å diagnostisere en agent som grep etter feil verktøy. For å forstå hvorfor det fungerer slik, les [Verktøykontekst og promptbuffer](/nb-NO/handbok/konsepter/verktoykontekst).
@@ -13,25 +13,26 @@ Denne veiledningen dekker det praktiske arbeidet rundt verktøyflaten med to niv
 
 To segmenter er viktige her:
 
-- **Verktøydefinisjoner** og **MCP- og dynamiske verktøy** — det faste settet, med den reelle tokenkostnaden til hvert verktøy.
+- **Verktøydefinisjoner** og **MCP- og dynamiske verktøy** — det direkte settet, med den reelle tokenkostnaden til hvert verktøy.
 - **Verktøy lastet ved behov** — den utsatte indeksen. Hver oppføring belastes bare med navnet sitt, fordi et navn er alt forespørselen bærer med seg; å åpne ett viser fortsatt hele beskrivelsen og skjemaet, slik at du kan se hva det *ville* koste hvis kjøringen trakk det inn.
+
+I en kjøring med `repl` nevnes verktøyene et skript når fram til i systemprompten, og de vises i ingen av segmentene.
 
 Hvis det utsatte segmentet er tomt, er utsettelse av for denne serveren. Sjekk `--tool-deferral` i [`cc_server`-CLI-en](/nb-NO/handbok/referanse/cc-server-cli).
 
 ## Endre hvilke verktøy som lastes på forhånd
 
-Det faste settet er policy, ikke konfigurasjon — det ligger i `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) og gjelder for hver kjøring:
+Det direkte settet er policy, ikke konfigurasjon — det ligger i `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) og gjelder for hver kjøring:
 
-- `residentBuiltins` — fil- og shell-vokabularet.
-- `residentDiscovery` — `search_tools` og `list_my_tools`. Ikke fjern disse; det er slik en agent når alt annet.
-- `residentMcpTools` — de få Control Center-verktøyene som er verdt skjemaet sitt ved hver forespørsel.
-- En blokk per modus, for verktøyene en gitt [modus](/nb-NO/handbok/konsepter/moduser) bruker i nesten hver tur.
+- `directTools` — de tolv verktøyene hver kjøring kaller direkte: `read`, `write`, `edit`, `search`, `find`, `bash` og `read_output`; `ask_user` og `task`; `todo_write`, `search_memory` og `send_message`.
+- `residentDiscovery` — `search_tools` og `list_my_tools`. Ikke fjern disse; det er slik en agent når alt annet. En kjøring med `repl` får `search_tools` når noe verktøy lastes ved første bruk, og ingen `list_my_tools`.
+- `directNamesFor(mode)` — verktøyene en gitt [modus](/nb-NO/handbok/konsepter/moduser/) legger til for sin egen løkke: gjennomgangsverbene i gjennomgangsmodus, `submit_plan` i planmodus og `propose_orchestration` i orkestreringsmodus.
 
 To regler når du redigerer det:
 
-**Legg bare til et verktøy hvis de fleste kjøringer bruker det.** Hvert navn koster skjemaet sitt ved hver forespørsel i hver kjøring, for alltid. Et verktøy som er viktig når det brukes, men sjeldent totalt sett, hører hjemme i den utsatte halvdelen — agenten finner det fortsatt.
+**Legg bare til et verktøy hvis de fleste kjøringer bruker det.** Hvert navn koster skjemaet sitt ved hver forespørsel i hver kjøring, for alltid. Et verktøy som er viktig når det brukes, men sjeldent totalt sett, hører hjemme utenfor det direkte settet — agenten kan fortsatt nå det, fra et skript eller ved å laste det ved første bruk.
 
-**Bruk verktøyets virkelige navn.** Et fast navn som ikke samsvarer med noe verktøy, er inert: ingen feil, ingen advarsel, verktøyet blir rett og slett utsatt. `test/tooling/resident_tool_names_test.dart` fanger opp dette og holder i tillegg hver modus under 40 faste verktøy, som er hele poenget — forbi det båndet blir verktøyvalget målbar dårligere.
+**Bruk verktøyets virkelige navn.** Et direkte navn som ikke samsvarer med noe verktøy, er inert: ingen feil, ingen advarsel, verktøyet blir rett og slett værende utenfor det direkte settet. `test/tooling/resident_tool_names_test.dart` fanger opp dette, holder det direkte settet i hver modus til høyst 20 verktøy og holder hver modus til høyst 40 verktøy sendt på forhånd, som er hele poenget — forbi det båndet blir verktøyvalget målbar dårligere.
 
 En modus' påkrevde og festede verb legges til automatisk, så du trenger aldri å føre opp en modus' eget utdataverb.
 
@@ -73,4 +74,4 @@ Vanlige årsaker, i rekkefølge etter sannsynlighet:
 - **En endring av modell eller resonneringsinnsats midt i samtalen.** Begge endrer prefikset. Underagenter er spesielt lette å gjøre feil her: å kjøre barn med lavere resonneringsinnsats for å spare penger kan koste mer i tapt bufferdeling enn det sparer.
 - **Hyppig kompaktering.** Kompaktering skriver om historikken med vilje, så kostnaden er reell; løsningen er å kompaktere sjelden og dypt i stedet for ofte og grunt.
 
-Å slå av utsettelse med `--tool-deferral=off` er en gyldig A/B-test for å isolere om en atferdsendring kom fra flaten med to nivåer. Den gjenskaper forespørselen fra før utsettelsen nøyaktig, så hvis atferden vedvarer med den av, er ikke flaten årsaken.
+Å slå av utsettelse med `--tool-deferral=off` er en gyldig A/B-test for å isolere om en atferdsendring kom fra flaten med to nivåer. Med den av sender en kjøring hvert tillatte verktøys definisjon, bortsett fra at en kjøring med `repl` fortsatt kaller verktøyene et skript kan kalle, fra skript. Hvis atferden vedvarer med den av, er ikke utsettelsen årsaken.

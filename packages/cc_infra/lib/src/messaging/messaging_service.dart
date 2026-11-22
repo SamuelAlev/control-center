@@ -22,8 +22,6 @@ import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
-import 'package:cc_domain/features/messaging/domain/services/mention_wake_policy.dart';
-import 'package:cc_domain/features/messaging/domain/services/peer_delegation_guards.dart';
 import 'package:cc_domain/features/messaging/domain/services/space_factory.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/dispatch_reply_hints.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dart';
@@ -38,6 +36,8 @@ import 'package:cc_infra/src/messaging/conversation_compaction_service.dart';
 import 'package:cc_infra/src/messaging/conversation_side_channel_service.dart';
 import 'package:cc_infra/src/messaging/conversation_title_service.dart';
 import 'package:cc_infra/src/messaging/mention_principals.dart';
+import 'package:cc_infra/src/messaging/mention_wakes.dart';
+import 'package:cc_infra/src/messaging/person_goal_command.dart';
 import 'package:cc_infra/src/messaging/prompt_attachments.dart';
 import 'package:cc_infra/src/messaging/steering_queue_service.dart';
 
@@ -108,21 +108,9 @@ class MessagingService implements MessagingPort {
   _dispatchBlocked;
   final AgentDispatchService _agentDispatchService;
 
-  /// Optional goal-command interceptor (the goal supervisor's startGoal
-  /// wrapper, injected — MessagingService never imports the supervisor). When
-  /// set and a dispatch prompt begins with `/goal ` or `/loop `, the prompt is
-  /// routed to this handler instead of a plain dispatch; the handler returns
-  /// the first run's message id. Null keeps historical behavior (the harness
-  /// handles the slash command in-session).
-  final Future<String?> Function({
-    required String workspaceId,
-    required String spaceId,
-    required String agentId,
-    required String prompt,
-    String? conversationId,
-    String? requestedByUserId,
-  })?
-  _goalCommandHandler;
+  /// Starts a goal from a signed-in person's `/goal …` message (only on
+  /// [dispatchResponderForText]); null treats `/goal` as ordinary text.
+  final PersonGoalCommand? _goalCommandHandler;
 
   /// Stops a space's in-flight workspace provisioning (the clone). Injected
   /// because the provisioning service lives above this layer; null on a host
@@ -193,20 +181,12 @@ class MessagingService implements MessagingPort {
   final _mentionParser = const AgentMentionParser();
   final _userMentionParser = const UserMentionParser();
 
-  /// Resolves the `@mentions` in an agent's own finished turn to the teammates
-  /// to wake (exact names only — see [MentionWakePolicy]).
-  final _wakePolicy = const MentionWakePolicy();
-
-  /// Depth and cycle caps for a wake chain, shared with the peer/delegation
-  /// tools so "how far can one agent reach" has one answer.
-  final _wakeGuards = const DelegationGuards();
-
-  /// Backstop for wake chains that are individually legal but repeat: the
-  /// cycle guard already makes a loop impossible WITHIN one chain, so this
-  /// bounds how often a given ordered pair can restart one.
-  final _wakeRateLimiter = PairRateLimiter(
-    maxPerWindow: 5,
-    window: const Duration(minutes: 5),
+  /// Wakes the teammates an agent's finished turn `@mentions`, through the
+  /// wake queue (its `sink` is bound by the runtime).
+  late final MentionWakes mentionWakes = MentionWakes(
+    _agentRepo,
+    _repo,
+    addAgentToSpace,
   );
 
   /// The author id for a human message: the acting user when supplied, else
@@ -761,7 +741,34 @@ class MessagingService implements MessagingPort {
       targets = agent != null ? {agent.id: agent} : {};
     }
 
+    final person = senderUserId; // A sender: a person typed it.
+    final goalHandler = _goalCommandHandler;
+    final startsGoal =
+        goalHandler != null &&
+        person != null &&
+        person.isNotEmpty &&
+        isPersonCommand(promptText);
     for (final agent in targets.values) {
+      if (startsGoal) {
+        unawaited(
+          startGoalFromMessage(
+            goalHandler,
+            workspaceId: workspaceId,
+            spaceId: spaceId,
+            agentId: agent.id,
+            prompt: promptText,
+            requestedByUserId: person,
+            conversationId: conversationId,
+            say: commandRefusalPoster(
+              _repo,
+              workspaceId: workspaceId,
+              spaceId: spaceId,
+              conversationId: conversationId,
+            ),
+          ),
+        );
+        continue;
+      }
       unawaited(
         dispatchAgent(
           workspaceId: workspaceId,
@@ -772,6 +779,7 @@ class MessagingService implements MessagingPort {
           // co-authors the agents' commits and their own GitHub token (when
           // stored) backs the runs.
           requestedByUserId: senderUserId,
+          wakeContext: const WakeContext.userMessage(),
           conversationId: conversationId,
           promptImageRefs: promptImageRefs,
         ),
@@ -952,6 +960,7 @@ class MessagingService implements MessagingPort {
               'The user provided feedback on your plan: $feedback. '
               'Please refine the plan accordingly and produce an updated plan.',
           requestedByUserId: requestedByUserId,
+          wakeContext: const WakeContext.userMessage(),
           conversationId: pendingPlan.conversationId,
           promptImageRefs: promptImageRefs,
         ),
@@ -970,31 +979,16 @@ class MessagingService implements MessagingPort {
     String? pipelineStepId,
     String? inReplyToAgentId,
     String? requestedByUserId,
-    WakeContext? wakeContext,
+    required WakeContext wakeContext,
     String? conversationId,
     Map<String, dynamic>? expectedOutputSchema,
     OutputContractMode outputContractMode = OutputContractMode.strict,
     List<String> promptImageRefs = const [],
     String? modelOverride,
   }) async {
-    // Durable-goal interception: a `/goal ` or `/loop ` prompt becomes a
-    // supervised objective instead of a one-off dispatch. Exact token match,
-    // case-sensitive, same as parseSlashCommand in cc_harness.
-    final goalHandler = _goalCommandHandler;
-    if (goalHandler != null) {
-      final trimmed = prompt.trimLeft();
-      if (trimmed.startsWith('/goal ') || trimmed.startsWith('/loop ')) {
-        return goalHandler(
-          workspaceId: workspaceId,
-          spaceId: spaceId,
-          agentId: agentId,
-          prompt: prompt,
-          conversationId: conversationId,
-          requestedByUserId: requestedByUserId,
-        );
-      }
-    }
     return dispatchAgentRun(
+      freshHistory: false,
+      readOnly: false,
       workspaceId: workspaceId,
       spaceId: spaceId,
       agentId: agentId,
@@ -1013,16 +1007,11 @@ class MessagingService implements MessagingPort {
     );
   }
 
-  /// The plain agent dispatch with no goal-command interception. This is the
-  /// goal supervisor's dispatcher target: its first run re-sends the verbatim
-  /// `/goal ...` prompt and must never loop back into the command handler.
+  /// The plain agent dispatch; [freshHistory], [readOnly]: see `AgentDispatchPort.start`.
   ///
-  /// [mentionChain] is the ordered list of agents whose `@mentions` led to this
-  /// run, oldest first and NOT including [agentId]. Empty for a run a human (or
-  /// a ticket, pipeline or tool) started. It is what makes the wake chain's
-  /// depth and cycle guards enforceable at a chokepoint: without it, A→B→A is
-  /// indistinguishable from two unrelated dispatches. It rides in memory only —
-  /// a chain never outlives the process that is executing it.
+  /// [mentionChain]: the agents whose `@mentions` led here, oldest first,
+  /// without [agentId] (empty when a person, ticket, pipeline or tool started
+  /// it); the wake chain's depth and cycle guards read it. Memory only.
   Future<String?> dispatchAgentRun({
     required String workspaceId,
     required String spaceId,
@@ -1033,7 +1022,7 @@ class MessagingService implements MessagingPort {
     String? pipelineStepId,
     String? inReplyToAgentId,
     String? requestedByUserId,
-    WakeContext? wakeContext,
+    required WakeContext wakeContext,
     String? conversationId,
     Map<String, dynamic>? expectedOutputSchema,
     OutputContractMode outputContractMode = OutputContractMode.strict,
@@ -1041,6 +1030,8 @@ class MessagingService implements MessagingPort {
     List<String> mentionChain = const [],
     List<String> promptImageRefs = const [],
     String? modelOverride,
+    required bool freshHistory,
+    required bool readOnly,
   }) async {
     if (prompt.isEmpty) {
       return null;
@@ -1148,6 +1139,8 @@ class MessagingService implements MessagingPort {
       costCapMicros: costCapMicros,
       promptImageRefs: promptImageRefs,
       modelOverride: modelOverride,
+      freshHistory: freshHistory,
+      readOnly: readOnly,
     );
 
     final messageId = result.runLog.id;
@@ -1185,152 +1178,22 @@ class MessagingService implements MessagingPort {
       // (PRD 16 §7) so a notification receiver can tell "my run" from
       // "someone else's run" and suppress the latter.
       requestedByUserId: requestedByUserId,
-      onTurnCompleted: (content) => _wakeMentionedAgents(
-        workspaceId: workspaceId,
-        spaceId: spaceId,
-        conversationId: convId,
-        senderAgentId: agentId,
-        senderAgentName: agentName,
-        content: content,
-        chain: mentionChain,
-        requestedByUserId: requestedByUserId,
-      ),
+      // A run without a conversation, or a read-only one, wakes nobody.
+      onTurnCompleted: convId == null || readOnly
+          ? null
+          : (content) => mentionWakes.wakeMentioned(
+              workspaceId: workspaceId,
+              spaceId: spaceId,
+              conversationId: convId,
+              senderAgentId: agentId,
+              senderAgentName: agentName,
+              senderRunId: messageId,
+              content: content,
+              chain: mentionChain,
+            ),
     );
 
     return messageId;
-  }
-
-  /// How much of the mentioning turn the woken agent receives as its prompt.
-  /// The full text stays in the conversation, which the woken agent also reads
-  /// as history, so this only bounds the summons itself.
-  static const int _wakePromptMaxChars = 4000;
-
-  /// Wakes teammates named in an agent's finished turn ("@architect …").
-  ///
-  /// Honours the Summons prompt promise at this chokepoint. Bounds:
-  /// [AgentMentionParser.parseProseMentions] (no code/addresses/version pins);
-  /// [MentionWakePolicy] (exact name, no prefix, ambiguity → nobody, no self);
-  /// [DelegationGuards] depth/cycle over [chain] (not autonomy/budget — no new
-  /// authority, unlike `delegate_task`); [PairRateLimiter] per ordered pair.
-  /// Best-effort: must not throw into the already-completed turn.
-  Future<void> _wakeMentionedAgents({
-    required String workspaceId,
-    required String spaceId,
-    required String? conversationId,
-    required String senderAgentId,
-    required String senderAgentName,
-    required String content,
-    required List<String> chain,
-    required String? requestedByUserId,
-  }) async {
-    try {
-      final agentRepo = _agentRepo;
-      if (agentRepo == null) {
-        return;
-      }
-      final tokens = _mentionParser.parseProseMentions(content);
-      if (tokens.isEmpty) {
-        return;
-      }
-
-      final candidates = await agentRepo.watchByWorkspace(workspaceId).first;
-      final targets = _wakePolicy.resolveTargets(
-        tokens: tokens,
-        candidates: candidates,
-        selfAgentId: senderAgentId,
-      );
-      // An unresolved token is prose, not a failed mention: agents write "@" in
-      // sentences all the time, and narrating every one of them would turn the
-      // space into a nag. A REFUSED wake is different — that one names a real
-      // teammate we deliberately declined to reach, so it is reported below.
-      if (targets.isEmpty) {
-        return;
-      }
-
-      // The chain the woken agents inherit: everyone on this wake path, the
-      // agent that just spoke last.
-      final chainSoFar = [...chain, senderAgentId];
-      final refusals = <String>[];
-
-      final depth = _wakeGuards.checkDepth(chain.length);
-      if (!depth.allowed) {
-        await _postWakeRefusals(workspaceId, spaceId, conversationId, [
-          '${depth.refusal} No agent was woken by this turn.',
-        ]);
-        return;
-      }
-
-      final now = DateTime.now();
-      for (final target in targets) {
-        final cycle = _wakeGuards.checkCycle(chainSoFar, target.agent.id);
-        if (!cycle.allowed) {
-          refusals.add('@${target.agent.name}: ${cycle.refusal}');
-          continue;
-        }
-        if (!_wakeRateLimiter.tryAcquire(senderAgentId, target.agent.id, now)) {
-          refusals.add(
-            '@${target.agent.name}: rate limited — $senderAgentName has woken '
-            'it too many times in a short window.',
-          );
-          continue;
-        }
-
-        await addAgentToSpace(workspaceId, spaceId, target.agent.id);
-        unawaited(
-          dispatchAgentRun(
-            workspaceId: workspaceId,
-            spaceId: spaceId,
-            agentId: target.agent.id,
-            prompt: _wakePrompt(senderAgentName, content),
-            conversationId: conversationId,
-            // Attributes the woken turn to the agent that summoned it, which
-            // is also what the woken agent's own Summons block reads.
-            inReplyToAgentId: senderAgentId,
-            // The human behind the original run stays the acting user, so the
-            // woken agent commits under the same identity and token.
-            requestedByUserId: requestedByUserId,
-            mentionChain: chainSoFar,
-          ),
-        );
-      }
-
-      await _postWakeRefusals(workspaceId, spaceId, conversationId, refusals);
-    } catch (_) {
-      // A wake is a courtesy on top of a turn that already succeeded.
-    }
-  }
-
-  /// The prompt a woken agent receives: the mentioning turn, attributed.
-  String _wakePrompt(String fromName, String content) {
-    final body = content.length <= _wakePromptMaxChars
-        ? content
-        : '${content.substring(0, _wakePromptMaxChars)}\n'
-              '…(truncated — the full turn is in this conversation)';
-    return '$fromName mentioned you in this conversation:\n\n$body';
-  }
-
-  /// Posts refused wakes as one system message. A guard that declines silently
-  /// is indistinguishable from the bug this feature exists to fix.
-  Future<void> _postWakeRefusals(
-    String workspaceId,
-    String spaceId,
-    String? conversationId,
-    List<String> refusals,
-  ) async {
-    if (refusals.isEmpty) {
-      return;
-    }
-    await _repo.sendMessage(
-      workspaceId: workspaceId,
-      spaceId: spaceId,
-      content: refusals.length == 1
-          ? 'Mention not delivered — ${refusals.single}'
-          : 'Mentions not delivered:\n${refusals.map((r) => '• $r').join('\n')}',
-      senderId: 'system',
-      senderType: 'system',
-      messageType: 'system',
-      conversationId: conversationId,
-    );
   }
 
   /// The one place a failed turn is retried from; see [AgentTurnRetrier].
@@ -1372,15 +1235,15 @@ class MessagingService implements MessagingPort {
   Future<bool> resumeRun(String runLogId) =>
       _agentDispatchService.resumeRun(runLogId);
 
-  /// Delivers a mid-run steering message to the in-flight run [runLogId].
-  /// Delegates to the dispatch service, which routes it to the live harness
-  /// loop's steering inbox.
+  /// A person's mid-run steering for [runLogId], handed to the dispatch
+  /// service with no source: these are the person's own words.
   @override
   Future<bool> steerRun(
     String runLogId,
     String message, {
     bool followUp = false,
-  }) => _agentDispatchService.steerRun(runLogId, message, followUp: followUp);
+  }) => _agentDispatchService
+      .steerRun(runLogId, message, followUp: followUp, source: null);
 
   /// The durable steering queue, wired by the runtime after construction
   /// (the queue service needs this service's dispatch tail, so the dependency
@@ -1389,8 +1252,7 @@ class MessagingService implements MessagingPort {
   /// queued / not deliverable".
   SteeringQueueService? steeringQueueService;
 
-  /// Queues a persisted steering message against the conversation's live runs
-  /// (see [SteeringQueueService.enqueue] for the full contract).
+  /// In-process enqueue ([SteeringQueueService.enqueue]); no grant is known.
   @override
   Future<({String messageId, bool steerable})?> enqueueSteering({
     required String workspaceId,
@@ -1406,6 +1268,7 @@ class MessagingService implements MessagingPort {
       conversationId: conversationId,
       content: content,
       senderUserId: await _authorUserId(senderUserId),
+      writerMayDirect: false,
       attachments: attachments,
     );
     return result == null
@@ -1426,8 +1289,8 @@ class MessagingService implements MessagingPort {
         conversationId: conversationId,
         messageId: messageId,
         content: content,
-      ) ??
-      false;
+        callerId: await _authorUserId(null),
+      ) ?? false;
 
   @override
   Future<bool> deleteSteering({
@@ -1469,9 +1332,8 @@ class MessagingService implements MessagingPort {
       ) ??
       false;
 
-  /// In-process stop-and-send. The `steering.forceSend` op checks the
-  /// caller's stop permission and calls the queue directly; this server-side
-  /// port is trusted code, so it may stop runs.
+  /// In-process stop-and-send (the `steering.forceSend` op calls the queue
+  /// itself): trusted, so it may stop runs; it acts as the owner fallback.
   @override
   Future<String> forceSendSteering({
     required String workspaceId,
@@ -1488,6 +1350,7 @@ class MessagingService implements MessagingPort {
       spaceId: spaceId,
       conversationId: conversationId,
       messageId: messageId,
+      callerId: await _authorUserId(null),
       mayStop: true,
       stopRun: (runId) => stopRun(workspaceId, runId),
     );
@@ -1646,7 +1509,7 @@ class MessagingService implements MessagingPort {
       spaceId: spaceId,
       conversationId: conversationId,
       contextWindowTokens: windowTokens,
-      selfAgentName: agent?.name ?? 'assistant',
+      self: (id: agent?.id, name: agent?.name ?? 'assistant'),
       force: true,
     );
     return ConversationCompactionResult(

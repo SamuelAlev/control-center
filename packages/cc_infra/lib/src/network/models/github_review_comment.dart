@@ -21,6 +21,7 @@ class GitHubReviewComment {
     this.reactions,
     this.bodyHtml,
     this.pullRequestReviewId,
+    this.subjectType = 'line',
   });
 
   /// Creates a [GitHubReviewComment] from JSON.
@@ -46,6 +47,7 @@ class GitHubReviewComment {
             )
           : null,
       bodyHtml: json['body_html'] as String?,
+      subjectType: json['subject_type'] as String? ?? 'line',
     );
   }
 
@@ -67,6 +69,7 @@ class GitHubReviewComment {
     'updated_at': updatedAt?.toIso8601String(),
     if (reactions != null) 'reactions': reactions!.toJson(),
     if (bodyHtml != null) 'body_html': bodyHtml,
+    'subject_type': subjectType,
   };
 
   /// Unique identifier for the review comment.
@@ -118,4 +121,11 @@ class GitHubReviewComment {
   /// The active line number this comment should be anchored to in the diff
   /// viewer (prefers the latest-revision [line] and falls back to [originalLine]).
   int? get anchorLine => line ?? originalLine;
+
+  /// What the comment is on: `line` (a diff line) or `file` (the whole file,
+  /// with no line at all).
+  final String subjectType;
+
+  /// Whether the comment is on the whole file rather than a diff line.
+  bool get isFileLevel => subjectType == 'file';
 }

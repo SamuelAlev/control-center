@@ -5,6 +5,9 @@ import 'package:cc_domain/core/domain/repositories/agent_run_cost_history_port.d
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_output_port.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
+import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
+import 'package:cc_domain/features/dispatch/domain/ports/wake_run_ledger.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
 import 'package:cc_domain/features/model_routing/domain/entities/usage.dart';
 import 'package:cc_domain/features/observability/domain/run_verification.dart';
 import 'package:cc_persistence/database/cross_workspace_queries.dart';
@@ -35,7 +38,8 @@ class DaoAgentRunLogRepository
     implements
         AgentRunLogRepository,
         AgentRunCostHistoryPort,
-        AgentRunOutputPort {
+        AgentRunOutputPort,
+        WakeRunLedger {
   /// Creates a [DaoAgentRunLogRepository] over the per-workspace databases.
   DaoAgentRunLogRepository(this._dbs) : _cross = CrossWorkspaceQueries(_dbs);
 
@@ -412,6 +416,12 @@ class DaoAgentRunLogRepository
       verificationStatus: drift.Value(completed.verification.status.wire),
       nativeSessionId: drift.Value(completed.nativeSessionId),
       resumedNativeSession: drift.Value(completed.resumedNativeSession),
+      // Absent rather than cleared when the caller has no reason: a reason an
+      // earlier write recorded (the stop path) is never erased.
+      endReason: drift.Value.absentIfNull(completed.endReason?.wire),
+      // No `wake_ids`: the list is written when the run starts and grows as
+      // the run drains pushed wakes ([addWakeIds]); a terminal write built
+      // from the run's start would drop what it drained.
       // No final cost report: stamp elapsed time, but preserve usage that a
       // concurrent updateCost may already have recorded.
       durationMs: writeCost
@@ -513,8 +523,95 @@ class DaoAgentRunLogRepository
         retryAttempt: drift.Value(log.retry.attempt),
         parentRunId: drift.Value.absentIfNull(log.parentRunId),
         spawnToolCallId: drift.Value.absentIfNull(log.spawnToolCallId),
+        endReason: drift.Value.absentIfNull(log.endReason?.wire),
+        wakeIds: _wakeIdsOf(log),
+        // Absent when null, so a later write of a run built without it never
+        // turns a person's run into a bot run.
+        requestedByUserId: drift.Value.absentIfNull(log.requestedByUserId),
+        // Absent when null for the same reason: a later write never clears
+        // why the run started.
+        wakeReason: drift.Value.absentIfNull(log.wakeReason?.wire),
+        // Absent when null: a later write never clears which run started it.
+        startedByRunId: drift.Value.absentIfNull(log.startedByRunId),
       ),
       _payloadOf(log),
     );
+  }
+
+  /// `agent_run_logs.wake_ids` for [log]: written when the run carries wake
+  /// ids, absent otherwise, so a write of a run built without them (a status
+  /// update from a caller that never read them) never clears the record of
+  /// which wakes the run delivered.
+  static drift.Value<String> _wakeIdsOf(AgentRunLog log) => log.wakeIds.isEmpty
+      ? const drift.Value.absent()
+      : drift.Value(jsonEncode(log.wakeIds));
+
+  @override
+  Future<WakeLedgerRun?> runForWake(String workspaceId, String wakeId) async {
+    // The newest run: a wake reopened after a server stop and delivered
+    // again is on two runs, and only the later one says what became of it.
+    final rows = await _dbs
+        .of(workspaceId)
+        .customSelect(
+          'SELECT id, completed_at, end_reason FROM agent_run_logs '
+          'WHERE wake_ids IS NOT NULL AND '
+          'EXISTS (SELECT 1 FROM json_each(agent_run_logs.wake_ids) '
+          'WHERE json_each.value = ?) ORDER BY started_at DESC, id DESC '
+          'LIMIT 1',
+          variables: [drift.Variable.withString(wakeId)],
+        )
+        .get();
+    final row = rows.firstOrNull;
+    if (row == null) {
+      return null;
+    }
+    return WakeLedgerRun(
+      runId: row.read<String>('id'),
+      live: row.readNullable<DateTime>('completed_at') == null,
+      endReason: RunEndReasonWire.tryParse(
+        row.readNullable<String>('end_reason'),
+      ),
+    );
+  }
+
+  @override
+  Future<void> addWakeIds(
+    String workspaceId,
+    String runId,
+    List<String> wakeIds,
+  ) async {
+    if (wakeIds.isEmpty) {
+      return;
+    }
+    final db = _dbs.of(workspaceId);
+    await db.transaction(() async {
+      final rows = await db
+          .customSelect(
+            'SELECT wake_ids FROM agent_run_logs WHERE id = ?',
+            variables: [drift.Variable.withString(runId)],
+          )
+          .get();
+      final row = rows.firstOrNull;
+      if (row == null) {
+        return;
+      }
+      final stored = row.read<String?>('wake_ids');
+      final ids = <String>[
+        if (stored != null)
+          for (final id in jsonDecode(stored) as List) '$id',
+      ];
+      final merged = [...ids, ...wakeIds.where((id) => !ids.contains(id))];
+      if (merged.length == ids.length) {
+        return;
+      }
+      await db.customUpdate(
+        'UPDATE agent_run_logs SET wake_ids = ? WHERE id = ?',
+        variables: [
+          drift.Variable.withString(jsonEncode(merged.toSet().toList())),
+          drift.Variable.withString(runId),
+        ],
+        updates: {db.agentRunLogsTable},
+      );
+    });
   }
 }

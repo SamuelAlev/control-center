@@ -2,7 +2,7 @@
 title: Modlar
 description: Bir modu neden bir ajanın değil bir alanın taşıdığı; dört modun her birinin neyi garanti ettiği; ve bu garantinin nerede yalnızca istemle değil yapısal olarak sağlandığı.
 slug: tr-TR/kilavuz/kavramlar/modlar
-sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
+sourceHash: 4450ebc86d95efb0366bc3f0ab4ddebc6d3a3adb
 ---
 
 ## Mod nedir
@@ -41,7 +41,7 @@ Planı olmadan sona eren bir çalıştırma yine de `completed` durumuyla kayded
 
 İkinci ve ayrı bir çıkış yolu daha vardır: `exit_plan_mode`. Bu bir çıktı fiili değil, katı bir onay kapısıdır — `submit_plan` yerine onu çağıran bir ajan hiçbir şey teslim etmemiştir. İlk çağrı kalıcı bir `plan_exit` onayı açar ve `pending` döndürür, alan salt okunur kalır; yinelenen çağrılar ikinci bir kapı açmak yerine `pending` olarak kalır. Ancak onay verildikten sonra sonraki bir çağrı alanı sohbete döndürür. Bir ret, ajanın revize edilmiş bir plan için yeni bir istek açmasına izin verir.
 
-Plan modundan kendiniz çıkmak için ileti alanındaki açılır menüyü (veya Shift+Tab) kullanın. `exit_plan_mode` kararı `decide_approval` MCP aracıyla verilir. Gelen kutusundaki “ajan onayı” satırları başka bir şeydir: çalışan bir ajanın tur bazlı onay istemleri.
+Plan modundan kendiniz çıkmak için ileti alanındaki açılır menüyü (veya Shift+Tab) kullanın. `exit_plan_mode` kararı bir ajan çalıştırması `decide_approval` MCP aracıyla verir. Gelen kutusundaki “ajan onayı” satırları başka bir şeydir: çalışan bir ajanın tur bazlı onay istemleri.
 
 ### İnceleme — salt okunur, sözleşme yok
 
@@ -65,6 +65,8 @@ Orkestrasyon modu tek bir hedefi tüm ekip için bir plana dönüştürür. Plan
 
 **Salt okunur modlar ağ erişimini veya sırları reddetmez.** İnceleme, plan ve orkestrasyonun reddettiği etki sınıfları dünyayı değiştirenlerdir: dosya silme, worktree dışına yazma, commit'ler, push'lar, PR oluşturma ve yayımlama, harici takip sistemi eşitleme yazmaları, paket kurulumları, süreç başlatma, çalışma alanı mutasyonu ve enclosure denetimi. Ağ çıkışı ve sır erişimi bilinçli olarak varsayılanlarında kalır — araştırma, salt okunur bir modun tüm amacıdır.
 
+**Kod modu bir modu asla genişletmez.** Önce modun araç filtresi uygulanır ve bir [kod modu](/tr-TR/kilavuz/kavramlar/kod-modu/) `repl` betiği yalnızca geriye kalan araçları çağırabilir; bunu doğrudan bir çağrıyla aynı kapıdan geçerek yapar. Modun sabitlenmiş fiilleri (çıktı fiili, `exit_plan_mode`, `ask_user`) ve kendi döngüsü (inceleme modunda inceleme düğümü fiilleri) her zaman doğrudan çağrılır; böylece bir çalıştırma teslimatını ya da bir soruyu iletmek için asla bir betik yazmak zorunda kalmaz. [Vibe modunda](/tr-TR/kilavuz/nasil-yapilir/arka-plan-workerlarini-yonetme/) yönlendiren çalıştırma yalnızca okuma araçlarını tutar ve betiklere özel araç tutmaz; bu yüzden betikleri yalnızca bu araçlara erişir.
+
 ## Mod seçme ve değiştirme
 
 İleti alanındaki mod açılır menüsü **üç** seçenek sunar: Ajan (sohbet), Plan ve Orkestrasyon. `review` **kullanıcı tarafından seçilemez** — bir PR inceleme alanı oluşturulduğunda sistem tarafından ve pipeline adımları tarafından ayarlanır.
@@ -87,4 +89,5 @@ Claude Code taşıma katmanında sohbet dışı bir mod `--permission-mode plan`
 - [Ajan modeli](/tr-TR/kilavuz/kavramlar/ajan-modeli/): hangi taşıma katmanlarının bir modu uygulayabildiği
 - [Korumalar](/tr-TR/kilavuz/kavramlar/korumalar/): bir modun ön ayarının beslediği etki sınıfı politikası
 - [Orkestrasyon](/tr-TR/kilavuz/kavramlar/orkestrasyon/): onaylanan bir orkestrasyon önerisinin ne yaptığı
+- [Kod modu](/tr-TR/kilavuz/kavramlar/kod-modu/): modun araçlarını çağıran betikler
 - [Plan modunu kullanma](/tr-TR/kilavuz/nasil-yapilir/plan-modu/): uygulamalı adım adım anlatım

@@ -2,29 +2,45 @@
 title: Konteks alat dan cache prompt
 description: Mengapa agen hanya diperlihatkan sebagian kecil alat, bukan semuanya, bagaimana agen menjangkau sisanya, dan aturan yang menjaga cache prompt penyedia tetap hangat sepanjang sebuah run.
 slug: id-ID/panduan-pengguna/konsep/konteks-alat
-sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
+sourceHash: 74ad7fcb903772d007ba9bd7ec85153fcf668335
 ---
 
 Ada dua hal yang berlaku untuk setiap permintaan yang dibuat harness bawaan: definisi alat adalah biaya tetap terbesar di dalamnya, dan hampir tidak ada satu pun yang akan dipakai. Halaman ini menjelaskan apa yang dilakukan Control Center untuk mengatasinya, dan mengapa jawabannya bukan sekadar "kirim lebih sedikit alat".
 
 ## Masalahnya adalah perhatian, bukan byte
 
-Control Center mendaftarkan sekitar 126 alat. Jika dikirim seluruhnya, definisinya memakan biaya sekitar **23.000 token pada setiap permintaan** — biaya yang tidak dapat disentuh oleh pemadatan apa pun, karena definisi alat berjalan di bagian permintaan yang terpisah dari percakapan.
+Control Center memiliki sekitar 160 alat sendiri. Jika dikirim seluruhnya, definisinya akan ikut dikirim pada **setiap permintaan** — biaya yang tidak dapat disentuh oleh pemadatan apa pun, karena definisi alat berjalan di bagian permintaan yang terpisah dari percakapan.
 
 Tagihan token adalah keluhan yang paling jelas, dan dengan cache prompt, tagihan itu juga yang lebih kecil. Biaya sesungguhnya adalah **akurasi pemilihan**. Evaluasi publik tentang pemanggilan alat sepakat bahwa model memilih alat yang tepat secara andal hingga sekitar 30–50 alat di dalam konteks, lalu makin memburuk setelah itu. Penyebab yang disebutkan bukanlah jumlah token, melainkan **tumpang tindih semantik**: begitu sebuah katalog memuat beberapa alat yang deskripsinya mirip, model memilih di antara yang tampak serupa alih-alih mengingat kembali sebuah kemampuan.
 
-Dengan 126 alat, agen sudah jauh melewati rentang itu pada setiap giliran — termasuk banyak giliran yang hanya perlu membaca sebuah file.
+Dengan sekitar 160 alat, agen sudah jauh melewati rentang itu pada setiap giliran — termasuk banyak giliran yang hanya perlu membaca sebuah file.
 
-## Permukaan dua tingkat
+## Satu himpunan langsung kecil
 
 Karena itu sebuah run diperlihatkan dua hal:
 
-- himpunan **residen** — sekitar dua lusin alat, dikirim dengan skema lengkap pada setiap permintaan;
+- himpunan **langsung** berisi sekitar lima belas alat, dikirim dengan skema lengkap pada setiap permintaan;
 - sebuah **indeks nama** untuk semua sisanya, dikelompokkan di bawah judul seperti "Tickets and projects" atau "Memory and knowledge", dengan biaya beberapa ratus token untuk seluruh katalog.
 
-Diukur pada katalog saat ini, hal itu membawa blok alat **dari ~23,1 ribu token menjadi ~5,0 ribu, sekitar 78% lebih kecil**, dan menempatkan himpunan yang selalu terlihat di dalam rentang yang pemilihannya andal.
+Diukur pada registri yang dibangun oleh tes, alat chat standar agen bawaan berjumlah 14 definisi alat dan sekitar 16,5 KB dengan `repl`, dengan `repl` sendiri sekitar 4 KB (definisinya tidak boleh melebihi 4.096 byte), dan 14 definisi serta sekitar 13 KB di server yang tidak dapat menjalankan skrip. Itu adalah pengukuran satu permukaan, bukan setiap instalasi. Setiap alat lain dijangkau dari skrip atau dimuat saat pertama kali dipakai.
 
-Himpunan residen adalah alat-alat yang dipakai sebuah run pada *sebagian besar* run: kosakata file dan shell (`read`, `write`, `edit`, `search`, `bash`, …), alat penemuan, daftar periksa tugas, pencarian memori, dan kata kerja apa pun yang harus dipanggil [mode](/id-ID/panduan-pengguna/konsep/mode) saat ini untuk menghasilkan luarannya. Kata kerja luaran milik sebuah mode selalu residen — sebuah run tidak boleh sampai harus mencari panggilan tunggal yang menghasilkan luarannya.
+Himpunan langsung berisi alat yang paling banyak dipakai run pada giliran-giliran awalnya dan alat yang tidak boleh dicari-cari oleh run: `read`, `write`, `edit`, `search`, `find`, `bash` dan `read_output`; `ask_user` dan `task`; `todo_write`, `search_memory` dan `send_message`; serta verba apa pun yang harus dipanggil [mode](/id-ID/panduan-pengguna/konsep/mode/) saat ini untuk menyerahkan keluarannya. Verba keluaran milik sebuah mode selalu langsung — sebuah run tidak boleh sampai harus mencari panggilan tunggal yang menghasilkan luarannya. Sebuah alat mendapat tempat karena dipakai di sebagian besar run, bukan karena penting ketika dipakai: setiap nama dalam himpunan adalah definisi pada setiap giliran di setiap run.
+
+### Skrip menjangkau sisanya
+
+Ketika server dapat menjalankan skrip, setiap run juga memiliki [`repl`](/id-ID/panduan-pengguna/konsep/mode-kode/), yang berada di urutan pertama dalam daftar. Aturan untuk sisa katalog kemudian adalah:
+
+- alat yang boleh dipanggil skrip hanya dapat dijangkau **hanya dari skrip**: ia ada dalam indeks nama, dan skrip `repl` memanggilnya sebagai `tools.<name>(args)` setelah mencarinya dengan `searchTools()` atau `describeTool()`, sampai server tidak dapat menjalankan skrip run tersebut dan alat itu dimuat saat pertama kali dipakai sebagai gantinya ([Saat skrip tidak dapat dijalankan](/id-ID/panduan-pengguna/konsep/mode-kode/#saat-skrip-tidak-dapat-dijalankan));
+- alat yang tidak boleh dipanggil skrip (`eval`, `task`, persetujuan, delegasi dan beberapa lainnya) **ditunda**: ia dimuat saat pertama kali dipakai, seperti dijelaskan di bawah;
+- `search_tools` ditambahkan ketika ada yang ditunda.
+
+Run tanpa `repl` mendapat himpunan langsung yang sama, dan semua yang lain ditunda.
+
+Himpunan langsung sama dengan atau tanpa `repl`, dan itu disengaja. Agen belajar satu permukaan, kepala setiap permintaan berisi alat yang sama dalam urutan yang sama, dan menambahkan `repl` tidak mengubah apa pun yang sudah diandalkan agen.
+
+Keuntungannya: skema alat khusus skrip tidak pernah dikirim ke penyedia, sehingga seratusan alat di luar himpunan langsung hanya menanggung namanya. Skrip yang membutuhkan sepuluh di antaranya tidak membayar skema satu pun dari mereka, dan hasil antaranya tidak pernah masuk ke konteks.
+
+Biayanya: alat di luar himpunan langsung membutuhkan skrip untuk memanggilnya, dan skrip harus mencari argumen alat itu lebih dulu. Untuk satu panggilan cepat, itu adalah langkah tambahan yang tidak diperlukan panggilan langsung. Itulah sebabnya alat yang paling banyak dipanggil run pada giliran awalnya tetap langsung.
 
 ### Ditunda bukan berarti tidak tersedia
 
@@ -32,19 +48,21 @@ Inilah bagian yang membuat rancangan ini aman, bukan sekadar murah. **Alat yang 
 
 Agen melihat namanya di dalam prompt. Jika agen memanggil nama itu secara langsung, harness memuat skemanya dan menjalankan alat tersebut pada langkah yang sama — tanpa galat, tanpa perjalanan bolak-balik. Model tidak perlu tahu bahwa alat itu pernah "dibongkar".
 
-Ketika agen tahu tugasnya tetapi tidak tahu namanya, `search_tools` menerima deskripsi dalam bahasa sehari-hari ("tetapkan tiket kepada seseorang"), memberi peringkat pada seluruh permukaan run, dan mengembalikan kecocokan *dengan skemanya yang sudah dimuat*, sehingga giliran berikutnya bisa langsung memanggilnya. Jika pencarian tidak menemukan apa pun, ia mengatakannya secara terus terang dan menyarankan kata kunci lain atau pencarian yang lebih luas — sengaja demikian, karena agen yang membaca hasil pencarian kosong sebagai "kemampuan ini tidak ada" akan mengarang pengganti alih-alih mencari lagi.
+Ketika agen tahu tugasnya tetapi tidak tahu namanya, `search_tools` menerima deskripsi dalam bahasa sehari-hari ("tetapkan tiket kepada seseorang"), memberi peringkat pada seluruh permukaan run, dan mengembalikan kecocokan *dengan skemanya yang sudah dimuat*, sehingga giliran berikutnya bisa langsung memanggilnya. Kecocokan yang hanya dapat dipanggil dari skrip dikembalikan beserta cara memanggilnya dari skrip, kecuali skrip run tersebut sudah tidak dapat dijalankan: maka alat itu dimuat seperti kecocokan lainnya. Jika pencarian tidak menemukan apa pun, ia mengatakannya secara terus terang dan menyarankan kata kunci lain atau pencarian yang lebih luas — sengaja demikian, karena agen yang membaca hasil pencarian kosong sebagai "kemampuan ini tidak ada" akan mengarang pengganti alih-alih mencari lagi.
 
 `search_tools` hanya ada di harness bawaan. Klien MCP eksternal sebagai gantinya memiliki `search_tool_bm25`, yang memberi peringkat pada indeks yang sama tetapi hanya mendeskripsikan kecocokan — klien tersebut sudah menerima semua skema dari `tools/list`, jadi tidak ada yang perlu dimuat.
 
-### Apa yang tidak pernah dilakukan oleh penundaan
+### Apa yang tidak pernah dilakukan permukaan
 
-Penundaan diterapkan **setelah** filter alat milik mode, tidak pernah sebagai penggantinya. Penundaan menyembunyikan sebuah skema; ia tidak dapat memunculkan alat yang ditolak oleh mode. Alat yang diaktifkan tetap melewati prompt persetujuan dan [pagar pengaman tindakan](/id-ID/panduan-pengguna/konsep/pagar-pengaman) persis seperti alat residen, dan sebuah alat tidak dapat memuat nama yang sejak awal tidak ada di permukaan run.
+Penundaan dan skrip diterapkan **setelah** filter alat milik mode, tidak pernah sebagai penggantinya. Keduanya menyembunyikan sebuah skema; keduanya tidak dapat memunculkan alat yang ditolak mode. Alat yang dimuat dan panggilan skrip tetap melewati prompt persetujuan dan [pagar pengaman tindakan](/id-ID/panduan-pengguna/konsep/pagar-pengaman/) persis seperti panggilan langsung, dan keduanya tidak dapat menjangkau nama yang sejak awal tidak ada di permukaan run.
 
-Permukaan MCP yang dilihat klien eksternal **tidak** terpengaruh. `tools/list` tetap mengembalikan katalog lengkap. Upaya sebelumnya untuk memangkasnya langsung merusak agen: klien MCP memvalidasi nama alat terhadap daftar cache-nya sendiri dan menolak apa pun yang tidak terdaftar tanpa pernah bertanya ke server, sehingga alat yang "tersembunyi tetapi dapat dipanggil" menjadi tidak terjangkau. Penundaan berada di dalam harness, tempat memuat alat di tengah run adalah hal yang benar-benar bisa dilakukan harness.
+Permukaan MCP yang dilihat klien eksternal **tidak** ditunda. `tools/list` mengembalikan katalog lengkap, karena klien MCP memvalidasi nama alat terhadap daftar cache-nya sendiri dan menolak apa pun yang tidak terdaftar tanpa pernah bertanya ke server, sehingga alat yang "tersembunyi tetapi dapat dipanggil" akan menjadi tidak terjangkau. Penundaan berada di dalam harness, tempat memuat alat di tengah run adalah hal yang benar-benar bisa dilakukan harness.
 
-### Mematikannya
+Run agen yang menjangkau Control Center melalui endpoint MCP-nya ketika server dapat menjalankan skrip adalah satu-satunya pengecualian. `tools/list`-nya berisi `repl`, alat langsung, dan setiap alat yang tidak boleh dipanggil skrip, dan run itu memanggil sisanya dari skrip. Panggilan langsung ke salah satu dari alat-alat itu dijawab dengan cara memanggilnya dari skrip.
 
-`--tool-deferral=off` (atau `CC_SERVER_TOOL_DEFERRAL=off`) membuat setiap alat yang diloloskan menjadi residen kembali, sehingga menghasilkan permintaan yang persis sama dengan yang dibuat server sebelum penundaan ada. Lihat [referensi CLI `cc_server`](/id-ID/panduan-pengguna/referensi/cli-cc-server).
+### Mematikan penundaan
+
+`--tool-deferral=off` (atau `CC_SERVER_TOOL_DEFERRAL=off`) mematikan penundaan: run tanpa `repl` mendapat setiap alat yang diizinkan secara lengkap, dan run dengan `repl` mendapat alat yang tidak boleh dipanggil skrip secara lengkap, sementara sisanya tetap hanya dari skrip. Lihat [referensi CLI `cc_server`](/id-ID/panduan-pengguna/referensi/cli-cc-server/).
 
 ## Cache prompt
 
@@ -66,7 +84,7 @@ Penyedia mengizinkan jumlah penanda cache yang terbatas, dan Control Center memb
 
 | Penanda                      | Mencakup                           | Masa berlaku |
 | ---------------------------- | ---------------------------------- | -------- |
-| Alat **residen** terakhir    | Blok alat                          | 1 jam    |
+| Alat **langsung** terakhir   | Blok alat                          | 1 jam    |
 | Blok sistem terakhir         | Alat + prompt sistem               | 1 jam    |
 | Ekor giliran sebelumnya      | Riwayat hingga permintaan terakhir | 5 menit  |
 | Ekor giliran saat ini        | Riwayat lengkap                    | 5 menit  |
@@ -79,12 +97,12 @@ Awalan alat-dan-sistem mendapat masa berlaku panjang karena ia konstan sepanjang
 
 Subagen dengan tipe yang sama menghasilkan awalan prompt yang identik byte demi byte, jadi mereka seharusnya membaca satu entri cache alih-alih masing-masing menulis entrinya sendiri. Namun sebuah entri baru bisa dibaca setelah permintaan yang menulisnya mulai merespons, sehingga fan-out yang diluncurkan sekaligus membuat setiap anaknya membayar biaya lebih untuk awalan yang mereka bagi bersama.
 
-Harness membiarkan anak pertama dengan bentuk tertentu mulai, lalu melepaskan saudara-saudaranya begitu ia mulai melakukan streaming. Penantiannya terbatas: anak pertama yang lambat menghabiskan satu hit cache, tidak pernah menggagalkan fan-out itu sendiri. Karena alasan yang sama, setiap subagen mendapat himpunan alat residen yang sama terlepas dari profilnya — memvariasikannya per profil hanya akan memecah awalan bersama tanpa manfaat, karena profil sudah menentukan apa yang boleh dipanggil oleh si anak.
+Harness membiarkan anak pertama dengan bentuk tertentu mulai, lalu melepaskan saudara-saudaranya begitu ia mulai melakukan streaming. Penantiannya terbatas: anak pertama yang lambat menghabiskan satu hit cache, tidak pernah menggagalkan fan-out itu sendiri. Karena alasan yang sama, setiap subagen mendapat himpunan alat langsung yang sama terlepas dari profilnya — memvariasikannya per profil hanya akan memecah awalan bersama tanpa manfaat, karena profil sudah menentukan apa yang boleh dipanggil oleh si anak.
 
 ## Menyaksikannya bekerja
 
 Kedua bagiannya dapat diamati, bukan sekadar diasumsikan:
 
-- **Penjelajah konteks** pada sebuah percakapan melaporkan alat residen, indeks yang ditunda dan berapa biaya yang *akan* ditimbulkan oleh setiap skema yang ditahan, dibangun dari jalur kode yang sama dengan yang digunakan run sungguhan.
+- **Penjelajah konteks** pada sebuah percakapan melaporkan alat langsung, indeks yang ditunda dan berapa biaya yang *akan* ditimbulkan oleh setiap skema yang ditahan, dibangun dari jalur kode yang sama dengan yang digunakan run sungguhan.
 - Setiap run mencatat alat tertunda mana yang dimuatnya dan apa yang memicunya, sehingga pencarian yang tidak menemukan apa pun terlihat sebagai kegagalan pengambilan kembali alih-alih menghilang ke dalam agen yang diam-diam melakukan sesuatu yang mirip.
 - Observabilitas melaporkan **Tingkat cache** sebagai pembacaan cache dibagi seluruh token prompt yang diproses, termasuk penulisan cache — run yang terus membangun ulang awalannya memperoleh skor rendah, bukan skor seperti run yang tidak pernah membutuhkan cache.

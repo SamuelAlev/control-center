@@ -1,4 +1,11 @@
+import 'package:cc_domain/core/domain/entities/agent_run_log.dart'
+    show RunStatus;
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
+import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/agent_goal_status.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/goal_hold.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/wake_rule_values.dart';
 
 /// Fired when an agent finishes a run (success or failure).
 class AgentRunCompleted implements DomainEvent {
@@ -33,6 +40,170 @@ class AgentRunCompleted implements DomainEvent {
 
   /// Conversation tied to the run, if any.
   final String? conversationId;
+
+  @override
+  final DateTime occurredAt;
+}
+
+/// A run has ended and its terminal run-log row is written.
+///
+/// The one fact every reader of a finished run builds on: published exactly
+/// once per run, AFTER the terminal write that stamped [status] and
+/// [endReason] (the write that won `completeIfActive`), so a listener reads
+/// what happened from the event and never re-reads a row that may not be
+/// final yet. A second terminal write for the same run publishes nothing.
+///
+/// Only top-level runs settle: a subagent's child row (one with a parent run)
+/// ends inside its parent's run and publishes no event of its own.
+class AgentRunSettled implements DomainEvent {
+  /// Creates an [AgentRunSettled] event.
+  const AgentRunSettled({
+    required this.agentId,
+    required this.workspaceId,
+    required this.spaceId,
+    required this.conversationId,
+    required this.runId,
+    required this.status,
+    required this.endReason,
+    required this.costMicros,
+    required this.limitResetsAt,
+    required this.wakeIds,
+    required this.requestedByUserId,
+    required this.wakeReason,
+    required this.occurredAt,
+  });
+
+  /// Agent whose run ended.
+  final String agentId;
+
+  /// Workspace the run belongs to.
+  final String workspaceId;
+
+  /// Space the run worked in, if any.
+  final String? spaceId;
+
+  /// Conversation the run answered, if any.
+  final String? conversationId;
+
+  /// The run-log id.
+  final String runId;
+
+  /// The terminal status just written ([RunStatus.completed] or
+  /// [RunStatus.error]).
+  final RunStatus status;
+
+  /// Why the run ended, as written in the same terminal write.
+  final RunEndReason endReason;
+
+  /// The run's final cost in micro-dollars, its subagents' included, read
+  /// from the row just written.
+  final int costMicros;
+
+  /// When the provider said the limit resets, for a run that ended on a usage
+  /// limit on its last account and whose provider reported a time.
+  final DateTime? limitResetsAt;
+
+  /// The wakes this run delivered, in delivery order.
+  final List<String> wakeIds;
+
+  /// The person who started the run; null for a run the server started.
+  final String? requestedByUserId;
+
+  /// Why the run was started (its dispatch-time `WakeContext.wakeReason`,
+  /// read from the run row): `userMessage` for a person's own message. Null
+  /// for a run started without one (a subagent).
+  final WakeReason? wakeReason;
+
+  @override
+  final DateTime occurredAt;
+}
+
+/// A goal reached an outcome a person should hear about: it completed,
+/// failed, was cancelled, exhausted its budget, or paused needing a person.
+class GoalSettled implements DomainEvent {
+  /// Creates a [GoalSettled] event.
+  const GoalSettled({
+    required this.goalId,
+    required this.workspaceId,
+    required this.spaceId,
+    required this.conversationId,
+    required this.agentId,
+    required this.status,
+    required this.hold,
+    required this.summary,
+    required this.requestedByUserId,
+    required this.occurredAt,
+  });
+
+  /// The goal.
+  final String goalId;
+
+  /// Workspace the goal belongs to.
+  final String workspaceId;
+
+  /// Space the goal runs in.
+  final String spaceId;
+
+  /// Conversation the goal runs in.
+  final String conversationId;
+
+  /// Agent pursuing the goal.
+  final String agentId;
+
+  /// The goal's status after the change: a terminal status, or
+  /// [AgentGoalStatus.paused] for a pause that needs a person.
+  final AgentGoalStatus status;
+
+  /// Why a paused goal is held; null for a terminal status.
+  final GoalHold? hold;
+
+  /// The closing summary or the reason, when there is one.
+  final String? summary;
+
+  /// The person who started the goal; null when the server started it.
+  final String? requestedByUserId;
+
+  @override
+  final DateTime occurredAt;
+}
+
+/// A wake rule (a schedule, loop or watch) ended for good: it fired its
+/// one-off, ran out of runs, budget or time, its goal ended, its person left
+/// the workspace, or someone deleted it. Its pending wake is already
+/// cancelled when this is published.
+class WakeRuleEnded implements DomainEvent {
+  /// Creates a [WakeRuleEnded] event.
+  const WakeRuleEnded({
+    required this.ruleId,
+    required this.workspaceId,
+    required this.spaceId,
+    required this.conversationId,
+    required this.agentId,
+    required this.reason,
+    required this.requestedByUserId,
+    required this.occurredAt,
+  });
+
+  /// The rule.
+  final String ruleId;
+
+  /// Workspace the rule belongs to.
+  final String workspaceId;
+
+  /// The conversation's space.
+  final String spaceId;
+
+  /// Conversation the rule wakes.
+  final String conversationId;
+
+  /// Agent the rule wakes.
+  final String agentId;
+
+  /// Why it ended.
+  final WakeRuleEndReason reason;
+
+  /// The person the rule acted for; null for a bot's rule.
+  final String? requestedByUserId;
 
   @override
   final DateTime occurredAt;

@@ -1,6 +1,7 @@
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_node_config.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/step_kind.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart';
+import 'package:cc_domain/features/pipelines/domain/templates/goal_pursue_config.dart';
 
 /// One entry in the editor sidebar — represents a kind of node the user
 /// can drag onto the canvas.
@@ -202,6 +203,27 @@ NodeTypeLibrary defaultNodeTypeLibrary() {
         outputKey: 'custom_output',
         extras: {'spaceId': _runRoomRef, 'conversationTitle': 'Custom prompt'},
         prompt: 'Write your prompt here. Use {{state_key}} placeholders.',
+      ),
+    ),
+    NodeType(
+      id: 'goal.pursue',
+      displayName: 'Pursue a goal',
+      description:
+          'Starts a durable goal for an agent: it works in segments until '
+          'the contract is met and verified, within the budget, then the '
+          'step continues with {summary, verdict}. Waits while the goal '
+          'is paused or needs review.',
+      defaultKind: StepKind.listen,
+      defaultBodyKey: kGoalPursueBodyKey,
+      defaultConfig: PipelineNodeConfig(
+        label: 'Pursue a goal',
+        outputKey: 'goal_result',
+        extras: {
+          'spaceId': _runRoomRef,
+          'conversationTitle': 'Goal',
+          'budgetMicros': 5000000,
+        },
+        prompt: 'Describe the objective. Use {{state_key}} placeholders.',
       ),
     ),
     NodeType(

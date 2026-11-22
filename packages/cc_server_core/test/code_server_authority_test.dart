@@ -36,7 +36,6 @@ import 'package:cc_domain/features/memory/domain/repositories/memory_domain_repo
 import 'package:cc_domain/features/memory/domain/repositories/memory_fact_repository.dart';
 import 'package:cc_domain/features/memory/domain/repositories/memory_policy_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
-import 'package:cc_domain/features/messaging/domain/repositories/space_read_repository.dart';
 import 'package:cc_domain/features/newsfeed/domain/repositories/newsfeed_repository.dart';
 import 'package:cc_domain/features/notifications/domain/repositories/notification_feed_repository.dart';
 import 'package:cc_domain/features/orchestration/domain/repositories/orchestration_repository.dart';
@@ -374,7 +373,6 @@ RemoteRpcCatalog _catalog(
     forgeRead:
         ({required workspaceId, required userId, required repoId}) async {},
   ),
-  spaceReadRepository: _SpaceReads(),
   memoryDomainRepository: _MemoryDomains(),
   memoryAccessGrantRepository: _MemoryGrants(),
   agentWorkingMemoryRepository: _WorkingMemory(),
@@ -435,8 +433,6 @@ class _Newsfeed with _Unused implements NewsfeedRepository {}
 class _Agents with _Unused implements AgentRepository {}
 
 class _Repos with _Unused implements RepoRepository {}
-
-class _SpaceReads with _Unused implements SpaceReadRepository {}
 
 class _MemoryDomains with _Unused implements MemoryDomainRepository {}
 

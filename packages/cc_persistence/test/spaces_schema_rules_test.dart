@@ -273,7 +273,7 @@ void main() {
   });
 
   group('natural keys', () {
-    test('a principal joins a space once; a read moves its cursor', () async {
+    test('a principal joins a space once', () async {
       await seedSpace(db, 's');
       for (final id in ['p1', 'p2']) {
         await db.messagingDao.insertParticipant(
@@ -285,11 +285,8 @@ void main() {
           ),
         );
       }
-      await db.messagingDao.markSpaceRead('s', 'user-1');
-
       final rows = await db.messagingDao.getParticipants('s');
       expect(rows.map((r) => r.id), ['p1']);
-      expect(rows.single.lastReadAt, isNotNull);
     });
 
     test('the Notes doc bumps its version in place', () async {

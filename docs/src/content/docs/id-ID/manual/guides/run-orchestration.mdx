@@ -2,7 +2,7 @@
 title: Jalankan orkestrasi
 description: Minta rencana kepada orkestrator, tinjau dan edit rencana itu di Plan Studio, setujui sekali, lalu biarkan pipeline yang dihasilkan mengerjakan pekerjaannya.
 slug: id-ID/panduan-pengguna/panduan-praktis/jalankan-orkestrasi
-sourceHash: 086301be6c1957f6336294720967813c3050ed25
+sourceHash: cc4390cbac6c2122dd24c23bcef20693f40121bb
 ---
 
 Panduan ini menunjukkan cara mengubah satu tujuan besar menjadi rencana seluruh
@@ -61,22 +61,13 @@ Tekan **Estimasi** di bilah persetujuan untuk melihat rentang biaya, durasi, dan
 radius dampak sebelum Anda menyetujuinya. Lihat
 [Bekerja di Plan Studio](/id-ID/panduan-pengguna/panduan-praktis/plan-studio/) untuk editor lengkapnya.
 
-:::note[Anggaran bukan batas belanja]
-Anggaran sebuah proposal dibandingkan dengan _estimasi_ di bilah persetujuan:
-saat ujung atas estimasi melebihi anggaran itu, totalnya berubah merah dengan
-peringatan melebihi anggaran. Tidak ada yang memeriksa pengeluaran selama
-rencana dieksekusi, jadi hal itu tidak akan menghentikan atau menggagalkan
-eksekusi. Untuk penghentian pengeluaran yang sesungguhnya, gunakan kebijakan
-anggaran per agen — lihat
-[Kelola biaya](/id-ID/panduan-pengguna/panduan-praktis/kelola-biaya/).
+:::note[Anggaran menahan run]
+Anggaran sebuah proposal dibandingkan dengan _estimasi_ di bilah persetujuan: saat ujung atas estimasi melebihi anggaran itu, totalnya berubah merah dengan peringatan melebihi anggaran. Saat rencana dieksekusi, server memeriksa pengeluaran sebelum setiap langkah baru. Pada anggaran, run ditahan dan tidak ada yang baru dimulai; langkah yang sudah berjalan tetap selesai. Pihak yang meminta run mendapat notifikasi dan menekan **Naikkan batas** di halaman run pipeline untuk melanjutkan. Lihat [Kelola biaya](/id-ID/panduan-pengguna/panduan-praktis/kelola-biaya/).
 :::
 
 ## Langkah 3: Setujui
 
-Setujui rencana itu, dari kartu di chat atau dari bilah persetujuan Plan Studio.
-**Inilah satu-satunya keputusan yang Anda buat.** Persetujuan hanya dapat
-dilakukan operator — tidak ada alat MCP untuk itu, sehingga agen dapat
-mengusulkan dan merevisi tetapi tidak pernah menyetujui rencananya sendiri.
+Setujui rencana itu, dari kartu di chat atau dari bilah persetujuan Plan Studio. **Inilah satu-satunya keputusan yang Anda buat.** Persetujuan hanya dapat dilakukan operator — tidak ada alat MCP untuk itu, sehingga agen dapat mengusulkan dan merevisi tetapi tidak pernah menyetujui rencananya sendiri. Menyetujui memerlukan akses tulis ke repositori space, dan run kemudian bertindak untuk orang yang menyetujuinya.
 
 Dari sini, materializer deterministik (fungsi murni, tanpa LLM) mengubah
 proposal menjadi [pipeline](/id-ID/panduan-pengguna/konsep/pipeline/) sungguhan dan membuat
@@ -114,12 +105,7 @@ Tekan **Batalkan orkestrasi** pada kartu di chat, atau **Batalkan eksekusi** di
 bilah persetujuan Plan Studio. Pembatalan membongkar pekerjaan yang sedang
 berjalan.
 
-Orkestrasi gagal ketika materialisasi gagal, atau ketika eksekusi pipeline yang
-dihasilkannya gagal (riset, diskusi, sintesis, atau persist — langkah-langkah
-itu tidak dilanjutkan saat gagal). Langkah **kerja** yang dihasilkan selalu
-dilanjutkan saat gagal, sehingga satu sub-tiket yang gagal tidak menggagalkan
-eksekusi. Tidak ada jalur kegagalan karena anggaran terlampaui dan tidak ada
-ambang "setiap sub-tiket gagal".
+Orkestrasi gagal ketika materialisasi gagal, atau ketika eksekusi pipeline yang dihasilkannya gagal (riset, diskusi, sintesis, atau persist — langkah-langkah itu tidak dilanjutkan saat gagal). Langkah **kerja** yang dihasilkan selalu dilanjutkan saat gagal, sehingga satu sub-tiket yang gagal tidak menggagalkan eksekusi. Mencapai anggaran menahan run alih-alih menggagalkannya, dan tidak ada ambang "setiap sub-tiket gagal".
 
 ## Panduan terkait
 

@@ -46,21 +46,6 @@ class SpaceParticipantsTable extends Table {
   /// Joined at.
   DateTimeColumn get joinedAt => dateTime().withDefault(currentDateAndTime)();
 
-  /// `created_at` of the newest message the participant had seen when they
-  /// last read the space (their read cursor). Null until the space is first
-  /// opened under this participant, which is treated as "nothing unseen yet"
-  /// rather than "everything unseen".
-  ///
-  /// Drives the sidebar's unread indicator: an agent message after the
-  /// cursor (while no run is in flight) surfaces a notification dot.
-  DateTimeColumn get lastReadAt => dateTime().nullable()();
-
-  /// `rowid` of that message (0 when the space had none), so the cursor is
-  /// the pair `(lastReadAt, lastReadSeq)`. `created_at` has whole-second
-  /// resolution: a message landing later in the same second as the read
-  /// compares after it by this column, not before.
-  IntColumn get lastReadSeq => integer().withDefault(const Constant(0))();
-
   @override
   String get tableName => 'space_participants';
 

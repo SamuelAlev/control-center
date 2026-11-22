@@ -1,0 +1,143 @@
+---
+title: Realizuj cel
+description: Daj agentowi cel, nad którym pracuje przez kolejne uruchomienia i restarty, określ, co znaczy gotowe, i zdecyduj, kiedy cel jest zakończony.
+slug: pl-PL/podrecznik/poradniki/realizuj-cel
+sourceHash: 0ea77964bd9e3044e168624bc67325de0fd1d1e5
+---
+
+Cel to praca, nad którą agent pracuje, aż zostanie spełnione to, co znaczy gotowe. Agent pracuje w **segmentach**: ograniczonych uruchomieniach, które serwer rozpoczyna jedno po drugim, także po restartach, aż cel zostanie zweryfikowany, zamknie go osoba albo osiągnie limit. Agent nie może zamknąć celu, mówiąc, że skończył. Serwer uruchamia sprawdzenia celu, a najpierw wynik ogląda recenzent.
+
+## Rozpocznij cel
+
+Wpisz `/goal` i cel w polu wiadomości rozmowy:
+
+```text
+/goal --budget 20 --days 2 --check "make test" make the importer handle files over 2 GB
+```
+
+Wpisanie `/goal` z tekstem na początku otwiera wywiad o celu. Pyta o kryteria sukcesu, sprawdzenia, które muszą przejść, granice i warunki zatrzymania, oferuje osobnego kontrolera, rozpoczynanie każdego segmentu od nowa i odpowiadanie na własne pytania. Każdy krok można pominąć.
+
+| Flaga | Znaczenie |
+| --- | --- |
+| `--budget <dollars>` | Ile może wydać cały cel. Domyślnie 50 dolarów |
+| `--max <N>` | Najwięcej segmentów, jakie może zająć cel. Domyślnie bez limitu |
+| `--days <N>` | Termin, tyle dni od teraz |
+| `--check "<command>"` | Polecenie, które musi przejść, zanim cel może się zakończyć, uruchamiane w worktree. Można powtórzyć, najwyżej 5 razy |
+| `--checker <agent>` | Inny agent, który sprawdza twierdzenie, że cel jest gotowy, po nazwie lub identyfikatorze |
+| `--fresh` | Każdy segment zaczyna bez historii rozmowy, tylko z celu i jego notatek |
+| `--unattended wait` lub `--unattended assume` | Co dzieje się z pytaniami agenta, gdy nikt nie odpowiada (zob. [Gdy nikt nie odpowiada](#gdy-nikt-nie-odpowiada)) |
+
+- Flagi mogą stać w dowolnym miejscu wiadomości. Nieznana flaga, powtórzona flaga, zła wartość i więcej niż 5 sprawdzeń są odrzucane, a szkic zostaje w polu wiadomości z powodem pod spodem.
+- Liczba na początku celu jest częścią celu. Aby ograniczyć segmenty, użyj `--max`.
+- `/goal` jest odczytywane tylko w wiadomości, którą sam wpisujesz. Ten sam tekst od agenta, potoku lub wybudzenia jest zwykłą wiadomością.
+- Agent realizuje w obszarze roboczym jeden cel naraz. Drugie `/goal` dla tego samego agenta jest odrzucane, dopóki pierwszy jest aktywny.
+
+### Co znaczy gotowe
+
+Cel może zawierać sekcje, które stają się jego kontraktem:
+
+```text
+/goal make the importer handle files over 2 GB
+
+## Success criteria
+- A 3 GB fixture imports without running out of memory
+- The progress bar reaches 100%
+
+## Boundaries
+- Don't change the public API
+
+## Stop conditions
+- A migration would drop data
+
+## Checks
+- `make test` (300 s)
+- environment task `test` (600 s)
+```
+
+- **Kryteria sukcesu**: najwyżej 12, każde najwyżej 300 znaków. Każde to coś, co recenzent może potwierdzić.
+- **Sprawdzenia**: najwyżej 5. Sprawdzenie działa w worktree albo jako nazwane zadanie [środowiska](/pl-PL/podrecznik/poradniki/srodowiska/) przestrzeni. Każde ma domyślnie 300 sekund, najwyżej 1,800.
+- Sekcja ponad limit jest odrzucana, nigdy nie obcinana.
+
+Cel bez kryteriów pozwala agentowi zdecydować, kiedy jest gotowy, a cel bez sprawdzenia polega tylko na recenzji. Strona celu o tym informuje.
+
+## Jak cel jest kontynuowany
+
+Każdy segment to uruchomienie ograniczone do 5 dolarów lub do tego, co zostało z budżetu, zależnie od tego, co jest mniejsze. Po każdym segmencie serwer decyduje, co dalej, na podstawie tego, co segment zrobił:
+
+- **Zrobił postęp.** Rozpoczyna się następny segment.
+- **Czeka na coś, co sam uruchomił**: harmonogram, obserwację, pytanie do innego agenta albo przekazane zgłoszenie. Cel na to czeka. Jeśli nic nie nadejdzie, serwer sprawdza ponownie po 20 minutach, potem po 40, 80, 160, a następnie co 240 minut. Karta pokazuje **Czeka na to, co uruchomił · sprawdzi ponownie do** i podaje godzinę.
+- **Nie zrobił postępu.** Postęp oznacza, że worktree zmienił się w wyniku własnej pracy segmentu, lista kontrolna się zmieniła albo agent zrobił coś nowego. Po 3 segmentach bez postępu cel się wstrzymuje: **Brak postępu w ostatnich segmentach.**
+- **Czekał zbyt długo.** Po 24 godzinach czekania albo po 6 czekaniach na nowe rzeczy, które sam uruchomił, bez postępu między nimi, cel się wstrzymuje: **Czeka po segmentach bez postępu.**
+- **Zakończył się błędem.** Serwer ponawia po 30 sekundach, potem dłużej, do 15 minut. Po 3 błędach z rzędu cel kończy się niepowodzeniem.
+- **Zapytał osobę.** Cel czeka, aż ktoś odpowie: **Potrzebuje osoby**.
+
+Cel zatrzymuje się też przy swoim budżecie (**Budżet wyczerpany**), limicie segmentów lub terminie.
+
+## Gdy agent mówi, że skończył
+
+Agent twierdzi, że cel jest gotowy, z dowodem dla każdego kryterium. Potem:
+
+1. **Serwer uruchamia sprawdzenia** w sandboxie, nigdy bezpośrednio na maszynie serwera. Sprawdzenie, które kończy się kodem innym niż zero, nie przechodzi. Sprawdzenie, którego nie da się uruchomić w ogóle (brak polecenia, brak uprawnień do wykonania, nieistniejące zadanie środowiska), jest uszkodzone: cel zatrzymuje się dla osoby z **To sprawdzenie nie może się uruchomić:** i poleceniem. Bez sandboxa na serwerze cel zatrzymuje się z **Brak dostępnego sandboxa do uruchomienia jego sprawdzeń.** (Wyjątkiem jest serwer, którego właściciel wyłączył sandboxing dla każdego uruchomienia: sprawdzenia działają tam tak samo jak polecenia własne agenta.) Gdy nic w worktree nie zmieniło się od nieudanego sprawdzenia, nie jest ono uruchamiane ponownie.
+2. **Recenzent ogląda wynik**, gdy wszystkie sprawdzenia przeszły albo ich nie ma. Recenzentem jest kontroler celu, w przeciwnym razie kontroler przestrzeni, w przeciwnym razie własny agent celu. Działa tylko do odczytu, bez historii rozmowy: może czytać pliki i wyjście sprawdzeń, ale nie może niczego zmieniać, uruchamiać poleceń ani budzić innych agentów. Dostaje też pełny diff testów i skryptów sprawdzeń, które zmienił agent, i traktuje to, co agent napisał w rozmowie i w swoich notatkach, jako twierdzenia, a nie dowód. Cel bez kryteriów ocenia jako całość. Odpowiada, że cel jest gotowy, nie jest gotowy albo że nie może tego ocenić.
+3. **Gotowe**: cel się kończy. **Niegotowe**: agent dostaje ustalenia recenzenta i pracuje dalej. Po 3 rundach uznanych za niegotowe albo gdy recenzent nie może ocenić, cel czeka na ciebie: **Czeka na recenzję: twierdzi, że jest gotowy, a nic tego nie potwierdziło**.
+
+Wiadomość, którą wpiszesz, gdy recenzent działa, nie trafia do recenzenta i nie zostaje wysłana po zakończeniu recenzji. Pozostaje zakolejkowana dla następnego segmentu agenta. Gdy żaden segment nie następuje, zostaje wstrzymana dla ciebie pod **Wyślij wstrzymane wiadomości**.
+
+Recenzent, który nie może działać (usunięty albo na adapterze, który nie może utrzymać uruchomienia tylko do odczytu, jak agent ACP), wstrzymuje cel: **Jego agent kontrolujący jest niedostępny. Wybierz innego kontrolera, potem wznów.** Żaden inny agent nie wkracza bez ciebie.
+
+Kontroler od innego dostawcy niż agent celu rzadziej dzieli jego martwe punkty. Bez osobnego kontrolera agent sprawdza własną pracę, a cel zapisuje **Zweryfikował sam (bez osobnego kontrolera)**.
+
+## Śledź cel
+
+- **W rozmowie**: karta celu w panelu **Ogólne** pokazuje wstrzymanie, segment, wydatki względem budżetu, pozostały czas, co znaczy gotowe, sprawdzenia i ostatni werdykt.
+- **Strona Cele**: pasek boczny → **Cele**. Cele są pogrupowane jako **Czeka na recenzję**, **Otwarte** i **Zakończone**.
+- **Strona celu**: otwórz cel, aby zobaczyć **Teraz** (segmenty, wydatki, termin, liczbę braków postępu i co dalej), **Co znaczy gotowe**, sekcję **Weryfikacja** (ostatnia runda: twierdzenie, każde sprawdzenie z wyjściem, recenzja dla każdego kryterium) i **Harmonogramy i wybudzenia**. Każdy cel ma własny adres (`/workspaces/<workspace>/goals/<goal id>`), więc możesz udostępnić link.
+
+Na telefonie ekran celów rozpoczyna cel z sprawdzeniami i limitem segmentów oraz pokazuje te same cele i wstrzymania.
+
+## Zmień lub zatrzymaj cel
+
+| Działanie | Kto może |
+| --- | --- |
+| **Wstrzymaj cel**, **Zatrzymaj cel** | Każdy z dostępem do przestrzeni |
+| **Wznów cel**, **Podnieś budżet** | Tylko osoba, która rozpoczęła cel (administrator obszaru roboczego dla celu, którego nikt nie rozpoczął) |
+| **Edytuj** co znaczy gotowe, **Zmień kontrolera** | Tylko osoba, która uruchomiła cel (a dla celu, którego nikt nie uruchomił, administrator obszaru roboczego), z prawem zapisu do repozytoriów przestrzeni, gdy cel jest wstrzymany |
+| **Zatwierdź ukończenie** | Każdy z dostępem do przestrzeni, gdy cel czeka na recenzję. Cel uruchomiony przez potok: tylko osoba, która uruchomiła to uruchomienie (a gdy nikt tego nie zrobił, administrator obszaru roboczego) |
+
+- Naciśnięcie **Zatrzymaj** w uruchomieniu agenta wstrzymuje cel (**Wstrzymany przez osobę**). Jego oczekujące wybudzenia czekają, aż go wznowisz.
+- **Zatwierdź ukończenie** zamyka cel jako gotowy na twoje słowo. Cel zapisuje **Zamknięte przez osobę bez zaliczonego sprawdzenia**.
+- Cel, który wykorzystał budżet, wznawia się tylko z wyższym budżetem.
+- Gdy osoba, która uruchomiła cel, opuszcza obszar roboczy, cel od razu przechodzi do recenzji, a jego działający agent zostaje zatrzymany. Nikt nie może go wznowić; każdy z dostępem do przestrzeni może go zatrzymać. Codzienne podsumowanie wymienia go dla administratorów obszaru roboczego.
+
+## Gdy nikt nie odpowiada
+
+Gdy segment zadaje osobie pytanie albo prosi o zatwierdzenie, a nikt nie odpowiada, prośba czeka domyślnie 72 godziny. Potem zatwierdzenie liczy się jako odrzucone, pytanie jako bez odpowiedzi, a cel się wstrzymuje: **Pytanie albo prośba o zatwierdzenie skierowane do osoby pozostały bez odpowiedzi.** Uruchomienie, które zapytało, nie dostaje już dalszych odpowiedzi: wszystko inne, o co zapyta, jest od razu odrzucane, a ono kończy to, co może. Administrator obszaru roboczego ustawia czas (od 1 godziny do 7 dni) w **Ustawienia → Obszar roboczy → Harmonogramy → Gdy nikt nie odpowiada**. Raz dziennie, o ustawionej tam godzinie, dostajesz jedno podsumowanie wszystkiego, co na ciebie czeka.
+
+Z `--unattended assume` agent podaje swoje założenie i idzie dalej po 10 minutach bez odpowiedzi, o ile jego warunki zatrzymania na to pozwalają. Dotyczy to tylko pytań. Zatwierdzenia nigdy nie są zakładane, a recenzja niczego nie zakłada.
+
+## Limity użycia i restarty
+
+- **Limit użycia dostawcy.** Gdy segment zatrzymuje się na limicie użycia dostawcy, a dostawca podaje, kiedy limit się resetuje (w ciągu 7 dni), cel się wstrzymuje bez kary: **Wstrzymany przy limicie użycia · wznowi się** i czas. Wznawia się 30 sekund po resecie. Po 8 takich wstrzymaniach cel czeka na ciebie: **Zbyt często trafiał na limity użycia. Przejrzyj go, potem wznów.** Każde wznowienie zaczyna licznik od nowa. Agenty ACP nie podają resetu, więc ich cele nie czekają na limicie.
+- **Restart serwera.** Cel przetrwa restart. Segment, który restart przerwał, zaczyna się od nowa, a harmonogramy celu i oczekujące wybudzenia zostają zachowane.
+
+## Usprawnienia po celu
+
+Gdy cel przejdzie weryfikację, krótka recenzja tylko do odczytu (najwyżej 1 dolar) może zaproponować usprawnienia: fakt pamięci, politykę, notatkę o agencie albo zmianę umiejętności. Wpisz `/refine`, aby poprosić o taką samą recenzję pracy w rozmowie. Najwyżej jedna recenzja działa na rozmowę co 20 minut.
+
+Propozycje pojawiają się na stronie **Usprawnienia** (pasek boczny → **Usprawnienia**). Otwórz jedną, aby zobaczyć, co zmienia, dowody oraz **Zaakceptuj**, **Odrzuć** lub **Cofnij**.
+
+- Propozycja nic nie zmienia, dopóki ktoś jej nie zaakceptuje. Wygasa po 30 dniach.
+- Zmiana umiejętności albo polityki dla całego obszaru roboczego wymaga administratora obszaru roboczego (**Decyduje administrator**).
+- Zmiana umiejętności jest zapisywana jako osobna wersja. Naciśnij **Uruchom ocenę**, aby porównać ją z obecną umiejętnością; **Zaakceptuj** jest możliwe dopiero po zaliczonej ocenie. Ocena przechodzi, gdy została uruchomiona w całości, a agent rozwiązał z zmianą co najmniej tyle samo uruchomień, co z obecną umiejętnością; strona pokazuje obie liczby. Jeśli umiejętność zmieni się po ocenie, uruchom ją ponownie.
+- **Cofnij** przywraca wcześniejszy tekst, o ile nikt go od tego czasu nie zmienił.
+
+## W potoku
+
+Potok może rozpocząć cel krokiem **Pursue a goal** (`goal.pursue`). Krok czeka, aż cel się zakończy, i przekazuje dalej jego podsumowanie i werdykt. Zob. [Kroki potoku](/pl-PL/podrecznik/dokumentacja-referencyjna/kroki-potoku/).
+
+## Zobacz także
+
+- [Harmonogramy i wybudzenia](/pl-PL/podrecznik/poradniki/harmonogramy-i-wybudzenia/)
+- [Agenci współpracują](/pl-PL/podrecznik/poradniki/agenci-wspolpracuja/)
+- [Zarządzaj kosztami](/pl-PL/podrecznik/poradniki/zarzadzanie-kosztami/)
+- [Polecenia slash](/pl-PL/podrecznik/dokumentacja-referencyjna/polecenia-slash/)

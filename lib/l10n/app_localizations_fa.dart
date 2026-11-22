@@ -1034,9 +1034,6 @@ class AppLocalizationsFa extends AppLocalizations {
   }
 
   @override
-  String get calendarAllDayGutter => 'تمام‌روز';
-
-  @override
   String calendarAllDayEventCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -2502,9 +2499,6 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get activityBackedUpServer => 'از دادهٔ سرور پشتیبان گرفته شد';
-
-  @override
-  String get activityMarkedSpaceRead => 'فضا خوانده‌شده علامت خورد';
 
   @override
   String get activityRespondedToInvitation => 'به دعوت رویداد پاسخ داده شد';
@@ -13421,6 +13415,17 @@ class AppLocalizationsFa extends AppLocalizations {
   }
 
   @override
+  String diffFileUnresolvedConversations(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count گفتگوی حل‌نشده',
+      one: '1 گفتگوی حل‌نشده',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get pendingReview => 'بازبینی در انتظار';
 
   @override
@@ -13775,9 +13780,6 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get spaceKeepAfterMergeHint =>
       'دیگر دربارهٔ این فضا از شما پرسیده نمی‌شود.';
-
-  @override
-  String get spaceAllPrsMergedLabel => 'همهٔ درخواست‌های ادغام ادغام شدند';
 
   @override
   String get archiveSpace => 'بایگانی فضا';
@@ -15334,7 +15336,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get skillEvalIncomplete => 'ناقص';
 
   @override
-  String get skillEvalInconclusive => 'بی‌نتیجه';
+  String get skillEvalInconclusive => 'بدون تصمیم (شواهد کافی نیست)';
 
   @override
   String get skillEvalInferred => 'استنباط‌شده';
@@ -18881,4 +18883,2922 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get mcpServerNotFound =>
       'این سرور دیگر وجود ندارد. ممکن است کسی آن را حذف کرده باشد.';
+
+  @override
+  String get scriptToolCalls => 'فراخوانی ابزارها';
+
+  @override
+  String scriptCallCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count فراخوانی',
+      one: '۱ فراخوانی',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scriptCallsRunning(int count) {
+    return '$count در حال اجرا';
+  }
+
+  @override
+  String scriptCallsOk(int count) {
+    return '$count موفق';
+  }
+
+  @override
+  String scriptCallsFailed(int count) {
+    return '$count ناموفق';
+  }
+
+  @override
+  String scriptCallsDenied(int count) {
+    return '$count ردشده';
+  }
+
+  @override
+  String scriptCallsCancelled(int count) {
+    return '$count لغوشده';
+  }
+
+  @override
+  String scriptCallsQueued(int count) {
+    return '$count در صف';
+  }
+
+  @override
+  String scriptCallsSkipped(int count) {
+    return '$count ردشده';
+  }
+
+  @override
+  String get scriptStepQueued => 'در صف';
+
+  @override
+  String get scriptStepSkipped => 'ردشده';
+
+  @override
+  String get scriptGroupLoop => 'حلقه';
+
+  @override
+  String get scriptGroupEach => 'برای هر مورد';
+
+  @override
+  String get scriptGroupParallel => 'موازی';
+
+  @override
+  String get scriptGroupFunction => 'تابع';
+
+  @override
+  String scriptCallsHidden(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'نمایش $count فراخوانی دیگر',
+      one: 'نمایش ۱ فراخوانی دیگر',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptCallsUnplaced => 'فراخوانی‌هایی که در اسکریپت جایی ندارند';
+
+  @override
+  String get scriptToolComputed => 'ابزار';
+
+  @override
+  String scriptStepSemantics(String subject, String state) {
+    return '$subject، $state';
+  }
+
+  @override
+  String get scriptSourceLabel => 'اسکریپت';
+
+  @override
+  String scriptSourceLines(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count خط',
+      one: '۱ خط',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptStateRunning => 'در حال اجرا';
+
+  @override
+  String get scriptStateCompleted => 'کامل‌شده';
+
+  @override
+  String get scriptStateFailed => 'ناموفق';
+
+  @override
+  String get scriptStateTimedOut => 'مهلت تمام شد';
+
+  @override
+  String get scriptStateCancelled => 'لغوشده';
+
+  @override
+  String get scriptStateMemoryExceeded => 'حافظه تمام شد';
+
+  @override
+  String get scriptStateOutputExceeded => 'خروجی بیش از حد';
+
+  @override
+  String get scriptStateSandboxError => 'خطای سندباکس';
+
+  @override
+  String get scriptStateRefused => 'رد شده';
+
+  @override
+  String get transcriptToolDenied => 'ردشده';
+
+  @override
+  String get transcriptStatusRunningScript => 'در حال اجرای یک اسکریپت…';
+
+  @override
+  String get scriptOriginLine => 'از اسکریپتی که عامل در حال اجرای آن است';
+
+  @override
+  String get scriptOriginShow => 'نمایش اسکریپت';
+
+  @override
+  String get codeModeTitle => 'حالت کد';
+
+  @override
+  String get codeModeSubtitle =>
+      'عامل‌ها می‌توانند اسکریپت کوتاهی بنویسند که ابزارهایشان را فراخوانی کند، به جای اینکه یکی‌یکی آن‌ها را فراخوانی کنند.';
+
+  @override
+  String get codeModeStatusLabel => 'وضعیت';
+
+  @override
+  String get codeModeFactAvailability => 'در این سرور';
+
+  @override
+  String get codeModeAvailable => 'در دسترس';
+
+  @override
+  String get codeModeUnavailable => 'در دسترس نیست';
+
+  @override
+  String get codeModeFactRunner => 'اجراکننده';
+
+  @override
+  String codeModeUnavailableNote(String reason) {
+    return 'این سرور نمی‌تواند اسکریپت اجرا کند، بنابراین عامل‌ها اینجا ابزارهایشان را یکی‌یکی فراخوانی می‌کنند. پیام سرور: $reason';
+  }
+
+  @override
+  String get codeModeNoReason => 'دلیلی ارائه نشده است.';
+
+  @override
+  String get codeModeViewExecutions => 'نمایش اجراهای کد';
+
+  @override
+  String get codeModeLimitsLabel => 'محدودیت‌ها';
+
+  @override
+  String get codeModeLimitsSubtitle =>
+      'یک اسکریپت تا چه مدتی و تا چه حدی می‌تواند پیش برود. پیش‌فرض‌ها برای بیشتر فضاهای کاری مناسب‌اند.';
+
+  @override
+  String get codeModeLimitsDisclosure => 'تنظیم محدودیت‌ها';
+
+  @override
+  String get codeModeLimitsAtDefaults => 'پیش‌فرض';
+
+  @override
+  String codeModeLimitsChangedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count مورد تغییر کرده',
+      one: '۱ مورد تغییر کرده',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeModeLimitsUseDefaults => 'استفاده از پیش‌فرض‌ها';
+
+  @override
+  String get codeModeLimitWallClock => 'زمان هر اسکریپت';
+
+  @override
+  String get codeModeLimitWallClockHelp =>
+      'زمانی که صرف انتظار برای یک شخص می‌شود، حساب نمی‌شود.';
+
+  @override
+  String get codeModeLimitCpu => 'زمان پردازنده';
+
+  @override
+  String get codeModeLimitCpuHelp => 'زمانی که خود اسکریپت صرف محاسبه می‌کند.';
+
+  @override
+  String get codeModeLimitHeap => 'حافظه';
+
+  @override
+  String get codeModeLimitHeapHelp =>
+      'حافظه‌ای که اسکریپت هنگام اجرا می‌تواند استفاده کند.';
+
+  @override
+  String get codeModeLimitNestedCalls => 'تعداد فراخوانی ابزار در هر اسکریپت';
+
+  @override
+  String get codeModeLimitNestedCallsHelp =>
+      'فراخوانی‌های بیش از این رد می‌شوند و به اسکریپت دلیلش گفته می‌شود.';
+
+  @override
+  String get codeModeLimitInFlight => 'فراخوانی همزمان';
+
+  @override
+  String get codeModeLimitInFlightHelp =>
+      'تعداد فراخوانی‌هایی که یک اسکریپت می‌تواند همزمان در حال اجرا داشته باشد.';
+
+  @override
+  String get codeModeLimitOutputTokens => 'خروجی که عامل می‌خواند';
+
+  @override
+  String get codeModeLimitOutputTokensHelp =>
+      'خروجی طولانی کوتاه می‌شود؛ عامل می‌تواند بقیه را در صورت درخواست بخواند.';
+
+  @override
+  String codeModeLimitRange(String defaultValue, String min, String max) {
+    return 'پیش‌فرض $defaultValue. از $min تا $max.';
+  }
+
+  @override
+  String codeModeLimitOutOfRange(String min, String max) {
+    return 'یک عدد صحیح از $min تا $max وارد کنید.';
+  }
+
+  @override
+  String get codeModeSuffixSeconds => 'ث';
+
+  @override
+  String get codeModeSuffixMebibytes => 'مگابایت';
+
+  @override
+  String get codeModeSuffixCalls => 'فراخوانی';
+
+  @override
+  String get codeModeSuffixTokens => 'توکن';
+
+  @override
+  String codeModeServerCap(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'این سرور در هر زمان حداکثر $count اسکریپت را در همه فضاهای کاری اجرا می‌کند.',
+      one:
+          'این سرور در هر زمان حداکثر ۱ اسکریپت را در همه فضاهای کاری اجرا می‌کند.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String codeModeUnitMilliseconds(String value) {
+    return '$value میلی‌ثانیه';
+  }
+
+  @override
+  String codeModeUnitSeconds(String value) {
+    return '$value ث';
+  }
+
+  @override
+  String codeModeUnitMinutesSeconds(String minutes, String seconds) {
+    return '$minutes دقیقه و $seconds ث';
+  }
+
+  @override
+  String get codeModeRefusedLimitUnknown =>
+      'سرور یکی از این محدودیت‌ها را نمی‌شناسد.';
+
+  @override
+  String get codeModeRefusedLimitOutOfRange =>
+      'یکی از این محدودیت‌ها خارج از حد مجاز سرور است.';
+
+  @override
+  String get codeModeRefusedUnknownSetting => 'سرور این تنظیم را نشناخت.';
+
+  @override
+  String get codeExecutionsTitle => 'اجراهای کد';
+
+  @override
+  String get codeExecutionsSubtitle =>
+      'اسکریپت‌هایی که عامل‌ها در این فضای کاری اجرا کرده‌اند، همراه با هر فراخوانی ابزار که انجام داده‌اند.';
+
+  @override
+  String get codeExecutionsEmpty => 'هنوز هیچ اسکریپتی اینجا اجرا نشده است.';
+
+  @override
+  String get codeExecutionsEmptyFiltered =>
+      'هیچ اسکریپتی با این فیلترها مطابقت ندارد.';
+
+  @override
+  String get codeExecutionsStatusFilter => 'نتیجه';
+
+  @override
+  String get codeExecutionsAllOutcomes => 'همه نتیجه‌ها';
+
+  @override
+  String codeExecutionsOutcomeCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count نتیجه',
+      one: '۱ نتیجه',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionsScopeRun => 'اسکریپت‌ها از یک اجرا';
+
+  @override
+  String get codeExecutionsScopeConversation => 'اسکریپت‌ها از یک گفتگو';
+
+  @override
+  String get codeExecutionsScopeAgent => 'اسکریپت‌ها از یک عامل';
+
+  @override
+  String get codeExecutionsShowAll => 'نمایش همه';
+
+  @override
+  String get codeExecutionUntitled => 'اسکریپت بی‌عنوان';
+
+  @override
+  String get codeExecutionRecord => 'ضبط';
+
+  @override
+  String get codeExecutionBackToList => 'بازگشت به اجراهای کد';
+
+  @override
+  String get codeExecutionNotFound =>
+      'این اجرای کد در این فضای کاری نیست. ممکن است همراه با اجرایش حذف شده باشد.';
+
+  @override
+  String get codeExecutionRefusedSpace =>
+      'این اسکریپت در فضایی اجرا شده که شما اجازهٔ باز کردنش را ندارید، پس ضبطش پنهان می‌ماند.';
+
+  @override
+  String get codeExecutionOpenRecord => 'باز کردن ضبط';
+
+  @override
+  String get codeExecutionFactStarted => 'شروع‌شده';
+
+  @override
+  String get codeExecutionFactDuration => 'مدت';
+
+  @override
+  String get codeExecutionFactCalls => 'فراخوانی ابزارها';
+
+  @override
+  String get codeExecutionFactAgent => 'عامل';
+
+  @override
+  String get codeExecutionFactSurface => 'اجرا شده از طریق';
+
+  @override
+  String get codeExecutionSurfaceHarness => 'عامل داخلی';
+
+  @override
+  String get codeExecutionSurfaceMcp => 'عامل بیرونی';
+
+  @override
+  String get codeExecutionFactCpu => 'زمان پردازنده';
+
+  @override
+  String get codeExecutionFactMemory => 'بیشترین حافظه';
+
+  @override
+  String get codeExecutionOpenConversation => 'باز کردن گفتگو';
+
+  @override
+  String get codeExecutionRunScripts => 'اسکریپت‌های این اجرا';
+
+  @override
+  String get codeExecutionAgentScripts => 'اسکریپت‌های این عامل';
+
+  @override
+  String get codeExecutionScript => 'اسکریپت';
+
+  @override
+  String get codeExecutionConsole => 'کنسول';
+
+  @override
+  String get codeExecutionOutputTruncated =>
+      'خروجی برای جا شدن در آنچه نگه داشته می‌شود، کوتاه شد.';
+
+  @override
+  String get codeExecutionNoPayload =>
+      'اسکریپت و خروجی‌اش دیگر نگه داشته نمی‌شوند.';
+
+  @override
+  String codeExecutionCallsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count فراخوانی ابزار',
+      one: '۱ فراخوانی ابزار',
+      zero: 'فراخوانی ابزارها',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionNoCalls => 'این اسکریپت هیچ ابزاری را فراخوانی نکرد.';
+
+  @override
+  String get codeExecutionCallCompleted => 'کامل‌شده';
+
+  @override
+  String get codeExecutionCallFailed => 'ناموفق';
+
+  @override
+  String get codeExecutionCallDenied => 'ردشده';
+
+  @override
+  String get codeExecutionCallCancelled => 'لغوشده';
+
+  @override
+  String get codeExecutionCallTimedOut => 'مهلت تمام شد';
+
+  @override
+  String get codeExecutionCallUnknownTool => 'ابزار ناشناخته';
+
+  @override
+  String get codeExecutionCallInvalidArgs => 'آرگومان‌های نامعتبر';
+
+  @override
+  String get codeExecutionGateAllowed => 'مجاز';
+
+  @override
+  String get codeExecutionGateApproved => 'تأییدشده توسط یک شخص';
+
+  @override
+  String get codeExecutionGateDenied => 'ردشده';
+
+  @override
+  String get codeExecutionGateNotReached => 'بررسی نشد';
+
+  @override
+  String codeExecutionCallWaited(String duration) {
+    return '$duration منتظر یک شخص ماند';
+  }
+
+  @override
+  String get codeExecutionCallArguments => 'آرگومان‌ها';
+
+  @override
+  String get codeExecutionCallResult => 'نتیجه';
+
+  @override
+  String codeExecutionCallResultSize(String size) {
+    return 'برگشت $size';
+  }
+
+  @override
+  String codeExecutionBytes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count بایت',
+      one: '۱ بایت',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionEndedScriptError =>
+      'اسکریپت خطایی پرتاب کرد که هیچ‌چیز آن را مدیریت نکرد.';
+
+  @override
+  String codeExecutionEndedScriptErrorNamed(String name) {
+    return 'اسکریپت $name پرتاب کرد که هیچ‌چیز آن را مدیریت نکرد.';
+  }
+
+  @override
+  String get codeExecutionEndedStalled =>
+      'اسکریپت منتظر چیزی ماند که هرگز تمام نمی‌شود.';
+
+  @override
+  String get codeExecutionEndedCpu => 'اسکریپت زمان پردازنده‌اش تمام شد.';
+
+  @override
+  String get codeExecutionEndedHeap => 'اسکریپت به حد مجاز حافظه‌اش رسید.';
+
+  @override
+  String get codeExecutionEndedOutput => 'اسکریپت بیش از حد مجاز خروجی نوشت.';
+
+  @override
+  String get codeExecutionEndedDeadline => 'زمان اسکریپت تمام شد.';
+
+  @override
+  String get codeExecutionEndedCancelled => 'اسکریپت پیش از پایان لغو شد.';
+
+  @override
+  String get codeExecutionEndedShutdown => 'سرور هنگام اجرای اسکریپت خاموش شد.';
+
+  @override
+  String get codeExecutionEndedServerStopped =>
+      'سرور هنگام اجرای اسکریپت متوقف شد. ضبط با شروع دوباره سرور بسته شد.';
+
+  @override
+  String get codeExecutionEndedInternal =>
+      'برنامه‌ی اجراکننده‌ی اسکریپت به‌خودی‌خود خطا داد.';
+
+  @override
+  String get codeExecutionEndedStart =>
+      'برنامه‌ی اجراکننده‌ی اسکریپت نتوانست شروع شود.';
+
+  @override
+  String get codeExecutionEndedLockdown =>
+      'برنامه‌ی اجراکننده‌ی اسکریپت نتوانست خودش را کاملاً محدود کند، بنابراین اسکریپت اجرا نشد.';
+
+  @override
+  String get codeExecutionEndedExited =>
+      'برنامه‌ی اجراکننده‌ی اسکریپت پیش از پایان اسکریپت متوقف شد.';
+
+  @override
+  String get codeExecutionEndedRunnerBrokeRules =>
+      'برنامه‌ی اجراکننده‌ی اسکریپت قواعد اجرایش را شکست و متوقف شد.';
+
+  @override
+  String get codeExecutionEndedUnresponsive =>
+      'برنامه‌ی اجراکننده‌ی اسکریپت پاسخ نداد و متوقف شد.';
+
+  @override
+  String get codeExecutionEndedHostError => 'سرور هنگام اجرای اسکریپت خطا داد.';
+
+  @override
+  String get codeExecutionRunningNote =>
+      'هنوز در حال اجراست. فراخوانی‌های ابزارش با پایان هرکدام اینجا ظاهر می‌شوند و نتیجه‌اش وقتی تمام شود.';
+
+  @override
+  String codeModeServerWorkspaceShare(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'اسکریپت‌های هر فضای کاری حداکثر $count مورد از آن‌ها را استفاده می‌کنند.',
+      one:
+          'اسکریپت‌های هر فضای کاری حداکثر ۱ مورد از آن‌ها را استفاده می‌کنند.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get wakeOriginGoal => 'هدف';
+
+  @override
+  String get wakeOriginGoalCheck => 'بررسی هدف';
+
+  @override
+  String get wakeOriginGoalReview => 'بازبینی هدف';
+
+  @override
+  String get wakeOriginSchedule => 'زمان‌بندی';
+
+  @override
+  String get wakeOriginWatch => 'پایش';
+
+  @override
+  String wakeOriginReplyFrom(String agent) {
+    return 'پاسخ از $agent';
+  }
+
+  @override
+  String get wakeOriginReply => 'پاسخ';
+
+  @override
+  String wakeOriginMessageFrom(String agent) {
+    return 'پیام از $agent';
+  }
+
+  @override
+  String get wakeOriginMessage => 'پیام';
+
+  @override
+  String wakeOriginWorkFinishedBy(String agent) {
+    return 'کار تمام‌شده از $agent';
+  }
+
+  @override
+  String get wakeOriginWorkFinished => 'کار تمام‌شده';
+
+  @override
+  String get wakeOriginLimitReset => 'بازنشانی محدودیت';
+
+  @override
+  String get wakeOriginRecovery => 'بازیابی';
+
+  @override
+  String get wakeOriginAssignment => 'واگذاری';
+
+  @override
+  String get wakeOriginPipelineStep => 'مرحله پایپ‌لاین';
+
+  @override
+  String get wakeOriginImprovementReview => 'بازبینی بهبود';
+
+  @override
+  String get wakeKindStopped => 'نگه داشته شد، چون یک شخص اجرا را متوقف کرد.';
+
+  @override
+  String get wakeKindAttempts => 'ارسال سه بار ناموفق بود.';
+
+  @override
+  String get wakeKindAgentDeleted => 'عامل دیگر وجود ندارد.';
+
+  @override
+  String get wakeKindAgentNotDispatchable => 'عامل بازنشسته شده است.';
+
+  @override
+  String get wakeKindAgentPaused => 'عامل مکث شده است.';
+
+  @override
+  String get wakeKindPersonRemoved =>
+      'شخصی که این برای او کار می‌کند فضای کاری را ترک کرده است.';
+
+  @override
+  String get wakeKindBudgetBlocked => 'یک بودجه اجرا را مسدود می‌کند.';
+
+  @override
+  String get wakeKindTakeOver =>
+      'یک شخص درخت کار (worktree) را در اختیار گرفته است.';
+
+  @override
+  String get wakeKindRateCapConversation =>
+      'این گفتگو در ساعت گذشته از بیدارباش‌ها 30 اجرا شروع کرده است.';
+
+  @override
+  String get wakeKindRateCapWorkspace =>
+      'این فضای کاری در ساعت گذشته از بیدارباش‌ها 300 اجرا شروع کرده است.';
+
+  @override
+  String get wakeKindLiveRunNoInput => 'اجرای زنده عامل اینجا ورودی نمی‌پذیرد.';
+
+  @override
+  String get wakeKindLiveRunOtherOptions =>
+      'اجرای زنده عامل اینجا به شکل دیگری اجرا می‌شود، پس این بعد از آن اجرای خودش را شروع می‌کند.';
+
+  @override
+  String get wakeKindLiveRunOtherPerson =>
+      'اجرای زنده عامل اینجا از طرف شخص دیگری است، پس این بعد از آن اجرای خودش را شروع می‌کند.';
+
+  @override
+  String get wakeKindDispatchRefused => 'اجرا نتوانست شروع شود.';
+
+  @override
+  String get wakeKindSandboxUnavailable =>
+      'برای اجرای فقط‌خواندنی سندباکسی در دسترس نیست.';
+
+  @override
+  String get wakeKindReadOnlyUnavailable =>
+      'بک‌اند این عامل نمی‌تواند اجرا را فقط‌خواندنی نگه دارد.';
+
+  @override
+  String get wakeKindServerStopped => 'راه‌اندازی مجدد سرور اجرا را متوقف کرد.';
+
+  @override
+  String get wakeKindServerRestarted =>
+      'سرور در حین اجرای یک شخص راه‌اندازی مجدد شد.';
+
+  @override
+  String get wakeKindGuardFailed => 'یک بررسی پیش از ارسال ناموفق بود.';
+
+  @override
+  String get wakeKindLimit => 'در انتظار محدودیت مصرف ارائه‌دهنده.';
+
+  @override
+  String get wakeKindLimitRunLive => 'در انتظار پایان اجرای در محدودیت مصرف.';
+
+  @override
+  String get wakeKindWakeMissed => 'در زمانی که سرور خاموش بود از دست رفت.';
+
+  @override
+  String get wakeKindPipelineRunEnded => 'اجرای پایپ‌لاینش پایان یافت.';
+
+  @override
+  String get wakeKindGoalEnded => 'هدفش پایان یافت.';
+
+  @override
+  String get wakeKindGoalBudgetExhausted => 'هدفش بودجه‌اش را مصرف کرد.';
+
+  @override
+  String get wakeKindGoalReviewStale =>
+      'از زمانی که این بازبینی خواسته شد، هدف تغییر کرده است.';
+
+  @override
+  String get wakeKindGoalPaused => 'هدفش مکث شده است.';
+
+  @override
+  String get wakeKindGoalHeld => 'هدفش نگه‌داشته شده است.';
+
+  @override
+  String get wakeKindGoalStopped => 'هدفش متوقف شد.';
+
+  @override
+  String get wakeKindAskSettled =>
+      'پرسشی که به آن پاسخ می‌دهد قبلاً تکلیفش روشن شده بود.';
+
+  @override
+  String get wakeKindRuleEnded => 'زمان‌بندی‌اش پایان یافت.';
+
+  @override
+  String get wakeKindUnknown => 'به دلیلی که این نسخه نام نمی‌برد:';
+
+  @override
+  String wakeStripHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count بیدارباش در انتظار',
+      one: '1 بیدارباش در انتظار',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String wakeStripDue(String time) {
+    return 'موعد $time';
+  }
+
+  @override
+  String get wakeStripDueNow => 'هم‌اکنون موعد است';
+
+  @override
+  String get wakeStripHeld => 'نگه‌داشته‌شده';
+
+  @override
+  String wakeStripExpires(String time) {
+    return 'انقضا $time';
+  }
+
+  @override
+  String wakeStripAttempt(int attempt) {
+    return 'تلاش $attempt';
+  }
+
+  @override
+  String get wakeStripCancel => 'لغو بیدارباش';
+
+  @override
+  String get wakeStripDeliverNow => 'ارسال همین حالا';
+
+  @override
+  String get wakeStripResume => 'ازسرگیری';
+
+  @override
+  String get wakeStripDismiss => 'نادیده گرفتن';
+
+  @override
+  String get wakeStripResumeAll => 'ازسرگیری همه';
+
+  @override
+  String get wakeStripResumeOnlyTheirs =>
+      'فقط شخصی که این اجرا مال اوست می‌تواند آن را ازسرگیری کند.';
+
+  @override
+  String get wakeReceiptStarted => 'یک اجرا شروع شد.';
+
+  @override
+  String get wakeReceiptPushed => 'به اجرای زنده تحویل داده شد.';
+
+  @override
+  String wakeReceiptWaiting(String reason) {
+    return 'هنوز در انتظار است. $reason';
+  }
+
+  @override
+  String wakeReceiptSkipped(String reason) {
+    return 'ارسال نشد. $reason';
+  }
+
+  @override
+  String get wakeReceiptDuplicate => 'قبلاً ارسال شده بود.';
+
+  @override
+  String wakeReleased(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count بیدارباش ازسرگرفته شد.',
+      one: '1 بیدارباش ازسرگرفته شد.',
+      zero: 'چیزی ازسرگرفته نشد.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get wakeRefusalNotYours =>
+      'این بیدارباش از طرف شخص دیگری عمل می‌کند. فقط او می‌تواند آن را ارسال یا ازسرگیری کند.';
+
+  @override
+  String get wakeRefusalSettled => 'این بیدارباش قبلاً تکلیفش روشن شده است.';
+
+  @override
+  String heldSteeringHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count پیام نگه‌داشته‌شده',
+      one: '1 پیام نگه‌داشته‌شده',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get heldSteeringResume => 'ارسال پیام‌های نگه‌داشته‌شده';
+
+  @override
+  String get heldSteeringDelete => 'حذف پیام نگه‌داشته‌شده';
+
+  @override
+  String heldSteeringReleased(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count پیام نگه‌داشته‌شده ارسال شد.',
+      one: '1 پیام نگه‌داشته‌شده ارسال شد.',
+      zero: 'چیزی نگه داشته نشده بود.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get workAgentUnknown => 'یک عامل';
+
+  @override
+  String workFeedWoke(int count, String agent) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$agent را برای $count مورد در انتظار بیدار کرد',
+      one: '$agent بیدار شد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String workFeedWakeSkipped(String agent) {
+    return 'بیدارباشی برای $agent ارسال نشد.';
+  }
+
+  @override
+  String workFeedWakeMissed(String agent) {
+    return 'بیدارباشی برای $agent در زمانی که سرور خاموش بود از دست رفت.';
+  }
+
+  @override
+  String workFeedScheduleCreated(String agent) {
+    return 'زمان‌بندی برای $agent تنظیم شد.';
+  }
+
+  @override
+  String workFeedScheduleEnded(String agent) {
+    return 'زمان‌بندی $agent پایان یافت.';
+  }
+
+  @override
+  String get workFeedOpenSchedule => 'باز کردن زمان‌بندی';
+
+  @override
+  String workFeedNoteFromAgent(String agent) {
+    return '$agent این یادداشت را با کلمات خودش برای خودش گذاشت:';
+  }
+
+  @override
+  String get workFeedNoteFromPerson => 'یادآوری‌ای که یک شخص تنظیم کرد:';
+
+  @override
+  String workFeedLimitParkHeld(String provider, String time) {
+    return 'در محدودیت مصرف $provider مکث شد. محدودیت در $time بازنشانی می‌شود.';
+  }
+
+  @override
+  String workFeedLimitParkPending(String provider, String time) {
+    return 'در محدودیت مصرف $provider مکث شد. در $time خودبه‌خود ازسر گرفته می‌شود.';
+  }
+
+  @override
+  String workFeedLimitParkResumed(String provider) {
+    return 'بعد از محدودیت مصرف $provider ازسر گرفته شد.';
+  }
+
+  @override
+  String workFeedLimitParkGone(String provider) {
+    return 'دیگر در محدودیت مصرف $provider در انتظار نیست.';
+  }
+
+  @override
+  String get workFeedLimitParkResume => 'ازسرگیری';
+
+  @override
+  String get workFeedLimitParkCancel => 'لغو';
+
+  @override
+  String workFeedStillInFlight(String agent) {
+    return 'وضعیتی که پس از فشرده‌سازی گفتگو به $agent داده شد';
+  }
+
+  @override
+  String get workFeedShowDetails => 'نمایش جزئیات';
+
+  @override
+  String get workFeedHideDetails => 'پنهان کردن جزئیات';
+
+  @override
+  String get workFeedCommandRefused => 'این فرمان رد شد.';
+
+  @override
+  String get wakeRuleEndFired => 'یک بار اجرا شد.';
+
+  @override
+  String get wakeRuleEndExpired => 'به تاریخ پایانش رسید.';
+
+  @override
+  String get wakeRuleEndRunCap => 'اجراهایش تمام شد.';
+
+  @override
+  String get wakeRuleEndCostCap => 'به سقف هزینه‌اش رسید.';
+
+  @override
+  String get wakeRuleEndGoalEnded => 'هدفش پایان یافت.';
+
+  @override
+  String get wakeRuleEndCancelled => 'لغو شد.';
+
+  @override
+  String get wakeRuleEndMemberRemoved => 'شخص مربوطه فضای کاری را ترک کرد.';
+
+  @override
+  String get wakeRuleEndInvalidRow => 'تنظیمات ذخیره‌شده‌اش خوانده نشد.';
+
+  @override
+  String get wakeRuleRefusalIntervalTooShort =>
+      'فاصله زمانی خیلی کوتاه است. یک فاصله بلندتر انتخاب کنید.';
+
+  @override
+  String get wakeRuleRefusalTooSoon =>
+      'آن زمان خیلی نزدیک است. یک زمان دیرتر انتخاب کنید.';
+
+  @override
+  String get wakeRuleRefusalLineageEnded =>
+      'این زنجیره بیدارباش‌ها اجراها یا زمانش را مصرف کرده است.';
+
+  @override
+  String get wakeRuleRefusalWatchTargetUnreadable =>
+      'شما نمی‌توانید آنچه را این پایش می‌کند بخوانید.';
+
+  @override
+  String get wakeRuleRefusalExpiryRequired =>
+      'یک پایان تعیین کنید، مثلاً --days 3.';
+
+  @override
+  String get wakeRuleRefusalLimitReached =>
+      'این گفتگو هم‌اکنون به اندازه مجازش زمان‌بندی دارد.';
+
+  @override
+  String get wakeRuleRefusalInvalidWhen => 'زمان خوانده نمی‌شود.';
+
+  @override
+  String get wakeRuleRefusalNoteTooLong => 'یادداشت خیلی طولانی است.';
+
+  @override
+  String get wakeRuleRefusalExpiryTooLong => 'پایان خیلی دور است.';
+
+  @override
+  String get wakeRuleRefusalLimitOutOfRange =>
+      'یکی از محدودیت‌های اجرا، روز یا بودجه خارج از محدوده است.';
+
+  @override
+  String get wakeRuleRefusalNextOutsideLoop =>
+      'فقط یک حلقه می‌تواند زمان بعدی خودش را انتخاب کند.';
+
+  @override
+  String get wakeRuleRefusalWatchRefused => 'این قابل پایش نیست.';
+
+  @override
+  String get wakeRuleRefusalRuleEnded => 'این زمان‌بندی قبلاً پایان یافته است.';
+
+  @override
+  String get wakeRuleRefusalNotYours => 'این زمان‌بندی متعلق به شخص دیگری است.';
+
+  @override
+  String get workRefusalUnknown => 'سرور این را رد کرد:';
+
+  @override
+  String get goalRefusalAlreadyActive => 'این گفتگو هم‌اکنون یک هدف فعال دارد.';
+
+  @override
+  String get goalRefusalNotInReview => 'این هدف منتظر بازبینی نیست.';
+
+  @override
+  String get goalRefusalEvidenceIncomplete => 'شواهد هدف ناقص است.';
+
+  @override
+  String get goalRefusalClaimPending =>
+      'ادعای انجام‌شدن آن هنوز در حال بررسی است.';
+
+  @override
+  String get goalRefusalNotActiveSegment =>
+      'این هدف هیچ بخشی در حال اجرا ندارد.';
+
+  @override
+  String get goalRefusalNotYours =>
+      'فقط شخصی که این هدف را شروع کرده می‌تواند این کار را انجام دهد.';
+
+  @override
+  String get goalRefusalNotPaused => 'ابتدا هدف را مکث کنید.';
+
+  @override
+  String get goalRefusalContractInvalid => 'قرارداد هدف خوانده نمی‌شود.';
+
+  @override
+  String get goalRefusalCheckerUnknown => 'هیچ عاملی با این نام وجود ندارد.';
+
+  @override
+  String get goalRefusalCheckerAmbiguous =>
+      'بیش از یک عامل این نام را دارد. از شناسه آن استفاده کنید.';
+
+  @override
+  String get goalRefusalCheckerIsGoalAgent =>
+      'بررسی‌کننده باید عاملی غیر از عاملی باشد که کار را انجام می‌دهد.';
+
+  @override
+  String get goalRefusalCommandInvalid => 'این فرمان /goal خوانده نمی‌شود.';
+
+  @override
+  String goalCardWorking(int segment) {
+    return 'در حال کار · بخش $segment';
+  }
+
+  @override
+  String get goalCardWaiting => 'انتظار برای بیدارباش بعدی‌اش';
+
+  @override
+  String get goalCardVerifying => 'در حال بررسی انجام‌شدنش';
+
+  @override
+  String goalCardLimitUntil(String time) {
+    return 'در محدودیت مصرف مکث شد · ازسرگیری $time';
+  }
+
+  @override
+  String get goalCardLimit => 'در محدودیت مصرف مکث شد';
+
+  @override
+  String get goalCardPerson => 'نیازمند یک شخص';
+
+  @override
+  String get goalCardByPerson => 'توسط یک شخص مکث شد';
+
+  @override
+  String get goalCardNeedsReview =>
+      'در انتظار بازبینی: می‌گوید انجام شده و هیچ چیزی تأییدش نکرده است';
+
+  @override
+  String goalCardSegments(int run, int max) {
+    return 'بخش $run از $max';
+  }
+
+  @override
+  String goalCardSegmentsNoCap(int run) {
+    return 'بخش $run';
+  }
+
+  @override
+  String goalCardMoney(String spent, String cap) {
+    return '$spent از $cap';
+  }
+
+  @override
+  String goalCardTimeLeft(String time) {
+    return '$time مانده';
+  }
+
+  @override
+  String get goalCardOverdue => 'از مهلتش گذشته است';
+
+  @override
+  String get goalCardDoneMeans => 'معنای انجام‌شدن';
+
+  @override
+  String get goalCardChecks => 'بررسی‌ها';
+
+  @override
+  String get goalCardCheckPassed => 'موفق';
+
+  @override
+  String goalCardCheckFailed(int code) {
+    return 'ناموفق · کد خروج $code';
+  }
+
+  @override
+  String get goalCardCheckTimedOut => 'مهلت تمام شد';
+
+  @override
+  String get goalCardCheckNotRerun => 'دوباره اجرا نشد: چیزی تغییر نکرده بود';
+
+  @override
+  String get goalCardCheckBroken => 'قابل اجرا نیست';
+
+  @override
+  String get goalCardCheckNotRun => 'هنوز اجرا نشده';
+
+  @override
+  String get goalCardCriterionMet => 'برآورده شد';
+
+  @override
+  String get goalCardCriterionUnmet => 'برآورده نشد';
+
+  @override
+  String get goalCardCriterionCannotTell => 'نمی‌توان تشخیص داد';
+
+  @override
+  String get goalCardVerdictPass => 'آخرین بررسی: انجام شده';
+
+  @override
+  String get goalCardVerdictFail => 'آخرین بررسی: انجام نشده';
+
+  @override
+  String get goalCardVerdictCannotVerify => 'آخرین بررسی: مشخص نشد';
+
+  @override
+  String get goalCardConcerns => 'نگرانی‌ها';
+
+  @override
+  String goalCardVerifiedBy(String agent) {
+    return 'تأیید شده توسط $agent';
+  }
+
+  @override
+  String get goalCardVerifiedBySelf =>
+      'خودش تأیید کرد (بررسی‌کننده جداگانه‌ای نبود)';
+
+  @override
+  String get goalCardClosedByPerson => 'یک شخص بدون بررسی موفق آن را بست';
+
+  @override
+  String get goalCardNoMachineCheck => 'بررسی خودکار ندارد';
+
+  @override
+  String get goalCardAddCheck => 'افزودن بررسی';
+
+  @override
+  String get goalCardOpen => 'باز کردن هدف';
+
+  @override
+  String get goalCardApprove => 'تأیید تکمیل';
+
+  @override
+  String get goalCardApproveTitle => 'این هدف به‌عنوان انجام‌شده بسته شود؟';
+
+  @override
+  String get goalCardApproveBody =>
+      'هیچ بررسی‌ای آن را تأیید نکرده است. شما بر اساس گفته خودتان آن را می‌بندید و هدف ثبت می‌کند که یک شخص بدون تأیید آن را بسته است.';
+
+  @override
+  String get goalCardApproveConfirm => 'بستن به‌عنوان انجام‌شده';
+
+  @override
+  String get goalCardResumeNotYours =>
+      'ازسرگیری آن یا افزایش بودجه‌اش با کسی است که آن را شروع کرده است.';
+
+  @override
+  String get goalHoldDetailStalled => 'در بخش‌های آخرش پیشرفتی نبوده است.';
+
+  @override
+  String get goalHoldDetailStalledWaiting =>
+      'در انتظار، بعد از بخش‌هایی بدون پیشرفت.';
+
+  @override
+  String get goalHoldDetailVerificationFailed => 'آخرین بررسی ناموفق بود.';
+
+  @override
+  String get goalHoldDetailCannotVerify =>
+      'بررسی‌کننده نتوانست تشخیص دهد که آیا انجام شده است یا نه.';
+
+  @override
+  String get goalHoldDetailSandboxUnavailable =>
+      'برای اجرای بررسی‌هایش سندباکسی در دسترس نیست.';
+
+  @override
+  String get goalHoldDetailCheckerUnavailable =>
+      'عامل بررسی‌کننده‌اش در دسترس نیست. بررسی‌کننده دیگری انتخاب کنید، سپس ازسرگیری کنید.';
+
+  @override
+  String get goalHoldDetailCheckBroken => 'این بررسی قابل اجرا نیست:';
+
+  @override
+  String get goalHoldDetailWakeSkipped => 'بیدارباشش ارسال نشد.';
+
+  @override
+  String get goalHoldDetailClaimPending =>
+      'ادعایش مبنی بر انجام‌شدن منتظر یک بررسی است.';
+
+  @override
+  String get goalHoldDetailUnanswered =>
+      'یک پرسش یا درخواست تأیید از یک شخص بی‌پاسخ ماند.';
+
+  @override
+  String get goalHoldDetailLimitParks =>
+      'خیلی زیاد به محدودیت‌های مصرف خورده است. آن را بررسی کنید، سپس ازسرگیری کنید.';
+
+  @override
+  String get goalHoldDetailInput => 'در انتظار پاسخ در گفتگو.';
+
+  @override
+  String get peerAsksSection => 'پرسش‌ها';
+
+  @override
+  String peerAskTo(String agent) {
+    return 'به $agent';
+  }
+
+  @override
+  String get peerAskKindAsk => 'پرسش';
+
+  @override
+  String get peerAskKindConsult => 'مشورت';
+
+  @override
+  String get peerAskKindReview => 'بازبینی';
+
+  @override
+  String get peerAskStatusPending => 'در انتظار';
+
+  @override
+  String get peerAskStatusAnswered => 'پاسخ داده شد';
+
+  @override
+  String get peerAskStatusFailed => 'ناموفق';
+
+  @override
+  String get peerAskStatusExpired => 'منقضی شد';
+
+  @override
+  String get peerAskStatusCancelled => 'لغو شد';
+
+  @override
+  String peerAskAsked(String time) {
+    return 'پرسیده شد $time';
+  }
+
+  @override
+  String peerAskExpires(String time) {
+    return 'انقضا $time';
+  }
+
+  @override
+  String get peerAskPromised => 'پاسخ را قول داد';
+
+  @override
+  String get peerAskBackground => 'در پس‌زمینه';
+
+  @override
+  String get peerAskCancel => 'لغو پرسش';
+
+  @override
+  String get peerAskAlreadySettled => 'این پرسش قبلاً تکلیفش روشن شده است.';
+
+  @override
+  String get slashHintGoal =>
+      'روی یک هدف کار کنید تا انجام شود. پرچم‌ها: --check, --checker, --fresh, --unattended';
+
+  @override
+  String get slashHintLoop =>
+      'یک کار را در هر فاصله زمانی یا با سرعت عامل تکرار کنید';
+
+  @override
+  String get slashHintSchedule =>
+      'کار را بعداً اجرا کنید: مثلاً بعد از 2h، ساعت 09:00 یا با cron';
+
+  @override
+  String get slashHintRefine =>
+      'کار این گفتگو را بازبینی کنید و بهبودها را پیشنهاد دهید';
+
+  @override
+  String get notifGoalCompleted => 'هدف انجام شد';
+
+  @override
+  String get notifGoalFailed => 'هدف ناموفق شد';
+
+  @override
+  String get notifGoalCancelled => 'هدف لغو شد';
+
+  @override
+  String get notifGoalBudgetExhausted => 'هدف بودجه‌اش را مصرف کرد';
+
+  @override
+  String get notifGoalNeedsReview => 'یک هدف منتظر بازبینی شماست';
+
+  @override
+  String get notifGoalNeedsPerson => 'یک هدف به شما نیاز دارد';
+
+  @override
+  String get notifGoalOnHold => 'یک هدف نگه‌داشته شده است';
+
+  @override
+  String get notifWakeRuleEnded => 'یک زمان‌بندی پایان یافت';
+
+  @override
+  String notifWaitingDigest(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count مورد منتظر شماست',
+      one: '1 مورد منتظر شماست',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notifImprovementProposed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count بهبود پیشنهاد شد',
+      one: 'یک بهبود پیشنهاد شد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notifPipelineRunHeld =>
+      'یک اجرای پایپ‌لاین در بودجه‌اش نگه داشته شد';
+
+  @override
+  String notifPipelineRunHeldBody(String spent, String cap) {
+    return '$spent از $cap خرج شده است';
+  }
+
+  @override
+  String get inboxGoalNeedsReview => 'هدف منتظر بازبینی است';
+
+  @override
+  String get inboxGoalNeedsPerson => 'هدف به شما نیاز دارد';
+
+  @override
+  String get inboxImprovementProposed => 'بهبود پیشنهاد شد';
+
+  @override
+  String get improvementRefusalAlreadyDecided =>
+      'کسی قبلاً درباره این پیشنهاد تصمیم گرفته است.';
+
+  @override
+  String get improvementRefusalCampaignRequired =>
+      'این تغییر با مهارت فعلی ارزیابی را نگذرانده است، یا مهارت پس از اندازه‌گیری تغییر کرده است. ارزیابی را دوباره اجرا کنید.';
+
+  @override
+  String get improvementRefusalChangedSince =>
+      'هدف از زمان پیشنهاد تغییر کرده است. آن را رد کنید تا عامل دوباره پیشنهاد دهد.';
+
+  @override
+  String get improvementRefusalTargetMissing =>
+      'آنچه این پیشنهاد تغییر می‌دهد دیگر وجود ندارد.';
+
+  @override
+  String get improvementRefusalCampaignState =>
+      'ارزیابی در وضعیت فعلی‌اش نمی‌تواند شروع یا تمام شود.';
+
+  @override
+  String get improvementRefusalReviewCooldown =>
+      'این گفتگو اخیراً بازبینی شده است. بعداً دوباره امتحان کنید.';
+
+  @override
+  String get improvementRefusalAdminRequired =>
+      'فقط مدیر فضای کاری می‌تواند درباره این پیشنهاد تصمیم بگیرد.';
+
+  @override
+  String get improvementKindMemoryFact => 'واقعیت حافظه';
+
+  @override
+  String get improvementKindPolicy => 'سیاست';
+
+  @override
+  String get improvementKindAgentNote => 'یادداشت عامل';
+
+  @override
+  String get improvementKindSkillEdit => 'تغییر مهارت';
+
+  @override
+  String get improvementKindSkillNew => 'مهارت جدید';
+
+  @override
+  String get improvementScopeAgent => 'این عامل';
+
+  @override
+  String get improvementScopeRepository => 'این مخزن';
+
+  @override
+  String get improvementScopeWorkspace => 'کل فضای کاری';
+
+  @override
+  String get improvementStatusProposed => 'پیشنهادشده';
+
+  @override
+  String get improvementStatusAccepted => 'پذیرفته‌شده';
+
+  @override
+  String get improvementStatusRejected => 'ردشده';
+
+  @override
+  String get improvementStatusRolledBack => 'برگشت داده شد';
+
+  @override
+  String get improvementStatusExpired => 'منقضی شد';
+
+  @override
+  String get improvementOperationAdd => 'افزودن';
+
+  @override
+  String get improvementOperationReplace => 'جایگزین می‌کند';
+
+  @override
+  String get improvementOperationRemove => 'حذف می‌کند';
+
+  @override
+  String scheduleTriggerOnce(String time) {
+    return 'یک‌بار، $time';
+  }
+
+  @override
+  String scheduleTriggerEvery(String interval) {
+    return 'هر $interval';
+  }
+
+  @override
+  String scheduleTriggerCron(String cron, String zone) {
+    return 'طبق زمان‌بندی $cron ($zone)';
+  }
+
+  @override
+  String get scheduleTriggerSelfPaced =>
+      'وقتی عامل انتخاب کند، با فاصله 1 تا 60 دقیقه';
+
+  @override
+  String get scheduleTriggerPrChecks => 'وقتی بررسی‌های درخواست ادغام تمام شود';
+
+  @override
+  String scheduleTriggerPrChecksOf(String pr) {
+    return 'وقتی بررسی‌های $pr تمام شود';
+  }
+
+  @override
+  String get scheduleTriggerPrReview =>
+      'وقتی درخواست ادغام بازبینی یا پاسخ بگیرد';
+
+  @override
+  String scheduleTriggerPrReviewOf(String pr) {
+    return 'وقتی $pr بازبینی یا پاسخ بگیرد';
+  }
+
+  @override
+  String get scheduleTriggerPrMerged => 'وقتی درخواست ادغام انجام شود';
+
+  @override
+  String scheduleTriggerPrMergedOf(String pr) {
+    return 'وقتی $pr ادغام شود';
+  }
+
+  @override
+  String get scheduleTriggerEnvironment =>
+      'وقتی یک وظیفه محیط خاتمه یابد یا آماده شود';
+
+  @override
+  String scheduleTriggerTicket(String id) {
+    return 'وقتی تیکت $id تکلیفش روشن شود';
+  }
+
+  @override
+  String scheduleTriggerPipelineRun(String id) {
+    return 'وقتی اجرای پایپ‌لاین $id پایان یابد';
+  }
+
+  @override
+  String get goalNextWaiting => 'وقتی چیزی که منتظرش است برسد ادامه می‌دهد.';
+
+  @override
+  String get goalNextVerifying =>
+      'وقتی بررسی‌ها و بازبینی تمام شود، کامل می‌شود یا به کار ادامه می‌دهد.';
+
+  @override
+  String get goalNextLimit =>
+      'وقتی محدودیت مصرف بازنشانی شود ازسر گرفته می‌شود.';
+
+  @override
+  String get goalNextPerson =>
+      'وقتی کسی به پرسش یا درخواست تأییدش پاسخ دهد ادامه می‌دهد.';
+
+  @override
+  String get goalNextByPerson =>
+      'تا وقتی کسی آن را ازسر نگیرد، مکث‌شده می‌ماند.';
+
+  @override
+  String get goalNextNeedsReview =>
+      'آن را به‌عنوان انجام‌شده تأیید کنید، یا برای ادامه کار ازسرش بگیرید.';
+
+  @override
+  String get goalNextWorking =>
+      'بخش به بخش کار می‌کند تا انجام شود یا به محدودیتی برسد.';
+
+  @override
+  String get goalContractAddCheck => 'افزودن بررسی';
+
+  @override
+  String goalContractChecksFull(int max) {
+    return 'یک هدف حداکثر $max بررسی دارد.';
+  }
+
+  @override
+  String goalContractChecksCount(int count, int max) {
+    return '$count از $max بررسی';
+  }
+
+  @override
+  String get goalContractCheckTaskHint => 'نام وظیفه محیط، مثلاً test';
+
+  @override
+  String get goalContractCheckCommandHint => 'فرمان، مثلاً make test';
+
+  @override
+  String get goalContractCheckWhere => 'محل اجرا';
+
+  @override
+  String get goalContractCheckInWorktree => 'در درخت کار';
+
+  @override
+  String get goalContractCheckInEnvironment => 'وظیفه محیط';
+
+  @override
+  String get goalContractSecondsSuffix => 'ث';
+
+  @override
+  String goalContractTimeoutRange(int max) {
+    return '1 تا $max ثانیه';
+  }
+
+  @override
+  String get goalContractRemoveCheck => 'حذف بررسی';
+
+  @override
+  String get goalContractDoneMeans => 'معنای انجام‌شدن';
+
+  @override
+  String get goalContractDoneMeansHelp =>
+      'هر معیار یک چیز است که بازبین می‌تواند تأیید کند.';
+
+  @override
+  String get goalContractCriterionHint =>
+      'یادداشت‌های انتشار هر تغییر ادغام‌شده را فهرست می‌کند';
+
+  @override
+  String goalContractCriterionTooLong(int max) {
+    return 'حداکثر $max نویسه.';
+  }
+
+  @override
+  String get goalContractRemoveCriterion => 'حذف معیار';
+
+  @override
+  String get goalContractAddCriterion => 'افزودن معیار';
+
+  @override
+  String goalContractCriteriaFull(int max) {
+    return 'یک هدف حداکثر $max معیار دارد.';
+  }
+
+  @override
+  String goalContractCriteriaCount(int count, int max) {
+    return '$count از $max معیار';
+  }
+
+  @override
+  String get goalContractChecks => 'بررسی‌ها';
+
+  @override
+  String get goalContractChecksHelp =>
+      'سرور این‌ها را اجرا می‌کند وقتی عامل بگوید کار تمام شده است. هدفی که بررسی ندارد فقط به بازبینی تکیه می‌کند.';
+
+  @override
+  String get goalContractBoundaries => 'مرزها';
+
+  @override
+  String get goalContractBoundariesHint => 'API عمومی را تغییر ندهید';
+
+  @override
+  String get goalContractStopWhen => 'توقف و پرسیدن وقتی';
+
+  @override
+  String get goalContractStopWhenHint => 'یک مهاجرت داده‌ها را حذف می‌کند';
+
+  @override
+  String get goalContractEditTitle => 'ویرایش معنای انجام‌شدن';
+
+  @override
+  String get goalCheckerTitle => 'چه کسی این هدف را بررسی می‌کند';
+
+  @override
+  String get goalCheckerLabel => 'بررسی‌کننده';
+
+  @override
+  String get goalCheckerNone => 'بدون بررسی‌کننده جداگانه';
+
+  @override
+  String get goalCheckerNoneWeaker =>
+      'بدون بررسی‌کننده جداگانه، عامل کار خودش را بازبینی می‌کند و موارد کمتری را می‌گیرد.';
+
+  @override
+  String goalCheckerRecommend(String agent) {
+    return 'مثلاً $agent: بررسی‌کننده‌ای از ارائه‌دهنده‌ای دیگر کمتر احتمال دارد نقاط کور مشترک داشته باشد.';
+  }
+
+  @override
+  String get goalCheckerRecommendGeneric =>
+      'بررسی‌کننده‌ای از ارائه‌دهنده‌ای متفاوت با عامل هدف، کمتر احتمال دارد نقاط کور آن را داشته باشد.';
+
+  @override
+  String raiseCapSpentOf(String spent, String cap) {
+    return '$spent از $cap خرج شده است.';
+  }
+
+  @override
+  String get raiseCapNewCap => 'سقف جدید به دلار';
+
+  @override
+  String raiseCapMustExceed(String cap) {
+    return 'بیشتر از $cap وارد کنید.';
+  }
+
+  @override
+  String get raiseCapConfirm => 'افزایش سقف';
+
+  @override
+  String get goalsBackToList => 'همه اهداف';
+
+  @override
+  String goalPursuedBy(String agent) {
+    return 'پیگیری‌شده توسط $agent';
+  }
+
+  @override
+  String get goalOpenConversation => 'باز کردن گفتگو';
+
+  @override
+  String goalStarted(String time) {
+    return 'شروع شد $time';
+  }
+
+  @override
+  String get goalStopTitle => 'این هدف متوقف شود؟';
+
+  @override
+  String get goalStopBody =>
+      'عامل برای همیشه روی آن کار را متوقف می‌کند. کار تاکنونش در گفتگو باقی می‌ماند.';
+
+  @override
+  String get goalRaiseBudgetTitle => 'افزایش بودجه و ازسرگیری';
+
+  @override
+  String get goalRaiseBudgetAction => 'افزایش بودجه';
+
+  @override
+  String get goalSectionNow => 'اکنون';
+
+  @override
+  String get goalFactSegments => 'بخش‌ها';
+
+  @override
+  String get goalFactMoney => 'خرج‌شده';
+
+  @override
+  String get goalFactDeadline => 'مهلت';
+
+  @override
+  String get goalFactNoProgress => 'بدون پیشرفت';
+
+  @override
+  String get goalNoDeadline => 'ندارد';
+
+  @override
+  String goalDeadlineWithLeft(String time, String left) {
+    return '$time، $left مانده';
+  }
+
+  @override
+  String goalNoProgressCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count بخش آخر پیشرفتی نداشتند',
+      one: 'بخش آخر پیشرفتی نداشت',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get goalObjective => 'هدف';
+
+  @override
+  String get goalSectionContract => 'معنای انجام‌شدن';
+
+  @override
+  String get goalContractPauseFirst =>
+      'برای تغییر معنای انجام‌شدن یا بررسی‌کننده، هدف را مکث کنید.';
+
+  @override
+  String get goalContractEdit => 'ویرایش';
+
+  @override
+  String get goalCheckerChange => 'تغییر بررسی‌کننده';
+
+  @override
+  String get goalContractNone =>
+      'هنوز چیزی نوشته نشده است. عامل تشخیص می‌دهد کی کار تمام شده است.';
+
+  @override
+  String get goalCheckerSelf =>
+      'بدون بررسی‌کننده جداگانه: عامل کار خودش را تأیید می‌کند.';
+
+  @override
+  String goalCheckerIs(String agent) {
+    return 'بررسی‌شده توسط $agent';
+  }
+
+  @override
+  String goalCheckWorktree(int seconds) {
+    return 'در درخت کار، تا $seconds ث';
+  }
+
+  @override
+  String goalCheckEnvironmentTask(int seconds) {
+    return 'وظیفه محیط، تا $seconds ث';
+  }
+
+  @override
+  String get goalSectionVerification => 'تأیید';
+
+  @override
+  String get goalNotVerifiedYet =>
+      'هنوز تأیید نشده است. عامل نگفته که کار تمام شده است.';
+
+  @override
+  String goalVerificationRound(int round, int total, String time) {
+    return 'دور $round از $total، $time';
+  }
+
+  @override
+  String get goalVerificationClaim => 'آنچه عامل ادعا می‌کند';
+
+  @override
+  String get goalCheckOutputTail => 'خروجی (آخرین خطوط)';
+
+  @override
+  String goalCheckExitCode(int code) {
+    return 'موفق · کد خروج $code';
+  }
+
+  @override
+  String get goalVerificationReview => 'بازبینی';
+
+  @override
+  String get goalVerificationNoVerdict => 'هنوز بازبینی‌ای نیست.';
+
+  @override
+  String goalVerdictItem(String criterion, String state) {
+    return '$criterion · $state';
+  }
+
+  @override
+  String get goalSectionSchedules => 'زمان‌بندی‌ها و بیدارباش‌ها';
+
+  @override
+  String get goalNoSchedules => 'زمان‌بندی یا بیدارباش در انتظاری نیست.';
+
+  @override
+  String get goalPendingWakes => 'بیدارباش‌های در انتظار';
+
+  @override
+  String workListGroup(String label, int count) {
+    return '$label · $count';
+  }
+
+  @override
+  String get goalNotFound =>
+      'این هدف وجود ندارد، یا در فضایی است که شما نمی‌توانید بازش کنید.';
+
+  @override
+  String get goalsTitle => 'اهداف';
+
+  @override
+  String get goalsSubtitle =>
+      'کاری که عامل تا برآورده شدن معنای انجام‌شدن ادامه می‌دهد.';
+
+  @override
+  String get goalsEmpty => 'هنوز هدفی نیست';
+
+  @override
+  String get goalsEmptyHint => 'در یک گفتگو با /goal یکی شروع کنید.';
+
+  @override
+  String get goalsGroupReview => 'در انتظار بازبینی';
+
+  @override
+  String get goalsGroupOpen => 'باز';
+
+  @override
+  String get goalsGroupEnded => 'پایان‌یافته';
+
+  @override
+  String get scheduleStatusActive => 'فعال';
+
+  @override
+  String get scheduleStatusPaused => 'مکث‌شده';
+
+  @override
+  String get scheduleStatusEnded => 'پایان‌یافته';
+
+  @override
+  String get scheduleWhenBusySkip =>
+      'وقتی عامل مشغول است، این اجرا را رد می‌کند';
+
+  @override
+  String get scheduleWhenBusyQueue => 'تا وقتی عامل آزاد شود صبر می‌کند';
+
+  @override
+  String get scheduleDeliverRun => 'یک اجرای عامل شروع می‌کند';
+
+  @override
+  String get scheduleDeliverNotify => 'فقط اطلاع می‌دهد';
+
+  @override
+  String get scheduleNew => 'زمان‌بندی جدید';
+
+  @override
+  String get schedulesEmpty => 'زمان‌بندی یا پایشی نیست';
+
+  @override
+  String get schedulesEmptyHint =>
+      'عامل‌ها آن‌ها را با /loop و /schedule تنظیم می‌کنند، یا می‌توانید یکی بسازید.';
+
+  @override
+  String scheduleOwnedBy(String name) {
+    return 'مالک: $name';
+  }
+
+  @override
+  String scheduleRunsSkips(int runs, int skips) {
+    String _temp0 = intl.Intl.pluralLogic(
+      runs,
+      locale: localeName,
+      other: '$runs اجرا',
+      one: '1 اجرا',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      skips,
+      locale: localeName,
+      other: '$skips رد شدن',
+      one: '1 رد شدن',
+      zero: 'بدون رد شدن',
+    );
+    return '$_temp0، $_temp1';
+  }
+
+  @override
+  String scheduleExpires(String time) {
+    return 'پایان $time';
+  }
+
+  @override
+  String scheduleNextFires(String times) {
+    return 'بعدی: $times';
+  }
+
+  @override
+  String get schedulesTitle => 'زمان‌بندی‌ها';
+
+  @override
+  String get schedulesSubtitle =>
+      'زمان‌بندی‌ها، حلقه‌ها و پایش‌هایی که عامل‌ها را بیدار می‌کنند.';
+
+  @override
+  String get scheduleWhenLabel => 'زمان اجرا';
+
+  @override
+  String get scheduleWhenEvery => 'مکرر، هر…';
+
+  @override
+  String get scheduleWhenCron => 'بر اساس یک عبارت cron';
+
+  @override
+  String get scheduleWhenOnceIn => 'یک‌بار، بعد از…';
+
+  @override
+  String get scheduleWhenOnceAt => 'یک‌بار، در اولین… بعدی';
+
+  @override
+  String get scheduleDurationLabel => 'فاصله';
+
+  @override
+  String get scheduleDurationHelp =>
+      'از s، m، h یا d استفاده کنید، مثلاً 30m یا 1h30m. تکرارها حداقل 60 s از هم فاصله دارند.';
+
+  @override
+  String get scheduleDurationInvalid =>
+      'این یک مدت زمان نیست، مثلاً 30m یا 2h.';
+
+  @override
+  String get scheduleHour => 'ساعت';
+
+  @override
+  String get scheduleMinute => 'دقیقه';
+
+  @override
+  String get scheduleCronLabel => 'Cron (دقیقه ساعت روز ماه روز‌هفته)';
+
+  @override
+  String get scheduleCronInvalid =>
+      'این یک عبارت cron با پنج فیلد که اجرا شود نیست.';
+
+  @override
+  String get scheduleTimeInvalid =>
+      'این زمانی در آینده نیست، مانند 09:00 یا 2026-11-21T09:00Z.';
+
+  @override
+  String scheduleDaysRange(int max) {
+    return '1 تا $max روز.';
+  }
+
+  @override
+  String scheduleOptionUnknown(String option) {
+    return '$option گزینهٔ معتبری نیست.';
+  }
+
+  @override
+  String get scheduleLimits => 'محدودیت‌ها';
+
+  @override
+  String get schedulePresetWeekdays => 'روزهای هفته ساعت 09:00';
+
+  @override
+  String get schedulePresetDaily => 'هر روز ساعت 09:00';
+
+  @override
+  String get schedulePresetHourly => 'هر ساعت، سر ساعت';
+
+  @override
+  String get scheduleZoneLabel => 'منطقه زمانی';
+
+  @override
+  String get scheduleZoneHelp => 'خالی یعنی منطقه زمانی فضای کاری.';
+
+  @override
+  String get scheduleZoneInvalid =>
+      'این یک منطقه زمانی نیست، مثلاً Europe/Berlin.';
+
+  @override
+  String get scheduleCreateTitle => 'زمان‌بندی جدید';
+
+  @override
+  String get scheduleSpaceLabel => 'فضا';
+
+  @override
+  String get scheduleSpaceHint => 'یک فضا انتخاب کنید';
+
+  @override
+  String get scheduleConversationLabel => 'گفتگو';
+
+  @override
+  String get scheduleConversationHint => 'یک گفتگو انتخاب کنید';
+
+  @override
+  String get scheduleAgentLabel => 'عامل';
+
+  @override
+  String get scheduleAgentHint => 'انتخاب کنید چه کسی بیدار شود';
+
+  @override
+  String get scheduleNoteLabel => 'هر اجرا از چه شروع می‌شود';
+
+  @override
+  String get scheduleNoteHint =>
+      'آنچه شب تغییر کرده را خلاصه کنید و هر مورد مسدودشده را علامت بزنید.';
+
+  @override
+  String get scheduleExpiresInDays => 'پایان بعد از (روز)';
+
+  @override
+  String get scheduleExpiresInDaysHelp => 'خالی: 30 روز، حداکثر 365.';
+
+  @override
+  String get scheduleMaxRuns => 'سقف اجرا';
+
+  @override
+  String scheduleMaxRunsHelp(int max) {
+    return 'خالی: بدون سقف، حداکثر $max.';
+  }
+
+  @override
+  String get scheduleCostCap => 'سقف هزینه (دلار)';
+
+  @override
+  String get scheduleCostCapHelp => 'خالی: پیش‌فرض فضای کاری.';
+
+  @override
+  String get scheduleWhenBusyLabel => 'اگر عامل مشغول باشد';
+
+  @override
+  String get scheduleWhenBusyDefault => 'پیش‌فرض این نوع';
+
+  @override
+  String get scheduleDeliverLabel => 'هر اجرا';
+
+  @override
+  String get scheduleCreate => 'ایجاد زمان‌بندی';
+
+  @override
+  String get scheduleExtendTitle => 'تمدید این زمان‌بندی';
+
+  @override
+  String scheduleExtendNow(String current, String latest) {
+    return 'پایانش $current است. حداکثر تا $latest می‌تواند ادامه داشته باشد.';
+  }
+
+  @override
+  String get scheduleExtendDays => 'افزودن روز';
+
+  @override
+  String scheduleExtendTooLong(String latest) {
+    return 'حداکثر تا $latest می‌تواند پایان یابد.';
+  }
+
+  @override
+  String scheduleMaxRunsRange(int max) {
+    return '1 تا $max اجرا.';
+  }
+
+  @override
+  String scheduleCostCapRange(String max) {
+    return 'حداقل 1 دلار و حداکثر $max.';
+  }
+
+  @override
+  String get scheduleExtend => 'تمدید';
+
+  @override
+  String get scheduleRemoveTitle =>
+      'این زمان‌بندی پایان‌یافته از فهرست حذف شود؟';
+
+  @override
+  String get scheduleDeleteTitle => 'این زمان‌بندی پایان یابد؟';
+
+  @override
+  String get scheduleRemoveBody =>
+      'از فهرست ناپدید می‌شود. اجراهایش در گفتگو می‌مانند.';
+
+  @override
+  String get scheduleDeleteBody =>
+      'برای همیشه اجرا نمی‌شود. اجراهایش در گفتگو می‌مانند.';
+
+  @override
+  String get scheduleRemove => 'حذف از فهرست';
+
+  @override
+  String get scheduleDelete => 'پایان دادن';
+
+  @override
+  String get scheduleOwnerOnly =>
+      'فقط مالک آن می‌تواند ازسرش بگیرد یا تمدیدش کند.';
+
+  @override
+  String get schedulesBackToList => 'همه زمان‌بندی‌ها';
+
+  @override
+  String get scheduleNoteByAgent => 'یادداشت، نوشته‌شده توسط عامل';
+
+  @override
+  String get scheduleNoteByPerson => 'یادداشت، نوشته‌شده توسط یک شخص';
+
+  @override
+  String scheduleNoteEditedBy(String name) {
+    return 'یادداشت، آخرین ویرایش توسط $name';
+  }
+
+  @override
+  String get scheduleNoNote => 'یادداشتی نیست.';
+
+  @override
+  String get schedulePause => 'مکث';
+
+  @override
+  String get scheduleResume => 'ازسرگیری';
+
+  @override
+  String get scheduleOpenChainRoot => 'باز کردن اولین زمان‌بندی این زنجیره';
+
+  @override
+  String get scheduleSectionFacts => 'جزئیات';
+
+  @override
+  String get scheduleFactAgent => 'بیدار می‌کند';
+
+  @override
+  String get scheduleFactConversation => 'در';
+
+  @override
+  String get scheduleConversationUnknown => 'گفتگویی که ممکن است نبینید';
+
+  @override
+  String get scheduleFactOwner => 'مالک';
+
+  @override
+  String get scheduleNoOwner => 'هیچ‌کس';
+
+  @override
+  String get scheduleFactNextFires => 'زمان‌های اجرای بعدی';
+
+  @override
+  String get scheduleFactNext => 'اجرای بعدی';
+
+  @override
+  String get scheduleFactLast => 'آخرین اجرا';
+
+  @override
+  String get scheduleFactRuns => 'اجراها';
+
+  @override
+  String scheduleRunsNoCap(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count اجرا، بدون سقف',
+      one: '1 اجرا، بدون سقف',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleRunsOfCap(int count, int max) {
+    return '$count از $max اجرا';
+  }
+
+  @override
+  String get scheduleFactSkips => 'رد شده‌ها';
+
+  @override
+  String scheduleSkips(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count اجرا رد شد',
+      one: '1 اجرا رد شد',
+      zero: 'هیچ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scheduleFactSpent => 'خرج‌شده';
+
+  @override
+  String get scheduleFactEnds => 'پایان';
+
+  @override
+  String get scheduleFactWhenBusy => 'اگر عامل مشغول باشد';
+
+  @override
+  String get scheduleFactDeliver => 'هر اجرا';
+
+  @override
+  String get scheduleFactChain => 'زنجیره';
+
+  @override
+  String scheduleChainLeft(int runs, String time) {
+    String _temp0 = intl.Intl.pluralLogic(
+      runs,
+      locale: localeName,
+      other: '$runs اجرای باقی‌مانده',
+      one: '1 اجرای باقی‌مانده',
+    );
+    return '$_temp0 در زنجیره، که در $time پایان می‌یابد';
+  }
+
+  @override
+  String get scheduleFactCreated => 'ایجادشده';
+
+  @override
+  String get scheduleSectionHistory => 'بیدارباش‌ها و اجراهای اخیر';
+
+  @override
+  String get scheduleNoRuns => 'هنوز اجرایی نیست.';
+
+  @override
+  String scheduleRunLine(String status, String cost) {
+    return '$status · $cost';
+  }
+
+  @override
+  String get scheduleRunPending => 'در انتظار شروع';
+
+  @override
+  String get scheduleRunRunning => 'در حال اجرا';
+
+  @override
+  String get scheduleRunCompleted => 'تمام شد';
+
+  @override
+  String get scheduleRunFailed => 'ناموفق';
+
+  @override
+  String get scheduleNotFound =>
+      'این زمان‌بندی وجود ندارد، یا در فضایی است که شما نمی‌توانید بازش کنید.';
+
+  @override
+  String get improvementCampaignTitle => 'اجرای یک ارزیابی';
+
+  @override
+  String improvementCampaignCost(int repetitions, String budget) {
+    String _temp0 = intl.Intl.pluralLogic(
+      repetitions,
+      locale: localeName,
+      other: 'هر وظیفه $repetitions بار اجرا می‌شود',
+      one: 'هر وظیفه یک‌بار اجرا می‌شود',
+    );
+    return '$_temp0 با مهارت فعلی و با تغییر. حداکثر $budget خرج می‌کند که به این فضای کاری حساب می‌شود.';
+  }
+
+  @override
+  String get improvementCampaignCostUnknown =>
+      'این ارزیابی مجموعه را با مهارت فعلی و با تغییر اجرا می‌کند، تا بودجه‌ای که تعیین کرده‌اید.';
+
+  @override
+  String get improvementCampaignUnavailable =>
+      'در حال حاضر ارزیابی‌ها روی این سرور نمی‌توانند اجرا شوند.';
+
+  @override
+  String get improvementCampaignCorpus => 'مجموعه داده';
+
+  @override
+  String get improvementCampaignProvider => 'ارائه‌دهنده';
+
+  @override
+  String get improvementCampaignModel => 'مدل';
+
+  @override
+  String get improvementCampaignRepetitions => 'اجرا برای هر وظیفه';
+
+  @override
+  String get improvementCampaignBudget => 'بودجه (دلار)';
+
+  @override
+  String improvementCampaignRange(int max) {
+    return '1 تا $max.';
+  }
+
+  @override
+  String get improvementCampaignStart => 'شروع ارزیابی';
+
+  @override
+  String get improvementRollbackTitle => 'این تغییر برگردانده شود؟';
+
+  @override
+  String get improvementRollbackBody =>
+      'متنی که جایگزین شده برمی‌گردد، به شرط اینکه از آن زمان کسی آن را تغییر نداده باشد.';
+
+  @override
+  String get improvementRollback => 'برگرداندن';
+
+  @override
+  String get improvementRolledBackDone => 'برگردانده شد.';
+
+  @override
+  String get improvementNeedsAdmin =>
+      'فقط مدیر فضای کاری می‌تواند درباره این مورد تصمیم بگیرد: یک مهارت یا سیاست را برای کل فضای کاری تغییر می‌دهد.';
+
+  @override
+  String get improvementAdminDecides =>
+      'به‌عنوان مدیر، شما درباره این مورد تصمیم می‌گیرید: یک مهارت یا سیاست را برای کل فضای کاری تغییر می‌دهد.';
+
+  @override
+  String get improvementNeedsCampaign =>
+      'پیش از پذیرفتن این تغییر مهارت، یک ارزیابی قبول‌شده اجرا کنید.';
+
+  @override
+  String get improvementsBackToList => 'همه بهبودها';
+
+  @override
+  String improvementMeta(String kind, String scope, String agent) {
+    return '$kind · $scope · پیشنهاد از $agent';
+  }
+
+  @override
+  String get improvementAccept => 'پذیرفتن';
+
+  @override
+  String get improvementAcceptedDone => 'پذیرفته شد.';
+
+  @override
+  String get improvementReject => 'رد';
+
+  @override
+  String get improvementRejectedDone => 'رد شد.';
+
+  @override
+  String get improvementRunEvaluation => 'اجرای ارزیابی';
+
+  @override
+  String get improvementSectionChange => 'چه چیزی تغییر می‌کند';
+
+  @override
+  String get improvementTarget => 'هدف';
+
+  @override
+  String improvementScopeLine(String scope) {
+    return 'اعمال می‌شود روی: $scope';
+  }
+
+  @override
+  String get improvementNewText => 'متن جدید';
+
+  @override
+  String get improvementRemovedText => 'متن حذف‌شده';
+
+  @override
+  String get improvementExpected => 'اثر موردانتظار';
+
+  @override
+  String get improvementSectionEvidence => 'شواهد و تصمیم';
+
+  @override
+  String get improvementNoEvidence => 'شاهدی پیوست نشده است.';
+
+  @override
+  String get improvementEvidenceRuns => 'اجراها';
+
+  @override
+  String get improvementEvidenceMessages => 'پیام‌ها';
+
+  @override
+  String improvementOpenMessage(int index) {
+    return 'پیام $index';
+  }
+
+  @override
+  String get improvementEvidenceChecks => 'نتایج بررسی';
+
+  @override
+  String get improvementEvaluation => 'ارزیابی';
+
+  @override
+  String get improvementCampaignNone => 'هنوز ارزیابی نشده است.';
+
+  @override
+  String get improvementCampaignRunning => 'ارزیابی در حال اجراست.';
+
+  @override
+  String get improvementCampaignPassed =>
+      'ارزیابی موفق بود: کامل اجرا شد و تغییر دست‌کم به همان تعداد اجرا که مهارت فعلی حل کرد، حل کرد؛ این ثابت نمی‌کند که بهتر است. می‌توان آن را پذیرفت.';
+
+  @override
+  String get improvementCampaignFailed =>
+      'ارزیابی موفق نبود، یا مهارت پس از اندازه‌گیری تغییر کرد. دوباره اجرایش کنید، یا تغییر را رد کنید.';
+
+  @override
+  String improvementDecided(String status, String name, String time) {
+    return '$status توسط $name، $time';
+  }
+
+  @override
+  String get improvementSomeone => 'کسی';
+
+  @override
+  String improvementExpires(String time) {
+    return 'اگر کسی تصمیم نگیرد، $time منقضی می‌شود.';
+  }
+
+  @override
+  String get improvementOpenApplied => 'باز کردن آنچه تغییر کرد';
+
+  @override
+  String get improvementsTitle => 'بهبودها';
+
+  @override
+  String get improvementsSubtitle =>
+      'تغییراتی که عامل‌ها برای حافظه، یادداشت‌ها، سیاست‌ها و مهارت‌هایشان پیشنهاد داده‌اند.';
+
+  @override
+  String get improvementsEmpty => 'پیشنهادی نیست';
+
+  @override
+  String get improvementsEmptyHint =>
+      'عامل‌ها پس از بازبینی کارشان بهبود پیشنهاد می‌دهند، مثلاً با /refine.';
+
+  @override
+  String get improvementRowNeedsAdmin => 'یک مدیر تصمیم می‌گیرد';
+
+  @override
+  String get improvementNotFound =>
+      'این پیشنهاد وجود ندارد، یا در فضایی است که شما نمی‌توانید بازش کنید.';
+
+  @override
+  String get dispatchSettingsTitle => 'زمان‌بندی‌ها';
+
+  @override
+  String get dispatchSettingsSubtitle =>
+      'محدودیت‌های زمان‌بندی‌ها و پایش‌ها، و آنچه برای درخواست‌هایی که کسی به آن‌ها پاسخ نمی‌دهد اتفاق می‌افتد.';
+
+  @override
+  String get dispatchLimitsLabel => 'محدودیت‌های زمان‌بندی';
+
+  @override
+  String get dispatchLimitsSubtitle =>
+      'سقف تعداد زمان‌بندی‌ها و پایش‌هایی که عامل‌ها می‌توانند داشته باشند، و پیش‌فرض‌هایشان.';
+
+  @override
+  String dispatchLimitRange(int max) {
+    return '1 تا $max';
+  }
+
+  @override
+  String get dispatchLimitPerConversation => 'برای هر عامل در یک گفتگو';
+
+  @override
+  String get dispatchLimitPerConversationHelp =>
+      'زمان‌بندی‌های فعال یا مکث‌شده‌ای که یک عامل می‌تواند در یک گفتگو داشته باشد.';
+
+  @override
+  String get dispatchLimitPerAgent => 'برای هر عامل';
+
+  @override
+  String get dispatchLimitPerAgentHelp =>
+      'زمان‌بندی‌های فعال یا مکث‌شده‌ای که یک عامل می‌تواند در کل فضای کاری داشته باشد.';
+
+  @override
+  String get dispatchLimitPerWorkspace => 'در فضای کاری';
+
+  @override
+  String get dispatchLimitPerWorkspaceHelp =>
+      'زمان‌بندی‌های فعال یا مکث‌شده در کل فضای کاری.';
+
+  @override
+  String get dispatchLimitCostCap => 'سقف هزینه پیش‌فرض (دلار)';
+
+  @override
+  String get dispatchLimitCostCapHelp =>
+      'آنچه یک زمان‌بندی در کل می‌تواند خرج کند، وقتی سقف خودش را تعیین نکرده است.';
+
+  @override
+  String get dispatchLimitZone => 'منطقه زمانی';
+
+  @override
+  String get dispatchLimitZoneHelp =>
+      'منطقه‌ای که زمان‌بندی cron وقتی نامی ندارد با آن خوانده می‌شود، و منطقه خلاصه روزانه.';
+
+  @override
+  String get dispatchUnattendedLabel => 'وقتی کسی پاسخ نمی‌دهد';
+
+  @override
+  String get dispatchUnattendedSubtitle =>
+      'اجرایی که سرور شروع کرده چقدر منتظر یک شخص می‌ماند، و خلاصه روزانه آنچه منتظر است چه زمانی ارسال شود.';
+
+  @override
+  String get dispatchUnattendedExpiry => 'درخواست‌ها چند ساعت منتظر بمانند';
+
+  @override
+  String get dispatchUnattendedExpiryHelp =>
+      'بعد از این، یک تأیید رد‌شده حساب می‌شود و یک پرسش بی‌پاسخ. هدف‌هایی که فرض پاسخ را دارند بعد از 10 دقیقه به پرسش‌های خودشان پاسخ می‌دهند.';
+
+  @override
+  String dispatchUnattendedExpiryRange(int min, int max) {
+    return '$min تا $max ساعت';
+  }
+
+  @override
+  String get dispatchDigestHour => 'خلاصه روزانه در (ساعت)';
+
+  @override
+  String dispatchDigestHourHelp(String zone) {
+    return 'در $zone، منطقه زمانی بالا.';
+  }
+
+  @override
+  String get dispatchDigestHourRange => '0 تا 23';
+
+  @override
+  String get goalRecordCrumb => 'هدف';
+
+  @override
+  String get scheduleRecordCrumb => 'زمان‌بندی';
+
+  @override
+  String get improvementRecordCrumb => 'پیشنهاد';
+
+  @override
+  String get goalNodeNeedsAgent =>
+      'عاملی را که هدف را پیگیری می‌کند انتخاب کنید.';
+
+  @override
+  String get goalNodeNeedsObjective => 'هدف را بنویسید.';
+
+  @override
+  String get goalNodeContractInvalid =>
+      'قرارداد یک فیلد بیشتر از حد مجاز دارد؛ تا رفع نشود ذخیره نمی‌شود.';
+
+  @override
+  String get goalNodeBudget => 'بودجه (دلار)';
+
+  @override
+  String get goalNodeBudgetHelp =>
+      'حداکثر هزینه‌ای که هدف می‌تواند داشته باشد. وقتی تمام شود، هدف برای یک شخص نگه داشته می‌شود.';
+
+  @override
+  String goalNodeBudgetRange(int max) {
+    return 'لازم: بیشتر از 0، تا $max.';
+  }
+
+  @override
+  String get goalNodeMaxRuns => 'سقف بخش‌ها';
+
+  @override
+  String get goalNodeMaxRunsHelp =>
+      'اختیاری. حداکثر تعداد بخش‌ها (اجراهای عامل) که هدف می‌تواند داشته باشد.';
+
+  @override
+  String get goalNodeDeadline => 'مهلت (ساعت)';
+
+  @override
+  String get goalNodeDeadlineHelp =>
+      'اختیاری. ساعت‌هایی از وقتی که این مرحله هدف را شروع می‌کند.';
+
+  @override
+  String goalNodeRange(int max) {
+    return '1 تا $max، یا خالی.';
+  }
+
+  @override
+  String get goalNodeContract => 'قرارداد';
+
+  @override
+  String get goalNodeContractHelp =>
+      'معنای انجام‌شدن: معیارهایی که بازبین بررسی می‌کند، و فرمان‌هایی که باید موفق شوند.';
+
+  @override
+  String get nodeConfigObjective => 'هدف';
+
+  @override
+  String pipelineRunGoalStep(String step) {
+    return 'مرحله $step یک هدف را پیگیری می‌کند';
+  }
+
+  @override
+  String get pipelineRunOpenGoal => 'باز کردن هدف';
+
+  @override
+  String get pipelineRunHeldBudget =>
+      'این اجرا نگه داشته شده است: هماهنگی آن به سقف هزینه‌اش رسیده است.';
+
+  @override
+  String pipelineRunHeldOther(String reason) {
+    return 'این اجرا نگه داشته شده است ($reason).';
+  }
+
+  @override
+  String pipelineRunHeldSpent(String spent, String cap) {
+    return '$spent از $cap خرج شده است. سقف را افزایش دهید و اجرا ادامه می‌یابد.';
+  }
+
+  @override
+  String get pipelineRunRaiseCap => 'افزایش سقف';
+
+  @override
+  String get pipelineRunRaiseCapTitle => 'افزایش سقف هماهنگی';
+
+  @override
+  String get pipelineRunCapRaised =>
+      'سقف افزایش یافت. اجرا به‌زودی ادامه می‌یابد.';
+
+  @override
+  String get goalLaunchChecks => 'بررسی‌ها';
+
+  @override
+  String get goalLaunchChecksHelp =>
+      'فرمان‌هایی که باید موفق شوند تا هدف بتواند تمام شود. اختیاری.';
+
+  @override
+  String get goalLaunchFresh => 'شروع هر بخش از نو';
+
+  @override
+  String get goalLaunchFreshHelp =>
+      'هر اجرا بدون تاریخچه گفتگو شروع می‌شود، فقط از روی هدف و یادداشت‌های آن.';
+
+  @override
+  String get goalLaunchAssume =>
+      'وقتی کسی پاسخ نمی‌دهد به پرسش‌های خودش پاسخ دهد';
+
+  @override
+  String get goalLaunchAssumeHelp =>
+      'اگر 10 دقیقه بدون پاسخ بماند، عامل فرض خودش را بیان می‌کند و ادامه می‌دهد، اگر شرایط توقف اجازه دهد.';
+
+  @override
+  String workFeedLimitParkOutcomeResumed(String provider, String time) {
+    return 'بعد از محدودیت مصرف $provider در $time ازسر گرفته شد.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeCancelled(String provider, String time) {
+    return 'در $time لغو شد. بعد از محدودیت مصرف $provider ازسر گرفته نشد.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeExpired(String provider, String time) {
+    return 'در $time بدون ازسرگیری بعد از محدودیت مصرف $provider منقضی شد.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeSkipped(String provider, String time) {
+    return 'بعد از محدودیت مصرف $provider ازسر گرفته نشد ($time).';
+  }
+
+  @override
+  String workFeedCommandRefusedNamed(String command) {
+    return 'فرمان /$command رد شد.';
+  }
+
+  @override
+  String get improvementRefusalQueued =>
+      'یک بازبینی از این گفتگو هم‌اکنون در انتظار اجرا است.';
+
+  @override
+  String get improvementRefusalAgentNotFound =>
+      'این عامل جزو عامل‌های این فضای کاری نیست.';
+
+  @override
+  String get workRefusalWakeQueueFull =>
+      'هم‌اکنون بیدارباش‌های زیادی اینجا در انتظارند. بعد از اجرای برخی، دوباره تلاش کنید.';
+
+  @override
+  String get orchestrationRefusalNotYours =>
+      'فقط شخصی که این اجرا از طرف او کار می‌کند می‌تواند آن را تغییر دهد.';
+
+  @override
+  String get orchestrationRefusalCapInvalid =>
+      'سقف جدید باید بالاتر از سقف فعلی و هزینه‌شده باشد و حداکثر \$1,000.';
+
+  @override
+  String get orchestrationRefusalCapChanged =>
+      'یک نفر زودتر سقف را افزایش داد. سقف جدید را بررسی کنید و دوباره تلاش کنید.';
+
+  @override
+  String workFeedCapRaised(String person, String oldCap, String newCap) {
+    return '$person سقف هزینه اجرای نگه‌داشته‌شده را از $oldCap به $newCap افزایش داد.';
+  }
+
+  @override
+  String get workFeedPersonUnknown => 'یک شخص';
+
+  @override
+  String workFeedApplyIncomplete(String skill) {
+    return 'تغییر پذیرفته‌شده مهارت $skill تمام نشد، چون مهارت در این میان تغییر کرد. پیشنهاد برگشت داده شد.';
+  }
+
+  @override
+  String get workFeedOpenImprovement => 'باز کردن بهبود';
+
+  @override
+  String get peerAskFailNoOutput => 'بدون پاسخ تمام شد.';
+
+  @override
+  String get peerAskFailRunFailed => 'اجرایش ناموفق بود.';
+
+  @override
+  String get peerAskFailStoppedByPerson => 'یک شخص اجرایش را متوقف کرد.';
+
+  @override
+  String get peerAskFailBudget => 'اجرایش به بودجه‌اش رسید.';
+
+  @override
+  String get peerAskFailSilence => 'اجرایش بی‌صدا ماند و متوقف شد.';
+
+  @override
+  String get peerAskFailUsageLimit =>
+      'اجرایش در محدودیت مصرف ارائه‌دهنده متوقف شد.';
+
+  @override
+  String get peerAskFailNotDelivered => 'پرسش هرگز تحویل داده نشد.';
+
+  @override
+  String heldSteeringLimitHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count پیام در محدودیت مصرف نگه‌داشته شد',
+      one: '1 پیام در محدودیت مصرف نگه‌داشته شد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get heldSteeringLimitNote =>
+      'این‌ها وقتی ارسال می‌شوند که شخصی که اجرا برایش کار می‌کند آن را ازسرگیری کند. اگر ظرف 7 روز پس از بازنشانی ازسرگیری نشود، برای همان شخص نگه‌داشته می‌شوند.';
+
+  @override
+  String get wakeKindRuleFolded => 'یک رویداد بعدی جایگزینش شد.';
+
+  @override
+  String goalCardWaitingNext(String time) {
+    return 'در انتظار کاری که خودش راه انداخته · تا $time دوباره بررسی می‌کند';
+  }
+
+  @override
+  String raiseCapAtMost(String max) {
+    return 'حداکثر $max وارد کنید.';
+  }
+
+  @override
+  String raiseCapNowAt(String cap) {
+    return 'سقف هم‌اکنون $cap است.';
+  }
+
+  @override
+  String get scheduleWakeReasonSchedule => 'زمان‌بندی‌شده';
+
+  @override
+  String get scheduleWakeReasonWatch => 'پایش';
+
+  @override
+  String get scheduleWakeReasonLimitReset => 'بعد از محدودیت مصرف';
+
+  @override
+  String get scheduleWakeStatePending => 'در انتظار';
+
+  @override
+  String get scheduleWakeStateHeld => 'نگه‌داشته‌شده';
+
+  @override
+  String get scheduleWakeStateClaimed => 'در حال شروع';
+
+  @override
+  String get scheduleWakeStateDelivered => 'ارسال‌شده';
+
+  @override
+  String get scheduleWakeStateSkipped => 'ردشده';
+
+  @override
+  String get scheduleWakeStateExpired => 'منقضی شد';
+
+  @override
+  String get scheduleWakeStateCancelled => 'لغو شد';
+
+  @override
+  String scheduleWakeLine(String reason, String state) {
+    return '$reason · $state';
+  }
+
+  @override
+  String scheduleWakeExit(int code) {
+    return 'کد خروج $code';
+  }
+
+  @override
+  String scheduleWakeEvents(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count رویداد',
+      one: '1 رویداد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scheduleWakesNone => 'هنوز بیدارباشی نیست.';
+
+  @override
+  String get scheduleWakesOlder => 'نمایش قدیمی‌ترها';
+
+  @override
+  String get improvementCandidateStaged =>
+      'مهارت پیشنهادی به‌عنوان یک بازنگری جدا ذخیره می‌شود. ارزیابی آن مهارت زنده را تغییر نمی‌دهد؛ مهارت فقط وقتی پیشنهاد پذیرفته شود تغییر می‌کند.';
+
+  @override
+  String goalNextWaitingFallback(String time) {
+    return 'وقتی چیزی که منتظرش است برسد ادامه می‌دهد، یا اگر چیزی نرسید، در $time دوباره بررسی می‌کند.';
+  }
+
+  @override
+  String get steeringRefusalHeldByLimit =>
+      'پیام‌هایی که مکث محدودیت مصرف نگه داشته، وقتی منتظر است نمی‌توانند دستی ارسال شوند.';
+
+  @override
+  String steeringRefusalHeldByLimitAt(String time) {
+    return 'پیام‌هایی که مکث محدودیت مصرف نگه داشته، وقتی منتظر است نمی‌توانند دستی ارسال شوند. محدودیت در $time بازنشانی می‌شود.';
+  }
+
+  @override
+  String heldSteeringLimitResetsAt(String time) {
+    return 'محدودیت مصرف در $time بازنشانی می‌شود. این‌ها وقتی ارسال می‌شوند که شخصی که اجرا برایش کار می‌کند آن را ازسرگیری کند.';
+  }
+
+  @override
+  String heldSteeringFromPerson(String name) {
+    return 'از $name';
+  }
+
+  @override
+  String get heldSteeringFromSomeoneElse => 'از شخص دیگری';
+
+  @override
+  String get heldSteeringOnlyWriterSends =>
+      'فقط شخصی که یک پیام نگه‌داشته‌شده را نوشته می‌تواند آن را ارسال کند.';
+
+  @override
+  String get steeringRefusalNotYours =>
+      'این پیام‌های نگه‌داشته‌شده مال شخص دیگری‌اند. فقط کسی که یکی از آن‌ها را نوشته می‌تواند آن را ارسال کند.';
+
+  @override
+  String improvementEvaluationSolved(
+    int pairedRuns,
+    int candidateSolved,
+    int baselineSolved,
+  ) {
+    String _temp0 = intl.Intl.pluralLogic(
+      pairedRuns,
+      locale: localeName,
+      other: 'در $pairedRuns اجرای جفت‌شده',
+      one: 'در 1 اجرای جفت‌شده',
+    );
+    return '$_temp0، تغییر $candidateSolved و مهارت فعلی $baselineSolved را حل کرد.';
+  }
+
+  @override
+  String improvementEvaluationWorse(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count وظیفه با تغییر بدتر شد.',
+      one: '1 وظیفه با تغییر بدتر شد.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String improvementEvaluationCostlier(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count وظیفه با تغییر هزینه بیشتری داشتند.',
+      one: '1 وظیفه با تغییر هزینه بیشتری داشت.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String improvementEvaluationHarnessErrors(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count اجرا به خطای هارنس برخورد کردند.',
+      one: '1 اجرا به خطای هارنس برخورد کرد.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get improvementEvaluationIncomplete => 'ارزیابی کامل اجرا نشد.';
+
+  @override
+  String workFeedLimitParkExpires(String time) {
+    return 'انقضا $time';
+  }
+
+  @override
+  String workFeedSchedulePaused(String person, String agent) {
+    return '$person زمان‌بندی $agent را متوقف کرد.';
+  }
+
+  @override
+  String get goalCardApproveNotYours =>
+      'فقط شخصی که اجرای پایپ‌لاین را شروع کرده می‌تواند تکمیل این هدف را تأیید کند.';
+
+  @override
+  String get goalCardObjective => 'خودِ هدف';
+
+  @override
+  String get planNeedsWrite =>
+      'تأیید یا تغییر این طرح به دسترسی نوشتن در همهٔ مخزن‌های این فضا نیاز دارد. یک مدیر فضای کاری می‌تواند این دسترسی را بدهد.';
+
+  @override
+  String scheduleSpentWithChain(String spent, String cap) {
+    return '$spent از $cap، با احتساب هر زمان‌بندی در زنجیره‌اش';
+  }
 }

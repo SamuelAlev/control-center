@@ -291,16 +291,6 @@ void main() {
           pipelineStepId: 'ps-1',
           inReplyToAgentId: 'a-0',
           conversationId: 'conv-1',
-          wakeContext: const WakeContext(
-            runId: 'run-x',
-            agentId: 'a-1',
-            workspaceId: _ws,
-            wakeReason: WakeReason.userMessage,
-            ticketId: 't-1',
-            spaceId: 'c-1',
-            messageId: 'm-1',
-            pipelineRunId: 'pr-1',
-          ),
           expectedOutputSchema: {'type': 'object'},
           outputContractMode: OutputContractMode.permissive,
         );
@@ -319,20 +309,12 @@ void main() {
         expect(call.args['output_contract_mode'], 'permissive');
         // requestedByUserId is deliberately NOT sent over the wire.
         expect(call.args.containsKey('requested_by_user_id'), isFalse);
-        // The wake context is mapped to its wire shape.
-        final wake = call.args['wake_context'] as Map<String, dynamic>;
-        expect(wake['run_id'], 'run-x');
-        expect(wake['agent_id'], 'a-1');
-        expect(wake['workspace_id'], _ws);
-        expect(wake['wake_reason'], 'userMessage');
-        expect(wake['ticket_id'], 't-1');
-        expect(wake['space_id'], 'c-1');
-        expect(wake['message_id'], 'm-1');
-        expect(wake['pipeline_run_id'], 'pr-1');
+        // A client never names why a run exists (finding 14).
+        expect(call.args.containsKey('wake_context'), isFalse);
       },
     );
 
-    test('dispatchAgent omits a null wake context', () async {
+    test('dispatchAgent sends no wake context', () async {
       host.callResults['dispatch.dispatchAgent'] = const {};
       final dispatch = RemoteMessagingDispatch(client);
       final runId = await dispatch.dispatchAgent(
@@ -514,6 +496,7 @@ void main() {
           spaceId: 'c-1',
           agentId: 'a-1',
           prompt: 'p',
+          wakeContext: const WakeContext.userMessage(),
         );
         expect(runId, 'run-9');
         expect(

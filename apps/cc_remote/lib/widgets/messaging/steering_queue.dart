@@ -2,8 +2,10 @@ import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_remote/conversation_drafts.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
+import 'package:cc_remote/operation_scope.dart';
 import 'package:cc_remote/providers.dart';
 import 'package:cc_remote/widgets/phone_text_editor.dart';
+import 'package:cc_remote/work_kind_text.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -48,7 +50,10 @@ class _QueueState extends ConsumerState<SteeringQueue> {
     if (!mounted ||
         !widget.canWrite ||
         _acting ||
-        (action == 'edit' && text == null) ||
+        (action == 'edit' &&
+            (text == null ||
+                message.senderId !=
+                    ref.read(remoteIdentityProvider).value?.userId)) ||
         ref.read(activeWorkspaceIdProvider).value != scope.workspaceId) {
       return;
     }
@@ -111,13 +116,20 @@ class _QueueState extends ConsumerState<SteeringQueue> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final ordered = _ordered;
+    // Only the writer edits a card (the server's rule); every other action
+    // stays for anyone who may write.
+    final me = ref.watch(remoteIdentityProvider).value?.userId;
+    // Watched so the workspace check and the client are ready on a tap.
+    ref
+      ..watch(activeWorkspaceIdProvider)
+      ..watch(rpcClientProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (_error != null)
           CcAlert(
             title: l10n.mobileActionFailed,
-            description: Text('$_error'),
+            description: Text(steeringFailureText(l10n, _error!)),
             variant: CcAlertVariant.danger,
           ),
         for (var i = 0; i < ordered.length; i++)
@@ -137,7 +149,8 @@ class _QueueState extends ConsumerState<SteeringQueue> {
                     runSpacing: 8,
                     children: [
                       for (final action in <(String, String)>[
-                        ('edit', l10n.mobileEditQueued),
+                        if (me != null && ordered[i].senderId == me)
+                          ('edit', l10n.mobileEditQueued),
                         ('deliver', l10n.mobileSteerNow),
                         if (i > 0) ('up', l10n.mobileMoveUp),
                         if (i + 1 < ordered.length)

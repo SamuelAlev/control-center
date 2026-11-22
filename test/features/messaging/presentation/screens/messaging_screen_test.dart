@@ -1,9 +1,7 @@
 import 'dart:async';
 
-import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
-import 'package:cc_domain/features/messaging/domain/repositories/space_read_repository.dart';
 import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcClient;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/constants/app_constants.dart';
@@ -34,6 +32,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../helpers/fake_conversation_read_repository.dart';
 import '../../../../helpers/fake_rpc_client.dart';
 
 /// The workspace the screen is scoped to in these tests. The screen renders a
@@ -60,22 +59,6 @@ RemoteRpcClient _noOpRpcClient() {
 Widget _wrap(Widget child) => Scaffold(
   body: CcTheme(data: CcThemeData.light(), child: child),
 );
-
-/// Keeps [ownServerPrefsProvider] widget-watched for tests that archive a
-/// space. In the app the sidebar's folder prefs always watch it, so the
-/// stream is live and its snapshot arrives; with only provider-side listens
-/// Riverpod leaves the stream idle and the folder unlink would await forever.
-class _PrefsLive extends ConsumerWidget {
-  const _PrefsLive({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(ownServerPrefsProvider);
-    return child;
-  }
-}
 
 /// Seeds a [cacheStore] with the persisted layout of a space that has a
 /// terminal tab open — what the server cache holds once a user opened one
@@ -167,8 +150,8 @@ _pumpRevisitHarness(WidgetTester tester) async {
         ).overrideWith((ref) => Stream.value([_testSpaceA, _testSpaceB])),
         agentsProvider.overrideWith((ref) => Stream.value(const [])),
         workspacesProvider.overrideWith((ref) => Stream.value(const [])),
-        spaceReadRepositoryProvider.overrideWith(
-          (ref) => _FakeSpaceReadRepository(),
+        conversationReadRepositoryProvider.overrideWith(
+          (ref) => FakeConversationReadRepository(),
         ),
         for (final id in ['ch-1', 'ch-2']) ...[
           spaceParticipantsProvider(
@@ -215,32 +198,6 @@ class _TestActiveWorkspaceNotifier extends ActiveWorkspaceIdNotifier {
   final String? _id;
   @override
   String? build() => _id;
-}
-
-/// A no-host [SpaceReadRepository] fake. The real provider is RPC-flipped
-/// (composition flip) and would open an in-process host, leaving a pending
-/// reconnect timer after the widget tree is torn down. The read cursor is not
-/// under test in these screen tests.
-class _FakeSpaceReadRepository implements SpaceReadRepository {
-  @override
-  Future<void> markSpaceRead(
-    String workspaceId,
-    String spaceId,
-    String userId, {
-    String? conversationId,
-  }) async {}
-  @override
-  Stream<FeedPosition?> watchUserLastReadAt(
-    String workspaceId,
-    String spaceId,
-    String userId,
-  ) => Stream.value(null);
-
-  @override
-  Stream<Map<String, FeedPosition>> watchUserSpaceReads(
-    String workspaceId,
-    String userId,
-  ) => Stream.value(const {});
 }
 
 final _testSpaceA = Space(
@@ -422,8 +379,8 @@ void main() {
           )).overrideWith(
             (ref) => Stream.value((messages: const [], hasMore: false)),
           ),
-          spaceReadRepositoryProvider.overrideWith(
-            (ref) => _FakeSpaceReadRepository(),
+          conversationReadRepositoryProvider.overrideWith(
+            (ref) => FakeConversationReadRepository(),
           ),
           spaceMessagesProvider(
             'ch-2',
@@ -567,8 +524,8 @@ void main() {
           )).overrideWith(
             (ref) => Stream.value((messages: const [], hasMore: false)),
           ),
-          spaceReadRepositoryProvider.overrideWith(
-            (ref) => _FakeSpaceReadRepository(),
+          conversationReadRepositoryProvider.overrideWith(
+            (ref) => FakeConversationReadRepository(),
           ),
           spaceMessagesProvider(
             'ch-2',
@@ -702,8 +659,8 @@ void main() {
           ).overrideWith((ref) => Stream.value([_testSpaceA, _testSpaceB])),
           agentsProvider.overrideWith((ref) => Stream.value(const [])),
           workspacesProvider.overrideWith((ref) => Stream.value(const [])),
-          spaceReadRepositoryProvider.overrideWith(
-            (ref) => _FakeSpaceReadRepository(),
+          conversationReadRepositoryProvider.overrideWith(
+            (ref) => FakeConversationReadRepository(),
           ),
           for (final id in ['ch-1', 'ch-2']) ...[
             spaceParticipantsProvider(
@@ -847,117 +804,6 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testWidgets('archiving a space from the header asks for no confirmation', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(800, 600);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(() {
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-    });
-
-    // Archiving is reversible, so the header button archives immediately —
-    // no confirmation dialog — and the URL drops back to the space list.
-    final archived = <String>[];
-    final host = FakeRpcHost();
-    host.onCall = (op, args) {
-      if (op == 'messaging.archiveSpace') {
-        archived.add(args['space_id'] as String);
-      }
-      return const <String, dynamic>{};
-    };
-
-    final router = GoRouter(
-      initialLocation: '/workspaces/ws-1/spaces/ch-2',
-      routes: [
-        GoRoute(
-          path: '/workspaces/:wid/spaces/:cid',
-          builder: (context, state) => _wrap(
-            MessagingScreen(selectedSpaceId: state.pathParameters['cid']),
-          ),
-        ),
-        GoRoute(
-          path: '/workspaces/:wid/spaces',
-          builder: (context, state) => const SizedBox(key: Key('spaces-stub')),
-        ),
-      ],
-    );
-    addTearDown(router.dispose);
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          activeWorkspaceIdProvider.overrideWith(
-            () => _TestActiveWorkspaceNotifier(_kWorkspaceId),
-          ),
-          rpcClientProvider.overrideWithValue(host.client()),
-          selectedSpaceIdProvider.overrideWith(
-            () => _TestSelectedSpaceNotifier('ch-2'),
-          ),
-          spacesProvider.overrideWith((ref) => Stream.value([_testSpaceB])),
-          workspaceSpacesProvider(
-            _kWorkspaceId,
-          ).overrideWith((ref) => Stream.value([_testSpaceB])),
-          agentsProvider.overrideWith((ref) => Stream.value(const [])),
-          spaceParticipantsProvider(
-            'ch-2',
-          ).overrideWith((ref) => Stream.value(const [])),
-          workspacesProvider.overrideWith((ref) => Stream.value(const [])),
-          spaceFeedWindowedProvider((
-            spaceId: 'ch-2',
-            conversationId: 'ch-2',
-          )).overrideWith(
-            (ref) => Stream.value((messages: const [], hasMore: false)),
-          ),
-          spaceReadRepositoryProvider.overrideWith(
-            (ref) => _FakeSpaceReadRepository(),
-          ),
-          // Archiving unlinks the space's personal folder, whose write first
-          // awaits a prefs snapshot. The real app always has one by now (the
-          // sidebar's folders watch the same stream); this fake host never
-          // pushes one, so seed an empty snapshot here.
-          ownServerPrefsProvider.overrideWith(
-            (ref) => Stream.value(const <String, String>{}),
-          ),
-          spaceMessagesProvider(
-            'ch-2',
-          ).overrideWith((ref) => Stream.value(const [])),
-          // The pane resolves the space's standing conversation before it
-          // renders — a conversation owns its own uuid, so this cannot be
-          // assumed. Pinned to the id the feed overrides already use.
-          standingConversationIdProvider(
-            'ch-2',
-          ).overrideWith((ref) async => 'ch-2'),
-        ],
-        child: _PrefsLive(
-          child: MaterialApp.router(
-            localizationsDelegates: appLocalizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            routerConfig: router,
-          ),
-        ),
-      ),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-
-    await tester.tap(find.byIcon(AppIcons.archive));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-
-    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
-    expect(find.text(l10n.deleteSpace), findsNothing);
-    expect(archived, ['ch-2']);
-    expect(
-      find.byKey(const Key('spaces-stub')),
-      findsOneWidget,
-      reason: 'the archived space leaves the URL for the space list',
-    );
-    await tester.pumpWidget(Container());
-    await tester.pumpAndSettle();
-  });
-
   // Repro for the reported regression: open a terminal in a space, navigate
   // away (newsfeed) so the whole screen unmounts, come back — the terminal
   // must re-claim its kept session from the app-level registry, not spawn a
@@ -1019,8 +865,8 @@ void main() {
       )).overrideWith(
         (ref) => Stream.value((messages: const [], hasMore: false)),
       ),
-      spaceReadRepositoryProvider.overrideWith(
-        (ref) => _FakeSpaceReadRepository(),
+      conversationReadRepositoryProvider.overrideWith(
+        (ref) => FakeConversationReadRepository(),
       ),
       spaceMessagesProvider(
         'ch-1',
@@ -1230,8 +1076,8 @@ void main() {
               ),
           ]),
         ),
-        spaceReadRepositoryProvider.overrideWith(
-          (ref) => _FakeSpaceReadRepository(),
+        conversationReadRepositoryProvider.overrideWith(
+          (ref) => FakeConversationReadRepository(),
         ),
         spaceMessagesProvider(
           'ch-1',
@@ -1493,8 +1339,8 @@ void main() {
           )).overrideWith(
             (ref) => Stream.value((messages: const [], hasMore: false)),
           ),
-          spaceReadRepositoryProvider.overrideWith(
-            (ref) => _FakeSpaceReadRepository(),
+          conversationReadRepositoryProvider.overrideWith(
+            (ref) => FakeConversationReadRepository(),
           ),
           spaceMessagesProvider(
             'ch-1',

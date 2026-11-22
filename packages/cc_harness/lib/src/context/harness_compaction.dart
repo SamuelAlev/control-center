@@ -42,7 +42,13 @@ class HarnessCompactionInput {
     this.selfAgentName = 'assistant',
     this.activeEditTargets = const {},
     this.cancel = CancellationToken.none,
+    this.focus,
   });
+
+  /// The longest [focus] a summarizer is handed, in characters: the
+  /// `compact` tool's focus (1,000) plus the owner's `preCompact` hook output
+  /// (1,000) and the line between them.
+  static const int maxFocusChars = 2001;
 
   /// The messages (ascending) being folded.
   final List<HarnessMessage> messages;
@@ -60,6 +66,13 @@ class HarnessCompactionInput {
   /// request when it fires (throwing [CancelledException]) so a cancelled run
   /// neither waits on nor pays for a summary nobody will use.
   final CancellationToken cancel;
+
+  /// What must survive this compaction, when someone said so: the focus the
+  /// model passed to `compact`, then the output of the owner's `preCompact`
+  /// hook. A model-backed summarizer adds it to its instructions; the
+  /// structural digest has no instructions to add it to. Null when neither
+  /// said anything.
+  final String? focus;
 }
 
 /// The text a summarizer produced, and whether a model wrote it.
@@ -126,15 +139,7 @@ class StructuralHarnessSummarizer implements HarnessSummarizerPort {
     // Pin new authoritative steering alongside the original request carried
     // from the prior summary, before either evidence section is tail-bounded.
     final digestSplit = splitPinnedEvidence(digest);
-
-    // The original request and system steering are PINNED: they must survive
-    // every fold, so they are budgeted for (not tail-bounded away). The set
-    // collapses the case where the carried and fresh copies are identical.
-    final pinnedParts = <String>{
-      if (split.pinned.isNotEmpty) split.pinned,
-      if (digestSplit.pinned.isNotEmpty) digestSplit.pinned,
-    };
-    final pinned = _boundHead(pinnedParts.join('\n\n'), budget.totalChars ~/ 3);
+    final pinned = _pinnedPayload(split, digestSplit, budget);
 
     var remaining = budget.totalChars - header.length - pinned.length;
     if (remaining < 0) {
@@ -180,29 +185,99 @@ class StructuralHarnessSummarizer implements HarnessSummarizerPort {
   }
 
   /// Drops the previous summary's own heading so it is re-wrapped, not nested.
-  String _strip(String? summary) {
-    final text = summary?.trim() ?? '';
-    if (text.isEmpty) {
-      return '';
-    }
-    final lines = text.split('\n');
-    if (lines.isNotEmpty && lines.first.trimLeft().startsWith('#')) {
-      return lines.skip(1).join('\n').trim();
-    }
-    return text;
-  }
+  String _strip(String? summary) => _stripSummaryHeading(summary);
 }
 
-/// Head-bounds [text] to [maxChars], keeping the OLDEST content (the original
-/// instructions come first) with an explicit marker when it must be cut.
-String _boundHead(String text, int maxChars) {
-  if (maxChars <= 0 || text.isEmpty) {
+/// Drops a summary's own heading so it is re-wrapped, not nested.
+String _stripSummaryHeading(String? summary) {
+  final text = summary?.trim() ?? '';
+  if (text.isEmpty) {
     return '';
   }
-  if (text.length <= maxChars) {
-    return text;
+  final lines = text.split('\n');
+  if (lines.isNotEmpty && lines.first.trimLeft().startsWith('#')) {
+    return lines.skip(1).join('\n').trim();
   }
-  return '${text.substring(0, maxChars)}…[authoritative context truncated]';
+  return text;
+}
+
+/// The pinned block is one budget across folds: the carried block (from
+/// the previous summary) and the fold's own are merged item by item and
+/// fitted again ([mergePinnedEvidence]): the original request whole, then
+/// the newest of the person's messages and the steering.
+String _pinnedPayload(
+  ({String pinned, String rest}) carried,
+  ({String pinned, String rest}) fresh,
+  HarnessEvidenceBudget budget,
+) => mergePinnedEvidence([
+  carried.pinned,
+  fresh.pinned,
+], budget: budget.authoritativeShare);
+
+/// The pinned evidence of a fold, framed between [evidencePinBegin] and
+/// [evidencePinEnd], or an empty string when there is none: the block
+/// carried in [HarnessCompactionInput.previousSummary], merged with the
+/// person's messages and the steering in [HarnessCompactionInput.messages]
+/// ([serializeHarnessHistory]).
+///
+/// The structural digest builds its pinned block exactly this way. A
+/// model-written summary re-attaches it ([withPinnedEvidence]), so the
+/// person's requests and steering survive every fold verbatim whichever
+/// summarizer ran, instead of only as well as a model paraphrased them.
+String pinnedEvidenceBlock(
+  HarnessCompactionInput input, {
+  HarnessEvidenceBudget budget = HarnessEvidenceBudget.defaults,
+}) {
+  final carried = splitPinnedEvidence(
+    _stripSummaryHeading(input.previousSummary),
+  );
+  final fresh = splitPinnedEvidence(
+    serializeHarnessHistory(
+      input.messages,
+      selfAgentName: input.selfAgentName,
+      budget: budget,
+      activeEditTargets: input.activeEditTargets.isEmpty
+          ? collectActiveEditTargets(input.messages)
+          : input.activeEditTargets,
+    ),
+  );
+  final pinned = _pinnedPayload(carried, fresh, budget);
+  if (pinned.isEmpty) {
+    return '';
+  }
+  return '$evidencePinBegin\n$pinned\n$evidencePinEnd';
+}
+
+/// [summary] with the fold's pinned evidence ([pinnedEvidenceBlock]) placed
+/// before it. Any pinned block the model copied into [summary] is taken out
+/// first, and any other marker in the model's text is neutralised
+/// ([neutraliseEvidenceMarkers]), so the block appears once, at the start,
+/// and holds the server's copy, not the model's.
+String withPinnedEvidence(
+  String summary,
+  HarnessCompactionInput input, {
+  HarnessEvidenceBudget budget = HarnessEvidenceBudget.defaults,
+}) {
+  var body = summary.trim();
+  while (true) {
+    final begin = body.indexOf(evidencePinBegin);
+    if (begin < 0) {
+      break;
+    }
+    final end = body.indexOf(evidencePinEnd, begin);
+    if (end < 0) {
+      break;
+    }
+    body =
+        '${body.substring(0, begin)}'
+        '${body.substring(end + evidencePinEnd.length)}';
+  }
+  body = neutraliseEvidenceMarkers(body).trim();
+  final pinned = pinnedEvidenceBlock(input, budget: budget);
+  if (pinned.isEmpty) {
+    return body;
+  }
+  return body.isEmpty ? pinned : '$pinned\n\n$body';
 }
 
 /// Tail-bounds [text] to at most [maxChars], dropping the OLDEST whole lines and
@@ -211,7 +286,8 @@ String _boundHead(String text, int maxChars) {
 /// Whole-line (never mid-line) so a recovery handle embedded in the text — e.g.
 /// `read_output(handle: "out_…")` — is either fully present or fully dropped,
 /// never truncated into a handle that does not resolve. This is the guarantee
-/// that bounding cannot fabricate provenance.
+/// that bounding cannot fabricate provenance. Nor does it cut a data
+/// envelope: one whose opener is dropped is dropped through its closer.
 String boundEvidence(String text, int maxChars) {
   if (maxChars <= 0) {
     return '';
@@ -234,7 +310,10 @@ String boundEvidence(String text, int maxChars) {
   if (kept.isEmpty) {
     return marker;
   }
-  return '$marker\n${kept.reversed.join('\n')}';
+  // An envelope whose opener fell off the front would leave its payload
+  // unframed: drop the rest of it too.
+  final tail = dropOrphanedEnvelopeTail(kept.reversed.join('\n'));
+  return tail.isEmpty ? marker : '$marker\n$tail';
 }
 
 /// The outcome of a compaction / prune pass.
@@ -323,6 +402,28 @@ class HarnessCompactionResult {
   int get reclaimed => tokensBefore - tokensAfter;
 }
 
+/// Asks [focus] for a compaction's focus: trimmed, bounded to
+/// [HarnessCompactionInput.maxFocusChars], null when blank, absent or
+/// throwing. For [HarnessCompactor] implementations.
+Future<String?> resolveCompactionFocus(
+  Future<String?> Function()? focus,
+) async {
+  if (focus == null) {
+    return null;
+  }
+  try {
+    final text = (await focus())?.trim();
+    if (text == null || text.isEmpty) {
+      return null;
+    }
+    return text.length > HarnessCompactionInput.maxFocusChars
+        ? text.substring(0, HarnessCompactionInput.maxFocusChars)
+        : text;
+  } on Object {
+    return null;
+  }
+}
+
 /// Compacts a harness history in place when it approaches the context window.
 abstract interface class HarnessCompactor {
   /// Compacts [history] (mutating it in place) when
@@ -350,6 +451,12 @@ abstract interface class HarnessCompactor {
   /// [cancel] is the run's token. When it fires mid-pass the compactor must
   /// leave [history] untouched (return [HarnessCompactionResult.unchanged]):
   /// the loop has stopped waiting and is about to persist the history it has.
+  ///
+  /// [focus] is asked, at most once and only when a summary is about to be
+  /// written, for what must survive ([HarnessCompactionInput.focus]). It is a
+  /// function so the owner's `preCompact` hook runs only for a compaction
+  /// that summarizes, not on every turn's threshold check. A throw counts as
+  /// no focus.
   Future<HarnessCompactionResult> maybeCompact(
     List<HarnessMessage> history, {
     required int? contextWindow,
@@ -358,6 +465,7 @@ abstract interface class HarnessCompactor {
     String selfAgentName,
     bool force,
     CancellationToken cancel,
+    Future<String?> Function()? focus,
   });
 
   /// Reclaims context cheaply by eliding uneventful older tool results, shedding
@@ -468,6 +576,7 @@ class DefaultHarnessCompactor implements HarnessCompactor {
     String selfAgentName = 'assistant',
     bool force = false,
     CancellationToken cancel = CancellationToken.none,
+    Future<String?> Function()? focus,
   }) async {
     if (contextWindow == null) {
       return HarnessCompactionResult.unchanged(
@@ -577,6 +686,7 @@ class DefaultHarnessCompactor implements HarnessCompactor {
     // exists. A throwing summarizer therefore leaves the fold un-applied, and
     // any staged masking is committed and reported rather than lost or
     // mislabelled "unchanged".
+    final focusText = await resolveCompactionFocus(focus);
     final HarnessSummary summary;
     try {
       summary = await summarizer.summarize(
@@ -586,6 +696,7 @@ class DefaultHarnessCompactor implements HarnessCompactor {
           selfAgentName: selfAgentName,
           activeEditTargets: collectActiveEditTargets(staged),
           cancel: cancel,
+          focus: focusText,
         ),
       );
     } on Object catch (e) {
@@ -722,6 +833,7 @@ class DefaultHarnessCompactor implements HarnessCompactor {
         }
         if (b.content != elidedResultMarker &&
             !isMaskedObservation(b.content) &&
+            !nestedCallsProtected(b) &&
             elision.isUseless(
               toolName: toolNames[b.toolUseId] ?? '',
               outputs: b.content,
@@ -822,6 +934,7 @@ class DefaultHarnessCompactor implements HarnessCompactor {
         if (b is HarnessToolResultBlock &&
             b.content != elidedResultMarker &&
             !isMaskedObservation(b.content) &&
+            !nestedCallsProtected(b) &&
             elision.isUseless(
               toolName: toolNames[b.toolUseId] ?? '',
               outputs: b.content,
@@ -936,7 +1049,9 @@ class DefaultHarnessCompactor implements HarnessCompactor {
     for (final m in fold) {
       if (m.role == HarnessRole.user) {
         final text = m.textContent.trimLeft();
-        if (text.startsWith(harnessSummaryMarker)) {
+        // Only the compactor's own message (no origin): a person's message
+        // that happens to start with the marker is their words.
+        if (m.origin == null && text.startsWith(harnessSummaryMarker)) {
           return text.substring(harnessSummaryMarker.length).trim();
         }
         return null;

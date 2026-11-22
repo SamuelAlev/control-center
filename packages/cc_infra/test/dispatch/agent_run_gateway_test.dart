@@ -406,6 +406,9 @@ void main() {
       AgentRunGrant(
         workspaceId: 'w1',
         conversationId: 'c1',
+        mcpEndpoint: true,
+        claudeHook: true,
+        readOnly: false,
         agentId: 'a1',
         spaceId: 's1',
         repos: const [_widgets],
@@ -480,30 +483,81 @@ void main() {
       expect(gateway.mcpScopeFor('guessed'), isNull);
     });
 
-    test('the owner\'s personal MCP servers come only from the grant',
-        () async {
-      expect(gateway.mcpScopeFor(lease.secret)?.personalMcp, isFalse);
-      final accountable = (await gateway.open(
+    test(
+      'the owner\'s personal MCP servers come only from the grant',
+      () async {
+        expect(gateway.mcpScopeFor(lease.secret)?.personalMcp, isFalse);
+        final accountable = (await gateway.open(
+          const AgentRunGrant(
+            workspaceId: 'ws',
+            conversationId: 'c',
+            mcpEndpoint: true,
+            claudeHook: true,
+            readOnly: false,
+            personalMcp: true,
+          ),
+        ))!;
+        addTearDown(() => gateway.close(accountable));
+        final scope = gateway.mcpScopeFor(accountable.secret)!;
+        expect(scope.personalMcp, isTrue);
+        expect(scope.toolView.includePersonal, isTrue);
+        expect(scope.toolView.workspaceId, 'ws');
+      },
+    );
+
+    test('the run ids come only from the grant', () async {
+      final plain = gateway.mcpScopeFor(lease.secret)!;
+      expect(plain.runLogId, isNull);
+      final coded = (await gateway.open(
         const AgentRunGrant(
           workspaceId: 'ws',
           conversationId: 'c',
-          personalMcp: true,
+          mcpEndpoint: true,
+          claudeHook: true,
+          readOnly: false,
+          runId: 'dispatch-9',
+          runLogId: 'log-9',
         ),
       ))!;
-      addTearDown(() => gateway.close(accountable));
-      final scope = gateway.mcpScopeFor(accountable.secret)!;
-      expect(scope.personalMcp, isTrue);
-      expect(scope.toolView.includePersonal, isTrue);
-      expect(scope.toolView.workspaceId, 'ws');
+      addTearDown(() => gateway.close(coded));
+      final scope = gateway.mcpScopeFor(coded.secret)!;
+      expect(scope.runId, 'dispatch-9');
+      expect(scope.runLogId, 'log-9');
     });
 
     test('a closed run proves nothing', () async {
       final closing = (await gateway.open(
-        const AgentRunGrant(workspaceId: 'ws', conversationId: 'c'),
+        const AgentRunGrant(
+          workspaceId: 'ws',
+          conversationId: 'c',
+          mcpEndpoint: true,
+          claudeHook: true,
+          readOnly: false,
+        ),
       ))!;
       await gateway.close(closing);
 
       expect(gateway.mcpScopeFor(closing.secret), isNull);
+    });
+
+    test('a run whose agent does not call the MCP endpoint proves nothing '
+        'there', () async {
+      // The built-in harness calls its tools in-process. Its secret is in
+      // every process of the run, so a command (a script's `bash` among
+      // them) must not reach a tool with it as a call of the run.
+      final harness = (await gateway.open(
+        const AgentRunGrant(
+          workspaceId: 'ws',
+          conversationId: 'c',
+          mcpEndpoint: false,
+          claudeHook: false,
+          readOnly: false,
+        ),
+      ))!;
+      addTearDown(() => gateway.close(harness));
+
+      expect(gateway.mcpScopeFor(harness.secret), isNull);
+      expect(gateway.mcpScopeFor(lease.secret), isNotNull);
     });
 
     test('configs that differ only in the run secret compare equal', () {
@@ -751,6 +805,17 @@ void main() {
       expect(upstream.seen, hasLength(1));
     });
 
+    test('a push is audited under its refs, not repeated, and the row '
+        'digests what was pushed', () async {
+      rule(ActionClass.gitPush, ActionDecision.allow);
+
+      await send('POST', pushPath, body: _push(['refs/heads/feature/y']));
+
+      final audit = audits.single;
+      expect(audit.actionSummary, 'git push to acme/widgets: feature/y');
+      expect(audit.command, audit.actionSummary);
+    });
+
     test('a flat deny is refused at discovery, with the reason', () async {
       rule(ActionClass.gitPush, ActionDecision.deny);
 
@@ -975,6 +1040,9 @@ void main() {
         AgentRunGrant(
           workspaceId: 'w1',
           conversationId: 'c2',
+          mcpEndpoint: true,
+          claudeHook: true,
+          readOnly: false,
           agentId: 'a1',
           spaceId: 's1',
           actingUserId: 'bo',
@@ -1216,6 +1284,9 @@ void main() {
           AgentRunGrant(
             workspaceId: 'w1',
             conversationId: 'c1',
+            mcpEndpoint: true,
+            claudeHook: true,
+            readOnly: false,
             repos: const [_widgets],
             identity: _adaIdentity,
           ),
@@ -1279,6 +1350,9 @@ void main() {
             AgentRunGrant(
               workspaceId: 'w1',
               conversationId: 'c-${identity.hashCode}',
+              mcpEndpoint: true,
+              claudeHook: true,
+              readOnly: false,
               identity: identity,
             ),
           ))!,
@@ -1361,10 +1435,14 @@ void main() {
         AgentRunGrant(
           workspaceId: 'w1',
           conversationId: 'c-sign',
+          mcpEndpoint: true,
+          claudeHook: true,
+          readOnly: false,
           agentId: 'a1',
           spaceId: 's1',
           actingUserId: 'ada',
-          runId: 'run-1',
+          runId: 'dispatch-1',
+          runLogId: 'run-1',
           identity: identity,
           signProgram: '/runs/run-1/bin/cc-git-sign',
         ),
@@ -1403,6 +1481,9 @@ void main() {
         AgentRunGrant(
           workspaceId: 'w1',
           conversationId: 'c-mismatch',
+          mcpEndpoint: true,
+          claudeHook: true,
+          readOnly: false,
           actingUserId: 'ada',
           identity: who,
           signProgram: signProgram,
@@ -1454,7 +1535,7 @@ void main() {
       expect(audit.actionSummary, 'sign git commit');
       expect(audit.decision, ActionDecision.allow);
       expect(audit.onBehalfOfUserId, 'ada');
-      expect(audit.runId, 'run-1');
+      expect(audit.runId, 'run-1', reason: 'the run log, not the dispatch');
     });
 
     test('a commit that is not the run\'s own is not signed', () async {
@@ -1560,6 +1641,9 @@ void main() {
           AgentRunGrant(
             workspaceId: 'w1',
             conversationId: 'c-plan',
+            mcpEndpoint: true,
+            claudeHook: true,
+            readOnly: false,
             actingUserId: 'ada',
             mode: Mode.plan,
             identity: identity,
@@ -1608,6 +1692,9 @@ void main() {
         AgentRunGrant(
           workspaceId: 'w1',
           conversationId: 'c-bo',
+          mcpEndpoint: true,
+          claudeHook: true,
+          readOnly: false,
           actingUserId: 'bo',
           identity: AgentCommitIdentity.person((
             name: 'Bo',
@@ -1667,6 +1754,9 @@ void main() {
         AgentRunGrant(
           workspaceId: 'w1',
           conversationId: 'c-next',
+          mcpEndpoint: true,
+          claudeHook: true,
+          readOnly: false,
           actingUserId: 'ada',
           identity: identity,
           signProgram: '/runs/run-3/bin/cc-git-sign',
@@ -1786,6 +1876,9 @@ void main() {
         AgentRunGrant(
           workspaceId: 'w1',
           conversationId: 'c-e2e',
+          mcpEndpoint: true,
+          claudeHook: true,
+          readOnly: false,
           actingUserId: 'ada',
           identity: identity,
           signProgram: shim.path,
@@ -1887,6 +1980,9 @@ void main() {
       const AgentRunGrant(
         workspaceId: 'w1',
         conversationId: 'c-fetch',
+        mcpEndpoint: true,
+        claudeHook: true,
+        readOnly: false,
         agentId: 'a1',
         spaceId: 's1',
         actingUserId: 'u-ada',
@@ -2513,6 +2609,9 @@ void main() {
       const AgentRunGrant(
         workspaceId: 'w1',
         conversationId: 'c-forges',
+        mcpEndpoint: true,
+        claudeHook: true,
+        readOnly: false,
         repos: [
           _widgets,
           (forge: ForgeHost.gitlab, owner: 'acme/platform', name: 'api-server'),
@@ -2604,7 +2703,13 @@ void main() {
 
     test('a run on no repository keeps its origin', () async {
       final run = (await gateway.open(
-        const AgentRunGrant(workspaceId: 'w1', conversationId: 'c1'),
+        const AgentRunGrant(
+          workspaceId: 'w1',
+          conversationId: 'c1',
+          mcpEndpoint: true,
+          claudeHook: true,
+          readOnly: false,
+        ),
       ))!;
       final resolved = await urls(
         'git@github.com:acme/widgets.git',
@@ -2634,6 +2739,9 @@ void main() {
           AgentRunGrant(
             workspaceId: 'w1',
             conversationId: 'c1',
+            mcpEndpoint: true,
+            claudeHook: true,
+            readOnly: false,
             repos: [(forge: forge, owner: owner, name: name)],
           ),
         ))!;
@@ -2655,6 +2763,9 @@ void main() {
         AgentRunGrant(
           workspaceId: 'w1',
           conversationId: 'c-person',
+          mcpEndpoint: true,
+          claudeHook: true,
+          readOnly: false,
           actingUserId: 'bo',
           repos: const [_widgets],
           identity: _adaIdentity,
@@ -2719,6 +2830,9 @@ void main() {
         const AgentRunGrant(
           workspaceId: 'w1',
           conversationId: 'c-space',
+          mcpEndpoint: true,
+          claudeHook: true,
+          readOnly: false,
           repos: [
             (forge: ForgeHost.github, owner: 'acme', name: 'shop-ui'),
             (forge: ForgeHost.github, owner: 'acme', name: 'api-server'),
@@ -2749,7 +2863,13 @@ void main() {
 
     test('a run on no repository has none', () async {
       final run = (await gateway.open(
-        const AgentRunGrant(workspaceId: 'w1', conversationId: 'c-none'),
+        const AgentRunGrant(
+          workspaceId: 'w1',
+          conversationId: 'c-none',
+          mcpEndpoint: true,
+          claudeHook: true,
+          readOnly: false,
+        ),
       ))!;
 
       final unnamed = await send('GET', path, secret: run.secret);
@@ -2773,6 +2893,9 @@ void main() {
         const AgentRunGrant(
           workspaceId: 'w2',
           conversationId: 'c-other',
+          mcpEndpoint: true,
+          claudeHook: true,
+          readOnly: false,
           repos: [(forge: ForgeHost.github, owner: 'other', name: 'repo')],
         ),
       ))!;
@@ -2943,11 +3066,17 @@ void main() {
       const one = AgentRunGrant(
         workspaceId: 'w1',
         conversationId: 'c1',
+        mcpEndpoint: true,
+        claudeHook: true,
+        readOnly: false,
         repos: [(forge: ForgeHost.github, owner: 'Acme', name: 'Widgets')],
       );
       const several = AgentRunGrant(
         workspaceId: 'w1',
         conversationId: 'c1',
+        mcpEndpoint: true,
+        claudeHook: true,
+        readOnly: false,
         repos: [
           (forge: ForgeHost.github, owner: 'acme', name: 'shop-ui'),
           (forge: ForgeHost.github, owner: 'acme', name: 'api-server'),
@@ -2956,12 +3085,21 @@ void main() {
       const mixed = AgentRunGrant(
         workspaceId: 'w1',
         conversationId: 'c1',
+        mcpEndpoint: true,
+        claudeHook: true,
+        readOnly: false,
         repos: [
           (forge: ForgeHost.gitlab, owner: 'acme/platform', name: 'api-server'),
           (forge: ForgeHost.github, owner: 'acme', name: 'widgets'),
         ],
       );
-      const none = AgentRunGrant(workspaceId: 'w1', conversationId: 'c1');
+      const none = AgentRunGrant(
+        workspaceId: 'w1',
+        conversationId: 'c1',
+        mcpEndpoint: true,
+        claudeHook: true,
+        readOnly: false,
+      );
 
       expect(one.repoOn(ForgeHost.github, 'acme', 'widgets'), (
         forge: ForgeHost.github,
@@ -3088,6 +3226,9 @@ void main() {
         const AgentRunGrant(
           workspaceId: 'w1',
           conversationId: 'c-space',
+          mcpEndpoint: true,
+          claudeHook: true,
+          readOnly: false,
           repos: [
             (forge: ForgeHost.github, owner: 'acme', name: 'shop-ui'),
             (forge: ForgeHost.github, owner: 'acme', name: 'api-server'),
@@ -3215,7 +3356,12 @@ void main() {
       bool available = true,
     }) async {
       final settings =
-          jsonDecode(AgentRunLease.claudeHookSettings(available ? lease : null))
+          jsonDecode(
+                AgentRunLease.claudeHookSettings(
+                  available ? lease : null,
+                  readOnly: false,
+                ),
+              )
               as Map;
       final entry =
           ((settings['hooks'] as Map)['PreToolUse'] as List).single as Map;
@@ -3249,11 +3395,15 @@ void main() {
       required String worktree,
       List<String> stateDirs = const [],
       Mode mode = Mode.chat,
+      bool readOnly = false,
     }) async {
       final run = (await gateway.open(
         AgentRunGrant(
           workspaceId: 'w1',
           conversationId: 'c1',
+          mcpEndpoint: true,
+          claudeHook: true,
+          readOnly: readOnly,
           agentId: 'a1',
           spaceId: 's1',
           mode: mode,
@@ -3261,7 +3411,9 @@ void main() {
           runnerStateDirs: stateDirs,
         ),
       ))!;
-      final settings = jsonDecode(AgentRunLease.claudeHookSettings(run)) as Map;
+      final settings =
+          jsonDecode(AgentRunLease.claudeHookSettings(run, readOnly: readOnly))
+              as Map;
       final entry =
           ((settings['hooks'] as Map)['PreToolUse'] as List).single as Map;
       final handler = (entry['hooks'] as List).single as Map;
@@ -3285,7 +3437,8 @@ void main() {
 
       test('the hook matches every tool the policy has a rule for', () {
         final settings =
-            jsonDecode(AgentRunLease.claudeHookSettings(lease)) as Map;
+            jsonDecode(AgentRunLease.claudeHookSettings(lease, readOnly: false))
+                as Map;
         final entry =
             ((settings['hooks'] as Map)['PreToolUse'] as List).single as Map;
 
@@ -3302,11 +3455,60 @@ void main() {
 
       test('without a lease only Bash is blocked', () {
         final settings =
-            jsonDecode(AgentRunLease.claudeHookSettings(null)) as Map;
+            jsonDecode(AgentRunLease.claudeHookSettings(null, readOnly: false))
+                as Map;
         final entry =
             ((settings['hooks'] as Map)['PreToolUse'] as List).single as Map;
 
         expect(entry['matcher'], 'Bash');
+      });
+
+      test('a read-only run\'s hook sees every tool, with a lease or '
+          'without one (then it refuses all)', () {
+        for (final held in [lease, null]) {
+          final settings =
+              jsonDecode(AgentRunLease.claudeHookSettings(held, readOnly: true))
+                  as Map;
+          final entry =
+              ((settings['hooks'] as Map)['PreToolUse'] as List).single as Map;
+          expect(entry['matcher'], '*');
+        }
+      });
+
+      test('a read-only run may only read: every tool that changes anything '
+          'is refused, before any rule', () async {
+        for (final tool in [
+          'Write',
+          'Edit',
+          'MultiEdit',
+          'NotebookEdit',
+          'Bash',
+          'Task',
+          'TodoWrite',
+          'WebFetch',
+          'WebSearch',
+          'KillShell',
+        ]) {
+          final result = await nativeHook(
+            tool,
+            {'file_path': '${tree.path}/a.txt', 'command': 'ls'},
+            worktree: tree.path,
+            mode: Mode.review,
+            readOnly: true,
+          );
+          expect(result.exitCode, 2, reason: tool);
+          expect(result.err, contains('read-only run'), reason: tool);
+        }
+        for (final tool in ['Read', 'Glob', 'Grep', 'LS', 'mcp__cc__read']) {
+          final result = await nativeHook(
+            tool,
+            {'file_path': '${tree.path}/a.txt', 'pattern': 'x'},
+            worktree: tree.path,
+            mode: Mode.review,
+            readOnly: true,
+          );
+          expect(result.exitCode, 0, reason: tool);
+        }
       });
 
       test('a write inside the worktree asks nothing', () async {
@@ -3779,17 +3981,28 @@ void main() {
         // Exits 1, which Claude Code would not treat as a block.
         ['/usr/bin/false'],
       ]) {
-        final run = (await AgentRunGateway(
-          guard: ActionGuardService(
-            repository: rules,
-            confirmationPort: confirm,
-          ),
-          broker: broker,
-          loopbackBase: () async => Uri.parse('http://127.0.0.1:${host.port}'),
-          client: AgentRunClientLauncher(command: command, files: command),
-        ).open(const AgentRunGrant(workspaceId: 'w1', conversationId: 'c1')))!;
+        final run =
+            (await AgentRunGateway(
+              guard: ActionGuardService(
+                repository: rules,
+                confirmationPort: confirm,
+              ),
+              broker: broker,
+              loopbackBase: () async =>
+                  Uri.parse('http://127.0.0.1:${host.port}'),
+              client: AgentRunClientLauncher(command: command, files: command),
+            ).open(
+              const AgentRunGrant(
+                workspaceId: 'w1',
+                conversationId: 'c1',
+                mcpEndpoint: true,
+                claudeHook: true,
+                readOnly: false,
+              ),
+            ))!;
         final settings =
-            jsonDecode(AgentRunLease.claudeHookSettings(run)) as Map;
+            jsonDecode(AgentRunLease.claudeHookSettings(run, readOnly: false))
+                as Map;
         final entry =
             ((settings['hooks'] as Map)['PreToolUse'] as List).single as Map;
         final handler = (entry['hooks'] as List).single as Map;
@@ -3827,6 +4040,9 @@ void main() {
       AgentRunGrant(
         workspaceId: 'w1',
         conversationId: 'c1',
+        mcpEndpoint: true,
+        claudeHook: true,
+        readOnly: false,
         agentId: 'a1',
         spaceId: 's1',
         worktreeRoot: tree.path,
@@ -3841,7 +4057,9 @@ void main() {
       String tool,
       Map<String, Object?> input,
     ) async {
-      final settings = jsonDecode(AgentRunLease.claudeHookSettings(run)) as Map;
+      final settings =
+          jsonDecode(AgentRunLease.claudeHookSettings(run, readOnly: false))
+              as Map;
       final entry =
           ((settings['hooks'] as Map)['PreToolUse'] as List).single as Map;
       final handler = (entry['hooks'] as List).single as Map;
@@ -3966,6 +4184,9 @@ void main() {
           AgentRunGrant(
             workspaceId: 'w1',
             conversationId: 'c-person',
+            mcpEndpoint: true,
+            claudeHook: true,
+            readOnly: false,
             actingUserId: 'u1',
             repos: const [_widgets],
             identity: _adaIdentity,

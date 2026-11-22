@@ -354,4 +354,175 @@ void main() {
       expect(folder.transcriptChars, greaterThanOrEqualTo(0));
     });
   });
+
+  group('nested calls (a code mode script)', () {
+    test('fold under their parent in call order with the parent id', () {
+      folder
+        ..add(ToolCallEvent(toolName: 'repl', toolCallId: 'r'))
+        ..add(
+          ToolCallEvent(
+            toolName: 'read',
+            toolCallId: 'r/1',
+            inputs: const {'path': 'a.dart'},
+            parentToolCallId: 'r',
+          ),
+        )
+        ..add(
+          ToolCallEvent(
+            toolName: 'search',
+            toolCallId: 'r/2',
+            parentToolCallId: 'r',
+          ),
+        )
+        ..add(
+          ToolResultEvent(
+            toolCallId: 'r/1',
+            outputs: 'body',
+            parentToolCallId: 'r',
+          ),
+        )
+        ..add(
+          ToolResultEvent(
+            toolCallId: 'r/2',
+            outputs: 'hits',
+            parentToolCallId: 'r',
+          ),
+        )
+        ..add(ToolResultEvent(toolCallId: 'r', outputs: 'script done'));
+
+      final tools = folder.segments.cast<ToolSegment>();
+      expect([for (final t in tools) t.toolCallId], ['r', 'r/1', 'r/2']);
+      expect([for (final t in tools) t.parentToolCallId], [null, 'r', 'r']);
+      expect(
+        [for (final t in tools) t.outputs],
+        ['script done', 'body', 'hits'],
+      );
+      expect(tools.every((t) => t.status == ToolSegmentStatus.ok), isTrue);
+    });
+
+    test('pair each result with its own call when results interleave', () {
+      folder
+        ..add(ToolCallEvent(toolName: 'repl', toolCallId: 'r'))
+        ..add(
+          ToolCallEvent(
+            toolName: 'read',
+            toolCallId: 'r/1',
+            parentToolCallId: 'r',
+          ),
+        )
+        ..add(
+          ToolCallEvent(
+            toolName: 'read',
+            toolCallId: 'r/2',
+            parentToolCallId: 'r',
+          ),
+        )
+        // The second call settles first, then the script fails before the
+        // first one does.
+        ..add(
+          ToolResultEvent(
+            toolCallId: 'r/2',
+            outputs: 'second',
+            parentToolCallId: 'r',
+          ),
+        )
+        ..add(ToolResultEvent(toolCallId: 'r', outputs: 'boom', isError: true))
+        ..add(
+          ToolResultEvent(
+            toolCallId: 'r/1',
+            outputs: 'first',
+            isError: true,
+            parentToolCallId: 'r',
+          ),
+        );
+
+      final byId = {
+        for (final t in folder.segments.cast<ToolSegment>()) t.toolCallId: t,
+      };
+      expect(byId['r']!.outputs, 'boom');
+      expect(byId['r']!.status, ToolSegmentStatus.error);
+      expect(byId['r/1']!.outputs, 'first');
+      expect(byId['r/1']!.status, ToolSegmentStatus.error);
+      expect(byId['r/2']!.outputs, 'second');
+      expect(byId['r/2']!.status, ToolSegmentStatus.ok);
+      expect(folder.segments, hasLength(3));
+    });
+
+    test('an unknown nested result never closes the parent', () {
+      folder
+        ..add(ToolCallEvent(toolName: 'repl', toolCallId: 'r'))
+        ..add(
+          ToolResultEvent(
+            toolCallId: 'r/9',
+            outputs: 'stray',
+            toolName: 'read',
+            parentToolCallId: 'r',
+          ),
+        );
+
+      final parent = folder.segments.first as ToolSegment;
+      expect(parent.status, ToolSegmentStatus.running);
+      final orphan = folder.segments.last as ToolSegment;
+      expect(orphan.toolCallId, 'r/9');
+      expect(orphan.parentToolCallId, 'r');
+    });
+
+    test('an id-less result still closes the model\'s own call', () {
+      folder
+        ..add(ToolCallEvent(toolName: 'repl', toolCallId: 'r'))
+        ..add(
+          ToolCallEvent(
+            toolName: 'read',
+            toolCallId: 'r/1',
+            parentToolCallId: 'r',
+          ),
+        )
+        ..add(ToolResultEvent(toolCallId: '', outputs: 'parent out'));
+
+      expect((folder.segments[0] as ToolSegment).outputs, 'parent out');
+      expect(
+        (folder.segments[1] as ToolSegment).status,
+        ToolSegmentStatus.running,
+      );
+    });
+
+    test('nested arguments never blank the text before the parent', () {
+      folder
+        ..add(TextEvent(content: 'lib/a.dart'))
+        ..add(
+          ToolCallEvent(
+            toolName: 'repl',
+            toolCallId: 'r',
+            inputs: const {'code': 'await tools.read({path})'},
+          ),
+        )
+        ..add(
+          ToolCallEvent(
+            toolName: 'read',
+            toolCallId: 'r/1',
+            inputs: const {'path': 'lib/a.dart'},
+            parentToolCallId: 'r',
+          ),
+        );
+
+      expect((folder.segments.first as TextSegment).text, 'lib/a.dart');
+    });
+
+    test('the parent id survives the persisted form', () {
+      folder
+        ..add(ToolCallEvent(toolName: 'repl', toolCallId: 'r'))
+        ..add(
+          ToolCallEvent(
+            toolName: 'read',
+            toolCallId: 'r/1',
+            parentToolCallId: 'r',
+          ),
+        );
+
+      final restored = TranscriptSegment.fromJson(
+        folder.takeChangedSegments()[1]!,
+      );
+      expect((restored as ToolSegment).parentToolCallId, 'r');
+    });
+  });
 }

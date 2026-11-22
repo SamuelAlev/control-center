@@ -2,10 +2,10 @@
 title: Innebygde agentverktøy
 description: Verktøyflaten den innebygde harnessen gir en agent — språkserver, strukturelt søk, feilsøker, kerneler og worker-kontroll — med hver operasjon og argumentene dens.
 slug: nb-NO/handbok/referanse/agentverktoy
-sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
+sourceHash: e99183fd4b257a60f94444101e1d39a7d6c77249
 ---
 
-Dette er de **serverbundne** verktøyene den innebygde agentkjøretiden registrerer direkte — språkserver, strukturelt søk, feilsøker, kerneler, spørsmål og worker-kontroll — i motsetning til [MCP-verktøyene](/nb-NO/handbok/referanse/mcp-verktoy/) den broer inn, og de generiske fil-, søke- og skallverktøyene fra harness-kjøretiden. De ligger ikke i MCP-registeret: en ekstern MCP-klient ser dem ikke, fordi hvert av dem er bundet til en levende ressurs på serversiden — en språkserverprosess, en feilsøkingsadapter, en tolk — som tilhører én kjøring.
+Dette er de **serverbundne** verktøyene den innebygde agentkjøretiden registrerer direkte — språkserver, strukturelt søk, feilsøker, kerneler, kodemodusskript, spørsmål og worker-kontroll — i motsetning til [MCP-verktøyene](/nb-NO/handbok/referanse/mcp-verktoy/) den broer inn, og de generiske fil-, søke- og skallverktøyene fra harness-kjøretiden. De ligger ikke i MCP-registeret: en ekstern MCP-klient ser dem ikke, fordi hvert av dem er bundet til en levende ressurs på serversiden — en språkserverprosess, en feilsøkingsadapter, en tolk — som tilhører én kjøring.
 
 Hvert verktøy her registreres bare når ressursen bak det er koblet opp for kjøringen — en supervisor for språkserveren eller feilsøkeren, en tree-sitter-parser, en kernelfabrikk, en spørsmålsport, en vibe-oversikt. Å oppdage en språkserver eller feilsøkingsadapter for *denne utsjekkingen* er en egen, senere sjekk (`status` / `adapters`): de verktøyene blir liggende på flaten, slik at agenten kan spørre hvorfor ingenting er brukbart, i stedet for å gjette.
 
@@ -15,9 +15,23 @@ Hvert verktøy erklærer et nivå, og nivået avgjør **hvilke flater som ser de
 
 | Nivå    | Betydning                              | Verktøy her                                        |
 | ------- | -------------------------------------- | -------------------------------------------------- |
-| `read`  | Ingen bivirkninger                     | `lsp`, `ast_grep`, `ask_user`, de fem `vibe_*`     |
+| `read`  | Ingen bivirkninger                     | `lsp`, `ast_grep`, `ask_user`, `repl`, de fem `vibe_*` |
 | `write` | Endrer filer                           | `lsp_rename`, `ast_edit`, `resolve`                |
 | `exec`  | Starter eller styrer en prosess        | `debug`, `eval`                                    |
+
+## Direkte, bare fra skript eller lastet ved første bruk
+
+Når serveren kan kjøre skript, kaller en kjøring noen få verktøy direkte og når resten fra et [`repl`](#repl--kjør-et-skript-som-kaller-verktøyene-dine)-skript; se [Kodemodus](/nb-NO/handbok/konsepter/kodemodus/#hvilke-verktøy-agenten-kaller-direkte) for hele regelen. For verktøyene på denne siden:
+
+| Verktøy | Med `repl` | Uten `repl` |
+| ---- | ----------- | -------------- |
+| `repl` | Direkte | Finnes ikke |
+| `ask_user` | Direkte | Direkte |
+| `lsp`, `lsp_rename`, `ast_grep`, `ast_edit`, `resolve`, `debug` | Bare fra et skript | Lastes ved første bruk |
+| `eval` | Lastes ved første bruk (et skript kan ikke kalle den) | Lastes ved første bruk |
+| `vibe_*` | Direkte i vibe-modus, aldri fra et skript | Direkte i vibe-modus |
+
+Et verktøy merket «Bare fra et skript» lastes i stedet ved første bruk, når serveren ikke kan kjøre kjøringens skript ([Når skript ikke kan kjøres](/nb-NO/handbok/konsepter/kodemodus/#når-skript-ikke-kan-kjøres)).
 
 ---
 
@@ -152,9 +166,49 @@ Registreres når kjøringen har en supervisor for feilsøkingsøkter, en arbeids
 
 ---
 
+## `repl` — kjør et skript som kaller verktøyene dine
+
+Er til stede i hver kjøring når serveren kan kjøre skript ([Når en kjøring har `repl`](/nb-NO/handbok/konsepter/kodemodus/#når-en-kjøring-har-repl)). Skriptet er vanlig JavaScript, kroppen til en async-funksjon, og kjører i en ny, låst tolk i sin egen prosess: ingen tilgang til filsystem, nettverk, prosesser eller moduler. `repl` selv tilhører `read`-nivået og vokter seg selv, fordi hvert verktøykall skriptet gjør, sjekkes for seg selv. Også på MCP-endepunktet, for agentkjøringer på en server som kan kjøre skript.
+
+| Argument | Betydning |
+| ------------------- | --------------------------------------------------------------------------------------------- |
+| `code` | Skriptet. Høyst 256 KiB |
+| `description` | Påkrevd. En kort etikett for raden i samtalen |
+| `timeout_ms` | Valgfritt. En kortere tidsgrense enn arbeidsområdets; aldri en lengre |
+| `max_output_tokens` | Valgfritt. Et mindre utdatabudsjett enn arbeidsområdets; aldri et større |
+
+```js
+// Read three files together and report only which ones failed.
+const paths = ["lib/a.dart", "lib/b.dart", "lib/c.dart"];
+const results = await Promise.allSettled(paths.map((path) => tools.read({ path })));
+return results
+  .map((r, i) => (r.status === "rejected" ? `${paths[i]}: ${r.reason.message}` : null))
+  .filter(Boolean);
+```
+
+Beskrivelsen av `repl` forteller agenten: «Et verktøy som ikke er et av dine direkte verktøy, har ingen definisjon i denne forespørselen. Før det første kallet til ett, slå det opp med `describeTool(name)` eller `searchTools(query)`, med mindre den nøyaktige kallformen allerede er vist for deg i denne samtalen.»
+
+`describeTool(name)` returnerer et verktøys beskrivelse, deklarasjon, inndata- og utdataskjemaene og resultatnotatet, når det har ett: det et skript får fra et fullført kall, i verktøyets egne ord. `repl`-beskrivelsen lister notatene til de direkte verktøyene et skript kan kalle. Et resultat som er JSON-tekst, kommer ferdig tolket, med mindre det har mer enn 131 072 verdier; da kommer det som tekst, og skriptet tolker det med `JSON.parse`. Teksten i et resultat fra et verktøy i en ekstern MCP-server kuttes ved 262 144 tegn, og kuttet tekst kan ikke lenger tolkes.
+
+- `tools.<name>(args)` kaller et verktøy gjennom samme filter, tillatelsesregler og godkjenning som et direkte kall, og avviser med en feil når kallet nektes eller mislykkes. Skrivebeskyttede kall kan kjøres sammen; kall som endrer noe, kjøres ett om gangen, i den rekkefølgen skriptet gjorde dem. Mens ett av kallene venter på en person, starter ingen andre kall fra skriptet.
+- `ALL_TOOLS`, `searchTools(query, { limit, namespace })`, `describeTool(name)` og `describeNamespace(name)` finner verktøy, også de til tilkoblede MCP-servere. Et verktøy utenfor det direkte settet som et skript kan kalle, kan bare kalles fra et skript; et direkte kall returnerer hvordan det kalles fra `repl`. Når serveren ikke kan kjøre kjøringens skript, lastes et slikt verktøy i stedet ved første bruk.
+- Oppslag er begrenset: en søkestreng på høyst 1 024 tegn, et navn eller navnerom på høyst 256 tegn, `limit` fra 0 til 50, og høyst 200 oppslag som til sammen tar 2 sekunder av serverens tid per skript, mens alle skript i ett arbeidsområde deler 2 sekunder oppslagstid, som gis tilbake med 0,25 sekunder per sekund; når en av grensene er brukt opp, avvises videre oppslag. I en svært stor katalog deler beskrivelsene i `ALL_TOOLS` omtrent én million tegn likt, og en kuttet beskrivelse ender med `…`; `describeTool` returnerer alltid hele beskrivelsen. En type som er for stor til å vises, står som `unknown /* too large to show */`, og et ukjent navn besvares med de nærmeste navnene.
+- Verktøy er gruppert i navnerom: `builtin` (harnessets egne verktøy), `control-center` (Control Centers verktøy) og ett per tilkoblet MCP-server, oppkalt etter serveren. En server som heter `builtin`, `control-center` eller `script`, eller hvis navn begynner med `external-`, i en hvilken som helst blanding av store og små bokstaver og med eller uten mellomrom rundt, listes som `external-` etterfulgt av navnet sitt, og ingen verktøy er noensinne i `script`.
+- Bare det skriptet returnerer, eller sender til `text()`, `image()` eller `console.*`, kommer tilbake til agenten. Utdata over budsjettet beholder starten og slutten, og `read_output` leser resten.
+- `store(key, value)` / `load(key)` beholder JSON-verdier for senere skript i samme samtale og agent, og verdiene lagres først når skriptet er ferdig. Skriptene til en underagent har ingen lagring.
+- `await tools.ask_user(...)` stiller et spørsmål; svaret legges også til resultatet. `sleep(ms)`, `setTimeout`, `limits()` og `models.embed` / `rank` / `classify` (embeddinger på enheten) er også tilgjengelige.
+- `describeTool(name)` og `searchTools(query)` svarer også for skriptets egne funksjoner, som ikke er verktøy: `text`, `image`, `store`, `load`, `sleep`, `setTimeout`, `clearTimeout`, `limits`, `exit` og `models.*`, under navnerommet `script`.
+- Kan ikke kalles fra et skript: `repl`, `eval`, `task`, `checkpoint`, `rewind`, `compact`, `search_tools` og `vibe_*`-verbene.
+- Et skript leser sin egen kjørings fortid: `history({start, role, tool, limit})` blar i samtalens transkripsjon (høyst 50 rader per kall; send forrige sides `next_start` som `start`), `outputs()` lister verktøyutdataene som er lagret for denne samtalen og agenten, og `loadOutput(handle)` leser 16 384 tegn fra én av dem. `storedKeys()` lister de lagrede nøklene med størrelsene deres. `keep(value, label)` lagrer en stor verdi som en utdata et senere skript eller `read_output` kan lese, og den lagres først når skriptet fullføres (1 MiB per verdi, 64 verdier og 16 MiB per kjøring). `limits().returnBudgetChars` sier hvor mye av utdatabudsjettet som er igjen. En skrivebeskyttet kjøring (en måls gjennomgang) kan lese, men ikke lagre eller bevare. På Claude Code og ACP fungerer `history()`, mens `outputs()`, `loadOutput()` og `keep()` avvises, fordi Control Center ikke beholder verktøyutdata fra de kjøringene.
+- En feil fra et tidsavbrudd, en utdataoverflyt eller kallgrensen sier hvordan den kan rettes.
+
+En kjøring kjører ett skript om gangen. Grensene og hva som skjer ved hver, står på [kodemodus](/nb-NO/handbok/konsepter/kodemodus/#grenser)-siden; hvert skript registreres under **Observabilitet → Kodekjøringer**.
+
+---
+
 ## `eval` — vedvarende tolker
 
-En Python- eller JavaScript-celle der variabler, importer og innlastet data overlever mellom kall. `exec`-nivå; ikke parallelltrygt.
+En Python- eller JavaScript-celle der variabler, importer og innlastet data overlever mellom kall. `exec`-nivå; ikke parallelltrygt. Ikke kallbar fra et `repl`-skript, og en celle kan ikke kalle kjøringens verktøy: for å kalle verktøy fra kode, bruk [`repl`](#repl--kjør-et-skript-som-kaller-verktøyene-dine).
 
 | Argument      | Betydning                                 |
 | ------------- | ----------------------------------------- |
@@ -166,20 +220,34 @@ En Python- eller JavaScript-celle der variabler, importer og innlastet data over
 - Det siste uttrykket ekkoes slik en notatbok gjør.
 - `display()` virker, et pandas-dataframe tegnes som en tabell, og en matplotlib-figur kommer tilbake som et **bilde transkriptet viser**.
 - IPython-idiomene folk skriver av refleks — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — skrives om til ren kode. `%pip` tømmer i tillegg `sys.modules`, så neste `import` ser det som nettopp ble installert.
-
-### Kalle dine egne verktøy fra innsiden av en celle
-
-```python
-contents = tool("read", {"path": "lib/auth.dart"})
-```
-
-Broen **går inn i harnessets verktøyregister på nytt**, så tillatelsesregler, godkjenning og hver innpakning gjelder nøyaktig som for et kall fra modellen. Den rir på kernelens eget rør i stedet for en loopback-socket: ingen port, ingen hemmelighet, ingen regel for utgående trafikk.
-
-Cellens tidsavbrudd er et *inaktivitets*budsjett (standard 5 minutter) og **settes på pause** mens et brokall pågår, så en celle som sprer seg ut til underagenter, ikke drepes midt i utsendelsen.
+- En celle som skriver ut mer enn utdatabudsjettet, beholder de første tre fjerdedelene og den siste fjerdedelen, med én linje som sier hvor mange tegn og bilder som ble fjernet.
+- Når tolken døde uten at den ble bedt om det, får neste celle beskjed én gang om at de tidligere variablene er borte.
 
 :::note[Hvor kernelen kjører]
 I samtalens isolerte miljø når den har ett, ellers i kjøringens OS-sandkasse på verten. Med sandkassen av eller utilgjengelig kjører den uten avgrensning, og `eval` ber om godkjenning for vertskjøring. Den starter ikke et isolert miljø for å komme dit — den samme regelen som hindrer at en stasjonsfane starter av seg selv.
 :::
+
+---
+
+## `bash` i bakgrunnen
+
+`bash` med `run_in_background: true` starter kommandoen og returnerer med én gang et håndtak (`b1`, `b2`, …) i stedet for å vente. Agenten fortsetter å arbeide, eller avslutter turen sin og blir vekket når kommandoen avsluttes.
+
+| Argument | Betydning |
+| ------------------- | ------- |
+| `run_in_background` | `true` for å starte og returnere med én gang |
+| `timeout_seconds` | Sekunder før kommandoen drepes: 600 som standard, høyst 3 600 |
+| `notify` | Valgfritt. Et enkelt mønster; hver utdatalinje som matcher, sendes til agenten mens kommandoen kjører (for eksempel `listening on\|FAILED`) |
+
+- Høyst 4 bakgrunnskommandoer kjører samtidig i én kjøring. Hver drepes ved tidsavbruddet og når kjøringen avsluttes, sammen med alle prosesser den startet.
+- Når en kommando avsluttes, får agenten et varsel med avslutningskoden, de siste 2 000 tegnene av utdata og et `read_output`-håndtak for resten.
+- En agent hvis eneste gjenværende arbeid er en bakgrunnskommando, venter uten å kalle modellen, og kjøringens vakthund for stillhet settes på pause mens den venter.
+- `bash_output(handle)` leser en kommandos tilstand og nylige utdata; `bash_kill(handle)` stopper den. Begge sier når resultatet allerede er levert.
+- Et skript kan ikke starte en bakgrunnskommando. Claude Code har sin egen bakgrunns-Bash; Control Center holder den kjøringen åpen i høyst 10 minutter etter turen som lot en oppgave kjøre.
+
+## `compact` — frigjør plass i kontekstvinduet
+
+Komprimerer samtalens eldre kontekst før neste modellkall, og beholder det `focus` nevner (høyst 1 000 tegn). De nyeste turene beholdes ordrett. Agentens budsjettlinje per tur viser kontekstbruk på 70, 80 og 90 %, og verktøyet er verdt å kalle etter omtrent 70 % før en lang ny arbeidsfase. Serverens eiers `preCompact`-hook kan legge til i fokuset ([Skall-hooks](/nb-NO/handbok/referanse/agentkonfigurasjon/#skall-hooks)). Etter en komprimering legger serveren til en blokk «Still in flight»: målet, ventende vekkinger, åpne spørsmål, bakgrunnskommandoer, sjekklisten og lagrede nøkler, hver med kallet som henter den tilbake.
 
 ---
 

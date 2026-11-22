@@ -24,6 +24,10 @@ class CreateSkillTool extends McpTool {
 
   @override
   String get name => 'create_skill';
+
+  /// Not for scripts: it installs a new skill (see [McpTool.scriptCallable]).
+  @override
+  bool get scriptCallable => false;
   @override
   Set<ActionClass> get actionClasses => const {
     ActionClass.fileWriteOutsideWorktree,
@@ -53,13 +57,6 @@ class CreateSkillTool extends McpTool {
             'Full markdown content for the skill\'s SKILL.md file, '
             'including YAML frontmatter with name and description.',
       },
-      'allow_quarantine_override': {
-        'type': 'boolean',
-        'description':
-            'When true, create even if the scan gate returns a quarantine '
-            'verdict (an explicit, recorded operator override). Defaults to '
-            'false — quarantined content is blocked.',
-      },
     },
     'required': ['workspace_id', 'slug', 'content'],
   };
@@ -85,12 +82,12 @@ class CreateSkillTool extends McpTool {
     final workspaceId = rawWorkspaceId;
     final slug = rawSlug;
     final content = rawContent;
-    final allowQuarantineOverride =
-        arguments['allow_quarantine_override'] == true;
 
     // Lighter create-time gate (PRD 23 §2): Layers 1–2 only (no LLM review),
     // over the EXACT bytes about to be written. Fail-closed — a scanner error
-    // or a quarantine verdict (without an override) blocks the write.
+    // or a quarantine verdict blocks the write. A model never overrides the
+    // verdict: a person saves quarantined content through `skills.saveLocal`
+    // after confirming the findings, never through this tool.
     final scanner = _scanner;
     SkillScanResult? scanResult;
     if (scanner != null) {
@@ -104,8 +101,7 @@ class CreateSkillTool extends McpTool {
       } on Object catch (e) {
         return CallResult.error('create_skill blocked: scan failed: $e');
       }
-      if (scanResult.verdict == SkillScanVerdict.quarantine &&
-          !allowQuarantineOverride) {
+      if (scanResult.verdict == SkillScanVerdict.quarantine) {
         final findings = scanResult.findings
             .map(
               (f) =>

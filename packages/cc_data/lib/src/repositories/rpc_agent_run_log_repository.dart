@@ -2,28 +2,31 @@ import 'package:cc_data/src/repositories/remote_agent_run_log_repository.dart';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/ports/run_transcript_relay_port.dart';
-import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
+import 'package:cc_domain/core/domain/repositories/agent_run_log_reader.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_run_role.dart';
 import 'package:cc_domain/core/domain/value_objects/output_contract_mode.dart';
 import 'package:cc_domain/core/domain/value_objects/retry_meta.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_update_codec.dart';
+import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
 import 'package:cc_domain/features/observability/domain/run_stage.dart';
 import 'package:cc_domain/features/observability/domain/run_verification.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 
-/// An [AgentRunLogRepository] backed by the RPC client — the thin-client data
+/// An [AgentRunLogReader] backed by the RPC client — the thin-client data
 /// path.
 ///
 /// Implements the domain interface over the host's `agent_run_log.*` ops + the
 /// `agent_run_log.watchByAgent` / `agent_run_log.watchActiveByConversation` /
 /// `agent_run_log.watchRecent` subscriptions, mapping the [AgentRunLogDto] wire
 /// shape back to [AgentRunLog]. The host owns persistence; this client never
-/// touches a database. Reads, watches and the direct upsert row write are
-/// served.
+/// touches a database. Reads and watches are served; every write is the
+/// server's own, so this class has none (a person's stop is
+/// `RemoteAgentRunLogRepository.stop`).
 class RpcAgentRunLogRepository
-    implements AgentRunLogRepository, RunTranscriptRelayPort {
+    implements AgentRunLogReader, RunTranscriptRelayPort {
   /// Creates an [RpcAgentRunLogRepository] over [client].
   RpcAgentRunLogRepository(RemoteRpcClient client)
     : _remote = RemoteAgentRunLogRepository(client);
@@ -84,59 +87,12 @@ class RpcAgentRunLogRepository
     resumedNativeSession: d.resumedNativeSession,
     parentRunId: d.parentRunId,
     spawnToolCallId: d.spawnToolCallId,
-  );
-
-  static AgentRunLogDto _toDto(AgentRunLog l) => AgentRunLogDto(
-    id: l.id,
-    agentId: l.agentId,
-    workspaceId: l.workspaceId,
-    conversationId: l.conversationId,
-    ticketId: l.ticketId,
-    spaceId: l.spaceId,
-    startedAt: l.startedAt.toIso8601String(),
-    completedAt: l.completedAt?.toIso8601String(),
-    status: l.status.name,
-    summary: l.summary,
-    adapter: l.adapter,
-    modelId: l.modelId,
-    pid: l.pid,
-    logPath: l.logPath,
-    inputTokens: l.cost.inputTokens,
-    outputTokens: l.cost.outputTokens,
-    thoughtTokens: l.cost.thoughtTokens,
-    cachedReadTokens: l.cost.cachedReadTokens,
-    cachedWriteTokens: l.cost.cachedWriteTokens,
-    costMicros: l.cost.costMicros,
-    costBasis: l.cost.costBasis.name,
-    durationMs: l.cost.durationMs,
-    timeToFirstTokenMs: l.cost.timeToFirstTokenMs,
-    liveness: l.liveness?.name,
-    errorFamily: l.errorFamily?.name,
-    lastOutputAt: l.lastOutputAt?.toIso8601String(),
-    contextSnapshotJson: l.contextSnapshotJson,
-    pipelineRunId: l.pipelineRunId,
-    pipelineStepId: l.pipelineStepId,
-    errorCode: l.errorCode,
-    expectedOutputSchema: l.expectedOutputSchema,
-    outputContractMode: l.outputContractMode.toStorageString(),
-    outputJson: l.outputJson,
-    outputRejections: l.outputRejections,
-    retryOfRunId: l.retry.parentRunId,
-    retryAttempt: l.retry.attempt,
-    agentRole: l.role.name,
-    childCostMicros: l.childCostMicros,
-    effort: l.effort,
-    taskFamily: l.taskFamily,
-    // Emit the structured observability payloads only when set, so a run that
-    // recorded neither stays byte-identical to a historical payload.
-    latency: l.latency.isEmpty ? null : l.latency.toJson(),
-    verification: l.verification.status == VerificationStatus.unverified
+    endReason: RunEndReasonWire.tryParse(d.endReason),
+    wakeIds: d.wakeIds,
+    requestedByUserId: (d.requestedByUserId?.isEmpty ?? true)
         ? null
-        : l.verification.toJson(),
-    nativeSessionId: l.nativeSessionId,
-    resumedNativeSession: l.resumedNativeSession,
-    parentRunId: l.parentRunId,
-    spawnToolCallId: l.spawnToolCallId,
+        : d.requestedByUserId,
+    wakeReason: WakeReasonWire.tryParse(d.wakeReason),
   );
 
   @override
@@ -144,13 +100,6 @@ class RpcAgentRunLogRepository
       _remote
           .watchByAgent(workspaceId, agentId)
           .map((dtos) => dtos.map(_fromDto).toList());
-
-  @override
-  @override
-  Future<List<AgentRunLog>> activeByConversation(
-    String workspaceId,
-    String conversationId,
-  ) async => await watchActiveByConversation(workspaceId, conversationId).first;
 
   @override
   Stream<List<AgentRunLog>> watchActiveByConversation(
@@ -187,17 +136,6 @@ class RpcAgentRunLogRepository
       _remote
           .watchActiveByWorkspace(workspaceId)
           .map((dtos) => dtos.map(_fromDto).toList());
-
-  /// Host-side only: the liveness jobs that read every workspace's unfinished
-  /// runs run on the server, against its own store.
-  @override
-  Future<List<AgentRunLog>> nonTerminal() =>
-      throw UnsupportedError('nonTerminal is host-side only');
-
-  /// Host-side only: ticket reconciliation runs on the server.
-  @override
-  Future<AgentRunLog?> latestForTicket(String workspaceId, String ticketId) =>
-      throw UnsupportedError('latestForTicket is host-side only');
 
   @override
   Stream<List<AgentRunLog>> watchRecent(int limit) =>
@@ -247,58 +185,6 @@ class RpcAgentRunLogRepository
     final dto = await _remote.activeRunForAgent(workspaceId, agentId);
     return dto == null ? null : _fromDto(dto);
   }
-
-  @override
-  Future<void> upsert(AgentRunLog log) => _remote.upsert(_toDto(log));
-
-  @override
-  Future<void> updateCost(String workspaceId, String runId, RunCost cost) =>
-      _remote.updateCost(workspaceId, runId, cost);
-
-  @override
-  Future<void> addChildCostMicros(
-    String workspaceId,
-    String runId,
-    int amountMicros,
-  ) => _remote.addChildCostMicros(workspaceId, runId, amountMicros);
-
-  /// [logPath] is not sent: the server records a run's log path itself and
-  /// accepts none from the wire.
-  @override
-  Future<bool> updateRuntime(
-    String workspaceId,
-    String runId, {
-    int? pid,
-    bool markRunning = false,
-    String? logPath,
-    String? contextSnapshotJson,
-    DateTime? lastOutputAt,
-    RunLiveness? liveness,
-    RunErrorFamily? errorFamily,
-    String? summary,
-    String? modelId,
-    String? effort,
-    String? taskFamily,
-  }) => _remote.updateRuntime(
-    workspaceId,
-    runId,
-    pid: pid,
-    markRunning: markRunning,
-    contextSnapshotJson: contextSnapshotJson,
-    lastOutputAt: lastOutputAt,
-    liveness: liveness,
-    errorFamily: errorFamily,
-    summary: summary,
-    modelId: modelId,
-    effort: effort,
-    taskFamily: taskFamily,
-  );
-
-  @override
-  Future<bool> completeIfActive(
-    AgentRunLog completed, {
-    bool writeCost = true,
-  }) => _remote.completeIfActive(_toDto(completed), writeCost: writeCost);
 
   // ---- RunTranscriptRelayPort ----
   //

@@ -13,8 +13,11 @@ import 'package:cc_domain/features/messaging/domain/entities/space_participant.d
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/message_page.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dart';
+import 'package:cc_mcp/src/mcp_script_surface.dart';
 import 'package:cc_mcp/src/tools/add_review_node_tool.dart';
 import 'package:test/test.dart';
+
+import 'result_note_expect.dart';
 
 class _FakeMessagingRepository implements MessagingRepository {
   @override
@@ -412,6 +415,46 @@ void main() {
       expect(data['confidence'], 0.92);
       expect(data['status'], 'open');
     });
+
+    test(
+      'what a script receives is the object its result note states',
+      () async {
+        final result = await tool.call({
+          'workspace_id': 'ws-1',
+          'space_id': 'ch-1',
+          'sender_id': 'a-1',
+          'node_type': 'bug',
+          'content': 'Null pointer on line 42',
+          'priority': 'p0',
+          'confidence': 0.92,
+        });
+        final value =
+            asScriptSees(nestedResultValue(result))! as Map<String, Object?>;
+        expectNotedObject(
+          tool.resultNote,
+          value,
+          required: {
+            'message_id',
+            'space_id',
+            'node_type',
+            'priority',
+            'status',
+            'confidence',
+          },
+          optional: {'severity', 'category', 'effort'},
+        );
+        for (final key in [
+          'message_id',
+          'space_id',
+          'node_type',
+          'priority',
+          'status',
+        ]) {
+          expect(value[key], isA<String>(), reason: key);
+        }
+        expect(value['confidence'], isA<num>());
+      },
+    );
 
     test('includes priority and confidence in sent metadata', () async {
       await tool.call({

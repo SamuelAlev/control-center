@@ -40,6 +40,26 @@ SqliteException _sqlite(int code) => SqliteException(
 );
 
 void main() {
+  test('a second active goal answers conflict with goal_already_active', () {
+    final mapped = mapAppExceptionToRpc(
+      const GoalAlreadyActiveException(workspaceId: 'ws-1', agentId: 'a-1'),
+    );
+    expect(mapped?.code, RpcErrorCodes.conflict);
+    expect(mapped?.data, {'kind': 'goal_already_active'});
+  });
+
+  test('a goal not waiting for a review answers conflict with '
+      'goal_not_in_review', () {
+    final mapped = mapAppExceptionToRpc(
+      const GoalRefusedException(
+        'Only a goal paused for a review can be closed as done.',
+        kind: GoalRefusedException.notInReviewKind,
+      ),
+    );
+    expect(mapped?.code, RpcErrorCodes.conflict);
+    expect(mapped?.data, {'kind': 'goal_not_in_review'});
+  });
+
   group('storage failures', () {
     test('busy and locked answer storage.busy, even wrapped by drift', () {
       for (final error in <Object>[

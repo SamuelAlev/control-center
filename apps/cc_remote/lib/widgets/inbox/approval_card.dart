@@ -6,6 +6,7 @@ import 'package:cc_remote/format.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/operation_scope.dart';
 import 'package:cc_remote/providers.dart';
+import 'package:cc_remote/widgets/messaging/script_origin_line.dart';
 import 'package:cc_remote/widgets/phone_markdown.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
@@ -104,6 +105,10 @@ class _ApprovalCardState extends ConsumerState<ApprovalCard> {
               ],
             ],
           ),
+          if (request.origin != null) ...[
+            const SizedBox(height: 6),
+            const ScriptOriginLine(),
+          ],
           const SizedBox(height: 8),
           ConstrainedBox(
             constraints: BoxConstraints(

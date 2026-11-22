@@ -2,6 +2,7 @@ import 'package:cc_domain/cc_domain.dart'
     show NotFoundException, ValidationException;
 import 'package:cc_domain/core/domain/entities/message.dart'
     show MessageType, SenderType;
+import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
@@ -185,6 +186,7 @@ class PrMergeConflictService {
       prompt: prompt,
       requestedByUserId: userId,
       conversationId: conversation.id,
+      wakeContext: const WakeContext.userMessage(),
     );
     if (runId == null || runId.isEmpty) {
       throw StateError('The agent could not be started.');

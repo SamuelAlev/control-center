@@ -7,6 +7,7 @@ import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/features/evals/domain/entities/skill_evaluation_campaign.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_attempt.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_manifest.dart';
+import 'package:cc_domain/features/evals/domain/evaluation/evaluation_outcome.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_plan.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/paired_evaluation.dart';
 import 'package:cc_domain/features/evals/domain/repositories/evals_repository.dart';
@@ -222,7 +223,34 @@ class _Snapshots implements SkillEvaluationSnapshotStore {
     required String workspaceId,
     required String skillKey,
     required String hash,
-  }) async => null;
+  }) async => stored[hash];
+
+  /// Stored revisions by hash (a captured baseline, a staged candidate).
+  final stored = <String, AdmittedSkillEvaluationSnapshot>{};
+
+  /// Stores [body] as a revision of [slug] and returns its hash.
+  String store(String slug, String body) {
+    final files = <String, List<int>>{
+      'SKILL.md': utf8.encode('---\nname: $slug\n---\n$body'),
+    };
+    final hash = SkillPackageSnapshot.computeHash(files);
+    stored[hash] = AdmittedSkillEvaluationSnapshot(
+      skillKey: 'workspace:$slug',
+      package: SkillPackageSnapshot(
+        slug: slug,
+        files: files,
+        packageHash: hash,
+        origin: 'workspace',
+      ),
+      scan: const SkillScanResult(
+        verdict: SkillScanVerdict.pass,
+        findings: [],
+        manifest: SkillCapabilityManifest(),
+        rulesVersion: 1,
+      ),
+    );
+    return hash;
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -371,7 +399,7 @@ EvaluationAttempt _attempt(SkillEvaluationJob job, String id, {int? cost}) =>
       seed: 1,
       startedAtEpochMs: _instant.millisecondsSinceEpoch,
       cost: EvaluationCostRoles(billedMicros: cost),
-      completed: true,
+      end: EvaluationAttemptEnd.finished,
     );
 
 EvaluationRunResult _result(SkillEvaluationJob job, {bool coverage = true}) =>
@@ -399,6 +427,10 @@ EvaluationRunResult _result(SkillEvaluationJob job, {bool coverage = true}) =>
         expectedTrials: 2,
         expectedPairs: 1,
         coverageComplete: coverage,
+        hypothesis: EvaluationHypothesis.regressionScreen,
+        primaryOutcome: EvaluationOutcomeMeasure.verifiedSuccess,
+        repetitions: 1,
+        stoppedAtInterim: false,
       ),
       benchmark: BenchmarkRun(
         id: job.campaign.id,
@@ -862,6 +894,64 @@ void main() {
       expect(h.repository.policies.values.single.enabled, false);
     },
   );
+
+  test('a staged candidate is the treatment; the live skill stays the '
+      'baseline and is what the campaign depends on', () async {
+    final h = _Harness();
+    addTearDown(h.close);
+    await h.service.start();
+    final jobs = <SkillEvaluationJob>[];
+    h.execute = (job) async {
+      jobs.add(job);
+      return _result(job);
+    };
+    final live = h.snapshots.store('candidate', 'A');
+    final staged = h.snapshots.store('candidate', 'B');
+    final campaign = await h.service.launch(
+      workspaceId: _workspace,
+      actor: _actor,
+      settings: SkillEvaluationSettings(
+        skillSlug: 'candidate',
+        corpusId: _corpus,
+        providerId: 'openrouter',
+        modelId: 'vendor/model',
+        comparison: SkillEvaluationComparison.previous,
+        repetitions: 1,
+        budgetMicros: 1000000,
+        baselineHash: live,
+        candidateHash: staged,
+      ),
+    );
+    await h.repository.settled(campaign.id);
+    expect(campaign.skillHash, staged);
+    expect(campaign.baselineHash, live);
+    expect(campaign.staleReason, isNull);
+    expect(jobs.single.candidate.package.packageHash, staged);
+    expect(jobs.single.previous!.package.packageHash, live);
+    // The live skill was only read to check the baseline, never replaced.
+    expect(h.snapshots.captures, ['$_workspace:candidate']);
+    expect(
+      SkillEvaluationSettings.fromJson(campaign.configuration).candidateHash,
+      isNull,
+      reason: 'a client can never name a staged candidate',
+    );
+
+    h.revision('candidate');
+    await h.service.refreshRevisions();
+    expect(
+      (await h.service.get(_workspace, _actor, campaign.id)).staleReason,
+      isNull,
+      reason: 'the live skill is still the baseline',
+    );
+    h.snapshots.revisions['candidate'] = 'C';
+    h.revision('candidate');
+    await h.service.refreshRevisions();
+    expect(
+      (await h.service.get(_workspace, _actor, campaign.id)).staleReason,
+      isNotNull,
+      reason: 'the baseline it was measured against changed',
+    );
+  });
 
   test(
     'composition ambient revision invalidates target and admission rechecks A after B race',

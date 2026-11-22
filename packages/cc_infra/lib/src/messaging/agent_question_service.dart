@@ -14,6 +14,14 @@ import 'package:cc_infra/src/log/cc_infra_log.dart';
 typedef QuestionExpirer =
     Future<bool> Function(String workspaceId, String messageId);
 
+/// A pending question's give-up timer, and what moving it needs.
+typedef _Deadline = ({
+  Timer? timer,
+  void Function() giveUp,
+  Map<String, dynamic> metadata,
+  String workspaceId,
+});
+
 /// How [AgentQuestionService.deliverAnswer] ended.
 enum QuestionAnswerDelivery {
   /// The answer was persisted and the waiting agent received it.
@@ -65,8 +73,18 @@ class AgentQuestionService implements AgentQuestionPort {
   final void Function(AgentQuestionRequest request, String messageId)? _onAsked;
   final void Function(String messageId)? _onClosed;
 
+  /// Asked before a question is posted: an answer it returns is the
+  /// question's result at once, and no form is posted (nobody is there to
+  /// answer it: an earlier request of its run went unanswered). Set once by
+  /// the server.
+  AgentQuestionAnswer? Function(AgentQuestionRequest request)? answerUnasked;
+
   /// Pending questions keyed by the question message id.
   final Map<String, Completer<AgentQuestionAnswer?>> _pending = {};
+
+  /// Each pending question's give-up timer and form metadata, so its
+  /// deadline can be moved ([waitUntil]).
+  final Map<String, _Deadline> _deadlines = {};
 
   StreamController<void>? _pendingChanges;
 
@@ -122,6 +140,16 @@ class AgentQuestionService implements AgentQuestionPort {
       );
     }
 
+    AgentQuestionAnswer? unasked;
+    try {
+      unasked = answerUnasked?.call(request);
+    } on Object catch (e) {
+      // A failing check posts the question as usual.
+      CcInfraLog.warning('AgentQuestionService: answerUnasked failed: $e');
+    }
+    if (unasked != null) {
+      return unasked;
+    }
     final waitsForever = _timeout == Duration.zero;
     final metadata = <String, dynamic>{
       'question': request.question,
@@ -130,6 +158,9 @@ class AgentQuestionService implements AgentQuestionPort {
       'allowFreeText': request.allowFreeText,
       'multiSelect': request.multiSelect,
       if (request.askedByName != null) 'askedByName': request.askedByName,
+      // Set when a code mode script asked: the form says so and links to the
+      // script's transcript row.
+      'origin': ?request.origin?.toJson(),
       kQuestionAnsweredKey: false,
       if (!waitsForever) ...{
         kQuestionExpiresAtKey: DateTime.now()
@@ -173,16 +204,74 @@ class AgentQuestionService implements AgentQuestionPort {
       if (!waitsForever) {
         timer = Timer(_timeout, giveUp);
       }
+      _deadlines[messageId] = (
+        timer: timer,
+        giveUp: giveUp,
+        metadata: metadata,
+        workspaceId: request.workspaceId,
+      );
       answer = await completer.future;
       return answer;
     } finally {
       timer?.cancel();
+      _deadlines.remove(messageId)?.timer?.cancel();
       _claim(messageId, completer);
       _onClosed?.call(messageId);
-      if (answer == null) {
+      // A server notice is no person's answer: the form closes as expired.
+      if (answer == null || answer.serverNotice != null) {
         await _markExpired(request.workspaceId, messageId, metadata);
       }
     }
+  }
+
+  /// Moves the deadline of the question pending as [messageId] to [until]
+  /// (a run the server started waits the workspace's expiry, not the
+  /// default timeout), and the form's `expiresAt` with it. Returns false
+  /// when the question is no longer pending.
+  Future<bool> waitUntil(String messageId, DateTime until) async {
+    final entry = _deadlines[messageId];
+    if (entry == null || !isPending(messageId)) {
+      return false;
+    }
+    entry.timer?.cancel();
+    final left = until.difference(DateTime.now());
+    final timer = Timer(left.isNegative ? Duration.zero : left, entry.giveUp);
+    entry.metadata
+      ..[kQuestionExpiresAtKey] = until.toUtc().toIso8601String()
+      ..[kQuestionTimeoutMsKey] = left.isNegative ? 0 : left.inMilliseconds;
+    _deadlines[messageId] = (
+      timer: timer,
+      giveUp: entry.giveUp,
+      metadata: entry.metadata,
+      workspaceId: entry.workspaceId,
+    );
+    try {
+      await _messaging.updateMessage(
+        entry.workspaceId,
+        messageId,
+        metadata: {...entry.metadata},
+      );
+    } on Object catch (e) {
+      // The wait itself moved; only the form's countdown is stale.
+      CcInfraLog.warning('AgentQuestionService: moving $messageId: $e');
+    }
+    return true;
+  }
+
+  /// Ends the wait on [messageId] with no person's answer: the asker reads
+  /// [answer]'s [AgentQuestionAnswer.serverNotice] and the form closes as
+  /// expired. Goes through the same claim an answer does, so a person's
+  /// answer that landed first wins. Returns whether the wait was released.
+  bool release(String messageId, AgentQuestionAnswer answer) {
+    if (answer.serverNotice == null) {
+      throw ArgumentError.value(answer, 'answer', 'must be a server notice');
+    }
+    final completer = _claim(messageId);
+    if (completer == null) {
+      return false;
+    }
+    completer.complete(answer);
+    return true;
   }
 
   /// Closes the form of a question nobody answered while the asker waited, so

@@ -196,6 +196,8 @@ void main() {
       ),
     );
     return DispatchSession(
+      freshHistory: false,
+      readOnly: false,
       deps: deps,
       onResolveHandle:
           ({

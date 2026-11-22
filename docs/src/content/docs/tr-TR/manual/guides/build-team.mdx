@@ -2,7 +2,7 @@
 title: Ajan ekibi kurma
 description: Atanan işin tek bir koordinatör üzerinden yönlendirilmesi için ajanları bir lider altında gruplayın.
 slug: tr-TR/kilavuz/nasil-yapilir/ajan-ekibi-kurma
-sourceHash: fc5e2b8c8a49e398ff1b322fcfb25c4aed84bbb4
+sourceHash: 55add2d16bf90650b7d4cbda7aa78f0fdf1b72e2
 ---
 
 Bu kılavuz bir ekip oluşturmayı, ekibe bir lider atamayı ve işi ekibe yönlendirmeyi gösterir.
@@ -51,7 +51,7 @@ Bir bilet ekip ataması taşıdığında:
 
 1. Ekibin lideri; bilet, çalışma yönergeleri ve üye listesiyle birlikte gönderilir.
 2. Lider üyelere devreder ve değerlendirmesini `record_team_activity` aracıyla kaydeder — `action` (devredildi), `no_action` (yapılacak başka bir şey yok, bu da daha fazla yeniden tetiklemeyi durdurur) veya `failed`.
-3. Tamamlanan her üye çalıştırması lideri yeniden uyandırır; bu, eylemsizlik korumasıyla sınırlanır.
+3. Lider, bir `@mention` ya da bir mesajla başlattığı bir üye çalıştırması bittiğinde, liderin kendisini tetiklediği konuşmada ve yapılacak iş yok korumasıyla sınırlı olarak, lideri yeniden uyandırır. Lider `delegate_task` ile devrettiği iş, bilet tamamlandığında onu uyandırır; `ask_agent` ile sorduğu bir soru ise yanıtıyla onu uyandırır (bkz. [Birlikte çalışan ajanlar](/tr-TR/kilavuz/nasil-yapilir/birlikte-calisan-ajanlar/)).
 
 Pipeline **Team dispatch** düğümü diğer giriş noktasıdır. Bir ekip kimliği, bir istem ve bir gönderim modu alır:
 

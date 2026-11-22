@@ -1,0 +1,178 @@
+---
+title: Modalità codice
+description: Come un agente scrive un breve script che chiama i suoi strumenti invece di chiamarli uno alla volta, quali strumenti chiama direttamente e quali solo da script, i limiti in cui gira uno script, come uno script si presenta nella conversazione, e come viene isolato e registrato.
+slug: it-IT/manuale/concetti/modalita-codice
+sourceHash: d41fe2f38c216949847fc7c4768fdf96bed2dc83
+---
+
+Un agente di solito chiama i suoi strumenti uno alla volta. Ogni chiamata è un turno del modello: l'agente richiede la chiamata, il risultato torna nel suo contesto e l'agente lo legge prima di richiedere la successiva. Per il lavoro in gran parte meccanico, come leggere venti file per trovare i tre che contano o controllare ogni ticket aperto per una certa etichetta, la maggior parte di quei turni e gran parte di quel contesto vanno spesi per risultati che l'agente scarta.
+
+La modalità codice è uno strumento, `repl`. Con esso l'agente scrive un breve script JavaScript che chiama i suoi altri strumenti, cicla sui risultati, li filtra e li combina, e restituisce solo ciò che serve. Una sola chiamata a `repl` può fare il lavoro di decine di turni di strumenti, e nel contesto entra solo la risposta dello script.
+
+Ogni esecuzione ha `repl` quando il server può eseguire script. Non c'è nulla da attivare: vedi [Quando un'esecuzione ha `repl`](#quando-unesecuzione-ha-repl).
+
+## Cosa può fare uno script
+
+Uno script è JavaScript semplice, scritto come corpo di una funzione async, quindi `await` e `return` funzionano al livello superiore. Ogni chiamata a `repl` avvia un nuovo interprete vuoto.
+
+- **Chiamare strumenti.** `await tools.read({ path: "README.md" })` chiama uno strumento e si risolve nel suo risultato, oppure viene rifiutata con un errore quando la chiamata fallisce o viene negata. Le chiamate indipendenti possono essere eseguite insieme con `Promise.allSettled`.
+- **Trovare strumenti.** `ALL_TOOLS` elenca ogni strumento che lo script può chiamare. `searchTools(query)` trova gli strumenti in base a ciò che fanno, `describeTool(name)` restituisce la descrizione e gli argomenti di uno strumento, e `describeNamespace(name)` elenca gli strumenti di un gruppo. Anche gli strumenti dei server MCP connessi sono raggiungibili in questo modo.
+- **Restituire risultati.** Solo ciò che lo script restituisce, o passa a `text()`, `image()` o `console.log()`, torna all'agente. Al modello arrivano al massimo quattro immagini.
+- **Conservare valori.** `store(key, value)` e `load(key)` conservano piccoli valori JSON tra gli script della stessa conversazione e dello stesso agente. I valori vengono salvati solo quando lo script termina. I subagenti non hanno uno store.
+- **Chiedere a una persona.** `await tools.ask_user({ question, options })` pone una domanda e attende la risposta.
+- **Usare gli embedding sul dispositivo.** `models.embed`, `models.rank` e `models.classify` usano il modello di embedding del server, quando è installato.
+- **Attendere.** `sleep(ms)` e `setTimeout`, entro il limite di tempo dello script. `limits()` restituisce i limiti in cui lo script gira.
+
+Uno script non ha accesso a file system, rete, processi, moduli o ambiente: niente `fetch`, `require`, `import` o `process`. L'unica via d'uscita è una chiamata a uno strumento, e ogni chiamata a strumento passa per gli stessi controlli di una chiamata che l'agente effettua direttamente.
+
+Le chiamate a strumenti che uno script ha già effettuato non vengono annullate se lo script fallisce in seguito.
+
+## Quali strumenti l'agente chiama direttamente
+
+Ogni esecuzione dell'agente integrato riceve lo stesso piccolo insieme di strumenti che chiama per nome:
+
+- `repl`, per primo;
+- gli strumenti di file e shell `read`, `write`, `edit`, `search`, `find`, `bash` e `read_output`;
+- `ask_user` e `task`;
+- `todo_write`, `search_memory` e `send_message`;
+- i verbi di cui la [modalità](/it-IT/manuale/concetti/modalita/) della conversazione ha bisogno per consegnare il suo output o per uscirne, come `submit_plan` in modalità piano;
+- `search_tools`, quando uno strumento viene caricato al primo uso (vedi sotto).
+
+Ogni altro strumento che l'esecuzione può usare si raggiunge in due modi:
+
+- **Solo da uno script**, quando uno script può chiamarlo. L'agente lo trova con `searchTools()` o `describeTool()` e lo chiama come `tools.<name>(args)`. La sua descrizione non raggiunge mai il modello, quindi non costa nulla nel prompt. Se l'agente lo chiama comunque direttamente, la risposta gli dice di chiamare lo strumento da uno script. Se il server non può eseguire gli script dell'esecuzione, lo strumento viene invece caricato al primo uso ([Quando gli script non possono girare](#quando-gli-script-non-possono-girare)).
+- **Caricato al primo uso**, quando uno script non può chiamarlo. L'agente vede il suo nome, e chiamandolo per nome, oppure trovandolo con `search_tools`, lo carica.
+
+Alcuni strumenti non sono mai chiamabili da uno script, tra cui `repl` stesso (uno script non può avviare uno script), `eval`, `task`, `checkpoint`, `rewind`, i verbi `vibe_*` e gli strumenti che avviano o inviano messaggi ad altre esecuzioni di agente, creano, decidono o commentano approvazioni, modificano policy o skill, o escono dalla modalità piano. L'agente li chiama direttamente.
+
+Un'esecuzione senza `repl` riceve gli stessi strumenti diretti, e tutto il resto viene caricato al primo uso. [Contesto degli strumenti e cache dei prompt](/it-IT/manuale/concetti/contesto-strumenti/) spiega perché l'insieme è lo stesso in entrambi i casi.
+
+La modalità codice non aggiunge mai uno strumento che la modalità della conversazione non consente. Il filtro di strumenti della modalità si applica per primo, e uno script può chiamare solo ciò che resta.
+
+## Quando un'esecuzione ha `repl`
+
+Un'esecuzione ha `repl` quando il runner di script del server ha superato il controllo di isolamento all'avvio ([Come sono isolati gli script](#come-sono-isolati-gli-script)). Nessuna impostazione dello spazio di lavoro, dell'agente o del server lo cambia. Un'esecuzione non ha `repl` quando:
+
+- il runner non riesce a isolarsi sulla macchina del server; il server allora non esegue alcuno script;
+- il server è una demo pubblica, che non esegue script;
+- l'esecuzione non appartiene ad alcuno spazio di lavoro;
+- i limiti dello spazio di lavoro non possono essere letti, perché eseguire con i valori predefiniti potrebbe superare limiti che un admin ha abbassato;
+- il log dell'esecuzione non può essere scritto, perché ogni script viene registrato nella sua esecuzione prima di partire.
+
+Un'esecuzione del genere chiama tutti i suoi strumenti direttamente.
+
+La modalità codice funziona per le esecuzioni dell'agente integrato e per gli agenti che raggiungono gli strumenti di Control Center tramite il suo endpoint MCP, come Claude Code. Per un agente MCP, la lista di strumenti che riceve contiene `repl`, gli strumenti diretti e gli strumenti che uno script non può chiamare; il resto lo chiama da script. Solo un'esecuzione che Control Center ha avviato e per la quale tiene un registro riceve lì `repl`; ogni altro client riceve tutti gli strumenti tranne `repl`.
+
+**Impostazioni → Spazio di lavoro → Modalità codice** mostra sotto **Stato** se questo server esegue script (**Disponibile** o **Non disponibile**, con il motivo del server) e quale versione del **Runner** è installata. **Visualizza esecuzioni di codice** apre l'elenco degli script eseguiti.
+
+Un proprietario del server non può disattivare gli script. Può però porvi dei limiti: quanti ne girano insieme e quanta memoria può usarne uno (vedi [Limiti](#limiti)).
+
+### Quando gli script non possono girare
+
+Un'esecuzione non perde mai uno strumento perché il server non può eseguire i suoi script. Quando il server rifiuta uno script per una ragione che nessun altro script avrebbe evitato (per esempio gli script non sono disponibili, lo script ha atteso metà del suo tempo in attesa di un posto libero, la sua registrazione non può essere scritta, la lista di strumenti dell'esecuzione è troppo grande da consegnare a uno script, oppure il runner non riesce ad avviarsi o a isolarsi), l'esecuzione smette di usare gli script per tutto il resto della sua durata:
+
+- un'esecuzione dell'agente integrato mantiene `repl`, e ogni strumento che raggiungeva solo da uno script viene ora caricato al primo uso: l'agente lo chiama per nome o lo trova con `search_tools`;
+- un'esecuzione sull'endpoint MCP riceve una lista di strumenti con tutti gli strumenti e senza `repl`, e il suo client viene avvisato che la lista è cambiata. Il server ricorda le ultime 1.024 esecuzioni di questo tipo; una più vecchia torna a usare gli script.
+
+Quegli strumenti passano gli stessi filtri di modalità, guardrail e approvazioni di prima, quindi non diventa chiamabile nulla che non lo fosse. Uno script che fallisce per conto suo, lanciando un errore, esaurendo un limite o vedendo una chiamata negata, non cambia nulla.
+
+Il server continua inoltre a verificare che gli script possano girare. Quando il runner non riesce ad avviarsi per una ragione che non dipende dallo script, il server ripete il controllo di isolamento, al massimo una volta al minuto. Se il controllo fallisce, il server non esegue alcuno script e registra la stessa riga `code_mode=unavailable` dell'avvio; le esecuzioni che partono nel frattempo non ricevono `repl`. Continua a controllare, al massimo una volta al minuto, e quando un controllo riesce di nuovo esegue gli script e registra la riga `code_mode=available`. Solo un controllo fallito all'avvio richiede un riavvio.
+
+## Limiti
+
+Ogni script gira entro dei limiti. Un admin dello spazio di lavoro ne può modificare sei sotto **Limiti** in **Impostazioni → Spazio di lavoro → Modalità codice** (**Modifica limiti**); l'agente può chiedere meno tempo o un budget di output più piccolo per un singolo script, mai di più.
+
+| Limite | Predefinito | Intervallo | Quando si esaurisce |
+| --- | --- | --- | --- |
+| Tempo per script | 5 min | da 1 s a 25 min | Lo script viene interrotto e l'agente viene informato che ha esaurito il tempo. |
+| Tempo di processore | 30 s | da 1 s a 2 min | Lo script viene interrotto. |
+| Memoria | 256 MiB | da 16 MiB a 1 GiB | Lo script viene interrotto. Il proprietario del server può impostare un tetto più basso per l'intero server. |
+| Chiamate a strumenti per script | 500 | da 1 a 5.000 | Le chiamate successive vengono rifiutate, e lo script viene informato del motivo. |
+| Chiamate contemporanee | 8 | da 1 a 32 | Le chiamate di sola lettura oltre questo limite attendono il proprio turno. Le chiamate che modificano qualcosa vengono sempre eseguite una alla volta. |
+| Output letto dall'agente | 10.000 token | da 100 a 50.000 | L'output viene accorciato al suo inizio e alla sua fine, e l'agente può leggere il resto su richiesta. |
+
+Il tempo che uno script trascorre in attesa di una persona, per un'approvazione o una domanda, non conta nel suo limite di tempo. Mentre attende, lo script non avvia altre chiamate a strumenti: quelle che fa nel frattempo partono, in ordine, dopo la tua risposta.
+
+Alcuni limiti sono fissi: il sorgente di uno script è al massimo 256 KiB, gli argomenti di una chiamata a strumento 1 MiB e 16.384 valori, un comando che uno script passa a uno strumento integrato che lo esegue 16 KiB (il nome dello strumento conta nel limite), il risultato consegnato a uno script 4 MiB, un valore conservato 256 KiB, e tutto ciò che una conversazione e un agente conservano insieme 1 MiB. Un'esecuzione esegue uno script alla volta.
+
+Anche le ricerche di strumenti di uno script sono limitate: una query di `searchTools` di al massimo 1.024 caratteri, un nome di strumento o di namespace di al massimo 256, al massimo 50 risultati, e al massimo 200 ricerche che occupano in tutto 2 secondi del tempo del server; oltre, le ricerche successive falliscono. Tutti gli script di uno spazio di lavoro condividono anche 2 secondi di tempo di ricerca, restituiti a un quarto di secondo per ogni secondo. L'indice di ricerca assegna a ogni strumento una quota uguale di circa un milione di caratteri, spesa prima sui nomi degli argomenti e poi sulla descrizione, e indicizza sempre il nome di ogni strumento, così anche in un catalogo molto grande uno strumento si trova per nome.
+
+Il proprietario del server limita anche quanti script girano contemporaneamente sul server (`--code-mode-max-processes`, per default il doppio dei core del processore, al massimo 16) e la memoria che può usare uno script (`--code-mode-max-heap-mb`); gli script in attesa di una persona sono contati a parte, fino a quattro volte quel numero. Quando questo limite è più di uno, uno spazio di lavoro può usarne al massimo circa tre quarti, così nessuno spazio di lavoro può occupare tutti i posti. Un'esecuzione e i suoi subagent insieme usano al massimo la metà dei posti del proprio spazio di lavoro (almeno uno), così i loro script successivi attendono mentre vanno avanti quelli delle altre esecuzioni dello spazio di lavoro. Vedi il [riferimento alla CLI di `cc_server`](/it-IT/manuale/riferimento/cc-server-cli/#modalità-codice).
+
+## Approvazioni e domande
+
+Una chiamata a strumento da uno script viene controllata esattamente come una chiamata diretta: il filtro di strumenti della modalità, i [guardrail di azione](/it-IT/manuale/concetti/guardrail/), la richiesta di approvazione e i controlli propri dello strumento. Uno script non può fare nulla che l'agente non potrebbe fare chiamando lo strumento direttamente.
+
+Quando la chiamata di uno script richiede approvazione, la scheda di approvazione riporta **Da uno script che l'agente sta eseguendo**, e **Mostra script** apre lo script nella conversazione. Per evitare che uno script ti inondi di schede:
+
+- uno script può chiedere approvazione al massimo 10 volte, e porre al massimo 10 domande;
+- una volta che rifiuti una delle sue chiamate, le sue chiamate successive che richiedono approvazione vengono rifiutate senza chiedere.
+
+Per le esecuzioni dell'agente integrato, le richieste di approvazione generate dai comandi che lo script esegue, come un push, contano nello stesso limite e si fermano dopo un rifiuto allo stesso modo. Quando anche lo script di un subagente gira nello stesso momento, una richiesta del genere conta per entrambi gli script e un rifiuto li ferma entrambi.
+
+Nell'esecuzione dell'agente integrato, un'approvazione per uno strumento di un server MCP esterno non viene ricordata: ogni chiamata chiede di nuovo, sia che la faccia uno script sia che la faccia l'agente direttamente, a meno che l'autonomia dello spazio non sia impostata su **Agisci liberamente**. Ogni richiesta del genere causata da uno script conta nel limite di 10 richieste di approvazione per script.
+
+Se lo script termina prima che tu risponda, la scheda viene ritirata, e una risposta data dopo non approva nulla.
+
+## Nella conversazione
+
+Una chiamata a `repl` compare nella conversazione come una riga con l'etichetta della descrizione dello script. Espandendola si vedono lo script e il suo output, e le chiamate a strumento effettuate dallo script sotto **Chiamate a strumenti**, con il conteggio di quante sono in esecuzione, riuscite, fallite, negate, annullate, in coda o saltate.
+
+### Come si legge uno script
+
+Le chiamate a strumento sono disposte secondo la struttura dello script, non come un unico lungo elenco. Il runner indica la riga e la colonna da cui ogni chiamata è stata fatta, e l'app legge lo script per trovarne i cicli, le diramazioni e le funzioni:
+
+- **Un ciclo** (`for`, `while`) compare come un gruppo **Ciclo** intestato dalla sua prima riga, e una funzione passata a una chiamata come `map` o `forEach` come un gruppo **Per ogni**. Una linea sottile separa un giro del ciclo dal successivo quando l'app riesce a distinguerli.
+- **Chiamate eseguite insieme** con `Promise.all`, `Promise.allSettled` o un combinatore simile compaiono come un gruppo **In parallelo**.
+- **Una diramazione** (`if`/`else`, `switch`, `try`/`catch`) mostra un gruppo per ogni ramo, intestato dalla sua condizione.
+- **Una funzione** che lo script definisce e chiama compare come un gruppo **Funzione**.
+
+Un gruppo dentro un altro è rientrato di un passo in più, fino a otto passi; i gruppi più profondi restano a quel rientro.
+
+Ogni intestazione di gruppo mostra come si sono concluse finora le sue chiamate. Prima che una chiamata parta, la sua riga mostra lo strumento e gli argomenti come sono scritti nello script:
+
+| Riga | Significato |
+| --- | --- |
+| **In coda** | Lo script non ha ancora raggiunto questa chiamata. |
+| In esecuzione | La chiamata è in esecuzione. |
+| Terminata | La chiamata è terminata; la riga mostra il suo esito e quanto è durata. |
+| **Saltato** | Lo script ha saltato questa chiamata, come il ramo di un `if` non preso, o è terminato senza raggiungerla. |
+
+Una chiamata scritta dentro gli argomenti di una chiamata allo stesso strumento viene segnalata dallo stesso punto dello script di quella chiamata. Quando l'app non riesce a stabilire se la chiamata esterna è stata effettuata, la sua riga non mostra alcuna parola di stato al posto di **Saltato**.
+
+Quando un gruppo ha effettuato più di otto chiamate, il suo centro si ripiega: le prime due e le ultime tre restano in vista, come ogni chiamata ancora in esecuzione, fallita o negata, insieme alla chiamata che ha avviato il suo giro del ciclo. **Mostra N chiamate in più** apre altre 100 chiamate ogni volta che lo premi, e indica fino a quattro strumenti delle chiamate nascoste con quante ce ne sono di ciascuno, dal più raro, come **Mostra 12 chiamate in più** · Bash 1 · Read 11. Un nome di strumento più lungo di 24 caratteri viene accorciato lì.
+
+Una chiamata che l'app non riesce a collocare nello script, come quella fatta da un callback `then`, è elencata dopo l'albero sotto **Chiamate non collocate nello script**. Quando l'app non riesce a leggere lo script, o nessuna chiamata indica dove è stata fatta, le chiamate si mostrano come un semplice elenco nell'ordine in cui sono state fatte.
+
+Ogni riga di chiamata mostra l'inizio degli argomenti della chiamata e del suo risultato, fino a 8 KiB ciascuno; quando le righe di uno script contengono insieme 256 KiB di questi estratti, le sue righe successive mostrano solo lo strumento e l'esito. Quando lo script è terminato, **Apri registrazione** apre la sua registrazione completa; se la registrazione non si trova, apre invece l'elenco degli script di quella esecuzione. Uno script respinto prima di partire (per esempio perché un altro script della stessa esecuzione era ancora in corso) non ha registrazione né link.
+
+## La registrazione
+
+Ogni script che viene eseguito è registrato nel suo spazio di lavoro prima di partire, e la registrazione viene completata quando termina. **Osservabilità → Esecuzioni di codice** le elenca, dalla più recente, e può filtrarle per esito. I link **Script di questa esecuzione** e **Script di questo agente** di una registrazione restringono l'elenco a una sola esecuzione o a un solo agente. Una registrazione mostra:
+
+- lo script, il suo output e la sua console;
+- quando è partito, quanto è durato, il tempo di processore e il picco di memoria usati, e se è stato eseguito dall'agente integrato o da uno esterno;
+- come è terminato, in parole semplici (per esempio, ha esaurito il tempo o ha generato un errore che nessuno ha catturato);
+- ogni chiamata a strumento, in ordine, con il suo esito, se è stata consentita, approvata da una persona o negata, quanto tempo una persona ha impiegato a decidere, i suoi argomenti (senza segreti, troncati a 8 KiB) e la dimensione del suo risultato. Il risultato stesso non viene conservato.
+
+La registrazione conserva dove nello script è stata fatta ogni chiamata, quindi le sue chiamate a strumento sono disposte allo stesso modo che nella conversazione. Una chiamata approvata da una persona non viene mai ripiegata lì.
+
+Uno script ancora in esecuzione appare come in corso, con le chiamate a strumento già terminate; il suo output, la durata e l'uso di risorse compaiono quando termina. Se il server si ferma mentre uno script è in esecuzione, la registrazione viene chiusa al successivo avvio del server e lo indica; finché non è chiusa, nessuno script gira in quello spazio di lavoro.
+
+Le registrazioni sono conservate con la loro esecuzione: eliminare l'esecuzione o il suo spazio ne elimina anche le registrazioni. I membri vedono le registrazioni degli spazi che possono aprire.
+
+## Come sono isolati gli script
+
+Gli script non girano mai all'interno del server. Ogni script gira nel proprio processo, un piccolo programma incluso nel server, `cc_codemode`, che esegue JavaScript nel motore QuickJS-NG. Prima di leggere lo script, il programma si isola con i controlli del sistema operativo: su Linux un filtro di chiamate di sistema e limiti di risorse, su macOS un profilo di sandbox che nega tutto per default, su Windows un AppContainer e un job object. Dopo questo non può aprire file, usare la rete, avviare processi o vedere altri programmi. Parte senza variabili d'ambiente e non detiene credenziali; il suo unico canale è il server, che risponde alle sue chiamate a strumenti.
+
+Il server verifica l'isolamento all'avvio, eseguendo l'autotest del programma. Se l'isolamento non tiene su quella macchina, per esempio dentro un container il cui profilo di sicurezza rifiuta uno dei passi, il server lì non esegue alcuno script: nessuna esecuzione riceve `repl`, e la pagina delle impostazioni mostra **Non disponibile** con il motivo. Uno script non gira mai con un isolamento più debole. L'isolamento su Windows non è ancora stato provato su Windows.
+
+La posizione di una chiamata nello script è riportata dal runner, quindi serve solo a disporre la conversazione e la registrazione. Non decide mai se una chiamata è consentita.
+
+Vedi [Sandbox e sicurezza](/it-IT/manuale/concetti/sandbox-e-sicurezza/#script-in-modalità-codice) per ciò che l'isolamento copre e ciò che non copre.
+
+## Vedi anche
+
+- [Contesto degli strumenti e cache dei prompt](/it-IT/manuale/concetti/contesto-strumenti/): perché l'insieme diretto è piccolo e uguale con o senza `repl`.
+- [Strumenti agent integrati](/it-IT/manuale/riferimento/strumenti-agente/#repl--esegui-uno-script-che-chiama-i-tuoi-strumenti): l'input dello strumento `repl`.
+- [CLI di `cc_server`](/it-IT/manuale/riferimento/cc-server-cli/#modalità-codice): i limiti che il proprietario del server imposta.

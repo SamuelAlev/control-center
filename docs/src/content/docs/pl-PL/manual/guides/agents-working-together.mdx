@@ -1,0 +1,63 @@
+---
+title: Agenci współpracują
+description: Jak agenci zadają sobie pytania, przekazują pracę i są wybudzani z odpowiedzią oraz gdzie widzisz, na czym jeden agent czeka na drugiego.
+slug: pl-PL/podrecznik/poradniki/agenci-wspolpracuja
+sourceHash: 36bb45cd480fb45d0380e8fd651845c59a7debcb
+---
+
+Agenci w obszarze roboczym mogą zadawać sobie pytania, konsultować się ze specjalistą, prosić o recenzję, wysyłać wiadomość albo delegować zgłoszenie. Żadnego z tego nie wymaga, by agent siedział i czekał: agent, który zapytał, może kontynuować pracę albo zakończyć turę i zostanie wybudzony we własnej rozmowie, gdy nadejdzie odpowiedź.
+
+## Pytanie innego agenta
+
+Agent pyta za pomocą `ask_agent`, na jeden z dwóch sposobów:
+
+- **Czekaj** (domyślnie): agent blokuje się, aż przyjdzie odpowiedź, domyślnie do 600 sekund, najwyżej 1,800.
+- **W tle**: wywołanie zwraca się od razu, a agent pracuje dalej.
+
+Tak czy inaczej pytanie jest zapisywane, zanim zostanie dostarczone. Gdy odpowiedź nie wróciła w wywołaniu, pytający zostaje wybudzony dokładnie raz, z odpowiedzią, gdy uruchomienie drugiego agenta się kończy: odpowiedzią, niepowodzeniem albo wygaśnięciem po 24 godzinach bez odpowiedzi. Po drodze może usłyszeć, po jednym razie, że drugi agent obiecał odpowiedź, że czeka na osobę albo że zatrzymał się na limicie użycia. Żadna z tych wiadomości nie jest odpowiedzią.
+
+`consult_agent` (sprowadza najlepiej dopasowanego specjalistę), `request_peer_review` (drugie spojrzenie na ustalenie recenzji) i `send_to_agent` (wiadomość jednokierunkowa) działają przez tę samą kolejkę. `send_to_agent` mówi, czy drugi agent został wybudzony, czy wiadomość czeka za jego obecnym uruchomieniem, albo dlaczego została odrzucona.
+
+Drugi agent odczytuje pytanie jako informację od innego agenta, nigdy jako polecenie, którego musi przestrzegać, i nie może uruchomić polecenia slash.
+
+## Przekazywanie pracy
+
+- **Zgłoszenie delegowane** (`delegate_task`) wybudza agenta, który je delegował, w rozmowie, z której delegował, gdy zgłoszenie się rozstrzygnie.
+- **Uruchomienie członka zespołu**, które lider rozpoczął `@mention` albo wiadomością, wybudza lidera w rozmowie, z której wybudził członka, gdy się kończy. (Pytanie jest załatwione przez swoją odpowiedź, a delegowane zgłoszenie przez swoje zgłoszenie.)
+- **Worker w tle** w trybie dyrektora (`/vibe`) przekazuje swój wynik dyrektorowi, który pracuje dalej.
+- **`@mention`** agenta oraz kontroler przestrzeni są dostarczane tak samo, jako wybudzenia.
+
+Agent może zobaczyć, co robi inny agent, bez pytania go: `agent_activity` pokazuje status drugiego agenta, jego bieżące narzędzie i ostatnie wiadomości, i nikogo nie wybudza.
+
+## Limity
+
+Serwer egzekwuje te limity, cokolwiek mówią agenty:
+
+| Limit | Wartość |
+| --- | --- |
+| Jak głęboki może być łańcuch pytań i przekazań | 3 |
+| Cykle (agent pytający tego, który przez innych na niego czeka) | Odrzucane |
+| Oczekujące pytania od pytającego agenta | 10 |
+| Oczekujące pytania do pytanego agenta | 20 |
+| To samo pytanie do tego samego agenta ponownie | Odrzucane w ciągu 10 minut |
+| Wiadomości między jedną parą agentów | 10 na minutę |
+| Długość wiadomości lub odpowiedzi | 16,384 znaków |
+
+Delegowanie też respektuje autonomię i budżet pytającego agenta: agent nie może przekazać pracy innemu z większą autonomią albo większymi pieniędzmi, niż sam ma. Wiadomość, którą wysyłasz sam, nigdy nie jest w ten sposób ograniczana.
+
+Gdy pytany agent zatrzymuje się na limicie użycia dostawcy, jego uruchomienie czeka na reset, jeśli reset nadejdzie przed wygaśnięciem pytania. W przeciwnym razie pytanie kończy się niepowodzeniem od razu, a pytający dostaje informację, dlaczego.
+
+## Zobacz, na czym agent czeka
+
+W rozmowie sekcja **Pytania** w panelu **Ogólne** wymienia pytania, które agenty zadały z niej: do kogo, jakiego rodzaju (**Pytanie**, **Konsultacja** albo **Recenzja**), kiedy i w jakim stanie (**Czeka**, **Odpowiedziano**, **Niepowodzenie**, **Wygasło** albo **Anulowano**), z **Obiecał odpowiedź** albo **W tle** tam, gdzie to dotyczy. Nieudane pytanie mówi, dlaczego, na przykład **Jego uruchomienie zatrzymało się na limicie użycia dostawcy.**
+
+Każdy z dostępem do przestrzeni może **Anuluj pytanie**. Pytający agent wtedy nie zostaje wybudzony, a uruchomienie drugiego agenta nie zostaje zatrzymane.
+
+Odpowiedzi, wiadomości i zakończona praca, które czekają na agenta, pojawiają się też na pasku nad polem wiadomości, razem z innymi, na które agent czeka (zob. [Harmonogramy i wybudzenia](/pl-PL/podrecznik/poradniki/harmonogramy-i-wybudzenia/#zobacz-co-czeka)).
+
+## Zobacz także
+
+- [Deleguj pracę agentom](/pl-PL/podrecznik/poradniki/delegowanie-zgloszen/)
+- [Zbuduj zespół agentów](/pl-PL/podrecznik/poradniki/budowanie-zespolu-agentow/)
+- [Kieruj workerami w tle](/pl-PL/podrecznik/poradniki/kierowanie-workerami-w-tle/)
+- [Narzędzia MCP: komunikacja między agentami i delegowanie](/pl-PL/podrecznik/dokumentacja-referencyjna/narzedzia-mcp/#komunikacja-między-agentami-i-delegowanie)

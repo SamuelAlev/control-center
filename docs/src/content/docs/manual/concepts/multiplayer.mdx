@@ -157,7 +157,8 @@ The presence lane isn't just a roster — it drives the collaboration verbs:
   you're in.
 - **Steer.** A message to a running agent is queued as steering; the agent
   re-reads it before resuming its next turn, so you can nudge a run
-  mid-flight without killing it.
+  mid-flight without killing it. Steering a run that works for someone else
+  needs write access to the space's repositories.
 - **Take over.** Assuming control of a conversation pauses every active run
   at its next clean turn boundary (a Claude Code run, which has no safe
   boundary, is stopped) behind a per-turn git snapshot, so the take-over is

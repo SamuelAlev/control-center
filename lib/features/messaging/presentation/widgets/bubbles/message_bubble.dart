@@ -13,6 +13,7 @@ import 'package:control_center/features/messaging/presentation/widgets/bubbles/s
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/thread_indicator.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/ticket_card.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/user_bubble.dart';
+import 'package:control_center/features/messaging/presentation/widgets/work/work_system_row.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/orchestration/presentation/widgets/orchestration_proposal_bubble.dart';
 import 'package:flutter/widgets.dart';
@@ -62,7 +63,9 @@ class SpaceMessageBubble extends ConsumerWidget {
       return CompactionDivider(message: message);
     }
     if (message.isSystem) {
-      return SystemMessage(content: message.content);
+      return isWorkSystemRow(message)
+          ? WorkSystemRow(message: message)
+          : SystemMessage(content: message.content);
     }
     if (message.isTicket) {
       return TicketCard(message: message);

@@ -2,7 +2,7 @@
 title: Contexto de ferramentas e cache de prompts
 description: Porque é que um agente vê um conjunto reduzido de ferramentas em vez de todas, como chega às restantes e as regras que mantêm quente a cache de prompts do fornecedor ao longo de uma execução.
 slug: pt-PT/manual/conceitos/contexto-de-ferramentas
-sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
+sourceHash: 74ad7fcb903772d007ba9bd7ec85153fcf668335
 ---
 
 Há duas coisas verdadeiras em cada pedido que o harness integrado faz: as
@@ -12,10 +12,7 @@ a isto e porque é que a resposta não é simplesmente «enviar menos ferramenta
 
 ## O problema é a atenção, não os bytes
 
-O Control Center regista cerca de 126 ferramentas. Enviadas na íntegra, as suas
-definições custam aproximadamente **23 000 tokens em cada pedido** — um custo que
-nenhuma compactação consegue tocar, porque as definições das ferramentas viajam
-numa parte do pedido separada da conversa.
+O Control Center tem cerca de 160 ferramentas próprias. Enviadas na íntegra, as suas definições iriam acompanhar **cada pedido** — um custo que nenhuma compactação consegue tocar, porque as definições das ferramentas viajam numa parte do pedido separada da conversa.
 
 A fatura dos tokens é a queixa óbvia e, com a cache de prompts, é também a
 menor. O custo real é a **precisão de seleção**. As avaliações publicadas sobre
@@ -26,30 +23,36 @@ a **sobreposição semântica**: quando um catálogo contém várias ferramentas
 descrições soam iguais, o modelo está a escolher entre parecidas em vez de se
 lembrar de uma capacidade.
 
-Com 126 ferramentas, um agente está bem para lá dessa faixa em todos os turnos —
-incluindo os muitos turnos em que só precisava de ler um ficheiro.
+Com cerca de 160 ferramentas, um agente está bem para lá dessa faixa em todos os turnos — incluindo os muitos turnos em que só precisava de ler um ficheiro.
 
-## A superfície em dois níveis
+## Um pequeno conjunto direto
 
 Uma execução vê, por isso, duas coisas:
 
-- um conjunto **residente** — cerca de duas dúzias de ferramentas, enviadas com
-  esquemas completos em cada pedido;
+- um **conjunto direto** de cerca de quinze ferramentas, enviadas com esquemas completos em cada pedido;
 - um **índice de nomes** de todo o resto, agrupado sob títulos como «Tickets and
   projects» ou «Memory and knowledge», que custa algumas centenas de tokens para
   o catálogo inteiro.
 
-Medido no catálogo atual, isto faz o bloco de ferramentas passar de **~23,1k
-tokens para ~5,0k, cerca de 78 % menos**, e coloca o conjunto sempre visível
-dentro da faixa em que a seleção é fiável.
+Medido no registo que os testes constroem, as ferramentas de chat padrão do agente integrado somam 14 definições de ferramentas e cerca de 16,5 KB com `repl`, dos quais `repl` ocupa cerca de 4 KB (a sua definição não pode exceder 4 096 bytes), e 14 definições e cerca de 13 KB num servidor que não consegue executar scripts. Isto é a medição de uma só superfície, não de todas as instalações. Todas as outras ferramentas são alcançadas a partir de um script ou carregam-se na primeira utilização.
 
-O conjunto residente é o das ferramentas que uma execução usa na *maioria* das
-execuções: o vocabulário de ficheiros e shell (`read`, `write`, `edit`, `search`,
-`bash`, …), as ferramentas de descoberta, a lista de tarefas, a pesquisa na
-memória e o verbo que o [modo](/pt-PT/manual/conceitos/modos) atual tem de chamar
-para entregar o seu resultado. O próprio verbo de saída de um modo é sempre
-residente — uma execução nunca deve ter de procurar a chamada que produz o seu
-entregável.
+O conjunto direto são as ferramentas que a maioria das execuções usa nos primeiros turnos e as que uma execução nunca deve ter de procurar: `read`, `write`, `edit`, `search`, `find`, `bash` e `read_output`; `ask_user` e `task`; `todo_write`, `search_memory` e `send_message`; e o verbo que o [modo](/pt-PT/manual/conceitos/modos/) atual tem de chamar para entregar o seu resultado. O verbo de saída de um modo é sempre direto — uma execução nunca deve ter de procurar a chamada que produz o seu entregável. Uma ferramenta ganha lugar por ser usada na maioria das execuções, e não por ser importante quando é usada: cada nome do conjunto é uma definição em cada turno de cada execução.
+
+### Os scripts chegam ao resto
+
+Quando o servidor consegue executar scripts, cada execução tem também [`repl`](/pt-PT/manual/conceitos/modo-de-codigo/), em primeiro lugar na lista. A regra para o resto do catálogo é então:
+
+- uma ferramenta que um script pode chamar só é alcançada **a partir de um script**: está no índice de nomes, e um script `repl` chama-a como `tools.<name>(args)` depois de a procurar com `searchTools()` ou `describeTool()`, até o servidor não conseguir executar os scripts da execução e ela passar a ser carregada na primeira utilização ([Quando os scripts não podem correr](/pt-PT/manual/conceitos/modo-de-codigo/#quando-os-scripts-não-podem-correr));
+- uma ferramenta que um script não pode chamar (`eval`, `task`, aprovações, delegação e algumas outras) fica **diferida**: é carregada na primeira utilização, como descrito abaixo;
+- `search_tools` é acrescentada quando algo fica diferido.
+
+Uma execução sem `repl` recebe o mesmo conjunto direto, e tudo o resto fica diferido.
+
+O conjunto direto é o mesmo com ou sem `repl`, de propósito. O agente aprende uma só superfície, o início de cada pedido são as mesmas ferramentas pela mesma ordem, e acrescentar `repl` não altera nada em que o agente já se apoiava.
+
+O que poupa: o esquema de uma ferramenta exclusiva de script nunca é enviado ao fornecedor, pelo que as cem e tal ferramentas fora do conjunto direto custam apenas os seus nomes. Um script que precise de dez delas não paga nenhum dos seus esquemas, e os seus resultados intermédios nunca entram no contexto.
+
+O que custa: uma ferramenta fora do conjunto direto precisa de um script para ser chamada, e o script tem de procurar primeiro os argumentos da ferramenta. Para uma chamada rápida isso é um passo extra que uma chamada direta não precisaria. É por isso que as ferramentas que a maioria das execuções chama nos primeiros turnos continuam diretas.
 
 ### Diferido não significa indisponível
 
@@ -62,44 +65,24 @@ carrega o esquema e executa a ferramenta no mesmo passo — sem erro, sem ida e
 volta. O modelo não precisa de saber que a ferramenta alguma vez esteve
 «descarregada».
 
-Quando o agente conhece a tarefa mas não o nome, o `search_tools` recebe uma
-descrição em linguagem natural («atribuir um ticket a alguém»), ordena toda a
-superfície da execução e devolve as correspondências *já com os respetivos
-esquemas carregados*, para que o turno imediatamente seguinte possa chamar uma
-delas. Se uma pesquisa não encontrar nada, di-lo claramente e sugere outra
-formulação ou uma pesquisa mais ampla — deliberadamente, porque um agente que lê
-uma pesquisa vazia como «esta capacidade não existe» vai inventar um substituto
-em vez de voltar a procurar.
+Quando o agente conhece a tarefa mas não o nome, o `search_tools` recebe uma descrição em linguagem natural («atribuir um ticket a alguém»), ordena toda a superfície da execução e devolve as correspondências *já com os respetivos esquemas carregados*, para que o turno imediatamente seguinte possa chamar uma delas. Uma correspondência que só é chamável a partir de um script é devolvida com a forma de a chamar a partir de um script, a menos que os scripts da execução já não consigam correr: nesse caso é carregada como qualquer outra correspondência. Se uma pesquisa não encontrar nada, di-lo claramente e sugere outra formulação ou uma pesquisa mais ampla — deliberadamente, porque um agente que lê uma pesquisa vazia como «esta capacidade não existe» vai inventar um substituto em vez de voltar a procurar.
 
 O `search_tools` existe apenas no harness integrado. Os clientes MCP externos
 têm, em vez dele, o `search_tool_bm25`, que ordena o mesmo índice mas apenas
 descreve as correspondências — esses clientes já receberam todos os esquemas a
 partir do `tools/list`, pelo que não há nada a carregar.
 
-### O que o diferimento nunca faz
+### O que a superfície nunca faz
 
-O diferimento é aplicado **depois** do filtro de ferramentas do modo, nunca em
-vez dele. Esconde um esquema; não consegue revelar uma ferramenta que o modo
-negou. Uma ferramenta ativada continua a passar pelo pedido de aprovação e pelas
-[barreiras de ação](/pt-PT/manual/conceitos/barreiras) exatamente como uma
-residente, e uma ferramenta não pode carregar um nome que não estivesse já na
-superfície da execução.
+O diferimento e os scripts são aplicados **depois** do filtro de ferramentas do modo, nunca em vez dele. Escondem um esquema; não conseguem revelar uma ferramenta que o modo negou. Uma ferramenta carregada e uma chamada feita por um script continuam a passar pelo pedido de aprovação e pelas [barreiras de ação](/pt-PT/manual/conceitos/barreiras/) exatamente como uma chamada direta passaria, e nenhum dos dois consegue chegar a um nome que não estava, desde o início, na superfície da execução.
 
-A superfície MCP que os clientes externos veem **não** é afetada. O `tools/list`
-continua a devolver o catálogo completo. Uma tentativa anterior de o reduzir
-quebrou os agentes por completo: os clientes MCP validam os nomes das
-ferramentas contra a sua própria lista em cache e recusam tudo o que não esteja
-listado sem nunca perguntar ao servidor, pelo que uma ferramenta «escondida mas
-chamável» era simplesmente inalcançável. O diferimento vive no harness, onde
-carregar uma ferramenta a meio de uma execução é algo que o harness consegue
-mesmo fazer.
+A superfície MCP que os clientes externos veem **não** é diferida. `tools/list` devolve o catálogo completo, porque os clientes MCP validam os nomes das ferramentas contra a sua própria lista em cache e recusam tudo o que não esteja listado sem nunca perguntar ao servidor, pelo que uma ferramenta «escondida mas chamável» seria simplesmente inalcançável. O diferimento vive no harness, onde carregar uma ferramenta a meio de uma execução é algo que o harness consegue mesmo fazer.
 
-### Desativar isto
+Uma execução de agente que alcança o Control Center através do seu endpoint MCP, enquanto o servidor consegue executar scripts, é a única exceção. O seu `tools/list` contém `repl`, as ferramentas diretas e todas as ferramentas que um script não pode chamar, e chama o resto a partir de scripts. Uma chamada direta a uma dessas é respondida com a forma de a chamar a partir de um script.
 
-`--tool-deferral=off` (ou `CC_SERVER_TOOL_DEFERRAL=off`) volta a tornar
-residentes todas as ferramentas admitidas, produzindo exatamente os pedidos que
-o servidor fazia antes de o diferimento existir. Consulta a
-[referência da CLI do `cc_server`](/pt-PT/manual/referencia/cc-server-cli).
+### Desligar o diferimento
+
+`--tool-deferral=off` (ou `CC_SERVER_TOOL_DEFERRAL=off`) desliga o diferimento: uma execução sem `repl` recebe todas as ferramentas admitidas por inteiro, e uma execução com `repl` recebe por inteiro as ferramentas que um script não pode chamar, enquanto as restantes ficam exclusivas de script. Consulta a [referência da CLI do `cc_server`](/pt-PT/manual/referencia/cc-server-cli/).
 
 ## Cache de prompts
 
@@ -134,7 +117,7 @@ Center gasta-os deliberadamente:
 
 | Marcador                       | Abrange                         | Duração |
 | ------------------------------ | ------------------------------- | ------- |
-| Última ferramenta **residente** | O bloco de ferramentas          | 1 hora  |
+| Última ferramenta **direta**    | O bloco de ferramentas          | 1 hora  |
 | Último bloco de sistema        | Ferramentas + prompt de sistema | 1 hora  |
 | Cauda do turno anterior        | Histórico até ao último pedido  | 5 min   |
 | Cauda do turno atual           | O histórico completo            | 5 min   |
@@ -161,21 +144,13 @@ uma entrada só se torna legível quando o pedido que a escreveu começa a
 responder, pelo que um fan-out lançado de uma só vez tem todos os filhos a pagar
 o preço extra por um prefixo que todos partilham.
 
-O harness deixa arrancar o primeiro filho de uma dada forma e depois liberta os
-seus irmãos assim que este começa a transmitir. A espera é limitada: um primeiro
-filho lento custa um acerto de cache, nunca o fan-out em si. Pela mesma razão,
-todos os subagentes recebem o mesmo conjunto residente de ferramentas
-independentemente do seu perfil — variá-lo por perfil fragmentaria o prefixo
-partilhado sem qualquer ganho, já que o perfil já decidiu o que o filho pode
-chamar.
+O harness deixa arrancar o primeiro filho de uma dada forma e depois liberta os seus irmãos assim que este começa a transmitir. A espera é limitada: um primeiro filho lento custa um acerto de cache, nunca o fan-out em si. Pela mesma razão, todos os subagentes recebem o mesmo conjunto direto de ferramentas independentemente do seu perfil — variá-lo por perfil fragmentaria o prefixo partilhado sem qualquer ganho, já que o perfil já decidiu o que o filho pode chamar.
 
 ## Vê-lo a funcionar
 
 Ambas as metades são observáveis em vez de presumidas:
 
-- O **explorador de contexto** de uma conversa indica as ferramentas residentes,
-  o índice diferido e quanto cada esquema retido *custaria*, construído a partir
-  do mesmo caminho de código que uma execução real usa.
+- O **explorador de contexto** de uma conversa indica as ferramentas diretas, o índice diferido e quanto cada esquema retido *custaria*, construído a partir do mesmo caminho de código que uma execução real usa.
 - Cada execução regista que ferramentas diferidas carregou e o que o
   desencadeou, pelo que uma pesquisa que não encontra nada é visível como uma
   falha de recuperação, em vez de desaparecer num agente que faz silenciosamente

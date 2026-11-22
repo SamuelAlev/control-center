@@ -2,10 +2,10 @@
 title: Ingebouwde agenttools
 description: Het tooloppervlak dat de ingebouwde harness een agent geeft — taalserver, structureel zoeken, debugger, kernels en workerbesturing — met elke bewerking en zijn argumenten.
 slug: nl-NL/handleiding/referentie/agenttools
-sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
+sourceHash: e99183fd4b257a60f94444101e1d39a7d6c77249
 ---
 
-Dit zijn de **aan de server gebonden** tools die de ingebouwde agentruntime rechtstreeks registreert — taalserver, structureel zoeken, debugger, kernels, vragen en workerbesturing — in tegenstelling tot de [MCP-tools](/nl-NL/handleiding/referentie/mcp-tools/) die hij erin overbrugt en de generieke bestands-, zoek- en shelltools van de harnessruntime. Ze staan niet in het MCP-register: een externe MCP-client ziet ze niet, omdat elke tool gebonden is aan een levende resource aan de serverkant — een taalserverproces, een debugadapter, een interpreter — die bij één run hoort.
+Dit zijn de **aan de server gebonden** tools die de ingebouwde agentruntime rechtstreeks registreert — taalserver, structureel zoeken, debugger, kernels, codemodus-scripts, vragen en workerbesturing — in tegenstelling tot de [MCP-tools](/nl-NL/handleiding/referentie/mcp-tools/) die hij erin overbrugt en de generieke bestands-, zoek- en shelltools van de harnessruntime. Ze staan niet in het MCP-register: een externe MCP-client ziet ze niet, omdat elke tool gebonden is aan een levende resource aan de serverkant — een taalserverproces, een debugadapter, een interpreter — die bij één run hoort.
 
 Elke tool hier wordt alleen geregistreerd wanneer de onderliggende resource voor de run is aangesloten — een taalserver- of debugsupervisor, een tree-sitter-parser, een factory voor kernels, een vraagpoort, een roster van vibewerkers. Detectie van een taalserver of debugadapter voor *deze checkout* is een aparte, latere controle (`status` / `adapters`): die tools blijven in het aanbod staan zodat de agent kan vragen waarom er niets bruikbaar is, in plaats van te gokken.
 
@@ -15,9 +15,23 @@ Elke tool verklaart een niveau, en dat niveau bepaalt **welke oppervlakken hem t
 
 | Niveau  | Betekenis                      | Tools hier                                       |
 | ------- | ------------------------------ | ------------------------------------------------ |
-| `read`  | Geen neveneffecten             | `lsp`, `ast_grep`, `ask_user`, de vijf `vibe_*`   |
+| `read`  | Geen neveneffecten             | `lsp`, `ast_grep`, `ask_user`, `repl`, de vijf `vibe_*` |
 | `write` | Wijzigt bestanden              | `lsp_rename`, `ast_edit`, `resolve`               |
 | `exec`  | Start of bestuurt een proces   | `debug`, `eval`                                   |
+
+## Direct, alleen vanuit een script of geladen bij eerste gebruik
+
+Wanneer de server scripts kan draaien, roept een run een paar tools direct aan en bereikt de rest vanuit een [`repl`](#repl--een-script-draaien-dat-je-tools-aanroept)-script; zie [Codemodus](/nl-NL/handleiding/concepten/codemodus/#welke-tools-de-agent-direct-aanroept) voor de volledige regel. Voor de tools op deze pagina:
+
+| Tool | Met `repl` | Zonder `repl` |
+| ---- | ----------- | -------------- |
+| `repl` | Direct | Niet aanwezig |
+| `ask_user` | Direct | Direct |
+| `lsp`, `lsp_rename`, `ast_grep`, `ast_edit`, `resolve`, `debug` | Alleen vanuit een script | Geladen bij eerste gebruik |
+| `eval` | Geladen bij eerste gebruik (een script kan hem niet aanroepen) | Geladen bij eerste gebruik |
+| `vibe_*` | Direct in vibe-modus, nooit vanuit een script | Direct in vibe-modus |
+
+Een tool die is gemarkeerd als “Alleen vanuit een script” wordt in plaats daarvan bij eerste gebruik geladen zodra de server de scripts van de run niet kan draaien ([Wanneer scripts niet kunnen draaien](/nl-NL/handleiding/concepten/codemodus/#wanneer-scripts-niet-kunnen-draaien)).
 
 ---
 
@@ -152,9 +166,49 @@ Eén sessie per gesprek, met een harde TTL (30 minuten). Een tweede `launch` wor
 
 ---
 
+## `repl` — een script draaien dat je tools aanroept
+
+Aanwezig op elke run wanneer de server scripts kan draaien ([Wanneer een run `repl` heeft](/nl-NL/handleiding/concepten/codemodus/#wanneer-een-run-repl-heeft)). Het script is gewoon JavaScript, de body van een async-functie, en draait in een nieuwe, afgesloten interpreter in een eigen proces: geen toegang tot bestandssysteem, netwerk, processen of modules. `repl` zelf hoort bij het `read`-niveau en bewaakt zichzelf, omdat elke toolaanroep die het script doet afzonderlijk wordt gecontroleerd. Ook op het MCP-eindpunt, voor agentruns op een server die scripts kan draaien.
+
+| Argument | Betekenis |
+| ------------------- | --------------------------------------------------------------------------------------------- |
+| `code` | Het script. Maximaal 256 KiB |
+| `description` | Verplicht. Een kort label voor de regel in het transcript |
+| `timeout_ms` | Optioneel. Een kortere tijdslimiet dan die van de werkruimte; nooit een langere |
+| `max_output_tokens` | Optioneel. Een kleiner uitvoerbudget dan dat van de werkruimte; nooit een groter |
+
+```js
+// Read three files together and report only which ones failed.
+const paths = ["lib/a.dart", "lib/b.dart", "lib/c.dart"];
+const results = await Promise.allSettled(paths.map((path) => tools.read({ path })));
+return results
+  .map((r, i) => (r.status === "rejected" ? `${paths[i]}: ${r.reason.message}` : null))
+  .filter(Boolean);
+```
+
+De beschrijving van `repl` zegt de agent: „Een tool die geen van je directe tools is, heeft in dit verzoek geen definitie. Zoek hem op met `describeTool(name)` of `searchTools(query)` voordat je hem voor het eerst aanroept, tenzij de exacte aanroepvorm al eerder in dit gesprek aan je is getoond.”
+
+`describeTool(name)` geeft de beschrijving van een tool, zijn declaratie, zijn invoer- en uitvoerschema's en zijn resultaatnotitie, wanneer die er is: wat een script ontvangt van een voltooide aanroep, in de eigen woorden van de tool. De `repl`-beschrijving somt de notities op van de directe tools die een script mag aanroepen. Een resultaat dat JSON-tekst is, komt geparseerd aan, tenzij het meer dan 131.072 waarden bevat: dan komt het als tekst aan, en het script parseert het met `JSON.parse`. De tekst van een resultaat van een tool van een externe MCP-server wordt afgekapt bij 262.144 tekens, en afgekapte tekst is geen geldige JSON meer.
+
+- `tools.<name>(args)` roept een tool aan via hetzelfde filter, dezelfde beveiligingen en goedkeuring als een directe aanroep, en wordt afgewezen met een fout wanneer die wordt geweigerd of mislukt. Aanroepen die alleen lezen, kunnen tegelijk lopen; aanroepen die iets wijzigen, lopen één voor één, in de volgorde waarin het script ze deed. Terwijl een van zijn aanroepen op een persoon wacht, start het script geen andere aanroep.
+- `ALL_TOOLS`, `searchTools(query, { limit, namespace })`, `describeTool(name)` en `describeNamespace(name)` vinden tools, ook die van verbonden MCP-servers. Een tool buiten de directe set die een script mag aanroepen, is alleen vanuit een script aanroepbaar; een directe aanroep ervan geeft terug hoe je die vanuit `repl` aanroept. Zodra de server de scripts van de run niet kan draaien, wordt zo'n tool in plaats daarvan bij eerste gebruik geladen.
+- Opzoekingen zijn begrensd: een zoekopdracht van hooguit 1.024 tekens, een naam of namespace van hooguit 256, `limit` van 0 tot 50, en per script hooguit 200 opzoekingen die samen 2 seconden serverstijd kosten, terwijl alle scripts van één werkruimte samen 2 seconden opzoektijd delen, die met een kwart seconde per seconde terugkomt; bij overschrijding van een van beide worden verdere opzoekingen afgewezen. In een zeer grote catalogus delen de beschrijvingen in `ALL_TOOLS` gelijkelijk ongeveer een miljoen tekens, en een afgekapte beschrijving eindigt op `…`; `describeTool` geeft altijd de volledige beschrijving terug. Een type dat te groot is om te tonen, staat als `unknown /* too large to show */`, en een onbekende naam wordt beantwoord met de dichtstbijzijnde namen.
+- Tools zijn gegroepeerd in namespaces: `builtin` (de eigen tools van de harness), `control-center` (de tools van Control Center) en één per verbonden MCP-server, genoemd naar de server. Een server met de naam `builtin`, `control-center` of `script`, of waarvan de naam begint met `external-`, in welke combinatie van hoofdletters ook en met of zonder spaties eromheen, wordt getoond als `external-` gevolgd door zijn naam, en geen enkele tool staat ooit in `script`.
+- Alleen wat het script teruggeeft, of doorgeeft aan `text()`, `image()` of `console.*`, komt terug bij de agent. Uitvoer die over het budget gaat, behoudt het begin en het einde, en `read_output` leest de rest.
+- `store(key, value)` / `load(key)` bewaren JSON-waarden voor latere scripts van dezelfde conversatie en agent, en worden alleen opgeslagen wanneer het script klaar is. De scripts van een subagent hebben geen store.
+- `await tools.ask_user(...)` stelt een vraag; het antwoord wordt ook aan het resultaat toegevoegd. `sleep(ms)`, `setTimeout`, `limits()` en `models.embed` / `rank` / `classify` (embeddings op het apparaat) zijn ook beschikbaar.
+- `describeTool(name)` en `searchTools(query)` geven ook antwoord voor de eigen functies van het script, die geen tools zijn: `text`, `image`, `store`, `load`, `sleep`, `setTimeout`, `clearTimeout`, `limits`, `exit` en `models.*`, onder de naamruimte `script`.
+- Niet aanroepbaar vanuit een script: `repl`, `eval`, `task`, `checkpoint`, `rewind`, `compact`, `search_tools` en de `vibe_*`-tools.
+- Een script leest het verleden van de eigen run: `history({start, role, tool, limit})` bladert door het transcript van het gesprek (maximaal 50 rijen per aanroep; geef de `next_start` van de vorige pagina mee als `start`), `outputs()` somt de toolresultaten op die voor dit gesprek en deze agent zijn opgeslagen, en `loadOutput(handle)` leest 16.384 tekens van er één. `storedKeys()` somt de opgeslagen sleutels op met hun groottes. `keep(value, label)` slaat een grote waarde op als uitvoer die een later script of `read_output` kan lezen; dat gebeurt pas wanneer het script klaar is (1 MiB per waarde, 64 waarden en 16 MiB per run). `limits().returnBudgetChars` zegt hoeveel van het uitvoerbudget nog over is. Een alleen-lezen run (een doelreview) kan lezen, maar niet opslaan of bewaren. Op Claude Code en ACP werkt `history()`, maar `outputs()`, `loadOutput()` en `keep()` weigeren, omdat Control Center geen toolresultaten van die runs bewaart.
+- Een fout door een time-out, een uitvoeroverloop of de aanroeplimiet zegt hoe je hem oplost.
+
+Eén run draait op een moment maar één script. De limieten en wat er bij elk gebeurt, staan op de pagina [codemodus](/nl-NL/handleiding/concepten/codemodus/#limieten); elk script wordt vastgelegd onder **Observeerbaarheid → Codeuitvoeringen**.
+
+---
+
 ## `eval` — persistente interpreters
 
-Een Python- of JavaScript-cel waarvan variabelen, imports en geladen data tussen aanroepen behouden blijven. Niveau `exec`; niet parallelveilig.
+Een Python- of JavaScript-cel waarvan variabelen, imports en geladen data tussen aanroepen behouden blijven. Niveau `exec`; niet parallelveilig. Niet aanroepbaar vanuit een `repl`-script, en een cel kan de tools van de run niet aanroepen: wil je tools vanuit code aanroepen, gebruik dan [`repl`](#repl--een-script-draaien-dat-je-tools-aanroept).
 
 | Argument      | Betekenis                                        |
 | ------------- | ------------------------------------------------ |
@@ -166,20 +220,34 @@ Een Python- of JavaScript-cel waarvan variabelen, imports en geladen data tussen
 - De laatste expressie wordt weergegeven zoals een notebook dat doet.
 - `display()` werkt, een pandas-frame wordt als tabel weergegeven, en een matplotlib-figuur komt terug als een **afbeelding die het transcript weergeeft**.
 - De IPython-idiomen die mensen reflexmatig typen — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — worden herschreven naar gewone code. `%pip` leegt ook `sys.modules`, zodat de volgende `import` ziet wat er net is geïnstalleerd.
-
-### Je eigen tools aanroepen vanuit een cel
-
-```python
-contents = tool("read", {"path": "lib/auth.dart"})
-```
-
-De brug **gaat weer het toolregister van de harness binnen**, dus beveiligingen, goedkeuring en elke wrapper gelden precies zoals bij een aanroep die het model zelf doet. Hij loopt over de eigen pipe van de kernel in plaats van over een loopback-socket: geen poort, geen secret, geen egress-regel.
-
-De time-out van de cel is een budget voor *inactiviteit* (standaard 5 minuten) en wordt **opgeschort** zolang er een aanroep via de brug openstaat, zodat een cel die uitwaaiert naar subagenten niet midden in die uitwaaiering wordt gedood.
+- Een cel die meer uitvoer afdrukt dan zijn uitvoerbudget, behoudt de eerste driekwart en het laatste kwart, met één regel die zegt hoeveel tekens en afbeeldingen zijn weggelaten.
+- Wanneer de interpreter zonder verzoek is gestopt, wordt de volgende cel één keer verteld dat zijn eerdere variabelen weg zijn.
 
 :::note[Waar de kernel draait]
 In de omhulling van het gesprek als die er is, anders in de OS-sandbox van de run op de host. Met de sandbox uit of niet beschikbaar draait hij zonder inperking en vraagt `eval` om goedkeuring voor hostuitvoering. Hij start geen omhulling op om daar te komen, dezelfde regel die voorkomt dat een rigtab automatisch start.
 :::
+
+---
+
+## `bash` op de achtergrond
+
+`bash` met `run_in_background: true` start het commando en keert meteen terug met een handle (`b1`, `b2`, …) in plaats van te wachten. De agent blijft werken, of beëindigt zijn beurt en wordt gewekt wanneer het commando stopt.
+
+| Argument | Betekenis |
+| ------------------- | ------- |
+| `run_in_background` | `true` om te starten en meteen terug te keren |
+| `timeout_seconds` | Seconden voordat het commando wordt gestopt: standaard 600, maximaal 3.600 |
+| `notify` | Optioneel. Een eenvoudig patroon; elke uitvoerregel die erbij past, wordt tijdens het draaien naar de agent gestuurd (zoals `listening on\|FAILED`) |
+
+- Er draaien hoogstens 4 achtergrondcommando's tegelijk in één run. Elk wordt gestopt bij zijn time-out en wanneer de run eindigt, samen met elk proces dat het startte.
+- Wanneer een commando stopt, krijgt de agent een melding met de exitcode, de laatste 2.000 tekens uitvoer en een `read_output`-handle voor de rest.
+- Een agent wiens enige overgebleven werk een achtergrondcommando is, wacht zonder het model aan te roepen, en de stilte-watchdog van de run pauzeert terwijl hij wacht.
+- `bash_output(handle)` leest de staat en recente uitvoer van een commando; `bash_kill(handle)` stopt het. Beide zeggen wanneer het resultaat al is afgeleverd.
+- Een script kan geen achtergrondcommando starten. Claude Code heeft zijn eigen achtergrond-Bash; Control Center houdt die run maximaal 10 minuten open na de beurt die een taak aan het draaien liet.
+
+## `compact` — ruimte vrijmaken in het contextvenster
+
+Compacteert de oudere context van het gesprek vóór de volgende modelaanroep, met behoud van wat `focus` noemt (maximaal 1.000 tekens). De nieuwste beurten blijven letterlijk staan. De budgetregel per beurt van de agent toont het contextgebruik bij 70, 80 en 90%, en de tool is het waard om na ongeveer 70% aan te roepen voordat een lange nieuwe fase van werk begint. De `preCompact`-hook van de servereigenaar kan aan de focus toevoegen ([Shell-hooks](/nl-NL/handleiding/referentie/agentconfiguratie/#shell-hooks)). Na een compactie voegt de server een blok "Still in flight" toe: het doel, de wachtende wekbeurten, open vragen, achtergrondcommando's, de checklist en de opgeslagen sleutels, elk met de aanroep die het herstelt.
 
 ---
 

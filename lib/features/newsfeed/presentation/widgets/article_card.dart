@@ -36,6 +36,31 @@ class ArticleCard extends StatelessWidget {
   /// on this node rather than painting a separate selection highlight.
   final FocusNode? focusNode;
 
+  static const double _padTop = 11;
+  static const double _padBottom = AppSpacing.sm + 2;
+  static const double _titleLineHeight = 1.3;
+  static const double _metaGap = AppSpacing.sm;
+
+  /// The bookmark glyph plus [SaveToggleButton]'s padding on both sides.
+  static const double _metaButtonHeight = 16 + 2 * AppSpacing.xs;
+
+  /// Width of the card's border on each edge.
+  static const double borderWidth = 1;
+
+  /// Height of everything below the thumbnail, border included: two title
+  /// lines and the meta row, at [scaler]. The grid sizes
+  /// its tiles from this, so a card is never taller than its content.
+  static double bodyHeight(TextScaler scaler) {
+    final title =
+        2 * scaler.scale(CcTypography.body.fontSize!) * _titleLineHeight;
+    final metaText =
+        scaler.scale(CcTypography.caption.fontSize!) *
+        CcTypography.caption.height!;
+    final meta = metaText > _metaButtonHeight ? metaText : _metaButtonHeight;
+    return (2 * borderWidth + _padTop + title + _metaGap + meta + _padBottom)
+        .ceilToDouble();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -68,7 +93,7 @@ class ArticleCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: bg,
             borderRadius: AppRadii.brLg,
-            border: Border.all(color: border),
+            border: Border.all(color: border, width: borderWidth),
             boxShadow: hovered ? AppShadows.soft : null,
           ),
           clipBehavior: Clip.antiAlias,
@@ -86,9 +111,9 @@ class ArticleCard extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(
                     AppSpacing.md,
-                    11,
+                    _padTop,
                     AppSpacing.md,
-                    AppSpacing.sm + 2,
+                    _padBottom,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,28 +146,15 @@ class ArticleCard extends StatelessWidget {
                                 fontWeight: read
                                     ? FontWeight.w500
                                     : FontWeight.w600,
-                                height: 1.3,
+                                height: _titleLineHeight,
                                 color: titleColor,
                               ),
                             ),
                           ),
                         ],
                       ),
-                      if (article.summary.isNotEmpty) ...[
-                        const SizedBox(height: AppSpacing.xs + 2),
-                        Text(
-                          article.summary,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: CcTypography.caption.copyWith(
-                            height: 1.4,
-                            color:
-                                tokens?.textTertiary ?? colors.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
                       const Spacer(),
-                      const SizedBox(height: AppSpacing.sm),
+                      const SizedBox(height: _metaGap),
                       _MetaRow(
                         feed: feed,
                         article: article,

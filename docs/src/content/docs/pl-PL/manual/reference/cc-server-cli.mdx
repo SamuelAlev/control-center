@@ -2,7 +2,7 @@
 title: CLI cc_server
 description: Każda flaga, zmienna środowiskowa, podpolecenie i ścieżka katalogu danych serwera headless.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/cc-server-cli
-sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
+sourceHash: ee71514a1721599da299a81b5702bc7cdb372330
 ---
 
 Każde ustawienie procesu można podać flagą CLI albo zmienną środowiskową;
@@ -10,10 +10,7 @@ pierwszeństwo ma flaga, potem zmienna środowiskowa, a na końcu wartość domy
 Wyjątkiem są poświadczenia dostawców — patrz [Aplikacje dostawców i Connect](#aplikacje-dostawców-i-connect).
 
 :::caution[Nieznane flagi są po cichu ignorowane]
-Parser argumentów jest napisany ręcznie i pomija wszystko, czego nie rozpoznaje, więc
-literówka (`--tls-key-file`, `--bindany`) nie daje żadnego błędu — serwer po prostu
-startuje z wartością domyślną. Gdy flaga wydaje się nie działać, sprawdź wiersze logu
-startowego.
+Parser argumentów jest napisany ręcznie i pomija wszystko, czego nie rozpoznaje, więc literówka (`--tls-key-file`, `--bindany`) nie daje żadnego błędu — serwer po prostu startuje z wartością domyślną. Gdy flaga wydaje się nie działać, sprawdź wiersze logu startowego. [Flaga trybu kodu](#tryb-kodu) z wartością, której nie przyjmuje, jest inna: serwer odmawia startu.
 :::
 
 ## Ustawienia podstawowe
@@ -51,8 +48,10 @@ startowego.
 | `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | `on` opakowuje uruchomienia agentów w natywny dla systemu hosta sandbox, a na hoście bez niego startuje tylko uruchomienia właściciela serwera. `off` uruchamia agentów wszystkich członków bez ograniczeń na tym hoście. Patrz poniżej |
 | `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Wyłącznik bezpieczeństwa w środowisku produkcyjnym dla indeksowania grafu kodu w tle. `off` startuje czysto, bez przebudowy            |
 | `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Liczba sekund, przez które pierwszy przebieg indeksowania jest wstrzymywany po banerze gotowości (ograniczana do 0–300)                |
-| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Czy uruchomienia harnessu wysyłają mały, rezydentny zestaw narzędzi plus indeks nazw, wczytując resztę przy pierwszym użyciu. Patrz poniżej |
+| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Czy uruchomienia harnessu wysyłają mały zestaw narzędzi bezpośrednich plus indeks nazw, wczytując resztę przy pierwszym użyciu. Patrz poniżej |
 | `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Liczba sekund, przez które uruchomienie czeka, aż człowiek naprawi poświadczenie, które nie może go obsłużyć (ograniczana do 0–3600). Patrz poniżej |
+| `--code-mode-max-processes` | `CC_SERVER_CODE_MODE_MAX_PROCESSES` | `min(16, 2 × cores)` | Skrypty trybu kodu działające naraz na tym serwerze, bez liczenia tych czekających na człowieka, 1–64. Zobacz niżej |
+| `--code-mode-max-heap-mb` | `CC_SERVER_CODE_MODE_MAX_HEAP_MB` | `1024` | Najwięcej pamięci, jaką może zużyć jeden skrypt, 16–1024 MiB. Wyższy limit pamięci obszaru roboczego zostaje obniżony do tej wartości |
 
 ## Aplikacje dostawców i Connect
 
@@ -113,18 +112,9 @@ Dla automatyzacji osobą odpowiedzialną jest ta, z którą automatyzacja jest p
 
 ### `--tool-deferral`
 
-Uruchomienia wbudowanego harnessu wysyłają mały, rezydentny zestaw definicji
-narzędzi plus sam indeks nazw pozostałych, których schematy wczytują się przy
-pierwszym użyciu. Zmniejsza to blok narzędzi o około 78% i utrzymuje stale
-widoczny zestaw w przedziale, w którym modele wybierają narzędzia niezawodnie.
-Odroczone narzędzia przez cały czas można wywołać po nazwie, a `search_tools`
-znajduje je po intencji. Zobacz [Kontekst narzędzi i cache promptów](/pl-PL/podrecznik/koncepcje/kontekst-narzedzi).
+Uruchomienia wbudowanego harnessu wysyłają mały zestaw bezpośredni definicji narzędzi oraz indeks samych nazw pozostałych, których schematy wczytują się przy pierwszym użyciu albo które są wywoływane ze skryptu `repl`. Utrzymuje to stale widoczny zestaw w przedziale, w którym modele niezawodnie wybierają narzędzia. Zmierzone na rejestrze, który budują testy, standardowe narzędzia czatu wbudowanego agenta to 14 definicji: około 16,5 KB z `repl` (w tym około 4 KB samego `repl`, którego definicja nie może przekroczyć 4 096 bajtów), około 13 KB na serwerze, który nie może uruchamiać skryptów. Odroczone narzędzia przez cały czas można wywołać po nazwie, a `search_tools` znajduje je po intencji. Zobacz [Kontekst narzędzi i cache promptów](/pl-PL/podrecznik/koncepcje/kontekst-narzedzi/).
 
-`--tool-deferral off` ponownie czyni rezydentnym każde dopuszczone narzędzie,
-odtwarzając żądania, które serwer wysyłał, zanim odroczenie powstało. To wyłącznik
-bezpieczeństwa dla modelu, który źle radzi sobie z dwuwarstwową powierzchnią —
-flaga zamiast przebudowy. Dotyczy wyłącznie wbudowanego harnessu; `tools/list`
-MCP, który widzą klienci zewnętrzni, to zawsze pełny katalog.
+`--tool-deferral off` wysyła definicję każdego dopuszczonego narzędzia z góry, z tym że uruchomienie z `repl` nadal wywołuje ze skryptu narzędzia, które skrypt może wywołać. To wyłącznik bezpieczeństwa dla modelu, który źle radzi sobie z dwuwarstwową powierzchnią — flaga zamiast przebudowy. Dotyczy wyłącznie wbudowanego harnessu; `tools/list` MCP, który widzą klienci zewnętrzni, to pełny katalog, z wyjątkiem uruchomienia agenta na serwerze, który może uruchamiać skrypty w [trybie kodu](/pl-PL/podrecznik/koncepcje/tryb-kodu/).
 
 ### `--credential-gate`
 
@@ -143,6 +133,25 @@ niepowodzeniem z komunikatem, którym i tak by się skończyło.
 `--credential-gate=0` to wyłącznik bezpieczeństwa: nic nigdy nie trafia do
 poczekalni, a błędne poświadczenie kończy turę dokładnie tak, jak przed powstaniem
 tej bramki.
+
+### Tryb kodu
+
+[Tryb kodu](/pl-PL/podrecznik/koncepcje/tryb-kodu/) pozwala agentowi uruchomić skrypt w JavaScripcie, który wywołuje jego narzędzia. Nie ma flagi, która go włącza albo wyłącza: każde uruchomienie dostaje narzędzie `repl`, gdy serwer może uruchamiać skrypty, a publiczny serwer demo nie uruchamia żadnego.
+
+Skrypty działają w `cc_codemode`, programie dołączonym do serwera w `bin/codemode/`. Serwer nie startuje bez niego: wypisuje jedną linię z nazwą tego, czego brakuje, i kończy działanie kodem `78`. Przy starcie uruchamia autotest blokady programu i wypisuje jedną linię (wyciszaną tylko przez `--log-level error`):
+
+```text
+cc_server: code_mode=available (cc_codemode 0.1.0 quickjs-ng 0.16.2 protocol 2; 16 scripts at once, at most 12 per workspace; up to 64 more runners kept for scripts waiting on a person; heap at most 1024 MiB per script)
+cc_server: code_mode=unavailable (<reason>) — runs on this host get no repl tool; scripts never run without full lockdown
+```
+
+`unavailable` oznacza, że program nie może zablokować się na tym hoście, na przykład w kontenerze, którego profil bezpieczeństwa odrzuca jeden z jego kroków, albo że program nie jest buildem wydaniowym. Serwer działa normalnie, żadne uruchomienie nie dostaje `repl`, a ustawienia trybu kodu obszaru roboczego pokazują powód.
+
+Serwer nadal sprawdza, czy skrypty mogą działać. Gdy program nie uruchamia się z powodu innego niż skrypt, serwer ponownie uruchamia autotest, najwyżej raz na minutę. Jeśli się nie powiedzie, serwer wypisuje linię `unavailable` z powodem i nie uruchamia skryptów: uruchomienia startujące w międzyczasie nie dostają `repl`, a uruchomienie, które już go ma, wywołuje narzędzia bezpośrednio ([Gdy skrypty nie mogą działać](/pl-PL/podrecznik/koncepcje/tryb-kodu/#gdy-skrypty-nie-mogą-działać)). Nadal sprawdza, najwyżej raz na minutę, a gdy autotest znów przejdzie, wypisuje linię `available` i ponownie uruchamia skrypty. Tylko autotest, który nie przeszedł przy starcie, wymaga restartu. Powód pokazany w ustawieniach obszaru roboczego ma usunięte ścieżki hosta; linia w logu zawiera go w całości.
+
+Dwie flagi trybu kodu ograniczają to, czego mogą używać skrypty. `--code-mode-max-processes` ogranicza skrypty działające naraz we wszystkich obszarach roboczych (domyślnie dwukrotność rdzeni procesora, najwyżej 16; akceptowane wartości 1–64). Przy limicie 2 lub większym jeden obszar roboczy używa najwyżej limitu pomniejszonego o jedną czwartą, więc żaden pojedynczy obszar roboczy nie może zająć każdego miejsca, a czekające skrypty są przyjmowane po kolei między obszarami roboczymi. Skrypt czekający na zatwierdzenie albo odpowiedź człowieka oddaje miejsce innemu skryptowi i nie startuje żadnego wywołania narzędzia, dopóki nie dostanie odpowiedzi; zachowuje się najwyżej cztery razy tyle takich czekających skryptów, ile wynosi limit, z czego najwyżej trzy czwarte z jednego obszaru roboczego, a każdy może nadal liczyć w granicach własnego limitu czasu procesora. `--code-mode-max-heap-mb` to najwięcej pamięci, jaką może zużyć jeden skrypt.
+
+Wartość, której te flagi nie przyjmują (liczba spoza zakresu albo coś, co nie jest liczbą), zatrzymuje serwer przy starcie (kod wyjścia `78`) z komunikatem wymieniającym przyjmowane wartości. Nigdy nie jest odczytywana jako wartość domyślna.
 
 ## Podpolecenia
 
@@ -249,6 +258,7 @@ Serwer utrzymuje katalog danych prywatny dla swojego konta (`0700`). Odmawia sta
 | `backups/exports/`                | Eksporty pojedynczego obszaru roboczego, `<workspaceId>-<timestamp>.db`         |
 | `backups/transfer/`               | Obszar przejściowy dla pobieranych i wysyłanych kopii zapasowych; czyszczony przez trasę, która do niego zapisuje |
 | `models/`                         | Modele osadzania, diaryzacji i mowy działające na urządzeniu                     |
+| `codemode/` | Wersja deweloperska runnera trybu kodu, instalowana przez `scripts/natives/build_codemode.sh`; pakiety wydania zawierają go w `bin/codemode/` |
 | `meetings/<meetingId>/`           | Zachowane nagrania audio spotkań                                                |
 | `rigs/images/`                    | Zaimportowane obrazy dysków rigów (powierzchnia pulpitu QEMU)                    |
 | `rigs/smolvm/<rigId>/`            | Stan wykonawczy microVM poszczególnych rigów (sekret brokera, `0600`)            |

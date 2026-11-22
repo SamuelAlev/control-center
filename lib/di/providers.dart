@@ -22,7 +22,7 @@ import 'package:cc_domain/core/domain/ports/schema_validator_port.dart';
 import 'package:cc_domain/core/domain/ports/server_notice_feed.dart';
 import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
-import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
+import 'package:cc_domain/core/domain/repositories/agent_run_log_reader.dart';
 import 'package:cc_domain/core/domain/repositories/commit_signing_key_repository.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/repo_repository.dart';
@@ -48,9 +48,9 @@ import 'package:cc_domain/features/memory/domain/repositories/memory_policy_repo
 import 'package:cc_domain/features/messaging/domain/ports/conversation_title_port.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_summaries_port.dart';
 import 'package:cc_domain/features/messaging/domain/ports/space_turn_relay_port.dart';
+import 'package:cc_domain/features/messaging/domain/repositories/conversation_read_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
-import 'package:cc_domain/features/messaging/domain/repositories/space_read_repository.dart';
 import 'package:cc_domain/features/model_routing/domain/services/model_catalog_service.dart';
 import 'package:cc_domain/features/notifications/domain/repositories/notification_feed_repository.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_lifecycle_repository.dart';
@@ -93,8 +93,9 @@ final agentRepositoryProvider = Provider<AgentRepository>((ref) {
   return RpcAgentRepository(ref.watch(rpcClientProvider));
 });
 
-/// Provides the [AgentRunLogRepository] the UI reads through.
-final agentRunLogRepositoryProvider = Provider<AgentRunLogRepository>((ref) {
+/// Provides the run-log reads the UI renders ([AgentRunLogReader]); every
+/// run-log write is the server's own.
+final agentRunLogRepositoryProvider = Provider<AgentRunLogReader>((ref) {
   return RpcAgentRunLogRepository(ref.watch(rpcClientProvider));
 });
 
@@ -190,6 +191,12 @@ final environmentRepositoryProvider = Provider<RpcEnvironmentRepository>((ref) {
   return RpcEnvironmentRepository(ref.watch(rpcClientProvider));
 });
 
+/// Provides code mode over RPC: a workspace's status and settings, and the
+/// executions its runs recorded. Every call names its workspace.
+final codeModeRepositoryProvider = Provider<RpcCodeModeRepository>((ref) {
+  return RpcCodeModeRepository(ref.watch(rpcClientProvider));
+});
+
 /// Provides the [MessagingRepository] the UI reads through.
 final messagingRepositoryProvider = Provider<MessagingRepository>((ref) {
   return RpcMessagingRepository(ref.watch(rpcClientProvider));
@@ -220,11 +227,13 @@ final conversationTitlePortProvider = Provider<ConversationTitlePort>((ref) {
   return RpcConversationRepository(ref.watch(rpcClientProvider));
 });
 
-/// Provides the [SpaceReadRepository] the UI reads through — the sidebar's
-/// read-cursor port.
-final spaceReadRepositoryProvider = Provider<SpaceReadRepository>((ref) {
-  return RpcSpaceReadRepository(ref.watch(rpcClientProvider));
-});
+/// Provides the [ConversationReadRepository] the UI reads through: the
+/// person's per-conversation read cursors.
+final conversationReadRepositoryProvider = Provider<ConversationReadRepository>(
+  (ref) {
+    return RpcConversationReadRepository(ref.watch(rpcClientProvider));
+  },
+);
 
 /// Provides the [IsolatedRepoRepository] the UI reads through.
 final isolatedRepoRepositoryProvider = Provider<IsolatedRepoRepository>((ref) {

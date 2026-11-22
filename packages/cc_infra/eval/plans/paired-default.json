@@ -30,9 +30,11 @@
     }
   ],
   "randomizedOrder": true,
-  "minPairs": 8,
+  "hypothesis": "non_inferiority",
+  "primaryOutcome": "verified_success",
+  "minTasks": 10,
   "alpha": 0.05,
-  "nonInferiorityMargin": 0.05,
+  "nonInferiorityMargin": 0.1,
   "maxCostRatio": 1.0,
   "contextWindowTokens": 32000,
   "caveats": [
@@ -41,5 +43,5 @@
       "message": "Provider cache expiry is not observable; the idle duration is an operator guess recorded here."
     }
   ],
-  "notes": "The canonical paired campaign: the quality default against a cheaper configuration, across cold, warm and post-idle cache strata. A cheaper arm can only be recommended when it is non-inferior on matched pairs AND no individual task regresses."
+  "notes": "The canonical paired campaign: the quality default against a cheaper configuration, across cold, warm and post-idle cache strata. A cheaper arm is recommended when it is non-inferior on the task-clustered paired test and cheaper over the used tasks; per-task regressions are listed, not blocking. Non-inferiority on verified success with an absolute margin of 0.10 (10 points); the margin and the cost ceiling are the owner's to change."
 }

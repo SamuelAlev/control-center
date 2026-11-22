@@ -2,7 +2,7 @@
 title: Outils MCP
 description: Catalogue complet, par famille, des outils MCP que cc_server enregistre.
 slug: fr-CA/manuel/reference/outils-mcp
-sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
+sourceHash: 0ef9efd386b57c3a254e7f637b0436d9baff1719
 ---
 
 `cc_server` héberge un seul registre d’outils MCP (JSON-RPC 2.0), servi sur le port principal du serveur (`9030` par défaut) à `POST /mcp` et `GET /sse`, version de protocole `2024-11-05`. Tous les clients atteignent le même registre : l’application de bureau, la version web, les clients MCP externes et l’environnement d’exécution d’agents intégré. Les serveurs MCP externes sont raccordés au même registre dans leurs propres couches : une par espace de travail, pour les serveurs que configurent ses administrateurs, et une pour les serveurs personnels du propriétaire du serveur. Ce point de terminaison ne les liste, ne les appelle et ne les recherche que pour une exécution d’agent : les serveurs de son propre espace de travail et, lorsque le propriétaire du serveur est responsable de l’exécution, les serveurs personnels. Le jeton MCP et les appareils jumelés ne les voient jamais (voir [Serveurs MCP utilisés par vos agents](/fr-CA/manuel/guides/serveur-mcp/#serveurs-mcp-utilisés-par-vos-agents)).
@@ -11,21 +11,22 @@ sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
 
 | Mesure                                                                                     | Nombre |
 | ------------------------------------------------------------------------------------------ | ------ |
-| Outils enregistrés par `cc_server`                                                          | 110    |
-| Provenant de `packages/cc_mcp`                                                              | 108    |
+| Outils enregistrés par `cc_server`                                                          | 116    |
+| Provenant de `packages/cc_mcp`                                                              | 114    |
 | Provenant de `packages/cc_mcp_client` (découverte des outils)                               | 2      |
-| Enregistrés dans le registre de base (`server_mcp_registry.dart`)                           | 63     |
-| Enregistrés après le démarrage, à mesure que leurs services se lancent (`cc_server_runtime.dart`) | 47     |
-| Parmi les 63 du registre de base, conditionnés à un dépôt de graphe de code                 | 5      |
+| Enregistrés dans le registre de base (`server_mcp_registry.dart`)                           | 64     |
+| Enregistrés après le démarrage, à mesure que leurs services se lancent (`cc_server_runtime.dart`) | 52     |
+| Parmi les 64 du registre de base, conditionnés à un dépôt de graphe de code                 | 5      |
+| Sur les 64 du registre de base, conditionnel à l’exécuteur du mode code (`repl`) | 1 |
 
-Les cinq outils de graphe de code ne sont enregistrés que lorsque l’hôte passe un dépôt de graphe de code à `buildServerMcpRegistry`. `cc_server` en passe toujours un, donc les 110 sont actifs dans le binaire livré.
+Les cinq outils de graphe de code ne sont enregistrés que lorsque l’hôte passe un dépôt de graphe de code à `buildServerMcpRegistry`, et `repl` seulement lorsqu’il passe l’exécuteur du mode code. `cc_server` passe toujours les deux (il ne démarre pas sans l’exécuteur), donc les 111 sont enregistrés dans le binaire livré ; le serveur de démonstration public n’enregistre aucun `repl`.
 
-Le registre complet est annoncé dans `tools/list` sans filtrage de découverte. Les modifications de tickets sont des outils typés.
+Le registre complet est annoncé dans `tools/list` sans filtrage de découverte, sauf pour une exécution d’agent qui peut exécuter des scripts (voir plus bas). Les modifications de tickets sont des outils typés.
 
 :::note[Les clients externes voient toujours le catalogue au complet]
-`tools/list` n’est jamais élagué, sauf pour les serveurs MCP personnels du propriétaire du serveur, qu’il n’inclut jamais. Les clients MCP valident les noms d’outils contre leur propre copie en cache de cette liste et refusent tout ce qui n’y figure pas sans interroger le serveur, si bien qu’un outil qui y est caché est inatteignable plutôt que simplement discret.
+`tools/list` n’est jamais élagué, sauf pour les serveurs MCP personnels du propriétaire du serveur, qu’il n’inclut jamais, et pour le [mode code](/fr-CA/manuel/concepts/mode-code/) : `repl` n’est listé qu’à une exécution d’agent sur un serveur qui peut exécuter des scripts, et cette exécution reçoit `repl`, les outils directs (`read`, `write`, `edit`, `search`, `find`, `bash`, `read_output`, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` et les verbes propres à son mode, lorsque le registre les possède) et les outils qu’un script ne peut pas appeler. Elle appelle le reste depuis un script ; un appel direct à l’un d’eux reçoit une réponse indiquant comment l’appeler depuis `repl`. Les clients MCP valident les noms d’outils contre leur propre copie en cache de cette liste et refusent tout ce qui n’y figure pas sans interroger le serveur, si bien qu’un outil qui y est caché est inatteignable plutôt que simplement discret.
 
-Le **harnais intégré** est différent : il ne charge qu’un sous-ensemble résident de définitions par requête et tire le reste au premier usage, ce qui est un comportement propre au harnais et ne change rien à ce registre. Voir [Contexte des outils et cache de prompts](/fr-CA/manuel/concepts/contexte-des-outils).
+Le **harnais intégré** est différent : il ne charge qu’un petit ensemble direct de définitions par requête et atteint le reste depuis des scripts ou le charge à la première utilisation, ce qui est un comportement propre au harnais et ne change rien à ce registre. Voir [Contexte des outils et cache de prompts](/fr-CA/manuel/concepts/contexte-des-outils/).
 :::
 
 :::note[Chaque classe d’outil est enregistrée]
@@ -51,6 +52,14 @@ Les deux viennent de `cc_mcp_client`, et non de `cc_mcp`, et tous deux consulten
 
 Un troisième outil de découverte, **`search_tools`**, n’existe qu’à l’intérieur du harnais intégré et ne fait pas partie de ce registre MCP. Il classe la surface d’outils de l’exécution elle-même et, contrairement à `search_tool_bm25`, **charge** les schémas de ce qu’il trouve afin que l’agent puisse appeler une correspondance au tour suivant. Les agents sur le harnais devraient le préférer ; les clients MCP disposent de `search_tool_bm25`.
 
+## Mode code
+
+| Outil | Description |
+| ------ | ----------- |
+| `repl` | Exécute un script JavaScript qui appelle les autres outils de l’exécution sous la forme `tools.<id>(args)` et ne renvoie que ce dont il a besoin. Listé seulement pour une exécution d’agent sur un serveur qui peut exécuter des scripts en [mode code](/fr-CA/manuel/concepts/mode-code/). Chaque appel imbriqué passe par la même porte qu’un `tools/call`. Prend `code`, `description`, `timeout_ms?`, `max_output_tokens?` |
+
+Un script ne peut pas appeler `repl`, `search_tool_bm25`, `list_my_tools`, ni aucun outil qui démarre ou envoie un message à une autre exécution d’agent, assigne ou commente un ticket, envoie un message, crée, tranche ou commente une approbation, propose ou modifie une politique, installe ou modifie des compétences, crée un profil d’exécution, soumet un plan ou quitte le mode plan, termine l’objectif de la conversation ou soumet le résultat d’une exécution de pipeline. Ces outils déclarent `scriptCallable` faux et sont toujours appelés directement ; dans le harnais intégré, un outil hors de l’ensemble direct se charge à la première utilisation. `create_ticket` n’est appelable depuis un script que sans `assignee`.
+
 ## Outils d’agent
 
 | Outil         | Description                                          |
@@ -59,15 +68,29 @@ Un troisième outil de découverte, **`search_tools`**, n’existe qu’à l’i
 
 ## Messagerie et délégation entre agents pairs
 
-Les agents se parlent entre eux par les espaces (durables, visibles dans l’effectif). `ask_agent` est une requête-réponse avec délai d’attente obligatoire ; `delegate_task` est encadré côté serveur par un plafond de profondeur, une détection de cycle, une enveloppe budgétaire et un plafond d’autonomie.
+Les agents se parlent par l’intermédiaire des espaces (durables, visibles dans la liste de présence). `ask_agent` attend soit la réponse (`mode: wait`, 600 secondes par défaut, 1 800 au maximum), soit rend la main aussitôt (`mode: background`) ; dans les deux cas, le demandeur est réveillé une fois avec la réponse lorsque celle-ci n’est pas revenue directement. `send_to_agent`, `ask_agent`, `consult_agent`, `request_peer_review` et `delegate_task` passent par la même porte côté serveur : profondeur (3), détection de cycles, enveloppe budgétaire, plafond d’autonomie et limite de débit par paire d’agents. L’identité de l’expéditeur vient toujours de l’exécution appelante. Voir [Agents en collaboration](/fr-CA/manuel/guides/agents-en-collaboration/).
 
 | Outil           | Description                                                                                     |
 | --------------- | ----------------------------------------------------------------------------------------------- |
-| `send_to_agent` | Envoyer un message unidirectionnel à un autre agent, adressé par `to_agent_id` ou par `to_agent_name` exact |
-| `ask_agent`     | Poser une question à un autre agent et attendre sa réponse, ou expirer                           |
+| `send_to_agent` | Envoyer un message unidirectionnel à un autre agent, adressé par `to_agent_id` ou par `to_agent_name` exact ; répond avec `delivery_status` `woken`, `queued_behind_run` ou `refused` |
+| `ask_agent`     | Poser une question à un autre agent ; attendre la réponse ou poursuivre et être réveillé lorsqu’elle arrive |
 | `delegate_task` | Déléguer une tâche à un autre agent sous forme de ticket enfant suivi                            |
 | `consult_agent` | Ajouter à l’espace le spécialiste dont les skills correspondent le mieux et le lancer avec une consigne ciblée |
 | `todo_read`     | Lire la liste de tâches persistée de cette conversation                                          |
+| `agent_activity` | Lire ce que fait un autre agent maintenant et ce qu’il a fait récemment (statut, outil en cours, derniers messages), sans le réveiller |
+
+## Outils de relance et d’objectif
+
+Un agent les utilise au lieu de dormir ou d’interroger en boucle. Chacun n’agit que pour l’agent appelant dans sa propre conversation ; l’agent n’est jamais un argument. Voir [Planifications et relances](/fr-CA/manuel/guides/planifications-relances/) et [Poursuivre un objectif](/fr-CA/manuel/guides/poursuivre-objectif/).
+
+| Outil | Description |
+| ------------- | ----------- |
+| `wake_me` | Se programmer pour être réveillé plus tard : à un moment (`in:20m`, `at:<ISO time>`), à intervalle (`every:30m`), selon un cron (`cron:0 9 * * 1-5`, avec `tz`), à son propre rythme dans une boucle autorégulée (`next`, avec `delay` de 1 à 60 minutes), ou lorsqu’un événement se produit (`on:pr_checks`, `on:pr_review`, `on:pr_merged`, `on:environment`, `on:ticket:<id>`, `on:pipeline_run:<id>`). Facultatifs : `note`, `max_runs`, `expires_in`, `when_busy` (`skip` ou `queue`) et `deliver` (`run` ou `notify`) |
+| `list_wakes` | Lister ce que l’agent a en attente dans cette conversation : planifications, surveillances, relances en attente et demandes sans réponse |
+| `cancel_wake` | Annuler une planification ou une surveillance que l’agent s’est fixée, par son identifiant |
+| `goal_status` | Lire l’objectif actif de l’agent : critères d’achèvement, segment, dépenses et budget restant, compteurs de segments sans progression, retenue, dernière vérification et relances d’objectif en attente |
+
+`complete_goal` (sous [Outils de plan, de playbook et d’artefact](#outils-de-plan-de-playbook-et-dartefact)) est la seule façon pour un agent de dire qu’un objectif est terminé, et c’est une affirmation, non un achèvement.
 
 ## Outils de skills
 
@@ -94,7 +117,7 @@ Chaque installation et chaque mise à jour passe par une barrière d’analyse �
 | `revise_artifact`  | Remplacer le contenu d’un artefact publié                                                                                             |
 | `list_artifacts`   | Lister les artefacts de l’espace de travail                                                                                           |
 | `get_artifact`     | Lire un artefact                                                                                                                      |
-| `complete_goal`    | Déclarer atteint l’objectif durable actif de la conversation (lancé avec `/goal` ou `/loop`)                                           |
+| `complete_goal` | Affirmer que l’objectif actif de l’agent est atteint, avec des preuves pour chaque critère ; le serveur lance ensuite les vérifications et une révision |
 
 ## Outils d’espace de travail
 
@@ -162,10 +185,10 @@ Chaque installation et chaque mise à jour passe par une barrière d’analyse �
 | `create_goal`                | Créer un objectif organisationnel (niveau entreprise, équipe, agent ou tâche)                               |
 | `list_goals`                 | Lister les objectifs avec leur niveau, leur statut et leur progression agrégée                              |
 | `update_goal_progress`       | Définir la progression d’un objectif                                                                         |
-| `create_approval`            | Ouvrir une approbation du conseil pour une action gouvernée (sortie de plan, fusion, publication, embauche, personnalisée) |
+| `create_approval`            | Ouvrir une approbation du conseil pour une action gouvernée (sortie de plan, fusion, publication, embauche, personnalisée) au nom de l’agent appelant. Exécutions d’agent uniquement |
 | `list_approvals`             | Lister les approbations, avec filtrage facultatif par statut                                                 |
-| `decide_approval`            | Consigner une décision : approuver, rejeter, demander une révision ou soumettre de nouveau                   |
-| `comment_approval`           | Commenter une approbation du conseil                                                                         |
+| `decide_approval`            | Consigner la décision de l’agent appelant : approuver, rejeter, demander une révision ou soumettre de nouveau. Exécutions d’agent uniquement |
+| `comment_approval`           | Commenter une approbation du conseil au nom de l’agent appelant. Exécutions d’agent uniquement               |
 | `exit_plan_mode`             | Ouvrir (puis, une fois approuvée, consommer) une approbation `plan_exit`, faisant sortir la conversation du mode plan |
 | `agent_heartbeat`            | Signaler la vitalité (en vie, inactif, bloqué) ; le silence fait passer la santé d’exécution à récemment perdu, puis hors ligne |
 | `list_runtime_health`        | Lister la santé d’exécution de chaque agent                                                                  |

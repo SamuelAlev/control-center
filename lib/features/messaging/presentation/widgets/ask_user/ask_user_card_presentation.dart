@@ -71,6 +71,10 @@ extension _AskUserCardPresentation on _AskUserCardState {
                             color: t.textTertiary,
                           ),
                         ),
+                        if (widget.originLine != null) ...[
+                          const SizedBox(height: AppSpacing.xxs),
+                          widget.originLine!,
+                        ],
                         const SizedBox(height: AppSpacing.sm),
                         Flexible(
                           child: CcScrollbar(

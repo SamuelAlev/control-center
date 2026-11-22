@@ -1,20 +1,28 @@
-import 'package:cc_data/cc_data.dart';
-import 'package:cc_domain/cc_domain.dart';
-import 'package:cc_domain/core/domain/value_objects/money.dart';
+import 'package:cc_domain/cc_domain.dart' show ValidationException;
+import 'package:cc_domain/features/dispatch/domain/value_objects/goal_command.dart';
 import 'package:cc_domain/features/telemetry/telemetry.dart';
 import 'package:cc_remote/analytics.dart';
+import 'package:cc_remote/app_icons.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/operation_scope.dart';
 import 'package:cc_remote/providers.dart';
 import 'package:cc_remote/widgets/plan_goal/confirm_operation.dart';
 import 'package:cc_remote/widgets/plan_goal/plan_review.dart';
+import 'package:cc_remote/widgets/plan_goal/work_target_picker.dart';
+import 'package:cc_remote/widgets/touch_target.dart';
+import 'package:cc_remote/widgets/work/work_text.dart';
+import 'package:cc_remote/work_kind_text.dart';
+import 'package:cc_remote/work_launcher.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' show NumberFormat;
 
-/// Starts via the same /goal or /loop server dispatch as a conversation turn.
-/// A hard cost cap is required and displayed before dispatch.
+/// Starts a goal the way a conversation's `/goal` does: an objective, the
+/// optional checks (commands that pass when the work is done), a required
+/// budget shown before sending, and an optional segment cap. The body is
+/// read locally first, so a refusal shows before anything is sent; the
+/// server reads it again and decides.
 class PhoneGoalCreate extends ConsumerStatefulWidget {
   const PhoneGoalCreate({
     super.key,
@@ -32,34 +40,59 @@ class PhoneGoalCreate extends ConsumerStatefulWidget {
 class _PhoneGoalCreateState extends ConsumerState<PhoneGoalCreate> {
   final _objective = TextEditingController();
   final _budget = TextEditingController();
+  final _segments = TextEditingController();
+  final _checks = <TextEditingController>[TextEditingController()];
   String? _spaceId;
   String? _agentId;
-  bool _loop = false;
   bool _busy = false;
-  String? _error;
+  ({String text, String? code})? _failure;
   String? _notice;
 
   @override
   void dispose() {
-    _objective.dispose();
-    _budget.dispose();
+    for (final c in [_objective, _budget, _segments, ..._checks]) {
+      c.dispose();
+    }
     super.dispose();
   }
 
-  int? get _budgetMicros => parsePlanBudgetMicros(context, _budget.text);
+  bool get _allowed =>
+      mounted &&
+      ref.read(activeWorkspaceIdProvider).value == widget.workspaceId &&
+      (ref.read(workspaceRoleProvider).value?.canWrite ?? false);
+
+  void _fail(String text, [String? code]) =>
+      setState(() => _failure = (text: text, code: code));
 
   Future<void> _send() async {
     final l10n = AppLocalizations.of(context);
     final objective = _objective.text.trim();
-    final micros = _budgetMicros;
-    final space = _spaceId;
+    final micros = parsePlanBudgetMicros(context, _budget.text);
     final agentId = _agentId;
     if (objective.isEmpty ||
         micros == null ||
         agentId == null ||
-        (widget.conversationId == null && space == null)) {
-      setState(() => _error = l10n.mobileGoalCreateInvalid);
-      return;
+        (widget.conversationId == null && _spaceId == null)) {
+      return _fail(l10n.mobileGoalCreateInvalid);
+    }
+    final segmentsText = _segments.text.trim();
+    final maxRuns = segmentsText.isEmpty ? null : int.tryParse(segmentsText);
+    if (segmentsText.isNotEmpty && (maxRuns == null || maxRuns < 1)) {
+      return _fail(l10n.goalCreateSegmentInvalid);
+    }
+    final String body;
+    try {
+      body = phoneGoalCommandBody(
+        objective: objective,
+        budgetMicros: micros,
+        maxRuns: maxRuns,
+        checks: [for (final c in _checks) c.text],
+      );
+      GoalCommand.parse(body);
+    } on ValidationException catch (e) {
+      return _fail(l10n.goalRefusalCommandInvalid, e.message);
+    } on ArgumentError catch (e) {
+      return _fail(l10n.goalRefusalCommandInvalid, '${e.message}');
     }
     final confirmed = await confirmOperation(
       context,
@@ -67,76 +100,52 @@ class _PhoneGoalCreateState extends ConsumerState<PhoneGoalCreate> {
       description: l10n.mobileGoalCreateConfirm(planMoney(context, micros)),
       action: l10n.mobileGoalCreate,
     );
-    if (!confirmed ||
-        !mounted ||
-        ref.read(activeWorkspaceIdProvider).value != widget.workspaceId ||
-        !(ref.read(workspaceRoleProvider).value?.canWrite ?? false)) {
-      return;
-    }
-    final client = ref.read(rpcClientProvider).value;
-    if (client == null) {
-      setState(() => _error = l10n.mobileGoalUnavailable);
-      return;
-    }
+    final launcher = ref.read(phoneWorkLauncherProvider);
+    if (!confirmed || !_allowed) return;
+    if (launcher == null) return _fail(l10n.mobileGoalUnavailable);
     setState(() {
       _busy = true;
-      _error = null;
+      _failure = null;
       _notice = null;
     });
+    final analytics = ref.read(analyticsProvider);
     try {
-      final requestedConversation = widget.conversationId;
-      final targetSpace = requestedConversation == null
-          ? space
-          : (await RpcConversationRepository(client).getById(
-              workspaceId: widget.workspaceId,
-              conversationId: requestedConversation,
-            ))?.spaceId;
-      if (targetSpace == null || targetSpace.isEmpty) {
-        throw StateError(l10n.mobileGoalConversationMissing);
-      }
-      final conversationId =
-          requestedConversation ??
-          (await RpcConversationRepository(
-            client,
-          ).ensure(workspaceId: widget.workspaceId, spaceId: targetSpace)).id;
-      if (ref.read(activeWorkspaceIdProvider).value != widget.workspaceId ||
-          !(ref.read(workspaceRoleProvider).value?.canWrite ?? false)) {
-        return;
-      }
-      // The goal command takes dollars; the parser allows at most two
-      // decimals, so whole cents are exact here.
-      final cents = micros ~/ microsPerCent;
-      final budget =
-          '${cents ~/ 100}.${(cents % 100).toString().padLeft(2, '0')}';
-      final analytics = ref.read(analyticsProvider);
-      final runId = await RemoteMessagingDispatch(client).dispatchAgent(
+      final target = await launcher.target(
         workspaceId: widget.workspaceId,
-        spaceId: targetSpace,
+        conversationId: widget.conversationId,
+        spaceId: _spaceId,
+      );
+      if (!_allowed) return;
+      final runId = await launcher.startGoal(
+        workspaceId: widget.workspaceId,
+        target: target,
         agentId: agentId,
-        prompt: '${_loop ? '/loop' : '/goal'} $objective --budget $budget',
-        conversationId: conversationId,
+        body: body,
       );
       analytics.track(
         AnalyticsEvents.goalStarted(
-          kind: _loop ? 'loop' : 'goal',
+          kind: 'goal',
           workspaceId: widget.workspaceId,
-          spaceId: targetSpace,
-          conversationId: conversationId,
+          spaceId: target.spaceId,
+          conversationId: target.conversationId,
           agentId: agentId,
           budgetMicros: micros,
           accepted: runId != null,
         ),
       );
-      if (mounted) {
-        if (runId == null) {
-          setState(() => _error = l10n.mobileGoalStartRefused);
-        } else {
-          _objective.clear();
-          setState(() => _notice = l10n.mobileGoalCreateSent);
-        }
+      if (!mounted) return;
+      if (runId == null) return _fail(l10n.mobileGoalStartRefused);
+      _objective.clear();
+      for (final c in _checks) {
+        c.clear();
       }
+      setState(() => _notice = l10n.mobileGoalCreateSent);
+    } on WorkTargetMissing {
+      if (mounted) _fail(l10n.mobileGoalConversationMissing);
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+      if (!mounted) return;
+      final failure = workFailure(l10n, e);
+      _fail(failure.text, failure.code);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -146,123 +155,80 @@ class _PhoneGoalCreateState extends ConsumerState<PhoneGoalCreate> {
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
+    ref.watch(activeWorkspaceIdProvider);
     final writable = ref.watch(workspaceRoleProvider).value?.canWrite ?? false;
-    final spaces = ref.watch(spacesProvider);
-    final items = (spaces.value ?? const <SpaceDto>[])
-        .where((s) => s.workspaceId == widget.workspaceId)
-        .toList();
-    final agents = ref.watch(agentsProvider);
-    final eligibleAgents = (agents.value ?? const <AgentDto>[])
-        .where(
-          (a) =>
-              a.workspaceId == widget.workspaceId &&
-              a.lifecycleStatus == 'active',
-        )
-        .toList();
+    final enabled = writable && !_busy;
+    final secondary = CcTypography.bodySm.copyWith(color: t.textSecondary);
+    final failure = _failure;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
           l10n.mobileGoalCreate,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+          style: CcTypography.body.copyWith(
             color: t.textPrimary,
+            fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 12),
-        if (widget.conversationId == null) ...[
-          Text(
-            l10n.mobileGoalChooseSpace,
-            style: TextStyle(color: t.textSecondary),
-          ),
-          if (spaces.isLoading) const Center(child: CcSpinner(size: 20)),
-          if (spaces.hasError)
-            Text(spaces.error.toString(), style: TextStyle(color: t.danger)),
-          if (spaces.hasValue && items.isEmpty)
-            Text(
-              l10n.mobileGoalNoSpaces,
-              style: TextStyle(color: t.textSecondary),
-            ),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final space in items)
-                CcButton(
-                  size: CcButtonSize.lg,
-                  variant: CcButtonVariant.secondary,
-                  onPressed: () => setState(() => _spaceId = space.id),
-                  child: Text(
-                    _spaceId == space.id
-                        ? l10n.mobileGoalSelectedSpace(space.name)
-                        : space.name,
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-        ],
-        Text(
-          l10n.mobileGoalChooseAgent,
-          style: TextStyle(color: t.textSecondary),
-        ),
-        if (agents.isLoading) const Center(child: CcSpinner(size: 20)),
-        if (agents.hasError)
-          Text(agents.error.toString(), style: TextStyle(color: t.danger)),
-        if (agents.hasValue && eligibleAgents.isEmpty)
-          Text(
-            l10n.mobileGoalNoAgents,
-            style: TextStyle(color: t.textSecondary),
-          ),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final agent in eligibleAgents)
-              CcButton(
-                size: CcButtonSize.lg,
-                variant: CcButtonVariant.secondary,
-                onPressed: () => setState(() => _agentId = agent.id),
-                child: Text(
-                  _agentId == agent.id
-                      ? l10n.mobileGoalSelectedAgent(agent.name)
-                      : agent.name,
-                ),
-              ),
-          ],
+        WorkTargetPicker(
+          workspaceId: widget.workspaceId,
+          askSpace: widget.conversationId == null,
+          spaceId: _spaceId,
+          agentId: _agentId,
+          onSpace: (id) => setState(() => _spaceId = id),
+          onAgent: (id) => setState(() => _agentId = id),
         ),
         const SizedBox(height: 12),
         CcTextArea(
           controller: _objective,
           minLines: 3,
           maxLines: 6,
-          enabled: writable && !_busy,
+          enabled: enabled,
           hintText: l10n.mobileGoalObjectiveHint,
         ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            CcButton(
-              size: CcButtonSize.lg,
-              variant: _loop
-                  ? CcButtonVariant.secondary
-                  : CcButtonVariant.primary,
-              onPressed: () => setState(() => _loop = false),
-              child: Text(l10n.mobileGoalGoal),
+        const SizedBox(height: 16),
+        Text(l10n.goalCreateChecks, style: secondary),
+        const SizedBox(height: 6),
+        for (var i = 0; i < _checks.length; i++)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  // RTL carve-out: a check is a shell command.
+                  child: Directionality(
+                    textDirection: TextDirection.ltr,
+                    child: CcTextField(
+                      controller: _checks[i],
+                      hintText: l10n.goalCreateCheckHint,
+                      enabled: enabled,
+                    ),
+                  ),
+                ),
+                if (_checks.length > 1)
+                  PhoneIconButton(
+                    icon: AppIcons.x,
+                    semanticLabel: l10n.goalCreateRemoveCheck,
+                    onPressed: enabled
+                        ? () => setState(() => _checks.removeAt(i).dispose())
+                        : null,
+                  ),
+              ],
             ),
-            CcButton(
+          ),
+        if (_checks.length < GoalCommand.maxChecks)
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: CcButton(
               size: CcButtonSize.lg,
-              variant: _loop
-                  ? CcButtonVariant.primary
-                  : CcButtonVariant.secondary,
-              onPressed: () => setState(() => _loop = true),
-              child: Text(l10n.mobileGoalLoop),
+              variant: CcButtonVariant.ghost,
+              onPressed: enabled
+                  ? () => setState(() => _checks.add(TextEditingController()))
+                  : null,
+              child: Text(l10n.goalCreateAddCheck),
             ),
-          ],
-        ),
+          ),
         const SizedBox(height: 12),
         CcTextField(
           controller: _budget,
@@ -271,18 +237,35 @@ class _PhoneGoalCreateState extends ConsumerState<PhoneGoalCreate> {
             locale: Localizations.localeOf(context).toLanguageTag(),
             decimalDigits: 2,
           ).format(50),
-          enabled: writable && !_busy,
+          enabled: enabled,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
         ),
         const SizedBox(height: 12),
-        if (_error != null) Text(_error!, style: TextStyle(color: t.danger)),
+        CcTextField(
+          controller: _segments,
+          label: l10n.goalCreateSegmentCap,
+          enabled: enabled,
+          keyboardType: TextInputType.number,
+        ),
+        const SizedBox(height: 12),
+        if (failure != null)
+          WorkKindLine(
+            sentence: failure.code == null ? failure.text : null,
+            kind: failure.code ?? '',
+            lead: failure.text,
+            color: t.textErrorPrimary,
+          ),
         if (_notice != null)
-          Text(_notice!, style: TextStyle(color: t.textPrimary)),
+          Text(
+            _notice!,
+            style: CcTypography.bodySm.copyWith(color: t.textPrimary),
+          ),
+        const SizedBox(height: 8),
         CcButton(
           fullWidth: true,
           size: CcButtonSize.lg,
           loading: _busy,
-          onPressed: writable && !_busy ? _send : null,
+          onPressed: enabled ? _send : null,
           child: Text(l10n.mobileGoalCreate),
         ),
       ],

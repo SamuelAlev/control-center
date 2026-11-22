@@ -28,6 +28,8 @@ void main() {
       'packages/cc_server_core/lib/src/server_mcp_registry.dart',
       'packages/cc_server_core/lib/src/cc_server_runtime.dart',
       'packages/cc_server_core/lib/src/environments/server_environment_adapters.dart',
+      // The peer tools (`registerPeerTools`, called from the runtime).
+      'packages/cc_server_core/lib/src/runtime/server_peer_tools_wiring.dart',
     ].map((rel) => File('${root.path}/$rel').readAsStringSync()).join('\n');
   });
 
@@ -60,6 +62,22 @@ void main() {
     expect(toolClasses.keys, isNot(contains('RigUseTool')));
   });
 
+  test('the runtime calls every wiring file\'s entry point', () {
+    // A wiring file outside the runtime counts only while the runtime runs
+    // it: listing a file whose registrations nothing calls would hide the
+    // very hole this ratchet exists for.
+    final runtime = File(
+      '${root.path}/packages/cc_server_core/lib/src/cc_server_runtime.dart',
+    ).readAsStringSync();
+    expect(
+      RegExp(r'(?<![A-Za-z0-9_])registerPeerTools\(').hasMatch(runtime),
+      isTrue,
+      reason:
+          'server_peer_tools_wiring.dart is read as wiring, but '
+          'cc_server_runtime.dart no longer calls registerPeerTools',
+    );
+  });
+
   test('every tool is registered, or listed as deliberately not', () {
     final missing = <String>[];
     for (final entry in toolClasses.entries) {
@@ -74,8 +92,8 @@ void main() {
       missing.toList()..sort(),
       isEmpty,
       reason:
-          'These McpTool classes exist on disk but are constructed by neither '
-          'server_mcp_registry.dart nor cc_server_runtime.dart, so they never '
+          'These McpTool classes exist on disk but are constructed by none of '
+          'the wiring files above, so they never '
           'appear in `tools/list` — an agent cannot call them and nothing '
           'else fails. Register them, or add them to `unwired` above with a '
           'reason:\n  ${missing.join('\n  ')}',

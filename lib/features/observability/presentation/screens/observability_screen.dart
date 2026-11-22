@@ -4,6 +4,8 @@ import 'package:control_center/features/observability/presentation/widgets/tabs/
 import 'package:control_center/features/observability/presentation/widgets/tabs/quality_tab.dart';
 import 'package:control_center/features/observability/presentation/widgets/tabs/usage_tab.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/router/routes.dart';
+import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
 import 'package:control_center/shared/widgets/scoped_shortcuts.dart';
 import 'package:flutter/widgets.dart';
@@ -13,7 +15,8 @@ import 'package:go_router/go_router.dart';
 /// (lifetime token totals, the activity calendar, the per-model trend and
 /// split), Insights (time-ranged KPIs, charts, breakdowns, per-agent and
 /// per-run rows), Live (roster, quotas, goal, fleet) and Quality (benchmark,
-/// evals).
+/// evals). Code executions, every script agents ran, sit one click away in
+/// the header.
 class ObservabilityScreen extends StatelessWidget {
   /// Creates an [ObservabilityScreen].
   const ObservabilityScreen({super.key});
@@ -34,6 +37,16 @@ class ObservabilityScreen extends StatelessWidget {
       child: PageWrapper(
         title: l10n.navObservability,
         subtitle: l10n.obsScreenSubtitle,
+        actions: [
+          CcButton(
+            variant: CcButtonVariant.secondary,
+            size: CcButtonSize.sm,
+            icon: AppIcons.scrollText,
+            onPressed: () =>
+                context.go(codeExecutionsRoute(context.currentWorkspaceId!)),
+            child: Text(l10n.codeExecutionsTitle),
+          ),
+        ],
         child: CcTabView(
           selectedIndex: selectedIndex,
           onChanged: (i) {

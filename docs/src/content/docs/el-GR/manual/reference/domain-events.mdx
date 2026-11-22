@@ -2,7 +2,7 @@
 title: Γεγονότα τομέα
 description: Πλήρης κατάλογος των 54 γεγονότων τομέα, των φορτίων τους και των συνδρομητών στην πλευρά του διακομιστή που τα καταναλώνουν.
 slug: el-GR/εγχειρίδιο/αναφορά/γεγονότα-τομέα
-sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
+sourceHash: f58123448c0f31c95774bbaebee89f1509940896
 ---
 
 ## Δίαυλος γεγονότων
@@ -24,7 +24,10 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 | Γεγονός             | Φορτίο                                                 | Ενεργοποιείται όταν                                     |
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | Δημιουργείται χώρος εργασίας                            |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Ο πράκτορας ολοκληρώνει μια εκτέλεση (επιτυχία ή αποτυχία) |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Η ροή διεργασίας του πράκτορα τελειώνει, πριν γραφτεί η τελική κατάσταση. Κρατιέται μόνο για τη γέφυρα της συνομιλίας PR και τα αναλυτικά |
+| `AgentRunSettled` | `agentId`, `workspaceId`, `runId`, `status`, `endReason`, `costMicros`, `wakeIds`, `spaceId?`, `conversationId?`, `limitResetsAt?`, `requestedByUserId?`, `wakeReason?` | Γράφεται η τελική κατάσταση μιας εκτέλεσης· δημοσιεύεται ακριβώς μία φορά ανά εκτέλεση. Το `endReason` είναι `completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` ή `serverStopped`. Η εκτέλεση ενός υποπράκτορα δεν δημοσιεύει τίποτα |
+| `GoalSettled` | `goalId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `status`, `hold?`, `summary?`, `requestedByUserId?` | Ένας στόχος τελειώνει, ή αρχίζει να περιμένει την ανασκόπηση ενός ατόμου |
+| `WakeRuleEnded` | `ruleId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `reason`, `requestedByUserId?` | Ένα χρονοδιάγραμμα ή μια παρακολούθηση τελειώνει (ενεργοποιήθηκε η μία φορά της, έληξε, εξάντλησε τις εκτελέσεις ή το κόστος της, ακυρώθηκε, τελείωσε ο στόχος της, έφυγε το άτομό της) |
 | `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | Ένας πράκτορας αρχίζει να περιμένει έναν άνθρωπο: μια έγκριση, μια ερώτηση `ask_user` ή μια εκτέλεση σταματημένη λόγω διαπιστευτηρίων (το `kind` είναι `approval`, `question` ή `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Καταχωρίζεται ένα αποθετήριο· ενεργοποιεί ευρετηρίαση κώδικα στο παρασκήνιο |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Μια δεξιότητα εγκαθίσταται ή ενημερώνεται, φέροντας το πόρισμα σάρωσης της αλυσίδας εφοδιασμού της |
@@ -57,6 +60,16 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 | `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | Κάποιος σας ανέφερε σε σχόλιο PR ή σε σχόλιο ανασκόπησης                   |
 | `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | Κάποιος απάντησε σε νήμα ανασκόπησης στο οποίο συμμετέχετε                     |
 | `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | Κάποιος έκλεισε νήμα ανασκόπησης στο οποίο συμμετέχετε                         |
+
+### Η παρακολούθηση pull request
+
+Δημοσιεύεται από τον ανοιχτό poller pull request για κάθε pull request που ελέγχει, όποιος κι αν το έγραψε, για τις παρακολουθήσεις `on:pr_*` των πρακτόρων. Και τα τρία φέρουν `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `headRef` και `authorLogin`.
+
+| Γεγονός | Πρόσθετο φορτίο | Ενεργοποιείται όταν |
+| ----------------------- | ----------------------------------------------- | ---------- |
+| `PrWatchChecksSettled` | `passing`, `failedChecks`, `failedCheckUrl?` | Τελείωσε κάθε έλεγχος της κεφαλής του pull request |
+| `PrWatchReviewActivity` | `decision`, `decisionChanged`, `newComments` | Το pull request πήρε ανασκόπηση ή νέα σχόλια |
+| `PrWatchClosed` | `merged` | Το pull request συγχωνεύτηκε ή έκλεισε |
 
 ## Γεγονότα μηνυμάτων
 
@@ -167,14 +180,20 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 | Παροχή χώρου συνομιλίας (ενσωματωμένη) | `SpaceCreated`                                                                                    |
 | `PipelineTriggerDispatcher`         | Κάθε `DomainEvent`· κάθε ενεργοποιημένος ενεργοποιητής φιλτράρει για τον δικό του τύπο               |
 | `SubPipelineResumeListener`         | `PipelineRunCompleted`, `PipelineRunFailed`                                                          |
-| `PipelineCostRollupListener`        | `AgentRunCompleted`                                                                                  |
-| `BudgetEvaluationListener`          | `AgentRunCompleted`                                                                                  |
+| `PipelineCostRollupListener`        | `AgentRunSettled`                                                                                    |
+| `BudgetEvaluationListener`          | `AgentRunSettled`                                                                                    |
 | `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (μόνο εκτελέσεις `meeting_summary`) |
-| `PipelineStepResumeListener`        | `AgentRunCompleted`                                                                                  |
-| `AgentRunTaskCompleter`             | `AgentRunCompleted`                                                                                  |
-| `GoalSupervisor`                    | `AgentRunCompleted`                                                                                  |
-| `CheckerDispatchListener`           | `AgentRunCompleted`                                                                                  |
-| `TeamRoutingService`                | `AgentRunCompleted`, `TicketAssigned`                                                                |
+| `PipelineStepResumeListener`        | `AgentRunSettled`                                                                                    |
+| `AgentRunTaskCompleter`             | `AgentRunSettled`                                                                                    |
+| `GoalSupervisor`                    | `AgentRunSettled` — αποφασίζει το επόμενο βήμα του στόχου                                            |
+| `CheckerDispatchListener`           | `AgentRunSettled` — βάζει τον ελεγκτή στην ουρά ως αφύπνιση· παραλείπει τα τμήματα και τις ανασκοπήσεις στόχων |
+| `TeamRoutingService`                | `AgentRunSettled`, `TicketAssigned`                                                                  |
+| `WakeQueueService` | `AgentRunSettled` — παραδίδει τις αφυπνίσεις που περίμεναν να τελειώσει η εκτέλεση |
+| `WakeRuleService` | `AgentRunSettled` (αυτορυθμιζόμενοι βρόχοι), `GoalSettled` (τερματίζει τα χρονοδιαγράμματα ενός στόχου), `PrWatch*`, `EnvironmentProcessExited`, `EnvironmentReady`, τα τέλη εισιτηρίων και εκτελέσεων pipeline (παρακολουθήσεις), `WorkspaceMemberRemoved` (τερματίζει τα χρονοδιαγράμματα αυτού του ατόμου) |
+| `PeerAskService` | `AgentRunSettled` — κλείνει τις ερωτήσεις που έκαναν οι πράκτορες ο ένας στον άλλο και ξυπνά όποιον ρώτησε |
+| `LimitParkService` | `AgentRunSettled` με `usageLimit` — περιμένει την επαναφορά του ορίου του παρόχου |
+| `ImprovementReviewService` | `GoalSettled` (ένας επαληθευμένος στόχος) και `AgentRunSettled` — βάζει στην ουρά την ανασκόπηση βελτίωσης και διαβάζει το αποτέλεσμά της |
+| Βήμα στόχου pipeline (`goal.pursue`) | `GoalSettled`, `AgentRunSettled`, `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` — συνεχίζει το βήμα, χρεώνει την ενορχήστρωση και παρακολουθεί την εκτέλεση pipeline |
 | `OrchestrationRunListener`          | `PipelineRunCancelled`, `PipelineRunFailed`                                                          |
 | `MultiVendorTicketSyncCoordinator`  | `TicketCreated`, `TicketAssigned`, `TicketReassigned`, `TicketStatusChanged`, `TicketDetailsUpdated` |
 | `WorktreeGcListener`                | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`         |
@@ -234,6 +253,8 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 δεν δημοσιεύεται τίποτα.
 
 Οι πέντε κατηγορίες PR που συντάξατε φέρουν `forUserId`, οπότε φτάνουν στον συντάκτη και όχι σε όλους στον χώρο εργασίας.
+
+Πέντε πλαίσια για τη μακροχρόνια εργασία, το καθένα απευθυνόμενο στο άτομο που το αφορά (`for_user_id`): `notifications/goal_settled` (από το `GoalSettled`), `notifications/wake_rule_ended` (από το `WakeRuleEnded`), `notifications/improvement_proposed`, `notifications/pipeline_run_held` (μια εκτέλεση pipeline κρατημένη στο ανώτατο όριο κόστους της ενορχήστρωσής της) και `notifications/waiting_digest` (μία φορά την ημέρα, όσα περιμένουν ένα άτομο). Κάθε ένα φέρει `notification_kind`: το `notify` αντιστοιχεί στο `agentRunCompleted`, τα `question` και `review` στο `agentAwaitingInput`. Κάθε πλαίσιο ειδοποίησης φέρει πλέον `notification_kind`, και ένα πλαίσιο με `quiet: true` (ένα χρονοδιάγραμμα που τελείωσε, ένας στόχος που τελείωσε) πηγαίνει στο κέντρο ειδοποιήσεων χωρίς αναδυόμενο μήνυμα, ήχο ή δυνατή push ειδοποίηση.
 
 Ο `RemoteEventForwarder` προωθεί επιπλέον το `TicketReassigned` ως `notifications/ticket_reassigned` και κάθε `TaskLifecycleEvent` ως `notifications/task_<phase>`. Κανένα από τα δύο δεν αντιστοιχίζεται σε κατηγορία ειδοποίησης — τροφοδοτούν ζωντανή διεπαφή χρήστη, όχι το κέντρο ειδοποιήσεων. Τα γεγονότα ιδιότητας μέλους δεν προωθούνται ως πλαίσια: ακυρώνουν την προσωρινή μνήμη του προωθητή και οι οικοδεσπότες συνεδριών απορρίπτουν τις συνδρομές χώρου εργασίας του μέλους που αφαιρέθηκε.
 

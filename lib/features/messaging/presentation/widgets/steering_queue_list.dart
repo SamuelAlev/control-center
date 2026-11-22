@@ -1,13 +1,19 @@
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/forge/presentation/repo_code_refusal.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/steering_queue_card.dart';
+import 'package:control_center/features/messaging/presentation/widgets/work/work_text.dart'
+    show inertText;
 import 'package:control_center/features/messaging/providers/messaging_providers.dart'
     show ConversationRef;
 import 'package:control_center/features/messaging/providers/steering_queue_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart'
+    show refusalKindOf;
 import 'package:control_center/shared/widgets/composer/composer.dart'
     show composerHorizontalMargin;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -58,6 +64,21 @@ class _SteeringQueueListState extends ConsumerState<SteeringQueueList> {
     // typed it still belongs to a run that can very likely take it. A refused
     // delivery flips this, so nothing is stopped without saying so first.
     final steerable = ref.watch(steeringSteerableProvider(key)) ?? true;
+    // A card is sent by stopping the runs only as its writer: the server
+    // refuses anyone else (`steering_not_yours`). Steering into a lane that
+    // can take it stays open to everyone in the space.
+    final viewerId = ref.watch(currentUserIdProvider);
+    final users = ref.watch(usersByIdProvider).value;
+    bool mine(Message card) => viewerId != null && card.senderId == viewerId;
+    String? author(Message card) {
+      if (mine(card)) {
+        return null;
+      }
+      final name = users?[card.senderId]?.displayName.trim() ?? '';
+      return name.isEmpty
+          ? l10n.heldSteeringFromSomeoneElse
+          : l10n.heldSteeringFromPerson(inertText(name, singleLine: true));
+    }
 
     return Semantics(
       label: l10n.steeringQueueLabel,
@@ -85,9 +106,15 @@ class _SteeringQueueListState extends ConsumerState<SteeringQueueList> {
               card: card,
               steerable: steerable,
               dragHandle: _dragHandle(context, index),
-              onEdit: (content) => _onEdit(key, card.id, content),
+              // Only a card's writer edits it; the server refuses anyone else.
+              onEdit: mine(card)
+                  ? (content) => _onEdit(key, card.id, content)
+                  : null,
               onDelete: () => _onDelete(key, card.id),
-              onDeliver: () => _onDeliver(key, card.id, force: !steerable),
+              onDeliver: steerable || mine(card)
+                  ? () => _onDeliver(key, card.id, force: !steerable)
+                  : null,
+              author: author(card),
             );
           },
         ),
@@ -199,11 +226,20 @@ class _SteeringQueueListState extends ConsumerState<SteeringQueueList> {
             );
     } on RemoteRpcException catch (e) {
       // A refusal (the role may steer but not stop runs) or a failed stop:
-      // the card stays queued, and the user is told why.
+      // the card stays queued, and the user is told why. Someone else's card
+      // (`steering_not_yours`, a race with the button's check) reads by its
+      // kind, never by the server's sentence: it stays queued.
+      // Steering a run that acts for someone else needs the write grant
+      // (`repo_grant_required`): worded as the forge refusals are.
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
+        final notYours = refusalKindOf(e) == 'steering_not_yours';
         CcToastScope.maybeOf(context)?.show(
-          AppLocalizations.of(context).steeringForceSendFailed(e.message),
-          variant: CcToastVariant.danger,
+          notYours
+              ? l10n.steeringDeliverUnavailable
+              : repoCodeRefusalMessage(l10n, e) ??
+                    l10n.steeringForceSendFailed(e.message),
+          variant: notYours ? CcToastVariant.neutral : CcToastVariant.danger,
         );
       }
       return;

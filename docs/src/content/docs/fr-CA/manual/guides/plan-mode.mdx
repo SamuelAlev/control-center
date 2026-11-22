@@ -2,7 +2,7 @@
 title: Utiliser le mode plan
 description: Basculez un espace en mode plan, obtenez un plan typé et approuvez-le pour le transformer en travail en cours d’exécution.
 slug: fr-CA/manuel/guides/mode-plan
-sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
+sourceHash: accf49606e5e8597d3ea76e3274f08d3854996dc
 ---
 
 Ce guide vous montre comment obtenir d’un agent un plan structuré avant qu’il
@@ -124,11 +124,7 @@ approuvée, le prochain appel `exit_plan_mode` de l’agent fait passer l’espa
 mode plan au mode agent et déverrouille ses outils de mutation. Un rejet lui
 permet d’ouvrir une nouvelle demande contre un plan révisé.
 
-Pour quitter le mode plan, changez le menu déroulant du compositeur (ou
-Shift+Tab), ou approuvez le plan soumis. `exit_plan_mode` ouvre une approbation
-durable décidée avec l’outil MCP `decide_approval`. La surcouche de garde-fous des
-appels d’outils bloqués est une autre file, en mémoire, et ne porte pas les
-demandes de sortie du mode plan.
+Pour quitter le mode plan, changez le menu déroulant du compositeur (ou Shift+Tab), ou approuvez le plan soumis. `exit_plan_mode` ouvre une approbation durable, que décide une exécution d’agent avec l’outil MCP `decide_approval`. La surcouche de garde-fous des appels d’outils bloqués est une autre file, en mémoire, et ne porte pas les demandes de sortie du mode plan.
 
 ## Le mode plan dans une étape de pipeline
 

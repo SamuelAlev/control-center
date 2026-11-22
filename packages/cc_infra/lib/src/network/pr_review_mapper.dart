@@ -558,6 +558,7 @@ PrCodeReviewComment prCodeReviewCommentFromGitHub(GitHubReviewComment c) {
     originalLine: c.originalLine,
     reactions: reactionGroupsFromSummary(c.reactions),
     reviewId: c.pullRequestReviewId,
+    isFileLevel: c.isFileLevel,
   );
 }
 

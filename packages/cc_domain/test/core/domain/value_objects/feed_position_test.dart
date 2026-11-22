@@ -78,36 +78,65 @@ void main() {
   });
 
   group('SpaceActivity', () {
-    test('unread compares positions; a missing cursor is never unread', () {
+    test('a conversation is unread past its own cursor, or with none', () {
       final activity = SpaceActivity(
         spaceId: 's',
-        lastAgentMessage: FeedPosition(at: second, seq: 8),
+        lastAgentMessageByConversation: {'c': FeedPosition(at: second, seq: 8)},
       );
 
-      expect(activity.unreadAfter(FeedPosition(at: second, seq: 7)), isTrue);
-      expect(activity.unreadAfter(FeedPosition(at: second, seq: 8)), isFalse);
-      expect(activity.unreadAfter(null), isFalse);
       expect(
-        const SpaceActivity(
-          spaceId: 's',
-        ).unreadAfter(FeedPosition(at: second, seq: 0)),
+        activity.conversationUnread('c', FeedPosition(at: second, seq: 7)),
+        isTrue,
+      );
+      expect(
+        activity.conversationUnread('c', FeedPosition(at: second, seq: 8)),
         isFalse,
       );
+      expect(activity.conversationUnread('c', null), isTrue);
+      // No agent message there (or the conversation is archived): never.
+      expect(activity.conversationUnread('other', null), isFalse);
+    });
+
+    test('a space is unread when any conversation is', () {
+      final activity = SpaceActivity(
+        spaceId: 's',
+        lastAgentMessageByConversation: {
+          'a': FeedPosition(at: second, seq: 3),
+          'b': FeedPosition(at: second, seq: 8),
+        },
+      );
+
+      // Reading one conversation leaves the other unread.
+      expect(
+        activity.unreadFor({'a': FeedPosition(at: second, seq: 3)}),
+        isTrue,
+      );
+      expect(
+        activity.unreadFor({
+          'a': FeedPosition(at: second, seq: 3),
+          'b': FeedPosition(at: second, seq: 8),
+        }),
+        isFalse,
+      );
+      expect(const SpaceActivity(spaceId: 's').unreadFor(const {}), isFalse);
     });
 
     test('round-trips its wire shape', () {
       final activity = SpaceActivity(
         spaceId: 's',
         lastMessageAt: second,
-        lastAgentMessage: FeedPosition(at: second, seq: 8),
         lastAgentMessageByConversation: {'c': FeedPosition(at: second, seq: 8)},
         openQuestionCount: 2,
+        conversationsNeedingInput: const {'c'},
       );
       final json = activity.toJson();
-      expect(json['last_agent_message'], {
-        'at': '2026-03-01T12:00:00.000Z',
-        'seq': 8,
-      });
+      expect(json['needs_input_conversations'], ['c']);
+      expect(json['conversations'], [
+        {
+          'conversation_id': 'c',
+          'last_agent_message': {'at': '2026-03-01T12:00:00.000Z', 'seq': 8},
+        },
+      ]);
       expect(SpaceActivity.fromJson(json), activity);
     });
   });

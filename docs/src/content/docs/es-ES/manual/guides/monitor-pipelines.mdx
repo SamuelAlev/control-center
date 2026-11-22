@@ -2,7 +2,7 @@
 title: Supervisar ejecuciones de pipeline
 description: Trabaja con la cola de ejecuciones, lee la cascada de tiempos y el panel de pasos de una ejecución y recupera un paso que ha fallado o se ha quedado atascado.
 slug: es-ES/manual/guias/supervisar-pipelines
-sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
+sourceHash: 48d44ae3ca3e23c1123ef282ccffece35b542b96
 ---
 
 Esta página cubre todo lo que viene después de que una ejecución haya arrancado:
@@ -73,6 +73,8 @@ su trabajo. Dos redes de seguridad del motor hacen fallar toda la ejecución en
 lugar de reanudarla: un paso suspendido más de 24 horas (`extras.awaitApproval`
 —el cuerpo `orchestration.awaitApproval`— queda exento; `human.gate` no) y un
 paso no idempotente que estaba en curso cuando se detuvo el servidor.
+
+Un paso **Pursue a goal** también queda exento del respaldo de 24 horas: sigue suspendido mientras trabaja su objetivo, y su página enlaza con el objetivo. Una ejecución completa también puede estar **Suspended** porque su orquestación alcanzó su tope de coste; la página de la ejecución muestra entonces lo gastado del tope y, para quien pidió la ejecución, **Subir límite**.
 
 ## Inspeccionar un paso
 

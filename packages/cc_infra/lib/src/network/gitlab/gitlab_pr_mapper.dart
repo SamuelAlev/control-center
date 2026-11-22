@@ -714,6 +714,7 @@ PrCodeReviewComment prCodeReviewCommentFromGitLab(
     startLine: (startLine != null && startLine != line) ? startLine : null,
     line: line,
     originalLine: oldLine,
+    isFileLevel: position.positionType == 'file',
   );
 }
 
@@ -724,7 +725,7 @@ PrCodeReviewComment prCodeReviewCommentFromGitLab(
 /// first note through `inReplyToId`. System notes ("changed the description")
 /// are activity, not comments, and are dropped. Image comments
 /// (`position_type: image`) are skipped: they have no line to anchor to in a
-/// text diff.
+/// text diff. File comments (`position_type: file`) are kept as file-level.
 List<PrCodeReviewComment> prCodeReviewCommentsFromGitLab(
   Iterable<GitLabDiscussion> discussions,
 ) {
@@ -733,7 +734,9 @@ List<PrCodeReviewComment> prCodeReviewCommentsFromGitLab(
     GitLabNotePosition? anchor;
     for (final note in discussion.notes) {
       final position = note.position;
-      if (position != null && position.positionType == 'text') {
+      if (position != null &&
+          (position.positionType == 'text' ||
+              position.positionType == 'file')) {
         anchor = position;
         break;
       }

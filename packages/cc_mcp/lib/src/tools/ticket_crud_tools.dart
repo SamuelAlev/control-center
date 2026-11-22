@@ -47,6 +47,18 @@ class CreateTicketTool extends McpTool {
 
   @override
   String get name => 'create_ticket';
+
+  /// Assigning the new ticket publishes `TicketAssigned`, which starts the
+  /// assignee's run wherever a pipeline listens for it: a script may not
+  /// start another agent run, so it creates the ticket unassigned.
+  @override
+  String? scriptArgumentRefusal(Map<String, dynamic> arguments) =>
+      arguments['assignee'] == null
+      ? null
+      : 'create_ticket refuses assignee when a script calls it: assigning '
+            "the ticket starts the assignee's run, which a script may not "
+            'do. Create it without assignee, or call create_ticket with '
+            'assignee directly instead of from the script.';
   @override
   Set<ActionClass> get actionClasses => const {ActionClass.vendorSyncWrite};
 

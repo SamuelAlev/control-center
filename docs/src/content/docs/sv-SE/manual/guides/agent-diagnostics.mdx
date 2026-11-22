@@ -2,7 +2,7 @@
 title: Felsök en agent
 description: Arbeta dig igenom körningsloggen, adapterproben, serverns status och värddiagnostiken när en agent slutar producera körningar.
 slug: sv-SE/handbok/how-to-guider/felsok-agent
-sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
+sourceHash: 8cd7078bacfbfcd18d90512974eff3539366883c
 ---
 
 Den här guiden visar hur du tar reda på varför en agent inte producerar några körningar.
@@ -90,7 +90,13 @@ Kontrollera **Inställningar → Server → Diagnostik och integritet → Semant
 
 ### Servern startar inte alls
 
-Nativa bibliotek krävs och det finns inget degraderat läge. En saknad dylib gör att `cc_server` vägrar starta och namnger förövaren i felet. Lägg de nativa biblioteken på plats med `scripts/natives/build_natives.sh` och bygg om serverbinären.
+Nativa bibliotek krävs och det finns inget degraderat läge. En saknad dylib, eller en saknad körare för kodläget (`bin/codemode/cc_codemode`), gör att `cc_server` vägrar starta och namnger förövaren i felet. Lägg de nativa biblioteken på plats med `scripts/natives/build_natives.sh` och bygg om serverbinären med `scripts/build_server.sh`.
+
+### Ett skript misslyckades, eller kodläget erbjuds inte
+
+För att se vad ett skript i [Kodläge](/sv-SE/handbok/koncept/kodlage/) gjorde, öppna skriptets post från **Öppna post** på dess rad i konversationen, eller från **Observability → Kodkörningar**. Posten säger hur skriptet slutade med vanliga ord (tog slut på tid, förbrukade sin processortid, nådde sin minnesgräns, kastade ett fel) och listar varje verktygsanrop det gjorde, med om räckena tillät det, en person godkände det eller det nekades.
+
+Om agenten inte alls har något `repl`-verktyg, öppna **Inställningar → Arbetsyta → Kodläge**. Under **Status** visar **På den här servern** om den är **Tillgänglig** eller **Otillgänglig**; **Otillgänglig** betyder att servern inte kan låsa ner skriptköraren på sin värd, och sidan citerar skälet. Serverns startlogg har samma rad (`code_mode=…`). En körning utan arbetsyta, vars arbetsytegränser inte kunde läsas eller vars körlogg inte kunde skrivas, får heller ingen `repl` och anropar sina verktyg direkt.
 
 ### En åtgärd nekas tyst
 

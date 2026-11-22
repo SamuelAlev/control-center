@@ -1,19 +1,21 @@
-import 'package:cc_data/cc_data.dart';
-import 'package:cc_domain/features/dispatch/domain/entities/agent_goal_run.dart';
+import 'package:cc_domain/cc_domain.dart' show AgentDto;
+import 'package:cc_domain/features/dispatch/domain/repositories/goal_run_view.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_goal_status.dart';
 import 'package:cc_remote/app_icons.dart';
-import 'package:cc_remote/format.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/operation_scope.dart';
 import 'package:cc_remote/providers.dart';
-import 'package:cc_remote/widgets/phone_markdown.dart';
-import 'package:cc_remote/widgets/plan_goal/confirm_operation.dart';
+import 'package:cc_remote/widgets/plan_goal/goal_actions.dart';
+import 'package:cc_remote/widgets/plan_goal/goal_contract_view.dart';
+import 'package:cc_remote/widgets/plan_goal/goal_hold_line.dart';
+import 'package:cc_remote/widgets/plan_goal/goal_verification_view.dart';
 import 'package:cc_remote/widgets/plan_goal/plan_review.dart';
+import 'package:cc_remote/widgets/work/work_text.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' show NumberFormat;
 
 String phoneGoalStatus(AppLocalizations l10n, AgentGoalStatus status) =>
     switch (status) {
@@ -25,241 +27,123 @@ String phoneGoalStatus(AppLocalizations l10n, AgentGoalStatus status) =>
       AgentGoalStatus.budgetExhausted => l10n.mobileGoalBudgetExhausted,
     };
 
-/// Durable supervisor state and only the controls the current status accepts.
-class PhoneGoalDetail extends ConsumerStatefulWidget {
+CcBadgeVariant phoneGoalStatusVariant(AgentGoalStatus status) =>
+    switch (status) {
+      AgentGoalStatus.active ||
+      AgentGoalStatus.completed => CcBadgeVariant.success,
+      AgentGoalStatus.failed => CcBadgeVariant.danger,
+      _ => CcBadgeVariant.neutral,
+    };
+
+/// One goal: its objective and status, the hold in words (who must act and
+/// what happens next), segments, money and deadline, what done means, the
+/// last verification and who verified it, and the controls its state and
+/// this viewer allow. The objective, summary and every verification text
+/// are the agent's or person's words and render as plain text.
+class PhoneGoalDetail extends ConsumerWidget {
   const PhoneGoalDetail({
     super.key,
-    required this.goal,
+    required this.view,
     required this.workspaceId,
   });
-  final AgentGoalRun goal;
+
+  final GoalRunView view;
   final String workspaceId;
 
   @override
-  ConsumerState<PhoneGoalDetail> createState() => _PhoneGoalDetailState();
-}
-
-class _PhoneGoalDetailState extends ConsumerState<PhoneGoalDetail> {
-  bool _busy = false;
-  String? _error;
-
-  bool get _canAct =>
-      ref.read(activeWorkspaceIdProvider).value == widget.workspaceId &&
-      (ref.read(workspaceRoleProvider).value?.canWrite ?? false);
-
-  Future<void> _act(
-    Future<void> Function(RpcAgentGoalRunRepository) action,
-  ) async {
-    if (_busy || !_canAct) return;
-    final client = ref.read(rpcClientProvider).value;
-    if (client == null) return;
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    try {
-      if (!_canAct) return;
-      await action(RpcAgentGoalRunRepository(client));
-    } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  Future<void> _stop() async {
-    final l10n = AppLocalizations.of(context);
-    final ok = await confirmOperation(
-      context,
-      title: l10n.mobileGoalStop,
-      description: l10n.mobileGoalStopConfirm,
-      action: l10n.mobileGoalStop,
-      destructive: true,
-    );
-    if (ok && mounted) {
-      await _act((r) => r.cancelGoal(widget.workspaceId, widget.goal.id));
-    }
-  }
-
-  Future<void> _resumeRaising(int newCap) async {
-    final l10n = AppLocalizations.of(context);
-    final ok = await confirmOperation(
-      context,
-      title: l10n.mobileGoalRaiseBudget,
-      description: l10n.mobileGoalRaiseConfirm(
-        planMoney(context, widget.goal.costCapMicros),
-        planMoney(context, newCap),
-      ),
-      action: l10n.mobileGoalRaiseBudget,
-    );
-    if (ok && mounted) {
-      await _act(
-        (r) => r.resumeGoal(
-          widget.workspaceId,
-          widget.goal.id,
-          raiseCostCapMicros: newCap,
-        ),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final t = context.designSystem ?? DesignSystemTokens.light();
-    final l10n = AppLocalizations.of(context);
-    final g = widget.goal;
-    final locale = Localizations.localeOf(context).toLanguageTag();
-    final number = NumberFormat.decimalPattern(locale);
-    final writable = ref.watch(workspaceRoleProvider).value?.canWrite ?? false;
-    final budgetOnly =
-        g.status == AgentGoalStatus.budgetExhausted &&
-        g.costMicros >= g.costCapMicros &&
-        !g.deadlinePassed(DateTime.now()) &&
-        (g.maxRuns == null || g.runCount < g.maxRuns!);
-    final nextCap = g.costCapMicros > g.costMicros
-        ? g.costCapMicros * 2
-        : (g.costMicros + 1) * 2;
+    final l = AppLocalizations.of(context);
+    final g = view.goal;
+    final agents = ref.watch(agentsProvider).value ?? const <AgentDto>[];
+    String? agentName(String id) =>
+        agents.where((a) => a.id == id).firstOrNull?.name;
+    final secondary = CcTypography.bodySm.copyWith(color: t.textSecondary);
+    final maxRuns = g.maxRuns;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          g.userText,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: t.textPrimary,
-          ),
+          inertText(g.userText),
+          style: CcTypography.title.copyWith(color: t.textPrimary),
         ),
         const SizedBox(height: 12),
-        Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: CcBadge(
-            label: phoneGoalStatus(l10n, g.status),
-            variant: g.status == AgentGoalStatus.failed
-                ? CcBadgeVariant.danger
-                : g.status == AgentGoalStatus.active
-                ? CcBadgeVariant.success
-                : CcBadgeVariant.neutral,
-          ),
+        Wrap(
+          spacing: 8,
+          runSpacing: 6,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            CcBadge(
+              label: phoneGoalStatus(l, g.status),
+              variant: phoneGoalStatusVariant(g.status),
+            ),
+            if (agentName(g.agentId) case final name?)
+              Text(name, style: secondary),
+          ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
+        GoalHoldLine(goal: g),
+        const SizedBox(height: 12),
         Text(
-          l10n.mobileGoalKind(
-            g.kind == AgentGoalKind.loop
-                ? l10n.mobileGoalLoop
-                : l10n.mobileGoalGoal,
-          ),
-          style: TextStyle(color: t.textSecondary),
+          maxRuns == null
+              ? l.goalSegmentsNoCap(g.runCount)
+              : l.goalSegments(g.runCount, maxRuns),
+          style: secondary,
         ),
         Text(
-          l10n.mobileGoalProgress(
-            number.format(g.runCount),
-            g.maxRuns == null
-                ? l10n.mobileGoalNoRunLimit
-                : number.format(g.maxRuns!),
+          l.goalMoney(
             planMoney(context, g.costMicros),
             planMoney(context, g.costCapMicros),
           ),
-          style: TextStyle(fontSize: 14, color: t.textSecondary),
+          style: secondary,
         ),
-        if (g.deadlineAt != null)
-          Text(
-            l10n.mobileGoalDeadline(
-              '${shortDate(context, g.deadlineAt!)} ${clockTime(context, g.deadlineAt!)}',
-            ),
-            style: TextStyle(color: t.textSecondary),
-          ),
+        if (g.deadlineAt case final deadline?)
+          Text(l.goalDeadline(workTime(context, deadline)), style: secondary),
         if (g.consecutiveFailures > 0)
           Text(
-            l10n.mobileGoalFailures(number.format(g.consecutiveFailures)),
-            style: TextStyle(color: t.danger),
-          ),
-        if (g.summary?.isNotEmpty == true) ...[
-          const SizedBox(height: 16),
-          Text(
-            l10n.mobileGoalSummary,
-            style: TextStyle(fontWeight: FontWeight.w600, color: t.textPrimary),
-          ),
-          PhoneMarkdown(data: g.summary!),
-        ],
-        if (g.status == AgentGoalStatus.failed && g.summary?.isNotEmpty != true)
-          Text(
-            l10n.mobileGoalFailedDescription,
-            style: TextStyle(color: t.danger),
-          ),
-        if (g.status == AgentGoalStatus.budgetExhausted && !budgetOnly)
-          Text(
-            l10n.mobileGoalBudgetWall,
-            style: TextStyle(color: t.textSecondary),
-          ),
-        if (_error != null) ...[
-          const SizedBox(height: 12),
-          Text(_error!, style: TextStyle(color: t.danger)),
-        ],
-        if (writable && g.status == AgentGoalStatus.active) ...[
-          const SizedBox(height: 20),
-          CcButton(
-            fullWidth: true,
-            size: CcButtonSize.lg,
-            loading: _busy,
-            variant: CcButtonVariant.secondary,
-            onPressed: _busy
-                ? null
-                : () => _act((r) => r.pauseGoal(widget.workspaceId, g.id)),
-            child: Text(l10n.mobileGoalPause),
-          ),
-        ],
-        if (writable && g.status == AgentGoalStatus.paused) ...[
-          const SizedBox(height: 20),
-          CcButton(
-            fullWidth: true,
-            size: CcButtonSize.lg,
-            loading: _busy,
-            onPressed: _busy
-                ? null
-                : () => _act((r) => r.resumeGoal(widget.workspaceId, g.id)),
-            child: Text(l10n.mobileGoalResume),
-          ),
-        ],
-        if (writable && budgetOnly) ...[
-          const SizedBox(height: 20),
-          CcButton(
-            fullWidth: true,
-            size: CcButtonSize.lg,
-            loading: _busy,
-            onPressed: _busy ? null : () => _resumeRaising(nextCap),
-            child: Text(l10n.mobileGoalRaiseTo(planMoney(context, nextCap))),
-          ),
-        ],
-        if (writable &&
-            (g.status == AgentGoalStatus.active ||
-                g.status == AgentGoalStatus.paused)) ...[
-          const SizedBox(height: 8),
-          CcButton(
-            fullWidth: true,
-            size: CcButtonSize.lg,
-            variant: CcButtonVariant.destructive,
-            onPressed: _busy ? null : _stop,
-            child: Text(l10n.mobileGoalStop),
-          ),
-        ],
-        if (g.spaceId.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          CcButton(
-            fullWidth: true,
-            size: CcButtonSize.lg,
-            variant: CcButtonVariant.secondary,
-            icon: AppIcons.arrowRight,
-            onPressed: () => context.push(
-              remoteSpaceLocation(
-                workspaceId: widget.workspaceId,
-                spaceId: g.spaceId,
-                conversationId: g.conversationId,
-              ),
+            l.mobileGoalFailures(
+              NumberFormat.decimalPattern(
+                Localizations.localeOf(context).toLanguageTag(),
+              ).format(g.consecutiveFailures),
             ),
-            child: Text(l10n.mobileGoalOpenConversation),
+            style: CcTypography.bodySm.copyWith(color: t.textErrorPrimary),
           ),
+        if (g.pipeline != null) Text(l.goalPipelineStep, style: secondary),
+        if (g.status == AgentGoalStatus.failed &&
+            (g.summary?.trim().isEmpty ?? true))
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              l.mobileGoalFailedDescription,
+              style: CcTypography.bodySm.copyWith(color: t.textErrorPrimary),
+            ),
+          ),
+        if (g.summary case final summary? when summary.trim().isNotEmpty) ...[
+          goalSectionHeading(context, l.goalSummaryHeading),
+          WorkQuote(summary),
         ],
+        GoalContractView(contract: g.contract),
+        GoalVerificationView(goal: g, agentName: agentName),
+        const SizedBox(height: 12),
+        GoalActions(view: view, workspaceId: workspaceId),
+        if (g.spaceId.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: CcButton(
+              fullWidth: true,
+              size: CcButtonSize.lg,
+              variant: CcButtonVariant.secondary,
+              icon: AppIcons.arrowRight,
+              onPressed: () => context.push(
+                remoteSpaceLocation(
+                  workspaceId: workspaceId,
+                  spaceId: g.spaceId,
+                  conversationId: g.conversationId,
+                ),
+              ),
+              child: Text(l.mobileGoalOpenConversation),
+            ),
+          ),
       ],
     );
   }

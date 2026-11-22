@@ -134,6 +134,7 @@ class AuditStreamSink {
     'source_scope': d.sourceScope,
     'rule_id': d.ruleId,
     'prompted': d.prompted,
+    if (d.unanswered) 'unanswered': true,
     'responder': d.responderUserId,
     'device_id': d.deviceId,
     'ip': d.ip,

@@ -2,7 +2,7 @@
 title: Kroki potoku
 description: Dokumentacja referencyjna rodzajów kroków potoku, kluczy ciał kroków, ich konfiguracji oraz wyników kroków.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/kroki-potoku
-sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
+sourceHash: 0d2876bc1ac359f4d2cfe94902bd5f924d19d5d5
 ---
 
 Krok potoku ma dwie niezależne osie:
@@ -58,6 +58,31 @@ Ogólny węzeł promptu i wysyłki: renderuje prompt, wysyła agenta do rozmowy 
 | `extras.spaceId`          | Istniejąca rozmowa, w której pracować (domyślnie: ukryta)      |
 | `extras.conversationTitle` | Nazwany strumień wewnątrz tej przestrzeni (opcjonalny)       |
 | `extras.mode`             | Odczytywany na węźle, który *otwiera* pokój (`messaging.createSpace`), a nie tutaj. Domyślnie `review`. |
+
+### `goal.pursue`
+
+Rozpoczyna trwały cel (zob. [Realizuj cel](/pl-PL/podrecznik/poradniki/realizuj-cel/)) i wstrzymuje się do jego zakończenia. Edytor pokazuje go jako **Pursue a goal**. Nie jest jednym z 25 wbudowanych kroków powyżej; rejestrowany obok nich.
+
+| Pole konfiguracji | Opis |
+| ---------------------- | ----------- |
+| `agentId` | Agent, który realizuje cel (wymagane) |
+| `prompt` | Cel; obsługuje podstawianie `{{key}}` (wymagane) |
+| `outputKey` | Klucz stanu dla wyniku (wymagane) |
+| `extras.spaceId` | Pokój, w którym działa cel (wymagane, jak każdy krok agenta) |
+| `extras.budgetMicros` | Budżet celu w mikrodolarach, od 1 do 1 000 000 000 (wymagane) |
+| `extras.maxRuns` | Limit segmentów, od 1 do 1 000 (opcjonalne) |
+| `extras.deadlineHours` | Godziny od chwili, gdy krok rozpoczyna cel, od 1 do 2 160 (opcjonalne) |
+| `extras.contract` | Co znaczy gotowe: kryteria i sprawdzenia (opcjonalne) |
+
+Wynik pod `outputKey` to `{summary, verdict}`, gdzie `verdict` to werdykt recenzenta z jego punktami i zastrzeżeniami albo null.
+
+| Cel | Krok |
+| -------- | -------- |
+| zakończony | kończy się |
+| niepowodzenie, anulowanie lub wyczerpanie budżetu | kończy się niepowodzeniem (stosują się `retry` i `continueOnFail`); powtórzony krok rozpoczyna nowy cel |
+| wstrzymany, w tym czekający na recenzję osoby | pozostaje zawieszony, zwolniony z 24-godzinnego przeglądu żywotności |
+
+Cel rozpoczęty przez uruchomienie potoku jest obciążany orkiestracją tego uruchomienia, łącznie z jego recenzją. Gdy uruchomienie potoku zostanie anulowane, zakończy się niepowodzeniem albo ukończy się, zanim cel zakończy pracę, cel zostaje anulowany.
 
 ### `pipeline.condition`
 

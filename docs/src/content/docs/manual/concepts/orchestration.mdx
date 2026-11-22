@@ -34,12 +34,17 @@ than free-form prose. A proposal has:
 - **Synthesis**: the final step that produces the deliverable.
 - **Budget**: a declared cost ceiling.
 
-:::caution[The budget is advisory]
+:::caution[The budget holds the run, it does not kill it]
 The proposal's cost ceiling is compared against the plan's estimated total and
-flags an over-budget plan in the approval bar _before_ you approve. Nothing
-reads it once the run has started, so it does not stop or fail an orchestration
-that overruns. Per-agent and per-workspace budget policies are a separate
-mechanism and are what actually pause spend.
+flags an over-budget plan in the approval bar _before_ you approve. Once the
+run has started, the server checks what it spent before each new step: at the
+ceiling the pipeline run is held (`suspended`, reason `orchestration_budget`)
+and nothing new starts, while steps already running finish. Whoever requested
+the run is notified and resumes it with **Raise cap** on the pipeline run's
+page (a workspace admin when nobody requested it). A raise must be above the
+old cap and what was spent, at most 1,000 dollars, and a cap is never removed.
+Goals the run pursues count against it, their reviews included. Per-agent and
+per-workspace budget policies are a separate mechanism.
 :::
 
 ## Where you review it

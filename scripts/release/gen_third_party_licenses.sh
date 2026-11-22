@@ -64,6 +64,8 @@ trap 'rm -f "$tmp"' EXIT
     echo "Review and satisfy those redistribution obligations before public release."
     echo "PDFium dependency notices are in media/pdfium-licenses/; SVG renderer"
     echo "dependency notices and pinned manifests are in media/svg-licenses/."
+    echo "The code mode runner under bin/codemode/ statically links QuickJS-NG,"
+    echo "rquickjs and the Rust crates marked \"(Rust crate)\" below."
     echo
   fi
   echo

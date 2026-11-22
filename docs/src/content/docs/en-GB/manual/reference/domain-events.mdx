@@ -2,7 +2,7 @@
 title: Domain events
 description: Complete catalogue of the 54 domain events, their payloads and the server-side subscribers that consume them.
 slug: en-GB/manual/reference/domain-events
-sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
+sourceHash: f58123448c0f31c95774bbaebee89f1509940896
 ---
 
 ## Event bus
@@ -24,7 +24,10 @@ Every event in the catalogue below lives in that one directory; there are no dom
 | Event               | Payload                                                | Fired when                                              |
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | Workspace is created                                    |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Agent finishes a run (success or failure)               |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Agent's process stream ends, before the final state is written. Kept for the PR-conversation bridge and analytics only |
+| `AgentRunSettled` | `agentId`, `workspaceId`, `runId`, `status`, `endReason`, `costMicros`, `wakeIds`, `spaceId?`, `conversationId?`, `limitResetsAt?`, `requestedByUserId?`, `wakeReason?` | A run's final state is written; published exactly once per run. `endReason` is `completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` or `serverStopped`. A subagent's run publishes none |
+| `GoalSettled` | `goalId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `status`, `hold?`, `summary?`, `requestedByUserId?` | A goal ends, or starts waiting for a person's review |
+| `WakeRuleEnded` | `ruleId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `reason`, `requestedByUserId?` | A schedule or watch ends (fired its one time, expired, used its runs or cost, cancelled, its goal ended, its person left) |
 | `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | An agent starts waiting on a human: an approval, an `ask_user` question or a run parked on a credential (`kind` is `approval`, `question` or `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | A repo is registered; triggers background code indexing |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | A skill is installed or updated, carrying its supply-chain scan verdict |
@@ -57,6 +60,16 @@ All six carry `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle` and 
 | `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | Someone mentioned you in a PR comment or review comment          |
 | `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | Someone replied in a review thread you are in                                 |
 | `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | Someone resolved a review thread you are in                                   |
+
+### The pull request watch
+
+Published by the open pull request poller for every pull request it polls, whoever authored it, for agents' `on:pr_*` watches. All three carry `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `headRef` and `authorLogin`.
+
+| Event | Additional payload | Fired when |
+| ----------------------- | ----------------------------------------------- | ---------- |
+| `PrWatchChecksSettled` | `passing`, `failedChecks`, `failedCheckUrl?` | Every check of the pull request's head finished |
+| `PrWatchReviewActivity` | `decision`, `decisionChanged`, `newComments` | The pull request got a review or new comments |
+| `PrWatchClosed` | `merged` | The pull request merged or closed |
 
 ## Messaging events
 
@@ -167,14 +180,20 @@ Every subscriber below is constructed inside `runCcServer` (or a service it buil
 | Chat-space provisioning (inline)    | `SpaceCreated`                                                                                       |
 | `PipelineTriggerDispatcher`         | Every `DomainEvent`; each enabled trigger filters for its own type                                   |
 | `SubPipelineResumeListener`         | `PipelineRunCompleted`, `PipelineRunFailed`                                                          |
-| `PipelineCostRollupListener`        | `AgentRunCompleted`                                                                                  |
-| `BudgetEvaluationListener`          | `AgentRunCompleted`                                                                                  |
+| `PipelineCostRollupListener`        | `AgentRunSettled`                                                                                    |
+| `BudgetEvaluationListener`          | `AgentRunSettled`                                                                                    |
 | `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (only `meeting_summary` runs)    |
-| `PipelineStepResumeListener`        | `AgentRunCompleted`                                                                                  |
-| `AgentRunTaskCompleter`             | `AgentRunCompleted`                                                                                  |
-| `GoalSupervisor`                    | `AgentRunCompleted`                                                                                  |
-| `CheckerDispatchListener`           | `AgentRunCompleted`                                                                                  |
-| `TeamRoutingService`                | `AgentRunCompleted`, `TicketAssigned`                                                                |
+| `PipelineStepResumeListener`        | `AgentRunSettled`                                                                                    |
+| `AgentRunTaskCompleter`             | `AgentRunSettled`                                                                                    |
+| `GoalSupervisor`                    | `AgentRunSettled` — decides the goal's next step                                                     |
+| `CheckerDispatchListener`           | `AgentRunSettled` — queues the checker as a wake; skips goal segments and reviews                    |
+| `TeamRoutingService`                | `AgentRunSettled`, `TicketAssigned`                                                                  |
+| `WakeQueueService` | `AgentRunSettled` — delivers wakes that waited for the run to end |
+| `WakeRuleService` | `AgentRunSettled` (self-paced loops), `GoalSettled` (ends a goal's schedules), `PrWatch*`, `EnvironmentProcessExited`, `EnvironmentReady`, ticket and pipeline-run endings (watches), `WorkspaceMemberRemoved` (ends that person's schedules) |
+| `PeerAskService` | `AgentRunSettled` — settles questions agents asked each other and wakes the asker |
+| `LimitParkService` | `AgentRunSettled` with `usageLimit` — waits for the provider's reset |
+| `ImprovementReviewService` | `GoalSettled` (a verified goal) and `AgentRunSettled` — queues the improvement review and reads its result |
+| Pipeline goal step (`goal.pursue`) | `GoalSettled`, `AgentRunSettled`, `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` — resumes the step, charges the orchestration and follows the pipeline run |
 | `OrchestrationRunListener`          | `PipelineRunCancelled`, `PipelineRunFailed`                                                          |
 | `MultiVendorTicketSyncCoordinator`  | `TicketCreated`, `TicketAssigned`, `TicketReassigned`, `TicketStatusChanged`, `TicketDetailsUpdated` |
 | `WorktreeGcListener`                | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`         |
@@ -233,6 +252,8 @@ told about each `ask_user` question by `AgentQuestionService`. One wait is one
 event; nothing is published when the wait ends.
 
 The five authored-PR categories carry `forUserId`, so they reach the author rather than everyone in the workspace.
+
+Five frames for long-running work, each addressed to the person it concerns (`for_user_id`): `notifications/goal_settled` (from `GoalSettled`), `notifications/wake_rule_ended` (from `WakeRuleEnded`), `notifications/improvement_proposed`, `notifications/pipeline_run_held` (a pipeline run held at its orchestration's cost cap) and `notifications/waiting_digest` (once a day, what waits for a person). Each carries `notification_kind`: `notify` maps to `agentRunCompleted`, `question` and `review` to `agentAwaitingInput`. Every notifying frame carries `notification_kind` now, and a frame with `quiet: true` (a schedule that ended, a goal that ended) goes to the notification centre without a toast, sound or loud push.
 
 `RemoteEventForwarder` additionally forwards `TicketReassigned` as `notifications/ticket_reassigned` and every `TaskLifecycleEvent` as `notifications/task_<phase>`. Neither maps to a notification category — they drive live UI, not the notification centre. Membership events are not forwarded as frames: they invalidate the forwarder's cache, and the session hosts drop the removed member's workspace subscriptions.
 

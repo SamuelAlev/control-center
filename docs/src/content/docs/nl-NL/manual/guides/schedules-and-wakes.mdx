@@ -1,0 +1,110 @@
+---
+title: Schema's en wekbeurten
+description: Wek een agent later op, volgens een schema of wanneer er iets gebeurt, bekijk wat er wacht, en wat er gebeurt bij een herstart of een gebruikslimiet.
+slug: nl-NL/handleiding/gidsen/schemas-en-wekbeurten
+sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+---
+
+Een agent slaapt niet en blijft ook niet herhaaldelijk controleren terwijl hij wacht. De agent of jij zet een **wekbeurt** klaar: een duurzaam verzoek om de run van de agent in een gesprek op een tijdstip of wanneer er iets gebeurt te starten of voort te zetten. Elke run die de server start zonder dat iemand typt, begint als een wekbeurt: het volgende segment van een doel, een schema, een bewaking, een antwoord van een andere agent, afgerond gedelegeerd werk, het einde van een gebruikslimiet, het werk dat na een herstart is overgebleven. Wekbeurten worden bewaard in de database van de werkruimte, dus ze overleven een herstart.
+
+## Zelf een agent inplannen
+
+Typ een van deze in het invoerveld van een gesprek:
+
+```text
+/loop every 30m --days 3 check the deploy and fix what broke
+/loop keep the flaky tests green
+/schedule in 2h look at the overnight benchmark
+/schedule at 09:00 summarize what changed overnight
+/schedule cron "0 9 * * 1-5" --max 20 triage new tickets
+```
+
+| Commando | Wat het doet |
+| --- | --- |
+| `/loop every <interval> <prompt>` | Wekt de agent nu met de prompt en daarna elk interval (minstens 60 seconden uit elkaar) |
+| `/loop <prompt>` | Een zelfgestuurde lus: wekt de agent nu, en na elke run kiest de agent de volgende wachttijd, 1 tot 60 minuten (standaard 20) |
+| `/schedule in <duration> <prompt>` | Wekt de agent eenmaal, na de wachttijd |
+| `/schedule at <HH:MM or ISO time> <prompt>` | Wekt de agent eenmaal. `HH:MM` is het eerstvolgende zo'n tijdstip in de tijdzone van de werkruimte; een ISO-tijd zonder offset is UTC |
+| `/schedule cron "<expression>" <prompt>` | Wekt de agent volgens een cron-expressie van vijf velden, gelezen in de tijdzone van de werkruimte. De aanhalingstekens zijn optioneel |
+
+- `--max <N>` begrenst de runs, `--days <N>` beëindigt het schema na zoveel dagen (standaard 30, maximaal 365), en `--budget <dollars>` begrenst wat het schema in totaal mag uitgeven (anders het standaardbudget van de werkruimte, om mee te beginnen 50 dollar).
+- `/loop` start meteen de eerste run. `/schedule` wacht op zijn tijdstip.
+- Duur gebruikt `s`, `m`, `h` en `d`, zoals `90s`, `20m` of `1h30m`.
+- Deze commando's worden alleen gelezen in een bericht dat je zelf typt.
+
+De composer helpt je ze te schrijven. Na `/loop` of `/schedule` en een spatie toont de suggestielijst wanneer het wordt aangeroepen en wordt die smaller naarmate je typt; typ `--` na het tijdstip voor de limieten. Enter of Tab kiest een rij en verstuurt niets. Een regel boven je tekst leest het commando dan terug: wanneer het wordt aangeroepen, wanneer het eindigt, en wat er nog ontbreekt. Als je op Enter drukt bij een commando dat niet gelezen kan worden, zegt die regel wat er mis is en blijft je concept staan.
+
+Je kunt ook een schema maken op de pagina **Schema's** met **Nieuw schema**: kies de space, het gesprek en de agent, wanneer het afgaat, waarmee elke run begint, een einde, een limiet voor runs en een kostenlimiet. **Als de agent bezig is** kiest tussen die aanroep overslaan en wachten tot de agent vrij is. **Bij elke aanroep** kiest tussen een run starten en je alleen melden met de notitie.
+
+## Wat agents inplannen
+
+Agents gebruiken de tool `wake_me` voor dezelfde dingen, en voor bewakingen:
+
+| Bewaking | Activeert wanneer |
+| --- | --- |
+| `on:pr_checks` | De controles van de pull request van de space zijn klaar |
+| `on:pr_review` | De pull request van de space krijgt een review of een antwoord |
+| `on:pr_merged` | De pull request van de space wordt samengevoegd |
+| `on:environment` | Een taak van de omgeving van de space eindigt, of de omgeving wordt klaar |
+| `on:ticket:<id>` | Een ticket wordt afgehandeld |
+| `on:pipeline_run:<id>` | Een pipeline-run eindigt |
+
+- Een bewaking van een pull request hoort de eigen pull request van de space, of één pull request die ze noemt (`on:pr_checks:acme/shop-ui#12`). Een bewaking op iets wat de persoon achter de bewaking niet kan lezen, wordt geweigerd.
+- De eigen acties van de agent activeren zijn bewakingen niet. Een gebeurtenis die binnenkomt terwijl de agent werkt, gaat niet verloren: ze wacht tot de run eindigt, en latere gebeurtenissen worden samengevoegd in dezelfde wekbeurt.
+- Het schema van een agent moet een limiet voor runs of een einde hebben. Het eindigt standaard na 7 dagen en maximaal na 30. Een bewaking loopt standaard 10 keer.
+- Een schema dat een agent zet in een run die door een van zijn eigen schema's is gestart, deelt de einddatum, de limiet voor runs en de kostenlimiet van het eerste schema, zodat een keten van schema's van een agent niet langer kan duren dan het eerste. Het beëindigen van het eerste schema beëindigt de hele keten; pauzeren ervan pauzeert alleen dat schema. Runs die de keten via andere agenten start tellen mee voor dezelfde kostenlimiet. Een schema dat jij maakt start geen keten: wat een agent in zijn runs instelt, is beperkt zoals alles wat hij instelt na een bericht van jou.
+- Een agent laat met `list_wakes` zien wat er op hem wacht, en annuleert wat hij zelf heeft ingesteld met `cancel_wake`. Wat jij hebt ingesteld, kan hij niet annuleren.
+
+## Zien wat wacht
+
+**Boven het invoerveld.** Wanneer er wekbeurten voor een agent in het gesprek wachten, toont een balk ze: **N wekbeurten wachten**, waar elk vandaan komt (**Doel**, **Schema**, **Bewaking**, **Antwoord van** een agent, **Limiet gereset**, **Herstel**, …), wanneer het aan de beurt is en waarom het wordt vastgehouden.
+
+| Knop | Wat het doet | Wie kan |
+| --- | --- | --- |
+| **Nu afleveren** | Levert een wachtende wekbeurt meteen af | Alleen de persoon voor wie de wekbeurt handelt |
+| **Hervatten** | Geeft een vastgehouden wekbeurt vrij | Alleen de persoon voor wie de wekbeurt handelt |
+| **Wekbeurt annuleren** | Annuleert die | Iedereen met toegang tot de space |
+
+Een wekbeurt die niet is afgeleverd, laat één rij in het gesprek achter die zegt waarom, zoals **De agent is gepauzeerd.** of **Een budget blokkeert een run.**
+
+**De pagina Schema's.** Zijbalk → **Schema's** toont elk schema en elke bewaking die je kunt zien, gegroepeerd op status; een cron-schema toont zijn volgende drie tijdstippen in jouw tijdzone. Open er een om de notitie, eigenaar, volgende aanroepen, runs, overgeslagen aanroepen, uitgaven en einde te zien, en **Recente wekbeurten en runs**. Elk schema heeft een eigen adres (`/workspaces/<workspace>/schedules/<id>`).
+
+| Actie | Wie kan |
+| --- | --- |
+| **Pauzeren**, **Beëindigen** | Iedereen met toegang tot de space |
+| **Hervatten**, **Verlengen** | Alleen de eigenaar ervan (een werkruimtebeheerder voor een schema dat een agent zonder persoon heeft gemaakt) |
+
+Wanneer iemand anders dan de eigenaar van een schema het pauzeert, toont het gesprek een regel met hun naam.
+
+Op de telefoon start **Herhalen** op het doelenscherm een herhalende prompt (elke zoveel minuten of uur, of zelfgestuurd) met een kostenlimiet en een einde, en op het scherm **Schema's** pauzeer, hervat en beëindig je schema's. De voortgangsweergave van een gesprek toont wat wacht, inclusief pauzes bij de gebruikslimiet (**Nu hervatten**, **Annuleren**) en werk dat is overgebleven na een stop van de server.
+
+## Hoe een schema draait
+
+- Elke run van een schema of bewaking is begrensd op 5 dollar, of op wat het schema nog over heeft als dat minder is, en het schema stopt bij zijn kostenlimiet.
+- Een cronmoment in het uur dat wordt overgeslagen wanneer de klok vooruit gaat, draait die dag een uur later (02:30 draait om 03:30). Een moment in het uur dat zich herhaalt wanneer de klok terug gaat, draait één keer.
+- De run van een schema voegt zich nooit bij een run die al bezig is. Als de agent bezig is wanneer een tijdgebonden schema afgaat, wordt die aanroep stilletjes overgeslagen, tenzij het schema wacht tot de agent vrij is.
+- Een run die een schema of bewaking heeft gestart en die zonder problemen eindigt, meldt zich niet bij jou, tenzij er iemand in wordt genoemd. Wanneer een schema eindigt, zegt de bel waarom (**Het aantal runs is op.**, **De einddatum is bereikt.**, …) zonder geluid.
+- Er starten hooguit 30 runs per uur vanuit wekbeurten in één gesprek, en 300 in een werkruimte.
+- Wanneer de persoon voor wie een schema handelt de werkruimte verlaat, eindigt het schema. Al het andere dat voor hem handelde stopt ook: zijn wachtende wekbeurten worden geannuleerd, zijn in de wachtrij staande en vastgehouden berichten worden verwijderd, en zijn lopende agenten worden gestopt.
+
+## Stoppen, herstarten en gebruikslimieten
+
+- **Stoppen.** Op **Stoppen** drukken bij de run van een agent houdt zijn wachtende wekbeurten vast (die welke niet bij een doel horen) en de berichten die jij voor hem in de wachtrij hebt gezet. Ze wachten op **Hervatten** of **Vastgehouden berichten verzenden**. Elke persoon verzendt zijn eigen vastgehouden berichten; niemand verzendt die van een ander.
+- **Een herstart van de server.** Wekbeurten en schema's overleven. Een run die een wekbeurt startte, wordt na de herstart hervat, met hooguit 3 pogingen. Een run die jij zelf hebt gestart, wordt niet vanzelf opnieuw uitgevoerd: die laat een vastgehouden wekbeurt **Herstel** achter, en hij gaat verder wanneer je op **Hervatten** drukt. Een tijdgebonden schema dat zijn momenten miste terwijl de server uit stond, start alleen laat binnen een korte marge (de helft van zijn interval, maximaal 10 minuten; 24 uur voor een eenmalig schema), anders registreert het één overslag: **Gemist terwijl de server uit stond.**
+- **Een gebruikslimiet van de provider.** Wanneer een run stopt bij de gebruikslimiet van een provider en de provider zegt wanneer die wordt gereset (binnen 7 dagen), wordt de run gepauzeerd. Een run die de server heeft gestart, zoals een segment van een doel of de run van een schema, wordt zelf hervat 30 seconden na de reset. Een run die jij hebt gestart wacht op jou: het gesprek toont **Gepauzeerd bij** de **gebruikslimiet van de provider. De limiet wordt gereset om** een tijdstip, met **Hervatten** (alleen jij) en **Annuleren** (iedereen in de space). Na **Hervatten** gaat hij verder zodra de limiet is gereset. Een pauze die je niet hervat, verloopt 7 dagen na de reset. Berichten die je bij de limiet in de wachtrij hebt gezet, worden in de hervatte run verstuurd; als de run niet op de reset wacht, of de pauze wordt geannuleerd of verloopt, worden ze voor jou vastgehouden onder **Vastgehouden berichten verzenden**. Berichten die anderen in de wachtrij hebben gezet, worden meteen voor hen vastgehouden. De volgende aanroep van een schema wacht tot de gepauzeerde run is hervat. ACP-agents melden geen reset, dus hun runs wachten niet.
+
+## Limieten van de werkruimte
+
+Een beheerder van de werkruimte stelt de limieten in onder **Instellingen → Werkruimte → Schema's**:
+
+- **Limieten voor schema's**: hoeveel actieve of gepauzeerde schema's één agent in één gesprek mag houden (10), over de werkruimte heen (50), en in de hele werkruimte (500); de standaard kostenlimiet van een schema (50 dollar); en de tijdzone die cron-schema's en het dagelijkse overzicht gebruiken (in het begin UTC).
+- **Als niemand antwoordt**: hoe lang een run die de server startte wacht op het antwoord of de goedkeuring van een persoon (standaard 72 uur, 1 uur tot 7 dagen) voordat een goedkeuring als geweigerd telt en een vraag als onbeantwoord (daarna wordt alles wat dezelfde run nog vraagt meteen geweigerd), en het uur van het dagelijkse overzicht van wat op jou wacht in doelen, schema's en andere runs die de server startte.
+
+Leden zien de pagina alleen lezen.
+
+## Zie ook
+
+- [Een doel nastreven](/nl-NL/handleiding/gidsen/doel-nastreven/)
+- [Agents laten samenwerken](/nl-NL/handleiding/gidsen/agents-laten-samenwerken/)
+- [Slash-commando's](/nl-NL/handleiding/referentie/slash-commandos/)
+- [Tools voor wekbeurten en doelen](/nl-NL/handleiding/referentie/mcp-tools/#tools-voor-wekbeurten-en-doelen)

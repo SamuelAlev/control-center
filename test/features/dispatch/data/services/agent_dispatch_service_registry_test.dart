@@ -13,6 +13,8 @@ import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart';
 import 'package:cc_domain/features/dispatch/domain/registry/agent_ref.dart';
 import 'package:cc_domain/features/dispatch/domain/usecases/dispatch_agent_use_case.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/mention_context.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
+import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
 import 'package:cc_infra/src/dispatch/agent_dispatch_service.dart';
 import 'package:cc_infra/src/dispatch/agent_registry_impl.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -30,6 +32,7 @@ class _FakeDispatchUseCase implements DispatchAgentUseCase {
     required String workspaceId,
     required String agentId,
     required String prompt,
+    required bool freshHistory,
     String? spaceId,
     String? conversationId,
     String? adapterId,
@@ -41,6 +44,8 @@ class _FakeDispatchUseCase implements DispatchAgentUseCase {
 class _FakeAgentDispatchPort implements AgentDispatchPort {
   _FakeAgentDispatchPort(this.events);
   @override
+  bool get readOnlyRunsAvailable => true;
+  @override
   Future<bool> pauseDispatch(String dispatchId) async => false;
 
   @override
@@ -49,6 +54,8 @@ class _FakeAgentDispatchPort implements AgentDispatchPort {
 
   @override
   DispatchHandle start({
+    required bool freshHistory,
+    required bool readOnly,
     required String cliName,
     required String prompt,
     AgentPromptParts? promptParts,
@@ -64,7 +71,7 @@ class _FakeAgentDispatchPort implements AgentDispatchPort {
     String? runLogId,
     String? ticketId,
     String? requestedByUserId,
-    WakeContext? wakeContext,
+    required WakeContext wakeContext,
     Mode? mode,
     int? silenceTimeoutMinutes,
     Map<String, String>? environment,
@@ -104,6 +111,7 @@ class _FakeAgentDispatchPort implements AgentDispatchPort {
   Future<bool> steerDispatch(
     String dispatchId,
     String message, {
+    required String? source,
     bool followUp = false,
   }) async => false;
   @override
@@ -269,6 +277,7 @@ PreparedDispatch _prepared({Agent? agent}) => PreparedDispatch(
   mode: Mode.chat,
   resolvedAdapterId: null,
   cliName: 'claude',
+  transport: AdapterTransport.claudeCli,
 );
 
 void main() {
@@ -295,6 +304,9 @@ void main() {
     'dispatch registers the agent as running with display name + dispatch',
     () async {
       await service(agent: _agent()).dispatch(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
+        readOnly: false,
         agentId: 'a1',
         prompt: 'do work',
         workingDirectory: '/tmp/work',
@@ -315,6 +327,9 @@ void main() {
     // The roster is per-workspace and an empty workspace id names none, so the
     // run joins no roster.
     await service(agent: _agent()).dispatch(
+      wakeContext: const WakeContext.userMessage(),
+      freshHistory: false,
+      readOnly: false,
       agentId: 'a1',
       prompt: 'do work',
       workingDirectory: '/tmp/work',
@@ -327,6 +342,9 @@ void main() {
     'tool-call events become the agent activity as the stream is consumed',
     () async {
       final result = await service(agent: _agent()).dispatch(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
+        readOnly: false,
         agentId: 'a1',
         prompt: 'do work',
         workingDirectory: '/tmp/work',
@@ -346,6 +364,9 @@ void main() {
     'a DoneEvent flips the agent to idle (clearing activity + dispatch)',
     () async {
       final result = await service(agent: _agent()).dispatch(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
+        readOnly: false,
         agentId: 'a1',
         prompt: 'do work',
         workingDirectory: '/tmp/work',
@@ -367,6 +388,9 @@ void main() {
 
   test('completeRun marks the agent idle in the registry', () async {
     final result = await service(agent: _agent()).dispatch(
+      wakeContext: const WakeContext.userMessage(),
+      freshHistory: false,
+      readOnly: false,
       agentId: 'a1',
       prompt: 'do work',
       workingDirectory: '/tmp/work',
@@ -374,19 +398,22 @@ void main() {
     );
     expect(registry.get('a1')!.status, AgentStatus.running);
 
-    await service(agent: _agent()).completeRun(result.runLog, 'done');
+    await service(agent: _agent()).completeRun(result.runLog, 'done', endReason: RunEndReason.completed);
     expect(registry.get('a1')!.status, AgentStatus.idle);
   });
 
   test('failRun marks the agent idle in the registry', () async {
     final result = await service(agent: _agent()).dispatch(
+      wakeContext: const WakeContext.userMessage(),
+      freshHistory: false,
+      readOnly: false,
       agentId: 'a1',
       prompt: 'do work',
       workingDirectory: '/tmp/work',
       workspaceId: 'ws-1',
     );
 
-    await service(agent: _agent()).failRun(result.runLog, 'boom');
+    await service(agent: _agent()).failRun(result.runLog, 'boom', endReason: RunEndReason.error, cost: null);
     expect(registry.get('a1')!.status, AgentStatus.idle);
   });
 }

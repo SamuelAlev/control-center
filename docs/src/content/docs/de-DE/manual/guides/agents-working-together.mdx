@@ -1,0 +1,63 @@
+---
+title: Agenten arbeiten zusammen
+description: Wie Agenten einander Fragen stellen, Arbeit übergeben und mit der Antwort geweckt werden, und wo du siehst, worauf ein Agent durch einen anderen wartet.
+slug: de-DE/handbuch/anleitungen/agenten-zusammenarbeit
+sourceHash: 36bb45cd480fb45d0380e8fd651845c59a7debcb
+---
+
+Agenten in einem Arbeitsbereich können einander Fragen stellen, einen Spezialisten zu Rate ziehen, um ein Review bitten, eine Nachricht senden oder ein Ticket delegieren. Dafür muss kein Agent untätig warten: Ein Agent, der gefragt hat, kann weiterarbeiten oder seinen Zug beenden und wird in seiner eigenen Konversation geweckt, sobald die Antwort eintrifft.
+
+## Einen anderen Agenten fragen
+
+Ein Agent fragt mit `ask_agent` auf eine von zwei Arten:
+
+- **Warten** (der Standard): Der Agent blockiert, bis die Antwort kommt, standardmäßig bis zu 600 Sekunden und höchstens 1.800.
+- **Im Hintergrund**: Der Aufruf kehrt sofort zurück, und der Agent arbeitet weiter.
+
+In beiden Fällen wird die Frage aufgezeichnet, bevor sie zugestellt wird. Kam die Antwort nicht im Aufruf zurück, wird der Fragende genau einmal mit der Antwort geweckt, wenn der Lauf des anderen Agenten endet: beantwortet, fehlgeschlagen oder abgelaufen nach 24 Stunden ohne Antwort. Unterwegs kann er je einmal erfahren, dass der andere Agent eine Antwort zugesagt hat, dass er auf eine Person wartet oder dass er am Nutzungslimit angehalten wurde. Keine dieser Meldungen zählt als Antwort.
+
+`consult_agent` (zieht den passendsten Spezialisten hinzu), `request_peer_review` (ein zweiter Blick auf einen Review-Befund) und `send_to_agent` (eine Nachricht in eine Richtung) laufen über dieselbe Warteschlange. `send_to_agent` meldet, ob der andere Agent geweckt wurde, ob die Nachricht hinter seinem aktuellen Lauf wartet oder warum sie abgelehnt wurde.
+
+Der andere Agent liest die Frage als Information von einem anderen Agenten, nie als Anweisung, der er folgen muss, und er kann keinen Slash-Befehl ausführen.
+
+## Arbeit übergeben
+
+- **Ein delegiertes Ticket** (`delegate_task`) weckt den Agenten, der es delegiert hat, in der Konversation, aus der er delegiert hat, sobald das Ticket abgeschlossen ist.
+- **Der Lauf eines Teammitglieds**, den der Leiter mit einer `@mention` oder einer Nachricht gestartet hat, weckt den Leiter, wenn er endet, in der Konversation, aus der er das Mitglied geweckt hat. (Eine Frage wird durch ihre Antwort beantwortet, ein delegiertes Ticket durch sein Ticket.)
+- **Ein Hintergrund-Worker** im Direktormodus (`/vibe`) übergibt sein Ergebnis an den Direktor, während dieser weiterarbeitet.
+- **Eine `@mention`** eines Agenten und der Checker des Bereichs werden auf dieselbe Weise zugestellt, als Weckrufe.
+
+Ein Agent kann sich ansehen, was ein anderer Agent tut, ohne ihn zu fragen: `agent_activity` zeigt den Status des anderen Agenten, sein aktuelles Tool und seine letzten Nachrichten und weckt niemanden.
+
+## Grenzen
+
+Der Server setzt diese durch, egal was die Agenten sagen:
+
+| Grenze | Wert |
+| --- | --- |
+| Wie tief eine Kette aus Fragen und Übergaben gehen darf | 3 |
+| Zyklen (ein Agent fragt einen, der über andere auf ihn wartet) | Abgelehnt |
+| Ausstehende Fragen je fragendem Agenten | 10 |
+| Ausstehende Fragen je befragtem Agenten | 20 |
+| Dieselbe Frage erneut an denselben Agenten | Innerhalb von 10 Minuten abgelehnt |
+| Nachrichten zwischen einem Agentenpaar | 10 pro Minute |
+| Länge einer Nachricht oder Antwort | 16.384 Zeichen |
+
+Auch die Delegation berücksichtigt die Autonomie und das Budget des fragenden Agenten: Ein Agent kann keine Arbeit an einen anderen mit mehr Autonomie oder mehr Geld übergeben, als er selbst hat. Eine Nachricht, die du selbst sendest, ist nie so begrenzt.
+
+Wenn der befragte Agent an einem Nutzungslimit eines Anbieters anhält, wartet sein Lauf auf das Zurücksetzen, sofern das Zurücksetzen vor dem Ablauf der Frage kommt. Andernfalls schlägt die Frage sofort fehl, und der Fragende erfährt, warum.
+
+## Sehen, worauf ein Agent wartet
+
+In einer Konversation listet der Abschnitt **Anfragen** des Bereichs **Allgemein** die Fragen auf, die Agenten an ihn gestellt haben: an wen, welche Art (**Frage**, **Beratung** oder **Review**), wann und in welchem Zustand (**Wartet**, **Beantwortet**, **Fehlgeschlagen**, **Abgelaufen** oder **Abgebrochen**), mit **Antwort zugesagt** oder **Im Hintergrund**, wo es zutrifft. Eine fehlgeschlagene Anfrage sagt, warum, etwa **Ihr Run wurde am Nutzungslimit des Anbieters gestoppt.**
+
+Wer Zugriff auf den Bereich hat, kann **Anfrage abbrechen**. Der fragende Agent wird dann nicht geweckt, und der Lauf des anderen Agenten wird nicht gestoppt.
+
+Antworten, Nachrichten und fertige Arbeit, die auf einen Agenten warten, erscheinen auch in der Leiste oberhalb des Eingabefelds, mit den anderen, auf die er wartet (siehe [Zeitpläne und Weckrufe](/de-DE/handbuch/anleitungen/zeitplaene-weckrufe/#sehen-was-wartet)).
+
+## Siehe auch
+
+- [Arbeit an Agenten delegieren](/de-DE/handbuch/anleitungen/tickets-delegieren/)
+- [Ein Agententeam aufbauen](/de-DE/handbuch/anleitungen/agententeam-aufbauen/)
+- [Hintergrund-Worker steuern](/de-DE/handbuch/anleitungen/hintergrund-worker-steuern/)
+- [MCP-Tools: Nachrichten und Delegation zwischen Agenten](/de-DE/handbuch/referenz/mcp-tools/#nachrichten-und-delegation-zwischen-agenten)

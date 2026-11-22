@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.28
+# syntax=docker/dockerfile:1.29
 
 # =============================================================================
 # Dockerfile for the self-hostable Control Center backend (cc_server).
@@ -106,7 +106,21 @@ RUN test -x /app/bin/media/ffmpeg \
  && test -x /app/bin/media/ffprobe \
  && test -x /app/bin/media/cc_pdf_render \
  && test -s /app/bin/media/libpdfium.so \
- && test -s /app/bin/media/pdfium-licenses/pdfium.txt
+ && test -s /app/bin/media/pdfium-licenses/pdfium.txt \
+ && test -x /app/bin/codemode/cc_codemode \
+ && /app/bin/codemode/cc_codemode --version | grep -q '^cc_codemode .* quickjs-ng '
+
+# Code mode's runner (bin/codemode/cc_codemode) confines itself when it starts:
+# no_new_privs, rlimits, a seccomp-bpf allowlist and, where the kernel has it,
+# Landlock. It needs no namespaces and no capabilities, so it works as the
+# unprivileged ccserver user under `--cap-drop=ALL` and no-new-privileges.
+# Docker's default seccomp profile allows the seccomp(2), prctl(2) and
+# landlock_* calls it makes. A stricter custom profile (--security-opt
+# seccomp=...) that blocks them leaves the runner short of a full lockdown: it
+# refuses to run, the server reports code mode as unavailable with the reason,
+# and nothing else is affected. `cc_codemode --self-test` inside a running
+# container shows which control failed. It is not run here: a build step's
+# sandbox is not the deployment's seccomp profile, so it would prove nothing.
 
 # Which binary in the bundle to run: `cc_server` (default) or `cc_demo_server`.
 # The CI job extracts the matching standalone archive into ./bundle.

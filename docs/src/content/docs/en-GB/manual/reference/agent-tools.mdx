@@ -2,10 +2,10 @@
 title: Built-in agent tools
 description: The tool surface the built-in harness gives an agent — language server, structural search, debugger, kernels and worker control — with every operation and its arguments.
 slug: en-GB/manual/reference/agent-tools
-sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
+sourceHash: e99183fd4b257a60f94444101e1d39a7d6c77249
 ---
 
-These are the **server-bound** tools the built-in agent runtime registers directly — language server, structural search, debugger, kernels, questions and worker control — as opposed to the [MCP tools](/en-GB/manual/reference/mcp-tools/) it bridges in and the generic file, search and shell tools from the harness runtime. They are not on the MCP registry: an external MCP client will not see them, because each one is bound to a live server-side resource — a language server process, a debug adapter, an interpreter — that belongs to one run.
+These are the **server-bound** tools the built-in agent runtime registers directly — language server, structural search, debugger, kernels, code mode scripts, questions and worker control — as opposed to the [MCP tools](/en-GB/manual/reference/mcp-tools/) it bridges in and the generic file, search and shell tools from the harness runtime. They are not on the MCP registry: an external MCP client will not see them, because each one is bound to a live server-side resource — a language server process, a debug adapter, an interpreter — that belongs to one run.
 
 Every tool here is registered only when its backing resource is wired for the run — a language-server or debug supervisor, a tree-sitter parser, a kernel factory, a question port, a vibe roster. Detection of a language server or debug adapter for *this checkout* is a separate, later check (`status` / `adapters`): those tools stay on the surface so the agent can ask why nothing is usable, rather than guessing.
 
@@ -15,9 +15,23 @@ Each tool declares a tier, and the tier decides **which surfaces see it** — no
 
 | Tier    | Meaning                                | Tools here                                         |
 | ------- | -------------------------------------- | -------------------------------------------------- |
-| `read`  | No side effects                        | `lsp`, `ast_grep`, `ask_user`, the five `vibe_*`   |
+| `read`  | No side effects                        | `lsp`, `ast_grep`, `ask_user`, `repl`, the five `vibe_*` |
 | `write` | Changes files                          | `lsp_rename`, `ast_edit`, `resolve`                |
 | `exec`  | Starts or controls a process           | `debug`, `eval`                                    |
+
+## Direct, script-only or loaded on first use
+
+When the server can run scripts, a run calls a few tools directly and reaches the rest from a [`repl`](#repl--run-a-script-that-calls-your-tools) script; see [Code mode](/en-GB/manual/concepts/code-mode/#which-tools-the-agent-calls-directly) for the whole rule. For the tools on this page:
+
+| Tool | With `repl` | Without `repl` |
+| ---- | ----------- | -------------- |
+| `repl` | Direct | Not present |
+| `ask_user` | Direct | Direct |
+| `lsp`, `lsp_rename`, `ast_grep`, `ast_edit`, `resolve`, `debug` | From a script only | Loaded on first use |
+| `eval` | Loaded on first use (a script cannot call it) | Loaded on first use |
+| `vibe_*` | Direct in vibe mode, never from a script | Direct in vibe mode |
+
+A tool marked "From a script only" loads on first use instead once the server cannot run the run's scripts ([When scripts cannot run](/en-GB/manual/concepts/code-mode/#when-scripts-cannot-run)).
 
 ---
 
@@ -152,9 +166,49 @@ One session per conversation, with a hard TTL (30 minutes). A second `launch` is
 
 ---
 
+## `repl` — run a script that calls your tools
+
+Present on every run when the server can run scripts ([When a run has `repl`](/en-GB/manual/concepts/code-mode/#when-a-run-has-repl)). The script is plain JavaScript, the body of an async function, and runs in a fresh, locked-down interpreter in its own process: no file system, network, process or module access. `repl` itself is of the `read` tier and guards itself, because every tool call the script makes is checked on its own. Also on the MCP endpoint, for agent runs on a server that can run scripts.
+
+| Argument            | Meaning                                                                                       |
+| ------------------- | --------------------------------------------------------------------------------------------- |
+| `code`              | The script. At most 256 KiB                                                                   |
+| `description`       | Required. A short label for the transcript row                                                |
+| `timeout_ms`        | Optional. A shorter time limit than the workspace's; never a longer one                      |
+| `max_output_tokens` | Optional. A smaller output budget than the workspace's; never a larger one                   |
+
+```js
+// Read three files together and report only which ones failed.
+const paths = ["lib/a.dart", "lib/b.dart", "lib/c.dart"];
+const results = await Promise.allSettled(paths.map((path) => tools.read({ path })));
+return results
+  .map((r, i) => (r.status === "rejected" ? `${paths[i]}: ${r.reason.message}` : null))
+  .filter(Boolean);
+```
+
+The `repl` description tells the agent: "A tool that is not one of your direct tools has no definition in this request. Before the first call to one, look it up with `describeTool(name)` or `searchTools(query)`, unless its exact call shape was already shown to you in this conversation."
+
+`describeTool(name)` returns a tool's description, its declaration, its input and output schemas and its result note, when it has one: what a script receives from a completed call, in the tool's own words. The `repl` description lists the notes of the direct tools a script may call. A result that is JSON text arrives parsed, unless it holds more than 131,072 values: then it arrives as the text, and the script parses it with `JSON.parse`. The text of a result from a tool of an external MCP server is cut at 262,144 characters, and cut text no longer parses.
+
+- `tools.<name>(args)` calls a tool through the same filter, guardrails and approval as a direct call, and rejects with an error when it is refused or fails. Read-only calls can run together; calls that change something run one at a time, in the order the script made them. While one of its calls waits for a person, no other call of the script starts.
+- `ALL_TOOLS`, `searchTools(query, { limit, namespace })`, `describeTool(name)` and `describeNamespace(name)` find tools, those of connected MCP servers included. A tool outside the direct set that a script may call is callable only from a script; calling one directly returns how to call it from `repl`. Once the server cannot run the run's scripts, such a tool loads on first use instead.
+- Lookups are limited: a query of at most 1,024 characters, a name or namespace of at most 256, `limit` from 0 to 50, and at most 200 lookups taking 2 seconds of the server's time in all per script, while all scripts of one workspace share 2 seconds of lookup time, given back at a quarter of a second each second; past either, further lookups reject. In a very large catalogue the descriptions in `ALL_TOOLS` share about a million characters equally and a cut one ends in `…`; `describeTool` always returns the whole description. A type too large to show reads `unknown /* too large to show */`, and an unknown name is answered with the closest names.
+- Tools are grouped in namespaces: `builtin` (the harness's own tools), `control-center` (Control Center's tools) and one per connected MCP server, named after the server. A server named `builtin`, `control-center` or `script`, or whose name starts with `external-`, in any mix of capitals and with or without spaces around it, is listed as `external-` followed by its name, and no tool is ever in `script`.
+- Only what the script returns, or passes to `text()`, `image()` or `console.*`, comes back. Output past the budget keeps its start and end, and `read_output` reads the rest.
+- `store(key, value)` / `load(key)` keep JSON values for later scripts of the same conversation and agent, saved only when the script completes. A subagent's scripts have no store.
+- `await tools.ask_user(...)` asks a question; its answer is also added to the result. `sleep(ms)`, `setTimeout`, `limits()` and `models.embed` / `rank` / `classify` (on-device embeddings) are available too.
+- `describeTool(name)` and `searchTools(query)` also answer for the script's own functions, which are not tools: `text`, `image`, `store`, `load`, `sleep`, `setTimeout`, `clearTimeout`, `limits`, `exit` and `models.*`, under the namespace `script`.
+- Not callable from a script: `repl`, `eval`, `task`, `checkpoint`, `rewind`, `compact`, `search_tools` and the `vibe_*` verbs.
+- A script reads its own run's past: `history({start, role, tool, limit})` pages the conversation's transcript (at most 50 rows a call; pass the previous page's `next_start` as `start`), `outputs()` lists the tool outputs stored for this conversation and agent, and `loadOutput(handle)` reads 16,384 characters of one. `storedKeys()` lists the stored keys with their sizes. `keep(value, label)` stores a large value as an output a later script or `read_output` can read, saved only when the script completes (1 MiB a value, 64 values and 16 MiB a run). `limits().returnBudgetChars` says how much of the output budget is left. A read-only run (a goal review) can read but not store or keep. On Claude Code and ACP, `history()` works and `outputs()`, `loadOutput()` and `keep()` refuse, because Control Center keeps no tool outputs of those runs.
+- An error from a timeout, an output overflow or the call limit says how to fix it.
+
+One run runs one script at a time. The limits and what happens at each are on the [code mode](/en-GB/manual/concepts/code-mode/#limits) page; every script is recorded under **Observability → Code executions**.
+
+---
+
 ## `eval` — persistent interpreters
 
-A Python or JavaScript cell whose variables, imports and loaded data survive between calls. `exec` tier; not parallel-safe.
+A Python or JavaScript cell whose variables, imports and loaded data survive between calls. `exec` tier; not parallel-safe. Not callable from a `repl` script, and a cell cannot call the run's tools: to call tools from code, use [`repl`](#repl--run-a-script-that-calls-your-tools).
 
 | Argument      | Meaning                                          |
 | ------------- | ------------------------------------------------ |
@@ -166,20 +220,34 @@ A Python or JavaScript cell whose variables, imports and loaded data survive bet
 - The last expression is echoed the way a notebook does.
 - `display()` works, a pandas frame renders as a table, and a matplotlib figure comes back as an **image the transcript shows**.
 - The IPython idioms people reflexively type — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — are rewritten into plain code. `%pip` also evicts `sys.modules`, so the next `import` sees what was just installed.
-
-### Calling your own tools from inside a cell
-
-```python
-contents = tool("read", {"path": "lib/auth.dart"})
-```
-
-The bridge **re-enters the harness tool registry**, so guardrails, approval and every wrapper apply exactly as they do to a model-issued call. It rides the kernel's own pipe rather than a loopback socket: no port, no secret, no egress rule.
-
-The cell's timeout is an *inactivity* budget (default 5 minutes) and it is **suspended** while a bridged call is outstanding, so a cell that fans out to subagents is not killed mid-fanout.
+- A cell that prints more than its output budget keeps the first three quarters and the last quarter, with one line saying how many characters and images were dropped.
+- When the interpreter died without being asked to, the next cell is told once that its earlier variables are gone.
 
 :::note[Where the kernel runs]
 In the conversation's enclosure when it has one, otherwise in the run's OS sandbox on the host. With the sandbox off or unavailable it runs unconfined and `eval` asks for host-execution approval. It does not boot an enclosure to get there, the same rule that stops a rig tab auto-starting.
 :::
+
+---
+
+## `bash` in the background
+
+`bash` with `run_in_background: true` starts the command and returns at once with a handle (`b1`, `b2`, …) instead of waiting. The agent keeps working, or ends its turn and is woken when the command exits.
+
+| Argument | Meaning |
+| ------------------- | ------- |
+| `run_in_background` | `true` to start and return at once |
+| `timeout_seconds` | Seconds before the command is killed: 600 by default, 3,600 at most |
+| `notify` | Optional. A simple pattern; each output line that matches is sent to the agent while the command runs (such as `listening on\|FAILED`) |
+
+- At most 4 background commands run at once in one run. Each is killed at its timeout and when the run ends, with every process it started.
+- When a command exits, the agent gets a notice with the exit code, the last 2,000 characters of output and a `read_output` handle for the rest.
+- An agent whose only remaining work is a background command waits without calling the model, and the run's silence watchdog pauses while it waits.
+- `bash_output(handle)` reads a command's state and recent output; `bash_kill(handle)` stops it. Both say when the result was already delivered.
+- A script cannot start a background command. Claude Code has its own background Bash; Control Center keeps that run open for at most 10 minutes after the turn that left a task running.
+
+## `compact` — free room in the context window
+
+Compacts the conversation's older context before the next model call, keeping what `focus` names (at most 1,000 characters). The newest turns stay verbatim. The agent's per-turn budget line shows context use at 70, 80 and 90%, and the tool is worth calling past about 70% before a long new phase of work. The server owner's `preCompact` hook can add to the focus ([Shell hooks](/en-GB/manual/reference/agent-configuration/#shell-hooks)). After a compaction, the server adds a "Still in flight" block: the goal, pending wakes, open asks, background commands, the checklist and stored keys, each with the call that recovers it.
 
 ---
 

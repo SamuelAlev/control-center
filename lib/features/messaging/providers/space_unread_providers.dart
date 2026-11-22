@@ -1,94 +1,76 @@
-/// Read cursors and unread signals for spaces and conversations.
+/// Read cursors and unread signals for conversations, and the space signal
+/// derived from them.
 library;
 
 import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
+import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// The user participant's read cursor for a space (the position of the
-/// newest message they had seen when they last opened it), or null when the
-/// space has never been opened under the user. A server subscription that
-/// emits immediately.
-final spaceUserLastReadAtProvider = StreamProvider.autoDispose
-    .family<FeedPosition?, String>((ref, spaceId) {
-      // Only open the read-cursor subscription for a space that actually
-      // belongs to the active workspace, and subscribe AGAINST that same
-      // workspace id — never a foreign, deleted or not-yet-loaded space. See
-      // [workspaceOwningSpace] for why the pair has to be established here
-      // rather than assembled from the ambient workspace at call time.
-      final workspaceId = workspaceOwningSpace(ref, spaceId);
-      if (workspaceId == null) {
-        return Stream<FeedPosition?>.value(null);
-      }
+/// The signed-in person's read cursors across a workspace's conversations,
+/// keyed by conversation id: ONE server subscription for the whole sidebar.
+/// A conversation missing from the map has never been read by them.
+final userConversationReadsProvider = StreamProvider.autoDispose
+    .family<Map<String, FeedPosition>, String>((ref, workspaceId) {
       return ref
-          .watch(spaceReadRepositoryProvider)
-          .watchUserLastReadAt(
+          .watch(conversationReadRepositoryProvider)
+          .watchUserConversationReads(
             workspaceId,
-            spaceId,
             ref.watch(currentUserIdProvider) ?? '',
           );
     });
 
-/// Whether a space has agent messages the user hasn't seen yet (the sidebar's
-/// notification-dot signal). True only when the user has opened the space
-/// before (a non-null read cursor exists) AND a top-level agent message landed
-/// after that cursor. A never-opened space shows no dot, so a space the user
-/// never visited does not light up with its whole history. Reads the server-computed activity aggregate — no
-/// per-space message-list subscription.
-///
-/// When the space lists its conversations, the matching [conversationUnreadProvider]
-/// carries the same signal onto the conversation that actually has unseen
-/// work; the space row suppresses its own dot in that case so one unseen
-/// reply does not light both the parent and the child.
+/// The person's cursor in one conversation of the active workspace: loading
+/// until the cursors arrive, then null when they have never read it.
+final conversationLastReadProvider = Provider.autoDispose
+    .family<AsyncValue<FeedPosition?>, ConversationRef>((ref, key) {
+      final workspaceId = workspaceOwningSpace(ref, key.spaceId);
+      if (workspaceId == null) {
+        return const AsyncValue.data(null);
+      }
+      return ref.watch(
+        userConversationReadsProvider(
+          workspaceId,
+        ).select((reads) => reads.whenData((m) => m[key.conversationId])),
+      );
+    });
+
+/// Whether one conversation has an agent message the person hasn't seen.
+/// Archived conversations never do: the server leaves them out of
+/// `SpaceActivity.lastAgentMessageByConversation`. False while the cursors
+/// are loading, so rows do not flash a dot on connect.
+final conversationUnreadProvider = Provider.autoDispose
+    .family<bool, ConversationRef>((ref, key) {
+      final lastRead = ref.watch(conversationLastReadProvider(key));
+      if (!lastRead.hasValue) {
+        return false;
+      }
+      return spaceActivityOf(
+            ref,
+            key.spaceId,
+          )?.conversationUnread(key.conversationId, lastRead.value) ??
+          false;
+    });
+
+/// Whether a space has unread work: one of its listed (not archived)
+/// conversations is unread. A space keeps no read state of its own.
 final spaceUnreadProvider = Provider.autoDispose.family<bool, String>((
   ref,
   spaceId,
 ) {
-  final lastRead = ref.watch(spaceUserLastReadAtProvider(spaceId)).value;
-  return spaceActivityOf(ref, spaceId)?.unreadAfter(lastRead) ?? false;
+  final workspaceId = ref.watch(activeWorkspaceIdProvider);
+  if (workspaceId == null) {
+    return false;
+  }
+  final activity = spaceActivityOf(ref, spaceId);
+  if (activity == null || activity.lastAgentMessageByConversation.isEmpty) {
+    return false;
+  }
+  return ref.watch(
+    userConversationReadsProvider(workspaceId).select(
+      (reads) => reads.value != null && activity.unreadFor(reads.value!),
+    ),
+  );
 });
-
-/// Whether one conversation has agent messages the user hasn't seen yet.
-///
-/// Same cursor as [spaceUnreadProvider] (read marks are still space-scoped —
-/// opening any conversation in the space clears the room) but compared against
-/// THAT conversation's last agent message, so the unread dot can sit on the
-/// row that has the unseen work instead of on the parent space.
-final conversationUnreadProvider = Provider.autoDispose
-    .family<bool, ConversationRef>((ref, key) {
-      final lastRead = ref
-          .watch(spaceUserLastReadAtProvider(key.spaceId))
-          .value;
-      if (lastRead == null) {
-        return false;
-      }
-      final lastAgent = spaceActivityOf(
-        ref,
-        key.spaceId,
-      )?.lastAgentMessageByConversation[key.conversationId];
-      return lastAgent != null && lastAgent.isAfter(lastRead);
-    });
-
-/// Number of distinct conversations with agent mail after the space's read
-/// cursor. Uses the workspace activity breakdown, not message or PR counts.
-/// Never-opened spaces follow the existing unread policy and stay quiet.
-final spaceUnreadConversationCountProvider = Provider.autoDispose
-    .family<int, String>((ref, spaceId) {
-      final lastRead = ref.watch(spaceUserLastReadAtProvider(spaceId)).value;
-      if (lastRead == null) {
-        return 0;
-      }
-      final activity = spaceActivityOf(ref, spaceId);
-      if (activity == null) {
-        return 0;
-      }
-      var count = 0;
-      for (final agent in activity.lastAgentMessageByConversation.values) {
-        if (agent.isAfter(lastRead)) {
-          count++;
-        }
-      }
-      return count;
-    });

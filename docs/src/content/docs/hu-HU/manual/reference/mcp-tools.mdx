@@ -2,7 +2,7 @@
 title: MCP-eszközök
 description: A cc_server által regisztrált MCP-eszközök teljes katalógusa, eszközcsaládonként.
 slug: hu-HU/kezikonyv/referencia/mcp-eszkozok
-sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
+sourceHash: 0ef9efd386b57c3a254e7f637b0436d9baff1719
 ---
 
 A `cc_server` egyetlen MCP (JSON-RPC 2.0) eszközregisztert üzemeltet, amely a fő szerverporton (alapértelmezés szerint `9030`) érhető el a `POST /mcp` és a `GET /sse` végponton, `2024-11-05` protokollverzióval. Minden kliens ugyanezt a regisztert éri el: az asztali alkalmazás, a webes build, a külső MCP-kliensek és a beépített ügynökfuttató. A külső MCP-szerverek saját rétegekben kapcsolódnak ugyanabba a regiszterbe: munkaterületenként egy réteg a munkaterület adminisztrátorai által beállított szervereknek, és egy réteg a szerver tulajdonosának személyes szerverei számára. Ez a végpont csak ügynökfuttatáshoz listázza, hívja és keresi őket: a saját munkaterület szervereit, valamint a személyes szervereket, ha a szerver tulajdonosa felel a futtatásért. Az MCP-token és a párosított eszközök soha nem látják őket (lásd: [Az ügynökök által használt MCP-szerverek](/hu-HU/kezikonyv/gyakorlati-utmutatok/mcp-szerver/#az-ügynökök-által-használt-mcp-szerverek)).
@@ -11,21 +11,22 @@ A `cc_server` egyetlen MCP (JSON-RPC 2.0) eszközregisztert üzemeltet, amely a 
 
 | Mérőszám | Darabszám |
 | --- | --- |
-| A `cc_server` által regisztrált eszközök | 110 |
-| A `packages/cc_mcp` csomagból | 108 |
+| A `cc_server` által regisztrált eszközök | 116 |
+| A `packages/cc_mcp` csomagból | 114 |
 | A `packages/cc_mcp_client` csomagból (eszközfelfedezés) | 2 |
-| Az alapregiszterben regisztrálva (`server_mcp_registry.dart`) | 63 |
-| Indítás után regisztrálva, ahogy a szolgáltatásaik elindulnak (`cc_server_runtime.dart`) | 47 |
-| Az alapregiszter 63 eszközéből kódgráfrepozitóriumtól függő | 5 |
+| Az alapregiszterben regisztrálva (`server_mcp_registry.dart`) | 64 |
+| Indítás után regisztrálva, ahogy a szolgáltatásaik elindulnak (`cc_server_runtime.dart`) | 52 |
+| Az alapregiszter 64 eszközéből kódgráfrepozitóriumtól függő | 5 |
+| Az alapregiszter 64 eszközéből, feltéve hogy a kódmód-futtató (`repl`) elérhető | 1 |
 
-Az öt kódgráf-eszköz csak akkor kerül regisztrálásra, ha a gazdagép kódgráfrepozitóriumot ad át a `buildServerMcpRegistry` számára. A `cc_server` mindig átad egyet, így mind a 110 eszköz aktív a szállított binárisban.
+Az öt kódgráf-eszköz csak akkor kerül regisztrálásra, ha a gazdagép kódgráfrepozitóriumot ad át a `buildServerMcpRegistry` számára, a `repl` pedig csak akkor, ha a kódmód futtatóját adja át. A `cc_server` mindkettőt átadja (futtató nélkül nem indul el), így mind a 111 eszköz regisztrálva van a szállított binárisban; a nyilvános demószerver nem regisztrálja a `repl`-t.
 
-A teljes regiszter megjelenik a `tools/list` válaszában, felfedezési kapuzás nélkül. A jegy módosításai típusos eszközök.
+A teljes regiszter megjelenik a `tools/list` válaszában, felfedezési kapuzás nélkül, kivéve az olyan ügynökfuttatást, amely tud szkripteket futtatni (lent). A jegy módosításai típusos eszközök.
 
 :::note[A külső kliensek mindig a teljes katalógust látják]
-A `tools/list` soha nem csonkul, kivéve a szerver tulajdonosának személyes MCP-szervereit, amelyeket soha nem tartalmaz. Az MCP-kliensek az eszközneveket a lista saját gyorsítótárazott példányához ellenőrzik, és a szervertől való kérdezés nélkül elutasítanak mindent, ami nem szerepel benne, így az ott elrejtett eszköz nem csupán csendes, hanem elérhetetlen.
+A `tools/list` soha nem csonkul, kivéve a szerver tulajdonosának személyes MCP-szervereit, amelyeket soha nem tartalmaz, és a [kódmódot](/hu-HU/kezikonyv/fogalmak/kodmod/): a `repl` csak olyan ügynökfuttatásnak szerepel a listában, amely olyan szerveren fut, ahol a szkriptek futtathatók, és ez a futtatás a `repl`-t, a közvetlen eszközöket (`read`, `write`, `edit`, `search`, `find`, `bash`, `read_output`, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` és a mód saját igéi, ahol a regiszter tartalmazza őket) és azokat az eszközöket kapja, amelyeket a szkript nem hívhat. A többit szkriptből hívja; egy közvetlen hívásra a válasz megmondja, hogyan hívja meg `repl`-ből. Az MCP-kliensek az eszközneveket a lista saját gyorsítótárazott példányához ellenőrzik, és a szervertől való kérdezés nélkül elutasítanak mindent, ami nem szerepel benne, így az ott elrejtett eszköz nem csupán csendes, hanem elérhetetlen.
 
-A **beépített harness** más: kérésenként csak a definíciók egy állandó részhalmazát tölti be, a többit pedig az első használatkor húzza be, ami harness oldali viselkedés, és nem változtatja meg ezt a regisztert. Lásd: [Eszközkontextus és promptgyorsítótár](/hu-HU/kezikonyv/fogalmak/eszkozkontextus).
+A **beépített harness** más: kérésenként csak a definíciók egy kis közvetlen készletét tölti be, a többit pedig szkriptekből éri el, vagy első használatkor tölti be, ami harness oldali viselkedés, és nem változtatja meg ezt a regisztert. Lásd: [Eszközkontextus és promptgyorsítótár](/hu-HU/kezikonyv/fogalmak/eszkozkontextus/).
 :::
 
 :::note[Minden eszközosztály regisztrálva van]
@@ -51,6 +52,14 @@ Mindkettő a `cc_mcp_client` csomagból származik, nem a `cc_mcp`-ből, és min
 
 Egy harmadik felfedező eszköz, a **`search_tools`** kizárólag a beépített harnessen belül létezik, és nem része ennek az MCP-regiszternek. A futtatás saját eszközfelületét rangsorolja, és a `search_tool_bm25`-tól eltérően **betölti** a megtalált eszközök sémáit, hogy az ügynök a következő körében meghívhassa a találatot. A harnessen futó ügynököknek ezt érdemes előnyben részesíteniük; az MCP-klienseknek a `search_tool_bm25` áll rendelkezésére.
 
+## Kódmód
+
+| Eszköz | Leírás |
+| ------ | ----------- |
+| `repl` | Futtat egy JavaScript-szkriptet, amely a futtatás többi eszközét `tools.<id>(args)` alakban hívja, és csak azt adja vissza, amire szüksége van. Csak olyan ügynökfuttatásnak szerepel a listában, amely olyan szerveren fut, amely tud [kódmód](/hu-HU/kezikonyv/fogalmak/kodmod/) szkripteket futtatni. Minden beágyazott hívás ugyanazon a kapun megy át, mint egy `tools/call`. Bemenetei: `code`, `description`, `timeout_ms?`, `max_output_tokens?` |
+
+Egy szkript nem hívhatja a `repl`-t, a `search_tool_bm25`-öt, a `list_my_tools`-t, és nem hívhat olyan eszközt, amely másik ügynökfuttatást indít vagy üzen neki, jegyhez rendel vagy azt kommentálja, üzenetet küld, jóváhagyást hoz létre, dönt el róla vagy kommentál egy jóváhagyást, szabályzatot javasol vagy módosít, készségeket telepít vagy módosít, futásidejű profilt hoz létre, tervet nyújt be, vagy kilép a tervmódból, befejezi a beszélgetés célját, vagy beküldi a pipeline-futtatás kimenetét. Ezek az eszközök a `scriptCallable` értéket false-ra állítják, és mindig közvetlenül hívják őket; a beépített harnessben a közvetlen készleten kívüli ilyen eszköz első használatkor töltődik be. A `create_ticket` csak `assignee` nélkül hívható szkriptből.
+
 ## Ügynökeszközök
 
 | Eszköz | Leírás |
@@ -59,15 +68,29 @@ Egy harmadik felfedező eszköz, a **`search_tools`** kizárólag a beépített 
 
 ## Ügynökök közötti üzenetváltás és delegálás
 
-Az ügynökök tereken keresztül beszélnek egymással (tartósak, a névsorban láthatók). Az `ask_agent` kérés/válasz, kötelező időtúllépéssel; a `delegate_task`-et szerveroldalon mélységkorlát, ciklusfelismerés, költségvetési keret és autonómiaplafon őrzi.
+Az ügynökök terekben beszélnek egymással (tartós, a névsorban látható módon). Az `ask_agent` vagy megvárja a választ (`mode: wait`, alapértelmezés szerint 600 másodperc, legfeljebb 1 800), vagy azonnal visszatér (`mode: background`); mindkét esetben a kérdező egyszer kap ébresztést a válasszal, ha az nem jött vissza soron belül. A `send_to_agent`, az `ask_agent`, a `consult_agent`, a `request_peer_review` és a `delegate_task` ugyanazon a szerveroldali kapun megy át: mélység (3), ciklusdetektálás, költségkeret-boríték, autonómia-plafon és sebességkorlát ügynökpáronként. A küldő azonosítóját mindig a hívó futtatása adja. Lásd: [Ügynökök együttműködése](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynokok-egyuttmukodese/).
 
 | Eszköz | Leírás |
 | --- | --- |
-| `send_to_agent` | Egyirányú üzenetet küld egy másik ügynöknek, `to_agent_id` vagy pontos `to_agent_name` alapján címezve |
-| `ask_agent` | Kérdést tesz fel egy másik ügynöknek, és megvárja a válaszát, vagy időtúllépésbe fut |
+| `send_to_agent` | Egyirányú üzenetet küld egy másik ügynöknek, `to_agent_id` vagy pontos `to_agent_name` alapján címezve; a válasz `delivery_status` mezője `woken`, `queued_behind_run` vagy `refused` |
+| `ask_agent` | Kérdést tesz fel egy másik ügynöknek; megvárja a válaszát, vagy folytatja, és felébresztik, amikor az megérkezik |
 | `delegate_task` | Egy feladatot követett gyermekjegyként delegál egy másik ügynöknek |
 | `consult_agent` | A készségek alapján legjobban illeszkedő szakértőt adja a térhez, és egy fókuszált eligazítással indítja el |
 | `todo_read` | Elolvassa e beszélgetés elmentett feladatlistáját |
+| `agent_activity` | Megnézi, mit csinál most egy másik ügynök, és mit csinált utoljára (állapot, aktuális eszköz, utolsó üzenetek), anélkül hogy felébresztené. |
+
+## Ébresztő- és cél-eszközök
+
+Az ügynök ezeket használja alvás vagy lekérdezés helyett. Mindegyik csak a hívó ügynökre hat, a saját beszélgetésében; az ügynök soha nem argumentum. Lásd: [Ütemezések és ébresztők](/hu-HU/kezikonyv/gyakorlati-utmutatok/utemezesek-ebresztok/) és [Cél követése](/hu-HU/kezikonyv/gyakorlati-utmutatok/cel-kovetese/).
+
+| Eszköz | Leírás |
+| ------------- | ----------- |
+| `wake_me` | Későbbi ébresztést állít be: időpontra (`in:20m`, `at:<ISO time>`), intervallumra (`every:30m`), cronra (`cron:0 9 * * 1-5`, `tz`-vel), saját ütemében egy önjáró ciklusban (`next`, `delay`-jel 1 és 60 perc között), vagy amikor valami történik (`on:pr_checks`, `on:pr_review`, `on:pr_merged`, `on:environment`, `on:ticket:<id>`, `on:pipeline_run:<id>`). Opcionális: `note`, `max_runs`, `expires_in`, `when_busy` (`skip` vagy `queue`) és `deliver` (`run` vagy `notify`) |
+| `list_wakes` | Felsorolja, mi vár az ügynökre ebben a beszélgetésben: ütemezések, figyelők, függőben lévő ébresztők és megválaszolatlan kérdések |
+| `cancel_wake` | Egy ütemezést vagy figyelőt töröl, amelyet az ügynök maga állított be, az azonosítója alapján |
+| `goal_status` | Az ügynök aktív céljának olvasása: szerződés, szakasz, elköltött és hátralévő költségkeret, előrehaladás nélküli szakaszok száma, visszatartás, utolsó ellenőrzés és függőben lévő célébresztők |
+
+A `complete_goal` ([Terv-, playbook- és artefaktumeszközök](#terv--playbook--és-artefaktumeszközök) alatt) az egyetlen mód, amellyel egy ügynök azt mondja, hogy egy cél kész, és ez állítás, nem befejezés.
 
 ## Készségeszközök
 
@@ -94,7 +117,7 @@ Minden telepítés és frissítés egy fail-closed vizsgálati kapun halad át, 
 | `revise_artifact` | Lecseréli egy közzétett artefaktum tartalmát |
 | `list_artifacts` | Felsorolja a munkaterület artefaktumait |
 | `get_artifact` | Elolvas egy artefaktumot |
-| `complete_goal` | Elértnek nyilvánítja a beszélgetés aktív, tartós célját (amelyet a `/goal` vagy a `/loop` indított) |
+| `complete_goal` | Az ügynök aktív céljáról állítja, hogy teljesült, minden kritériumhoz bizonyítékkal; a szerver ezután lefuttatja az ellenőrzéseket és egy átnézést |
 
 ## Munkaterület-eszközök
 
@@ -162,10 +185,10 @@ Minden telepítés és frissítés egy fail-closed vizsgálati kapun halad át, 
 | `create_goal` | Szervezeti célt hoz létre (vállalat, csapat, ügynök vagy feladat szintjén) |
 | `list_goals` | Felsorolja a célokat szinttel, állapottal és összesített haladással |
 | `update_goal_progress` | Beállítja egy cél haladását |
-| `create_approval` | Testületi jóváhagyást nyit egy felügyelt művelethez (terv elhagyása, összefésülés, kiadás, felvétel, egyéni) |
+| `create_approval` | Testületi jóváhagyást nyit egy felügyelt művelethez (terv elhagyása, összefésülés, kiadás, felvétel, egyéni) a hívó ügynök nevében. Csak ügynökfuttatás |
 | `list_approvals` | Felsorolja a jóváhagyásokat, opcionálisan állapot szerint szűrve |
-| `decide_approval` | Döntést rögzít: jóváhagyás, elutasítás, átdolgozás kérése vagy újrabeküldés |
-| `comment_approval` | Hozzászól egy testületi jóváhagyáshoz |
+| `decide_approval` | A hívó ügynök döntését rögzíti: jóváhagyás, elutasítás, átdolgozás kérése vagy újrabeküldés. Csak ügynökfuttatás |
+| `comment_approval` | Hozzászól egy testületi jóváhagyáshoz a hívó ügynökként. Csak ügynökfuttatás |
 | `exit_plan_mode` | Megnyit (és jóváhagyás után felhasznál) egy `plan_exit` jóváhagyást, amely a beszélgetést kilépteti a tervmódból |
 | `agent_heartbeat` | Jelenti az életjelet (aktív, tétlen, elakadt); az elnémulás a futásidejű állapotot először nemrég elveszett, majd offline értékre váltja |
 | `list_runtime_health` | Felsorolja az egyes ügynökök futásidejű állapotát |

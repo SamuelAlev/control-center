@@ -1,0 +1,44 @@
+{
+  "id": "campaign-goal-fresh-history",
+  "seed": 2002,
+  "arms": [
+    {
+      "id": "conversation",
+      "axis": "baseline",
+      "label": "Every segment continues the conversation's history (the default)"
+    },
+    {
+      "id": "history-none",
+      "axis": "session_continuity",
+      "sessionContinuity": "history_none",
+      "label": "Every segment after the first starts with no history (--fresh)"
+    }
+  ],
+  "strata": [
+    {
+      "stratum": "cold",
+      "repetitions": 1
+    },
+    {
+      "stratum": "warm",
+      "repetitions": 1
+    }
+  ],
+  "randomizedOrder": true,
+  "hypothesis": "superiority",
+  "primaryOutcome": "verified_success",
+  "minTasks": 10,
+  "alpha": 0.05,
+  "maxCostRatio": 1.0,
+  "caveats": [
+    {
+      "code": "segments_are_follow_up_turns",
+      "message": "A segment here is a follow-up turn of one attempt whose text restates the goal, not a wake-started goal segment: the server's goal block, checklist and owed-work pacing are not in the attempt. The arm changes exactly what --fresh changes, the history a turn starts with."
+    }
+  ],
+  "taskTags": [
+    "goal_segments",
+    "session_continuity"
+  ],
+  "notes": "Plan section 20, campaign 2 (work package 3): conversation context against --fresh on multi-segment tasks. Completion is verified success, cost is the attempt total, repeated work is the re-read count (a read of a target already read in the attempt). The question is superiority on verified success: is --fresh better than conversation context. The margin and the cost ceiling are the owner's to change. minTasks is 10: with the 3 to 5 tasks its tag selects today the verdict reads \"No decision\" with the reason \"N tasks, 10 needed\", which is the honest state until the task set grows."
+}

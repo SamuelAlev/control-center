@@ -9,6 +9,7 @@ import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.d
 import 'package:cc_domain/features/messaging/domain/entities/space_participant.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
@@ -16,10 +17,12 @@ import 'package:control_center/features/messaging/presentation/widgets/space_inp
 import 'package:control_center/features/messaging/providers/editing_message_provider.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/messaging/providers/space_attachment_upload_provider.dart';
+import 'package:control_center/features/messaging/providers/space_composer_submit.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/composer/composer_models.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -73,6 +76,9 @@ class _RecordingMessagingPort implements MessagingPort {
   /// Body of the last queued steering card, or null if nothing queued.
   String? steeredContent;
 
+  /// Thrown by `enqueueSteering` when set.
+  Object? enqueueError;
+
   @override
   Future<({String messageId, bool steerable})?> enqueueSteering({
     required String workspaceId,
@@ -82,6 +88,9 @@ class _RecordingMessagingPort implements MessagingPort {
     String? senderUserId,
     List<Map<String, dynamic>> attachments = const [],
   }) async {
+    if (enqueueError case final error?) {
+      throw error;
+    }
     steeredContent = content;
     return (messageId: 'steer-1', steerable: true);
   }
@@ -573,6 +582,53 @@ void main() {
         );
       });
     }
+
+    testWidgets('a steering message refused for want of the write grant is '
+        'worded as the forge refusals are, and nothing is sent', (
+      tester,
+    ) async {
+      final sender = await pumpRoom(
+        tester,
+        participants: [_agentParticipant('a1')],
+        roster: [_agent('a1')],
+        activeRuns: [liveRun],
+      );
+      sender.enqueueError = RemoteRpcException(
+        -33002,
+        'server words: write needed',
+        {'kind': 'repo_grant_required', 'level': 'write'},
+      );
+      final bar = tester.state<ConsumerState<SpaceInputBar>>(
+        find.byType(SpaceInputBar),
+      );
+      // The submit throws so the composer keeps the draft.
+      await expectLater(
+        submitSpaceComposer(
+          ref: bar.ref,
+          context: bar.context,
+          spaceId: 'ch-1',
+          conversationId: 'conv-1',
+          submission: const ComposerSubmission(
+            text: 'try the other branch',
+            mentions: [],
+            attachments: [],
+          ),
+        ),
+        throwsA(isA<RemoteRpcException>()),
+      );
+      await tester.pump();
+      expect(
+        find.text(
+          'You can read this repository but not change it. A workspace '
+          'admin can grant write access.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('server words'), findsNothing);
+      expect(sender.sentContent, isNull, reason: 'never falls through');
+      await tester.pump(const Duration(seconds: 6));
+      await tester.pump(const Duration(seconds: 1));
+    });
 
     testWidgets('mentioning a real agent mid-run starts its own turn', (
       tester,

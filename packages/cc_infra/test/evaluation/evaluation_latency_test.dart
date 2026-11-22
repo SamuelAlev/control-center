@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_backend_port.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_manifest.dart';
+import 'package:cc_domain/features/evals/domain/evaluation/evaluation_outcome.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_plan.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_task.dart';
 import 'package:cc_harness/cancellation.dart';
@@ -103,6 +104,7 @@ class _AuxCompactor implements HarnessCompactor {
     String selfAgentName = 'assistant',
     bool force = false,
     CancellationToken cancel = CancellationToken.none,
+    Future<String?> Function()? focus,
   }) async {
     if (!requested) {
       requested = true;
@@ -415,6 +417,7 @@ void main() {
         claudePath: '${workspace.path}/claude-fixture',
       ).execute(request());
       expect(attempt.completed, isTrue);
+      expect(attempt.end, EvaluationAttemptEnd.finished);
       expect(attempt.toolEvents, hasLength(1));
       expect(attempt.latency.firstUsefulTextMs, isNotNull);
       expect(attempt.latency.transportTtfbMs, isNull);
@@ -430,6 +433,7 @@ void main() {
           claudePath: '${workspace.path}/claude-fixture',
         ).execute(request());
         expect(attempt.completed, isFalse);
+        expect(attempt.end, EvaluationAttemptEnd.harnessFault);
         expect(attempt.error, isNotNull);
         expect(attempt.latency.transportTtfbMs, isNull);
         expect(attempt.latency.firstModelEventMs, isNull);
@@ -437,5 +441,29 @@ void main() {
         expect(attempt.cost.budgetMicros, isNull);
       },
     );
+
+    test('the CLI stopping for turns is the agent stopping; an execution '
+        'error is the harness', () async {
+      for (final (subtype, end) in [
+        ('error_max_turns', EvaluationAttemptEnd.agentStopped),
+        ('error_max_budget_usd', EvaluationAttemptEnd.agentStopped),
+        ('error_during_execution', EvaluationAttemptEnd.harnessFault),
+      ]) {
+        cliScript([
+          {'type': 'system', 'subtype': 'init', 'session_id': 'session-1'},
+          {
+            'type': 'result',
+            'subtype': subtype,
+            'total_cost_usd': 0.01,
+            'usage': {'input_tokens': 1, 'output_tokens': 2},
+          },
+        ]);
+        final attempt = await ClaudeCliEvaluationBackend(
+          claudePath: '${workspace.path}/claude-fixture',
+        ).execute(request());
+        expect(attempt.end, end, reason: subtype);
+        expect(attempt.error, contains(subtype));
+      }
+    });
   }, skip: Platform.isWindows ? 'the shebang CLI fixture is POSIX-only' : false);
 }

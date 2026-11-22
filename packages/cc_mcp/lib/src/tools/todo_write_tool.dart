@@ -26,6 +26,11 @@ class TodoWriteTool extends McpTool {
   String get name => 'todo_write';
 
   @override
+  String get resultNote =>
+      'Text: `Task list (D/N done):`, a `[x]`, `[~]` or `[ ]` line per item, '
+      'then any notes.';
+
+  @override
   Set<String> get forcedScopeKeys => const {'conversation_id'};
 
   @override

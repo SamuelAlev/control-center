@@ -2,7 +2,7 @@
 title: Övervaka pipelinekörningar
 description: Arbeta i körningskön, läs en körnings tidslinje och stegpanel och rädda ett misslyckat eller fastnat steg.
 slug: sv-SE/handbok/how-to-guider/overvaka-pipelines
-sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
+sourceHash: 48d44ae3ca3e23c1123ef282ccffece35b542b96
 ---
 
 Den här sidan handlar om allt som händer efter att en körning har startat: att
@@ -70,6 +70,8 @@ Två skyddsnät i motorn låter hela körningen misslyckas i stället för att
 (`extras.awaitApproval` – kroppen `orchestration.awaitApproval` – är undantaget;
 `human.gate` är det inte) och ett icke-idempotent steg som var mitt i körningen
 när servern stoppades.
+
+Ett steg **Pursue a goal** undantas även från 24-timmarsgränsen: det förblir pausat medan dess mål arbetar, och dess sida länkar till målet. En hel körning kan också vara **Pausad** eftersom dess orkestrering nått sin kostnadsgräns; körningens sida visar då vad som spenderats av gränsen och, för körningens begärare, **Höj gräns**.
 
 ## Inspektera ett steg
 

@@ -2,7 +2,7 @@
 title: CLI cc_server
 description: Setiap flag, pemboleh ubah persekitaran, subperintah dan laluan direktori data bagi pelayan tanpa kepala.
 slug: ms-MY/manual-pengguna/rujukan/cli-cc-server
-sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
+sourceHash: ee71514a1721599da299a81b5702bc7cdb372330
 ---
 
 Setiap flag proses menerima flag CLI atau pemboleh ubah persekitaran; flag diutamakan,
@@ -10,9 +10,7 @@ kemudian persekitaran, kemudian lalai. Kelayakan pembekal ialah pengecualian —
 lihat [Apl pembekal dan Connect](#apl-pembekal-dan-connect).
 
 :::caution[Flag yang tidak dikenali diabaikan secara senyap]
-Penghurai argumen ditulis sendiri dan melangkau apa-apa yang tidak dikenali, jadi salah taip
-(`--tls-key-file`, `--bindany`) tidak menghasilkan ralat — pelayan cuma bermula dengan
-lalai. Periksa baris log permulaan apabila sesuatu flag kelihatan tidak berkesan.
+Penghurai argumen ditulis sendiri dan melangkau apa-apa yang tidak dikenali, jadi salah taip (`--tls-key-file`, `--bindany`) tidak menghasilkan ralat — pelayan cuma bermula dengan lalai. Periksa baris log permulaan apabila sesuatu flag kelihatan tidak berkesan. Satu [bendera mod kod](#mod-kod) dengan nilai yang tidak diterimanya adalah berbeza: pelayan enggan bermula.
 :::
 
 ## Teras
@@ -50,8 +48,10 @@ lalai. Periksa baris log permulaan apabila sesuatu flag kelihatan tidak berkesan
 | `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | `on` membalut larian ejen dalam kotak pasir natif OS hos, dan pada hos tanpa satu hanya memulakan larian pemilik pelayan. `off` menjalankan ejen setiap ahli tanpa kurungan pada hos ini. Lihat di bawah |
 | `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Suis mati lapangan untuk pengindeksan graf kod latar belakang. `off` but dengan bersih tanpa bina semula                    |
 | `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Saat untuk menahan sapuan indeks pertama selepas sepanduk sedia (dihadkan 0–300)                                            |
-| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Sama ada larian harness menghantar set alat residen yang kecil serta indeks nama, lalu memuatkan selebihnya pada penggunaan pertama. Lihat di bawah |
+| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Sama ada larian harness menghantar set alat langsung yang kecil serta indeks nama, lalu memuatkan selebihnya pada penggunaan pertama. Lihat di bawah |
 | `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Saat sesuatu larian diparkirkan sambil menunggu manusia membetulkan kelayakan yang tidak dapat melayaninya (dihadkan 0–3600). Lihat di bawah |
+| `--code-mode-max-processes` | `CC_SERVER_CODE_MODE_MAX_PROCESSES` | `min(16, 2 × cores)` | Skrip mod kod yang berjalan serentak pada pelayan ini, tidak termasuk yang menunggu seseorang, 1–64. Lihat di bawah |
+| `--code-mode-max-heap-mb` | `CC_SERVER_CODE_MODE_MAX_HEAP_MB` | `1024` | Memori paling banyak yang boleh digunakan oleh satu skrip, 16–1024 MiB. Had memori yang lebih tinggi bagi ruang kerja diturunkan kepadanya |
 
 ## Apl pembekal dan Connect
 
@@ -102,18 +102,9 @@ Bagi automasi, orang yang bertanggungjawab ialah orang yang automasi itu terikat
 
 ### `--tool-deferral`
 
-Larian harness terbina menghantar set residen kecil takrifan alat serta indeks nama
-sahaja bagi selebihnya, yang memuatkan skemanya pada kali pertama digunakan. Ia
-memangkas blok alat sebanyak kira-kira 78% dan mengekalkan set yang sentiasa kelihatan
-dalam julat tempat model memilih alat dengan andal. Alat yang ditangguhkan kekal
-boleh dipanggil dengan nama sepanjang masa, dan `search_tools` menemuinya mengikut
-niat. Lihat [Konteks alat dan caching prompt](/ms-MY/manual-pengguna/konsep/konteks-alat).
+Larian harness terbina menghantar set langsung kecil takrifan alat serta indeks nama sahaja bagi selebihnya, yang memuatkan skemanya pada kali pertama digunakan, atau dipanggil daripada skrip `repl`. Ia mengekalkan set yang sentiasa kelihatan dalam julat tempat model memilih alat dengan andal. Diukur pada pendaftaran yang dibina oleh ujian, alat sembang piawai ejen terbina berjumlah 14 definisi: kira-kira 16.5 KB dengan `repl` (kira-kira 4 KB daripadanya ialah `repl`, yang definisinya tidak boleh melebihi 4,096 bait), kira-kira 13 KB pada pelayan yang tidak boleh menjalankan skrip. Alat yang ditangguhkan kekal boleh dipanggil dengan nama sepanjang masa, dan `search_tools` menemuinya mengikut niat. Lihat [Konteks alat dan caching prompt](/ms-MY/manual-pengguna/konsep/konteks-alat/).
 
-`--tool-deferral off` menjadikan setiap alat yang diterima residen semula, menghasilkan
-semula permintaan yang dibuat oleh pelayan sebelum penundaan wujud. Ia ialah suis mati
-bagi model yang mengendalikan permukaan dua peringkat dengan teruk — satu flag dan bukan
-bina semula. Ia hanya menjejaskan harness terbina; `tools/list` MCP yang dilihat oleh
-klien luaran sentiasa katalog yang lengkap.
+`--tool-deferral off` menghantar takrifan setiap alat yang diterima terlebih dahulu, kecuali bahawa larian dengan `repl` masih memanggil daripada skrip alat yang boleh dipanggil oleh skrip. Ia ialah suis mati bagi model yang mengendalikan permukaan dua peringkat dengan teruk — satu flag dan bukan bina semula. Ia hanya menjejaskan harness terbina; `tools/list` MCP yang dilihat oleh klien luaran ialah katalog yang lengkap, kecuali bagi larian ejen pada pelayan yang boleh menjalankan skrip [mod kod](/ms-MY/manual-pengguna/konsep/mod-kod/).
 
 ### `--credential-gate`
 
@@ -131,6 +122,25 @@ larian itu gagal dengan mesej yang sama seperti jika ia digagalkan sejak awal.
 
 `--credential-gate=0` ialah suis mati: tiada apa yang pernah diparkirkan dan kelayakan
 yang buruk menamatkan giliran tepat seperti sebelum pintu ini wujud.
+
+### Mod kod
+
+[Mod kod](/ms-MY/manual-pengguna/konsep/mod-kod/) membenarkan ejen menjalankan skrip JavaScript yang memanggil alatnya. Tiada bendera yang menghidupkan atau mematikannya: setiap larian mendapat alat `repl` apabila pelayan boleh menjalankan skrip, dan pelayan demo awam tidak menjalankan sebarang skrip.
+
+Skrip berjalan dalam `cc_codemode`, program yang dibundel bersama pelayan dalam `bin/codemode/`. Pelayan tidak akan bermula tanpanya: ia mencetak satu baris yang menamakan apa yang hilang dan keluar dengan kod `78`. Semasa bermula ia menjalankan ujian kendiri kunci program dan mencetak satu baris (hanya didiamkan oleh `--log-level error`):
+
+```text
+cc_server: code_mode=available (cc_codemode 0.1.0 quickjs-ng 0.16.2 protocol 2; 16 scripts at once, at most 12 per workspace; up to 64 more runners kept for scripts waiting on a person; heap at most 1024 MiB per script)
+cc_server: code_mode=unavailable (<reason>) — runs on this host get no repl tool; scripts never run without full lockdown
+```
+
+`unavailable` bermakna program tidak dapat mengunci dirinya pada hos ini, contohnya dalam bekas yang profil keselamatannya menolak salah satu langkahnya, atau kerana ia bukan binaan keluaran. Pelayan berjalan seperti biasa, tiada larian mendapat `repl`, dan halaman tetapan mod kod ruang kerja menunjukkan sebabnya.
+
+Pelayan terus menyemak semasa ia berjalan. Apabila program gagal dimulakan atas sebab yang bukan disebabkan skrip, pelayan menjalankan ujian kendiri sekali lagi, paling kerap sekali seminit. Jika itu gagal, pelayan mencetak baris `unavailable` bersama sebabnya dan tidak menjalankan skrip: larian yang bermula sementara itu tidak mendapat `repl`, dan larian yang sudah memilikinya memanggil alatnya secara langsung ([Apabila skrip tidak boleh dijalankan](/ms-MY/manual-pengguna/konsep/mod-kod/#apabila-skrip-tidak-boleh-dijalankan)). Ia terus menyemak, paling kerap sekali seminit, dan apabila ujian kendiri lulus semula, ia mencetak baris `available` dan menjalankan skrip semula. Hanya ujian kendiri yang gagal semasa permulaan memerlukan permulaan semula. Sebab yang ditunjukkan oleh tetapan ruang kerja telah membuang laluan hos; baris log memaparkannya sepenuhnya.
+
+Dua bendera mod kod menghadkan apa yang boleh digunakan oleh skrip. `--code-mode-max-processes` mengehadkan skrip yang berjalan serentak merentasi setiap ruang kerja (lalai dua kali teras pemproses, paling banyak 16; diterima 1–64). Dengan had 2 atau lebih, satu ruang kerja menggunakan paling banyak had tolak satu perempat daripadanya, supaya tiada satu ruang kerja pun boleh mengambil setiap tempat, dan skrip yang menunggu diterima mengikut giliran merentasi ruang kerja. Skrip yang menunggu kelulusan atau jawapan seseorang menyerahkan tempatnya kepada skrip lain dan tidak memulakan panggilan alat sehingga dijawab; sehingga empat kali had skrip menunggu sedemikian dikekalkan, paling banyak tiga perempat daripadanya dari satu ruang kerja, dan setiap satunya masih boleh mengira dalam had masa pemprosesnya sendiri. `--code-mode-max-heap-mb` ialah jumlah memori paling banyak yang boleh digunakan oleh mana-mana satu skrip.
+
+Nilai yang tidak diterima oleh bendera ini (nombor di luar julat, atau bukan nombor) menghentikan pelayan semasa bermula (kod keluar `78`) dengan mesej yang menamakan nilai yang diterima. Ia tidak sekali-kali dibaca sebagai lalai.
 
 ## Subperintah
 
@@ -233,6 +243,7 @@ Pelayan memastikan direktori data kekal peribadi kepada akaunnya sendiri (`0700`
 | `backups/exports/`                | Eksport satu ruang kerja, `<workspaceId>-<timestamp>.db`                         |
 | `backups/transfer/`               | Kawasan persediaan untuk muat turun dan muat naik sandaran; disapu oleh laluan yang menulisnya |
 | `models/`                         | Model pembenaman, diarisasi dan pertuturan pada peranti                          |
+| `codemode/` | Salinan pembangunan pelari mod kod, dipasang oleh `scripts/natives/build_codemode.sh`; bundel keluaran membawanya dalam `bin/codemode/` |
 | `meetings/<meetingId>/`           | Audio mesyuarat yang disimpan                                                    |
 | `rigs/images/`                    | Imej cakera stesen yang diimport (permukaan desktop QEMU)                        |
 | `rigs/smolvm/<rigId>/`            | Keadaan masa jalan microVM setiap stesen (rahsia broker, `0600`)                 |

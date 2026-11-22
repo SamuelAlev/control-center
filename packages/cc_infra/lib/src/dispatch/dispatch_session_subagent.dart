@@ -3,6 +3,42 @@ part of 'dispatch_session.dart';
 String _stripFrontmatter(String md) =>
     MarkdownFrontmatter.parse(md).body.trim();
 
+/// The code mode paragraph of a subagent's system prompt: the tools only a
+/// `repl` script can reach, and how to reach them. Null when the subagent
+/// has no `repl` or no such tool (its `repl` description then says all
+/// there is to say).
+///
+/// A subagent's prompt is its profile's own, not the mode capability block
+/// a top-level run gets, so this is the one part of that block a child
+/// needs: without it a child sees neither the script-only tools' names nor
+/// that it must not call them directly. The wording follows the capability
+/// block's script-tool paragraph.
+String? _subagentScriptToolsNote({
+  required bool hasRepl,
+  required List<String> scriptToolNames,
+}) {
+  if (!hasRepl || scriptToolNames.isEmpty) {
+    return null;
+  }
+  final buf = StringBuffer()
+    ..writeln(
+      '${scriptToolNames.length} more tools are callable from `repl`, as '
+      '`await tools.<name>(args)` (or `tools["<name>"](args)`) inside a '
+      'script. They are not loaded as tools of their own, so do not call '
+      "them directly. In a script, `await describeTool(name)` returns a tool's "
+      'declaration and `await searchTools(query)` finds the right one for a '
+      'plain-language description.',
+    )
+    ..writeln();
+  for (final entry in groupToolsByCategory(scriptToolNames).entries) {
+    final grouped = [...entry.value]..sort();
+    buf.writeln(
+      '- ${entry.key.label}: ${grouped.map((n) => '`$n`').join(', ')}',
+    );
+  }
+  return buf.toString().trim();
+}
+
 extension _DispatchSessionSubagent on DispatchSession {
   Future<SubagentResult> _spawnSubagent(
     SubagentSpawnRequest req, {
@@ -16,7 +52,17 @@ extension _DispatchSessionSubagent on DispatchSession {
     required HarnessRunConfig runConfig,
     bool Function()? budgetExceeded,
     required String baseSystemPrompt,
-    required ToolApprovalCallback? approval,
+    // The run's approval decision, given the origins of the loop asking: one
+    // implementation for every loop, each binding its own origins, so the
+    // card of a script's call names that loop's script and no other.
+    required Future<ToolGateDecision> Function(
+      RunScriptOrigins origins,
+      ToolApprovalRequest request,
+    )
+    approvalWith,
+    // The run's refusal of a script's call too long to audit whole, asked
+    // before a hook or a card in every loop.
+    required NestedCallRefusal scriptRefusal,
     Advisor? parentAdvisor,
     AgentLoopHooks? parentHooks,
   }) async {
@@ -50,6 +96,9 @@ extension _DispatchSessionSubagent on DispatchSession {
     final childRunId =
         '${runLogId ?? 'run'}-sub-${_subagentSeq++}-${const Uuid().v4()}';
     final childAgentId = agentId ?? 'subagent';
+    // The outputs this child stores: its scripts read only these, though
+    // they share its parent's store scope.
+    final childOutputs = RunOutputLedger();
     final startedAt = DateTime.now();
     final repo = deps.runLogRepo;
     final ws = parentAccounting.workspaceId;
@@ -88,12 +137,25 @@ extension _DispatchSessionSubagent on DispatchSession {
       ),
     );
 
+    // The parent's script setup: the same execution service and the same
+    // teardown, so a stop ends a child's script too. The origins are the
+    // child's own, under the run id its scripts are recorded under: its
+    // approval cards, its questions and its commands resolve a nested call
+    // here, never in a parent's or a sibling's registry, which may hold a
+    // script under the same tool call id.
+    final scripts = await _codeModeScripts();
+    final scriptExecutions = scripts.executions;
+    final childOrigins = RunScriptOrigins(runId: childRunId);
+    Future<ToolGateDecision> childApproval(ToolApprovalRequest request) =>
+        approvalWith(childOrigins, request);
     final childRegistry = _buildHarnessRegistry(
       mode: subProfile.surface.maxTier == ToolApprovalTier.exec
           ? Mode.chat
           : Mode.plan,
       env: env,
       personalMcp: await _personalMcpAllowed(),
+      scriptOrigins: childOrigins,
+      replSlot: scriptExecutions != null,
     );
 
     var childProvider = parentProvider;
@@ -154,7 +216,8 @@ extension _DispatchSessionSubagent on DispatchSession {
               runConfig: runConfig,
               budgetExceeded: budgetExceeded,
               baseSystemPrompt: baseSystemPrompt,
-              approval: approval,
+              approvalWith: approvalWith,
+              scriptRefusal: scriptRefusal,
               parentAdvisor: parentAdvisor,
               parentHooks: parentHooks,
             ),
@@ -165,15 +228,19 @@ extension _DispatchSessionSubagent on DispatchSession {
     final childAdmitted = custom != null
         ? custom.filterTools(childRegistry.toolsFor(subProfile.surface))
         : subProfile.filterTools(childRegistry.toolsFor(subProfile.surface));
-    final childPartition = materializeHarnessToolSurface(
+    // The parent's script setup, not one of the child's own: sibling
+    // children then build the same surface and share one cache prefix, and a
+    // subagent cannot get a script tool its parent did not get.
+    final childSurface = materializeHarnessToolSurface(
       registry: HarnessToolRegistry.of(childAdmitted),
       surface: const ToolSurfaceSpec.unrestricted(),
       residency: DispatchSession._childResidency(
         enabled: deps.toolDeferralEnabled,
       ),
     );
-    final childTools = childPartition.resident;
-    final childDeferredTools = childPartition.deferred;
+    var childTools = childSurface.resident;
+    final childDeferredTools = childSurface.deferred;
+    var childScriptTools = childSurface.scriptOnly;
     final childModelId = childModel ?? childProvider.defaultModel;
     final childModelInfo = deps.modelResolver?.call(
       '$childProviderId/$childModelId',
@@ -184,6 +251,7 @@ extension _DispatchSessionSubagent on DispatchSession {
       override: req.effortOverride,
     );
 
+    var childHasRunLogRow = false;
     if (repo != null) {
       try {
         await repo.upsert(
@@ -206,12 +274,62 @@ extension _DispatchSessionSubagent on DispatchSession {
             spawnToolCallId: req.spawnToolCallId,
           ),
         );
+        childHasRunLogRow = true;
       } catch (e) {
         CcInfraLog.warning(
           'Failed to write subagent start run-log for "${req.label}": $e',
         );
       }
     }
+
+    // The child's own `repl`. Its scripts run under the child's run id, so
+    // the service's one-script-per-run admission never makes a parent's
+    // script and a child's script wait on each other, and their records
+    // hang off the child's run-log row. A child whose row could not be
+    // written gets no `repl` (its scripts could not be recorded) and calls
+    // its tools directly. The agent is the parent's real one, never the
+    // placeholder the child's tool context carries; the full output lands
+    // where that context's `read_output` reads.
+    if (scriptExecutions != null &&
+        !childHasRunLogRow &&
+        childTools.any((t) => t.name == ReplToolDescription.toolName)) {
+      childTools = withoutReplTool(
+        resident: childTools,
+        scriptOnly: childScriptTools,
+      );
+      childScriptTools = const [];
+    } else if (scriptExecutions != null) {
+      childTools = bindReplTool(
+        resident: childTools,
+        scriptOnly: childScriptTools,
+        binding: ReplBinding(
+          executions: scriptExecutions.forLoop(childOrigins),
+          run: _subagentReplRun(ws, childRunId, childAgentId, childOutputs),
+          limits: scripts.limits,
+          fullOutputSink: childOutputs.recording(_replOutputSink(childAgentId)),
+        ),
+      );
+    }
+    // The child's own background commands name their follow-ups in the
+    // forms the child calls them in.
+    backgroundCommandsOf([
+      ...childTools,
+      ...childDeferredTools,
+      ...childScriptTools,
+    ])?.bindCallForms(
+      toolFormsOver(
+        callable: [
+          for (final t in [...childTools, ...childDeferredTools]) t.name,
+        ],
+        scriptOnly: [for (final t in childScriptTools) t.name],
+      ),
+    );
+    final scriptToolsNote = _subagentScriptToolsNote(
+      hasRepl: childTools.any(
+        (tool) => tool.name == ReplToolDescription.toolName,
+      ),
+      scriptToolNames: [for (final tool in childScriptTools) tool.name],
+    );
 
     addEvent(
       DebugEvent(
@@ -223,10 +341,10 @@ extension _DispatchSessionSubagent on DispatchSession {
     final childGeneration =
         childCredential?.generation ?? const ProviderGenerationDefaults();
     final config = AgentLoopConfig(
-      systemPrompt: subProfile.buildSystemPrompt(
-        baseSystemPrompt,
-        canSpawn: canSpawn,
-      ),
+      systemPrompt: [
+        subProfile.buildSystemPrompt(baseSystemPrompt, canSpawn: canSpawn),
+        ?scriptToolsNote,
+      ].join('\n\n'),
       model: childModel,
       purpose: LlmCallPurpose.subagent,
       maxTurns: subProfile.maxTurns,
@@ -238,14 +356,15 @@ extension _DispatchSessionSubagent on DispatchSession {
       tools: LoopToolConfig(
         overlapReadOnlyTools: runConfig.overlapReadOnlyTools,
         observationIngest: ToolObservationIngest(
-          store: deps.toolOutputStore,
+          store: childOutputs.over(_outputs),
           retainMinTokens:
               runConfig.compaction.policy == CompactionPolicy.current
               ? 0
               : kToolOutputRetentionMinTokens,
         ),
         toolTimeout: const Duration(minutes: 30),
-        approvalCallback: approval,
+        approvalCallback: childApproval,
+        nestedCallRefusal: scriptRefusal,
         autoApprove: false,
         maxParallelToolCalls: runConfig.maxParallelToolCalls < 2
             ? runConfig.maxParallelToolCalls
@@ -300,6 +419,7 @@ extension _DispatchSessionSubagent on DispatchSession {
     final buf = StringBuffer();
     var lastText = '';
     var isError = false;
+    final nestedRows = NestedCallRows();
 
     final pilotKey =
         '${subProfile.type.name}|$childProviderId|'
@@ -315,6 +435,7 @@ extension _DispatchSessionSubagent on DispatchSession {
         userMessage: req.description,
         tools: childTools,
         deferredTools: childDeferredTools,
+        scriptTools: childScriptTools,
         provider: childProvider,
         context: childContext,
         config: config,
@@ -325,8 +446,12 @@ extension _DispatchSessionSubagent on DispatchSession {
           event,
           imageRefs: _toolImageRefs,
         );
-        if (transcriptEvent != null) {
-          readMedia.add(transcriptEvent);
+        // A script's calls are kept bounded, as on the parent's stream.
+        final kept = transcriptEvent == null
+            ? null
+            : nestedRows.bound(transcriptEvent);
+        if (kept != null) {
+          readMedia.add(kept);
         }
         switch (event) {
           case LoopTextDelta(:final text):
@@ -374,6 +499,19 @@ extension _DispatchSessionSubagent on DispatchSession {
                 ),
               );
             }
+          case LoopPark(:final parked, :final reason):
+            // A subagent waiting on its own background command is not silent
+            // either: the session's watchdog skips while it is parked.
+            _noteLoopPark(childRunId, parked: parked);
+            addEvent(
+              DebugEvent(
+                content: parked
+                    ? '[harness] subagent "${req.label}" waiting for $reason '
+                          'to finish.'
+                    : '[harness] subagent "${req.label}" done waiting for '
+                          '$reason.',
+              ),
+            );
           default:
             break;
         }
@@ -385,6 +523,7 @@ extension _DispatchSessionSubagent on DispatchSession {
         DebugEvent(content: '[harness] subagent "${req.label}" crashed: $e'),
       );
     } finally {
+      _noteLoopPark(childRunId, parked: false);
       releasePilot();
       await childAccounting.flush();
     }
@@ -420,13 +559,18 @@ extension _DispatchSessionSubagent on DispatchSession {
               parentRunId: parentRunId,
               spawnToolCallId: req.spawnToolCallId,
             );
-        await repo.completeIfActive(
+        // The terminal write every run end shares, with an end reason: the
+        // parent's when it cut the child short. A child announces nothing.
+        await RunSettlement(runLogs: repo, eventBus: null).settle(
           base.copyWith(
             status: isError ? RunStatus.error : RunStatus.completed,
             completedAt: completedAt,
             summary: finalText.isEmpty ? req.label : _clip(finalText, 2000),
             cost: cost,
           ),
+          endReason: isError
+              ? _endReason ?? RunEndReason.error
+              : RunEndReason.completed,
         );
       } catch (e) {
         CcInfraLog.warning(
@@ -489,67 +633,21 @@ extension _DispatchSessionSubagent on DispatchSession {
           directive: null,
           notice: 'plan mode',
         );
-      case 'goal':
-        final ws = workspaceId;
-        final conv = conversationId;
-        final goalText = (body ?? '').trim();
-        if (deps.todoRepo != null &&
-            ws != null &&
-            ws.isNotEmpty &&
-            conv != null &&
-            conv.isNotEmpty &&
-            goalText.isNotEmpty) {
-          try {
-            await deps.todoRepo!.setGoal(ws, conv, goalText);
-          } on Object catch (e) {
-            CcInfraLog.warning('Failed to set conversation goal: $e');
-          }
-        }
-        return (
-          mode: null,
-          userTextOverride: body,
-          maxTurns: null,
-          directive:
-              'The user invoked /goal. Treat the request as a goal to '
-              'accomplish end-to-end: keep working across tool calls until it '
-              'is achieved, then report what you did. Do not stop after a '
-              'single step. The goal is DURABLE: the supervisor keeps the '
-              'objective alive across segments and server restarts until you '
-              'declare completion with the complete_goal MCP tool, passing a '
-              'summary of what was achieved. There is no turn limit: the run '
-              'is bounded by its cost budget and a repetition guard steers '
-              'you if you start looping, so spend turns on real progress. '
-              'Checkpoint relentlessly (commit work, write notes and memory, '
-              'update tickets) because every segment starts from durable '
-              'state. Decompose large goals into tickets or plan nodes '
-              'instead of one monolithic run.\n\n'
-              '$goalCompletionAudit',
-          notice: 'goal mode',
-        );
       case 'vibe':
-        _vibeRoster = VibeRoster();
+        // A settled worker's result reaches the director's aside lane, tagged
+        // as not a person's words (`vibe:<id>`).
+        _vibeRoster = VibeRoster(
+          onSettled: (worker) => _steering.pushAside(
+            vibeSettledNotice(worker, nonce: newWakeDataNonce()),
+            source: 'vibe:${worker.id}',
+          ),
+        );
         return (
           mode: null,
           userTextOverride: body,
           maxTurns: null,
           directive: vibeDirectorPrompt,
           notice: 'vibe mode',
-        );
-      case 'loop':
-        return (
-          mode: null,
-          userTextOverride: body,
-          maxTurns: null,
-          directive:
-              'The user invoked /loop. Work the task iteratively: after '
-              'each pass, re-evaluate and continue refining until it is fully '
-              'complete. Do not stop early. There is no turn limit — the run '
-              'is bounded by its cost budget and a repetition guard steers '
-              'you if you start cycling without progress. When it is fully '
-              'complete, declare completion with the complete_goal MCP tool, '
-              'passing a summary of what was achieved.\n\n'
-              '$goalCompletionAudit',
-          notice: 'loop mode',
         );
       default:
         final command = await _loadUserCommand(name);

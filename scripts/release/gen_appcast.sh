@@ -38,6 +38,16 @@ export SPARKLE_ED25519_KEY SPARKLE_DSA_PRIVATE_KEY
 # shellcheck source=../lib/artifact_names.sh
 source "$REPO_ROOT/scripts/lib/artifact_names.sh"
 
+# The update dialog shows this release's entry on the site changelog, not the
+# GitHub release page. Entry ids are the version with dots as dashes
+# (docs/src/data/changelog.ts); refuse a feed that would land on no entry.
+NOTES_ID="v${VERSION//./-}"
+NOTES_URL="https://usectrl.dev/changelog#${NOTES_ID}"
+grep -q "id: \"${NOTES_ID}\"" "$REPO_ROOT/docs/src/data/changelog.ts" || {
+  echo "gen_appcast: no changelog entry \"${NOTES_ID}\" in docs/src/data/changelog.ts" >&2
+  exit 1
+}
+
 DMG="${ARTIFACTS}/macos/Control-Center-${VERSION}-arm64.dmg"
 if release_ships_platform macos; then
   [ -f "$DMG" ] || { echo "::error::missing macOS artifact $DMG" >&2; exit 1; }
@@ -246,7 +256,7 @@ cat > "${OUT}/appcast.xml" <<EOF
       <pubDate>${PUB_DATE}</pubDate>
       <sparkle:version>${BUILD_NUMBER}</sparkle:version>
       <sparkle:shortVersionString>${VERSION}</sparkle:shortVersionString>
-      <sparkle:releaseNotesLink>https://github.com/${REPO}/releases/tag/${TAG}</sparkle:releaseNotesLink>
+      <sparkle:releaseNotesLink>${NOTES_URL}</sparkle:releaseNotesLink>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
       <enclosure url="${BASE}/Control-Center-${VERSION}-arm64.dmg" sparkle:edSignature="${DMG_SIG}" length="${DMG_LEN}" type="application/octet-stream" />
     </item>
@@ -278,7 +288,7 @@ write_windows_feed() { # platform artifact-dir installer-kind
       <pubDate>${PUB_DATE}</pubDate>
       <sparkle:version>${VERSION}+${BUILD_NUMBER}</sparkle:version>
       <sparkle:shortVersionString>${VERSION}</sparkle:shortVersionString>
-      <sparkle:releaseNotesLink>https://github.com/${REPO}/releases/tag/${TAG}</sparkle:releaseNotesLink>
+      <sparkle:releaseNotesLink>${NOTES_URL}</sparkle:releaseNotesLink>
       <enclosure url="${BASE}/${setup_name}" sparkle:dsaSignature="${sig}" sparkle:installerArguments="/SILENT /SP-" length="${len}" type="application/octet-stream" />
     </item>
   </channel>

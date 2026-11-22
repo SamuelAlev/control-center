@@ -2,7 +2,7 @@
 title: Bina pasukan ejen
 description: Kumpulkan ejen di bawah seorang ketua supaya kerja yang ditugaskan dihalakan melalui satu penyelaras.
 slug: ms-MY/manual-pengguna/panduan-cara/bina-pasukan-ejen
-sourceHash: fc5e2b8c8a49e398ff1b322fcfb25c4aed84bbb4
+sourceHash: 55add2d16bf90650b7d4cbda7aa78f0fdf1b72e2
 ---
 
 Panduan ini menunjukkan cara mencipta pasukan, menetapkan ketua untuknya dan menghalakan kerja kepadanya.
@@ -51,7 +51,7 @@ Apabila tiket memang membawa penetapan pasukan:
 
 1. Ketua pasukan dihantar bersama tiket, arahan operasinya dan senarai ahlinya.
 2. Ketua mewakilkan kepada ahli dan merekodkan penilaiannya dengan alat `record_team_activity` — `action` (diwakilkan), `no_action` (tiada lagi yang perlu dilakukan, yang menghentikan pencetusan semula selanjutnya) atau `failed`.
-3. Setiap larian ahli yang selesai membangunkan semula ketua, terbatas oleh penjaga tanpa tindakan.
+3. Ahli pasukan yang dimulakan oleh ketua dengan `@mention` atau mesej membangunkan semula ketua apabila ia tamat, dalam perbualan tempat ketua membangunkannya, dibatasi oleh pengawal tiada tindakan. Kerja yang diserahkan ketua dengan `delegate_task` membangunkannya apabila tiket itu selesai, dan soalan yang ditanyanya dengan `ask_agent` membangunkannya dengan balasan (lihat [Ejen bekerja bersama](/ms-MY/manual-pengguna/panduan-cara/ejen-bekerja-bersama/)).
 
 Nod pipeline **Team dispatch** ialah titik masuk yang satu lagi. Ia menerima id pasukan, satu prompt dan satu modus penghantaran:
 

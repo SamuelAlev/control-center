@@ -2,9 +2,10 @@ import 'dart:convert';
 
 import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
+import 'package:cc_domain/core/domain/value_objects/script_call_origin.dart';
 import 'package:cc_domain/features/guardrails/domain/entities/action_policy_rule.dart';
 import 'package:cc_domain/features/guardrails/domain/entities/guard_decision.dart'
-    show EnforcementLevel;
+    show EnforcementLevel, GuardDecision;
 import 'package:cc_domain/features/guardrails/domain/repositories/action_policy_repository.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_approval_copy.dart';
 import 'package:cc_domain/features/guardrails/domain/services/autonomy_composition.dart';
@@ -22,6 +23,15 @@ const kProposeOnlyReason =
     "this space's autonomy is set to propose-only; propose the action in a "
     'message instead and let the operator run it';
 
+/// The source a refusal of a code mode script's oversized action is audited
+/// under ([ActionGuardService.scriptActionRefusal]).
+const kScriptActionSizeSource = 'code_mode';
+
+/// What a gate tells the model when the card it raised came down with
+/// nobody's answer ([ConfirmationRequest.onUnanswered]): the call is not
+/// run, and nobody declined it.
+const kUnansweredCardReason = 'nobody answered before the card came down';
+
 /// The verdict of an action-guard check.
 class GuardVerdict {
   /// Creates a [GuardVerdict].
@@ -31,6 +41,7 @@ class GuardVerdict {
     this.source,
     this.prompted = false,
     this.resolution,
+    this.unanswered = false,
   });
 
   /// An allow verdict. [prompted] is true when the operator was just asked to
@@ -40,7 +51,8 @@ class GuardVerdict {
     this.prompted = false,
     this.resolution,
   }) : allowed = true,
-       reason = null;
+       reason = null,
+       unanswered = false;
 
   /// A deny verdict carrying the agent-facing [reason].
   const GuardVerdict.deny(
@@ -48,6 +60,7 @@ class GuardVerdict {
     this.source,
     this.prompted = false,
     this.resolution,
+    this.unanswered = false,
   }) : allowed = false;
 
   /// Whether the action may proceed.
@@ -63,6 +76,13 @@ class GuardVerdict {
   /// a downstream capability-tier gate avoid a DOUBLE confirmation for the same
   /// tool call (PRD 24 — the guard owns the declared classes and already asked).
   final bool prompted;
+
+  /// A denial because the card came down without a person's answer (its
+  /// deadline passed, it was withdrawn or expired, the host shut down:
+  /// [ConfirmationRequest.onUnanswered]). It refuses the call, and it is
+  /// nobody's decision: a code mode script's approval budget does not count
+  /// it as a decline. Always false on an allow.
+  final bool unanswered;
 
   /// The policy's answer this verdict was decided from, or null when the call
   /// had no effects to resolve. A gate that asks on its own hands it to
@@ -95,6 +115,7 @@ class GuardAudit {
     this.actionClasses = const [],
     this.ruleId,
     this.prompted = false,
+    this.unanswered = false,
     this.onBehalfOfUserId,
     this.runId,
     this.command,
@@ -127,8 +148,14 @@ class GuardAudit {
   /// The `action_policies` row that decided, when a stored rule did.
   final String? ruleId;
 
-  /// Whether a human was asked and answered.
+  /// Whether a human was asked (a card went up), answered or not.
   final bool prompted;
+
+  /// Whether the card went up and came down with nobody's answer (its
+  /// deadline passed, it expired or was withdrawn, the host shut down:
+  /// [ConfirmationRequest.onUnanswered]). The call was refused, and no
+  /// person decided it; a [prompted] deny without it is a person's decline.
+  final bool unanswered;
 
   /// The human this agent acts on behalf of — the delegation link that makes
   /// an agent action attributable to a person.
@@ -176,6 +203,92 @@ class ActionGuardService {
 
   Future<List<ActionPolicyRule>> _managedRules() async =>
       _managed?.call() ?? Future.value(const []);
+
+  /// The most UTF-8 bytes of action summary ([toolActionSummary]: the tool's
+  /// name and what the call runs, `bash: …`, `eval: …`) a call a code mode
+  /// script makes may carry: what the guard audit stores whole
+  /// ([GuardDecision.maxActionNameBytes]). The audit therefore holds whole
+  /// what every such call a script made ran; a direct call's is in its
+  /// transcript row.
+  static const int maxScriptActionSummaryBytes =
+      GuardDecision.maxActionNameBytes;
+
+  /// The action summary of a call to [tool] that runs [executed], what the
+  /// caller handed it to run (the tool's `executedContent`):
+  /// `<tool>: <executed>`, or the tool's name when the call runs nothing the
+  /// caller handed it. When [executed] is [tool] itself (a gateway whose
+  /// summary already is the command line it runs), it is not repeated.
+  static String toolActionSummary(String tool, String? executed) =>
+      executed == null || executed == tool ? tool : '$tool: $executed';
+
+  /// Refuses a call a code mode script makes whose [actionSummary] is over
+  /// [maxScriptActionSummaryBytes] ([scriptActionRefusal]) and audits the
+  /// refusal (source [kScriptActionSizeSource]) with [command], what the
+  /// call would have run, so the row's digest covers all of it. Null, with
+  /// nothing audited, when the summary fits.
+  ///
+  /// Every gate a script's call passes asks this before the owner's pre-tool
+  /// hook on the harness, policy, a card or the script's approval budget, so
+  /// a refused call is handed to nothing and runs nothing. Only a tool's own
+  /// refusal of an argument (`scriptArgumentRefusal`) comes before it, and on
+  /// MCP also the conversation-mode and read-only refusals, which read the
+  /// tool's name alone. An evaluation campaign's loop never asks it: nothing
+  /// there refuses a script's call for its size.
+  String? refuseScriptAction({
+    required String workspaceId,
+    required Set<ActionClass> classes,
+    required String actionSummary,
+    String? command,
+    String? spaceId,
+    String? agentId,
+    String? onBehalfOfUserId,
+    String? runId,
+  }) {
+    final refusal = scriptActionRefusal(actionSummary);
+    if (refusal != null) {
+      _onAudit?.call(
+        GuardAudit(
+          workspaceId: workspaceId,
+          decision: ActionDecision.deny,
+          reason: refusal,
+          source: kScriptActionSizeSource,
+          agentId: agentId,
+          spaceId: spaceId,
+          actionSummary: actionSummary,
+          actionClasses: [for (final c in classes) c.wire],
+          onBehalfOfUserId: onBehalfOfUserId,
+          runId: runId,
+          command: command,
+        ),
+      );
+    }
+    return refusal;
+  }
+
+  /// Why a call a script makes with [actionSummary] is refused before it
+  /// runs and before any card is raised, or null when the summary fits
+  /// [maxScriptActionSummaryBytes]. The script can catch the refusal.
+  static String? scriptActionRefusal(String actionSummary) {
+    final bytes = utf8.encode(actionSummary).length;
+    if (bytes <= maxScriptActionSummaryBytes) {
+      return null;
+    }
+    return 'The command is ${_grouped(bytes)} bytes; a command a script runs '
+        'takes at most ${_grouped(maxScriptActionSummaryBytes)}. Write long '
+        'content to a file and run that.';
+  }
+
+  static String _grouped(int n) {
+    final digits = '$n';
+    final out = StringBuffer();
+    for (var i = 0; i < digits.length; i++) {
+      if (i > 0 && (digits.length - i) % 3 == 0) {
+        out.write(',');
+      }
+      out.write(digits[i]);
+    }
+    return out.toString();
+  }
 
   /// Resolves an action to its policy decision WITHOUT surfacing confirmation
   /// (pure read of the store + [PolicyResolver]). A chokepoint layering its own
@@ -233,6 +346,7 @@ class ActionGuardService {
     String? spaceId,
     String actionSummary = '',
     bool prompted = false,
+    bool unanswered = false,
     String? onBehalfOfUserId,
     String? runId,
     String? command,
@@ -249,6 +363,7 @@ class ActionGuardService {
         actionClasses: [for (final c in classes) c.wire],
         ruleId: resolution.driving.rule?.id,
         prompted: prompted,
+        unanswered: unanswered,
         onBehalfOfUserId: onBehalfOfUserId,
         runId: runId,
         command: command,
@@ -265,6 +380,13 @@ class ActionGuardService {
   /// they just pressed is not a control, it is a second click. `deny` is
   /// unaffected — a workspace/space rule that forbids an effect still forbids it
   /// however it was initiated, and is still audited.
+  ///
+  /// [origin] marks a call a code mode script made; the card a `prompt`
+  /// raises carries it ([ConfirmationRequest.origin]). [onPersonWait] is told
+  /// `true` immediately before that card is shown and `false` once the
+  /// answer, a withdrawal or an error comes back, so a caller can stop its
+  /// clocks for exactly the time a person is asked. It is never called when
+  /// nobody is asked. Neither changes what is decided, recorded or audited.
   Future<GuardVerdict> check({
     required String workspaceId,
     required Set<ActionClass> classes,
@@ -295,7 +417,39 @@ class ActionGuardService {
     // Completes when the caller stops waiting (a hook deadline, a run that
     // ended): carried onto the confirmation so the prompt is withdrawn.
     Future<void>? withdrawn,
+    ScriptCallOrigin? origin,
+    void Function(bool waiting)? onPersonWait,
+    // Asked synchronously when the check is about to raise a card, before it
+    // does: a reason it returns denies the action without a card, with that
+    // reason, audited as the deny. A script's approval budget refuses here
+    // a card the caller's own resolution did not foresee.
+    String? Function()? beforeCard,
+    // What the call runs when that is not a shell [command] (a tool's
+    // `executedContent`: a code cell, an argv; a gateway's command line,
+    // which may be [actionSummary] itself). The audit row and the size bound
+    // read `<actionSummary>: <executed>` ([toolActionSummary]) and the row
+    // digests it; the card keeps [actionSummary], and command rules see
+    // [command] only.
+    String? executed,
   }) async {
+    final audited = toolActionSummary(actionSummary, executed);
+    // A script's call the audit could not hold whole does not run, whatever
+    // the policy says: refused, and audited, before anything else.
+    if (origin != null) {
+      if (refuseScriptAction(
+            workspaceId: workspaceId,
+            classes: classes,
+            actionSummary: audited,
+            command: executed ?? command,
+            spaceId: spaceId,
+            agentId: agentId,
+            onBehalfOfUserId: onBehalfOfUserId,
+            runId: runId,
+          )
+          case final refusal?) {
+        return GuardVerdict.deny(refusal, source: kScriptActionSizeSource);
+      }
+    }
     if (classes.isEmpty && (command == null || command.isEmpty)) {
       return const GuardVerdict.allow();
     }
@@ -315,22 +469,28 @@ class ActionGuardService {
       now: DateTime.now(),
     );
 
-    void audit(ActionDecision decision, {bool prompted = false}) {
+    void audit(
+      ActionDecision decision, {
+      bool prompted = false,
+      bool unanswered = false,
+      String? reason,
+    }) {
       _onAudit?.call(
         GuardAudit(
           workspaceId: workspaceId,
           decision: decision,
-          reason: res.driving.reason,
+          reason: reason ?? res.driving.reason,
           source: res.driving.source,
           agentId: agentId,
           spaceId: spaceId,
-          actionSummary: actionSummary,
+          actionSummary: audited,
           actionClasses: [for (final c in classes) c.wire],
           ruleId: res.driving.rule?.id,
           prompted: prompted,
+          unanswered: unanswered,
           onBehalfOfUserId: onBehalfOfUserId,
           runId: runId,
-          command: command,
+          command: executed ?? command,
         ),
       );
     }
@@ -414,24 +574,42 @@ class ActionGuardService {
             resolution: res,
           );
         }
-        final approved = await port.requestApproval(
-          approvalRequest(
+        if (beforeCard?.call() case final refusal?) {
+          audit(ActionDecision.deny, reason: refusal);
+          return GuardVerdict.deny(
+            refusal,
+            source: res.driving.source,
             resolution: res,
-            spaceId: spaceId,
-            conversationId: conversationId,
-            actionSummary: actionSummary,
-            workspaceId: workspaceId,
-            agentId: agentId,
-            request: request,
-            classes: classes,
-            command: command,
-            rationale: approvalRationale,
-            withdrawn: withdrawn,
-          ),
+          );
+        }
+        var unanswered = false;
+        final card = approvalRequest(
+          resolution: res,
+          spaceId: spaceId,
+          conversationId: conversationId,
+          actionSummary: actionSummary,
+          workspaceId: workspaceId,
+          agentId: agentId,
+          request: request,
+          classes: classes,
+          command: command,
+          rationale: approvalRationale,
+          withdrawn: withdrawn,
+          origin: origin,
+          runId: runId,
+          onUnanswered: () => unanswered = true,
         );
+        _tellPersonWait(onPersonWait, true);
+        final bool approved;
+        try {
+          approved = await port.requestApproval(card);
+        } finally {
+          _tellPersonWait(onPersonWait, false);
+        }
         audit(
           approved ? ActionDecision.allow : ActionDecision.deny,
           prompted: true,
+          unanswered: !approved && unanswered,
         );
         return approved
             ? GuardVerdict.allow(
@@ -440,11 +618,33 @@ class ActionGuardService {
                 resolution: res,
               )
             : GuardVerdict.deny(
-                'Denied at confirmation: ${res.driving.reason}',
+                // Nobody answered: the call is refused, and nothing was
+                // decided, so the reason says so rather than "denied".
+                unanswered
+                    ? 'Nobody answered at confirmation: ${res.driving.reason}'
+                    : 'Denied at confirmation: ${res.driving.reason}',
                 source: res.driving.source,
                 prompted: true,
                 resolution: res,
+                unanswered: unanswered,
               );
+    }
+  }
+
+  /// Tells [listener] that a wait on a person starts ([waiting] true) or
+  /// ends. A listener only stops a caller's clocks, so its failure is
+  /// dropped: it must never change what the guard decides.
+  static void _tellPersonWait(
+    void Function(bool waiting)? listener,
+    bool waiting,
+  ) {
+    if (listener == null) {
+      return;
+    }
+    try {
+      listener(waiting);
+    } on Object {
+      // See above: the decision stands whatever the listener does.
     }
   }
 
@@ -456,6 +656,7 @@ class ActionGuardService {
   /// a policy deny does not refuse here and a plain allow does not spare the
   /// ask. Without [guard] or [workspaceId] nothing is consulted and the card
   /// offers no standing approval. A spared ask is audited as an allow.
+  /// [origin] marks a call a code mode script made, as on [approvalRequest].
   static Future<bool> confirmCommand({
     required ActionGuardService? guard,
     required ConfirmationPort port,
@@ -473,6 +674,7 @@ class ActionGuardService {
     ConfirmationSeverity? severity,
     ConfirmationKind? kind,
     Future<void>? withdrawn,
+    ScriptCallOrigin? origin,
   }) async {
     final request = ActionRequest(classes: classes, command: command);
     final ws = workspaceId;
@@ -518,6 +720,8 @@ class ActionGuardService {
         severity: severity,
         kind: kind,
         withdrawn: withdrawn,
+        origin: origin,
+        runId: runId,
       ),
     );
   }
@@ -545,6 +749,11 @@ class ActionGuardService {
   /// the push gateway the refs but not the command, so a branch must match at
   /// both, and the gateway still asks about the real branch of a push
   /// approved by command.
+  ///
+  /// [origin] marks a call a code mode script made: the card says so and
+  /// links to the script. It is display context, not part of the action's
+  /// identity, so it changes neither the fingerprint nor what is remembered.
+  /// [onUnanswered] is the card's [ConfirmationRequest.onUnanswered].
   static ConfirmationRequest approvalRequest({
     required ActionResolution? resolution,
     required Set<ActionClass> classes,
@@ -562,6 +771,9 @@ class ActionGuardService {
     ConfirmationSeverity? severity,
     ConfirmationKind? kind,
     Future<void>? withdrawn,
+    ScriptCallOrigin? origin,
+    String? runId,
+    void Function()? onUnanswered,
   }) {
     final script = command ?? request.command;
     final copy = ActionApprovalCopy.describe(
@@ -649,6 +861,9 @@ class ActionGuardService {
       agentId: agentId,
       constraintJson: constraint?.encode(),
       withdrawn: withdrawn,
+      origin: origin,
+      runId: runId,
+      onUnanswered: onUnanswered,
     );
   }
 

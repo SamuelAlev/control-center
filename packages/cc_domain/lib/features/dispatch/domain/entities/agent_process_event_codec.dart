@@ -5,7 +5,9 @@ import 'package:cc_domain/core/domain/value_objects/message_attachment.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/usage_scope.dart';
+import 'package:cc_domain/features/code_mode/domain/value_objects/script_call_site.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
 import 'package:cc_domain/features/observability/domain/run_stage.dart';
 
 /// Lossless JSON wire codec for the [AgentProcessEvent] sealed hierarchy.
@@ -38,13 +40,21 @@ abstract final class AgentProcessEventCodec {
         'ts': ts,
         'content': content,
       },
-      ToolCallEvent(:final toolName, :final toolCallId, :final inputs) =>
+      ToolCallEvent(
+        :final toolName,
+        :final toolCallId,
+        :final inputs,
+        :final parentToolCallId,
+        :final callSite,
+      ) =>
         <String, dynamic>{
           'kind': 'toolCall',
           'ts': ts,
           'toolName': toolName,
           'toolCallId': toolCallId,
           'inputs': ?inputs,
+          'parentToolCallId': ?parentToolCallId,
+          'callSite': ?callSite?.toJson(),
         },
       ToolResultEvent(
         :final toolCallId,
@@ -54,6 +64,8 @@ abstract final class AgentProcessEventCodec {
         :final isPartial,
         :final images,
         :final attachments,
+        :final parentToolCallId,
+        :final outcome,
       ) =>
         <String, dynamic>{
           'kind': 'toolResult',
@@ -69,6 +81,8 @@ abstract final class AgentProcessEventCodec {
             'attachments': [
               for (final attachment in attachments) attachment.toJson(),
             ],
+          'parentToolCallId': ?parentToolCallId,
+          'outcome': ?outcome,
         },
       UsageEvent(
         :final usage,
@@ -164,13 +178,17 @@ abstract final class AgentProcessEventCodec {
         if (text.isNotEmpty) 'text': text,
         if (thinking.isNotEmpty) 'thinking': thinking,
       },
-      DoneEvent(:final outcome) => <String, dynamic>{
-        'kind': 'done',
-        'ts': ts,
-        // Optional terminal-outcome override (e.g. 'max_turns') — absent on
-        // a plain completion.
-        if (outcome != null) 'outcome': turnOutcomeToString(outcome),
-      },
+      DoneEvent(:final outcome, :final endReason, :final limitResetsAt) =>
+        <String, dynamic>{
+          'kind': 'done',
+          'ts': ts,
+          // Optional terminal-outcome override (e.g. 'max_turns') — absent on
+          // a plain completion.
+          if (outcome != null) 'outcome': turnOutcomeToString(outcome),
+          if (endReason != null) 'end_reason': endReason.wire,
+          if (limitResetsAt != null)
+            'limit_resets_at': limitResetsAt.toUtc().toIso8601String(),
+        },
     };
   }
 
@@ -198,6 +216,8 @@ abstract final class AgentProcessEventCodec {
           toolName: _string(json['toolName']),
           toolCallId: _string(json['toolCallId']),
           inputs: _mapOrNull(json['inputs']),
+          parentToolCallId: _stringOrNull(json['parentToolCallId']),
+          callSite: ScriptCallSite.tryParse(json['callSite']),
           timestamp: timestamp,
         );
       case 'toolResult':
@@ -213,6 +233,8 @@ abstract final class AgentProcessEventCodec {
                 ?ToolImageRef.fromJson(raw.cast<String, dynamic>()),
           ],
           attachments: MessageAttachment.attachmentsFromMetadata(json),
+          parentToolCallId: _stringOrNull(json['parentToolCallId']),
+          outcome: _stringOrNull(json['outcome']),
           timestamp: timestamp,
         );
       case 'usage':
@@ -296,6 +318,12 @@ abstract final class AgentProcessEventCodec {
       case 'done':
         return DoneEvent(
           outcome: turnOutcomeFromString(_stringOrNull(json['outcome'])),
+          endReason: RunEndReasonWire.tryParse(
+            _stringOrNull(json['end_reason']),
+          ),
+          limitResetsAt: DateTime.tryParse(
+            _stringOrNull(json['limit_resets_at']) ?? '',
+          ),
           timestamp: timestamp,
         );
       default:

@@ -102,6 +102,19 @@ void main() {
       }
     });
 
+    test('holds the extra directories the host runs programs from', () {
+      final runnerDir = Directory('$home/app/bin/codemode')
+        ..createSync(recursive: true);
+      final found = scanHostExecutables(
+        path: path,
+        home: home,
+        scanRoots: [home],
+        extraDirs: ['$home/app/bin', runnerDir.path, 'relative/codemode', ''],
+      );
+      expect(found.dirs, containsAll(['$home/app/bin', runnerDir.path]));
+      expect(found.dirs.where((d) => d.contains('relative')), isEmpty);
+    });
+
     test('adds a few profile rules per entry', () async {
       final config = await _config(home: home, work: work);
       final found = scan();

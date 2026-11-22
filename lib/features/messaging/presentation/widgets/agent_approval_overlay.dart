@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:cc_domain/cc_domain.dart' show ConfirmationRequestDto;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/agent_approval_card.dart';
+import 'package:control_center/features/messaging/presentation/widgets/script_origin_line.dart';
 import 'package:control_center/features/messaging/providers/approval_analytics.dart';
 import 'package:control_center/features/messaging/providers/pending_confirmations_provider.dart';
 import 'package:control_center/features/messaging/providers/visible_conversation_spaces.dart';
@@ -153,6 +154,16 @@ class _AgentApprovalOverlayState extends ConsumerState<AgentApprovalOverlay> {
                         onApproveAndRemember: () =>
                             _respond(front, approved: true, remember: true),
                         onDeny: () => _respond(front, approved: false),
+                        onShowScript: front.origin == null
+                            ? null
+                            : () => showScriptCall(
+                                ref,
+                                spaceId: front.spaceId,
+                                conversationId: front.conversationId,
+                                toolCallId: front.origin!.parentToolCallId,
+                                workspaceId: front.workspaceId,
+                                navigate: true,
+                              ),
                       ),
                     ],
                   ),

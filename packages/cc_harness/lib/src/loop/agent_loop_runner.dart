@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:math';
 import 'package:cc_harness/src/cancellation_token.dart';
 import 'package:cc_harness/src/context/harness_compaction.dart';
 import 'package:cc_harness/src/context/harness_token_accounting.dart';
 import 'package:cc_harness/src/context/provider_image_budget.dart';
+import 'package:cc_harness/src/context/still_in_flight.dart';
 import 'package:cc_harness/src/context/token_estimator.dart';
 import 'package:cc_harness/src/context/tool_observation.dart';
 import 'package:cc_harness/src/context/tool_output_truncation.dart';
@@ -13,14 +15,22 @@ import 'package:cc_harness/src/loop/agent_loop.dart';
 import 'package:cc_harness/src/loop/agent_loop_hooks.dart';
 import 'package:cc_harness/src/loop/checklist_supervisor.dart';
 import 'package:cc_harness/src/loop/completion_contract.dart';
+import 'package:cc_harness/src/loop/steering_message.dart';
+import 'package:cc_harness/src/loop/steering_queue.dart';
 import 'package:cc_harness/src/loop/stream_rules.dart';
 import 'package:cc_harness/src/loop/transcript_store.dart';
 import 'package:cc_harness/src/messages.dart';
 import 'package:cc_harness/src/provider/llm_provider_port.dart';
+import 'package:cc_harness/src/tools/background_commands.dart';
+import 'package:cc_harness/src/tools/background_notify.dart';
 import 'package:cc_harness/src/tools/tool.dart';
+import 'package:cc_harness/src/tools/tool_reentry.dart';
 
 part 'agent_loop_guards.dart';
+part 'agent_loop_reentry.dart';
+part 'agent_loop_run_end.dart';
 part 'agent_loop_tool_catalog.dart';
+part 'agent_loop_tool_gate.dart';
 part 'agent_loop_tool_step.dart';
 part 'agent_loop_turn_streamer.dart';
 
@@ -88,6 +98,7 @@ class AgentLoopRunner implements AgentLoop {
     required List<HarnessTool> tools,
     required LlmProviderPort provider,
     List<HarnessTool> deferredTools = const [],
+    List<HarnessTool> scriptTools = const [],
     HarnessToolContext? context,
     AgentLoopConfig config = const AgentLoopConfig(),
     CancellationToken? cancel,
@@ -97,6 +108,7 @@ class AgentLoopRunner implements AgentLoop {
       history: history,
       tools: tools,
       deferredTools: deferredTools,
+      scriptTools: scriptTools,
       provider: provider,
       context: context,
       config: config,
@@ -116,6 +128,10 @@ class AgentLoopRunner implements AgentLoop {
         error: 'The agent loop failed: $e',
         errorCode: 'loop_exception',
       );
+    } finally {
+      // A background command never outlives its run: [finish] kills them, and
+      // this covers a host that stopped listening to the stream instead.
+      await state.closeBackground();
     }
   }
 }
@@ -133,6 +149,7 @@ class _RunState {
     required this.history,
     required List<HarnessTool> tools,
     required List<HarnessTool> deferredTools,
+    required List<HarnessTool> scriptTools,
     required this.provider,
     required HarnessToolContext? context,
     required this.config,
@@ -141,6 +158,7 @@ class _RunState {
   }) : catalog = _ToolCatalog(
          tools: tools,
          deferredTools: deferredTools,
+         scriptTools: scriptTools,
          nativeDeferral:
              tools.isNotEmpty &&
              deferredTools.isNotEmpty &&
@@ -149,8 +167,12 @@ class _RunState {
        // Hand the run's cancellation token to tools so a cancelled run kills
        // work in flight (bash, web fetch) instead of only being noticed
        // between tools.
+       // A host context may carry a reentry (a subagent's spawning call
+       // hands its own context down): this run's calls get this run's
+       // reentry, never one borrowed from another run.
        ctx = (context ?? const HarnessToolContext(workingDirectory: '.'))
-           .withCancel(cancel),
+           .withCancel(cancel)
+           .withReentry(null),
        observationIngest =
            config.tools.observationIngest ?? ToolObservationIngest(),
        ledger = ContractLedger(config.guards.contract),
@@ -191,6 +213,28 @@ class _RunState {
   String? snapshotSource;
 
   late final _RunGuards guards;
+
+  /// The one gate every tool call passes, direct or nested.
+  late final _ToolGate gate = _ToolGate(this);
+
+  /// The lane every effectful, gated or person-waiting nested call takes, one
+  /// at a time in call order across the whole run.
+  final _Lane serialLane = _Lane(1);
+
+  /// Builds the reentry for a model-issued call in a parallel batch.
+  _LoopReentry reentryFor(
+    String parentToolUseId,
+    CancellationToken callToken,
+    _PausableDeadline? deadline,
+    void Function(AgentLoopEvent event) emit,
+  ) => _LoopReentry(
+    this,
+    parentToolUseId: parentToolUseId,
+    parentToken: callToken,
+    parentDeadline: deadline,
+    emit: emit,
+  );
+
   final Stopwatch stopwatch = Stopwatch()..start();
   final Random rng = Random();
 
@@ -225,7 +269,39 @@ class _RunState {
   /// Set once [finish] has emitted the terminal event.
   bool finished = false;
 
+  /// The run's background commands, carried by its `bash` family of tools
+  /// ([BackgroundCommandTool]); null when none carries them.
+  late final BackgroundCommandRegistry? background = backgroundCommandsOf(
+    catalog.admitted.values,
+  );
+
+  /// The run's own aside lane for background-command notices. Not the host's
+  /// queue: that one may be a nested view that delivers into the parent's
+  /// lanes, is capped for people's messages, and has persistence listeners.
+  /// Drained with the host's aside lane, at the same point, as system
+  /// messages.
+  final SteeringQueue noticeLane = SteeringQueue();
+
+  /// The focus of a `compact` call made this turn: set when the model asks
+  /// for a compaction, consumed by the next turn boundary.
+  String? pendingCompactFocus;
+
+  /// Whether `compact` was called and the compaction has not run yet.
+  bool compactRequested = false;
+
+  /// The highest context-use level (70, 80, 90 percent) already announced;
+  /// re-armed when a compaction brings the use back under it.
+  int contextLineLevel = 0;
+
   AgentLoopHooks? get hooks => config.steering.hooks;
+
+  /// Whether independent calls may run concurrently: not while a hook
+  /// intercepts tools, whose veto and observation must run in call order.
+  bool get batchingAllowed {
+    final hooks = this.hooks;
+    return hooks == null || !hooks.interceptsTools;
+  }
+
   HarnessCompactor? get compactor => config.compaction.compactor;
 
   int billableTokensNow() =>
@@ -263,12 +339,18 @@ class _RunState {
     // context with no ask attached.
     history.add(
       userImages.isEmpty
-          ? HarnessMessage.user(userMessage)
+          ? HarnessMessage.user(
+              userMessage,
+              origin: config.steering.requestOrigin,
+            )
           : HarnessMessage(
               role: HarnessRole.user,
               content: [HarnessTextBlock(userMessage), ...userImages],
+              origin: config.steering.requestOrigin,
             ),
     );
+
+    openBackground();
 
     final hooks = this.hooks;
     if (hooks != null) {
@@ -308,6 +390,7 @@ class _RunState {
         return;
       }
       yield* _drainSteering();
+      yield* contextUseLine();
       yield* guards.turnPressure();
 
       // The clean boundary at the start of this turn (end of a complete prior
@@ -357,7 +440,7 @@ class _RunState {
         return;
       }
 
-      yield* guards.afterToolTurn(output.pending);
+      yield* guards.afterToolTurn(output.pending, step.observedCalls);
 
       // Reclaim uneventful older tool results — but only once there is enough
       // to reclaim to be worth the cached prefix it rewrites. Batched, it is a
@@ -403,6 +486,7 @@ class _RunState {
       return;
     }
     finished = true;
+    await closeBackground();
     await persistTranscript();
     if (error != null) {
       yield LoopError(error, code: errorCode);
@@ -565,43 +649,105 @@ class _RunState {
     // A THROWING compactor must not take the run down: compaction is an
     // optimization, and the turn is still runnable without it (the provider's
     // own overflow error is the backstop). Report and continue.
+    // A `compact` call forces the pass and carries its focus; the owner's
+    // `preCompact` hook adds to the focus of any pass that summarizes.
+    final requested = compactRequested;
+    final toolFocus = pendingCompactFocus;
+    compactRequested = false;
+    pendingCompactFocus = null;
     HarnessCompactionResult? result;
-    try {
-      result = await raceCancellation(
+    Object? error;
+    yield* _announcedPass(
+      (focus) => raceCancellation(
         compactor.maybeCompact(
           history,
           contextWindow: config.compaction.contextWindow,
           overheadTokens: overheadTokensNow(),
           reservedOutputTokens: config.maxTokens,
           selfAgentName: config.compaction.selfAgentName,
+          force: requested,
           cancel: cancel,
+          focus: focus,
         ),
         cancel,
-      );
-    } on Object catch (e) {
-      yield LoopNotice('Compaction failed and was skipped: $e');
+      ),
+      () => compactionFocus(toolFocus),
+      (r, e) => (result, error) = (r, e),
+    );
+    if (error != null) {
+      yield LoopNotice('Compaction failed and was skipped: $error');
       result = null;
     }
-    if (result != null && result.changed) {
-      onHistoryRewritten(fold: result, reindexed: true);
-      yield _compactionEvent(result);
+    if (result case final folded? when folded.changed) {
+      onHistoryRewritten(fold: folded, reindexed: true);
+      await writeStillInFlight();
+      yield _compactionEvent(folded);
+    } else if (requested) {
+      yield const LoopNotice(
+        'Compaction was requested but there was nothing old enough to fold.',
+      );
     }
+  }
+
+  /// Runs one compactor [pass], handing it [focus] wrapped so the moment the
+  /// compactor asks for it (only when a summary is about to be written) is
+  /// announced: [LoopCompacting] started, then ended when the pass returns.
+  /// [done] receives the result, or the error the pass threw.
+  Stream<AgentLoopEvent> _announcedPass(
+    Future<HarnessCompactionResult?> Function(
+      Future<String?> Function() focus,
+    )
+    pass,
+    Future<String?> Function() focus,
+    void Function(HarnessCompactionResult? result, Object? error) done,
+  ) async* {
+    final began = Completer<void>();
+    final running = pass(() {
+      if (!began.isCompleted) {
+        began.complete();
+      }
+      return focus();
+    });
+    await Future.any<void>([
+      began.future,
+      running.then<void>((_) {}, onError: (Object _) {}),
+    ]);
+    final announced = began.isCompleted;
+    if (announced) {
+      yield const LoopCompacting(started: true);
+    }
+    HarnessCompactionResult? result;
+    Object? error;
+    try {
+      result = await running;
+    } on Object catch (e) {
+      error = e;
+    }
+    if (announced) {
+      yield const LoopCompacting(started: false);
+    }
+    done(result, error);
   }
 
   /// Forced compaction after the provider rejected the request as too large.
   ///
-  /// Returns the compaction event when the history changed (the turn should
-  /// be re-issued), or a failure message when the compactor THREW — guarded
-  /// so a throw cannot escape the generator without a terminal event; the
-  /// original overflow error then ends the run through [finish].
-  Future<({LoopCompaction? event, String? failure})>
-  recoverFromOverflow() async {
+  /// Hands [done] the compaction event when the history changed (the turn
+  /// should be re-issued), or a failure message when the compactor THREW —
+  /// guarded so a throw cannot escape the generator without a terminal
+  /// event; the original overflow error then ends the run through [finish].
+  /// Yields [LoopCompacting] around a pass that summarizes.
+  Stream<AgentLoopEvent> recoverFromOverflow(
+    void Function(({LoopCompaction? event, String? failure}) recovery) done,
+  ) async* {
     final compactor = this.compactor;
     if (compactor == null || config.compaction.contextWindow == null) {
-      return (event: null, failure: null);
+      done((event: null, failure: null));
+      return;
     }
-    try {
-      final result = await raceCancellation(
+    HarnessCompactionResult? result;
+    Object? error;
+    yield* _announcedPass(
+      (focus) => raceCancellation(
         compactor.maybeCompact(
           history,
           contextWindow: config.compaction.contextWindow,
@@ -610,16 +756,28 @@ class _RunState {
           selfAgentName: config.compaction.selfAgentName,
           force: true,
           cancel: cancel,
+          focus: focus,
         ),
         cancel,
-      );
-      if (result == null || !result.changed) {
-        return (event: null, failure: null);
-      }
-      onHistoryRewritten(fold: result, reindexed: true);
-      return (event: _compactionEvent(result), failure: null);
+      ),
+      () => compactionFocus(null),
+      (r, e) => (result, error) = (r, e),
+    );
+    if (error != null) {
+      done((event: null, failure: 'Overflow compaction failed: $error'));
+      return;
+    }
+    final folded = result;
+    if (folded == null || !folded.changed) {
+      done((event: null, failure: null));
+      return;
+    }
+    try {
+      onHistoryRewritten(fold: folded, reindexed: true);
+      await writeStillInFlight();
+      done((event: _compactionEvent(folded), failure: null));
     } on Object catch (e) {
-      return (event: null, failure: 'Overflow compaction failed: $e');
+      done((event: null, failure: 'Overflow compaction failed: $e'));
     }
   }
 
@@ -634,19 +792,50 @@ class _RunState {
   /// Mid-run steering: drain messages queued while the agent was working and
   /// inject them before this turn's provider call.
   Stream<AgentLoopEvent> _drainSteering() async* {
+    // Background-command notices: system framing, never the person's words.
+    // Their untrusted part (the output) is inside the data envelope. Tagged
+    // as notices: an observation a compaction summarises or drops, never
+    // pins (the state block is the live record of what is in flight).
+    collectNotify();
+    for (final msg in noticeLane.drainAside()) {
+      if (msg.content.trim().isNotEmpty) {
+        history.add(
+          HarnessMessage.system(
+            msg.content.trim(),
+            origin: HarnessMessageOrigin.notice,
+          ),
+        );
+      }
+      if (msg.source case final source?
+          when source.startsWith(backgroundNoticeSource)) {
+        background?.markNoticeDelivered(
+          source.substring(backgroundNoticeSource.length),
+        );
+      }
+    }
     final steering = config.steering.queue;
     if (steering == null) {
       return;
     }
     for (final msg in steering.drainSteering()) {
       if (msg.content.trim().isNotEmpty) {
-        history.add(HarnessMessage.user(msg.content.trim()));
+        history.add(
+          HarnessMessage.user(
+            msg.content.trim(),
+            origin: laneMessageOrigin(msg),
+          ),
+        );
         yield const LoopNotice('Steering message injected.');
       }
     }
     for (final msg in steering.drainAside()) {
       if (msg.content.trim().isNotEmpty) {
-        history.add(HarnessMessage.system(msg.content.trim()));
+        history.add(
+          HarnessMessage.system(
+            msg.content.trim(),
+            origin: laneMessageOrigin(msg),
+          ),
+        );
       }
     }
   }
@@ -692,38 +881,7 @@ class _RunState {
       );
       return;
     }
-    // Follow-up lane: queued messages meant to run once the agent finishes.
-    final followUps = config.steering.queue?.drainFollowUp() ?? const [];
-    if (followUps.isNotEmpty) {
-      for (final msg in followUps) {
-        if (msg.content.trim().isNotEmpty) {
-          history.add(HarnessMessage.user(msg.content.trim()));
-        }
-      }
-      // A new user prompt: its answer gets a fresh truncation allowance.
-      consecutiveTruncations = 0;
-      yield const LoopNotice('Follow-up message injected; continuing.');
-      return;
-    }
-    // Completion contract: if a deliverable is owed and missing, nudge
-    // (bounded) then end `contractUnmet`. After follow-up drain so user
-    // steering outranks the reminder.
-    if (ledger.isActive && !await ledger.resolveSatisfied()) {
-      if (ledger.canNudge) {
-        history.add(HarnessMessage.system(ledger.takeNudge()));
-        yield LoopNotice(
-          'Completion contract "${ledger.contract!.id}" unmet — '
-          'steering the agent to deliver.',
-        );
-        return;
-      }
-      yield* finish(LoopDoneReason.contractUnmet);
-      return;
-    }
-    // The final answer is in [history] and a model that answered with no tool
-    // calls leaves no dangling `tool_use`, so [finish] saves it: without that
-    // the next run resumed from the turn BEFORE the answer.
-    yield* finish(LoopDoneReason.completed);
+    yield* wouldStop(output.text);
   }
 
   /// Handles a `rewind` call in [pending]: prunes the history back to the
@@ -791,6 +949,16 @@ class _RunState {
             ),
           ],
           activatedToolNames: carriedThroughRewind.toList(growable: false),
+          // What the person said in the dropped span stays theirs: a later
+          // compaction pins it.
+          carriedPersonTexts: [
+            for (final m in dropped) ...[
+              ...m.carriedPersonTexts,
+              if (m.origin == HarnessMessageOrigin.person &&
+                  m.textContent.trim().isNotEmpty)
+                m.textContent.trim(),
+            ],
+          ],
         ),
       );
     // Labels set inside the discarded span now point past (or at a different

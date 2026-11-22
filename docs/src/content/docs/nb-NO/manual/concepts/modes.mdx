@@ -2,7 +2,7 @@
 title: Moduser
 description: Hvorfor det er et område, og ikke en agent, som bærer en modus; hva hver av de fire modusene garanterer; og hvor den garantien er strukturell snarere enn bare en instruks i prompten.
 slug: nb-NO/handbok/konsepter/moduser
-sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
+sourceHash: 4450ebc86d95efb0366bc3f0ab4ddebc6d3a3adb
 ---
 
 ## Hva en modus er
@@ -41,7 +41,7 @@ En kjøring som avsluttes uten planen sin, registreres likevel med statusen `com
 
 Det finnes en andre, separat vei ut: `exit_plan_mode`. Den er en hard godkjenningsport, ikke et resultatverb – en agent som kaller den i stedet for `submit_plan`, har ikke levert noe. Det første kallet åpner en varig `plan_exit`-godkjenning og returnerer `pending`, og området forblir skrivebeskyttet; gjentatte kall forblir `pending` i stedet for å åpne en andre port. Først når godkjenningen er gitt, setter et påfølgende kall området til chat. En avvisning lar agenten åpne en ny forespørsel om en revidert plan.
 
-For å forlate planmodus selv bytter du nedtrekksmenyen i skrivefeltet (eller Shift+Tab). `exit_plan_mode` avgjøres med MCP-verktøyet `decide_approval`. Radene for «agentgodkjenning» i innboksen er noe annet: bekreftelsesmeldinger per tur fra en agent som kjører.
+For å forlate planmodus selv bytter du nedtrekksmenyen i skrivefeltet (eller Shift+Tab). `exit_plan_mode` avgjøres av en agentkjøring med MCP-verktøyet `decide_approval`. Radene for «agentgodkjenning» i innboksen er noe annet: bekreftelsesmeldinger per tur fra en agent som kjører.
 
 ### Gjennomgang – skrivebeskyttet, ingen kontrakt
 
@@ -65,6 +65,8 @@ Ingenting i forslaget utføres før du godkjenner det. Ved godkjenning ansetter 
 
 **Skrivebeskyttede moduser nekter ikke nettverkstilgang eller hemmeligheter.** Effektklassene som gjennomgang, plan og orkestrering nekter, er de som endrer verden: sletting av filer, skriving utenfor worktreet, commits, pushes, oppretting og publisering av PR-er, synkroniseringsskrivinger mot leverandører, pakkeinstallasjoner, oppstart av prosesser, mutasjon av arbeidsområdet og kontroll av isolerte miljøer (stasjoner). Utgående nettverkstrafikk og tilgang til hemmeligheter forblir bevisst på standardverdiene sine – undersøkelse er hele poenget med en skrivebeskyttet modus.
 
+**Kodemodus utvider aldri en modus.** Modusens verktøyfilter brukes først, og et `repl`-skript i [kodemodus](/nb-NO/handbok/konsepter/kodemodus/) kan bare kalle verktøyene som er igjen etter det, gjennom samme gate som et direkte kall. Modusens fastsatte verb (utdataverbet, `exit_plan_mode`, `ask_user`) og dens egen løkke (verbene for gjennomgangsnoden i gjennomgangsmodus) kalles alltid direkte, så en kjøring aldri må skrive et skript for å levere resultatet sitt eller stille et spørsmål. I [vibe-modus](/nb-NO/handbok/slik-gjor-du/styr-bakgrunnsworkere/) beholder den styrende kjøringen bare leseverktøy og ingen verktøy bare for skript, så skriptene dens når bare dem.
+
 ## Å velge og bytte modus
 
 Modusnedtrekksmenyen i skrivefeltet tilbyr **tre** alternativer: Agent (chat), Plan og Orkestrer. `review` kan **ikke velges av brukeren** – den settes av systemet når et PR-gjennomgangsområde opprettes, og av pipeline-steg.
@@ -87,4 +89,5 @@ Tillatelseslistene begrenser verktøy på skrivenivå og høyere. Lesenivået i 
 - [Agentmodellen](/nb-NO/handbok/konsepter/agentmodell/): hvilke transporter som kan håndheve en modus
 - [Tillatelsesregler](/nb-NO/handbok/konsepter/tillatelsesregler/): effektklassepolicyen som forhåndsinnstillingen til en modus mater inn i
 - [Orkestrering](/nb-NO/handbok/konsepter/orkestrering/): hva et godkjent orkestreringsforslag gjør
+- [Kodemodus](/nb-NO/handbok/konsepter/kodemodus/): skript som kaller modusens verktøy
 - [Bruk planmodus](/nb-NO/handbok/slik-gjor-du/planmodus/): den praktiske gjennomgangen

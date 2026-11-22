@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cc_harness/context.dart';
 import 'package:cc_harness/messages.dart';
 import 'package:cc_infra/src/context/text_raster.dart';
@@ -82,6 +84,7 @@ bool isSnapcompactMessage(HarnessMessage message) => message.isSnapshotCarrier;
 HarnessMessage? rehydrateSnapshotMessage(
   String? retainedSource, {
   List<String> activatedToolNames = const [],
+  List<String> carriedPersonTexts = const [],
 }) {
   final source = retainedSource?.trim() ?? '';
   if (source.isEmpty) {
@@ -96,6 +99,10 @@ HarnessMessage? rehydrateSnapshotMessage(
       ),
     ],
     activatedToolNames: activatedToolNames,
+    // The person's words the page carried stay the person's: the restored
+    // text is one message whose provenance is flattened, so a compaction
+    // pins them from here.
+    carriedPersonTexts: carriedPersonTexts,
   );
 }
 
@@ -129,6 +136,7 @@ List<HarnessMessage> rehydrateSnapcompactHistory(
   final restored = rehydrateSnapshotMessage(
     retainedSource,
     activatedToolNames: collectActivatedToolNames(history),
+    carriedPersonTexts: history[newest].carriedPersonTexts,
   );
   final out = <HarnessMessage>[];
   for (var i = 0; i < history.length; i++) {
@@ -138,7 +146,14 @@ List<HarnessMessage> rehydrateSnapcompactHistory(
       continue;
     }
     if (i == newest) {
-      out.add(restored ?? HarnessMessage.user(snapshotUnavailableMarker));
+      out.add(
+        restored ??
+            HarnessMessage(
+              role: HarnessRole.user,
+              content: const [HarnessTextBlock(snapshotUnavailableMarker)],
+              carriedPersonTexts: m.carriedPersonTexts,
+            ),
+      );
     } else {
       out.add(
         HarnessMessage(
@@ -151,6 +166,7 @@ List<HarnessMessage> rehydrateSnapcompactHistory(
           activatedToolNames: m.activatedToolNames,
           // No snapshot-carrier marker: this is a pointer, not a page — the
           // source may be dropped once no real page remains.
+          carriedPersonTexts: m.carriedPersonTexts,
         ),
       );
     }
@@ -322,6 +338,10 @@ class Snapcompactor {
     final head = messages.sublist(0, headEnd);
     final middle = messages.sublist(headEnd, tailStart);
     final tail = messages.sublist(tailStart);
+    final personTexts = snapshotPersonTexts(
+      middle,
+      startsHistory: headEnd == 0,
+    );
 
     // The previous pass's source comes first, so a second compaction images
     // the WHOLE discarded history rather than only what has been discarded
@@ -372,7 +392,16 @@ class Snapcompactor {
         ),
         for (final frame in frames)
           HarnessImageBlock(mediaType: 'image/png', data: frame.base64Data),
+        // The person's own messages stay readable as text, verbatim.
+        if (personTexts.isNotEmpty)
+          HarnessTextBlock(
+            '[What the person wrote in those messages, as text:]\n\n'
+            '${personTexts.join('\n\n')}',
+          ),
       ],
+      // Pinned by every later compaction as the person's words, including
+      // after this page is restored to text.
+      carriedPersonTexts: personTexts,
       // Activation metadata of the imaged region travels WITH the replacement:
       // a search result referencing a deferred tool may be inside the middle,
       // and losing its activation would make that tool uncallable.
@@ -406,6 +435,36 @@ class Snapcompactor {
   }
 }
 
+/// The person's messages in [messages] (a span a snapshot page folds),
+/// verbatim and in order: the texts earlier pages carried, every message
+/// tagged [HarnessMessageOrigin.person], and, when the span [startsHistory],
+/// an untagged first user message that is not a summary (the conversation's
+/// original request).
+List<String> snapshotPersonTexts(
+  List<HarnessMessage> messages, {
+  required bool startsHistory,
+}) {
+  final texts = <String>[];
+  for (var i = 0; i < messages.length; i++) {
+    final m = messages[i];
+    texts.addAll(m.carriedPersonTexts);
+    if (m.role != HarnessRole.user) {
+      continue;
+    }
+    final text = m.textContent.trim();
+    final original =
+        startsHistory &&
+        i == 0 &&
+        m.origin == null &&
+        !text.startsWith(harnessSummaryMarker);
+    if (text.isNotEmpty &&
+        (m.origin == HarnessMessageOrigin.person || original)) {
+      texts.add(text);
+    }
+  }
+  return texts;
+}
+
 /// Flattens messages to the plain text a page is rendered from.
 ///
 /// Tool results are included in full: they are most of the discarded bulk, and
@@ -426,8 +485,21 @@ String renderMessagesAsText(List<HarnessMessage> messages) {
           buffer.writeln(text);
         case HarnessToolUseBlock(:final name, :final input):
           buffer.writeln('[call $name] $input');
-        case HarnessToolResultBlock(:final content, :final isError):
+        case HarnessToolResultBlock(
+          :final content,
+          :final isError,
+          :final nestedCalls,
+        ):
           buffer.writeln('[result${isError ? ' error' : ''}] $content');
+          // A script's calls have no tool-use block of their own; without
+          // these lines a page would say a script ran but not which tools it
+          // called or which files it touched.
+          for (final call in nestedCalls) {
+            buffer.writeln(
+              '[nested call ${call.name}${call.isError ? ' error' : ''}] '
+              '${jsonEncode(call.args)}',
+            );
+          }
         case HarnessThinkingBlock():
           // Reasoning is the model's scratch space and the single largest
           // thing in a long history. Re-showing it as a picture spends the

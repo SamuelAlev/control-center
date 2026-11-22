@@ -2,7 +2,7 @@
 title: Ügynökkonfiguráció
 description: Az ügynökentitás összes mezője és a hozzá tartozó enumok.
 slug: hu-HU/kezikonyv/referencia/ugynokkonfiguracio
-sourceHash: e77edc905bed16d2f7d5bcd19a62541d885f6aab
+sourceHash: 708808ecdf4d2fc769600241c46f85db411550a8
 ---
 
 Ez a referencia felsorolja az ügynökentitás összes mezőjét, valamint a használt enumokat és jelzőket. Az ügynök alkalmazásbeli létrehozásának vagy szerkesztésének lépésről lépésre haladó bemutatását lásd: [Ügynök létrehozása és konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-letrehozasa/).
@@ -82,7 +82,7 @@ Készségazonosítók megváltoztathatatlan, kis-nagybetűt nem megkülönbözte
 
 ## Shell-hookok
 
-A shell-hookok lehetővé teszik, hogy a szerver tulajdonosa saját szkripteket futtasson egy beépített harness-futás körül: a munkamenet indulásakor, minden eszközhívás előtt és minden eszközhívás után. A hook tetszőleges kód, ezért a hookok a gazdagép konfigurációjának részei. Csak a szerver tulajdonosa állítja be, kézzel, a szerver gépén. Az alkalmazásban nincs ilyen beállítás, és nincs olyan művelet, amely írná őket.
+A shell-hookok lehetővé teszik, hogy a szerver tulajdonosa saját szkripteket futtasson egy ügynökfuttatás körül: a munkamenet indulásakor, minden eszközhívás előtt és után, amikor az ügynök befejezné a körét, valamint a tömörítés előtt. A hook tetszőleges kód, ezért a hookok a gazdagép konfigurációjának részei. Csak a szerver tulajdonosa állítja be, kézzel, a szerver gépén. Az alkalmazásban nincs ilyen beállítás, és nincs olyan művelet, amely írná őket.
 
 Egy ügynök hookjai a szerver adatkönyvtárának saját mappájában élnek:
 
@@ -92,22 +92,31 @@ Egy ügynök hookjai a szerver adatkönyvtárának saját mappájában élnek:
 
 Az `<agent slug>` az ügynök mappájának neve a munkaterületen (`agents/<slug>/`). Ez a mappa minden munkaterület tárhelyén kívül esik, és minden homokozó elrejti az adatkönyvtárat, így egyetlen tag, futtatás vagy terminál sem tudja írni.
 
-A `hooks.json` három kulcs valamelyikéhez rendel szkriptet, a hook-mappához viszonyított útvonal alapján:
+A `hooks.json` öt kulcs valamelyikéhez rendel szkriptet, a hook-mappához viszonyított útvonal alapján:
 
 | Kulcs          | Mikor fut                 | Mit jelent a kilépési kódja                                    |
 | -------------- | ------------------------- | -------------------------------------------------------------- |
 | `sessionStart` | Egyszer, a futás indulásakor | Semmit; a hook csak megfigyel                               |
 | `preTool`      | Minden eszközhívás előtt  | `0` engedélyezi a hívást; bármi más megtagadja                 |
 | `postTool`     | Minden eszközhívás után   | Semmit; a hook csak megfigyel                                  |
+| `stop` | Amikor az ügynök befejezné a körét | `2` a stdout-on szöveggel a futtatást azzal a szöveggel folytatja; minden más hagyja, hogy a kör véget érjen |
+| `preCompact` | A tömörítés előtt | `0`: a stdout-ja hozzáadódik ahhoz, amit az összefoglalónak meg kell őriznie |
 
 - Minden szkript önálló futtatható programként indul, shell és argumentumok nélkül, ezért futtathatónak kell lennie, és shebang sorral kell kezdődnie. Az eseményt JSON-ként kapja a stdin-en: az esemény nevét, az eszközhookok esetén pedig az eszköz nevét az argumentumaival (`preTool`), illetve az eredményével (`postTool`).
 - A hook a futás eszközfolyamatai egyikeként fut, a futás ügynökmappájában. Ha a szerver homokozóban futtatja az ügynököket, a hook a futás homokozóján belül fut. Minimális környezetet kap, és a futás hitelesítő adatai közül egyiket sem: se forge- vagy szolgáltatói tokent, se átjáró-hozzáférést.
-- Minden hook 30 másodpercet kap. A kimenetét beolvassák és eldobják.
+- Minden hook 30 másodpercet kap. A `sessionStart`, a `preTool` és a `postTool` kimenetét beolvassák és eldobják.
 - A `preTool` hibánál zárt: a nem nulla kilépési kód, az időtúllépés vagy az, ha a szkript nem indítható el, megtagadja az eszközhívást.
 - Az olyan útvonal, amely abszolút, hiányzik, vagy kilép a hook-mappából (a linkek feloldása után), visszautasításra kerül, a futás naplója pedig megmondja, melyik hook és miért. Egy visszautasított vagy olvashatatlan `preTool` hook minden eszközhívást megtagad, amíg ki nem javítják.
 - A `.agents/harness.json` fájlban lévő `hooks` blokkot – akár egy repóban, akár az ügynök saját mappájában – a rendszer figyelmen kívül hagyja. Egy repó gyakran más valakinek a kódja, az ügynök mappáját pedig tagok és futtatások is írhatják. A futás naplója rögzíti, hogy a blokkot figyelmen kívül hagyták, és megmondja, honnan olvassák helyette a hookokat.
 
-A shell-hookok csak a beépített harness-re vonatkoznak. Ha `preTool` vagy `postTool` hook van beállítva, a futás az eszközeit egyesével hívja.
+### A stop és a preCompact hookok
+
+- A `stop` megkapja az `event: "stop"` értéket, az ügynök utolsó üzenetét (`last_message`), a `stop_hook_active` értékét (igaz, ha ezt a megállást a hook által okozott folytatás előzte meg) és a `block_count` értékét (hányszor tartotta eddig folyamatban a futtatást, 0-tól). A futtatás folytatásához `2`-es kóddal lép ki, és kiírja, mit tegyen az ügynök ezután. A szöveg, 2 000 karakterre vágva, rendszerüzenetként jut el az ügynökhöz.
+- A `stop` hook egy futtatáson belül legfeljebb 3-szor tartja folyamatban a futtatást. Ezután már nem fut le újra, és a kör véget ér.
+- A `stop` hiba esetén engedékenyen működik: időtúllépés, el nem induló szkript, a `2`-től eltérő kilépés, vagy `2`-es kilépés üres stdout-tal lehetővé teszi, hogy a kör véget érjen, így egy hibás hook nem tarthat nyitva egy futtatást.
+- A `preCompact` megkapja az `event: "pre_compact"` értéket. A stdout-ja, 1 000 karakterre vágva, hozzáadódik a tömörítés fókuszához. Egy hibázó szkript semmit sem ad hozzá.
+
+A shell-hookok a beépített harness-re vonatkoznak. A Claude Code-on a `stop` és a `preCompact` hook is lefut: a Claude Code saját `Stop` és `PreCompact` hookjai a szervert kérdezik meg, a szerver pedig ugyanúgy futtatja a tulajdonos szkriptjeit. A másik három kulcs csak a beépített harness-re vonatkozik. Ha `preTool` vagy `postTool` hook van beállítva, a futás az eszközeit egyesével hívja.
 
 ## AgentLiveState (származtatott)
 

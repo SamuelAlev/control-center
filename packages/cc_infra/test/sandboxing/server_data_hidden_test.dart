@@ -17,6 +17,7 @@ import 'package:cc_domain/features/sandboxing/domain/repositories/sandbox_exec_g
 import 'package:cc_domain/features/sandboxing/domain/sandbox_config.dart';
 import 'package:cc_domain/features/sandboxing/domain/sandbox_policy.dart';
 import 'package:cc_domain/features/sandboxing/domain/services/sandbox_exec_grant_service.dart';
+import 'package:cc_infra/src/code_mode/bundled_code_runner.dart';
 import 'package:cc_infra/src/dispatch/agent_run_gateway.dart';
 import 'package:cc_infra/src/dispatch/dispatch_session.dart';
 import 'package:cc_infra/src/dispatch/host_execution_gate.dart';
@@ -186,6 +187,50 @@ void main() {
       final r = await sandboxed('"$shim"');
       expect(r.exitCode, 1);
       expect('${r.stderr}', contains('this signer only signs commits'));
+    });
+
+    test('the code mode runner and the directories it is found in cannot be '
+        'changed: the bundle beside the server, and the data dir', () async {
+      // An install under the writable home, as a hand-run server has it.
+      String install(String dir) {
+        final runner = File(p.join(dir, 'codemode', 'cc_codemode'))
+          ..parent.createSync(recursive: true)
+          ..writeAsStringSync('#!/bin/sh\necho runner\n');
+        Process.runSync('/bin/chmod', ['755', runner.path]);
+        return runner.path;
+      }
+
+      final bin = p.join(tree.root.path, 'app', 'bin');
+      final runner = install(bin);
+      final dataRunner = install(tree.data);
+
+      // Without the runner's directories, a run could replace it: the host
+      // runs it unconfined.
+      final before = p.join(tree.root.path, 'before', 'bin');
+      final beforeRunner = install(before);
+      await expectAllowed('echo "echo owned" > "$beforeRunner"');
+
+      await manager.disposeSession(spec.sessionId);
+      manager = SandboxManager(
+        hiddenPaths: [tree.data, tree.env],
+        extraHostExecutableDirs: BundledCodeRunner.installDirectories(
+          processEnvironment: const {},
+          serverExecutable: p.join(bin, 'cc_server'),
+        ),
+      );
+      final codemode = p.dirname(runner);
+      await expectDenied('echo "echo owned" > "$runner"');
+      await expectDenied('echo x > "$codemode/cc_codemode.new"');
+      await expectDenied('mv "$runner" "$runDir/gone"');
+      await expectDenied('mv "$codemode" "$bin/codemode.old"');
+      await expectDenied('echo x > "$bin/cc_server"');
+      // The data dir's copy is hidden with the data dir.
+      await expectDenied('cat "$dataRunner"');
+      await expectDenied('echo "echo owned" > "$dataRunner"');
+      expect(File(runner).readAsStringSync(), contains('echo runner'));
+      expect(File(dataRunner).readAsStringSync(), contains('echo runner'));
+      // Still readable where it is not hidden; only the host runs it.
+      expect(await expectAllowed('cat "$runner"'), contains('echo runner'));
     });
   }, skip: Platform.isMacOS ? false : 'real Seatbelt proof runs on macOS');
 
@@ -395,6 +440,8 @@ final class _Tree {
   /// A dispatch of agent-1 in space-1, with its Claude Code account and the
   /// space's worktrees granted for exec (they are server-made copies).
   DispatchSession session() => DispatchSession(
+    freshHistory: false,
+    readOnly: false,
     deps: SandboxDispatchDeps(
       hostExecution: const HostExecutionGate(
         posture: HostExecutionPosture.offByOwner,

@@ -1,0 +1,110 @@
+---
+title: Scheman och väckningar
+description: Väck en agent senare, enligt ett schema eller när något händer, se vad som väntar och vad som händer vid en omstart eller en användningsgräns.
+slug: sv-SE/handbok/how-to-guider/scheman-vackningar
+sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+---
+
+En agent sover inte och kollar inte om hela tiden medan den väntar. Den, eller du, ställer in en **väckning**: en varaktig begäran om att starta eller fortsätta agentens körning i en konversation vid en tid eller när något händer. Varje körning som servern startar utan att någon skriver börjar som en väckning: nästa segment i ett mål, ett schema, en bevakning, ett svar från en annan agent, färdigt delegerat arbete, slutet på en användningsgräns, arbetet som blir kvar efter en omstart. Väckningar sparas i arbetsytans databas, så de överlever en omstart.
+
+## Schemalägg en agent själv
+
+Skriv ett av dessa i en konversations skrivfält:
+
+```text
+/loop every 30m --days 3 check the deploy and fix what broke
+/loop keep the flaky tests green
+/schedule in 2h look at the overnight benchmark
+/schedule at 09:00 summarize what changed overnight
+/schedule cron "0 9 * * 1-5" --max 20 triage new tickets
+```
+
+| Kommando | Funktion |
+| --- | --- |
+| `/loop every <interval> <prompt>` | Väcker agenten med prompten nu och sedan med jämna mellanrum, med ett intervall (minst 60 sekunder isär) |
+| `/loop <prompt>` | En självstyrd loop: väcker agenten nu, och efter varje körning väljer agenten nästa fördröjning, 1 till 60 minuter (20 som standard) |
+| `/schedule in <duration> <prompt>` | Väcker agenten en gång, efter fördröjningen |
+| `/schedule at <HH:MM or ISO time> <prompt>` | Väcker agenten en gång. `HH:MM` är nästa sådan tid i arbetsytans tidszon; en ISO-tid utan offset är UTC |
+| `/schedule cron "<expression>" <prompt>` | Väcker agenten enligt en cron med fem fält, tolkad i arbetsytans tidszon. Citattecknen är valfria |
+
+- `--max <N>` begränsar körningarna, `--days <N>` avslutar schemat efter så många dagar (30 som standard, högst 365) och `--budget <dollars>` begränsar vad schemat får spendera totalt (arbetsytans standard annars, till att börja med 50 dollar).
+- `/loop` kör sin första körning direkt. `/schedule` väntar på sin tid.
+- Varaktigheter använder `s`, `m`, `h` och `d`, till exempel `90s`, `20m` eller `1h30m`.
+- Dessa kommandon läses bara i ett meddelande du skriver själv.
+
+Skrivfältet hjälper dig att skriva dem. Efter `/loop` eller `/schedule` och ett mellanslag visar förslagslistan när de körs och smalnar av när du skriver; skriv `--` efter tiden för gränserna. Enter eller Tab väljer en rad och skickar inget. En rad ovanför din text läser sedan upp kommandot: när det körs, när det slutar och vad som ännu saknas. Om du trycker på Enter på ett kommando som inte kan läsas säger den raden vad som är fel, och ditt utkast finns kvar.
+
+Du kan också skapa ett schema från sidan **Scheman** med **Nytt schema**: välj ytan, konversationen och agenten, när det ska köras, vad varje körning startar från, ett slut, en gräns för körningar och en kostnadsgräns. **Om agenten är upptagen** väljer mellan att hoppa över den körningen och att vänta tills agenten är ledig. **Vid varje körning** väljer mellan att starta en körning och att bara meddela dig med noteringen.
+
+## Vad agenter ställer in
+
+Agenter använder verktyget `wake_me` för samma saker, och för bevakningar:
+
+| Bevakning | Utlöses när |
+| --- | --- |
+| `on:pr_checks` | Kontrollerna för ytans pull request är klara |
+| `on:pr_review` | Utrymmets pull request får en granskning eller ett svar |
+| `on:pr_merged` | Utrymmets pull request mergas |
+| `on:environment` | En uppgift i ytans miljö avslutas, eller miljön blir klar |
+| `on:ticket:<id>` | Ett ärende avgörs |
+| `on:pipeline_run:<id>` | En pipeline-körning avslutas |
+
+- En bevakning av pull request hör ytans egen pull request, eller en pull request den anger (`on:pr_checks:acme/shop-ui#12`). En bevakning på något som personen inte kan läsa avvisas.
+- Agentens egna åtgärder utlöser inte dess bevakningar. En händelse som kommer medan agenten arbetar går inte förlorad: den väntar tills körningen tar slut, och senare händelser samlas i samma väckning.
+- En agents schema måste ha en gräns för körningar eller ett slut. Det tar slut efter 7 dagar som standard och högst 30. En bevakning körs 10 gånger som standard.
+- Ett schema som en agent sätter i en körning som ett av dess egna scheman startade delar det första schemats slut, gräns för körningar och kostnadsgräns, så en kedja av en agents scheman kan inte överleva det första. Om du tar bort det första schemat avslutas hela kedjan; om du pausar det pausas bara det schemat. Körningar som kedjan startar genom andra agenter räknas mot samma kostnadsgräns. Ett schema du skapade startar ingen kedja: det en agent sätter i sina körningar begränsas som allt den sätter efter ett meddelande från dig.
+- En agent listar vad som väntar med `list_wakes` och avbryter det den själv ställt in med `cancel_wake`. Den kan inte avbryta det du ställt in.
+
+## Se vad som väntar
+
+**Ovanför skrivfältet.** När väckningar väntar på en agent i konversationen visar en remsa dem: **N väckningar väntar**, varifrån var och en kommer (**Mål**, **Schema**, **Bevakning**, **Svar från** en agent, **Gränsen återställd**, **Återställning**, …), när den ska levereras och varför den hålls.
+
+| Knapp | Funktion | Vem som kan |
+| --- | --- | --- |
+| **Leverera nu** | Levererar en väntande väckning direkt | Bara den person som väckningen agerar för |
+| **Återuppta** | Släpper en hållen väckning | Bara den person som väckningen agerar för |
+| **Avbryt väckning** | Avbryter den | Alla med åtkomst till ytan |
+
+En väckning som inte levererades lämnar en rad i konversationen som säger varför, till exempel **Agenten är pausad.** eller **En budget blockerar en körning.**
+
+**Schemasidan.** Sidomenyn → **Scheman** listar varje schema och varje bevakning du kan se, grupperade efter status; ett cron-schema visar sina tre nästa tider i din tidszon. Öppna ett för att se dess notering, ägare, nästa körningar, körningar, överhoppningar, kostnad och slut, och **Senaste väckningar och körningar**. Varje schema har en egen adress (`/workspaces/<workspace>/schedules/<id>`).
+
+| Åtgärd | Vem som kan |
+| --- | --- |
+| **Pausa**, **Ta bort** | Alla med åtkomst till ytan |
+| **Återuppta**, **Förläng** | Bara dess ägare (en administratör för arbetsytan för ett schema som en agent skapade utan en person) |
+
+När någon annan än ett schemas ägare pausar det visar konversationen en rad som nämner den personen.
+
+På telefonen startar **Upprepa** på målvyn en upprepad prompt (var så många minuter eller timmar, eller självstyrd) med en kostnadsgräns och ett slut, och vyn **Scheman** pausar, återupptar och tar bort scheman. En konversations förloppsvy visar vad som väntar, inklusive pauser vid användningsgränsen (**Återuppta nu**, **Avbryt**) och arbete som blev kvar efter ett serverstopp.
+
+## Så körs ett schema
+
+- Varje körning av ett schema eller en bevakning begränsas till 5 dollar, eller till det schemat har kvar när det är mindre, och schemat stannar vid sin kostnadsgräns.
+- En cron-tid i timmen som hoppas över när klockan ställs fram körs en timme senare den dagen (02:30 körs kl. 03:30). En tid i timmen som upprepas när klockan ställs tillbaka körs en gång.
+- En schemakörning ansluter aldrig till en körning som redan pågår. Om agenten är upptagen när ett tidsstyrt schema utlöses hoppas den körningen tyst över, om inte schemat väntar tills agenten är ledig.
+- En körning som ett schema eller en bevakning startat och som avslutas utan problem meddelar dig inte, om den inte nämner någon. När ett schema tar slut säger klockan varför (**Den använde sina körningar.**, **Den nådde sitt slutdatum.**, …) utan ljud.
+- Högst 30 körningar i timmen startar från väckningar i en konversation, och 300 i en arbetsyta.
+- När personen som ett schema agerar för lämnar arbetsytan tar schemat slut. Allt annat som agerade för den personen stoppas också: deras väntande väckningar avbryts, deras köade och parkerade meddelanden tas bort, och deras körande agenter stoppas.
+
+## Stopp, omstart och användningsgränser
+
+- **Stoppa.** När du trycker **Stoppa** på en agents körning hålls dess väntande väckningar (de som inte hör till ett mål) och de meddelanden du köat för den. De väntar på **Återuppta** eller **Skicka parkerade meddelanden**. Varje person skickar sina egna parkerade meddelanden; ingen skickar en annan persons.
+- **En serveromstart.** Väckningar och scheman överlever. En körning som en väckning startade återupptas efter omstarten, med högst 3 försök. En körning du startade själv körs inte om av sig själv: den lämnar en hållen väckning **Återställning**, och den fortsätter när du trycker **Återuppta**. Ett tidsstyrt schema som missade sina tider medan servern var nere körs sent bara inom en kort marginal (hälften av dess intervall, högst 10 minuter; 24 timmar för ett engångsschema), annars registreras en enda överhoppning: **Missades medan servern var nere.**
+- **En leverantörs användningsgräns.** När en körning stannar vid en leverantörs användningsgräns och leverantören säger när den återställs (inom 7 dagar), pausas körningen. En körning som servern startade, till exempel ett målsegment eller en schemakörning, återupptas av sig själv 30 sekunder efter återställningen. För en körning du startade väntar den på dig: konversationen visar **Pausad vid** leverantörens **användningsgräns. Gränsen återställs** en tid, med **Återuppta** (bara du) och **Avbryt** (alla i ytan). Efter **Återuppta** fortsätter den när gränsen har återställts. En paus som du inte återupptar går ut 7 dagar efter återställningen. Meddelanden du köat vid gränsen skickas in i den återupptagna körningen; om körningen inte väntar på återställningen, eller pausen avbryts eller går ut, hålls de för dig under **Skicka parkerade meddelanden** i stället. Andra personers köade meddelanden hålls för dem direkt. Ett schemas nästa körning väntar tills den pausade körningen återupptas. ACP-agenter rapporterar ingen återställning, så deras körningar väntar inte.
+
+## Gränser för arbetsytan
+
+En arbetsytans administratör anger gränserna under **Inställningar → Arbetsyta → Scheman**:
+
+- **Gränser för scheman**: hur många aktiva eller pausade scheman en agent får ha i en konversation (10), över arbetsytan (50) och i hela arbetsytan (500); schemats standardkostnadsgräns (50 dollar); och tidszonen som cron-scheman och den dagliga sammanfattningen använder (UTC till att börja med).
+- **När ingen svarar**: hur länge en körning som servern startade väntar på en persons svar eller godkännande (72 timmar som standard, 1 timme till 7 dagar) innan ett godkännande räknas som nekat och en fråga som obesvarad (därefter avvisas allt annat som samma körning frågar om direkt), och timmen för den dagliga sammanfattningen av vad som väntar på dig i mål, scheman och andra körningar som servern startade.
+
+Medlemmar ser sidan skrivskyddad.
+
+## Se även
+
+- [Arbeta mot ett mål](/sv-SE/handbok/how-to-guider/arbeta-mot-mal/)
+- [Agenter som samarbetar](/sv-SE/handbok/how-to-guider/agenter-samarbetar/)
+- [Slash-kommandon](/sv-SE/handbok/referens/slash-kommandon/)
+- [Verktyg för väckningar och mål](/sv-SE/handbok/referens/mcp-verktyg/#verktyg-för-väckningar-och-mål)

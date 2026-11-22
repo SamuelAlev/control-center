@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/entities/github_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_inline_thread.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/pending_review_comment.dart';
@@ -89,7 +90,13 @@ class PrInlineCommentsController extends Notifier<PrInlineCommentsState> {
   PrPostingContext? _context;
 
   /// The viewer's login on this PR's forge, kept current by `build`.
+  /// Lower-cased (the connection map folds case), so it identifies the viewer
+  /// but is not what gets displayed.
   String _viewerLogin = '';
+
+  /// The signed-in GitHub profile, kept current by `build`: the login as the
+  /// forge cases it and the avatar a just-written comment shows.
+  GitHubUser? _viewerProfile;
 
   @override
   /// Builds the initial comment state from the PR's own repo.
@@ -114,6 +121,14 @@ class PrInlineCommentsController extends Notifier<PrInlineCommentsState> {
     ref.listen(
       currentUserLoginForPrProvider(pr),
       (_, login) => _viewerLogin = login,
+      fireImmediately: true,
+    );
+    // Followed for the same reason. Listening is also what loads it: nothing
+    // else on the PR screen watches the profile, so a one-off read at write
+    // time found it still loading and the comment went out with no avatar.
+    ref.listen(
+      githubUserProvider,
+      (_, user) => _viewerProfile = user.value,
       fireImmediately: true,
     );
 
@@ -165,23 +180,25 @@ class PrInlineCommentsController extends Notifier<PrInlineCommentsState> {
   /// viewer, so a just-written comment reads as its real author (login +
   /// avatar) instead of an anonymous "You" while the forge round-trips.
   ///
-  /// Read at write time, never watched: a late-resolving identity lookup must
-  /// not rebuild this controller (a rebuild returns a fresh state and would
-  /// drop the threads it already holds). Falls back to 'You' while the
-  /// identity is unresolved, which the server-comment stream corrects once
-  /// the comment lands.
+  /// Followed, never watched: a late-resolving identity lookup must not
+  /// rebuild this controller (a rebuild returns a fresh state and would drop
+  /// the threads it already holds). Falls back to 'You' while the identity is
+  /// unresolved, which the server-comment stream corrects once the comment
+  /// lands.
   ({String author, String? avatarUrl}) _viewerIdentity() {
-    // The login on THIS PR's forge. The avatar comes from the GitHub profile,
-    // so it is only used when that profile is the same account.
+    // The login on THIS PR's forge. The GitHub profile supplies the login's
+    // real casing and the avatar, so it is only used when it is the same
+    // account; otherwise the entry would read differently once synced.
     final login = _viewerLogin;
     if (login.isEmpty) {
       return (author: 'You', avatarUrl: null);
     }
-    final user = ref.read(githubUserProvider).value;
-    final avatar = user != null && user.login.toLowerCase() == login
-        ? user.avatarUrl
-        : '';
-    return (author: login, avatarUrl: avatar.isEmpty ? null : avatar);
+    final user = _viewerProfile;
+    if (user == null || user.login.toLowerCase() != login) {
+      return (author: login, avatarUrl: null);
+    }
+    final avatar = user.avatarUrl;
+    return (author: user.login, avatarUrl: avatar.isEmpty ? null : avatar);
   }
 
   /// Finds a thread that covers the given line and side, or null.
@@ -191,7 +208,8 @@ class PrInlineCommentsController extends Notifier<PrInlineCommentsState> {
     required String side,
   }) {
     for (final t in state.threads) {
-      if (t.filePath == filePath &&
+      if (!t.isFileLevel &&
+          t.filePath == filePath &&
           t.side == side &&
           line >= t.line &&
           line <= t.lineEnd) {
@@ -267,6 +285,48 @@ class PrInlineCommentsController extends Notifier<PrInlineCommentsState> {
     state = state.copyWith(threads: [...state.threads, thread], idCounter: c2);
 
     if (ctx != null && !batched) {
+      _postThread(thread, authorBody);
+    }
+    return thread;
+  }
+
+  /// Creates a thread on [filePath] as a whole and posts it right away.
+  ///
+  /// A file-level comment is how a file with no diff rows (a rename without
+  /// changes, an image) gets commented on. It is never queued for a review:
+  /// the forge's review submission takes line anchors only, so holding it back
+  /// would mean it could never be sent with the verdict anyway.
+  PrInlineThread createFileComment({
+    required String filePath,
+    required String authorBody,
+  }) {
+    final c1 = state.idCounter + 1;
+    final c2 = c1 + 1;
+    final ctx = _context;
+    final identity = _viewerIdentity();
+    final thread = PrInlineThread(
+      id: 'thread-$c1',
+      filePath: filePath,
+      line: 0,
+      side: 'RIGHT',
+      kind: PrInlineThreadKind.comment,
+      originalCode: '',
+      suggestedCode: '',
+      isFileLevel: true,
+      entries: [
+        PrInlineEntry(
+          id: 'entry-$c2',
+          author: identity.author,
+          authorAvatarUrl: identity.avatarUrl,
+          body: authorBody,
+        ),
+      ],
+      syncState: ctx == null
+          ? PrInlineSyncState.local
+          : PrInlineSyncState.pending,
+    );
+    state = state.copyWith(threads: [...state.threads, thread], idCounter: c2);
+    if (ctx != null) {
       _postThread(thread, authorBody);
     }
     return thread;
@@ -353,16 +413,23 @@ class PrInlineCommentsController extends Notifier<PrInlineCommentsState> {
       return;
     }
     try {
-      final result = await ctx.repository.postReviewComment(
-        prNumber: ctx.prNumber,
-        commitSha: ctx.commitSha,
-        path: thread.filePath,
-        line: thread.lineEnd,
-        side: thread.side,
-        startLine: thread.isMultiLine ? thread.line : null,
-        startSide: thread.isMultiLine ? thread.side : null,
-        body: body,
-      );
+      final result = thread.isFileLevel
+          ? await ctx.repository.postFileComment(
+              prNumber: ctx.prNumber,
+              commitSha: ctx.commitSha,
+              path: thread.filePath,
+              body: body,
+            )
+          : await ctx.repository.postReviewComment(
+              prNumber: ctx.prNumber,
+              commitSha: ctx.commitSha,
+              path: thread.filePath,
+              line: thread.lineEnd,
+              side: thread.side,
+              startLine: thread.isMultiLine ? thread.line : null,
+              startSide: thread.isMultiLine ? thread.side : null,
+              body: body,
+            );
       _patchThread(
         thread.id,
         (t) => t.copyWith(

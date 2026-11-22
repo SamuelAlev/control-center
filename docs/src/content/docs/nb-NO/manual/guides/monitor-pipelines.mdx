@@ -2,7 +2,7 @@
 title: Overvåk pipeline-kjøringer
 description: Jobb deg gjennom kjøringskøen, les tidslinjen og stegpanelet til en kjøring, og få et steg som har feilet eller står fast, i gang igjen.
 slug: nb-NO/handbok/slik-gjor-du/overvak-pipelines
-sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
+sourceHash: 48d44ae3ca3e23c1123ef282ccffece35b542b96
 ---
 
 Denne siden handler om alt som skjer etter at en kjøring har startet: å finne
@@ -69,6 +69,8 @@ sikkerhetsnett i motoren feiler hele kjøringen i stedet for å gjenoppta: et st
 som har vært suspendert i mer enn 24 timer (`extras.awaitApproval` — kroppen
 `orchestration.awaitApproval` — er unntatt; `human.gate` er det ikke) og et
 ikke-idempotent steg som var i gang da serveren stoppet.
+
+Et **Pursue a goal**-steg er også unntatt fra sikkerhetsgrensen på 24 timer: det forblir suspendert mens målet arbeider, og siden lenker til målet. En hel kjøring kan også være **Suspendert** fordi orkestreringen har nådd kostnadstaket sitt; kjøringssiden viser da hva som er brukt av taket, og for den som ba om kjøringen, **Øk grensen**.
 
 ## Inspiser et steg
 

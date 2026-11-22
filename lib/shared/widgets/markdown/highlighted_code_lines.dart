@@ -20,8 +20,12 @@ const int kCodeHighlightMaxLines = 800;
 ///  * inside the grammar's sync line budget → tokenize in `build`, coloured on
 ///    the first frame;
 ///  * above it → render PLAIN immediately and tokenize off the UI thread; the
-///    result lands in the highlight LRU and the rebuild picks it up;
+///    result is held in this widget's state (and the highlight LRU, when the
+///    block is small enough to cache) and the rebuild picks it up;
 ///  * past the hard caps, or with no language → plain, permanently.
+///
+/// A surface whose whole point is reading the file (the IDE file viewer)
+/// raises [maxChars] / [maxLines]; everything else keeps the defaults.
 ///
 /// [builder] always receives one entry per line of [code] (an empty inner list
 /// for a blank line), so a caller can lay out a gutter against it without
@@ -64,6 +68,25 @@ class _HighlightedCodeLinesState extends State<HighlightedCodeLines> {
   /// for the same (code, language, theme).
   (String, String?, bool)? _pendingAsync;
 
+  /// The inputs [_asyncLines] was tokenized for.
+  (String, String?, bool)? _asyncKey;
+
+  /// The last async result. Held here rather than only in the highlight LRU:
+  /// a block over the LRU's per-item cap is never cached there, so a rebuild
+  /// that only peeked the LRU would find nothing, render plain and tokenize
+  /// the whole block again, forever.
+  List<List<InlineSpan>>? _asyncLines;
+
+  @override
+  void didUpdateWidget(HighlightedCodeLines oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.code != widget.code ||
+        oldWidget.languageId != widget.languageId) {
+      _asyncKey = null;
+      _asyncLines = null;
+    }
+  }
+
   List<List<InlineSpan>> _lines({required bool dark}) {
     final code = widget.code;
     final languageId = widget.languageId;
@@ -80,6 +103,11 @@ class _HighlightedCodeLinesState extends State<HighlightedCodeLines> {
     )) {
       return highlightCodeLines(code: code, languageId: languageId, dark: dark);
     }
+    final key = (code, languageId, dark);
+    final held = _asyncLines;
+    if (held != null && _asyncKey == key) {
+      return held;
+    }
     final cached = peekHighlightedLines(
       code: code,
       languageId: languageId,
@@ -88,18 +116,25 @@ class _HighlightedCodeLinesState extends State<HighlightedCodeLines> {
     if (cached != null) {
       return cached;
     }
-    final key = (code, languageId, dark);
     if (_pendingAsync != key) {
       _pendingAsync = key;
-      highlightCodeLinesAsync(
-        code: code,
-        languageId: languageId,
-        dark: dark,
-      ).whenComplete(() {
-        if (mounted && _pendingAsync == key) {
-          setState(() => _pendingAsync = null);
-        }
-      });
+      highlightCodeLinesAsync(code: code, languageId: languageId, dark: dark)
+          .then<void>((lines) {
+            if (mounted && _pendingAsync == key) {
+              setState(() {
+                _pendingAsync = null;
+                _asyncKey = key;
+                _asyncLines = lines;
+              });
+            }
+          })
+          .catchError((Object _) {
+            // highlightCodeLinesAsync already degrades to plain; this only
+            // keeps an unexpected throw from leaving the request pending.
+            if (mounted && _pendingAsync == key) {
+              setState(() => _pendingAsync = null);
+            }
+          });
     }
     return highlightCodeLines(code: code, languageId: null, dark: dark);
   }

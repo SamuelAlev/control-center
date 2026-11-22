@@ -1,5 +1,6 @@
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/features/orchestration/domain/entities/orchestration.dart';
+import 'package:cc_domain/features/orchestration/domain/ports/orchestration_cap_raiser.dart';
 import 'package:cc_domain/features/orchestration/domain/repositories/orchestration_repository.dart';
 import 'package:cc_domain/features/orchestration/domain/services/orchestration_proposal_validator.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket.dart';
@@ -12,6 +13,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// adapter over the connected `cc_server`, which runs the orchestration
 /// use-cases, listeners and the MCP `propose_*` tool itself.
 final orchestrationRepositoryProvider = Provider<OrchestrationRepository>(
+  (ref) => RpcOrchestrationRepository(ref.watch(rpcClientProvider)),
+);
+
+/// Raises a held pipeline run's orchestration cap (`orchestration.raiseCap`).
+final orchestrationCapRaiserProvider = Provider<OrchestrationCapRaiser>(
   (ref) => RpcOrchestrationRepository(ref.watch(rpcClientProvider)),
 );
 

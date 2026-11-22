@@ -1,0 +1,143 @@
+---
+title: Cél követése
+description: Adjon egy ügynöknek olyan célt, amelyen a futtatásokon és újraindításokon át dolgozik, határozza meg, mit jelent a kész, és döntsön arról, mikor van kész.
+slug: hu-HU/kezikonyv/gyakorlati-utmutatok/cel-kovetese
+sourceHash: 0ea77964bd9e3044e168624bc67325de0fd1d1e5
+---
+
+A cél olyan munka, amelyen az ügynök addig dolgozik, amíg a „mit jelent a kész” feltételei teljesülnek. Az ügynök **szakaszokban** dolgozik: korlátozott futtatásokban, amelyeket a szerver egymás után indít el, újraindításokon át, amíg a célt nem ellenőrzik, egy személy le nem zárja, vagy el nem éri valamelyik korlátot. Az ügynök nem zárhatja le a célt azzal, hogy azt mondja, kész. A szerver lefuttatja a cél ellenőrzéseit, és egy átnéző először megnézi az eredményt.
+
+## Cél indítása
+
+Írja be a `/goal` parancsot és a célt a beszélgetés szerkesztőjébe:
+
+```text
+/goal --budget 20 --days 2 --check "make test" make the importer handle files over 2 GB
+```
+
+A `/goal` parancs után szöveggel kezdett üzenet megnyitja a célkitűzés-kérdezést. Ez néhány kérdéssel pontosítja a célkitűzést: sikerkritériumokat, azokat az ellenőrzéseket, amelyeknek sikeresen le kell futniuk, határokat és leállási feltételeket kérdez, és felajánlja, hogy külön ellenőrzőt adjon meg, minden szakaszt tiszta lappal indítson, és az ügynök maga válaszoljon a saját kérdéseire. Minden lépés kihagyható.
+
+| Kapcsoló | Jelentés |
+| --- | --- |
+| `--budget <dollars>` | Az egész cél legfeljebb ennyit költhet. Alapértelmezés szerint 50 dollár |
+| `--max <N>` | A cél legfeljebb ennyi szakaszt vehet igénybe. Alapértelmezés szerint nincs korlát |
+| `--days <N>` | Határidő, ennyi nap múlva |
+| `--check "<command>"` | Parancs, amelynek sikeresen le kell futnia, mielőtt a cél befejeződhet. A worktree-ben fut. Több is megadható, legfeljebb 5 |
+| `--checker <agent>` | Másik ügynök, amely ellenőrzi, hogy a cél valóban kész-e; név vagy azonosító szerint |
+| `--fresh` | Minden szakasz a beszélgetés előzményei nélkül indul, csak a cél és a jegyzetei alapján |
+| `--unattended wait` vagy `--unattended assume` | Mi történik az ügynök kérdéseivel, ha senki sem válaszol (lásd: [Ha senki nem válaszol](#ha-senki-nem-válaszol)) |
+
+- A kapcsolók bárhol állhatnak az üzenetben. Az ismeretlen kapcsolót, az ismételt kapcsolót, a hibás értéket és az 5-nél több ellenőrzést a rendszer elutasítja, a piszkozat pedig a szerkesztőben marad, alatta az okkal.
+- A célkitűzés elején álló szám a célkitűzés része. A szakaszok számának korlátozásához használja a `--max` kapcsolót.
+- A `/goal` parancsot csak az Ön által begépelt üzenetben olvassuk. Ugyanez a szöveg egy ügynöktől, pipeline-tól vagy ébresztőtől közönséges üzenet.
+- Egy ügynök egyszerre egy célon dolgozik egy munkaterületen. Ugyanannak az ügynöknek a második `/goal` parancsát elutasítjuk, amíg az első aktív.
+
+### Mit jelent a kész
+
+A célkitűzés olyan szakaszokat is tartalmazhat, amelyek a cél szerződésévé válnak:
+
+```text
+/goal make the importer handle files over 2 GB
+
+## Success criteria
+- A 3 GB fixture imports without running out of memory
+- The progress bar reaches 100%
+
+## Boundaries
+- Don't change the public API
+
+## Stop conditions
+- A migration would drop data
+
+## Checks
+- `make test` (300 s)
+- environment task `test` (600 s)
+```
+
+- **Sikerkritériumok**: legfeljebb 12, mindegyik legfeljebb 300 karakter. Mindegyiket egy átnéző meg tudja erősíteni.
+- **Ellenőrzések**: legfeljebb 5. Az ellenőrzés a worktree-ben fut, vagy a tér [környezetének](/hu-HU/kezikonyv/gyakorlati-utmutatok/kornyezetek/) egy elnevezett feladataként. Alapértelmezés szerint 300 másodperc áll rendelkezésre, legfeljebb 1 800.
+- A határt túllépő szakaszt elutasítjuk, nem vágjuk le.
+
+Kritériumok nélküli cél esetén az ügynök dönti el, mikor kész, az ellenőrzés nélküli cél pedig csak az átnézésre hagyatkozik. A cél oldala ezt jelzi.
+
+## Hogyan folytatódik egy cél
+
+Minden szakasz legfeljebb 5 dollárral futó futtatás, vagy a költségkeret maradékával, attól függően, melyik a kisebb. Minden szakasz után a szerver abból, amit a szakasz tett, eldönti, mi következik:
+
+- **Előrehaladt.** A következő szakasz elindul.
+- **Valamire vár, amit maga állított be**: ütemezésre, figyelőre, kérdésre egy másik ügynöknek vagy kiadott jegyre. A cél erre vár. Ha nem érkezik semmi, a szerver 20 perc múlva, majd 40, 80, 160, utána pedig 240 percenként újra ránéz. A kártyán ez áll: **A felállított munkára vár · újra ránéz** egy időpont.
+- **Nem volt előrehaladás.** Előrehaladás az, ha a worktree tartalma a szakasz saját munkájától változott, az ellenőrzőlista változott, vagy az ügynök valami újat csinált. 3 szakasz előrehaladás nélkül után a cél szünetel: **Az utolsó szakaszaiban nem volt előrehaladás.**
+- **Túl sokat várt.** 24 óra várakozás után, vagy 6 olyan várakozás után, amelyek új, maga beállított dolgokra vártak úgy, hogy közben nem volt előrehaladás, a cél szünetel: **Vár, az előrehaladás nélküli szakaszok után.**
+- **Hibázott.** A szerver 30 másodperc múlva újrapróbálja, majd egyre később, legfeljebb 15 perc múlva. 3 egymást követő hiba után a cél sikertelen.
+- **Kérdést tett fel egy személynek.** A cél addig vár, amíg valaki válaszol: **Személyre vár**.
+
+A cél megáll a költségkereténél (**Költségkeret kimerítve**), a szakaszkorlátjánál és a határidejénél is.
+
+## Amikor az ügynök azt mondja, kész
+
+Az ügynök minden sikerkritériumhoz bizonyítékkal együtt állítja, hogy a cél kész. Ezután:
+
+1. **A szerver lefuttatja az ellenőrzéseket** homokozóban, sosem közvetlenül a szerver gépén. A nem nulla kilépési kódú ellenőrzés sikertelen. Az az ellenőrzés, amely egyáltalán nem tud lefutni (a parancs nem található, nem futtatható, vagy a környezetben nincs ilyen feladat), hibás: a cél egy személyre vár, ezzel: **Ez az ellenőrzés nem futhat:** és a parancs. Ha a szerveren nincs homokozó, a cél ezzel áll meg: **Nincs elérhető homokozó az ellenőrzések futtatásához.** (Kivétel az a szerver, amelynek tulajdonosa minden futtatásra kikapcsolta a homokozást: ott az ellenőrzések úgy futnak, ahogy az ügynök saját parancsai.) Ha egy sikertelen ellenőrzés óta a worktree semmit sem változott, nem futtatjuk újra.
+2. **Egy átnéző megnézi az eredményt**, ha minden ellenőrzés sikeres, vagy nincs ellenőrzés. Az átnéző a cél ellenőrzője, különben a térben beállított ellenőrző, különben a cél saját ügynöke. Csak olvasható módban fut, előzmények nélkül: olvashat fájlokat és az ellenőrzések kimenetét, de nem módosíthat semmit, nem futtathat parancsot és nem ébreszthet más ügynököket. Az ügynök által módosított tesztek és ellenőrző szkriptek teljes diffjét is megkapja, és amit az ügynök a beszélgetésben és a jegyzeteiben ír, azt állításnak tekinti, nem bizonyítéknak. Ha a célnak nincsenek feltételei, a célt egészében ítéli meg. Azt válaszolja, hogy a cél kész, nincs kész, vagy nem tudja megmondani.
+3. **Kész**: a cél befejeződik. **Nincs kész**: az ügynök megkapja az átnéző megállapításait, és dolgozik tovább. 3 „nincs kész” kör után, vagy ha az átnéző nem tudja megmondani, a cél Önre vár: **Átnézésre vár: azt állítja, hogy kész, de semmi sem erősítette meg**.
+
+Az átnéző futása alatt beírt üzenet nem kerül az átnézőhöz, és az átnézés végén sem küldődik el. Az ügynök következő szakaszáig sorban marad. Ha nem következik újabb szakasz, az üzenet Önnek visszatartva marad a **Visszatartott üzenetek küldése** alatt.
+
+Ha az átnéző nem tud futni (törölték, vagy olyan adaptert használ, amely nem tudja csak olvashatóan futtatni az ügynököt, például egy ACP-ügynököt), a cél szünetel: **Az ellenőrző ügynöke nem elérhető. Válasszon másikat, majd folytassa.** Más ügynök Ön nélkül nem lép be.
+
+Másik szolgáltatótól származó ellenőrző, mint a cél ügynöke, kevésbé valószínű, hogy ugyanazokat a vakfoltokat hordozza. Külön ellenőrző nélkül az ügynök a saját munkáját nézi át, és a cél ezt rögzíti: **Saját maga ellenőrizte (nincs külön ellenőrző)**.
+
+## Cél követése
+
+- **A beszélgetésben**: a cél kártyája az **Általános** panelen mutatja a visszatartást, a szakaszt, a költést a költségkerethez képest, a hátralévő időt, a mit jelent a kész feltételeit, az ellenőrzéseket és az utolsó ítéletet.
+- **A Célok oldal**: oldalsáv → **Célok**. A célok csoportosítva jelennek meg: **Átnézésre vár**, **Nyitott** és **Befejezett**.
+- **A cél oldala**: nyisson meg egy célt, és lássa a **Jelenleg** részt (szakaszok, költés, határidő, előrehaladás nélküli számláló és mi következik), a **Mit jelent a kész** részt, az **Ellenőrzés** részt (az utolsó kör: az állítás, minden ellenőrzés a kimenetével, az átnézés sikerkritériumonként), és az **Ütemezések és ébresztők** részt. Minden célnak saját címe van (`/workspaces/<workspace>/goals/<goal id>`), így linket oszthat meg.
+
+Telefonon a célok képernyőn ellenőrzésekkel és szakaszkorláttal lehet célt indítani, és ugyanazok a célok és visszatartások jelennek meg.
+
+## Cél módosítása vagy leállítása
+
+| Művelet | Ki teheti |
+| --- | --- |
+| **Cél szüneteltetése**, **Cél leállítása** | Bárki, akinek hozzáférése van a térhez |
+| **Cél folytatása**, **Költségkeret emelése** | Csak az, aki a célt elindította (olyan célnál, amelyet senki sem indított, munkaterület-adminisztrátor) |
+| **Szerkesztés** a mit jelent a kész részénél, **Ellenőrző módosítása** | Csak az a személy, aki a célt indította (olyan cél esetén, amelyet senki nem indított, a munkaterület-adminisztrátor), akinek írási joga van a tér tárolóihoz, amíg a cél szünetel |
+| **Befejezés jóváhagyása** | Bárki, akinek hozzáférése van a térhez, amíg a cél átnézésre vár. Pipeline által indított célt csak az a személy hagyhat jóvá, aki az adott futtatást indította (ha senki nem indította, a munkaterület-adminisztrátor) |
+
+- Ha az ügynök futtatásán a **Leállítás** gombot nyomja, a cél szünetel (**Egy személy szüneteltette**). A cél még ki nem kézbesített ébresztői addig várnak, amíg folytatja.
+- A **Befejezés jóváhagyása** a cél befejezettként zárja le az Ön szava alapján. A cél ezt rögzíti: **Egy személy zárta le sikeres ellenőrzés nélkül**.
+- A költségkeretét kimerítő cél csak magasabb költségkerettel folytatódik.
+- Amikor az a személy, aki a célt indította, elhagyja a munkaterületet, a cél azonnal átnézésre vár, a futó ügynökét pedig leállítják. Senki nem folytathatja; a tér bármely hozzáféréssel rendelkező tagja leállíthatja. A napi összesítő a munkaterület-adminisztrátoroknak listázza.
+
+## Ha senki nem válaszol
+
+Ha egy szakasz kérdést tesz fel egy személynek, vagy jóváhagyást kér, és senki nem válaszol, a kérés alapértelmezés szerint 72 óráig vár. Utána a jóváhagyás elutasítottnak számít, a kérdés megválaszolatlannak, a cél pedig szünetel: **Egy személynek szóló kérdés vagy jóváhagyási kérés válasz nélkül maradt.** A kérdést feltevő futtatás nem kap további válaszokat: bármi mást kérdez, azt azonnal elutasítják, és befejezi, amit tud. Egy munkaterület-adminisztrátor állítja be az időt (1 órától 7 napig) itt: **Beállítások → Munkaterület → Ütemezések → Ha senki nem válaszol**. Naponta egyszer, a beállított órában kap egy összesítőt mindarról, ami Önre vár.
+
+A `--unattended assume` kapcsolóval az ügynök kimondja a feltevését, és 10 perc válasz nélkül továbbmegy, ha a leállási feltételei ezt engedik. Ez csak a kérdésekre vonatkozik. Jóváhagyást sosem feltételez, és egy átnézés sosem feltételez semmit.
+
+## Használati korlátok és újraindítások
+
+- **Szolgáltatói használati korlát.** Ha egy szakasz a szolgáltató használati korlátjánál áll meg, és a szolgáltató megmondja, mikor áll vissza (7 napon belül), a cél büntetés nélkül szünetel: **Használati korlátnál szüneteltetve · folytatódik** egy időpont. A visszaállás után 30 másodperccel folytatódik. 8 ilyen szünet után a cél Önre vár: **Túl gyakran érte el a használati korlátot. Nézze át, majd folytassa.** Bármelyik folytatás újraindítja a számlálót. Az ACP-ügynökök nem jelentenek visszaállást, ezért céljaik nem várnak korlátnál.
+- **A szerver újraindítása.** A cél túléli az újraindítást. Az újraindítás által megszakított szakasz újra indul, a cél ütemezései és függőben lévő ébresztői pedig megmaradnak.
+
+## Fejlesztések egy cél után
+
+Miután a cél sikeresen átment az ellenőrzésen, egy rövid, csak olvasható átnézés (legfeljebb 1 dollár) fejlesztéseket javasolhat: egy memóriatényt, egy szabályzatot, megjegyzést az ügynökről, vagy egy skill módosítását. A `/refine` begépelésével ugyanezt az átnézést kérheti a beszélgetés munkájára. Beszélgetésenként legfeljebb egy átnézés fut 20 percenként.
+
+A javaslatok a **Fejlesztések** oldalon jelennek meg (oldalsáv → **Fejlesztések**). Nyisson meg egyet, és lássa, mit változtat, a bizonyítékokat, valamint az **Elfogadás**, az **Elutasítás** és a **Visszavonás** gombot.
+
+- A javaslat addig nem változtat semmin, amíg valaki el nem fogadja. 30 nap után lejár.
+- A skill módosításához, vagy a teljes munkaterületre érvényes szabályzathoz munkaterület-adminisztrátor kell (**Adminisztrátor dönt**).
+- A skill-módosítás külön revízióként tárolódik. Nyomja meg a **Kiértékelés futtatása** gombot, hogy összehasonlítsa a jelenlegi skill-lel; az **Elfogadás** csak sikeres kiértékelés után lehetséges. Egy kiértékelés sikeres, ha teljesen lefutott, és az ügynök a módosítással legalább annyi futtatást oldott meg, mint a jelenlegi skill-lel; az oldal mindkét számot mutatja. Ha a skill a kiértékelés után változik, futtassa újra.
+- A **Visszavonás** visszaállítja a korábbi szöveget, feltéve, hogy azóta senki sem változtatta meg.
+
+## Pipeline-ban
+
+Egy pipeline a **Pursue a goal** lépéssel (`goal.pursue`) indíthat célt. A lépés addig vár, amíg a cél véget nem ér, és továbbadja az összefoglalóját és az ítéletét. Lásd: [Pipeline-lépésfajták](/hu-HU/kezikonyv/referencia/pipeline-lepesek/).
+
+## Lásd még
+
+- [Ütemezések és ébresztők](/hu-HU/kezikonyv/gyakorlati-utmutatok/utemezesek-ebresztok/)
+- [Ügynökök együttműködése](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynokok-egyuttmukodese/)
+- [Költségek kezelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/koltsegek-kezelese/)
+- [Slash-parancsok](/hu-HU/kezikonyv/referencia/slash-parancsok/)

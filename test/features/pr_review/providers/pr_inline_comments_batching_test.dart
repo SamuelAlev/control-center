@@ -84,6 +84,25 @@ class _RecordingRepository extends EmptyPrReviewRepository {
     ));
     return {'id': 99};
   }
+
+  @override
+  Future<Map<String, dynamic>> postFileComment({
+    required int prNumber,
+    required String commitSha,
+    required String path,
+    required String body,
+  }) async {
+    log.add((
+      prNumber: prNumber,
+      event: 'POST_FILE_COMMENT:$path',
+      body: body,
+      c: const [],
+    ));
+    if (failWith != null) {
+      throw failWith!;
+    }
+    return {'id': 101};
+  }
 }
 
 final _repo = Repo(
@@ -194,6 +213,53 @@ void main() {
 
       expect(ctl.pendingReviewThreads, isEmpty);
       expect(log.single.event, 'POST_COMMENT');
+    });
+
+    test('a file comment posts at once as a file comment', () async {
+      final log = _log();
+      final container = _container(_RecordingRepository(log));
+      final ctl = await _controller(container);
+
+      final thread = ctl.createFileComment(
+        filePath: 'lib/moved.dart',
+        authorBody: 'Why the move?',
+      );
+      expect(thread.isFileLevel, isTrue);
+      await Future<void>.delayed(Duration.zero);
+
+      // Never queued: a review submission takes line comments only.
+      expect(ctl.pendingReviewThreads, isEmpty);
+      expect(log.single.event, 'POST_FILE_COMMENT:lib/moved.dart');
+      expect(log.single.body, 'Why the move?');
+      final posted = ctl.byId(thread.id)!;
+      expect(posted.syncState, PrInlineSyncState.synced);
+      expect(posted.serverId, 101);
+      // It anchors no row, so a line lookup never finds it.
+      expect(
+        ctl.forAnchor(filePath: 'lib/moved.dart', line: 0, side: 'RIGHT'),
+        isNull,
+      );
+    });
+
+    test('a failed file comment retries as a file comment', () async {
+      final log = _log();
+      final container = _container(
+        _RecordingRepository(log, failWith: StateError('offline')),
+      );
+      final ctl = await _controller(container);
+
+      final thread = ctl.createFileComment(
+        filePath: 'lib/moved.dart',
+        authorBody: 'Why the move?',
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(ctl.byId(thread.id)!.syncState, PrInlineSyncState.error);
+
+      await ctl.retryPost(thread.id);
+      expect(log.map((c) => c.event), [
+        'POST_FILE_COMMENT:lib/moved.dart',
+        'POST_FILE_COMMENT:lib/moved.dart',
+      ]);
     });
 
     test('submitting sends every queued comment with the verdict', () async {

@@ -2,7 +2,7 @@
 title: Barreiras — uma política única para toda ação que altera o estado
 description: Por que o Control Center encaminha todo efeito colateral de agente por um único motor de permitir, perguntar ou negar, por que a taxonomia de ActionClass é mantida pequena de propósito e o que o dial de autonomia realmente muda.
 slug: pt-BR/manual/conceitos/barreiras
-sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
+sourceHash: bb98b2ca26ae104ab7701d4d381cd5c41d25d32f
 ---
 
 Os agentes no Control Center podem excluir arquivos, fazer push de branches,
@@ -33,6 +33,17 @@ ele tenha desligado o sandbox para todos com `--sandbox off`. Para qualquer
 execução que começa sem sandbox, as barreiras são a camada de imposição mais
 externa, e não uma política sobreposta a um piso, o que vale saber quando você decide o quão
 permissivo ser.
+
+### Chamadas que um script faz
+
+Um script do [modo de código](/pt-BR/manual/conceitos/modo-de-codigo/) chama ferramentas em código, muitas de cada vez, mas cada uma das chamadas é uma chamada de ferramenta separada para o motor. Ela passa pelo mesmo gate do harness ou do despachante MCP de uma chamada direta, com as mesmas regras, o mesmo pedido de aprovação e a mesma entrada de auditoria, e nada do que ela faz é aprovado porque a chamada de `repl` que a iniciou foi.
+
+Duas regras extras se aplicam às chamadas feitas por um script, porque um script pode fazer centenas de chamadas e capturar cada recusa:
+
+- no máximo 10 das chamadas dele chegam a uma pessoa para aprovação; as seguintes que precisariam de uma pessoa são recusadas sem cartão;
+- depois que uma pessoa recusa uma das chamadas dele, as demais chamadas que precisam de aprovação são recusadas sem perguntar.
+
+Um cartão aberto por um script informa isso e permite que você abra o script. Se o script terminar enquanto o cartão está aberto, o cartão é retirado, e uma resposta que chegue depois disso é registrada como negação e não aprova nada.
 
 ## ActionClass: uma taxonomia deliberadamente fechada
 
@@ -271,5 +282,6 @@ receber.
 ## Conceitos relacionados
 
 - [Sandbox e segurança](/pt-BR/manual/conceitos/sandbox-e-seguranca/): o que de fato restringe a execução de um agente e até onde chega o piso do sistema operacional sob este motor
+- [Modo de código](/pt-BR/manual/conceitos/modo-de-codigo/): scripts cujas chamadas de ferramenta passam todas por este motor
 - [Multijogador — identidade, associação e presença](/pt-BR/manual/conceitos/multijogador/): espaços, principals e onde fica o dial de autonomia
 - [Configurar guardrails](/pt-BR/manual/guias/configurar-guardrails/): como escrever e testar regras na prática

@@ -2,8 +2,11 @@ import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/operation_scope.dart';
+import 'package:cc_remote/widgets/activity/work_notifications.dart';
 
 String activityTitle(NotificationFeedItem item, AppLocalizations l) {
+  final work = workActivityTitle(item, l);
+  if (work != null) return work;
   final method = item.method;
   if (method == 'notifications/agent_awaiting_input') {
     return l.activityAgentWaiting;
@@ -91,6 +94,8 @@ String activityBody(NotificationFeedItem item) {
 }
 
 String? activityDestination(NotificationFeedItem item, List<Repo> repos) {
+  final work = workActivityDestination(item);
+  if (work.handled) return work.location;
   final p = item.params;
   final ws = item.workspaceId;
   final space = p['space_id'];

@@ -1,0 +1,178 @@
+---
+title: Kodemodus
+description: Hvordan en agent skriver et kort skript som kaller verktøyene sine, i stedet for å kalle dem ett om gangen, hvilke verktøy den kaller direkte og hvilke fra et skript, grensene et skript kjører under, hvordan et skript leses i samtalen, og hvordan det innesperres og registreres.
+slug: nb-NO/handbok/konsepter/kodemodus
+sourceHash: d41fe2f38c216949847fc7c4768fdf96bed2dc83
+---
+
+En agent kaller vanligvis verktøyene sine ett om gangen. Hvert kall er en modellrunde: agenten ber om kallet, resultatet kommer tilbake inn i konteksten, og agenten leser det før den ber om neste. For arbeid som stort sett er mekanisk, for eksempel å lese tjue filer for å finne de tre som betyr noe, eller å sjekke alle åpne saker for én etikett, går de fleste av disse rundene og mesteparten av konteksten med til resultater agenten kaster.
+
+Kodemodus er ett verktøy, `repl`. Med det skriver agenten et kort JavaScript-skript som kaller de andre verktøyene, løkker over, filtrerer og kombinerer resultatene, og bare returnerer det den trenger. Ett `repl`-kall kan gjøre jobben til dusinvis av verktøyrunder, og bare skriptets svar kommer inn i konteksten.
+
+Hver kjøring har `repl` når serveren kan kjøre skript. Det er ingenting å slå på: se [Når en kjøring har `repl`](#når-en-kjøring-har-repl).
+
+## Hva et skript kan gjøre
+
+Et skript er vanlig JavaScript, skrevet som kroppen til en async-funksjon, slik at `await` og `return` fungerer på øverste nivå. Hvert `repl`-kall starter en ny, tom tolk.
+
+- **Kall verktøy.** `await tools.read({ path: "README.md" })` kaller et verktøy og gir resultatet, eller avviser med en feil når kallet mislykkes eller nektes. Uavhengige kall kan kjøres samtidig med `Promise.allSettled`.
+- **Finn verktøy.** `ALL_TOOLS` lister alle verktøyene skriptet kan kalle. `searchTools(query)` finner verktøy ut fra hva de gjør, `describeTool(name)` returnerer ett verktøys beskrivelse og argumenter, og `describeNamespace(name)` lister verktøyene i én gruppe. Verktøyene til tilkoblede MCP-servere kan nås på samme måte.
+- **Returner resultater.** Bare det skriptet returnerer, eller sender til `text()`, `image()` eller `console.log()`, kommer tilbake til agenten. Opptil fire bilder når modellen.
+- **Behold verdier.** `store(key, value)` og `load(key)` beholder små JSON-verdier mellom skript i samme samtale og for samme agent. Verdiene lagres først når skriptet er ferdig. Underagenter har ingen lagring.
+- **Spør en person.** `await tools.ask_user({ question, options })` stiller et spørsmål og venter på svaret.
+- **Bruk embeddinger på enheten.** `models.embed`, `models.rank` og `models.classify` bruker serverens embedding-modell, når den er installert.
+- **Vent.** `sleep(ms)` og `setTimeout`, innenfor skriptets tidsgrense. `limits()` returnerer grensene skriptet kjører under.
+
+Et skript har ingen tilgang til filsystem, nettverk, prosesser, moduler eller miljø: ingen `fetch`, `require`, `import` eller `process`. Den eneste veien ut er et verktøykall, og hvert verktøykall går gjennom de samme kontrollene som et kall agenten gjør direkte.
+
+Verktøykall et skript allerede har gjort, blir ikke angret når skriptet senere feiler.
+
+## Hvilke verktøy agenten kaller direkte
+
+Hver kjøring av den innebygde agenten får det samme lille settet med verktøy som den kaller direkte med navn:
+
+- `repl`, først;
+- fil- og skallverktøyene `read`, `write`, `edit`, `search`, `find`, `bash` og `read_output`;
+- `ask_user` og `task`;
+- `todo_write`, `search_memory` og `send_message`;
+- verbene [modusen](/nb-NO/handbok/konsepter/moduser/) i samtalen trenger for å levere resultatet sitt eller forlate den, for eksempel `submit_plan` i planmodus;
+- `search_tools`, når noe verktøy lastes ved første bruk (se under).
+
+Alle andre verktøy kjøringen kan bruke, nås på en av to måter:
+
+- **Bare fra et skript**, når et skript kan kalle verktøyet. Agenten finner det med `searchTools()` eller `describeTool()` og kaller det som `tools.<name>(args)`. Beskrivelsen til et verktøy bare for skript når aldri modellen, så den koster ingenting i prompten. Hvis agenten likevel kaller verktøyet direkte, sier svaret at det må kalles fra et skript. Hvis serveren ikke kan kjøre kjøringens skript, lastes det ved første bruk i stedet ([Når skript ikke kan kjøres](#når-skript-ikke-kan-kjøres)).
+- **Lastes ved første bruk**, når et skript ikke kan kalle verktøyet. Agenten ser navnet, og å kalle det med navn, eller finne det med `search_tools`, laster det.
+
+Noen verktøy kan aldri kalles fra et skript, blant dem `repl` selv (et skript kan ikke starte et skript), `eval`, `task`, `checkpoint`, `rewind`, `vibe_*`-verbene, og verktøy som starter eller sender meldinger til andre agentkjøringer, oppretter, avgjør eller kommenterer godkjenninger, endrer policy eller ferdigheter, eller forlater planmodus. Agenten kaller dem direkte.
+
+En kjøring uten `repl` får de samme direkte verktøyene, og alt annet lastes ved første bruk. [Verktøykontekst og promptbuffer](/nb-NO/handbok/konsepter/verktoykontekst/) forklarer hvorfor settet er det samme begge veier.
+
+Kodemodus legger aldri til et verktøy som modusen i samtalen ikke tillater. Modusens verktøyfilter brukes først, og et skript kan bare kalle det som er igjen.
+
+## Når en kjøring har `repl`
+
+En kjøring har `repl` når skriptkjøreren på serveren bestod låsingskontrollen ved oppstart ([Hvordan skript er innesperret](#hvordan-skript-er-innesperret)). Ingen innstilling i arbeidsområdet, hos agenten eller på serveren endrer det. En kjøring har fortsatt ingen `repl` når:
+
+- skriptkjøreren ikke kan låse seg selv på serverens maskin; serveren kjører da ingen skript i det hele tatt;
+- serveren er en offentlig demo, som ikke kjører skript;
+- kjøringen tilhører ingen arbeidsområde;
+- arbeidsområdets grenser ikke kan leses, fordi kjøring etter standardverdiene kan gå over grenser en admin har satt lavere;
+- kjøringens logg ikke kunne skrives, fordi hvert skript registreres under kjøringen før det starter.
+
+En slik kjøring kaller alle sine verktøy direkte.
+
+Kodemodus fungerer for kjøringer av den innebygde agenten og for agenter som når Control Centers verktøy gjennom MCP-endepunktet, for eksempel Claude Code. For en MCP-agent inneholder verktøylisten den får `repl`, de direkte verktøyene og verktøyene et skript ikke kan kalle; resten kalles fra skript. Bare en kjøring som Control Center startet og fører logg for, får `repl` der; alle andre klienter får hvert verktøy unntatt `repl`.
+
+**Innstillinger → Arbeidsområde → Kodemodus** viser under **Status** om denne serveren kan kjøre skript (**Tilgjengelig** eller **Utilgjengelig**, med serverens begrunnelse) og hvilken versjon av **Kjører** som er installert. **Vis kodekjøringer** åpner listen over skript som har kjørt.
+
+En serverens eier kan ikke slå av skript. Eieren kan sette øvre grenser: hvor mange som kjører samtidig, og hvor mye minne ett kan bruke (se [Grenser](#grenser)).
+
+### Når skript ikke kan kjøres
+
+En kjøring mister aldri et verktøy fordi serveren ikke kan kjøre skriptene sine. Når serveren avviser et skript av en grunn ethvert annet skript også ville møtt (for eksempel at skript er utilgjengelige, at skriptet har ventet halvparten av tiden på en ledig plass, at opptaket ikke kan skrives, at kjøringens verktøyliste er for stor til å gis til et skript, eller at kjøreren ikke kan starte eller låse seg selv), slutter kjøringen å bruke skript resten av kjøringen:
+
+- en kjøring av den innebygde agenten beholder `repl`, og hvert verktøy den bare nådde fra et skript, lastes nå ved første bruk: agenten kaller det med navn eller finner det med `search_tools`;
+- en kjøring på MCP-endepunktet får en verktøyliste med alle verktøy og uten `repl`, og klienten får beskjed om at listen har endret seg. Serveren husker de siste 1 024 slike kjøringene; en eldre går tilbake til skript.
+
+Disse verktøyene passerer det samme modusfilteret, de samme tillatelsesreglene og godkjenningene som før, så ingenting blir kallbart som ikke var det. Et skript som feiler på egen hånd, ved å kaste en feil, nå en grense eller få et kall nektet, endrer ingenting: kjøringen bruker fortsatt skript.
+
+Serveren sjekker også fortsatt at skript kan kjøres. Når kjøreren ikke starter av en grunn som ikke skyldes skriptet, kjører serveren låsingskontrollen på nytt, høyst én gang i minuttet. Hvis kontrollen feiler, kjører serveren ingen skript og logger den samme linjen `code_mode=unavailable` som ved oppstart; kjøringer som starter i mellomtiden får ingen `repl`. Den fortsetter å sjekke, høyst én gang i minuttet, og når en kontroll går igjennom igjen, kjører den skript på nytt og logger linjen `code_mode=available`. Bare en kontroll som feilet ved oppstart, krever en omstart.
+
+## Grenser
+
+Hvert skript kjører under grenser. En admin i arbeidsområdet kan endre seks av dem under **Grenser** i **Innstillinger → Arbeidsområde → Kodemodus** (**Juster grenser**); agenten kan be om kortere tid eller et mindre utdatabudsjett for ett skript, aldri mer.
+
+| Grense | Standard | Område | Når grensen nås |
+| --- | --- | --- | --- |
+| Tid per skript | 5 min | 1 s til 25 min | Skriptet stoppes, og agenten får vite at tiden er brukt opp. |
+| Prosessortid | 30 s | 1 s til 2 min | Skriptet stoppes. |
+| Minne | 256 MiB | 16 MiB til 1 GiB | Skriptet stoppes. Serverens eier kan sette et lavere tak for hele serveren. |
+| Verktøykall per skript | 500 | 1 til 5 000 | Flere kall avvises, og skriptet får vite hvorfor. |
+| Kall samtidig | 8 | 1 til 32 | Skrivebeskyttede kall utover den venter på sin tur. Kall som endrer noe, kjøres alltid ett om gangen. |
+| Utdata agenten leser | 10 000 tokens | 100 til 50 000 | Utdataene kortes ned til starten og slutten, og agenten kan lese resten på forespørsel. |
+
+Tid et skript bruker på å vente på en person, på en godkjenning eller på et spørsmål, teller ikke mot tidsgrensen. Mens det venter, starter skriptet ingen andre verktøykall; kall det gjør i mellomtiden, starter i rekkefølge når du har svart.
+
+Noen grenser er faste: et skripts kildekode er høyst 256 KiB, argumentene til ett verktøykall 1 MiB og 16 384 verdier, en kommando et skript sender til et innebygd verktøy som kjører den 16 KiB (verktøyets navn regnes med), ett resultat som gis til skriptet 4 MiB, en lagret verdi 256 KiB, og det en samtale og én agent lagrer til sammen 1 MiB. En kjøring kjører ett skript om gangen.
+
+Også et skripts oppslag av verktøy har grenser: en `searchTools`-søkestreng på høyst 1 024 tegn, et verktøy- eller navnerom på høyst 256 tegn, høyst 50 resultater, og høyst 200 oppslag som til sammen tar 2 sekunder av serverens tid; etter det feiler flere oppslag. Alle skript i ett arbeidsområde deler også 2 sekunder oppslagstid, som gis tilbake med 0,25 sekunder per sekund. Søkeindeksen gir hvert verktøy en lik andel på omtrent én million tegn, brukt først på argumentnavnene og deretter på beskrivelsen, og den indekserer alltid hvert verktøys navn, så et verktøy finnes på navnet sitt selv i en svært stor katalog.
+
+Serverens eier begrenser også hvor mange skript som kjører samtidig på serveren (`--code-mode-max-processes`, som standard to ganger antall prosessorkjerner, høyst 16) og minnet ett skript kan bruke (`--code-mode-max-heap-mb`); skript som venter på en person telles for seg, opptil fire ganger det tallet. Når taket er mer enn ett, kan ett arbeidsområde bruke høyst omtrent tre firedeler av det, slik at ingen enkelt arbeidsområde kan ta alle plassene. En kjøring og underagentene dens bruker til sammen høyst halvparten av arbeidsområdets plasser (minst én), så deres videre skript venter mens skript fra arbeidsområdets andre kjøringer går foran. Se [CLI-referansen for `cc_server`](/nb-NO/handbok/referanse/cc-server-cli/#kodemodus).
+
+## Godkjenninger og spørsmål
+
+Et verktøykall fra et skript sjekkes nøyaktig som et direkte kall: modusens verktøyfilter, [tillatelsesreglene for handlinger](/nb-NO/handbok/konsepter/tillatelsesregler/), godkjenningsforespørselen og verktøyets egne kontroller. Et skript kan ikke gjøre noe agenten ikke kunne gjort ved å kalle verktøyet selv.
+
+Når et kall fra et skript trenger godkjenning, sier godkjenningskortet **Fra et skript agenten kjører**, og **Vis skript** åpner skriptet i samtalen. For at et skript ikke skal overøse deg med kort:
+
+- ett skript kan be om godkjenning høyst 10 ganger og stille høyst 10 spørsmål;
+- når du har avslått ett av kallene, blir skriptets senere kall som trenger godkjenning, avvist uten å spørre.
+
+For kjøringer av den innebygde agenten, godkjenningsspørsmål som kommer fra kommandoene et skript kjører, for eksempel en push, teller mot samme grense og stopper etter et avslag på samme måte. Når skriptet til en underagent kjører samtidig, teller et slikt spørsmål for begge skriptene, og et avslag stopper begge.
+
+I en kjøring av den innebygde agenten huskes ikke en godkjenning for et verktøy fra en ekstern MCP-server: hvert kall spør på nytt, enten et skript eller agenten selv gjør kallet, med mindre områdets autonomi er satt til **Handle fritt**. Hvert slikt godkjenningsspørsmål som et skript utløser, teller mot grensen på 10.
+
+Hvis skriptet avslutter før du har svart, trekkes kortet tilbake, og et svar som kommer etter dette, godkjenner ingenting.
+
+## I samtalen
+
+Et `repl`-kall vises i samtalen som én rad, merket med skriptets beskrivelse. Når du utvider den, vises skriptet og utdataene, og verktøykallene skriptet gjorde, under **Verktøykall**, med en telling av hvor mange som kjører, er fullført, feilet, nektet, avbrutt, i kø eller hoppet over.
+
+### Slik leses et skript i samtalen
+
+Verktøykallene stilles opp etter hvordan skriptet er skrevet, ikke som én lang liste. Kjøreren rapporterer linjen og kolonnen hvert kall ble gjort fra, og appen leser skriptet for å finne løkkene, grenene og funksjonene:
+
+- **En løkke** (`for`, `while`) vises som en gruppe med **Løkke** som overskrift, der overskriften er første linje i løkken, og en funksjon sendt til et kall som `map` eller `forEach` vises som en gruppe **For hver**. En tynn linje skiller én gjennomgang av løkken fra neste når appen kan skille dem.
+- **Kall som kjører sammen** med `Promise.all`, `Promise.allSettled` eller en lignende kombinator vises som en gruppe **Parallelt**.
+- **En grein** (`if`/`else`, `switch`, `try`/`catch`) viser én gruppe per gren, med betingelsen som overskrift.
+- **En funksjon** skriptet definerer og kaller, vises som en gruppe **Funksjon**.
+
+En gruppe inne i en annen er rykket inn ett steg til, opptil åtte steg; dypere grupper blir stående på det innrykket.
+
+Hver gruppeoverskrift viser hvordan kallene har endt så langt. Før et kall kjører, viser raden verktøyet og argumentene slik de er skrevet i skriptet:
+
+| Rad | Betydning |
+| --- | --- |
+| **I kø** | Skriptet har ikke nådd dette kallet ennå. |
+| Kjører | Kallet kjører. |
+| Ferdig | Kallet er avsluttet; raden viser utfallet og hvor lang tid det tok. |
+| **Hoppet over** | Skriptet hoppet over dette kallet, for eksempel grenen til en `if` som ikke ble tatt, eller det avsluttet uten å nå det. |
+
+Et kall skrevet inne i argumentene til et kall til samme verktøy rapporteres fra samme sted i skriptet som det kallet. Når appen ikke kan avgjøre om det ytre kallet ble gjort, viser raden ingen tilstandsord i stedet for **Hoppet over**.
+
+Når en gruppe har gjort mer enn åtte kall, foldes midten sammen: de to første og de tre siste forblir synlige, og det gjør også hvert kall som fortsatt kjører, feilet eller ble nektet, sammen med kallet som startet den gjennomgangen av løkken. **Vis N kall til** åpner 100 til hver gang du trykker, og nevner opptil fire verktøy blant de skjulte kallene med antall for hvert, de sjeldneste først, for eksempel **Vis 12 kall til** · Bash 1 · Read 11. Et verktøynavn som er lengre enn 24 tegn, kuttes der.
+
+Et kall appen ikke kan plassere i skriptet, for eksempel et som en `then`-funksjon gjorde, listes etter treet under **Kall som ikke er plassert i skriptet**. Når appen ikke kan lese skriptet, eller ingen kall sier hvor det ble gjort, vises kallene som en vanlig liste i den rekkefølgen de ble gjort.
+
+Hver kallrad viser starten av kallets argumenter og av resultatet, opptil 8 KiB hver; når radene til et skript til sammen har 256 KiB av disse, viser de senere radene bare verktøyet og utfallet. Når skriptet er ferdig, åpner **Åpne opptak** hele opptaket; finnes ikke opptaket, åpnes listen over skript fra den kjøringen i stedet. Et skript som ble avvist før det kjørte (for eksempel fordi et annet skript i samme kjøring fortsatt kjørte), har verken opptak eller lenke.
+
+## Opptaket
+
+Hvert skript som kjøres, blir lagret i arbeidsområdet før det starter, og opptaket fullføres når det avslutter. **Observabilitet → Kodekjøringer** lister dem, nyeste først, og kan filtreres på utfall. Lenkene **Skript i denne kjøringen** og **Skript fra denne agenten** i et opptak begrenser listen til én kjøring eller én agent. Et opptak viser:
+
+- skriptet, utdataene og konsollen;
+- når det startet, hvor lang tid det tok, prosessortiden og toppminnet det brukte, og om det kjørte gjennom den innebygde agenten eller en ekstern agent;
+- hvordan det endte, med vanlige ord (for eksempel at tiden gikk tom, eller at det kastet en feil som ingen fanget);
+- hvert verktøykall, i rekkefølge, med utfallet, om det var tillatt, godkjent av en person eller nektet, hvor lang tid en person brukte på å avgjøre, argumentene (hemmeligheter fjernet, kuttet til 8 KiB) og størrelsen på resultatet. Selve resultatet lagres ikke.
+
+Opptaket viser hvor i skriptet hvert kall ble gjort, så verktøykallene der er stilt opp på samme måte som i samtalen. Et kall en person godkjente, skjules aldri der.
+
+Et skript som fortsatt kjører, vises som kjørende, med verktøykallene som er ferdige så langt. Utdata, varighet og ressursbruk vises når det avslutter. Hvis serveren stopper mens et skript kjører, lukkes opptaket når serveren starter igjen, og det står at det skjedde. Inntil opptaket er lukket, kjører ingen skript i det arbeidsområdet.
+
+Opptak lagres sammen med kjøringen: å slette kjøringen eller området den hører til, sletter dem også. Medlemmer ser opptakene for områder de kan åpne.
+
+## Hvordan skript er innesperret
+
+Skript kjører aldri inne i serveren. Hvert skript kjører i sin egen prosess, et lite program som følger med serveren, `cc_codemode`, som kjører JavaScript i QuickJS-NG-motoren. Før det leser skriptet, låser programmet seg selv med operativsystemets egne kontroller: på Linux et filter for systemkall og ressursgrenser, på macOS en sandkasseprofil som avviser alt som ikke er tillatt på forhånd, og på Windows en AppContainer og et jobbobjekt. Etter det kan det ikke åpne filer, bruke nettverk, starte prosesser eller se andre programmer. Det starter uten miljøvariabler og har ingen legitimasjon; den eneste kanalen er serveren, som svarer på verktøykallene.
+
+Serveren sjekker låsingen når den starter, ved å kjøre programmets selvtest. Holder ikke låsingen på den maskinen, for eksempel inne i en container hvis sikkerhetsprofil avviser ett av trinnene, kjører serveren ingen skript der: ingen kjøring får `repl`, og innstillingssiden viser **Utilgjengelig** med årsaken. Et skript kjører aldri med svakere innesperring. Windows-låsingen er ennå ikke testet på Windows.
+
+Hvor et kall ble gjort i skriptet, rapporteres av kjøreren, så det brukes bare til å stille opp samtalen og opptaket. Det avgjør aldri om et kall er tillatt.
+
+Se [Sandkasse og sikkerhet](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/#skript-i-kodemodus) for hva låsingen dekker, og hva den ikke dekker.
+
+## Se også
+
+- [Verktøykontekst og promptbuffer](/nb-NO/handbok/konsepter/verktoykontekst/): hvorfor det direkte settet er lite og det samme med eller uten `repl`.
+- [Innebygde agentverktøy](/nb-NO/handbok/referanse/agentverktoy/#repl--kjør-et-skript-som-kaller-verktøyene-dine): inndataene til `repl`-verktøyet.
+- [`cc_server` CLI](/nb-NO/handbok/referanse/cc-server-cli/#kodemodus): grensene serverens eier setter.

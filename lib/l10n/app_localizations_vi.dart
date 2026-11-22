@@ -1042,9 +1042,6 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get calendarAllDayGutter => 'Cả ngày';
-
-  @override
   String calendarAllDayEventCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -2509,9 +2506,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get activityBackedUpServer => 'Đã sao lưu dữ liệu máy chủ';
-
-  @override
-  String get activityMarkedSpaceRead => 'Đã đánh dấu không gian là đã đọc';
 
   @override
   String get activityRespondedToInvitation => 'Đã phản hồi lời mời sự kiện';
@@ -13455,6 +13449,17 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String diffFileUnresolvedConversations(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count cuộc hội thoại chưa giải quyết',
+      one: '1 cuộc hội thoại chưa giải quyết',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get pendingReview => 'Review đang chờ';
 
   @override
@@ -13810,9 +13815,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get spaceKeepAfterMergeHint =>
       'Bạn sẽ không được hỏi lại về không gian này.';
-
-  @override
-  String get spaceAllPrsMergedLabel => 'Đã hợp nhất tất cả yêu cầu kéo';
 
   @override
   String get archiveSpace => 'Lưu trữ không gian';
@@ -15368,7 +15370,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get skillEvalIncomplete => 'Chưa hoàn chỉnh';
 
   @override
-  String get skillEvalInconclusive => 'Chưa thể kết luận';
+  String get skillEvalInconclusive =>
+      'Chưa có quyết định (không đủ bằng chứng)';
 
   @override
   String get skillEvalInferred => 'Suy ra';
@@ -18924,4 +18927,2947 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get mcpServerNotFound =>
       'Máy chủ này không còn tồn tại. Có thể ai đó đã xóa nó.';
+
+  @override
+  String get scriptToolCalls => 'Lệnh gọi công cụ';
+
+  @override
+  String scriptCallCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count lệnh gọi',
+      one: '1 lệnh gọi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scriptCallsRunning(int count) {
+    return '$count đang chạy';
+  }
+
+  @override
+  String scriptCallsOk(int count) {
+    return '$count thành công';
+  }
+
+  @override
+  String scriptCallsFailed(int count) {
+    return '$count thất bại';
+  }
+
+  @override
+  String scriptCallsDenied(int count) {
+    return '$count bị từ chối';
+  }
+
+  @override
+  String scriptCallsCancelled(int count) {
+    return '$count đã hủy';
+  }
+
+  @override
+  String scriptCallsQueued(int count) {
+    return '$count đang chờ';
+  }
+
+  @override
+  String scriptCallsSkipped(int count) {
+    return '$count đã bỏ qua';
+  }
+
+  @override
+  String get scriptStepQueued => 'Đang chờ';
+
+  @override
+  String get scriptStepSkipped => 'Đã bỏ qua';
+
+  @override
+  String get scriptGroupLoop => 'Vòng lặp';
+
+  @override
+  String get scriptGroupEach => 'Với mỗi';
+
+  @override
+  String get scriptGroupParallel => 'Song song';
+
+  @override
+  String get scriptGroupFunction => 'Hàm';
+
+  @override
+  String scriptCallsHidden(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Hiện thêm $count lệnh gọi',
+      one: 'Hiện thêm 1 lệnh gọi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptCallsUnplaced => 'Lệnh gọi không nằm trong tập lệnh';
+
+  @override
+  String get scriptToolComputed => 'Công cụ';
+
+  @override
+  String scriptStepSemantics(String subject, String state) {
+    return '$subject, $state';
+  }
+
+  @override
+  String get scriptSourceLabel => 'Tập lệnh';
+
+  @override
+  String scriptSourceLines(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dòng',
+      one: '1 dòng',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptStateRunning => 'Đang chạy';
+
+  @override
+  String get scriptStateCompleted => 'Hoàn tất';
+
+  @override
+  String get scriptStateFailed => 'Thất bại';
+
+  @override
+  String get scriptStateTimedOut => 'Hết thời gian';
+
+  @override
+  String get scriptStateCancelled => 'Đã hủy';
+
+  @override
+  String get scriptStateMemoryExceeded => 'Hết bộ nhớ';
+
+  @override
+  String get scriptStateOutputExceeded => 'Đầu ra quá lớn';
+
+  @override
+  String get scriptStateSandboxError => 'Lỗi sandbox';
+
+  @override
+  String get scriptStateRefused => 'Bị từ chối';
+
+  @override
+  String get transcriptToolDenied => 'Từ chối';
+
+  @override
+  String get transcriptStatusRunningScript => 'Đang chạy tập lệnh…';
+
+  @override
+  String get scriptOriginLine => 'Từ một tập lệnh mà agent đang chạy';
+
+  @override
+  String get scriptOriginShow => 'Hiện tập lệnh';
+
+  @override
+  String get codeModeTitle => 'Chế độ code';
+
+  @override
+  String get codeModeSubtitle =>
+      'Agent có thể viết một tập lệnh ngắn gọi các công cụ của chúng thay vì gọi từng cái một.';
+
+  @override
+  String get codeModeStatusLabel => 'Trạng thái';
+
+  @override
+  String get codeModeFactAvailability => 'Trên máy chủ này';
+
+  @override
+  String get codeModeAvailable => 'Khả dụng';
+
+  @override
+  String get codeModeUnavailable => 'Không khả dụng';
+
+  @override
+  String get codeModeFactRunner => 'Trình chạy';
+
+  @override
+  String codeModeUnavailableNote(String reason) {
+    return 'Máy chủ này không thể chạy tập lệnh, nên các agent ở đây gọi công cụ từng cái một. Máy chủ cho biết: $reason';
+  }
+
+  @override
+  String get codeModeNoReason => 'không có lý do nào được đưa ra.';
+
+  @override
+  String get codeModeViewExecutions => 'Xem các lần thực thi code';
+
+  @override
+  String get codeModeLimitsLabel => 'Giới hạn';
+
+  @override
+  String get codeModeLimitsSubtitle =>
+      'Một tập lệnh được chạy trong bao lâu và đi xa đến đâu. Mặc định phù hợp với hầu hết không gian làm việc.';
+
+  @override
+  String get codeModeLimitsDisclosure => 'Điều chỉnh giới hạn';
+
+  @override
+  String get codeModeLimitsAtDefaults => 'Mặc định';
+
+  @override
+  String codeModeLimitsChangedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count đã đổi',
+      one: '1 đã đổi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeModeLimitsUseDefaults => 'Dùng mặc định';
+
+  @override
+  String get codeModeLimitWallClock => 'Thời gian mỗi tập lệnh';
+
+  @override
+  String get codeModeLimitWallClockHelp =>
+      'Thời gian chờ người dùng không được tính.';
+
+  @override
+  String get codeModeLimitCpu => 'Thời gian xử lý';
+
+  @override
+  String get codeModeLimitCpuHelp =>
+      'Thời gian chính tập lệnh dùng để tính toán.';
+
+  @override
+  String get codeModeLimitHeap => 'Bộ nhớ';
+
+  @override
+  String get codeModeLimitHeapHelp =>
+      'Bộ nhớ tập lệnh được dùng trong khi chạy.';
+
+  @override
+  String get codeModeLimitNestedCalls => 'Lệnh gọi công cụ mỗi tập lệnh';
+
+  @override
+  String get codeModeLimitNestedCallsHelp =>
+      'Các lệnh gọi vượt mức này sẽ bị từ chối và tập lệnh được cho biết lý do.';
+
+  @override
+  String get codeModeLimitInFlight => 'Lệnh gọi đồng thời';
+
+  @override
+  String get codeModeLimitInFlightHelp =>
+      'Số lệnh gọi mà một tập lệnh có thể chạy cùng lúc.';
+
+  @override
+  String get codeModeLimitOutputTokens => 'Đầu ra agent đọc';
+
+  @override
+  String get codeModeLimitOutputTokensHelp =>
+      'Đầu ra dài sẽ được rút gọn; agent có thể đọc phần còn lại khi cần.';
+
+  @override
+  String codeModeLimitRange(String defaultValue, String min, String max) {
+    return 'Mặc định $defaultValue. Từ $min đến $max.';
+  }
+
+  @override
+  String codeModeLimitOutOfRange(String min, String max) {
+    return 'Nhập một số nguyên từ $min đến $max.';
+  }
+
+  @override
+  String get codeModeSuffixSeconds => 's';
+
+  @override
+  String get codeModeSuffixMebibytes => 'MiB';
+
+  @override
+  String get codeModeSuffixCalls => 'lệnh gọi';
+
+  @override
+  String get codeModeSuffixTokens => 'token';
+
+  @override
+  String codeModeServerCap(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Máy chủ này chạy tối đa $count tập lệnh cùng lúc, trên tất cả không gian làm việc.',
+      one:
+          'Máy chủ này chạy tối đa 1 tập lệnh cùng lúc, trên tất cả không gian làm việc.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String codeModeUnitMilliseconds(String value) {
+    return '$value ms';
+  }
+
+  @override
+  String codeModeUnitSeconds(String value) {
+    return '$value s';
+  }
+
+  @override
+  String codeModeUnitMinutesSeconds(String minutes, String seconds) {
+    return '$minutes phút $seconds giây';
+  }
+
+  @override
+  String get codeModeRefusedLimitUnknown =>
+      'Máy chủ không biết một trong các giới hạn này.';
+
+  @override
+  String get codeModeRefusedLimitOutOfRange =>
+      'Một trong các giới hạn này nằm ngoài mức máy chủ cho phép.';
+
+  @override
+  String get codeModeRefusedUnknownSetting =>
+      'Máy chủ không nhận ra cài đặt đó.';
+
+  @override
+  String get codeExecutionsTitle => 'Thực thi code';
+
+  @override
+  String get codeExecutionsSubtitle =>
+      'Các tập lệnh agent đã chạy trong không gian làm việc này, cùng mọi lệnh gọi công cụ chúng đã thực hiện.';
+
+  @override
+  String get codeExecutionsEmpty => 'Chưa có tập lệnh nào chạy ở đây.';
+
+  @override
+  String get codeExecutionsEmptyFiltered =>
+      'Không có tập lệnh nào khớp với bộ lọc này.';
+
+  @override
+  String get codeExecutionsStatusFilter => 'Kết quả';
+
+  @override
+  String get codeExecutionsAllOutcomes => 'Tất cả kết quả';
+
+  @override
+  String codeExecutionsOutcomeCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count kết quả',
+      one: '1 kết quả',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionsScopeRun => 'Tập lệnh từ một lần chạy';
+
+  @override
+  String get codeExecutionsScopeConversation =>
+      'Tập lệnh từ một cuộc trò chuyện';
+
+  @override
+  String get codeExecutionsScopeAgent => 'Tập lệnh của một agent';
+
+  @override
+  String get codeExecutionsShowAll => 'Hiện tất cả';
+
+  @override
+  String get codeExecutionUntitled => 'Tập lệnh không có tên';
+
+  @override
+  String get codeExecutionRecord => 'Bản ghi';
+
+  @override
+  String get codeExecutionBackToList => 'Quay lại thực thi code';
+
+  @override
+  String get codeExecutionNotFound =>
+      'Lần thực thi code này không có trong không gian làm việc này. Có thể nó đã bị xóa cùng với lần chạy.';
+
+  @override
+  String get codeExecutionRefusedSpace =>
+      'Tập lệnh này chạy trong một space bạn không thể mở, nên bản ghi của nó vẫn bị ẩn.';
+
+  @override
+  String get codeExecutionOpenRecord => 'Mở bản ghi';
+
+  @override
+  String get codeExecutionFactStarted => 'Bắt đầu';
+
+  @override
+  String get codeExecutionFactDuration => 'Thời lượng';
+
+  @override
+  String get codeExecutionFactCalls => 'Lệnh gọi công cụ';
+
+  @override
+  String get codeExecutionFactAgent => 'Agent';
+
+  @override
+  String get codeExecutionFactSurface => 'Chạy qua';
+
+  @override
+  String get codeExecutionSurfaceHarness => 'Agent tích hợp';
+
+  @override
+  String get codeExecutionSurfaceMcp => 'Agent bên ngoài';
+
+  @override
+  String get codeExecutionFactCpu => 'Thời gian xử lý';
+
+  @override
+  String get codeExecutionFactMemory => 'Bộ nhớ cao nhất';
+
+  @override
+  String get codeExecutionOpenConversation => 'Mở cuộc trò chuyện';
+
+  @override
+  String get codeExecutionRunScripts => 'Tập lệnh trong lần chạy này';
+
+  @override
+  String get codeExecutionAgentScripts => 'Tập lệnh của agent này';
+
+  @override
+  String get codeExecutionScript => 'Tập lệnh';
+
+  @override
+  String get codeExecutionConsole => 'Console';
+
+  @override
+  String get codeExecutionOutputTruncated =>
+      'Đầu ra đã được cắt để vừa với phần được giữ lại.';
+
+  @override
+  String get codeExecutionNoPayload =>
+      'Tập lệnh và đầu ra của nó không còn được lưu nữa.';
+
+  @override
+  String codeExecutionCallsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count lệnh gọi công cụ',
+      one: '1 lệnh gọi công cụ',
+      zero: 'Lệnh gọi công cụ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionNoCalls => 'Tập lệnh không gọi công cụ nào.';
+
+  @override
+  String get codeExecutionCallCompleted => 'Hoàn tất';
+
+  @override
+  String get codeExecutionCallFailed => 'Thất bại';
+
+  @override
+  String get codeExecutionCallDenied => 'Từ chối';
+
+  @override
+  String get codeExecutionCallCancelled => 'Đã hủy';
+
+  @override
+  String get codeExecutionCallTimedOut => 'Hết thời gian';
+
+  @override
+  String get codeExecutionCallUnknownTool => 'Công cụ không xác định';
+
+  @override
+  String get codeExecutionCallInvalidArgs => 'Đối số không hợp lệ';
+
+  @override
+  String get codeExecutionGateAllowed => 'Cho phép';
+
+  @override
+  String get codeExecutionGateApproved => 'Người dùng đã duyệt';
+
+  @override
+  String get codeExecutionGateDenied => 'Từ chối';
+
+  @override
+  String get codeExecutionGateNotReached => 'Chưa kiểm tra';
+
+  @override
+  String codeExecutionCallWaited(String duration) {
+    return 'Chờ $duration để người dùng duyệt';
+  }
+
+  @override
+  String get codeExecutionCallArguments => 'Đối số';
+
+  @override
+  String get codeExecutionCallResult => 'Kết quả';
+
+  @override
+  String codeExecutionCallResultSize(String size) {
+    return 'Trả về $size';
+  }
+
+  @override
+  String codeExecutionBytes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count byte',
+      one: '1 byte',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionEndedScriptError =>
+      'Tập lệnh đã báo lỗi và không có gì bắt lỗi đó.';
+
+  @override
+  String codeExecutionEndedScriptErrorNamed(String name) {
+    return 'Tập lệnh đã báo $name và không có gì bắt lỗi đó.';
+  }
+
+  @override
+  String get codeExecutionEndedStalled =>
+      'Tập lệnh đang chờ một việc không bao giờ hoàn thành.';
+
+  @override
+  String get codeExecutionEndedCpu => 'Tập lệnh đã dùng hết thời gian xử lý.';
+
+  @override
+  String get codeExecutionEndedHeap => 'Tập lệnh đã đạt giới hạn bộ nhớ.';
+
+  @override
+  String get codeExecutionEndedOutput =>
+      'Tập lệnh đã ghi nhiều đầu ra hơn mức cho phép.';
+
+  @override
+  String get codeExecutionEndedDeadline => 'Tập lệnh đã hết thời gian.';
+
+  @override
+  String get codeExecutionEndedCancelled =>
+      'Tập lệnh đã bị hủy trước khi hoàn tất.';
+
+  @override
+  String get codeExecutionEndedShutdown =>
+      'Máy chủ đã tắt trong khi tập lệnh đang chạy.';
+
+  @override
+  String get codeExecutionEndedServerStopped =>
+      'Máy chủ đã dừng trong khi tập lệnh đang chạy. Bản ghi được đóng khi máy chủ khởi động lại.';
+
+  @override
+  String get codeExecutionEndedInternal =>
+      'Chương trình chạy tập lệnh đã tự gặp lỗi.';
+
+  @override
+  String get codeExecutionEndedStart =>
+      'Chương trình chạy tập lệnh không thể khởi động.';
+
+  @override
+  String get codeExecutionEndedLockdown =>
+      'Chương trình chạy tập lệnh không thể tự giới hạn quyền, nên tập lệnh không được chạy.';
+
+  @override
+  String get codeExecutionEndedExited =>
+      'Chương trình chạy tập lệnh đã dừng trước khi tập lệnh hoàn tất.';
+
+  @override
+  String get codeExecutionEndedRunnerBrokeRules =>
+      'Chương trình chạy tập lệnh đã vi phạm quy tắc hoạt động và bị dừng.';
+
+  @override
+  String get codeExecutionEndedUnresponsive =>
+      'Chương trình chạy tập lệnh không phản hồi và đã bị dừng.';
+
+  @override
+  String get codeExecutionEndedHostError =>
+      'Máy chủ gặp lỗi khi chạy tập lệnh.';
+
+  @override
+  String get codeExecutionRunningNote =>
+      'Đang chạy. Các lệnh gọi công cụ sẽ hiện ở đây khi hoàn tất, và kết quả khi kết thúc.';
+
+  @override
+  String codeModeServerWorkspaceShare(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Tập lệnh của một không gian làm việc dùng tối đa $count trong số đó.',
+      one: 'Tập lệnh của một không gian làm việc dùng tối đa 1 trong số đó.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get wakeOriginGoal => 'Mục tiêu';
+
+  @override
+  String get wakeOriginGoalCheck => 'Kiểm chứng mục tiêu';
+
+  @override
+  String get wakeOriginGoalReview => 'Đánh giá mục tiêu';
+
+  @override
+  String get wakeOriginSchedule => 'Lịch';
+
+  @override
+  String get wakeOriginWatch => 'Theo dõi';
+
+  @override
+  String wakeOriginReplyFrom(String agent) {
+    return 'Phản hồi từ $agent';
+  }
+
+  @override
+  String get wakeOriginReply => 'Phản hồi';
+
+  @override
+  String wakeOriginMessageFrom(String agent) {
+    return 'Tin nhắn từ $agent';
+  }
+
+  @override
+  String get wakeOriginMessage => 'Tin nhắn';
+
+  @override
+  String wakeOriginWorkFinishedBy(String agent) {
+    return 'Công việc đã xong từ $agent';
+  }
+
+  @override
+  String get wakeOriginWorkFinished => 'Công việc đã xong';
+
+  @override
+  String get wakeOriginLimitReset => 'Đặt lại giới hạn';
+
+  @override
+  String get wakeOriginRecovery => 'Khôi phục';
+
+  @override
+  String get wakeOriginAssignment => 'Được giao việc';
+
+  @override
+  String get wakeOriginPipelineStep => 'Bước quy trình';
+
+  @override
+  String get wakeOriginImprovementReview => 'Đánh giá cải tiến';
+
+  @override
+  String get wakeKindStopped => 'Bị giữ vì một người đã dừng lần chạy.';
+
+  @override
+  String get wakeKindAttempts => 'Gửi không thành công ba lần.';
+
+  @override
+  String get wakeKindAgentDeleted => 'Agent không còn tồn tại.';
+
+  @override
+  String get wakeKindAgentNotDispatchable => 'Agent đã ngừng hoạt động.';
+
+  @override
+  String get wakeKindAgentPaused => 'Agent đang tạm dừng.';
+
+  @override
+  String get wakeKindPersonRemoved =>
+      'Người mà nó hoạt động thay mặt đã rời không gian làm việc.';
+
+  @override
+  String get wakeKindBudgetBlocked => 'Ngân sách đang chặn lần chạy.';
+
+  @override
+  String get wakeKindTakeOver => 'Một người đã tiếp quản cây làm việc.';
+
+  @override
+  String get wakeKindRateCapConversation =>
+      'Cuộc trò chuyện này đã bắt đầu 30 lần chạy từ lượt đánh thức trong giờ qua.';
+
+  @override
+  String get wakeKindRateCapWorkspace =>
+      'Không gian làm việc này đã bắt đầu 300 lần chạy từ lượt đánh thức trong giờ qua.';
+
+  @override
+  String get wakeKindLiveRunNoInput =>
+      'Lần chạy trực tiếp của agent ở đây không nhận đầu vào.';
+
+  @override
+  String get wakeKindLiveRunOtherOptions =>
+      'Lần chạy trực tiếp của agent ở đây chạy theo cách khác, nên lượt này sẽ bắt đầu lần chạy riêng sau nó.';
+
+  @override
+  String get wakeKindLiveRunOtherPerson =>
+      'Lần chạy trực tiếp của agent ở đây hoạt động thay cho người khác, nên lượt này sẽ bắt đầu lần chạy riêng sau nó.';
+
+  @override
+  String get wakeKindDispatchRefused => 'Lần chạy không thể bắt đầu.';
+
+  @override
+  String get wakeKindSandboxUnavailable =>
+      'Không có sandbox cho lần chạy chỉ đọc.';
+
+  @override
+  String get wakeKindReadOnlyUnavailable =>
+      'Backend của agent này không thể giữ lần chạy ở chế độ chỉ đọc.';
+
+  @override
+  String get wakeKindServerStopped => 'Máy chủ khởi động lại đã dừng lần chạy.';
+
+  @override
+  String get wakeKindServerRestarted =>
+      'Máy chủ đã khởi động lại trong lần chạy của một người.';
+
+  @override
+  String get wakeKindGuardFailed =>
+      'Một bước kiểm tra trước khi gửi đã thất bại.';
+
+  @override
+  String get wakeKindLimit => 'Đang chờ tại giới hạn sử dụng của nhà cung cấp.';
+
+  @override
+  String get wakeKindLimitRunLive =>
+      'Đang chờ lần chạy ở giới hạn sử dụng kết thúc.';
+
+  @override
+  String get wakeKindWakeMissed => 'Bị bỏ lỡ khi máy chủ đang tắt.';
+
+  @override
+  String get wakeKindPipelineRunEnded =>
+      'Lần chạy quy trình của nó đã kết thúc.';
+
+  @override
+  String get wakeKindGoalEnded => 'Mục tiêu của nó đã kết thúc.';
+
+  @override
+  String get wakeKindGoalBudgetExhausted =>
+      'Mục tiêu của nó đã dùng hết ngân sách.';
+
+  @override
+  String get wakeKindGoalReviewStale =>
+      'Mục tiêu đã thay đổi kể từ khi yêu cầu đánh giá này được gửi.';
+
+  @override
+  String get wakeKindGoalPaused => 'Mục tiêu của nó đang tạm dừng.';
+
+  @override
+  String get wakeKindGoalHeld => 'Mục tiêu của nó đang được giữ.';
+
+  @override
+  String get wakeKindGoalStopped => 'Mục tiêu của nó đã bị dừng.';
+
+  @override
+  String get wakeKindAskSettled => 'Câu hỏi mà nó trả lời đã được giải quyết.';
+
+  @override
+  String get wakeKindRuleEnded => 'Lịch của nó đã kết thúc.';
+
+  @override
+  String get wakeKindUnknown => 'Vì một lý do mà phiên bản này không nhận ra:';
+
+  @override
+  String wakeStripHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count lượt đánh thức đang chờ',
+      one: '1 lượt đánh thức đang chờ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String wakeStripDue(String time) {
+    return 'Đến hạn lúc $time';
+  }
+
+  @override
+  String get wakeStripDueNow => 'Đến hạn ngay';
+
+  @override
+  String get wakeStripHeld => 'Đang giữ';
+
+  @override
+  String wakeStripExpires(String time) {
+    return 'Hết hạn lúc $time';
+  }
+
+  @override
+  String wakeStripAttempt(int attempt) {
+    return 'Lần thử $attempt';
+  }
+
+  @override
+  String get wakeStripCancel => 'Hủy lượt đánh thức';
+
+  @override
+  String get wakeStripDeliverNow => 'Gửi ngay';
+
+  @override
+  String get wakeStripResume => 'Tiếp tục';
+
+  @override
+  String get wakeStripDismiss => 'Bỏ qua';
+
+  @override
+  String get wakeStripResumeAll => 'Tiếp tục tất cả';
+
+  @override
+  String get wakeStripResumeOnlyTheirs =>
+      'Chỉ người có lần chạy này mới có thể tiếp tục.';
+
+  @override
+  String get wakeReceiptStarted => 'Đã bắt đầu một lần chạy.';
+
+  @override
+  String get wakeReceiptPushed => 'Đã chuyển cho lần chạy trực tiếp.';
+
+  @override
+  String wakeReceiptWaiting(String reason) {
+    return 'Vẫn đang chờ. $reason';
+  }
+
+  @override
+  String wakeReceiptSkipped(String reason) {
+    return 'Chưa được gửi. $reason';
+  }
+
+  @override
+  String get wakeReceiptDuplicate => 'Đã được gửi trước đó.';
+
+  @override
+  String wakeReleased(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Đã tiếp tục $count lượt đánh thức.',
+      one: 'Đã tiếp tục 1 lượt đánh thức.',
+      zero: 'Không có gì được tiếp tục.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get wakeRefusalNotYours =>
+      'Lượt đánh thức này hoạt động thay cho người khác. Chỉ họ mới có thể gửi hoặc tiếp tục nó.';
+
+  @override
+  String get wakeRefusalSettled => 'Lượt đánh thức này đã được xử lý xong.';
+
+  @override
+  String heldSteeringHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tin nhắn đang giữ',
+      one: '1 tin nhắn đang giữ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get heldSteeringResume => 'Gửi các tin nhắn đang giữ';
+
+  @override
+  String get heldSteeringDelete => 'Xóa tin nhắn đang giữ';
+
+  @override
+  String heldSteeringReleased(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Đã gửi $count tin nhắn đang giữ.',
+      one: 'Đã gửi 1 tin nhắn đang giữ.',
+      zero: 'Không có tin nhắn nào được giữ.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get workAgentUnknown => 'một agent';
+
+  @override
+  String workFeedWoke(int count, String agent) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Đã đánh thức $agent để xử lý $count mục đang chờ',
+      one: 'Đã đánh thức $agent',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String workFeedWakeSkipped(String agent) {
+    return 'Lượt đánh thức cho $agent chưa được gửi.';
+  }
+
+  @override
+  String workFeedWakeMissed(String agent) {
+    return 'Lượt đánh thức cho $agent đã bị bỏ lỡ khi máy chủ đang tắt.';
+  }
+
+  @override
+  String workFeedScheduleCreated(String agent) {
+    return 'Đã đặt lịch cho $agent.';
+  }
+
+  @override
+  String workFeedScheduleEnded(String agent) {
+    return 'Lịch của $agent đã kết thúc.';
+  }
+
+  @override
+  String get workFeedOpenSchedule => 'Mở lịch';
+
+  @override
+  String workFeedNoteFromAgent(String agent) {
+    return '$agent đã để lại ghi chú này cho chính mình, bằng lời của nó:';
+  }
+
+  @override
+  String get workFeedNoteFromPerson => 'Lời nhắc do một người đặt:';
+
+  @override
+  String workFeedLimitParkHeld(String provider, String time) {
+    return 'Tạm dừng ở giới hạn sử dụng của $provider. Giới hạn sẽ được đặt lại lúc $time.';
+  }
+
+  @override
+  String workFeedLimitParkPending(String provider, String time) {
+    return 'Tạm dừng ở giới hạn sử dụng của $provider. Sẽ tiếp tục lúc $time.';
+  }
+
+  @override
+  String workFeedLimitParkResumed(String provider) {
+    return 'Đã tiếp tục sau giới hạn sử dụng của $provider.';
+  }
+
+  @override
+  String workFeedLimitParkGone(String provider) {
+    return 'Không còn chờ ở giới hạn sử dụng của $provider.';
+  }
+
+  @override
+  String get workFeedLimitParkResume => 'Tiếp tục';
+
+  @override
+  String get workFeedLimitParkCancel => 'Hủy';
+
+  @override
+  String workFeedStillInFlight(String agent) {
+    return 'Trạng thái được giao cho $agent sau khi nén';
+  }
+
+  @override
+  String get workFeedShowDetails => 'Hiện chi tiết';
+
+  @override
+  String get workFeedHideDetails => 'Ẩn chi tiết';
+
+  @override
+  String get workFeedCommandRefused => 'Máy chủ đã từ chối lệnh.';
+
+  @override
+  String get wakeRuleEndFired => 'Lịch đã chạy một lần.';
+
+  @override
+  String get wakeRuleEndExpired => 'Lịch đã đến ngày kết thúc.';
+
+  @override
+  String get wakeRuleEndRunCap => 'Lịch đã dùng hết số lần chạy.';
+
+  @override
+  String get wakeRuleEndCostCap => 'Lịch đã đạt mức chi phí tối đa.';
+
+  @override
+  String get wakeRuleEndGoalEnded => 'Mục tiêu của nó đã kết thúc.';
+
+  @override
+  String get wakeRuleEndCancelled => 'Lịch đã bị hủy.';
+
+  @override
+  String get wakeRuleEndMemberRemoved =>
+      'Người phụ trách lịch đã rời không gian làm việc.';
+
+  @override
+  String get wakeRuleEndInvalidRow => 'Các thiết lập đã lưu không đọc được.';
+
+  @override
+  String get wakeRuleRefusalIntervalTooShort =>
+      'Khoảng cách quá ngắn. Hãy chọn khoảng dài hơn.';
+
+  @override
+  String get wakeRuleRefusalTooSoon =>
+      'Thời điểm đó quá sớm. Hãy chọn thời điểm sau.';
+
+  @override
+  String get wakeRuleRefusalLineageEnded =>
+      'Chuỗi lượt đánh thức này đã dùng hết số lần chạy hoặc thời gian.';
+
+  @override
+  String get wakeRuleRefusalWatchTargetUnreadable =>
+      'Bạn không thể đọc những gì mục này sẽ theo dõi.';
+
+  @override
+  String get wakeRuleRefusalExpiryRequired =>
+      'Hãy đặt thời hạn kết thúc, ví dụ --days 3.';
+
+  @override
+  String get wakeRuleRefusalLimitReached =>
+      'Cuộc trò chuyện này đã có đủ số lịch tối đa.';
+
+  @override
+  String get wakeRuleRefusalInvalidWhen => 'Không đọc được thời điểm.';
+
+  @override
+  String get wakeRuleRefusalNoteTooLong => 'Ghi chú quá dài.';
+
+  @override
+  String get wakeRuleRefusalExpiryTooLong => 'Thời hạn kết thúc quá xa.';
+
+  @override
+  String get wakeRuleRefusalLimitOutOfRange =>
+      'Giới hạn số lần chạy, số ngày hoặc ngân sách nằm ngoài phạm vi cho phép.';
+
+  @override
+  String get wakeRuleRefusalNextOutsideLoop =>
+      'Chỉ vòng lặp mới có thể tự chọn thời điểm tiếp theo.';
+
+  @override
+  String get wakeRuleRefusalWatchRefused => 'Không thể theo dõi mục này.';
+
+  @override
+  String get wakeRuleRefusalRuleEnded => 'Lịch này đã kết thúc.';
+
+  @override
+  String get wakeRuleRefusalNotYours => 'Lịch này thuộc về người khác.';
+
+  @override
+  String get workRefusalUnknown => 'Máy chủ đã từ chối yêu cầu này:';
+
+  @override
+  String get goalRefusalAlreadyActive =>
+      'Cuộc trò chuyện này đã có một mục tiêu đang hoạt động.';
+
+  @override
+  String get goalRefusalNotInReview => 'Mục tiêu này không đang chờ đánh giá.';
+
+  @override
+  String get goalRefusalEvidenceIncomplete =>
+      'Bằng chứng của mục tiêu chưa đầy đủ.';
+
+  @override
+  String get goalRefusalClaimPending =>
+      'Yêu cầu cho rằng mục tiêu đã xong vẫn đang được kiểm tra.';
+
+  @override
+  String get goalRefusalNotActiveSegment =>
+      'Mục tiêu này không có phân đoạn nào đang chạy.';
+
+  @override
+  String get goalRefusalNotYours =>
+      'Chỉ người đã bắt đầu mục tiêu này mới có thể làm việc đó.';
+
+  @override
+  String get goalRefusalNotPaused => 'Hãy tạm dừng mục tiêu trước.';
+
+  @override
+  String get goalRefusalContractInvalid =>
+      'Không đọc được hợp đồng của mục tiêu.';
+
+  @override
+  String get goalRefusalCheckerUnknown => 'Không có agent nào có tên đó.';
+
+  @override
+  String get goalRefusalCheckerAmbiguous =>
+      'Có nhiều agent cùng tên đó. Hãy dùng id của agent.';
+
+  @override
+  String get goalRefusalCheckerIsGoalAgent =>
+      'Bộ kiểm tra phải là một agent khác với agent đang thực hiện công việc.';
+
+  @override
+  String get goalRefusalCommandInvalid => 'Lệnh /goal này không đọc được.';
+
+  @override
+  String goalCardWorking(int segment) {
+    return 'Đang chạy · phân đoạn $segment';
+  }
+
+  @override
+  String get goalCardWaiting => 'Đang chờ lượt đánh thức tiếp theo';
+
+  @override
+  String get goalCardVerifying => 'Đang kiểm tra xem đã xong chưa';
+
+  @override
+  String goalCardLimitUntil(String time) {
+    return 'Tạm dừng ở giới hạn sử dụng · tiếp tục lúc $time';
+  }
+
+  @override
+  String get goalCardLimit => 'Tạm dừng ở giới hạn sử dụng';
+
+  @override
+  String get goalCardPerson => 'Cần một người';
+
+  @override
+  String get goalCardByPerson => 'Một người đã tạm dừng';
+
+  @override
+  String get goalCardNeedsReview =>
+      'Đang chờ đánh giá: mục tiêu nói đã xong, nhưng chưa có gì xác nhận';
+
+  @override
+  String goalCardSegments(int run, int max) {
+    return 'Phân đoạn $run trên $max';
+  }
+
+  @override
+  String goalCardSegmentsNoCap(int run) {
+    return 'Phân đoạn $run';
+  }
+
+  @override
+  String goalCardMoney(String spent, String cap) {
+    return '$spent trên $cap';
+  }
+
+  @override
+  String goalCardTimeLeft(String time) {
+    return 'Còn $time';
+  }
+
+  @override
+  String get goalCardOverdue => 'Đã quá hạn';
+
+  @override
+  String get goalCardDoneMeans => 'Hoàn thành khi';
+
+  @override
+  String get goalCardChecks => 'Kiểm chứng';
+
+  @override
+  String get goalCardCheckPassed => 'Đạt';
+
+  @override
+  String goalCardCheckFailed(int code) {
+    return 'Thất bại · mã thoát $code';
+  }
+
+  @override
+  String get goalCardCheckTimedOut => 'Hết thời gian';
+
+  @override
+  String get goalCardCheckNotRerun => 'Không chạy lại: không có gì thay đổi';
+
+  @override
+  String get goalCardCheckBroken => 'Không thể chạy';
+
+  @override
+  String get goalCardCheckNotRun => 'Chưa chạy';
+
+  @override
+  String get goalCardCriterionMet => 'Đạt';
+
+  @override
+  String get goalCardCriterionUnmet => 'Chưa đạt';
+
+  @override
+  String get goalCardCriterionCannotTell => 'Chưa rõ';
+
+  @override
+  String get goalCardVerdictPass => 'Lần kiểm tra gần nhất: đã xong';
+
+  @override
+  String get goalCardVerdictFail => 'Lần kiểm tra gần nhất: chưa xong';
+
+  @override
+  String get goalCardVerdictCannotVerify => 'Lần kiểm tra gần nhất: chưa rõ';
+
+  @override
+  String get goalCardConcerns => 'Lo ngại';
+
+  @override
+  String goalCardVerifiedBy(String agent) {
+    return 'Được xác minh bởi $agent';
+  }
+
+  @override
+  String get goalCardVerifiedBySelf =>
+      'Tự xác minh (không có bộ kiểm tra riêng)';
+
+  @override
+  String get goalCardClosedByPerson =>
+      'Một người đã đóng mà không có kiểm chứng đạt';
+
+  @override
+  String get goalCardNoMachineCheck => 'Không có kiểm chứng tự động';
+
+  @override
+  String get goalCardAddCheck => 'Thêm kiểm chứng';
+
+  @override
+  String get goalCardOpen => 'Mở mục tiêu';
+
+  @override
+  String get goalCardApprove => 'Phê duyệt hoàn thành';
+
+  @override
+  String get goalCardApproveTitle => 'Đóng mục tiêu này là đã xong?';
+
+  @override
+  String get goalCardApproveBody =>
+      'Chưa có kiểm chứng nào xác nhận. Bạn đóng theo lời mình, và mục tiêu sẽ ghi nhận rằng một người đã đóng mà chưa xác minh.';
+
+  @override
+  String get goalCardApproveConfirm => 'Đóng là đã xong';
+
+  @override
+  String get goalCardResumeNotYours =>
+      'Tiếp tục mục tiêu hoặc tăng ngân sách thuộc về người đã bắt đầu nó.';
+
+  @override
+  String get goalHoldDetailStalled =>
+      'Không có tiến triển trong các phân đoạn gần nhất.';
+
+  @override
+  String get goalHoldDetailStalledWaiting =>
+      'Đang chờ, sau các phân đoạn không có tiến triển.';
+
+  @override
+  String get goalHoldDetailVerificationFailed =>
+      'Lần kiểm chứng gần nhất đã thất bại.';
+
+  @override
+  String get goalHoldDetailCannotVerify =>
+      'Bộ kiểm tra không rõ mục tiêu đã xong hay chưa.';
+
+  @override
+  String get goalHoldDetailSandboxUnavailable =>
+      'Không có sandbox để chạy các kiểm chứng.';
+
+  @override
+  String get goalHoldDetailCheckerUnavailable =>
+      'Agent kiểm tra không khả dụng. Hãy chọn bộ kiểm tra khác, rồi tiếp tục.';
+
+  @override
+  String get goalHoldDetailCheckBroken => 'Kiểm chứng này không thể chạy:';
+
+  @override
+  String get goalHoldDetailWakeSkipped =>
+      'Lượt đánh thức của nó chưa được gửi.';
+
+  @override
+  String get goalHoldDetailClaimPending =>
+      'Yêu cầu rằng nó đã xong đang chờ kiểm chứng.';
+
+  @override
+  String get goalHoldDetailUnanswered =>
+      'Một câu hỏi hoặc yêu cầu phê duyệt gửi cho người đã không được trả lời.';
+
+  @override
+  String get goalHoldDetailLimitParks =>
+      'Nó đã chạm giới hạn sử dụng quá thường xuyên. Hãy xem lại, rồi tiếp tục.';
+
+  @override
+  String get goalHoldDetailInput =>
+      'Đang chờ câu trả lời trong cuộc trò chuyện.';
+
+  @override
+  String get peerAsksSection => 'Yêu cầu';
+
+  @override
+  String peerAskTo(String agent) {
+    return 'Gửi tới $agent';
+  }
+
+  @override
+  String get peerAskKindAsk => 'Câu hỏi';
+
+  @override
+  String get peerAskKindConsult => 'Tham vấn';
+
+  @override
+  String get peerAskKindReview => 'Đánh giá';
+
+  @override
+  String get peerAskStatusPending => 'Đang chờ';
+
+  @override
+  String get peerAskStatusAnswered => 'Đã trả lời';
+
+  @override
+  String get peerAskStatusFailed => 'Thất bại';
+
+  @override
+  String get peerAskStatusExpired => 'Đã hết hạn';
+
+  @override
+  String get peerAskStatusCancelled => 'Đã hủy';
+
+  @override
+  String peerAskAsked(String time) {
+    return 'Đã hỏi lúc $time';
+  }
+
+  @override
+  String peerAskExpires(String time) {
+    return 'Hết hạn lúc $time';
+  }
+
+  @override
+  String get peerAskPromised => 'Đã hứa sẽ trả lời';
+
+  @override
+  String get peerAskBackground => 'Chạy nền';
+
+  @override
+  String get peerAskCancel => 'Hủy yêu cầu';
+
+  @override
+  String get peerAskAlreadySettled => 'Yêu cầu này đã được xử lý xong.';
+
+  @override
+  String get slashHintGoal =>
+      'Làm việc hướng tới mục tiêu cho đến khi xong. Cờ: --check, --checker, --fresh, --unattended';
+
+  @override
+  String get slashHintLoop =>
+      'Lặp lại một tác vụ, theo khoảng thời gian hoặc theo nhịp của agent';
+
+  @override
+  String get slashHintSchedule =>
+      'Chạy tác vụ sau: sau 2h, lúc 09:00 hoặc theo cron';
+
+  @override
+  String get slashHintRefine =>
+      'Xem lại công việc của cuộc trò chuyện này và đề xuất cải tiến';
+
+  @override
+  String get notifGoalCompleted => 'Mục tiêu đã xong';
+
+  @override
+  String get notifGoalFailed => 'Mục tiêu thất bại';
+
+  @override
+  String get notifGoalCancelled => 'Mục tiêu đã hủy';
+
+  @override
+  String get notifGoalBudgetExhausted => 'Mục tiêu đã dùng hết ngân sách';
+
+  @override
+  String get notifGoalNeedsReview => 'Một mục tiêu đang chờ bạn đánh giá';
+
+  @override
+  String get notifGoalNeedsPerson => 'Một mục tiêu cần bạn';
+
+  @override
+  String get notifGoalOnHold => 'Một mục tiêu đang được giữ';
+
+  @override
+  String get notifWakeRuleEnded => 'Một lịch đã kết thúc';
+
+  @override
+  String notifWaitingDigest(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count việc đang chờ bạn',
+      one: '1 việc đang chờ bạn',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notifImprovementProposed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Có $count cải tiến được đề xuất',
+      one: 'Có một cải tiến được đề xuất',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notifPipelineRunHeld =>
+      'Một lần chạy quy trình đang bị giữ ở mức ngân sách của nó';
+
+  @override
+  String notifPipelineRunHeldBody(String spent, String cap) {
+    return 'Đã chi $spent trên $cap';
+  }
+
+  @override
+  String get inboxGoalNeedsReview => 'Mục tiêu đang chờ đánh giá';
+
+  @override
+  String get inboxGoalNeedsPerson => 'Mục tiêu cần bạn';
+
+  @override
+  String get inboxImprovementProposed => 'Đã đề xuất cải tiến';
+
+  @override
+  String get improvementRefusalAlreadyDecided =>
+      'Ai đó đã quyết định về đề xuất này.';
+
+  @override
+  String get improvementRefusalCampaignRequired =>
+      'Thay đổi này chưa qua đánh giá với skill hiện tại, hoặc skill đã thay đổi sau khi được đo. Hãy chạy lại đánh giá.';
+
+  @override
+  String get improvementRefusalChangedSince =>
+      'Mục tiêu đã thay đổi kể từ khi đề xuất này được đưa ra. Hãy từ chối và để agent đề xuất lại.';
+
+  @override
+  String get improvementRefusalTargetMissing =>
+      'Nội dung mà đề xuất này thay đổi không còn tồn tại.';
+
+  @override
+  String get improvementRefusalCampaignState =>
+      'Đợt đánh giá không thể bắt đầu hoặc kết thúc ở trạng thái hiện tại.';
+
+  @override
+  String get improvementRefusalReviewCooldown =>
+      'Cuộc trò chuyện này vừa được đánh giá. Hãy thử lại sau.';
+
+  @override
+  String get improvementRefusalAdminRequired =>
+      'Chỉ quản trị viên không gian làm việc mới có thể quyết định về đề xuất này.';
+
+  @override
+  String get improvementKindMemoryFact => 'Dữ kiện bộ nhớ';
+
+  @override
+  String get improvementKindPolicy => 'Chính sách';
+
+  @override
+  String get improvementKindAgentNote => 'Ghi chú agent';
+
+  @override
+  String get improvementKindSkillEdit => 'Thay đổi skill';
+
+  @override
+  String get improvementKindSkillNew => 'Skill mới';
+
+  @override
+  String get improvementScopeAgent => 'Agent này';
+
+  @override
+  String get improvementScopeRepository => 'Kho lưu trữ này';
+
+  @override
+  String get improvementScopeWorkspace => 'Toàn bộ không gian làm việc';
+
+  @override
+  String get improvementStatusProposed => 'Đã đề xuất';
+
+  @override
+  String get improvementStatusAccepted => 'Đã chấp nhận';
+
+  @override
+  String get improvementStatusRejected => 'Đã từ chối';
+
+  @override
+  String get improvementStatusRolledBack => 'Đã hoàn tác';
+
+  @override
+  String get improvementStatusExpired => 'Đã hết hạn';
+
+  @override
+  String get improvementOperationAdd => 'Thêm';
+
+  @override
+  String get improvementOperationReplace => 'Thay thế';
+
+  @override
+  String get improvementOperationRemove => 'Xóa';
+
+  @override
+  String scheduleTriggerOnce(String time) {
+    return 'Một lần, $time';
+  }
+
+  @override
+  String scheduleTriggerEvery(String interval) {
+    return 'Mỗi $interval';
+  }
+
+  @override
+  String scheduleTriggerCron(String cron, String zone) {
+    return 'Theo lịch $cron ($zone)';
+  }
+
+  @override
+  String get scheduleTriggerSelfPaced =>
+      'Khi agent chọn, cách nhau 1 đến 60 phút';
+
+  @override
+  String get scheduleTriggerPrChecks =>
+      'Khi các kiểm tra của pull request hoàn tất';
+
+  @override
+  String scheduleTriggerPrChecksOf(String pr) {
+    return 'Khi các kiểm tra của $pr hoàn tất';
+  }
+
+  @override
+  String get scheduleTriggerPrReview =>
+      'Khi pull request nhận được đánh giá hoặc phản hồi';
+
+  @override
+  String scheduleTriggerPrReviewOf(String pr) {
+    return 'Khi $pr nhận được đánh giá hoặc phản hồi';
+  }
+
+  @override
+  String get scheduleTriggerPrMerged => 'Khi pull request được merge';
+
+  @override
+  String scheduleTriggerPrMergedOf(String pr) {
+    return 'Khi $pr được merge';
+  }
+
+  @override
+  String get scheduleTriggerEnvironment =>
+      'Khi một tác vụ của môi trường kết thúc hoặc môi trường sẵn sàng';
+
+  @override
+  String scheduleTriggerTicket(String id) {
+    return 'Khi phiếu $id được xử lý xong';
+  }
+
+  @override
+  String scheduleTriggerPipelineRun(String id) {
+    return 'Khi lần chạy quy trình $id kết thúc';
+  }
+
+  @override
+  String get goalNextWaiting =>
+      'Mục tiêu sẽ tiếp tục khi điều nó đang chờ xuất hiện.';
+
+  @override
+  String get goalNextVerifying =>
+      'Khi các kiểm chứng và đánh giá xong, mục tiêu sẽ hoàn thành hoặc tiếp tục làm việc.';
+
+  @override
+  String get goalNextLimit =>
+      'Mục tiêu sẽ tiếp tục khi giới hạn sử dụng được đặt lại.';
+
+  @override
+  String get goalNextPerson =>
+      'Mục tiêu sẽ tiếp tục khi có người trả lời câu hỏi hoặc yêu cầu phê duyệt của nó.';
+
+  @override
+  String get goalNextByPerson =>
+      'Mục tiêu sẽ tạm dừng cho đến khi có người tiếp tục nó.';
+
+  @override
+  String get goalNextNeedsReview =>
+      'Phê duyệt là đã xong, hoặc tiếp tục để mục tiêu làm việc tiếp.';
+
+  @override
+  String get goalNextWorking =>
+      'Mục tiêu sẽ tiếp tục làm việc, mỗi lần một phân đoạn, cho đến khi xong hoặc chạm giới hạn.';
+
+  @override
+  String get goalContractAddCheck => 'Thêm kiểm chứng';
+
+  @override
+  String goalContractChecksFull(int max) {
+    return 'Một mục tiêu có tối đa $max kiểm chứng.';
+  }
+
+  @override
+  String goalContractChecksCount(int count, int max) {
+    return '$count trên $max kiểm chứng';
+  }
+
+  @override
+  String get goalContractCheckTaskHint =>
+      'Tên tác vụ của môi trường, ví dụ test';
+
+  @override
+  String get goalContractCheckCommandHint => 'Lệnh, ví dụ make test';
+
+  @override
+  String get goalContractCheckWhere => 'Chạy ở đâu';
+
+  @override
+  String get goalContractCheckInWorktree => 'Trong cây làm việc';
+
+  @override
+  String get goalContractCheckInEnvironment => 'Tác vụ môi trường';
+
+  @override
+  String get goalContractSecondsSuffix => 'giây';
+
+  @override
+  String goalContractTimeoutRange(int max) {
+    return 'Từ 1 đến $max giây';
+  }
+
+  @override
+  String get goalContractRemoveCheck => 'Xóa kiểm chứng';
+
+  @override
+  String get goalContractDoneMeans => 'Hoàn thành khi';
+
+  @override
+  String get goalContractDoneMeansHelp =>
+      'Mỗi tiêu chí là một điều mà bộ đánh giá có thể xác nhận.';
+
+  @override
+  String get goalContractCriterionHint =>
+      'Ghi chú phát hành liệt kê mọi thay đổi đã merge';
+
+  @override
+  String goalContractCriterionTooLong(int max) {
+    return 'Tối đa $max ký tự.';
+  }
+
+  @override
+  String get goalContractRemoveCriterion => 'Xóa tiêu chí';
+
+  @override
+  String get goalContractAddCriterion => 'Thêm tiêu chí';
+
+  @override
+  String goalContractCriteriaFull(int max) {
+    return 'Một mục tiêu có tối đa $max tiêu chí.';
+  }
+
+  @override
+  String goalContractCriteriaCount(int count, int max) {
+    return '$count trên $max tiêu chí';
+  }
+
+  @override
+  String get goalContractChecks => 'Kiểm chứng';
+
+  @override
+  String get goalContractChecksHelp =>
+      'Máy chủ chạy các kiểm chứng này khi agent nói rằng nó đã xong. Mục tiêu không có kiểm chứng sẽ chỉ dựa vào đánh giá.';
+
+  @override
+  String get goalContractBoundaries => 'Ranh giới';
+
+  @override
+  String get goalContractBoundariesHint => 'Không thay đổi API công khai';
+
+  @override
+  String get goalContractStopWhen => 'Dừng và hỏi khi';
+
+  @override
+  String get goalContractStopWhenHint =>
+      'Một lần di chuyển dữ liệu sẽ xóa dữ liệu';
+
+  @override
+  String get goalContractEditTitle => 'Sửa định nghĩa hoàn thành';
+
+  @override
+  String get goalCheckerTitle => 'Ai kiểm tra mục tiêu này';
+
+  @override
+  String get goalCheckerLabel => 'Bộ kiểm tra';
+
+  @override
+  String get goalCheckerNone => 'Không có bộ kiểm tra riêng';
+
+  @override
+  String get goalCheckerNoneWeaker =>
+      'Khi không có bộ kiểm tra riêng, agent sẽ tự đánh giá công việc của mình, và cách này bắt được ít lỗi hơn.';
+
+  @override
+  String goalCheckerRecommend(String agent) {
+    return 'Ví dụ $agent: bộ kiểm tra từ nhà cung cấp khác ít có khả năng chung điểm mù với agent.';
+  }
+
+  @override
+  String get goalCheckerRecommendGeneric =>
+      'Bộ kiểm tra từ nhà cung cấp khác với agent của mục tiêu ít có khả năng chung điểm mù với nó.';
+
+  @override
+  String raiseCapSpentOf(String spent, String cap) {
+    return 'Đã chi $spent trên $cap.';
+  }
+
+  @override
+  String get raiseCapNewCap => 'Ngân sách mới bằng đô la';
+
+  @override
+  String raiseCapMustExceed(String cap) {
+    return 'Nhập số lớn hơn $cap.';
+  }
+
+  @override
+  String get raiseCapConfirm => 'Tăng ngân sách';
+
+  @override
+  String get goalsBackToList => 'Tất cả mục tiêu';
+
+  @override
+  String goalPursuedBy(String agent) {
+    return 'Được theo đuổi bởi $agent';
+  }
+
+  @override
+  String get goalOpenConversation => 'Mở cuộc trò chuyện';
+
+  @override
+  String goalStarted(String time) {
+    return 'Bắt đầu lúc $time';
+  }
+
+  @override
+  String get goalStopTitle => 'Dừng mục tiêu này?';
+
+  @override
+  String get goalStopBody =>
+      'Agent sẽ ngừng làm việc trên mục tiêu này vĩnh viễn. Công việc đã làm cho đến nay vẫn còn trong cuộc trò chuyện.';
+
+  @override
+  String get goalRaiseBudgetTitle => 'Tăng ngân sách và tiếp tục';
+
+  @override
+  String get goalRaiseBudgetAction => 'Tăng ngân sách';
+
+  @override
+  String get goalSectionNow => 'Hiện tại';
+
+  @override
+  String get goalFactSegments => 'Phân đoạn';
+
+  @override
+  String get goalFactMoney => 'Đã chi';
+
+  @override
+  String get goalFactDeadline => 'Hạn chót';
+
+  @override
+  String get goalFactNoProgress => 'Không tiến triển';
+
+  @override
+  String get goalNoDeadline => 'Không có';
+
+  @override
+  String goalDeadlineWithLeft(String time, String left) {
+    return '$time, còn $left';
+  }
+
+  @override
+  String goalNoProgressCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count phân đoạn gần nhất không có tiến triển',
+      one: 'Phân đoạn gần nhất không có tiến triển',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get goalObjective => 'Mục tiêu cần đạt';
+
+  @override
+  String get goalSectionContract => 'Hoàn thành khi';
+
+  @override
+  String get goalContractPauseFirst =>
+      'Hãy tạm dừng mục tiêu để thay đổi định nghĩa hoàn thành hoặc bộ kiểm tra.';
+
+  @override
+  String get goalContractEdit => 'Sửa';
+
+  @override
+  String get goalCheckerChange => 'Đổi bộ kiểm tra';
+
+  @override
+  String get goalContractNone =>
+      'Chưa có gì được ghi lại. Agent sẽ tự quyết định khi nào đã xong.';
+
+  @override
+  String get goalCheckerSelf =>
+      'Không có bộ kiểm tra riêng: agent tự xác minh công việc của mình.';
+
+  @override
+  String goalCheckerIs(String agent) {
+    return 'Được kiểm tra bởi $agent';
+  }
+
+  @override
+  String goalCheckWorktree(int seconds) {
+    return 'Trong cây làm việc, tối đa $seconds giây';
+  }
+
+  @override
+  String goalCheckEnvironmentTask(int seconds) {
+    return 'Tác vụ môi trường, tối đa $seconds giây';
+  }
+
+  @override
+  String get goalSectionVerification => 'Xác minh';
+
+  @override
+  String get goalNotVerifiedYet =>
+      'Chưa được xác minh. Agent chưa nói rằng nó đã xong.';
+
+  @override
+  String goalVerificationRound(int round, int total, String time) {
+    return 'Vòng $round trên $total, $time';
+  }
+
+  @override
+  String get goalVerificationClaim => 'Điều agent khẳng định';
+
+  @override
+  String get goalCheckOutputTail => 'Đầu ra (các dòng cuối)';
+
+  @override
+  String goalCheckExitCode(int code) {
+    return 'Đạt · mã thoát $code';
+  }
+
+  @override
+  String get goalVerificationReview => 'Đánh giá';
+
+  @override
+  String get goalVerificationNoVerdict => 'Chưa có đánh giá.';
+
+  @override
+  String goalVerdictItem(String criterion, String state) {
+    return '$criterion · $state';
+  }
+
+  @override
+  String get goalSectionSchedules => 'Lịch và lượt đánh thức';
+
+  @override
+  String get goalNoSchedules => 'Không có lịch hay lượt đánh thức đang chờ.';
+
+  @override
+  String get goalPendingWakes => 'Lượt đánh thức đang chờ';
+
+  @override
+  String workListGroup(String label, int count) {
+    return '$label · $count';
+  }
+
+  @override
+  String get goalNotFound =>
+      'Mục tiêu này không tồn tại, hoặc nằm trong một space mà bạn không mở được.';
+
+  @override
+  String get goalsTitle => 'Mục tiêu';
+
+  @override
+  String get goalsSubtitle =>
+      'Công việc mà agent tiếp tục làm cho đến khi đạt định nghĩa hoàn thành.';
+
+  @override
+  String get goalsEmpty => 'Chưa có mục tiêu nào';
+
+  @override
+  String get goalsEmptyHint =>
+      'Hãy bắt đầu một mục tiêu bằng /goal trong cuộc trò chuyện.';
+
+  @override
+  String get goalsGroupReview => 'Đang chờ đánh giá';
+
+  @override
+  String get goalsGroupOpen => 'Đang mở';
+
+  @override
+  String get goalsGroupEnded => 'Đã kết thúc';
+
+  @override
+  String get scheduleStatusActive => 'Đang hoạt động';
+
+  @override
+  String get scheduleStatusPaused => 'Tạm dừng';
+
+  @override
+  String get scheduleStatusEnded => 'Đã kết thúc';
+
+  @override
+  String get scheduleWhenBusySkip => 'Bỏ qua lần kích hoạt khi agent đang bận';
+
+  @override
+  String get scheduleWhenBusyQueue => 'Chờ đến khi agent rảnh';
+
+  @override
+  String get scheduleDeliverRun => 'Bắt đầu một lần chạy';
+
+  @override
+  String get scheduleDeliverNotify => 'Chỉ thông báo';
+
+  @override
+  String get scheduleNew => 'Lịch mới';
+
+  @override
+  String get schedulesEmpty => 'Chưa có lịch hay theo dõi nào';
+
+  @override
+  String get schedulesEmptyHint =>
+      'Agent đặt chúng bằng /loop và /schedule, hoặc bạn có thể tạo một lịch.';
+
+  @override
+  String scheduleOwnedBy(String name) {
+    return 'Người phụ trách: $name';
+  }
+
+  @override
+  String scheduleRunsSkips(int runs, int skips) {
+    String _temp0 = intl.Intl.pluralLogic(
+      runs,
+      locale: localeName,
+      other: '$runs lần chạy',
+      one: '1 lần chạy',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      skips,
+      locale: localeName,
+      other: '$skips lần bỏ qua',
+      one: '1 lần bỏ qua',
+      zero: 'không bỏ qua lần nào',
+    );
+    return '$_temp0, $_temp1';
+  }
+
+  @override
+  String scheduleExpires(String time) {
+    return 'Kết thúc lúc $time';
+  }
+
+  @override
+  String scheduleNextFires(String times) {
+    return 'Tiếp theo: $times';
+  }
+
+  @override
+  String get schedulesTitle => 'Lịch';
+
+  @override
+  String get schedulesSubtitle => 'Lịch, vòng lặp và theo dõi đánh thức agent.';
+
+  @override
+  String get scheduleWhenLabel => 'Khi nào kích hoạt';
+
+  @override
+  String get scheduleWhenEvery => 'Lặp lại, mỗi…';
+
+  @override
+  String get scheduleWhenCron => 'Theo lịch cron';
+
+  @override
+  String get scheduleWhenOnceIn => 'Một lần, sau…';
+
+  @override
+  String get scheduleWhenOnceAt => 'Một lần, vào lần tới lúc…';
+
+  @override
+  String get scheduleDurationLabel => 'Khoảng thời gian';
+
+  @override
+  String get scheduleDurationHelp =>
+      'Dùng s, m, h hoặc d, ví dụ 30m hoặc 1h30m. Các lần lặp cách nhau ít nhất 60 giây.';
+
+  @override
+  String get scheduleDurationInvalid =>
+      'Đây không phải khoảng thời gian, ví dụ 30m hoặc 2h.';
+
+  @override
+  String get scheduleHour => 'Giờ';
+
+  @override
+  String get scheduleMinute => 'Phút';
+
+  @override
+  String get scheduleCronLabel => 'Cron (phút giờ ngày tháng thứ)';
+
+  @override
+  String get scheduleCronInvalid =>
+      'Đây không phải biểu thức cron năm trường có thể kích hoạt.';
+
+  @override
+  String get scheduleTimeInvalid =>
+      'Đây không phải thời điểm trong tương lai, chẳng hạn 09:00 hoặc 2026-11-21T09:00Z.';
+
+  @override
+  String scheduleDaysRange(int max) {
+    return 'Từ 1 đến $max ngày.';
+  }
+
+  @override
+  String scheduleOptionUnknown(String option) {
+    return '$option không phải là tùy chọn hợp lệ.';
+  }
+
+  @override
+  String get scheduleLimits => 'Giới hạn';
+
+  @override
+  String get schedulePresetWeekdays => 'Các ngày trong tuần lúc 09:00';
+
+  @override
+  String get schedulePresetDaily => 'Hằng ngày lúc 09:00';
+
+  @override
+  String get schedulePresetHourly => 'Mỗi giờ, đúng giờ';
+
+  @override
+  String get scheduleZoneLabel => 'Múi giờ';
+
+  @override
+  String get scheduleZoneHelp =>
+      'Để trống nghĩa là múi giờ của không gian làm việc.';
+
+  @override
+  String get scheduleZoneInvalid =>
+      'Đây không phải múi giờ, ví dụ Europe/Berlin.';
+
+  @override
+  String get scheduleCreateTitle => 'Lịch mới';
+
+  @override
+  String get scheduleSpaceLabel => 'Space';
+
+  @override
+  String get scheduleSpaceHint => 'Chọn một space';
+
+  @override
+  String get scheduleConversationLabel => 'Cuộc trò chuyện';
+
+  @override
+  String get scheduleConversationHint => 'Chọn một cuộc trò chuyện';
+
+  @override
+  String get scheduleAgentLabel => 'Agent';
+
+  @override
+  String get scheduleAgentHint => 'Chọn agent sẽ được đánh thức';
+
+  @override
+  String get scheduleNoteLabel => 'Mỗi lần chạy bắt đầu từ';
+
+  @override
+  String get scheduleNoteHint =>
+      'Tóm tắt những gì đã thay đổi qua đêm và nêu mọi việc đang bị chặn.';
+
+  @override
+  String get scheduleExpiresInDays => 'Kết thúc sau (ngày)';
+
+  @override
+  String get scheduleExpiresInDaysHelp => 'Để trống: 30 ngày, tối đa 365.';
+
+  @override
+  String get scheduleMaxRuns => 'Giới hạn số lần chạy';
+
+  @override
+  String scheduleMaxRunsHelp(int max) {
+    return 'Để trống: không giới hạn, tối đa $max.';
+  }
+
+  @override
+  String get scheduleCostCap => 'Giới hạn chi phí (đô la)';
+
+  @override
+  String get scheduleCostCapHelp =>
+      'Để trống: mặc định của không gian làm việc.';
+
+  @override
+  String get scheduleWhenBusyLabel => 'Nếu agent đang bận';
+
+  @override
+  String get scheduleWhenBusyDefault => 'Mặc định cho loại này';
+
+  @override
+  String get scheduleDeliverLabel => 'Mỗi lần kích hoạt';
+
+  @override
+  String get scheduleCreate => 'Tạo lịch';
+
+  @override
+  String get scheduleExtendTitle => 'Gia hạn lịch này';
+
+  @override
+  String scheduleExtendNow(String current, String latest) {
+    return 'Lịch kết thúc lúc $current. Có thể kéo dài tối đa đến $latest.';
+  }
+
+  @override
+  String get scheduleExtendDays => 'Thêm ngày';
+
+  @override
+  String scheduleExtendTooLong(String latest) {
+    return 'Lịch có thể kết thúc muộn nhất là $latest.';
+  }
+
+  @override
+  String scheduleMaxRunsRange(int max) {
+    return 'Từ 1 đến $max lần chạy.';
+  }
+
+  @override
+  String scheduleCostCapRange(String max) {
+    return 'Ít nhất 1 đô la và tối đa $max.';
+  }
+
+  @override
+  String get scheduleExtend => 'Gia hạn';
+
+  @override
+  String get scheduleRemoveTitle => 'Xóa lịch này?';
+
+  @override
+  String get scheduleDeleteTitle => 'Hủy lịch này?';
+
+  @override
+  String get scheduleRemoveBody =>
+      'Lịch sẽ biến khỏi danh sách. Các lần chạy của nó vẫn còn trong cuộc trò chuyện.';
+
+  @override
+  String get scheduleDeleteBody =>
+      'Lịch sẽ ngừng kích hoạt vĩnh viễn. Các lần chạy của nó vẫn còn trong cuộc trò chuyện.';
+
+  @override
+  String get scheduleRemove => 'Xóa';
+
+  @override
+  String get scheduleDelete => 'Hủy lịch';
+
+  @override
+  String get scheduleOwnerOnly =>
+      'Chỉ người phụ trách mới có thể tiếp tục hoặc gia hạn lịch này.';
+
+  @override
+  String get schedulesBackToList => 'Tất cả lịch';
+
+  @override
+  String get scheduleNoteByAgent => 'Ghi chú, do agent viết';
+
+  @override
+  String get scheduleNoteByPerson => 'Ghi chú, do một người viết';
+
+  @override
+  String scheduleNoteEditedBy(String name) {
+    return 'Ghi chú, sửa lần cuối bởi $name';
+  }
+
+  @override
+  String get scheduleNoNote => 'Không có ghi chú.';
+
+  @override
+  String get schedulePause => 'Tạm dừng';
+
+  @override
+  String get scheduleResume => 'Tiếp tục';
+
+  @override
+  String get scheduleOpenChainRoot => 'Mở lịch đầu tiên của chuỗi này';
+
+  @override
+  String get scheduleSectionFacts => 'Chi tiết';
+
+  @override
+  String get scheduleFactAgent => 'Đánh thức';
+
+  @override
+  String get scheduleFactConversation => 'Trong';
+
+  @override
+  String get scheduleConversationUnknown =>
+      'Một cuộc trò chuyện bạn có thể không xem được';
+
+  @override
+  String get scheduleFactOwner => 'Người phụ trách';
+
+  @override
+  String get scheduleNoOwner => 'Không ai';
+
+  @override
+  String get scheduleFactNextFires => 'Các lần kích hoạt tiếp theo';
+
+  @override
+  String get scheduleFactNext => 'Kích hoạt tiếp theo';
+
+  @override
+  String get scheduleFactLast => 'Kích hoạt gần nhất';
+
+  @override
+  String get scheduleFactRuns => 'Lần chạy';
+
+  @override
+  String scheduleRunsNoCap(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count lần chạy, không giới hạn',
+      one: '1 lần chạy, không giới hạn',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleRunsOfCap(int count, int max) {
+    return '$count trên $max lần chạy';
+  }
+
+  @override
+  String get scheduleFactSkips => 'Bỏ qua';
+
+  @override
+  String scheduleSkips(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count lần kích hoạt bị bỏ qua',
+      one: '1 lần kích hoạt bị bỏ qua',
+      zero: 'Không có',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scheduleFactSpent => 'Đã chi';
+
+  @override
+  String get scheduleFactEnds => 'Kết thúc';
+
+  @override
+  String get scheduleFactWhenBusy => 'Nếu agent đang bận';
+
+  @override
+  String get scheduleFactDeliver => 'Mỗi lần kích hoạt';
+
+  @override
+  String get scheduleFactChain => 'Chuỗi';
+
+  @override
+  String scheduleChainLeft(int runs, String time) {
+    String _temp0 = intl.Intl.pluralLogic(
+      runs,
+      locale: localeName,
+      other: 'Còn $runs lần chạy',
+      one: 'Còn 1 lần chạy',
+    );
+    return '$_temp0 trong chuỗi, kết thúc lúc $time';
+  }
+
+  @override
+  String get scheduleFactCreated => 'Đã tạo';
+
+  @override
+  String get scheduleSectionHistory => 'Lượt đánh thức và lần chạy gần đây';
+
+  @override
+  String get scheduleNoRuns => 'Chưa có lần chạy nào.';
+
+  @override
+  String scheduleRunLine(String status, String cost) {
+    return '$status · $cost';
+  }
+
+  @override
+  String get scheduleRunPending => 'Đang chờ bắt đầu';
+
+  @override
+  String get scheduleRunRunning => 'Đang chạy';
+
+  @override
+  String get scheduleRunCompleted => 'Đã xong';
+
+  @override
+  String get scheduleRunFailed => 'Thất bại';
+
+  @override
+  String get scheduleNotFound =>
+      'Lịch này không tồn tại, hoặc nằm trong một space mà bạn không mở được.';
+
+  @override
+  String get improvementCampaignTitle => 'Chạy một đánh giá';
+
+  @override
+  String improvementCampaignCost(int repetitions, String budget) {
+    String _temp0 = intl.Intl.pluralLogic(
+      repetitions,
+      locale: localeName,
+      other: 'Mỗi tác vụ chạy $repetitions lần',
+      one: 'Mỗi tác vụ chạy một lần',
+    );
+    return '$_temp0 với skill hiện tại và với thay đổi. Chi tối đa $budget, tính vào không gian làm việc này.';
+  }
+
+  @override
+  String get improvementCampaignCostUnknown =>
+      'Đánh giá chạy bộ dữ liệu với skill hiện tại và với thay đổi, trong giới hạn ngân sách bạn đặt.';
+
+  @override
+  String get improvementCampaignUnavailable =>
+      'Hiện không thể chạy đánh giá trên máy chủ này.';
+
+  @override
+  String get improvementCampaignCorpus => 'Bộ dữ liệu';
+
+  @override
+  String get improvementCampaignProvider => 'Nhà cung cấp';
+
+  @override
+  String get improvementCampaignModel => 'Mô hình';
+
+  @override
+  String get improvementCampaignRepetitions => 'Số lần chạy mỗi tác vụ';
+
+  @override
+  String get improvementCampaignBudget => 'Ngân sách (đô la)';
+
+  @override
+  String improvementCampaignRange(int max) {
+    return 'Từ 1 đến $max.';
+  }
+
+  @override
+  String get improvementCampaignStart => 'Bắt đầu đánh giá';
+
+  @override
+  String get improvementRollbackTitle => 'Hoàn tác thay đổi này?';
+
+  @override
+  String get improvementRollbackBody =>
+      'Nội dung mà nó đã thay thế sẽ được khôi phục, miễn là chưa ai thay đổi nó kể từ đó.';
+
+  @override
+  String get improvementRollback => 'Hoàn tác';
+
+  @override
+  String get improvementRolledBackDone => 'Đã hoàn tác.';
+
+  @override
+  String get improvementNeedsAdmin =>
+      'Chỉ quản trị viên không gian làm việc mới có thể quyết định về đề xuất này: nó thay đổi một skill hoặc chính sách cho toàn bộ không gian làm việc.';
+
+  @override
+  String get improvementAdminDecides =>
+      'Với tư cách quản trị viên, bạn quyết định về đề xuất này: nó thay đổi một skill hoặc chính sách cho toàn bộ không gian làm việc.';
+
+  @override
+  String get improvementNeedsCampaign =>
+      'Hãy chạy một đánh giá đạt yêu cầu trước khi chấp nhận thay đổi skill này.';
+
+  @override
+  String get improvementsBackToList => 'Tất cả cải tiến';
+
+  @override
+  String improvementMeta(String kind, String scope, String agent) {
+    return '$kind · $scope · do $agent đề xuất';
+  }
+
+  @override
+  String get improvementAccept => 'Chấp nhận';
+
+  @override
+  String get improvementAcceptedDone => 'Đã chấp nhận.';
+
+  @override
+  String get improvementReject => 'Từ chối';
+
+  @override
+  String get improvementRejectedDone => 'Đã từ chối.';
+
+  @override
+  String get improvementRunEvaluation => 'Chạy đánh giá';
+
+  @override
+  String get improvementSectionChange => 'Thay đổi gì';
+
+  @override
+  String get improvementTarget => 'Đích';
+
+  @override
+  String improvementScopeLine(String scope) {
+    return 'Áp dụng cho: $scope';
+  }
+
+  @override
+  String get improvementNewText => 'Nội dung mới';
+
+  @override
+  String get improvementRemovedText => 'Nội dung bị xóa';
+
+  @override
+  String get improvementExpected => 'Tác động kỳ vọng';
+
+  @override
+  String get improvementSectionEvidence => 'Bằng chứng và quyết định';
+
+  @override
+  String get improvementNoEvidence => 'Không có bằng chứng đính kèm.';
+
+  @override
+  String get improvementEvidenceRuns => 'Lần chạy';
+
+  @override
+  String get improvementEvidenceMessages => 'Tin nhắn';
+
+  @override
+  String improvementOpenMessage(int index) {
+    return 'Tin nhắn $index';
+  }
+
+  @override
+  String get improvementEvidenceChecks => 'Kết quả kiểm tra';
+
+  @override
+  String get improvementEvaluation => 'Đánh giá';
+
+  @override
+  String get improvementCampaignNone => 'Chưa được đánh giá.';
+
+  @override
+  String get improvementCampaignRunning => 'Đang chạy đánh giá.';
+
+  @override
+  String get improvementCampaignPassed =>
+      'Đánh giá đạt: nó đã chạy đầy đủ và thay đổi giải được ít nhất số lần chạy mà skill hiện tại giải được. Điều này không chứng minh thay đổi tốt hơn. Có thể chấp nhận.';
+
+  @override
+  String get improvementCampaignFailed =>
+      'Đánh giá không đạt, hoặc skill đã thay đổi sau khi được đo. Hãy chạy lại, hoặc từ chối thay đổi.';
+
+  @override
+  String improvementDecided(String status, String name, String time) {
+    return '$status bởi $name, $time';
+  }
+
+  @override
+  String get improvementSomeone => 'ai đó';
+
+  @override
+  String improvementExpires(String time) {
+    return 'Hết hạn lúc $time nếu không ai quyết định.';
+  }
+
+  @override
+  String get improvementOpenApplied => 'Mở nội dung đã thay đổi';
+
+  @override
+  String get improvementsTitle => 'Cải tiến';
+
+  @override
+  String get improvementsSubtitle =>
+      'Các thay đổi mà agent đã đề xuất cho bộ nhớ, ghi chú, chính sách và skill của chúng.';
+
+  @override
+  String get improvementsEmpty => 'Chưa có đề xuất nào';
+
+  @override
+  String get improvementsEmptyHint =>
+      'Agent đề xuất cải tiến sau khi xem lại công việc, ví dụ với /refine.';
+
+  @override
+  String get improvementRowNeedsAdmin => 'Quản trị viên quyết định';
+
+  @override
+  String get improvementNotFound =>
+      'Đề xuất này không tồn tại, hoặc nằm trong một space mà bạn không mở được.';
+
+  @override
+  String get dispatchSettingsTitle => 'Lịch';
+
+  @override
+  String get dispatchSettingsSubtitle =>
+      'Giới hạn cho lịch và theo dõi, và việc gì xảy ra với các yêu cầu không ai trả lời.';
+
+  @override
+  String get dispatchLimitsLabel => 'Giới hạn lịch';
+
+  @override
+  String get dispatchLimitsSubtitle =>
+      'Giới hạn số lịch và theo dõi mà agent được giữ, cùng mặc định của chúng.';
+
+  @override
+  String dispatchLimitRange(int max) {
+    return '1 đến $max';
+  }
+
+  @override
+  String get dispatchLimitPerConversation =>
+      'Mỗi agent trong một cuộc trò chuyện';
+
+  @override
+  String get dispatchLimitPerConversationHelp =>
+      'Số lịch đang hoạt động hoặc tạm dừng mà một agent được giữ trong một cuộc trò chuyện.';
+
+  @override
+  String get dispatchLimitPerAgent => 'Mỗi agent';
+
+  @override
+  String get dispatchLimitPerAgentHelp =>
+      'Số lịch đang hoạt động hoặc tạm dừng mà một agent được giữ trên toàn không gian làm việc.';
+
+  @override
+  String get dispatchLimitPerWorkspace => 'Trong không gian làm việc';
+
+  @override
+  String get dispatchLimitPerWorkspaceHelp =>
+      'Số lịch đang hoạt động hoặc tạm dừng trong toàn bộ không gian làm việc.';
+
+  @override
+  String get dispatchLimitCostCap => 'Giới hạn chi phí mặc định (đô la)';
+
+  @override
+  String get dispatchLimitCostCapHelp =>
+      'Số tiền tối đa một lịch được chi khi nó không đặt giới hạn riêng.';
+
+  @override
+  String get dispatchLimitZone => 'Múi giờ';
+
+  @override
+  String get dispatchLimitZoneHelp =>
+      'Múi giờ dùng để đọc lịch cron khi lịch không chỉ định, và múi giờ của bản tóm tắt hằng ngày.';
+
+  @override
+  String get dispatchUnattendedLabel => 'Khi không ai trả lời';
+
+  @override
+  String get dispatchUnattendedSubtitle =>
+      'Một lần chạy do máy chủ bắt đầu sẽ chờ người trả lời trong bao lâu, và khi nào bản tóm tắt hằng ngày về những việc đang chờ được gửi đi.';
+
+  @override
+  String get dispatchUnattendedExpiry => 'Yêu cầu chờ (giờ)';
+
+  @override
+  String get dispatchUnattendedExpiryHelp =>
+      'Sau thời gian này, phê duyệt được coi là bị từ chối và câu hỏi là chưa được trả lời. Mục tiêu được đặt tự trả lời câu hỏi của mình sau 10 phút.';
+
+  @override
+  String dispatchUnattendedExpiryRange(int min, int max) {
+    return 'Từ $min đến $max giờ';
+  }
+
+  @override
+  String get dispatchDigestHour => 'Tóm tắt hằng ngày lúc (giờ)';
+
+  @override
+  String dispatchDigestHourHelp(String zone) {
+    return 'Theo $zone, múi giờ ở trên.';
+  }
+
+  @override
+  String get dispatchDigestHourRange => '0 đến 23';
+
+  @override
+  String get goalRecordCrumb => 'Mục tiêu';
+
+  @override
+  String get scheduleRecordCrumb => 'Lịch';
+
+  @override
+  String get improvementRecordCrumb => 'Đề xuất';
+
+  @override
+  String get goalNodeNeedsAgent => 'Chọn agent sẽ theo đuổi mục tiêu.';
+
+  @override
+  String get goalNodeNeedsObjective => 'Hãy viết mục tiêu cần đạt.';
+
+  @override
+  String get goalNodeContractInvalid =>
+      'Hợp đồng có một trường vượt giới hạn; nó sẽ không được lưu cho đến khi sửa.';
+
+  @override
+  String get goalNodeBudget => 'Ngân sách (đô la)';
+
+  @override
+  String get goalNodeBudgetHelp =>
+      'Số tiền tối đa mục tiêu được chi. Khi hết, mục tiêu sẽ được giữ để chờ người xử lý.';
+
+  @override
+  String goalNodeBudgetRange(int max) {
+    return 'Bắt buộc: lớn hơn 0, tối đa $max.';
+  }
+
+  @override
+  String get goalNodeMaxRuns => 'Giới hạn phân đoạn';
+
+  @override
+  String get goalNodeMaxRunsHelp =>
+      'Không bắt buộc. Số phân đoạn (lần chạy agent) tối đa mà mục tiêu được dùng.';
+
+  @override
+  String get goalNodeDeadline => 'Hạn chót (giờ)';
+
+  @override
+  String get goalNodeDeadlineHelp =>
+      'Không bắt buộc. Số giờ tính từ khi bước bắt đầu mục tiêu.';
+
+  @override
+  String goalNodeRange(int max) {
+    return 'Từ 1 đến $max, hoặc để trống.';
+  }
+
+  @override
+  String get goalNodeContract => 'Hợp đồng';
+
+  @override
+  String get goalNodeContractHelp =>
+      'Hoàn thành khi: các tiêu chí mà bộ đánh giá kiểm tra, và các lệnh phải chạy đạt.';
+
+  @override
+  String get nodeConfigObjective => 'Mục tiêu cần đạt';
+
+  @override
+  String pipelineRunGoalStep(String step) {
+    return 'Bước $step theo đuổi một mục tiêu';
+  }
+
+  @override
+  String get pipelineRunOpenGoal => 'Mở mục tiêu';
+
+  @override
+  String get pipelineRunHeldBudget =>
+      'Lần chạy này bị giữ: điều phối của nó đã đạt giới hạn chi phí.';
+
+  @override
+  String pipelineRunHeldOther(String reason) {
+    return 'Lần chạy này bị giữ ($reason).';
+  }
+
+  @override
+  String pipelineRunHeldSpent(String spent, String cap) {
+    return 'Đã chi $spent trên $cap. Tăng giới hạn và lần chạy sẽ tiếp tục.';
+  }
+
+  @override
+  String get pipelineRunRaiseCap => 'Tăng giới hạn';
+
+  @override
+  String get pipelineRunRaiseCapTitle => 'Tăng giới hạn điều phối';
+
+  @override
+  String get pipelineRunCapRaised =>
+      'Đã tăng giới hạn. Lần chạy sẽ tiếp tục ngay.';
+
+  @override
+  String get goalLaunchChecks => 'Kiểm chứng';
+
+  @override
+  String get goalLaunchChecksHelp =>
+      'Các lệnh phải chạy đạt thì mục tiêu mới được hoàn tất. Không bắt buộc.';
+
+  @override
+  String get goalLaunchFresh => 'Bắt đầu mỗi phân đoạn mới';
+
+  @override
+  String get goalLaunchFreshHelp =>
+      'Mỗi lần chạy bắt đầu không có lịch sử cuộc trò chuyện, chỉ từ mục tiêu và các ghi chú của nó.';
+
+  @override
+  String get goalLaunchAssume =>
+      'Tự trả lời câu hỏi của mình khi không ai trả lời';
+
+  @override
+  String get goalLaunchAssumeHelp =>
+      'Sau 10 phút không có câu trả lời, agent nêu giả định của mình rồi tiếp tục, nếu điều kiện dừng cho phép.';
+
+  @override
+  String workFeedLimitParkOutcomeResumed(String provider, String time) {
+    return 'Đã tiếp tục lúc $time sau giới hạn sử dụng của $provider.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeCancelled(String provider, String time) {
+    return 'Đã hủy lúc $time. Nó không tiếp tục sau giới hạn sử dụng của $provider.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeExpired(String provider, String time) {
+    return 'Đã hết hạn lúc $time mà không tiếp tục sau giới hạn sử dụng của $provider.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeSkipped(String provider, String time) {
+    return 'Không tiếp tục sau giới hạn sử dụng của $provider ($time).';
+  }
+
+  @override
+  String workFeedCommandRefusedNamed(String command) {
+    return 'Lệnh /$command đã bị từ chối.';
+  }
+
+  @override
+  String get improvementRefusalQueued =>
+      'Một đánh giá cho cuộc trò chuyện này đã đang chờ chạy.';
+
+  @override
+  String get improvementRefusalAgentNotFound =>
+      'Agent đó không thuộc không gian làm việc này.';
+
+  @override
+  String get workRefusalWakeQueueFull =>
+      'Đã có quá nhiều lượt đánh thức đang chờ ở đây. Hãy thử lại sau khi một số đã chạy.';
+
+  @override
+  String get orchestrationRefusalNotYours =>
+      'Chỉ người mà lần chạy này thay mặt mới có thể thay đổi.';
+
+  @override
+  String get orchestrationRefusalCapInvalid =>
+      'Giới hạn mới phải lớn hơn giới hạn hiện tại và số tiền đã chi, và tối đa 1.000 USD.';
+
+  @override
+  String get orchestrationRefusalCapChanged =>
+      'Có người đã tăng giới hạn trước. Hãy kiểm tra giới hạn mới và thử lại.';
+
+  @override
+  String workFeedCapRaised(String person, String oldCap, String newCap) {
+    return '$person đã tăng giới hạn chi tiêu của lần chạy từ $oldCap lên $newCap.';
+  }
+
+  @override
+  String get workFeedPersonUnknown => 'Một người';
+
+  @override
+  String workFeedApplyIncomplete(String skill) {
+    return 'Thay đổi đã chấp nhận cho skill $skill không thể hoàn tất, vì skill đã thay đổi trong lúc đó. Đề xuất đã được hoàn tác.';
+  }
+
+  @override
+  String get workFeedOpenImprovement => 'Mở cải tiến';
+
+  @override
+  String get peerAskFailNoOutput => 'Nó kết thúc mà không có câu trả lời.';
+
+  @override
+  String get peerAskFailRunFailed => 'Lần chạy của nó đã thất bại.';
+
+  @override
+  String get peerAskFailStoppedByPerson => 'Một người đã dừng lần chạy của nó.';
+
+  @override
+  String get peerAskFailBudget => 'Lần chạy của nó đã đạt ngân sách.';
+
+  @override
+  String get peerAskFailSilence =>
+      'Lần chạy của nó im lặng quá lâu và đã bị dừng.';
+
+  @override
+  String get peerAskFailUsageLimit =>
+      'Lần chạy của nó đã dừng ở giới hạn sử dụng của nhà cung cấp.';
+
+  @override
+  String get peerAskFailNotDelivered => 'Câu hỏi chưa bao giờ được gửi đi.';
+
+  @override
+  String heldSteeringLimitHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tin nhắn đang giữ ở giới hạn sử dụng',
+      one: '1 tin nhắn đang giữ ở giới hạn sử dụng',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get heldSteeringLimitNote =>
+      'Các tin nhắn này sẽ được gửi khi người mà lần chạy phục vụ tiếp tục lần chạy. Nếu không được tiếp tục trong vòng 7 ngày kể từ lúc đặt lại, chúng sẽ được giữ cho người đó.';
+
+  @override
+  String get wakeKindRuleFolded => 'Một sự kiện sau đó đã thay thế nó.';
+
+  @override
+  String goalCardWaitingNext(String time) {
+    return 'Đang chờ điều nó đã thiết lập · sẽ kiểm tra lại lúc $time';
+  }
+
+  @override
+  String raiseCapAtMost(String max) {
+    return 'Nhập tối đa $max.';
+  }
+
+  @override
+  String raiseCapNowAt(String cap) {
+    return 'Giới hạn hiện là $cap.';
+  }
+
+  @override
+  String get scheduleWakeReasonSchedule => 'Theo lịch';
+
+  @override
+  String get scheduleWakeReasonWatch => 'Theo dõi';
+
+  @override
+  String get scheduleWakeReasonLimitReset =>
+      'Sau khi giới hạn sử dụng được đặt lại';
+
+  @override
+  String get scheduleWakeStatePending => 'Đang chờ';
+
+  @override
+  String get scheduleWakeStateHeld => 'Đang giữ';
+
+  @override
+  String get scheduleWakeStateClaimed => 'Đang bắt đầu';
+
+  @override
+  String get scheduleWakeStateDelivered => 'Đã gửi';
+
+  @override
+  String get scheduleWakeStateSkipped => 'Đã bỏ qua';
+
+  @override
+  String get scheduleWakeStateExpired => 'Đã hết hạn';
+
+  @override
+  String get scheduleWakeStateCancelled => 'Đã hủy';
+
+  @override
+  String scheduleWakeLine(String reason, String state) {
+    return '$reason · $state';
+  }
+
+  @override
+  String scheduleWakeExit(int code) {
+    return 'mã thoát $code';
+  }
+
+  @override
+  String scheduleWakeEvents(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sự kiện',
+      one: '1 sự kiện',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scheduleWakesNone => 'Chưa có lượt đánh thức nào.';
+
+  @override
+  String get scheduleWakesOlder => 'Hiện cũ hơn';
+
+  @override
+  String get improvementCandidateStaged =>
+      'Skill được đề xuất được lưu thành một bản sửa đổi riêng. Đánh giá nó không làm thay đổi skill đang dùng; skill chỉ thay đổi khi đề xuất được chấp nhận.';
+
+  @override
+  String goalNextWaitingFallback(String time) {
+    return 'Mục tiêu sẽ tiếp tục khi điều nó đang chờ xuất hiện, hoặc sẽ kiểm tra lại lúc $time nếu không có gì xuất hiện.';
+  }
+
+  @override
+  String get steeringRefusalHeldByLimit =>
+      'Tin nhắn mà tạm dừng vì giới hạn sử dụng đang giữ không thể gửi bằng tay trong khi nó đang chờ.';
+
+  @override
+  String steeringRefusalHeldByLimitAt(String time) {
+    return 'Tin nhắn mà tạm dừng vì giới hạn sử dụng đang giữ không thể gửi bằng tay trong khi nó đang chờ. Giới hạn sẽ được đặt lại lúc $time.';
+  }
+
+  @override
+  String heldSteeringLimitResetsAt(String time) {
+    return 'Giới hạn sẽ đặt lại lúc $time. Các tin nhắn này sẽ được gửi khi người mà lần chạy phục vụ tiếp tục lần chạy.';
+  }
+
+  @override
+  String heldSteeringFromPerson(String name) {
+    return 'Từ $name';
+  }
+
+  @override
+  String get heldSteeringFromSomeoneElse => 'Từ người khác';
+
+  @override
+  String get heldSteeringOnlyWriterSends =>
+      'Chỉ người đã viết tin nhắn đang giữ mới có thể gửi nó.';
+
+  @override
+  String get steeringRefusalNotYours =>
+      'Các tin nhắn đang giữ này là của người khác. Chỉ người đã viết mới có thể gửi chúng.';
+
+  @override
+  String improvementEvaluationSolved(
+    int pairedRuns,
+    int candidateSolved,
+    int baselineSolved,
+  ) {
+    String _temp0 = intl.Intl.pluralLogic(
+      pairedRuns,
+      locale: localeName,
+      other: 'Trong $pairedRuns lần chạy ghép cặp',
+      one: 'Trong 1 lần chạy ghép cặp',
+    );
+    return '$_temp0, thay đổi giải được $candidateSolved và skill hiện tại giải được $baselineSolved.';
+  }
+
+  @override
+  String improvementEvaluationWorse(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tác vụ kết quả kém đi với thay đổi.',
+      one: '1 tác vụ kết quả kém đi với thay đổi.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String improvementEvaluationCostlier(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tác vụ tốn kém hơn với thay đổi.',
+      one: '1 tác vụ tốn kém hơn với thay đổi.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String improvementEvaluationHarnessErrors(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count lần chạy gặp lỗi harness.',
+      one: '1 lần chạy gặp lỗi harness.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get improvementEvaluationIncomplete => 'Đánh giá chưa chạy đầy đủ.';
+
+  @override
+  String workFeedLimitParkExpires(String time) {
+    return 'Hết hạn lúc $time';
+  }
+
+  @override
+  String workFeedSchedulePaused(String person, String agent) {
+    return '$person đã tạm dừng lịch của $agent.';
+  }
+
+  @override
+  String get goalCardApproveNotYours =>
+      'Chỉ người đã khởi chạy quy trình mới có thể phê duyệt việc hoàn tất mục tiêu này.';
+
+  @override
+  String get goalCardObjective => 'Mục tiêu cần đạt';
+
+  @override
+  String get planNeedsWrite =>
+      'Phê duyệt hoặc thay đổi kế hoạch này cần quyền ghi trên mọi kho lưu trữ trong space này. Quản trị viên không gian làm việc có thể cấp quyền.';
+
+  @override
+  String scheduleSpentWithChain(String spent, String cap) {
+    return '$spent trên $cap, tính tất cả lịch trong chuỗi của nó';
+  }
 }

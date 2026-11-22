@@ -2,7 +2,7 @@
 title: Pipeline-stegtyper
 description: Referanse for typer av pipeline-steg, kroppsnøkler for steg, konfigurasjonen deres og stegresultater.
 slug: nb-NO/handbok/referanse/pipeline-steg
-sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
+sourceHash: 0d2876bc1ac359f4d2cfe94902bd5f924d19d5d5
 ---
 
 Et pipeline-steg har to uavhengige akser:
@@ -58,6 +58,31 @@ Generisk node for prompt og utsending: renderer prompten, sender agenten ut i en
 | `extras.spaceId`           | Eksisterende samtale å jobbe i (standard: en skjult en)      |
 | `extras.conversationTitle` | Navngitt strøm inne i det området (valgfritt)                |
 | `extras.mode`              | Leses på noden som *åpner* rommet (`messaging.createSpace`), ikke her. Standard `review`. |
+
+### `goal.pursue`
+
+Starter et varig mål (se [Forfølg et mål](/nb-NO/handbok/slik-gjor-du/forfolg-et-mal/)) og er suspendert til målet avsluttes. Redigeringen viser det som **Pursue a goal**. Ikke en av de 25 forhåndsdefinerte stegene over; registrert ved siden av dem.
+
+| Konfigurasjonsfelt | Beskrivelse |
+| ---------------------- | ----------- |
+| `agentId` | Agenten som forfølger målet (påkrevd) |
+| `prompt` | Målet; støtter `{{key}}`-erstatning (påkrevd) |
+| `outputKey` | Tilstandsnøkkel for resultatet (påkrevd) |
+| `extras.spaceId` | Rommet målet arbeider i (påkrevd, som alle agentsteg) |
+| `extras.budgetMicros` | Målets budsjett i mikrodollar, 1 til 1 000 000 000 (påkrevd) |
+| `extras.maxRuns` | Et segmenttak, 1 til 1 000 (valgfritt) |
+| `extras.deadlineHours` | Timer fra steget starter målet, 1 til 2 160 (valgfritt) |
+| `extras.contract` | Hva ferdig betyr: kriterier og sjekker (valgfritt) |
+
+Resultatet under `outputKey` er `{summary, verdict}`, der `verdict` er gjennomgåerens dom med dens punkter og bekymringer, eller null.
+
+| Målet | Steget |
+| -------- | -------- |
+| fullført | fullføres |
+| mislyktes, avbrutt eller budsjett brukt opp | feiler (`retry` og `continueOnFail` gjelder); et forsøkt steg starter et nytt mål |
+| pauset, inkludert venter på en persons gjennomgang | forblir suspendert, unntatt fra livssjekken på 24 timer |
+
+Et mål startet av en pipeline-kjøring belastes den kjøringens orkestrering, også gjennomgangen. Når pipeline-kjøringen avbrytes, feiler eller fullføres mens målet arbeider, avbrytes målet.
 
 ### `pipeline.condition`
 

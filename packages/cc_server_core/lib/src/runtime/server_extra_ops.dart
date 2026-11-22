@@ -9,12 +9,19 @@ import 'package:cc_domain/core/domain/repositories/workspace_settings_repository
 import 'package:cc_domain/features/code_graph/domain/ports/code_graph_repo_gate.dart';
 import 'package:cc_domain/features/code_graph/domain/ports/code_graph_tree_port.dart';
 import 'package:cc_domain/features/code_graph/domain/repositories/code_graph_repository.dart';
+import 'package:cc_domain/features/code_mode/domain/ports/code_execution_repository.dart';
+import 'package:cc_domain/features/dispatch/domain/repositories/agent_goal_run_repository.dart';
+import 'package:cc_domain/features/dispatch/domain/repositories/wake_repository.dart';
+import 'package:cc_domain/features/dispatch/domain/repositories/wake_rule_repository.dart';
 import 'package:cc_domain/features/mcp/domain/mcp_server_status.dart';
 import 'package:cc_domain/features/mcp/domain/ports/mcp_client_control.dart';
 import 'package:cc_domain/features/messaging/domain/ports/conversation_title_port.dart';
+import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
+import 'package:cc_domain/features/messaging/domain/repositories/conversation_read_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/model_routing/domain/ports/models_dev_source.dart';
+import 'package:cc_domain/features/notifications/domain/repositories/notification_feed_repository.dart';
 import 'package:cc_domain/features/telemetry/telemetry.dart'
     show TelemetryConfigRepository;
 import 'package:cc_host/cc_host.dart' show RepoOp, WatchQuery;
@@ -25,13 +32,19 @@ import 'package:cc_infra/cc_infra.dart'
         FilterListService,
         FontsourceCatalogService,
         ModelCatalogService,
+        PeerAskService,
         ServerWeatherService,
-        SoundscapeHub;
+        SoundscapeHub,
+        WakeQueueService,
+        WakeRuleService;
 import 'package:cc_persistence/cc_persistence.dart'
     show DaoAgentRepository, DaoUserRepository, DaoWorkspaceRepository;
 import 'package:cc_server_core/src/agents/agent_create_rpc.dart';
 import 'package:cc_server_core/src/backup/backup_rpc.dart';
 import 'package:cc_server_core/src/catalog/account_pool_ops.dart';
+import 'package:cc_server_core/src/catalog/agent_goal_contract_ops.dart';
+import 'package:cc_server_core/src/catalog/agent_goal_run_ops.dart'
+    show GoalApproveControl, buildAgentGoalReviewOps, goalSpaceGate;
 import 'package:cc_server_core/src/catalog/audit_log_ops.dart';
 import 'package:cc_server_core/src/catalog/calendar_write_ops.dart';
 import 'package:cc_server_core/src/catalog/changelog_ops.dart';
@@ -39,21 +52,29 @@ import 'package:cc_server_core/src/catalog/claude_session_settings_ops.dart';
 import 'package:cc_server_core/src/catalog/claude_sign_in_ops.dart';
 import 'package:cc_server_core/src/catalog/commit_signing_ops.dart';
 import 'package:cc_server_core/src/catalog/conversation_outline_ops.dart';
+import 'package:cc_server_core/src/catalog/conversation_read_ops.dart';
 import 'package:cc_server_core/src/catalog/conversation_title_ops.dart';
 import 'package:cc_server_core/src/catalog/forge_automation_token_ops.dart';
 import 'package:cc_server_core/src/catalog/forge_compose_ops.dart';
 import 'package:cc_server_core/src/catalog/gif_ops.dart';
+import 'package:cc_server_core/src/catalog/improvement_ops.dart';
 import 'package:cc_server_core/src/catalog/mcp_server_ops.dart';
+import 'package:cc_server_core/src/catalog/orchestration_cap_ops.dart';
+import 'package:cc_server_core/src/catalog/peer_ask_ops.dart';
 import 'package:cc_server_core/src/catalog/pr_data_gate.dart';
 import 'package:cc_server_core/src/catalog/pr_merge_conflict_ops.dart';
 import 'package:cc_server_core/src/catalog/server_notice_ops.dart';
 import 'package:cc_server_core/src/catalog/sign_in_ops.dart';
 import 'package:cc_server_core/src/catalog/user_profile_ops.dart';
+import 'package:cc_server_core/src/catalog/wake_ops.dart';
+import 'package:cc_server_core/src/catalog/wake_rule_ops.dart';
 import 'package:cc_server_core/src/catalog/workspace_mcp_server_ops.dart';
 import 'package:cc_server_core/src/catalog/workspace_provider_app_ops.dart';
 import 'package:cc_server_core/src/chat/chat_connector.dart';
 import 'package:cc_server_core/src/chat/chat_rpc_ops.dart';
 import 'package:cc_server_core/src/code_graph/code_graph_rpc.dart';
+import 'package:cc_server_core/src/code_mode/code_mode_rpc_ops.dart';
+import 'package:cc_server_core/src/code_mode/server_code_mode.dart';
 import 'package:cc_server_core/src/connect/klipy_gifs.dart';
 import 'package:cc_server_core/src/connect/sign_in_service.dart';
 import 'package:cc_server_core/src/context/context_inspection_service.dart';
@@ -75,6 +96,7 @@ import 'package:cc_server_core/src/mcp_servers/workspace_mcp_servers.dart';
 import 'package:cc_server_core/src/model_routing/models_dev_rpc.dart';
 import 'package:cc_server_core/src/newsfeed/filter_list_rpc.dart';
 import 'package:cc_server_core/src/pr_review/pr_merge_conflict_service.dart';
+import 'package:cc_server_core/src/runtime/server_learning_wiring.dart';
 import 'package:cc_server_core/src/soundscape/soundscape_rpc.dart';
 import 'package:cc_server_core/src/telemetry/telemetry_ops.dart';
 import 'package:cc_server_core/src/weather/weather_rpc.dart';
@@ -131,6 +153,8 @@ ExtraOpsResult buildServerExtraOps({
   // The conversation feed's outline and anchored range reads.
   required MessagingRepository messagingRepository,
   required ConversationRepository conversationRepository,
+  required ConversationReadRepository conversationReads,
+  required NotificationFeedRepository notificationFeedRepository,
   // The read gate of a conversation's space (derived from the conversation).
   required Future<void> Function(
     String workspaceId,
@@ -144,18 +168,82 @@ ExtraOpsResult buildServerExtraOps({
   required UserActivityRepository userActivity,
   required Future<bool> Function(String userId) isServerOwner,
   required PrDataGate prData,
+  // Code mode: the resolver and runner facts behind `codeMode.status`, and
+  // the execution records the observability pages read.
+  required CodeModeSettings codeModeSettings,
+  required CodeModeHostFacts codeModeHost,
+  required CodeExecutionRepository codeExecutions,
   McpServerControl? mcpServer,
   WorkspaceMcpServers? workspaceMcpServers,
   McpClientControl? mcpClientControl,
   ServerNoticeRepository? serverNotices,
+  // Durable goals' contracts and the guided `/goal` interview.
+  required AgentGoalRunRepository agentGoalRunRepository,
+  required MessagingPort? guidedGoals,
+  required GoalApproveControl goalApproveCompletion,
+  // A conversation's waiting wakes and a person's controls over them.
+  required WakeQueueService Function()? wakeQueue,
+  required WakeRepository? wakes,
+  // Schedules, loops and watches: a person's controls and the Schedules
+  // screen's reads.
+  required WakeRuleService Function()? wakeRules,
+  required WakeRuleRepository? wakeRuleRepository,
+  // The asks an agent waits on in a conversation, and a person's cancel.
+  required PeerAskService? peerAsks,
+  // Improvement proposals and a person's decisions on them, and the raise
+  // of an orchestration's cost cap.
+  required ServerLearning learning,
 }) {
+  final improvementOps = buildImprovementOps(
+    proposals: learning.proposals,
+    adoption: learning.adoption,
+    requireSpace: prData.requireSpace,
+  );
+  final peerAskOps = buildPeerAskOps(
+    service: peerAsks,
+    asks: peerAsks?.repository,
+    conversations: conversationRepository,
+    requireSpace: prData.requireSpace,
+    guardSpace: prData.guardSpace,
+  );
+  final wakeOps = buildWakeOps(
+    wakeQueue: wakeQueue,
+    wakes: wakes,
+    conversations: conversationRepository,
+    requireSpace: prData.requireSpace,
+    guardSpace: prData.guardSpace,
+  );
+  final wakeRuleOps = buildWakeRuleOps(
+    service: wakeRules,
+    rules: wakeRuleRepository,
+    conversations: conversationRepository,
+    requireSpace: prData.requireSpace,
+    guardSpace: prData.guardSpace,
+    roleOf: (workspaceId, userId) async =>
+        (await membershipRepository.getMember(workspaceId, userId))?.role,
+  );
   final conversationOutline = buildConversationOutlineOps(
     messaging: messagingRepository,
     conversations: conversationRepository,
     prData: prData,
   );
+  final conversationReadOps = buildConversationReadOps(
+    reads: conversationReads,
+    conversations: conversationRepository,
+    notificationFeed: notificationFeedRepository,
+    prData: prData,
+  );
   final ops = <RepoOp>[
+    ...buildOrchestrationCapOps(
+      orchestrations: learning.orchestrations,
+      caps: learning.orchestrations,
+      runs: learning.pipelineRuns,
+      messages: messagingRepository,
+      requireSpace: prData.requireSpace,
+      reposExposedBy: prData.reposExposedBy,
+    ),
     ...conversationOutline.ops,
+    ...conversationReadOps.ops,
     ...fleetOps,
     ...buildAgentCreateOps(
       agentRepository: agentRepository,
@@ -237,12 +325,42 @@ ExtraOpsResult buildServerExtraOps({
       requireConversation: requireConversationSpace,
     ),
     ...buildAccountPoolOps(workspaceSettings),
+    ...buildAgentGoalContractOps(
+      goals: agentGoalRunRepository,
+      agents: agentRepository,
+      requireSpace: prData.requireSpace,
+      reposExposedBy: prData.reposExposedBy,
+      guidedGoals: guidedGoals,
+    ),
+    ...buildAgentGoalReviewOps(
+      goalSpace: goalSpaceGate(
+        goals: agentGoalRunRepository,
+        requireSpace: prData.requireSpace,
+      ),
+      approveCompletion: goalApproveCompletion,
+    ),
+    if (workspaceSettings != null)
+      ...buildCodeModeOps(
+        settings: codeModeSettings,
+        settingsStore: workspaceSettings,
+        executions: codeExecutions,
+        host: codeModeHost,
+        spaceInWorkspace: (workspaceId, spaceId) async =>
+            await messagingRepository.getSpaceById(workspaceId, spaceId) !=
+            null,
+        requireSpace: prData.requireSpace,
+        hiddenSpaces: prData.hiddenSpaces,
+      ),
     ...buildTelemetryOps(config: telemetryConfig),
     ...buildMcpServerOps(mcp: mcpServer),
     ...buildConfiguredMcpServerOps(
       workspaceServers: workspaceMcpServers,
       personal: mcpClientControl,
     ),
+    ...wakeOps.ops,
+    ...wakeRuleOps.ops,
+    ...peerAskOps.ops,
+    ...improvementOps.ops,
   ];
 
   final watches = <WatchQuery>[
@@ -252,6 +370,11 @@ ExtraOpsResult buildServerExtraOps({
     ...buildChatWatchQueries(connector: chatConnector, users: userRepository),
     ...buildTelemetryWatchQueries(telemetryConfig),
     ...conversationOutline.watches,
+    ...conversationReadOps.watches,
+    ...wakeOps.watches,
+    ...wakeRuleOps.watches,
+    ...peerAskOps.watches,
+    ...improvementOps.watches,
     ...buildAuditLogWatchQueries(
       serverAudit: serverAudit,
       activity: userActivity,

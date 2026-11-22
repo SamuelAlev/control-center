@@ -2,7 +2,7 @@
 title: Diagnose an agent
 description: Work through the run log, adapter probe, server status and host diagnostics when an agent stops producing runs.
 slug: en-GB/manual/guides/agent-diagnostics
-sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
+sourceHash: 8cd7078bacfbfcd18d90512974eff3539366883c
 ---
 
 This guide shows you how to find out why an agent is not producing runs.
@@ -90,7 +90,13 @@ Check **Settings → Server → Diagnostics & privacy → Semantic search**. Unt
 
 ### The server will not boot at all
 
-Native libraries are required and there is no degraded mode. A missing dylib makes `cc_server` refuse to start and name the offender in the error. Stage the natives with `scripts/natives/build_natives.sh` and rebuild the server binary.
+Native libraries are required and there is no degraded mode. A missing dylib, or a missing code mode runner (`bin/codemode/cc_codemode`), makes `cc_server` refuse to start and name the offender in the error. Stage the natives with `scripts/natives/build_natives.sh` and rebuild the server binary with `scripts/build_server.sh`.
+
+### A script failed, or code mode is not offered
+
+To see what a [code mode](/en-GB/manual/concepts/code-mode/) script did, open the script's record from **Open record** on its row in the conversation, or from **Observability → Code executions**. The record says how the script ended in plain words (ran out of time, used up its processor time, reached its memory limit, threw an error), and lists every tool call it made with whether the guardrails allowed it, a person approved it or it was denied.
+
+If the agent has no `repl` tool at all, open **Settings → Workspace → Code mode**. Under **Status**, **On this server** says **Available** or **Unavailable**; **Unavailable** means the server cannot lock the script runner down on its host, and the page quotes the reason. The server's startup log has the same line (`code_mode=…`). A run with no workspace, whose workspace limits could not be read or whose run log could not be written also gets no `repl`, and calls its tools directly.
 
 ### An action is silently denied
 

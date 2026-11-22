@@ -2,7 +2,7 @@
 title: Eventos de domínio
 description: Catálogo completo dos 54 eventos de domínio, com os respetivos payloads e os subscritores do lado do servidor que os consomem.
 slug: pt-PT/manual/referencia/eventos-de-dominio
-sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
+sourceHash: f58123448c0f31c95774bbaebee89f1509940896
 ---
 
 ## Barramento de eventos
@@ -24,7 +24,10 @@ Todos os eventos do catálogo abaixo vivem nesse único diretório; não há eve
 | Evento              | Payload                                                | Emitido quando                                          |
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | O espaço de trabalho é criado                           |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | O agente termina uma execução (com êxito ou com falha)  |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | O fluxo de processo do agente termina, antes de o estado final ser escrito. Mantido apenas para a ponte de conversas de PR e para análise |
+| `AgentRunSettled` | `agentId`, `workspaceId`, `runId`, `status`, `endReason`, `costMicros`, `wakeIds`, `spaceId?`, `conversationId?`, `limitResetsAt?`, `requestedByUserId?`, `wakeReason?` | O estado final de uma execução é escrito; publicado exatamente uma vez por execução. `endReason` é `completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` ou `serverStopped`. A execução de um subagente não publica nenhum |
+| `GoalSettled` | `goalId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `status`, `hold?`, `summary?`, `requestedByUserId?` | Um objetivo termina, ou começa a aguardar a revisão de uma pessoa |
+| `WakeRuleEnded` | `ruleId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `reason`, `requestedByUserId?` | Uma programação ou um monitor termina (disparou a sua vez, expirou, usou as suas execuções ou o seu custo, foi cancelado, o seu objetivo terminou, ou a pessoa associada saiu) |
 | `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | Um agente começa a aguardar por uma pessoa: uma aprovação, uma pergunta `ask_user` ou uma execução parada numa credencial (`kind` é `approval`, `question` ou `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Um repo é registado; desencadeia a indexação de código em segundo plano |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Uma skill é instalada ou atualizada, transportando o veredicto da análise da cadeia de abastecimento |
@@ -57,6 +60,16 @@ Os seis transportam `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle
 | `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | Alguém o mencionou num comentário de PR ou num comentário de revisão      |
 | `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | Alguém respondeu num tópico de revisão em que participa                         |
 | `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | Alguém resolveu um tópico de revisão em que participa                           |
+
+### O monitor de pull requests
+
+Publicado pelo sondador de pull requests abertos para cada pull request que sonda, seja qual for o seu autor, para os monitores `on:pr_*` dos agentes. Os três transportam `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `headRef` e `authorLogin`.
+
+| Evento | Payload adicional | Emitido quando |
+| ----------------------- | ----------------------------------------------- | ---------- |
+| `PrWatchChecksSettled` | `passing`, `failedChecks`, `failedCheckUrl?` | Terminou todas as verificações da head do pull request |
+| `PrWatchReviewActivity` | `decision`, `decisionChanged`, `newComments` | O pull request recebeu uma revisão ou novos comentários |
+| `PrWatchClosed` | `merged` | O pull request foi integrado ou fechado |
 
 ## Eventos de mensagens
 
@@ -167,14 +180,20 @@ Todos os subscritores abaixo são construídos dentro do `runCcServer` (ou de um
 | Aprovisionamento do espaço de chat (em linha) | `SpaceCreated`                                                                              |
 | `PipelineTriggerDispatcher`         | Todos os `DomainEvent`; cada disparador ativado filtra pelo seu próprio tipo                         |
 | `SubPipelineResumeListener`         | `PipelineRunCompleted`, `PipelineRunFailed`                                                          |
-| `PipelineCostRollupListener`        | `AgentRunCompleted`                                                                                  |
-| `BudgetEvaluationListener`          | `AgentRunCompleted`                                                                                  |
+| `PipelineCostRollupListener`        | `AgentRunSettled`                                                                                    |
+| `BudgetEvaluationListener`          | `AgentRunSettled`                                                                                    |
 | `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (apenas execuções de `meeting_summary`) |
-| `PipelineStepResumeListener`        | `AgentRunCompleted`                                                                                  |
-| `AgentRunTaskCompleter`             | `AgentRunCompleted`                                                                                  |
-| `GoalSupervisor`                    | `AgentRunCompleted`                                                                                  |
-| `CheckerDispatchListener`           | `AgentRunCompleted`                                                                                  |
-| `TeamRoutingService`                | `AgentRunCompleted`, `TicketAssigned`                                                                |
+| `PipelineStepResumeListener`        | `AgentRunSettled`                                                                                    |
+| `AgentRunTaskCompleter`             | `AgentRunSettled`                                                                                    |
+| `GoalSupervisor`                    | `AgentRunSettled` — decide o próximo passo do objetivo                                               |
+| `CheckerDispatchListener`           | `AgentRunSettled` — coloca o verificador em fila como despertar; ignora segmentos e revisões de objetivos |
+| `TeamRoutingService`                | `AgentRunSettled`, `TicketAssigned`                                                                  |
+| `WakeQueueService` | `AgentRunSettled` — entrega os despertares que esperaram pelo fim da execução |
+| `WakeRuleService` | `AgentRunSettled` (ciclos de ritmo próprio), `GoalSettled` (termina as programações de um objetivo), `PrWatch*`, `EnvironmentProcessExited`, `EnvironmentReady`, o fim de tickets e de execuções de pipeline (monitores), `WorkspaceMemberRemoved` (termina as programações dessa pessoa) |
+| `PeerAskService` | `AgentRunSettled` — resolve as perguntas que os agentes fizeram uns aos outros e acorda quem perguntou |
+| `LimitParkService` | `AgentRunSettled` com `usageLimit` — espera pela redefinição do fornecedor |
+| `ImprovementReviewService` | `GoalSettled` (um objetivo verificado) e `AgentRunSettled` — coloca na fila a revisão de melhorias e lê o seu resultado |
+| Passo de objetivo de pipeline (`goal.pursue`) | `GoalSettled`, `AgentRunSettled`, `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` — retoma o passo, imputa o custo à orquestração e acompanha a execução do pipeline |
 | `OrchestrationRunListener`          | `PipelineRunCancelled`, `PipelineRunFailed`                                                          |
 | `MultiVendorTicketSyncCoordinator`  | `TicketCreated`, `TicketAssigned`, `TicketReassigned`, `TicketStatusChanged`, `TicketDetailsUpdated` |
 | `WorktreeGcListener`                | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`         |
@@ -233,6 +252,8 @@ entradas e é informado de cada pergunta `ask_user` pelo `AgentQuestionService`.
 Uma espera corresponde a um evento; nada é publicado quando a espera termina.
 
 As cinco categorias de PRs próprias transportam `forUserId`, por isso chegam ao autor em vez de chegarem a todos no espaço de trabalho.
+
+Cinco mensagens de trabalho de longa duração, cada uma endereçada à pessoa a quem diz respeito (`for_user_id`): `notifications/goal_settled` (a partir de `GoalSettled`), `notifications/wake_rule_ended` (a partir de `WakeRuleEnded`), `notifications/improvement_proposed`, `notifications/pipeline_run_held` (uma execução de pipeline retida no limite de custo da sua orquestração) e `notifications/waiting_digest` (uma vez por dia, o que espera por uma pessoa). Cada uma transporta `notification_kind`: `notify` corresponde a `agentRunCompleted`, `question` e `review` a `agentAwaitingInput`. Toda a mensagem de notificação transporta agora `notification_kind`, e uma mensagem com `quiet: true` (uma programação que terminou, um objetivo que terminou) vai para o centro de notificações sem aviso, som ou push ruidoso.
 
 O `RemoteEventForwarder` reencaminha ainda o `TicketReassigned` como `notifications/ticket_reassigned` e todos os `TaskLifecycleEvent` como `notifications/task_<phase>`. Nenhum deles corresponde a uma categoria de notificação — alimentam a interface em direto, não o centro de notificações. Os eventos de associação não são reencaminhados como frames: invalidam a cache do reencaminhador e os anfitriões de sessão eliminam as subscrições de espaços de trabalho do membro removido.
 

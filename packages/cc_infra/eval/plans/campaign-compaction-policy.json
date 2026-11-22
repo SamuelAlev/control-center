@@ -1,0 +1,55 @@
+{
+  "id": "campaign-compaction-policy",
+  "seed": 2003,
+  "arms": [
+    {
+      "id": "current",
+      "axis": "baseline",
+      "label": "Current compaction (the shipped default)"
+    },
+    {
+      "id": "masking",
+      "axis": "memory_policy",
+      "memoryPolicy": "masking",
+      "label": "Masking of stale observations, recoverable (compaction.policy masking)"
+    },
+    {
+      "id": "hybrid",
+      "axis": "memory_policy",
+      "memoryPolicy": "hybrid_masking_summary",
+      "label": "Masking plus summarisation at the fold (compaction.policy hybrid)"
+    }
+  ],
+  "strata": [
+    {
+      "stratum": "cold",
+      "repetitions": 1
+    },
+    {
+      "stratum": "warm",
+      "repetitions": 2
+    }
+  ],
+  "randomizedOrder": true,
+  "hypothesis": "non_inferiority",
+  "primaryOutcome": "verified_success",
+  "minTasks": 10,
+  "alpha": 0.05,
+  "nonInferiorityMargin": 0.15,
+  "maxCostRatio": 1.0,
+  "contextWindowTokens": 6000,
+  "memoryExperiment": {
+    "id": "compaction-policy",
+    "enabled": true,
+    "modes": [
+      "masking",
+      "hybrid_masking_summary"
+    ],
+    "requireRecoverableReferences": true,
+    "notes": "Plan section 12 item 4. Both arms are the harness CompactionPolicy a run gets from compaction.policy in .agents/harness.json; the 6,000-token window makes every long task fold at least once."
+  },
+  "taskTags": [
+    "long_context"
+  ],
+  "notes": "Plan section 20, campaign 3 (work package 8): current against masking and hybrid on tasks long enough to compact. The default becomes the cheapest arm that passes the non-inferiority gate; both treatments are paired against current in one report. An arm whose attempts recorded no fold or mask is reported as not exercised. The question is non-inferiority on verified success with an absolute margin of 0.15 (15 points), Holm-corrected over its two treatments; adoption also needs a cost ratio below 1 over the used tasks. The margin and the cost ceiling are the owner's to change. minTasks is 10: with the 3 to 5 tasks its tag selects today the verdict reads \"No decision\" with the reason \"N tasks, 10 needed\", which is the honest state until the task set grows."
+}

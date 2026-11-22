@@ -1,6 +1,5 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row.dart';
-import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -9,19 +8,20 @@ import '../../../../helpers/test_wrap.dart';
 void main() {
   const inset = EdgeInsets.symmetric(vertical: AppSpacing.sm);
 
-  Future<void> pump(WidgetTester tester, {String? subtitle}) async {
+  Future<void> pump(
+    WidgetTester tester, {
+    String? subtitle,
+    bool signal = true,
+  }) async {
     await tester.pumpWidget(
       testWrap(
         Align(
           alignment: Alignment.topCenter,
           child: SpaceRow(
-            leading: const SpaceStatusMark(),
+            signal: signal ? const AttentionDot(selected: false) : null,
             label: 'test',
-            subtitle: subtitle,
+            subtitle: subtitle == null ? null : Text(subtitle),
             selected: false,
-            status: SpaceStatus.idle,
-            unread: false,
-            leadingHandlesRunning: true,
             cardInset: inset,
             onPress: () {},
           ),
@@ -31,40 +31,55 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('a space without a branch centers the mark with the title', (
+  Future<void> unmount(WidgetTester tester) async {
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+
+  testWidgets('a quiet row starts its title at the inset, no empty column', (
+    tester,
+  ) async {
+    await pump(tester, signal: false);
+
+    final row = tester.getRect(find.byType(SpaceRow));
+    expect(row.height, kCcSidebarItemExtent + inset.vertical);
+    expect(
+      tester.getTopLeft(find.text('test')).dx,
+      closeTo(row.left + kSpaceSidebarPad, 0.5),
+    );
+    await unmount(tester);
+  });
+
+  testWidgets('the dot sits at the inset, a gap before the centred title', (
     tester,
   ) async {
     await pump(tester);
 
     final row = tester.getRect(find.byType(SpaceRow));
     expect(row.height, kCcSidebarItemExtent + inset.vertical);
-
-    final mark = tester.getCenter(find.byType(SpaceStatusMark));
-    final title = tester.getCenter(find.text('test'));
-    expect(mark.dy, closeTo(title.dy, 0.5));
-    expect(mark.dy, closeTo(row.center.dy, 0.5));
-
-    await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pump(const Duration(milliseconds: 100));
+    final dot = tester.getRect(find.byType(AttentionDot));
+    final title = tester.getRect(find.text('test'));
+    expect(dot.left, greaterThanOrEqualTo(row.left + kSpaceSidebarPad));
+    expect(title.left - dot.right, greaterThanOrEqualTo(AppSpacing.xs));
+    expect(dot.center.dy, closeTo(title.center.dy, 0.5));
+    expect(dot.center.dy, closeTo(row.center.dy, 0.5));
+    await unmount(tester);
   });
 
-  testWidgets('a branch keeps the mark centered on the two-line block', (
+  testWidgets('with a subtitle the dot stays on the title line', (
     tester,
   ) async {
-    await pump(tester, subtitle: 'feat/checks');
+    await pump(tester, subtitle: '761');
 
     final row = tester.getRect(find.byType(SpaceRow));
     expect(row.height, greaterThan(kCcSidebarItemExtent + inset.vertical));
-
-    final mark = tester.getCenter(find.byType(SpaceStatusMark)).dy;
-    final title = tester.getCenter(find.text('test')).dy;
-    final branch = tester.getCenter(find.text('feat/checks')).dy;
-    expect(mark, greaterThan(title));
-    expect(mark, lessThan(branch));
-    expect(mark, closeTo((title + branch) / 2, 1));
-
-    await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pump(const Duration(milliseconds: 100));
+    final dot = tester.getCenter(find.byType(AttentionDot)).dy;
+    final title = tester.getRect(find.text('test'));
+    final subtitle = tester.getRect(find.text('761'));
+    expect(dot, closeTo(title.center.dy, 0.5));
+    // The subtitle keeps to the title's edge, not the dot's.
+    expect(subtitle.left, closeTo(title.left, 0.5));
+    await unmount(tester);
   });
 
   testWidgets('a rail narrower than the mark columns does not overflow', (
@@ -72,7 +87,7 @@ void main() {
   ) async {
     // The collapsed rail leaves 32px per item. Space rows keep expanded
     // geometry until the width settles, so they lay out there mid-animation.
-    for (final subtitle in [null, 'feat/checks']) {
+    for (final subtitle in [null, '761']) {
       for (final indent in [
         0.0,
         kSpaceSidebarMarkSlot + kSpaceSidebarMarkGap,
@@ -87,13 +102,10 @@ void main() {
                   collapsed: false,
                   transitioning: true,
                   child: SpaceRow(
-                    leading: const SpaceStatusMark(),
+                    signal: const AttentionDot(selected: false),
                     label: 'a long space title',
-                    subtitle: subtitle,
+                    subtitle: subtitle == null ? null : Text(subtitle),
                     selected: false,
-                    status: SpaceStatus.idle,
-                    unread: true,
-                    leadingHandlesRunning: true,
                     count: 12,
                     indent: indent,
                     cardInset: inset,
@@ -117,13 +129,10 @@ void main() {
     tester,
   ) async {
     Widget row(String label) => SpaceRow(
-      leading: const SpaceStatusMark(),
+      signal: const AttentionDot(selected: false),
       label: label,
       trailingLabel: '5d',
       selected: false,
-      status: SpaceStatus.idle,
-      unread: false,
-      leadingHandlesRunning: true,
       onPress: () {},
     );
     await tester.pumpWidget(

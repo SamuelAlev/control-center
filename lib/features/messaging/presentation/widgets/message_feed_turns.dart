@@ -45,9 +45,24 @@ extension _TurnMethods on _SpaceMessageFeedState {
     if (turn == null) {
       return null;
     }
+    final message = item.message;
+    // A turn that streamed here settles onto the relay's last snapshot. The
+    // list row ships without segments, so confirm the finished transcript
+    // with the server, as a single-row turn bubble does: the persisted one
+    // can hold text the stream never delivered, and the snapshot would cut
+    // the turn off until something else refetched it. One read per turn: it
+    // stops once the transcript has arrived.
+    final List<TranscriptSegment>? confirmed =
+        turn.sawLive &&
+            !turn.confirmed &&
+            message.isStreamingComplete &&
+            message.metadata?['segments_elided'] == true
+        ? ref.watch(messageDetailProvider(message.id)).asData?.value?.transcript
+        : null;
     final transcript = turn.transcriptFor(
-      item.message,
-      cached: () => _transcriptCache?.get(item.message.id),
+      message,
+      cached: () => _transcriptCache?.get(message.id),
+      confirmed: confirmed,
     );
     if (transcript != null) {
       turn.rows.prepare(

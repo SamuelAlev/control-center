@@ -2,7 +2,7 @@
 title: Chat with an agent
 description: Create a space with an agent, send it work, steer it mid-run and stop it.
 slug: en-GB/manual/guides/chat-with-agent
-sourceHash: 0dbc01158345074d818cec6084501abc03323fea
+sourceHash: 3e899c417e120a7cc741e802d577d0182210115b
 ---
 
 This guide shows you how to work with an agent in a space.
@@ -41,6 +41,8 @@ It becomes a queued steering card in the strip above the composer and is injecte
 into the live run at the next turn boundary. There is no toast — the card is the
 feedback.
 
+To steer a run that works for someone else you need write access to the space's repositories; without it the message is refused and stays in the composer. A read-only run, such as a goal's review, takes no message while it runs: when it ends the message is sent as an ordinary one, and after a goal's review it waits for the goal's next segment instead.
+
 Three things change that behaviour:
 
 - A message containing an **@mention** is always sent as a message, never as
@@ -71,8 +73,9 @@ lists what is waiting, so you can unblock the agent without hunting for the
 space. The overlay hides a request the moment that space's conversation is on
 screen, so you never answer the same prompt twice.
 
-There is no timeout: a blocked agent waits until someone decides. The same
-request also appears in the inbox's attention strip and on the phone client.
+A run you started waits an hour for an approval; then the approval counts as denied. The same request also appears in the inbox's attention strip and on the phone client.
+
+A run the server started (a goal's segment, a schedule, a reply from another agent) waits 72 hours by default instead, set by a workspace admin; then an approval counts as denied and a question as unanswered. See [When nobody answers](/en-GB/manual/guides/pursue-a-goal/#when-nobody-answers).
 
 ## Answer an agent's question
 
@@ -105,6 +108,8 @@ control.
 
 A stopped run is marked as stopped. Send a new message to dispatch again.
 
+Stopping also holds what was queued for that agent: your steering cards (**Send held messages** sends them) and its pending wakes (**Resume** in the strip above the composer). A goal the agent was working on pauses until someone resumes it.
+
 ## Use slash commands
 
 Type `/` in the composer to see the command list. The ones that change how the
@@ -113,8 +118,10 @@ conversation behaves:
 | Command        | What it does                                                                                                                         |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | `/plan`        | Switches the space into plan mode. A bare `/plan` just arms the mode; `/plan <request>` arms it and sends the rest as your message |
-| `/goal <text>` | Records the conversation's working goal                                                                                              |
-| `/loop <text>` | Iterates on a task until it is complete                                                                                              |
+| `/goal <text>` | Starts a durable goal the agent keeps working on until it is verified done ([Pursue a goal](/en-GB/manual/guides/pursue-a-goal/)) |
+| `/loop <text>` | Wakes the agent with the text now and again, on an interval or at its own pace ([Schedules and wakes](/en-GB/manual/guides/schedules-and-wakes/)) |
+| `/schedule <when> <text>` | Wakes the agent later, once or on a cron |
+| `/refine`      | Asks for a review of the conversation's work that may propose improvements                                                           |
 | `/compact`     | Folds older history into an anchored summary and continues on the compacted context                                                  |
 | `/todo …`      | Views and edits this conversation's persisted todo list                                                                              |
 

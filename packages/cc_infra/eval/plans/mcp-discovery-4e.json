@@ -25,9 +25,11 @@
     }
   ],
   "randomizedOrder": true,
-  "minPairs": 8,
+  "hypothesis": "non_inferiority",
+  "primaryOutcome": "verified_success",
+  "minTasks": 10,
   "alpha": 0.05,
-  "nonInferiorityMargin": 0.05,
+  "nonInferiorityMargin": 0.1,
   "maxCostRatio": 1.0,
   "contextWindowTokens": 32000,
   "caveats": [
@@ -36,5 +38,5 @@
       "message": "This campaign requires --mcp-config with at least one server; absent or empty catalogs are refused before spend. Connection statuses and the observed tool-surface identity are recorded per attempt."
     }
   ],
-  "notes": "Report 4E. Startup metadata time (initMetadataMs) and the MCP server statuses are recorded per attempt so discovery cost is measured separately from model latency; the discovery cache is only defensible when tool availability and permissions are handled correctly."
+  "notes": "Report 4E. Startup metadata time (initMetadataMs) and the MCP server statuses are recorded per attempt so discovery cost is measured separately from model latency; the discovery cache is only defensible when tool availability and permissions are handled correctly. Non-inferiority on verified success with an absolute margin of 0.10 (10 points); the margin and the cost ceiling are the owner's to change."
 }

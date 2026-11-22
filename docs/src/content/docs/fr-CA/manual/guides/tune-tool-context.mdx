@@ -2,7 +2,7 @@
 title: Ajuster le contexte d’outils d’un agent
 description: Inspectez ce qu’une exécution envoie réellement, modifiez les outils chargés d’emblée et déterminez si un mauvais choix d’outil découle d’un raté de récupération ou d’un problème de prompt.
 slug: fr-CA/manuel/guides/ajuster-contexte-outils
-sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
+sourceHash: 22a4306a97aa8da0332f8e3e20e06ed86119f1d5
 ---
 
 Ce guide couvre le travail pratique autour de la surface d’outils à deux niveaux : voir ce qu’une exécution envoie, la modifier et diagnostiquer un agent qui a saisi le mauvais outil. Pour comprendre pourquoi les choses fonctionnent ainsi, lisez [Contexte des outils et cache de prompts](/fr-CA/manuel/concepts/contexte-des-outils).
@@ -13,25 +13,26 @@ Ouvrez une conversation et touchez l’indicateur d’utilisation du contexte da
 
 Deux segments importent ici :
 
-- **Définitions d’outils** et **MCP et outils dynamiques** — l’ensemble résident, avec le coût réel en jetons de chaque outil.
+- **Définitions d'outils** et **MCP et outils dynamiques** — l’ensemble direct, avec le coût réel en jetons de chaque outil.
 - **Outils chargés à la demande** — l’index différé. Chaque entrée n’est facturée que pour son nom, car la requête ne transporte que le nom; en ouvrir une affiche tout de même la description et le schéma complets, de sorte que vous voyez ce que celui-ci *coûterait* si l’exécution le chargeait.
+
+Dans une exécution avec `repl`, les outils qu’un script atteint sont nommés dans l’invite système et n’apparaissent dans aucun des deux segments.
 
 Si le segment différé est vide, la mise en différé est désactivée pour ce serveur. Vérifiez `--tool-deferral` dans la [CLI `cc_server`](/fr-CA/manuel/reference/cc-server-cli).
 
 ## Modifier les outils chargés d’emblée
 
-L’ensemble résident est une politique, pas une configuration — il vit dans `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) et s’applique à chaque exécution :
+L’ensemble direct est une politique, pas une configuration — il vit dans `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) et s’applique à chaque exécution :
 
-- `residentBuiltins` — le vocabulaire de fichiers et de shell.
-- `residentDiscovery` — `search_tools` et `list_my_tools`. Ne les retirez pas; c’est ainsi qu’un agent atteint tout le reste.
-- `residentMcpTools` — la poignée d’outils Control Center qui valent leur schéma à chaque requête.
-- Un bloc par mode, pour les outils qu’un [mode](/fr-CA/manuel/concepts/modes) donné utilise à presque chaque tour.
+- `directTools` — les douze outils que chaque exécution appelle directement : `read`, `write`, `edit`, `search`, `find`, `bash` et `read_output` ; `ask_user` et `task` ; `todo_write`, `search_memory` et `send_message`.
+- `residentDiscovery` — `search_tools` et `list_my_tools`. Ne les retirez pas; c’est ainsi qu’un agent atteint tout le reste. Une exécution avec `repl` reçoit `search_tools` lorsqu’un outil se charge à la première utilisation, et non `list_my_tools`.
+- `directNamesFor(mode)` — les outils qu’un [mode](/fr-CA/manuel/concepts/modes/) donné ajoute à sa propre boucle : les verbes de revue en mode revue, `submit_plan` en mode plan et `propose_orchestration` en mode orchestration.
 
 Deux règles lorsque vous le modifiez :
 
-**N’ajoutez un outil que si la plupart des exécutions l’utilisent.** Chaque nom coûte son schéma à chaque requête de chaque exécution, pour toujours. Un outil important lorsqu’il sert, mais rare dans l’ensemble, appartient à la moitié différée — l’agent le trouvera quand même.
+**N’ajoutez un outil que si la plupart des exécutions l’utilisent.** Chaque nom coûte son schéma à chaque requête de chaque exécution, pour toujours. Un outil important lorsqu’il sert, mais rare dans l’ensemble, appartient hors de l’ensemble direct — l’agent pourra quand même l’atteindre, depuis un script ou en le chargeant à la première utilisation.
 
-**Utilisez le vrai nom de l’outil.** Un nom résident qui ne correspond à aucun outil est inerte : aucune erreur, aucun avertissement, l’outil est simplement différé. `test/tooling/resident_tool_names_test.dart` le détecte et maintient aussi chaque mode sous 40 outils résidents, ce qui est le but de l’exercice — au-delà de cette bande, la sélection des outils se dégrade de façon mesurable.
+**Utilisez le vrai nom de l’outil.** Un nom direct qui ne correspond à aucun outil est inerte : aucune erreur, aucun avertissement, l’outil reste simplement hors de l’ensemble direct. `test/tooling/resident_tool_names_test.dart` le détecte, maintient l’ensemble direct de chaque mode à au plus 20 outils et maintient chaque mode à au plus 40 outils envoyés d’emblée, ce qui est le but de l’exercice — au-delà de cette bande, la sélection des outils se dégrade de façon mesurable.
 
 Les verbes requis et épinglés d’un mode sont ajoutés automatiquement, de sorte que vous n’avez jamais à lister le verbe de sortie du mode lui-même.
 
@@ -73,4 +74,4 @@ Causes courantes, par ordre de probabilité :
 - **Un changement de modèle ou d’effort en cours de conversation.** Les deux modifient le préfixe. Les sous-agents sont particulièrement faciles à rater ici : exécuter les enfants à un effort moindre pour économiser peut coûter plus cher en partage de cache perdu que ce que cela permet d’économiser.
 - **Un compactage fréquent.** Le compactage réécrit l’historique par conception, son coût est donc réel; la solution consiste à compacter rarement et en profondeur plutôt que souvent et en surface.
 
-Désactiver la mise en différé avec `--tool-deferral=off` constitue un test A/B valide pour isoler si un changement de comportement provient de la surface à deux niveaux. Cela reproduit exactement la requête d’avant la mise en différé, donc si le comportement persiste une fois la mise en différé désactivée, la surface n’en est pas la cause.
+Désactiver la mise en différé avec `--tool-deferral=off` constitue un test A/B valide pour isoler si un changement de comportement provient de la surface à deux niveaux. Avec cette option désactivée, une exécution envoie la définition de chaque outil admis, sauf qu’une exécution avec `repl` appelle encore depuis des scripts les outils qu’un script peut appeler, donc si le comportement persiste avec elle désactivée, la mise en différé n’en est pas la cause.

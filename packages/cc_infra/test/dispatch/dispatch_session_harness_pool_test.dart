@@ -116,6 +116,7 @@ class _Loop implements AgentLoop {
     required String userMessage,
     required List<HarnessTool> tools,
     List<HarnessTool> deferredTools = const [],
+    List<HarnessTool> scriptTools = const [],
     required LlmProviderPort provider,
     HarnessToolContext? context,
     AgentLoopConfig config = const AgentLoopConfig(),
@@ -189,6 +190,8 @@ void main() {
     addTearDown(() => deleteDirBestEffort(tempDir));
     final loop = _Loop();
     final session = DispatchSession(
+      freshHistory: false,
+      readOnly: false,
       deps: SandboxDispatchDeps(
         hostExecution: const HostExecutionGate(
           posture: HostExecutionPosture.offByOwner,

@@ -10,7 +10,9 @@ exception — see [Provider apps and Connect](#provider-apps-and-connect).
 :::caution[Unknown flags are ignored silently]
 The argument parser is hand-rolled and skips anything it does not recognise, so a typo
 (`--tls-key-file`, `--bindany`) produces no error — the server just starts with the
-default. Check the startup log lines when a flag seems to have no effect.
+default. Check the startup log lines when a flag seems to have no effect. A
+[code mode flag](#code-mode) with a value it does not accept is different: the server
+refuses to start.
 :::
 
 ## Core
@@ -48,8 +50,10 @@ default. Check the startup log lines when a flag seems to have no effect.
 | `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | `on` wraps agent runs in the host's OS-native sandbox, and on a host without one starts only the server owner's runs. `off` runs every member's agents unconfined on this host. See below |
 | `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Field kill switch for background code-graph indexing. `off` boots clean without a rebuild                                   |
 | `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Seconds to hold the first index sweep after the ready banner (clamped 0–300)                                                |
-| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Whether harness runs send a small resident tool set plus a name index, loading the rest on first use. See below              |
+| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Whether harness runs send a small direct tool set plus a name index, loading the rest on first use. See below              |
 | `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Seconds a run parks waiting for a human to fix a credential that cannot serve it (clamped 0–3600). See below                 |
+| `--code-mode-max-processes` | `CC_SERVER_CODE_MODE_MAX_PROCESSES` | `min(16, 2 × cores)`           | Code mode scripts running at once on this server, not counting those waiting for a person, 1–64. See below                                                            |
+| `--code-mode-max-heap-mb` | `CC_SERVER_CODE_MODE_MAX_HEAP_MB` | `1024`                              | The most memory one script may use, 16–1024 MiB. A workspace's higher memory limit is lowered to it                          |
 
 ## Provider apps and Connect
 
@@ -113,16 +117,21 @@ the state is never silent.
 
 ### `--tool-deferral`
 
-Built-in harness runs send a small resident set of tool definitions plus a name-only
-index of the rest, which load their schemas the first time they are used. It cuts the
-tool block by roughly 78% and keeps the always-visible set inside the range where models
-select tools reliably. Deferred tools stay callable by name throughout, and `search_tools`
-finds them by intent. See [Tool context and prompt caching](/manual/concepts/tool-context).
+Built-in harness runs send a small direct set of tool definitions plus a name-only
+index of the rest, which load their schemas the first time they are used, or are called
+from a `repl` script. It keeps the always-visible set inside the range where models
+select tools reliably. Measured on the registry the tests build, the built-in agent's
+standard chat tools come to 14 definitions: about 16.5 KB with `repl` (about 4 KB of
+them `repl`'s, whose definition may not exceed 4,096 bytes), about 13 KB on a server that
+cannot run scripts. Deferred tools stay callable
+by name throughout, and `search_tools` finds them by intent. See
+[Tool context and prompt caching](/manual/concepts/tool-context).
 
-`--tool-deferral off` makes every admitted tool resident again, reproducing the requests
-the server made before deferral existed. It is the kill switch for a model that handles
+`--tool-deferral off` sends every admitted tool's definition up front, except that a run with `repl`
+still calls from scripts the tools a script may call. It is the kill switch for a model that handles
 the two-tier surface badly — a flag rather than a rebuild. It affects only the built-in
-harness; the MCP `tools/list` external clients see is always the full catalogue.
+harness; the MCP `tools/list` external clients see is the full catalogue, except for an
+agent run on a server that can run [code mode](/manual/concepts/code-mode/) scripts.
 
 ### `--credential-gate`
 
@@ -138,6 +147,52 @@ expires, the run fails with the message it would have failed with anyway.
 
 `--credential-gate=0` is the kill switch: nothing is ever parked and a bad credential
 ends the turn exactly as it did before the gate existed.
+
+### Code mode
+
+[Code mode](/manual/concepts/code-mode/) lets an agent run a JavaScript script that calls
+its tools. There is no flag that turns it on or off: every run gets the `repl` tool when
+the server can run scripts, and a public demo server runs none.
+
+Scripts run in `cc_codemode`, a program bundled with the server in `bin/codemode/`.
+The server does not start without it: it prints one line naming what is missing and exits
+with code `78`. At start it runs the program's lockdown self-test
+and prints one line (silenced only by `--log-level error`):
+
+```text
+cc_server: code_mode=available (cc_codemode 0.1.0 quickjs-ng 0.16.2 protocol 2; 16 scripts at once, at most 12 per workspace; up to 64 more runners kept for scripts waiting on a person; heap at most 1024 MiB per script)
+cc_server: code_mode=unavailable (<reason>) — runs on this host get no repl tool; scripts never run without full lockdown
+```
+
+`unavailable` means the program cannot lock itself down on this host, for example in a
+container whose security profile refuses one of its steps, or that it is not a release
+build. The server runs normally, no run gets `repl`, and the workspace's code mode
+settings show the reason.
+
+The server keeps checking while it runs. When the program fails to start for a reason
+that is not the script's, the server runs the self-test again, at most once a minute. If
+that fails, the server prints the `unavailable` line with its reason and runs no scripts:
+runs that start meanwhile get no `repl`, and a run that already has it calls its tools
+directly ([When scripts cannot run](/manual/concepts/code-mode/#when-scripts-cannot-run)).
+It keeps checking, at most once a minute, and when the self-test passes again it prints
+the `available` line and runs scripts again. Only a self-test that failed at start needs
+a restart. The reason the workspace's settings show has host paths removed; the log line
+has it whole.
+
+The two code mode flags bound what scripts may use.
+`--code-mode-max-processes` caps the scripts running at once across every workspace
+(default twice the processor cores, at most 16; accepted 1–64). With a cap of 2 or more,
+one workspace uses at most the cap less a quarter of it, so no single workspace can take
+every place, and waiting scripts are admitted in turn across workspaces. A script waiting
+for a person's approval or answer gives its place to another script and starts no tool
+call until it is answered; up to four times the cap of such waiting scripts are kept, at
+most three quarters of them from one workspace, and each can still compute within its own
+processor-time limit.
+`--code-mode-max-heap-mb` is the most memory any one script may use.
+
+A value these flags do not accept (a number out of range, or not a number) stops the
+server at start (exit code `78`) with a message naming the accepted values. It is never
+read as the default.
 
 ## Subcommands
 
@@ -242,6 +297,7 @@ newer version, or when its identity file cannot be read.
 | `backups/exports/`                | Single-workspace exports, `<workspaceId>-<timestamp>.db`                        |
 | `backups/transfer/`               | Staging for backup downloads and uploads; swept by the route that writes it     |
 | `models/`                         | On-device embedding, diarization and speech models                              |
+| `codemode/`                       | A development copy of the code mode runner, installed by `scripts/natives/build_codemode.sh`; release bundles carry it in `bin/codemode/` |
 | `meetings/<meetingId>/`           | Retained meeting audio                                                          |
 | `rigs/images/`                    | Imported rig disk images (the QEMU desktop surface)                             |
 | `rigs/smolvm/<rigId>/`            | Per-rig microVM runtime state (the broker secret, `0600`)                       |

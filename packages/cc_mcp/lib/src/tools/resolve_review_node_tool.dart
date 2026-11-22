@@ -27,6 +27,15 @@ class ResolveReviewNodeTool extends McpTool {
   @override
   String get name => 'resolve_review_node';
 
+  /// `agent_id` names the calling agent, never a target: forced from the
+  /// call scope, so a run cannot act as another agent.
+  @override
+  Set<String> get forcedScopeKeys => const {'agent_id'};
+
+  @override
+  String get resultNote =>
+      '{node_message_id, status, previous_status, resolved_by: string}.';
+
   @override
   String get description =>
       'Marks a review node finding as fixed. Call this after actually making '

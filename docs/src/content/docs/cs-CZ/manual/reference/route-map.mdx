@@ -2,7 +2,7 @@
 title: Mapa tras
 description: Každá trasa, kterou Control Center registruje, s její obrazovkou a parametry dotazu.
 slug: cs-CZ/prirucka/referencni-prirucka/mapa-tras
-sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
+sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
 ---
 
 ## Shell aplikace
@@ -40,6 +40,12 @@ Cesty níže vynechávají prefix `/workspaces/:workspaceId`.
 | `/pipelines`                            | —                                  | Seznam běhů pipeline                                                                                                                                                         |
 | `/pipelines/run`                        | `?templateId=<id>`                 | Ruční spouštěč běhu                                                                                                                                                          |
 | `/pipelines/:runId`                     | —                                  | Detail běhu pipeline (časová osa kroků)                                                                                                                                      |
+| `/goals` | — | Seznam cílů seskupený na čekající na kontrolu, otevřené a ukončené |
+| `/goals/:goalId` | `?edit=contract` | Jeden cíl: teď, co znamená hotovo, ověření, plány a probuzení; `edit=contract` otevře editor kontraktu u pozastaveného cíle |
+| `/schedules` | — | Plány a sledování seskupené podle stavu, s **Nový plán** |
+| `/schedules/:ruleId` | — | Jeden plán: poznámka, podrobnosti, nedávná probuzení a běhy |
+| `/improvements` | — | Návrhy vylepšení seskupené podle stavu |
+| `/improvements/:proposalId` | — | Jeden návrh: co se mění, důkazy, vyhodnocení a rozhodnutí |
 | `/plans`                                | —                                  | Přehled Plan Studio: aktivní plány, dokumenty plánů, playbooky                                                                                                              |
 | `/plans/:kind/:id`                      | —                                  | Plan Studio pro jeden plán; `kind` je `orchestration` nebo `document`                                                                                                       |
 | `/meetings`                             | —                                  | Seznam schůzek                                                                                                                                                               |
@@ -99,6 +105,7 @@ Cesty nastavení jsou členěné podle **rozsahu** — `you/`, `workspace/`, `se
 | `/settings/workspace/skills`       | Konfigurace dovedností                                                                                   |
 | `/settings/memory`                 | Paměť pracovního prostoru: fakta, politiky, graf znalostí                                                |
 | `/settings/workspace/permissions`  | Oprávnění agentů: matice guardrailů a sonda Co kdyby?                                                    |
+| `/settings/workspace/schedules` | Limity plánů, časové pásmo pro cron plány a přehled a jak dlouho čekají běhy spuštěné serverem na odpověď (správci upravují; členové čtou) |
 | `/settings/pipelines`              | Šablony pipeline                                                                                         |
 | `/settings/pipelines/:templateId`  | Editor šablony pipeline (plátno s přetahováním)                                                          |
 

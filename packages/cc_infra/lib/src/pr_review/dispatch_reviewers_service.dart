@@ -6,6 +6,7 @@ import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/review_space_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/core/domain/services/slugify.dart';
+import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/ports/dispatch_reviewers_port.dart';
@@ -88,6 +89,7 @@ class DispatchReviewersService implements DispatchReviewersPort {
     required String spaceId,
     required String workspaceId,
     required List<Map<String, dynamic>> reviewers,
+    required String? startedByRunId,
     int? concurrency,
     String? cohortBrief,
   }) async {
@@ -184,6 +186,10 @@ class DispatchReviewersService implements DispatchReviewersPort {
               spaceId: spaceId,
               agentId: spec.agentId,
               prompt: brief,
+              wakeContext: WakeContext(
+                wakeReason: WakeReason.assignment,
+                startedByRunId: startedByRunId,
+              ),
             );
             dispatched.add({
               'role': spec.role,

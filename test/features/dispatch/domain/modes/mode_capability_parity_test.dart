@@ -606,7 +606,6 @@ final Set<String> _knownToolNames = {
   planModeExitVerb,
   planModeClarifyVerb,
   // Named in prompts as forbidden, so they must be recognized to be checked.
-  'hire_agent',
   'delegate_ticket',
   'create_ticket',
   'list_pull_requests',

@@ -1,0 +1,63 @@
+---
+title: Agenti spolupracují
+description: Jak se agenti navzájem ptají, předávají si práci a jsou probuzeni s odpovědí, a kde vidíte, na čem jeden agent čeká od druhého.
+slug: cs-CZ/prirucka/navody/agenti-spolupracuji
+sourceHash: 36bb45cd480fb45d0380e8fd651845c59a7debcb
+---
+
+Agenti v pracovním prostoru se mohou navzájem ptát, konzultovat specialistu, žádat o posouzení, posílat zprávy nebo delegovat ticket. Nic z toho nevyžaduje, aby agent seděl a čekal: agent, který se zeptal, může pokračovat, nebo ukončit svůj tah, a když odpověď přijde, je probuzen ve své vlastní konverzaci.
+
+## Dotaz jinému agentovi
+
+Agent se ptá pomocí `ask_agent`, a to jedním ze dvou způsobů:
+
+- **Čekat** (výchozí): agent je blokován, dokud nepřijde odpověď, ve výchozím nastavení nejvýše 600 sekund a nejvýše 1 800.
+- **Na pozadí**: volání se hned vrátí a agent pracuje dál.
+
+V obou případech se otázka nejdřív zapíše, než je doručena. Když odpověď nepřišla v rámci volání, žadatel je probuzen přesně jednou, s odpovědí, až skončí běh druhého agenta: odpovězeno, selhalo, nebo vypršelo po 24 hodinách bez odpovědi. Po cestě může každou z těchto zpráv dostat nejvýše jednou: že druhý agent slíbil odpověď, že čeká na osobu, nebo že se zastavil na limitu využití. Žádná z nich se za odpověď nepočítá.
+
+`consult_agent` (přivede nejlépe sedícího specialistu), `request_peer_review` (druhý pohled na nález posouzení) a `send_to_agent` (jednosměrná zpráva) fungují přes stejnou frontu. `send_to_agent` říká, zda byl druhý agent probuzen, zda zpráva čeká za jeho současným během, nebo proč byla odmítnuta.
+
+Druhý agent čte dotaz jako informaci od jiného agenta, nikdy jako pokyn, který musí splnit, a nemůže spustit slash příkaz.
+
+## Předávání práce
+
+- **Delegovaný ticket** (`delegate_task`) probudí agenta, který ho delegoval, v konverzaci, ze které delegoval, až se ticket dořeší.
+- **Běh člena týmu**, který vedoucí spustil pomocí `@mention` nebo zprávy, probudí vedoucího, v konverzaci, ze které člena probudil, až skončí. (Na otázku odpovídá její odpověď a na delegovaný ticket jeho ticket.)
+- **Worker na pozadí** v režimu ředitele (`/vibe`) předá svůj výsledek řediteli, zatímco ředitel pracuje dál.
+- **`@mention`** agenta a ověřovatel prostoru se doručují stejným způsobem, jako probuzení.
+
+Agent se může podívat, co dělá jiný agent, aniž by se ho ptal: `agent_activity` ukáže stav druhého agenta, jeho aktuální nástroj a jeho poslední zprávy, a nikoho neprobudí.
+
+## Limity
+
+Server tyto limity vynucuje, ať říkají agenti cokoli:
+
+| Limit | Hodnota |
+| --- | --- |
+| Jak hluboko může řetěz dotazů a předávání jít | 3 |
+| Cykly (agent se ptá toho, kdo přes ostatní čeká na něj) | Odmítnuto |
+| Čekající dotazy na jednoho ptajícího se agenta | 10 |
+| Čekající dotazy na jednoho dotazovaného agenta | 20 |
+| Stejná otázka stejnému agentovi znovu | Odmítnuto do 10 minut |
+| Zprávy mezi jednou dvojicí agentů | 10 za minutu |
+| Délka zprávy nebo odpovědi | 16 384 znaků |
+
+Delegování také respektuje autonomii a rozpočet ptajícího se agenta: agent nemůže předat práci jinému s větší autonomií nebo větším rozpočtem, než má sám. Zpráva, kterou pošlete sami, se takto nikdy neomezuje.
+
+Když se dotazovaný agent zastaví na limitu využití u poskytovatele, jeho běh počká na reset, pokud reset přijde dřív, než dotaz vyprší. Jinak dotaz okamžitě selže a žadatel je informován proč.
+
+## Podívejte se, na co agent čeká
+
+V konverzaci sekce **Dotazy** v panelu **Obecné** vypisuje dotazy, které agenti položili: komu, jakého druhu (**Otázka**, **Konzultace** nebo **Kontrola**), kdy, a jejich stav (**Čeká**, **Odpovězeno**, **Selhalo**, **Vypršelo** nebo **Zrušeno**), s **Slíbila odpověď** nebo **Na pozadí** tam, kde to platí. Neúspěšný dotaz říká proč, například **Její běh se zastavil na limitu využití u poskytovatele.**
+
+Kdokoli s přístupem k prostoru může **Zrušit dotaz**. Ptající se agent pak není probuzen a běh druhého agenta se nezastaví.
+
+Odpovědi, zprávy a dokončená práce, které čekají na agenta, se objeví také v pruhu nad vstupním polem, spolu s ostatními, na které čeká (viz [Plány a probuzení](/cs-CZ/prirucka/navody/plany-a-probuzeni/#podívejte-se-co-čeká)).
+
+## Viz také
+
+- [Delegujte práci agentům](/cs-CZ/prirucka/navody/delegovani-ticketu/)
+- [Sestavte tým agentů](/cs-CZ/prirucka/navody/sestaveni-tymu-agentu/)
+- [Řiďte workery na pozadí](/cs-CZ/prirucka/navody/rizeni-workeru-na-pozadi/)
+- [Nástroje MCP: zprávy mezi agenty a delegování](/cs-CZ/prirucka/referencni-prirucka/nastroje-mcp/#zprávy-mezi-agenty-a-delegování)

@@ -2,7 +2,7 @@
 title: Domeingebeurtenissen
 description: Volledige catalogus van de 54 domeingebeurtenissen, hun payloads en de abonnees aan de serverkant die ze consumeren.
 slug: nl-NL/handleiding/referentie/domeingebeurtenissen
-sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
+sourceHash: f58123448c0f31c95774bbaebee89f1509940896
 ---
 
 ## Gebeurtenissenbus
@@ -24,7 +24,10 @@ Elke gebeurtenis in de catalogus hieronder woont in die ene map; er zijn nergens
 | Gebeurtenis         | Payload                                                | Wordt gepubliceerd wanneer                               |
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | Werkruimte wordt aangemaakt                             |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Agent rondt een run af (geslaagd of mislukt)            |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | De processtroom van de agent eindigt, voordat de eindtoestand is geschreven. Alleen bewaard voor de PR-gesprekbrug en analytics |
+| `AgentRunSettled` | `agentId`, `workspaceId`, `runId`, `status`, `endReason`, `costMicros`, `wakeIds`, `spaceId?`, `conversationId?`, `limitResetsAt?`, `requestedByUserId?`, `wakeReason?` | De eindtoestand van een run is geschreven; per run precies één keer gepubliceerd. `endReason` is `completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` of `serverStopped`. De run van een subagent publiceert er geen |
+| `GoalSettled` | `goalId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `status`, `hold?`, `summary?`, `requestedByUserId?` | Een doel eindigt, of begint te wachten op de review van een persoon |
+| `WakeRuleEnded` | `ruleId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `reason`, `requestedByUserId?` | Een schema of bewaking eindigt (één keer aangeroepen, verlopen, het aantal runs of de kosten op, geannuleerd, het doel is geëindigd, de persoon is vertrokken) |
 | `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | Een agent begint op een mens te wachten: een goedkeuring, een `ask_user`-vraag of een run die stilstaat op inloggegevens (`kind` is `approval`, `question` of `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Een repo wordt geregistreerd; start code-indexering op de achtergrond |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Een skill wordt geïnstalleerd of bijgewerkt, met het oordeel van de toeleveringsketenscan erbij |
@@ -57,6 +60,16 @@ Alle zes dragen `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle` en
 | `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | Iemand vermeldde je in een PR-opmerking of reviewopmerking                |
 | `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | Iemand antwoordde in een reviewthread waarin je zit                           |
 | `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | Iemand markeerde een reviewthread waarin je zit als opgelost                  |
+
+### De pull-requestbewaking
+
+Gepubliceerd door de poller van open pull requests voor elke pull request die hij pollt, wie hem ook schreef, voor de `on:pr_*`-bewakingen van agenten. Alle drie dragen `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `headRef` en `authorLogin`.
+
+| Gebeurtenis | Aanvullende payload | Wordt gepubliceerd wanneer |
+| ----------------------- | ----------------------------------------------- | ---------- |
+| `PrWatchChecksSettled` | `passing`, `failedChecks`, `failedCheckUrl?` | Elke controle van de head van de pull request is afgerond |
+| `PrWatchReviewActivity` | `decision`, `decisionChanged`, `newComments` | De pull request kreeg een review of nieuwe opmerkingen |
+| `PrWatchClosed` | `merged` | De pull request is samengevoegd of gesloten |
 
 ## Berichtengebeurtenissen
 
@@ -167,14 +180,20 @@ Elke abonnee hieronder wordt geconstrueerd in `runCcServer` (of in een service d
 | Provisioneren van chatruimtes (inline) | `SpaceCreated`                                                                                    |
 | `PipelineTriggerDispatcher`         | Elke `DomainEvent`; elke ingeschakelde trigger filtert op zijn eigen type                            |
 | `SubPipelineResumeListener`         | `PipelineRunCompleted`, `PipelineRunFailed`                                                          |
-| `PipelineCostRollupListener`        | `AgentRunCompleted`                                                                                  |
-| `BudgetEvaluationListener`          | `AgentRunCompleted`                                                                                  |
+| `PipelineCostRollupListener`        | `AgentRunSettled`                                                                                    |
+| `BudgetEvaluationListener`          | `AgentRunSettled`                                                                                    |
 | `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (alleen runs van `meeting_summary`) |
-| `PipelineStepResumeListener`        | `AgentRunCompleted`                                                                                  |
-| `AgentRunTaskCompleter`             | `AgentRunCompleted`                                                                                  |
-| `GoalSupervisor`                    | `AgentRunCompleted`                                                                                  |
-| `CheckerDispatchListener`           | `AgentRunCompleted`                                                                                  |
-| `TeamRoutingService`                | `AgentRunCompleted`, `TicketAssigned`                                                                |
+| `PipelineStepResumeListener`        | `AgentRunSettled`                                                                                    |
+| `AgentRunTaskCompleter`             | `AgentRunSettled`                                                                                    |
+| `GoalSupervisor`                    | `AgentRunSettled` — bepaalt de volgende stap van het doel                                            |
+| `CheckerDispatchListener`           | `AgentRunSettled` — zet de checker in de wachtrij als wekbeurt; slaat doelsegmenten en reviews over  |
+| `TeamRoutingService`                | `AgentRunSettled`, `TicketAssigned`                                                                  |
+| `WakeQueueService` | `AgentRunSettled` — levert wekbeurten af die wachtten tot de run eindigde |
+| `WakeRuleService` | `AgentRunSettled` (zelf-getimede lussen), `GoalSettled` (beëindigt de schema's van een doel), `PrWatch*`, `EnvironmentProcessExited`, `EnvironmentReady`, het eindigen van tickets en pipeline-runs (bewakingen), `WorkspaceMemberRemoved` (beëindigt de schema's van die persoon) |
+| `PeerAskService` | `AgentRunSettled` — beslecht vragen die agenten elkaar stelden en wekt de vrager |
+| `LimitParkService` | `AgentRunSettled` met `usageLimit` — wacht op de reset door de provider |
+| `ImprovementReviewService` | `GoalSettled` (een geverifieerd doel) en `AgentRunSettled` — zet de verbeteringsreview in de wachtrij en leest het resultaat |
+| Pipeline-doelstap (`goal.pursue`) | `GoalSettled`, `AgentRunSettled`, `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` — hervat de stap, belast de orkestratie en volgt de pipeline-run |
 | `OrchestrationRunListener`          | `PipelineRunCancelled`, `PipelineRunFailed`                                                          |
 | `MultiVendorTicketSyncCoordinator`  | `TicketCreated`, `TicketAssigned`, `TicketReassigned`, `TicketStatusChanged`, `TicketDetailsUpdated` |
 | `WorktreeGcListener`                | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`         |
@@ -234,6 +253,8 @@ elke `ask_user`-vraag. Eén wachtmoment is één gebeurtenis; er wordt niets
 gepubliceerd wanneer het wachten eindigt.
 
 De vijf categorieën voor eigen PR's dragen `forUserId` mee, zodat ze de auteur bereiken in plaats van iedereen in de werkruimte.
+
+Vijf frames voor langlopend werk, elk gericht aan de persoon die het aangaat (`for_user_id`): `notifications/goal_settled` (van `GoalSettled`), `notifications/wake_rule_ended` (van `WakeRuleEnded`), `notifications/improvement_proposed`, `notifications/pipeline_run_held` (een pipeline-run die bij het kostenplafond van zijn orkestratie is vastgehouden) en `notifications/waiting_digest` (eens per dag, wat op een persoon wacht). Elk draagt `notification_kind`: `notify` wordt `agentRunCompleted`, `question` en `review` worden `agentAwaitingInput`. Elk meldingsframe draagt nu `notification_kind`, en een frame met `quiet: true` (een schema dat eindigde, een doel dat eindigde) gaat naar het meldingscentrum zonder toast, geluid of luide push.
 
 `RemoteEventForwarder` stuurt daarnaast `TicketReassigned` door als `notifications/ticket_reassigned` en elke `TaskLifecycleEvent` als `notifications/task_<phase>`. Geen van beide komt overeen met een meldingscategorie — ze sturen live UI aan, niet het meldingencentrum. Lidmaatschapsgebeurtenissen worden niet als frames doorgestuurd: ze maken de cache van de forwarder ongeldig, en de sessiehosts laten de werkruimte-abonnementen van het verwijderde lid vallen.
 

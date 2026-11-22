@@ -2,7 +2,7 @@
 title: Usar el modo plan
 description: Cambia un espacio al modo plan, obtén un plan tipado y apruébalo para convertirlo en trabajo en ejecución.
 slug: es-MX/manual/guias/modo-plan
-sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
+sourceHash: accf49606e5e8597d3ea76e3274f08d3854996dc
 ---
 
 Esta guía te muestra cómo obtener un plan estructurado de un agente antes de que
@@ -121,11 +121,7 @@ siguiente llamada del agente a `exit_plan_mode` pasa el espacio del modo plan al
 modo agente y desbloquea sus herramientas que mutan. Un rechazo le permite abrir
 una solicitud nueva contra un plan revisado.
 
-Para salir del modo plan, cambia el desplegable del compositor (o Shift+Tab), o
-aprueba el plan enviado. `exit_plan_mode` abre una aprobación duradera que se decide
-con la herramienta MCP `decide_approval`. La superposición de barandillas para las
-llamadas de herramientas bloqueadas es otra cola, en memoria, y no transporta
-solicitudes de salida del modo plan.
+Para salir del modo plan, cambia el desplegable del compositor (o Shift+Tab), o aprueba el plan enviado. `exit_plan_mode` abre una aprobación duradera, que una ejecución de agente decide con la herramienta MCP `decide_approval`. La superposición de barandillas para las llamadas de herramientas bloqueadas es otra cola, en memoria, y no transporta solicitudes de salida del modo plan.
 
 ## El modo plan en un paso de pipeline
 

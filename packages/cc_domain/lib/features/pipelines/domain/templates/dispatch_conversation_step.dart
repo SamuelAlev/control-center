@@ -1,4 +1,5 @@
 import 'package:cc_domain/core/domain/value_objects/output_contract_mode.dart';
+import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
 import 'package:cc_domain/core/logging/cc_domain_log.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_dispatch_port.dart';
 import 'package:cc_domain/features/dispatch/domain/prompts/output_contract_prompt.dart';
@@ -210,6 +211,12 @@ Future<StepResult> dispatchConversationStep({
       workspaceId: workspaceId,
       pipelineRunId: ctx.pipelineRunId,
       pipelineStepId: ctx.stepId,
+      wakeContext: WakeContext(
+        wakeReason: WakeReason.pipelineStep,
+        // A step's run is the pipeline's, never an agent's direct dispatch.
+        startedByRunId: null,
+        pipelineRunId: ctx.pipelineRunId,
+      ),
       // The member the run acts for, from the engine-written trigger payload
       // only (never step state, which an agent's output can write).
       requestedByUserId: switch (ctx.triggerPayload?[kPipelineRequestedByKey]) {

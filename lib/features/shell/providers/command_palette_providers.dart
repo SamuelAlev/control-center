@@ -94,6 +94,27 @@ class _NavigationCommandSource implements CommandSource {
         onExecute: () => router.go(nav(pipelinesRoute)),
       ),
       CommandItem(
+        id: 'goals',
+        label: l10n.goalsTitle,
+        icon: AppIcons.target,
+        category: l10n.categoryNavigation,
+        onExecute: () => router.go(nav(goalsRoute)),
+      ),
+      CommandItem(
+        id: 'schedules',
+        label: l10n.schedulesTitle,
+        icon: AppIcons.calendarClock,
+        category: l10n.categoryNavigation,
+        onExecute: () => router.go(nav(schedulesRoute)),
+      ),
+      CommandItem(
+        id: 'improvements',
+        label: l10n.improvementsTitle,
+        icon: AppIcons.lightbulb,
+        category: l10n.categoryNavigation,
+        onExecute: () => router.go(nav(improvementsRoute)),
+      ),
+      CommandItem(
         id: 'plans',
         label: l10n.plansTitle,
         icon: AppIcons.fileText,

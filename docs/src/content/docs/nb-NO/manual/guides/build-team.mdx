@@ -2,7 +2,7 @@
 title: Bygg et agentteam
 description: Grupper agenter under en leder, slik at tildelt arbeid rutes gjennom én koordinator.
 slug: nb-NO/handbok/slik-gjor-du/bygg-agentteam
-sourceHash: fc5e2b8c8a49e398ff1b322fcfb25c4aed84bbb4
+sourceHash: 55add2d16bf90650b7d4cbda7aa78f0fdf1b72e2
 ---
 
 Denne veiledningen viser hvordan du oppretter et team, gir det en leder og ruter arbeid til det.
@@ -51,7 +51,7 @@ Når en sak faktisk har en teamtildeling:
 
 1. Teamets leder sendes ut med saken, driftsinstruksjonene og medlemslisten.
 2. Lederen delegerer til medlemmene og registrerer vurderingen sin med verktøyet `record_team_activity` — `action` (delegert), `no_action` (ingenting mer å gjøre, noe som stopper videre gjenutløsninger) eller `failed`.
-3. Hver medlemskjøring som fullføres, vekker lederen på nytt, begrenset av no-action-vakten.
+3. En medlemskjøring lederen startet med en `@mention` eller en melding, vekker lederen igjen når den avsluttes, i samtalen lederen vekte den fra, avgrenset av vakten mot «ingen handling». Arbeid lederen overlot med `delegate_task`, vekker den når saken er avgjort, og et spørsmål den stilte med `ask_agent`, vekker den med svaret (se [Agenter som samarbeider](/nb-NO/handbok/slik-gjor-du/agenter-samarbeider/)).
 
 Pipeline-noden **Team dispatch** er det andre inngangspunktet. Den tar en team-id, en prompt og en utsendingsmodus:
 

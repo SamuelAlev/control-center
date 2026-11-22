@@ -4,6 +4,7 @@ import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_run_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_cost_rollup_listener.dart';
 import 'package:test/test.dart';
@@ -43,15 +44,23 @@ AgentRunLog _log({
   cost: RunCost(costMicros: costMicros, inputTokens: tokens),
 );
 
-AgentRunCompleted _event({
-  String? runId = 'log-1',
+AgentRunSettled _event({
+  String runId = 'log-1',
   String agentId = 'agent-1',
-  String? workspaceId = 'ws-1',
-}) => AgentRunCompleted(
+  String workspaceId = 'ws-1',
+}) => AgentRunSettled(
   agentId: agentId,
   workspaceId: workspaceId,
+  spaceId: null,
   conversationId: 'conv-1',
   runId: runId,
+  status: RunStatus.completed,
+  endReason: RunEndReason.completed,
+  costMicros: 0,
+  limitResetsAt: null,
+  wakeIds: const [],
+  requestedByUserId: null,
+  wakeReason: null,
   occurredAt: DateTime(2026),
 );
 
@@ -98,16 +107,6 @@ void main() {
       },
     );
 
-    test('event with null runId skips', () async {
-      logRepo.seed(_log(id: 'log-1'));
-
-      listener0().start();
-      eventBus.publish(_event(runId: null));
-      await Future<void>.delayed(Duration.zero);
-
-      expect(runRepo.costIncrements, isEmpty);
-    });
-
     test('run log with no pipelineRunId skips', () async {
       logRepo.seed(_log(id: 'log-1', pipelineRunId: null));
 
@@ -137,7 +136,7 @@ void main() {
       expect(runRepo.costIncrements, isEmpty);
     });
 
-    test('non-AgentRunCompleted events are ignored', () async {
+    test('non-AgentRunSettled events are ignored', () async {
       logRepo.seed(_log(id: 'log-1'));
       listener0().start();
 
@@ -171,7 +170,7 @@ void main() {
   });
 }
 
-// Minimal DomainEvent impl for testing non-AgentRunCompleted events.
+// Minimal DomainEvent impl for testing non-AgentRunSettled events.
 class _OtherEvent implements DomainEvent {
   const _OtherEvent();
 

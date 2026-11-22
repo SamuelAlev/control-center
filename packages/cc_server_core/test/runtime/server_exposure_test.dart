@@ -25,6 +25,16 @@ void main() {
     expect(line, endsWith(' sandbox=native'));
   });
 
+  test('the relay URL, the operator text, is shown printable', () {
+    final line = describeServerExposure(
+      config(['--signaling-url', 'wss://relay.example/\u202E\x1B[2Jx']),
+      ownerUserId: null,
+      hostExecution: HostExecutionPosture.sandboxed,
+    );
+    expect(line, contains(r'relay=wss://relay.example/\u{202E}\u{001B}[2Jx'));
+    expect(line, isNot(matches(RegExp('[\x00-\x1F\x7F\u202E]'))));
+  });
+
   test('a network bind without TLS names the plaintext listener', () {
     final line = describeServerExposure(
       config(['--bind', 'any', '--insecure']),

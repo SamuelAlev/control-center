@@ -2,11 +2,16 @@ import 'dart:async';
 
 import 'package:cc_domain/cc_domain.dart' show JsonRpcRequest;
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
+import 'package:cc_domain/features/code_mode/domain/value_objects/code_execution_status.dart';
+import 'package:cc_domain/features/code_mode/domain/value_objects/script_approval_budget.dart';
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
 import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
 import 'package:cc_mcp/src/mcp_tool_dispatcher.dart';
 import 'package:cc_mcp/src/tools/ask_user_tool.dart';
 import 'package:test/test.dart';
+
+import '../code_mode_fakes.dart';
+import 'result_note_expect.dart';
 
 class _RecordingPort implements AgentQuestionPort {
   _RecordingPort(this._answer);
@@ -120,6 +125,76 @@ void main() {
       });
       expect(result.isError, isTrue);
       expect(result.content.single.text, contains('timed out'));
+    });
+  });
+
+  group('AskUserTool from a script', () {
+    test('resolves to the structured answer, carries the origin and holds '
+        "the script's clock", () async {
+      final port = _RecordingPort(
+        const AgentQuestionAnswer(
+          selectedLabels: ['Blue'],
+          freeText: 'and red',
+        ),
+      );
+      final tool = AskUserTool(port: port);
+      expect(tool.waitsOnPerson, isTrue);
+      expect(tool.outputSchema['required'], ['selected', 'text', 'skipped']);
+      final dispatcher = McpToolDispatcher(registry: McpToolRegistry([tool]));
+      final waits = <bool>[];
+      final outcome = await dispatcher.callNested(
+        runScope(),
+        nestedRequest(
+          'ask_user',
+          arguments: {'question': 'Which colour?'},
+          onPersonWait: waits.add,
+        ),
+        approvals: ScriptApprovalBudget(),
+      );
+      expect(outcome.status, NestedCallStatus.completed);
+      expect(outcome.value, {
+        'selected': ['Blue'],
+        'text': 'and red',
+        'skipped': false,
+      });
+      expectNotedObject(
+        tool.resultNote,
+        outcome.value,
+        required: {'selected', 'text', 'skipped'},
+      );
+      expect(waits, [true, false]);
+      expect(port.seen!.origin?.parentToolCallId, 'toolu_parent');
+      expect(port.seen!.conversationId, 'conv-1');
+    });
+
+    test('a question nobody answers rejects', () async {
+      final dispatcher = McpToolDispatcher(
+        registry: McpToolRegistry([AskUserTool(port: _RecordingPort(null))]),
+      );
+      final outcome = await dispatcher.callNested(
+        runScope(),
+        nestedRequest('ask_user', arguments: {'question': 'Which?'}),
+        approvals: ScriptApprovalBudget(),
+      );
+      expect(outcome.status, NestedCallStatus.failed);
+      expect(outcome.errorMessage, startsWith('No answer'));
+    });
+
+    test('a direct call has no origin', () async {
+      final port = _RecordingPort(const AgentQuestionAnswer(skipped: true));
+      final result = await AskUserTool(port: port).call({
+        'workspace_id': 'ws1',
+        'space_id': 'space1',
+        'conversation_id': 'conv1',
+        'question': 'Which?',
+      });
+      expect(result.isError, isFalse);
+      expect(result.structured, {
+        'selected': <String>[],
+        'text': null,
+        'skipped': true,
+      });
+      expect(port.seen!.origin, isNull);
     });
   });
 }

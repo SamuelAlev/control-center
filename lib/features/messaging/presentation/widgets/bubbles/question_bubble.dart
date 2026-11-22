@@ -1,10 +1,12 @@
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_question_metadata.dart';
+import 'package:cc_domain/core/domain/value_objects/script_call_origin.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/ask_user/ask_user_card.dart';
 import 'package:control_center/features/messaging/presentation/widgets/ask_user/ask_user_summary.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/bubble_shared.dart';
+import 'package:control_center/features/messaging/presentation/widgets/script_origin_line.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -111,6 +113,7 @@ class _QuestionBubbleState extends ConsumerState<QuestionBubble> {
     final count = _meta['questionCount'];
     final answered = _answered;
     final expired = _expired;
+    final origin = ScriptCallOrigin.fromJson(_meta['origin']);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: answered != null || expired
@@ -128,6 +131,17 @@ class _QuestionBubbleState extends ConsumerState<QuestionBubble> {
               multiSelect: _meta['multiSelect'] == true,
               questionIndex: index is int ? index : int.tryParse('$index'),
               questionCount: count is int ? count : int.tryParse('$count'),
+              originLine: origin == null
+                  ? null
+                  : ScriptOriginLine(
+                      origin: origin,
+                      onShow: () => showScriptCall(
+                        ref,
+                        spaceId: widget.message.spaceId,
+                        conversationId: widget.message.conversationId,
+                        toolCallId: origin.parentToolCallId,
+                      ),
+                    ),
               submitting: _submitting,
               onSubmit: _submit,
               expiresAt: widget.message.questionExpiresAt,

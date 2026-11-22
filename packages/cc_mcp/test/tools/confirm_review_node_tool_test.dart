@@ -10,14 +10,15 @@ import 'package:cc_domain/features/messaging/domain/entities/space_participant.d
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/message_page.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dart';
+import 'package:cc_mcp/src/mcp_script_surface.dart';
 import 'package:cc_mcp/src/tools/confirm_review_node_tool.dart';
 import 'package:test/test.dart';
 
-class _FakeMessagingRepository implements MessagingRepository {
+import 'result_note_expect.dart';
 
+class _FakeMessagingRepository implements MessagingRepository {
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
   @override
   Future<void> archiveSpace(String workspaceId, String spaceId) async {}
 
@@ -316,6 +317,22 @@ void main() {
           jsonDecode(result.content.first.text) as Map<String, dynamic>;
       expect(data['confirmed_by'], contains('a-2'));
       expect(data['confirmation_count'], 1);
+      final value =
+          asScriptSees(nestedResultValue(result))! as Map<String, Object?>;
+      expectNotedObject(
+        tool.resultNote,
+        value,
+        required: {
+          'node_message_id',
+          'confirmed_by',
+          'confirmation_count',
+          'status',
+        },
+      );
+      expect(value['node_message_id'], isA<String>());
+      expect(value['confirmed_by'], isA<List<Object?>>());
+      expect(value['confirmation_count'], isA<int>());
+      expect(value['status'], isA<String>());
     });
 
     test('moves to consensus_ready on first peer confirmation', () async {

@@ -1,9 +1,10 @@
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/cc_domain.dart';
-import 'package:cc_domain/features/dispatch/domain/entities/agent_goal_run.dart';
+import 'package:cc_domain/features/dispatch/domain/repositories/goal_run_view.dart';
 import 'package:cc_domain/features/plan_studio/domain/entities/plan_document.dart';
 import 'package:cc_domain/features/plan_studio/domain/services/plan_document_compiler.dart';
 import 'package:cc_remote/providers.dart';
+import 'package:cc_remote/work_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// A subscription always names the active workspace explicitly; changing
@@ -61,26 +62,24 @@ final phonePlanStepsProvider = StreamProvider.autoDispose
     });
 
 final phoneWorkspaceGoalsProvider = StreamProvider.autoDispose
-    .family<List<AgentGoalRun>, String>((ref, workspaceId) {
-      final client = ref.watch(rpcClientProvider).value;
+    .family<List<GoalRunView>, String>((ref, workspaceId) {
+      final repo = ref.watch(phoneGoalRunsRepositoryProvider);
       final active = ref.watch(activeWorkspaceIdProvider).value;
-      if (client == null || active != workspaceId) return const Stream.empty();
-      return RpcAgentGoalRunRepository(client).watchForWorkspace(workspaceId);
+      if (repo == null || active != workspaceId) return const Stream.empty();
+      return repo.watchForWorkspace(workspaceId);
     });
 
 /// One conversation's goals, over the conversation watch rather than the
-/// workspace inventory.
+/// workspace inventory. Each carries the server's per-viewer `canResume`.
 final phoneConversationGoalsProvider = StreamProvider.autoDispose
-    .family<List<AgentGoalRun>, ({String workspaceId, String conversationId})>((
+    .family<List<GoalRunView>, ({String workspaceId, String conversationId})>((
       ref,
       key,
     ) {
-      final client = ref.watch(rpcClientProvider).value;
+      final repo = ref.watch(phoneGoalRunsRepositoryProvider);
       final active = ref.watch(activeWorkspaceIdProvider).value;
-      if (client == null || active != key.workspaceId) {
+      if (repo == null || active != key.workspaceId) {
         return const Stream.empty();
       }
-      return RpcAgentGoalRunRepository(
-        client,
-      ).watchForConversation(key.workspaceId, key.conversationId);
+      return repo.watchForConversation(key.workspaceId, key.conversationId);
     });

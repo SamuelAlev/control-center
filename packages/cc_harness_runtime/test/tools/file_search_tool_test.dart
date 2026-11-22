@@ -56,6 +56,16 @@ void main() {
     expect(result.content, isNot(contains('readme.md')));
   });
 
+  test('returns its hits as a structured value', () async {
+    final result = await tool().execute({'query': 'readme'}, ctx);
+    expect(result.content, 'readme.md');
+    expect(result.structured, {
+      'files': [
+        {'path': 'readme.md', 'is_directory': false},
+      ],
+    });
+  });
+
   test('reports no matches cleanly', () async {
     final result = await tool().execute({'query': 'zzznomatch'}, ctx);
     expect(result.isError, isFalse);

@@ -1,0 +1,143 @@
+---
+title: Forfølg et mål
+description: Gi en agent et mål den arbeider videre på over kjøringer og omstarter, definer hva ferdig betyr, og avgjør når den er ferdig.
+slug: nb-NO/handbok/slik-gjor-du/forfolg-et-mal
+sourceHash: 0ea77964bd9e3044e168624bc67325de0fd1d1e5
+---
+
+Et mål er arbeid en agent holder på med til hva ferdig betyr er oppfylt. Agenten arbeider i **segmenter**: avgrensede kjøringer som serveren starter etter hverandre, på tvers av omstarter, til målet er verifisert, en person lukker det, eller det når en grense. Agenten kan ikke lukke et mål ved å si at den er ferdig. Serveren kjører målets sjekker, og en kontrollagent ser på resultatet først.
+
+## Start et mål
+
+Skriv `/goal` og målet i samtalens skrivefelt:
+
+```text
+/goal --budget 20 --days 2 --check "make test" make the importer handle files over 2 GB
+```
+
+Når du skriver `/goal` med tekst først, åpnes målintervjuet. Det spør etter suksesskriterier, sjekkene som må bestå, avgrensninger og stoppvilkår, og tilbyr en egen kontrollagent, å starte hvert segment på nytt og å la agenten svare på egne spørsmål. Hvert steg kan hoppes over.
+
+| Flagg | Betydning |
+| --- | --- |
+| `--budget <dollars>` | Hva hele målet kan bruke. 50 dollar som standard |
+| `--max <N>` | Flest segmenter målet kan ta. Ingen grense som standard |
+| `--days <N>` | En frist, så mange dager fra nå |
+| `--check "<command>"` | En kommando som må bestå før målet kan fullføres, kjøres i worktree. Gjenta for flere, høyst 5 |
+| `--checker <agent>` | En annen agent som gjennomgår påstanden om at målet er ferdig, etter navn eller id |
+| `--fresh` | Start hvert segment uten samtalens historikk, kun fra målet og dets notater |
+| `--unattended wait` eller `--unattended assume` | Hva som skjer med agentens spørsmål når ingen svarer (se [Når ingen svarer](#når-ingen-svarer)) |
+
+- Flagg kan stå hvor som helst i meldingen. Et ukjent flagg, et gjentatt flagg, en ugyldig verdi og mer enn 5 sjekker avvises, og utkastet ditt blir i skrivefeltet med årsaken under.
+- Et tall i begynnelsen av målet er en del av målet. For å sette en grense for segmenter, bruk `--max`.
+- `/goal` leses bare i en melding du skriver selv. Den samme teksten fra en agent, en pipeline eller en vekking er en vanlig melding.
+- En agent arbeider med ett mål om gangen i et arbeidsområde. Et nytt `/goal` for samme agent avvises mens det første er aktivt.
+
+### Hva ferdig betyr
+
+Målet kan ha seksjoner som blir målets kontrakt:
+
+```text
+/goal make the importer handle files over 2 GB
+
+## Success criteria
+- A 3 GB fixture imports without running out of memory
+- The progress bar reaches 100%
+
+## Boundaries
+- Don't change the public API
+
+## Stop conditions
+- A migration would drop data
+
+## Checks
+- `make test` (300 s)
+- environment task `test` (600 s)
+```
+
+- **Suksesskriterier**: høyst 12, hver på høyst 300 tegn. Hvert av dem er noe en gjennomgang kan bekrefte.
+- **Sjekker**: høyst 5. En sjekk kjøres i worktree eller som en navngitt oppgave i områdets [miljø](/nb-NO/handbok/slik-gjor-du/miljoer/). Hver har 300 sekunder som standard og høyst 1,800.
+- En seksjon over grensen avvises, aldri kuttes.
+
+Et mål uten kriterier lar agenten avgjøre når den er ferdig, og et mål uten sjekk stoler bare på gjennomgang. Målsiden sier det.
+
+## Hvordan et mål fortsetter
+
+Hvert segment er en kjøring begrenset til 5 dollar eller det som er igjen av budsjettet, det som er lavest. Etter hvert segment avgjør serveren hva som kommer neste, ut fra hva segmentet gjorde:
+
+- **Det gjorde fremdrift.** Neste segment starter.
+- **Den venter på noe den satte i gang**: en tidsplan, en overvåking, et spørsmål til en annen agent eller en delegert sak. Målet venter på den. Hvis ingenting kommer, ser serveren igjen etter 20 minutter, deretter 40, 80, 160 og hvert 240. minutt. Kortet viser **Venter på det den satte i gang · ser igjen innen** et tidspunkt.
+- **Det gjorde ingen fremdrift.** Fremdrift betyr at worktree endret seg gjennom segmentets eget arbeid, sjekklisten endret seg, eller agenten gjorde noe nytt. Etter 3 segmenter uten fremdrift settes målet på pause: **Ingen fremdrift i de siste segmentene.**
+- **Den ventet for lenge.** Etter 24 timer med venting, eller 6 ventinger på nye ting den satte i gang uten fremdrift mellom, settes målet på pause: **Venter, etter segmenter uten fremdrift.**
+- **Det mislyktes.** Serveren prøver på nytt etter 30 sekunder, deretter lengre, opptil 15 minutter. Etter 3 mislykkede forsøk på rad mislykkes målet.
+- **Den spurte en person.** Målet holder til noen svarer: **Trenger en person**.
+
+Målet stopper også ved budsjettet (**Budsjett brukt opp**), segmentgrensen eller fristen.
+
+## Når agenten sier at den er ferdig
+
+Agenten hevder at målet er ferdig, med bevis for hvert kriterium. Deretter:
+
+1. **Serveren kjører sjekkene** i en sandkasse, aldri direkte på serverens maskin. En sjekk som avslutter med en annen kode enn null, mislykkes. En sjekk som ikke kan kjøres i det hele tatt (kommando ikke funnet, ikke kjørbar, en miljøoppgave som ikke finnes) er ødelagt: målet stopper for en person med **Denne sjekken kan ikke kjøres:** og kommandoen. Uten sandkasse på serveren stopper målet med **Ingen sandkasse er tilgjengelig for å kjøre sjekkene.** (En server der eieren har slått av sandkasser for alle kjøringer er unntaket: sjekkene kjører der slik agentens egne kommandoer gjør.) Når ingenting i worktree har endret seg siden en sjekk mislyktes, kjøres den ikke på nytt.
+2. **Kontrollagenten ser på resultatet**, når alle sjekkene bestod eller det ikke finnes noen. Kontrollagenten er målets kontrollagent, ellers områdets kontrollagent, ellers målets egen agent. Den kjører skrivebeskyttet uten samtalens historikk: den kan lese filer og utdata fra sjekkene, men kan ikke endre noe, kjøre kommandoer eller vekke andre agenter. Den får også hele diffen av testene og sjekkskriptene agenten endret, og den behandler det agenten skrev i samtalen og i sine notater som påstander, ikke som bevis. For et mål uten kriterier vurderer den målet som helhet. Den svarer at målet er ferdig, ikke ferdig, eller at den ikke kan avgjøre det.
+3. **Ferdig**: målet fullføres. **Ikke ferdig**: agenten får kontrollagentens funn og fortsetter å arbeide. Etter 3 runder som ikke er ferdig, eller når kontrollagenten ikke kan avgjøre det, venter målet på deg: **Venter på gjennomgang: den sier at den er ferdig, og ingenting har bekreftet det**.
+
+En melding du skriver mens kontrollagenten kjører, blir ikke gitt til kontrollagenten og sendes ikke når gjennomgangen avsluttes. Den blir satt i kø for agentens neste segment. Når intet segment følger, holdes den for deg under **Send holdte meldinger**.
+
+En kontrollagent som ikke kan kjøres (slettet, eller på en adapter som ikke kan holde en kjøring skrivebeskyttet, som en ACP-agent) setter målet på pause: **Kontrollagenten er utilgjengelig. Velg en annen, og fortsett deretter.** Ingen annen agent trer inn uten deg.
+
+En kontrollagent hos en annen leverandør enn målets agent deler sjeldnere dens blinde flekker. Uten en egen kontrollagent gjennomgår agenten sitt eget arbeid, og målet registrerer **Verifisert av seg selv (ingen egen kontrollagent)**.
+
+## Følg et mål
+
+- **I samtalen**: målkortet i panelet **Generelt** viser hva som holder det tilbake, segmentet, forbruk mot budsjettet, tid igjen, hva ferdig betyr, sjekkene og siste dom.
+- **Målsiden**: sidemenyen → **Mål**. Mål er gruppert som **Venter på gjennomgang**, **Åpne** og **Avsluttet**.
+- **Siden for målet**: åpne et mål for å se **Nå** (segmenter, forbruk, frist, antall uten fremdrift og hva som skjer videre), **Hva ferdig betyr**, **Verifisering** (siste runde: påstanden, hver sjekk med utdata, gjennomgangen per kriterium) og **Tidsplaner og vekkinger**. Hvert mål har sin egen adresse (`/workspaces/<workspace>/goals/<goal id>`), så du kan dele en lenke.
+
+På telefonen starter målskjermen et mål med sjekker og en segmentgrense, og viser de samme målene og hva som holder dem tilbake.
+
+## Endre eller stopp et mål
+
+| Handling | Hvem kan |
+| --- | --- |
+| **Sett mål på pause**, **Stopp mål** | Alle med tilgang til området |
+| **Fortsett mål**, **Øk budsjett** | Bare personen som startet målet (en arbeidsområdeadministrator for et mål ingen startet) |
+| **Rediger** hva ferdig betyr, **Bytt kontrollagent** | Bare personen som startet målet (en arbeidsområdeadministrator for et mål ingen startet), med skrivetilgang til områdets repositorier, mens målet er på pause |
+| **Godkjenn fullføring** | Alle med tilgang til området, mens målet venter på gjennomgang. Et mål en pipeline startet: bare personen som startet den kjøringen (en arbeidsområdeadministrator når ingen gjorde det) |
+
+- Å trykke **Stopp** på agentens kjøring setter målet på pause (**Pauset av en person**). Ventende vekkinger venter til du fortsetter det.
+- **Godkjenn fullføring** avslutter målet som ferdig på ditt ord. Målet registrerer **Lukket av en person uten bestått sjekk**.
+- Et mål som brukte opp budsjettet, fortsetter bare med et høyere budsjett.
+- Når personen som startet et mål forlater arbeidsområdet, settes målet på pause for gjennomgang med en gang, og den kjørende agenten stoppes. Ingen kan gjenoppta det; alle med tilgang til området kan stoppe det. Det daglige sammendraget lister det for arbeidsområdeadministratorene.
+
+## Når ingen svarer
+
+Når et segment stiller en person et spørsmål eller ber om en godkjenning og ingen svarer, venter forespørselen 72 timer som standard. Deretter regnes en godkjenning som avslått, et spørsmål som ubesvart, og målet settes på pause: **Et spørsmål eller en godkjenningsforespørsel til en person ble ubesvart.** Kjøringen som spurte får ikke flere svar: alt annet den spør om avvises med en gang, og den fullfører det den kan. En arbeidsområdeadministrator setter tiden (1 time til 7 dager) under **Innstillinger → Arbeidsområde → Tidsplaner → Når ingen svarer**. Én gang om dagen, på klokkeslettet som er satt der, får du ett sammendrag av alt som venter på deg.
+
+Med `--unattended assume` sier agenten hva den antar, og fortsetter etter 10 minutter uten svar, når stoppvilkårene tillater det. Dette gjelder bare spørsmål. En godkjenning antas aldri, og en gjennomgang antar aldri noe.
+
+## Bruksgrenser og omstarter
+
+- **En leverandørs bruksgrense.** Når et segment stopper ved en leverandørs bruksgrense og leverandøren sier når den nullstilles (innen 7 dager), settes målet på pause uten å telle som et mislykket forsøk: **Pauset ved bruksgrensen · fortsetter** et tidspunkt. Det fortsetter 30 sekunder etter nullstillingen. Etter 8 slike pauser venter målet på deg: **Det traff bruksgrenser for ofte. Se over det, og fortsett deretter.** Enhver fortsettelse starter tellingen på nytt. ACP-agenter rapporterer ingen nullstilling, så målene deres venter ikke ved en grense.
+- **En omstart av serveren.** Et mål overlever en omstart. Et segment som omstarten avbrøt, startes på nytt, og målets tidsplaner og ventende vekkinger beholdes.
+
+## Forbedringer etter et mål
+
+Etter at et mål består verifisering, kan en kort skrivebeskyttet gjennomgang (høyst 1 dollar) foreslå forbedringer: et minnefaktum, en policy, et notat om agenten, eller en endring i en skill. Skriv `/refine` for å be om samme gjennomgang av samtalens arbeid. Høyst én gjennomgang kjører per samtale hvert 20. minutt.
+
+Forslag vises på siden **Forbedringer** (sidemenyen → **Forbedringer**). Åpne et forslag for å se hva det endrer, grunnlaget, og **Godta**, **Avvis** eller **Rull tilbake**.
+
+- Et forslag endrer ingenting før noen godtar det. Det utløper etter 30 dager.
+- En endring i en skill, eller i en policy for hele arbeidsområdet, krever en arbeidsområdeadministrator (**En administrator avgjør**).
+- En endring av en skill lagres som en egen revisjon. Trykk **Kjør evaluering** for å sammenligne den med den gjeldende skillen; **Godta** er mulig først etter at en evaluering besto. En evaluering består når den kjørte fullt ut, og agenten løste minst like mange kjøringer med endringen som med den gjeldende skillen; siden viser begge tallene. Hvis skillen endres etter evalueringen, kjør den på nytt.
+- **Rull tilbake** gjenoppretter den tidligere teksten, så lenge ingen har endret den siden.
+
+## I en pipeline
+
+En pipeline kan starte et mål med steget **Pursue a goal** (`goal.pursue`). Steget venter til målet slutter, og gir videre sammendraget og dommen. Se [Pipeline-stegtyper](/nb-NO/handbok/referanse/pipeline-steg/).
+
+## Se også
+
+- [Tidsplaner og vekkinger](/nb-NO/handbok/slik-gjor-du/tidsplaner-vekkinger/)
+- [Agenter som samarbeider](/nb-NO/handbok/slik-gjor-du/agenter-samarbeider/)
+- [Administrer kostnader](/nb-NO/handbok/slik-gjor-du/administrer-kostnader/)
+- [Skråstrekkommandoer](/nb-NO/handbok/referanse/skrastrekkommandoer/)

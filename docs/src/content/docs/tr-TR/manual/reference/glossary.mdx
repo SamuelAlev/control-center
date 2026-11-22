@@ -2,7 +2,7 @@
 title: Sözlük
 description: Control Center genelinde kullanılan temel terimlerin tanımları.
 slug: tr-TR/kilavuz/referans/sozluk
-sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
+sourceHash: ba09880357171a4fcbb82201798578de3856cbe6
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -36,7 +36,13 @@ export const glossaryTerms = [
 ['Rig', 'Bir ajanın gerçek zamanlı olarak yönettiği atılabilir bir makine: kapalı bir tarayıcı ya da Linux masaüstü, ana makine tarafından yönetilen bir Android emülatörü ya da iOS Simülatörü veya kapalı bir terminal. Kendi tam çözünürlüklü kanalından canlı izlenir ve devralma sunucu tarafında uygulanır. Bir konuşmaya kapsamlıdır; böylece insan sekmesi ile ajan aracı tek bir makineyi adresler.'],
 ['Enclosure', 'VM destekli rig’lerin sahip olduğu daha güçlü yalıtım özelliği: bir çekirdek sınırı, tek kullanımlık overlay diski, varsayılan olarak reddeden ağ kapısı ve kimlik bilgisi broker’ı. Android ve iOS rig’leri atılabilirdir, ancak ana makine tarafından yönetilen ağ kullanır; bu yüzden bu sınırı talep etmezler. Herhangi bir rig’i yönetmek enclosureControl koruma sınıfını kullanır.'],
 ['RunCost', 'Tek bir ajan çalıştırması için jeton/maliyet dökümü (girdi jetonları, çıktı jetonları, mikrodolar cinsinden tahmini maliyet).'],
-['WakeReason', 'Bir ajanın neden gönderildiği. Altı değer: kullanıcı iletisi, bilet ataması, bir arızanın ardından kurtarma amaçlı yeniden gönderim, alt biletin tamamlanması, zamanlanmış takip kalp atışı ve pipeline adımı.'],
+['WakeReason', 'Bir ajan çalıştırmasının neden var olduğu. Bir kişinin mesajı, bir bilet atanması ya da bir pipeline adımı; ya da sunucunun kendiliğinden başlattığı bir çalıştırma için uyandırmasının nedeni: bir zamanlama, bir izleme, bir hedefin bölümü, kontrolü ya da incelemesi, başka bir ajanın mesajı ya da yanıtı, tamamlanan alt iş, sıfırlanmış bir kullanım sınırı, bir iyileştirme incelemesi ya da yeniden başlatmadan sonra kurtarma.'],
+['Uyandırma', 'Çalışma alanının veritabanında tutulan, bir konuşmada bir ajanın çalıştırmasını başlatmak ya da sürdürmek için kalıcı bir istek; bir neden ve adına hareket edilen kişiyle birlikte. Sunucunun birisi yazmadan başlattığı her çalıştırma bir uyandırma olarak başlar; uyandırmalar yeniden başlatmadan sonra da kalır.'],
+['Hedef', 'Bir ajanın bölümler halinde üzerinde çalışmayı sürdürdüğü iş; sunucu tamamlanmanın ne anlama geldiğinin karşılandığını doğrulayana ya da bir kişi kapatana kadar. /goal ile başlatılır; ajan başına aynı anda bir tane. Ajan tamamlandığını iddia eder; kontroller ve salt okunur bir inceleme karar verir.'],
+['Zamanlama', 'Bir ajanı bir zamanda, bir aralıkta, bir cron ile ya da ajanın kendi temposunda uyandıran; bitişi, çalıştırma sınırı ve maliyet sınırı olan bir kural. /loop, /schedule, Zamanlamalar sayfası ya da ajanın wake_me aracıyla oluşturulur.'],
+['İzleme', 'Bir şey olduğunda bir ajanı uyandıran kural: bir pull request’in kontrolleri biter, bir inceleme alır ya da birleştirilir, bir ortam görevi çıkar, bir bilet sonuçlanır ya da bir pipeline çalıştırması biter.'],
+['Soru', 'Bir ajanın bir başkasına sorduğu soru; iletilmeden önce kaydedilir. Soran, yanıtla ya da neden yanıt olmadığıyla bir kez uyandırılır.'],
+['İyileştirme önerisi', 'Doğrulanmış bir hedeften sonra ya da /refine üzerine bir incelemenin önerdiği; bellekte, bir politikada, bir ajan notunda ya da bir skill’de yapılacak değişiklik. Bir kişi kabul edene kadar hiçbir şeyi değiştirmez; bir skill değişikliği önce değerlendirilir.'],
 ['SandboxPort', 'Sandbox yaşam döngüsünü yönetir (probe, launch, events, exec, destroy).'],
 ['CredentialBrokerPort', 'Sandbox başlatması için kapsamlı kimlik bilgileri üretir (bir ajanın ortamı için tek depoluk bir token, yazma yalnızca sunucu tarafındaki push yolu için) ve sökme sırasında bunları serbest bırakır.'],
 ['GitRepoInspectorPort', 'Yerel bir Git depo yolundan üst veriyi (sahip, depo, dal) çıkarır.'],
@@ -94,6 +100,11 @@ export const glossaryTerms = [
 ['Kurulum kimliği', 'Bir sunucunun tek bir Connect adresine karşı kimliği; kurulum anahtarından türetilir. Connect sunuculara kurulum kimliğine göre izin verir; anahtarı değiştirmek kimliği değiştirir ve herkesin Connect hatlarındaki oturumunu kapatır.'],
 ['Kurulum bağlaması', 'Connect’in, bir Slack ekibinin bağlı olduğu tek sunucuya dair kaydı (install_binding). GitHub kurulumlarının böyle bir kaydı yoktur: bir üyenin oturum açtığı herhangi bir sunucu bunları kullanabilir.'],
 ['Oturum açma hattı', 'Bir sağlayıcının tarayıcıda oturum açması: github, google, linear, linear_app ya da slack. Kendi uygulamalarıyla bir hat, kendi uygulaması tamamen yapılandırılmışsa onda çalışır, değilse kullanılamaz; bir Connect seçildiyse hattı Connect çalıştırır. İkisi de birbirine geri dönmez.'],
+['Kod modu', 'Çalıştırmanın diğer araçlarını çağıran bir JavaScript betiği çalıştıran repl aracı. Sunucu betik çalıştırabildiğinde her çalıştırmada bulunur; bunun bir ayarı yoktur.'],
+['Doğrudan araç', 'Her istekte şemasıyla birlikte, repl olsun ya da olmasın, bir çalıştırmanın adıyla çağırdığı araç: dosya ve kabuk araçları, ask_user, task, görev listesi, bellek araması, send_message ve modun kendi fiilleri.'],
+['Yalnızca betik aracı', 'Doğrudan kümenin dışında olan ve repl bulunan bir çalıştırmanın yalnızca bir betikten çağırabildiği araç; sunucu çalıştırmanın betiklerini çalıştıramadığında bunun yerine ilk kullanımda yüklenir. Bu olana dek açıklaması modele asla ulaşmaz.'],
+['Kod modu runner’ı', 'cc_codemode, kendini işletim sisteminin denetimleriyle kilitledikten sonra bir betiği QuickJS-NG motorunda çalıştıran, sunucuyla birlikte paketlenmiş program. Bu program olmadan sunucu başlamaz ve yalnızca yayın derlemesiyse ve kilitlemesi tamamlanmışsa betik çalıştırır.'],
+['Kod çalıştırması', 'Tek bir betiğin kaydı: kaynağı, çıktısı, sınırları ve yaptığı her araç çağrısı; çalışma alanında tutulur ve Gözlemlenebilirlik → Kod çalıştırmaları altında listelenir.'],
 ];
 
 <StructuredData
@@ -157,7 +168,19 @@ export const glossaryTerms = [
 
 **RunCost**: Tek bir ajan çalıştırması için jeton/maliyet dökümü (girdi jetonları, çıktı jetonları, mikrodolar cinsinden tahmini maliyet).
 
-**WakeReason**: Bir ajanın neden gönderildiği. Altı değer: kullanıcı iletisi, bilet ataması, bir arızanın ardından kurtarma amaçlı yeniden gönderim, alt biletin tamamlanması, zamanlanmış takip kalp atışı ve pipeline adımı.
+**WakeReason**: Bir ajan çalıştırmasının neden var olduğu. Bir kişinin mesajı, bir bilet atanması ya da bir pipeline adımı; ya da sunucunun kendiliğinden başlattığı bir çalıştırma için uyandırmasının nedeni: bir zamanlama, bir izleme, bir hedefin bölümü, kontrolü ya da incelemesi, başka bir ajanın mesajı ya da yanıtı, tamamlanan alt iş, sıfırlanmış bir kullanım sınırı, bir iyileştirme incelemesi ya da yeniden başlatmadan sonra kurtarma.
+
+**Uyandırma**: Çalışma alanının veritabanında tutulan, bir konuşmada bir ajanın çalıştırmasını başlatmak ya da sürdürmek için kalıcı bir istek; bir neden ve adına hareket edilen kişiyle birlikte. Sunucunun birisi yazmadan başlattığı her çalıştırma bir uyandırma olarak başlar; uyandırmalar yeniden başlatmadan sonra da kalır.
+
+**Hedef**: Bir ajanın bölümler halinde üzerinde çalışmayı sürdürdüğü iş; sunucu tamamlanmanın ne anlama geldiğinin karşılandığını doğrulayana ya da bir kişi kapatana kadar. `/goal` ile başlatılır; ajan başına aynı anda bir tane. Ajan tamamlandığını iddia eder; kontroller ve salt okunur bir inceleme karar verir.
+
+**Zamanlama**: Bir ajanı bir zamanda, bir aralıkta, bir cron ile ya da ajanın kendi temposunda uyandıran; bitişi, çalıştırma sınırı ve maliyet sınırı olan bir kural. `/loop`, `/schedule`, Zamanlamalar sayfası ya da ajanın `wake_me` aracıyla oluşturulur.
+
+**İzleme**: Bir şey olduğunda bir ajanı uyandıran kural: bir pull request’in kontrolleri biter, bir inceleme alır ya da birleştirilir, bir ortam görevi çıkar, bir bilet sonuçlanır ya da bir pipeline çalıştırması biter.
+
+**Soru**: Bir ajanın bir başkasına sorduğu soru; iletilmeden önce kaydedilir. Soran, yanıtla ya da neden yanıt olmadığıyla bir kez uyandırılır.
+
+**İyileştirme önerisi**: Doğrulanmış bir hedeften sonra ya da `/refine` üzerine bir incelemenin önerdiği; bellekte, bir politikada, bir ajan notunda ya da bir skill’de yapılacak değişiklik. Bir kişi kabul edene kadar hiçbir şeyi değiştirmez; bir skill değişikliği önce değerlendirilir.
 
 ## Portlar
 
@@ -258,6 +281,20 @@ export const glossaryTerms = [
 **Review axis**: İnceleme başına beş puanlama şeridinden biri: `correctness`, `security` ve `testGap` inceleyici bulgularından alınır; `visual` ve `apiContract` ise belirleyicidir. Kapılanan eksenler karara katılır ve onu yalnızca daha ağır yapabilir — `partial` ya da `unavailable` bir kapı, kararı geçirmek yerine askıda tutar.
 
 **Review verdict**: `ship`, `hold` veya `block`. Güveni ≥ 0.7 olan herhangi bir P0 bulgusu block verir; diğer herhangi bir P0 ya da herhangi bir P1 hold verir; aksi hâlde ship. Kapılanan ve başarısız olan bir eksen block’u zorlar ve bulgular tarafından alt edilemez.
+
+## Kod modu
+
+**Kod modu**: Bir ajan çalıştırmasının diğer araçlarını çağıran ve yalnızca ajanın ihtiyaç duyduğunu döndüren bir JavaScript betiği çalıştıran `repl` aracı. Sunucu betik çalıştırabildiğinde her çalıştırmada bulunur; bunun bir ayarı yoktur. **Ayarlar → Çalışma alanı → Kod modu** sunucunun betik çalıştırıp çalıştırmadığını gösterir ve bir betiğin altında çalıştığı sınırları belirler. Bkz. [Kod modu](/tr-TR/kilavuz/kavramlar/kod-modu/).
+
+**Doğrudan araç**: Her istekte şemasıyla birlikte, `repl` olsun ya da olmasın, bir çalıştırmanın adıyla çağırdığı araç: dosya ve kabuk araçları, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` ve modun kendi fiilleri.
+
+**Yalnızca betik aracı**: Doğrudan kümenin dışında olan ve `repl` bulunan bir çalıştırmanın yalnızca bir betikten çağırabildiği araç; sunucu çalıştırmanın betiklerini çalıştıramadığında bunun yerine ilk kullanımda yüklenir ([Betikler çalıştırılamadığında](/tr-TR/kilavuz/kavramlar/kod-modu/#betikler-çalıştırılamadığında)). Bu olana dek açıklaması modele asla ulaşmaz ve doğrudan bir çağrı, onu bir betikten nasıl çağıracağı yanıtıyla karşılanır. Bir betiğin çağıramayacağı bir araç asla yalnızca betik aracı değildir: ilk kullanımda yüklenir.
+
+**İç içe çağrı**: Bir betiğin yaptığı araç çağrısı. Doğrudan bir çağrıyla aynı mod filtresinden, korumalardan ve onaydan geçer.
+
+**Kod modu runner’ı**: `cc_codemode`, sunucuyla birlikte paketlenen ve kendini **kilitleme**sinden sonra tek bir betiği QuickJS-NG motorunda çalıştıran program. Bu program olmadan sunucu başlamaz ve yalnızca yayın derlemesiyse ve kilitlemesi tamamlanmışsa betik çalıştırır.
+
+**Kod çalıştırması**: Tek bir betiğin kaydı: kaynağı, çıktısı, sınırları ve yaptığı her araç çağrısı; çalışma alanında tutulur ve **Gözlemlenebilirlik → Kod çalıştırmaları** altında listelenir.
 
 ## Filo ve eval’ler
 

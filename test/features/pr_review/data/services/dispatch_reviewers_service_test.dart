@@ -618,6 +618,7 @@ void main() {
       seedWorkspaceAndAgents();
 
       final result = await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -639,6 +640,7 @@ void main() {
       seedWorkspaceAndAgents();
 
       final result = await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -657,6 +659,7 @@ void main() {
       seedWorkspaceAndAgents();
 
       await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -672,6 +675,7 @@ void main() {
       seedWorkspaceAndAgents();
 
       await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -689,6 +693,7 @@ void main() {
       seedWorkspaceAndAgents();
 
       final result = await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -712,6 +717,7 @@ void main() {
       seedWorkspaceAndAgents();
 
       await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -741,6 +747,7 @@ void main() {
         );
 
         await sut0().dispatch(
+          startedByRunId: null,
           spaceId: 'ch-1',
           workspaceId: 'ws-1',
           reviewers: [
@@ -756,6 +763,7 @@ void main() {
       seedWorkspaceAndAgents();
 
       await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -776,6 +784,7 @@ void main() {
       reviewSpaces = _FakeReviewSpaces(assocs: [_assoc()]);
 
       await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -798,6 +807,7 @@ void main() {
         unawaited(workspaces.upsert(_workspace(reviewConcurrency: 5)));
 
         final result = await sut0().dispatch(
+          startedByRunId: null,
           spaceId: 'ch-1',
           workspaceId: 'ws-1',
           reviewers: [
@@ -814,6 +824,7 @@ void main() {
       unawaited(workspaces.upsert(_workspace(reviewConcurrency: 5)));
 
       final result = await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -839,6 +850,7 @@ void main() {
       // No workspace seeded
 
       final result = await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -867,6 +879,7 @@ void main() {
       reviewSpaces = _FakeReviewSpaces(assocs: [_assoc()]);
 
       await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-custom',
         reviewers: [
@@ -891,6 +904,7 @@ void main() {
       );
 
       await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -911,6 +925,7 @@ void main() {
       );
 
       await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -925,6 +940,7 @@ void main() {
       seedWorkspaceAndAgents();
 
       await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -942,6 +958,7 @@ void main() {
       );
 
       await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -959,6 +976,7 @@ void main() {
       );
 
       await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -976,6 +994,7 @@ void main() {
       );
 
       await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -996,6 +1015,7 @@ void main() {
       seedWorkspaceAndAgents();
 
       final result = await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [],
@@ -1009,6 +1029,7 @@ void main() {
       seedWorkspaceAndAgents();
 
       final result = await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1025,6 +1046,7 @@ void main() {
       seedWorkspaceAndAgents();
 
       await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1041,6 +1063,7 @@ void main() {
       reviewSpaces = _FakeReviewSpaces(assocs: [_assoc()]);
 
       await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1087,6 +1110,7 @@ void main() {
         );
 
         await sut.dispatch(
+          startedByRunId: null,
           spaceId: 'ch-1',
           workspaceId: 'ws-1',
           reviewers: [
@@ -1117,6 +1141,7 @@ void main() {
 
       await expectLater(
         sut.dispatch(
+          startedByRunId: null,
           spaceId: 'ch-1',
           workspaceId: 'ws-1',
           reviewers: [
@@ -1137,6 +1162,7 @@ void main() {
       seedWorkspaceAndAgents();
 
       await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1154,6 +1180,7 @@ void main() {
       reviewSpaces = _FakeReviewSpaces(assocs: [_assoc()]);
 
       await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1202,6 +1229,7 @@ void main() {
         );
 
         await sut.dispatch(
+          startedByRunId: null,
           spaceId: 'ch-1',
           workspaceId: 'ws-1',
           reviewers: [
@@ -1223,6 +1251,7 @@ void main() {
       seedWorkspaceAndAgents();
 
       await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1247,6 +1276,7 @@ void main() {
       seedWorkspaceAndAgents();
 
       await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1262,6 +1292,7 @@ void main() {
       seedWorkspaceAndAgents();
 
       await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1280,6 +1311,7 @@ void main() {
       seedWorkspaceAndAgents();
 
       await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1296,6 +1328,7 @@ void main() {
       seedWorkspaceAndAgents();
 
       await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1329,6 +1362,7 @@ void main() {
         );
 
         final result = await sut0().dispatch(
+          startedByRunId: null,
           spaceId: 'ch-1',
           workspaceId: 'ws-1',
           reviewers: [
@@ -1351,6 +1385,7 @@ void main() {
       );
 
       final result = await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1372,6 +1407,7 @@ void main() {
       seedWorkspaceAndAgents(); // seeds flutter (a1) and go/rust (a2)
 
       final result = await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1397,6 +1433,7 @@ void main() {
       seedWorkspaceAndAgents();
 
       final result = await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [],
@@ -1415,6 +1452,7 @@ void main() {
       seedWorkspaceAndAgents();
 
       final result = await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1432,6 +1470,7 @@ void main() {
       seedWorkspaceAndAgents();
 
       final result = await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1449,6 +1488,7 @@ void main() {
       seedWorkspaceAndAgents();
 
       final result = await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1468,6 +1508,7 @@ void main() {
         seedWorkspaceAndAgents();
 
         final result = await sut0().dispatch(
+          startedByRunId: null,
           spaceId: 'ch-1',
           workspaceId: 'ws-1',
           reviewers: [
@@ -1520,6 +1561,7 @@ void main() {
       );
 
       final result = await sut0(matching: custom).dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1542,6 +1584,7 @@ void main() {
       final custom = _CustomMatching((candidates, role) => null);
 
       final result = await sut0(matching: custom).dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1566,6 +1609,7 @@ void main() {
       unawaited(workspaces.upsert(_workspace(reviewConcurrency: 10)));
 
       final result = await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1581,6 +1625,7 @@ void main() {
       seedWorkspaceAndAgents();
 
       final result = await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1601,6 +1646,7 @@ void main() {
 
       // Not specifying concurrency falls back to workspace default.
       final result = await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1631,6 +1677,7 @@ void main() {
       );
 
       final result = await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1658,6 +1705,7 @@ void main() {
       );
 
       final result = await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1676,6 +1724,7 @@ void main() {
       // No agents seeded at all.
 
       final result = await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1702,6 +1751,7 @@ void main() {
       );
 
       final result = await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1743,6 +1793,7 @@ void main() {
         );
 
         final result = await sut0().dispatch(
+          startedByRunId: null,
           spaceId: 'ch-1',
           workspaceId: 'ws-1',
           reviewers: [
@@ -1767,6 +1818,7 @@ void main() {
       seedWorkspaceAndAgents();
 
       await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1782,6 +1834,7 @@ void main() {
       seedWorkspaceAndAgents();
 
       await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1805,6 +1858,7 @@ void main() {
       reviewSpaces = _FakeReviewSpaces(assocs: [_assoc()]);
 
       await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1833,6 +1887,7 @@ void main() {
 
       // Should not throw — exception caught and repo path returned as null.
       await sut.dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1878,6 +1933,7 @@ void main() {
       );
 
       await sut.dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1897,6 +1953,7 @@ void main() {
       reviewSpaces = _FakeReviewSpaces(assocs: [_assoc()]);
 
       await sut0().dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [
@@ -1930,6 +1987,7 @@ void main() {
       );
 
       await sut2.dispatch(
+        startedByRunId: null,
         spaceId: 'ch-1',
         workspaceId: 'ws-1',
         reviewers: [

@@ -1,8 +1,12 @@
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
+import 'package:cc_domain/core/domain/value_objects/script_call_origin.dart';
+import 'package:cc_domain/features/code_mode/domain/value_objects/script_approval_budget.dart';
 import 'package:cc_domain/features/environments/domain/ports/environment_port.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_component.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_definition.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
+import 'package:cc_domain/features/guardrails/domain/services/policy_resolver.dart';
+import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_request.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/autonomy_level.dart';
 import 'package:cc_harness/tools.dart' show ActionClass;
@@ -16,6 +20,7 @@ const _caller = AgentEnvironmentCaller(
   spaceId: 'space-1',
   conversationId: 'conversation-1',
   runId: 'run-1',
+  scriptApprovals: [],
 );
 
 EnvironmentDefinition _passthroughDefinition(String maps) =>
@@ -132,12 +137,38 @@ class _Guard implements ActionGuardService {
     AutonomyLevel? autonomy,
     bool autonomyGated = true,
     Future<void>? withdrawn,
+    ScriptCallOrigin? origin,
+    void Function(bool waiting)? onPersonWait,
+    String? Function()? beforeCard,
+    String? executed,
   }) async {
     _harness.guarded.add(classes);
+    _harness.listeners.add(onPersonWait);
+    _harness.asked.add((summary: actionSummary, origin: origin));
     return _harness.allow
         ? const GuardVerdict.allow()
         : const GuardVerdict.deny('denied');
   }
+
+  /// What a caller holding a script's budget reads first: nothing asks.
+  @override
+  Future<ActionResolution> resolve({
+    required String workspaceId,
+    required Set<ActionClass> classes,
+    String? command,
+    String? spaceId,
+    String? agentId,
+    Mode mode = Mode.chat,
+    ActionRequest request = ActionRequest.empty,
+  }) async => const ActionResolution(
+    decision: ActionDecision.allow,
+    driving: PolicyResolution(
+      decision: ActionDecision.allow,
+      source: 'default',
+      reason: 'allowed',
+    ),
+    prompting: [],
+  );
 
   @override
   Object? noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -184,6 +215,12 @@ class _Harness {
   }
 
   final List<Set<ActionClass>> guarded = [];
+
+  /// The person-wait listener each check was handed.
+  final List<void Function(bool waiting)?> listeners = [];
+
+  /// The summary and script origin each check was handed.
+  final List<({String summary, ScriptCallOrigin? origin})> asked = [];
   final List<
     ({
       String binary,
@@ -196,6 +233,34 @@ class _Harness {
 }
 
 void main() {
+  group('person-wait listener', () {
+    test('the caller\'s listener reaches the guard; none means none', () async {
+      final h = _Harness()..allow = false;
+      void listener(bool waiting) {}
+      const plain = _caller;
+      final named = AgentEnvironmentCaller(
+        workspaceId: plain.workspaceId,
+        spaceId: plain.spaceId,
+        conversationId: plain.conversationId,
+        runId: plain.runId,
+        scriptApprovals: const [],
+        onPersonWait: listener,
+      );
+
+      final without = await h.gateway.handle(plain, 'cc-env', const ['up']);
+      final withIt = await h.gateway.handle(named, 'cc-env', const ['up']);
+
+      expect(h.listeners, hasLength(2));
+      expect(h.listeners[0], isNull);
+      expect(identical(h.listeners[1], listener), isTrue);
+      // The listener decides nothing.
+      expect(
+        (withIt.exitCode, withIt.stderr),
+        (without.exitCode, without.stderr),
+      );
+    });
+  });
+
   group('docker shim', () {
     bool allowed(List<String> argv) => validateComposeShim(argv) == null;
 
@@ -433,6 +498,30 @@ void main() {
           'ls',
         ]);
         expect(h.guarded.single, contains(ActionClass.hostExecution));
+      });
+
+      test('a command a script\'s process runs is checked with no script '
+          'origin, so it is not refused for its size', () async {
+        final scripted = AgentEnvironmentCaller(
+          workspaceId: _caller.workspaceId,
+          spaceId: _caller.spaceId,
+          conversationId: _caller.conversationId,
+          runId: _caller.runId,
+          scriptApprovals: [ScriptApprovalBudget()],
+        );
+        final long = 'x' * (20 * 1024);
+        await h.gateway.handle(scripted, 'docker', [
+          'compose',
+          'exec',
+          'web',
+          'echo',
+          long,
+        ]);
+
+        final asked = h.asked.single;
+        expect(asked.origin, isNull);
+        expect(asked.summary, contains(long));
+        expect(h.host.single.arguments, contains(long));
       });
     });
   });

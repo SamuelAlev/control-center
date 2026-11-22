@@ -57,7 +57,7 @@ void _scheduleWarmUps({
     afterReady.add(const Duration(seconds: 2), 'code-server warm-up', () async {
       CcHostLog.info(
         'cc_server: warming code-server (managed dir: '
-        '$dataDir/code-server)',
+        '${printableText(dataDir, max: 1024)}/code-server)',
       );
       await codeServerSessions.warmUp();
       CcHostLog.info('cc_server: code-server ready — embedded editor enabled');
@@ -94,7 +94,7 @@ void _scheduleWarmUps({
   if (!isDemo) {
     CcHostLog.info(
       'cc_server: ensuring on-device models (embedding + diarization + '
-      'speech) under $dataDir/models',
+      'speech) under ${printableText(dataDir, max: 1024)}/models',
     );
     unawaited(embeddingModelControl.install());
     unawaited(diarizationModelControl.install());

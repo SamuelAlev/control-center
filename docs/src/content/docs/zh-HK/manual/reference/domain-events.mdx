@@ -2,7 +2,7 @@
 title: 領域事件
 description: 全部 54 個領域事件的完整目錄、它們的載荷，以及消費這些事件的伺服器端訂閱方。
 slug: zh-HK/手冊/參考/領域事件
-sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
+sourceHash: f58123448c0f31c95774bbaebee89f1509940896
 ---
 
 ## 事件匯流排
@@ -28,7 +28,10 @@ JSON-RPC 訊框轉發出去，並依工作區成員關係逐一篩選每個訂�
 | 事件                | 載荷                                                   | 觸發時機                                                |
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | 建立工作區時                                            |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | 代理完成一次執行（成功或失敗）                          |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | 代理的程序串流結束，早於最終狀態寫入。僅保留給 PR 對話橋接與分析使用     |
+| `AgentRunSettled` | `agentId`, `workspaceId`, `runId`, `status`, `endReason`, `costMicros`, `wakeIds`, `spaceId?`, `conversationId?`, `limitResetsAt?`, `requestedByUserId?`, `wakeReason?` | 一次執行的最終狀態寫入後發佈；每次執行恰好發佈一次。`endReason` 為 `completed`、`error`、`stoppedByUser`、`budget`、`silence`、`usageLimit` 或 `serverStopped` 之一。子代理的執行不會發佈任何事件 |
+| `GoalSettled` | `goalId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `status`, `hold?`, `summary?`, `requestedByUserId?` | 目標結束，或開始等待人手審核時 |
+| `WakeRuleEnded` | `ruleId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `reason`, `requestedByUserId?` | 排程或監看結束（已觸發其一次、已過期、已用完其執行次數或成本、已取消、其目標已結束，或其所屬人員已離開） |
 | `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | 代理開始等待人手處理：一項核准、一個 `ask_user` 問題，或一次因憑證而被擱置的執行（`kind` 為 `approval`、`question` 或 `credential`） |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | 註冊程式庫時；會觸發背景程式碼索引                      |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | 安裝或更新技能時，並附帶其供應鏈掃描判定        |
@@ -63,6 +66,16 @@ PR 的訊號，每個都攜帶 `forUserId`，讓輪詢能把它們路由給相�
 | `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | 有人在 PR 留言或審查留言中提及你                                          |
 | `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | 有人在你所在的審查討論串中回覆                                                 |
 | `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | 有人將你所在的審查討論串標記為已解決                                           |
+
+### 拉取請求監看
+
+開啟中的拉取請求輪詢器，為它輪詢的每個拉取請求發佈，不論作者是誰，供代理的 `on:pr_*` 監看使用。三者都帶有 `workspaceId`、`repoOwner`、`repoName`、`prNumber`、`prTitle`、`headRef` 與 `authorLogin`。
+
+| 事件 | 額外載荷 | 觸發時機 |
+| ----------------------- | ----------------------------------------------- | ---------- |
+| `PrWatchChecksSettled` | `passing`, `failedChecks`, `failedCheckUrl?` | 拉取請求頭部提交的每項檢查都已完成 |
+| `PrWatchReviewActivity` | `decision`, `decisionChanged`, `newComments` | 拉取請求收到審查或新的留言 |
+| `PrWatchClosed` | `merged` | 拉取請求已合併或關閉 |
 
 ## 訊息事件
 
@@ -183,14 +196,20 @@ PR 的訊號，每個都攜帶 `forUserId`，讓輪詢能把它們路由給相�
 | 聊天空間佈建（內聯）                | `SpaceCreated`                                                                                       |
 | `PipelineTriggerDispatcher`         | 每個 `DomainEvent`；每個已啟用的觸發器會篩選自己的類型                                               |
 | `SubPipelineResumeListener`         | `PipelineRunCompleted`, `PipelineRunFailed`                                                          |
-| `PipelineCostRollupListener`        | `AgentRunCompleted`                                                                                  |
-| `BudgetEvaluationListener`          | `AgentRunCompleted`                                                                                  |
+| `PipelineCostRollupListener`        | `AgentRunSettled`                                                                                    |
+| `BudgetEvaluationListener`          | `AgentRunSettled`                                                                                    |
 | `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled`（僅限 `meeting_summary` 執行）   |
-| `PipelineStepResumeListener`        | `AgentRunCompleted`                                                                                  |
-| `AgentRunTaskCompleter`             | `AgentRunCompleted`                                                                                  |
-| `GoalSupervisor`                    | `AgentRunCompleted`                                                                                  |
-| `CheckerDispatchListener`           | `AgentRunCompleted`                                                                                  |
-| `TeamRoutingService`                | `AgentRunCompleted`, `TicketAssigned`                                                                |
+| `PipelineStepResumeListener`        | `AgentRunSettled`                                                                                    |
+| `AgentRunTaskCompleter`             | `AgentRunSettled`                                                                                    |
+| `GoalSupervisor`                    | `AgentRunSettled` — 決定目標的下一步                                                                         |
+| `CheckerDispatchListener`           | `AgentRunSettled` — 將審核代理排入佇列作為一次喚醒；略過目標的段與審核                                                        |
+| `TeamRoutingService`                | `AgentRunSettled`, `TicketAssigned`                                                                  |
+| `WakeQueueService` | `AgentRunSettled` — 傳遞等待該次執行結束的喚醒 |
+| `WakeRuleService` | `AgentRunSettled`（自我節奏循環）、`GoalSettled`（結束目標的排程）、`PrWatch*`、`EnvironmentProcessExited`、`EnvironmentReady`、工單與管線執行的結束事件（監看），以及 `WorkspaceMemberRemoved`（結束該人員的排程） |
+| `PeerAskService` | `AgentRunSettled` — 結算代理之間互相提出的問題，並喚醒提問者 |
+| `LimitParkService` | `AgentRunSettled` 且結束原因為 `usageLimit` — 等待供應商的重設 |
+| `ImprovementReviewService` | `GoalSettled`（已驗證的目標）與 `AgentRunSettled` — 排入改進審視並讀取其結果 |
+| 管線目標步驟（`goal.pursue`） | `GoalSettled`、`AgentRunSettled`、`PipelineRunCompleted`、`PipelineRunFailed`、`PipelineRunCancelled` — 恢復該步驟、把成本計入編排，並追蹤該管線執行 |
 | `OrchestrationRunListener`          | `PipelineRunCancelled`, `PipelineRunFailed`                                                          |
 | `MultiVendorTicketSyncCoordinator`  | `TicketCreated`, `TicketAssigned`, `TicketReassigned`, `TicketStatusChanged`, `TicketDetailsUpdated` |
 | `WorktreeGcListener`                | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`         |
@@ -254,6 +273,8 @@ PR 的訊號，每個都攜帶 `forUserId`，讓輪詢能把它們路由給相�
 
 五個自己提交的 PR 類別都攜帶 `forUserId`，因此它們會送達作者，而不是工作區內的
 每個人。
+
+長時間運行的工作有五種通知訊框，各自寄給與其相關的人（`for_user_id`）：`notifications/goal_settled`（由 `GoalSettled` 產生）、`notifications/wake_rule_ended`（由 `WakeRuleEnded` 產生）、`notifications/improvement_proposed`、`notifications/pipeline_run_held`（在其編排的成本上限處被保留的管線執行）與 `notifications/waiting_digest`（每天一次，列出等待人手處理的事項）。每個都帶有 `notification_kind`：`notify` 對應 `agentRunCompleted`，`question` 與 `review` 對應 `agentAwaitingInput`。現在每個會通知的訊框都攜帶 `notification_kind`，而帶有 `quiet: true` 的訊框（已結束的排程、已結束的目標）會送到通知中心，不會彈出提示、發出聲音或以響亮方式推送。
 
 `RemoteEventForwarder` 另外會把 `TicketReassigned` 轉發為
 `notifications/ticket_reassigned`，並把每個 `TaskLifecycleEvent` 轉發為

@@ -11,8 +11,11 @@ import 'package:cc_domain/features/memory/domain/services/memory_repo_scope_reso
 import 'package:cc_domain/testing/fake_repo_repository.dart';
 import 'package:cc_infra/src/embedding/embedding_model_manager.dart';
 import 'package:cc_infra/src/embedding/embedding_service.dart';
+import 'package:cc_mcp/src/mcp_script_surface.dart';
 import 'package:cc_mcp/src/tools/search_memory_tool.dart';
 import 'package:test/test.dart';
+
+import 'result_note_expect.dart';
 
 class _FakeFactRepository implements MemoryFactRepository {
   _FakeFactRepository(this._facts);
@@ -320,5 +323,69 @@ void main() {
       final decoded = jsonDecode(text) as Map<String, dynamic>;
       expect(decoded.containsKey('policies'), isTrue);
     });
+
+    test(
+      'what a script receives is the object its result note states',
+      () async {
+        final tool = SearchMemoryTool(
+          factRepository: _FakeFactRepository([_makeFact()]),
+          policyRepository: _OnePolicy(),
+          repoScope: MemoryRepoScopeResolver(FakeRepoRepository()),
+        );
+        final result = await tool.run({'workspace_id': 'ws1', 'query': 'JWT'});
+        final value =
+            asScriptSees(nestedResultValue(result))! as Map<String, Object?>;
+        expectNotedObject(
+          tool.resultNote,
+          value,
+          required: {'facts', 'policies'},
+          optional: {'hint'},
+        );
+        final fact = (value['facts']! as List).single as Map<String, Object?>;
+        expectNotedObject(
+          tool.resultNote,
+          fact,
+          required: {
+            'id',
+            'domain',
+            'domain_name',
+            'topic',
+            'content',
+            'repo',
+            'confidence',
+          },
+        );
+        for (final key in ['id', 'domain', 'domain_name', 'topic', 'content']) {
+          expect(fact[key], isA<String>(), reason: key);
+        }
+        expect(fact['confidence'], isA<num>());
+        expect(fact['repo'], anyOf(isNull, isA<String>()));
+        final policy =
+            (value['policies']! as List).single as Map<String, Object?>;
+        expectNotedObject(
+          tool.resultNote,
+          policy,
+          required: {'id', 'domain', 'domain_name', 'rule', 'repo'},
+        );
+        expect(policy['rule'], isA<String>());
+      },
+    );
   });
+}
+
+class _OnePolicy extends _FakePolicyRepository {
+  @override
+  Future<List<MemoryPolicy>> getActiveByWorkspace(
+    String workspaceId, {
+    String? domain,
+  }) async => [
+    MemoryPolicy(
+      id: 'p1',
+      workspaceId: workspaceId,
+      domain: 'test',
+      rule: 'Rotate keys.',
+      createdAt: DateTime(2025),
+      updatedAt: DateTime(2025),
+    ),
+  ];
 }

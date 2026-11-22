@@ -66,6 +66,12 @@ fail the whole run rather than resuming: a step suspended longer than 24 hours
 `human.gate` is not) and a non-idempotent step that was mid-flight when the
 server stopped.
 
+A **Pursue a goal** step is exempt from the 24-hour backstop too: it stays
+suspended while its goal works, and its page links to the goal. A whole run can
+also be **Suspended** because its orchestration reached its cost cap; the run
+page then shows what was spent of the cap and, to the run's requester,
+**Raise cap**.
+
 ## Inspect a step
 
 Select a node on the canvas. The step panel shows, in order:

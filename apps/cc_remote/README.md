@@ -22,7 +22,8 @@ fvm flutter test --platform chrome --concurrency=2 \
   test/rtl_locale_test.dart test/bottom_tabs_test.dart \
   test/agent_transcript_test.dart test/sent_attachments_test.dart \
   test/push_browser_test.dart test/settings_language_test.dart \
-  test/personal_connection_card_test.dart
+  test/personal_connection_card_test.dart test/code_mode_status_card_test.dart \
+  test/script_tree_test.dart
 ```
 
 The filesystem checks in `material_free_test.dart` cannot run on Chrome. Chrome currently ignores the concurrency option; retain the package cap in commands.

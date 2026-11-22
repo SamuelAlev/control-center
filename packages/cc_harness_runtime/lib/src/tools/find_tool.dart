@@ -20,6 +20,11 @@ class FindTool extends HarnessTool {
   String get name => 'find';
 
   @override
+  String get resultNote =>
+      '{files: string[] (newest first), total: number, truncated: '
+      'boolean}.';
+
+  @override
   String get description =>
       "Find files matching a glob pattern (e.g. '**/*.dart'). Returns paths "
       'sorted by modification time, newest first.';
@@ -47,6 +52,28 @@ class FindTool extends HarnessTool {
       },
     },
     'required': ['pattern'],
+  };
+
+  @override
+  Map<String, dynamic> get outputSchema => const {
+    'type': 'object',
+    'properties': {
+      'files': {
+        'type': 'array',
+        'items': {'type': 'string'},
+        'description':
+            'Matching paths relative to the base directory, newest first.',
+      },
+      'total': {
+        'type': 'integer',
+        'description': 'How many files matched, shown or not.',
+      },
+      'truncated': {
+        'type': 'boolean',
+        'description': 'Whether more files matched than `files` lists.',
+      },
+    },
+    'required': ['files', 'total', 'truncated'],
   };
 
   @override
@@ -90,7 +117,10 @@ class FindTool extends HarnessTool {
       return HarnessToolResult.error('Failed to list $rawPath: $listError');
     }
     if (matches.isEmpty) {
-      return HarnessToolResult.success('No files match $pattern.');
+      return HarnessToolResult.success(
+        'No files match $pattern.',
+        structured: const {'files': <String>[], 'total': 0, 'truncated': false},
+      );
     }
     matches.sort((a, b) => b.$2.compareTo(a.$2));
     final shown = matches.take(maxResults).map((m) => m.$1).toList();
@@ -98,7 +128,14 @@ class FindTool extends HarnessTool {
     if (matches.length > maxResults) {
       buffer.write('\n\n(${matches.length} total; showing first $maxResults)');
     }
-    return HarnessToolResult.success(buffer.toString());
+    return HarnessToolResult.success(
+      buffer.toString(),
+      structured: {
+        'files': shown,
+        'total': matches.length,
+        'truncated': matches.length > maxResults,
+      },
+    );
   }
 
   /// The walk + glob match + mtime stat, run inside a worker isolate.

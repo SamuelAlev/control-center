@@ -32,6 +32,23 @@ void main() {
       expect(toolCategoryFor('publish_review_to_github'), ToolCategory.review);
     });
 
+    test('pr counts as a word of the name, not as a part of another word', () {
+      expect(toolCategoryFor('list_prs'), ToolCategory.forge);
+      expect(toolCategoryFor('pr_status'), ToolCategory.forge);
+      expect(toolCategoryFor('mcp__acme__get_pr'), ToolCategory.forge);
+      // Presence, profile and product are not pull requests.
+      expect(
+        toolCategoryFor('list_agent_presence'),
+        ToolCategory.collaboration,
+      );
+      expect(toolCategoryFor('list_runtime_profiles'), ToolCategory.other);
+      expect(toolCategoryFor('create_work_product'), ToolCategory.artifacts);
+      expect(
+        toolCategoryFor('save_work_product_revision'),
+        ToolCategory.artifacts,
+      );
+    });
+
     test(
       'a bridged external tool is filed on its tool name, not its server',
       () {
@@ -51,7 +68,10 @@ void main() {
     });
 
     test('every resident tool name resolves to a real category', () {
-      for (final name in ModeToolPolicy.residentNamesFor(Mode.chat)) {
+      for (final name in {
+        ...ModeToolPolicy.directNamesFor(Mode.chat),
+        ...ModeToolPolicy.residentDiscovery,
+      }) {
         expect(
           toolCategoryFor(name),
           isNot(ToolCategory.other),

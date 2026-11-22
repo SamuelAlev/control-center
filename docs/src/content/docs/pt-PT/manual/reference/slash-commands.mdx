@@ -2,7 +2,7 @@
 title: Comandos slash
 description: Todos os comandos que pode escrever no compositor, o que fazem e onde são executados.
 slug: pt-PT/manual/referencia/comandos-slash
-sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
+sourceHash: 38430a6315b112c92a7806d1c28dff8a0285e363
 ---
 
 Comandos escritos no compositor de um espaço. Dividem-se em três grupos conforme o local onde produzem efeito, e a diferença é importante: um comando **local** nunca viaja como mensagem, pelo que não aparece na transcrição nem chega a nenhum agente.
@@ -21,23 +21,35 @@ Comandos escritos no compositor de um espaço. Dividem-se em três grupos confor
 
 **Local → despacho.** Arma o modo plano na conversa: uma worktree totalmente só de leitura e uma superfície de ferramentas limitada a `read`. O entregável do agente é um plano, não uma edição. Um `/plan` isolado apenas alterna o modo e nunca viaja como mensagem; com um prompt, é o resto da linha que inicia a execução.
 
-### `/goal <objective>`
+### `/goal [flags] <objective>`
 
-**Despacho.** Inicia um objetivo autónomo que o supervisor de objetivos volta a despachar entre segmentos e reinícios.
+**Despacho.** Inicia um objetivo durável: o agente trabalha no objetivo em segmentos, através de reinícios, até o servidor verificar que está concluído, uma pessoa o encerrar ou ele atingir um limite. Veja [Perseguir um objetivo](/pt-PT/manual/guias/perseguir-objetivo/).
 
-Escrever `/goal` com texto abre primeiro a **entrevista do objetivo** — uma passagem curta que se recusa a aceitar um rascunho enquanto este não tiver todos os cinco: critérios de sucesso que um avaliador possa decidir sem juízo de valor, um comando de verificação exato, um limite de tentativas, fronteiras de âmbito e condições de paragem. Cada passo oferece «Ignorar e executar como está»: a entrevista é uma predefinição, não uma porta.
+Escrever `/goal` com texto abre primeiro a **entrevista do objetivo** — uma passagem curta que pede critérios de sucesso que um avaliador possa decidir sem juízo de valor, as verificações que têm de passar, fronteiras de âmbito e condições de paragem, e depois oferece um verificador separado, segmentos novos e responder às suas próprias perguntas. Cada passo oferece «Ignorar e executar como está»: a entrevista é uma predefinição, não uma porta.
 
-`/goal pause`, `/goal resume` e `/goal drop` não são comandos slash. Pausar, retomar e parar vivem na lista de objetivos da conversa, na barra lateral. As flags iniciais do próprio objetivo são `--budget <dollars>`, `--max <N>` (orçamento da execução) e `--days <N>` (prazo). Um objetivo que atingiu o limite de custo só retoma se esse limite for aumentado, a partir do mesmo controlo da barra lateral.
+As flags podem estar em qualquer ponto da mensagem: `--budget <dollars>` (o orçamento do objetivo, 50 por predefinição), `--max <N>` (um limite de segmentos), `--days <N>` (um prazo), `--check "<command>"` (até 5), `--checker <agent>`, `--fresh` e `--unattended wait|assume`. Uma flag desconhecida ou repetida é recusada e o rascunho fica no compositor. Um número no início do objetivo faz parte do objetivo. As secções `## Success criteria`, `## Boundaries`, `## Stop conditions` e `## Checks` passam a ser o contrato do objetivo.
+
+`/goal pause`, `/goal resume` e `/goal drop` não são comandos slash. Pausar, retomar e parar estão no cartão do objetivo no painel **Geral** da conversa e na página do objetivo (barra lateral → **Objetivos**). Retomar, e aumentar o orçamento, pertencem à pessoa que iniciou o objetivo.
 
 :::note[Porque é que isto interrompe]
 Um objetivo autónomo é o único sítio onde um briefing vago é genuinamente caro. A execução trabalha durante horas num objetivo cujo «terminado» ninguém definiu e depois relata sucesso nos seus próprios termos. Cinco perguntas são mais baratas do que uma execução durante a noite que acabou quando lhe apeteceu.
 :::
 
-### `/loop [budget] [task]`
+### `/loop [every <interval>] [flags] <prompt>`
 
-**Despacho.** Trabalha iterativamente até estar concluído. Aceita um limite: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**Despacho.** Cria uma programação que acorda o agente com o prompt agora e depois outra vez: a cada intervalo (no mínimo 60 segundos) ou, sem `every`, após um atraso que o agente escolhe de cada vez (1 a 60 minutos). `--max <N>` limita as execuções, `--days <N>` termina-a (30 dias por predefinição), `--budget <dollars>` limita o seu gasto. Veja [Programações e despertares](/pt-PT/manual/guias/programacoes-despertares/).
 
-Um token que *parece* um limite (começa por um dígito ou um sinal) e falha a análise é um erro rígido. A prosa é só prosa, pelo que `/loop keep going until the tests pass` é um ciclo ilimitado com um prompt inline, e não uma análise errada.
+`/loop` já não inicia um objetivo, e um número no início não é uma contagem de execuções.
+
+### `/schedule <when> [flags] <prompt>`
+
+**Despacho.** Cria uma programação que acorda o agente mais tarde: `in 2h`, `at 09:00` (a próxima dessas horas no fuso horário do espaço de trabalho), `at <ISO time>` ou `cron "0 9 * * 1-5"` (as aspas são opcionais). Aceita os mesmos `--max`, `--days` e `--budget` que `/loop`. Fica à espera da primeira hora.
+
+### `/refine`
+
+**Despacho.** Pede uma revisão curta, só de leitura, do trabalho da conversa, que pode propor melhorias à memória, às políticas, às notas de agente ou às skills. As propostas ficam à espera na página **Melhorias** até alguém as aceitar. No máximo uma revisão por conversa a cada 20 minutos.
+
+`/goal`, `/loop`, `/schedule` e `/refine` atuam apenas numa mensagem que se escreve pessoalmente; a partir de um agente, de um pipeline ou de um despertar, o mesmo texto é uma mensagem comum. Um `/goal`, `/loop` ou `/schedule` que não se consegue ler mantém o rascunho, e uma linha acima do texto no compositor diz o que está errado.
 
 ### `/vibe [task]`
 

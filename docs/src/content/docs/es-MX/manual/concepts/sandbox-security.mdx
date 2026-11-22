@@ -2,7 +2,7 @@
 title: Sandbox y seguridad
 description: Qué limita realmente a un agente en Control Center hoy, hasta dónde llega el sandbox del sistema operativo y qué fronteras se mantienen en un host que no tiene backend.
 slug: es-MX/manual/conceptos/sandbox-y-seguridad
-sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
+sourceHash: 7644c97911f685ef5084875fb16f1006f21ea940
 ---
 
 :::note[Dónde llega el sandbox del sistema operativo y dónde no]
@@ -54,6 +54,8 @@ La misma regla cubre las cosas pequeñas que inician un proceso por ti:
 - **Ayudantes rápidos que se ejecutan a través de una CLI ACP**: títulos de conversación, `/btw`, `/handoff` y `/goal`. Cuando el servidor pone a los agentes en sandbox, se ejecutan dentro del sandbox, en una sesión propia. Con `--sandbox off` se ejecutan sin confinar. Sin ningún sandbox disponible, solo se ejecutan para las solicitudes de las que es responsable el propietario del servidor; para cualquier otra persona se omiten, así que no se genera ningún título y una pregunta lateral informa de que el sintetizador de contenido no tiene un ejecutor que funcione. Los ayudantes que no inician ninguna herramienta no se ven afectados.
 - **Las pruebas golden de un pull request** en la comprobación visual de Review Studio siguen la misma regla.
 - **Los procesos de herramientas y `bash`** en una ejecución nunca recurren al host. Si el servidor está configurado para poner a los agentes en sandbox pero no tiene ningún sandbox que dar a una ejecución, se rechazan.
+- **Las comprobaciones de un objetivo** se ejecutan en un sandbox de un solo uso sobre el worktree de la conversación, confinadas igual que el `bash` del agente. Sin sandbox no se ejecutan y el objetivo se detiene para que lo atienda una persona; con `--sandbox off` se ejecutan como lo hace el `bash` del agente.
+- **La revisión de un objetivo** se ejecuta en solo lectura en todos los adaptadores: solo lee, los worktrees se montan en solo lectura, sin `bash`, sin subagentes, sin web. Un adaptador que no puede mantener una ejecución en solo lectura (un agente ACP) no se usa como revisor.
 
 ## Qué limita realmente a un agente
 
@@ -314,6 +316,24 @@ no solo en un registro. La telemetría solo existe mientras un sandbox nativo es
 envolviendo realmente el proceso; en un host sin backend no hay nada que observar.
 Tampoco tiene relación con las barandillas: una violación proviene de una llamada al sistema denegada, nunca de una consulta de regla.
 
+## Scripts en modo código
+
+Los scripts de [modo código](/es-MX/manual/conceptos/modo-codigo/) son un caso aparte y no dependen en absoluto del sandbox del agente. Un script nunca corre dentro del servidor ni en el sandbox del agente. Corre en su propio proceso, `cc_codemode`, un programa incluido con el servidor, que se bloquea antes de leer el script e informa hasta dónde llegó el bloqueo. El servidor envía el script solo cuando el bloqueo está completo.
+
+| Host | Lo que el ejecutor se aplica a sí mismo |
+| --- | --- |
+| Linux | Una lista de permitidos de llamadas al sistema (seccomp) que le deja poco más que leer su entrada, escribir su salida, administrar su propia memoria, leer relojes y salir; sin nuevos privilegios ni capabilities; sin volcados de memoria; sin escritura de archivos, sin procesos nuevos y con tres archivos abiertos como máximo; 3 GiB de espacio de direcciones; un límite estricto de tiempo de procesador. Landlock se añade donde el kernel lo incluye. |
+| macOS | Un perfil de sandbox que deniega todo por defecto y que además rechaza la información de procesos, las comprobaciones de existencia de archivos, la información del sistema y del hardware, y las llamadas al kernel relacionadas; sin volcados de memoria, sin escritura de archivos y con un límite estricto de tiempo de procesador. |
+| Windows | Un AppContainer nuevo para cada script, en un job object que permite un solo proceso, 3 GiB de memoria y ninguna interfaz de usuario, con el código dinámico, los procesos hijos y las llamadas a win32k desactivados. **Todavía no probado en Windows.** |
+
+El ejecutor arranca sin variables de entorno, sin archivos abiertos además de su entrada y su salida, y sin credenciales. Lo único que puede hacer fuera de su propia memoria es pedirle al servidor que ejecute una herramienta, y el servidor ejecuta esa llamada con el mismo filtro de modo, las mismas [barandillas](/es-MX/manual/conceptos/barandillas/) y las mismas aprobaciones que una llamada directa.
+
+El servidor revisa todo esto al arrancar: ejecuta la autoprueba del ejecutor, que aplica el bloqueo, intenta leer y crear archivos, abrir una conexión de red e iniciar un proceso (y más en cada sistema), y ejecuta scripts reales bajo ese bloqueo. Si algo no es rechazado, el servidor no ejecuta scripts en esa máquina: ninguna ejecución recibe `repl`, y el servidor indica por qué al arrancar y en la página de ajustes del modo código. Un ejecutor que no sea una compilación de lanzamiento se rechaza de la misma manera. No hay ningún respaldo más débil.
+
+El ejecutor también informa en qué lugar del script se hizo cada llamada, para que la conversación pueda mostrar la estructura del script. El servidor verifica esa posición contra el script y la usa solo para mostrarla: nunca decide si una llamada está permitida, y no figura en la auditoría de las barandillas.
+
+Lo que esto no cubre: un script aún puede hacer lo que permitan las herramientas de la ejecución, porque sus llamadas a herramientas son llamadas reales; en macOS aún puede averiguar si existe un identificador de proceso; y un fallo en el motor de JavaScript o en el kernel queda contenido por el bloqueo, pero el bloqueo no lo descarta.
+
 ## Las confirmaciones vienen de las barandillas, no del sandbox
 
 El sandbox no tiene ninguna vía de aprobación. Lanza, ejecuta, emite eventos y se
@@ -334,6 +354,7 @@ sitio donde se indica qué se puede comprobar a mano.
 
 ## Conceptos relacionados
 
+- [Modo código](/es-MX/manual/conceptos/modo-codigo/): scripts que llaman a herramientas, y el ejecutor que los confina
 - [Rigs y recintos](/es-MX/manual/conceptos/rigs/): el escalón por encima del sandbox, para cuando el trabajo necesita una máquina desechable completa con una frontera del kernel, y no un proceso envuelto
 - [Barandillas](/es-MX/manual/conceptos/barandillas/): la capa de políticas por encima de la base del sistema operativo y el origen real de las aprobaciones
 - [Ciclo de vida del despacho de un agente](/es-MX/manual/conceptos/ciclo-de-vida-del-despacho/): dónde encaja el aislamiento en el flujo de despacho

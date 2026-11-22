@@ -53,10 +53,10 @@ extension _NavigationMethods on _SpaceMessageFeedState {
         historyPending) {
       return;
     }
-    if (_consumedFocusMessageId == pending.messageId) {
+    if (_claims.message == pending.messageId) {
       return;
     }
-    _consumedFocusMessageId = pending.messageId;
+    _claims.message = pending.messageId;
     if (!_didInitialLanding) {
       _didInitialLanding = true;
     }
@@ -68,7 +68,7 @@ extension _NavigationMethods on _SpaceMessageFeedState {
           pending.messageId) {
         ref.read(pendingFocusMessageProvider.notifier).set(null);
       }
-      _consumedFocusMessageId = null;
+      _claims.message = null;
       scrollToMessage(pending.messageId);
     });
   }
@@ -187,4 +187,79 @@ extension _NavigationMethods on _SpaceMessageFeedState {
     _highlight(messageId);
     return true;
   }
+
+  /// Consumes a pending "show this tool call" target meant for this
+  /// conversation: scrolls its transcript row into view and flashes it, then
+  /// clears the one-shot.
+  void _maybeConsumePendingToolFocus(PendingToolCallFocus? pending) {
+    if (pending == null || pending.spaceId != widget.spaceId) {
+      return;
+    }
+    final conversationId = pending.conversationId;
+    if (conversationId != null &&
+        conversationId.isNotEmpty &&
+        conversationId != widget.conversationId) {
+      return;
+    }
+    if (_claims.toolCall == pending.toolCallId) {
+      return;
+    }
+    _claims.toolCall = pending.toolCallId;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      if (ref.read(pendingFocusToolCallProvider) == pending) {
+        ref.read(pendingFocusToolCallProvider.notifier).set(null);
+      }
+      _claims.toolCall = null;
+      unawaited(_scrollToToolCall(pending.toolCallId));
+    });
+  }
+
+  /// Brings the transcript row showing the call [toolCallId] into view (a
+  /// script's calls show in its row) and flashes it. False when no row of the
+  /// loaded window shows it.
+  Future<bool> _scrollToToolCall(String toolCallId) async {
+    final at = latestRowShowingToolCall(_rows, toolCallId);
+    if (at < 0) {
+      return false;
+    }
+    final key = _rows[at].key;
+    final index = _rows.length - 1 - at;
+    _follow.mode = FeedFollowMode.anchored;
+    await _runProgrammatic(() async {
+      if (_listController.isAttached && _scrollController.hasClients) {
+        _listController.jumpToItem(
+          index: index,
+          scrollController: _scrollController,
+          alignment: 0.5,
+        );
+        await WidgetsBinding.instance.endOfFrame;
+      }
+    });
+    if (!mounted) {
+      return false;
+    }
+    _set(() => _highlightedRowKey = key);
+    _highlightTimer?.cancel();
+    _highlightTimer = Timer(const Duration(milliseconds: 1200), () {
+      _highlightTimer = null;
+      if (mounted && _highlightedRowKey == key) {
+        _set(() => _highlightedRowKey = null);
+      }
+    });
+    return true;
+  }
+}
+
+/// Focus targets a feed has already claimed, so each one-shot is acted on
+/// exactly once even though the provider write that clears it is deferred out
+/// of `build`.
+class _FocusClaims {
+  /// A permalink target (`?m=<id>`).
+  String? message;
+
+  /// A "show this tool call" target.
+  String? toolCall;
 }

@@ -2,7 +2,7 @@
 title: Kosten verwalten
 description: Sieh, was deine Agenten ausgeben, begrenze einen autonomen Lauf und senke den Tokenverbrauch.
 slug: de-DE/handbuch/anleitungen/kosten-verwalten
-sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
+sourceHash: 040176a3840653a57c823ce4ff7e3ed9cf071c07
 ---
 
 Diese Anleitung zeigt dir, was Agentenläufe kosten und wie du einen autonomen Lauf begrenzst.
@@ -40,21 +40,30 @@ Die Karte **Nutzung & Kosten** auf dieser Seite zeigt die beobachteten Ausgaben 
 
 ## Einen autonomen Lauf begrenzen
 
-Zwei Slash-Befehle, im Composer eines Bereichs getippt, sind die einzigen Läufe mit einer Kostenobergrenze:
+Diese Läufe haben eine Kostenobergrenze. Ein Lauf, den du mit dem Senden einer Nachricht startest, hat keine.
 
 ```
 /goal ship the auth refactor --budget 20
-/loop keep the flaky tests green
+/loop every 1h --budget 10 keep the flaky tests green
 ```
 
-- Jedes Segment eines Laufs `/goal` oder `/loop` stoppt, wenn die bepreisten Ausgaben **500 Cent (5,00 $)** erreichen. Bei 80 % davon steuert die Schleife das Modell zuerst an, abzuschließen und eine saubere Übergabe zu hinterlassen, damit es nicht mitten in der Aufgabe abbricht.
-- Ein ganzes dauerhaftes Ziel ist auf **5.000 Cent (50,00 $)** begrenzt, sofern du nicht `--budget <dollars>` angibst. Der Supervisor reicht das _verbleibende_ Budget des Ziels in jedes Segment, sodass ein ausdrückliches Budget nie um ein ganzes Segment überschritten wird.
-- `--days N` setzt eine Frist nach der Wanduhr und `--max N` eine Obergrenze für die Anzahl der Läufe. Beides setzt du ausdrücklich; ohne sie ist das Ziel nur durch die Kosten begrenzt.
-- Ein Ziel, das an seine Obergrenze stößt, stoppt bei `budgetExhausted` und lässt sich nur fortsetzen, indem du das Budget anhebst.
+| Lauf | Obergrenze |
+| --- | --- |
+| Abschnitt eines Ziels | 5 Dollar oder der Rest des Zielbudgets, falls das weniger ist |
+| Ein Ziel | 50 Dollar, sofern du nicht `--budget <dollars>` angibst |
+| Review eines Ziels | 2 Dollar oder der Rest, dem Ziel belastet |
+| Ein Lauf, den ein Zeitplan oder eine Überwachung startet | 5 Dollar; der Zeitplan stoppt bei seiner eigenen Kostengrenze (50 Dollar, sofern du nicht `--budget` angibst, oder dem Standardwert des Arbeitsbereichs) |
+| Das Review nach einem Ziel oder `/refine` | 1 Dollar |
 
-Weil die Obergrenze über den Preis läuft, erreicht ein Modell, das der Katalog nicht bepreisen kann, sie nie. So ein Lauf ist stattdessen durch den Schutz vor Endlosschleifen, das Aufgeben des Supervisors nach drei Fehlern hintereinander und durch dich begrenzt.
+- Ein Lauf mit Obergrenze stoppt, wenn seine bepreisten Ausgaben die Obergrenze erreichen, beim eingebauten Harness, bei Claude Code und bei ACP-Agenten. Bei 90 % steuern das eingebaute Harness und Claude Code den Agenten zuerst an, abzuschließen und eine saubere Übergabe zu hinterlassen, damit er nicht mitten in der Aufgabe abbricht. Ein ACP-Agent wird bei der Obergrenze abgebrochen.
+- Das _verbleibende_ Budget des Ziels wird in jeden Abschnitt weitergereicht, sodass ein ausdrückliches Budget nie um einen ganzen Abschnitt überschritten wird.
+- `--days N` setzt eine Frist und `--max N` eine Obergrenze für Abschnitte. Beides setzt du ausdrücklich; ohne sie ist das Ziel durch die Kosten und durch seinen Stopp bei fehlendem Fortschritt begrenzt.
+- Ein Ziel, das an sein Budget stößt, stoppt bei **Budget erschöpft** und wird nur mit einem höheren Budget fortgesetzt, das nur die Person geben kann, die es gestartet hat.
+- Ein Lauf einer Pipeline, der an der Obergrenze seiner Orchestrierung angehalten wurde, wartet, bis sein Auftraggeber auf der Seite des Pipeline-Laufs **Grenze erhöhen** drückt. Die neue Obergrenze muss über der alten und über dem bereits Ausgegebenen liegen, höchstens 1.000 Dollar betragen, und eine Obergrenze wird nie entfernt.
 
-Eine Nachricht in einem Bereich, eine @-Erwähnung oder ein Pipeline-Schritt hat keine Kostenobergrenze. Der Lauf endet, wenn das Modell stoppt, wenn du ihn stoppst oder wenn der Schutz vor Endlosschleifen ihn umlenkt.
+Weil die Obergrenze über den Preis läuft, erreicht ein Modell, das der Katalog nicht bepreisen kann, sie nie. So ein Lauf ist stattdessen durch den Schutz vor Endlosschleifen, durch den Stopp eines Ziels bei fehlendem Fortschritt und sein Aufgeben nach drei Fehlern hintereinander sowie durch dich begrenzt.
+
+Eine Nachricht in einem Bereich, eine @-Erwähnung oder ein Pipeline-Schritt außerhalb einer begrenzten Orchestrierung hat keine eigene Kostenobergrenze. Der Lauf endet, wenn das Modell stoppt, wenn du ihn stoppst oder wenn der Schutz vor Endlosschleifen ihn umlenkt.
 
 ## Tokenverbrauch senken
 

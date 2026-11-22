@@ -1,8 +1,8 @@
 ---
 title: Utforska data i en persistent kernel
-description: Ge en agent en Python- eller JavaScript-tolk som behåller sina variabler mellan anrop, ritar diagram i chatten och kan anropa dina egna verktyg inifrån en cell.
+description: Ge en agent en Python- eller JavaScript-tolk som behåller sina variabler mellan anrop och ritar diagram i chatten.
 slug: sv-SE/handbok/how-to-guider/utforska-data-i-kernel
-sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
+sourceHash: 8fcd77019bfae5088223822a12ef91c8a6879c5d
 ---
 
 Den här guiden visar hur du låter en agent läsa in något dyrt en gång och sedan ställa flera frågor till det, i stället för att betala för inläsningen vid varje fråga.
@@ -62,22 +62,9 @@ De här skrivs om till vanlig kod i stället för att ge fel:
 
 Det är cacherensningen för `%pip` som spelar roll: att installera i en levande tolk gör ingenting för en modul som redan har importerats, så utan den är versionen du just installerade inte den som körs.
 
-## Anropa dina egna verktyg inifrån en cell
+## Anropa verktyg från kod
 
-```python
-paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
-for path in paths.splitlines()[:100]:
-    contents = tool("read", {"path": path})
-    ...
-```
-
-`tool(name, args)` går in i agentens eget verktygsregister igen. Det innebär att en cell kan sprida ut arbetet över hundra filer, eller delegera via `task`, utan att modellen gör av med en tur per objekt.
-
-:::caution[Bryggan kringgår inte dina räcken]
-Ett bryggat anrop löses mot **samma** verktygsregister som ett anrop utfärdat av modellen, så `ActionClass`-policy, godkännandeförfrågningar och varje wrapper gäller på samma sätt. En brygga som nådde förbi registret skulle vara ett hål format precis som ”skriv en Python-one-liner”.
-:::
-
-Ett bryggat anrop **pausar cellens tidsgräns** medan det pågår. Budgeten mäter inaktivitet, inte klocktid – en cell som sprider ut arbetet till subagenter och väntar i fyra minuter har inte hängt sig, och att döda den mitt i utspridningen skulle förlora hela kernelns tillstånd.
+En cell kan inte anropa agentens verktyg. För att loopa över verktyg i kod skriver agenten i stället ett [`repl`](/sv-SE/handbok/koncept/kodlage/)-skript. Ett skript kan inte anropa `eval` heller: agenten anropar det direkt.
 
 ## Börja om
 

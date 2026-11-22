@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# Build a runnable server bundle, including managed media executables and data.
+# Build a runnable server bundle, including managed media executables, the code
+# mode runner and data.
 # Usage: scripts/build_server.sh [cc_server|cc_demo_server] [x64|arm64 (Windows)]
 set -euo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$REPO_ROOT/scripts/lib/common.sh"
 source "$REPO_ROOT/scripts/lib/media.sh"
+source "$REPO_ROOT/scripts/lib/codemode.sh"
 
 APP="${1:-cc_server}"
 case "$APP" in
@@ -36,10 +38,12 @@ if [ -f "$REPO_ROOT/.cc_natives_prebuilt_dir" ]; then
   [ -z "$PREBUILT" ] || NATIVES="$PREBUILT"
 fi
 
-# Fail before Dart deletes the previous CLI output if media was not staged.
+# Fail before Dart deletes the previous CLI output if media or the code mode
+# runner was not staged.
 [ -d "$NATIVES/media" ] \
   || die "managed media missing in $NATIVES/media; run scripts/natives/build_natives.sh (Windows: scripts/release/windows_natives.sh) first"
 cc_media_verify "$NATIVES/media" "$OS" "$ARCH"
+cc_codemode_verify "$NATIVES/codemode" "$OS" "$ARCH"
 
 DART="$(resolve_dart)"
 log "Building $APP CLI bundle ($OS${ARCH:+ $ARCH})"
@@ -50,4 +54,7 @@ BUNDLE="$REPO_ROOT/apps/$APP/build/cli/$(cc_cli_dir "$OS" "$ARCH")/bundle"
 # Dart code assets include shared libraries, not subprocess executables, fonts
 # or notices. Keep the complete media tree together, just like release bundles.
 cc_media_stage "$NATIVES" "$BUNDLE/bin/media" "$OS" "$ARCH"
+# Code mode's runner is a subprocess executable too; the server refuses to boot
+# without bin/codemode/cc_codemode[.exe].
+cc_codemode_stage "$NATIVES" "$BUNDLE/bin/codemode" "$OS" "$ARCH"
 log "Built $APP → $BUNDLE"

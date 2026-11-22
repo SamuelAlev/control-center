@@ -6,6 +6,9 @@ import 'package:cc_rpc/cc_rpc.dart';
 import 'package:cc_server_core/src/cc_server_config.dart';
 import 'package:cc_server_core/src/file_secrets_store.dart';
 import 'package:cc_server_core/src/identity/identity_bootstrap.dart';
+import 'package:cc_server_core/src/runtime/server_native_preflight.dart';
+import 'package:cc_server_core/src/server_boot_refusal.dart'
+    show createDataDirectory;
 
 /// Outcome of provisioning a device against a server data dir.
 class PairResult {
@@ -32,17 +35,22 @@ class PairResult {
 /// Does not create a workspace. Idempotent: re-run rotates the PSK and restarts
 /// the credential lifetime ([RemotePairingLifecycle.credentialLifetime]). Safe against a live server
 /// (WAL + secrets/registry watch pick up the write).
+///
+/// A bundle missing a required native is refused first ([checkNatives],
+/// [refuseMissingNatives]), before the global database is opened or migrated.
 Future<PairResult> pairDevice({
   required CcServerConfig config,
   String deviceId = 'web-client',
   String? label,
+  Future<void> Function(String dataDir) checkNatives = refuseMissingNatives,
 }) async {
+  await checkNatives(config.dataDir);
   // Infer the platform from the device id so `--device desktop` mints a desktop
   // row (platform + privilege + icon), `--device ios`/`--device android` a
   // phone and anything else a web client. Otherwise the row was always
   // `platform: 'web'` + label `Web client`, masking the actual device tier.
   final platform = _platformForDeviceId(deviceId);
-  Directory(config.dataDir).createSync(recursive: true);
+  createDataDirectory(config.dataDir);
   final db = GlobalDatabase.atDataDir(config.dataDir);
   final workspaceDbs = WorkspaceDatabaseManager(
     dataDir: config.dataDir,

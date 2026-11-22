@@ -202,8 +202,9 @@ class Composer extends ConsumerStatefulWidget {
   /// created it disposes it, and it must outlive this widget.
   final FocusNode? focusNode;
 
-  /// Optional strip rendered inside the box, above the field. The edit session
-  /// uses it to name what sending will do.
+  /// Optional strip rendered inside the box, above the field, naming what
+  /// sending will do: the edit session, a command being written. It brings
+  /// its own gap to the field below.
   final Widget? banner;
 
   /// When true (the default), a successful [onSubmit] clears the sent draft.
@@ -246,6 +247,13 @@ class _ComposerState extends ConsumerState<Composer> {
   late List<({ResolvedMention mention, String token})> _picked;
 
   MentionQuery? _activeQuery;
+  // The popup hears every key before the field does and closes itself on a
+  // pick, so by the time the field hears that key "is the popup open" no
+  // longer says whose key it was. This does.
+  final MentionPopupKeys _popupKeys = MentionPopupKeys();
+  // The key that made a pick, while it is still held: its repeats belong to
+  // the pick, not to the field.
+  LogicalKeyboardKey? _heldPickKey;
   bool _sending = false;
   bool _composerFocused = false;
   bool _isEmpty = true;
@@ -465,7 +473,8 @@ class _ComposerState extends ConsumerState<Composer> {
   void _onControllerChanged() {
     final text = _controller.text;
     final caret = _controller.selection.baseOffset;
-    final query = detectMentionQuery(text, caret);
+    final query =
+        detectMentionQuery(text, caret) ?? _argumentQueryAt(text, caret);
     final isEmpty = text.trim().isEmpty;
     final isLong = _isLongDraft(text);
     // A programmatic replace (an edit session swapping the draft out and
@@ -494,6 +503,18 @@ class _ComposerState extends ConsumerState<Composer> {
       _popupCtrl.hide();
     }
     _maybeOpenTappedRef(text);
+  }
+
+  /// The query a source opens by itself at [caret] (the next argument of a
+  /// command it knows), when no trigger character opened one.
+  MentionQuery? _argumentQueryAt(String text, int caret) {
+    for (final source in widget.sources) {
+      final query = source.detect(text, caret);
+      if (query != null) {
+        return query;
+      }
+    }
+    return null;
   }
 
   bool get _preservingAttachments {
@@ -812,9 +833,14 @@ class _ComposerState extends ConsumerState<Composer> {
       text: newText,
       selection: TextSelection.collapsed(offset: cursor),
     );
-    setState(() => _activeQuery = null);
-    if (_popupCtrl.isShowing) {
+    // A pick closes the popup, unless it leads into the next step of a
+    // command: `/schedule ` goes straight on to when it fires.
+    final next = _argumentQueryAt(newText, cursor);
+    setState(() => _activeQuery = next);
+    if (next == null && _popupCtrl.isShowing) {
       _popupCtrl.hide();
+    } else if (next != null && !_popupCtrl.isShowing) {
+      _popupCtrl.show();
     }
     // A DIRECTORY falls through with the plain-path insertion above: it is a
     // place to look, not a file to preview or upload.
@@ -1275,6 +1301,10 @@ class _ComposerState extends ConsumerState<Composer> {
   }
 
   KeyEventResult _onFieldKey(FocusNode node, KeyEvent event) {
+    final popupKey = _onPopupKey(event);
+    if (popupKey != null) {
+      return popupKey;
+    }
     if (event is! KeyDownEvent) {
       return KeyEventResult.ignored;
     }
@@ -1357,7 +1387,10 @@ class _ComposerState extends ConsumerState<Composer> {
       return historyResult;
     }
     // Shift+Enter inserts a newline when the popup is closed.
-    // Plain Enter sends the message.
+    // Plain Enter sends the message, unless the popup has a row to pick:
+    // then the key was the popup's and never reaches this line. An open
+    // popup with nothing in it (an unknown command, nobody by that name)
+    // takes no Enter, so the draft is sent as typed.
     if (event.logicalKey == LogicalKeyboardKey.enter) {
       if (HardwareKeyboard.instance.isShiftPressed) {
         if (!_popupCtrl.isShowing) {
@@ -1365,14 +1398,57 @@ class _ComposerState extends ConsumerState<Composer> {
         }
         return KeyEventResult.handled;
       }
-      if (!_popupCtrl.isShowing) {
+      if (!_popupCtrl.isShowing || !_popupKeys.takesEnter) {
         _submit();
         return KeyEventResult.handled;
       }
     }
-    // When the popup is open, the global handler in MentionPopup eats
-    // arrow/Enter/Tab — we just stay out of its way here.
     return KeyEventResult.ignored;
+  }
+
+  /// Keeps a key the popup already acted on from acting a second time: the
+  /// Enter or Tab that picked a row must not also send the draft or move
+  /// focus, and the Escape that closed the popup must not also blur the
+  /// field. Handled for that event and, for a pick, for the key's repeats
+  /// while it stays held. Null when [event] is the field's own.
+  KeyEventResult? _onPopupKey(KeyEvent event) {
+    final key = event.logicalKey;
+    if (_popupKeys.consumed(event)) {
+      if (event is KeyDownEvent && _picksARow(key)) {
+        _heldPickKey = key;
+      }
+      return KeyEventResult.handled;
+    }
+    if (key == _heldPickKey) {
+      if (event is KeyRepeatEvent) {
+        return KeyEventResult.handled;
+      }
+      // Released, or pressed afresh after a release this field never heard.
+      _heldPickKey = null;
+    }
+    return null;
+  }
+
+  static bool _picksARow(LogicalKeyboardKey key) =>
+      key == LogicalKeyboardKey.enter ||
+      key == LogicalKeyboardKey.numpadEnter ||
+      key == LogicalKeyboardKey.tab;
+
+  /// The platform's own send action for the field. The web reports every
+  /// Enter this way as well as through the key event, in either order, so an
+  /// Enter that is the popup's is refused on both sides of the pick: before
+  /// it (the popup still has a row to give) and after it (the key that
+  /// picked is still down).
+  void _onFieldSubmitted() {
+    if (_popupCtrl.isShowing && _popupKeys.takesEnter) {
+      return;
+    }
+    final held = _heldPickKey;
+    if (held != null &&
+        HardwareKeyboard.instance.logicalKeysPressed.contains(held)) {
+      return;
+    }
+    _submit();
   }
 
   /// Inserts a newline at the caret, replacing any selection.
@@ -1474,6 +1550,9 @@ class _ComposerState extends ConsumerState<Composer> {
       // theme switch, and reading tokens inside `buildTextSpan` would cost a
       // `dependOnInheritedWidget` lookup on every keystroke instead.
       controller.tokens = ds;
+      controller.paintsCommand = widget.sources.any(
+        (source) => source.triggers.contains(MentionTrigger.slash),
+      );
     }
     final config = _uploadConfiguration;
     final staged = config == null
@@ -1495,27 +1574,27 @@ class _ComposerState extends ConsumerState<Composer> {
         if (query == null) {
           return const SizedBox.shrink();
         }
-        // Position the popup so its bottom-start meets the composer's
-        // top-start, i.e. floats just above the input. Wrapping in
-        // Positioned(width:…) keeps the follower's bounding box tight to the
-        // popup so the bottom-start anchor lines up with the popup's actual
-        // edge — not the overlay's edge — which is what was previously
-        // breaking placement.
+        // Position the popup so its bottom-start meets the top-start of the
+        // box's content, i.e. floats just above everything in the box: the
+        // banner and the attachments stay readable under it. The offset
+        // lines its edge up with the field's text (4px in) and lets it sit
+        // on the box's top border. Wrapping in Positioned(width:…) keeps the
+        // follower's bounding box tight to the popup so the bottom-start
+        // anchor lines up with the popup's actual edge — not the overlay's
+        // edge — which is what was previously breaking placement.
+        final direction = Directionality.of(overlayContext);
         return Positioned(
           width: 380,
           child: CompositedTransformFollower(
             link: _link,
             showWhenUnlinked: false,
-            offset: const Offset(0, -6),
-            followerAnchor: AlignmentDirectional.bottomStart.resolve(
-              Directionality.of(overlayContext),
-            ),
-            targetAnchor: AlignmentDirectional.topStart.resolve(
-              Directionality.of(overlayContext),
-            ),
+            offset: Offset(direction == TextDirection.rtl ? -4 : 4, -4),
+            followerAnchor: AlignmentDirectional.bottomStart.resolve(direction),
+            targetAnchor: AlignmentDirectional.topStart.resolve(direction),
             child: MentionPopup(
               query: query,
               sources: widget.sources,
+              keys: _popupKeys,
               onSelect: _selectSuggestion,
               onDismiss: _dismissPopup,
             ),
@@ -1554,31 +1633,28 @@ class _ComposerState extends ConsumerState<Composer> {
     required List<ComposerAttachment> visibleAttachments,
     required String? blockedMessage,
   }) {
-    final field = CompositedTransformTarget(
-      link: _link,
-      child: Focus(
-        onKeyEvent: _onFieldKey,
-        // Notes that the next caret move came from a POINTER, which is what
-        // separates clicking a reference from arrowing over it. Listener, not
-        // GestureDetector: this must observe without entering the arena, where
-        // it would compete with the field's own tap-to-place-caret recognizer.
-        child: Listener(
-          onPointerUp: _onPointerUp,
-          child: CcTextField(
-            controller: _controller,
-            focusNode: _focus,
-            // Unbounded lines: the box below caps the HEIGHT, so the field
-            // grows line by line to a share of the pane and scrolls past it.
-            maxLines: null,
-            minLines: fill ? null : widget.minLines,
-            expands: fill,
-            textInputAction: TextInputAction.send,
-            textStyle: CcTypography.body.copyWith(color: ds.textPrimary),
-            inputFormatters: [_longPaste],
-            onSubmitted: (_) => _submit(),
-            hintText: widget.hint,
-            chromeless: true,
-          ),
+    final field = Focus(
+      onKeyEvent: _onFieldKey,
+      // Notes that the next caret move came from a POINTER, which is what
+      // separates clicking a reference from arrowing over it. Listener, not
+      // GestureDetector: this must observe without entering the arena, where
+      // it would compete with the field's own tap-to-place-caret recognizer.
+      child: Listener(
+        onPointerUp: _onPointerUp,
+        child: CcTextField(
+          controller: _controller,
+          focusNode: _focus,
+          // Unbounded lines: the box below caps the HEIGHT, so the field
+          // grows line by line to a share of the pane and scrolls past it.
+          maxLines: null,
+          minLines: fill ? null : widget.minLines,
+          expands: fill,
+          textInputAction: TextInputAction.send,
+          textStyle: CcTypography.body.copyWith(color: ds.textPrimary),
+          inputFormatters: [_longPaste],
+          onSubmitted: (_) => _onFieldSubmitted(),
+          hintText: widget.hint,
+          chromeless: true,
         ),
       ),
     );
@@ -1609,81 +1685,89 @@ class _ComposerState extends ConsumerState<Composer> {
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: fill ? MainAxisSize.max : MainAxisSize.min,
-          children: [
-            if (widget.banner != null) ...[
-              widget.banner!,
+        // The suggestion list hangs off the content's top edge.
+        child: CompositedTransformTarget(
+          link: _link,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: fill ? MainAxisSize.max : MainAxisSize.min,
+            children: [
+              // A banner brings its own gap to the field: one that shows only
+              // some of the time must not leave the gap behind.
+              ?widget.banner,
+              if (visibleAttachments.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(bottom: 6),
+                  child: AttachmentStrip(
+                    attachments: visibleAttachments,
+                    onRemove: _removeAttachment,
+                    onRetry: _retryAttachment,
+                    onOpen: (a) =>
+                        unawaited(openAttachmentPreview(context, ref, a)),
+                  ),
+                ),
+              if (blockedMessage != null)
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(
+                    bottom: 6,
+                    start: 4,
+                  ),
+                  child: Text(
+                    blockedMessage,
+                    style: CcTypography.caption.copyWith(
+                      color: ds.textSecondary,
+                    ),
+                  ),
+                ),
+              // One wrapper either way, so the field (and its text input
+              // connection) stays mounted when the host toggles expansion: flex 0
+              // lays out at content size under the cap; flex 1 fills the box.
+              Flexible(
+                flex: fill ? 1 : 0,
+                fit: FlexFit.tight,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: fill ? double.infinity : maxInputHeight,
+                  ),
+                  // Text sits on the input inset DESIGN.md sets (12px from the
+                  // border, 10px from the top); the toolbar's square buttons
+                  // keep the box's tighter 8px so their edges frame the corner.
+                  child: Padding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(4, 2, 4, 0),
+                    child: field,
+                  ),
+                ),
+              ),
               const SizedBox(height: 6),
+              ComposerToolbar(
+                leading: widget.leading,
+                trailing: widget.trailing,
+                sending: _isSending,
+                canSend:
+                    !_isEmpty ||
+                    _attachments.isNotEmpty ||
+                    _dictationBase != null,
+                showStop:
+                    widget.isBusy &&
+                    _isEmpty &&
+                    _attachments.isEmpty &&
+                    widget.onStop != null,
+                onStop: widget.onStop,
+                enableFilePicker: widget.enableFilePicker,
+                onPickFiles: _pickFiles,
+                onSubmit: _submit,
+                blockedMessage: blockedMessage,
+                composerFocused: _composerFocused,
+                onDictationPartial: _applyDictationPartial,
+                expanded: widget.expanded,
+                onToggleExpanded:
+                    widget.onExpandedChanged != null &&
+                        (widget.expanded || _isLong)
+                    ? () => _setExpanded(!widget.expanded)
+                    : null,
+              ),
             ],
-            if (visibleAttachments.isNotEmpty)
-              Padding(
-                padding: const EdgeInsetsDirectional.only(bottom: 6),
-                child: AttachmentStrip(
-                  attachments: visibleAttachments,
-                  onRemove: _removeAttachment,
-                  onRetry: _retryAttachment,
-                  onOpen: (a) =>
-                      unawaited(openAttachmentPreview(context, ref, a)),
-                ),
-              ),
-            if (blockedMessage != null)
-              Padding(
-                padding: const EdgeInsetsDirectional.only(bottom: 6, start: 4),
-                child: Text(
-                  blockedMessage,
-                  style: CcTypography.caption.copyWith(color: ds.textSecondary),
-                ),
-              ),
-            // One wrapper either way, so the field (and its text input
-            // connection) stays mounted when the host toggles expansion: flex 0
-            // lays out at content size under the cap; flex 1 fills the box.
-            Flexible(
-              flex: fill ? 1 : 0,
-              fit: FlexFit.tight,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: fill ? double.infinity : maxInputHeight,
-                ),
-                // Text sits on the input inset DESIGN.md sets (12px from the
-                // border, 10px from the top); the toolbar's square buttons
-                // keep the box's tighter 8px so their edges frame the corner.
-                child: Padding(
-                  padding: const EdgeInsetsDirectional.fromSTEB(4, 2, 4, 0),
-                  child: field,
-                ),
-              ),
-            ),
-            const SizedBox(height: 6),
-            ComposerToolbar(
-              leading: widget.leading,
-              trailing: widget.trailing,
-              sending: _isSending,
-              canSend:
-                  !_isEmpty ||
-                  _attachments.isNotEmpty ||
-                  _dictationBase != null,
-              showStop:
-                  widget.isBusy &&
-                  _isEmpty &&
-                  _attachments.isEmpty &&
-                  widget.onStop != null,
-              onStop: widget.onStop,
-              enableFilePicker: widget.enableFilePicker,
-              onPickFiles: _pickFiles,
-              onSubmit: _submit,
-              blockedMessage: blockedMessage,
-              composerFocused: _composerFocused,
-              onDictationPartial: _applyDictationPartial,
-              expanded: widget.expanded,
-              onToggleExpanded:
-                  widget.onExpandedChanged != null &&
-                      (widget.expanded || _isLong)
-                  ? () => _setExpanded(!widget.expanded)
-                  : null,
-            ),
-          ],
+          ),
         ),
       ),
     );

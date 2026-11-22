@@ -19,6 +19,7 @@ import 'package:cc_remote/widgets/messaging/space_composer_bar.dart';
 import 'package:cc_remote/widgets/messaging/space_message_tile.dart';
 import 'package:cc_remote/widgets/reverse_follow_physics.dart';
 import 'package:cc_remote/widgets/touch_target.dart';
+import 'package:cc_remote/work_kind_text.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter/semantics.dart' show SemanticsService;
@@ -225,7 +226,7 @@ class _SpaceScreenState extends ConsumerState<_ConversationScreen> {
                 enabled: writable,
                 ready: _draft.ready,
                 pending: _pending,
-                attachError: _attachError ?? _draft.error?.toString(),
+                attachError: _attachError ?? _draftErrorText(),
                 detailsMaxHeight: (constraints.maxHeight * .16).clamp(
                   32.0,
                   120.0,
@@ -243,8 +244,3 @@ class _SpaceScreenState extends ConsumerState<_ConversationScreen> {
     );
   }
 }
-
-bool _queued(MessageDto message) =>
-    message.messageType == 'steering' &&
-    message.metadata is Map &&
-    (message.metadata as Map)['steerState'] == 'queued';

@@ -1,11 +1,13 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row_adornments.dart';
-import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:flutter/widgets.dart';
 
+/// Space between the signal and the title.
+const double _kSignalGap = 6;
+
 /// Text block of a space or conversation row: the title line with its count
-/// chip, trailing caption and unread / needs-input indicator, plus the
-/// optional subtitle line under it.
+/// chip and trailing caption, plus the optional subtitle line under it. The
+/// unread and needs-input signal leads the row instead (see [AttentionDot]).
 class SpaceRowLabel extends StatelessWidget {
   /// Creates a [SpaceRowLabel].
   const SpaceRowLabel({
@@ -17,10 +19,7 @@ class SpaceRowLabel extends StatelessWidget {
     required this.caption,
     required this.filled,
     required this.transitioning,
-    required this.status,
-    required this.unread,
-    required this.leadingHandlesRunning,
-    required this.muted,
+    this.signal,
     this.subtitle,
     this.trailingLabel,
     this.count,
@@ -47,20 +46,12 @@ class SpaceRowLabel extends StatelessWidget {
   /// Sidebar width is animating, so trailing chrome is hidden.
   final bool transitioning;
 
-  /// Drives the trailing unread / needs-input indicator.
-  final SpaceStatus status;
+  /// The spinner or attention dot in front of the title, centred on the
+  /// title line. The title moves over to make room for it.
+  final Widget? signal;
 
-  /// Whether the unread dot should show.
-  final bool unread;
-
-  /// Whether the leading slot already shows the running signal.
-  final bool leadingHandlesRunning;
-
-  /// Muted agent-DM row. Hides the trailing indicator.
-  final bool muted;
-
-  /// Second line under the title.
-  final String? subtitle;
+  /// Second line under the title, painted in the caption style and colour.
+  final Widget? subtitle;
 
   /// Short trailing caption.
   final String? trailingLabel;
@@ -87,75 +78,83 @@ class SpaceRowLabel extends StatelessWidget {
     // The chip leaves with the other trailing chrome: as the row narrows it
     // would overflow the title line.
     final showCount = count != null && !transitioning;
-    final showIndicator =
-        !muted &&
-        !transitioning &&
-        SpaceTrailingIndicator.shouldShow(
-          status: status,
-          unread: unread,
-          leadingHandlesRunning: leadingHandlesRunning,
-        );
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    final titleLine = Row(
       children: [
-        Row(
-          children: [
-            // The title and its chip take the free width so the caption and
-            // indicator always sit flush at the end, whatever the title's
-            // length. The inner row stays loose: the tooltip hugs the text.
-            Expanded(
-              child: Row(
-                children: [
-                  Flexible(
-                    child: CcTooltip(
-                      message: label,
-                      showDelay: const Duration(milliseconds: 700),
-                      placement: CcTooltipPlacement.end,
-                      maxWidth: 480,
-                      child: CcScrambleText(
-                        label,
-                        scrambling: labelScrambling,
-                        style: _labelStyle,
-                      ),
-                    ),
+        // The title and its chip take the free width so the caption always
+        // sits flush at the end, whatever the title's length. The inner row
+        // stays loose: the tooltip hugs the text.
+        Expanded(
+          child: Row(
+            children: [
+              Flexible(
+                child: CcTooltip(
+                  message: label,
+                  showDelay: const Duration(milliseconds: 700),
+                  placement: CcTooltipPlacement.end,
+                  maxWidth: 480,
+                  child: CcScrambleText(
+                    label,
+                    scrambling: labelScrambling,
+                    style: _labelStyle,
                   ),
-                  if (showCount) ...[
-                    const SizedBox(width: AppSpacing.sm),
-                    SpaceCountChip(count: count!, selected: filled),
-                  ],
-                ],
+                ),
               ),
-            ),
-            if (showTrailing) ...[
-              const SizedBox(width: AppSpacing.sm),
-              Text(
-                trailingLabel!,
-                style: CcTypography.caption.copyWith(color: caption),
-              ),
+              if (showCount) ...[
+                const SizedBox(width: AppSpacing.sm),
+                SpaceCountChip(count: count!, selected: filled),
+              ],
             ],
-            if (showIndicator) ...[
-              const SizedBox(width: AppSpacing.sm),
-              SpaceTrailingIndicator(
-                status: status,
-                unread: unread,
-                leadingHandlesRunning: leadingHandlesRunning,
-                selected: filled,
-              ),
-            ],
-          ],
+          ),
         ),
-        if (subtitle != null && subtitle!.isNotEmpty) ...[
+        if (showTrailing) ...[
+          const SizedBox(width: AppSpacing.sm),
           Text(
-            subtitle!,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            // RTL carve-out: a branch name is a git ref.
-            textDirection: TextDirection.ltr,
+            trailingLabel!,
             style: CcTypography.caption.copyWith(color: caption),
           ),
         ],
       ],
+    );
+    final signal = this.signal;
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (signal == null)
+          titleLine
+        else
+          // The signal sits in front of the title line, in the column the
+          // padding below opens; the subtitle stays aligned with the title.
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              titleLine,
+              PositionedDirectional(
+                start: -(kSpaceRowSignalSize + _kSignalGap),
+                width: kSpaceRowSignalSize,
+                top: 0,
+                bottom: 0,
+                child: Center(child: signal),
+              ),
+            ],
+          ),
+        if (subtitle case final subtitle?)
+          DefaultTextStyle.merge(
+            style: CcTypography.caption.copyWith(color: caption),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            child: subtitle,
+          ),
+      ],
+    );
+    if (signal == null) {
+      return content;
+    }
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(
+        start: kSpaceRowSignalSize + _kSignalGap,
+      ),
+      child: content,
     );
   }
 }

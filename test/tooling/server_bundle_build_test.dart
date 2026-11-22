@@ -11,6 +11,7 @@ void main() {
       'scripts/build_server.sh',
       'scripts/lib/common.sh',
       'scripts/lib/media.sh',
+      'scripts/lib/codemode.sh',
       'scripts/lib/natives.sh',
       'scripts/lib/native_pins.env',
     ]) {

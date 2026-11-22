@@ -18,13 +18,8 @@ final _redactionPatterns = <RegExp>[
   // 20-character prefix.
   RegExp(r'eC1hY2Nlc3MtdG9rZW46[A-Za-z0-9+/=]*'),
   RegExp(r'(CLAUDE_CODE_OAUTH_TOKEN\s*=\s*)\S+', caseSensitive: false),
-  // VULN-010: a PAT embedded in a git/https URL — as git echoes on stderr
-  // (`https://x-access-token:ghp_…@github.com/…`) when a clone/fetch fails.
-  RegExp(r'(x-access-token:)[^@\s]+(@)', caseSensitive: false),
-  RegExp(
-    r'([a-zA-Z][a-zA-Z0-9+.-]*://[^/@\s]+:)[^@/\s]+(@)',
-    caseSensitive: false,
-  ),
+  kAccessTokenUrlPattern,
+  kUrlCredentialPattern,
   RegExp(r'(TICKETING_API_KEY\s*=\s*)\S+', caseSensitive: false),
   RegExp(r'(GH_TOKEN\s*=\s*)\S+', caseSensitive: false),
   RegExp(r'(GITHUB_TOKEN\s*=\s*)\S+', caseSensitive: false),
@@ -35,6 +30,35 @@ final _redactionPatterns = <RegExp>[
   // API keys, JWTs, private keys): the one table the scanner shares.
   for (final token in kTokenPatterns) token.pattern,
 ];
+
+/// VULN-010: a PAT embedded in a git/https URL — as git echoes on stderr
+/// (`https://x-access-token:ghp_…@github.com/…`) when a clone/fetch fails.
+/// The token after `x-access-token:` up to the `@` is redacted, whatever its
+/// length. Linear: the match starts only where a run of non-`@`,
+/// non-space characters starts, first checks once that the run ends at an
+/// `@`, and keeps the run up to its first `x-access-token:` (group 1).
+/// Started at every `x-access-token:`, a run of them with no `@` was
+/// rescanned from each one (quadratic: 36.8 s at 256 KiB). It redacts
+/// exactly what that pattern did.
+final RegExp kAccessTokenUrlPattern = RegExp(
+  r'(?<![^@\s])(?=[^@\s]*@)([^@\s]*?x-access-token:)[^@\s]+(@)',
+  caseSensitive: false,
+);
+
+/// The password of a URL's `user:password@`, whatever its length; the
+/// scheme before `://` is not part of the match and is never read, so
+/// nothing scans a long run of letters looking for one. Linear: the match
+/// starts only at `://`, whose `/` ends every run it reads, and checks once
+/// that the run after it ends at an `@` before it looks for the colon.
+/// Without that check a run of colons with no `@` was rescanned from each
+/// colon (quadratic: 36.8 s at 64 KiB). Where it differs from the pattern
+/// that required a scheme (`[a-zA-Z][a-zA-Z0-9+.-]*://…`): it also redacts
+/// after a `://` with no scheme or an unusual one (`://u:p@h`,
+/// `9://u:p@h`), never less.
+final RegExp kUrlCredentialPattern = RegExp(
+  r'(://(?=[^/@\s]*@)[^/@\s]+:)[^@/\s]+(@)',
+  caseSensitive: false,
+);
 
 const _redacted = '***REDACTED***';
 
@@ -109,4 +133,3 @@ bool _isSecretKey(String keyLower) {
       keyLower.contains('credential') ||
       keyLower.contains('auth');
 }
-

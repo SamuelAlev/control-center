@@ -2,29 +2,45 @@
 title: Konteks alat dan caching prompt
 description: Mengapa ejen diperlihatkan satu set alat yang kecil dan bukan kesemuanya, bagaimana ia mencapai selebihnya, dan peraturan yang memastikan cache prompt pembekal kekal panas sepanjang satu larian.
 slug: ms-MY/manual-pengguna/konsep/konteks-alat
-sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
+sourceHash: 74ad7fcb903772d007ba9bd7ec85153fcf668335
 ---
 
 Dua perkara benar bagi setiap permintaan yang dibuat oleh harness terbina: takrifan alat ialah kos tetap terbesar di dalamnya, dan hampir kesemuanya tidak akan digunakan. Halaman ini menerangkan apa yang dilakukan oleh Control Center tentang perkara itu, dan mengapa jawapannya bukan sekadar "hantar lebih sedikit alat".
 
 ## Masalahnya ialah perhatian, bukan bait
 
-Control Center mendaftarkan kira-kira 126 alat. Jika dihantar sepenuhnya, takrifannya menelan kos kira-kira **23,000 token pada setiap permintaan** — kos yang tidak dapat disentuh oleh sebarang pemampatan, kerana takrifan alat bergerak dalam bahagian permintaan yang berasingan daripada perbualan.
+Control Center mempunyai kira-kira 160 alatnya sendiri. Jika dihantar sepenuhnya, takrifannya akan menumpang pada **setiap permintaan** — kos yang tidak dapat disentuh oleh sebarang pemampatan, kerana takrifan alat bergerak dalam bahagian permintaan yang berasingan daripada perbualan.
 
 Bil token ialah aduan yang jelas, dan dengan caching prompt ia juga yang lebih kecil. Kos sebenar ialah **ketepatan pemilihan**. Penilaian awam tentang pemanggilan alat bersetuju bahawa model memilih alat yang betul dengan andal sehingga sekitar 30–50 alat dalam konteks, dan semakin merosot selepas itu. Punca yang dinamakan bukanlah bilangan token tetapi **pertindihan semantik**: sebaik sahaja sesuatu katalog mengandungi beberapa alat yang huraiannya serupa, model memilih antara yang kelihatan seiras dan bukan mengingati semula sesuatu keupayaan.
 
-Pada 126 alat, ejen sudah jauh melepasi julat itu pada setiap pusingan — termasuk banyak pusingan yang hanya memerlukan pembacaan satu fail.
+Pada kira-kira 160 alat, ejen sudah jauh melepasi julat itu pada setiap pusingan — termasuk banyak pusingan yang hanya memerlukan pembacaan satu fail.
 
-## Permukaan dua peringkat
+## Satu set langsung yang kecil
 
 Oleh itu, satu larian diperlihatkan dua perkara:
 
-- satu set **residen** — kira-kira dua dozen alat, dihantar dengan skema penuh pada setiap permintaan;
+- satu set **langsung** kira-kira lima belas alat, dihantar dengan skema penuh pada setiap permintaan;
 - satu **indeks nama** bagi semua yang lain, dikelompokkan di bawah tajuk seperti "Tickets and projects" atau "Memory and knowledge", dengan kos beberapa ratus token untuk keseluruhan katalog.
 
-Apabila diukur pada katalog semasa, ini menjadikan blok alat berubah daripada **~23.1k token kepada ~5.0k, kira-kira 78% lebih kecil**, dan meletakkan set yang sentiasa kelihatan dalam julat yang pemilihannya andal.
+Diukur pada pendaftaran yang dibina oleh ujian, alat sembang piawai ejen terbina berjumlah 14 definisi alat dan kira-kira 16.5 KB dengan `repl`, daripadanya `repl` ialah kira-kira 4 KB (definisinya tidak boleh melebihi 4,096 bait), dan 14 definisi dan kira-kira 13 KB pada pelayan yang tidak boleh menjalankan skrip. Ini ialah ukuran bagi satu permukaan, bukan bagi setiap pemasangan. Setiap alat lain dicapai daripada skrip atau dimuatkan pada penggunaan pertama.
 
-Set residen ialah alat yang digunakan oleh sesuatu larian dalam *kebanyakan* larian: perbendaharaan kata fail dan shell (`read`, `write`, `edit`, `search`, `bash`, …), alat penemuan, senarai semak tugas, carian memori, dan apa-apa kata kerja yang mesti dipanggil oleh [modus](/ms-MY/manual-pengguna/konsep/modus) semasa untuk menghasilkan outputnya. Kata kerja output sesebuah modus sentiasa residen — sesuatu larian tidak boleh sekali-kali terpaksa mencari satu-satunya panggilan yang menghasilkan hasil kerjanya.
+Set langsung ialah alat yang kebanyakan larian gunakan dalam giliran pertamanya dan yang tidak pernah perlu dicari oleh larian: `read`, `write`, `edit`, `search`, `find`, `bash` dan `read_output`; `ask_user` dan `task`; `todo_write`, `search_memory` dan `send_message`; dan apa-apa kata kerja yang mesti dipanggil oleh [modus](/ms-MY/manual-pengguna/konsep/modus/) semasa untuk menghantar outputnya. Kata kerja output sesebuah modus sentiasa langsung, kerana larian tidak sekali-kali perlu mencari satu-satunya panggilan yang menghasilkan hasil kerjanya. Sesuatu alat memperoleh tempat dengan digunakan dalam kebanyakan larian, bukan dengan menjadi penting apabila ia digunakan: setiap nama dalam set itu ialah definisi pada setiap giliran setiap larian.
+
+### Skrip mencapai yang selebihnya
+
+Apabila pelayan boleh menjalankan skrip, setiap larian juga mempunyai [`repl`](/ms-MY/manual-pengguna/konsep/mod-kod/), yang pertama dalam senarai. Peraturan bagi selebihnya katalog ialah:
+
+- alat yang boleh dipanggil oleh skrip **hanya daripada skrip**: ia berada dalam indeks nama, dan skrip `repl` memanggilnya sebagai `tools.<name>(args)` selepas mencarinya dengan `searchTools()` atau `describeTool()`, sehingga pelayan tidak boleh menjalankan skrip bagi larian itu dan ia dimuatkan pada penggunaan pertama sebaliknya ([Apabila skrip tidak boleh dijalankan](/ms-MY/manual-pengguna/konsep/mod-kod/#apabila-skrip-tidak-boleh-dijalankan));
+- alat yang tidak boleh dipanggil oleh skrip (`eval`, `task`, kelulusan, delegasi dan beberapa lagi) ialah **tertangguh**: ia dimuatkan pada penggunaan pertama, seperti yang diterangkan di bawah;
+- `search_tools` ditambah apabila ada sesuatu yang tertangguh.
+
+Larian tanpa `repl` mendapat set langsung yang sama, dan selebihnya tertangguh.
+
+Set langsung adalah sama dengan atau tanpa `repl`, dengan sengaja. Ejen belajar satu permukaan, kepala setiap permintaan ialah alat yang sama dalam susunan yang sama, dan menambah `repl` tidak mengubah apa-apa yang telah diharapkan oleh ejen.
+
+Apa yang dijimatkan: skema alat hanya-skrip tidak sekali-kali dihantar kepada pembekal, jadi kira-kira seratus alat di luar set langsung hanya menelan kos nama mereka. Skrip yang memerlukan sepuluh daripadanya tidak membayar untuk mana-mana skemanya, dan hasil perantaraannya tidak pernah memasuki konteks.
+
+Apa yang menelan kos: alat di luar set langsung memerlukan skrip untuk memanggilnya, dan skrip itu perlu mencari argumen alat itu dahulu. Untuk satu panggilan pantas, ia ialah langkah tambahan yang tidak diperlukan oleh panggilan langsung. Itulah sebabnya alat yang kebanyakan larian panggil dalam giliran pertamanya kekal langsung.
 
 ### Tertunda tidak bermakna tidak tersedia
 
@@ -32,19 +48,21 @@ Inilah bahagian yang menjadikan reka bentuk ini selamat dan bukan sekadar murah.
 
 Ejen melihat nama itu dalam promptnya. Jika ia memanggil nama tersebut secara terus, harness memuatkan skema dan menjalankan alat itu dalam langkah yang sama — tiada ralat, tiada perjalanan pergi-balik. Model tidak perlu tahu bahawa alat itu pernah "dinyahmuat".
 
-Apabila ejen tahu tugasnya tetapi tidak tahu namanya, `search_tools` menerima huraian dalam bahasa biasa ("tetapkan tiket kepada seseorang"), menyusun kedudukan seluruh permukaan larian itu, dan mengembalikan padanan *dengan skemanya yang sudah dimuatkan*, supaya pusingan seterusnya boleh memanggil salah satunya. Jika sesuatu carian tidak menemui apa-apa, ia menyatakannya secara terus terang dan mencadangkan pilihan kata lain atau carian yang lebih luas — secara sengaja, kerana ejen yang membaca carian kosong sebagai "keupayaan ini tidak wujud" akan mencipta pengganti dan bukan mencari semula.
+Apabila ejen tahu tugasnya tetapi tidak tahu namanya, `search_tools` menerima huraian dalam bahasa biasa ("tetapkan tiket kepada seseorang"), menyusun kedudukan seluruh permukaan larian itu, dan mengembalikan padanan *dengan skemanya yang sudah dimuatkan*, supaya pusingan seterusnya boleh memanggil salah satunya. Padanan yang hanya boleh dipanggil daripada skrip dikembalikan dengan cara memanggilnya daripada skrip, melainkan skrip larian itu tidak lagi boleh dijalankan: maka ia dimuatkan seperti mana-mana padanan lain. Jika sesuatu carian tidak menemui apa-apa, ia menyatakannya secara terus terang dan mencadangkan pilihan kata lain atau carian yang lebih luas — secara sengaja, kerana ejen yang membaca carian kosong sebagai "keupayaan ini tidak wujud" akan mencipta pengganti dan bukan mencari semula.
 
 `search_tools` hanya wujud dalam harness terbina. Klien MCP luaran sebaliknya mempunyai `search_tool_bm25`, yang menyusun kedudukan indeks yang sama tetapi hanya menghuraikan padanan — klien tersebut sudah menerima setiap skema daripada `tools/list`, jadi tiada apa yang perlu dimuatkan.
 
-### Apa yang tidak pernah dilakukan oleh penundaan
+### Apa yang permukaan ini tidak pernah lakukan
 
-Penundaan dilaksanakan **selepas** penapis alat modus, tidak sekali-kali sebagai gantinya. Ia menyembunyikan sesuatu skema; ia tidak boleh mendedahkan alat yang ditolak oleh modus. Alat yang diaktifkan masih melalui gesaan kelulusan dan [guardrail tindakan](/ms-MY/manual-pengguna/konsep/guardrail) sama seperti alat residen, dan sesuatu alat tidak boleh memuatkan nama yang tidak berada pada permukaan larian itu pada mulanya.
+Penundaan dan skrip dilaksanakan **selepas** penapis alat modus, tidak sekali-kali sebagai gantinya. Mereka menyembunyikan sesuatu skema; mereka tidak boleh mendedahkan alat yang ditolak oleh modus. Alat yang dimuatkan dan panggilan skrip masih melalui gesaan kelulusan dan [guardrail tindakan](/ms-MY/manual-pengguna/konsep/guardrail/) sama seperti panggilan langsung, dan kedua-duanya tidak boleh mencapai nama yang tidak berada pada permukaan larian itu pada mulanya.
 
-Permukaan MCP yang dilihat oleh klien luaran **tidak** terjejas. `tools/list` masih mengembalikan katalog yang lengkap. Satu percubaan lebih awal untuk memangkasnya telah merosakkan ejen secara langsung: klien MCP mengesahkan nama alat terhadap senarai cache mereka sendiri dan menolak apa-apa yang tidak tersenarai tanpa pernah bertanya kepada pelayan, jadi alat yang "tersembunyi tetapi boleh dipanggil" sememangnya tidak dapat dicapai. Penundaan tinggal dalam harness, di mana memuatkan alat semasa larian ialah sesuatu yang benar-benar boleh dilakukan oleh harness.
+Permukaan MCP yang dilihat oleh klien luaran **tidak** ditangguhkan. `tools/list` mengembalikan katalog yang lengkap kerana klien MCP mengesahkan nama alat terhadap senarai cache mereka sendiri dan menolak apa-apa yang tidak tersenarai tanpa pernah bertanya kepada pelayan, jadi alat yang "tersembunyi tetapi boleh dipanggil" akan hanya tidak dapat dicapai. Penundaan tinggal dalam harness, di mana memuatkan alat semasa larian ialah sesuatu yang benar-benar boleh dilakukan oleh harness.
 
-### Mematikannya
+Larian ejen yang mencapai Control Center melalui titik akhir MCPnya, semasa pelayan boleh menjalankan skrip, ialah satu-satunya pengecualian. Senarai `tools/list` larian itu mengandungi `repl`, alat langsung dan setiap alat yang tidak boleh dipanggil oleh skrip, dan ia memanggil selebihnya daripada skrip. Panggilan langsung kepada salah satu daripada itu dijawab dengan cara memanggilnya daripada skrip.
 
-`--tool-deferral=off` (atau `CC_SERVER_TOOL_DEFERRAL=off`) menjadikan setiap alat yang diterima residen semula, menghasilkan permintaan yang tepat seperti yang dibuat oleh pelayan sebelum penundaan wujud. Lihat [rujukan CLI `cc_server`](/ms-MY/manual-pengguna/rujukan/cli-cc-server).
+### Mematikan penangguhan
+
+`--tool-deferral=off` (atau `CC_SERVER_TOOL_DEFERRAL=off`) mematikan penangguhan: larian tanpa `repl` mendapat setiap alat yang diterima sepenuhnya, dan larian dengan `repl` mendapat alat yang tidak boleh dipanggil oleh skrip sepenuhnya manakala selebihnya kekal khusus skrip. Lihat [rujukan CLI `cc_server`](/ms-MY/manual-pengguna/rujukan/cli-cc-server/).
 
 ## Caching prompt
 
@@ -64,7 +82,7 @@ Pembekal membenarkan bilangan penanda cache yang terhad, dan Control Center meng
 
 | Penanda                  | Merangkumi                            | Jangka hayat |
 | ------------------------ | ------------------------------------- | ------------ |
-| Alat **residen** terakhir | Blok alat                            | 1 jam        |
+| Alat **langsung** terakhir | Blok alat                            | 1 jam        |
 | Blok sistem terakhir     | Alat + prompt sistem                  | 1 jam        |
 | Ekor pusingan sebelumnya | Sejarah sehingga permintaan terakhir  | 5 min        |
 | Ekor pusingan semasa     | Sejarah penuh                         | 5 min        |
@@ -77,12 +95,12 @@ Awalan alat-dan-sistem mengambil jangka hayat yang panjang kerana ia tetap sepan
 
 Subejen daripada jenis yang sama menghasilkan awalan prompt yang serupa bait demi bait, jadi mereka sepatutnya membaca satu entri cache dan bukannya masing-masing menulis entri sendiri. Tetapi sesuatu entri hanya menjadi boleh dibaca setelah permintaan yang menulisnya mula membalas, jadi pancaran keluar yang dilancarkan serentak menyebabkan setiap anak membayar premium untuk awalan yang dikongsi oleh mereka semua.
 
-Harness membenarkan anak pertama bagi sesuatu bentuk bermula, kemudian melepaskan adik-beradiknya sebaik sahaja ia mula menstrim. Tungguannya terbatas: anak pertama yang lambat hanya menelan satu hit cache, tidak sekali-kali pancaran keluar itu sendiri. Atas sebab yang sama, setiap subejen menerima set alat residen yang sama tanpa mengira profilnya — mengubahnya mengikut profil akan memecahkan awalan yang dikongsi tanpa sebarang faedah, memandangkan profil itu sudah pun menentukan apa yang boleh dipanggil oleh anak tersebut.
+Harness membenarkan anak pertama bagi sesuatu bentuk bermula, kemudian melepaskan adik-beradiknya sebaik sahaja ia mula menstrim. Tungguannya terbatas: anak pertama yang lambat hanya menelan satu hit cache, tidak sekali-kali pancaran keluar itu sendiri. Atas sebab yang sama, setiap subejen menerima set alat langsung yang sama tanpa mengira profilnya — mengubahnya mengikut profil akan memecahkan awalan yang dikongsi tanpa sebarang faedah, memandangkan profil itu sudah pun menentukan apa yang boleh dipanggil oleh anak tersebut.
 
 ## Melihatnya berfungsi
 
 Kedua-dua bahagian boleh diperhatikan dan bukan diandaikan:
 
-- **Penjelajah konteks** pada sesuatu perbualan melaporkan alat residen, indeks tertunda dan apa yang *akan* dikenakan oleh setiap skema yang ditahan, dibina daripada laluan kod yang sama seperti yang digunakan oleh larian sebenar.
+- **Penjelajah konteks** pada sesuatu perbualan melaporkan alat langsung, indeks tertunda dan apa yang *akan* dikenakan oleh setiap skema yang ditahan, dibina daripada laluan kod yang sama seperti yang digunakan oleh larian sebenar.
 - Setiap larian merekodkan alat tertunda yang dimuatkannya dan apa yang mencetuskannya, jadi carian yang tidak menemui apa-apa kelihatan sebagai kegagalan pengambilan dan bukannya hilang ke dalam ejen yang secara senyap melakukan sesuatu yang berhampiran.
 - Kebolehcerapan melaporkan **Kadar cache** sebagai bacaan cache berbanding semua token prompt yang diproses, termasuk penulisan cache — larian yang sentiasa membina semula awalannya mendapat skor yang rendah, dan bukan diskor seperti larian yang tidak pernah memerlukan cache.

@@ -1,6 +1,8 @@
 import 'dart:math';
 
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/newsfeed/presentation/widgets/article_card.dart';
+import 'package:control_center/features/newsfeed/presentation/widgets/article_grid_delegate.dart';
 import 'package:control_center/features/newsfeed/providers/newsfeed_providers.dart';
 import 'package:flutter/widgets.dart';
 
@@ -93,11 +95,8 @@ class _GridSkeleton extends StatelessWidget {
         AppSpacing.xl,
         AppSpacing.xl,
       ),
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 340,
-        mainAxisSpacing: AppSpacing.lg,
-        crossAxisSpacing: AppSpacing.lg,
-        childAspectRatio: 0.9,
+      gridDelegate: ArticleGridDelegate(
+        bodyHeight: ArticleCard.bodyHeight(MediaQuery.textScalerOf(context)),
       ),
       itemCount: 9,
       itemBuilder: (context, _) => const _CardSkeleton(),
@@ -115,9 +114,7 @@ class _CardSkeleton extends StatelessWidget {
       decoration: BoxDecoration(
         color: t.bgPrimary,
         borderRadius: AppRadii.brLg,
-        border: Border.all(
-          color: t.borderSecondary,
-        ),
+        border: Border.all(color: t.borderSecondary),
       ),
       child: const ClipRRect(
         borderRadius: AppRadii.brLg,
@@ -258,8 +255,7 @@ class _ShimmerState extends State<_Shimmer>
 
     final t = context.designSystem ?? DesignSystemTokens.light();
     final base = t.bgQuaternary;
-    final highlight =
-        Color.lerp(base, t.bgPrimary, 0.55) ?? base;
+    final highlight = Color.lerp(base, t.bgPrimary, 0.55) ?? base;
 
     return AnimatedBuilder(
       animation: _controller,

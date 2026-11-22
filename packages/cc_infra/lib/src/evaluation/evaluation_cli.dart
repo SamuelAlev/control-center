@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_domain/features/code_mode/domain/value_objects/code_mode.dart'
+    show CodeRunnerUnavailable;
+import 'package:cc_domain/features/evals/domain/evaluation/evaluation_attempt.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_backend_port.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_manifest.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_plan.dart';
@@ -17,6 +20,7 @@ import 'package:cc_infra/src/evaluation/backends/builtin_evaluation_backend.dart
 import 'package:cc_infra/src/evaluation/backends/claude_cli_evaluation_backend.dart';
 import 'package:cc_infra/src/evaluation/backends/replay_evaluation_backend.dart';
 import 'package:cc_infra/src/evaluation/evaluation_artifacts.dart';
+import 'package:cc_infra/src/evaluation/evaluation_code_runner.dart';
 import 'package:cc_infra/src/evaluation/evaluation_engine.dart';
 import 'package:cc_infra/src/evaluation/evaluation_verifier_runner.dart';
 import 'package:cc_infra/src/model_routing/file_models_dev_source.dart';
@@ -29,7 +33,10 @@ import 'package:path/path.dart' as p;
 ///
 /// Commands:
 ///   * `list`   — print the corpus and the plan's arms;
-///   * `run`    — execute a live paired campaign and write the report;
+///   * `run`    — execute a live paired campaign and write the report; it
+///                spends money, so it runs only under the explicit paid-run
+///                policy `--max-spend-usd` (or prints its schedule with
+///                `--dry-run`, which spends nothing);
 ///   * `replay` — deterministically re-verify a previous campaign's recorded
 ///                attempts with NO model calls;
 ///   * `verify` — run a task's behavioral verifiers against an existing
@@ -103,6 +110,9 @@ cc_eval <list|run|replay|verify|report> [options]
   --mcp-config <path>    --mcp-config for the Claude CLI
   --permission-mode <m>  --permission-mode for the Claude CLI
   --max-attempt-cost-usd <n> API-equivalent Claude budget per trial, all turns
+  --max-spend-usd <n>    the paid-run policy: required for a live run; no
+                         attempt starts once the known spend reaches it, and
+                         unpriced spend stops the campaign
   --turn-timeout <min>   per-turn timeout for the Claude CLI
   --idle-minutes <n>     post-idle wait override
   --pricing-cache <path> models.dev cache JSON for cost estimation
@@ -112,10 +122,11 @@ cc_eval <list|run|replay|verify|report> [options]
 Future<int> _list(_Options options, IOSink out) async {
   final corpus = await EvaluationCorpus.read(options.corpusPath);
   final plan = _readPlan(options);
+  final tasks = plan.selectTasks(corpus.tasks);
   out
     ..writeln('corpus ${corpus.id} (${corpus.corpusHash})')
-    ..writeln('tasks: ${corpus.tasks.length}');
-  for (final task in corpus.tasks) {
+    ..writeln('tasks: ${tasks.length} of ${corpus.tasks.length}');
+  for (final task in tasks) {
     out.writeln(
       '  ${task.id} [${task.kind.wire}] ${task.independentlyCheckable ? 'behavioral' : 'WEAK-EVIDENCE'}'
       ' · ${task.verifiers.length} verifier(s)'
@@ -207,20 +218,72 @@ Future<int> _run(_Options options, bool replay, IOSink out, IOSink err) async {
       'live evaluation is disabled by --offline; use the replay subcommand',
     );
   }
+  // The paid-run policy: a live run calls a model, so it starts only with an
+  // explicit spend ceiling, checked before anything is resolved or spawned.
+  final ceiling = replay || options.dryRun
+      ? null
+      : EvaluationSpendCeiling.fromFlag(
+          options.getString('max-spend-usd'),
+          planUsd: plan.maxSpendUsd,
+        );
 
   // Everything the manifest pins is resolved from the REAL artifacts BEFORE the
   // campaign: the fixture's commit, the executable's version, the tool schemas
   // and the effective instructions.
   final lookups = await _catalogLookups(options.pricingCache);
+  ceiling?.requirePriceForGoals(
+    plan,
+    priced: lookups.priced(options.provider, options.model),
+    model: '${options.provider}/${options.model ?? '(unpinned)'}',
+  );
   final contextWindow =
       plan.contextWindowTokens ??
       options.getInt('context-window') ??
       lookups.contextWindowFor('${options.provider}/${options.model ?? ''}');
+  // The builtin harness's attempts get `repl` when CC_CODEMODE_RUNNER names
+  // a runner that passes its self-test, opened once for the campaign, and
+  // none otherwise, as a server without a runner.
+  final codeRunner = !replay && options.backend == 'builtin'
+      ? await EvaluationCodeRunner.open()
+      : null;
+  if (codeRunner?.availability case CodeRunnerUnavailable(:final reason)) {
+    out.writeln('cc_eval: no repl in this campaign: $reason');
+  }
+  try {
+    return await _runCampaign(
+      options,
+      replay,
+      out,
+      corpus: corpus,
+      plan: plan,
+      lookups: lookups,
+      contextWindow: contextWindow,
+      codeRunner: codeRunner,
+      ceiling: ceiling,
+    );
+  } finally {
+    await codeRunner?.dispose();
+  }
+}
+
+Future<int> _runCampaign(
+  _Options options,
+  bool replay,
+  IOSink out, {
+  required EvaluationCorpus corpus,
+  required EvaluationPlan plan,
+  required _CatalogLookups lookups,
+  required int? contextWindow,
+  required EvaluationCodeRunner? codeRunner,
+  required EvaluationSpendCeiling? ceiling,
+}) async {
   final backend = await _buildBackend(
     options,
     replay,
     lookups: lookups,
     contextWindowTokens: contextWindow,
+    codeRunner: codeRunner,
+    ceiling: ceiling,
   );
   final manifest = await _buildManifest(
     options,
@@ -245,6 +308,8 @@ Future<int> _run(_Options options, bool replay, IOSink out, IOSink err) async {
       keepWorkspaces: options.keep,
       dryRun: options.dryRun,
       onProgress: (message) => out.writeln('• $message'),
+      cancelled: ceiling?.reached,
+      onAttempt: ceiling?.record,
     ),
   );
   final result = await engine.run();
@@ -276,6 +341,9 @@ EvaluationPlan _readPlan(_Options options) {
   }
   return EvaluationPlan(
     id: plan.id,
+    hypothesis: plan.hypothesis,
+    primaryOutcome: plan.primaryOutcome,
+    minTasks: plan.minTasks,
     seed: seed ?? plan.seed,
     arms: plan.arms,
     strata: [
@@ -291,15 +359,17 @@ EvaluationPlan _readPlan(_Options options) {
         ),
     ],
     randomizedOrder: plan.randomizedOrder,
-    minPairs: plan.minPairs,
     alpha: plan.alpha,
     nonInferiorityMargin: plan.nonInferiorityMargin,
+    interimAtTasks: plan.interimAtTasks,
     maxCostRatio: plan.maxCostRatio,
+    maxSpendUsd: plan.maxSpendUsd,
     contextWindowTokens: plan.contextWindowTokens,
     caveats: plan.caveats,
     routePolicy: plan.routePolicy,
     memoryExperiment: plan.memoryExperiment,
     overlapExperiment: plan.overlapExperiment,
+    taskTags: plan.taskTags,
     notes: plan.notes,
   );
 }
@@ -309,6 +379,8 @@ Future<EvaluationBackendPort> _buildBackend(
   bool replay, {
   required _CatalogLookups lookups,
   required int? contextWindowTokens,
+  required EvaluationSpendCeiling? ceiling,
+  EvaluationCodeRunner? codeRunner,
 }) async {
   if (replay) {
     final source = options.replayFrom;
@@ -325,7 +397,10 @@ Future<EvaluationBackendPort> _buildBackend(
       final credential = await EnvProviderCredentialStore().activeCredential(
         options.provider,
       );
-      if (credential == null && !_isLocalProvider(options.provider)) {
+      // A dry run executes no attempt, so it needs no credential.
+      if (credential == null &&
+          !_isLocalProvider(options.provider) &&
+          !options.dryRun) {
         throw StateError(
           'no credential for provider "${options.provider}": set '
           '${(EnvProviderCredentialStore.envKeys[options.provider] ?? ['its API key env var']).join(' or ')} '
@@ -340,6 +415,8 @@ Future<EvaluationBackendPort> _buildBackend(
         toolOutputDir: p.join(options.outDir, 'tool-output'),
         tokenCalibration: TokenCalibration(),
         contextWindowTokens: contextWindowTokens,
+        codeExecutions: codeRunner?.executions,
+        ceilingRemainderMicros: ceiling?.remainingMicros,
       );
     case 'claude-cli':
       final turnTimeout = options.turnTimeoutMinutes;
@@ -386,6 +463,9 @@ Future<_CatalogLookups> _catalogLookups(String? explicitPath) async {
   await service.ensureLoaded();
   final catalog = service.catalogSync();
   return _CatalogLookups(
+    priced: (providerId, model) =>
+        model != null &&
+        (catalog.modelGet(providerId, model)?.cost?.isKnown ?? false),
     price: (record) {
       final cost = catalog.modelGet(record.providerId, record.model)?.cost;
       if (cost == null || !cost.isKnown) {
@@ -415,6 +495,7 @@ Future<_CatalogLookups> _catalogLookups(String? explicitPath) async {
 class _CatalogLookups {
   /// Creates a [_CatalogLookups].
   const _CatalogLookups({
+    required this.priced,
     required this.price,
     required this.vision,
     required this.effort,
@@ -425,10 +506,13 @@ class _CatalogLookups {
   /// window — every one of which makes an experimental arm refuse rather than
   /// run an indistinguishable configuration.
   const _CatalogLookups.empty()
-    : price = _noPrice,
+    : priced = _noPriced,
+      price = _noPrice,
       vision = _noVision,
       effort = _noEffort,
       contextWindow = _noWindow;
+
+  static bool _noPriced(String providerId, String? model) => false;
 
   static ProviderCallCost? _noPrice(ProviderCallRecord record) => null;
 
@@ -437,6 +521,9 @@ class _CatalogLookups {
   static bool _noEffort(String qualifiedModel) => false;
 
   static int? _noWindow(String qualifiedModel) => null;
+
+  /// Whether the catalog prices a provider's model (false without one).
+  final bool Function(String providerId, String? model) priced;
 
   /// Prices a completed provider call, or null when unknown.
   final ProviderCallCost? Function(ProviderCallRecord record) price;
@@ -551,6 +638,75 @@ Future<String?> _cliVersion(_Options options) async {
     return version.isEmpty ? null : version;
   } on ProcessException {
     return null;
+  }
+}
+
+/// The paid-run policy of a live campaign: its spend ceiling in micro-USD.
+///
+/// Checked between attempts, so the attempt in flight may pass it; an attempt
+/// whose spend could not be priced stops the campaign, because unknown spend
+/// cannot be held under a ceiling.
+class EvaluationSpendCeiling {
+  /// Creates an [EvaluationSpendCeiling] of [micros].
+  EvaluationSpendCeiling(this.micros);
+
+  /// Parses `--max-spend-usd`, refusing a live run without a positive value.
+  /// A plan's own `maxSpendUsd` (its owner's ceiling) lowers it, never
+  /// raises it.
+  factory EvaluationSpendCeiling.fromFlag(
+    String? raw, {
+    required double? planUsd,
+  }) {
+    final usd = raw == null ? null : double.tryParse(raw);
+    if (usd == null || !usd.isFinite || usd <= 0) {
+      throw StateError(
+        'a live campaign spends money and needs the paid-run policy: pass '
+        '--max-spend-usd <n> (the campaign ceiling), or --dry-run to print '
+        'the schedule without spending',
+      );
+    }
+    final held = planUsd != null && planUsd < usd ? planUsd : usd;
+    return EvaluationSpendCeiling((held * 1000000).round());
+  }
+
+  /// The ceiling in micro-USD.
+  final int micros;
+  int _spent = 0;
+  bool _unpriced = false;
+
+  /// Whether no further attempt may start.
+  bool reached() => _unpriced || _spent >= micros;
+
+  /// What is left of the ceiling: a goal attempt's cost limit.
+  int remainingMicros() => _spent >= micros ? 0 : micros - _spent;
+
+  /// Refuses a live campaign with a goal arm whose [model] the pricing cache
+  /// does not price. A goal attempt runs several loops (segments and
+  /// reviews), and unpriced spend cannot be held under the ceiling: without
+  /// a price it would be bounded only by turns.
+  void requirePriceForGoals(
+    EvaluationPlan plan, {
+    required bool priced,
+    required String model,
+  }) {
+    if (priced || !plan.arms.any((arm) => arm.goalVerification != null)) {
+      return;
+    }
+    throw StateError(
+      'a live goal-verification campaign needs a price for its model, and '
+      'the pricing cache (--pricing-cache) has none for $model: its spend '
+      'could not be held under --max-spend-usd; nothing was spent',
+    );
+  }
+
+  /// Adds a finished attempt's spend.
+  Future<void> record(EvaluationAttempt attempt) async {
+    final spent = attempt.cost.allAttemptMicros;
+    if (spent == null) {
+      _unpriced = true;
+    } else {
+      _spent += spent;
+    }
   }
 }
 

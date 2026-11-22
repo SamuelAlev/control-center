@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 import 'package:cc_domain/features/mcp/domain/services/tool_index.dart';
 import 'package:cc_harness/tools.dart';
+import 'package:cc_infra/src/harness/repl_tool.dart' show ReplLane;
 
 /// The largest number of matches one search may return.
 ///
@@ -24,11 +25,57 @@ const int kDefaultToolSearchLimit = 5;
 /// model as a plausible answer. Filtered here rather than in the index so the
 /// two callers keep ranking identically on the terms that matter.
 const Set<String> _toolQueryStopwords = {
-  'a', 'an', 'and', 'are', 'as', 'at', 'be', 'but', 'by', 'can', 'do', 'does',
-  'for', 'from', 'have', 'how', 'i', 'in', 'into', 'is', 'it', 'its', 'me',
-  'my', 'need', 'of', 'on', 'or', 'so', 'some', 'that', 'the', 'their', 'them',
-  'then', 'there', 'these', 'this', 'to', 'up', 'want', 'was', 'we', 'what',
-  'when', 'which', 'will', 'with', 'would', 'you', 'your',
+  'a',
+  'an',
+  'and',
+  'are',
+  'as',
+  'at',
+  'be',
+  'but',
+  'by',
+  'can',
+  'do',
+  'does',
+  'for',
+  'from',
+  'have',
+  'how',
+  'i',
+  'in',
+  'into',
+  'is',
+  'it',
+  'its',
+  'me',
+  'my',
+  'need',
+  'of',
+  'on',
+  'or',
+  'so',
+  'some',
+  'that',
+  'the',
+  'their',
+  'them',
+  'then',
+  'there',
+  'these',
+  'this',
+  'to',
+  'up',
+  'want',
+  'was',
+  'we',
+  'what',
+  'when',
+  'which',
+  'will',
+  'with',
+  'would',
+  'you',
+  'your',
 };
 
 /// Fraction of the best score a hit must reach to be returned.
@@ -50,14 +97,31 @@ const double _minRelativeScore = 0.25;
 /// It cannot widen a surface: the catalogue it indexes is what the mode already
 /// admitted, and activation only ever reveals a schema the run was always
 /// allowed to call. Approval and the action guard are untouched.
+///
+/// With `repl`, the run's script-only tools are indexed too but never
+/// loaded: a match on one says to call it from a `repl` script, the same
+/// answer a direct call to it gets. Without them, a search for something
+/// only a script can do would come back empty and read as a missing
+/// capability.
 class HarnessToolSearchTool extends HarnessTool {
-  /// Creates a search tool over [catalog], reporting residency per [_residency].
+  /// Creates a search tool over [catalog], reporting residency per
+  /// [_residency]. [scriptOnly] are the run's tools callable only from a
+  /// `repl` script.
+  ///
+  /// `lane` is the run's script state: once its scripts can no longer run
+  /// ([ReplLane.withdrawn]), a match on a script-only tool loads it like any
+  /// deferred tool instead of pointing at a script.
   HarnessToolSearchTool({
     required List<HarnessTool> catalog,
     required this._residency,
+    List<HarnessTool> scriptOnly = const [],
+    this._lane,
   }) : _catalog = catalog,
-       _index = ToolIndex.build([
-         for (final t in catalog)
+       _scriptOnly = List.unmodifiable(scriptOnly),
+       // Shared: the surface builds this tool, and binding `repl` builds it
+       // again for the same tools; runs with the same surface share it too.
+       _index = ToolIndex.shared([
+         for (final t in [...catalog, ...scriptOnly])
            ToolDef(
              name: t.name,
              description: t.description,
@@ -66,11 +130,44 @@ class HarnessToolSearchTool extends HarnessTool {
        ]);
 
   final List<HarnessTool> _catalog;
+  final List<HarnessTool> _scriptOnly;
   final ToolResidencySpec _residency;
   final ToolIndex _index;
+  final ReplLane? _lane;
+
+  /// The same search for a run whose script-only tools are [scriptOnly]: a
+  /// `repl` bound after a surface narrowed them (the `/vibe` orchestrator
+  /// keeps none) must not have its search point at tools no script reaches.
+  /// `lane` is that `repl`'s script state.
+  HarnessToolSearchTool withScriptOnly(
+    List<HarnessTool> scriptOnly, {
+    ReplLane? lane,
+  }) => HarnessToolSearchTool(
+    catalog: _catalog,
+    residency: _residency,
+    scriptOnly: scriptOnly,
+    lane: lane,
+  );
+
+  /// The same search for a run that calls [scriptOnly] directly because it
+  /// has no `repl`: they are searched as tools already loaded.
+  HarnessToolSearchTool withScriptOnlyResident(List<HarnessTool> scriptOnly) =>
+      HarnessToolSearchTool(
+        catalog: [..._catalog, ...scriptOnly],
+        residency: ToolResidencySpec(
+          enabled: _residency.enabled,
+          residentNames: {
+            ..._residency.residentNames,
+            for (final t in scriptOnly) t.name,
+          },
+        ),
+      );
+
+  /// The tool's name, which the surface reserves for the one it builds.
+  static const String toolName = 'search_tools';
 
   @override
-  String get name => 'search_tools';
+  String get name => toolName;
 
   @override
   String get description =>
@@ -110,12 +207,23 @@ class HarnessToolSearchTool extends HarnessTool {
   @override
   ToolApprovalTier get approvalTier => ToolApprovalTier.read;
 
+  /// A script has `searchTools()` and `ALL_TOOLS` of its own, which answer
+  /// from the catalog the script can actually call; loading a schema into the
+  /// model's request from inside a script would change nothing the script
+  /// can reach.
+  @override
+  bool get scriptCallable => false;
+
   @override
   Future<HarnessToolResult> execute(
     Map<String, dynamic> args,
     HarnessToolContext context,
   ) async {
-    final query = (args['query'] as String?)?.trim() ?? '';
+    // Cut to what the index reads before anything else touches it, so a
+    // huge query costs no more here than in the index.
+    final query = ToolIndex.boundQuery(
+      (args['query'] as String?)?.trim() ?? '',
+    );
     if (query.isEmpty) {
       return HarnessToolResult.error(
         'search_tools needs a `query` describing what you want to do.',
@@ -151,7 +259,7 @@ class HarnessToolSearchTool extends HarnessTool {
         jsonEncode({
           'query': query,
           'matches': <Object>[],
-          'tools_searched': _catalog.length,
+          'tools_searched': _catalog.length + _scriptOnly.length,
           'hint':
               'No tool matched those words. Try different vocabulary (the '
               'tool may name the same thing differently), or raise `limit`. '
@@ -161,12 +269,35 @@ class HarnessToolSearchTool extends HarnessTool {
         }),
       );
     }
-    final byName = {for (final t in _catalog) t.name: t};
+    // Once the run's scripts can no longer run, its script-only tools are
+    // deferred tools like the rest: a match loads them.
+    final withdrawn = _lane?.withdrawn ?? false;
+    final byName = {
+      for (final t in _catalog) t.name: t,
+      if (withdrawn)
+        for (final t in _scriptOnly) t.name: t,
+    };
+    final scriptOnlyByName = {
+      if (!withdrawn)
+        for (final t in _scriptOnly) t.name: t,
+    };
     final matches = <Map<String, dynamic>>[];
     final activate = <String>{};
+    var anyScriptOnly = false;
     for (final hit in hits) {
       final tool = byName[hit.name];
       if (tool == null) {
+        final scripted = scriptOnlyByName[hit.name];
+        if (scripted != null) {
+          anyScriptOnly = true;
+          matches.add({
+            'name': scripted.name,
+            'description': scripted.description,
+            'arguments': hit.schemaKeys,
+            'already_loaded': false,
+            'script_only': true,
+          });
+        }
         continue;
       }
       final loaded = _residency.isResident(tool);
@@ -186,11 +317,16 @@ class HarnessToolSearchTool extends HarnessTool {
       jsonEncode({
         'query': query,
         'matches': matches,
-        'tools_searched': _catalog.length,
-        'hint':
-            'These tools are now callable by name with their full schemas. '
-            'If none of them fits, search again with different words or a '
-            'larger `limit`.',
+        'tools_searched': _catalog.length + _scriptOnly.length,
+        'hint': anyScriptOnly
+            ? 'A match marked `script_only` is callable only from a script: '
+                  'call it from `repl` as `await tools["<name>"](args)`, not '
+                  'directly. The others are now callable by name with their '
+                  'full schemas. If none of them fits, search again with '
+                  'different words or a larger `limit`.'
+            : 'These tools are now callable by name with their full schemas. '
+                  'If none of them fits, search again with different words or '
+                  'a larger `limit`.',
       }),
       activateTools: activate,
     );

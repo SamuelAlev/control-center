@@ -2,7 +2,7 @@
 title: Chatear con un agente
 description: Crea un espacio con un agente, envíale trabajo, oriéntalo a mitad de la ejecución y detenlo.
 slug: es-MX/manual/guias/chatear-con-agente
-sourceHash: 0dbc01158345074d818cec6084501abc03323fea
+sourceHash: 3e899c417e120a7cc741e802d577d0182210115b
 ---
 
 Esta guía muestra cómo trabajar con un agente en un espacio.
@@ -44,6 +44,8 @@ nuevo. Se convierte en una tarjeta de orientación en cola en la franja sobre el
 compositor y se inyecta en la ejecución activa en el siguiente límite de turno.
 No hay ningún aviso emergente: la tarjeta es la respuesta.
 
+Para orientar una ejecución que trabaja para otra persona necesitas acceso de escritura a los repositorios del espacio; sin él, el mensaje se rechaza y se queda en el compositor. Una ejecución de solo lectura, como la revisión de un objetivo, no acepta mensajes mientras se ejecuta: cuando termina, el mensaje se envía como uno ordinario, y tras la revisión de un objetivo espera al siguiente segmento del objetivo en su lugar.
+
 Tres cosas cambian ese comportamiento:
 
 - Un mensaje que contiene una **@mención** siempre se envía como mensaje, nunca
@@ -78,9 +80,9 @@ agente sin tener que buscar el espacio. La superposición oculta una solicitud e
 el momento en que la conversación de ese espacio aparece en pantalla, así que
 nunca respondes dos veces a la misma solicitud.
 
-No hay tiempo de espera: un agente bloqueado espera hasta que alguien decide. La
-misma solicitud también aparece en la franja de atención de la bandeja de entrada
-y en el cliente para celular.
+Una ejecución que iniciaste espera una hora por una aprobación; después, la aprobación cuenta como denegada. La misma solicitud también aparece en la franja de atención de la bandeja de entrada y en el cliente para celular.
+
+Una ejecución que inició el servidor (un segmento de un objetivo, una programación o una respuesta de otro agente) espera 72 horas por defecto, según lo define un admin del espacio de trabajo; después, una aprobación cuenta como denegada y una pregunta como sin respuesta. Consulta [Cuando nadie responde](/es-MX/manual/guias/perseguir-un-objetivo/#cuando-nadie-responde).
 
 ## Responder a la pregunta de un agente
 
@@ -119,6 +121,8 @@ del espacio de trabajo con el mismo control.
 Una ejecución detenida se marca como detenida. Envía un mensaje nuevo para
 despachar de nuevo.
 
+Detener también retiene lo que se encoló para ese agente: tus mensajes de guía (**Enviar mensajes retenidos** los envía) y sus reactivaciones pendientes (**Reanudar** en la franja sobre el redactor). Un objetivo en el que trabajaba el agente se pausa hasta que alguien lo reanude.
+
 ## Usar comandos slash
 
 Escribe `/` en el compositor para ver la lista de comandos. Estos son los que
@@ -127,8 +131,10 @@ cambian cómo se comporta la conversación:
 | Comando        | Qué hace                                                                                                                             |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | `/plan`        | Cambia el espacio al modo plan. Un `/plan` a secas solo arma el modo; `/plan <request>` lo arma y envía el resto como tu mensaje     |
-| `/goal <text>` | Registra el objetivo de trabajo de la conversación                                                                                   |
-| `/loop <text>` | Itera sobre una tarea hasta que esté completa                                                                                        |
+| `/goal <text>` | Inicia un objetivo duradero en el que el agente sigue trabajando hasta que se verifique que está terminado ([Perseguir un objetivo](/es-MX/manual/guias/perseguir-un-objetivo/)) |
+| `/loop <text>` | Reactiva al agente con el texto de vez en cuando, cada cierto intervalo o a su propio ritmo ([Programaciones y reactivaciones](/es-MX/manual/guias/programaciones-reactivaciones/)) |
+| `/schedule <when> <text>` | Reactiva al agente más tarde, una vez o según un cron |
+| `/refine`      | Pide una revisión del trabajo de la conversación que puede proponer mejoras                                                          |
 | `/compact`     | Pliega el historial más antiguo en un resumen anclado y continúa sobre el contexto compactado                                        |
 | `/todo …`      | Consulta y edita la lista de tareas persistida de esta conversación                                                                  |
 

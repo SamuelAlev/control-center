@@ -3,9 +3,8 @@ import 'package:control_center/features/messaging/presentation/widgets/space_row
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 
-/// Where a nested conversation's title lines up with the space title.
-const double _kTextStart =
-    kSpaceSidebarPad + kSpaceSidebarMarkSlot + kSpaceSidebarMarkGap;
+/// Where the count lines up with the space and conversation titles.
+const double _kTextStart = kSpaceSidebarPad;
 
 /// "N conversations" discloses the space's conversations.
 ///

@@ -2,7 +2,7 @@
 title: Diagnozuj agenta
 description: Przejdź przez dziennik uruchomień, sondę adaptera, status serwera i diagnostykę hosta, gdy agent przestaje tworzyć uruchomienia.
 slug: pl-PL/podrecznik/poradniki/diagnostyka-agenta
-sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
+sourceHash: 8cd7078bacfbfcd18d90512974eff3539366883c
 ---
 
 Ten poradnik pokazuje, jak ustalić, dlaczego agent nie tworzy uruchomień.
@@ -90,7 +90,13 @@ Sprawdź **Ustawienia → Serwer → Diagnostyka i prywatność → Wyszukiwanie
 
 ### Serwer w ogóle nie startuje
 
-Wymagane są natywne biblioteki i nie ma trybu ograniczonego działania. Brakująca biblioteka dylib sprawia, że `cc_server` odmawia startu i wskazuje winowajcę w błędzie. Przygotuj natywne biblioteki przez `scripts/natives/build_natives.sh` i przebuduj plik binarny serwera.
+Wymagane są natywne biblioteki i nie ma trybu ograniczonego działania. Brakująca biblioteka dylib albo brakujący runner trybu kodu (`bin/codemode/cc_codemode`) sprawia, że `cc_server` odmawia startu i wskazuje winowajcę w błędzie. Przygotuj natywne biblioteki przez `scripts/natives/build_natives.sh` i przebuduj plik binarny serwera przez `scripts/build_server.sh`.
+
+### Skrypt się nie powiódł albo tryb kodu nie jest oferowany
+
+Aby zobaczyć, co zrobił skrypt [trybu kodu](/pl-PL/podrecznik/koncepcje/tryb-kodu/), otwórz zapis skryptu przez **Otwórz zapis** przy jego wierszu w rozmowie albo z **Obserwowalność → Wykonania kodu**. Zapis mówi prostymi słowami, jak skrypt się zakończył (skończył mu się czas, wyczerpał czas procesora, dobił do limitu pamięci, rzucił błąd), i wymienia każde wywołanie narzędzia, które wykonał, wraz z tym, czy guardraile je dopuściły, człowiek je zatwierdził, czy zostało odrzucone.
+
+Jeśli agent w ogóle nie ma narzędzia `repl`, otwórz **Ustawienia → Obszar roboczy → Tryb kodu**. W sekcji **Stan** pole **Na tym serwerze** pokazuje **Dostępne** albo **Niedostępne**; **Niedostępne** oznacza, że serwer nie może zablokować runnera skryptów na swoim hoście, a strona podaje powód. Ta sama linia (`code_mode=…`) jest w logu startowym serwera. Uruchomienie bez obszaru roboczego, uruchomienie, którego limity obszaru roboczego nie dało się odczytać, albo uruchomienie, którego dziennik nie mógł zostać zapisany, też nie dostaje `repl` i wywołuje narzędzia bezpośrednio.
 
 ### Akcja jest po cichu odrzucana
 

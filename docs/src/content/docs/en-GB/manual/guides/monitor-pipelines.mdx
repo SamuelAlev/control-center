@@ -2,7 +2,7 @@
 title: Monitor pipeline runs
 description: Work the runs queue, read a run's waterfall and step panel and recover from a failed or stuck step.
 slug: en-GB/manual/guides/monitor-pipelines
-sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
+sourceHash: 48d44ae3ca3e23c1123ef282ccffece35b542b96
 ---
 
 This is the page for everything after a run has started: finding it, reading
@@ -67,6 +67,8 @@ fail the whole run rather than resuming: a step suspended longer than 24 hours
 (`extras.awaitApproval` — the `orchestration.awaitApproval` body — is exempt;
 `human.gate` is not) and a non-idempotent step that was mid-flight when the
 server stopped.
+
+A **Pursue a goal** step is exempt from the 24-hour backstop too: it stays suspended while its goal works, and its page links to the goal. A whole run can also be **Suspended** because its orchestration reached its cost cap; the run page then shows what was spent of the cap and, to the run's requester, **Raise cap**.
 
 ## Inspect a step
 

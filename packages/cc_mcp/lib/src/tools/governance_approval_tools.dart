@@ -20,6 +20,27 @@ Map<String, dynamic> _approvalJson(Approval a) => {
   'decided_at': a.decidedAt?.toIso8601String(),
 };
 
+/// The schema entry of the calling agent: filled from the run's attested
+/// grant, whatever the caller sent ([McpTool.forcedScopeKeys]).
+const Map<String, dynamic> _callerAgent = {
+  'type': 'string',
+  'description': 'Authenticated caller agent, filled by transport.',
+};
+
+/// The agent an attested call came from, or null when there is none. These
+/// tools record who acted on an approval: that is whoever the call is
+/// attested as, never an argument, so a call that proves no agent is refused.
+String? _attestedAgent(Map<String, dynamic> arguments) =>
+    switch (arguments['agent_id']) {
+      final String id when id.isNotEmpty => id,
+      _ => null,
+    };
+
+CallResult _noAgent(String tool) => CallResult.error(
+  '$tool can only be called by a Control Center agent run: it records the '
+  'calling agent as the actor.',
+);
+
 /// Opens a board approval — a durable governance gate with a comment history.
 class CreateApprovalTool extends McpTool {
   /// Creates a [CreateApprovalTool].
@@ -29,6 +50,20 @@ class CreateApprovalTool extends McpTool {
 
   @override
   String get name => 'create_approval';
+
+  /// Not for scripts: it creates an approval (see [McpTool.scriptCallable]).
+  @override
+  bool get scriptCallable => false;
+
+  /// The requester is the calling agent ([_attestedAgent]).
+  @override
+  bool get requiresRunGrant => true;
+
+  @override
+  Set<String> get requiredScopeKeys => const {'workspace_id', 'agent_id'};
+
+  @override
+  Set<String> get forcedScopeKeys => const {'agent_id'};
 
   @override
   String get description =>
@@ -61,7 +96,7 @@ class CreateApprovalTool extends McpTool {
         'description': 'Kind of governed action.',
       },
       'description': {'type': 'string', 'description': 'Rationale.'},
-      'requested_by': {'type': 'string', 'description': 'Requesting agent id.'},
+      'agent_id': _callerAgent,
       'linked_ticket_ids': {
         'type': 'array',
         'items': {'type': 'string'},
@@ -81,13 +116,17 @@ class CreateApprovalTool extends McpTool {
     if (title is! String) {
       return CallResult.error('Missing or invalid argument: title');
     }
+    final agent = _attestedAgent(arguments);
+    if (agent == null) {
+      return _noAgent(name);
+    }
     final rawTickets = arguments['linked_ticket_ids'];
     final approval = await _service.createApproval(
       workspaceId: workspaceId,
       title: title,
       kind: ApprovalKind.fromStorage(arguments['kind'] as String?),
       description: arguments['description'] as String?,
-      requestedById: arguments['requested_by'] as String?,
+      requestedById: agent,
       linkedTicketIds: rawTickets is List
           ? rawTickets.map((e) => e.toString()).toList()
           : const [],
@@ -154,6 +193,20 @@ class DecideApprovalTool extends McpTool {
   @override
   String get name => 'decide_approval';
 
+  /// Not for scripts: it decides an approval (see [McpTool.scriptCallable]).
+  @override
+  bool get scriptCallable => false;
+
+  /// The decider is the calling agent ([_attestedAgent]), recorded as one.
+  @override
+  bool get requiresRunGrant => true;
+
+  @override
+  Set<String> get requiredScopeKeys => const {'workspace_id', 'agent_id'};
+
+  @override
+  Set<String> get forcedScopeKeys => const {'agent_id'};
+
   @override
   String get description =>
       'Records a decision on a pending approval: approve, reject, '
@@ -174,7 +227,7 @@ class DecideApprovalTool extends McpTool {
         'enum': ['approve', 'reject', 'request_revision', 'resubmit'],
         'description': 'The decision to apply.',
       },
-      'decided_by': {'type': 'string', 'description': 'Deciding actor id.'},
+      'agent_id': _callerAgent,
       'reason': {'type': 'string', 'description': 'Decision rationale.'},
     },
     'required': ['workspace_id', 'approval_id', 'decision'],
@@ -190,6 +243,10 @@ class DecideApprovalTool extends McpTool {
     if (approvalId is! String) {
       return CallResult.error('Missing or invalid argument: approval_id');
     }
+    final agent = _attestedAgent(arguments);
+    if (agent == null) {
+      return _noAgent(name);
+    }
     final rawDecision = arguments['decision'];
     final decision = ApprovalDecision.tryParse(
       rawDecision is String ? rawDecision.replaceAll('_', '') : null,
@@ -204,7 +261,8 @@ class DecideApprovalTool extends McpTool {
       approvalId,
       workspaceId: workspaceId,
       decision: decision,
-      decidedById: arguments['decided_by'] as String?,
+      decidedByActorType: 'agent',
+      decidedById: agent,
       reason: arguments['reason'] as String?,
     );
     return CallResult.success(jsonEncode(_approvalJson(updated)));
@@ -221,6 +279,21 @@ class CommentApprovalTool extends McpTool {
   @override
   String get name => 'comment_approval';
 
+  /// Not for scripts: what it posts is read by the person deciding the
+  /// approval (see [McpTool.scriptCallable]).
+  @override
+  bool get scriptCallable => false;
+
+  /// The author is the calling agent ([_attestedAgent]), recorded as one.
+  @override
+  bool get requiresRunGrant => true;
+
+  @override
+  Set<String> get requiredScopeKeys => const {'workspace_id', 'agent_id'};
+
+  @override
+  Set<String> get forcedScopeKeys => const {'agent_id'};
+
   @override
   String get description => 'Adds a comment to a board approval\'s discussion.';
 
@@ -234,7 +307,7 @@ class CommentApprovalTool extends McpTool {
       'workspace_id': {'type': 'string', 'description': 'Workspace ID.'},
       'approval_id': {'type': 'string', 'description': 'Approval id.'},
       'body': {'type': 'string', 'description': 'Comment text.'},
-      'author_id': {'type': 'string', 'description': 'Author id.'},
+      'agent_id': _callerAgent,
     },
     'required': ['workspace_id', 'approval_id', 'body'],
   };
@@ -253,11 +326,16 @@ class CommentApprovalTool extends McpTool {
     if (body is! String) {
       return CallResult.error('Missing or invalid argument: body');
     }
+    final agent = _attestedAgent(arguments);
+    if (agent == null) {
+      return _noAgent(name);
+    }
     final comment = await _service.comment(
       approvalId,
       workspaceId: workspaceId,
       body: body,
-      authorId: arguments['author_id'] as String?,
+      authorType: 'agent',
+      authorId: agent,
     );
     return CallResult.success(
       jsonEncode({

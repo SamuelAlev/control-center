@@ -131,12 +131,71 @@
 # models.dev load moved to the top of boot, post-ready scheduling); the
 # speech/code-server/Claude Code warm-ups and on-device model installs moved to
 # runtime/server_warm_up_wiring.dart, leaving it under the old floor.
-packages/cc_domain/lib/features/evals/domain/evaluation/evaluation_plan.dart  1580
+# Lowered 2026-11-18: code mode moved AgentDto to dtos/agent_dtos.dart,
+# RoutingDecision to evaluation/routing_decision.dart, the boot reconcilers to
+# runtime/server_boot_sweeps.dart, the agent wire mapping to
+# catalog/agent_wire.dart and the workspace_settings.* ops to
+# catalog/workspace_settings_ops.dart, so six files shrank below their floors.
+# Lowered 2026-11-19: the long-running-work data model moved AgentRunLogDto
+# to dtos/agent_run_log_dtos.dart and agentGoalRunToWire to
+# catalog/agent_goal_run_ops.dart.
+# Lowered 2026-11-19 (run settlement): ClaudeCallUsage moved to
+# sandboxing/claude_call_usage.dart, the /goal dispatch branch to
+# catalog/person_goal_dispatch.dart, the kill settlement to
+# catalog/agent_run_log_write_ops.dart and the boot run recovery order to
+# runtime/boot_run_recovery.dart.
+# Lowered 2026-11-19: the wake queue moved run dispatch, mention wakes and the
+# person-dispatch context out of messaging_service.dart, dispatch_session.dart
+# (park and watchdog part) and the RPC catalog (wake, goal-contract and run-log
+# packs; runtime/server_wake_queue_wiring.dart, server_peer_tools_wiring.dart).
+# Raised 2026-11-19 by 31 (wake rules): cc_server_runtime.dart builds
+# runtime/server_wake_rules_wiring.dart before the messaging service (a
+# person's /loop and /schedule), attaches it to the wake queue, starts it
+# before the queue and hands its pack to the server extra ops.
+# Raised 2026-11-19 by 16 (unattended): cc_server_runtime.dart wires
+# runtime/server_unattended_wiring.dart (the "Still in flight" hooks, the
+# expiry of unanswered requests and the daily digest) in one call after the
+# wake queue is attached.
+# Lowered 2026-11-19 (limits): the stream's task lifecycle lines (subagents
+# and Claude Code's background Bash tasks) moved from claude_stream_json.dart
+# to its part claude_task_lifecycle.dart.
+# cc_server_runtime.dart lowered by 1 (limits): the run queues are built
+# before the credential gate, which they now provide.
+# Code mode additions (2026-11-19, settled 2026-11-20 at 8259): 2 lines in
+# cc_server_runtime.dart hand ServerCodeMode the space rule and the dispatch
+# adapter ServerCodeMode's ScriptPastSources (what a run's scripts read of
+# their past with history/outputs/loadOutput, and keep; also bound to the MCP
+# repl tool). The rest of that wiring lives in server_code_mode_wiring.dart.
+# 3 lines added by another builder since 2026-11-19 are counted in 8259.
+# Code mode follow-up 2 (2026-11-20, net 0): the dispatch use case takes
+# ServerCodeMode's service (+1: its prompt names tools by real script
+# availability), ServerCodeMode takes the event bus (+1: an MCP
+# run's script-past port is dropped when the run settles), and the MCP relist
+# on availability changes is one call to ServerCodeMode (-2).
+# Raised 2026-11-19 by 34 (wake rules follow-up 1): open_pr_polling_service.dart
+# publishes the pull request watch edges (detect_pr_watch_events.dart) at its
+# snapshot comparison and on a confirmed merge or close, for every polled pull
+# request whoever opened it.
+# Removed 2026-11-20 (evaluation campaigns): evaluation_plan.dart fell under the
+# budget (1446) after TaskRoutePolicy moved to task_route_policy.dart.
+# Lowered 2026-11-20 (folder grant asker): dispatch_session.dart's two
+# exec-grant methods moved to dispatch_session_sandbox.dart.
+# Lowered 2026-11-20 (long-running work, settled): the orchestration ops moved
+# from remote_rpc_catalog.dart to catalog/orchestration_ops.dart behind the
+# space gate, and dtos.dart, catalog_wire.dart and cc_server_runtime.dart are
+# recorded at the counts the same work left them at.
+# Lowered 2026-11-20 (fix round 7): steering.update and steering.deliver
+# moved from remote_rpc_catalog.dart to catalog/steering_force_ops.dart
+# behind the steering write gate.
+# Lowered 2026-11-20 (review round): dispatch_session.dart's two run-stop
+# summaries moved to dispatch_session_run_end.dart, and remote_rpc_catalog.dart
+# is recorded at the count the same round left it at (agents.killProcesses
+# moved to the stop pack).
 packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart  2734
-packages/cc_domain/lib/src/dtos/dtos.dart  3686
+packages/cc_domain/lib/src/dtos/dtos.dart  3330
 packages/cc_infra/lib/src/chat/chat_bridge_service.dart  1550
-packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2355
-packages/cc_infra/lib/src/messaging/messaging_service.dart  1763
+packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2241
+packages/cc_infra/lib/src/messaging/messaging_service.dart  1626
 packages/cc_infra/lib/src/network/github/github_forge_pr_client.dart  1689
 packages/cc_infra/lib/src/network/github_graphql_client.dart  2215
 packages/cc_infra/lib/src/network/github_pr_client.dart  2254
@@ -145,12 +204,12 @@ packages/cc_infra/lib/src/rigs/cdp_client.dart  2495
 packages/cc_infra/lib/src/rigs/qemu_enclosure_backend.dart  1795
 packages/cc_infra/lib/src/rigs/rig_service.dart  2298
 packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2035
-packages/cc_infra/lib/src/sandboxing/claude_stream_json.dart  1660
+packages/cc_infra/lib/src/sandboxing/claude_stream_json.dart  1516
 packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2803
-packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3118
-packages/cc_server_core/lib/src/cc_server_runtime.dart  8405
+packages/cc_server_core/lib/src/catalog/catalog_wire.dart  2879
+packages/cc_server_core/lib/src/cc_server_runtime.dart  8257
 packages/cc_server_core/lib/src/demo/demo_seeder.dart  2865
 packages/cc_server_core/lib/src/local_rpc_server.dart  2503
-packages/cc_server_core/lib/src/pr_review/open_pr_polling_service.dart  1864
-packages/cc_server_core/lib/src/remote_rpc_catalog.dart  14779
+packages/cc_server_core/lib/src/pr_review/open_pr_polling_service.dart  1898
+packages/cc_server_core/lib/src/remote_rpc_catalog.dart  14346
 packages/cc_server_core/lib/src/repo_ide_data_service.dart  2365

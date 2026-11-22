@@ -2,7 +2,7 @@
 title: Orchestráció
 description: Hogyan lesz egy „nagy kérésből” az egész csapatot mozgósító terv, amelyet egyszer hagy jóvá, majd egy generált pipeline hajtja végre.
 slug: hu-HU/kezikonyv/fogalmak/orchestracio
-sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
+sourceHash: db1bbceaba025b64539588004eebb65d944d5933
 ---
 
 Egyetlen ügynök egyetlen dologban jó. Vannak azonban ennél nagyobb kérések: „kutassa fel az X piacát, és írjon pozicionálási dokumentumot”, „szállítsa le ezt a funkciót elejétől a végéig”, „vizsgálja át ezt a modult, és javítsa, amit talál”. Az **orchestráció** az, ahogy a Control Center ezeket kezeli: egy orchestrátor (rendszerint az Ön CEO-ügynöke) egy egész csapatot érintő tervet javasol, amelyet **egyszer** hagy jóvá, és amelyből egy determinisztikus materializáló olyan pipeline-t készít, amely elvégzi a munkát.
@@ -27,8 +27,8 @@ Amikor megad egy célt az orchestrátornak, az egy strukturált **`Orchestration
 - **Összegzés**: a záró lépés, amely előállítja a szállítandót.
 - **Költségvetés**: egy megadott költségplafon.
 
-:::caution[A költségvetés csak tájékoztató jellegű]
-A javaslat költségplafonját a rendszer a terv becsült összértékéhez hasonlítja, és a jóváhagyási sávban jelzi a keret túllépését _még a jóváhagyás előtt_. A futtatás megkezdése után azonban már semmi sem olvassa, így nem állítja le és nem buktatja meg a keretet túllépő orchestrációt. Az ügynökönkénti és munkaterületenkénti költségvetési szabályzatok külön mechanizmust alkotnak, és valójában ezek függesztik fel a költést.
+:::caution[A költségvetés megtartja a futtatást, nem öli meg]
+A javaslat költségplafonját a rendszer a terv becsült összértékéhez hasonlítja, és a jóváhagyási sávban jelzi a keret túllépését _még a jóváhagyás előtt_. A futtatás megkezdése után a szerver minden új lépés előtt ellenőrzi az addig elköltött összeget: a plafonnál a pipeline-futtatás visszatartva lesz (`suspended`, ok: `orchestration_budget`), és semmi új nem indul, míg a már futó lépések befejeződnek. Akit a futtatás kért, értesítést kap, és a pipeline-futtatás oldalán a **Plafon emelése** gombbal folytathatja (ha senki nem kérte, a munkaterület adminisztrátora). Az emelésnek a régi plafon és az elköltött összeg fölött kell lennie, legfeljebb 1 000 dollár lehet, és a plafont soha nem lehet eltávolítani. A futtatás által követett célok ráterhelődnek, átnézéseikkel együtt. Az ügynökönkénti és munkaterületenkénti költségvetési szabályzatok külön mechanizmust alkotnak.
 :::
 
 ## Hol nézheti át

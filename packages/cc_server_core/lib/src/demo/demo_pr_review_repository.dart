@@ -287,6 +287,32 @@ class DemoPrReviewRepository extends EmptyPrReviewRepository {
   });
 
   @override
+  Future<Map<String, dynamic>> postFileComment({
+    required int prNumber,
+    required String commitSha,
+    required String path,
+    required String body,
+  }) => _locked(() async {
+    final key = _key(prNumber);
+    final rows = await _readList(DemoPrCacheKind.reviewComments, key);
+    final id = _nextId(rows);
+    rows.add({
+      'id': id,
+      'body': body,
+      'user': PrCacheCodec.userToCache(visitor),
+      'path': path,
+      'created_at': DateTime.now().toIso8601String(),
+      'side': 'RIGHT',
+      'diff_hunk': '',
+      'thread_id': 'demo-thread-$id',
+      'file_level': true,
+      'reactions': <Map<String, dynamic>>[],
+    });
+    await _put(DemoPrCacheKind.reviewComments, key, jsonEncode(rows));
+    return {'id': id};
+  });
+
+  @override
   Future<void> replyToReviewComment({
     required int prNumber,
     required int parentCommentId,
@@ -313,6 +339,7 @@ class DemoPrReviewRepository extends EmptyPrReviewRepository {
       // Replies join the parent's thread, which is what makes them render
       // nested rather than as a new top-level comment.
       if (parent['thread_id'] != null) 'thread_id': parent['thread_id'],
+      if (parent['file_level'] == true) 'file_level': true,
       'reactions': <Map<String, dynamic>>[],
     });
     await _put(DemoPrCacheKind.reviewComments, key, jsonEncode(rows));

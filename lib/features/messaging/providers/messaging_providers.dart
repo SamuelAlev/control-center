@@ -13,7 +13,6 @@ import 'package:cc_domain/features/messaging/domain/value_objects/conversation_o
 import 'package:cc_domain/features/messaging/domain/value_objects/thread_summary.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/di/providers.dart';
-import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
 import 'package:flutter/foundation.dart';
@@ -85,28 +84,31 @@ final pendingFocusMessageProvider =
       ({String spaceId, String messageId})?
     >(PendingFocusMessageNotifier.new);
 
-/// Side effect: stamps the user's read cursor for a space whenever it becomes
-/// selected, so the sidebar's unseen indicator clears on open. Lives in a
-/// provider (not in [SelectedSpaceNotifier]) so the notifier stays pure and
-/// its unit tests don't need a binding/database and so the write only happens
-/// while the sidebar is actually mounted (the provider is watched there).
-///
-/// The stamp is fire-and-forget and best-effort — a read-cursor write must
-/// never block selection or surface an error.
-final selectedSpaceReadCursorEffectProvider = Provider<void>((ref) {
-  ref.listen<String?>(selectedSpaceIdProvider, (_, id) {
-    if (id == null) {
-      return;
-    }
-    ref
-        .read(spaceReadRepositoryProvider)
-        .markSpaceRead(
-          ref.requireWorkspaceId(),
-          id,
-          ref.read(currentUserIdProvider) ?? '',
-        );
-  });
+/// A transcript row to bring into view: a tool call in a space, and in one
+/// conversation of it when the request named one.
+typedef PendingToolCallFocus = ({
+  String spaceId,
+  String? conversationId,
+  String toolCallId,
 });
+
+/// A one-shot "show this tool call" target, set by the "Show script" link on
+/// an approval or a question a script raised. The conversation's feed
+/// consumes it when it is on screen, scrolls the row into view and clears it,
+/// the way [pendingFocusMessageProvider] works for a message.
+class PendingFocusToolCallNotifier extends Notifier<PendingToolCallFocus?> {
+  @override
+  PendingToolCallFocus? build() => null;
+
+  /// Sets the pending target, or clears it when null.
+  void set(PendingToolCallFocus? value) => state = value;
+}
+
+/// Provider for [PendingFocusToolCallNotifier].
+final pendingFocusToolCallProvider =
+    NotifierProvider<PendingFocusToolCallNotifier, PendingToolCallFocus?>(
+      PendingFocusToolCallNotifier.new,
+    );
 
 /// Provider for the messaging service (space lifecycle + agent dispatch),
 /// typed as the web-safe [MessagingPort].

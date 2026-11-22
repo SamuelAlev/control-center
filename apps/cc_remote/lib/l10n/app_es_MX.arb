@@ -5,5 +5,8 @@
   "credentialsProviderUnreachable": "No se puede contactar con {provider} en este momento. Reintentando.",
   "repoAccessAddToApp": "Agrega {names} a los repositorios de la GitHub App. Toca para abrir GitHub.",
   "repoAccessAskAdminAdd": "La GitHub App todavía no ve {names}. Pide a un administrador del espacio de trabajo que los agregue a sus repositorios.",
-  "repoAccessAutomationTokenMissing": "Ningún token de automatización puede leer {names}, así que el trabajo en segundo plano allí está en pausa. Un admin puede agregar uno en Ajustes → Repositorios."
+  "repoAccessAutomationTokenMissing": "Ningún token de automatización puede leer {names}, así que el trabajo en segundo plano allí está en pausa. Un admin puede agregar uno en Ajustes → Repositorios.",
+  "goalCreateAddCheck": "Agregar comprobación",
+  "limitParkTitle": "Pausada en el límite de uso de {provider}, que se restablece a las {time}. La ejecución espera a que se presione Reanudar, hasta 7 días después del restablecimiento.",
+  "limitParkTitleUnnamed": "Pausada en el límite de uso del proveedor, que se restablece a las {time}. La ejecución espera a que se presione Reanudar, hasta 7 días después del restablecimiento."
 }

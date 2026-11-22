@@ -54,6 +54,13 @@ class ClaudeIdleCompactor {
   final bool Function() _enabled;
   final _timers = <String, Timer>{};
 
+  /// The prompt-cache lifetime the last settled turn of each conversation
+  /// reported (insertion-ordered, so the oldest is dropped first).
+  final _ttls = <String, Duration>{};
+
+  /// The most conversations whose cache lifetime is remembered.
+  static const int maxRememberedTtls = 4096;
+
   /// Starts the compaction turn. Assigned once the messaging layer exists,
   /// which is built after the dispatch layer that reports to this class.
   Future<Object?> Function(ClaudeSettledTurn turn)? compact;
@@ -73,6 +80,14 @@ class ClaudeIdleCompactor {
   /// A turn ended cleanly. Waits for its cache's expiry when it is worth it.
   void turnSettled(ClaudeSettledTurn turn) {
     final ttl = turn.cacheTtl;
+    if (ttl != null) {
+      final ttlKey = _key(turn.workspaceId, turn.conversationId);
+      _ttls.remove(ttlKey);
+      _ttls[ttlKey] = ttl;
+      if (_ttls.length > maxRememberedTtls) {
+        _ttls.remove(_ttls.keys.first);
+      }
+    }
     if (ttl == null ||
         turn.contextTokens < ClaudeSessionSettings.minIdleCompactTokens ||
         !_enabled()) {
@@ -98,6 +113,12 @@ class ClaudeIdleCompactor {
       );
     }
   }
+
+  /// The prompt-cache lifetime the last Claude turn in this conversation
+  /// reported (five minutes on an API key, an hour on a subscription), or
+  /// null when no Claude turn has settled there since the server started.
+  Duration? cacheTtlFor(String workspaceId, String conversationId) =>
+      _ttls[_key(workspaceId, conversationId)];
 
   /// Cancels everything waiting.
   void dispose() {

@@ -63,5 +63,11 @@
   "settingsCommitSigningCreated": "Clave de firma creada. Agrégala a tu cuenta de la forja.",
   "settingsCommitSigningAddTitle": "Agrégala a tu cuenta de la forja",
   "auditLogOutcomeOk": "Exitoso",
-  "auditLogTimeAdd": "Agregar"
+  "auditLogTimeAdd": "Agregar",
+  "goalCardAddCheck": "Agregar comprobación",
+  "improvementOperationAdd": "Agrega",
+  "goalContractAddCheck": "Agregar comprobación",
+  "goalContractAddCriterion": "Agregar criterio",
+  "scheduleExtendDays": "Agregar días",
+  "improvementCampaignUnavailable": "Las evaluaciones no pueden ejecutarse en este servidor en este momento."
 }

@@ -143,4 +143,8 @@ class _Unreadable implements SpaceReadGate {
   @override
   Future<Set<String>> unreadable(String workspaceId, String userId) async =>
       _spaces;
+
+  @override
+  Future<List<String>> exposedBy(String workspaceId, String? spaceId) async =>
+      const [];
 }

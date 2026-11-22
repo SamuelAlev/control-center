@@ -2,10 +2,10 @@
 title: Instrumente agent integrate
 description: Suprafața de instrumente pe care harness-ul integrat o oferă unui agent — server de limbaj, căutare structurală, depanator, kerneluri și controlul workerilor — împreună cu fiecare operație și argumentele ei.
 slug: ro-RO/manual/referinta/instrumente-agent
-sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
+sourceHash: e99183fd4b257a60f94444101e1d39a7d6c77249
 ---
 
-Acestea sunt instrumentele **legate de server** pe care runtime-ul de agent integrat le înregistrează direct — server de limbaj, căutare structurală, depanator, kerneluri, întrebări și controlul workerilor — spre deosebire de [instrumentele MCP](/ro-RO/manual/referinta/instrumente-mcp/) pe care le aduce prin punte și de instrumentele generice de fișiere, căutare și shell din runtime-ul harness-ului. Nu se află în registrul MCP: un client MCP extern nu le va vedea, pentru că fiecare este legat de o resursă activă de pe server — un proces de server de limbaj, un adaptor de depanare, un interpretor — care aparține unei singure rulări.
+Acestea sunt instrumentele **legate de server** pe care runtime-ul de agent integrat le înregistrează direct — server de limbaj, căutare structurală, depanator, kerneluri, scripturi ale modului cod, întrebări și controlul workerilor — spre deosebire de [instrumentele MCP](/ro-RO/manual/referinta/instrumente-mcp/) pe care le aduce prin punte și de instrumentele generice de fișiere, căutare și shell din runtime-ul harness-ului. Nu se află în registrul MCP: un client MCP extern nu le va vedea, pentru că fiecare este legat de o resursă activă de pe server — un proces de server de limbaj, un adaptor de depanare, un interpretor — care aparține unei singure rulări.
 
 Fiecare instrument de aici este înregistrat doar când resursa din spatele lui este conectată pentru rulare — un supraveghetor de server de limbaj sau de depanare, un analizor sintactic tree-sitter, o fabrică de kerneluri, un port de întrebări, o listă de vibe. Detectarea unui server de limbaj sau a unui adaptor de depanare pentru *acest checkout* este o verificare separată, ulterioară (`status` / `adapters`): instrumentele respective rămân pe suprafață ca agentul să poată întreba de ce nu este utilizabil nimic, în loc să ghicească.
 
@@ -15,9 +15,23 @@ Fiecare instrument declară un nivel, iar nivelul decide **care suprafețe îl v
 
 | Nivel   | Semnificație                           | Instrumente aici                                   |
 | ------- | -------------------------------------- | -------------------------------------------------- |
-| `read`  | Fără efecte secundare                  | `lsp`, `ast_grep`, `ask_user`, cele cinci `vibe_*` |
+| `read`  | Fără efecte secundare                  | `lsp`, `ast_grep`, `ask_user`, `repl`, cele cinci `vibe_*` |
 | `write` | Modifică fișiere                       | `lsp_rename`, `ast_edit`, `resolve`                |
 | `exec`  | Pornește sau controlează un proces     | `debug`, `eval`                                    |
+
+## Direct, disponibil doar din script sau încărcat la prima utilizare
+
+Când serverul poate rula scripturi, o rulare apelează direct câteva instrumente și ajunge la restul dintr-un script [`repl`](#repl--rulează-un-script-care-apelează-instrumentele-tale); vezi [Mod cod](/ro-RO/manual/concepte/mod-cod/#ce-instrumente-apelează-agentul-direct) pentru regula completă. Pentru instrumentele din această pagină:
+
+| Instrument | Cu `repl` | Fără `repl` |
+| ---- | ----------- | -------------- |
+| `repl` | Direct | Absent |
+| `ask_user` | Direct | Direct |
+| `lsp`, `lsp_rename`, `ast_grep`, `ast_edit`, `resolve`, `debug` | Doar din script | Încărcat la prima utilizare |
+| `eval` | Încărcat la prima utilizare (un script nu îl poate apela) | Încărcat la prima utilizare |
+| `vibe_*` | Direct în modul vibe, niciodată dintr-un script | Direct în modul vibe |
+
+Un instrument marcat „Doar din script” se încarcă la prima utilizare în schimb, odată ce serverul nu poate rula scripturile rulării ([Când scripturile nu pot rula](/ro-RO/manual/concepte/mod-cod/#când-scripturile-nu-pot-rula)).
 
 ---
 
@@ -152,9 +166,49 @@ O singură sesiune per conversație, cu un TTL strict (30 de minute). Un al doil
 
 ---
 
+## `repl` — rulează un script care apelează instrumentele tale
+
+Prezent pe fiecare rulare când serverul poate rula scripturi ([Când o rulare are `repl`](/ro-RO/manual/concepte/mod-cod/#când-o-rulare-are-repl)). Scriptul este JavaScript simplu, corpul unei funcții async, și rulează într-un interpretor nou, blocat, în propriul proces: fără acces la sistemul de fișiere, la rețea, la procese sau la module. `repl` în sine aparține nivelului `read`, pentru că fiecare apel de instrument făcut de script este verificat separat. Este disponibil și pe endpoint-ul MCP, pentru rulările de agent pe un server care poate rula scripturi.
+
+| Argument | Semnificație |
+| ------------------- | --------------------------------------------------------------------------------------------- |
+| `code` | Scriptul. Cel mult 256 KiB |
+| `description` | Obligatoriu. O etichetă scurtă pentru rândul din transcriere |
+| `timeout_ms` | Opțional. O limită de timp mai scurtă decât cea a spațiului de lucru; niciodată una mai lungă |
+| `max_output_tokens` | Opțional. Un buget de ieșire mai mic decât cel al spațiului de lucru; niciodată unul mai mare |
+
+```js
+// Read three files together and report only which ones failed.
+const paths = ["lib/a.dart", "lib/b.dart", "lib/c.dart"];
+const results = await Promise.allSettled(paths.map((path) => tools.read({ path })));
+return results
+  .map((r, i) => (r.status === "rejected" ? `${paths[i]}: ${r.reason.message}` : null))
+  .filter(Boolean);
+```
+
+Descrierea `repl` îi spune agentului: „Un instrument care nu este unul dintre instrumentele tale directe nu are o definiție în această cerere. Înainte de primul apel către unul dintre ele, caută-l cu `describeTool(name)` sau `searchTools(query)`, cu excepția cazului în care forma exactă a apelului i-a fost deja arătată în această conversație.”
+
+`describeTool(name)` returnează descrierea unui instrument, declarația sa, schemele de intrare și de ieșire și nota sa despre rezultat, atunci când există una: ce primește un script de la un apel încheiat, în propriile cuvinte ale instrumentului. Descrierea `repl` listează notele instrumentelor directe pe care un script le poate apela. Un rezultat care este text JSON ajunge parsat, cu excepția cazului în care conține mai mult de 131.072 de valori: atunci ajunge ca text, iar scriptul îl parsează cu `JSON.parse`. Textul unui rezultat de la un instrument al unui server MCP extern este tăiat la 262.144 de caractere, iar textul tăiat nu mai poate fi parsat.
+
+- `tools.<name>(args)` apelează un instrument prin același filtru, aceleași guardrail-uri și aceeași aprobare ca un apel direct și eșuează cu o eroare când este refuzat sau când eșuează. Apelurile doar de citire pot rula împreună; apelurile care modifică ceva rulează pe rând, în ordinea în care le-a făcut scriptul. Cât timp unul dintre apelurile sale așteaptă o persoană, scriptul nu pornește niciun alt apel.
+- `ALL_TOOLS`, `searchTools(query, { limit, namespace })`, `describeTool(name)` și `describeNamespace(name)` găsesc instrumente, inclusiv pe cele ale serverelor MCP conectate. Un instrument din afara setului direct, pe care un script îl poate apela, este apelabil doar dintr-un script; apelându-l direct se returnează cum poate fi apelat din `repl`. Odată ce serverul nu poate rula scripturile rulării, un astfel de instrument se încarcă la prima utilizare în schimb.
+- Căutările sunt limitate: o interogare de cel mult 1.024 de caractere, un nume sau namespace de cel mult 256, `limit` de la 0 la 50 și cel mult 200 de căutări care iau în total 2 secunde din timpul serverului pe script, în timp ce toate scripturile unui spațiu de lucru împart 2 secunde de timp de căutare, care se refac cu un sfert de secundă pe fiecare secundă; dincolo de oricare dintre limite, căutările următoare sunt respinse. Într-un catalog foarte mare, descrierile din `ALL_TOOLS` împart în mod egal aproximativ un milion de caractere, iar una tăiată se termină în `…`; `describeTool` returnează întotdeauna descrierea completă. Un tip prea mare pentru a fi afișat apare ca `unknown /* too large to show */`, iar un nume necunoscut primește ca răspuns cele mai apropiate nume.
+- Instrumentele sunt grupate în namespace-uri: `builtin` (instrumentele proprii ale harnessului), `control-center` (instrumentele Control Center) și câte unul pentru fiecare server MCP conectat, numit după server. Un server numit `builtin`, `control-center` sau `script`, ori al cărui nume începe cu `external-`, în orice amestec de majuscule și minuscule și cu sau fără spații în jurul lui, este listat ca `external-` urmat de numele său, iar niciun instrument nu se află vreodată în `script`.
+- Vine înapoi doar ce returnează scriptul sau transmite către `text()`, `image()` sau `console.*`. Ieșirea peste buget păstrează începutul și sfârșitul, iar `read_output` citește restul.
+- `store(key, value)` / `load(key)` păstrează valori JSON pentru scripturile ulterioare ale aceleiași conversații și ale aceluiași agent, salvate doar când scriptul se încheie. Scripturile unui subagent nu au depozit.
+- `await tools.ask_user(...)` pune o întrebare, iar răspunsul ei este adăugat și în rezultat. `sleep(ms)`, `setTimeout`, `limits()` și `models.embed` / `rank` / `classify` (embedding-uri pe dispozitiv) sunt disponibile și ele.
+- `describeTool(name)` și `searchTools(query)` răspund și pentru funcțiile proprii ale scriptului, care nu sunt instrumente: `text`, `image`, `store`, `load`, `sleep`, `setTimeout`, `clearTimeout`, `limits`, `exit` și `models.*`, sub spațiul de nume `script`.
+- Nu pot fi apelate dintr-un script: `repl`, `eval`, `task`, `checkpoint`, `rewind`, `compact`, `search_tools` și verbele `vibe_*`.
+- Un script citește trecutul propriei rulări: `history({start, role, tool, limit})` parcurge transcriptul conversației (cel mult 50 de rânduri la un apel; trece `next_start` din pagina anterioară ca `start`), `outputs()` listează ieșirile de unelte stocate pentru această conversație și agent, iar `loadOutput(handle)` citește 16.384 de caractere dintr-una. `storedKeys()` listează cheile stocate cu dimensiunile lor. `keep(value, label)` stochează o valoare mare ca ieșire pe care o poate citi un script ulterior sau `read_output`, salvată doar când scriptul se încheie (1 MiB o valoare, 64 de valori și 16 MiB pe rulare). `limits().returnBudgetChars` spune cât din bugetul de ieșire a mai rămas. O rulare doar în citire (o revizuire de obiectiv) poate citi, dar nu poate stoca sau păstra. Pe Claude Code și ACP, `history()` funcționează, iar `outputs()`, `loadOutput()` și `keep()` refuză, pentru că Control Center nu păstrează ieșiri de unelte ale acelor rulări.
+- O eroare de la un timeout, o depășire a ieșirii sau a limitei de apeluri spune cum se remediază.
+
+O rulare execută un singur script pe rând. Limitele și ce se întâmplă la fiecare sunt pe pagina [mod cod](/ro-RO/manual/concepte/mod-cod/#limite); fiecare script este înregistrat la **Observabilitate → Execuții de cod**.
+
+---
+
 ## `eval` — interpretoare persistente
 
-O celulă Python sau JavaScript ale cărei variabile, importuri și date încărcate supraviețuiesc între apeluri. Nivel `exec`; nu este sigur la rulare în paralel.
+O celulă Python sau JavaScript ale cărei variabile, importuri și date încărcate supraviețuiesc între apeluri. Nivel `exec`; nu este sigur la rulare în paralel. Nu poate fi apelată dintr-un script `repl`, iar o celulă nu poate apela instrumentele rulării: pentru a apela instrumente din cod, folosește [`repl`](#repl--rulează-un-script-care-apelează-instrumentele-tale).
 
 | Argument      | Semnificație                                     |
 | ------------- | ------------------------------------------------ |
@@ -166,20 +220,34 @@ O celulă Python sau JavaScript ale cărei variabile, importuri și date încăr
 - Ultima expresie este afișată așa cum face un notebook.
 - `display()` funcționează, un DataFrame pandas se randează ca tabel, iar o figură matplotlib revine ca o **imagine pe care transcrierea o afișează**.
 - Idiomurile IPython pe care lumea le tastează reflex — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — sunt rescrise în cod simplu. `%pip` elimină și intrările din `sys.modules`, așa că următorul `import` vede ce tocmai a fost instalat.
-
-### Apelarea propriilor instrumente din interiorul unei celule
-
-```python
-contents = tool("read", {"path": "lib/auth.dart"})
-```
-
-Puntea **reintră în registrul de instrumente al harness-ului**, așa că guardrail-urile, aprobarea și fiecare înveliș se aplică exact ca la un apel emis de model. Călătorește pe conducta proprie a kernelului, nu pe un socket loopback: fără port, fără secret, fără regulă de ieșire în rețea.
-
-Timeout-ul celulei este un buget de *inactivitate* (implicit 5 minute) și este **suspendat** cât timp un apel prin punte este în curs, așa că o celulă care face fan-out către subagenți nu este omorâtă la mijlocul fan-out-ului.
+- O celulă care tipărește mai mult decât bugetul ei de ieșire păstrează primele trei sferturi și ultimul sfert, cu o linie care spune câte caractere și imagini au fost eliminate.
+- Când interpretorul a murit fără să i se fi cerut, următoarea celulă este anunțată o dată că variabilele ei de dinainte nu mai există.
 
 :::note[Unde rulează kernelul]
 În mediul izolat al conversației când aceasta are unul, altfel în sandbox-ul rulării de pe gazdă. Cu sandbox-ul oprit sau indisponibil rulează neizolat, iar `eval` cere aprobarea rulării pe gazdă. Nu pornește un mediu izolat ca să ajungă acolo — aceeași regulă care împiedică pornirea automată a unui tab de stație.
 :::
+
+---
+
+## `bash` în fundal
+
+`bash` cu `run_in_background: true` pornește comanda și returnează imediat cu un handle (`b1`, `b2`, …) în loc să aștepte. Agentul continuă să lucreze sau își încheie tura și este trezit când comanda iese.
+
+| Argument | Semnificație |
+| ------------------- | ------- |
+| `run_in_background` | `true` ca să pornească și să returneze imediat |
+| `timeout_seconds` | Secunde până când comanda este oprită: implicit 600, cel mult 3.600 |
+| `notify` | Opțional. Un tipar simplu; fiecare linie de ieșire care se potrivește este trimisă agentului cât timp rulează comanda (cum ar fi `listening on\|FAILED`) |
+
+- Cel mult 4 comenzi de fundal rulează deodată într-o rulare. Fiecare este oprită la timeout și la încheierea rulării, împreună cu fiecare proces pe care l-a pornit.
+- Când o comandă iese, agentul primește o notificare cu codul de ieșire, ultimele 2.000 de caractere de ieșire și un handle `read_output` pentru rest.
+- Un agent a cărui singură muncă rămasă este o comandă de fundal așteaptă fără să cheme modelul, iar supraveghetorul de liniște al rulării se oprește cât timp așteaptă.
+- `bash_output(handle)` citește starea unei comenzi și ieșirea recentă; `bash_kill(handle)` o oprește. Ambele spun când rezultatul fusese deja livrat.
+- Un script nu poate porni o comandă de fundal. Claude Code are propriul Bash de fundal; Control Center păstrează rularea deschisă cel mult 10 minute după tura care a lăsat o sarcină în curs.
+
+## `compact` — eliberează spațiu în fereastra de context
+
+Compactează contextul mai vechi al conversației înainte de următorul apel al modelului, păstrând ce numește `focus` (cel mult 1.000 de caractere). Cele mai noi ture rămân neschimbate. Linia de buget per tură a agentului arată utilizarea contextului la 70, 80 și 90%, iar unealta merită apelată după circa 70% înainte de o nouă fază lungă de lucru. Hook-ul `preCompact` al proprietarului serverului poate adăuga la focalizare ([Hook-uri de shell](/ro-RO/manual/referinta/configurarea-agentilor/#hook-uri-de-shell)). După o compactare, serverul adaugă un bloc „Still in flight”: obiectivul, treziri în așteptare, întrebări deschise, comenzi de fundal, lista de verificare și cheile stocate, fiecare cu apelul care le recuperează.
 
 ---
 

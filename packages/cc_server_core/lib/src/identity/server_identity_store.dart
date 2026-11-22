@@ -228,10 +228,13 @@ final class ServerIdentityUnreadable extends ServerBootRefusal {
   final String quarantinedAt;
 
   @override
-  String get message =>
-      'cc_server: cannot start — the server identity at $path could not be '
-      'read, and its bytes are kept at $quarantinedAt. Starting with a new '
-      'identity would make every paired client pair again. Restore the file '
-      'from a backup to $path, or delete $quarantinedAt to start as a new '
-      'server.';
+  String get message {
+    final file = printableText(path, max: 1024);
+    final kept = printableText(quarantinedAt, max: 1024);
+    return 'cc_server: cannot start \u2014 the server identity at $file could not '
+        'be read, and its bytes are kept at $kept. Starting with a new '
+        'identity would make every paired client pair again. Restore the '
+        'file from a backup to $file, or delete $kept to start as a new '
+        'server.';
+  }
 }

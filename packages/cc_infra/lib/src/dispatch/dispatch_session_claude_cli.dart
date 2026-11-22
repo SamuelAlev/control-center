@@ -79,6 +79,12 @@ extension _ClaudeCliMethods on DispatchSession {
       // `AgentDispatchService`, where the account plan can still be re-resolved
       // before the sandbox profile is built from it. This is the terminal
       // report, and it shares its sentence with what the gate showed.
+      if (spent.reason == RunCredentialReason.planSpent) {
+        _markEndReason(
+          RunEndReason.usageLimit,
+          limitResetsAt: spent.earliestReset,
+        );
+      }
       addEvent(ErrorEvent(content: claudeRefusalDetail(spent)));
       _finish(exitCode: 126);
       return;
@@ -173,7 +179,10 @@ extension _ClaudeCliMethods on DispatchSession {
     // under `--dangerously-skip-permissions` (a PreToolUse deny wins in every
     // permission mode), which is what lets "ask first" reach a runner whose
     // own prompt gate is off.
-    final hookSettings = AgentRunLease.claudeHookSettings(_gatewayLease);
+    final hookSettings = AgentRunLease.claudeHookSettings(
+      _gatewayLease,
+      readOnly: readOnly,
+    );
     final permissionMode = _claudePermissionMode(mode);
     _claude.mcpExpected = mcpConfigPath != null || mcpServers != null;
 
@@ -189,11 +198,17 @@ extension _ClaudeCliMethods on DispatchSession {
       mcpConfigPath: mcpConfigPath,
       mcpServers: mcpServers,
       settingsJson: hookSettings,
+      // Whether this server runs scripts, which shapes the MCP `tools/list`
+      // this session is handed.
+      hasRepl: deps.codeExecutions?.availability.isAvailable ?? false,
     );
-    if (claudeResumeReset) {
+    // A fresh run starts a new native session and leaves the conversation's
+    // stored one untouched (neither cleared nor resumed nor replaced), so the
+    // next ordinary run resumes it as before.
+    if (claudeResumeReset && !freshHistory) {
       await _clearClaudeRecord(policy);
     }
-    final resumeRecord = await _loadClaudeRecord(policy);
+    final resumeRecord = freshHistory ? null : await _loadClaudeRecord(policy);
     final parts = promptParts;
     // A stored session is reachable only when the CLI can be asked for it, the
     // preparation produced a delta, and the record carries a conversation
@@ -258,6 +273,7 @@ extension _ClaudeCliMethods on DispatchSession {
     // cumulative counters so a reset or an account switch cannot erase earlier
     // attempts from the run's reported spend.
     _claude.dispatchTotals = ClaudeDispatchTotals();
+    _claude.unreported = ClaudeUnreportedUsage();
     _claude.init = null;
     _claude.nativeSessionId = _claude.resumeId;
     if (activeResumeRecord != null && parts != null) {
@@ -426,6 +442,7 @@ extension _ClaudeCliMethods on DispatchSession {
             producedOutput = true;
             _claude.subagents?.onEvent(event);
           },
+          onBackgroundTask: _onClaudeBackgroundTask,
           // Occupancy, not spend: the size of the newest main-thread call,
           // measured against the agent's configured window, else the one the
           // `--model` id runs with. A setting the model cannot honour is
@@ -439,9 +456,13 @@ extension _ClaudeCliMethods on DispatchSession {
                 compactions: compactions,
               ),
             );
+            _onClaudeCallUsage(u);
           },
+          // Spend only: a subagent's calls run in their own window.
+          onSubagentCallUsage: _onClaudeCallUsage,
           onCompactBoundary: (preTokens) {
             compactions++;
+            _noteClaudeCompacted();
             if (compactOnly) {
               // The run's whole output: without it the conversation shows an
               // empty reply from an agent nobody spoke to.
@@ -585,8 +606,15 @@ extension _ClaudeCliMethods on DispatchSession {
       await _drainSandboxEvents();
       _claude.parser = null;
       if (_cancelSource.isCancelled) {
+        // A stop already settled the run with the cumulative report that
+        // includes the calls no `result` reported (`_failRun`), and may have
+        // ended its stream: nothing more is emitted from here.
         break;
       }
+      // Calls this process streamed that no `result` will report now: it died
+      // mid-turn. Counted at their streamed size before anything moves to
+      // another account or ends the run.
+      _foldClaudeUnreportedUsage();
 
       final failure = terminal;
       final hasNext = i + 1 < attempts.length;
@@ -724,6 +752,14 @@ extension _ClaudeCliMethods on DispatchSession {
           // failure anyway so the NEXT dispatch starts somewhere usable.
           await _reportClaudeAccountFailure(attempt.accountId, failure);
         }
+        // The plan ran out and no account is left to carry the run: it ends
+        // on a usage limit, with the CLI's reset time when it reported one.
+        if (failure.isCapacity && !compactOnly) {
+          _markEndReason(
+            RunEndReason.usageLimit,
+            limitResetsAt: failure.resetsAt,
+          );
+        }
         final detail = redactSecrets('[claude] ${failure.message}');
         addEvent(
           compactOnly
@@ -771,6 +807,8 @@ extension _ClaudeCliMethods on DispatchSession {
     } else {
       addEvent(DebugEvent(content: '[claude] claude exited cleanly (code 0)'));
     }
+    // The terminal write must be the row's last cost write.
+    await _claude.costWrites;
     _finish(exitCode: exitCode);
   }
 
@@ -791,6 +829,12 @@ extension _ClaudeCliMethods on DispatchSession {
       _closeClaudeStdin();
       return false;
     }
+    // The run reached its cost cap on this turn: nothing queued starts
+    // another turn. What is queued stays queued and converts at run end.
+    if (_costCapReached) {
+      _closeClaudeStdin();
+      return !failed;
+    }
     if (!failed) {
       final pending = [
         ..._steering.drainSteering(),
@@ -798,8 +842,16 @@ extension _ClaudeCliMethods on DispatchSession {
         ..._steering.drainFollowUp(),
       ];
       if (pending.isNotEmpty) {
+        // Near the cap, the next turn starts with the wrap-up note.
+        final wrapUp = _takeCostWrapUp();
+        if (wrapUp != null) {
+          stdin.add(_claudeUserLine(wrapUp));
+        }
         _writeClaudeSteering(stdin, pending);
         return false;
+      }
+      if (_holdClaudeForBackground()) {
+        return true;
       }
     }
     _closeClaudeStdin();
@@ -811,7 +863,7 @@ extension _ClaudeCliMethods on DispatchSession {
   Future<void> _closeClaudeSubagents() async {
     final subagents = _claude.subagents;
     _claude.subagents = null;
-    await subagents?.closeAll();
+    await subagents?.closeAll(endReason: _endReason ?? RunEndReason.error);
   }
 
   /// Child-run recording for the subagents this run spawns. Null when the run
@@ -853,6 +905,7 @@ extension _ClaudeCliMethods on DispatchSession {
     required String? mcpConfigPath,
     required Map<String, Object?>? mcpServers,
     required String? settingsJson,
+    required bool hasRepl,
   }) {
     var mcp = '';
     if (mcpServers != null) {
@@ -890,6 +943,12 @@ extension _ClaudeCliMethods on DispatchSession {
       'git=${jsonEncode(_run.identity.gitEnv)}',
       'mcp=${sha256.convert(utf8.encode(mcp))}',
       'settings=${sha256.convert(utf8.encode(settingsJson ?? ''))}',
+      // `repl` shapes the Control Center MCP `tools/list` (`repl`, and most
+      // tools moved behind it). A resumed session keeps the tool list it
+      // fetched, so a change forks, and a fork withholds trust in Claude
+      // Code's MCP discovery cache (no record under the new fingerprint), so
+      // a list fetched without `repl` is never reused with it.
+      'repl=$hasRepl',
       'append=${ClaudeCliBackend.appendedSystemPrompt(hasControlCenterMcp: hasControlCenterMcp)}',
       if (hasControlCenterMcp)
         'disallowed=${ClaudeCliBackend.replacedNativeTools}',
@@ -1003,7 +1062,8 @@ extension _ClaudeCliMethods on DispatchSession {
     final policy = _claude.policyKey;
     final sessionId = _claude.nativeSessionId;
     final ws = workspaceId;
-    if (store == null ||
+    if (freshHistory ||
+        store == null ||
         storeKey == null ||
         policy == null ||
         sessionId == null ||
@@ -1223,6 +1283,23 @@ extension _ClaudeCliMethods on DispatchSession {
     // into the native session's counters) never inflates this run and a reset
     // or account failover never erases what this run already spent.
     _claude.dispatchTotals.add(turn);
+    // A result with token counters reported every call streamed so far,
+    // replacing their estimates (main-loop-only counters too: the ledger
+    // reconciles the rest when whole-tree counters return). One with a cost
+    // and no counters reported their spend but not their tokens. One that
+    // reported nothing (a crashed, zeroed result) leaves them estimated, to be
+    // counted when the process ends without a better report.
+    final countersReported =
+        usage.inputTokens > 0 ||
+        usage.outputTokens > 0 ||
+        usage.cacheReadTokens > 0 ||
+        usage.cacheWriteTokens > 0 ||
+        usage.modelUsage.isNotEmpty;
+    if (countersReported) {
+      _claude.unreported.settle();
+    } else if (usage.costReported && usage.costUsd > 0) {
+      _claude.unreported.dropEstimates();
+    }
     // The CLI's OWN model, from `system/init` — the id it actually serves,
     // which can differ from the requested `--model`.
     final servingModel = _claude.init?.model ?? modelId;
@@ -1262,30 +1339,10 @@ extension _ClaudeCliMethods on DispatchSession {
       ),
     );
 
-    final totals = _claude.dispatchTotals;
     // Every result carries reconciled observed counters: whole-tree model
     // deltas when available, known main-loop usage otherwise. Missing model
     // counters are credited once if a later full snapshot fills the gap.
-    if (totals.hasTokenData) {
-      addEvent(
-        UsageEvent(
-          purpose: domain_purpose.LlmCallPurpose.main,
-          provider: provider,
-          modelId: servingModel,
-          scope: UsageScope.runCumulative,
-          nativeSessionId: nativeSessionId,
-          resumedNativeSession: resumed,
-          usage: RunUsage(
-            inputTokens: totals.inputTokens,
-            outputTokens: totals.outputTokens,
-            cachedReadTokens: totals.cacheReadTokens,
-            cachedWriteTokens: totals.cacheWriteTokens,
-            costMicros: totals.costMicros,
-            costBasis: basis,
-          ),
-        ),
-      );
-    }
+    _emitClaudeRunCumulative();
 
     // A `/clear` mints a new session id on the result; keep the record's id
     // current so the next turn resumes the LATEST session.
@@ -1294,6 +1351,140 @@ extension _ClaudeCliMethods on DispatchSession {
       _claude.nativeSessionId = resultSessionId;
     }
     unawaited(_persistClaudeRecord(normalExit: false));
+    // The reported spend replaced the in-turn estimate
+    // (`_observeClaudeRunningCost`). At the cap the run ends with this turn
+    // (`_onClaudeTurnEnded` starts no queued turn) and settles as `budget`.
+    _observeRunCost(
+      _claude.dispatchTotals.costMicros + _claude.unreported.pricedMicros,
+    );
+  }
+
+  /// One streamed report of a model call, main thread or subagent: its spend
+  /// joins the run's until the turn's `result` reports it. The run's
+  /// cumulative report and its row move with it, and the cost cap is checked
+  /// on it.
+  void _onClaudeCallUsage(ClaudeCallUsage call) {
+    if (!_claude.unreported.record(call, _claudeCallPriceMicros)) {
+      return;
+    }
+    _emitClaudeRunCumulative();
+    _observeClaudeRunningCost();
+  }
+
+  /// [call]'s estimated cost at its serving model's catalog price, in
+  /// micro-dollars, or null when the catalog has no price for it.
+  int? _claudeCallPriceMicros(ClaudeCallUsage call) {
+    final model = call.model ?? _claude.init?.model ?? modelId;
+    final price = model == null
+        ? null
+        : deps.modelResolver
+              ?.call(model.contains('/') ? model : 'anthropic/$model')
+              ?.cost;
+    if (price == null || !price.isKnown) {
+      return null;
+    }
+    return price.estimateMicros(
+      inputTokens: call.inputTokens,
+      cacheReadTokens: call.cacheReadTokens,
+      cacheWriteTokens: call.cacheWriteTokens,
+      outputTokens: call.outputTokens,
+    );
+  }
+
+  /// Counts, for good, the calls the process streamed that no `result` will
+  /// report: it ended (or crashed) mid-turn. They join the dispatch's totals
+  /// at their streamed size and estimated price, so a later attempt's reports
+  /// (a failover) build on them rather than dropping them.
+  void _foldClaudeUnreportedUsage() {
+    final pending = _claude.unreported;
+    if (pending.isEmpty) {
+      return;
+    }
+    final calls = pending.calls;
+    _claude.dispatchTotals.addUnreported(pending);
+    pending.settle();
+    addEvent(
+      DebugEvent(
+        content:
+            '[claude] $calls model call${calls == 1 ? '' : 's'} ended without '
+            'a result; counted at their streamed usage (cost estimated)',
+      ),
+    );
+    _emitClaudeRunCumulative();
+  }
+
+  /// Emits the run's spend so far as one ABSOLUTE `runCumulative` report, and
+  /// writes it to the run's row: what the turns' results reported, plus every
+  /// streamed call no result has reported yet. A later report replaces it,
+  /// so the in-turn part stays provisional until the turn's `result` lands;
+  /// if the run is stopped first, `_failRun` settles it with this figure.
+  void _emitClaudeRunCumulative() {
+    final totals = _claude.dispatchTotals;
+    final pending = _claude.unreported;
+    if (!totals.hasTokenData && pending.isEmpty) {
+      return;
+    }
+    // Locally priced API usage is an ESTIMATE; only an established
+    // subscription lane is `subscription`. A call no price was found for
+    // makes the figure an estimate whatever the lane.
+    final basis = totals.costUnavailable || pending.hasUnpriced
+        ? CostBasis.estimated
+        : _claudeCostBasis();
+    final usage = RunUsage(
+      inputTokens: totals.inputTokens + pending.inputTokens,
+      outputTokens: totals.outputTokens + pending.outputTokens,
+      cachedReadTokens: totals.cacheReadTokens + pending.cacheReadTokens,
+      cachedWriteTokens: totals.cacheWriteTokens + pending.cacheWriteTokens,
+      costMicros: totals.costMicros + pending.pricedMicros,
+      costBasis: basis,
+    );
+    addEvent(
+      UsageEvent(
+        purpose: domain_purpose.LlmCallPurpose.main,
+        provider: _claudeProvider,
+        // The CLI's OWN model, from `system/init`.
+        modelId: _claude.init?.model ?? modelId,
+        scope: UsageScope.runCumulative,
+        nativeSessionId: _claude.nativeSessionId,
+        resumedNativeSession: _claude.resumeId != null,
+        usage: usage,
+      ),
+    );
+    _writeClaudeRunCost();
+  }
+
+  /// Writes the run's spend so far to its row, after any write in flight.
+  ///
+  /// The row otherwise holds no cost until the run ends, so a running run
+  /// showed nothing until its turn finished. Writes coalesce: a queued write
+  /// reads the latest cumulative report when it runs. `_runClaudeCli` and
+  /// `_abortRun` await [ClaudeRunState.costWrites] before the terminal
+  /// event, so the terminal write lands last.
+  void _writeClaudeRunCost() {
+    final repo = deps.runLogRepo;
+    final id = runLogId;
+    final ws = workspaceId;
+    if (repo == null || id == null || ws == null || ws.isEmpty) {
+      return;
+    }
+    if (_claude.costWriteQueued) {
+      return;
+    }
+    _claude.costWriteQueued = true;
+    _claude.costWrites = _claude.costWrites.then((_) async {
+      _claude.costWriteQueued = false;
+      final cost = _runEnd.usage.total;
+      if (cost == null) {
+        return;
+      }
+      try {
+        await repo.updateCost(ws, id, cost);
+      } on Object catch (e) {
+        CcInfraLog.warning(
+          'dispatch $dispatchId: could not write the run\'s spend: $e',
+        );
+      }
+    });
   }
 
   /// Whether this run's spend is flat-fee subscription usage or a locally
@@ -1353,25 +1544,6 @@ extension _ClaudeCliMethods on DispatchSession {
           offsetMs: _claudeOffsetMs(),
           durationMs: _claudeAttemptDurationMs(),
           source: RunTimingSource.adapter,
-          provider: _claudeProvider,
-          modelId: _claude.init?.model ?? modelId,
-        ),
-      );
-    }
-  }
-
-  /// The first structured stdout line of the current attempt — the transport
-  /// boundary the adapter can see. Called from the shared sandbox-event
-  /// forwarder, which is also where the line is parsed.
-  void _noteClaudeFirstStdout() {
-    if (!_claude.sawFirstStdout) {
-      _claude.sawFirstStdout = true;
-      addEvent(
-        StageTimingEvent(
-          stage: RunStage.firstResponseByte,
-          offsetMs: _claudeOffsetMs(),
-          durationMs: _claudeAttemptDurationMs(),
-          source: RunTimingSource.transport,
           provider: _claudeProvider,
           modelId: _claude.init?.model ?? modelId,
         ),

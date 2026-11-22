@@ -2,7 +2,7 @@
 title: Trabajar en Plan Studio
 description: Revisa, edita, estima, compara y aprueba un plan en el editor de Plan Studio, y ejecuta playbooks con parámetros.
 slug: es-MX/manual/guias/plan-studio
-sourceHash: 04a6e193c6b57af3fce63c90673a0958b37552fb
+sourceHash: 9df96d8f10ca86584f3979b84af5eee250719752
 ---
 
 Esta guía te muestra cómo trabajar con planes en Plan Studio. Para saber qué son
@@ -137,8 +137,7 @@ aprueba siempre todos los pasos: no hay forma de seleccionar antes un
 subconjunto. La aprobación se bloquea mientras la propuesta tenga errores de
 validación, que se muestran junto a los botones.
 
-Aprobar es exclusivo del operador. No hay ninguna herramienta MCP para ello, así
-que un agente puede proponer y revisar un plan, pero nunca aprobarlo.
+Aprobar es exclusivo del operador. No hay ninguna herramienta MCP para ello, así que un agente puede proponer y revisar un plan, pero nunca aprobarlo. Aprobar un plan, guardar una revisión, **Aprobar seleccionados** y **Continuar nodo** requieren acceso de escritura a los repositorios del espacio.
 
 Cuando una orquestación está en ejecución, la barra cambia:
 
@@ -149,7 +148,9 @@ Cuando una orquestación está en ejecución, la barra cambia:
   nunca se puede aprobar sin sus dependencias). El control está en la barra de
   ejecución de todas las orquestaciones; no hace nada cuando el plan se aprobó en
   bloque.
-- Presiona **Cancelar ejecución** para detener toda la orquestación.
+- Presiona **Cancelar ejecución** para detener toda la orquestación. Cualquier persona con acceso al espacio puede hacerlo.
+
+**Continuar nodo** y **Aprobar seleccionados** pertenecen a la persona en cuyo nombre actúa la ejecución (un admin del espacio de trabajo cuando actúa para nadie).
 
 Los pasos que quedan fuera de un conjunto aprobado parcial se muestran como
 aplazados y no se ejecutan hasta que amplíes el conjunto.

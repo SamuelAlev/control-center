@@ -2,7 +2,7 @@
 title: Quản lý chi phí
 description: Xem các agent của bạn đang chi bao nhiêu, giới hạn một lượt chạy tự chủ và cắt giảm lượng token dùng.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-chi-phi
-sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
+sourceHash: 040176a3840653a57c823ce4ff7e3ed9cf071c07
 ---
 
 Hướng dẫn này chỉ cách xem các lượt chạy agent tốn bao nhiêu và cách giới hạn một lượt chạy tự chủ.
@@ -40,21 +40,30 @@ Thẻ **Sử dụng và chi phí** trên trang này hiển thị chi tiêu ghi n
 
 ## Giới hạn một lượt chạy tự chủ
 
-Hai lệnh slash, gõ trong khung soạn tin của một space, là những lượt chạy duy nhất có mức trần chi tiêu:
+Các lượt chạy này có giới hạn chi tiêu. Lượt chạy bạn bắt đầu bằng cách gửi một tin nhắn thì không có.
 
 ```
 /goal ship the auth refactor --budget 20
-/loop keep the flaky tests green
+/loop every 1h --budget 10 keep the flaky tests green
 ```
 
-- Mỗi phân đoạn của một lượt chạy `/goal` hoặc `/loop` dừng lại khi chi tiêu được định giá của nó đạt **500 cent ($5.00)**. Ở mức 80% của ngưỡng đó, vòng lặp trước tiên điều hướng mô hình kết thúc gọn gàng và để lại một bàn giao sạch, nhờ đó nó không chết giữa tác vụ.
-- Toàn bộ một mục tiêu bền vững bị giới hạn ở **5000 cent ($50.00)** trừ khi bạn truyền `--budget <dollars>`. Bộ giám sát luồn ngân sách _còn lại_ của mục tiêu vào từng phân đoạn, nên một ngân sách tường minh không bao giờ bị vượt quá nguyên một phân đoạn.
-- `--days N` thêm một hạn chót theo đồng hồ thực và `--max N` một mức trần số lượt chạy. Cả hai đều là tùy chọn; nếu không có chúng, mục tiêu chỉ bị giới hạn bởi chi phí.
-- Một mục tiêu chạm mức trần của nó sẽ dừng ở `budgetExhausted` và chỉ có thể tiếp tục bằng cách nâng ngân sách.
+| Lượt chạy | Giới hạn |
+| --- | --- |
+| Phân đoạn của một mục tiêu | 5 đô la, hoặc phần ngân sách còn lại của mục tiêu nếu ít hơn |
+| Một mục tiêu | 50 đô la trừ khi bạn truyền `--budget <dollars>` |
+| Đánh giá của một mục tiêu | 2 đô la, hoặc phần còn lại, tính vào mục tiêu |
+| Một lần chạy do một lịch hoặc theo dõi bắt đầu | 5 đô la; lịch dừng ở giới hạn chi phí riêng của nó (50 đô la trừ khi bạn truyền `--budget`, hoặc mặc định của không gian làm việc) |
+| Đánh giá sau một mục tiêu, hoặc `/refine` | 1 đô la |
 
-Vì mức trần được định giá, một mô hình mà danh mục không thể định giá sẽ không bao giờ chạm tới nó. Thay vào đó, một lượt chạy như vậy bị giới hạn bởi rào chắn chống lặp vòng lặp chết, việc bộ giám sát bỏ cuộc sau ba lần thất bại liên tiếp, và chính bạn.
+- Một lượt chạy có giới hạn dừng khi chi tiêu được định giá của nó đạt mức trần, trên harness tích hợp sẵn, Claude Code và agent ACP. Ở mức 90% thì harness tích hợp sẵn và Claude Code trước tiên điều hướng agent kết thúc gọn gàng và để lại một bàn giao sạch, nhờ đó nó không chết giữa tác vụ. Một agent ACP bị hủy khi chạm mức trần.
+- Ngân sách _còn lại_ của mục tiêu được luồn vào từng phân đoạn, nên một ngân sách tường minh không bao giờ bị vượt quá nguyên một phân đoạn.
+- `--days N` thêm một hạn chót và `--max N` một mức trần số phân đoạn. Cả hai đều là tùy chọn; nếu không có chúng, mục tiêu được giới hạn bởi chi phí và bởi điểm dừng khi không có tiến triển.
+- Một mục tiêu chạm ngân sách của nó sẽ dừng ở **Hết ngân sách** và chỉ tiếp tục khi có ngân sách cao hơn, mà chỉ người đã bắt đầu nó mới có thể cấp.
+- Một lần chạy quy trình bị giữ ở giới hạn của điều phối của nó sẽ chờ đến khi người yêu cầu nhấn **Tăng giới hạn** trên trang của lần chạy quy trình đó. Giới hạn mới phải cao hơn giới hạn cũ và mức đã chi, tối đa 1.000 đô la, và một giới hạn không bao giờ bị gỡ bỏ.
 
-Một tin nhắn trong space, một lượt @-mention, hay một bước quy trình đều không có mức trần chi tiêu. Lượt chạy kết thúc khi mô hình dừng, khi bạn dừng nó, hoặc khi rào chắn vòng lặp chết điều hướng nó.
+Vì mức trần được định giá, một mô hình mà danh mục không thể định giá sẽ không bao giờ chạm tới nó. Thay vào đó, một lượt chạy như vậy bị giới hạn bởi rào chắn chống lặp vòng lặp chết, điểm dừng khi không có tiến triển của một mục tiêu, việc bỏ cuộc sau ba lần thất bại liên tiếp, và chính bạn.
+
+Một tin nhắn trong space, một lượt @-mention, hay một bước quy trình nằm ngoài một điều phối có giới hạn đều không có mức trần chi tiêu riêng. Lượt chạy kết thúc khi mô hình dừng, khi bạn dừng nó, hoặc khi rào chắn vòng lặp chết điều hướng nó.
 
 ## Cắt giảm lượng token dùng
 

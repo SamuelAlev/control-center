@@ -339,6 +339,14 @@ class EnvironmentExecTool extends EnvironmentTool {
   @override
   List<String> get extraRequired => const ['service', 'command'];
 
+  /// The argv, as its JSON list.
+  @override
+  String? executedContent(Map<String, dynamic> arguments) =>
+      switch (arguments['command']) {
+        final List command => jsonEncode([for (final part in command) '$part']),
+        _ => null,
+      };
+
   @override
   Future<CallResult> act(
     String workspaceId,
@@ -392,6 +400,19 @@ class EnvironmentRunTaskTool extends EnvironmentTool {
 
   @override
   List<String> get extraRequired => const ['task_id'];
+
+  /// The task and the extra arguments it runs with, as a JSON list.
+  @override
+  String? executedContent(Map<String, dynamic> arguments) {
+    final (task, extra) = (arguments['task_id'], arguments['arguments']);
+    return task == null
+        ? null
+        : jsonEncode([
+            '$task',
+            if (extra is List)
+              for (final item in extra) '$item',
+          ]);
+  }
 
   @override
   Future<CallResult> act(

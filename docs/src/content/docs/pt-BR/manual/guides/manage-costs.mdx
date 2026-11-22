@@ -2,7 +2,7 @@
 title: Gerenciar custos
 description: Veja quanto seus agentes estão gastando, limite uma execução autônoma e reduza o uso de tokens.
 slug: pt-BR/manual/guias/gerenciar-custos
-sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
+sourceHash: 040176a3840653a57c823ce4ff7e3ed9cf071c07
 ---
 
 Este guia mostra como ver quanto custam as execuções de agentes e como limitar uma execução autônoma.
@@ -40,21 +40,30 @@ O cartão **Uso e custo** desta página mostra os gastos observados dos últimos
 
 ## Limitar uma execução autônoma
 
-Dois comandos slash, digitados no composer de um espaço, são as únicas execuções com teto de gastos:
+Essas execuções têm um teto de gastos. Uma execução que você inicia enviando uma mensagem não tem.
 
 ```
 /goal ship the auth refactor --budget 20
-/loop keep the flaky tests green
+/loop every 1h --budget 10 keep the flaky tests green
 ```
 
-- Cada segmento de uma execução `/goal` ou `/loop` para quando seu gasto precificado chega a **500 centavos ($5.00)**. A 80% disso, o loop primeiro orienta o modelo a encerrar e deixar uma passagem limpa, para que não morra no meio da tarefa.
-- Uma meta durável inteira tem teto de **5000 centavos ($50.00)**, a menos que você passe `--budget <dollars>`. O supervisor injeta o orçamento _restante_ da meta em cada segmento, de modo que um orçamento explícito nunca é ultrapassado por um segmento inteiro.
-- `--days N` adiciona um prazo em tempo real e `--max N` um teto de número de execuções. Ambos são opcionais; sem eles, a meta é limitada apenas pelo custo.
-- Uma meta que atinge seu limite para em `budgetExhausted` e só pode ser retomada se o orçamento for aumentado.
+| Execução | Teto |
+| --- | --- |
+| Segmento de um objetivo | 5 dólares, ou o que resta do orçamento do objetivo, se for menos |
+| Um objetivo | 50 dólares, a menos que você passe `--budget <dollars>` |
+| A revisão de um objetivo | 2 dólares, ou o que resta, cobrados do objetivo |
+| Uma execução que uma programação ou um monitor inicia | 5 dólares; a programação para no próprio teto de custo (50 dólares, a menos que você passe `--budget`, ou o padrão do espaço de trabalho) |
+| A revisão depois de um objetivo, ou `/refine` | 1 dólar |
 
-Como o teto é precificado, um modelo que o catálogo não consegue precificar nunca o alcança. Uma execução assim é limitada, em vez disso, pela proteção contra repetição de loop infinito, pela desistência do supervisor após três falhas consecutivas e por você.
+- Uma execução com teto para quando o gasto precificado dela chega ao teto, no harness integrado, no Claude Code e nos agentes ACP. A 90%, o harness integrado e o Claude Code primeiro orientam o agente a encerrar e deixar uma passagem limpa, para que ele não morra no meio da tarefa. Um agente ACP é cancelado ao atingir o teto.
+- O orçamento _restante_ do objetivo é injetado em cada segmento, de modo que um orçamento explícito nunca é ultrapassado por um segmento inteiro.
+- `--days N` adiciona um prazo e `--max N` um teto de segmentos. Ambos são opcionais; sem eles, o objetivo é limitado pelo custo e pela sua parada por falta de progresso.
+- Um objetivo que atinge o orçamento para em **Orçamento esgotado** e só é retomado com um orçamento maior, que só a pessoa que o iniciou pode dar.
+- Uma execução de pipeline retida no teto de sua orquestração aguarda até que quem a pediu pressione **Aumentar limite** na página da execução de pipeline. O novo teto precisa estar acima do anterior e do que foi gasto, no máximo 1.000 dólares, e um teto nunca é removido.
 
-Uma mensagem em um espaço, uma menção com @ ou uma etapa de pipeline não tem teto de gastos. A execução termina quando o modelo para, quando você a interrompe ou quando a proteção contra loop infinito a orienta.
+Como o teto é precificado, um modelo que o catálogo não consegue precificar nunca o alcança. Uma execução assim é limitada, em vez disso, pela proteção contra repetição de loop infinito, pela parada de um objetivo por falta de progresso e pela desistência dele após três falhas consecutivas, e por você.
+
+Uma mensagem em um espaço, uma menção com @ ou uma etapa de pipeline fora de uma orquestração com teto não tem teto de gastos próprio. A execução termina quando o modelo para, quando você a interrompe ou quando a proteção contra loop infinito a orienta.
 
 ## Reduzir o uso de tokens
 

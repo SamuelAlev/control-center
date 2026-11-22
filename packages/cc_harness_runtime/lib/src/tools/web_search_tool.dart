@@ -53,6 +53,31 @@ class WebSearchTool extends HarnessTool {
   };
 
   @override
+  Map<String, dynamic> get outputSchema => const {
+    'type': 'object',
+    'properties': {
+      'results': {
+        'type': 'array',
+        'items': {
+          'type': 'object',
+          'properties': {
+            'title': {'type': 'string'},
+            'url': {'type': 'string'},
+            'snippet': {'type': 'string'},
+          },
+          'required': ['title', 'url', 'snippet'],
+        },
+        'description': 'Ranked best first.',
+      },
+      'backend': {
+        'type': 'string',
+        'description': 'The search backend that answered.',
+      },
+    },
+    'required': ['results', 'backend'],
+  };
+
+  @override
   Future<HarnessToolResult> execute(
     Map<String, dynamic> args,
     HarnessToolContext context,
@@ -89,10 +114,7 @@ class WebSearchTool extends HarnessTool {
           sawBlock = true;
           continue;
         }
-        body = await response
-            .transform(utf8.decoder)
-            .join()
-            .timeout(_timeout);
+        body = await response.transform(utf8.decoder).join().timeout(_timeout);
       } on Object {
         // A dead or unreachable backend is the next backend's problem.
         continue;
@@ -108,7 +130,16 @@ class WebSearchTool extends HarnessTool {
             buf.writeln('   ${hit.snippet}');
           }
         }
-        return HarnessToolResult.success(buf.toString().trimRight());
+        return HarnessToolResult.success(
+          buf.toString().trimRight(),
+          structured: {
+            'results': [
+              for (final hit in hits)
+                {'title': hit.title, 'url': hit.url, 'snippet': hit.snippet},
+            ],
+            'backend': backend.name,
+          },
+        );
       }
       if (looksBlocked(body)) {
         sawBlock = true;
@@ -117,7 +148,10 @@ class WebSearchTool extends HarnessTool {
       // A clean, parseable page with genuinely nothing on it. Believe it —
       // and stop, because asking three engines the same question and getting
       // three empty answers costs three round-trips to learn one fact.
-      return HarnessToolResult.success('No results for "$query".');
+      return HarnessToolResult.success(
+        'No results for "$query".',
+        structured: {'results': const <Object?>[], 'backend': backend.name},
+      );
     }
 
     return HarnessToolResult.error(

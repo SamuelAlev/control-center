@@ -1,0 +1,178 @@
+---
+title: Codemodus
+description: Hoe een agent een kort script schrijft dat zijn tools aanroept in plaats van ze een voor een aan te roepen, welke tools hij direct aanroept en welke vanuit een script, de limieten waaronder een script draait, hoe een script in de conversatie wordt gelezen, en hoe een script wordt ingesperd en vastgelegd.
+slug: nl-NL/handleiding/concepten/codemodus
+sourceHash: d41fe2f38c216949847fc7c4768fdf96bed2dc83
+---
+
+Een agent roept zijn tools gewoonlijk een voor een aan. Elke aanroep is een modelbeurt: de agent vraagt de aanroep aan, het resultaat komt terug in zijn context, en de agent leest het voordat hij om de volgende vraagt. Bij werk dat vooral mechanisch is, zoals twintig bestanden lezen om de drie belangrijke te vinden of elk open ticket controleren op één label, gaan de meeste van die beurten en het meeste van die context op aan resultaten die de agent toch weggooit.
+
+Codemodus is één tool, `repl`. Daarmee schrijft de agent een kort JavaScript-script dat zijn andere tools aanroept, lussen doorloopt, resultaten filtert en combineert, en alleen geeft wat hij nodig heeft. Eén `repl`-aanroep kan het werk van tientallen toolbeurten doen, en alleen het antwoord van het script komt in de context.
+
+Elke run heeft `repl` wanneer de server scripts kan draaien. Er is niets om aan te zetten: zie [Wanneer een run `repl` heeft](#wanneer-een-run-repl-heeft).
+
+## Wat een script kan doen
+
+Een script is gewoon JavaScript, geschreven als de body van een async-functie, zodat `await` en `return` op het hoogste niveau werken. Elke `repl`-aanroep start een nieuwe, lege interpreter.
+
+- **Tools aanroepen.** `await tools.read({ path: "README.md" })` roept een tool aan en levert het resultaat op, of faalt met een fout wanneer de aanroep mislukt of wordt geweigerd. Onafhankelijke aanroepen kunnen samen lopen met `Promise.allSettled`.
+- **Tools zoeken.** `ALL_TOOLS` somt elke tool op die het script mag aanroepen. `searchTools(query)` zoekt tools op basis van wat ze doen, `describeTool(name)` geeft de beschrijving en argumenten van één tool, en `describeNamespace(name)` somt de tools van één groep op. De tools van verbonden MCP-servers zijn ook zo bereikbaar.
+- **Resultaten teruggeven.** Alleen wat het script teruggeeft, of doorgeeft aan `text()`, `image()` of `console.log()`, komt terug bij de agent. Maximaal vier afbeeldingen bereiken het model.
+- **Waarden bewaren.** `store(key, value)` en `load(key)` bewaren kleine JSON-waarden tussen scripts van dezelfde conversatie en agent. Waarden worden pas opgeslagen wanneer het script klaar is. Subagents hebben geen store.
+- **Een persoon vragen.** `await tools.ask_user({ question, options })` stelt een vraag en wacht op het antwoord.
+- **Embeddings op het apparaat gebruiken.** `models.embed`, `models.rank` en `models.classify` gebruiken het embeddingmodel van de server, wanneer dat is geïnstalleerd.
+- **Wachten.** `sleep(ms)` en `setTimeout`, binnen de tijdslimiet van het script. `limits()` geeft de limieten terug waaronder het script draait.
+
+Een script heeft geen toegang tot het bestandssysteem, het netwerk, processen, modules of omgevingsvariabelen: geen `fetch`, `require`, `import` of `process`. De enige uitweg is een toolaanroep, en elke toolaanroep gaat door dezelfde controles als een aanroep die de agent rechtstreeks doet.
+
+Toolaanroepen die een script al heeft gedaan, worden niet ongedaan gemaakt als het script daarna faalt.
+
+## Welke tools de agent direct aanroept
+
+Elke run van de ingebouwde agent krijgt dezelfde kleine set tools die hij bij naam aanroept:
+
+- `repl`, als eerste;
+- de bestands- en shelltools `read`, `write`, `edit`, `search`, `find`, `bash` en `read_output`;
+- `ask_user` en `task`;
+- `todo_write`, `search_memory` en `send_message`;
+- de werkwoorden die de [modus](/nl-NL/handleiding/concepten/modi/) van het gesprek nodig heeft om zijn uitvoer af te leveren of de modus te verlaten, zoals `submit_plan` in de plan-modus;
+- `search_tools`, wanneer een tool bij eerste gebruik wordt geladen (hieronder).
+
+Elke andere tool die een run mag gebruiken, wordt op een van twee manieren bereikt:
+
+- **Alleen vanuit een script**, wanneer een script hem mag aanroepen. De agent vindt hem met `searchTools()` of `describeTool()` en roept hem aan als `tools.<name>(args)`. De beschrijving van zo'n tool bereikt het model nooit, dus ze kost niets in de prompt. Als de agent er toch direct een aanroept, zegt het antwoord dat hij de tool vanuit een script moet aanroepen. Als de server de scripts van de run niet kan draaien, wordt hij in plaats daarvan bij eerste gebruik geladen ([Wanneer scripts niet kunnen draaien](#wanneer-scripts-niet-kunnen-draaien)).
+- **Geladen bij eerste gebruik**, wanneer een script hem niet mag aanroepen. De agent ziet zijn naam, en wanneer hij die bij naam aanroept of hem met `search_tools` vindt, wordt hij geladen.
+
+Sommige tools zijn nooit vanuit een script aanroepbaar, waaronder `repl` zelf (een script kan geen script starten), `eval`, `task`, `checkpoint`, `rewind`, de `vibe_*`-werkwoorden, en tools die andere agentruns starten of berichten naar hen sturen, goedkeuringen aanmaken, erover beslissen of erop reageren, beleid of skills wijzigen, of de plan-modus verlaten. De agent roept die direct aan.
+
+Een run zonder `repl` krijgt dezelfde directe tools, en al het overige wordt bij eerste gebruik geladen. [Toolcontext en promptcaching](/nl-NL/handleiding/concepten/toolcontext/) legt uit waarom de set in beide gevallen dezelfde is.
+
+Codemodus voegt nooit een tool toe die de modus van de conversatie niet toestaat. Het toolfilter van de modus wordt eerst toegepast, en een script kan alleen aanroepen wat overblijft.
+
+## Wanneer een run `repl` heeft
+
+Een run heeft `repl` wanneer de scriptrunner van de server bij het starten zijn afsluitingscontrole heeft doorstaan ([Hoe scripts zijn ingesperd](#hoe-scripts-zijn-ingesperd)). Geen instelling van de werkruimte, de agent of de server verandert dat. Een run heeft nog steeds geen `repl` wanneer:
+
+- de runner zich op de machine van de server niet kan afschermen; de server draait dan helemaal geen scripts;
+- de server een openbare demo is, die geen scripts draait;
+- de run bij geen werkruimte hoort;
+- de limieten van de werkruimte niet gelezen kunnen worden, omdat draaien met de standaardwaarden de limieten zou overschrijden die een beheerder lager heeft gezet;
+- het logboek van de run niet geschreven kan worden, omdat elk script vóór de start onder zijn run wordt vastgelegd.
+
+Zo'n run roept al zijn tools direct aan.
+
+Codemodus werkt voor runs van de ingebouwde agent en voor agents die de tools van Control Center bereiken via het MCP-eindpunt, zoals Claude Code. Voor een MCP-agent bevat de toollijst die hij krijgt `repl`, de directe tools en de tools die een script niet mag aanroepen; de rest roept hij vanuit scripts aan. Alleen een run die Control Center zelf heeft gestart en waarvoor het een logboek bijhoudt, krijgt daar `repl`; elke andere client krijgt elke tool behalve `repl`.
+
+**Instellingen → Werkruimte → Codemodus** toont onder **Status** of deze server scripts kan draaien (**Beschikbaar** of **Niet beschikbaar**, met de reden van de server) en welke versie van de **Runner** is geïnstalleerd. **Codeuitvoeringen bekijken** opent de lijst met scripts die zijn gedraaid.
+
+Een serverbeheerder kan scripts niet uitzetten. De beheerder kan ze wel begrenzen: hoeveel er tegelijk draaien en hoeveel geheugen er één mag gebruiken (zie [Limieten](#limieten)).
+
+### Wanneer scripts niet kunnen draaien
+
+Een run verliest nooit een tool omdat de server zijn scripts niet kan draaien. Wanneer de server een script weigert om een reden die elk ander script ook zou treffen (bijvoorbeeld scripts zijn niet beschikbaar, het script heeft de helft van zijn tijd op een vrije plaats gewacht, de opname kan niet worden geschreven, de toollijst van de run is te groot om aan een script mee te geven, of de runner kan niet starten of zichzelf niet afschermen), gebruikt de run voor de rest van de run geen scripts meer:
+
+- een run van de ingebouwde agent houdt `repl`, en elke tool die hij alleen vanuit een script bereikte, wordt nu bij eerste gebruik geladen: de agent roept hem bij naam aan of vindt hem met `search_tools`;
+- een run op het MCP-eindpunt krijgt een toollijst met elke tool en zonder `repl`, en zijn client krijgt te horen dat de lijst is gewijzigd. De server onthoudt de laatste 1.024 zulke runs; een oudere gaat terug naar scripts.
+
+Die tools gaan door hetzelfde modusfilter, dezelfde beveiligingen en goedkeuringen als voorheen, dus er wordt niets aanroepbaar dat dat niet was. Een script dat op eigen houtje faalt, door een fout te gooien, een limiet te bereiken of een aanroep geweigerd te krijgen, verandert niets.
+
+De server blijft ook controleren of scripts kunnen draaien. Wanneer de runner niet start om een reden die niet bij het script ligt, herhaalt de server zijn afsluitingscontrole, hooguit één keer per minuut. Slaagt die niet, dan draait de server geen scripts, logt hij dezelfde regel `code_mode=unavailable` als bij het starten, en krijgen runs die intussen starten geen `repl`. Hij blijft controleren, hooguit één keer per minuut, en wanneer een controle slaagt, draait hij weer scripts en logt hij de regel `code_mode=available`. Alleen een controle die bij het starten van de server mislukte, vereist een herstart.
+
+## Limieten
+
+Elk script draait onder limieten. Een beheerder van de werkruimte kan er zes wijzigen onder **Limieten** in **Instellingen → Werkruimte → Codemodus** (**Limieten aanpassen**); de agent kan voor één script om minder tijd of een kleiner uitvoerbudget vragen, nooit om meer.
+
+| Limiet | Standaard | Bereik | Wanneer het op is |
+| --- | --- | --- | --- |
+| Tijd per script | 5 min | 1 s tot 25 min | Het script wordt gestopt en de agent krijgt te horen dat de tijd op is. |
+| Processortijd | 30 s | 1 s tot 2 min | Het script wordt gestopt. |
+| Geheugen | 256 MiB | 16 MiB tot 1 GiB | Het script wordt gestopt. De serverbeheerder kan voor de hele server een lager plafond instellen. |
+| Toolaanroepen per script | 500 | 1 tot 5.000 | Verdere aanroepen worden geweigerd en het script krijgt te horen waarom. |
+| Aanroepen tegelijk | 8 | 1 tot 32 | Aanroepen die alleen lezen en boven die limiet uitkomen, wachten op hun beurt. Aanroepen die iets wijzigen, lopen altijd één voor één. |
+| Uitvoer die de agent leest | 10.000 tokens | 100 tot 50.000 | De uitvoer wordt ingekort tot het begin en het einde, en de agent kan de rest op verzoek lezen. |
+
+Tijd die een script besteedt aan wachten op een persoon, bij een goedkeuring of een vraag, telt niet mee voor zijn tijdslimiet. Terwijl het wacht, start het script geen andere toolaanroep: aanroepen die het ondertussen doet, starten in volgorde zodra jij hebt geantwoord.
+
+Sommige limieten liggen vast: de broncode van een script is maximaal 256 KiB, de argumenten van één toolaanroep 1 MiB en 16.384 waarden, een opdracht die een script aan een ingebouwde tool geeft om uit te voeren maximaal 16 KiB (de naam van de tool telt mee), één resultaat dat aan het script wordt gegeven 4 MiB, een opgeslagen waarde 256 KiB, en alles wat één conversatie en agent samen opslaan 1 MiB. Een run draait op een moment maar één script.
+
+Ook de opzoekingen van een script zijn begrensd: een `searchTools`-zoekopdracht van hooguit 1.024 tekens, een tool- of namespacenaam van hooguit 256, hooguit 50 resultaten, en hooguit 200 opzoekingen die samen 2 seconden serverstijd kosten; daarna mislukken verdere opzoekingen. Alle scripts van één werkruimte delen ook 2 seconden opzoektijd, die met een kwart seconde per seconde terugkomt. De zoekindex geeft elke tool een gelijk aandeel van ongeveer een miljoen tekens, eerst besteed aan de argumentnamen en daarna aan de beschrijving, en indexeert altijd de naam van elke tool, zodat een tool zelfs in een zeer grote catalogus op naam wordt gevonden.
+
+De serverbeheerder beperkt ook hoeveel scripts tegelijk op de server draaien (`--code-mode-max-processes`, standaard twee keer het aantal processorkernen, maximaal 16) en hoeveel geheugen één script mag gebruiken (`--code-mode-max-heap-mb`); scripts die op een persoon wachten, worden apart geteld, tot vier keer dat getal. Als dat maximum meer dan één is, kan één werkruimte hooguit ongeveer driekwart ervan gebruiken, zodat geen enkele werkruimte alle plaatsen kan innemen. Een run en zijn subagents samen gebruiken hooguit de helft van de plaatsen van hun werkruimte (minstens één), zodat hun verdere scripts wachten terwijl scripts van de andere runs van de werkruimte wel doorgaan. Zie de [referentie van de `cc_server` CLI](/nl-NL/handleiding/referentie/cc-server-cli/#codemodus).
+
+## Goedkeuringen en vragen
+
+Een toolaanroep vanuit een script wordt precies zo gecontroleerd als een directe aanroep: het toolfilter van de modus, de [actiebeveiligingen](/nl-NL/handleiding/concepten/beveiligingen/), de goedkeuringsvraag en de eigen controles van de tool. Een script kan niets doen wat de agent niet zelf via de tool had kunnen doen.
+
+Wanneer de aanroep van een script goedkeuring nodig heeft, toont de goedkeuringskaart **Van een script dat de agent uitvoert**, en **Script tonen** opent het script in de conversatie. Om te voorkomen dat een script je met kaarten overspoelt:
+
+- één script kan maximaal 10 keer om goedkeuring vragen en maximaal 10 vragen stellen;
+- zodra je een van zijn aanroepen weigert, worden zijn latere aanroepen die goedkeuring nodig hebben, zonder te vragen geweigerd.
+
+Voor runs van de ingebouwde agent: goedkeuringsvragen die ontstaan door opdrachten die een script uitvoert, zoals een git push, tellen mee voor dezelfde limiet en stoppen op dezelfde manier na een weigering. Loopt tegelijk het script van een subagent, dan telt zo'n vraag voor beide scripts mee, en stopt een weigering ze allebei.
+
+Bij een run van de ingebouwde agent wordt een goedkeuring voor een tool van een externe MCP-server niet onthouden: elke aanroep vraagt opnieuw om goedkeuring, of die nu van een script komt of van de agent zelf, tenzij de autonomie van de ruimte op **Vrij handelen** staat. Elke zo'n goedkeuringsvraag die een script veroorzaakt, telt mee voor het maximum van 10 keer om goedkeuring vragen.
+
+Als het script eindigt voordat je antwoordt, wordt de kaart ingetrokken, en een antwoord dat daarna komt, keurt niets goed.
+
+## In de conversatie
+
+Een `repl`-aanroep verschijnt in de conversatie als één rij met als titel de beschrijving van het script. Uitklappen toont het script en zijn uitvoer, en de toolaanroepen die het script deed onder **Toolaanroepen**, met het aantal dat actief, voltooid, mislukt, geweigerd, afgebroken, in de wachtrij of overgeslagen is.
+
+### Zo leest een script
+
+De toolaanroepen staan in de volgorde van het script, niet als één lange lijst. De runner meldt de regel en kolom waar elke aanroep is gedaan, en de app leest het script om zijn lussen, vertakkingen en functies te vinden:
+
+- **Een lus** (`for`, `while`) verschijnt als een groep **Lus**, met als kop de eerste regel ervan, en een callback die aan een aanroep als `map` of `forEach` wordt doorgegeven als een groep **Voor elk**. Een dunne lijn scheidt één doorgang van de lus van de volgende, wanneer de app die kan onderscheiden.
+- **Aanroepen die samen lopen** met `Promise.all`, `Promise.allSettled` of een vergelijkbare combinator verschijnen als een groep **Parallel**.
+- **Een vertakking** (`if`/`else`, `switch`, `try`/`catch`) toont één groep per tak, met als kop de voorwaarde.
+- **Een functie** die het script definieert en aanroept, verschijnt als een groep **Functie**.
+
+Een groep binnen een andere groep wordt een stap verder ingesprongen, tot acht stappen; diepere groepen blijven op die inspringing.
+
+Elke groepskop toont hoe de aanroepen tot nu toe zijn geëindigd. Voordat een aanroep draait, toont zijn rij de tool en de argumenten zoals ze in het script staan:
+
+| Rij | Betekenis |
+| --- | --- |
+| **In wachtrij** | Het script heeft deze aanroep nog niet bereikt. |
+| Actief | De aanroep draait. |
+| Klaar | De aanroep is geëindigd; de rij toont het resultaat en hoe lang het duurde. |
+| **Overgeslagen** | Het script heeft deze aanroep overgeslagen, zoals de tak van een `if` die niet werd genomen, of het script eindigde voordat het er kwam. |
+
+Een aanroep die binnen de argumenten van een aanroep van dezelfde tool staat, wordt gemeld vanaf dezelfde plek in het script als die aanroep. Kan de app niet zien of de buitenste aanroep is gedaan, dan toont zijn rij geen statuswoord in plaats van **Overgeslagen**.
+
+Wanneer een groep meer dan acht aanroepen heeft, klapt het midden in: de eerste twee en de laatste drie blijven zichtbaar, net als elke aanroep die nog loopt, is mislukt of geweigerd is, samen met de aanroep die de doorgang van de lus begon. **Nog N aanroepen tonen** opent elke keer 100 meer, en noemt tot vier tools van de verborgen aanroepen met hoeveel van elk, de zeldzaamste eerst, zoals **Nog 12 aanroepen tonen** · Bash 1 · Read 11. Een toolnaam van meer dan 24 tekens wordt daar ingekort.
+
+Een aanroep die de app niet in het script kan plaatsen, zoals een aanroep die een `then`-callback deed, wordt na de boom vermeld onder **Aanroepen niet in het script geplaatst**. Kan de app het script niet lezen, of meldt geen enkele aanroep waar hij is gedaan, dan verschijnen de aanroepen als een gewone lijst in de volgorde waarin ze zijn gedaan.
+
+Elke aanroepsrij toont het begin van de argumenten van de aanroep en van zijn resultaat, tot 8 KiB per stuk; zodra de rijen van één script samen 256 KiB daarvan bevatten, tonen zijn latere rijen alleen de tool en hoe de aanroep eindigde. Zodra het script klaar is, opent **Opname openen** de volledige opname; als de opname niet gevonden kan worden, opent het in plaats daarvan de lijst met scripts van die run. Een script dat al voor het draaien werd geweigerd (bijvoorbeeld omdat een ander script van dezelfde run nog liep), heeft geen opname en geen link.
+
+## De opname
+
+Elk script dat draait, wordt vastgelegd in zijn werkruimte voordat het start, en de opname wordt afgemaakt wanneer het eindigt. **Observeerbaarheid → Codeuitvoeringen** toont ze, de nieuwste eerst, en je kunt filteren op uitkomst. Met de koppelingen **Scripts in deze run** en **Scripts van deze agent** in een opname beperk je de lijst tot één run of één agent. Een opname toont:
+
+- het script, zijn uitvoer en zijn console;
+- wanneer het startte, hoe lang het duurde, de processortijd en het piekgeheugen dat het gebruikte, en of het draaide via de ingebouwde agent of een externe;
+- hoe het eindigde, in gewone woorden (bijvoorbeeld dat de tijd op was of dat het een fout gaf die niet werd opgevangen);
+- elke toolaanroep, in volgorde, met zijn uitkomst: of hij is toegestaan, door een persoon is goedgekeurd of is geweigerd, hoe lang een persoon erover deed om te beslissen, zijn argumenten (geheimen verwijderd, tot 8 KiB ingekort) en de omvang van het resultaat. Het resultaat zelf wordt niet bewaard.
+
+De opname bewaart waar in het script elke aanroep is gedaan, zodat zijn toolaanroepen daar op dezelfde manier worden weergegeven als in de conversatie. Een aanroep die een persoon heeft goedgekeurd, wordt daar nooit weggeklapt.
+
+Een script dat nog loopt, wordt als lopend getoond, met de toolaanroepen die tot nu toe klaar zijn; zijn uitvoer, duur en resourcegebruik verschijnen wanneer het eindigt. Als de server stopt terwijl een script loopt, wordt de opname gesloten wanneer de server weer start, en dat wordt in de opname vermeld; er draait in die werkruimte geen script totdat die is gesloten.
+
+Opnames worden bewaard bij hun run: het verwijderen van de run of zijn space verwijdert ze. Leden zien de opnames van spaces die ze kunnen openen.
+
+## Hoe scripts zijn ingesperd
+
+Scripts draaien nooit in de server. Elk script draait in zijn eigen proces, een klein programma dat met de server wordt meegeleverd, `cc_codemode`, dat JavaScript uitvoert in de QuickJS-NG-engine. Voordat het programma het script leest, sluit het zichzelf af met de eigen besturing van het besturingssysteem: op Linux een filter op systeemaanroepen en resourcelimieten, op macOS een standaard-geweigerd sandboxprofiel, op Windows een AppContainer en een job-object. Daarna kan het geen bestanden openen, het netwerk niet gebruiken, geen processen starten en andere programma's niet zien. Het begint zonder omgevingsvariabelen en heeft geen inloggegevens; het enige kanaal is de server, die zijn toolaanroepen beantwoordt.
+
+De server controleert de afsluiting bij het starten door de zelftest van het programma te draaien. Als de afsluiting op die machine niet standhoudt, bijvoorbeeld in een container waarvan het beveiligingsprofiel een van de stappen weigert, draait de server daar geen scripts: geen enkele run krijgt `repl`, en de instellingenpagina toont **Niet beschikbaar** met de reden. Een script draait nooit met minder afscherming. De Windows-afsluiting is nog niet op Windows getest.
+
+Waar een aanroep in het script is gedaan, meldt de runner; dat wordt alleen gebruikt om de conversatie en de opname op te bouwen. Het bepaalt nooit of een aanroep is toegestaan.
+
+Zie [Sandbox en beveiliging](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/#scripts-in-codemodus) voor wat de afsluiting wel en niet dekt.
+
+## Zie ook
+
+- [Toolcontext en promptcaching](/nl-NL/handleiding/concepten/toolcontext/): waarom de directe set klein is en met of zonder `repl` dezelfde blijft.
+- [Ingebouwde agenttools](/nl-NL/handleiding/referentie/agenttools/#repl--een-script-draaien-dat-je-tools-aanroept): de invoer van de `repl`-tool.
+- [`cc_server` CLI](/nl-NL/handleiding/referentie/cc-server-cli/#codemodus): de limieten die de serverbeheerder instelt.

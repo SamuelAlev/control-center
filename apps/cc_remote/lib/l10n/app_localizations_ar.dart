@@ -1624,54 +1624,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get mobileGoalBudgetExhausted => 'بلغت الميزانية حدها';
 
   @override
-  String get mobileGoalGoal => 'الهدف';
-
-  @override
-  String get mobileGoalLoop => 'دورة التكرار';
-
-  @override
-  String mobileGoalKind(String kind) {
-    return 'النوع: $kind';
-  }
-
-  @override
-  String mobileGoalRuns(String count) {
-    return '$count عمليات تشغيل';
-  }
-
-  @override
-  String get mobileGoalNoRunLimit => 'بلا حد';
-
-  @override
-  String mobileGoalProgress(
-    String runs,
-    String maxRuns,
-    String spent,
-    String cap,
-  ) {
-    return 'عمليات التشغيل: $runs / $maxRuns · المصروف: $spent / $cap';
-  }
-
-  @override
-  String mobileGoalDeadline(String date) {
-    return 'الموعد النهائي: $date';
-  }
-
-  @override
   String mobileGoalFailures(String count) {
     return 'عمليات التشغيل الفاشلة المتتالية: $count';
   }
 
   @override
-  String get mobileGoalSummary => 'ملخص الإنجاز';
-
-  @override
   String get mobileGoalFailedDescription =>
       'توقف المشرف بعد تكرار فشل التشغيل. راجع المحادثة للاطلاع على التفاصيل.';
-
-  @override
-  String get mobileGoalBudgetWall =>
-      'بلغ الموعد النهائي أو حد التشغيل. لا يمكن استئناف هذا الهدف برفع سقف التكلفة.';
 
   @override
   String get mobileGoalPause => 'إيقاف الهدف مؤقتًا';
@@ -2791,4 +2750,1339 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get runSandboxUnavailable =>
       'لا توجد حاوية معزولة على هذا الخادم، لذا لا يمكن إلا لمالكه تشغيل الوكلاء هنا. يمكن للمالك تثبيت الحاوية المعزولة، أو إيقاف العزل للجميع.';
+
+  @override
+  String get scriptToolCalls => 'استدعاءات الأدوات';
+
+  @override
+  String scriptCallCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count استدعاء',
+      many: '$count استدعاءً',
+      few: '$count استدعاءات',
+      two: 'استدعاءان',
+      one: 'استدعاء واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scriptCallsRunning(int count) {
+    return '$count قيد التشغيل';
+  }
+
+  @override
+  String scriptCallsOk(int count) {
+    return '$count ناجح';
+  }
+
+  @override
+  String scriptCallsFailed(int count) {
+    return '$count فشل';
+  }
+
+  @override
+  String scriptCallsDenied(int count) {
+    return '$count مرفوض';
+  }
+
+  @override
+  String scriptCallsCancelled(int count) {
+    return '$count أُلغي';
+  }
+
+  @override
+  String scriptCallsQueued(int count) {
+    return '$count في قائمة الانتظار';
+  }
+
+  @override
+  String scriptCallsSkipped(int count) {
+    return '$count تم تخطيه';
+  }
+
+  @override
+  String get scriptStepQueued => 'في قائمة الانتظار';
+
+  @override
+  String get scriptStepSkipped => 'تم تخطيه';
+
+  @override
+  String get scriptGroupLoop => 'حلقة';
+
+  @override
+  String get scriptGroupEach => 'لكل عنصر';
+
+  @override
+  String get scriptGroupParallel => 'بالتوازي';
+
+  @override
+  String get scriptGroupFunction => 'دالة';
+
+  @override
+  String scriptCallsHidden(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'إظهار $count استدعاء إضافي',
+      many: 'إظهار $count استدعاءً إضافيًا',
+      few: 'إظهار $count استدعاءات إضافية',
+      two: 'إظهار استدعاءين إضافيين',
+      one: 'إظهار استدعاء واحد إضافي',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptCallsUnplaced => 'استدعاءات لم تُوضع في السكربت';
+
+  @override
+  String get scriptToolComputed => 'الأداة';
+
+  @override
+  String scriptStepSemantics(String subject, String state) {
+    return '$subject، $state';
+  }
+
+  @override
+  String get scriptSourceLabel => 'السكربت';
+
+  @override
+  String scriptSourceLines(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count سطر',
+      many: '$count سطرًا',
+      few: '$count أسطر',
+      two: 'سطران',
+      one: 'سطر واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptStateRunning => 'قيد التشغيل';
+
+  @override
+  String get scriptStateCompleted => 'مكتمل';
+
+  @override
+  String get scriptStateFailed => 'فشل';
+
+  @override
+  String get scriptStateTimedOut => 'انتهت المهلة';
+
+  @override
+  String get scriptStateCancelled => 'أُلغي';
+
+  @override
+  String get scriptStateMemoryExceeded => 'نفدت الذاكرة';
+
+  @override
+  String get scriptStateOutputExceeded => 'مخرج كبير جدًا';
+
+  @override
+  String get scriptStateSandboxError => 'خطأ في البيئة المعزولة';
+
+  @override
+  String get scriptStateRefused => 'مرفوض';
+
+  @override
+  String get scriptOriginLine => 'من سكربت يشغّله الوكيل';
+
+  @override
+  String get codeModeTitle => 'وضع الكود';
+
+  @override
+  String get codeModeAvailable => 'متاح';
+
+  @override
+  String get codeModeUnavailable => 'غير متاح';
+
+  @override
+  String codeModeUnavailableNote(String reason) {
+    return 'لا يستطيع هذا الخادم تشغيل السكربتات، لذا يستدعي الوكلاء هنا أدواتهم واحدةً تلو الأخرى. ما يقوله الخادم: $reason';
+  }
+
+  @override
+  String get codeModeNoReason => 'لم يُذكر سبب.';
+
+  @override
+  String get workKindUnknown => 'لسبب لا تذكره هذه النسخة:';
+
+  @override
+  String get workRefusalUnknown => 'رفض الخادم هذا:';
+
+  @override
+  String workActionFailed(String error) {
+    return 'لم ينجح ذلك: $error';
+  }
+
+  @override
+  String get wakeKindStopped => 'محتجز لأن شخصًا أوقف التشغيل.';
+
+  @override
+  String get wakeKindAttempts => 'فشل التسليم ثلاث مرات.';
+
+  @override
+  String get wakeKindAgentDeleted => 'الوكيل لم يعد موجودًا.';
+
+  @override
+  String get wakeKindAgentNotDispatchable => 'الوكيل مُتقاعد.';
+
+  @override
+  String get wakeKindAgentPaused => 'الوكيل متوقف مؤقتًا.';
+
+  @override
+  String get wakeKindPersonRemoved =>
+      'الشخص الذي يعمل الإيقاظ باسمه غادر مساحة العمل.';
+
+  @override
+  String get wakeKindBudgetBlocked => 'الميزانية تمنع التشغيل.';
+
+  @override
+  String get wakeKindTakeOver => 'تولّى شخص شجرة العمل.';
+
+  @override
+  String get wakeKindRateCapConversation =>
+      'بدأت هذه المحادثة 30 تشغيلًا من عمليات الإيقاظ في الساعة الأخيرة.';
+
+  @override
+  String get wakeKindRateCapWorkspace =>
+      'بدأت مساحة العمل هذه 300 تشغيل من عمليات الإيقاظ في الساعة الأخيرة.';
+
+  @override
+  String get wakeKindLiveRunNoInput =>
+      'التشغيل المباشر للوكيل هنا لا يقبل مدخلات.';
+
+  @override
+  String get wakeKindLiveRunOtherOptions =>
+      'التشغيل المباشر للوكيل هنا يعمل بشكل مختلف، لذلك سيبدأ هذا تشغيلًا خاصًا به بعده.';
+
+  @override
+  String get wakeKindLiveRunOtherPerson =>
+      'التشغيل المباشر للوكيل هنا يعمل باسم شخص آخر، لذلك سيبدأ هذا تشغيلًا خاصًا به بعده.';
+
+  @override
+  String get wakeKindDispatchRefused => 'تعذّر بدء التشغيل.';
+
+  @override
+  String get wakeKindSandboxUnavailable =>
+      'لا تتوفر بيئة معزولة لتشغيل للقراءة فقط.';
+
+  @override
+  String get wakeKindReadOnlyUnavailable =>
+      'لا تستطيع خلفية هذا الوكيل إبقاء التشغيل للقراءة فقط.';
+
+  @override
+  String get wakeKindServerStopped => 'أوقفت إعادة تشغيل الخادم التشغيل.';
+
+  @override
+  String get wakeKindServerRestarted => 'أُعيد تشغيل الخادم أثناء تشغيل لشخص.';
+
+  @override
+  String get wakeKindGuardFailed => 'فشل فحص قبل التسليم.';
+
+  @override
+  String get wakeKindLimit => 'في انتظار إعادة ضبط حد استخدام المزوّد.';
+
+  @override
+  String get wakeKindLimitRunLive =>
+      'في انتظار انتهاء التشغيل عند حد الاستخدام.';
+
+  @override
+  String get wakeKindWakeMissed => 'فات أثناء توقف الخادم.';
+
+  @override
+  String get wakeKindPipelineRunEnded => 'انتهى تشغيل خط الأنابيب الخاص به.';
+
+  @override
+  String get wakeKindGoalEnded => 'انتهى هدفه.';
+
+  @override
+  String get wakeKindGoalBudgetExhausted => 'استنفد هدفه ميزانيته.';
+
+  @override
+  String get wakeKindGoalReviewStale => 'تغيّر الهدف منذ طُلبت هذه المراجعة.';
+
+  @override
+  String get wakeKindGoalPaused => 'هدفه متوقف مؤقتًا.';
+
+  @override
+  String get wakeKindGoalHeld => 'هدفه محتجز.';
+
+  @override
+  String get wakeKindGoalStopped => 'أُوقف هدفه.';
+
+  @override
+  String get wakeKindAskSettled => 'السؤال الذي يجيب عنه حُسم من قبل.';
+
+  @override
+  String get wakeKindRuleEnded => 'انتهت جدولته.';
+
+  @override
+  String get wakeRefusalNotYours =>
+      'هذا الإيقاظ يعمل باسم شخص آخر. هو وحده يستطيع تسليمه أو استئنافه.';
+
+  @override
+  String get wakeRefusalSettled => 'حُسم هذا الإيقاظ من قبل.';
+
+  @override
+  String get goalRefusalAlreadyActive => 'لهذا الوكيل هدف نشط بالفعل.';
+
+  @override
+  String get goalRefusalNotInReview => 'هذا الهدف ليس في انتظار المراجعة.';
+
+  @override
+  String get goalRefusalEvidenceIncomplete => 'أدلة الهدف غير مكتملة.';
+
+  @override
+  String get goalRefusalClaimPending => 'ما زال يجري فحص ادعاء بأنه تم.';
+
+  @override
+  String get goalRefusalNotActiveSegment => 'لا يعمل أي مقطع لهذا الهدف.';
+
+  @override
+  String get goalRefusalNotYours =>
+      'الشخص الذي بدأ هذا الهدف وحده يستطيع فعل ذلك.';
+
+  @override
+  String get goalRefusalNotPaused => 'أوقف الهدف مؤقتًا أولًا.';
+
+  @override
+  String get goalRefusalContractInvalid => 'تعذّرت قراءة عقد الهدف.';
+
+  @override
+  String get goalRefusalCheckerUnknown => 'لا يوجد وكيل بهذا الاسم.';
+
+  @override
+  String get goalRefusalCheckerAmbiguous => 'أكثر من وكيل يحمل هذا الاسم.';
+
+  @override
+  String get goalRefusalCheckerIsGoalAgent =>
+      'يجب أن يكون المدقق وكيلًا غير الوكيل الذي ينفذ العمل.';
+
+  @override
+  String get goalRefusalCommandInvalid => 'تعذّرت قراءة هذا الهدف:';
+
+  @override
+  String get wakeRuleRefusalIntervalTooShort =>
+      'الفاصل قصير جدًا. اختر دقيقة واحدة على الأقل.';
+
+  @override
+  String get wakeRuleRefusalTooSoon =>
+      'هذا الوقت قريب جدًا. اختر وقتًا لاحقًا.';
+
+  @override
+  String get wakeRuleRefusalLineageEnded =>
+      'استنفدت سلسلة الإيقاظ هذه تشغيلاتها أو وقتها.';
+
+  @override
+  String get wakeRuleRefusalWatchTargetUnreadable =>
+      'لا يمكنك قراءة ما ستراقبه هذه المراقبة.';
+
+  @override
+  String get wakeRuleRefusalExpiryRequired =>
+      'حدّد لها تاريخ انتهاء أو عدد تشغيلات.';
+
+  @override
+  String get wakeRuleRefusalLimitReached =>
+      'لهذه المحادثة أو هذا الوكيل بالفعل أقصى عدد من الجدولات المسموح به.';
+
+  @override
+  String get wakeRuleRefusalInvalidWhen => 'تعذّرت قراءة الوقت.';
+
+  @override
+  String get wakeRuleRefusalNoteTooLong => 'الملاحظة طويلة جدًا.';
+
+  @override
+  String get wakeRuleRefusalExpiryTooLong => 'النهاية بعيدة جدًا.';
+
+  @override
+  String get wakeRuleRefusalLimitOutOfRange =>
+      'حد التشغيلات أو الأيام أو الميزانية خارج النطاق.';
+
+  @override
+  String get wakeRuleRefusalNextOutsideLoop =>
+      'الحلقة وحدها تستطيع اختيار وقتها التالي.';
+
+  @override
+  String get wakeRuleRefusalWatchRefused => 'لا يمكن مراقبة ذلك.';
+
+  @override
+  String get wakeRuleRefusalRuleEnded => 'انتهت هذه الجدولة بالفعل.';
+
+  @override
+  String get wakeRuleRefusalNotYours => 'هذه الجدولة تخص شخصًا آخر.';
+
+  @override
+  String get wakeRuleEndFired => 'شغّل مرته الواحدة.';
+
+  @override
+  String get wakeRuleEndExpired => 'بلغ تاريخ انتهائه.';
+
+  @override
+  String get wakeRuleEndRunCap => 'استنفد تشغيلاته.';
+
+  @override
+  String get wakeRuleEndCostCap => 'بلغ حد التكلفة.';
+
+  @override
+  String get wakeRuleEndGoalEnded => 'انتهى هدفه.';
+
+  @override
+  String get wakeRuleEndCancelled => 'أُلغيت.';
+
+  @override
+  String get wakeRuleEndMemberRemoved => 'غادر الشخص المعني مساحة العمل.';
+
+  @override
+  String get wakeRuleEndInvalidRow => 'تعذّرت قراءة إعداداته المخزّنة.';
+
+  @override
+  String goalHoldWorking(int segment) {
+    final intl.NumberFormat segmentNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String segmentString = segmentNumberFormat.format(segment);
+
+    return 'يعمل على المقطع $segmentString. لا يحتاج أحد إلى التدخل.';
+  }
+
+  @override
+  String get goalHoldWaiting => 'في انتظار عمل مستحق له. سيستمر من تلقاء نفسه.';
+
+  @override
+  String goalHoldWaitingUntil(String time) {
+    return 'في انتظار عمل مستحق له. سيستمر من تلقاء نفسه في $time في أبعد حد.';
+  }
+
+  @override
+  String get goalHoldVerifying =>
+      'يقول إنه تم. يشغّل الخادم فحوصه، ثم يقرر المراجع.';
+
+  @override
+  String get goalHoldLimit =>
+      'متوقف عند حد استخدام المزوّد. يُستأنف من تلقاء نفسه بعد إعادة الضبط.';
+
+  @override
+  String goalHoldLimitUntil(String time) {
+    return 'متوقف عند حد استخدام المزوّد. يُستأنف من تلقاء نفسه في $time.';
+  }
+
+  @override
+  String get goalHoldPerson =>
+      'في انتظار رد شخص في المحادثة. سيستمر بعد أن يجيب أحد.';
+
+  @override
+  String get goalHoldByPerson =>
+      'أوقفه شخص مؤقتًا. يبقى متوقفًا حتى يستأنفه أحد.';
+
+  @override
+  String get goalHoldNeedsReview =>
+      'في انتظار المراجعة: لا يستطيع المضي وحده. وافق عليه كمنجز، أو استأنفه، أو ألغِه.';
+
+  @override
+  String get goalHoldBudget => 'استنفد ميزانيته. ارفع الميزانية ليستمر.';
+
+  @override
+  String goalHoldLimitParks(int count, int max) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return 'مرات الإيقاف عند حد الاستخدام: $countString من $maxString';
+  }
+
+  @override
+  String get goalHoldDetailStalled => 'لا تقدّم في مقاطعه الأخيرة.';
+
+  @override
+  String get goalHoldDetailStalledWaiting =>
+      'انتظر 24 ساعة على العمل نفسه دون تقدّم.';
+
+  @override
+  String get goalHoldDetailVerificationFailed => 'فشل آخر فحص.';
+
+  @override
+  String get goalHoldDetailCannotVerify => 'تعذّر على المدقق الجزم بأنه تم.';
+
+  @override
+  String get goalHoldDetailSandboxUnavailable =>
+      'لا تتوفر بيئة معزولة لتشغيل فحوصه.';
+
+  @override
+  String get goalHoldDetailCheckerUnavailable =>
+      'وكيل المدقق غير متاح. اختر مدققًا آخر، ثم استأنف.';
+
+  @override
+  String get goalHoldDetailCheckBroken => 'هذا الفحص لا يمكن تشغيله:';
+
+  @override
+  String get goalHoldDetailWakeSkipped => 'لم يُسلَّم إيقاظه.';
+
+  @override
+  String get goalHoldDetailClaimPending => 'ادعاؤه بأنه تم ينتظر فحصًا.';
+
+  @override
+  String get goalHoldDetailUnanswered =>
+      'بقي سؤال أو طلب موافقة موجَّه إلى شخص بلا رد.';
+
+  @override
+  String get goalHoldDetailLimitParks =>
+      'تجاوز حدود الاستخدام مرات كثيرة. راجعه، ثم استأنف.';
+
+  @override
+  String get goalHoldDetailInput => 'في انتظار رد في المحادثة.';
+
+  @override
+  String goalSegments(int run, int max) {
+    final intl.NumberFormat runNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String runString = runNumberFormat.format(run);
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return 'المقطع $runString من $maxString';
+  }
+
+  @override
+  String goalSegmentsNoCap(int run) {
+    final intl.NumberFormat runNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String runString = runNumberFormat.format(run);
+
+    return 'المقطع $runString، بلا حد';
+  }
+
+  @override
+  String goalMoney(String spent, String cap) {
+    return 'أُنفق $spent من $cap';
+  }
+
+  @override
+  String goalDeadline(String time) {
+    return 'الموعد النهائي $time';
+  }
+
+  @override
+  String get goalPipelineStep => 'خطوة في خط أنابيب تعمل على هذا الهدف.';
+
+  @override
+  String get goalSummaryHeading => 'آخر ملخص';
+
+  @override
+  String get goalDoneMeans => 'المطلوب للإنجاز';
+
+  @override
+  String get goalChecks => 'الفحوصات';
+
+  @override
+  String get goalBoundaries => 'الحدود';
+
+  @override
+  String get goalStopWhen => 'توقف واسأل عندما';
+
+  @override
+  String get goalNoMachineCheck =>
+      'لا يوجد فحص آلي. يحكم المراجع بناءً على ما يستطيع قراءته.';
+
+  @override
+  String get goalCheckEnvironment => 'مهمة البيئة';
+
+  @override
+  String goalLastCheck(int round, String time) {
+    final intl.NumberFormat roundNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String roundString = roundNumberFormat.format(round);
+
+    return 'آخر فحص، الجولة $roundString، $time';
+  }
+
+  @override
+  String get goalClaim => 'ما ادّعاه';
+
+  @override
+  String get goalCheckPassed => 'ناجح';
+
+  @override
+  String goalCheckFailed(int code) {
+    return 'فشل، رمز الخروج $code';
+  }
+
+  @override
+  String get goalCheckTimedOut => 'انتهت المهلة';
+
+  @override
+  String get goalCheckNotRerun => 'لم يُعَد تشغيله: لم يتغير شيء';
+
+  @override
+  String get goalCheckBroken => 'تعذّر التشغيل';
+
+  @override
+  String get goalCriterionMet => 'مُستوفى';
+
+  @override
+  String get goalCriterionUnmet => 'غير مُستوفى';
+
+  @override
+  String get goalCriterionCannotTell => 'لا يمكن الجزم';
+
+  @override
+  String get goalVerdictPass => 'الحكم: تم';
+
+  @override
+  String get goalVerdictFail => 'الحكم: لم يتم';
+
+  @override
+  String get goalVerdictCannotVerify => 'الحكم: تعذّر الجزم';
+
+  @override
+  String get goalConcerns => 'المخاوف';
+
+  @override
+  String goalVerifiedBy(String agent) {
+    return 'تحقق منه $agent';
+  }
+
+  @override
+  String get goalVerifiedBySelf => 'تحقق منه بنفسه (دون مدقق منفصل)';
+
+  @override
+  String get goalClosedByPerson => 'أغلقه شخص دون فحص ناجح';
+
+  @override
+  String get goalApprove => 'الموافقة على الإكمال';
+
+  @override
+  String get goalApproveTitle => 'إغلاق هذا الهدف كمنجز؟';
+
+  @override
+  String get goalApproveBody =>
+      'لم يؤكده أي فحص. تُغلقه بكلمتك، ويسجّل الهدف أن شخصًا أغلقه دون تحقق.';
+
+  @override
+  String get goalApproveConfirm => 'إغلاق كمنجز';
+
+  @override
+  String get goalResumeNotYours => 'استئنافه أو رفع ميزانيته من حق من بدأه.';
+
+  @override
+  String get goalChooseChecker => 'اختر مدققًا آخر';
+
+  @override
+  String goalCheckerSet(String agent) {
+    return 'يدقّقه $agent الآن. استأنف ليُتحقق منه مجددًا.';
+  }
+
+  @override
+  String get goalSchedules => 'الجدولات';
+
+  @override
+  String get goalRepeat => 'تكرار';
+
+  @override
+  String get goalCreateChecks => 'الفحوصات (اختياري)';
+
+  @override
+  String get goalCreateCheckHint => 'أمر ينجح عندما يكتمل العمل';
+
+  @override
+  String get goalCreateAddCheck => 'إضافة فحص';
+
+  @override
+  String get goalCreateRemoveCheck => 'إزالة الفحص';
+
+  @override
+  String get goalCreateSegmentCap => 'حد المقاطع (اختياري)';
+
+  @override
+  String get goalCreateSegmentInvalid => 'حد المقاطع عدد صحيح، 1 على الأقل.';
+
+  @override
+  String get scheduleCreateTitle => 'تكرار مطالبة';
+
+  @override
+  String get scheduleCadence => 'كم مرة';
+
+  @override
+  String get scheduleEveryMinutes => 'كل N دقيقة';
+
+  @override
+  String get scheduleEveryHours => 'كل N ساعة';
+
+  @override
+  String get scheduleSelfPaced => 'بتوقيت ذاتي';
+
+  @override
+  String get scheduleSelfPacedHint =>
+      'يختار الوكيل التأخير بعد كل تشغيل، بين دقيقة وساعة.';
+
+  @override
+  String get scheduleInterval => 'الفاصل';
+
+  @override
+  String get scheduleNote => 'ماذا يفعل كل تشغيل؟';
+
+  @override
+  String get scheduleCostCap => 'حد التكلفة بالدولار (اختياري)';
+
+  @override
+  String get scheduleExpiryDays => 'ينتهي بعد N يومًا (اختياري)';
+
+  @override
+  String get scheduleCreateInvalid =>
+      'اختر مساحة ووكيلًا، واكتب ما يجب أن يفعله كل تشغيل، واكتب أعدادًا صحيحة لا تقل عن 1.';
+
+  @override
+  String get scheduleCreateButton => 'بدء الجدولة';
+
+  @override
+  String get scheduleCreateConfirmTitle => 'بدء هذه الجدولة؟';
+
+  @override
+  String scheduleCreateConfirmEveryMinutes(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'تعمل كل $countString دقيقة، ابتداءً من الآن.',
+      many: 'تعمل كل $countString دقيقةً، ابتداءً من الآن.',
+      few: 'تعمل كل $countString دقائق، ابتداءً من الآن.',
+      two: 'تعمل كل دقيقتين، ابتداءً من الآن.',
+      one: 'تعمل كل دقيقة، ابتداءً من الآن.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleCreateConfirmEveryHours(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'تعمل كل $countString ساعة، ابتداءً من الآن.',
+      many: 'تعمل كل $countString ساعةً، ابتداءً من الآن.',
+      few: 'تعمل كل $countString ساعات، ابتداءً من الآن.',
+      two: 'تعمل كل ساعتين، ابتداءً من الآن.',
+      one: 'تعمل كل ساعة، ابتداءً من الآن.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scheduleCreateConfirmSelfPaced =>
+      'تعمل الآن، ثم يختار الوكيل موعد التشغيل التالي.';
+
+  @override
+  String get scheduleCreated => 'بدأت الجدولة. وهي مدرجة ضمن الجدولات.';
+
+  @override
+  String get schedulesTitle => 'الجدولات';
+
+  @override
+  String get schedulesLoadFailed => 'تعذّر تحميل الجدولات';
+
+  @override
+  String get schedulesEmpty => 'لا توجد جدولات ولا مراقبات';
+
+  @override
+  String get schedulesEmptyDescription =>
+      'كرّر مطالبة من شاشة الأهداف، أو أرسل /loop أو /schedule في محادثة.';
+
+  @override
+  String get scheduleMissing => 'لم تعد هذه الجدولة متاحة في مساحة العمل هذه.';
+
+  @override
+  String scheduleEvery(String interval) {
+    return 'كل $interval';
+  }
+
+  @override
+  String get scheduleSelfPacedLoop => 'حلقة بتوقيت ذاتي';
+
+  @override
+  String get scheduleCron => 'جدولة cron';
+
+  @override
+  String scheduleOnce(String time) {
+    return 'مرة واحدة في $time';
+  }
+
+  @override
+  String scheduleWatch(String event) {
+    return 'مراقبة: $event';
+  }
+
+  @override
+  String get scheduleWatchPrChecks => 'فحوصات طلب السحب';
+
+  @override
+  String get scheduleWatchPrReview => 'مراجعات طلب السحب';
+
+  @override
+  String get scheduleWatchPrMerged => 'دمج طلب السحب';
+
+  @override
+  String get scheduleWatchEnvironment => 'البيئة';
+
+  @override
+  String get scheduleWatchTicket => 'التذكرة';
+
+  @override
+  String get scheduleWatchPipelineRun => 'تشغيل خط الأنابيب';
+
+  @override
+  String get scheduleStatusActive => 'نشطة';
+
+  @override
+  String get scheduleStatusPaused => 'متوقفة مؤقتًا';
+
+  @override
+  String get scheduleStatusEnded => 'منتهية';
+
+  @override
+  String scheduleWakes(String agent) {
+    return 'يوقظ $agent';
+  }
+
+  @override
+  String scheduleNext(String time) {
+    return 'التشغيل التالي $time';
+  }
+
+  @override
+  String scheduleLast(String time) {
+    return 'آخر تشغيل $time';
+  }
+
+  @override
+  String scheduleRuns(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString تشغيل',
+      many: '$countString تشغيلًا',
+      few: '$countString تشغيلات',
+      two: 'تشغيلان',
+      one: 'تشغيل واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleRunsOf(int count, int max) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return '$countString من $maxString تشغيلات';
+  }
+
+  @override
+  String scheduleSkipped(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString تخطٍّ',
+      many: '$countString تخطيًا',
+      few: '$countString تخطيات',
+      two: 'تخطيان',
+      one: 'تخطٍّ واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleEnds(String time) {
+    return 'تنتهي $time';
+  }
+
+  @override
+  String scheduleChain(int count, String time) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return 'جزء من سلسلة: $countString تشغيلات متبقية، وتنتهي $time';
+  }
+
+  @override
+  String get scheduleNoteAgent => 'ملاحظة الوكيل الخاصة، بكلماته:';
+
+  @override
+  String get scheduleNotePerson => 'ملاحظة شخص:';
+
+  @override
+  String scheduleActsFor(String name) {
+    return 'يعمل باسم $name';
+  }
+
+  @override
+  String get scheduleActsForBot => 'لا يعمل باسم أي شخص';
+
+  @override
+  String get scheduleGoalBound => 'ينتهي مع هدفه.';
+
+  @override
+  String get schedulePause => 'إيقاف مؤقت';
+
+  @override
+  String get scheduleResume => 'استئناف';
+
+  @override
+  String get scheduleDelete => 'حذف';
+
+  @override
+  String get scheduleRemove => 'إزالة';
+
+  @override
+  String get scheduleDeleteTitle => 'حذف هذه الجدولة؟';
+
+  @override
+  String get scheduleDeleteBody => 'تتوقف نهائيًا. ولا يُلغى ما فعلته من قبل.';
+
+  @override
+  String get scheduleRemoveTitle => 'إزالة هذه الجدولة؟';
+
+  @override
+  String get scheduleRemoveBody => 'تختفي من القائمة.';
+
+  @override
+  String get scheduleResumeNotYours =>
+      'لا يستطيع استئنافها إلا الشخص الذي تعمل الجدولة باسمه.';
+
+  @override
+  String get scheduleResumeAdminOnly =>
+      'لا يستطيع استئناف جدولة لا يملكها شخص إلا مسؤول مساحة العمل.';
+
+  @override
+  String get scheduleOpenConversation => 'فتح المحادثة';
+
+  @override
+  String get progressWaiting => 'في الانتظار';
+
+  @override
+  String get progressNothingWaiting => 'لا شيء ينتظر.';
+
+  @override
+  String get wakeOriginGoal => 'الهدف';
+
+  @override
+  String get wakeOriginGoalCheck => 'فحص الهدف';
+
+  @override
+  String get wakeOriginGoalReview => 'مراجعة الهدف';
+
+  @override
+  String get wakeOriginSchedule => 'الجدولة';
+
+  @override
+  String get wakeOriginWatch => 'المراقبة';
+
+  @override
+  String get wakeOriginReply => 'ردّ';
+
+  @override
+  String get wakeOriginMessage => 'رسالة';
+
+  @override
+  String get wakeOriginWorkFinished => 'عمل منجز';
+
+  @override
+  String get wakeOriginLimitReset => 'إعادة ضبط الحد';
+
+  @override
+  String get wakeOriginRecovery => 'الاستعادة';
+
+  @override
+  String get wakeOriginAssignment => 'التكليف';
+
+  @override
+  String get wakeOriginPipelineStep => 'خطوة خط الأنابيب';
+
+  @override
+  String get wakeOriginImprovementReview => 'مراجعة التحسينات';
+
+  @override
+  String wakeOriginReplyFrom(String agent) {
+    return 'ردّ من $agent';
+  }
+
+  @override
+  String wakeOriginMessageFrom(String agent) {
+    return 'رسالة من $agent';
+  }
+
+  @override
+  String wakeOriginWorkFinishedBy(String agent) {
+    return 'عمل منجز من $agent';
+  }
+
+  @override
+  String wakeFor(String agent) {
+    return 'لـ $agent';
+  }
+
+  @override
+  String wakeDue(String time) {
+    return 'موعده $time';
+  }
+
+  @override
+  String get wakeDueNow => 'موعده الآن';
+
+  @override
+  String get wakeHeld => 'محتجز';
+
+  @override
+  String wakeExpires(String time) {
+    return 'ينتهي $time';
+  }
+
+  @override
+  String wakeAttempt(int attempt) {
+    final intl.NumberFormat attemptNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String attemptString = attemptNumberFormat.format(attempt);
+
+    return 'المحاولة $attemptString';
+  }
+
+  @override
+  String get wakeCancel => 'إلغاء';
+
+  @override
+  String get wakeDeliverNow => 'تسليم الآن';
+
+  @override
+  String get wakeResume => 'استئناف';
+
+  @override
+  String get wakeDismiss => 'تجاهل';
+
+  @override
+  String get wakeResumeOnlyTheirs =>
+      'الشخص الذي يخص هذا التشغيل وحده يستطيع استئنافه.';
+
+  @override
+  String get wakeRecovery =>
+      'أعاد الخادم تشغيل أثناء هذا التشغيل. استأنفه لمواصلته، أو تجاهله.';
+
+  @override
+  String limitParkTitle(String provider, String time) {
+    return 'متوقف مؤقتًا عند حد الاستخدام لدى $provider، ويُعاد تعيينه في $time. ينتظر التشغيل الاستئناف لمدة تصل إلى 7 أيام بعد إعادة التعيين.';
+  }
+
+  @override
+  String limitParkTitleUnnamed(String time) {
+    return 'متوقف مؤقتًا عند حد الاستخدام لدى المزوّد، ويُعاد تعيينه في $time. ينتظر التشغيل الاستئناف لمدة تصل إلى 7 أيام بعد إعادة التعيين.';
+  }
+
+  @override
+  String get limitParkResumeNow => 'الاستئناف الآن';
+
+  @override
+  String get limitParkCancel => 'إلغاء';
+
+  @override
+  String limitParkResumed(String provider) {
+    return 'استُؤنف بعد حد استخدام $provider.';
+  }
+
+  @override
+  String limitParkGone(String provider) {
+    return 'لم يعد في انتظار حد استخدام $provider.';
+  }
+
+  @override
+  String get limitParkProviderUnknown => 'المزوّد';
+
+  @override
+  String get mobileHeldMessages => 'رسائل محتجزة';
+
+  @override
+  String get heldSteeringTitle =>
+      'محتجزة لأن التشغيل انتهى قبل أن يأخذها. أرسل رسائلك الآن أو أزلها.';
+
+  @override
+  String get heldSteeringRelease => 'إرسال الرسائل المحتجزة';
+
+  @override
+  String get notifGoalCompleted => 'تم الهدف';
+
+  @override
+  String get notifGoalFailed => 'فشل الهدف';
+
+  @override
+  String get notifGoalCancelled => 'أُلغي الهدف';
+
+  @override
+  String get notifGoalBudgetExhausted => 'استنفد الهدف ميزانيته';
+
+  @override
+  String get notifGoalNeedsReview => 'هدف ينتظر مراجعتك';
+
+  @override
+  String get notifGoalNeedsPerson => 'هدف يحتاج إليك';
+
+  @override
+  String get notifGoalOnHold => 'الهدف محتجز';
+
+  @override
+  String get notifWakeRuleEnded => 'انتهت جدولة';
+
+  @override
+  String notifWaitingDigest(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString شيء ينتظرك',
+      many: '$countString شيئًا ينتظرك',
+      few: '$countString أشياء تنتظرك',
+      two: 'شيئان ينتظرانك',
+      one: 'شيء واحد ينتظرك',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notifImprovementProposed(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'اقتُرح $countString تحسين',
+      many: 'اقتُرح $countString تحسينًا',
+      few: 'اقتُرحت $countString تحسينات',
+      two: 'اقتُرح تحسينان',
+      one: 'اقتُرح تحسين',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notifPipelineRunHeld => 'تشغيل خط الأنابيب محتجز عند ميزانيته';
+
+  @override
+  String notifPipelineRunHeldBody(String spent, String cap) {
+    return 'أُنفق $spent من $cap';
+  }
+
+  @override
+  String get notifNeedsYou => 'يحتاج إليك';
+
+  @override
+  String get notifDigestGoalReview => 'هدف ينتظر المراجعة';
+
+  @override
+  String get notifDigestGoalPerson => 'هدف يحتاج إلى شخص';
+
+  @override
+  String get notifDigestHeldWake => 'إيقاظ محتجز';
+
+  @override
+  String get notifDigestImprovement => 'تحسين مقترح';
+
+  @override
+  String get wakeKindRulePaused => 'توقفت جدولته مؤقتًا.';
+
+  @override
+  String get wakeKindRuleBusy =>
+      'كان الوكيل مشغولًا، والجدولة تتخطّى وقتًا كهذا.';
+
+  @override
+  String get wakeKindRuleFolded => 'حلّ مكانه حدث لاحق من المراقبة نفسها.';
+
+  @override
+  String get wakeKindRuleSuperseded => 'حلّ محلّه موعد لاحق من جدولته.';
+
+  @override
+  String get wakeKindRuleNotified =>
+      'جدولته ترسل إشعارًا فقط، لذلك لم يبدأ أي تشغيل.';
+
+  @override
+  String get wakeKindRuleLimitParked =>
+      'جدولته في انتظار إعادة ضبط حد استخدام المزوّد.';
+
+  @override
+  String get improvementRefusalCooldown =>
+      'جرت مراجعة للتحسينات في هذه المحادثة قبل وقت قصير. حاول لاحقًا.';
+
+  @override
+  String get improvementRefusalQueued =>
+      'مراجعة التحسينات لهذه المحادثة تنتظر التشغيل بالفعل.';
+
+  @override
+  String get improvementRefusalAgentNotFound =>
+      'هذا الوكيل ليس وكيلًا في مساحة العمل هذه.';
+
+  @override
+  String get steeringRefusalHeldByLimit =>
+      'لا يمكن إرسال الرسائل المحتجزة عند حد الاستخدام يدويًا. تنتظر أن يُستأنف التشغيل المتوقف.';
+
+  @override
+  String limitParkCancelled(String provider) {
+    return 'أُلغي الانتظار عند حد استخدام $provider.';
+  }
+
+  @override
+  String limitParkExpired(String provider) {
+    return 'انتهت مهلة الانتظار عند حد استخدام $provider قبل أن يُستأنف التشغيل.';
+  }
+
+  @override
+  String limitParkSkipped(String provider) {
+    return 'لم يُستأنف التشغيل بعد حد استخدام $provider.';
+  }
+
+  @override
+  String get heldSteeringLimitTitle =>
+      'محتجز بينما ينتظر التشغيل إعادة تعيين حد الاستخدام. تُرسل عندما يستأنفه الشخص الذي يعمل التشغيل لصالحه.';
+
+  @override
+  String heldSteeringLimitAt(String time) {
+    return 'محتجز حتى يُعاد تعيين حد الاستخدام في $time. تُرسل عندما يستأنفه الشخص الذي يعمل التشغيل لصالحه.';
+  }
+
+  @override
+  String get heldSteeringOtherTitle => 'محتجزة لدى الخادم. يمكنك إزالتها.';
+
+  @override
+  String workRowWoke(int count, String agent) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'أيقظ $agent لأجل $countString عنصر في الانتظار',
+      many: 'أيقظ $agent لأجل $countString عنصرًا في الانتظار',
+      few: 'أيقظ $agent لأجل $countString عناصر في الانتظار',
+      two: 'أيقظ $agent لأجل عنصرين في الانتظار',
+      one: 'أيقظ $agent',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String workRowWakeMissed(String agent) {
+    return 'فات إيقاظ لـ$agent أثناء توقف الخادم.';
+  }
+
+  @override
+  String workRowWakeSkipped(String agent) {
+    return 'لم يُسلَّم إيقاظ لـ$agent.';
+  }
+
+  @override
+  String workRowScheduleCreated(String agent) {
+    return 'تم ضبط جدولة لـ$agent.';
+  }
+
+  @override
+  String workRowScheduleEnded(String agent) {
+    return 'انتهت جدولة $agent.';
+  }
+
+  @override
+  String workRowNoteFromAgent(String agent) {
+    return 'ملاحظة الجدولة من $agent:';
+  }
+
+  @override
+  String get workRowNoteFromPerson => 'ملاحظة جدولة من شخص:';
+
+  @override
+  String workRowCommandRefusedNamed(String command) {
+    return 'رُفض الأمر $command.';
+  }
+
+  @override
+  String get workRowCommandRefused => 'رُفض أمر.';
+
+  @override
+  String workRowCapRaised(String person, String from, String to) {
+    return 'رفع $person حد الإنفاق لخط الأنابيب من $from إلى $to.';
+  }
+
+  @override
+  String workRowCapRaisedNoAmounts(String person) {
+    return 'رفع $person حد الإنفاق لخط الأنابيب.';
+  }
+
+  @override
+  String get workRowApplyIncomplete =>
+      'تعذّر إكمال تغيير مقبول على هذه المهارة، لأن المهارة تغيّرت في الأثناء. أُرجع الاقتراح.';
+
+  @override
+  String get workRowOpenSchedule => 'فتح الجدولة';
+
+  @override
+  String get heldSteeringOthersTitle =>
+      'محتجزة لأن التشغيل انتهى قبل أن يأخذها. لا يستطيع إرسال رسالة إلا الشخص الذي كتبها.';
+
+  @override
+  String get heldSteeringOnlyYours =>
+      'يُرسل رسائلك فقط. تبقى الرسائل الأخرى بانتظار من كتبها.';
+
+  @override
+  String heldSteeringWrittenBy(String name) {
+    return 'كتبها $name';
+  }
+
+  @override
+  String get steeringRefusalNotYours =>
+      'لا يستطيع إرسال رسالة محتجزة إلا الشخص الذي كتبها، ولا شيء من هذه الرسائل يخصّك.';
+
+  @override
+  String get steeringRefusalNeedsWrite =>
+      'تحتاج إلى صلاحية الكتابة في مستودعات هذه المساحة لتوجيه تشغيل يعمل لصالح شخص آخر.';
+
+  @override
+  String workRowSchedulePaused(String name, String agent) {
+    return 'أوقف $name الجدولة الخاصة بـ$agent.';
+  }
+
+  @override
+  String get goalVerdictObjective => 'الغاية ككل';
+
+  @override
+  String get notifDigestRequest => 'في انتظار ردك';
 }

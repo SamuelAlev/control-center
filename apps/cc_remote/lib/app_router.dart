@@ -18,6 +18,7 @@ import 'package:cc_remote/screens/plan_detail_screen.dart';
 import 'package:cc_remote/screens/plans_screen.dart';
 import 'package:cc_remote/screens/pr_detail_screen.dart';
 import 'package:cc_remote/screens/pr_screen.dart';
+import 'package:cc_remote/screens/schedules_screen.dart';
 import 'package:cc_remote/screens/settings_screen.dart';
 import 'package:cc_remote/screens/space_management_screen.dart';
 import 'package:cc_remote/screens/space_screen.dart';
@@ -136,6 +137,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => _scoped(
           state,
           SupervisedGoalsScreen(goalId: state.pathParameters['goalId']!),
+        ),
+      ),
+      GoRoute(
+        path: '/schedules',
+        builder: (context, state) => _scoped(
+          state,
+          RemoteDetailPage(
+            title: AppLocalizations.of(context).schedulesTitle,
+            child: const SchedulesScreen(),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/schedules/:ruleId',
+        builder: (_, state) => _scoped(
+          state,
+          SchedulesScreen(ruleId: state.pathParameters['ruleId']!),
         ),
       ),
       GoRoute(

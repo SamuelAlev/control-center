@@ -2,7 +2,7 @@
 title: Administrer kostnader
 description: Se hva agentene dine bruker, sett et tak på en autonom kjøring og kutt tokenbruken.
 slug: nb-NO/handbok/slik-gjor-du/administrer-kostnader
-sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
+sourceHash: 040176a3840653a57c823ce4ff7e3ed9cf071c07
 ---
 
 Denne veiledningen viser hvordan du ser hva agentkjøringer koster, og hvordan du setter et tak på en autonom kjøring.
@@ -40,21 +40,30 @@ Kortet **Bruk og kostnad** på denne siden viser de siste sju dagene med observe
 
 ## Sett et tak på en autonom kjøring
 
-To skråstrekkommandoer, skrevet i skrivefeltet til et område, er de eneste kjøringene med et kostnadstak:
+Disse kjøringene har et kostnadstak. En kjøring du starter ved å sende en melding, har ikke det.
 
 ```
 /goal ship the auth refactor --budget 20
-/loop keep the flaky tests green
+/loop every 1h --budget 10 keep the flaky tests green
 ```
 
-- Hvert segment av en `/goal`- eller `/loop`-kjøring stopper når det prisede forbruket når **500 cent ($5.00)**. Ved 80 % av dette styrer løkken først modellen til å runde av og legge igjen en ryddig overlevering, slik at den ikke dør midt i en oppgave.
-- Et helt varig mål er begrenset til **5000 cent ($50.00)** med mindre du oppgir `--budget <dollars>`. Supervisoren trer målets _gjenværende_ budsjett inn i hvert segment, slik at et eksplisitt budsjett aldri overskrides med et helt segment.
-- `--days N` legger til en frist i veggklokketid, og `--max N` et tak på antall kjøringer. Begge er valgfrie; uten dem er målet bare begrenset av kostnad.
-- Et mål som treffer veggen sin, stopper ved `budgetExhausted` og kan bare gjenopptas ved å heve budsjettet.
+| Kjøring | Tak |
+| --- | --- |
+| Et segment i et mål | 5 dollar, eller det som er igjen av målets budsjett hvis det er mindre |
+| Et mål | 50 dollar med mindre du oppgir `--budget <dollars>` |
+| Gjennomgangen av et mål | 2 dollar, eller det som er igjen, belastet målet |
+| En kjøring en tidsplan eller overvåking starter | 5 dollar; tidsplanen stopper ved sin egen kostnadsgrense (50 dollar med mindre du oppgir `--budget`, eller arbeidsområdets standard) |
+| Gjennomgangen etter et mål, eller `/refine` | 1 dollar |
 
-Siden taket er priset, når en modell katalogen ikke kan prise, aldri fram til det. En slik kjøring begrenses i stedet av vakten mot gjentakelsesløkker, av at supervisoren gir opp etter tre påfølgende feil, og av deg.
+- En kjøring med tak stopper når det prisede forbruket når taket, i den innebygde harnessen, Claude Code og ACP-agenter. Ved 90 % styrer den innebygde harnessen og Claude Code først agenten til å runde av og legge igjen en ryddig overlevering, slik at den ikke dør midt i en oppgave. En ACP-agent avbrytes ved taket.
+- Målets _gjenværende_ budsjett føres inn i hvert segment, slik at et eksplisitt budsjett aldri overskrides med et helt segment.
+- `--days N` legger til en frist, og `--max N` et tak på antall segmenter. Begge er valgfrie; uten dem er målet begrenset av kostnad og av stoppen ved manglende fremdrift.
+- Et mål som treffer budsjettet sitt, stopper ved **Budsjett brukt opp** og fortsetter bare med et høyere budsjett, som bare personen som startet det, kan gi.
+- En pipeline-kjøring holdt ved orkestreringens tak venter til den som ba om den, trykker **Øk grensen** på pipeline-kjøringens side. Den nye grensen må være over den gamle og det som er brukt, høyst 1,000 dollar, og et tak fjernes aldri.
 
-En melding i et område, en @-nevning eller et pipeline-steg har ikke noe kostnadstak. Kjøringen avsluttes når modellen stopper, når du stopper den, eller når vakten mot gjentakelsesløkker styrer den.
+Siden taket er priset, når en modell katalogen ikke kan prise, aldri fram til det. En slik kjøring begrenses i stedet av vakten mot gjentakelsesløkker, av målets stopp ved manglende fremdrift og at det gir opp etter tre påfølgende feil, og av deg.
+
+En melding i et område, en @-nevning, eller et pipeline-steg utenfor en orkestrering med tak, har ikke noe eget kostnadstak. Kjøringen avsluttes når modellen stopper, når du stopper den, eller når vakten mot gjentakelsesløkker styrer den.
 
 ## Kutt tokenbruken
 

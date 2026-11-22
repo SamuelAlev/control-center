@@ -73,21 +73,25 @@ Future<void> stageServerNatives(String dataDir) async {
       entity.copySync(target.path);
     }
   }
-  // The preflight also requires the managed media tools, found at
-  // `<dataDir>/media/`. Link the first staged copy rather than copying it.
-  final mediaTarget = p.join(dataDir, 'media');
-  for (final source in sources) {
-    final media = Directory(p.join(source.path, 'media'));
-    if (!media.existsSync() || Directory(mediaTarget).existsSync()) {
-      continue;
+  // The preflight also requires the managed media tools and the code mode
+  // runner, found at `<dataDir>/media/` and `<dataDir>/codemode/`. Link the
+  // first staged copy of each rather than copying it. A `CC_CODEMODE_RUNNER`
+  // in the test environment names the runner directly and wins over both.
+  for (final dirName in const ['media', 'codemode']) {
+    final target = p.join(dataDir, dirName);
+    for (final source in sources) {
+      final staged = Directory(p.join(source.path, dirName));
+      if (!staged.existsSync() || Directory(target).existsSync()) {
+        continue;
+      }
+      _stageToolDirectory(staged, target);
     }
-    _stageMedia(media, mediaTarget);
   }
 }
 
-/// Symlinks the media directory, copying it only where a link is refused
+/// Symlinks a staged tool directory, copying it only where a link is refused
 /// (unprivileged Windows).
-void _stageMedia(Directory source, String targetPath) {
+void _stageToolDirectory(Directory source, String targetPath) {
   try {
     Link(targetPath).createSync(source.absolute.path);
     return;

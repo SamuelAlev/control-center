@@ -16,20 +16,30 @@ import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_domain/features/dispatch/domain/isolation/path_lock_manager.dart';
+import 'package:cc_domain/features/dispatch/domain/modes/read_only_run_profile.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_dispatch_port.dart';
 import 'package:cc_domain/features/dispatch/domain/registry/agent_ref.dart';
 import 'package:cc_domain/features/dispatch/domain/registry/agent_registry.dart';
+import 'package:cc_domain/features/dispatch/domain/services/run_settlement.dart';
+import 'package:cc_domain/features/dispatch/domain/services/wake_frame.dart'
+    show nonCommandTurnInput;
 import 'package:cc_domain/features/dispatch/domain/usecases/build_agent_prompt_use_case.dart';
 import 'package:cc_domain/features/dispatch/domain/usecases/dispatch_agent_use_case.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/mention_context.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/wake_rule_limits.dart'
+    show wakeRunIsQuiet;
 import 'package:cc_domain/features/observability/domain/doom_loop_detector.dart';
 import 'package:cc_domain/features/observability/domain/run_stage.dart';
 import 'package:cc_domain/features/observability/domain/run_verification.dart';
+import 'package:cc_domain/features/sandboxing/domain/host_execution_posture.dart'
+    show ReadOnlyRunUnavailableException;
 import 'package:cc_infra/cc_infra.dart'
     show WorkspaceFilesystemService, HireAgentUseCase;
 import 'package:cc_infra/src/dispatch/claude_refusal_message.dart';
 import 'package:cc_infra/src/dispatch/dispatch_session.dart'
     show kRunStoppedByUserSummary;
+import 'package:cc_infra/src/dispatch/limit_park_service.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:uuid/uuid.dart';
 
@@ -41,6 +51,7 @@ class AgentDispatchResult {
     required this.dispatchId,
     required this.runLog,
     this.agent,
+    this.quiet = false,
   });
 
   /// Stream of events emitted by the agent process.
@@ -54,6 +65,10 @@ class AgentDispatchResult {
 
   /// The agent that was dispatched, if resolved.
   final Agent? agent;
+
+  /// Whether only schedule and watch wakes started the run: its closing
+  /// message notifies no one unless the run fails or mentions them.
+  final bool quiet;
 }
 
 /// Orchestrates agent dispatch: prompt building, workspace provisioning and process spawning.
@@ -73,7 +88,7 @@ class AgentDispatchService {
     this.resolveHarnessRotation,
     this.onHarnessCredentialExhausted,
     this.credentialGate,
-    this.onRunEnded,
+    this.limitParks,
   });
 
   final AgentDispatchPort _agentDispatch;
@@ -148,15 +163,11 @@ class AgentDispatchService {
   /// in-session (in-process, no profile). Null = pre-gate fail-in-session.
   final RunCredentialGatePort? credentialGate;
 
-  /// Notified (fire-and-forget, after the run log row is stamped terminal) when
-  /// a run completes, fails or is stopped — the steering queue's
-  /// "last run ended; convert what is still queued" trigger.
-  ///
-  /// Late-bound (a plain mutable field) because the steering queue service is
-  /// constructed after this one and needs the dispatch service itself to reach
-  /// live sessions — a constructor cycle otherwise.
-  void Function(String workspaceId, String conversationId, String? spaceId)?
-  onRunEnded;
+  /// The durable record of a [credentialGate] park (`LimitParkService`, read
+  /// when a park begins): a person's run whose accounts are all spent until
+  /// a known reset gets the `limitReset` wake a restart keeps, and does not
+  /// start when the queue resumed it first. Null keeps the park in memory.
+  final LimitParkService? Function()? limitParks;
 
   /// Provisions/reuses the per-conversation working root with isolated repo
   /// worktrees and returns it as the agent's working directory. Optional —
@@ -170,8 +181,19 @@ class AgentDispatchService {
   final PathLockManager? _pathLock;
 
   /// Event bus used to publish the `waiting_local_directory` task state when a
-  /// dispatch parks on a held path. Null skips the signal.
+  /// dispatch parks on a held path, and `AgentRunSettled` when this service
+  /// ends a run. Null skips both signals.
   final DomainEventBus? _eventBus;
+
+  /// Ends a run: the terminal write and its `AgentRunSettled`, through the
+  /// one chokepoint every terminal writer shares. Null without a run-log
+  /// store (nothing to write).
+  RunSettlement? get _settlement {
+    final repo = _runLogRepo;
+    return repo == null
+        ? null
+        : RunSettlement(runLogs: repo, eventBus: _eventBus);
+  }
 
   /// Maps a live run log id to the dispatch id of its in-flight process, so a
   /// specific run can be stopped without cross-killing other concurrent
@@ -191,11 +213,18 @@ class AgentDispatchService {
   /// threaded to the dispatch port so the run's git commits carry an honest
   /// co-author trailer and per-user credentials apply. Null attributes the run
   /// to the server owner.
+  ///
+  /// [freshHistory] starts the run with no history from before it (no
+  /// conversation window in the prompt, no resumed transcript or native
+  /// session); [readOnly] runs it with the review mode's capabilities. See
+  /// `AgentDispatchPort.start`.
   Future<AgentDispatchResult> dispatch({
     required String agentId,
     required String prompt,
     required String workingDirectory,
     required String workspaceId,
+    required bool freshHistory,
+    required bool readOnly,
     String? adapterId,
     String? conversationId,
     String? spaceId,
@@ -205,7 +234,7 @@ class AgentDispatchService {
     String? requestedByUserId,
     Map<String, dynamic>? expectedOutputSchema,
     OutputContractMode outputContractMode = OutputContractMode.strict,
-    WakeContext? wakeContext,
+    required WakeContext wakeContext,
     MentionContext? mentionContext,
     AgentRunRole role = AgentRunRole.main,
     String? parentAgentId,
@@ -214,6 +243,12 @@ class AgentDispatchService {
     List<String> promptImageRefs = const [],
     String? modelOverride,
   }) async {
+    // A read-only run needs the sandbox: refused here, before any run row,
+    // preparation or credential wait, so its wake is skipped with the kind
+    // and no failed run is left behind (the session checks again).
+    if (readOnly && !_agentDispatch.readOnlyRunsAvailable) {
+      throw const ReadOnlyRunUnavailableException();
+    }
     final startedAt = DateTime.now();
     final preparationClock = Stopwatch()..start();
     // Prepare the dispatch (resolve agent + build prompt) FIRST so we can derive
@@ -221,16 +256,28 @@ class AgentDispatchService {
     // conversation overlay cwd. `workingDirectory` here is the agent's global
     // dir (the fallback / symlink-target source); the resolved cwd is computed
     // below and threaded into the actual process spawn.
+    // Only a signed-in person's message can act as a command. Any other
+    // run's text that opens with a slash is fenced, so no backend (a
+    // resumed Claude session gets the bare text) reads it as one.
+    final commandsAllowed = wakeContext.allowsCommands(
+      requestedByUserId: requestedByUserId,
+    );
     final prepared = await _dispatchUseCase.execute(
       workspaceId: workspaceId,
       agentId: agentId,
-      prompt: prompt,
+      prompt: commandsAllowed ? prompt : nonCommandTurnInput(prompt),
+      freshHistory: freshHistory,
       spaceId: spaceId,
       conversationId: conversationId,
       adapterId: adapterId,
       wakeContext: wakeContext,
       mentionContext: mentionContext,
     );
+    // A read-only run only where its backend holds it to reading: refused
+    // here, still before any run row, on one that cannot (ACP).
+    if (readOnly && !ReadOnlyRunProfile.enforcedOn(prepared.transport)) {
+      throw const ReadOnlyRunUnavailableException.backend();
+    }
     final contextReadyMs = preparationClock.elapsedMilliseconds;
 
     final agent = prepared.agent;
@@ -305,6 +352,23 @@ class AgentDispatchService {
       spaceId: spaceId,
       agentName: prepared.agent?.name,
       runLogId: runLogId,
+      parks: limitParks?.call(),
+      // Built only for a park: a dispatch with no workspace or run id has
+      // nothing a park could resume.
+      parkRun: () => workspaceId.isEmpty || runLogId.isEmpty
+          ? null
+          : LimitParkRun(
+              workspaceId: workspaceId,
+              spaceId: spaceId,
+              conversationId: prepared.effectiveConversationId,
+              agentId: agentId,
+              runId: runLogId,
+              requestedByUserId: requestedByUserId,
+              wakeReason: wakeContext.wakeReason,
+              wakeIds: wakeContext.wakeIds,
+              adapter: prepared.resolvedAdapterId,
+              modelId: modelOverride ?? prepared.agent?.modelId,
+            ),
     );
 
     // Park this run when another in-flight run owns the same working directory:
@@ -370,6 +434,21 @@ class AgentDispatchService {
         expectedOutputSchema: expectedOutputSchema,
         outputContractMode: outputContractMode,
         role: role,
+        // Who the run is for, on the row itself, so it survives a restart:
+        // the settlement of a run reaped at boot, killed, or closed by
+        // `completeIfActive` names it from here. Null for a server run.
+        requestedByUserId: (requestedByUserId?.isEmpty ?? true)
+            ? null
+            : requestedByUserId,
+        // The wakes this run delivers: the wake queue finds a run by them
+        // after a restart, and the settlement names them.
+        wakeIds: wakeContext.wakeIds,
+        // Why it started, for the same reader: a person's run that drained
+        // wakes still gets its recovery after a server stop.
+        wakeReason: wakeContext.wakeReason,
+        // The run whose tool call started this one by a direct dispatch:
+        // the wake rules keep it in that run's chain of wakes.
+        startedByRunId: wakeContext.startedByRunId,
       );
       await _runLogRepo?.upsert(runLog);
       final handle = _agentDispatch.start(
@@ -384,9 +463,12 @@ class AgentDispatchService {
         // `startedAt`, so stage timings from an adapter that launches later
         // still measure from the run's beginning.
         runStartedAt: startedAt,
-        // The user's message verbatim, so built-in slash commands are recognized
-        // (the layered prompt starts with `<context>`, never a slash).
-        userText: prepared.rawUserText,
+        // The person's message verbatim, so built-in slash commands are
+        // recognized (the layered prompt starts with `<context>`, never a
+        // slash). Only a signed-in person's message is one: a peer's text, a
+        // wake's payload or a rule's note is data and never reaches the
+        // command parser on any lane (null here).
+        userText: commandsAllowed ? prepared.rawUserText : null,
         workingDirectory: resolvedWorkingDirectory,
         // The agent's global config dir (AGENTS.md + .agents source) is mounted
         // read-only alongside the writable cwd so the overlay symlinks resolve.
@@ -404,6 +486,8 @@ class AgentDispatchService {
         requestedByUserId: requestedByUserId,
         wakeContext: wakeContext,
         mode: prepared.mode,
+        freshHistory: freshHistory,
+        readOnly: readOnly,
         // Blob references for images the human attached to the triggering
         // message; the dispatch session resolves them per workspace.
         imagePaths: promptImageRefs.isEmpty ? null : promptImageRefs,
@@ -526,18 +610,20 @@ class AgentDispatchService {
         dispatchId: handle.dispatchId,
         runLog: runLog,
         agent: prepared.agent,
+        quiet: wakeRunIsQuiet([for (final w in wakeContext.wakes) w.reason]),
       );
     } on Object catch (error) {
       pathLockHandle?.release();
       try {
         final row = await _runLogRepo?.getById(workspaceId, runLogId);
         if (row != null) {
-          await _runLogRepo?.completeIfActive(
+          await _settlement?.settle(
             row.copyWith(
               completedAt: DateTime.now(),
               status: RunStatus.error,
               summary: 'Dispatch startup failed: $error',
             ),
+            endReason: RunEndReason.error,
             writeCost: false,
           );
         }
@@ -598,8 +684,12 @@ class AgentDispatchService {
   /// Feeds a tool call to [doomLoop] and returns the tool name when this call
   /// crosses into a detected repeating-call loop, or null otherwise (including
   /// for non-tool events). The caller latches so the response fires once.
+  ///
+  /// Only calls the model made count. A script's calls (`parentToolCallId`
+  /// set) repeat by design, a loop over files calling `read` each time, and
+  /// the model's own repetition is already visible in its `repl` calls.
   String? _recordDoomLoop(DoomLoopDetector doomLoop, AgentProcessEvent event) {
-    if (event is! ToolCallEvent) {
+    if (event is! ToolCallEvent || event.parentToolCallId != null) {
       return null;
     }
     final decision = doomLoop.record(
@@ -649,6 +739,8 @@ class AgentDispatchService {
     required String? spaceId,
     required String? agentName,
     required String runLogId,
+    required LimitParkService? parks,
+    required LimitParkRun? Function() parkRun,
   }) async {
     final resolve = resolveClaudeConfigDir;
     if (resolve == null) {
@@ -668,6 +760,16 @@ class AgentDispatchService {
     }
     while (plan?.refusal != null) {
       final refusal = plan!.refusal!;
+      // A person's run a restart would lose gets its durable wake first.
+      final run = parks == null ? null : parkRun();
+      final ticket = run == null
+          ? null
+          : await parks!.credentialParked(
+              run,
+              resetsAt: refusal.reason == RunCredentialReason.planSpent
+                  ? refusal.earliestReset
+                  : null,
+            );
       final outcome = await gate.awaitCredentials(
         RunCredentialBlockRequest(
           lane: RunCredentialLane.claudeCode,
@@ -688,7 +790,15 @@ class AgentDispatchService {
         // the server never saw.
         recheck: () async => (await resolveOnce())?.refusal == null,
       );
-      if (outcome != RunCredentialOutcome.resolved) {
+      final resolved = outcome == RunCredentialOutcome.resolved;
+      // Whichever resumes first cancels the other: a wake the queue already
+      // took is a run that goes on, so this dispatch must not start one.
+      if (ticket != null &&
+          !await parks!.credentialParkEnded(ticket, outcome: outcome) &&
+          resolved) {
+        throw LimitParkSupersededException(runLogId);
+      }
+      if (!resolved) {
         return plan;
       }
       plan = await resolveOnce();
@@ -791,9 +901,14 @@ class AgentDispatchService {
   /// [nativeSessionId] / [resumedNativeSession] record which adapter session the
   /// run used and whether it was resumed — stored as data so a resume-vs-fresh
   /// comparison can group on it.
+  ///
+  /// [endReason] is why the run ended (`completed` for a plain finish,
+  /// `budget` when it stopped at its cost cap), written in the same terminal
+  /// write; the write that ends the run publishes `AgentRunSettled`.
   Future<void> completeRun(
     AgentRunLog runLog,
     String? summary, {
+    required RunEndReason endReason,
     RunCost? cost,
     RunLatencyProfile? latency,
     RunVerification? verification,
@@ -841,38 +956,22 @@ class AgentDispatchService {
     // A contract-unmet run keeps the verdict `_markContractUnmet` already
     // recorded, for the same reason it keeps its summary: that one was decided
     // against the deliverable, which the classifier cannot see.
-    final stamped = await _runLogRepo?.completeIfActive(
+    final stamped = await _settlement?.settle(
       unmetDeliverable
           ? completed
           : completed.copyWith(
               liveness: const RunLivenessClassifier().classify(completed),
             ),
+      endReason: endReason,
       writeCost: cost != null,
     );
     if (stamped != true) {
       return;
     }
-    _notifyRunEnded(runLog);
     await _propagateCostToParent(
       workspaceId,
       runLog.agentId,
       cost?.costMicros ?? 0,
-    );
-  }
-
-  /// Fires [onRunEnded] when the caller has just stamped a run terminal.
-  ///
-  /// Fire-and-forget on purpose: the steering-queue conversion it triggers
-  /// reads the run log (which now shows the run completed) and must never sit
-  /// on the run-completion path.
-  void _notifyRunEnded(AgentRunLog runLog) {
-    final hook = onRunEnded;
-    final workspaceId = runLog.workspaceId;
-    if (hook == null || workspaceId == null || workspaceId.isEmpty) {
-      return;
-    }
-    scheduleMicrotask(
-      () => hook(workspaceId, runLog.conversationId ?? '', runLog.spaceId),
     );
   }
 
@@ -956,11 +1055,23 @@ class AgentDispatchService {
   /// Marks [runLog] failed (idempotent) and forgets its dispatch mapping.
   /// [errorCode] is the failure's machine-readable code, when it has one.
   ///
+  /// [endReason] is why the run ended (`error`, or what the session decided:
+  /// `usageLimit` with the provider's [limitResetsAt], `silence`, a stop),
+  /// written in the same terminal write; the write that ends the run
+  /// publishes `AgentRunSettled`.
+  ///
+  /// [cost] is what the run spent, as its usage reports stated it: a failed
+  /// run is billed like a completed one, so the settlement (a goal's spend,
+  /// a budget) counts it. Null keeps the cost the row already holds.
+  ///
   /// Workspace-sourced from [AgentRunLog.workspaceId], like [completeRun].
   Future<void> failRun(
     AgentRunLog runLog,
     String error, {
+    required RunEndReason endReason,
+    required RunCost? cost,
     String? errorCode,
+    DateTime? limitResetsAt,
   }) async {
     _runToDispatch.remove(runLog.id);
     // The run ended (in error): the agent goes idle but stays registered so it
@@ -982,33 +1093,32 @@ class AgentDispatchService {
         errorCode: errorCode,
         // A run that died after 20 minutes is a different diagnosis from one
         // that died on the first turn, so a failure gets timed too.
-        cost: _timed(existing.cost, existing.startedAt, completedAt),
+        cost: _timed(cost ?? existing.cost, existing.startedAt, completedAt),
       );
       // Classified for the same reason as the completed path — and it is worth
       // more here, because this is where the classifier separates a process we
       // lost (`dead`) from one that reported it was blocked (`blocked`) from an
       // ordinary failure.
-      final completed =
-          await _runLogRepo?.completeIfActive(
-            failed.copyWith(
-              liveness: const RunLivenessClassifier().classify(failed),
-            ),
-            writeCost: false,
-          ) ??
-          false;
-      if (completed) {
-        _notifyRunEnded(runLog);
-      }
+      await _settlement?.settle(
+        failed.copyWith(
+          liveness: const RunLivenessClassifier().classify(failed),
+        ),
+        endReason: endReason,
+        writeCost: cost != null,
+        limitResetsAt: limitResetsAt,
+      );
     }
   }
 
   /// Delivers a mid-run steering [message] to the in-flight dispatch backing
   /// [runLogId] (built-in harness only). Returns true when a live run received
   /// it; false when the run has no active dispatch (finished, or an external-CLI
-  /// transport with no steering space).
+  /// transport with no steering space). [source]: see
+  /// [AgentDispatchPort.steerDispatch]; null only for a person's own words.
   Future<bool> steerRun(
     String runLogId,
     String message, {
+    required String? source,
     bool followUp = false,
   }) async {
     final dispatchId = _runToDispatch[runLogId];
@@ -1018,6 +1128,7 @@ class AgentDispatchService {
     return _agentDispatch.steerDispatch(
       dispatchId,
       message,
+      source: source,
       followUp: followUp,
     );
   }
@@ -1049,6 +1160,10 @@ class AgentDispatchService {
   /// closes the run log if the terminate path did not already stamp it. Safe to
   /// call for an already-finished run — it becomes a no-op. A run id belonging
   /// to another workspace resolves to no row, so the close is skipped.
+  ///
+  /// Either way the run settles as [RunEndReason.stoppedByUser]: the session's
+  /// terminate stamps that reason itself, and this close writes it when the
+  /// session had nothing to stamp.
   Future<void> stopRun(String workspaceId, String runLogId) async {
     final dispatchId = _runToDispatch.remove(runLogId);
     if (dispatchId != null) {
@@ -1060,19 +1175,15 @@ class AgentDispatchService {
       // re-dispatchable). The id comes from the run log so the registry stays
       // in sync even when only the run id is known.
       _registry?.setStatus(existing.agentId, AgentStatus.idle);
-      final completed =
-          await _runLogRepo?.completeIfActive(
-            existing.copyWith(
-              completedAt: DateTime.now(),
-              status: RunStatus.error,
-              summary: kRunStoppedByUserSummary,
-            ),
-            writeCost: false,
-          ) ??
-          false;
-      if (completed) {
-        _notifyRunEnded(existing);
-      }
+      await _settlement?.settle(
+        existing.copyWith(
+          completedAt: DateTime.now(),
+          status: RunStatus.error,
+          summary: kRunStoppedByUserSummary,
+        ),
+        endReason: RunEndReason.stoppedByUser,
+        writeCost: false,
+      );
     }
   }
 }

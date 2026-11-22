@@ -2,7 +2,7 @@
   "name": "docs",
   "type": "module",
   "version": "0.0.1",
-  "packageManager": "pnpm@12.18.0+sha512.9d7882d5dc82147ecfc4e062aa34834e0ad0296710a1837a1115ae012127d36b7109e321ac1598a1dd0a65597681b1e99917e12ed0d749eae91187943363beb3",
+  "packageManager": "pnpm@12.21.0+sha512.66fd8278ee28935ce951792d34367ff3af5c432a2756445823029533835b8da529bbe0be5130afd56ed0713fb8789e47bad82d93bd5ae2fe54b15562d6276ef0",
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
@@ -14,17 +14,17 @@
     "generate-types": "wrangler types"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^14.4.7",
-    "@astrojs/mdx": "^8.1.5",
+    "@astrojs/cloudflare": "^14.4.9",
+    "@astrojs/mdx": "^8.1.6",
     "@astrojs/rss": "^4.0.19",
-    "@astrojs/sitemap": "^3.7.4",
+    "@astrojs/sitemap": "^3.7.6",
     "@astrojs/starlight": "^0.41.11",
     "@tailwindcss/vite": "^4.3.5",
-    "astro": "^7.4.11",
+    "astro": "^7.4.13",
     "sharp": "^0.35.5",
     "tailwindcss": "^4.3.5",
     "three": "^0.187.0",
-    "wrangler": "^4.160.1"
+    "wrangler": "^4.164.0"
   },
   "devDependencies": {
     "@gltf-transform/core": "^4.5.1",

@@ -104,6 +104,7 @@ Widget _popup(
           MentionPopup(
             query: query,
             sources: sources,
+            keys: MentionPopupKeys(),
             onSelect: onSelect ?? (_) {},
             onDismiss: () {},
           ),
@@ -308,6 +309,7 @@ void main() {
           MentionPopup(
             query: _query('p'),
             sources: sources(),
+            keys: MentionPopupKeys(),
             onSelect: (_) {},
             onDismiss: () {},
           ),
@@ -322,6 +324,7 @@ void main() {
           MentionPopup(
             query: _query('pl'),
             sources: sources(),
+            keys: MentionPopupKeys(),
             onSelect: (_) {},
             onDismiss: () {},
           ),
@@ -355,6 +358,7 @@ void main() {
                 ),
               ),
             ],
+            keys: MentionPopupKeys(),
             onSelect: (_) {},
             onDismiss: () {},
           ),
@@ -395,6 +399,7 @@ void main() {
         MentionPopup(
           query: _query(partial),
           sources: sources,
+          keys: MentionPopupKeys(),
           onSelect: selected.add,
           onDismiss: () {},
         ),
@@ -463,6 +468,7 @@ void main() {
           MentionPopup(
             query: _query('p'),
             sources: sources,
+            keys: MentionPopupKeys(),
             onSelect: selected.add,
             onDismiss: () {},
           ),
@@ -495,6 +501,7 @@ void main() {
                 ]),
               ),
             ],
+            keys: MentionPopupKeys(),
             onSelect: (_) {},
             onDismiss: () {},
           ),

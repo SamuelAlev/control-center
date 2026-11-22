@@ -2,7 +2,7 @@
 title: Planmodus nutzen
 description: Schalte einen Bereich in den Plan-Modus, hol einen typisierten Plan und gib ihn frei, damit daraus laufende Arbeit wird.
 slug: de-DE/handbuch/anleitungen/planmodus
-sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
+sourceHash: accf49606e5e8597d3ea76e3274f08d3854996dc
 ---
 
 Diese Anleitung zeigt, wie du von einem Agenten einen strukturierten Plan
@@ -123,11 +123,7 @@ nicht handeln. Ist die Anfrage freigegeben, schaltet der nächste Aufruf von
 verändernden Werkzeuge frei. Eine Ablehnung lässt ihn eine neue Anfrage gegen
 einen überarbeiteten Plan öffnen.
 
-Den Plan-Modus verlässt du über das Dropdown im Composer (oder Umschalt+Tab)
-oder indem du den eingereichten Plan freigibst. `exit_plan_mode` öffnet eine
-dauerhafte Freigabe, über die das MCP-Tool `decide_approval` entscheidet. Das
-Overlay der Schutzregeln für blockierte Werkzeugaufrufe ist eine andere
-Warteschlange im Speicher und trägt keine Plan-Ausstiegsanfragen.
+Den Plan-Modus verlässt du über das Dropdown im Composer (oder Umschalt+Tab) oder indem du den eingereichten Plan freigibst. `exit_plan_mode` öffnet eine dauerhafte Freigabe, die ein Agentenlauf mit dem MCP-Tool `decide_approval` entscheidet. Das Overlay der Schutzregeln für blockierte Werkzeugaufrufe ist eine andere Warteschlange im Speicher und trägt keine Plan-Ausstiegsanfragen.
 
 ## Plan-Modus in einem Pipeline-Schritt
 

@@ -2,7 +2,7 @@
 title: Een agent diagnosticeren
 description: Loop het runlog, de adapterdetectie, de serverstatus en de hostdiagnose door wanneer een agent geen runs meer produceert.
 slug: nl-NL/handleiding/gidsen/agent-diagnosticeren
-sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
+sourceHash: 8cd7078bacfbfcd18d90512974eff3539366883c
 ---
 
 Deze gids laat zien hoe je erachter komt waarom een agent geen runs produceert.
@@ -161,10 +161,13 @@ blijven dus ook daarna alleen op trefwoorden doorzoekbaar.
 
 ### De server start helemaal niet op
 
-Native bibliotheken zijn vereist en er is geen terugvalmodus. Een ontbrekende
-dylib zorgt dat `cc_server` weigert te starten en noemt de boosdoener in de fout.
-Zet de natives klaar met `scripts/natives/build_natives.sh` en bouw de
-serverbinary opnieuw.
+Native bibliotheken zijn vereist en er is geen terugvalmodus. Een ontbrekende dylib, of een ontbrekende codemodus-runner (`bin/codemode/cc_codemode`), zorgt dat `cc_server` weigert te starten en noemt de boosdoener in de fout. Zet de natives klaar met `scripts/natives/build_natives.sh` en bouw de serverbinary opnieuw met `scripts/build_server.sh`.
+
+### Een script is mislukt, of codemodus wordt niet aangeboden
+
+Om te zien wat een [codemodus](/nl-NL/handleiding/concepten/codemodus/)-script heeft gedaan, open je de opname van het script via **Opname openen** op zijn rij in de conversatie, of via **Observeerbaarheid → Codeuitvoeringen**. De opname zegt in gewone woorden hoe het script eindigde (de tijd was op, de processortijd was op, de geheugenlimiet is bereikt, er is een fout gegooid), en somt elke toolaanroep op die het deed, met of de beveiligingen hem toestonden, een persoon hem goedkeurde of hij werd geweigerd.
+
+Als de agent helemaal geen `repl`-tool heeft, open je **Instellingen → Werkruimte → Codemodus**. Onder **Status** zegt **Op deze server** **Beschikbaar** of **Niet beschikbaar**; **Niet beschikbaar** betekent dat de server de scriptrunner op zijn host niet kan afsluiten, en de pagina noemt de reden. Het opstartlogboek van de server heeft dezelfde regel (`code_mode=…`). Een run zonder werkruimte, waarvan de limieten van de werkruimte niet konden worden gelezen of waarvan het runlogboek niet kon worden geschreven, krijgt ook geen `repl` en roept zijn tools direct aan.
 
 ### Een actie wordt stil geweigerd
 

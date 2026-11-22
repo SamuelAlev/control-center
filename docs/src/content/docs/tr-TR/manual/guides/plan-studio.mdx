@@ -2,7 +2,7 @@
 title: Plan Studio’da çalışma
 description: Plan Studio düzenleyicisinde bir planı inceleyin, düzenleyin, tahmin edin, farkını alın ve onaylayın; parametreli playbook’ları çalıştırın.
 slug: tr-TR/kilavuz/nasil-yapilir/plan-studio
-sourceHash: 04a6e193c6b57af3fce63c90673a0958b37552fb
+sourceHash: 9df96d8f10ca86584f3979b84af5eee250719752
 ---
 
 Bu kılavuz, Plan Studio’da planlarla nasıl çalışacağınızı gösterir. Orkestrasyonların
@@ -132,8 +132,7 @@ Uygulamada önerilen bir plan tek bir karardır ve bütün olarak verilir: onay
 onaylar — önce bir alt küme seçmenin yolu yoktur. Öneride doğrulama hataları varken
 onaylama engellenir; bu hatalar düğmelerin yanında gösterilir.
 
-Onaylama yalnızca operatöre açıktır. Bunun için bir MCP aracı yoktur; dolayısıyla
-bir ajan plan önerebilir ve planı revize edebilir, ancak asla onaylayamaz.
+Onaylama yalnızca operatöre açıktır. Bunun için bir MCP aracı yoktur; dolayısıyla bir ajan plan önerebilir ve planı revize edebilir, ancak asla onaylayamaz. Bir planı onaylamak, bir revizyonu kaydetmek, **Seçilenleri onayla** ve **Düğümü sürdür** alanın depolarına yazma erişimi gerektirir.
 
 Bir orkestrasyon yürümeye başladığında çubuk değişir:
 
@@ -143,7 +142,9 @@ Bir orkestrasyon yürümeye başladığında çubuk değişir:
   genişletmek için **Seçilenleri onayla**’ya basın (bir adım bağımlılıkları olmadan
   asla onaylanamaz). Bu kontrol, her orkestrasyonda yürütme çubuğunda bulunur; plan
   bütün olarak onaylandığında hiçbir işlem yapmaz.
-- Tüm orkestrasyonu durdurmak için **Çalıştırmayı iptal et**’e basın.
+- Tüm orkestrasyonu durdurmak için **Çalıştırmayı iptal et**’e basın. Alana erişimi olan herkes bunu yapabilir.
+
+**Düğümü sürdür** ve **Seçilenleri onayla**, çalıştırmanın adına hareket ettiği kişiye aittir (kimse adına hareket etmiyorsa bir çalışma alanı yöneticisine).
 
 Kısmi olarak onaylanmış kümenin dışındaki adımlar ertelenmiş olarak görüntülenir ve
 siz kümeyi genişletene kadar çalışmaz.

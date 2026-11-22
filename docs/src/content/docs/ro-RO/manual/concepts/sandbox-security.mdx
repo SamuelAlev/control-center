@@ -2,7 +2,7 @@
 title: Sandbox și securitate
 description: Ce limitează de fapt un agent în Control Center astăzi, până unde ajunge sandbox-ul de sistem și ce granițe rezistă pe o gazdă care nu are niciun backend.
 slug: ro-RO/manual/concepte/sandbox-si-securitate
-sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
+sourceHash: 7644c97911f685ef5084875fb16f1006f21ea940
 ---
 
 :::note[Unde ajunge sandbox-ul de sistem și unde nu ajunge]
@@ -51,6 +51,8 @@ Aceeași regulă acoperă și lucrurile mai mici care pornesc un proces pentru t
 - **Ajutoare rapide care rulează printr-un CLI ACP**: titlurile conversațiilor, `/btw`, `/handoff` și `/goal`. Când serverul învelește agenții în sandbox, ele rulează în sandbox, într-o sesiune proprie. Sub `--sandbox off` rulează neizolate. Fără sandbox disponibil rulează doar pentru cererile de care răspunde proprietarul serverului; pentru ceilalți sunt sărite, deci nu se generează niciun titlu, iar o întrebare secundară raportează că Content synthesizer nu are un runner funcțional. Ajutoarele care nu pornesc niciun instrument nu sunt afectate.
 - **Testele golden ale unui pull request** din verificarea vizuală a Review Studio urmează aceeași regulă.
 - **Procesele de instrumente și `bash`** dintr-o rulare nu revin niciodată pe gazdă. Dacă serverul este setat să învelească agenții în sandbox, dar nu are un sandbox care să-l dea unei rulări, acestea sunt refuzate.
+- **Verificările unui obiectiv** rulează într-un sandbox de unică folosință peste worktree-ul conversației, izolate la fel ca `bash`-ul propriu al agentului. Fără sandbox nu rulează, iar obiectivul se oprește pentru o persoană; sub `--sandbox off` rulează cum rulează `bash`-ul agentului.
+- **Revizuirea unui obiectiv** rulează doar în citire la fiecare adaptor: doar citiri, worktree-urile montate doar în citire, fără `bash`, fără subagenți, fără web. Un adaptor care nu poate păstra o rulare doar în citire (un agent ACP) nu este folosit ca revizor.
 
 ## Ce limitează de fapt un agent
 
@@ -275,6 +277,24 @@ rulării, așa că un apel de sistem refuzat apare în transcriere, nu doar înt
 există doar cât timp un sandbox nativ învelește efectiv procesul — pe o gazdă fără backend nu
 există nimic de observat. De asemenea, nu are legătură cu guardrail-urile: o încălcare provine dintr-un apel de sistem refuzat, niciodată dintr-o căutare de regulă.
 
+## Scripturi în modul cod
+
+Scripturile din [modul cod](/ro-RO/manual/concepte/mod-cod/) sunt un caz separat și nu depind deloc de sandbox-ul agentului. Un script nu rulează niciodată în interiorul serverului și nu rulează niciodată în sandbox-ul agentului. Rulează în propriul proces, `cc_codemode`, un program livrat împreună cu serverul, care se blochează singur înainte să citească scriptul și raportează cât de departe a ajuns blocarea. Serverul trimite scriptul doar când blocarea este completă.
+
+| Gazdă | Ce aplică runner-ul asupra lui însuși |
+| --- | --- |
+| Linux | O listă de permisiuni pentru apelurile de sistem (seccomp) care îi lasă puțin mai mult decât citirea intrării, scrierea ieșirii, gestionarea propriei memorii, citirea ceasurilor și ieșirea; fără privilegii noi și fără capabilities; fără core dump-uri; fără scrieri în fișiere, fără procese noi și cel mult trei fișiere deschise; 3 GiB de spațiu de adrese; o limită fermă de timp de procesor. Landlock se adaugă acolo unde kernel-ul îl are. |
+| macOS | Un profil de sandbox care refuză implicit și care refuză, de asemenea, informațiile despre procese, verificările de existență a fișierelor, informațiile despre sistem și hardware și apelurile de kernel aferente; fără core dump-uri, fără scrieri în fișiere și o limită fermă de timp de procesor. |
+| Windows | Un AppContainer nou pentru fiecare script, într-un job care permite un singur proces, 3 GiB de memorie și nicio interfață de utilizator, cu cod dinamic, procese copil și apeluri win32k dezactivate. **Încă nerulat pe Windows.** |
+
+Runner-ul pornește fără variabile de mediu, fără fișiere deschise în afara intrării și ieșirii sale și fără credențiale. Tot ce poate face în afara propriei memorii este să ceară serverului să ruleze un instrument, iar serverul rulează acel apel prin același filtru de mod, aceleași [guardrail-uri](/ro-RO/manual/concepte/guardrail-uri/) și aceleași aprobări ca un apel direct.
+
+Serverul verifică toate acestea la pornire: rulează autotestul runner-ului, care aplică blocarea, încearcă să citească și să creeze fișiere, să deschidă o conexiune de rețea și să pornească un proces (și altele, pe fiecare sistem) și rulează scripturi reale sub ea. Dacă ceva nu este refuzat, serverul nu rulează niciun script pe mașina respectivă: nicio rulare nu primește `repl`, iar serverul spune de ce, la pornire și pe pagina de setări pentru modul cod. Un runner care nu este un build de lansare este refuzat în același mod. Nu există un fallback mai slab.
+
+Runner-ul raportează și unde în script a fost făcut fiecare apel, astfel că aceasta poate arăta structura scriptului în conversație. Serverul verifică poziția aceea față de script și o folosește doar pentru afișare: nu decide niciodată dacă un apel este permis și nu apare în auditul guardrail-urilor.
+
+Ce nu acoperă asta: un script poate face în continuare orice permit instrumentele rulării, pentru că apelurile lui sunt apeluri reale de instrumente; pe macOS poate afla în continuare dacă există un id de proces; iar o defecțiune în motorul JavaScript sau în kernel este contracarată de blocare, nu exclusă de ea.
+
 ## Confirmările vin de la guardrail-uri, nu de la sandbox
 
 Sandbox-ul nu are nicio cale de aprobare. El lansează, execută, emite evenimente și se
@@ -294,6 +314,7 @@ care declară ce poate fi verificat manual.
 
 ## Concepte conexe
 
+- [Mod cod](/ro-RO/manual/concepte/mod-cod/): scripturi care apelează instrumente și runner-ul care le izolează
 - [Stații și medii izolate](/ro-RO/manual/concepte/statii/): pasul de deasupra sandbox-ului — când munca are nevoie de o mașină întreagă de unică folosință cu o graniță de kernel, nu de un proces învelit
 - [Guardrail-uri](/ro-RO/manual/concepte/guardrail-uri/): stratul de politici de deasupra pragului oferit de sistemul de operare și de unde vin de fapt aprobările
 - [Ciclul de viață al trimiterii agenților](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/): unde se încadrează izolarea în fluxul de trimitere

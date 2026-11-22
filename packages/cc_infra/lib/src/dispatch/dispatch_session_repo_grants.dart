@@ -53,7 +53,8 @@ extension _DispatchSessionRepoGrants on DispatchSession {
   /// Asked for the person the run acts for ([requestedByUserId]; the server
   /// resolves the accountable human for a run nobody asked for). A failed
   /// lookup, or a run in a space it cannot name, makes every worktree
-  /// read-only.
+  /// read-only. A [readOnly] run asks for no grant: every worktree is
+  /// read-only for it.
   Future<List<String>> _resolveReadOnlyWorktrees() async {
     final known = _readOnlyWorktreeDirs;
     if (known != null) {
@@ -61,13 +62,18 @@ extension _DispatchSessionRepoGrants on DispatchSession {
     }
     final reposDir = _reposDir;
     final lookup = deps.writableWorktrees;
-    if (reposDir == null || lookup == null) {
+    if (reposDir == null || (lookup == null && !readOnly)) {
       return _readOnlyWorktreeDirs = const [];
     }
     List<String>? writable;
     final ws = workspaceId;
     final space = spaceId;
-    if (ws != null && ws.isNotEmpty && space != null && space.isNotEmpty) {
+    if (!readOnly &&
+        lookup != null &&
+        ws != null &&
+        ws.isNotEmpty &&
+        space != null &&
+        space.isNotEmpty) {
       try {
         writable = await lookup(ws, space, requestedByUserId);
       } on Object catch (e) {

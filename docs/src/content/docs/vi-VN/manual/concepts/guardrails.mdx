@@ -2,7 +2,7 @@
 title: Rào chắn — một chính sách cho mọi hành động gây thay đổi
 description: Vì sao Control Center đưa mọi tác động phụ của agent qua một cỗ máy cho phép/hỏi trước/từ chối duy nhất, cách hệ phân loại ActionClass cố ý giữ nhỏ, và núm tự chủ thực sự thay đổi điều gì.
 slug: vi-VN/so-tay/khai-niem/rao-chan
-sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
+sourceHash: bb98b2ca26ae104ab7701d4d381cd5c41d25d32f
 ---
 
 Agent trong Control Center có thể xóa tệp, push nhánh, xuất bản pull request
@@ -32,6 +32,17 @@ chủ sở hữu đã tắt sandbox cho tất cả mọi người bằng `--sand
 chạy bắt đầu mà không có sandbox, rào chắn là lớp thực thi ngoài cùng chứ không phải
 một chính sách ngồi trên một cái sàn, điều đáng biết khi bạn quyết định nới rộng đến
 mức nào.
+
+### Lệnh gọi từ một tập lệnh
+
+Một tập lệnh [chế độ code](/vi-VN/so-tay/khai-niem/che-do-code/) gọi công cụ trong mã, nhiều cái cùng lúc, nhưng mỗi lệnh gọi của nó là một lệnh gọi công cụ riêng biệt tới động cơ. Nó đi qua cùng cổng harness hoặc cổng dispatcher MCP như một lệnh gọi trực tiếp, với cùng quy tắc, cùng lời nhắc phê duyệt và cùng mục nhật ký kiểm toán, và không có việc gì nó làm được phê duyệt chỉ vì lệnh `repl` đã khởi động nó.
+
+Hai quy tắc bổ sung áp dụng cho các lệnh gọi từ một tập lệnh, vì một tập lệnh có thể thực hiện hàng trăm lệnh gọi và bắt mọi lần bị từ chối:
+
+- tối đa 10 lệnh gọi của nó được chuyển đến người dùng để phê duyệt; các lệnh sau đó cần người dùng sẽ bị từ chối mà không hiện thẻ;
+- khi một người từ chối một trong các lệnh gọi của nó, phần còn lại các lệnh gọi cần phê duyệt sẽ bị từ chối mà không hỏi.
+
+Một thẻ do tập lệnh đưa ra sẽ nói rõ điều đó và cho phép bạn mở tập lệnh. Nếu tập lệnh kết thúc khi thẻ đang mở, thẻ bị thu hồi, và một câu trả lời đến sau đó được ghi là từ chối và không phê duyệt được gì.
 
 ## ActionClass: một hệ phân loại đóng có chủ đích
 
@@ -267,5 +278,6 @@ phép thử chính là câu trả lời mà agent sẽ nhận được.
 ## Khái niệm liên quan
 
 - [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/): điều gì thực sự ràng buộc một lần chạy agent và sàn hệ điều hành bên dưới cỗ máy này vươn tới đâu
+- [Chế độ code](/vi-VN/so-tay/khai-niem/che-do-code/): các tập lệnh mà mọi lệnh gọi công cụ đều đi qua động cơ này
 - [Đa người dùng — danh tính, tư cách thành viên và hiện diện](/vi-VN/so-tay/khai-niem/da-nguoi-dung/): space, chủ thể và nơi núm tự chủ ngự trị
 - [Cấu hình rào chắn](/vi-VN/so-tay/huong-dan-thuc-hanh/cau-hinh-rao-chan/): viết và kiểm thử quy tắc trong thực tế

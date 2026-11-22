@@ -1,0 +1,178 @@
+---
+title: Kódmód
+description: Hogyan írja meg egy ügynök a rövid szkriptet, amely meghívja az eszközeit ahelyett, hogy egyesével hívná őket, mely eszközöket hívja közvetlenül és melyeket szkriptből, milyen korlátok között fut egy szkript, hogyan olvasható a szkript a beszélgetésben, valamint hogyan van elszigetelve és rögzítve.
+slug: hu-HU/kezikonyv/fogalmak/kodmod
+sourceHash: d41fe2f38c216949847fc7c4768fdf96bed2dc83
+---
+
+Az ügynök általában egyesével hívja az eszközeit. Minden hívás egy modellkör: az ügynök kéri a hívást, az eredmény visszakerül a kontextusába, és az ügynök elolvassa, mielőtt kéri a következőt. Olyan munkánál, amely többnyire mechanikus, például húsz fájl elolvasásánál, hogy megtalálja a három lényegeset, vagy minden nyitott jegy ellenőrzésénél egy címke miatt, ezeknek a köröknek és a kontextusnak a nagy része olyan eredményekre megy el, amelyeket az ügynök eldob.
+
+A kódmód egyetlen eszköz: a `repl`. Ezzel az ügynök rövid JavaScript-szkriptet ír, amely meghívja a többi eszközét, ciklust futtat, szűri és összesíti az eredményeket, és csak azt adja vissza, amire szükség van. Egyetlen `repl`-hívás tucatnyi eszközkör munkáját elvégezheti, és a kontextusba csak a szkript válasza kerül.
+
+Ha a szerver tud szkripteket futtatni, minden futtatásnak van `repl` eszköze. Nincs mit bekapcsolni: lásd [Mikor van egy futtatásnak `repl`-je](#mikor-van-egy-futtatásnak-repl-je).
+
+## Mit tud egy szkript
+
+A szkript sima JavaScript, egy async függvény törzseként íródik, így az `await` és a `return` a legfelső szinten is működik. Minden `repl`-hívás új, üres értelmezőt indít.
+
+- **Eszközök hívása.** `await tools.read({ path: "README.md" })` meghív egy eszközt, és az eredményével teljesül, vagy hibával utasítódik el, ha a hívás meghiúsul vagy tiltott. A független hívások a `Promise.allSettled` segítségével futhatnak egyszerre.
+- **Eszközök keresése.** Az `ALL_TOOLS` felsorolja az összes eszközt, amelyet a szkript hívhat. A `searchTools(query)` a funkciójuk alapján keres eszközöket, a `describeTool(name)` egy eszköz leírását és argumentumait adja vissza, a `describeNamespace(name)` pedig egy csoport eszközeit sorolja fel. A csatlakoztatott MCP-kiszolgálók eszközei is így érhetők el.
+- **Eredmények visszaadása.** Csak az jut vissza az ügynökhöz, amit a szkript visszaad, vagy átad a `text()`, `image()` vagy `console.log()` függvénynek. Legfeljebb négy kép jut el a modellhez.
+- **Értékek megőrzése.** A `store(key, value)` és a `load(key)` kis JSON-értékeket őriz meg ugyanazon beszélgetés és ügynök szkriptjei között. Az értékek csak akkor mentődnek el, amikor a szkript befejeződik. Az al-ügynököknek nincs tárolójuk.
+- **Kérdés a személynek.** Az `await tools.ask_user({ question, options })` kérdést tesz fel, és megvárja a választ.
+- **Helyi beágyazások használata.** A `models.embed`, a `models.rank` és a `models.classify` a szerver beágyazási modelljét használja, ha az telepítve van.
+- **Várakozás.** A `sleep(ms)` és a `setTimeout` a szkript időkorlátján belül. A `limits()` visszaadja a szkriptre vonatkozó korlátokat.
+
+A szkriptnek nincs fájlrendszer-, hálózati, folyamat-, modul- vagy környezeti hozzáférése: nincs `fetch`, `require`, `import` vagy `process`. Az egyetlen kiút egy eszközhívás, és minden eszközhívás ugyanazokon az ellenőrzéseken megy át, mint az ügynök által közvetlenül kezdeményezett hívás.
+
+A szkript által már végrehajtott eszközhívásokat nem vonjuk vissza, ha a szkript később meghiúsul.
+
+## Mely eszközöket hívja az ügynök közvetlenül
+
+Minden beépített ügynökfuttatás ugyanazt a kis eszközkészletet kapja, amelyet név szerint hív:
+
+- `repl`, először;
+- a fájl- és shell-eszközök: `read`, `write`, `edit`, `search`, `find`, `bash` és `read_output`;
+- `ask_user` és `task`;
+- `todo_write`, `search_memory` és `send_message`;
+- a beszélgetés [módjának](/hu-HU/kezikonyv/fogalmak/modok/) igéi, amelyekkel átadja a kimenetét vagy kilép a módból, például a tervmódban a `submit_plan`;
+- a `search_tools`, ha valamelyik eszköz első használatkor töltődik be (lent).
+
+Minden más eszközt, amelyet a futtatás használhat, kétféleképpen érünk el:
+
+- **Csak szkriptből**, ha a szkript hívhatja. Az ügynök a `searchTools()` vagy a `describeTool()` segítségével találja meg, és `tools.<name>(args)` alakban hívja. A leírása soha nem jut el a modellhez, így a promptban nem kerül semmibe. Ha az ügynök mégis közvetlenül hívja, a válasz megmondja neki, hogy hívja az eszközt szkriptből. Ha a szerver nem tudja futtatni a futtatás szkriptjeit, az eszköz helyette első használatkor töltődik be ([Amikor a szkriptek nem futtathatók](#amikor-a-szkriptek-nem-futtathatók)).
+- **Első használatkor töltődik be**, ha a szkript nem hívhatja. Az ügynök csak a nevét látja; ha név szerint hívja, vagy a `search_tools` segítségével megtalálja, az eszköz betöltődik.
+
+Néhány eszközt soha nem lehet szkriptből hívni, köztük magát a `repl`-t (egy szkript nem indíthat szkriptet), az `eval`-t, a `task`-ot, a `checkpoint`-ot, a `rewind`-ot, a `vibe_*` igéket, valamint azokat az eszközöket, amelyek más ügynökfuttatásokat indítanak vagy üzennek nekik, jóváhagyásokat hoznak létre, döntenek róluk vagy kommentálják őket, szabályzatot vagy készségeket módosítanak, illetve kilépnek a tervmódból. Az ügynök ezeket közvetlenül hívja.
+
+A `repl` nélküli futtatás ugyanazokat a közvetlen eszközöket kapja, minden más pedig első használatkor töltődik be. [Eszközkontextus és promptgyorsítótár](/hu-HU/kezikonyv/fogalmak/eszkozkontextus/) magyarázza, miért ugyanaz a készlet mindkét esetben.
+
+A kódmód soha nem ad hozzá olyan eszközt, amelyet a beszélgetés módja nem engedélyez. A mód eszközszűrőjét alkalmazzuk először, és a szkript csak a maradékot hívhatja.
+
+## Mikor van egy futtatásnak `repl`-je
+
+A futtatásnak akkor van `repl`-je, ha a szerver szkriptfuttatója indításkor átment a zárolás-ellenőrzésen ([Hogyan vannak elszigetelve a szkriptek](#hogyan-vannak-elszigetelve-a-szkriptek)). Egyetlen munkaterület-, ügynök- vagy szerverbeállítás sem változtatja ezt meg. Nincs `repl`-je a futtatásnak akkor, ha:
+
+- a futtató nem tudja lezárni magát a szerver gépén; ilyenkor a szerver egyáltalán nem futtat szkripteket;
+- a szerver nyilvános demó, amely nem futtat szkripteket;
+- a futtatás nem tartozik munkaterülethez;
+- a munkaterület korlátait nem lehet beolvasni, mert az alapértelmezésekkel való futtatás túllépheti azokat a korlátokat, amelyeket egy adminisztrátor alacsonyabbra állított;
+- a futtatás naplóját nem lehetett megírni, mert minden szkriptet a futtatása alatt rögzítünk, mielőtt az elindul.
+
+Egy ilyen futtatás minden eszközét közvetlenül hívja.
+
+A kódmód a beépített ügynök futtatásaival működik, valamint azokkal az ügynökökkel, amelyek a Control Center eszközeit az MCP-végpontján keresztül érik el, például a Claude Code. Egy MCP-ügynöknél az általa kapott eszközlistában a `repl`, a közvetlen eszközök és azok az eszközök szerepelnek, amelyeket szkript nem hívhat; a többit szkriptekből hívja. Ott csak az a futtatás kap `repl`-t, amelyet a Control Center indított, és amelyről naplót vezet; bármely más kliens minden eszközt megkap, a `repl` kivételével.
+
+A **Beállítások → Munkaterület → Kódmód** oldal az **Állapot** részében mutatja, hogy a szerver futtat-e szkripteket (**Elérhető** vagy **Nem elérhető**, a szerver által megadott okkal), és melyik **Futtató**-verzió van telepítve. A **Kódfuttatások megtekintése** megnyitja a lefutott szkriptek listáját.
+
+A szerver tulajdonosa nem kapcsolhatja ki a szkripteket. Korlátozhatja őket: hogy hány fut egyszerre, és hogy egy szkript mennyi memóriát használhat (lásd: [Korlátok](#korlátok)).
+
+### Amikor a szkriptek nem futtathatók
+
+A futtatás soha nem veszít el egy eszközt azért, mert a szerver nem tudja futtatni a szkriptjeit. Ha a szerver olyan okból utasít vissza egy szkriptet, amelyet más szkript sem kerülhetett volna el (például a szkriptek nem érhetők el, a szkript az idejének felét szabad helyre várta, a felvételét nem lehet írni, a futtatás eszközlistája túl nagy ahhoz, hogy szkriptnek adják, vagy a futtató nem tud elindulni, illetve lezárni magát), a futtatás a hátralévő élettartamában nem használ szkripteket:
+
+- a beépített ügynök futtatása megtartja a `repl`-t, és minden eszköz, amelyet eddig csak szkriptből értek el, első használatkor töltődik be: az ügynök név szerint hívja, vagy a `search_tools` segítségével találja meg;
+- az MCP-végponton futó futtatás minden eszközt tartalmazó eszközlistát kap `repl` nélkül, a kliense pedig értesítést kap arról, hogy a lista megváltozott. A szerver az utolsó 1 024 ilyen futtatást jegyzi meg; a nála régebbi futtatások visszatérnek a szkriptekhez.
+
+Ezek az eszközök ugyanazt a módszűrést, korlátokat és jóváhagyásokat kapják, mint korábban, így semmi sem válik hívhatóvá, ami nem volt az. Egy szkript, amely a saját hibájából hiúsul meg — hibát dob, eléri egy korlát értékét, vagy egy hívását megtagadják —, semmit nem változtat.
+
+A szerver azt is folyamatosan ellenőrzi, hogy a szkriptek futhatnak-e. Ha a futtató a szkripttől független okból nem tud elindulni, a szerver percenként legfeljebb egyszer megismétli a zárolás-ellenőrzését. Ha az ellenőrzés sikertelen, a szerver nem futtat szkripteket, és ugyanazt a `code_mode=unavailable` sort naplózza, mint indításkor; az addig induló futtatások nem kapnak `repl`-t. Percenként legfeljebb egyszer tovább ellenőriz, és amikor egy ellenőrzés sikeres, újra futtat szkripteket, és naplózza a `code_mode=available` sort. Csak az az ellenőrzés igényel újraindítást, amely indításkor hibázott.
+
+## Korlátok
+
+Minden szkript korlátok között fut. Egy munkaterület-adminisztrátor a **Beállítások → Munkaterület → Kódmód** oldalon, a **Korlátok** részben hatot módosíthat közülük (a **Korlátok módosítása** gombbal); az ügynök egyetlen szkriptre kérhet kevesebb időt vagy kisebb kimeneti keretet, de soha többet.
+
+| Korlát | Alapértelmezett | Tartomány | Mikor éri el |
+| --- | --- | --- | --- |
+| Idő szkriptenként | 5 perc | 1 s – 25 perc | A szkript leáll, és az ügynök megkapja, hogy lejárt az ideje. |
+| Processzoridő | 30 s | 1 s – 2 perc | A szkript leáll. |
+| Memória | 256 MiB | 16 MiB – 1 GiB | A szkript leáll. A szerver tulajdonosa alacsonyabb plafont állíthat be az egész szerverre. |
+| Eszközhívások szkriptenként | 500 | 1–5000 | A további hívásokat elutasítják, a szkript pedig megkapja az okot. |
+| Hívások egyszerre | 8 | 1–32 | A csak olvasó hívások, amelyek a korláton túl vannak, sorban várnak. A módosító hívások mindig egyesével futnak. |
+| Az ügynök által olvasott kimenet | 10 000 token | 100–50 000 | A kimenet elejére és végére rövidül, az ügynök pedig kérésre elolvashatja a többit. |
+
+Az az idő, amelyet a szkript egy személyre vár, jóváhagyásra vagy kérdésre, nem számít bele az időkorlátba. Amíg vár, a szkript nem indít el más eszközhívást: a közben indított hívások a válasz után, sorrendben indulnak el.
+
+Néhány korlát rögzített: a szkript forrása legfeljebb 256 KiB, egy eszközhívás argumentumai 1 MiB és 16 384 érték, a szkript által egy beépített eszköznek átadott parancs, amelyet az eszköz futtat, 16 KiB (az eszköz neve is beleszámít), egy szkriptnek átadott eredmény 4 MiB, egy tárolt érték 256 KiB, és egy beszélgetés és ügynök által együtt tárolt összes adat 1 MiB. Egy futtatás egyszerre egy szkriptet futtat.
+
+A szkriptek eszközkeresései is korlátozottak: a `searchTools` lekérdezése legfeljebb 1 024 karakter lehet, egy eszköz- vagy névtér neve legfeljebb 256, legfeljebb 50 találat, és összesen legfeljebb 200 keresés, amelyek együttesen 2 másodpercnyi szerveridőt vesznek igénybe; e fölött a további keresések hibával térnek vissza. Egy munkaterület összes szkriptje közösen osztozik 2 másodpercnyi keresési időn, amelyet másodpercenként negyed másodperc ad vissza. A keresőindex minden eszköznek egyenlő részt ad nagyjából egymillió karakterből, amelyet először az argumentumneveire, azután a leírására költ, és minden eszköz nevét mindig indexeli, így még egy nagyon nagy katalógusban is megtalálható az eszköz a nevével.
+
+A szerver tulajdonosa azt is korlátozza, hány szkript fut egyszerre a szerveren (`--code-mode-max-processes`, alapértelmezés szerint a processzormagok számának kétszerese, legfeljebb 16), és azt a memóriát, amelyet egy szkript használhat (`--code-mode-max-heap-mb`); a személyre váró szkriptek külön számítanak, legfeljebb ennek a számnak a négyszereséig. Ha ez a plafon egynél nagyobb, egy munkaterület legfeljebb nagyjából a háromnegyedét használhatja, így egyetlen munkaterület sem foglalhatja el az összes helyet. Egy futtatás és az alügynökei együttesen a munkaterületük helyeinek legfeljebb felét használhatják (de legalább egyet), így további szkriptjeik várakoznak, miközben a munkaterület más futtatásainak szkriptjei továbbhaladnak. Lásd a [`cc_server` CLI-referenciát](/hu-HU/kezikonyv/referencia/cc-server-cli/#kódmód).
+
+## Jóváhagyások és kérdések
+
+Egy szkriptből érkező eszközhívást pontosan úgy ellenőriznek, mint egy közvetlen hívást: a mód eszközszűrőjét, a [műveleti korlátokat](/hu-HU/kezikonyv/fogalmak/korlatok/), a jóváhagyási kérdést és az eszköz saját ellenőrzéseit. Egy szkript sem tehet olyat, amit az ügynök nem tehetne meg, ha maga hívná meg az eszközt.
+
+Ha egy szkript hívásához jóváhagyás kell, a jóváhagyási kártya ezt írja: **Az ügynök által futtatott szkriptből**, a **Szkript megjelenítése** pedig megnyitja a szkriptet a beszélgetésben. Hogy egy szkript ne árasszon el kártyákkal:
+
+- egy szkript legfeljebb 10-szer kérhet jóváhagyást, és legfeljebb 10 kérdést tehet fel;
+- ha egy hívását elutasítja, a szkript későbbi, jóváhagyást igénylő hívásait kérdezés nélkül elutasítják.
+
+A beépített ügynök futtatásainál a szkript által futtatott parancsok, például egy git push miatti jóváhagyási kérdések ugyanahhoz a korláthoz számítanak, és egy elutasítás után ugyanúgy nem kérdeznek többet. Ha egy alügynök szkriptje ugyanekkor fut, az ilyen kérdés mindkét szkriptet terheli, és az elutasítás mindkettőt megállítja.
+
+A beépített ügynök futtatásaiban egy külső MCP-szerver eszközének jóváhagyása nem jegyződik meg: minden hívás újra kérdez, akár egy szkript, akár maga az ügynök hívja meg, hacsak a tér autonómiája nincs **Szabad cselekvés** értékre állítva. A szkript által kiváltott minden ilyen kérdés beleszámít abba a korlátba, hogy egy szkript legfeljebb 10-szer kérhet jóváhagyást.
+
+Ha a szkript azelőtt fejeződik be, hogy válaszol, a kártya visszavonásra kerül, és az ezután adott válasz nem hagy jóvá semmit.
+
+## A beszélgetésben
+
+Egy `repl`-hívás a beszélgetésben egy sorként jelenik meg, amelyet a szkript leírása címkéz. Kibontva megmutatja a szkriptet és a kimenetét, a szkript által indított eszközhívásokat pedig az **Eszközhívások** alatt jeleníti meg, és megmutatja, hány van közülük futó, sikeres, hibás, megtagadott, megszakított, várólistán lévő vagy kihagyott.
+
+### Így olvasható egy szkript
+
+A hívások a szkript írásmódját követik, nem egyetlen hosszú listában jelennek meg. A futtató jelzi, melyik sorból és oszlopból történt minden hívás, az alkalmazás pedig beolvassa a szkriptet, hogy megtalálja benne a ciklusokat, elágazásokat és függvényeket:
+
+- **Ciklus** (`for`, `while`) **Ciklus** csoportként jelenik meg, fejlécében a ciklus első sorával, a `map` vagy `forEach` hívásnak átadott visszahívás pedig **Minden elemre** csoportként. Vékony vonal választja el a ciklus egyes köreit egymástól, ha az alkalmazás meg tudja különböztetni őket.
+- **Egyszerre futó hívások** a `Promise.all`, a `Promise.allSettled` vagy hasonló kombinátor segítségével **Párhuzamosan** csoportként jelennek meg.
+- **Elágazás** (`if`/`else`, `switch`, `try`/`catch`) ágonként egy csoportként jelenik meg, a fejlécében a feltételével.
+- **Függvény**, amelyet a szkript definiál és hív, **Függvény** csoportként jelenik meg.
+
+A másik csoportba ágyazott csoport eggyel beljebb húzódik, legfeljebb nyolc szintig; a mélyebb csoportok ezen a behúzáson maradnak.
+
+Minden csoport fejléce megmutatja, hogyan értek véget eddigi hívásai. Mielőtt egy hívás lefut, a sora az eszközt és az argumentumokat mutatja úgy, ahogy a szkriptben vannak megírva:
+
+| Sor | Jelentés |
+| --- | --- |
+| **Várólistán** | A szkript még nem jutott el ehhez a híváshoz. |
+| Fut | A hívás fut. |
+| Kész | A hívás véget ért; a sora mutatja az eredményét és azt, mennyi ideig tartott. |
+| **Kihagyva** | A szkript kihagyta ezt a hívást, például az `if` olyan ágát, amelyet nem vett be, vagy úgy ért véget, hogy nem jutott el hozzá. |
+
+A hívás, amely egy ugyanolyan eszköz hívásának argumentumában áll, ugyanarról a helyről van jelentve a szkriptben, mint az a hívás. Ha az alkalmazás nem tudja megállapítani, megtörtént-e a külső hívás, a sora **Kihagyva** állapotszó helyett semmilyen állapotszót nem mutat.
+
+Ha egy csoport nyolcnál több hívást tett, a közepe összecsukódik: az első kettő és az utolsó három látszik, ugyanúgy minden hívás, amely még fut, hibás vagy megtagadott, valamint az a hívás, amely a ciklus adott körét indította. A **N további hívás megjelenítése** gombbal minden alkalommal 100 további hívás nyílik meg, és a rejtett hívások közül legfeljebb négy eszközt nevez meg darabszámmal, a legritkábbakkal kezdve, például **12 további hívás megjelenítése** · Bash 1 · Read 11. A 24 karakternél hosszabb eszköznév ott le van rövidítve.
+
+Az a hívás, amelyet az alkalmazás nem tud a szkriptbe illeszteni, például egy `then` visszahívás hívása, a fa után, **A szkriptbe nem illeszthető hívások** címszó alatt jelenik meg. Ha az alkalmazás nem tudja beolvasni a szkriptet, vagy egyetlen hívás sem jelzi, honnan történt, a hívások egyszerű listaként jelennek meg, abban a sorrendben, ahogy történtek.
+
+Minden hívássor a hívás argumentumainak és eredményének elejét mutatja, legfeljebb 8 KiB-ot mindegyikből; ha egy szkript sorai együtt 256 KiB ilyen részletet tartalmaznak, a szkript későbbi sorai csak az eszközt és azt mutatják meg, hogyan ért véget a hívás. Ha a szkript befejeződött, a **Felvétel megnyitása** megnyitja a teljes felvételét; ha a felvétel nem található, a futás szkriptjeinek listáját nyitja meg. Az a szkript, amelyet a futás előtt utasítottak el (például mert ugyanazon futtatás másik szkriptje még futott), nem rendelkezik felvétellel és hivatkozással.
+
+## A felvétel
+
+Minden futó szkript felvételt kap a munkaterületében, mielőtt elindul, és a felvétel a befejezéskor zárul le. A **Megfigyelhetőség → Kódfuttatások** felsorolja őket, a legújabbak elöl, és eredmény szerint szűrhetők. Egy felvétel **Szkriptek ebben a futtatásban** és **Szkriptek ettől az ügynöktől** hivatkozásai a listát egy futtatásra vagy egy ügynökre szűkítik. Egy felvétel a következőket mutatja:
+
+- a szkriptet, a kimenetét és a konzolját;
+- mikor indult, mennyi ideig tartott, mennyi processzoridőt és csúcs memóriát használt, és hogy a beépített ügynökön vagy egy külső ügynökön futott;
+- hogyan ért véget, közérthetően (például lejárt az ideje, vagy egy el nem kapott hibát dobott);
+- minden eszközhívás sorrendben, az eredményével, azzal együtt, hogy engedélyezett volt-e, ember hagyta-e jóvá vagy tiltották le, mennyi ideig tartott, míg egy személy döntött, az argumentumai (a titkok eltávolítva, 8 KiB-ra vágva) és az eredménye mérete. Maga az eredmény nem marad meg.
+
+A felvétel megőrzi, hogy a szkriptben hol történt minden hívás, így az eszközhívásai ugyanúgy vannak elrendezve, mint a beszélgetésben. Az a hívás, amelyet egy személy hagyott jóvá, ott soha nem záródik össze.
+
+Egy még futó szkript futó állapotban jelenik meg, a mostanáig befejezett eszközhívásaival; kimenete, időtartama és erőforrás-használata a befejezéskor jelenik meg. Ha a szerver leáll, miközben egy szkript fut, a felvétel a szerver újraindulásakor lezárul, és ezt jelzi; addig a munkaterületben egyetlen szkript sem fut, amíg a felvétel nincs lezárva.
+
+A felvételek a futtatásukhoz tartoznak: a futtatás vagy a tér törlése a felvételeket is törli. A tagok azoknak a tereknek a felvételeit látják, amelyeket megnyithatnak.
+
+## Hogyan vannak elszigetelve a szkriptek
+
+A szkriptek soha nem a szerveren belül futnak. Mindegyik a saját folyamatában fut: egy kis program a szerverrel együtt, a `cc_codemode`, amely a JavaScriptet a QuickJS-NG motorban futtatja. Mielőtt beolvassa a szkriptet, a program az operációs rendszer saját vezérlőivel zárolja magát: Linuxon rendszerhívás-szűrővel és erőforráskorlátokkal, macOS-en alapértelmezetten tiltó sandbox-profillal, Windowson AppContainerrel és job objecttel. Ezután nem nyithat meg fájlokat, nem használhatja a hálózatot, nem indíthat folyamatokat, és nem láthat más programokat. Környezeti változók nélkül indul, és nem tart fenn hitelesítő adatokat; egyetlen csatornája a szerver, amely a hívásaira válaszol.
+
+A szerver indításkor ellenőrzi a zárolást, a program önteszt futtatásával. Ha a zárolás az adott gépen nem érvényesül, például egy olyan konténerben, amelynek biztonsági profilja megtagadja valamelyik lépést, a szerver ott nem futtat szkripteket: egyetlen futtatás sem kap `repl`-t, a beállítási oldal pedig **Nem elérhető** állapotot mutat az okkal. Egy szkript soha nem fut kevesebb korláttal. A Windows-os zárolást még nem tesztelték Windowson.
+
+A futtató jelenti, hogy a szkriptben melyik helyről származik egy hívás, ezért ez csak a beszélgetés és a felvétel elrendezéséhez használható. Soha nem dönti el, hogy egy hívás engedélyezett-e.
+
+Azt, hogy a zárolás mit fed le és mit nem, lásd a [Homokozó és biztonság](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/#szkriptek-kódmódban) oldalon.
+
+## Lásd még
+
+- [Eszközkontextus és promptgyorsítótár](/hu-HU/kezikonyv/fogalmak/eszkozkontextus/): miért kicsi a közvetlen készlet, és miért ugyanaz, akár van `repl`, akár nincs.
+- [Beépített ügynökeszközök](/hu-HU/kezikonyv/referencia/ugynokeszkozok/#repl--szkript-futtatása-amely-hívja-az-eszközeit): a `repl` eszköz bemenete.
+- [`cc_server` CLI](/hu-HU/kezikonyv/referencia/cc-server-cli/#kódmód): a szerver tulajdonosa által beállított korlátok.

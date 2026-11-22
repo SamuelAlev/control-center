@@ -14,6 +14,7 @@ PrCodeReviewComment _comment({
   String side = 'RIGHT',
   String body = 'body',
   String diffHunk = '',
+  bool isFileLevel = false,
 }) => PrCodeReviewComment(
   id: id,
   body: body,
@@ -25,6 +26,7 @@ PrCodeReviewComment _comment({
   line: line,
   originalLine: originalLine,
   diffHunk: diffHunk,
+  isFileLevel: isFileLevel,
 );
 
 void main() {
@@ -58,6 +60,16 @@ void main() {
         expect(result.outdated.single.diffHunk, isNotEmpty);
       },
     );
+
+    test('a file-level comment is its own bucket, not outdated', () {
+      final onFile = _comment(id: 1, path: 'lib/main.dart', isFileLevel: true);
+
+      final result = partitionServerCommentsForFile([onFile], 'lib/main.dart');
+
+      expect(result.fileLevel, [onFile]);
+      expect(result.outdated, isEmpty);
+      expect(result.anchored, isEmpty);
+    });
 
     test('a comment with a live line is anchored by "<side>-<line>"', () {
       final anchored = _comment(id: 2, path: 'lib/main.dart', line: 42);

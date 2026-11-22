@@ -2,7 +2,7 @@
 title: Strumenti MCP
 description: Catalogo completo degli strumenti MCP che cc_server registra, per famiglia.
 slug: it-IT/manuale/riferimento/strumenti-mcp
-sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
+sourceHash: 0ef9efd386b57c3a254e7f637b0436d9baff1719
 ---
 
 `cc_server` ospita un unico registro di strumenti MCP (JSON-RPC 2.0), servito sulla porta principale del server (predefinita `9030`) su `POST /mcp` e `GET /sse`, versione del protocollo `2024-11-05`. Ogni client raggiunge lo stesso registro: il desktop, la build web, i client MCP esterni e il runtime integrato degli agenti. I server MCP esterni sono collegati allo stesso registro, ciascuno nel proprio livello: uno per spazio di lavoro, per i server configurati dai suoi amministratori, e uno per i server personali del proprietario del server. Questo endpoint li elenca, li chiama e li cerca solo per un'esecuzione di agente: quelli del proprio spazio di lavoro e, in più, quelli personali quando il proprietario del server è responsabile dell'esecuzione. Il token MCP e i dispositivi associati non li vedono mai (vedi [Server MCP usati dai tuoi agenti](/it-IT/manuale/guide/server-mcp/#server-mcp-usati-dai-tuoi-agenti)).
@@ -11,21 +11,22 @@ sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
 
 | Voce | Conteggio |
 | --- | --- |
-| Strumenti registrati da `cc_server` | 110 |
-| Da `packages/cc_mcp` | 108 |
+| Strumenti registrati da `cc_server` | 116 |
+| Da `packages/cc_mcp` | 114 |
 | Da `packages/cc_mcp_client` (scoperta degli strumenti) | 2 |
-| Registrati nel registro di base (`server_mcp_registry.dart`) | 63 |
-| Registrati dopo l'avvio man mano che i loro servizi partono (`cc_server_runtime.dart`) | 47 |
-| Dei 63 del registro di base, condizionati a un repository con grafo del codice | 5 |
+| Registrati nel registro di base (`server_mcp_registry.dart`) | 64 |
+| Registrati dopo l'avvio man mano che i loro servizi partono (`cc_server_runtime.dart`) | 52 |
+| Dei 64 del registro di base, condizionati a un repository con grafo del codice | 5 |
+| Dei 64 del registro di base, subordinato al runner della modalità codice (`repl`) | 1 |
 
-I cinque strumenti del grafo del codice vengono registrati solo quando l'host passa un repository con grafo del codice a `buildServerMcpRegistry`. `cc_server` ne passa sempre uno, quindi tutti e 110 sono attivi nel binario distribuito.
+I cinque strumenti del grafo del codice vengono registrati solo quando l'host passa un repository con grafo del codice a `buildServerMcpRegistry`, e `repl` solo quando passa il runner della modalità codice. `cc_server` passa sempre entrambi (non si avvia senza il runner), quindi tutti e 111 sono registrati nel binario distribuito; il server demo pubblico non registra `repl`.
 
-Il registro completo è annunciato in `tools/list` senza filtri di scoperta. Le modifiche ai ticket sono strumenti tipizzati.
+Il registro completo è annunciato in `tools/list` senza filtri di scoperta, a parte un'esecuzione di agente che può eseguire script (più sotto). Le modifiche ai ticket sono strumenti tipizzati.
 
 :::note[I client esterni vedono sempre l'intero catalogo]
-`tools/list` non viene mai ridotto, a parte i server MCP personali del proprietario del server, che non vi compaiono mai. I client MCP convalidano i nomi degli strumenti rispetto alla propria copia in cache di quell'elenco e rifiutano qualsiasi cosa non sia in elenco senza chiedere al server, quindi uno strumento nascosto lì è irraggiungibile, non semplicemente silenzioso.
+`tools/list` non viene mai ridotto, a parte i server MCP personali del proprietario del server, che non vi compaiono mai, e la [modalità codice](/it-IT/manuale/concetti/modalita-codice/): `repl` è elencato solo per un'esecuzione di agente su un server che può eseguire script, e quell'esecuzione ha in elenco `repl`, gli strumenti diretti (`read`, `write`, `edit`, `search`, `find`, `bash`, `read_output`, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` e i verbi propri della sua modalità, dove il registro li ha) e gli strumenti che uno script non può chiamare. Il resto lo chiama da uno script; una chiamata diretta a uno di questi riceve in risposta come chiamarlo da `repl`. I client MCP convalidano i nomi degli strumenti rispetto alla propria copia in cache di quell'elenco e rifiutano qualsiasi cosa non sia in elenco senza chiedere al server, quindi uno strumento nascosto lì è irraggiungibile, non semplicemente silenzioso.
 
-L'**harness integrato** è diverso: carica solo un sottoinsieme residente di definizioni per richiesta e richiama il resto al primo uso; è un comportamento lato harness e non cambia questo registro. Vedi [Contesto degli strumenti e cache dei prompt](/it-IT/manuale/concetti/contesto-strumenti).
+L'**harness integrato** è diverso: carica per richiesta solo un piccolo insieme diretto di definizioni e raggiunge il resto da script oppure lo carica al primo uso; è un comportamento lato harness e non cambia questo registro. Vedi [Contesto degli strumenti e cache dei prompt](/it-IT/manuale/concetti/contesto-strumenti/).
 :::
 
 :::note[Ogni classe di strumento è registrata]
@@ -51,6 +52,14 @@ Entrambi provengono da `cc_mcp_client`, non da `cc_mcp`, ed entrambi consultano 
 
 Un terzo strumento di scoperta, **`search_tools`**, esiste solo dentro l'harness integrato e non fa parte di questo registro MCP. Classifica la superficie di strumenti dell'esecuzione stessa e, a differenza di `search_tool_bm25`, **carica** gli schemi di ciò che trova, così l'agente può chiamare una corrispondenza al turno successivo. Gli agenti sull'harness dovrebbero preferirlo; i client MCP hanno `search_tool_bm25`.
 
+## Modalità codice
+
+| Strumento | Descrizione |
+| ------ | ----------- |
+| `repl` | Esegue uno script JavaScript che chiama gli altri strumenti dell'esecuzione come `tools.<id>(args)` e restituisce solo ciò che serve. Elencato solo per un'esecuzione di agente su un server che può eseguire script della [modalità codice](/it-IT/manuale/concetti/modalita-codice/). Ogni chiamata annidata passa dallo stesso gate di una `tools/call`. Accetta `code`, `description`, `timeout_ms?`, `max_output_tokens?`   |
+
+Uno script non può chiamare `repl`, `search_tool_bm25`, `list_my_tools`, né alcuno strumento che avvia o invia messaggi a un'altra esecuzione di agente, assegna un ticket o vi lascia commenti, invia un messaggio, crea, decide o commenta un'approvazione, propone o modifica una policy, installa o modifica skill, crea un profilo di runtime, presenta un piano, esce dalla modalità piano, completa l'obiettivo della conversazione o consegna l'output di un'esecuzione di pipeline. Questi strumenti dichiarano `scriptCallable` false e vengono sempre chiamati direttamente; nell'harness integrato uno strumento fuori dall'insieme diretto viene caricato al primo uso. `create_ticket` è chiamabile da uno script solo senza `assignee`.
+
 ## Strumenti degli agenti
 
 | Strumento | Descrizione |
@@ -59,15 +68,29 @@ Un terzo strumento di scoperta, **`search_tools`**, esiste solo dentro l'harness
 
 ## Messaggistica tra agenti pari e delega
 
-Gli agenti parlano tra loro tramite gli spazi (durevoli, visibili nel roster). `ask_agent` è richiesta/risposta con un timeout obbligatorio; `delegate_task` è protetto lato server da un tetto di profondità, dal rilevamento dei cicli, da un perimetro di budget e da un tetto di autonomia.
+Gli agenti si parlano tra loro attraverso gli spazi (durevoli, visibili nell'elenco dei membri). `ask_agent` attende la risposta (`mode: wait`, 600 secondi per impostazione predefinita, al massimo 1.800) oppure restituisce subito (`mode: background`); in ogni caso il richiedente viene risvegliato una volta con la risposta, quando questa non arriva nella stessa chiamata. `send_to_agent`, `ask_agent`, `consult_agent`, `request_peer_review` e `delegate_task` passano dallo stesso controllo lato server: profondità (3), rilevamento dei cicli, envelope di budget, tetto di autonomia e un limite di frequenza per coppia di agenti. L'identità del mittente proviene sempre dall'esecuzione chiamante. Vedi [Agenti che lavorano insieme](/it-IT/manuale/guide/agenti-insieme/).
 
 | Strumento | Descrizione |
 | --- | --- |
-| `send_to_agent` | Invia un messaggio a senso unico a un altro agente, indirizzato tramite `to_agent_id` o `to_agent_name` esatto |
-| `ask_agent` | Poni una domanda a un altro agente e attendi la sua risposta, oppure vai in timeout |
+| `send_to_agent` | Invia un messaggio a senso unico a un altro agente, indirizzato tramite `to_agent_id` o `to_agent_name` esatto; risponde con `delivery_status` `woken`, `queued_behind_run` o `refused` |
+| `ask_agent` | Poni una domanda a un altro agente; attendi la risposta oppure prosegui ed essere risvegliato quando arriva |
 | `delegate_task` | Delega un'attività a un altro agente come ticket figlio tracciato |
 | `consult_agent` | Aggiungi allo spazio lo specialista che corrisponde meglio per skill e invialo con un brief mirato |
 | `todo_read` | Leggi la checklist delle attività persistita di questa conversazione |
+| `agent_activity` | Legge che cosa sta facendo ora un altro agente e che cosa ha fatto l'ultima volta (stato, strumento corrente, ultimi messaggi), senza risvegliarlo |
+
+## Strumenti di risveglio e obiettivo
+
+Un agente usa questi strumenti al posto di attendere o interrogare. Ciascuno agisce solo per l'agente chiamante nella sua conversazione; l'agente non è mai un argomento. Vedi [Pianificazioni e risvegli](/it-IT/manuale/guide/pianificazioni-risvegli/) e [Persegui un obiettivo](/it-IT/manuale/guide/persegui-obiettivo/).
+
+| Strumento | Descrizione |
+| ------------- | ----------- |
+| `wake_me` | Fissa un risveglio successivo: a un orario (`in:20m`, `at:<ISO time>`), a intervalli (`every:30m`), su un cron (`cron:0 9 * * 1-5`, con `tz`), al proprio ritmo dentro un loop a ritmo autonomo (`next`, con `delay` da 1 a 60 minuti), oppure quando accade qualcosa (`on:pr_checks`, `on:pr_review`, `on:pr_merged`, `on:environment`, `on:ticket:<id>`, `on:pipeline_run:<id>`). Facoltativi: `note`, `max_runs`, `expires_in`, `when_busy` (`skip` o `queue`) e `deliver` (`run` o `notify`) |
+| `list_wakes` | Elenca ciò che l'agente ha in attesa in questa conversazione: pianificazioni, monitoraggi, risvegli in attesa e richieste senza risposta |
+| `cancel_wake` | Annulla una pianificazione o un monitoraggio che l'agente ha impostato per sé, tramite il suo id |
+| `goal_status` | Legge l'obiettivo attivo dell'agente: contratto, segmento, spesa e budget residuo, segnalazioni di assenza di progresso, trattenimento, ultima verifica e risvegli dell'obiettivo in attesa |
+
+`complete_goal` (in [Strumenti per piani, playbook e artefatti](#strumenti-per-piani-playbook-e-artefatti)) è l'unico modo in cui un agente dichiara completato un obiettivo, ed è una dichiarazione, non un completamento.
 
 ## Strumenti per le skill
 
@@ -94,7 +117,7 @@ Ogni installazione e ogni aggiornamento passa attraverso un gate di scansione fa
 | `revise_artifact` | Sostituisci il contenuto di un artefatto pubblicato |
 | `list_artifacts` | Elenca gli artefatti dello spazio di lavoro |
 | `get_artifact` | Leggi un artefatto |
-| `complete_goal` | Dichiara raggiunto l'obiettivo durevole attivo della conversazione (avviato con `/goal` o `/loop`) |
+| `complete_goal` | Dichiara che l'obiettivo attivo dell'agente è raggiunto, con prove per ogni criterio; il server esegue poi i controlli e una revisione |
 
 ## Strumenti per gli spazi di lavoro
 
@@ -162,10 +185,10 @@ Ogni installazione e ogni aggiornamento passa attraverso un gate di scansione fa
 | `create_goal` | Crea un obiettivo organizzativo (a livello di azienda, team, agente o attività) |
 | `list_goals` | Elenca gli obiettivi con livello, stato e avanzamento aggregato |
 | `update_goal_progress` | Imposta l'avanzamento di un obiettivo |
-| `create_approval` | Apre un'approvazione della board per un'azione governata (uscita dal piano, merge, release, assunzione, personalizzata) |
+| `create_approval` | Apre un'approvazione della board per un'azione governata (uscita dal piano, merge, release, assunzione, personalizzata) a nome dell'agente chiamante. Solo esecuzioni di agente |
 | `list_approvals` | Elenca le approvazioni, facoltativamente filtrate per stato |
-| `decide_approval` | Registra una decisione: approva, rifiuta, richiedi revisione o invia di nuovo |
-| `comment_approval` | Commenta un'approvazione della board |
+| `decide_approval` | Registra la decisione dell'agente chiamante: approva, rifiuta, richiedi revisione o invia di nuovo. Solo esecuzioni di agente |
+| `comment_approval` | Commenta un'approvazione della board a nome dell'agente chiamante. Solo esecuzioni di agente |
 | `exit_plan_mode` | Apre (e, una volta approvata, consuma) un'approvazione `plan_exit`, portando la conversazione fuori dalla modalità Piano |
 | `agent_heartbeat` | Segnala lo stato di attività (attivo, inattivo, bloccato); il silenzio porta lo stato di salute del runtime a recentemente perso, poi offline |
 | `list_runtime_health` | Elenca lo stato di salute del runtime di ciascun agente |

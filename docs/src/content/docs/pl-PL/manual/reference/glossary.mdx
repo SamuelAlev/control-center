@@ -2,7 +2,7 @@
 title: Słownik
 description: Definicje kluczowych pojęć używanych w Control Center.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/slownik
-sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
+sourceHash: ba09880357171a4fcbb82201798578de3856cbe6
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -36,7 +36,13 @@ export const glossaryTerms = [
 ['Rig', 'Jednorazowa maszyna, którą agent steruje w czasie rzeczywistym: odizolowana przeglądarka lub pulpit Linuksa, zarządzany przez hosta emulator Androida lub Symulator iOS, albo odizolowany terminal. Obserwowana na żywo przez własny tor w pełnej rozdzielczości, z przejmowaniem wymuszanym po stronie serwera. Przypisana do rozmowy, dzięki czemu karta człowieka i narzędzie agenta kierują do jednej maszyny.'],
 ['Izolacja', 'Silniejsza właściwość izolacji dostępna dla rigów opartych na maszynach wirtualnych: granica jądra, jednorazowy dysk nakładkowy, brama sieciowa domyślnie odmawiająca i broker poświadczeń. Rigi Android i iOS są jednorazowe, ale korzystają z sieci zarządzanej przez hosta, więc nie roszczą sobie tej granicy. Sterowanie dowolnym rigiem używa klasy guardrail enclosureControl.'],
 ['RunCost', 'Zestawienie tokenów i kosztów (tokeny wejściowe, tokeny wyjściowe, szacowany koszt w mikrodolarach) dla jednego uruchomienia agenta.'],
-['WakeReason', 'Powód uruchomienia agenta. Sześć wartości: wiadomość użytkownika, przypisanie zgłoszenia, ponowne uruchomienie naprawcze po awarii, ukończenie zgłoszenia podrzędnego, zaplanowany heartbeat kontynuacji i krok potoku.'],
+['WakeReason', 'Powód, dla którego istnieje uruchomienie agenta. Wiadomość osoby, przydział zgłoszenia albo krok potoku; a w przypadku uruchomienia, które serwer zaczyna sam, powód jego wybudzenia: harmonogram, obserwacja, segment, sprawdzenie lub recenzja celu, wiadomość albo odpowiedź innego agenta, zakończona praca podrzędna, zresetowany limit użycia, recenzja usprawnienia albo odzyskanie po restarcie.'],
+['Wybudzenie', 'Trwałe żądanie, przechowywane w bazie danych obszaru roboczego, by uruchomić lub kontynuować uruchomienie jednego agenta w jednej rozmowie, z powodem i osobą, w imieniu której działa. Każde uruchomienie, które serwer zaczyna bez wpisywania przez kogokolwiek, zaczyna się jako wybudzenie; wybudzenia przetrwają restart.'],
+['Cel', 'Praca, przy której agent wytrwale pracuje w segmentach, aż serwer zweryfikuje, że spełniono to, co znaczy gotowe, albo zamknie ją osoba. Rozpoczynany poleceniem /goal; jeden na agenta naraz. Agent twierdzi, że jest gotowy; sprawdzenia i recenzja tylko do odczytu rozstrzygają.'],
+['Harmonogram', 'Reguła, która budzi agenta o określonej porze, w odstępach czasu, według crona albo we własnym tempie, z końcem, limitem uruchomień i limitem kosztów. Tworzony poleceniami /loop, /schedule, na stronie Harmonogramy albo narzędziem agenta wake_me.'],
+['Obserwacja', 'Reguła, która budzi agenta, gdy coś się wydarzy: zakończą się sprawdzenia pull requesta, dostanie recenzję albo zostanie scalony, zakończy się zadanie środowiska, rozstrzygnie się zgłoszenie albo zakończy się uruchomienie potoku.'],
+['Pytanie', 'Pytanie jednego agenta do drugiego, zapisane zanim zostanie dostarczone. Pytający zostaje wybudzony raz, z odpowiedzią albo z powodem, dlaczego jej nie ma.'],
+['Propozycja usprawnienia', 'Zmiana pamięci, polityki, notatki agenta lub umiejętności, którą recenzja proponuje po zweryfikowanym celu albo przy /refine. Nic się nie zmienia, dopóki osoba jej nie zaakceptuje; zmiana umiejętności najpierw jest oceniana.'],
 ['SandboxPort', 'Zarządza cyklem życia sandboxa (probe, launch, events, exec, destroy).'],
 ['CredentialBrokerPort', 'Wystawia ograniczone poświadczenia na potrzeby uruchomienia sandboxa (token dla jednego repozytorium dla środowiska agenta, z prawem zapisu tylko dla ścieżki push po stronie serwera) i zwalnia je przy zamykaniu.'],
 ['GitRepoInspectorPort', 'Wyodrębnia metadane (właściciel, repozytorium, gałąź) ze ścieżki lokalnego repozytorium Git.'],
@@ -94,6 +100,11 @@ export const glossaryTerms = [
 ['Identyfikator instalacji', 'Tożsamość serwera wobec jednego adresu Connect, wyprowadzona z jego klucza instalacji. Connect dopuszcza serwery według identyfikatora instalacji; wymiana klucza go zmienia i wylogowuje wszystkich ze ścieżek przez Connect.'],
 ['Powiązanie instalacji', 'Zapis Connect (install_binding) jednego serwera, z którym powiązany jest zespół Slack. Instalacje GitHub nie mają takiego powiązania: może z nich korzystać każdy serwer, na którym zaloguje się członek.'],
 ['Ścieżka logowania', 'Logowanie w przeglądarce u jednego dostawcy: github, google, linear, linear_app lub slack. W trybie własnych aplikacji ścieżka działa na własnej aplikacji, gdy jest w pełni skonfigurowana, w przeciwnym razie jest niedostępna; po wybraniu Connect uruchamia ją Connect. Żadna nie przechodzi na drugą.'],
+['Tryb kodu', 'Narzędzie repl, które uruchamia skrypt w JavaScripcie wywołujący pozostałe narzędzia uruchomienia. Każde uruchomienie je ma, gdy serwer może uruchamiać skrypty; nie ma żadnego ustawienia.'],
+['Narzędzie bezpośrednie', 'Narzędzie, które uruchomienie wywołuje po nazwie, z jego schematem w każdym żądaniu, niezależnie od tego, czy ma repl: narzędzia plikowe i powłoki, ask_user, task, lista zadań, wyszukiwanie w pamięci, send_message i własne czasowniki trybu.'],
+['Narzędzie dostępne tylko w skrypcie', 'Narzędzie spoza zestawu bezpośredniego, które uruchomienie z repl może wywołać tylko ze skryptu, dopóki serwer nie może uruchamiać skryptów uruchomienia; wtedy narzędzie zamiast tego wczytuje się przy pierwszym użyciu. Do tego czasu jego opis nigdy nie trafia do modelu.'],
+['Runner trybu kodu', 'cc_codemode, dołączony do serwera program, który uruchamia jeden skrypt w silniku QuickJS-NG po zablokowaniu się przy pomocy mechanizmów systemu operacyjnego. Serwer nie startuje bez niego i uruchamia skrypt tylko wtedy, gdy jest buildem wydaniowym, a jego blokada jest kompletna.'],
+['Wykonanie kodu', 'Zapis jednego skryptu: jego kod źródłowy, wyjście, limity i każde wywołanie narzędzia, które wykonał, przechowywany w jego obszarze roboczym i wymieniany w Obserwowalność → Wykonania kodu.'],
 ];
 
 <StructuredData
@@ -157,7 +168,19 @@ export const glossaryTerms = [
 
 **RunCost**: Zestawienie tokenów i kosztów (tokeny wejściowe, tokeny wyjściowe, szacowany koszt w mikrodolarach) dla jednego uruchomienia agenta.
 
-**WakeReason**: Powód uruchomienia agenta. Sześć wartości: wiadomość użytkownika, przypisanie zgłoszenia, ponowne uruchomienie naprawcze po awarii, ukończenie zgłoszenia podrzędnego, zaplanowany heartbeat kontynuacji i krok potoku.
+**WakeReason**: Powód, dla którego istnieje uruchomienie agenta. Wiadomość osoby, przydział zgłoszenia albo krok potoku; a w przypadku uruchomienia, które serwer zaczyna sam, powód jego wybudzenia: harmonogram, obserwacja, segment, sprawdzenie lub recenzja celu, wiadomość albo odpowiedź innego agenta, zakończona praca podrzędna, zresetowany limit użycia, recenzja usprawnienia albo odzyskanie po restarcie.
+
+**Wybudzenie**: Trwałe żądanie, przechowywane w bazie danych obszaru roboczego, by uruchomić lub kontynuować uruchomienie jednego agenta w jednej rozmowie, z powodem i osobą, w imieniu której działa. Każde uruchomienie, które serwer zaczyna bez wpisywania przez kogokolwiek, zaczyna się jako wybudzenie; wybudzenia przetrwają restart.
+
+**Cel**: Praca, przy której agent wytrwale pracuje w segmentach, aż serwer zweryfikuje, że spełniono to, co znaczy gotowe, albo zamknie ją osoba. Rozpoczynany poleceniem `/goal`; jeden na agenta naraz. Agent twierdzi, że jest gotowy; sprawdzenia i recenzja tylko do odczytu rozstrzygają.
+
+**Harmonogram**: Reguła, która budzi agenta o określonej porze, w odstępach czasu, według crona albo we własnym tempie, z końcem, limitem uruchomień i limitem kosztów. Tworzony poleceniami `/loop`, `/schedule`, na stronie Harmonogramy albo narzędziem agenta `wake_me`.
+
+**Obserwacja**: Reguła, która budzi agenta, gdy coś się wydarzy: zakończą się sprawdzenia pull requesta, dostanie recenzję albo zostanie scalony, zakończy się zadanie środowiska, rozstrzygnie się zgłoszenie albo zakończy się uruchomienie potoku.
+
+**Pytanie**: Pytanie jednego agenta do drugiego, zapisane zanim zostanie dostarczone. Pytający zostaje wybudzony raz, z odpowiedzią albo z powodem, dlaczego jej nie ma.
+
+**Propozycja usprawnienia**: Zmiana pamięci, polityki, notatki agenta lub umiejętności, którą recenzja proponuje po zweryfikowanym celu albo przy `/refine`. Nic się nie zmienia, dopóki osoba jej nie zaakceptuje; zmiana umiejętności najpierw jest oceniana.
 
 ## Porty
 
@@ -258,6 +281,20 @@ export const glossaryTerms = [
 **Oś recenzji**: Jedna z pięciu linii oceny w recenzji: `correctness`, `security` i `testGap` pochodzą z ustaleń recenzentów; `visual` i `apiContract` są deterministyczne. Osie objęte bramką wliczają się do werdyktu i mogą go tylko zaostrzyć — bramka `partial` lub `unavailable` wstrzymuje werdykt, zamiast go przepuścić.
 
 **Werdykt recenzji**: `ship`, `hold` lub `block`. Każde ustalenie P0 z pewnością ≥ 0,7 blokuje; każde inne P0 lub dowolne P1 wstrzymuje; w przeciwnym razie ship. Oś objęta bramką, która nie przechodzi, wymusza block i nie mogą jej przegłosować ustalenia.
+
+## Tryb kodu
+
+**Tryb kodu**: narzędzie `repl`, które uruchamia skrypt w JavaScripcie wywołujący pozostałe narzędzia uruchomienia i zwraca tylko to, czego potrzebuje agent. Każde uruchomienie je ma, gdy serwer może uruchamiać skrypty; nie ma żadnego ustawienia. **Ustawienia → Obszar roboczy → Tryb kodu** pokazuje, czy ten serwer uruchamia skrypty, i ustala limity, w ramach których działa skrypt. Zobacz [Tryb kodu](/pl-PL/podrecznik/koncepcje/tryb-kodu/).
+
+**Narzędzie bezpośrednie**: narzędzie, które uruchomienie wywołuje po nazwie, z jego schematem w każdym żądaniu, niezależnie od tego, czy ma `repl`: narzędzia plikowe i powłoki, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` i własne czasowniki trybu.
+
+**Narzędzie dostępne tylko w skrypcie**: narzędzie spoza zestawu bezpośredniego, które uruchomienie z `repl` może wywołać tylko ze skryptu, dopóki serwer nie może uruchamiać skryptów uruchomienia, i wtedy wczytuje się przy pierwszym użyciu ([Gdy skrypty nie mogą działać](/pl-PL/podrecznik/koncepcje/tryb-kodu/#gdy-skrypty-nie-mogą-działać)). Do tego czasu jego opis nigdy nie trafia do modelu, a bezpośrednie wywołanie dostaje odpowiedź, jak wywołać je ze skryptu. Narzędzie, którego skrypt nie może wywołać, nigdy nie jest dostępne tylko w skrypcie: wczytuje się przy pierwszym użyciu.
+
+**Wywołanie zagnieżdżone**: wywołanie narzędzia wykonywane przez skrypt. Przechodzi przez ten sam filtr trybu, te same guardraile i zatwierdzenie co wywołanie bezpośrednie.
+
+**Runner trybu kodu**: `cc_codemode`, dołączony do serwera program, który uruchamia jeden skrypt w silniku QuickJS-NG po zablokowaniu się (jego **blokada**). Serwer nie startuje bez niego i uruchamia skrypt tylko wtedy, gdy jest buildem wydaniowym, a jego blokada jest kompletna.
+
+**Wykonanie kodu**: zapis jednego skryptu — jego kod źródłowy, wyjście, limity i każde wywołanie narzędzia, które wykonał, przechowywany w jego obszarze roboczym i wymieniany w **Obserwowalność → Wykonania kodu**.
 
 ## Flota i ewaluacje
 

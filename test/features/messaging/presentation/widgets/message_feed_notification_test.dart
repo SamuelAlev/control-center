@@ -2,8 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:cc_domain/core/domain/entities/message.dart';
-import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
-import 'package:cc_domain/features/messaging/domain/repositories/space_read_repository.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/font_settings.dart';
@@ -23,44 +21,21 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../helpers/active_workspace.dart';
+import '../../../../helpers/fake_conversation_read_repository.dart';
 
-/// Uses the real persisted acknowledgement rather than counting cursor calls.
-class _PersistedReads implements SpaceReadRepository {
-  _PersistedReads(this.dao);
-
-  final NotificationFeedDao dao;
-
-  @override
-  Future<void> markSpaceRead(
-    String workspaceId,
-    String spaceId,
-    String userId, {
-    String? conversationId,
-  }) async {
-    if (conversationId != null) {
-      await dao.markConversationMessagesRead(
+/// Uses the real persisted acknowledgement rather than counting cursor
+/// calls: reading the conversation marks its notifications read, as the host
+/// does.
+FakeConversationReadRepository _persistedReads(NotificationFeedDao dao) =>
+    FakeConversationReadRepository(
+      onMark: (workspaceId, conversationId) => dao.markConversationMessagesRead(
         workspaceId,
-        userId,
-        spaceId: spaceId,
+        'user-1',
+        spaceId: 'space-1',
         conversationId: conversationId,
         readAt: DateTime(2026, 10, 13, 12),
-      );
-    }
-  }
-
-  @override
-  Stream<FeedPosition?> watchUserLastReadAt(
-    String workspaceId,
-    String spaceId,
-    String userId,
-  ) => Stream.value(null);
-
-  @override
-  Stream<Map<String, FeedPosition>> watchUserSpaceReads(
-    String workspaceId,
-    String userId,
-  ) => Stream.value(const {});
-}
+      ),
+    );
 
 void main() {
   for (final (leaveSpace, refresh) in [
@@ -157,11 +132,8 @@ void main() {
               }),
               spaceTurnRelayProvider('space-1').overrideWith((ref) {}),
               codeFontFamilyProvider.overrideWith((ref) => 'monospace'),
-              spaceUserLastReadAtProvider(
-                'space-1',
-              ).overrideWith((ref) => Stream.value(null)),
-              spaceReadRepositoryProvider.overrideWithValue(
-                _PersistedReads(dao),
+              conversationReadRepositoryProvider.overrideWithValue(
+                _persistedReads(dao),
               ),
               agentDetailProvider('agent-1').overrideWith((ref) async => null),
             ],

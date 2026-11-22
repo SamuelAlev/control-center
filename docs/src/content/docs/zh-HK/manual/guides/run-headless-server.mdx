@@ -3,7 +3,7 @@ title: 執行無介面伺服器
 description: 執行 cc_server 無介面二進位檔或其 Docker 映像，將用戶端配對到它，並以完整的 CLI 旗標與環境變數介面進行設定。
 dateModified: 2026-11-08
 slug: zh-HK/手冊/操作指南/執行無介面伺服器
-sourceHash: 82ef1bd62ea2f91104b0525e06e3f417783726e8
+sourceHash: 5245c5eca0aea940ac28a862141a3e2be21c8d2c
 ---
 
 在一部長期開機的機器上執行 `cc_server`，然後從你的桌面、瀏覽器或手機連接它。這部伺服器是純 Dart 原生二進位檔——不含 Flutter 引擎——因此可在 macOS、Linux 或 Windows 上無介面執行。它擁有資料庫、執行代理，並發出所有對外 API 呼叫；用戶端只負責呈現。
@@ -247,8 +247,7 @@ node tool/stage_resource_assets.mjs build/web
 
 ## 設定
 
-上方用到的旗標，就是首次設定所需的那些。完整的介面——23
-組旗標與環境變數配對、四個子指令，以及資料目錄的佈局——都在 [`cc_server` CLI 參考](/zh-HK/手冊/參考/cc-server-cli/) 中。
+上方用到的旗標，就是首次設定所需的那些。完整的介面——25 組旗標與環境變數配對、四個子指令，以及資料目錄的佈局——都在 [`cc_server` CLI 參考](/zh-HK/手冊/參考/cc-server-cli/) 中。
 
 :::caution[未知旗標會被靜默忽略]
 參數剖析器是手寫的，會略過任何它不認識的東西，因此打錯字（`--tls-key-file`、`--bindany`）不會產生錯誤——伺服器只會以預設值啟動。當某個旗標似乎沒有作用時，請檢查啟動記錄行。

@@ -4,7 +4,7 @@ import 'package:control_center/features/messaging/presentation/ide/editor/messag
 import 'package:control_center/features/messaging/presentation/ide/messaging_ide_tabs.dart';
 import 'package:control_center/features/messaging/presentation/utils/conversation_display_name.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row.dart'
-    show ConversationUnreadMark;
+    show AttentionDot;
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/editor/editor_layout_controller.dart';
 import 'package:control_center/shared/editor/editor_tab.dart';
@@ -87,7 +87,7 @@ class IdeConversationView {
     if (unreadIds.contains(id)) {
       return (_) => const SizedBox.square(
         dimension: 14,
-        child: Center(child: ConversationUnreadMark()),
+        child: Center(child: AttentionDot(selected: false)),
       );
     }
     return null;
@@ -202,4 +202,38 @@ void focusIdeTabByKey(
     return;
   }
   openConversation(spaceId, conv.id);
+}
+
+/// The conversation ids of the chat tabs in [tabs], in tab order, per space.
+///
+/// Each chat tab names its space, so a tab order can never be filed under
+/// another space mid-switch. The no-arg tab shows the standing conversation,
+/// known ([standingId]) only for the open space ([openSpaceId]); elsewhere it
+/// is left out. A conversation shown by two tabs counts once, at its first.
+Map<String, List<String>> conversationTabOrders(
+  Iterable<EditorTab> tabs, {
+  required String? openSpaceId,
+  required String? standingId,
+}) {
+  final orders = <String, List<String>>{};
+  for (final tab in tabs) {
+    if (tab.kind != MessagingTabKinds.chat) {
+      continue;
+    }
+    final spaceId = tab.args['spaceId'] as String?;
+    if (spaceId == null) {
+      continue;
+    }
+    final conversationId =
+        tab.args['conversationId'] as String? ??
+        (spaceId == openSpaceId ? standingId : null);
+    if (conversationId == null) {
+      continue;
+    }
+    final order = orders.putIfAbsent(spaceId, () => []);
+    if (!order.contains(conversationId)) {
+      order.add(conversationId);
+    }
+  }
+  return orders;
 }

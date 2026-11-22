@@ -15,6 +15,7 @@ REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT"
 source "$REPO_ROOT/scripts/lib/common.sh"
 source "$REPO_ROOT/scripts/lib/media.sh"
+source "$REPO_ROOT/scripts/lib/codemode.sh"
 
 VERSION="${1:?usage: cc_server_package.sh <version> [os]}"
 
@@ -100,6 +101,7 @@ done
 # cannot boot.
 bash scripts/release/verify_natives.sh --dir "$DIST/lib" --dir "$STAGE" "$OS" server
 cc_media_stage "$NATIVES" "$DIST/bin/media" "$OS" "$ARCH"
+cc_codemode_stage "$NATIVES" "$DIST/bin/codemode" "$OS" "$ARCH"
 # Windows on Arm: every PE image in the archive (cc_server.exe, the bundled and
 # the staged natives) must be an Arm64 image — see pe_machine in common.sh.
 if [ "$OS" = windows ] && [ "$ARCH" = arm64 ]; then
@@ -214,6 +216,9 @@ SECRETS_DIR="$SCRATCH_DIR"
       # signed bare here would notarize and then refuse to start — see the
       # entitlements file. Its dylibs/addons take none: entitlements are read
       # from a process's main executable.
+      # Everything else, bin/codemode/cc_codemode included, is signed bare:
+      # the code mode runner confines itself with Seatbelt and must not carry
+      # an exception it does not need.
       case "$rel" in
         bin/code-server/*)
           if file -b "$f" | grep -q 'Mach-O.*executable'; then
@@ -263,6 +268,9 @@ Every Mach-O in the archive must be signed with the Developer ID identity under
 the hardened runtime. Something is staging code the signing pass above does not
 reach — extend it rather than relaxing this check."
       log "All Mach-Os in the archive are Developer-ID signed + hardened"
+      # Behaviour, not just flags: the re-signed code mode runner must still
+      # pass its lockdown self-test under the hardened runtime.
+      cc_codemode_verify "$DIST/bin/codemode" macos
 
       # Notarize the zipped bundle. Prefer a stored notarytool keychain profile,
       # else Apple-ID credentials. Skip (with a warning) when neither is present.

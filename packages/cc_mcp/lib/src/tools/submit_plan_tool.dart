@@ -57,6 +57,15 @@ class SubmitPlanTool extends McpTool {
   @override
   String get name => 'submit_plan';
 
+  /// `agent_id` names the calling agent, never a target: forced from the
+  /// call scope, so a run cannot act as another agent.
+  @override
+  Set<String> get forcedScopeKeys => const {'agent_id'};
+
+  /// Not for scripts: it leaves plan mode (see [McpTool.scriptCallable]).
+  @override
+  bool get scriptCallable => false;
+
   @override
   String get description =>
       'Submit your plan as a typed dependency graph (plan mode\'s output '

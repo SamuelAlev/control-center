@@ -2,7 +2,7 @@
 title: CLI cc_server
 description: Mọi cờ, biến môi trường, lệnh con và đường dẫn thư mục dữ liệu của máy chủ không giao diện.
 slug: vi-VN/so-tay/tham-chieu/cli-cc-server
-sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
+sourceHash: ee71514a1721599da299a81b5702bc7cdb372330
 ---
 
 Mọi cờ của tiến trình nhận một cờ CLI hoặc một biến môi trường; cờ thắng, rồi đến
@@ -10,10 +10,7 @@ biến môi trường, rồi đến giá trị mặc định. Thông tin xác th
 ngoại lệ — xem [Ứng dụng nhà cung cấp và Connect](#ứng-dụng-nhà-cung-cấp-và-connect).
 
 :::caution[Các cờ không xác định bị bỏ qua âm thầm]
-Bộ phân tích đối số được viết thủ công và bỏ qua mọi thứ nó không nhận ra, nên một lỗi
-đánh máy (`--tls-key-file`, `--bindany`) không tạo ra lỗi nào — máy chủ chỉ khởi động
-với giá trị mặc định. Hãy kiểm tra các dòng log lúc khởi động khi một cờ có vẻ không có
-tác dụng.
+Bộ phân tích đối số được viết thủ công và bỏ qua mọi thứ nó không nhận ra, nên một lỗi đánh máy (`--tls-key-file`, `--bindany`) không tạo ra lỗi nào — máy chủ chỉ khởi động với giá trị mặc định. Hãy kiểm tra các dòng log lúc khởi động khi một cờ có vẻ không có tác dụng. Một [cờ chế độ code](#chế-độ-code) với một giá trị nó không chấp nhận thì khác: máy chủ từ chối khởi động.
 :::
 
 ## Cốt lõi
@@ -51,8 +48,10 @@ tác dụng.
 | `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | `on` bọc các lượt chạy agent trong sandbox native của hệ điều hành trên máy chủ nhà, và trên một máy chủ nhà không có sandbox thì chỉ khởi động các lượt chạy của chủ sở hữu máy chủ. `off` chạy agent của mọi thành viên không bị giới hạn trên máy chủ nhà này. Xem bên dưới |
 | `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Công tắc tắt cho môi trường thật đối với việc lập chỉ mục đồ thị mã chạy nền. `off` khởi động sạch mà không cần dựng lại     |
 | `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Số giây giữ lần quét chỉ mục đầu tiên sau banner báo sẵn sàng (giới hạn trong khoảng 0–300)                                  |
-| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Liệu các lượt chạy harness có gửi một tập công cụ thường trú nhỏ cộng một chỉ mục tên, phần còn lại được nạp ở lần dùng đầu tiên hay không. Xem bên dưới |
+| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Liệu các lượt chạy harness có gửi một tập công cụ trực tiếp nhỏ cộng một chỉ mục tên, phần còn lại được nạp ở lần dùng đầu tiên hay không. Xem bên dưới  |
 | `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Số giây một lượt chạy tạm dừng chờ người sửa một thông tin xác thực không thể phục vụ nó (giới hạn trong khoảng 0–3600). Xem bên dưới |
+| `--code-mode-max-processes` | `CC_SERVER_CODE_MODE_MAX_PROCESSES` | `min(16, 2 × cores)` | Các tập lệnh chế độ code chạy đồng thời trên máy chủ này, không tính những tập lệnh đang chờ người dùng, từ 1–64. Xem bên dưới |
+| `--code-mode-max-heap-mb` | `CC_SERVER_CODE_MODE_MAX_HEAP_MB` | `1024` | Bộ nhớ tối đa mà một tập lệnh được dùng, 16–1024 MiB. Giới hạn bộ nhớ cao hơn của không gian làm việc sẽ bị hạ xuống bằng mức này |
 
 ## Ứng dụng nhà cung cấp và Connect
 
@@ -113,18 +112,9 @@ một cảnh báo suốt vòng đời tiến trình để trạng thái đó kh�
 
 ### `--tool-deferral`
 
-Các lượt chạy của harness tích hợp sẵn gửi một tập định nghĩa công cụ thường trú nhỏ
-cộng một chỉ mục chỉ gồm tên của phần còn lại; các định nghĩa này nạp lược đồ của
-chúng ở lần đầu được dùng. Cách này cắt khối công cụ đi khoảng 78% và giữ tập luôn
-hiển thị nằm trong khoảng mà các mô hình chọn công cụ một cách đáng tin cậy. Các công
-cụ bị trì hoãn vẫn gọi được bằng tên trong suốt quá trình, và `search_tools` tìm thấy
-chúng theo ý định. Xem [Ngữ cảnh công cụ và bộ nhớ đệm prompt](/vi-VN/so-tay/khai-niem/ngu-canh-cong-cu).
+Các lần chạy harness tích hợp gửi một tập định nghĩa công cụ trực tiếp nhỏ cộng một chỉ mục chỉ có tên của phần còn lại, các công cụ này nạp lược đồ của chúng ở lần đầu được dùng, hoặc được gọi từ một tập lệnh `repl`. Cách này giữ tập luôn hiển thị nằm trong khoảng mà các mô hình chọn công cụ một cách đáng tin cậy. Đo trên sổ đăng ký mà các bài kiểm thử tạo ra, các công cụ chat chuẩn của agent tích hợp có 14 định nghĩa: khoảng 16,5 KB khi có `repl` (trong đó khoảng 4 KB là của `repl`, định nghĩa của nó không được vượt quá 4.096 byte), khoảng 13 KB trên máy chủ không thể chạy tập lệnh. Các công cụ bị trì hoãn vẫn gọi được bằng tên trong suốt quá trình, và `search_tools` tìm thấy chúng theo ý định. Xem [Ngữ cảnh công cụ và bộ nhớ đệm prompt](/vi-VN/so-tay/khai-niem/ngu-canh-cong-cu/).
 
-`--tool-deferral off` khiến mọi công cụ được chấp nhận trở lại thường trú, tái tạo
-đúng những yêu cầu mà máy chủ gửi trước khi có tính năng trì hoãn. Đây là công tắc tắt
-dành cho một mô hình xử lý kém bề mặt hai tầng — một cờ thay vì một lần dựng lại. Nó
-chỉ ảnh hưởng đến harness tích hợp sẵn; `tools/list` của MCP mà các máy khách bên ngoài
-thấy luôn là danh mục đầy đủ.
+`--tool-deferral off` gửi định nghĩa của mọi công cụ được chấp nhận ngay từ đầu, ngoại trừ việc một lần chạy có `repl` vẫn gọi từ tập lệnh các công cụ mà tập lệnh được phép gọi. Đây là công tắc tắt dành cho một mô hình xử lý kém bề mặt hai tầng — một cờ thay vì một lần dựng lại. Nó chỉ ảnh hưởng đến harness tích hợp sẵn; `tools/list` của MCP mà các máy khách bên ngoài thấy là danh mục đầy đủ, ngoại trừ với agent chạy trên máy chủ có thể chạy tập lệnh [chế độ code](/vi-VN/so-tay/khai-niem/che-do-code/).
 
 ### `--credential-gate`
 
@@ -142,6 +132,25 @@ bại.
 
 `--credential-gate=0` là công tắc tắt: không gì bị tạm dừng và một thông tin xác thực
 hỏng kết thúc lượt đúng như trước khi có cổng này.
+
+### Chế độ code
+
+[Chế độ code](/vi-VN/so-tay/khai-niem/che-do-code/) cho phép một agent chạy một tập lệnh JavaScript gọi các công cụ của nó. Không có cờ nào bật hoặc tắt nó: mọi lần chạy đều nhận công cụ `repl` khi máy chủ có thể chạy tập lệnh, còn máy chủ demo công khai không chạy tập lệnh nào.
+
+Tập lệnh chạy trong `cc_codemode`, một chương trình đi kèm máy chủ trong `bin/codemode/`. Máy chủ không khởi động nếu thiếu nó: nó in một dòng nêu những gì bị thiếu và thoát với mã `78`. Khi khởi động, nó chạy tự kiểm tra cơ chế khóa của chương trình và in một dòng (chỉ bị tắt tiếng bởi `--log-level error`):
+
+```text
+cc_server: code_mode=available (cc_codemode 0.1.0 quickjs-ng 0.16.2 protocol 2; 16 scripts at once, at most 12 per workspace; up to 64 more runners kept for scripts waiting on a person; heap at most 1024 MiB per script)
+cc_server: code_mode=unavailable (<reason>) — runs on this host get no repl tool; scripts never run without full lockdown
+```
+
+`unavailable` nghĩa là chương trình không thể tự khóa trên máy này, ví dụ bên trong một container có hồ sơ bảo mật từ chối một trong các bước của nó, hoặc chương trình không phải bản dựng phát hành. Máy chủ vẫn chạy bình thường, không lần chạy nào nhận `repl`, và phần cài đặt chế độ code của không gian làm việc hiện lý do.
+
+Máy chủ tiếp tục kiểm tra khi đang chạy. Khi chương trình không khởi động được vì lý do không thuộc về tập lệnh, máy chủ chạy lại tự kiểm tra, tối đa một lần mỗi phút. Nếu thất bại, máy chủ in dòng `unavailable` kèm lý do và không chạy tập lệnh nào: các lần chạy bắt đầu trong lúc đó không nhận `repl`, và một lần chạy đã có nó gọi công cụ của nó trực tiếp ([Khi không thể chạy tập lệnh](/vi-VN/so-tay/khai-niem/che-do-code/#khi-không-thể-chạy-tập-lệnh)). Nó tiếp tục kiểm tra, tối đa một lần mỗi phút, và khi tự kiểm tra đạt trở lại, nó in dòng `available` và chạy tập lệnh trở lại. Chỉ một tự kiểm tra thất bại khi khởi động mới cần khởi động lại. Lý do mà cài đặt của không gian làm việc hiển thị đã bỏ đường dẫn trên máy chủ; dòng nhật ký có đầy đủ.
+
+Hai cờ chế độ code giới hạn những gì tập lệnh được dùng. `--code-mode-max-processes` giới hạn số tập lệnh chạy cùng lúc trên mọi không gian làm việc (mặc định gấp đôi số lõi xử lý, tối đa 16; chấp nhận 1–64). Với mức trần từ 2 trở lên, một không gian làm việc dùng tối đa mức trần trừ đi một phần tư của nó, nên không một không gian làm việc nào có thể chiếm mọi chỗ, và các tập lệnh đang chờ được nhận lần lượt giữa các không gian làm việc. Một tập lệnh đang chờ phê duyệt hoặc câu trả lời của người dùng nhường chỗ cho tập lệnh khác và không bắt đầu lệnh gọi công cụ nào cho đến khi được trả lời; tối đa bốn lần mức trần số tập lệnh chờ như vậy được giữ lại, tối đa ba phần tư trong số đó đến từ một không gian làm việc, và mỗi tập lệnh vẫn có thể tính toán trong giới hạn thời gian xử lý của riêng nó. `--code-mode-max-heap-mb` là bộ nhớ tối đa mà mỗi tập lệnh được dùng.
+
+Một giá trị mà các cờ này không chấp nhận (một số ngoài phạm vi, hoặc không phải là số) sẽ dừng máy chủ khi khởi động (mã thoát `78`) với thông báo nêu các giá trị được chấp nhận. Nó không bao giờ bị đọc thành mặc định.
 
 ## Lệnh con
 
@@ -246,6 +255,7 @@ Máy chủ giữ thư mục dữ liệu riêng cho tài khoản của chính nó
 | `backups/exports/`                | Bản xuất của một không gian làm việc, `<workspaceId>-<timestamp>.db`                        |
 | `backups/transfer/`               | Khu trung chuyển cho việc tải lên và tải xuống bản sao lưu; được dọn bởi tuyến ghi vào đó     |
 | `models/`                         | Mô hình embedding, tách người nói và nhận dạng giọng nói chạy ngay trên máy              |
+| `codemode/` | Một bản phát triển của trình chạy chế độ code, được cài bởi `scripts/natives/build_codemode.sh`; các gói phát hành mang nó trong `bin/codemode/` |
 | `meetings/<meetingId>/`           | Âm thanh cuộc họp được lưu giữ                                                          |
 | `rigs/images/`                    | Ảnh đĩa rig đã nhập (bề mặt desktop QEMU)                             |
 | `rigs/smolvm/<rigId>/`            | Trạng thái chạy microVM của từng rig (bí mật của broker, `0600`)                       |

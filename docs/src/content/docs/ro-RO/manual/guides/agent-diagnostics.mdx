@@ -2,7 +2,7 @@
 title: Diagnostichează un agent
 description: Parcurge jurnalul de rulare, verificarea adaptorului, starea serverului și diagnosticările gazdei atunci când un agent nu mai produce rulări.
 slug: ro-RO/manual/ghiduri-practice/diagnosticare-agent
-sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
+sourceHash: 8cd7078bacfbfcd18d90512974eff3539366883c
 ---
 
 Acest ghid îți arată cum să afli de ce un agent nu produce rulări.
@@ -90,7 +90,13 @@ Verifică **Setări → Server → Diagnosticări și confidențialitate → Că
 
 ### Serverul nu pornește deloc
 
-Bibliotecile native sunt obligatorii și nu există mod degradat. O dylib lipsă face `cc_server` să refuze pornirea și numește vinovatul în eroare. Pregătește bibliotecile native cu `scripts/natives/build_natives.sh` și recompilează binarul serverului.
+Bibliotecile native sunt obligatorii și nu există mod degradat. O dylib lipsă sau un runner de mod cod lipsă (`bin/codemode/cc_codemode`) face `cc_server` să refuze pornirea și numește vinovatul în eroare. Pregătește bibliotecile native cu `scripts/natives/build_natives.sh` și recompilează binarul serverului cu `scripts/build_server.sh`.
+
+### Un script a eșuat sau modul cod nu este oferit
+
+Pentru a vedea ce a făcut un script din [modul cod](/ro-RO/manual/concepte/mod-cod/), deschide înregistrarea scriptului din **Deschide înregistrarea** de pe rândul lui din conversație sau din **Observabilitate → Execuții de cod**. Înregistrarea spune cum s-a încheiat scriptul, în cuvinte simple (a rămas fără timp, și-a epuizat timpul de procesor, a atins limita de memorie, a aruncat o eroare) și listează fiecare apel de instrument pe care l-a făcut, cu indicarea dacă guardrail-urile l-au permis, o persoană l-a aprobat sau a fost refuzat.
+
+Dacă agentul nu are deloc instrumentul `repl`, deschide **Setări → Spațiu de lucru → Mod cod**. Sub **Stare**, **Pe acest server** arată **Disponibil** sau **Indisponibil**; **Indisponibil** înseamnă că serverul nu poate bloca runner-ul de scripturi pe gazda lui, iar pagina citează motivul. Jurnalul de pornire al serverului are aceeași linie (`code_mode=…`). O rulare fără spațiu de lucru, a cărei limite de spațiu de lucru nu au putut fi citite sau al cărei jurnal nu a putut fi scris, nu primește nici ea `repl` și își apelează instrumentele direct.
 
 ### O acțiune este refuzată în tăcere
 

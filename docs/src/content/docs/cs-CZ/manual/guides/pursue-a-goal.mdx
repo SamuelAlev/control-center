@@ -1,0 +1,143 @@
+---
+title: Usilujte o cíl
+description: Dejte agentovi cíl, na kterém pracuje napříč běhy a restarty, určete, co znamená hotovo, a rozhodněte, kdy je cíl splněn.
+slug: cs-CZ/prirucka/navody/usilujte-o-cil
+sourceHash: 0ea77964bd9e3044e168624bc67325de0fd1d1e5
+---
+
+Cíl je práce, na které agent pracuje, dokud není splněno, co znamená hotovo. Agent pracuje v **segmentech**: omezených bězích, které server spouští jeden za druhým, i přes restarty, dokud cíl není ověřen, dokud ho osoba neuzavře, nebo dokud nedosáhne nějakého limitu. Agent nemůže cíl uzavřít tím, že řekne, že je hotovo. Server spustí kontroly cíle a výsledek nejdřív posoudí ověřovatel.
+
+## Spuštění cíle
+
+V poli pro psaní zprávy v konverzaci napište `/goal` a zadání cíle:
+
+```text
+/goal --budget 20 --days 2 --check "make test" make the importer handle files over 2 GB
+```
+
+Pokud zprávu začnete `/goal` a textem, otevře se rozhovor o zadání cíle. Ptá se na kritéria úspěchu, kontroly, které musí projít, hranice a podmínky zastavení, a nabízí samostatného ověřovatele, začátek každého segmentu od nuly a to, že agent odpovídá na své vlastní otázky. Každý krok lze přeskočit.
+
+| Příznak | Význam |
+| --- | --- |
+| `--budget <dollars>` | Celkem, co smí cíl utratit. Ve výchozím nastavení 50 dolarů |
+| `--max <N>` | Nejvíc segmentů, které smí cíl zabrat. Ve výchozím nastavení bez limitu |
+| `--days <N>` | Termín, tolik dní od teď |
+| `--check "<command>"` | Příkaz, který musí projít, než může cíl skončit; spouští se v worktree. Lze zadat víc, nejvýše 5 |
+| `--checker <agent>` | Jiný agent, který posoudí tvrzení, že je cíl hotový, podle jména nebo id |
+| `--fresh` | Začít každý segment bez historie konverzace, jen z cíle a jeho poznámek |
+| `--unattended wait` nebo `--unattended assume` | Co se stane s otázkami agenta, když na ně nikdo neodpoví (viz [Když nikdo neodpoví](#když-nikdo-neodpoví)) |
+
+- Příznaky mohou stát kdekoli ve zprávě. Neznámý příznak, opakovaný příznak, špatná hodnota a více než 5 kontrol se odmítnou a váš koncept zůstane v poli pro psaní s důvodem pod ním.
+- Číslo na začátku zadání je součástí zadání. Chcete-li omezit segmenty, použijte `--max`.
+- `/goal` se čte jen ve zprávě, kterou napíšete sami. Stejný text od agenta, z pipeline nebo z probuzení je obyčejná zpráva.
+- Agent v jednom pracovním prostoru sleduje jeden cíl najednou. Druhé `/goal` pro stejného agenta se odmítne, dokud je první aktivní.
+
+### Co znamená hotovo
+
+Zadání může obsahovat oddíly, které se stanou smluvními podmínkami cíle:
+
+```text
+/goal make the importer handle files over 2 GB
+
+## Success criteria
+- A 3 GB fixture imports without running out of memory
+- The progress bar reaches 100%
+
+## Boundaries
+- Don't change the public API
+
+## Stop conditions
+- A migration would drop data
+
+## Checks
+- `make test` (300 s)
+- environment task `test` (600 s)
+```
+
+- **Kritéria úspěchu**: nejvýše 12, každé nejvýše 300 znaků. Každé je věc, kterou může ověřovatel potvrdit.
+- **Kontroly**: nejvýše 5. Kontrola běží v worktree nebo jako pojmenovaná úloha [prostředí](/cs-CZ/prirucka/navody/prostredi/) prostoru. Každá má výchozí 300 sekund a nejvýše 1 800.
+- Oddíl nad svým limitem se odmítne, nikdy se nezkrátí.
+
+Cíl bez kritérií nechá agenta rozhodnout, kdy je hotovo, a cíl bez kontroly se spoléhá jen na posouzení. Stránka cíle to říká.
+
+## Jak cíl pokračuje
+
+Každý segment je běh omezený na 5 dolarů nebo na to, co zbývá z rozpočtu, podle toho, co je menší. Po každém segmentu server rozhodne, co bude dál, podle toho, co segment udělal:
+
+- **Udělal pokrok.** Začne další segment.
+- **Čeká na něco, co sám nastavil**: plán, sledování, dotaz jinému agentovi nebo delegovaný ticket. Cíl na to čeká. Pokud nic nedorazí, server se podívá znovu po 20 minutách, pak po 40, 80, 160 a každých 240 minutách. Karta říká **Čeká na to, co nastavil · znovu se podívá do** a čas.
+- **Nedělal pokrok.** Pokrokem se rozumí, že se worktree změnil vlastní prací segmentu, změnil se seznam úkolů, nebo agent udělal něco nového. Po 3 segmentech bez pokroku se cíl pozastaví: **V posledních segmentech nedošlo k žádnému pokroku.**
+- **Čekal příliš dlouho.** Po 24 hodinách čekání, nebo po 6 čekáních na nové věci, které nastavil, bez pokroku mezi nimi, se cíl pozastaví: **Čeká po segmentech bez pokroku.**
+- **Selhal.** Server to zopakuje po 30 sekundách, pak déle, nejvýše za 15 minut. Po 3 selháních v řadě cíl selže.
+- **Zeptal se osoby.** Cíl čeká, dokud někdo neodpoví: **Potřebuje osobu**.
+
+Cíl se zastaví také na svém rozpočtu (**Rozpočet vyčerpán**), na limitu segmentů nebo na termínu.
+
+## Když agent říká, že je hotovo
+
+Agent tvrdí, že cíl je hotový, a ke každému kritériu přiloží důkaz. Potom:
+
+1. **Server spustí kontroly** v sandboxu, nikdy přímo na stroji serveru. Kontrola, která skončí nenulovým kódem, selže. Kontrola, která nemůže vůbec běžet (příkaz nenalezen, není spustitelný, úloha prostředí neexistuje), je rozbitá: cíl se zastaví kvůli osobě s **Tuto kontrolu nelze spustit:** a příkazem. Pokud na serveru není sandbox, cíl se zastaví s **Pro spuštění jeho kontrol není k dispozici sandbox.** (Výjimkou je server, jehož vlastník vypnul sandbox pro každý běh: kontroly tam běží stejně jako vlastní příkazy agenta.) Pokud se od neúspěšné kontroly ve worktree nic nezměnilo, znovu se nespustí.
+2. **Výsledek posoudí ověřovatel**, když prošly všechny kontroly nebo žádné nejsou. Ověřovatelem je ověřovatel cíle, jinak ověřovatel prostoru, jinak vlastní agent cíle. Běží jen pro čtení bez historie konverzace: může číst soubory a výstup kontrol, ale nemůže nic měnit, spouštět příkazy ani probouzet jiné agenty. Dostane také úplný diff testů a kontrolních skriptů, které agent změnil, a to, co agent napsal v konverzaci a ve svých poznámkách, bere jako tvrzení, ne jako důkaz. U cíle bez kritérií posoudí cíl jako celek. Odpoví, že cíl je hotový, že není hotový, nebo že to nedokáže posoudit.
+3. **Hotovo**: cíl se dokončí. **Není hotovo**: agent dostane nálezy ověřovatele a pracuje dál. Po 3 kolech, která nejsou hotová, nebo když ověřovatel nedokáže posoudit, cíl čeká na vás: **Čeká na kontrolu: tvrdí, že je hotovo, a nic to nepotvrdilo**.
+
+Zpráva, kterou napíšete, zatímco ověřovatel běží, se ověřovateli nepředá a neodešle se, když ověření skončí. Zůstane zařazena do fronty pro další segment agenta. Když žádný segment nenásleduje, podrží se pro vás pod **Odeslat podržené zprávy**.
+
+Ověřovatel, který nemůže běžet (smazaný, nebo u adaptéru, který nedokáže udržet běh jen pro čtení, například u agenta ACP), cíl pozastaví: **Jeho ověřovatel není dostupný. Vyberte jiného ověřovatele a poté pokračujte.** Žádný jiný agent nezasáhne bez vás.
+
+Ověřovatel od jiného poskytovatele, než je agent cíle, s menší pravděpodobností sdílí jeho slepá místa. Bez samostatného ověřovatele agent kontroluje vlastní práci a cíl zaznamená **Ověřil sám (bez samostatného ověřovatele)**.
+
+## Sledování cíle
+
+- **V konverzaci**: karta cíle v panelu **Obecné** ukazuje podržení, segment, výdaje oproti rozpočtu, zbývající čas, co znamená hotovo, kontroly a poslední verdikt.
+- **Stránka Cíle**: postranní panel → **Cíle**. Cíle jsou seskupeny jako **Čeká na kontrolu**, **Otevřené** a **Ukončené**.
+- **Stránka cíle**: otevřete cíl a uvidíte **Teď** (segmenty, výdaje, termín, počet bez pokroku a co bude dál), **Co znamená hotovo**, **Ověření** (poslední kolo: tvrzení, každou kontrolu s výstupem a posouzení podle každého kritéria) a **Plány a probuzení**. Každý cíl má vlastní adresu (`/workspaces/<workspace>/goals/<goal id>`), takže můžete poslat odkaz.
+
+Na telefonu obrazovka cílů spustí cíl s kontrolami a limitem segmentů a zobrazí tytéž cíle a podržení.
+
+## Změna nebo zastavení cíle
+
+| Akce | Kdo může |
+| --- | --- |
+| **Pozastavit cíl**, **Zastavit cíl** | Kdokoli s přístupem k prostoru |
+| **Obnovit cíl**, **Zvýšit rozpočet** | Jen osoba, která cíl spustila (u cíle, který nikdo nespustil, správce pracovního prostoru) |
+| **Upravit** co znamená hotovo, **Změnit ověřovatele** | Pouze osoba, která cíl spustila (u cíle, který nikdo nespustil, správci pracovního prostoru), s právem zápisu do repozitářů prostoru, dokud je cíl pozastavený |
+| **Schválit dokončení** | Kdokoli s přístupem k prostoru, dokud cíl čeká na kontrolu. Cíl, který spustila pipeline: jen osoba, která ten běh spustila (když ho nikdo nespustil, správci pracovního prostoru) |
+
+- Stisknutí **Zastavit** u běhu agenta pozastaví cíl (**Pozastavila osoba**). Jeho čekající probuzení čekají, dokud ho neobnovíte.
+- **Schválit dokončení** uzavře cíl jako hotový na vaše slovo. Cíl zaznamená **Uzavřela osoba bez úspěšné kontroly**.
+- Cíl, který vyčerpal rozpočet, se obnoví jen s vyšším rozpočtem.
+- Když osoba, která cíl spustila, opustí pracovní prostor, cíl se hned pozastaví k kontrole a jeho běžící agent se zastaví. Obnovit ho nemůže nikdo; zastavit ho může kdokoli s přístupem k prostoru. Denní přehled ho uvádí pro správce pracovního prostoru.
+
+## Když nikdo neodpoví
+
+Když segment položí osobě otázku nebo požádá o schválení a nikdo neodpoví, žádost čeká ve výchozím nastavení 72 hodin. Pak se schválení počítá jako zamítnuté, otázka jako nezodpovězená a cíl se pozastaví: **Otázka nebo žádost o schválení adresovaná osobě zůstala bez odpovědi.** Běh, který se ptal, už žádné další odpovědi nedostane: cokoli jiného, na co se zeptá, je hned odmítnuto a dokončí, co může. Správce pracovního prostoru nastaví čas (1 hodina až 7 dní) v **Nastavení → Pracovní prostor → Plány → Když nikdo neodpoví**. Jednou denně, v hodinu nastavenou v tomto místě, dostanete jeden denní přehled všeho, co na vás čeká.
+
+S `--unattended assume` agent uvede svůj předpoklad a pokračuje po 10 minutách bez odpovědi, pokud to dovolují jeho podmínky zastavení. Platí to jen pro otázky. Schválení se nikdy nepředpokládá a posouzení nikdy nic nepředpokládá.
+
+## Limity využití a restarty
+
+- **Limit využití u poskytovatele.** Když segment skončí na limitu využití u poskytovatele a poskytovatel řekne, kdy se limit resetuje (do 7 dnů), cíl se pozastaví bez přičtení selhání: **Pozastaveno na limitu využití · pokračuje** a čas. Pokračuje 30 sekund po resetu. Po 8 takových pozastaveních čeká cíl na vás: **Příliš často narážel na limity využití. Prohlédněte si ho a poté pokračujte.** Každé obnovení počítání spustí znovu. Agenti ACP reset nehlásí, takže jejich cíle na limitu nečekají.
+- **Restart serveru.** Cíl přežije restart. Segment, který restart přerušil, se spustí znovu a plány a čekající probuzení cíle se zachovají.
+
+## Vylepšení po cíli
+
+Po průchodu ověřením může krátké posouzení jen pro čtení (nejvýše 1 dolar) navrhnout vylepšení: fakt do paměti, zásadu, poznámku k agentovi nebo změnu dovednosti. Napište `/refine`, chcete-li si vyžádat totéž posouzení práce v konverzaci. Nejvýše jedno posouzení běží v jedné konverzaci každých 20 minut.
+
+Návrhy se objeví na stránce **Vylepšení** (postranní panel → **Vylepšení**). Otevřete návrh a uvidíte, co mění, důkazy a tlačítka **Přijmout**, **Odmítnout** nebo **Vrátit zpět**.
+
+- Návrh nic nezmění, dokud ho někdo nepřijme. Po 30 dnech vyprší.
+- Změna dovednosti nebo zásady pro celý pracovní prostor potřebuje správce pracovního prostoru (**Rozhoduje správce**).
+- Změna dovednosti se uloží jako samostatná revize. Stiskněte **Spustit vyhodnocení**, aby se porovnala s aktuální dovedností; **Přijmout** je možné až po úspěšném vyhodnocení. Vyhodnocení projde, když proběhlo celé a agent s změnou vyřešil alespoň tolik běhů jako s aktuální dovedností; stránka ukazuje obě čísla. Změní-li se dovednost po vyhodnocení, spusťte ho znovu.
+- **Vrátit zpět** obnoví předchozí text, pokud ho od té doby nikdo neměnil.
+
+## V pipeline
+
+Pipeline může cíl spustit krokem **Pursue a goal** (`goal.pursue`). Krok čeká, dokud cíl neskončí, a předá jeho souhrn a verdikt. Viz [Typy kroků pipeline](/cs-CZ/prirucka/referencni-prirucka/kroky-pipeline/).
+
+## Viz také
+
+- [Plány a probuzení](/cs-CZ/prirucka/navody/plany-a-probuzeni/)
+- [Agenti spolupracují](/cs-CZ/prirucka/navody/agenti-spolupracuji/)
+- [Spravujte náklady](/cs-CZ/prirucka/navody/sprava-nakladu/)
+- [Slash příkazy](/cs-CZ/prirucka/referencni-prirucka/slash-prikazy/)

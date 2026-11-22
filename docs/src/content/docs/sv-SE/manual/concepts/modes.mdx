@@ -2,7 +2,7 @@
 title: Lägen
 description: Varför en yta, inte en agent, bär ett läge; vad vart och ett av de fyra lägena garanterar; och var den garantin är strukturell i stället för att bara stå i prompten.
 slug: sv-SE/handbok/koncept/lagen
-sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
+sourceHash: 4450ebc86d95efb0366bc3f0ab4ddebc6d3a3adb
 ---
 
 ## Vad ett läge är
@@ -41,7 +41,7 @@ En körning som slutar utan sin plan registreras fortfarande med statusen `compl
 
 Det finns en andra, separat väg ut: `exit_plan_mode`. Det är en hård godkännandegrind, inte ett utdataverb – en agent som anropar det i stället för `submit_plan` har inte levererat något. Det första anropet öppnar ett varaktigt `plan_exit`-godkännande och returnerar `pending`, och ytan förblir skrivskyddad; upprepade anrop stannar i `pending` i stället för att öppna en andra grind. Först när godkännandet har beviljats växlar ett efterföljande anrop ytan till chatt. En avvisning låter agenten öppna en ny begäran om en reviderad plan.
 
-För att själv lämna planläget växlar du dropdown-menyn i composern (eller Shift+Tab). `exit_plan_mode` avgörs med MCP-verktyget `decide_approval`. Rader för "agentgodkännande" i inkorgen är något annat: bekräftelseprompter per tur från en körande agent.
+För att själv lämna planläget växlar du dropdown-menyn i composern (eller Shift+Tab). `exit_plan_mode` avgörs av en agentkörning med MCP-verktyget `decide_approval`. Rader för "agentgodkännande" i inkorgen är något annat: bekräftelseprompter per tur från en körande agent.
 
 ### Granskning – skrivskyddat, inget kontrakt
 
@@ -65,6 +65,8 @@ Inget i förslaget körs förrän du godkänner det. Vid godkännande anställer
 
 **Skrivskyddade lägen nekar inte nätverksåtkomst eller hemligheter.** Effektklasserna som granskning, plan och orkestrering avvisar är de som förändrar världen: filradering, skrivningar utanför worktreen, commits, pushar, skapande och publicering av PR:er, skrivningar vid leverantörssynkronisering, paketinstallationer, processstart, mutation av arbetsytan och styrning av stationer. Utgående nätverkstrafik och åtkomst till hemligheter ligger kvar på sina standardvärden med avsikt – research är hela poängen med ett skrivskyddat läge.
 
+**Kodläget vidgar aldrig ett läge.** Lägets verktygsfilter tillämpas först, och ett `repl`-skript i [Kodläge](/sv-SE/handbok/koncept/kodlage/) kan bara anropa de verktyg som finns kvar efter det, genom samma grind som ett direkt anrop. Lägets fästa verb (dess utdataverb, `exit_plan_mode`, `ask_user`) och dess egen loop (granskningsnodverben i granskningsläget) anropas alltid direkt, så en körning behöver aldrig skriva ett skript för att leverera sitt resultat eller ställa en fråga. I [vibe-läget](/sv-SE/handbok/how-to-guider/styr-bakgrundsworkers/) behåller den styrande körningen bara läsverktyg och inga verktyg som bara anropas från skript, så dess skript når bara dem.
+
 ## Att välja och byta läge
 
 Lägesmenyn i composern erbjuder **tre** alternativ: Agent (chatt), Plan och Orkestrera. `review` är **inte valbart av användaren** – det sätts av systemet när en PR-granskningsyta skapas och av pipelinesteg.
@@ -87,4 +89,5 @@ Tillåtelselistorna begränsar verktyg på skrivnivå och uppåt. Den inbyggda h
 - [Agentmodellen](/sv-SE/handbok/koncept/agentmodell/): vilka transporter som kan upprätthålla ett läge
 - [Räcken](/sv-SE/handbok/koncept/racken/): effektklasspolicyn som ett läges förinställning matar in i
 - [Orkestrering](/sv-SE/handbok/koncept/orkestrering/): vad ett godkänt orkestreringsförslag gör
+- [Kodläge](/sv-SE/handbok/koncept/kodlage/): skript som anropar lägets verktyg
 - [Använd planläge](/sv-SE/handbok/how-to-guider/planlage/): den praktiska genomgången

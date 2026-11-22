@@ -34,7 +34,8 @@ class _ScanResult {
     this.listError,
   );
 
-  final List<String> results;
+  /// Matches as (workspace-relative path, 1-based line, trimmed text).
+  final List<(String, int, String)> results;
   final bool truncated;
   final int totalMatches;
   final String? listError;
@@ -55,6 +56,11 @@ class SearchTool extends HarnessTool {
 
   @override
   String get name => 'search';
+
+  @override
+  String get resultNote =>
+      '{matches: {path: string, line: number, text: string}[], total: '
+      'number, truncated: boolean}.';
 
   @override
   String get description =>
@@ -91,6 +97,37 @@ class SearchTool extends HarnessTool {
       },
     },
     'required': ['pattern'],
+  };
+
+  @override
+  Map<String, dynamic> get outputSchema => const {
+    'type': 'object',
+    'properties': {
+      'matches': {
+        'type': 'array',
+        'items': {
+          'type': 'object',
+          'properties': {
+            'path': {
+              'type': 'string',
+              'description': 'Workspace-relative path.',
+            },
+            'line': {'type': 'integer', 'description': '1-based line.'},
+            'text': {'type': 'string', 'description': 'The line, trimmed.'},
+          },
+          'required': ['path', 'line', 'text'],
+        },
+      },
+      'total': {
+        'type': 'integer',
+        'description': 'How many lines matched, shown or not.',
+      },
+      'truncated': {
+        'type': 'boolean',
+        'description': 'Whether more lines matched than `matches` lists.',
+      },
+    },
+    'required': ['matches', 'total', 'truncated'],
   };
 
   @override
@@ -156,24 +193,37 @@ class SearchTool extends HarnessTool {
       );
     }
 
+    final structured = {
+      'matches': [
+        for (final (path, line, text) in outcome.results)
+          {'path': path, 'line': line, 'text': text},
+      ],
+      'total': outcome.totalMatches,
+      'truncated': outcome.truncated,
+    };
     if (outcome.results.isEmpty) {
-      return HarnessToolResult.success('No matches for /$pattern/.');
+      return HarnessToolResult.success(
+        'No matches for /$pattern/.',
+        structured: structured,
+      );
     }
-    final buffer = StringBuffer(outcome.results.join('\n'));
+    final buffer = StringBuffer(
+      outcome.results.map((m) => '${m.$1}:${m.$2}: ${m.$3}').join('\n'),
+    );
     if (outcome.truncated) {
       buffer.write(
         '\n\n(${outcome.totalMatches} total matches; '
         'showing first $maxResults)',
       );
     }
-    return HarnessToolResult.success(buffer.toString());
+    return HarnessToolResult.success(buffer.toString(), structured: structured);
   }
 
   /// The whole walk + read + match, run inside a worker isolate.
   static _ScanResult _scan(_ScanRequest req) {
     final regex = RegExp(req.pattern);
     final globRegex = _globToRegExp(req.glob);
-    final results = <String>[];
+    final results = <(String, int, String)>[];
     var truncated = false;
     var totalMatches = 0;
 
@@ -219,7 +269,7 @@ class SearchTool extends HarnessTool {
         if (regex.hasMatch(lines[i])) {
           totalMatches++;
           if (results.length < req.maxResults) {
-            results.add('$rel:${i + 1}: ${lines[i].trim()}');
+            results.add((rel, i + 1, lines[i].trim()));
           } else {
             truncated = true;
           }

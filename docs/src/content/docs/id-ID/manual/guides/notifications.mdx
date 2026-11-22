@@ -2,7 +2,7 @@
 title: Konfigurasi notifikasi
 description: Nyalakan atau matikan kategori, atur Quiet hours dan suara, serta ketahui notifikasi mana yang sampai kepada Anda dan di mana.
 slug: id-ID/panduan-pengguna/panduan-praktis/notifikasi
-sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
+sourceHash: b1e5bb3b8a13bbbbd169916ab8e7cd7bdd403c1a
 ---
 
 Panduan ini menunjukkan cara mengonfigurasi notifikasi dan apa yang sebenarnya
@@ -48,6 +48,8 @@ ponsel sama sekali tidak memiliki permukaan notifikasi.
 
 Apa pun di luar daftar ini tidak dapat dinotifikasi atau difilter — tidak ada
 kategori "segala hal lainnya".
+
+Pekerjaan jangka panjang memakai dua kategori pertama. Tujuan yang selesai dan jadwal yang berakhir dihitung sebagai **Agen selesai**; tujuan yang menunggu tinjauan Anda, usulan perbaikan, run pipeline yang ditahan pada batas biayanya, dan ringkasan harian tentang apa yang menunggu Anda dihitung sebagai **Agen menunggu Anda**. Masing-masing sampai ke orang yang bersangkutan: siapa pun yang memulai tujuan, jadwal, atau run itu.
 
 **Agen menunggu Anda** memicu saat sebuah penantian dimulai: persetujuan yang tertunda (termasuk hibah eksekusi sandbox dan
 persetujuan alat Claude Code), pertanyaan `ask_user`, atau run yang ditahan
@@ -120,6 +122,8 @@ Sebuah notifikasi dibuang, secara senyap, ketika salah satu dari ini benar:
 Pemeriksaan itu berlaku untuk toast OS. Lonceng yang tahan lama tetap mencatat
 peristiwanya.
 
+Beberapa notifikasi bersifat **senyap**: server menandainya agar sampai ke lonceng tanpa toast, suara, atau push telepon yang keras. Jadwal yang berakhir dan tujuan yang selesai bersifat senyap. Tujuan yang menunggu tinjauan Anda tidak.
+
 Dua pembuangan lain terjadi lebih jauh di hulu, pada apa yang benar-benar
 dikirim server:
 
@@ -130,10 +134,7 @@ dikirim server:
 - Space antar-agen dibisukan di bilah sisi, sehingga tidak pernah menambah
   lencana belum dibaca milik manusia
 
-Di dalam sebuah space tidak ada sudut yang tenang: setiap percakapan memberitahu
-dengan setara, termasuk utas. Status baca berskala space, sehingga yang belum
-dibaca teragregasi di seluruh percakapan sebuah space alih-alih dilacak per
-percakapan.
+Di dalam sebuah space tidak ada sudut yang tenang: setiap percakapan memberitahu dengan setara, termasuk utas. Status baca dilacak per percakapan, dan sebuah space belum dibaca selama salah satu percakapannya belum dibaca.
 
 ## Baca dan bersihkan pusat notifikasi
 
@@ -187,6 +188,8 @@ Periksa apakah Anda belum berada di space tempat hal itu terjadi — rute yang
 aktif menekan toast OS-nya sendiri. Di space bersama, run yang dimulai orang lain
 memberi tahu orang itu, bukan Anda. Giliran yang berakhir tanpa balasan dan tanpa
 galat tidak mengirim apa pun.
+
+Run yang dimulai oleh jadwal atau pantauan dan berakhir tanpa masalah tidak mengirim apa pun kecuali jika ia menyebut seseorang. Tujuan yang selesai atau jadwal yang berakhir masuk ke lonceng tanpa toast.
 
 ## Panduan terkait
 

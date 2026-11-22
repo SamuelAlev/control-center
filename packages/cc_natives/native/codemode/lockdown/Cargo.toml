@@ -1,0 +1,33 @@
+[package]
+name = "cc_codemode_lockdown"
+description = "Process self-confinement for cc_codemode: seccomp-bpf, Landlock and rlimits on Linux, Seatbelt on macOS, AppContainer, job object and mitigation policies on Windows."
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+name = "lockdown"
+
+[target.'cfg(unix)'.dependencies]
+libc = "=0.2.191"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+seccompiler = { version = "=0.5.0", default-features = false }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "=0.61.2", features = [
+  "Win32_Foundation",
+  "Win32_Networking_WinSock",
+  "Win32_Security",
+  "Win32_Security_Authorization",
+  "Win32_Storage_FileSystem",
+  "Win32_System_Console",
+  "Win32_System_IO",
+  "Win32_System_JobObjects",
+  "Win32_System_LibraryLoader",
+  "Win32_System_Memory",
+  "Win32_System_SystemInformation",
+  "Win32_System_SystemServices",
+  "Win32_System_Threading",
+] }

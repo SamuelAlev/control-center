@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_activity.dart';
 import 'package:cc_remote/app_icons.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
@@ -36,8 +37,8 @@ class _MessagingScreenState extends ConsumerState<MessagingScreen> {
         ? const AsyncValue<List<SpaceActivity>>.loading()
         : ref.watch(remoteSpaceActivityProvider(workspaceId));
     final reads = workspaceId == null
-        ? const AsyncValue<Map<String, DateTime>>.loading()
-        : ref.watch(remoteSpaceReadProvider(workspaceId));
+        ? const AsyncValue<Map<String, FeedPosition>>.loading()
+        : ref.watch(remoteConversationReadsProvider(workspaceId));
     final running = workspaceId == null
         ? const AsyncValue<Set<String>>.loading()
         : ref.watch(remoteRunningSpacesProvider(workspaceId));
@@ -112,7 +113,9 @@ class _MessagingScreenState extends ConsumerState<MessagingScreen> {
                           ref.invalidate(
                             remoteSpaceActivityProvider(workspaceId),
                           );
-                          ref.invalidate(remoteSpaceReadProvider(workspaceId));
+                          ref.invalidate(
+                            remoteConversationReadsProvider(workspaceId),
+                          );
                           ref.invalidate(
                             remoteRunningSpacesProvider(workspaceId),
                           );

@@ -7,8 +7,7 @@ import 'package:cc_infra/src/eval/eval_kernel.dart';
 /// Persistent interpreter cells that keep variables between calls.
 ///
 /// Not `bash python -c` — reload cost kills exploratory loops; figures return
-/// as images. Cells may `tool(...)` into the harness registry with the same
-/// ActionClass/approval path (re-enter, do not bypass).
+/// as images. A cell calls no tools: code calls tools through `repl`.
 class EvalTool extends HarnessTool {
   /// Creates an [EvalTool].
   EvalTool({
@@ -37,8 +36,7 @@ class EvalTool extends HarnessTool {
       'Run code in a persistent interpreter. Variables, imports and loaded '
       'data survive between calls, so load once and explore in later cells. '
       'The last expression is echoed like a notebook; matplotlib figures come '
-      'back as images. Inside a cell, `tool("read", {"path": ...})` calls your '
-      'own tools. Use `reset` to start over with a clean interpreter.';
+      'back as images. Use `reset` to start over with a clean interpreter.';
 
   /// Exec tier: a kernel runs arbitrary code and holds a process.
   @override
@@ -56,6 +54,18 @@ class EvalTool extends HarnessTool {
   /// two halves of two programs interleaved in one namespace.
   @override
   bool get parallelSafe => false;
+
+  /// The cell.
+  @override
+  String? executedContent(Map<String, dynamic> args) => switch (args['code']) {
+    final String code => code,
+    _ => null,
+  };
+
+  /// The model's own tool: a script would hand it Python wrapped in a
+  /// JavaScript string, and the model can call it directly.
+  @override
+  bool get scriptCallable => false;
 
   @override
   Map<String, dynamic> get inputSchema => withRequiredCallDescription({
@@ -112,8 +122,15 @@ class EvalTool extends HarnessTool {
     return _render(outcome, language);
   }
 
+  /// What the first cell after an interpreter died unasked is told, once.
+  static const String restartNotice =
+      'Note: the interpreter stopped since the last cell (it exited or was '
+      'killed) and was started again for this one: every variable, import '
+      'and loaded file of the session is gone. Re-run the setup cells this '
+      'one needs.\n\n';
+
   HarnessToolResult _render(KernelRunOutcome outcome, KernelLanguage language) {
-    final buffer = StringBuffer();
+    final buffer = StringBuffer(outcome.restarted ? restartNotice : '');
     final images = <HarnessImageBlock>[];
     for (final output in outcome.outputs) {
       switch (output) {
@@ -125,10 +142,7 @@ class EvalTool extends HarnessTool {
           if (mediaType == 'image/png') {
             if (images.length < maxImages) {
               images.add(
-                HarnessImageBlock(
-                  mediaType: mediaType,
-                  data: base64Data,
-                ),
+                HarnessImageBlock(mediaType: mediaType, data: base64Data),
               );
             }
           } else {
@@ -154,9 +168,7 @@ class EvalTool extends HarnessTool {
     }
     final text = buffer.toString().trimRight();
     return HarnessToolResult.success(
-      text.isEmpty
-          ? '(${language.name} cell ran with no output)'
-          : text,
+      text.isEmpty ? '(${language.name} cell ran with no output)' : text,
       images: images,
     );
   }

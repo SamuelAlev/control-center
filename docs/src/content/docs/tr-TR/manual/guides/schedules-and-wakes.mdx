@@ -1,0 +1,110 @@
+---
+title: Zamanlamalar ve uyandırmalar
+description: Bir ajanı ileride bir zamanlamayla ya da bir şey olduğunda uyandırın, neyin beklediğini görün ve bir yeniden başlatmada ya da kullanım sınırında ne olduğunu öğrenin.
+slug: tr-TR/kilavuz/nasil-yapilir/zamanlamalar-ve-uyandirmalar
+sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+---
+
+Bir ajan beklerken uyumaz ve yoklamaz. Ajan ya da siz bir **uyandırma** kurarsınız: bir konuşmadaki ajanın çalıştırmasını belirli bir zamanda ya da bir şey olduğunda başlatmak ya da sürdürmek için kalıcı bir istek. Kimse yazmadan sunucunun başlattığı her çalıştırma bir uyandırma olarak başlar: bir hedefin sonraki bölümü, bir zamanlama, bir izleme, başka bir ajandan gelen bir yanıt, tamamlanan devredilmiş iş, bir kullanım sınırının sonu ya da bir yeniden başlatmadan sonra kalan iş. Uyandırmalar çalışma alanının veritabanında tutulur, bu yüzden yeniden başlatmadan sağ çıkar.
+
+## Bir ajanı kendiniz zamanlayın
+
+Bir konuşmanın yazma alanına bunlardan birini yazın:
+
+```text
+/loop every 30m --days 3 check the deploy and fix what broke
+/loop keep the flaky tests green
+/schedule in 2h look at the overnight benchmark
+/schedule at 09:00 summarize what changed overnight
+/schedule cron "0 9 * * 1-5" --max 20 triage new tickets
+```
+
+| Komut | Ne yapar |
+| --- | --- |
+| `/loop every <interval> <prompt>` | Ajanı istemle şimdi, ardından her aralıkta bir uyandırır (aralar en az 60 saniye) |
+| `/loop <prompt>` | Kendi hızını ayarlayan bir döngü: ajanı şimdi uyandırır, her çalıştırmadan sonra ajan bir sonraki gecikmeyi 1 ile 60 dakika arasında seçer (varsayılan 20) |
+| `/schedule in <duration> <prompt>` | Ajanı gecikmeden sonra bir kez uyandırır |
+| `/schedule at <HH:MM or ISO time> <prompt>` | Ajanı bir kez uyandırır. `HH:MM` çalışma alanının saat diliminde bir sonraki o saattir; ofsetsiz bir ISO zamanı UTC'dir |
+| `/schedule cron "<expression>" <prompt>` | Ajanı çalışma alanının saat diliminde okunan beş alanlı bir cron ile uyandırır. Tırnaklar isteğe bağlıdır |
+
+- `--max <N>` çalıştırmaları sınırlar, `--days <N>` zamanlamayı o kadar gün sonra bitirir (varsayılan 30, en fazla 365) ve `--budget <dollars>` zamanlamanın toplamda harcayabileceği tutarı sınırlar (aksi halde çalışma alanının varsayılanı, başlangıçta 50 dolar).
+- `/loop` ilk çalıştırmasını hemen başlatır. `/schedule` kendi zamanını bekler.
+- Süreler `s`, `m`, `h` ve `d` kullanır, örneğin `90s`, `20m` ya da `1h30m`.
+- Bu komutlar yalnızca kendi yazdığınız bir mesajda okunur.
+
+Yazı alanı bunları yazmanıza yardımcı olur. `/loop` ya da `/schedule` yazıp bir boşluk bıraktıktan sonra, öneri listesi ne zaman tetikleneceğini sunar ve yazdıkça daraltır; sınırlar için saatin ardından `--` yazın. Enter ya da Tab bir satırı seçer ve hiçbir şey göndermez. Metninizin üstündeki bir satır o zaman komutu geri okur: ne zaman tetikleneceğini, ne zaman biteceğini ve neyin hâlâ eksik olduğunu. Okunamayan bir komutta Enter’a basarsanız, o satır neyin yanlış olduğunu söyler ve taslağınız kalır.
+
+Ayrıca **Zamanlamalar** sayfasından **Yeni zamanlama** ile bir zamanlama oluşturabilirsiniz: alanı, konuşmayı ve ajanı, ne zaman tetikleneceğini, her çalıştırmanın neyle başlayacağını, bir bitişi, bir çalıştırma sınırını ve bir maliyet sınırını seçin. **Ajan meşgulse** o tetiklemeyi atlamak ile ajan boşalana kadar beklemek arasında seçim yapar. **Her tetikleme** bir çalıştırma başlatmak ile yalnızca notla sizi bilgilendirmek arasında seçim yapar.
+
+## Ajanların kurduğu işler
+
+Ajanlar aynı işler ve izlemeler için `wake_me` aracını kullanır:
+
+| İzleme | Tetiklendiği zaman |
+| --- | --- |
+| `on:pr_checks` | Alanın pull request'inin kontrolleri biter |
+| `on:pr_review` | Alanın pull request'ine bir inceleme ya da yanıt gelir |
+| `on:pr_merged` | Alanın pull request'i birleşir |
+| `on:environment` | Alanın ortamındaki bir görev çıkar ya da ortam hazır olur |
+| `on:ticket:<id>` | Bir bilet sonuçlanır |
+| `on:pipeline_run:<id>` | Bir pipeline çalıştırması biter |
+
+- Bir pull request izlemesi alanın kendi pull request'ini ya da adını verdiği bir pull request'i dinler (`on:pr_checks:acme/shop-ui#12`). Kişisinin okuyamadığı bir şeye yapılan izleme reddedilir.
+- Ajanın kendi eylemleri izlemelerini tetiklemez. Ajan çalışırken gelen bir olay kaybolmaz: çalıştırma bitene kadar bekler ve sonraki olaylar aynı uyandırmada birleştirilir.
+- Bir ajanın zamanlamasında bir çalıştırma sınırı ya da bir bitiş olmalıdır. Varsayılan olarak 7 gün sonra, en fazla 30 gün sonra biter. Bir izleme varsayılan olarak 10 kez çalışır.
+- Bir ajanın kendi zamanlamalarından birinin başlattığı bir çalıştırmada kurduğu bir zamanlama, ilk zamanlamanın bitişini, çalıştırma sınırını ve maliyet sınırını paylaşır; böylece ajanın zamanlamalarından oluşan bir zincir ilkinden uzun süre yaşayamaz. İlk zamanlamayı silmek tüm zinciri bitirir; onu duraklatmak yalnızca o zamanlamayı duraklatır. Zincirin diğer ajanlar üzerinden başlattığı çalıştırmalar aynı maliyet sınırına dahil edilir. Sizin oluşturduğunuz bir zamanlama zincir başlatmaz: bir ajanın çalıştırmalarında kurduğu şeyler, sizin bir mesajınızdan sonra ayarladığı her şey gibi sınırlanır.
+- Bir ajan beklediği uyandırmaları `list_wakes` ile listeler ve kendi kurduğu şeyleri `cancel_wake` ile iptal eder. Sizin kurduklarınızı iptal edemez.
+
+## Neyin beklediğini görün
+
+**Yazma alanının üstünde.** Bir konuşmadaki bir ajan için uyandırmalar beklediğinde, bir şerit bunları gösterir: **N uyandırma bekliyor**, her birinin nereden geldiği (**Hedef**, **Zamanlama**, **İzleme**, bir ajandan gelen **yanıt**, **Sınır sıfırlandı**, **Kurtarma**, …), ne zaman geleceği ve neden tutulduğu.
+
+| Düğme | Ne yapar | Kimler yapabilir |
+| --- | --- | --- |
+| **Şimdi teslim et** | Bekleyen bir uyandırmayı hemen teslim eder | Yalnızca uyandırmanın adına hareket ettiği kişi |
+| **Sürdür** | Tutulan bir uyandırmayı serbest bırakır | Yalnızca uyandırmanın adına hareket ettiği kişi |
+| **Uyandırmayı iptal et** | İptal eder | Alanın erişimi olan herkes |
+
+Teslim edilmeyen bir uyandırma, neden olduğunu gösteren tek bir satır olarak konuşmada kalır, örneğin **Ajan duraklatıldı.** ya da **Bir bütçe çalıştırmayı engelliyor.**
+
+**Zamanlamalar sayfası.** Kenar çubuğu → **Zamanlamalar**, göreceğiniz her zamanlamayı ve izlemeyi duruma göre gruplanmış olarak listeler; bir cron zamanlaması kendi saat dilimizdeki sonraki üç zamanını gösterir. Birini açarak notunu, sahibini, sonraki tetiklemelerini, çalıştırmalarını, atlamalarını, harcamasını ve bitişini ve **Son uyandırmalar ve çalıştırmalar** bölümünü görün. Her zamanlamanın kendi adresi vardır (`/workspaces/<workspace>/schedules/<id>`).
+
+| Eylem | Kimler yapabilir |
+| --- | --- |
+| **Duraklat**, **Sil** | Alanın erişimi olan herkes |
+| **Sürdür**, **Uzat** | Yalnızca sahibi (bir kişi olmadan bir ajanın oluşturduğu bir zamanlama için bir çalışma alanı yöneticisi) |
+
+Bir zamanlamanın sahibi dışında biri onu duraklattığında, konuşmada bu kişinin adını gösteren bir satır çıkar.
+
+Telefonda hedefler ekranındaki **Tekrarla** bir tekrarlanan istem başlatır (her birkaç dakikada ya da saatte bir, ya da kendi hızında) bir maliyet sınırı ve bir bitişle, **Zamanlamalar** ekranı ise zamanlamaları duraklatır, sürdürür ve siler. Bir konuşmanın ilerleme görünümü neyin beklediğini gösterir; buna kullanım sınırı duraklatmaları (**Şimdi sürdür**, **İptal**) ve sunucu durdurulduktan sonra kalan iş de dahildir.
+
+## Bir zamanlama nasıl çalışır
+
+- Bir zamanlamanın ya da izlemenin her çalıştırması 5 dolarla ya da zamanlamanın kalanıyla, hangisi azsa onunla sınırlıdır ve zamanlama maliyet sınırına ulaşınca durur.
+- Saat ileri alındığında atlanan bir saatteki bir cron zamanı, o gün bir saat sonra çalışır (02:30 zamanı 03:30’da çalışır). Saat geri alındığında tekrarlanan bir saatteki bir zaman bir kez çalışır.
+- Bir zamanlamanın çalıştırması, zaten süren bir çalıştırmaya asla katılmaz. Zamanlı bir zamanlama tetiklendiğinde ajan meşgulse, bu tetikleme sessizce atlanır; zamanlama ajan boşalana kadar beklemek üzere ayarlanmadıysa.
+- Bir zamanlamanın ya da izlemenin başlattığı ve sorunsuz biten bir çalıştırma, birinden bahsetmedikçe sizi bilgilendirmez. Bir zamanlama bittiğinde zil nedenini (**Çalıştırma hakkını kullandı.**, **Bitiş tarihine ulaştı.**, …) sessizce gösterir.
+- Bir konuşmadaki uyandırmalardan saatte en fazla 30 çalıştırma, bir çalışma alanında ise 300 çalıştırma başlar.
+- Zamanlamanın adına hareket ettiği kişi çalışma alanından ayrılırsa zamanlama biter. Onlar adına hareket eden her şey de durur: bekleyen uyandırmaları iptal edilir, kuyruğa alınmış ve tutulan iletileri silinir ve çalışan ajanları durdurulur.
+
+## Durdurma, yeniden başlatma ve kullanım sınırları
+
+- **Durdur.** Bir ajanın çalıştırmasında **Durdur** düğmesine basmak, bekleyen uyandırmalarını (bir hedefe ait olmayanları) ve ona kuyruğa aldığınız iletileri tutar. Bunlar **Sürdür** ya da **Tutulan iletileri gönder** bekler. Her kişi kendi tutulan iletilerini gönderir; kimse başkasınınkini göndermez.
+- **Sunucu yeniden başlatması.** Uyandırmalar ve zamanlamalar yeniden başlatmadan sağ çıkar. Bir uyandırmanın başlattığı bir çalıştırma, yeniden başlatmadan sonra en fazla 3 denemeyle devam eder. Sizin kendiniz başlattığınız bir çalıştırma kendiliğinden yeniden çalıştırılmaz: tutulan bir **Kurtarma** uyandırması bırakır ve **Sürdür** düğmesine bastığınızda devam eder. Sunucu kapalıyken zamanlarını kaçıran zamanlı bir zamanlama, yalnızca kısa bir tolerans süresi içinde geç tetiklenir (aralığının yarısı, en fazla 10 dakika; tek seferlik bir zamanlama için 24 saat); aksi halde tek bir atlama kaydeder: **Sunucu kapalıyken kaçırıldı.**
+- **Sağlayıcının kullanım sınırı.** Bir çalıştırma bir sağlayıcının kullanım sınırında durursa ve sağlayıcı sıfırlanma zamanını söylerse (7 gün içinde), çalıştırma duraklatılır. Sunucunun başlattığı bir çalıştırma, örneğin bir hedefin bölümü ya da bir zamanlamanın çalıştırması, sıfırlanmadan 30 saniye sonra kendiliğinden devam eder. Sizin başlattığınız bir çalıştırma sizi bekler: konuşmada **Sağlayıcının kullanım sınırında duraklatıldı.** ve **… saatinde sıfırlanır.** gösterilir; **Sürdür** (yalnızca siz) ve **İptal** (alandaki herkes) seçenekleri vardır. **Sürdür** düğmesine bastığınızda, sınır sıfırlandıktan sonra devam eder. Devam ettirmediğiniz bir duraklatma, sıfırlanmadan 7 gün sonra sona erer. Sınırda yazdığınız iletiler devam eden çalıştırmaya gönderilir; çalıştırma sıfırlanmayı beklemiyorsa ya da duraklatma iptal edilir veya sona ererse, bunlar sizin için bunun yerine **Tutulan iletileri gönder** altında tutulur. Başkalarının kuyruğa aldığı iletiler hemen onlar için tutulur. Bir zamanlamanın bir sonraki tetiklemesi, duraklatılmış çalıştırma devam edene kadar bekler. ACP ajanları sıfırlanma zamanı bildirmez, bu yüzden çalıştırmaları beklemez.
+
+## Çalışma alanı sınırları
+
+Bir çalışma alanı yöneticisi sınırları **Ayarlar → Çalışma alanı → Zamanlamalar** altında belirler:
+
+- **Zamanlama sınırları**: bir ajanın bir konuşmada tutabileceği etkin ya da duraklatılmış zamanlama sayısı (10), çalışma alanı genelinde (50) ve tüm çalışma alanında (500); bir zamanlamanın varsayılan maliyet sınırı (50 dolar); ve cron zamanlamalarının ve günlük özetin kullandığı saat dilimi (başlangıçta UTC).
+- **Kimse yanıtlamadığında**: sunucunun başlattığı bir çalıştırmanın bir kişinin yanıtını ya da onayını ne kadar süre bekleyeceği (varsayılan 72 saat, 1 saat ile 7 gün arası); bundan sonra bir onay reddedilmiş, bir soru yanıtsız sayılır (bundan sonra aynı çalıştırmanın sorduğu başka her şey hemen reddedilir); ve sizin için, hedeflerde, zamanlamalarda ve sunucunun başlattığı diğer çalıştırmalarda sizi bekleyenlerin günlük özetinin saati.
+
+Üyeler sayfayı salt okunur görür.
+
+## Ayrıca bakın
+
+- [Bir hedefi yürütme](/tr-TR/kilavuz/nasil-yapilir/hedef-yurutme/)
+- [Birlikte çalışan ajanlar](/tr-TR/kilavuz/nasil-yapilir/birlikte-calisan-ajanlar/)
+- [Slash komutları](/tr-TR/kilavuz/referans/slash-komutlari/)
+- [Uyandırma ve hedef araçları](/tr-TR/kilavuz/referans/mcp-araclari/#uyandırma-ve-hedef-araçları)

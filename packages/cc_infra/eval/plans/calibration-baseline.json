@@ -1,0 +1,28 @@
+{
+  "id": "calibration-baseline",
+  "seed": 3001,
+  "hypothesis": "calibration",
+  "primaryOutcome": "verified_success",
+  "arms": [
+    {
+      "id": "baseline",
+      "axis": "baseline",
+      "label": "The quality default, alone"
+    }
+  ],
+  "strata": [
+    {
+      "stratum": "cold",
+      "repetitions": 1
+    },
+    {
+      "stratum": "warm",
+      "repetitions": 2
+    }
+  ],
+  "randomizedOrder": true,
+  "alpha": 0.05,
+  "maxCostRatio": 1.0,
+  "maxSpendUsd": null,
+  "notes": "The first paid run: every corpus task, 3 repetitions, one arm, no verdict. The report prints each task's pass rate over its repetitions (with a note on tasks at 0 of 3 or 3 of 3, which carry no information), the price per attempt and how attempts ended, so pass rates and prices are measured before anyone writes more tasks or sizes a campaign. maxSpendUsd is the owner's to set: a live run is held to the lower of it and --max-spend-usd. Expected attempts: corpus tasks × 3."
+}

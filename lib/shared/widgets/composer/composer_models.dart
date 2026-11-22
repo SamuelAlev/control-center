@@ -9,11 +9,16 @@ enum MentionTrigger {
   slash('/'),
 
   /// `#` — reference a PR / issue / ticket (reserved for future).
-  hash('#');
+  hash('#'),
+
+  /// The words after a command: no character opens this one. A source that
+  /// knows the command opens it from the text and caret
+  /// (`MentionSource.detect`), to offer the command's next argument.
+  argument('');
 
   const MentionTrigger(this.symbol);
 
-  /// Trigger character symbol.
+  /// Trigger character symbol; empty for [argument].
   final String symbol;
 
   /// Looks up a trigger from its character symbol.

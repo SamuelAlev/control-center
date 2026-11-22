@@ -2,7 +2,7 @@
 title: Comenzi slash
 description: Fiecare comandă pe care o poți tasta în composer, ce face și unde rulează.
 slug: ro-RO/manual/referinta/comenzi-slash
-sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
+sourceHash: 38430a6315b112c92a7806d1c28dff8a0285e363
 ---
 
 Comenzi tastate în composerul unui spațiu. Ele se împart în trei grupuri după locul unde își fac efectul, iar diferența contează: o comandă **locală** nu circulă niciodată ca mesaj, așa că nu apare în transcript și nu ajunge la niciun agent.
@@ -21,23 +21,35 @@ Comenzi tastate în composerul unui spațiu. Ele se împart în trei grupuri dup
 
 **Local → trimitere.** Armează modul plan pe conversație: un worktree complet doar în citire și o suprafață de instrumente limitată la `read`. Livrabilul agentului este un plan, nu o editare. Un `/plan` simplu doar comută modul și nu circulă niciodată ca mesaj; cu o cerere, restul liniei este ceea ce pornește rularea.
 
-### `/goal <objective>`
+### `/goal [flags] <objective>`
 
-**Trimitere.** Pornește un obiectiv autonom pe care supraveghetorul de obiective îl redistribuie pe segmente și îl repornește.
+**Trimitere.** Pornește un obiectiv durabil: agentul lucrează la obiectiv în segmente, peste repornirile serverului, până când serverul îl verifică drept terminat, o persoană îl închide sau atinge o limită. Vezi [Urmărește un obiectiv](/ro-RO/manual/ghiduri-practice/urmareste-obiectiv/).
 
-Tastarea `/goal` cu text mai întâi deschide **interviul de clarificare a obiectivului** — o trecere scurtă care refuză să accepte o schiță până când aceasta nu le are pe toate cinci: criterii de succes pe care un evaluator le poate tranșa fără judecată, o comandă exactă de verificare, un plafon de încercări, limite de scop și condiții de oprire. Fiecare pas oferă *Sari și rulează așa cum e scris*: interviul este o valoare implicită, nu o poartă.
+Tastarea `/goal` cu text mai întâi deschide **interviul de clarificare a obiectivului** — o trecere scurtă care cere criterii de succes pe care un evaluator le poate tranșa fără judecată, verificările care trebuie să treacă, limitele de scop și condițiile de oprire, apoi oferă un verificator separat, segmente pornite de la zero și răspunsul la propriile întrebări. Fiecare pas oferă *Sari și rulează așa cum e scris*: interviul este o valoare implicită, nu o poartă.
 
-`/goal pause`, `/goal resume` și `/goal drop` nu sunt comenzi slash. Pauza, reluarea și oprirea stau în lista de obiective a conversației, din bara laterală. Flagurile de pornire pe obiectivul propriu-zis sunt `--budget <dollars>`, `--max <N>` (plafon de rulări) și `--days <N>` (termen limită). Un obiectiv care și-a atins plafonul de cost se reia doar ridicând acel plafon, din același control din bara laterală.
+Flagurile pot sta oriunde în mesaj: `--budget <dollars>` (bugetul obiectivului, implicit 50), `--max <N>` (un plafon de segmente), `--days <N>` (un termen limită), `--check "<command>"` (până la 5), `--checker <agent>`, `--fresh` și `--unattended wait|assume`. Un flag necunoscut sau repetat este refuzat, iar schița rămâne în compunere. Un număr de la începutul obiectivului face parte din obiectiv. Secțiunile `## Success criteria`, `## Boundaries`, `## Stop conditions` și `## Checks` devin contractul obiectivului.
+
+`/goal pause`, `/goal resume` și `/goal drop` nu sunt comenzi slash. Pauza, reluarea și oprirea se găsesc pe cardul obiectivului din panoul **General** al conversației și pe pagina obiectivului (bara laterală → **Obiective**). Reluarea și ridicarea bugetului aparțin persoanei care a pornit obiectivul.
 
 :::note[De ce întrerupe totuși]
 Un obiectiv autonom este singurul loc în care un brief vag este cu adevărat scump. Rularea lucrează ore întregi la un obiectiv al cărui „gata” nu l-a definit nimeni, apoi raportează succes în termenii ei. Cinci întrebări sunt mai ieftine decât o rulare peste noapte care s-a terminat când a simțit ea că s-a terminat.
 :::
 
-### `/loop [budget] [task]`
+### `/loop [every <interval>] [flags] <prompt>`
 
-**Trimitere.** Lucrează iterativ până când termină. Acceptă o limită: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**Trimitere.** Creează un program care trezește agentul cu promptul acum și apoi din nou: la fiecare interval (cel puțin 60 de secunde) sau, fără `every`, după o întârziere pe care agentul o alege de fiecare dată (de la 1 la 60 de minute). `--max <N>` plafonează rulările, `--days <N>` îl încheie (implicit 30 de zile), `--budget <dollars>` plafonează cheltuiala lui. Vezi [Programe și treziri](/ro-RO/manual/ghiduri-practice/programe-si-treziri/).
 
-Un token care *pare* o limită (începe cu o cifră sau cu un semn) și nu poate fi citit ca limită este o eroare gravă. Proza rămâne proză, așa că `/loop keep going until the tests pass` este o buclă nemărginită cu un prompt inline, nu o interpretare greșită.
+`/loop` nu mai pornește un obiectiv, iar un număr de la început nu este un număr de rulări.
+
+### `/schedule <when> [flags] <prompt>`
+
+**Trimitere.** Creează un program care trezește agentul mai târziu: `in 2h`, `at 09:00` (următorul astfel de moment în fusul orar al spațiului de lucru), `at <ISO time>` sau `cron "0 9 * * 1-5"` (ghilimelele sunt opționale). Acceptă aceleași `--max`, `--days` și `--budget` ca `/loop`. Așteaptă până la primul lui moment.
+
+### `/refine`
+
+**Trimitere.** Cere o revizuire scurtă, doar în citire, a muncii din conversație, care poate propune îmbunătățiri ale memoriei, politicilor, notițelor de agent sau abilităților. Propunerile așteaptă pe pagina **Îmbunătățiri** până când cineva le acceptă. Cel mult o revizuire per conversație la fiecare 20 de minute.
+
+`/goal`, `/loop`, `/schedule` și `/refine` acționează doar într-un mesaj pe care îl scrii tu; dintr-un agent, dintr-un pipeline sau dintr-o trezire același text este un mesaj obișnuit. Un `/goal`, `/loop` sau `/schedule` care nu poate fi citit păstrează schița ta, iar o linie deasupra textului din compozitor spune ce nu este în regulă.
 
 ### `/vibe [task]`
 

@@ -2,7 +2,7 @@
 title: Glossario
 description: Definizioni dei termini chiave usati in Control Center.
 slug: it-IT/manuale/riferimento/glossario
-sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
+sourceHash: ba09880357171a4fcbb82201798578de3856cbe6
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -36,7 +36,13 @@ export const glossaryTerms = [
 ['Rig', 'Una macchina usa e getta che un agente pilota in tempo reale: un browser o un desktop Linux racchiuso, un emulatore Android o un simulatore iOS gestito dall\'host, oppure un terminale racchiuso. Osservata dal vivo su una corsia dedicata a piena risoluzione, con la presa di controllo imposta lato server. Con ambito di conversazione, così la scheda umana e lo strumento dell\'agente si rivolgono a un\'unica macchina.'],
 ['Recinto', 'La più forte proprietà di isolamento disponibile per i rig supportati da VM: un confine a livello di kernel, un disco overlay usa e getta, un gate di rete che nega per impostazione predefinita e un broker delle credenziali. I rig Android e iOS sono usa e getta ma usano la rete gestita dall\'host, quindi non rivendicano questo confine. Pilotare un rig usa la classe di guardrail enclosureControl.'],
 ['RunCost', 'Il conteggio di token e costi (token di input, token di output, costo stimato in microdollari) per una singola esecuzione di agente.'],
-['WakeReason', 'Perché un agente è stato inviato. Sei valori: messaggio dell\'utente, assegnazione di un ticket, reinvio di ripristino dopo un errore, ticket figlio completato, heartbeat di follow-up pianificato e passaggio di pipeline.'],
+['WakeReason', 'Perché esiste un\'esecuzione di agente. Il messaggio di una persona, l\'assegnazione di un ticket o un passaggio di pipeline; oppure, per un\'esecuzione che il server avvia da solo, il motivo del suo risveglio: una pianificazione, un monitoraggio, un segmento, un controllo o una revisione di un obiettivo, il messaggio o la risposta di un altro agente, lavoro figlio concluso, un limite di utilizzo ripristinato, una revisione dei miglioramenti o il ripristino dopo un riavvio.'],
+['Risveglio', 'Una richiesta durevole, conservata nel database dello spazio di lavoro, di avviare o proseguire l\'esecuzione di un agente in una conversazione, con un motivo e la persona per cui agisce. Ogni esecuzione che il server avvia senza che qualcuno digiti nulla inizia come un risveglio; i risvegli sopravvivono a un riavvio.'],
+['Obiettivo', 'Lavoro che un agente porta avanti, a segmenti, finché il server non verifica che sia soddisfatto ciò che significa completato, oppure una persona lo chiude. Si avvia con /goal; uno per agente alla volta. L\'agente dichiara di averlo completato; controlli e una revisione in sola lettura decidono.'],
+['Pianificazione', 'Una regola che sveglia un agente a un orario, a intervalli, su un cron o al ritmo dell\'agente stesso, con una fine, un limite di esecuzioni e un limite di costo. Si crea con /loop, /schedule, dalla pagina Pianificazioni o con lo strumento wake_me dell\'agente.'],
+['Monitoraggio', 'Una regola che sveglia un agente quando accade qualcosa: terminano i controlli di una pull request, riceve una revisione o viene unita, termina un\'attività di un ambiente, si chiude un ticket o termina un\'esecuzione di pipeline.'],
+['Richiesta', 'La domanda di un agente a un altro, registrata prima di essere consegnata. Il richiedente viene risvegliato una volta con la risposta, oppure con il motivo per cui non c\'è.'],
+['Proposta di miglioramento', 'Una modifica alla memoria, a una policy, a una nota dell\'agente o a una skill che una revisione suggerisce dopo un obiettivo verificato o con /refine. Non cambia nulla finché una persona non la accetta; una modifica a una skill viene prima valutata.'],
 ['SandboxPort', 'Gestisce il ciclo di vita del sandbox (probe, launch, events, exec, destroy).'],
 ['CredentialBrokerPort', 'Conia credenziali con ambito limitato per l\'avvio del sandbox (un token limitato a un repository per l\'ambiente di un agente, di scrittura solo per il percorso di push lato server) e le rilascia allo smontaggio.'],
 ['GitRepoInspectorPort', 'Estrae i metadati (owner, repo, branch) dal percorso di un repository Git locale.'],
@@ -94,6 +100,11 @@ export const glossaryTerms = [
 ['Id di installazione', 'L\'identità di un server verso un indirizzo Connect, derivata dalla sua chiave di installazione. Connect autorizza i server per id di installazione; ruotare la chiave lo cambia e disconnette tutti dai canali Connect.'],
 ['Associazione dell\'installazione', 'Il registro di Connect (install_binding) del solo server a cui è associato un team Slack. Le installazioni GitHub non ne hanno: qualsiasi server su cui un membro accede può usarle.'],
 ['Canale di accesso', 'L\'accesso dal browser di un provider: github, google, linear, linear_app o slack. Con app proprie un canale usa l\'app propria quando è completamente configurata, altrimenti non è disponibile; con un Connect scelto, è Connect a eseguirlo. Nessuno dei due ripiega sull\'altro.'],
+['Modalità codice', 'Lo strumento repl, che esegue uno script JavaScript che chiama gli altri strumenti dell\'esecuzione. Ogni esecuzione lo ha quando il server può eseguire script; non c\'è alcuna impostazione.'],
+['Strumento diretto', 'Uno strumento che un\'esecuzione chiama per nome, con il suo schema in ogni richiesta, che abbia o no repl: gli strumenti di file e shell, ask_user, task, la checklist delle attività, la ricerca in memoria, send_message e i verbi propri della modalità.'],
+['Strumento solo da script', 'Uno strumento fuori dall\'insieme diretto che un\'esecuzione con repl può chiamare solo da uno script, finché il server non può eseguire gli script dell\'esecuzione e lo strumento viene invece caricato al primo uso. Fino ad allora la sua descrizione non raggiunge mai il modello.'],
+['Runner della modalità codice', 'cc_codemode, il programma incluso nel server che esegue uno script nel motore QuickJS-NG dopo essersi isolato con i controlli del sistema operativo. Il server non si avvia senza di esso ed esegue uno script solo se è una build di rilascio e il suo isolamento è completo.'],
+['Esecuzione di codice', 'La registrazione di uno script: sorgente, output, limiti e ogni chiamata a strumento effettuata, conservata nel suo spazio di lavoro ed elencata sotto Osservabilità → Esecuzioni di codice.'],
 ];
 
 <StructuredData
@@ -157,7 +168,19 @@ export const glossaryTerms = [
 
 **RunCost**: Il conteggio di token e costi (token di input, token di output, costo stimato in microdollari) per una singola esecuzione di agente.
 
-**WakeReason**: Perché un agente è stato inviato. Sei valori: messaggio dell'utente, assegnazione di un ticket, reinvio di ripristino dopo un errore, ticket figlio completato, heartbeat di follow-up pianificato e passaggio di pipeline.
+**WakeReason**: Perché esiste un'esecuzione di agente. Il messaggio di una persona, l'assegnazione di un ticket o un passaggio di pipeline; oppure, per un'esecuzione che il server avvia da solo, il motivo del suo risveglio: una pianificazione, un monitoraggio, un segmento, un controllo o una revisione di un obiettivo, il messaggio o la risposta di un altro agente, lavoro figlio concluso, un limite di utilizzo ripristinato, una revisione dei miglioramenti o il ripristino dopo un riavvio.
+
+**Risveglio**: Una richiesta durevole, conservata nel database dello spazio di lavoro, di avviare o proseguire l'esecuzione di un agente in una conversazione, con un motivo e la persona per cui agisce. Ogni esecuzione che il server avvia senza che qualcuno digiti nulla inizia come un risveglio; i risvegli sopravvivono a un riavvio.
+
+**Obiettivo**: Lavoro che un agente porta avanti, a segmenti, finché il server non verifica che sia soddisfatto ciò che significa completato, oppure una persona lo chiude. Si avvia con `/goal`; uno per agente alla volta. L'agente dichiara di averlo completato; controlli e una revisione in sola lettura decidono.
+
+**Pianificazione**: Una regola che sveglia un agente a un orario, a intervalli, su un cron o al ritmo dell'agente stesso, con una fine, un limite di esecuzioni e un limite di costo. Si crea con `/loop`, `/schedule`, dalla pagina Pianificazioni o con lo strumento `wake_me` dell'agente.
+
+**Monitoraggio**: Una regola che sveglia un agente quando accade qualcosa: terminano i controlli di una pull request, riceve una revisione o viene unita, termina un'attività di un ambiente, si chiude un ticket o termina un'esecuzione di pipeline.
+
+**Richiesta**: La domanda di un agente a un altro, registrata prima di essere consegnata. Il richiedente viene risvegliato una volta con la risposta, oppure con il motivo per cui non c'è.
+
+**Proposta di miglioramento**: Una modifica alla memoria, a una policy, a una nota dell'agente o a una skill che una revisione suggerisce dopo un obiettivo verificato o con `/refine`. Non cambia nulla finché una persona non la accetta; una modifica a una skill viene prima valutata.
 
 ## Porte
 
@@ -258,6 +281,20 @@ export const glossaryTerms = [
 **Asse di revisione**: Una delle cinque corsie di punteggio per revisione: `correctness`, `security` e `testGap` tratti dai rilievi dei revisori; `visual` e `apiContract` deterministici. Gli assi con gate confluiscono nel verdetto e possono solo renderlo più severo — un gate `partial` o `unavailable` trattiene il verdetto invece di farlo passare.
 
 **Verdetto di revisione**: `ship`, `hold` o `block`. Qualunque rilievo P0 con confidenza ≥ 0.7 blocca; qualunque altro P0 o qualunque P1 trattiene; altrimenti ship. Un asse con gate in errore forza block e non può essere messo in minoranza dai rilievi.
+
+## Modalità codice
+
+**Modalità codice**: Lo strumento `repl`, che esegue uno script JavaScript che chiama gli altri strumenti dell'esecuzione e restituisce solo ciò che serve all'agente. Ogni esecuzione lo ha quando il server può eseguire script; non c'è alcuna impostazione. **Impostazioni → Spazio di lavoro → Modalità codice** mostra se questo server esegue script e imposta i limiti in cui gira uno script. Vedi [Modalità codice](/it-IT/manuale/concetti/modalita-codice/).
+
+**Strumento diretto**: Uno strumento che un'esecuzione chiama per nome, con il suo schema in ogni richiesta, che abbia o no `repl`: gli strumenti di file e shell, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` e i verbi propri della modalità.
+
+**Strumento solo da script**: Uno strumento fuori dall'insieme diretto che un'esecuzione con `repl` può chiamare solo da uno script, finché il server non può eseguire gli script dell'esecuzione e lo strumento viene invece caricato al primo uso ([Quando gli script non possono girare](/it-IT/manuale/concetti/modalita-codice/#quando-gli-script-non-possono-girare)). Fino ad allora la sua descrizione non raggiunge mai il modello, e una chiamata diretta riceve in risposta come chiamarlo da uno script. Uno strumento che uno script non può chiamare non è mai solo da script: viene caricato al primo uso.
+
+**Chiamata annidata**: una chiamata a strumento effettuata da uno script. Passa dallo stesso filtro di modalità, dagli stessi guardrail e dalla stessa approvazione di una chiamata diretta.
+
+**Runner della modalità codice**: `cc_codemode`, il programma incluso nel server che esegue uno script nel motore QuickJS-NG dopo essersi isolato (il suo **isolamento**). Il server non si avvia senza di esso ed esegue uno script solo se è una build di rilascio e il suo isolamento è completo.
+
+**Esecuzione di codice**: la registrazione di uno script: sorgente, output, limiti e ogni chiamata a strumento effettuata, conservata nel suo spazio di lavoro ed elencata sotto **Osservabilità → Esecuzioni di codice**.
 
 ## Flotta ed eval
 

@@ -1,0 +1,63 @@
+---
+title: Agents en collaboration
+description: Comment les agents se posent des questions, se transmettent du travail et sont relancés avec la réponse, et où voir ce qu’un agent attend d’un autre.
+slug: fr-CA/manuel/guides/agents-en-collaboration
+sourceHash: 36bb45cd480fb45d0380e8fd651845c59a7debcb
+---
+
+Les agents d’un espace de travail peuvent se poser des questions, consulter un spécialiste, demander une révision, envoyer un message ou déléguer un ticket. Rien de cela n’oblige un agent à attendre sans rien faire : un agent qui a posé une question peut poursuivre son travail, ou terminer son tour, et il est relancé dans sa propre conversation à l’arrivée de la réponse.
+
+## Demander à un autre agent
+
+Un agent demande avec `ask_agent`, de l’une de deux façons :
+
+- **Attendre** (par défaut) : l’agent reste bloqué jusqu’à l’arrivée de la réponse, jusqu’à 600 secondes par défaut et 1 800 au maximum.
+- **En arrière-plan** : l’appel revient tout de suite et l’agent poursuit son travail.
+
+Dans les deux cas, la question est enregistrée avant d’être livrée. Lorsque la réponse n’est pas revenue dans l’appel, le demandeur est relancé une seule fois, avec la réponse, à la fin de l’exécution de l’autre agent : répondue, en échec, ou expirée après 24 heures sans réponse. Entre-temps, il peut apprendre, une fois chacun, que l’autre agent a promis une réponse, qu’il attend une personne, ou qu’il s’est arrêté à une limite d’utilisation. Aucun de ces messages ne compte comme la réponse.
+
+`consult_agent` (faire intervenir le spécialiste le plus adapté), `request_peer_review` (un second regard sur une constatation de révision) et `send_to_agent` (un message à sens unique) passent par la même file. `send_to_agent` indique si l’autre agent a été relancé, si le message attend derrière son exécution en cours, ou pourquoi il a été refusé.
+
+L’autre agent lit la question comme une information venant d’un autre agent, jamais comme une instruction à suivre, et il ne peut pas exécuter de commande slash.
+
+## Transmettre du travail
+
+- **Un ticket délégué** (`delegate_task`) relance l’agent qui l’a délégué, dans la conversation d’où il l’a délégué, quand le ticket se règle.
+- **L’exécution d’un membre d’équipe** que le chef a démarrée avec une `@mention` ou un message relance le chef, dans la conversation d’où il a relancé le membre, quand elle se termine. (Une question est réglée par sa réponse, et un ticket délégué par son ticket.)
+- **Un worker en arrière-plan** en mode directeur (`/vibe`) remet son résultat au directeur, qui poursuit son travail pendant ce temps.
+- **Une `@mention`** d’un agent, et le vérificateur de l’espace, sont livrés de la même façon, comme des relances.
+
+Un agent peut voir ce que fait un autre agent sans le lui demander : `agent_activity` affiche le statut de l’autre agent, son outil en cours et ses derniers messages, et ne relance personne.
+
+## Limites
+
+Le serveur applique ces limites, quoi que disent les agents :
+
+| Limite | Valeur |
+| --- | --- |
+| Profondeur maximale d’une chaîne de demandes et de transmissions | 3 |
+| Cycles (un agent qui demande à un agent qui, par d’autres, attend sa réponse) | Refusé |
+| Demandes en attente par agent demandeur | 10 |
+| Demandes en attente par agent sollicité | 20 |
+| La même question au même agent à nouveau | Refusée pendant 10 minutes |
+| Messages entre une même paire d’agents | 10 par minute |
+| Longueur d’un message ou d’une réponse | 16 384 caractères |
+
+La délégation respecte aussi l’autonomie et le budget de l’agent demandeur : un agent ne peut pas confier du travail à un autre qui dispose de plus d’autonomie ou d’argent que lui. Un message que vous envoyez vous-même n’est jamais limité de cette façon.
+
+Quand l’agent sollicité s’arrête à une limite d’utilisation du fournisseur, son exécution attend la réinitialisation si elle arrive avant l’expiration de la question. Sinon, la question échoue tout de suite, et le demandeur en est informé avec la raison.
+
+## Voir ce qu’un agent attend
+
+Dans une conversation, la section **Demandes** du panneau **Général** liste les questions que des agents ont posées à cet agent : à qui, de quel type (**Question**, **Consultation** ou **Révision**), quand, et son état (**En attente**, **Répondue**, **Échec**, **Expirée** ou **Annulée**), avec **Réponse promise** ou **En arrière-plan** là où cela s’applique. Une demande en échec indique pourquoi, par exemple **Son exécution s'est arrêtée à la limite d'utilisation du fournisseur.**
+
+Toute personne ayant accès à l’espace peut **Annuler la demande**. L’agent demandeur n’est alors pas relancé, et l’exécution de l’autre agent n’est pas arrêtée.
+
+Les répliques, messages et travaux terminés qui attendent un agent apparaissent aussi dans la bande au-dessus de la zone de saisie, avec les autres éléments qu’il a en attente (voir [Planifications et relances](/fr-CA/manuel/guides/planifications-relances/#voir-ce-qui-attend)).
+
+## Voir aussi
+
+- [Déléguer du travail aux agents](/fr-CA/manuel/guides/deleguer-tickets/)
+- [Constituer une équipe d’agents](/fr-CA/manuel/guides/constituer-equipe/)
+- [Diriger des workers en arrière-plan](/fr-CA/manuel/guides/diriger-workers-arriere-plan/)
+- [Outils MCP : messagerie et délégation entre agents pairs](/fr-CA/manuel/reference/outils-mcp/#messagerie-et-délégation-entre-agents-pairs)

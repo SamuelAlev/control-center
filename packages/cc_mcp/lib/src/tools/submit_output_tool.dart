@@ -41,6 +41,17 @@ class SubmitOutputTool extends McpTool {
   @override
   String get name => 'submit_output';
 
+  /// `agent_id` names the calling agent, never a target: forced from the
+  /// call scope, so a run cannot act as another agent.
+  @override
+  Set<String> get forcedScopeKeys => const {'agent_id'};
+
+  /// Not for scripts: submitting the run's output lets the run end, and three
+  /// rejected payloads fail it, so the model submits after reading each
+  /// rejection (see [McpTool.scriptCallable]).
+  @override
+  bool get scriptCallable => false;
+
   @override
   String get description =>
       'Submit the structured output payload for your current pipeline run. '

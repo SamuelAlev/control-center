@@ -266,6 +266,10 @@ export default defineConfig({
                   slug: "manual/concepts/tool-context",
                 },
                 {
+                  label: "docs.sidebar.conceptsCodeMode",
+                  slug: "manual/concepts/code-mode",
+                },
+                {
                   label: "docs.sidebar.conceptsConversationHistory",
                   slug: "manual/concepts/conversation-history",
                 },
@@ -389,6 +393,18 @@ export default defineConfig({
                 {
                   label: "docs.sidebar.guidesBuildTeam",
                   slug: "manual/guides/build-team",
+                },
+                {
+                  label: "docs.sidebar.guidesPursueGoal",
+                  slug: "manual/guides/pursue-a-goal",
+                },
+                {
+                  label: "docs.sidebar.guidesSchedulesWakes",
+                  slug: "manual/guides/schedules-and-wakes",
+                },
+                {
+                  label: "docs.sidebar.guidesAgentsTogether",
+                  slug: "manual/guides/agents-working-together",
                 },
                 {
                   label: "docs.sidebar.guidesManageCosts",

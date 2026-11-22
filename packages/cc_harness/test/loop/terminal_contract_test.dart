@@ -88,6 +88,7 @@ class _ThrowingForcedCompactor implements HarnessCompactor {
     String selfAgentName = 'assistant',
     bool force = false,
     CancellationToken cancel = CancellationToken.none,
+    Future<String?> Function()? focus,
   }) async {
     if (force) {
       throw StateError('summarizer exploded');
@@ -112,6 +113,7 @@ class _CountingCompactor implements HarnessCompactor {
     String selfAgentName = 'assistant',
     bool force = false,
     CancellationToken cancel = CancellationToken.none,
+    Future<String?> Function()? focus,
   }) async {
     if (!force) {
       return const HarnessCompactionResult.unchanged(0);

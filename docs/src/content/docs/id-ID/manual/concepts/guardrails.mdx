@@ -2,7 +2,7 @@
 title: Pagar pengaman — satu kebijakan untuk setiap tindakan yang mengubah keadaan
 description: Mengapa Control Center mengalirkan setiap efek samping agen melalui satu mesin allow/prompt/deny, mengapa taksonomi ActionClass sengaja dibiarkan kecil, dan apa yang sebenarnya diubah oleh dial otonomi.
 slug: id-ID/panduan-pengguna/konsep/pagar-pengaman
-sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
+sourceHash: bb98b2ca26ae104ab7701d4d381cd5c41d25d32f
 ---
 
 Agen di Control Center dapat menghapus file, mem-push branch, memublikasikan
@@ -33,6 +33,17 @@ menyediakannya dan Linux memerlukan `bwrap` dan
 itu, hanya run milik pemilik server yang dimulai, kecuali pemilik mematikan sandbox untuk semua orang dengan `--sandbox off`. Untuk setiap run yang dimulai tanpa sandbox, pagar pengaman adalah lapisan penegakan terluar, bukan kebijakan yang
 berdiri di atas dasar, dan itu perlu diketahui saat Anda memutuskan seberapa
 permisif ingin bersikap.
+
+### Panggilan yang dibuat skrip
+
+Skrip [mode kode](/id-ID/panduan-pengguna/konsep/mode-kode/) memanggil alat dalam kode, banyak sekaligus, tetapi setiap panggilannya adalah panggilan alat terpisah ke mesin. Panggilan itu melewati gerbang harness atau gerbang dispatcher MCP yang sama seperti panggilan langsung, dengan aturan, prompt persetujuan, dan entri audit yang sama. Tidak ada yang dilakukannya yang disetujui hanya karena panggilan `repl` yang memulainya disetujui.
+
+Dua aturan tambahan berlaku untuk panggilan dari skrip, karena satu skrip dapat membuat ratusan panggilan dan menangkap setiap penolakan:
+
+- paling banyak 10 panggilannya yang sampai ke seseorang untuk persetujuan; panggilan berikutnya yang memerlukan seseorang ditolak tanpa kartu;
+- setelah seseorang menolak salah satu panggilannya, sisa panggilannya yang memerlukan persetujuan ditolak tanpa bertanya.
+
+Kartu yang dimunculkan oleh skrip menyatakan hal itu dan memungkinkan Anda membuka skripnya. Jika skrip berakhir selagi kartu masih terbuka, kartu ditarik, dan jawaban yang tiba setelah itu dicatat sebagai penolakan serta tidak menyetujui apa pun.
 
 ## ActionClass: taksonomi yang sengaja ditutup
 
@@ -272,5 +283,6 @@ sama — jawaban dari uji itu adalah jawaban yang akan diterima agen.
 ## Konsep terkait
 
 - [Sandbox dan keamanan](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/): apa yang sebenarnya membatasi jalannya agen dan sejauh mana dasar OS di bawah mesin ini menjangkau
+- [Mode kode](/id-ID/panduan-pengguna/konsep/mode-kode/): skrip yang setiap panggilan alatnya melewati mesin ini
 - [Multiplayer — identitas, keanggotaan dan kehadiran](/id-ID/panduan-pengguna/konsep/multiplayer/): space, prinsipal dan di mana dial otonomi berada
 - [Konfigurasi pagar pengaman](/id-ID/panduan-pengguna/panduan-praktis/konfigurasi-pagar-pengaman/): menulis dan menguji aturan dalam praktik

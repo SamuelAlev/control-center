@@ -1,8 +1,8 @@
 ---
 title: Explorar dados num kernel persistente
-description: Dê a um agente um interpretador Python ou JavaScript que mantém as suas variáveis entre chamadas, desenha gráficos no chat e consegue chamar as suas próprias ferramentas a partir de dentro de uma célula.
+description: Dê a um agente um interpretador Python ou JavaScript que mantém as suas variáveis entre chamadas e desenha gráficos no chat.
 slug: pt-PT/manual/guias/explorar-dados-em-kernel
-sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
+sourceHash: 8fcd77019bfae5088223822a12ef91c8a6879c5d
 ---
 
 Este guia mostra-lhe como fazer com que um agente carregue algo dispendioso uma única vez e depois lhe faça várias perguntas, em vez de pagar o carregamento em cada pergunta.
@@ -62,22 +62,9 @@ São reescritas como código simples em vez de darem erro:
 
 A expulsão da cache do `%pip` é a que importa: instalar num interpretador em execução não faz nada a um módulo já importado, pelo que, sem ela, a versão que acabou de instalar não é a que está a correr.
 
-## Chamar as suas próprias ferramentas a partir de dentro de uma célula
+## Chamar ferramentas a partir de código
 
-```python
-paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
-for path in paths.splitlines()[:100]:
-    contents = tool("read", {"path": path})
-    ...
-```
-
-`tool(name, args)` volta a entrar no registo de ferramentas do próprio agente. Isso significa que uma célula se pode distribuir por uma centena de ficheiros, ou delegar através de `task`, sem que o modelo gaste um turno por item.
-
-:::caution[A ponte não contorna as suas barreiras]
-Uma chamada através da ponte é resolvida contra o **mesmo** registo de ferramentas que uma chamada emitida pelo modelo, pelo que a política de `ActionClass`, os pedidos de aprovação e todos os wrappers se aplicam de forma idêntica. Uma ponte que passasse ao lado do registo seria um buraco com exatamente a forma de «escrever um one-liner em Python».
-:::
-
-Uma chamada através da ponte **suspende o tempo limite da célula** enquanto está pendente. O orçamento mede a inatividade, não o tempo real — uma célula que se distribui por subagentes e espera quatro minutos não está encravada, e matá-la a meio da distribuição perderia todo o estado do kernel.
+Uma célula não pode chamar as ferramentas do agente. Para chamar ferramentas em ciclo a partir de código, o agente escreve em vez disso um script [`repl`](/pt-PT/manual/conceitos/modo-de-codigo/). Um script também não pode chamar `eval`: o agente chama-a diretamente.
 
 ## Começar de novo
 

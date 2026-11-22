@@ -312,7 +312,8 @@ class _TurnStreamer {
         if (lastError.kind == LlmErrorKind.contextOverflow &&
             _overflowRecoveries < _maxOverflowRecoveriesPerTurn) {
           _overflowRecoveries++;
-          final recovery = await s.recoverFromOverflow();
+          var recovery = (event: null as LoopCompaction?, failure: null as String?);
+          yield* s.recoverFromOverflow((r) => recovery = r);
           if (recovery.failure case final failure?) {
             yield LoopNotice(failure);
           }

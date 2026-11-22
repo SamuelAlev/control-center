@@ -2,7 +2,7 @@
 title: Configurar notificações
 description: Ative ou desative categorias, defina um horário de silêncio e um som e saiba quais notificações chegam até você e onde.
 slug: pt-BR/manual/guias/notificacoes
-sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
+sourceHash: b1e5bb3b8a13bbbbd169916ab8e7cd7bdd403c1a
 ---
 
 Este guia mostra como configurar as notificações e o que cada ajuste realmente
@@ -49,6 +49,8 @@ notificação.
 
 Nada fora desta lista pode ser notificado nem filtrado — não existe uma
 categoria “todo o resto”.
+
+Trabalhos de longa duração usam as duas primeiras categorias. Um objetivo que terminou e uma programação que terminou contam como **Agente finalizado**; um objetivo aguardando sua revisão, uma proposta de melhoria, uma execução de pipeline retida no seu teto de custo e o resumo diário do que espera por você contam como **Um agente está esperando você**. Cada um chega à pessoa a quem diz respeito: quem iniciou o objetivo, a programação ou a execução.
 
 **Um agente está esperando você** dispara quando uma espera começa: uma aprovação pendente (incluindo concessões de execução no sandbox e aprovações
 de ferramentas do Claude Code), uma pergunta `ask_user` ou uma execução retida
@@ -122,6 +124,8 @@ Uma notificação é descartada, em silêncio, quando qualquer uma destas condi�
 Essas verificações se aplicam aos toasts do sistema operacional. O sino durável
 continua registrando o evento.
 
+Algumas notificações são **silenciosas**: o servidor as marca para que cheguem ao sino sem um toast, um som ou um push alto no celular. Uma programação que terminou e um objetivo que terminou são silenciosos. Um objetivo aguardando sua revisão não é.
+
 Há mais duas supressões, mais acima na cadeia, naquilo que o servidor chega a
 enviar:
 
@@ -132,10 +136,7 @@ enviar:
 - Os espaços entre agentes ficam silenciados na barra lateral, então nunca
   incrementam o indicador de não lidos dos humanos
 
-Dentro de um espaço não existe canto tranquilo: toda conversa notifica
-igualmente, threads incluídos. O estado de leitura tem escopo por espaço, então
-o não lido se agrega entre as conversas de um espaço, em vez de ser rastreado
-por conversa.
+Dentro de um espaço não existe canto tranquilo: toda conversa notifica igualmente, threads incluídos. O estado de leitura é rastreado por conversa, e um espaço fica não lido enquanto qualquer uma de suas conversas estiver não lida.
 
 ## Ler e limpar a central de notificações
 
@@ -188,6 +189,8 @@ Verifique se você já não estava no espaço onde isso aconteceu — uma rota a
 suprime o próprio toast do sistema operacional. Em um espaço compartilhado, uma
 execução que outra pessoa iniciou avisa essa pessoa, não você. Uma rodada que
 terminou sem resposta e sem erro não envia nada.
+
+Uma execução que uma programação ou um monitor iniciou e que termina sem problemas não envia nada, a menos que mencione alguém. Um objetivo concluído ou uma programação encerrada vai para o sino, sem toast.
 
 ## Guias relacionados
 

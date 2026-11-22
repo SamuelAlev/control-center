@@ -2,23 +2,33 @@
 title: Levenscyclus van agent-dispatch
 description: Wat er gebeurt tussen het aankomen van een bericht en het sluiten van een run-log — promptopbouw, worktrees, identiteit, wat een run begrenst en hoe de uitkomst ervan eerlijk wordt vastgelegd.
 slug: nl-NL/handleiding/concepten/dispatch-levenscyclus
-sourceHash: 13e7fe3ed86c8659c5fec818e0b89737241e2b9d
+sourceHash: 07c46e22e30f1a10e64b7fb949c78bdae9747efa
 ---
 
 ## Wat een dispatch is
 
 Een dispatch is één run van één agent, in één gesprek, op één adapter. Alles eromheen gebeurt op `cc_server`: de client stuurt een bericht en kijkt daarna hoe gebeurtenissen terugstromen. Er is geen dispatchpad in welke client dan ook.
 
-Agenten worden om zes redenen gewekt; de run draagt die reden mee als zijn **wekcontext**, zodat de agent weet _waarom_ hij wakker is:
+Elke run draagt een **wekcontext** die aangeeft _waarom_ de agent wakker is. Een run die je start door een bericht te sturen is `userMessage`; elke run die de server zelf start, begint als een duurzame **wekbeurt** in de wachtrij van de werkruimte en draagt de reden van die wekbeurt (zie [Schema's en wekbeurten](/nl-NL/handleiding/gidsen/schemas-en-wekbeurten/)):
 
 | Wekreden        | Trigger                                                     |
-| ---------------- | ------------------------------------------------------------ |
-| `userMessage`    | Iemand heeft een bericht in een ruimte gestuurd, of heeft de agent vermeld |
+| -------------------- | ------- |
+| `userMessage`    | Iemand heeft een bericht in een ruimte gestuurd                            |
 | `assignment`     | Er is een ticket aan de agent toegewezen                     |
 | `pipelineStep`   | Een pipelinestap heeft hem gedispatcht                       |
-| `childCompleted` | Een kindticket is afgerond                                   |
-| `followUp`       | Een geplande vervolghartslag                                 |
-| `recovery`       | Het herstelpad heeft hem na een fout opnieuw gedispatcht     |
+| `childCompleted` | Een gedelegeerd of kindticket is afgerond, of de run van een teamlid is beëindigd |
+| `schedule` | Een schema of lus is aangeroepen |
+| `watch` | Er is iets gebeurd waarnaar een bewaking luistert (pull-requestcontroles, een review, een omgeving, een ticket, een pipeline-run) |
+| `goalContinuation` | Het volgende segment van een doel |
+| `goalVerification` | De controles of de review van een doel vonden het nog niet klaar |
+| `goalReview` | De alleen-lezen review van de claim van een doel dat het klaar is |
+| `peerMessage` | Een andere agent heeft er een bericht of een vraag naartoe gestuurd, of het is @-vermeld, of het is de checker van de ruimte |
+| `peerReply`      | Het antwoord op een vraag die hij aan een andere agent heeft gesteld |
+| `limitReset` | Een gebruikslimiet van de provider waarbij het is gestopt, is gereset |
+| `improvementReview` | De review na een geverifieerd doel, of `/refine` |
+| `recovery` | Werk dat een serverherstart of een fout onderbrak |
+
+Een wekbeurt wordt afgeleverd in een lopende run van de agent in dat gesprek wanneer die run input aanneemt en handelt voor dezelfde persoon; anders wacht die tot die run eindigt en start zijn eigen run. Slash-commando’s worden alleen gelezen in een bericht dat een persoon heeft getypt; in elke andere run is dezelfde tekst een gewoon bericht.
 
 De wekcontext draagt de id's mee die bij de reden horen — ticket, ruimte, bericht, pipelinerun — en die worden in de omgeving en de prompt van de agent geïnjecteerd.
 
@@ -104,17 +114,17 @@ Er is bewust **nergens een beurtplafond**. Een harde iteratietelling doodt legit
 - **het model zelf stopt**;
 - **een mens hem stopt**, of het gesprek overneemt (waardoor de ingebouwde harness pauzeert bij zijn volgende schone beurtgrens — een Claude Code-run, die geen veilige grens heeft, wordt in plaats daarvan gestopt);
 - **de stiltewatchdog afgaat.** Geen uitvoer binnen de drempel en de sessie wordt beëindigd met een `silentRun`-fout. De standaard is 15 minuten, wat terugloopt naar 10 in de vooral lezende modi (review en plan); een agent mag hem tussen 1 en 240 minuten overschrijven. De watchdog wordt bewapend wanneer een kindproces zijn PID rapporteert, dus hij dekt de Claude Code CLI — **niet** de ingebouwde harness, die niets start;
-- **een kostenplafond toeslaat** — maar alleen voor autonome commando's.
+- **een kostenplafond slaat toe** — bij doelsegmenten en doelreviews, schema- en bewakingsruns, de verbeteringsreview en pipeline-runs onder een orkestratie met een kostenplafond.
 
 De doom-loopbeveiliging is geen terminator: drie identieke toolaanroepen op een rij en de lus _stuurt_ de agent bij om van aanpak te veranderen.
 
 :::note[Een normale beurt heeft geen kostenplafond]
-De kostenbeveiliging binnen de sessie is alleen aangesloten voor `/goal` en `/loop`; elke andere run geeft helemaal geen budget mee. Voor die commando's mag één onbeheerd segment standaard 500 cent ($5.00) verbruiken, met een zachte bijsturing op 80% die de agent vraagt om netjes af te ronden vóór de harde stop, en een duurzaam doelbudget van 5000 cent ($50.00) over segmenten heen. Een expliciet `/goal --budget` wordt nooit met een heel segment overschreden.
+Een run die je start met een bericht heeft geen kostenplafond. Een segment van een doel mag 5 dollar uitgeven, of wat er van het budget van het doel over is (standaard 50 dollar) als dat minder is; de review van een doel 2 dollar; een run die een schema of bewaking heeft gestart 5 dollar; de verbeteringsreview 1 dollar. Bij 90% sturen de ingebouwde harness en Claude Code de agent aan om netjes af te ronden voordat de harde stop komt; een ACP-agent wordt bij het plafond geannuleerd. Zie [Kosten beheren](/nl-NL/handleiding/gidsen/kosten-beheren/#een-autonome-run-begrenzen).
 :::
 
 Alles bij elkaar heeft een gewone interactieve beurt op de ingebouwde harness geen beurtplafond, geen kostenplafond en geen stiltewatchdog. Hij eindigt wanneer het model stopt of wanneer jij hem stopt. Dat is een bewuste afweging — de alternatieven doden allemaal legitiem lang werk — maar het betekent wel dat een onbeheerde interactieve run door niets anders wordt begrensd dan het eigen oordeel van het model.
 
-Tijdens een run wordt een bericht dat naar een draaiende agent wordt gestuurd in de wachtrij gezet als **bijsturing** en bij de volgende beurtgrens geleegd, zodat je een run kunt bijsturen zonder hem te doden. Bijsturing, pauzeren, subagenten en het afrondingscontract zijn functies van de ingebouwde harness; Claude Code heeft ze geen van alle.
+Tijdens een run wordt een bericht dat naar een draaiende agent wordt gestuurd in de wachtrij gezet als **bijsturing** en bij de volgende beurtgrens geleegd, zodat je een run kunt bijsturen zonder hem te doden. Een alleen-lezen run, zoals de review van een doel, neemt er geen terwijl hij draait, en bijsturen van een run die voor iemand anders werkt vraagt schrijfrechten op de repositories van de space. Bijsturing, pauzeren, subagenten en het afrondingscontract zijn functies van de ingebouwde harness; Claude Code heeft ze geen van alle.
 
 ## Hoe een run wordt vastgelegd
 
@@ -130,11 +140,11 @@ Wanneer een run eindigt zonder het resultaat dat zijn modus vereiste — een pla
 Dit is bewust. De status omzetten zou ticket- en pipelinestatemachines verplaatsen die niets met het ontbrekende artefact te maken hebben. Het betekent ook dat "status: completed" alleen nooit genoeg is om te concluderen dat een run is geslaagd — lees de samenvatting.
 :::
 
-Het sluiten van de run publiceert `AgentRunCompleted` en daar hangt veel aan: kostenoptelling van de pipeline, het hervatten van een pipelinestap die op de run wachtte, het afronden van het onderliggende ticket, het mappen van een orkestratie op een eindtoestand, de voort-of-stopbeslissing van de doelsupervisor, de rol van controleur en de budgetevaluatie na de run. Het aanwezigheidsrooster volgt apart, door naar de recente run-logs te kijken in plaats van naar de gebeurtenis. De melding "agent voltooid" staat niet in dat rijtje: de gebeurtenis vuurt zodra de processtroom eindigt, voordat het antwoord is weggeschreven, dus de melding is de `MessageReceived` van de beurt, gepubliceerd zodra het bericht is opgeslagen.
+Zodra de eindtoestand van de run is weggeschreven, publiceert de server `AgentRunSettled` precies één keer, met de reden waarom de run eindigde (`completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` of `serverStopped`), en daar hangt veel aan: de kostenoptelling van de pipeline, het hervatten van een pipelinestap die op de run wachtte, het afronden van het onderliggende ticket, het mappen van een orkestratie op een eindtoestand, de voort-of-stopbeslissing van de doelsupervisor, het antwoord op een vraag die een andere agent stelde, het volgende aanroepen van een zelfgetimede lus, de pauze bij de gebruikslimiet, de rol van controleur en de budgetevaluatie na de run. Een run die een serverstop onderbrak (`serverStopped`) wordt nooit als fout behandeld; het werk gaat verder na de herstart. `AgentRunCompleted` wordt nog steeds eerder gepubliceerd, alleen voor de pull-requestbrug en analytics. Het aanwezigheidsrooster volgt apart, door naar de recente run-logs te kijken in plaats van naar de gebeurtenis. De melding "agent voltooid" staat niet in dat rijtje: de gebeurtenis vuurt zodra de processtroom eindigt, voordat het antwoord is weggeschreven, dus de melding is de `MessageReceived` van de beurt, gepubliceerd zodra het bericht is opgeslagen.
 
 ## Budgetten, achteraf
 
-Budgethandhaving is een _reactie_, geen poort. Wanneer een run klaar is, vergelijkt de evaluator de uitgaven van de agent van deze maand tot nu toe met het effectieve plafond (een gekoppeld budgetbeleid als dat er is, anders het eigen maandbedrag van de agent; nul betekent onbeperkt). Het overschrijden van de zachte drempel legt een waarschuwingsincident vast; het uitputten van het budget legt een hard incident vast en zet de levenscyclusstatus van de agent op `paused` in het organigram. Dispatch accepteert nog steeds werk van die agent. Een pipelinetrigger `BudgetThresholdCrossed` kan vervolgwerk vanuit dezelfde gebeurtenis starten.
+Budgethandhaving is een _reactie_, geen poort. Wanneer een run klaar is, vergelijkt de evaluator de uitgaven van de agent van deze maand tot nu toe met het effectieve plafond (een gekoppeld budgetbeleid als dat er is, anders het eigen maandbedrag van de agent; nul betekent onbeperkt). Het overschrijden van de zachte drempel legt een waarschuwingsincident vast; het uitputten van het budget legt een hard incident vast en zet de levenscyclusstatus van de agent op `paused` in het organigram. Dispatch accepteert nog steeds werk dat je die agent stuurt, maar wekbeurten voor die agent (schema’s, doelsegmenten, antwoorden) wachten zolang hij is gepauzeerd, maximaal 7 dagen. Een pipelinetrigger `BudgetThresholdCrossed` kan vervolgwerk vanuit dezelfde gebeurtenis starten.
 
 ## Afstamming van nieuwe pogingen
 
@@ -147,4 +157,5 @@ Elke run-log kan afstamming van nieuwe pogingen bevatten — een bovenliggende r
 - [Beveiligingen](/nl-NL/handleiding/concepten/beveiligingen/): het effectklassebeleid dat elke bewaakte aanroep passeert
 - [Sandbox en beveiliging](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/): het volledige isolatieverhaal
 - [Multiplayer](/nl-NL/handleiding/concepten/multiplayer/): bijsturing, overnemen en de autonomieknop
-- [Domeingebeurtenissen](/nl-NL/handleiding/concepten/domeingebeurtenissen/): wat `AgentRunCompleted` in gang zet
+- [Domeingebeurtenissen](/nl-NL/handleiding/concepten/domeingebeurtenissen/): wat `AgentRunSettled` in gang zet
+- [Een doel nastreven](/nl-NL/handleiding/gidsen/doel-nastreven/) en [Schema's en wekbeurten](/nl-NL/handleiding/gidsen/schemas-en-wekbeurten/): runs die de server zelf start

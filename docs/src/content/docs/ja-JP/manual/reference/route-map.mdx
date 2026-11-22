@@ -2,7 +2,7 @@
 title: ルートマップ
 description: Control Center が登録するすべてのルートと、対応する画面およびクエリパラメーター。
 slug: ja-JP/マニュアル/リファレンス/ルートマップ
-sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
+sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
 ---
 
 ## アプリシェル
@@ -40,6 +40,12 @@ sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 | `/pipelines`                            | —                                         | パイプライン実行の一覧                                                                                                                                                     |
 | `/pipelines/run`                        | `?templateId=<id>`                        | 手動実行ランチャー                                                                                                                                                        |
 | `/pipelines/:runId`                     | —                                         | パイプライン実行の詳細（ステップタイムライン）                                                                                                                              |
+| `/goals` | — | グループ分けされたゴール一覧（レビュー待ち、進行中、終了） |
+| `/goals/:goalId` | `?edit=contract` | 1 つのゴール: 現在、完了の条件、検証、スケジュールと起動予約。`edit=contract` は一時停止中のゴールで契約の編集画面を開きます |
+| `/schedules` | — | ステータス別にグループ分けされたスケジュールとウォッチ。**新しいスケジュール**付き |
+| `/schedules/:ruleId` | — | 1 つのスケジュール: メモ、詳細、最近の起動予約と実行 |
+| `/improvements` | — | 改善案（ステータス別にグループ分け） |
+| `/improvements/:proposalId` | — | 1 つの提案: 変更内容、根拠、評価、決定 |
 | `/plans`                                | —                                         | Plan Studio ハブ: アクティブなプラン、プランドキュメント、プレイブック                                                                                                        |
 | `/plans/:kind/:id`                      | —                                         | 1 つのプランの Plan Studio。`kind` は `orchestration` または `document`                                                                                                     |
 | `/meetings`                             | —                                         | ミーティングの一覧                                                                                                                                                        |
@@ -99,6 +105,7 @@ sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 | `/settings/workspace/skills`       | スキルの設定                                                                                          |
 | `/settings/memory`                 | ワークスペースメモリ: ファクト、ポリシー、ナレッジグラフ                                                |
 | `/settings/workspace/permissions`  | エージェントの権限: ガードレールマトリクスと what-if プローブ                                           |
+| `/settings/workspace/schedules` | スケジュールの上限、cron スケジュールとダイジェストのタイムゾーン、サーバーが開始した実行が回答を待つ期間（管理者が編集、メンバーは閲覧） |
 | `/settings/pipelines`              | パイプラインテンプレート                                                                              |
 | `/settings/pipelines/:templateId`  | パイプラインテンプレートエディター（ドラッグ＆ドロップキャンバス）                                      |
 

@@ -1,0 +1,63 @@
+---
+title: Agenti che lavorano insieme
+description: Come gli agenti si fanno domande, si passano il lavoro e vengono risvegliati con la risposta, e dove vedi da cosa dipende un agente su un altro.
+slug: it-IT/manuale/guide/agenti-insieme
+sourceHash: 36bb45cd480fb45d0380e8fd651845c59a7debcb
+---
+
+Gli agenti di uno spazio di lavoro possono farsi domande a vicenda, consultare uno specialista, chiedere una revisione, inviare un messaggio o delegare un ticket. Nulla di questo richiede che un agente stia fermo ad aspettare: un agente che ha fatto una domanda può proseguire, oppure terminare il proprio turno, e viene risvegliato nella sua conversazione quando arriva la risposta.
+
+## Chiedere a un altro agente
+
+Un agente chiede con `ask_agent`, in uno di due modi:
+
+- **Attendi** (il predefinito): l'agente resta bloccato finché arriva la risposta, per al massimo 600 secondi per impostazione predefinita e 1.800 al massimo.
+- **In background**: la chiamata restituisce subito il controllo e l'agente continua a lavorare.
+
+In entrambi i casi la domanda viene registrata prima di essere consegnata. Quando la risposta non è tornata nella chiamata, il richiedente viene risvegliato una sola volta, con la risposta, al termine dell'esecuzione dell'altro agente: con una risposta, con un errore, o scaduta dopo 24 ore senza risposta. Nel frattempo può sentire, al massimo una volta ciascuno, che l'altro agente ha promesso una risposta, che attende una persona, o che si è fermato a un limite di utilizzo. Nessuno di questi messaggi conta come risposta.
+
+`consult_agent` (coinvolge lo specialista più adatto), `request_peer_review` (un secondo sguardo a un rilievo di revisione) e `send_to_agent` (un messaggio a senso unico) passano tutti dalla stessa coda. `send_to_agent` indica se l'altro agente è stato risvegliato, se il messaggio attende dietro la sua esecuzione attuale, o perché è stato rifiutato.
+
+L'altro agente legge la domanda come un'informazione proveniente da un altro agente, mai come un'istruzione da seguire, e non può eseguire un comando slash.
+
+## Passare il lavoro
+
+- **Un ticket delegato** (`delegate_task`) risveglia l'agente che l'ha delegato, nella conversazione da cui l'ha delegato, quando il ticket si chiude.
+- **L'esecuzione di un membro del team** che il leader ha avviato con un `@mention` o un messaggio risveglia il leader, nella conversazione da cui ha risvegliato il membro, quando termina. (Una domanda riceve risposta con la sua risposta, e un ticket delegato con il suo ticket.)
+- **Un worker in background** in modalità direttore (`/vibe`) consegna il suo risultato al direttore, che continua a lavorare.
+- **Una `@mention`** a un agente, e il checker dello spazio, vengono consegnati nello stesso modo, come risvegli.
+
+Un agente può vedere cosa fa un altro agente senza chiederglielo: `agent_activity` mostra lo stato dell'altro agente, il suo strumento attuale e i suoi ultimi messaggi, e non risveglia nessuno.
+
+## Limiti
+
+Il server li applica, qualunque cosa dicano gli agenti:
+
+| Limite | Valore |
+| --- | --- |
+| Quanto in profondità può spingersi una catena di domande e passaggi di lavoro | 3 |
+| Cicli (un agente che chiede a uno che, attraverso altri, sta aspettando lui) | Rifiutato |
+| Domande in sospeso per agente richiedente | 10 |
+| Domande in sospeso per agente interpellato | 20 |
+| La stessa domanda allo stesso agente di nuovo | Rifiutata entro 10 minuti |
+| Messaggi tra una coppia di agenti | 10 al minuto |
+| Lunghezza di un messaggio o di una risposta | 16.384 caratteri |
+
+Anche la delega rispetta l'autonomia e il budget dell'agente richiedente: un agente non può passare lavoro a un altro con più autonomia o più denaro di quanto ne ha. Un messaggio che invii tu stesso non è mai limitato in questo modo.
+
+Quando l'agente interpellato si ferma al limite di utilizzo di un provider, la sua esecuzione attende il ripristino se il ripristino arriva prima che la domanda scada. Altrimenti la domanda fallisce subito e il richiedente viene informato del motivo.
+
+## Vedere da cosa dipende un agente
+
+In una conversazione, la sezione **Richieste** del pannello **Generale** elenca le domande che gli agenti hanno fatto a quella conversazione: a chi, di che tipo (**Domanda**, **Consulto** o **Revisione**), quando, e il suo stato (**In attesa**, **Risposta ricevuta**, **Non riuscita**, **Scaduta** o **Annullata**), con **Ha promesso una risposta** o **In background** dove applicabile. Una richiesta fallita dice il motivo, come **La sua esecuzione si è fermata al limite di utilizzo del provider.**
+
+Chiunque abbia accesso allo spazio può **Annulla richiesta**. L'agente richiedente non viene quindi risvegliato, e l'esecuzione dell'altro agente non viene fermata.
+
+Anche risposte, messaggi e lavori conclusi che attendono un agente compaiono nella striscia sopra il compositore, con gli altri che ha in attesa (vedi [Pianificazioni e risvegli](/it-IT/manuale/guide/pianificazioni-risvegli/#vedi-cosa-è-in-attesa)).
+
+## Vedi anche
+
+- [Delega il lavoro agli agenti](/it-IT/manuale/guide/delega-ticket/)
+- [Crea un team di agenti](/it-IT/manuale/guide/crea-team/)
+- [Dirigi i worker in background](/it-IT/manuale/guide/dirigi-worker-in-background/)
+- [Strumenti MCP: messaggistica tra agenti pari e delega](/it-IT/manuale/riferimento/strumenti-mcp/#messaggistica-tra-agenti-pari-e-delega)

@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: Elke flag, omgevingsvariabele, subcommando en datadirectorypad van de headless server.
 slug: nl-NL/handleiding/referentie/cc-server-cli
-sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
+sourceHash: ee71514a1721599da299a81b5702bc7cdb372330
 ---
 
 Elke procesflag heeft een CLI-flag of een omgevingsvariabele; de flag wint, dan
@@ -10,10 +10,7 @@ de omgeving, dan de standaardwaarde. Inloggegevens van providers zijn de
 uitzondering — zie [Provider-apps en Connect](#provider-apps-en-connect).
 
 :::caution[Onbekende flags worden stil genegeerd]
-De argumentparser is handmatig geschreven en slaat alles over wat hij niet
-herkent, dus een typefout (`--tls-key-file`, `--bindany`) geeft geen fout — de
-server start gewoon met de standaardwaarde. Controleer de logregels bij het
-opstarten wanneer een flag geen effect lijkt te hebben.
+De argumentparser is handmatig geschreven en slaat alles over wat hij niet herkent, dus een typefout (`--tls-key-file`, `--bindany`) geeft geen fout — de server start gewoon met de standaardwaarde. Controleer de logregels bij het opstarten wanneer een flag geen effect lijkt te hebben. Een [codemodus-vlag](#codemodus) met een waarde die hij niet accepteert, is anders: de server weigert te starten.
 :::
 
 ## Kern
@@ -51,8 +48,10 @@ opstarten wanneer een flag geen effect lijkt te hebben.
 | `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                    | `on` verpakt agent-runs in de OS-native sandbox van de host, en op een host zonder die starten alleen de runs van de servereigenaar. `off` draait de agents van elk lid op deze host zonder inperking. Zie hieronder |
 | `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                    | Noodschakelaar in het veld voor het op de achtergrond indexeren van de codegraph. Met `off` start hij schoon, zonder herbouw  |
 | `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                    | Seconden waarmee de eerste indexeringsronde na de gereedheidsbanner wordt uitgesteld (begrensd op 0–300)                      |
-| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                    | Of harness-runs een kleine residente toolset plus een naamindex meesturen en de rest bij het eerste gebruik laden. Zie hieronder |
+| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                    | Of harness-runs een kleine directe toolset plus een naamindex meesturen en de rest bij het eerste gebruik laden. Zie hieronder   |
 | `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                   | Seconden dat een run wacht tot een mens een inloggegeven herstelt dat hem niet kan bedienen (begrensd op 0–3600). Zie hieronder |
+| `--code-mode-max-processes` | `CC_SERVER_CODE_MODE_MAX_PROCESSES` | `min(16, 2 × cores)` | Codemodus-scripts die tegelijk op deze server draaien, niet meegeteld die op een persoon wachten, 1–64. Zie hieronder |
+| `--code-mode-max-heap-mb` | `CC_SERVER_CODE_MODE_MAX_HEAP_MB` | `1024` | Het meeste geheugen dat één script mag gebruiken, 16–1024 MiB. Een hogere geheugenlimiet van een werkruimte wordt daartoe verlaagd |
 
 ## Provider-apps en Connect
 
@@ -108,19 +107,9 @@ Voor automatisering is de verantwoordelijke persoon degene aan wie de automatise
 
 ### `--tool-deferral`
 
-Runs van de ingebouwde harness sturen een kleine residente set tooldefinities
-plus een naamindex van de rest mee; die laatste laden hun schema's de eerste keer
-dat ze worden gebruikt. Dat verkleint het toolblok met ongeveer 78% en houdt de
-altijd zichtbare set binnen het bereik waarin modellen tools betrouwbaar kiezen.
-Uitgestelde tools blijven de hele tijd op naam aanroepbaar, en `search_tools`
-vindt ze op intentie. Zie [Toolcontext en promptcaching](/nl-NL/handleiding/concepten/toolcontext).
+Runs van de ingebouwde harness sturen een kleine directe set tooldefinities plus een naamindex van de rest mee, die schema's laden bij het eerste gebruik of worden aangeroepen vanuit een `repl`-script. Dat houdt de altijd zichtbare set binnen het bereik waarin modellen tools betrouwbaar kiezen. Gemeten op het register dat de tests opbouwen, komen de standaard chattools van de ingebouwde agent op 14 definities: ongeveer 16,5 KB met `repl` (ongeveer 4 KB daarvan is van `repl`, en de definitie daarvan mag niet groter zijn dan 4.096 bytes), en ongeveer 13 KB op een server die geen scripts kan draaien. Uitgestelde tools blijven de hele tijd op naam aanroepbaar, en `search_tools` vindt ze op intentie. Zie [Toolcontext en promptcaching](/nl-NL/handleiding/concepten/toolcontext/).
 
-`--tool-deferral off` maakt elke toegelaten tool weer resident en reproduceert de
-verzoeken die de server deed voordat uitstelling bestond. Het is de
-noodschakelaar voor een model dat slecht overweg kan met het oppervlak met twee
-niveaus — een flag in plaats van een herbouw. Het beïnvloedt alleen de ingebouwde
-harness; de MCP-`tools/list` die externe clients zien, is altijd de volledige
-catalogus.
+`--tool-deferral off` stuurt de definitie van elke toegelaten tool vooraf mee, behalve dat een run met `repl` de tools die een script mag aanroepen nog steeds vanuit scripts aanroept. Het is de noodschakelaar voor een model dat slecht overweg kan met het oppervlak met twee niveaus — een flag in plaats van een herbouw. Het beïnvloedt alleen de ingebouwde harness; de MCP-`tools/list` die externe clients zien, is de volledige catalogus, behalve voor een agentrun op een server die [codemodus](/nl-NL/handleiding/concepten/codemodus/)-scripts kan draaien.
 
 ### `--credential-gate`
 
@@ -138,6 +127,25 @@ mislukt de run met de melding waarmee hij toch al zou zijn mislukt.
 
 `--credential-gate=0` is de noodschakelaar: er wordt nooit iets geparkeerd en een
 slecht inloggegeven beëindigt de beurt precies zoals voordat de gate bestond.
+
+### Codemodus
+
+[Codemodus](/nl-NL/handleiding/concepten/codemodus/) laat een agent een JavaScript-script draaien dat zijn tools aanroept. Er is geen vlag die het aan of uit zet: elke run krijgt de `repl`-tool wanneer de server scripts kan draaien, en een publieke demoserver draait er geen.
+
+Scripts draaien in `cc_codemode`, een programma dat bij de server wordt meegeleverd in `bin/codemode/`. De server start niet zonder dat: hij drukt één regel af met wat ontbreekt en stopt met exitcode `78`. Bij het starten draait hij de zelftest van de afsluiting van het programma en drukt één regel af (alleen onderdrukt met `--log-level error`):
+
+```text
+cc_server: code_mode=available (cc_codemode 0.1.0 quickjs-ng 0.16.2 protocol 2; 16 scripts at once, at most 12 per workspace; up to 64 more runners kept for scripts waiting on a person; heap at most 1024 MiB per script)
+cc_server: code_mode=unavailable (<reason>) — runs on this host get no repl tool; scripts never run without full lockdown
+```
+
+`unavailable` betekent dat het programma zichzelf op deze host niet kan afsluiten, bijvoorbeeld in een container waarvan het beveiligingsprofiel een van de stappen weigert, of dat het programma geen releasebuild is. De server draait gewoon door, geen enkele run krijgt `repl`, en de instellingen van codemodus in de werkruimte tonen de reden.
+
+De server blijft controleren terwijl hij draait. Wanneer het programma niet start om een reden die niet bij het script ligt, draait de server de zelftest opnieuw, hooguit één keer per minuut. Mislukt die, dan drukt de server de regel `unavailable` af met de reden en draait hij geen scripts: runs die intussen starten krijgen geen `repl`, en een run die hem al heeft, roept zijn tools direct aan ([Wanneer scripts niet kunnen draaien](/nl-NL/handleiding/concepten/codemodus/#wanneer-scripts-niet-kunnen-draaien)). Hij blijft controleren, hooguit één keer per minuut, en wanneer de zelftest weer slaagt, drukt hij de regel `available` af en draait hij weer scripts. Alleen een zelftest die bij het starten mislukte, vereist een herstart. De reden die de instellingen van de werkruimte tonen, heeft paden van de host weggelaten; de logregel bevat ze volledig.
+
+De twee vlaggen van codemodus begrenzen wat scripts mogen gebruiken. `--code-mode-max-processes` begrenst de scripts die tegelijk draaien over alle werkruimten (standaard twee keer het aantal processorkernen, hooguit 16; geaccepteerd 1–64). Bij een limiet van 2 of meer gebruikt één werkruimte hooguit de limiet min een kwart van de limiet, zodat geen enkele werkruimte alle plaatsen kan innemen, en wachtende scripts worden om de beurt toegelaten over werkruimten heen. Een script dat wacht op de goedkeuring of het antwoord van een persoon, maakt zijn plaats vrij voor een ander script en start geen toolaanroep tot er is geantwoord; tot vier keer de limiet aan zulke wachtende scripts wordt bewaard, waarvan hooguit driekwart van één werkruimte komt, en elk kan binnen zijn eigen limiet op processortijd nog blijven rekenen. `--code-mode-max-heap-mb` is het meeste geheugen dat één script mag gebruiken.
+
+Een waarde die deze vlaggen niet accepteren (een getal buiten het bereik, of geen getal), stopt de server bij het starten (exitcode `78`) met een melding die de geaccepteerde waarden noemt. Ze wordt nooit als standaard gelezen.
 
 ## Subcommando's
 
@@ -243,6 +251,7 @@ De server houdt de datadirectory alleen toegankelijk voor zijn eigen account (`0
 | `backups/exports/`                | Exportbestanden van één werkruimte, `<workspaceId>-<timestamp>.db`               |
 | `backups/transfer/`               | Staging voor het downloaden en uploaden van back-ups; opgeruimd door de route die erin schrijft |
 | `models/`                         | Embedding-, diarisatie- en spraakmodellen op het apparaat                        |
+| `codemode/` | Een ontwikkelkopie van de codemodus-runner, geïnstalleerd door `scripts/natives/build_codemode.sh`; releasebundels bevatten hem in `bin/codemode/` |
 | `meetings/<meetingId>/`           | Bewaarde vergaderaudio                                                          |
 | `rigs/images/`                    | Geïmporteerde rig-schijfimages (het QEMU-desktopoppervlak)                       |
 | `rigs/smolvm/<rigId>/`            | Runtime-status per rig-microVM (het brokersecret, `0600`)                        |

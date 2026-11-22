@@ -1,4 +1,5 @@
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
+import 'package:cc_domain/features/code_mode/domain/value_objects/script_call_site.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_harness/context.dart';
 import 'package:cc_harness/loop.dart';
@@ -87,6 +88,10 @@ DefaultHarnessCompactor buildHarnessTextCompactor({
 /// Covers what every host records identically: streamed text and thinking,
 /// the withdrawal of an abandoned attempt's deltas, tool calls, tool results
 /// (with their images resolved through [imageRefs]) and loop errors.
+///
+/// A call a script made (through a tool's reentry) carries the id of the call
+/// that ran the script as `parentToolCallId`, so every host's transcript can
+/// fold it under that call instead of showing it as a call the model made.
 Future<AgentProcessEvent?> harnessTranscriptEvent(
   AgentLoopEvent event, {
   required HarnessToolImageRefs imageRefs,
@@ -97,15 +102,42 @@ Future<AgentProcessEvent?> harnessTranscriptEvent(
     text: text,
     thinking: thinking,
   ),
-  LoopToolCallStart(:final toolName, :final toolUseId, :final args) =>
-    ToolCallEvent(toolName: toolName, toolCallId: toolUseId, inputs: args),
-  LoopToolCallResult(:final toolName, :final toolUseId, :final result) =>
+  LoopToolCallStart(
+    :final toolName,
+    :final toolUseId,
+    :final args,
+    :final parentToolUseId,
+    :final callSite,
+  ) =>
+    ToolCallEvent(
+      toolName: toolName,
+      toolCallId: toolUseId,
+      inputs: args,
+      parentToolCallId: parentToolUseId,
+      // Out of range is dropped, never thrown: a site is only a hint.
+      callSite: callSite == null
+          ? null
+          : ScriptCallSite.tryParse([callSite.line, callSite.column]),
+    ),
+  LoopToolCallResult(
+    :final toolName,
+    :final toolUseId,
+    :final result,
+    :final parentToolUseId,
+  ) =>
     ToolResultEvent(
       toolCallId: toolUseId,
       outputs: result.content,
       toolName: toolName,
       isError: result.isError,
-      images: await imageRefs(toolName, result),
+      // A script's call keeps no images: its row is a bounded preview
+      // (NestedCallRows), and storing them would let a script write one
+      // blob per call.
+      images: parentToolUseId == null
+          ? await imageRefs(toolName, result)
+          : const [],
+      parentToolCallId: parentToolUseId,
+      outcome: result.outcome,
     ),
   LoopError(:final message, :final code) => ErrorEvent(
     content: message,

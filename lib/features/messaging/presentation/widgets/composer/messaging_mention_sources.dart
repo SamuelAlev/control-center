@@ -72,6 +72,7 @@ List<MentionSource> buildMessagingMentionSources(
   WidgetRef ref,
   String? workspaceId, {
   String? spaceId,
+  required Map<String, String> commandHints,
 }) {
   final agents = workspaceId != null
       ? ref.watch(workspaceAgentsProvider(workspaceId)).value ?? const []
@@ -174,7 +175,15 @@ List<MentionSource> buildMessagingMentionSources(
           ),
       ]),
     SlashCommandSource([
-      ...kMessagingSlashCommands,
+      for (final c in kMessagingSlashCommands)
+        commandHints[c.name] == null
+            ? c
+            : SlashCommand(
+                name: c.name,
+                description: commandHints[c.name]!,
+                icon: c.icon,
+                badge: c.badge,
+              ),
       // Skills carry their own `skill:` namespace so they never collide with
       // the builtins above — a skill named `plan` or `compact` was otherwise
       // shadowed for good, and every skill added narrowed the names a future

@@ -216,6 +216,7 @@ void main() {
 
     test('toPayload maps TicketAssigned', timeout: const Timeout.factor(2), () {
       final event = TicketAssigned(
+        assigningRunId: null,
         ticketId: 't-1',
         ticketTitle: 'Fix bug',
         ticketBody: 'Description',
@@ -236,6 +237,7 @@ void main() {
       timeout: const Timeout.factor(2),
       () {
         final event = TicketAssigned(
+          assigningRunId: null,
           workspaceId: 'ws-1',
           ticketId: 't-1',
           ticketTitle: 'Bug',
@@ -558,6 +560,7 @@ void main() {
 
     test('TicketAssigned dedup key', timeout: const Timeout.factor(2), () {
       final event = TicketAssigned(
+        assigningRunId: null,
         workspaceId: 'ws-1',
         ticketId: 't-1',
         ticketTitle: '',

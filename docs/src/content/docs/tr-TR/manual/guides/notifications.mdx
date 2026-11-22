@@ -2,7 +2,7 @@
 title: Bildirimleri yapılandırma
 description: Kategorileri açıp kapatın, sessiz saatleri ve bir ses belirleyin; hangi bildirimlerin size nerede ulaştığını öğrenin.
 slug: tr-TR/kilavuz/nasil-yapilir/bildirimler
-sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
+sourceHash: b1e5bb3b8a13bbbbd169916ab8e7cd7bdd403c1a
 ---
 
 Bu kılavuz, bildirimleri nasıl yapılandıracağınızı ve her ayarın gerçekte neyi
@@ -48,6 +48,8 @@ istemcisinde hiçbir bildirim yüzeyi yoktur.
 
 Bu liste dışındaki hiçbir şey için bildirim gönderilemez veya filtrelenemez —
 “diğer her şey” diye bir kategori yoktur.
+
+Uzun süren iş ilk iki kategoriyi kullanır. Sona eren bir hedef ve sona eren bir zamanlama **Ajan tamamlandı** sayılır; incelemenizi bekleyen bir hedef, bir iyileştirme önerisi, maliyet sınırında tutulan bir pipeline çalıştırması ve sizi bekleyen şeylerin günlük özeti ise **Bir ajan sizi bekliyor** sayılır. Her biri ilgili kişiye ulaşır: hedefi, zamanlamayı ya da çalıştırmayı başlatan kişiye.
 
 **Bir ajan sizi bekliyor** bir bekleme başladığında tetiklenir: bekleyen bir
 onay (sandbox çalıştırma izinleri ve Claude Code araç onayları dahil), bir
@@ -117,6 +119,8 @@ tetiklenir. Varsayılan 5 dakikadır.
 Bu denetimler işletim sistemi bildirimleri için geçerlidir. Kalıcı zil yine de
 olayı kaydeder.
 
+Bazı bildirimler **sessiz** olur: sunucu bunları işaretler, böylece zile bir uyarı, ses ya da yüksek sesli telefon bildirimi olmadan ulaşırlar. Sona eren bir zamanlama ve sona eren bir hedef sessizdir. İncelemenizi bekleyen bir hedef sessiz değildir.
+
 İki bastırma daha vardır ve daha yukarıda, sunucunun en başta ne gönderdiği
 noktasında işler:
 
@@ -127,9 +131,7 @@ noktasında işler:
 - Ajanlar arası alanlar kenar çubuğunda sessize alınmıştır, bu yüzden insan
   okunmamış rozetini hiç artırmazlar
 
-Bir alanın içinde sessiz bir köşe yoktur: diziler dahil her konuşma eşit şekilde
-bildirir. Okundu durumu alan kapsamlıdır; bu nedenle okunmamış durum konuşma
-başına izlenmek yerine bir alanın konuşmaları genelinde toplanır.
+Bir alanın içinde sessiz bir köşe yoktur: diziler dahil her konuşma eşit şekilde bildirir. Okundu durumu her konuşma için izlenir ve bir alan, konuşmalarından herhangi biri okunmamış olduğu sürece okunmamış sayılır.
 
 ## Bildirim merkezini okuma ve temizleme
 
@@ -182,6 +184,8 @@ Olayın gerçekleştiği alanda zaten bulunmadığınızı denetleyin — etkin 
 kendi işletim sistemi bildirimini bastırır. Paylaşılan bir alanda başka birinin
 başlattığı çalıştırma size değil, o kişiye bildirim gönderir. Yanıt ve hata
 olmadan biten bir tur hiçbir şey göndermez.
+
+Bir zamanlamanın ya da izlemenin başlattığı, sorunsuz biten bir çalıştırma, birini anmadıkça hiçbir şey göndermez. Tamamlanan bir hedef ya da sona eren bir zamanlama, bildirim uyarısı olmadan zile düşer.
 
 ## İlgili kılavuzlar
 

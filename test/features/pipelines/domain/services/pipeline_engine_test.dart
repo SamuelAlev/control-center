@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:cc_domain/cc_domain.dart' show ValidationException;
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
+import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/pipeline_events.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_definition.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_node_config.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_run.dart';
@@ -21,6 +23,7 @@ import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_templa
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_body_registry.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_engine.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_start.dart';
+import 'package:cc_domain/features/pipelines/domain/services/pipeline_step_resume_listener.dart';
 import 'package:cc_domain/features/pipelines/domain/services/step_process_registry.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -2524,6 +2527,92 @@ void main() {
       },
     );
 
+    test('a run the server stop ended leaves its step running, and boot '
+        'recovery fires it again', () async {
+      final def = _linearDefinition();
+      templateRepo.seed(def);
+      var attempts = 0;
+      bodies.registerBody('pipeline.trigger', (_) async => StepResult.ok());
+      bodies.registerBody('bodyA', (_) async {
+        attempts++;
+        return StepResult.ok();
+      });
+      bodies.registerBody('bodyB', (_) async => StepResult.ok());
+      runRepo.runs['stopped'] = PipelineRun(
+        id: 'stopped',
+        templateId: 'tpl',
+        workspaceId: 'ws',
+        status: PipelineRunStatus.running,
+        startedAt: DateTime(2026),
+        templateSnapshot: def,
+      );
+      runRepo.steps['s-trigger'] = PipelineStepRun(
+        id: 's-trigger',
+        pipelineRunId: 'stopped',
+        stepId: 'trigger',
+        status: PipelineStepStatus.completed,
+        startedAt: DateTime(2026),
+        finishedAt: DateTime(2026),
+      );
+      runRepo.steps['s-stepA'] = PipelineStepRun(
+        id: 's-stepA',
+        pipelineRunId: 'stopped',
+        stepId: 'stepA',
+        status: PipelineStepStatus.running,
+        startedAt: DateTime(2026),
+      );
+      // The step's agent run, ended by the server's stop.
+      agentRunLogRepo.seed(
+        AgentRunLog(
+          id: 'agent-run',
+          agentId: 'agent-1',
+          workspaceId: 'ws',
+          pipelineRunId: 'stopped',
+          pipelineStepId: 'stepA',
+          startedAt: DateTime(2026),
+          completedAt: DateTime(2026),
+          status: RunStatus.error,
+          endReason: RunEndReason.serverStopped,
+        ),
+      );
+      final listener = PipelineStepResumeListener(
+        eventBus: eventBus,
+        runLogRepository: agentRunLogRepo,
+        engine: engine,
+      )..start();
+      addTearDown(listener.dispose);
+
+      eventBus.publish(
+        AgentRunSettled(
+          agentId: 'agent-1',
+          workspaceId: 'ws',
+          spaceId: null,
+          conversationId: null,
+          runId: 'agent-run',
+          status: RunStatus.error,
+          endReason: RunEndReason.serverStopped,
+          costMicros: 0,
+          limitResetsAt: null,
+          wakeIds: const [],
+          requestedByUserId: null,
+          wakeReason: null,
+          occurredAt: DateTime(2026),
+        ),
+      );
+      for (var i = 0; i < 20; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+      expect(runRepo.steps['s-stepA']!.status, PipelineStepStatus.running);
+      expect(runRepo.runs['stopped']!.status, PipelineRunStatus.running);
+
+      await engine.resumeAll();
+      await _waitFor(
+        () => runRepo.runs['stopped']?.status == PipelineRunStatus.completed,
+        reason: 'boot recovery fires the interrupted step again',
+      );
+      expect(attempts, 1);
+    });
+
     test('resumes a pending step from a crashed run', () async {
       final def = _linearDefinition();
       templateRepo.seed(def);
@@ -3051,9 +3140,8 @@ void main() {
 
     test('two completions racing the same step harvest it once', () async {
       // A fan-out step dispatches N agent runs and every one of them publishes
-      // `AgentRunCompleted`. The listener asks whether they are ALL terminal,
-      // and the last two to finish can both answer yes — the event's own run is
-      // treated as terminal whether or not its status write has landed. Both
+      // `AgentRunSettled`. The listener asks whether they are ALL terminal,
+      // and the last two to finish can both answer yes. Both
       // then reach resumeStep, with a dozen awaits between reading the step's
       // open row and writing it completed.
       //

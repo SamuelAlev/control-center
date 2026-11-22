@@ -1,0 +1,176 @@
+---
+title: Code mode
+description: How an agent writes a short script that calls its tools instead of calling them one at a time, which tools it calls directly and which from a script, the limits a script runs under, how a script reads in the conversation, and how it is confined and recorded.
+---
+
+An agent normally calls its tools one at a time. Each call is a model turn: the agent asks for the call, the result comes back into its context, and the agent reads it before it asks for the next one. For work that is mostly mechanical, such as reading twenty files to find the three that matter or checking every open ticket for one label, most of those turns and most of that context are spent on results the agent throws away.
+
+Code mode is one tool, `repl`. With it the agent writes a short JavaScript script that calls its other tools, loops, filters and combines their results, and returns only what it needs. One `repl` call can do the work of dozens of tool turns, and only the script's answer enters the context.
+
+Every run has `repl` when the server can run scripts. There is nothing to turn on: see [When a run has `repl`](#when-a-run-has-repl).
+
+## What a script can do
+
+A script is plain JavaScript, written as the body of an async function, so `await` and `return` work at the top level. Each `repl` call starts a new, empty interpreter.
+
+- **Call tools.** `await tools.read({ path: "README.md" })` calls a tool and resolves to its result, or rejects with an error when the call fails or is denied. Independent calls can run together with `Promise.allSettled`.
+- **Find tools.** `ALL_TOOLS` lists every tool the script may call. `searchTools(query)` finds tools by what they do, `describeTool(name)` returns one tool's description and arguments, and `describeNamespace(name)` lists the tools of one group. The tools of connected MCP servers are reachable this way too.
+- **Return results.** Only what the script returns, or passes to `text()`, `image()` or `console.log()`, comes back to the agent. Up to four images reach the model.
+- **Keep values.** `store(key, value)` and `load(key)` keep small JSON values between scripts of the same conversation and agent. Values are saved only when the script completes. Subagents have no store.
+- **Ask a person.** `await tools.ask_user({ question, options })` asks a question and waits for the answer.
+- **Use on-device embeddings.** `models.embed`, `models.rank` and `models.classify` use the server's embedding model, when it is installed.
+- **Wait.** `sleep(ms)` and `setTimeout`, within the script's time limit. `limits()` returns the limits the script runs under.
+
+A script has no file system, network, process, module or environment access: no `fetch`, `require`, `import` or `process`. The only way out is a tool call, and every tool call goes through the same checks as a call the agent made directly.
+
+Tool calls a script already made are not undone when the script fails afterwards.
+
+## Which tools the agent calls directly
+
+Every run of the built-in agent gets the same small set of tools it calls by name:
+
+- `repl`, first;
+- the file and shell tools `read`, `write`, `edit`, `search`, `find`, `bash` and `read_output`;
+- `ask_user` and `task`;
+- `todo_write`, `search_memory` and `send_message`;
+- the verbs the conversation's [mode](/manual/concepts/modes/) needs to deliver its output or leave it, such as `submit_plan` in plan mode;
+- `search_tools`, when some tool loads on first use (below).
+
+Every other tool the run may use is reached one of two ways:
+
+- **From a script only**, when a script may call it. The agent finds it with `searchTools()` or `describeTool()` and calls it as `tools.<name>(args)`. Its description never reaches the model, so it costs nothing in the prompt. If the agent calls one directly anyway, the answer tells it to call the tool from a script. If the server cannot run the run's scripts, it loads on first use instead ([When scripts cannot run](#when-scripts-cannot-run)).
+- **Loaded on first use**, when a script may not call it. The agent sees its name, and calling it by name, or finding it with `search_tools`, loads it.
+
+Some tools are never callable from a script, among them `repl` itself (a script cannot start a script), `eval`, `task`, `checkpoint`, `rewind`, the `vibe_*` verbs, and tools that start or message other agent runs, create, decide or comment on approvals, change policy or skills, or leave plan mode. The agent calls those directly.
+
+A run without `repl` gets the same direct tools, and everything else loads on first use. [Tool context and prompt caching](/manual/concepts/tool-context/) explains why the set is the same either way.
+
+Code mode never adds a tool the conversation's mode does not allow. The mode's tool filter is applied first, and a script can call only what is left.
+
+## When a run has `repl`
+
+A run has `repl` when the server's script runner passed its lockdown check at start ([How scripts are confined](#how-scripts-are-confined)). No workspace, agent or server setting changes that. A run still has no `repl` when:
+
+- the runner cannot lock itself down on the server's machine; the server then runs no scripts at all;
+- the server is a public demo, which runs no scripts;
+- the run belongs to no workspace;
+- the workspace's limits cannot be read, because running under the defaults could go past limits an admin lowered;
+- the run's log could not be written, because every script is recorded under its run before it starts.
+
+Such a run calls all of its tools directly.
+
+Code mode works for runs of the built-in agent and for agents that reach Control Center's tools through its MCP endpoint, such as Claude Code. For an MCP agent, the tool list it receives holds `repl`, the direct tools and the tools a script may not call; it calls the rest from scripts. Only a run that Control Center started and keeps a log for gets `repl` there; any other client is sent every tool except `repl`.
+
+**Settings → Workspace → Code mode** shows under **Status** whether this server runs scripts (**Available** or **Unavailable**, with the server's reason) and which **Runner** version is installed. **View code executions** opens the list of scripts that ran.
+
+A server owner cannot switch scripts off. The owner can bound them: how many run at once and how much memory one may use (see [Limits](#limits)).
+
+### When scripts cannot run
+
+A run never loses a tool because the server cannot run its scripts. When the server refuses a script for a reason no other script would have escaped (for example scripts are unavailable, the script has waited half of its time for a free place, its record cannot be written, the run's tool list is too large to hand to a script, or the runner cannot start or lock itself down), the run stops using scripts for the rest of its life:
+
+- a run of the built-in agent keeps `repl`, and every tool it reached only from a script now loads on first use: the agent calls it by name or finds it with `search_tools`;
+- a run on the MCP endpoint is sent a tool list with every tool and no `repl`, and its client is told that the list changed. The server remembers the last 1,024 such runs; an older one goes back to scripts.
+
+Those tools pass the same mode filter, guardrails and approvals as before, so nothing becomes callable that was not. A script that fails on its own account, by throwing an error, running out of a limit or having a call denied, changes nothing.
+
+The server also keeps checking that scripts can run. When the runner fails to start for a reason that is not the script's, the server repeats its lockdown check, at most once a minute. If the check fails, the server runs no scripts and logs the same `code_mode=unavailable` line as at start; runs that start meanwhile get no `repl`. It keeps checking, at most once a minute, and when a check passes it runs scripts again and logs the `code_mode=available` line. Only a check that failed when the server started needs a restart.
+
+## Limits
+
+Every script runs under limits. A workspace admin can change six of them under **Limits** in **Settings → Workspace → Code mode** (**Adjust limits**); the agent can ask for less time or a smaller output budget for one script, never more.
+
+| Limit | Default | Range | When it runs out |
+| --- | --- | --- | --- |
+| Time per script | 5 min | 1 s to 25 min | The script is stopped and the agent is told it ran out of time. |
+| Processor time | 30 s | 1 s to 2 min | The script is stopped. |
+| Memory | 256 MiB | 16 MiB to 1 GiB | The script is stopped. The server owner can set a lower ceiling for the whole server. |
+| Tool calls per script | 500 | 1 to 5,000 | Further calls are refused, and the script is told why. |
+| Calls at once | 8 | 1 to 32 | Read-only calls beyond it wait their turn. Calls that change something always run one at a time. |
+| Output the agent reads | 10,000 tokens | 100 to 50,000 | The output is shortened to its start and end, and the agent can read the rest on request. |
+
+Time a script spends waiting for a person, on an approval or a question, does not count against its time limit. While it waits, the script starts no other tool call: calls it makes meanwhile start, in order, once you have answered.
+
+Some limits are fixed: a script's source is at most 256 KiB, one tool call's arguments 1 MiB and 16,384 values, a command a script passes to a built-in tool that runs it 16 KiB (the tool's name counts towards it), one result handed to the script 4 MiB, a stored value 256 KiB, and everything one conversation and agent store together 1 MiB. One run runs one script at a time.
+
+A script's tool lookups are limited too: a `searchTools` query of at most 1,024 characters, a tool or namespace name of at most 256, at most 50 results, and at most 200 lookups taking 2 seconds of the server's time in all; past that, further lookups fail. All scripts of one workspace also share 2 seconds of lookup time, given back at a quarter of a second each second. The search index gives every tool an equal share of about a million characters, spent on its argument names first and then on its description, and always indexes every tool's name, so even in a very large catalogue a tool is found by its name.
+
+The server owner also limits how many scripts run at once on the server (`--code-mode-max-processes`, by default twice the number of processor cores, at most 16) and the memory one script may use (`--code-mode-max-heap-mb`); scripts waiting for a person are counted apart, up to four times that number. When that cap is more than one, one workspace can use at most about three quarters of it, so no single workspace can take every place. A run and its subagents together use at most half of their workspace's places (at least one), so their further scripts wait while scripts of the workspace's other runs go ahead. See the [`cc_server` CLI reference](/manual/reference/cc-server-cli/#code-mode).
+
+## Approvals and questions
+
+A tool call from a script is checked exactly like a direct call: the mode's tool filter, the [action guardrails](/manual/concepts/guardrails/), the approval prompt and the tool's own checks. A script cannot do anything the agent could not do by calling the tool itself.
+
+When a script's call needs approval, the approval card says **From a script the agent is running**, and **Show script** opens the script in the conversation. To keep a script from flooding you with cards:
+
+- one script can ask for approval at most 10 times, and ask at most 10 questions;
+- once you decline one of its calls, its later calls that need approval are refused without asking.
+
+For runs of the built-in agent, approval prompts caused by the commands a script runs, such as a push, count towards the same limit and stop after a decline in the same way. When a subagent's script runs at the same time, such a prompt counts for both scripts, and a decline stops both.
+
+In a run of the built-in agent, an approval for a tool of an external MCP server is not remembered: each call asks again, whether a script or the agent itself makes it, unless the space's autonomy is set to **Act freely**. Each such prompt that a script causes counts towards its limit of 10.
+
+If the script ends before you answer, the card is withdrawn, and an answer given after that approves nothing.
+
+## In the conversation
+
+A `repl` call shows in the conversation as one row labelled with the script's description. Expanding it shows the script and its output, and the tool calls the script made under **Tool calls**, with a count of how many are running, ok, failed, denied, cancelled, queued or skipped.
+
+### How a script reads
+
+The tool calls are laid out the way the script is written, not as one long list. The runner reports the line and column each call was made from, and the app reads the script to find its loops, branches and functions:
+
+- **A loop** (`for`, `while`) shows as a **Loop** group headed by its first line, and a callback passed to a call such as `map` or `forEach` as a **For each** group. A thin line separates one pass of the loop from the next when the app can tell them apart.
+- **Calls run together** with `Promise.all`, `Promise.allSettled` or a similar combinator show as an **In parallel** group.
+- **A branch** (`if`/`else`, `switch`, `try`/`catch`) shows one group per arm, headed by its condition.
+- **A function** the script defines and calls shows as a **Function** group.
+
+A group inside another is indented one step further, up to eight steps; deeper groups stay at that indent.
+
+Each group header shows how its calls ended so far. Before a call runs, its row shows the tool and the arguments as written in the script:
+
+| Row | Meaning |
+| --- | --- |
+| **Queued** | The script has not reached this call yet. |
+| Running | The call is running. |
+| Done | The call ended; the row shows its outcome and how long it took. |
+| **Skipped** | The script passed this call by, such as the arm of an `if` that was not taken, or ended without reaching it. |
+
+A call written inside the arguments of a call to the same tool is reported from the same place in the script as that call. When the app cannot tell whether the outer call was made, its row shows no state word instead of **Skipped**.
+
+When a group has made more than eight calls, its middle folds: the first two and the last three stay in sight, and so does every call that is still running, failed or was denied, together with the call that started its pass of the loop. **Show N more calls** opens 100 more each time you press it, and names up to four tools of the hidden calls with how many of each, the rarest first, such as **Show 12 more calls** · Bash 1 · Read 11. A tool name longer than 24 characters is cut short there.
+
+A call the app cannot place in the script, such as one a `then` callback made, is listed after the tree under **Calls not placed in the script**. When the app cannot read the script, or no call says where it was made, the calls show as a plain list in the order they were made.
+
+Each call row shows the beginning of the call's arguments and of its result, up to 8 KiB each; once a script's rows hold 256 KiB of these, its later rows show only the tool and the outcome. Once the script has finished, **Open record** opens its full record; if the record cannot be found, it opens the list of scripts from that run instead. A script that was refused before it ran (for example because another script of the same run was still running) has no record and no link.
+
+## The record
+
+Every script that runs is recorded in its workspace before it starts, and the record is completed when it ends. **Observability → Code executions** lists them, newest first, and can be filtered by outcome. A record's **Scripts in this run** and **Scripts by this agent** links narrow the list to one run or one agent. A record shows:
+
+- the script, its output and its console;
+- when it started, how long it took, the processor time and peak memory it used, and whether it ran through the built-in agent or an external one;
+- how it ended, in plain words (for example, it ran out of time or threw an error nothing caught);
+- every tool call, in order, with its outcome, whether it was allowed, approved by a person or denied, how long a person took to decide, its arguments (secrets removed, cut to 8 KiB) and the size of its result. The result itself is not kept.
+
+The record keeps where in the script each call was made, so its tool calls are laid out the same way as in the conversation. A call a person approved is never folded away there.
+
+A script that is still running shows as running, with the tool calls that have finished so far; its output, duration and resource use appear when it ends. If the server stops while a script runs, the record is closed when the server starts again and says so; no script runs in that workspace until it is closed.
+
+Records are kept with their run: deleting the run or its space deletes them. Members see the records of spaces they can open.
+
+## How scripts are confined
+
+Scripts never run inside the server. Each script runs in its own process, a small program bundled with the server, `cc_codemode`, that runs JavaScript in the QuickJS-NG engine. Before it reads the script, the program locks itself down with the operating system's own controls: on Linux a system call filter and resource limits, on macOS a deny-by-default sandbox profile, on Windows an AppContainer and a job object. After that it cannot open files, use the network, start processes or see other programs. It starts with no environment variables and holds no credentials; its only channel is the server, which answers its tool calls.
+
+The server checks the lockdown when it starts, by running the program's self-test. If the lockdown does not hold on that machine, for example inside a container whose security profile refuses one of the steps, the server runs no scripts there: no run gets `repl`, and the settings page shows **Unavailable** with the reason. A script never runs with less confinement. The Windows lockdown has not yet been run on Windows.
+
+Where a call was made in the script is reported by the runner, so it is only used to lay out the conversation and the record. It never decides whether a call is allowed.
+
+See [Sandbox and security](/manual/concepts/sandbox-security/#scripts-in-code-mode) for what the lockdown does and does not cover.
+
+## See also
+
+- [Tool context and prompt caching](/manual/concepts/tool-context/): why the direct set is small and the same with or without `repl`.
+- [Agent tools](/manual/reference/agent-tools/#repl--run-a-script-that-calls-your-tools): the `repl` tool's input.
+- [`cc_server` CLI](/manual/reference/cc-server-cli/#code-mode): the limits the server owner sets.

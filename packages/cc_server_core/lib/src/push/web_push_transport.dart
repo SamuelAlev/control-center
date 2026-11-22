@@ -133,6 +133,7 @@ Future<WebPushWireMessage> buildWebPushWireMessage({
   required PushSubscriptionRecord subscription,
   required VapidIdentity vapid,
   required Uint8List payload,
+  bool quiet = false,
 }) async {
   final endpoint = validatedPushEndpoint(subscription.endpoint);
   final publicKey = _decode(subscription.p256dh);
@@ -156,7 +157,10 @@ Future<WebPushWireMessage> buildWebPushWireMessage({
       'Content-Encoding': 'aes128gcm',
       'Content-Type': 'application/octet-stream',
       'TTL': '300',
-      'Urgency': 'normal',
+      // RFC 8030: a frame the server marked `quiet` may wait for a good
+      // moment to wake the device; everything else is delivered at normal
+      // urgency.
+      'Urgency': quiet ? 'low' : 'normal',
     },
     body: encrypted,
   );
@@ -175,6 +179,7 @@ class WebPushTransport {
     required VapidIdentity vapid,
     required Uint8List payload,
     Future<bool> Function()? maySend,
+    bool quiet = false,
   }) async {
     final uri = validatedPushEndpoint(subscription.endpoint);
     final addresses = await InternetAddress.lookup(
@@ -194,6 +199,7 @@ class WebPushTransport {
       subscription: subscription,
       vapid: vapid,
       payload: payload,
+      quiet: quiet,
     );
     final client = HttpClient()
       ..connectionTimeout = const Duration(seconds: 4)

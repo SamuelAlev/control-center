@@ -2,24 +2,34 @@ import 'dart:convert';
 
 import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
-import 'package:cc_domain/core/domain/value_objects/output_contract_mode.dart';
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space_participant.dart';
-import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_domain/features/messaging/domain/services/peer_delegation_guards.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/message_page.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dart';
+import 'package:cc_domain/features/ticketing/domain/repositories/ticket_repository.dart';
+import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_service.dart';
 import 'package:cc_mcp/src/tools/consult_agent_tool.dart';
 import 'package:test/test.dart';
+
+import 'peer_tool_kit.dart';
+
+/// The kit the current test delivers through.
+late PeerKit _kit;
 
 class _FakeAgentRepository implements AgentRepository {
   final List<Agent> _agents = [];
 
-  void add(Agent agent) => _agents.add(agent);
+  void add(Agent agent) {
+    _agents.add(agent);
+    _kit.agents[agent.id] = agent;
+  }
 
   @override
   Stream<List<Agent>> watchAll() => Stream.value(List.unmodifiable(_agents));
@@ -98,6 +108,7 @@ class _FakeMessagingRepository implements MessagingRepository {
 
   final Map<String, List<SpaceParticipant>> _participants = {};
   final List<_SentMessage> sent = [];
+  int _ids = 0;
 
   void addParticipantEntry(String spaceId, SpaceParticipant p) {
     (_participants[spaceId] ??= []).add(p);
@@ -157,7 +168,19 @@ class _FakeMessagingRepository implements MessagingRepository {
         messageType: messageType,
       ),
     );
-    return 'msg-${sent.length}';
+    final messageId = 'msg-${++_ids}';
+    _kit.conversation('c-$spaceId', spaceId: spaceId, workspaceId: workspaceId);
+    _kit.messages[messageId] = Message(
+      id: messageId,
+      spaceId: spaceId,
+      conversationId: 'c-$spaceId',
+      senderId: senderId,
+      senderType: SenderType.system,
+      content: content,
+      messageType: MessageType.system,
+      createdAt: _kit.now,
+    );
+    return messageId;
   }
 
   // Unused stubs
@@ -198,7 +221,7 @@ class _FakeMessagingRepository implements MessagingRepository {
       const Stream.empty();
   @override
   Future<Message?> getMessageById(String workspaceId, String messageId) async =>
-      null;
+      _kit.messages[messageId];
   @override
   Future<MessagePage> getMessagePage(
     String workspaceId,
@@ -329,198 +352,10 @@ class _SentMessage {
   final String messageType;
 }
 
-class _FakeMessagingPort implements MessagingPort {
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-  @override
-  Future<void> archiveSpace(String workspaceId, String spaceId) async {}
-
-  @override
-  Future<void> unarchiveSpace(String workspaceId, String spaceId) async {}
-
-  /// Spaces this fake was asked to stop provisioning.
-  final List<String> cancelledProvisioning = [];
-
-  @override
-  Future<void> cancelSpaceProvisioning(
-    String workspaceId,
-    String spaceId,
-  ) async => cancelledProvisioning.add(spaceId);
-
-  @override
-  Future<String?> createConversation({
-    required String workspaceId,
-    required String spaceId,
-    required String title,
-    String? createdByPrincipalId,
-    bool reuseExisting = false,
-  }) async => null;
-
-  @override
-  Future<void> retryAgentTurn({
-    required String workspaceId,
-    required String spaceId,
-    required String failedMessageId,
-    String? modelOverride,
-    String? requestedByUserId,
-  }) async {}
-
-  @override
-  Future<ConversationCompactionResult> compactConversation({
-    required String workspaceId,
-    required String spaceId,
-    String? conversationId,
-  }) async => const ConversationCompactionResult(
-    status: ConversationCompactionStatus.unavailable,
-  );
-
+/// The runs the wake queue started, with the consultation brief their
+/// wake carried.
+class _FakeMessagingPort {
   final List<_DispatchCall> dispatched = [];
-
-  @override
-  Future<void> updateSpaceName(
-    String workspaceId,
-    String spaceId,
-    String name,
-  ) async {}
-
-  @override
-  Future<List<String>?> getSpaceRepos(
-    String workspaceId,
-    String spaceId,
-  ) async => null;
-
-  @override
-  Future<void> setSpaceRepos(
-    String workspaceId,
-    String spaceId,
-    List<String>? repoIds,
-  ) async {}
-
-  @override
-  Future<String?> dispatchAgent({
-    required String workspaceId,
-    required String spaceId,
-    required String agentId,
-    required String prompt,
-    String? ticketId,
-    String? pipelineRunId,
-    String? pipelineStepId,
-    String? inReplyToAgentId,
-    String? requestedByUserId,
-    dynamic wakeContext,
-    String? conversationId,
-    Map<String, dynamic>? expectedOutputSchema,
-    OutputContractMode outputContractMode = OutputContractMode.strict,
-  }) async {
-    dispatched.add(
-      _DispatchCall(
-        spaceId: spaceId,
-        agentId: agentId,
-        prompt: prompt,
-        workspaceId: workspaceId,
-      ),
-    );
-    return null;
-  }
-
-  // Unused stubs
-  @override
-  Future<void> sendUserMessage(
-    String workspaceId,
-    String spaceId,
-    String content, {
-    String? senderUserId,
-    String? conversationId,
-    Map<String, dynamic>? metadata,
-  }) async {}
-  @override
-  Future<void> addAgentToSpace(
-    String workspaceId,
-    String spaceId,
-    String agentId, {
-    bool renameForGroup = true,
-  }) async {}
-  @override
-  Future<bool> spaceExists(String workspaceId, String spaceId) async => true;
-  @override
-  Future<Space> createSpace(
-    String workspaceId,
-    String name,
-    List<String> agentIds, {
-    dynamic mode,
-    List<String>? repoIds,
-    Map<String, String>? repoBranches,
-    String? pipelineRunId,
-    String? createdByUserId,
-    SpaceKind kind = SpaceKind.topic,
-  }) async => throw UnimplementedError();
-  @override
-  Future<void> sendAndDispatch(
-    String workspaceId,
-    String spaceId,
-    String content, {
-    String? senderUserId,
-    List<dynamic>? structuredMentions,
-    List<dynamic>? entityRefs,
-    String? conversationId,
-    Map<String, dynamic>? metadata,
-  }) async {}
-  @override
-  Future<void> refinePlan({
-    required String workspaceId,
-    required String spaceId,
-    required String feedback,
-    String? senderUserId,
-  }) async {}
-  @override
-  Future<void> removeParticipant(
-    String workspaceId,
-    String spaceId,
-    String agentId,
-  ) async {}
-  @override
-  Future<void> deleteSpace(String workspaceId, String spaceId) async {}
-  @override
-  Future<void> clearSpaceMessages(String workspaceId, String spaceId) async {}
-  @override
-  Future<void> stopRun(String workspaceId, String runLogId) async {}
-  @override
-  Future<bool> pauseRun(String runLogId) async => false;
-  @override
-  Future<bool> resumeRun(String runLogId) async => false;
-  @override
-  Future<bool> steerRun(
-    String runLogId,
-    String message, {
-    bool followUp = false,
-  }) async => false;
-
-  /// Context and branch surfaces this fake does not exercise.
-  @override
-  Future<ConversationShakeResult> shakeConversation({
-    required String workspaceId,
-    required String spaceId,
-    String? conversationId,
-    String target = 'tool_output',
-  }) async => const ConversationShakeResult();
-
-  @override
-  Future<ConversationSideChannelResult> askAside({
-    required String workspaceId,
-    required String spaceId,
-    String? conversationId,
-    required String kind,
-    String input = '',
-    String? requestedByUserId,
-  }) async => const ConversationSideChannelResult();
-
-  @override
-  Future<GuidedGoalStepResult> guidedGoalStep({
-    required String workspaceId,
-    required String rough,
-    List<String> transcript = const [],
-    String? requestedByUserId,
-  }) async => const GuidedGoalStepResult();
 }
 
 class _DispatchCall {
@@ -561,14 +396,29 @@ void main() {
     late _FakeMessagingPort messagingPort;
     late ConsultAgentTool tool;
 
-    setUp(() {
+    setUp(() async {
+      _kit = PeerKit();
       agents = _FakeAgentRepository();
       messaging = _FakeMessagingRepository();
       messagingPort = _FakeMessagingPort();
+      _kit.onDispatch = (run) => messagingPort.dispatched.add(
+        _DispatchCall(
+          spaceId: run.spaceId,
+          agentId: run.agentId,
+          prompt: _kit.wakes
+              .all(run.workspaceId)
+              .lastWhere((w) => w.agentId == run.agentId)
+              .payload,
+          workspaceId: run.workspaceId,
+        ),
+      );
+      await _kit.start();
       tool = ConsultAgentTool(
         agents: agents,
         messaging: messaging,
-        messagingPort: messagingPort,
+        service: _openGate(),
+        peerAsks: _kit.service,
+        rateLimiter: PairRateLimiter(),
       );
     });
 
@@ -1222,6 +1072,9 @@ void main() {
         )).length;
         messaging.sent.clear();
         messagingPort.dispatched.clear();
+        // The first consult's run ends; a second wake would otherwise wait
+        // behind it in that conversation.
+        await _kit.finish('run-1', answer: 'Use the flag.');
 
         // Second consult — same agent, same space
         await tool.call({
@@ -1234,7 +1087,7 @@ void main() {
 
         final participants = await messaging.getParticipants('ws-1', 'ch-1');
         expect(participants.length, countAfterFirst);
-        // Still dispatched a second time (consult is stateless)
+        // Woken a second time: a new consult is a new wake.
         expect(messagingPort.dispatched.length, 1);
         expect(messaging.sent.length, 1);
       });
@@ -1292,7 +1145,9 @@ void main() {
           final throwingTool = ConsultAgentTool(
             agents: agents,
             messaging: throwingRepo,
-            messagingPort: messagingPort,
+            service: _openGate(),
+            peerAsks: _kit.service,
+            rateLimiter: PairRateLimiter(),
           );
           agents.add(
             _createAgent(
@@ -1322,7 +1177,9 @@ void main() {
         final throwingTool = ConsultAgentTool(
           agents: agents,
           messaging: throwingRepo,
-          messagingPort: messagingPort,
+          service: _openGate(),
+          peerAsks: _kit.service,
+          rateLimiter: PairRateLimiter(),
         );
         agents.add(
           _createAgent(
@@ -1491,7 +1348,9 @@ void main() {
         final throwingTool = ConsultAgentTool(
           agents: agents,
           messaging: throwingRepo,
-          messagingPort: messagingPort,
+          service: _openGate(),
+          peerAsks: _kit.service,
+          rateLimiter: PairRateLimiter(),
         );
         agents.add(
           _createAgent(
@@ -1526,4 +1385,21 @@ class _ThrowingMessagingRepository extends _FakeMessagingRepository {
   ) async {
     throw Exception('boom');
   }
+}
+
+/// A gate that admits every hand-off: both agents act with approval, no
+/// budget stop. Gate refusals are covered in `peer_tools_gate_test.dart`.
+TicketWorkflowService _openGate() => TicketWorkflowService(
+  repository: _NoTickets(),
+  eventBus: DomainEventBus(),
+  resolveEffectiveAutonomy:
+      ({required workspaceId, required agentId, spaceId}) async =>
+          AutonomyLevel.actWithApproval,
+  resolveRemainingBudgetMicros:
+      ({required workspaceId, required agentId}) async => null,
+);
+
+class _NoTickets implements TicketRepository {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

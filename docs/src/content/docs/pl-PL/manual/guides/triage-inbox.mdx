@@ -2,7 +2,7 @@
 title: Przeglądaj skrzynkę
 description: Pracuj ze wspólną skrzynką — usuwaj to, co Cię blokuje, recenzuj to, co na Ciebie czeka, i śledź własne PR-y.
 slug: pl-PL/podrecznik/poradniki/przeglad-skrzynki
-sourceHash: 8b1cedaef10bca4c784509cf67c82493c1baab35
+sourceHash: 78a60272d46bc865d25bd7bc98796a89978e3e7c
 ---
 
 Ten poradnik pokazuje, jak pracować ze skrzynką: jedną powierzchnią, która
@@ -77,9 +77,9 @@ Każda karta paska ma jedną następną akcję:
    połączenia, serię kolejnych niepowodzeń i ostatni wynik. W skrzynce pojawia
    się tylko ostatnie niepowodzenie dla danego dostawcy, więc udana
    synchronizacja usuwa kartę.
-3. Karty znikają samodzielnie, gdy tylko leżący u ich podstaw stan się rozwiąże
-   (agent dostanie odpowiedź, synchronizacja wróci do zdrowia) — nie ma nic do
-   ręcznego odrzucania.
+3. Jeśli karta mówi **Cel czeka na recenzję** albo **Cel potrzebuje osoby**, kliknij **Recenzuj** — trafisz na stronę celu, gdzie go zatwierdzasz, wznawiasz albo odpowiadasz na to, na co czeka. Wznowienie należy do osoby, która uruchomiła cel. Zatwierdzenie celu uruchomionego przez potok należy do osoby, która uruchomiła to uruchomienie (zob. [Realizuj cel](/pl-PL/podrecznik/poradniki/realizuj-cel/)). Wyświetlane są tylko cele, na które możesz działać: cel czekający na recenzję albo cel uruchomiony przez Ciebie, który potrzebuje osoby.
+4. Jeśli karta mówi **Zaproponowano usprawnienie**, kliknij **Recenzuj** — trafisz na propozycję, gdzie ją akceptujesz albo odrzucasz.
+3. Karty znikają samodzielnie, gdy tylko leżący u ich podstaw stan się rozwiąże (agent dostanie odpowiedź, synchronizacja wróci do zdrowia, cel przejdzie dalej, propozycja zostanie rozstrzygnięta) — nie ma nic do ręcznego odrzucania.
 
 :::note[To potwierdzenia na jedną turę, nie zatwierdzenia zarządcze]
 Karta „zatwierdzenia agenta” to działający agent, który zatrzymuje się, aby

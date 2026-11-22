@@ -334,6 +334,7 @@ class _FakeMessagingPort implements MessagingPort {
       'agentId': agentId,
       'prompt': prompt,
       'workspaceId': workspaceId,
+      'startedByRunId': wakeContext?.startedByRunId,
     });
     return 'run-${dispatched.length}';
   }
@@ -419,6 +420,7 @@ void main() {
       );
 
       final result = await svc.dispatch(
+        startedByRunId: null,
         spaceId: 'ch',
         workspaceId: 'ws',
         reviewers: [
@@ -448,6 +450,40 @@ void main() {
       ));
     });
 
+    test("each reviewer's run records the run that asked for it; a "
+        'caller with no run (a person) starts runs that record none', () async {
+      final messagingPort = _FakeMessagingPort();
+      final svc = service(
+        agents: _FakeAgentRepo({
+          'ws': [
+            _agent(id: 'a1', name: 'Alice', title: 'Senior Flutter Engineer'),
+            _agent(id: 'a2', name: 'Bob', title: 'Security Reviewer'),
+          ],
+        }),
+        messaging: _FakeMessagingRepo(),
+        reviewSpaces: _FakeReviewSpaceRepo({'ch': _assoc()}),
+        messagingPort: messagingPort,
+        workspaces: _FakeWorkspaceRepo([_workspace()]),
+      );
+      for (final run in ['run-lead', null]) {
+        await svc.dispatch(
+          startedByRunId: run,
+          spaceId: 'ch',
+          workspaceId: 'ws',
+          reviewers: [
+            {'role': 'flutter'},
+            {'role': 'security'},
+          ],
+        );
+      }
+      expect(messagingPort.dispatched.map((d) => d['startedByRunId']), [
+        'run-lead',
+        'run-lead',
+        null,
+        null,
+      ]);
+    });
+
     test('unmatched roles are reported without dispatching', () async {
       final agents = _FakeAgentRepo({
         'ws': [_agent(id: 'a1', name: 'Alice', title: 'Flutter Engineer')],
@@ -466,6 +502,7 @@ void main() {
       );
 
       final result = await svc.dispatch(
+        startedByRunId: null,
         spaceId: 'ch',
         workspaceId: 'ws',
         reviewers: [
@@ -500,6 +537,7 @@ void main() {
       );
 
       final result = await svc.dispatch(
+        startedByRunId: null,
         spaceId: 'ch',
         workspaceId: 'ws',
         reviewers: [
@@ -533,6 +571,7 @@ void main() {
       );
 
       final result = await svc.dispatch(
+        startedByRunId: null,
         spaceId: 'ch',
         workspaceId: 'ws',
         reviewers: [
@@ -567,6 +606,7 @@ void main() {
       );
 
       await svc.dispatch(
+        startedByRunId: null,
         spaceId: 'ch',
         workspaceId: 'ws',
         reviewers: [
@@ -599,6 +639,7 @@ void main() {
       );
 
       await svc.dispatch(
+        startedByRunId: null,
         spaceId: 'ch',
         workspaceId: 'ws',
         reviewers: [
@@ -630,6 +671,7 @@ void main() {
       );
 
       final result = await svc.dispatch(
+        startedByRunId: null,
         spaceId: 'ch',
         workspaceId: 'ws',
         reviewers: [
@@ -657,6 +699,7 @@ void main() {
       );
 
       final result = await svc.dispatch(
+        startedByRunId: null,
         spaceId: 'ch',
         workspaceId: 'ws',
         reviewers: [
@@ -688,6 +731,7 @@ void main() {
       );
 
       final result = await svc.dispatch(
+        startedByRunId: null,
         spaceId: 'ch',
         workspaceId: 'ws',
         reviewers: [
@@ -717,6 +761,7 @@ void main() {
       );
 
       await svc.dispatch(
+        startedByRunId: null,
         spaceId: 'ch',
         workspaceId: 'ws',
         reviewers: [
@@ -749,6 +794,7 @@ void main() {
       );
 
       await svc.dispatch(
+        startedByRunId: null,
         spaceId: 'ch',
         workspaceId: 'ws',
         reviewers: [
@@ -779,6 +825,7 @@ void main() {
       );
 
       await svc.dispatch(
+        startedByRunId: null,
         spaceId: 'ch',
         workspaceId: 'ws',
         reviewers: [
@@ -807,6 +854,7 @@ void main() {
       );
 
       await svc.dispatch(
+        startedByRunId: null,
         spaceId: 'ch',
         workspaceId: 'ws',
         reviewers: [
@@ -850,6 +898,7 @@ void main() {
       ).create(recursive: true);
 
       await svc.dispatch(
+        startedByRunId: null,
         spaceId: 'ch',
         workspaceId: 'ws',
         reviewers: [
@@ -880,6 +929,7 @@ void main() {
       );
 
       await svc.dispatch(
+        startedByRunId: null,
         spaceId: 'ch',
         workspaceId: 'ws',
         reviewers: [

@@ -1,8 +1,8 @@
 ---
 title: Jelajahi data di kernel persisten
-description: Beri agen interpreter Python atau JavaScript yang mempertahankan variabelnya di antara panggilan, menggambar grafik ke dalam chat, dan dapat memanggil alat Anda sendiri dari dalam sel.
+description: Beri agen interpreter Python atau JavaScript yang mempertahankan variabelnya di antara panggilan dan menggambar grafik ke dalam chat.
 slug: id-ID/panduan-pengguna/panduan-praktis/jelajahi-data-di-kernel
-sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
+sourceHash: 8fcd77019bfae5088223822a12ef91c8a6879c5d
 ---
 
 Panduan ini menunjukkan cara membuat agen memuat sesuatu yang mahal sekali, lalu mengajukan beberapa pertanyaan tentangnya, alih-alih membayar biaya pemuatan pada setiap pertanyaan.
@@ -62,22 +62,9 @@ Ini ditulis ulang menjadi kode biasa alih-alih memunculkan galat:
 
 Penggusuran cache `%pip` adalah yang paling penting: memasang ke interpreter yang sedang berjalan tidak berpengaruh apa pun bagi modul yang sudah diimpor, jadi tanpanya versi yang baru Anda pasang bukan versi yang sedang berjalan.
 
-## Memanggil alat Anda sendiri dari dalam sel
+## Memanggil alat dari kode
 
-```python
-paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
-for path in paths.splitlines()[:100]:
-    contents = tool("read", {"path": path})
-    ...
-```
-
-`tool(name, args)` masuk kembali ke registri alat milik agen itu sendiri. Artinya, sebuah sel dapat menyebar ke lebih dari seratus berkas, atau didelegasikan melalui `task`, tanpa model menghabiskan satu giliran per item.
-
-:::caution[Jembatan tidak melewati pagar pengaman Anda]
-Panggilan yang dijembatani diselesaikan terhadap registri alat yang **sama** dengan panggilan yang dikeluarkan model, sehingga kebijakan `ActionClass`, prompt persetujuan, dan setiap wrapper berlaku secara identik. Jembatan yang melangkahi registri akan menjadi celah yang bentuknya persis seperti "tulis satu baris Python".
-:::
-
-Panggilan yang dijembatani **menangguhkan batas waktu sel** selama panggilan itu belum selesai. Anggaran mengukur ketidakaktifan, bukan waktu jam dinding — sel yang menyebar ke subagen dan menunggu empat menit tidak macet, dan mematikannya di tengah penyebaran akan menghilangkan seluruh status kernel.
+Sebuah sel tidak dapat memanggil alat agen. Untuk melakukan perulangan atas alat dalam kode, agen menulis skrip [`repl`](/id-ID/panduan-pengguna/konsep/mode-kode/) sebagai gantinya. Skrip juga tidak dapat memanggil `eval`: agen memanggilnya secara langsung.
 
 ## Memulai ulang
 

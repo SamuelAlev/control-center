@@ -1045,9 +1045,6 @@ class AppLocalizationsHu extends AppLocalizations {
   }
 
   @override
-  String get calendarAllDayGutter => 'Egész napos';
-
-  @override
   String calendarAllDayEventCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -2521,9 +2518,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get activityBackedUpServer => 'Szerveradatok biztonsági mentése kész';
-
-  @override
-  String get activityMarkedSpaceRead => 'Tér olvasottnak jelölve';
 
   @override
   String get activityRespondedToInvitation => 'Válasz az eseménymeghívóra';
@@ -13525,6 +13519,17 @@ class AppLocalizationsHu extends AppLocalizations {
   }
 
   @override
+  String diffFileUnresolvedConversations(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count megoldatlan beszélgetés',
+      one: '1 megoldatlan beszélgetés',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get pendingReview => 'Függő átnézés';
 
   @override
@@ -13881,9 +13886,6 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get spaceKeepAfterMergeHint =>
       'Ennél a térnél többé nem tesszük fel ezt a kérdést.';
-
-  @override
-  String get spaceAllPrsMergedLabel => 'Minden pull request egyesítve';
 
   @override
   String get archiveSpace => 'Tér archiválása';
@@ -15453,7 +15455,7 @@ class AppLocalizationsHu extends AppLocalizations {
   String get skillEvalIncomplete => 'Hiányos';
 
   @override
-  String get skillEvalInconclusive => 'Nem dönthető el';
+  String get skillEvalInconclusive => 'Nincs döntés (nincs elég bizonyíték)';
 
   @override
   String get skillEvalInferred => 'Kikövetkeztetett';
@@ -19019,4 +19021,2949 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get mcpServerNotFound =>
       'Ez a szerver már nem létezik. Lehet, hogy valaki eltávolította.';
+
+  @override
+  String get scriptToolCalls => 'Eszközhívások';
+
+  @override
+  String scriptCallCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hívás',
+      one: '1 hívás',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scriptCallsRunning(int count) {
+    return '$count fut';
+  }
+
+  @override
+  String scriptCallsOk(int count) {
+    return '$count sikeres';
+  }
+
+  @override
+  String scriptCallsFailed(int count) {
+    return '$count sikertelen';
+  }
+
+  @override
+  String scriptCallsDenied(int count) {
+    return '$count tiltva';
+  }
+
+  @override
+  String scriptCallsCancelled(int count) {
+    return '$count megszakítva';
+  }
+
+  @override
+  String scriptCallsQueued(int count) {
+    return '$count várólistán';
+  }
+
+  @override
+  String scriptCallsSkipped(int count) {
+    return '$count kihagyva';
+  }
+
+  @override
+  String get scriptStepQueued => 'Várólistán';
+
+  @override
+  String get scriptStepSkipped => 'Kihagyva';
+
+  @override
+  String get scriptGroupLoop => 'Ciklus';
+
+  @override
+  String get scriptGroupEach => 'Minden elemre';
+
+  @override
+  String get scriptGroupParallel => 'Párhuzamosan';
+
+  @override
+  String get scriptGroupFunction => 'Függvény';
+
+  @override
+  String scriptCallsHidden(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count további hívás megjelenítése',
+      one: '1 további hívás megjelenítése',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptCallsUnplaced => 'A szkriptbe nem illeszthető hívások';
+
+  @override
+  String get scriptToolComputed => 'Eszköz';
+
+  @override
+  String scriptStepSemantics(String subject, String state) {
+    return '$subject, $state';
+  }
+
+  @override
+  String get scriptSourceLabel => 'Szkript';
+
+  @override
+  String scriptSourceLines(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sor',
+      one: '1 sor',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptStateRunning => 'Fut';
+
+  @override
+  String get scriptStateCompleted => 'Befejezve';
+
+  @override
+  String get scriptStateFailed => 'Sikertelen';
+
+  @override
+  String get scriptStateTimedOut => 'Lejárt az idő';
+
+  @override
+  String get scriptStateCancelled => 'Megszakítva';
+
+  @override
+  String get scriptStateMemoryExceeded => 'Elfogyott a memória';
+
+  @override
+  String get scriptStateOutputExceeded => 'Túl nagy kimenet';
+
+  @override
+  String get scriptStateSandboxError => 'Homokozóhiba';
+
+  @override
+  String get scriptStateRefused => 'Elutasítva';
+
+  @override
+  String get transcriptToolDenied => 'Tiltva';
+
+  @override
+  String get transcriptStatusRunningScript => 'Szkript futtatása…';
+
+  @override
+  String get scriptOriginLine => 'Az ügynök által futtatott szkriptből';
+
+  @override
+  String get scriptOriginShow => 'Szkript megjelenítése';
+
+  @override
+  String get codeModeTitle => 'Kódmód';
+
+  @override
+  String get codeModeSubtitle =>
+      'Az ügynökök rövid szkriptet írhatnak, amely meghívja az eszközeiket, ahelyett hogy egyesével hívnák őket.';
+
+  @override
+  String get codeModeStatusLabel => 'Állapot';
+
+  @override
+  String get codeModeFactAvailability => 'Ezen a szerveren';
+
+  @override
+  String get codeModeAvailable => 'Elérhető';
+
+  @override
+  String get codeModeUnavailable => 'Nem elérhető';
+
+  @override
+  String get codeModeFactRunner => 'Futtató';
+
+  @override
+  String codeModeUnavailableNote(String reason) {
+    return 'Ez a szerver nem tud szkripteket futtatni, ezért az ügynökök itt egyesével hívják az eszközeiket. A szerver szerint: $reason';
+  }
+
+  @override
+  String get codeModeNoReason => 'nem adtak meg okot.';
+
+  @override
+  String get codeModeViewExecutions => 'Kódfuttatások megtekintése';
+
+  @override
+  String get codeModeLimitsLabel => 'Korlátok';
+
+  @override
+  String get codeModeLimitsSubtitle =>
+      'Meddig és meddig juthat el egy szkript. Az alapértelmezések a legtöbb munkaterületnek megfelelnek.';
+
+  @override
+  String get codeModeLimitsDisclosure => 'Korlátok módosítása';
+
+  @override
+  String get codeModeLimitsAtDefaults => 'Alapértelmezések';
+
+  @override
+  String codeModeLimitsChangedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count módosítva',
+      one: '1 módosítva',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeModeLimitsUseDefaults => 'Alapértelmezések használata';
+
+  @override
+  String get codeModeLimitWallClock => 'Idő szkriptenként';
+
+  @override
+  String get codeModeLimitWallClockHelp =>
+      'Az embernek adott válaszra várakozás ideje nem számít bele.';
+
+  @override
+  String get codeModeLimitCpu => 'Processzoridő';
+
+  @override
+  String get codeModeLimitCpuHelp =>
+      'Az az idő, amelyet maga a szkript számolással tölt.';
+
+  @override
+  String get codeModeLimitHeap => 'Memória';
+
+  @override
+  String get codeModeLimitHeapHelp =>
+      'A memória, amelyet a szkript futás közben használhat.';
+
+  @override
+  String get codeModeLimitNestedCalls => 'Eszközhívások szkriptenként';
+
+  @override
+  String get codeModeLimitNestedCallsHelp =>
+      'A korláton túli hívásokat elutasítják, és a szkript megkapja az okot.';
+
+  @override
+  String get codeModeLimitInFlight => 'Hívások egyszerre';
+
+  @override
+  String get codeModeLimitInFlightHelp =>
+      'Egyszerre futó hívások száma, amelyek egy szkriptből indulhatnak.';
+
+  @override
+  String get codeModeLimitOutputTokens => 'Az ügynök által olvasott kimenet';
+
+  @override
+  String get codeModeLimitOutputTokensHelp =>
+      'A hosszabb kimenet rövidítve lesz; a többit az ügynök kérésre elolvashatja.';
+
+  @override
+  String codeModeLimitRange(String defaultValue, String min, String max) {
+    return 'Alapértelmezett: $defaultValue. $min és $max között.';
+  }
+
+  @override
+  String codeModeLimitOutOfRange(String min, String max) {
+    return 'Adjon meg egy egész számot $min és $max között.';
+  }
+
+  @override
+  String get codeModeSuffixSeconds => 'mp';
+
+  @override
+  String get codeModeSuffixMebibytes => 'MiB';
+
+  @override
+  String get codeModeSuffixCalls => 'hívás';
+
+  @override
+  String get codeModeSuffixTokens => 'token';
+
+  @override
+  String codeModeServerCap(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Ez a szerver egyszerre legfeljebb $count szkriptet futtat, az összes munkaterületen együtt.',
+      one:
+          'Ez a szerver egyszerre legfeljebb 1 szkriptet futtat, az összes munkaterületen együtt.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String codeModeUnitMilliseconds(String value) {
+    return '$value ms';
+  }
+
+  @override
+  String codeModeUnitSeconds(String value) {
+    return '$value mp';
+  }
+
+  @override
+  String codeModeUnitMinutesSeconds(String minutes, String seconds) {
+    return '$minutes perc $seconds mp';
+  }
+
+  @override
+  String get codeModeRefusedLimitUnknown =>
+      'A szerver nem ismeri ezek egyikét.';
+
+  @override
+  String get codeModeRefusedLimitOutOfRange =>
+      'Ezek egyike a szerver által megengedett tartományon kívül esik.';
+
+  @override
+  String get codeModeRefusedUnknownSetting =>
+      'A szerver nem ismerte fel ezt a beállítást.';
+
+  @override
+  String get codeExecutionsTitle => 'Kódfuttatások';
+
+  @override
+  String get codeExecutionsSubtitle =>
+      'Az ügynökök által ebben a munkaterületen futtatott szkriptek, az összes általuk indított eszközhívással.';
+
+  @override
+  String get codeExecutionsEmpty => 'Itt még nem futott szkript.';
+
+  @override
+  String get codeExecutionsEmptyFiltered =>
+      'Nincs a szűrőknek megfelelő szkript.';
+
+  @override
+  String get codeExecutionsStatusFilter => 'Eredmény';
+
+  @override
+  String get codeExecutionsAllOutcomes => 'Minden eredmény';
+
+  @override
+  String codeExecutionsOutcomeCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count eredmény',
+      one: '1 eredmény',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionsScopeRun => 'Szkriptek egy futtatásból';
+
+  @override
+  String get codeExecutionsScopeConversation => 'Szkriptek egy beszélgetésből';
+
+  @override
+  String get codeExecutionsScopeAgent => 'Szkriptek egy ügynöktől';
+
+  @override
+  String get codeExecutionsShowAll => 'Összes megjelenítése';
+
+  @override
+  String get codeExecutionUntitled => 'Névtelen szkript';
+
+  @override
+  String get codeExecutionRecord => 'Felvétel';
+
+  @override
+  String get codeExecutionBackToList => 'Vissza a kódfuttatásokhoz';
+
+  @override
+  String get codeExecutionNotFound =>
+      'Ez a kódfuttatás nincs ebben a munkaterületen. Lehet, hogy a futtatásával együtt törölték.';
+
+  @override
+  String get codeExecutionRefusedSpace =>
+      'Ez a szkript olyan térben futott, amelyet nem nyithat meg, ezért a felvétele rejtve marad.';
+
+  @override
+  String get codeExecutionOpenRecord => 'Felvétel megnyitása';
+
+  @override
+  String get codeExecutionFactStarted => 'Elindítva';
+
+  @override
+  String get codeExecutionFactDuration => 'Időtartam';
+
+  @override
+  String get codeExecutionFactCalls => 'Eszközhívások';
+
+  @override
+  String get codeExecutionFactAgent => 'Ügynök';
+
+  @override
+  String get codeExecutionFactSurface => 'Futtatva ezen keresztül';
+
+  @override
+  String get codeExecutionSurfaceHarness => 'Beépített ügynök';
+
+  @override
+  String get codeExecutionSurfaceMcp => 'Külső ügynök';
+
+  @override
+  String get codeExecutionFactCpu => 'Processzoridő';
+
+  @override
+  String get codeExecutionFactMemory => 'Csúcsmemória';
+
+  @override
+  String get codeExecutionOpenConversation => 'Beszélgetés megnyitása';
+
+  @override
+  String get codeExecutionRunScripts => 'Szkriptek ebben a futtatásban';
+
+  @override
+  String get codeExecutionAgentScripts => 'Szkriptek ettől az ügynöktől';
+
+  @override
+  String get codeExecutionScript => 'Szkript';
+
+  @override
+  String get codeExecutionConsole => 'Konzol';
+
+  @override
+  String get codeExecutionOutputTruncated =>
+      'A kimenet a megtartott méretre lett vágva.';
+
+  @override
+  String get codeExecutionNoPayload =>
+      'A szkript és a kimenete már nincs megtartva.';
+
+  @override
+  String codeExecutionCallsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count eszközhívás',
+      one: '1 eszközhívás',
+      zero: 'Eszközhívások',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionNoCalls => 'A szkript nem hívott meg eszközt.';
+
+  @override
+  String get codeExecutionCallCompleted => 'Befejezve';
+
+  @override
+  String get codeExecutionCallFailed => 'Sikertelen';
+
+  @override
+  String get codeExecutionCallDenied => 'Tiltva';
+
+  @override
+  String get codeExecutionCallCancelled => 'Megszakítva';
+
+  @override
+  String get codeExecutionCallTimedOut => 'Lejárt az idő';
+
+  @override
+  String get codeExecutionCallUnknownTool => 'Ismeretlen eszköz';
+
+  @override
+  String get codeExecutionCallInvalidArgs => 'Érvénytelen argumentumok';
+
+  @override
+  String get codeExecutionGateAllowed => 'Engedélyezve';
+
+  @override
+  String get codeExecutionGateApproved => 'Ember jóváhagyta';
+
+  @override
+  String get codeExecutionGateDenied => 'Tiltva';
+
+  @override
+  String get codeExecutionGateNotReached => 'Nem ellenőrizve';
+
+  @override
+  String codeExecutionCallWaited(String duration) {
+    return '$duration várakozás emberre';
+  }
+
+  @override
+  String get codeExecutionCallArguments => 'Argumentumok';
+
+  @override
+  String get codeExecutionCallResult => 'Eredmény';
+
+  @override
+  String codeExecutionCallResultSize(String size) {
+    return 'Visszaadott méret: $size';
+  }
+
+  @override
+  String codeExecutionBytes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bájt',
+      one: '1 bájt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionEndedScriptError =>
+      'A szkript hibát dobott, és semmi nem kezelte.';
+
+  @override
+  String codeExecutionEndedScriptErrorNamed(String name) {
+    return 'A szkript $name hibát dobott, és semmi nem kezelte.';
+  }
+
+  @override
+  String get codeExecutionEndedStalled =>
+      'A szkript olyasmire várt, ami soha nem fejeződik be.';
+
+  @override
+  String get codeExecutionEndedCpu =>
+      'A szkript elhasználta a processzoridejét.';
+
+  @override
+  String get codeExecutionEndedHeap => 'A szkript elérte a memórialimitjét.';
+
+  @override
+  String get codeExecutionEndedOutput =>
+      'A szkript a megengedettnél több kimenetet írt.';
+
+  @override
+  String get codeExecutionEndedDeadline => 'A szkriptnek lejárt az ideje.';
+
+  @override
+  String get codeExecutionEndedCancelled =>
+      'A szkriptet a befejezése előtt megszakították.';
+
+  @override
+  String get codeExecutionEndedShutdown =>
+      'A szkript futása közben a szerver leállt.';
+
+  @override
+  String get codeExecutionEndedServerStopped =>
+      'A szerver a szkript futása közben leállt. A felvétel a szerver következő indításakor lezárult.';
+
+  @override
+  String get codeExecutionEndedInternal =>
+      'A szkriptfuttató program saját hibából leállt.';
+
+  @override
+  String get codeExecutionEndedStart =>
+      'A szkriptfuttató program nem tudott elindulni.';
+
+  @override
+  String get codeExecutionEndedLockdown =>
+      'A szkriptfuttató program nem tudta teljesen korlátozni magát, ezért a szkript nem futott le.';
+
+  @override
+  String get codeExecutionEndedExited =>
+      'A szkriptfuttató program a szkript befejezése előtt leállt.';
+
+  @override
+  String get codeExecutionEndedRunnerBrokeRules =>
+      'A szkriptfuttató program megsértette a rá vonatkozó szabályokat, ezért leállították.';
+
+  @override
+  String get codeExecutionEndedUnresponsive =>
+      'A szkriptfuttató program nem válaszolt, ezért leállították.';
+
+  @override
+  String get codeExecutionEndedHostError =>
+      'A szerver hibát okozott a szkript futtatása közben.';
+
+  @override
+  String get codeExecutionRunningNote =>
+      'Még fut. Az eszközhívások itt jelennek meg, ahogy befejeződnek, az eredmény pedig a végén.';
+
+  @override
+  String codeModeServerWorkspaceShare(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Egy munkaterület szkriptjei ezekből legfeljebb $count darabot használhatnak.',
+      one:
+          'Egy munkaterület szkriptjei ezekből legfeljebb 1 darabot használhatnak.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get wakeOriginGoal => 'Cél';
+
+  @override
+  String get wakeOriginGoalCheck => 'Célellenőrzés';
+
+  @override
+  String get wakeOriginGoalReview => 'Cél-átnézés';
+
+  @override
+  String get wakeOriginSchedule => 'Ütemezés';
+
+  @override
+  String get wakeOriginWatch => 'Figyelő';
+
+  @override
+  String wakeOriginReplyFrom(String agent) {
+    return 'Válasz tőle: $agent';
+  }
+
+  @override
+  String get wakeOriginReply => 'Válasz';
+
+  @override
+  String wakeOriginMessageFrom(String agent) {
+    return 'Üzenet tőle: $agent';
+  }
+
+  @override
+  String get wakeOriginMessage => 'Üzenet';
+
+  @override
+  String wakeOriginWorkFinishedBy(String agent) {
+    return 'Befejezett munka tőle: $agent';
+  }
+
+  @override
+  String get wakeOriginWorkFinished => 'Befejezett munka';
+
+  @override
+  String get wakeOriginLimitReset => 'Korlát visszaállása';
+
+  @override
+  String get wakeOriginRecovery => 'Helyreállítás';
+
+  @override
+  String get wakeOriginAssignment => 'Hozzárendelés';
+
+  @override
+  String get wakeOriginPipelineStep => 'Pipeline-lépés';
+
+  @override
+  String get wakeOriginImprovementReview => 'Fejlesztési átnézés';
+
+  @override
+  String get wakeKindStopped =>
+      'A futtatást valaki leállította, ezért visszatartva.';
+
+  @override
+  String get wakeKindAttempts => 'A kézbesítés háromszor sikertelen volt.';
+
+  @override
+  String get wakeKindAgentDeleted => 'Az ügynök már nem létezik.';
+
+  @override
+  String get wakeKindAgentNotDispatchable => 'Az ügynök nyugdíjazva van.';
+
+  @override
+  String get wakeKindAgentPaused => 'Az ügynök szüneteltetve van.';
+
+  @override
+  String get wakeKindPersonRemoved =>
+      'Az a személy, akinek a nevében fut, kilépett a munkaterületről.';
+
+  @override
+  String get wakeKindBudgetBlocked => 'Egy költségkeret blokkolja a futtatást.';
+
+  @override
+  String get wakeKindTakeOver => 'Egy személy átvette a worktree-t.';
+
+  @override
+  String get wakeKindRateCapConversation =>
+      'Ez a beszélgetés az elmúlt órában ébresztőkből 30 futtatást indított.';
+
+  @override
+  String get wakeKindRateCapWorkspace =>
+      'Ez a munkaterület az elmúlt órában ébresztőkből 300 futtatást indított.';
+
+  @override
+  String get wakeKindLiveRunNoInput =>
+      'Az ügynök itteni futó futtatása nem fogad bemenetet.';
+
+  @override
+  String get wakeKindLiveRunOtherOptions =>
+      'Az ügynök itteni futó futtatása másként fut, ezért ez utána indít saját futtatást.';
+
+  @override
+  String get wakeKindLiveRunOtherPerson =>
+      'Az ügynök itteni futó futtatása más személy nevében fut, ezért ez utána indít saját futtatást.';
+
+  @override
+  String get wakeKindDispatchRefused => 'A futtatás nem tudott elindulni.';
+
+  @override
+  String get wakeKindSandboxUnavailable =>
+      'Csak olvasható futtatáshoz nincs elérhető homokozó.';
+
+  @override
+  String get wakeKindReadOnlyUnavailable =>
+      'Ennek az ügynöknek a háttere nem tud csak olvasható futtatást fenntartani.';
+
+  @override
+  String get wakeKindServerStopped =>
+      'A szerver újraindítása leállította a futtatást.';
+
+  @override
+  String get wakeKindServerRestarted =>
+      'A szerver újraindult egy személy futtatása közben.';
+
+  @override
+  String get wakeKindGuardFailed =>
+      'A kézbesítés előtti ellenőrzés sikertelen volt.';
+
+  @override
+  String get wakeKindLimit => 'A szolgáltató használati korlátjánál vár.';
+
+  @override
+  String get wakeKindLimitRunLive =>
+      'A használati korlátnál lévő futtatás végére vár.';
+
+  @override
+  String get wakeKindWakeMissed => 'A szerver leállása alatt kimaradt.';
+
+  @override
+  String get wakeKindPipelineRunEnded =>
+      'A hozzá tartozó pipeline-futtatás véget ért.';
+
+  @override
+  String get wakeKindGoalEnded => 'A hozzá tartozó cél véget ért.';
+
+  @override
+  String get wakeKindGoalBudgetExhausted =>
+      'A hozzá tartozó cél elhasználta a költségkeretét.';
+
+  @override
+  String get wakeKindGoalReviewStale =>
+      'A cél megváltozott a hozzá kért átnézés óta.';
+
+  @override
+  String get wakeKindGoalPaused => 'A hozzá tartozó cél szüneteltetve van.';
+
+  @override
+  String get wakeKindGoalHeld => 'A hozzá tartozó cél visszatartva van.';
+
+  @override
+  String get wakeKindGoalStopped => 'A hozzá tartozó célt leállították.';
+
+  @override
+  String get wakeKindAskSettled =>
+      'A kérdés, amelyre válaszol, már le van zárva.';
+
+  @override
+  String get wakeKindRuleEnded => 'Az ütemezése véget ért.';
+
+  @override
+  String get wakeKindUnknown => 'Ebben a verzióban nem ismert ok:';
+
+  @override
+  String wakeStripHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ébresztő vár',
+      one: '1 ébresztő vár',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String wakeStripDue(String time) {
+    return 'Esedékes: $time';
+  }
+
+  @override
+  String get wakeStripDueNow => 'Most esedékes';
+
+  @override
+  String get wakeStripHeld => 'Visszatartva';
+
+  @override
+  String wakeStripExpires(String time) {
+    return 'Lejár: $time';
+  }
+
+  @override
+  String wakeStripAttempt(int attempt) {
+    return '$attempt. kísérlet';
+  }
+
+  @override
+  String get wakeStripCancel => 'Ébresztő törlése';
+
+  @override
+  String get wakeStripDeliverNow => 'Kézbesítés most';
+
+  @override
+  String get wakeStripResume => 'Folytatás';
+
+  @override
+  String get wakeStripDismiss => 'Elvetés';
+
+  @override
+  String get wakeStripResumeAll => 'Mind folytatása';
+
+  @override
+  String get wakeStripResumeOnlyTheirs =>
+      'Csak az a személy folytathatja, akinek a futtatása ez.';
+
+  @override
+  String get wakeReceiptStarted => 'Futtatás indult.';
+
+  @override
+  String get wakeReceiptPushed => 'Átadva a futó futtatásnak.';
+
+  @override
+  String wakeReceiptWaiting(String reason) {
+    return 'Még vár. $reason';
+  }
+
+  @override
+  String wakeReceiptSkipped(String reason) {
+    return 'Nem lett kézbesítve. $reason';
+  }
+
+  @override
+  String get wakeReceiptDuplicate => 'Már kézbesítve.';
+
+  @override
+  String wakeReleased(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ébresztő folytatva.',
+      one: '1 ébresztő folytatva.',
+      zero: 'Nem folytattunk semmit.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get wakeRefusalNotYours =>
+      'Ez az ébresztő egy másik személy nevében fut. Csak ő kézbesítheti vagy folytathatja.';
+
+  @override
+  String get wakeRefusalSettled => 'Ez az ébresztő már le van zárva.';
+
+  @override
+  String heldSteeringHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count visszatartott üzenet',
+      one: '1 visszatartott üzenet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get heldSteeringResume => 'Visszatartott üzenetek küldése';
+
+  @override
+  String get heldSteeringDelete => 'Visszatartott üzenet törlése';
+
+  @override
+  String heldSteeringReleased(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count visszatartott üzenet elküldve.',
+      one: '1 visszatartott üzenet elküldve.',
+      zero: 'Nincs visszatartott üzenet.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get workAgentUnknown => 'egy ügynök';
+
+  @override
+  String workFeedWoke(int count, String agent) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Felébresztette: $agent, $count várakozó elem miatt',
+      one: 'Felébresztette: $agent',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String workFeedWakeSkipped(String agent) {
+    return '$agent egyik ébresztőjét nem kézbesítettük.';
+  }
+
+  @override
+  String workFeedWakeMissed(String agent) {
+    return '$agent egyik ütemezett ébresztője kimaradt a szerver leállása alatt.';
+  }
+
+  @override
+  String workFeedScheduleCreated(String agent) {
+    return 'Ütemezés beállítva: $agent.';
+  }
+
+  @override
+  String workFeedScheduleEnded(String agent) {
+    return '$agent ütemezése véget ért.';
+  }
+
+  @override
+  String get workFeedOpenSchedule => 'Ütemezés megnyitása';
+
+  @override
+  String workFeedNoteFromAgent(String agent) {
+    return '$agent saját szavaival hagyott magának ezt a jegyzetet:';
+  }
+
+  @override
+  String get workFeedNoteFromPerson =>
+      'Egy személy által beállított emlékeztető:';
+
+  @override
+  String workFeedLimitParkHeld(String provider, String time) {
+    return '$provider használati korlátján szüneteltetve. A korlát ekkor áll vissza: $time.';
+  }
+
+  @override
+  String workFeedLimitParkPending(String provider, String time) {
+    return '$provider használati korlátján szüneteltetve. Ekkor folytatódik: $time.';
+  }
+
+  @override
+  String workFeedLimitParkResumed(String provider) {
+    return 'Folytatva $provider használati korlátja után.';
+  }
+
+  @override
+  String workFeedLimitParkGone(String provider) {
+    return 'Már nem vár $provider használati korlátjára.';
+  }
+
+  @override
+  String get workFeedLimitParkResume => 'Folytatás';
+
+  @override
+  String get workFeedLimitParkCancel => 'Mégse';
+
+  @override
+  String workFeedStillInFlight(String agent) {
+    return 'A tömörítés után $agent számára átadott állapot';
+  }
+
+  @override
+  String get workFeedShowDetails => 'Részletek megjelenítése';
+
+  @override
+  String get workFeedHideDetails => 'Részletek elrejtése';
+
+  @override
+  String get workFeedCommandRefused => 'A parancsot a szerver elutasította.';
+
+  @override
+  String get wakeRuleEndFired => 'Egyszer lefutott.';
+
+  @override
+  String get wakeRuleEndExpired => 'Elérte a befejezési dátumát.';
+
+  @override
+  String get wakeRuleEndRunCap => 'Felhasználta a futtatásait.';
+
+  @override
+  String get wakeRuleEndCostCap => 'Elérte a költségplafonját.';
+
+  @override
+  String get wakeRuleEndGoalEnded => 'A hozzá tartozó cél véget ért.';
+
+  @override
+  String get wakeRuleEndCancelled => 'Törölték.';
+
+  @override
+  String get wakeRuleEndMemberRemoved =>
+      'Az a személy, akié, kilépett a munkaterületről.';
+
+  @override
+  String get wakeRuleEndInvalidRow =>
+      'A tárolt beállításait nem lehetett beolvasni.';
+
+  @override
+  String get wakeRuleRefusalIntervalTooShort =>
+      'Az időköz túl rövid. Válasszon hosszabbat.';
+
+  @override
+  String get wakeRuleRefusalTooSoon =>
+      'Ez az időpont túl közeli. Válasszon későbbit.';
+
+  @override
+  String get wakeRuleRefusalLineageEnded =>
+      'Ez az ébresztőlánc felhasználta a futtatásait vagy az idejét.';
+
+  @override
+  String get wakeRuleRefusalWatchTargetUnreadable =>
+      'Nem olvasható, mit figyelne ez.';
+
+  @override
+  String get wakeRuleRefusalExpiryRequired =>
+      'Adjon meg befejezést, például --days 3.';
+
+  @override
+  String get wakeRuleRefusalLimitReached =>
+      'Ebben a beszélgetésben már annyi ütemezés van, amennyi megengedett.';
+
+  @override
+  String get wakeRuleRefusalInvalidWhen => 'Az időpontot nem lehet értelmezni.';
+
+  @override
+  String get wakeRuleRefusalNoteTooLong => 'A jegyzet túl hosszú.';
+
+  @override
+  String get wakeRuleRefusalExpiryTooLong => 'A befejezés túl messze van.';
+
+  @override
+  String get wakeRuleRefusalLimitOutOfRange =>
+      'A futtatás, a nap vagy a költségkeret korlátja kívül esik a tartományon.';
+
+  @override
+  String get wakeRuleRefusalNextOutsideLoop =>
+      'Csak egy ciklus választhatja meg a saját következő időpontját.';
+
+  @override
+  String get wakeRuleRefusalWatchRefused => 'Ezt nem lehet figyelni.';
+
+  @override
+  String get wakeRuleRefusalRuleEnded => 'Ez az ütemezés már véget ért.';
+
+  @override
+  String get wakeRuleRefusalNotYours => 'Ez az ütemezés másé.';
+
+  @override
+  String get workRefusalUnknown => 'A szerver ezt elutasította:';
+
+  @override
+  String get goalRefusalAlreadyActive =>
+      'Ebben a beszélgetésben már van aktív cél.';
+
+  @override
+  String get goalRefusalNotInReview => 'Ez a cél nem vár átnézésre.';
+
+  @override
+  String get goalRefusalEvidenceIncomplete => 'A cél bizonyítékai hiányosak.';
+
+  @override
+  String get goalRefusalClaimPending =>
+      'A cél késznek jelölését még ellenőrzik.';
+
+  @override
+  String get goalRefusalNotActiveSegment =>
+      'Ennek a célnak nincs futó szakasza.';
+
+  @override
+  String get goalRefusalNotYours =>
+      'Ezt csak az teheti meg, aki ezt a célt indította.';
+
+  @override
+  String get goalRefusalNotPaused => 'Előbb szüneteltesse a célt.';
+
+  @override
+  String get goalRefusalContractInvalid =>
+      'A cél szerződését nem lehet beolvasni.';
+
+  @override
+  String get goalRefusalCheckerUnknown => 'Nincs ilyen nevű ügynök.';
+
+  @override
+  String get goalRefusalCheckerAmbiguous =>
+      'Több ügynöknek is ez a neve. Használja az azonosítóját.';
+
+  @override
+  String get goalRefusalCheckerIsGoalAgent =>
+      'Az ellenőrzőnek más ügynöknek kell lennie, mint annak, amelyik a munkát végzi.';
+
+  @override
+  String get goalRefusalCommandInvalid =>
+      'Ezt a /goal parancsot nem lehet értelmezni.';
+
+  @override
+  String goalCardWorking(int segment) {
+    return 'Fut · $segment. szakasz';
+  }
+
+  @override
+  String get goalCardWaiting => 'A következő ébresztőre vár';
+
+  @override
+  String get goalCardVerifying => 'Ellenőrzi, hogy kész-e';
+
+  @override
+  String goalCardLimitUntil(String time) {
+    return 'Használati korlátnál szüneteltetve · folytatódik: $time';
+  }
+
+  @override
+  String get goalCardLimit => 'Használati korlátnál szüneteltetve';
+
+  @override
+  String get goalCardPerson => 'Személyre vár';
+
+  @override
+  String get goalCardByPerson => 'Egy személy szüneteltette';
+
+  @override
+  String get goalCardNeedsReview =>
+      'Átnézésre vár: azt állítja, hogy kész, de semmi sem erősítette meg';
+
+  @override
+  String goalCardSegments(int run, int max) {
+    return '$run. szakasz, összesen $max';
+  }
+
+  @override
+  String goalCardSegmentsNoCap(int run) {
+    return '$run. szakasz';
+  }
+
+  @override
+  String goalCardMoney(String spent, String cap) {
+    return '$spent / $cap';
+  }
+
+  @override
+  String goalCardTimeLeft(String time) {
+    return '$time van hátra';
+  }
+
+  @override
+  String get goalCardOverdue => 'Lejárt a határidő';
+
+  @override
+  String get goalCardDoneMeans => 'Kész, ha';
+
+  @override
+  String get goalCardChecks => 'Ellenőrzések';
+
+  @override
+  String get goalCardCheckPassed => 'Sikeres';
+
+  @override
+  String goalCardCheckFailed(int code) {
+    return 'Sikertelen · kilépési kód: $code';
+  }
+
+  @override
+  String get goalCardCheckTimedOut => 'Lejárt az idő';
+
+  @override
+  String get goalCardCheckNotRerun => 'Nem futott újra: semmi sem változott';
+
+  @override
+  String get goalCardCheckBroken => 'Nem tud futni';
+
+  @override
+  String get goalCardCheckNotRun => 'Még nem futott';
+
+  @override
+  String get goalCardCriterionMet => 'Teljesült';
+
+  @override
+  String get goalCardCriterionUnmet => 'Nem teljesült';
+
+  @override
+  String get goalCardCriterionCannotTell => 'Nem megállapítható';
+
+  @override
+  String get goalCardVerdictPass => 'Legutóbbi ellenőrzés: kész';
+
+  @override
+  String get goalCardVerdictFail => 'Legutóbbi ellenőrzés: nincs kész';
+
+  @override
+  String get goalCardVerdictCannotVerify =>
+      'Legutóbbi ellenőrzés: nem derült ki';
+
+  @override
+  String get goalCardConcerns => 'Aggályok';
+
+  @override
+  String goalCardVerifiedBy(String agent) {
+    return 'Ellenőrizte: $agent';
+  }
+
+  @override
+  String get goalCardVerifiedBySelf =>
+      'Saját maga ellenőrizte (nincs külön ellenőrző)';
+
+  @override
+  String get goalCardClosedByPerson =>
+      'Egy személy zárta le sikeres ellenőrzés nélkül';
+
+  @override
+  String get goalCardNoMachineCheck => 'Nincs gépi ellenőrzés';
+
+  @override
+  String get goalCardAddCheck => 'Ellenőrzés hozzáadása';
+
+  @override
+  String get goalCardOpen => 'Cél megnyitása';
+
+  @override
+  String get goalCardApprove => 'Befejezés jóváhagyása';
+
+  @override
+  String get goalCardApproveTitle => 'Lezárja késznek ezt a célt?';
+
+  @override
+  String get goalCardApproveBody =>
+      'Semmi sem erősítette meg. Az Ön szava alapján zárja le, a cél pedig rögzíti, hogy egy személy ellenőrzés nélkül zárta le.';
+
+  @override
+  String get goalCardApproveConfirm => 'Lezárás késznek';
+
+  @override
+  String get goalCardResumeNotYours =>
+      'A folytatás és a költségkeret emelése annak a személynek a joga, aki indította.';
+
+  @override
+  String get goalHoldDetailStalled =>
+      'Az utolsó szakaszaiban nem volt előrehaladás.';
+
+  @override
+  String get goalHoldDetailStalledWaiting =>
+      'Vár, az előrehaladás nélküli szakaszok után.';
+
+  @override
+  String get goalHoldDetailVerificationFailed =>
+      'Az utolsó ellenőrzés sikertelen volt.';
+
+  @override
+  String get goalHoldDetailCannotVerify =>
+      'Az ellenőrző nem tudta megállapítani, hogy kész-e.';
+
+  @override
+  String get goalHoldDetailSandboxUnavailable =>
+      'Nincs elérhető homokozó az ellenőrzések futtatásához.';
+
+  @override
+  String get goalHoldDetailCheckerUnavailable =>
+      'Az ellenőrző ügynöke nem elérhető. Válasszon másikat, majd folytassa.';
+
+  @override
+  String get goalHoldDetailCheckBroken => 'Ez az ellenőrzés nem futhat:';
+
+  @override
+  String get goalHoldDetailWakeSkipped => 'Az ébresztőjét nem kézbesítettük.';
+
+  @override
+  String get goalHoldDetailClaimPending =>
+      'A késznek jelölését egy ellenőrzés várja.';
+
+  @override
+  String get goalHoldDetailUnanswered =>
+      'Egy személynek szóló kérdés vagy jóváhagyási kérés válasz nélkül maradt.';
+
+  @override
+  String get goalHoldDetailLimitParks =>
+      'Túl gyakran érte el a használati korlátot. Nézze át, majd folytassa.';
+
+  @override
+  String get goalHoldDetailInput => 'Válaszra vár a beszélgetésben.';
+
+  @override
+  String get peerAsksSection => 'Kérdések';
+
+  @override
+  String peerAskTo(String agent) {
+    return 'Neki: $agent';
+  }
+
+  @override
+  String get peerAskKindAsk => 'Kérdés';
+
+  @override
+  String get peerAskKindConsult => 'Konzultáció';
+
+  @override
+  String get peerAskKindReview => 'Átnézés';
+
+  @override
+  String get peerAskStatusPending => 'Vár';
+
+  @override
+  String get peerAskStatusAnswered => 'Megválaszolva';
+
+  @override
+  String get peerAskStatusFailed => 'Sikertelen';
+
+  @override
+  String get peerAskStatusExpired => 'Lejárt';
+
+  @override
+  String get peerAskStatusCancelled => 'Törölve';
+
+  @override
+  String peerAskAsked(String time) {
+    return 'Feltéve: $time';
+  }
+
+  @override
+  String peerAskExpires(String time) {
+    return 'Lejár: $time';
+  }
+
+  @override
+  String get peerAskPromised => 'Megígérte, hogy válaszol';
+
+  @override
+  String get peerAskBackground => 'Háttérben';
+
+  @override
+  String get peerAskCancel => 'Kérdés törlése';
+
+  @override
+  String get peerAskAlreadySettled => 'Ez a kérdés már le van zárva.';
+
+  @override
+  String get slashHintGoal =>
+      'Dolgozzon egy célon, amíg kész nincs. Kapcsolók: --check, --checker, --fresh, --unattended';
+
+  @override
+  String get slashHintLoop =>
+      'Ismételjen egy feladatot adott időközönként vagy az ügynök ütemében';
+
+  @override
+  String get slashHintSchedule =>
+      'Futtasson egy feladatot később: 2h múlva, 09:00-kor vagy cron szerint';
+
+  @override
+  String get slashHintRefine =>
+      'Nézze át a beszélgetés munkáját, és javasoljon fejlesztéseket';
+
+  @override
+  String get notifGoalCompleted => 'Cél kész';
+
+  @override
+  String get notifGoalFailed => 'A cél sikertelen';
+
+  @override
+  String get notifGoalCancelled => 'A célt törölték';
+
+  @override
+  String get notifGoalBudgetExhausted => 'A cél elhasználta a költségkeretét';
+
+  @override
+  String get notifGoalNeedsReview => 'Egy cél az Ön átnézésére vár';
+
+  @override
+  String get notifGoalNeedsPerson => 'Egy célnak szüksége van Önre';
+
+  @override
+  String get notifGoalOnHold => 'Egy cél várakozik';
+
+  @override
+  String get notifWakeRuleEnded => 'Egy ütemezés véget ért';
+
+  @override
+  String notifWaitingDigest(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dolog vár Önre',
+      one: '1 dolog vár Önre',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notifImprovementProposed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count fejlesztési javaslat érkezett',
+      one: 'Javaslat érkezett egy fejlesztésre',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notifPipelineRunHeld =>
+      'Egy pipeline-futtatás a költségkereténél várakozik';
+
+  @override
+  String notifPipelineRunHeldBody(String spent, String cap) {
+    return 'Elköltve: $spent / $cap';
+  }
+
+  @override
+  String get inboxGoalNeedsReview => 'A cél átnézésre vár';
+
+  @override
+  String get inboxGoalNeedsPerson => 'A célnak szüksége van Önre';
+
+  @override
+  String get inboxImprovementProposed => 'Fejlesztés javasolva';
+
+  @override
+  String get improvementRefusalAlreadyDecided =>
+      'Valaki már döntött erről a javaslatról.';
+
+  @override
+  String get improvementRefusalCampaignRequired =>
+      'Ez a változtatás nem ment át a jelenlegi készséggel szembeni kiértékelésen, vagy a készség a mérés után változott. Futtassa újra a kiértékelést.';
+
+  @override
+  String get improvementRefusalChangedSince =>
+      'A cél megváltozott, mióta ezt javasolták. Utasítsa el, és hagyja, hogy az ügynök újra javasoljon.';
+
+  @override
+  String get improvementRefusalTargetMissing =>
+      'Amit ez a javaslat módosít, már nem létezik.';
+
+  @override
+  String get improvementRefusalCampaignState =>
+      'A kiértékelés jelenlegi állapotában nem indulhat el vagy fejeződhet be.';
+
+  @override
+  String get improvementRefusalReviewCooldown =>
+      'Ezt a beszélgetést nemrég átnézték. Próbálja újra később.';
+
+  @override
+  String get improvementRefusalAdminRequired =>
+      'Erről a javaslatról csak egy munkaterület-adminisztrátor dönthet.';
+
+  @override
+  String get improvementKindMemoryFact => 'Memóriatény';
+
+  @override
+  String get improvementKindPolicy => 'Szabályzat';
+
+  @override
+  String get improvementKindAgentNote => 'Ügynök-jegyzet';
+
+  @override
+  String get improvementKindSkillEdit => 'Készségmódosítás';
+
+  @override
+  String get improvementKindSkillNew => 'Új készség';
+
+  @override
+  String get improvementScopeAgent => 'Ez az ügynök';
+
+  @override
+  String get improvementScopeRepository => 'Ez a tároló';
+
+  @override
+  String get improvementScopeWorkspace => 'Az egész munkaterület';
+
+  @override
+  String get improvementStatusProposed => 'Javasolt';
+
+  @override
+  String get improvementStatusAccepted => 'Elfogadva';
+
+  @override
+  String get improvementStatusRejected => 'Elutasítva';
+
+  @override
+  String get improvementStatusRolledBack => 'Visszavonva';
+
+  @override
+  String get improvementStatusExpired => 'Lejárt';
+
+  @override
+  String get improvementOperationAdd => 'Hozzáad';
+
+  @override
+  String get improvementOperationReplace => 'Lecserél';
+
+  @override
+  String get improvementOperationRemove => 'Eltávolít';
+
+  @override
+  String scheduleTriggerOnce(String time) {
+    return 'Egyszer, $time';
+  }
+
+  @override
+  String scheduleTriggerEvery(String interval) {
+    return 'Minden $interval';
+  }
+
+  @override
+  String scheduleTriggerCron(String cron, String zone) {
+    return 'Az ütemterv szerint: $cron ($zone)';
+  }
+
+  @override
+  String get scheduleTriggerSelfPaced => 'Az ügynök dönti el, 1–60 perc között';
+
+  @override
+  String get scheduleTriggerPrChecks =>
+      'Amikor a pull request ellenőrzései befejeződnek';
+
+  @override
+  String scheduleTriggerPrChecksOf(String pr) {
+    return 'Amikor a(z) $pr ellenőrzései befejeződnek';
+  }
+
+  @override
+  String get scheduleTriggerPrReview =>
+      'Amikor a pull requestre érkezik átnézés vagy válasz';
+
+  @override
+  String scheduleTriggerPrReviewOf(String pr) {
+    return 'Amikor a(z) $pr átnézést vagy választ kap';
+  }
+
+  @override
+  String get scheduleTriggerPrMerged => 'Amikor a pull request összefésülődik';
+
+  @override
+  String scheduleTriggerPrMergedOf(String pr) {
+    return 'Amikor a(z) $pr összefésülődik';
+  }
+
+  @override
+  String get scheduleTriggerEnvironment =>
+      'Amikor a környezet egy feladata befejeződik vagy kész lesz';
+
+  @override
+  String scheduleTriggerTicket(String id) {
+    return 'Amikor a(z) $id jegy lezárul';
+  }
+
+  @override
+  String scheduleTriggerPipelineRun(String id) {
+    return 'Amikor a(z) $id pipeline-futtatás véget ér';
+  }
+
+  @override
+  String get goalNextWaiting =>
+      'Akkor folytatódik, amikor megérkezik, amire vár.';
+
+  @override
+  String get goalNextVerifying =>
+      'Amikor az ellenőrzések és az átnézés befejeződnek, befejeződik, vagy tovább dolgozik.';
+
+  @override
+  String get goalNextLimit =>
+      'A használati korlát visszaállásakor folytatódik.';
+
+  @override
+  String get goalNextPerson =>
+      'Akkor folytatódik, amikor valaki megválaszolja a kérdését vagy a jóváhagyási kérését.';
+
+  @override
+  String get goalNextByPerson =>
+      'Addig szüneteltetve marad, amíg valaki folytatja.';
+
+  @override
+  String get goalNextNeedsReview =>
+      'Hagyja jóvá késznek, vagy folytassa, hogy tovább dolgozzon.';
+
+  @override
+  String get goalNextWorking =>
+      'Szakaszonként dolgozik tovább, amíg kész nincs, vagy el nem éri a korlátot.';
+
+  @override
+  String get goalContractAddCheck => 'Ellenőrzés hozzáadása';
+
+  @override
+  String goalContractChecksFull(int max) {
+    return 'Egy célnak legfeljebb $max ellenőrzése lehet.';
+  }
+
+  @override
+  String goalContractChecksCount(int count, int max) {
+    return '$count / $max ellenőrzés';
+  }
+
+  @override
+  String get goalContractCheckTaskHint =>
+      'A környezet feladatának neve, például test';
+
+  @override
+  String get goalContractCheckCommandHint => 'Parancs, például make test';
+
+  @override
+  String get goalContractCheckWhere => 'Hol fut';
+
+  @override
+  String get goalContractCheckInWorktree => 'A worktree-ben';
+
+  @override
+  String get goalContractCheckInEnvironment => 'Környezeti feladat';
+
+  @override
+  String get goalContractSecondsSuffix => 'mp';
+
+  @override
+  String goalContractTimeoutRange(int max) {
+    return '1 és $max másodperc között';
+  }
+
+  @override
+  String get goalContractRemoveCheck => 'Ellenőrzés eltávolítása';
+
+  @override
+  String get goalContractDoneMeans => 'Kész, ha';
+
+  @override
+  String get goalContractDoneMeansHelp =>
+      'Minden feltétel egy olyan dolog, amit az átnézők megerősíthetnek.';
+
+  @override
+  String get goalContractCriterionHint =>
+      'A kiadási jegyzetek felsorolják az összes összefésült változtatást';
+
+  @override
+  String goalContractCriterionTooLong(int max) {
+    return 'Legfeljebb $max karakter.';
+  }
+
+  @override
+  String get goalContractRemoveCriterion => 'Feltétel eltávolítása';
+
+  @override
+  String get goalContractAddCriterion => 'Feltétel hozzáadása';
+
+  @override
+  String goalContractCriteriaFull(int max) {
+    return 'Egy célnak legfeljebb $max feltétele lehet.';
+  }
+
+  @override
+  String goalContractCriteriaCount(int count, int max) {
+    return '$count / $max feltétel';
+  }
+
+  @override
+  String get goalContractChecks => 'Ellenőrzések';
+
+  @override
+  String get goalContractChecksHelp =>
+      'A szerver ezeket futtatja, amikor az ügynök azt mondja, hogy kész. Ellenőrzés nélküli cél csak az átnézésre támaszkodik.';
+
+  @override
+  String get goalContractBoundaries => 'Korlátok';
+
+  @override
+  String get goalContractBoundariesHint => 'Ne módosítsa a nyilvános API-t';
+
+  @override
+  String get goalContractStopWhen => 'Álljon meg és kérdezzen, ha';
+
+  @override
+  String get goalContractStopWhenHint => 'Egy migráció adatot törölne';
+
+  @override
+  String get goalContractEditTitle => 'Kész feltételeinek szerkesztése';
+
+  @override
+  String get goalCheckerTitle => 'Ki ellenőrzi ezt a célt';
+
+  @override
+  String get goalCheckerLabel => 'Ellenőrző';
+
+  @override
+  String get goalCheckerNone => 'Nincs külön ellenőrző';
+
+  @override
+  String get goalCheckerNoneWeaker =>
+      'Külön ellenőrző nélkül az ügynök a saját munkáját nézi át, ami kevesebbet fog meg.';
+
+  @override
+  String goalCheckerRecommend(String agent) {
+    return 'Például $agent: egy másik szolgáltatón lévő ellenőrző kisebb valószínűséggel osztozik ugyanazokon a vakfoltokon.';
+  }
+
+  @override
+  String get goalCheckerRecommendGeneric =>
+      'A célügynöktől eltérő szolgáltatón lévő ellenőrző kisebb valószínűséggel osztozik a vakfoltjain.';
+
+  @override
+  String raiseCapSpentOf(String spent, String cap) {
+    return 'Eddig elköltve: $spent a(z) $cap keretből.';
+  }
+
+  @override
+  String get raiseCapNewCap => 'Új keret dollárban';
+
+  @override
+  String raiseCapMustExceed(String cap) {
+    return 'Adjon meg $cap-nál nagyobb összeget.';
+  }
+
+  @override
+  String get raiseCapConfirm => 'Keret emelése';
+
+  @override
+  String get goalsBackToList => 'Összes cél';
+
+  @override
+  String goalPursuedBy(String agent) {
+    return 'Dolgozik rajta: $agent';
+  }
+
+  @override
+  String get goalOpenConversation => 'Beszélgetés megnyitása';
+
+  @override
+  String goalStarted(String time) {
+    return 'Indítva: $time';
+  }
+
+  @override
+  String get goalStopTitle => 'Leállítja ezt a célt?';
+
+  @override
+  String get goalStopBody =>
+      'Az ügynök véglegesen abbahagyja rajta a munkát. Az eddigi munkája megmarad a beszélgetésben.';
+
+  @override
+  String get goalRaiseBudgetTitle => 'Költségkeret emelése és folytatás';
+
+  @override
+  String get goalRaiseBudgetAction => 'Költségkeret emelése';
+
+  @override
+  String get goalSectionNow => 'Jelenleg';
+
+  @override
+  String get goalFactSegments => 'Szakaszok';
+
+  @override
+  String get goalFactMoney => 'Elköltve';
+
+  @override
+  String get goalFactDeadline => 'Határidő';
+
+  @override
+  String get goalFactNoProgress => 'Előrehaladás nélkül';
+
+  @override
+  String get goalNoDeadline => 'Nincs';
+
+  @override
+  String goalDeadlineWithLeft(String time, String left) {
+    return '$time, $left van hátra';
+  }
+
+  @override
+  String goalNoProgressCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Az utolsó $count szakasz nem hozott előrehaladást',
+      one: 'Az utolsó szakasz nem hozott előrehaladást',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get goalObjective => 'Célkitűzés';
+
+  @override
+  String get goalSectionContract => 'Mit jelent a kész';
+
+  @override
+  String get goalContractPauseFirst =>
+      'Szüneteltesse a célt, ha módosítaná, mit jelent a kész, vagy hogy ki ellenőrzi.';
+
+  @override
+  String get goalContractEdit => 'Szerkesztés';
+
+  @override
+  String get goalCheckerChange => 'Ellenőrző módosítása';
+
+  @override
+  String get goalContractNone =>
+      'Még semmi sincs leírva. Az ügynök dönt arról, hogy kész-e.';
+
+  @override
+  String get goalCheckerSelf =>
+      'Nincs külön ellenőrző: az ügynök maga ellenőrzi a munkáját.';
+
+  @override
+  String goalCheckerIs(String agent) {
+    return 'Ellenőrzi: $agent';
+  }
+
+  @override
+  String goalCheckWorktree(int seconds) {
+    return 'A worktree-ben, legfeljebb $seconds mp';
+  }
+
+  @override
+  String goalCheckEnvironmentTask(int seconds) {
+    return 'Környezeti feladat, legfeljebb $seconds mp';
+  }
+
+  @override
+  String get goalSectionVerification => 'Ellenőrzés';
+
+  @override
+  String get goalNotVerifiedYet =>
+      'Még nincs ellenőrizve. Az ügynök nem jelezte, hogy kész.';
+
+  @override
+  String goalVerificationRound(int round, int total, String time) {
+    return '$round. kör a(z) $total-ból, $time';
+  }
+
+  @override
+  String get goalVerificationClaim => 'Amit az ügynök állít';
+
+  @override
+  String get goalCheckOutputTail => 'Kimenet (az utolsó sorok)';
+
+  @override
+  String goalCheckExitCode(int code) {
+    return 'Sikeres · kilépési kód: $code';
+  }
+
+  @override
+  String get goalVerificationReview => 'Átnézés';
+
+  @override
+  String get goalVerificationNoVerdict => 'Még nincs átnézés.';
+
+  @override
+  String goalVerdictItem(String criterion, String state) {
+    return '$criterion · $state';
+  }
+
+  @override
+  String get goalSectionSchedules => 'Ütemezések és ébresztők';
+
+  @override
+  String get goalNoSchedules => 'Nincs ütemezés vagy függőben lévő ébresztő.';
+
+  @override
+  String get goalPendingWakes => 'Függőben lévő ébresztők';
+
+  @override
+  String workListGroup(String label, int count) {
+    return '$label · $count';
+  }
+
+  @override
+  String get goalNotFound =>
+      'Ez a cél nem létezik, vagy olyan területen van, amelyet nem nyithat meg.';
+
+  @override
+  String get goalsTitle => 'Célok';
+
+  @override
+  String get goalsSubtitle =>
+      'Munka, amelyen az ügynök addig dolgozik, amíg a kész feltételei nem teljesülnek.';
+
+  @override
+  String get goalsEmpty => 'Még nincs cél';
+
+  @override
+  String get goalsEmptyHint =>
+      'Indítson egyet a /goal paranccsal egy beszélgetésben.';
+
+  @override
+  String get goalsGroupReview => 'Átnézésre vár';
+
+  @override
+  String get goalsGroupOpen => 'Nyitott';
+
+  @override
+  String get goalsGroupEnded => 'Befejezett';
+
+  @override
+  String get scheduleStatusActive => 'Aktív';
+
+  @override
+  String get scheduleStatusPaused => 'Szüneteltetve';
+
+  @override
+  String get scheduleStatusEnded => 'Véget ért';
+
+  @override
+  String get scheduleWhenBusySkip =>
+      'Kihagyja az indítást, amíg az ügynök elfoglalt';
+
+  @override
+  String get scheduleWhenBusyQueue => 'Megvárja, amíg az ügynök szabad lesz';
+
+  @override
+  String get scheduleDeliverRun => 'Futtatást indít';
+
+  @override
+  String get scheduleDeliverNotify => 'Csak értesít';
+
+  @override
+  String get scheduleNew => 'Új ütemezés';
+
+  @override
+  String get schedulesEmpty => 'Nincs ütemezés vagy figyelő';
+
+  @override
+  String get schedulesEmptyHint =>
+      'Az ügynökök a /loop és a /schedule paranccsal állítják be őket, vagy Ön is létrehozhat egyet.';
+
+  @override
+  String scheduleOwnedBy(String name) {
+    return 'Tulajdonos: $name';
+  }
+
+  @override
+  String scheduleRunsSkips(int runs, int skips) {
+    String _temp0 = intl.Intl.pluralLogic(
+      runs,
+      locale: localeName,
+      other: '$runs futtatás',
+      one: '1 futtatás',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      skips,
+      locale: localeName,
+      other: '$skips kihagyás',
+      one: '1 kihagyás',
+      zero: 'nincs kihagyás',
+    );
+    return '$_temp0, $_temp1';
+  }
+
+  @override
+  String scheduleExpires(String time) {
+    return 'Véget ér: $time';
+  }
+
+  @override
+  String scheduleNextFires(String times) {
+    return 'Következő: $times';
+  }
+
+  @override
+  String get schedulesTitle => 'Ütemezések';
+
+  @override
+  String get schedulesSubtitle =>
+      'Ütemezések, ciklusok és figyelők, amelyek felébresztik az ügynököket.';
+
+  @override
+  String get scheduleWhenLabel => 'Mikor indul';
+
+  @override
+  String get scheduleWhenEvery => 'Ismétlődve, minden…';
+
+  @override
+  String get scheduleWhenCron => 'Cron-ütemezés szerint';
+
+  @override
+  String get scheduleWhenOnceIn => 'Egyszer, ennyi idő múlva…';
+
+  @override
+  String get scheduleWhenOnceAt => 'Egyszer, a következő…';
+
+  @override
+  String get scheduleDurationLabel => 'Időköz';
+
+  @override
+  String get scheduleDurationHelp =>
+      'Használjon s, m, h vagy d egységet, például 30m vagy 1h30m. Az ismétlések legalább 60 másodpercenként történnek.';
+
+  @override
+  String get scheduleDurationInvalid =>
+      'Ez nem időtartam, például 30m vagy 2h.';
+
+  @override
+  String get scheduleHour => 'Óra';
+
+  @override
+  String get scheduleMinute => 'Perc';
+
+  @override
+  String get scheduleCronLabel => 'Cron (perc óra nap hónap hét napja)';
+
+  @override
+  String get scheduleCronInvalid =>
+      'Ez nem olyan öt mezős cron-kifejezés, amely indulna.';
+
+  @override
+  String get scheduleTimeInvalid =>
+      'Ez nem egy jövőbeli időpont, például 09:00 vagy 2026-11-21T09:00Z.';
+
+  @override
+  String scheduleDaysRange(int max) {
+    return '1 és $max nap között.';
+  }
+
+  @override
+  String scheduleOptionUnknown(String option) {
+    return 'A(z) $option nem érvényes beállítás.';
+  }
+
+  @override
+  String get scheduleLimits => 'Korlátok';
+
+  @override
+  String get schedulePresetWeekdays => 'Hétköznapokon 09:00-kor';
+
+  @override
+  String get schedulePresetDaily => 'Minden nap 09:00-kor';
+
+  @override
+  String get schedulePresetHourly => 'Óránként, egész órakor';
+
+  @override
+  String get scheduleZoneLabel => 'Időzóna';
+
+  @override
+  String get scheduleZoneHelp => 'Üresen a munkaterület időzónája.';
+
+  @override
+  String get scheduleZoneInvalid => 'Ez nem időzóna, például Europe/Berlin.';
+
+  @override
+  String get scheduleCreateTitle => 'Új ütemezés';
+
+  @override
+  String get scheduleSpaceLabel => 'Tér';
+
+  @override
+  String get scheduleSpaceHint => 'Válasszon egy teret';
+
+  @override
+  String get scheduleConversationLabel => 'Beszélgetés';
+
+  @override
+  String get scheduleConversationHint => 'Válasszon egy beszélgetést';
+
+  @override
+  String get scheduleAgentLabel => 'Ügynök';
+
+  @override
+  String get scheduleAgentHint => 'Válassza ki, ki ébredjen';
+
+  @override
+  String get scheduleNoteLabel => 'Mivel kezdődik minden futtatás';
+
+  @override
+  String get scheduleNoteHint =>
+      'Foglalja össze, mi változott éjszaka, és jelezzen minden blokkolt dolgot.';
+
+  @override
+  String get scheduleExpiresInDays => 'Véget ér (napban)';
+
+  @override
+  String get scheduleExpiresInDaysHelp => 'Üresen: 30 nap, legfeljebb 365.';
+
+  @override
+  String get scheduleMaxRuns => 'Futtatási korlát';
+
+  @override
+  String scheduleMaxRunsHelp(int max) {
+    return 'Üresen: nincs korlát, legfeljebb $max.';
+  }
+
+  @override
+  String get scheduleCostCap => 'Költségplafon (dollár)';
+
+  @override
+  String get scheduleCostCapHelp => 'Üresen: a munkaterület alapértelmezése.';
+
+  @override
+  String get scheduleWhenBusyLabel => 'Ha az ügynök elfoglalt';
+
+  @override
+  String get scheduleWhenBusyDefault => 'Az ilyen típus alapértelmezése';
+
+  @override
+  String get scheduleDeliverLabel => 'Minden indítás';
+
+  @override
+  String get scheduleCreate => 'Ütemezés létrehozása';
+
+  @override
+  String get scheduleExtendTitle => 'Ütemezés meghosszabbítása';
+
+  @override
+  String scheduleExtendNow(String current, String latest) {
+    return 'Jelenleg eddig tart: $current. Legkésőbb eddig tarthat: $latest.';
+  }
+
+  @override
+  String get scheduleExtendDays => 'Napok hozzáadása';
+
+  @override
+  String scheduleExtendTooLong(String latest) {
+    return 'Legkésőbb eddig tarthat: $latest.';
+  }
+
+  @override
+  String scheduleMaxRunsRange(int max) {
+    return '1 és $max futtatás között.';
+  }
+
+  @override
+  String scheduleCostCapRange(String max) {
+    return 'Legalább 1 dollár, legfeljebb $max.';
+  }
+
+  @override
+  String get scheduleExtend => 'Meghosszabbítás';
+
+  @override
+  String get scheduleRemoveTitle => 'Eltávolítja ezt az ütemezést?';
+
+  @override
+  String get scheduleDeleteTitle => 'Törli ezt az ütemezést?';
+
+  @override
+  String get scheduleRemoveBody =>
+      'Eltűnik a listából. Futtatásai a beszélgetésben maradnak.';
+
+  @override
+  String get scheduleDeleteBody =>
+      'Véglegesen leáll az indítás. Futtatásai a beszélgetésben maradnak.';
+
+  @override
+  String get scheduleRemove => 'Eltávolítás';
+
+  @override
+  String get scheduleDelete => 'Törlés';
+
+  @override
+  String get scheduleOwnerOnly =>
+      'Folytatni vagy meghosszabbítani csak a tulajdonosa tudja.';
+
+  @override
+  String get schedulesBackToList => 'Összes ütemezés';
+
+  @override
+  String get scheduleNoteByAgent => 'Jegyzet, az ügynök írta';
+
+  @override
+  String get scheduleNoteByPerson => 'Jegyzet, egy személy írta';
+
+  @override
+  String scheduleNoteEditedBy(String name) {
+    return 'Jegyzet, utoljára szerkesztette: $name';
+  }
+
+  @override
+  String get scheduleNoNote => 'Nincs jegyzet.';
+
+  @override
+  String get schedulePause => 'Szünet';
+
+  @override
+  String get scheduleResume => 'Folytatás';
+
+  @override
+  String get scheduleOpenChainRoot => 'A lánc első ütemezésének megnyitása';
+
+  @override
+  String get scheduleSectionFacts => 'Részletek';
+
+  @override
+  String get scheduleFactAgent => 'Ébreszti';
+
+  @override
+  String get scheduleFactConversation => 'Itt:';
+
+  @override
+  String get scheduleConversationUnknown =>
+      'Egy beszélgetés, amelyet nem láthat';
+
+  @override
+  String get scheduleFactOwner => 'Tulajdonos';
+
+  @override
+  String get scheduleNoOwner => 'Senki';
+
+  @override
+  String get scheduleFactNextFires => 'Következő indítások';
+
+  @override
+  String get scheduleFactNext => 'Következő indítás';
+
+  @override
+  String get scheduleFactLast => 'Utoljára indult';
+
+  @override
+  String get scheduleFactRuns => 'Futtatások';
+
+  @override
+  String scheduleRunsNoCap(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count futtatás, nincs korlát',
+      one: '1 futtatás, nincs korlát',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleRunsOfCap(int count, int max) {
+    return '$count / $max futtatás';
+  }
+
+  @override
+  String get scheduleFactSkips => 'Kihagyások';
+
+  @override
+  String scheduleSkips(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count indítás kihagyva',
+      one: '1 indítás kihagyva',
+      zero: 'Nincs',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scheduleFactSpent => 'Elköltve';
+
+  @override
+  String get scheduleFactEnds => 'Vége';
+
+  @override
+  String get scheduleFactWhenBusy => 'Ha az ügynök elfoglalt';
+
+  @override
+  String get scheduleFactDeliver => 'Minden indítás';
+
+  @override
+  String get scheduleFactChain => 'Lánc';
+
+  @override
+  String scheduleChainLeft(int runs, String time) {
+    String _temp0 = intl.Intl.pluralLogic(
+      runs,
+      locale: localeName,
+      other: '$runs futtatás maradt',
+      one: '1 futtatás maradt',
+    );
+    return '$_temp0 a láncban, a lánc vége: $time';
+  }
+
+  @override
+  String get scheduleFactCreated => 'Létrehozva';
+
+  @override
+  String get scheduleSectionHistory => 'Legutóbbi ébresztések és futtatások';
+
+  @override
+  String get scheduleNoRuns => 'Még nincs futtatás.';
+
+  @override
+  String scheduleRunLine(String status, String cost) {
+    return '$status · $cost';
+  }
+
+  @override
+  String get scheduleRunPending => 'Indulásra vár';
+
+  @override
+  String get scheduleRunRunning => 'Fut';
+
+  @override
+  String get scheduleRunCompleted => 'Befejezve';
+
+  @override
+  String get scheduleRunFailed => 'Sikertelen';
+
+  @override
+  String get scheduleNotFound =>
+      'Ez az ütemezés nem létezik, vagy olyan területen van, amelyet nem nyithat meg.';
+
+  @override
+  String get improvementCampaignTitle => 'Kiértékelés futtatása';
+
+  @override
+  String improvementCampaignCost(int repetitions, String budget) {
+    String _temp0 = intl.Intl.pluralLogic(
+      repetitions,
+      locale: localeName,
+      other: 'Minden feladat $repetitions-szor fut',
+      one: 'Minden feladat egyszer fut',
+    );
+    return '$_temp0 a jelenlegi készséggel és a módosítással. Legfeljebb $budget költhet el, a munkaterületet terheli.';
+  }
+
+  @override
+  String get improvementCampaignCostUnknown =>
+      'A kiértékelés a feladatkészletet a jelenlegi készséggel és a módosítással futtatja, legfeljebb az Ön által megadott keretig.';
+
+  @override
+  String get improvementCampaignUnavailable =>
+      'A kiértékelések jelenleg nem futtathatók ezen a szerveren.';
+
+  @override
+  String get improvementCampaignCorpus => 'Feladatkészlet';
+
+  @override
+  String get improvementCampaignProvider => 'Szolgáltató';
+
+  @override
+  String get improvementCampaignModel => 'Modell';
+
+  @override
+  String get improvementCampaignRepetitions => 'Futtatás feladatonként';
+
+  @override
+  String get improvementCampaignBudget => 'Keret (dollár)';
+
+  @override
+  String improvementCampaignRange(int max) {
+    return '1 és $max között.';
+  }
+
+  @override
+  String get improvementCampaignStart => 'Kiértékelés indítása';
+
+  @override
+  String get improvementRollbackTitle => 'Visszavonja ezt a módosítást?';
+
+  @override
+  String get improvementRollbackBody =>
+      'A helyette cserélt szöveg visszakerül, feltéve, hogy azóta senki nem módosította.';
+
+  @override
+  String get improvementRollback => 'Visszavonás';
+
+  @override
+  String get improvementRolledBackDone => 'Visszavonva.';
+
+  @override
+  String get improvementNeedsAdmin =>
+      'Erről csak egy munkaterület-adminisztrátor dönthet: egy készséget vagy szabályzatot módosít az egész munkaterületen.';
+
+  @override
+  String get improvementAdminDecides =>
+      'Adminisztrátorként Ön dönt erről: egy készséget vagy szabályzatot módosít az egész munkaterületen.';
+
+  @override
+  String get improvementNeedsCampaign =>
+      'Sikeres kiértékelést futtasson, mielőtt elfogadja ezt a készségmódosítást.';
+
+  @override
+  String get improvementsBackToList => 'Összes fejlesztés';
+
+  @override
+  String improvementMeta(String kind, String scope, String agent) {
+    return '$kind · $scope · javasolta: $agent';
+  }
+
+  @override
+  String get improvementAccept => 'Elfogadás';
+
+  @override
+  String get improvementAcceptedDone => 'Elfogadva.';
+
+  @override
+  String get improvementReject => 'Elutasítás';
+
+  @override
+  String get improvementRejectedDone => 'Elutasítva.';
+
+  @override
+  String get improvementRunEvaluation => 'Kiértékelés futtatása';
+
+  @override
+  String get improvementSectionChange => 'Mi változik';
+
+  @override
+  String get improvementTarget => 'Cél';
+
+  @override
+  String improvementScopeLine(String scope) {
+    return 'Érvényes: $scope';
+  }
+
+  @override
+  String get improvementNewText => 'Új szöveg';
+
+  @override
+  String get improvementRemovedText => 'Eltávolított szöveg';
+
+  @override
+  String get improvementExpected => 'Várt hatás';
+
+  @override
+  String get improvementSectionEvidence => 'Bizonyíték és döntés';
+
+  @override
+  String get improvementNoEvidence => 'Nincs csatolt bizonyíték.';
+
+  @override
+  String get improvementEvidenceRuns => 'Futtatások';
+
+  @override
+  String get improvementEvidenceMessages => 'Üzenetek';
+
+  @override
+  String improvementOpenMessage(int index) {
+    return '$index. üzenet';
+  }
+
+  @override
+  String get improvementEvidenceChecks => 'Ellenőrzési eredmények';
+
+  @override
+  String get improvementEvaluation => 'Kiértékelés';
+
+  @override
+  String get improvementCampaignNone => 'Még nincs kiértékelve.';
+
+  @override
+  String get improvementCampaignRunning => 'A kiértékelés fut.';
+
+  @override
+  String get improvementCampaignPassed =>
+      'A kiértékelés sikeres: teljes egészében lefutott, és a változtatás legalább annyi futtatást oldott meg, mint a jelenlegi készség, ami nem bizonyítja, hogy jobb. Elfogadható.';
+
+  @override
+  String get improvementCampaignFailed =>
+      'A kiértékelés nem ment át, vagy a készség a mérés után változott. Futtassa újra, vagy utasítsa el a változtatást.';
+
+  @override
+  String improvementDecided(String status, String name, String time) {
+    return '$status, döntött: $name, $time';
+  }
+
+  @override
+  String get improvementSomeone => 'valaki';
+
+  @override
+  String improvementExpires(String time) {
+    return 'Lejár: $time, ha valaki nem dönt.';
+  }
+
+  @override
+  String get improvementOpenApplied => 'A módosított elem megnyitása';
+
+  @override
+  String get improvementsTitle => 'Fejlesztések';
+
+  @override
+  String get improvementsSubtitle =>
+      'Az ügynökök által javasolt módosítások a memóriájukhoz, jegyzeteikhez, szabályzataikhoz és készségeikhez.';
+
+  @override
+  String get improvementsEmpty => 'Nincs javaslat';
+
+  @override
+  String get improvementsEmptyHint =>
+      'Az ügynökök a munkájuk átnézése után javasolnak fejlesztéseket, például a /refine paranccsal.';
+
+  @override
+  String get improvementRowNeedsAdmin => 'Adminisztrátor dönt';
+
+  @override
+  String get improvementNotFound =>
+      'Ez a javaslat nem létezik, vagy olyan területen van, amelyet nem nyithat meg.';
+
+  @override
+  String get dispatchSettingsTitle => 'Ütemezések';
+
+  @override
+  String get dispatchSettingsSubtitle =>
+      'Korlátok az ütemezésekre és figyelőkre, és az arra nem válaszolt kérésekre vonatkozó szabályok.';
+
+  @override
+  String get dispatchLimitsLabel => 'Ütemezési korlátok';
+
+  @override
+  String get dispatchLimitsSubtitle =>
+      'Hány ütemezést és figyelőt tarthatnak az ügynökök, és azok alapértékei.';
+
+  @override
+  String dispatchLimitRange(int max) {
+    return '1 és $max között';
+  }
+
+  @override
+  String get dispatchLimitPerConversation => 'Ügynökönként egy beszélgetésben';
+
+  @override
+  String get dispatchLimitPerConversationHelp =>
+      'Aktív vagy szüneteltetett ütemezések, amelyeket egy ügynök egy beszélgetésben tarthat.';
+
+  @override
+  String get dispatchLimitPerAgent => 'Ügynökönként';
+
+  @override
+  String get dispatchLimitPerAgentHelp =>
+      'Aktív vagy szüneteltetett ütemezések, amelyeket egy ügynök az egész munkaterületen tarthat.';
+
+  @override
+  String get dispatchLimitPerWorkspace => 'A munkaterületen';
+
+  @override
+  String get dispatchLimitPerWorkspaceHelp =>
+      'Aktív vagy szüneteltetett ütemezések az egész munkaterületen.';
+
+  @override
+  String get dispatchLimitCostCap => 'Alapértelmezett költségplafon (dollár)';
+
+  @override
+  String get dispatchLimitCostCapHelp =>
+      'Mennyit költhet összesen, ha nincs saját plafonja.';
+
+  @override
+  String get dispatchLimitZone => 'Időzóna';
+
+  @override
+  String get dispatchLimitZoneHelp =>
+      'Az az időzóna, amelyben a cron-ütemezés értelmeződik, ha nem nevez meg mást, valamint a napi összesítő időzónája.';
+
+  @override
+  String get dispatchUnattendedLabel => 'Ha senki nem válaszol';
+
+  @override
+  String get dispatchUnattendedSubtitle =>
+      'Meddig vár a szerver által indított futtatás egy személyre, és mikor megy ki a napi összesítő a várakozó dolgokról.';
+
+  @override
+  String get dispatchUnattendedExpiry => 'A kérések ennyit várnak (óra)';
+
+  @override
+  String get dispatchUnattendedExpiryHelp =>
+      'Ennek lejárta után a jóváhagyás elutasítottnak, a kérdés megválaszolatlannak számít. A saját kérdéseit magától megválaszoló célok 10 perc után tesznek így.';
+
+  @override
+  String dispatchUnattendedExpiryRange(int min, int max) {
+    return '$min–$max óra';
+  }
+
+  @override
+  String get dispatchDigestHour => 'Napi összesítő ekkor (óra)';
+
+  @override
+  String dispatchDigestHourHelp(String zone) {
+    return 'A(z) $zone időzóna szerint, a fenti időzónában.';
+  }
+
+  @override
+  String get dispatchDigestHourRange => '0 és 23 között';
+
+  @override
+  String get goalRecordCrumb => 'Cél';
+
+  @override
+  String get scheduleRecordCrumb => 'Ütemezés';
+
+  @override
+  String get improvementRecordCrumb => 'Javaslat';
+
+  @override
+  String get goalNodeNeedsAgent => 'Válassza ki a célt követő ügynököt.';
+
+  @override
+  String get goalNodeNeedsObjective => 'Írja le a célkitűzést.';
+
+  @override
+  String get goalNodeContractInvalid =>
+      'A szerződés egyik mezője meghaladja a korlátot; a javítás előtt nem mentődik.';
+
+  @override
+  String get goalNodeBudget => 'Keret (dollár)';
+
+  @override
+  String get goalNodeBudgetHelp =>
+      'Legfeljebb ennyit költhet a cél. Ha kimerül, a cél egy személyre vár.';
+
+  @override
+  String goalNodeBudgetRange(int max) {
+    return 'Kötelező: 0-nál több, legfeljebb $max.';
+  }
+
+  @override
+  String get goalNodeMaxRuns => 'Szakaszkorlát';
+
+  @override
+  String get goalNodeMaxRunsHelp =>
+      'Opcionális. Legfeljebb ennyi szakaszt (ügynökfuttatást) vehet igénybe a cél.';
+
+  @override
+  String get goalNodeDeadline => 'Határidő (óra)';
+
+  @override
+  String get goalNodeDeadlineHelp =>
+      'Opcionális. Órák attól, hogy a lépés elindítja a célt.';
+
+  @override
+  String goalNodeRange(int max) {
+    return '1 és $max között, vagy üresen.';
+  }
+
+  @override
+  String get goalNodeContract => 'Szerződés';
+
+  @override
+  String get goalNodeContractHelp =>
+      'Mit jelent a kész: a feltételek, amelyeket az átnéző ellenőriz, és a parancsok, amelyeknek sikeresnek kell lenniük.';
+
+  @override
+  String get nodeConfigObjective => 'Célkitűzés';
+
+  @override
+  String pipelineRunGoalStep(String step) {
+    return 'A(z) $step lépés célon dolgozik';
+  }
+
+  @override
+  String get pipelineRunOpenGoal => 'Cél megnyitása';
+
+  @override
+  String get pipelineRunHeldBudget =>
+      'Ez a futtatás vissza van tartva: az orchestráció elérte a költségplafonját.';
+
+  @override
+  String pipelineRunHeldOther(String reason) {
+    return 'Ez a futtatás vissza van tartva ($reason).';
+  }
+
+  @override
+  String pipelineRunHeldSpent(String spent, String cap) {
+    return 'Elköltve: $spent a(z) $cap keretből. Emelje a plafont, és a futtatás folytatódik.';
+  }
+
+  @override
+  String get pipelineRunRaiseCap => 'Plafon emelése';
+
+  @override
+  String get pipelineRunRaiseCapTitle => 'Az orchestrációs plafon emelése';
+
+  @override
+  String get pipelineRunCapRaised =>
+      'A plafon emelve. A futtatás rövidesen folytatódik.';
+
+  @override
+  String get goalLaunchChecks => 'Ellenőrzések';
+
+  @override
+  String get goalLaunchChecksHelp =>
+      'Parancsok, amelyeknek sikeresnek kell lenniük, mielőtt a cél befejeződhet. Opcionális.';
+
+  @override
+  String get goalLaunchFresh => 'Minden szakasz tiszta lappal induljon';
+
+  @override
+  String get goalLaunchFreshHelp =>
+      'Minden futtatás a beszélgetés előzményei nélkül indul, csak a célból és annak jegyzeteiből.';
+
+  @override
+  String get goalLaunchAssume =>
+      'Válaszoljon a saját kérdéseire, ha senki nem tesz';
+
+  @override
+  String get goalLaunchAssumeHelp =>
+      'Válasz nélküli 10 perc után az ügynök rögzíti a feltételezését, és folytatja, ha a leállási feltételek ezt engedik.';
+
+  @override
+  String workFeedLimitParkOutcomeResumed(String provider, String time) {
+    return 'Folytatva ekkor: $time, $provider használati korlátja után.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeCancelled(String provider, String time) {
+    return 'Törölve ekkor: $time. $provider használati korlátja után nem folytatódott.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeExpired(String provider, String time) {
+    return 'Lejárt ekkor: $time, $provider használati korlátja után, anélkül hogy folytatódott volna.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeSkipped(String provider, String time) {
+    return 'Nem folytatódott $provider használati korlátja után ($time).';
+  }
+
+  @override
+  String workFeedCommandRefusedNamed(String command) {
+    return 'A(z) /$command parancsot a szerver elutasította.';
+  }
+
+  @override
+  String get improvementRefusalQueued =>
+      'Ennek a beszélgetésnek egy átnézése már futásra vár.';
+
+  @override
+  String get improvementRefusalAgentNotFound =>
+      'Ez az ügynök nem tartozik ehhez a munkaterülethez.';
+
+  @override
+  String get workRefusalWakeQueueFull =>
+      'Itt már túl sok ébresztő vár. Próbálja újra, ha néhány lefutott.';
+
+  @override
+  String get orchestrationRefusalNotYours =>
+      'Csak az a személy módosíthatja, akinek a nevében ez a futtatás dolgozik.';
+
+  @override
+  String get orchestrationRefusalCapInvalid =>
+      'Az új plafonnak a jelenlegi plafon és az elköltött összeg fölött kell lennie, és legfeljebb \$1,000 lehet.';
+
+  @override
+  String get orchestrationRefusalCapChanged =>
+      'Valaki már előbb emelte a plafont. Ellenőrizze az új plafont, és próbálja újra.';
+
+  @override
+  String workFeedCapRaised(String person, String oldCap, String newCap) {
+    return '$person a futtatás plafonját $oldCap-ról $newCap-ra emelte.';
+  }
+
+  @override
+  String get workFeedPersonUnknown => 'Valaki';
+
+  @override
+  String workFeedApplyIncomplete(String skill) {
+    return 'A(z) $skill készség elfogadott módosítását nem lehetett befejezni, mert a készség időközben változott. A javaslatot visszavonták.';
+  }
+
+  @override
+  String get workFeedOpenImprovement => 'Fejlesztés megnyitása';
+
+  @override
+  String get peerAskFailNoOutput => 'Válasz nélkül ért véget.';
+
+  @override
+  String get peerAskFailRunFailed => 'A futtatása sikertelen volt.';
+
+  @override
+  String get peerAskFailStoppedByPerson =>
+      'Egy személy leállította a futtatását.';
+
+  @override
+  String get peerAskFailBudget => 'A futtatása elérte a költségkeretét.';
+
+  @override
+  String get peerAskFailSilence =>
+      'A futtatása elhallgatott, ezért leállították.';
+
+  @override
+  String get peerAskFailUsageLimit =>
+      'A futtatása a szolgáltató használati korlátjánál állt meg.';
+
+  @override
+  String get peerAskFailNotDelivered => 'A kérdés soha nem jutott el.';
+
+  @override
+  String heldSteeringLimitHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count üzenet visszatartva a használati korlátnál',
+      one: '1 üzenet visszatartva a használati korlátnál',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get heldSteeringLimitNote =>
+      'Ezeket akkor küldjük el, amikor a futtatás szerinti személy folytatja. Ha a visszaállítás után 7 napon belül nem folytatja, ennek a személynek visszatartva maradnak.';
+
+  @override
+  String get wakeKindRuleFolded => 'Egy későbbi esemény felváltotta.';
+
+  @override
+  String goalCardWaitingNext(String time) {
+    return 'A felállított munkára vár · újra ránéz: $time';
+  }
+
+  @override
+  String raiseCapAtMost(String max) {
+    return 'Legfeljebb $max adjon meg.';
+  }
+
+  @override
+  String raiseCapNowAt(String cap) {
+    return 'A plafon most $cap.';
+  }
+
+  @override
+  String get scheduleWakeReasonSchedule => 'Ütemezett';
+
+  @override
+  String get scheduleWakeReasonWatch => 'Figyelő';
+
+  @override
+  String get scheduleWakeReasonLimitReset => 'Használati korlát után';
+
+  @override
+  String get scheduleWakeStatePending => 'Vár';
+
+  @override
+  String get scheduleWakeStateHeld => 'Visszatartva';
+
+  @override
+  String get scheduleWakeStateClaimed => 'Indul';
+
+  @override
+  String get scheduleWakeStateDelivered => 'Kézbesítve';
+
+  @override
+  String get scheduleWakeStateSkipped => 'Kihagyva';
+
+  @override
+  String get scheduleWakeStateExpired => 'Lejárt';
+
+  @override
+  String get scheduleWakeStateCancelled => 'Törölve';
+
+  @override
+  String scheduleWakeLine(String reason, String state) {
+    return '$reason · $state';
+  }
+
+  @override
+  String scheduleWakeExit(int code) {
+    return 'kilépési kód: $code';
+  }
+
+  @override
+  String scheduleWakeEvents(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count esemény',
+      one: '1 esemény',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scheduleWakesNone => 'Még nincs ébresztés.';
+
+  @override
+  String get scheduleWakesOlder => 'Régebbiek megjelenítése';
+
+  @override
+  String get improvementCandidateStaged =>
+      'A javasolt készség külön változatként van tárolva. Kiértékelése nem módosítja az élő készséget; a készség csak a javaslat elfogadásakor változik.';
+
+  @override
+  String goalNextWaitingFallback(String time) {
+    return 'Akkor folytatódik, amikor megérkezik, amire vár, vagy $time-kor újra ránéz, ha semmi sem érkezik.';
+  }
+
+  @override
+  String get steeringRefusalHeldByLimit =>
+      'A használati korlát miatti szünetet tartó üzenetek a várakozás alatt nem küldhetők el kézzel.';
+
+  @override
+  String steeringRefusalHeldByLimitAt(String time) {
+    return 'A használati korlát miatti szünetet tartó üzenetek a várakozás alatt nem küldhetők el kézzel. A korlát ekkor áll vissza: $time.';
+  }
+
+  @override
+  String heldSteeringLimitResetsAt(String time) {
+    return 'A limit $time-kor áll vissza. Ezeket akkor küldjük el, amikor a futtatás szerinti személy folytatja.';
+  }
+
+  @override
+  String heldSteeringFromPerson(String name) {
+    return 'Feladó: $name';
+  }
+
+  @override
+  String get heldSteeringFromSomeoneElse => 'Másik feladótól';
+
+  @override
+  String get heldSteeringOnlyWriterSends =>
+      'Visszatartott üzenetet csak az küldhet el, aki írta.';
+
+  @override
+  String get steeringRefusalNotYours =>
+      'Ezek a visszatartott üzenetek másé. Csak az a személy küldheti el, aki írta.';
+
+  @override
+  String improvementEvaluationSolved(
+    int pairedRuns,
+    int candidateSolved,
+    int baselineSolved,
+  ) {
+    String _temp0 = intl.Intl.pluralLogic(
+      pairedRuns,
+      locale: localeName,
+      other: '$pairedRuns párosított futtatásban',
+      one: '1 párosított futtatásban',
+    );
+    return '$_temp0: a változtatás $candidateSolved, a jelenlegi készség $baselineSolved feladatot oldott meg.';
+  }
+
+  @override
+  String improvementEvaluationWorse(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count feladat rosszabb lett a változtatással.',
+      one: '1 feladat rosszabb lett a változtatással.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String improvementEvaluationCostlier(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count feladat drágább lett a változtatással.',
+      one: '1 feladat drágább lett a változtatással.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String improvementEvaluationHarnessErrors(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count futtatás harness-hibába ütközött.',
+      one: '1 futtatás harness-hibába ütközött.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get improvementEvaluationIncomplete =>
+      'A kiértékelés nem futott le teljesen.';
+
+  @override
+  String workFeedLimitParkExpires(String time) {
+    return 'Lejár: $time';
+  }
+
+  @override
+  String workFeedSchedulePaused(String person, String agent) {
+    return '$person szüneteltette $agent ütemezését.';
+  }
+
+  @override
+  String get goalCardApproveNotYours =>
+      'Csak a pipeline-futtatást indító személy hagyhatja jóvá ennek a célnak a lezárását.';
+
+  @override
+  String get goalCardObjective => 'A célkitűzés';
+
+  @override
+  String get planNeedsWrite =>
+      'A terv jóváhagyásához vagy módosításához írási jogosultság kell ennek a térnek minden tárolójához. Munkaterület-adminisztrátor megadhatja.';
+
+  @override
+  String scheduleSpentWithChain(String spent, String cap) {
+    return '$spent a(z) $cap keretből, beleszámítva a láncban lévő összes ütemezést';
+  }
 }

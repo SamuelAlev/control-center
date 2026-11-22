@@ -1,22 +1,26 @@
 import 'dart:convert';
 
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
+import 'package:cc_domain/features/dispatch/domain/entities/peer_ask.dart';
+import 'package:cc_domain/features/dispatch/domain/services/peer_ask_text.dart';
 import 'package:cc_domain/features/messaging/domain/services/peer_delegation_guards.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket.dart';
 import 'package:cc_domain/features/ticketing/domain/repositories/ticket_repository.dart';
 import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_service.dart';
+import 'package:cc_infra/cc_infra.dart' show TicketSettledWakes;
 import 'package:cc_mcp/src/tools/delegate_task_tool.dart';
-import 'package:cc_mcp/src/tools/pending_delegation_hops.dart';
 import 'package:test/test.dart';
+
+import 'peer_tool_kit.dart';
 
 void main() {
   late _FakeTickets tickets;
   late DelegateTaskTool tool;
-  late PendingDelegationHops pendingHops;
+  late PeerKit kit;
 
   setUp(() {
     tickets = _FakeTickets();
-    pendingHops = PendingDelegationHops();
+    kit = PeerKit();
     tool = DelegateTaskTool(
       service: TicketWorkflowService(
         repository: tickets,
@@ -27,7 +31,7 @@ void main() {
         resolveRemainingBudgetMicros:
             ({required workspaceId, required agentId}) async => null,
       ),
-      pendingHops: pendingHops,
+      peerAsks: kit.service,
     );
   });
 
@@ -71,7 +75,7 @@ void main() {
         repository: tickets,
         eventBus: DomainEventBus(),
       ),
-      pendingHops: pendingHops,
+      peerAsks: kit.service,
     );
     final result = await bare.run({
       'workspace_id': 'ws-1',
@@ -84,8 +88,39 @@ void main() {
     expect(tickets.store, isEmpty);
   });
 
+  test('records the conversation and run it was delegated from', () async {
+    kit.conversation('c-sp-a', spaceId: 'sp-a');
+    final result = await tool.callForRun(
+      {
+        'workspace_id': 'ws-1',
+        'title': 'Look at this',
+        'to_agent_id': 'agent-b',
+        'from_agent_id': 'agent-a',
+      },
+      runScope(agentId: 'agent-a', runId: 'run-a', conversationId: 'c-sp-a'),
+    );
+    expect(result.isError, isFalse, reason: result.content.first.text);
+    final ticket = tickets.store.values.single;
+    expect(ticket.delegatedFromConversationId, 'c-sp-a');
+    expect(ticket.delegatedByAgentId, 'agent-a');
+    expect(ticket.metadata[TicketSettledWakes.delegatingRunKey], 'run-a');
+  });
+
   test('cannot delegate to the caller of an active ask', () async {
-    final release = pendingHops.enter('ws-1', 'agent-a', 'agent-b');
+    // agent-a asked agent-b and waits on it.
+    await kit.asks.insert(
+      PeerAsk(
+        id: 'ask-1',
+        workspaceId: 'ws-1',
+        askerAgentId: 'agent-a',
+        askerConversationId: 'c-a',
+        askerSpaceId: 'sp-a',
+        recipientAgentId: 'agent-b',
+        questionHash: 'h',
+        createdAt: kit.now,
+        expiresAt: kit.now.add(const Duration(hours: 24)),
+      ),
+    );
     final result = await tool.run({
       'workspace_id': 'ws-1',
       'title': 'Loop back',
@@ -94,8 +129,8 @@ void main() {
     });
     expect(result.isError, isTrue);
     expect(result.content.first.text, contains('cycle'));
+    expect(refusalField(result, 'kind'), PeerAskRefusals.cycle);
     expect(tickets.store, isEmpty);
-    release();
   });
 }
 

@@ -2,7 +2,7 @@
 title: Einen Agenten diagnostizieren
 description: Geh Laufprotokoll, Adapter-Prüfung, Serverstatus und Host-Diagnose durch, wenn ein Agent keine Läufe mehr erzeugt.
 slug: de-DE/handbuch/anleitungen/agent-diagnostizieren
-sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
+sourceHash: 8cd7078bacfbfcd18d90512974eff3539366883c
 ---
 
 Diese Anleitung zeigt, wie du herausfindest, warum ein Agent keine Läufe erzeugt.
@@ -90,7 +90,13 @@ Prüfe **Einstellungen → Server → Diagnose und Datenschutz → Semantische S
 
 ### Der Server startet überhaupt nicht
 
-Native Bibliotheken sind Pflicht, einen eingeschränkten Modus gibt es nicht. Eine fehlende dylib lässt `cc_server` den Start verweigern und nennt die fehlende Datei im Fehler. Die Natives stellst du mit `scripts/natives/build_natives.sh` bereit und baust danach die Server-Binärdatei neu.
+Native Bibliotheken sind Pflicht, einen eingeschränkten Modus gibt es nicht. Eine fehlende dylib oder ein fehlender Code-Modus-Runner (`bin/codemode/cc_codemode`) lässt `cc_server` den Start verweigern und nennt die fehlende Datei im Fehler. Die Natives stellst du mit `scripts/natives/build_natives.sh` bereit und baust danach die Server-Binärdatei mit `scripts/build_server.sh` neu.
+
+### Ein Skript ist fehlgeschlagen, oder der Code-Modus wird nicht angeboten
+
+Um zu sehen, was ein Skript des [Code-Modus](/de-DE/handbuch/konzepte/code-modus/) getan hat, öffne seine Aufzeichnung über **Aufzeichnung öffnen** in seiner Zeile in der Unterhaltung oder über **Observability → Code-Ausführungen**. Die Aufzeichnung nennt in einfachen Worten, wie das Skript geendet hat (Zeit abgelaufen, Prozessorzeit verbraucht, Speichergrenze erreicht, Fehler ausgelöst), und listet jeden Tool-Aufruf, den es gemacht hat, mit der Angabe, ob die Schutzregeln ihn erlaubt, eine Person ihn genehmigt oder er abgelehnt wurde.
+
+Hat der Agent überhaupt kein `repl`-Tool, öffne **Einstellungen → Arbeitsbereich → Code-Modus**. Unter **Status** zeigt **Auf diesem Server**, ob **Verfügbar** oder **Nicht verfügbar**; **Nicht verfügbar** bedeutet, dass der Server den Skript-Runner auf seinem Host nicht abschirmen kann, und die Seite nennt den Grund. Das Startprotokoll des Servers hat dieselbe Zeile (`code_mode=…`). Ein Lauf ohne Arbeitsbereich, dessen Arbeitsbereichsgrenzen nicht gelesen werden konnten oder dessen Laufprotokoll nicht geschrieben werden konnte, erhält ebenfalls kein `repl` und ruft seine Tools direkt auf.
 
 ### Eine Aktion wird stillschweigend abgelehnt
 

@@ -2,7 +2,7 @@
 title: Diagnosis agen
 description: Telusuri log run, pemeriksaan adapter, status server, dan diagnostik host saat agen berhenti menghasilkan run.
 slug: id-ID/panduan-pengguna/panduan-praktis/diagnosis-agen
-sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
+sourceHash: 8cd7078bacfbfcd18d90512974eff3539366883c
 ---
 
 Panduan ini menunjukkan cara mengetahui mengapa sebuah agen tidak menghasilkan run.
@@ -90,7 +90,13 @@ Periksa **Pengaturan → Server → Diagnostik & privasi → Pencarian semantik*
 
 ### Server sama sekali tidak mau boot
 
-Pustaka native diperlukan dan tidak ada mode terdegradasi. Dylib yang hilang membuat `cc_server` menolak untuk mulai dan menyebutkan pelakunya dalam galat. Siapkan pustaka native dengan `scripts/natives/build_natives.sh` dan bangun ulang biner server.
+Pustaka native diperlukan dan tidak ada mode terdegradasi. Dylib yang hilang, atau runner mode kode yang hilang (`bin/codemode/cc_codemode`), membuat `cc_server` menolak untuk mulai dan menyebutkan pelakunya dalam galat. Siapkan pustaka native dengan `scripts/natives/build_natives.sh` dan bangun ulang biner server dengan `scripts/build_server.sh`.
+
+### Skrip gagal, atau mode kode tidak ditawarkan
+
+Untuk melihat apa yang dilakukan sebuah skrip [mode kode](/id-ID/panduan-pengguna/konsep/mode-kode/), buka rekam skrip dari **Buka rekam** pada barisnya dalam percakapan, atau dari **Observabilitas → Eksekusi kode**. Rekam menyatakan bagaimana skrip berakhir dengan bahasa sehari-hari (kehabisan waktu, menghabiskan waktu prosesornya, mencapai batas memorinya, melempar galat), dan mencantumkan setiap panggilan alat yang dibuatnya beserta apakah pagar pengaman mengizinkannya, seseorang menyetujuinya, atau ditolak.
+
+Jika agen sama sekali tidak memiliki alat `repl`, buka **Pengaturan → Ruang kerja → Mode kode**. Di bawah **Status**, **Di server ini** menyatakan **Tersedia** atau **Tidak tersedia**; **Tidak tersedia** berarti server tidak dapat mengunci runner skrip di hostnya, dan halaman menyebutkan alasannya. Log startup server memuat baris yang sama (`code_mode=…`). Run tanpa ruang kerja, yang batas ruang kerjanya tidak dapat dibaca, atau yang catatan runnya tidak dapat ditulis juga tidak mendapat `repl`, dan memanggil alatnya secara langsung.
 
 ### Tindakan ditolak secara diam-diam
 

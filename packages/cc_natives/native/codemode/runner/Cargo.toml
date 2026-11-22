@@ -1,0 +1,30 @@
+[package]
+name = "cc_codemode"
+description = "Runs one model-written JavaScript script in QuickJS-NG behind a stdio bridge, after locking the process down."
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+build = "build.rs"
+
+[[bin]]
+name = "cc_codemode"
+path = "src/main.rs"
+
+[dependencies]
+lockdown = { package = "cc_codemode_lockdown", path = "../lockdown" }
+# QuickJS-NG 0.16.2. Features: `std` (error traits, eval file names) and
+# `allocator`. No module loader, no futures, no macros. The C sources compile
+# with `cc`; the crate ships pregenerated bindings for every target we build,
+# so no bindgen or libclang.
+rquickjs = { version = "=0.14.0", default-features = false, features = ["std", "allocator"] }
+# Frames are parsed into serde_json::Value by hand: no serde derive, so no
+# proc-macro crates in the tree. `float_roundtrip` parses every number to the
+# double it names; without it a long mantissa can land one unit off, and a
+# script's numbers would reach tools and the store changed.
+serde_json = { version = "=1.0.149", default-features = false, features = ["std", "float_roundtrip"] }
+libc = "=0.2.191"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "=0.61.2", features = ["Win32_Foundation", "Win32_System_Threading"] }

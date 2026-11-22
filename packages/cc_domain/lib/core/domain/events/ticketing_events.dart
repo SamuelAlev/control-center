@@ -125,6 +125,7 @@ class TicketAssigned implements DomainEvent {
     this.assignedAgentId,
     this.assigneeType = 'agent',
     this.assignedTeamId,
+    required this.assigningRunId,
     required this.workspaceId,
     required this.occurredAt,
   });
@@ -150,6 +151,12 @@ class TicketAssigned implements DomainEvent {
 
   /// Team the ticket was assigned to, if any.
   final String? assignedTeamId;
+
+  /// The agent run whose tool call made this assignment (an attested
+  /// `assign_ticket` call); null for a person's and for any other. A run the
+  /// assignment starts directly (the team leader's) records it as its
+  /// `startedByRunId`.
+  final String? assigningRunId;
 
   /// Workspace owning the ticket — the scope every listener reads it back in.
   final String workspaceId;

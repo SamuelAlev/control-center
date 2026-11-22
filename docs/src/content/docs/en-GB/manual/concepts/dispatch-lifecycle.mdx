@@ -2,23 +2,33 @@
 title: Agent dispatch lifecycle
 description: What happens between a message arriving and a run log closing — prompt assembly, worktrees, identity, what bounds a run and how its outcome is recorded honestly.
 slug: en-GB/manual/concepts/dispatch-lifecycle
-sourceHash: 13e7fe3ed86c8659c5fec818e0b89737241e2b9d
+sourceHash: 07c46e22e30f1a10e64b7fb949c78bdae9747efa
 ---
 
 ## What a dispatch is
 
 A dispatch is one run of one agent, in one conversation, on one adapter. Everything about it happens on `cc_server`: the client sends a message and then watches events stream back. There is no dispatch path in any client.
 
-Agents are woken for six reasons, which the run carries as its **wake context** so the agent knows _why_ it is awake:
+Every run carries a **wake context** that says _why_ the agent is awake. A run you start by sending a message is `userMessage`; every run the server starts on its own begins as a durable **wake** in the workspace's queue and carries the wake's reason (see [Schedules and wakes](/en-GB/manual/guides/schedules-and-wakes/)):
 
 | Wake reason      | Trigger                                                      |
-| ---------------- | ------------------------------------------------------------ |
-| `userMessage`    | Somebody sent a message in a space, or mentioned the agent |
+| -------------------- | ------- |
+| `userMessage`    | Somebody sent a message in a space                         |
 | `assignment`     | A ticket was assigned to the agent                           |
 | `pipelineStep`   | A pipeline step dispatched it                                |
-| `childCompleted` | A child ticket finished                                      |
-| `followUp`       | A scheduled follow-up heartbeat                              |
-| `recovery`       | The recovery path re-dispatched after a failure              |
+| `childCompleted` | A delegated or child ticket finished, or a team member's run ended |
+| `schedule` | A schedule or loop fired |
+| `watch` | Something a watch listens for happened (pull request checks, a review, an environment, a ticket, a pipeline run) |
+| `goalContinuation` | A goal's next segment |
+| `goalVerification` | A goal's checks or review found it not done yet |
+| `goalReview` | The read-only review of a goal's claim that it is done |
+| `peerMessage` | Another agent sent it a message or a question, or it was @-mentioned, or it is the space's checker |
+| `peerReply`      | The answer to a question it asked another agent              |
+| `limitReset` | A provider usage limit it stopped at has reset |
+| `improvementReview` | The review after a verified goal, or `/refine` |
+| `recovery` | Work a server restart or a failure interrupted |
+
+A wake is delivered into a live run of the agent in that conversation when the run takes input and acts for the same person; otherwise it waits for that run to end and starts its own. Slash commands are read only in a message a person typed; in any other run the same text is an ordinary message.
 
 The wake context carries the ids that go with the reason — ticket, space, message, pipeline run — and they are injected into the agent's environment and prompt.
 
@@ -104,17 +114,17 @@ There is deliberately **no turn ceiling anywhere**. A hard iteration count kills
 - **the model stops** on its own;
 - **a human stops it**, or takes over the conversation (which pauses the built-in harness at its next clean turn boundary — a Claude Code run, which has no safe boundary, is stopped instead);
 - **the silence watchdog fires.** No output for the threshold and the session is terminated with a `silentRun` failure. The default is 15 minutes, dropping to 10 in the read-mostly modes (review and plan); an agent may override it between 1 and 240 minutes. The watchdog is armed when a child process reports its PID, so it covers the Claude Code CLI — **not** the built-in harness, which spawns nothing;
-- **a cost cap bites** — but only for autonomous commands.
+- **a cost cap bites** — on goal segments and reviews, schedule and watch runs, the improvement review, and pipeline runs under a capped orchestration.
 
 The doom-loop guard is not a terminator: three identical tool calls in a row and the loop _steers_ the agent to change approach.
 
 :::note[A normal turn has no cost cap]
-The in-session cost guard is wired only for `/goal` and `/loop`; every other run passes no budget at all. For those commands, one unattended segment may burn 500 cents ($5.00) by default, with a soft steer at 80% asking the agent to wrap up cleanly before the hard stop and a durable goal budget of 5000 cents ($50.00) across segments. An explicit `/goal --budget` is never overshot by a whole segment.
+A run you start with a message passes no budget. A goal's segment may spend 5 dollars, or what is left of the goal's budget (50 dollars by default) if that is less; a goal's review 2 dollars; a run a schedule or watch started 5 dollars; the improvement review 1 dollar. At 90% the built-in harness and Claude Code steer the agent to wrap up cleanly before the hard stop; an ACP agent is cancelled at the cap. See [Manage costs](/en-GB/manual/guides/manage-costs/#cap-an-autonomous-run).
 :::
 
 Put together, an ordinary interactive turn on the built-in harness has no turn ceiling, no cost cap and no silence watchdog. It ends when the model stops or when you stop it. That is a deliberate trade — the alternatives all kill legitimate long work — but it does mean an unattended interactive run is bounded by nothing but the model's own judgement.
 
-Mid-run, a message sent to a running agent is queued as **steering** and drained at the next turn boundary, so you can nudge a run without killing it. Steering, pausing, subagents and the completion contract are built-in-harness features; Claude Code has none of them.
+Mid-run, a message sent to a running agent is queued as **steering** and drained at the next turn boundary, so you can nudge a run without killing it. A read-only run, such as a goal's review, takes none while it runs, and steering a run that works for someone else needs write access to the space's repositories. Steering, pausing, subagents and the completion contract are built-in-harness features; Claude Code has none of them.
 
 ## How a run is recorded
 
@@ -130,11 +140,11 @@ When a run ends without the deliverable its mode required — a plan-mode run th
 This is deliberate. Flipping the status would move ticket and pipeline state machines that have nothing to do with the missing artefact. It also means "status: completed" alone is never enough to conclude a run succeeded — read the summary.
 :::
 
-Closing the run publishes `AgentRunCompleted` and a lot hangs off it: pipeline cost roll-up, resuming a pipeline step that was waiting on the run, completing the backing ticket, mapping an orchestration to a terminal state, the goal supervisor's continue-or-stop decision, the checker role and the post-run budget evaluation. The presence roster follows separately, by watching the recent run logs rather than the event. The "agent finished" notification is not on that list: the event fires when the process stream ends, before the reply is written, so the notification is the turn's `MessageReceived`, published once the message is persisted.
+Once the run's final state is written, the server publishes `AgentRunSettled` exactly once, with why the run ended (`completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` or `serverStopped`), and a lot hangs off it: pipeline cost roll-up, resuming a pipeline step that was waiting on the run, completing the backing ticket, mapping an orchestration to a terminal state, the goal supervisor's continue-or-stop decision, the answer to a question another agent asked, a self-paced loop's next fire, the usage-limit pause, the checker role and the post-run budget evaluation. A run a server stop interrupted (`serverStopped`) is never treated as a failure; the work resumes after the restart. `AgentRunCompleted` is still published, earlier, for the pull request bridge and analytics only. The presence roster follows separately, by watching the recent run logs rather than the event. The "agent finished" notification is not on that list: the event fires when the process stream ends, before the reply is written, so the notification is the turn's `MessageReceived`, published once the message is persisted.
 
 ## Budgets, after the fact
 
-Budget enforcement is a _reaction_, not a gate. When a run completes, the evaluator compares the agent's month-to-date spend against its effective ceiling (a linked budget policy if there is one, otherwise the agent's own monthly figure; zero means unlimited). Crossing the soft threshold records a warning incident; exhausting the budget records a hard incident and flips the agent's lifecycle status to `paused` on the org chart. Dispatch still accepts work from that agent. A `BudgetThresholdCrossed` pipeline trigger can start follow-up work from the same event.
+Budget enforcement is a _reaction_, not a gate. When a run completes, the evaluator compares the agent's month-to-date spend against its effective ceiling (a linked budget policy if there is one, otherwise the agent's own monthly figure; zero means unlimited). Crossing the soft threshold records a warning incident; exhausting the budget records a hard incident and flips the agent's lifecycle status to `paused` on the org chart. Dispatch still accepts work you send that agent, but wakes for it (schedules, goal segments, replies) wait while it is paused, for at most 7 days. A `BudgetThresholdCrossed` pipeline trigger can start follow-up work from the same event.
 
 ## Retry lineage
 
@@ -147,4 +157,5 @@ Every run log can carry retry lineage — a parent run id, an attempt counter an
 - [Guardrails](/en-GB/manual/concepts/guardrails/): the effect-class policy every gated call passes
 - [Sandbox and security](/en-GB/manual/concepts/sandbox-security/): the isolation story in full
 - [Multiplayer](/en-GB/manual/concepts/multiplayer/): steering, take-over and the autonomy dial
-- [Domain events](/en-GB/manual/concepts/domain-events/): what `AgentRunCompleted` sets off
+- [Domain events](/en-GB/manual/concepts/domain-events/): what `AgentRunSettled` sets off
+- [Pursue a goal](/en-GB/manual/guides/pursue-a-goal/) and [Schedules and wakes](/en-GB/manual/guides/schedules-and-wakes/): runs the server starts on its own

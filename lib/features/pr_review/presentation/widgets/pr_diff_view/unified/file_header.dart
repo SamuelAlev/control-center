@@ -1,6 +1,7 @@
 import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/file_unresolved_badge.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/outdated_comments.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -20,7 +21,7 @@ class FastFileHeader extends StatefulWidget {
     required this.file,
     required this.expanded,
     required this.isViewed,
-    required this.onToggleExpanded,
+    this.onToggleExpanded,
     this.canPreview = false,
     this.isPreview = false,
     this.onTogglePreview,
@@ -30,6 +31,7 @@ class FastFileHeader extends StatefulWidget {
     this.onAddFileComment,
     this.onOpenInEditor,
     this.outdatedComments = const [],
+    this.unresolvedConversations = 0,
     this.showTopBorder = true,
   });
 
@@ -59,8 +61,10 @@ class FastFileHeader extends StatefulWidget {
   /// [AppLocalizations.preview].
   final String? previewOnLabel;
 
-  /// Toggles expand/collapse.
-  final VoidCallback onToggleExpanded;
+  /// Toggles expand/collapse. Null when the file has nothing under its
+  /// header (a rename without changes): the chevron is hidden and the row is
+  /// not a button.
+  final VoidCallback? onToggleExpanded;
 
   /// Toggles the viewed state (null hides the control).
   final VoidCallback? onToggleViewed;
@@ -75,6 +79,10 @@ class FastFileHeader extends StatefulWidget {
   /// When non-empty, a collapsed "outdated" group is shown in the header so the
   /// comments are surfaced (not dropped) without anchoring them to a live row.
   final List<PrCodeReviewComment> outdatedComments;
+
+  /// Open review conversations on this file. Above zero, a badge says so, so
+  /// a collapsed file or a thread below the fold is not missed.
+  final int unresolvedConversations;
 
   /// Whether to draw the top hairline. The first file directly under a
   /// bordered toolbar turns this off so the two borders don't stack.
@@ -122,8 +130,8 @@ class _FastFileHeaderState extends State<FastFileHeader> {
       child: Semantics(
         container: true,
         header: true,
-        button: true,
-        expanded: widget.expanded,
+        button: widget.onToggleExpanded != null,
+        expanded: widget.onToggleExpanded != null ? widget.expanded : null,
         label: fileHeaderSemanticsLabel(
           l10n,
           widget.file,
@@ -236,6 +244,10 @@ class _FastFileHeaderState extends State<FastFileHeader> {
                     ),
                   ),
                 ),
+                if (widget.unresolvedConversations > 0) ...[
+                  const SizedBox(width: 8),
+                  FileUnresolvedBadge(count: widget.unresolvedConversations),
+                ],
                 if (widget.outdatedComments.isNotEmpty) ...[
                   const SizedBox(width: 8),
                   OutdatedCommentsGroup(comments: widget.outdatedComments),
@@ -276,16 +288,18 @@ class _FastFileHeaderState extends State<FastFileHeader> {
                     onPressed: widget.onToggleViewed,
                   ),
                 ],
-                const SizedBox(width: 2),
-                CcIconButton(
-                  icon: widget.expanded
-                      ? AppIcons.chevronUp
-                      : AppIcons.chevronDown,
-                  size: CcButtonSize.sm,
-                  color: tokens.textTertiary,
-                  tooltip: widget.expanded ? l10n.collapse : l10n.expand,
-                  onPressed: widget.onToggleExpanded,
-                ),
+                if (widget.onToggleExpanded != null) ...[
+                  const SizedBox(width: 2),
+                  CcIconButton(
+                    icon: widget.expanded
+                        ? AppIcons.chevronUp
+                        : AppIcons.chevronDown,
+                    size: CcButtonSize.sm,
+                    color: tokens.textTertiary,
+                    tooltip: widget.expanded ? l10n.collapse : l10n.expand,
+                    onPressed: widget.onToggleExpanded,
+                  ),
+                ],
               ],
             ),
           ),

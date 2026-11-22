@@ -110,6 +110,35 @@ void main() {
     },
   );
 
+  test('a read a script made stores nothing and keeps its parent', () async {
+    await File(p.join(root.path, 'frame.png')).writeAsBytes(
+      base64Decode(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=',
+      ),
+    );
+    capture.add(
+      ToolCallEvent(
+        toolName: 'Read',
+        toolCallId: 'repl-1/1',
+        inputs: {'file_path': 'frame.png'},
+        parentToolCallId: 'repl-1',
+      ),
+    );
+    capture.add(
+      ToolResultEvent(
+        toolCallId: 'repl-1/1',
+        outputs: '[image]',
+        parentToolCallId: 'repl-1',
+      ),
+    );
+    await capture.drained;
+
+    final result = events.whereType<ToolResultEvent>().single;
+    expect(result.attachments, isEmpty);
+    expect(result.parentToolCallId, 'repl-1');
+    expect(Directory(p.join(root.path, 'workspace')).existsSync(), isFalse);
+  });
+
   test('completion cannot overtake a media save', () async {
     final entered = Completer<void>();
     final release = Completer<void>();

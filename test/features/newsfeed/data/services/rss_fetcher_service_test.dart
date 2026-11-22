@@ -677,8 +677,8 @@ void main() {
 
       expect(articles, hasLength(1));
       expect(articles.single.title, 'Title with bold & "special" chars');
-      // After _stripHtml removes the <img> tag, only text nodes remain.
-      expect(articles.single.summary, 'Description with  inside');
+      // The <img> tag goes, and the whitespace around it collapses.
+      expect(articles.single.summary, 'Description with inside');
     });
     test('handles stray less-than in title', () async {
       _respondWith(fake, _rssWithStrayLt);
@@ -877,7 +877,7 @@ void main() {
         url: 'https://e.com/strip',
       );
 
-      expect(articles.single.summary, 'Paragraph one.Paragraph two.');
+      expect(articles.single.summary, 'Paragraph one. Paragraph two.');
     });
 
     test('HN items get empty summary', () async {

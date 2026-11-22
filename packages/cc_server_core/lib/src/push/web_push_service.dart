@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
+import 'package:cc_domain/features/notifications/domain/value_objects/notification_kind.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_server_core/src/notification_wire.dart'
     show notificationTargetsUser;
@@ -151,7 +152,7 @@ class WebPushService {
     if (_closed || _inFlight >= maxConcurrent) {
       return;
     }
-    final category = categoryForPush(item.method);
+    final category = categoryForPush(item.method, item.params);
     if (category == null) {
       return;
     }
@@ -242,6 +243,10 @@ class WebPushService {
       }
       try {
         final route = safePushRoute(item.workspaceId, item.method, item.params);
+        final notificationKind = NotificationKindWire.tryParse(
+          item.params[notificationKindKey],
+        );
+        final quiet = isQuietPush(item.params);
         final payload = Uint8List.fromList(
           utf8.encode(
             jsonEncode({
@@ -250,6 +255,8 @@ class WebPushService {
               'kind': category == 'agentAwaitingInput'
                   ? 'attention'
                   : 'activity',
+              notificationKindKey: ?notificationKind?.wire,
+              notificationQuietKey: quiet,
             }),
           ),
         );
@@ -257,6 +264,7 @@ class WebPushService {
           subscription: record,
           vapid: vapid,
           payload: payload,
+          quiet: quiet,
           maySend: () async {
             if (_closed ||
                 !await workspaceExists(item.workspaceId) ||
@@ -319,9 +327,29 @@ const pushCategories = <String>{
   'rigStatusChanged',
 };
 
+/// Whether a frame's push is quiet (`Urgency: low`, a silent card): only
+/// when the frame builder set `quiet: true`. The `notification_kind` never
+/// decides it, so a `notify` frame such as a new message sounds as before.
+bool isQuietPush(Map<String, dynamic> params) =>
+    params[notificationQuietKey] == true;
+
 /// Maps durable notification methods to delivery categories, excluding unknowns.
-String? categoryForPush(String method) => switch (method) {
+///
+/// A goal's outcome (`notification_kind: notify`) is announced like a
+/// finished run, as is a wake rule that ended; a goal that needs a person
+/// (`notification_kind: review`) and the daily digest like an agent waiting
+/// on input.
+String? categoryForPush(String method, Map<String, dynamic> params) =>
+    switch (method) {
   'notifications/message_received' => 'message',
+  'notifications/goal_settled' =>
+    params[notificationKindKey] == NotificationKind.review.wire
+        ? 'agentAwaitingInput'
+        : 'agentRunCompleted',
+  'notifications/wake_rule_ended' => 'agentRunCompleted',
+  'notifications/improvement_proposed' ||
+  'notifications/pipeline_run_held' ||
+  'notifications/waiting_digest' => 'agentAwaitingInput',
   'notifications/agent_awaiting_input' ||
   'notifications/agent_action_blocked' => 'agentAwaitingInput',
   'notifications/pr_published' => 'pullRequestPublished',
@@ -364,16 +392,40 @@ bool _ownerOnlyPrMethod(String method) => const {
 }.contains(method);
 
 /// Only known PWA route shapes. Never trust a URL embedded in the event frame.
+///
+/// A goal opens its page (`/goals/<goalId>`), a wake rule that ended its
+/// schedule (`/schedules/<ruleId>`) and the daily digest the activity list
+/// (`/activity`), each with only `workspace_id`; the phone's push worker
+/// allows exactly these shapes.
 String safePushRoute(
   String workspaceId,
   String method,
   Map<String, dynamic> p,
 ) {
   final ws = Uri.encodeQueryComponent(workspaceId);
+  final detail = switch (method) {
+    'notifications/goal_settled' => ('goals', p['goal_id']),
+    'notifications/wake_rule_ended' => ('schedules', p['rule_id']),
+    _ => null,
+  };
+  if (detail case (final page, final String id)
+      when _pushRouteId.hasMatch(id)) {
+    return Uri(
+      pathSegments: ['', page, id],
+      queryParameters: {'workspace_id': workspaceId},
+    ).toString();
+  }
+  if (method == 'notifications/waiting_digest') {
+    return '/activity?workspace_id=$ws';
+  }
   if (method == 'notifications/message_received' ||
-      method == 'notifications/agent_awaiting_input') {
+      method == 'notifications/agent_awaiting_input' ||
+      method == 'notifications/goal_settled' ||
+      method == 'notifications/improvement_proposed' ||
+      method == 'notifications/pipeline_run_held' ||
+      method == 'notifications/wake_rule_ended') {
     final space = p['space_id'];
-    if (space is String && RegExp(r'^[a-zA-Z0-9_-]{1,128}$').hasMatch(space)) {
+    if (space is String && _pushRouteId.hasMatch(space)) {
       return Uri(
         pathSegments: ['', 'spaces', space],
         queryParameters: {
@@ -390,3 +442,6 @@ String safePushRoute(
   }
   return '/inbox?workspace_id=$ws';
 }
+
+/// An id a push route may carry: the phone's push worker checks the same.
+final RegExp _pushRouteId = RegExp(r'^[a-zA-Z0-9_-]{1,128}$');

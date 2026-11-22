@@ -2,10 +2,10 @@
 title: Wbudowane narzędzia agentów
 description: Powierzchnia narzędzi, którą wbudowany harness daje agentowi — serwer językowy, wyszukiwanie strukturalne, debugger, kernele i sterowanie workerami — wraz z każdą operacją i jej argumentami.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/narzedzia-agentow
-sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
+sourceHash: e99183fd4b257a60f94444101e1d39a7d6c77249
 ---
 
-To narzędzia **związane z serwerem**, które wbudowane środowisko uruchomieniowe agenta rejestruje bezpośrednio — serwer językowy, wyszukiwanie strukturalne, debugger, kernele, pytania i sterowanie workerami — w odróżnieniu od [narzędzi MCP](/pl-PL/podrecznik/dokumentacja-referencyjna/narzedzia-mcp/), które mostkuje, oraz ogólnych narzędzi plikowych, wyszukiwania i powłoki ze środowiska uruchomieniowego harnessu. Nie ma ich w rejestrze MCP: zewnętrzny klient MCP ich nie zobaczy, bo każde jest przypisane do żywego zasobu po stronie serwera — procesu serwera językowego, adaptera debuggera, interpretera — który należy do jednego uruchomienia.
+To narzędzia **związane z serwerem**, które wbudowane środowisko uruchomieniowe agenta rejestruje bezpośrednio — serwer językowy, wyszukiwanie strukturalne, debugger, kernele, skrypty trybu kodu, pytania i sterowanie workerami — w odróżnieniu od [narzędzi MCP](/pl-PL/podrecznik/dokumentacja-referencyjna/narzedzia-mcp/), które mostkuje, oraz ogólnych narzędzi plikowych, wyszukiwania i powłoki ze środowiska uruchomieniowego harnessu. Nie ma ich w rejestrze MCP: zewnętrzny klient MCP ich nie zobaczy, bo każde jest przypisane do żywego zasobu po stronie serwera — procesu serwera językowego, adaptera debuggera, interpretera — który należy do jednego uruchomienia.
 
 Każde narzędzie tutaj jest rejestrowane tylko wtedy, gdy jego zasób zaplecza jest podłączony na czas uruchomienia — nadzorca serwera językowego lub debugowania, parser tree-sittera, fabryka kernelów, port pytań, lista workerów vibe. Wykrywanie serwera językowego lub adaptera debuggera dla *tej kopii roboczej* to osobne, późniejsze sprawdzenie (`status` / `adapters`): te narzędzia pozostają na powierzchni, żeby agent mógł zapytać, dlaczego nic nie da się użyć, zamiast zgadywać.
 
@@ -15,9 +15,23 @@ Każde narzędzie deklaruje poziom, a poziom decyduje o tym, **które powierzchn
 
 | Poziom  | Znaczenie                          | Narzędzia tutaj                                  |
 | ------- | ---------------------------------- | ------------------------------------------------ |
-| `read`  | Bez efektów ubocznych              | `lsp`, `ast_grep`, `ask_user`, pięć `vibe_*`     |
+| `read`  | Bez efektów ubocznych              | `lsp`, `ast_grep`, `ask_user`, `repl`, pięć `vibe_*` |
 | `write` | Zmienia pliki                      | `lsp_rename`, `ast_edit`, `resolve`              |
 | `exec`  | Uruchamia proces lub steruje nim   | `debug`, `eval`                                  |
+
+## Bezpośrednio, tylko ze skryptu albo ładowane przy pierwszym użyciu
+
+Gdy serwer może uruchamiać skrypty, uruchomienie wywołuje kilka narzędzi bezpośrednio, a resztę osiąga ze skryptu [`repl`](#repl--uruchamianie-skryptu-wywołującego-twoje-narzędzia); całą zasadę opisuje [Tryb kodu](/pl-PL/podrecznik/koncepcje/tryb-kodu/#które-narzędzia-agent-wywołuje-bezpośrednio). Dla narzędzi z tej strony:
+
+| Narzędzie | Z `repl` | Bez `repl` |
+| ---- | ----------- | -------------- |
+| `repl` | Bezpośrednio | Nie występuje |
+| `ask_user` | Bezpośrednio | Bezpośrednio |
+| `lsp`, `lsp_rename`, `ast_grep`, `ast_edit`, `resolve`, `debug` | Tylko ze skryptu | Ładowane przy pierwszym użyciu |
+| `eval` | Ładowane przy pierwszym użyciu (skrypt nie może go wywołać) | Ładowane przy pierwszym użyciu |
+| `vibe_*` | Bezpośrednio w trybie vibe, nigdy ze skryptu | Bezpośrednio w trybie vibe |
+
+Narzędzie oznaczone „Tylko ze skryptu” wczytuje się zamiast tego przy pierwszym użyciu, gdy serwer nie może uruchamiać skryptów uruchomienia ([Gdy skrypty nie mogą działać](/pl-PL/podrecznik/koncepcje/tryb-kodu/#gdy-skrypty-nie-mogą-działać)).
 
 ---
 
@@ -152,9 +166,49 @@ Jedna sesja na rozmowę, z twardym TTL (30 minut). Drugie `launch` jest odrzucan
 
 ---
 
+## `repl` — uruchamianie skryptu wywołującego twoje narzędzia
+
+Obecne w każdym uruchomieniu, gdy serwer może uruchamiać skrypty ([Kiedy uruchomienie ma `repl`](/pl-PL/podrecznik/koncepcje/tryb-kodu/#kiedy-uruchomienie-ma-repl)). Skrypt to zwykły JavaScript, treść funkcji async, i działa w świeżym, zablokowanym interpreterze we własnym procesie: bez dostępu do systemu plików, sieci, procesów i modułów. Samo `repl` należy do poziomu `read` i pilnuje siebie, bo każde wywołanie narzędzia wykonane przez skrypt jest sprawdzane osobno. Dostępne też na endpoincie MCP, dla uruchomień agentów na serwerze, który może uruchamiać skrypty.
+
+| Argument | Znaczenie |
+| ------------------- | --------------------------------------------------------------------------------------------- |
+| `code` | Skrypt. Najwyżej 256 KiB |
+| `description` | Wymagane. Krótka etykieta wiersza w transkrypcji |
+| `timeout_ms` | Opcjonalne. Krótszy limit czasu niż limit obszaru roboczego; nigdy dłuższy |
+| `max_output_tokens` | Opcjonalne. Mniejszy budżet wyjścia niż obszaru roboczego; nigdy większy |
+
+```js
+// Read three files together and report only which ones failed.
+const paths = ["lib/a.dart", "lib/b.dart", "lib/c.dart"];
+const results = await Promise.allSettled(paths.map((path) => tools.read({ path })));
+return results
+  .map((r, i) => (r.status === "rejected" ? `${paths[i]}: ${r.reason.message}` : null))
+  .filter(Boolean);
+```
+
+Opis `repl` mówi agentowi: „Narzędzie, które nie jest jednym z twoich narzędzi bezpośrednich, nie ma definicji w tym żądaniu. Zanim po raz pierwszy je wywołasz, sprawdź je poleceniem `describeTool(name)` albo `searchTools(query)`, chyba że jego dokładny kształt wywołania został ci już pokazany w tej rozmowie.”
+
+`describeTool(name)` zwraca opis narzędzia, jego deklarację, schematy wejścia i wyjścia oraz jego notę o wyniku, jeśli ją ma: to, co skrypt dostaje z zakończonego wywołania, we własnych słowach narzędzia. Opis `repl` wylicza noty bezpośrednich narzędzi, które skrypt może wywołać. Wynik narzędzia, który jest tekstem JSON, trafia już sparsowany, chyba że zawiera więcej niż 131 072 wartości: wtedy trafia jako tekst, a skrypt parsuje go za pomocą `JSON.parse`. Tekst wyniku narzędzia z zewnętrznego serwera MCP jest ucinany po 262 144 znakach, a ucięty tekst nie daje się już sparsować.
+
+- `tools.<name>(args)` wywołuje narzędzie przez ten sam filtr, guardraile i zatwierdzenie co wywołanie bezpośrednie i odrzuca się błędem, gdy zostanie odmówione lub się nie powiedzie. Wywołania tylko do odczytu mogą działać równolegle; wywołania, które coś zmieniają, działają jedno po drugim, w kolejności, w jakiej skrypt je wykonał. Dopóki jedno z jego wywołań czeka na człowieka, żadne inne wywołanie skryptu nie startuje.
+- `ALL_TOOLS`, `searchTools(query, { limit, namespace })`, `describeTool(name)` i `describeNamespace(name)` znajdują narzędzia, także te z podłączonych serwerów MCP. Narzędzie spoza zestawu bezpośredniego, które skrypt może wywołać, jest wywoływalne tylko ze skryptu; bezpośrednie wywołanie zwraca informację, jak wywołać je z `repl`. Gdy serwer nie może uruchamiać skryptów uruchomienia, takie narzędzie zamiast tego wczytuje się przy pierwszym użyciu.
+- Wyszukiwania są ograniczone: zapytanie do 1 024 znaków, nazwa lub przestrzeń nazw do 256, `limit` od 0 do 50, a najwyżej 200 wyszukiwań zajmujących łącznie 2 sekundy czasu serwera na skrypt, podczas gdy wszystkie skrypty jednego obszaru roboczego dzielą 2 sekundy czasu wyszukiwania, odzyskiwane w tempie ćwierć sekundy na każdą sekundę; po przekroczeniu któregokolwiek z tych limitów kolejne wyszukiwania są odrzucane. W bardzo dużym katalogu opisy w `ALL_TOOLS` dzielą równo około miliona znaków, a obcięty kończy się na `…`; `describeTool` zawsze zwraca cały opis. Typ zbyt duży, by go pokazać, jest oznaczony jako `unknown /* too large to show */`, a nieznana nazwa dostaje odpowiedź z najbliższymi nazwami.
+- Narzędzia są pogrupowane w przestrzenie nazw: `builtin` (własne narzędzia harnessu), `control-center` (narzędzia Control Center) i po jednej dla każdego podłączonego serwera MCP, nazwanej od tego serwera. Serwer nazwany `builtin`, `control-center` lub `script`, albo którego nazwa zaczyna się od `external-`, w dowolnej mieszance wielkich i małych liter oraz z spacjami lub bez spacji wokół niej, jest wyświetlany jako `external-` plus jego nazwa, a żadne narzędzie nigdy nie znajduje się w `script`.
+- Do agenta wraca tylko to, co skrypt zwróci lub przekaże do `text()`, `image()` albo `console.*`. Wyjście ponad budżet zachowuje swój początek i koniec, a resztę odczytuje `read_output`.
+- `store(key, value)` / `load(key)` przechowują wartości JSON dla późniejszych skryptów tej samej rozmowy i agenta, zapisywane dopiero po zakończeniu skryptu. Skrypty subagenta nie mają magazynu.
+- `await tools.ask_user(...)` zadaje pytanie; jego odpowiedź jest też dopisywana do wyniku. Dostępne są także `sleep(ms)`, `setTimeout`, `limits()` oraz `models.embed` / `rank` / `classify` (osadzenia na urządzeniu).
+- `describeTool(name)` i `searchTools(query)` odpowiadają także dla funkcji własnych skryptu, które nie są narzędziami: `text`, `image`, `store`, `load`, `sleep`, `setTimeout`, `clearTimeout`, `limits`, `exit` i `models.*`, w przestrzeni nazw `script`.
+- Nie do wywołania ze skryptu: `repl`, `eval`, `task`, `checkpoint`, `rewind`, `compact`, `search_tools` i czasowniki `vibe_*`.
+- Skrypt czyta przeszłość własnego uruchomienia: `history({start, role, tool, limit})` stronicuje transkrypt rozmowy (co najwyżej 50 wierszy za wywołanie; jako `start` przekaż `next_start` poprzedniej strony), `outputs()` wypisuje wyjścia narzędzi zapisane dla tej rozmowy i agenta, a `loadOutput(handle)` czyta 16 384 znaki jednego z nich. `storedKeys()` wypisuje zapisane klucze wraz z ich rozmiarami. `keep(value, label)` zapisuje dużą wartość jako wyjście, które późniejszy skrypt albo `read_output` mogą odczytać; zapisywane jest tylko wtedy, gdy skrypt się zakończy (1 MiB na wartość, 64 wartości i 16 MiB na uruchomienie). `limits().returnBudgetChars` podaje, ile z budżetu wyjścia zostało. Uruchomienie tylko do odczytu (recenzja celu) może czytać, ale nie zapisywać ani nie używać keep. W Claude Code i ACP `history()` działa, a `outputs()`, `loadOutput()` i `keep()` odmawiają działania, ponieważ Control Center nie przechowuje wyjść narzędzi tych uruchomień.
+- Błąd z przekroczenia czasu, przepełnienia wyjścia albo limitu wywołań podpowiada, jak to naprawić.
+
+Jedno uruchomienie wykonuje naraz jeden skrypt. Limity i to, co dzieje się przy każdym z nich, opisuje strona [trybu kodu](/pl-PL/podrecznik/koncepcje/tryb-kodu/#limity); każdy skrypt jest zapisywany w **Obserwowalność → Wykonania kodu**.
+
+---
+
 ## `eval` — trwałe interpretery
 
-Komórka Pythona lub JavaScriptu, której zmienne, importy i wczytane dane przetrwają między wywołaniami. Poziom `exec`; nie jest bezpieczna równolegle.
+Komórka Pythona lub JavaScriptu, której zmienne, importy i wczytane dane przetrwają między wywołaniami. Poziom `exec`; nie jest bezpieczna równolegle. Nie można jej wywołać ze skryptu `repl`, a komórka nie może wywoływać narzędzi uruchomienia: aby wywoływać narzędzia z kodu, użyj [`repl`](#repl--uruchamianie-skryptu-wywołującego-twoje-narzędzia).
 
 | Argument      | Znaczenie                                        |
 | ------------- | ------------------------------------------------ |
@@ -166,20 +220,34 @@ Komórka Pythona lub JavaScriptu, której zmienne, importy i wczytane dane przet
 - Ostatnie wyrażenie jest zwracane tak, jak robi to notatnik.
 - `display()` działa, ramka pandas renderuje się jako tabela, a wykres matplotlib wraca jako **obraz, który pokazuje transkrypt**.
 - Idiomy IPython, które wpisuje się odruchowo — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — są przepisywane na zwykły kod. `%pip` dodatkowo usuwa moduły z `sys.modules`, więc następny `import` widzi to, co właśnie zainstalowano.
-
-### Wywoływanie własnych narzędzi z wnętrza komórki
-
-```python
-contents = tool("read", {"path": "lib/auth.dart"})
-```
-
-Most **wchodzi z powrotem do rejestru narzędzi harnessu**, więc guardraile, zatwierdzanie i każde opakowanie działają dokładnie tak samo jak przy wywołaniu zleconym przez model. Korzysta z własnego potoku kernela, a nie z gniazda loopback: żadnego portu, żadnego sekretu, żadnej reguły ruchu wychodzącego.
-
-Limit czasu komórki to budżet *bezczynności* (domyślnie 5 minut), który jest **wstrzymywany**, gdy wywołanie przez most jest w toku, więc komórka rozdzielająca pracę na subagentów nie zostaje zabita w połowie rozdzielania.
+- Komórka, która wypisze więcej niż jej budżet wyjścia, zachowuje pierwsze trzy czwarte i ostatnią czwartą, z jednym wierszem mówiącym, ile znaków i obrazów zostało usuniętych.
+- Gdy interpreter zginął, choć nikt tego nie zlecił, następna komórka dostaje raz informację, że jego wcześniejsze zmienne zniknęły.
 
 :::note[Gdzie działa kernel]
 W odizolowanym środowisku rozmowy, gdy rozmowa je ma; w przeciwnym razie w sandboxie systemu operacyjnego uruchomienia na hoście. Gdy sandbox jest wyłączony lub niedostępny, kernel działa bez ograniczeń, a `eval` prosi o zatwierdzenie wykonania na hoście. Nie uruchamia przy tym odizolowanego środowiska — ta sama zasada, która powstrzymuje kartę riga przed automatycznym startem.
 :::
+
+---
+
+## `bash` w tle
+
+`bash` z `run_in_background: true` uruchamia polecenie i od razu zwraca uchwyt (`b1`, `b2`, …) zamiast czekać. Agent pracuje dalej albo kończy turę i zostaje wybudzony, gdy polecenie się zakończy.
+
+| Argument | Znaczenie |
+| ------------------- | ------- |
+| `run_in_background` | `true`, by uruchomić i od razu wrócić |
+| `timeout_seconds` | Sekundy do zabicia polecenia: domyślnie 600, co najwyżej 3 600 |
+| `notify` | Opcjonalne. Prosty wzorzec; każdy wiersz wyjścia, który pasuje, jest wysyłany do agenta, gdy polecenie działa (na przykład `listening on\|FAILED`) |
+
+- Co najwyżej 4 polecenia w tle działają naraz w jednym uruchomieniu. Każde jest zabijane po przekroczeniu czasu i po zakończeniu uruchomienia, wraz z każdym procesem, który uruchomiło.
+- Gdy polecenie się zakończy, agent dostaje powiadomienie z kodem wyjścia, ostatnimi 2 000 znakami wyjścia i uchwytem `read_output` do reszty.
+- Agent, którego jedyną pozostałą pracą jest polecenie w tle, czeka bez wywoływania modelu, a strażnik ciszy uruchomienia wstrzymuje się na czas tego czekania.
+- `bash_output(handle)` odczytuje stan polecenia i ostatnie wyjście; `bash_kill(handle)` je zatrzymuje. Oba mówią, czy wynik został już dostarczony.
+- Skrypt nie może uruchomić polecenia w tle. Claude Code ma własny Bash w tle; Control Center utrzymuje to uruchomienie otwarte najwyżej przez 10 minut po turze, która zostawiła zadanie w toku.
+
+## `compact` — zwolnij miejsce w oknie kontekstu
+
+Kompaktuje starszy kontekst rozmowy przed następnym wywołaniem modelu, zachowując to, co nazywa `focus` (co najwyżej 1 000 znaków). Najnowsze tury zostają dosłownie. Wiersz budżetu tury agenta pokazuje zużycie kontekstu przy 70, 80 i 90%, a narzędzie warto wywołać po około 70%, przed długą nową fazą pracy. Hak `preCompact` właściciela serwera może dopisać do skupienia ([Haki powłoki](/pl-PL/podrecznik/dokumentacja-referencyjna/konfiguracja-agentow/#haki-powłoki)). Po kompaktowaniu serwer dodaje blok „Still in flight”: cel, oczekujące wybudzenia, otwarte pytania, polecenia w tle, listę kontrolną i zapisane klucze, każdy z wywołaniem, które go przywraca.
 
 ---
 

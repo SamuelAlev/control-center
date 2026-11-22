@@ -1579,54 +1579,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get mobileGoalBudgetExhausted => '予算上限に到達';
 
   @override
-  String get mobileGoalGoal => '目標';
-
-  @override
-  String get mobileGoalLoop => 'ループ';
-
-  @override
-  String mobileGoalKind(String kind) {
-    return '種類: $kind';
-  }
-
-  @override
-  String mobileGoalRuns(String count) {
-    return '実行$count回';
-  }
-
-  @override
-  String get mobileGoalNoRunLimit => '無制限';
-
-  @override
-  String mobileGoalProgress(
-    String runs,
-    String maxRuns,
-    String spent,
-    String cap,
-  ) {
-    return '実行: $runs / $maxRuns · 使用額: $spent / $cap';
-  }
-
-  @override
-  String mobileGoalDeadline(String date) {
-    return '期限: $date';
-  }
-
-  @override
   String mobileGoalFailures(String count) {
     return '連続失敗回数: $count';
   }
 
   @override
-  String get mobileGoalSummary => '完了時の概要';
-
-  @override
   String get mobileGoalFailedDescription =>
       '実行の失敗が続いたため監督機能が停止しました。詳細は会話を確認してください。';
-
-  @override
-  String get mobileGoalBudgetWall =>
-      '期限または実行回数の上限に達しました。費用上限を引き上げても、このゴールは再開できません。';
 
   @override
   String get mobileGoalPause => 'ゴールを一時停止';
@@ -2723,4 +2682,1276 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get runSandboxUnavailable =>
       'このサーバーにはサンドボックスがないため、ここでエージェントを実行できるのはそのオーナーだけです。オーナーはサンドボックスをインストールするか、全員のサンドボックスをオフにできます。';
+
+  @override
+  String get scriptToolCalls => 'ツール呼び出し';
+
+  @override
+  String scriptCallCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 回の呼び出し',
+      one: '1 回の呼び出し',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scriptCallsRunning(int count) {
+    return '$count 件実行中';
+  }
+
+  @override
+  String scriptCallsOk(int count) {
+    return '$count 件成功';
+  }
+
+  @override
+  String scriptCallsFailed(int count) {
+    return '$count 件失敗';
+  }
+
+  @override
+  String scriptCallsDenied(int count) {
+    return '$count 件拒否';
+  }
+
+  @override
+  String scriptCallsCancelled(int count) {
+    return '$count 件キャンセル';
+  }
+
+  @override
+  String scriptCallsQueued(int count) {
+    return '$count 件キュー待ち';
+  }
+
+  @override
+  String scriptCallsSkipped(int count) {
+    return '$count 件スキップ';
+  }
+
+  @override
+  String get scriptStepQueued => 'キュー待ち';
+
+  @override
+  String get scriptStepSkipped => 'スキップ済み';
+
+  @override
+  String get scriptGroupLoop => 'ループ';
+
+  @override
+  String get scriptGroupEach => '各要素ごと';
+
+  @override
+  String get scriptGroupParallel => '並列';
+
+  @override
+  String get scriptGroupFunction => '関数';
+
+  @override
+  String scriptCallsHidden(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'さらに $count 件の呼び出しを表示',
+      one: 'さらに 1 件の呼び出しを表示',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptCallsUnplaced => 'スクリプト内に配置されていない呼び出し';
+
+  @override
+  String get scriptToolComputed => 'ツール';
+
+  @override
+  String scriptStepSemantics(String subject, String state) {
+    return '$subject、$state';
+  }
+
+  @override
+  String get scriptSourceLabel => 'スクリプト';
+
+  @override
+  String scriptSourceLines(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 行',
+      one: '1 行',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptStateRunning => '実行中';
+
+  @override
+  String get scriptStateCompleted => '完了';
+
+  @override
+  String get scriptStateFailed => '失敗';
+
+  @override
+  String get scriptStateTimedOut => '時間切れ';
+
+  @override
+  String get scriptStateCancelled => 'キャンセル済み';
+
+  @override
+  String get scriptStateMemoryExceeded => 'メモリ上限超過';
+
+  @override
+  String get scriptStateOutputExceeded => '出力量超過';
+
+  @override
+  String get scriptStateSandboxError => 'サンドボックスエラー';
+
+  @override
+  String get scriptStateRefused => '拒否';
+
+  @override
+  String get scriptOriginLine => 'エージェントが実行中のスクリプトからのリクエスト';
+
+  @override
+  String get codeModeTitle => 'コードモード';
+
+  @override
+  String get codeModeAvailable => '利用可能';
+
+  @override
+  String get codeModeUnavailable => '利用不可';
+
+  @override
+  String codeModeUnavailableNote(String reason) {
+    return 'このサーバーではスクリプトを実行できないため、ここのエージェントはツールを1つずつ呼び出します。サーバーの説明: $reason';
+  }
+
+  @override
+  String get codeModeNoReason => '理由は示されませんでした。';
+
+  @override
+  String get workKindUnknown => 'このバージョンでは次の理由を認識できません:';
+
+  @override
+  String get workRefusalUnknown => 'サーバーがこれを拒否しました:';
+
+  @override
+  String workActionFailed(String error) {
+    return 'うまくいきませんでした: $error';
+  }
+
+  @override
+  String get wakeKindStopped => '担当者が実行を停止したため、保留中です。';
+
+  @override
+  String get wakeKindAttempts => '配信が3回失敗しました。';
+
+  @override
+  String get wakeKindAgentDeleted => 'エージェントはもう存在しません。';
+
+  @override
+  String get wakeKindAgentNotDispatchable => 'エージェントは退役済みです。';
+
+  @override
+  String get wakeKindAgentPaused => 'エージェントは一時停止中です。';
+
+  @override
+  String get wakeKindPersonRemoved => '代わりに動く担当者がワークスペースを離れました。';
+
+  @override
+  String get wakeKindBudgetBlocked => '予算により実行がブロックされています。';
+
+  @override
+  String get wakeKindTakeOver => '担当者がワークツリーを引き継ぎました。';
+
+  @override
+  String get wakeKindRateCapConversation => 'この会話は、起動予約から直近1時間に30回の実行を開始しました。';
+
+  @override
+  String get wakeKindRateCapWorkspace =>
+      'このワークスペースは、起動予約から直近1時間に300回の実行を開始しました。';
+
+  @override
+  String get wakeKindLiveRunNoInput => 'エージェントの実行中の処理は入力を受け付けません。';
+
+  @override
+  String get wakeKindLiveRunOtherOptions =>
+      'エージェントの実行中の処理は別の設定で動いているため、この起動予約はその後に独自の実行を開始します。';
+
+  @override
+  String get wakeKindLiveRunOtherPerson =>
+      'エージェントの実行中の処理は別の担当者として動いているため、この起動予約はその後に独自の実行を開始します。';
+
+  @override
+  String get wakeKindDispatchRefused => '実行を開始できませんでした。';
+
+  @override
+  String get wakeKindSandboxUnavailable => '読み取り専用の実行に使えるサンドボックスがありません。';
+
+  @override
+  String get wakeKindReadOnlyUnavailable => 'このエージェントのバックエンドは、実行を読み取り専用に保てません。';
+
+  @override
+  String get wakeKindServerStopped => 'サーバーの再起動により実行が停止しました。';
+
+  @override
+  String get wakeKindServerRestarted => '担当者の実行中にサーバーが再起動しました。';
+
+  @override
+  String get wakeKindGuardFailed => '配信前のチェックに失敗しました。';
+
+  @override
+  String get wakeKindLimit => 'プロバイダーの利用上限がリセットされるまで待っています。';
+
+  @override
+  String get wakeKindLimitRunLive => '利用上限に達した実行が終わるまで待っています。';
+
+  @override
+  String get wakeKindWakeMissed => 'サーバーの停止中に逃しました。';
+
+  @override
+  String get wakeKindPipelineRunEnded => 'パイプラインの実行が終了しました。';
+
+  @override
+  String get wakeKindGoalEnded => 'ゴールが終了しました。';
+
+  @override
+  String get wakeKindGoalBudgetExhausted => 'ゴールが予算を使い切りました。';
+
+  @override
+  String get wakeKindGoalReviewStale => 'このレビューを依頼した後にゴールが変更されました。';
+
+  @override
+  String get wakeKindGoalPaused => 'ゴールは一時停止中です。';
+
+  @override
+  String get wakeKindGoalHeld => 'ゴールは保留中です。';
+
+  @override
+  String get wakeKindGoalStopped => 'ゴールは停止されました。';
+
+  @override
+  String get wakeKindAskSettled => 'この起動予約が回答する質問は、すでに決着しています。';
+
+  @override
+  String get wakeKindRuleEnded => 'スケジュールが終了しました。';
+
+  @override
+  String get wakeRefusalNotYours =>
+      'この起動予約は別の担当者のために動きます。配信や再開ができるのはその担当者だけです。';
+
+  @override
+  String get wakeRefusalSettled => 'この起動予約はすでに決着しています。';
+
+  @override
+  String get goalRefusalAlreadyActive => 'このエージェントにはすでに進行中のゴールがあります。';
+
+  @override
+  String get goalRefusalNotInReview => 'このゴールはレビュー待ちではありません。';
+
+  @override
+  String get goalRefusalEvidenceIncomplete => 'ゴールの根拠が不完全です。';
+
+  @override
+  String get goalRefusalClaimPending => '完了したという主張は、まだ確認中です。';
+
+  @override
+  String get goalRefusalNotActiveSegment => 'このゴールには実行中のセグメントがありません。';
+
+  @override
+  String get goalRefusalNotYours => 'このゴールを開始した担当者だけが実行できます。';
+
+  @override
+  String get goalRefusalNotPaused => '先にゴールを一時停止してください。';
+
+  @override
+  String get goalRefusalContractInvalid => 'ゴールの契約を読み取れません。';
+
+  @override
+  String get goalRefusalCheckerUnknown => 'その名前のエージェントはありません。';
+
+  @override
+  String get goalRefusalCheckerAmbiguous => 'その名前のエージェントが複数あります。';
+
+  @override
+  String get goalRefusalCheckerIsGoalAgent =>
+      'チェッカーは、作業を行うエージェントとは別のエージェントである必要があります。';
+
+  @override
+  String get goalRefusalCommandInvalid => 'このゴールを読み取れません:';
+
+  @override
+  String get wakeRuleRefusalIntervalTooShort => '間隔が短すぎます。少なくとも1分を選んでください。';
+
+  @override
+  String get wakeRuleRefusalTooSoon => 'その時刻は近すぎます。より後の時刻を選んでください。';
+
+  @override
+  String get wakeRuleRefusalLineageEnded => 'この起動予約の連鎖は、実行回数または時間を使い切りました。';
+
+  @override
+  String get wakeRuleRefusalWatchTargetUnreadable => 'この監視対象は読み取れません。';
+
+  @override
+  String get wakeRuleRefusalExpiryRequired => '終了日、または実行回数を指定してください。';
+
+  @override
+  String get wakeRuleRefusalLimitReached =>
+      'この会話またはエージェントにはすでに上限までのスケジュールがあります。';
+
+  @override
+  String get wakeRuleRefusalInvalidWhen => '時刻を読み取れません。';
+
+  @override
+  String get wakeRuleRefusalNoteTooLong => 'ノートが長すぎます。';
+
+  @override
+  String get wakeRuleRefusalExpiryTooLong => '終了日が先すぎます。';
+
+  @override
+  String get wakeRuleRefusalLimitOutOfRange => '実行回数、日数、または予算の上限が範囲外です。';
+
+  @override
+  String get wakeRuleRefusalNextOutsideLoop => '次の時刻を自分で決められるのはループだけです。';
+
+  @override
+  String get wakeRuleRefusalWatchRefused => 'これは監視できません。';
+
+  @override
+  String get wakeRuleRefusalRuleEnded => 'そのスケジュールはすでに終了しています。';
+
+  @override
+  String get wakeRuleRefusalNotYours => 'そのスケジュールは別の担当者のものです。';
+
+  @override
+  String get wakeRuleEndFired => '1回の実行を完了しました。';
+
+  @override
+  String get wakeRuleEndExpired => '終了日に達しました。';
+
+  @override
+  String get wakeRuleEndRunCap => '実行回数の上限に達しました。';
+
+  @override
+  String get wakeRuleEndCostCap => 'コスト上限に達しました。';
+
+  @override
+  String get wakeRuleEndGoalEnded => 'ゴールが終了しました。';
+
+  @override
+  String get wakeRuleEndCancelled => 'キャンセルされました。';
+
+  @override
+  String get wakeRuleEndMemberRemoved => '担当者がワークスペースを離れました。';
+
+  @override
+  String get wakeRuleEndInvalidRow => '保存された設定を読み取れませんでした。';
+
+  @override
+  String goalHoldWorking(int segment) {
+    final intl.NumberFormat segmentNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String segmentString = segmentNumberFormat.format(segment);
+
+    return 'セグメント $segmentString で作業中です。誰も対応する必要はありません。';
+  }
+
+  @override
+  String get goalHoldWaiting => '受け取るべき作業を待っています。自動で続行します。';
+
+  @override
+  String goalHoldWaitingUntil(String time) {
+    return '受け取るべき作業を待っています。遅くとも $time には自動で続行します。';
+  }
+
+  @override
+  String get goalHoldVerifying => '完了を宣言しています。サーバーがチェックを実行し、その後レビュー担当者が判断します。';
+
+  @override
+  String get goalHoldLimit => 'プロバイダーの利用上限で一時停止中です。リセット後に自動で再開します。';
+
+  @override
+  String goalHoldLimitUntil(String time) {
+    return 'プロバイダーの利用上限で一時停止中です。$timeに自動で再開します。';
+  }
+
+  @override
+  String get goalHoldPerson => '会話で担当者の回答を待っています。誰かが回答すると続行します。';
+
+  @override
+  String get goalHoldByPerson => '担当者が一時停止しました。誰かが再開するまで一時停止のままです。';
+
+  @override
+  String get goalHoldNeedsReview =>
+      'レビュー待ち: 自動では進めません。完了として承認するか、再開するか、キャンセルしてください。';
+
+  @override
+  String get goalHoldBudget => '予算を使い切りました。続行するには予算を引き上げてください。';
+
+  @override
+  String goalHoldLimitParks(int count, int max) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return '利用上限による一時停止: $countString / $maxString';
+  }
+
+  @override
+  String get goalHoldDetailStalled => '直近のセグメントで進捗がありません。';
+
+  @override
+  String get goalHoldDetailStalledWaiting => '同じ作業で24時間、進捗なく待機しました。';
+
+  @override
+  String get goalHoldDetailVerificationFailed => '前回のチェックが失敗しました。';
+
+  @override
+  String get goalHoldDetailCannotVerify => 'チェッカーは、完了したかどうかを判断できませんでした。';
+
+  @override
+  String get goalHoldDetailSandboxUnavailable => 'チェックを実行するサンドボックスがありません。';
+
+  @override
+  String get goalHoldDetailCheckerUnavailable =>
+      'チェッカーのエージェントが利用できません。別のチェッカーを選んでから再開してください。';
+
+  @override
+  String get goalHoldDetailCheckBroken => 'このチェックは実行できません:';
+
+  @override
+  String get goalHoldDetailWakeSkipped => 'その起動予約は配信されませんでした。';
+
+  @override
+  String get goalHoldDetailClaimPending => '完了したという主張は、チェックの結果を待っています。';
+
+  @override
+  String get goalHoldDetailUnanswered => '担当者への質問または承認リクエストに回答がありません。';
+
+  @override
+  String get goalHoldDetailLimitParks => '利用上限での一時停止が多すぎました。内容を確認してから再開してください。';
+
+  @override
+  String get goalHoldDetailInput => '会話内の回答を待っています。';
+
+  @override
+  String goalSegments(int run, int max) {
+    final intl.NumberFormat runNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String runString = runNumberFormat.format(run);
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return 'セグメント $runString / $maxString';
+  }
+
+  @override
+  String goalSegmentsNoCap(int run) {
+    final intl.NumberFormat runNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String runString = runNumberFormat.format(run);
+
+    return 'セグメント $runString、上限なし';
+  }
+
+  @override
+  String goalMoney(String spent, String cap) {
+    return '$spent / $cap 使用';
+  }
+
+  @override
+  String goalDeadline(String time) {
+    return '期限 $time';
+  }
+
+  @override
+  String get goalPipelineStep => 'パイプラインのステップがこのゴールを進めています。';
+
+  @override
+  String get goalSummaryHeading => '最後の要約';
+
+  @override
+  String get goalDoneMeans => '完了の条件';
+
+  @override
+  String get goalChecks => 'チェック';
+
+  @override
+  String get goalBoundaries => '境界';
+
+  @override
+  String get goalStopWhen => '停止して確認する条件';
+
+  @override
+  String get goalNoMachineCheck => '機械的なチェックはありません。レビュー担当者は読み取れる内容から判断します。';
+
+  @override
+  String get goalCheckEnvironment => '環境のタスク';
+
+  @override
+  String goalLastCheck(int round, String time) {
+    final intl.NumberFormat roundNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String roundString = roundNumberFormat.format(round);
+
+    return '前回のチェック、ラウンド $roundString、$time';
+  }
+
+  @override
+  String get goalClaim => 'エージェントの主張';
+
+  @override
+  String get goalCheckPassed => '合格';
+
+  @override
+  String goalCheckFailed(int code) {
+    return '失敗、終了コード $code';
+  }
+
+  @override
+  String get goalCheckTimedOut => '時間切れ';
+
+  @override
+  String get goalCheckNotRerun => '再実行なし: 変更がありません';
+
+  @override
+  String get goalCheckBroken => '実行できません';
+
+  @override
+  String get goalCriterionMet => '達成';
+
+  @override
+  String get goalCriterionUnmet => '未達成';
+
+  @override
+  String get goalCriterionCannotTell => '判断できません';
+
+  @override
+  String get goalVerdictPass => '判定: 完了';
+
+  @override
+  String get goalVerdictFail => '判定: 未完了';
+
+  @override
+  String get goalVerdictCannotVerify => '判定: 判断できませんでした';
+
+  @override
+  String get goalConcerns => '懸念点';
+
+  @override
+  String goalVerifiedBy(String agent) {
+    return '$agentが検証';
+  }
+
+  @override
+  String get goalVerifiedBySelf => '自身で検証（別のチェッカーなし）';
+
+  @override
+  String get goalClosedByPerson => '合格したチェックなしに、担当者が閉じました';
+
+  @override
+  String get goalApprove => '完了を承認';
+
+  @override
+  String get goalApproveTitle => 'このゴールを完了として閉じますか？';
+
+  @override
+  String get goalApproveBody =>
+      'どのチェックもこれを確認していません。あなた自身の判断で閉じ、ゴールには担当者が未検証のまま閉じたことが記録されます。';
+
+  @override
+  String get goalApproveConfirm => '完了として閉じる';
+
+  @override
+  String get goalResumeNotYours => '再開や予算の引き上げは、開始した担当者だけができます。';
+
+  @override
+  String get goalChooseChecker => '別のチェッカーを選ぶ';
+
+  @override
+  String goalCheckerSet(String agent) {
+    return '$agentが今チェックします。再開すると、もう一度検証します。';
+  }
+
+  @override
+  String get goalSchedules => 'スケジュール';
+
+  @override
+  String get goalRepeat => '繰り返す';
+
+  @override
+  String get goalCreateChecks => 'チェック（任意）';
+
+  @override
+  String get goalCreateCheckHint => '作業が完了したときに合格するコマンド';
+
+  @override
+  String get goalCreateAddCheck => 'チェックを追加';
+
+  @override
+  String get goalCreateRemoveCheck => 'チェックを削除';
+
+  @override
+  String get goalCreateSegmentCap => 'セグメントの上限（任意）';
+
+  @override
+  String get goalCreateSegmentInvalid => 'セグメントの上限は、1以上の整数で入力してください。';
+
+  @override
+  String get scheduleCreateTitle => 'プロンプトを繰り返す';
+
+  @override
+  String get scheduleCadence => '頻度';
+
+  @override
+  String get scheduleEveryMinutes => 'N分ごと';
+
+  @override
+  String get scheduleEveryHours => 'N時間ごと';
+
+  @override
+  String get scheduleSelfPaced => '自動調整';
+
+  @override
+  String get scheduleSelfPacedHint => 'エージェントは各実行の後に、次までの間隔を1分から1時間の間で選びます。';
+
+  @override
+  String get scheduleInterval => '間隔';
+
+  @override
+  String get scheduleNote => '各実行では何をしますか？';
+
+  @override
+  String get scheduleCostCap => 'コスト上限（USD、任意）';
+
+  @override
+  String get scheduleExpiryDays => 'N日後に終了（任意）';
+
+  @override
+  String get scheduleCreateInvalid =>
+      'スペースとエージェントを選び、各実行の内容を入力し、1以上の整数を入力してください。';
+
+  @override
+  String get scheduleCreateButton => 'スケジュールを開始';
+
+  @override
+  String get scheduleCreateConfirmTitle => 'このスケジュールを開始しますか？';
+
+  @override
+  String scheduleCreateConfirmEveryMinutes(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString分ごとに、今から実行されます。',
+      one: '1分ごとに、今から実行されます。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleCreateConfirmEveryHours(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString時間ごとに、今から実行されます。',
+      one: '1時間ごとに、今から実行されます。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scheduleCreateConfirmSelfPaced =>
+      '今すぐ実行され、その後はエージェントが次の実行時刻を選びます。';
+
+  @override
+  String get scheduleCreated => 'スケジュールを開始しました。スケジュールの下に表示されます。';
+
+  @override
+  String get schedulesTitle => 'スケジュール';
+
+  @override
+  String get schedulesLoadFailed => 'スケジュールを読み込めませんでした';
+
+  @override
+  String get schedulesEmpty => 'スケジュールも監視もありません';
+
+  @override
+  String get schedulesEmptyDescription =>
+      'ゴールの画面からプロンプトを繰り返すか、会話で /loop または /schedule を送ってください。';
+
+  @override
+  String get scheduleMissing => 'このスケジュールは、このワークスペースではもう利用できません。';
+
+  @override
+  String scheduleEvery(String interval) {
+    return '$intervalごと';
+  }
+
+  @override
+  String get scheduleSelfPacedLoop => '自動調整ループ';
+
+  @override
+  String get scheduleCron => 'cron スケジュール';
+
+  @override
+  String scheduleOnce(String time) {
+    return '$timeに1回';
+  }
+
+  @override
+  String scheduleWatch(String event) {
+    return '監視: $event';
+  }
+
+  @override
+  String get scheduleWatchPrChecks => 'プルリクエストのチェック';
+
+  @override
+  String get scheduleWatchPrReview => 'プルリクエストのレビュー';
+
+  @override
+  String get scheduleWatchPrMerged => 'プルリクエストのマージ';
+
+  @override
+  String get scheduleWatchEnvironment => '環境';
+
+  @override
+  String get scheduleWatchTicket => 'チケット';
+
+  @override
+  String get scheduleWatchPipelineRun => 'パイプラインの実行';
+
+  @override
+  String get scheduleStatusActive => 'アクティブ';
+
+  @override
+  String get scheduleStatusPaused => '一時停止中';
+
+  @override
+  String get scheduleStatusEnded => '終了';
+
+  @override
+  String scheduleWakes(String agent) {
+    return '起動するエージェント: $agent';
+  }
+
+  @override
+  String scheduleNext(String time) {
+    return '次回の実行 $time';
+  }
+
+  @override
+  String scheduleLast(String time) {
+    return '前回の実行 $time';
+  }
+
+  @override
+  String scheduleRuns(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '実行 $countString回',
+      one: '実行 1回',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleRunsOf(int count, int max) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return '$countString / $maxString 回';
+  }
+
+  @override
+  String scheduleSkipped(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'スキップ $countString回',
+      one: 'スキップ 1回',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleEnds(String time) {
+    return '$timeに終了';
+  }
+
+  @override
+  String scheduleChain(int count, String time) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return 'チェーンの一部: 残り $countString 回、$timeに終了';
+  }
+
+  @override
+  String get scheduleNoteAgent => 'エージェント自身のノート（本人の言葉）:';
+
+  @override
+  String get scheduleNotePerson => '担当者のノート:';
+
+  @override
+  String scheduleActsFor(String name) {
+    return '担当: $name';
+  }
+
+  @override
+  String get scheduleActsForBot => '担当者なし';
+
+  @override
+  String get scheduleGoalBound => 'ゴールとともに終了します。';
+
+  @override
+  String get schedulePause => '一時停止';
+
+  @override
+  String get scheduleResume => '再開';
+
+  @override
+  String get scheduleDelete => '終了';
+
+  @override
+  String get scheduleRemove => '削除';
+
+  @override
+  String get scheduleDeleteTitle => 'このスケジュールを終了しますか？';
+
+  @override
+  String get scheduleDeleteBody => '完全に停止します。すでに行われた内容は取り消されません。';
+
+  @override
+  String get scheduleRemoveTitle => 'このスケジュールを削除しますか？';
+
+  @override
+  String get scheduleRemoveBody => '一覧から消えます。';
+
+  @override
+  String get scheduleResumeNotYours => 'このスケジュールの担当者だけが再開できます。';
+
+  @override
+  String get scheduleResumeAdminOnly => '担当者のいないスケジュールは、ワークスペースの管理者だけが再開できます。';
+
+  @override
+  String get scheduleOpenConversation => '会話を開く';
+
+  @override
+  String get progressWaiting => '待機中';
+
+  @override
+  String get progressNothingWaiting => '待機中のものはありません。';
+
+  @override
+  String get wakeOriginGoal => 'ゴール';
+
+  @override
+  String get wakeOriginGoalCheck => 'ゴールのチェック';
+
+  @override
+  String get wakeOriginGoalReview => 'ゴールのレビュー';
+
+  @override
+  String get wakeOriginSchedule => 'スケジュール';
+
+  @override
+  String get wakeOriginWatch => '監視';
+
+  @override
+  String get wakeOriginReply => '返信';
+
+  @override
+  String get wakeOriginMessage => 'メッセージ';
+
+  @override
+  String get wakeOriginWorkFinished => '完了した作業';
+
+  @override
+  String get wakeOriginLimitReset => '上限のリセット';
+
+  @override
+  String get wakeOriginRecovery => '復旧';
+
+  @override
+  String get wakeOriginAssignment => '割り当て';
+
+  @override
+  String get wakeOriginPipelineStep => 'パイプラインのステップ';
+
+  @override
+  String get wakeOriginImprovementReview => '改善のレビュー';
+
+  @override
+  String wakeOriginReplyFrom(String agent) {
+    return '$agentからの返信';
+  }
+
+  @override
+  String wakeOriginMessageFrom(String agent) {
+    return '$agentからのメッセージ';
+  }
+
+  @override
+  String wakeOriginWorkFinishedBy(String agent) {
+    return '$agentが完了した作業';
+  }
+
+  @override
+  String wakeFor(String agent) {
+    return '$agent向け';
+  }
+
+  @override
+  String wakeDue(String time) {
+    return '$timeに実行予定';
+  }
+
+  @override
+  String get wakeDueNow => 'まもなく実行';
+
+  @override
+  String get wakeHeld => '保留中';
+
+  @override
+  String wakeExpires(String time) {
+    return '$timeに期限切れ';
+  }
+
+  @override
+  String wakeAttempt(int attempt) {
+    final intl.NumberFormat attemptNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String attemptString = attemptNumberFormat.format(attempt);
+
+    return '試行 $attemptString';
+  }
+
+  @override
+  String get wakeCancel => 'キャンセル';
+
+  @override
+  String get wakeDeliverNow => '今すぐ配信';
+
+  @override
+  String get wakeResume => '再開';
+
+  @override
+  String get wakeDismiss => '破棄';
+
+  @override
+  String get wakeResumeOnlyTheirs => 'この実行の担当者だけが再開できます。';
+
+  @override
+  String get wakeRecovery => 'サーバーがこの実行中に再起動しました。再開して続行するか、破棄してください。';
+
+  @override
+  String limitParkTitle(String provider, String time) {
+    return '$providerの使用上限に達したため一時停止中です。上限は$timeにリセットされます。実行はリセット後最大7日間、再開を待ちます。';
+  }
+
+  @override
+  String limitParkTitleUnnamed(String time) {
+    return 'プロバイダーの使用上限に達したため一時停止中です。上限は$timeにリセットされます。実行はリセット後最大7日間、再開を待ちます。';
+  }
+
+  @override
+  String get limitParkResumeNow => '今すぐ再開';
+
+  @override
+  String get limitParkCancel => 'キャンセル';
+
+  @override
+  String limitParkResumed(String provider) {
+    return '$providerの利用上限の後に再開しました。';
+  }
+
+  @override
+  String limitParkGone(String provider) {
+    return '$providerの利用上限での待機は終了しました。';
+  }
+
+  @override
+  String get limitParkProviderUnknown => 'プロバイダー';
+
+  @override
+  String get mobileHeldMessages => '保留中のメッセージ';
+
+  @override
+  String get heldSteeringTitle =>
+      '実行が保留中のメッセージを受け取る前に終了したため、保留されています。今すぐ自分のメッセージを送るか、削除してください。';
+
+  @override
+  String get heldSteeringRelease => '保留中のメッセージを送信';
+
+  @override
+  String get notifGoalCompleted => 'ゴールが完了';
+
+  @override
+  String get notifGoalFailed => 'ゴールが失敗';
+
+  @override
+  String get notifGoalCancelled => 'ゴールがキャンセル';
+
+  @override
+  String get notifGoalBudgetExhausted => 'ゴールが予算を使い切りました';
+
+  @override
+  String get notifGoalNeedsReview => 'ゴールがレビューを待っています';
+
+  @override
+  String get notifGoalNeedsPerson => 'ゴールに担当者の対応が必要です';
+
+  @override
+  String get notifGoalOnHold => 'ゴールが保留中です';
+
+  @override
+  String get notifWakeRuleEnded => 'スケジュールが終了しました';
+
+  @override
+  String notifWaitingDigest(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '待機中の項目が $countString件あります',
+      one: '待機中の項目が 1件あります',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notifImprovementProposed(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '改善案 $countString件が提案されました',
+      one: '改善案が提案されました',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notifPipelineRunHeld => 'パイプラインの実行が予算で保留されました';
+
+  @override
+  String notifPipelineRunHeldBody(String spent, String cap) {
+    return '$spent / $cap 使用';
+  }
+
+  @override
+  String get notifNeedsYou => '要対応';
+
+  @override
+  String get notifDigestGoalReview => 'ゴールがレビューを待っています';
+
+  @override
+  String get notifDigestGoalPerson => 'ゴールに担当者の対応が必要です';
+
+  @override
+  String get notifDigestHeldWake => '保留中の起動予約';
+
+  @override
+  String get notifDigestImprovement => '提案された改善';
+
+  @override
+  String get wakeKindRulePaused => 'スケジュールが一時停止中でした。';
+
+  @override
+  String get wakeKindRuleBusy => 'エージェントは取り込み中で、このスケジュールは取り込み中の時刻をスキップする設定です。';
+
+  @override
+  String get wakeKindRuleFolded => '同じ監視の後のイベントに置き換わりました。';
+
+  @override
+  String get wakeKindRuleSuperseded => 'スケジュールの後の時刻に置き換えられました。';
+
+  @override
+  String get wakeKindRuleNotified => 'このスケジュールは通知のみを送る設定のため、実行は開始されませんでした。';
+
+  @override
+  String get wakeKindRuleLimitParked => 'スケジュールは、プロバイダーの利用上限がリセットされるのを待っています。';
+
+  @override
+  String get improvementRefusalCooldown =>
+      'この会話の改善のレビューは少し前に実行されました。後でもう一度お試しください。';
+
+  @override
+  String get improvementRefusalQueued => 'この会話の改善のレビューは、すでに実行待ちです。';
+
+  @override
+  String get improvementRefusalAgentNotFound => 'そのエージェントは、このワークスペースにありません。';
+
+  @override
+  String get steeringRefusalHeldByLimit =>
+      '利用上限で保留されたメッセージは、手動で送信できません。一時停止中の実行が再開するのを待ちます。';
+
+  @override
+  String limitParkCancelled(String provider) {
+    return '$providerの利用上限での待機はキャンセルされました。';
+  }
+
+  @override
+  String limitParkExpired(String provider) {
+    return '実行が再開する前に、$providerの利用上限での待機が期限切れになりました。';
+  }
+
+  @override
+  String limitParkSkipped(String provider) {
+    return '実行は$providerの利用上限の後に再開しませんでした。';
+  }
+
+  @override
+  String get heldSteeringLimitTitle =>
+      '実行が使用上限のリセットを待っている間、保留中です。実行の担当者が再開すると送信されます。';
+
+  @override
+  String heldSteeringLimitAt(String time) {
+    return '使用上限が$timeにリセットされるまで保留中です。実行の担当者が再開すると送信されます。';
+  }
+
+  @override
+  String get heldSteeringOtherTitle => 'サーバーが保留中です。削除できます。';
+
+  @override
+  String workRowWoke(int count, String agent) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '待機中の $countString件のため$agentを起動しました',
+      one: '$agentを起動しました',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String workRowWakeMissed(String agent) {
+    return '$agentへの起動予約は、サーバーの停止中に逃されました。';
+  }
+
+  @override
+  String workRowWakeSkipped(String agent) {
+    return '$agentへの起動予約は配信されませんでした。';
+  }
+
+  @override
+  String workRowScheduleCreated(String agent) {
+    return '$agentのスケジュールを設定しました。';
+  }
+
+  @override
+  String workRowScheduleEnded(String agent) {
+    return '$agentのスケジュールが終了しました。';
+  }
+
+  @override
+  String workRowNoteFromAgent(String agent) {
+    return '$agentからのスケジュールのノート:';
+  }
+
+  @override
+  String get workRowNoteFromPerson => '担当者からのスケジュールのノート:';
+
+  @override
+  String workRowCommandRefusedNamed(String command) {
+    return '$commandコマンドは拒否されました。';
+  }
+
+  @override
+  String get workRowCommandRefused => 'コマンドは拒否されました。';
+
+  @override
+  String workRowCapRaised(String person, String from, String to) {
+    return '$personがパイプラインの支出上限を $from から $to に引き上げました。';
+  }
+
+  @override
+  String workRowCapRaisedNoAmounts(String person) {
+    return '$personがパイプラインの支出上限を引き上げました。';
+  }
+
+  @override
+  String get workRowApplyIncomplete =>
+      'このスキルへの承認済みの変更は、その間にスキルが変わったため完了できませんでした。提案はロールバックされました。';
+
+  @override
+  String get workRowOpenSchedule => 'スケジュールを開く';
+
+  @override
+  String get heldSteeringOthersTitle =>
+      '実行が受け取る前に終了したため、保留されています。保留中のメッセージを送信できるのは、書いた人だけです。';
+
+  @override
+  String get heldSteeringOnlyYours =>
+      'あなたのメッセージだけを送信します。他の人のメッセージは、書いた人のために待機します。';
+
+  @override
+  String heldSteeringWrittenBy(String name) {
+    return '$nameが書いたメッセージ';
+  }
+
+  @override
+  String get steeringRefusalNotYours =>
+      '保留中のメッセージを送信できるのは、書いた人だけです。これらはいずれもあなたのものではありません。';
+
+  @override
+  String get steeringRefusalNeedsWrite =>
+      'ほかの人の代わりに動いている実行に指示を送るには、このスペースのリポジトリへの書き込み権限が必要です。';
+
+  @override
+  String workRowSchedulePaused(String name, String agent) {
+    return '$nameが$agentのスケジュールを一時停止しました。';
+  }
+
+  @override
+  String get goalVerdictObjective => '目的全体';
+
+  @override
+  String get notifDigestRequest => 'あなたの回答を待っています';
 }

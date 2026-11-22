@@ -15,6 +15,7 @@ import 'package:cc_remote/widgets/conversation_progress/progress_outputs.dart';
 import 'package:cc_remote/widgets/conversation_progress/progress_run.dart';
 import 'package:cc_remote/widgets/conversation_progress/progress_shared.dart';
 import 'package:cc_remote/widgets/conversation_progress/progress_todos.dart';
+import 'package:cc_remote/widgets/conversation_progress/progress_waiting.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -149,6 +150,9 @@ class _ProgressContentState extends ConsumerState<ProgressContent> {
           mutate: _mutate,
           onError: (message) => setState(() => _actionError = message),
         ),
+        const SizedBox(height: 24),
+        progressHeading(t, l.progressWaiting),
+        ProgressWaiting(scope: scope),
         const SizedBox(height: 24),
         progressHeading(t, l.progressTodos),
         ProgressTodos(

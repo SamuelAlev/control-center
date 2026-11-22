@@ -34,11 +34,13 @@ void main() {
       expect(parseSlashCommand('/').isCommand, isFalse);
     });
 
-    test('built-in set contains plan/goal/loop/compact', () {
-      expect(
-        harnessBuiltinCommands,
-        containsAll(['plan', 'goal', 'loop', 'compact']),
-      );
+    test('built-in set contains plan/compact, and not goal or loop', () {
+      expect(harnessBuiltinCommands, containsAll(['plan', 'compact']));
+      // `/loop` is ordinary text now: it starts no goal and has no directive.
+      expect(harnessBuiltinCommands, isNot(contains('loop')));
+      // `/goal` starts a goal on the server before any run; the harness
+      // never sees it as a command.
+      expect(harnessBuiltinCommands, isNot(contains('goal')));
     });
   });
 

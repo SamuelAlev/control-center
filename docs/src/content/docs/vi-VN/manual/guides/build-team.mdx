@@ -2,7 +2,7 @@
 title: Xây dựng một nhóm agent
 description: Gom các agent dưới một trưởng nhóm để công việc được giao đi qua một đầu mối điều phối.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/xay-dung-doi-agent
-sourceHash: fc5e2b8c8a49e398ff1b322fcfb25c4aed84bbb4
+sourceHash: 55add2d16bf90650b7d4cbda7aa78f0fdf1b72e2
 ---
 
 Hướng dẫn này chỉ cho bạn cách tạo một nhóm, gán trưởng nhóm cho nhóm đó và đưa công việc đến nhóm.
@@ -51,7 +51,7 @@ Khi một phiếu thực sự mang phân công cho nhóm:
 
 1. Trưởng nhóm của nhóm được điều phối kèm phiếu, hướng dẫn vận hành và danh sách thành viên.
 2. Trưởng nhóm phân công cho các thành viên và ghi lại đánh giá của mình bằng công cụ `record_team_activity` — `action` (đã phân công), `no_action` (không còn việc gì để làm, điều này dừng các lần kích hoạt lại tiếp theo) hoặc `failed`.
-3. Mỗi lượt chạy của thành viên hoàn tất sẽ đánh thức trưởng nhóm lần nữa, trong giới hạn của rào chắn no-action.
+3. Một lần chạy của thành viên mà leader khởi động bằng một `@mention` hoặc một tin nhắn sẽ đánh thức leader một lần nữa khi nó kết thúc, trong cuộc hội thoại mà leader đã đánh thức nó, bị giới hạn bởi chốt không hành động. Công việc leader giao bằng `delegate_task` đánh thức nó khi phiếu được giải quyết, và một câu hỏi nó hỏi bằng `ask_agent` đánh thức nó cùng với câu trả lời (xem [Các agent phối hợp](/vi-VN/so-tay/huong-dan-thuc-hanh/agent-phoi-hop/)).
 
 Node **Team dispatch** của quy trình là điểm vào còn lại. Nó nhận id nhóm, một prompt và một chế độ điều phối:
 

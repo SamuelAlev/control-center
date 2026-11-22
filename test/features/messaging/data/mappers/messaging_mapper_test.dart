@@ -107,7 +107,6 @@ void main() {
         participantType: 'agent',
         role: 'member',
         joinedAt: now,
-        lastReadSeq: 0,
       );
 
       final participant = mapper.participantToDomain(row);
@@ -129,7 +128,6 @@ void main() {
         participantType: 'user',
         role: 'owner',
         joinedAt: now,
-        lastReadSeq: 0,
       );
 
       final participant = mapper.participantToDomain(row);
@@ -151,7 +149,6 @@ void main() {
           participantType: 'user',
           role: 'owner',
           joinedAt: now,
-          lastReadSeq: 0,
         ),
         SpaceParticipantsTableData(
           id: 'p-2',
@@ -160,7 +157,6 @@ void main() {
           participantType: 'agent',
           role: 'member',
           joinedAt: now,
-          lastReadSeq: 0,
         ),
       ];
 

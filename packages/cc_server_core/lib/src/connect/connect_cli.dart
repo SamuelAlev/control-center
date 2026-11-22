@@ -10,6 +10,8 @@ import 'package:cc_server_core/src/connect/klipy_gifs.dart';
 import 'package:cc_server_core/src/dotenv.dart';
 import 'package:cc_server_core/src/file_secrets_store.dart';
 import 'package:cc_server_core/src/identity/provider_app_settings.dart';
+import 'package:cc_server_core/src/runtime/server_native_preflight.dart';
+import 'package:cc_server_core/src/server_boot_refusal.dart';
 
 /// `cc_server connect status | enable [--url URL] | disable`.
 ///
@@ -19,10 +21,15 @@ import 'package:cc_server_core/src/identity/provider_app_settings.dart';
 /// (`ConnectSettings.noticeExternalChanges`) and drops what it cached, as the
 /// Settings screen does at once. Returns the process exit code: 78 when
 /// `CC_CONNECT_URL` is unusable, as the server's boot refuses it.
+///
+/// A refusal the server's boot would make (a code mode cap it does not
+/// accept, a missing required native, checked by [checkNatives] before the
+/// global database is opened) is printed and ends with 78 too.
 Future<int> runConnectCommand({
   required List<String> args,
   IOSink? out,
   IOSink? err,
+  Future<void> Function(String dataDir) checkNatives = refuseMissingNatives,
 }) async {
   // The process's stdio (or the caller's sinks): never ours to close.
   // ignore: close_sinks
@@ -40,12 +47,20 @@ Future<int> runConnectCommand({
     ConnectSettings.checkEnvironment(environment);
   } on ConnectEnvironmentInvalid catch (e) {
     stderrSink.writeln(
-      'cc_server connect: CC_CONNECT_URL is not usable: ${e.reason}',
+      'cc_server connect: CC_CONNECT_URL is not usable: '
+      '${printableError(e.reason)}',
     );
     return 78;
   }
-  final config = CcServerConfig.resolve(rest, environment: environment);
-  Directory(config.dataDir).createSync(recursive: true);
+  final CcServerConfig config;
+  try {
+    config = CcServerConfig.resolve(rest, environment: environment);
+    await checkNatives(config.dataDir);
+    createDataDirectory(config.dataDir);
+  } on ServerBootRefusal catch (e) {
+    stderrSink.writeln(terminalLine(e.message));
+    return 78;
+  }
   final db = GlobalDatabase.atDataDir(config.dataDir);
   try {
     final secrets = FileSecretsStore(dataDir: config.dataDir);
@@ -79,12 +94,14 @@ Future<int> runConnectCommand({
         return 0;
       default:
         stderrSink
-          ..writeln('Unknown connect command: $command')
+          ..writeln(
+            'Unknown connect command: ${printableError(command, max: 80)}',
+          )
           ..writeln(connectUsage);
         return 64;
     }
   } on ValidationException catch (e) {
-    stderrSink.writeln('cc_server connect: ${e.message}');
+    stderrSink.writeln('cc_server connect: ${printableError(e.message)}');
     return 1;
   } finally {
     await db.close();
@@ -117,30 +134,31 @@ Future<void> _printStatus(
     config: state.usable ? state.config : null,
     klipy: klipy,
   );
-  out
-    ..writeln('Mode        ${state.choice.mode.name}')
-    ..writeln(
-      'URL         ${state.choice.baseUrl.isEmpty ? '-' : state.choice.baseUrl}',
-    )
-    ..writeln(
-      'Locked      ${state.choice.lockedByEnvironment ? 'yes (CC_CONNECT_URL)' : 'no'}',
-    )
-    ..writeln('Install id  ${state.installId.isEmpty ? '-' : state.installId}')
-    ..writeln(
-      'Health      ${state.usable ? 'ok' : (state.error.isEmpty ? 'off' : state.error)}'
-      '${state.stale ? ' (cached; Connect unreachable)' : ''}',
-    );
+  // A stored URL, an error a Connect answered with: redacted and printable.
+  void line(String text) => out.writeln(terminalLine(text));
+  line('Mode        ${state.choice.mode.name}');
+  line(
+    'URL         ${state.choice.baseUrl.isEmpty ? '-' : state.choice.baseUrl}',
+  );
+  line(
+    'Locked      ${state.choice.lockedByEnvironment ? 'yes (CC_CONNECT_URL)' : 'no'}',
+  );
+  line('Install id  ${state.installId.isEmpty ? '-' : state.installId}');
+  line(
+    'Health      ${state.usable ? 'ok' : (state.error.isEmpty ? 'off' : state.error)}'
+    '${state.stale ? ' (cached; Connect unreachable)' : ''}',
+  );
   final pins = state.pendingPins;
   if (pins != null && pins.isNotEmpty) {
-    out.writeln(
-      'Pins        changed; confirm in Settings → Connect before lanes use it',
+    line(
+      'Pins        changed; confirm in Settings \u2192 Connect before lanes use it',
     );
   }
-  out.writeln('Lanes');
+  line('Lanes');
   for (final lane in lanes) {
-    out.writeln(
+    line(
       '  ${lane.lane.padRight(11)}${lane.source.name}'
-      '${lane.error.isEmpty ? '' : ' — ${lane.error}'}',
+      '${lane.error.isEmpty ? '' : ' \u2014 ${lane.error}'}',
     );
   }
 }

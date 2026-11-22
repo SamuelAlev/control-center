@@ -1,0 +1,143 @@
+---
+title: Pursue a goal
+description: Give an agent an objective it keeps working on across runs and restarts, define what done means, and decide when it is finished.
+slug: en-GB/manual/guides/pursue-a-goal
+sourceHash: 0ea77964bd9e3044e168624bc67325de0fd1d1e5
+---
+
+A goal is work an agent keeps at until what done means is met. The agent works in **segments**: bounded runs that the server starts one after another, across restarts, until the goal is verified, a person closes it, or it reaches a limit. The agent cannot close a goal by saying it is done. The server runs the goal's checks and a reviewer looks at the result first.
+
+## Start a goal
+
+Type `/goal` and the objective in a conversation's composer:
+
+```text
+/goal --budget 20 --days 2 --check "make test" make the importer handle files over 2 GB
+```
+
+Typing `/goal` with text first opens the objective interview. It asks for success criteria, the checks that must pass, boundaries and stop conditions, and offers a separate checker, starting each segment fresh, and answering its own questions. Every step can be skipped.
+
+| Flag | Meaning |
+| --- | --- |
+| `--budget <dollars>` | What the whole goal may spend. 50 dollars by default |
+| `--max <N>` | The most segments the goal may take. No cap by default |
+| `--days <N>` | A deadline, that many days from now |
+| `--check "<command>"` | A command that must pass before the goal can finish, run in the worktree. Repeat for more, at most 5 |
+| `--checker <agent>` | Another agent that reviews the claim that the goal is done, by name or id |
+| `--fresh` | Start each segment without the conversation's history, from the goal and its notes only |
+| `--unattended wait` or `--unattended assume` | What happens to the agent's questions when nobody answers (see [When nobody answers](#when-nobody-answers)) |
+
+- Flags can stand anywhere in the message. An unknown flag, a repeated flag, a bad value and more than 5 checks are refused, and your draft stays in the composer with the reason under it.
+- A number at the start of the objective is part of the objective. To cap segments, use `--max`.
+- `/goal` is read only in a message you type yourself. The same text from an agent, a pipeline or a wake is an ordinary message.
+- An agent pursues one goal at a time in a workspace. A second `/goal` for the same agent is refused while the first is active.
+
+### What done means
+
+The objective can carry sections that become the goal's contract:
+
+```text
+/goal make the importer handle files over 2 GB
+
+## Success criteria
+- A 3 GB fixture imports without running out of memory
+- The progress bar reaches 100%
+
+## Boundaries
+- Don't change the public API
+
+## Stop conditions
+- A migration would drop data
+
+## Checks
+- `make test` (300 s)
+- environment task `test` (600 s)
+```
+
+- **Success criteria**: at most 12, each at most 300 characters. Each one is a thing a reviewer can confirm.
+- **Checks**: at most 5. A check runs in the worktree or as a named task of the space's [environment](/en-GB/manual/guides/environments/). Each has 300 seconds by default and 1,800 at most.
+- A section over its limit is refused, never cut.
+
+A goal with no criteria lets the agent decide when it is done, and a goal with no check relies on review alone. The goal page says so.
+
+## How a goal continues
+
+Each segment is a run capped at 5 dollars or what is left of the budget, whichever is lower. After each segment the server decides what comes next, from what the segment did:
+
+- **It made progress.** The next segment starts.
+- **It is waiting on something it set up**: a schedule, a watch, a question to another agent or a delegated ticket. The goal waits for it. If nothing arrives, the server looks again after 20 minutes, then 40, 80, 160 and every 240 minutes. The card reads **Waiting on what it set up · looks again by** a time.
+- **It made no progress.** Progress means the worktree changed through the segment's own work, the checklist changed, or the agent did something new. After 3 segments without progress the goal pauses: **No progress in its last segments.**
+- **It waited too long.** After 24 hours of waiting, or 6 waits on new things it set up without progress in between, the goal pauses: **Waiting, after segments without progress.**
+- **It failed.** The server retries after 30 seconds, then longer, up to 15 minutes. After 3 failures in a row the goal fails.
+- **It asked a person.** The goal holds until someone answers: **Needs a person**.
+
+The goal also stops at its budget (**Budget exhausted**), its segment cap or its deadline.
+
+## When the agent says it is done
+
+The agent claims the goal is done with evidence for each criterion. Then:
+
+1. **The server runs the checks** in a sandbox, never on the server's machine directly. A check that exits non-zero fails. A check that cannot run at all (command not found, not executable, an environment task that does not exist) is broken: the goal stops for a person with **This check can't run:** and the command. With no sandbox on the server, the goal stops with **No sandbox is available to run its checks.** (A server whose owner turned sandboxing off for every run is the exception: checks run there the way the agent's own commands do.) When nothing in the worktree changed since a check failed, it is not rerun.
+2. **A reviewer looks at the result**, when every check passed or there are none. The reviewer is the goal's checker, else the space's checker, else the goal's own agent. It runs read-only with no conversation history: it can read files and the checks' output, but cannot change anything, run commands or wake other agents. It also gets the full diff of the tests and check scripts the agent changed, and it treats what the agent wrote in the conversation and in its notes as claims, not as proof. For a goal with no criteria it judges the objective as a whole. It answers that the goal is done, not done, or that it cannot tell.
+3. **Done**: the goal completes. **Not done**: the agent gets the reviewer's findings and keeps working. After 3 rounds that are not done, or when the reviewer cannot tell, the goal waits for you: **Waiting for review: it says it is done, and nothing confirmed it**.
+
+A message you type while the reviewer runs is not given to the reviewer and is not sent when the review ends. It stays queued for the agent's next segment. When no segment follows, it is held for you under **Send held messages**.
+
+A reviewer that cannot run (deleted, or on an adapter that cannot keep a run read-only, such as an ACP agent) pauses the goal: **Its checker agent is unavailable. Pick another checker, then resume.** No other agent steps in without you.
+
+A checker on a different provider from the goal's agent is less likely to share its blind spots. Without a separate checker the agent reviews its own work, and the goal records **Verified by itself (no separate checker)**.
+
+## Follow a goal
+
+- **In the conversation**: the goal card in the **General** panel shows the hold, the segment, spend against the budget, time left, what done means, the checks and the last verdict.
+- **The Goals page**: sidebar → **Goals**. Goals are grouped as **Waiting for review**, **Open** and **Ended**.
+- **The goal page**: open a goal to see **Now** (segments, spend, deadline, no-progress count and what happens next), **What done means**, **Verification** (the last round: the claim, each check with its output, the review per criterion) and **Schedules and wakes**. Each goal has its own address (`/workspaces/<workspace>/goals/<goal id>`), so you can share a link.
+
+On the phone, the goals screen starts a goal with checks and a segment cap, and shows the same goals and holds.
+
+## Change or stop a goal
+
+| Action | Who can |
+| --- | --- |
+| **Pause goal**, **Stop goal** | Anyone with access to the space |
+| **Resume goal**, **Raise budget** | Only the person who started the goal (a workspace admin for a goal nobody started) |
+| **Edit** what done means, **Change checker** | Only the person who started the goal (a workspace admin for a goal nobody started), with write access to the space's repositories, while the goal is paused |
+| **Approve completion** | Anyone with access to the space, while the goal waits for review. A goal a pipeline started: only the person who started that run (a workspace admin when nobody did) |
+
+- Pressing **Stop** on the agent's run pauses the goal (**Paused by a person**). Its pending wakes wait until you resume it.
+- **Approve completion** closes the goal as done on your word. The goal records **Closed by a person without a passing check**.
+- A goal that used its budget resumes only with a higher budget.
+- When the person who started a goal leaves the workspace, the goal pauses for review at once and its running agent is stopped. Nobody can resume it; anyone with access to the space can stop it. The daily digest lists it for the workspace admins.
+
+## When nobody answers
+
+When a segment asks a person a question or for an approval and nobody answers, the request waits 72 hours by default. Then an approval counts as denied, a question as unanswered, and the goal pauses: **A question or approval request to a person went unanswered.** The run that asked gets no further answers: anything else it asks is refused at once, and it finishes what it can. A workspace admin sets the time (1 hour to 7 days) under **Settings → Workspace → Schedules → When nobody answers**. Once a day, at the hour set there, you get one digest of everything waiting for you.
+
+With `--unattended assume`, the agent states its assumption and goes on after 10 minutes without an answer, when its stop conditions allow. This applies only to questions. An approval is never assumed, and a review never assumes anything.
+
+## Usage limits and restarts
+
+- **A provider usage limit.** When a segment stops at a provider's usage limit and the provider says when it resets (within 7 days), the goal pauses without a strike: **Paused at the usage limit · resumes** a time. It continues 30 seconds after the reset. After 8 such pauses the goal waits for you: **It hit usage limits too often. Look it over, then resume.** Any resume starts the count again. ACP agents report no reset, so their goals do not wait at a limit.
+- **A server restart.** A goal survives a restart. A segment the restart interrupted is started again, and the goal's schedules and pending wakes are kept.
+
+## Improvements after a goal
+
+After a goal passes verification, a short read-only review (at most 1 dollar) may propose improvements: a memory fact, a policy, a note on the agent, or a change to a skill. Type `/refine` to ask for the same review of the conversation's work. At most one review runs per conversation every 20 minutes.
+
+Proposals appear on the **Improvements** page (sidebar → **Improvements**). Open one to see what it changes, the evidence, and **Accept**, **Reject** or **Roll back**.
+
+- A proposal changes nothing until someone accepts it. It expires after 30 days.
+- A change to a skill, or to a policy for the whole workspace, needs a workspace admin (**An admin decides**).
+- A skill change is stored as a separate revision. Press **Run evaluation** to compare it with the current skill; **Accept** is possible only after an evaluation passed. An evaluation passes when it ran in full and the agent solved at least as many runs with the change as with the current skill; the page shows both numbers. If the skill changes after the evaluation, run it again.
+- **Roll back** restores the earlier text, as long as nobody changed it since.
+
+## In a pipeline
+
+A pipeline can start a goal with the **Pursue a goal** step (`goal.pursue`). The step waits until the goal ends and passes on its summary and verdict. See [Pipeline steps](/en-GB/manual/reference/pipeline-steps/).
+
+## See also
+
+- [Schedules and wakes](/en-GB/manual/guides/schedules-and-wakes/)
+- [Agents working together](/en-GB/manual/guides/agents-working-together/)
+- [Manage costs](/en-GB/manual/guides/manage-costs/)
+- [Slash commands](/en-GB/manual/reference/slash-commands/)

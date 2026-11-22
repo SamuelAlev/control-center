@@ -199,9 +199,10 @@ class RpcMessagingPort implements MessagingPort {
     metadata: metadata,
   );
 
-  // [requestedByUserId] is accepted for interface parity but never sent over
-  // the wire: the server stamps the requesting identity from the session's
-  // authenticated user, so a client cannot attribute a run to someone else.
+  // [requestedByUserId] and [wakeContext] are accepted for interface parity
+  // but never sent over the wire: the server stamps the requesting identity
+  // from the session's authenticated user, so a client cannot attribute a
+  // run to someone else, and records the run as that person's message.
   @override
   Future<String?> dispatchAgent({
     required String workspaceId,
@@ -213,7 +214,7 @@ class RpcMessagingPort implements MessagingPort {
     String? pipelineStepId,
     String? inReplyToAgentId,
     String? requestedByUserId,
-    WakeContext? wakeContext,
+    required WakeContext wakeContext,
     String? conversationId,
     Map<String, dynamic>? expectedOutputSchema,
     OutputContractMode outputContractMode = OutputContractMode.strict,
@@ -226,7 +227,6 @@ class RpcMessagingPort implements MessagingPort {
     pipelineRunId: pipelineRunId,
     pipelineStepId: pipelineStepId,
     inReplyToAgentId: inReplyToAgentId,
-    wakeContext: wakeContext,
     conversationId: conversationId,
     expectedOutputSchema: expectedOutputSchema,
     outputContractMode: outputContractMode,

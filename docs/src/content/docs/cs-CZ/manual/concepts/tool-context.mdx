@@ -2,29 +2,45 @@
 title: Kontext nástrojů a cache promptů
 description: Proč agent vidí malou sadu nástrojů místo všech, jak se dostane ke zbytku a jaká pravidla drží cache promptů poskytovatele zahřátou po celý běh.
 slug: cs-CZ/prirucka/koncepty/kontext-nastroju
-sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
+sourceHash: 74ad7fcb903772d007ba9bd7ec85153fcf668335
 ---
 
 U každého požadavku vestavěného harnessu platí dvě věci: definice nástrojů tvoří největší pevný náklad a skoro žádná z nich se nepoužije. Tahle stránka vysvětluje, co s tím Control Center dělá a proč odpověď není prostě „posílat míň nástrojů“.
 
 ## Problém je pozornost, ne bajty
 
-Control Center registruje zhruba 126 nástrojů. Když se pošlou celé, stojí jejich definice přibližně **23 000 tokenů na každý požadavek** — náklad, na který komprimace nesáhne, protože definice nástrojů jdou v požadavku jinou částí než konverzace.
+Control Center má vlastních zhruba 160 nástrojů. Když se pošlou celé, jejich definice by se vezly s **každým požadavkem** — náklad, na který komprimace nesáhne, protože definice nástrojů jdou v požadavku jinou částí než konverzace.
 
 Účet za tokeny je ta zjevná stížnost a s cache promptů zároveň ta menší. Skutečná cena je **přesnost výběru**. Publikovaná hodnocení volání nástrojů se shodují, že modely vyberou správný nástroj spolehlivě zhruba do 30–50 nástrojů v kontextu a za tou hranicí se postupně zhoršují. Pojmenovaná příčina není počet tokenů, ale **sémantický překryv**: jakmile katalog obsahuje několik nástrojů, jejichž popisy znějí podobně, model volí mezi dvojníky, místo aby si vybavoval schopnost.
 
-Při 126 nástrojích je agent na každém tahu daleko za tím pásmem — včetně těch mnoha tahů, kde stačilo přečíst soubor.
+Při zhruba 160 nástrojích je agent na každém tahu daleko za tím pásmem — včetně těch mnoha tahů, kde stačilo přečíst soubor.
 
-## Dvouúrovňová plocha
+## Jedna malá přímá sada
 
 Běh proto vidí dvě věci:
 
-- **rezidentní** sadu — zhruba dvě desítky nástrojů, poslaných s plným schématem při každém požadavku;
+- **přímou** sadu zhruba patnácti nástrojů, poslaných s plným schématem při každém požadavku;
 - **jmenný index** všeho ostatního, seskupený pod nadpisy jako „Tickets and projects“ nebo „Memory and knowledge“, za pár stovek tokenů na celý katalog.
 
-Na současném katalogu to srazí blok nástrojů z **~23,1 tis. tokenů na ~5,0 tis., tedy asi o 78 %**, a trvale viditelnou sadu dostane do pásma, kde je výběr spolehlivý.
+Měřeno na registru, který testy sestaví, dosahují standardní chatové nástroje vestavěného agenta 14 definic nástrojů a zhruba 16,5 KB s `repl`, z toho `repl` zabírá zhruba 4 KB (jeho definice nesmí přesáhnout 4 096 bajtů), a 14 definic a zhruba 13 KB na serveru, který skripty spouštět nedokáže. Jde o měření jedné plochy, ne každé instalace. Každý další nástroj se volá ze skriptu, nebo se načte až při prvním použití.
 
-Rezidentní sada jsou nástroje, které běh použije ve *většině* běhů: slovník souborů a shellu (`read`, `write`, `edit`, `search`, `bash`, …), nástroje pro objevování, kontrolní seznam úkolů, hledání v paměti a sloveso, které musí aktuální [režim](/cs-CZ/prirucka/koncepty/rezimy/) zavolat, aby odevzdal výstup. Vlastní výstupní sloveso režimu je vždy rezidentní. Běh nesmí hledat právě to volání, které jeho výstup vytvoří.
+Přímou sadu tvoří nástroje, které většina běhů použije v prvních tazích, a ty, které běh nesmí nikdy hledat: slovník souborů a shellu (`read`, `write`, `edit`, `search`, `find`, `bash` a `read_output`), `ask_user` a `task`, `todo_write`, `search_memory` a `send_message`, a sloveso, které musí aktuální [režim](/cs-CZ/prirucka/koncepty/rezimy/) zavolat, aby odevzdal výstup. Vlastní výstupní sloveso režimu je vždy přímé. Běh nesmí hledat právě to volání, které jeho výstup vytvoří. Nástroj si místo zaslouží tím, že ho používá většina běhů, ne tím, jak je důležitý, když se použije: každé jméno v sadě je definice při každém tahu každého běhu.
+
+### Skripty dosáhnou na zbytek
+
+Když server umí spouštět skripty, má každý běh také [`repl`](/cs-CZ/prirucka/koncepty/rezim-kodu/), jako první v seznamu. Pravidlo pro zbytek katalogu je pak:
+
+- nástroj, který skript smí volat, je dosažitelný **jen ze skriptu**: je v jmenném indexu a skript `repl` ho volá jako `tools.<name>(args)` poté, co ho vyhledá přes `searchTools()` nebo `describeTool()`, dokud server nemůže spouštět skripty běhu, a pak se načte až při prvním použití ([Když skripty nemohou běžet](/cs-CZ/prirucka/koncepty/rezim-kodu/#když-skripty-nemohou-běžet));
+- nástroj, který skript volat nesmí (`eval`, `task`, schválení, delegování a několik dalších), je **odložený**: načte se až při prvním použití, jak je popsáno níže;
+- `search_tools` se přidá, když je cokoli odloženo.
+
+Běh bez `repl` dostane stejnou přímou sadu a všechno ostatní je odloženo.
+
+Přímá sada je stejná s `repl` i bez něj, a to záměrně. Agent se naučí jednu plochu, začátek každého požadavku tvoří stejné nástroje ve stejném pořadí a přidání `repl` nemění nic, na čem agent už spoléhal.
+
+Co to šetří: schéma nástroje dostupného jen ze skriptu se nikdy neposílá poskytovateli, takže těch asi sto nástrojů mimo přímou sadu stojí jen svá jména. Skript, který jich potřebuje deset, nezaplatí za žádné jejich schéma a jeho mezivýsledky se do kontextu nedostanou.
+
+Co to stojí: nástroj mimo přímou sadu musí zavolat skript a skript si nejdřív musí vyhledat argumenty nástroje. Pro jedno rychlé volání je to navíc krok, který přímé volání nepotřebuje. Proto nástroje, které většina běhů volá v prvních tazích, zůstávají přímé.
 
 ### Odložený neznamená nedostupný
 
@@ -32,19 +48,21 @@ Tohle z návrhu dělá bezpečný, ne jen levný. **Odložený nástroj jde zavo
 
 Agent vidí jméno v promptu. Když ho zavolá přímo, harness ve stejném kroku načte schéma a nástroj spustí — bez chyby a bez dalšího kola. Model nemusí vědět, že byl nástroj kdy „nenačtený“.
 
-Když agent zná úkol, ale ne jméno, `search_tools` vezme popis běžným jazykem („přiřaď ticket někomu“), seřadí celou plochu běhu a vrátí shody *už s načtenými schématy*, takže hned další tah může jednu zavolat. Když hledání nic nenajde, řekne to napřímo a navrhne jiné znění nebo širší hledání. Schválně: agent, který prázdné hledání přečte jako „tahle schopnost neexistuje“, si vymyslí náhradu, místo aby hledal znovu.
+Když agent zná úkol, ale ne jméno, `search_tools` vezme popis běžným jazykem („přiřaď ticket někomu“), seřadí celou plochu běhu a vrátí shody *už s načtenými schématy*, takže hned další tah může jednu zavolat. Shoda, kterou lze volat jen ze skriptu, se vrátí i s tím, jak ji volat ze skriptu, pokud skripty běhu už nemohou běžet; pak se načte jako každá jiná shoda. Když hledání nic nenajde, řekne to napřímo a navrhne jiné znění nebo širší hledání. Schválně: agent, který prázdné hledání přečte jako „tahle schopnost neexistuje“, si vymyslí náhradu, místo aby hledal znovu.
 
 `search_tools` existuje jen ve vestavěném harnessu. Externí klienti MCP mají místo něj `search_tool_bm25`, který řadí stejný index, ale shody jen popisuje. Ti klienti už každé schéma dostali z `tools/list`, takže není co načítat.
 
-### Co odložení nikdy nedělá
+### Co povrch nikdy nedělá
 
-Odložení se uplatní **až po** filtru nástrojů režimu, nikdy místo něj. Skryje schéma. Nástroj, který režim zakázal, odhalit neumí. Aktivovaný nástroj pořád projde výzvou ke schválení a [guardraily akcí](/cs-CZ/prirucka/koncepty/guardraily/) úplně stejně jako rezidentní a nenačte jméno, které na ploše běhu od začátku nebylo.
+Odložení i skripty se uplatní **až po** filtru nástrojů režimu, nikdy místo něj. Skrývají schéma; nemohou odhalit nástroj, který režim zakázal. Načtený nástroj a volání ze skriptu pořád projdou výzvou ke schválení a [guardraily akcí](/cs-CZ/prirucka/koncepty/guardraily/) úplně stejně jako přímé volání, a ani jedno nemůže dosáhnout na jméno, které od začátku nebylo na ploše běhu.
 
-Plocha MCP, kterou vidí externí klienti, se **nemění**. `tools/list` pořád vrací celý katalog. Dřívější pokus ho ořezat agenty rovnou rozbil: klienti MCP ověřují jména nástrojů proti vlastnímu seznamu v cache a cokoliv, co v něm není, odmítnou, aniž by se serveru zeptali, takže nástroj „skrytý, ale volatelný“ byl prostě nedosažitelný. Odložení žije v harnessu, kde načtení nástroje uprostřed běhu harness opravdu umí.
+Plocha MCP, kterou vidí externí klienti, se **neodkládá**. `tools/list` vrací celý katalog, protože klienti MCP ověřují jména nástrojů proti vlastnímu seznamu v cache a cokoliv, co v něm není, odmítnou, aniž by se serveru zeptali, takže nástroj „skrytý, ale volatelný“ by byl prostě nedosažitelný. Odložení žije v harnessu, kde načtení nástroje uprostřed běhu harness opravdu umí.
 
-### Jak to vypnout
+Jedinou výjimkou je běh agenta, který se k Control Center dostává přes jeho koncový bod MCP, když server umí spouštět skripty. Jeho `tools/list` obsahuje `repl`, přímé nástroje a všechny nástroje, které skript volat nesmí, a zbytek volá ze skriptů. Přímé volání jednoho z nich se odpoví tím, jak ho volat ze skriptu.
 
-`--tool-deferral=off` (nebo `CC_SERVER_TOOL_DEFERRAL=off`) znovu udělá rezidentním každý připuštěný nástroj a vyrobí přesně ty požadavky, které server posílal, než odložení existovalo. Viz [referenční příručka CLI `cc_server`](/cs-CZ/prirucka/referencni-prirucka/cc-server-cli/).
+### Jak vypnout odložení
+
+`--tool-deferral=off` (nebo `CC_SERVER_TOOL_DEFERRAL=off`) odložení vypne: běh bez `repl` dostane každý připuštěný nástroj celý a běh s `repl` dostane celé ty nástroje, které skript volat nesmí, zatímco zbytek zůstane dostupný jen ze skriptu. Viz [referenční příručka CLI `cc_server`](/cs-CZ/prirucka/referencni-prirucka/cc-server-cli/).
 
 ## Cache promptů
 
@@ -64,7 +82,7 @@ Poskytovatel dovolí omezený počet značek cache a Control Center je utrácí 
 
 | Značka | Pokrývá | Životnost |
 | --- | --- | --- |
-| Poslední **rezidentní** nástroj | Blok nástrojů | 1 hodina |
+| Poslední **přímý** nástroj      | Blok nástrojů | 1 hodina |
 | Poslední systémový blok | Nástroje + systémový prompt | 1 hodina |
 | Ocas předchozího tahu | Historie až po poslední požadavek | 5 min |
 | Ocas aktuálního tahu | Celá historie | 5 min |
@@ -77,12 +95,12 @@ Prefix nástrojů a systému má dlouhou životnost, protože je po celý běh s
 
 Subagenti stejného typu vyrábějí bajtově totožné prefixy promptů, takže mají číst jednu položku cache, ne si každý zapisovat vlastní. Položka je ale čitelná až ve chvíli, kdy požadavek, který ji zapsal, začne odpovídat. Rozvětvení spuštěné najednou proto nechá každého potomka platit přirážku za prefix, který mají společný.
 
-Harness nechá nastartovat prvního potomka daného tvaru a sourozence pustí, jakmile začne streamovat. Čekání má mez: pomalý první potomek přijde o jeden zásah cache, o rozvětvení ne. Ze stejného důvodu dostane každý subagent stejnou rezidentní sadu nástrojů bez ohledu na profil — měnit ji podle profilu by společný prefix rozdrobilo bez zisku, protože profil už rozhodl, co potomek smí volat.
+Harness nechá nastartovat prvního potomka daného tvaru a sourozence pustí, jakmile začne streamovat. Čekání má mez: pomalý první potomek přijde o jeden zásah cache, o rozvětvení ne. Ze stejného důvodu dostane každý subagent stejnou přímou sadu nástrojů bez ohledu na profil — měnit ji podle profilu by společný prefix rozdrobilo bez zisku, protože profil už rozhodl, co potomek smí volat.
 
 ## Jak to sledovat
 
 Obě poloviny jdou pozorovat, ne jen předpokládat:
 
-- **Průzkumník kontextu** u konverzace hlásí rezidentní nástroje, odložený index a to, kolik by každé zadržené schéma *stálo*. Počítá to stejná cesta v kódu, kterou používá skutečný běh.
+- **Průzkumník kontextu** u konverzace hlásí přímé nástroje, odložený index a to, kolik by každé zadržené schéma *stálo*. Počítá to stejná cesta v kódu, kterou používá skutečný běh.
 - Každý běh si zapisuje, které odložené nástroje načetl a co načtení spustilo, takže hledání, které nic nenašlo, je vidět jako minutí vyhledání, ne že se ztratí v agentovi, který potichu dělá něco vedlejšího.
 - Observabilita hlásí **Míra cache** jako čtení z cache vůči všem zpracovaným tokenům promptu, včetně zápisů do cache — běh, který si prefix pořád staví znovu, vychází nízko, ne jako běh, který cache nikdy nepotřeboval.

@@ -163,6 +163,13 @@ class SettingsField extends StatelessWidget {
         badge: badge,
       ),
     );
+    final note = _note(context);
+    // A top-aligned control carries its note in its own column, straight
+    // under it. Below the row it would sit under the label block instead,
+    // which a description makes taller than the control, and the gap made it
+    // read as the next field's label. A centred control keeps the note below
+    // the row, where it cannot pull the control off the label's centre line.
+    final noteInColumn = !centered && note.isNotEmpty;
     final row = Row(
       crossAxisAlignment: centered
           ? CrossAxisAlignment.center
@@ -178,6 +185,25 @@ class SettingsField extends StatelessWidget {
             constraints: BoxConstraints(maxWidth: controlWidth!),
             child: child,
           )
+        else if (noteInColumn)
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (controlWidth == null)
+                  child
+                else
+                  // The note may run past a capped control; only the
+                  // control keeps the cap.
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: SizedBox(width: controlWidth, child: child),
+                  ),
+                ...note,
+              ],
+            ),
+          )
         else if (controlWidth == null)
           Expanded(child: child)
         else ...[
@@ -187,8 +213,7 @@ class SettingsField extends StatelessWidget {
       ],
     );
 
-    final note = _note(context);
-    if (note.isEmpty) {
+    if (note.isEmpty || noteInColumn) {
       return row;
     }
     final noteBlock = Column(

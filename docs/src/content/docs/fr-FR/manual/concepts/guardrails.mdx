@@ -2,7 +2,7 @@
 title: Garde-fous — une politique unique pour chaque action qui modifie l’état
 description: Pourquoi Control Center fait passer chaque effet de bord d’un agent par un moteur unique d’autorisation, de demande ou de refus, pourquoi la taxonomie des ActionClasses reste volontairement restreinte et ce que le cadran d’autonomie change réellement.
 slug: fr-FR/manuel/concepts/garde-fous
-sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
+sourceHash: bb98b2ca26ae104ab7701d4d381cd5c41d25d32f
 ---
 
 Les agents de Control Center peuvent supprimer des fichiers, pousser des
@@ -33,6 +33,17 @@ propose un backend — mais [Windows n’en propose aucun et Linux a besoin de
 hôtes, seules les exécutions du propriétaire du serveur démarrent, sauf si celui-ci a désactivé le bac à sable pour tout le monde avec `--sandbox off`. Pour toute exécution qui démarre sans bac à sable, les garde-fous constituent la couche de contrôle la plus externe plutôt
 qu’une politique posée au-dessus d’un socle, ce qu’il est utile de savoir
 lorsque vous décidez du degré de permissivité à adopter.
+
+### Appels effectués par un script
+
+Un script du [mode code](/fr-FR/manuel/concepts/mode-code/) appelle des outils en code, plusieurs à la fois, mais chacun de ses appels est un appel d’outil distinct adressé au moteur. Il passe par la même porte du harnais ou du répartiteur MCP que l’appel direct, avec les mêmes règles, la même demande d’approbation et la même entrée d’audit, et rien de ce qu’il fait n’est approuvé parce que l’appel `repl` qui l’a lancé l’était.
+
+Deux règles supplémentaires s’appliquent aux appels émis depuis un script, car un seul script peut faire des centaines d’appels et intercepter chaque refus :
+
+- au plus 10 de ses appels parviennent à une personne pour approbation ; les suivants qui exigeraient une personne sont refusés sans carte ;
+- une fois qu’une personne refuse l’un de ses appels, le reste de ses appels qui nécessitent une approbation est refusé sans demande.
+
+Une carte ouverte par un script l’indique et vous permet d’ouvrir le script. Si le script se termine pendant que la carte est ouverte, la carte est retirée, et une réponse qui arrive ensuite est enregistrée comme un refus et n’approuve rien.
 
 ## ActionClass : une taxonomie volontairement fermée
 
@@ -278,5 +289,6 @@ est celle que l’agent obtiendra.
 ## Concepts liés
 
 - [Bac à sable et sécurité](/fr-FR/manuel/concepts/bac-a-sable-et-securite/) : ce qui contraint réellement l’exécution d’un agent et jusqu’où s’étend le socle du système d’exploitation sous ce moteur
+- [Mode code](/fr-FR/manuel/concepts/mode-code/) : les scripts dont chaque appel d’outil passe par ce moteur
 - [Multijoueur — identité, appartenance et présence](/fr-FR/manuel/concepts/multijoueur/) : les espaces, les principaux et l’emplacement du cadran d’autonomie
 - [Configurer les garde-fous](/fr-FR/manuel/guides/configurer-garde-fous/) : écrire et tester des règles en pratique

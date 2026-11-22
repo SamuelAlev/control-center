@@ -178,6 +178,23 @@ void main() {
       );
     });
 
+    test('a file-level review comment keeps its subject', () {
+      final c = PrCodeReviewComment(
+        id: 8,
+        body: 'b',
+        user: const PrUser(login: 'u', avatarUrl: ''),
+        path: 'lib/moved.dart',
+        position: null,
+        createdAt: DateTime.utc(2025),
+        isFileLevel: true,
+      );
+      final back = PrCacheCodec.reviewCommentFromCache(
+        PrCacheCodec.reviewCommentToCache(c),
+      );
+      expect(back.isFileLevel, isTrue);
+      expect(back.line, isNull);
+    });
+
     test('a conversation comment', () {
       final c = IssueComment(
         id: 1,

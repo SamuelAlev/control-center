@@ -15,7 +15,7 @@ import 'package:go_router/go_router.dart';
 /// (General / Explorer / Source control / Notes / Artifacts) plus one or more
 /// tabbed editor groups (Chat / Terminal / Browser). The selected conversation comes from the
 /// URL (`/spaces/:spaceId`) and is mirrored into [selectedSpaceIdProvider]
-/// so the breadcrumbs, read-cursor effect and IDE layout read one source.
+/// so the breadcrumbs and IDE layout read one source.
 class MessagingScreen extends ConsumerStatefulWidget {
   /// Creates a new [MessagingScreen].
   const MessagingScreen({

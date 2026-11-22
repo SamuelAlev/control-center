@@ -2,7 +2,7 @@
 title: Kjør en orkestrering
 description: Be en orkestrator om en plan, gå gjennom og rediger den i Plan Studio, godkjenn den én gang og la en generert pipeline gjøre arbeidet.
 slug: nb-NO/handbok/slik-gjor-du/kjor-orkestrering
-sourceHash: 086301be6c1957f6336294720967813c3050ed25
+sourceHash: cc4390cbac6c2122dd24c23bcef20693f40121bb
 ---
 
 Denne veiledningen viser hvordan du gjør ett stort mål om til en plan for hele
@@ -60,21 +60,13 @@ Trykk **Estimer** i godkjenningslinjen for kostnads-, varighets- og
 sprengningsradiusintervaller før du forplikter deg. Se
 [Jobb i Plan Studio](/nb-NO/handbok/slik-gjor-du/plan-studio/) for hele redigeringen.
 
-:::note[Budsjettet er ikke en forbruksgrense]
-Budsjettet til et forslag sammenlignes med _estimatet_ i godkjenningslinjen: når
-den høye enden av estimatet overstiger det, blir totalen rød med en advarsel om
-over budsjett. Ingenting sjekker forbruket mens planen kjører, så det vil ikke
-stoppe eller feile en kjøring. For en faktisk forbruksstopp bruker du
-budsjettpolicyer per agent — se
-[Administrer kostnader](/nb-NO/handbok/slik-gjor-du/administrer-kostnader/).
+:::note[Budsjettet holder kjøringen]
+Budsjettet til et forslag sammenlignes med _estimatet_ i godkjenningslinjen: når den høye enden av estimatet overstiger det, blir totalen rød med en advarsel om over budsjett. Mens planen kjører, sjekker serveren forbruket før hvert nytt steg. Ved budsjettet holdes kjøringen, og ingenting nytt starter; steg som allerede kjører, fullføres. Den som ba om kjøringen får et varsel og trykker **Øk grensen** på pipeline-kjøringens side for å fortsette. Se [Administrer kostnader](/nb-NO/handbok/slik-gjor-du/administrer-kostnader/).
 :::
 
 ## Steg 3: Godkjenn
 
-Godkjenn planen, fra kortet i chatten eller fra godkjenningslinjen i Plan Studio.
-**Dette er den eneste beslutningen du tar.** Godkjenning er forbeholdt
-operatøren — det finnes ikke noe MCP-verktøy for det, så en agent kan foreslå og
-revidere, men aldri godkjenne sin egen plan.
+Godkjenn planen, fra kortet i chatten eller fra godkjenningslinjen i Plan Studio. **Dette er den eneste beslutningen du tar.** Godkjenning er forbeholdt operatøren — det finnes ikke noe MCP-verktøy for det, så en agent kan foreslå og revidere, men aldri godkjenne sin egen plan. Godkjenning krever skrivetilgang til områdets repositorier, og kjøringen handler deretter for personen som godkjente den.
 
 Herfra gjør en deterministisk materialisator (en ren funksjon, ingen LLM)
 forslaget om til en ekte [pipeline](/nb-NO/handbok/konsepter/pipelines/) og oppretter
@@ -111,12 +103,7 @@ overordnede saken merkes som fullført, deretter `completed`.
 Trykk **Avbryt orkestrering** på kortet i chatten, eller **Avbryt kjøring** i
 godkjenningslinjen i Plan Studio. Et avbrudd river ned arbeidet som er i gang.
 
-En orkestrering feiler når materialiseringen feiler, eller når kjøringen av den
-genererte pipelinen feiler (forskning, diskusjon, syntese eller persistering — de
-stegene fortsetter ikke hvis de feiler). Genererte **arbeidssteg** fortsetter
-alltid hvis de feiler, så én mislykket undersak får ikke kjøringen til å feile.
-Det finnes ingen feilsti for overskredet budsjett og ingen terskel for «alle
-undersaker mislyktes».
+En orkestrering feiler når materialiseringen feiler, eller når kjøringen av den genererte pipelinen feiler (forskning, diskusjon, syntese eller persistering — de stegene fortsetter ikke hvis de feiler). Genererte **arbeidssteg** fortsetter alltid hvis de feiler, så én mislykket undersak får ikke kjøringen til å feile. Å nå budsjettet holder kjøringen i stedet for å feile den, og det finnes ingen terskel for «alle undersaker mislyktes».
 
 ## Relaterte veiledninger
 

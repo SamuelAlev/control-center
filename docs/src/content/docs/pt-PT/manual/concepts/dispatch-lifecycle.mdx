@@ -2,23 +2,33 @@
 title: Ciclo de vida do despacho de agentes
 description: O que acontece entre a chegada de uma mensagem e o fecho de um registo de execução — composição do prompt, worktrees, identidade, o que limita uma execução e como o seu desfecho é registado com honestidade.
 slug: pt-PT/manual/conceitos/ciclo-de-vida-do-despacho
-sourceHash: 13e7fe3ed86c8659c5fec818e0b89737241e2b9d
+sourceHash: 07c46e22e30f1a10e64b7fb949c78bdae9747efa
 ---
 
 ## O que é um despacho
 
 Um despacho é uma execução de um agente, numa conversa, num adaptador. Tudo o que lhe diz respeito acontece no `cc_server`: o cliente envia uma mensagem e depois vê os eventos a voltar em fluxo. Não existe qualquer caminho de despacho em nenhum cliente.
 
-Os agentes são despertados por seis motivos, que a execução transporta como o seu **contexto de despertar**, para que o agente saiba _porquê_ está desperto:
+Cada execução transporta um **contexto de despertar** que indica _porquê_ o agente está acordado. Uma execução que começa quando envia uma mensagem é `userMessage`; cada execução que o servidor inicia por conta própria começa como um **despertar** durável na fila do espaço de trabalho e transporta o motivo do despertar (veja [Programações e despertares](/pt-PT/manual/guias/programacoes-despertares/)):
 
 | Motivo de despertar | Gatilho                                                      |
-| ---------------- | ------------------------------------------------------------ |
-| `userMessage`    | Alguém enviou uma mensagem num espaço, ou mencionou o agente |
+| -------------------- | ------- |
+| `userMessage`    | Alguém enviou uma mensagem num espaço                        |
 | `assignment`     | Foi atribuído um ticket ao agente                           |
 | `pipelineStep`   | Um passo de pipeline despachou-o                            |
-| `childCompleted` | Um ticket filho terminou                                    |
-| `followUp`       | Um batimento de acompanhamento agendado                     |
-| `recovery`       | O caminho de recuperação voltou a despachar após uma falha  |
+| `childCompleted` | Um ticket delegado ou filho terminou, ou terminou a execução de um membro da equipa |
+| `schedule` | Disparou uma programação ou um ciclo |
+| `watch` | Aconteceu algo que um monitor observa (verificações de um pull request, uma revisão, um ambiente, um ticket, uma execução de pipeline) |
+| `goalContinuation` | O próximo segmento de um objetivo |
+| `goalVerification` | As verificações ou a revisão de um objetivo concluíram que ainda não está concluído |
+| `goalReview` | A revisão, só de leitura, da afirmação de que um objetivo está concluído |
+| `peerMessage` | Outro agente lhe enviou uma mensagem ou uma pergunta, foi @-mencionado, ou é o verificador do espaço |
+| `peerReply`      | A resposta a uma pergunta que fez a outro agente            |
+| `limitReset` | Um limite de utilização do fornecedor em que parou foi redefinido |
+| `improvementReview` | A revisão após um objetivo verificado, ou `/refine` |
+| `recovery` | Trabalho que um reinício do servidor ou uma falha interrompeu |
+
+Um despertar é entregue numa execução ativa do agente nessa conversa quando essa execução recebe entrada e age em nome da mesma pessoa; caso contrário, espera que essa execução termine e inicia a sua própria. Os comandos slash só são lidos numa mensagem escrita por uma pessoa; em qualquer outra execução, o mesmo texto é uma mensagem comum.
 
 O contexto de despertar transporta os ids que acompanham o motivo — ticket, espaço, mensagem, execução de pipeline — e estes são injetados no ambiente e no prompt do agente.
 
@@ -104,17 +114,17 @@ Não existe deliberadamente **qualquer teto de turnos**. Uma contagem fixa de it
 - **o modelo para** por si próprio;
 - **uma pessoa a para**, ou assume a conversa (o que pausa o harness integrado no seu próximo limite de turno limpo — uma execução do Claude Code, que não tem fronteira segura, é parada em vez disso);
 - **o temporizador de silêncio dispara.** Sem saída durante o limiar e a sessão é terminada com uma falha `silentRun`. A predefinição são 15 minutos, a descer para 10 nos modos mais orientados à leitura (revisão e plano); um agente pode substituí-la entre 1 e 240 minutos. O temporizador é armado quando um processo filho comunica o seu PID, por isso cobre a CLI do Claude Code — **não** o harness integrado, que não gera processos nenhuns;
-- **um limite de custo entra em ação** — mas apenas para comandos autónomos.
+- **um limite de custo entra em ação** — nos segmentos e revisões de objetivos, nas execuções de programações e monitores, na revisão de melhorias e nas execuções de pipeline sob uma orquestração com limite.
 
 A proteção contra ciclos viciosos não é um terminador: três chamadas de ferramenta idênticas seguidas e o ciclo _orienta_ o agente para mudar de abordagem.
 
 :::note[Um turno normal não tem limite de custo]
-A proteção de custos dentro da sessão só está ligada para `/goal` e `/loop`; qualquer outra execução não passa orçamento nenhum. Para esses comandos, um segmento sem supervisão pode gastar, por predefinição, 500 cêntimos ($5.00), com uma orientação suave aos 80% a pedir ao agente que termine de forma limpa antes da paragem rígida, e um orçamento durável do objetivo de 5000 cêntimos ($50.00) entre segmentos. Um `/goal --budget` explícito nunca é excedido em todo um segmento.
+Uma execução que começa com uma mensagem não tem orçamento. Um segmento de um objetivo pode gastar 5 dólares, ou o que resta do orçamento do objetivo (50 dólares por predefinição) se for menos; a revisão de um objetivo, 2 dólares; uma execução que uma programação ou um monitor iniciou, 5 dólares; a revisão de melhorias, 1 dólar. Aos 90%, o harness integrado e o Claude Code orientam o agente para terminar com cuidado antes do corte definitivo; um agente ACP é cancelado no limite. Consulte [Gerir custos](/pt-PT/manual/guias/gerir-custos/#limitar-uma-execução-autónoma).
 :::
 
 No conjunto, um turno interativo vulgar no harness integrado não tem teto de turnos, limite de custo nem temporizador de silêncio. Termina quando o modelo para ou quando tu o paras. É uma troca deliberada — as alternativas matam todo o trabalho longo legítimo —, mas significa de facto que uma execução interativa sem supervisão não é limitada por nada além do próprio juízo do modelo.
 
-A meio de uma execução, uma mensagem enviada a um agente em execução é colocada em fila como **orientação** e consumida no limite de turno seguinte, para que possas dar um empurrão a uma execução sem a matar. A orientação, a pausa, os subagentes e o contrato de conclusão são funcionalidades do harness integrado; o Claude Code não tem nenhuma delas.
+A meio de uma execução, uma mensagem enviada a um agente em execução é colocada em fila como **orientação** e consumida no limite de turno seguinte, para que possas dar um empurrão a uma execução sem a matar. Uma execução só de leitura, como a revisão de um objetivo, não aceita nenhuma enquanto corre, e orientar uma execução que trabalha para outra pessoa exige acesso de escrita aos repositórios do espaço. A orientação, a pausa, os subagentes e o contrato de conclusão são funcionalidades do harness integrado; o Claude Code não tem nenhuma delas.
 
 ## Como uma execução é registada
 
@@ -130,11 +140,11 @@ Quando uma execução termina sem o resultado que o seu modo exigia — uma exec
 Isto é deliberado. Mudar o estado mexeria nas máquinas de estados de tickets e pipelines que não têm nada a ver com o artefacto em falta. Também significa que «estado: completed» por si só nunca chega para concluir que uma execução teve êxito — lê o resumo.
 :::
 
-Fechar a execução publica `AgentRunCompleted`, e muita coisa depende disso: a agregação de custos do pipeline, a retoma de um passo de pipeline que estava à espera da execução, a conclusão do ticket subjacente, o mapeamento de uma orquestração para um estado terminal, a decisão de continuar ou parar do supervisor de objetivos, o papel de verificador e a avaliação de orçamento posterior à execução. A lista de presença segue-se à parte, ao observar os registos de execução recentes em vez do evento. A notificação «agente finalizado» não consta dessa lista: o evento é disparado quando o stream do processo termina, antes de a resposta ser escrita, pelo que a notificação é o `MessageReceived` do turno, publicado assim que a mensagem é guardada.
+Assim que o estado final da execução é escrito, o servidor publica `AgentRunSettled` exatamente uma vez, com o motivo por que a execução terminou (`completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` ou `serverStopped`), e muita coisa depende disso: a agregação de custos do pipeline, a retoma de um passo de pipeline que estava à espera da execução, a conclusão do ticket subjacente, o mapeamento de uma orquestração para um estado terminal, a decisão de continuar ou parar do supervisor de objetivos, a resposta a uma pergunta que outro agente fez, o próximo disparo de um ciclo de ritmo próprio, a pausa por limite de utilização, o papel de verificador e a avaliação de orçamento posterior à execução. Uma execução que uma paragem do servidor interrompeu (`serverStopped`) nunca é tratada como falha; o trabalho retoma após o reinício. `AgentRunCompleted` continua a ser publicado, mais cedo, apenas para a ponte de pull requests e para análise. A lista de presença segue-se à parte, ao observar os registos de execução recentes em vez do evento. A notificação «agente finalizado» não consta dessa lista: o evento é disparado quando o stream do processo termina, antes de a resposta ser escrita, pelo que a notificação é o `MessageReceived` do turno, publicado assim que a mensagem é guardada.
 
 ## Orçamentos, a posteriori
 
-A aplicação do orçamento é uma _reação_, não um controlo prévio. Quando uma execução termina, o avaliador compara o gasto do agente no mês até à data com o seu teto efetivo (uma política de orçamento associada, se existir; caso contrário, o valor mensal do próprio agente; zero significa ilimitado). Ultrapassar o limiar suave regista um incidente de aviso; esgotar o orçamento regista um incidente rígido e muda o estado do ciclo de vida do agente para `paused` no organigrama. O despacho continua a aceitar trabalho desse agente. Um gatilho de pipeline `BudgetThresholdCrossed` pode iniciar trabalho de acompanhamento a partir do mesmo evento.
+A aplicação do orçamento é uma _reação_, não um controlo prévio. Quando uma execução termina, o avaliador compara o gasto do agente no mês até à data com o seu teto efetivo (uma política de orçamento associada, se existir; caso contrário, o valor mensal do próprio agente; zero significa ilimitado). Ultrapassar o limiar suave regista um incidente de aviso; esgotar o orçamento regista um incidente rígido e muda o estado do ciclo de vida do agente para `paused` no organigrama. O despacho continua a aceitar trabalho que lhe envia para esse agente, mas os despertares para ele (programações, segmentos de objetivos, respostas) ficam à espera enquanto estiver em pausa, durante no máximo 7 dias. Um gatilho de pipeline `BudgetThresholdCrossed` pode iniciar trabalho de acompanhamento a partir do mesmo evento.
 
 ## Linhagem de tentativas
 
@@ -147,4 +157,5 @@ Cada registo de execução pode transportar linhagem de tentativas — um id de 
 - [Barreiras](/pt-PT/manual/conceitos/barreiras/): a política de classes de efeito por que passa cada chamada condicionada
 - [Sandbox e segurança](/pt-PT/manual/conceitos/sandbox-e-seguranca/): a história do isolamento em pormenor
 - [Multijogador](/pt-PT/manual/conceitos/multijogador/): orientação, assunção do controlo e o seletor de autonomia
-- [Eventos de domínio](/pt-PT/manual/conceitos/eventos-de-dominio/): o que `AgentRunCompleted` desencadeia
+- [Eventos de domínio](/pt-PT/manual/conceitos/eventos-de-dominio/): o que `AgentRunSettled` desencadeia
+- [Perseguir um objetivo](/pt-PT/manual/guias/perseguir-objetivo/) e [Programações e despertares](/pt-PT/manual/guias/programacoes-despertares/): execuções que o servidor inicia por conta própria

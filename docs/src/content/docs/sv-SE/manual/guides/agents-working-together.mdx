@@ -1,0 +1,63 @@
+---
+title: Agenter som samarbetar
+description: Hur agenter frågar varandra, lämnar över arbete och väcks med svaret, och var du ser vad den ena agenten väntar på från den andra.
+slug: sv-SE/handbok/how-to-guider/agenter-samarbetar
+sourceHash: 36bb45cd480fb45d0380e8fd651845c59a7debcb
+---
+
+Agenter i en arbetsyta kan fråga varandra, rådfråga en specialist, begära en granskning, skicka ett meddelande eller delegera ett ärende. Inget av detta kräver att en agent sitter och väntar: en agent som frågat kan fortsätta arbeta eller avsluta sin tur, och väcks i sin egen konversation när svaret kommer.
+
+## Fråga en annan agent
+
+En agent frågar med `ask_agent`, på ett av två sätt:
+
+- **Vänta** (standard): agenten blockeras tills svaret kommer, i högst 600 sekunder som standard och högst 1 800.
+- **I bakgrunden**: anropet returnerar direkt och agenten fortsätter arbeta.
+
+Oavsett sätt registreras frågan innan den levereras. Om svaret inte kom tillbaka i anropet väcks frågeställaren exakt en gång, med svaret, när den andra agentens körning tar slut: besvarad, misslyckad eller utgången efter 24 timmar utan svar. Under vägen kan den få höra, en gång var, att den andra agenten lovade ett svar, att den väntar på en person, eller att den stannade vid en användningsgräns. Inget av det räknas som svaret.
+
+`consult_agent` (för in den bäst matchande specialisten), `request_peer_review` (en andra blick på ett granskningsfynd) och `send_to_agent` (ett meddelande i en riktning) går genom samma kö. `send_to_agent` anger om den andra agenten väcktes, om meddelandet väntar bakom dess nuvarande körning, eller varför det avvisades.
+
+Den andra agenten läser frågan som information från en annan agent, aldrig som en instruktion den måste följa, och den kan inte köra ett slash-kommando.
+
+## Lämna över arbete
+
+- **Ett delegerat ärende** (`delegate_task`) väcker agenten som delegerade det, i konversationen den delegerade från, när ärendet avgörs.
+- **En teammedlems körning** som ledaren startade med en `@mention` eller ett meddelande väcker ledaren, i konversationen där den väckte medlemmen, när den tar slut. (En fråga besvaras av sitt svar, och ett delegerat ärende av sitt ärende.)
+- **En bakgrundsworker** i direktörsläge (`/vibe`) lämnar sitt resultat till direktören medan direktören fortsätter arbeta.
+- **En `@mention`** av en agent, och ytans granskare, levereras på samma sätt, som väckningar.
+
+En agent kan titta på vad en annan agent gör utan att fråga den: `agent_activity` visar den andra agentens status, dess aktuella verktyg och dess senaste meddelanden, och väcker ingen.
+
+## Begränsningar
+
+Servern tillämpar dessa, oavsett vad agenterna säger:
+
+| Gräns | Värde |
+| --- | --- |
+| Hur djupt en kedja av frågor och överlämningar får gå | 3 |
+| Cykler (en agent som frågar en som, genom andra, väntar på den) | Nekas |
+| Väntande frågor per frågande agent | 10 |
+| Väntande frågor per agent som frågas | 20 |
+| Samma fråga till samma agent igen | Nekas inom 10 minuter |
+| Meddelanden mellan ett par agenter | 10 per minut |
+| Längd på ett meddelande eller svar | 16 384 tecken |
+
+Delegering respekterar också den frågande agentens självständighet och budget: en agent kan inte lämna arbete till en annan med mer självständighet eller pengar än den själv har. Ett meddelande som du skickar själv begränsas aldrig på detta sätt.
+
+När den frågade agenten stannar vid en leverantörs användningsgräns väntar dess körning på återställningen om den kommer före att frågan går ut. Annars misslyckas frågan direkt, och frågeställaren får veta varför.
+
+## Se vad en agent väntar på
+
+I en konversation listar avsnittet **Frågor** i panelen **Allmänt** de frågor som agenter ställt från den: till vem, vilken typ (**Fråga**, **Rådfråga** eller **Granskning**), när, och dess läge (**Väntar**, **Besvarad**, **Misslyckades**, **Utgången** eller **Avbruten**), med **Lovade ett svar** eller **I bakgrunden** där det gäller. En misslyckad fråga säger varför, till exempel **Dess körning stoppades vid leverantörens användningsgräns.**
+
+Alla med åtkomst till ytan kan **Avbryt fråga**. Den frågande agenten väcks då inte, och den andra agentens körning stoppas inte.
+
+Svar, meddelanden och färdigt arbete som väntar på en agent visas också i remsan ovanför skrivfältet, tillsammans med de andra den har att vänta på (se [Scheman och väckningar](/sv-SE/handbok/how-to-guider/scheman-vackningar/#se-vad-som-väntar)).
+
+## Se även
+
+- [Delegera arbete till agenter](/sv-SE/handbok/how-to-guider/delegera-arenden/)
+- [Bygg ett agentteam](/sv-SE/handbok/how-to-guider/bygg-agentteam/)
+- [Styr bakgrundsworkers](/sv-SE/handbok/how-to-guider/styr-bakgrundsworkers/)
+- [MCP-verktyg: meddelanden och delegering mellan agenter](/sv-SE/handbok/referens/mcp-verktyg/#meddelanden-och-delegering-mellan-agenter)

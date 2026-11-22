@@ -2,7 +2,7 @@
 title: Bygg ett agentteam
 description: Gruppera agenter under en ledare så att tilldelat arbete går via en koordinator.
 slug: sv-SE/handbok/how-to-guider/bygg-agentteam
-sourceHash: fc5e2b8c8a49e398ff1b322fcfb25c4aed84bbb4
+sourceHash: 55add2d16bf90650b7d4cbda7aa78f0fdf1b72e2
 ---
 
 Den här guiden visar hur du skapar ett team, ger det en ledare och dirigerar arbete till det.
@@ -51,7 +51,7 @@ När ett ärende faktiskt bär en teamtilldelning:
 
 1. Teamets ledare skickas ut med ärendet, sina driftsinstruktioner och medlemslistan.
 2. Ledaren delegerar till medlemmar och registrerar sin bedömning med verktyget `record_team_activity` — `action` (delegerat), `no_action` (inget mer att göra, vilket stoppar ytterligare återutlösningar) eller `failed`.
-3. Varje medlemskörning som slutförs väcker ledaren igen, inom ramen för no-action-spärren.
+3. En medlemskörning som ledaren startade med en `@mention` eller ett meddelande väcker ledaren igen när den slutar, i konversationen som ledaren väcktes från, begränsat av vakten mot inga åtgärder. Arbete som ledaren överlämnade med `delegate_task` väcker den när ärendet är avgjort, och en fråga den ställde med `ask_agent` väcker den med svaret (se [Agenter som samarbetar](/sv-SE/handbok/how-to-guider/agenter-samarbetar/)).
 
 Pipeline-noden **Team dispatch** är den andra ingången. Den tar ett team-id, en prompt och ett utskicksläge:
 

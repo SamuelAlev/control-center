@@ -76,6 +76,10 @@ class _SpyStore implements ToolOutputStore {
   );
 
   @override
+  Future<List<ToolOutputEntry>> list(ToolOutputScope scope) =>
+      delegate!.list(scope);
+
+  @override
   Future<void> clearScope(ToolOutputScope scope) => delegate!.clearScope(scope);
 
   @override

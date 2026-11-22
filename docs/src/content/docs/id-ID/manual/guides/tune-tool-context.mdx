@@ -2,7 +2,7 @@
 title: Sesuaikan konteks alat agen
 description: Periksa apa yang sebenarnya dikirim sebuah run, ubah alat mana yang dimuat lebih dahulu, dan tentukan apakah pilihan alat yang buruk merupakan kegagalan pengambilan kembali atau masalah prompt.
 slug: id-ID/panduan-pengguna/panduan-praktis/sesuaikan-konteks-alat
-sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
+sourceHash: 22a4306a97aa8da0332f8e3e20e06ed86119f1d5
 ---
 
 Panduan ini membahas pekerjaan praktis seputar permukaan alat dua tingkat: melihat apa yang dikirim sebuah run, mengubahnya, dan mendiagnosis agen yang meraih alat yang salah. Untuk alasan di balik cara kerjanya, baca [Konteks alat dan cache prompt](/id-ID/panduan-pengguna/konsep/konteks-alat).
@@ -13,25 +13,26 @@ Buka percakapan dan ketuk indikator penggunaan konteks di tajuk percakapan. Indi
 
 Ada dua segmen yang penting di sini:
 
-- **Definisi alat** dan **MCP & alat dinamis** — himpunan residen, beserta biaya token sebenarnya dari tiap alat.
+- **Definisi alat** dan **MCP & alat dinamis** — himpunan langsung, beserta biaya token sebenarnya dari tiap alat.
 - **Alat yang dimuat sesuai permintaan** — indeks yang ditunda. Setiap entri hanya dikenai biaya namanya, karena hanya nama itulah yang dibawa permintaan; membuka salah satunya tetap menampilkan deskripsi dan skema lengkapnya, sehingga Anda dapat melihat berapa biaya yang *akan* ditimbulkannya jika run menariknya masuk.
+
+Dalam run dengan `repl`, alat yang dijangkau skrip disebutkan dalam system prompt dan tidak muncul di kedua segmen.
 
 Jika segmen yang ditunda kosong, penundaan dimatikan untuk server ini. Periksa `--tool-deferral` pada [CLI `cc_server`](/id-ID/panduan-pengguna/referensi/cli-cc-server).
 
 ## Ubah alat mana yang dimuat lebih dahulu
 
-Himpunan residen adalah kebijakan, bukan konfigurasi — himpunan itu berada di `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) dan berlaku untuk setiap run:
+Himpunan langsung adalah kebijakan, bukan konfigurasi — himpunan itu berada di `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) dan berlaku untuk setiap run:
 
-- `residentBuiltins` — kosakata file dan shell.
-- `residentDiscovery` — `search_tools` dan `list_my_tools`. Jangan hapus keduanya; itulah cara agen menjangkau semua alat lainnya.
-- `residentMcpTools` — segelintir alat Control Center yang layak membawa skemanya pada setiap permintaan.
-- Blok per mode, untuk alat yang dipakai [mode](/id-ID/panduan-pengguna/konsep/mode) tertentu pada hampir setiap giliran.
+- `directTools` — dua belas alat yang dipanggil langsung oleh setiap run: `read`, `write`, `edit`, `search`, `find`, `bash` dan `read_output`; `ask_user` dan `task`; `todo_write`, `search_memory` dan `send_message`.
+- `residentDiscovery` — `search_tools` dan `list_my_tools`. Jangan hapus keduanya; itulah cara agen menjangkau semua alat lainnya. Run dengan `repl` mendapat `search_tools` ketika ada alat yang dimuat saat pertama kali dipakai, dan tidak mendapat `list_my_tools`.
+- `directNamesFor(mode)` — alat yang ditambahkan sebuah [mode](/id-ID/panduan-pengguna/konsep/mode/) untuk loop-nya sendiri: kata kerja tinjauan dalam mode tinjauan, `submit_plan` dalam mode rencana, dan `propose_orchestration` dalam mode orkestrasi.
 
 Dua aturan saat mengeditnya:
 
-**Tambahkan alat hanya jika sebagian besar run memakainya.** Setiap nama membebani skemanya pada setiap permintaan dari setiap run, selamanya. Alat yang penting saat dipakai tetapi jarang secara keseluruhan termasuk ke bagian yang ditunda — agen tetap akan menemukannya.
+**Tambahkan alat hanya jika sebagian besar run memakainya.** Setiap nama membebani skemanya pada setiap permintaan dari setiap run, selamanya. Alat yang penting saat dipakai tetapi jarang secara keseluruhan termasuk di luar himpunan langsung — agen tetap dapat menjangkaunya, dari skrip atau dengan memuatnya saat pertama kali dipakai.
 
-**Gunakan nama asli alat itu.** Nama residen yang tidak cocok dengan alat mana pun tidak berpengaruh sama sekali: tanpa galat, tanpa peringatan, alat itu sekadar ditunda. `test/tooling/resident_tool_names_test.dart` menangkap hal ini dan juga menjaga setiap mode di bawah 40 alat residen, dan itulah inti persoalannya — di luar rentang itu, pemilihan alat terdegradasi secara terukur.
+**Gunakan nama asli alat itu.** Nama langsung yang tidak cocok dengan alat mana pun tidak berpengaruh sama sekali: tanpa galat, tanpa peringatan, alat itu sekadar tetap berada di luar himpunan langsung. `test/tooling/resident_tool_names_test.dart` menangkap hal ini, memastikan himpunan langsung setiap mode berisi paling banyak 20 alat, dan memastikan setiap mode mengirim paling banyak 40 alat di awal, dan itulah inti persoalannya — di luar rentang itu, pemilihan alat terdegradasi secara terukur.
 
 Kata kerja yang diwajibkan dan disematkan milik sebuah mode ditambahkan secara otomatis, jadi Anda tidak perlu mencantumkan kata kerja luaran milik mode itu sendiri.
 
@@ -73,4 +74,4 @@ Penyebab umum, diurutkan berdasarkan kemungkinannya:
 - **Perubahan model atau upaya penalaran di tengah percakapan.** Keduanya mengubah awalan. Subagen sangat mudah salah di sini: menjalankan anak pada upaya penalaran yang lebih rendah untuk menghemat uang bisa lebih mahal akibat kehilangan berbagi cache daripada penghematan yang didapat.
 - **Pemadatan yang sering.** Pemadatan menulis ulang riwayat secara sengaja, jadi biayanya nyata; solusinya adalah memadatkan secara jarang dan mendalam, bukan sering dan dangkal.
 
-Menonaktifkan penundaan dengan `--tool-deferral=off` adalah uji A/B yang sah untuk mengisolasi apakah perubahan perilaku berasal dari permukaan dua tingkat. Opsi itu menghasilkan ulang permintaan sebelum penundaan secara persis, jadi jika perilakunya tetap ada saat penundaan dimatikan, permukaannya bukan penyebabnya.
+Menonaktifkan penundaan dengan `--tool-deferral=off` adalah uji A/B yang sah untuk mengisolasi apakah perubahan perilaku berasal dari permukaan dua tingkat. Dengan opsi itu dimatikan, run mengirim definisi setiap alat yang diizinkan, kecuali bahwa run dengan `repl` tetap memanggil dari skrip alat-alat yang boleh dipanggil skrip; jadi jika perilakunya tetap ada saat penundaan dimatikan, penundaan bukan penyebabnya.

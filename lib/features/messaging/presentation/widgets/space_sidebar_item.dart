@@ -5,6 +5,7 @@ import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/archived_conversations_dialog.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_folder_picker_dialog.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_pr_subtitle.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_route_selection.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row_adornments.dart';
@@ -36,9 +37,6 @@ class SpaceSidebarItem extends ConsumerWidget implements CcFluidHoverTarget {
     required this.space,
     required this.selected,
     required this.onPress,
-    this.leading,
-    this.absentLeading,
-    this.subtitle,
     this.quietSelection = false,
     this.cardInset = EdgeInsets.zero,
     this.muted = false,
@@ -57,16 +55,6 @@ class SpaceSidebarItem extends ConsumerWidget implements CcFluidHoverTarget {
 
   /// Tap handler (navigation; the URL is the source of truth for selection).
   final VoidCallback onPress;
-
-  /// Replaces the whole leading slot (PR badge, spinner, absent mark).
-  final Widget? leading;
-
-  /// Leading mark when the space has no pull request and is not running.
-  /// Null keeps the pencil. The global sidebar passes the empty dot.
-  final Widget? absentLeading;
-
-  /// Second line under the space name. A checked-out branch.
-  final String? subtitle;
 
   /// Selected without the solid brand fill. The parent paints the panel.
   final bool quietSelection;
@@ -90,7 +78,7 @@ class SpaceSidebarItem extends ConsumerWidget implements CcFluidHoverTarget {
   /// space listing four conversations spun on the parent and left all four
   /// looking idle, so the row that says "an agent is working" was never the row
   /// that says WHERE. When the children carry it, this row shows its ordinary
-  /// leading glyph (the PR badge / pencil) instead of a second spinner.
+  /// title with no spinner in front of it.
   ///
   /// Only ever true when a listed conversation is actually running: a run this
   /// space owns that no visible row can claim (an archived conversation, a run
@@ -103,9 +91,9 @@ class SpaceSidebarItem extends ConsumerWidget implements CcFluidHoverTarget {
   /// Same placement rule as [runningShownOnConversations]: the signal belongs
   /// on the most specific row the user can see. When the children carry it,
   /// this row drops the idle unread dot so one unseen reply does not light
-  /// both the parent and the child. A never-listed single-conversation space
-  /// (and unread on an archived conversation no visible row can claim) keeps
-  /// the dot here.
+  /// both the parent and the child. A space whose conversations are not
+  /// listed keeps the dot here. Archived conversations never make a space
+  /// unread.
   final bool unreadShownOnConversations;
 
   /// Whether this row is its own press target. False when an enclosing card
@@ -134,32 +122,25 @@ class SpaceSidebarItem extends ConsumerWidget implements CcFluidHoverTarget {
         status == SpaceStatus.running && !runningShownOnConversations;
 
     final label = space.name.isNotEmpty ? space.name : l10n.spaceLabel;
-    // The leading slot carries the running signal (a spinner), so the trailing
-    // indicator stays clear of a redundant running dot.
-    final mark =
-        leading ??
-        SpaceLeadingIcon(
-          spaceId: space.id,
-          running: running,
-          unreadConversationCount: muted
-              ? 0
-              : ref.watch(spaceUnreadConversationCountProvider(space.id)),
-          // Quiet selection paints no brand fill, so the status-colored PR
-          // glyph stays. Recolouring is only for the solid selected row.
-          selected: selected && !quietSelection,
-          absent: absentLeading,
-        );
+    // The row's only status, hung in front of the title: a spinner while
+    // running, the attention dot when unread or waiting on an answer.
+    final mark = spaceRowSignal(
+      running: running,
+      attention: !muted && (unread || status == SpaceStatus.needsInput),
+      selected: selected && !quietSelection,
+    );
+    final prs = ref.watch(spaceRowPrsProvider(space.id));
 
     return SpaceRow(
-      leading: mark,
+      signal: mark,
       label: label,
-      subtitle: subtitle,
+      // Quiet selection paints no brand fill, so the status hues stay.
+      subtitle: prs.isEmpty
+          ? null
+          : SpacePrSubtitle(prs: prs, selected: selected && !quietSelection),
       quietSelection: quietSelection,
       cardInset: cardInset,
       selected: selected,
-      status: status,
-      unread: unread,
-      leadingHandlesRunning: true,
       muted: muted,
       count: conversationCount,
       onPress: interactive ? onPress : null,

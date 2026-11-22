@@ -56,6 +56,29 @@ class FileSearchTool extends HarnessTool {
   };
 
   @override
+  Map<String, dynamic> get outputSchema => const {
+    'type': 'object',
+    'properties': {
+      'files': {
+        'type': 'array',
+        'items': {
+          'type': 'object',
+          'properties': {
+            'path': {
+              'type': 'string',
+              'description': 'Workspace-relative path.',
+            },
+            'is_directory': {'type': 'boolean'},
+          },
+          'required': ['path', 'is_directory'],
+        },
+        'description': 'Best matches first.',
+      },
+    },
+    'required': ['files'],
+  };
+
+  @override
   Future<HarnessToolResult> execute(
     Map<String, dynamic> args,
     HarnessToolContext context,
@@ -73,13 +96,25 @@ class FileSearchTool extends HarnessTool {
         sharedRoots: context.sharedRoots,
         limit: limit,
       );
+      final structured = {
+        'files': [
+          for (final hit in results)
+            {'path': hit.path, 'is_directory': hit.isDirectory},
+        ],
+      };
       if (results.isEmpty) {
-        return HarnessToolResult.success('No files match "$query".');
+        return HarnessToolResult.success(
+          'No files match "$query".',
+          structured: structured,
+        );
       }
       final lines = [
         for (final hit in results) hit.isDirectory ? '${hit.path}/' : hit.path,
       ];
-      return HarnessToolResult.success(lines.join('\n'));
+      return HarnessToolResult.success(
+        lines.join('\n'),
+        structured: structured,
+      );
     } on Object catch (e) {
       return HarnessToolResult.error('File search failed: $e');
     }

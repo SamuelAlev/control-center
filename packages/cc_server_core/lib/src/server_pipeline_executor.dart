@@ -24,6 +24,7 @@ import 'package:cc_domain/features/pipelines/domain/services/step_process_regist
 import 'package:cc_domain/features/pipelines/domain/services/sub_pipeline_launcher.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/call_flow_template.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/foreach_template.dart';
+import 'package:cc_domain/features/pipelines/domain/templates/goal_pursue_step.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/human_gate_template.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/messaging_post_space_template.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/prompt_agent_template.dart';
@@ -39,6 +40,7 @@ import 'package:cc_domain/features/skills/domain/ports/skill_analysis_port.dart'
 import 'package:cc_domain/features/teams/domain/repositories/team_repository.dart';
 import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_service.dart';
 import 'package:cc_infra/cc_infra.dart';
+import 'package:cc_server_core/src/runtime/server_pipeline_goals.dart';
 
 /// The headless server's pipeline executor: the [PipelineEngine] plus the
 /// [StepProcessRegistry] its bodies expose kill callbacks through.
@@ -130,6 +132,9 @@ ServerPipelineExecutor buildServerPipelineExecutor({
   required VoiceProfileRepository voiceProfileRepository,
   required DiarizationModelManager diarizationModelManager,
   required MeetingDiarizationPort diarizationService,
+  // `goal.pursue`: the goals a step starts and waits on, and the
+  // orchestration cap they (and every step) are held at.
+  required PipelineGoalPursuits goalPursuits,
   // Public demo: keep the body key so an in-flight graph does not fail
   // "unknown body", but never `Process.start`. Default on so a missed
   // argument cannot silently disable bash on a real host.
@@ -192,6 +197,14 @@ ServerPipelineExecutor buildServerPipelineExecutor({
     runRepository: runRepository,
   );
   registerMessagingPostSpaceBody(registry, messagingPort: messagingPort);
+  registerGoalPursueBody(
+    registry,
+    templateRepository: templateRepository,
+    agentRepository: agentRepository,
+    messagingPort: messagingPort,
+    runRepository: runRepository,
+    goals: goalPursuits,
+  );
   registerConditionBody(
     registry,
     templateRepository: templateRepository,
@@ -284,6 +297,17 @@ ServerPipelineExecutor buildServerPipelineExecutor({
   );
   // Wire the late-bound launcher so `flow.callPipeline` can start child runs.
   launcher.engine = engine;
+  // An orchestration's `maxCostMicros` holds its run before the next step.
+  final budgetGate = OrchestrationBudgetGate(
+    orchestrations: orchestrationRepository,
+    runs: runRepository,
+    messages: messagingRepository,
+    eventBus: eventBus,
+    engine: () => engine,
+    now: DateTime.now,
+  );
+  engine.registerBudgetGate(budgetGate);
+  goalPursuits.bind(engine: engine, runs: runRepository, gate: budgetGate);
 
   return (engine: engine, stepProcess: stepProcess);
 }

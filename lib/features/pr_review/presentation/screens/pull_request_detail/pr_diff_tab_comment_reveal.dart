@@ -63,7 +63,7 @@ extension _PrDiffTabCommentReveal on _PrDiffTabState {
       // diff), or an outdated thread whose anchor line is gone from the
       // current diff: there is no row to scroll to, so hand it back rather
       // than scrolling nowhere.
-      if (thread == null || thread.endLine == null) {
+      if (thread == null || thread.isOutdated) {
         _abandonReveal(commentId);
         return;
       }

@@ -5,9 +5,20 @@ import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_run_role.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+import 'package:cc_harness/context.dart'
+    show serializeHarnessHistory, splitPinnedEvidence;
+import 'package:cc_harness/loop.dart'
+    show
+        SteeringChannel,
+        SteeringMessage,
+        SteeringQueue,
+        laneMessageOrigin;
+import 'package:cc_harness/messages.dart'
+    show HarnessMessage, HarnessMessageOrigin;
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_server_core/src/collab/checker_listener.dart';
 import 'package:cc_server_core/src/collab/takeover_service.dart';
@@ -162,7 +173,7 @@ void main() {
     final paused = <String>[];
     final stopped = <String>[];
     final resumed = <String>[];
-    final steered = <({String runId, String message})>[];
+    final steered = <({String runId, String message, String? source})>[];
     late Set<String> pausable;
     late TakeoverService service;
 
@@ -205,8 +216,8 @@ void main() {
         stopRun: (ws, runId) async {
           stopped.add(runId);
         },
-        steerRun: (runId, message) async {
-          steered.add((runId: runId, message: message));
+        steerRun: (runId, message, {required source}) async {
+          steered.add((runId: runId, message: message, source: source));
           return true;
         },
         conversationChanges: (workspaceId, spaceId) async => [
@@ -310,6 +321,54 @@ void main() {
       expect(steered.single.runId, 'run-pausable');
 
       expect(await service.isActive('ws1', 'ch1'), isFalse);
+    });
+
+    test('the hand-back steers the diff as the server and only the note as '
+        'the person, so a compaction pins only the note', () async {
+      pausable.add('run-pausable');
+      runLogs.activeByConversationSeeds['ws1:ch1'] = [
+        _run('run-pausable', agentId: 'a1'),
+      ];
+      await service.begin(
+        workspaceId: 'ws1',
+        spaceId: 'ch1',
+        userId: 'u1',
+        displayName: 'Ada',
+      );
+      await service.handBack(
+        workspaceId: 'ws1',
+        spaceId: 'ch1',
+        userId: 'u1',
+        displayName: 'Ada',
+        note: 'Keep the public API unchanged.',
+      );
+      expect(steered.map((s) => s.source), ['takeover', null]);
+      expect(steered.first.message, contains('1 file(s) changed'));
+      expect(steered.first.message, isNot(contains('public API')));
+      expect(steered.last.message, 'Note from Ada: Keep the public API '
+          'unchanged.');
+
+      final lane = SteeringQueue();
+      for (final s in steered) {
+        lane.enqueue(
+          SteeringMessage(
+            content: s.message,
+            channel: SteeringChannel.steering,
+            enqueuedAt: DateTime(2026),
+            source: s.source,
+          ),
+        );
+      }
+      final drained = lane.drainSteering();
+      final digest = serializeHarnessHistory([
+        HarnessMessage.user('Fix it.', origin: HarnessMessageOrigin.person),
+        for (final m in drained)
+          HarnessMessage.user(m.content, origin: laneMessageOrigin(m)),
+      ]);
+      final pinned = splitPinnedEvidence(digest).pinned;
+      expect(pinned, contains('Keep the public API unchanged.'));
+      expect(pinned, isNot(contains('file(s) changed')));
+      expect(digest, contains('file(s) changed'), reason: 'summarised');
     });
 
     test('concurrent begins: exactly one wins the claim', () async {
@@ -447,6 +506,7 @@ void main() {
         >[];
     var clock = DateTime(2026, 1, 1);
     late CheckerDispatchListener listener;
+    final goalRuns = <String>{};
     const workspaceId = 'ws1';
     late GlobalDatabase global;
     late WorkspaceDatabaseManager dbs;
@@ -469,6 +529,7 @@ void main() {
       runLogs = _FakeAgentRunLogRepository();
       eventBus = DomainEventBus();
       dispatches.clear();
+      goalRuns.clear();
       clock = DateTime(2026, 1, 1);
       listener = CheckerDispatchListener(
         eventBus: eventBus,
@@ -481,6 +542,8 @@ void main() {
               required String agentId,
               required String prompt,
               required String workspaceId,
+              required String sourceAgentId,
+              required String sourceRunId,
             }) async {
               dispatches.add((
                 spaceId: spaceId,
@@ -490,6 +553,9 @@ void main() {
                 prompt: prompt,
               ));
             },
+        isGoalRun:
+            ({required String workspaceId, required String runId}) async =>
+                goalRuns.contains(runId),
         cooldown: const Duration(minutes: 2),
         now: () => clock,
       );
@@ -503,12 +569,13 @@ void main() {
     });
 
     /// A finished run of [agentId] in the space `ch1`, in a conversation
-    /// whose id is not the space's, and the event its completion publishes.
-    AgentRunCompleted finished(
+    /// whose id is not the space's, and the event its settlement publishes.
+    AgentRunSettled finished(
       String runId, {
       required String agentId,
       AgentRunRole role = AgentRunRole.main,
       String? spaceId = 'ch1',
+      RunEndReason reason = RunEndReason.completed,
     }) {
       runLogs.byId[runId] = _run(
         runId,
@@ -518,11 +585,21 @@ void main() {
         spaceId: spaceId,
         conversationId: 'conv-7',
       );
-      return AgentRunCompleted(
+      return AgentRunSettled(
         agentId: agentId,
         workspaceId: 'ws1',
+        spaceId: spaceId,
         conversationId: 'conv-7',
         runId: runId,
+        status: reason == RunEndReason.completed
+            ? RunStatus.completed
+            : RunStatus.error,
+        endReason: reason,
+        costMicros: 0,
+        limitResetsAt: null,
+        wakeIds: const [],
+        requestedByUserId: null,
+        wakeReason: null,
         occurredAt: clock,
       );
     }
@@ -603,6 +680,55 @@ void main() {
       clock = clock.add(const Duration(minutes: 3));
       eventBus.publish(finished('run-3', agentId: 'worker-3'));
       await _pumpUntil(() => dispatches.length == 2);
+    });
+
+    test('a goal segment or a goal review is not reviewed; an ordinary run '
+        'still is', () async {
+      await setChecker();
+      goalRuns
+        ..add('run-goal')
+        ..add('run-goal-review');
+
+      eventBus
+        ..publish(finished('run-goal', agentId: 'worker-agent'))
+        ..publish(finished('run-goal-review', agentId: 'reviewer-agent'));
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      expect(dispatches, isEmpty);
+
+      eventBus.publish(finished('run-plain', agentId: 'worker-agent'));
+      await _pumpUntil(() => dispatches.isNotEmpty);
+      expect(dispatches.single.agentId, 'checker-agent');
+    });
+
+    test('a stopped run is not reviewed', () async {
+      await setChecker();
+
+      eventBus
+        ..publish(
+          finished(
+            'run-stopped',
+            agentId: 'worker-agent',
+            reason: RunEndReason.stoppedByUser,
+          ),
+        )
+        ..publish(
+          finished(
+            'run-shutdown',
+            agentId: 'worker-agent',
+            reason: RunEndReason.serverStopped,
+          ),
+        );
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      expect(dispatches, isEmpty);
+    });
+
+    test('a run that failed is still reviewed', () async {
+      await setChecker();
+
+      eventBus.publish(
+        finished('run-err', agentId: 'worker-agent', reason: RunEndReason.error),
+      );
+      await _pumpUntil(() => dispatches.isNotEmpty);
     });
 
     test('no checker configured means nothing dispatches', () async {

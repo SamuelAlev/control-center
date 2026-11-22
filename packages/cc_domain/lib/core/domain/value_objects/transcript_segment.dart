@@ -1,4 +1,5 @@
 import 'package:cc_domain/core/domain/value_objects/message_attachment.dart';
+import 'package:cc_domain/features/code_mode/domain/value_objects/script_call_site.dart';
 import 'package:collection/collection.dart';
 
 /// Terminal status of a [ToolSegment].
@@ -126,6 +127,9 @@ sealed class TranscriptSegment {
                 ?ToolImageRef.fromJson(raw.cast<String, dynamic>()),
           ],
           attachments: MessageAttachment.attachmentsFromMetadata(json),
+          parentToolCallId: json['parentToolCallId'] as String?,
+          callSite: ScriptCallSite.tryParse(json['callSite']),
+          outcome: json['outcome'] as String?,
         );
       case 'text':
         return TextSegment(
@@ -253,6 +257,9 @@ class ToolSegment extends TranscriptSegment {
     this.prunedAt,
     this.images = const [],
     this.attachments = const [],
+    this.parentToolCallId,
+    this.callSite,
+    this.outcome,
   });
 
   /// Name of the tool (e.g. `Read`, `Edit`, `mcp__cc__create_ticket`).
@@ -294,6 +301,38 @@ class ToolSegment extends TranscriptSegment {
   /// Original media files read by the tool, stored in the workspace blob store.
   final List<MessageAttachment> attachments;
 
+  /// The `repl` call whose script made this call, or null for a call the
+  /// model made directly.
+  ///
+  /// A nested segment is folded under its parent when a transcript is shown,
+  /// so a script's tool calls render as child rows of the `repl` row with the
+  /// same renderer a direct call gets. Like [toolCallId] it never changes
+  /// after the call starts, so [copyWith] carries it unchanged.
+  final String? parentToolCallId;
+
+  /// Where in the parent's script this call was made, or null when the
+  /// runner reported no position (and always for a direct call). Meaningful
+  /// only on a nested segment ([parentToolCallId] set).
+  ///
+  /// A display hint from an untrusted process (the runner executes
+  /// model-written code): it places the row in the script's structure and
+  /// nothing that decides reads it. Like [parentToolCallId] it never changes
+  /// after the call starts, so [copyWith] carries it unchanged.
+  final ScriptCallSite? callSite;
+
+  /// How the call ended when that is finer than [status] says, as the
+  /// result's short lower-snake word: `denied`, `cancelled` or `timed_out`
+  /// from the gate, or a script's execution status on a `repl` call. Null
+  /// when the producer said nothing finer (and always for an external
+  /// adapter's transcript).
+  ///
+  /// What a client reads to tell a refusal from a failure, instead of
+  /// parsing [outputs].
+  final String? outcome;
+
+  /// Whether this call was made from a code mode script.
+  bool get isNested => parentToolCallId != null;
+
   /// Whether this tool's output has been pruned/elided.
   bool get isPruned => prunedAt != null;
 
@@ -310,6 +349,7 @@ class ToolSegment extends TranscriptSegment {
     DateTime? prunedAt,
     List<ToolImageRef>? images,
     List<MessageAttachment>? attachments,
+    String? outcome,
   }) => ToolSegment(
     toolName: toolName ?? this.toolName,
     toolCallId: toolCallId,
@@ -321,6 +361,9 @@ class ToolSegment extends TranscriptSegment {
     prunedAt: prunedAt ?? this.prunedAt,
     images: images ?? this.images,
     attachments: attachments ?? this.attachments,
+    parentToolCallId: parentToolCallId,
+    callSite: callSite,
+    outcome: outcome ?? this.outcome,
   );
 
   @override
@@ -339,6 +382,9 @@ class ToolSegment extends TranscriptSegment {
       'attachments': [
         for (final attachment in attachments) attachment.toJson(),
       ],
+    'parentToolCallId': ?parentToolCallId,
+    'callSite': ?callSite?.toJson(),
+    'outcome': ?outcome,
   };
 
   @override
@@ -354,7 +400,13 @@ class ToolSegment extends TranscriptSegment {
           durationMs == other.durationMs &&
           prunedAt == other.prunedAt &&
           const DeepCollectionEquality().equals(images, other.images) &&
-          const DeepCollectionEquality().equals(attachments, other.attachments);
+          const DeepCollectionEquality().equals(
+            attachments,
+            other.attachments,
+          ) &&
+          parentToolCallId == other.parentToolCallId &&
+          callSite == other.callSite &&
+          outcome == other.outcome;
 
   @override
   int get hashCode => Object.hash(
@@ -368,6 +420,9 @@ class ToolSegment extends TranscriptSegment {
     prunedAt,
     const DeepCollectionEquality().hash(images),
     const DeepCollectionEquality().hash(attachments),
+    parentToolCallId,
+    callSite,
+    outcome,
   );
 }
 

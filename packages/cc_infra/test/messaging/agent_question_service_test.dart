@@ -1,10 +1,11 @@
-import 'dart:async' show Completer;
+import 'dart:async' show Completer, unawaited;
 import 'dart:typed_data';
 
 import 'package:cc_domain/cc_domain.dart' show WorkspaceMismatchException;
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_question_metadata.dart';
+import 'package:cc_domain/core/domain/value_objects/script_call_origin.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
@@ -41,6 +42,7 @@ void main() {
     bool allowFreeText = false,
     bool multiSelect = false,
     String? context,
+    ScriptCallOrigin? origin,
   }) {
     return AgentQuestionRequest(
       workspaceId: ws,
@@ -53,6 +55,7 @@ void main() {
       multiSelect: multiSelect,
       askedByAgentId: askedByAgentId,
       askedByName: askedByName,
+      origin: origin,
     );
   }
 
@@ -133,6 +136,27 @@ void main() {
       },
     );
 
+    test('an answer the server gives before asking is the result, and no '
+        'form is posted (nobody is there)', () async {
+      const notice = AgentQuestionAnswer.unanswered('nobody', proceed: false);
+      final seen = <AgentQuestionRequest>[];
+      service.answerUnasked = (r) {
+        seen.add(r);
+        return notice;
+      };
+      final answer = await service.ask(request());
+      expect(answer?.serverNotice, 'nobody');
+      expect(seen, hasLength(1));
+      expect(messaging.sentMessages, isEmpty);
+
+      // No answer from the check: the question is posted as usual.
+      service.answerUnasked = (_) => null;
+      messaging.nextMessageId = 'm-1';
+      unawaited(service.ask(request()));
+      await Future<void>.delayed(Duration.zero);
+      expect(messaging.sentMessages, hasLength(1));
+    });
+
     test('posts a user_question message with rich metadata', () async {
       messaging.nextMessageId = 'm-1';
       final future = service.ask(
@@ -162,11 +186,41 @@ void main() {
       final options = sent.metadata!['options'] as List;
       expect(options, hasLength(1));
       expect((options.first as Map)['value'], 'a');
+      expect(
+        sent.metadata!.containsKey('origin'),
+        isFalse,
+        reason: 'a question the model asked directly names no script',
+      );
       // Clean up the pending completer.
       await service.submitAnswer(
         ws,
         questionMessage('m-1'),
         const AgentQuestionAnswer(selectedLabels: ['a']),
+      );
+      await future;
+    });
+
+    test('a script\'s question carries the script\'s origin', () async {
+      messaging.nextMessageId = 'm-origin';
+      final future = service.ask(
+        request(
+          allowFreeText: true,
+          origin: ScriptCallOrigin(
+            parentToolCallId: 'r',
+            executionId: 'run-1/r',
+          ),
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+      final sent = messaging.sentMessages.single;
+      expect(sent.metadata!['origin'], {
+        'parent_tool_call_id': 'r',
+        'execution_id': 'run-1/r',
+      });
+      await service.submitAnswer(
+        ws,
+        questionMessage('m-origin'),
+        const AgentQuestionAnswer(skipped: true),
       );
       await future;
     });
@@ -242,6 +296,57 @@ void main() {
       );
       await future;
       expect(closed, ['m-answered']);
+    });
+
+    test('a run the server started waits until its moved deadline, and the '
+        'form says so', () async {
+      messaging.nextMessageId = 'm-moved';
+      final future = service.ask(request());
+      await Future<void>.delayed(Duration.zero);
+      final until = DateTime.now().add(const Duration(seconds: 3));
+      expect(await service.waitUntil('m-moved', until), isTrue);
+      // Past the 1-second default timeout: still waiting.
+      await Future<void>.delayed(const Duration(milliseconds: 1500));
+      expect(service.isPending('m-moved'), isTrue);
+      final moved = messaging.updatedMessages.single.metadata!;
+      expect(moved[kQuestionExpiresAtKey], until.toUtc().toIso8601String());
+      expect(moved[kQuestionAnsweredKey], isFalse);
+      // The moved deadline still ends the wait, with no answer.
+      expect(await future, isNull);
+      expect(await service.waitUntil('m-moved', until), isFalse);
+    });
+
+    test('a withdrawn question reads the notice and its form expires; a '
+        'person\'s answer that landed first wins', () async {
+      messaging.nextMessageId = 'm-withdrawn';
+      final future = service.ask(request());
+      await Future<void>.delayed(Duration.zero);
+      const notice = AgentQuestionAnswer.unanswered(
+        'nobody answered',
+        proceed: false,
+      );
+      expect(service.release('m-withdrawn', notice), isTrue);
+      expect(await future, notice);
+      final closed = messaging.updatedMessages.last.metadata!;
+      expect(closed[kQuestionAnsweredKey], isTrue);
+      expect(closed[kQuestionExpiredKey], isTrue);
+      expect(closed, isNot(contains(kQuestionAnswerKey)));
+      expect(service.release('m-withdrawn', notice), isFalse);
+      expect(
+        () => service.release('m-withdrawn', const AgentQuestionAnswer()),
+        throwsArgumentError,
+      );
+
+      messaging.nextMessageId = 'm-answered';
+      final answered = service.ask(request());
+      await Future<void>.delayed(Duration.zero);
+      await service.submitAnswer(
+        ws,
+        questionMessage('m-answered'),
+        const AgentQuestionAnswer(freeText: 'Postgres'),
+      );
+      expect(service.release('m-answered', notice), isFalse);
+      expect((await answered)?.freeText, 'Postgres');
     });
 
     test('closes the form when the asker stops waiting', () async {

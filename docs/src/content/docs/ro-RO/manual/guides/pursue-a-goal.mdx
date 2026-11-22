@@ -1,0 +1,143 @@
+---
+title: Urmărește un obiectiv
+description: Dă unui agent un obiectiv pe care îl urmărește în mai multe rulări și reporniri, definește ce înseamnă terminat și decide când este încheiat.
+slug: ro-RO/manual/ghiduri-practice/urmareste-obiectiv
+sourceHash: 0ea77964bd9e3044e168624bc67325de0fd1d1e5
+---
+
+Un obiectiv este lucrul la care un agent lucrează până când ce înseamnă terminat este îndeplinit. Agentul lucrează în **segmente**: rulări limitate pe care serverul le pornește unul după altul, peste reporniri, până când obiectivul este verificat, o persoană îl închide sau ajunge la o limită. Agentul nu poate încheia un obiectiv spunând că este terminat. Serverul rulează verificările obiectivului, iar un revizor analizează mai întâi rezultatul.
+
+## Pornește un obiectiv
+
+Scrie `/goal` și obiectivul în compozitorul unei conversații:
+
+```text
+/goal --budget 20 --days 2 --check "make test" make the importer handle files over 2 GB
+```
+
+Dacă mesajul începe cu `/goal` urmat de text, se deschide interviul obiectivului. Acesta cere criterii de succes, verificările care trebuie să treacă, limitele și condițiile de oprire și oferă un verificator separat, pornirea fiecărui segment de la zero și răspunsul la propriile întrebări. Fiecare pas poate fi sărit.
+
+| Opțiune | Înseamnă |
+| --- | --- |
+| `--budget <dollars>` | Cât poate cheltui în total obiectivul. Implicit 50 de dolari |
+| `--max <N>` | Numărul maxim de segmente pe care le poate parcurge obiectivul. Implicit nu există limită |
+| `--days <N>` | Un termen limită, peste atâtea zile de acum |
+| `--check "<command>"` | O comandă care trebuie să reușească înainte ca obiectivul să se poată încheia, rulată în worktree. Repetă pentru mai multe, cel mult 5 |
+| `--checker <agent>` | Un alt agent care analizează afirmația că obiectivul este terminat, după nume sau id |
+| `--fresh` | Pornește fiecare segment fără istoricul conversației, doar din obiectiv și din notele lui |
+| `--unattended wait` or `--unattended assume` | Ce se întâmplă cu întrebările agentului când nimeni nu răspunde (vezi [Când nimeni nu răspunde](#când-nimeni-nu-răspunde)) |
+
+- Indicatorii pot sta oriunde în mesaj. Un indicator necunoscut, un indicator repetat, o valoare greșită sau mai mult de 5 verificări sunt refuzate, iar ciorna ta rămâne în compozitor, cu motivul sub ea.
+- Un număr la începutul obiectivului face parte din obiectiv. Pentru a limita segmentele, folosește `--max`.
+- `/goal` este citit doar dintr-un mesaj scris chiar de tine. Același text venit de la un agent, un pipeline sau o trezire este un mesaj obișnuit.
+- Un agent urmărește un singur obiectiv odată într-un spațiu de lucru. Un al doilea `/goal` pentru același agent este refuzat cât timp primul este activ.
+
+### Ce înseamnă terminat
+
+Obiectivul poate avea secțiuni care devin contractul obiectivului:
+
+```text
+/goal make the importer handle files over 2 GB
+
+## Success criteria
+- A 3 GB fixture imports without running out of memory
+- The progress bar reaches 100%
+
+## Boundaries
+- Don't change the public API
+
+## Stop conditions
+- A migration would drop data
+
+## Checks
+- `make test` (300 s)
+- environment task `test` (600 s)
+```
+
+- **Criterii de succes**: cel mult 12, fiecare de cel mult 300 de caractere. Fiecare este ceva ce un revizor poate confirma.
+- **Verificări**: cel mult 5. O verificare rulează în worktree sau ca o sarcină numită a [mediului](/ro-RO/manual/ghiduri-practice/medii/) spațiului. Fiecare are implicit 300 de secunde și cel mult 1.800.
+- O secțiune peste limită este refuzată, nu tăiată.
+
+Un obiectiv fără criterii lasă agentul să decidă când este terminat, iar unul fără verificare se bazează doar pe revizuire. Pagina obiectivului spune asta.
+
+## Cum continuă un obiectiv
+
+Fiecare segment este o rulare limitată la 5 dolari sau la ce a rămas din buget, oricare este mai mic. După fiecare segment, serverul decide ce urmează, din ce a făcut segmentul:
+
+- **A făcut progres.** Începe următorul segment.
+- **Așteaptă ceva ce a pregătit**: un program, o urmărire, o întrebare către alt agent sau un tichet delegat. Obiectivul așteaptă după el. Dacă nu sosește nimic, serverul se uită din nou după 20 de minute, apoi după 40, 80, 160 și apoi la fiecare 240 de minute. Pe card scrie **Așteaptă ce a pregătit · se uită din nou până la** o oră.
+- **Nu a făcut progres.** Progres înseamnă că worktree-ul s-a schimbat prin munca proprie a segmentului, lista de verificare s-a schimbat sau agentul a făcut ceva nou. După 3 segmente fără progres, obiectivul se pune pe pauză: **Niciun progres în ultimele segmente.**
+- **A așteptat prea mult.** După 24 de ore de așteptare, sau după 6 așteptări pentru lucruri noi pe care le-a pregătit, fără progres între ele, obiectivul se pune pe pauză: **Se așteaptă, după segmente fără progres.**
+- **A eșuat.** Serverul reîncearcă după 30 de secunde, apoi după mai mult, până la 15 minute. După 3 eșecuri la rând, obiectivul eșuează.
+- **A întrebat o persoană.** Obiectivul rămâne până când cineva răspunde: **Are nevoie de o persoană**.
+
+Obiectivul se oprește și la bugetul său (**Buget epuizat**), la plafonul de segmente sau la termenul limită.
+
+## Când agentul spune că a terminat
+
+Agentul afirmă că obiectivul este terminat, cu dovezi pentru fiecare criteriu. Apoi:
+
+1. **Serverul rulează verificările** într-un sandbox, niciodată direct pe mașina serverului. O verificare care iese cu un cod diferit de zero eșuează. O verificare care nu poate rula deloc (comandă negăsită, neexecutabilă, o sarcină de mediu inexistentă) este defectă: obiectivul se oprește pentru o persoană cu **Această verificare nu poate rula:** și comanda. Dacă serverul nu are sandbox, obiectivul se oprește cu **Nu este disponibil niciun sandbox pentru a-și rula verificările.** (Excepția este un server al cărui proprietar a dezactivat sandbox-ul pentru fiecare rulare: verificările rulează acolo la fel ca propriile comenzi ale agentului.) Când nimic din worktree nu s-a schimbat de la o verificare eșuată, ea nu se rulează din nou.
+2. **Un revizor analizează rezultatul**, când au trecut toate verificările sau nu există niciuna. Revizorul este verificatorul obiectivului, altfel verificatorul spațiului, altfel agentul obiectivului. Rulează doar în citire, fără istoricul conversației: poate citi fișiere și ieșirea verificărilor, dar nu poate schimba nimic, nu poate rula comenzi și nu poate trezi alți agenți. Primește și diferența completă a testelor și a scripturilor de verificare pe care le-a modificat agentul și tratează ce a scris agentul în conversație și în notițele sale ca pretenții, nu ca dovadă. Pentru un obiectiv fără criterii, judecă obiectivul ca întreg. Răspunde că obiectivul este terminat, că nu este terminat sau că nu poate spune.
+3. **Terminat**: obiectivul se încheie. **Nu este terminat**: agentul primește constatările revizorului și continuă să lucreze. După 3 runde în care nu este terminat, sau când revizorul nu poate spune, obiectivul așteaptă după tine: **Așteaptă revizuire: spune că este terminat, iar nimic nu a confirmat asta**.
+
+Un mesaj pe care îl scrii cât timp rulează revizorul nu este transmis revizorului și nu este trimis când se încheie revizuirea. Rămâne în coadă pentru următorul segment al agentului. Când nu urmează niciun segment, este reținut pentru tine sub **Trimite mesajele reținute**.
+
+Un revizor care nu poate rula (șters sau pe un adaptor care nu poate păstra o rulare doar în citire, cum este un agent ACP) pune obiectivul pe pauză: **Agentul verificator nu este disponibil. Alege alt verificator, apoi reia.** Niciun alt agent nu intră în locul lui fără tine.
+
+Un verificator de la alt furnizor decât agentul obiectivului are șanse mai mici să aibă aceleași puncte oarbe. Fără un verificator separat, agentul își revizuiește propria muncă, iar obiectivul înregistrează **Verificat de el însuși (fără verificator separat)**.
+
+## Urmărește progresul unui obiectiv
+
+- **În conversație**: cardul obiectivului din panoul **General** arată reținerea, segmentul, cheltuiala față de buget, timpul rămas, ce înseamnă terminat, verificările și ultimul verdict.
+- **Pagina Obiective**: bara laterală → **Obiective**. Obiectivele sunt grupate ca **Așteaptă revizuire**, **Deschise** și **Încheiate**.
+- **Pagina obiectivului**: deschide un obiectiv ca să vezi **Acum** (segmentele, cheltuiala, termenul limită, numărul de segmente fără progres și ce urmează), **Ce înseamnă terminat**, **Verificare** (ultima rundă: afirmația, fiecare verificare cu ieșirea ei, revizuirea pe fiecare criteriu) și **Programe și treziri**. Fiecare obiectiv are propria adresă (`/workspaces/<workspace>/goals/<goal id>`), ca să poți trimite un link.
+
+Pe telefon, ecranul de obiective pornește un obiectiv cu verificări și cu un plafon de segmente și arată aceleași obiective și aceleași rețineri.
+
+## Modifică sau oprește un obiectiv
+
+| Acțiune | Cine poate |
+| --- | --- |
+| **Pune obiectivul în pauză**, **Oprește obiectivul** | Oricine are acces la spațiu |
+| **Reia obiectivul**, **Mărește bugetul** | Doar persoana care a pornit obiectivul (un admin al spațiului de lucru, pentru un obiectiv pe care nu l-a pornit nimeni) |
+| **Editează** ce înseamnă terminat, **Schimbă verificatorul** | Doar persoana care a pornit obiectivul (un admin al spațiului de lucru, pentru un obiectiv pe care nu l-a pornit nimeni), cu acces de scriere la depozitele spațiului, cât timp obiectivul este pus pe pauză |
+| **Aprobă finalizarea** | Oricine are acces la spațiu, cât timp obiectivul așteaptă revizuire. Un obiectiv pe care l-a pornit un pipeline: doar persoana care a pornit rularea respectivă (un admin al spațiului de lucru, când nimeni nu a pornit-o) |
+
+- Apăsarea lui **Oprește** pe rularea agentului pune obiectivul pe pauză (**Pus pe pauză de o persoană**). Trezirile lui în așteptare rămân în așteptare până îl reiei.
+- **Aprobă finalizarea** închide obiectivul ca terminat pe cuvântul tău. Obiectivul înregistrează **Închis de o persoană fără o verificare reușită**.
+- Un obiectiv care și-a consumat bugetul reia doar cu un buget mai mare.
+- Când persoana care a pornit un obiectiv părăsește spațiul de lucru, obiectivul trece imediat în revizuire, iar agentul său aflat în rulare este oprit. Nimeni nu îl poate relua; oricine are acces la spațiu îl poate opri. Digestul zilnic îl listează pentru adminii spațiului de lucru.
+
+## Când nimeni nu răspunde
+
+Când un segment adresează o persoană o întrebare sau cere o aprobare și nimeni nu răspunde, cererea așteaptă implicit 72 de ore. Apoi o aprobare se consideră refuzată, o întrebare rămâne fără răspuns, iar obiectivul se pune pe pauză: **O întrebare sau o cerere de aprobare adresată unei persoane a rămas fără răspuns.** Rularea care a întrebat nu mai primește alte răspunsuri: orice altceva întreabă este refuzat imediat, iar ea termină ce poate. Un admin al spațiului de lucru setează timpul (de la 1 oră la 7 zile) în **Setări → Spațiu de lucru → Programe → Când nimeni nu răspunde**. O dată pe zi, la ora setată acolo, primești un singur digest cu tot ce te așteaptă.
+
+Cu `--unattended assume`, agentul spune care este presupunerea lui și continuă după 10 minute fără răspuns, când condițiile de oprire o permit. Asta se aplică doar întrebărilor. O aprobare nu se presupune niciodată, iar o revizuire nu presupune nimic.
+
+## Limite de utilizare și reporniri
+
+- **O limită de utilizare a providerului.** Când un segment se oprește la limita de utilizare a unui provider, iar providerul spune când se resetează (în 7 zile), obiectivul se pune pe pauză fără penalizare: **Pus pe pauză la limita de utilizare · se reia la** o oră. Continuă la 30 de secunde după resetare. După 8 astfel de pauze, obiectivul așteaptă după tine: **A atins limitele de utilizare prea des. Verifică-l, apoi reia.** Orice reluare începe numărătoarea din nou. Agenții ACP nu raportează resetare, deci obiectivele lor nu așteaptă la o limită.
+- **O repornire a serverului.** Un obiectiv supraviețuiește unei reporniri. Un segment întrerupt de repornire pornește din nou, iar programele și trezirile în așteptare ale obiectivului se păstrează.
+
+## Îmbunătățiri după un obiectiv
+
+După ce un obiectiv trece verificarea, o revizuire scurtă, doar în citire (cel mult 1 dolar), poate propune îmbunătățiri: un fapt de memorie, o politică, o notă despre agent sau o modificare a unui skill. Scrie `/refine` ca să ceri aceeași revizuire pentru lucrul din conversație. Cel mult o revizuire rulează pe conversație la fiecare 20 de minute.
+
+Propunerile apar pe pagina **Îmbunătățiri** (bara laterală → **Îmbunătățiri**). Deschide una ca să vezi ce modifică, dovezile și **Acceptă**, **Respinge** sau **Anulează modificarea**.
+
+- O propunere nu schimbă nimic până când cineva o acceptă. Expiră după 30 de zile.
+- O modificare a unui skill sau a unei politici pentru întregul spațiu de lucru necesită un admin al spațiului de lucru (**Decide un admin**).
+- O modificare de skill este păstrată ca o revizie separată. Apasă **Rulează evaluarea** ca să o compari cu skill-ul actual; **Acceptă** este posibil doar după o evaluare reușită. O evaluare reușește când a rulat integral și agentul a rezolvat cel puțin tot atâtea rulări cu modificarea ca și cu skill-ul actual; pagina arată ambele numere. Dacă skill-ul se schimbă după evaluare, rulează-o din nou.
+- **Anulează modificarea** restabilește textul anterior, atât timp cât nimeni nu l-a schimbat între timp.
+
+## Într-un pipeline
+
+Un pipeline poate porni un obiectiv cu pasul **Pursue a goal** (`goal.pursue`). Pasul așteaptă până când obiectivul se încheie și transmite mai departe rezumatul și verdictul. Vezi [Pași de pipeline](/ro-RO/manual/referinta/pasi-pipeline/).
+
+## Vezi și
+
+- [Programe și treziri](/ro-RO/manual/ghiduri-practice/programe-si-treziri/)
+- [Agenți care lucrează împreună](/ro-RO/manual/ghiduri-practice/agenti-impreuna/)
+- [Gestionează costurile](/ro-RO/manual/ghiduri-practice/gestioneaza-costuri/)
+- [Comenzi slash](/ro-RO/manual/referinta/comenzi-slash/)

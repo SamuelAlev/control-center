@@ -1,7 +1,8 @@
-import 'dart:math' as math;
-
+import 'package:cc_domain/features/evals/domain/evaluation/evaluation_arm_settings.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_manifest.dart';
+import 'package:cc_domain/features/evals/domain/evaluation/evaluation_outcome.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_task.dart';
+import 'package:cc_domain/features/evals/domain/evaluation/task_route_policy.dart';
 
 /// Whether a report came from live model executions or from replaying a
 /// recorded campaign (HARNESS_RESEARCH §6: the offline mode exists only as a
@@ -90,7 +91,13 @@ enum EvaluationAxis {
   toolOverlap('tool_overlap'),
 
   /// Package exposure is the only deliberate difference between skill arms.
-  skillIntervention('skill_intervention');
+  skillIntervention('skill_intervention'),
+
+  /// What a goal's completion claim is worth (`GoalVerificationMode`).
+  goalVerification('goal_verification'),
+
+  /// Whether the run has the `repl` script surface (`CodeModeSurface`).
+  codeMode('code_mode');
 
   const EvaluationAxis(this.wire);
 
@@ -117,6 +124,8 @@ enum EvaluationAxis {
     EvaluationAxis.mcpDiscoveryCache => 'MCP discovery cache',
     EvaluationAxis.toolOverlap => 'Tool overlap',
     EvaluationAxis.skillIntervention => 'Skill intervention',
+    EvaluationAxis.goalVerification => 'Goal verification',
+    EvaluationAxis.codeMode => 'Code mode',
   };
 }
 
@@ -171,7 +180,12 @@ enum SessionContinuityMode {
   fresh('fresh'),
 
   /// An explicit native session id is resumed and only the new turn is sent.
-  nativeResume('native_resume');
+  nativeResume('native_resume'),
+
+  /// Every turn after the first starts with no history, as a dispatch with
+  /// `freshHistory` (a goal's `--fresh` segments): the turn's text and the
+  /// workspace are all the run has.
+  historyNone('history_none');
 
   const SessionContinuityMode(this.wire);
 
@@ -267,9 +281,41 @@ class EvaluationEffectiveConfig {
     this.mcpDiscoveryCache = McpDiscoveryCacheMode.disabled,
     this.toolOverlap = ToolOverlapMode.serial,
     this.skillExposure,
+    this.goalVerification,
+    this.codeMode,
     this.cacheEnabled = true,
     this.toolDeferralEnabled = true,
   });
+
+  /// Parses [toJson]'s output; an absent setting reads as its default.
+  factory EvaluationEffectiveConfig.fromJson(Map<String, dynamic> json) =>
+      EvaluationEffectiveConfig(
+        adapter: json['adapter'] as String? ?? '',
+        providerId: json['providerId'] as String? ?? '',
+        modelId: json['modelId'] as String? ?? '',
+        effortLevel: json['effortLevel'] as String?,
+        memoryPolicy: MemoryPolicyMode.fromWire(
+          json['memoryPolicy'] as String?,
+        ),
+        sessionContinuity: SessionContinuityMode.fromWire(
+          json['sessionContinuity'] as String?,
+        ),
+        mcpDiscoveryCache: McpDiscoveryCacheMode.fromWire(
+          json['mcpDiscoveryCache'] as String?,
+        ),
+        toolOverlap: ToolOverlapMode.fromWire(json['toolOverlap'] as String?),
+        skillExposure: json['skillExposure'] == null
+            ? null
+            : SkillExposure.fromWire(json['skillExposure'] as String),
+        goalVerification: json['goalVerification'] == null
+            ? null
+            : GoalVerificationMode.fromWire(json['goalVerification'] as String),
+        codeMode: json['codeMode'] == null
+            ? null
+            : CodeModeSurface.fromWire(json['codeMode'] as String),
+        cacheEnabled: json['cacheEnabled'] as bool? ?? true,
+        toolDeferralEnabled: json['toolDeferralEnabled'] as bool? ?? true,
+      );
 
   /// Builds the effective config for [arm] under [manifest].
   factory EvaluationEffectiveConfig.forArm(
@@ -285,6 +331,8 @@ class EvaluationEffectiveConfig {
     mcpDiscoveryCache: arm.mcpDiscoveryCache ?? McpDiscoveryCacheMode.disabled,
     toolOverlap: arm.toolOverlap ?? ToolOverlapMode.serial,
     skillExposure: arm.skillExposure,
+    goalVerification: arm.goalVerification,
+    codeMode: arm.codeMode,
     cacheEnabled: manifest.cacheEnabled,
     toolDeferralEnabled: manifest.toolDeferralEnabled,
   );
@@ -316,6 +364,12 @@ class EvaluationEffectiveConfig {
   /// Target exposure, null outside skill comparisons.
   final SkillExposure? skillExposure;
 
+  /// What a goal's claim is worth; null when the attempt is not a goal.
+  final GoalVerificationMode? goalVerification;
+
+  /// The `repl` surface; null leaves it to the campaign's script runner.
+  final CodeModeSurface? codeMode;
+
   /// Whether provider prompt caching is requested.
   final bool cacheEnabled;
 
@@ -332,6 +386,8 @@ class EvaluationEffectiveConfig {
       'mcpCache=${mcpDiscoveryCache.wire}',
       'overlap=${toolOverlap.wire}',
       if (skillExposure != null) 'skill=${skillExposure!.wire}',
+      if (goalVerification != null) 'goal=${goalVerification!.wire}',
+      if (codeMode != null) 'code=${codeMode!.wire}',
     ];
     return parts.join(' · ');
   }
@@ -347,6 +403,8 @@ class EvaluationEffectiveConfig {
     'mcpDiscoveryCache': mcpDiscoveryCache.wire,
     'toolOverlap': toolOverlap.wire,
     if (skillExposure != null) 'skillExposure': skillExposure!.wire,
+    if (goalVerification != null) 'goalVerification': goalVerification!.wire,
+    if (codeMode != null) 'codeMode': codeMode!.wire,
     'cacheEnabled': cacheEnabled,
     'toolDeferralEnabled': toolDeferralEnabled,
   };
@@ -364,6 +422,8 @@ class EvaluationEffectiveConfig {
           mcpDiscoveryCache == other.mcpDiscoveryCache &&
           toolOverlap == other.toolOverlap &&
           skillExposure == other.skillExposure &&
+          goalVerification == other.goalVerification &&
+          codeMode == other.codeMode &&
           cacheEnabled == other.cacheEnabled &&
           toolDeferralEnabled == other.toolDeferralEnabled;
 
@@ -378,6 +438,8 @@ class EvaluationEffectiveConfig {
     mcpDiscoveryCache,
     toolOverlap,
     skillExposure,
+    goalVerification,
+    codeMode,
     cacheEnabled,
     toolDeferralEnabled,
   );
@@ -399,6 +461,8 @@ class EvaluationArm {
     this.toolOverlap,
     this.skillExposure,
     this.taskRoutePolicyId,
+    this.goalVerification,
+    this.codeMode,
   });
 
   /// Parses from JSON.
@@ -424,6 +488,12 @@ class EvaluationArm {
         ? null
         : SkillExposure.fromWire(json['skillExposure'] as String),
     taskRoutePolicyId: json['taskRoutePolicyId'] as String?,
+    goalVerification: json['goalVerification'] == null
+        ? null
+        : GoalVerificationMode.fromWire(json['goalVerification'] as String),
+    codeMode: json['codeMode'] == null
+        ? null
+        : CodeModeSurface.fromWire(json['codeMode'] as String),
   );
 
   /// Stable arm id (unique within a plan).
@@ -460,6 +530,12 @@ class EvaluationArm {
   /// the arm was generated from a policy rather than declared by hand.
   final String? taskRoutePolicyId;
 
+  /// Goal verification override.
+  final GoalVerificationMode? goalVerification;
+
+  /// `repl` surface override.
+  final CodeModeSurface? codeMode;
+
   /// Whether this arm is the pinned quality default (the baseline).
   ///
   /// A baseline arm carries no overrides at all; that is what makes it the
@@ -474,7 +550,10 @@ class EvaluationArm {
       toolOverlap == null &&
       (skillExposure == null ||
           skillExposure == SkillExposure.absent ||
-          skillExposure == SkillExposure.available);
+          skillExposure == SkillExposure.available) &&
+      (goalVerification == null ||
+          goalVerification == GoalVerificationMode.claimOnly) &&
+      (codeMode == null || codeMode == CodeModeSurface.repl);
 
   /// Serializes to JSON.
   Map<String, dynamic> toJson() => {
@@ -489,6 +568,8 @@ class EvaluationArm {
     if (toolOverlap != null) 'toolOverlap': toolOverlap!.wire,
     if (skillExposure != null) 'skillExposure': skillExposure!.wire,
     if (taskRoutePolicyId != null) 'taskRoutePolicyId': taskRoutePolicyId,
+    if (goalVerification != null) 'goalVerification': goalVerification!.wire,
+    if (codeMode != null) 'codeMode': codeMode!.wire,
   };
 
   @override
@@ -505,7 +586,9 @@ class EvaluationArm {
           mcpDiscoveryCache == other.mcpDiscoveryCache &&
           toolOverlap == other.toolOverlap &&
           skillExposure == other.skillExposure &&
-          taskRoutePolicyId == other.taskRoutePolicyId;
+          taskRoutePolicyId == other.taskRoutePolicyId &&
+          goalVerification == other.goalVerification &&
+          codeMode == other.codeMode;
 
   @override
   int get hashCode => Object.hash(
@@ -520,238 +603,8 @@ class EvaluationArm {
     toolOverlap,
     skillExposure,
     taskRoutePolicyId,
-  );
-}
-
-/// One task-boundary routing decision (report 4A: "Prefer changing
-/// model/effort at task boundaries rather than repeatedly mid-session").
-class RoutingDecision {
-  /// Creates a [RoutingDecision].
-  const RoutingDecision({this.modelId, this.effortLevel, this.note = ''});
-
-  /// Parses from JSON.
-  factory RoutingDecision.fromJson(Map<String, dynamic> json) =>
-      RoutingDecision(
-        modelId: json['modelId'] as String?,
-        effortLevel: json['effortLevel'] as String?,
-        note: json['note'] as String? ?? '',
-      );
-
-  /// Model to use, or null to keep the pinned model.
-  final String? modelId;
-
-  /// Effort to use, or null to keep the pinned effort.
-  final String? effortLevel;
-
-  /// Why this route was chosen (audit trail).
-  final String note;
-
-  /// Serializes to JSON.
-  Map<String, dynamic> toJson() => {
-    if (modelId != null) 'modelId': modelId,
-    if (effortLevel != null) 'effortLevel': effortLevel,
-    if (note.isNotEmpty) 'note': note,
-  };
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is RoutingDecision &&
-          modelId == other.modelId &&
-          effortLevel == other.effortLevel &&
-          note == other.note;
-
-  @override
-  int get hashCode => Object.hash(modelId, effortLevel, note);
-}
-
-/// An OPT-IN, task-boundary routing policy (report 4A + §6).
-///
-/// The policy is inert unless [enabled] is explicitly set, and even then it
-/// may only route *away* from the pinned quality default for task classes the
-/// operator enumerated AND whose acceptance evidence is independently
-/// checkable. [violations] enumerates every way a policy would silently
-/// degrade a user-selected default; the runner refuses to apply a policy that
-/// reports any.
-class TaskRoutePolicy {
-  /// Creates a [TaskRoutePolicy].
-  const TaskRoutePolicy({
-    required this.id,
-    this.version = 1,
-    this.enabled = false,
-    this.description = '',
-    this.optedInBy = '',
-    this.byTaskKind = const {},
-    this.byTaskId = const {},
-    this.defaultDecision = const RoutingDecision(),
-    this.allowUncheckedRouting = false,
-  });
-
-  /// Parses from JSON.
-  factory TaskRoutePolicy.fromJson(Map<String, dynamic> json) =>
-      TaskRoutePolicy(
-        id: json['id'] as String? ?? '',
-        version: (json['version'] as num?)?.toInt() ?? 1,
-        enabled: json['enabled'] as bool? ?? false,
-        description: json['description'] as String? ?? '',
-        optedInBy: json['optedInBy'] as String? ?? '',
-        byTaskKind: {
-          for (final e
-              in (json['byTaskKind'] as Map?)?.entries ??
-                  const Iterable<MapEntry<dynamic, dynamic>>.empty())
-            EvaluationTaskKind.fromWire('${e.key}'): RoutingDecision.fromJson(
-              (e.value as Map).cast<String, dynamic>(),
-            ),
-        },
-        byTaskId: {
-          for (final e
-              in (json['byTaskId'] as Map?)?.entries ??
-                  const Iterable<MapEntry<dynamic, dynamic>>.empty())
-            '${e.key}': RoutingDecision.fromJson(
-              (e.value as Map).cast<String, dynamic>(),
-            ),
-        },
-        defaultDecision: json['defaultDecision'] == null
-            ? const RoutingDecision()
-            : RoutingDecision.fromJson(
-                (json['defaultDecision'] as Map).cast<String, dynamic>(),
-              ),
-        allowUncheckedRouting: json['allowUncheckedRouting'] as bool? ?? false,
-      );
-
-  /// Stable policy id.
-  final String id;
-
-  /// Policy revision — recorded with every routed trial.
-  final int version;
-
-  /// Whether the operator explicitly turned routing on. Defaults to false:
-  /// an unconfigured policy never routes.
-  final bool enabled;
-
-  /// What the policy is for.
-  final String description;
-
-  /// Who opted in (an audit string: operator/account).
-  final String optedInBy;
-
-  /// Per-task-class routes.
-  final Map<EvaluationTaskKind, RoutingDecision> byTaskKind;
-
-  /// Per-task-id routes (win over [byTaskKind]).
-  final Map<String, RoutingDecision> byTaskId;
-
-  /// The route for a task with no explicit entry. Kept empty by design: the
-  /// default route is the pinned quality default.
-  final RoutingDecision defaultDecision;
-
-  /// Whether to allow routing a task whose acceptance evidence is not fully
-  /// behavioral. Off by default; turning it on is recorded as a caveat rather
-  /// than silently accepted.
-  final bool allowUncheckedRouting;
-
-  /// The route for [task], or null to keep the quality default.
-  RoutingDecision? decisionFor(EvaluationTask task) {
-    if (!enabled) {
-      return null;
-    }
-    final byId = byTaskId[task.id];
-    if (byId != null) {
-      return byId;
-    }
-    return byTaskKind[task.kind];
-  }
-
-  /// Every way this policy would silently replace the pinned quality default.
-  ///
-  /// Empty when the policy is inert, or when it only routes task classes the
-  /// operator enumerated whose evidence is independently checkable.
-  List<String> violations({
-    required List<EvaluationTask> tasks,
-    required List<EvaluationArm> arms,
-  }) {
-    final problems = <String>[];
-    if (!enabled) {
-      return problems;
-    }
-    if (optedInBy.trim().isEmpty) {
-      problems.add(
-        'policy "$id" is enabled without an opt-in record (optedInBy)',
-      );
-    }
-    if (byTaskKind.isEmpty && byTaskId.isEmpty) {
-      problems.add('policy "$id" is enabled but routes nothing');
-    }
-    if (arms.where((a) => a.isBaseline).isEmpty) {
-      problems.add(
-        'policy "$id" has no baseline arm, so non-inferiority cannot be '
-        'established',
-      );
-    }
-    for (final task in tasks) {
-      final decision = decisionFor(task);
-      if (decision == null) {
-        continue;
-      }
-      if (!task.independentlyCheckable && !allowUncheckedRouting) {
-        problems.add(
-          'policy "$id" routes task "${task.id}" (${task.kind.wire}) whose '
-          'acceptance evidence is not fully behavioral',
-        );
-      }
-      if ((decision.modelId == null || decision.modelId!.trim().isEmpty) &&
-          (decision.effortLevel == null ||
-              decision.effortLevel!.trim().isEmpty) &&
-          decision.note.trim().isEmpty) {
-        problems.add('policy "$id" has an empty route for task "${task.id}"');
-      }
-    }
-    return problems;
-  }
-
-  /// Serializes to JSON.
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'version': version,
-    'enabled': enabled,
-    if (description.isNotEmpty) 'description': description,
-    if (optedInBy.isNotEmpty) 'optedInBy': optedInBy,
-    if (byTaskKind.isNotEmpty)
-      'byTaskKind': {
-        for (final e in byTaskKind.entries) e.key.wire: e.value.toJson(),
-      },
-    if (byTaskId.isNotEmpty)
-      'byTaskId': {for (final e in byTaskId.entries) e.key: e.value.toJson()},
-    if (defaultDecision != const RoutingDecision())
-      'defaultDecision': defaultDecision.toJson(),
-    if (allowUncheckedRouting) 'allowUncheckedRouting': true,
-  };
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is TaskRoutePolicy &&
-          id == other.id &&
-          version == other.version &&
-          enabled == other.enabled &&
-          description == other.description &&
-          optedInBy == other.optedInBy &&
-          defaultDecision == other.defaultDecision &&
-          allowUncheckedRouting == other.allowUncheckedRouting &&
-          _mapEq(byTaskKind, other.byTaskKind) &&
-          _mapEq(byTaskId, other.byTaskId);
-
-  @override
-  int get hashCode => Object.hash(
-    id,
-    version,
-    enabled,
-    description,
-    optedInBy,
-    defaultDecision,
-    allowUncheckedRouting,
-    byTaskKind.length,
-    byTaskId.length,
+    goalVerification,
+    codeMode,
   );
 }
 
@@ -766,7 +619,7 @@ class MemoryPolicyExperiment {
   const MemoryPolicyExperiment({
     required this.id,
     this.enabled = false,
-    required this.mode,
+    required this.modes,
     this.requireRecoverableReferences = true,
     this.requireSnapshotFidelityCheck = true,
     this.fidelityVerifiers = const [],
@@ -778,7 +631,10 @@ class MemoryPolicyExperiment {
       MemoryPolicyExperiment(
         id: json['id'] as String? ?? '',
         enabled: json['enabled'] as bool? ?? false,
-        mode: MemoryPolicyMode.fromWire(json['mode'] as String?),
+        modes: [
+          for (final mode in (json['modes'] as List?) ?? const [])
+            MemoryPolicyMode.fromWire(mode as String?),
+        ],
         requireRecoverableReferences:
             json['requireRecoverableReferences'] as bool? ?? true,
         requireSnapshotFidelityCheck:
@@ -802,8 +658,9 @@ class MemoryPolicyExperiment {
   /// in force until an operator asks for the experiment.
   final bool enabled;
 
-  /// The policy under test.
-  final MemoryPolicyMode mode;
+  /// The policies under test: one arm each, every one paired against the
+  /// baseline in the same campaign.
+  final List<MemoryPolicyMode> modes;
 
   /// Whether masked observations must remain recoverable through a reference.
   final bool requireRecoverableReferences;
@@ -824,12 +681,15 @@ class MemoryPolicyExperiment {
     if (!enabled) {
       return problems;
     }
-    if (mode.rewritesHistory && !requireRecoverableReferences) {
+    if (modes.isEmpty) {
+      problems.add('experiment "$id" names no memory policy');
+    }
+    if (modes.any((m) => m.rewritesHistory) && !requireRecoverableReferences) {
       problems.add(
         'experiment "$id" rewrites history with no recoverable references',
       );
     }
-    if (mode == MemoryPolicyMode.snapshotImages) {
+    if (modes.contains(MemoryPolicyMode.snapshotImages)) {
       if (!requireSnapshotFidelityCheck) {
         problems.add(
           'experiment "$id" enables screenshot compaction without a fidelity '
@@ -850,7 +710,7 @@ class MemoryPolicyExperiment {
   Map<String, dynamic> toJson() => {
     'id': id,
     'enabled': enabled,
-    'mode': mode.wire,
+    'modes': [for (final mode in modes) mode.wire],
     'requireRecoverableReferences': requireRecoverableReferences,
     'requireSnapshotFidelityCheck': requireSnapshotFidelityCheck,
     if (fidelityVerifiers.isNotEmpty)
@@ -864,7 +724,7 @@ class MemoryPolicyExperiment {
       other is MemoryPolicyExperiment &&
           id == other.id &&
           enabled == other.enabled &&
-          mode == other.mode &&
+          _listEq(modes, other.modes) &&
           requireRecoverableReferences == other.requireRecoverableReferences &&
           requireSnapshotFidelityCheck == other.requireSnapshotFidelityCheck &&
           notes == other.notes &&
@@ -874,7 +734,7 @@ class MemoryPolicyExperiment {
   int get hashCode => Object.hash(
     id,
     enabled,
-    mode,
+    Object.hashAll(modes),
     requireRecoverableReferences,
     requireSnapshotFidelityCheck,
     notes,
@@ -1050,90 +910,6 @@ class EvaluationCaveat {
   int get hashCode => Object.hash(code, message);
 }
 
-/// One scheduled trial: which task, which arm, in which stratum, at which
-/// repetition, with which derived repeat seed.
-class EvaluationTrial {
-  /// Creates an [EvaluationTrial].
-  const EvaluationTrial({
-    required this.ordinal,
-    required this.taskId,
-    required this.armId,
-    required this.stratum,
-    required this.repetition,
-    required this.seed,
-    this.executionMode = EvaluationExecutionMode.live,
-  });
-
-  /// Parses from JSON.
-  factory EvaluationTrial.fromJson(Map<String, dynamic> json) =>
-      EvaluationTrial(
-        ordinal: (json['ordinal'] as num?)?.toInt() ?? 0,
-        taskId: json['taskId'] as String? ?? '',
-        armId: json['armId'] as String? ?? '',
-        stratum: CacheStratum.fromWire(json['stratum'] as String?),
-        repetition: (json['repetition'] as num?)?.toInt() ?? 0,
-        seed: (json['seed'] as num?)?.toInt() ?? 0,
-        executionMode: EvaluationExecutionMode.fromWire(
-          json['executionMode'] as String?,
-        ),
-      );
-
-  /// Position in the randomized execution order.
-  final int ordinal;
-
-  /// The task to run.
-  final String taskId;
-
-  /// The arm to run it under.
-  final String armId;
-
-  /// The cache stratum this trial belongs to.
-  final CacheStratum stratum;
-
-  /// Repetition index within (task, arm, stratum).
-  final int repetition;
-
-  /// The derived repeat seed handed to the backend.
-  final int seed;
-
-  /// Whether this trial is live or a replay.
-  final EvaluationExecutionMode executionMode;
-
-  /// Serializes to JSON.
-  Map<String, dynamic> toJson() => {
-    'ordinal': ordinal,
-    'taskId': taskId,
-    'armId': armId,
-    'stratum': stratum.wire,
-    'repetition': repetition,
-    'seed': seed,
-    'executionMode': executionMode.wire,
-  };
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is EvaluationTrial &&
-          ordinal == other.ordinal &&
-          taskId == other.taskId &&
-          armId == other.armId &&
-          stratum == other.stratum &&
-          repetition == other.repetition &&
-          seed == other.seed &&
-          executionMode == other.executionMode;
-
-  @override
-  int get hashCode => Object.hash(
-    ordinal,
-    taskId,
-    armId,
-    stratum,
-    repetition,
-    seed,
-    executionMode,
-  );
-}
-
 /// The reproducible campaign plan: corpus tasks × arms × strata × repetitions,
 /// with a seeded, randomized execution order (HARNESS_RESEARCH §6: "Use paired
 /// runs and repeated trials… Randomize execution order and account for
@@ -1142,6 +918,9 @@ class EvaluationPlan {
   /// Creates an [EvaluationPlan].
   const EvaluationPlan({
     required this.id,
+    required this.hypothesis,
+    required this.primaryOutcome,
+    required this.minTasks,
     this.seed = 1,
     this.arms = const [],
     this.strata = const [
@@ -1149,21 +928,30 @@ class EvaluationPlan {
       StratumSpec(stratum: CacheStratum.warm, repetitions: 1),
     ],
     this.randomizedOrder = true,
-    this.minPairs = 8,
     this.alpha = 0.05,
-    this.nonInferiorityMargin = 0.05,
+    this.nonInferiorityMargin,
+    this.interimAtTasks,
     this.maxCostRatio = 1.0,
+    this.maxSpendUsd,
     this.contextWindowTokens,
     this.caveats = const [],
     this.routePolicy,
     this.memoryExperiment,
     this.overlapExperiment,
+    this.taskTags = const [],
     this.notes = '',
   });
 
-  /// Parses from JSON.
+  /// Parses from JSON. Throws [FormatException] when the plan does not say
+  /// what it asks (`hypothesis`, `primaryOutcome`); a missing `minTasks`
+  /// loads as null and is a violation.
   factory EvaluationPlan.fromJson(Map<String, dynamic> json) => EvaluationPlan(
     id: json['id'] as String? ?? '',
+    hypothesis: EvaluationHypothesis.fromWire(json['hypothesis'] as String?),
+    primaryOutcome: EvaluationOutcomeMeasure.fromWire(
+      json['primaryOutcome'] as String?,
+    ),
+    minTasks: (json['minTasks'] as num?)?.toInt(),
     seed: (json['seed'] as num?)?.toInt() ?? 1,
     arms:
         (json['arms'] as List?)
@@ -1183,11 +971,11 @@ class EvaluationPlan {
           StratumSpec(stratum: CacheStratum.warm, repetitions: 1),
         ],
     randomizedOrder: json['randomizedOrder'] as bool? ?? true,
-    minPairs: (json['minPairs'] as num?)?.toInt() ?? 8,
     alpha: (json['alpha'] as num?)?.toDouble() ?? 0.05,
-    nonInferiorityMargin:
-        (json['nonInferiorityMargin'] as num?)?.toDouble() ?? 0.05,
+    nonInferiorityMargin: (json['nonInferiorityMargin'] as num?)?.toDouble(),
+    interimAtTasks: (json['interimAtTasks'] as num?)?.toInt(),
     maxCostRatio: (json['maxCostRatio'] as num?)?.toDouble() ?? 1.0,
+    maxSpendUsd: (json['maxSpendUsd'] as num?)?.toDouble(),
     contextWindowTokens: (json['contextWindowTokens'] as num?)?.toInt(),
     caveats:
         (json['caveats'] as List?)
@@ -1212,6 +1000,9 @@ class EvaluationPlan {
         : ToolOverlapExperiment.fromJson(
             (json['overlapExperiment'] as Map).cast<String, dynamic>(),
           ),
+    taskTags: [
+      for (final tag in (json['taskTags'] as List?) ?? const []) '$tag',
+    ],
     notes: json['notes'] as String? ?? '',
   );
 
@@ -1228,23 +1019,48 @@ class EvaluationPlan {
   /// The cache strata and their repetition counts.
   final List<StratumSpec> strata;
 
-  /// Whether to shuffle the execution order inside each stratum.
+  /// Whether to shuffle the task order and each task's arm order.
   final bool randomizedOrder;
 
-  /// Minimum number of matched pairs required before a non-inferiority verdict
-  /// is allowed to be anything other than inconclusive.
-  final int minPairs;
+  /// What the plan asks of each treatment arm.
+  final EvaluationHypothesis hypothesis;
 
-  /// Significance level for the one-sided task-cluster quality bounds.
+  /// What each attempt is scored on.
+  final EvaluationOutcomeMeasure primaryOutcome;
+
+  /// Complete task blocks (both arms, every repetition scored) required
+  /// before any verdict but "no decision": at least 10 for superiority and
+  /// non-inferiority, at least 3 for a regression screen, none for a
+  /// calibration plan.
+  final int? minTasks;
+
+  /// One-sided significance level per claim (Holm-adjusted across the
+  /// plan's treatment arms).
   final double alpha;
 
-  /// Relative success-rate loss permitted while still calling a treatment
-  /// non-inferior (e.g. `0.05` = may lose up to 5 percentage points).
-  final double nonInferiorityMargin;
+  /// The loss a non-inferiority plan tolerates, in absolute points of the
+  /// primary outcome's rate (`0.15` = 15 percentage points). Set exactly
+  /// when the hypothesis is non-inferiority.
+  final double? nonInferiorityMargin;
+
+  /// The task blocks after which one interim look runs: the campaign stops
+  /// early only when a superiority or inferiority claim has a one-sided p
+  /// below 0.001. Null runs to the planned size.
+  final int? interimAtTasks;
 
   /// The largest acceptable ratio of treatment cost to baseline cost for an
-  /// adoption recommendation (`1.0` = no more expensive).
+  /// adoption recommendation, over the used task blocks. May exceed 1 for a
+  /// superiority plan; a non-inferiority adoption needs a ratio below 1.
   final double maxCostRatio;
+
+  /// The plan's own spend ceiling in USD, when its owner set one: a live run
+  /// is held to the lower of this and `--max-spend-usd`.
+  final double? maxSpendUsd;
+
+  /// Whether a stratum waits for the provider cache to expire, which keeps
+  /// the global (unblocked) order.
+  bool get hasPostIdleStratum =>
+      strata.any((s) => s.stratum == CacheStratum.postIdle);
 
   /// The context window (tokens) an experimental context-management arm runs
   /// with.
@@ -1266,8 +1082,18 @@ class EvaluationPlan {
   /// The opt-in tool-overlap experiment, if any.
   final ToolOverlapExperiment? overlapExperiment;
 
+  /// The campaign's task set: the corpus tasks carrying any of these tags.
+  /// Empty runs the whole corpus.
+  final List<String> taskTags;
+
   /// Operator notes.
   final String notes;
+
+  /// The tasks this plan runs, in corpus order.
+  List<EvaluationTask> selectTasks(List<EvaluationTask> tasks) => [
+    for (final task in tasks)
+      if (taskTags.isEmpty || task.tags.any(taskTags.contains)) task,
+  ];
 
   /// The baseline arm (the pinned quality default).
   EvaluationArm? get baselineArm {
@@ -1292,9 +1118,7 @@ class EvaluationPlan {
       ...?memory?.violations(),
       ...?overlap?.violations(tasks),
     ];
-    if (arms.length < 2) {
-      problems.add('plan "$id" needs at least two arms to pair');
-    }
+    problems.addAll(_decisionViolations(tasks));
     if (baselineArm == null) {
       problems.add('plan "$id" has no baseline (quality default) arm');
     }
@@ -1326,6 +1150,34 @@ class EvaluationPlan {
               arm.taskRoutePolicyId != null)) {
         problems.add('arm "${arm.id}" mixes skill exposure with another axis');
       }
+      final runAxes = {
+        if (arm.goalVerification != null) EvaluationAxis.goalVerification,
+        if (arm.codeMode != null) EvaluationAxis.codeMode,
+      };
+      if (arm.axis != EvaluationAxis.baseline &&
+          runAxes.any((axis) => axis != arm.axis)) {
+        final other = runAxes.firstWhere((axis) => axis != arm.axis);
+        problems.add('arm "${arm.id}" sets ${other.wire} off its axis');
+      }
+      if ((arm.axis == EvaluationAxis.goalVerification &&
+              arm.goalVerification != GoalVerificationMode.checksReview) ||
+          (arm.axis == EvaluationAxis.codeMode &&
+              arm.codeMode != CodeModeSurface.withoutRepl)) {
+        problems.add('arm "${arm.id}" does not deviate on ${arm.axis.wire}');
+      }
+      if (runAxes.contains(arm.axis) &&
+          (arm.modelId != null ||
+              arm.effortLevel != null ||
+              arm.memoryPolicy != null ||
+              arm.sessionContinuity != null ||
+              arm.mcpDiscoveryCache != null ||
+              arm.toolOverlap != null ||
+              arm.skillExposure != null ||
+              arm.taskRoutePolicyId != null)) {
+        problems.add(
+          'arm "${arm.id}" mixes ${arm.axis.wire} with another axis',
+        );
+      }
     }
     for (final spec in strata) {
       if (spec.repetitions < 1) {
@@ -1339,12 +1191,6 @@ class EvaluationPlan {
           'plan "$id" post-idle stratum needs a positive idle duration',
         );
       }
-    }
-    if (minPairs < 2) {
-      problems.add('plan "$id" minPairs must be at least 2');
-    }
-    if (alpha <= 0 || alpha >= 1 || !alpha.isFinite) {
-      problems.add('plan "$id" alpha must be between 0 and 1');
     }
     // A context-management arm needs a window, or the loop never compacts and
     // the arm measures nothing while claiming a policy.
@@ -1374,7 +1220,7 @@ class EvaluationPlan {
       }
       if (arm.memoryPolicy != null &&
           arm.memoryPolicy != MemoryPolicyMode.textCurrent &&
-          (memory == null || memory.mode != arm.memoryPolicy)) {
+          (memory == null || !memory.modes.contains(arm.memoryPolicy))) {
         problems.add(
           'arm "${arm.id}" sets memory policy ${arm.memoryPolicy!.wire} '
           'without a matching enabled memory experiment (opt-in required)',
@@ -1404,70 +1250,114 @@ class EvaluationPlan {
         'routing policy "${route.id}" is opted in but no arm applies it',
       );
     }
-    if (memory != null &&
-        memory.enabled &&
-        !arms.any((a) => a.memoryPolicy == memory.mode)) {
-      problems.add(
-        'memory experiment "${memory.id}" is opted in but no arm '
-        'uses ${memory.mode.wire}',
-      );
+    for (final mode in memory?.modes ?? const <MemoryPolicyMode>[]) {
+      if (memory!.enabled && !arms.any((a) => a.memoryPolicy == mode)) {
+        problems.add(
+          'memory experiment "${memory.id}" is opted in but no arm '
+          'uses ${mode.wire}',
+        );
+      }
+    }
+    if (taskTags.isNotEmpty && selectTasks(tasks).isEmpty) {
+      problems.add('plan "$id" selects no task tagged ${taskTags.join('/')}');
     }
     return problems;
   }
 
-  /// The deterministic, randomized trial schedule for [tasks].
-  ///
-  /// Strata run in the canonical cold → warm → post-idle order (so cache
-  /// carryover is monotone), but the trials *inside* a stratum are shuffled
-  /// with the plan seed, which is what breaks any residual ordering bias
-  /// between arms.
-  List<EvaluationTrial> schedule(
-    List<EvaluationTask> tasks, {
-    EvaluationExecutionMode executionMode = EvaluationExecutionMode.live,
-  }) {
-    final ordered = <EvaluationTrial>[];
-    var ordinal = 0;
-    for (var s = 0; s < strata.length; s++) {
-      final spec = strata[s];
-      final bucket = <EvaluationTrial>[];
-      for (final task in tasks) {
-        for (final arm in arms) {
-          for (var rep = 0; rep < spec.repetitions; rep++) {
-            bucket.add(
-              EvaluationTrial(
-                ordinal: 0,
-                taskId: task.id,
-                armId: arm.id,
-                stratum: spec.stratum,
-                repetition: rep,
-                seed: _deriveSeed(seed, task.id, arm.id, spec, rep),
-                executionMode: executionMode,
-              ),
-            );
-          }
-        }
+  /// What the plan's decision fields allow, by hypothesis.
+  List<String> _decisionViolations(List<EvaluationTask> tasks) {
+    final problems = <String>[];
+    final calibration = hypothesis == EvaluationHypothesis.calibration;
+    if (calibration) {
+      if (arms.length != 1) {
+        problems.add('calibration plan "$id" runs exactly one arm');
       }
-      if (randomizedOrder) {
-        bucket.shuffle(math.Random(_mix(seed ^ (s * 0x9e3779b1))));
+      if (minTasks != null || interimAtTasks != null) {
+        problems.add(
+          'calibration plan "$id" reaches no verdict: it takes no minTasks '
+          'and no interimAtTasks',
+        );
       }
-      for (final trial in bucket) {
-        ordered.add(_withOrdinal(trial, ordinal++));
+    } else if (arms.length < 2) {
+      problems.add('plan "$id" needs at least two arms to pair');
+    }
+    final floor = switch (hypothesis) {
+      EvaluationHypothesis.superiority ||
+      EvaluationHypothesis.nonInferiority => 10,
+      EvaluationHypothesis.regressionScreen => 3,
+      EvaluationHypothesis.calibration => null,
+    };
+    if (floor != null && (minTasks == null || minTasks! < floor)) {
+      problems.add(
+        'plan "$id" minTasks must be at least $floor for ${hypothesis.wire}',
+      );
+    }
+    final margin = nonInferiorityMargin;
+    if (hypothesis == EvaluationHypothesis.nonInferiority) {
+      if (margin == null || !margin.isFinite || margin <= 0 || margin > 0.5) {
+        problems.add(
+          'plan "$id" nonInferiorityMargin must be in (0, 0.5] absolute '
+          'points for non_inferiority',
+        );
+      }
+      if (maxCostRatio > 1) {
+        problems.add(
+          'plan "$id" maxCostRatio above 1 cannot support a non-inferiority '
+          'adoption, which needs a saving',
+        );
+      }
+    } else if (margin != null) {
+      problems.add(
+        'plan "$id" sets nonInferiorityMargin without the non_inferiority '
+        'hypothesis',
+      );
+    }
+    final interim = interimAtTasks;
+    if (interim != null) {
+      final planned = selectTasks(tasks).length;
+      if (hypothesis != EvaluationHypothesis.superiority &&
+          hypothesis != EvaluationHypothesis.nonInferiority) {
+        problems.add('plan "$id" interimAtTasks needs a comparison plan');
+      } else if (hasPostIdleStratum) {
+        problems.add(
+          'plan "$id" has a post-idle stratum, which is analysed only when '
+          'complete: it takes no interimAtTasks',
+        );
+      } else if (interim < (minTasks ?? 0) || interim >= planned) {
+        problems.add(
+          'plan "$id" interimAtTasks must be at least minTasks and below the '
+          '$planned planned task(s)',
+        );
       }
     }
-    return ordered;
+    if (alpha <= 0 || alpha >= 1 || !alpha.isFinite) {
+      problems.add('plan "$id" alpha must be between 0 and 1');
+    }
+    if (!maxCostRatio.isFinite || maxCostRatio <= 0) {
+      problems.add('plan "$id" maxCostRatio must be positive');
+    }
+    final spend = maxSpendUsd;
+    if (spend != null && (!spend.isFinite || spend <= 0)) {
+      problems.add('plan "$id" maxSpendUsd must be positive');
+    }
+    return problems;
   }
 
   /// Serializes to JSON.
   Map<String, dynamic> toJson() => {
     'id': id,
     'seed': seed,
+    'hypothesis': hypothesis.wire,
+    'primaryOutcome': primaryOutcome.wire,
+    'minTasks': ?minTasks,
     'arms': [for (final a in arms) a.toJson()],
     'strata': [for (final s in strata) s.toJson()],
     'randomizedOrder': randomizedOrder,
-    'minPairs': minPairs,
     'alpha': alpha,
-    'nonInferiorityMargin': nonInferiorityMargin,
+    'nonInferiorityMargin': ?nonInferiorityMargin,
+    'interimAtTasks': ?interimAtTasks,
     'maxCostRatio': maxCostRatio,
+    'maxSpendUsd': ?maxSpendUsd,
     if (contextWindowTokens != null) 'contextWindowTokens': contextWindowTokens,
     if (caveats.isNotEmpty) 'caveats': [for (final c in caveats) c.toJson()],
     if (routePolicy != null) 'routePolicy': routePolicy!.toJson(),
@@ -1475,6 +1365,7 @@ class EvaluationPlan {
       'memoryExperiment': memoryExperiment!.toJson(),
     if (overlapExperiment != null)
       'overlapExperiment': overlapExperiment!.toJson(),
+    if (taskTags.isNotEmpty) 'taskTags': taskTags,
     if (notes.isNotEmpty) 'notes': notes,
   };
 
@@ -1495,63 +1386,26 @@ class EvaluationPlan {
     ];
     return EvaluationPlan(
       id: id,
+      hypothesis: hypothesis,
+      primaryOutcome: primaryOutcome,
+      minTasks: minTasks,
       seed: seed,
       arms: arms,
       strata: strata,
       randomizedOrder: randomizedOrder,
-      minPairs: minPairs,
       alpha: alpha,
       nonInferiorityMargin: nonInferiorityMargin,
+      interimAtTasks: interimAtTasks,
       maxCostRatio: maxCostRatio,
+      maxSpendUsd: maxSpendUsd,
       contextWindowTokens: contextWindowTokens,
       caveats: merged,
       routePolicy: routePolicy,
       memoryExperiment: memoryExperiment,
       overlapExperiment: overlapExperiment,
+      taskTags: taskTags,
       notes: notes,
     );
-  }
-
-  static EvaluationTrial _withOrdinal(EvaluationTrial trial, int ordinal) =>
-      EvaluationTrial(
-        ordinal: ordinal,
-        taskId: trial.taskId,
-        armId: trial.armId,
-        stratum: trial.stratum,
-        repetition: trial.repetition,
-        seed: trial.seed,
-        executionMode: trial.executionMode,
-      );
-
-  /// A per-trial seed derived from the campaign seed and the trial identity,
-  /// so the seed is stable no matter what order the schedule is executed in.
-  static int _deriveSeed(
-    int seed,
-    String taskId,
-    String armId,
-    StratumSpec spec,
-    int repetition,
-  ) {
-    var h = _mix(seed);
-    for (final unit in taskId.codeUnits) {
-      h = _mix(h ^ unit);
-    }
-    for (final unit in armId.codeUnits) {
-      h = _mix(h ^ (unit + 0x9e37));
-    }
-    h = _mix(h ^ spec.stratum.index + 0x85eb);
-    return _mix(h ^ repetition) & 0x7fffffff;
-  }
-
-  /// A small deterministic integer mixer (the murmur3 finalizer).
-  static int _mix(int value) {
-    var h = value & 0xffffffff;
-    h ^= h >> 16;
-    h = (h * 0x85ebca6b) & 0xffffffff;
-    h ^= h >> 13;
-    h = (h * 0xc2b2ae35) & 0xffffffff;
-    h ^= h >> 16;
-    return h & 0x7fffffff;
   }
 }
 
@@ -1561,18 +1415,6 @@ bool _listEq(List<Object?> a, List<Object?> b) {
   }
   for (var i = 0; i < a.length; i++) {
     if (a[i] != b[i]) {
-      return false;
-    }
-  }
-  return true;
-}
-
-bool _mapEq(Map<Object?, Object?> a, Map<Object?, Object?> b) {
-  if (a.length != b.length) {
-    return false;
-  }
-  for (final e in a.entries) {
-    if (b[e.key] != e.value) {
       return false;
     }
   }

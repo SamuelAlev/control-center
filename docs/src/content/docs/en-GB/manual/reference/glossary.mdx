@@ -2,7 +2,7 @@
 title: Glossary
 description: Definitions of key terms used throughout Control Center.
 slug: en-GB/manual/reference/glossary
-sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
+sourceHash: ba09880357171a4fcbb82201798578de3856cbe6
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -36,7 +36,13 @@ export const glossaryTerms = [
 ['Rig', 'A disposable machine an agent drives in real time: an enclosed browser or Linux desktop, a host-managed Android emulator or iOS Simulator, or an enclosed terminal. Watched live over its own full-resolution lane, with take-over enforced server-side. Scoped to a conversation so the human tab and agent tool address one machine.'],
 ['Enclosure', 'The stronger isolation property available to VM-backed rigs: a kernel boundary, throwaway overlay disk, deny-by-default network gate and credential broker. Android and iOS rigs are disposable but use host-managed networking, so they do not claim this boundary. Driving any rig uses the enclosureControl guardrail class.'],
 ['RunCost', 'Token/cost tally (input tokens, output tokens, estimated cost in micro-dollars) for a single agent run.'],
-['WakeReason', 'Why an agent was dispatched. Six values: user message, ticket assignment, recovery re-dispatch after a failure, child ticket completed, scheduled follow-up heartbeat and pipeline step.'],
+['WakeReason', 'Why an agent run exists. A person\'s message, a ticket assignment or a pipeline step; or, for a run the server starts on its own, the reason of its wake: a schedule, a watch, a goal\'s segment, check or review, another agent\'s message or reply, finished child work, a usage limit that reset, an improvement review, or recovery after a restart.'],
+['Wake', 'A durable request, kept in the workspace\'s database, to start or continue one agent\'s run in one conversation, with a reason and the person it acts for. Every run the server starts without someone typing begins as one; wakes survive a restart.'],
+['Goal', 'Work an agent keeps at, in segments, until the server verifies that what done means is met or a person closes it. Started with /goal; one per agent at a time. The agent claims it is done; checks and a read-only review decide.'],
+['Schedule', 'A rule that wakes an agent at a time, on an interval, on a cron or at the agent\'s own pace, with an end, a run cap and a cost cap. Made with /loop, /schedule, the Schedules page or the agent\'s wake_me tool.'],
+['Watch', 'A rule that wakes an agent when something happens: a pull request\'s checks finish, it gets a review or merges, an environment task exits, a ticket settles or a pipeline run ends.'],
+['Ask', 'One agent\'s question to another, recorded before it is delivered. The asker is woken once with the answer, or with why there is none.'],
+['Improvement proposal', 'A change to memory, a policy, an agent note or a skill that a review suggests after a verified goal or on /refine. It changes nothing until a person accepts it; a skill change is evaluated first.'],
 ['SandboxPort', 'Manages sandbox lifecycle (probe, launch, events, exec, destroy).'],
 ['CredentialBrokerPort', 'Mints scoped credentials for sandbox launch (a one-repository token for an agent\'s environment, write only for the server-side push path) and releases them on teardown.'],
 ['GitRepoInspectorPort', 'Extracts metadata (owner, repo, branch) from a local Git repo path.'],
@@ -94,6 +100,11 @@ export const glossaryTerms = [
 ['Install id', 'A server\'s identity towards one Connect address, derived from its install key. Connect allowlists servers by install id; rotating the key changes it and signs everyone out of Connect lanes.'],
 ['Install binding', 'Connect\'s record of the one server a Slack team is bound to. GitHub installations have none: any server a member signs in on can use them.'],
 ['Sign-in lane', 'One provider\'s browser sign-in: github, google, linear, linear_app or slack. Under own apps a lane runs on the own app when it is fully configured, else it is unavailable; with a Connect chosen, Connect runs it. Neither falls back to the other.'],
+['Code mode', 'The repl tool, which runs a JavaScript script that calls the run\'s other tools. Every run has it when the server can run scripts; there is no setting.'],
+['Direct tool', 'A tool a run calls by name, with its schema in every request, whether or not it has repl: the file and shell tools, ask_user, task, the task list, memory search, send_message and the mode\'s own verbs.'],
+['Script-only tool', 'A tool outside the direct set that a run with repl can call only from a script, until the server cannot run the run\'s scripts and it loads on first use instead. Until then its description never reaches the model.'],
+['Code mode runner', 'cc_codemode, the bundled program that runs one script in the QuickJS-NG engine after locking itself down with the operating system\'s controls. The server does not start without it, and runs no script unless it is a release build and its lockdown is complete.'],
+['Code execution', 'The record of one script: its source, output, limits and every tool call it made, kept in its workspace and listed under Observability → Code executions.'],
 ];
 
 <StructuredData
@@ -157,7 +168,19 @@ export const glossaryTerms = [
 
 **RunCost**: Token/cost tally (input tokens, output tokens, estimated cost in micro-dollars) for a single agent run.
 
-**WakeReason**: Why an agent was dispatched. Six values: user message, ticket assignment, recovery re-dispatch after a failure, child ticket completed, scheduled follow-up heartbeat and pipeline step.
+**WakeReason**: Why an agent run exists. A person's message, a ticket assignment or a pipeline step; or, for a run the server starts on its own, the reason of its wake: a schedule, a watch, a goal's segment, check or review, another agent's message or reply, finished child work, a usage limit that reset, an improvement review, or recovery after a restart.
+
+**Wake**: A durable request, kept in the workspace's database, to start or continue one agent's run in one conversation, with a reason and the person it acts for. Every run the server starts without someone typing begins as one; wakes survive a restart.
+
+**Goal**: Work an agent keeps at, in segments, until the server verifies that what done means is met or a person closes it. Started with `/goal`; one per agent at a time. The agent claims it is done; checks and a read-only review decide.
+
+**Schedule**: A rule that wakes an agent at a time, on an interval, on a cron or at the agent's own pace, with an end, a run cap and a cost cap. Made with `/loop`, `/schedule`, the Schedules page or the agent's `wake_me` tool.
+
+**Watch**: A rule that wakes an agent when something happens: a pull request's checks finish, it gets a review or merges, an environment task exits, a ticket settles or a pipeline run ends.
+
+**Ask**: One agent's question to another, recorded before it is delivered. The asker is woken once with the answer, or with why there is none.
+
+**Improvement proposal**: A change to memory, a policy, an agent note or a skill that a review suggests after a verified goal or on `/refine`. It changes nothing until a person accepts it; a skill change is evaluated first.
 
 ## Ports
 
@@ -258,6 +281,20 @@ export const glossaryTerms = [
 **Review axis**: One of five per-review scoring lanes: `correctness`, `security` and `testGap` drawn from reviewer findings; `visual` and `apiContract` deterministic. Gated axes fold into the verdict and can only make it more severe — a `partial` or `unavailable` gate holds the verdict rather than passing it.
 
 **Review verdict**: `ship`, `hold` or `block`. Any P0 finding with confidence ≥ 0.7 blocks; any other P0 or any P1 holds; otherwise ship. A gated failing axis forces block and cannot be out-voted by findings.
+
+## Code mode
+
+**Code mode**: The `repl` tool, which runs a JavaScript script that calls the run's other tools and returns only what the agent needs. Every run has it when the server can run scripts; there is no setting. **Settings → Workspace → Code mode** shows whether this server runs scripts and sets the limits a script runs under. See [Code mode](/en-GB/manual/concepts/code-mode/).
+
+**Direct tool**: A tool a run calls by name, with its schema in every request, whether or not it has `repl`: the file and shell tools, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` and the mode's own verbs.
+
+**Script-only tool**: A tool outside the direct set that a run with `repl` can call only from a script, until the server cannot run the run's scripts and it loads on first use instead ([When scripts cannot run](/en-GB/manual/concepts/code-mode/#when-scripts-cannot-run)). Until then its description never reaches the model, and a direct call is answered with how to call it from a script. A tool a script may not call is never script-only: it loads on first use.
+
+**Nested call**: A tool call a script makes. It passes the same mode filter, guardrails and approval as a direct call.
+
+**Code mode runner**: `cc_codemode`, the program bundled with the server that runs one script in the QuickJS-NG engine after locking itself down (its **lockdown**). The server does not start without it, and runs no script unless it is a release build and its lockdown is complete.
+
+**Code execution**: The record of one script: its source, output, limits and every tool call it made, kept in its workspace and listed under **Observability → Code executions**.
 
 ## Fleet and evals
 

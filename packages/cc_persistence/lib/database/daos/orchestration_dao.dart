@@ -17,15 +17,40 @@ class OrchestrationDao extends DatabaseAccessor<WorkspaceDatabase>
   Future<void> insert(OrchestrationsTableCompanion row) =>
       into(orchestrationsTable).insert(row);
 
-  /// Updates an orchestration scoped to [workspaceId]. Returns rows written.
+  /// Updates an orchestration scoped to [workspaceId] while it is still at
+  /// [revision] in [status] (what the writer read). Returns rows written
+  /// (0: gone, or another writer moved it).
   Future<int> updateById(
     String id,
     String workspaceId,
-    OrchestrationsTableCompanion row,
-  ) =>
-      (update(orchestrationsTable)
-            ..where((o) => o.id.equals(id) & o.workspaceId.equals(workspaceId)))
+    OrchestrationsTableCompanion row, {
+    required int revision,
+    required String status,
+  }) =>
+      (update(orchestrationsTable)..where(
+            (o) =>
+                o.id.equals(id) &
+                o.workspaceId.equals(workspaceId) &
+                o.revision.equals(revision) &
+                o.status.equals(status),
+          ))
           .write(row);
+
+  /// Sets the cap of [id] to [to] while it is still [from]; writes that
+  /// column only. Returns rows written (0: gone, or another raise won).
+  Future<int> raiseCap(
+    String id,
+    String workspaceId, {
+    required int from,
+    required int to,
+  }) =>
+      (update(orchestrationsTable)..where(
+            (o) =>
+                o.id.equals(id) &
+                o.workspaceId.equals(workspaceId) &
+                o.maxCostMicros.equals(from),
+          ))
+          .write(OrchestrationsTableCompanion(maxCostMicros: Value(to)));
 
   // --- reads ---
 
@@ -50,16 +75,24 @@ class OrchestrationDao extends DatabaseAccessor<WorkspaceDatabase>
             ..limit(1))
           .getSingleOrNull();
 
-  /// Fetches the orchestration owning [pipelineRunId] within [workspaceId].
+  /// Fetches the orchestration owning [pipelineRunId] within [workspaceId]:
+  /// the oldest when two name it (the server writes one, so this is a
+  /// deterministic answer, never a throw).
   Future<OrchestrationsTableData?> forPipelineRun(
     String workspaceId,
     String pipelineRunId,
   ) =>
-      (select(orchestrationsTable)..where(
-            (o) =>
-                o.workspaceId.equals(workspaceId) &
-                o.pipelineRunId.equals(pipelineRunId),
-          ))
+      (select(orchestrationsTable)
+            ..where(
+              (o) =>
+                  o.workspaceId.equals(workspaceId) &
+                  o.pipelineRunId.equals(pipelineRunId),
+            )
+            ..orderBy([
+              (o) => OrderingTerm.asc(o.createdAt),
+              (o) => OrderingTerm.asc(o.id),
+            ])
+            ..limit(1))
           .getSingleOrNull();
 
   /// Fetches the orchestration owning [pipelineRunId] across all workspaces.
@@ -72,9 +105,15 @@ class OrchestrationDao extends DatabaseAccessor<WorkspaceDatabase>
   /// caller then acts in.
   Future<OrchestrationsTableData?> forPipelineRunAnyWorkspace(
     String pipelineRunId,
-  ) => (select(
-    orchestrationsTable,
-  )..where((o) => o.pipelineRunId.equals(pipelineRunId))).getSingleOrNull();
+  ) =>
+      (select(orchestrationsTable)
+            ..where((o) => o.pipelineRunId.equals(pipelineRunId))
+            ..orderBy([
+              (o) => OrderingTerm.asc(o.createdAt),
+              (o) => OrderingTerm.asc(o.id),
+            ])
+            ..limit(1))
+          .getSingleOrNull();
 
   // --- watches ---
 

@@ -2,7 +2,7 @@
 title: Crea un team di agenti
 description: Raggruppa gli agenti sotto un responsabile, così il lavoro assegnato passa da un unico coordinatore.
 slug: it-IT/manuale/guide/crea-team
-sourceHash: fc5e2b8c8a49e398ff1b322fcfb25c4aed84bbb4
+sourceHash: 55add2d16bf90650b7d4cbda7aa78f0fdf1b72e2
 ---
 
 Questa guida mostra come creare un team, assegnargli un responsabile e instradargli il lavoro.
@@ -51,7 +51,7 @@ Quando un ticket porta davvero l'assegnazione a un team:
 
 1. Il responsabile del team viene inviato con il ticket, le sue istruzioni operative e l'elenco dei membri.
 2. Il responsabile delega ai membri e registra la sua valutazione con lo strumento `record_team_activity` — `action` (delegato), `no_action` (niente più da fare, il che interrompe ulteriori riattivazioni) o `failed`.
-3. Ogni esecuzione di un membro che termina risveglia di nuovo il responsabile, entro i limiti della salvaguardia no-action.
+3. Un'esecuzione di un membro avviata dal leader con un `@mention` o un messaggio riattiva il leader quando termina, nella conversazione da cui il leader l'ha riattivata, entro il limite della guardia di assenza di azione. Il lavoro che il leader ha passato con `delegate_task` lo riattiva quando il ticket si chiude, e una domanda che ha posto con `ask_agent` lo riattiva con la risposta (vedi [Agenti che lavorano insieme](/it-IT/manuale/guide/agenti-insieme/)).
 
 Il nodo **Team dispatch** di una pipeline è l'altro punto di ingresso. Richiede un ID del team, un prompt e una modalità di invio:
 

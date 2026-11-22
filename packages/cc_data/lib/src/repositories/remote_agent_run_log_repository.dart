@@ -1,6 +1,4 @@
 import 'package:cc_domain/cc_domain.dart';
-import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
-import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 
 /// Reads/mutates agent run logs over the RPC client instead of a local
@@ -95,103 +93,14 @@ class RemoteAgentRunLogRepository {
     return _logs(data);
   }
 
-  /// Inserts or updates [log] (the host owns persistence). The workspace comes
-  /// from [AgentRunLogDto.workspaceId] — the run's own workspace is the only
-  /// authoritative answer, so it is never threaded separately.
-  ///
-  /// The null-aware `?` matters: [AgentRunLogDto.workspaceId] is nullable and a
-  /// key present with a null value is NOT the same as an absent key. The client
-  /// only injects the session's workspace when the key is absent and the host
-  /// rejects a scoped op whose `workspace_id` is not a non-empty string — so
-  /// sending an explicit null would make this call fail every time instead of
-  /// falling back to the session's workspace.
-  Future<void> upsert(AgentRunLogDto log) => _client.call(
-    'agent_run_log.upsert',
-    {'workspace_id': ?log.workspaceId, 'log': log.toJson()},
+  /// Asks the host to stop the live run [runId] of [workspaceId]: it signals
+  /// the run's process and settles the run as stopped by a person. The host
+  /// decides the end reason, time and cost; a client never writes a run log.
+  /// Refused (`not_found`) when the run is not live or has no process.
+  Future<void> stop(String workspaceId, String runId) => _client.call(
+    'agent_run_log.stop',
+    {'workspace_id': workspaceId, 'run_id': runId},
   );
-
-  /// Column-scoped own cost write on the host.
-  Future<void> updateCost(
-    String workspaceId,
-    String runId,
-    RunCost cost,
-  ) async {
-    await _client.call('agent_run_log.updateCost', {
-      'workspace_id': workspaceId,
-      'run_id': runId,
-      'cost': {
-        'input_tokens': cost.inputTokens,
-        'output_tokens': cost.outputTokens,
-        'thought_tokens': cost.thoughtTokens,
-        'cached_read_tokens': cost.cachedReadTokens,
-        'cached_write_tokens': cost.cachedWriteTokens,
-        'cost_micros': cost.costMicros,
-        'cost_basis': cost.costBasis.name,
-        'duration_ms': cost.durationMs,
-        'time_to_first_token_ms': cost.timeToFirstTokenMs,
-      },
-    });
-  }
-
-  /// Atomic host-side descendant cost increment.
-  Future<void> addChildCostMicros(
-    String workspaceId,
-    String runId,
-    int amountMicros,
-  ) async {
-    await _client.call('agent_run_log.addChildCostMicros', {
-      'workspace_id': workspaceId,
-      'run_id': runId,
-      'amount_micros': amountMicros,
-    });
-  }
-
-  /// Column-scoped host-side runtime metadata update. Carries no log path:
-  /// only the server's own dispatch records where a run's log is.
-  Future<bool> updateRuntime(
-    String workspaceId,
-    String runId, {
-    int? pid,
-    bool markRunning = false,
-    String? contextSnapshotJson,
-    DateTime? lastOutputAt,
-    RunLiveness? liveness,
-    RunErrorFamily? errorFamily,
-    String? summary,
-    String? modelId,
-    String? effort,
-    String? taskFamily,
-  }) async {
-    final result = await _client.call('agent_run_log.updateRuntime', {
-      'workspace_id': workspaceId,
-      'run_id': runId,
-      'pid': ?pid,
-      if (markRunning) 'mark_running': true,
-      'context_snapshot_json': ?contextSnapshotJson,
-      if (lastOutputAt != null)
-        'last_output_at': lastOutputAt.toIso8601String(),
-      if (liveness != null) 'liveness': liveness.name,
-      if (errorFamily != null) 'error_family': errorFamily.name,
-      'summary': ?summary,
-      'model_id': ?modelId,
-      'effort': ?effort,
-      'task_family': ?taskFamily,
-    });
-    return result['updated'] == true;
-  }
-
-  /// Conditional host-side partial terminal update.
-  Future<bool> completeIfActive(
-    AgentRunLogDto completed, {
-    required bool writeCost,
-  }) async {
-    final result = await _client.call('agent_run_log.completeIfActive', {
-      'workspace_id': ?completed.workspaceId,
-      'log': completed.toJson(),
-      'write_cost': writeCost,
-    });
-    return result['completed'] == true;
-  }
 
   /// Live run logs for [agentId] in [workspaceId] — a fresh snapshot on every
   /// change, newest first.

@@ -1,0 +1,2357 @@
+{
+ "user_version": 37,
+ "objects": [
+  {
+   "type": "table",
+   "name": "_sqliteai_vector",
+   "tbl_name": "_sqliteai_vector",
+   "sql": "CREATE TABLE _sqliteai_vector (tblname TEXT, colname TEXT, key TEXT, value ANY, PRIMARY KEY(tblname, colname, key))"
+  },
+  {
+   "type": "table",
+   "name": "repos",
+   "tbl_name": "repos",
+   "sql": "CREATE TABLE \"repos\" (\"id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"path\" TEXT NOT NULL, \"forge\" TEXT NOT NULL DEFAULT 'github' CHECK(\"forge\" IN ('github', 'gitlab', 'bitbucket', 'local')), \"remote_owner\" TEXT NOT NULL DEFAULT '', \"remote_name\" TEXT NOT NULL DEFAULT '', \"linked_by_user_id\" TEXT NOT NULL DEFAULT '', \"forge_repo_id\" TEXT NOT NULL DEFAULT '', \"position\" INTEGER NOT NULL DEFAULT 0, \"linked_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "budget_policy",
+   "tbl_name": "budget_policy",
+   "sql": "CREATE TABLE \"budget_policy\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"scope_type\" TEXT NOT NULL CHECK(\"scope_type\" IN ('agent', 'team', 'company', 'workspace')), \"scope_id\" TEXT NOT NULL, \"monthly_budget_micros\" INTEGER NOT NULL DEFAULT 0, \"soft_threshold_percent\" INTEGER NOT NULL DEFAULT 80, \"hard_stop_enabled\" INTEGER NOT NULL DEFAULT 1 CHECK (\"hard_stop_enabled\" IN (0, 1)), \"spent_micros\" INTEGER NOT NULL DEFAULT 0, \"status\" TEXT NOT NULL DEFAULT 'active' CHECK(\"status\" IN ('active', 'paused')), \"period_start\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"period_end\" INTEGER NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "runtime_profiles",
+   "tbl_name": "runtime_profiles",
+   "sql": "CREATE TABLE \"runtime_profiles\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"protocol_family\" TEXT NOT NULL DEFAULT 'cli' CHECK(\"protocol_family\" IN ('claude', 'acp', 'cli')), \"command\" TEXT NOT NULL, \"fixed_args_json\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"fixed_args_json\") AND json_type(\"fixed_args_json\") = 'array'), \"description\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "agents",
+   "tbl_name": "agents",
+   "sql": "CREATE TABLE \"agents\" (\"id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"title\" TEXT NOT NULL, \"agent_md_path\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"reports_to\" TEXT NULL REFERENCES agents (id) ON DELETE SET NULL, \"skills\" TEXT NOT NULL, \"persona\" TEXT NULL, \"system_prompt\" TEXT NULL, \"adapter_id\" TEXT NULL, \"model_id\" TEXT NULL, \"strict_mode\" INTEGER NOT NULL DEFAULT 0 CHECK (\"strict_mode\" IN (0, 1)), \"effort\" TEXT NULL, \"context_size\" INTEGER NULL, \"role\" TEXT NULL CHECK(\"role\" IN ('ceo', 'coder', 'reviewer', 'qa', 'designer', 'security', 'devops', 'pm', 'general')), \"monthly_budget_micros\" INTEGER NOT NULL DEFAULT 0, \"silence_timeout_minutes\" INTEGER NULL, \"max_concurrent_tasks\" INTEGER NOT NULL DEFAULT 1, \"visibility\" TEXT NOT NULL DEFAULT 'workspace' CHECK(\"visibility\" IN ('workspace', 'private')), \"lifecycle_status\" TEXT NOT NULL DEFAULT 'active' CHECK(\"lifecycle_status\" IN ('active', 'paused', 'archived')), \"budget_policy_id\" TEXT NULL REFERENCES budget_policy (id) ON DELETE SET NULL, \"runtime_profile_id\" TEXT NULL REFERENCES runtime_profiles (id) ON DELETE SET NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "pipeline_runs",
+   "tbl_name": "pipeline_runs",
+   "sql": "CREATE TABLE \"pipeline_runs\" (\"id\" TEXT NOT NULL, \"template_id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"status\" TEXT NOT NULL DEFAULT 'pending' CHECK(\"status\" IN ('pending', 'queued', 'running', 'suspended', 'completed', 'failed', 'cancelled')), \"state_json\" TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(\"state_json\") AND json_type(\"state_json\") = 'object'), \"trigger_event_type\" TEXT NULL, \"trigger_payload_json\" TEXT NULL CHECK(json_valid(\"trigger_payload_json\") AND json_type(\"trigger_payload_json\") = 'object'), \"started_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"attempt_started_at\" INTEGER NULL, \"finished_at\" INTEGER NULL, \"active_ms\" INTEGER NOT NULL DEFAULT 0, \"last_resumed_at\" INTEGER NULL, \"error_message\" TEXT NULL, \"error_stack_trace\" TEXT NULL, \"dedup_key\" TEXT NULL, \"parent_pipeline_run_id\" TEXT NULL REFERENCES pipeline_runs (id) ON DELETE SET NULL, \"parent_step_id\" TEXT NULL, \"template_version\" INTEGER NOT NULL DEFAULT 1, \"attempt_count\" INTEGER NOT NULL DEFAULT 1, \"total_cost_micros\" INTEGER NOT NULL DEFAULT 0, \"total_tokens\" INTEGER NOT NULL DEFAULT 0, \"dry_run\" INTEGER NOT NULL DEFAULT 0 CHECK (\"dry_run\" IN (0, 1)), \"is_projection\" INTEGER NOT NULL DEFAULT 0 CHECK (\"is_projection\" IN (0, 1)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "spaces",
+   "tbl_name": "spaces",
+   "sql": "CREATE TABLE \"spaces\" (\"id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"mode\" TEXT NOT NULL DEFAULT 'chat' CHECK(\"mode\" IN ('chat', 'review', 'plan', 'orchestrate')), \"pipeline_run_id\" TEXT NULL REFERENCES pipeline_runs (id) ON DELETE CASCADE, \"provisioning_status\" TEXT NOT NULL DEFAULT 'ready' CHECK(\"provisioning_status\" IN ('ready', 'provisioning', 'failed', 'cancelled')), \"provisioning_step\" TEXT NULL CHECK(json_valid(\"provisioning_step\") AND json_type(\"provisioning_step\") = 'object'), \"kind\" TEXT NOT NULL DEFAULT 'topic' CHECK(\"kind\" IN ('topic', 'agentPeer', 'system', 'pr', 'slack')), \"no_repos\" INTEGER NOT NULL DEFAULT 0 CHECK (\"no_repos\" IN (0, 1)), \"archived_at\" INTEGER NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "conversations",
+   "tbl_name": "conversations",
+   "sql": "CREATE TABLE \"conversations\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL REFERENCES spaces (id) ON DELETE CASCADE, \"title\" TEXT NOT NULL DEFAULT '', \"status\" TEXT NOT NULL DEFAULT 'active' CHECK(\"status\" IN ('active', 'archived')), \"anchor_message_id\" TEXT REFERENCES conversation_messages(id) ON DELETE SET NULL, \"created_by_principal_id\" TEXT NULL, \"leaf_message_id\" TEXT REFERENCES conversation_messages(id) ON DELETE SET NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "projects",
+   "tbl_name": "projects",
+   "sql": "CREATE TABLE \"projects\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"description\" TEXT NULL, \"color\" TEXT NOT NULL DEFAULT 'gray' CHECK(\"color\" IN ('gray', 'blue', 'green', 'amber', 'red', 'purple', 'teal', 'pink')), \"status\" TEXT NOT NULL DEFAULT 'active' CHECK(\"status\" IN ('active', 'completed', 'archived')), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "teams",
+   "tbl_name": "teams",
+   "sql": "CREATE TABLE \"teams\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"description\" TEXT NULL, \"leader_id\" TEXT NULL REFERENCES agents (id) ON DELETE SET NULL, \"instructions\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "tickets",
+   "tbl_name": "tickets",
+   "sql": "CREATE TABLE \"tickets\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"provider\" TEXT NOT NULL DEFAULT 'local' CHECK(\"provider\" IN ('local', 'linear', 'jira', 'clickup')), \"external_key\" TEXT NULL, \"url\" TEXT NULL, \"title\" TEXT NOT NULL, \"description\" TEXT NULL, \"priority\" INTEGER NOT NULL DEFAULT 0, \"labels\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"labels\") AND json_type(\"labels\") = 'array'), \"status\" TEXT NOT NULL DEFAULT 'open' CHECK(\"status\" IN ('backlog', 'open', 'inProgress', 'blocked', 'inReview', 'done', 'failed', 'cancelled')), \"raw_status\" TEXT NULL, \"external_synced_at\" INTEGER NULL, \"parent_ticket_id\" TEXT NULL REFERENCES tickets (id) ON DELETE SET NULL, \"project_id\" TEXT NULL REFERENCES projects (id) ON DELETE SET NULL, \"assigned_agent_id\" TEXT NULL, \"assignee_type\" TEXT NOT NULL DEFAULT 'agent' CHECK(\"assignee_type\" IN ('user', 'agent')), \"created_by_type\" TEXT NOT NULL DEFAULT 'system' CHECK(\"created_by_type\" IN ('user', 'agent', 'system')), \"created_by_id\" TEXT NULL, \"assigned_team_id\" TEXT NULL REFERENCES teams (id) ON DELETE SET NULL, \"delegated_by_agent_id\" TEXT NULL REFERENCES agents (id) ON DELETE SET NULL, \"delegation_depth\" INTEGER NOT NULL DEFAULT 0, \"delegation_root_ticket_id\" TEXT NULL REFERENCES tickets (id) ON DELETE SET NULL, \"delegated_from_conversation_id\" TEXT NULL, \"space_id\" TEXT NULL REFERENCES spaces (id) ON DELETE SET NULL, \"error_message\" TEXT NULL, \"linked_pr_ids\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"linked_pr_ids\") AND json_type(\"linked_pr_ids\") = 'array'), \"metadata\" TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(\"metadata\") AND json_type(\"metadata\") = 'object'), \"version\" INTEGER NOT NULL DEFAULT 0, \"origin_kind\" TEXT NOT NULL DEFAULT 'manual' CHECK(\"origin_kind\" IN ('manual', 'pipelineStep', 'agentDelegation', 'externalSync', 'recovery')), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"started_at\" INTEGER NULL, \"blocked_at\" INTEGER NULL, \"cancelled_at\" INTEGER NULL, \"completed_at\" INTEGER NULL, \"finished_at\" INTEGER NULL, \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "agent_run_logs",
+   "tbl_name": "agent_run_logs",
+   "sql": "CREATE TABLE \"agent_run_logs\" (\"id\" TEXT NOT NULL, \"agent_id\" TEXT NOT NULL REFERENCES agents (id) ON DELETE CASCADE, \"workspace_id\" TEXT NOT NULL, \"conversation_id\" TEXT NULL REFERENCES conversations (id) ON DELETE SET NULL, \"ticket_id\" TEXT NULL REFERENCES tickets (id) ON DELETE SET NULL, \"space_id\" TEXT NULL REFERENCES spaces (id) ON DELETE SET NULL, \"started_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"completed_at\" INTEGER NULL, \"status\" TEXT NOT NULL DEFAULT 'pending' CHECK(\"status\" IN ('pending', 'running', 'completed', 'error')), \"summary\" TEXT NULL, \"adapter\" TEXT NULL, \"model_id\" TEXT NULL, \"pid\" INTEGER NULL, \"log_path\" TEXT NULL, \"input_tokens\" INTEGER NOT NULL DEFAULT 0, \"output_tokens\" INTEGER NOT NULL DEFAULT 0, \"thought_tokens\" INTEGER NOT NULL DEFAULT 0, \"cached_read_tokens\" INTEGER NOT NULL DEFAULT 0, \"cached_write_tokens\" INTEGER NOT NULL DEFAULT 0, \"cost_micros\" INTEGER NOT NULL DEFAULT 0, \"cost_basis\" TEXT NULL CHECK(\"cost_basis\" IN ('estimated', 'providerReported', 'subscription', 'mixed', 'unknown')), \"child_cost_micros\" INTEGER NOT NULL DEFAULT 0, \"effort\" TEXT NULL, \"task_family\" TEXT NULL, \"native_session_id\" TEXT NULL, \"resumed_native_session\" INTEGER NOT NULL DEFAULT 0 CHECK (\"resumed_native_session\" IN (0, 1)), \"latency_json\" TEXT NULL CHECK(json_valid(\"latency_json\") AND json_type(\"latency_json\") = 'array'), \"verification_status\" TEXT NULL CHECK(\"verification_status\" IN ('unverified', 'passed', 'failed')), \"agent_role\" TEXT NULL CHECK(\"agent_role\" IN ('main', 'sub', 'advisor')), \"duration_ms\" INTEGER NULL, \"time_to_first_token_ms\" INTEGER NULL, \"liveness_class\" TEXT NULL CHECK(\"liveness_class\" IN ('alive', 'productive', 'completed', 'blocked', 'empty', 'looping', 'failed', 'stalled', 'dead')), \"error_family\" TEXT NULL CHECK(\"error_family\" IN ('transientUpstream', 'sandboxInfrastructure', 'budgetExceeded', 'processLost', 'silentRun', 'unknown')), \"error_code\" TEXT NULL, \"pipeline_run_id\" TEXT NULL REFERENCES pipeline_runs (id) ON DELETE SET NULL, \"pipeline_step_id\" TEXT NULL, \"memory_reads\" INTEGER NOT NULL DEFAULT 0, \"memory_writes\" INTEGER NOT NULL DEFAULT 0, \"code_graph_calls\" INTEGER NOT NULL DEFAULT 0, \"last_output_at\" INTEGER NULL, \"output_contract_mode\" TEXT NULL DEFAULT 'strict' CHECK(\"output_contract_mode\" IN ('strict', 'permissive')), \"output_rejections\" INTEGER NOT NULL DEFAULT 0, \"retry_of_run_id\" TEXT NULL REFERENCES agent_run_logs (id) ON DELETE SET NULL, \"retry_attempt\" INTEGER NOT NULL DEFAULT 0, \"parent_run_id\" TEXT NULL REFERENCES agent_run_logs (id) ON DELETE SET NULL, \"spawn_tool_call_id\" TEXT NULL, \"end_reason\" TEXT NULL CHECK(\"end_reason\" IN ('completed', 'error', 'stopped_by_user', 'budget', 'silence', 'usage_limit', 'server_stopped')), \"wake_ids\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"wake_ids\") AND json_type(\"wake_ids\") = 'array'), \"requested_by_user_id\" TEXT NULL, \"wake_reason\" TEXT NULL CHECK(\"wake_reason\" IN ('user_message', 'assignment', 'recovery', 'child_completed', 'schedule', 'pipeline_step', 'goal_continuation', 'goal_verification', 'goal_review', 'watch', 'peer_message', 'peer_reply', 'limit_reset', 'improvement_review')), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "agent_run_payloads",
+   "tbl_name": "agent_run_payloads",
+   "sql": "CREATE TABLE \"agent_run_payloads\" (\"run_id\" TEXT NOT NULL REFERENCES agent_run_logs (id) ON DELETE CASCADE, \"context_snapshot_json\" TEXT NULL CHECK(json_valid(\"context_snapshot_json\")), \"expected_output_schema\" TEXT NULL CHECK(json_valid(\"expected_output_schema\") AND json_type(\"expected_output_schema\") = 'object'), \"output_json\" TEXT NULL CHECK(json_valid(\"output_json\") AND json_type(\"output_json\") = 'object'), \"verification_json\" TEXT NULL CHECK(json_valid(\"verification_json\") AND json_type(\"verification_json\") = 'object'), PRIMARY KEY (\"run_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "agent_goal_runs",
+   "tbl_name": "agent_goal_runs",
+   "sql": "CREATE TABLE \"agent_goal_runs\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL REFERENCES spaces (id) ON DELETE CASCADE, \"conversation_id\" TEXT NOT NULL REFERENCES conversations (id) ON DELETE CASCADE, \"agent_id\" TEXT NOT NULL REFERENCES agents (id) ON DELETE CASCADE, \"user_text\" TEXT NOT NULL, \"status\" TEXT NOT NULL DEFAULT 'active' CHECK(\"status\" IN ('active', 'paused', 'completed', 'failed', 'cancelled', 'budget_exhausted')), \"deadline_at\" INTEGER NULL, \"cost_cap_micros\" INTEGER NOT NULL DEFAULT 50000000, \"cost_micros\" INTEGER NOT NULL DEFAULT 0, \"max_runs\" INTEGER NULL, \"run_count\" INTEGER NOT NULL DEFAULT 0, \"active_run_id\" TEXT NULL REFERENCES agent_run_logs (id) ON DELETE SET NULL, \"consecutive_failures\" INTEGER NOT NULL DEFAULT 0, \"requested_by_user_id\" TEXT NULL, \"summary\" TEXT NULL, \"contract\" TEXT NULL CHECK(json_valid(\"contract\") AND json_type(\"contract\") = 'object'), \"hold\" TEXT NULL CHECK(\"hold\" IN ('waiting', 'verifying', 'limit', 'person', 'by_person', 'needs_review')), \"hold_until\" INTEGER NULL, \"hold_detail\" TEXT NULL, \"no_progress_streak\" INTEGER NOT NULL DEFAULT 0, \"verification_rounds\" INTEGER NOT NULL DEFAULT 0, \"last_fingerprint\" TEXT NULL, \"last_activity_digest\" TEXT NULL, \"start_ref\" TEXT NULL CHECK(json_valid(\"start_ref\") AND json_type(\"start_ref\") = 'object'), \"park_count\" INTEGER NOT NULL DEFAULT 0, \"fresh\" INTEGER NOT NULL DEFAULT 0 CHECK (\"fresh\" IN (0, 1)), \"unattended\" TEXT NOT NULL DEFAULT 'wait' CHECK(\"unattended\" IN ('wait', 'assume')), \"checker_agent_id\" TEXT NULL, \"verification\" TEXT NULL CHECK(json_valid(\"verification\") AND json_type(\"verification\") = 'object'), \"pipeline_run_id\" TEXT NULL, \"pipeline_step_id\" TEXT NULL, \"progress_marks\" TEXT NULL CHECK(json_valid(\"progress_marks\")), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "pull_requests",
+   "tbl_name": "pull_requests",
+   "sql": "CREATE TABLE \"pull_requests\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"pr_url\" TEXT NULL, \"pr_number\" INTEGER NULL, \"title\" TEXT NOT NULL, \"body\" TEXT NOT NULL, \"status\" TEXT NOT NULL DEFAULT 'draft' CHECK(\"status\" IN ('draft', 'published', 'created')), \"diff_summary\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"merged_at\" INTEGER NULL, \"closed_at\" INTEGER NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "review_drafts",
+   "tbl_name": "review_drafts",
+   "sql": "CREATE TABLE \"review_drafts\" (\"id\" TEXT NOT NULL, \"owner\" TEXT NOT NULL, \"repo\" TEXT NOT NULL, \"pr_number\" INTEGER NOT NULL, \"comment_text\" TEXT NOT NULL, \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "caches",
+   "tbl_name": "caches",
+   "sql": "CREATE TABLE \"caches\" (\"workspace_id\" TEXT NOT NULL, \"kind\" TEXT NOT NULL CHECK(\"kind\" IN ('prDetail', 'prDiff', 'prFiles', 'prFileContent', 'prImageDiff', 'prCommits', 'prCommitFiles', 'prReviews', 'prReviewComments', 'prIssueComments', 'prTimelineEvents', 'prCheckRuns', 'prCommitStatuses', 'prReviewerState', 'assignableUsers', 'requestableTeams', 'repoLabels', 'prPreview', 'commitPreview', 'openPrList', 'branchPrHistory', 'closedPrList', 'repoAccess')), \"key\" TEXT NOT NULL, \"payload\" TEXT NOT NULL, \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"kind\", \"key\", \"workspace_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "space_participants",
+   "tbl_name": "space_participants",
+   "sql": "CREATE TABLE \"space_participants\" (\"id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL REFERENCES spaces (id) ON DELETE CASCADE, \"principal_id\" TEXT NOT NULL, \"participant_type\" TEXT NOT NULL DEFAULT 'agent' CHECK(\"participant_type\" IN ('user', 'agent')), \"role\" TEXT NOT NULL DEFAULT 'member', \"joined_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "space_repos",
+   "tbl_name": "space_repos",
+   "sql": "CREATE TABLE \"space_repos\" (\"workspace_id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL REFERENCES spaces (id) ON DELETE CASCADE, \"repo_id\" TEXT NOT NULL REFERENCES repos (id) ON DELETE CASCADE, \"branch\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"space_id\", \"repo_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "conversation_messages",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE TABLE \"conversation_messages\" (\"id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL REFERENCES spaces (id) ON DELETE CASCADE, \"conversation_id\" TEXT NOT NULL REFERENCES conversations (id) ON DELETE CASCADE, \"sender_id\" TEXT NOT NULL, \"sender_type\" TEXT NOT NULL CHECK(\"sender_type\" IN ('user', 'agent', 'system')), \"revision\" INTEGER NOT NULL DEFAULT 0, \"content\" TEXT NOT NULL, \"content_chars\" INTEGER NOT NULL DEFAULT 0, \"message_type\" TEXT NOT NULL DEFAULT 'text' CHECK(\"message_type\" IN ('text', 'system', 'ticket_card', 'agent_turn', 'review_node', 'hire_proposal', 'review_summary', 'plan', 'user_question', 'orchestration_proposal', 'artifact', 'compaction', 'steering')), \"answered\" INTEGER NOT NULL DEFAULT 0 CHECK (\"answered\" IN (0, 1)), \"plan_status\" TEXT NULL CHECK(\"plan_status\" IN ('pending', 'approved', 'refining')), \"steer_state\" TEXT NULL CHECK(\"steer_state\" IN ('queued', 'injected', 'converted', 'held')), \"list_metadata\" TEXT NULL CHECK(json_valid(\"list_metadata\") AND json_type(\"list_metadata\") = 'object'), \"transcript_chars\" INTEGER NOT NULL DEFAULT 0, \"context_tokens\" INTEGER NULL, \"context_window_tokens\" INTEGER NULL, \"parent_message_id\" TEXT REFERENCES conversation_messages(id) ON DELETE SET NULL, \"compacted\" INTEGER NOT NULL DEFAULT 0 CHECK (\"compacted\" IN (0, 1)), \"reverted\" INTEGER NOT NULL DEFAULT 0 CHECK (\"reverted\" IN (0, 1)), \"reverted_at\" INTEGER NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "catalog_files",
+   "tbl_name": "catalog_files",
+   "sql": "CREATE TABLE \"catalog_files\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"uploader_user_id\" TEXT NULL, \"name\" TEXT NOT NULL, \"creator_id\" TEXT NULL, \"path\" TEXT NOT NULL, \"media_type\" TEXT NOT NULL, \"bytes\" INTEGER NOT NULL, \"source\" TEXT NOT NULL CHECK(\"source\" IN ('upload', 'artifact')), \"owned_bytes\" INTEGER NOT NULL DEFAULT 0 CHECK (\"owned_bytes\" IN (0, 1)), \"attached_message_id\" TEXT NULL REFERENCES conversation_messages (id) ON DELETE SET NULL, \"state\" TEXT NOT NULL CHECK(\"state\" IN ('draft', 'attached', 'artifact', 'discarded')), \"created_at\" INTEGER NOT NULL, \"updated_at\" INTEGER NOT NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "space_notes",
+   "tbl_name": "space_notes",
+   "sql": "CREATE TABLE \"space_notes\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL REFERENCES spaces (id) ON DELETE CASCADE, \"content_markdown\" TEXT NOT NULL DEFAULT '', \"updated_by_principal\" TEXT NOT NULL, \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"version\" INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (\"id\"), UNIQUE (\"space_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "space_autonomy",
+   "tbl_name": "space_autonomy",
+   "sql": "CREATE TABLE \"space_autonomy\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL REFERENCES spaces (id) ON DELETE CASCADE, \"agent_id\" TEXT NOT NULL REFERENCES agents (id) ON DELETE CASCADE, \"autonomy_level\" TEXT NOT NULL CHECK(\"autonomy_level\" IN ('proposeOnly', 'actWithApproval', 'actFreely')), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"space_id\", \"agent_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "message_reactions",
+   "tbl_name": "message_reactions",
+   "sql": "CREATE TABLE \"message_reactions\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL REFERENCES spaces (id) ON DELETE CASCADE, \"message_id\" TEXT NOT NULL REFERENCES conversation_messages (id) ON DELETE CASCADE, \"principal_id\" TEXT NOT NULL, \"principal_type\" TEXT NOT NULL CHECK(\"principal_type\" IN ('user', 'agent')), \"emoji\" TEXT NOT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"message_id\", \"principal_id\", \"emoji\"))"
+  },
+  {
+   "type": "table",
+   "name": "conversation_message_embeddings",
+   "tbl_name": "conversation_message_embeddings",
+   "sql": "CREATE TABLE \"conversation_message_embeddings\" (\"message_id\" TEXT NOT NULL REFERENCES conversation_messages (id) ON DELETE CASCADE, \"embedding\" BLOB NOT NULL, PRIMARY KEY (\"message_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "conversation_activity",
+   "tbl_name": "conversation_activity",
+   "sql": "CREATE TABLE \"conversation_activity\" (\"conversation_id\" TEXT NOT NULL REFERENCES conversations (id) ON DELETE CASCADE, \"space_id\" TEXT NOT NULL REFERENCES spaces (id) ON DELETE CASCADE, \"last_message_at\" INTEGER NOT NULL, \"last_agent_message_at\" INTEGER NULL, \"last_agent_message_seq\" INTEGER NULL, \"open_question_count\" INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (\"conversation_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "conversation_reads",
+   "tbl_name": "conversation_reads",
+   "sql": "CREATE TABLE \"conversation_reads\" (\"conversation_id\" TEXT NOT NULL REFERENCES conversations (id) ON DELETE CASCADE, \"user_id\" TEXT NOT NULL, \"last_read_at\" INTEGER NOT NULL, \"last_read_seq\" INTEGER NOT NULL, PRIMARY KEY (\"conversation_id\", \"user_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "review_spaces",
+   "tbl_name": "review_spaces",
+   "sql": "CREATE TABLE \"review_spaces\" (\"id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL REFERENCES spaces (id) ON DELETE CASCADE, \"workspace_id\" TEXT NOT NULL, \"pr_external_id\" TEXT NOT NULL, \"pr_number\" INTEGER NOT NULL, \"repo_full_name\" TEXT NOT NULL, \"status\" TEXT NOT NULL DEFAULT 'requested' CHECK(\"status\" IN ('requested', 'in_progress', 'awaiting_approval', 'completed')), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "activity_log",
+   "tbl_name": "activity_log",
+   "sql": "CREATE TABLE \"activity_log\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"actor_type\" TEXT NOT NULL, \"actor_id\" TEXT NULL REFERENCES agents (id) ON DELETE SET NULL, \"action\" TEXT NOT NULL, \"entity_type\" TEXT NOT NULL, \"entity_id\" TEXT NULL, \"details\" TEXT NULL, \"run_id\" TEXT NULL REFERENCES agent_run_logs (id) ON DELETE SET NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "agent_working_memory",
+   "tbl_name": "agent_working_memory",
+   "sql": "CREATE TABLE \"agent_working_memory\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"agent_id\" TEXT NOT NULL REFERENCES agents (id) ON DELETE CASCADE, \"content\" TEXT NOT NULL DEFAULT '', \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "memory_domains",
+   "tbl_name": "memory_domains",
+   "sql": "CREATE TABLE \"memory_domains\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"label\" TEXT NOT NULL, \"description\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"created_by_role\" TEXT NOT NULL CHECK(\"created_by_role\" IN ('ceo', 'coder', 'reviewer', 'qa', 'designer', 'security', 'devops', 'pm', 'general')), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "memory_facts",
+   "tbl_name": "memory_facts",
+   "sql": "CREATE TABLE \"memory_facts\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"domain\" TEXT NOT NULL, \"topic\" TEXT NOT NULL, \"content\" TEXT NOT NULL, \"source_observation_ids\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"source_observation_ids\") AND json_type(\"source_observation_ids\") = 'array'), \"confidence\" REAL NOT NULL DEFAULT 1.0, \"superseded_by\" TEXT NULL, \"authored_by_agent_id\" TEXT NULL REFERENCES agents (id) ON DELETE SET NULL, \"authored_by_role\" TEXT NULL CHECK(\"authored_by_role\" IN ('ceo', 'coder', 'reviewer', 'qa', 'designer', 'security', 'devops', 'pm', 'general')), \"memory_type\" TEXT NOT NULL DEFAULT 'fact' CHECK(\"memory_type\" IN ('fact', 'preference', 'decision', 'commitment', 'goal', 'event', 'instruction', 'relationship', 'context', 'learning', 'observation', 'error', 'artifact', 'request', 'unknown')), \"veracity\" TEXT NOT NULL DEFAULT 'stated' CHECK(\"veracity\" IN ('stated', 'inferred', 'tool', 'imported', 'unknown')), \"valid_until\" INTEGER NULL, \"recall_count\" INTEGER NOT NULL DEFAULT 0, \"last_recalled_at\" INTEGER NULL, \"temporal_tags\" TEXT NULL CHECK(json_valid(\"temporal_tags\") AND json_type(\"temporal_tags\") = 'array'), \"mention_count\" INTEGER NOT NULL DEFAULT 1, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "memory_fact_embeddings",
+   "tbl_name": "memory_fact_embeddings",
+   "sql": "CREATE TABLE \"memory_fact_embeddings\" (\"fact_id\" TEXT NOT NULL REFERENCES memory_facts (id) ON DELETE CASCADE, \"embedding\" BLOB NOT NULL, PRIMARY KEY (\"fact_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "memory_policies",
+   "tbl_name": "memory_policies",
+   "sql": "CREATE TABLE \"memory_policies\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"domain\" TEXT NOT NULL, \"rule\" TEXT NOT NULL, \"source_fact_ids\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"source_fact_ids\") AND json_type(\"source_fact_ids\") = 'array'), \"required_role\" TEXT NULL CHECK(\"required_role\" IN ('ceo', 'coder', 'reviewer', 'qa', 'designer', 'security', 'devops', 'pm', 'general')), \"active\" INTEGER NOT NULL DEFAULT 1 CHECK (\"active\" IN (0, 1)), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "memory_access_grants",
+   "tbl_name": "memory_access_grants",
+   "sql": "CREATE TABLE \"memory_access_grants\" (\"workspace_id\" TEXT NOT NULL, \"agent_role\" TEXT NOT NULL CHECK(\"agent_role\" IN ('ceo', 'coder', 'reviewer', 'qa', 'designer', 'security', 'devops', 'pm', 'general')), \"memory_domain\" TEXT NOT NULL, \"permission\" TEXT NOT NULL DEFAULT 'read' CHECK(\"permission\" IN ('none', 'read', 'write')), PRIMARY KEY (\"agent_role\", \"memory_domain\"))"
+  },
+  {
+   "type": "table",
+   "name": "memory_conflicts",
+   "tbl_name": "memory_conflicts",
+   "sql": "CREATE TABLE \"memory_conflicts\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"fact_a_id\" TEXT NOT NULL REFERENCES memory_facts (id) ON DELETE CASCADE, \"fact_b_id\" TEXT NOT NULL REFERENCES memory_facts (id) ON DELETE CASCADE, \"conflict_type\" TEXT NOT NULL DEFAULT 'contradiction' CHECK(\"conflict_type\" IN ('contradiction', 'cross_agent')), \"resolution\" TEXT NULL CHECK(\"resolution\" IN ('superseded')), \"winning_fact_id\" TEXT NULL REFERENCES memory_facts (id) ON DELETE SET NULL, \"resolved_at\" INTEGER NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "episodic_edges",
+   "tbl_name": "episodic_edges",
+   "sql": "CREATE TABLE \"episodic_edges\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"source_fact_id\" TEXT NOT NULL REFERENCES memory_facts (id) ON DELETE CASCADE, \"target_fact_id\" TEXT NOT NULL REFERENCES memory_facts (id) ON DELETE CASCADE, \"edge_type\" TEXT NOT NULL CHECK(\"edge_type\" IN ('related_to', 'references', 'contextual')), \"weight\" REAL NOT NULL DEFAULT 1.0, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "working_memory_items",
+   "tbl_name": "working_memory_items",
+   "sql": "CREATE TABLE \"working_memory_items\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"agent_id\" TEXT NOT NULL REFERENCES agents (id) ON DELETE CASCADE, \"session_id\" TEXT NULL, \"content\" TEXT NOT NULL, \"memory_type\" TEXT NOT NULL DEFAULT 'observation' CHECK(\"memory_type\" IN ('fact', 'preference', 'decision', 'commitment', 'goal', 'event', 'instruction', 'relationship', 'context', 'learning', 'observation', 'error', 'artifact', 'request', 'unknown')), \"veracity\" TEXT NOT NULL DEFAULT 'inferred' CHECK(\"veracity\" IN ('stated', 'inferred', 'tool', 'imported', 'unknown')), \"importance\" REAL NOT NULL DEFAULT 0.5, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"expires_at\" INTEGER NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "memory_consolidation_log",
+   "tbl_name": "memory_consolidation_log",
+   "sql": "CREATE TABLE \"memory_consolidation_log\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"agent_id\" TEXT NULL REFERENCES agents (id) ON DELETE SET NULL, \"items_considered\" INTEGER NOT NULL DEFAULT 0, \"facts_created\" INTEGER NOT NULL DEFAULT 0, \"facts_updated\" INTEGER NOT NULL DEFAULT 0, \"conflicts_detected\" INTEGER NOT NULL DEFAULT 0, \"evicted\" INTEGER NOT NULL DEFAULT 0, \"started_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"finished_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "memory_beliefs",
+   "tbl_name": "memory_beliefs",
+   "sql": "CREATE TABLE \"memory_beliefs\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"topic\" TEXT NOT NULL, \"content\" TEXT NOT NULL, \"confidence\" REAL NOT NULL DEFAULT 0.5, \"harmony_score\" REAL NOT NULL DEFAULT 0.0, \"provenance_fact_ids\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"provenance_fact_ids\") AND json_type(\"provenance_fact_ids\") = 'array'), \"provenance_agent_ids\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"provenance_agent_ids\") AND json_type(\"provenance_agent_ids\") = 'array'), \"cluster_id\" TEXT NOT NULL, \"action\" TEXT NOT NULL DEFAULT 'create' CHECK(\"action\" IN ('create', 'update', 'dampen')), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "pipeline_run_snapshots",
+   "tbl_name": "pipeline_run_snapshots",
+   "sql": "CREATE TABLE \"pipeline_run_snapshots\" (\"run_id\" TEXT NOT NULL REFERENCES pipeline_runs (id) ON DELETE CASCADE, \"template_snapshot_json\" TEXT NOT NULL CHECK(json_valid(\"template_snapshot_json\") AND json_type(\"template_snapshot_json\") = 'object'), PRIMARY KEY (\"run_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "pipeline_step_runs",
+   "tbl_name": "pipeline_step_runs",
+   "sql": "CREATE TABLE \"pipeline_step_runs\" (\"id\" TEXT NOT NULL, \"pipeline_run_id\" TEXT NOT NULL REFERENCES pipeline_runs (id) ON DELETE CASCADE, \"step_id\" TEXT NOT NULL, \"status\" TEXT NOT NULL DEFAULT 'pending' CHECK(\"status\" IN ('pending', 'running', 'suspended', 'completed', 'failed', 'skipped', 'cancelled')), \"input_json\" TEXT NULL CHECK(json_valid(\"input_json\")), \"output_json\" TEXT NULL CHECK(json_valid(\"output_json\")), \"space_id\" TEXT NULL REFERENCES spaces (id) ON DELETE SET NULL, \"error_message\" TEXT NULL, \"error_stack_trace\" TEXT NULL, \"attempt_count\" INTEGER NOT NULL DEFAULT 0, \"attempt_history\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"attempt_history\") AND json_type(\"attempt_history\") = 'array'), \"started_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"finished_at\" INTEGER NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "pipeline_templates",
+   "tbl_name": "pipeline_templates",
+   "sql": "CREATE TABLE \"pipeline_templates\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"description\" TEXT NULL, \"nodes_json\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"nodes_json\") AND json_type(\"nodes_json\") = 'array'), \"edges_json\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"edges_json\") AND json_type(\"edges_json\") = 'array'), \"inputs_json\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"inputs_json\") AND json_type(\"inputs_json\") = 'array'), \"is_enabled\" INTEGER NOT NULL DEFAULT 1 CHECK (\"is_enabled\" IN (0, 1)), \"is_built_in\" INTEGER NOT NULL DEFAULT 0 CHECK (\"is_built_in\" IN (0, 1)), \"max_parallel_runs\" INTEGER NULL, \"version\" INTEGER NOT NULL DEFAULT 1, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "pipeline_triggers",
+   "tbl_name": "pipeline_triggers",
+   "sql": "CREATE TABLE \"pipeline_triggers\" (\"id\" TEXT NOT NULL, \"event_type\" TEXT NOT NULL, \"template_id\" TEXT NOT NULL REFERENCES pipeline_templates (id) ON DELETE CASCADE, \"workspace_id\" TEXT NOT NULL, \"enabled\" INTEGER NOT NULL DEFAULT 0 CHECK (\"enabled\" IN (0, 1)), \"cron_expression\" TEXT NULL, \"timezone\" TEXT NULL, \"next_run_at\" INTEGER NULL, \"webhook_token_ref\" TEXT NULL, \"event_filters_json\" TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(\"event_filters_json\") AND json_type(\"event_filters_json\") = 'object'), \"match_json\" TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(\"match_json\") AND json_type(\"match_json\") = 'object'), \"last_fired_at\" INTEGER NULL, \"catch_up_policy\" TEXT NOT NULL DEFAULT 'catchUpLatestOnly' CHECK(\"catch_up_policy\" IN ('catchUpLatestOnly', 'skip')), \"armed_by_user_ids\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"armed_by_user_ids\") AND json_type(\"armed_by_user_ids\") = 'array'), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "ticket_collaborators",
+   "tbl_name": "ticket_collaborators",
+   "sql": "CREATE TABLE \"ticket_collaborators\" (\"id\" TEXT NOT NULL, \"ticket_id\" TEXT NOT NULL REFERENCES tickets (id) ON DELETE CASCADE, \"principal_id\" TEXT NOT NULL, \"collaborator_type\" TEXT NOT NULL DEFAULT 'agent' CHECK(\"collaborator_type\" IN ('user', 'agent')), \"role\" TEXT NOT NULL DEFAULT 'collaborator' CHECK(\"role\" IN ('assignee', 'collaborator', 'reviewer')), \"joined_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "ticket_links",
+   "tbl_name": "ticket_links",
+   "sql": "CREATE TABLE \"ticket_links\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"source_ticket_id\" TEXT NOT NULL REFERENCES tickets (id) ON DELETE CASCADE, \"target_ticket_id\" TEXT NOT NULL REFERENCES tickets (id) ON DELETE CASCADE, \"type\" TEXT NOT NULL CHECK(\"type\" IN ('blocks', 'relates_to', 'duplicate_of')), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "team_members",
+   "tbl_name": "team_members",
+   "sql": "CREATE TABLE \"team_members\" (\"team_id\" TEXT NOT NULL REFERENCES teams (id) ON DELETE CASCADE, \"agent_id\" TEXT NOT NULL REFERENCES agents (id) ON DELETE CASCADE, \"role\" TEXT NOT NULL DEFAULT 'member' CHECK(\"role\" IN ('leader', 'member')), PRIMARY KEY (\"team_id\", \"agent_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "isolated_repos",
+   "tbl_name": "isolated_repos",
+   "sql": "CREATE TABLE \"isolated_repos\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL, \"repo_id\" TEXT NOT NULL REFERENCES repos (id) ON DELETE CASCADE, \"path\" TEXT NOT NULL, \"branch\" TEXT NOT NULL, \"backend\" TEXT NOT NULL DEFAULT 'rift' CHECK(\"backend\" IN ('rift', 'gitWorktree')), \"source_path\" TEXT NOT NULL, \"ticket_id\" TEXT NULL REFERENCES tickets (id) ON DELETE SET NULL, \"linked_ticket_vendor\" TEXT NULL, \"linked_ticket_external_id\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "space_stack_entries",
+   "tbl_name": "space_stack_entries",
+   "sql": "CREATE TABLE \"space_stack_entries\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL, \"repo_id\" TEXT NOT NULL REFERENCES repos (id) ON DELETE CASCADE, \"position\" INTEGER NOT NULL, \"branch\" TEXT NOT NULL, \"base_branch\" TEXT NOT NULL, \"pr_number\" INTEGER NULL, \"pr_external_id\" TEXT NULL, \"rewritten\" INTEGER NOT NULL DEFAULT 0 CHECK (\"rewritten\" IN (0, 1)), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"space_id\", \"repo_id\", \"position\"), UNIQUE (\"space_id\", \"repo_id\", \"branch\"))"
+  },
+  {
+   "type": "table",
+   "name": "meetings",
+   "tbl_name": "meetings",
+   "sql": "CREATE TABLE \"meetings\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"title\" TEXT NOT NULL, \"title_is_custom\" INTEGER NOT NULL DEFAULT 0 CHECK (\"title_is_custom\" IN (0, 1)), \"status\" TEXT NOT NULL DEFAULT 'recording' CHECK(\"status\" IN ('recording', 'processing', 'done', 'failed')), \"source_app\" TEXT NULL, \"user_notes\" TEXT NOT NULL DEFAULT '', \"enhanced_notes\" TEXT NULL, \"summary_instructions\" TEXT NULL, \"summary\" TEXT NULL, \"audio_path\" TEXT NULL, \"mode\" TEXT NOT NULL DEFAULT 'remote' CHECK(\"mode\" IN ('remote', 'inPerson')), \"started_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"ended_at\" INTEGER NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "meeting_transcript_segments",
+   "tbl_name": "meeting_transcript_segments",
+   "sql": "CREATE TABLE \"meeting_transcript_segments\" (\"id\" TEXT NOT NULL, \"meeting_id\" TEXT NOT NULL REFERENCES meetings (id) ON DELETE CASCADE, \"workspace_id\" TEXT NOT NULL, \"speaker\" TEXT NOT NULL CHECK(\"speaker\" IN ('me', 'them')), \"speaker_label\" TEXT NULL, \"speaker_name_override\" TEXT NULL, \"content\" TEXT NOT NULL, \"start_ms\" INTEGER NOT NULL, \"end_ms\" INTEGER NOT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "meeting_action_items",
+   "tbl_name": "meeting_action_items",
+   "sql": "CREATE TABLE \"meeting_action_items\" (\"id\" TEXT NOT NULL, \"meeting_id\" TEXT NOT NULL REFERENCES meetings (id) ON DELETE CASCADE, \"workspace_id\" TEXT NOT NULL, \"content\" TEXT NOT NULL, \"owner\" TEXT NULL, \"done\" INTEGER NOT NULL DEFAULT 0 CHECK (\"done\" IN (0, 1)), \"ticket_id\" TEXT NULL, \"sort_order\" INTEGER NOT NULL DEFAULT 0, \"is_manual\" INTEGER NOT NULL DEFAULT 0 CHECK (\"is_manual\" IN (0, 1)), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "meeting_decisions",
+   "tbl_name": "meeting_decisions",
+   "sql": "CREATE TABLE \"meeting_decisions\" (\"id\" TEXT NOT NULL, \"meeting_id\" TEXT NOT NULL REFERENCES meetings (id) ON DELETE CASCADE, \"workspace_id\" TEXT NOT NULL, \"content\" TEXT NOT NULL, \"sort_order\" INTEGER NOT NULL DEFAULT 0, \"is_manual\" INTEGER NOT NULL DEFAULT 0 CHECK (\"is_manual\" IN (0, 1)), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "meeting_speakers",
+   "tbl_name": "meeting_speakers",
+   "sql": "CREATE TABLE \"meeting_speakers\" (\"id\" TEXT NOT NULL, \"meeting_id\" TEXT NOT NULL REFERENCES meetings (id) ON DELETE CASCADE, \"workspace_id\" TEXT NOT NULL, \"channel\" TEXT NOT NULL CHECK(\"channel\" IN ('me', 'them')), \"label\" TEXT NOT NULL, \"display_name\" TEXT NULL, \"embedding\" TEXT NULL CHECK(json_valid(\"embedding\") AND json_type(\"embedding\") = 'array'), \"enrolled_profile_name\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "calendar_accounts",
+   "tbl_name": "calendar_accounts",
+   "sql": "CREATE TABLE \"calendar_accounts\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"user_id\" TEXT NOT NULL DEFAULT '', \"provider_id\" TEXT NOT NULL DEFAULT 'google', \"account_email\" TEXT NOT NULL, \"display_name\" TEXT NULL, \"last_synced_at\" INTEGER NULL, \"auth_expired_at\" INTEGER NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "calendar_events",
+   "tbl_name": "calendar_events",
+   "sql": "CREATE TABLE \"calendar_events\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"account_id\" TEXT NOT NULL REFERENCES calendar_accounts (id) ON DELETE CASCADE, \"external_event_id\" TEXT NOT NULL, \"calendar_id\" TEXT NOT NULL, \"title\" TEXT NOT NULL, \"description\" TEXT NULL, \"location\" TEXT NULL, \"start_time\" INTEGER NOT NULL, \"end_time\" INTEGER NOT NULL, \"is_all_day\" INTEGER NOT NULL DEFAULT 0 CHECK (\"is_all_day\" IN (0, 1)), \"attendees_json\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"attendees_json\") AND json_type(\"attendees_json\") = 'array'), \"meeting_url\" TEXT NULL, \"status\" TEXT NOT NULL DEFAULT 'confirmed' CHECK(\"status\" IN ('confirmed', 'tentative', 'cancelled')), \"recurring_event_id\" TEXT NULL, \"alerted_at\" INTEGER NULL, \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "calendar_sources",
+   "tbl_name": "calendar_sources",
+   "sql": "CREATE TABLE \"calendar_sources\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"account_id\" TEXT NOT NULL REFERENCES calendar_accounts (id) ON DELETE CASCADE, \"calendar_id\" TEXT NOT NULL, \"summary\" TEXT NOT NULL, \"background_color\" TEXT NULL, \"primary\" INTEGER NOT NULL DEFAULT 0 CHECK (\"primary\" IN (0, 1)), \"writable\" INTEGER NOT NULL DEFAULT 0 CHECK (\"writable\" IN (0, 1)), \"sync_token\" TEXT NULL, \"sync_token_minted_at\" INTEGER NULL, \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "meeting_calendar_links",
+   "tbl_name": "meeting_calendar_links",
+   "sql": "CREATE TABLE \"meeting_calendar_links\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"meeting_id\" TEXT NOT NULL REFERENCES meetings (id) ON DELETE CASCADE, \"calendar_event_id\" TEXT NOT NULL REFERENCES calendar_events (id) ON DELETE CASCADE, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "voice_profiles",
+   "tbl_name": "voice_profiles",
+   "sql": "CREATE TABLE \"voice_profiles\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"display_name\" TEXT NOT NULL, \"embedding\" TEXT NOT NULL CHECK(json_valid(\"embedding\") AND json_type(\"embedding\") = 'array'), \"sample_count\" INTEGER NOT NULL DEFAULT 1, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "orchestrations",
+   "tbl_name": "orchestrations",
+   "sql": "CREATE TABLE \"orchestrations\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"parent_ticket_id\" TEXT NULL REFERENCES tickets (id) ON DELETE SET NULL, \"space_id\" TEXT NULL REFERENCES spaces (id) ON DELETE SET NULL, \"orchestrator_agent_id\" TEXT NULL REFERENCES agents (id) ON DELETE SET NULL, \"status\" TEXT NOT NULL DEFAULT 'proposed' CHECK(\"status\" IN ('proposed', 'approved', 'executing', 'synthesizing', 'completed', 'failed', 'cancelled')), \"proposal_json\" TEXT NOT NULL CHECK(json_valid(\"proposal_json\") AND json_type(\"proposal_json\") = 'object'), \"revision\" INTEGER NOT NULL DEFAULT 1, \"approved_revision\" INTEGER NULL, \"pipeline_template_id\" TEXT NULL REFERENCES pipeline_templates (id) ON DELETE SET NULL, \"pipeline_run_id\" TEXT NULL REFERENCES pipeline_runs (id) ON DELETE SET NULL, \"team_id\" TEXT NULL REFERENCES teams (id) ON DELETE SET NULL, \"project_id\" TEXT NULL REFERENCES projects (id) ON DELETE SET NULL, \"estimated_cost_micros\" INTEGER NULL, \"max_cost_micros\" INTEGER NULL, \"hired_agent_ids_json\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"hired_agent_ids_json\") AND json_type(\"hired_agent_ids_json\") = 'array'), \"approved_node_keys_json\" TEXT NULL CHECK(json_valid(\"approved_node_keys_json\") AND json_type(\"approved_node_keys_json\") = 'array'), \"error_message\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"completed_at\" INTEGER NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "orchestration_revisions",
+   "tbl_name": "orchestration_revisions",
+   "sql": "CREATE TABLE \"orchestration_revisions\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"orchestration_id\" TEXT NOT NULL REFERENCES orchestrations (id) ON DELETE CASCADE, \"revision\" INTEGER NOT NULL, \"proposal_json\" TEXT NOT NULL CHECK(json_valid(\"proposal_json\") AND json_type(\"proposal_json\") = 'object'), \"authored_by\" TEXT NOT NULL, \"author_kind\" TEXT NOT NULL DEFAULT 'user' CHECK(\"author_kind\" IN ('user', 'agent', 'system')), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"orchestration_id\", \"revision\"))"
+  },
+  {
+   "type": "table",
+   "name": "plan_documents",
+   "tbl_name": "plan_documents",
+   "sql": "CREATE TABLE \"plan_documents\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"conversation_id\" TEXT NOT NULL REFERENCES conversations (id) ON DELETE CASCADE, \"agent_id\" TEXT NOT NULL REFERENCES agents (id) ON DELETE CASCADE, \"plan_json\" TEXT NOT NULL CHECK(json_valid(\"plan_json\") AND json_type(\"plan_json\") = 'object'), \"status\" TEXT NOT NULL DEFAULT 'proposed' CHECK(\"status\" IN ('draft', 'proposed', 'approved', 'rejected', 'superseded')), \"revision\" INTEGER NOT NULL DEFAULT 1, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "playbooks",
+   "tbl_name": "playbooks",
+   "sql": "CREATE TABLE \"playbooks\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"description\" TEXT NOT NULL DEFAULT '', \"params_schema_json\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"params_schema_json\") AND json_type(\"params_schema_json\") = 'array'), \"source_proposal_json\" TEXT NOT NULL CHECK(json_valid(\"source_proposal_json\") AND json_type(\"source_proposal_json\") = 'object'), \"version\" INTEGER NOT NULL DEFAULT 1, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"name\"))"
+  },
+  {
+   "type": "table",
+   "name": "review_cohorts",
+   "tbl_name": "review_cohorts",
+   "sql": "CREATE TABLE \"review_cohorts\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"pr_external_id\" TEXT NOT NULL, \"cohort_key\" TEXT NOT NULL, \"title\" TEXT NOT NULL, \"summary_markdown\" TEXT NOT NULL DEFAULT '', \"order_index\" INTEGER NOT NULL DEFAULT 0, \"impact_score\" INTEGER NOT NULL DEFAULT 0, \"derivation\" TEXT NOT NULL DEFAULT 'path' CHECK(\"derivation\" IN ('graph', 'path')), \"file_paths_json\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"file_paths_json\") AND json_type(\"file_paths_json\") = 'array'), \"layers_json\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"layers_json\") AND json_type(\"layers_json\") = 'array'), \"diagrams_json\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"diagrams_json\") AND json_type(\"diagrams_json\") = 'array'), \"insights_json\" TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(\"insights_json\") AND json_type(\"insights_json\") = 'object'), \"head_sha\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"pr_external_id\", \"cohort_key\"))"
+  },
+  {
+   "type": "table",
+   "name": "api_contract_snapshots",
+   "tbl_name": "api_contract_snapshots",
+   "sql": "CREATE TABLE \"api_contract_snapshots\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"repo_id\" TEXT NOT NULL REFERENCES repos (id) ON DELETE CASCADE, \"pr_external_id\" TEXT NOT NULL, \"spec_path\" TEXT NOT NULL, \"before_json\" TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(\"before_json\")), \"after_json\" TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(\"after_json\")), \"changes_json\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"changes_json\") AND json_type(\"changes_json\") = 'array'), \"derived\" INTEGER NOT NULL DEFAULT 0 CHECK (\"derived\" IN (0, 1)), \"head_sha\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"pr_external_id\", \"spec_path\"))"
+  },
+  {
+   "type": "table",
+   "name": "visual_diff_snapshots",
+   "tbl_name": "visual_diff_snapshots",
+   "sql": "CREATE TABLE \"visual_diff_snapshots\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"repo_id\" TEXT NOT NULL REFERENCES repos (id) ON DELETE CASCADE, \"pr_external_id\" TEXT NOT NULL, \"component_key\" TEXT NOT NULL, \"component_title\" TEXT NOT NULL DEFAULT '', \"status\" TEXT NOT NULL DEFAULT 'changed' CHECK(\"status\" IN ('added', 'changed', 'removed', 'approved', 'unchanged')), \"variants_json\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"variants_json\") AND json_type(\"variants_json\") = 'array'), \"head_sha\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"pr_external_id\", \"component_key\"))"
+  },
+  {
+   "type": "table",
+   "name": "review_axis_results",
+   "tbl_name": "review_axis_results",
+   "sql": "CREATE TABLE \"review_axis_results\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"pr_external_id\" TEXT NOT NULL, \"axis\" TEXT NOT NULL CHECK(\"axis\" IN ('correctness', 'security', 'test_gap', 'performance', 'visual', 'api_contract')), \"verdict\" TEXT NOT NULL CHECK(\"verdict\" IN ('pass', 'warn', 'fail', 'partial', 'unavailable')), \"findings_count\" INTEGER NOT NULL DEFAULT 0, \"gated\" INTEGER NOT NULL DEFAULT 0 CHECK (\"gated\" IN (0, 1)), \"confidence\" REAL NOT NULL DEFAULT 1.0, \"note\" TEXT NOT NULL DEFAULT '', \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"pr_external_id\", \"axis\"))"
+  },
+  {
+   "type": "table",
+   "name": "review_dependency_diffs",
+   "tbl_name": "review_dependency_diffs",
+   "sql": "CREATE TABLE \"review_dependency_diffs\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"pr_external_id\" TEXT NOT NULL, \"file_path\" TEXT NOT NULL, \"ecosystem\" TEXT NOT NULL CHECK(\"ecosystem\" IN ('pub', 'npm', 'pnpm', 'yarn')), \"base_sha\" TEXT NULL, \"head_sha\" TEXT NULL, \"diff_json\" TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(\"diff_json\") AND json_type(\"diff_json\") = 'object'), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"pr_external_id\", \"file_path\"))"
+  },
+  {
+   "type": "table",
+   "name": "review_run_snapshots",
+   "tbl_name": "review_run_snapshots",
+   "sql": "CREATE TABLE \"review_run_snapshots\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"pr_external_id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL REFERENCES spaces (id) ON DELETE CASCADE, \"head_sha\" TEXT NULL, \"finalized_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"verdict_json\" TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(\"verdict_json\") AND json_type(\"verdict_json\") = 'object'), \"fingerprints_json\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"fingerprints_json\") AND json_type(\"fingerprints_json\") = 'array'), \"stats_json\" TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(\"stats_json\") AND json_type(\"stats_json\") = 'object'), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "provider_policies",
+   "tbl_name": "provider_policies",
+   "sql": "CREATE TABLE \"provider_policies\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"action\" TEXT NOT NULL DEFAULT 'provider.use', \"resource\" TEXT NOT NULL, \"effect\" TEXT NOT NULL CHECK(\"effect\" IN ('allow', 'deny')), \"layer\" TEXT NOT NULL DEFAULT 'workspace' CHECK(\"layer\" IN ('global', 'user', 'workspace')), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "goals",
+   "tbl_name": "goals",
+   "sql": "CREATE TABLE \"goals\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"parent_goal_id\" TEXT NULL REFERENCES goals (id) ON DELETE SET NULL, \"level\" TEXT NOT NULL DEFAULT 'company' CHECK(\"level\" IN ('company', 'team', 'agent', 'task')), \"title\" TEXT NOT NULL, \"description\" TEXT NULL, \"status\" TEXT NOT NULL DEFAULT 'active' CHECK(\"status\" IN ('active', 'achieved', 'abandoned')), \"owner_agent_id\" TEXT NULL REFERENCES agents (id) ON DELETE SET NULL, \"team_id\" TEXT NULL REFERENCES teams (id) ON DELETE SET NULL, \"target_ticket_id\" TEXT NULL REFERENCES tickets (id) ON DELETE SET NULL, \"progress\" INTEGER NOT NULL DEFAULT 0, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "budget_incidents",
+   "tbl_name": "budget_incidents",
+   "sql": "CREATE TABLE \"budget_incidents\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"policy_id\" TEXT NULL REFERENCES budget_policy (id) ON DELETE SET NULL, \"scope_type\" TEXT NOT NULL CHECK(\"scope_type\" IN ('agent', 'team', 'company', 'workspace')), \"scope_id\" TEXT NOT NULL, \"spent_micros\" INTEGER NOT NULL DEFAULT 0, \"budget_micros\" INTEGER NOT NULL DEFAULT 0, \"is_hard_stop\" INTEGER NOT NULL DEFAULT 0 CHECK (\"is_hard_stop\" IN (0, 1)), \"reason\" TEXT NOT NULL, \"triggered_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "approvals",
+   "tbl_name": "approvals",
+   "sql": "CREATE TABLE \"approvals\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"title\" TEXT NOT NULL, \"description\" TEXT NULL, \"kind\" TEXT NOT NULL DEFAULT 'custom' CHECK(\"kind\" IN ('plan_exit', 'merge', 'release', 'hire', 'custom')), \"status\" TEXT NOT NULL DEFAULT 'pending' CHECK(\"status\" IN ('pending', 'approved', 'rejected', 'revision_requested')), \"requested_by_actor_type\" TEXT NOT NULL DEFAULT 'agent' CHECK(\"requested_by_actor_type\" IN ('user', 'agent', 'system')), \"requested_by_id\" TEXT NULL, \"linked_ticket_ids\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"linked_ticket_ids\") AND json_type(\"linked_ticket_ids\") = 'array'), \"linked_entity_type\" TEXT NULL, \"linked_entity_id\" TEXT NULL, \"decided_by_actor_type\" TEXT NULL CHECK(\"decided_by_actor_type\" IN ('user', 'agent', 'system')), \"decided_by_id\" TEXT NULL, \"decision_reason\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"decided_at\" INTEGER NULL, \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "approval_comments",
+   "tbl_name": "approval_comments",
+   "sql": "CREATE TABLE \"approval_comments\" (\"id\" TEXT NOT NULL, \"approval_id\" TEXT NOT NULL REFERENCES approvals (id) ON DELETE CASCADE, \"workspace_id\" TEXT NOT NULL, \"author_type\" TEXT NOT NULL DEFAULT 'user' CHECK(\"author_type\" IN ('user', 'agent', 'system')), \"author_id\" TEXT NULL, \"body\" TEXT NOT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "approval_routing_policies",
+   "tbl_name": "approval_routing_policies",
+   "sql": "CREATE TABLE \"approval_routing_policies\" (\"workspace_id\" TEXT NOT NULL, \"policy_json\" TEXT NOT NULL CHECK(json_valid(\"policy_json\") AND json_type(\"policy_json\") = 'object'), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"workspace_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "work_product_revisions",
+   "tbl_name": "work_product_revisions",
+   "sql": "CREATE TABLE \"work_product_revisions\" (\"id\" TEXT NOT NULL, \"work_product_id\" TEXT NOT NULL REFERENCES work_products (id) ON DELETE CASCADE, \"workspace_id\" TEXT NOT NULL, \"revision_number\" INTEGER NOT NULL, \"content\" TEXT NOT NULL, \"base_revision_id\" TEXT NULL REFERENCES work_product_revisions (id) ON DELETE SET NULL, \"author_type\" TEXT NOT NULL DEFAULT 'agent' CHECK(\"author_type\" IN ('user', 'agent', 'system')), \"author_id\" TEXT NULL, \"summary\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"work_product_id\", \"revision_number\"))"
+  },
+  {
+   "type": "table",
+   "name": "work_products",
+   "tbl_name": "work_products",
+   "sql": "CREATE TABLE \"work_products\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"ticket_id\" TEXT NULL REFERENCES tickets (id) ON DELETE SET NULL, \"agent_id\" TEXT NULL REFERENCES agents (id) ON DELETE SET NULL, \"title\" TEXT NOT NULL, \"artifact_type\" TEXT NOT NULL DEFAULT 'document' CHECK(\"artifact_type\" IN ('plan', 'document', 'diff', 'report', 'note')), \"current_revision_id\" TEXT NULL REFERENCES work_product_revisions (id) ON DELETE SET NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "agent_runtime_state",
+   "tbl_name": "agent_runtime_state",
+   "sql": "CREATE TABLE \"agent_runtime_state\" (\"agent_id\" TEXT NOT NULL REFERENCES agents (id) ON DELETE CASCADE, \"workspace_id\" TEXT NOT NULL, \"reported_status\" TEXT NOT NULL DEFAULT 'offline' CHECK(\"reported_status\" IN ('alive', 'idle', 'stuck', 'offline')), \"last_heartbeat_at\" INTEGER NULL, \"current_run_id\" TEXT NULL REFERENCES agent_run_logs (id) ON DELETE SET NULL, \"note\" TEXT NULL, \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"agent_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "team_activity_log",
+   "tbl_name": "team_activity_log",
+   "sql": "CREATE TABLE \"team_activity_log\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"team_id\" TEXT NOT NULL REFERENCES teams (id) ON DELETE CASCADE, \"ticket_id\" TEXT NOT NULL REFERENCES tickets (id) ON DELETE CASCADE, \"kind\" TEXT NOT NULL CHECK(\"kind\" IN ('action', 'no_action', 'failed')), \"leader_id\" TEXT NULL REFERENCES agents (id) ON DELETE SET NULL, \"member_id\" TEXT NULL REFERENCES agents (id) ON DELETE SET NULL, \"summary\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "webhook_deliveries",
+   "tbl_name": "webhook_deliveries",
+   "sql": "CREATE TABLE \"webhook_deliveries\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"trigger_id\" TEXT NOT NULL REFERENCES pipeline_triggers (id) ON DELETE CASCADE, \"status\" TEXT NOT NULL CHECK(\"status\" IN ('queued', 'dispatched', 'rejected', 'ignored', 'failed')), \"signature_status\" TEXT NOT NULL CHECK(\"signature_status\" IN ('valid', 'invalid', 'missing', 'skipped')), \"dedupe_key\" TEXT NULL, \"dedupe_source\" TEXT NULL, \"event_action\" TEXT NULL, \"headers_json\" TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(\"headers_json\") AND json_type(\"headers_json\") = 'object'), \"response_status\" INTEGER NULL, \"response_body\" TEXT NULL, \"run_id\" TEXT NULL REFERENCES pipeline_runs (id) ON DELETE SET NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "cron_executions",
+   "tbl_name": "cron_executions",
+   "sql": "CREATE TABLE \"cron_executions\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"trigger_id\" TEXT NOT NULL REFERENCES pipeline_triggers (id) ON DELETE CASCADE, \"planned_at\" INTEGER NOT NULL, \"status\" TEXT NOT NULL DEFAULT 'fired' CHECK(\"status\" IN ('fired', 'skipped', 'failed')), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "ticket_sync_configs",
+   "tbl_name": "ticket_sync_configs",
+   "sql": "CREATE TABLE \"ticket_sync_configs\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"vendor\" TEXT NOT NULL, \"vendor_project_id\" TEXT NOT NULL DEFAULT '', \"direction\" TEXT NOT NULL DEFAULT 'bidirectional' CHECK(\"direction\" IN ('push', 'pull', 'bidirectional')), \"field_mapping\" TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(\"field_mapping\") AND json_type(\"field_mapping\") = 'object'), \"credential_ref\" TEXT NULL, \"webhook_secret_ref\" TEXT NULL, \"enabled\" INTEGER NOT NULL DEFAULT 1 CHECK (\"enabled\" IN (0, 1)), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "ticket_sync_links",
+   "tbl_name": "ticket_sync_links",
+   "sql": "CREATE TABLE \"ticket_sync_links\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"ticket_id\" TEXT NOT NULL REFERENCES tickets (id) ON DELETE CASCADE, \"vendor\" TEXT NOT NULL, \"external_id\" TEXT NOT NULL, \"external_key\" TEXT NULL, \"external_url\" TEXT NULL, \"last_synced_at\" INTEGER NULL, \"last_direction\" TEXT NULL CHECK(\"last_direction\" IN ('push', 'pull', 'bidirectional')), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "ticket_sync_log",
+   "tbl_name": "ticket_sync_log",
+   "sql": "CREATE TABLE \"ticket_sync_log\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"ticket_id\" TEXT NULL REFERENCES tickets (id) ON DELETE SET NULL, \"vendor\" TEXT NOT NULL, \"direction\" TEXT NOT NULL CHECK(\"direction\" IN ('push', 'pull', 'bidirectional')), \"outcome\" TEXT NOT NULL CHECK(\"outcome\" IN ('ok', 'failed', 'skipped', 'deduplicated')), \"message\" TEXT NULL, \"dedupe_key\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "ticket_write_ledger",
+   "tbl_name": "ticket_write_ledger",
+   "sql": "CREATE TABLE \"ticket_write_ledger\" (\"workspace_id\" TEXT NOT NULL, \"write_id\" TEXT NOT NULL, \"operation\" TEXT NOT NULL, \"result_json\" TEXT NOT NULL CHECK(json_valid(\"result_json\")), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"write_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "write_ledger",
+   "tbl_name": "write_ledger",
+   "sql": "CREATE TABLE \"write_ledger\" (\"workspace_id\" TEXT NOT NULL, \"idempotency_key\" TEXT NOT NULL, \"op_name\" TEXT NOT NULL, \"result_json\" TEXT NULL CHECK(json_valid(\"result_json\")), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"idempotency_key\", \"workspace_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "todos",
+   "tbl_name": "todos",
+   "sql": "CREATE TABLE \"todos\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"conversation_id\" TEXT NOT NULL REFERENCES conversations (id) ON DELETE CASCADE, \"content\" TEXT NOT NULL, \"status\" TEXT NOT NULL DEFAULT 'pending' CHECK(\"status\" IN ('pending', 'in_progress', 'completed')), \"position\" INTEGER NOT NULL DEFAULT 0, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "workspace_members",
+   "tbl_name": "workspace_members",
+   "sql": "CREATE TABLE \"workspace_members\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"user_id\" TEXT NOT NULL, \"role\" TEXT NOT NULL DEFAULT 'member' CHECK(\"role\" IN ('owner', 'admin', 'member', 'viewer', 'guest') OR \"role\" LIKE 'custom:_%'), \"invited_by\" TEXT NULL, \"joined_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"display_name\" TEXT NULL, \"email\" TEXT NULL, \"git_author_name\" TEXT NULL, \"git_author_email\" TEXT NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "workspace_invites",
+   "tbl_name": "workspace_invites",
+   "sql": "CREATE TABLE \"workspace_invites\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"code_hash\" TEXT NOT NULL, \"role\" TEXT NOT NULL DEFAULT 'member' CHECK(\"role\" IN ('admin', 'member', 'viewer', 'guest') OR \"role\" LIKE 'custom:_%'), \"repo_grants_json\" TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(\"repo_grants_json\") AND json_type(\"repo_grants_json\") = 'object'), \"created_by\" TEXT NOT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"expires_at\" INTEGER NOT NULL, \"used_at\" INTEGER NULL, \"used_by\" TEXT NULL, \"revoked_at\" INTEGER NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "user_activity",
+   "tbl_name": "user_activity",
+   "sql": "CREATE TABLE \"user_activity\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"user_id\" TEXT NOT NULL, \"action\" TEXT NOT NULL, \"target_type\" TEXT NULL, \"target_id\" TEXT NULL, \"device_id\" TEXT NULL, \"ip\" TEXT NULL, \"country_code\" TEXT NULL, \"details\" TEXT NULL CHECK(json_valid(\"details\") AND json_type(\"details\") = 'object'), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "workspace_member_repo_grants",
+   "tbl_name": "workspace_member_repo_grants",
+   "sql": "CREATE TABLE \"workspace_member_repo_grants\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"user_id\" TEXT NOT NULL, \"repo_id\" TEXT NOT NULL REFERENCES repos (id) ON DELETE CASCADE, \"level\" TEXT NOT NULL DEFAULT 'read' CHECK(\"level\" IN ('read', 'review', 'write')), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "session_recordings",
+   "tbl_name": "session_recordings",
+   "sql": "CREATE TABLE \"session_recordings\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"run_log_id\" TEXT NOT NULL REFERENCES agent_run_logs (id) ON DELETE CASCADE, \"agent_id\" TEXT NULL REFERENCES agents (id) ON DELETE SET NULL, \"conversation_id\" TEXT NULL, \"config_hash\" TEXT NOT NULL, \"hash_version\" INTEGER NOT NULL DEFAULT 1, \"events_ref\" TEXT NULL, \"cassette_ref\" TEXT NULL, \"fixture_ref\" TEXT NULL, \"event_count\" INTEGER NOT NULL DEFAULT 0, \"title\" TEXT NOT NULL DEFAULT '', \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "golden_sessions",
+   "tbl_name": "golden_sessions",
+   "sql": "CREATE TABLE \"golden_sessions\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"agent_id\" TEXT NOT NULL, \"recording_id\" TEXT NOT NULL REFERENCES session_recordings (id) ON DELETE CASCADE, \"mode\" TEXT NOT NULL DEFAULT 'deterministic' CHECK(\"mode\" IN ('deterministic', 'live')), \"name\" TEXT NOT NULL DEFAULT '', \"enabled\" INTEGER NOT NULL DEFAULT 1 CHECK (\"enabled\" IN (0, 1)), \"last_status\" TEXT NOT NULL DEFAULT 'unknown' CHECK(\"last_status\" IN ('pass', 'fail', 'unknown')), \"last_scorecard_json\" TEXT NULL CHECK(json_valid(\"last_scorecard_json\")), \"blessed_by\" TEXT NULL, \"blessed_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "eval_suites",
+   "tbl_name": "eval_suites",
+   "sql": "CREATE TABLE \"eval_suites\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"description\" TEXT NOT NULL DEFAULT '', \"task_json\" TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(\"task_json\") AND json_type(\"task_json\") = 'object'), \"fixture_ref\" TEXT NULL, \"fixture_sha\" TEXT NULL, \"graders_json\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"graders_json\") AND json_type(\"graders_json\") = 'array'), \"default_batch_size\" INTEGER NOT NULL DEFAULT 1, \"is_starter\" INTEGER NOT NULL DEFAULT 0 CHECK (\"is_starter\" IN (0, 1)), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"name\"))"
+  },
+  {
+   "type": "table",
+   "name": "eval_runs",
+   "tbl_name": "eval_runs",
+   "sql": "CREATE TABLE \"eval_runs\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"suite_id\" TEXT NOT NULL REFERENCES eval_suites (id) ON DELETE CASCADE, \"config_hash\" TEXT NOT NULL, \"batch_size\" INTEGER NOT NULL DEFAULT 1, \"scorecard_json\" TEXT NULL CHECK(json_valid(\"scorecard_json\") AND json_type(\"scorecard_json\") = 'object'), \"pass_rate\" REAL NOT NULL DEFAULT 0.0, \"status\" TEXT NOT NULL DEFAULT 'queued' CHECK(\"status\" IN ('queued', 'running', 'done', 'failed', 'cancelled')), \"cost_micros\" INTEGER NOT NULL DEFAULT 0, \"triggered_by\" TEXT NOT NULL DEFAULT 'manual' CHECK(\"triggered_by\" IN ('manual', 'canary', 'golden', 'ci')), \"job_id\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"started_at\" INTEGER NULL, \"finished_at\" INTEGER NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "agent_config_versions",
+   "tbl_name": "agent_config_versions",
+   "sql": "CREATE TABLE \"agent_config_versions\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"agent_id\" TEXT NOT NULL REFERENCES agents (id) ON DELETE CASCADE, \"config_hash\" TEXT NOT NULL, \"hash_version\" INTEGER NOT NULL DEFAULT 1, \"config_json\" TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(\"config_json\") AND json_type(\"config_json\") = 'object'), \"status\" TEXT NOT NULL DEFAULT 'live' CHECK(\"status\" IN ('live', 'canary', 'retired')), \"scorecard_json\" TEXT NULL CHECK(json_valid(\"scorecard_json\")), \"promoted_by\" TEXT NULL, \"promoted_at\" INTEGER NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"agent_id\", \"config_hash\"))"
+  },
+  {
+   "type": "table",
+   "name": "skill_eval_campaigns",
+   "tbl_name": "skill_eval_campaigns",
+   "sql": "CREATE TABLE \"skill_eval_campaigns\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"skill_key\" TEXT NOT NULL, \"status\" TEXT NOT NULL CHECK(\"status\" IN ('queued', 'running', 'cancelling', 'cancelled', 'completed', 'failed', 'interrupted')), \"created_at\" INTEGER NOT NULL, \"payload_json\" TEXT NOT NULL CHECK(json_valid(\"payload_json\") AND json_type(\"payload_json\") = 'object'), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "skill_eval_attempts",
+   "tbl_name": "skill_eval_attempts",
+   "sql": "CREATE TABLE \"skill_eval_attempts\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"campaign_id\" TEXT NOT NULL REFERENCES skill_eval_campaigns (id) ON DELETE CASCADE, \"ordinal\" INTEGER NOT NULL, \"payload_json\" TEXT NOT NULL CHECK(json_valid(\"payload_json\") AND json_type(\"payload_json\") = 'object'), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "skill_eval_policies",
+   "tbl_name": "skill_eval_policies",
+   "sql": "CREATE TABLE \"skill_eval_policies\" (\"workspace_id\" TEXT NOT NULL, \"skill_key\" TEXT NOT NULL, \"enabled\" INTEGER NOT NULL CHECK (\"enabled\" IN (0, 1)), \"payload_json\" TEXT NOT NULL CHECK(json_valid(\"payload_json\") AND json_type(\"payload_json\") = 'object'), PRIMARY KEY (\"skill_key\"))"
+  },
+  {
+   "type": "table",
+   "name": "skill_scan_results",
+   "tbl_name": "skill_scan_results",
+   "sql": "CREATE TABLE \"skill_scan_results\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"content_hash\" TEXT NOT NULL, \"rules_version\" INTEGER NOT NULL DEFAULT 1, \"verdict\" TEXT NOT NULL DEFAULT 'quarantine' CHECK(\"verdict\" IN ('pass', 'warn', 'quarantine')), \"findings_json\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"findings_json\") AND json_type(\"findings_json\") = 'array'), \"manifest_json\" TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(\"manifest_json\") AND json_type(\"manifest_json\") = 'object'), \"llm_reviewed\" INTEGER NOT NULL DEFAULT 0 CHECK (\"llm_reviewed\" IN (0, 1)), \"skill_ref\" TEXT NULL, \"scanned_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"content_hash\", \"rules_version\"))"
+  },
+  {
+   "type": "table",
+   "name": "action_policies",
+   "tbl_name": "action_policies",
+   "sql": "CREATE TABLE \"action_policies\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"scope_type\" TEXT NOT NULL CHECK(\"scope_type\" IN ('workspace', 'agent', 'space')), \"scope_id\" TEXT NOT NULL DEFAULT '', \"action_class\" TEXT NULL CHECK(\"action_class\" IN ('fileDelete', 'fileWriteOutsideWorktree', 'gitCommit', 'gitPush', 'prCreate', 'prPublish', 'vendorSyncWrite', 'networkEgress', 'secretAccess', 'packageInstall', 'processSpawn', 'workspaceMutation', 'enclosureControl', 'hostExecution')), \"command_prefix\" TEXT NULL, \"decision\" TEXT NOT NULL DEFAULT 'prompt' CHECK(\"decision\" IN ('allow', 'prompt', 'deny')), \"provenance\" TEXT NOT NULL DEFAULT 'user' CHECK(\"provenance\" IN ('user', 'remembered')), \"constraint_json\" TEXT NULL CHECK(json_valid(\"constraint_json\") AND json_type(\"constraint_json\") = 'object'), \"expires_at\" INTEGER NULL, \"enforcement\" TEXT NULL CHECK(\"enforcement\" IN ('advisory', 'soft', 'hard')), \"created_by\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), CHECK ((action_class IS NULL) <> (command_prefix IS NULL)), CHECK ((scope_type = 'workspace') = (scope_id = '')))"
+  },
+  {
+   "type": "table",
+   "name": "sandbox_exec_grants",
+   "tbl_name": "sandbox_exec_grants",
+   "sql": "CREATE TABLE \"sandbox_exec_grants\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"path\" TEXT NOT NULL, \"decision\" TEXT NOT NULL DEFAULT 'deny' CHECK(\"decision\" IN ('allow', 'deny')), \"created_by\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"path\"))"
+  },
+  {
+   "type": "table",
+   "name": "guard_decisions",
+   "tbl_name": "guard_decisions",
+   "sql": "CREATE TABLE \"guard_decisions\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"seq\" INTEGER NOT NULL, \"occurred_at\" INTEGER NOT NULL, \"actor_type\" TEXT NOT NULL CHECK(\"actor_type\" IN ('user', 'agent', 'system')), \"actor_id\" TEXT NOT NULL, \"on_behalf_of_user_id\" TEXT NULL, \"delegation_chain_id\" TEXT NULL, \"delegation_depth\" INTEGER NULL, \"space_id\" TEXT NULL, \"run_id\" TEXT NULL, \"device_id\" TEXT NULL, \"ip\" TEXT NULL, \"surface\" TEXT NOT NULL CHECK(\"surface\" IN ('repo_rpc', 'harness', 'mcp', 'skill_install', 'sandbox', 'subscription', 'audit')), \"action_name\" TEXT NOT NULL, \"action_classes\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"action_classes\") AND json_type(\"action_classes\") = 'array'), \"permission\" TEXT NULL, \"args_digest\" TEXT NULL, \"constraint_summary\" TEXT NULL, \"decision\" TEXT NOT NULL CHECK(\"decision\" IN ('allow', 'prompt', 'deny')), \"enforcement\" TEXT NULL CHECK(\"enforcement\" IN ('advisory', 'soft', 'hard')), \"source_scope\" TEXT NULL, \"rule_id\" TEXT NULL, \"prompted\" INTEGER NOT NULL DEFAULT 0 CHECK (\"prompted\" IN (0, 1)), \"responder_user_id\" TEXT NULL, \"override_reason\" TEXT NULL, \"correlation_id\" TEXT NULL, \"prev_hash\" TEXT NOT NULL, \"entry_hash\" TEXT NOT NULL, \"kind\" TEXT NOT NULL DEFAULT 'decision' CHECK(\"kind\" IN ('decision', 'checkpoint')), PRIMARY KEY (\"id\"), UNIQUE (\"seq\"))"
+  },
+  {
+   "type": "table",
+   "name": "workspace_roles",
+   "tbl_name": "workspace_roles",
+   "sql": "CREATE TABLE \"workspace_roles\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"base_preset\" TEXT NOT NULL CHECK(\"base_preset\" IN ('admin', 'member', 'viewer', 'guest')), \"denied_permissions\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"denied_permissions\") AND json_type(\"denied_permissions\") = 'array'), \"created_by\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"name\"))"
+  },
+  {
+   "type": "table",
+   "name": "conversation_goals",
+   "tbl_name": "conversation_goals",
+   "sql": "CREATE TABLE \"conversation_goals\" (\"conversation_id\" TEXT NOT NULL REFERENCES conversations (id) ON DELETE CASCADE, \"workspace_id\" TEXT NOT NULL, \"title\" TEXT NOT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"conversation_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "transcripts",
+   "tbl_name": "transcripts",
+   "sql": "CREATE TABLE \"transcripts\" (\"id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"run_id\" TEXT NULL REFERENCES agent_run_logs (id) ON DELETE CASCADE, \"message_id\" TEXT NULL REFERENCES conversation_messages (id) ON DELETE CASCADE, \"segment_count\" INTEGER NOT NULL DEFAULT 0, \"transcript_chars\" INTEGER NOT NULL DEFAULT 0, \"outcome\" TEXT NULL CHECK(\"outcome\" IN ('completed', 'failed', 'interrupted', 'max_turns')), \"complete\" INTEGER NOT NULL DEFAULT 0 CHECK (\"complete\" IN (0, 1)), \"started_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), CHECK ((run_id IS NULL) <> (message_id IS NULL)))"
+  },
+  {
+   "type": "table",
+   "name": "transcript_segments",
+   "tbl_name": "transcript_segments",
+   "sql": "CREATE TABLE \"transcript_segments\" (\"transcript_id\" INTEGER NOT NULL REFERENCES transcripts (id) ON DELETE CASCADE, \"seq\" INTEGER NOT NULL, \"body\" TEXT NOT NULL CHECK(json_valid(\"body\") AND json_type(\"body\") = 'object'), PRIMARY KEY (\"transcript_id\", \"seq\"))"
+  },
+  {
+   "type": "table",
+   "name": "chat_space_links",
+   "tbl_name": "chat_space_links",
+   "sql": "CREATE TABLE \"chat_space_links\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"provider\" TEXT NOT NULL CHECK(\"provider\" IN ('slack')), \"external_team_id\" TEXT NOT NULL DEFAULT '', \"external_channel_id\" TEXT NOT NULL, \"external_thread_id\" TEXT NULL, \"cc_space_id\" TEXT NOT NULL REFERENCES spaces (id) ON DELETE CASCADE, \"created_by_user_id\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"last_activity_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "chat_user_links",
+   "tbl_name": "chat_user_links",
+   "sql": "CREATE TABLE \"chat_user_links\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"provider\" TEXT NOT NULL CHECK(\"provider\" IN ('slack')), \"external_team_id\" TEXT NOT NULL DEFAULT '', \"external_user_id\" TEXT NOT NULL, \"user_id\" TEXT NOT NULL, \"method\" TEXT NOT NULL DEFAULT 'code' CHECK(\"method\" IN ('email', 'code', 'manual')), \"linked_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "workspace_meta",
+   "tbl_name": "workspace_meta",
+   "sql": "CREATE TABLE \"workspace_meta\" (\"id\" INTEGER NOT NULL DEFAULT 0, \"workspace_id\" TEXT NOT NULL, \"install_id\" TEXT NOT NULL, \"created_with_schema_version\" INTEGER NOT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "workspace_settings",
+   "tbl_name": "workspace_settings",
+   "sql": "CREATE TABLE \"workspace_settings\" (\"workspace_id\" TEXT NOT NULL, \"key\" TEXT NOT NULL, \"value\" TEXT NOT NULL, \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"key\", \"workspace_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "notification_feed",
+   "tbl_name": "notification_feed",
+   "sql": "CREATE TABLE \"notification_feed\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"method\" TEXT NOT NULL, \"params_json\" TEXT NOT NULL CHECK(json_valid(\"params_json\") AND json_type(\"params_json\") = 'object'), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "notification_read_marks",
+   "tbl_name": "notification_read_marks",
+   "sql": "CREATE TABLE \"notification_read_marks\" (\"workspace_id\" TEXT NOT NULL, \"user_id\" TEXT NOT NULL, \"last_seen_at\" INTEGER NULL, \"last_seen_seq\" INTEGER NOT NULL DEFAULT 0, \"cleared_before\" INTEGER NULL, \"cleared_before_seq\" INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (\"user_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "notification_item_states",
+   "tbl_name": "notification_item_states",
+   "sql": "CREATE TABLE \"notification_item_states\" (\"workspace_id\" TEXT NOT NULL, \"user_id\" TEXT NOT NULL, \"item_id\" TEXT NOT NULL REFERENCES notification_feed (id) ON DELETE CASCADE, \"read_at\" INTEGER NULL, \"dismissed_at\" INTEGER NULL, PRIMARY KEY (\"user_id\", \"item_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "rig_sessions",
+   "tbl_name": "rig_sessions",
+   "sql": "CREATE TABLE \"rig_sessions\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"surface\" TEXT NOT NULL CHECK(\"surface\" IN ('computer', 'browser', 'mobile', 'ios', 'window', 'environment')), \"backend\" TEXT NOT NULL CHECK(\"backend\" IN ('qemu-hvf', 'qemu-kvm', 'qemu-tcg', 'android-emulator', 'ios-simulator', 'host-window', 'smolvm')), \"phase\" TEXT NOT NULL DEFAULT 'provisioning' CHECK(\"phase\" IN ('provisioning', 'ready', 'parked', 'closing', 'closed', 'failed')), \"status_detail\" TEXT NULL, \"close_reason\" TEXT NULL CHECK(\"close_reason\" IN ('requested', 'idleTimeout', 'ttlExpired', 'conversationEnded', 'workspaceGone', 'serverShutdown', 'backendFailure', 'memoryPressure')), \"spec_json\" TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(\"spec_json\") AND json_type(\"spec_json\") = 'object'), \"display_width\" INTEGER NULL, \"display_height\" INTEGER NULL, \"current_url\" TEXT NULL, \"conversation_id\" TEXT NULL, \"agent_id\" TEXT NULL REFERENCES agents (id) ON DELETE SET NULL, \"worker_id\" TEXT NULL, \"created_by\" TEXT NOT NULL, \"controller\" TEXT NULL, \"control_held_since\" INTEGER NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"ready_at\" INTEGER NULL, \"last_activity_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"closed_at\" INTEGER NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "rig_action_log",
+   "tbl_name": "rig_action_log",
+   "sql": "CREATE TABLE \"rig_action_log\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"rig_id\" TEXT NOT NULL REFERENCES rig_sessions (id) ON DELETE CASCADE, \"seq\" INTEGER NOT NULL, \"verb\" TEXT NOT NULL, \"args_json\" TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(\"args_json\") AND json_type(\"args_json\") = 'object'), \"summary\" TEXT NOT NULL DEFAULT '', \"actor\" TEXT NOT NULL, \"is_take_over\" INTEGER NOT NULL DEFAULT 0 CHECK (\"is_take_over\" IN (0, 1)), \"is_error\" INTEGER NOT NULL DEFAULT 0 CHECK (\"is_error\" IN (0, 1)), \"result_text\" TEXT NULL, \"image_hash\" TEXT NULL, \"duration_ms\" INTEGER NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"rig_id\", \"seq\"))"
+  },
+  {
+   "type": "table",
+   "name": "skill_sources",
+   "tbl_name": "skill_sources",
+   "sql": "CREATE TABLE \"skill_sources\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"owner\" TEXT NOT NULL, \"repo\" TEXT NOT NULL, \"url\" TEXT NOT NULL, \"description\" TEXT NOT NULL DEFAULT '', \"default_branch\" TEXT NOT NULL DEFAULT '', \"star_count\" INTEGER NOT NULL DEFAULT 0, \"skill_count\" INTEGER NOT NULL DEFAULT 0, \"last_synced_at\" INTEGER NULL, \"last_error\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"owner\", \"repo\"))"
+  },
+  {
+   "type": "table",
+   "name": "run_call_usages",
+   "tbl_name": "run_call_usages",
+   "sql": "CREATE TABLE \"run_call_usages\" (\"id\" TEXT NOT NULL, \"run_id\" TEXT NULL REFERENCES agent_run_logs (id) ON DELETE CASCADE, \"workspace_id\" TEXT NOT NULL, \"conversation_id\" TEXT NULL REFERENCES conversations (id) ON DELETE SET NULL, \"request_id\" TEXT NOT NULL, \"attempt\" INTEGER NOT NULL DEFAULT 1, \"purpose\" TEXT NOT NULL DEFAULT 'main' CHECK(\"purpose\" IN ('main', 'compaction', 'advisor', 'side_request', 'subagent')), \"provider\" TEXT NOT NULL DEFAULT '', \"model_id\" TEXT NOT NULL DEFAULT '', \"input_tokens\" INTEGER NOT NULL DEFAULT 0, \"output_tokens\" INTEGER NOT NULL DEFAULT 0, \"thought_tokens\" INTEGER NOT NULL DEFAULT 0, \"cached_read_tokens\" INTEGER NOT NULL DEFAULT 0, \"cached_write_tokens\" INTEGER NOT NULL DEFAULT 0, \"cost_micros\" INTEGER NULL, \"cost_basis\" TEXT NOT NULL DEFAULT 'estimated' CHECK(\"cost_basis\" IN ('estimated', 'providerReported', 'subscription', 'mixed', 'unknown')), \"transport_first_byte_ms\" INTEGER NULL, \"first_model_event_ms\" INTEGER NULL, \"duration_ms\" INTEGER NULL, \"outcome\" TEXT NOT NULL DEFAULT 'success' CHECK(\"outcome\" IN ('success', 'failure', 'cancelled')), \"error_code\" TEXT NULL, \"started_at\" INTEGER NOT NULL, \"recorded_at\" INTEGER NOT NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "environment_definitions",
+   "tbl_name": "environment_definitions",
+   "sql": "CREATE TABLE \"environment_definitions\" (\"id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"definition_json\" TEXT NOT NULL CHECK(json_valid(\"definition_json\") AND json_type(\"definition_json\") = 'object'), \"source_repo_id\" TEXT NULL REFERENCES repos (id) ON DELETE SET NULL, \"source_path\" TEXT NULL, \"approved_blob_hash\" TEXT NULL, \"overrides_json\" TEXT NULL CHECK(json_valid(\"overrides_json\") AND json_type(\"overrides_json\") = 'object'), \"created_by\" TEXT NULL, \"host_approved_by\" TEXT NULL, \"created_at\" INTEGER NOT NULL, \"updated_at\" INTEGER NOT NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "space_environments",
+   "tbl_name": "space_environments",
+   "sql": "CREATE TABLE \"space_environments\" (\"id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL, \"definition_id\" TEXT NOT NULL REFERENCES environment_definitions (id), \"name\" TEXT NOT NULL, \"status\" TEXT NOT NULL CHECK(\"status\" IN ('creating', 'starting', 'ready', 'degraded', 'failed', 'blocked', 'stopped', 'stopping', 'destroying', 'gone')), \"placement\" TEXT NOT NULL DEFAULT 'host' CHECK(\"placement\" IN ('host', 'rig')), \"rig_id\" TEXT NULL REFERENCES rig_sessions (id) ON DELETE SET NULL, \"ports_json\" TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(\"ports_json\") AND json_type(\"ports_json\") = 'object'), \"endpoints_json\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"endpoints_json\") AND json_type(\"endpoints_json\") = 'array'), \"components_json\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"components_json\") AND json_type(\"components_json\") = 'array'), \"options_json\" TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(\"options_json\") AND json_type(\"options_json\") = 'object'), \"warnings_json\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"warnings_json\") AND json_type(\"warnings_json\") = 'array'), \"last_error_json\" TEXT NULL CHECK(json_valid(\"last_error_json\") AND json_type(\"last_error_json\") = 'object'), \"needs_recreate\" INTEGER NOT NULL DEFAULT 0 CHECK (\"needs_recreate\" IN (0, 1)), \"created_by\" TEXT NOT NULL, \"created_at\" INTEGER NOT NULL, \"last_used_at\" INTEGER NOT NULL, PRIMARY KEY (\"id\"), UNIQUE (\"space_id\", \"definition_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "environment_runs",
+   "tbl_name": "environment_runs",
+   "sql": "CREATE TABLE \"environment_runs\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"space_id\" TEXT NULL REFERENCES spaces (id) ON DELETE SET NULL, \"environment_id\" TEXT NULL REFERENCES space_environments (id) ON DELETE SET NULL, \"definition_id\" TEXT NULL REFERENCES environment_definitions (id) ON DELETE SET NULL, \"repo_id\" TEXT NULL REFERENCES repos (id) ON DELETE SET NULL, \"kind\" TEXT NOT NULL CHECK(\"kind\" IN ('start', 'stop', 'reset', 'refresh', 'destroy', 'task', 'test')), \"label\" TEXT NULL, \"status\" TEXT NOT NULL CHECK(\"status\" IN ('running', 'succeeded', 'failed', 'blocked', 'timedOut')), \"started_at\" INTEGER NOT NULL, \"completed_at\" INTEGER NULL, \"exit_code\" INTEGER NULL, \"error\" TEXT NULL, \"output_text\" TEXT NOT NULL DEFAULT '', PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "imported_authority_holds",
+   "tbl_name": "imported_authority_holds",
+   "sql": "CREATE TABLE \"imported_authority_holds\" (\"id\" TEXT NOT NULL, \"kind\" TEXT NOT NULL CHECK(\"kind\" IN ('action_policy', 'sandbox_exec_grant', 'repo_grant', 'membership_role', 'invite')), \"payload_json\" TEXT NOT NULL CHECK(json_valid(\"payload_json\") AND json_type(\"payload_json\") = 'object'), \"imported_at\" INTEGER NOT NULL, \"source_install_id\" TEXT NOT NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "space_takeovers",
+   "tbl_name": "space_takeovers",
+   "sql": "CREATE TABLE \"space_takeovers\" (\"space_id\" TEXT NOT NULL REFERENCES spaces (id) ON DELETE CASCADE, \"user_id\" TEXT NOT NULL, \"display_name\" TEXT NOT NULL, \"since\" INTEGER NOT NULL, \"paused_run_ids\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"paused_run_ids\") AND json_type(\"paused_run_ids\") = 'array'), \"stopped_run_ids\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"stopped_run_ids\") AND json_type(\"stopped_run_ids\") = 'array'), PRIMARY KEY (\"space_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "space_checkers",
+   "tbl_name": "space_checkers",
+   "sql": "CREATE TABLE \"space_checkers\" (\"space_id\" TEXT NOT NULL REFERENCES spaces (id) ON DELETE CASCADE, \"agent_id\" TEXT NOT NULL REFERENCES agents (id) ON DELETE CASCADE, \"updated_at\" INTEGER NOT NULL, PRIMARY KEY (\"space_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "editor_layouts",
+   "tbl_name": "editor_layouts",
+   "sql": "CREATE TABLE \"editor_layouts\" (\"user_id\" TEXT NOT NULL, \"surface\" TEXT NOT NULL CHECK(\"surface\" IN ('space', 'pull_request')), \"target\" TEXT NOT NULL, \"layout\" TEXT NOT NULL CHECK(json_valid(\"layout\")), \"updated_at\" INTEGER NOT NULL, PRIMARY KEY (\"user_id\", \"surface\", \"target\"))"
+  },
+  {
+   "type": "table",
+   "name": "pr_code_owner_reviewers",
+   "tbl_name": "pr_code_owner_reviewers",
+   "sql": "CREATE TABLE \"pr_code_owner_reviewers\" (\"repo_key\" TEXT NOT NULL, \"pr_number\" INTEGER NOT NULL, \"identity\" TEXT NOT NULL, PRIMARY KEY (\"repo_key\", \"pr_number\", \"identity\"))"
+  },
+  {
+   "type": "table",
+   "name": "pending_pr_replies",
+   "tbl_name": "pending_pr_replies",
+   "sql": "CREATE TABLE \"pending_pr_replies\" (\"run_log_id\" TEXT NOT NULL REFERENCES agent_run_logs (id) ON DELETE CASCADE, \"reply_json\" TEXT NOT NULL CHECK(json_valid(\"reply_json\") AND json_type(\"reply_json\") = 'object'), \"created_at\" INTEGER NOT NULL, PRIMARY KEY (\"run_log_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "approval_escalations",
+   "tbl_name": "approval_escalations",
+   "sql": "CREATE TABLE \"approval_escalations\" (\"approval_id\" TEXT NOT NULL REFERENCES approvals (id) ON DELETE CASCADE, \"tier\" INTEGER NOT NULL CHECK(\"tier\" >= 1), \"escalated_at\" INTEGER NOT NULL, PRIMARY KEY (\"approval_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "plan_divergences",
+   "tbl_name": "plan_divergences",
+   "sql": "CREATE TABLE \"plan_divergences\" (\"orchestration_id\" TEXT NOT NULL REFERENCES orchestrations (id) ON DELETE CASCADE, \"node_key\" TEXT NOT NULL, \"reasons\" TEXT NOT NULL CHECK(json_valid(\"reasons\") AND json_type(\"reasons\") = 'array'), \"held\" INTEGER NOT NULL CHECK (\"held\" IN (0, 1)), \"recorded_at\" INTEGER NOT NULL, PRIMARY KEY (\"orchestration_id\", \"node_key\"))"
+  },
+  {
+   "type": "table",
+   "name": "mcp_servers",
+   "tbl_name": "mcp_servers",
+   "sql": "CREATE TABLE \"mcp_servers\" (\"id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"transport\" TEXT NOT NULL CHECK(\"transport\" IN ('stdio', 'http', 'sse')), \"command\" TEXT NULL, \"args_json\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"args_json\") AND json_type(\"args_json\") = 'array'), \"url\" TEXT NULL, \"env_names_json\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"env_names_json\") AND json_type(\"env_names_json\") = 'array'), \"header_names_json\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"header_names_json\") AND json_type(\"header_names_json\") = 'array'), \"enabled\" INTEGER NOT NULL DEFAULT 1 CHECK (\"enabled\" IN (0, 1)), \"created_by\" TEXT NULL, \"host_approved_by\" TEXT NULL, \"created_at\" INTEGER NOT NULL, \"updated_at\" INTEGER NOT NULL, PRIMARY KEY (\"id\"), UNIQUE (\"name\"))"
+  },
+  {
+   "type": "table",
+   "name": "code_executions",
+   "tbl_name": "code_executions",
+   "sql": "CREATE TABLE \"code_executions\" (\"id\" TEXT NOT NULL, \"run_id\" TEXT NOT NULL REFERENCES agent_run_logs (id) ON DELETE CASCADE, \"tool_call_id\" TEXT NOT NULL, \"id_suffix\" INTEGER NOT NULL, \"surface\" TEXT NOT NULL CHECK(\"surface\" IN ('harness', 'mcp')), \"conversation_id\" TEXT NULL REFERENCES conversations (id) ON DELETE SET NULL, \"agent_id\" TEXT NULL REFERENCES agents (id) ON DELETE SET NULL, \"space_id\" TEXT NULL REFERENCES spaces (id) ON DELETE CASCADE, \"description\" TEXT NOT NULL DEFAULT '', \"started_at_ms\" INTEGER NOT NULL, \"duration_ms\" INTEGER NOT NULL, \"status\" TEXT NOT NULL CHECK(\"status\" IN ('running', 'completed', 'failed', 'timed_out', 'cancelled', 'memory_exceeded', 'output_exceeded', 'sandbox_error', 'refused')), \"error_kind\" TEXT NULL CHECK(\"error_kind\" IN ('script_error', 'stalled', 'cpu', 'heap', 'output', 'deadline', 'cancelled', 'shutdown', 'server_stopped', 'internal', 'start', 'lockdown', 'exited', 'protocol', 'frame_too_large', 'call_cap', 'output_overrun', 'store_overrun', 'stdin_stalled', 'unresponsive', 'host_error', 'invalid_tool_call_id', 'execution_id', 'unavailable', 'source_too_large', 'catalog', 'run_busy', 'server_busy', 'no_run_log', 'audit_unavailable', 'space_gone')), \"source_hash\" TEXT NOT NULL, \"source_bytes\" INTEGER NOT NULL, \"cpu_ms\" INTEGER NULL, \"peak_heap_bytes\" INTEGER NULL, \"calls_completed\" INTEGER NOT NULL DEFAULT 0, \"calls_failed\" INTEGER NOT NULL DEFAULT 0, \"calls_denied\" INTEGER NOT NULL DEFAULT 0, \"calls_cancelled\" INTEGER NOT NULL DEFAULT 0, \"calls_timed_out\" INTEGER NOT NULL DEFAULT 0, \"calls_unknown_tool\" INTEGER NOT NULL DEFAULT 0, \"calls_invalid_args\" INTEGER NOT NULL DEFAULT 0, \"question_count\" INTEGER NOT NULL DEFAULT 0, \"output_bytes\" INTEGER NOT NULL DEFAULT 0, \"output_truncated\" INTEGER NOT NULL DEFAULT 0 CHECK (\"output_truncated\" IN (0, 1)), \"engine_version\" TEXT NULL, \"lockdown_json\" TEXT NULL CHECK(json_valid(\"lockdown_json\") AND json_type(\"lockdown_json\") = 'object'), \"limits_json\" TEXT NOT NULL CHECK(json_valid(\"limits_json\") AND json_type(\"limits_json\") = 'object'), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "code_execution_payloads",
+   "tbl_name": "code_execution_payloads",
+   "sql": "CREATE TABLE \"code_execution_payloads\" (\"execution_id\" TEXT NOT NULL REFERENCES code_executions (id) ON DELETE CASCADE, \"source\" TEXT NOT NULL, \"output\" TEXT NOT NULL DEFAULT '', \"console\" TEXT NOT NULL DEFAULT '', \"error_name\" TEXT NULL, PRIMARY KEY (\"execution_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "code_execution_calls",
+   "tbl_name": "code_execution_calls",
+   "sql": "CREATE TABLE \"code_execution_calls\" (\"execution_id\" TEXT NOT NULL REFERENCES code_executions (id) ON DELETE CASCADE, \"sequence\" INTEGER NOT NULL, \"tool_call_id\" TEXT NOT NULL, \"tool_name\" TEXT NOT NULL, \"start_offset_ms\" INTEGER NOT NULL, \"duration_ms\" INTEGER NOT NULL, \"status\" TEXT NOT NULL CHECK(\"status\" IN ('completed', 'failed', 'denied', 'cancelled', 'timed_out', 'unknown_tool', 'invalid_args')), \"gate_decision\" TEXT NULL CHECK(\"gate_decision\" IN ('allowed', 'approved', 'denied')), \"approval_wait_ms\" INTEGER NOT NULL DEFAULT 0, \"argument_bytes\" INTEGER NOT NULL DEFAULT 0, \"result_bytes\" INTEGER NOT NULL DEFAULT 0, \"arguments\" TEXT NOT NULL DEFAULT '{}', \"error\" TEXT NULL, \"site_line\" INTEGER NULL, \"site_column\" INTEGER NULL, PRIMARY KEY (\"execution_id\", \"sequence\"), CHECK ((site_line IS NULL) = (site_column IS NULL) AND (site_line IS NULL OR (site_line >= 1 AND site_column >= 1))))"
+  },
+  {
+   "type": "table",
+   "name": "code_mode_store",
+   "tbl_name": "code_mode_store",
+   "sql": "CREATE TABLE \"code_mode_store\" (\"conversation_id\" TEXT NOT NULL REFERENCES conversations (id) ON DELETE CASCADE, \"agent_id\" TEXT NOT NULL REFERENCES agents (id) ON DELETE CASCADE, \"key\" TEXT NOT NULL, \"value_json\" TEXT NOT NULL CHECK(json_valid(\"value_json\")), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"conversation_id\", \"agent_id\", \"key\"))"
+  },
+  {
+   "type": "table",
+   "name": "agent_wakes",
+   "tbl_name": "agent_wakes",
+   "sql": "CREATE TABLE \"agent_wakes\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL, \"conversation_id\" TEXT NOT NULL REFERENCES conversations (id) ON DELETE CASCADE, \"agent_id\" TEXT NOT NULL REFERENCES agents (id) ON DELETE CASCADE, \"reason\" TEXT NOT NULL CHECK(\"reason\" IN ('user_message', 'assignment', 'recovery', 'child_completed', 'schedule', 'pipeline_step', 'goal_continuation', 'goal_verification', 'goal_review', 'watch', 'peer_message', 'peer_reply', 'limit_reset', 'improvement_review')), \"lane\" TEXT NOT NULL DEFAULT 'aside' CHECK(\"lane\" IN ('aside', 'follow_up')), \"payload\" TEXT NOT NULL, \"detail\" TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(\"detail\") AND json_type(\"detail\") = 'object'), \"run_options\" TEXT NULL CHECK(json_valid(\"run_options\") AND json_type(\"run_options\") = 'object'), \"dedup_key\" TEXT NOT NULL, \"not_before\" INTEGER NOT NULL, \"expires_at\" INTEGER NULL, \"requested_by_user_id\" TEXT NULL, \"chain\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"chain\") AND json_type(\"chain\") = 'array'), \"expects_reply\" INTEGER NOT NULL DEFAULT 0 CHECK (\"expects_reply\" IN (0, 1)), \"state\" TEXT NOT NULL DEFAULT 'pending' CHECK(\"state\" IN ('pending', 'held', 'claimed', 'delivered', 'skipped', 'expired', 'cancelled')), \"state_reason\" TEXT NULL, \"delivered_run_id\" TEXT NULL, \"attempt\" INTEGER NOT NULL DEFAULT 0, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"claimed_at\" INTEGER NULL, \"settled_at\" INTEGER NULL, PRIMARY KEY (\"id\"), CHECK (length(payload) <= 4000), CHECK (attempt >= 0), CHECK (expires_at IS NULL OR expires_at >= created_at))"
+  },
+  {
+   "type": "table",
+   "name": "wake_rules",
+   "tbl_name": "wake_rules",
+   "sql": "CREATE TABLE \"wake_rules\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL, \"conversation_id\" TEXT NOT NULL REFERENCES conversations (id) ON DELETE CASCADE, \"agent_id\" TEXT NOT NULL REFERENCES agents (id) ON DELETE CASCADE, \"trigger_kind\" TEXT NOT NULL CHECK(\"trigger_kind\" IN ('at', 'every', 'cron', 'self_paced', 'event')), \"trigger_at\" INTEGER NULL, \"interval_seconds\" INTEGER NULL, \"cron_expression\" TEXT NULL, \"time_zone\" TEXT NULL, \"event_kind\" TEXT NULL CHECK(\"event_kind\" IN ('pr_checks', 'pr_review', 'pr_merged', 'environment', 'ticket', 'pipeline_run')), \"event_target_id\" TEXT NULL, \"note\" TEXT NOT NULL, \"note_edited_by_user_id\" TEXT NULL, \"root_rule_id\" TEXT NULL, \"deliver\" TEXT NOT NULL DEFAULT 'run' CHECK(\"deliver\" IN ('run', 'notify')), \"when_busy\" TEXT NOT NULL DEFAULT 'skip' CHECK(\"when_busy\" IN ('skip', 'queue')), \"max_runs\" INTEGER NULL, \"cost_cap_micros\" INTEGER NOT NULL, \"expires_at\" INTEGER NOT NULL, \"run_count\" INTEGER NOT NULL DEFAULT 0, \"skip_count\" INTEGER NOT NULL DEFAULT 0, \"cost_micros\" INTEGER NOT NULL DEFAULT 0, \"last_fired_at\" INTEGER NULL, \"next_fire_at\" INTEGER NULL, \"next_delay_seconds\" INTEGER NULL, \"goal_id\" TEXT NULL REFERENCES agent_goal_runs (id) ON DELETE CASCADE, \"origin\" TEXT NOT NULL CHECK(\"origin\" IN ('agent', 'person')), \"created_by_run_id\" TEXT NULL, \"created_by_user_id\" TEXT NULL, \"requested_by_user_id\" TEXT NULL, \"status\" TEXT NOT NULL DEFAULT 'active' CHECK(\"status\" IN ('active', 'paused', 'ended')), \"end_reason\" TEXT NULL CHECK(\"end_reason\" IN ('fired', 'expired', 'run_cap', 'cost_cap', 'goal_ended', 'cancelled', 'member_removed', 'invalid_row')), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), CHECK ((trigger_kind <> 'at' OR trigger_at IS NOT NULL) AND (trigger_kind <> 'every' OR interval_seconds >= 60) AND (trigger_kind <> 'cron' OR (cron_expression IS NOT NULL AND time_zone IS NOT NULL)) AND (trigger_kind <> 'event' OR event_kind IS NOT NULL) AND (event_kind NOT IN ('ticket', 'pipeline_run') OR event_target_id IS NOT NULL)), CHECK ((status = 'ended') = (end_reason IS NOT NULL)), CHECK (length(note) <= 4000), CHECK (expires_at >= created_at), CHECK (run_count >= 0 AND skip_count >= 0 AND cost_micros >= 0), CHECK (cost_cap_micros > 0 AND (max_runs IS NULL OR max_runs > 0)))"
+  },
+  {
+   "type": "table",
+   "name": "peer_asks",
+   "tbl_name": "peer_asks",
+   "sql": "CREATE TABLE \"peer_asks\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"kind\" TEXT NOT NULL DEFAULT 'ask' CHECK(\"kind\" IN ('ask', 'consult', 'review')), \"mode\" TEXT NOT NULL DEFAULT 'wait' CHECK(\"mode\" IN ('wait', 'background')), \"asker_agent_id\" TEXT NOT NULL REFERENCES agents (id) ON DELETE CASCADE, \"asker_run_id\" TEXT NULL, \"asker_conversation_id\" TEXT NOT NULL REFERENCES conversations (id) ON DELETE CASCADE, \"asker_space_id\" TEXT NOT NULL, \"recipient_agent_id\" TEXT NOT NULL REFERENCES agents (id) ON DELETE CASCADE, \"recipient_conversation_id\" TEXT NULL, \"recipient_space_id\" TEXT NULL, \"question_message_id\" TEXT NULL, \"question_hash\" TEXT NOT NULL, \"dispatched_run_id\" TEXT NULL, \"chain\" TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(\"chain\") AND json_type(\"chain\") = 'array'), \"status\" TEXT NOT NULL DEFAULT 'pending' CHECK(\"status\" IN ('pending', 'answered', 'failed', 'expired', 'cancelled')), \"reply_message_id\" TEXT NULL, \"reply_inline\" INTEGER NOT NULL DEFAULT 0 CHECK (\"reply_inline\" IN (0, 1)), \"error\" TEXT NULL, \"requested_by_user_id\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"expires_at\" INTEGER NOT NULL, \"settled_at\" INTEGER NULL, \"promised_at\" INTEGER NULL, \"blocked_noticed_at\" INTEGER NULL, \"stall_noticed_run_id\" TEXT NULL, PRIMARY KEY (\"id\"), CHECK (asker_agent_id <> recipient_agent_id), CHECK (expires_at >= created_at), CHECK (error IS NULL OR length(error) <= 2000))"
+  },
+  {
+   "type": "table",
+   "name": "improvement_proposals",
+   "tbl_name": "improvement_proposals",
+   "sql": "CREATE TABLE \"improvement_proposals\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"agent_id\" TEXT NOT NULL REFERENCES agents (id) ON DELETE CASCADE, \"space_id\" TEXT NULL, \"conversation_id\" TEXT NULL REFERENCES conversations (id) ON DELETE SET NULL, \"goal_id\" TEXT NULL REFERENCES agent_goal_runs (id) ON DELETE SET NULL, \"review_run_id\" TEXT NULL, \"kind\" TEXT NOT NULL CHECK(\"kind\" IN ('memory_fact', 'policy', 'agent_note', 'skill_edit', 'skill_new')), \"scope\" TEXT NOT NULL CHECK(\"scope\" IN ('agent', 'repository', 'workspace')), \"scope_ref_id\" TEXT NULL, \"operation\" TEXT NOT NULL CHECK(\"operation\" IN ('add', 'replace', 'remove')), \"target_ref\" TEXT NULL, \"change\" TEXT NOT NULL, \"evidence\" TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(\"evidence\") AND json_type(\"evidence\") = 'object'), \"expected\" TEXT NOT NULL, \"status\" TEXT NOT NULL DEFAULT 'proposed' CHECK(\"status\" IN ('proposed', 'accepted', 'rejected', 'rolled_back', 'expired')), \"before_text\" TEXT NULL, \"after_text\" TEXT NULL, \"applied_ref\" TEXT NULL, \"candidate_revision_id\" TEXT NULL, \"campaign_id\" TEXT NULL, \"campaign_state\" TEXT NOT NULL DEFAULT 'none' CHECK(\"campaign_state\" IN ('none', 'running', 'passed', 'failed')), \"decided_by_user_id\" TEXT NULL, \"decided_at\" INTEGER NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"expires_at\" INTEGER NOT NULL, PRIMARY KEY (\"id\"), CHECK (length(change) BETWEEN 1 AND 600), CHECK (length(expected) BETWEEN 1 AND 600), CHECK (expires_at >= created_at))"
+  },
+  {
+   "type": "index",
+   "name": "uq_repos_path",
+   "tbl_name": "repos",
+   "sql": "CREATE UNIQUE INDEX uq_repos_path ON repos (path)"
+  },
+  {
+   "type": "index",
+   "name": "uq_agents_name",
+   "tbl_name": "agents",
+   "sql": "CREATE UNIQUE INDEX uq_agents_name ON agents (name)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agents_reports_to",
+   "tbl_name": "agents",
+   "sql": "CREATE INDEX idx_agents_reports_to ON agents (reports_to)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agents_budget_policy",
+   "tbl_name": "agents",
+   "sql": "CREATE INDEX idx_agents_budget_policy ON agents (budget_policy_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agents_runtime_profile",
+   "tbl_name": "agents",
+   "sql": "CREATE INDEX idx_agents_runtime_profile ON agents (runtime_profile_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_run_logs_started",
+   "tbl_name": "agent_run_logs",
+   "sql": "CREATE INDEX idx_agent_run_logs_started ON agent_run_logs (started_at, id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_run_logs_agent_started",
+   "tbl_name": "agent_run_logs",
+   "sql": "CREATE INDEX idx_agent_run_logs_agent_started ON agent_run_logs (agent_id, started_at, id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_run_logs_conversation_started",
+   "tbl_name": "agent_run_logs",
+   "sql": "CREATE INDEX idx_agent_run_logs_conversation_started ON agent_run_logs (conversation_id, started_at, id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_run_logs_space_started",
+   "tbl_name": "agent_run_logs",
+   "sql": "CREATE INDEX idx_agent_run_logs_space_started ON agent_run_logs (space_id, started_at, id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_run_logs_ticket",
+   "tbl_name": "agent_run_logs",
+   "sql": "CREATE INDEX idx_agent_run_logs_ticket ON agent_run_logs (ticket_id, started_at, id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_run_logs_status",
+   "tbl_name": "agent_run_logs",
+   "sql": "CREATE INDEX idx_agent_run_logs_status ON agent_run_logs (status, started_at, id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_run_logs_pipelineRun",
+   "tbl_name": "agent_run_logs",
+   "sql": "CREATE INDEX idx_agent_run_logs_pipelineRun ON agent_run_logs (pipeline_run_id, pipeline_step_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_run_logs_status_completed",
+   "tbl_name": "agent_run_logs",
+   "sql": "CREATE INDEX idx_agent_run_logs_status_completed ON agent_run_logs (status, completed_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_run_logs_parentRun",
+   "tbl_name": "agent_run_logs",
+   "sql": "CREATE INDEX idx_agent_run_logs_parentRun ON agent_run_logs (parent_run_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_run_logs_retryOf",
+   "tbl_name": "agent_run_logs",
+   "sql": "CREATE INDEX idx_agent_run_logs_retryOf ON agent_run_logs (retry_of_run_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_goal_runs_agent_status",
+   "tbl_name": "agent_goal_runs",
+   "sql": "CREATE INDEX idx_agent_goal_runs_agent_status ON agent_goal_runs (agent_id, status)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_goal_runs_status",
+   "tbl_name": "agent_goal_runs",
+   "sql": "CREATE INDEX idx_agent_goal_runs_status ON agent_goal_runs (status, created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_goal_runs_created",
+   "tbl_name": "agent_goal_runs",
+   "sql": "CREATE INDEX idx_agent_goal_runs_created ON agent_goal_runs (created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_goal_runs_space",
+   "tbl_name": "agent_goal_runs",
+   "sql": "CREATE INDEX idx_agent_goal_runs_space ON agent_goal_runs (space_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_goal_runs_conversation",
+   "tbl_name": "agent_goal_runs",
+   "sql": "CREATE INDEX idx_agent_goal_runs_conversation ON agent_goal_runs (conversation_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_goal_runs_active_run",
+   "tbl_name": "agent_goal_runs",
+   "sql": "CREATE INDEX idx_agent_goal_runs_active_run ON agent_goal_runs (active_run_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_goal_runs_pipeline_run",
+   "tbl_name": "agent_goal_runs",
+   "sql": "CREATE INDEX idx_agent_goal_runs_pipeline_run ON agent_goal_runs (pipeline_run_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_agent_goal_runs_active_agent",
+   "tbl_name": "agent_goal_runs",
+   "sql": "CREATE UNIQUE INDEX uq_agent_goal_runs_active_agent ON agent_goal_runs (agent_id) WHERE status = 'active'"
+  },
+  {
+   "type": "index",
+   "name": "idx_pull_requests_ws_created",
+   "tbl_name": "pull_requests",
+   "sql": "CREATE INDEX idx_pull_requests_ws_created ON pull_requests (created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_caches_kind_updated",
+   "tbl_name": "caches",
+   "sql": "CREATE INDEX idx_caches_kind_updated ON caches (kind, updated_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_spaces_pipelineRunId",
+   "tbl_name": "spaces",
+   "sql": "CREATE INDEX idx_spaces_pipelineRunId ON spaces (pipeline_run_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_conversations_spaceId",
+   "tbl_name": "conversations",
+   "sql": "CREATE INDEX idx_conversations_spaceId ON conversations (space_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_conversations_anchorMessageId",
+   "tbl_name": "conversations",
+   "sql": "CREATE INDEX idx_conversations_anchorMessageId ON conversations (anchor_message_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_conversations_leafMessageId",
+   "tbl_name": "conversations",
+   "sql": "CREATE INDEX idx_conversations_leafMessageId ON conversations (leaf_message_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_space_participants_space_principal",
+   "tbl_name": "space_participants",
+   "sql": "CREATE UNIQUE INDEX uq_space_participants_space_principal ON space_participants (space_id, principal_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_space_repos_repo",
+   "tbl_name": "space_repos",
+   "sql": "CREATE INDEX idx_space_repos_repo ON space_repos (repo_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_catalog_files_lifecycle",
+   "tbl_name": "catalog_files",
+   "sql": "CREATE INDEX idx_catalog_files_lifecycle ON catalog_files (state, created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_catalog_files_path",
+   "tbl_name": "catalog_files",
+   "sql": "CREATE INDEX idx_catalog_files_path ON catalog_files (path)"
+  },
+  {
+   "type": "index",
+   "name": "idx_catalog_files_attached_message",
+   "tbl_name": "catalog_files",
+   "sql": "CREATE INDEX idx_catalog_files_attached_message ON catalog_files (attached_message_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_space_autonomy_agentId",
+   "tbl_name": "space_autonomy",
+   "sql": "CREATE INDEX idx_space_autonomy_agentId ON space_autonomy (agent_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_message_reactions_spaceId",
+   "tbl_name": "message_reactions",
+   "sql": "CREATE INDEX idx_message_reactions_spaceId ON message_reactions (space_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_conversation_messages_messageType",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE INDEX idx_conversation_messages_messageType ON conversation_messages (message_type)"
+  },
+  {
+   "type": "index",
+   "name": "idx_conversation_messages_space_created",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE INDEX idx_conversation_messages_space_created ON conversation_messages (space_id, created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_conversation_messages_conversation_created",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE INDEX idx_conversation_messages_conversation_created ON conversation_messages (conversation_id, created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_conversation_messages_parentMessageId",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE INDEX idx_conversation_messages_parentMessageId ON conversation_messages (parent_message_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_conversation_messages_live_activity",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE INDEX idx_conversation_messages_live_activity ON conversation_messages (space_id, conversation_id, created_at, sender_type) WHERE reverted = 0"
+  },
+  {
+   "type": "index",
+   "name": "idx_conversation_messages_live_chars",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE INDEX idx_conversation_messages_live_chars ON conversation_messages (conversation_id, message_type, content_chars, transcript_chars) WHERE reverted = 0 AND compacted = 0"
+  },
+  {
+   "type": "index",
+   "name": "idx_conversation_messages_context_reading",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE INDEX idx_conversation_messages_context_reading ON conversation_messages (conversation_id, created_at, context_tokens, context_window_tokens) WHERE reverted = 0 AND context_tokens IS NOT NULL"
+  },
+  {
+   "type": "index",
+   "name": "idx_conversation_messages_open_questions",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE INDEX idx_conversation_messages_open_questions ON conversation_messages (conversation_id) WHERE message_type = 'user_question' AND answered = 0 AND reverted = 0"
+  },
+  {
+   "type": "index",
+   "name": "idx_conversation_messages_outline",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE INDEX idx_conversation_messages_outline ON conversation_messages (conversation_id, created_at, space_id, id, sender_id, sender_type, message_type, content_chars, answered, steer_state, revision) WHERE reverted = 0 AND revision >= 0"
+  },
+  {
+   "type": "index",
+   "name": "idx_conversation_messages_queued_steering",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE INDEX idx_conversation_messages_queued_steering ON conversation_messages (conversation_id, space_id) WHERE steer_state = 'queued'"
+  },
+  {
+   "type": "index",
+   "name": "idx_conversation_activity_spaceId",
+   "tbl_name": "conversation_activity",
+   "sql": "CREATE INDEX idx_conversation_activity_spaceId ON conversation_activity (space_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_conversation_reads_userId",
+   "tbl_name": "conversation_reads",
+   "sql": "CREATE INDEX idx_conversation_reads_userId ON conversation_reads (user_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_review_spaces_prExternalId",
+   "tbl_name": "review_spaces",
+   "sql": "CREATE INDEX idx_review_spaces_prExternalId ON review_spaces (pr_external_id, created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_review_spaces_space",
+   "tbl_name": "review_spaces",
+   "sql": "CREATE INDEX idx_review_spaces_space ON review_spaces (space_id, created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_activity_log_agent",
+   "tbl_name": "activity_log",
+   "sql": "CREATE INDEX idx_activity_log_agent ON activity_log (actor_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_activity_log_entity",
+   "tbl_name": "activity_log",
+   "sql": "CREATE INDEX idx_activity_log_entity ON activity_log (entity_type, entity_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_activity_log_created",
+   "tbl_name": "activity_log",
+   "sql": "CREATE INDEX idx_activity_log_created ON activity_log (created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_activity_log_run",
+   "tbl_name": "activity_log",
+   "sql": "CREATE INDEX idx_activity_log_run ON activity_log (run_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_budget_policy_scope",
+   "tbl_name": "budget_policy",
+   "sql": "CREATE UNIQUE INDEX uq_budget_policy_scope ON budget_policy (scope_type, scope_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_agent_working_memory_agent",
+   "tbl_name": "agent_working_memory",
+   "sql": "CREATE UNIQUE INDEX uq_agent_working_memory_agent ON agent_working_memory (agent_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_memory_domains_name",
+   "tbl_name": "memory_domains",
+   "sql": "CREATE UNIQUE INDEX idx_memory_domains_name ON memory_domains (name)"
+  },
+  {
+   "type": "index",
+   "name": "idx_memory_facts_supersededBy",
+   "tbl_name": "memory_facts",
+   "sql": "CREATE INDEX idx_memory_facts_supersededBy ON memory_facts (superseded_by)"
+  },
+  {
+   "type": "index",
+   "name": "idx_memory_facts_topic",
+   "tbl_name": "memory_facts",
+   "sql": "CREATE INDEX idx_memory_facts_topic ON memory_facts (topic)"
+  },
+  {
+   "type": "index",
+   "name": "idx_memory_facts_author",
+   "tbl_name": "memory_facts",
+   "sql": "CREATE INDEX idx_memory_facts_author ON memory_facts (authored_by_agent_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_memory_conflicts_factA",
+   "tbl_name": "memory_conflicts",
+   "sql": "CREATE INDEX idx_memory_conflicts_factA ON memory_conflicts (fact_a_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_memory_conflicts_factB",
+   "tbl_name": "memory_conflicts",
+   "sql": "CREATE INDEX idx_memory_conflicts_factB ON memory_conflicts (fact_b_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_memory_conflicts_winner",
+   "tbl_name": "memory_conflicts",
+   "sql": "CREATE INDEX idx_memory_conflicts_winner ON memory_conflicts (winning_fact_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_episodic_edges_target",
+   "tbl_name": "episodic_edges",
+   "sql": "CREATE INDEX idx_episodic_edges_target ON episodic_edges (target_fact_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_episodic_edges_triple",
+   "tbl_name": "episodic_edges",
+   "sql": "CREATE UNIQUE INDEX uq_episodic_edges_triple ON episodic_edges (source_fact_id, target_fact_id, edge_type)"
+  },
+  {
+   "type": "index",
+   "name": "idx_working_memory_items_agent",
+   "tbl_name": "working_memory_items",
+   "sql": "CREATE INDEX idx_working_memory_items_agent ON working_memory_items (agent_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_memory_consolidation_log_agent",
+   "tbl_name": "memory_consolidation_log",
+   "sql": "CREATE INDEX idx_memory_consolidation_log_agent ON memory_consolidation_log (agent_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_pipeline_runs_active_dedup",
+   "tbl_name": "pipeline_runs",
+   "sql": "CREATE UNIQUE INDEX uq_pipeline_runs_active_dedup ON pipeline_runs (template_id, dedup_key) WHERE dedup_key IS NOT NULL AND status IN ('pending', 'queued', 'running', 'suspended')"
+  },
+  {
+   "type": "index",
+   "name": "idx_pipeline_runs_template_status",
+   "tbl_name": "pipeline_runs",
+   "sql": "CREATE INDEX idx_pipeline_runs_template_status ON pipeline_runs (template_id, status, started_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_pipeline_runs_started",
+   "tbl_name": "pipeline_runs",
+   "sql": "CREATE INDEX idx_pipeline_runs_started ON pipeline_runs (started_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_pipeline_runs_status",
+   "tbl_name": "pipeline_runs",
+   "sql": "CREATE INDEX idx_pipeline_runs_status ON pipeline_runs (status)"
+  },
+  {
+   "type": "index",
+   "name": "idx_pipeline_runs_parent",
+   "tbl_name": "pipeline_runs",
+   "sql": "CREATE INDEX idx_pipeline_runs_parent ON pipeline_runs (parent_pipeline_run_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_pipeline_step_runs_pipelineRunId",
+   "tbl_name": "pipeline_step_runs",
+   "sql": "CREATE INDEX idx_pipeline_step_runs_pipelineRunId ON pipeline_step_runs (pipeline_run_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_pipeline_step_runs_space",
+   "tbl_name": "pipeline_step_runs",
+   "sql": "CREATE INDEX idx_pipeline_step_runs_space ON pipeline_step_runs (space_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_pipeline_triggers",
+   "tbl_name": "pipeline_triggers",
+   "sql": "CREATE UNIQUE INDEX uq_pipeline_triggers ON pipeline_triggers (template_id, event_type)"
+  },
+  {
+   "type": "index",
+   "name": "idx_pipeline_triggers_enabled_eventType",
+   "tbl_name": "pipeline_triggers",
+   "sql": "CREATE INDEX idx_pipeline_triggers_enabled_eventType ON pipeline_triggers (enabled, event_type)"
+  },
+  {
+   "type": "index",
+   "name": "uq_pipeline_triggers_webhook_token_ref",
+   "tbl_name": "pipeline_triggers",
+   "sql": "CREATE UNIQUE INDEX uq_pipeline_triggers_webhook_token_ref ON pipeline_triggers (webhook_token_ref)"
+  },
+  {
+   "type": "index",
+   "name": "uq_tickets_provider_externalKey",
+   "tbl_name": "tickets",
+   "sql": "CREATE UNIQUE INDEX uq_tickets_provider_externalKey ON tickets (provider, external_key) WHERE external_key IS NOT NULL"
+  },
+  {
+   "type": "index",
+   "name": "idx_tickets_status_updated",
+   "tbl_name": "tickets",
+   "sql": "CREATE INDEX idx_tickets_status_updated ON tickets (status, updated_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_tickets_assignee_status",
+   "tbl_name": "tickets",
+   "sql": "CREATE INDEX idx_tickets_assignee_status ON tickets (assigned_agent_id, status)"
+  },
+  {
+   "type": "index",
+   "name": "idx_tickets_parent",
+   "tbl_name": "tickets",
+   "sql": "CREATE INDEX idx_tickets_parent ON tickets (parent_ticket_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_tickets_project",
+   "tbl_name": "tickets",
+   "sql": "CREATE INDEX idx_tickets_project ON tickets (project_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_tickets_team",
+   "tbl_name": "tickets",
+   "sql": "CREATE INDEX idx_tickets_team ON tickets (assigned_team_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_tickets_delegated_by",
+   "tbl_name": "tickets",
+   "sql": "CREATE INDEX idx_tickets_delegated_by ON tickets (delegated_by_agent_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_tickets_delegation_root",
+   "tbl_name": "tickets",
+   "sql": "CREATE INDEX idx_tickets_delegation_root ON tickets (delegation_root_ticket_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_tickets_space",
+   "tbl_name": "tickets",
+   "sql": "CREATE INDEX idx_tickets_space ON tickets (space_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_ticket_collaborators_ticket_agent",
+   "tbl_name": "ticket_collaborators",
+   "sql": "CREATE UNIQUE INDEX uq_ticket_collaborators_ticket_agent ON ticket_collaborators (ticket_id, principal_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_ticket_links_target",
+   "tbl_name": "ticket_links",
+   "sql": "CREATE INDEX idx_ticket_links_target ON ticket_links (target_ticket_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_ticket_links_source_target_type",
+   "tbl_name": "ticket_links",
+   "sql": "CREATE UNIQUE INDEX uq_ticket_links_source_target_type ON ticket_links (source_ticket_id, target_ticket_id, type)"
+  },
+  {
+   "type": "index",
+   "name": "idx_projects_created",
+   "tbl_name": "projects",
+   "sql": "CREATE INDEX idx_projects_created ON projects (created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_teams_leader",
+   "tbl_name": "teams",
+   "sql": "CREATE INDEX idx_teams_leader ON teams (leader_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_teamMembers_agentId",
+   "tbl_name": "team_members",
+   "sql": "CREATE INDEX idx_teamMembers_agentId ON team_members (agent_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_isolated_repos_unit",
+   "tbl_name": "isolated_repos",
+   "sql": "CREATE UNIQUE INDEX idx_isolated_repos_unit ON isolated_repos (space_id, repo_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_isolated_repos_repo",
+   "tbl_name": "isolated_repos",
+   "sql": "CREATE INDEX idx_isolated_repos_repo ON isolated_repos (repo_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_isolated_repos_ticket",
+   "tbl_name": "isolated_repos",
+   "sql": "CREATE INDEX idx_isolated_repos_ticket ON isolated_repos (ticket_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_space_stack_repo",
+   "tbl_name": "space_stack_entries",
+   "sql": "CREATE INDEX idx_space_stack_repo ON space_stack_entries (repo_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_meetings_createdAt",
+   "tbl_name": "meetings",
+   "sql": "CREATE INDEX idx_meetings_createdAt ON meetings (created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_meeting_segments_meetingId",
+   "tbl_name": "meeting_transcript_segments",
+   "sql": "CREATE INDEX idx_meeting_segments_meetingId ON meeting_transcript_segments (meeting_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_meeting_action_items_meetingId",
+   "tbl_name": "meeting_action_items",
+   "sql": "CREATE INDEX idx_meeting_action_items_meetingId ON meeting_action_items (meeting_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_meeting_decisions_meetingId",
+   "tbl_name": "meeting_decisions",
+   "sql": "CREATE INDEX idx_meeting_decisions_meetingId ON meeting_decisions (meeting_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_meeting_speakers_meeting_channel_label",
+   "tbl_name": "meeting_speakers",
+   "sql": "CREATE UNIQUE INDEX uq_meeting_speakers_meeting_channel_label ON meeting_speakers (meeting_id, channel, label)"
+  },
+  {
+   "type": "index",
+   "name": "uq_calendar_accounts_user_email",
+   "tbl_name": "calendar_accounts",
+   "sql": "CREATE UNIQUE INDEX uq_calendar_accounts_user_email ON calendar_accounts (user_id, account_email)"
+  },
+  {
+   "type": "index",
+   "name": "uq_calendar_events_account_external",
+   "tbl_name": "calendar_events",
+   "sql": "CREATE UNIQUE INDEX uq_calendar_events_account_external ON calendar_events (account_id, external_event_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_calendar_events_start",
+   "tbl_name": "calendar_events",
+   "sql": "CREATE INDEX idx_calendar_events_start ON calendar_events (start_time)"
+  },
+  {
+   "type": "index",
+   "name": "uq_calendar_sources_account_cal",
+   "tbl_name": "calendar_sources",
+   "sql": "CREATE UNIQUE INDEX uq_calendar_sources_account_cal ON calendar_sources (account_id, calendar_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_meeting_calendar_links_meetingId",
+   "tbl_name": "meeting_calendar_links",
+   "sql": "CREATE UNIQUE INDEX uq_meeting_calendar_links_meetingId ON meeting_calendar_links (meeting_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_meeting_calendar_links_eventId",
+   "tbl_name": "meeting_calendar_links",
+   "sql": "CREATE INDEX idx_meeting_calendar_links_eventId ON meeting_calendar_links (calendar_event_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_voice_profiles_name",
+   "tbl_name": "voice_profiles",
+   "sql": "CREATE UNIQUE INDEX uq_voice_profiles_name ON voice_profiles (display_name)"
+  },
+  {
+   "type": "index",
+   "name": "idx_orchestrations_parentTicket",
+   "tbl_name": "orchestrations",
+   "sql": "CREATE INDEX idx_orchestrations_parentTicket ON orchestrations (parent_ticket_id, created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_orchestrations_pipelineRun",
+   "tbl_name": "orchestrations",
+   "sql": "CREATE INDEX idx_orchestrations_pipelineRun ON orchestrations (pipeline_run_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_orchestrations_status",
+   "tbl_name": "orchestrations",
+   "sql": "CREATE INDEX idx_orchestrations_status ON orchestrations (status)"
+  },
+  {
+   "type": "index",
+   "name": "idx_orchestrations_created",
+   "tbl_name": "orchestrations",
+   "sql": "CREATE INDEX idx_orchestrations_created ON orchestrations (created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_orchestrations_space",
+   "tbl_name": "orchestrations",
+   "sql": "CREATE INDEX idx_orchestrations_space ON orchestrations (space_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_orchestrations_orchestrator",
+   "tbl_name": "orchestrations",
+   "sql": "CREATE INDEX idx_orchestrations_orchestrator ON orchestrations (orchestrator_agent_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_orchestrations_template",
+   "tbl_name": "orchestrations",
+   "sql": "CREATE INDEX idx_orchestrations_template ON orchestrations (pipeline_template_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_orchestrations_team",
+   "tbl_name": "orchestrations",
+   "sql": "CREATE INDEX idx_orchestrations_team ON orchestrations (team_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_orchestrations_project",
+   "tbl_name": "orchestrations",
+   "sql": "CREATE INDEX idx_orchestrations_project ON orchestrations (project_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_plan_documents_conversation",
+   "tbl_name": "plan_documents",
+   "sql": "CREATE INDEX idx_plan_documents_conversation ON plan_documents (conversation_id, updated_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_plan_documents_updated",
+   "tbl_name": "plan_documents",
+   "sql": "CREATE INDEX idx_plan_documents_updated ON plan_documents (updated_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_plan_documents_agent",
+   "tbl_name": "plan_documents",
+   "sql": "CREATE INDEX idx_plan_documents_agent ON plan_documents (agent_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_api_contract_snapshots_repo",
+   "tbl_name": "api_contract_snapshots",
+   "sql": "CREATE INDEX idx_api_contract_snapshots_repo ON api_contract_snapshots (repo_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_visual_diff_snapshots_repo",
+   "tbl_name": "visual_diff_snapshots",
+   "sql": "CREATE INDEX idx_visual_diff_snapshots_repo ON visual_diff_snapshots (repo_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_review_run_snapshots_pr_time",
+   "tbl_name": "review_run_snapshots",
+   "sql": "CREATE INDEX idx_review_run_snapshots_pr_time ON review_run_snapshots (pr_external_id, finalized_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_review_run_snapshots_space",
+   "tbl_name": "review_run_snapshots",
+   "sql": "CREATE INDEX idx_review_run_snapshots_space ON review_run_snapshots (space_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_review_run_snapshots_finalized",
+   "tbl_name": "review_run_snapshots",
+   "sql": "CREATE INDEX idx_review_run_snapshots_finalized ON review_run_snapshots (finalized_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_provider_policies_created",
+   "tbl_name": "provider_policies",
+   "sql": "CREATE INDEX idx_provider_policies_created ON provider_policies (created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_goals_created",
+   "tbl_name": "goals",
+   "sql": "CREATE INDEX idx_goals_created ON goals (created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_goals_parent",
+   "tbl_name": "goals",
+   "sql": "CREATE INDEX idx_goals_parent ON goals (parent_goal_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_goals_owner_agent",
+   "tbl_name": "goals",
+   "sql": "CREATE INDEX idx_goals_owner_agent ON goals (owner_agent_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_goals_team",
+   "tbl_name": "goals",
+   "sql": "CREATE INDEX idx_goals_team ON goals (team_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_goals_target_ticket",
+   "tbl_name": "goals",
+   "sql": "CREATE INDEX idx_goals_target_ticket ON goals (target_ticket_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_budget_incidents_scope",
+   "tbl_name": "budget_incidents",
+   "sql": "CREATE INDEX idx_budget_incidents_scope ON budget_incidents (scope_type, scope_id, triggered_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_budget_incidents_triggered",
+   "tbl_name": "budget_incidents",
+   "sql": "CREATE INDEX idx_budget_incidents_triggered ON budget_incidents (triggered_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_budget_incidents_policy",
+   "tbl_name": "budget_incidents",
+   "sql": "CREATE INDEX idx_budget_incidents_policy ON budget_incidents (policy_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_approvals_status",
+   "tbl_name": "approvals",
+   "sql": "CREATE INDEX idx_approvals_status ON approvals (status, created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_approvals_created",
+   "tbl_name": "approvals",
+   "sql": "CREATE INDEX idx_approvals_created ON approvals (created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_approval_comments_approval",
+   "tbl_name": "approval_comments",
+   "sql": "CREATE INDEX idx_approval_comments_approval ON approval_comments (approval_id, created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_work_products_updated",
+   "tbl_name": "work_products",
+   "sql": "CREATE INDEX idx_work_products_updated ON work_products (updated_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_work_products_ticket",
+   "tbl_name": "work_products",
+   "sql": "CREATE INDEX idx_work_products_ticket ON work_products (ticket_id, updated_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_work_products_agent",
+   "tbl_name": "work_products",
+   "sql": "CREATE INDEX idx_work_products_agent ON work_products (agent_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_work_products_current_revision",
+   "tbl_name": "work_products",
+   "sql": "CREATE INDEX idx_work_products_current_revision ON work_products (current_revision_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_work_product_revisions_base",
+   "tbl_name": "work_product_revisions",
+   "sql": "CREATE INDEX idx_work_product_revisions_base ON work_product_revisions (base_revision_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_runtime_state_current_run",
+   "tbl_name": "agent_runtime_state",
+   "sql": "CREATE INDEX idx_agent_runtime_state_current_run ON agent_runtime_state (current_run_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_runtime_profiles_name",
+   "tbl_name": "runtime_profiles",
+   "sql": "CREATE INDEX idx_runtime_profiles_name ON runtime_profiles (name)"
+  },
+  {
+   "type": "index",
+   "name": "idx_team_activity_team_created",
+   "tbl_name": "team_activity_log",
+   "sql": "CREATE INDEX idx_team_activity_team_created ON team_activity_log (team_id, created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_team_activity_ticket",
+   "tbl_name": "team_activity_log",
+   "sql": "CREATE INDEX idx_team_activity_ticket ON team_activity_log (ticket_id, created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_team_activity_leader",
+   "tbl_name": "team_activity_log",
+   "sql": "CREATE INDEX idx_team_activity_leader ON team_activity_log (leader_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_team_activity_member",
+   "tbl_name": "team_activity_log",
+   "sql": "CREATE INDEX idx_team_activity_member ON team_activity_log (member_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_webhook_deliveries_trigger",
+   "tbl_name": "webhook_deliveries",
+   "sql": "CREATE INDEX idx_webhook_deliveries_trigger ON webhook_deliveries (trigger_id, created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_webhook_deliveries_created",
+   "tbl_name": "webhook_deliveries",
+   "sql": "CREATE INDEX idx_webhook_deliveries_created ON webhook_deliveries (created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_webhook_deliveries_run",
+   "tbl_name": "webhook_deliveries",
+   "sql": "CREATE INDEX idx_webhook_deliveries_run ON webhook_deliveries (run_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_webhook_deliveries_dedupe",
+   "tbl_name": "webhook_deliveries",
+   "sql": "CREATE UNIQUE INDEX uq_webhook_deliveries_dedupe ON webhook_deliveries (trigger_id, dedupe_key) WHERE dedupe_key IS NOT NULL AND status IN ('queued', 'dispatched')"
+  },
+  {
+   "type": "index",
+   "name": "idx_cron_executions_slot",
+   "tbl_name": "cron_executions",
+   "sql": "CREATE UNIQUE INDEX idx_cron_executions_slot ON cron_executions (trigger_id, planned_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_cron_executions_created",
+   "tbl_name": "cron_executions",
+   "sql": "CREATE INDEX idx_cron_executions_created ON cron_executions (created_at)"
+  },
+  {
+   "type": "index",
+   "name": "uq_ticket_sync_configs_vendor",
+   "tbl_name": "ticket_sync_configs",
+   "sql": "CREATE UNIQUE INDEX uq_ticket_sync_configs_vendor ON ticket_sync_configs (vendor)"
+  },
+  {
+   "type": "index",
+   "name": "uq_ticket_sync_links_ticket_vendor",
+   "tbl_name": "ticket_sync_links",
+   "sql": "CREATE UNIQUE INDEX uq_ticket_sync_links_ticket_vendor ON ticket_sync_links (ticket_id, vendor)"
+  },
+  {
+   "type": "index",
+   "name": "idx_ticket_sync_links_vendor_ext",
+   "tbl_name": "ticket_sync_links",
+   "sql": "CREATE INDEX idx_ticket_sync_links_vendor_ext ON ticket_sync_links (vendor, external_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_ticket_sync_log_dedupe",
+   "tbl_name": "ticket_sync_log",
+   "sql": "CREATE INDEX idx_ticket_sync_log_dedupe ON ticket_sync_log (vendor, dedupe_key)"
+  },
+  {
+   "type": "index",
+   "name": "idx_ticket_sync_log_created",
+   "tbl_name": "ticket_sync_log",
+   "sql": "CREATE INDEX idx_ticket_sync_log_created ON ticket_sync_log (created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_ticket_sync_log_ticket",
+   "tbl_name": "ticket_sync_log",
+   "sql": "CREATE INDEX idx_ticket_sync_log_ticket ON ticket_sync_log (ticket_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_write_ledger_created",
+   "tbl_name": "write_ledger",
+   "sql": "CREATE INDEX idx_write_ledger_created ON write_ledger (created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_todos_conversation",
+   "tbl_name": "todos",
+   "sql": "CREATE INDEX idx_todos_conversation ON todos (conversation_id, position)"
+  },
+  {
+   "type": "index",
+   "name": "uq_workspace_members_user",
+   "tbl_name": "workspace_members",
+   "sql": "CREATE UNIQUE INDEX uq_workspace_members_user ON workspace_members (user_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_workspace_invites_codeHash",
+   "tbl_name": "workspace_invites",
+   "sql": "CREATE UNIQUE INDEX uq_workspace_invites_codeHash ON workspace_invites (code_hash)"
+  },
+  {
+   "type": "index",
+   "name": "idx_user_activity_created",
+   "tbl_name": "user_activity",
+   "sql": "CREATE INDEX idx_user_activity_created ON user_activity (created_at, id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_member_repo_grants_user_repo",
+   "tbl_name": "workspace_member_repo_grants",
+   "sql": "CREATE UNIQUE INDEX uq_member_repo_grants_user_repo ON workspace_member_repo_grants (user_id, repo_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_member_repo_grants_repo",
+   "tbl_name": "workspace_member_repo_grants",
+   "sql": "CREATE INDEX idx_member_repo_grants_repo ON workspace_member_repo_grants (repo_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_session_recordings_config",
+   "tbl_name": "session_recordings",
+   "sql": "CREATE INDEX idx_session_recordings_config ON session_recordings (config_hash)"
+  },
+  {
+   "type": "index",
+   "name": "idx_session_recordings_runlog",
+   "tbl_name": "session_recordings",
+   "sql": "CREATE INDEX idx_session_recordings_runlog ON session_recordings (run_log_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_session_recordings_agent",
+   "tbl_name": "session_recordings",
+   "sql": "CREATE INDEX idx_session_recordings_agent ON session_recordings (agent_id, created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_session_recordings_created",
+   "tbl_name": "session_recordings",
+   "sql": "CREATE INDEX idx_session_recordings_created ON session_recordings (created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_golden_sessions_agent",
+   "tbl_name": "golden_sessions",
+   "sql": "CREATE INDEX idx_golden_sessions_agent ON golden_sessions (agent_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_golden_sessions_recording",
+   "tbl_name": "golden_sessions",
+   "sql": "CREATE INDEX idx_golden_sessions_recording ON golden_sessions (recording_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_golden_sessions_blessed",
+   "tbl_name": "golden_sessions",
+   "sql": "CREATE INDEX idx_golden_sessions_blessed ON golden_sessions (blessed_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_eval_runs_suite_created",
+   "tbl_name": "eval_runs",
+   "sql": "CREATE INDEX idx_eval_runs_suite_created ON eval_runs (suite_id, created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_config_versions_agent",
+   "tbl_name": "agent_config_versions",
+   "sql": "CREATE INDEX idx_agent_config_versions_agent ON agent_config_versions (agent_id, status, created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_skill_eval_campaigns_skill_created",
+   "tbl_name": "skill_eval_campaigns",
+   "sql": "CREATE INDEX idx_skill_eval_campaigns_skill_created ON skill_eval_campaigns (skill_key, created_at, id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_skill_eval_campaigns_created",
+   "tbl_name": "skill_eval_campaigns",
+   "sql": "CREATE INDEX idx_skill_eval_campaigns_created ON skill_eval_campaigns (created_at, id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_skill_eval_campaigns_status",
+   "tbl_name": "skill_eval_campaigns",
+   "sql": "CREATE INDEX idx_skill_eval_campaigns_status ON skill_eval_campaigns (status)"
+  },
+  {
+   "type": "index",
+   "name": "idx_skill_eval_attempts_campaign",
+   "tbl_name": "skill_eval_attempts",
+   "sql": "CREATE INDEX idx_skill_eval_attempts_campaign ON skill_eval_attempts (campaign_id, ordinal)"
+  },
+  {
+   "type": "index",
+   "name": "idx_skill_scan_results_scanned",
+   "tbl_name": "skill_scan_results",
+   "sql": "CREATE INDEX idx_skill_scan_results_scanned ON skill_scan_results (scanned_at)"
+  },
+  {
+   "type": "index",
+   "name": "uq_action_policies_class_rule",
+   "tbl_name": "action_policies",
+   "sql": "CREATE UNIQUE INDEX uq_action_policies_class_rule ON action_policies (scope_type, scope_id, action_class, provenance, coalesce(constraint_json, ''),(provenance = 'user' AND constraint_json IS NULL AND expires_at IS NULL)) WHERE action_class IS NOT NULL"
+  },
+  {
+   "type": "index",
+   "name": "uq_action_policies_command_rule",
+   "tbl_name": "action_policies",
+   "sql": "CREATE UNIQUE INDEX uq_action_policies_command_rule ON action_policies (scope_type, scope_id, command_prefix, provenance, coalesce(constraint_json, ''),(provenance = 'user' AND constraint_json IS NULL AND expires_at IS NULL)) WHERE command_prefix IS NOT NULL"
+  },
+  {
+   "type": "index",
+   "name": "idx_action_policies_scope",
+   "tbl_name": "action_policies",
+   "sql": "CREATE INDEX idx_action_policies_scope ON action_policies (scope_type, scope_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_sandbox_exec_grants_created",
+   "tbl_name": "sandbox_exec_grants",
+   "sql": "CREATE INDEX idx_sandbox_exec_grants_created ON sandbox_exec_grants (created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_transcripts_run_id",
+   "tbl_name": "transcripts",
+   "sql": "CREATE UNIQUE INDEX idx_transcripts_run_id ON transcripts (run_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_transcripts_message_id",
+   "tbl_name": "transcripts",
+   "sql": "CREATE UNIQUE INDEX idx_transcripts_message_id ON transcripts (message_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_transcripts_run_sweep",
+   "tbl_name": "transcripts",
+   "sql": "CREATE INDEX idx_transcripts_run_sweep ON transcripts (updated_at) WHERE run_id IS NOT NULL AND complete = 1"
+  },
+  {
+   "type": "index",
+   "name": "uq_chat_space_links_ws_provider_space_thread",
+   "tbl_name": "chat_space_links",
+   "sql": "CREATE UNIQUE INDEX uq_chat_space_links_ws_provider_space_thread ON chat_space_links (provider, external_channel_id, external_thread_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_chat_space_links_ws_provider_dm",
+   "tbl_name": "chat_space_links",
+   "sql": "CREATE UNIQUE INDEX uq_chat_space_links_ws_provider_dm ON chat_space_links (provider, external_channel_id) WHERE external_thread_id IS NULL"
+  },
+  {
+   "type": "index",
+   "name": "idx_chat_space_links_ccSpaceId",
+   "tbl_name": "chat_space_links",
+   "sql": "CREATE INDEX idx_chat_space_links_ccSpaceId ON chat_space_links (cc_space_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_chat_user_links_ws_provider_team_user",
+   "tbl_name": "chat_user_links",
+   "sql": "CREATE UNIQUE INDEX uq_chat_user_links_ws_provider_team_user ON chat_user_links (provider, external_team_id, external_user_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_chat_user_links_ws_provider_user",
+   "tbl_name": "chat_user_links",
+   "sql": "CREATE UNIQUE INDEX uq_chat_user_links_ws_provider_user ON chat_user_links (provider, user_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_notification_feed_created",
+   "tbl_name": "notification_feed",
+   "sql": "CREATE INDEX idx_notification_feed_created ON notification_feed (created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_notification_feed_wait_id",
+   "tbl_name": "notification_feed",
+   "sql": "CREATE INDEX idx_notification_feed_wait_id ON notification_feed (json_extract(params_json, '$.wait_id')) WHERE json_valid(params_json)"
+  },
+  {
+   "type": "index",
+   "name": "idx_notification_item_states_item",
+   "tbl_name": "notification_item_states",
+   "sql": "CREATE INDEX idx_notification_item_states_item ON notification_item_states (item_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_rig_sessions_phase",
+   "tbl_name": "rig_sessions",
+   "sql": "CREATE INDEX idx_rig_sessions_phase ON rig_sessions (phase, last_activity_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_rig_sessions_conversation",
+   "tbl_name": "rig_sessions",
+   "sql": "CREATE INDEX idx_rig_sessions_conversation ON rig_sessions (conversation_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_rig_sessions_agent",
+   "tbl_name": "rig_sessions",
+   "sql": "CREATE INDEX idx_rig_sessions_agent ON rig_sessions (agent_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_skill_sources_created",
+   "tbl_name": "skill_sources",
+   "sql": "CREATE INDEX idx_skill_sources_created ON skill_sources (created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_run_call_usages_runId",
+   "tbl_name": "run_call_usages",
+   "sql": "CREATE INDEX idx_run_call_usages_runId ON run_call_usages (run_id, started_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_run_call_usages_conversation",
+   "tbl_name": "run_call_usages",
+   "sql": "CREATE INDEX idx_run_call_usages_conversation ON run_call_usages (conversation_id, started_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_environment_definitions_source_repo",
+   "tbl_name": "environment_definitions",
+   "sql": "CREATE INDEX idx_environment_definitions_source_repo ON environment_definitions (source_repo_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_space_environments_definition",
+   "tbl_name": "space_environments",
+   "sql": "CREATE INDEX idx_space_environments_definition ON space_environments (definition_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_space_environments_rig",
+   "tbl_name": "space_environments",
+   "sql": "CREATE INDEX idx_space_environments_rig ON space_environments (rig_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_environment_runs_space",
+   "tbl_name": "environment_runs",
+   "sql": "CREATE INDEX idx_environment_runs_space ON environment_runs (space_id, started_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_environment_runs_definition",
+   "tbl_name": "environment_runs",
+   "sql": "CREATE INDEX idx_environment_runs_definition ON environment_runs (definition_id, started_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_environment_runs_environment",
+   "tbl_name": "environment_runs",
+   "sql": "CREATE INDEX idx_environment_runs_environment ON environment_runs (environment_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_environment_runs_repo",
+   "tbl_name": "environment_runs",
+   "sql": "CREATE INDEX idx_environment_runs_repo ON environment_runs (repo_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_space_checkers_agent",
+   "tbl_name": "space_checkers",
+   "sql": "CREATE INDEX idx_space_checkers_agent ON space_checkers (agent_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_executions_started",
+   "tbl_name": "code_executions",
+   "sql": "CREATE INDEX idx_code_executions_started ON code_executions (started_at_ms, id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_executions_run_started",
+   "tbl_name": "code_executions",
+   "sql": "CREATE INDEX idx_code_executions_run_started ON code_executions (run_id, started_at_ms, id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_executions_conversation_started",
+   "tbl_name": "code_executions",
+   "sql": "CREATE INDEX idx_code_executions_conversation_started ON code_executions (conversation_id, started_at_ms, id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_executions_agent_started",
+   "tbl_name": "code_executions",
+   "sql": "CREATE INDEX idx_code_executions_agent_started ON code_executions (agent_id, started_at_ms, id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_executions_space_started",
+   "tbl_name": "code_executions",
+   "sql": "CREATE INDEX idx_code_executions_space_started ON code_executions (space_id, started_at_ms, id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_executions_status_started",
+   "tbl_name": "code_executions",
+   "sql": "CREATE INDEX idx_code_executions_status_started ON code_executions (status, started_at_ms, id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_executions_tool_call_started",
+   "tbl_name": "code_executions",
+   "sql": "CREATE INDEX idx_code_executions_tool_call_started ON code_executions (tool_call_id, started_at_ms, id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_executions_run_tool_call_suffix",
+   "tbl_name": "code_executions",
+   "sql": "CREATE INDEX idx_code_executions_run_tool_call_suffix ON code_executions (run_id, tool_call_id, id_suffix)"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_mode_store_agent",
+   "tbl_name": "code_mode_store",
+   "sql": "CREATE INDEX idx_code_mode_store_agent ON code_mode_store (agent_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_agent_wakes_dedup_key",
+   "tbl_name": "agent_wakes",
+   "sql": "CREATE UNIQUE INDEX uq_agent_wakes_dedup_key ON agent_wakes (dedup_key)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_wakes_state_not_before",
+   "tbl_name": "agent_wakes",
+   "sql": "CREATE INDEX idx_agent_wakes_state_not_before ON agent_wakes (state, not_before)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_wakes_conversation_agent_state",
+   "tbl_name": "agent_wakes",
+   "sql": "CREATE INDEX idx_agent_wakes_conversation_agent_state ON agent_wakes (conversation_id, agent_id, state)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_wakes_agent_state",
+   "tbl_name": "agent_wakes",
+   "sql": "CREATE INDEX idx_agent_wakes_agent_state ON agent_wakes (agent_id, state)"
+  },
+  {
+   "type": "index",
+   "name": "idx_wake_rules_conversation_agent_status",
+   "tbl_name": "wake_rules",
+   "sql": "CREATE INDEX idx_wake_rules_conversation_agent_status ON wake_rules (conversation_id, agent_id, status)"
+  },
+  {
+   "type": "index",
+   "name": "idx_wake_rules_agent_status",
+   "tbl_name": "wake_rules",
+   "sql": "CREATE INDEX idx_wake_rules_agent_status ON wake_rules (agent_id, status)"
+  },
+  {
+   "type": "index",
+   "name": "idx_wake_rules_status_event_kind",
+   "tbl_name": "wake_rules",
+   "sql": "CREATE INDEX idx_wake_rules_status_event_kind ON wake_rules (status, event_kind)"
+  },
+  {
+   "type": "index",
+   "name": "idx_wake_rules_goal",
+   "tbl_name": "wake_rules",
+   "sql": "CREATE INDEX idx_wake_rules_goal ON wake_rules (goal_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_wake_rules_root_rule",
+   "tbl_name": "wake_rules",
+   "sql": "CREATE INDEX idx_wake_rules_root_rule ON wake_rules (root_rule_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_peer_asks_recipient_status",
+   "tbl_name": "peer_asks",
+   "sql": "CREATE INDEX idx_peer_asks_recipient_status ON peer_asks (recipient_agent_id, status)"
+  },
+  {
+   "type": "index",
+   "name": "idx_peer_asks_asker_status",
+   "tbl_name": "peer_asks",
+   "sql": "CREATE INDEX idx_peer_asks_asker_status ON peer_asks (asker_agent_id, status)"
+  },
+  {
+   "type": "index",
+   "name": "idx_peer_asks_dispatched_run",
+   "tbl_name": "peer_asks",
+   "sql": "CREATE INDEX idx_peer_asks_dispatched_run ON peer_asks (dispatched_run_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_peer_asks_asker_conversation_status",
+   "tbl_name": "peer_asks",
+   "sql": "CREATE INDEX idx_peer_asks_asker_conversation_status ON peer_asks (asker_conversation_id, status)"
+  },
+  {
+   "type": "index",
+   "name": "idx_peer_asks_status_expires",
+   "tbl_name": "peer_asks",
+   "sql": "CREATE INDEX idx_peer_asks_status_expires ON peer_asks (status, expires_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_improvement_proposals_status_created",
+   "tbl_name": "improvement_proposals",
+   "sql": "CREATE INDEX idx_improvement_proposals_status_created ON improvement_proposals (status, created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_improvement_proposals_goal",
+   "tbl_name": "improvement_proposals",
+   "sql": "CREATE INDEX idx_improvement_proposals_goal ON improvement_proposals (goal_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_improvement_proposals_conversation",
+   "tbl_name": "improvement_proposals",
+   "sql": "CREATE INDEX idx_improvement_proposals_conversation ON improvement_proposals (conversation_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_improvement_proposals_agent_status",
+   "tbl_name": "improvement_proposals",
+   "sql": "CREATE INDEX idx_improvement_proposals_agent_status ON improvement_proposals (agent_id, status)"
+  },
+  {
+   "type": "table",
+   "name": "memory_facts_fts",
+   "tbl_name": "memory_facts_fts",
+   "sql": "CREATE VIRTUAL TABLE memory_facts_fts\n      USING fts5(topic, content, workspace_id, content=memory_facts, content_rowid=rowid)"
+  },
+  {
+   "type": "table",
+   "name": "memory_facts_fts_data",
+   "tbl_name": "memory_facts_fts_data",
+   "sql": "CREATE TABLE 'memory_facts_fts_data'(id INTEGER PRIMARY KEY, block BLOB)"
+  },
+  {
+   "type": "table",
+   "name": "memory_facts_fts_idx",
+   "tbl_name": "memory_facts_fts_idx",
+   "sql": "CREATE TABLE 'memory_facts_fts_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID"
+  },
+  {
+   "type": "table",
+   "name": "memory_facts_fts_docsize",
+   "tbl_name": "memory_facts_fts_docsize",
+   "sql": "CREATE TABLE 'memory_facts_fts_docsize'(id INTEGER PRIMARY KEY, sz BLOB)"
+  },
+  {
+   "type": "table",
+   "name": "memory_facts_fts_config",
+   "tbl_name": "memory_facts_fts_config",
+   "sql": "CREATE TABLE 'memory_facts_fts_config'(k PRIMARY KEY, v) WITHOUT ROWID"
+  },
+  {
+   "type": "trigger",
+   "name": "memory_facts_ai",
+   "tbl_name": "memory_facts",
+   "sql": "CREATE TRIGGER memory_facts_ai AFTER INSERT ON memory_facts BEGIN\n        INSERT INTO memory_facts_fts(rowid, topic, content, workspace_id)\n        VALUES (new.rowid, new.topic, new.content, new.workspace_id);\n      END"
+  },
+  {
+   "type": "trigger",
+   "name": "memory_facts_ad",
+   "tbl_name": "memory_facts",
+   "sql": "CREATE TRIGGER memory_facts_ad AFTER DELETE ON memory_facts BEGIN\n        INSERT INTO memory_facts_fts(memory_facts_fts, rowid, topic, content, workspace_id)\n        VALUES ('delete', old.rowid, old.topic, old.content, old.workspace_id);\n      END"
+  },
+  {
+   "type": "trigger",
+   "name": "memory_facts_au",
+   "tbl_name": "memory_facts",
+   "sql": "CREATE TRIGGER memory_facts_au AFTER UPDATE ON memory_facts BEGIN\n        INSERT INTO memory_facts_fts(memory_facts_fts, rowid, topic, content, workspace_id)\n        VALUES ('delete', old.rowid, old.topic, old.content, old.workspace_id);\n        INSERT INTO memory_facts_fts(rowid, topic, content, workspace_id)\n        VALUES (new.rowid, new.topic, new.content, new.workspace_id);\n      END"
+  },
+  {
+   "type": "table",
+   "name": "conversation_messages_fts",
+   "tbl_name": "conversation_messages_fts",
+   "sql": "CREATE VIRTUAL TABLE conversation_messages_fts\n      USING fts5(content, space_id, content=conversation_messages, content_rowid=rowid)"
+  },
+  {
+   "type": "table",
+   "name": "conversation_messages_fts_data",
+   "tbl_name": "conversation_messages_fts_data",
+   "sql": "CREATE TABLE 'conversation_messages_fts_data'(id INTEGER PRIMARY KEY, block BLOB)"
+  },
+  {
+   "type": "table",
+   "name": "conversation_messages_fts_idx",
+   "tbl_name": "conversation_messages_fts_idx",
+   "sql": "CREATE TABLE 'conversation_messages_fts_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID"
+  },
+  {
+   "type": "table",
+   "name": "conversation_messages_fts_docsize",
+   "tbl_name": "conversation_messages_fts_docsize",
+   "sql": "CREATE TABLE 'conversation_messages_fts_docsize'(id INTEGER PRIMARY KEY, sz BLOB)"
+  },
+  {
+   "type": "table",
+   "name": "conversation_messages_fts_config",
+   "tbl_name": "conversation_messages_fts_config",
+   "sql": "CREATE TABLE 'conversation_messages_fts_config'(k PRIMARY KEY, v) WITHOUT ROWID"
+  },
+  {
+   "type": "trigger",
+   "name": "conversation_messages_ai",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE TRIGGER conversation_messages_ai AFTER INSERT ON conversation_messages BEGIN\n        INSERT INTO conversation_messages_fts(rowid, content, space_id)\n        VALUES (new.rowid, new.content, new.space_id);\n      END"
+  },
+  {
+   "type": "trigger",
+   "name": "conversation_messages_ad",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE TRIGGER conversation_messages_ad AFTER DELETE ON conversation_messages BEGIN\n        INSERT INTO conversation_messages_fts(conversation_messages_fts, rowid, content, space_id)\n        VALUES ('delete', old.rowid, old.content, old.space_id);\n      END"
+  },
+  {
+   "type": "trigger",
+   "name": "conversation_messages_au",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE TRIGGER conversation_messages_au\n      AFTER UPDATE OF content, space_id ON conversation_messages BEGIN\n        INSERT INTO conversation_messages_fts(conversation_messages_fts, rowid, content, space_id)\n        VALUES ('delete', old.rowid, old.content, old.space_id);\n        INSERT INTO conversation_messages_fts(rowid, content, space_id)\n        VALUES (new.rowid, new.content, new.space_id);\n      END"
+  },
+  {
+   "type": "trigger",
+   "name": "conversation_messages_revision_au",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE TRIGGER conversation_messages_revision_au\n      AFTER UPDATE ON conversation_messages\n      WHEN new.revision <= old.revision BEGIN\n        UPDATE conversation_messages SET revision = old.revision + 1\n        WHERE rowid = new.rowid;\n      END"
+  }
+ ]
+}

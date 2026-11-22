@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_attempt.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_backend_port.dart';
+import 'package:cc_domain/features/evals/domain/evaluation/evaluation_outcome.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_plan.dart';
 import 'package:cc_natives/cc_natives.dart' show IsolatedGit;
 import 'package:path/path.dart' as p;
@@ -108,7 +109,7 @@ class ReplayEvaluationBackend implements EvaluationBackendPort {
       sessionId: recorded.sessionId,
       servedModel: recorded.servedModel,
       servedEffort: recorded.servedEffort,
-      completed: recorded.completed,
+      end: recorded.end,
       error: recorded.error,
       tokens: recorded.tokens,
       cost: recorded.cost,
@@ -175,7 +176,7 @@ class ReplayEvaluationBackend implements EvaluationBackendPort {
         ordinal: request.ordinal,
         startedAtEpochMs: DateTime.now().millisecondsSinceEpoch,
         executionMode: EvaluationExecutionMode.offlineReplay,
-        completed: false,
+        end: EvaluationAttemptEnd.harnessFault,
         error:
             'no recording for attempt ${request.attemptId} in "$recordingsDir" '
             '— replay cannot invent one',

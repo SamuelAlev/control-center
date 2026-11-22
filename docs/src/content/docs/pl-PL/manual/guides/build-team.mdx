@@ -2,7 +2,7 @@
 title: Zbuduj zespół agentów
 description: Grupuj agentów pod liderem, aby przydzielona praca przechodziła przez jednego koordynatora.
 slug: pl-PL/podrecznik/poradniki/budowanie-zespolu-agentow
-sourceHash: fc5e2b8c8a49e398ff1b322fcfb25c4aed84bbb4
+sourceHash: 55add2d16bf90650b7d4cbda7aa78f0fdf1b72e2
 ---
 
 Ten poradnik pokazuje, jak utworzyć zespół, wyznaczyć mu lidera i kierować do niego pracę.
@@ -51,7 +51,7 @@ Gdy zgłoszenie faktycznie niesie przypisanie do zespołu:
 
 1. Lider zespołu jest wysyłany ze zgłoszeniem, swoimi instrukcjami operacyjnymi i składem członków.
 2. Lider deleguje zadania członkom i zapisuje swoją ocenę narzędziem `record_team_activity` — `action` (zdelegowano), `no_action` (nie ma nic więcej do zrobienia, co zatrzymuje kolejne ponowne wyzwolenia) lub `failed`.
-3. Każde zakończone uruchomienie członka ponownie budzi lidera, ograniczane przez zabezpieczenie braku działania.
+3. Uruchomienie członka, które lider rozpoczął przez `@mention` lub wiadomością, budzi lidera ponownie po zakończeniu, w rozmowie, z której lider go wybudził, ograniczone strażnikiem braku działania. Praca, którą lider przekazał przez `delegate_task`, budzi go, gdy zgłoszenie się rozstrzygnie, a pytanie, które zadał przez `ask_agent`, budzi go z odpowiedzią (zob. [Agenci współpracują](/pl-PL/podrecznik/poradniki/agenci-wspolpracuja/)).
 
 Węzeł potoku **Team dispatch** to drugi punkt wejścia. Przyjmuje identyfikator zespołu, prompt i tryb wysyłania:
 

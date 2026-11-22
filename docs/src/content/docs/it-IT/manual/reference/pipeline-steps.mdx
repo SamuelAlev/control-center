@@ -2,7 +2,7 @@
 title: Passaggi delle pipeline
 description: Riferimento per i tipi di passaggio delle pipeline, le chiavi del corpo dei passaggi, la loro configurazione e i risultati dei passaggi.
 slug: it-IT/manuale/riferimento/passaggi-pipeline
-sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
+sourceHash: 0d2876bc1ac359f4d2cfe94902bd5f924d19d5d5
 ---
 
 Un passaggio di pipeline ha due assi indipendenti:
@@ -58,6 +58,31 @@ Nodo generico di prompt e invio: renderizza il prompt, invia l'agente in una con
 | `extras.spaceId`           | Conversazione esistente in cui lavorare (predefinita: una nascosta) |
 | `extras.conversationTitle` | Flusso con nome all'interno di quello spazio (opzionale)     |
 | `extras.mode`              | Letto sul nodo che *apre* la stanza (`messaging.createSpace`), non qui. Predefinito `review`. |
+
+### `goal.pursue`
+
+Avvia un obiettivo durevole (vedi [Persegui un obiettivo](/it-IT/manuale/guide/persegui-obiettivo/)) e si sospende finché l'obiettivo non termina. L'editor lo mostra come **Pursue a goal**. Non è uno dei 25 corpi predefiniti sopra; è registrato accanto a loro.
+
+| Campo di configurazione | Descrizione |
+| ---------------------- | ----------- |
+| `agentId` | L'agente che persegue l'obiettivo (obbligatorio) |
+| `prompt` | L'obiettivo; supporta la sostituzione `{{key}}` (obbligatorio) |
+| `outputKey` | Chiave di stato per il risultato (obbligatoria) |
+| `extras.spaceId` | La stanza in cui lavora l'obiettivo (obbligatoria, come ogni passaggio di agente) |
+| `extras.budgetMicros` | Il budget dell'obiettivo in micro-dollari, da 1 a 1.000.000.000 (obbligatorio) |
+| `extras.maxRuns` | Un limite di segmenti, da 1 a 1.000 (facoltativo) |
+| `extras.deadlineHours` | Ore dal momento in cui il passaggio avvia l'obiettivo, da 1 a 2.160 (facoltativo) |
+| `extras.contract` | Cosa significa completato: criteri e controlli (facoltativo) |
+
+Il risultato sotto `outputKey` è `{summary, verdict}`, dove `verdict` è il verdetto del revisore con i suoi punti e le sue preoccupazioni, oppure null.
+
+| L'obiettivo | Il passaggio |
+| -------- | -------- |
+| completato | completa |
+| fallito, annullato o budget esaurito | fallisce (si applicano `retry` e `continueOnFail`); un passaggio ritentato avvia un nuovo obiettivo |
+| in pausa, compresa l'attesa della revisione di una persona | resta sospeso, esente dalla verifica di vitalità di 24 ore |
+
+Un obiettivo avviato da un'esecuzione di pipeline viene addebitato all'orchestrazione di quell'esecuzione, revisione compresa. Quando l'esecuzione della pipeline viene annullata, fallisce o completa mentre l'obiettivo lavora, l'obiettivo viene annullato.
 
 ### `pipeline.condition`
 

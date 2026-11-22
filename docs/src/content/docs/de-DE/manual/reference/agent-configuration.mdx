@@ -2,7 +2,7 @@
 title: Agentenkonfiguration
 description: Jedes Feld der Agenten-Entität und die Enums, die sie verwendet.
 slug: de-DE/handbuch/referenz/agentenkonfiguration
-sourceHash: e77edc905bed16d2f7d5bcd19a62541d885f6aab
+sourceHash: 708808ecdf4d2fc769600241c46f85db411550a8
 ---
 
 Diese Referenz listet jedes Feld der Agenten-Entität auf, dazu die Enums und Flags, die sie verwendet. Wie du einen Agenten in der App anlegst oder bearbeitest, steht Schritt für Schritt unter [Einen Agenten erstellen und konfigurieren](/de-DE/handbuch/anleitungen/agent-erstellen/).
@@ -82,7 +82,7 @@ Eine unveränderliche Menge von Skill-Kennungen, ohne Unterscheidung der Groß- 
 
 ## Shell-Hooks
 
-Shell-Hooks lassen den Serverinhaber eigene Skripte um einen eingebauten Harness-Lauf ausführen: einmal beim Sitzungsstart, vor jedem Tool-Aufruf und nach jedem Tool-Aufruf. Ein Hook ist beliebiger Code, daher gehören Hooks zur Host-Konfiguration. Nur der Serverinhaber richtet sie von Hand auf der Maschine des Servers ein. Es gibt keine Einstellung in der App und keine Operation, die sie schreibt.
+Shell-Hooks lassen den Serverinhaber eigene Skripte um einen Agenten-Lauf ausführen: einmal beim Sitzungsstart, vor jedem Tool-Aufruf, nach jedem Tool-Aufruf, wenn der Agent seinen Zug beenden würde, und vor einer Verdichtung. Ein Hook ist beliebiger Code, daher gehören Hooks zur Host-Konfiguration. Nur der Serverinhaber richtet sie von Hand auf der Maschine des Servers ein. Es gibt keine Einstellung in der App und keine Operation, die sie schreibt.
 
 Für einen Agenten liegen die Hooks in seinem eigenen Ordner unter dem Datenverzeichnis des Servers:
 
@@ -92,22 +92,31 @@ Für einen Agenten liegen die Hooks in seinem eigenen Ordner unter dem Datenverz
 
 `<agent slug>` ist der Name des Ordners des Agenten im Arbeitsbereich (`agents/<slug>/`). Dieser Ordner liegt außerhalb des Speichers jedes Arbeitsbereichs, und jede Sandbox verbirgt das Datenverzeichnis, daher kann kein Mitglied, kein Lauf und kein Terminal ihn beschreiben.
 
-`hooks.json` ordnet jedem von drei Schlüsseln ein Skript zu, über einen Pfad relativ zum Hook-Ordner:
+`hooks.json` ordnet jedem von fünf Schlüsseln ein Skript zu, über einen Pfad relativ zum Hook-Ordner:
 
 | Schlüssel      | Wann er läuft                 | Was sein Exit-Code bedeutet                                    |
 | -------------- | ----------------------------- | -------------------------------------------------------------- |
 | `sessionStart` | Einmal, wenn der Lauf startet | Nichts; der Hook beobachtet nur                                |
 | `preTool`      | Vor jedem Tool-Aufruf         | `0` erlaubt den Aufruf; alles andere verweigert ihn            |
 | `postTool`     | Nach jedem Tool-Aufruf        | Nichts; der Hook beobachtet nur                                |
+| `stop` | Wenn der Agent seinen Zug beenden würde | `2` mit Text auf stdout hält den Lauf mit diesem Text am Laufen; alles andere lässt den Zug enden |
+| `preCompact` | Vor einer Verdichtung | `0`: Sein stdout wird dem hinzugefügt, was die Zusammenfassung behalten soll |
 
 - Jedes Skript wird als eigene ausführbare Datei gestartet, ohne Shell und ohne Argumente. Es muss daher ausführbar sein und mit einer Shebang-Zeile beginnen. Es bekommt das Ereignis als JSON auf stdin: den Ereignisnamen und bei den Tool-Hooks den Namen des Tools mit seinen Argumenten (`preTool`) bzw. seinem Ergebnis (`postTool`).
 - Ein Hook läuft als einer der Tool-Prozesse des Laufs, im Ordner des Agenten für diesen Lauf. Lässt der Server Agenten in einer Sandbox laufen, läuft er in der Sandbox des Laufs. Er bekommt eine minimale Umgebung und keine Anmeldedaten des Laufs: kein Forge- oder Anbieter-Token und keinen Zugriff auf das Gateway.
-- Jeder Hook hat 30 Sekunden. Seine Ausgabe wird gelesen und verworfen.
+- Jeder Hook hat 30 Sekunden. Die Ausgabe von `sessionStart`, `preTool` und `postTool` wird gelesen und verworfen.
 - `preTool` schließt im Fehlerfall: Ein Exit-Code ungleich null, ein Timeout oder ein Skript, das nicht starten kann, verweigert den Tool-Aufruf.
 - Ein Pfad, der absolut ist, fehlt oder den Hook-Ordner verlässt (Links aufgelöst), wird abgelehnt, und das Log des Laufs sagt, welcher Hook warum abgelehnt wurde. Ein abgelehnter oder unlesbarer `preTool`-Hook verweigert jeden Tool-Aufruf, bis er behoben ist.
 - Ein `hooks`-Block in `.agents/harness.json`, egal ob im Repository oder im eigenen Ordner des Agenten, wird ignoriert. Ein Repository ist oft fremder Code, und den Ordner des Agenten können Mitglieder und Läufe beschreiben. Das Log des Laufs sagt, dass der Block ignoriert wurde, und wo Hooks stattdessen gelesen werden.
 
-Shell-Hooks gelten nur für den eingebauten Harness. Ist ein `preTool`- oder `postTool`-Hook konfiguriert, ruft der Lauf seine Tools nacheinander auf.
+### Die stop- und preCompact-Hooks
+
+- `stop` erhält `event: "stop"`, die letzte Nachricht des Agenten (`last_message`), `stop_hook_active` (true, wenn dieser Stopp auf eine Fortsetzung folgt, die der Hook ausgelöst hat) und `block_count` (wie oft er den Lauf bisher am Laufen gehalten hat, ab 0). Um den Lauf am Laufen zu halten, beendet er sich mit `2` und gibt aus, was der Agent als Nächstes tun soll. Der Text, auf 2.000 Zeichen gekürzt, erreicht den Agenten als Systemnachricht.
+- Ein `stop`-Hook hält einen Lauf höchstens 3-mal am Laufen. Danach wird er nicht mehr ausgeführt, und der Zug endet.
+- `stop` fällt bei Fehlern offen aus: Ein Timeout, ein Skript, das nicht starten kann, jeder Exit-Code außer `2` oder ein Exit `2` ohne Text auf stdout lässt den Zug enden, damit ein kaputter Hook keinen Lauf offen halten kann.
+- `preCompact` erhält `event: "pre_compact"`. Sein stdout, auf 1.000 Zeichen gekürzt, wird dem Fokus der Verdichtung hinzugefügt. Ein fehlschlagendes Skript fügt nichts hinzu.
+
+Shell-Hooks gelten für den eingebauten Harness. Auf Claude Code laufen zusätzlich die Hooks `stop` und `preCompact`: Die eigenen Hooks `Stop` und `PreCompact` von Claude Code fragen den Server, und der Server führt die Skripte des Inhabers auf dieselbe Weise aus. Die übrigen drei Schlüssel gelten nur für den eingebauten Harness. Ist ein `preTool`- oder `postTool`-Hook konfiguriert, ruft der Lauf seine Tools nacheinander auf.
 
 ## AgentLiveState (abgeleitet)
 

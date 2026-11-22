@@ -2,7 +2,7 @@
 title: Étapes de pipeline
 description: Référence des types d’étapes de pipeline, des clés de corps d’étape, de leur configuration et des résultats d’étape.
 slug: fr-FR/manuel/reference/etapes-de-pipeline
-sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
+sourceHash: 0d2876bc1ac359f4d2cfe94902bd5f924d19d5d5
 ---
 
 Une étape de pipeline possède deux axes indépendants :
@@ -58,6 +58,31 @@ Nœud générique de prompt et de lancement : il rend le prompt, lance l’agen
 | `extras.spaceId`           | Conversation existante dans laquelle travailler (par défaut : une conversation masquée) |
 | `extras.conversationTitle` | Flux nommé à l’intérieur de cet espace (facultatif)             |
 | `extras.mode`              | Lu sur le nœud qui *ouvre* la salle (`messaging.createSpace`), pas ici. Valeur par défaut `review`. |
+
+### `goal.pursue`
+
+Lance un objectif durable (voir [Poursuivre un objectif](/fr-FR/manuel/guides/poursuivre-objectif/)) et se suspend jusqu’à la fin de l’objectif. L’éditeur l’affiche comme **Pursue a goal**. Ce n’est pas l’un des 25 corps prédéfinis ci-dessus ; il est enregistré à côté d’eux.
+
+| Champ de configuration | Description |
+| ---------------------- | ----------- |
+| `agentId` | L’agent qui poursuit l’objectif (obligatoire) |
+| `prompt` | L’objectif ; accepte la substitution `{{key}}` (obligatoire) |
+| `outputKey` | Clé d’état du résultat (obligatoire) |
+| `extras.spaceId` | L’espace dans lequel l’objectif travaille (obligatoire, comme chaque étape d’agent) |
+| `extras.budgetMicros` | Le budget de l’objectif en micro-dollars, de 1 à 1 000 000 000 (obligatoire) |
+| `extras.maxRuns` | Un plafond de segments, de 1 à 1 000 (facultatif) |
+| `extras.deadlineHours` | Heures à partir du moment où l’étape lance l’objectif, de 1 à 2 160 (facultatif) |
+| `extras.contract` | Ce que « terminé » signifie : critères et vérifications (facultatif) |
+
+Le résultat sous `outputKey` est `{summary, verdict}`, où `verdict` est le verdict du relecteur avec ses points et ses réserves, ou null.
+
+| L’objectif | L’étape |
+| -------- | -------- |
+| terminé | termine |
+| échoué, annulé ou budget épuisé | échoue (`retry` et `continueOnFail` s’appliquent) ; une étape relancée lance un nouvel objectif |
+| en pause, y compris en attente de la revue d’une personne | reste suspendue, exemptée du balayage de vivacité de 24 heures |
+
+Un objectif lancé par une exécution de pipeline est imputé à l’orchestration de cette exécution, revue comprise. Lorsque l’exécution de pipeline est annulée, échoue ou se termine pendant que l’objectif travaille, l’objectif est annulé.
 
 ### `pipeline.condition`
 

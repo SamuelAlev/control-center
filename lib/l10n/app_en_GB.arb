@@ -88,5 +88,6 @@
   "providerAppCreateGitHubOrgHint": "Leave empty to create the app under your own GitHub account. Creating it under an organisation takes an owner of that organisation.",
   "calendarDeleteConfirmInvite": "It's removed from your calendar only. The organiser and other guests keep it.",
   "githubInstallOnAnotherOrganization": "Install on another organisation",
-  "onboardingYouSubtitle": "Your username is how people mention you and how your work is labelled. You can change it and your display name later in Settings → You → Profile."
+  "onboardingYouSubtitle": "Your username is how people mention you and how your work is labelled. You can change it and your display name later in Settings → You → Profile.",
+  "scheduleNoteHint": "Summarise what changed overnight and flag anything blocked."
 }

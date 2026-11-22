@@ -2,7 +2,7 @@
 title: Diagnosticar un agente
 description: Recorre el registro de ejecuciones, la sonda del adaptador, el estado del servidor y el diagnóstico del host cuando un agente deja de generar ejecuciones.
 slug: es-MX/manual/guias/diagnosticar-agente
-sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
+sourceHash: 8cd7078bacfbfcd18d90512974eff3539366883c
 ---
 
 Esta guía te muestra cómo averiguar por qué un agente no está generando ejecuciones.
@@ -90,7 +90,13 @@ Consulta **Ajustes → Servidor → Diagnóstico y privacidad → Búsqueda sem�
 
 ### El servidor no arranca en absoluto
 
-Las bibliotecas nativas son obligatorias y no existe ningún modo degradado. Si falta una dylib, `cc_server` se niega a arrancar y señala el archivo problemático en el error. Prepara los nativos con `scripts/natives/build_natives.sh` y recompila el binario del servidor.
+Las bibliotecas nativas son obligatorias y no existe ningún modo degradado. Si falta una dylib o el ejecutor de modo código (`bin/codemode/cc_codemode`), `cc_server` se niega a arrancar y señala el archivo problemático en el error. Prepara los nativos con `scripts/natives/build_natives.sh` y recompila el binario del servidor con `scripts/build_server.sh`.
+
+### Un script falló o no se ofrece el modo código
+
+Para ver lo que hizo un script de [modo código](/es-MX/manual/conceptos/modo-codigo/), abre el registro del script desde **Abrir registro** en su fila en la conversación, o desde **Observabilidad → Ejecuciones de código**. El registro dice cómo terminó el script en palabras sencillas (se quedó sin tiempo, agotó su tiempo de procesador, alcanzó su límite de memoria o lanzó un error) y enumera cada llamada a herramienta que hizo, con si las barandillas la permitieron, si una persona la aprobó o si se denegó.
+
+Si el agente no tiene ninguna herramienta `repl`, abre **Ajustes → Espacio de trabajo → Modo código**. Bajo **Estado**, **En este servidor** indica **Disponible** o **No disponible**; **No disponible** significa que el servidor no puede bloquear el ejecutor de scripts en su host, y la página cita el motivo. El registro de arranque del servidor tiene la misma línea (`code_mode=…`). Una ejecución sin espacio de trabajo, cuyos límites del espacio de trabajo no se pudieron leer, o cuyo registro de ejecución no pudo escribirse, también se queda sin `repl` y llama a sus herramientas directamente.
 
 ### Una acción se deniega en silencio
 

@@ -1,8 +1,11 @@
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
+import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/ports/process_control_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/core/logging/cc_domain_log.dart';
 import 'package:cc_domain/features/agents/domain/services/budget_policy_service.dart';
+import 'package:cc_domain/features/dispatch/domain/services/run_settlement.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
 import 'package:cc_domain/features/ticketing/domain/repositories/ticket_repository.dart';
 import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_service.dart';
 
@@ -11,13 +14,26 @@ import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_ser
 class OrphanRunReaper {
   /// Creates an orphan reaper with the required repositories,
   /// [_ticketWorkflow], [_processControl] and optional [_budgetEnforcement].
+  /// A reaped run settles on [_eventBus] (`AgentRunSettled`, reason
+  /// `serverStopped`); null writes the row and announces nothing.
+  ///
+  /// `startedBefore` is when this server process started: a run that began
+  /// at or after it is this process's own (a goal segment or a pipeline step
+  /// boot recovery just dispatched, a person's new run), never an orphan,
+  /// whatever its pid says.
   OrphanRunReaper({
     required this._runLogRepo,
     required this._ticketRepo,
     required this._ticketWorkflow,
     required this._processControl,
+    required this._eventBus,
+    required this._startedBefore,
     this._budgetEnforcement,
   });
+
+  final DateTime _startedBefore;
+
+  final DomainEventBus? _eventBus;
 
   final AgentRunLogRepository _runLogRepo;
   final TicketRepository _ticketRepo;
@@ -32,7 +48,11 @@ class OrphanRunReaper {
   Future<void> reap() async {
     final runs = await _runLogRepo.nonTerminal();
     final activeRuns = runs
-        .where((r) => r.status == RunStatus.running)
+        .where(
+          (r) =>
+              r.status == RunStatus.running &&
+              r.startedAt.isBefore(_startedBefore),
+        )
         .toList();
 
     if (activeRuns.isEmpty) {
@@ -103,7 +123,19 @@ class OrphanRunReaper {
       completedAt: DateTime.now(),
       liveness: RunLiveness.dead,
     );
-    if (!await _runLogRepo.completeIfActive(failed, writeCost: false)) {
+    // A run whose process is gone was ended by the server going away (or
+    // dying): it settles as a server stop, through the same chokepoint as
+    // every other terminal write, so it is announced exactly once, naming
+    // the requester its row recorded at dispatch.
+    final settled = await RunSettlement(
+      runLogs: _runLogRepo,
+      eventBus: _eventBus,
+    ).settle(
+      failed,
+      endReason: RunEndReason.serverStopped,
+      writeCost: false,
+    );
+    if (!settled) {
       CcDomainLog.info(
         '$_tag: Run ${run.id} finished before it could be reaped — left as is',
       );

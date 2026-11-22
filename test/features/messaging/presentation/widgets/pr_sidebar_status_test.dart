@@ -1,5 +1,5 @@
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
-import 'package:control_center/features/messaging/presentation/widgets/pr_status_badge.dart';
+import 'package:control_center/features/messaging/presentation/widgets/pr_sidebar_status.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 PullRequest _pr({required PrState state, bool isDraft = false}) {

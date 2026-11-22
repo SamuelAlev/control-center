@@ -93,6 +93,7 @@ class SnapcompactCompactor implements HarnessCompactor {
     String selfAgentName = 'assistant',
     bool force = false,
     CancellationToken cancel = CancellationToken.none,
+    Future<String?> Function()? focus,
   }) async {
     final useSnapshots = readerHasVision && preferSnapshots;
     if (!useSnapshots) {
@@ -104,6 +105,7 @@ class SnapcompactCompactor implements HarnessCompactor {
         selfAgentName: selfAgentName,
         force: force,
         cancel: cancel,
+        focus: focus,
       );
     }
 
@@ -116,6 +118,12 @@ class SnapcompactCompactor implements HarnessCompactor {
             contextWindow) {
       return HarnessCompactionResult.unchanged(before);
     }
+
+    // The focus is asked before anything is folded, on this path too: the
+    // owner's `preCompact` script runs before every compaction. Asked once;
+    // a fallback below reuses the answer instead of running the script again.
+    final focusText = await resolveCompactionFocus(focus);
+    Future<String?> asked() async => focusText;
 
     final SnapcompactResult snapped;
     try {
@@ -134,6 +142,7 @@ class SnapcompactCompactor implements HarnessCompactor {
         selfAgentName: selfAgentName,
         force: force,
         cancel: cancel,
+        focus: asked,
       );
     }
 
@@ -155,6 +164,7 @@ class SnapcompactCompactor implements HarnessCompactor {
         selfAgentName: selfAgentName,
         force: force,
         cancel: cancel,
+        focus: asked,
       );
     }
 
@@ -164,7 +174,7 @@ class SnapcompactCompactor implements HarnessCompactor {
     // reading the pre-compaction conversation forever.
     history
       ..clear()
-      ..addAll(snapped.messages);
+      ..addAll(withSnapshotFocus(snapped, focusText));
 
     final after = estimateHarnessHistory(history);
     return HarnessCompactionResult(
@@ -184,6 +194,39 @@ class SnapcompactCompactor implements HarnessCompactor {
       policy: config.policy,
       reclaimedTokens: before - after,
     );
+  }
+
+  /// [snapped]'s messages, with [focus] (the `compact` call's and the owner's
+  /// `preCompact` script's) added to the page message's own text: no summary
+  /// is written on this path, so the instruction that introduces the pages is
+  /// the only text a focus can steer. Not part of the retained source: the
+  /// focus belongs to this compaction.
+  static List<HarnessMessage> withSnapshotFocus(
+    SnapcompactResult snapped,
+    String? focus,
+  ) {
+    final i = snapped.replacementIndex;
+    if (focus == null ||
+        snapped.frames == 0 ||
+        i >= snapped.messages.length ||
+        !snapped.messages[i].isSnapshotCarrier) {
+      return snapped.messages;
+    }
+    final page = snapped.messages[i];
+    return [
+      ...snapped.messages.take(i),
+      // copyWith: the page's person texts and activations travel with it.
+      page.copyWith(
+        content: [
+          ...page.content,
+          HarnessTextBlock(
+            '[Asked to keep in view across this compaction: $focus]',
+          ),
+        ],
+        isSnapshotCarrier: true,
+      ),
+      ...snapped.messages.skip(i + 1),
+    ];
   }
 
   /// Runs the text fallback over a history whose snapshot regions are first
@@ -206,6 +249,7 @@ class SnapcompactCompactor implements HarnessCompactor {
     required String selfAgentName,
     required bool force,
     required CancellationToken cancel,
+    required Future<String?> Function()? focus,
   }) async {
     final rehydrated = rehydrateSnapcompactHistory(history, _retainedSource);
     final rehydratedChanged = !identical(rehydrated, history);
@@ -218,6 +262,7 @@ class SnapcompactCompactor implements HarnessCompactor {
       selfAgentName: selfAgentName,
       force: force,
       cancel: cancel,
+      focus: focus,
     );
     if (rehydratedChanged && !cancel.isCancelled) {
       // The fallback mutates the list it was given; adopt it back into the

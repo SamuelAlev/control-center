@@ -23,6 +23,16 @@ class DismissReviewNodeTool extends McpTool {
   @override
   String get name => 'dismiss_review_node';
 
+  /// `agent_id` names the calling agent, never a target: forced from the
+  /// call scope, so a run cannot act as another agent.
+  @override
+  Set<String> get forcedScopeKeys => const {'agent_id'};
+
+  @override
+  String get resultNote =>
+      '{node_message_id, status, previous_status, dismissed_by, reason: '
+      'string, suppression_recorded: boolean}.';
+
   @override
   String get description =>
       'Dismisses a review node finding. Sets the status to "dismissed", posts '

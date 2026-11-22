@@ -2,7 +2,7 @@
 title: Konfigurasi ejen
 description: Setiap medan pada entiti ejen dan enum yang digunakannya.
 slug: ms-MY/manual-pengguna/rujukan/konfigurasi-ejen
-sourceHash: e77edc905bed16d2f7d5bcd19a62541d885f6aab
+sourceHash: 708808ecdf4d2fc769600241c46f85db411550a8
 ---
 
 Rujukan ini menyenaraikan setiap medan pada entiti ejen, beserta enum dan bendera yang digunakannya. Untuk panduan langkah demi langkah mencipta atau mengedit ejen dalam aplikasi, lihat [Cipta dan konfigurasikan ejen](/ms-MY/manual-pengguna/panduan-cara/cipta-ejen/).
@@ -81,7 +81,7 @@ Set pengecam kemahiran yang tidak boleh diubah dan tidak sensitif huruf besar/ke
 
 ## Cangkuk shell
 
-Cangkuk shell membolehkan pemilik pelayan menjalankan skripnya sendiri di sekeliling larian harness terbina: sekali pada permulaan sesi, sebelum setiap panggilan alat, dan selepas setiap panggilan alat. Cangkuk ialah kod sewenang-wenang, jadi cangkuk ialah konfigurasi hos. Hanya pemilik pelayan yang menyediakannya, secara manual, pada mesin pelayan. Tiada tetapan dalam apl dan tiada operasi yang menulisnya.
+Cangkuk shell membolehkan pemilik pelayan menjalankan skripnya sendiri di sekeliling sesuatu larian ejen: sekali pada permulaan sesi, sebelum setiap panggilan alat, selepas setiap panggilan alat, apabila ejen akan menamatkan gilirannya, dan sebelum pemadatan. Cangkuk ialah kod sewenang-wenang, jadi cangkuk ialah konfigurasi hos. Hanya pemilik pelayan yang menyediakannya, secara manual, pada mesin pelayan. Tiada tetapan dalam apl dan tiada operasi yang menulisnya.
 
 Bagi ejen, cangkuk berada dalam folder sendirinya di bawah direktori data pelayan:
 
@@ -91,22 +91,31 @@ Bagi ejen, cangkuk berada dalam folder sendirinya di bawah direktori data pelaya
 
 `<agent slug>` ialah nama folder ejen dalam ruang kerja (`agents/<slug>/`). Folder itu berada di luar storan setiap ruang kerja, dan setiap kotak pasir menyembunyikan direktori data, jadi tiada ahli, larian atau terminal boleh menulisnya.
 
-`hooks.json` memetakan mana-mana daripada tiga kunci kepada skrip, mengikut laluan relatif kepada folder cangkuk:
+`hooks.json` memetakan mana-mana daripada lima kunci kepada skrip, mengikut laluan relatif kepada folder cangkuk:
 
 | Kunci          | Bila ia berjalan              | Maksud kod keluarnya                                           |
 | -------------- | ----------------------------- | -------------------------------------------------------------- |
 | `sessionStart` | Sekali, apabila larian bermula | Tiada apa-apa; cangkuk hanya memerhati                         |
 | `preTool`      | Sebelum setiap panggilan alat | `0` membenarkan panggilan alat; apa-apa lain menafikannya     |
 | `postTool`     | Selepas setiap panggilan alat | Tiada apa-apa; cangkuk hanya memerhati                         |
+| `stop` | Apabila ejen akan menamatkan gilirannya | `2` dengan teks pada stdout mengekalkan larian dengan teks itu; apa-apa lain membenarkan giliran tamat |
+| `preCompact` | Sebelum pemadatan | `0`: stdout-nya ditambah kepada apa yang sepatutnya dikekalkan oleh ringkasan |
 
 - Setiap skrip dimulakan sebagai boleh laku sendiri, tanpa shell dan tanpa argumen, jadi ia mesti boleh dilaksanakan dan bermula dengan baris shebang. Ia menerima peristiwa sebagai JSON pada stdin: nama peristiwa, dan untuk cangkuk alat, nama alat dengan argumennya (`preTool`) atau hasilnya (`postTool`).
 - Cangkuk berjalan sebagai salah satu proses alat larian, dalam direktori ejen untuk larian itu. Apabila pelayan mengasingkan ejen dalam kotak pasir, ia berjalan di dalam kotak pasir larian itu. Ia mendapat persekitaran minimum dan tiada kelayakan larian: tiada token forge atau pembekal dan tiada akses gerbang.
-- Setiap cangkuk mempunyai 30 saat. Outputnya dibaca dan dibuang.
+- Setiap cangkuk mempunyai 30 saat. Output `sessionStart`, `preTool` dan `postTool` dibaca dan dibuang.
 - `preTool` gagal tertutup. Kod keluar bukan sifar, tamat masa atau skrip yang tidak dapat dimulakan menafikan panggilan alat itu.
 - Laluan yang mutlak, hilang, atau yang keluar daripada folder cangkuk (pautan diselesaikan) ditolak, dan log larian menyatakan cangkuk mana yang ditolak dan sebabnya. Cangkuk `preTool` yang ditolak atau tidak boleh dibaca menafikan setiap panggilan alat sehingga ia dibetulkan.
 - Blok `hooks` dalam `.agents/harness.json`, sama ada dalam repositori atau dalam folder ejen sendiri, diabaikan. Repositori selalunya kod orang lain, dan folder ejen boleh ditulis oleh ahli serta oleh larian. Log larian menyatakan blok itu diabaikan dan dari mana cangkuk dibaca sebaliknya.
 
-Cangkuk shell hanya terpakai pada harness terbina. Cangkuk `preTool` atau `postTool` yang dikonfigurasi menjadikan larian memanggil alatnya satu demi satu.
+### Cangkuk stop dan preCompact
+
+- `stop` menerima `event: "stop"`, mesej terakhir ejen (`last_message`), `stop_hook_active` (benar apabila henti ini mengikuti kesinambungan yang dicetuskan oleh cangkuk) dan `block_count` (berapa kali ia telah mengekalkan larian setakat ini, bermula dari 0). Untuk mengekalkan larian, ia keluar dengan `2` dan mencetak apa yang sepatutnya dilakukan ejen seterusnya. Teks itu, dipotong kepada 2,000 aksara, sampai kepada ejen sebagai mesej sistem.
+- Cangkuk `stop` mengekalkan larian paling banyak 3 kali dalam sesuatu larian. Selepas itu ia tidak dijalankan semula, dan giliran tamat.
+- `stop` gagal terbuka. Tamat masa, skrip yang tidak dapat dimulakan, sebarang keluaran selain `2`, atau keluaran `2` tanpa apa-apa pada stdout membenarkan giliran tamat, supaya cangkuk yang rosak tidak dapat mengekalkan larian terbuka.
+- `preCompact` menerima `event: "pre_compact"`. Stdout-nya, dipotong kepada 1,000 aksara, ditambah kepada fokus pemadatan. Skrip yang gagal tidak menambah apa-apa.
+
+Cangkuk shell terpakai pada harness terbina. Pada Claude Code, cangkuk `stop` dan `preCompact` juga dijalankan: cangkuk `Stop` dan `PreCompact` Claude Code sendiri meminta pelayan, dan pelayan menjalankan skrip pemilik dengan cara yang sama. Tiga kunci yang lain terpakai pada harness terbina sahaja. Cangkuk `preTool` atau `postTool` yang dikonfigurasi menjadikan larian memanggil alatnya satu demi satu.
 
 ## AgentLiveState (terbitan)
 

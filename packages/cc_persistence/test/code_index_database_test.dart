@@ -57,18 +57,27 @@ void main() {
   /// The vector of a symbol tilted by [tilt] from the query `vec(0)`.
   Uint8List vector(double tilt) => vec(tilt).buffer.asUint8List();
 
+  /// Every object of the code index's tables (the tables, their indexes,
+  /// triggers and FTS shadow tables share each table's name as a prefix).
+  ///
+  /// Named per table rather than as `code_*`: the workspace file has tables
+  /// of its own under that prefix (code mode's `code_executions`), which are
+  /// not the code index.
+  final codeIndexObjects = () {
+    final index = createTestCodeIndexDatabase();
+    final names = [for (final t in index.allTables) t.actualTableName];
+    unawaited(index.close());
+    final globs = [
+      for (final n in names) "name GLOB '$n*' OR tbl_name GLOB '$n*'",
+    ];
+    return 'SELECT name FROM sqlite_master WHERE ${globs.join(' OR ')}';
+  }();
+
   group('the workspace file', () {
     test('a fresh one holds no code index object', () async {
       final db = createTestDatabase();
       addTearDown(db.close);
-      expect(
-        await column(
-          db,
-          "SELECT name FROM sqlite_master WHERE name GLOB 'code_*' "
-          "OR tbl_name GLOB 'code_*'",
-        ),
-        isEmpty,
-      );
+      expect(await column(db, codeIndexObjects), isEmpty);
     });
 
     test('a v29 file loses its code tables when it converges', () async {
@@ -91,14 +100,7 @@ void main() {
       addTearDown(db.close);
 
       expect(await db.schemaDifferences(), isEmpty);
-      expect(
-        await column(
-          db,
-          "SELECT name FROM sqlite_master WHERE name GLOB 'code_*' "
-          "OR tbl_name GLOB 'code_*'",
-        ),
-        isEmpty,
-      );
+      expect(await column(db, codeIndexObjects), isEmpty);
       expect(
         db.lastConvergeReport!.droppedTables,
         containsAll([

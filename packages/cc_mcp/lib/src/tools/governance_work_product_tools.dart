@@ -26,6 +26,11 @@ class CreateWorkProductTool extends McpTool {
   @override
   String get name => 'create_work_product';
 
+  /// `agent_id` names the calling agent, never a target: forced from the
+  /// call scope, so a run cannot act as another agent.
+  @override
+  Set<String> get forcedScopeKeys => const {'agent_id'};
+
   @override
   String get description =>
       'Creates a durable deliverable artifact (plan, document, diff, report, '
@@ -83,6 +88,11 @@ class SaveWorkProductRevisionTool extends McpTool {
 
   @override
   String get name => 'save_work_product_revision';
+
+  /// `agent_id` names the calling agent, never a target: forced from the
+  /// call scope, so a run cannot act as another agent.
+  @override
+  Set<String> get forcedScopeKeys => const {'agent_id'};
 
   @override
   String get description =>

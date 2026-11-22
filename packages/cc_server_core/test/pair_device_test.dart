@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_server_core/cc_server_core.dart';
+import 'package:cc_server_core/src/server_boot_refusal.dart'
+    show NativeLibrariesMissing;
 import 'package:test/test.dart';
 
 import 'helpers/best_effort_delete.dart';
@@ -25,8 +27,23 @@ void main() {
     Future<GlobalDatabase> openDb() async =>
         GlobalDatabase(openGlobalDatabase(dataDir: tmp.path));
 
+    test('a missing native refuses before the database is created', () async {
+      await expectLater(
+        pairDevice(
+          config: configFor(tmp.path),
+          checkNatives: (dataDir) async =>
+              throw NativeLibrariesMissing(const ['libx'], searched: [dataDir]),
+        ),
+        throwsA(isA<NativeLibrariesMissing>()),
+      );
+      expect(tmp.listSync(), isEmpty);
+    });
+
     test('a fresh data dir pairs WITHOUT creating a workspace', () async {
-      final result = await pairDevice(config: configFor(tmp.path));
+      final result = await pairDevice(
+        config: configFor(tmp.path),
+        checkNatives: _natives,
+      );
       expect(result.deviceId, 'web-client');
       expect(result.psk, isNotEmpty);
 
@@ -55,7 +72,7 @@ void main() {
       );
       await seed.close();
 
-      await pairDevice(config: configFor(tmp.path));
+      await pairDevice(config: configFor(tmp.path), checkNatives: _natives);
 
       final db = await openDb();
       try {
@@ -69,8 +86,14 @@ void main() {
     });
 
     test('re-running rotates the PSK and still creates no workspace', () async {
-      final first = await pairDevice(config: configFor(tmp.path));
-      final second = await pairDevice(config: configFor(tmp.path));
+      final first = await pairDevice(
+        config: configFor(tmp.path),
+        checkNatives: _natives,
+      );
+      final second = await pairDevice(
+        config: configFor(tmp.path),
+        checkNatives: _natives,
+      );
       expect(second.psk, isNot(first.psk));
 
       final db = await openDb();
@@ -82,3 +105,6 @@ void main() {
     });
   });
 }
+
+/// The natives are this suite's concern only in the refusal test.
+Future<void> _natives(String _) async {}

@@ -126,6 +126,15 @@ abstract class PrReviewRepository {
     String? startSide,
   });
 
+  /// Post a comment on a file as a whole (no diff line), e.g. a rename
+  /// without changes.
+  Future<Map<String, dynamic>> postFileComment({
+    required int prNumber,
+    required String commitSha,
+    required String path,
+    required String body,
+  });
+
   /// Reply to review comment.
   Future<void> replyToReviewComment({
     required int prNumber,
@@ -445,6 +454,16 @@ class EmptyPrReviewRepository implements PrReviewRepository {
     required String body,
     int? startLine,
     String? startSide,
+  }) async {
+    return {'id': 0};
+  }
+
+  @override
+  Future<Map<String, dynamic>> postFileComment({
+    required int prNumber,
+    required String commitSha,
+    required String path,
+    required String body,
   }) async {
     return {'id': 0};
   }

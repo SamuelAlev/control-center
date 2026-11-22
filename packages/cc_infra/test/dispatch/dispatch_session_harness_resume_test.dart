@@ -150,6 +150,8 @@ void main() {
   Future<String> run(AgentPromptParts parts) async {
     runNumber++;
     final session = DispatchSession(
+      freshHistory: false,
+      readOnly: false,
       deps: SandboxDispatchDeps(
         hostExecution: const HostExecutionGate(
           posture: HostExecutionPosture.offByOwner,

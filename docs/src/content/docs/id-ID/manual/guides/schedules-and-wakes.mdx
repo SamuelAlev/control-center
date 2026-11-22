@@ -1,0 +1,110 @@
+---
+title: Jadwal dan pengingat
+description: Bangunkan agen nanti, sesuai jadwal atau saat sesuatu terjadi, lihat apa yang menunggu, dan apa yang terjadi saat restart atau batas penggunaan.
+slug: id-ID/panduan-pengguna/panduan-praktis/jadwal-dan-pengingat
+sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+---
+
+Agen tidak tidur atau memeriksa berulang kali saat menunggu. Agen itu, atau Anda, memasang **pengingat**: permintaan tahan lama untuk memulai atau melanjutkan run agen dalam sebuah percakapan pada suatu waktu atau saat sesuatu terjadi. Setiap run yang dimulai server tanpa ada yang mengetik dimulai sebagai pengingat: segmen berikutnya dari tujuan, jadwal, pantauan, balasan dari agen lain, pekerjaan delegasi yang selesai, akhir batas penggunaan, atau pekerjaan yang tersisa setelah restart. Pengingat disimpan di basis data ruang kerja, sehingga tetap ada setelah restart.
+
+## Jadwalkan agen sendiri
+
+Ketik salah satu perintah ini di kolom penulisan percakapan:
+
+```text
+/loop every 30m --days 3 check the deploy and fix what broke
+/loop keep the flaky tests green
+/schedule in 2h look at the overnight benchmark
+/schedule at 09:00 summarize what changed overnight
+/schedule cron "0 9 * * 1-5" --max 20 triage new tickets
+```
+
+| Perintah | Yang dilakukannya |
+| --- | --- |
+| `/loop every <interval> <prompt>` | Membangunkan agen dengan prompt sekarang, lalu setiap interval (berjarak minimal 60 detik) |
+| `/loop <prompt>` | Loop yang mengatur iramanya sendiri: membangunkan agen sekarang, dan setelah setiap run agen memilih jeda berikutnya, 1 sampai 60 menit (20 menit secara bawaan) |
+| `/schedule in <duration> <prompt>` | Membangunkan agen sekali, setelah jeda |
+| `/schedule at <HH:MM or ISO time> <prompt>` | Membangunkan agen sekali. `HH:MM` adalah waktu berikutnya dalam zona waktu ruang kerja; waktu ISO tanpa offset dianggap UTC |
+| `/schedule cron "<expression>" <prompt>` | Membangunkan agen sesuai cron lima bidang, dibaca dalam zona waktu ruang kerja. Tanda kutipnya boleh dihilangkan |
+
+- `--max <N>` membatasi jumlah run, `--days <N>` mengakhiri jadwal setelah sekian hari (30 secara bawaan, paling banyak 365), dan `--budget <dollars>` membatasi total yang boleh dibelanjakan jadwal (jika tidak, anggaran bawaan ruang kerja, awalnya 50 dolar).
+- `/loop` menjalankan run pertamanya segera. `/schedule` menunggu waktunya.
+- Durasi memakai `s`, `m`, `h` dan `d`, misalnya `90s`, `20m` atau `1h30m`.
+- Perintah ini hanya dibaca dalam pesan yang Anda ketik sendiri.
+
+Composer membantu Anda menulisnya. Setelah `/loop` atau `/schedule` dan spasi, daftar saran menawarkan kapan ia dipicu dan menyempit saat Anda mengetik; ketik `--` setelah waktunya untuk batasnya. Enter atau Tab memilih sebuah baris dan tidak mengirim apa pun. Sebuah baris di atas teks Anda kemudian menampilkan kembali perintahnya: kapan ia dipicu, kapan berakhir, dan apa yang masih kurang. Jika Anda menekan Enter pada perintah yang tidak dapat dibaca, baris itu menjelaskan apa yang salah dan draf Anda tetap ada.
+
+Anda juga bisa membuat jadwal dari halaman **Jadwal** dengan **Jadwal baru**: pilih space, percakapan dan agen, kapan jadwal aktif, apa yang dimulai setiap run, akhir, batas run, dan batas biaya. **Jika agen sibuk** memilih antara melewati pemicuan itu atau menunggu sampai agen bebas. **Setiap pemicuan** memilih antara memulai run atau hanya memberi tahu Anda dengan catatannya.
+
+## Yang disiapkan agen
+
+Agen memakai alat `wake_me` untuk hal yang sama, dan untuk pantauan:
+
+| Pantauan | Aktif saat |
+| --- | --- |
+| `on:pr_checks` | Pemeriksaan pull request milik space selesai |
+| `on:pr_review` | Pull request milik space mendapat tinjauan atau balasan |
+| `on:pr_merged` | Pull request milik space digabungkan |
+| `on:environment` | Sebuah tugas dari lingkungan space keluar, atau lingkungan menjadi siap |
+| `on:ticket:<id>` | Sebuah tiket mencapai keadaan final |
+| `on:pipeline_run:<id>` | Sebuah run pipeline berakhir |
+
+- Pantauan pull request mendengar pull request milik space, atau satu pull request yang disebutnya (`on:pr_checks:acme/shop-ui#12`). Pantauan atas sesuatu yang tidak bisa dibaca oleh orangnya ditolak.
+- Tindakan agen sendiri tidak memicu pantauannya. Peristiwa yang datang saat agen sedang bekerja tidak hilang: ia menunggu sampai run berakhir, dan peristiwa berikutnya digabungkan ke pengingat yang sama.
+- Jadwal agen harus punya batas run atau akhir. Jadwal berakhir setelah 7 hari secara bawaan dan paling lama 30 hari. Pantauan berjalan 10 kali secara bawaan.
+- Jadwal yang dipasang agen dalam run yang dimulai oleh salah satu jadwalnya sendiri memakai akhir, batas run, dan batas biaya jadwal pertama, sehingga rangkaian jadwal agen tidak bisa melampaui yang pertama. Menghapus jadwal pertama mengakhiri seluruh rangkaian; menjedanya hanya menjeda jadwal itu. Run yang dimulai rangkaian melalui agen lain dihitung terhadap batas biaya yang sama. Jadwal yang Anda buat tidak memulai rangkaian: apa yang dipasang agen dalam run-nya dibatasi seperti apa pun yang dipasangnya setelah pesan Anda.
+- Agen mendaftar apa yang menunggunya dengan `list_wakes`, dan membatalkan yang dipasangnya sendiri dengan `cancel_wake`. Ia tidak bisa membatalkan yang Anda pasang.
+
+## Lihat apa yang menunggu
+
+**Di atas kolom penulisan.** Saat ada pengingat yang menunggu agen dalam percakapan, sebuah strip menampilkannya: **N pengingat menunggu**, asal setiap pengingat (**Tujuan**, **Jadwal**, **Pantauan**, **Balasan dari** agen, **Batas direset**, **Pemulihan**, …), kapan jatuh tempo, dan alasan ditahan.
+
+| Tombol | Yang dilakukannya | Siapa yang bisa |
+| --- | --- | --- |
+| **Kirim sekarang** | Mengirimkan pengingat yang menunggu sekarang juga | Hanya orang yang diwakili pengingat itu |
+| **Lanjutkan** | Melepaskan pengingat yang ditahan | Hanya orang yang diwakili pengingat itu |
+| **Batalkan pengingat** | Membatalkannya | Siapa pun yang punya akses ke space |
+
+Pengingat yang tidak terkirim meninggalkan satu baris di percakapan yang menjelaskan alasannya, misalnya **Agen itu sedang dijeda.** atau **Anggaran memblokir run.**
+
+**Halaman Jadwal.** Bilah sisi → **Jadwal** menampilkan setiap jadwal dan pantauan yang bisa Anda lihat, dikelompokkan menurut status; jadwal cron menampilkan tiga waktu berikutnya dalam zona waktu Anda. Buka satu untuk melihat catatannya, pemiliknya, pemicuan berikutnya, run, lewatan, biaya dan akhirnya, serta **Pengingat dan run terbaru**. Setiap jadwal punya alamatnya sendiri (`/workspaces/<workspace>/schedules/<id>`).
+
+| Tindakan | Siapa yang bisa |
+| --- | --- |
+| **Jeda**, **Hapus** | Siapa pun yang punya akses ke space |
+| **Lanjutkan**, **Perpanjang** | Hanya pemiliknya (admin ruang kerja untuk jadwal yang dibuat agen tanpa seseorang) |
+
+Ketika orang selain pemilik jadwal menjedanya, percakapan menampilkan baris yang menyebutkan namanya.
+
+Di ponsel, **Ulangi** pada layar tujuan memulai prompt yang berulang (setiap sekian menit atau jam, atau mengatur iramanya sendiri) dengan batas biaya dan akhir, dan layar **Jadwal** menjeda, melanjutkan, dan menghapus jadwal. Tampilan kemajuan percakapan menampilkan apa yang menunggu, termasuk jeda di batas penggunaan (**Lanjutkan sekarang**, **Batal**) dan pekerjaan yang tersisa setelah server berhenti.
+
+## Cara jadwal berjalan
+
+- Setiap run jadwal atau pantauan dibatasi 5 dolar, atau pada sisa anggaran jadwal jika itu lebih kecil, dan jadwal berhenti saat mencapai batas biayanya.
+- Waktu cron pada jam yang dilewati saat jam dimajukan berjalan satu jam lebih lambat pada hari itu (02:30 berjalan pada 03:30). Waktu pada jam yang berulang saat jam dimundurkan berjalan sekali.
+- Run jadwal tidak pernah bergabung dengan run yang sudah berjalan. Jika agen sibuk saat jadwal berwaktu aktif, pemicuan itu dilewati tanpa suara, kecuali jadwalnya menunggu sampai agen bebas.
+- Run yang dimulai jadwal atau pantauan dan berakhir tanpa masalah tidak memberi tahu Anda, kecuali menyebut seseorang. Saat jadwal berakhir, lonceng menjelaskan alasannya (**Batas run-nya sudah habis.**, **Sudah mencapai tanggal berakhirnya.**, …) tanpa suara.
+- Paling banyak 30 run per jam dimulai dari pengingat dalam satu percakapan, dan 300 dalam satu ruang kerja.
+- Saat orang yang diwakili jadwal meninggalkan ruang kerja, jadwal itu berakhir. Semua hal lain yang bertindak untuk mereka juga ikut berhenti: pengingat mereka yang menunggu dibatalkan, pesan mereka yang diantrekan dan ditahan dihapus, dan agen mereka yang sedang berjalan dihentikan.
+
+## Berhenti, restart, dan batas penggunaan
+
+- **Berhenti.** Menekan **Berhenti** pada run agen menahan pengingatnya yang menunggu (yang bukan milik tujuan) dan pesan yang Anda antrekan untuknya. Mereka menunggu **Lanjutkan** atau **Kirim pesan yang ditahan**. Setiap orang mengirim pesan tahannya sendiri; tidak ada yang mengirim pesan tahan milik orang lain.
+- **Restart server.** Pengingat dan jadwal tetap ada. Run yang dimulai pengingat dilanjutkan setelah restart, dengan paling banyak 3 percobaan. Run yang Anda mulai sendiri tidak dijalankan ulang oleh sistem: ia meninggalkan pengingat **Pemulihan** yang ditahan, dan berlanjut saat Anda menekan **Lanjutkan**. Jadwal berwaktu yang melewatkan waktu-waktu yang seharusnya dijalankannya saat server mati hanya dijalankan terlambat dalam tenggang singkat (setengah intervalnya, paling lama 10 menit; 24 jam untuk jadwal sekali jalan), jika tidak, ia mencatat satu lewatan: **Terlewat saat server mati.**
+- **Batas penggunaan penyedia.** Saat run berhenti di batas penggunaan penyedia dan penyedia menyebutkan kapan batasnya direset (dalam 7 hari), run itu dijeda. Run yang dimulai server, seperti segmen tujuan atau run jadwal, dilanjutkan sendiri 30 detik setelah reset. Run yang Anda mulai menunggu Anda: percakapan menampilkan **Dijeda di** **batas penggunaan penyedia. Batas direset pada** sebuah waktu, dengan **Lanjutkan** (hanya Anda) dan **Batalkan** (siapa pun di space). Setelah **Lanjutkan**, run melanjutkan begitu batasnya sudah direset. Jeda yang tidak Anda lanjutkan berakhir 7 hari setelah reset. Pesan yang Anda antrekan saat batas dikirim ke run yang dilanjutkan; jika run tidak menunggu reset, atau jeda dibatalkan atau berakhir, pesan itu ditahan untuk Anda di bawah **Kirim pesan yang ditahan**. Pesan antrean milik orang lain langsung ditahan untuk mereka. Pemicuan berikutnya dari jadwal menunggu sampai run yang dijeda dilanjutkan. Agen ACP tidak melaporkan reset, sehingga run mereka tidak menunggu.
+
+## Batas ruang kerja
+
+Admin ruang kerja mengatur batasnya di **Pengaturan → Ruang kerja → Jadwal**:
+
+- **Batas jadwal**: berapa banyak jadwal aktif atau dijeda yang boleh dimiliki satu agen dalam satu percakapan (10), dalam satu ruang kerja (50), dan di seluruh ruang kerja (500); batas biaya bawaan sebuah jadwal (50 dolar); dan zona waktu yang dipakai jadwal cron dan ringkasan harian (UTC secara awal).
+- **Saat tidak ada yang menjawab**: berapa lama run yang dimulai server menunggu jawaban atau persetujuan seseorang (72 jam secara bawaan, 1 jam sampai 7 hari) sebelum persetujuan dihitung sebagai ditolak dan pertanyaan sebagai belum dijawab (setelah itu, apa pun yang diminta run yang sama langsung ditolak), serta jam ringkasan harian tentang apa yang menunggu Anda dalam tujuan, jadwal, dan run lain yang dimulai server.
+
+Anggota hanya bisa melihat halaman ini tanpa mengubah.
+
+## Lihat juga
+
+- [Kejar tujuan](/id-ID/panduan-pengguna/panduan-praktis/kejar-tujuan/)
+- [Agen bekerja bersama](/id-ID/panduan-pengguna/panduan-praktis/agen-bekerja-bersama/)
+- [Perintah slash](/id-ID/panduan-pengguna/referensi/perintah-slash/)
+- [Alat pengingat dan tujuan](/id-ID/panduan-pengguna/referensi/alat-mcp/#alat-pengingat-dan-tujuan)

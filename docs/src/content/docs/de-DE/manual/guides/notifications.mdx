@@ -2,7 +2,7 @@
 title: Benachrichtigungen konfigurieren
 description: Schalte Kategorien ein oder aus, lege Quiet hours und einen Ton fest und erkenne, welche Benachrichtigungen dich wo erreichen.
 slug: de-DE/handbuch/anleitungen/benachrichtigungen
-sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
+sourceHash: b1e5bb3b8a13bbbbd169916ab8e7cd7bdd403c1a
 ---
 
 Diese Anleitung zeigt, wie du Benachrichtigungen konfigurierst und was jede
@@ -50,6 +50,8 @@ Benachrichtigungsfläche.
 
 Alles außerhalb dieser Liste wird weder gemeldet noch gefiltert. Eine Kategorie
 „alles andere“ gibt es nicht.
+
+Länger laufende Arbeit nutzt die ersten beiden Kategorien. Ein beendetes Ziel und ein beendeter Zeitplan zählen als **Agent abgeschlossen**; ein Ziel, das auf deine Prüfung wartet, ein Verbesserungsvorschlag, ein Pipeline-Lauf, der an seiner Kostenobergrenze angehalten wurde, und die tägliche Übersicht darüber, was auf dich wartet, zählen als **Agent wartet auf dich**. Jede erreicht die Person, um die es geht: wer das Ziel, den Zeitplan oder den Lauf gestartet hat.
 
 **Agent wartet auf dich** meldet sich, sobald eine Wartezeit beginnt: bei
 einer ausstehenden Freigabe (auch Ausführungsfreigaben der Sandbox
@@ -124,6 +126,8 @@ Eine Benachrichtigung wird still verworfen, wenn eines davon zutrifft:
 Diese Prüfungen gelten für Betriebssystem-Toasts. Die dauerhafte Glocke schreibt
 das Ereignis trotzdem auf.
 
+Einige Benachrichtigungen sind **still**: Der Server markiert sie, damit sie die Glocke erreichen, ohne Toast, Ton oder lautes Push auf dem Telefon. Ein beendeter Zeitplan und ein beendetes Ziel sind still. Ein Ziel, das auf deine Prüfung wartet, ist es nicht.
+
 Zwei weitere Unterdrückungen liegen vorgelagert, bei dem, was der Server
 überhaupt sendet:
 
@@ -134,10 +138,7 @@ Zwei weitere Unterdrückungen liegen vorgelagert, bei dem, was der Server
 - Bereiche von Agent zu Agent sind in der Seitenleiste stumm, deshalb erhöhen
   sie nie das Ungelesen-Badge eines Menschen
 
-In einem Bereich gibt es keine stille Ecke: jede Unterhaltung benachrichtigt
-gleich, Threads eingeschlossen. Der Lesestatus gilt für den ganzen Bereich,
-deshalb summiert sich Ungelesenes über die Unterhaltungen eines Bereichs, statt
-je Unterhaltung geführt zu werden.
+In einem Bereich gibt es keine stille Ecke: jede Unterhaltung benachrichtigt gleich, Threads eingeschlossen. Der Lesestatus wird je Unterhaltung geführt, und ein Bereich ist ungelesen, solange eine seiner Unterhaltungen ungelesen ist.
 
 ## Die Benachrichtigungszentrale lesen und leeren
 
@@ -192,6 +193,8 @@ aktive Route unterdrückt ihren eigenen Betriebssystem-Toast. In einem
 gemeinsamen Bereich benachrichtigt ein Lauf, den jemand anderes gestartet hat,
 diese Person und nicht dich. Ein Turn, der ohne Antwort und ohne Fehler endet,
 sendet nichts.
+
+Ein Lauf, den ein Zeitplan oder eine Überwachung gestartet hat und der ohne Probleme endet, sendet nichts, außer er erwähnt jemanden. Ein beendetes Ziel oder ein beendeter Zeitplan geht in die Glocke, ohne Toast.
 
 ## Verwandte Anleitungen
 

@@ -2,7 +2,7 @@
 title: Regola il contesto degli strumenti di un agente
 description: Ispeziona che cosa invia davvero un'esecuzione, cambia quali strumenti vengono caricati in anticipo e stabilisci se una scelta di strumento sbagliata è stato un recupero mancato o un problema di prompt.
 slug: it-IT/manuale/guide/regola-contesto-strumenti
-sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
+sourceHash: 22a4306a97aa8da0332f8e3e20e06ed86119f1d5
 ---
 
 Questa guida copre il lavoro pratico attorno alla superficie degli strumenti a due livelli: vedere che cosa invia un'esecuzione, cambiarlo e diagnosticare un agente che ha puntato allo strumento sbagliato. Per capire perché funziona così, leggi [Contesto degli strumenti e cache dei prompt](/it-IT/manuale/concetti/contesto-strumenti).
@@ -13,25 +13,26 @@ Apri una conversazione e tocca l'indicatore di utilizzo del contesto nell'intest
 
 Qui contano due segmenti:
 
-- **Definizioni degli strumenti** e **MCP e strumenti dinamici** — l'insieme residente, con il costo reale in token di ogni strumento.
+- **Definizioni degli strumenti** e **MCP e strumenti dinamici** — l'insieme diretto, con il costo reale in token di ogni strumento.
 - **Strumenti caricati su richiesta** — l'indice differito. Ogni voce paga solo il proprio nome, perché un nome è tutto ciò che la richiesta porta con sé; aprirne una mostra comunque la descrizione e lo schema completi, così puoi vedere quanto *costerebbe* se l'esecuzione la caricasse.
+
+In un'esecuzione con `repl`, gli strumenti che uno script raggiunge sono nominati nel prompt di sistema e non compaiono in nessuno dei due segmenti.
 
 Se il segmento dei differiti è vuoto, il differimento è disattivato su questo server. Controlla `--tool-deferral` nella [CLI di `cc_server`](/it-IT/manuale/riferimento/cc-server-cli).
 
 ## Cambia quali strumenti vengono caricati in anticipo
 
-L'insieme residente è una politica, non una configurazione: vive in `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) e vale per ogni esecuzione:
+L'insieme diretto è una politica, non una configurazione: vive in `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) e vale per ogni esecuzione:
 
-- `residentBuiltins` — il vocabolario di file e shell.
-- `residentDiscovery` — `search_tools` e `list_my_tools`. Non rimuoverli: sono il modo in cui un agente raggiunge tutto il resto.
-- `residentMcpTools` — la manciata di strumenti di Control Center il cui schema vale il costo a ogni richiesta.
-- Un blocco per modalità, per gli strumenti che una determinata [modalità](/it-IT/manuale/concetti/modalita) usa quasi a ogni turno.
+- `directTools` — i dodici strumenti che ogni esecuzione chiama direttamente: `read`, `write`, `edit`, `search`, `find`, `bash` e `read_output`; `ask_user` e `task`; `todo_write`, `search_memory` e `send_message`.
+- `residentDiscovery` — `search_tools` e `list_my_tools`. Non rimuoverli: sono il modo in cui un agente raggiunge tutto il resto. Un'esecuzione con `repl` riceve `search_tools` quando qualche strumento viene caricato al primo uso, e non `list_my_tools`.
+- `directNamesFor(mode)` — gli strumenti che una data [modalità](/it-IT/manuale/concetti/modalita/) aggiunge al proprio ciclo: i verbi di revisione in modalità revisione, `submit_plan` in modalità piano e `propose_orchestration` in modalità orchestrazione.
 
 Due regole quando lo modifichi:
 
-**Aggiungi uno strumento solo se lo usa la maggior parte delle esecuzioni.** Ogni nome costa il proprio schema a ogni richiesta di ogni esecuzione, per sempre. Uno strumento importante quando serve ma raro nel complesso appartiene alla metà differita: l'agente lo troverà comunque.
+**Aggiungi uno strumento solo se lo usa la maggior parte delle esecuzioni.** Ogni nome costa il proprio schema a ogni richiesta di ogni esecuzione, per sempre. Uno strumento importante quando serve ma raro nel complesso deve restare fuori dall'insieme diretto: l'agente potrà comunque raggiungerlo, da uno script o caricandolo al primo uso.
 
-**Usa il nome reale dello strumento.** Un nome residente che non corrisponde ad alcuno strumento è inerte: nessun errore, nessun avviso, lo strumento viene semplicemente differito. `test/tooling/resident_tool_names_test.dart` se ne accorge e tiene anche ogni modalità sotto i 40 strumenti residenti, che è poi il punto dell'esercizio: oltre quella soglia, la selezione degli strumenti peggiora in modo misurabile.
+**Usa il nome reale dello strumento.** Un nome diretto che non corrisponde ad alcuno strumento è inerte: nessun errore, nessun avviso, lo strumento semplicemente resta fuori dall'insieme diretto. `test/tooling/resident_tool_names_test.dart` se ne accorge, tiene l'insieme diretto di ogni modalità entro 20 strumenti e tiene ogni modalità entro 40 strumenti inviati in anticipo, che è poi il punto dell'esercizio: oltre quella soglia, la selezione degli strumenti peggiora in modo misurabile.
 
 I verbi richiesti e fissati di una modalità vengono aggiunti automaticamente, quindi non devi mai elencare il verbo di output della modalità stessa.
 
@@ -73,4 +74,4 @@ Cause comuni, in ordine di probabilità:
 - **Un cambio di modello o di sforzo di ragionamento a conversazione avviata.** Entrambi cambiano il prefisso. Con i subagent è particolarmente facile sbagliare: eseguire i figli a uno sforzo di ragionamento più basso per risparmiare può costare, in condivisione di cache persa, più di quanto faccia risparmiare.
 - **Compattazione frequente.** La compattazione riscrive la cronologia per sua stessa natura, quindi il suo costo è reale; la soluzione è compattare di rado e in profondità, non spesso e in superficie.
 
-Disattivare il differimento con `--tool-deferral=off` è un A/B valido per isolare se un cambiamento di comportamento deriva dalla superficie a due livelli. Riproduce esattamente la richiesta precedente al differimento, quindi se il comportamento persiste con il differimento disattivato, la superficie non è la causa.
+Disattivare il differimento con `--tool-deferral=off` è un A/B valido per isolare se un cambiamento di comportamento deriva dalla superficie a due livelli. Con il differimento disattivato, un'esecuzione invia la definizione di ogni strumento ammesso, tranne che un'esecuzione con `repl` continua a chiamare da script gli strumenti che uno script può chiamare; quindi se il comportamento persiste con il differimento disattivato, il differimento non è la causa.

@@ -2,7 +2,7 @@
 title: Discută cu un agent
 description: Creează un spațiu cu un agent, trimite-i muncă, direcționează-l în timpul rulării și oprește-l.
 slug: ro-RO/manual/ghiduri-practice/discuta-cu-agent
-sourceHash: 0dbc01158345074d818cec6084501abc03323fea
+sourceHash: 3e899c417e120a7cc741e802d577d0182210115b
 ---
 
 Acest ghid îți arată cum să lucrezi cu un agent într-un spațiu.
@@ -42,6 +42,8 @@ tur nou. El devine un card de direcționare pus în coadă, în banda de deasupr
 composerului, și este injectat în rularea activă la următoarea limită de tur. Nu
 există nicio notificare tip toast — cardul este feedback-ul.
 
+Ca să direcționezi o rulare care lucrează pentru altcineva, ai nevoie de acces de scriere la depozitele spațiului; fără el, mesajul este refuzat și rămâne în compozitor. O rulare doar în citire, cum este revizuirea unui obiectiv, nu primește niciun mesaj cât timp rulează: când se încheie, mesajul este trimis ca unul obișnuit, iar după revizuirea unui obiectiv așteaptă următorul segment al obiectivului.
+
 Trei lucruri schimbă acest comportament:
 
 - Un mesaj care conține o **mențiune @** este mereu trimis ca mesaj, niciodată ca
@@ -75,9 +77,9 @@ spațiul. Suprapunerea ascunde o cerere în momentul în care conversația acelu
 spațiu este pe ecran, așa că nu răspunzi niciodată de două ori la aceeași
 solicitare.
 
-Nu există niciun timeout: un agent blocat așteaptă până când cineva decide.
-Aceeași cerere apare și în banda de atenție a inbox-ului, și pe clientul de pe
-telefon.
+O rulare pe care ai pornit-o așteaptă o oră o aprobare; apoi aprobarea se consideră refuzată. Aceeași cerere apare și în banda de atenție a inbox-ului, și pe clientul de pe telefon.
+
+O rulare pornită de server (un segment al unui obiectiv, un program, un răspuns de la alt agent) așteaptă implicit 72 de ore, stabilite de un admin al spațiului de lucru; apoi o aprobare se consideră refuzată, iar o întrebare rămâne fără răspuns. Vezi [Când nimeni nu răspunde](/ro-RO/manual/ghiduri-practice/urmareste-obiectiv/#când-nimeni-nu-răspunde).
 
 ## Răspunde la întrebarea unui agent
 
@@ -116,6 +118,8 @@ lucru, cu același control.
 O rulare oprită este marcată ca oprită. Trimite un mesaj nou pentru a declanșa din
 nou o trimitere.
 
+Oprirea reține și ce a fost pus în coadă pentru acel agent: cardurile tale de direcționare (**Trimite mesajele reținute** le trimite) și trezirile lui în așteptare (**Reia** din banda de deasupra compozitorului). Un obiectiv pe care îl lucra agentul se pune pe pauză până când cineva îl reia.
+
 ## Folosește comenzile slash
 
 Scrie `/` în composer pentru a vedea lista de comenzi. Cele care schimbă
@@ -124,8 +128,10 @@ comportamentul conversației:
 | Comandă        | Ce face                                                                                                                              |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | `/plan`        | Comută spațiul în modul plan. Un `/plan` simplu doar armează modul; `/plan <cerere>` îl armează și trimite restul ca mesajul tău       |
-| `/goal <text>` | Înregistrează obiectivul de lucru al conversației                                                                                    |
-| `/loop <text>` | Iterează asupra unei sarcini până când aceasta este finalizată                                                                        |
+| `/goal <text>` | Pornește un obiectiv durabil de care agentul se ocupă până când este verificat ca terminat ([Urmărește un obiectiv](/ro-RO/manual/ghiduri-practice/urmareste-obiectiv/)) |
+| `/loop <text>` | Trezește agentul cu textul din când în când, la un interval sau în ritmul lui ([Programe și treziri](/ro-RO/manual/ghiduri-practice/programe-si-treziri/)) |
+| `/schedule <when> <text>` | Trezește agentul mai târziu, o singură dată sau printr-un cron |
+| `/refine`      | Cere o revizuire a lucrului din conversație, care poate propune îmbunătățiri                                                         |
 | `/compact`     | Pliază istoricul mai vechi într-un rezumat ancorat și continuă pe contextul compactat                                                |
 | `/todo …`      | Vizualizează și editează lista de todo persistată a acestei conversații                                                              |
 

@@ -1,0 +1,143 @@
+---
+title: Kejar tujuan
+description: Beri agen sebuah sasaran yang terus dikerjakannya lintas run dan restart, tentukan arti selesai, dan putuskan kapan tujuan itu selesai.
+slug: id-ID/panduan-pengguna/panduan-praktis/kejar-tujuan
+sourceHash: 0ea77964bd9e3044e168624bc67325de0fd1d1e5
+---
+
+Tujuan adalah pekerjaan yang terus dikerjakan agen sampai arti selesai terpenuhi. Agen bekerja dalam **segmen**: run terbatas yang dimulai server satu per satu, melintasi restart, sampai tujuan terverifikasi, ditutup oleh seseorang, atau mencapai batas. Agen tidak bisa menutup tujuan hanya dengan menyatakan bahwa dirinya sudah selesai. Server menjalankan pemeriksaan tujuan, dan peninjau melihat hasilnya lebih dulu.
+
+## Memulai tujuan
+
+Ketik `/goal` dan sasarannya di kolom penulisan percakapan:
+
+```text
+/goal --budget 20 --days 2 --check "make test" make the importer handle files over 2 GB
+```
+
+Mengetik `/goal` dengan teks di awal membuka wawancara sasaran. Wawancara ini menanyakan kriteria keberhasilan, pemeriksaan yang harus lulus, batasan dan kondisi berhenti, lalu menawarkan pemeriksa terpisah, memulai setiap segmen dari awal, dan menjawab pertanyaannya sendiri. Setiap langkah boleh dilewati.
+
+| Bendera | Arti |
+| --- | --- |
+| `--budget <dollars>` | Jumlah yang boleh dibelanjakan seluruh tujuan. Secara bawaan 50 dolar |
+| `--max <N>` | Jumlah segmen paling banyak yang boleh dijalankan tujuan. Secara bawaan tanpa batas |
+| `--days <N>` | Tenggat waktu, sejumlah hari dari sekarang |
+| `--check "<command>"` | Perintah yang harus lulus sebelum tujuan bisa selesai, dijalankan di worktree. Ulangi untuk menambah, paling banyak 5 |
+| `--checker <agent>` | Agen lain yang meninjau klaim bahwa tujuan sudah selesai, berdasarkan nama atau id |
+| `--fresh` | Mulai setiap segmen tanpa riwayat percakapan, hanya dari tujuan dan catatannya |
+| `--unattended wait` atau `--unattended assume` | Apa yang terjadi pada pertanyaan agen saat tidak ada yang menjawab (lihat [Saat tidak ada yang menjawab](#saat-tidak-ada-yang-menjawab)) |
+
+- Bendera bisa ditulis di mana saja dalam pesan. Bendera yang tidak dikenal, bendera yang diulang, nilai yang salah, dan lebih dari 5 pemeriksaan akan ditolak, dan draf Anda tetap di kolom penulisan dengan alasannya di bawahnya.
+- Angka di awal sasaran adalah bagian dari sasaran. Untuk membatasi segmen, gunakan `--max`.
+- `/goal` hanya dibaca dari pesan yang Anda ketik sendiri. Teks yang sama dari agen, pipeline, atau pengingat adalah pesan biasa.
+- Satu agen mengerjakan satu tujuan pada satu waktu di sebuah ruang kerja. `/goal` kedua untuk agen yang sama ditolak selama yang pertama masih aktif.
+
+### Arti selesai
+
+Sasaran bisa memuat bagian yang menjadi kontrak tujuan:
+
+```text
+/goal make the importer handle files over 2 GB
+
+## Success criteria
+- A 3 GB fixture imports without running out of memory
+- The progress bar reaches 100%
+
+## Boundaries
+- Don't change the public API
+
+## Stop conditions
+- A migration would drop data
+
+## Checks
+- `make test` (300 s)
+- environment task `test` (600 s)
+```
+
+- **Kriteria keberhasilan**: paling banyak 12, masing-masing paling banyak 300 karakter. Setiap kriteria adalah hal yang bisa dikonfirmasi oleh peninjau.
+- **Pemeriksaan**: paling banyak 5. Pemeriksaan dijalankan di worktree atau sebagai tugas bernama dari [lingkungan](/id-ID/panduan-pengguna/panduan-praktis/lingkungan/) milik space. Setiap pemeriksaan punya 300 detik secara bawaan dan paling banyak 1.800.
+- Bagian yang melebihi batasnya ditolak, tidak pernah dipotong.
+
+Tujuan tanpa kriteria membiarkan agen memutuskan kapan dirinya selesai, dan tujuan tanpa pemeriksaan hanya mengandalkan tinjauan. Halaman tujuan menyatakan hal itu.
+
+## Bagaimana tujuan berlanjut
+
+Setiap segmen adalah run yang dibatasi 5 dolar atau sisa anggaran, mana yang lebih rendah. Setelah setiap segmen, server memutuskan apa yang berikutnya, berdasarkan apa yang dilakukan segmen itu:
+
+- **Ada kemajuan.** Segmen berikutnya dimulai.
+- **Menunggu hal yang disiapkannya**: sebuah jadwal, pantauan, pertanyaan ke agen lain, atau tiket yang didelegasikan. Tujuan menunggu hal itu. Jika tidak ada yang datang, server memeriksa lagi setelah 20 menit, lalu 40, 80, 160, dan setiap 240 menit. Kartunya menampilkan **Menunggu hal yang disiapkannya · memeriksa lagi pada** dengan sebuah waktu.
+- **Tidak ada kemajuan.** Kemajuan berarti worktree berubah lewat pekerjaan segmen itu sendiri, daftar periksa berubah, atau agen melakukan sesuatu yang baru. Setelah 3 segmen tanpa kemajuan, tujuan dijeda: **Tidak ada kemajuan pada segmen terakhirnya.**
+- **Terlalu lama menunggu.** Setelah 24 jam menunggu, atau 6 kali menunggu hal baru yang disiapkannya tanpa kemajuan di antaranya, tujuan dijeda: **Menunggu, setelah segmen tanpa kemajuan.**
+- **Gagal.** Server mencoba lagi setelah 30 detik, lalu lebih lama, hingga 15 menit. Setelah 3 kegagalan berturut-turut, tujuan gagal.
+- **Bertanya kepada seseorang.** Tujuan ditahan sampai seseorang menjawab: **Perlu seseorang**.
+
+Tujuan juga berhenti saat anggarannya habis (**Anggaran habis**), saat batas segmennya tercapai, atau saat tenggatnya tiba.
+
+## Saat agen menyatakan sudah selesai
+
+Agen mengklaim tujuan sudah selesai dengan bukti untuk setiap kriteria. Kemudian:
+
+1. **Server menjalankan pemeriksaan** di sandbox, tidak pernah langsung di mesin server. Pemeriksaan yang keluar dengan kode tidak nol gagal. Pemeriksaan yang sama sekali tidak bisa dijalankan (perintah tidak ditemukan, tidak dapat dieksekusi, atau tugas lingkungan yang tidak ada) rusak: tujuan berhenti untuk seseorang dengan **Pemeriksaan ini tidak dapat dijalankan:** dan perintahnya. Jika server tidak punya sandbox, tujuan berhenti dengan **Tidak ada sandbox untuk menjalankan pemeriksaannya.** (Server yang pemiliknya mematikan sandbox untuk setiap run adalah pengecualian: pemeriksaan dijalankan di sana seperti perintah milik agen sendiri.) Jika tidak ada yang berubah di worktree sejak pemeriksaan gagal, pemeriksaan itu tidak dijalankan ulang.
+2. **Peninjau melihat hasilnya**, saat semua pemeriksaan lulus atau tidak ada pemeriksaan. Peninjau adalah pemeriksa tujuan, jika tidak ada maka pemeriksa space, jika tidak ada maka agen tujuan itu sendiri. Peninjau berjalan hanya-baca tanpa riwayat percakapan: ia bisa membaca berkas dan keluaran pemeriksaan, tetapi tidak bisa mengubah apa pun, menjalankan perintah, atau membangunkan agen lain. Ia juga menerima diff lengkap dari tes dan skrip pemeriksaan yang diubah agen, dan ia memperlakukan apa yang ditulis agen dalam percakapan dan catatannya sebagai klaim, bukan bukti. Untuk tujuan tanpa kriteria, ia menilai sasaran secara keseluruhan. Ia menjawab bahwa tujuan sudah selesai, belum selesai, atau tidak bisa memastikan.
+3. **Selesai**: tujuan tuntas. **Belum selesai**: agen menerima temuan peninjau dan terus bekerja. Setelah 3 putaran yang belum selesai, atau saat peninjau tidak bisa memastikan, tujuan menunggu Anda: **Menunggu tinjauan: tujuan menyatakan sudah selesai, dan belum ada yang mengonfirmasi**.
+
+Pesan yang Anda ketik saat peninjau berjalan tidak diberikan kepada peninjau dan tidak dikirim saat tinjauan berakhir. Pesan itu tetap diantrekan untuk segmen berikutnya dari agen. Jika tidak ada segmen yang menyusul, pesan itu ditahan untuk Anda di bawah **Kirim pesan yang ditahan**.
+
+Peninjau yang tidak bisa berjalan (dihapus, atau pada adaptor yang tidak bisa menjaga run tetap hanya-baca, seperti agen ACP) menjeda tujuan: **Agen pemeriksanya tidak tersedia. Pilih pemeriksa lain, lalu lanjutkan.** Tidak ada agen lain yang mengambil alih tanpa Anda.
+
+Pemeriksa dari penyedia yang berbeda dari agen tujuan lebih kecil kemungkinannya memiliki titik buta yang sama. Tanpa pemeriksa terpisah, agen meninjau pekerjaannya sendiri, dan tujuan mencatat **Diverifikasi oleh dirinya sendiri (tanpa pemeriksa terpisah)**.
+
+## Mengikuti tujuan
+
+- **Dalam percakapan**: kartu tujuan di panel **Umum** menampilkan status ditahan, segmen, belanja terhadap anggaran, waktu yang tersisa, arti selesai, pemeriksaan, dan vonis terakhir.
+- **Halaman Tujuan**: bilah sisi → **Tujuan**. Tujuan dikelompokkan sebagai **Menunggu tinjauan**, **Terbuka**, dan **Berakhir**.
+- **Halaman tujuan**: buka tujuan untuk melihat **Sekarang** (segmen, belanja, tenggat, jumlah tanpa kemajuan, dan apa yang terjadi berikutnya), **Arti selesai**, **Verifikasi** (putaran terakhir: klaim, setiap pemeriksaan dengan keluarannya, tinjauan per kriteria), dan **Jadwal dan pengingat**. Setiap tujuan punya alamatnya sendiri (`/workspaces/<workspace>/goals/<goal id>`), sehingga Anda bisa membagikan tautannya.
+
+Di ponsel, layar tujuan memulai tujuan dengan pemeriksaan dan batas segmen, serta menampilkan tujuan dan status ditahan yang sama.
+
+## Mengubah atau menghentikan tujuan
+
+| Tindakan | Siapa yang bisa |
+| --- | --- |
+| **Jeda tujuan**, **Hentikan tujuan** | Siapa pun yang punya akses ke space |
+| **Lanjutkan tujuan**, **Naikkan anggaran** | Hanya orang yang memulai tujuan (admin ruang kerja untuk tujuan yang tidak dimulai siapa pun) |
+| **Ubah** arti selesai, **Ubah pemeriksa** | Hanya orang yang memulai tujuan (admin ruang kerja untuk tujuan yang tidak dimulai siapa pun), dengan akses tulis ke repositori milik space, selama tujuan dijeda |
+| **Setujui penyelesaian** | Siapa pun yang punya akses ke space, selama tujuan menunggu tinjauan. Tujuan yang dimulai pipeline: hanya orang yang memulai run itu (admin ruang kerja jika tidak ada yang memulainya) |
+
+- Menekan **Berhenti** pada run agen menjeda tujuan (**Dijeda oleh seseorang**). Pengingatnya yang menunggu tetap menunggu sampai Anda melanjutkannya.
+- **Setujui penyelesaian** menutup tujuan sebagai selesai atas perintah Anda. Tujuan mencatat **Ditutup oleh seseorang tanpa pemeriksaan yang lulus**.
+- Tujuan yang sudah menghabiskan anggarannya hanya dilanjutkan dengan anggaran yang lebih tinggi.
+- Ketika orang yang memulai sebuah tujuan meninggalkan ruang kerja, tujuan itu langsung dijeda untuk ditinjau dan agen yang sedang berjalan dihentikan. Tidak ada yang dapat melanjutkannya; siapa pun yang punya akses ke space dapat menghentikannya. Ringkasan harian mencantumkannya untuk admin ruang kerja.
+
+## Saat tidak ada yang menjawab
+
+Saat segmen mengajukan pertanyaan atau meminta persetujuan kepada seseorang dan tidak ada yang menjawab, permintaan itu menunggu 72 jam secara bawaan. Setelah itu, persetujuan dihitung sebagai ditolak, pertanyaan sebagai belum dijawab, dan tujuan dijeda: **Pertanyaan atau permintaan persetujuan kepada seseorang belum dijawab.** Run yang mengajukan pertanyaan tidak mendapat jawaban lanjutan: apa pun yang diminta lagi langsung ditolak, dan run menyelesaikan apa yang bisa diselesaikannya. Admin ruang kerja mengatur waktunya (1 jam sampai 7 hari) di **Pengaturan → Ruang kerja → Jadwal → Saat tidak ada yang menjawab**. Sekali sehari, pada jam yang diatur di sana, Anda mendapat satu ringkasan dari semua yang menunggu Anda.
+
+Dengan `--unattended assume`, agen menyatakan asumsinya dan melanjutkan setelah 10 menit tanpa jawaban, jika kondisi berhentinya memungkinkan. Ini hanya berlaku untuk pertanyaan. Persetujuan tidak pernah diasumsikan, dan tinjauan tidak pernah mengasumsikan apa pun.
+
+## Batas penggunaan dan restart
+
+- **Batas penggunaan penyedia.** Saat segmen berhenti di batas penggunaan penyedia dan penyedia menyebutkan kapan batasnya direset (dalam 7 hari), tujuan dijeda tanpa hitungan kegagalan: **Dijeda di batas penggunaan · dilanjutkan** dengan sebuah waktu. Tujuan dilanjutkan 30 detik setelah reset. Setelah 8 jeda seperti itu, tujuan menunggu Anda: **Terlalu sering mencapai batas penggunaan. Periksa dulu, lalu lanjutkan.** Setiap pelanjutan memulai hitungan dari awal. Agen ACP tidak melaporkan reset, sehingga tujuan mereka tidak menunggu di batas penggunaan.
+- **Restart server.** Tujuan bertahan lewat restart. Segmen yang terganggu oleh restart dimulai ulang, dan jadwal serta pengingat yang menunggu milik tujuan tetap disimpan.
+
+## Perbaikan setelah tujuan
+
+Setelah tujuan lulus verifikasi, tinjauan singkat hanya-baca (paling banyak 1 dolar) dapat mengusulkan perbaikan: fakta memori, kebijakan, catatan tentang agen, atau perubahan pada skill. Ketik `/refine` untuk meminta tinjauan yang sama atas pekerjaan percakapan. Paling banyak satu tinjauan berjalan per percakapan setiap 20 menit.
+
+Usulan muncul di halaman **Perbaikan** (bilah sisi → **Perbaikan**). Buka satu untuk melihat apa yang diubahnya, buktinya, serta **Terima**, **Tolak**, atau **Kembalikan**.
+
+- Usulan tidak mengubah apa pun sampai seseorang menerimanya. Usulan kedaluwarsa setelah 30 hari.
+- Perubahan pada skill, atau pada kebijakan untuk seluruh ruang kerja, memerlukan admin ruang kerja (**Admin yang memutuskan**).
+- Perubahan skill disimpan sebagai revisi terpisah. Tekan **Jalankan evaluasi** untuk membandingkannya dengan skill saat ini; **Terima** hanya bisa setelah evaluasi lulus. Evaluasi lulus jika berjalan penuh dan agen menyelesaikan setidaknya sama banyak run dengan perubahan dibandingkan dengan skill saat ini; halaman menampilkan kedua angka. Jika skill berubah setelah evaluasi, jalankan lagi.
+- **Kembalikan** memulihkan teks sebelumnya, selama belum ada yang mengubahnya sejak itu.
+
+## Dalam pipeline
+
+Pipeline bisa memulai tujuan dengan langkah **Pursue a goal** (`goal.pursue`). Langkah itu menunggu sampai tujuan berakhir, lalu meneruskan ringkasan dan vonisnya. Lihat [Jenis langkah pipeline](/id-ID/panduan-pengguna/referensi/langkah-pipeline/).
+
+## Lihat juga
+
+- [Jadwal dan pengingat](/id-ID/panduan-pengguna/panduan-praktis/jadwal-dan-pengingat/)
+- [Agen bekerja bersama](/id-ID/panduan-pengguna/panduan-praktis/agen-bekerja-bersama/)
+- [Kelola biaya](/id-ID/panduan-pengguna/panduan-praktis/kelola-biaya/)
+- [Perintah slash](/id-ID/panduan-pengguna/referensi/perintah-slash/)

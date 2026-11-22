@@ -23,7 +23,12 @@ class RigEventListener {
   final DomainEventBus _eventBus;
   final RigRepository _rigs;
   final AgentRunLogRepository _runLogs;
-  final Future<bool> Function(String runLogId, String message) _steerRun;
+  final Future<bool> Function(
+    String runLogId,
+    String message, {
+    required String? source,
+  })
+  _steerRun;
 
   final List<StreamSubscription<Object?>> _subs = [];
 
@@ -73,7 +78,7 @@ class RigEventListener {
               'refused until control is released — observation '
               '(screenshots, extraction) still works, so keep narrating '
               'what you see rather than retrying the action.';
-    await _steer(event.workspaceId, agentId, message);
+    await _steer(event.workspaceId, agentId, event.rigId, message);
   }
 
   /// The system reclaimed the machine (idle, TTL or memory-pressure eviction).
@@ -88,6 +93,7 @@ class RigEventListener {
     await _steer(
       event.workspaceId,
       agentId,
+      event.rigId,
       'The rig was closed: ${_reasonPhrase(event.reason)}. '
       '${_describe(rig, event.rigId)} no longer exists and every action '
       'against it will fail. Re-open it via rig.open if you still need it — '
@@ -116,6 +122,7 @@ class RigEventListener {
     await _steer(
       event.workspaceId,
       agentId,
+      event.rigId,
       'The rig was closed: ${_reasonPhrase(event.reason)}. '
       '${_describe(rig, event.rigId)} is gone. Re-open it via rig.open if '
       'you still need it, and expect the guest to start from the base image.',
@@ -131,17 +138,19 @@ class RigEventListener {
   /// Resolves the agent's live run and pushes [message] onto its steering lane.
   ///
   /// No active run means there is nothing to interrupt — the agent will read
-  /// the rig's state when it next asks for it.
+  /// the rig's state when it next asks for it. The message is the rig's
+  /// (`rig:<id>`), never the person's: a compaction drops it.
   Future<void> _steer(
     String workspaceId,
     String agentId,
+    String rigId,
     String message,
   ) async {
     final run = await _runLogs.activeRunForAgent(workspaceId, agentId);
     if (run == null) {
       return;
     }
-    await _steerRun(run.id, message);
+    await _steerRun(run.id, message, source: 'rig:$rigId');
   }
 
   /// A rig lookup or a steer failing must never take the event bus down with

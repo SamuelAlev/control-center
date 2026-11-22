@@ -2,7 +2,7 @@
 title: Bir ajanın araç bağlamını ayarlama
 description: Bir çalıştırmanın gerçekte ne gönderdiğini inceleyin, hangi araçların baştan yüklendiğini değiştirin ve kötü bir araç seçiminin erişim ıskası mı yoksa istem sorunu mu olduğunu belirleyin.
 slug: tr-TR/kilavuz/nasil-yapilir/arac-baglamini-ayarlama
-sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
+sourceHash: 22a4306a97aa8da0332f8e3e20e06ed86119f1d5
 ---
 
 Bu kılavuz, iki katmanlı araç yüzeyi etrafındaki pratik işleri kapsar: bir çalıştırmanın ne gönderdiğini görmek, bunu değiştirmek ve yanlış araca uzanan bir ajanı tanılamak. Bunun neden böyle çalıştığını okumak için [Araç bağlamı ve istem önbelleği](/tr-TR/kilavuz/kavramlar/arac-baglami) sayfasına bakın.
@@ -13,25 +13,26 @@ Bir konuşma açın ve konuşma başlığındaki bağlam kullanımı göstergesi
 
 Burada iki segment önemlidir:
 
-- **Araç tanımları** ve **MCP ve dinamik araçlar** — her aracın gerçek token maliyetiyle birlikte yerleşik küme.
+- **Araç tanımları** ve **MCP ve dinamik araçlar** — her aracın gerçek token maliyetiyle birlikte doğrudan küme.
 - **İstek üzerine yüklenen araçlar** — ertelenmiş dizin. Her girdi için yalnızca adı ücretlendirilir, çünkü isteğin taşıdığı tek şey bir addır; birini açtığınızda yine tam açıklama ve şema gösterilir, böylece çalıştırma onu içeri çekseydi ne kadar *mal olacağını* görebilirsiniz.
+
+`repl` içeren bir çalıştırmada, bir betiğin ulaştığı araçlar sistem isteminde adlandırılır ve iki bölümün hiçbirinde görünmez.
 
 Ertelenmiş segment boşsa, bu sunucuda istek üzerine yükleme kapalıdır. [`cc_server` CLI](/tr-TR/kilavuz/referans/cc-server-cli) üzerindeki `--tool-deferral` seçeneğine bakın.
 
 ## Hangi araçların baştan yüklendiğini değiştirin
 
-Yerleşik küme yapılandırma değil politikadır — `ModeToolPolicy` içinde yaşar (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) ve her çalıştırmaya uygulanır:
+Doğrudan küme yapılandırma değil politikadır — `ModeToolPolicy` içinde yaşar (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) ve her çalıştırmaya uygulanır:
 
-- `residentBuiltins` — dosya ve kabuk sözcük dağarcığı.
-- `residentDiscovery` — `search_tools` ve `list_my_tools`. Bunları kaldırmayın; bir ajanın diğer her şeye ulaşma yolu bunlardır.
-- `residentMcpTools` — her istekte şemasına değen bir avuç Control Center aracı.
-- Belirli bir [modun](/tr-TR/kilavuz/kavramlar/modlar) neredeyse her turda kullandığı araçlar için mod başına bir blok.
+- `directTools` — her çalıştırmanın doğrudan çağırdığı on iki araç: `read`, `write`, `edit`, `search`, `find`, `bash` ve `read_output`; `ask_user` ve `task`; `todo_write`, `search_memory` ve `send_message`.
+- `residentDiscovery` — `search_tools` ve `list_my_tools`. Bunları kaldırmayın; bir ajanın diğer her şeye ulaşma yolu bunlardır. `repl` içeren bir çalıştırma, bir araç ilk kullanımda yüklendiğinde `search_tools` alır ve `list_my_tools` almaz.
+- `directNamesFor(mode)` — belirli bir [mod](/tr-TR/kilavuz/kavramlar/modlar/) kendi döngüsü için ekleyen araçlar: inceleme modunda inceleme fiilleri, plan modunda `submit_plan` ve orkestrasyon modunda `propose_orchestration`.
 
 Onu düzenlerken iki kural:
 
-**Bir aracı yalnızca çalıştırmaların çoğu onu kullanıyorsa ekleyin.** Her ad, sonsuza dek her çalıştırmanın her isteğinde şemasının bedelini ödetir. Kullanıldığında önemli olan ama genel olarak seyrek görülen bir araç ertelenmiş yarıya aittir — ajan onu yine de bulur.
+**Bir aracı yalnızca çalıştırmaların çoğu onu kullanıyorsa ekleyin.** Her ad, sonsuza dek her çalıştırmanın her isteğinde şemasının bedelini ödetir. Kullanıldığında önemli olan ama genel olarak seyrek görülen bir araç doğrudan kümenin dışında kalmalıdır — ajan onu yine de bir betikten ya da ilk kullanımda yükleyerek ulaşır.
 
-**Aracın gerçek adını kullanın.** Hiçbir araçla eşleşmeyen yerleşik bir ad etkisizdir: hata yok, uyarı yok, araç yalnızca ertelenir. `test/tooling/resident_tool_names_test.dart` bunu yakalar ve ayrıca her modu 40 yerleşik aracın altında tutar; asıl amaç da budur — bu bandın ötesinde araç seçimi ölçülebilir biçimde bozulur.
+**Aracın gerçek adını kullanın.** Hiçbir araçla eşleşmeyen doğrudan bir ad etkisizdir: hata yok, uyarı yok, araç yalnızca doğrudan kümenin dışında kalır. `test/tooling/resident_tool_names_test.dart` bunu yakalar her modun doğrudan kümesini en fazla 20 araçta tutar ve her modu baştan gönderilen en fazla 40 araçta tutar; asıl amaç da budur — bu bandın ötesinde araç seçimi ölçülebilir biçimde bozulur.
 
 Bir modun zorunlu ve sabitlenmiş fiilleri otomatik olarak eklenir, böylece bir modun kendi çıktı fiilini hiçbir zaman listelemek zorunda kalmazsınız.
 
@@ -73,4 +74,4 @@ Olasılık sırasına göre yaygın nedenler:
 - **Konuşmanın ortasında bir model veya efor değişikliği.** Her ikisi de öneki değiştirir. Alt ajanlarda bu özellikle kolayca hata yapılır: para tasarrufu için alt süreçleri daha düşük eforda çalıştırmak, kaybedilen önbellek paylaşımı nedeniyle tasarruf ettiğinden daha fazlaya mal olabilir.
 - **Sık sıkıştırma.** Sıkıştırma, tasarımı gereği geçmişi yeniden yazar, dolayısıyla maliyeti gerçektir; çözüm, sık ve sığ yerine seyrek ve derin sıkıştırmaktır.
 
-İstek üzerine yüklemeyi `--tool-deferral=off` ile kapatmak, bir davranış değişikliğinin iki katmanlı yüzeyden gelip gelmediğini yalıtmak için geçerli bir A/B'dir. İstek üzerine yükleme öncesi isteği tam olarak yeniden üretir; dolayısıyla kapalıyken davranış sürüyorsa, neden bu yüzey değildir.
+İstek üzerine yüklemeyi `--tool-deferral=off` ile kapatmak, bir davranış değişikliğinin iki katmanlı yüzeyden gelip gelmediğini yalıtmak için geçerli bir A/B'dir. Kapalıyken bir çalıştırma, kabul edilen her aracın tanımını gönderir; yalnızca `repl` içeren bir çalıştırma, bir betiğin çağırabileceği araçları yine betiklerden çağırır. Bu nedenle kapalıyken davranış sürüyorsa, neden istek üzerine yükleme değildir.

@@ -2,7 +2,7 @@
 title: Pipeline steps
 description: Reference for pipeline step kinds, step body keys, their configuration and step results.
 slug: en-GB/manual/reference/pipeline-steps
-sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
+sourceHash: 0d2876bc1ac359f4d2cfe94902bd5f924d19d5d5
 ---
 
 A pipeline step has two independent axes:
@@ -58,6 +58,31 @@ Generic prompt-and-dispatch node: renders the prompt, dispatches the agent into 
 | `extras.spaceId`   | Existing conversation to work in (default: a hidden one)     |
 | `extras.conversationTitle` | Named stream inside that space (optional)             |
 | `extras.mode`      | Read on the node that *opens* the room (`messaging.createSpace`), not here. Default `review`. |
+
+### `goal.pursue`
+
+Starts a durable goal (see [Pursue a goal](/en-GB/manual/guides/pursue-a-goal/)) and suspends until the goal ends. The editor shows it as **Pursue a goal**. Not one of the 25 seeded bodies above; registered beside them.
+
+| Config field | Description |
+| ---------------------- | ----------- |
+| `agentId` | The agent that pursues the goal (required) |
+| `prompt` | The objective; supports `{{key}}` substitution (required) |
+| `outputKey` | State key for the result (required) |
+| `extras.spaceId` | The room the goal works in (required, like every agent step) |
+| `extras.budgetMicros` | The goal's budget in micro-dollars, 1 to 1,000,000,000 (required) |
+| `extras.maxRuns` | A segment cap, 1 to 1,000 (optional) |
+| `extras.deadlineHours` | Hours from when the step starts the goal, 1 to 2,160 (optional) |
+| `extras.contract` | What done means: criteria and checks (optional) |
+
+The result under `outputKey` is `{summary, verdict}`, where `verdict` is the reviewer's verdict with its items and concerns, or null.
+
+| The goal | The step |
+| -------- | -------- |
+| completed | completes |
+| failed, cancelled or budget exhausted | fails (`retry` and `continueOnFail` apply); a retried step starts a new goal |
+| paused, including waiting for a person's review | stays suspended, exempt from the 24-hour liveness sweep |
+
+A goal started by a pipeline run is charged to that run's orchestration, its review included. When the pipeline run is cancelled, fails or completes while the goal works, the goal is cancelled.
 
 ### `pipeline.condition`
 

@@ -2,7 +2,7 @@
 title: Módok
 description: Miért a tér, és nem az ügynök hordozza a módot; mit garantál a négy mód mindegyike; és hol strukturális ez a garancia, nem csupán a promptban előírt.
 slug: hu-HU/kezikonyv/fogalmak/modok
-sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
+sourceHash: 4450ebc86d95efb0366bc3f0ab4ddebc6d3a3adb
 ---
 
 ## Mi a mód
@@ -41,7 +41,7 @@ A terv nélkül befejeződő futtatás továbbra is `completed` állapotban ker�
 
 Van egy második, külön kivezető út is: az `exit_plan_mode`. Ez kemény jóváhagyási kapu, nem kimeneti ige — az az ügynök, amelyik ezt hívja meg a `submit_plan` helyett, semmit nem szállított le. Az első hívás megnyit egy tartós `plan_exit` jóváhagyást, és `pending` értékkel tér vissza, a tér pedig csak olvasható marad; az ismételt hívások `pending` állapotban maradnak, és nem nyitnak második kaput. Csak a jóváhagyás megadása után váltja át egy későbbi hívás a teret csevegésre. Elutasítás esetén az ügynök új kérést nyithat egy módosított tervhez.
 
-Ha saját maga szeretne kilépni a terv módból, váltson az üzenetszerkesztő legördülő menüjében (vagy nyomjon Shift+Tab-ot). Az `exit_plan_mode`-ról a `decide_approval` MCP-eszköz dönt. A Beérkezett „ügynök jóváhagyása” sorai más dolgot jelentenek: egy futó ügynök körönkénti megerősítést kérő promptjai.
+Ha saját maga szeretne kilépni a terv módból, váltson az üzenetszerkesztő legördülő menüjében (vagy nyomjon Shift+Tab-ot). Az `exit_plan_mode`-ról egy ügynökfuttatás dönt a `decide_approval` MCP-eszközzel. A Beérkezett „ügynök jóváhagyása” sorai más dolgot jelentenek: egy futó ügynök körönkénti megerősítést kérő promptjai.
 
 ### Átnézés — csak olvasható, szerződés nélkül
 
@@ -65,6 +65,8 @@ A javaslatban semmi sem fut le, amíg Ön jóvá nem hagyja. Jóváhagyáskor eg
 
 **A csak olvasható módok nem tagadják meg a hálózati hozzáférést vagy a titkokat.** Azok a hatásfajták, amelyeket az átnézés, a terv és az orchestrálás megtagad, azok, amelyek megváltoztatják a világot: fájltörlés, a worktree-n kívüli írás, commitok, pushek, PR létrehozása és közzététele, külső követőbe történő szinkronírás, csomagtelepítés, folyamatindítás, munkaterület-módosítás és elszigetelt környezet vezérlése. A hálózati kimenő forgalom és a titkokhoz való hozzáférés szándékosan az alapértelmezésükön marad — a kutatás egy csak olvasható mód teljes lényege.
 
+**A kódmód soha nem bővíti a módot.** A mód eszközszűrőjét alkalmazzuk először, és a [kódmód](/hu-HU/kezikonyv/fogalmak/kodmod/) `repl`-szkript csak az utána megmaradt eszközöket hívhatja, ugyanazon a kapun keresztül, mint a közvetlen hívás. A mód rögzített igéi (a kimeneti igéje, az `exit_plan_mode`, az `ask_user`) és saját köre (az átnézési csomópont igéi átnézés módban) mindig közvetlenül hívódnak, így egy futtatásnak sosem kell szkriptet írnia ahhoz, hogy átadja az eredményét vagy kérdést tegyen fel. A [vibe módban](/hu-HU/kezikonyv/gyakorlati-utmutatok/hatter-workerek-iranyitasa/) az irányító futtatás csak olvasó eszközöket tart meg, és egyetlen csak szkriptből hívható eszközt sem, így a szkriptjei csak ezeket érik el.
+
 ## A mód kiválasztása és megváltoztatása
 
 Az üzenetszerkesztő módválasztója **három** lehetőséget kínál: Ügynök (csevegés), Terv és Orchestrálás. A `review` **nem választható ki a felhasználó által** — azt a rendszer állítja be, amikor egy PR-átnézési tér létrejön, valamint a pipeline-lépések.
@@ -87,4 +89,5 @@ Az engedélyezési listák az írási szintű és annál magasabb szintű eszkö
 - [Az ügynökmodell](/hu-HU/kezikonyv/fogalmak/ugynokmodell/): mely transzportok tudnak módot érvényesíteni
 - [Korlátok](/hu-HU/kezikonyv/fogalmak/korlatok/): a hatásfajta-szabályzat, amelyet egy mód készlete táplál
 - [Orchestráció](/hu-HU/kezikonyv/fogalmak/orchestracio/): mit tesz egy jóváhagyott orchestrálási javaslat
+- [Kódmód](/hu-HU/kezikonyv/fogalmak/kodmod/): olyan szkriptek, amelyek a mód eszközeit hívják
 - [Tervmód használata](/hu-HU/kezikonyv/gyakorlati-utmutatok/tervmod/): a gyakorlati végigvezetés

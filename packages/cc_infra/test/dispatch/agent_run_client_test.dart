@@ -17,6 +17,7 @@ typedef _Seen = ({
   String path,
   Map<String, String> query,
   String? token,
+  List<String>? call,
   String? contentType,
   String? tool,
   List<int> body,
@@ -32,6 +33,7 @@ class _Gateway {
         path: request.uri.path,
         query: request.uri.queryParameters,
         token: request.headers.value(agentRunTokenHeader),
+        call: request.headers[agentRunCallHeader],
         contentType: request.headers.value(HttpHeaders.contentTypeHeader),
         tool: request.headers.value('X-CC-Env-Tool'),
         body: body,
@@ -135,6 +137,46 @@ void main() {
         lessThan(AgentRunGateway.hookTimeout),
       ),
     );
+  });
+
+  group('call token', () {
+    test('speaks the gateway\'s names', () {
+      expect(agentRunCallEnvKey, AgentRunLease.callTokenEnvKey);
+      expect(agentRunCallHeader, AgentRunLease.callTokenHeader);
+    });
+
+    test(
+      'every verb names the command it runs under, beside the secret',
+      () async {
+        final object = File('${dir.path}/commit')..writeAsStringSync('tree\n');
+        final env = {...gateway.env, agentRunCallEnvKey: 'call_Tok-1'};
+        await client(const ['hook'], env: env);
+        await client(['git-sign', '-Y', 'sign', object.path], env: env);
+        await client(const ['forge-token', 'acme/widgets'], env: env);
+        await client(const ['env', 'cc-env', 'status'], env: env);
+
+        expect(gateway.seen, hasLength(4));
+        for (final seen in gateway.seen) {
+          expect(seen.token, _secret, reason: seen.path);
+          expect(seen.call, ['call_Tok-1'], reason: seen.path);
+        }
+      },
+    );
+
+    test('without one, or with one that is not a token, none is sent and '
+        'the request goes out as before', () async {
+      for (final call in [null, '', 'a b', 'tok\r\nX-Other: 1', 'x' * 129]) {
+        gateway.seen.clear();
+        gateway.answer = (r) async => r.write('allow');
+        final r = await client(
+          const ['hook'],
+          env: {...gateway.env, agentRunCallEnvKey: ?call},
+        );
+        expect(r.code, 0, reason: '$call');
+        expect(gateway.seen.single.call, isNull, reason: '$call');
+        expect(gateway.seen.single.token, _secret);
+      }
+    });
   });
 
   group('hook', () {

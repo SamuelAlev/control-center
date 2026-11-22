@@ -2,23 +2,33 @@
 title: Životní cyklus odeslání agenta
 description: Co se stane mezi příchodem zprávy a uzavřením záznamu běhu. Skládání promptu, worktree, identita, co běh ohraničuje a jak se výsledek zapíše poctivě.
 slug: cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani
-sourceHash: 13e7fe3ed86c8659c5fec818e0b89737241e2b9d
+sourceHash: 07c46e22e30f1a10e64b7fb949c78bdae9747efa
 ---
 
 ## Co je odeslání
 
 Odeslání je jeden běh jednoho agenta, v jedné konverzaci, na jednom adaptéru. Celé se to odehrává na `cc_server`: klient pošle zprávu a pak sleduje, jak se události streamují zpátky. V žádném klientovi cesta odeslání není.
 
-Agenti se probouzejí ze šesti důvodů. Běh je nese jako **kontext probuzení**, aby agent věděl, _proč_ je vzhůru:
+Každý běh nese **kontext probuzení**, který říká, _proč_ je agent vzhůru. Běh, který spustíte odesláním zprávy, je `userMessage`; každý běh, který server spustí sám, začíná jako trvalé **probuzení** ve frontě pracovního prostoru a nese důvod probuzení (viz [Plány a probuzení](/cs-CZ/prirucka/navody/plany-a-probuzeni/)):
 
 | Důvod probuzení | Spouštěč |
-| --- | --- |
-| `userMessage` | Někdo poslal zprávu v prostoru, nebo agenta zmínil |
+| -------------------- | ------- |
+| `userMessage` | Někdo poslal zprávu v prostoru                     |
 | `assignment` | Agentovi byl přiřazen ticket |
 | `pipelineStep` | Odeslal ho krok pipeline |
-| `childCompleted` | Dokončil se dceřiný ticket |
-| `followUp` | Naplánovaný kontrolní tep |
-| `recovery` | Cesta obnovy ho po selhání odeslala znovu |
+| `childCompleted` | Dokončil se delegovaný nebo dceřiný ticket, nebo skončil běh člena týmu |
+| `schedule` | Plán nebo smyčka se spustila |
+| `watch` | Nastala událost, na kterou čeká sledování (kontroly pull requestu, kontrola, prostředí, ticket, běh pipeline) |
+| `goalContinuation` | Další segment cíle |
+| `goalVerification` | Kontroly nebo kontrola cíle zjistily, že ještě není hotovo |
+| `goalReview` | Kontrola jen pro čtení, která ověřuje tvrzení cíle, že je hotovo |
+| `peerMessage` | Jiný agent mu poslal zprávu nebo dotaz, byl označen @zmínkou, nebo je ověřovatelem prostoru |
+| `peerReply` | Odpověď na dotaz, který položil jinému agentovi |
+| `limitReset` | Limit využití u poskytovatele, na kterém zastavil, se obnovil |
+| `improvementReview` | Kontrola po ověřeném cíli, nebo `/refine` |
+| `recovery` | Práci, kterou přerušil restart serveru nebo selhání |
+
+Probuzení se doručí do živého běhu agenta v dané konverzaci, když ten běh přijímá vstup a jedná za stejnou osobu; jinak počká, až ten běh skončí, a spustí vlastní. Slash příkazy se čtou jen ve zprávě, kterou napsala osoba; v jakémkoli jiném běhu je stejný text obyčejnou zprávou.
 
 Kontext probuzení nese id, která k důvodu patří: ticket, prostor, zprávu a běh pipeline. Vloží se do prostředí agenta i do promptu.
 
@@ -104,17 +114,17 @@ Záměrně **nikde není strop tahů**. Pevný počet iterací zabíjí legitimn
 - **se model zastaví** sám;
 - **ho zastaví člověk**, nebo převezme konverzaci (to pozastaví vestavěný harness na další čisté hranici tahu; běh Claude Code, který bezpečnou hranici nemá, se místo toho zastaví);
 - **spustí hlídač ticha.** Žádný výstup po dobu prahu a relace skončí selháním `silentRun`. Výchozí hodnota je 15 minut, v režimech, které hlavně čtou (revize a plán), klesá na 10. Agent ji může přepsat v rozmezí 1 až 240 minut. Hlídač se aktivuje, když dceřiný proces nahlásí své PID, takže pokrývá CLI Claude Code, **ne** vestavěný harness, který nic nespouští;
-- **narazí se na strop nákladů**, ale jen u autonomních příkazů.
+- **narazí se na strop nákladů** — u segmentů cílů a kontrol, běhů plánů a sledování, kontroly vylepšení a běhů pipeline pod orchestrací se stropem.
 
 Ochrana před zacyklením běh neukončuje: tři stejná volání nástroje za sebou a smyčka agenta _nasměruje_, aby změnil postup.
 
 :::note[Běžný tah nemá strop nákladů]
-Hlídač nákladů uvnitř relace je zapojený jen u `/goal` a `/loop`. Každý jiný běh nepředává žádný rozpočet. U těchto příkazů může jeden bezobslužný segment ve výchozím stavu spotřebovat 500 centů ($5.00). Při 80 % přijde měkké nasměrování, ať agent čistě skončí, než přijde tvrdé zastavení, a trvalý rozpočet cíle je 5000 centů ($50.00) přes všechny segmenty. Celý segment nikdy nepřestřelí výslovné `/goal --budget`.
+Běh, který spustíte zprávou, nemá žádný rozpočet. Segment cíle může utratit 5 dolarů, nebo zbytek rozpočtu cíle (výchozích 50 dolarů), pokud je to méně; kontrola cíle 2 dolary; běh, který spustil plán nebo sledování, 5 dolarů; kontrola vylepšení 1 dolar. Na 90 % vestavěný harness a Claude Code agenta nasměrují, aby se čistě ukončil dřív, než přijde tvrdé zastavení; agent ACP se při stropu zruší. Viz [Spravujte náklady](/cs-CZ/prirucka/navody/sprava-nakladu/#zastropuj-autonomní-běh).
 :::
 
 Běžný interaktivní tah na vestavěném harnessu tak nemá strop tahů, strop nákladů ani hlídače ticha. Skončí, když se model zastaví, nebo když ho zastavíš. Je to záměrný kompromis: každá alternativa zabíjí legitimní dlouhou práci. Bezobslužný interaktivní běh tak neohraničuje nic než vlastní úsudek modelu.
 
-Uprostřed běhu se zpráva běžícímu agentovi zařadí do fronty jako **korekce** a na další hranici tahu se odebere, takže běh postrčíš, aniž bys ho ukončil. Korekce, pozastavení, podagenti a kontrakt dokončení patří vestavěnému harnessu. Claude Code z nich nemá nic.
+Uprostřed běhu se zpráva běžícímu agentovi zařadí do fronty jako **korekce** a na další hranici tahu se odebere, takže běh postrčíš, aniž bys ho ukončil. Běh jen pro čtení, například kontrola cíle, žádnou zprávu během svého běhu nepřijme, a korekce běhu, který pracuje pro někoho jiného, vyžaduje právo zápisu do repozitářů prostoru. Korekce, pozastavení, podagenti a kontrakt dokončení patří vestavěnému harnessu. Claude Code z nich nemá nic.
 
 ## Jak se běh zaznamenává
 
@@ -130,11 +140,11 @@ Když běh skončí bez toho, co měl režim dodat (běh v režimu plánu, kter�
 Je to schválně. Přepnutí stavu by pohnulo automaty ticketů a pipeline, které s chybějícím artefaktem nemají co dělat. Samotné „status: completed“ taky nikdy nestačí, abys z něj usoudil, že běh uspěl. Přečti shrnutí.
 :::
 
-Uzavření běhu publikuje `AgentRunCompleted` a na té události visí hodně: souhrn nákladů pipeline, obnovení kroku pipeline, který na běh čekal, dokončení podkladového ticketu, namapování orchestrace na koncový stav, rozhodnutí supervizora cíle, jestli pokračovat, nebo zastavit, role kontrolora a vyhodnocení rozpočtu po běhu. Seznam přítomnosti jde vlastní cestou: sleduje nedávné záznamy běhů, ne tuhle událost. Oznámení „Agent dokončil“ v tom výčtu není: událost se spustí ve chvíli, kdy skončí proud procesu, tedy ještě před zápisem odpovědi. Oznámením je proto `MessageReceived` daného tahu, publikované až po uložení zprávy.
+Jakmile je konečný stav běhu zapsán, server jednou publikuje `AgentRunSettled` s tím, proč běh skončil (`completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` nebo `serverStopped`), a na té události visí hodně: souhrn nákladů pipeline, obnovení kroku pipeline, který na běh čekal, dokončení podkladového ticketu, namapování orchestrace na koncový stav, rozhodnutí supervizora cíle, jestli pokračovat, nebo zastavit, odpověď na dotaz, který položil jinému agentovi, další spuštění smyčky, kterou agent řídí sám, pauza na limitu využití, role kontrolora a vyhodnocení rozpočtu po běhu. Běh, který přerušilo zastavení serveru (`serverStopped`), se nikdy nepovažuje za selhání; práce pokračuje po restartu. `AgentRunCompleted` se publikuje dřív, jen pro most pull requestů a analytiku. Seznam přítomnosti jde vlastní cestou: sleduje nedávné záznamy běhů, ne tuhle událost. Oznámení „Agent dokončil“ v tom výčtu není: událost se spustí ve chvíli, kdy skončí proud procesu, tedy ještě před zápisem odpovědi. Oznámením je proto `MessageReceived` daného tahu, publikované až po uložení zprávy.
 
 ## Rozpočty až potom
 
-Vynucení rozpočtu je _reakce_, ne brána. Když běh skončí, vyhodnocovač porovná útratu agenta od začátku měsíce s jeho účinným stropem (navázaná politika rozpočtu, pokud nějaká je, jinak vlastní měsíční číslo agenta; nula znamená bez omezení). Překročení měkkého prahu zapíše varovný incident. Vyčerpání rozpočtu zapíše tvrdý incident a na organizačním schématu přepne stav životního cyklu agenta na `paused`. Odeslání od toho agenta práci pořád bere. Spouštěč pipeline `BudgetThresholdCrossed` může ze stejné události rozjet navazující práci.
+Vynucení rozpočtu je _reakce_, ne brána. Když běh skončí, vyhodnocovač porovná útratu agenta od začátku měsíce s jeho účinným stropem (navázaná politika rozpočtu, pokud nějaká je, jinak vlastní měsíční číslo agenta; nula znamená bez omezení). Překročení měkkého prahu zapíše varovný incident. Vyčerpání rozpočtu zapíše tvrdý incident a na organizačním schématu přepne stav životního cyklu agenta na `paused`. Odeslání pořád přijímá práci, kterou mu pošlete, ale probuzení pro něj (plány, segmenty cílů, odpovědi) čekají, dokud je pozastavený, nejdéle 7 dní. Spouštěč pipeline `BudgetThresholdCrossed` může ze stejné události rozjet navazující práci.
 
 ## Linie opakování
 
@@ -147,4 +157,5 @@ Každý záznam běhu může nést linii opakování: id nadřazeného běhu, po
 - [Guardraily](/cs-CZ/prirucka/koncepty/guardraily/): politika tříd efektů, kterou projde každé hlídané volání
 - [Sandbox a zabezpečení](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/): celý příběh izolace
 - [Multiplayer](/cs-CZ/prirucka/koncepty/multiplayer/): korekce, převzetí a ovládání autonomie
-- [Doménové události](/cs-CZ/prirucka/koncepty/domenove-udalosti/): co spouští `AgentRunCompleted`
+- [Doménové události](/cs-CZ/prirucka/koncepty/domenove-udalosti/): co spouští `AgentRunSettled`
+- [Usilujte o cíl](/cs-CZ/prirucka/navody/usilujte-o-cil/) a [Plány a probuzení](/cs-CZ/prirucka/navody/plany-a-probuzeni/): běhy, které server spouští sám

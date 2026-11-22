@@ -2,7 +2,7 @@
 title: Pași de pipeline
 description: Referință pentru tipurile de pași de pipeline, cheile de corp ale pașilor, configurația lor și rezultatele pașilor.
 slug: ro-RO/manual/referinta/pasi-pipeline
-sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
+sourceHash: 0d2876bc1ac359f4d2cfe94902bd5f924d19d5d5
 ---
 
 Un pas de pipeline are două axe independente:
@@ -58,6 +58,31 @@ Nod generic de tip prompt și trimitere: redă promptul, trimite agentul într-o
 | `extras.spaceId`           | Conversația existentă în care se lucrează (implicit: una ascunsă) |
 | `extras.conversationTitle` | Fluxul cu nume din interiorul acelui spațiu (opțional)       |
 | `extras.mode`              | Se citește pe nodul care *deschide* camera (`messaging.createSpace`), nu aici. Implicit `review`. |
+
+### `goal.pursue`
+
+Pornește un obiectiv durabil (vezi [Urmărește un obiectiv](/ro-RO/manual/ghiduri-practice/urmareste-obiectiv/)) și se suspendă până când obiectivul se încheie. Editorul îl arată ca **Pursue a goal**. Nu este unul dintre cele 25 de corpuri semănate de mai sus; este înregistrat alături de ele.
+
+| Câmp de configurare | Descriere |
+| ---------------------- | ----------- |
+| `agentId` | Agentul care urmărește obiectivul (obligatoriu) |
+| `prompt` | Obiectivul; acceptă substituția `{{key}}` (obligatoriu) |
+| `outputKey` | Cheia de stare pentru rezultat (obligatoriu) |
+| `extras.spaceId` | Camera în care lucrează obiectivul (obligatoriu, ca orice pas de agent) |
+| `extras.budgetMicros` | Bugetul obiectivului în micro-dolari, de la 1 la 1.000.000.000 (obligatoriu) |
+| `extras.maxRuns` | Un plafon de segmente, de la 1 la 1.000 (opțional) |
+| `extras.deadlineHours` | Ore de la momentul în care pasul pornește obiectivul, de la 1 la 2.160 (opțional) |
+| `extras.contract` | Ce înseamnă terminat: criterii și verificări (opțional) |
+
+Rezultatul de sub `outputKey` este `{summary, verdict}`, unde `verdict` este verdictul revizorului cu elementele și preocupările lui, sau null.
+
+| Obiectivul | Pasul |
+| -------- | -------- |
+| terminat | se încheie cu succes |
+| eșuat, anulat sau buget epuizat | eșuează (`retry` și `continueOnFail` se aplică); un pas reîncercat pornește un obiectiv nou |
+| pus pe pauză, inclusiv când așteaptă revizuirea unei persoane | rămâne suspendat, scutit de verificarea de activitate de 24 de ore |
+
+Un obiectiv pornit de o rulare de pipeline este trecut în contul orchestrării acelei rulări, inclusiv revizuirea lui. Când rularea de pipeline este anulată, eșuează sau se încheie cât timp lucrează obiectivul, obiectivul este anulat.
 
 ### `pipeline.condition`
 

@@ -608,6 +608,36 @@ void main() {
       );
     });
 
+    test('postFileComment posts a file-subject comment with no line', () async {
+      final b = build(
+        (r) => httpTextResponse(r, {
+          'id': 3,
+          'body': 'b',
+          'path': 'moved.dart',
+          'subject_type': 'file',
+          'line': null,
+        }),
+      );
+      final comment = await b.client.postFileComment(
+        owner,
+        repo,
+        prNumber: 5,
+        commitSha: 'abc',
+        path: 'moved.dart',
+        body: 'why the move?',
+      );
+      final request = b.fake.requests.single;
+      expect(request.url, endsWith('/pulls/5/comments'));
+      final body = _jsonBody(request) as Map<String, dynamic>;
+      expect(body, {
+        'commit_id': 'abc',
+        'path': 'moved.dart',
+        'body': 'why the move?',
+        'subject_type': 'file',
+      });
+      expect(comment.isFileLevel, isTrue);
+    });
+
     test('replyToReviewComment POSTs to the replies sub-path', () async {
       final b = build((r) => httpTextResponse(r, {'id': 1}));
       await b.client.replyToReviewComment(

@@ -1,0 +1,178 @@
+---
+title: Kod modu
+description: Bir ajanın araçlarını tek tek çağırmak yerine bu araçları çağıran kısa bir betik yazması; hangi araçları doğrudan, hangilerini bir betikten çağırdığı; bir betiğin altında çalıştığı sınırlar; bir betiğin konuşmada nasıl okunduğu ve nasıl sınırlandırılıp kaydedildiği.
+slug: tr-TR/kilavuz/kavramlar/kod-modu
+sourceHash: d41fe2f38c216949847fc7c4768fdf96bed2dc83
+---
+
+Bir ajan araçlarını normalde tek tek çağırır. Her çağrı bir model turudur: ajan çağrıyı ister, sonuç bağlamına geri döner ve ajan bir sonrakini istemeden önce onu okur. Çoğunlukla mekanik olan işlerde, örneğin üç önemli dosyayı bulmak için yirmi dosyayı okumak ya da açık biletlerin hepsinde bir etiketi kontrol etmek gibi, bu turların ve bağlamın çoğu ajanın attığı sonuçlara harcanır.
+
+Kod modu tek bir araçtır: `repl`. Bununla ajan, diğer araçlarını çağıran, döngüler kuran, sonuçları süzüp birleştiren ve yalnızca ihtiyaç duyduğunu döndüren kısa bir JavaScript betiği yazar. Tek bir `repl` çağrısı onlarca araç turunun işini yapabilir ve bağlama yalnızca betiğin yanıtı girer.
+
+Sunucu betik çalıştırabildiğinde her çalıştırmada `repl` bulunur. Açılacak bir şey yoktur: bkz. [Bir çalıştırmada `repl` ne zaman bulunur](#bir-çalıştırmada-repl-ne-zaman-bulunur).
+
+## Bir betik neler yapabilir
+
+Bir betik, bir async fonksiyonun gövdesi olarak yazılmış düz JavaScript'tir; bu yüzden `await` ve `return` üst düzeyde çalışır. Her `repl` çağrısı yeni ve boş bir yorumlayıcı başlatır.
+
+- **Araç çağır.** `await tools.read({ path: "README.md" })` bir aracı çağırır ve sonucuna çözümlenir; çağrı başarısız olur ya da reddedilirse hatayla reddeder. Bağımsız çağrılar `Promise.allSettled` ile birlikte çalıştırılabilir.
+- **Araç bul.** `ALL_TOOLS`, betiğin çağırabileceği her aracı listeler. `searchTools(query)` araçları ne yaptıklarına göre bulur, `describeTool(name)` bir aracın açıklamasını ve argümanlarını döndürür, `describeNamespace(name)` ise bir grubun araçlarını listeler. Bağlı MCP sunucularının araçlarına da bu yolla erişilir.
+- **Sonuçları döndür.** Yalnızca betiğin döndürdüğü ya da `text()`, `image()` veya `console.log()` ile ilettiği şey ajana geri gelir. Modele en fazla dört görsel ulaşır.
+- **Değer sakla.** `store(key, value)` ve `load(key)`, aynı konuşma ve ajan için betikler arasında küçük JSON değerlerini saklar. Değerler yalnızca betik tamamlandığında kaydedilir. Alt ajanların deposu yoktur.
+- **Bir kişiye sor.** `await tools.ask_user({ question, options })` bir soru sorar ve yanıtı bekler.
+- **Cihaz üzerinde gömmeler kullan.** Sunucunun gömme modeli kuruluysa `models.embed`, `models.rank` ve `models.classify` bunu kullanır.
+- **Bekle.** `sleep(ms)` ve `setTimeout`, betiğin süre sınırı içinde çalışır. `limits()`, betiğin altında çalıştığı sınırları döndürür.
+
+Bir betiğin dosya sistemi, ağ, süreç, modül ya da ortam erişimi yoktur: `fetch`, `require`, `import` ya da `process` yoktur. Dışarı çıkmanın tek yolu bir araç çağrısıdır ve her araç çağrısı, ajanın doğrudan yaptığı bir çağrının geçtiği aynı denetimlerden geçer.
+
+Bir betik sonradan başarısız olursa, betiğin daha önce yaptığı araç çağrıları geri alınmaz.
+
+## Ajanın doğrudan çağırdığı araçlar
+
+Yerleşik ajanın her çalıştırması, adıyla çağırdığı küçük bir araç kümesini alır:
+
+- `repl`, ilk sırada;
+- dosya ve kabuk araçları `read`, `write`, `edit`, `search`, `find`, `bash` ve `read_output`;
+- `ask_user` ve `task`;
+- `todo_write`, `search_memory` ve `send_message`;
+- konuşmanın [modunun](/tr-TR/kilavuz/kavramlar/modlar/) çıktısını teslim etmek ya da moddan çıkmak için ihtiyaç duyduğu fiiller, örneğin plan modunda `submit_plan`;
+- `search_tools`, bazı araçlar ilk kullanımda yüklendiğinde (aşağıda).
+
+Çalıştırmanın kullanabileceği diğer her araca iki yoldan biriyle ulaşılır:
+
+- **Yalnızca bir betikten**, bir betik onu çağırabiliyorsa. Ajan onu `searchTools()` ya da `describeTool()` ile bulur ve `tools.<name>(args)` olarak çağırır. Açıklaması modele hiç ulaşmaz; bu yüzden istemde bir maliyeti yoktur. Ajan böyle bir aracı yine de doğrudan çağırırsa cevap, aracı bir betikten çağırması gerektiğini söyler. Sunucu bir çalıştırmanın betiklerini çalıştıramıyorsa, araç bunun yerine ilk kullanımda yüklenir ([Betikler çalıştırılamadığında](#betikler-çalıştırılamadığında)).
+- **İlk kullanımda yüklenir**, bir betik onu çağıramadığında. Ajan yalnızca adını görür; adıyla çağırmak ya da `search_tools` ile bulmak aracı yükler.
+
+Bazı araçlar hiçbir zaman bir betikten çağrılamaz; bunların arasında `repl`'in kendisi (bir betik bir betik başlatamaz), `eval`, `task`, `checkpoint`, `rewind`, `vibe_*` fiilleri ve başka ajan çalıştırmalarını başlatan ya da onlara mesaj gönderen, onay oluşturan, onay üzerinde karar veren ya da yorum yapan, ilke ya da becerileri değiştiren veya plan modundan çıkan araçlar bulunur. Ajan bunları doğrudan çağırır.
+
+`repl` olmayan bir çalıştırma aynı doğrudan araçları alır; geri kalan her şey ilk kullanımda yüklenir. [Araç bağlamı ve istem önbelleği](/tr-TR/kilavuz/kavramlar/arac-baglami/) kümenin iki durumda da neden aynı olduğunu açıklar.
+
+Kod modu, konuşmanın modunun izin vermediği bir aracı asla eklemez. Önce modun araç filtresi uygulanır ve bir betik yalnızca geriye kalanları çağırabilir.
+
+## Bir çalıştırmada `repl` ne zaman bulunur
+
+Bir çalıştırmada `repl` bulunur; sunucunun betik çalıştırıcısı (runner) başlangıçta kilitleme denetimini geçtiğinde ([Betikler nasıl sınırlandırılır](#betikler-nasıl-sınırlandırılır)). Hiçbir çalışma alanı, ajan ya da sunucu ayarı bunu değiştirmez. Bir çalıştırmada yine de `repl` bulunmaz şu durumlarda:
+
+- runner sunucunun makinesinde kendini kilitleyemez; bu durumda sunucu hiç betik çalıştırmaz;
+- sunucu, betik çalıştırmayan herkese açık bir demodur;
+- çalıştırma hiçbir çalışma alanına ait değildir;
+- çalışma alanının sınırları okunamaz, çünkü varsayılanlarla çalıştırmak bir yöneticinin düşürdüğü sınırları aşabilir;
+- çalıştırmanın günlüğü yazılamadı, çünkü her betik başlamadan önce kendi çalıştırmasının altında kaydedilir.
+
+Böyle bir çalıştırma tüm araçlarını doğrudan çağırır.
+
+Kod modu, yerleşik ajanın çalıştırmaları ve Control Center'ın araçlarına MCP uç noktası üzerinden ulaşan ajanlar için çalışır (örneğin Claude Code gibi). Bir MCP ajanı için aldığı araç listesi `repl`'i, doğrudan araçları ve bir betiğin çağıramadığı araçları içerir; geri kalanını betiklerden çağırır. Yalnızca Control Center'ın başlattığı ve bir günlük tuttuğu bir çalıştırma orada `repl`'i alır; diğer her istemciye `repl` hariç tüm araçlar gönderilir.
+
+**Ayarlar → Çalışma alanı → Kod modu** sayfasında **Durum** altında bu sunucunun betik çalıştırıp çalıştırmadığı (**Kullanılabilir** ya da **Kullanılamıyor**, sunucunun verdiği nedenle birlikte) ve kurulu **Runner** sürümü gösterilir. **Kod çalıştırmalarını görüntüle** çalışan betiklerin listesini açar.
+
+Sunucu sahibi betikleri kapatamaz. Sahip bunları sınırlandırabilir: aynı anda kaç tanesinin çalışacağını ve birinin ne kadar bellek kullanabileceğini ([Sınırlar](#sınırlar) bölümüne bakın).
+
+### Betikler çalıştırılamadığında
+
+Bir çalıştırma, sunucu betiklerini çalıştıramadığı için hiçbir aracını kaybetmez. Sunucu bir betiği, bunu hiçbir başka betiğin de atlatamayacağı bir nedenle reddettiğinde (örneğin betikler kullanılamıyorsa, betik boş bir yer için süresinin yarısını beklemişse, kaydı yazılamıyorsa, çalıştırmanın araç listesi bir betiğe verilemeyecek kadar büyükse ya da runner başlayamaz ya da kendini kilitleyemezse), çalıştırma ömrünün geri kalanında betik kullanmayı bırakır:
+
+- yerleşik ajanın bir çalıştırması `repl`'i tutar ve yalnızca bir betikten çağrılan her araç artık ilk kullanımda yüklenir: ajan onu adıyla çağırır ya da `search_tools` ile bulur;
+- MCP uç noktasındaki bir çalıştırmaya her araçla ve `repl` olmadan bir araç listesi gönderilir ve istemcisine listenin değiştiği bildirilir. Sunucu bu tür son 1.024 çalıştırmayı hatırlar; daha eskisi betiklere geri döner.
+
+Bu araçlar, öncekiyle aynı mod filtresi, korumalara ve onaylara tabidir; böylece daha önce çağrılamayan hiçbir şey çağrılabilir olmaz. Kendi nedeniyle başarısız olan bir betik — bir hata fırlatarak, bir sınıra çarparak ya da bir çağrının reddedilmesiyle — hiçbir şeyi değiştirmez; çalıştırma betik kullanmaya devam eder.
+
+Sunucu ayrıca betiklerin çalışabildiğini denetlemeye devam eder. Runner, betiğin nedeni olmayan bir sebeple başlayamazsa, sunucu kilitleme denetimini yeniden çalıştırır; dakikada en fazla bir kez. Denetim başarısız olursa sunucu hiçbir betik çalıştırmaz ve başlangıçtaki ile aynı `code_mode=unavailable` satırını günlüğe yazar; bu arada başlayan çalıştırmalar `repl` almaz. Denetimi dakikada en fazla bir kez yapmaya devam eder; bir denetim geçtiğinde yeniden betik çalıştırır ve `code_mode=available` satırını günlüğe yazar. Yalnızca sunucu başlarken başarısız olan bir denetim yeniden başlatma gerektirir.
+
+## Sınırlar
+
+Her betik sınırlar altında çalışır. Bir çalışma alanı yöneticisi bunlardan altısını **Ayarlar → Çalışma alanı → Kod modu** sayfasındaki **Sınırlar** altında değiştirebilir (**Sınırları ayarla**); ajan tek bir betik için daha kısa bir süre ya da daha küçük bir çıktı bütçesi isteyebilir, ama asla daha fazlasını isteyemez.
+
+| Sınır | Varsayılan | Aralık | Tükenince |
+| --- | --- | --- | --- |
+| Betik başına süre | 5 dk | 1 sn ila 25 dk | Betik durdurulur ve ajana süresinin dolduğu bildirilir. |
+| İşlemci süresi | 30 sn | 1 sn ila 2 dk | Betik durdurulur. |
+| Bellek | 256 MiB | 16 MiB ila 1 GiB | Betik durdurulur. Sunucu sahibi tüm sunucu için daha düşük bir üst sınır belirleyebilir. |
+| Betik başına araç çağrısı | 500 | 1 ila 5.000 | Sonraki çağrılar reddedilir ve betiğe nedeni bildirilir. |
+| Aynı anda çağrı | 8 | 1 ila 32 | Bu sınırın ötesindeki salt okunur çağrılar sıralarını bekler. Bir şeyi değiştiren çağrılar her zaman tek tek çalışır. |
+| Ajanın okuduğu çıktı | 10.000 token | 100 ila 50.000 | Çıktı başı ve sonuna indirilir; ajan geri kalanını istek üzerine okuyabilir. |
+
+Bir betiğin bir kişiyi beklediği süre, yani bir onay ya da bir soru için geçen süre, süre sınırına dahil edilmez. Bekledikçe betik başka hiçbir araç çağrısı başlatmaz: bu sırada yaptığı çağrılar, siz yanıtladıktan sonra sırayla başlar.
+
+Bazı sınırlar sabittir: bir betiğin kaynağı en fazla 256 KiB, bir araç çağrısının argümanları 1 MiB ve 16.384 değer, bir betiğin bunu çalıştıran bir yerleşik araca ilettiği komut en fazla 16 KiB (aracın adı da buna dahildir), betiğe verilen bir sonuç 4 MiB, saklanan bir değer 256 KiB ve bir konuşma ile ajanın birlikte sakladığı her şey toplamda 1 MiB. Bir çalıştırma aynı anda yalnızca bir betik çalıştırır.
+
+Bir betiğin araç aramaları da sınırlıdır: en fazla 1.024 karakterlik bir `searchTools` sorgusu, en fazla 256 karakterlik bir araç ya da ad alanı adı, en fazla 50 sonuç ve sunucunun zamanından toplamda 2 saniye harcayan en fazla 200 arama; bunun ötesindeki aramalar başarısız olur. Bir çalışma alanının tüm betikleri de 2 saniyelik arama süresini paylaşır; bu süre her saniye çeyrek saniye geri verilir. Arama dizini her araca yaklaşık bir milyon karakterlik eşit bir pay verir; bu pay önce argüman adlarına, sonra açıklamasına harcanır ve her aracın adını her zaman dizine ekler, böylece çok büyük bir katalogda bile bir araç adıyla bulunur.
+
+Sunucu sahibi ayrıca sunucuda aynı anda kaç betiğin çalışacağını (`--code-mode-max-processes`; varsayılanı işlemci çekirdeği sayısının iki katı, en fazla 16) ve tek bir betiğin kullanabileceği belleği (`--code-mode-max-heap-mb`) da sınırlar. Bir kişiyi bekleyen betikler ayrıca sayılır ve bu sayının en fazla dört katı kadar tutulur. Bu sınır birden büyükse, bir çalışma alanı bunun yaklaşık dörtte üçünü kullanabilir; böylece tek bir çalışma alanı tüm yerleri alamaz. Bir çalıştırma ve alt ajanları birlikte, çalışma alanlarının yerlerinin en fazla yarısını (en az bir tane) kullanır; böylece onların ek betikleri bekler, çalışma alanının diğer çalıştırmalarının betikleri ise devam eder. Bkz. [`cc_server` CLI](/tr-TR/kilavuz/referans/cc-server-cli/#kod-modu).
+
+## Onaylar ve sorular
+
+Bir betikten yapılan bir araç çağrısı, doğrudan çağrıyla aynen denetlenir: modun araç filtresi, [eylem korumaları](/tr-TR/kilavuz/kavramlar/korumalar/), onay istemi ve aracın kendi denetimleri. Bir betik, ajanın aracı kendisi çağırarak yapamayacağı hiçbir şeyi yapamaz.
+
+Bir betiğin çağrısı onay gerektirdiğinde, onay kartı **Ajanın çalıştırdığı bir betikten** olduğunu söyler ve **Betiği göster** betiği konuşmada açar. Bir betiğin sizi kartlarla boğmasını önlemek için:
+
+- bir betik en fazla 10 kez onay isteyebilir ve en fazla 10 soru sorabilir;
+- bir çağrısını reddettiğinizde, betiğin onay gerektiren sonraki çağrıları sormadan reddedilir.
+
+Yerleşik ajanın çalıştırmalarında, bir betiğin çalıştırdığı komutlardan, örneğin bir git push işleminden kaynaklanan onay istemleri de aynı sınıra dahil edilir ve bir reddin ardından aynı şekilde durur. Bir alt ajanın betiği aynı anda çalışırken, böyle bir istem her iki betiğe de dahil edilir ve bir red ikisini de durdurur.
+
+Yerleşik ajanın çalıştırmalarında, harici bir MCP sunucusunun aracına ait bir onay hatırlanmaz: her çağrı, ister bir betikten ister ajanın kendisinden gelsin, yeniden sorulur; alanın özerkliği **Serbest hareket et** olarak ayarlanmadıkça. Bir betiğin neden olduğu her bu tür onay istemi, o betiğin en fazla 10 kez onay isteyebileceği sınırına dahil edilir.
+
+Betik siz yanıtlamadan önce biterse kart geri çekilir ve bundan sonra verilen bir yanıt hiçbir şeyi onaylamaz.
+
+## Konuşmada
+
+Bir `repl` çağrısı konuşmada, betiğin açıklamasıyla etiketlenmiş tek bir satır olarak görünür. Genişletildiğinde betiği ve çıktısını gösterir; betiğin yaptığı araç çağrıları **Araç çağrıları** altında, her biri için kaçının çalıştığını, tamamlandığını, başarısız olduğunu, reddedildiğini, iptal edildiğini, kuyrukta ya da atlandığını gösteren bir sayımla görünür.
+
+### Konuşmada bir betik nasıl okunur
+
+Araç çağrıları tek uzun bir liste olarak değil, betiğin yazıldığı biçimde düzenlenir. Runner her çağrının yapıldığı satır ve sütunu bildirir; uygulama da betiği okuyarak döngülerini, dallarını ve işlevlerini bulur:
+
+- **Bir döngü** (`for`, `while`) ilk satırıyla başlık olarak gösterilen bir **Döngü** grubu olarak, `map` ya da `forEach` gibi bir çağrıya verilen bir geri çağırma ise bir **Her biri için** grubu olarak gösterilir. Uygulama döngünün bir turunu bir sonrakinden ayırt edebildiğinde ince bir çizgi ayırır.
+- **Çağrılar birlikte çalışır**; `Promise.all`, `Promise.allSettled` ya da benzer bir birleştiriciyle, bir **Paralel** grup olarak gösterilir.
+- **Bir dal** (`if`/`else`, `switch`, `try`/`catch`) her kol için, koşuluyla başlık olarak bir grup gösterir.
+- Betiğin tanımlayıp çağırdığı **bir işlev**, bir **İşlev** grubu olarak gösterilir.
+
+Bir grubun içindeki grup bir adım daha içeride girintilenir; sekiz adıma kadar. Daha derin gruplar bu girintide kalır.
+
+Her grubun başlığı, çağrılarının şimdiye kadar nasıl bittiğini gösterir. Bir çağrı çalışmadan önce satırı, aracı ve argümanları betikte yazıldığı gibi gösterir:
+
+| Satır | Anlamı |
+| --- | --- |
+| **Kuyrukta** | Betik bu çağrıya henüz ulaşmadı. |
+| Çalışıyor | Çağrı çalışıyor. |
+| Bitti | Çağrı bitti; satır sonucunu ve ne kadar sürdüğünü gösterir. |
+| **Atlandı** | Betik bu çağrıyı atladı; örneğin alınmayan bir `if` dalı ya da çağrıya ulaşmadan biten bir betik. |
+
+Bir çağrı, aynı aracın başka bir çağrısının argümanlarının içine yazılmışsa, o çağrının yapıldığı yerden betikte bildirilir. Uygulama dış çağrının yapılıp yapılmadığını anlayamazsa, satırı **Atlandı** yerine hiçbir durum sözcüğü göstermez.
+
+Bir grup sekizden fazla çağrı yaptığında ortası katlanır: ilk iki ve son üç çağrı görünür kalır; çalışmaya devam eden, başarısız olan ya da reddedilen her çağrı ve döngünün o turunu başlatan çağrı da öyle. **N çağrı daha göster** her basışta 100 çağrı daha açar ve gizli çağrılardan en fazla dört aracın adını, her birinden kaç tane olduğunu, en nadir olanı önce olacak şekilde gösterir; örneğin **12 çağrı daha göster** · Bash 1 · Read 11. Bu düğmede 24 karakterden uzun bir araç adı burada kısaltılır.
+
+Uygulamanın betiğe yerleştiremediği bir çağrı, örneğin bir `then` geri çağırmasının yaptığı çağrı, ağacın altında **Betikte yeri belirlenemeyen çağrılar** başlığı altında listelenir. Uygulama betiği okuyamazsa ya da hiçbir çağrı nerede yapıldığını bildirmezse, çağrılar yapıldıkları sırayla düz bir liste olarak gösterilir.
+
+Her çağrı satırı, çağrının argümanlarının ve sonucunun başını gösterir; her biri en fazla 8 KiB. Bir betiğin satırları bunlardan 256 KiB tuttuğunda, sonraki satırları yalnızca aracı ve çağrının nasıl bittiğini gösterir. Betik bittikten sonra **Kaydı aç** tam kaydını açar; kayıt bulunamazsa, bunun yerine o çalıştırmadaki betiklerin listesini açar. Çalışmadan önce reddedilen bir betiğin (örneğin aynı çalıştırmanın başka bir betiği hâlâ çalışıyorsa) kaydı ve bağlantısı yoktur.
+
+## Kayıt
+
+Çalıştırılan her betik, başlamadan önce çalışma alanında kaydedilir ve bittiğinde kayıt tamamlanır. **Gözlemlenebilirlik → Kod çalıştırmaları** bunları en yeniden eskiye listeler ve sonuca göre süzülebilir. Bir kaydın **Bu çalıştırmadaki betikler** ve **Bu ajanın betikleri** bağlantıları listeyi tek bir çalıştırmaya ya da tek bir ajana indirir. Bir kayıt şunları gösterir:
+
+- betiği, çıktısını ve konsolunu;
+- ne zaman başladığını, ne kadar sürdüğünü, kullandığı işlemci süresini ve en yüksek belleği ve yerleşik ajan mı yoksa harici bir ajan mı üzerinden çalıştığını;
+- nasıl bittiğini, sade bir dille (örneğin süresi dolmuştur ya da yakalanmayan bir hata fırlatmıştır);
+- her araç çağrısını, sırayla, sonucuyla birlikte; çağrının izin verilip verilmediğini, bir kişi tarafından onaylanıp onaylanmadığını ya da reddedildiğini, bir kişinin karar vermesinin ne kadar sürdüğünü, argümanlarını (gizli bilgiler çıkarılmış ve 8 KiB'a kısaltılmış) ve sonucunun boyutunu. Sonucun kendisi tutulmaz.
+
+Kayıt, her çağrının betikte nerede yapıldığını tutar; bu yüzden araç çağrıları orada, konuşmadaki yapıyla aynı biçimde düzenlenir. Bir kişinin onayladığı bir çağrı orada hiçbir zaman katlanmaz.
+
+Hâlâ çalışan bir betik, şu ana kadar biten araç çağrılarıyla birlikte çalışıyor olarak görünür; çıktısı, süresi ve kaynak kullanımı bittiğinde görünür. Betik çalışırken sunucu durursa, kayıt sunucu yeniden başladığında kapatılır ve bunu belirtir; kayıt kapanana kadar o çalışma alanında hiçbir betik çalışmaz.
+
+Kayıtlar çalıştırmalarıyla birlikte saklanır: çalıştırmayı ya da alanını silmek kayıtları da siler. Üyeler, açabildikleri alanların kayıtlarını görür.
+
+## Betikler nasıl sınırlandırılır
+
+Betikler hiçbir zaman sunucunun içinde çalışmaz. Her betik kendi sürecinde çalışır: sunucuyla birlikte paketlenmiş küçük bir program olan `cc_codemode`, JavaScript'i QuickJS-NG motorunda çalıştırır. Program betiği okumadan önce, işletim sisteminin kendi denetimleriyle kendini kilitler: Linux'ta bir sistem çağrısı filtresi ve kaynak sınırları, macOS'ta varsayılan olarak reddeden bir sandbox profili, Windows'ta bir AppContainer ve bir job nesnesi. Bundan sonra dosya açamaz, ağı kullanamaz, süreç başlatamaz ya da diğer programları göremez. Hiçbir ortam değişkeni olmadan başlar ve hiçbir kimlik bilgisi tutmaz; tek kanalı, araç çağrılarını yanıtlayan sunucudur.
+
+Sunucu, kilitlemeyi başlangıçta programın kendi kendini sınama testini çalıştırarak denetler. Kilitleme o makinede tutmazsa, örneğin bir güvenlik profilinin adımlardan birini reddettiği bir konteynerde, sunucu orada hiç betik çalıştırmaz: hiçbir çalıştırma `repl` almaz ve ayarlar sayfası **Kullanılamıyor** ile nedenini gösterir. Bir betik hiçbir zaman daha az sınırlandırılmış olarak çalışmaz. Windows kilitlemesi henüz Windows üzerinde denenmedi.
+
+Betikte bir çağrının nerede yapıldığını runner bildirir; bu yüzden yalnızca konuşmayı ve kaydı düzenlemek için kullanılır. Bir çağrıya izin verilip verilmeyeceğine hiçbir zaman o karar verir.
+
+Kilitlemenin neyi kapsayıp neyi kapsamadığı için bkz. [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/#kod-modundaki-betikler).
+
+## Ayrıca bakın
+
+- [Araç bağlamı ve istem önbelleği](/tr-TR/kilavuz/kavramlar/arac-baglami/): doğrudan kümenin neden küçük olduğunu ve `repl` olsun ya da olmasın neden aynı olduğunu.
+- [Yerleşik ajan araçları](/tr-TR/kilavuz/referans/ajan-araclari/#repl--araçlarınızı-çağıran-bir-betiği-çalıştırın): `repl` aracının girdisi.
+- [`cc_server` CLI](/tr-TR/kilavuz/referans/cc-server-cli/#kod-modu): sunucu sahibinin belirlediği sınırlar.

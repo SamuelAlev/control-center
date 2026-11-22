@@ -322,8 +322,9 @@ class _PrInlineThreadBlockState extends ConsumerState<PrInlineThreadBlock> {
                 prRef: widget.controller.pr,
                 originalCode: thread.originalCode,
                 filePath: thread.filePath,
-                originalStartLine: thread.line,
-                lineEnd: thread.lineEnd,
+                // A file-level thread has no lines; the actions name the file.
+                originalStartLine: thread.isFileLevel ? null : thread.line,
+                lineEnd: thread.isFileLevel ? null : thread.lineEnd,
                 canResolve: widget.canResolve,
                 resolved: thread.resolved,
                 resolveBusy: widget.resolveBusy,

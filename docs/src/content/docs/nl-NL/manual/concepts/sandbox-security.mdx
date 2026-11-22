@@ -2,7 +2,7 @@
 title: Sandbox en beveiliging
 description: Wat een agent in Control Center vandaag daadwerkelijk beperkt, hoe ver de OS-sandbox reikt en welke grenzen standhouden op een host die geen backend heeft.
 slug: nl-NL/handleiding/concepten/sandbox-en-beveiliging
-sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
+sourceHash: 7644c97911f685ef5084875fb16f1006f21ea940
 ---
 
 :::note[Waar de OS-sandbox wel en niet reikt]
@@ -52,6 +52,8 @@ Dezelfde regel geldt voor de kleinere dingen die voor je een proces starten:
 - **Snelle hulpjes die via een ACP-CLI draaien**: gesprekstitels, `/btw`, `/handoff` en `/goal`. Wanneer de server agents in een sandbox draait, draaien ze binnen de sandbox, in een eigen sessie. Onder `--sandbox off` draaien ze zonder inperking. Zonder beschikbare sandbox draaien ze alleen voor verzoeken waarvoor de servereigenaar verantwoordelijk is; voor anderen worden ze overgeslagen, dus er wordt geen titel gegenereerd en een zijvraag meldt dat de Content synthesizer geen werkende runner heeft. Hulpjes die geen tool starten, worden hier niet door geraakt.
 - **De golden tests van een pull request** in de visuele controle van Review Studio volgen dezelfde regel.
 - **Toolprocessen en `bash`** in een run vallen nooit terug op de host. Als de server agents in een sandbox wil draaien maar er voor een run geen sandbox beschikbaar is, worden ze geweigerd.
+- **De controles van een doel** draaien in een eenmalige sandbox over de worktree van het gesprek, begrensd zoals de eigen `bash` van de agent. Zonder sandbox draaien ze niet en wacht het doel op een persoon; onder `--sandbox off` draaien ze zoals de `bash` van de agent doet.
+- **De review van een doel** draait op elke adapter alleen-lezen: alleen lezen, worktrees alleen-lezen gekoppeld, geen `bash`, geen subagents, geen web. Een adapter die een run niet alleen-lezen kan houden (een ACP-agent), wordt niet als reviewer gebruikt.
 
 ## Wat een agent daadwerkelijk beperkt
 
@@ -295,6 +297,24 @@ systeemaanroep verschijnt in het transcript in plaats van alleen in een log. De
 telemetrie bestaat alleen zolang een native sandbox het proces daadwerkelijk
 omhult — op een host zonder backend valt er niets waar te nemen. Ze staat ook los van de beveiligingen: een schending komt van een geweigerde systeemaanroep, nooit van het opzoeken van een regel.
 
+## Scripts in codemodus
+
+[Codemodus](/nl-NL/handleiding/concepten/codemodus/)-scripts vormen een apart geval en zijn helemaal niet afhankelijk van de sandbox van de agent. Een script draait nooit binnen de server en nooit in de sandbox van de agent. Het draait in zijn eigen proces, `cc_codemode`, een programma dat bij de server wordt meegeleverd. Het sluit zichzelf af voordat het het script leest, en meldt hoe ver die afsluiting is gekomen. De server stuurt het script pas wanneer de afsluiting volledig is.
+
+| Host | Wat de runner op zichzelf toepast |
+| --- | --- |
+| Linux | Een allowlist van systeemaanroepen (seccomp) die het weinig meer laat dan lezen van zijn invoer, schrijven naar zijn uitvoer, zijn eigen geheugen beheren, klokken lezen en afsluiten; geen nieuwe privileges en geen capabilities; geen core dumps; geen bestandsschrijfacties, geen nieuwe processen en hooguit drie open bestanden; 3 GiB adresruimte; een harde limiet op processortijd. Landlock wordt erbij gezet waar de kernel dat ondersteunt. |
+| macOS | Een standaard-geweigerd sandboxprofiel dat ook procesinformatie, controles op bestandsbestaan, systeem- en hardware-informatie en de bijbehorende kernelaanroepen weigert; geen core dumps, geen bestandsschrijfacties en een harde limiet op processortijd. |
+| Windows | Een nieuwe AppContainer voor elk script, in een job dat één proces toestaat, 3 GiB geheugen en geen gebruikersinterface, met dynamische code, kindprocessen en win32k-aanroepen uitgeschakeld. **Nog niet op Windows getest.** |
+
+Het programma start zonder omgevingsvariabelen, zonder open bestanden naast zijn invoer en uitvoer, en zonder inloggegevens. Buiten zijn eigen geheugen kan het alleen de server vragen een tool uit te voeren, en de server voert die aanroep uit via hetzelfde modusfilter, dezelfde [beveiligingen](/nl-NL/handleiding/concepten/beveiligingen/) en goedkeuringen als een directe aanroep.
+
+De server controleert dit allemaal bij het starten: hij draait de zelftest van het programma, die de afsluiting toepast, probeert bestanden te lezen en te maken, een netwerkverbinding te openen en een proces te starten (en op elk systeem nog meer), en draait er echte scripts onder. Wordt iets niet geweigerd, dan draait de server op die machine geen scripts: geen enkele run krijgt `repl`, en vermeldt de server bij het starten en op de instellingenpagina van codemodus waarom. Een runner die geen releasebuild is, wordt op dezelfde manier geweigerd. Er is geen zwakkere terugval.
+
+De runner meldt ook waar in het script elke aanroep is gedaan, zodat het gesprek de structuur van het script kan tonen. De server controleert die positie tegen het script en gebruikt ze alleen voor weergave: ze bepaalt nooit of een aanroep is toegestaan, en ze staat niet in de auditlog van de beveiligingen.
+
+Wat dit niet dekt: een script kan nog alles doen wat de tools van de run toestaan, omdat zijn toolaanroepen echte toolaanroepen zijn; op macOS kan het nog altijd te weten komen of een proces-id bestaat; en een fout in de JavaScript-engine of de kernel wordt door de afsluiting ingeperkt, niet uitgesloten.
+
 ## Bevestigingen komen van de beveiligingen, niet van de sandbox
 
 De sandbox heeft geen goedkeuringspad. Hij start, voert uit, zendt gebeurtenissen
@@ -316,6 +336,7 @@ die beschrijft wat je met de hand kunt controleren.
 
 ## Gerelateerde concepten
 
+- [Codemodus](/nl-NL/handleiding/concepten/codemodus/): scripts die tools aanroepen, en de runner die ze insluit
 - [Rigs en omhullingen](/nl-NL/handleiding/concepten/rigs/): de stap boven de sandbox — wanneer het werk een hele wegwerp-VM nodig heeft met een kernelgrens, niet een omhuld proces
 - [Beveiligingen](/nl-NL/handleiding/concepten/beveiligingen/): de beleidslaag boven de ondergrens van het besturingssysteem en waar goedkeuringen echt vandaan komen
 - [Levenscyclus van agent-dispatch](/nl-NL/handleiding/concepten/dispatch-levenscyclus/): waar isolatie past in de dispatchstroom

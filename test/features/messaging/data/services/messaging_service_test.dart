@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:cc_domain/cc_domain.dart' show WorkspaceMismatchException;
+import 'package:cc_domain/cc_domain.dart'
+    show GoalAlreadyActiveException, WorkspaceMismatchException;
 import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/entities/message.dart';
@@ -15,7 +16,9 @@ import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
+import 'package:cc_domain/features/dispatch/domain/entities/wake.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_dispatch_port.dart';
+import 'package:cc_domain/features/dispatch/domain/services/wake_frame.dart';
 import 'package:cc_domain/features/dispatch/domain/usecases/build_agent_prompt_use_case.dart';
 import 'package:cc_domain/features/dispatch/domain/usecases/dispatch_agent_use_case.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
@@ -24,6 +27,7 @@ import 'package:cc_domain/features/messaging/domain/entities/space_participant.d
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/message_page.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dart';
+import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
 import 'package:cc_infra/src/dispatch/agent_dispatch_service.dart';
 import 'package:cc_infra/src/messaging/agent_stream_processor.dart';
 import 'package:cc_infra/src/messaging/messaging_service.dart';
@@ -465,6 +469,9 @@ class _FakeMessagingRepo implements MessagingRepository {
 }
 
 class _FakeAgentDispatchPort implements AgentDispatchPort {
+  @override
+  bool get readOnlyRunsAvailable => true;
+
   final List<String> pausedDispatchIds = [];
   final List<String> resumedDispatchIds = [];
 
@@ -476,6 +483,9 @@ class _FakeAgentDispatchPort implements AgentDispatchPort {
 
   /// Whom each [start] was for, in order (null: nobody asked for the run).
   final List<String?> requesters = [];
+
+  /// Each `start`'s two run options, in call order.
+  final List<({bool freshHistory, bool readOnly})> runOptions = [];
   bool pauseReturn = false;
   bool resumeReturn = false;
 
@@ -500,6 +510,8 @@ class _FakeAgentDispatchPort implements AgentDispatchPort {
 
   @override
   DispatchHandle start({
+    required bool freshHistory,
+    required bool readOnly,
     required String cliName,
     required String prompt,
     required String workingDirectory,
@@ -515,7 +527,7 @@ class _FakeAgentDispatchPort implements AgentDispatchPort {
     String? runLogId,
     String? ticketId,
     String? requestedByUserId,
-    WakeContext? wakeContext,
+    required WakeContext wakeContext,
     Mode? mode,
     int? silenceTimeoutMinutes,
     Map<String, String>? environment,
@@ -549,6 +561,7 @@ class _FakeAgentDispatchPort implements AgentDispatchPort {
     lastPrompt = prompt;
     lastImagePaths = imagePaths;
     requesters.add(requestedByUserId);
+    runOptions.add((freshHistory: freshHistory, readOnly: readOnly));
     return DispatchHandle(dispatchId: 'ds-1', events: _controller.stream);
   }
 
@@ -562,6 +575,7 @@ class _FakeAgentDispatchPort implements AgentDispatchPort {
   Future<bool> steerDispatch(
     String dispatchId,
     String message, {
+    required String? source,
     bool followUp = false,
   }) async => false;
 
@@ -572,6 +586,7 @@ class _FakeAgentDispatchPort implements AgentDispatchPort {
 /// Records who each queued card was stored as written by.
 class _RecordingSteeringQueue implements SteeringQueueService {
   final List<String> senders = [];
+  final List<bool> mayDirect = [];
 
   @override
   Future<EnqueueSteeringResult?> enqueue({
@@ -580,9 +595,11 @@ class _RecordingSteeringQueue implements SteeringQueueService {
     required String conversationId,
     required String content,
     required String senderUserId,
+    required bool writerMayDirect,
     List<Map<String, dynamic>> attachments = const [],
   }) async {
     senders.add(senderUserId);
+    mayDirect.add(writerMayDirect);
     return null;
   }
 
@@ -606,6 +623,7 @@ class _FakeDispatchAgentUseCase extends Fake implements DispatchAgentUseCase {
     required String workspaceId,
     required String agentId,
     required String prompt,
+    required bool freshHistory,
     String? spaceId,
     String? conversationId,
     String? adapterId,
@@ -629,6 +647,7 @@ class _FakeDispatchAgentUseCase extends Fake implements DispatchAgentUseCase {
       mode: Mode.chat,
       resolvedAdapterId: null,
       cliName: 'claude',
+      transport: AdapterTransport.claudeCli,
     );
   }
 }
@@ -969,6 +988,7 @@ void main() {
       dispatchPort.emitEvent(TextEvent(content: 'hello'));
 
       await service.dispatchAgent(
+        wakeContext: const WakeContext.userMessage(),
         workspaceId: _ws,
         spaceId: space.id,
         agentId: 'agent-1',
@@ -991,6 +1011,7 @@ void main() {
       dispatchPort.emitEvent(TextEvent(content: 'hello'));
 
       await service.dispatchAgent(
+        wakeContext: const WakeContext.userMessage(),
         workspaceId: _ws,
         spaceId: space.id,
         agentId: 'agent-1',
@@ -1018,6 +1039,7 @@ void main() {
       final space = await service.createSpace(_ws, 'Chat', ['agent-1']);
       dispatchPort.emitEvent(TextEvent(content: 'hello'));
       await service.dispatchAgent(
+        wakeContext: const WakeContext.userMessage(),
         workspaceId: _ws,
         spaceId: space.id,
         agentId: 'agent-1',
@@ -1037,6 +1059,7 @@ void main() {
       final space = await service.createSpace(_ws, 'Chat', ['agent-1']);
       dispatchPort.emitEvent(TextEvent(content: 'hello'));
       await service.dispatchAgent(
+        wakeContext: const WakeContext.userMessage(),
         workspaceId: _ws,
         spaceId: space.id,
         agentId: 'agent-1',
@@ -1062,6 +1085,7 @@ void main() {
     test('does nothing when prompt is empty', () async {
       final space = await service.createSpace(_ws, 'Chat', ['agent-1']);
       await service.dispatchAgent(
+        wakeContext: const WakeContext.userMessage(),
         workspaceId: _ws,
         spaceId: space.id,
         agentId: 'agent-1',
@@ -1077,6 +1101,7 @@ void main() {
       dispatchPort.emitEvent(TextEvent(content: 'Done'));
 
       await service.dispatchAgent(
+        wakeContext: const WakeContext.userMessage(),
         workspaceId: _ws,
         spaceId: space.id,
         agentId: 'agent-1',
@@ -1091,6 +1116,7 @@ void main() {
       final space = await service.createSpace(_ws, 'Chat', ['agent-1']);
 
       await service.dispatchAgent(
+        wakeContext: const WakeContext.userMessage(),
         workspaceId: _ws,
         spaceId: space.id,
         agentId: 'agent-1',
@@ -1106,6 +1132,7 @@ void main() {
       dispatchPort.emitEvent(TextEvent(content: 'hello'));
 
       await service.dispatchAgent(
+        wakeContext: const WakeContext.userMessage(),
         workspaceId: _ws,
         spaceId: space.id,
         agentId: 'agent-1',
@@ -1144,6 +1171,7 @@ void main() {
       dispatchPort.emitEvent(TextEvent(content: 'hello'));
 
       await svc.dispatchAgent(
+        wakeContext: const WakeContext.userMessage(),
         workspaceId: _ws,
         spaceId: space.id,
         agentId: 'agent-1',
@@ -1163,6 +1191,7 @@ void main() {
       dispatchPort.emitEvent(TextEvent(content: 'hello'));
 
       await service.dispatchAgent(
+        wakeContext: const WakeContext.userMessage(),
         workspaceId: _ws,
         spaceId: space.id,
         agentId: 'agent-1',
@@ -1248,6 +1277,109 @@ void main() {
 
       final msgs = await repo.getMessages(_ws, space.id);
       expect(msgs.any((m) => m.messageType == MessageType.agentTurn), isTrue);
+    });
+
+    group('/goal', () {
+      late List<({String agentId, String prompt, String requestedByUserId})>
+      goals;
+      Object? refusal;
+
+      MessagingService makeGoalService() => MessagingService(
+        repo,
+        agentRepo: agentRepo,
+        agentDispatchService: dispatchService,
+        streamRegistry: streamRegistry,
+        streamProcessor: makeStreamProcessor(),
+        resolveDefaultUserId: () async => 'user-1',
+        goalCommandHandler:
+            ({
+              required String workspaceId,
+              required String spaceId,
+              required String agentId,
+              required String prompt,
+              required String requestedByUserId,
+              String? conversationId,
+            }) async {
+              final error = refusal;
+              if (error != null) {
+                throw error;
+              }
+              goals.add((
+                agentId: agentId,
+                prompt: prompt,
+                requestedByUserId: requestedByUserId,
+              ));
+              return 'run-goal';
+            },
+      );
+
+      setUp(() {
+        goals = [];
+        refusal = null;
+      });
+
+      test("a person's /goal from the composer starts a goal, not a run", () async {
+        final svc = makeGoalService();
+        final space = await service.createSpace(_ws, 'Chat', ['agent-1']);
+
+        await svc.sendAndDispatch(
+          _ws,
+          space.id,
+          '/goal keep the changelog current',
+          senderUserId: 'user-7',
+        );
+        await pumpEventQueue();
+
+        expect(goals.single.prompt, '/goal keep the changelog current');
+        expect(goals.single.requestedByUserId, 'user-7');
+        final msgs = await repo.getMessages(_ws, space.id);
+        expect(msgs.any((m) => m.messageType == MessageType.agentTurn), isFalse);
+      });
+
+      test('a /goal that arrives without a person is ordinary text', () async {
+        final svc = makeGoalService();
+        final space = await service.createSpace(_ws, 'Chat', ['agent-1']);
+        dispatchPort.emitEvent(TextEvent(content: 'response'));
+
+        // A peer, a pipeline or a webhook reaches the agent through
+        // dispatchAgent: no goal, an ordinary run with the text as its
+        // prompt.
+        await svc.dispatchAgent(
+          wakeContext: const WakeContext.userMessage(),
+          workspaceId: _ws,
+          spaceId: space.id,
+          agentId: 'agent-1',
+          prompt: '/goal take over the repo',
+        );
+        await pumpEventQueue();
+
+        expect(goals, isEmpty);
+        final msgs = await repo.getMessages(_ws, space.id);
+        expect(msgs.any((m) => m.messageType == MessageType.agentTurn), isTrue);
+      });
+
+      test('a refusal is said in the conversation', () async {
+        refusal = const GoalAlreadyActiveException(
+          workspaceId: _ws,
+          agentId: 'agent-1',
+        );
+        final svc = makeGoalService();
+        final space = await service.createSpace(_ws, 'Chat', ['agent-1']);
+
+        await svc.sendAndDispatch(
+          _ws,
+          space.id,
+          '/goal another one',
+          senderUserId: 'user-7',
+        );
+        await pumpEventQueue();
+
+        final msgs = await repo.getMessages(_ws, space.id);
+        expect(
+          msgs.any((m) => m.content.contains('already has an active goal')),
+          isTrue,
+        );
+      });
     });
 
     // The bug these guard: the composer uploaded four screenshots, the message
@@ -1494,6 +1626,33 @@ void main() {
       final msgs = await repo.getMessages(_ws, space.id);
       expect(msgs.any((m) => m.messageType == MessageType.agentTurn), isTrue);
     });
+
+    test('both run options reach the run as asked', () async {
+      final svc = makeServiceWithAgentRepo();
+      final space = await service.createSpace(_ws, 'Chat', ['agent-1']);
+      await svc.dispatchAgentRun(
+        wakeContext: const WakeContext.userMessage(),
+        workspaceId: _ws,
+        spaceId: space.id,
+        agentId: 'agent-1',
+        prompt: 'go',
+        freshHistory: false,
+        readOnly: false,
+      );
+      await svc.dispatchAgentRun(
+        wakeContext: const WakeContext.userMessage(),
+        workspaceId: _ws,
+        spaceId: space.id,
+        agentId: 'agent-1',
+        prompt: 'go again',
+        freshHistory: true,
+        readOnly: true,
+      );
+      expect(dispatchPort.runOptions, [
+        (freshHistory: false, readOnly: false),
+        (freshHistory: true, readOnly: true),
+      ]);
+    });
   });
 
   // An agent's own finished turn can name a teammate ("@Reviewer can you look?")
@@ -1503,8 +1662,10 @@ void main() {
   group('agent-authored mention wake', () {
     late _ReplayAgentRepo agentRepo;
     late MessagingService svc;
+    late List<Wake> woken;
 
     setUp(() {
+      woken = [];
       agentRepo = _ReplayAgentRepo();
       agentRepo.upsert(_testAgent(id: 'agent-1', name: 'Builder'));
       agentRepo.upsert(_testAgent(id: 'agent-2', name: 'Reviewer'));
@@ -1516,6 +1677,10 @@ void main() {
         streamProcessor: makeStreamProcessor(),
         resolveDefaultUserId: () async => 'user-1',
       );
+      svc.mentionWakes.sink = (wake) async {
+        woken.add(wake);
+        return true;
+      };
     });
 
     tearDown(() {
@@ -1531,15 +1696,24 @@ void main() {
       String text, {
       List<String> chain = const [],
       bool fail = false,
+      bool readOnly = false,
+      void Function(String runId)? whileRunning,
     }) async {
       final space = await svc.createSpace(_ws, 'Chat', ['agent-1']);
-      await svc.dispatchAgentRun(
+      final runId = await svc.dispatchAgentRun(
+        freshHistory: false,
+        readOnly: readOnly,
+        wakeContext: const WakeContext.userMessage(),
         workspaceId: _ws,
         spaceId: space.id,
         agentId: 'agent-1',
         prompt: 'go',
+        // No conversation repository is wired here, so the run names its
+        // conversation: a run without one wakes nobody.
+        conversationId: 'conv-1',
         mentionChain: chain,
       );
+      whileRunning?.call(runId!);
       dispatchPort.emitEvent(TextEvent(content: text));
       if (fail) {
         dispatchPort.emitError(StateError('boom'));
@@ -1551,12 +1725,18 @@ void main() {
       return space;
     }
 
+    // A mention is a wake through the queue, never a direct dispatch.
     Future<bool> wokeReviewer(Space space) async {
       final msgs = await repo.getMessages(_ws, space.id);
-      return msgs.any(
-        (m) =>
-            m.messageType == MessageType.agentTurn && m.senderId == 'agent-2',
+      expect(
+        msgs.where(
+          (m) =>
+              m.messageType == MessageType.agentTurn &&
+              m.senderId == 'agent-2',
+        ),
+        isEmpty,
       );
+      return woken.any((w) => w.agentId == 'agent-2');
     }
 
     Future<String?> systemNotice(Space space) async {
@@ -1577,6 +1757,33 @@ void main() {
       final participants = await repo.getParticipants(_ws, space.id);
       expect(participants.any((p) => p.principalId == 'agent-2'), isTrue);
       expect(await wokeReviewer(space), isTrue);
+      final wake = woken.single;
+      expect(wake.reason, WakeReason.peerMessage);
+      expect(wake.conversationId, 'conv-1');
+      expect(wake.payload, 'Open question for @Reviewer — thoughts?');
+      // The woken run acts for nobody, and knows who led to it.
+      expect(wake.requestedByUserId, isNull);
+      expect(wake.chain, ['agent-1']);
+      expect(wake.detail.sourceAgentId, 'agent-1');
+      expect(wake.detail.fields[WakeFields.via], WakeFields.viaMention);
+      expect(wake.detail.fields[WakeFields.sourceAgentName], 'Builder');
+      expect(wake.dedupKey, startsWith('mention:'));
+      expect(wake.dedupKey, endsWith(':agent-2'));
+    });
+
+    test('a read-only run (a goal review) wakes nobody it mentions', () async {
+      final space = await runTurn(
+        'Open question for @Reviewer — thoughts?',
+        readOnly: true,
+      );
+      expect(await wokeReviewer(space), isFalse);
+      expect(woken, isEmpty);
+    });
+
+    test('a chained mention carries the chain so far', () async {
+      final space = await runTurn('@Reviewer over to you', chain: ['agent-3']);
+      expect(await wokeReviewer(space), isTrue);
+      expect(woken.single.chain, ['agent-3', 'agent-1']);
     });
 
     test('does not wake for a mention inside a code fence', () async {
@@ -1622,6 +1829,39 @@ void main() {
 
       expect(await wokeReviewer(space), isFalse);
       expect(await systemNotice(space), contains('cycle detected'));
+    });
+
+    test('a wake drained into the run extends its chain: a cycle through '
+        'it is refused', () async {
+      // The queue pushed a wake whose chain names Reviewer into this run's
+      // lane (`WakeQueueService.chainCarried`).
+      final space = await runTurn(
+        '@Reviewer back to you',
+        whileRunning: (runId) =>
+            svc.mentionWakes.carryChain(_ws, runId, ['agent-2']),
+      );
+
+      expect(await wokeReviewer(space), isFalse);
+      expect(await systemNotice(space), contains('cycle detected'));
+    });
+
+    test('a carried chain counts toward the depth cap', () async {
+      final space = await runTurn(
+        '@Reviewer one more hop',
+        chain: ['a'],
+        whileRunning: (runId) =>
+            svc.mentionWakes.carryChain(_ws, runId, ['b', 'a', 'c']),
+      );
+
+      expect(await wokeReviewer(space), isFalse);
+      expect(await systemNotice(space), contains('chain depth 4'));
+    });
+
+    test('a carried chain of another run is not this one\'s', () async {
+      svc.mentionWakes.carryChain(_ws, 'other-run', ['agent-2']);
+      final space = await runTurn('@Reviewer over to you');
+      expect(await wokeReviewer(space), isTrue);
+      expect(woken.single.chain, ['agent-1']);
     });
 
     test('refuses past the depth cap and says so', () async {
@@ -1818,10 +2058,8 @@ void main() {
         agentId: 'agent-1',
         prompt: 'Do something',
         wakeContext: const WakeContext(
-          agentId: 'agent-1',
-          runId: 'wake-run-1',
-          workspaceId: 'ws-1',
-          wakeReason: WakeReason.userMessage,
+          wakeReason: WakeReason.assignment,
+          startedByRunId: null,
           ticketId: 'ticket-1',
         ),
       );
@@ -1836,6 +2074,7 @@ void main() {
       dispatchPort.emitEvent(TextEvent(content: 'Done'));
 
       await service.dispatchAgent(
+        wakeContext: const WakeContext.userMessage(),
         workspaceId: _ws,
         spaceId: space.id,
         agentId: 'agent-1',
@@ -1853,6 +2092,7 @@ void main() {
       dispatchPort.emitEvent(TextEvent(content: 'Done'));
 
       await service.dispatchAgent(
+        wakeContext: const WakeContext.userMessage(),
         workspaceId: _ws,
         spaceId: space.id,
         agentId: 'agent-1',
@@ -1900,6 +2140,7 @@ void main() {
       dispatchPort.emitEvent(TextEvent(content: 'hello'));
       dispatchPort.emitEvent(TextEvent(content: 'Done'));
       await service.dispatchAgent(
+        wakeContext: const WakeContext.userMessage(),
         workspaceId: _ws,
         spaceId: space.id,
         agentId: 'agent-1',
@@ -1912,6 +2153,7 @@ void main() {
       dispatchPort.emitEvent(TextEvent(content: 'hello again'));
       dispatchPort.emitEvent(TextEvent(content: 'Done'));
       await service.dispatchAgent(
+        wakeContext: const WakeContext.userMessage(),
         workspaceId: _ws,
         spaceId: space.id,
         agentId: 'agent-1',
@@ -2169,6 +2411,7 @@ void main() {
       final space = await service.createSpace(_ws, 'Chat', ['agent-1']);
       dispatchPort.emitEvent(TextEvent(content: 'hello'));
       await service.dispatchAgent(
+        wakeContext: const WakeContext.userMessage(),
         workspaceId: _ws,
         spaceId: space.id,
         agentId: 'agent-1',
@@ -2204,6 +2447,8 @@ void main() {
       // The card's author is who the turn it becomes acts for. Storing a
       // member's card as the owner's ('user-1' here) ran it as the owner.
       expect(queue.senders, ['member-7', 'user-1']);
+      // In process no grant is known: the card enters only its writer's run.
+      expect(queue.mayDirect, [false, false]);
     });
   });
 }

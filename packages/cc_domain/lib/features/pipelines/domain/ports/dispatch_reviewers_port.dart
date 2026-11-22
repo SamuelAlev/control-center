@@ -14,11 +14,17 @@ abstract class DispatchReviewersPort {
   /// to each brief so reviewers walk areas in impact order and stamp their
   /// findings with a `cohort_key`. Null sends the brief without it.
   ///
+  /// [startedByRunId] is the agent run whose tool call asks for the
+  /// reviewers (an attested `dispatch_reviewers` call): each reviewer's run
+  /// records it (`WakeContext.startedByRunId`), so it stays in that run's
+  /// chain of wakes. Null when no run asks (a person's operation).
+  ///
   /// Returns a map with `dispatched` and `unmatched` lists.
   Future<Map<String, dynamic>> dispatch({
     required String spaceId,
     required String workspaceId,
     required List<Map<String, dynamic>> reviewers,
+    required String? startedByRunId,
     int? concurrency,
     String? cohortBrief,
   });

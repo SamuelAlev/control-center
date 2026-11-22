@@ -8,6 +8,17 @@ extension _DispatchSessionSandbox on DispatchSession {
   /// work the server owner is accountable for may run there. A refused run
   /// ends with the refusal as its error.
   Future<bool> _admittedOnHost() async {
+    // A read-only run is read-only because the sandbox mounts its worktree
+    // read-only: without one it is refused, whoever asked, never started
+    // bare with only the tools held back.
+    if (readOnly &&
+        (deps.hostExecution.posture != HostExecutionPosture.sandboxed ||
+            deps.sandboxManager == null)) {
+      const refusal = ReadOnlyRunUnavailableException();
+      _failRun(refusal.message, code: refusal.code);
+      _finish(error: refusal);
+      return false;
+    }
     try {
       await deps.hostExecution.admit(
         workspaceId: workspaceId,
@@ -206,16 +217,8 @@ extension _DispatchSessionSandbox on DispatchSession {
   }
 
   /// The live kernel for [language], created on first use.
-  ///
-  /// **The bridge re-enters the registry, it does not go around it.** A
-  /// `tool(...)` call from inside a cell resolves against the SAME tool
-  /// registry a model-issued call does, so `ActionClass` guardrails, the
-  /// approval callback and every wrapper (diagnostics-on-write included) apply
-  /// identically. A bridge that reached past the registry would be a hole in
-  /// the guardrails shaped exactly like "write a Python one-liner".
   EvalKernel _kernelFor(
     KernelLanguage language, {
-    required HarnessToolRegistry registryForBridge,
     required ToolProcessLauncher hostProcesses,
   }) => _kernels.putIfAbsent(
     language,
@@ -229,25 +232,6 @@ extension _DispatchSessionSandbox on DispatchSession {
           conversationId: conversationId,
         ),
       ),
-      bridge: (name, arguments) async {
-        final tool = registryForBridge.findByName(name);
-        if (tool == null) {
-          return (content: 'Unknown tool: $name', isError: true);
-        }
-        final result = await tool.execute(
-          arguments,
-          HarnessToolContext(
-            workingDirectory: agentDirHostPath,
-            sharedRoots: _workspaceSharedRoots(),
-            readOnlyRoots: _readOnlyRoots,
-            agentId: agentId,
-            workspaceId: workspaceId,
-            conversationId: conversationId,
-            spaceId: spaceId,
-          ),
-        );
-        return (content: result.content, isError: result.isError);
-      },
     ),
   );
 
@@ -301,5 +285,94 @@ extension DispatchSessionSandboxForTesting on DispatchSession {
       );
     }
     return _sandboxSpec(_sandboxSessionId, workspaceId ?? '');
+  }
+
+  /// The run, agent and conversation an exec-grant card names: a run the
+  /// server started waits the workspace's unattended expiry on it.
+  ExecGrantAsker get _execGrantAsker => (
+    runId: runLogId,
+    agentId: agentId,
+    conversationId: conversationId,
+  );
+
+  /// Resolves the operator-approved exec roots for this session, asking once
+  /// per undecided tree. Returns empty when no grant service is wired, which
+  /// leaves the exec block fully closed.
+  ///
+  /// Also the harness `bash` tool's resolver (per command, so an answer lands
+  /// on the next one): the tool's own cwd is deliberately NOT the candidate —
+  /// it is a subdirectory of these roots, and naming it would make each `cd` a
+  /// fresh unknown tree and re-ask on it.
+  Future<List<String>> _resolveExecGrantRoots(String wsId) async {
+    final service = deps.execGrantService;
+    if (service == null || wsId.isEmpty) {
+      return const [];
+    }
+    try {
+      return await service.approvedRoots(
+        workspaceId: wsId,
+        candidateRoots: _execGrantCandidateRoots(),
+        managedRoots: await _managedExecGrantRoots(),
+        spaceId: spaceId,
+        asker: _execGrantAsker,
+        runAsks: _execGrantAsks,
+      );
+    } on Object catch (e) {
+      // A failed lookup must not take the dispatch down with it: the run
+      // proceeds under the stricter, pre-grant rules.
+      CcInfraLog.warning(
+        'dispatch $dispatchId: exec-grant resolution failed, '
+        'continuing without grants: $e',
+      );
+      return const [];
+    }
+  }
+
+  /// Offers a grant for a `process-exec` denial the sandbox reported.
+  ///
+  /// Deliberately AFTER the fact and deliberately not blocking: a Seatbelt
+  /// profile is fixed when the process starts, so the exec that was just
+  /// refused cannot be retried under a new answer. The approval applies from
+  /// the next command (the harness rebuilds its profile per command) or the
+  /// next dispatch — which the confirmation copy says outright, rather than
+  /// letting the operator approve and watch it fail again.
+  Future<void> _maybeOfferExecGrant(SandboxViolation v) async {
+    final service = deps.execGrantService;
+    final wsId = workspaceId ?? '';
+    final action = v.action;
+    final target = v.target;
+    if (service == null ||
+        wsId.isEmpty ||
+        !action.startsWith('process-exec') ||
+        target.isEmpty ||
+        !_execGrantAsks.offering.add(target)) {
+      return;
+    }
+    try {
+      final granted = await service.recordDeniedExec(
+        workspaceId: wsId,
+        deniedPath: target,
+        candidateRoots: _execGrantCandidateRoots(),
+        managedRoots: await _managedExecGrantRoots(),
+        spaceId: spaceId,
+        asker: _execGrantAsker,
+        runAsks: _execGrantAsks,
+      );
+      if (granted != null) {
+        addEvent(
+          DebugEvent(
+            content:
+                '[sandbox] allowed running programs under $granted — '
+                'takes effect on the next command',
+          ),
+        );
+      }
+    } on Object catch (e) {
+      CcInfraLog.warning(
+        'dispatch $dispatchId: exec-grant prompt failed for $target: $e',
+      );
+    } finally {
+      _execGrantAsks.offering.remove(target);
+    }
   }
 }

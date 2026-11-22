@@ -2,7 +2,7 @@
 title: Chatta con un agente
 description: Crea uno spazio con un agente, inviagli del lavoro, guidalo durante l'esecuzione e fermalo.
 slug: it-IT/manuale/guide/chatta-con-agente
-sourceHash: 0dbc01158345074d818cec6084501abc03323fea
+sourceHash: 3e899c417e120a7cc741e802d577d0182210115b
 ---
 
 Questa guida mostra come lavorare con un agente in uno spazio.
@@ -43,6 +43,8 @@ nuovo turno. Diventa una scheda di guida in coda nella striscia sopra il compose
 e viene iniettato nell'esecuzione in corso al confine del turno successivo. Non
 c'è alcun avviso a comparsa: la scheda stessa è il riscontro.
 
+Per guidare un'esecuzione che lavora per qualcun altro serve l'accesso in scrittura ai repository dello spazio; senza, il messaggio viene rifiutato e resta nel compositore. Un'esecuzione in sola lettura, come la revisione di un obiettivo, non accetta messaggi mentre è in corso: quando termina, il messaggio viene inviato come uno normale e, dopo la revisione di un obiettivo, attende invece il segmento successivo dell'obiettivo.
+
 Tre cose cambiano questo comportamento:
 
 - Un messaggio che contiene una **@menzione** viene sempre inviato come messaggio,
@@ -77,9 +79,9 @@ cercare lo spazio. Il pannello nasconde una richiesta nel momento in cui la
 conversazione di quello spazio è sullo schermo, così non rispondi mai due volte
 allo stesso prompt.
 
-Non c'è alcun timeout: un agente bloccato attende finché qualcuno decide. La
-stessa richiesta compare anche nella striscia delle attenzioni della posta in
-arrivo e sul client del telefono.
+Un'esecuzione che hai avviato attende un'ora un'approvazione; poi l'approvazione conta come negata. La stessa richiesta compare anche nella striscia delle attenzioni della posta in arrivo e sul client del telefono.
+
+Un'esecuzione avviata dal server (un segmento di un obiettivo, una pianificazione, una risposta da un altro agente) attende invece 72 ore per impostazione predefinita, un valore impostato da un admin dello spazio di lavoro; poi un'approvazione conta come negata e una domanda come senza risposta. Vedi [Quando nessuno risponde](/it-IT/manuale/guide/persegui-obiettivo/#quando-nessuno-risponde).
 
 ## Rispondi alla domanda di un agente
 
@@ -118,6 +120,8 @@ nello spazio di lavoro con lo stesso controllo.
 Un'esecuzione fermata viene contrassegnata come arrestata. Invia un nuovo
 messaggio per inviare di nuovo.
 
+Fermare trattiene anche ciò che è in coda per quell'agente: i messaggi di guida che hai messo in coda (**Invia i messaggi trattenuti** li invia) e i suoi risvegli in attesa (**Riprendi** nella striscia sopra il compositore). Un obiettivo su cui l'agente stava lavorando va in pausa finché qualcuno non lo riprende.
+
 ## Usa i comandi slash
 
 Digita `/` nel composer per vedere l'elenco dei comandi. Quelli che cambiano il
@@ -126,8 +130,10 @@ comportamento della conversazione:
 | Comando        | Che cosa fa                                                                                                                         |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | `/plan`        | Porta lo spazio in modalità piano. Un `/plan` da solo si limita ad attivare la modalità; `/plan <request>` la attiva e invia il resto come tuo messaggio |
-| `/goal <text>` | Registra l'obiettivo di lavoro della conversazione                                                                                    |
-| `/loop <text>` | Itera su un'attività finché non è completa                                                                                             |
+| `/goal <text>` | Avvia un obiettivo durevole su cui l'agente continua a lavorare finché non è verificato come completato ([Persegui un obiettivo](/it-IT/manuale/guide/persegui-obiettivo/)) |
+| `/loop <text>` | Risveglia l'agente con il testo ogni tanto, a un intervallo o al suo ritmo ([Pianificazioni e risvegli](/it-IT/manuale/guide/pianificazioni-risvegli/)) |
+| `/schedule <when> <text>` | Risveglia l'agente più tardi, una volta o su un cron |
+| `/refine`      | Chiede una revisione del lavoro della conversazione che può proporre miglioramenti                                                    |
 | `/compact`     | Ripiega la cronologia più vecchia in un riepilogo ancorato e prosegue sul contesto compattato                                           |
 | `/todo …`      | Visualizza e modifica l'elenco delle cose da fare persistente di questa conversazione                                                   |
 

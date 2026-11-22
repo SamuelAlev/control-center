@@ -2,7 +2,7 @@
 title: אירועי תחום
 description: קטלוג מלא של 54 אירועי התחום, המטענים שלהם והמנויים בצד השרת שצורכים אותם.
 slug: he-IL/מדריך-למשתמש/עזר/אירועי-תחום
-sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
+sourceHash: f58123448c0f31c95774bbaebee89f1509940896
 ---
 
 ## אפיק אירועים
@@ -24,7 +24,10 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 | אירוע               | מטען                                                | נורה כאשר                                              |
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | סביבת עבודה נוצרת                                    |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | הסוכן מסיים הרצה (הצלחה או כשל)               |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | זרם התהליך של הסוכן מסתיים, לפני שהמצב הסופי נכתב. נשמר לגשר שיחת בקשת המשיכה ולאנליטיקה בלבד |
+| `AgentRunSettled` | `agentId`, `workspaceId`, `runId`, `status`, `endReason`, `costMicros`, `wakeIds`, `spaceId?`, `conversationId?`, `limitResetsAt?`, `requestedByUserId?`, `wakeReason?` | המצב הסופי של הרצה נכתב; מתפרסם בדיוק פעם אחת לכל הרצה. `endReason` הוא `completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` או `serverStopped`. הרצה של תת־סוכן אינה מפרסמת כלום |
+| `GoalSettled` | `goalId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `status`, `hold?`, `summary?`, `requestedByUserId?` | מטרה מסתיימת, או מתחילה לחכות לסקירה של אדם |
+| `WakeRuleEnded` | `ruleId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `reason`, `requestedByUserId?` | לוח זמנים או מעקב מסתיים (הופעל פעם אחת, פג תוקפו, מיצה את ההרצות או העלות שלו, בוטל, המטרה שלו הסתיימה, או האדם שלו עזב) |
 | `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | סוכן מתחיל להמתין לאדם: אישור, שאלת `ask_user` או הרצה שתקועה על פרטי גישה (`kind` הוא `approval`, `question` או `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | מאגר נרשם; מפעיל אינדוקס קוד ברקע |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | מיומנות מותקנת או מתעדכנת, ונושאת את תוצאת סריקת שרשרת האספקה שלה |
@@ -57,6 +60,16 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 | `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | מישהו איזכר אותך בתגובה ל-PR או בתגובת סקירה          |
 | `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | מישהו השיב בשרשור סקירה שאתם משתתפים בו                                 |
 | `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | מישהו סימן כנפתר שרשור סקירה שאתם משתתפים בו                                   |
+
+### מעקב בקשת משיכה
+
+מתפרסם על ידי הסורק של בקשות המשיכה הפתוחות, לכל בקשת משיכה שהוא סורק, ללא קשר למי שכתב אותה, עבור מעקבי `on:pr_*` של סוכנים. לשלושתם יש `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `headRef` ו-`authorLogin`.
+
+| אירוע | מטען נוסף | נורה כאשר |
+| ----------------------- | ----------------------------------------------- | ---------- |
+| `PrWatchChecksSettled` | `passing`, `failedChecks`, `failedCheckUrl?` | כל הבדיקות של ה-head של בקשת המשיכה הסתיימו |
+| `PrWatchReviewActivity` | `decision`, `decisionChanged`, `newComments` | לבקשת המשיכה התקבלה סקירה או תגובות חדשות |
+| `PrWatchClosed` | `merged` | בקשת המשיכה מוזגה או נסגרה |
 
 ## אירועי הודעות
 
@@ -167,14 +180,20 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 | הקצאת מרחב צ'אט (inline)    | `SpaceCreated`                                                                                       |
 | `PipelineTriggerDispatcher`         | כל `DomainEvent`; כל טריגר מופעל מסנן לפי הסוג שלו                                   |
 | `SubPipelineResumeListener`         | `PipelineRunCompleted`, `PipelineRunFailed`                                                          |
-| `PipelineCostRollupListener`        | `AgentRunCompleted`                                                                                  |
-| `BudgetEvaluationListener`          | `AgentRunCompleted`                                                                                  |
+| `PipelineCostRollupListener`        | `AgentRunSettled`                                                                                    |
+| `BudgetEvaluationListener`          | `AgentRunSettled`                                                                                    |
 | `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (רק הרצות `meeting_summary`)    |
-| `PipelineStepResumeListener`        | `AgentRunCompleted`                                                                                  |
-| `AgentRunTaskCompleter`             | `AgentRunCompleted`                                                                                  |
-| `GoalSupervisor`                    | `AgentRunCompleted`                                                                                  |
-| `CheckerDispatchListener`           | `AgentRunCompleted`                                                                                  |
-| `TeamRoutingService`                | `AgentRunCompleted`, `TicketAssigned`                                                                |
+| `PipelineStepResumeListener`        | `AgentRunSettled`                                                                                    |
+| `AgentRunTaskCompleter`             | `AgentRunSettled`                                                                                    |
+| `GoalSupervisor`                    | `AgentRunSettled` — מחליט על השלב הבא של המטרה                                                       |
+| `CheckerDispatchListener`           | `AgentRunSettled` — מכניס את הבודק לתור כהשכמה; מדלג על מקטעי מטרות וסקירות                          |
+| `TeamRoutingService`                | `AgentRunSettled`, `TicketAssigned`                                                                  |
+| `WakeQueueService` | `AgentRunSettled` — מוסר השכמות שחיכו לסיום ההרצה |
+| `WakeRuleService` | `AgentRunSettled` (לולאות בקצב עצמי), `GoalSettled` (מסיים לוחות זמנים של מטרה), `PrWatch*`, `EnvironmentProcessExited`, `EnvironmentReady`, סיומי כרטיסים והרצות פייפליין (מעקבים), `WorkspaceMemberRemoved` (מסיים את לוחות הזמנים של אותו אדם) |
+| `PeerAskService` | `AgentRunSettled` — מסדר שאלות שסוכנים שאלו זה את זה ומעיר את השואל |
+| `LimitParkService` | `AgentRunSettled` עם `usageLimit` — ממתין לאיפוס של הספק |
+| `ImprovementReviewService` | `GoalSettled` (מטרה שאומתה) ו-`AgentRunSettled` — מכניס לתור את סקירת השיפור וקורא את התוצאה שלה |
+| שלב מטרה של פייפליין (`goal.pursue`) | `GoalSettled`, `AgentRunSettled`, `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` — ממשיך את השלב, מחייב את התזמור ועוקב אחרי הרצת הפייפליין |
 | `OrchestrationRunListener`          | `PipelineRunCancelled`, `PipelineRunFailed`                                                          |
 | `MultiVendorTicketSyncCoordinator`  | `TicketCreated`, `TicketAssigned`, `TicketReassigned`, `TicketStatusChanged`, `TicketDetailsUpdated` |
 | `WorktreeGcListener`                | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`         |
@@ -227,6 +246,8 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 את `AgentAwaitingInput` מפרסם `AgentAwaitingInputPublisher`, שעוקב אחר רשומות חדשות במרשמי האישורים וחסימות פרטי הגישה, ו-`AgentQuestionService` מעדכן אותו על כל שאלת `ask_user`. המתנה אחת היא אירוע אחד; כשההמתנה מסתיימת, לא מתפרסם דבר.
 
 חמש הקטגוריות של בקשות משיכה שיצרתם נושאות `forUserId`, ולכן הן מגיעות למחבר ולא לכולם בסביבת העבודה.
+
+חמש מסגרות של עבודה ארוכת טווח, שכל אחת מופנית לאדם שהיא נוגעת לו (`for_user_id`): `notifications/goal_settled` (מ-`GoalSettled`), `notifications/wake_rule_ended` (מ-`WakeRuleEnded`), `notifications/improvement_proposed`, `notifications/pipeline_run_held` (הרצת פייפליין שמוחזקת בתקרת העלות של התזמור שלה) ו-`notifications/waiting_digest` (פעם ביום, מה שממתין לאדם). לכל אחת יש `notification_kind`: `notify` ממופה ל-`agentRunCompleted`, ו-`question` ו-`review` ל-`agentAwaitingInput`. כל מסגרת שמתריעה נושאת עכשיו `notification_kind`, ומסגרת עם `quiet: true` (לוח זמנים שהסתיים, מטרה שהסתיימה) מגיעה למרכז ההתראות בלי התראה קופצת, צליל או דחיפה רועשת.
 
 `RemoteEventForwarder` מעביר בנוסף את `TicketReassigned` בתור `notifications/ticket_reassigned` ואת כל `TaskLifecycleEvent` בתור `notifications/task_<phase>`. אף אחד מהם אינו ממופה לקטגוריית התראה — הם מניעים ממשק משתמש חי, לא את מרכז ההתראות. אירועי חברות אינם מועברים כמסגרות: הם מבטלים את המטמון של המעביר, ומארחי הסשנים מפילים את המינויים של החבר שהוסר.
 

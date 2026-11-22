@@ -7,6 +7,7 @@ import 'package:cc_remote/analytics.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/providers.dart';
 import 'package:cc_remote/widgets/messaging/ask_user_card.dart';
+import 'package:cc_remote/widgets/messaging/script_origin_line.dart';
 import 'package:cc_remote/widgets/phone_markdown.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
@@ -143,9 +144,19 @@ class _PendingApprovalsState extends ConsumerState<PendingApprovals> {
       allowSkip: false,
       submitting: _responding.contains(p.id),
       scrollableBody: true,
-      extraBody: command == null || command.isEmpty
+      extraBody: p.origin == null && (command == null || command.isEmpty)
           ? null
-          : PhoneApprovalCodeBlock(source: command),
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (p.origin != null) const ScriptOriginLine(),
+                if (p.origin != null && command != null && command.isNotEmpty)
+                  const SizedBox(height: 8),
+                if (command != null && command.isNotEmpty)
+                  PhoneApprovalCodeBlock(source: command),
+              ],
+            ),
       options: [
         AgentQuestionOption(label: l10n.deny, value: 'deny'),
         AgentQuestionOption(label: l10n.approve, value: 'approve'),

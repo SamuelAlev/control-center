@@ -237,6 +237,7 @@ class RpcPrReviewRepository implements PrReviewRepository {
         originalLine: d.originalLine,
         threadId: d.threadId,
         isResolved: d.isResolved,
+        isFileLevel: d.isFileLevel,
         reactions: _reactionsFromDto(d.reactions),
       );
 
@@ -689,6 +690,26 @@ class RpcPrReviewRepository implements PrReviewRepository {
         'body': body,
         'start_line': ?startLine,
         'start_side': ?startSide,
+      }),
+    );
+    final result = data['result'];
+    return result is Map ? result.cast<String, dynamic>() : <String, dynamic>{};
+  }
+
+  @override
+  Future<Map<String, dynamic>> postFileComment({
+    required int prNumber,
+    required String commitSha,
+    required String path,
+    required String body,
+  }) async {
+    final data = await _client.call(
+      'pr_review.postFileComment',
+      _coords({
+        'pr_number': prNumber,
+        'commit_sha': commitSha,
+        'path': path,
+        'body': body,
       }),
     );
     final result = data['result'];

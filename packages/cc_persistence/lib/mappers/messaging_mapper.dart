@@ -50,7 +50,6 @@ class MessagingMapper {
             PrincipalType.fromWire(row.participantType) ?? PrincipalType.agent,
         role: row.role,
         joinedAt: row.joinedAt,
-        lastReadAt: row.lastReadAt,
       );
 
   /// Converts a list of database participant rows to domain [SpaceParticipant]s.

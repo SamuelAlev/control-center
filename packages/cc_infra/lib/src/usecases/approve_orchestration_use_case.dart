@@ -3,6 +3,8 @@ import 'package:cc_domain/features/orchestration/domain/entities/orchestration_p
 import 'package:cc_domain/features/orchestration/domain/entities/orchestration_status.dart';
 import 'package:cc_domain/features/orchestration/domain/repositories/orchestration_repository.dart';
 import 'package:cc_domain/features/orchestration/domain/services/orchestration_materializer.dart';
+import 'package:cc_domain/features/orchestration/domain/usecases/save_orchestration_revision_use_case.dart'
+    show StaleRevisionException;
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_template_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_engine.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_validator.dart';
@@ -70,13 +72,29 @@ class ApproveOrchestrationUseCase {
       if (approvedNodeKeys != null) {
         _assertValidNodeSet(o, approvedNodeKeys);
       }
-      o = o.copyWith(
+      final approved = o.copyWith(
         status: OrchestrationStatus.approved,
         approvedRevision: o.revision,
         approvedNodeKeys: approvedNodeKeys?.toList(),
         updatedAt: DateTime.now(),
       );
-      await _orchestrations.update(o);
+      // Only while the row is still the revision read here: what is approved
+      // (and the cap it runs under) is the revision that was shown.
+      if (await _orchestrations.update(approved, read: o)) {
+        o = approved;
+      } else {
+        final now = await _orchestrations.getById(workspaceId, orchestrationId);
+        if (now == null) {
+          throw StateError('Orchestration $orchestrationId not found');
+        }
+        if (now.status == OrchestrationStatus.proposed) {
+          throw StaleRevisionException(o.revision, now.revision);
+        }
+        if (now.status != OrchestrationStatus.approved) {
+          return;
+        }
+        o = now;
+      }
     } else if (o.status != OrchestrationStatus.approved) {
       // Already executing / terminal — nothing to do.
       return;
@@ -120,15 +138,20 @@ class ApproveOrchestrationUseCase {
       return;
     }
     final allKeys = o.proposal.subTickets.map((t) => t.key).toSet();
-    await _orchestrations.update(
-      o.copyWith(
-        approvedNodeKeys: union.length == allKeys.length
+    await _orchestrations.change(workspaceId, orchestrationId, (current) {
+      final stored = current.approvedNodeKeys;
+      if (stored == null) {
+        return null;
+      }
+      final widened = {...stored, ...nodeKeys};
+      return current.copyWith(
+        approvedNodeKeys: widened.length == allKeys.length
             ? null
-            : union.toList(),
-        clearApprovedNodeKeys: union.length == allKeys.length,
+            : widened.toList(),
+        clearApprovedNodeKeys: widened.length == allKeys.length,
         updatedAt: DateTime.now(),
-      ),
-    );
+      );
+    });
     // Release the gates. The gate body re-reads the approved set on any
     // crash-recovery re-run, so both paths agree.
     final runId = o.pipelineRunId;
@@ -198,8 +221,10 @@ class ApproveOrchestrationUseCase {
       hireIndex++;
     }
     if (hired.length != o.hiredAgentIds.length) {
-      o = o.copyWith(hiredAgentIds: hired, updatedAt: DateTime.now());
-      await _orchestrations.update(o);
+      o = await _write(
+        o,
+        (c) => c.copyWith(hiredAgentIds: hired, updatedAt: DateTime.now()),
+      );
     }
 
     // 2. Team (idempotent on teamId).
@@ -231,8 +256,10 @@ class ApproveOrchestrationUseCase {
           ),
         );
       }
-      o = o.copyWith(teamId: teamId, updatedAt: DateTime.now());
-      await _orchestrations.update(o);
+      o = await _write(
+        o,
+        (c) => c.copyWith(teamId: teamId, updatedAt: DateTime.now()),
+      );
     }
 
     // 3. Project (idempotent on projectId).
@@ -252,8 +279,10 @@ class ApproveOrchestrationUseCase {
           workspaceId: workspaceId,
         );
       }
-      o = o.copyWith(projectId: projectId, updatedAt: DateTime.now());
-      await _orchestrations.update(o);
+      o = await _write(
+        o,
+        (c) => c.copyWith(projectId: projectId, updatedAt: DateTime.now()),
+      );
     }
 
     // 4. Pipeline template (idempotent on pipelineTemplateId).
@@ -272,8 +301,13 @@ class ApproveOrchestrationUseCase {
         await _fail(workspaceId, o, 'Generated pipeline is invalid: $e');
         rethrow;
       }
-      o = o.copyWith(pipelineTemplateId: templateId, updatedAt: DateTime.now());
-      await _orchestrations.update(o);
+      o = await _write(
+        o,
+        (c) => c.copyWith(
+          pipelineTemplateId: templateId,
+          updatedAt: DateTime.now(),
+        ),
+      );
     }
 
     // 5. Start the run (idempotent on pipelineRunId; dedupKey prevents stampede).
@@ -291,29 +325,42 @@ class ApproveOrchestrationUseCase {
         dedupKey: o.id,
       );
       final now = DateTime.now();
-      o = o.copyWith(
-        pipelineRunId: run?.id,
-        status: OrchestrationStatus.executing,
-        updatedAt: now,
+      o = await _write(
+        o,
+        (c) => c.status.isTerminal
+            ? null
+            : c.copyWith(
+                pipelineRunId: run?.id,
+                status: OrchestrationStatus.executing,
+                updatedAt: now,
+              ),
       );
-      await _orchestrations.update(o);
-      if (run != null) {}
     }
     return o;
   }
+
+  /// Writes [apply] of [o]'s row as it is now (re-read and re-applied when
+  /// another writer moved it); the row written, or [o] when nothing was.
+  Future<Orchestration> _write(
+    Orchestration o,
+    Orchestration? Function(Orchestration current) apply,
+  ) async => await _orchestrations.change(o.workspaceId, o.id, apply) ?? o;
 
   Future<void> _fail(
     String workspaceId,
     Orchestration o,
     String message,
   ) async {
-    await _orchestrations.update(
-      o.copyWith(
-        status: OrchestrationStatus.failed,
-        errorMessage: message,
-        completedAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      ),
+    await _write(
+      o,
+      (c) => c.status.isTerminal
+          ? null
+          : c.copyWith(
+              status: OrchestrationStatus.failed,
+              errorMessage: message,
+              completedAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ),
     );
     final parentTicketId = o.parentTicketId;
     if (parentTicketId != null) {

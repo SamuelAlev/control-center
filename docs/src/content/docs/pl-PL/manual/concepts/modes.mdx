@@ -2,7 +2,7 @@
 title: Tryby
 description: Dlaczego tryb należy do przestrzeni, a nie do agenta; co gwarantuje każdy z czterech trybów; i gdzie ta gwarancja jest strukturalna, a nie tylko wyrażona w promptcie.
 slug: pl-PL/podrecznik/koncepcje/tryby
-sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
+sourceHash: 4450ebc86d95efb0366bc3f0ab4ddebc6d3a3adb
 ---
 
 ## Czym jest tryb
@@ -41,7 +41,7 @@ Uruchomienie, które kończy się bez swojego planu, wciąż jest zapisywane ze 
 
 Istnieje drugie, osobne wyjście: `exit_plan_mode`. To twarda bramka zatwierdzania, a nie czasownik wyjściowy — agent, który wywoła ją zamiast `submit_plan`, niczego nie dostarczył. Pierwsze wywołanie otwiera trwałe zatwierdzenie `plan_exit` i zwraca `pending`, a przestrzeń pozostaje tylko do odczytu; kolejne wywołania pozostają `pending`, zamiast otwierać drugą bramkę. Dopiero gdy zatwierdzenie zostanie przyznane, następne wywołanie przełącza przestrzeń na czat. Odrzucenie pozwala agentowi otworzyć nowe żądanie zmienionego planu.
 
-Aby samodzielnie opuścić tryb planu, przełącz listę rozwijaną w polu tworzenia wiadomości (albo użyj Shift+Tab). O `exit_plan_mode` decyduje narzędzie MCP `decide_approval`. Wiersze „zatwierdzenie agenta” w Skrzynce to coś innego: potwierdzenia wyświetlane przy każdej turze przez działającego agenta.
+Aby samodzielnie opuścić tryb planu, przełącz listę rozwijaną w polu tworzenia wiadomości (albo użyj Shift+Tab). O `exit_plan_mode` decyduje uruchomienie agenta za pomocą narzędzia MCP `decide_approval`. Wiersze „zatwierdzenie agenta” w Skrzynce to coś innego: potwierdzenia wyświetlane przy każdej turze przez działającego agenta.
 
 ### Przegląd — tylko do odczytu, bez kontraktu
 
@@ -65,6 +65,8 @@ Nic z propozycji nie wykonuje się, dopóki jej nie zatwierdzisz. Po zatwierdzen
 
 **Tryby tylko do odczytu nie blokują dostępu do sieci ani do sekretów.** Klasy efektów, których odmawiają przegląd, plan i orkiestracja, to te, które zmieniają świat: usuwanie plików, zapisy poza drzewem roboczym, commity, wypychanie zmian, tworzenie i publikowanie pull requestów, zapisy synchronizacji z zewnętrznymi systemami, instalacje pakietów, uruchamianie procesów, zmiana struktury obszaru roboczego i sterowanie rigiem. Ruch wychodzący do sieci i dostęp do sekretów celowo pozostają na wartościach domyślnych — badanie jest całym sensem trybu tylko do odczytu.
 
+**Tryb kodu nigdy nie poszerza trybu.** Filtr narzędzi trybu stosowany jest najpierw, a skrypt `repl` w [trybie kodu](/pl-PL/podrecznik/koncepcje/tryb-kodu/) może wywołać tylko narzędzia, które po nim zostały, przez tę samą bramkę co wywołanie bezpośrednie. Przypięte czasowniki trybu (jego czasownik wyjścia, `exit_plan_mode`, `ask_user`) oraz jego własna pętla (czasowniki węzłów przeglądu w trybie przeglądu) są zawsze wywoływane bezpośrednio, więc uruchomienie nigdy nie musi pisać skryptu, aby dostarczyć wynik albo zadać pytanie. W [trybie vibe](/pl-PL/podrecznik/poradniki/kierowanie-workerami-w-tle/) uruchomienie kierujące zachowuje tylko narzędzia odczytu i żadnych narzędzi dostępnych wyłącznie w skryptach, więc jego skrypty docierają tylko do nich.
+
 ## Wybieranie i zmienianie trybu
 
 Lista rozwijana trybów w polu tworzenia wiadomości oferuje **trzy** opcje: Agent (czat), Plan i Orkiestracja. Trybu `review` **nie można wybrać** — ustawia go system przy tworzeniu przestrzeni recenzji PR-a oraz kroki potoku.
@@ -87,4 +89,5 @@ Listy dozwolonych ograniczają narzędzia poziomu zapisu i wyższego. Poziom odc
 - [Model agentów](/pl-PL/podrecznik/koncepcje/model-agentow/): które transporty mogą egzekwować tryb
 - [Guardraile](/pl-PL/podrecznik/koncepcje/guardraile/): polityka klas efektów, do której trafia preset trybu
 - [Orkiestracja](/pl-PL/podrecznik/koncepcje/orkiestracja/): co robi zatwierdzona propozycja orkiestracji
+- [Tryb kodu](/pl-PL/podrecznik/koncepcje/tryb-kodu/): skrypty wywołujące narzędzia trybu
 - [Używaj trybu planu](/pl-PL/podrecznik/poradniki/tryb-planu/): praktyczny przewodnik

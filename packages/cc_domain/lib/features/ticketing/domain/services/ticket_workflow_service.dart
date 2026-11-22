@@ -99,12 +99,14 @@ class TicketWorkflowService {
     String? createdById,
     String? assignedTeamId,
     String? delegatedByAgentId,
+    String? delegatedFromConversationId,
     int delegationDepth = 0,
     String? delegationRootTicketId,
     String? parentTicketId,
     String? projectId,
     String? spaceId,
     Map<String, String> providerExtras = const {},
+    Map<String, dynamic> metadata = const {},
   }) async {
     final now = DateTime.now();
     final externalKey = provider == TicketProvider.local ? _uuid.v4() : null;
@@ -127,9 +129,11 @@ class TicketWorkflowService {
       createdById: createdById,
       assignedTeamId: assignedTeamId,
       delegatedByAgentId: delegatedByAgentId,
+      delegatedFromConversationId: delegatedFromConversationId,
       delegationDepth: delegationDepth,
       delegationRootTicketId: delegationRootTicketId,
       spaceId: spaceId,
+      metadata: metadata,
       createdAt: now,
       updatedAt: now,
     );
@@ -142,9 +146,8 @@ class TicketWorkflowService {
         occurredAt: now,
       ),
     );
-    if (parentTicketId != null) {}
     if (assignedAgentId != null || assignedTeamId != null) {
-      _publishAssigned(ticket);
+      _publishAssigned(ticket, byRunId: null);
     }
     return ticket;
   }
@@ -189,8 +192,10 @@ class TicketWorkflowService {
     required String assignedAgentId,
     String? parentTicketId,
     String? delegatedByAgentId,
+    String? delegatedFromConversationId,
     String? description,
     String? spaceId,
+    required Map<String, dynamic> metadata,
   }) async {
     Ticket? parent;
     if (parentTicketId != null) {
@@ -206,8 +211,10 @@ class TicketWorkflowService {
       description: description,
       assignedAgentId: assignedAgentId,
       delegatedByAgentId: delegatedByAgentId,
+      delegatedFromConversationId: delegatedFromConversationId,
       parentTicketId: parentTicketId,
       spaceId: spaceId,
+      metadata: metadata,
       delegationDepth: parent == null ? 1 : parent.delegationDepth + 1,
       delegationRootTicketId: parent?.delegationRootTicketId ?? parent?.id,
     );
@@ -315,7 +322,7 @@ class TicketWorkflowService {
       },
       onApplied: (before, after) {
         if (before.assignedAgentId != after.assignedAgentId) {
-          _publishAssigned(after);
+          _publishAssigned(after, byRunId: null);
         }
         if (before.status != after.status) {
           eventBus.publish(
@@ -573,6 +580,40 @@ class TicketWorkflowService {
     String? assigneeId,
     PrincipalType assigneeType = PrincipalType.agent,
     String? teamId,
+  }) => _assign(
+    ticketId,
+    workspaceId: workspaceId,
+    assigneeId: assigneeId,
+    assigneeType: assigneeType,
+    teamId: teamId,
+    byRunId: null,
+  );
+
+  /// [assign], made by the agent run [runId] (an attested `assign_ticket`
+  /// call): the [TicketAssigned] it publishes names that run, so a run the
+  /// assignment starts (a team leader's) records it as its starter.
+  Future<void> assignFromRun(
+    String ticketId, {
+    required String workspaceId,
+    required String? assigneeId,
+    required String? teamId,
+    required String runId,
+  }) => _assign(
+    ticketId,
+    workspaceId: workspaceId,
+    assigneeId: assigneeId,
+    assigneeType: PrincipalType.agent,
+    teamId: teamId,
+    byRunId: runId,
+  );
+
+  Future<void> _assign(
+    String ticketId, {
+    required String workspaceId,
+    required String? assigneeId,
+    required PrincipalType assigneeType,
+    required String? teamId,
+    required String? byRunId,
   }) async {
     await _mutate(
       ticketId,
@@ -584,7 +625,7 @@ class TicketWorkflowService {
         assignedTeamId: teamId,
         updatedAt: DateTime.now(),
       ),
-      onApplied: (before, after) => _publishAssigned(after),
+      onApplied: (before, after) => _publishAssigned(after, byRunId: byRunId),
     );
   }
 
@@ -613,7 +654,7 @@ class TicketWorkflowService {
           ),
         );
         if (toAgentId != null) {
-          _publishAssigned(after);
+          _publishAssigned(after, byRunId: null);
         }
       },
     );
@@ -928,7 +969,7 @@ class TicketWorkflowService {
     );
   }
 
-  void _publishAssigned(Ticket ticket) {
+  void _publishAssigned(Ticket ticket, {required String? byRunId}) {
     eventBus.publish(
       TicketAssigned(
         ticketId: ticket.id,
@@ -938,6 +979,7 @@ class TicketWorkflowService {
         assignedAgentId: ticket.assignedAgentId,
         assigneeType: ticket.assigneeType.wireName,
         assignedTeamId: ticket.assignedTeamId,
+        assigningRunId: byRunId,
         workspaceId: ticket.workspaceId,
         occurredAt: DateTime.now(),
       ),

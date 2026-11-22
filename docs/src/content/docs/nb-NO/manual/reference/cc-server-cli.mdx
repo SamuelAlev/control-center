@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: Alle flagg, miljøvariabler, underkommandoer og stier i datamappen til headless-serveren.
 slug: nb-NO/handbok/referanse/cc-server-cli
-sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
+sourceHash: ee71514a1721599da299a81b5702bc7cdb372330
 ---
 
 Hvert prosessflagg tar et CLI-flagg eller en miljøvariabel; flagget vinner,
@@ -10,10 +10,7 @@ deretter miljøet, deretter standardverdien. Leverandørlegitimasjon er
 unntaket — se [Leverandørapper og Connect](#leverandørapper-og-connect).
 
 :::caution[Ukjente flagg ignoreres i stillhet]
-Argumentparseren er håndskrevet og hopper over alt den ikke kjenner igjen, så en
-skrivefeil (`--tls-key-file`, `--bindany`) gir ingen feil — serveren starter bare
-med standardverdien. Sjekk linjene i oppstartsloggen når et flagg ser ut til å
-ikke ha noen effekt.
+Argumentparseren er håndskrevet og hopper over alt den ikke kjenner igjen, så en skrivefeil (`--tls-key-file`, `--bindany`) gir ingen feil — serveren starter bare med standardverdien. Sjekk linjene i oppstartsloggen når et flagg ser ut til å ikke ha noen effekt. Et [kodemodusflagg](#kodemodus) med en verdi den ikke godtar, er annerledes: serveren nekter å starte.
 :::
 
 ## Kjerne
@@ -51,8 +48,10 @@ ikke ha noen effekt.
 | `--sandbox`          | `CC_SERVER_SANDBOX`            | `on`                                  | `on` pakker agentkjøringer inn i vertens OS-native sandkasse, og på en vert uten en starter bare serverens eiers kjøringer. `off` kjører alle medlemmers agenter uten avgrensning på denne verten. Se nedenfor |
 | `--code-index`       | `CC_SERVER_CODE_INDEX`         | `on`                                  | Kill-bryter i felt for indeksering av kodegrafen i bakgrunnen. `off` starter rent uten å bygge på nytt                        |
 | `--code-index-defer` | `CC_SERVER_CODE_INDEX_DEFER`   | `15`                                  | Sekunder å vente med den første indeksgjennomgangen etter klar-banneret (begrenset til 0–300)                                 |
-| `--tool-deferral`    | `CC_SERVER_TOOL_DEFERRAL`      | `on`                                  | Om harnesskjøringer sender et lite fast verktøysett pluss en navneindeks, og laster resten ved første bruk. Se nedenfor       |
+| `--tool-deferral`    | `CC_SERVER_TOOL_DEFERRAL`      | `on`                                  | Om harnesskjøringer sender et lite direkte verktøysett pluss en navneindeks, og laster resten ved første bruk. Se nedenfor    |
 | `--credential-gate`  | `CC_SERVER_CREDENTIAL_GATE`    | `900`                                 | Sekunder en kjøring parkeres og venter på at et menneske fikser en legitimasjon den ikke kan bruke (begrenset til 0–3600). Se nedenfor |
+| `--code-mode-max-processes` | `CC_SERVER_CODE_MODE_MAX_PROCESSES` | `min(16, 2 × cores)` | Skript i kodemodus som kjører samtidig på denne serveren, ikke regnet de som venter på en person, 1–64. Se nedenfor |
+| `--code-mode-max-heap-mb` | `CC_SERVER_CODE_MODE_MAX_HEAP_MB` | `1024` | Mest minne ett skript kan bruke, 16–1024 MiB. Et arbeidsområdes høyere minnegrense senkes til denne |
 
 ## Leverandørapper og Connect
 
@@ -109,18 +108,9 @@ For automatisering er den ansvarlige personen den automatiseringen er knyttet ti
 
 ### `--tool-deferral`
 
-Kjøringer på det innebygde harnesset sender et lite fast sett med
-verktøydefinisjoner pluss en navneindeks over resten, som laster skjemaene sine
-første gang de brukes. Det kutter verktøyblokken med omtrent 78 % og holder det
-alltid synlige settet innenfor båndet der modeller velger verktøy pålitelig.
-Utsatte verktøy kan kalles ved navn hele tiden, og `search_tools` finner dem ut
-fra intensjon. Se [Verktøykontekst og promptbuffer](/nb-NO/handbok/konsepter/verktoykontekst).
+Innebygde harnesskjøringer sender et lite direkte sett med verktøydefinisjoner pluss en navneindeks over resten, som bare har navn, og som laster skjemaene sine første gang de brukes, eller kalles fra et `repl`-skript. Det holder det alltid synlige settet innenfor båndet der modeller velger verktøy pålitelig. Målt på registeret testene bygger, er standardverktøyene i chatten til den innebygde agenten 14 definisjoner: omtrent 16,5 KB med `repl` (omtrent 4 KB av dem er `repl`s, hvis definisjon ikke kan overstige 4 096 byte), og omtrent 13 KB på en server som ikke kan kjøre skript. Utsatte verktøy kan kalles ved navn hele tiden, og `search_tools` finner dem ut fra intensjon. Se [Verktøykontekst og promptbuffer](/nb-NO/handbok/konsepter/verktoykontekst/).
 
-`--tool-deferral off` gjør hvert tillatt verktøy fast igjen og gir nøyaktig de
-samme forespørslene serveren sendte før utsettelsen fantes. Det er kill-bryteren
-for en modell som håndterer flaten med to nivåer dårlig — et flagg i stedet for en
-ny bygging. Det påvirker bare det innebygde harnesset; MCP-`tools/list` som
-eksterne klienter ser, er alltid hele katalogen.
+`--tool-deferral off` sender hvert tillatt verktøys definisjon på forhånd, bortsett fra at en kjøring med `repl` fortsatt kaller verktøyene et skript kan kalle, fra skript. Det er kill-bryteren for en modell som håndterer flaten med to nivåer dårlig — et flagg i stedet for en ny bygging. Det påvirker bare det innebygde harnesset; MCP-`tools/list` som eksterne klienter ser, er hele katalogen, unntatt for en agentkjøring på en server som kan kjøre [kodemodus](/nb-NO/handbok/konsepter/kodemodus/)-skript.
 
 ### `--credential-gate`
 
@@ -138,6 +128,25 @@ ville ha mislykkes med.
 
 `--credential-gate=0` er kill-bryteren: ingenting parkeres noensinne, og en dårlig
 legitimasjon avslutter turen nøyaktig som før porten fantes.
+
+### Kodemodus
+
+[Kodemodus](/nb-NO/handbok/konsepter/kodemodus/) lar en agent kjøre et JavaScript-skript som kaller verktøyene sine. Det finnes ingen innstilling som slår det av eller på: hver kjøring får `repl`-verktøyet når serveren kan kjøre skript, og en offentlig demoserver kjører ingen.
+
+Skript kjører i `cc_codemode`, et program som følger med serveren i `bin/codemode/`. Serveren starter ikke uten det: den skriver ut én linje som nevner hva som mangler, og avsluttes med kode `78`. Ved oppstart kjører den selvtesten for låsingen i programmet og skriver ut én linje (dempes bare av `--log-level error`):
+
+```text
+cc_server: code_mode=available (cc_codemode 0.1.0 quickjs-ng 0.16.2 protocol 2; 16 scripts at once, at most 12 per workspace; up to 64 more runners kept for scripts waiting on a person; heap at most 1024 MiB per script)
+cc_server: code_mode=unavailable (<reason>) — runs on this host get no repl tool; scripts never run without full lockdown
+```
+
+`unavailable` betyr at programmet ikke kan låse seg selv på denne verten, for eksempel i en container hvis sikkerhetsprofil avviser ett av trinnene, eller at den ikke er et utgivelsesbygg. Serveren kjører normalt, ingen kjøring får `repl`, og innstillingene for kodemodus i arbeidsområdet viser årsaken.
+
+Serveren fortsetter å sjekke mens den kjører. Når programmet ikke starter av en grunn som ikke skyldes skriptet, kjører serveren selvtesten igjen, høyst én gang i minuttet. Feiler den, skriver serveren linjen `unavailable` med årsaken og kjører ingen skript: kjøringer som starter i mellomtiden får ingen `repl`, og en kjøring som allerede har den, kaller verktøyene sine direkte ([Når skript ikke kan kjøres](/nb-NO/handbok/konsepter/kodemodus/#når-skript-ikke-kan-kjøres)). Den fortsetter å sjekke, høyst én gang i minuttet, og når selvtesten igjen består, skriver den linjen `available` og kjører skript igjen. Bare en selvtest som feilet ved oppstart, krever en omstart. Årsaken arbeidsområdets innstillinger viser, har vertsstier fjernet; logglinjen har den fullstendig.
+
+De to flaggene for kodemodus setter øvre grenser for hva skript kan bruke. `--code-mode-max-processes` begrenser skriptene som kjører samtidig på tvers av alle arbeidsområder (standard to ganger antall prosessorkjerner, høyst 16; godtas 1–64). Med en grense på 2 eller mer bruker ett arbeidsområde høyst grensen minus en fjerdedel av den, slik at ingen enkelt arbeidsområde kan ta alle plassene, og ventende skript slipper inn etter tur på tvers av arbeidsområder. Et skript som venter på en persons godkjenning eller svar, gir plassen sin til et annet skript og starter ingen verktøykall før den er besvart; inntil fire ganger grensen av slike ventende skript beholdes, høyst tre firedeler av dem fra ett arbeidsområde, og hvert av dem kan fortsatt gjøre beregninger innenfor sin egen grense for prosessortid. `--code-mode-max-heap-mb` er det mest minne ett skript kan bruke.
+
+En verdi disse flaggene ikke godtar (et tall utenfor området, eller noe som ikke er et tall), stopper serveren ved oppstart (avslutningskode `78`), med en melding som nevner de godtatte verdiene. Den leses aldri som standarden.
 
 ## Underkommandoer
 
@@ -242,6 +251,7 @@ Serveren holder datamappen privat for sin egen konto (`0700`). Den nekter å sta
 | `backups/exports/`                | Eksporter av enkeltarbeidsområder, `<workspaceId>-<timestamp>.db`                |
 | `backups/transfer/`               | Mellomlagring for ned- og opplasting av sikkerhetskopier; ryddes av ruten som skriver den |
 | `models/`                         | Innbyggings-, diariserings- og talemodeller på enheten                           |
+| `codemode/` | En utviklingskopi av kjøreren for kodemodus, installert av `scripts/natives/build_codemode.sh`; utgivelsespakkene har den i `bin/codemode/` |
 | `meetings/<meetingId>/`           | Lagret møtelyd                                                                   |
 | `rigs/images/`                    | Importerte diskavbildninger for stasjoner (QEMU-skrivebordsflaten)               |
 | `rigs/smolvm/<rigId>/`            | Kjøretidstilstand per stasjon for mikro-VM-er (meglerhemmeligheten, `0600`)      |

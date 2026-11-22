@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
+import 'package:cc_domain/core/domain/value_objects/script_call_origin.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/l10n/phone_widgets_localizations.dart';
 import 'package:cc_remote/l10n/remote_locales.dart';
@@ -217,5 +218,36 @@ void main() {
     );
     expect(find.text('Approve').hitTestable(), findsOneWidget);
     expect(find.text('Deny').hitTestable(), findsOneWidget);
+  });
+
+  testWidgets('a request a script raised says so, and only then', (
+    tester,
+  ) async {
+    ConfirmationRequestDto request({ScriptCallOrigin? origin}) =>
+        ConfirmationRequestDto(
+          id: 'approval-1',
+          spaceId: '',
+          title: 'Run git push',
+          detail: '',
+          severity: 'warning',
+          createdAt: '',
+          origin: origin,
+        );
+    await tester.pumpWidget(
+      host(
+        ApprovalCard(
+          request: request(
+            origin: ScriptCallOrigin(
+              parentToolCallId: 'r1',
+              executionId: 'run/r1',
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(find.text('From a script the agent is running'), findsOneWidget);
+
+    await tester.pumpWidget(host(ApprovalCard(request: request())));
+    expect(find.text('From a script the agent is running'), findsNothing);
   });
 }

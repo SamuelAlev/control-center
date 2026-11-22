@@ -39,7 +39,7 @@ A run that ends without its plan is still recorded with status `completed` — t
 
 There is a second, separate way out: `exit_plan_mode`. It is a hard approval gate, not an output verb — an agent that calls it instead of `submit_plan` has delivered nothing. The first call opens a durable `plan_exit` approval and returns `pending` and the space stays read-only; repeat calls stay `pending` rather than opening a second gate. Only once the approval is granted does a subsequent call flip the space to chat. A rejection lets the agent open a fresh request for a revised plan.
 
-To leave plan mode yourself, switch the composer dropdown (or Shift+Tab). `exit_plan_mode` is decided with the `decide_approval` MCP tool. Inbox "agent approval" rows are a different thing: per-turn confirmation prompts from a running agent.
+To leave plan mode yourself, switch the composer dropdown (or Shift+Tab). `exit_plan_mode` is decided by an agent run with the `decide_approval` MCP tool. Inbox "agent approval" rows are a different thing: per-turn confirmation prompts from a running agent.
 
 ### Review — read-only, no contract
 
@@ -63,6 +63,8 @@ Nothing in the proposal executes until you approve it. On approval a determinist
 
 **Read-only modes do not deny network access or secrets.** The effect classes review, plan and orchestrate refuse are the ones that change the world: file deletion, writes outside the worktree, commits, pushes, PR creation and publication, vendor sync writes, package installs, process spawning, workspace mutation and enclosure control. Network egress and secret access stay at their defaults on purpose — research is the entire point of a read-only mode.
 
+**Code mode never widens a mode.** The mode's tool filter is applied first, and a [code mode](/manual/concepts/code-mode/) `repl` script can call only the tools left after it, through the same gate as a direct call. The mode's pinned verbs (its output verb, `exit_plan_mode`, `ask_user`) and its own loop (the review node verbs in review mode) are always called directly, so a run never has to write a script to deliver its deliverable or ask a question. In [vibe mode](/manual/guides/direct-background-workers/) the directing run keeps only read tools and no script-only tools, so its scripts reach only those.
+
 ## Choosing and changing a mode
 
 The composer's mode dropdown offers **three** options: Agent (chat), Plan and Orchestrate. `review` is **not user-selectable** — it is set by the system when a PR review space is created and by pipeline steps.
@@ -85,4 +87,5 @@ The allow-lists constrain write-tier-and-above tools. The built-in harness's rea
 - [The agent model](/manual/concepts/agent-model/): which transports can enforce a mode
 - [Guardrails](/manual/concepts/guardrails/): the effect-class policy a mode's preset feeds into
 - [Orchestration](/manual/concepts/orchestration/): what an approved orchestrate proposal does
+- [Code mode](/manual/concepts/code-mode/): scripts that call the mode's tools
 - [Use plan mode](/manual/guides/plan-mode/): the practical walkthrough

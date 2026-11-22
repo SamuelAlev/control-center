@@ -43,7 +43,10 @@ extension _BuildMethods on _SpaceMessageFeedState {
 
         if (isVisible && !_cursorSnapshotTaken) {
           final liveCursorAsync = ref.watch(
-            spaceUserLastReadAtProvider(widget.spaceId),
+            conversationLastReadProvider((
+              spaceId: widget.spaceId,
+              conversationId: widget.conversationId,
+            )),
           );
           if (liveCursorAsync.hasValue) {
             _readFrontier = liveCursorAsync.value?.at;
@@ -123,8 +126,10 @@ extension _BuildMethods on _SpaceMessageFeedState {
         // [_estimateRowExtent], which reads it.
         syncListExtents(_listController, previousSlots, _slotKeysByIndex);
 
+        final toolFocus = ref.watch(pendingFocusToolCallProvider);
         if (isVisible) {
           _maybeConsumePendingFocus(historyPending: showMore);
+          _maybeConsumePendingToolFocus(toolFocus);
         }
 
         final keep = {for (final row in rows) ?messageIdOfRowKey(row.key)};

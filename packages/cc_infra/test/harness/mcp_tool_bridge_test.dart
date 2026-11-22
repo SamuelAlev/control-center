@@ -1,5 +1,6 @@
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 import 'package:cc_domain/features/mcp/domain/value_objects/capability_tier.dart';
+import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_infra/src/harness/mcp_tool_bridge.dart';
 import 'package:test/test.dart';
@@ -23,6 +24,54 @@ class _ImageMcpTool extends McpTool {
   @override
   Future<CallResult> run(Map<String, dynamic> arguments) async =>
       CallResult.withImages('captured', images);
+}
+
+/// Returns a structured result beside its text and declares its schema.
+class _StructuredMcpTool extends McpTool {
+  @override
+  String get name => 'count_things';
+  @override
+  String get description => 'counts';
+  @override
+  Map<String, dynamic> get inputSchema => const {'type': 'object'};
+  @override
+  Map<String, dynamic> get outputSchema => const {
+    'type': 'object',
+    'properties': {
+      'n': {'type': 'integer'},
+    },
+  };
+
+  @override
+  bool get waitsOnPerson => true;
+
+  @override
+  Future<CallResult> run(Map<String, dynamic> arguments) async =>
+      CallResult.success('3 things', structured: {'n': 3});
+}
+
+class _NamedMcpTool extends McpTool {
+  _NamedMcpTool(this.name, {this.scriptCallable = true, this.refusal});
+
+  @override
+  final String name;
+  @override
+  final bool scriptCallable;
+
+  /// What a script's call with an `assignee` is refused with, if anything.
+  final String? refusal;
+
+  @override
+  String? scriptArgumentRefusal(Map<String, dynamic> arguments) =>
+      arguments.containsKey('assignee') ? refusal : null;
+  @override
+  String get description => 'named';
+  @override
+  Map<String, dynamic> get inputSchema => const {'type': 'object'};
+
+  @override
+  Future<CallResult> run(Map<String, dynamic> arguments) async =>
+      CallResult.success('ok');
 }
 
 class _FakeMcpTool extends McpTool {
@@ -57,6 +106,21 @@ class _FakeMcpTool extends McpTool {
   Future<CallResult> run(Map<String, dynamic> arguments) async {
     lastArgs = arguments;
     return CallResult.success('facts');
+  }
+}
+
+/// Records the scope the bridge hands a tool that asks for it.
+class _RunScopedMcpTool extends _FakeMcpTool {
+  McpCallScope? lastScope;
+
+  @override
+  Future<CallResult> callForRun(
+    Map<String, dynamic> arguments,
+    McpCallScope scope, {
+    Future<void>? abandoned,
+  }) {
+    lastScope = scope;
+    return call(arguments, abandoned: abandoned);
   }
 }
 
@@ -213,6 +277,25 @@ void main() {
       },
     );
 
+    test("hands the tool the run's own attested scope, with its run", () async {
+      final tool = _RunScopedMcpTool();
+      await McpToolBridge(tool, runLogId: 'run-3').execute(
+        const {},
+        const HarnessToolContext(
+          workingDirectory: '.',
+          workspaceId: 'ws-1',
+          agentId: 'agent-1',
+          conversationId: 'conv-1',
+        ),
+      );
+      final scope = tool.lastScope!;
+      expect(scope.attested, isTrue);
+      expect(scope.runLogId, 'run-3');
+      expect(scope.agentId, 'agent-1');
+      expect(scope.conversationId, 'conv-1');
+      expect(tool.lastArgs?['workspace_id'], 'ws-1');
+    });
+
     test('forces the context workspace_id over a model-supplied one', () async {
       // Isolation boundary: a model-supplied foreign workspace_id must be
       // overridden with the run's workspace, never honored.
@@ -338,6 +421,59 @@ void main() {
         expect(result.images, hasLength(1));
         expect(result.images.single.data, 'AAAA');
       });
+    });
+  });
+
+  group('McpToolBridge script callability', () {
+    test('a bridged tool is script callable exactly when the MCP tool says '
+        'so, whatever its name', () {
+      expect(
+        McpToolBridge(
+          _NamedMcpTool('consult_agent', scriptCallable: false),
+        ).scriptCallable,
+        isFalse,
+      );
+      // The name alone decides nothing: no list of names is kept here.
+      expect(McpToolBridge(_NamedMcpTool('repl')).scriptCallable, isTrue);
+      expect(McpToolBridge(_NamedMcpTool('todo_write')).scriptCallable, isTrue);
+      expect(McpToolBridge(_StructuredMcpTool()).scriptCallable, isTrue);
+    });
+
+    test('a script\'s call is refused the arguments the MCP tool refuses', () {
+      final bridge = McpToolBridge(
+        _NamedMcpTool('create_ticket', refusal: 'assign directly'),
+      );
+      expect(
+        bridge.scriptArgumentRefusal({'assignee': 'a'}),
+        'assign directly',
+      );
+      expect(bridge.scriptArgumentRefusal({'title': 't'}), isNull);
+    });
+  });
+
+  group('McpToolBridge structured results', () {
+    test('passes the structured value and output schema through', () async {
+      final bridge = McpToolBridge(_StructuredMcpTool());
+      expect(bridge.outputSchema, _StructuredMcpTool().outputSchema);
+      expect(bridge.waitsOnPerson, isTrue);
+      final result = await bridge.execute(
+        const {},
+        const HarnessToolContext(workingDirectory: '.', workspaceId: 'ws-1'),
+      );
+      expect(result.content, '3 things');
+      expect(result.structured, {'n': 3});
+    });
+
+    test('a text-only tool has neither', () async {
+      final bridge = McpToolBridge(_FakeMcpTool());
+      expect(bridge.outputSchema, isNull);
+      expect(bridge.waitsOnPerson, isFalse);
+      expect(bridge.scriptCallable, isTrue);
+      final result = await bridge.execute(
+        const {},
+        const HarnessToolContext(workingDirectory: '.', workspaceId: 'ws-1'),
+      );
+      expect(result.structured, isNull);
     });
   });
 }

@@ -2,23 +2,33 @@
 title: Vòng đời điều phối agent
 description: Điều gì diễn ra giữa lúc một tin nhắn đến và lúc một log lượt chạy khép lại — việc lắp ghép prompt, worktree, danh tính, điều gì giới hạn một lượt chạy và cách ghi lại kết quả của nó một cách trung thực.
 slug: vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent
-sourceHash: 13e7fe3ed86c8659c5fec818e0b89737241e2b9d
+sourceHash: 07c46e22e30f1a10e64b7fb949c78bdae9747efa
 ---
 
 ## Một lần điều phối là gì
 
 Một lần điều phối là một lượt chạy của một agent, trong một cuộc hội thoại, trên một adapter. Mọi thứ về nó đều diễn ra trên `cc_server`: máy khách gửi một tin nhắn rồi quan sát dòng sự kiện chảy ngược về. Không có đường điều phối nào trong bất kỳ máy khách nào.
 
-Agent được đánh thức vì sáu lý do, và lượt chạy mang chúng dưới dạng **ngữ cảnh đánh thức** để agent biết _vì sao_ nó thức:
+Mỗi lượt chạy mang một **ngữ cảnh đánh thức** cho biết _vì sao_ agent được đánh thức. Lượt chạy bạn bắt đầu bằng cách gửi một tin nhắn là `userMessage`; mọi lượt chạy do máy chủ tự khởi động đều bắt đầu như một **lượt đánh thức** bền vững trong hàng đợi của không gian làm việc và mang lý do của lượt đánh thức đó (xem [Lịch và lượt đánh thức](/vi-VN/so-tay/huong-dan-thuc-hanh/lich-va-danh-thuc/)):
 
 | Lý do đánh thức  | Trình kích hoạt                                               |
-| ---------------- | ------------------------------------------------------------ |
-| `userMessage`    | Ai đó gửi một tin nhắn trong một space, hoặc nhắc đến agent  |
+| -------------------- | ------- |
+| `userMessage`    | Ai đó gửi một tin nhắn trong một space                       |
 | `assignment`     | Một phiếu được giao cho agent                                |
 | `pipelineStep`   | Một bước quy trình đã điều phối nó                           |
-| `childCompleted` | Một phiếu con đã hoàn tất                                    |
-| `followUp`       | Một nhịp tim theo dõi đã được lên lịch                       |
-| `recovery`       | Đường khôi phục đã điều phối lại sau một thất bại           |
+| `childCompleted` | Một phiếu được ủy thác hoặc phiếu con đã hoàn tất, hoặc lần chạy của một thành viên nhóm đã kết thúc |
+| `schedule` | Một lịch hoặc vòng lặp đã được kích hoạt |
+| `watch` | Một sự kiện mà một watch đang theo dõi đã xảy ra (kiểm chứng của pull request, một đánh giá, một môi trường, một phiếu, một lần chạy pipeline) |
+| `goalContinuation` | Phân đoạn tiếp theo của một mục tiêu |
+| `goalVerification` | Kiểm chứng hoặc đánh giá của một mục tiêu cho thấy nó chưa xong |
+| `goalReview` | Đánh giá chỉ đọc về việc một mục tiêu tuyên bố đã xong |
+| `peerMessage` | Một agent khác đã gửi cho nó một tin nhắn hoặc câu hỏi, hoặc nó được @-nhắc đến, hoặc nó là bộ kiểm tra của space |
+| `peerReply`      | Câu trả lời cho một câu hỏi mà nó đã hỏi một agent khác     |
+| `limitReset` | Một giới hạn sử dụng của nhà cung cấp mà nó đã dừng lại đã được đặt lại |
+| `improvementReview` | Đánh giá sau một mục tiêu đã được kiểm chứng, hoặc `/refine` |
+| `recovery` | Công việc mà việc khởi động lại máy chủ hoặc một thất bại đã làm gián đoạn |
+
+Lượt đánh thức được đưa vào một lần chạy đang hoạt động của agent trong cuộc hội thoại đó khi lần chạy đó nhận đầu vào và hành động cho cùng một người; nếu không, nó chờ lần chạy đó kết thúc rồi bắt đầu lần chạy riêng của mình. Lệnh slash chỉ được đọc trong tin nhắn do một người gõ; trong mọi lần chạy khác, cùng nội dung đó là một tin nhắn thông thường.
 
 Ngữ cảnh đánh thức mang các id đi kèm lý do — phiếu, space, tin nhắn, lượt chạy quy trình — và chúng được tiêm vào môi trường cùng prompt của agent.
 
@@ -104,17 +114,17 @@ Cố ý **không có giới hạn số lượt ở bất cứ đâu**. Một s�
 - **mô hình tự dừng**;
 - **một người dừng nó**, hoặc tiếp quản cuộc hội thoại (việc này tạm dừng harness tích hợp ở ranh giới lượt sạch tiếp theo — còn một lượt chạy Claude Code, vốn không có ranh giới an toàn, thì bị dừng thay vì tạm dừng);
 - **bộ giám sát im lặng kích hoạt.** Không có đầu ra trong suốt ngưỡng thời gian thì phiên bị kết thúc với lỗi `silentRun`. Mặc định là 15 phút, giảm còn 10 ở những chế độ chủ yếu đọc (rà soát và kế hoạch); agent có thể ghi đè trong khoảng 1 đến 240 phút. Bộ giám sát được kích hoạt khi một tiến trình con báo PID của nó, nên nó bao được CLI Claude Code — **không** bao harness tích hợp, vốn không khởi tạo gì;
-- **một trần chi phí có hiệu lực** — nhưng chỉ với các lệnh tự chủ.
+- **một trần chi phí có hiệu lực** — trên các segment và đánh giá của mục tiêu, các lần chạy của lịch và watch, đánh giá cải tiến, và các lần chạy pipeline dưới một điều phối có trần.
 
 Rào chắn vòng lặp chết không phải là thứ chấm dứt: ba lời gọi công cụ giống hệt nhau liên tiếp và vòng lặp _điều hướng_ agent đổi cách làm.
 
 :::note[Một lượt bình thường không có trần chi phí]
-Rào chắn chi phí trong phiên chỉ được nối cho `/goal` và `/loop`; mọi lượt chạy khác không truyền ngân sách nào cả. Với những lệnh đó, một phân đoạn không người trông mặc định có thể đốt 500 cent ($5.00), với một lần điều hướng mềm ở mức 80% yêu cầu agent kết thúc gọn gàng trước khi dừng cứng, và một ngân sách mục tiêu bền vững 5000 cent ($50.00) xuyên các phân đoạn. Một `/goal --budget` rõ ràng không bao giờ bị vượt quá nguyên một phân đoạn.
+Một lượt chạy bạn bắt đầu bằng tin nhắn không có ngân sách. Một segment của mục tiêu có thể chi 5 đô la, hoặc phần còn lại của ngân sách mục tiêu (mặc định 50 đô la) nếu ít hơn; một lần đánh giá của mục tiêu 2 đô la; một lần chạy do lịch hoặc watch khởi động 5 đô la; đánh giá cải tiến 1 đô la. Ở mức 90%, harness tích hợp và Claude Code hướng agent kết thúc gọn gàng trước khi dừng cứng; một agent ACP bị hủy khi chạm trần. Xem [Quản lý chi phí](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-chi-phi/#giới-hạn-một-lượt-chạy-tự-chủ).
 :::
 
 Gộp lại, một lượt tương tác thông thường trên harness tích hợp không có giới hạn số lượt, không có trần chi phí và không có bộ giám sát im lặng. Nó kết thúc khi mô hình dừng hoặc khi bạn dừng nó. Đó là một đánh đổi có chủ đích — mọi phương án thay thế đều giết công việc dài chính đáng — nhưng nó cũng có nghĩa là một lượt chạy tương tác không người trông chỉ bị giới hạn bởi chính phán đoán của mô hình.
 
-Giữa lượt chạy, một tin nhắn gửi tới agent đang chạy được xếp hàng như **điều hướng** và được xử lý ở ranh giới lượt kế tiếp, nên bạn có thể thúc nhẹ một lượt chạy mà không giết nó. Điều hướng, tạm dừng, subagent và hợp đồng hoàn tất là những tính năng của harness tích hợp; Claude Code không có thứ nào trong số đó.
+Giữa lượt chạy, một tin nhắn gửi tới agent đang chạy được xếp hàng như **điều hướng** và được xử lý ở ranh giới lượt kế tiếp, nên bạn có thể thúc nhẹ một lượt chạy mà không giết nó. Lượt chạy chỉ đọc, chẳng hạn như đánh giá của một mục tiêu, không nhận tin nhắn nào trong khi nó chạy, và điều hướng một lượt chạy làm việc cho người khác cần quyền ghi vào các kho mã của không gian. Điều hướng, tạm dừng, subagent và hợp đồng hoàn tất là những tính năng của harness tích hợp; Claude Code không có thứ nào trong số đó.
 
 ## Cách một lượt chạy được ghi lại
 
@@ -130,11 +140,11 @@ Khi một lượt chạy kết thúc mà không có kết quả giao mà chế �
 Đây là chủ ý. Đảo trạng thái sẽ làm dịch chuyển máy trạng thái của phiếu và quy trình, những thứ chẳng liên quan gì đến artifact còn thiếu. Nó cũng có nghĩa là chỉ "status: completed" thì không bao giờ đủ để kết luận một lượt chạy thành công — hãy đọc bản tóm tắt.
 :::
 
-Việc đóng lượt chạy phát `AgentRunCompleted` và rất nhiều thứ phụ thuộc vào nó: việc tổng hợp chi phí quy trình, việc tiếp tục một bước quy trình đang chờ lượt chạy, việc hoàn tất phiếu đứng sau, việc ánh xạ một điều phối sang một trạng thái cuối, quyết định tiếp tục hay dừng của bộ giám sát mục tiêu, vai trò trình kiểm tra và việc đánh giá ngân sách sau lượt chạy. Danh sách hiện diện theo sau một cách riêng, bằng cách quan sát các log lượt chạy gần đây thay vì sự kiện. Thông báo “Agent đã hoàn tất” không nằm trong danh sách đó: sự kiện được phát khi luồng của tiến trình kết thúc, trước khi câu trả lời được ghi, nên thông báo chính là `MessageReceived` của lượt hội thoại, được phát sau khi tin nhắn đã được lưu bền vững.
+Khi trạng thái cuối của lượt chạy đã được ghi, máy chủ phát `AgentRunSettled` đúng một lần, kèm lý do lượt chạy kết thúc (`completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` hoặc `serverStopped`), và rất nhiều thứ phụ thuộc vào nó: tổng hợp chi phí quy trình, việc tiếp tục một bước quy trình đang chờ lượt chạy, việc hoàn tất phiếu đứng sau, việc ánh xạ một điều phối sang trạng thái cuối, quyết định tiếp tục hay dừng của bộ giám sát mục tiêu, câu trả lời cho một câu hỏi mà agent khác đã hỏi, lần kích hoạt tiếp theo của một vòng lặp tự nhịp, việc tạm dừng ở giới hạn sử dụng, vai trò trình kiểm tra và việc đánh giá ngân sách sau lượt chạy. Lượt chạy bị máy chủ dừng ngang (`serverStopped`) không bao giờ bị coi là thất bại; công việc tiếp tục sau khi khởi động lại. `AgentRunCompleted` vẫn được phát, sớm hơn, chỉ dành cho cầu nối pull request và phân tích. Danh sách hiện diện theo sau một cách riêng, bằng cách quan sát các log lượt chạy gần đây thay vì sự kiện. Thông báo “Agent đã hoàn tất” không nằm trong danh sách đó: sự kiện được phát khi luồng của tiến trình kết thúc, trước khi câu trả lời được ghi, nên thông báo chính là `MessageReceived` của lượt hội thoại, được phát sau khi tin nhắn đã được lưu bền vững.
 
 ## Ngân sách, sau khi việc đã rồi
 
-Việc thi hành ngân sách là một _phản ứng_, không phải một cổng chặn. Khi một lượt chạy hoàn tất, bộ đánh giá so sánh chi tiêu từ đầu tháng đến nay của agent với mức trần hiệu dụng của nó (một chính sách ngân sách được liên kết nếu có, nếu không thì con số hàng tháng của chính agent; số không nghĩa là không giới hạn). Vượt ngưỡng mềm ghi lại một sự cố cảnh báo; cạn ngân sách ghi lại một sự cố cứng và đảo trạng thái vòng đời của agent thành `paused` trên sơ đồ tổ chức. Việc điều phối vẫn nhận công việc từ agent đó. Một trình kích hoạt quy trình `BudgetThresholdCrossed` có thể bắt đầu công việc tiếp nối từ chính sự kiện đó.
+Việc thi hành ngân sách là một _phản ứng_, không phải một cổng chặn. Khi một lượt chạy hoàn tất, bộ đánh giá so sánh chi tiêu từ đầu tháng đến nay của agent với mức trần hiệu dụng của nó (một chính sách ngân sách được liên kết nếu có, nếu không thì con số hàng tháng của chính agent; số không nghĩa là không giới hạn). Vượt ngưỡng mềm ghi lại một sự cố cảnh báo; cạn ngân sách ghi lại một sự cố cứng và đảo trạng thái vòng đời của agent thành `paused` trên sơ đồ tổ chức. Việc điều phối vẫn nhận công việc bạn gửi cho agent đó, nhưng các lượt đánh thức dành cho nó (lịch, segment mục tiêu, phản hồi) sẽ chờ trong khi nó đang tạm dừng, tối đa 7 ngày. Một trình kích hoạt quy trình `BudgetThresholdCrossed` có thể bắt đầu công việc tiếp nối từ chính sự kiện đó.
 
 ## Dòng dõi thử lại
 
@@ -147,4 +157,5 @@ Mỗi log lượt chạy có thể mang dòng dõi thử lại — id lượt ch
 - [Rào chắn](/vi-VN/so-tay/khai-niem/rao-chan/): chính sách theo lớp hiệu ứng mà mọi lời gọi bị gác đều đi qua
 - [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/): toàn bộ câu chuyện cách ly
 - [Đa người dùng](/vi-VN/so-tay/khai-niem/da-nguoi-dung/): điều hướng, tiếp quản và nút tự chủ
-- [Sự kiện miền](/vi-VN/so-tay/khai-niem/su-kien-mien/): những gì `AgentRunCompleted` khởi động
+- [Sự kiện miền](/vi-VN/so-tay/khai-niem/su-kien-mien/): những gì `AgentRunSettled` khởi động
+- [Theo đuổi một mục tiêu](/vi-VN/so-tay/huong-dan-thuc-hanh/theo-duoi-muc-tieu/) và [Lịch và lượt đánh thức](/vi-VN/so-tay/huong-dan-thuc-hanh/lich-va-danh-thuc/): các lần chạy do máy chủ tự khởi động

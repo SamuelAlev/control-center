@@ -143,10 +143,15 @@ Future<void> handleConversationToolCommand({
 /// Returns the ORIGINAL text when the interview cannot run (no one-shot
 /// model configured, a failed call) and null only when the person dismissed
 /// the dialog outright — a goal must never be lost to an interviewer.
+///
+/// [goalAgentId] is the agent the goal will go to, as far as the
+/// conversation surface can tell: the dialog does not offer it as the
+/// checker and suggests one on another provider.
 Future<String?> sharpenGoalObjective({
   required WidgetRef ref,
   required BuildContext context,
   required String rough,
+  required String? goalAgentId,
 }) {
   final port = ref.read(messagingServiceProvider);
   final workspaceId = ref.requireWorkspaceId();
@@ -154,6 +159,7 @@ Future<String?> sharpenGoalObjective({
     context: context,
     builder: (context) => GuidedGoalDialog(
       rough: rough,
+      goalAgentId: goalAgentId,
       step: (transcript) => port.guidedGoalStep(
         workspaceId: workspaceId,
         rough: rough,
@@ -201,7 +207,10 @@ Future<void> handleAsideCommand({
     return;
   }
   if (result.unavailable) {
-    toast?.show(l10n.contentSynthesizerUnavailable, variant: CcToastVariant.warning);
+    toast?.show(
+      l10n.contentSynthesizerUnavailable,
+      variant: CcToastVariant.warning,
+    );
     return;
   }
   if (result.empty) {

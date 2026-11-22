@@ -7,6 +7,7 @@ import 'package:cc_persistence/cc_persistence.dart' show ServerSettingDao;
 import 'package:cc_server_core/src/file_secrets_store.dart';
 import 'package:cc_server_core/src/media_proxy_guard.dart'
     show isBlockedProxyTarget, resolvesToBlockedAddress;
+import 'package:cc_server_core/src/server_boot_refusal.dart' show printableText;
 
 /// Which Connect this server uses, if any.
 enum ConnectMode {
@@ -205,7 +206,8 @@ final class ConnectEnvironmentInvalid implements Exception {
 
   /// What the operator reads.
   String get message =>
-      'cc_server: refusing to start — CC_CONNECT_URL is not usable: $reason '
+      'cc_server: refusing to start \u2014 CC_CONNECT_URL is not usable: '
+      '${printableText(reason, max: 300)} '
       'Set it to hosted, off or a Connect URL (https://, or http:// on this '
       'machine only), or unset it.';
 

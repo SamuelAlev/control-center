@@ -2,6 +2,7 @@ import 'package:cc_domain/features/newsfeed/domain/entities/rss_article.dart';
 import 'package:cc_domain/features/newsfeed/domain/entities/rss_feed.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/newsfeed/presentation/widgets/article_card.dart';
+import 'package:control_center/features/newsfeed/presentation/widgets/article_grid_delegate.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -79,7 +80,7 @@ void main() {
     expect(find.text('Test Article'), findsOneWidget);
   });
 
-  testWidgets('renders article summary', (tester) async {
+  testWidgets('leaves the summary to the reader view', (tester) async {
     tester.view.physicalSize = const Size(300, 400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
@@ -102,7 +103,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('This is a test summary.'), findsOneWidget);
+    expect(find.text('This is a test summary.'), findsNothing);
   });
 
   testWidgets('renders feed name when provided', (tester) async {
@@ -240,5 +241,66 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.text('Test Article'), findsOneWidget);
+  });
+
+  group('in the grid', () {
+    for (final width in [420.0, 900.0, 1500.0]) {
+      for (final scale in [1.0, 1.6]) {
+        testWidgets('fits its content tightly at ${width}px, ${scale}x text', (
+          tester,
+        ) async {
+          tester.view.physicalSize = Size(width, 1600);
+          tester.view.devicePixelRatio = 1.0;
+          addTearDown(() {
+            tester.view.resetPhysicalSize();
+            tester.view.resetDevicePixelRatio();
+          });
+          final article = _makeArticle(
+            title: 'A headline long enough to wrap past two lines ' * 4,
+            summary: 'A summary long enough to wrap past two lines ' * 6,
+          );
+
+          await tester.pumpWidget(
+            _wrap(
+              MediaQuery.withClampedTextScaling(
+                minScaleFactor: scale,
+                maxScaleFactor: scale,
+                child: Builder(
+                  builder: (context) => CustomScrollView(
+                    slivers: [
+                      SliverGrid(
+                        gridDelegate: ArticleGridDelegate(
+                          bodyHeight: ArticleCard.bodyHeight(
+                            MediaQuery.textScalerOf(context),
+                          ),
+                        ),
+                        delegate: SliverChildListDelegate([
+                          ArticleCard(
+                            article: article,
+                            feed: _makeFeed(),
+                            onTap: () {},
+                            onToggleSaved: () {},
+                          ),
+                        ]),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pump(const Duration(milliseconds: 200));
+
+          expect(tester.takeException(), isNull);
+          // Two title lines and the meta row fill the card: the Spacer
+          // between them has only the rounding [ArticleCard.bodyHeight] adds
+          // to reach a whole pixel, and a summary adds no height.
+          expect(
+            tester.getSize(find.byType(Spacer)).height,
+            lessThanOrEqualTo(1),
+          );
+        });
+      }
+    }
   });
 }

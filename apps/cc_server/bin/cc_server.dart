@@ -33,6 +33,17 @@ Commands:
   connect            Show or change which Control Center Connect this server
                      uses (status | enable [--url URL] | disable).
 
+Code mode (a value the server does not accept stops it at start):
+  --code-mode-max-processes N
+                     Runner slots on this server, 1 to 64: scripts that
+                     start tools at once; up to four times as many may be
+                     parked on a person besides
+                     (CC_SERVER_CODE_MODE_MAX_PROCESSES).
+  --code-mode-max-heap-mb N
+                     The most heap one script may use, 16 to 1024 MiB;
+                     workspace limits above it are lowered to it
+                     (CC_SERVER_CODE_MODE_MAX_HEAP_MB).
+
 Information (does not open databases or start services):
   --help, -h         Show this help.
   --version, -v      Print the build version.
@@ -56,18 +67,19 @@ https://github.com/SamuelAlev/control-center/tree/main/apps/cc_server
     exit(0);
   }
 
+  // A refusal (a configuration the server does not accept, a missing
+  // native) ends every command the same way: one line on stderr, exit 78,
+  // nothing created.
   if (args.isNotEmpty && args.first == 'pair') {
-    await _pair(args.sublist(1));
-    return;
+    await _exitWith(() => runPairCommand(args: args.sublist(1)));
   }
 
   if (args.isNotEmpty && args.first == 'update') {
-    await _update(args.sublist(1));
-    return;
+    await _exitWith(() => runUpdateCommand(args: args.sublist(1)));
   }
 
   if (args.isNotEmpty && args.first == 'connect') {
-    exit(await runConnectCommand(args: args.sublist(1)));
+    await _exitWith(() => runConnectCommand(args: args.sublist(1)));
   }
 
   // Run the whole server under a guarded zone so an uncaught async error in a
@@ -79,22 +91,15 @@ https://github.com/SamuelAlev/control-center/tree/main/apps/cc_server
 
 /// Boots the server, waits for a shutdown signal, then tears down and exits.
 Future<void> _runServer(List<String> args) async {
-  final CcServer server;
+  final CcServer? server;
   try {
-    server = await runCcServer(args: args, connectHost: buildEmbeddedConnect);
-  } on ProviderSecretInEnvironmentException catch (e) {
-    // An exported provider secret is an operator mistake, not a crash: say
-    // what to do instead and end the process.
-    stderr.writeln(e.message);
-    exit(78);
-  } on ConnectEnvironmentInvalid catch (e) {
-    stderr.writeln(e.message);
-    exit(78);
-  } on ServerBootRefusal catch (e) {
-    // A data dir others can read, an identity file that cannot be read: the
-    // operator has to resolve it, and the message says how.
-    stderr.writeln(e.message);
-    exit(78);
+    // An exported provider secret, a data dir others can read, a missing
+    // native, a setting the server does not accept: the operator has to
+    // resolve it, and the message says how, on one line and without a
+    // stack ([runOrRefuse]).
+    server = await runOrRefuse(
+      () => runCcServer(args: args, connectHost: buildEmbeddedConnect),
+    );
   } on SocketException catch (e) {
     // A failed bind must END the process. The guarded zone only RECORDS an
     // uncaught error, so without this the server stayed alive with no listener
@@ -102,13 +107,19 @@ Future<void> _runServer(List<String> args) async {
     // against the same database as the instance that owns the port. That reads
     // as "started but stuck": no ready banner, nothing to connect to and two
     // processes fighting over SQLite.
-    stderr.writeln(
-      'cc_server: cannot start — ${e.osError?.message ?? e.message} '
-      '(${e.address?.host}:${e.port}).\n'
-      'Another cc_server is already running on that port — either the desktop '
-      "app's embedded server or a previous run. Stop it, or pass --port.",
-    );
+    stderr.writeln(bindFailureLines(e));
     exit(1);
+  } on Object catch (e, stack) {
+    // Anything else before ready ends the process too, non-zero and in one
+    // line: the guarded zone only records an error, so one that escaped
+    // here left a process that ended with status 0 and printed a stack.
+    // The stack goes to the log file when it is open by then.
+    final logged = recordBootFailure(e, stack);
+    stderr.writeln(bootFailureLine(e, logged: logged));
+    exit(failedExitCode);
+  }
+  if (server == null) {
+    exit(refusedExitCode);
   }
 
   final done = Completer<void>();
@@ -154,112 +165,24 @@ Future<void> _runServer(List<String> args) async {
   try {
     await server.shutdown().timeout(const Duration(seconds: 12));
   } on Object catch (e) {
-    stderr.writeln('cc_server: shutdown did not complete cleanly: $e');
+    stderr.writeln(shutdownFailureLine(e));
   }
   await stdout.flush();
   exit(0);
 }
 
-/// Provisions a paired device against the data dir and prints the pairing key —
-/// plus a deep link + terminal QR when a `--client-url` (the web client's
-/// origin) is supplied — for a thin client to connect.
-Future<void> _pair(List<String> args) async {
-  final config = CcServerConfig.resolve(args);
-  final result = await pairDevice(
-    config: config,
-    deviceId: _flag(args, 'device') ?? 'web-client',
-    label: _flag(args, 'label'),
-  );
-
-  // `any`-bind requires TLS (LocalRpcServer refuses plaintext off-loopback), so
-  // a reachable URL is wss; loopback is plain ws. `--host` overrides the host
-  // in the printed/encoded URL (loopback can't be reached from a phone — pass
-  // the Mac's LAN IP or a tunnel host).
-  final scheme = config.bindAny ? 'wss' : 'ws';
-  final host =
-      _flag(args, 'host') ?? (config.bindAny ? '<this-host>' : 'localhost');
-  final serverUrl = '$scheme://$host:${config.port}/rpc';
-
-  stdout.writeln('Paired a device in ${result.dataDir}');
-  stdout
-    ..writeln('')
-    ..writeln('Connect a thin client (paste into its connect form):')
-    ..writeln('  Server      $serverUrl')
-    ..writeln('  Device id   ${result.deviceId}')
-    ..writeln('  Pairing key ${result.psk}')
-    ..writeln('');
-
-  final clientUrl = _flag(args, 'client-url');
-  if (clientUrl != null && clientUrl.isNotEmpty) {
-    final deepLink = buildWebClientDeepLink(
-      clientUrl: clientUrl,
-      serverUrl: serverUrl,
-      deviceId: result.deviceId,
-      psk: result.psk,
-    );
-    stdout
-      ..writeln('Scan to open the web client and connect:')
-      ..writeln('')
-      ..write(renderQrToAnsi(deepLink))
-      ..writeln('')
-      ..writeln(deepLink)
-      ..writeln('');
-  } else {
-    stdout.writeln(
-      'Tip: pass --client-url <web app origin> (and --bind any --host '
-      '<LAN ip>) to print a scannable QR a phone can open.',
-    );
+/// Runs a command (`pair`, `update`, `connect`) and ends the process with
+/// its exit code. A refusal it returns as 78 with one line; any other error
+/// ends it with 70 (`EX_SOFTWARE`) and one line, never an unhandled
+/// exception's stack.
+Future<Never> _exitWith(Future<int> Function() command) async {
+  int code;
+  try {
+    code = await command();
+  } on Object catch (e) {
+    stderr.writeln(commandFailureLine(e));
+    code = failedExitCode;
   }
-
-  stdout.writeln(
-    'Start the server: cc_server --data-dir ${result.dataDir} '
-    '--port ${config.port}${config.bindAny ? ' --bind any' : ''}',
-  );
-  if (config.bindAny) {
-    stdout.writeln(
-      '  A public (--bind any) bind needs TLS: pass --tls-cert <pem> '
-      '--tls-key <pem> for direct wss://, or run behind a TLS-terminating '
-      'reverse proxy and add --insecure (plaintext on a trusted network only).',
-    );
-  }
-}
-
-/// Runs the standalone-server self-update flow. Opt-in and never silent:
-/// without `--apply` it only checks for, downloads and verifies a newer
-/// release into a staging directory next to the install; `--apply`
-/// additionally refuses while a live server answers on the configured port
-/// (unless `--force` is passed with eyes open). A published release OLDER
-/// than this binary is refused unless `--allow-downgrade` is passed.
-Future<void> _update(List<String> args) async {
-  final config = CcServerConfig.resolve(args);
-  final runner = ServerUpdateRunner(
-    log: stdout.writeln,
-    probeUri: Uri.parse('http://127.0.0.1:${config.port}/healthz'),
-  );
-  final code = await runner.run(
-    apply: _flagBool(args, 'apply'),
-    force: _flagBool(args, 'force'),
-    allowDowngrade: _flagBool(args, 'allow-downgrade'),
-  );
   await stdout.flush();
   exit(code);
-}
-
-/// Reads `--name` (bare boolean flag) from [args].
-bool _flagBool(List<String> args, String name) {
-  return args.contains('--$name') || args.any((a) => a == '--$name=true');
-}
-
-/// Reads `--name value` or `--name=value` from [args]; null if absent.
-String? _flag(List<String> args, String name) {
-  for (var i = 0; i < args.length; i++) {
-    final a = args[i];
-    if (a == '--$name' && i + 1 < args.length) {
-      return args[i + 1];
-    }
-    if (a.startsWith('--$name=')) {
-      return a.substring(name.length + 3);
-    }
-  }
-  return null;
 }

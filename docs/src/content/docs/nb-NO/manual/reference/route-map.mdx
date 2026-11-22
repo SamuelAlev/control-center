@@ -2,7 +2,7 @@
 title: Rutekart
 description: Alle ruter Control Center registrerer, med tilhørende skjermbilde og spørringsparametere.
 slug: nb-NO/handbok/referanse/rutekart
-sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
+sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
 ---
 
 ## Appskallet
@@ -40,6 +40,12 @@ Stiene nedenfor utelater prefikset `/workspaces/:workspaceId`.
 | `/pipelines`                            | —                                         | Liste over pipeline-kjøringer                                                                                                                                            |
 | `/pipelines/run`                        | `?templateId=<id>`                        | Oppstarter for manuell kjøring                                                                                                                                           |
 | `/pipelines/:runId`                     | —                                         | Detaljer for pipeline-kjøring (tidslinje for steg)                                                                                                                        |
+| `/goals` | — | Liste over mål, gruppert som venter på gjennomgang, åpne og avsluttede |
+| `/goals/:goalId` | `?edit=contract` | Ett mål: nå, hva ferdig betyr, verifisering, tidsplaner og vekkinger; `edit=contract` åpner kontraktredigeringen for et pauset mål |
+| `/schedules` | — | Tidsplaner og overvåkinger, gruppert etter status, med **Ny tidsplan** |
+| `/schedules/:ruleId` | — | Én tidsplan: notat, detaljer, nylige vekkinger og kjøringer |
+| `/improvements` | — | Forbedringsforslag, gruppert etter status |
+| `/improvements/:proposalId` | — | Ett forslag: hva som endres, belegg, evaluering og beslutning |
 | `/plans`                                | —                                         | Plan Studio-samlingsside: aktive planer, plandokumenter, playbooks                                                                                                        |
 | `/plans/:kind/:id`                      | —                                         | Plan Studio for én plan; `kind` er `orchestration` eller `document`                                                                                                       |
 | `/meetings`                             | —                                         | Møteliste                                                                                                                                                                |
@@ -99,6 +105,7 @@ Innstillingsstiene er inndelt i navnerom etter **omfang** — `you/`, `workspace
 | `/settings/workspace/skills`       | Konfigurasjon av skills                                                                      |
 | `/settings/memory`                 | Arbeidsområdets minne: fakta, policyer, kunnskapsgraf                                        |
 | `/settings/workspace/permissions`  | Agenttillatelser: regelmatrise og «Hva om?»-probe                                            |
+| `/settings/workspace/schedules` | Grenser for tidsplaner, tidssonen for cron-tidsplaner og sammendraget, og hvor lenge serverstartede kjøringer venter på et svar (administratorer redigerer; medlemmer leser) |
 | `/settings/pipelines`              | Pipeline-maler                                                                               |
 | `/settings/pipelines/:templateId`  | Editor for pipeline-maler (lerret med dra og slipp)                                          |
 

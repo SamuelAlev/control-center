@@ -1,11 +1,15 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:cc_domain/core/domain/events/messaging_events.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_server_core/src/catalog/notification_feed_visibility.dart';
 import 'package:cc_server_core/src/file_secrets_store.dart';
+import 'package:cc_server_core/src/notification_wire.dart'
+    show messageReceivedFrame;
 import 'package:cc_server_core/src/push/web_push_repository.dart';
 import 'package:cc_server_core/src/push/web_push_service.dart';
 import 'package:cc_server_core/src/push/web_push_transport.dart';
@@ -26,6 +30,8 @@ class _RecordingTransport extends WebPushTransport {
   final reachedSend = Completer<void>();
   int attempts = 0;
   int delivered = 0;
+  final quiet = <bool>[];
+  final payloads = <Map<String, dynamic>>[];
 
   @override
   Future<PushDeliveryResult> send({
@@ -33,8 +39,11 @@ class _RecordingTransport extends WebPushTransport {
     required VapidIdentity vapid,
     required Uint8List payload,
     Future<bool> Function()? maySend,
+    bool quiet = false,
   }) async {
     attempts++;
+    this.quiet.add(quiet);
+    payloads.add(jsonDecode(utf8.decode(payload)) as Map<String, dynamic>);
     enteredPreparation.complete();
     if (releasePreparation != null) {
       await releasePreparation;
@@ -400,6 +409,111 @@ void main() {
     expect(transport.delivered, 1);
   });
 
+  test('a quiet push is low urgency and carries its kind, quiet and goal '
+      'route', () async {
+    final transport = _RecordingTransport();
+    final scoped = WebPushService(
+      repository: repository,
+      devices: database.pairedDeviceDao,
+      workspaceExists: (_) async => true,
+      isMember: (_, _) async => true,
+      canViewNotification: (_, _) async => true,
+      ownerUserId: 'alice',
+      viewerLogin: (_, _) async => '',
+      vapid: (await VapidIdentity.generate()).identity,
+      transport: transport,
+    );
+    await repository.save(
+      'device-a',
+      const PushSubscriptionRecord(
+        endpoint: 'https://fcm.googleapis.com/fcm/send/private',
+        p256dh: 'opaque',
+        auth: 'opaque',
+        categories: {'agentRunCompleted'},
+        quiet: false,
+      ),
+    );
+    scoped.onRecorded(
+      NotificationFeedItem(
+        id: 'goal-done',
+        workspaceId: 'workspace-1',
+        method: 'notifications/goal_settled',
+        params: const {
+          'goal_id': 'goal-1',
+          'space_id': 'space-1',
+          'notification_kind': 'notify',
+          'quiet': true,
+        },
+        seq: 0,
+        createdAt: DateTime.now(),
+      ),
+    );
+    await transport.reachedSend.future;
+    await scoped.dispose();
+    expect(transport.quiet, [true]);
+    expect(transport.payloads.single, {
+      'v': 1,
+      'route': '/goals/goal-1?workspace_id=workspace-1',
+      'kind': 'activity',
+      'notification_kind': 'notify',
+      'quiet': true,
+    });
+  });
+
+  test('a new message (notify, not quiet) is sent at normal urgency and '
+      'sounds, as before this build', () async {
+    final transport = _RecordingTransport();
+    final scoped = WebPushService(
+      repository: repository,
+      devices: database.pairedDeviceDao,
+      workspaceExists: (_) async => true,
+      isMember: (_, _) async => true,
+      canViewNotification: (_, _) async => true,
+      ownerUserId: 'alice',
+      viewerLogin: (_, _) async => '',
+      vapid: (await VapidIdentity.generate()).identity,
+      transport: transport,
+    );
+    await repository.save(
+      'device-a',
+      const PushSubscriptionRecord(
+        endpoint: 'https://fcm.googleapis.com/fcm/send/private',
+        p256dh: 'opaque',
+        auth: 'opaque',
+        // A message that does not mention the device's person is sent under
+        // `agentRunCompleted`.
+        categories: {'agentRunCompleted'},
+        quiet: false,
+      ),
+    );
+    scoped.onRecorded(
+      NotificationFeedItem(
+        id: 'msg-1',
+        workspaceId: 'workspace-1',
+        method: 'notifications/message_received',
+        // The frame the server builds for an agent's reply.
+        params: messageReceivedFrame(
+          MessageReceived(
+            spaceId: 'space-1',
+            messageId: 'm-1',
+            senderName: 'Bot',
+            contentPreview: 'done',
+            isAgentMessage: true,
+            workspaceId: 'workspace-1',
+            occurredAt: DateTime(2026),
+          ),
+        )!.params,
+        seq: 0,
+        createdAt: DateTime.now(),
+      ),
+    );
+    await transport.reachedSend.future;
+    await scoped.dispose();
+    expect(transport.quiet, [false]);
+    expect(transport.payloads.single['quiet'], isFalse);
+    expect(transport.payloads.single['notification_kind'], 'notify');
+  });
+
   test(
     'expired provider subscription is deleted after HTTP 410 or 404',
     () async {
@@ -440,4 +554,77 @@ void main() {
       expect(await repository.read('device-a'), isNull);
     },
   );
+
+  test("a goal's outcome pushes like a finished run, a review like a wait", () {
+    expect(
+      categoryForPush('notifications/goal_settled', {
+        'notification_kind': 'notify',
+      }),
+      'agentRunCompleted',
+    );
+    expect(
+      categoryForPush('notifications/goal_settled', {
+        'notification_kind': 'review',
+      }),
+      'agentAwaitingInput',
+    );
+    expect(
+      safePushRoute('ws-1', 'notifications/goal_settled', {
+        'goal_id': 'goal-1',
+        'space_id': 'space-1',
+        'conversation_id': 'conv-1',
+      }),
+      '/goals/goal-1?workspace_id=ws-1',
+    );
+    // A goal id the phone could not route falls back to the space.
+    expect(
+      safePushRoute('ws-1', 'notifications/goal_settled', {
+        'goal_id': '../admin',
+        'space_id': 'space-1',
+      }),
+      '/spaces/space-1?workspace_id=ws-1',
+    );
+  });
+
+  test('a rule that ended opens its schedule, the digest the activity list',
+      () {
+    expect(
+      safePushRoute('ws 1', 'notifications/wake_rule_ended', {
+        'rule_id': 'rule-1',
+        'space_id': 'space-1',
+      }),
+      '/schedules/rule-1?workspace_id=ws+1',
+    );
+    expect(
+      safePushRoute('ws-1', 'notifications/waiting_digest', {'count': 2}),
+      '/activity?workspace_id=ws-1',
+    );
+    expect(
+      safePushRoute('ws-1', 'notifications/wake_rule_ended', {
+        'rule_id': 'a/b',
+      }),
+      '/inbox?workspace_id=ws-1',
+    );
+  });
+
+  test('the wire message is low urgency only when asked', () async {
+    final keys = (await WebPushKeySet.newKeyPair()).publicKey;
+    final subscription = PushSubscriptionRecord(
+      endpoint: 'https://fcm.googleapis.com/fcm/send/abc',
+      p256dh: keys.p256dh,
+      auth: keys.auth,
+      categories: const {'agentRunCompleted'},
+      quiet: false,
+    );
+    final vapid = (await VapidIdentity.generate()).identity;
+    for (final quiet in [true, false]) {
+      final wire = await buildWebPushWireMessage(
+        subscription: subscription,
+        vapid: vapid,
+        payload: Uint8List.fromList([1]),
+        quiet: quiet,
+      );
+      expect(wire.headers['Urgency'], quiet ? 'low' : 'normal');
+    }
+  });
 }

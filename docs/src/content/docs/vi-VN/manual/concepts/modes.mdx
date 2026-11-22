@@ -2,7 +2,7 @@
 title: Chế độ
 description: Vì sao một space, chứ không phải một agent, mang chế độ; mỗi chế độ trong bốn chế độ bảo đảm điều gì; và ở đâu bảo đảm đó mang tính cấu trúc chứ không chỉ được nhắc trong prompt.
 slug: vi-VN/so-tay/khai-niem/che-do
-sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
+sourceHash: 4450ebc86d95efb0366bc3f0ab4ddebc6d3a3adb
 ---
 
 ## Chế độ là gì
@@ -41,7 +41,7 @@ Một lượt chạy kết thúc mà không có kế hoạch vẫn được ghi 
 
 Còn một lối thoát thứ hai, tách biệt: `exit_plan_mode`. Đây là một cổng phê duyệt cứng, không phải một động từ đầu ra — một agent gọi nó thay vì `submit_plan` thì chưa giao được gì. Lời gọi đầu tiên mở một phê duyệt `plan_exit` bền vững và trả về `pending`, còn space vẫn chỉ đọc; những lời gọi lặp lại vẫn ở `pending` thay vì mở thêm cổng thứ hai. Chỉ khi phê duyệt được chấp thuận thì một lời gọi sau đó mới chuyển space sang chế độ trò chuyện. Một lần từ chối cho phép agent mở một yêu cầu mới cho một kế hoạch đã chỉnh sửa.
 
-Để tự mình rời chế độ Kế hoạch, hãy đổi hộp chọn trong trình soạn (hoặc Shift+Tab). `exit_plan_mode` được quyết định bằng công cụ MCP `decide_approval`. Các hàng "phê duyệt agent" trong Hộp thư là chuyện khác: đó là những lời nhắc xác nhận theo từng lượt từ một agent đang chạy.
+Để tự mình rời chế độ Kế hoạch, hãy đổi hộp chọn trong trình soạn (hoặc Shift+Tab). `exit_plan_mode` được một lần chạy agent quyết định bằng công cụ MCP `decide_approval`. Các hàng "phê duyệt agent" trong Hộp thư là chuyện khác: đó là những lời nhắc xác nhận theo từng lượt từ một agent đang chạy.
 
 ### Rà soát — chỉ đọc, không có hợp đồng
 
@@ -65,6 +65,8 @@ Không có gì trong đề xuất được thực thi cho tới khi bạn phê d
 
 **Các chế độ chỉ đọc không từ chối truy cập mạng hay secret.** Những lớp hiệu ứng mà Rà soát, Kế hoạch và Điều phối từ chối là những lớp làm thay đổi thế giới: xóa tệp, ghi bên ngoài worktree, tạo commit, push, tạo và xuất bản PR, ghi đồng bộ với nhà cung cấp, cài gói, sinh tiến trình, biến đổi không gian làm việc và điều khiển enclosure. Lưu lượng mạng ra ngoài và quyền truy cập secret vẫn giữ nguyên mặc định là có chủ đích — nghiên cứu chính là toàn bộ ý nghĩa của một chế độ chỉ đọc.
 
+**Chế độ code không bao giờ mở rộng một chế độ.** Bộ lọc công cụ của chế độ được áp dụng trước, và một tập lệnh `repl` của [chế độ code](/vi-VN/so-tay/khai-niem/che-do-code/) chỉ có thể gọi những công cụ còn lại sau bộ lọc đó, qua cùng cổng như lệnh gọi trực tiếp. Các động từ được ghim của chế độ (động từ đầu ra của nó, `exit_plan_mode`, `ask_user`) và vòng lặp riêng của nó (các động từ của nút rà soát trong chế độ Rà soát) luôn được gọi trực tiếp, nên một lần chạy không bao giờ phải viết tập lệnh để giao sản phẩm hay đặt câu hỏi. Trong [chế độ vibe](/vi-VN/so-tay/huong-dan-thuc-hanh/dieu-khien-worker-nen/), lần chạy điều hướng chỉ giữ các công cụ đọc và không giữ công cụ chỉ dành cho tập lệnh, nên các tập lệnh của nó chỉ tới được những công cụ đó.
+
 ## Chọn và đổi chế độ
 
 Hộp chọn chế độ của trình soạn đưa ra **ba** lựa chọn: Agent (trò chuyện), Kế hoạch và Điều phối. `review` **không cho người dùng chọn** — nó do hệ thống đặt khi một space xem xét PR được tạo và do các bước quy trình đặt.
@@ -87,4 +89,5 @@ Các danh sách cho phép ràng buộc những công cụ từ cấp ghi trở l
 - [Mô hình agent](/vi-VN/so-tay/khai-niem/mo-hinh-agent/): những kênh truyền nào có thể thực thi một chế độ
 - [Rào chắn](/vi-VN/so-tay/khai-niem/rao-chan/): chính sách lớp hiệu ứng mà preset của một chế độ đổ vào
 - [Điều phối](/vi-VN/so-tay/khai-niem/dieu-phoi/): một đề xuất điều phối đã được phê duyệt sẽ làm gì
+- [Chế độ code](/vi-VN/so-tay/khai-niem/che-do-code/): các tập lệnh gọi công cụ của chế độ
 - [Dùng chế độ kế hoạch](/vi-VN/so-tay/huong-dan-thuc-hanh/che-do-ke-hoach/): hướng dẫn thực hành từng bước

@@ -2,7 +2,7 @@
 title: Maliyetleri yönetme
 description: Ajanlarınızın ne kadar harcadığını görün, özerk bir çalıştırmaya üst sınır koyun ve token kullanımını azaltın.
 slug: tr-TR/kilavuz/nasil-yapilir/maliyetleri-yonetme
-sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
+sourceHash: 040176a3840653a57c823ce4ff7e3ed9cf071c07
 ---
 
 Bu kılavuz, ajan çalıştırmalarının ne kadara mal olduğunu nasıl göreceğinizi ve
@@ -69,36 +69,30 @@ ile listeler. Bu sekme maliyet **göstermez** — bunun için Gözlemlenebilirli
 
 ## Özerk bir çalıştırmaya üst sınır koyun
 
-Bir alanın yazı alanına yazılan iki slash komutu, harcama üst sınırı olan tek
-çalıştırmalardır:
+Bu çalıştırmaların harcama üst sınırı vardır. Bir mesaj göndererek başlattığınız çalıştırmanın yoktur.
 
 ```
 /goal ship the auth refactor --budget 20
-/loop keep the flaky tests green
+/loop every 1h --budget 10 keep the flaky tests green
 ```
 
-- Bir `/goal` veya `/loop` çalıştırmasının her segmenti, fiyatlandırılmış
-  harcaması **500 sent ($5.00)** değerine ulaştığında durur. Bunun %80'inde
-  döngü önce modeli işi toparlamaya ve temiz bir devir bırakmaya yönlendirir;
-  böylece görev ortasında ölmez.
-- Kalıcı bir hedefin tamamı, `--budget <dollars>` vermediğiniz sürece **5000
-  sent ($50.00)** ile sınırlıdır. Gözetmen, hedefin _kalan_ bütçesini her
-  segmente aktarır; böylece açıkça verilen bir bütçe asla bir segmentin tamamı
-  kadar aşılmaz.
-- `--days N` bir duvar saati son tarihi, `--max N` ise bir çalıştırma sayısı
-  üst sınırı ekler. İkisi de isteğe bağlıdır; bunlar olmadan hedef yalnızca
-  maliyetle sınırlanır.
-- Sınırına dayanan bir hedef `budgetExhausted` durumunda durur ve yalnızca
-  bütçe yükseltilerek sürdürülebilir.
+| Çalıştırma | Üst sınır |
+| --- | --- |
+| Bir hedefin bir bölümü | 5 dolar ya da hedefin bütçesinden kalan, hangisi düşükse |
+| Bir hedef | `--budget <dollars>` vermediğiniz sürece 50 dolar |
+| Bir hedefin incelemesi | 2 dolar ya da kalan, hedefe yüklenir |
+| Bir zamanlamanın ya da izlemenin başlattığı bir çalıştırma | 5 dolar; zamanlama kendi maliyet sınırında durur (`--budget` vermediğiniz sürece 50 dolar ya da çalışma alanının varsayılanı) |
+| Bir hedefin sonrasındaki inceleme ya da `/refine` | 1 dolar |
 
-Üst sınır fiyatlandırılmış olduğundan, kataloğun fiyatlandıramadığı bir model
-ona asla ulaşamaz. Böyle bir çalıştırma bunun yerine kısır döngü yineleme
-korumasıyla, gözetmenin arka arkaya üç başarısızlıktan sonra pes etmesiyle ve
-sizinle sınırlanır.
+- Sınırlı bir çalıştırma, fiyatlandırılmış harcaması sınıra ulaştığında durur; bu, yerleşik harness, Claude Code ve ACP ajanları için geçerlidir. Sınırın %90'ında yerleşik harness ve Claude Code önce ajanı işi toparlamaya ve temiz bir devir bırakmaya yönlendirir; böylece görev ortasında ölmez. Bir ACP ajanı sınırda iptal edilir.
+- Hedefin _kalan_ bütçesi her segmente aktarılır; böylece açıkça verilen bir bütçe asla bir segmentin tamamı kadar aşılmaz.
+- `--days N` bir son tarih, `--max N` ise bir bölüm üst sınırı ekler. İkisi de isteğe bağlıdır; bunlar olmadan hedef maliyetle ve ilerleme olmayan durma koşuluyla sınırlanır.
+- Bütçesine ulaşan bir hedef **Bütçe tükendi** durumunda durur ve yalnızca daha yüksek bir bütçeyle sürdürülür; bunu yalnızca hedefi başlatan kişi verebilir.
+- Orkestrasyonunun üst sınırında tutulan bir pipeline çalıştırması, isteyenin pipeline çalıştırmasının sayfasında **Sınırı artır** düğmesine basana kadar bekler. Yeni sınır eskisinden ve harcananın üstünde olmalıdır, en fazla 1.000 dolar; bir sınır asla kaldırılmaz.
 
-Bir alandaki mesajın, bir @ anmasının veya bir pipeline adımının harcama üst
-sınırı yoktur. Çalıştırma, model durduğunda, siz onu durdurduğunuzda ya da
-kısır döngü koruması onu yönlendirdiğinde biter.
+Üst sınır fiyatlandırılmış olduğundan, kataloğun fiyatlandıramadığı bir model ona asla ulaşamaz. Böyle bir çalıştırma bunun yerine kısır döngü yineleme korumasıyla, hedefin ilerleme olmayan durma koşuluyla, arka arkaya üç başarısızlıktan sonra vazgeçmesiyle ve sizinle sınırlanır.
+
+Bir alandaki mesajın, bir @ anmasının ya da sınırlı bir orkestrasyon dışındaki bir pipeline adımının harcama üst sınırı yoktur. Çalıştırma, model durduğunda, siz onu durdurduğunuzda ya da kısır döngü koruması onu yönlendirdiğinde biter.
 
 ## Token kullanımını azaltın
 

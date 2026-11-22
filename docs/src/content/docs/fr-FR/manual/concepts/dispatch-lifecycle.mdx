@@ -2,23 +2,33 @@
 title: Cycle de vie du lancement d'un agent
 description: Ce qui se passe entre l'arrivée d'un message et la fermeture d'un journal d'exécution — assemblage du prompt, arbres de travail, identité, ce qui borne une exécution et comment son résultat est consigné honnêtement.
 slug: fr-FR/manuel/concepts/cycle-de-vie-du-lancement
-sourceHash: 13e7fe3ed86c8659c5fec818e0b89737241e2b9d
+sourceHash: 07c46e22e30f1a10e64b7fb949c78bdae9747efa
 ---
 
 ## Ce qu'est un lancement
 
 Un lancement correspond à une exécution d'un agent, dans une conversation, sur un adaptateur. Tout se déroule sur `cc_server` : le client envoie un message puis regarde les événements affluer en retour. Aucun client ne comporte de chemin de lancement.
 
-Les agents sont réveillés pour six raisons, que l'exécution transporte sous forme de **contexte de réveil**, afin que l'agent sache _pourquoi_ il est réveillé :
+Chaque exécution porte un **contexte de relance** qui indique _pourquoi_ l'agent est réveillé. Une exécution que vous lancez en envoyant un message est `userMessage` ; chaque exécution que le serveur lance de lui-même commence par une **relance** durable dans la file de l'espace de travail et porte la raison de cette relance (voir [Planifications et relances](/fr-FR/manuel/guides/planifications-relances/)) :
 
 | Motif de réveil  | Déclencheur                                                     |
-| ---------------- | --------------------------------------------------------------- |
-| `userMessage`    | Quelqu'un a envoyé un message dans un espace ou a mentionné l'agent |
+| -------------------- | ------- |
+| `userMessage`    | Quelqu'un a envoyé un message dans un espace                        |
 | `assignment`     | Un ticket a été assigné à l'agent                               |
 | `pipelineStep`   | Une étape de pipeline l'a lancé                                 |
-| `childCompleted` | Un ticket enfant s'est terminé                                  |
-| `followUp`       | Un battement de relance planifié                                |
-| `recovery`       | Le chemin de récupération a relancé après un échec              |
+| `childCompleted` | Un ticket délégué ou enfant s'est terminé, ou l'exécution d'un membre de l'équipe s'est terminée |
+| `schedule` | Une planification ou une boucle s'est déclenchée |
+| `watch` | Un événement écouté par une surveillance s'est produit (vérifications d'une pull request, revue, environnement, ticket, exécution d'un pipeline) |
+| `goalContinuation` | Le prochain segment d'un objectif |
+| `goalVerification` | Les vérifications ou la revue d'un objectif ont constaté qu'il n'est pas encore terminé |
+| `goalReview` | La revue en lecture seule de l'affirmation d'un objectif selon laquelle il est terminé |
+| `peerMessage` | Un autre agent lui a envoyé un message ou une question, ou il a été @-mentionné, ou il est le vérificateur de l'espace |
+| `peerReply`      | La réponse à une question qu'il a posée à un autre agent        |
+| `limitReset` | Une limite d'utilisation du fournisseur à laquelle il s'est arrêté a été réinitialisée |
+| `improvementReview` | La revue qui suit un objectif vérifié, ou `/refine` |
+| `recovery` | Le travail qu'un redémarrage du serveur ou un échec a interrompu |
+
+Une relance est livrée dans une exécution en cours de l'agent dans cette conversation lorsque cette exécution accepte une saisie et agit pour la même personne ; sinon elle attend la fin de cette exécution et démarre la sienne. Les commandes slash ne sont lues que dans un message tapé par une personne ; dans toute autre exécution, le même texte est un message ordinaire.
 
 Le contexte de réveil transporte les identifiants associés au motif — ticket, espace, message, exécution de pipeline — et ceux-ci sont injectés dans l'environnement et le prompt de l'agent.
 
@@ -104,17 +114,17 @@ Il n'y a délibérément **aucun plafond de tours, nulle part**. Un nombre d'it�
 - **le modèle s'arrête** de lui-même ;
 - **un humain l'arrête**, ou prend le contrôle de la conversation (ce qui met le harnais intégré en pause à sa prochaine frontière de tour propre — une exécution Claude Code, qui n'a pas de frontière sûre, est arrêtée à la place) ;
 - **le chien de garde d'inactivité se déclenche.** Aucune sortie pendant le seuil et la session est interrompue avec un échec `silentRun`. La valeur par défaut est de 15 minutes, ramenée à 10 dans les modes essentiellement consultatifs (revue et plan) ; un agent peut la remplacer entre 1 et 240 minutes. Le chien de garde est armé lorsqu'un processus enfant signale son PID, il couvre donc la CLI Claude Code — **pas** le harnais intégré, qui ne lance aucun processus ;
-- **un plafond de coût se déclenche** — mais uniquement pour les commandes autonomes.
+- **un plafond de coût se déclenche** — sur les segments et revues d'objectif, les exécutions de planification et de surveillance, la revue d'amélioration et les exécutions de pipeline sous une orchestration plafonnée.
 
 Le garde-fou contre les boucles infernales n'est pas un terminateur : trois appels d'outil identiques d'affilée et la boucle _oriente_ l'agent vers un autre angle d'attaque.
 
 :::note[Un tour normal n'a pas de plafond de coût]
-Le garde-fou de coût en session n'est câblé que pour `/goal` et `/loop` ; toute autre exécution ne transmet aucun budget. Pour ces commandes, un segment non surveillé peut brûler 500 cents (5,00 $) par défaut, avec une orientation en douceur à 80 % demandant à l'agent de conclure proprement avant l'arrêt net, et un budget d'objectif durable de 5 000 cents (50,00 $) tous segments confondus. Un `/goal --budget` explicite n'est jamais dépassé d'un segment entier.
+Une exécution que vous lancez avec un message n'a aucun budget. Un segment d'objectif peut dépenser 5 dollars, ou ce qui reste du budget de l'objectif (50 dollars par défaut) si c'est moins ; une revue d'objectif 2 dollars ; une exécution lancée par une planification ou une surveillance 5 dollars ; la revue d'amélioration 1 dollar. À 90 %, le harnais intégré et Claude Code incitent l'agent à conclure proprement avant l'arrêt définitif ; un agent ACP est annulé au plafond. Voir [Gérer les coûts](/fr-FR/manuel/guides/gerer-couts/#plafonner-une-exécution-autonome).
 :::
 
 Pris dans leur ensemble, un tour interactif ordinaire sur le harnais intégré n'a ni plafond de tours, ni plafond de coût, ni chien de garde d'inactivité. Il se termine lorsque le modèle s'arrête ou lorsque vous l'arrêtez. C'est un compromis délibéré — les alternatives tuent toutes du travail long légitime — mais cela signifie qu'une exécution interactive non surveillée n'est bornée par rien d'autre que le jugement du modèle lui-même.
 
-En cours d'exécution, un message envoyé à un agent actif est mis en file comme **pilotage** et vidé à la frontière de tour suivante, ce qui vous permet d'orienter une exécution sans la tuer. Le pilotage, la mise en pause, les sous-agents et le contrat d'achèvement sont des fonctionnalités du harnais intégré ; Claude Code n'en a aucune.
+En cours d'exécution, un message envoyé à un agent actif est mis en file comme **pilotage** et vidé à la frontière de tour suivante, ce qui vous permet d'orienter une exécution sans la tuer. Une exécution en lecture seule, comme la revue d'un objectif, n'en prend aucun pendant son déroulement, et piloter une exécution qui travaille pour quelqu'un d'autre exige un accès en écriture aux dépôts de l'espace. Le pilotage, la mise en pause, les sous-agents et le contrat d'achèvement sont des fonctionnalités du harnais intégré ; Claude Code n'en a aucune.
 
 ## Comment une exécution est consignée
 
@@ -130,11 +140,11 @@ Lorsqu'une exécution se termine sans le livrable exigé par son mode — une ex
 C'est délibéré. Basculer le statut ferait bouger des machines à états de tickets et de pipelines qui n'ont rien à voir avec l'artefact manquant. Cela signifie aussi que « statut : completed » à lui seul ne suffit jamais à conclure qu'une exécution a réussi — lisez le résumé.
 :::
 
-La clôture de l'exécution publie `AgentRunCompleted`, et beaucoup de choses en dépendent : l'agrégation des coûts de pipeline, la reprise d'une étape de pipeline qui attendait l'exécution, la clôture du ticket sous-jacent, la correspondance d'une orchestration avec un état terminal, la décision de poursuivre ou d'arrêter du superviseur d'objectif, le rôle de vérificateur et l'évaluation budgétaire après exécution. La liste de présence suit séparément, en observant les journaux d'exécution récents plutôt que l'événement. La notification « Agent terminé » ne figure pas dans cette liste : l'événement se déclenche à la fin du flux du processus, avant l'écriture de la réponse. La notification est donc le `MessageReceived` du tour, publié une fois le message enregistré.
+Une fois l'état final de l'exécution écrit, le serveur publie `AgentRunSettled` exactement une fois, avec la raison de la fin de l'exécution (`completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` ou `serverStopped`), et beaucoup de choses en dépendent : l'agrégation des coûts de pipeline, la reprise d'une étape de pipeline qui attendait l'exécution, la clôture du ticket sous-jacent, la correspondance d'une orchestration avec un état terminal, la décision de poursuivre ou d'arrêter du superviseur d'objectif, la réponse à une question qu'un autre agent a posée, le déclenchement suivant d'une boucle à rythme libre, la pause à la limite d'utilisation, le rôle de vérificateur et l'évaluation budgétaire après exécution. Une exécution interrompue par un arrêt du serveur (`serverStopped`) n'est jamais traitée comme un échec ; le travail reprend après le redémarrage. `AgentRunCompleted` est toujours publié, plus tôt, uniquement pour le pont vers les pull requests et les analyses. La liste de présence suit séparément, en observant les journaux d'exécution récents plutôt que l'événement. La notification « Agent terminé » ne figure pas dans cette liste : l'événement se déclenche à la fin du flux du processus, avant l'écriture de la réponse ; la notification est donc le `MessageReceived` du tour, publié une fois le message enregistré.
 
 ## Budgets, après coup
 
-L'application du budget est une _réaction_, pas un verrou. Lorsqu'une exécution se termine, l'évaluateur compare les dépenses de l'agent depuis le début du mois à son plafond effectif (une politique budgétaire liée s'il en existe une, sinon le montant mensuel propre à l'agent ; zéro signifie illimité). Franchir le seuil souple enregistre un incident d'avertissement ; épuiser le budget enregistre un incident dur et bascule le statut de cycle de vie de l'agent sur `paused` dans l'organigramme. Le lancement accepte toujours du travail de cet agent. Un déclencheur de pipeline `BudgetThresholdCrossed` peut lancer un travail de suivi à partir du même événement.
+L'application du budget est une _réaction_, pas un verrou. Lorsqu'une exécution se termine, l'évaluateur compare les dépenses de l'agent depuis le début du mois à son plafond effectif (une politique budgétaire liée s'il en existe une, sinon le montant mensuel propre à l'agent ; zéro signifie illimité). Franchir le seuil souple enregistre un incident d'avertissement ; épuiser le budget enregistre un incident dur et bascule le statut de cycle de vie de l'agent sur `paused` dans l'organigramme. Le lancement accepte toujours le travail que vous envoyez à cet agent, mais les relances qui le concernent (planifications, segments d'objectif, réponses) attendent tant qu'il est en pause, pendant 7 jours au plus. Un déclencheur de pipeline `BudgetThresholdCrossed` peut lancer un travail de suivi à partir du même événement.
 
 ## Lignée de tentative
 
@@ -147,4 +157,5 @@ Chaque journal d'exécution peut porter une lignée de tentative — un identifi
 - [Garde-fous](/fr-FR/manuel/concepts/garde-fous/) : la politique de classes d'effet que franchit chaque appel filtré
 - [Bac à sable et sécurité](/fr-FR/manuel/concepts/bac-a-sable-et-securite/) : l'histoire complète de l'isolation
 - [Multijoueur](/fr-FR/manuel/concepts/multijoueur/) : le pilotage, la prise de contrôle et le curseur d'autonomie
-- [Événements de domaine](/fr-FR/manuel/concepts/evenements-de-domaine/) : ce que `AgentRunCompleted` déclenche
+- [Événements de domaine](/fr-FR/manuel/concepts/evenements-de-domaine/) : ce que `AgentRunSettled` déclenche
+- [Poursuivre un objectif](/fr-FR/manuel/guides/poursuivre-objectif/) et [Planifications et relances](/fr-FR/manuel/guides/planifications-relances/) : exécutions que le serveur lance de lui-même

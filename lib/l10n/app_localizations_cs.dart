@@ -1051,9 +1051,6 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get calendarAllDayGutter => 'Celodenní';
-
-  @override
   String calendarAllDayEventCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -2532,9 +2529,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get activityBackedUpServer => 'Zálohována data serveru';
-
-  @override
-  String get activityMarkedSpaceRead => 'Prostor označen jako přečtený';
 
   @override
   String get activityRespondedToInvitation =>
@@ -13635,6 +13629,19 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String diffFileUnresolvedConversations(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count nevyřešených konverzací',
+      many: '$count nevyřešených konverzací',
+      few: '$count nevyřešené konverzace',
+      one: '1 nevyřešená konverzace',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get pendingReview => 'Čekající kontrola';
 
   @override
@@ -13994,10 +14001,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get spaceKeepAfterMergeHint =>
       'Na tento prostor se vás už znovu ptát nebudeme.';
-
-  @override
-  String get spaceAllPrsMergedLabel =>
-      'Všechny požadavky na začlenění sloučeny';
 
   @override
   String get archiveSpace => 'Archivovat prostor';
@@ -15578,7 +15581,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get skillEvalIncomplete => 'Neúplné';
 
   @override
-  String get skillEvalInconclusive => 'Neprůkazné';
+  String get skillEvalInconclusive => 'Bez rozhodnutí (nedostatek důkazů)';
 
   @override
   String get skillEvalInferred => 'Odvozené';
@@ -19158,4 +19161,2951 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get mcpServerNotFound =>
       'Tento server už neexistuje. Možná ho někdo odstranil.';
+
+  @override
+  String get scriptToolCalls => 'Volání nástrojů';
+
+  @override
+  String scriptCallCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count volání',
+      few: '$count volání',
+      one: '1 volání',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scriptCallsRunning(int count) {
+    return '$count běží';
+  }
+
+  @override
+  String scriptCallsOk(int count) {
+    return '$count v pořádku';
+  }
+
+  @override
+  String scriptCallsFailed(int count) {
+    return '$count selhalo';
+  }
+
+  @override
+  String scriptCallsDenied(int count) {
+    return '$count zakázáno';
+  }
+
+  @override
+  String scriptCallsCancelled(int count) {
+    return '$count zrušeno';
+  }
+
+  @override
+  String scriptCallsQueued(int count) {
+    return '$count ve frontě';
+  }
+
+  @override
+  String scriptCallsSkipped(int count) {
+    return '$count přeskočeno';
+  }
+
+  @override
+  String get scriptStepQueued => 'Ve frontě';
+
+  @override
+  String get scriptStepSkipped => 'Přeskočeno';
+
+  @override
+  String get scriptGroupLoop => 'Smyčka';
+
+  @override
+  String get scriptGroupEach => 'Pro každé';
+
+  @override
+  String get scriptGroupParallel => 'Paralelně';
+
+  @override
+  String get scriptGroupFunction => 'Funkce';
+
+  @override
+  String scriptCallsHidden(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Zobrazit $count dalších volání',
+      few: 'Zobrazit $count další volání',
+      one: 'Zobrazit 1 další volání',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptCallsUnplaced => 'Volání neumístěná ve skriptu';
+
+  @override
+  String get scriptToolComputed => 'Nástroj';
+
+  @override
+  String scriptStepSemantics(String subject, String state) {
+    return '$subject, $state';
+  }
+
+  @override
+  String get scriptSourceLabel => 'Skript';
+
+  @override
+  String scriptSourceLines(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count řádků',
+      few: '$count řádky',
+      one: '1 řádek',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptStateRunning => 'Běží';
+
+  @override
+  String get scriptStateCompleted => 'Dokončeno';
+
+  @override
+  String get scriptStateFailed => 'Selhalo';
+
+  @override
+  String get scriptStateTimedOut => 'Čas vypršel';
+
+  @override
+  String get scriptStateCancelled => 'Zrušeno';
+
+  @override
+  String get scriptStateMemoryExceeded => 'Nedostatek paměti';
+
+  @override
+  String get scriptStateOutputExceeded => 'Příliš mnoho výstupu';
+
+  @override
+  String get scriptStateSandboxError => 'Chyba sandboxu';
+
+  @override
+  String get scriptStateRefused => 'Odmítnuto';
+
+  @override
+  String get transcriptToolDenied => 'Zakázáno';
+
+  @override
+  String get transcriptStatusRunningScript => 'Spouštím skript…';
+
+  @override
+  String get scriptOriginLine => 'Z skriptu, který agent spouští';
+
+  @override
+  String get scriptOriginShow => 'Zobrazit skript';
+
+  @override
+  String get codeModeTitle => 'Režim kódu';
+
+  @override
+  String get codeModeSubtitle =>
+      'Agenti mohou napsat krátký skript, který volá jejich nástroje, místo volání jednoho po druhém.';
+
+  @override
+  String get codeModeStatusLabel => 'Stav';
+
+  @override
+  String get codeModeFactAvailability => 'Na tomto serveru';
+
+  @override
+  String get codeModeAvailable => 'Dostupné';
+
+  @override
+  String get codeModeUnavailable => 'Nedostupné';
+
+  @override
+  String get codeModeFactRunner => 'Runner';
+
+  @override
+  String codeModeUnavailableNote(String reason) {
+    return 'Tento server nemůže spouštět skripty, takže agenti tady volají své nástroje jeden po druhém. Server uvádí: $reason';
+  }
+
+  @override
+  String get codeModeNoReason => 'nebyl uveden žádný důvod.';
+
+  @override
+  String get codeModeViewExecutions => 'Zobrazit spuštění kódu';
+
+  @override
+  String get codeModeLimitsLabel => 'Limity';
+
+  @override
+  String get codeModeLimitsSubtitle =>
+      'Jak dlouho a jak daleko může jeden skript zajít. Výchozí hodnoty vyhovují většině pracovních prostorů.';
+
+  @override
+  String get codeModeLimitsDisclosure => 'Upravit limity';
+
+  @override
+  String get codeModeLimitsAtDefaults => 'Výchozí';
+
+  @override
+  String codeModeLimitsChangedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count změněných',
+      few: '$count změněné',
+      one: '1 změněný',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeModeLimitsUseDefaults => 'Použít výchozí';
+
+  @override
+  String get codeModeLimitWallClock => 'Čas na skript';
+
+  @override
+  String get codeModeLimitWallClockHelp =>
+      'Čas strávený čekáním na člověka se nepočítá.';
+
+  @override
+  String get codeModeLimitCpu => 'Čas procesoru';
+
+  @override
+  String get codeModeLimitCpuHelp => 'Čas, který skript sám stráví výpočty.';
+
+  @override
+  String get codeModeLimitHeap => 'Paměť';
+
+  @override
+  String get codeModeLimitHeapHelp =>
+      'Paměť, kterou smí skript použít za běhu.';
+
+  @override
+  String get codeModeLimitNestedCalls => 'Volání nástrojů na skript';
+
+  @override
+  String get codeModeLimitNestedCallsHelp =>
+      'Volání nad tento limit budou odmítnuta a skript se dozví proč.';
+
+  @override
+  String get codeModeLimitInFlight => 'Volání najednou';
+
+  @override
+  String get codeModeLimitInFlightHelp =>
+      'Kolik volání nástrojů může skript mít spuštěno současně.';
+
+  @override
+  String get codeModeLimitOutputTokens => 'Výstup, který agent čte';
+
+  @override
+  String get codeModeLimitOutputTokensHelp =>
+      'Delší výstup se zkrátí; zbytek si agent může vyžádat.';
+
+  @override
+  String codeModeLimitRange(String defaultValue, String min, String max) {
+    return 'Výchozí $defaultValue. Od $min do $max.';
+  }
+
+  @override
+  String codeModeLimitOutOfRange(String min, String max) {
+    return 'Zadejte celé číslo od $min do $max.';
+  }
+
+  @override
+  String get codeModeSuffixSeconds => 's';
+
+  @override
+  String get codeModeSuffixMebibytes => 'MiB';
+
+  @override
+  String get codeModeSuffixCalls => 'volání';
+
+  @override
+  String get codeModeSuffixTokens => 'tokenů';
+
+  @override
+  String codeModeServerCap(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Tento server spustí nejvýše $count skriptů najednou, napříč všemi pracovními prostory.',
+      few:
+          'Tento server spustí nejvýše $count skripty najednou, napříč všemi pracovními prostory.',
+      one:
+          'Tento server spustí nejvýše 1 skript najednou, napříč všemi pracovními prostory.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String codeModeUnitMilliseconds(String value) {
+    return '$value ms';
+  }
+
+  @override
+  String codeModeUnitSeconds(String value) {
+    return '$value s';
+  }
+
+  @override
+  String codeModeUnitMinutesSeconds(String minutes, String seconds) {
+    return '$minutes min $seconds s';
+  }
+
+  @override
+  String get codeModeRefusedLimitUnknown =>
+      'Server nezná jeden z těchto limitů.';
+
+  @override
+  String get codeModeRefusedLimitOutOfRange =>
+      'Jeden z těchto limitů je mimo rozsah, který server povoluje.';
+
+  @override
+  String get codeModeRefusedUnknownSetting =>
+      'Server toto nastavení nerozpoznal.';
+
+  @override
+  String get codeExecutionsTitle => 'Spuštění kódu';
+
+  @override
+  String get codeExecutionsSubtitle =>
+      'Skripty, které agenti spustili v tomto pracovním prostoru, se všemi jejich voláními nástrojů.';
+
+  @override
+  String get codeExecutionsEmpty => 'Zatím tu nebyl spuštěn žádný skript.';
+
+  @override
+  String get codeExecutionsEmptyFiltered =>
+      'Žádný skript neodpovídá těmto filtrům.';
+
+  @override
+  String get codeExecutionsStatusFilter => 'Výsledek';
+
+  @override
+  String get codeExecutionsAllOutcomes => 'Všechny výsledky';
+
+  @override
+  String codeExecutionsOutcomeCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count výsledků',
+      few: '$count výsledky',
+      one: '1 výsledek',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionsScopeRun => 'Skripty z jednoho běhu';
+
+  @override
+  String get codeExecutionsScopeConversation => 'Skripty z jedné konverzace';
+
+  @override
+  String get codeExecutionsScopeAgent => 'Skripty jednoho agenta';
+
+  @override
+  String get codeExecutionsShowAll => 'Zobrazit vše';
+
+  @override
+  String get codeExecutionUntitled => 'Skript bez názvu';
+
+  @override
+  String get codeExecutionRecord => 'Záznam';
+
+  @override
+  String get codeExecutionBackToList => 'Zpět na spuštění kódu';
+
+  @override
+  String get codeExecutionNotFound =>
+      'Toto spuštění kódu není v tomto pracovním prostoru. Mohlo být odstraněno spolu se svým během.';
+
+  @override
+  String get codeExecutionRefusedSpace =>
+      'Tento skript běžel v prostoru, který nemůžete otevřít, takže jeho záznam zůstává skrytý.';
+
+  @override
+  String get codeExecutionOpenRecord => 'Otevřít záznam';
+
+  @override
+  String get codeExecutionFactStarted => 'Spuštěno';
+
+  @override
+  String get codeExecutionFactDuration => 'Trvalo';
+
+  @override
+  String get codeExecutionFactCalls => 'Volání nástrojů';
+
+  @override
+  String get codeExecutionFactAgent => 'Agent';
+
+  @override
+  String get codeExecutionFactSurface => 'Běželo přes';
+
+  @override
+  String get codeExecutionSurfaceHarness => 'Vestavěný agent';
+
+  @override
+  String get codeExecutionSurfaceMcp => 'Externí agent';
+
+  @override
+  String get codeExecutionFactCpu => 'Čas procesoru';
+
+  @override
+  String get codeExecutionFactMemory => 'Špičková paměť';
+
+  @override
+  String get codeExecutionOpenConversation => 'Otevřít konverzaci';
+
+  @override
+  String get codeExecutionRunScripts => 'Skripty v tomto běhu';
+
+  @override
+  String get codeExecutionAgentScripts => 'Skripty tohoto agenta';
+
+  @override
+  String get codeExecutionScript => 'Skript';
+
+  @override
+  String get codeExecutionConsole => 'Konzole';
+
+  @override
+  String get codeExecutionOutputTruncated =>
+      'Výstup byl zkrácen, aby se vešel do uložené podoby.';
+
+  @override
+  String get codeExecutionNoPayload =>
+      'Skript a jeho výstup se již neuchovávají.';
+
+  @override
+  String codeExecutionCallsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count volání nástrojů',
+      few: '$count volání nástrojů',
+      one: '1 volání nástroje',
+      zero: 'Volání nástrojů',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionNoCalls => 'Skript nevolal žádné nástroje.';
+
+  @override
+  String get codeExecutionCallCompleted => 'Dokončeno';
+
+  @override
+  String get codeExecutionCallFailed => 'Selhalo';
+
+  @override
+  String get codeExecutionCallDenied => 'Zakázáno';
+
+  @override
+  String get codeExecutionCallCancelled => 'Zrušeno';
+
+  @override
+  String get codeExecutionCallTimedOut => 'Čas vypršel';
+
+  @override
+  String get codeExecutionCallUnknownTool => 'Neznámý nástroj';
+
+  @override
+  String get codeExecutionCallInvalidArgs => 'Neplatné argumenty';
+
+  @override
+  String get codeExecutionGateAllowed => 'Povoleno';
+
+  @override
+  String get codeExecutionGateApproved => 'Schváleno člověkem';
+
+  @override
+  String get codeExecutionGateDenied => 'Zakázáno';
+
+  @override
+  String get codeExecutionGateNotReached => 'Neověřeno';
+
+  @override
+  String codeExecutionCallWaited(String duration) {
+    return 'Čekalo $duration na člověka';
+  }
+
+  @override
+  String get codeExecutionCallArguments => 'Argumenty';
+
+  @override
+  String get codeExecutionCallResult => 'Výsledek';
+
+  @override
+  String codeExecutionCallResultSize(String size) {
+    return 'Vráceno $size';
+  }
+
+  @override
+  String codeExecutionBytes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bajtů',
+      few: '$count bajty',
+      one: '1 bajt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionEndedScriptError =>
+      'Skript vyvolal chybu a nic ji nezachytilo.';
+
+  @override
+  String codeExecutionEndedScriptErrorNamed(String name) {
+    return 'Skript vyvolal $name a nic to nezachytilo.';
+  }
+
+  @override
+  String get codeExecutionEndedStalled =>
+      'Skript čekal na něco, co se nikdy nedokončí.';
+
+  @override
+  String get codeExecutionEndedCpu => 'Skriptu došel čas procesoru.';
+
+  @override
+  String get codeExecutionEndedHeap => 'Skript dosáhl limitu paměti.';
+
+  @override
+  String get codeExecutionEndedOutput => 'Skript zapsal víc výstupu, než smí.';
+
+  @override
+  String get codeExecutionEndedDeadline => 'Skriptu vypršel čas.';
+
+  @override
+  String get codeExecutionEndedCancelled => 'Skript byl zrušen, než skončil.';
+
+  @override
+  String get codeExecutionEndedShutdown =>
+      'Server se během běhu skriptu vypnul.';
+
+  @override
+  String get codeExecutionEndedServerStopped =>
+      'Server se během běhu skriptu zastavil. Záznam se uzavřel při dalším spuštění serveru.';
+
+  @override
+  String get codeExecutionEndedInternal =>
+      'Program, který spouští skripty, selhal sám od sebe.';
+
+  @override
+  String get codeExecutionEndedStart =>
+      'Program, který spouští skripty, se nepodařilo spustit.';
+
+  @override
+  String get codeExecutionEndedLockdown =>
+      'Program, který spouští skripty, se nepodařilo zabezpečit, takže skript nebyl spuštěn.';
+
+  @override
+  String get codeExecutionEndedExited =>
+      'Program, který spouští skripty, skončil dřív, než skript dokončil.';
+
+  @override
+  String get codeExecutionEndedRunnerBrokeRules =>
+      'Program, který spouští skripty, porušil pravidla, pod kterými běží, a byl zastaven.';
+
+  @override
+  String get codeExecutionEndedUnresponsive =>
+      'Program, který spouští skripty, přestal reagovat a byl zastaven.';
+
+  @override
+  String get codeExecutionEndedHostError =>
+      'Server selhal při spouštění skriptu.';
+
+  @override
+  String get codeExecutionRunningNote =>
+      'Stále běží. Jeho volání nástrojů se sem zobrazují, jakmile skončí, a výsledek po ukončení.';
+
+  @override
+  String codeModeServerWorkspaceShare(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Skripty jednoho pracovního prostoru smějí použít nejvýše $count z nich.',
+      few:
+          'Skripty jednoho pracovního prostoru smějí použít nejvýše $count z nich.',
+      one: 'Skripty jednoho pracovního prostoru smějí použít nejvýše 1 z nich.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get wakeOriginGoal => 'Cíl';
+
+  @override
+  String get wakeOriginGoalCheck => 'Ověření cíle';
+
+  @override
+  String get wakeOriginGoalReview => 'Kontrola cíle';
+
+  @override
+  String get wakeOriginSchedule => 'Plán';
+
+  @override
+  String get wakeOriginWatch => 'Sledování';
+
+  @override
+  String wakeOriginReplyFrom(String agent) {
+    return 'Odpověď od $agent';
+  }
+
+  @override
+  String get wakeOriginReply => 'Odpověď';
+
+  @override
+  String wakeOriginMessageFrom(String agent) {
+    return 'Zpráva od $agent';
+  }
+
+  @override
+  String get wakeOriginMessage => 'Zpráva';
+
+  @override
+  String wakeOriginWorkFinishedBy(String agent) {
+    return 'Dokončená práce od $agent';
+  }
+
+  @override
+  String get wakeOriginWorkFinished => 'Dokončená práce';
+
+  @override
+  String get wakeOriginLimitReset => 'Obnovení limitu';
+
+  @override
+  String get wakeOriginRecovery => 'Obnovení';
+
+  @override
+  String get wakeOriginAssignment => 'Přiřazení';
+
+  @override
+  String get wakeOriginPipelineStep => 'Krok pipeline';
+
+  @override
+  String get wakeOriginImprovementReview => 'Kontrola vylepšení';
+
+  @override
+  String get wakeKindStopped => 'Podrženo, protože osoba běh zastavila.';
+
+  @override
+  String get wakeKindAttempts => 'Doručení selhalo třikrát.';
+
+  @override
+  String get wakeKindAgentDeleted => 'Agent už neexistuje.';
+
+  @override
+  String get wakeKindAgentNotDispatchable => 'Agent je vyřazen.';
+
+  @override
+  String get wakeKindAgentPaused => 'Agent je pozastaven.';
+
+  @override
+  String get wakeKindPersonRemoved =>
+      'Osoba, za kterou probuzení jedná, opustila pracovní prostor.';
+
+  @override
+  String get wakeKindBudgetBlocked => 'Rozpočet blokuje běh.';
+
+  @override
+  String get wakeKindTakeOver => 'Osoba převzala worktree.';
+
+  @override
+  String get wakeKindRateCapConversation =>
+      'Tato konverzace spustila za poslední hodinu 30 běhů z probuzení.';
+
+  @override
+  String get wakeKindRateCapWorkspace =>
+      'Tento pracovní prostor spustil za poslední hodinu 300 běhů z probuzení.';
+
+  @override
+  String get wakeKindLiveRunNoInput => 'Živý běh agenta zde nepřijímá vstup.';
+
+  @override
+  String get wakeKindLiveRunOtherOptions =>
+      'Živý běh agenta zde běží jinak, proto tohle spustí vlastní běh až po něm.';
+
+  @override
+  String get wakeKindLiveRunOtherPerson =>
+      'Živý běh agenta zde jedná za jinou osobu, proto tohle spustí vlastní běh až po něm.';
+
+  @override
+  String get wakeKindDispatchRefused => 'Běh se nepodařilo spustit.';
+
+  @override
+  String get wakeKindSandboxUnavailable =>
+      'Pro běh jen pro čtení není k dispozici sandbox.';
+
+  @override
+  String get wakeKindReadOnlyUnavailable =>
+      'Backend tohoto agenta nedokáže udržet běh jen pro čtení.';
+
+  @override
+  String get wakeKindServerStopped => 'Restart serveru běh zastavil.';
+
+  @override
+  String get wakeKindServerRestarted =>
+      'Server se restartoval během běhu osoby.';
+
+  @override
+  String get wakeKindGuardFailed => 'Kontrola před doručením selhala.';
+
+  @override
+  String get wakeKindLimit => 'Čeká na limit využití u poskytovatele.';
+
+  @override
+  String get wakeKindLimitRunLive => 'Čeká, až skončí běh na limitu využití.';
+
+  @override
+  String get wakeKindWakeMissed => 'Zmeškáno, když byl server vypnutý.';
+
+  @override
+  String get wakeKindPipelineRunEnded => 'Jeho běh pipeline skončil.';
+
+  @override
+  String get wakeKindGoalEnded => 'Jeho cíl skončil.';
+
+  @override
+  String get wakeKindGoalBudgetExhausted => 'Jeho cíl vyčerpal rozpočet.';
+
+  @override
+  String get wakeKindGoalReviewStale =>
+      'Cíl se od vyžádání této kontroly změnil.';
+
+  @override
+  String get wakeKindGoalPaused => 'Jeho cíl je pozastaven.';
+
+  @override
+  String get wakeKindGoalHeld => 'Jeho cíl je podržen.';
+
+  @override
+  String get wakeKindGoalStopped => 'Jeho cíl byl zastaven.';
+
+  @override
+  String get wakeKindAskSettled =>
+      'Otázka, na kterou odpovídá, už byla vyřešena.';
+
+  @override
+  String get wakeKindRuleEnded => 'Jeho plán skončil.';
+
+  @override
+  String get wakeKindUnknown => 'Z důvodu, který tato verze nezná:';
+
+  @override
+  String wakeStripHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count probuzení čeká',
+      few: '$count probuzení čekají',
+      one: '1 probuzení čeká',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String wakeStripDue(String time) {
+    return 'Na $time';
+  }
+
+  @override
+  String get wakeStripDueNow => 'Splatné teď';
+
+  @override
+  String get wakeStripHeld => 'Podrženo';
+
+  @override
+  String wakeStripExpires(String time) {
+    return 'Vyprší $time';
+  }
+
+  @override
+  String wakeStripAttempt(int attempt) {
+    return 'Pokus $attempt';
+  }
+
+  @override
+  String get wakeStripCancel => 'Zrušit probuzení';
+
+  @override
+  String get wakeStripDeliverNow => 'Doručit hned';
+
+  @override
+  String get wakeStripResume => 'Pokračovat';
+
+  @override
+  String get wakeStripDismiss => 'Zahodit';
+
+  @override
+  String get wakeStripResumeAll => 'Pokračovat ve všech';
+
+  @override
+  String get wakeStripResumeOnlyTheirs =>
+      'Pokračovat může jen osoba, jejíž běh to je.';
+
+  @override
+  String get wakeReceiptStarted => 'Běh byl spuštěn.';
+
+  @override
+  String get wakeReceiptPushed => 'Předáno živému běhu.';
+
+  @override
+  String wakeReceiptWaiting(String reason) {
+    return 'Stále čeká. $reason';
+  }
+
+  @override
+  String wakeReceiptSkipped(String reason) {
+    return 'Nedoručeno. $reason';
+  }
+
+  @override
+  String get wakeReceiptDuplicate => 'Už bylo doručeno.';
+
+  @override
+  String wakeReleased(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Obnoveno $count probuzení.',
+      few: 'Obnovena $count probuzení.',
+      one: 'Obnoveno 1 probuzení.',
+      zero: 'Nic nebylo obnoveno.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get wakeRefusalNotYours =>
+      'Toto probuzení jedná za jinou osobu. Doručit nebo obnovit ho může jen ona.';
+
+  @override
+  String get wakeRefusalSettled => 'Toto probuzení už bylo vyřízeno.';
+
+  @override
+  String heldSteeringHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count podržených zpráv',
+      few: '$count podržené zprávy',
+      one: '1 podržená zpráva',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get heldSteeringResume => 'Odeslat podržené zprávy';
+
+  @override
+  String get heldSteeringDelete => 'Smazat podrženou zprávu';
+
+  @override
+  String heldSteeringReleased(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Odesláno $count podržených zpráv.',
+      few: 'Odeslány $count podržené zprávy.',
+      one: 'Odeslána 1 podržená zpráva.',
+      zero: 'Nic nebylo podrženo.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get workAgentUnknown => 'agent';
+
+  @override
+  String workFeedWoke(int count, String agent) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Probudil $agent kvůli $count čekajícím položkám',
+      few: 'Probudil $agent kvůli $count čekajícím položkám',
+      one: 'Probudil $agent',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String workFeedWakeSkipped(String agent) {
+    return 'Probuzení pro $agent nebylo doručeno.';
+  }
+
+  @override
+  String workFeedWakeMissed(String agent) {
+    return 'Probuzení pro $agent bylo zmeškáno, když byl server vypnutý.';
+  }
+
+  @override
+  String workFeedScheduleCreated(String agent) {
+    return 'Plán nastaven pro $agent.';
+  }
+
+  @override
+  String workFeedScheduleEnded(String agent) {
+    return 'Plán pro $agent skončil.';
+  }
+
+  @override
+  String get workFeedOpenSchedule => 'Otevřít plán';
+
+  @override
+  String workFeedNoteFromAgent(String agent) {
+    return '$agent si tuto poznámku zapsal sám pro sebe, vlastními slovy:';
+  }
+
+  @override
+  String get workFeedNoteFromPerson => 'Připomínka, kterou nastavila osoba:';
+
+  @override
+  String workFeedLimitParkHeld(String provider, String time) {
+    return 'Pozastaveno na limitu využití u $provider. Limit se obnoví v $time.';
+  }
+
+  @override
+  String workFeedLimitParkPending(String provider, String time) {
+    return 'Pozastaveno na limitu využití u $provider. Pokračuje v $time.';
+  }
+
+  @override
+  String workFeedLimitParkResumed(String provider) {
+    return 'Pokračuje po limitu využití u $provider.';
+  }
+
+  @override
+  String workFeedLimitParkGone(String provider) {
+    return 'Už nečeká na limit využití u $provider.';
+  }
+
+  @override
+  String get workFeedLimitParkResume => 'Pokračovat';
+
+  @override
+  String get workFeedLimitParkCancel => 'Zrušit';
+
+  @override
+  String workFeedStillInFlight(String agent) {
+    return 'Stav předaný agentovi $agent po zhutnění';
+  }
+
+  @override
+  String get workFeedShowDetails => 'Zobrazit podrobnosti';
+
+  @override
+  String get workFeedHideDetails => 'Skrýt podrobnosti';
+
+  @override
+  String get workFeedCommandRefused => 'Příkaz byl odmítnut.';
+
+  @override
+  String get wakeRuleEndFired => 'Proběhl svůj jednorázový běh.';
+
+  @override
+  String get wakeRuleEndExpired => 'Dosáhl data konce.';
+
+  @override
+  String get wakeRuleEndRunCap => 'Vyčerpal své běhy.';
+
+  @override
+  String get wakeRuleEndCostCap => 'Dosáhl svého limitu nákladů.';
+
+  @override
+  String get wakeRuleEndGoalEnded => 'Jeho cíl skončil.';
+
+  @override
+  String get wakeRuleEndCancelled => 'Byl zrušen.';
+
+  @override
+  String get wakeRuleEndMemberRemoved =>
+      'Osoba, které patřil, opustila pracovní prostor.';
+
+  @override
+  String get wakeRuleEndInvalidRow => 'Jeho uložená nastavení nešla přečíst.';
+
+  @override
+  String get wakeRuleRefusalIntervalTooShort =>
+      'Interval je příliš krátký. Zvolte delší.';
+
+  @override
+  String get wakeRuleRefusalTooSoon =>
+      'Tento čas je příliš brzy. Zvolte pozdější.';
+
+  @override
+  String get wakeRuleRefusalLineageEnded =>
+      'Tento řetěz probuzení vyčerpal své běhy nebo svůj čas.';
+
+  @override
+  String get wakeRuleRefusalWatchTargetUnreadable =>
+      'Nelze přečíst, co by to sledovalo.';
+
+  @override
+  String get wakeRuleRefusalExpiryRequired =>
+      'Zadejte konec, například --days 3.';
+
+  @override
+  String get wakeRuleRefusalLimitReached =>
+      'Tato konverzace už má maximální povolený počet plánů.';
+
+  @override
+  String get wakeRuleRefusalInvalidWhen => 'Čas nelze přečíst.';
+
+  @override
+  String get wakeRuleRefusalNoteTooLong => 'Poznámka je příliš dlouhá.';
+
+  @override
+  String get wakeRuleRefusalExpiryTooLong => 'Konec je příliš daleko.';
+
+  @override
+  String get wakeRuleRefusalLimitOutOfRange =>
+      'Limit běhů, dnů nebo rozpočtu je mimo rozsah.';
+
+  @override
+  String get wakeRuleRefusalNextOutsideLoop =>
+      'Jen smyčka si může sama určit další čas.';
+
+  @override
+  String get wakeRuleRefusalWatchRefused => 'Toto nelze sledovat.';
+
+  @override
+  String get wakeRuleRefusalRuleEnded => 'Tento plán už skončil.';
+
+  @override
+  String get wakeRuleRefusalNotYours => 'Tento plán patří jiné osobě.';
+
+  @override
+  String get workRefusalUnknown => 'Server toto odmítl:';
+
+  @override
+  String get goalRefusalAlreadyActive => 'Tato konverzace už má aktivní cíl.';
+
+  @override
+  String get goalRefusalNotInReview => 'Tento cíl nečeká na kontrolu.';
+
+  @override
+  String get goalRefusalEvidenceIncomplete => 'Důkazy pro cíl jsou neúplné.';
+
+  @override
+  String get goalRefusalClaimPending =>
+      'Tvrzení, že je hotovo, se ještě ověřuje.';
+
+  @override
+  String get goalRefusalNotActiveSegment =>
+      'U tohoto cíle neběží žádný segment.';
+
+  @override
+  String get goalRefusalNotYours =>
+      'Tohle může udělat jen osoba, která cíl spustila.';
+
+  @override
+  String get goalRefusalNotPaused => 'Nejprve cíl pozastavte.';
+
+  @override
+  String get goalRefusalContractInvalid => 'Zadání cíle nelze přečíst.';
+
+  @override
+  String get goalRefusalCheckerUnknown => 'Žádný agent nemá toto jméno.';
+
+  @override
+  String get goalRefusalCheckerAmbiguous =>
+      'Více agentů má toto jméno. Použijte jejich ID.';
+
+  @override
+  String get goalRefusalCheckerIsGoalAgent =>
+      'Ověřovatel musí být jiný agent, než který na cíli pracuje.';
+
+  @override
+  String get goalRefusalCommandInvalid => 'Tento příkaz /goal nelze přečíst.';
+
+  @override
+  String goalCardWorking(int segment) {
+    return 'Běží · segment $segment';
+  }
+
+  @override
+  String get goalCardWaiting => 'Čeká na své další probuzení';
+
+  @override
+  String get goalCardVerifying => 'Ověřuje se, zda je hotovo';
+
+  @override
+  String goalCardLimitUntil(String time) {
+    return 'Pozastaveno na limitu využití · pokračuje $time';
+  }
+
+  @override
+  String get goalCardLimit => 'Pozastaveno na limitu využití';
+
+  @override
+  String get goalCardPerson => 'Potřebuje osobu';
+
+  @override
+  String get goalCardByPerson => 'Pozastavila osoba';
+
+  @override
+  String get goalCardNeedsReview =>
+      'Čeká na kontrolu: tvrdí, že je hotovo, a nic to nepotvrdilo';
+
+  @override
+  String goalCardSegments(int run, int max) {
+    return 'Segment $run z $max';
+  }
+
+  @override
+  String goalCardSegmentsNoCap(int run) {
+    return 'Segment $run';
+  }
+
+  @override
+  String goalCardMoney(String spent, String cap) {
+    return '$spent z $cap';
+  }
+
+  @override
+  String goalCardTimeLeft(String time) {
+    return '$time zbývá';
+  }
+
+  @override
+  String get goalCardOverdue => 'Po termínu';
+
+  @override
+  String get goalCardDoneMeans => 'Hotovo znamená';
+
+  @override
+  String get goalCardChecks => 'Kontroly';
+
+  @override
+  String get goalCardCheckPassed => 'Prošlo';
+
+  @override
+  String goalCardCheckFailed(int code) {
+    return 'Selhalo · návratový kód $code';
+  }
+
+  @override
+  String get goalCardCheckTimedOut => 'Čas vypršel';
+
+  @override
+  String get goalCardCheckNotRerun => 'Znovu nespuštěno: nic se nezměnilo';
+
+  @override
+  String get goalCardCheckBroken => 'Nelze spustit';
+
+  @override
+  String get goalCardCheckNotRun => 'Zatím nespuštěno';
+
+  @override
+  String get goalCardCriterionMet => 'Splněno';
+
+  @override
+  String get goalCardCriterionUnmet => 'Nesplněno';
+
+  @override
+  String get goalCardCriterionCannotTell => 'Nelze posoudit';
+
+  @override
+  String get goalCardVerdictPass => 'Poslední kontrola: hotovo';
+
+  @override
+  String get goalCardVerdictFail => 'Poslední kontrola: není hotovo';
+
+  @override
+  String get goalCardVerdictCannotVerify => 'Poslední kontrola: nelze posoudit';
+
+  @override
+  String get goalCardConcerns => 'Výhrady';
+
+  @override
+  String goalCardVerifiedBy(String agent) {
+    return 'Ověřil $agent';
+  }
+
+  @override
+  String get goalCardVerifiedBySelf =>
+      'Ověřil sám (bez samostatného ověřovatele)';
+
+  @override
+  String get goalCardClosedByPerson => 'Uzavřela osoba bez úspěšné kontroly';
+
+  @override
+  String get goalCardNoMachineCheck => 'Bez strojové kontroly';
+
+  @override
+  String get goalCardAddCheck => 'Přidat kontrolu';
+
+  @override
+  String get goalCardOpen => 'Otevřít cíl';
+
+  @override
+  String get goalCardApprove => 'Schválit dokončení';
+
+  @override
+  String get goalCardApproveTitle => 'Uzavřít tento cíl jako hotový?';
+
+  @override
+  String get goalCardApproveBody =>
+      'Žádná kontrola to nepotvrdila. Uzavřete cíl na vlastní slovo a cíl zaznamená, že ho osoba uzavřela neověřený.';
+
+  @override
+  String get goalCardApproveConfirm => 'Uzavřít jako hotové';
+
+  @override
+  String get goalCardResumeNotYours =>
+      'Pokračovat v něm nebo zvýšit jeho rozpočet může jen ten, kdo ho spustil.';
+
+  @override
+  String get goalHoldDetailStalled =>
+      'V posledních segmentech nedošlo k žádnému pokroku.';
+
+  @override
+  String get goalHoldDetailStalledWaiting => 'Čeká po segmentech bez pokroku.';
+
+  @override
+  String get goalHoldDetailVerificationFailed => 'Poslední kontrola selhala.';
+
+  @override
+  String get goalHoldDetailCannotVerify =>
+      'Ověřovatel nedokázal posoudit, zda je hotovo.';
+
+  @override
+  String get goalHoldDetailSandboxUnavailable =>
+      'Pro spuštění jeho kontrol není k dispozici sandbox.';
+
+  @override
+  String get goalHoldDetailCheckerUnavailable =>
+      'Jeho ověřovatel není dostupný. Vyberte jiného ověřovatele a poté pokračujte.';
+
+  @override
+  String get goalHoldDetailCheckBroken => 'Tuto kontrolu nelze spustit:';
+
+  @override
+  String get goalHoldDetailWakeSkipped => 'Jeho probuzení nebylo doručeno.';
+
+  @override
+  String get goalHoldDetailClaimPending =>
+      'Jeho tvrzení, že je hotovo, čeká na kontrolu.';
+
+  @override
+  String get goalHoldDetailUnanswered =>
+      'Otázka nebo žádost o schválení adresovaná osobě zůstala bez odpovědi.';
+
+  @override
+  String get goalHoldDetailLimitParks =>
+      'Příliš často narážel na limity využití. Prohlédněte si ho a poté pokračujte.';
+
+  @override
+  String get goalHoldDetailInput => 'Čeká na odpověď v konverzaci.';
+
+  @override
+  String get peerAsksSection => 'Dotazy';
+
+  @override
+  String peerAskTo(String agent) {
+    return 'Pro $agent';
+  }
+
+  @override
+  String get peerAskKindAsk => 'Otázka';
+
+  @override
+  String get peerAskKindConsult => 'Konzultace';
+
+  @override
+  String get peerAskKindReview => 'Kontrola';
+
+  @override
+  String get peerAskStatusPending => 'Čeká';
+
+  @override
+  String get peerAskStatusAnswered => 'Odpovězeno';
+
+  @override
+  String get peerAskStatusFailed => 'Selhalo';
+
+  @override
+  String get peerAskStatusExpired => 'Vypršelo';
+
+  @override
+  String get peerAskStatusCancelled => 'Zrušeno';
+
+  @override
+  String peerAskAsked(String time) {
+    return 'Položeno $time';
+  }
+
+  @override
+  String peerAskExpires(String time) {
+    return 'Vyprší $time';
+  }
+
+  @override
+  String get peerAskPromised => 'Slíbila odpověď';
+
+  @override
+  String get peerAskBackground => 'Na pozadí';
+
+  @override
+  String get peerAskCancel => 'Zrušit dotaz';
+
+  @override
+  String get peerAskAlreadySettled => 'Tento dotaz už byl vyřízen.';
+
+  @override
+  String get slashHintGoal =>
+      'Pracovat k cíli, dokud není hotový. Přepínače: --check, --checker, --fresh, --unattended';
+
+  @override
+  String get slashHintLoop => 'Opakovat úkol v intervalu nebo v tempu agenta';
+
+  @override
+  String get slashHintSchedule =>
+      'Spustit úkol později: za 2h, v 09:00 nebo podle cronu';
+
+  @override
+  String get slashHintRefine =>
+      'Prohlédnout práci v této konverzaci a navrhnout vylepšení';
+
+  @override
+  String get notifGoalCompleted => 'Cíl hotový';
+
+  @override
+  String get notifGoalFailed => 'Cíl selhal';
+
+  @override
+  String get notifGoalCancelled => 'Cíl zrušen';
+
+  @override
+  String get notifGoalBudgetExhausted => 'Cíl vyčerpal rozpočet';
+
+  @override
+  String get notifGoalNeedsReview => 'Cíl čeká na vaši kontrolu';
+
+  @override
+  String get notifGoalNeedsPerson => 'Cíl potřebuje vás';
+
+  @override
+  String get notifGoalOnHold => 'Cíl je podržen';
+
+  @override
+  String get notifWakeRuleEnded => 'Plán skončil';
+
+  @override
+  String notifWaitingDigest(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count věcí na vás čeká',
+      few: '$count věci na vás čekají',
+      one: '1 věc na vás čeká',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notifImprovementProposed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Navrženo $count úprav',
+      few: 'Navrženy $count úpravy',
+      one: 'Navržena 1 úprava',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notifPipelineRunHeld => 'Běh pipeline je podržen na svém rozpočtu';
+
+  @override
+  String notifPipelineRunHeldBody(String spent, String cap) {
+    return 'Utraceno $spent z $cap';
+  }
+
+  @override
+  String get inboxGoalNeedsReview => 'Cíl čeká na kontrolu';
+
+  @override
+  String get inboxGoalNeedsPerson => 'Cíl potřebuje vás';
+
+  @override
+  String get inboxImprovementProposed => 'Navržena úprava';
+
+  @override
+  String get improvementRefusalAlreadyDecided =>
+      'O tomto návrhu už někdo rozhodl.';
+
+  @override
+  String get improvementRefusalCampaignRequired =>
+      'Tato změna neprošla vyhodnocením proti aktuální dovednosti, nebo se dovednost po změření změnila. Spusťte vyhodnocení znovu.';
+
+  @override
+  String get improvementRefusalChangedSince =>
+      'Cíl se od navržení změnil. Návrh odmítněte a nechte agenta navrhnout znovu.';
+
+  @override
+  String get improvementRefusalTargetMissing =>
+      'To, co tento návrh mění, už neexistuje.';
+
+  @override
+  String get improvementRefusalCampaignState =>
+      'Vyhodnocení v aktuálním stavu nelze spustit nebo dokončit.';
+
+  @override
+  String get improvementRefusalReviewCooldown =>
+      'Tato konverzace byla nedávno prohlédnuta. Zkuste to později.';
+
+  @override
+  String get improvementRefusalAdminRequired =>
+      'O tomto návrhu může rozhodnout jen správce pracovního prostoru.';
+
+  @override
+  String get improvementKindMemoryFact => 'Fakt z paměti';
+
+  @override
+  String get improvementKindPolicy => 'Politika';
+
+  @override
+  String get improvementKindAgentNote => 'Poznámka agenta';
+
+  @override
+  String get improvementKindSkillEdit => 'Změna dovednosti';
+
+  @override
+  String get improvementKindSkillNew => 'Nová dovednost';
+
+  @override
+  String get improvementScopeAgent => 'Tento agent';
+
+  @override
+  String get improvementScopeRepository => 'Tento repozitář';
+
+  @override
+  String get improvementScopeWorkspace => 'Celý pracovní prostor';
+
+  @override
+  String get improvementStatusProposed => 'Navrženo';
+
+  @override
+  String get improvementStatusAccepted => 'Přijato';
+
+  @override
+  String get improvementStatusRejected => 'Odmítnuto';
+
+  @override
+  String get improvementStatusRolledBack => 'Vráceno zpět';
+
+  @override
+  String get improvementStatusExpired => 'Vypršelo';
+
+  @override
+  String get improvementOperationAdd => 'Přidá';
+
+  @override
+  String get improvementOperationReplace => 'Nahradí';
+
+  @override
+  String get improvementOperationRemove => 'Odebere';
+
+  @override
+  String scheduleTriggerOnce(String time) {
+    return 'Jednou, $time';
+  }
+
+  @override
+  String scheduleTriggerEvery(String interval) {
+    return 'Každých $interval';
+  }
+
+  @override
+  String scheduleTriggerCron(String cron, String zone) {
+    return 'Podle plánu $cron ($zone)';
+  }
+
+  @override
+  String get scheduleTriggerSelfPaced =>
+      'Když agent zvolí, s odstupem 1 až 60 minut';
+
+  @override
+  String get scheduleTriggerPrChecks => 'Až skončí kontroly pull requestu';
+
+  @override
+  String scheduleTriggerPrChecksOf(String pr) {
+    return 'Až skončí kontroly u $pr';
+  }
+
+  @override
+  String get scheduleTriggerPrReview =>
+      'Až pull request dostane recenzi nebo odpověď';
+
+  @override
+  String scheduleTriggerPrReviewOf(String pr) {
+    return 'Až $pr dostane recenzi nebo odpověď';
+  }
+
+  @override
+  String get scheduleTriggerPrMerged => 'Až se pull request sloučí';
+
+  @override
+  String scheduleTriggerPrMergedOf(String pr) {
+    return 'Až se $pr sloučí';
+  }
+
+  @override
+  String get scheduleTriggerEnvironment =>
+      'Až úkol prostředí skončí nebo bude připraven';
+
+  @override
+  String scheduleTriggerTicket(String id) {
+    return 'Až ticket $id skončí';
+  }
+
+  @override
+  String scheduleTriggerPipelineRun(String id) {
+    return 'Až běh pipeline $id skončí';
+  }
+
+  @override
+  String get goalNextWaiting => 'Pokračuje, až dorazí to, na co čeká.';
+
+  @override
+  String get goalNextVerifying =>
+      'Až skončí kontroly a posouzení, buď se dokončí, nebo bude dál pracovat.';
+
+  @override
+  String get goalNextLimit => 'Pokračuje, až se obnoví limit využití.';
+
+  @override
+  String get goalNextPerson =>
+      'Pokračuje, až někdo odpoví na jeho otázku nebo žádost o schválení.';
+
+  @override
+  String get goalNextByPerson => 'Zůstává pozastaven, dokud ho někdo neobnoví.';
+
+  @override
+  String get goalNextNeedsReview =>
+      'Schvalte ho jako hotový, nebo ho obnovte a nechte dál pracovat.';
+
+  @override
+  String get goalNextWorking =>
+      'Pracuje dál, segment po segmentu, dokud není hotový nebo nedosáhne limitu.';
+
+  @override
+  String get goalContractAddCheck => 'Přidat kontrolu';
+
+  @override
+  String goalContractChecksFull(int max) {
+    return 'Cíl může mít nejvýše $max kontrol.';
+  }
+
+  @override
+  String goalContractChecksCount(int count, int max) {
+    return '$count z $max kontrol';
+  }
+
+  @override
+  String get goalContractCheckTaskHint =>
+      'Název úkolu prostředí, například test';
+
+  @override
+  String get goalContractCheckCommandHint => 'Příkaz, například make test';
+
+  @override
+  String get goalContractCheckWhere => 'Kde běží';
+
+  @override
+  String get goalContractCheckInWorktree => 'V worktree';
+
+  @override
+  String get goalContractCheckInEnvironment => 'Úkol prostředí';
+
+  @override
+  String get goalContractSecondsSuffix => 's';
+
+  @override
+  String goalContractTimeoutRange(int max) {
+    return '1 až $max sekund';
+  }
+
+  @override
+  String get goalContractRemoveCheck => 'Odebrat kontrolu';
+
+  @override
+  String get goalContractDoneMeans => 'Hotovo znamená';
+
+  @override
+  String get goalContractDoneMeansHelp =>
+      'Každé kritérium je jedna věc, kterou může kontrolující potvrdit.';
+
+  @override
+  String get goalContractCriterionHint =>
+      'Poznámky k vydání uvádějí každou sloučenou změnu';
+
+  @override
+  String goalContractCriterionTooLong(int max) {
+    return 'Nejvýše $max znaků.';
+  }
+
+  @override
+  String get goalContractRemoveCriterion => 'Odebrat kritérium';
+
+  @override
+  String get goalContractAddCriterion => 'Přidat kritérium';
+
+  @override
+  String goalContractCriteriaFull(int max) {
+    return 'Cíl může mít nejvýše $max kritérií.';
+  }
+
+  @override
+  String goalContractCriteriaCount(int count, int max) {
+    return '$count z $max kritérií';
+  }
+
+  @override
+  String get goalContractChecks => 'Kontroly';
+
+  @override
+  String get goalContractChecksHelp =>
+      'Server je spustí, když agent řekne, že je hotovo. Cíl bez kontroly se spoléhá jen na posouzení.';
+
+  @override
+  String get goalContractBoundaries => 'Hranice';
+
+  @override
+  String get goalContractBoundariesHint => 'Neměňte veřejné API';
+
+  @override
+  String get goalContractStopWhen => 'Zastavit a zeptat se, když';
+
+  @override
+  String get goalContractStopWhenHint => 'Migrace by smazala data';
+
+  @override
+  String get goalContractEditTitle => 'Upravit, co znamená hotovo';
+
+  @override
+  String get goalCheckerTitle => 'Kdo kontroluje tento cíl';
+
+  @override
+  String get goalCheckerLabel => 'Ověřovatel';
+
+  @override
+  String get goalCheckerNone => 'Bez samostatného ověřovatele';
+
+  @override
+  String get goalCheckerNoneWeaker =>
+      'Bez samostatné kontroly agent kontroluje vlastní práci, což zachytí méně chyb.';
+
+  @override
+  String goalCheckerRecommend(String agent) {
+    return 'Například $agent: ověřovatel u jiného poskytovatele s menší pravděpodobností sdílí stejná slepá místa.';
+  }
+
+  @override
+  String get goalCheckerRecommendGeneric =>
+      'Ověřovatel u jiného poskytovatele, než je agent cíle, s menší pravděpodobností sdílí jeho slepá místa.';
+
+  @override
+  String raiseCapSpentOf(String spent, String cap) {
+    return 'Utraceno $spent z $cap.';
+  }
+
+  @override
+  String get raiseCapNewCap => 'Nový limit v dolarech';
+
+  @override
+  String raiseCapMustExceed(String cap) {
+    return 'Zadejte více než $cap.';
+  }
+
+  @override
+  String get raiseCapConfirm => 'Zvýšit limit';
+
+  @override
+  String get goalsBackToList => 'Všechny cíle';
+
+  @override
+  String goalPursuedBy(String agent) {
+    return 'Sleduje $agent';
+  }
+
+  @override
+  String get goalOpenConversation => 'Otevřít konverzaci';
+
+  @override
+  String goalStarted(String time) {
+    return 'Spuštěno $time';
+  }
+
+  @override
+  String get goalStopTitle => 'Zastavit tento cíl?';
+
+  @override
+  String get goalStopBody =>
+      'Agent na něm natrvalo přestane pracovat. Jeho dosavadní práce zůstane v konverzaci.';
+
+  @override
+  String get goalRaiseBudgetTitle => 'Zvýšit rozpočet a pokračovat';
+
+  @override
+  String get goalRaiseBudgetAction => 'Zvýšit rozpočet';
+
+  @override
+  String get goalSectionNow => 'Teď';
+
+  @override
+  String get goalFactSegments => 'Segmenty';
+
+  @override
+  String get goalFactMoney => 'Utraceno';
+
+  @override
+  String get goalFactDeadline => 'Termín';
+
+  @override
+  String get goalFactNoProgress => 'Bez pokroku';
+
+  @override
+  String get goalNoDeadline => 'Žádný';
+
+  @override
+  String goalDeadlineWithLeft(String time, String left) {
+    return '$time, zbývá $left';
+  }
+
+  @override
+  String goalNoProgressCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Posledních $count segmentů nepřineslo žádný pokrok',
+      few: 'Poslední $count segmenty nepřinesly žádný pokrok',
+      one: 'Poslední segment nepřinesl žádný pokrok',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get goalObjective => 'Cíl';
+
+  @override
+  String get goalSectionContract => 'Co znamená hotovo';
+
+  @override
+  String get goalContractPauseFirst =>
+      'Pro změnu toho, co znamená hotovo, nebo kdo kontroluje, cíl nejprve pozastavte.';
+
+  @override
+  String get goalContractEdit => 'Upravit';
+
+  @override
+  String get goalCheckerChange => 'Změnit ověřovatele';
+
+  @override
+  String get goalContractNone =>
+      'Zatím nic není zapsáno. Agent rozhodne, kdy je hotovo.';
+
+  @override
+  String get goalCheckerSelf =>
+      'Bez samostatného ověřovatele: agent ověřuje vlastní práci.';
+
+  @override
+  String goalCheckerIs(String agent) {
+    return 'Kontroluje $agent';
+  }
+
+  @override
+  String goalCheckWorktree(int seconds) {
+    return 'Ve worktree, nejvýše $seconds s';
+  }
+
+  @override
+  String goalCheckEnvironmentTask(int seconds) {
+    return 'Úkol prostředí, nejvýše $seconds s';
+  }
+
+  @override
+  String get goalSectionVerification => 'Ověření';
+
+  @override
+  String get goalNotVerifiedYet =>
+      'Zatím neověřeno. Agent neřekl, že je hotovo.';
+
+  @override
+  String goalVerificationRound(int round, int total, String time) {
+    return 'Kolo $round z $total, $time';
+  }
+
+  @override
+  String get goalVerificationClaim => 'Co agent tvrdí';
+
+  @override
+  String get goalCheckOutputTail => 'Výstup (poslední řádky)';
+
+  @override
+  String goalCheckExitCode(int code) {
+    return 'Prošlo · návratový kód $code';
+  }
+
+  @override
+  String get goalVerificationReview => 'Kontrola';
+
+  @override
+  String get goalVerificationNoVerdict => 'Zatím žádná kontrola.';
+
+  @override
+  String goalVerdictItem(String criterion, String state) {
+    return '$criterion · $state';
+  }
+
+  @override
+  String get goalSectionSchedules => 'Plány a probuzení';
+
+  @override
+  String get goalNoSchedules => 'Žádný plán ani čekající probuzení.';
+
+  @override
+  String get goalPendingWakes => 'Čekající probuzení';
+
+  @override
+  String workListGroup(String label, int count) {
+    return '$label · $count';
+  }
+
+  @override
+  String get goalNotFound =>
+      'Tento cíl neexistuje, nebo je v prostoru, který nemůžete otevřít.';
+
+  @override
+  String get goalsTitle => 'Cíle';
+
+  @override
+  String get goalsSubtitle =>
+      'Práce, na které agent vytrvale pracuje, dokud není splněno, co znamená hotovo.';
+
+  @override
+  String get goalsEmpty => 'Zatím žádné cíle';
+
+  @override
+  String get goalsEmptyHint => 'Spusťte jeden pomocí /goal v konverzaci.';
+
+  @override
+  String get goalsGroupReview => 'Čeká na kontrolu';
+
+  @override
+  String get goalsGroupOpen => 'Otevřené';
+
+  @override
+  String get goalsGroupEnded => 'Ukončené';
+
+  @override
+  String get scheduleStatusActive => 'Aktivní';
+
+  @override
+  String get scheduleStatusPaused => 'Pozastaveno';
+
+  @override
+  String get scheduleStatusEnded => 'Ukončeno';
+
+  @override
+  String get scheduleWhenBusySkip =>
+      'Přeskočí spuštění, když je agent zaneprázdněn';
+
+  @override
+  String get scheduleWhenBusyQueue => 'Počká, až bude agent volný';
+
+  @override
+  String get scheduleDeliverRun => 'Spustí běh';
+
+  @override
+  String get scheduleDeliverNotify => 'Jen upozorní';
+
+  @override
+  String get scheduleNew => 'Nový plán';
+
+  @override
+  String get schedulesEmpty => 'Žádné plány ani sledování';
+
+  @override
+  String get schedulesEmptyHint =>
+      'Agenti je nastavují pomocí /loop a /schedule, nebo můžete vytvořit vlastní.';
+
+  @override
+  String scheduleOwnedBy(String name) {
+    return 'Vlastník: $name';
+  }
+
+  @override
+  String scheduleRunsSkips(int runs, int skips) {
+    String _temp0 = intl.Intl.pluralLogic(
+      runs,
+      locale: localeName,
+      other: '$runs běhů',
+      few: '$runs běhy',
+      one: '1 běh',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      skips,
+      locale: localeName,
+      other: '$skips přeskočení',
+      few: '$skips přeskočení',
+      one: '1 přeskočení',
+      zero: 'bez přeskočení',
+    );
+    return '$_temp0, $_temp1';
+  }
+
+  @override
+  String scheduleExpires(String time) {
+    return 'Končí $time';
+  }
+
+  @override
+  String scheduleNextFires(String times) {
+    return 'Příště: $times';
+  }
+
+  @override
+  String get schedulesTitle => 'Plány';
+
+  @override
+  String get schedulesSubtitle =>
+      'Plány, smyčky a sledování, která probouzejí agenty.';
+
+  @override
+  String get scheduleWhenLabel => 'Kdy se spustí';
+
+  @override
+  String get scheduleWhenEvery => 'Opakovaně, každých…';
+
+  @override
+  String get scheduleWhenCron => 'Podle cron plánu';
+
+  @override
+  String get scheduleWhenOnceIn => 'Jednou, po…';
+
+  @override
+  String get scheduleWhenOnceAt => 'Jednou, při nejbližším…';
+
+  @override
+  String get scheduleDurationLabel => 'Interval';
+
+  @override
+  String get scheduleDurationHelp =>
+      'Použijte s, m, h nebo d, například 30m nebo 1h30m. Opakování jsou od sebe nejméně 60 s.';
+
+  @override
+  String get scheduleDurationInvalid =>
+      'Toto není délka, například 30m nebo 2h.';
+
+  @override
+  String get scheduleHour => 'Hodina';
+
+  @override
+  String get scheduleMinute => 'Minuta';
+
+  @override
+  String get scheduleCronLabel => 'Cron (minuta hodina den měsíc den v týdnu)';
+
+  @override
+  String get scheduleCronInvalid =>
+      'Toto není pětipolní cron, který by se spustil.';
+
+  @override
+  String get scheduleTimeInvalid =>
+      'Není to čas v budoucnosti, například 09:00 nebo 2026-11-21T09:00Z.';
+
+  @override
+  String scheduleDaysRange(int max) {
+    return '1 až $max dní.';
+  }
+
+  @override
+  String scheduleOptionUnknown(String option) {
+    return '$option není možnost.';
+  }
+
+  @override
+  String get scheduleLimits => 'Limity';
+
+  @override
+  String get schedulePresetWeekdays => 'Pracovní dny v 09:00';
+
+  @override
+  String get schedulePresetDaily => 'Každý den v 09:00';
+
+  @override
+  String get schedulePresetHourly => 'Každou hodinu, přesně na celou hodinu';
+
+  @override
+  String get scheduleZoneLabel => 'Časové pásmo';
+
+  @override
+  String get scheduleZoneHelp =>
+      'Prázdné znamená časové pásmo pracovního prostoru.';
+
+  @override
+  String get scheduleZoneInvalid =>
+      'Toto není časové pásmo, například Europe/Berlin.';
+
+  @override
+  String get scheduleCreateTitle => 'Nový plán';
+
+  @override
+  String get scheduleSpaceLabel => 'Prostor';
+
+  @override
+  String get scheduleSpaceHint => 'Vyberte prostor';
+
+  @override
+  String get scheduleConversationLabel => 'Konverzace';
+
+  @override
+  String get scheduleConversationHint => 'Vyberte konverzaci';
+
+  @override
+  String get scheduleAgentLabel => 'Agent';
+
+  @override
+  String get scheduleAgentHint => 'Vyberte, kdo se probudí';
+
+  @override
+  String get scheduleNoteLabel => 'Od čeho každý běh začne';
+
+  @override
+  String get scheduleNoteHint =>
+      'Shrňte, co se přes noc změnilo, a označte vše, co je zablokované.';
+
+  @override
+  String get scheduleExpiresInDays => 'Končí po (dnech)';
+
+  @override
+  String get scheduleExpiresInDaysHelp => 'Prázdné: 30 dní, nejvýše 365.';
+
+  @override
+  String get scheduleMaxRuns => 'Limit běhů';
+
+  @override
+  String scheduleMaxRunsHelp(int max) {
+    return 'Prázdné: bez limitu, nejvýše $max.';
+  }
+
+  @override
+  String get scheduleCostCap => 'Limit nákladů (dolary)';
+
+  @override
+  String get scheduleCostCapHelp =>
+      'Prázdné: výchozí hodnota pracovního prostoru.';
+
+  @override
+  String get scheduleWhenBusyLabel => 'Pokud je agent zaneprázdněn';
+
+  @override
+  String get scheduleWhenBusyDefault => 'Výchozí pro tento druh';
+
+  @override
+  String get scheduleDeliverLabel => 'Každé spuštění';
+
+  @override
+  String get scheduleCreate => 'Vytvořit plán';
+
+  @override
+  String get scheduleExtendTitle => 'Prodloužit tento plán';
+
+  @override
+  String scheduleExtendNow(String current, String latest) {
+    return 'Končí $current. Může trvat nejvýše do $latest.';
+  }
+
+  @override
+  String get scheduleExtendDays => 'Přidat dny';
+
+  @override
+  String scheduleExtendTooLong(String latest) {
+    return 'Může skončit nejpozději $latest.';
+  }
+
+  @override
+  String scheduleMaxRunsRange(int max) {
+    return '1 až $max běhů.';
+  }
+
+  @override
+  String scheduleCostCapRange(String max) {
+    return 'Nejméně 1 dolar a nejvýše $max.';
+  }
+
+  @override
+  String get scheduleExtend => 'Prodloužit';
+
+  @override
+  String get scheduleRemoveTitle => 'Odebrat tento plán?';
+
+  @override
+  String get scheduleDeleteTitle => 'Smazat tento plán?';
+
+  @override
+  String get scheduleRemoveBody =>
+      'Zmizí ze seznamu. Jeho běhy zůstanou v konverzaci.';
+
+  @override
+  String get scheduleDeleteBody =>
+      'Natrvalo přestane spouštět. Jeho běhy zůstanou v konverzaci.';
+
+  @override
+  String get scheduleRemove => 'Odebrat';
+
+  @override
+  String get scheduleDelete => 'Smazat';
+
+  @override
+  String get scheduleOwnerOnly =>
+      'Obnovit ho nebo prodloužit může jen jeho vlastník.';
+
+  @override
+  String get schedulesBackToList => 'Všechny plány';
+
+  @override
+  String get scheduleNoteByAgent => 'Poznámka, napsaná agentem';
+
+  @override
+  String get scheduleNoteByPerson => 'Poznámka, napsaná osobou';
+
+  @override
+  String scheduleNoteEditedBy(String name) {
+    return 'Poznámka, naposledy upravil $name';
+  }
+
+  @override
+  String get scheduleNoNote => 'Bez poznámky.';
+
+  @override
+  String get schedulePause => 'Pozastavit';
+
+  @override
+  String get scheduleResume => 'Pokračovat';
+
+  @override
+  String get scheduleOpenChainRoot => 'Otevřít první plán tohoto řetězu';
+
+  @override
+  String get scheduleSectionFacts => 'Podrobnosti';
+
+  @override
+  String get scheduleFactAgent => 'Probouzí';
+
+  @override
+  String get scheduleFactConversation => 'V';
+
+  @override
+  String get scheduleConversationUnknown => 'Konverzace, kterou nemůžete vidět';
+
+  @override
+  String get scheduleFactOwner => 'Vlastník';
+
+  @override
+  String get scheduleNoOwner => 'Nikdo';
+
+  @override
+  String get scheduleFactNextFires => 'Další spuštění';
+
+  @override
+  String get scheduleFactNext => 'Další spuštění';
+
+  @override
+  String get scheduleFactLast => 'Naposledy spuštěno';
+
+  @override
+  String get scheduleFactRuns => 'Běhy';
+
+  @override
+  String scheduleRunsNoCap(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count běhů, bez limitu',
+      few: '$count běhy, bez limitu',
+      one: '1 běh, bez limitu',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleRunsOfCap(int count, int max) {
+    return '$count z $max běhů';
+  }
+
+  @override
+  String get scheduleFactSkips => 'Přeskočeno';
+
+  @override
+  String scheduleSkips(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count spuštění přeskočeno',
+      few: '$count spuštění přeskočeno',
+      one: '1 spuštění přeskočeno',
+      zero: 'Žádné',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scheduleFactSpent => 'Utraceno';
+
+  @override
+  String get scheduleFactEnds => 'Končí';
+
+  @override
+  String get scheduleFactWhenBusy => 'Pokud je agent zaneprázdněn';
+
+  @override
+  String get scheduleFactDeliver => 'Každé spuštění';
+
+  @override
+  String get scheduleFactChain => 'Řetěz';
+
+  @override
+  String scheduleChainLeft(int runs, String time) {
+    String _temp0 = intl.Intl.pluralLogic(
+      runs,
+      locale: localeName,
+      other: 'Zbývá $runs běhů',
+      few: 'Zbývají $runs běhy',
+      one: 'Zbývá 1 běh',
+    );
+    return '$_temp0 v řetězu, který končí $time';
+  }
+
+  @override
+  String get scheduleFactCreated => 'Vytvořeno';
+
+  @override
+  String get scheduleSectionHistory => 'Nedávná probuzení a běhy';
+
+  @override
+  String get scheduleNoRuns => 'Zatím žádné běhy.';
+
+  @override
+  String scheduleRunLine(String status, String cost) {
+    return '$status · $cost';
+  }
+
+  @override
+  String get scheduleRunPending => 'Čeká na spuštění';
+
+  @override
+  String get scheduleRunRunning => 'Běží';
+
+  @override
+  String get scheduleRunCompleted => 'Dokončeno';
+
+  @override
+  String get scheduleRunFailed => 'Selhalo';
+
+  @override
+  String get scheduleNotFound =>
+      'Tento plán neexistuje, nebo je v prostoru, který nemůžete otevřít.';
+
+  @override
+  String get improvementCampaignTitle => 'Spustit vyhodnocení';
+
+  @override
+  String improvementCampaignCost(int repetitions, String budget) {
+    String _temp0 = intl.Intl.pluralLogic(
+      repetitions,
+      locale: localeName,
+      other: 'Každý úkol proběhne ${repetitions}krát',
+      few: 'Každý úkol proběhne ${repetitions}krát',
+      one: 'Každý úkol proběhne jednou',
+    );
+    return '$_temp0 s aktuální dovedností i se změnou. Utratí nejvýše $budget, účtováno tomuto pracovnímu prostoru.';
+  }
+
+  @override
+  String get improvementCampaignCostUnknown =>
+      'Vyhodnocení spustí korpus s aktuální dovedností i se změnou, nejvýše do rozpočtu, který nastavíte.';
+
+  @override
+  String get improvementCampaignUnavailable =>
+      'Vyhodnocení teď na tomto serveru nelze spustit.';
+
+  @override
+  String get improvementCampaignCorpus => 'Korpus';
+
+  @override
+  String get improvementCampaignProvider => 'Poskytovatel';
+
+  @override
+  String get improvementCampaignModel => 'Model';
+
+  @override
+  String get improvementCampaignRepetitions => 'Běhy na úkol';
+
+  @override
+  String get improvementCampaignBudget => 'Rozpočet (dolary)';
+
+  @override
+  String improvementCampaignRange(int max) {
+    return '1 až $max.';
+  }
+
+  @override
+  String get improvementCampaignStart => 'Spustit vyhodnocení';
+
+  @override
+  String get improvementRollbackTitle => 'Vrátit tuto změnu zpět?';
+
+  @override
+  String get improvementRollbackBody =>
+      'Text, který nahradila, se vrátí, pokud ho od té doby nikdo neupravil.';
+
+  @override
+  String get improvementRollback => 'Vrátit zpět';
+
+  @override
+  String get improvementRolledBackDone => 'Vráceno zpět.';
+
+  @override
+  String get improvementNeedsAdmin =>
+      'Rozhodnout o této změně může jen správce pracovního prostoru: mění dovednost nebo politiku pro celý pracovní prostor.';
+
+  @override
+  String get improvementAdminDecides =>
+      'Jako správce o této změně rozhodujete vy: mění dovednost nebo politiku pro celý pracovní prostor.';
+
+  @override
+  String get improvementNeedsCampaign =>
+      'Před přijetím této změny dovednosti spusťte úspěšné vyhodnocení.';
+
+  @override
+  String get improvementsBackToList => 'Všechna vylepšení';
+
+  @override
+  String improvementMeta(String kind, String scope, String agent) {
+    return '$kind · $scope · navrhl $agent';
+  }
+
+  @override
+  String get improvementAccept => 'Přijmout';
+
+  @override
+  String get improvementAcceptedDone => 'Přijato.';
+
+  @override
+  String get improvementReject => 'Odmítnout';
+
+  @override
+  String get improvementRejectedDone => 'Odmítnuto.';
+
+  @override
+  String get improvementRunEvaluation => 'Spustit vyhodnocení';
+
+  @override
+  String get improvementSectionChange => 'Co se mění';
+
+  @override
+  String get improvementTarget => 'Cíl';
+
+  @override
+  String improvementScopeLine(String scope) {
+    return 'Platí pro: $scope';
+  }
+
+  @override
+  String get improvementNewText => 'Nový text';
+
+  @override
+  String get improvementRemovedText => 'Odebraný text';
+
+  @override
+  String get improvementExpected => 'Očekávaný efekt';
+
+  @override
+  String get improvementSectionEvidence => 'Důkazy a rozhodnutí';
+
+  @override
+  String get improvementNoEvidence => 'Nejsou připojeny žádné důkazy.';
+
+  @override
+  String get improvementEvidenceRuns => 'Běhy';
+
+  @override
+  String get improvementEvidenceMessages => 'Zprávy';
+
+  @override
+  String improvementOpenMessage(int index) {
+    return 'Zpráva $index';
+  }
+
+  @override
+  String get improvementEvidenceChecks => 'Výsledky kontrol';
+
+  @override
+  String get improvementEvaluation => 'Vyhodnocení';
+
+  @override
+  String get improvementCampaignNone => 'Zatím nevyhodnoceno.';
+
+  @override
+  String get improvementCampaignRunning => 'Vyhodnocení probíhá.';
+
+  @override
+  String get improvementCampaignPassed =>
+      'Vyhodnocení prošlo: proběhlo celé a změna vyřešila alespoň tolik běhů jako aktuální dovednost, což ještě neznamená, že je lepší. Lze ji přijmout.';
+
+  @override
+  String get improvementCampaignFailed =>
+      'Vyhodnocení neprošlo, nebo se dovednost po změření změnila. Spusťte ho znovu, nebo změnu odmítněte.';
+
+  @override
+  String improvementDecided(String status, String name, String time) {
+    return '$status, $name, $time';
+  }
+
+  @override
+  String get improvementSomeone => 'někdo';
+
+  @override
+  String improvementExpires(String time) {
+    return 'Vyprší $time, pokud o ní někdo nerozhodne.';
+  }
+
+  @override
+  String get improvementOpenApplied => 'Otevřít, co změnilo';
+
+  @override
+  String get improvementsTitle => 'Vylepšení';
+
+  @override
+  String get improvementsSubtitle =>
+      'Změny, které agenti navrhli pro svou paměť, poznámky, politiky a dovednosti.';
+
+  @override
+  String get improvementsEmpty => 'Žádné návrhy';
+
+  @override
+  String get improvementsEmptyHint =>
+      'Agenti navrhují vylepšení po kontrole své práce, například pomocí /refine.';
+
+  @override
+  String get improvementRowNeedsAdmin => 'Rozhoduje správce';
+
+  @override
+  String get improvementNotFound =>
+      'Tento návrh neexistuje, nebo je v prostoru, který nemůžete otevřít.';
+
+  @override
+  String get dispatchSettingsTitle => 'Plány';
+
+  @override
+  String get dispatchSettingsSubtitle =>
+      'Limity plánů a sledování a co se stane s žádostmi, na které nikdo neodpoví.';
+
+  @override
+  String get dispatchLimitsLabel => 'Limity plánů';
+
+  @override
+  String get dispatchLimitsSubtitle =>
+      'Horní hranice počtu plánů a sledování, které mohou agenti mít, a jejich výchozí hodnoty.';
+
+  @override
+  String dispatchLimitRange(int max) {
+    return '1 až $max';
+  }
+
+  @override
+  String get dispatchLimitPerConversation => 'Na agenta v konverzaci';
+
+  @override
+  String get dispatchLimitPerConversationHelp =>
+      'Aktivní nebo pozastavené plány, které jeden agent může mít v jedné konverzaci.';
+
+  @override
+  String get dispatchLimitPerAgent => 'Na agenta';
+
+  @override
+  String get dispatchLimitPerAgentHelp =>
+      'Aktivní nebo pozastavené plány, které jeden agent může mít v celém pracovním prostoru.';
+
+  @override
+  String get dispatchLimitPerWorkspace => 'V pracovním prostoru';
+
+  @override
+  String get dispatchLimitPerWorkspaceHelp =>
+      'Aktivní nebo pozastavené plány v celém pracovním prostoru.';
+
+  @override
+  String get dispatchLimitCostCap => 'Výchozí limit nákladů (dolary)';
+
+  @override
+  String get dispatchLimitCostCapHelp =>
+      'Kolik celkem smí plán utratit, pokud si vlastní limit nenastaví.';
+
+  @override
+  String get dispatchLimitZone => 'Časové pásmo';
+
+  @override
+  String get dispatchLimitZoneHelp =>
+      'Pásmo, ve kterém se čte cron plán, pokud žádné neuvede, a pásmo denního přehledu.';
+
+  @override
+  String get dispatchUnattendedLabel => 'Když nikdo neodpoví';
+
+  @override
+  String get dispatchUnattendedSubtitle =>
+      'Jak dlouho čeká běh, který spustil server, na osobu, a kdy se odešle denní přehled čekajícího.';
+
+  @override
+  String get dispatchUnattendedExpiry => 'Žádosti čekají (hodiny)';
+
+  @override
+  String get dispatchUnattendedExpiryHelp =>
+      'Poté se schválení počítá jako zamítnuté a otázka jako nezodpovězená. Cíle nastavené na automatickou odpověď odpoví na své otázky po 10 minutách.';
+
+  @override
+  String dispatchUnattendedExpiryRange(int min, int max) {
+    return '$min až $max hodin';
+  }
+
+  @override
+  String get dispatchDigestHour => 'Denní přehled v (hodina)';
+
+  @override
+  String dispatchDigestHourHelp(String zone) {
+    return 'V $zone, výše zvoleném časovém pásmu.';
+  }
+
+  @override
+  String get dispatchDigestHourRange => '0 až 23';
+
+  @override
+  String get goalRecordCrumb => 'Cíl';
+
+  @override
+  String get scheduleRecordCrumb => 'Plán';
+
+  @override
+  String get improvementRecordCrumb => 'Návrh';
+
+  @override
+  String get goalNodeNeedsAgent => 'Vyberte agenta, který cíl sleduje.';
+
+  @override
+  String get goalNodeNeedsObjective => 'Napište cíl.';
+
+  @override
+  String get goalNodeContractInvalid =>
+      'Zadání má pole nad limitem; neuloží se, dokud ho neopravíte.';
+
+  @override
+  String get goalNodeBudget => 'Rozpočet (dolary)';
+
+  @override
+  String get goalNodeBudgetHelp =>
+      'Nejvíce, co smí cíl utratit. Když rozpočet dojde, cíl čeká na osobu.';
+
+  @override
+  String goalNodeBudgetRange(int max) {
+    return 'Povinné: více než 0, nejvýše $max.';
+  }
+
+  @override
+  String get goalNodeMaxRuns => 'Limit segmentů';
+
+  @override
+  String get goalNodeMaxRunsHelp =>
+      'Nepovinné. Nejvíce segmentů (běhů agenta), které cíl smí použít.';
+
+  @override
+  String get goalNodeDeadline => 'Termín (hodiny)';
+
+  @override
+  String get goalNodeDeadlineHelp =>
+      'Nepovinné. Hodiny od chvíle, kdy krok cíl spustí.';
+
+  @override
+  String goalNodeRange(int max) {
+    return '1 až $max, nebo prázdné.';
+  }
+
+  @override
+  String get goalNodeContract => 'Zadání';
+
+  @override
+  String get goalNodeContractHelp =>
+      'Co znamená hotovo: kritéria, která kontroluje posuzující, a příkazy, které musí projít.';
+
+  @override
+  String get nodeConfigObjective => 'Cíl';
+
+  @override
+  String pipelineRunGoalStep(String step) {
+    return 'Krok $step sleduje cíl';
+  }
+
+  @override
+  String get pipelineRunOpenGoal => 'Otevřít cíl';
+
+  @override
+  String get pipelineRunHeldBudget =>
+      'Tento běh je podržen: jeho orchestrace dosáhla limitu nákladů.';
+
+  @override
+  String pipelineRunHeldOther(String reason) {
+    return 'Tento běh je podržen ($reason).';
+  }
+
+  @override
+  String pipelineRunHeldSpent(String spent, String cap) {
+    return 'Utraceno $spent z $cap. Zvyšte limit a běh bude pokračovat.';
+  }
+
+  @override
+  String get pipelineRunRaiseCap => 'Zvýšit limit';
+
+  @override
+  String get pipelineRunRaiseCapTitle => 'Zvýšit limit orchestrace';
+
+  @override
+  String get pipelineRunCapRaised => 'Limit zvýšen. Běh brzy pokračuje.';
+
+  @override
+  String get goalLaunchChecks => 'Kontroly';
+
+  @override
+  String get goalLaunchChecksHelp =>
+      'Příkazy, které musí projít, aby cíl mohl skončit. Nepovinné.';
+
+  @override
+  String get goalLaunchFresh => 'Začínat každý segment od začátku';
+
+  @override
+  String get goalLaunchFreshHelp =>
+      'Každý běh začne bez historie konverzace, pouze z cíle a jeho poznámek.';
+
+  @override
+  String get goalLaunchAssume =>
+      'Odpovídat na vlastní otázky, když na ně nikdo neodpoví';
+
+  @override
+  String get goalLaunchAssumeHelp =>
+      'Po 10 minutách bez odpovědi agent uvede svůj předpoklad a pokračuje, pokud to podmínky zastavení dovolí.';
+
+  @override
+  String workFeedLimitParkOutcomeResumed(String provider, String time) {
+    return 'Pokračovalo v $time po limitu využití u $provider.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeCancelled(String provider, String time) {
+    return 'Zrušeno v $time. Po limitu využití u $provider nepokračovalo.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeExpired(String provider, String time) {
+    return 'Vypršelo v $time, aniž by po limitu využití u $provider pokračovalo.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeSkipped(String provider, String time) {
+    return 'Po limitu využití u $provider nepokračovalo ($time).';
+  }
+
+  @override
+  String workFeedCommandRefusedNamed(String command) {
+    return 'Příkaz /$command byl odmítnut.';
+  }
+
+  @override
+  String get improvementRefusalQueued =>
+      'Kontrola této konverzace už čeká na spuštění.';
+
+  @override
+  String get improvementRefusalAgentNotFound =>
+      'Tento agent není agentem tohoto pracovního prostoru.';
+
+  @override
+  String get workRefusalWakeQueueFull =>
+      'Tady už čeká příliš mnoho probuzení. Zkuste to, až některá proběhnou.';
+
+  @override
+  String get orchestrationRefusalNotYours =>
+      'Změnit to může jen osoba, za kterou tento běh jedná.';
+
+  @override
+  String get orchestrationRefusalCapInvalid =>
+      'Nový limit musí být vyšší než aktuální limit a než utracená částka, a nejvýše 1 000 \$.';
+
+  @override
+  String get orchestrationRefusalCapChanged =>
+      'Limit už někdo zvýšil jako první. Zkontrolujte nový limit a zkuste to znovu.';
+
+  @override
+  String workFeedCapRaised(String person, String oldCap, String newCap) {
+    return '$person zvýšil limit běhu z $oldCap na $newCap.';
+  }
+
+  @override
+  String get workFeedPersonUnknown => 'Osoba';
+
+  @override
+  String workFeedApplyIncomplete(String skill) {
+    return 'Přijatou změnu dovednosti $skill nebylo možné dokončit, protože se dovednost mezitím změnila. Návrh byl vrácen zpět.';
+  }
+
+  @override
+  String get workFeedOpenImprovement => 'Otevřít vylepšení';
+
+  @override
+  String get peerAskFailNoOutput => 'Skončila bez odpovědi.';
+
+  @override
+  String get peerAskFailRunFailed => 'Její běh selhal.';
+
+  @override
+  String get peerAskFailStoppedByPerson => 'Osoba zastavila její běh.';
+
+  @override
+  String get peerAskFailBudget => 'Její běh dosáhl rozpočtu.';
+
+  @override
+  String get peerAskFailSilence => 'Její běh utichl a byl zastaven.';
+
+  @override
+  String get peerAskFailUsageLimit =>
+      'Její běh se zastavil na limitu využití u poskytovatele.';
+
+  @override
+  String get peerAskFailNotDelivered => 'Otázka nebyla nikdy doručena.';
+
+  @override
+  String heldSteeringLimitHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count zpráv podrženo na limitu využití',
+      few: '$count zprávy podrženy na limitu využití',
+      one: '1 zpráva podržena na limitu využití',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get heldSteeringLimitNote =>
+      'Odešlou se, až je osoba, pro kterou běh pracuje, obnoví. Pokud nebude obnoven do 7 dnů od resetu, budou pro tuto osobu podrženy.';
+
+  @override
+  String get wakeKindRuleFolded => 'Pozdější událost ji nahradila.';
+
+  @override
+  String goalCardWaitingNext(String time) {
+    return 'Čeká na to, co nastavil · znovu se podívá do $time';
+  }
+
+  @override
+  String raiseCapAtMost(String max) {
+    return 'Zadejte nejvýše $max.';
+  }
+
+  @override
+  String raiseCapNowAt(String cap) {
+    return 'Limit je nyní $cap.';
+  }
+
+  @override
+  String get scheduleWakeReasonSchedule => 'Naplánováno';
+
+  @override
+  String get scheduleWakeReasonWatch => 'Sledování';
+
+  @override
+  String get scheduleWakeReasonLimitReset => 'Po limitu využití';
+
+  @override
+  String get scheduleWakeStatePending => 'Čeká';
+
+  @override
+  String get scheduleWakeStateHeld => 'Podrženo';
+
+  @override
+  String get scheduleWakeStateClaimed => 'Spouští se';
+
+  @override
+  String get scheduleWakeStateDelivered => 'Doručeno';
+
+  @override
+  String get scheduleWakeStateSkipped => 'Přeskočeno';
+
+  @override
+  String get scheduleWakeStateExpired => 'Vypršelo';
+
+  @override
+  String get scheduleWakeStateCancelled => 'Zrušeno';
+
+  @override
+  String scheduleWakeLine(String reason, String state) {
+    return '$reason · $state';
+  }
+
+  @override
+  String scheduleWakeExit(int code) {
+    return 'návratový kód $code';
+  }
+
+  @override
+  String scheduleWakeEvents(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count událostí',
+      few: '$count události',
+      one: '1 událost',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scheduleWakesNone => 'Zatím žádná probuzení.';
+
+  @override
+  String get scheduleWakesOlder => 'Zobrazit starší';
+
+  @override
+  String get improvementCandidateStaged =>
+      'Navržená dovednost se uloží jako samostatná revize. Vyhodnocení ponechá živou dovednost beze změny; dovednost se změní, až když bude návrh přijat.';
+
+  @override
+  String goalNextWaitingFallback(String time) {
+    return 'Pokračuje, až dorazí to, na co čeká, nebo se znovu podívá v $time, pokud nic nedorazí.';
+  }
+
+  @override
+  String get steeringRefusalHeldByLimit =>
+      'Zprávy, které pozastavení kvůli limitu využití drží, nelze během čekání odeslat ručně.';
+
+  @override
+  String steeringRefusalHeldByLimitAt(String time) {
+    return 'Zprávy, které pozastavení kvůli limitu využití drží, nelze během čekání odeslat ručně. Limit se obnoví v $time.';
+  }
+
+  @override
+  String heldSteeringLimitResetsAt(String time) {
+    return 'Limit se resetuje v $time. Odešlou se, až je osoba, pro kterou běh pracuje, obnoví.';
+  }
+
+  @override
+  String heldSteeringFromPerson(String name) {
+    return 'Od $name';
+  }
+
+  @override
+  String get heldSteeringFromSomeoneElse => 'Od někoho jiného';
+
+  @override
+  String get heldSteeringOnlyWriterSends =>
+      'Podržené zprávy může odeslat jen osoba, která ji napsala.';
+
+  @override
+  String get steeringRefusalNotYours =>
+      'Tyto podržené zprávy patří někomu jinému. Odeslat může jen osoba, která některou napsala.';
+
+  @override
+  String improvementEvaluationSolved(
+    int pairedRuns,
+    int candidateSolved,
+    int baselineSolved,
+  ) {
+    String _temp0 = intl.Intl.pluralLogic(
+      pairedRuns,
+      locale: localeName,
+      other: 'V $pairedRuns párových bězích',
+      few: 'V $pairedRuns párových bězích',
+      one: 'V 1 párovém běhu',
+    );
+    return '$_temp0, změna vyřešila $candidateSolved a aktuální dovednost vyřešila $baselineSolved.';
+  }
+
+  @override
+  String improvementEvaluationWorse(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count úloh dopadlo s změnou hůř.',
+      few: '$count úlohy dopadly s změnou hůř.',
+      one: '1 úloha dopadla s změnou hůř.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String improvementEvaluationCostlier(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count úloh s změnou stálo více.',
+      few: '$count úlohy s změnou stály více.',
+      one: '1 úloha s změnou stála více.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String improvementEvaluationHarnessErrors(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count běhů narazilo na chybu harnessu.',
+      few: '$count běhy narazily na chybu harnessu.',
+      one: '1 běh narazil na chybu harnessu.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get improvementEvaluationIncomplete => 'Vyhodnocení neproběhlo celé.';
+
+  @override
+  String workFeedLimitParkExpires(String time) {
+    return 'Vyprší $time';
+  }
+
+  @override
+  String workFeedSchedulePaused(String person, String agent) {
+    return 'Plán pro $agent pozastavil uživatel $person.';
+  }
+
+  @override
+  String get goalCardApproveNotYours =>
+      'Schválit dokončení tohoto cíle může jen osoba, která spustila běh pipeline.';
+
+  @override
+  String get goalCardObjective => 'Cíl';
+
+  @override
+  String get planNeedsWrite =>
+      'Schválení nebo změna tohoto plánu vyžaduje přístup k zápisu do všech repozitářů v tomto prostoru. Přístup může udělit správce pracovního prostoru.';
+
+  @override
+  String scheduleSpentWithChain(String spent, String cap) {
+    return '$spent z $cap, včetně všech plánů v jeho řetězci';
+  }
 }

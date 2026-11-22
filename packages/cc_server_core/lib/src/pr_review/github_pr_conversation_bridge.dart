@@ -5,6 +5,7 @@ import 'package:cc_domain/core/domain/entities/message.dart'
 import 'package:cc_domain/core/domain/entities/workspace_member.dart';
 import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
+import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_state_repositories.dart';
@@ -690,6 +691,7 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
         agentId: answerer,
         prompt: question,
         requestedByUserId: asker.userId,
+        wakeContext: const WakeContext.userMessage(),
       );
     } on Object catch (e) {
       // The message is in the space; only the turn failed to start. Report

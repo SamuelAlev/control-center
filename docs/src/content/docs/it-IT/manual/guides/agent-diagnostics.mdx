@@ -2,7 +2,7 @@
 title: Diagnostica un agente
 description: Esamina il registro delle esecuzioni, la sonda degli adapter, lo stato del server e la diagnostica dell'host quando un agente smette di produrre esecuzioni.
 slug: it-IT/manuale/guide/diagnostica-agente
-sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
+sourceHash: 8cd7078bacfbfcd18d90512974eff3539366883c
 ---
 
 Questa guida mostra come scoprire perché un agente non produce esecuzioni.
@@ -90,7 +90,13 @@ Controlla **Impostazioni → Server → Diagnostica e privacy → Ricerca semant
 
 ### Il server non si avvia affatto
 
-Le librerie native sono necessarie e non esiste una modalità degradata. Una dylib mancante fa sì che `cc_server` rifiuti di avviarsi e indichi il colpevole nell'errore. Prepara le librerie native con `scripts/natives/build_natives.sh` e ricompila il binario del server.
+Le librerie native sono necessarie e non esiste una modalità degradata. Una dylib mancante, o un runner della modalità codice mancante (`bin/codemode/cc_codemode`), fa sì che `cc_server` rifiuti di avviarsi e indichi il colpevole nell'errore. Prepara le librerie native con `scripts/natives/build_natives.sh` e ricompila il binario del server con `scripts/build_server.sh`.
+
+### Uno script non è riuscito, oppure la modalità codice non viene offerta
+
+Per vedere cosa ha fatto uno script della [modalità codice](/it-IT/manuale/concetti/modalita-codice/), apri la registrazione dello script da **Apri registrazione** sulla sua riga nella conversazione, oppure da **Osservabilità → Esecuzioni di codice**. La registrazione indica in parole semplici come è terminato lo script (ha esaurito il tempo, ha esaurito il tempo di processore, ha raggiunto il limite di memoria, ha generato un errore) ed elenca ogni chiamata a strumento effettuata, con l'indicazione se i guardrail l'hanno consentita, una persona l'ha approvata o è stata negata.
+
+Se l'agente non ha affatto lo strumento `repl`, apri **Impostazioni → Spazio di lavoro → Modalità codice**. Sotto **Stato**, **Su questo server** indica **Disponibile** o **Non disponibile**; **Non disponibile** significa che il server non riesce a isolare il runner degli script sul suo host, e la pagina riporta il motivo. La riga di log di avvio del server contiene la stessa informazione (`code_mode=…`). Un'esecuzione senza spazio di lavoro, quella per cui non si possono leggere i limiti dello spazio di lavoro o quella il cui log non si può scrivere, non riceve neppure `repl` e chiama direttamente i suoi strumenti.
 
 ### Un'azione viene negata silenziosamente
 

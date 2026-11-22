@@ -343,7 +343,8 @@ class Message {
   /// Lifecycle of a [MessageType.steering] message, from metadata
   /// (`metadata['steerState']`): `'queued'` while it waits to be injected
   /// (rendered in the steering queue strip), `'injected'` once a run has
-  /// taken it (rendered in the trail), and null for every other message.
+  /// taken it (rendered in the trail), `'held'` after a person stopped the
+  /// run before it was delivered, and null for every other message.
   String? get steerState {
     if (!isSteering) {
       return null;
@@ -356,6 +357,10 @@ class Message {
 
   /// Whether a run has injected this steering message.
   bool get isSteeringInjected => steerState == 'injected';
+
+  /// Whether this steering message is held: a person stopped the run before
+  /// it was delivered, and it waits for them to release or delete it.
+  bool get isSteeringHeld => steerState == 'held';
 
   /// Position of a queued steering message in the user-ordered queue
   /// (`metadata['steerOrder']`, ascending). Falls back to `createdAt`

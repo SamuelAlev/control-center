@@ -2,7 +2,7 @@
 title: Den Tool-Kontext eines Agenten abstimmen
 description: Sieh nach, was ein Lauf wirklich schickt, ändere, welche Tools von Anfang an geladen werden, und kläre, ob eine schlechte Tool-Wahl ein Fehltreffer beim Nachschlagen oder ein Prompt-Problem war.
 slug: de-DE/handbuch/anleitungen/tool-kontext-abstimmen
-sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
+sourceHash: 22a4306a97aa8da0332f8e3e20e06ed86119f1d5
 ---
 
 Diese Anleitung behandelt die praktische Arbeit an der zweistufigen Tool-Oberfläche: nachsehen, was ein Lauf schickt, das ändern und einen Agenten diagnostizieren, der zum falschen Tool gegriffen hat. Warum es so funktioniert, liest du unter [Tool-Kontext und Prompt-Caching](/de-DE/handbuch/konzepte/tool-kontext/).
@@ -13,25 +13,26 @@ Diese Anleitung behandelt die praktische Arbeit an der zweistufigen Tool-Oberfl�
 
 Zwei Segmente zählen hier:
 
-- **Tool-Definitionen** und **MCP & dynamische Tools** — die residente Menge, mit den echten Tokenkosten jedes Tools.
+- **Tool-Definitionen** und **MCP & dynamische Tools** — die direkte Menge, mit den echten Tokenkosten jedes Tools.
 - **Bei Bedarf geladene Tools** — der zurückgestellte Index. Jeder Eintrag kostet nur seinen Namen, denn die Anfrage trägt nur den Namen; öffnest du einen, siehst du trotzdem die volle Beschreibung und das Schema, also was er *kosten würde*, wenn der Lauf ihn nachzieht.
+
+In einem Lauf mit `repl` werden die Tools, die ein Skript erreicht, im Systemprompt genannt und erscheinen in keinem der beiden Segmente.
 
 Ist das zurückgestellte Segment leer, ist die Zurückstellung auf diesem Server aus. Prüfe `--tool-deferral` in der [`cc_server` CLI](/de-DE/handbuch/referenz/cc-server-cli/).
 
 ## Festlegen, welche Tools von Anfang an geladen werden
 
-Die residente Menge ist Richtlinie, keine Konfiguration — sie liegt in `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) und gilt für jeden Lauf:
+Die direkte Menge ist Richtlinie, keine Konfiguration — sie liegt in `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) und gilt für jeden Lauf:
 
-- `residentBuiltins` — das Datei- und Shell-Vokabular.
-- `residentDiscovery` — `search_tools` und `list_my_tools`. Die nimmst du nicht heraus; über sie erreicht ein Agent alles andere.
-- `residentMcpTools` — die wenigen Tools von Control Center, deren Schema sich auf jeder Anfrage lohnt.
-- Ein Block je Modus, für die Tools, die ein bestimmter [Modus](/de-DE/handbuch/konzepte/modi/) in fast jedem Turn braucht.
+- `directTools` — die zwölf Tools, die jeder Lauf direkt aufruft: `read`, `write`, `edit`, `search`, `find`, `bash` und `read_output`; `ask_user` und `task`; `todo_write`, `search_memory` und `send_message`.
+- `residentDiscovery` — `search_tools` und `list_my_tools`. Die nimmst du nicht heraus; über sie erreicht ein Agent alles andere. Ein Lauf mit `repl` erhält `search_tools`, sobald ein Tool beim ersten Gebrauch geladen wird, und kein `list_my_tools`.
+- `directNamesFor(mode)` — die Tools, die ein bestimmter [Modus](/de-DE/handbuch/konzepte/modi/) für seine eigene Schleife hinzufügt: die Review-Verben im Review-Modus, `submit_plan` im Plan-Modus und `propose_orchestration` im Orchestrate-Modus.
 
 Zwei Regeln, wenn du sie bearbeitest:
 
-**Nimm ein Tool nur auf, wenn die meisten Läufe es benutzen.** Jeder Name kostet sein Schema bei jeder Anfrage jedes Laufs, und das dauerhaft. Ein Tool, das wichtig ist, sobald es gebraucht wird, insgesamt aber selten vorkommt, gehört in die zurückgestellte Hälfte — der Agent findet es trotzdem.
+**Nimm ein Tool nur auf, wenn die meisten Läufe es benutzen.** Jeder Name kostet sein Schema bei jeder Anfrage jedes Laufs, und das dauerhaft. Ein Tool, das wichtig ist, sobald es gebraucht wird, insgesamt aber selten vorkommt, gehört außerhalb der direkten Menge — der Agent erreicht es trotzdem, aus einem Skript oder indem er es beim ersten Gebrauch lädt.
 
-**Nimm den echten Namen des Tools.** Ein residenter Name, der auf kein Tool passt, bleibt wirkungslos: kein Fehler, keine Warnung, das Tool wird einfach zurückgestellt. `test/tooling/resident_tool_names_test.dart` fängt das ab und hält außerdem jeden Modus unter 40 residenten Tools. Genau das ist der Sinn — jenseits dieses Bandes wird die Tool-Auswahl messbar schlechter.
+**Nimm den echten Namen des Tools.** Ein direkter Name, der auf kein Tool passt, bleibt wirkungslos: kein Fehler, keine Warnung, das Tool bleibt einfach außerhalb der direkten Menge. `test/tooling/resident_tool_names_test.dart` fängt das ab, hält die direkte Menge jedes Modus auf höchstens 20 Tools und jeden Modus auf höchstens 40 Tools, die vorab gesendet werden. Genau das ist der Sinn — jenseits dieses Bandes wird die Tool-Auswahl messbar schlechter.
 
 Die erforderlichen und verankerten Verben eines Modus kommen automatisch dazu, du musst das eigene Ausgabe-Verb eines Modus also nie selbst eintragen.
 
@@ -73,4 +74,4 @@ Häufige Ursachen, nach Wahrscheinlichkeit geordnet:
 - **Ein Wechsel von Modell oder Aufwand mitten in der Unterhaltung.** Beides ändert das Präfix. Bei Subagenten geht das besonders leicht schief: Kinder mit niedrigerem Aufwand laufen zu lassen, um Geld zu sparen, kann durch das verlorene gemeinsame Präfix mehr kosten, als es spart.
 - **Häufige Verdichtung.** Verdichtung schreibt den Verlauf absichtlich um, die Kosten sind also echt; die Abhilfe ist, selten und tief zu verdichten statt oft und flach.
 
-Die Zurückstellung mit `--tool-deferral=off` auszuschalten ist ein gültiger A/B-Vergleich, um zu isolieren, ob eine Verhaltensänderung von der zweistufigen Oberfläche kam. Der Server erzeugt dann genau die Anfrage von vor der Zurückstellung. Bleibt das Verhalten auch so, ist die Oberfläche nicht die Ursache.
+Die Zurückstellung mit `--tool-deferral=off` auszuschalten ist ein gültiger A/B-Vergleich, um zu isolieren, ob eine Verhaltensänderung von der zweistufigen Oberfläche kam. Ohne sie sendet ein Lauf die Definition jedes zugelassenen Tools vorab, außer dass ein Lauf mit `repl` weiterhin die Tools, die ein Skript aufrufen darf, aus Skripten aufruft. Bleibt das Verhalten bei ausgeschalteter Zurückstellung bestehen, ist die Zurückstellung nicht die Ursache.

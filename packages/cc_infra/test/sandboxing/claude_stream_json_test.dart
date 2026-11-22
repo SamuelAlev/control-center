@@ -771,6 +771,74 @@ void main() {
       expect(readings([delta(40)]), isEmpty);
     });
 
+    test('every report of a call carries its message id and model', () {
+      final out = readings([
+        {
+          'type': 'stream_event',
+          'event': {
+            'type': 'message_start',
+            'message': {
+              'id': 'msg_01',
+              'model': 'claude-opus-5-5',
+              'usage': {'input_tokens': 2, 'cache_read_input_tokens': 90},
+            },
+          },
+        },
+        delta(40),
+      ]);
+      expect(out.map((u) => u.messageId), ['msg_01', 'msg_01']);
+      expect(out.map((u) => u.model), ['claude-opus-5-5', 'claude-opus-5-5']);
+      expect(out.first.callStarted, isTrue);
+      expect(out.last.callStarted, isFalse);
+      expect(out.last.outputTokens, 40);
+      expect(out.every((u) => !u.subagent), isTrue);
+    });
+
+    test('calls without a message id still count apart', () {
+      final out = readings([
+        start({'input_tokens': 1}),
+        start({'input_tokens': 2}),
+      ]);
+      expect(out.first.messageId, isNot(out.last.messageId));
+    });
+
+    test('a subagent call is spend from its assistant lines, not occupancy',
+        () {
+      final occupancy = <ClaudeCallUsage>[];
+      final subagent = <ClaudeCallUsage>[];
+      final p = ClaudeStreamJsonParser(
+        ClaudeStreamJsonCallbacks(
+          onCallUsage: occupancy.add,
+          onSubagentCallUsage: subagent.add,
+        ),
+      );
+      // The shape `claude -p` 2.1.318 streams for a subagent's tool call.
+      p.process({
+        'type': 'assistant',
+        'parent_tool_use_id': 'toolu_task',
+        'message': {
+          'id': 'msg_sub',
+          'model': 'claude-haiku-5-5',
+          'content': [
+            {'type': 'tool_use', 'id': 'toolu_glob', 'name': 'Glob'},
+          ],
+          'usage': {
+            'input_tokens': 2,
+            'cache_creation_input_tokens': 10207,
+            'cache_read_input_tokens': 7910,
+            'output_tokens': 26,
+          },
+        },
+      });
+      expect(occupancy, isEmpty);
+      expect(subagent.single.messageId, 'msg_sub');
+      expect(subagent.single.model, 'claude-haiku-5-5');
+      expect(subagent.single.subagent, isTrue);
+      expect(subagent.single.cacheWriteTokens, 10207);
+      expect(subagent.single.cacheReadTokens, 7910);
+      expect(subagent.single.outputTokens, 26);
+    });
+
     test('compact_boundary is surfaced with its pre-compaction size', () {
       final compactions = <int?>[];
       readings([

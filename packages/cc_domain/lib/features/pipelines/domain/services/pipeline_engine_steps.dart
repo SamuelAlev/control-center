@@ -84,6 +84,12 @@ extension _PipelineStepExecution on PipelineEngine {
       }
     }
 
+    // The run's owner's cap: a fresh dispatch past it holds the run instead
+    // (no row, so the planner offers the step again when the hold lifts).
+    if (existingStepRunId == null && await _heldByBudget(owning ?? run)) {
+      return;
+    }
+
     // Loop / recursion safety backstop (in-memory per process lifetime).
     final execCount = (_stepCounts[run.id] ?? 0) + 1;
     _stepCounts[run.id] = execCount;
@@ -283,12 +289,7 @@ extension _PipelineStepExecution on PipelineEngine {
       // The body dispatched work to a task and is waiting for it to settle.
       // The row stays `running` so the UI doesn't say "suspended" for a node
       // that's actively working. TicketResumeListener + [resumeStep] pick it up.
-      await repository.updateStepRun(
-        current.workspaceId,
-        stepRunId,
-        status: PipelineStepStatus.running,
-        outputJson: mutations.isEmpty ? null : jsonEncode(mutations),
-      );
+      await _writeSuspended(current, stepDef.id, stepRunId, mutations);
       return;
     }
 

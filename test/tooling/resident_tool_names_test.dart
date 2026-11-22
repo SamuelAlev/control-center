@@ -29,6 +29,8 @@ void main() {
       'packages/cc_harness_runtime/lib/src/tools',
       'packages/cc_infra/lib/src/harness',
       'packages/cc_mcp_client/lib/src',
+      // Code mode's `repl` names itself through `ReplToolDescription.toolName`.
+      'packages/cc_domain/lib/features/code_mode/domain/services',
     ];
     final names = <String>{};
     final literal = RegExp(r"""get name =>\s*'([a-z0-9_]+)'""");
@@ -67,9 +69,8 @@ void main() {
       reason: 'the scan found no tools at all — the paths above have moved',
     );
     final resident = {
-      ...ModeToolPolicy.residentBuiltins,
       ...ModeToolPolicy.residentDiscovery,
-      ...ModeToolPolicy.residentMcpTools,
+      for (final mode in Mode.values) ...ModeToolPolicy.directNamesFor(mode),
     };
     final unknown = resident.difference(declared).toList()..sort();
     expect(
@@ -80,6 +81,49 @@ void main() {
           'the tool they meant to keep loaded is being deferred instead: '
           '${unknown.join(', ')}',
     );
+  });
+
+  test('every direct tool is a tool that actually exists', () {
+    // With repl everything outside the direct set moves into scripts, so a
+    // name here that matches nothing silently becomes script-only.
+    final unknown =
+        ModeToolPolicy.directTools.difference(declaredToolNames()).toList()
+          ..sort();
+    expect(
+      unknown,
+      isEmpty,
+      reason: 'These direct tools match no tool: ${unknown.join(', ')}',
+    );
+    // `repl` and `search_tools` are placed by the surface, not named here.
+    expect(ModeToolPolicy.directTools, isNot(contains('repl')));
+  });
+
+  test('the direct set stays small in every mode', () {
+    // What `materializeHarnessToolSurface` keeps direct beside `repl`: the
+    // direct set, the mode's pinned verbs and the interaction verbs.
+    for (final mode in Mode.values) {
+      final profile = profileFor(mode);
+      final direct = {
+        ...ModeToolPolicy.directNamesFor(mode),
+        ...profile.toToolSurfaceSpec().pinnedNames,
+        ...ModeCapabilityProfile.interactionVerbs,
+      };
+      expect(
+        direct.length,
+        lessThanOrEqualTo(20),
+        reason:
+            '${mode.name} keeps ${direct.length} tools direct. Every one '
+            'costs its definition on every request; the long tail belongs '
+            'in scripts.',
+      );
+      expect(
+        direct.intersection(ModeToolPolicy.residentDiscovery),
+        isEmpty,
+        reason:
+            'with repl, discovery is the script catalog: a discovery tool '
+            'kept direct duplicates it',
+      );
+    }
   });
 
   test('every mode resident set stays under the selection-accuracy band', () {

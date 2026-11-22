@@ -2,7 +2,7 @@
 title: Verklarende woordenlijst
 description: Definities van de kernbegrippen die in Control Center worden gebruikt.
 slug: nl-NL/handleiding/referentie/woordenlijst
-sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
+sourceHash: ba09880357171a4fcbb82201798578de3856cbe6
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -36,7 +36,13 @@ export const glossaryTerms = [
 ['Rig', 'Een wegwerpmachine die een agent in realtime aanstuurt: een afgesloten browser of Linux-desktop, een door de host beheerde Android-emulator of iOS Simulator, of een afgesloten terminal. Live bekeken via zijn eigen baan op volledige resolutie, met overname die server-side wordt afgedwongen. Gebonden aan een gesprek, zodat het menselijke tabblad en de agenttool één machine aanspreken.'],
 ['Omhulling', 'De sterkere isolatie-eigenschap die beschikbaar is voor VM-ondersteunde rigs: een kernelgrens, een wegwerp-overlayschijf, een netwerkpoort die standaard weigert en een credential broker. Android- en iOS-rigs zijn wegwerpbaar maar gebruiken door de host beheerde netwerken, dus claimen deze grens niet. Elke rig aansturen gebruikt de beveiligingsklasse enclosureControl.'],
 ['RunCost', 'Token- en kostenoverzicht (invoertokens, uitvoertokens, geschatte kosten in microdollar) voor één agentrun.'],
-['WakeReason', 'Waarom een agent is gedispatcht. Zes waarden: gebruikersbericht, tickettoewijzing, hersteldispatch na een fout, kindticket afgerond, geplande vervolghartslag en pipelinestap.'],
+['WakeReason', 'Waarom een agentrun bestaat. Een bericht van een persoon, een tickettoewijzing of een pipelinestap; of, voor een run die de server zelf start, de reden van zijn wekbeurt: een schema, een bewaking, een segment, controle of review van een doel, een bericht of antwoord van een andere agent, afgerond kinderwerk, een gebruikslimiet die is gereset, een verbeteringsreview, of herstel na een herstart.'],
+['Wekbeurt', 'Een duurzaam verzoek, bewaard in de database van de werkruimte, om de run van één agent in één gesprek te starten of voort te zetten, met een reden en de persoon voor wie het handelt. Elke run die de server start zonder dat iemand typt, begint als een wekbeurt; wekbeurten overleven een herstart.'],
+['Doel', 'Werk waar een agent in segmenten aan blijft werken, tot de server verifieert dat aan wat klaar betekent is voldaan of een persoon het sluit. Gestart met /goal; één per agent tegelijk. De agent claimt dat het klaar is; controles en een alleen-lezen review beslissen.'],
+['Schema', 'Een regel die een agent wekt op een tijdstip, met een interval, met een cron of in het eigen tempo van de agent, met een einde, een runlimiet en een kostenlimiet. Gemaakt met /loop, /schedule, de pagina Schema’s of de tool wake_me van de agent.'],
+['Bewaking', 'Een regel die een agent wekt wanneer er iets gebeurt: de controles van een pull request zijn klaar, het krijgt een review of wordt samengevoegd, een omgevingstaak eindigt, een ticket wordt afgehandeld of een pipeline-run eindigt.'],
+['Vraag', 'De vraag van de ene agent aan de andere, vastgelegd voordat hij wordt afgeleverd. De vrager wordt één keer gewekt met het antwoord, of met de reden waarom er geen is.'],
+['Verbeteringsvoorstel', 'Een wijziging aan geheugen, een beleid, een agentnotitie of een skill die een review voorstelt na een geverifieerd doel of bij /refine. Er verandert niets totdat een persoon het accepteert; een skill-wijziging wordt eerst geëvalueerd.'],
 ['SandboxPort', 'Beheert de levenscyclus van de sandbox (probe, launch, events, exec, destroy).'],
 ['CredentialBrokerPort', 'Geeft begrensde inloggegevens uit voor het starten van een sandbox (een token voor één repository voor de omgeving van een agent, schrijfrechten alleen voor het pushpad op de server) en geeft ze bij het opruimen weer vrij.'],
 ['GitRepoInspectorPort', 'Haalt metadata (owner, repo, branch) op uit een lokaal Git-repopad.'],
@@ -94,6 +100,11 @@ export const glossaryTerms = [
 ['Installatie-ID', 'De identiteit van een server tegenover één Connect-adres, afgeleid van zijn installatiesleutel. Connect laat servers toe op installatie-ID; het vervangen van de sleutel wijzigt het en meldt iedereen af bij de Connect-routes.'],
 ['Installatiebinding', 'Het register van Connect van de ene server waaraan een Slack-team is gebonden. GitHub-installaties hebben geen binding: elke server waarop een lid aanmeldt, kan ze gebruiken.'],
 ['Aanmeldroute', 'De browseraanmelding van één provider: github, google, linear, linear_app of slack. Onder eigen apps draait een route op de eigen app als die volledig is geconfigureerd, anders is hij niet beschikbaar; met een gekozen Connect draait Connect hem. Geen van beide valt terug op de ander.'],
+['Codemodus', 'De repl-tool, die een JavaScript-script draait dat de andere tools van de run aanroept. Elke run heeft hem wanneer de server scripts kan draaien; er is geen instelling.'],
+['Directe tool', 'Een tool die een run bij naam aanroept, met zijn schema in elk verzoek, met of zonder repl: de bestands- en shelltools, ask_user, task, de takenlijst, geheugenzoekopdrachten, send_message en de eigen werkwoorden van de modus.'],
+['Alleen-via-script-tool', 'Een tool buiten de directe set die een run met repl alleen vanuit een script kan aanroepen, totdat de server de scripts van de run niet kan draaien en hij in plaats daarvan bij eerste gebruik wordt geladen. Tot die tijd bereikt de beschrijving het model nooit.'],
+['Codemodus-runner', 'cc_codemode, het meegeleverde programma dat één script draait in de QuickJS-NG-engine, nadat het zichzelf heeft afgesloten met de besturing van het besturingssysteem. De server start er niet zonder, en draait geen script tenzij het een releasebuild is en de afsluiting volledig is.'],
+['Codeuitvoering', 'De opname van één script: de broncode, uitvoer, limieten en elke toolaanroep die het deed, bewaard in zijn werkruimte en te vinden onder Observeerbaarheid → Codeuitvoeringen.'],
 ];
 
 <StructuredData
@@ -157,7 +168,19 @@ export const glossaryTerms = [
 
 **RunCost**: Token- en kostenoverzicht (invoertokens, uitvoertokens, geschatte kosten in microdollar) voor één agentrun.
 
-**WakeReason**: Waarom een agent is gedispatcht. Zes waarden: gebruikersbericht, tickettoewijzing, hersteldispatch na een fout, kindticket afgerond, geplande vervolghartslag en pipelinestap.
+**WakeReason**: Waarom een agentrun bestaat. Een bericht van een persoon, een tickettoewijzing of een pipelinestap; of, voor een run die de server zelf start, de reden van zijn wekbeurt: een schema, een bewaking, een segment, controle of review van een doel, een bericht of antwoord van een andere agent, afgerond kinderwerk, een gebruikslimiet die is gereset, een verbeteringsreview, of herstel na een herstart.
+
+**Wekbeurt**: Een duurzaam verzoek, bewaard in de database van de werkruimte, om de run van één agent in één gesprek te starten of voort te zetten, met een reden en de persoon voor wie het handelt. Elke run die de server start zonder dat iemand typt, begint als een wekbeurt; wekbeurten overleven een herstart.
+
+**Doel**: Werk waar een agent in segmenten aan blijft werken, tot de server verifieert dat aan wat klaar betekent is voldaan of een persoon het sluit. Gestart met `/goal`; één per agent tegelijk. De agent claimt dat het klaar is; controles en een alleen-lezen review beslissen.
+
+**Schema**: Een regel die een agent wekt op een tijdstip, met een interval, met een cron of in het eigen tempo van de agent, met een einde, een runlimiet en een kostenlimiet. Gemaakt met `/loop`, `/schedule`, de pagina Schema’s of de tool `wake_me` van de agent.
+
+**Bewaking**: Een regel die een agent wekt wanneer er iets gebeurt: de controles van een pull request zijn klaar, het krijgt een review of wordt samengevoegd, een omgevingstaak eindigt, een ticket wordt afgehandeld of een pipeline-run eindigt.
+
+**Vraag**: De vraag van de ene agent aan de andere, vastgelegd voordat hij wordt afgeleverd. De vrager wordt één keer gewekt met het antwoord, of met de reden waarom er geen is.
+
+**Verbeteringsvoorstel**: Een wijziging aan geheugen, een beleid, een agentnotitie of een skill die een review voorstelt na een geverifieerd doel of bij `/refine`. Er verandert niets totdat een persoon het accepteert; een skill-wijziging wordt eerst geëvalueerd.
 
 ## Poorten
 
@@ -258,6 +281,20 @@ export const glossaryTerms = [
 **Reviewas**: Een van vijf scorebanen per review: `correctness`, `security` en `testGap` uit de bevindingen van reviewers; `visual` en `apiContract` deterministisch. Assen met een poort worden in het oordeel meegenomen en kunnen het alleen strenger maken — een poort die `partial` of `unavailable` is, houdt het oordeel tegen in plaats van het goed te keuren.
 
 **Review-oordeel**: `ship`, `hold` of `block`. Elke P0-bevinding met een betrouwbaarheid >= 0,7 blokkeert; elk ander P0 of elk P1 houdt tegen; anders ship. Een as met een poort die faalt, dwingt block af en kan niet door bevindingen worden overstemd.
+
+## Codemodus
+
+**Codemodus**: De `repl`-tool, die een JavaScript-script draait dat de andere tools van de run aanroept en alleen teruggeeft wat de agent nodig heeft. Elke run heeft hem wanneer de server scripts kan draaien; er is geen instelling. **Instellingen → Werkruimte → Codemodus** toont of deze server scripts draait en stelt de limieten in waaronder een script draait. Zie [Codemodus](/nl-NL/handleiding/concepten/codemodus/).
+
+**Directe tool**: Een tool die een run bij naam aanroept, met zijn schema in elk verzoek, met of zonder `repl`: de bestands- en shelltools, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` en de eigen werkwoorden van de modus.
+
+**Alleen-via-script-tool**: Een tool buiten de directe set die een run met `repl` alleen vanuit een script kan aanroepen, totdat de server de scripts van de run niet kan draaien en hij in plaats daarvan bij eerste gebruik wordt geladen ([Wanneer scripts niet kunnen draaien](/nl-NL/handleiding/concepten/codemodus/#wanneer-scripts-niet-kunnen-draaien)). Tot die tijd bereikt de beschrijving het model nooit, en een directe aanroep krijgt als antwoord hoe je die vanuit een script aanroept. Een tool die een script niet mag aanroepen, is nooit alleen-via-script: hij wordt geladen bij eerste gebruik.
+
+**Geneste aanroep**: Een toolaanroep die een script doet. Die gaat door hetzelfde modusfilter, dezelfde beveiligingen en goedkeuring als een directe aanroep.
+
+**Codemodus-runner**: `cc_codemode`, het programma dat bij de server wordt meegeleverd en één script draait in de QuickJS-NG-engine nadat het zichzelf heeft afgesloten (zijn **afsluiting**). De server start er niet zonder, en draait geen script tenzij het een releasebuild is en de afsluiting volledig is.
+
+**Codeuitvoering**: De opname van één script: de broncode, uitvoer, limieten en elke toolaanroep die het deed, bewaard in zijn werkruimte en te vinden onder **Observeerbaarheid → Codeuitvoeringen**.
 
 ## Fleet en evals
 

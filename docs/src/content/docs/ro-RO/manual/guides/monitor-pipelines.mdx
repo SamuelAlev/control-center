@@ -2,7 +2,7 @@
 title: Monitorizează rulările de pipeline
 description: Lucrează cu coada de rulări, citește cascada și panoul de pași al unei rulări și recuperează un pas eșuat sau blocat.
 slug: ro-RO/manual/ghiduri-practice/monitorizeaza-pipeline-uri
-sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
+sourceHash: 48d44ae3ca3e23c1123ef282ccffece35b542b96
 ---
 
 Aceasta este pagina pentru tot ce se întâmplă după pornirea unei rulări: găsirea
@@ -73,6 +73,8 @@ rulare în loc să o reia: un pas suspendat mai mult de 24 de ore
 (`extras.awaitApproval` — corpul `orchestration.awaitApproval` — este exceptat;
 `human.gate` nu este) și un pas neidempotent care era în curs de execuție când
 serverul s-a oprit.
+
+Un pas **Pursue a goal** este scutit și de limita de 24 de ore: rămâne suspendat cât timp lucrează obiectivul lui, iar pagina lui face trimitere la obiectiv. Întreaga rulare poate fi de asemenea **Suspendat**, pentru că orchestrarea ei a atins plafonul de cost; pagina rulării arată atunci ce s-a cheltuit din plafon și, pentru solicitantul rulării, **Mărește plafonul**.
 
 ## Inspectează un pas
 

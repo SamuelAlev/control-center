@@ -136,7 +136,8 @@ PrCommit prCommitFromBitbucket(BitbucketCommit commit) => PrCommit(
 /// Bitbucket anchors with `{from, to}`: `to` names a line on the post-image and
 /// `from` a line on the pre-image, so `to` becomes side `RIGHT` and `from`
 /// becomes side `LEFT`. A comment on an outdated or file-level anchor has
-/// neither, and keeps side `RIGHT` with a null line.
+/// neither, and keeps side `RIGHT` with a null line; one that is not marked
+/// outdated is on the file as a whole.
 ///
 /// `diffHunk`, `startLine` and `reviewId` stay empty/null: Bitbucket returns no
 /// surrounding hunk, has no multi-line anchors and has no review resource for a
@@ -155,6 +156,8 @@ PrCodeReviewComment prCodeReviewCommentFromBitbucket(BitbucketComment comment) {
     inReplyToId: comment.parentId,
     line: line,
     originalLine: comment.inlineFrom,
+    isFileLevel:
+        comment.inlinePath != null && line == null && !comment.inlineOutdated,
   );
 }
 

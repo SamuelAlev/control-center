@@ -84,4 +84,68 @@ void main() {
       }
     });
   });
+
+  group('CustomSubagentProfile.filterTools', () {
+    test('a list that names bash admits the tools that follow bash', () {
+      const profile = CustomSubagentProfile(
+        name: 'builder',
+        description: 'd',
+        base: SubagentType.general,
+        systemPrompt: 'p',
+        toolAllowlist: ['read', 'bash'],
+      );
+      final names = profile
+          .filterTools([
+            for (final n in [
+              'read',
+              'bash',
+              'bash_output',
+              'bash_kill',
+              'read_output',
+              'write',
+            ])
+              _Tool(n),
+          ])
+          .map((t) => t.name);
+      expect(names, [
+        'read',
+        'bash',
+        'bash_output',
+        'bash_kill',
+        'read_output',
+      ]);
+    });
+
+    test('a list without bash admits none of them', () {
+      const profile = CustomSubagentProfile(
+        name: 'reader',
+        description: 'd',
+        base: SubagentType.general,
+        systemPrompt: 'p',
+        toolAllowlist: ['read'],
+      );
+      final names = profile
+          .filterTools([_Tool('read'), _Tool('bash_output')])
+          .map((t) => t.name);
+      expect(names, ['read']);
+    });
+  });
+}
+
+class _Tool extends HarnessTool {
+  _Tool(this.name);
+
+  @override
+  final String name;
+  @override
+  String get description => name;
+  @override
+  ToolApprovalTier get approvalTier => ToolApprovalTier.read;
+  @override
+  Map<String, dynamic> get inputSchema => const {'type': 'object'};
+  @override
+  Future<HarnessToolResult> execute(
+    Map<String, dynamic> args,
+    HarnessToolContext context,
+  ) async => HarnessToolResult.success('ok');
 }

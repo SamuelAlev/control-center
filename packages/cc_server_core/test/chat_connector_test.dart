@@ -1164,12 +1164,14 @@ class _FakeTickets implements TicketWorkflowService {
     PrincipalType assigneeType = PrincipalType.agent,
     String? assignedTeamId,
     String? delegatedByAgentId,
+    String? delegatedFromConversationId,
     int delegationDepth = 0,
     String? delegationRootTicketId,
     String? parentTicketId,
     String? projectId,
     String? spaceId,
     Map<String, String> providerExtras = const {},
+    Map<String, dynamic> metadata = const {},
   }) async {
     if (failNext) {
       failNext = false;

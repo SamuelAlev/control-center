@@ -1,0 +1,63 @@
+---
+title: Ügynökök együttműködése
+description: Hogyan kérdeznek az ügynökök egymástól, adnak át munkát és ébrednek fel a válasszal, és hol látja, mire vár egy ügynök egy másiktól.
+slug: hu-HU/kezikonyv/gyakorlati-utmutatok/ugynokok-egyuttmukodese
+sourceHash: 36bb45cd480fb45d0380e8fd651845c59a7debcb
+---
+
+A munkaterületen az ügynökök kérdezhetnek egymástól, szakértőt konzultálhatnak, átnézést kérhetnek, üzenetet küldhetnek vagy jegyet delegálhatnak. Ehhez egyik ügynöknek sem kell ülnie és várnia: a kérdező ügynök folytathatja, vagy befejezheti a körét, és a saját beszélgetésében ébresztik fel, amikor megérkezik a válasz.
+
+## Kérdés egy másik ügynöknek
+
+Egy ügynök az `ask_agent` eszközzel kérdez, kétféleképpen:
+
+- **Várakozás** (az alapértelmezés): az ügynök blokkolva marad, amíg meg nem érkezik a válasz, alapértelmezés szerint legfeljebb 600 másodpercig, legfeljebb 1 800-ig.
+- **Háttérben**: a hívás azonnal visszatér, és az ügynök folytatja a munkát.
+
+Mindkét esetben a kérdés rögzítésre kerül, mielőtt kézbesítenék. Ha a válasz nem érkezett vissza a hívásban, a kérdező pontosan egyszer ébred fel a válasszal, amikor a másik ügynök futtatása véget ér: válaszolt, sikertelen lett, vagy 24 óra válasz nélkül lejárt. Útközben mindegyikről legfeljebb egyszer értesülhet: hogy a másik ügynök válaszra ígérkezett, hogy egy személyre vár, vagy hogy egy használati korlátnál megállt. Egyik sem számít válasznak.
+
+A `consult_agent` (a legjobban illő szakértő bevonása), a `request_peer_review` (második pillantás egy átnézési megállapításra) és a `send_to_agent` (egyirányú üzenet) ugyanazon a soron keresztül működik. A `send_to_agent` megmondja, felébredt-e a másik ügynök, vár-e az üzenet az aktuális futtatása mögött, vagy miért utasították el.
+
+A másik ügynök a kérdést egy másik ügynöktől érkező információként olvassa, sosem olyan utasításként, amelyet követnie kell, és nem futtathat slash-parancsot.
+
+## Munka átadása
+
+- **Egy delegált jegy** (`delegate_task`) felébreszti azt az ügynököt, aki delegálta, abban a beszélgetésben, ahonnan delegálta, amikor a jegy lezárul.
+- **Egy csapattag futtatása**, amelyet a vezető egy `@mention`-nel vagy üzenettel indított, felébreszti a vezetőt abban a beszélgetésben, amelyből a tagot felébresztette, amikor véget ér. (A kérdést a válasza, a delegált jegyet pedig a jegye zárja le.)
+- **Egy háttérmunkás** az igazgató módban (`/vibe`) átadja az eredményét az igazgatónak, miközben az igazgató tovább dolgozik.
+- **Egy ügynök `@mention`-je** és a tér ellenőrzője ugyanúgy, ébresztőként kézbesítjük.
+
+Egy ügynök megnézheti, mit csinál egy másik ügynök anélkül, hogy kérdezné: az `agent_activity` megmutatja a másik ügynök állapotát, az aktuális eszközét és utolsó üzeneteit, és senkit sem ébreszt fel.
+
+## Korlátok
+
+A szerver ezeket érvényesíti, bármit mondjanak az ügynökök:
+
+| Korlát | Érték |
+| --- | --- |
+| Milyen mélyre mehet a kérdések és átadások láncolata | 3 |
+| Körök (egy ügynök olyan ügynököt kérdez, amely másokon keresztül rá vár) | Elutasítva |
+| Függőben lévő kérdések kérdezőnként | 10 |
+| Függőben lévő kérdések kérdezett ügynökönként | 20 |
+| Ugyanaz a kérdés ugyanannak az ügynöknek újra | 10 percen belül elutasítva |
+| Üzenetek egy ügynökpár között | percenként 10 |
+| Egy üzenet vagy válasz hossza | 16 384 karakter |
+
+Az átadás a kérdező ügynök önállóságát és költségkeretét is tiszteletben tartja: egy ügynök nem adhat munkát olyan másiknak, amelynek több önállósága vagy pénze van, mint neki. Az Ön által küldött üzenetet ez sosem korlátozza.
+
+Ha a megkérdezett ügynök egy szolgáltató használati korlátjánál áll meg, a futtatása megvárja a visszaállást, ha az a kérdés lejárta előtt következik be. Egyébként a kérdés azonnal sikertelen lesz, és a kérdező megtudja, miért.
+
+## Lássa, mire vár egy ügynök
+
+Egy beszélgetésben az **Általános** panel **Kérdések** része listázza azokat a kérdéseket, amelyeket az ügynökök tőle kérdeztek: kitől, milyen fajtát (**Kérdés**, **Konzultáció** vagy **Átnézés**), mikor, és állapotát (**Vár**, **Megválaszolva**, **Sikertelen**, **Lejárt** vagy **Törölve**), ahol alkalmazható, a **Megígérte, hogy válaszol** vagy a **Háttérben** jelzéssel. Egy sikertelen kérdés megmondja az okát, például: **A futtatása a szolgáltató használati korlátjánál állt meg.**
+
+Bárki, akinek hozzáférése van a térhez, megnyomhatja a **Kérdés törlése** gombot. Az ügynök ekkor nem ébred fel, a másik ügynök futtatása pedig nem áll le.
+
+Az ügynöknek küldött válaszok, üzenetek és elkészült munka a szerkesztő feletti sávban is megjelennek, a többi várakozó tétellel együtt (lásd: [Ütemezések és ébresztők](/hu-HU/kezikonyv/gyakorlati-utmutatok/utemezesek-ebresztok/#nézze-meg-mi-vár)).
+
+## Lásd még
+
+- [Munka delegálása ügynököknek](/hu-HU/kezikonyv/gyakorlati-utmutatok/jegyek-delegalasa/)
+- [Ügynökcsapat felépítése](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynokcsapat-felepitese/)
+- [Háttér-workerek irányítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/hatter-workerek-iranyitasa/)
+- [MCP-eszközök: ügynökök közötti üzenetváltás és delegálás](/hu-HU/kezikonyv/referencia/mcp-eszkozok/#ügynökök-közötti-üzenetváltás-és-delegálás)

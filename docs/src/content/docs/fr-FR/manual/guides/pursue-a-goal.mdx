@@ -1,0 +1,143 @@
+---
+title: Poursuivre un objectif
+description: Donner à un agent un objectif sur lequel il continue de travailler d’une exécution à l’autre et après les redémarrages, définir les critères d’achèvement et décider quand il est terminé.
+slug: fr-FR/manuel/guides/poursuivre-objectif
+sourceHash: 0ea77964bd9e3044e168624bc67325de0fd1d1e5
+---
+
+Un objectif est un travail auquel un agent reste attaché jusqu’à ce que ses critères d’achèvement soient atteints. L’agent travaille en **segments** : des exécutions bornées que le serveur lance les unes après les autres, y compris après des redémarrages, jusqu’à ce que l’objectif soit vérifié, qu’une personne le clôture ou qu’il atteigne une limite. L’agent ne peut pas clore un objectif en affirmant qu’il est terminé. Le serveur exécute les vérifications de l’objectif, et un relecteur examine d’abord le résultat.
+
+## Démarrer un objectif
+
+Tapez `/goal` suivi de l’objectif dans la zone de saisie d’une conversation :
+
+```text
+/goal --budget 20 --days 2 --check "make test" make the importer handle files over 2 GB
+```
+
+Taper `/goal` suivi d’un texte ouvre d’abord l’entretien sur l’objectif. Il demande les critères d’achèvement, les vérifications qui doivent réussir, les limites et les conditions d’arrêt, et propose un vérificateur distinct, de démarrer chaque segment à neuf et de répondre lui-même à ses questions. Chaque étape peut être ignorée.
+
+| Drapeau | Signification |
+| --- | --- |
+| `--budget <dollars>` | Ce que tout l’objectif peut dépenser. 50 dollars par défaut |
+| `--max <N>` | Le nombre maximal de segments que l’objectif peut prendre. Aucune limite par défaut |
+| `--days <N>` | Une échéance, dans ce nombre de jours à partir de maintenant |
+| `--check "<command>"` | Une commande qui doit réussir avant que l’objectif puisse se terminer, exécutée dans le worktree. Répéter pour en ajouter, 5 au maximum |
+| `--checker <agent>` | Un autre agent qui examine l’affirmation selon laquelle l’objectif est terminé, désigné par son nom ou son identifiant |
+| `--fresh` | Démarrer chaque segment sans l’historique de la conversation, à partir de l’objectif et de ses notes seulement |
+| `--unattended wait` ou `--unattended assume` | Ce qui arrive aux questions de l’agent quand personne ne répond (voir [Quand personne ne répond](#quand-personne-ne-répond)) |
+
+- Les drapeaux peuvent figurer n’importe où dans le message. Un drapeau inconnu, un drapeau répété, une valeur incorrecte et plus de 5 vérifications sont refusés, et votre brouillon reste dans la zone de saisie avec la raison affichée dessous.
+- Un nombre au début de l’objectif fait partie de l’objectif. Pour limiter les segments, utilisez `--max`.
+- `/goal` n’est lu que dans un message que vous tapez vous-même. Le même texte venant d’un agent, d’un pipeline ou d’une relance est un message ordinaire.
+- Un agent poursuit un seul objectif à la fois dans un espace de travail. Un second `/goal` pour le même agent est refusé tant que le premier est actif.
+
+### Critères d’achèvement
+
+L’objectif peut contenir des sections qui deviennent le contrat de l’objectif :
+
+```text
+/goal make the importer handle files over 2 GB
+
+## Success criteria
+- A 3 GB fixture imports without running out of memory
+- The progress bar reaches 100%
+
+## Boundaries
+- Don't change the public API
+
+## Stop conditions
+- A migration would drop data
+
+## Checks
+- `make test` (300 s)
+- environment task `test` (600 s)
+```
+
+- **Critères de réussite** : 12 au maximum, 300 caractères chacun au maximum. Chacun est une chose qu’un relecteur peut confirmer.
+- **Vérifications** : 5 au maximum. Une vérification s’exécute dans le worktree ou comme une tâche nommée de l’[environnement](/fr-FR/manuel/guides/environnements/) de l’espace. Chacune dispose de 300 secondes par défaut et de 1 800 au maximum.
+- Une section qui dépasse sa limite est refusée, jamais tronquée.
+
+Un objectif sans critères laisse l’agent décider quand il est terminé, et un objectif sans vérification ne repose que sur la revue. La page de l’objectif l’indique.
+
+## Comment un objectif continue
+
+Chaque segment est une exécution plafonnée à 5 dollars ou à ce qui reste du budget, le plus bas des deux. Après chaque segment, le serveur décide de la suite à partir de ce que le segment a fait :
+
+- **Il a progressé.** Le segment suivant démarre.
+- **Il attend quelque chose qu’il a mis en place** : une planification, une surveillance, une question à un autre agent ou un ticket délégué. L’objectif attend. Si rien n’arrive, le serveur revérifie après 20 minutes, puis après 40, 80, 160, puis toutes les 240 minutes. La carte affiche **En attente de ce qu’il a mis en place · revérifie d’ici** une heure.
+- **Il n’a pas progressé.** La progression signifie que le worktree a changé grâce au travail propre du segment, que la liste de contrôle a changé, ou que l’agent a fait quelque chose de nouveau. Après 3 segments sans progression, l’objectif est mis en pause : **Aucune progression dans ses derniers segments.**
+- **Il a attendu trop longtemps.** Après 24 heures d’attente, ou après 6 attentes sur de nouvelles choses mises en place sans progression entre-temps, l’objectif est mis en pause : **En attente, après des segments sans progression.**
+- **Il a échoué.** Le serveur réessaie après 30 secondes, puis après des délais plus longs, jusqu’à 15 minutes. Après 3 échecs d’affilée, l’objectif échoue.
+- **Il a posé une question à une personne.** L’objectif attend qu’on réponde : **Attend une personne**.
+
+L’objectif s’arrête aussi à son budget (**Budget épuisé**), à son plafond de segments ou à son échéance.
+
+## Quand l’agent dit qu’il a terminé
+
+L’agent affirme que l’objectif est atteint, avec une preuve pour chaque critère. Ensuite :
+
+1. **Le serveur exécute les vérifications** dans un bac à sable, jamais directement sur la machine du serveur. Une vérification qui se termine avec un code non nul échoue. Une vérification qui ne peut pas du tout s’exécuter (commande introuvable, non exécutable, tâche d’environnement inexistante) est défectueuse : l’objectif s’arrête pour une personne avec **Cette vérification ne peut pas être exécutée :** et la commande. Sans bac à sable sur le serveur, l’objectif s’arrête avec **Aucun bac à sable n'est disponible pour exécuter ses vérifications.** (Un serveur dont le propriétaire a désactivé le bac à sable pour toutes les exécutions fait exception : les vérifications s’y exécutent comme les commandes propres de l’agent.) Quand rien n’a changé dans le worktree depuis l’échec d’une vérification, elle n’est pas relancée.
+2. **Un relecteur examine le résultat**, lorsque toutes les vérifications ont réussi ou qu’il n’y en a aucune. Le relecteur est le vérificateur de l’objectif, sinon le vérificateur de l’espace, sinon l’agent de l’objectif lui-même. Il s’exécute en lecture seule, sans historique de conversation : il peut lire les fichiers et la sortie des vérifications, mais ne peut rien modifier, exécuter de commandes ni relancer d’autres agents. Il reçoit aussi le diff complet des tests et des scripts de vérification modifiés par l’agent, et il traite ce que l’agent a écrit dans la conversation et dans ses notes comme des affirmations, non comme des preuves. Pour un objectif sans critères, il juge l’objectif dans son ensemble. Il répond que l’objectif est terminé, qu’il ne l’est pas, ou qu’il ne peut pas trancher.
+3. **Terminé** : l’objectif est achevé. **Pas terminé** : l’agent reçoit les constats du relecteur et continue de travailler. Après 3 tours « Pas terminé », ou quand le relecteur ne peut pas trancher, l’objectif attend votre décision : **En attente de revue : il affirme être terminé, et rien ne l'a confirmé**.
+
+Un message que vous tapez pendant que le relecteur s’exécute n’est pas transmis au relecteur et n’est pas envoyé à la fin de la revue. Il reste en file d’attente pour le prochain segment de l’agent. Lorsqu’aucun segment ne suit, il est retenu pour vous sous **Envoyer les messages retenus**.
+
+Un relecteur qui ne peut pas s’exécuter (supprimé, ou sur un adaptateur qui ne peut pas garder une exécution en lecture seule, comme un agent ACP) met l’objectif en pause : **Son agent vérificateur est indisponible. Choisissez-en un autre, puis reprenez.** Aucun autre agent ne prend le relais sans vous.
+
+Un vérificateur d’un autre fournisseur que l’agent de l’objectif partage moins probablement ses angles morts. Sans vérificateur distinct, l’agent relit son propre travail, et l’objectif enregistre **Vérifié par lui-même (aucun vérificateur distinct)**.
+
+## Suivre un objectif
+
+- **Dans la conversation** : la carte de l’objectif dans le panneau **Général** affiche la retenue, le segment, la dépense par rapport au budget, le temps restant, les critères d’achèvement, les vérifications et le dernier verdict.
+- **La page Objectifs** : barre latérale → **Objectifs**. Les objectifs sont regroupés en **En attente de revue**, **Ouverts** et **Terminés**.
+- **La page de l’objectif** : ouvrez un objectif pour voir **Maintenant** (segments, dépense, échéance, nombre sans progression et ce qui se passe ensuite), **Critères d'achèvement**, **Vérification** (le dernier tour : l’affirmation, chaque vérification avec sa sortie, la revue par critère) et **Planifications et relances**. Chaque objectif a sa propre adresse (`/workspaces/<workspace>/goals/<goal id>`), vous pouvez donc partager un lien.
+
+Sur téléphone, l’écran des objectifs lance un objectif avec des vérifications et un plafond de segments, et affiche les mêmes objectifs et retenues.
+
+## Modifier ou arrêter un objectif
+
+| Action | Qui peut |
+| --- | --- |
+| **Mettre l'objectif en pause**, **Arrêter l'objectif** | Toute personne ayant accès à l’espace |
+| **Reprendre l'objectif**, **Relever le budget** | Seule la personne qui a lancé l’objectif (un admin de l’espace de travail pour un objectif que personne n’a lancé) |
+| **Modifier** les critères d’achèvement, **Changer de vérificateur** | Seule la personne qui a lancé l’objectif (un admin de l’espace de travail pour un objectif que personne n’a lancé), avec un accès en écriture aux dépôts de l’espace, tant que l’objectif est en pause |
+| **Approuver l'achèvement** | Toute personne ayant accès à l’espace, tant que l’objectif attend une revue. Un objectif lancé par un pipeline : seule la personne qui a lancé cette exécution (un admin de l’espace de travail lorsque personne ne l’a fait) |
+
+- Appuyer sur **Arrêter** dans l’exécution de l’agent met l’objectif en pause (**En pause par une personne**). Ses relances en attente restent en suspens jusqu’à ce que vous le repreniez.
+- **Approuver l'achèvement** clôt l’objectif comme terminé sur votre parole. L’objectif enregistre **Clos par une personne sans vérification réussie**.
+- Un objectif qui a épuisé son budget ne reprend qu’avec un budget plus élevé.
+- Lorsque la personne qui a lancé un objectif quitte l’espace de travail, l’objectif est mis en pause et attend une revue immédiatement, et son agent en cours d’exécution est arrêté. Personne ne peut le reprendre ; toute personne ayant accès à l’espace peut l’arrêter. Le récapitulatif quotidien le liste pour les admins de l’espace de travail.
+
+## Quand personne ne répond
+
+Quand un segment pose une question à une personne ou demande une approbation et que personne ne répond, la demande attend 72 heures par défaut. Ensuite, une approbation compte comme refusée, une question comme sans réponse, et l’objectif est mis en pause : **Une question ou une demande d'approbation adressée à une personne est restée sans réponse.** L’exécution qui a posé la question ne reçoit plus de réponse : toute autre question qu’elle pose est refusée immédiatement, et elle termine ce qu’elle peut. Un admin de l’espace de travail règle le délai (de 1 heure à 7 jours) dans **Paramètres → Espace de travail → Planifications → Quand personne ne répond**. Chaque jour, à l’heure réglée là, vous recevez un seul récapitulatif de tout ce qui vous attend.
+
+Avec `--unattended assume`, l’agent indique son hypothèse et poursuit après 10 minutes sans réponse, lorsque ses conditions d’arrêt le permettent. Cela ne s’applique qu’aux questions. Une approbation n’est jamais supposée, et une revue ne suppose jamais rien.
+
+## Limites d’utilisation et redémarrages
+
+- **Une limite d’utilisation du fournisseur.** Quand un segment s’arrête à la limite d’utilisation d’un fournisseur et que le fournisseur indique quand elle se réinitialise (dans les 7 jours), l’objectif est mis en pause sans sanction : **En pause à la limite d’utilisation · reprise à** une heure. Il reprend 30 secondes après la réinitialisation. Après 8 pauses de ce type, l’objectif attend votre décision : **Il a atteint les limites d’utilisation trop souvent. Examinez-le, puis reprenez.** Toute reprise remet le compte à zéro. Les agents ACP ne signalent aucune réinitialisation, donc leurs objectifs n’attendent pas à une limite.
+- **Un redémarrage du serveur.** Un objectif survit à un redémarrage. Un segment interrompu par le redémarrage est relancé, et les planifications et les relances en attente de l’objectif sont conservées.
+
+## Améliorations après un objectif
+
+Après qu’un objectif a passé la vérification, une courte revue en lecture seule (1 dollar au maximum) peut proposer des améliorations : un fait de mémoire, une politique, une note sur l’agent, ou une modification d’un skill. Tapez `/refine` pour demander la même revue du travail de la conversation. Une seule revue au plus s’exécute par conversation toutes les 20 minutes.
+
+Les propositions apparaissent sur la page **Améliorations** (barre latérale → **Améliorations**). Ouvrez-en une pour voir ce qu’elle modifie, les preuves, et **Accepter**, **Rejeter** ou **Annuler**.
+
+- Une proposition ne change rien tant que quelqu’un ne l’a pas acceptée. Elle expire après 30 jours.
+- Une modification d’un skill, ou d’une politique pour tout l’espace de travail, demande un admin de l’espace de travail (**Un admin tranche**).
+- Une modification de skill est enregistrée comme une révision distincte. Appuyez sur **Lancer une évaluation** pour la comparer au skill actuel ; **Accepter** n’est possible qu’après une évaluation réussie. Une évaluation réussit lorsqu’elle s’est entièrement exécutée et que l’agent a résolu au moins autant d’exécutions avec la modification qu’avec le skill actuel ; la page affiche les deux nombres. Si le skill change après l’évaluation, relancez-la.
+- **Annuler** rétablit le texte précédent, tant que personne ne l’a modifié depuis.
+
+## Dans un pipeline
+
+Un pipeline peut lancer un objectif avec l’étape **Pursue a goal** (`goal.pursue`). L’étape attend la fin de l’objectif et transmet son résumé et son verdict. Voir [Étapes de pipeline](/fr-FR/manuel/reference/etapes-de-pipeline/).
+
+## Voir aussi
+
+- [Planifications et relances](/fr-FR/manuel/guides/planifications-relances/)
+- [Agents qui collaborent](/fr-FR/manuel/guides/agents-collaborent/)
+- [Gérer les coûts](/fr-FR/manuel/guides/gerer-couts/)
+- [Commandes slash](/fr-FR/manuel/reference/commandes-slash/)

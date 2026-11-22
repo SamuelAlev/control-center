@@ -10,7 +10,19 @@ import 'package:cc_server_core/src/evals/skill_evaluation_service.dart';
 /// Paid execution and evidence are explicit workspace surfaces. The shared
 /// dispatcher checks registration and membership before these handlers; service
 /// authorization also covers background work and per-repository evidence.
-List<RepoOp> buildSkillEvaluationOps(SkillEvaluationService service) => [
+///
+/// [guardCancel] refuses `evals.cancelCampaign` on a campaign another
+/// surface owns by that surface's rule (an improvement proposal's campaign
+/// is stopped by a workspace admin or through the proposal).
+List<RepoOp> buildSkillEvaluationOps(
+  SkillEvaluationService service, {
+  required Future<void> Function(
+    String workspaceId,
+    String campaignId, {
+    required bool isAdmin,
+  })
+  guardCancel,
+}) => [
   RepoOp(
     name: 'evals.skillCorpora',
     kind: RepoOpKind.read,
@@ -56,12 +68,20 @@ List<RepoOp> buildSkillEvaluationOps(SkillEvaluationService service) => [
     minRole: WorkspaceRole.member,
     requiredArgs: const ['workspace_id', 'campaign_id'],
     // Effect-free control message: cancels existing work, starts no process.
-    handler: (ctx) async => {
-      'campaign': (await service.cancel(
+    handler: (ctx) async {
+      final campaignId = ctx.args['campaign_id'] as String;
+      await guardCancel(
         ctx.workspaceId!,
-        ctx.principal,
-        ctx.args['campaign_id'] as String,
-      )).toJson(),
+        campaignId,
+        isAdmin: ctx.role?.isAdmin ?? false,
+      );
+      return {
+        'campaign': (await service.cancel(
+          ctx.workspaceId!,
+          ctx.principal,
+          campaignId,
+        )).toJson(),
+      };
     },
   ),
   RepoOp(

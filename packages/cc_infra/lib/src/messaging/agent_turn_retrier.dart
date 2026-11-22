@@ -1,5 +1,6 @@
 import 'package:cc_domain/cc_domain.dart' show WorkspaceMismatchException;
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/messaging/domain/services/agent_turn_retry_policy.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
@@ -12,6 +13,7 @@ typedef RetryDispatch =
       required String spaceId,
       required String agentId,
       required String prompt,
+      required WakeContext wakeContext,
       String? requestedByUserId,
       String? conversationId,
       String? modelOverride,
@@ -96,6 +98,8 @@ class AgentTurnRetrier {
             'Review the conversation above and re-attempt the task. If the '
             'previous approach is what failed, try a different one rather than '
             'repeating it.',
+        // A person pressed Retry: the new run is their message's.
+        wakeContext: const WakeContext.userMessage(),
         requestedByUserId: requestedByUserId,
         conversationId: failed.conversationId,
         modelOverride: modelOverride,

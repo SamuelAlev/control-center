@@ -2,7 +2,7 @@
 title: Cấu hình agent
 description: Mọi trường trên thực thể agent và các enum mà nó dùng.
 slug: vi-VN/so-tay/tham-chieu/cau-hinh-agent
-sourceHash: e77edc905bed16d2f7d5bcd19a62541d885f6aab
+sourceHash: 708808ecdf4d2fc769600241c46f85db411550a8
 ---
 
 Trang tham chiếu này liệt kê mọi trường trên thực thể agent, cùng các enum và cờ mà nó dùng. Để xem hướng dẫn từng bước về cách tạo hoặc chỉnh sửa một agent trong ứng dụng, xem [Tạo và cấu hình một agent](/vi-VN/so-tay/huong-dan-thuc-hanh/tao-agent/).
@@ -81,7 +81,7 @@ Một tập hợp bất biến, không phân biệt chữ hoa chữ thường, g
 
 ## Hook shell
 
-Hook shell cho phép chủ sở hữu máy chủ chạy các script riêng của họ quanh một lần chạy harness tích hợp sẵn: một lần khi phiên bắt đầu, trước mỗi lệnh gọi công cụ, và sau mỗi lệnh gọi công cụ. Hook là mã tùy ý, nên hook là cấu hình của máy chủ. Chỉ chủ sở hữu máy chủ mới thiết lập chúng, bằng tay, trên máy của máy chủ. Không có thiết lập nào trong ứng dụng và không có thao tác nào ghi chúng.
+Hook shell cho phép chủ sở hữu máy chủ chạy các script riêng của họ quanh một lần chạy agent: một lần khi phiên bắt đầu, trước mỗi lệnh gọi công cụ, sau mỗi lệnh gọi công cụ, khi agent sắp kết thúc lượt của nó, và trước khi nén ngữ cảnh. Hook là mã tùy ý, nên hook là cấu hình của máy chủ. Chỉ chủ sở hữu máy chủ mới thiết lập chúng, bằng tay, trên máy của máy chủ. Không có thiết lập nào trong ứng dụng và không có thao tác nào ghi chúng.
 
 Với một agent, các hook nằm trong thư mục riêng của nó dưới thư mục dữ liệu của máy chủ:
 
@@ -91,22 +91,31 @@ Với một agent, các hook nằm trong thư mục riêng của nó dưới th�
 
 `<agent slug>` là tên thư mục của agent trong không gian làm việc (`agents/<slug>/`). Thư mục đó nằm ngoài bộ nhớ của mọi không gian làm việc, và mọi sandbox đều ẩn thư mục dữ liệu, nên không thành viên, lần chạy hay terminal nào có thể ghi vào nó.
 
-`hooks.json` ánh xạ bất kỳ khóa nào trong ba khóa sau tới một script, theo đường dẫn tương đối so với thư mục hook:
+`hooks.json` ánh xạ bất kỳ khóa nào trong năm khóa sau tới một script, theo đường dẫn tương đối so với thư mục hook:
 
 | Khóa           | Khi nào chạy              | Mã thoát có nghĩa là gì                                        |
 | -------------- | ------------------------- | -------------------------------------------------------------- |
 | `sessionStart` | Một lần, khi lần chạy bắt đầu | Không có gì; hook chỉ quan sát                              |
 | `preTool`      | Trước mỗi lệnh gọi công cụ | `0` cho phép lệnh gọi; mọi giá trị khác thì từ chối         |
 | `postTool`     | Sau mỗi lệnh gọi công cụ  | Không có gì; hook chỉ quan sát                                 |
+| `stop` | Khi agent sắp kết thúc lượt của nó | `2` kèm văn bản trên stdout giữ lần chạy tiếp tục với văn bản đó; mọi giá trị khác để lượt kết thúc |
+| `preCompact` | Trước khi nén ngữ cảnh | `0`: stdout của nó được thêm vào những gì bản tóm tắt nên giữ lại |
 
 - Mỗi script được khởi chạy như một tệp thực thi riêng, không có shell và không có tham số, nên nó phải có quyền thực thi và bắt đầu bằng dòng shebang. Nó nhận sự kiện dưới dạng JSON trên stdin: tên sự kiện, và với các hook công cụ là tên công cụ cùng đối số của nó (`preTool`) hoặc kết quả của nó (`postTool`).
 - Một hook chạy như một tiến trình công cụ của lần chạy, trong thư mục của agent cho lần chạy đó. Khi máy chủ đặt agent trong sandbox, nó chạy bên trong sandbox của lần chạy. Nó nhận một môi trường tối giản và không có thông tin xác thực nào của lần chạy: không có token forge hay nhà cung cấp và không có quyền truy cập gateway.
-- Mỗi hook có 30 giây. Đầu ra của nó được đọc và bỏ đi.
+- Mỗi hook có 30 giây. Đầu ra của `sessionStart`, `preTool` và `postTool` được đọc và bỏ đi.
 - `preTool` đóng khi lỗi. Mã thoát khác 0, quá thời gian, hoặc một script không khởi động được đều từ chối lệnh gọi công cụ.
 - Một đường dẫn là tuyệt đối, không tồn tại, hoặc thoát khỏi thư mục hook (sau khi phân giải liên kết) sẽ bị từ chối, và nhật ký của lần chạy nói hook nào bị từ chối và vì sao. Một hook `preTool` bị từ chối hoặc không đọc được sẽ từ chối mọi lệnh gọi công cụ cho tới khi được sửa.
 - Một khối `hooks` trong `.agents/harness.json`, dù nằm trong một repository hay trong thư mục riêng của agent, sẽ bị bỏ qua. Một repository thường là mã của người khác, còn thư mục của agent có thể bị thành viên và các lần chạy ghi vào. Nhật ký của lần chạy ghi rằng khối đã bị bỏ qua và hook được đọc từ đâu thay thế.
 
-Hook shell chỉ áp dụng cho harness tích hợp sẵn. Một hook `preTool` hoặc `postTool` được cấu hình sẽ khiến lần chạy gọi các công cụ của nó lần lượt từng cái một.
+### Hook stop và preCompact
+
+- `stop` nhận `event: "stop"`, tin nhắn cuối của agent (`last_message`), `stop_hook_active` (true khi lần dừng này theo sau một lần tiếp tục do hook gây ra) và `block_count` (số lần nó đã giữ lần chạy tiếp tục cho đến nay, bắt đầu từ 0). Để giữ lần chạy tiếp tục, nó thoát với mã `2` và in ra việc agent nên làm tiếp theo. Văn bản, cắt còn 2.000 ký tự, đến agent dưới dạng một tin nhắn hệ thống.
+- Một hook `stop` giữ lần chạy tiếp tục tối đa 3 lần trong một lần chạy. Sau đó nó không được chạy lại, và lượt kết thúc.
+- `stop` không chặn khi lỗi (fail open). Hết thời gian, một script không khởi động được, mã thoát khác `2`, hoặc mã thoát `2` mà stdout trống đều khiến lượt kết thúc, nên một hook hỏng không thể giữ lần chạy mở.
+- `preCompact` nhận `event: "pre_compact"`. Stdout của nó, cắt còn 1.000 ký tự, được thêm vào trọng tâm của việc nén. Một script lỗi không thêm gì cả.
+
+Hook shell áp dụng cho harness tích hợp sẵn. Trên Claude Code, các hook `stop` và `preCompact` cũng chạy: các hook `Stop` và `PreCompact` của chính Claude Code yêu cầu máy chủ, và máy chủ chạy các script của chủ sở hữu theo cùng cách. Ba khóa còn lại chỉ áp dụng cho harness tích hợp sẵn. Một hook `preTool` hoặc `postTool` được cấu hình sẽ khiến lần chạy gọi các công cụ của nó lần lượt từng cái một.
 
 ## AgentLiveState (giá trị dẫn xuất)
 

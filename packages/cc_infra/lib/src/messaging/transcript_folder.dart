@@ -341,9 +341,20 @@ class TranscriptFolder {
     _apply(SegmentClosed(idx, blanked), structural: true);
   }
 
+  /// Opens a tool segment for [event].
+  ///
+  /// A call a script made ([ToolCallEvent.parentToolCallId] set) is appended
+  /// like any other: it can only start while its parent is running, so it
+  /// already lands after the parent's segment and in the order the script made
+  /// its calls, and appending keeps every index stable for the live registry.
+  /// Clients fold it under the parent by that id. It never takes part in the
+  /// argument-echo guard: the model streamed no arguments for it, so nothing
+  /// the model wrote can be an echo of them.
   void _openTool(ToolCallEvent event) {
     closeOpenText(event.timestamp);
-    _absorbToolArgEcho(event.inputs);
+    if (event.parentToolCallId == null) {
+      _absorbToolArgEcho(event.inputs);
+    }
     _transcriptChars +=
         event.toolName.length + (event.inputs?.toString().length ?? 0);
     final seg = ToolSegment(
@@ -351,22 +362,32 @@ class TranscriptFolder {
       toolCallId: event.toolCallId,
       inputs: event.inputs,
       startedAt: event.timestamp,
+      parentToolCallId: event.parentToolCallId,
+      callSite: event.callSite,
     );
     _segments.add(seg);
     final idx = _segments.length - 1;
     if (event.toolCallId.isNotEmpty) {
       _openToolByCallId[event.toolCallId] = idx;
     }
-    _lastOpenToolIndex = idx;
+    // The id-less fallback is for a transport that sends a result without the
+    // call's id, which only a model-issued call can be. A nested call always
+    // has its own id, so it must not become the segment such a result closes.
+    if (event.parentToolCallId == null) {
+      _lastOpenToolIndex = idx;
+    }
     _apply(SegmentOpened(idx, seg), structural: true);
   }
 
   void _applyToolResult(ToolResultEvent event) {
+    final byId = event.toolCallId.isNotEmpty
+        ? _openToolByCallId[event.toolCallId]
+        : null;
+    // A nested result pairs by its own id or not at all: falling back to the
+    // last open call would close the script's parent call with one of the
+    // script's results.
     final target =
-        (event.toolCallId.isNotEmpty
-            ? _openToolByCallId[event.toolCallId]
-            : null) ??
-        _lastOpenToolIndex;
+        byId ?? (event.parentToolCallId == null ? _lastOpenToolIndex : null);
 
     if (target == null || _segments[target] is! ToolSegment) {
       // Orphan result — no matching open call. Render as a terminal cell.
@@ -381,6 +402,8 @@ class TranscriptFolder {
         durationMs: 0,
         images: event.images,
         attachments: event.attachments,
+        parentToolCallId: event.parentToolCallId,
+        outcome: event.outcome,
       );
       _segments.add(seg);
       final idx = _segments.length - 1;
@@ -416,6 +439,7 @@ class TranscriptFolder {
       // Screenshots ride the final result only; a partial never carries them.
       images: event.images.isEmpty ? null : event.images,
       attachments: event.attachments.isEmpty ? null : event.attachments,
+      outcome: event.outcome,
     );
     _segments[target] = closed;
     if (event.toolCallId.isNotEmpty) {

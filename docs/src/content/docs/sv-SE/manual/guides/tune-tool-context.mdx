@@ -2,7 +2,7 @@
 title: Justera en agents verktygskontext
 description: Granska vad en körning faktiskt skickar, ändra vilka verktyg som laddas i förväg och avgör om ett dåligt verktygsval var en hämtningsmiss eller ett promptproblem.
 slug: sv-SE/handbok/how-to-guider/justera-verktygskontext
-sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
+sourceHash: 22a4306a97aa8da0332f8e3e20e06ed86119f1d5
 ---
 
 Den här guiden tar upp det praktiska arbetet kring verktygsytan i två nivåer: att se vad en körning skickar, att ändra det och att diagnostisera en agent som grep efter fel verktyg. Läs [Verktygskontext och promptcache](/sv-SE/handbok/koncept/verktygskontext) om du vill veta varför det fungerar så här.
@@ -13,25 +13,26 @@ Den här guiden tar upp det praktiska arbetet kring verktygsytan i två nivåer:
 
 Två segment spelar roll här:
 
-- **Verktygsdefinitioner** och **MCP och dynamiska verktyg** — den residenta uppsättningen, med varje verktygs verkliga tokenkostnad.
+- **Verktygsdefinitioner** och **MCP och dynamiska verktyg** — den direkta uppsättningen, med varje verktygs verkliga tokenkostnad.
 - **Verktyg som läses in vid behov** — det uppskjutna indexet. Varje post kostar bara sitt namn, eftersom ett namn är allt förfrågan bär med sig; att öppna en post visar fortfarande hela beskrivningen och schemat, så du ser vad den *skulle* kosta om körningen läste in den.
+
+I en körning med `repl` nämns de verktyg ett skript når i systemprompten och finns i inget av segmenten.
 
 Om det uppskjutna segmentet är tomt är uppskjutning avstängd för den här servern. Kontrollera `--tool-deferral` i [CLI-referensen för `cc_server`](/sv-SE/handbok/referens/cc-server-cli).
 
 ## Ändra vilka verktyg som laddas i förväg
 
-Den residenta uppsättningen är policy, inte konfiguration — den finns i `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) och gäller för varje körning:
+Den direkta uppsättningen är policy, inte konfiguration — den finns i `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) och gäller för varje körning:
 
-- `residentBuiltins` — ordförrådet för filer och skal.
-- `residentDiscovery` — `search_tools` och `list_my_tools`. Ta inte bort dem; det är så en agent når allt annat.
-- `residentMcpTools` — den handfull Control Center-verktyg som är värda sitt schema vid varje förfrågan.
-- Ett block per läge, för de verktyg som ett givet [läge](/sv-SE/handbok/koncept/lagen) använder nästan varje tur.
+- `directTools` — de tolv verktyg som varje körning anropar direkt: `read`, `write`, `edit`, `search`, `find`, `bash` och `read_output`; `ask_user` och `task`; `todo_write`, `search_memory` och `send_message`.
+- `residentDiscovery` — `search_tools` och `list_my_tools`. Ta inte bort dem; det är så en agent når allt annat. En körning med `repl` får `search_tools` när något läses in vid första användning, och ingen `list_my_tools`.
+- `directNamesFor(mode)` — de verktyg som ett givet [läge](/sv-SE/handbok/koncept/lagen/) lägger till för sin egen loop: granskningsverben i granskningsläge, `submit_plan` i planläge och `propose_orchestration` i orkestreringsläge.
 
 Två regler när du redigerar den:
 
-**Lägg bara till ett verktyg om de flesta körningar använder det.** Varje namn kostar sitt schema vid varje förfrågan i varje körning, för alltid. Ett verktyg som är viktigt när det används men sällsynt i stort hör hemma i den uppskjutna halvan — agenten hittar det ändå.
+**Lägg bara till ett verktyg om de flesta körningar använder det.** Varje namn kostar sitt schema vid varje förfrågan i varje körning, för alltid. Ett verktyg som är viktigt när det används men sällsynt i stort hör hemma utanför den direkta uppsättningen — agenten når det ändå, från ett skript eller genom att läsa in det vid första användning.
 
-**Använd verktygets verkliga namn.** Ett resident namn som inte matchar något verktyg är inert: inget fel, ingen varning, verktyget skjuts helt enkelt upp. `test/tooling/resident_tool_names_test.dart` fångar detta och håller dessutom varje läge under 40 residenta verktyg, vilket är hela poängen med övningen — bortom det intervallet försämras verktygsvalet mätbart.
+**Använd verktygets verkliga namn.** Ett direkt namn som inte matchar något verktyg är inert: inget fel, ingen varning, verktyget ligger helt enkelt kvar utanför den direkta uppsättningen. `test/tooling/resident_tool_names_test.dart` fångar detta, håller varje lägets direkta uppsättning till högst 20 verktyg och håller varje läge till högst 40 verktyg skickade i förväg, vilket är hela poängen med övningen — bortom det intervallet försämras verktygsvalet mätbart.
 
 Ett läges obligatoriska och fästa verb läggs till automatiskt, så du behöver aldrig lista ett läges eget utdataverb.
 
@@ -73,4 +74,4 @@ Vanliga orsaker, i sannolikhetsordning:
 - **Ett byte av modell eller effort under samtalet.** Båda ändrar prefixet. Subagenter är särskilt lätta att få fel här: att köra barn på lägre effort för att spara pengar kan kosta mer i förlorad cache-delning än det sparar.
 - **Tät komprimering.** Komprimering skriver om historiken av design, så dess kostnad är verklig; lösningen är att komprimera sällan och djupt i stället för ofta och grunt.
 
-Att stänga av uppskjutningen med `--tool-deferral=off` är ett giltigt A/B-test för att isolera om en beteendeändring kom från ytan i två nivåer. Det återskapar förfrågan exakt som före uppskjutningen, så om beteendet kvarstår med den avstängd är ytan inte orsaken.
+Att stänga av uppskjutningen med `--tool-deferral=off` är ett giltigt A/B-test för att isolera om en beteendeändring kom från ytan i två nivåer. Med den avstängd skickar en körning varje tillåtet verktygs definition, förutom att en körning med `repl` fortfarande anropar från skript de verktyg ett skript får anropa, så om beteendet kvarstår med den avstängd är uppskjutningen inte orsaken.

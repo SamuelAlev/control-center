@@ -37,7 +37,18 @@ typedef HookProcessStart =
 ///   that was declared but refused before the run.
 /// * The **session-start** and **post-tool** scripts only observe, so they are
 ///   best-effort: a missing or failing script never breaks the run.
-class ShellAgentLoopHooks implements AgentLoopHooks {
+/// * The **stop** script ([AgentLoopTurnHooks.onWouldStop]) fails OPEN: only
+///   an observed exit 2 with text on stdout keeps the run going (the text,
+///   cut to [maxStopTextChars], becomes a system message), and at most
+///   [maxStopBlocks] times in a run. A spawn failure, a timeout, any other
+///   exit or a block past the limit lets the turn end: a broken stop hook
+///   must not hold a run open. An exit 2 with nothing on stdout also ends
+///   the turn, with one warning ([onWarning]). The script reads
+///   `stop_hook_active` (this stop follows a continuation it caused) and
+///   `block_count` (its blocks so far in the run, 0-based) on stdin.
+/// * The **pre-compact** script's stdout (cut to [maxPreCompactChars]) is
+///   added to a compaction's focus; a failing script adds nothing.
+class ShellAgentLoopHooks implements AgentLoopHooks, AgentLoopTurnHooks {
   /// Creates a [ShellAgentLoopHooks].
   ShellAgentLoopHooks({
     required this.cwd,
@@ -45,9 +56,20 @@ class ShellAgentLoopHooks implements AgentLoopHooks {
     this.sessionStartScript,
     this.preToolScript,
     this.postToolScript,
+    this.stopScript,
+    this.preCompactScript,
     this.denyTools = false,
     this.timeout = const Duration(seconds: 30),
+    this.onWarning,
   });
+
+  /// Receives a warning about a script's misuse (a stop block without a
+  /// reason). Null drops it.
+  final void Function(String message)? onWarning;
+
+  /// The warning for an exit 2 with nothing on stdout.
+  static const String reasonlessBlockWarning =
+      'stop hook blocked without a reason';
 
   /// Working directory the scripts run in.
   final String cwd;
@@ -67,6 +89,36 @@ class ShellAgentLoopHooks implements AgentLoopHooks {
 
   /// Script run after each tool call (optional).
   final String? postToolScript;
+
+  /// Script asked when the model would end its turn (optional).
+  final String? stopScript;
+
+  /// Script run before a compaction; its stdout joins the focus (optional).
+  final String? preCompactScript;
+
+  /// How many times the stop script may keep one run going.
+  static const int maxStopBlocks = 3;
+
+  /// The most of the stop script's stdout the model reads.
+  static const int maxStopTextChars = 2000;
+
+  /// The most of the pre-compact script's stdout added to the focus.
+  static const int maxPreCompactChars = 1000;
+
+  /// The exit code with which the stop script keeps the run going.
+  static const int stopBlockExitCode = 2;
+
+  int _stopBlocks = 0;
+
+  /// Whether the last stop answer was a block: the next stop follows a
+  /// continuation this hook caused.
+  bool _lastStopBlocked = false;
+
+  /// Whether the next stop follows a continuation the stop script caused.
+  bool get stopHookActive => _lastStopBlocked;
+
+  /// How many times the stop script kept this run going so far.
+  int get stopBlocks => _stopBlocks;
 
   /// Per-hook timeout.
   final Duration timeout;
@@ -122,10 +174,112 @@ class ShellAgentLoopHooks implements AgentLoopHooks {
     }
   }
 
+  @override
+  Future<WouldStop> onWouldStop(WouldStopContext context) async {
+    final text = await stopBlock(
+      event: {
+        'event': 'stop',
+        'turn': context.turn,
+        'last_message': context.lastAssistantText,
+        'stop_hook_active': _lastStopBlocked,
+        'block_count': _stopBlocks,
+      },
+    );
+    // The owner's own words: steering a compaction keeps.
+    return text == null
+        ? const WouldStopEnd()
+        : WouldStopContinue(text, origin: null);
+  }
+
+  /// Asks the stop script whether the turn may end. Returns the text to send
+  /// the model when the script keeps the run going (exit 2 with text on
+  /// stdout, cut to [maxStopTextChars]), or null when the turn may end. Past
+  /// [maxStopBlocks] blocks the script is not run at all.
+  ///
+  /// Shared by the harness loop ([onWouldStop]) and the Claude Code `Stop`
+  /// hook the agent run gateway answers, so both lanes count blocks the same
+  /// way. [event] is the JSON object the script reads on stdin; it gains
+  /// `block_count` when the caller did not set it.
+  Future<String?> stopBlock({required Map<String, Object?> event}) async {
+    final script = stopScript;
+    if (script == null || _stopBlocks >= maxStopBlocks) {
+      _lastStopBlocked = false;
+      return null;
+    }
+    final (:code, :stdout) = await _runCapturing(
+      script,
+      jsonEncode({'block_count': _stopBlocks, ...event}),
+      maxStopTextChars,
+    );
+    final text = stdout.trim();
+    if (code == stopBlockExitCode && text.isEmpty) {
+      onWarning?.call(reasonlessBlockWarning);
+    }
+    if (code != stopBlockExitCode || text.isEmpty) {
+      _lastStopBlocked = false;
+      return null;
+    }
+    _stopBlocks++;
+    _lastStopBlocked = true;
+    return text;
+  }
+
+  @override
+  Future<String?> preCompact() => preCompactFocus();
+
+  /// Runs the pre-compact script with [event] on stdin and returns its
+  /// stdout (cut to [maxPreCompactChars]) when it exits 0, else null. Shared
+  /// by the harness loop ([preCompact]) and the Claude Code `PreCompact` hook
+  /// the agent run gateway answers.
+  Future<String?> preCompactFocus({
+    Map<String, Object?> event = const {'event': 'pre_compact'},
+  }) async {
+    final script = preCompactScript;
+    if (script == null) {
+      return null;
+    }
+    final (:code, :stdout) = await _runCapturing(
+      script,
+      jsonEncode(event),
+      maxPreCompactChars,
+    );
+    final text = stdout.trim();
+    return code == 0 && text.isNotEmpty ? text : null;
+  }
+
+  /// Runs [script] like [_run] and also keeps the first [maxChars]
+  /// characters of its stdout (the rest is drained and dropped).
+  Future<({int? code, String stdout})> _runCapturing(
+    String script,
+    String stdinJson,
+    int maxChars,
+  ) async {
+    final out = StringBuffer();
+    final code = await _run(
+      script,
+      stdinJson,
+      onStdout: (process) => process.stdout
+          .transform(const Utf8Decoder(allowMalformed: true))
+          .listen((chunk) {
+            final room = maxChars - out.length;
+            if (room > 0) {
+              out.write(chunk.length <= room ? chunk : chunk.substring(0, room));
+            }
+          })
+          .asFuture<void>(),
+    );
+    return (code: code, stdout: out.toString());
+  }
+
   /// Runs [script] with [stdinJson] piped in; returns its exit code, or null if
   /// the process could not be spawned. A timeout kills the script and returns
-  /// `-1`.
-  Future<int?> _run(String script, String stdinJson) async {
+  /// `-1`. [onStdout] reads stdout instead of draining it; its future is
+  /// awaited (briefly) after the exit so the last bytes are in.
+  Future<int?> _run(
+    String script,
+    String stdinJson, {
+    Future<void> Function(Process process)? onStdout,
+  }) async {
     final Process process;
     try {
       process = await start(
@@ -139,7 +293,10 @@ class ShellAgentLoopHooks implements AgentLoopHooks {
     }
     // Drain both pipes concurrently with the run. Errors on them (the process
     // was killed mid-write) are irrelevant to the exit-code verdict.
-    unawaited(process.stdout.drain<void>().catchError((Object _) {}));
+    final Future<void> stdoutDone = onStdout == null
+        ? process.stdout.drain<void>()
+        : onStdout(process);
+    final readingStdout = stdoutDone.catchError((Object _) {});
     unawaited(process.stderr.drain<void>().catchError((Object _) {}));
     try {
       process.stdin.write(stdinJson);
@@ -148,8 +305,9 @@ class ShellAgentLoopHooks implements AgentLoopHooks {
       // Broken pipe: the script already exited without reading stdin. The
       // exit code is still the gate — do not treat this as a failed launch.
     }
+    int? code;
     try {
-      return await process.exitCode.timeout(
+      code = await process.exitCode.timeout(
         timeout,
         onTimeout: () {
           process.kill();
@@ -159,5 +317,13 @@ class ShellAgentLoopHooks implements AgentLoopHooks {
     } on Object {
       return null;
     }
+    if (onStdout != null) {
+      // A grandchild may hold the pipe open; never wait on it for long.
+      await readingStdout.timeout(
+        const Duration(seconds: 2),
+        onTimeout: () {},
+      );
+    }
+    return code;
   }
 }

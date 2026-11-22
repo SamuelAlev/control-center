@@ -48,6 +48,9 @@ Map<String, dynamic> pendingConfirmationToWire(PendingConfirmation p) => {
     'action_classes': p.request.actionClasses,
   if (p.request.agentId != null) 'agent_id': p.request.agentId,
   if (p.request.fingerprint != null) 'fingerprint': p.request.fingerprint,
+  // Set when a code mode script made the call: the card says so and links to
+  // the script's transcript row.
+  'origin': ?p.request.origin?.toJson(),
   'created_at': p.createdAt.toUtc().toIso8601String(),
 };
 
@@ -57,7 +60,8 @@ class _Entry {
   final Completer<bool> completer;
 
   /// The auto-deny timer, or null when the registry waits indefinitely.
-  final Timer? timer;
+  /// Moved by [PendingConfirmationRegistry.denyAfter].
+  Timer? timer;
 }
 
 /// Host-side registry of in-flight agent-action approvals.
@@ -82,6 +86,12 @@ class PendingConfirmationRegistry {
   final DateTime Function() _clock;
 
   final Map<String, _Entry> _entries = {};
+
+  /// Asked synchronously before a request is shown: true refuses it at once
+  /// as unanswered, with no card (nobody is there to answer it: an earlier
+  /// request of its run went unanswered). Set once by the server; never
+  /// approves anything.
+  bool Function(ConfirmationRequest request)? refuseUnasked;
   final StreamController<List<PendingConfirmation>> _pending =
       StreamController<List<PendingConfirmation>>.broadcast();
   int _counter = 0;
@@ -124,6 +134,12 @@ class PendingConfirmationRegistry {
     Duration? timeoutOverride,
   }) {
     final id = 'cf_${_clock().toUtc().microsecondsSinceEpoch}_${_counter++}';
+    if (_refusesUnasked(request)) {
+      // No entry and no snapshot: no card, no notification. The producer is
+      // told nobody answered, so it stores no decision.
+      _tellUnanswered(request);
+      return (id: id, approved: Future<bool>.value(false));
+    }
     final completer = Completer<bool>();
     final entry = PendingConfirmation(
       id: id,
@@ -131,28 +147,79 @@ class PendingConfirmationRegistry {
       createdAt: _clock().toUtc(),
     );
     final t = timeoutOverride ?? timeout;
-    final timer = t == null
-        ? null
-        : Timer(t, () {
-            final removed = _entries.remove(id);
-            if (removed != null && !removed.completer.isCompleted) {
-              removed.completer.complete(
-                false,
-              ); // Timeout → fail closed (deny).
-              _emit();
-            }
-          });
+    final timer = t == null ? null : Timer(t, () => _timeOut(id));
     _entries[id] = _Entry(entry, completer, timer);
     _emit();
     // The asker stopped waiting (a hook deadline, a run that ended): take the
     // prompt down as a deny so nobody answers about work that has moved on.
     unawaited(
       request.withdrawn?.then(
-        (_) => cancel(id, approved: false),
-        onError: (Object _) => cancel(id, approved: false),
+        (_) => _timeOut(id),
+        onError: (Object _) => _timeOut(id),
       ),
     );
     return (id: id, approved: completer.future);
+  }
+
+  /// Timeout, withdrawal → fail closed (deny), told to the producer as
+  /// unanswered ([ConfirmationRequest.onUnanswered]).
+  void _timeOut(String id) {
+    final removed = _entries.remove(id);
+    if (removed != null && !removed.completer.isCompleted) {
+      removed.timer?.cancel();
+      _unanswered(removed);
+      removed.completer.complete(false);
+      _emit();
+    }
+  }
+
+  /// Denies the pending request [id] now because nobody answered it (a
+  /// server-side expiry): the producer is told it went unanswered, so it
+  /// stores no decision. Returns false when [id] is no longer pending.
+  bool expire(String id) {
+    final entry = _entries[id];
+    if (entry == null || entry.completer.isCompleted) {
+      return false;
+    }
+    _timeOut(id);
+    return true;
+  }
+
+  /// [refuseUnasked]'s answer; a failing check shows the card as usual.
+  bool _refusesUnasked(ConfirmationRequest request) {
+    try {
+      return refuseUnasked?.call(request) ?? false;
+    } on Object {
+      return false;
+    }
+  }
+
+  static void _unanswered(_Entry entry) =>
+      _tellUnanswered(entry.pending.request);
+
+  static void _tellUnanswered(ConfirmationRequest request) {
+    try {
+      request.onUnanswered?.call();
+    } on Object {
+      // The producer's bookkeeping must not keep the request pending.
+    }
+  }
+
+  /// Replaces the deadline of the pending request [id]: it is denied once
+  /// [after] has passed, unless someone answers first. A request of a run
+  /// the server started waits the workspace's expiry rather than the
+  /// registry's [timeout]. A deadline only ever denies: nothing here can
+  /// approve. Returns false when [id] is no longer pending.
+  bool denyAfter(String id, Duration after) {
+    final entry = _entries[id];
+    if (entry == null || entry.completer.isCompleted) {
+      return false;
+    }
+    entry.timer?.cancel();
+    entry.timer = Timer(after.isNegative ? Duration.zero : after, () {
+      _timeOut(id);
+    });
+    return true;
   }
 
   /// Records a remote decision for [id]. Returns true if [id] was pending (and
@@ -196,6 +263,7 @@ class PendingConfirmationRegistry {
     for (final entry in _entries.values) {
       entry.timer?.cancel();
       if (!entry.completer.isCompleted) {
+        _unanswered(entry);
         entry.completer.complete(false);
       }
     }

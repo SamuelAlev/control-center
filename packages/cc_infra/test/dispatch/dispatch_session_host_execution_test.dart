@@ -141,6 +141,7 @@ class _ScriptedLoop implements AgentLoop {
     required String userMessage,
     required List<HarnessTool> tools,
     List<HarnessTool> deferredTools = const [],
+    List<HarnessTool> scriptTools = const [],
     required LlmProviderPort provider,
     HarnessToolContext? context,
     AgentLoopConfig config = const AgentLoopConfig(),
@@ -199,6 +200,8 @@ void main() {
       agentLoop: _ScriptedLoop(const [LoopDone(LoopDoneReason.completed)]),
     );
     final session = DispatchSession(
+      freshHistory: false,
+      readOnly: false,
       deps: deps,
       onResolveHandle:
           ({

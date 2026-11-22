@@ -4,6 +4,13 @@ import 'package:cc_domain/features/environments/domain/value_objects/environment
 import 'package:cc_domain/features/environments/domain/value_objects/environment_template.dart';
 import 'package:path/path.dart' as p;
 
+/// The prefix of the variables the contract sets for a definition's own
+/// keys (`CC_ENV_PORT_<KEY>`, `CC_ENV_URL_<KEY>`, `CC_ENV_OPT_<KEY>`,
+/// `CC_ENV_REPO_<ROLE>`, `CC_ENV_SOURCE_<ROLE>`) and of its fixed ones
+/// (`CC_ENV_NAME` and the rest). A server started inside an environment
+/// reads none of them as its own settings.
+const String environmentContractPrefix = 'CC_ENV_';
+
 /// One repo role present in a space.
 class EnvironmentContractRepo {
   /// Creates an [EnvironmentContractRepo].
@@ -200,13 +207,15 @@ class EnvironmentContract {
       'CC_ENV_STATE_DIR': input.stateDir,
       'CC_ENV_HOME': input.home,
       for (final entry in input.ports.entries)
-        'CC_ENV_PORT_${environmentVariableKey(entry.key)}': '${entry.value}',
+        '${environmentContractPrefix}PORT_${environmentVariableKey(entry.key)}':
+            '${entry.value}',
       'CC_ENV_URL': ?input.primaryUrl,
       for (final entry in input.urls.entries)
-        'CC_ENV_URL_${environmentVariableKey(entry.key)}': entry.value,
+        '${environmentContractPrefix}URL_${environmentVariableKey(entry.key)}':
+            entry.value,
       for (final entry in input.options.entries)
         if (entry.value != null)
-          'CC_ENV_OPT_${environmentVariableKey(entry.key)}':
+          '${environmentContractPrefix}OPT_${environmentVariableKey(entry.key)}':
               environmentOptionText(entry.value),
       'CC_SPACE_ID': input.spaceId,
       'CC_SPACE_NAME': input.spaceName,
@@ -222,8 +231,10 @@ class EnvironmentContract {
         'CC_ROOT_PATH': repo.sourcePath,
       },
       for (final item in input.repos) ...{
-        'CC_ENV_REPO_${environmentVariableKey(item.role)}': item.path,
-        'CC_ENV_SOURCE_${environmentVariableKey(item.role)}': item.sourcePath,
+        '${environmentContractPrefix}REPO_${environmentVariableKey(item.role)}':
+            item.path,
+        '${environmentContractPrefix}SOURCE_${environmentVariableKey(item.role)}':
+            item.sourcePath,
       },
       'CC_SPACE_REPOS': jsonEncode([
         for (final item in input.repos)

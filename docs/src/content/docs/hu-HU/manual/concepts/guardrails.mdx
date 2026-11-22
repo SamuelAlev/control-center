@@ -2,7 +2,7 @@
 title: Korlátok – egy szabályzat minden állapotmódosító művelethez
 description: Miért vezeti át a Control Center minden ügynökmellékhatást egyetlen engedélyezés–kérdezés–tiltás motoron, miért marad szándékosan kicsi az ActionClass-taxonómia, és mit változtat meg valójában az autonómiatárcsa.
 slug: hu-HU/kezikonyv/fogalmak/korlatok
-sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
+sourceHash: bb98b2ca26ae104ab7701d4d381cd5c41d25d32f
 ---
 
 A Control Center ügynökei fájlokat törölhetnek, ágakat küldhetnek fel, pull
@@ -29,6 +29,17 @@ folyamat. A `cc_server` ott alkalmazza a homokozót, ahol a gazdagép kínál
 háttérrendszert – de [a Windows nem kínál ilyet, a Linuxon pedig `bwrap` és
 `socat` kell hozzá](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/). Az ilyen
 gazdagépeken csak a szerver tulajdonosának futtatásai indulnak el, hacsak a tulajdonos a `--sandbox off` kapcsolóval mindenki számára ki nem kapcsolta a homokozót. Minden homokozó nélkül induló futtatásnál a korlátok a legkülső érvényesítési réteg, nem pedig egy padló tetején ülő szabályzat, amit érdemes tudni, amikor eldönti, mennyire legyen megengedő.
+
+### A szkript által indított hívások
+
+A [kódmód](/hu-HU/kezikonyv/fogalmak/kodmod/) szkriptje kódban hív eszközöket, egyszerre sokat, de a hívásai mindegyike külön eszközhívás a motornak. Ugyanazon a harness-kapun vagy MCP-diszpécser-kapun megy át, mint a közvetlen hívás, ugyanazokkal a szabályokkal, ugyanazzal a jóváhagyási kérdéssel és ugyanazzal a naplóbejegyzéssel, és amit csinál, nem azért van jóváhagyva, mert az azt elindító `repl`-hívás jóvá lett hagyva.
+
+Két további szabály vonatkozik a szkriptből érkező hívásokra, mert egyetlen szkript akár száz hívást is indíthat, és minden elutasítást elkaphat:
+
+- legfeljebb 10 hívása juthat el egy személyhez jóváhagyásra; a későbbi, személyt igénylő hívásokat kártya nélkül utasítják el;
+- ha egy személy elutasít az egyik hívását, a jóváhagyást igénylő többi hívását kérdezés nélkül elutasítják.
+
+A szkript által felvetett kártya ezt jelzi, és megnyitható belőle a szkript. Ha a szkript a kártya nyitva állása alatt fejeződik be, a kártya visszavonásra kerül, és az ezután érkező válasz elutasításként kerül rögzítésre, és semmit sem hagy jóvá.
 
 ## ActionClass: szándékosan zárt taxonómia
 
@@ -265,5 +276,6 @@ próba válasza az a válasz, amelyet az ügynök kapni fog.
 ## Kapcsolódó fogalmak
 
 - [Homokozó és biztonság](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/): mi korlátozza valójában az ügynökfuttatást, és meddig ér el az e motor alatti operációsrendszer-padló
+- [Kódmód](/hu-HU/kezikonyv/fogalmak/kodmod/): olyan szkriptek, amelyek minden eszközhívása átmegy ezen a motoron
 - [Többszereplős mód és jelenlét](/hu-HU/kezikonyv/fogalmak/tobbszereplos-mod/): terek, szereplők és hogy hol él az autonómiatárcsa
 - [Korlátok konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/korlatok-konfiguralasa/): szabályok írása és tesztelése a gyakorlatban

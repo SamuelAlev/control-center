@@ -52,6 +52,13 @@ void main() {
     Map<String, dynamic> args = const {},
   ]) => tools[name]!.execute(args, ctx());
 
+  test('no director verb can be called from a script', () {
+    expect(tools, hasLength(5));
+    for (final tool in tools.values) {
+      expect(tool.scriptCallable, isFalse, reason: tool.name);
+    }
+  });
+
   group('vibe_spawn', () {
     test('returns immediately rather than blocking on the worker', () async {
       // Async by default is the ergonomic difference from `task`: a director

@@ -2,7 +2,7 @@
 title: MCP-tools
 description: Volledige catalogus van de MCP-tools die cc_server registreert, per familie.
 slug: nl-NL/handleiding/referentie/mcp-tools
-sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
+sourceHash: 0ef9efd386b57c3a254e7f637b0436d9baff1719
 ---
 
 `cc_server` host één MCP-toolregister (JSON-RPC 2.0), aangeboden op de hoofdpoort van de server (standaard `9030`) via `POST /mcp` en `GET /sse`, met protocolversie `2024-11-05`. Elke client komt op hetzelfde register uit: de desktop, de webbuild, externe MCP-clients en de ingebouwde agentruntime. Externe MCP-servers worden in eigen lagen in hetzelfde register opgenomen: één per werkruimte voor de MCP-servers die de beheerders ervan instellen, en één voor de persoonlijke MCP-servers van de serverbeheerder. Dit eindpunt somt ze alleen op, roept ze alleen aan en doorzoekt ze alleen voor een agent-run: de MCP-servers van de eigen werkruimte, plus de persoonlijke wanneer de serverbeheerder verantwoordelijk is voor de run. Het MCP-token en gekoppelde apparaten zien ze nooit (zie [MCP-servers die agents gebruiken](/nl-NL/handleiding/gidsen/mcp-server/#mcp-servers-die-agents-gebruiken)).
@@ -11,21 +11,22 @@ sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
 
 | Maatstaf                                                                  | Aantal |
 | ------------------------------------------------------------------------- | ------ |
-| Tools die `cc_server` registreert                                         | 110    |
-| Uit `packages/cc_mcp`                                                     | 108    |
+| Tools die `cc_server` registreert                                         | 116    |
+| Uit `packages/cc_mcp`                                                     | 114    |
 | Uit `packages/cc_mcp_client` (tooldiscovery)                              | 2      |
-| Geregistreerd in het baseregister (`server_mcp_registry.dart`)            | 63     |
-| Geregistreerd na het opstarten, zodra hun services beschikbaar komen (`cc_server_runtime.dart`) | 47 |
-| Van de 63 van het baseregister, voorwaardelijk op een codegraaf-repository | 5     |
+| Geregistreerd in het baseregister (`server_mcp_registry.dart`)            | 64     |
+| Geregistreerd na het opstarten, zodra hun services beschikbaar komen (`cc_server_runtime.dart`) | 52 |
+| Van de 64 van het baseregister, voorwaardelijk op een codegraaf-repository | 5     |
+| Van het basisregister van 64, afhankelijk van de codemodus-runner (`repl`) | 1 |
 
-De vijf codegraaftools worden alleen geregistreerd wanneer de host een codegraaf-repository doorgeeft aan `buildServerMcpRegistry`. `cc_server` geeft er altijd een door, dus alle 110 zijn actief in de meegeleverde binary.
+De vijf codegraaftools worden alleen geregistreerd wanneer de host een codegraaf-repository doorgeeft aan `buildServerMcpRegistry`, en `repl` alleen wanneer hij de codemodus-runner doorgeeft. `cc_server` geeft altijd beide door (hij start niet zonder de runner), dus alle 111 zijn geregistreerd in de meegeleverde binary; de publieke demoserver registreert geen `repl`.
 
-Het volledige register wordt aangekondigd in `tools/list`, zonder beperking op discovery. Ticketbewerkingen zijn getypeerde tools.
+Het volledige register wordt aangekondigd in `tools/list`, zonder beperking op discovery, behalve door een agentrun die scripts kan draaien (hieronder). Ticketbewerkingen zijn getypeerde tools.
 
 :::note[Externe clients zien altijd de volledige catalogus]
-`tools/list` wordt nooit ingekort, behalve voor de persoonlijke MCP-servers van de servereigenaar, die er nooit in staan. MCP-clients valideren toolnamen tegen hun eigen gecachte kopie van die lijst en weigeren alles wat daar niet op staat, zonder het de server te vragen; een tool die daar verborgen blijft, is dus onbereikbaar in plaats van alleen maar stil.
+`tools/list` wordt nooit ingekort, behalve voor de persoonlijke MCP-servers van de servereigenaar, die er nooit in staan, en [codemodus](/nl-NL/handleiding/concepten/codemodus/): `repl` staat alleen in de lijst voor een agentrun op een server die scripts kan draaien, en die run krijgt in de lijst `repl`, de directe tools (`read`, `write`, `edit`, `search`, `find`, `bash`, `read_output`, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` en de eigen uitvoerwerkwoorden van zijn modus, voor zover het register ze heeft) en de tools die een script niet mag aanroepen. Hij roept de rest vanuit een script aan; een directe aanroep van een van die tools krijgt als antwoord hoe je die vanuit `repl` aanroept. MCP-clients valideren toolnamen tegen hun eigen gecachte kopie van die lijst en weigeren alles wat daar niet op staat, zonder het de server te vragen; een tool die daar verborgen blijft, is dus onbereikbaar in plaats van alleen maar stil.
 
-De **ingebouwde harness** werkt anders: die laadt per verzoek alleen een residente subset van definities en haalt de rest binnen bij het eerste gebruik. Dat is gedrag aan de harnesskant en verandert niets aan dit register. Zie [Toolcontext en promptcaching](/nl-NL/handleiding/concepten/toolcontext).
+De **ingebouwde harness** werkt anders: die laadt per verzoek alleen een kleine directe set van definities en bereikt de rest vanuit scripts of laadt die bij het eerste gebruik. Dat is gedrag aan de harnesskant en verandert niets aan dit register. Zie [Toolcontext en promptcaching](/nl-NL/handleiding/concepten/toolcontext/).
 :::
 
 :::note[Elke toolklasse wordt geregistreerd]
@@ -51,6 +52,14 @@ Beide komen uit `cc_mcp_client`, niet uit `cc_mcp`, en beide raadplegen de modus
 
 Een derde discovery-tool, **`search_tools`**, bestaat alleen binnen de ingebouwde harness en maakt geen deel uit van dit MCP-register. Die rangschikt het eigen tooloppervlak van de uitvoering en **laadt**, anders dan `search_tool_bm25`, de schema's van wat hij vindt, zodat de agent een treffer in zijn volgende beurt kan aanroepen. Agenten op de harness kunnen die beter gebruiken; MCP-clients hebben `search_tool_bm25`.
 
+## Codemodus
+
+| Tool | Beschrijving |
+| ------ | ----------- |
+| `repl` | Voer een JavaScript-script uit dat de andere tools van de run aanroept als `tools.<id>(args)` en alleen teruggeeft wat het nodig heeft. Alleen voor een agentrun op een server die [codemodus](/nl-NL/handleiding/concepten/codemodus/)-scripts kan draaien. Elke geneste aanroep gaat langs dezelfde poort als een `tools/call`. Neemt `code`, `description`, `timeout_ms?`, `max_output_tokens?`    |
+
+Een script kan `repl`, `search_tool_bm25` en `list_my_tools` niet aanroepen, ook geen tool die een andere agentrun start of ermee praat, een ticket toewijst of erop reageert, een bericht stuurt, een goedkeuring aanmaakt, erover beslist of erop reageert, beleid voorstelt of wijzigt, skills installeert of wijzigt, een runtimeprofiel aanmaakt, een plan indient, de plan-modus verlaat, het doel van de conversatie afrondt of de uitvoer van een pipelinerun indient. Die tools zetten `scriptCallable` op false en worden altijd direct aangeroepen; in de ingebouwde harness wordt een zelden gebruikte tool buiten de directe set bij eerste gebruik geladen. `create_ticket` kan vanuit een script alleen worden aangeroepen zonder `assignee`.
+
 ## Agenttools
 
 | Tool          | Beschrijving                              |
@@ -59,15 +68,29 @@ Een derde discovery-tool, **`search_tools`**, bestaat alleen binnen de ingebouwd
 
 ## Berichten en delegatie tussen agentpeers
 
-Agenten praten met elkaar via ruimtes (duurzaam en zichtbaar in de ledenlijst). `ask_agent` is request/reply met een verplichte time-out; `delegate_task` wordt serverside bewaakt door een diepteplafond, cyclusdetectie, budgetenvelop en autonomieplafond.
+Agents praten met elkaar via ruimtes (duurzaam, zichtbaar in het rooster). `ask_agent` wacht óf op het antwoord (`mode: wait`, standaard 600 seconden, maximaal 1.800) óf keert meteen terug (`mode: background`); in beide gevallen wordt de vrager één keer gewekt met het antwoord wanneer het niet inline terugkwam. `send_to_agent`, `ask_agent`, `consult_agent`, `request_peer_review` en `delegate_task` doorlopen dezelfde poort aan de serverkant: diepte (3), cycludetectie, budgetenvelop, autonomieplafond en een snelheidslimiet per paar agents. De afzender komt altijd uit de aanroepende run. Zie [Agents laten samenwerken](/nl-NL/handleiding/gidsen/agents-laten-samenwerken/).
 
 | Tool            | Beschrijving                                                                                   |
 | --------------- | ---------------------------------------------------------------------------------------------- |
-| `send_to_agent` | Stuur een eenrichtingsbericht naar een andere agent, geadresseerd via `to_agent_id` of de exacte `to_agent_name` |
-| `ask_agent`     | Stel een andere agent een vraag en wacht op het antwoord, of laat de time-out aflopen           |
+| `send_to_agent` | Stuur een eenrichtingsbericht naar een andere agent, geadresseerd via `to_agent_id` of de exacte `to_agent_name`; antwoordt met `delivery_status` `woken`, `queued_behind_run` of `refused` |
+| `ask_agent`     | Stel een andere agent een vraag; wacht op het antwoord of ga door en word gewekt wanneer het binnenkomt |
 | `delegate_task` | Delegeer een taak aan een andere agent als een gevolgd subticket                                |
 | `consult_agent` | Voeg de best passende specialist op basis van skills toe aan de ruimte en dispatch die met een gerichte briefing |
 | `todo_read`     | Lees de opgeslagen takenchecklist van dit gesprek                                               |
+| `agent_activity` | Lees wat een andere agent nu doet en wat hij daarvoor deed (status, huidige tool, laatste berichten), zonder hem te wekken |
+
+## Tools voor wekbeurten en doelen
+
+Een agent gebruikt deze in plaats van te slapen of te pollen. Elk handelt alleen voor de aanroepende agent in zijn eigen gesprek; de agent is nooit een argument. Zie [Schema's en wekbeurten](/nl-NL/handleiding/gidsen/schemas-en-wekbeurten/) en [Een doel nastreven](/nl-NL/handleiding/gidsen/doel-nastreven/).
+
+| Tool | Beschrijving |
+| ------------- | ----------- |
+| `wake_me` | Laat de agent later wekken: op een tijdstip (`in:20m`, `at:<ISO time>`), met een interval (`every:30m`), met een cron (`cron:0 9 * * 1-5`, met `tz`), in het eigen tempo binnen een zelf-getimede lus (`next`, met `delay` van 1 tot 60 minuten), of wanneer er iets gebeurt (`on:pr_checks`, `on:pr_review`, `on:pr_merged`, `on:environment`, `on:ticket:<id>`, `on:pipeline_run:<id>`). Optioneel `note`, `max_runs`, `expires_in`, `when_busy` (`skip` of `queue`) en `deliver` (`run` of `notify`) |
+| `list_wakes` | Lijst wat de agent in dit gesprek in de wacht heeft: schema’s, bewakingen, wachtende wekbeurten en onbeantwoorde vragen |
+| `cancel_wake` | Annuleer een schema of bewaking die de agent zichzelf heeft gegeven, op id |
+| `goal_status` | Lees het actieve doel van de agent: contract, segment, uitgaven en resterend budget, strikes voor geen voortgang, wachtstand, laatste verificatie en wachtende doelwekbeurten |
+
+`complete_goal` (onder [Plan-, playbook- en artefacttools](#plan--playbook--en-artefacttools)) is de enige manier waarop een agent zegt dat een doel klaar is, en het is een claim, geen afronding.
 
 ## Skilltools
 
@@ -94,7 +117,7 @@ Elke installatie en update passeert een fail-closed scanpoort voordat skillinhou
 | `revise_artifact`  | Vervang de inhoud van een gepubliceerd artefact                                                                        |
 | `list_artifacts`   | Toon de artefacten van de werkruimte                                                                                   |
 | `get_artifact`     | Lees één artefact                                                                                                      |
-| `complete_goal`    | Verklaar het actieve duurzame doel van het gesprek (gestart met `/goal` of `/loop`) bereikt                             |
+| `complete_goal` | Claim dat het actieve doel van de agent is bereikt, met bewijs voor elk criterium; de server draait daarna de controles en een review |
 
 ## Werkruimtetools
 
@@ -162,10 +185,10 @@ Elke installatie en update passeert een fail-closed scanpoort voordat skillinhou
 | `create_goal`                | Maak een organisatiedoel aan (op bedrijfs-, team-, agent- of taakniveau)                              |
 | `list_goals`                 | Toon doelen met niveau, status en samengevoegde voortgang                                             |
 | `update_goal_progress`       | Stel de voortgang van een doel in                                                                     |
-| `create_approval`            | Open een boardgoedkeuring voor een bestuurde actie (plan verlaten, merge, release, aannemen, aangepast) |
+| `create_approval`            | Open een boardgoedkeuring voor een bestuurde actie (plan verlaten, merge, release, aannemen, aangepast) namens de aanroepende agent. Alleen agentruns |
 | `list_approvals`             | Toon goedkeuringen, optioneel gefilterd op status                                                     |
-| `decide_approval`            | Leg een beslissing vast: goedkeuren, afwijzen, herziening vragen of opnieuw indienen                  |
-| `comment_approval`           | Plaats een opmerking bij een boardgoedkeuring                                                         |
+| `decide_approval`            | Leg de beslissing van de aanroepende agent vast: goedkeuren, afwijzen, herziening vragen of opnieuw indienen. Alleen agentruns |
+| `comment_approval`           | Plaats een opmerking bij een boardgoedkeuring namens de aanroepende agent. Alleen agentruns           |
 | `exit_plan_mode`             | Open (en verbruik na goedkeuring) een `plan_exit`-goedkeuring, waarmee het gesprek de planmodus verlaat |
 | `agent_heartbeat`            | Meld levensvatbaarheid (levend, inactief, vastgelopen); stilte zet de runtimegezondheid op onlangs verloren en daarna offline |
 | `list_runtime_health`        | Toon de runtimegezondheid van elke agent                                                              |

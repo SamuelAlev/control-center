@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/tools.dart';
+import 'package:cc_infra/src/code_mode/run_script_origins.dart';
 import 'package:cc_infra/src/harness/ask_user_tool.dart';
 import 'package:test/test.dart';
 
@@ -220,4 +221,154 @@ void main() {
       expect(_tool(_RecordingPort(null)).approvalTier, ToolApprovalTier.read);
     });
   });
+
+  group('AskUserTool from a script', () {
+    late RunScriptOrigins origins;
+    setUp(() => origins = RunScriptOrigins(runId: 'run-1'));
+
+    AskUserTool scripted(AgentQuestionPort port, {String? runId}) =>
+        AskUserTool(
+          port: port,
+          workspaceId: 'ws1',
+          spaceId: 'space1',
+          conversationId: 'conv-side',
+          runId: runId,
+          scriptOrigins: origins,
+        );
+
+    test('waits on a person for the whole call', () {
+      expect(_tool(_RecordingPort(null)).waitsOnPerson, isTrue);
+    });
+
+    test('declares the structured answer a script reads', () {
+      final schema = _tool(_RecordingPort(null)).outputSchema;
+      expect(schema['required'], ['selected', 'text', 'skipped']);
+      expect((schema['properties'] as Map).keys, [
+        'selected',
+        'text',
+        'skipped',
+      ]);
+    });
+
+    test(
+      'answers with the structured value beside the unchanged text',
+      () async {
+        final port = _RecordingPort(
+          const AgentQuestionAnswer(
+            selectedLabels: ['Postgres', 'SQLite'],
+            freeText: '  keep both  ',
+          ),
+        );
+        final result = await _tool(port).execute({
+          'question': 'Which databases?',
+          'options': [
+            {'label': 'Postgres'},
+            {'label': 'SQLite'},
+          ],
+          'multi_select': true,
+          'allow_free_text': true,
+        }, _ctx);
+
+        expect(result.isError, isFalse);
+        expect(
+          result.content,
+          const AgentQuestionAnswer(
+            selectedLabels: ['Postgres', 'SQLite'],
+            freeText: '  keep both  ',
+          ).toPromptString(),
+        );
+        expect(result.structured, {
+          'selected': ['Postgres', 'SQLite'],
+          'text': 'keep both',
+          'skipped': false,
+        });
+      },
+    );
+
+    test('a skipped question is a value, not a rejection', () async {
+      final port = _RecordingPort(const AgentQuestionAnswer(skipped: true));
+      final result = await _tool(port).execute({'question': 'Which?'}, _ctx);
+
+      expect(result.isError, isFalse);
+      expect(result.structured, {
+        'selected': <String>[],
+        'text': null,
+        'skipped': true,
+      });
+    });
+
+    test('a question that times out or is dismissed stays an error', () async {
+      final port = _RecordingPort(null);
+      final result = await _tool(port).execute({'question': 'Which?'}, _ctx);
+
+      expect(result.isError, isTrue);
+      expect(result.structured, isNull);
+    });
+
+    test('a script\'s question carries the script as its origin', () async {
+      final port = _RecordingPort(const AgentQuestionAnswer(skipped: true));
+      await scripted(port, runId: 'run-log-1').execute({
+        'question': 'Which?',
+      }, _ctx.withToolCallId('r/1').withParentToolCallId('r'));
+
+      final origin = port.seen!.origin!;
+      expect(origin.parentToolCallId, 'r');
+      // No execution is registered under `r`: the form links no record.
+      expect(origin.executionId, isNull);
+      expect(port.seen!.runId, 'run-log-1');
+    });
+
+    test(
+      'names the execution the script runs as, once it is registered',
+      () async {
+        final port = _RecordingPort(const AgentQuestionAnswer(skipped: true));
+        origins.begin('r', 'run-1/r#2');
+        await scripted(
+          port,
+        ).execute({'question': 'Which?'}, _ctx.withParentToolCallId('r'));
+        expect(port.seen!.origin!.executionId, 'run-1/r#2');
+
+        origins.end('r', 'run-1/r#2');
+        await scripted(
+          port,
+        ).execute({'question': 'Which?'}, _ctx.withParentToolCallId('r'));
+        expect(port.seen!.origin!.executionId, isNull);
+      },
+    );
+
+    test('a run log id alone names no script', () async {
+      final port = _RecordingPort(const AgentQuestionAnswer(skipped: true));
+      await _toolWithRun(
+        port,
+        'run-log-1',
+      ).execute({'question': 'Which?'}, _ctx.withParentToolCallId('r'));
+
+      expect(port.seen!.origin, isNull);
+      expect(port.seen!.runId, 'run-log-1');
+    });
+
+    test('a question the model asked directly has no origin', () async {
+      final port = _RecordingPort(const AgentQuestionAnswer(skipped: true));
+      await scripted(port).execute({'question': 'Which?'}, _ctx);
+
+      expect(port.seen!.origin, isNull);
+    });
+
+    test('with no run id at all a script\'s question has no origin', () async {
+      final port = _RecordingPort(const AgentQuestionAnswer(skipped: true));
+      await _tool(
+        port,
+      ).execute({'question': 'Which?'}, _ctx.withParentToolCallId('r'));
+
+      expect(port.seen!.origin, isNull);
+    });
+  });
 }
+
+AskUserTool _toolWithRun(AgentQuestionPort port, String runId) => AskUserTool(
+  port: port,
+  workspaceId: 'ws1',
+  spaceId: 'space1',
+  conversationId: 'conv-side',
+  runId: runId,
+);

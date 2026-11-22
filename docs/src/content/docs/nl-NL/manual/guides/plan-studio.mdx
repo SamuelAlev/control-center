@@ -2,7 +2,7 @@
 title: Werken in Plan Studio
 description: Bekijk, bewerk, schat, vergelijk en keur een plan goed in de editor van Plan Studio, en voer geparameteriseerde playbooks uit.
 slug: nl-NL/handleiding/gidsen/plan-studio
-sourceHash: 04a6e193c6b57af3fce63c90673a0958b37552fb
+sourceHash: 9df96d8f10ca86584f3979b84af5eee250719752
 ---
 
 Deze gids laat zien hoe je in Plan Studio met plannen werkt. Wat orkestraties en
@@ -136,8 +136,7 @@ altijd elke stap goed — je kunt niet eerst een deelverzameling selecteren.
 Goedkeuren is geblokkeerd zolang het voorstel validatiefouten heeft, die naast de
 knoppen worden getoond.
 
-Goedkeuren is alleen voor operators. Er is geen MCP-tool voor, dus een agent kan
-een plan voorstellen en herzien, maar nooit goedkeuren.
+Goedkeuren is alleen voor operators. Er is geen MCP-tool voor, dus een agent kan een plan voorstellen en herzien, maar nooit goedkeuren. Een plan goedkeuren, een herziening opslaan, **Selectie goedkeuren** en **Knooppunt hervatten** vragen schrijfrechten op de repositories van de space.
 
 Zodra een orkestratie wordt uitgevoerd, verandert de balk:
 
@@ -148,7 +147,9 @@ Zodra een orkestratie wordt uitgevoerd, verandert de balk:
   kan nooit worden goedgekeurd zonder zijn afhankelijkheden). Het element staat
   bij elke orkestratie op de uitvoeringsbalk; het doet niets wanneer het plan in
   zijn geheel is goedgekeurd.
-- Druk op **Uitvoering annuleren** om de hele orkestratie te stoppen.
+- Druk op **Uitvoering annuleren** om de hele orkestratie te stoppen. Iedereen met toegang tot de space kan dat.
+
+**Knooppunt hervatten** en **Selectie goedkeuren** horen bij de persoon voor wie de run handelt (een werkruimtebeheerder wanneer hij voor niemand handelt).
 
 Stappen buiten een gedeeltelijk goedgekeurde verzameling worden als uitgesteld
 weergegeven en draaien niet tot je de verzameling verbreedt.

@@ -2,7 +2,7 @@
 title: Schutzregeln — eine Richtlinie für jede verändernde Aktion
 description: Warum Control Center jede Nebenwirkung eines Agenten durch eine einzige Policy-Engine für allow, prompt und deny führt, warum die ActionClass-Taxonomie absichtlich klein bleibt und was der Autonomieregler wirklich ändert.
 slug: de-DE/handbuch/konzepte/schutzregeln
-sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
+sourceHash: bb98b2ca26ae104ab7701d4d381cd5c41d25d32f
 ---
 
 Agenten in Control Center können Dateien löschen, Branches pushen, Pull
@@ -34,6 +34,17 @@ mit `--sandbox off` für alle ausgeschaltet. Für jeden Lauf, der ohne Sandbox
 startet, sind die Schutzregeln die äußerste Durchsetzungsschicht, nicht eine
 Richtlinie, die auf einer Untergrenze liegt. Das solltest du wissen, wenn du
 entscheidest, wie großzügig du sein willst.
+
+### Aufrufe aus einem Skript
+
+Ein Skript im [Code-Modus](/de-DE/handbuch/konzepte/code-modus/) ruft Tools im Code auf, viele auf einmal, aber jeder seiner Aufrufe ist ein eigener Tool-Aufruf an die Engine. Er durchläuft dasselbe Gate des Harness oder des MCP-Dispatchers wie ein direkter Aufruf, mit denselben Regeln, derselben Genehmigungsabfrage und demselben Audit-Eintrag. Nichts, was er tut, ist dadurch genehmigt, dass der `repl`-Aufruf, der ihn gestartet hat, genehmigt war.
+
+Für Aufrufe aus einem Skript gelten zwei zusätzliche Regeln, weil ein Skript Hunderte Aufrufe machen und jede Ablehnung im Code abfangen kann:
+
+- höchstens 10 seiner Aufrufe erreichen eine Person zur Genehmigung; spätere, die eine Person bräuchten, werden ohne Karte abgelehnt;
+- sobald eine Person einen seiner Aufrufe ablehnt, werden die übrigen Aufrufe, die eine Genehmigung brauchen, ohne Nachfrage abgelehnt.
+
+Eine Karte, die ein Skript erzeugt, sagt das und lässt dich das Skript öffnen. Endet das Skript, während die Karte offen ist, wird die Karte zurückgezogen, und eine Antwort, die danach eintrifft, wird als Ablehnung erfasst und genehmigt nichts.
 
 ## ActionClass: eine bewusst geschlossene Taxonomie
 
@@ -279,5 +290,6 @@ Agent bekommt.
 ## Verwandte Konzepte
 
 - [Sandbox und Sicherheit](/de-DE/handbuch/konzepte/sandbox-und-sicherheit/): was einen Agentenlauf tatsächlich eingrenzt und wie weit die Betriebssystem-Untergrenze unter dieser Engine reicht
+- [Code-Modus](/de-DE/handbuch/konzepte/code-modus/): Skripte, deren jeder Tool-Aufruf diese Engine durchläuft
 - [Multiplayer — Identität, Mitgliedschaft und Präsenz](/de-DE/handbuch/konzepte/multiplayer/): Bereiche, Prinzipale und wo der Autonomieregler sitzt
 - [Schutzregeln konfigurieren](/de-DE/handbuch/anleitungen/schutzregeln-konfigurieren/): Regeln in der Praxis schreiben und prüfen

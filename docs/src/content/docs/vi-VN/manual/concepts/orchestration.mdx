@@ -2,7 +2,7 @@
 title: Điều phối
 description: Cách một “yêu cầu lớn” trở thành kế hoạch của cả một đội mà bạn phê duyệt một lần, rồi thành một quy trình đã sinh để thực thi kế hoạch đó.
 slug: vi-VN/so-tay/khai-niem/dieu-phoi
-sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
+sourceHash: db1bbceaba025b64539588004eebb65d944d5933
 ---
 
 Một agent đơn lẻ chỉ giỏi một việc. Có những yêu cầu lớn hơn thế: “nghiên cứu
@@ -37,13 +37,8 @@ xác thực và thực thi, thay vì văn xuôi tự do. Một đề xuất gồ
 - **Tổng hợp**: bước cuối cùng tạo ra sản phẩm bàn giao.
 - **Ngân sách**: một trần chi phí đã khai báo.
 
-:::caution[Ngân sách chỉ mang tính tham khảo]
-Trần chi phí của đề xuất được so với tổng ước tính của kế hoạch và đánh dấu một
-kế hoạch vượt ngân sách ngay trên thanh phê duyệt _trước khi_ bạn phê duyệt.
-Không có gì đọc nó sau khi lần chạy bắt đầu, nên nó không dừng hay làm thất bại
-một điều phối vượt hạn mức. Các chính sách ngân sách theo từng agent và theo
-từng không gian làm việc là một cơ chế riêng, và chính chúng mới là thứ thực sự
-tạm dừng chi tiêu.
+:::caution[Ngân sách giữ lại lần chạy, không giết nó]
+Trần chi phí của đề xuất được so với tổng ước tính của kế hoạch và đánh dấu một kế hoạch vượt ngân sách ngay trên thanh phê duyệt _trước khi_ bạn phê duyệt. Khi lần chạy đã bắt đầu, máy chủ kiểm tra những gì nó đã chi trước mỗi bước mới: khi chạm trần, lần chạy quy trình bị giữ (`suspended`, lý do `orchestration_budget`) và không có gì mới bắt đầu, còn các bước đang chạy sẽ hoàn tất. Người đã yêu cầu lần chạy sẽ được thông báo và tiếp tục nó bằng **Tăng giới hạn** trên trang của lần chạy quy trình (hoặc quản trị viên không gian làm việc nếu không ai yêu cầu). Mức tăng phải cao hơn trần cũ và số đã chi, tối đa 1.000 đô la, và một trần không bao giờ bị gỡ bỏ. Các mục tiêu mà lần chạy theo đuổi được tính vào đó, kể cả các đánh giá của chúng. Các chính sách ngân sách theo từng agent và theo từng không gian làm việc là một cơ chế riêng.
 :::
 
 ## Nơi bạn xem xét nó

@@ -2,7 +2,7 @@
 title: Meldingen configureren
 description: Zet categorieën aan of uit, stel Quiet hours en een geluid in en zie welke meldingen je waar bereiken.
 slug: nl-NL/handleiding/gidsen/meldingen
-sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
+sourceHash: b1e5bb3b8a13bbbbd169916ab8e7cd7bdd403c1a
 ---
 
 Deze gids laat je zien hoe je meldingen configureert en wat elke instelling
@@ -48,6 +48,8 @@ server lezen. De telefoonclient heeft helemaal geen meldingsoppervlak.
 
 Alles buiten deze lijst kan niet worden gemeld of gefilterd — er is geen
 categorie "al het andere".
+
+Langlopend werk gebruikt de eerste twee categorieën. Een doel dat is beëindigd en een schema dat is beëindigd, tellen als **Agent voltooid**; een doel dat op je review wacht, een verbeteringsvoorstel, een pipeline-run die bij zijn kostenplafond is vastgehouden en het dagelijkse overzicht van wat op jou wacht, tellen als **Agent wacht op je**. Elk bereikt de persoon die het aangaat: wie het doel, het schema of de run heeft gestart.
 
 **Agent wacht op je** wordt geactiveerd zodra het wachten begint: een openstaande goedkeuring (inclusief
 sandbox-uitvoeringsrechten en goedkeuringen van tools in Claude Code), een
@@ -120,6 +122,8 @@ Een melding wordt stil verworpen wanneer een van deze dingen waar is:
 Die controles gelden voor OS-toasts. De blijvende bel legt de gebeurtenis wel
 vast.
 
+Sommige meldingen zijn **stil**: de server markeert ze zodat ze in de bel verschijnen zonder toast, geluid of luide telefoonpush. Een schema dat eindigde en een doel dat eindigde zijn stil. Een doel dat op je review wacht, is dat niet.
+
 Er zijn nog twee onderdrukkingen verder stroomopwaarts, in wat de server
 verstuurt:
 
@@ -130,10 +134,7 @@ verstuurt:
 - Ruimtes van agent tot agent staan gedempt in de zijbalk, dus ze verhogen nooit
   de ongelezen-badge van een mens
 
-Binnen een ruimte is er geen stille hoek: elk gesprek geeft evenveel meldingen,
-draden inbegrepen. De leesstatus hoort bij de ruimte, dus ongelezen telt samen
-over de gesprekken van een ruimte in plaats van per gesprek te worden
-bijgehouden.
+Binnen een ruimte is er geen stille hoek: elk gesprek geeft evenveel meldingen, draden inbegrepen. De leesstatus wordt per gesprek bijgehouden, en een ruimte is ongelezen zolang een van haar gesprekken dat is.
 
 ## Het meldingencentrum lezen en wissen
 
@@ -185,6 +186,8 @@ Controleer of je niet al in de ruimte was waar het gebeurde — een actieve rout
 onderdrukt zijn eigen OS-toast. In een gedeelde ruimte krijgt degene die een run
 heeft gestart de melding, niet jij. Een beurt die eindigde zonder antwoord en
 zonder fout, stuurt niets.
+
+Een run die een schema of bewaking heeft gestart en die zonder problemen eindigt, stuurt niets tenzij die iemand vermeldt. Een afgerond doel of een beëindigd schema gaat naar de bel zonder toast.
 
 ## Gerelateerde gidsen
 

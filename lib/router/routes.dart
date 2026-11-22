@@ -381,6 +381,16 @@ String settingsSkillsRoute(String workspaceId) =>
 String settingsGuardrailsRoute(String workspaceId) =>
     '/workspaces/$workspaceId/settings/workspace/permissions';
 
+/// Settings → Workspace → Code mode: whether runs get the script tool, and
+/// the limits a script runs under.
+String settingsCodeModeRoute(String workspaceId) =>
+    '/workspaces/$workspaceId/settings/workspace/code-mode';
+
+/// Settings → Workspace → Schedules: the workspace's limits on schedules and
+/// watches, and what happens to requests nobody answers.
+String settingsSchedulesRoute(String workspaceId) =>
+    '/workspaces/$workspaceId/settings/workspace/schedules';
+
 /// Settings → Server → Connection & status: which server this client talks to,
 /// plus how this server is shared (mDNS, tunnel opt-in, relay usage).
 String settingsServerConnectionRoute(String workspaceId) =>
@@ -469,6 +479,58 @@ String inboxRoute(String workspaceId) => '/workspaces/$workspaceId/inbox';
 String observabilityRoute(String workspaceId) =>
     '/workspaces/$workspaceId/observability';
 
+/// Observability → Code executions: the scripts a workspace's runs ran,
+/// newest first.
+///
+/// [runId], [conversationId] and [agentId] scope the list to one run,
+/// conversation or agent; [statuses] (wire names) narrows it by outcome. They
+/// ride as query parameters so a scoped list is a URL like any other.
+String codeExecutionsRoute(
+  String workspaceId, {
+  String? runId,
+  String? conversationId,
+  String? agentId,
+  Iterable<String> statuses = const [],
+}) {
+  final base = '/workspaces/$workspaceId/observability/code-executions';
+  final query = <String, String>{
+    if (runId != null && runId.isNotEmpty) codeExecutionsRunParam: runId,
+    if (conversationId != null && conversationId.isNotEmpty)
+      codeExecutionsConversationParam: conversationId,
+    if (agentId != null && agentId.isNotEmpty)
+      codeExecutionsAgentParam: agentId,
+    if (statuses.isNotEmpty) codeExecutionsStatusParam: statuses.join(','),
+  };
+  return query.isEmpty
+      ? base
+      : Uri(path: base, queryParameters: query).toString();
+}
+
+/// The query parameter scoping [codeExecutionsRoute] to one run.
+const String codeExecutionsRunParam = 'run';
+
+/// The query parameter scoping [codeExecutionsRoute] to one conversation.
+const String codeExecutionsConversationParam = 'conversation';
+
+/// The query parameter scoping [codeExecutionsRoute] to one agent.
+const String codeExecutionsAgentParam = 'agent';
+
+/// The query parameter narrowing [codeExecutionsRoute] to some outcomes, as
+/// comma-separated wire names.
+const String codeExecutionsStatusParam = 'status';
+
+/// One code execution's record.
+///
+/// An execution id is opaque and can hold `/` and `#` (`run-1/call_3#2`), so
+/// it is encoded as ONE path segment here and read back whole from the
+/// route's path parameter; nothing may split it.
+String codeExecutionRoute(String workspaceId, String executionId) =>
+    '/workspaces/$workspaceId/observability/code-executions/'
+    '${executionId == codeExecutionIdParam ? executionId : Uri.encodeComponent(executionId)}';
+
+/// The go_router parameter of [codeExecutionRoute]'s pattern.
+const String codeExecutionIdParam = ':executionId';
+
 /// GitHub user profile screen.
 String userProfileRoute(String workspaceId, String login) =>
     '/workspaces/$workspaceId/users/$login';
@@ -536,6 +598,33 @@ String calendarRoute(String workspaceId) => '/workspaces/$workspaceId/calendar';
 /// Calendar event detail screen for [id].
 String calendarDetailRoute(String workspaceId, String id) =>
     '/workspaces/$workspaceId/calendar/$id';
+
+/// The workspace's durable goals (the goal list; its pages are [goalRoute]).
+String goalsRoute(String workspaceId) => '/workspaces/$workspaceId/goals';
+
+/// One durable goal's page: status, hold, budget, contract, checks, verdict.
+String goalRoute(String workspaceId, String goalId) =>
+    '${goalsRoute(workspaceId)}/$goalId';
+
+/// The query a link to [goalRoute] carries to open the goal's contract
+/// editor at once (the goal card's "No machine check: add one").
+const String goalContractEditQuery = 'edit=contract';
+
+/// The workspace's schedules and watches (wake rules).
+String schedulesRoute(String workspaceId) =>
+    '/workspaces/$workspaceId/schedules';
+
+/// One schedule or watch's page.
+String scheduleRoute(String workspaceId, String ruleId) =>
+    '${schedulesRoute(workspaceId)}/$ruleId';
+
+/// The workspace's improvement proposals (the improvements inbox).
+String improvementsRoute(String workspaceId) =>
+    '/workspaces/$workspaceId/improvements';
+
+/// One improvement proposal's page.
+String improvementRoute(String workspaceId, String proposalId) =>
+    '${improvementsRoute(workspaceId)}/$proposalId';
 
 /// Maps a concrete in-shell location to the *logical* route that keybinding `when` clauses and `scope`s are written against (workspace-independent, so without the `/workspaces/:id` prefix).
 /// For example `/workspaces/ws-1/tickets/42` → `/tickets/42`. Non-workspace locations (`/onboarding`, the `/workspaces` picker) pass through unchanged.

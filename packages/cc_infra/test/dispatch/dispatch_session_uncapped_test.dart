@@ -14,6 +14,7 @@ import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
 import 'package:cc_domain/features/guardrails/domain/entities/action_policy_rule.dart';
 import 'package:cc_domain/features/guardrails/domain/repositories/action_policy_repository.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
@@ -165,6 +166,7 @@ class _RecordingLoop implements AgentLoop {
     required String userMessage,
     required List<HarnessTool> tools,
     List<HarnessTool> deferredTools = const [],
+    List<HarnessTool> scriptTools = const [],
     required LlmProviderPort provider,
     HarnessToolContext? context,
     AgentLoopConfig config = const AgentLoopConfig(),
@@ -194,6 +196,7 @@ class _RecordingLoop implements AgentLoop {
   ConfirmationPort? confirmationPort,
   bool connectApprover = true,
   Future<void> Function(AgentLoopConfig)? onRun,
+  int? costCapMicros,
 }) {
   final tempDir = Directory.systemTemp.createTempSync('cc_uncapped_');
   addTearDown(() => deleteDirBestEffort(tempDir));
@@ -222,6 +225,8 @@ class _RecordingLoop implements AgentLoop {
     autonomyResolver: autonomyResolver,
   );
   final session = DispatchSession(
+    freshHistory: false,
+    readOnly: false,
     deps: deps,
     onResolveHandle:
         ({
@@ -246,6 +251,7 @@ class _RecordingLoop implements AgentLoop {
     spaceId: spaceId,
     runLogId: 'run-1',
     mode: Mode.chat,
+    costCapMicros: costCapMicros,
   );
   return (session: session, loop: loop);
 }
@@ -261,8 +267,23 @@ Future<List<AgentProcessEvent>> _collect(DispatchSession session) async {
   return events;
 }
 
+/// What the loop's gate hands its approval callback for one call.
+ToolApprovalRequest _ask(
+  HarnessTool tool,
+  Map<String, dynamic> args,
+  ToolCallOrigin origin, {
+  CancellationToken withdrawn = CancellationToken.none,
+  PersonWaitListener? onPersonWait,
+}) => ToolApprovalRequest(
+  tool: tool,
+  args: args,
+  origin: origin,
+  withdrawn: withdrawn,
+  onPersonWait: onPersonWait ?? (_) {},
+);
+
 void main() {
-  test('/goal runs a single uncapped segment with the cost guard', () async {
+  test('/goal without a cost cap runs uncapped, with no cost guard', () async {
     final h = _buildSession(
       script: [
         const LoopTextDelta('done'),
@@ -276,11 +297,33 @@ void main() {
     final config = h.loop.configs.single;
     expect(config.maxTurns, isNull);
     expect(config.guards.budget.isActive, isFalse);
-    expect(config.guards.externalBudgetExceeded, isNotNull);
-    expect(events.whereType<DoneEvent>().single.outcome, isNull);
+    expect(config.guards.externalBudgetExceeded, isNull);
+    expect(config.guards.externalBudgetPressure, isNull);
+    final done = events.whereType<DoneEvent>().single;
+    expect(done.outcome, isNull);
+    expect(done.endReason, isNull);
   });
 
-  test('/loop also runs uncapped with the cost guard', () async {
+  test('a cost cap guards any run, whatever its prompt', () async {
+    for (final prompt in ['/goal fix the bug', 'just answer this']) {
+      final h = _buildSession(
+        prompt: prompt,
+        costCapMicros: 2000000,
+        script: [const LoopDone(LoopDoneReason.completed)],
+      );
+
+      await _collect(h.session);
+
+      final guards = h.loop.configs.single.guards;
+      expect(guards.externalBudgetExceeded, isNotNull, reason: prompt);
+      // Nothing spent yet: below the cap and below the 90% wrap-up mark.
+      expect(guards.externalBudgetExceeded!(), isFalse, reason: prompt);
+      expect(guards.externalBudgetPressure, isNotNull, reason: prompt);
+      expect(guards.externalBudgetPressure!(), isFalse, reason: prompt);
+    }
+  });
+
+  test('/loop is plain text: no goal directive, no cost guard', () async {
     final h = _buildSession(
       prompt: '/loop polish the module',
       script: [const LoopDone(LoopDoneReason.completed)],
@@ -289,28 +332,13 @@ void main() {
     await _collect(h.session);
 
     final config = h.loop.configs.single;
-    expect(config.maxTurns, isNull);
-    expect(config.guards.budget.isActive, isFalse);
-    expect(config.guards.externalBudgetExceeded, isNotNull);
+    expect(config.guards.externalBudgetExceeded, isNull);
+    expect(h.loop.userMessages.single, contains('/loop polish the module'));
   });
 
   test('/plan runs uncapped without the cost guard', () async {
     final h = _buildSession(
       prompt: '/plan sketch the migration',
-      script: [const LoopDone(LoopDoneReason.completed)],
-    );
-
-    await _collect(h.session);
-
-    final config = h.loop.configs.single;
-    expect(config.maxTurns, isNull);
-    expect(config.guards.budget.isActive, isFalse);
-    expect(config.guards.externalBudgetExceeded, isNull);
-  });
-
-  test('plain chat runs uncapped without the cost guard', () async {
-    final h = _buildSession(
-      prompt: 'just answer this',
       script: [const LoopDone(LoopDoneReason.completed)],
     );
 
@@ -329,7 +357,7 @@ void main() {
 
     // No in-session chaining: one segment only and the turn finalizes as a
     // plain completion (the continuation of a /goal is the supervisor's
-    // responsibility, driven by AgentRunCompleted).
+    // responsibility, driven by AgentRunSettled).
     expect(h.loop.userMessages, hasLength(1));
     expect(events.whereType<DoneEvent>().single.outcome, isNull);
   });
@@ -346,7 +374,45 @@ void main() {
       events.whereType<DebugEvent>().map((e) => e.content).join('\n'),
       contains('budget exhausted'),
     );
-    expect(events.whereType<DoneEvent>().single.outcome, isNull);
+    final done = events.whereType<DoneEvent>().single;
+    expect(done.outcome, isNull);
+    // The run ends with `budget`: the cap ended it, not an error.
+    expect(done.endReason, RunEndReason.budget);
+  });
+
+  test('a spent provider quota ends the run as usageLimit', () async {
+    final h = _buildSession(
+      prompt: 'just answer this',
+      script: [
+        const LoopError(
+          'You exceeded your current quota.',
+          code: 'insufficient_quota',
+        ),
+        const LoopDone(LoopDoneReason.error),
+      ],
+    );
+
+    final events = await _collect(h.session);
+
+    expect(
+      events.whereType<DoneEvent>().single.endReason,
+      RunEndReason.usageLimit,
+    );
+  });
+
+  test('any other error leaves the reason to the terminal write', () async {
+    final h = _buildSession(
+      prompt: 'just answer this',
+      script: [
+        const LoopError('connection reset'),
+        const LoopDone(LoopDoneReason.error),
+      ],
+    );
+
+    final events = await _collect(h.session);
+
+    // Null: the stream processor writes `error` for a failed turn.
+    expect(events.whereType<DoneEvent>().single.endReason, isNull);
   });
 
   test(
@@ -360,10 +426,12 @@ void main() {
         autonomyResolver: (workspaceId, spaceId, agentId) async =>
             spaceId == 'space-1' ? 'proposeOnly' : 'actFreely',
         onRun: (config) async {
-          gate = await config.tools.approvalCallback!(WriteTool(), {
-            'path': 'change.txt',
-            'content': 'unsafe',
-          });
+          gate = await config.tools.approvalCallback!(
+            _ask(WriteTool(), {
+              'path': 'change.txt',
+              'content': 'unsafe',
+            }, const ToolCallOrigin(toolCallId: 'call-1')),
+          );
         },
       );
 
@@ -398,10 +466,12 @@ void main() {
       script: [const LoopDone(LoopDoneReason.completed)],
       actionGuard: guard,
       onRun: (config) async {
-        gate = await config.tools.approvalCallback!(WriteTool(), {
-          'path': 'change.txt',
-          'content': 'unsafe',
-        });
+        gate = await config.tools.approvalCallback!(
+          _ask(WriteTool(), {
+            'path': 'change.txt',
+            'content': 'unsafe',
+          }, const ToolCallOrigin(toolCallId: 'call-1')),
+        );
       },
     );
 
@@ -448,9 +518,11 @@ void main() {
             confirmationPort: approver,
             autonomyResolver: (_, _, _) async => 'actFreely',
             onRun: (config) async {
-              gate = await config.tools.approvalCallback!(_PolicyTool(effect), {
-                'path': 'target.txt',
-              });
+              gate = await config.tools.approvalCallback!(
+                _ask(_PolicyTool(effect), {
+                  'path': 'target.txt',
+                }, const ToolCallOrigin(toolCallId: 'call-1')),
+              );
             },
           );
 
@@ -488,8 +560,11 @@ void main() {
         autonomyResolver: (_, _, _) async => 'actFreely',
         onRun: (config) async {
           gate = await config.tools.approvalCallback!(
-            _PolicyTool(ActionClass.prCreate),
-            {},
+            _ask(
+              _PolicyTool(ActionClass.prCreate),
+              {},
+              const ToolCallOrigin(toolCallId: 'call-1'),
+            ),
           );
         },
       );
@@ -516,7 +591,11 @@ void main() {
       onRun: (config) async {
         final tool = _PolicyTool(ActionClass.fileDelete);
         Future<void> call(String path) async => gates.add(
-          (await config.tools.approvalCallback!(tool, {'path': path})).allowed,
+          (await config.tools.approvalCallback!(
+            _ask(tool, {
+              'path': path,
+            }, const ToolCallOrigin(toolCallId: 'call-1')),
+          )).allowed,
         );
         await call('/w/a/x.txt');
         // What `confirmation.respond` writes for "Approve for 8 hours".

@@ -1,0 +1,110 @@
+---
+title: Jadual dan panggilan bangun
+description: Bangunkan ejen kemudian, mengikut jadual atau apabila sesuatu berlaku, lihat apa yang menunggu, dan apa yang berlaku semasa permulaan semula atau had penggunaan.
+slug: ms-MY/manual-pengguna/panduan-cara/jadual-panggilan-bangun
+sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+---
+
+Ejen tidak tidur atau memeriksa berulang kali semasa menunggu. Ejen itu, atau anda, menyediakan **panggilan bangun**: permintaan tahan lama untuk memulakan atau meneruskan larian ejen dalam perbualan pada masa tertentu atau apabila sesuatu berlaku. Setiap larian yang dimulakan pelayan tanpa seseorang menaip bermula sebagai panggilan bangun: segmen seterusnya bagi matlamat, jadual, pantauan, balasan daripada ejen lain, kerja delegasi yang siap, penghujung had penggunaan, atau kerja yang tertinggal selepas permulaan semula. Panggilan bangun disimpan dalam pangkalan data ruang kerja, jadi ia kekal selepas permulaan semula.
+
+## Jadualkan ejen sendiri
+
+Taip salah satu daripada ini dalam kotak tulis perbualan:
+
+```text
+/loop every 30m --days 3 check the deploy and fix what broke
+/loop keep the flaky tests green
+/schedule in 2h look at the overnight benchmark
+/schedule at 09:00 summarize what changed overnight
+/schedule cron "0 9 * * 1-5" --max 20 triage new tickets
+```
+
+| Perintah | Apa yang dilakukannya |
+| --- | --- |
+| `/loop every <interval> <prompt>` | Membangunkan ejen dengan prompt sekarang dan kemudian setiap selang (sekurang-kurangnya 60 saat antara satu sama lain) |
+| `/loop <prompt>` | Gelung ditentukan sendiri: membangunkan ejen sekarang, dan selepas setiap larian ejen memilih kelewatan seterusnya, 1 hingga 60 minit (20 secara lalai) |
+| `/schedule in <duration> <prompt>` | Membangunkan ejen sekali, selepas kelewatan itu |
+| `/schedule at <HH:MM or ISO time> <prompt>` | Membangunkan ejen sekali. `HH:MM` ialah masa seterusnya bagi jam itu dalam zon waktu ruang kerja; masa ISO tanpa ofset ialah UTC |
+| `/schedule cron "<expression>" <prompt>` | Membangunkan ejen mengikut cron lima medan, dibaca dalam zon waktu ruang kerja. Tanda petikan adalah pilihan |
+
+- `--max <N>` mengehadkan larian, `--days <N>` menamatkan jadual selepas bilangan hari itu (30 secara lalai, 365 paling banyak), dan `--budget <dollars>` mengehadkan jumlah yang boleh dibelanjakan oleh jadual (jika tidak, bajet lalai ruang kerja, 50 dolar pada mulanya).
+- `/loop` melancarkan larian pertamanya serta-merta. `/schedule` menunggu masanya.
+- Tempoh menggunakan `s`, `m`, `h` dan `d`, seperti `90s`, `20m` atau `1h30m`.
+- Arahan ini hanya dibaca dalam mesej yang anda taip sendiri.
+
+Penggubah mesej membantu anda menulisnya. Selepas `/loop` atau `/schedule` dan ruang, senarai cadangan menawarkan bila ia dicetuskan dan menyempit apabila anda menaip; taipkan `--` selepas masa untuk had. Enter atau Tab memilih satu baris dan tidak menghantar apa-apa. Satu baris di atas teks anda kemudian mengulang arahan itu: bila ia dicetuskan, bila ia tamat, dan apa yang masih tiada. Jika anda menekan Enter pada arahan yang tidak dapat dibaca, baris itu menyatakan apa yang salah dan draf anda kekal.
+
+Anda juga boleh mencipta jadual daripada halaman **Jadual** dengan **Jadual baharu**: pilih ruang, perbualan dan ejen, bila ia dicetuskan, titik mula setiap larian, penamat, had larian dan had kos. **Jika ejen sibuk** memilih antara melangkau cetusan itu dan menunggu sehingga ejen bebas. **Setiap cetusan** memilih antara memulakan larian atau hanya memberitahu anda dengan nota itu.
+
+## Apa yang ejen jadualkan
+
+Ejen menggunakan alat `wake_me` untuk perkara yang sama, dan untuk pantauan:
+
+| Pantauan | Dicetuskan apabila |
+| --- | --- |
+| `on:pr_checks` | Semakan permintaan tarik ruang selesai |
+| `on:pr_review` | Permintaan tarik ruang menerima semakan atau balasan |
+| `on:pr_merged` | Permintaan tarik ruang digabungkan |
+| `on:environment` | Satu tugas persekitaran ruang tamat, atau persekitaran menjadi sedia |
+| `on:ticket:<id>` | Tiket diselesaikan |
+| `on:pipeline_run:<id>` | Satu larian pipeline tamat |
+
+- Pantauan permintaan tarik mendengar permintaan tarik ruang itu sendiri, atau satu permintaan tarik yang dinamakannya (`on:pr_checks:acme/shop-ui#12`). Pantauan pada sesuatu yang orangnya tidak boleh baca ditolak.
+- Tindakan ejen sendiri tidak mencetuskan pantauannya. Peristiwa yang tiba semasa ejen sedang bekerja tidak hilang: ia menunggu sehingga larian tamat, dan peristiwa kemudian digabungkan ke dalam panggilan bangun yang sama.
+- Jadual ejen mesti mempunyai had larian atau tarikh tamat. Ia tamat selepas 7 hari secara lalai dan 30 hari paling banyak. Pantauan berjalan 10 kali secara lalai.
+- Jadual yang ditetapkan ejen dalam larian yang dimulakan oleh salah satu jadualnya sendiri berkongsi tamat, had larian dan had kos jadual pertama itu, jadi rantaian jadual ejen tidak boleh bertahan melebihi yang pertama. Memadam jadual pertama menamatkan keseluruhan rantaian; menjeda jadual itu hanya menjeda jadual itu sahaja. Larian yang dimulakan rantaian melalui ejen lain dikira terhadap had kos yang sama. Jadual yang anda cipta tidak memulakan rantaian: apa yang ditetapkan ejen dalam larian-lariannya dihadkan seperti apa-apa yang ditetapkannya selepas mesej anda.
+- Ejen menyenaraikan apa yang menunggunya dengan `list_wakes`, dan membatalkan apa yang ditetapkannya sendiri dengan `cancel_wake`. Ia tidak boleh membatalkan apa yang anda tetapkan.
+
+## Lihat apa yang menunggu
+
+**Di atas kotak tulis.** Apabila panggilan bangun menunggu ejen dalam perbualan, satu jalur menunjukkannya: **N panggilan bangun menunggu**, dari mana setiap satu datang (**Matlamat**, **Jadual**, **Pantauan**, **Balasan daripada** ejen, **Had ditetapkan semula**, **Pemulihan**, dan lain-lain), bila ia sepatutnya dijalankan, dan mengapa ia ditahan.
+
+| Butang | Apa yang dilakukannya | Siapa boleh |
+| --- | --- | --- |
+| **Hantar sekarang** | Menghantar panggilan bangun yang menunggu serta-merta | Hanya orang yang panggilan bangun itu bertindak untuknya |
+| **Sambung** | Melepaskan panggilan bangun yang ditahan | Hanya orang yang panggilan bangun itu bertindak untuknya |
+| **Batalkan panggilan bangun** | Membatalkannya | Sesiapa yang mempunyai akses ke ruang |
+
+Panggilan bangun yang tidak dihantar meninggalkan satu baris dalam perbualan yang menjelaskan sebabnya, seperti **Ejen itu dijeda.** atau **Bajet menyekat larian.**
+
+**Halaman Jadual.** Bar sisi → **Jadual** menyenaraikan setiap jadual dan pantauan yang boleh anda lihat, dikumpulkan mengikut status; jadual cron menunjukkan tiga masa seterusnya dalam zon waktu anda. Buka satu untuk melihat nota, pemilik, cetusan seterusnya, larian, lompatan, perbelanjaan dan tamatnya, serta **Panggilan bangun dan larian terkini**. Setiap jadual mempunyai alamatnya sendiri (`/workspaces/<workspace>/schedules/<id>`).
+
+| Tindakan | Siapa boleh |
+| --- | --- |
+| **Jeda**, **Padam** | Sesiapa yang mempunyai akses ke ruang |
+| **Sambung**, **Lanjutkan** | Hanya pemiliknya (pentadbir ruang kerja bagi jadual yang dibuat ejen tanpa seseorang) |
+
+Apabila seseorang selain pemilik jadual menjedanya, perbualan menunjukkan satu baris yang menamakan mereka.
+
+Pada telefon, **Ulang** pada skrin matlamat memulakan prompt berulang (setiap sekian minit atau jam, atau ditentukan sendiri) dengan had kos dan tamat, dan skrin **Jadual** menjeda, menyambung dan memadam jadual. Paparan kemajuan perbualan menunjukkan apa yang menunggu, termasuk jeda had penggunaan (**Sambung sekarang**, **Batal**) dan kerja yang tertinggal selepas pelayan berhenti.
+
+## Bagaimana jadual dijalankan
+
+- Setiap larian jadual atau pantauan dihadkan kepada 5 dolar, atau kepada apa yang tinggal pada jadual itu apabila itu lebih kecil, dan jadual berhenti pada had kosnya.
+- Masa cron dalam jam yang dilangkau apabila jam dimajukan dijalankan sejam kemudian pada hari itu (02:30 dijalankan pada 03:30). Masa dalam jam yang berulang apabila jam diundurkan dijalankan sekali.
+- Larian jadual tidak sekali-kali menyertai larian yang sudah berjalan. Jika ejen sibuk apabila jadual berwaktu dicetuskan, cetusan itu dilangkau secara senyap, melainkan jadual menunggu sehingga ejen bebas.
+- Larian yang dimulakan jadual atau pantauan dan tamat tanpa masalah tidak memberitahu anda, melainkan ia menyebut seseorang. Apabila jadual tamat, loceng menjelaskan sebabnya (**Ia telah menggunakan larian yang dibenarkan.**, **Ia telah sampai tarikh tamatnya.**, dan lain-lain) tanpa bunyi.
+- Paling banyak 30 larian sejam dimulakan daripada panggilan bangun dalam satu perbualan, dan 300 dalam satu ruang kerja.
+- Apabila orang yang bagi pihaknya jadual bertindak meninggalkan ruang kerja, jadual itu tamat. Segala yang lain yang bertindak untuk mereka turut berhenti: panggilan bangun yang menunggu mereka dibatalkan, mesej mereka yang beratur dan ditahan dipadam, dan ejen mereka yang sedang berjalan dihentikan.
+
+## Henti, permulaan semula dan had penggunaan
+
+- **Henti.** Menekan **Henti** pada larian ejen menahan panggilan bangun yang menunggunya (yang bukan milik matlamat) dan mesej yang anda beratur untuknya. Ia menunggu **Sambung** atau **Hantar mesej yang ditahan**. Setiap orang menghantar mesej ditahan mereka sendiri; tiada sesiapa menghantar milik orang lain.
+- **Permulaan semula pelayan.** Panggilan bangun dan jadual kekal. Larian yang dimulakan panggilan bangun disambung selepas permulaan semula, dengan paling banyak 3 cubaan. Larian yang anda mulakan sendiri tidak dijalankan semula dengan sendirinya: ia meninggalkan panggilan bangun **Pemulihan** yang ditahan, dan ia diteruskan apabila anda menekan **Sambung**. Jadual berwaktu yang terlepas slot (masa ia sepatutnya dijalankan) semasa pelayan tidak aktif hanya dijalankan lewat dalam tempoh tangguh yang pendek (separuh selangnya, paling banyak 10 minit; 24 jam bagi jadual satu kali), jika tidak ia merekodkan satu lompatan: **Terlepas semasa pelayan tidak aktif.**
+- **Had penggunaan penyedia.** Apabila larian berhenti pada had penggunaan penyedia dan penyedia menyatakan bila ia ditetapkan semula (dalam tempoh 7 hari), larian itu dijeda. Larian yang dimulakan pelayan, seperti segmen matlamat atau larian jadual, disambung sendiri 30 saat selepas penetapan semula. Larian yang anda mulakan menunggu anda: perbualan menunjukkan **Dijeda di** had **penggunaan penyedia. Had itu ditetapkan semula pada** satu masa, dengan **Sambung** (hanya anda) dan **Batal** (sesiapa dalam ruang). Selepas **Sambung**, ia diteruskan setelah had itu ditetapkan semula. Jeda yang tidak anda sambung luput 7 hari selepas penetapan semula. Mesej yang anda beratur pada had dihantar ke dalam larian yang disambung; jika larian tidak menunggu penetapan semula, atau jeda dibatalkan atau luput, ia ditahan untuk anda di bawah **Hantar mesej yang ditahan**. Mesej beratur orang lain ditahan untuk mereka serta-merta. Cetusan seterusnya jadual menunggu sehingga larian yang dijeda disambung. Ejen ACP tidak melaporkan penetapan semula, jadi larian mereka tidak menunggu.
+
+## Had ruang kerja
+
+Pentadbir ruang kerja menetapkan had di bawah **Tetapan → Ruang kerja → Jadual**:
+
+- **Had jadual**: berapa banyak jadual aktif atau dijeda yang boleh dimiliki seorang ejen dalam satu perbualan (10), merentasi ruang kerja (50), dan dalam keseluruhan ruang kerja (500); had kos lalai bagi satu jadual (50 dolar); dan zon waktu yang digunakan oleh jadual cron dan ringkasan harian (UTC sebagai permulaan).
+- **Apabila tiada sesiapa menjawab**: berapa lama larian yang dimulakan pelayan menunggu jawapan atau kelulusan seseorang (72 jam secara lalai, 1 jam hingga 7 hari) sebelum kelulusan dikira ditolak dan soalan dikira tidak dijawab (selepas itu, apa-apa lagi yang diminta larian yang sama ditolak serta-merta), serta jam bagi ringkasan harian apa yang menunggu anda dalam matlamat, jadual dan larian lain yang dimulakan pelayan.
+
+Ahli melihat halaman ini secara baca sahaja.
+
+## Lihat juga
+
+- [Kejar matlamat](/ms-MY/manual-pengguna/panduan-cara/kejar-matlamat/)
+- [Ejen bekerja bersama](/ms-MY/manual-pengguna/panduan-cara/ejen-bekerja-bersama/)
+- [Perintah slash](/ms-MY/manual-pengguna/rujukan/perintah-slash/)
+- [Alat panggilan bangun dan matlamat](/ms-MY/manual-pengguna/rujukan/alat-mcp/#alat-panggilan-bangun-dan-matlamat)

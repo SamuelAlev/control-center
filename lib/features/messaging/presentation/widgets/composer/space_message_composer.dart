@@ -1,5 +1,7 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/composer/edit_message_choice_dialog.dart';
+import 'package:control_center/features/messaging/presentation/widgets/composer/editing_message_banner.dart';
+import 'package:control_center/features/messaging/presentation/widgets/work/composer_command_strip.dart';
 import 'package:control_center/features/messaging/providers/composer_expanded_provider.dart';
 import 'package:control_center/features/messaging/providers/conversation_checkpoint_providers.dart';
 import 'package:control_center/features/messaging/providers/editing_message_provider.dart';
@@ -7,7 +9,6 @@ import 'package:control_center/features/messaging/providers/message_edit_provide
 import 'package:control_center/features/messaging/providers/space_attachment_upload_provider.dart';
 import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/composer/composer.dart';
 import 'package:control_center/shared/widgets/composer/composer_draft.dart';
 import 'package:control_center/shared/widgets/composer/composer_models.dart';
@@ -235,7 +236,16 @@ class _SpaceMessageComposerState extends ConsumerState<SpaceMessageComposer> {
       isBusy: widget.isBusy,
       onStop: widget.onStop,
       leading: widget.leading,
-      banner: isEditing ? _EditingMessageBanner(onCancel: _cancel) : null,
+      // What sending will do, when it is not the plain thing: change a sent
+      // message, or start the schedule being written.
+      banner: isEditing
+          ? EditingMessageBanner(onCancel: _cancel)
+          : ComposerCommandStrip(
+              spaceId: widget.spaceId,
+              conversationId: widget.conversationId,
+              controller: widget.draft.controller,
+              focusNode: _focus,
+            ),
       // The field stays put until the session ends, which restores the parked
       // draft. Clearing here would drop that draft and any attachments that
       // belonged to it.
@@ -250,47 +260,6 @@ class _SpaceMessageComposerState extends ConsumerState<SpaceMessageComposer> {
         }
         await widget.onSubmit(submission);
       },
-    );
-  }
-}
-
-/// The strip at the top of the composer while a sent message is loaded in it.
-class _EditingMessageBanner extends StatelessWidget {
-  const _EditingMessageBanner({required this.onCancel});
-
-  final VoidCallback onCancel;
-
-  @override
-  Widget build(BuildContext context) {
-    final ds = context.ds;
-    final l10n = AppLocalizations.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Icon(AppIcons.pencil, size: 14, color: ds.fgSecondary),
-            const SizedBox(width: AppSpacing.xs),
-            Expanded(
-              child: Text(
-                l10n.editMessage,
-                style: CcTypography.caption.copyWith(
-                  color: ds.fgSecondary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            CcIconButton(
-              icon: AppIcons.x,
-              size: CcButtonSize.sm,
-              tooltip: l10n.cancelEdit,
-              onPressed: onCancel,
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        const CcDivider(),
-      ],
     );
   }
 }

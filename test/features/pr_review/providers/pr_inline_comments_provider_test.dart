@@ -137,23 +137,25 @@ void main() {
           ),
           githubUserProvider.overrideWith(
             (ref) async => const GitHubUser(
-              login: 'octocat',
+              login: 'OctoCat',
               avatarUrl: 'https://example.com/octocat.png',
             ),
           ),
-          // The author is the login on the PR's forge; the avatar comes from
-          // the GitHub identity only when that login matches it.
+          // The author is the login on the PR's forge (the connection map
+          // lower-cases it); the profile supplies the casing and the avatar
+          // only when that login matches it.
           viewerLoginsProvider.overrideWithValue(const {
             ForgeHost.github: 'octocat',
           }),
         ],
       );
       addTearDown(identified.dispose);
-      // Let the identity resolve: entries read its latest value at write time.
-      await identified.read(githubUserProvider.future);
+      // The controller comes first, with the profile still cold: nothing else
+      // on the PR screen loads it, so the controller has to.
       final ctl = identified.read(
         prInlineCommentsControllerProvider(_prRefA).notifier,
       );
+      await identified.read(githubUserProvider.future);
 
       final thread = ctl.create(
         filePath: 'lib/foo.dart',
@@ -165,7 +167,7 @@ void main() {
         authorBody: 'Nice!',
       );
 
-      expect(thread.entries.first.author, 'octocat');
+      expect(thread.entries.first.author, 'OctoCat');
       expect(
         thread.entries.first.authorAvatarUrl,
         'https://example.com/octocat.png',
@@ -173,7 +175,7 @@ void main() {
 
       ctl.reply(threadId: thread.id, body: 'following up');
       final reply = ctl.byId(thread.id)!.entries.last;
-      expect(reply.author, 'octocat');
+      expect(reply.author, 'OctoCat');
       expect(reply.authorAvatarUrl, 'https://example.com/octocat.png');
     });
 

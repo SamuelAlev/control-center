@@ -74,6 +74,7 @@ AgentRunLogsTableData _makeRow({
   codeGraphCalls: 0,
   outputContractMode: outputContractMode,
   outputRejections: outputRejections,
+  wakeIds: '[]',
 );
 
 void main() {

@@ -13,12 +13,17 @@ class SendSpaceMessageTool extends McpTool {
   @override
   String get name => 'send_message';
 
+  /// Not for scripts: it posts into a space as an agent, and the space's agents
+  /// answer (see [McpTool.scriptCallable]).
+  @override
+  bool get scriptCallable => false;
+
   @override
   bool get isMutating => true;
 
   @override
   String get description =>
-      'Sends a message into a space from a specific sender agent. The space '
+      'Sends a message into a space as the calling agent. The space '
       'must belong to the given workspace. Pass conversation_id to target a '
       'specific conversation (stream) inside the space — for example a thread '
       'opened with start-thread semantics; omit it to post into the space\'s '
@@ -33,7 +38,14 @@ class SendSpaceMessageTool extends McpTool {
         'description': 'The workspace the space must belong to.',
       },
       'space_id': {'type': 'string', 'description': 'The space ID.'},
-      'sender_id': {'type': 'string', 'description': 'The sender agent ID.'},
+      // One of `McpCallScope.callerIdentityKeys`: an agent run always sends
+      // as itself.
+      'sender_id': {
+        'type': 'string',
+        'description':
+            'Set by Control Center to the calling agent; any value you pass '
+            'is replaced.',
+      },
       'content': {'type': 'string', 'description': 'Message content.'},
       'conversation_id': {
         'type': 'string',

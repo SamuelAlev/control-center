@@ -182,6 +182,8 @@ _dispatchClaude({
   );
 
   final session = DispatchSession(
+    freshHistory: false,
+    readOnly: false,
     deps: deps,
     onResolveHandle:
         ({
@@ -359,6 +361,8 @@ void main() {
       backendRegistry: BackendRegistry({'claude': const ClaudeCliBackend()}),
     );
     final session = DispatchSession(
+      freshHistory: false,
+      readOnly: false,
       deps: deps,
       onResolveHandle:
           ({

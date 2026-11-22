@@ -53,21 +53,54 @@ class ClaudeCliBackend implements AgentBackend {
   /// renders a form in the conversation and waits.
   static const replacedNativeTools = '$nativeChecklistTools,AskUserQuestion';
 
+  /// The Control Center tools [appendedSystemPrompt] names, by bare name.
+  /// Pinned against the prompt here and against the server's registry, so
+  /// the prompt never names a tool the run cannot have.
+  static const controlCenterToolNames = [
+    'repl',
+    'render_media',
+    'ask_user',
+    'todo_read',
+    'todo_write',
+    'open_pull_request',
+    'comment_on_pull_request',
+    'update_pull_request',
+    'search_code',
+    'code_symbol',
+    'code_callers',
+  ];
+
   // Keep this shell-policy-safe for the same reason as the Bash instruction.
+  // One text, true with `repl` and without: how a Control Center tool is
+  // reached is stated once, and every tool after it goes by its bare name,
+  // so nothing here tells the model to look for a script-only tool with
+  // tool search, which cannot find it.
   static const _controlCenterSystemPrompt =
       '$bashDescriptionInstruction '
+      'Control Center tools are the MCP tools named '
+      'mcp__control-center__NAME, written below by NAME alone. Call a loaded '
+      'one directly, and load a listed one that is not loaded yet with tool '
+      'search. When repl is one of them, most of the others are callable '
+      'only from a script given to repl, as await tools.NAME with one '
+      'argument object. Tool search does not find those, so a tool named '
+      'below or in your instructions that you cannot find is called from a '
+      'repl script and is never reported as missing. '
+      'To find code by what it does, or to follow a symbol to its definition '
+      'and its callers, use search_code, code_symbol and code_callers before '
+      'you grep, and grep when they return nothing. With repl, make several '
+      'Control Center calls in one script and return only the part you need. '
       'For still images including SVG, HEIC and WebP, video or GIF/APNG frames, '
-      'and PDF or PDF-compatible AI pages, use tool search to load '
-      'mcp__control-center__render_media. It returns images using bundled '
-      'renderers. Do not ask the user to install FFmpeg or invoke system '
+      'and PDF or PDF-compatible AI pages, use render_media. It returns '
+      'images using bundled renderers. From a script, pass each image it '
+      'returns to the script image function so that you see it. In a script, '
+      'a result with text and images arrives as an object with text and '
+      'images. Do not ask the user to install FFmpeg or invoke system '
       'media tools. '
-      'To ask the user a question, use tool search to load '
-      'mcp__control-center__ask_user. It shows a form in the conversation and '
-      'waits for the answer. '
+      'To ask the user a question, use ask_user. It shows a form in the '
+      'conversation and waits for the answer. '
       'For multi-step work or a user-provided task list, you MUST use the '
-      'Control Center checklist. Use your tool search to load '
-      'mcp__control-center__todo_read and mcp__control-center__todo_write '
-      'before starting substantive work. Claude Code native task tools are '
+      'Control Center checklist, todo_read and todo_write, and start it '
+      'before substantive work. Claude Code native task tools are '
       'disabled because their lists are not shown in Control Center. '
       'Call todo_read before creating or resuming a checklist and after '
       'context compaction so you preserve existing items. Call todo_write '
@@ -78,16 +111,16 @@ class ClaudeCliBackend implements AgentBackend {
       'final reply. A plan written in chat is not a substitute for the '
       'checklist. Skip checklists for single-step replies. '
       'When the task calls for publishing changes, push with git push and '
-      'open the pull request with mcp__control-center__open_pull_request, '
-      'loaded with tool search. gh pr create cannot open pull requests '
+      'open the pull request with open_pull_request. gh pr create cannot '
+      'open pull requests '
       'from the sandbox. git fetch works for the GitHub repositories this '
       'run works on, and gh reads them (pull requests, issues, checks) on a '
       'read-only token: with several repositories, run gh inside one or '
       'pass --repo owner/name. To write, comment on '
       "this run's pull request with "
-      'mcp__control-center__comment_on_pull_request (it posts as the '
+      'comment_on_pull_request (it posts as the '
       'Control Center bot) and change its title or description with '
-      'mcp__control-center__update_pull_request, never gh pr comment, gh pr '
+      'update_pull_request, never gh pr comment, gh pr '
       'edit or gh api. Control Center '
       'requests approval when the '
       'guarded action runs. Printing commands in chat does not request '

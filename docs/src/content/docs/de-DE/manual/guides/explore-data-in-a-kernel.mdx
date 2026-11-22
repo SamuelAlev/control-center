@@ -1,8 +1,8 @@
 ---
 title: Daten in einem persistenten Kernel erkunden
-description: Gib einem Agenten einen Python- oder JavaScript-Interpreter, der seine Variablen zwischen Aufrufen behält, Diagramme in den Chat zeichnet und aus einer Zelle heraus deine eigenen Tools aufrufen kann.
+description: Gib einem Agenten einen Python- oder JavaScript-Interpreter, der seine Variablen zwischen Aufrufen behält und Diagramme in den Chat zeichnet.
 slug: de-DE/handbuch/anleitungen/daten-im-kernel-erkunden
-sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
+sourceHash: 8fcd77019bfae5088223822a12ef91c8a6879c5d
 ---
 
 Diese Anleitung zeigt, wie du einen Agenten etwas Teures einmal laden lässt und ihm dann mehrere Fragen dazu stellst, statt den Ladevorgang bei jeder Frage erneut zu bezahlen.
@@ -62,22 +62,9 @@ Sie werden in gewöhnlichen Code umgeschrieben, statt einen Fehler zu werfen:
 
 Das Leeren des `%pip`-Caches ist der Punkt, auf den es ankommt: In einen laufenden Interpreter zu installieren ändert nichts an einem Modul, das schon importiert wurde, und ohne das Leeren läuft nicht die Version, die du gerade installiert hast.
 
-## Eigene Tools aus einer Zelle aufrufen
+## Tools aus Code aufrufen
 
-```python
-paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
-for path in paths.splitlines()[:100]:
-    contents = tool("read", {"path": path})
-    ...
-```
-
-`tool(name, args)` steigt wieder in die eigene Werkzeugregistrierung des Agenten ein. Eine Zelle kann sich so über hundert Dateien auffächern oder über `task` delegieren, ohne dass das Modell einen Turn je Element verbraucht.
-
-:::caution[Die Brücke umgeht deine Schutzregeln nicht]
-Ein überbrückter Aufruf löst gegen **dieselbe** Werkzeugregistrierung auf wie ein vom Modell ausgelöster Aufruf, deshalb gelten die `ActionClass`-Richtlinie, Freigabeaufforderungen und jeder Wrapper identisch. Eine Brücke, die an der Registrierung vorbeigreift, wäre ein Loch in genau der Form „schreib einen Python-Einzeiler“.
-:::
-
-Ein überbrückter Aufruf **setzt das Timeout der Zelle aus**, solange er aussteht. Das Budget misst Untätigkeit, nicht die Wanduhrzeit — eine Zelle, die sich auf Subagenten auffächert und vier Minuten wartet, hängt nicht, und sie mitten in der Auffächerung abzubrechen nähme den Zustand des ganzen Kernels mit.
+Eine Zelle kann die Tools des Agenten nicht aufrufen. Um in Code über Tools zu schleifen, schreibt der Agent stattdessen ein [`repl`](/de-DE/handbuch/konzepte/code-modus/)-Skript. Auch ein Skript kann `eval` nicht aufrufen: Das ruft der Agent direkt auf.
 
 ## Von vorn
 

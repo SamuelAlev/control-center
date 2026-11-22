@@ -1,6 +1,15 @@
 part of 'space_screen.dart';
 
 extension _SpaceComposer on _SpaceScreenState {
+  /// The draft's failure in words: a steering refusal by its kind, any
+  /// other failure as it is. The draft stays for a retry.
+  String? _draftErrorText() {
+    final error = _draft.error;
+    return error == null
+        ? null
+        : steeringFailureText(AppLocalizations.of(context), error);
+  }
+
   Future<void> _attach() async {
     final picked = await pickAttachments();
     if (!mounted || picked.isEmpty) return;

@@ -7,6 +7,7 @@ import 'package:cc_domain/core/domain/value_objects/sandbox_backend.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_event.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_handle.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
+import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_domain/features/sandboxing/domain/host_execution_posture.dart';
 import 'package:cc_infra/src/dispatch/host_execution_gate.dart';
@@ -151,6 +152,9 @@ void main() {
         final adapter = _adapter(gate: gate);
 
         final handle = adapter.start(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           cliName: 'claude',
           prompt: 'hello',
           workingDirectory: '/tmp/work',
@@ -174,12 +178,18 @@ void main() {
         final adapter = _adapter(gate: gate);
 
         final h1 = adapter.start(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           cliName: 'claude',
           prompt: 'p1',
           workingDirectory: '/tmp/w1',
           agentId: 'agent-a',
         );
         final h2 = adapter.start(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           cliName: 'claude',
           prompt: 'p2',
           workingDirectory: '/tmp/w2',
@@ -201,6 +211,9 @@ void main() {
       final adapter = _adapter(gate: gate);
 
       final handle = adapter.start(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
+        readOnly: false,
         cliName: 'claude',
         prompt: 'hello',
         workingDirectory: '/tmp/work',
@@ -233,12 +246,18 @@ void main() {
       final stalledAdapter = _adapter(gate: gate);
 
       final h1 = stalledAdapter.start(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
+        readOnly: false,
         cliName: 'claude',
         prompt: 'p1',
         workingDirectory: '/tmp/w1',
         agentId: 'agent-a',
       );
       final h2 = stalledAdapter.start(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
+        readOnly: false,
         cliName: 'claude',
         prompt: 'p2',
         workingDirectory: '/tmp/w2',
@@ -266,12 +285,18 @@ void main() {
       final adapter = _adapter(gate: gate);
 
       adapter.start(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
+        readOnly: false,
         cliName: 'claude',
         prompt: 'p1',
         workingDirectory: '/tmp/w1',
         agentId: null,
       );
       adapter.start(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
+        readOnly: false,
         cliName: 'claude',
         prompt: 'p2',
         workingDirectory: '/tmp/w2',
@@ -303,6 +328,9 @@ void main() {
       final adapter = _adapter(gate: gate);
 
       adapter.start(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
+        readOnly: false,
         cliName: 'claude',
         prompt: 'p1',
         workingDirectory: '/tmp/w1',

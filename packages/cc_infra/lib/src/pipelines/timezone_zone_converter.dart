@@ -1,9 +1,12 @@
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_cron_scheduler.dart';
-import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
-/// IANA timezone rules for scheduled pipeline triggers, backed by the embedded
-/// `timezone` database.
+/// IANA timezone rules for scheduled pipeline triggers and wake rules, backed
+/// by the embedded `timezone` database: every IANA name, the backward links
+/// (`US/Eastern`, `Europe/Kiev`, `Asia/Calcutta`) included. The data is as
+/// current as the `timezone` release in the lockfile (its version is in the
+/// header of the package's `data/latest_all.dart`).
 ///
 /// Plugs into [PipelineCronScheduler] as its `toLocal` / `toUtc` converters, so
 /// a cron trigger with `timezone: Europe/Berlin` fires at Berlin wall-clock
@@ -11,9 +14,17 @@ import 'package:timezone/timezone.dart' as tz;
 /// on the literal fields of the [DateTime] it is handed, so a wall-clock time
 /// travels as a UTC-flagged [DateTime] carrying the local fields.
 ///
-/// A non-existent wall-clock time (inside a spring-forward gap) resolves to the
-/// instant just after the gap; an ambiguous one (the repeated fall-back hour)
-/// resolves to its first occurrence.
+/// [toUtc] reads a wall-clock time with the zone's offset at the instant those
+/// fields name in UTC, corrected once (the package's `TZDateTime`). So:
+/// - a time inside a spring-forward gap moves forward by the gap's length
+///   (02:30 in Europe/Berlin on 2026-03-29, whose 02:00 to 03:00 does not
+///   exist, is 03:30 CEST), never to the gap's end;
+/// - a time in the repeated fall-back hour resolves to the occurrence whose
+///   offset is in effect at those fields read as UTC: the later one (standard
+///   time) east of Greenwich (02:30 in Europe/Berlin on 2026-10-25 is 02:30
+///   CET, 01:30Z), the earlier one (daylight time) west of it (01:30 in
+///   America/New_York on 2026-11-01 is 01:30 EDT, 05:30Z). Either way it is
+///   one instant, so a daily cron at that time fires once.
 final class TimezoneZoneConverter {
   TimezoneZoneConverter._();
 

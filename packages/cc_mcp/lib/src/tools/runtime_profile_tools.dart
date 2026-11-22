@@ -27,6 +27,11 @@ class CreateRuntimeProfileTool extends McpTool {
   @override
   String get name => 'create_runtime_profile';
 
+  /// Not for scripts: it creates a runtime profile (see
+  /// [McpTool.scriptCallable]).
+  @override
+  bool get scriptCallable => false;
+
   @override
   String get description =>
       'Defines a reusable runtime profile wrapping a protocol family, a CLI '

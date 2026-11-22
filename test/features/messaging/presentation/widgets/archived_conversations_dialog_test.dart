@@ -88,7 +88,6 @@ GoRouter _router() {
           space: _space,
           selected: false,
           onPress: () {},
-          leading: const SizedBox.shrink(),
           menuRevealed: true,
         ),
       ),

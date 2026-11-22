@@ -2,7 +2,7 @@
 title: Mit einem Agenten chatten
 description: So legst du einen Bereich mit einem Agenten an, schickst ihm Arbeit, steuerst ihn mitten im Lauf und stoppst ihn.
 slug: de-DE/handbuch/anleitungen/mit-agent-chatten
-sourceHash: 0dbc01158345074d818cec6084501abc03323fea
+sourceHash: 3e899c417e120a7cc741e802d577d0182210115b
 ---
 
 Diese Anleitung zeigt, wie du mit einem Agenten in einem Bereich arbeitest.
@@ -42,6 +42,8 @@ Zug in die Warteschlange. Er wird zu einer Steuerungskarte in der Leiste über
 dem Composer und an der nächsten Turn-Grenze in den laufenden Lauf eingeschleust.
 Einen Toast gibt es nicht — die Karte ist die Rückmeldung.
 
+Um einen Lauf zu lenken, der für jemand anderen arbeitet, brauchst du Schreibzugriff auf die Repositories des Bereichs; ohne ihn wird die Nachricht abgelehnt und bleibt im Composer. Ein rein lesender Lauf, etwa das Review eines Ziels, nimmt währenddessen keine Nachricht an: Wenn er endet, wird die Nachricht wie eine gewöhnliche gesendet, und nach dem Review eines Ziels wartet sie stattdessen auf den nächsten Abschnitt des Ziels.
+
 Drei Dinge ändern dieses Verhalten:
 
 - Eine Nachricht mit einer **@-Erwähnung** wird immer als Nachricht geschickt,
@@ -77,9 +79,9 @@ den Bereich suchen zu müssen. Das Overlay verbirgt eine Anfrage, sobald die
 Unterhaltung dieses Bereichs auf dem Bildschirm ist, damit du dieselbe
 Rückfrage nie zweimal beantwortest.
 
-Es gibt kein Timeout: ein blockierter Agent wartet, bis jemand entscheidet.
-Dieselbe Anfrage erscheint auch in der Aufmerksamkeitsleiste des Posteingangs
-und auf dem Smartphone-Client.
+Ein Lauf, den du gestartet hast, wartet eine Stunde auf eine Genehmigung; danach gilt die Genehmigung als abgelehnt. Dieselbe Anfrage erscheint auch in der Aufmerksamkeitsleiste des Posteingangs und auf dem Smartphone-Client.
+
+Ein Lauf, den der Server gestartet hat (ein Abschnitt eines Ziels, ein Zeitplan, eine Antwort eines anderen Agenten), wartet stattdessen standardmäßig 72 Stunden, die ein Admin des Arbeitsbereichs festlegt; danach gilt eine Genehmigung als abgelehnt und eine Frage als unbeantwortet. Siehe [Wenn niemand antwortet](/de-DE/handbuch/anleitungen/ziel-verfolgen/#wenn-niemand-antwortet).
 
 ## Die Frage eines Agenten beantworten
 
@@ -118,6 +120,8 @@ laufenden Agenten im Arbeitsbereich mit derselben Steuerung.
 Ein gestoppter Lauf ist als **Gestoppt** markiert. Schick eine neue Nachricht,
 um wieder einen Lauf zu starten.
 
+Stoppen hält auch zurück, was für diesen Agenten eingereiht wurde: deine Steuerungskarten (**Zurückgehaltene Nachrichten senden** sendet sie) und seine ausstehenden Weckrufe (**Fortsetzen** in der Leiste oberhalb des Eingabefelds). Ein Ziel, an dem der Agent gearbeitet hat, pausiert, bis jemand es fortsetzt.
+
 ## Slash-Befehle nutzen
 
 Tippe `/` im Composer, um die Befehlsliste zu sehen. Die, die ändern, wie sich
@@ -126,8 +130,10 @@ die Unterhaltung verhält:
 | Befehl         | Wirkung                                                                                                                                                              |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `/plan`        | Schaltet den Bereich in den Plan-Modus. Ein bloßes `/plan` schaltet den Modus nur scharf; `/plan <request>` schaltet ihn scharf und schickt den Rest als deine Nachricht |
-| `/goal <text>` | Hält das Arbeitsziel der Unterhaltung fest                                                                                                                           |
-| `/loop <text>` | Iteriert an einer Aufgabe, bis sie fertig ist                                                                                                                        |
+| `/goal <text>` | Startet ein dauerhaftes Ziel, an dem der Agent arbeitet, bis es geprüft als erledigt gilt ([Ein Ziel verfolgen](/de-DE/handbuch/anleitungen/ziel-verfolgen/)) |
+| `/loop <text>` | Weckt den Agenten mit dem Text ab und zu, in einem Intervall oder in seinem eigenen Tempo ([Zeitpläne und Weckrufe](/de-DE/handbuch/anleitungen/zeitplaene-weckrufe/)) |
+| `/schedule <when> <text>` | Weckt den Agenten später, einmal oder nach einem Cron-Ausdruck |
+| `/refine`      | Fordert ein Review der Arbeit der Konversation an, das Verbesserungen vorschlagen kann                                                                               |
 | `/compact`     | Faltet älteren Verlauf in eine verankerte Zusammenfassung und macht auf dem verdichteten Kontext weiter                                                              |
 | `/todo …`      | Zeigt die gespeicherte Aufgabenliste dieser Unterhaltung und bearbeitet sie                                                                                          |
 

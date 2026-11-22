@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_attempt.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_backend_port.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_manifest.dart';
+import 'package:cc_domain/features/evals/domain/evaluation/evaluation_outcome.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_plan.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_task.dart';
 import 'package:cc_domain/features/evals/domain/value_objects/agent_config_hash.dart';
@@ -478,10 +479,16 @@ class ControlledSkillEvaluation {
     final plan = EvaluationPlan(
       id: campaignId,
       arms: [baseline, treatment],
+      // A screen, not a quality claim: skill corpora are small. A loss on
+      // every one of 5+ tasks reads inferior on the exact sign-flip p; below
+      // 5 tasks no inferior verdict is possible, and the observed task-mean
+      // difference is what a person judges by.
+      hypothesis: EvaluationHypothesis.regressionScreen,
+      primaryOutcome: EvaluationOutcomeMeasure.verifiedSuccess,
+      minTasks: 3,
       strata: [
         StratumSpec(stratum: CacheStratum.cold, repetitions: repetitions),
       ],
-      minPairs: 2,
     );
     var spent = 0;
     var priceUnknown = false;
@@ -490,7 +497,9 @@ class ControlledSkillEvaluation {
         if (priceUnknown ||
             spent >= budgetMicros ||
             (_strictReservation && spent + maxCallMicros! > budgetMicros)) {
-          throw StateError('campaign budget exhausted or spend unknown');
+          throw priceUnknown
+              ? StateError('campaign spend unknown')
+              : const EvaluationCeilingReached('campaign budget exhausted');
         }
         final snapshot = request.arm.id == 'baseline' ? previous : candidate;
         final exposure = request.effective.skillExposure;
@@ -548,7 +557,9 @@ class ControlledSkillEvaluation {
             if (exposure == SkillExposure.forced && snapshot != null)
               'The target skill is explicitly loaded for this diagnostic run. Its full instructions follow:\n${utf8.decode(snapshot.files['SKILL.md']!)}',
           ].join('\n'),
-          approvalCallbackFactory: (request) => (tool, arguments) async {
+          approvalCallbackFactory: (request) => (approval) async {
+            final tool = approval.tool;
+            final arguments = approval.args;
             if (tool.name != 'write' && tool.name != 'edit') {
               return const ToolGateDecision.allow();
             }

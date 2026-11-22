@@ -2,7 +2,7 @@
 title: Configurer les notifications
 description: Activez ou désactivez des catégories, définissez des heures de silence et un son, et sachez quelles notifications vous parviennent et où.
 slug: fr-FR/manuel/guides/notifications
-sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
+sourceHash: b1e5bb3b8a13bbbbd169916ab8e7cd7bdd403c1a
 ---
 
 Ce guide vous explique comment configurer les notifications et ce que chaque
@@ -49,6 +49,8 @@ surface de notification.
 
 Tout ce qui ne figure pas dans cette liste ne peut être ni notifié ni filtré —
 il n’existe pas de catégorie « tout le reste ».
+
+Les travaux de longue durée utilisent les deux premières catégories. Un objectif terminé et une planification terminée comptent comme **Agent terminé** ; un objectif en attente de votre revue, une proposition d’amélioration, une exécution de pipeline retenue à son plafond de coût et le récapitulatif quotidien de ce qui vous attend comptent comme **Un agent vous attend**. Chacun parvient à la personne concernée : celle qui a lancé l’objectif, la planification ou l’exécution.
 
 **Un agent vous attend** se déclenche au moment où une attente
 commence : une approbation en suspens (y compris les autorisations d’exécution du
@@ -127,6 +129,8 @@ est vraie :
 Ces vérifications s’appliquent aux toasts du système d’exploitation. La cloche
 durable enregistre quand même l’événement.
 
+Certaines notifications sont **discrètes** : le serveur les marque pour qu’elles atteignent la cloche sans toast, sans son ni notification push bruyante sur le téléphone. Une planification terminée et un objectif terminé sont discrets. Un objectif en attente de votre revue ne l’est pas.
+
 Deux autres suppressions interviennent plus en amont, dans ce que le serveur
 envoie réellement :
 
@@ -137,10 +141,7 @@ envoie réellement :
 - Les espaces entre agents sont en sourdine dans la barre latérale, si bien
   qu’ils n’incrémentent jamais la pastille de non-lus des humains
 
-À l’intérieur d’un espace, il n’y a aucun coin tranquille : chaque
-conversation notifie de la même façon, fils compris. L’état de lecture est propre
-à l’espace, si bien que les non-lus s’agrègent entre les conversations d’un
-espace au lieu d’être suivis conversation par conversation.
+À l’intérieur d’un espace, il n’y a aucun coin tranquille : chaque conversation notifie de la même façon, fils compris. L’état de lecture est suivi par conversation, et un espace est non lu tant qu’une de ses conversations l’est.
 
 ## Lire et vider le centre de notifications
 
@@ -194,6 +195,8 @@ Vérifiez que vous n’étiez pas déjà dans l’espace où elle a eu lieu — 
 active supprime son propre toast du système d’exploitation. Dans un espace
 partagé, une exécution lancée par quelqu’un d’autre notifie cette personne, pas
 vous. Un tour terminé sans réponse ni erreur n’envoie rien.
+
+Une exécution lancée par une planification ou une surveillance qui se termine sans problème n’envoie rien, sauf si elle mentionne quelqu’un. Un objectif terminé ou une planification terminée va dans la cloche, sans toast.
 
 ## Guides connexes
 

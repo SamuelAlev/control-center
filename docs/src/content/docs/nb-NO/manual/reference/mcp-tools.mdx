@@ -2,7 +2,7 @@
 title: MCP-verktøy
 description: Fullstendig katalog over MCP-verktøyene cc_server registrerer, gruppert etter familie.
 slug: nb-NO/handbok/referanse/mcp-verktoy
-sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
+sourceHash: 0ef9efd386b57c3a254e7f637b0436d9baff1719
 ---
 
 `cc_server` er vert for ett MCP-verktøyregister (JSON-RPC 2.0), betjent på
@@ -16,29 +16,22 @@ Eksterne MCP-servere kobles inn i samme register i egne lag: ett per arbeidsomr�
 
 | Mål                                                                                              | Antall |
 | ------------------------------------------------------------------------------------------------ | ------ |
-| Verktøy registrert av `cc_server`                                                                | 110    |
-| Fra `packages/cc_mcp`                                                                            | 108    |
+| Verktøy registrert av `cc_server`                                                                | 116    |
+| Fra `packages/cc_mcp`                                                                            | 114    |
 | Fra `packages/cc_mcp_client` (verktøyoppdagelse)                                                 | 2      |
-| Registrert i basisregisteret (`server_mcp_registry.dart`)                                        | 63     |
-| Registrert etter oppstart etter hvert som tjenestene deres kommer opp (`cc_server_runtime.dart`) | 47     |
-| Av basisregisterets 63: betinget av et kodegraf-repositorium                                     | 5      |
+| Registrert i basisregisteret (`server_mcp_registry.dart`)                                        | 64     |
+| Registrert etter oppstart etter hvert som tjenestene deres kommer opp (`cc_server_runtime.dart`) | 52     |
+| Av basisregisterets 64: betinget av et kodegraf-repositorium                                     | 5      |
+| Av basisregistrets 64, avhengig av kjøreren for kodemodus (`repl`) | 1 |
 
-De fem kodegraf-verktøyene registreres bare når verten sender et
-kodegraf-repositorium til `buildServerMcpRegistry`. `cc_server` sender alltid
-ett, så alle 110 er aktive i binæren som leveres.
+De fem kodegraf-verktøyene registreres bare når verten sender et kodegraf-repositorium til `buildServerMcpRegistry`, og `repl` bare når den sender kjøreren for kodemodus. `cc_server` sender alltid begge (den starter ikke uten kjøreren), så alle 111 er registrert i den leverte binæren; den offentlige demoserveren registrerer ikke `repl`.
 
-Hele registeret annonseres i `tools/list` uten noen porting ved oppdagelse.
-Redigering av saker skjer gjennom typede verktøy.
+Hele registeret annonseres i `tools/list` uten begrensning ved oppdagelse, bortsett fra en agentkjøring som kan kjøre skript (se under). Redigering av saker skjer gjennom typede verktøy.
 
 :::note[Eksterne klienter ser alltid hele katalogen]
-`tools/list` kuttes aldri ned, bortsett fra serverens eiers personlige MCP-servere, som den aldri inneholder. MCP-klienter validerer verktøynavn mot sin egen
-bufrede kopi av listen og avviser alt som ikke står der, uten å spørre serveren,
-så et verktøy som skjules der, er uoppnåelig og ikke bare stille.
+`tools/list` kuttes aldri ned, bortsett fra serverens eiers personlige MCP-servere, som den aldri inneholder, og [kodemodus](/nb-NO/handbok/konsepter/kodemodus/): `repl` listes bare til en agentkjøring på en server som kan kjøre skript, og den kjøringen listes med `repl`, de direkte verktøyene (`read`, `write`, `edit`, `search`, `find`, `bash`, `read_output`, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` og modusens egne verb, der registeret har dem) og verktøyene et skript ikke kan kalle. Den kaller resten fra et skript; et direkte kall til et av dem besvares med hvordan det kalles fra `repl`. MCP-klienter validerer verktøynavn mot sin egen bufrede kopi av listen og avviser alt som ikke står der, uten å spørre serveren, så et verktøy som skjules der, er uoppnåelig og ikke bare stille.
 
-Den **innebygde harnessen** er annerledes: den laster bare et fastboende
-delsett av definisjoner per forespørsel og henter resten ved første bruk. Det er
-en oppførsel på harness-siden og endrer ikke dette registeret. Se
-[Verktøykontekst og promptbuffer](/nb-NO/handbok/konsepter/verktoykontekst).
+Den **innebygde harnessen** er annerledes: den laster bare et lite direkte sett med definisjoner per forespørsel og når resten fra skript eller laster dem ved første bruk. Det er en oppførsel på harness-siden og endrer ikke dette registeret. Se [Verktøykontekst og promptbuffer](/nb-NO/handbok/konsepter/verktoykontekst/).
 :::
 
 :::note[Hver verktøyklasse er registrert]
@@ -80,6 +73,14 @@ kjøringens egen verktøyflate og **laster** – i motsetning til `search_tool_b
 – skjemaene til det det finner, slik at agenten kan kalle et treff på neste tur.
 Agenter på harnessen bør foretrekke det; MCP-klienter har `search_tool_bm25`.
 
+## Kodemodus
+
+| Verktøy | Beskrivelse |
+| ------ | ----------- |
+| `repl` | Kjør et JavaScript-skript som kaller kjøringens andre verktøy som `tools.<id>(args)` og bare returnerer det det trenger. Listes bare til en agentkjøring på en server som kan kjøre [kodemodus](/nb-NO/handbok/konsepter/kodemodus/)-skript. Hvert nøstede kall går gjennom samme gate som et `tools/call`. Tar imot `code`, `description`, `timeout_ms?`, `max_output_tokens?`   |
+
+Et skript kan ikke kalle `repl`, `search_tool_bm25`, `list_my_tools` eller et verktøy som starter eller sender meldinger til en annen agentkjøring, tildeler eller kommenterer en sak, sender en melding, oppretter, avgjør eller kommenterer en godkjenning, foreslår eller endrer policy, installerer eller endrer ferdigheter, oppretter en kjøretidsprofil, sender inn en plan, forlater planmodus, fullfører samtalens mål eller sender inn utdataene fra en pipeline-kjøring. Disse verktøyene har `scriptCallable` satt til false og kalles alltid direkte; i det innebygde harnesset lastes ett av dem utenfor det direkte settet ved første bruk. `create_ticket` kan bare kalles fra et skript uten `assignee`.
+
 ## Agentverktøy
 
 | Verktøy       | Beskrivelse                                         |
@@ -88,18 +89,29 @@ Agenter på harnessen bør foretrekke det; MCP-klienter har `search_tool_bm25`.
 
 ## Agent-til-agent-meldinger og delegering
 
-Agenter snakker med hverandre over områder (varige og synlige i
-deltakerlisten). `ask_agent` er forespørsel/svar med obligatorisk tidsavbrudd;
-`delegate_task` er beskyttet på serversiden av et dybdemaksimum,
-syklusdeteksjon, en budsjettramme og et autonomitak.
+Agenter snakker med hverandre over områder (varige, synlige i oversikten). `ask_agent` venter enten på svaret (`mode: wait`, 600 sekunder som standard, høyst 1 800) eller returnerer med én gang (`mode: background`); uansett blir spørreren vekket én gang med svaret når svaret ikke kom tilbake innenfor kallet. `send_to_agent`, `ask_agent`, `consult_agent`, `request_peer_review` og `delegate_task` går gjennom samme porttest på serversiden: dybde (3), syklusdeteksjon, budsjettramme, autonomitak og en hastighetsgrense per par av agenter. Avsenderens identitet kommer alltid fra den kallende kjøringen. Se [Agenter som samarbeider](/nb-NO/handbok/slik-gjor-du/agenter-samarbeider/).
 
 | Verktøy         | Beskrivelse                                                                                                |
 | --------------- | ---------------------------------------------------------------------------------------------------------- |
-| `send_to_agent` | Send en enveis melding til en annen agent, adressert med `to_agent_id` eller nøyaktig `to_agent_name`       |
-| `ask_agent`     | Still et spørsmål til en annen agent og vent på svaret, eller la kallet gå ut på tid                       |
+| `send_to_agent` | Send en enveis melding til en annen agent, adressert med `to_agent_id` eller nøyaktig `to_agent_name`; svarer med `delivery_status` `woken`, `queued_behind_run` eller `refused` |
+| `ask_agent`     | Still et spørsmål til en annen agent; vent på svaret, eller fortsett og bli vekket når det kommer          |
 | `delegate_task` | Deleger en oppgave til en annen agent som en sporet, underordnet sak                                       |
 | `consult_agent` | Legg den spesialisten som matcher best ut fra skills, til i området og send den ut med en fokusert oppgavebeskrivelse |
 | `todo_read`     | Les denne samtalens lagrede gjøremålsliste                                                                 |
+| `agent_activity` | Les hva en annen agent gjør nå og gjorde sist (status, nåværende verktøy, siste meldinger), uten å vekke den |
+
+## Verktøy for vekking og mål
+
+En agent bruker disse i stedet for å sove eller spørre gjentatte ganger. Hver virker bare for den kallende agenten i sin egen samtale; agenten er aldri et argument. Se [Tidsplaner og vekkinger](/nb-NO/handbok/slik-gjor-du/tidsplaner-vekkinger/) og [Forfølg et mål](/nb-NO/handbok/slik-gjor-du/forfolg-et-mal/).
+
+| Verktøy | Beskrivelse |
+| ------------- | ----------- |
+| `wake_me` | Få å bli vekket senere: på et tidspunkt (`in:20m`, `at:<ISO time>`), med et intervall (`every:30m`), på en cron (`cron:0 9 * * 1-5`, med `tz`), i sitt eget tempo inni en selvstyrt løkke (`next`, med `delay` fra 1 til 60 minutter), eller når noe skjer (`on:pr_checks`, `on:pr_review`, `on:pr_merged`, `on:environment`, `on:ticket:<id>`, `on:pipeline_run:<id>`). Valgfritt: `note`, `max_runs`, `expires_in`, `when_busy` (`skip` eller `queue`) og `deliver` (`run` eller `notify`) |
+| `list_wakes` | List det agenten har som venter i denne samtalen: tidsplaner, overvåkinger, ventende vekkinger og ubesvarte spørsmål |
+| `cancel_wake` | Avbryt en tidsplan eller overvåking agenten satte opp selv, med dens id |
+| `goal_status` | Les agentens aktive mål: kontrakt, segment, forbruk og gjenstående budsjett, strekene for manglende fremdrift, tilbakeholdelse, siste verifisering og ventende målvekkinger |
+
+`complete_goal` (under [Verktøy for planer, playbooks og artefakter](#verktøy-for-planer-playbooks-og-artefakter)) er den eneste måten en agent sier at et mål er ferdig på, og det er en påstand, ikke en fullføring.
 
 ## Skill-verktøy
 
@@ -127,7 +139,7 @@ noe skill-innhold når disken eller en agentprompt.
 | `revise_artifact`  | Erstatt innholdet i en publisert artefakt                                                                                |
 | `list_artifacts`   | List opp arbeidsområdets artefakter                                                                                      |
 | `get_artifact`     | Les én artefakt                                                                                                          |
-| `complete_goal`    | Erklær samtalens aktive, varige mål (startet med `/goal` eller `/loop`) som oppnådd                                      |
+| `complete_goal` | Påstå at agentens aktive mål er oppnådd, med bevis for hvert kriterium; serveren kjører deretter sjekkene og en gjennomgang |
 
 ## Verktøy for arbeidsområder
 
@@ -195,10 +207,10 @@ noe skill-innhold når disken eller en agentprompt.
 | `create_goal`                | Opprett et organisasjonsmål (på selskaps-, team-, agent- eller oppgavenivå)                                   |
 | `list_goals`                 | List opp mål med nivå, status og samlet framdrift                                                             |
 | `update_goal_progress`       | Angi framdriften til et mål                                                                                   |
-| `create_approval`            | Åpne en styregodkjenning for en regulert handling (avslutning av plan, sammenslåing, utgivelse, ansettelse, egendefinert) |
+| `create_approval`            | Åpne en styregodkjenning for en regulert handling (avslutning av plan, sammenslåing, utgivelse, ansettelse, egendefinert) i den kallende agentens navn. Bare agentkjøringer |
 | `list_approvals`             | List opp godkjenninger, valgfritt filtrert på status                                                          |
-| `decide_approval`            | Registrer en avgjørelse: godkjenn, avvis, be om revisjon eller send inn på nytt                               |
-| `comment_approval`           | Kommenter en styregodkjenning                                                                                 |
+| `decide_approval`            | Registrer den kallende agentens avgjørelse: godkjenn, avvis, be om revisjon eller send inn på nytt. Bare agentkjøringer |
+| `comment_approval`           | Kommenter en styregodkjenning som den kallende agenten. Bare agentkjøringer                                   |
 | `exit_plan_mode`             | Åpne (og, når den er godkjent, forbruk) en `plan_exit`-godkjenning og vipp samtalen ut av planmodus            |
 | `agent_heartbeat`            | Rapporter livstegn (alive, idle, stuck); stillhet vipper kjøretidshelsen til nylig tapt og deretter frakoblet |
 | `list_runtime_health`        | List opp kjøretidshelsen til hver agent                                                                      |

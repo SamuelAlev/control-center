@@ -2,7 +2,7 @@
 title: ドメインイベント
 description: 54 個のドメインイベント、そのペイロード、およびそれらを消費するサーバー側のサブスクライバーの完全なカタログです。
 slug: ja-JP/マニュアル/リファレンス/ドメインイベント
-sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
+sourceHash: f58123448c0f31c95774bbaebee89f1509940896
 ---
 
 ## イベントバス
@@ -24,7 +24,10 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 | イベント          | ペイロード                                             | 発行されるタイミング                                    |
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | ワークスペースが作成されたとき                          |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | エージェントが実行を終了したとき（成功または失敗）      |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | エージェントのプロセスストリームが終了したとき（最終状態が書き込まれる前）。PR 会話ブリッジと分析のためだけに保持されます |
+| `AgentRunSettled` | `agentId`, `workspaceId`, `runId`, `status`, `endReason`, `costMicros`, `wakeIds`, `spaceId?`, `conversationId?`, `limitResetsAt?`, `requestedByUserId?`, `wakeReason?` | 実行の最終状態が書き込まれたとき。実行ごとに 1 回だけ発行されます。`endReason` は `completed`、`error`、`stoppedByUser`、`budget`、`silence`、`usageLimit`、`serverStopped` のいずれかです。サブエージェントの実行は何も発行しません |
+| `GoalSettled` | `goalId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `status`, `hold?`, `summary?`, `requestedByUserId?` | ゴールが終了したとき、または担当者のレビューを待ち始めたとき |
+| `WakeRuleEnded` | `ruleId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `reason`, `requestedByUserId?` | スケジュールまたはウォッチが終了したとき（一度だけ発火した、期限切れになった、実行回数または費用を使い切った、キャンセルされた、そのゴールが終了した、担当者が退出した） |
 | `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | エージェントが人間の対応待ちを開始したとき。承認、`ask_user` の質問、または認証情報で停止した実行（`kind` は `approval`、`question`、`credential` のいずれか） |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | リポジトリが登録されたとき。バックグラウンドのコードインデックス作成をトリガーします |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | スキルがインストールまたは更新されたとき。サプライチェーンスキャンの判定を伴います |
@@ -57,6 +60,16 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 | `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | PR のコメントまたはレビューコメントであなたがメンションされたとき      |
 | `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | あなたが参加しているレビュースレッドで誰かが返信したとき                      |
 | `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | あなたが参加しているレビュースレッドが解決されたとき                          |
+
+### プルリクエストのウォッチ
+
+オープンなプルリクエストのポーラーが、ポーリングするすべてのプルリクエストについて、作成者にかかわらず発行します。エージェントの `on:pr_*` ウォッチ用です。3 つすべてに `workspaceId`、`repoOwner`、`repoName`、`prNumber`、`prTitle`、`headRef`、`authorLogin` が含まれます。
+
+| イベント | 追加のペイロード | 発行されるタイミング |
+| ----------------------- | ----------------------------------------------- | ---------- |
+| `PrWatchChecksSettled` | `passing`, `failedChecks`, `failedCheckUrl?` | プルリクエストの先頭のすべてのチェックが終了したとき |
+| `PrWatchReviewActivity` | `decision`, `decisionChanged`, `newComments` | プルリクエストにレビューまたは新しいコメントがついたとき |
+| `PrWatchClosed` | `merged` | プルリクエストがマージまたはクローズされたとき |
 
 ## メッセージングのイベント
 
@@ -167,14 +180,20 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 | チャットスペースのプロビジョニング（インライン） | `SpaceCreated`                                                                                       |
 | `PipelineTriggerDispatcher`         | すべての `DomainEvent`。有効な各トリガーが自身のタイプでフィルタリングします                          |
 | `SubPipelineResumeListener`         | `PipelineRunCompleted`, `PipelineRunFailed`                                                          |
-| `PipelineCostRollupListener`        | `AgentRunCompleted`                                                                                  |
-| `BudgetEvaluationListener`          | `AgentRunCompleted`                                                                                  |
+| `PipelineCostRollupListener`        | `AgentRunSettled`                                                                                    |
+| `BudgetEvaluationListener`          | `AgentRunSettled`                                                                                    |
 | `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled`（`meeting_summary` の実行のみ）  |
-| `PipelineStepResumeListener`        | `AgentRunCompleted`                                                                                  |
-| `AgentRunTaskCompleter`             | `AgentRunCompleted`                                                                                  |
-| `GoalSupervisor`                    | `AgentRunCompleted`                                                                                  |
-| `CheckerDispatchListener`           | `AgentRunCompleted`                                                                                  |
-| `TeamRoutingService`                | `AgentRunCompleted`, `TicketAssigned`                                                                |
+| `PipelineStepResumeListener`        | `AgentRunSettled`                                                                                    |
+| `AgentRunTaskCompleter`             | `AgentRunSettled`                                                                                    |
+| `GoalSupervisor`                    | `AgentRunSettled` — ゴールの次のステップを決定                                                                    |
+| `CheckerDispatchListener`           | `AgentRunSettled` — チェッカーを起動予約としてキューに入れ、ゴールのセグメントとレビューは飛ばす                                           |
+| `TeamRoutingService`                | `AgentRunSettled`, `TicketAssigned`                                                                  |
+| `WakeQueueService` | `AgentRunSettled` — 実行の終了を待っていた起動予約を配信 |
+| `WakeRuleService` | `AgentRunSettled`（自己ペース型ループ）、`GoalSettled`（ゴールのスケジュールを終了）、`PrWatch*`、`EnvironmentProcessExited`、`EnvironmentReady`、チケットとパイプライン実行の終了（ウォッチ）、`WorkspaceMemberRemoved`（その人のスケジュールを終了） |
+| `PeerAskService` | `AgentRunSettled` — エージェント同士が尋ねた質問を決着させ、質問者を起動 |
+| `LimitParkService` | `usageLimit` 付きの `AgentRunSettled` — プロバイダーのリセットを待つ |
+| `ImprovementReviewService` | `GoalSettled`（検証済みのゴール）と `AgentRunSettled` — 改善案のレビューをキューに入れ、その結果を読む |
+| パイプラインのゴールステップ（`goal.pursue`） | `GoalSettled`、`AgentRunSettled`、`PipelineRunCompleted`、`PipelineRunFailed`、`PipelineRunCancelled` — ステップを再開し、オーケストレーションに計上し、パイプライン実行を追跡する |
 | `OrchestrationRunListener`          | `PipelineRunCancelled`, `PipelineRunFailed`                                                          |
 | `MultiVendorTicketSyncCoordinator`  | `TicketCreated`, `TicketAssigned`, `TicketReassigned`, `TicketStatusChanged`, `TicketDetailsUpdated` |
 | `WorktreeGcListener`                | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`         |
@@ -227,6 +246,8 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 `AgentAwaitingInput` は `AgentAwaitingInputPublisher` が発行します。このパブリッシャーは承認と認証情報ブロックのレジストリを監視して新しいエントリを検出し、`ask_user` の各質問については `AgentQuestionService` から通知を受けます。1 回の待機が 1 つのイベントです。待機が終わったときには何も発行されません。
 
 5 つの自作 PR カテゴリは `forUserId` を保持するため、ワークスペースの全員ではなく作成者に届きます。
+
+長時間実行の作業のための 5 つのフレーム。それぞれ、関係する人（`for_user_id`）宛てです。`notifications/goal_settled`（`GoalSettled` から）、`notifications/wake_rule_ended`（`WakeRuleEnded` から）、`notifications/improvement_proposed`、`notifications/pipeline_run_held`（オーケストレーションのコスト上限で保留されたパイプライン実行）、`notifications/waiting_digest`（1 日に 1 回、担当者を待っている項目）。それぞれが `notification_kind` を持ちます。`notify` は `agentRunCompleted` に、`question` と `review` は `agentAwaitingInput` に対応します。通知するフレームはすべて今では `notification_kind` を持ち、`quiet: true` のフレーム（終了したスケジュール、終了したゴール）はトースト、音、大きなプッシュなしで通知センターに届きます。
 
 `RemoteEventForwarder` はさらに、`TicketReassigned` を `notifications/ticket_reassigned` として、すべての `TaskLifecycleEvent` を `notifications/task_<phase>` として転送します。どちらも通知カテゴリにはマッピングされません。これらは通知センターではなく、ライブ UI を駆動します。メンバーシップイベントはフレームとして転送されません。それらはフォワーダーのキャッシュを無効化し、セッションホストは削除されたメンバーのワークスペース購読を破棄します。
 

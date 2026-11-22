@@ -53,7 +53,6 @@ void main() {
         conversationId: 'c',
         agentId: 'a',
         userText: 'ship it',
-        kind: AgentGoalKind.goal,
         costCapMicros: centsToMicros(1),
         createdAt: DateTime.utc(2026),
         updatedAt: DateTime.utc(2026),

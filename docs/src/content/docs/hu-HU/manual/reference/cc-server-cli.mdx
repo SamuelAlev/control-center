@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: A headless szerver minden kapcsolója, környezeti változója, alparancsa és adatkönyvtár-útvonala.
 slug: hu-HU/kezikonyv/referencia/cc-server-cli
-sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
+sourceHash: ee71514a1721599da299a81b5702bc7cdb372330
 ---
 
 Minden folyamatszintű beállítás megadható parancssori kapcsolóként vagy környezeti
@@ -10,10 +10,7 @@ változóként; ilyenkor a kapcsoló nyer, aztán a környezet, végül az alap�
 szolgáltatói hitelesítő adatok kivételt képeznek — lásd: [Szolgáltatói alkalmazások és Connect](#szolgáltatói-alkalmazások-és-connect).
 
 :::caution[Az ismeretlen kapcsolókat csendben figyelmen kívül hagyja]
-Az argumentumelemző kézzel írt, és mindent kihagy, amit nem ismer fel, ezért egy elírás
-(`--tls-key-file`, `--bindany`) nem ad hibát — a szerver egyszerűen az
-alapértelmezéssel indul el. Ha úgy tűnik, hogy egy kapcsolónak nincs hatása,
-ellenőrizze az indítási napló sorait.
+Az argumentumelemző kézzel írt, és mindent kihagy, amit nem ismer fel, ezért egy elírás (`--tls-key-file`, `--bindany`) nem ad hibát — a szerver egyszerűen az alapértelmezéssel indul el. Ha úgy tűnik, hogy egy kapcsolónak nincs hatása, ellenőrizze az indítási napló sorait. A [kódmód-kapcsoló](#kódmód) más: ha olyan értéket kap, amelyet nem fogad el, a szerver nem indul el.
 :::
 
 ## Alapvető
@@ -51,8 +48,10 @@ ellenőrizze az indítási napló sorait.
 | `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | `on` az ügynökfutásokat a gazdagép OS-natív homokozójába csomagolja, háttérrendszer nélküli gazdagépen pedig csak a szerver tulajdonosának futtatásait indítja el. `off` minden tag ügynökét homokozó nélkül futtatja ezen a gépen. Lásd alább |
 | `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Helyszíni vészkapcsoló a háttérbeli kódgráf-indexeléshez. Az `off` újraépítés nélkül, tisztán indít                                     |
 | `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Hány másodpercig várakozik az első indexelési kör a kész jelzősáv után (0–300 közé szorítva)                                  |
-| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Hogy a harness-futások egy kis rezidens eszközkészletet és egy névindexet küldenek-e, a többit az első használatkor betöltve. Lásd alább |
+| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Hogy a harness-futások egy kis közvetlen eszközkészletet és egy névindexet küldenek-e, a többit az első használatkor betöltve. Lásd alább |
 | `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Hány másodpercig parkol egy futás arra várva, hogy egy ember kijavítsa a kiszolgálására képtelen hitelesítő adatot (0–3600 közé szorítva). Lásd alább |
+| `--code-mode-max-processes` | `CC_SERVER_CODE_MODE_MAX_PROCESSES` | `min(16, 2 × cores)` | Egyidejűleg futó kódmód-szkriptek száma ezen a szerveren, a személyre váró szkriptek nélkül, 1–64. Lásd alább |
+| `--code-mode-max-heap-mb` | `CC_SERVER_CODE_MODE_MAX_HEAP_MB` | `1024` | Egy szkript által használható legnagyobb memória, 16–1024 MiB. A munkaterület magasabb memória-korlátját erre szűkíti |
 
 ## Szolgáltatói alkalmazások és Connect
 
@@ -119,18 +118,9 @@ háttérrendszer nélküli gazdagépen szeretnének ügynököket futtatni. Nem 
 
 ### `--tool-deferral`
 
-A beépített harness futásai az eszközdefiníciók egy kis rezidens készletét küldik el, a
-többihez pedig egy csak neveket tartalmazó indexet; ezek a sémáikat az első használatkor
-töltik be. Ez nagyjából 78%-kal csökkenti az eszközblokkot, és az állandóan látható
-készletet abba a sávba tartja, ahol a modellek megbízhatóan választanak eszközt. A
-halasztott eszközök végig név szerint hívhatók maradnak, a `search_tools` pedig szándék
-alapján megtalálja őket. Lásd: [Eszközkontextus és promptgyorsítótár](/hu-HU/kezikonyv/fogalmak/eszkozkontextus).
+A beépített harnessfuttatások az eszközdefiníciók egy kis közvetlen készletét küldik el, a többihez pedig egy csak neveket tartalmazó indexet; ezek a sémáikat az első használatkor töltik be, vagy egy `repl` szkriptből hívják őket. Így az állandóan látható készlet abban a tartományban marad, ahol a modellek megbízhatóan választanak eszközt. A tesztek által épített regiszteren mérve a beépített ügynök szokásos csevegőeszközei 14 definíciót tesznek ki: nagyjából 16,5 KB `repl`-lel (ebből nagyjából 4 KB a `repl`-é, amelynek definíciója legfeljebb 4 096 bájt lehet), és nagyjából 13 KB olyan szerveren, amely nem tud szkripteket futtatni. A halasztott eszközök végig név szerint hívhatók maradnak, a `search_tools` pedig szándék alapján megtalálja őket. Lásd: [Eszközkontextus és promptgyorsítótár](/hu-HU/kezikonyv/fogalmak/eszkozkontextus/).
 
-A `--tool-deferral off` minden beengedett eszközt újra rezidenssé tesz, pontosan azokat
-a kéréseket állítva elő, amelyeket a szerver a halasztás megjelenése előtt küldött. Ez a
-vészkapcsoló arra a modellre, amely rosszul kezeli a kétszintű felületet — egy kapcsoló,
-nem pedig újraépítés. Csak a beépített harnessre hat; az MCP `tools/list`, amelyet a
-külső kliensek látnak, mindig a teljes katalógus.
+A `--tool-deferral off` minden beengedett eszköz definícióját előre elküldi, kivéve, hogy a `repl`-es futtatás továbbra is szkriptből hívja azokat az eszközöket, amelyeket a szkript hívhat. Ez a vészkapcsoló arra a modellre, amely rosszul kezeli a kétszintű felületet — egy kapcsoló, nem pedig újraépítés. Csak a beépített harnessre hat; az MCP `tools/list`, amelyet a külső kliensek látnak, a teljes katalógus, kivéve egy olyan ügynökfuttatásnál, amely olyan szerveren fut, ahol a [kódmód](/hu-HU/kezikonyv/fogalmak/kodmod/) szkriptek futtathatók.
 
 ### `--credential-gate`
 
@@ -148,6 +138,25 @@ ugyanazzal az üzenettel hiúsul meg, amellyel egyébként is meghiúsult volna.
 
 A `--credential-gate=0` a vészkapcsoló: semmi sem parkol soha, és egy hibás hitelesítő
 adat pontosan úgy zárja le a kört, ahogy a kapu létezése előtt tette.
+
+### Kódmód
+
+A [kódmód](/hu-HU/kezikonyv/fogalmak/kodmod/) lehetővé teszi, hogy egy ügynök JavaScript-szkriptet futtasson, amely az eszközeit hívja. Nincs kapcsoló, amellyel be- vagy kikapcsolható: minden futtatás megkapja a `repl` eszközt, ha a szerver tud szkripteket futtatni, a nyilvános demószerver pedig egyet sem futtat.
+
+A szkriptek a `cc_codemode`-ban futnak, egy a szerverrel együtt szállított programban, a `bin/codemode/` mappában. Ez nélkül a szerver nem indul el: kiír egy sort, amely megnevezi, mi hiányzik, és `78` kilépési kóddal leáll. Induláskor lefuttatja a program zárolási önellenőrzését, és kiír egy sort (csak a `--log-level error` némítja el):
+
+```text
+cc_server: code_mode=available (cc_codemode 0.1.0 quickjs-ng 0.16.2 protocol 2; 16 scripts at once, at most 12 per workspace; up to 64 more runners kept for scripts waiting on a person; heap at most 1024 MiB per script)
+cc_server: code_mode=unavailable (<reason>) — runs on this host get no repl tool; scripts never run without full lockdown
+```
+
+Az `unavailable` azt jelenti, hogy a program nem tudja lezárni magát ezen a gépen, például egy olyan konténerben, amelynek biztonsági profilja megtagadja valamelyik lépését, vagy ha a program nem kiadási build. A szerver normálisan fut, egyetlen futtatás sem kap `repl`-t, a munkaterület kódmód-beállítási oldala pedig megmutatja az okot.
+
+A szerver futás közben is folyamatosan ellenőriz. Ha a program a szkripttől független okból nem tud elindulni, a szerver percenként legfeljebb egyszer újra lefuttatja az önellenőrzést. Ha az meghiúsul, a szerver kiírja az `unavailable` sort az okával, és nem futtat szkripteket: az addig induló futtatások nem kapnak `repl`-t, a már meglévő futtatás pedig közvetlenül hívja az eszközeit ([Amikor a szkriptek nem futtathatók](/hu-HU/kezikonyv/fogalmak/kodmod/#amikor-a-szkriptek-nem-futtathatók)). Percenként legfeljebb egyszer továbbra is ellenőriz, és amikor az önellenőrzés ismét sikeres, kiírja az `available` sort, és újra futtat szkripteket. Csak az indításkor meghiúsult önellenőrzés igényel újraindítást. A munkaterület beállításaiban megjelenő ok ki van szedve a gépen lévő útvonalakból; a naplósor teljes egészében tartalmazza.
+
+A két kódmód-kapcsoló korlátozza, mit használhatnak a szkriptek. A `--code-mode-max-processes` az egyszerre futó szkriptek számát korlátozza az összes munkaterületen (alapértelmezés: a processzormagok számának kétszerese, legfeljebb 16; elfogadott értékek: 1–64). Ha a korlát 2 vagy annál nagyobb, egy munkaterület legfeljebb a korlát mínusz annak egynegyedét használhatja, így egyetlen munkaterület sem foglalhatja el az összes helyet, és a várakozó szkriptek munkaterületek között sorban kapnak helyet. Egy személy jóváhagyására vagy válaszára váró szkript átadja a helyét egy másik szkriptnek, és addig nem indít el eszközhívást, amíg választ nem kap; az ilyen várakozó szkriptekből legfeljebb a korlát négyszeresét tartják meg, ezek legfeljebb háromnegyede ugyanabból a munkaterületből származhat, és mindegyik a saját feldolgozási időkorlátján belül még számolhat. A `--code-mode-max-heap-mb` az egyes szkriptek által használható legnagyobb memória.
+
+Ha ezek a kapcsolók nem fogadnak el egy értéket (tartományon kívüli szám vagy nem szám), a szerver indításkor leáll (kilépési kód: `78`), és egy üzenetet ír ki, amely megnevezi az elfogadott értékeket. Soha nem értelmezik alapértelmezettként.
 
 ## Alparancsok
 
@@ -253,6 +262,7 @@ A szerver az adatkönyvtárat csak a saját fiókja számára tartja hozzáférh
 | `backups/exports/`                | Egyetlen munkaterület exportjai, `<workspaceId>-<timestamp>.db`                  |
 | `backups/transfer/`               | Átmeneti terület a mentések letöltéséhez és feltöltéséhez; az azt író útvonal takarítja |
 | `models/`                         | Eszközön futó beágyazási, diarizációs és beszédmodellek                          |
+| `codemode/` | A kódmód-futtató fejlesztői példánya, amelyet a `scripts/natives/build_codemode.sh` telepít; a kiadási csomagok a `bin/codemode/` mappában tartalmazzák |
 | `meetings/<meetingId>/`           | Megőrzött megbeszélés-hanganyag                                                  |
 | `rigs/images/`                    | Importált állomáslemezképek (a QEMU asztali felülete)                            |
 | `rigs/smolvm/<rigId>/`            | Állomásonkénti microVM futásidejű állapot (a bróker titka, `0600`)               |

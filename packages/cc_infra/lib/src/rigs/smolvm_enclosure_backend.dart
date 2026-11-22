@@ -34,7 +34,7 @@ part 'smolvm_packs.dart';
 /// The digest is the Docker Hub index digest, so one pin serves both arm64
 /// and x64 hosts; smolvm resolves it through its default registry.
 const String kSmolvmExecImage =
-    'ubuntu:26.04@sha256:6a06111c3b0a8600feadb270aec771dc239bf407b25625f93f44ab00e11f4d3c';
+    'ubuntu:26.04@sha256:d66b366dac61b575bee2aef07e9c26e8070096fbe84a3d4d3eb0da069b5d76db';
 
 /// The OCI image every browser rig boots, pinned by digest.
 ///

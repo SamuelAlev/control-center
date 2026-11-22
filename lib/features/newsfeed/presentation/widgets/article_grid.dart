@@ -3,6 +3,7 @@ import 'package:cc_domain/features/newsfeed/domain/entities/rss_feed.dart';
 import 'package:cc_domain/features/newsfeed/domain/tracking_param_stripper.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/newsfeed/presentation/widgets/article_card.dart';
+import 'package:control_center/features/newsfeed/presentation/widgets/article_grid_delegate.dart';
 import 'package:control_center/features/newsfeed/presentation/widgets/article_list_row.dart';
 import 'package:control_center/features/newsfeed/providers/newsfeed_providers.dart';
 import 'package:control_center/router/routes.dart';
@@ -250,11 +251,8 @@ class _ArticleGridState extends ConsumerState<ArticleGrid> {
         AppSpacing.xl,
       ),
       sliver: SliverGrid(
-        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 340,
-          mainAxisSpacing: AppSpacing.lg,
-          crossAxisSpacing: AppSpacing.lg,
-          childAspectRatio: 0.9,
+        gridDelegate: ArticleGridDelegate(
+          bodyHeight: ArticleCard.bodyHeight(MediaQuery.textScalerOf(context)),
         ),
         delegate: SliverChildBuilderDelegate((context, index) {
           final article = articles[index];
@@ -324,11 +322,7 @@ class _EmptyState extends StatelessWidget {
               color: t.bgSecondary,
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              icon,
-              size: 32,
-              color: t.fgTertiary,
-            ),
+            child: Icon(icon, size: 32, color: t.fgTertiary),
           ),
           const SizedBox(height: 16),
           Text(
@@ -344,9 +338,7 @@ class _EmptyState extends StatelessWidget {
             child: Text(
               body,
               textAlign: TextAlign.center,
-              style: CcTypography.body.copyWith(
-                color: t.textTertiary,
-              ),
+              style: CcTypography.body.copyWith(color: t.textTertiary),
             ),
           ),
         ],

@@ -115,6 +115,31 @@ void main() {
       expect(res.denyReason, contains('denied by user'));
     });
 
+    test('the wait for a confirmation is reported as a person wait', () async {
+      final approver = _Approver(approve: false);
+      // How many questions had been asked at each report.
+      final reports = <(bool, int)>[];
+      final res = await runner(confirmationPort: approver).run(
+        'npm publish',
+        workdir: cwd.path,
+        personWait: (waiting) =>
+            reports.add((waiting, approver.requests.length)),
+      );
+      expect(res.denied, isTrue);
+      expect(reports, [(true, 0), (false, 1)]);
+    });
+
+    test('a command nobody is asked about reports no wait', () async {
+      final reports = <bool>[];
+      final res = await runner().run(
+        'echo hello',
+        workdir: cwd.path,
+        personWait: reports.add,
+      );
+      expect(res.exitCode, 0);
+      expect(reports, isEmpty);
+    });
+
     test('a space-level deny blocks bash and records that space', () async {
       final target = File('${cwd.path}/should-not-exist');
       final now = DateTime.now();

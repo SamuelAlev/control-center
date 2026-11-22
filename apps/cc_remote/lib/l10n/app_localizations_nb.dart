@@ -1626,54 +1626,13 @@ class AppLocalizationsNb extends AppLocalizations {
   String get mobileGoalBudgetExhausted => 'Budsjettet er brukt opp';
 
   @override
-  String get mobileGoalGoal => 'Mål';
-
-  @override
-  String get mobileGoalLoop => 'Løkke';
-
-  @override
-  String mobileGoalKind(String kind) {
-    return 'Type: $kind';
-  }
-
-  @override
-  String mobileGoalRuns(String count) {
-    return '$count kjøringer';
-  }
-
-  @override
-  String get mobileGoalNoRunLimit => 'ubegrenset';
-
-  @override
-  String mobileGoalProgress(
-    String runs,
-    String maxRuns,
-    String spent,
-    String cap,
-  ) {
-    return 'Kjøringer: $runs / $maxRuns · Brukt: $spent / $cap';
-  }
-
-  @override
-  String mobileGoalDeadline(String date) {
-    return 'Frist: $date';
-  }
-
-  @override
   String mobileGoalFailures(String count) {
     return 'Mislykkede kjøringer på rad: $count';
   }
 
   @override
-  String get mobileGoalSummary => 'Oppsummering av fullføring';
-
-  @override
   String get mobileGoalFailedDescription =>
       'Overvåkeren stoppet etter gjentatte mislykkede kjøringer. Se samtalen for detaljer.';
-
-  @override
-  String get mobileGoalBudgetWall =>
-      'Fristen eller grensen for antall kjøringer er nådd. Målet kan ikke fortsettes ved å øke kostnadsgrensen.';
 
   @override
   String get mobileGoalPause => 'Sett mål på pause';
@@ -2806,4 +2765,1339 @@ class AppLocalizationsNb extends AppLocalizations {
   @override
   String get runSandboxUnavailable =>
       'Denne serveren har ingen sandkasse, så bare eieren kan kjøre agenter her. Eieren kan installere sandkassen eller slå av sandkassing for alle.';
+
+  @override
+  String get scriptToolCalls => 'Verktøykall';
+
+  @override
+  String scriptCallCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count kall',
+      one: '1 kall',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scriptCallsRunning(int count) {
+    return '$count kjører';
+  }
+
+  @override
+  String scriptCallsOk(int count) {
+    return '$count ok';
+  }
+
+  @override
+  String scriptCallsFailed(int count) {
+    return '$count mislyktes';
+  }
+
+  @override
+  String scriptCallsDenied(int count) {
+    return '$count nektet';
+  }
+
+  @override
+  String scriptCallsCancelled(int count) {
+    return '$count avbrutt';
+  }
+
+  @override
+  String scriptCallsQueued(int count) {
+    return '$count i kø';
+  }
+
+  @override
+  String scriptCallsSkipped(int count) {
+    return '$count hoppet over';
+  }
+
+  @override
+  String get scriptStepQueued => 'I kø';
+
+  @override
+  String get scriptStepSkipped => 'Hoppet over';
+
+  @override
+  String get scriptGroupLoop => 'Løkke';
+
+  @override
+  String get scriptGroupEach => 'For hver';
+
+  @override
+  String get scriptGroupParallel => 'Parallelt';
+
+  @override
+  String get scriptGroupFunction => 'Funksjon';
+
+  @override
+  String scriptCallsHidden(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Vis $count kall til',
+      one: 'Vis 1 kall til',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptCallsUnplaced => 'Kall som ikke er plassert i skriptet';
+
+  @override
+  String get scriptToolComputed => 'Verktøy';
+
+  @override
+  String scriptStepSemantics(String subject, String state) {
+    return '$subject, $state';
+  }
+
+  @override
+  String get scriptSourceLabel => 'Skript';
+
+  @override
+  String scriptSourceLines(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count linjer',
+      one: '1 linje',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptStateRunning => 'Kjører';
+
+  @override
+  String get scriptStateCompleted => 'Fullført';
+
+  @override
+  String get scriptStateFailed => 'Mislyktes';
+
+  @override
+  String get scriptStateTimedOut => 'Tidsavbrudd';
+
+  @override
+  String get scriptStateCancelled => 'Avbrutt';
+
+  @override
+  String get scriptStateMemoryExceeded => 'Tom for minne';
+
+  @override
+  String get scriptStateOutputExceeded => 'For mye utdata';
+
+  @override
+  String get scriptStateSandboxError => 'Feil i sandkassen';
+
+  @override
+  String get scriptStateRefused => 'Avvist';
+
+  @override
+  String get scriptOriginLine => 'Fra et skript agenten kjører';
+
+  @override
+  String get codeModeTitle => 'Kodemodus';
+
+  @override
+  String get codeModeAvailable => 'Tilgjengelig';
+
+  @override
+  String get codeModeUnavailable => 'Utilgjengelig';
+
+  @override
+  String codeModeUnavailableNote(String reason) {
+    return 'Denne serveren kan ikke kjøre skript, så agenter her kaller verktøyene sine én om gangen. Serveren sier: $reason';
+  }
+
+  @override
+  String get codeModeNoReason => 'ingen grunn ble oppgitt.';
+
+  @override
+  String get workKindUnknown => 'Av en grunn denne versjonen ikke kjenner:';
+
+  @override
+  String get workRefusalUnknown => 'Serveren avviste dette:';
+
+  @override
+  String workActionFailed(String error) {
+    return 'Det virket ikke: $error';
+  }
+
+  @override
+  String get wakeKindStopped =>
+      'Holdt tilbake fordi en person stoppet kjøringen.';
+
+  @override
+  String get wakeKindAttempts => 'Levering mislyktes tre ganger.';
+
+  @override
+  String get wakeKindAgentDeleted => 'Agenten finnes ikke lenger.';
+
+  @override
+  String get wakeKindAgentNotDispatchable => 'Agenten er pensjonert.';
+
+  @override
+  String get wakeKindAgentPaused => 'Agenten er pauset.';
+
+  @override
+  String get wakeKindPersonRemoved =>
+      'Personen den handler for, har forlatt arbeidsområdet.';
+
+  @override
+  String get wakeKindBudgetBlocked => 'Et budsjett blokkerer en kjøring.';
+
+  @override
+  String get wakeKindTakeOver => 'En person har overtatt worktree.';
+
+  @override
+  String get wakeKindRateCapConversation =>
+      'Denne samtalen startet 30 kjøringer fra vekkinger den siste timen.';
+
+  @override
+  String get wakeKindRateCapWorkspace =>
+      'Dette arbeidsområdet startet 300 kjøringer fra vekkinger den siste timen.';
+
+  @override
+  String get wakeKindLiveRunNoInput =>
+      'Agentens aktive kjøring her tar ikke imot input.';
+
+  @override
+  String get wakeKindLiveRunOtherOptions =>
+      'Agentens aktive kjøring her kjører annerledes, så denne starter sin egen kjøring etterpå.';
+
+  @override
+  String get wakeKindLiveRunOtherPerson =>
+      'Agentens aktive kjøring her handler for en annen person, så denne starter sin egen kjøring etterpå.';
+
+  @override
+  String get wakeKindDispatchRefused => 'Kjøringen kunne ikke starte.';
+
+  @override
+  String get wakeKindSandboxUnavailable =>
+      'Ingen sandkasse er tilgjengelig for en skrivebeskyttet kjøring.';
+
+  @override
+  String get wakeKindReadOnlyUnavailable =>
+      'Denne agentens backend kan ikke holde en kjøring skrivebeskyttet.';
+
+  @override
+  String get wakeKindServerStopped =>
+      'En omstart av serveren stoppet kjøringen.';
+
+  @override
+  String get wakeKindServerRestarted =>
+      'Serveren startet på nytt under en persons kjøring.';
+
+  @override
+  String get wakeKindGuardFailed => 'En sjekk før levering mislyktes.';
+
+  @override
+  String get wakeKindLimit =>
+      'Venter på at leverandørens bruksgrense skal nullstilles.';
+
+  @override
+  String get wakeKindLimitRunLive =>
+      'Venter på at kjøringen ved bruksgrensen skal avsluttes.';
+
+  @override
+  String get wakeKindWakeMissed => 'Gikk glipp av mens serveren var nede.';
+
+  @override
+  String get wakeKindPipelineRunEnded => 'Pipeline-kjøringen ble avsluttet.';
+
+  @override
+  String get wakeKindGoalEnded => 'Målet ble avsluttet.';
+
+  @override
+  String get wakeKindGoalBudgetExhausted => 'Målet brukte opp budsjettet sitt.';
+
+  @override
+  String get wakeKindGoalReviewStale =>
+      'Målet endret seg etter at denne gjennomgangen ble bedt om.';
+
+  @override
+  String get wakeKindGoalPaused => 'Målet er pauset.';
+
+  @override
+  String get wakeKindGoalHeld => 'Målet er holdt tilbake.';
+
+  @override
+  String get wakeKindGoalStopped => 'Målet ble stoppet.';
+
+  @override
+  String get wakeKindAskSettled =>
+      'Spørsmålet den svarer på, er allerede avgjort.';
+
+  @override
+  String get wakeKindRuleEnded => 'Tidsplanen ble avsluttet.';
+
+  @override
+  String get wakeRefusalNotYours =>
+      'Denne vekkingen handler for en annen person. Bare de kan levere eller fortsette den.';
+
+  @override
+  String get wakeRefusalSettled => 'Denne vekkingen er allerede avgjort.';
+
+  @override
+  String get goalRefusalAlreadyActive =>
+      'Denne agenten har allerede et aktivt mål.';
+
+  @override
+  String get goalRefusalNotInReview =>
+      'Dette målet venter ikke på gjennomgang.';
+
+  @override
+  String get goalRefusalEvidenceIncomplete =>
+      'Bevisene for målet er ufullstendige.';
+
+  @override
+  String get goalRefusalClaimPending =>
+      'Påstanden om at det er ferdig, sjekkes fortsatt.';
+
+  @override
+  String get goalRefusalNotActiveSegment =>
+      'Dette målet har ingen segment som kjører.';
+
+  @override
+  String get goalRefusalNotYours =>
+      'Bare personen som startet dette målet, kan gjøre det.';
+
+  @override
+  String get goalRefusalNotPaused => 'Sett målet på pause først.';
+
+  @override
+  String get goalRefusalContractInvalid =>
+      'Kontrakten for målet kan ikke leses.';
+
+  @override
+  String get goalRefusalCheckerUnknown => 'Ingen agent har det navnet.';
+
+  @override
+  String get goalRefusalCheckerAmbiguous => 'Mer enn én agent har det navnet.';
+
+  @override
+  String get goalRefusalCheckerIsGoalAgent =>
+      'Kontrollagenten må være en annen agent enn den som gjør arbeidet.';
+
+  @override
+  String get goalRefusalCommandInvalid => 'Dette målet kan ikke leses:';
+
+  @override
+  String get wakeRuleRefusalIntervalTooShort =>
+      'Intervallet er for kort. Velg minst ett minutt.';
+
+  @override
+  String get wakeRuleRefusalTooSoon =>
+      'Tidspunktet er for tidlig. Velg et senere.';
+
+  @override
+  String get wakeRuleRefusalLineageEnded =>
+      'Denne kjeden av vekkinger har brukt opp kjøringene sine eller tiden sin.';
+
+  @override
+  String get wakeRuleRefusalWatchTargetUnreadable =>
+      'Du kan ikke lese det dette ville overvåket.';
+
+  @override
+  String get wakeRuleRefusalExpiryRequired =>
+      'Gi den en sluttdato eller et antall kjøringer.';
+
+  @override
+  String get wakeRuleRefusalLimitReached =>
+      'Denne samtalen eller agenten har allerede så mange tidsplaner som den kan ha.';
+
+  @override
+  String get wakeRuleRefusalInvalidWhen => 'Tidspunktet kan ikke leses.';
+
+  @override
+  String get wakeRuleRefusalNoteTooLong => 'Notatet er for langt.';
+
+  @override
+  String get wakeRuleRefusalExpiryTooLong => 'Sluttdatoen er for langt unna.';
+
+  @override
+  String get wakeRuleRefusalLimitOutOfRange =>
+      'En grense for kjøringer, dager eller budsjett er utenfor området.';
+
+  @override
+  String get wakeRuleRefusalNextOutsideLoop =>
+      'Bare en løkke kan velge sitt eget neste tidspunkt.';
+
+  @override
+  String get wakeRuleRefusalWatchRefused => 'Dette kan ikke overvåkes.';
+
+  @override
+  String get wakeRuleRefusalRuleEnded =>
+      'Denne tidsplanen er allerede avsluttet.';
+
+  @override
+  String get wakeRuleRefusalNotYours => 'Denne tidsplanen tilhører noen andre.';
+
+  @override
+  String get wakeRuleEndFired => 'Den kjørte én gang.';
+
+  @override
+  String get wakeRuleEndExpired => 'Den nådde sluttdatoen sin.';
+
+  @override
+  String get wakeRuleEndRunCap => 'Den brukte opp kjøringene sine.';
+
+  @override
+  String get wakeRuleEndCostCap => 'Den nådde kostnadsgrensen sin.';
+
+  @override
+  String get wakeRuleEndGoalEnded => 'Målet ble avsluttet.';
+
+  @override
+  String get wakeRuleEndCancelled => 'Den ble avbrutt.';
+
+  @override
+  String get wakeRuleEndMemberRemoved =>
+      'Personen den tilhører, har forlatt arbeidsområdet.';
+
+  @override
+  String get wakeRuleEndInvalidRow =>
+      'De lagrede innstillingene kunne ikke leses.';
+
+  @override
+  String goalHoldWorking(int segment) {
+    final intl.NumberFormat segmentNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String segmentString = segmentNumberFormat.format(segment);
+
+    return 'Jobber med segment $segmentString. Ingen trenger å gjøre noe.';
+  }
+
+  @override
+  String get goalHoldWaiting =>
+      'Venter på arbeid den skylder. Den fortsetter av seg selv.';
+
+  @override
+  String goalHoldWaitingUntil(String time) {
+    return 'Venter på arbeid den skylder. Den fortsetter av seg selv $time senest.';
+  }
+
+  @override
+  String get goalHoldVerifying =>
+      'Den sier at den er ferdig. Serveren kjører sjekkene, og deretter avgjør en vurderer.';
+
+  @override
+  String get goalHoldLimit =>
+      'Pauset ved leverandørens bruksgrense. Den fortsetter av seg selv etter nullstillingen.';
+
+  @override
+  String goalHoldLimitUntil(String time) {
+    return 'Pauset ved leverandørens bruksgrense. Den fortsetter av seg selv $time.';
+  }
+
+  @override
+  String get goalHoldPerson =>
+      'Venter på at en person svarer i samtalen. Den fortsetter når noen svarer.';
+
+  @override
+  String get goalHoldByPerson =>
+      'Pauset av en person. Den forblir pauset til noen fortsetter den.';
+
+  @override
+  String get goalHoldNeedsReview =>
+      'Venter på gjennomgang: den kan ikke fortsette av seg selv. Godkjenn den som ferdig, fortsett den eller avbryt den.';
+
+  @override
+  String get goalHoldBudget =>
+      'Den brukte opp budsjettet sitt. Øk budsjettet for at den skal fortsette.';
+
+  @override
+  String goalHoldLimitParks(int count, int max) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return 'Pauser ved bruksgrensen: $countString av $maxString';
+  }
+
+  @override
+  String get goalHoldDetailStalled => 'Ingen fremdrift i de siste segmentene.';
+
+  @override
+  String get goalHoldDetailStalledWaiting =>
+      'Den ventet 24 timer på samme arbeid uten fremdrift.';
+
+  @override
+  String get goalHoldDetailVerificationFailed => 'Den siste sjekken mislyktes.';
+
+  @override
+  String get goalHoldDetailCannotVerify =>
+      'Kontrollagenten kunne ikke avgjøre om det er ferdig.';
+
+  @override
+  String get goalHoldDetailSandboxUnavailable =>
+      'Ingen sandkasse er tilgjengelig for å kjøre sjekkene.';
+
+  @override
+  String get goalHoldDetailCheckerUnavailable =>
+      'Kontrollagenten er utilgjengelig. Velg en annen, og fortsett deretter.';
+
+  @override
+  String get goalHoldDetailCheckBroken => 'Denne sjekken kan ikke kjøres:';
+
+  @override
+  String get goalHoldDetailWakeSkipped => 'Vekkingen ble ikke levert.';
+
+  @override
+  String get goalHoldDetailClaimPending =>
+      'Påstanden om at det er ferdig, venter på en sjekk.';
+
+  @override
+  String get goalHoldDetailUnanswered =>
+      'Et spørsmål eller en godkjenningsforespørsel til en person ble ubesvart.';
+
+  @override
+  String get goalHoldDetailLimitParks =>
+      'Det traff bruksgrenser for ofte. Se over det, og fortsett deretter.';
+
+  @override
+  String get goalHoldDetailInput => 'Venter på et svar i samtalen.';
+
+  @override
+  String goalSegments(int run, int max) {
+    final intl.NumberFormat runNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String runString = runNumberFormat.format(run);
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return 'Segment $runString av $maxString';
+  }
+
+  @override
+  String goalSegmentsNoCap(int run) {
+    final intl.NumberFormat runNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String runString = runNumberFormat.format(run);
+
+    return 'Segment $runString, ingen grense';
+  }
+
+  @override
+  String goalMoney(String spent, String cap) {
+    return 'Brukt $spent av $cap';
+  }
+
+  @override
+  String goalDeadline(String time) {
+    return 'Frist $time';
+  }
+
+  @override
+  String get goalPipelineStep => 'Et pipeline-steg jobber med dette målet.';
+
+  @override
+  String get goalSummaryHeading => 'Siste oppsummering';
+
+  @override
+  String get goalDoneMeans => 'Ferdig betyr';
+
+  @override
+  String get goalChecks => 'Sjekker';
+
+  @override
+  String get goalBoundaries => 'Begrensninger';
+
+  @override
+  String get goalStopWhen => 'Stopp og spør når';
+
+  @override
+  String get goalNoMachineCheck =>
+      'Ingen maskinsjekk. En vurderer bedømmer ut fra det den kan lese.';
+
+  @override
+  String get goalCheckEnvironment => 'Miljøoppgave';
+
+  @override
+  String goalLastCheck(int round, String time) {
+    final intl.NumberFormat roundNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String roundString = roundNumberFormat.format(round);
+
+    return 'Siste sjekk, runde $roundString, $time';
+  }
+
+  @override
+  String get goalClaim => 'Hva den påsto';
+
+  @override
+  String get goalCheckPassed => 'Bestått';
+
+  @override
+  String goalCheckFailed(int code) {
+    return 'Mislyktes, exit $code';
+  }
+
+  @override
+  String get goalCheckTimedOut => 'Tidsavbrudd';
+
+  @override
+  String get goalCheckNotRerun => 'Ikke kjørt på nytt: ingenting endret seg';
+
+  @override
+  String get goalCheckBroken => 'Kan ikke kjøres';
+
+  @override
+  String get goalCriterionMet => 'Oppfylt';
+
+  @override
+  String get goalCriterionUnmet => 'Ikke oppfylt';
+
+  @override
+  String get goalCriterionCannotTell => 'Kan ikke avgjøre';
+
+  @override
+  String get goalVerdictPass => 'Dom: ferdig';
+
+  @override
+  String get goalVerdictFail => 'Dom: ikke ferdig';
+
+  @override
+  String get goalVerdictCannotVerify => 'Dom: kunne ikke avgjøre';
+
+  @override
+  String get goalConcerns => 'Bekymringer';
+
+  @override
+  String goalVerifiedBy(String agent) {
+    return 'Verifisert av $agent';
+  }
+
+  @override
+  String get goalVerifiedBySelf =>
+      'Verifisert av seg selv (ingen egen kontrollagent)';
+
+  @override
+  String get goalClosedByPerson => 'Lukket av en person uten bestått sjekk';
+
+  @override
+  String get goalApprove => 'Godkjenn fullføring';
+
+  @override
+  String get goalApproveTitle => 'Lukke dette målet som ferdig?';
+
+  @override
+  String get goalApproveBody =>
+      'Ingen sjekk bekreftet det. Du lukker det på ditt eget ord, og målet registrerer at en person lukket det uten verifisering.';
+
+  @override
+  String get goalApproveConfirm => 'Lukk som ferdig';
+
+  @override
+  String get goalResumeNotYours =>
+      'Å fortsette det eller heve budsjettet hører til den som startet det.';
+
+  @override
+  String get goalChooseChecker => 'Velg en annen kontrollagent';
+
+  @override
+  String goalCheckerSet(String agent) {
+    return '$agent kontrollerer nå. Fortsett for å verifisere på nytt.';
+  }
+
+  @override
+  String get goalSchedules => 'Tidsplaner';
+
+  @override
+  String get goalRepeat => 'Gjenta';
+
+  @override
+  String get goalCreateChecks => 'Sjekker (valgfritt)';
+
+  @override
+  String get goalCreateCheckHint =>
+      'En kommando som består når arbeidet er ferdig';
+
+  @override
+  String get goalCreateAddCheck => 'Legg til sjekk';
+
+  @override
+  String get goalCreateRemoveCheck => 'Fjern sjekk';
+
+  @override
+  String get goalCreateSegmentCap => 'Segmentgrense (valgfritt)';
+
+  @override
+  String get goalCreateSegmentInvalid =>
+      'Segmentgrensen er et heltall, minst 1.';
+
+  @override
+  String get scheduleCreateTitle => 'Gjenta en instruks';
+
+  @override
+  String get scheduleCadence => 'Hvor ofte';
+
+  @override
+  String get scheduleEveryMinutes => 'Hvert N minutt';
+
+  @override
+  String get scheduleEveryHours => 'Hver N time';
+
+  @override
+  String get scheduleSelfPaced => 'Selvstyrt';
+
+  @override
+  String get scheduleSelfPacedHint =>
+      'Agenten velger forsinkelsen etter hver kjøring, mellom 1 minutt og 1 time.';
+
+  @override
+  String get scheduleInterval => 'Intervall';
+
+  @override
+  String get scheduleNote => 'Hva skal hver kjøring gjøre?';
+
+  @override
+  String get scheduleCostCap => 'Kostnadsgrense i USD (valgfritt)';
+
+  @override
+  String get scheduleExpiryDays => 'Avsluttes etter N dager (valgfritt)';
+
+  @override
+  String get scheduleCreateInvalid =>
+      'Velg et område og en agent, skriv hva hver kjøring skal gjøre, og oppgi hele tall på minst 1.';
+
+  @override
+  String get scheduleCreateButton => 'Start tidsplan';
+
+  @override
+  String get scheduleCreateConfirmTitle => 'Start denne tidsplanen?';
+
+  @override
+  String scheduleCreateConfirmEveryMinutes(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Den kjører hvert $countString. minutt, fra nå.',
+      one: 'Den kjører hvert minutt, fra nå.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleCreateConfirmEveryHours(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Den kjører hver $countString. time, fra nå.',
+      one: 'Den kjører hver time, fra nå.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scheduleCreateConfirmSelfPaced =>
+      'Den kjører nå, og så velger agenten når den skal kjøre igjen.';
+
+  @override
+  String get scheduleCreated =>
+      'Tidsplanen er startet. Den står under Tidsplaner.';
+
+  @override
+  String get schedulesTitle => 'Tidsplaner';
+
+  @override
+  String get schedulesLoadFailed => 'Kunne ikke laste tidsplaner';
+
+  @override
+  String get schedulesEmpty => 'Ingen tidsplaner eller overvåkinger';
+
+  @override
+  String get schedulesEmptyDescription =>
+      'Gjenta en instruks fra målskjermen, eller send /loop eller /schedule i en samtale.';
+
+  @override
+  String get scheduleMissing =>
+      'Denne tidsplanen er ikke lenger tilgjengelig i dette arbeidsområdet.';
+
+  @override
+  String scheduleEvery(String interval) {
+    return 'Hver $interval';
+  }
+
+  @override
+  String get scheduleSelfPacedLoop => 'Selvstyrt løkke';
+
+  @override
+  String get scheduleCron => 'Cron-tidsplan';
+
+  @override
+  String scheduleOnce(String time) {
+    return 'Én gang kl. $time';
+  }
+
+  @override
+  String scheduleWatch(String event) {
+    return 'Overvåking: $event';
+  }
+
+  @override
+  String get scheduleWatchPrChecks => 'sjekker på pull request';
+
+  @override
+  String get scheduleWatchPrReview => 'gjennomganger av pull request';
+
+  @override
+  String get scheduleWatchPrMerged => 'sammenslåing av pull request';
+
+  @override
+  String get scheduleWatchEnvironment => 'miljø';
+
+  @override
+  String get scheduleWatchTicket => 'sak';
+
+  @override
+  String get scheduleWatchPipelineRun => 'pipeline-kjøring';
+
+  @override
+  String get scheduleStatusActive => 'Aktiv';
+
+  @override
+  String get scheduleStatusPaused => 'På pause';
+
+  @override
+  String get scheduleStatusEnded => 'Avsluttet';
+
+  @override
+  String scheduleWakes(String agent) {
+    return 'Vekker $agent';
+  }
+
+  @override
+  String scheduleNext(String time) {
+    return 'Neste kjøring $time';
+  }
+
+  @override
+  String scheduleLast(String time) {
+    return 'Sist kjørt $time';
+  }
+
+  @override
+  String scheduleRuns(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString kjøringer',
+      one: '1 kjøring',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleRunsOf(int count, int max) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return '$countString av $maxString kjøringer';
+  }
+
+  @override
+  String scheduleSkipped(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString hoppet over',
+      one: '1 hoppet over',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleEnds(String time) {
+    return 'Avsluttes $time';
+  }
+
+  @override
+  String scheduleChain(int count, String time) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return 'Del av en kjede: $countString kjøringer igjen, avsluttes $time';
+  }
+
+  @override
+  String get scheduleNoteAgent => 'Agentens eget notat, med egne ord:';
+
+  @override
+  String get scheduleNotePerson => 'En persons notat:';
+
+  @override
+  String scheduleActsFor(String name) {
+    return 'Handler for $name';
+  }
+
+  @override
+  String get scheduleActsForBot => 'Handler for ingen person';
+
+  @override
+  String get scheduleGoalBound => 'Den avsluttes med målet sitt.';
+
+  @override
+  String get schedulePause => 'Pause';
+
+  @override
+  String get scheduleResume => 'Fortsett';
+
+  @override
+  String get scheduleDelete => 'Slett';
+
+  @override
+  String get scheduleRemove => 'Fjern';
+
+  @override
+  String get scheduleDeleteTitle => 'Slette denne tidsplanen?';
+
+  @override
+  String get scheduleDeleteBody =>
+      'Den slutter for godt. Det den allerede har gjort, angres ikke.';
+
+  @override
+  String get scheduleRemoveTitle => 'Fjerne denne tidsplanen?';
+
+  @override
+  String get scheduleRemoveBody => 'Den forsvinner fra listen.';
+
+  @override
+  String get scheduleResumeNotYours =>
+      'Bare personen denne tidsplanen handler for, kan fortsette den.';
+
+  @override
+  String get scheduleResumeAdminOnly =>
+      'Bare en administrator for arbeidsområdet kan fortsette en tidsplan ingen person eier.';
+
+  @override
+  String get scheduleOpenConversation => 'Åpne samtale';
+
+  @override
+  String get progressWaiting => 'Venter';
+
+  @override
+  String get progressNothingWaiting => 'Ingenting venter.';
+
+  @override
+  String get wakeOriginGoal => 'Mål';
+
+  @override
+  String get wakeOriginGoalCheck => 'Målsjekk';
+
+  @override
+  String get wakeOriginGoalReview => 'Målgjennomgang';
+
+  @override
+  String get wakeOriginSchedule => 'Tidsplan';
+
+  @override
+  String get wakeOriginWatch => 'Overvåking';
+
+  @override
+  String get wakeOriginReply => 'Svar';
+
+  @override
+  String get wakeOriginMessage => 'Melding';
+
+  @override
+  String get wakeOriginWorkFinished => 'Ferdig arbeid';
+
+  @override
+  String get wakeOriginLimitReset => 'Bruksgrense nullstilt';
+
+  @override
+  String get wakeOriginRecovery => 'Gjenoppretting';
+
+  @override
+  String get wakeOriginAssignment => 'Oppgave tildelt';
+
+  @override
+  String get wakeOriginPipelineStep => 'Pipeline-steg';
+
+  @override
+  String get wakeOriginImprovementReview => 'Gjennomgang av forbedringer';
+
+  @override
+  String wakeOriginReplyFrom(String agent) {
+    return 'Svar fra $agent';
+  }
+
+  @override
+  String wakeOriginMessageFrom(String agent) {
+    return 'Melding fra $agent';
+  }
+
+  @override
+  String wakeOriginWorkFinishedBy(String agent) {
+    return 'Ferdig arbeid fra $agent';
+  }
+
+  @override
+  String wakeFor(String agent) {
+    return 'For $agent';
+  }
+
+  @override
+  String wakeDue(String time) {
+    return 'Forfaller $time';
+  }
+
+  @override
+  String get wakeDueNow => 'Forfaller nå';
+
+  @override
+  String get wakeHeld => 'Holdt tilbake';
+
+  @override
+  String wakeExpires(String time) {
+    return 'Utløper $time';
+  }
+
+  @override
+  String wakeAttempt(int attempt) {
+    final intl.NumberFormat attemptNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String attemptString = attemptNumberFormat.format(attempt);
+
+    return 'Forsøk $attemptString';
+  }
+
+  @override
+  String get wakeCancel => 'Avbryt';
+
+  @override
+  String get wakeDeliverNow => 'Lever nå';
+
+  @override
+  String get wakeResume => 'Fortsett';
+
+  @override
+  String get wakeDismiss => 'Avvis';
+
+  @override
+  String get wakeResumeOnlyTheirs =>
+      'Bare personen kjøringen tilhører, kan fortsette den.';
+
+  @override
+  String get wakeRecovery =>
+      'Serveren startet på nytt under denne kjøringen. Fortsett den for å gå videre, eller avvis.';
+
+  @override
+  String limitParkTitle(String provider, String time) {
+    return 'Satt på pause ved ${provider}s bruksgrense, som tilbakestilles kl. $time. Kjøringen venter på Fortsett i opptil 7 dager etter tilbakestillingen.';
+  }
+
+  @override
+  String limitParkTitleUnnamed(String time) {
+    return 'Satt på pause ved leverandørens bruksgrense, som tilbakestilles kl. $time. Kjøringen venter på Fortsett i opptil 7 dager etter tilbakestillingen.';
+  }
+
+  @override
+  String get limitParkResumeNow => 'Fortsett nå';
+
+  @override
+  String get limitParkCancel => 'Avbryt';
+
+  @override
+  String limitParkResumed(String provider) {
+    return 'Fortsatte etter ${provider}s bruksgrense.';
+  }
+
+  @override
+  String limitParkGone(String provider) {
+    return 'Venter ikke lenger på ${provider}s bruksgrense.';
+  }
+
+  @override
+  String get limitParkProviderUnknown => 'leverandøren';
+
+  @override
+  String get mobileHeldMessages => 'Holdte meldinger';
+
+  @override
+  String get heldSteeringTitle =>
+      'Holdt tilbake fordi kjøringen ble avsluttet før den kunne ta dem. Send dine nå, eller fjern dem.';
+
+  @override
+  String get heldSteeringRelease => 'Send holdte meldinger';
+
+  @override
+  String get notifGoalCompleted => 'Mål ferdig';
+
+  @override
+  String get notifGoalFailed => 'Mål mislyktes';
+
+  @override
+  String get notifGoalCancelled => 'Mål avbrutt';
+
+  @override
+  String get notifGoalBudgetExhausted => 'Målet brukte opp budsjettet';
+
+  @override
+  String get notifGoalNeedsReview => 'Et mål venter på gjennomgangen din';
+
+  @override
+  String get notifGoalNeedsPerson => 'Et mål trenger deg';
+
+  @override
+  String get notifGoalOnHold => 'Et mål er holdt tilbake';
+
+  @override
+  String get notifWakeRuleEnded => 'En tidsplan ble avsluttet';
+
+  @override
+  String notifWaitingDigest(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString ting venter på deg',
+      one: '1 ting venter på deg',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notifImprovementProposed(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString forbedringer ble foreslått',
+      one: 'En forbedring ble foreslått',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notifPipelineRunHeld =>
+      'En pipeline-kjøring er holdt tilbake ved budsjettet';
+
+  @override
+  String notifPipelineRunHeldBody(String spent, String cap) {
+    return 'Brukt $spent av $cap';
+  }
+
+  @override
+  String get notifNeedsYou => 'Trenger deg';
+
+  @override
+  String get notifDigestGoalReview => 'Mål venter på gjennomgang';
+
+  @override
+  String get notifDigestGoalPerson => 'Mål trenger en person';
+
+  @override
+  String get notifDigestHeldWake => 'Holdt vekking';
+
+  @override
+  String get notifDigestImprovement => 'Foreslått forbedring';
+
+  @override
+  String get wakeKindRulePaused => 'Tidsplanen ble satt på pause.';
+
+  @override
+  String get wakeKindRuleBusy =>
+      'Agenten var opptatt, og denne tidsplanen hopper over et tidspunkt når den er det.';
+
+  @override
+  String get wakeKindRuleFolded =>
+      'En senere hendelse i samme overvåking tok dens plass.';
+
+  @override
+  String get wakeKindRuleSuperseded =>
+      'Et senere tidspunkt i tidsplanen erstattet den.';
+
+  @override
+  String get wakeKindRuleNotified =>
+      'Tidsplanen sender bare et varsel, så ingen kjøring startet.';
+
+  @override
+  String get wakeKindRuleLimitParked =>
+      'Tidsplanen venter på at leverandørens bruksgrense skal nullstilles.';
+
+  @override
+  String get improvementRefusalCooldown =>
+      'En forbedringsgjennomgang kjørte i denne samtalen for kort tid siden. Prøv igjen senere.';
+
+  @override
+  String get improvementRefusalQueued =>
+      'En forbedringsgjennomgang av denne samtalen venter allerede på å kjøre.';
+
+  @override
+  String get improvementRefusalAgentNotFound =>
+      'Den agenten er ikke en agent i dette arbeidsområdet.';
+
+  @override
+  String get steeringRefusalHeldByLimit =>
+      'Meldinger holdt ved bruksgrensen kan ikke sendes manuelt. De venter på at den pausede kjøringen fortsetter.';
+
+  @override
+  String limitParkCancelled(String provider) {
+    return 'Ventingen ved ${provider}s bruksgrense ble avbrutt.';
+  }
+
+  @override
+  String limitParkExpired(String provider) {
+    return 'Ventingen ved ${provider}s bruksgrense utløp før kjøringen fortsatte.';
+  }
+
+  @override
+  String limitParkSkipped(String provider) {
+    return 'Kjøringen fortsatte ikke etter ${provider}s bruksgrense.';
+  }
+
+  @override
+  String get heldSteeringLimitTitle =>
+      'Holdt tilbake mens kjøringen venter på at bruksgrensen tilbakestilles. De sendes når personen den kjører for, fortsetter den.';
+
+  @override
+  String heldSteeringLimitAt(String time) {
+    return 'Holdt tilbake til bruksgrensen tilbakestilles kl. $time. De sendes når personen den kjører for, fortsetter den.';
+  }
+
+  @override
+  String get heldSteeringOtherTitle =>
+      'Holdt tilbake av serveren. Du kan fjerne dem.';
+
+  @override
+  String workRowWoke(int count, String agent) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Vekket $agent for $countString ventende elementer',
+      one: 'Vekket $agent',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String workRowWakeMissed(String agent) {
+    return 'En vekking for $agent gikk glipp av mens serveren var nede.';
+  }
+
+  @override
+  String workRowWakeSkipped(String agent) {
+    return 'En vekking for $agent ble ikke levert.';
+  }
+
+  @override
+  String workRowScheduleCreated(String agent) {
+    return 'Tidsplan satt for $agent.';
+  }
+
+  @override
+  String workRowScheduleEnded(String agent) {
+    return 'Tidsplanen til $agent ble avsluttet.';
+  }
+
+  @override
+  String workRowNoteFromAgent(String agent) {
+    return 'Tidsplannotat fra $agent:';
+  }
+
+  @override
+  String get workRowNoteFromPerson => 'Tidsplannotat fra en person:';
+
+  @override
+  String workRowCommandRefusedNamed(String command) {
+    return 'Kommandoen $command ble avvist.';
+  }
+
+  @override
+  String get workRowCommandRefused => 'En kommando ble avvist.';
+
+  @override
+  String workRowCapRaised(String person, String from, String to) {
+    return '$person hevet grensen for pipelinens utgifter fra $from til $to.';
+  }
+
+  @override
+  String workRowCapRaisedNoAmounts(String person) {
+    return '$person hevet grensen for pipelinens utgifter.';
+  }
+
+  @override
+  String get workRowApplyIncomplete =>
+      'En godtatt endring av denne ferdigheten kunne ikke fullføres, fordi ferdigheten endret seg i mellomtiden. Forslaget ble rullet tilbake.';
+
+  @override
+  String get workRowOpenSchedule => 'Åpne tidsplan';
+
+  @override
+  String get heldSteeringOthersTitle =>
+      'Holdt tilbake fordi kjøringen ble avsluttet før den kunne ta dem. Bare personen som skrev en melding, kan sende den.';
+
+  @override
+  String get heldSteeringOnlyYours =>
+      'Sender bare dine meldinger. De andre venter på personene som skrev dem.';
+
+  @override
+  String heldSteeringWrittenBy(String name) {
+    return 'Skrevet av $name';
+  }
+
+  @override
+  String get steeringRefusalNotYours =>
+      'Bare personen som skrev en holdt melding, kan sende den, og ingen av disse er dine.';
+
+  @override
+  String get steeringRefusalNeedsWrite =>
+      'Du trenger skrivetilgang til arkivene i dette området for å styre en kjøring som handler for en annen person.';
+
+  @override
+  String workRowSchedulePaused(String name, String agent) {
+    return '$name satte tidsplanen for $agent på pause.';
+  }
+
+  @override
+  String get goalVerdictObjective => 'Målsetningen som helhet';
+
+  @override
+  String get notifDigestRequest => 'Venter på svaret ditt';
 }

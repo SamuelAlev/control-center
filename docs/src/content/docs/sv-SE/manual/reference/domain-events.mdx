@@ -2,7 +2,7 @@
 title: Domänhändelser
 description: Fullständig katalog över de 54 domänhändelserna, deras nyttolaster och prenumeranterna på serversidan som konsumerar dem.
 slug: sv-SE/handbok/referens/domanhandelser
-sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
+sourceHash: f58123448c0f31c95774bbaebee89f1509940896
 ---
 
 ## Händelsebussen
@@ -30,7 +30,10 @@ domänhändelser deklarerade någon annanstans.
 | Händelse            | Nyttolast                                              | Utlöses när                                             |
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | Arbetsytan skapas                                       |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Agenten avslutar en körning (lyckad eller misslyckad)   |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Agentens processström tar slut, innan det slutliga tillståndet skrivs. Behålls enbart för PR-konversationsbryggan och analys |
+| `AgentRunSettled` | `agentId`, `workspaceId`, `runId`, `status`, `endReason`, `costMicros`, `wakeIds`, `spaceId?`, `conversationId?`, `limitResetsAt?`, `requestedByUserId?`, `wakeReason?` | Ett körnings slutliga tillstånd skrivs; publiceras exakt en gång per körning. `endReason` är `completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` eller `serverStopped`. En subagents körning publicerar ingen |
+| `GoalSettled` | `goalId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `status`, `hold?`, `summary?`, `requestedByUserId?` | Ett mål avslutas, eller börjar vänta på en persons granskning |
+| `WakeRuleEnded` | `ruleId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `reason`, `requestedByUserId?` | Ett schema eller en bevakning avslutas (avfyrade sin enda gång, gick ut, använde sina körningar eller sin kostnad, avbröts, dess mål avslutades, dess person lämnade) |
 | `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | En agent börjar vänta på en människa: ett godkännande, en `ask_user`-fråga eller en körning som står still på grund av inloggningsuppgifter (`kind` är `approval`, `question` eller `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Ett repo registreras; startar kodindexering i bakgrunden |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | En skill installeras eller uppdateras och bär sitt scanresultat från leveranskedjan |
@@ -67,6 +70,16 @@ valfri `forUserId`.
 | `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | Någon nämnde dig i en PR-kommentar eller granskningskommentar            |
 | `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | Någon svarade i en granskningstråd du är med i                                |
 | `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | Någon löste en granskningstråd du är med i                                    |
+
+### Bevakningen av pull requests
+
+Publiceras av den öppna pull request-pollaren för varje pull request den pollar, oavsett vem som skrev den, för agenters `on:pr_*`-bevakningar. Alla tre bär `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `headRef` och `authorLogin`.
+
+| Händelse | Ytterligare nyttolast | Utlöses när |
+| ----------------------- | ----------------------------------------------- | ---------- |
+| `PrWatchChecksSettled` | `passing`, `failedChecks`, `failedCheckUrl?` | Varje kontroll på pull requestens head är klar |
+| `PrWatchReviewActivity` | `decision`, `decisionChanged`, `newComments` | Pull requesten fick en granskning eller nya kommentarer |
+| `PrWatchClosed` | `merged` | Pull requesten mergades eller stängdes |
 
 ## Meddelandehändelser
 
@@ -193,14 +206,20 @@ bygger). Det finns ingen prenumerant på klientsidan.
 | Provisionering av chattyta (inline) | `SpaceCreated`                                                                                       |
 | `PipelineTriggerDispatcher`         | Varje `DomainEvent`; varje aktiverad trigger filtrerar på sin egen typ                               |
 | `SubPipelineResumeListener`         | `PipelineRunCompleted`, `PipelineRunFailed`                                                          |
-| `PipelineCostRollupListener`        | `AgentRunCompleted`                                                                                  |
-| `BudgetEvaluationListener`          | `AgentRunCompleted`                                                                                  |
+| `PipelineCostRollupListener`        | `AgentRunSettled`                                                                                    |
+| `BudgetEvaluationListener`          | `AgentRunSettled`                                                                                    |
 | `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (endast körningar av `meeting_summary`) |
-| `PipelineStepResumeListener`        | `AgentRunCompleted`                                                                                  |
-| `AgentRunTaskCompleter`             | `AgentRunCompleted`                                                                                  |
-| `GoalSupervisor`                    | `AgentRunCompleted`                                                                                  |
-| `CheckerDispatchListener`           | `AgentRunCompleted`                                                                                  |
-| `TeamRoutingService`                | `AgentRunCompleted`, `TicketAssigned`                                                                |
+| `PipelineStepResumeListener`        | `AgentRunSettled`                                                                                    |
+| `AgentRunTaskCompleter`             | `AgentRunSettled`                                                                                    |
+| `GoalSupervisor`                    | `AgentRunSettled` — avgör målets nästa steg                                                          |
+| `CheckerDispatchListener`           | `AgentRunSettled` — köar granskaren som en väckning; hoppar över målsegment och granskningar         |
+| `TeamRoutingService`                | `AgentRunSettled`, `TicketAssigned`                                                                  |
+| `WakeQueueService` | `AgentRunSettled` — levererar väckningar som väntade på att körningen skulle avslutas |
+| `WakeRuleService` | `AgentRunSettled` (självstyrda loopar), `GoalSettled` (avslutar ett måls scheman), `PrWatch*`, `EnvironmentProcessExited`, `EnvironmentReady`, ärendens och pipelinekörningars slut (bevakningar), `WorkspaceMemberRemoved` (avslutar den personens scheman) |
+| `PeerAskService` | `AgentRunSettled` — avgör frågor som agenter ställt till varandra och väcker den som frågade |
+| `LimitParkService` | `AgentRunSettled` med `usageLimit` — väntar på leverantörens återställning |
+| `ImprovementReviewService` | `GoalSettled` (ett verifierat mål) och `AgentRunSettled` — köar förbättringsgranskningen och läser dess resultat |
+| Pipeline-målsteg (`goal.pursue`) | `GoalSettled`, `AgentRunSettled`, `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` — återupptar steget, debiterar orkestreringen och följer pipelinekörningen |
 | `OrchestrationRunListener`          | `PipelineRunCancelled`, `PipelineRunFailed`                                                          |
 | `MultiVendorTicketSyncCoordinator`  | `TicketCreated`, `TicketAssigned`, `TicketReassigned`, `TicketStatusChanged`, `TicketDetailsUpdated` |
 | `WorktreeGcListener`                | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`         |
@@ -268,6 +287,8 @@ händelse; ingenting publiceras när väntan tar slut.
 
 De fem kategorierna för egna PR:er bär `forUserId`, så de når skaparen i stället
 för alla i arbetsytan.
+
+Fem ramar för långvarigt arbete, var och en adresserad till den person den gäller (`for_user_id`): `notifications/goal_settled` (från `GoalSettled`), `notifications/wake_rule_ended` (från `WakeRuleEnded`), `notifications/improvement_proposed`, `notifications/pipeline_run_held` (en pipelinekörning som hålls vid sin orkestrerings kostnadstak) och `notifications/waiting_digest` (en gång om dagen, vad som väntar på en person). Varje bär `notification_kind`: `notify` mappas till `agentRunCompleted`, `question` och `review` till `agentAwaitingInput`. Varje aviserande ram bär nu `notification_kind`, och en ram med `quiet: true` (ett schema som avslutades, ett mål som avslutades) når aviseringscentret utan toast, ljud eller högljudd push.
 
 `RemoteEventForwarder` vidarebefordrar dessutom `TicketReassigned` som
 `notifications/ticket_reassigned` och varje `TaskLifecycleEvent` som

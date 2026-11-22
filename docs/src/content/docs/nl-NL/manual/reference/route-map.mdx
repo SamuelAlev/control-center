@@ -2,7 +2,7 @@
 title: Routekaart
 description: Elke route die Control Center registreert, met het bijbehorende scherm en de queryparameters.
 slug: nl-NL/handleiding/referentie/routekaart
-sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
+sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
 ---
 
 ## App-shell
@@ -40,6 +40,12 @@ De paden hieronder laten de prefix `/workspaces/:workspaceId` weg.
 | `/pipelines`                            | —                                         | Lijst met pipelineruns                                                                                                                                                   |
 | `/pipelines/run`                        | `?templateId=<id>`                        | Startscherm voor handmatige runs                                                                                                                                         |
 | `/pipelines/:runId`                     | —                                         | Detail van een pipelinerun (tijdlijn van stappen)                                                                                                                        |
+| `/goals` | — | Lijst van doelen, gegroepeerd als wacht op review, open en beëindigd |
+| `/goals/:goalId` | `?edit=contract` | Eén doel: nu, wat klaar betekent, verificatie, schema's en wekbeurten; `edit=contract` opent de contracteditor bij een gepauzeerd doel |
+| `/schedules` | — | Schema's en bewakingen, gegroepeerd op status, met **Nieuw schema** |
+| `/schedules/:ruleId` | — | Eén schema: notitie, details, recente wekbeurten en runs |
+| `/improvements` | — | Verbeteringsvoorstellen, gegroepeerd op status |
+| `/improvements/:proposalId` | — | Eén voorstel: wat verandert, bewijs, evaluatie en besluit |
 | `/plans`                                | —                                         | Plan Studio-hub: actieve plannen, plandocumenten, playbooks                                                                                                              |
 | `/plans/:kind/:id`                      | —                                         | Plan Studio voor één plan; `kind` is `orchestration` of `document`                                                                                                       |
 | `/meetings`                             | —                                         | Lijst met vergaderingen                                                                                                                                                  |
@@ -99,6 +105,7 @@ Instellingenpaden zijn genamespaced per **bereik** — `you/`, `workspace/`, `se
 | `/settings/workspace/skills`       | Configuratie van skills                                                                             |
 | `/settings/memory`                 | Werkruimtegeheugen: feiten, beleid, kennisgraaf                                                     |
 | `/settings/workspace/permissions`  | Agentmachtigingen: matrix van beveiligingen en wat-als-probe                                        |
+| `/settings/workspace/schedules` | Limieten voor schema's, de tijdzone voor cron-schema's en het dagoverzicht, en hoe lang door de server gestarte runs wachten op een antwoord (beheerders bewerken; leden lezen) |
 | `/settings/pipelines`              | Pipelinesjablonen                                                                                   |
 | `/settings/pipelines/:templateId`  | Editor voor pipelinesjablonen (drag-and-drop-canvas)                                                |
 

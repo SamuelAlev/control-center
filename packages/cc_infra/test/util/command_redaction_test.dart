@@ -98,10 +98,7 @@ void main() {
 
     test('a too-short GitHub token body is NOT redacted (guard threshold)', () {
       // ghp_ + 10 chars < the shared table's 20 → no match, kept verbatim.
-      expect(
-        redactSecrets('leak ghp_aaaaaaaaaa'),
-        'leak ghp_aaaaaaaaaa',
-      );
+      expect(redactSecrets('leak ghp_aaaaaaaaaa'), 'leak ghp_aaaaaaaaaa');
     });
 
     test('every shape of the shared token table, as the scanner sees it', () {
@@ -133,6 +130,22 @@ void main() {
         redactSecrets('https://user:p%40ss@host.example.com/path'),
         'https://user:***REDACTED***@host.example.com/path',
       );
+    });
+
+    test('a URL with a long scheme is still redacted', () {
+      final scheme = 'x' * 40;
+      expect(
+        redactSecrets('$scheme://user:secret@host'),
+        '$scheme://user:***REDACTED***@host',
+      );
+    });
+
+    test('a long run of letters is scanned in linear time', () {
+      // Quadratic before the scheme was bounded: about 25 s for this input.
+      final input = 'a' * (64 * 1024);
+      final watch = Stopwatch()..start();
+      expect(redactSecrets(input), input);
+      expect(watch.elapsed, lessThan(const Duration(seconds: 2)));
     });
 
     test(

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:cc_domain/features/orchestration/domain/entities/orchestration.dart';
 import 'package:cc_domain/features/orchestration/domain/entities/orchestration_proposal.dart';
 import 'package:cc_domain/features/orchestration/domain/entities/orchestration_status.dart';
+import 'package:cc_domain/features/orchestration/domain/ports/orchestration_cap_store.dart';
 import 'package:cc_domain/features/orchestration/domain/repositories/orchestration_repository.dart';
 import 'package:cc_persistence/database/cross_workspace_queries.dart';
 import 'package:cc_persistence/database/daos/orchestration_dao.dart';
@@ -17,7 +18,8 @@ import 'package:drift/drift.dart';
 /// their workspace's own database file, so the workspace id picks the file
 /// before any SQL runs. [forPipelineRunAnyWorkspace] and
 /// [approvedNeedingMaterialization] are the two reads that span files.
-class DaoOrchestrationRepository implements OrchestrationRepository {
+class DaoOrchestrationRepository
+    implements OrchestrationRepository, OrchestrationCapStore {
   /// Creates a [DaoOrchestrationRepository] over the per-workspace databases.
   DaoOrchestrationRepository(this._dbs) : _cross = CrossWorkspaceQueries(_dbs);
 
@@ -33,9 +35,40 @@ class DaoOrchestrationRepository implements OrchestrationRepository {
       // the entity rather than from a parameter that could disagree with it.
       _dao(o.workspaceId).insert(_toCompanion(o));
 
+  /// Writes [next] while the stored row is still at [read]'s revision and
+  /// status; false when another writer moved it. The cost cap follows
+  /// [next] only when [read] is `proposed` (the condition keeps the row
+  /// proposed until the write lands: an agent's revised proposal carries its
+  /// budget, and an approval writes the cap of the revision it approves);
+  /// after that only [raiseCap] changes it, so a whole-row write racing a
+  /// raise never puts the old cap back.
   @override
-  Future<void> update(Orchestration o) =>
-      _dao(o.workspaceId).updateById(o.id, o.workspaceId, _toCompanion(o));
+  Future<bool> update(Orchestration next, {required Orchestration read}) async {
+    if (next.id != read.id || next.workspaceId != read.workspaceId) {
+      throw ArgumentError('An orchestration is written over its own read');
+    }
+    final row = _toCompanion(next);
+    return await _dao(next.workspaceId).updateById(
+          next.id,
+          next.workspaceId,
+          read.status == OrchestrationStatus.proposed
+              ? row
+              : row.copyWith(maxCostMicros: const Value.absent()),
+          revision: read.revision,
+          status: read.status.toStorageString(),
+        ) ==
+        1;
+  }
+
+  @override
+  Future<bool> raiseCap(
+    String workspaceId,
+    String id, {
+    required int from,
+    required int to,
+  }) async =>
+      await _dao(workspaceId).raiseCap(id, workspaceId, from: from, to: to) ==
+      1;
 
   @override
   Future<Orchestration?> getById(String workspaceId, String id) async {

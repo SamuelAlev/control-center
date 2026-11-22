@@ -16,6 +16,8 @@ class _FakeCommandRunner implements HarnessCommandRunner {
 
   final HarnessCommandResult result;
   String? lastCommand;
+  PersonWaitListener? lastPersonWait;
+  String? lastParentToolCallId;
 
   @override
   Future<HarnessCommandResult> run(
@@ -24,8 +26,13 @@ class _FakeCommandRunner implements HarnessCommandRunner {
     int timeoutSeconds = 120,
     Map<String, String>? env,
     CancellationToken? cancel,
+    PersonWaitListener? personWait,
+    String? parentToolCallId,
+    HarnessCommandObserver? observer,
   }) async {
     lastCommand = command;
+    lastPersonWait = personWait;
+    lastParentToolCallId = parentToolCallId;
     return result;
   }
 }
@@ -102,6 +109,23 @@ void main() {
     expect(result.content, contains('TODO'));
   });
 
+  test('search returns its matches as a structured value', () async {
+    File(
+      p.join(dir.path, 'd.dart'),
+    ).writeAsStringSync('void main() {}\n  // TODO: x');
+    final tool = SearchTool();
+    final result = await tool.execute({'pattern': 'TODO'}, ctx);
+    expect(result.content, 'd.dart:2: // TODO: x');
+    expect(result.structured, {
+      'matches': [
+        {'path': 'd.dart', 'line': 2, 'text': '// TODO: x'},
+      ],
+      'total': 1,
+      'truncated': false,
+    });
+    expect(tool.outputSchema['required'], ['matches', 'total', 'truncated']);
+  });
+
   test('find matches a glob and reports paths', () async {
     File(p.join(dir.path, 'one.dart')).writeAsStringSync('');
     Directory(p.join(dir.path, 'sub')).createSync();
@@ -112,6 +136,23 @@ void main() {
     expect(result.content, contains('one.dart'));
     expect(result.content, contains(p.join('sub', 'two.dart')));
     expect(result.content, isNot(contains('note.md')));
+  });
+
+  test('find returns its files as a structured value', () async {
+    File(p.join(dir.path, 'one.dart')).writeAsStringSync('');
+    final result = await FindTool().execute({'pattern': '*.dart'}, ctx);
+    expect(result.structured, {
+      'files': ['one.dart'],
+      'total': 1,
+      'truncated': false,
+    });
+    final none = await FindTool().execute({'pattern': '*.rs'}, ctx);
+    expect(none.content, 'No files match *.rs.');
+    expect(none.structured, {
+      'files': <String>[],
+      'total': 0,
+      'truncated': false,
+    });
   });
 
   group('BashTool', () {
@@ -149,6 +190,35 @@ void main() {
       expect(result.content, contains('exit code 0'));
     });
 
+    test('hands the runner the call\'s person-wait listener', () async {
+      final runner = _FakeCommandRunner(
+        const HarnessCommandResult(exitCode: 0, stdout: '', stderr: ''),
+      );
+      final reports = <bool>[];
+      await BashTool(runner).execute({
+        'command': 'true',
+        'description': 'Do nothing',
+      }, ctx.withPersonWait(reports.add));
+      runner.lastPersonWait!(true);
+      runner.lastPersonWait!(false);
+      expect(reports, [true, false]);
+    });
+
+    test('tells the runner which script\'s call the command belongs to',
+        () async {
+      final runner = _FakeCommandRunner(
+        const HarnessCommandResult(exitCode: 0, stdout: '', stderr: ''),
+      );
+      const args = {'command': 'true', 'description': 'Do nothing'};
+      await BashTool(runner).execute(args, ctx);
+      expect(runner.lastParentToolCallId, isNull);
+
+      await BashTool(
+        runner,
+      ).execute(args, ctx.withParentToolCallId('toolu_repl'));
+      expect(runner.lastParentToolCallId, 'toolu_repl');
+    });
+
     test('surfaces a policy denial as an error', () async {
       final runner = _FakeCommandRunner(
         HarnessCommandResult.deny('denied by policy'),
@@ -172,5 +242,30 @@ void main() {
       expect(result.isError, isTrue);
       expect(result.content, contains('boom'));
     });
+
+    test(
+      'returns output, exit code and timeout as a structured value',
+      () async {
+        final runner = _FakeCommandRunner(
+          const HarnessCommandResult(exitCode: 2, stdout: 'out', stderr: 'err'),
+        );
+        final tool = BashTool(runner);
+        final result = await tool.execute({
+          'command': 'false',
+          'description': 'Run a failing command',
+        }, ctx);
+        expect(result.content, 'exit code 2\nout\n[stderr]\nerr');
+        expect(result.structured, {
+          'output': 'out\n[stderr]\nerr',
+          'exit_code': 2,
+          'timed_out': false,
+        });
+        expect(tool.outputSchema['required'], [
+          'output',
+          'exit_code',
+          'timed_out',
+        ]);
+      },
+    );
   });
 }

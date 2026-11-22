@@ -2,7 +2,7 @@
 title: Evenimente de domeniu
 description: Catalog complet al celor 54 de evenimente de domeniu, al payload-urilor lor și al abonaților din partea serverului care le consumă.
 slug: ro-RO/manual/referinta/evenimente-de-domeniu
-sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
+sourceHash: f58123448c0f31c95774bbaebee89f1509940896
 ---
 
 ## Bus-ul de evenimente
@@ -24,7 +24,10 @@ Fiecare eveniment din catalogul de mai jos se află în acel singur director; nu
 | Eveniment          | Payload                                                | Se declanșează când                                     |
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | Spațiul de lucru este creat                             |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Agentul încheie o rulare (cu succes sau cu eroare)      |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Fluxul procesului agentului se încheie, înainte ca starea finală să fie scrisă. Păstrat doar pentru puntea conversației PR și pentru analiză |
+| `AgentRunSettled` | `agentId`, `workspaceId`, `runId`, `status`, `endReason`, `costMicros`, `wakeIds`, `spaceId?`, `conversationId?`, `limitResetsAt?`, `requestedByUserId?`, `wakeReason?` | Starea finală a unei rulări este scrisă; publicat exact o dată per rulare. `endReason` este `completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` sau `serverStopped`. Rularea unui subagent nu publică nimic |
+| `GoalSettled` | `goalId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `status`, `hold?`, `summary?`, `requestedByUserId?` | Un obiectiv se încheie sau începe să aștepte revizuirea unei persoane |
+| `WakeRuleEnded` | `ruleId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `reason`, `requestedByUserId?` | Un program sau o urmărire se încheie (și-a îndeplinit unica declanșare, a expirat, și-a consumat rulările sau costul, a fost anulat, obiectivul lui s-a încheiat, persoana lui a plecat) |
 | `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | Un agent începe să aștepte un om: o aprobare, o întrebare `ask_user` sau o rulare oprită din cauza credențialelor (`kind` este `approval`, `question` sau `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Un repo este înregistrat; declanșează indexarea codului în fundal |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Un skill este instalat sau actualizat, purtând verdictul scanării lanțului de aprovizionare |
@@ -57,6 +60,16 @@ Toate șase poartă `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle
 | `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | Cineva te-a menționat într-un comentariu de PR sau într-un comentariu de revizuire |
 | `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | Cineva a răspuns într-un fir de revizuire în care te afli                     |
 | `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | Cineva a marcat ca rezolvat un fir de revizuire în care te afli               |
+
+### Urmărirea pull request-ului
+
+Publicat de interogarea pull request-urilor deschise, pentru fiecare pull request pe care îl interoghează, indiferent cine l-a scris, pentru urmăririle `on:pr_*` ale agenților. Toate trei poartă `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `headRef` și `authorLogin`.
+
+| Eveniment | Payload suplimentar | Se declanșează când |
+| ----------------------- | ----------------------------------------------- | ---------- |
+| `PrWatchChecksSettled` | `passing`, `failedChecks`, `failedCheckUrl?` | Fiecare verificare a capului pull request-ului s-a terminat |
+| `PrWatchReviewActivity` | `decision`, `decisionChanged`, `newComments` | Pull request-ul a primit o revizuire sau comentarii noi |
+| `PrWatchClosed` | `merged` | Pull request-ul a fost îmbinat sau închis |
 
 ## Evenimente de mesagerie
 
@@ -167,14 +180,20 @@ Fiecare abonat de mai jos este construit în interiorul `runCcServer` (sau al un
 | Provisionarea spațiului de chat (inline) | `SpaceCreated`                                                                                   |
 | `PipelineTriggerDispatcher`         | Fiecare `DomainEvent`; fiecare trigger activ filtrează după propriul tip                             |
 | `SubPipelineResumeListener`         | `PipelineRunCompleted`, `PipelineRunFailed`                                                          |
-| `PipelineCostRollupListener`        | `AgentRunCompleted`                                                                                  |
-| `BudgetEvaluationListener`          | `AgentRunCompleted`                                                                                  |
+| `PipelineCostRollupListener`        | `AgentRunSettled`                                                                                    |
+| `BudgetEvaluationListener`          | `AgentRunSettled`                                                                                    |
 | `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (doar rulările `meeting_summary`) |
-| `PipelineStepResumeListener`        | `AgentRunCompleted`                                                                                  |
-| `AgentRunTaskCompleter`             | `AgentRunCompleted`                                                                                  |
-| `GoalSupervisor`                    | `AgentRunCompleted`                                                                                  |
-| `CheckerDispatchListener`           | `AgentRunCompleted`                                                                                  |
-| `TeamRoutingService`                | `AgentRunCompleted`, `TicketAssigned`                                                                |
+| `PipelineStepResumeListener`        | `AgentRunSettled`                                                                                    |
+| `AgentRunTaskCompleter`             | `AgentRunSettled`                                                                                    |
+| `GoalSupervisor`                    | `AgentRunSettled` — decide următorul pas al obiectivului                                             |
+| `CheckerDispatchListener`           | `AgentRunSettled` — pune verificatorul în coadă ca trezire; sare peste segmentele și revizuirile obiectivului |
+| `TeamRoutingService`                | `AgentRunSettled`, `TicketAssigned`                                                                  |
+| `WakeQueueService` | `AgentRunSettled` — livrează treziri care au așteptat încheierea rulării |
+| `WakeRuleService` | `AgentRunSettled` (buclele care își stabilesc singure ritmul), `GoalSettled` (încheie programele unui obiectiv), `PrWatch*`, `EnvironmentProcessExited`, `EnvironmentReady`, încheierile de tichete și rulări de pipeline (urmăriri), `WorkspaceMemberRemoved` (încheie programele acelei persoane) |
+| `PeerAskService` | `AgentRunSettled` — răspunde la întrebările pe care și le-au pus agenții și trezește cel care a întrebat |
+| `LimitParkService` | `AgentRunSettled` cu `usageLimit` — așteaptă resetarea providerului |
+| `ImprovementReviewService` | `GoalSettled` (un obiectiv verificat) și `AgentRunSettled` — pune în coadă revizuirea de îmbunătățire și citește rezultatul ei |
+| Pas de obiectiv de pipeline (`goal.pursue`) | `GoalSettled`, `AgentRunSettled`, `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` — reia pasul, taxează orchestrarea și urmărește rularea de pipeline |
 | `OrchestrationRunListener`          | `PipelineRunCancelled`, `PipelineRunFailed`                                                          |
 | `MultiVendorTicketSyncCoordinator`  | `TicketCreated`, `TicketAssigned`, `TicketReassigned`, `TicketStatusChanged`, `TicketDetailsUpdated` |
 | `WorktreeGcListener`                | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`         |
@@ -234,6 +253,8 @@ așteptare înseamnă un singur eveniment; când așteptarea se încheie, nu se
 publică nimic.
 
 Cele cinci categorii de PR-uri proprii poartă `forUserId`, așa că ajung la autor, nu la toată lumea din spațiul de lucru.
+
+Cinci cadre pentru munca de lungă durată, fiecare adresat persoanei căreia îi privește (`for_user_id`): `notifications/goal_settled` (din `GoalSettled`), `notifications/wake_rule_ended` (din `WakeRuleEnded`), `notifications/improvement_proposed`, `notifications/pipeline_run_held` (o rulare de pipeline reținută la plafonul de cost al orchestrării sale) și `notifications/waiting_digest` (o dată pe zi, ce așteaptă o persoană). Fiecare poartă `notification_kind`: `notify` corespunde lui `agentRunCompleted`, iar `question` și `review` corespund lui `agentAwaitingInput`. Fiecare cadru care notifică poartă acum `notification_kind`, iar un cadru cu `quiet: true` (un program care s-a încheiat, un obiectiv care s-a încheiat) ajunge în centrul de notificări fără toast, sunet sau notificare push zgomotoasă.
 
 `RemoteEventForwarder` retransmite în plus `TicketReassigned` ca `notifications/ticket_reassigned` și fiecare `TaskLifecycleEvent` ca `notifications/task_<phase>`. Niciuna nu se mapează la o categorie de notificări — ele conduc interfața live, nu centrul de notificări. Evenimentele de apartenență nu sunt retransmise ca frame-uri: ele invalidează cache-ul forwarder-ului, iar gazdele de sesiune elimină abonamentele la spațiile de lucru ale membrului eliminat.
 

@@ -212,6 +212,10 @@ const Map<String, PipelineNodeVisual> kPipelineNodeTypeVisuals = {
     icon: AppIcons.layers,
     category: PipelineNodeCategory.flow,
   ),
+  'goal.pursue': PipelineNodeVisual(
+    icon: AppIcons.target,
+    category: PipelineNodeCategory.agents,
+  ),
   'team.dispatch': PipelineNodeVisual(
     icon: AppIcons.users,
     category: PipelineNodeCategory.agents,
@@ -243,13 +247,8 @@ const Map<String, PipelineNodeVisual> kPipelineNodeTypeVisuals = {
 };
 
 /// Icon + category for a library [NodeType.id].
-PipelineNodeVisual visualForNodeTypeId(String id) {
-  return kPipelineNodeTypeVisuals[id] ??
-      const PipelineNodeVisual(
-        icon: AppIcons.circle,
-        category: PipelineNodeCategory.flow,
-      );
-}
+PipelineNodeVisual visualForNodeTypeId(String id) =>
+    kPipelineNodeTypeVisuals[id] ?? visualForStepKind(StepKind.listen);
 
 /// Fallback glyph when a step's body key is not in the library (the mandatory
 /// trigger node, built-in bodies that have no palette entry).

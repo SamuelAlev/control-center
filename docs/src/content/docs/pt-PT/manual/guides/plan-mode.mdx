@@ -2,7 +2,7 @@
 title: Usar o modo plano
 description: Coloque um espaço em modo plano, obtenha um plano tipado e aprove-o para dar origem a trabalho em execução.
 slug: pt-PT/manual/guias/modo-plano
-sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
+sourceHash: accf49606e5e8597d3ea76e3274f08d3854996dc
 ---
 
 Este guia mostra como obter um plano estruturado de um agente antes de este
@@ -117,11 +117,7 @@ de `exit_plan_mode` pelo agente muda o espaço do modo plano para o modo agente 
 desbloqueia as suas ferramentas que alteram estado. Uma rejeição permite-lhe abrir
 um novo pedido com base num plano revisto.
 
-Para sair do modo plano, mude o seletor do compositor (ou use Shift+Tab) ou
-aprove o plano submetido. O `exit_plan_mode` abre uma aprovação duradoura
-decidida com a ferramenta MCP `decide_approval`. A sobreposição de barreiras para
-chamadas de ferramentas bloqueadas é outra fila, mantida em memória, e não
-transporta pedidos de saída do modo plano.
+Para sair do modo plano, mude o seletor do compositor (ou use Shift+Tab) ou aprove o plano submetido. O `exit_plan_mode` abre uma aprovação duradoura, que uma execução de agente decide com a ferramenta MCP `decide_approval`. A sobreposição de barreiras para chamadas de ferramentas bloqueadas é outra fila, mantida em memória, e não transporta pedidos de saída do modo plano.
 
 ## O modo plano num passo de pipeline
 

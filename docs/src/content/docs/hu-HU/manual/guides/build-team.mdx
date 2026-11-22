@@ -2,7 +2,7 @@
 title: Ügynökcsapat felépítése
 description: Csoportosítsa az ügynököket egy vezető alá, hogy a hozzárendelt munka egyetlen koordinátoron keresztül fusson.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/ugynokcsapat-felepitese
-sourceHash: fc5e2b8c8a49e398ff1b322fcfb25c4aed84bbb4
+sourceHash: 55add2d16bf90650b7d4cbda7aa78f0fdf1b72e2
 ---
 
 Ez az útmutató bemutatja, hogyan hozhat létre csapatot, hogyan adhat neki vezetőt, és hogyan irányíthatja hozzá a munkát.
@@ -51,7 +51,7 @@ Amikor egy jegyen valóban szerepel csapathozzárendelés:
 
 1. A csapat vezetője kiosztásra kerül a jeggyel, annak működési utasításaival és a tagok névsorával együtt.
 2. A vezető delegál a tagoknak, és rögzíti a kiértékelését a `record_team_activity` eszközzel — `action` (delegált), `no_action` (nincs több teendő, ami leállítja a további újraaktiválásokat) vagy `failed`.
-3. Minden befejeződő tagfuttatás újra felébreszti a vezetőt; ennek határt szab a nincs művelet őr.
+3. Az a csapattag-futtatás, amelyet a vezető egy `@mention`-nel vagy üzenettel indított, újraébreszti a vezetőt, amikor véget ér, abban a beszélgetésben, ahonnan a vezető ébresztette, a „nincs teendő” őr korlátjával. Az a munka, amelyet a vezető a `delegate_task`-kal adott át, akkor ébreszti fel, amikor a jegy lezárul, a `ask_agent`-tel feltett kérdésre pedig a válasszal (lásd: [Ügynökök együttműködése](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynokok-egyuttmukodese/)).
 
 A pipeline **Team dispatch** csomópontja a másik belépési pont. Egy csapatazonosítót, egy promptot és egy kiosztási módot vár:
 

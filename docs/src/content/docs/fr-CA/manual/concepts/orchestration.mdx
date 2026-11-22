@@ -2,7 +2,7 @@
 title: Orchestration
 description: Comment une “grosse demande” devient un plan de toute l’équipe que vous approuvez une seule fois, puis un pipeline généré qui l’exécute.
 slug: fr-CA/manuel/concepts/orchestration
-sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
+sourceHash: db1bbceaba025b64539588004eebb65d944d5933
 ---
 
 Un seul agent est bon pour une chose. Certaines demandes dépassent cela : “étudier
@@ -39,13 +39,8 @@ et exécuter, plutôt que de la prose libre. Une proposition comporte :
 - **Synthèse** : l’étape finale qui produit le livrable.
 - **Budget** : un plafond de coût déclaré.
 
-:::caution[Le budget est indicatif]
-Le plafond de coût de la proposition est comparé au total estimé du plan et
-signale un plan hors budget dans la barre d’approbation _avant_ que vous
-approuviez. Rien ne le lit une fois l’exécution lancée; il n’arrête donc pas et
-ne fait pas échouer une orchestration qui dépasse les prévisions. Les politiques
-de budget par agent et par espace de travail constituent un autre mécanisme, et
-ce sont elles qui suspendent réellement les dépenses.
+:::caution[Le budget retient l’exécution, il ne la tue pas]
+Le plafond de coût de la proposition est comparé au total estimé du plan et signale un plan hors budget dans la barre d’approbation _avant_ que vous approuviez. Une fois l’exécution lancée, le serveur vérifie ce qu’elle a dépensé avant chaque nouvelle étape : au plafond, l’exécution du pipeline est retenue (`suspended`, raison `orchestration_budget`) et rien de nouveau ne démarre, tandis que les étapes déjà en cours se terminent. Quiconque a demandé l’exécution en est avisé et la reprend avec **Relever le plafond** sur la page de l’exécution du pipeline (un admin de l’espace de travail si personne ne l’a demandée). Une hausse du plafond doit dépasser l’ancien plafond et ce qui a été dépensé, sans excéder 1 000 dollars, et un plafond n’est jamais retiré. Les objectifs que l’exécution poursuit comptent contre elle, y compris leurs révisions. Les politiques de budget par agent et par espace de travail constituent un autre mécanisme.
 :::
 
 ## Où l’examiner

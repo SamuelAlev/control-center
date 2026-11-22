@@ -74,6 +74,8 @@ const Set<String> _workspaceTools = {
   'find',
   'search_files',
   'bash',
+  'bash_output',
+  'bash_kill',
   'lsp',
   'lsp_rename',
   'ast_grep',
@@ -81,6 +83,7 @@ const Set<String> _workspaceTools = {
   'resolve',
   'checkpoint',
   'rewind',
+  'compact',
   'web_fetch',
   'web_search',
 };
@@ -90,6 +93,8 @@ const Set<String> _workspaceTools = {
 /// Order encodes precedence where vocabularies overlap — `ticket_pr_link`
 /// is ticketing before it is forge, and `publish_review_to_github` is review
 /// before it is forge.
+final RegExp _prWord = RegExp(r'(^|_)prs?(_|$)');
+
 final List<(ToolCategory, bool Function(String))> _rules = [
   (ToolCategory.workspace, _workspaceTools.contains),
   (ToolCategory.ticketing, (n) => n.contains('ticket') || n.contains('todo')),
@@ -99,7 +104,10 @@ final List<(ToolCategory, bool Function(String))> _rules = [
   // knowledge.
   (
     ToolCategory.artifacts,
-    (n) => n.contains('artifact') || n.contains('output'),
+    (n) =>
+        n.contains('artifact') ||
+        n.contains('output') ||
+        n.contains('work_product'),
   ),
   (
     ToolCategory.memory,
@@ -127,8 +135,9 @@ final List<(ToolCategory, bool Function(String))> _rules = [
   (
     ToolCategory.forge,
     (n) =>
-        n.contains('_pr') ||
-        n.contains('pr_') ||
+        // `pr` as a word of the name: as a bare substring it also files
+        // presence, profile and product tools here.
+        _prWord.hasMatch(n) ||
         n.contains('pull_request') ||
         n.contains('github') ||
         n.contains('gitlab') ||

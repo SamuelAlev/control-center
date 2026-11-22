@@ -2,7 +2,7 @@
 title: Guardraily — jedna politika pro každou měnící akci
 description: Proč Control Center vede každý vedlejší efekt agenta jedním enginem allow/prompt/deny, proč taxonomie ActionClass zůstává schválně malá a co volič autonomie skutečně mění.
 slug: cs-CZ/prirucka/koncepty/guardraily
-sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
+sourceHash: bb98b2ca26ae104ab7701d4d381cd5c41d25d32f
 ---
 
 Agenti v Control Center mohou mazat soubory, odesílat větve, publikovat pull
@@ -27,6 +27,17 @@ dosáhnout. `cc_server` použije sandbox tam, kde hostitel nabízí backend, ale
 [Windows žádný nenabízí a Linux potřebuje `bwrap` a `socat`](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/).
 Na těch hostitelích startují jen běhy vlastníka serveru, pokud vlastník nevypnul sandbox pro všechny přepínačem `--sandbox off`. U každého běhu, který startuje bez sandboxu, jsou guardraily nejvnější vrstvou vynucení, ne politikou položenou na podlahu. To se hodí vědět, když se rozhoduješ, jak volné
 nastavení zvolit.
+
+### Volání, která skript provádí
+
+Skript [režimu kódu](/cs-CZ/prirucka/koncepty/rezim-kodu/) volá nástroje v kódu, mnoho najednou, ale každé jeho volání je samostatné volání nástroje vůči enginu. Prochází stejnou bránou harnessu nebo dispečera MCP jako přímé volání, se stejnými pravidly, stejnou výzvou ke schválení a stejným záznamem v auditu, a nic z toho, co dělá, není schváleno jen proto, že ho spustilo volání `repl`.
+
+Pro volání ze skriptu platí dvě zvláštní pravidla, protože jeden skript může provést stovky volání a každé odmítnutí zachytit:
+
+- nejvýše 10 jeho volání dosáhne člověka ke schválení; pozdější, která by člověka potřebovala, se odmítnou bez karty;
+- jakmile člověk odmítne jedno z jeho volání, zbylá volání, která potřebují schválení, se odmítnou bez dotazu.
+
+Karta vyvolaná skriptem to uvádí a umožňuje otevřít skript. Pokud skript skončí, zatímco je karta otevřená, karta se stáhne a odpověď, která přijde potom, se zapíše jako zamítnutí a nic neschválí.
 
 ## ActionClass: schválně uzavřená taxonomie
 
@@ -246,5 +257,6 @@ rozsah dají stejné rozhodnutí. Odpověď sondy je odpověď, kterou dostane a
 ## Související koncepty
 
 - [Sandbox a zabezpečení](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/): co běh agenta skutečně omezuje a jak daleko sahá podlaha operačního systému pod tímhle enginem
+- [Režim kódu](/cs-CZ/prirucka/koncepty/rezim-kodu/): skripty, jejichž každé volání nástroje prochází tímto enginem
 - [Multiplayer — identita, členství a přítomnost](/cs-CZ/prirucka/koncepty/multiplayer/): prostory, principálové a kde volič autonomie žije
 - [Nastavte guardraily](/cs-CZ/prirucka/navody/nastaveni-guardrailu/): jak pravidla v praxi napsat a vyzkoušet

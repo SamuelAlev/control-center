@@ -133,6 +133,8 @@ class _Fixture {
       AgentInputResolved(workspaceId: workspace, waitId: id, occurredAt: now);
 
   DispatchSession session() => DispatchSession(
+    freshHistory: false,
+    readOnly: false,
     deps: SandboxDispatchDeps(
       hostExecution: const HostExecutionGate(
         posture: HostExecutionPosture.offByOwner,
@@ -367,7 +369,7 @@ void main() {
       await f.sandbox.started.future;
       f.bus.publish(f.question('question-1'));
       await _deliver();
-      await session.stop();
+      await session.stop(summary: kRunStoppedByShutdownSummary);
       expect(session.silenceTimer, isNull);
       // Shutdown stops the child itself; nothing may stop it a second time.
       expect(f.sandbox.destroyed, isTrue);

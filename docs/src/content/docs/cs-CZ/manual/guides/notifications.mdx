@@ -2,7 +2,7 @@
 title: Nastavte oznámení
 description: Zapni nebo vypni kategorie, nastav tiché hodiny a zvuk a zjisti, která oznámení k tobě dorazí a kam.
 slug: cs-CZ/prirucka/navody/oznameni
-sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
+sourceHash: b1e5bb3b8a13bbbbd169916ab8e7cd7bdd403c1a
 ---
 
 Tenhle návod ukazuje, jak nastavit oznámení a co které nastavení opravdu
@@ -48,6 +48,8 @@ Telefonní klient nemá plochu oznámení vůbec.
 
 Co v tomhle seznamu není, oznámit ani filtrovat nejde. Kategorie „všechno
 ostatní“ neexistuje.
+
+Dlouhotrvající práce používá první dvě kategorie. Cíl, který skončil, a plán, který skončil, se počítají jako **Agent dokončil**; cíl čekající na vaši kontrolu, navržená úprava, běh pipeline podržený na stropu nákladů a denní přehled toho, co čeká na vás, se počítají jako **Agent na vás čeká**. Každé se dostane k osobě, které se týká: tomu, kdo spustil cíl, plán nebo běh.
 
 **Agent na vás čeká** se spustí, jakmile začne čekání:
 čekající schválení (včetně povolení ke spuštění příkazů v sandboxu a schválení
@@ -115,6 +117,8 @@ Oznámení se potichu zahodí, když platí cokoli z tohoto:
 
 Tyhle kontroly platí pro systémové toasty. Trvalý zvonek událost pořád zapíše.
 
+Některá oznámení jsou **tichá**: server je označí, takže se dostanou do zvonku bez toastu, zvuku nebo hlasitého push na telefonu. Plán, který skončil, a cíl, který skončil, jsou tichá. Cíl čekající na vaši kontrolu tichý není.
+
 Další dvě potlačení jsou výš, v tom, co server vůbec pošle:
 
 - Zpráva od jiného člověka, ve které tě nikdo nezmínil, se oznámením nikdy
@@ -124,9 +128,7 @@ Další dvě potlačení jsou výš, v tom, co server vůbec pošle:
 - Prostory, kde si agenti píšou mezi sebou, jsou v postranním panelu ztlumené,
   takže člověku nikdy nezvednou odznak nepřečtených
 
-Uvnitř prostoru není tichý kout. Oznamuje se každá konverzace stejně, včetně
-vláken. Stav přečtení patří k prostoru, takže nepřečtené se sčítá přes jeho
-konverzace a nesleduje se po jedné konverzaci.
+Uvnitř prostoru není tichý kout. Oznamuje se každá konverzace stejně, včetně vláken. Stav přečtení se sleduje po jednotlivých konverzacích a prostor je nepřečtený, dokud je nepřečtená některá z jeho konverzací.
 
 ## Přečti a vymaž centrum oznámení
 
@@ -176,6 +178,8 @@ značka načte.
 Zkontroluj, že už nejsi v prostoru, kde se to stalo. Aktivní trasa potlačí
 vlastní systémový toast. Ve sdíleném prostoru upozorní běh, který spustil někdo
 jiný, jeho, ne tebe. Tah, který skončil bez odpovědi i bez chyby, nepošle nic.
+
+Běh, který spustil plán nebo sledování a který skončí bez potíží, nepošle nic, pokud nikoho nezmíní. Dokončený cíl nebo skončený plán jde do zvonku bez toastu.
 
 ## Související návody
 

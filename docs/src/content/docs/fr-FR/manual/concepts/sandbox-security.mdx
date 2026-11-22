@@ -2,7 +2,7 @@
 title: Bac à sable et sécurité
 description: Ce qui limite réellement un agent dans Control Center aujourd'hui, jusqu'où va le bac à sable du système d'exploitation et quelles frontières tiennent sur un hôte dépourvu de backend.
 slug: fr-FR/manuel/concepts/bac-a-sable-et-securite
-sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
+sourceHash: 7644c97911f685ef5084875fb16f1006f21ea940
 ---
 
 :::note[Là où le bac à sable du système d'exploitation agit, et où il ne va pas]
@@ -56,6 +56,8 @@ La même règle s'applique aux petits mécanismes qui lancent un processus pour 
 - **Les assistants rapides qui passent par une CLI ACP** : titres de conversation, `/btw`, `/handoff` et `/goal`. Lorsque le serveur met les agents en bac à sable, ils s'exécutent dans le bac à sable, dans une session à eux. Sous `--sandbox off`, ils s'exécutent sans confinement. Sans bac à sable disponible, ils ne tournent que pour les demandes dont le propriétaire du serveur répond ; pour les autres, ils sont ignorés : aucun titre n'est généré, et une question annexe signale que Content synthesizer n'a pas de runner fonctionnel. Les assistants qui ne lancent aucun outil ne sont pas concernés.
 - **Les tests dorés d'une pull request** dans la vérification visuelle de Review Studio suivent la même règle.
 - **Les processus d'outils et `bash`** d'une exécution ne basculent jamais sur l'hôte. Si le serveur est réglé pour mettre les agents en bac à sable mais n'a pas de bac à sable à donner à une exécution, celle-ci est refusée.
+- **Les vérifications d'un objectif** s'exécutent dans un bac à sable à usage unique sur le worktree de la conversation, confiné comme le `bash` de l'agent. Sans bac à sable, elles ne s'exécutent pas et l'objectif s'arrête pour une personne ; avec `--sandbox off`, elles s'exécutent comme le `bash` de l'agent.
+- **La revue d'un objectif** s'exécute en lecture seule sur chaque adaptateur : lecture seule, worktrees montés en lecture seule, pas de `bash`, pas de sous-agents, pas de web. Un adaptateur qui ne peut pas garder une exécution en lecture seule (un agent ACP) n'est pas utilisé pour la revue.
 
 ## Ce qui limite réellement un agent
 
@@ -326,6 +328,24 @@ refusé apparaît dans la transcription plutôt que seulement dans un journal. L
 télémétrie n'existe que tant qu'un bac à sable natif encapsule réellement le
 processus — sur un hôte dépourvu de backend, il n'y a rien à observer. Elle est également sans rapport avec les garde-fous : une violation provient d'un appel système refusé, jamais d'une résolution de règle.
 
+## Scripts en mode code
+
+Les scripts du [mode code](/fr-FR/manuel/concepts/mode-code/) forment un cas à part, et ils ne dépendent pas du tout du bac à sable de l'agent. Un script ne s'exécute jamais dans le serveur ni dans le bac à sable de l'agent. Il s'exécute dans son propre processus, `cc_codemode`, un programme fourni avec le serveur, qui se verrouille avant de lire le script et indique quelles étapes du verrouillage ont pris effet. Le serveur n'envoie le script que lorsque le verrouillage est complet.
+
+| Hôte | Ce que l'exécuteur applique à lui-même |
+| --- | --- |
+| Linux | Une liste blanche d'appels système (seccomp) qui ne lui laisse guère plus que la lecture de son entrée, l'écriture de sa sortie, la gestion de sa propre mémoire, la lecture des horloges et la sortie ; pas de nouveaux privilèges ni de capacités ; aucun vidage mémoire (core dump) ; aucune écriture de fichiers, aucun nouveau processus et trois descripteurs de fichiers ouverts au plus ; 3 GiB d'espace d'adressage ; une limite stricte de temps processeur. Landlock est ajouté là où le noyau le permet. |
+| macOS | Un profil de bac à sable qui refuse par défaut, et qui refuse aussi les informations sur les processus, les vérifications d'existence de fichiers, les informations système et matérielles et les appels noyau associés ; pas de vidage mémoire, pas d'écriture de fichiers et une limite stricte de temps processeur. |
+| Windows | Un nouvel AppContainer pour chaque script, dans un job qui n'autorise qu'un processus, 3 GiB de mémoire et aucune interface utilisateur, avec le code dynamique, les processus enfants et les appels win32k désactivés. **Pas encore exécuté sous Windows.** |
+
+L'exécuteur démarre sans variable d'environnement, sans fichier ouvert autre que son entrée et sa sortie, et sans identifiant. Tout ce qu'il peut faire hors de sa propre mémoire se résume à demander au serveur d'exécuter un outil, et le serveur exécute cet appel avec le même filtre de mode, les [garde-fous](/fr-FR/manuel/concepts/garde-fous/) et les approbations qu'un appel direct.
+
+Le serveur vérifie tout cela au démarrage : il exécute l'auto-test de l'exécuteur, qui applique le verrouillage, tente de lire et de créer des fichiers, d'ouvrir une connexion réseau et de lancer un processus (et davantage sur chaque système), puis exécute de vrais scripts sous ce verrouillage. Si quoi que ce soit n'est pas refusé, le serveur n'exécute aucun script sur cette machine : aucune exécution ne reçoit `repl`, et le serveur indique pourquoi au démarrage et sur la page des réglages du mode code. Un exécuteur qui n'est pas un build de publication est refusé de la même manière. Il n'existe aucun repli moins restrictif.
+
+L'exécuteur indique aussi l'endroit du script où chaque appel a été fait, afin que la conversation puisse montrer la structure du script. Le serveur vérifie cette position par rapport au script et ne l'utilise que pour l'affichage : elle ne décide jamais si un appel est autorisé, et elle ne figure pas dans l'audit des garde-fous.
+
+Ce que cela ne couvre pas : un script peut toujours faire tout ce que les outils de l'exécution autorisent, car ses appels d'outils sont de vrais appels d'outils ; sur macOS, il peut encore savoir si un identifiant de processus existe ; et une faille dans le moteur JavaScript ou dans le noyau est contenue par le verrouillage, mais n'est pas exclue par lui.
+
 ## Les confirmations viennent des garde-fous, pas du bac à sable
 
 Le bac à sable n'a aucun chemin d'approbation. Il se lance, exécute, émet des
@@ -348,6 +368,7 @@ est le seul endroit qui énonce ce qui peut être vérifié à la main.
 
 ## Concepts liés
 
+- [Mode code](/fr-FR/manuel/concepts/mode-code/) : scripts qui appellent des outils, et l'exécuteur qui les confine
 - [Rigs et enceintes](/fr-FR/manuel/concepts/rigs/) : l'étape au-dessus du bac à sable — quand le travail exige une machine jetable entière avec une frontière de noyau, et non un processus encapsulé
 - [Garde-fous](/fr-FR/manuel/concepts/garde-fous/) : la couche de politiques au-dessus du plancher du système d'exploitation, et l'origine réelle des approbations
 - [Cycle de vie du lancement d'un agent](/fr-FR/manuel/concepts/cycle-de-vie-du-lancement/) : où l'isolation s'inscrit dans le flux de lancement

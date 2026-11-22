@@ -15,9 +15,18 @@ import 'package:cc_domain/core/domain/value_objects/run_cost.dart'
     show CostBasis;
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart'
     show TurnOutcome, turnOutcomeToString;
-import 'package:cc_domain/features/dispatch/domain/entities/agent_goal_run.dart'
-    show AgentGoalKind, AgentGoalKindWire;
+import 'package:cc_domain/core/domain/value_objects/wake_context.dart'
+    show WakeReasonWire;
+import 'package:cc_domain/features/code_mode/domain/value_objects/code_execution_status.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_goal_status.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/goal_hold.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/goal_unattended_policy.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/improvement_values.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/peer_ask_values.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/wake_rule_values.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/wake_trigger.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/wake_values.dart';
 import 'package:cc_domain/features/evals/domain/entities/skill_evaluation_campaign.dart'
     show SkillEvaluationCampaignStatus;
 import 'package:cc_domain/features/evals/domain/value_objects/eval_stored_values.dart';
@@ -250,15 +259,75 @@ abstract final class AgentsStoredValues {
     for (final v in ProtocolFamily.values) v.name,
   ];
 
-  /// `agent_goal_runs.kind`.
-  static final List<String> agentGoalKind = [
-    for (final v in AgentGoalKind.values) v.wire,
-  ];
-
   /// `agent_goal_runs.status`.
   static final List<String> agentGoalStatus = [
     for (final v in AgentGoalStatus.values) v.wire,
   ];
+
+  /// `agent_goal_runs.hold`.
+  static final List<String> goalHold = GoalHoldWire.wireNames;
+
+  /// `agent_goal_runs.unattended`.
+  static final List<String> goalUnattendedPolicy =
+      GoalUnattendedPolicyWire.wireNames;
+
+  // --- wakes, wake rules, peer asks, improvement proposals ---
+
+  /// `agent_wakes.reason`.
+  static final List<String> wakeReason = WakeReasonWire.wireNames;
+
+  /// `agent_wakes.lane`.
+  static final List<String> wakeLane = WakeLaneWire.wireNames;
+
+  /// `agent_wakes.state`.
+  static final List<String> wakeState = WakeStateWire.wireNames;
+
+  /// `wake_rules.trigger_kind`.
+  static const List<String> wakeTriggerKind = WakeTrigger.kinds;
+
+  /// `wake_rules.event_kind`.
+  static final List<String> wakeEventKind = WakeEventKindWire.wireNames;
+
+  /// `wake_rules.deliver`.
+  static final List<String> wakeDeliver = WakeDeliverWire.wireNames;
+
+  /// `wake_rules.when_busy`.
+  static final List<String> wakeWhenBusy = WakeWhenBusyWire.wireNames;
+
+  /// `wake_rules.origin`.
+  static final List<String> wakeRuleOrigin = WakeRuleOriginWire.wireNames;
+
+  /// `wake_rules.status`.
+  static final List<String> wakeRuleStatus = WakeRuleStatusWire.wireNames;
+
+  /// `wake_rules.end_reason`.
+  static final List<String> wakeRuleEndReason = WakeRuleEndReasonWire.wireNames;
+
+  /// `peer_asks.kind`.
+  static final List<String> peerAskKind = PeerAskKindWire.wireNames;
+
+  /// `peer_asks.mode`.
+  static final List<String> peerAskMode = PeerAskModeWire.wireNames;
+
+  /// `peer_asks.status`.
+  static final List<String> peerAskStatus = PeerAskStatusWire.wireNames;
+
+  /// `improvement_proposals.kind`.
+  static final List<String> improvementKind = ImprovementKindWire.wireNames;
+
+  /// `improvement_proposals.scope`.
+  static final List<String> improvementScope = ImprovementScopeWire.wireNames;
+
+  /// `improvement_proposals.operation`.
+  static final List<String> improvementOperation =
+      ImprovementOperationWire.wireNames;
+
+  /// `improvement_proposals.status`.
+  static final List<String> improvementStatus = ImprovementStatusWire.wireNames;
+
+  /// `improvement_proposals.campaign_state`.
+  static final List<String> improvementCampaignState =
+      ImprovementCampaignStateWire.wireNames;
 
   // --- runs ---
 
@@ -292,6 +361,9 @@ abstract final class AgentsStoredValues {
     for (final v in RunErrorFamily.values) v.name,
   ];
 
+  /// `agent_run_logs.end_reason`.
+  static final List<String> runEndReason = RunEndReasonWire.wireNames;
+
   /// `agent_run_logs.output_contract_mode`.
   static final List<String> outputContractMode = [
     for (final v in OutputContractMode.values) v.toStorageString(),
@@ -311,6 +383,26 @@ abstract final class AgentsStoredValues {
   static final List<String> llmCallOutcome = [
     for (final v in LlmCallOutcome.values) v.wire,
   ];
+
+  // --- code mode ---
+
+  /// `code_executions.status`.
+  static final List<String> codeExecutionStatus = CodeExecutionStatus.wireNames;
+
+  /// `code_executions.error_kind`.
+  static const List<String> codeExecutionErrorKind =
+      CodeExecutionErrorKind.values;
+
+  /// `code_executions.surface`.
+  static final List<String> codeExecutionSurface =
+      CodeExecutionSurface.wireNames;
+
+  /// `code_execution_calls.status`.
+  static final List<String> nestedCallStatus = NestedCallStatus.wireNames;
+
+  /// `code_execution_calls.gate_decision`.
+  static final List<String> nestedCallGateDecision =
+      NestedCallGateDecision.wireNames;
 
   // --- pipelines ---
 

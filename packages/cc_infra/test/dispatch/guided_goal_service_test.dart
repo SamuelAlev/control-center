@@ -206,4 +206,33 @@ Ask me if stuck.
     expect(step.question, isNull);
     expect(step.unavailable, isFalse);
   });
+
+  test('criteria past the contract limit are asked about, never cut', () async {
+    final thirteen = [for (var i = 1; i <= 13; i++) '- criterion $i'].join('\n');
+    final draft = _completeObjective.replaceFirst(
+      '`fvm flutter test test/auth` exits 0.',
+      thirteen,
+    );
+    final step = await build(_ScriptedRunner([draft])).step(
+      workspaceId: 'ws',
+      requestedByUserId: 'user-1',
+      roughObjective: 'fix auth',
+    );
+    expect(step.isReady, isFalse);
+    expect(step.question, contains('at most 12 items; this has 13'));
+  });
+
+  test('a criterion longer than 300 characters is asked about', () async {
+    final draft = _completeObjective.replaceFirst(
+      '`fvm flutter test test/auth` exits 0.',
+      '- ${'x' * 301}',
+    );
+    final step = await build(_ScriptedRunner([draft])).step(
+      workspaceId: 'ws',
+      requestedByUserId: 'user-1',
+      roughObjective: 'fix auth',
+    );
+    expect(step.isReady, isFalse);
+    expect(step.question, contains('at most 300 characters'));
+  });
 }

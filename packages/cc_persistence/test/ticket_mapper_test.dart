@@ -47,6 +47,7 @@ void main() {
     assignedAgentId: 'agent-1',
     assignedTeamId: 'team-1',
     delegatedByAgentId: 'agent-0',
+    delegatedFromConversationId: 'conv-9',
     spaceId: 'chan-1',
     errorMessage: null,
     linkedPrIds: const ['PR_1'],
@@ -93,6 +94,7 @@ void main() {
     expect(restored.assignedAgentId, ticket.assignedAgentId);
     expect(restored.assignedTeamId, ticket.assignedTeamId);
     expect(restored.delegatedByAgentId, ticket.delegatedByAgentId);
+    expect(restored.delegatedFromConversationId, 'conv-9');
     expect(restored.spaceId, ticket.spaceId);
     expect(restored.projectId, ticket.projectId);
     expect(restored.linkedPrIds, ticket.linkedPrIds);

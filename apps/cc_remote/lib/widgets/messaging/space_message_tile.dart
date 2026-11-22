@@ -12,6 +12,7 @@ import 'package:cc_remote/widgets/agent_transcript.dart';
 import 'package:cc_remote/widgets/messaging/sent_attachments.dart';
 import 'package:cc_remote/widgets/messaging/space_message_sender.dart';
 import 'package:cc_remote/widgets/messaging/user_question_tile.dart';
+import 'package:cc_remote/widgets/messaging/work_system_row.dart';
 import 'package:cc_remote/widgets/phone_markdown.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
@@ -185,8 +186,15 @@ class _SpaceMessageTileState extends State<SpaceMessageTile> {
 
   @override
   Widget build(BuildContext context) {
-    final t = context.designSystem ?? DesignSystemTokens.light();
     final m = widget.message;
+    if (isWorkSystemRow(m)) {
+      return WorkSystemRow(
+        message: m,
+        workspaceId: widget.workspaceId,
+        users: widget.users,
+      );
+    }
+    final t = context.designSystem ?? DesignSystemTokens.light();
     final isHuman = m.senderType == 'user';
     final isMine =
         isHuman && widget.myUserId != null && m.senderId == widget.myUserId;

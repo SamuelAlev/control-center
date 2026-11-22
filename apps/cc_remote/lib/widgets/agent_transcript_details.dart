@@ -99,3 +99,53 @@ Widget _sandboxUnavailable(BuildContext context) {
     description: Text(l10n.runSandboxUnavailable),
   );
 }
+
+Widget? _reasoning(DesignSystemTokens t, ReasoningSegment s) {
+  if (s.text.trim().isEmpty) {
+    return null;
+  }
+  // A faint leading rail sets the agent's thinking apart from its answer now
+  // that both interleave in one column (the answer is upright primary text).
+  return DecoratedBox(
+    decoration: BoxDecoration(
+      border: BorderDirectional(
+        start: BorderSide(color: t.borderSecondary, width: 2),
+      ),
+    ),
+    child: Padding(
+      padding: const EdgeInsetsDirectional.only(start: 8),
+      child: Text(
+        s.text,
+        style: TextStyle(
+          fontSize: 13,
+          height: 1.4,
+          fontStyle: FontStyle.italic,
+          color: t.textTertiary,
+        ),
+      ),
+    ),
+  );
+}
+
+Widget _mono(DesignSystemTokens t, String text, Color bg, Color fg) {
+  return DecoratedBox(
+    decoration: BoxDecoration(
+      color: bg,
+      borderRadius: const BorderRadius.all(Radius.circular(8)),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      // RTL carve-out: error/violation payloads are log output — LTR in
+      // every locale.
+      child: Directionality(
+        textDirection: TextDirection.ltr,
+        child: Text(
+          text,
+          style: CcFonts.code(
+            textStyle: TextStyle(fontSize: 12, height: 1.4, color: fg),
+          ),
+        ),
+      ),
+    ),
+  );
+}

@@ -99,7 +99,12 @@ class AgentAwaitingInputPublisher {
         kind: AgentInputKind.approval,
         summary: request.title,
         spaceId: request.spaceId,
+        // The run and its conversation, when the producer knows them: an
+        // agent that asked this run for work hears it is waiting on a
+        // person, and the notification opens the conversation that asked.
+        conversationId: request.conversationId,
         agentId: request.agentId,
+        runId: request.runId,
       );
     }
     _resolveGone(_approvals, current);
@@ -201,7 +206,15 @@ class AgentAwaitingInputPublisher {
         // The bus closed while the name was resolving (server shutdown).
       }
     }();
-    return (workspaceId: workspaceId, waitId: waitId, announced: announced);
+    return (
+      workspaceId: workspaceId,
+      waitId: waitId,
+      announced: announced,
+      agentId: agentId,
+      runId: runId,
+      conversationId: conversationId,
+      spaceId: spaceId,
+    );
   }
 
   Future<String?> _nameOf(String workspaceId, String? agentId) async {
@@ -216,6 +229,50 @@ class AgentAwaitingInputPublisher {
     }
   }
 
+  /// Whether a wait announced and not yet ended holds the run [runId] of
+  /// [agentId] in [conversationId] (in [spaceId]): what `agent_activity`
+  /// reports as `waiting_on_person`.
+  ///
+  /// A wait that names its run (a question) matches that run only. One that
+  /// does not (an approval, a credential block) matches the agent where its
+  /// conversation, or else its space, is the run's, and the agent alone when
+  /// it names neither.
+  bool holdsRun({
+    required String workspaceId,
+    required String agentId,
+    required String runId,
+    String? conversationId,
+    String? spaceId,
+  }) {
+    bool holds(_Wait wait) {
+      if (wait.workspaceId != workspaceId) {
+        return false;
+      }
+      final waitRun = wait.runId;
+      if (waitRun != null && waitRun.isNotEmpty) {
+        return waitRun == runId;
+      }
+      if (wait.agentId != agentId) {
+        return false;
+      }
+      final waitConversation = wait.conversationId;
+      if (waitConversation != null && waitConversation.isNotEmpty) {
+        return waitConversation == conversationId;
+      }
+      final waitSpace = wait.spaceId;
+      if (waitSpace != null && waitSpace.isNotEmpty) {
+        return waitSpace == spaceId;
+      }
+      return true;
+    }
+
+    return [
+      ..._approvals.values.nonNulls,
+      ..._credentialBlocks.values.nonNulls,
+      ..._questions.values,
+    ].any(holds);
+  }
+
   /// Stops watching.
   Future<void> dispose() async {
     await Future.wait(_subs.map((s) => s.cancel()));
@@ -223,5 +280,14 @@ class AgentAwaitingInputPublisher {
   }
 }
 
-/// One announced wait: enough to announce its end, once its start is out.
-typedef _Wait = ({String workspaceId, String waitId, Future<void> announced});
+/// One announced wait: enough to announce its end, once its start is out,
+/// and to say which run it holds ([AgentAwaitingInputPublisher.holdsRun]).
+typedef _Wait = ({
+  String workspaceId,
+  String waitId,
+  Future<void> announced,
+  String? agentId,
+  String? runId,
+  String? conversationId,
+  String? spaceId,
+});

@@ -2,7 +2,7 @@
 title: Conversar com um agente
 description: Crie um espaço com um agente, envie trabalho a ele, oriente-o durante a execução e pare-o.
 slug: pt-BR/manual/guias/conversar-com-agente
-sourceHash: 0dbc01158345074d818cec6084501abc03323fea
+sourceHash: 3e899c417e120a7cc741e802d577d0182210115b
 ---
 
 Este guia mostra como trabalhar com um agente em um espaço.
@@ -43,6 +43,8 @@ nova rodada. Ele se torna um cartão de orientação na fila, na faixa acima do
 composer, e é injetado na execução ao vivo no próximo limite de rodada. Não há
 toast nenhum — o cartão é o feedback.
 
+Para orientar uma execução que trabalha para outra pessoa, você precisa de acesso de escrita aos repositórios do espaço; sem ele, a mensagem é recusada e permanece no compositor. Uma execução somente leitura, como a revisão de um objetivo, não aceita mensagem enquanto roda: quando ela termina, a mensagem é enviada como uma mensagem comum e, após a revisão de um objetivo, ela aguarda o próximo segmento do objetivo.
+
 Três coisas mudam esse comportamento:
 
 - Uma mensagem que contém uma **@menção** é sempre enviada como mensagem, nunca
@@ -77,9 +79,9 @@ ficar caçando o espaço. O overlay esconde uma solicitação no momento em que 
 conversa daquele espaço está na tela, para que você nunca responda ao mesmo
 pedido duas vezes.
 
-Não há tempo limite: um agente bloqueado espera até que alguém decida. A mesma
-solicitação também aparece na faixa de atenção da caixa de entrada e no cliente
-de celular.
+Uma execução que você iniciou espera uma hora por uma aprovação; depois disso, a aprovação conta como negada. A mesma solicitação também aparece na faixa de atenção da caixa de entrada e no cliente de celular.
+
+Uma execução que o servidor iniciou (um segmento de objetivo, uma programação, uma resposta de outro agente) espera, em vez disso, 72 horas por padrão, prazo que um administrador do espaço de trabalho define; depois disso, uma aprovação conta como negada e uma pergunta como sem resposta. Veja [Quando ninguém responde](/pt-BR/manual/guias/perseguir-objetivo/#quando-ninguém-responde).
 
 ## Responder à pergunta de um agente
 
@@ -117,6 +119,8 @@ lista todo agente em execução no espaço de trabalho com o mesmo controle.
 Uma execução parada é marcada como parada. Envie uma nova mensagem para despachar
 de novo.
 
+Parar também retém o que foi enfileirado para esse agente: os seus cartões de direcionamento (**Enviar mensagens retidas** os envia) e os despertares pendentes dele (**Retomar** na faixa acima da composição). Um objetivo em que o agente estava trabalhando é pausado até que alguém o retome.
+
 ## Usar comandos slash
 
 Digite `/` no composer para ver a lista de comandos. Os que mudam o comportamento
@@ -125,8 +129,10 @@ da conversa:
 | Comando        | O que faz                                                                                                                            |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | `/plan`        | Coloca o espaço em modo plano. Um `/plan` sozinho apenas arma o modo; `/plan <request>` arma o modo e envia o resto como sua mensagem |
-| `/goal <text>` | Registra a meta de trabalho da conversa                                                                                              |
-| `/loop <text>` | Itera sobre uma tarefa até que ela esteja completa                                                                                   |
+| `/goal <text>` | Inicia um objetivo durável em que o agente continua trabalhando até que seja verificado como concluído ([Perseguir um objetivo](/pt-BR/manual/guias/perseguir-objetivo/)) |
+| `/loop <text>` | Desperta o agente com o texto agora e de novo, em um intervalo ou no ritmo próprio dele ([Programações e despertares](/pt-BR/manual/guias/programacoes-e-despertares/)) |
+| `/schedule <when> <text>` | Desperta o agente mais tarde, uma vez ou em um cron |
+| `/refine`      | Pede uma revisão do trabalho da conversa, que pode propor melhorias                                                                  |
 | `/compact`     | Dobra o histórico mais antigo em um resumo ancorado e continua no contexto compactado                                                |
 | `/todo …`      | Visualiza e edita a lista de todos persistida desta conversa                                                                         |
 

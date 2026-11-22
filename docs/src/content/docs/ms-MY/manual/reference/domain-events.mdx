@@ -2,7 +2,7 @@
 title: Acara domain
 description: Katalog lengkap 54 acara domain, muatannya dan pelanggan di pihak pelayan yang menggunakannya.
 slug: ms-MY/manual-pengguna/rujukan/acara-domain
-sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
+sourceHash: f58123448c0f31c95774bbaebee89f1509940896
 ---
 
 ## Bas acara
@@ -24,7 +24,10 @@ Setiap acara dalam katalog di bawah berada dalam direktori yang sama itu; tiada 
 | Acara               | Muatan                                                 | Tercetus apabila                                         |
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | Ruang kerja dicipta                                     |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Ejen menamatkan satu larian (berjaya atau gagal)        |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Aliran peristiwa proses ejen tamat, sebelum keadaan akhir ditulis. Disimpan untuk jambatan perbualan PR dan analitik sahaja |
+| `AgentRunSettled` | `agentId`, `workspaceId`, `runId`, `status`, `endReason`, `costMicros`, `wakeIds`, `spaceId?`, `conversationId?`, `limitResetsAt?`, `requestedByUserId?`, `wakeReason?` | Keadaan akhir larian ditulis; diterbitkan tepat sekali bagi setiap larian. `endReason` ialah `completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` atau `serverStopped`. Larian subejen tidak menerbitkan apa-apa |
+| `GoalSettled` | `goalId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `status`, `hold?`, `summary?`, `requestedByUserId?` | Matlamat tamat, atau mula menunggu kajian seseorang |
+| `WakeRuleEnded` | `ruleId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `reason`, `requestedByUserId?` | Jadual atau pantauan tamat (telah dicetuskan sekali, luput, telah menggunakan larian atau kosnya, dibatalkan, matlamatnya tamat, atau orangnya keluar) |
 | `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | Ejen mula menunggu manusia: kelulusan, soalan `ask_user` atau larian yang tertahan pada kelayakan (`kind` ialah `approval`, `question` atau `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Repo didaftarkan; mencetuskan pengindeksan kod latar belakang |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Kemahiran dipasang atau dikemas kini, sambil membawa keputusan imbasan rantaian bekalan |
@@ -57,6 +60,16 @@ Kesemua enam membawa `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitl
 | `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | Seseorang menyebut anda dalam ulasan PR atau ulasan semakan            |
 | `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | Seseorang membalas dalam benang semakan yang anda sertai                      |
 | `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | Seseorang menyelesaikan benang semakan yang anda sertai                       |
+
+### Pantauan permintaan tarik
+
+Diterbitkan oleh pemungut undian permintaan tarik terbuka bagi setiap permintaan tarik yang diundinya, tanpa mengira penulisnya, untuk pantauan `on:pr_*` ejen. Ketiga-tiganya membawa `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `headRef` dan `authorLogin`.
+
+| Acara | Muatan tambahan | Tercetus apabila |
+| ----------------------- | ----------------------------------------------- | ---------- |
+| `PrWatchChecksSettled` | `passing`, `failedChecks`, `failedCheckUrl?` | Setiap semakan pada kepala permintaan tarik telah selesai |
+| `PrWatchReviewActivity` | `decision`, `decisionChanged`, `newComments` | Permintaan tarik menerima kajian atau komen baharu |
+| `PrWatchClosed` | `merged` | Permintaan tarik digabungkan atau ditutup |
 
 ## Acara pemesejan
 
@@ -167,14 +180,20 @@ Setiap pelanggan di bawah dibina dalam `runCcServer` (atau perkhidmatan yang dib
 | Penyediaan ruang sembang (sebaris)  | `SpaceCreated`                                                                                       |
 | `PipelineTriggerDispatcher`         | Setiap `DomainEvent`; setiap pencetus yang didayakan menapis mengikut jenisnya sendiri               |
 | `SubPipelineResumeListener`         | `PipelineRunCompleted`, `PipelineRunFailed`                                                          |
-| `PipelineCostRollupListener`        | `AgentRunCompleted`                                                                                  |
-| `BudgetEvaluationListener`          | `AgentRunCompleted`                                                                                  |
+| `PipelineCostRollupListener`        | `AgentRunSettled`                                                                                    |
+| `BudgetEvaluationListener`          | `AgentRunSettled`                                                                                    |
 | `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (larian `meeting_summary` sahaja) |
-| `PipelineStepResumeListener`        | `AgentRunCompleted`                                                                                  |
-| `AgentRunTaskCompleter`             | `AgentRunCompleted`                                                                                  |
-| `GoalSupervisor`                    | `AgentRunCompleted`                                                                                  |
-| `CheckerDispatchListener`           | `AgentRunCompleted`                                                                                  |
-| `TeamRoutingService`                | `AgentRunCompleted`, `TicketAssigned`                                                                |
+| `PipelineStepResumeListener`        | `AgentRunSettled`                                                                                    |
+| `AgentRunTaskCompleter`             | `AgentRunSettled`                                                                                    |
+| `GoalSupervisor`                    | `AgentRunSettled` — menentukan langkah seterusnya matlamat                                           |
+| `CheckerDispatchListener`           | `AgentRunSettled` — beratur penyemak sebagai panggilan bangun; melangkau segmen matlamat dan kajian  |
+| `TeamRoutingService`                | `AgentRunSettled`, `TicketAssigned`                                                                  |
+| `WakeQueueService` | `AgentRunSettled` — menghantar panggilan bangun yang menunggu larian tamat |
+| `WakeRuleService` | `AgentRunSettled` (gelung yang dijadualkan sendiri), `GoalSettled` (menamatkan jadual sesuatu matlamat), `PrWatch*`, `EnvironmentProcessExited`, `EnvironmentReady`, penamatan tiket dan larian pipeline (pantauan), `WorkspaceMemberRemoved` (menamatkan jadual orang itu) |
+| `PeerAskService` | `AgentRunSettled` — menyelesaikan soalan yang ditanya ejen antara satu sama lain dan membangunkan penanya |
+| `LimitParkService` | `AgentRunSettled` dengan `usageLimit` — menunggu penetapan semula penyedia |
+| `ImprovementReviewService` | `GoalSettled` (matlamat yang disahkan) dan `AgentRunSettled` — beratur kajian penambahbaikan dan membaca hasilnya |
+| Langkah matlamat pipeline (`goal.pursue`) | `GoalSettled`, `AgentRunSettled`, `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` — menyambung semula langkah, mengecas orkestrasi dan mengikut larian pipeline |
 | `OrchestrationRunListener`          | `PipelineRunCancelled`, `PipelineRunFailed`                                                          |
 | `MultiVendorTicketSyncCoordinator`  | `TicketCreated`, `TicketAssigned`, `TicketReassigned`, `TicketStatusChanged`, `TicketDetailsUpdated` |
 | `WorktreeGcListener`                | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`         |
@@ -235,6 +254,8 @@ penantian ialah satu acara; tiada apa-apa diterbitkan apabila penantian
 berakhir.
 
 Kelima-lima kategori PR yang ditulis sendiri membawa `forUserId`, jadi ia sampai kepada penulis dan bukan kepada semua orang dalam ruang kerja.
+
+Lima bingkai untuk kerja jangka panjang, setiap satu dialamatkan kepada orang yang berkenaan (`for_user_id`): `notifications/goal_settled` (daripada `GoalSettled`), `notifications/wake_rule_ended` (daripada `WakeRuleEnded`), `notifications/improvement_proposed`, `notifications/pipeline_run_held` (larian pipeline yang ditahan pada had kos orkestrasinya) dan `notifications/waiting_digest` (sekali sehari, apa yang menunggu seseorang). Setiap satu membawa `notification_kind`: `notify` dipetakan kepada `agentRunCompleted`, `question` dan `review` kepada `agentAwaitingInput`. Setiap bingkai pemberitahuan kini membawa `notification_kind`, dan bingkai dengan `quiet: true` (jadual yang tamat, matlamat yang tamat) pergi ke pusat pemberitahuan tanpa toast, bunyi atau push yang kuat.
 
 `RemoteEventForwarder` turut memajukan `TicketReassigned` sebagai `notifications/ticket_reassigned` dan setiap `TaskLifecycleEvent` sebagai `notifications/task_<phase>`. Kedua-duanya tidak memetakan kepada mana-mana kategori pemberitahuan — ia memacu UI langsung, bukan pusat pemberitahuan. Acara keahlian tidak dimajukan sebagai bingkai: ia membatalkan kesahihan cache pemaju itu, dan hos sesi menggugurkan langganan ruang kerja ahli yang dibuang.
 

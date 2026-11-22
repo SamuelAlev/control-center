@@ -7,10 +7,16 @@ library;
 
 import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/calendar_events.dart';
+import 'package:cc_domain/core/domain/events/digest_events.dart';
+import 'package:cc_domain/core/domain/events/learning_events.dart';
 import 'package:cc_domain/core/domain/events/messaging_events.dart';
 import 'package:cc_domain/core/domain/events/pr_events.dart';
 import 'package:cc_domain/core/domain/events/rig_events.dart';
 import 'package:cc_domain/core/domain/events/ticketing_events.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/agent_goal_status.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/goal_hold.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/wake_rule_values.dart';
+import 'package:cc_domain/features/notifications/domain/value_objects/notification_kind.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_status.dart';
 
 /// One `notifications/*` JSON-RPC frame: its method and wire params.
@@ -32,9 +38,16 @@ NotificationFrame? messageReceivedFrame(MessageReceived event) {
   if (!event.isAgentMessage && event.mentions.isEmpty) {
     return null;
   }
+  // A schedule or watch run that finished cleanly tells no one unless it
+  // mentions them: a loop every 20 minutes must not ping every 20 minutes.
+  if (event.quietRun && event.mentions.isEmpty) {
+    return null;
+  }
   return (
     method: 'notifications/message_received',
     params: {
+      notificationKindKey: NotificationKind.notify.wire,
+      notificationQuietKey: false,
       'space_id': event.spaceId,
       if (event.conversationId != null) 'conversation_id': event.conversationId,
       'message_id': event.messageId,
@@ -104,6 +117,8 @@ bool notificationTargetsUser(
 NotificationFrame ticketAssignedFrame(TicketAssigned event) => (
   method: 'notifications/ticket_assigned',
   params: {
+    notificationKindKey: NotificationKind.notify.wire,
+    notificationQuietKey: false,
     'ticket_id': event.ticketId,
     'ticket_title': event.ticketTitle,
     if (event.assignedAgentId != null)
@@ -120,6 +135,8 @@ NotificationFrame ticketAssignedFrame(TicketAssigned event) => (
 NotificationFrame ticketStatusChangedFrame(TicketStatusChanged event) => (
   method: 'notifications/ticket_status_changed',
   params: {
+    notificationKindKey: NotificationKind.notify.wire,
+    notificationQuietKey: false,
     'ticket_id': event.ticketId,
     'from': event.from,
     'to': event.to,
@@ -135,6 +152,8 @@ NotificationFrame ticketReassignedFrame(
 ) => (
   method: 'notifications/ticket_reassigned',
   params: {
+    notificationKindKey: NotificationKind.notify.wire,
+    notificationQuietKey: false,
     'ticket_id': event.ticketId,
     if (event.fromAgentId != null) 'from_agent_id': event.fromAgentId,
     if (event.toAgentId != null) 'to_agent_id': event.toAgentId,
@@ -146,6 +165,8 @@ NotificationFrame ticketReassignedFrame(
 NotificationFrame prPublishedFrame(PullRequestPublished event) => (
   method: 'notifications/pr_published',
   params: {
+    notificationKindKey: NotificationKind.notify.wire,
+    notificationQuietKey: false,
     'pr_id': event.prId,
     'repo_owner': event.repoOwner,
     'repo_name': event.repoName,
@@ -157,6 +178,8 @@ NotificationFrame prPublishedFrame(PullRequestPublished event) => (
 NotificationFrame prMergedFrame(PrMerged event) => (
   method: 'notifications/pr_merged',
   params: {
+    notificationKindKey: NotificationKind.notify.wire,
+    notificationQuietKey: false,
     'pr_id': event.prId,
     'agent_id': event.agentId,
     'workspace_id': event.workspaceId,
@@ -167,6 +190,8 @@ NotificationFrame prMergedFrame(PrMerged event) => (
 NotificationFrame prMentionedFrame(PrMentioned event) => (
   method: 'notifications/pr_mentioned',
   params: {
+    notificationKindKey: NotificationKind.notify.wire,
+    notificationQuietKey: false,
     'repo_owner': event.repoOwner,
     'repo_name': event.repoName,
     'pr_number': event.prNumber,
@@ -179,6 +204,8 @@ NotificationFrame prMentionedFrame(PrMentioned event) => (
 NotificationFrame prReviewRequestedFrame(PrReviewRequested event) => (
   method: 'notifications/pr_review_requested',
   params: {
+    notificationKindKey: NotificationKind.review.wire,
+    notificationQuietKey: false,
     'repo_owner': event.repoOwner,
     'repo_name': event.repoName,
     'pr_number': event.prNumber,
@@ -197,6 +224,10 @@ NotificationFrame prMergeReadinessFrame(PrMergeReadinessChanged event) => (
       ? 'notifications/pr_ready_to_merge'
       : 'notifications/pr_merge_blocked',
   params: {
+    notificationKindKey: event.ready
+        ? NotificationKind.review.wire
+        : NotificationKind.notify.wire,
+    notificationQuietKey: false,
     'workspace_id': event.workspaceId,
     'repo_owner': event.repoOwner,
     'repo_name': event.repoName,
@@ -215,6 +246,8 @@ NotificationFrame prReviewDecisionFrame(PrReviewDecisionChanged event) => (
     _ => 'notifications/pr_approved',
   },
   params: {
+    notificationKindKey: NotificationKind.notify.wire,
+    notificationQuietKey: false,
     'workspace_id': event.workspaceId,
     'repo_owner': event.repoOwner,
     'repo_name': event.repoName,
@@ -232,6 +265,8 @@ NotificationFrame prChecksStatusFrame(PrChecksStatusChanged event) => (
       ? 'notifications/pr_checks_failed'
       : 'notifications/pr_checks_recovered',
   params: {
+    notificationKindKey: NotificationKind.notify.wire,
+    notificationQuietKey: false,
     'workspace_id': event.workspaceId,
     'repo_owner': event.repoOwner,
     'repo_name': event.repoName,
@@ -250,6 +285,8 @@ NotificationFrame prChecksStatusFrame(PrChecksStatusChanged event) => (
 NotificationFrame prCommentMentionedFrame(PrCommentMentioned event) => (
   method: 'notifications/pr_comment_mentioned',
   params: {
+    notificationKindKey: NotificationKind.notify.wire,
+    notificationQuietKey: false,
     'workspace_id': event.workspaceId,
     'repo_owner': event.repoOwner,
     'repo_name': event.repoName,
@@ -270,6 +307,8 @@ NotificationFrame prCommentMentionedFrame(PrCommentMentioned event) => (
 NotificationFrame prThreadRepliedFrame(PrThreadReplied event) => (
   method: 'notifications/pr_thread_replied',
   params: {
+    notificationKindKey: NotificationKind.notify.wire,
+    notificationQuietKey: false,
     'workspace_id': event.workspaceId,
     'repo_owner': event.repoOwner,
     'repo_name': event.repoName,
@@ -289,6 +328,8 @@ NotificationFrame prThreadRepliedFrame(PrThreadReplied event) => (
 NotificationFrame prThreadResolvedFrame(PrThreadResolved event) => (
   method: 'notifications/pr_thread_resolved',
   params: {
+    notificationKindKey: NotificationKind.notify.wire,
+    notificationQuietKey: false,
     'workspace_id': event.workspaceId,
     'repo_owner': event.repoOwner,
     'repo_name': event.repoName,
@@ -306,6 +347,8 @@ NotificationFrame prThreadResolvedFrame(PrThreadResolved event) => (
 NotificationFrame reviewBecameStaleFrame(ReviewBecameStale event) => (
   method: 'notifications/review_stale',
   params: {
+    notificationKindKey: NotificationKind.notify.wire,
+    notificationQuietKey: false,
     'workspace_id': event.workspaceId,
     'space_id': event.spaceId,
     'repo_owner': event.repoOwner,
@@ -326,6 +369,8 @@ NotificationFrame reviewBecameStaleFrame(ReviewBecameStale event) => (
 NotificationFrame externalPrMergedFrame(ExternalPrMerged event) => (
   method: 'notifications/external_pr_merged',
   params: {
+    notificationKindKey: NotificationKind.notify.wire,
+    notificationQuietKey: false,
     'workspace_id': event.workspaceId,
     'repo_owner': event.repoOwner,
     'repo_name': event.repoName,
@@ -339,6 +384,8 @@ NotificationFrame externalPrMergedFrame(ExternalPrMerged event) => (
 NotificationFrame meetingStartingSoonFrame(MeetingStartingSoon event) => (
   method: 'notifications/meeting_starting_soon',
   params: {
+    notificationKindKey: NotificationKind.notify.wire,
+    notificationQuietKey: false,
     'event_id': event.eventId,
     'title': event.title,
     'start_time': event.startTime.toIso8601String(),
@@ -352,6 +399,8 @@ NotificationFrame meetingStartingSoonFrame(MeetingStartingSoon event) => (
 NotificationFrame calendarAuthExpiredFrame(CalendarAuthExpired event) => (
   method: 'notifications/calendar_auth_expired',
   params: {
+    notificationKindKey: NotificationKind.review.wire,
+    notificationQuietKey: false,
     'account_email': event.accountEmail,
     'workspace_id': event.workspaceId,
   },
@@ -366,6 +415,8 @@ NotificationFrame calendarAuthExpiredFrame(CalendarAuthExpired event) => (
 NotificationFrame rigControlChangedFrame(RigControlChanged event) => (
   method: 'notifications/rig_control_changed',
   params: {
+    notificationKindKey: NotificationKind.notify.wire,
+    notificationQuietKey: false,
     'rig_id': event.rigId,
     'workspace_id': event.workspaceId,
     'held': event.controller != null,
@@ -381,6 +432,8 @@ NotificationFrame rigControlChangedFrame(RigControlChanged event) => (
 NotificationFrame rigReapedFrame(RigReaped event) => (
   method: 'notifications/rig_reaped',
   params: {
+    notificationKindKey: NotificationKind.notify.wire,
+    notificationQuietKey: false,
     'rig_id': event.rigId,
     'workspace_id': event.workspaceId,
     'reason': event.reason.wire,
@@ -406,6 +459,8 @@ NotificationFrame? rigClosedFrame(RigClosedEvent event) {
   return (
     method: 'notifications/rig_closed',
     params: {
+      notificationKindKey: NotificationKind.notify.wire,
+      notificationQuietKey: false,
       'rig_id': event.rigId,
       'workspace_id': event.workspaceId,
       'reason': event.reason.wire,
@@ -416,7 +471,26 @@ NotificationFrame? rigClosedFrame(RigClosedEvent event) {
 /// An agent stopped and is waiting on a human: an approval, a question or a
 /// credential. The client names the agent and says which, and links to the
 /// space where the wait can be answered. `wait_id` lets the feed find the row
-/// again when the wait ends.
+/// again when the wait ends. One frame per wait: a wait is announced once,
+/// however long it lasts. Params:
+///
+/// ```json
+/// {
+///   "workspace_id": "ws-1",
+///   "wait_id": "cf_1",
+///   "kind": "approval",
+///   "summary": "Push to main",
+///   "space_id": "space-1",
+///   "conversation_id": "conv-1",
+///   "agent_id": "agent-1",
+///   "agent_name": "Ada",
+///   "notification_kind": "question"
+/// }
+/// ```
+///
+/// `kind` is what the agent waits for (`approval`, `question`,
+/// `credential`); `notification_kind` is always `question`. The optional
+/// keys are omitted when absent.
 NotificationFrame agentAwaitingInputFrame(AgentAwaitingInput event) => (
   method: 'notifications/agent_awaiting_input',
   params: {
@@ -428,6 +502,57 @@ NotificationFrame agentAwaitingInputFrame(AgentAwaitingInput event) => (
     if (event.conversationId != null) 'conversation_id': event.conversationId,
     if (event.agentId != null) 'agent_id': event.agentId,
     if (event.agentName != null) 'agent_name': event.agentName,
+    notificationKindKey: NotificationKind.question.wire,
+    notificationQuietKey: false,
+  },
+);
+
+/// A durable goal reached an outcome its owner should hear about: it
+/// completed, failed, was cancelled or ran out of budget
+/// (`notification_kind: notify`), or it paused on a hold only a person can
+/// lift (`notification_kind: review`). A pause the
+/// person made themselves publishes nothing.
+///
+/// Directed at the person who started the goal (`for_user_id`); the feed and
+/// Web Push also require that viewer to read the goal's space. Params:
+///
+/// ```json
+/// {
+///   "workspace_id": "ws-1",
+///   "goal_id": "goal-1",
+///   "space_id": "space-1",
+///   "conversation_id": "conv-1",
+///   "agent_id": "agent-1",
+///   "status": "completed",
+///   "hold": "needs_review",
+///   "summary": "Durable /goal completed: the changelog is current.",
+///   "for_user_id": "user-1",
+///   "notification_kind": "notify",
+///   "quiet": true
+/// }
+/// ```
+///
+/// `quiet` is true for a terminal status (an FYI) and false for a review.
+/// `status` is the goal's wire status (`completed`, `failed`, `cancelled`,
+/// `budget_exhausted`, or `paused` for a review). `hold` (a `GoalHold` wire
+/// name), `summary` and `for_user_id` are omitted when absent.
+NotificationFrame goalSettledFrame(GoalSettled event) => (
+  method: 'notifications/goal_settled',
+  params: {
+    'workspace_id': event.workspaceId,
+    'goal_id': event.goalId,
+    'space_id': event.spaceId,
+    'conversation_id': event.conversationId,
+    'agent_id': event.agentId,
+    'status': event.status.wire,
+    if (event.hold != null) 'hold': event.hold!.wire,
+    if (event.summary != null) 'summary': event.summary,
+    if (event.requestedByUserId != null)
+      'for_user_id': event.requestedByUserId,
+    notificationKindKey: event.status.isTerminal
+        ? NotificationKind.notify.wire
+        : NotificationKind.review.wire,
+    notificationQuietKey: event.status.isTerminal,
   },
 );
 
@@ -439,6 +564,8 @@ NotificationFrame agentAwaitingInputFrame(AgentAwaitingInput event) => (
 NotificationFrame agentActionBlockedFrame(AgentActionBlocked event) => (
   method: 'notifications/agent_action_blocked',
   params: {
+    notificationKindKey: NotificationKind.review.wire,
+    notificationQuietKey: false,
     'workspace_id': event.workspaceId,
     'reason': event.reason,
     'summary': event.actionSummary,
@@ -446,5 +573,193 @@ NotificationFrame agentActionBlockedFrame(AgentActionBlocked event) => (
     if (event.agentId != null) 'agent_id': event.agentId,
     if (event.agentName != null) 'agent_name': event.agentName,
     if (event.source != null) 'source': event.source,
+  },
+);
+
+/// An improvement review proposed changes for a person to accept or reject
+/// (`notification_kind: review`). Directed at the person the review is for
+/// (`for_user_id`: the goal's or the `/refine`'s person, omitted for a
+/// bot-started goal); the feed and Web Push also require that viewer to read
+/// the space. The proposals themselves are read with `improvements.get` /
+/// `improvements.watchForWorkspace`. Params:
+///
+/// ```json
+/// {
+///   "workspace_id": "ws-1",
+///   "space_id": "space-1",
+///   "conversation_id": "conv-1",
+///   "agent_id": "agent-1",
+///   "goal_id": "goal-1",
+///   "proposal_ids": ["p-1", "p-2"],
+///   "count": 2,
+///   "for_user_id": "user-1",
+///   "notification_kind": "review"
+/// }
+/// ```
+NotificationFrame improvementProposedFrame(ImprovementProposed event) => (
+  method: 'notifications/improvement_proposed',
+  params: {
+    'workspace_id': event.workspaceId,
+    'space_id': event.spaceId,
+    'conversation_id': event.conversationId,
+    'agent_id': event.agentId,
+    'goal_id': ?event.goalId,
+    'proposal_ids': event.proposalIds,
+    'count': event.proposalIds.length,
+    'for_user_id': ?event.requestedByUserId,
+    notificationKindKey: NotificationKind.review.wire,
+    notificationQuietKey: false,
+  },
+);
+
+/// A pipeline run's remaining steps are held at its orchestration's cost cap
+/// (`notification_kind: review`): raising the cap (`orchestration.raiseCap`)
+/// resumes it. Directed at the run's requester when it
+/// has one. Params:
+///
+/// ```json
+/// {
+///   "workspace_id": "ws-1",
+///   "pipeline_run_id": "run-1",
+///   "orchestration_id": "orch-1",
+///   "space_id": "space-1",
+///   "reason": "orchestration_budget",
+///   "cap_micros": 5000000,
+///   "spent_micros": 5120000,
+///   "for_user_id": "user-1",
+///   "can_raise_cap": true,
+///   "notification_kind": "review"
+/// }
+/// ```
+///
+/// `space_id` and `for_user_id` are omitted when absent. A person's run is
+/// told only to that person, the one viewer who may raise its cap
+/// (`orchestration.raiseCap`), so it carries `can_raise_cap: true`; a bot's
+/// run reaches every member who may see it and carries no `can_raise_cap`
+/// (only an admin may raise it): a client reads the per-viewer
+/// `can_raise_cap` of the held run (`pipeline_run.*`) instead.
+NotificationFrame pipelineRunHeldFrame(PipelineRunHeld event) => (
+  method: 'notifications/pipeline_run_held',
+  params: {
+    'workspace_id': event.workspaceId,
+    'pipeline_run_id': event.pipelineRunId,
+    'orchestration_id': event.orchestrationId,
+    'space_id': ?event.spaceId,
+    'reason': event.reason,
+    'cap_micros': event.capMicros,
+    'spent_micros': event.spentMicros,
+    'for_user_id': ?event.requestedByUserId,
+    if (event.requestedByUserId != null) 'can_raise_cap': true,
+    notificationKindKey: NotificationKind.review.wire,
+    notificationQuietKey: false,
+  },
+);
+
+/// The end reasons of a wake rule its person is told about: it ran out of
+/// time, runs or budget, or its stored row broke. A one-off that fired (its
+/// run speaks for itself), a rule whose goal ended (`goal_settled` says
+/// so), one cancelled by hand and one whose person left tell no one.
+const Set<WakeRuleEndReason> notifiedWakeRuleEnds = {
+  WakeRuleEndReason.expired,
+  WakeRuleEndReason.runCap,
+  WakeRuleEndReason.costCap,
+  WakeRuleEndReason.invalidRow,
+};
+
+/// A wake rule (a schedule, loop or watch) ended for good
+/// (`notification_kind: notify`). Directed at the person it acted for
+/// (`for_user_id`); a bot's rule, and the reasons outside
+/// [notifiedWakeRuleEnds], have no frame. Params:
+///
+/// ```json
+/// {
+///   "workspace_id": "ws-1",
+///   "rule_id": "rule-1",
+///   "space_id": "space-1",
+///   "conversation_id": "conv-1",
+///   "agent_id": "agent-1",
+///   "reason": "run_cap",
+///   "for_user_id": "user-1",
+///   "notification_kind": "notify",
+///   "quiet": true
+/// }
+/// ```
+///
+/// `reason` is a `WakeRuleEndReason` wire name. Always `quiet` (an FYI).
+NotificationFrame? wakeRuleEndedFrame(WakeRuleEnded event) {
+  final person = event.requestedByUserId;
+  if (person == null ||
+      person.isEmpty ||
+      !notifiedWakeRuleEnds.contains(event.reason)) {
+    return null;
+  }
+  return (
+    method: 'notifications/wake_rule_ended',
+    params: {
+      'workspace_id': event.workspaceId,
+      'rule_id': event.ruleId,
+      'space_id': event.spaceId,
+      'conversation_id': event.conversationId,
+      'agent_id': event.agentId,
+      'reason': event.reason.wire,
+      'for_user_id': person,
+      notificationKindKey: NotificationKind.notify.wire,
+      notificationQuietKey: true,
+    },
+  );
+}
+
+/// The once-a-day digest of what waits for one person in one workspace
+/// (`notification_kind: review`): goals that need review or an answer, held
+/// wakes and improvement proposals waiting for a decision. Directed at that
+/// person (`for_user_id`); sent only when something waits. Params:
+///
+/// ```json
+/// {
+///   "workspace_id": "ws-1",
+///   "for_user_id": "user-1",
+///   "day": "2026-11-20",
+///   "count": 2,
+///   "items": [
+///     {
+///       "type": "goal_review",
+///       "id": "goal-1",
+///       "summary": "Keep the changelog current",
+///       "space_id": "space-1",
+///       "conversation_id": "conv-1",
+///       "agent_id": "agent-1"
+///     },
+///     {"type": "held_wake", "id": "wake-1", "summary": "…"}
+///   ],
+///   "notification_kind": "review"
+/// }
+/// ```
+///
+/// `type` is `goal_review`, `goal_person`, `held_wake`, `improvement` or
+/// `request` (an approval or question of a run the server started; its `id`
+/// is the request's, and `expires_at`, ISO-8601 UTC, is when it stops
+/// waiting); an item's `space_id`, `conversation_id`, `agent_id` and
+/// `expires_at` are omitted when absent. `day` is the local day in the workspace's time zone.
+NotificationFrame waitingDigestFrame(WaitingDigest event) => (
+  method: 'notifications/waiting_digest',
+  params: {
+    'workspace_id': event.workspaceId,
+    'for_user_id': event.forUserId,
+    'day': event.day,
+    'count': event.items.length,
+    'items': [
+      for (final item in event.items)
+        {
+          'type': item.type.wire,
+          'id': item.id,
+          'summary': item.summary,
+          'space_id': ?item.spaceId,
+          'conversation_id': ?item.conversationId,
+          'agent_id': ?item.agentId,
+          'expires_at': ?item.expiresAt?.toUtc().toIso8601String(),
+        },
+    ],
+    notificationKindKey: NotificationKind.review.wire,
+    notificationQuietKey: false,
   },
 );

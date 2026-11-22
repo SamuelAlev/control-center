@@ -22,6 +22,7 @@ class SteeringQueueCard extends StatefulWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onDeliver,
+    required this.author,
   });
 
   /// The queued conversation row this card shows.
@@ -35,15 +36,21 @@ class SteeringQueueCard extends StatefulWidget {
   /// The grip the list supplies, already wired to its reorder index.
   final Widget dragHandle;
 
-  /// Commits an edited body.
-  final ValueChanged<String> onEdit;
+  /// Commits an edited body. Null hides the pencil: only a card's writer
+  /// may edit it.
+  final ValueChanged<String>? onEdit;
 
   /// Drops the card from the queue.
   final VoidCallback onDelete;
 
   /// Gets the card in: ahead of the rest of a live lane, or, when [steerable]
-  /// is false, by stopping the run.
-  final VoidCallback onDeliver;
+  /// is false, by stopping the run. Null hides the button: only a card's
+  /// writer may stop the runs to send it.
+  final VoidCallback? onDeliver;
+
+  /// Whose card this is when it is someone else's ("From Ada"), or null for
+  /// the viewer's own.
+  final String? author;
 
   @override
   State<SteeringQueueCard> createState() => _SteeringQueueCardState();
@@ -69,7 +76,7 @@ class _SteeringQueueCardState extends State<SteeringQueueCard> {
     final text = _editController.text.trim();
     setState(() => _editing = false);
     if (text.isNotEmpty && text != widget.card.content) {
-      widget.onEdit(text);
+      widget.onEdit?.call(text);
     }
   }
 
@@ -125,11 +132,22 @@ class _SteeringQueueCardState extends State<SteeringQueueCard> {
                           ),
                         ),
                       ),
+                      if (widget.author case final author?) ...[
+                        const SizedBox(width: AppSpacing.sm),
+                        Text(
+                          author,
+                          maxLines: 1,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: ds.textTertiary,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
           ),
           const SizedBox(width: AppSpacing.sm),
-          if (!_editing)
+          if (!_editing && widget.onDeliver != null)
             CcButton(
               icon: AppIcons.arrowUp,
               variant: CcButtonVariant.secondary,
@@ -144,7 +162,7 @@ class _SteeringQueueCardState extends State<SteeringQueueCard> {
               tooltip: l10n.saveChanges,
               onPressed: _commitEdit,
             )
-          else
+          else if (widget.onEdit != null)
             CcIconButton(
               icon: AppIcons.pencil,
               size: CcButtonSize.sm,

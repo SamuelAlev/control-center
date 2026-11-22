@@ -1,6 +1,7 @@
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/shared/widgets/transcript/util/nested_calls.dart';
 
 /// One row of an agent turn's transcript, in display order.
 ///
@@ -28,10 +29,15 @@ final class SegmentRowPlan extends TranscriptRowPlan {
     required this.segment,
     required this.open,
     required super.gapBefore,
+    this.children = const [],
   });
 
   /// Index of the segment in the transcript.
   final int index;
+
+  /// Indices of the calls a script made from this call, in the order it made
+  /// them. They render inside this row, never as rows of their own.
+  final List<int> children;
 
   /// The segment as of the plan (a live open row re-reads fresher state).
   final TranscriptSegment segment;
@@ -67,11 +73,17 @@ final class LiveStatusRowPlan extends TranscriptRowPlan {
 /// Plans the rows of a transcript: [segments] in order with [inlineMessages]
 /// interleaved by time, empty closed prose dropped, and the live status line
 /// appended while [isLive] and no prose is streaming.
+///
+/// A call a script made folds into the row of the call that ran the script
+/// (see [foldNestedCalls]); one whose parent is not in [segments] keeps a row
+/// of its own.
 List<TranscriptRowPlan> planTranscriptRows({
   required List<TranscriptSegment> segments,
   required List<Message> inlineMessages,
   required bool isLive,
 }) {
+  final nested = foldNestedCalls(segments);
+  final folded = {for (final children in nested.values) ...children};
   final out = <TranscriptRowPlan>[];
   TranscriptSegment? prev;
   var afterInline = false;
@@ -89,6 +101,9 @@ List<TranscriptRowPlan> planTranscriptRows({
   }
 
   for (var i = 0; i < segments.length; i++) {
+    if (folded.contains(i)) {
+      continue;
+    }
     final seg = segments[i];
     while (nextInline < inlineMessages.length &&
         _inlineAt(inlineMessages[nextInline]) <=
@@ -107,7 +122,15 @@ List<TranscriptRowPlan> planTranscriptRows({
     } else {
       gap = transcriptGapBefore(prev!, seg);
     }
-    out.add(SegmentRowPlan(index: i, segment: seg, open: open, gapBefore: gap));
+    out.add(
+      SegmentRowPlan(
+        index: i,
+        segment: seg,
+        open: open,
+        gapBefore: gap,
+        children: nested[i] ?? const [],
+      ),
+    );
     prev = seg;
     afterInline = false;
   }

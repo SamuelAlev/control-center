@@ -2,10 +2,10 @@
 title: Yerleşik ajan araçları
 description: Yerleşik harness’ın bir ajana sunduğu araç yüzeyi — dil sunucusu, yapısal arama, hata ayıklayıcı, kernel’ler ve worker kontrolü — her işlem ve argümanıyla birlikte.
 slug: tr-TR/kilavuz/referans/ajan-araclari
-sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
+sourceHash: e99183fd4b257a60f94444101e1d39a7d6c77249
 ---
 
-Bunlar, yerleşik ajan çalışma zamanının doğrudan kaydettiği **sunucuya bağlı** araçlardır — dil sunucusu, yapısal arama, hata ayıklayıcı, kernel’ler, sorular ve worker kontrolü — içeri köprülediği [MCP araçlarının](/tr-TR/kilavuz/referans/mcp-araclari/) ve harness çalışma zamanının genel dosya, arama ve shell araçlarının aksine. MCP kayıt defterinde yer almazlar: harici bir MCP istemcisi onları görmez, çünkü her biri tek bir çalıştırmaya ait canlı bir sunucu tarafı kaynağa bağlıdır — bir dil sunucusu süreci, bir hata ayıklama adaptörü, bir yorumlayıcı.
+Bunlar, yerleşik ajan çalışma zamanının doğrudan kaydettiği **sunucuya bağlı** araçlardır — dil sunucusu, yapısal arama, hata ayıklayıcı, kernel’ler, kod modu betikleri, sorular ve worker kontrolü — içeri köprülediği [MCP araçlarının](/tr-TR/kilavuz/referans/mcp-araclari/) ve harness çalışma zamanının genel dosya, arama ve shell araçlarının aksine. MCP kayıt defterinde yer almazlar: harici bir MCP istemcisi onları görmez, çünkü her biri tek bir çalıştırmaya ait canlı bir sunucu tarafı kaynağa bağlıdır — bir dil sunucusu süreci, bir hata ayıklama adaptörü, bir yorumlayıcı.
 
 Buradaki her araç, yalnızca arka kaynağı çalıştırma için bağlanmışsa kaydedilir — bir dil sunucusu ya da hata ayıklama gözetmeni, bir tree-sitter ayrıştırıcısı, bir kernel fabrikası, bir soru portu, bir vibe kadrosu. *Bu checkout* için bir dil sunucusunun ya da hata ayıklama adaptörünün algılanması ayrı ve daha sonraki bir denetimdir (`status` / `adapters`): bu araçlar yüzeyde kalır; böylece ajan tahmin yürütmek yerine neden hiçbir şeyin kullanılamadığını sorabilir.
 
@@ -15,9 +15,23 @@ Her araç bir kademe bildirir ve kademe, **hangi yüzeylerin onu gördüğüne**
 
 | Kademe  | Anlamı                            | Buradaki araçlar                            |
 | ------- | --------------------------------- | ------------------------------------------- |
-| `read`  | Yan etkisi yok                    | `lsp`, `ast_grep`, `ask_user`, beş `vibe_*` |
+| `read`  | Yan etkisi yok                    | `lsp`, `ast_grep`, `ask_user`, `repl`, beş `vibe_*` |
 | `write` | Dosyaları değiştirir              | `lsp_rename`, `ast_edit`, `resolve`         |
 | `exec`  | Bir süreç başlatır veya denetler  | `debug`, `eval`                             |
+
+## Doğrudan, yalnızca betikten ya da ilk kullanımda yüklenen
+
+Sunucu betik çalıştırabildiğinde, bir çalıştırma birkaç aracı doğrudan çağırır ve geri kalanına bir [`repl`](#repl--araçlarınızı-çağıran-bir-betiği-çalıştırın) betiğinden ulaşır; tüm kural için bkz. [Kod modu](/tr-TR/kilavuz/kavramlar/kod-modu/#ajanın-doğrudan-çağırdığı-araçlar). Bu sayfadaki araçlar için:
+
+| Araç | `repl` ile | `repl` olmadan |
+| ---- | ----------- | -------------- |
+| `repl` | Doğrudan | Yok |
+| `ask_user` | Doğrudan | Doğrudan |
+| `lsp`, `lsp_rename`, `ast_grep`, `ast_edit`, `resolve`, `debug` | Yalnızca bir betikten | İlk kullanımda yüklenir |
+| `eval` | İlk kullanımda yüklenir (bir betik çağıramaz) | İlk kullanımda yüklenir |
+| `vibe_*` | Vibe modunda doğrudan, asla bir betikten değil | Vibe modunda doğrudan |
+
+"Yalnızca bir betikten" işaretli bir araç, sunucu çalıştırmanın betiklerini çalıştıramadığında bunun yerine ilk kullanımda yüklenir ([Betikler çalıştırılamadığında](/tr-TR/kilavuz/kavramlar/kod-modu/#betikler-çalıştırılamadığında)).
 
 ---
 
@@ -152,9 +166,49 @@ Konuşma başına bir oturum ve katı bir TTL (30 dakika). İkinci bir `launch`,
 
 ---
 
+## `repl` — araçlarınızı çağıran bir betiği çalıştırın
+
+Sunucu betik çalıştırabildiğinde her çalıştırmada bulunur ([Bir çalıştırmada `repl` ne zaman bulunur](/tr-TR/kilavuz/kavramlar/kod-modu/#bir-çalıştırmada-repl-ne-zaman-bulunur)). Betik düz JavaScript’tir, bir async fonksiyonun gövdesidir ve kendi sürecinde yeni, kilitlenmiş bir yorumlayıcıda çalışır: dosya sistemi, ağ, süreç ya da modül erişimi yoktur. `repl`’in kendisi `read` katmanındadır ve kendini korur, çünkü betiğin yaptığı her araç çağrısı ayrıca denetlenir. Sunucu betik çalıştırabildiğinde, MCP uç noktasında betik çalıştıran ajan çalıştırmaları için de bulunur.
+
+| Argüman | Anlamı |
+| ------------------- | --------------------------------------------------------------------------------------------- |
+| `code` | Betik. En fazla 256 KiB |
+| `description` | Zorunlu. Aktarım satırı için kısa bir etiket |
+| `timeout_ms` | İsteğe bağlı. Çalışma alanınınkinden daha kısa bir süre sınırı; asla daha uzun değil |
+| `max_output_tokens` | İsteğe bağlı. Çalışma alanınınkinden daha küçük bir çıktı bütçesi; asla daha büyük değil |
+
+```js
+// Read three files together and report only which ones failed.
+const paths = ["lib/a.dart", "lib/b.dart", "lib/c.dart"];
+const results = await Promise.allSettled(paths.map((path) => tools.read({ path })));
+return results
+  .map((r, i) => (r.status === "rejected" ? `${paths[i]}: ${r.reason.message}` : null))
+  .filter(Boolean);
+```
+
+`repl` açıklaması ajana şunu söyler: “Doğrudan araçlarınızdan biri olmayan bir araç bu istekte bir tanıma sahip değildir. Ona ilk çağrıdan önce, tam çağrı biçimi bu konuşmada size gösterilmediyse, `describeTool(name)` ya da `searchTools(query)` ile bakın.”
+
+`describeTool(name)`, bir aracın açıklamasını, bildirimini, giriş ve çıkış şemalarını ve varsa sonuç notunu döndürür: tamamlanmış bir çağrıdan bir betiğin ne aldığını, aracın kendi sözleriyle. `repl` açıklaması, betiğin çağırabileceği doğrudan araçların notlarını listeler. JSON metni olan bir sonuç ayrıştırılmış olarak gelir; ancak 131.072 değerden fazla içeriyorsa metin olarak gelir ve betik onu `JSON.parse` ile ayrıştırır. Harici bir MCP sunucusunun aracından gelen bir sonucun metni 262.144 karakterde kesilir ve kesilmiş metin artık ayrıştırılamaz.
+
+- `tools.<name>(args)`, doğrudan bir çağrıyla aynı filtreden, korumalardan ve onaydan geçerek bir aracı çağırır; reddedildiğinde ya da başarısız olduğunda hatayla reddeder. Salt okunur çağrılar birlikte çalışabilir; bir şeyi değiştiren çağrılar ise betiğin yaptığı sırayla tek tek çalışır. Betiğin çağrılarından biri bir kişiyi beklerken, betiğin başka hiçbir çağrısı başlamaz.
+- `ALL_TOOLS`, `searchTools(query, { limit, namespace })`, `describeTool(name)` ve `describeNamespace(name)` araçları bulur; bağlı MCP sunucularının araçları da dahil. Doğrudan kümenin dışındaki, bir betiğin çağırabildiği bir araç yalnızca bir betikten çağrılabilir; birini doğrudan çağırmak, onu `repl` ile nasıl çağıracağını döndürür. Sunucu bir çalıştırmanın betiklerini çalıştıramadığında, böyle bir araç bunun yerine ilk kullanımda yüklenir.
+- Aramalar sınırlıdır: en fazla 1.024 karakterlik bir sorgu, en fazla 256 karakterlik bir ad ya da ad alanı, 0 ile 50 arasında bir `limit` ve betik başına sunucunun zamanından toplamda 2 saniye harcayan en fazla 200 arama; bir çalışma alanının tüm betikleri ise 2 saniyelik arama süresini paylaşır ve bu süre her saniye çeyrek saniye geri verilir. Bunların herhangi biri tükenince, sonraki her arama reddedilir. Çok büyük bir katalogda `ALL_TOOLS` içindeki açıklamalar yaklaşık bir milyon karakteri eşit olarak paylaşır ve kesilen bir açıklama `…` ile biter; `describeTool` her zaman açıklamanın tamamını döndürür. Gösterilemeyecek kadar büyük bir tür `unknown /* too large to show */` olarak görünür; bilinmeyen bir ad ise en yakın adlarla yanıtlanır.
+- Araçlar ad alanlarında gruplanır: `builtin` (harness’ın kendi araçları), `control-center` (Control Center’ın araçları) ve bağlı her MCP sunucusu için, sunucunun adını taşıyan bir ad alanı. `builtin`, `control-center` ya da `script` adlı ya da adı `external-` ile başlayan bir sunucu, harflerin büyük ya da küçük olmasından ve adının etrafındaki boşluklardan bağımsız olarak, `external-` ön eki ve ardından adıyla listelenir; hiçbir araç `script` ad alanında bulunmaz.
+- Yalnızca betiğin döndürdüğü ya da `text()`, `image()` veya `console.*` ile ilettiği şey ajana geri döner. Bütçeyi aşan çıktı başı ve sonu korunarak kısaltılır; `read_output` kalanını okur.
+- `store(key, value)` / `load(key)`, aynı konuşma ve ajanın sonraki betikleri için JSON değerlerini tutar; yalnızca betik tamamlandığında kaydedilir. Bir alt ajanın betiklerinin deposu yoktur.
+- `await tools.ask_user(...)` bir soru sorar; yanıtı ayrıca sonuca da eklenir. `sleep(ms)`, `setTimeout`, `limits()` ve `models.embed` / `rank` / `classify` (cihaz üzerinde gömmeler) da kullanılabilir.
+- `describeTool(name)` ve `searchTools(query)` ayrıca araç olmayan betiğin kendi işlevleri için de yanıt verir: `text`, `image`, `store`, `load`, `sleep`, `setTimeout`, `clearTimeout`, `limits`, `exit` ve `models.*`, `script` ad alanı altında.
+- Bir betikten çağrılamaz: `repl`, `eval`, `task`, `checkpoint`, `rewind`, `compact`, `search_tools` ve `vibe_*` fiilleri.
+- Bir betik kendi çalıştırmasının geçmişini okuyabilir: `history({start, role, tool, limit})` konuşmanın dökümünü sayfalar (çağrı başına en fazla 50 satır; önceki sayfanın `next_start` değerini `start` olarak verin), `outputs()` bu konuşma ve ajan için saklanan araç çıktılarını listeler ve `loadOutput(handle)` birinin 16.384 karakterini okur. `storedKeys()` saklanan anahtarları boyutlarıyla listeler. `keep(value, label)` büyük bir değeri, sonraki bir betiğin ya da `read_output`’un okuyabileceği bir çıktı olarak saklar; yalnızca betik tamamlandığında kaydedilir (değer başına 1 MiB, çalıştırma başına 64 değer ve 16 MiB). `limits().returnBudgetChars` çıktı bütçesinden ne kadarının kaldığını söyler. Salt okunur bir çalıştırma (bir hedef incelemesi) okuyabilir, ama saklayamaz veya keep ile tutamaz. Claude Code ve ACP üzerinde `history()` çalışır; `outputs()`, `loadOutput()` ve `keep()` ise reddedilir, çünkü Control Center bu çalıştırmaların araç çıktılarını tutmaz.
+- Zaman aşımı, çıktı taşması ya da çağrı sınırından gelen bir hata, nasıl düzeltileceğini söyler.
+
+Bir çalıştırma aynı anda yalnızca bir betik çalıştırır. Sınırlar ve her birinde ne olduğu [kod modu](/tr-TR/kilavuz/kavramlar/kod-modu/#sınırlar) sayfasında; her betik **Gözlemlenebilirlik → Kod çalıştırmaları** altında kaydedilir.
+
+---
+
 ## `eval` — kalıcı yorumlayıcılar
 
-Değişkenleri, içe aktarmaları ve yüklenen verileri çağrılar arasında yaşamaya devam eden bir Python veya JavaScript hücresi. `exec` kademesi; paralel çalışmaya uygun değil.
+Değişkenleri, içe aktarmaları ve yüklenen verileri çağrılar arasında yaşamaya devam eden bir Python veya JavaScript hücresi. `exec` kademesi; paralel çalışmaya uygun değil. Bir `repl` betiğinden çağrılamaz ve bir hücre çalıştırmanın araçlarını çağıramaz: koddan araç çağırmak için [`repl`](#repl--araçlarınızı-çağıran-bir-betiği-çalıştırın) kullanın.
 
 | Argüman       | Anlamı                                             |
 | ------------- | -------------------------------------------------- |
@@ -166,20 +220,34 @@ Değişkenleri, içe aktarmaları ve yüklenen verileri çağrılar arasında ya
 - Son ifade, bir notebook’un yaptığı gibi yankılanır.
 - `display()` çalışır, bir pandas frame’i tablo olarak işlenir ve bir matplotlib şekli, **transkriptin gösterdiği bir görüntü** olarak geri döner.
 - İnsanların refleks olarak yazdığı IPython deyimleri — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — düz koda dönüştürülür. `%pip` ayrıca `sys.modules`’u boşaltır; böylece sonraki `import`, az önce kurulmuş olanı görür.
-
-### Kendi araçlarınızı bir hücrenin içinden çağırma
-
-```python
-contents = tool("read", {"path": "lib/auth.dart"})
-```
-
-Köprü, **harness araç kayıt defterine yeniden girer**; böylece korumalar, onay ve her sarmalayıcı, modelin yaptığı bir çağrıda olduğu gibi birebir uygulanır. Geri döngü soketi yerine kernel’in kendi borusunu kullanır: port yok, secret yok, dışa çıkış kuralı yok.
-
-Hücrenin zaman aşımı bir *hareketsizlik* bütçesidir (varsayılan 5 dakika) ve köprü üzerinden gelen bir çağrı sonuçlanana kadar **askıya alınır**; böylece alt ajanlara dağılan bir hücre, dağıtımın ortasında öldürülmez.
+- Çıktı bütçesinden fazla yazdıran bir hücre, ilk üç çeyreği ve son çeyreği tutar; kaç karakter ve görselin atıldığını gösteren tek bir satır ekler.
+- Yorumlayıcı istenmeden öldüğünde, bir sonraki hücreye önceki değişkenlerinin gittiği bir kez bildirilir.
 
 :::note[Kernel nerede çalışır]
 Konuşmanın bir enclosure’ı varsa orada, yoksa çalıştırmanın ana makinedeki işletim sistemi sandbox’ında. Sandbox kapalıysa ya da yoksa sınırlandırılmadan çalışır ve `eval` ana makine yürütme onayı ister. Oraya ulaşmak için bir enclosure **başlatmaz** — bir rig sekmesinin kendiliğinden başlamasını engelleyen kuralın aynısı.
 :::
+
+---
+
+## Arka planda `bash`
+
+`bash` ile `run_in_background: true` komutu başlatır ve beklemek yerine hemen bir tutamakla (`b1`, `b2`, …) döner. Ajan çalışmaya devam eder ya da turunu bitirir ve komut çıkınca uyandırılır.
+
+| Argüman | Anlamı |
+| ------------------- | ------- |
+| `run_in_background` | `true`: başlatır ve hemen döner |
+| `timeout_seconds` | Komut öldürülmeden önceki saniye: varsayılan 600, en fazla 3.600 |
+| `notify` | İsteğe bağlı. Basit bir desen; çalışırken eşleşen her çıktı satırı ajana gönderilir (örneğin `listening on\|FAILED`) |
+
+- Bir çalıştırmada aynı anda en fazla 4 arka plan komutu çalışır. Her biri, zaman aşımında ve çalıştırma bittiğinde, başlattığı her süreçle birlikte öldürülür.
+- Bir komut çıktığında ajan çıkış kodunu, çıktının son 2.000 karakterini ve kalanı için bir `read_output` tutamağını içeren bir bildirim alır.
+- Geriye yalnızca bir arka plan komutu kalan ajan, modeli çağırmadan bekler; çalıştırmanın sessizlik bekçisi beklerken duraklar.
+- `bash_output(handle)` bir komutun durumunu ve son çıktısını okur; `bash_kill(handle)` onu durdurur. İkisi de sonucun daha önce teslim edilip edilmediğini söyler.
+- Bir betik arka plan komutu başlatamaz. Claude Code’un kendi arka plan Bash’i vardır; Control Center ise bir görevi çalışır bırakan turdan sonra o çalıştırmayı en fazla 10 dakika açık tutar.
+
+## `compact` — bağlam penceresinde yer açar
+
+Bir sonraki model çağrısından önce konuşmanın eski bağlamını sıkıştırır; `focus` ile adlandırılanı (en fazla 1.000 karakter) korur. En yeni turlar olduğu gibi kalır. Ajanın tur başına bütçe satırı bağlam kullanımını yüzde 70, 80 ve 90 olarak gösterir; bu araç, uzun yeni bir iş aşamasından önce yaklaşık yüzde 70’in üzerinde çağrılmaya değer. Sunucu sahibinin `preCompact` hook’u odağa ekleme yapabilir ([Shell hook’ları](/tr-TR/kilavuz/referans/ajan-yapilandirmasi/#shell-hookları)). Bir sıkıştırmadan sonra sunucu “Still in flight” bloğunu ekler: hedef, bekleyen uyandırmalar, açık sorular, arka plan komutları, kontrol listesi ve saklanan anahtarlar; her biri onu geri getiren çağrısıyla birlikte.
 
 ---
 

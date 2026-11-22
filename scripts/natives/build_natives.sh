@@ -30,6 +30,9 @@ bash "$SCRIPT_DIR/build_watcher.sh" "$DEST"
 bash "$SCRIPT_DIR/build_inference.sh" "$DEST"
 # SAML SSO (pure-Rust; no C toolchain beyond cargo itself).
 bash "$SCRIPT_DIR/build_saml.sh" "$DEST"
+# Code mode's locked-down JavaScript runner (an executable, staged under
+# codemode/; its build fails when the lockdown self-test fails).
+bash "$SCRIPT_DIR/build_codemode.sh" "$DEST"
 bash "$SCRIPT_DIR/build_media.sh" "$DEST"
 # Desktop app windows (cc_window_windows.cpp is built separately, once CI does).
 bash "$SCRIPT_DIR/build_window.sh" "$DEST"

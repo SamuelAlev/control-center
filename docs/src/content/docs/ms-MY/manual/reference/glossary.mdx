@@ -2,7 +2,7 @@
 title: Glosari
 description: Takrif istilah penting yang digunakan di seluruh Control Center.
 slug: ms-MY/manual-pengguna/rujukan/glosari
-sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
+sourceHash: ba09880357171a4fcbb82201798578de3856cbe6
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -36,7 +36,13 @@ export const glossaryTerms = [
 ['Stesen', 'Mesin pakai buang yang dipandu ejen secara masa nyata: penyemak imbas atau desktop Linux tertutup, emulator Android atau Simulator iOS yang diuruskan hos, atau terminal tertutup. Ditonton secara langsung melalui lorong resolusi penuhnya sendiri, dengan pengambilalihan dikuatkuasakan di pihak pelayan. Berskop pada satu perbualan supaya tab manusia dan alat ejen menuju ke satu mesin yang sama.'],
 ['Persekitaran terasing', 'Sifat pengasingan yang lebih kuat yang tersedia untuk stesen bersandarkan VM: sempadan kernel, cakera tindanan pakai buang, gerbang rangkaian tolak-secara-lalai dan broker kelayakan. Stesen Android dan iOS boleh dibuang tetapi menggunakan rangkaian yang diuruskan hos, jadi ia tidak menuntut sempadan ini. Memandu mana-mana stesen menggunakan kelas guardrail enclosureControl.'],
 ['RunCost', 'Rekod token/kos (token input, token output, anggaran kos dalam mikrodolar) bagi satu larian ejen.'],
-['WakeReason', 'Sebab ejen dihantar. Enam nilai: mesej pengguna, penugasan tiket, penghantaran semula pemulihan selepas kegagalan, tiket anak selesai, denyutan susulan berjadual dan langkah pipeline.'],
+['WakeReason', 'Sebab sesuatu larian ejen wujud. Mesej seseorang, penugasan tiket atau langkah pipeline; atau, bagi larian yang dimulakan oleh pelayan sendiri, sebab panggilan bangunnya: jadual, pantauan, segmen matlamat, semakan atau kajian, mesej atau balasan ejen lain, kerja anak yang selesai, had penggunaan yang telah ditetapkan semula, kajian penambahbaikan, atau pemulihan selepas pemulaan semula.'],
+['Panggilan bangun', 'Permintaan tahan lama, disimpan dalam pangkalan data ruang kerja, untuk memulakan atau meneruskan larian satu ejen dalam satu perbualan, dengan sebab dan orang yang diwakilinya. Setiap larian yang dimulakan pelayan tanpa seseorang menaip bermula sebagai satu; panggilan bangun kekal selepas pemulaan semula.'],
+['Matlamat', 'Kerja yang diteruskan oleh ejen, dalam segmen, sehingga pelayan mengesahkan bahawa maksud siap dipenuhi atau seseorang menutupnya. Dimulakan dengan /goal; satu setiap ejen pada satu masa. Ejen mendakwa ia telah siap; semakan dan kajian baca sahaja memutuskan.'],
+['Jadual', 'Peraturan yang membangunkan ejen pada masa, pada sela, pada cron atau pada kadar ejen sendiri, dengan tarikh tamat, had larian dan had kos. Dibuat dengan /loop, /schedule, halaman Jadual atau alat wake_me ejen.'],
+['Pantauan', 'Peraturan yang membangunkan ejen apabila sesuatu berlaku: semakan permintaan tarik selesai, ia menerima kajian atau digabungkan, tugas persekitaran keluar, tiket selesai atau larian pipeline tamat.'],
+['Soalan', 'Soalan satu ejen kepada ejen lain, direkodkan sebelum ia dihantar. Penanya dibangunkan sekali dengan jawapan, atau dengan sebab tiada jawapan.'],
+['Cadangan penambahbaikan', 'Perubahan kepada memori, polisi, nota ejen atau kemahiran yang dicadangkan oleh kajian selepas matlamat yang disahkan atau pada /refine. Ia tidak mengubah apa-apa sehingga seseorang menerimanya; perubahan kemahiran dinilai dahulu.'],
 ['SandboxPort', 'Mengurus kitaran hayat kotak pasir (probe, launch, events, exec, destroy).'],
 ['CredentialBrokerPort', 'Menempa kelayakan berskop untuk pelancaran kotak pasir (satu token bagi satu repo untuk persekitaran ejen, tulis hanya untuk laluan push di sebelah pelayan), kemudian melepaskannya apabila dimusnahkan.'],
 ['GitRepoInspectorPort', 'Mengekstrak metadata (owner, repo, branch) daripada laluan repo Git setempat.'],
@@ -94,6 +100,11 @@ export const glossaryTerms = [
 ['Id pemasangan', 'Identiti pelayan terhadap satu alamat Connect, diperoleh daripada kunci pemasangannya. Connect membenarkan pelayan mengikut id pemasangan; memutar kunci menukarnya dan mengeluarkan semua orang daripada lorong Connect.'],
 ['Ikatan pemasangan', 'Rekod Connect tentang sesebuah pelayan tempat pasukan Slack terikat. Pemasangan GitHub tiada ikatan sedemikian: mana-mana pelayan tempat ahli log masuk boleh menggunakannya.'],
 ['Lorong log masuk', 'Log masuk pelayar bagi satu pembekal: `github`, `google`, `linear`, `linear_app` atau `slack`. Di bawah apl sendiri, lorong berjalan pada apl sendiri apabila apl itu dikonfigurasi sepenuhnya, jika tidak ia tidak tersedia; dengan Connect dipilih, Connect menjalankannya. Kedua-duanya tidak jatuh kembali antara satu sama lain.'],
+['Mod kod', 'Alat repl, yang menjalankan skrip JavaScript yang memanggil alat lain larian itu. Setiap larian mempunyainya apabila pelayan boleh menjalankan skrip; tiada tetapan.'],
+['Alat langsung', 'Alat yang dipanggil oleh larian mengikut nama, dengan skemanya dalam setiap permintaan, sama ada ia mempunyai repl atau tidak: alat fail dan shell, ask_user, task, senarai tugas, carian memori, send_message dan kata kerja modus.'],
+['Alat khusus skrip', 'Alat di luar set langsung yang boleh dipanggil oleh larian dengan repl hanya daripada skrip, sehingga pelayan tidak boleh menjalankan skrip larian itu dan ia dimuatkan pada penggunaan pertama sebaliknya. Sehingga itu perihalannya tidak pernah sampai kepada model.'],
+['Pelari mod kod', 'cc_codemode, program yang dibundel yang menjalankan satu skrip dalam enjin QuickJS-NG selepas mengunci dirinya dengan kawalan sistem operasi. Pelayan tidak akan bermula tanpanya, dan tidak menjalankan sebarang skrip melainkan ia binaan keluaran dan kuncinya lengkap.'],
+['Pelaksanaan kod', 'Rekod satu skrip: sumbernya, outputnya, had dan setiap panggilan alat yang dibuatnya, disimpan dalam ruang kerjanya dan disenaraikan di bawah Kebolehcerapan → Pelaksanaan kod.'],
 ];
 
 <StructuredData
@@ -157,7 +168,19 @@ export const glossaryTerms = [
 
 **RunCost**: Rekod token/kos (token input, token output, anggaran kos dalam mikrodolar) bagi satu larian ejen.
 
-**WakeReason**: Sebab ejen dihantar. Enam nilai: mesej pengguna, penugasan tiket, penghantaran semula pemulihan selepas kegagalan, tiket anak selesai, denyutan susulan berjadual dan langkah pipeline.
+**WakeReason**: Sebab sesuatu larian ejen wujud. Mesej seseorang, penugasan tiket atau langkah pipeline; atau, bagi larian yang dimulakan oleh pelayan sendiri, sebab panggilan bangunnya: jadual, pantauan, segmen matlamat, semakan atau kajian, mesej atau balasan ejen lain, kerja anak yang selesai, had penggunaan yang telah ditetapkan semula, kajian penambahbaikan, atau pemulihan selepas pemulaan semula.
+
+**Panggilan bangun**: Permintaan tahan lama, disimpan dalam pangkalan data ruang kerja, untuk memulakan atau meneruskan larian satu ejen dalam satu perbualan, dengan sebab dan orang yang diwakilinya. Setiap larian yang dimulakan pelayan tanpa seseorang menaip bermula sebagai satu; panggilan bangun kekal selepas pemulaan semula.
+
+**Matlamat**: Kerja yang diteruskan oleh ejen, dalam segmen, sehingga pelayan mengesahkan bahawa maksud siap dipenuhi atau seseorang menutupnya. Dimulakan dengan `/goal`; satu setiap ejen pada satu masa. Ejen mendakwa ia telah siap; semakan dan kajian baca sahaja memutuskan.
+
+**Jadual**: Peraturan yang membangunkan ejen pada masa, pada sela, pada cron atau pada kadar ejen sendiri, dengan tarikh tamat, had larian dan had kos. Dibuat dengan `/loop`, `/schedule`, halaman Jadual atau alat `wake_me` ejen.
+
+**Pantauan**: Peraturan yang membangunkan ejen apabila sesuatu berlaku: semakan permintaan tarik selesai, ia menerima kajian atau digabungkan, tugas persekitaran keluar, tiket selesai atau larian pipeline tamat.
+
+**Soalan**: Soalan satu ejen kepada ejen lain, direkodkan sebelum ia dihantar. Penanya dibangunkan sekali dengan jawapan, atau dengan sebab tiada jawapan.
+
+**Cadangan penambahbaikan**: Perubahan kepada memori, polisi, nota ejen atau kemahiran yang dicadangkan oleh kajian selepas matlamat yang disahkan atau pada `/refine`. Ia tidak mengubah apa-apa sehingga seseorang menerimanya; perubahan kemahiran dinilai dahulu.
 
 ## Port
 
@@ -258,6 +281,20 @@ export const glossaryTerms = [
 **Paksi semakan**: Salah satu daripada lima lorong penilaian bagi setiap semakan: `correctness`, `security` dan `testGap` diambil daripada penemuan penyemak; `visual` dan `apiContract` deterministik. Paksi berpintu dilipat ke dalam keputusan dan hanya boleh menjadikannya lebih berat — pintu `partial` atau `unavailable` menahan keputusan itu dan bukan meluluskannya.
 
 **Keputusan semakan**: `ship`, `hold` atau `block`. Mana-mana penemuan P0 dengan keyakinan ≥ 0.7 menyekat; mana-mana P0 lain atau mana-mana P1 menahan; sebaliknya ship. Paksi gagal berpintu memaksa block dan tidak boleh dikalahkan oleh penemuan.
+
+## Mod kod
+
+**Mod kod**: Alat `repl`, yang menjalankan skrip JavaScript yang memanggil alat lain larian itu dan memulangkan hanya apa yang diperlukan ejen. Setiap larian mempunyainya apabila pelayan boleh menjalankan skrip; tiada tetapan. **Tetapan → Ruang kerja → Mod kod** menunjukkan sama ada pelayan ini menjalankan skrip dan menetapkan had yang dikenakan ke atas skrip. Lihat [Mod kod](/ms-MY/manual-pengguna/konsep/mod-kod/).
+
+**Alat langsung**: Alat yang dipanggil oleh larian mengikut nama, dengan skemanya dalam setiap permintaan, sama ada ia mempunyai `repl` atau tidak: alat fail dan shell, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` dan kata kerja modus.
+
+**Alat khusus skrip**: Alat di luar set langsung yang boleh dipanggil oleh larian dengan `repl` hanya daripada skrip, sehingga pelayan tidak boleh menjalankan skrip larian itu dan ia dimuatkan pada penggunaan pertama sebaliknya ([Apabila skrip tidak boleh dijalankan](/ms-MY/manual-pengguna/konsep/mod-kod/#apabila-skrip-tidak-boleh-dijalankan)). Sehingga itu perihalannya tidak pernah sampai kepada model, dan panggilan langsung dibalas dengan penerangan tentang cara memanggilnya daripada skrip. Alat yang tidak boleh dipanggil oleh skrip tidak sekali-kali khusus skrip: ia dimuatkan pada penggunaan pertama.
+
+**Panggilan bersarang**: Panggilan alat yang dibuat oleh skrip. Ia melalui penapis modus, guardrail dan kelulusan yang sama seperti panggilan langsung.
+
+**Pelari mod kod**: `cc_codemode`, program yang dibundel bersama pelayan yang menjalankan satu skrip dalam enjin QuickJS-NG selepas mengunci dirinya (**kuncinya**). Pelayan tidak akan bermula tanpanya, dan tidak menjalankan sebarang skrip melainkan ia binaan keluaran dan kuncinya lengkap.
+
+**Pelaksanaan kod**: Rekod satu skrip: sumbernya, outputnya, had dan setiap panggilan alat yang dibuatnya, disimpan dalam ruang kerjanya dan disenaraikan di bawah **Kebolehcerapan → Pelaksanaan kod**.
 
 ## Armada dan eval
 

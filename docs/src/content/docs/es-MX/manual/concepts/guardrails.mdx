@@ -2,7 +2,7 @@
 title: Barandillas — una sola política para cada acción que muta el estado
 description: Por qué Control Center canaliza todos los efectos secundarios de un agente por un único motor de permitir/preguntar/denegar, por qué la taxonomía de ActionClass se mantiene pequeña a propósito y qué cambia realmente el dial de autonomía.
 slug: es-MX/manual/conceptos/barandillas
-sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
+sourceHash: bb98b2ca26ae104ab7701d4d381cd5c41d25d32f
 ---
 
 Los agentes de Control Center pueden eliminar archivos, hacer push de ramas, publicar pull requests y llamar a API externas. Cada una de esas acciones es un _tipo_ de riesgo distinto y, durante mucho tiempo, solo una de ellas —los comandos de shell— tenía una política. Las barandillas existen para responder de forma uniforme una sola pregunta, para toda acción que muta el estado que un agente pueda realizar, sin importar qué runtime o herramienta la proponga: **¿se permite, requiere una aprobación o se deniega?**
@@ -12,6 +12,17 @@ Los agentes de Control Center pueden eliminar archivos, hacer push de ramas, pub
 Existe exactamente un motor de políticas. Se consulta en cada punto donde una acción puede salir del sistema: el registro de herramientas del arnés integrado, la compuerta del despachador de MCP en el servidor y las mutaciones de operaciones de repositorio. Por eso, una regla escrita una sola vez aplica tanto al runtime integrado como a las CLI de agentes externos: no hay un segundo camino, más silencioso, que la rodee. Una regla también puede hacer coincidir un prefijo de comando en lugar de una clase de acción; ambas formas conviven en el mismo almacén.
 
 El motor no sustituye, sin embargo, al sandbox del sistema operativo, ni el sandbox lo sustituye a él. Responden a preguntas distintas: las barandillas deciden si una llamada que Control Center alcanza a ver puede ocurrir siquiera, mientras que el sandbox delimita hasta dónde puede llegar el proceso resultante. `cc_server` aplica el sandbox donde el host ofrece un backend, pero [Windows no ofrece ninguno y Linux necesita `bwrap` y `socat`](/es-MX/manual/conceptos/sandbox-y-seguridad/). En esos hosts solo arrancan las ejecuciones del propietario del servidor, a menos que el propietario haya desactivado el sandbox para todos con `--sandbox off`. Para cualquier ejecución que arranca sin sandbox, las barandillas son la capa de aplicación más externa en lugar de una política que se apoya sobre un piso, algo que conviene saber cuando decides qué tan permisivo ser.
+
+### Llamadas que hace un script
+
+Un script de [modo código](/es-MX/manual/conceptos/modo-codigo/) llama a herramientas en código, muchas a la vez, pero cada una de sus llamadas es una llamada separada a herramienta que va al motor. Pasa por la misma compuerta del arnés o del despachador MCP que una llamada directa, con las mismas reglas, la misma solicitud de aprobación y la misma entrada de auditoría, y nada de lo que hace queda aprobado solo porque lo estaba la llamada a `repl` que lo inició.
+
+Dos reglas adicionales se aplican a las llamadas desde un script, porque un solo script puede hacer cientos de llamadas y capturar cada rechazo para seguir:
+
+- como máximo 10 de sus llamadas llegan a una persona para aprobación; las siguientes que necesitarían una persona se rechazan sin tarjeta;
+- una vez que una persona rechaza una de sus llamadas, el resto de sus llamadas que necesitan aprobación se rechazan sin preguntar.
+
+Una tarjeta abierta por un script lo indica y te permite abrir el script. Si el script termina mientras la tarjeta está abierta, la tarjeta se retira, y una respuesta que llega después se registra como denegación y no aprueba nada.
 
 ## ActionClass: una taxonomía cerrada a propósito
 
@@ -139,5 +150,6 @@ La sonda recibe una clase de acción (o un comando) y un ámbito, y muestra qué
 ## Conceptos relacionados
 
 - [Sandbox y seguridad](/es-MX/manual/conceptos/sandbox-y-seguridad/): qué limita realmente la ejecución de un agente y hasta dónde llega el piso del sistema operativo que hay bajo este motor
+- [Modo código](/es-MX/manual/conceptos/modo-codigo/): scripts cuyas llamadas a herramientas pasan todas por este motor
 - [Multijugador — identidad, pertenencia y presencia](/es-MX/manual/conceptos/multijugador/): los espacios, los Principal y dónde vive el dial de autonomía
 - [Configurar barandillas](/es-MX/manual/guias/configurar-barandillas/): escribir y probar reglas en la práctica

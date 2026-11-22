@@ -55,11 +55,12 @@ class AgentRunTaskCompleter {
   })?
   _latestAgentContent;
 
-  StreamSubscription<AgentRunCompleted>? _sub;
+  StreamSubscription<AgentRunSettled>? _sub;
 
-  /// Start listening for `AgentRunCompleted` events.
+  /// Start listening for `AgentRunSettled` events (published after the run's
+  /// terminal write).
   void start() {
-    _sub = _eventBus.on<AgentRunCompleted>().listen(_onCompleted);
+    _sub = _eventBus.on<AgentRunSettled>().listen(_onCompleted);
   }
 
   /// Stop listening.
@@ -67,14 +68,13 @@ class AgentRunTaskCompleter {
     _sub?.cancel();
   }
 
-  Future<void> _onCompleted(AgentRunCompleted event) async {
+  Future<void> _onCompleted(AgentRunSettled event) async {
     try {
       final runId = event.runId;
       final conversationId = event.conversationId;
       final workspaceId = event.workspaceId;
-      // Without a workspace the run cannot be located: the workspace selects
-      // the database the run and its messages live in.
-      if (runId == null || conversationId == null || workspaceId == null) {
+      // Without a conversation there are no messages to harvest.
+      if (conversationId == null) {
         return;
       }
       final run = await _runLogs.getById(workspaceId, runId);
@@ -89,12 +89,11 @@ class AgentRunTaskCompleter {
       if (run.outputJson != null) {
         return;
       }
-      // The run is already recorded as failed: whatever it managed to say is
-      // not a deliverable, and harvesting it would hand the step a payload that
-      // makes a failure look like a result. (Best-effort — the terminal write
-      // often lands after this event, which is why the emptiness check below
-      // carries the load.)
-      if (run.status == RunStatus.error) {
+      // The run is recorded as failed: whatever it managed to say is not a
+      // deliverable, and harvesting it would hand the step a payload that
+      // makes a failure look like a result. The event follows the terminal
+      // write, so this status is final.
+      if (event.status == RunStatus.error || run.status == RunStatus.error) {
         return;
       }
       // A schema-declaring run cannot be satisfied by free-form text — let the
@@ -130,10 +129,6 @@ class AgentRunTaskCompleter {
       // indistinguishable downstream from a reviewer who genuinely found
       // nothing. Left null, the engine's own guard fails the step and says why.
       //
-      // Note the status is deliberately NOT the test here: the terminal write
-      // races this event (see `PipelineStepResumeListener`), so it usually
-      // still reads `running` at this point. "Produced nothing" is a fact this
-      // path can actually establish.
       if (lastMessage == null || lastMessage.trim().isEmpty) {
         CcDomainLog.warning(
           'AgentRunTaskCompleter: Run ${run.id} ended without submit_output and '

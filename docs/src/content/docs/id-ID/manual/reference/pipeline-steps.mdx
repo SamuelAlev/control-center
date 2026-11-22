@@ -2,7 +2,7 @@
 title: Jenis langkah pipeline
 description: Referensi untuk jenis langkah pipeline, kunci badan langkah, konfigurasinya, dan hasil langkah.
 slug: id-ID/panduan-pengguna/referensi/langkah-pipeline
-sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
+sourceHash: 0d2876bc1ac359f4d2cfe94902bd5f924d19d5d5
 ---
 
 Sebuah langkah pipeline memiliki dua sumbu yang independen:
@@ -58,6 +58,31 @@ Node prompt-dan-kirim generik: merender prompt, mengirim agen ke sebuah percakap
 | `extras.spaceId`   | Percakapan yang sudah ada untuk bekerja di dalamnya (bawaan: percakapan tersembunyi) |
 | `extras.conversationTitle` | Aliran bernama di dalam space itu (opsional) |
 | `extras.mode`      | Dibaca pada node yang *membuka* ruangan (`messaging.createSpace`), bukan di sini. Bawaan `review`. |
+
+### `goal.pursue`
+
+Memulai tujuan yang tahan lama (lihat [Kejar tujuan](/id-ID/panduan-pengguna/panduan-praktis/kejar-tujuan/)) dan ditangguhkan sampai tujuan itu berakhir. Editor menampilkannya sebagai **Pursue a goal**. Bukan salah satu dari 25 isi bawaan di atas; didaftarkan bersama mereka.
+
+| Kolom konfigurasi | Keterangan |
+| ---------------------- | ----------- |
+| `agentId` | Agen yang mengejar tujuan (wajib) |
+| `prompt` | Sasaran; mendukung substitusi `{{key}}` (wajib) |
+| `outputKey` | Kunci state untuk hasil (wajib) |
+| `extras.spaceId` | Ruang tempat tujuan bekerja (wajib, seperti setiap langkah agen) |
+| `extras.budgetMicros` | Anggaran tujuan dalam mikrodolar, 1 hingga 1.000.000.000 (wajib) |
+| `extras.maxRuns` | Batas segmen, 1 hingga 1.000 (opsional) |
+| `extras.deadlineHours` | Jam sejak langkah memulai tujuan, 1 hingga 2.160 (opsional) |
+| `extras.contract` | Arti selesai: kriteria dan pemeriksaan (opsional) |
+
+Hasil di bawah `outputKey` adalah `{summary, verdict}`, dengan `verdict` berupa putusan peninjau beserta item dan kekhawatirannya, atau null.
+
+| Tujuan | Langkah |
+| -------- | -------- |
+| selesai | selesai |
+| gagal, dibatalkan, atau anggaran habis | gagal (`retry` dan `continueOnFail` berlaku); langkah yang dicoba ulang memulai tujuan baru |
+| dijeda, termasuk menunggu tinjauan seseorang | tetap ditangguhkan, dikecualikan dari sapuan keberlangsungan 24 jam |
+
+Tujuan yang dimulai oleh run pipeline dibebankan ke orkestrasi run itu, termasuk tinjauannya. Saat run pipeline dibatalkan, gagal, atau selesai selagi tujuan bekerja, tujuan itu dibatalkan.
 
 ### `pipeline.condition`
 

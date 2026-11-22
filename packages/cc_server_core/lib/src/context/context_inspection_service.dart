@@ -6,6 +6,9 @@ import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/core/domain/ports/mode_resolver.dart';
 import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
+import 'package:cc_domain/features/code_mode/domain/ports/code_execution_port.dart';
+import 'package:cc_domain/features/code_mode/domain/value_objects/code_mode.dart';
+import 'package:cc_domain/features/code_mode/domain/value_objects/code_mode_limits.dart';
 import 'package:cc_domain/features/dispatch/domain/context/context_inspection.dart';
 import 'package:cc_domain/features/dispatch/domain/modes/mode_capability_profile.dart';
 import 'package:cc_domain/features/dispatch/domain/prompts/capability_preamble.dart';
@@ -17,6 +20,7 @@ import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
+import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/context.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
@@ -52,6 +56,8 @@ class ContextInspectionService {
     required this._filesystem,
     required this._mcpRegistry,
     required this._fileSearch,
+    required this._codeRunnerAvailability,
+    required this._codeModeLimits,
     this._memoryContextUseCase,
     this._sandboxManager,
     this._confirmationPort,
@@ -69,6 +75,15 @@ class ContextInspectionService {
   final WorkspaceFilesystemPort _filesystem;
   final McpToolRegistry _mcpRegistry;
   final FileSearchPort _fileSearch;
+
+  /// Whether this server runs scripts, with a reason fit for a client when
+  /// it does not: a run has `repl` exactly when this is available, so the
+  /// surface reported is the one a run gets.
+  final CodeRunnerAvailability Function() _codeRunnerAvailability;
+
+  /// The limits a workspace's scripts run under (the `repl` description
+  /// states some of them).
+  final Future<CodeModeLimits> Function(String workspaceId) _codeModeLimits;
   final BuildMemoryContextUseCase? _memoryContextUseCase;
   final SandboxManager? _sandboxManager;
   final ConfirmationPort? _confirmationPort;
@@ -193,8 +208,11 @@ class ContextInspectionService {
 
     // ── Tool surface for the conversation's mode ──
     final profile = profileFor(mode);
+    final scripts = _scriptsAvailability();
     final registry = buildHarnessToolRegistry(
       mode: mode,
+      // A run on a server that runs scripts gets a `repl` slot, bound below.
+      replSlot: scripts.isAvailable,
       // Only the schemas are read here; the network posture changes what the
       // web tools do when called, not whether they are advertised.
       networkEnabled: true,
@@ -213,20 +231,45 @@ class ContextInspectionService {
     // The top-level run always gets `task` (depth 0 is below the cap); the
     // dummy spawner is never called — only the schema is read.
     registry.register(TaskTool(_InspectionSubagentSpawner()));
-    // The SAME assembly a run gets, deferral included — the point of this
-    // service is to answer "what would the next dispatch send?", and a second
-    // computation of that answer is the drift it exists to catch.
+    // The SAME assembly a run gets, deferral and `repl` included — the
+    // point of this service is to answer "what would the next dispatch
+    // send?", and a second computation of that answer is the drift it exists
+    // to catch.
     final partition = materializeHarnessToolSurface(
       registry: registry,
       surface: profile.toToolSurfaceSpec(),
       residency: profile.toToolResidencySpec(enabled: _toolDeferralEnabled),
     );
-    final tools = partition.resident;
+    // With `repl`, the slot becomes the `repl` built for exactly this
+    // surface, as a run binds it, so its description (the script catalog)
+    // and its token cost are the ones the run would send.
+    final tools = partition.hasRepl
+        ? bindReplTool(
+            resident: partition.resident,
+            scriptOnly: partition.scriptOnly,
+            binding: ReplBinding(
+              executions: const _InspectionCodeExecutor(),
+              run: ReplRunIdentity(
+                workspaceId: workspaceId,
+                runId: 'context-inspection',
+                readOnly: false,
+                past: null,
+                conversationId: conversationId,
+                agentId: agentId,
+                spaceId: spaceId,
+              ),
+              limits: await _codeModeLimits(workspaceId),
+            ),
+          )
+        : partition.resident;
     final deferredTools = partition.deferred;
+    final scriptTools = partition.scriptOnly;
     final capabilityBlock = buildCapabilityPreamble(
       profile,
       materializedToolNames: [for (final t in tools) t.name],
       deferredToolNames: [for (final t in deferredTools) t.name],
+      hasRepl: partition.hasRepl,
+      scriptToolNames: [for (final t in scriptTools) t.name],
     );
 
     // ── The <context> block's standing sections ──
@@ -293,7 +336,7 @@ class ContextInspectionService {
           ContextSegmentKind.systemPrompt,
           id: 'system:capability-preamble',
           title: 'Capability preamble',
-          subtitle: 'mode: ${mode.name}',
+          subtitle: 'mode: ${mode.name} · ${_scriptsLabel(scripts)}',
           text: capabilityBlock,
         );
       }
@@ -365,7 +408,13 @@ class ContextInspectionService {
               ContextPart(
                 id: 'tool:${tool.name}',
                 title: tool.name,
-                subtitle: tool.approvalTier.name,
+                // `repl` stands for the script-only tools, which send no
+                // definition of their own (its description counts them);
+                // the count says how many it reaches.
+                subtitle: tool is ReplTool
+                    ? '${tool.approvalTier.name} · '
+                          '${scriptTools.length} script-only tools'
+                    : tool.approvalTier.name,
                 tokens: tokens,
                 chars: text.length,
                 content: includeContent ? text : null,
@@ -600,6 +649,42 @@ class ContextInspectionService {
     } on Object {
       return null;
     }
+  }
+}
+
+/// Whether a run has scripts, as a dispatch decides it: unavailable when the
+/// answer cannot be read.
+extension on ContextInspectionService {
+  CodeRunnerAvailability _scriptsAvailability() {
+    try {
+      return _codeRunnerAvailability();
+    } on Object catch (e) {
+      return CodeRunnerAvailability.unavailable('$e');
+    }
+  }
+}
+
+/// Whether the run has scripts and, when not, why.
+String _scriptsLabel(CodeRunnerAvailability scripts) => switch (scripts) {
+  CodeRunnerAvailable() => 'scripts: yes',
+  CodeRunnerUnavailable(:final reason) => 'scripts: no ($reason)',
+};
+
+/// Never runs a script: inspection reads `repl`'s description and schema.
+class _InspectionCodeExecutor implements CodeExecutionPort {
+  const _InspectionCodeExecutor();
+
+  @override
+  CodeRunnerAvailability get availability =>
+      const CodeRunnerAvailability.unavailable('inspection runs no scripts');
+
+  @override
+  Future<CodeExecutionResult> execute(
+    CodeExecutionRequest request, {
+    required ScriptNestedCall callNested,
+    CancellationToken cancel = CancellationToken.none,
+  }) {
+    throw StateError('inspection does not run scripts');
   }
 }
 

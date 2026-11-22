@@ -2,7 +2,7 @@
 title: CLI cc_server
 description: Setiap flag, variabel lingkungan, subperintah, dan jalur direktori data server headless.
 slug: id-ID/panduan-pengguna/referensi/cli-cc-server
-sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
+sourceHash: ee71514a1721599da299a81b5702bc7cdb372330
 ---
 
 Setiap flag proses diisi lewat flag CLI atau variabel lingkungan; flag menang,
@@ -10,9 +10,7 @@ lalu variabel lingkungan, lalu nilai bawaan. Kredensial penyedia adalah
 pengecualiannya — lihat [Aplikasi penyedia dan Connect](#aplikasi-penyedia-dan-connect).
 
 :::caution[Flag yang tidak dikenal diabaikan secara diam-diam]
-Parser argumen dibuat sendiri dan melewati apa pun yang tidak dikenali, sehingga salah ketik
-(`--tls-key-file`, `--bindany`) tidak menghasilkan galat — server tetap mulai dengan nilai
-bawaan. Periksa baris log startup bila suatu flag tampak tidak berpengaruh.
+Parser argumen dibuat sendiri dan melewati apa pun yang tidak dikenali, sehingga salah ketik (`--tls-key-file`, `--bindany`) tidak menghasilkan galat — server tetap mulai dengan nilai bawaan. Periksa baris log startup bila suatu flag tampak tidak berpengaruh. Sebuah [flag mode kode](#mode-kode) dengan nilai yang tidak diterimanya berbeda: server menolak untuk mulai.
 :::
 
 ## Inti
@@ -50,8 +48,10 @@ bawaan. Periksa baris log startup bila suatu flag tampak tidak berpengaruh.
 | `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | `on` membungkus run agen dalam sandbox native OS host, dan pada host tanpa sandbox hanya run milik pemilik server yang dimulai. `off` menjalankan agen setiap anggota tanpa kurungan di host ini. Lihat di bawah |
 | `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Sakelar pemutus lapangan untuk pengindeksan graf kode latar belakang. `off` melakukan boot bersih tanpa build ulang           |
 | `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Detik untuk menahan penyapuan indeks pertama setelah banner siap (dibatasi 0–300)                                             |
-| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Apakah run harness mengirim kumpulan alat residen yang kecil plus indeks nama, lalu memuat sisanya saat pertama dipakai. Lihat di bawah |
+| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Apakah run harness mengirim kumpulan alat langsung yang kecil plus indeks nama, lalu memuat sisanya saat pertama dipakai. Lihat di bawah |
 | `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Detik sebuah run diparkir menunggu manusia memperbaiki kredensial yang tidak dapat melayaninya (dibatasi 0–3600). Lihat di bawah |
+| `--code-mode-max-processes` | `CC_SERVER_CODE_MODE_MAX_PROCESSES` | `min(16, 2 × cores)` | Skrip mode kode yang berjalan bersamaan di server ini, tidak termasuk yang menunggu seseorang, 1–64. Lihat di bawah |
+| `--code-mode-max-heap-mb` | `CC_SERVER_CODE_MODE_MAX_HEAP_MB` | `1024` | Memori terbesar yang boleh dipakai satu skrip, 16–1024 MiB. Batas memori ruang kerja yang lebih tinggi diturunkan ke nilai ini |
 
 ## Aplikasi penyedia dan Connect
 
@@ -106,18 +106,9 @@ Untuk otomatisasi, orang yang bertanggung jawab adalah orang yang diikat oleh ot
 
 ### `--tool-deferral`
 
-Run harness bawaan mengirim kumpulan residen kecil berisi definisi alat plus indeks
-hanya nama untuk sisanya, yang memuat skemanya saat pertama kali dipakai. Ini memangkas
-blok alat sekitar 78% dan menjaga kumpulan yang selalu terlihat tetap dalam rentang tempat
-model memilih alat secara andal. Alat yang ditangguhkan tetap dapat dipanggil dengan
-namanya sepanjang run, dan `search_tools` menemukannya berdasarkan maksud. Lihat
-[Konteks alat dan cache prompt](/id-ID/panduan-pengguna/konsep/konteks-alat).
+Run harness bawaan mengirim himpunan langsung kecil berisi definisi alat plus indeks hanya-nama untuk sisanya, yang memuat skemanya saat pertama kali dipakai, atau dipanggil dari skrip `repl`. Ini menjaga himpunan yang selalu terlihat tetap dalam rentang tempat model memilih alat secara andal. Diukur pada registri yang dibangun tes, alat chat standar agen bawaan berjumlah 14 definisi: sekitar 16,5 KB dengan `repl` (sekitar 4 KB di antaranya milik `repl`, yang definisinya tidak boleh melebihi 4.096 byte), sekitar 13 KB di server yang tidak dapat menjalankan skrip. Alat yang ditangguhkan tetap dapat dipanggil dengan namanya sepanjang run, dan `search_tools` menemukannya berdasarkan maksud. Lihat [Konteks alat dan cache prompt](/id-ID/panduan-pengguna/konsep/konteks-alat/).
 
-`--tool-deferral off` membuat setiap alat yang diizinkan kembali residen, mereproduksi
-permintaan yang dibuat server sebelum penangguhan ada. Ini sakelar pemutus untuk model
-yang buruk dalam menangani permukaan dua tingkat — sebuah flag, bukan build ulang. Ini
-hanya memengaruhi harness bawaan; `tools/list` MCP yang dilihat klien eksternal selalu
-katalog lengkap.
+`--tool-deferral off` mengirim setiap alat yang diizinkan dengan definisi lengkapnya di awal, kecuali bahwa run dengan `repl` tetap memanggil dari skrip alat-alat yang boleh dipanggil skrip. Ini sakelar pemutus untuk model yang buruk dalam menangani permukaan dua tingkat — sebuah flag, bukan build ulang. Ini hanya memengaruhi harness bawaan; `tools/list` MCP yang dilihat klien eksternal adalah katalog lengkap, kecuali untuk run agen pada server yang dapat menjalankan skrip [mode kode](/id-ID/panduan-pengguna/konsep/mode-kode/).
 
 ### `--credential-gate`
 
@@ -134,6 +125,25 @@ digagalkan sejak awal.
 
 `--credential-gate=0` adalah sakelar pemutusnya: tidak ada yang pernah diparkir dan
 kredensial buruk mengakhiri giliran persis seperti sebelum gerbang ini ada.
+
+### Mode kode
+
+[Mode kode](/id-ID/panduan-pengguna/konsep/mode-kode/) memungkinkan agen menjalankan skrip JavaScript yang memanggil alatnya. Tidak ada flag yang menyalakan atau mematikannya: setiap run mendapat alat `repl` ketika server dapat menjalankan skrip, dan server demo publik tidak menjalankan skrip sama sekali.
+
+Skrip berjalan di `cc_codemode`, sebuah program yang dikemas bersama server di `bin/codemode/`. Server tidak akan mulai tanpanya: ia mencetak satu baris yang menyebutkan apa yang hilang dan keluar dengan kode `78`. Saat mulai, server menjalankan self-test kunci program dan mencetak satu baris (hanya dibisukan oleh `--log-level error`):
+
+```text
+cc_server: code_mode=available (cc_codemode 0.1.0 quickjs-ng 0.16.2 protocol 2; 16 scripts at once, at most 12 per workspace; up to 64 more runners kept for scripts waiting on a person; heap at most 1024 MiB per script)
+cc_server: code_mode=unavailable (<reason>) — runs on this host get no repl tool; scripts never run without full lockdown
+```
+
+`unavailable` berarti program tidak dapat mengunci dirinya di host ini, misalnya di dalam kontainer yang profil keamanannya menolak salah satu langkahnya, atau karena ia bukan build rilis. Server tetap berjalan seperti biasa, tidak ada run yang mendapat `repl`, dan pengaturan mode kode ruang kerja menampilkan alasannya.
+
+Server terus memeriksa selama berjalan. Ketika program gagal dimulai karena alasan yang bukan dari skrip, server menjalankan self-test lagi, paling banyak sekali per menit. Jika itu gagal, server mencetak baris `unavailable` beserta alasannya dan tidak menjalankan skrip apa pun: run yang mulai sementara itu tidak mendapat `repl`, dan run yang sudah memilikinya memanggil alatnya secara langsung ([Saat skrip tidak dapat dijalankan](/id-ID/panduan-pengguna/konsep/mode-kode/#saat-skrip-tidak-dapat-dijalankan)). Server terus memeriksa, paling banyak sekali per menit, dan ketika self-test lolos lagi ia mencetak baris `available` dan kembali menjalankan skrip. Hanya self-test yang gagal saat mulai yang memerlukan restart. Alasan yang ditampilkan pengaturan ruang kerja sudah menghapus path host; baris log memuatnya utuh.
+
+Dua flag mode kode membatasi apa yang boleh dipakai skrip. `--code-mode-max-processes` membatasi skrip yang berjalan bersamaan di seluruh ruang kerja (secara default dua kali inti prosesor, paling banyak 16; diterima 1–64). Dengan batas 2 atau lebih, satu ruang kerja paling banyak memakai batas itu dikurangi seperempatnya, sehingga tidak ada satu ruang kerja pun yang dapat mengambil semua tempat, dan skrip yang menunggu diterima bergiliran di antara ruang kerja. Skrip yang menunggu persetujuan atau jawaban seseorang menyerahkan tempatnya kepada skrip lain dan tidak memulai panggilan alat sampai dijawab; hingga empat kali batas skrip menunggu semacam itu tetap disimpan, paling banyak tiga perempatnya dari satu ruang kerja, dan masing-masing tetap dapat menghitung dalam batas waktu prosesornya sendiri. `--code-mode-max-heap-mb` adalah memori terbesar yang boleh dipakai satu skrip.
+
+Nilai yang tidak diterima flag ini (angka di luar rentang, atau bukan angka) menghentikan server saat mulai (kode keluar `78`) dengan pesan yang menyebutkan nilai yang diterima. Nilai itu tidak pernah dibaca sebagai default.
 
 ## Subperintah
 
@@ -238,6 +248,7 @@ Server menjaga direktori data tetap pribadi untuk akunnya sendiri (`0700`). Serv
 | `backups/exports/`                | Ekspor satu ruang kerja, `<workspaceId>-<timestamp>.db`                          |
 | `backups/transfer/`               | Area penampungan untuk unduhan dan unggahan cadangan; dibersihkan oleh rute yang menulisnya |
 | `models/`                         | Model embedding, diarisasi, dan ucapan di perangkat                              |
+| `codemode/` | Salinan pengembangan runner mode kode, dipasang oleh `scripts/natives/build_codemode.sh`; bundel rilis membawanya di `bin/codemode/` |
 | `meetings/<meetingId>/`           | Audio rapat yang disimpan                                                        |
 | `rigs/images/`                    | Image disk rig yang diimpor (permukaan desktop QEMU)                             |
 | `rigs/smolvm/<rigId>/`            | Status runtime microVM per rig (rahasia broker, `0600`)                          |

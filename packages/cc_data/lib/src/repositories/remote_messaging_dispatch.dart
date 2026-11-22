@@ -2,7 +2,6 @@ import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/value_objects/entity_ref.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/output_contract_mode.dart';
-import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 
@@ -188,7 +187,8 @@ class RemoteMessagingDispatch {
   /// [requestedByUserId] is accepted for signature parity with the server-side
   /// port but is deliberately NOT sent over the wire: the server stamps the
   /// requesting identity from the session's authenticated user, so a client
-  /// cannot attribute a run to someone else.
+  /// cannot attribute a run to someone else. Nor does a client name why the
+  /// run exists: the server records a person's dispatch as `userMessage`.
   Future<String?> dispatchAgent({
     required String workspaceId,
     required String spaceId,
@@ -199,7 +199,6 @@ class RemoteMessagingDispatch {
     String? pipelineStepId,
     String? inReplyToAgentId,
     String? requestedByUserId,
-    WakeContext? wakeContext,
     String? conversationId,
     Map<String, dynamic>? expectedOutputSchema,
     OutputContractMode outputContractMode = OutputContractMode.strict,
@@ -213,7 +212,6 @@ class RemoteMessagingDispatch {
       'pipeline_run_id': ?pipelineRunId,
       'pipeline_step_id': ?pipelineStepId,
       'in_reply_to_agent_id': ?inReplyToAgentId,
-      'wake_context': ?_wakeContextToWire(wakeContext),
       'conversation_id': ?conversationId,
       'expected_output_schema': ?expectedOutputSchema,
       'output_contract_mode': outputContractMode.toStorageString(),
@@ -491,24 +489,6 @@ class RemoteMessagingDispatch {
     );
   }
 
-  /// Encodes a [WakeContext] to its wire map. [WakeContext] carries no JSON
-  /// serializer, so the shape is mapped inline here (and symmetrically decoded
-  /// on the host). Returns null for a null context.
-  static Map<String, dynamic>? _wakeContextToWire(WakeContext? ctx) {
-    if (ctx == null) {
-      return null;
-    }
-    return {
-      'run_id': ctx.runId,
-      'agent_id': ctx.agentId,
-      'workspace_id': ctx.workspaceId,
-      'wake_reason': ctx.wakeReason.name,
-      'ticket_id': ?ctx.ticketId,
-      'space_id': ?ctx.spaceId,
-      'message_id': ?ctx.messageId,
-      'pipeline_run_id': ?ctx.pipelineRunId,
-    };
-  }
 }
 
 // Enum name→value lookups, built ONCE.

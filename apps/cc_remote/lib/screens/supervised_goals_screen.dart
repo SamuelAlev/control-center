@@ -1,4 +1,4 @@
-import 'package:cc_domain/features/dispatch/domain/entities/agent_goal_run.dart';
+import 'package:cc_domain/features/dispatch/domain/repositories/goal_run_view.dart';
 import 'package:cc_remote/app_icons.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/operation_scope.dart';
@@ -25,7 +25,7 @@ class SupervisedGoalsScreen extends ConsumerStatefulWidget {
 }
 
 class _SupervisedGoalsScreenState extends ConsumerState<SupervisedGoalsScreen> {
-  bool _creating = false;
+  PhoneGoalsForm? _form;
   String? _scope;
 
   @override
@@ -36,7 +36,7 @@ class _SupervisedGoalsScreenState extends ConsumerState<SupervisedGoalsScreen> {
     final workspaceId = workspace.value;
     if (_scope != workspaceId) {
       _scope = workspaceId;
-      _creating = false;
+      _form = null;
     }
     final goalsAsync = workspaceId == null
         ? null
@@ -80,9 +80,9 @@ class _SupervisedGoalsScreenState extends ConsumerState<SupervisedGoalsScreen> {
                       workspaceId: workspaceId,
                       conversationId: widget.conversationId,
                       writable: writable,
-                      creating: _creating,
-                      onToggleCreate: () =>
-                          setState(() => _creating = !_creating),
+                      form: _form,
+                      onForm: (form) =>
+                          setState(() => _form = _form == form ? null : form),
                     ),
             ),
           ],
@@ -93,11 +93,11 @@ class _SupervisedGoalsScreenState extends ConsumerState<SupervisedGoalsScreen> {
 
   Widget _detail(
     BuildContext context,
-    List<AgentGoalRun> goals,
+    List<GoalRunView> goals,
     String workspaceId,
   ) {
-    final goal = goals.where((g) => g.id == widget.goalId).firstOrNull;
-    if (goal == null) {
+    final view = goals.where((v) => v.goal.id == widget.goalId).firstOrNull;
+    if (view == null) {
       return CcEmptyState(
         icon: AppIcons.triangleAlert,
         message: AppLocalizations.of(context).mobileGoalMissing,
@@ -107,8 +107,8 @@ class _SupervisedGoalsScreenState extends ConsumerState<SupervisedGoalsScreen> {
       padding: const EdgeInsets.all(16),
       children: [
         PhoneGoalDetail(
-          key: ValueKey('$workspaceId:${goal.id}'),
-          goal: goal,
+          key: ValueKey('$workspaceId:${view.goal.id}'),
+          view: view,
           workspaceId: workspaceId,
         ),
         const SizedBox(height: 24),

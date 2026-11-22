@@ -2,7 +2,7 @@
 title: Orkestratie
 description: Hoe één "grote vraag" een plan voor het hele team wordt dat je één keer goedkeurt, en daarna een gegenereerde pipeline die het uitvoert.
 slug: nl-NL/handleiding/concepten/orkestratie
-sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
+sourceHash: db1bbceaba025b64539588004eebb65d944d5933
 ---
 
 Eén agent is goed in één ding. Sommige vragen zijn groter dan dat: "onderzoek de
@@ -38,13 +38,8 @@ uitvoeren, in plaats van vrije tekst. Een voorstel heeft:
 - **Synthese**: de laatste stap die het eindresultaat oplevert.
 - **Budget**: een opgegeven kostengrens.
 
-:::caution[Het budget is indicatief]
-De kostengrens van het voorstel wordt vergeleken met het geschatte totaal van het
-plan en markeert een plan dat over het budget gaat in de goedkeuringsbalk _vóór_
-je goedkeurt. Zodra de run is gestart, leest niets het nog, dus het stopt een
-orkestratie die het budget overschrijdt niet en laat die ook niet mislukken.
-Budgetbeleid per agent en per werkruimte is een apart mechanisme en is wat de
-uitgaven daadwerkelijk pauzeert.
+:::caution[Het budget houdt de run vast, het beëindigt hem niet]
+De kostengrens van het voorstel wordt vergeleken met het geschatte totaal van het plan en markeert een plan dat over het budget gaat in de goedkeuringsbalk _vóór_ je goedkeurt. Zodra de run is gestart, controleert de server vóór elke nieuwe stap wat er is uitgegeven: bij het plafond wordt de pipeline-run vastgehouden (`suspended`, reden `orchestration_budget`) en start er niets nieuws, terwijl stappen die al lopen af mogen maken. Wie de run heeft aangevraagd, wordt op de hoogte gebracht en hervat de run met **Limiet verhogen** op de pagina van de pipeline-run (een werkruimtebeheerder als niemand hem heeft aangevraagd). Een verhoging moet boven de oude limiet en het uitgegeven bedrag liggen, maximaal 1.000 dollar, en een limiet wordt nooit verwijderd. Doelen die de run nastreeft, tellen mee, inclusief hun reviews. Budgetbeleid per agent en per werkruimte is een apart mechanisme.
 :::
 
 ## Waar je het beoordeelt

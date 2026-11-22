@@ -1,13 +1,16 @@
 import 'dart:async';
 
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
 import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
-import 'package:cc_domain/features/messaging/domain/repositories/space_read_repository.dart';
+import 'package:cc_domain/core/domain/value_objects/transcript_update.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
+import 'package:control_center/features/messaging/presentation/widgets/bubbles/agent_turn.dart';
+import 'package:control_center/features/messaging/presentation/widgets/feed/feed_turn_row_views.dart';
 import 'package:control_center/features/messaging/presentation/widgets/message_feed.dart';
 import 'package:control_center/features/messaging/providers/live_turn_providers.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
@@ -19,6 +22,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../helpers/active_workspace.dart';
+import '../../../../helpers/fake_conversation_read_repository.dart';
 
 Widget _wrap(Widget child) => Scaffold(
   body: CcTheme(data: CcThemeData.light(), child: child),
@@ -44,31 +48,6 @@ Widget _routedApp(Widget child) => MaterialApp.router(
     ],
   ),
 );
-
-/// A no-host read-cursor sink for scroll and rendering tests. Persisted
-/// notification transitions are covered by message_feed_notification_test.
-class _FakeSpaceReadRepository implements SpaceReadRepository {
-  @override
-  Future<void> markSpaceRead(
-    String workspaceId,
-    String spaceId,
-    String userId, {
-    String? conversationId,
-  }) async {}
-
-  @override
-  Stream<FeedPosition?> watchUserLastReadAt(
-    String workspaceId,
-    String spaceId,
-    String userId,
-  ) => Stream.value(null);
-
-  @override
-  Stream<Map<String, FeedPosition>> watchUserSpaceReads(
-    String workspaceId,
-    String userId,
-  ) => Stream.value(const {});
-}
 
 /// The feed's own scrollable: the reverse (axisDirection up) viewport the
 /// SuperListView builds. Scrollables inside bubbles (code blocks) run
@@ -120,9 +99,10 @@ void main() {
           // client, so the fold is a no-op here.
           spaceTurnRelayProvider('ch-1').overrideWith((ref) {}),
           codeFontFamilyProvider.overrideWith((ref) => 'monospace'),
-          spaceUserLastReadAtProvider(
-            'ch-1',
-          ).overrideWith((ref) => Stream.value(null)),
+          conversationLastReadProvider((
+            spaceId: 'ch-1',
+            conversationId: 'ch-1',
+          )).overrideWithValue(AsyncData(null)),
         ],
         child: MaterialApp(
           localizationsDelegates: appLocalizationsDelegates,
@@ -187,9 +167,13 @@ void main() {
           // client, so the fold is a no-op here.
           spaceTurnRelayProvider('ch-1').overrideWith((ref) {}),
           codeFontFamilyProvider.overrideWith((ref) => 'monospace'),
-          spaceUserLastReadAtProvider(
-            'ch-1',
-          ).overrideWith((ref) => Stream.value(null)),
+          conversationLastReadProvider((
+            spaceId: 'ch-1',
+            conversationId: 'ch-1',
+          )).overrideWithValue(AsyncData(null)),
+          conversationReadRepositoryProvider.overrideWithValue(
+            FakeConversationReadRepository(),
+          ),
           for (var i = 1; i <= 2; i++)
             agentDetailProvider('agent-$i').overrideWith((ref) async => null),
         ],
@@ -251,9 +235,13 @@ void main() {
           // client, so the fold is a no-op here.
           spaceTurnRelayProvider('ch-1').overrideWith((ref) {}),
           codeFontFamilyProvider.overrideWith((ref) => 'monospace'),
-          spaceUserLastReadAtProvider(
-            'ch-1',
-          ).overrideWith((ref) => Stream.value(null)),
+          conversationLastReadProvider((
+            spaceId: 'ch-1',
+            conversationId: 'ch-1',
+          )).overrideWithValue(AsyncData(null)),
+          conversationReadRepositoryProvider.overrideWithValue(
+            FakeConversationReadRepository(),
+          ),
           for (var i = 0; i < 3; i++)
             agentDetailProvider('agent-$i').overrideWith((ref) async => null),
         ],
@@ -336,8 +324,12 @@ void main() {
           // client, so the fold is a no-op here.
           spaceTurnRelayProvider('ch-1').overrideWith((ref) {}),
           codeFontFamilyProvider.overrideWith((ref) => 'monospace'),
-          spaceUserLastReadAtProvider('ch-1').overrideWith(
-            (ref) => Stream.value(FeedPosition(at: readCursor, seq: 0)),
+          conversationLastReadProvider((
+            spaceId: 'ch-1',
+            conversationId: 'ch-1',
+          )).overrideWithValue(AsyncData(FeedPosition(at: readCursor, seq: 0))),
+          conversationReadRepositoryProvider.overrideWithValue(
+            FakeConversationReadRepository(),
           ),
           agentDetailProvider('agent-1').overrideWith((ref) async => null),
         ],
@@ -400,15 +392,18 @@ void main() {
             )).overrideWith((ref) => window.stream),
             spaceTurnRelayProvider('ch-1').overrideWith((ref) {}),
             codeFontFamilyProvider.overrideWith((ref) => 'monospace'),
-            spaceUserLastReadAtProvider('ch-1').overrideWith(
-              (ref) => Stream.value(FeedPosition(at: readCursor, seq: 0)),
+            conversationLastReadProvider((
+              spaceId: 'ch-1',
+              conversationId: 'ch-1',
+            )).overrideWithValue(
+              AsyncData(FeedPosition(at: readCursor, seq: 0)),
             ),
             agentDetailProvider('agent-1').overrideWith((ref) async => null),
             // The feed stamps the server read cursor when it treats an arrival
             // as witnessed; the real provider is RPC-flipped and would open a
             // host from a widget test.
-            spaceReadRepositoryProvider.overrideWith(
-              (ref) => _FakeSpaceReadRepository(),
+            conversationReadRepositoryProvider.overrideWith(
+              (ref) => FakeConversationReadRepository(),
             ),
           ],
           child: _routedApp(
@@ -438,7 +433,7 @@ void main() {
     },
   );
 
-  testWidgets('no unread divider when cursor is null (never opened)', (
+  testWidgets('no unread divider when the conversation was never read', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(400, 600);
@@ -475,9 +470,13 @@ void main() {
           // client, so the fold is a no-op here.
           spaceTurnRelayProvider('ch-1').overrideWith((ref) {}),
           codeFontFamilyProvider.overrideWith((ref) => 'monospace'),
-          spaceUserLastReadAtProvider(
-            'ch-1',
-          ).overrideWith((ref) => Stream.value(null)),
+          conversationLastReadProvider((
+            spaceId: 'ch-1',
+            conversationId: 'ch-1',
+          )).overrideWithValue(AsyncData(null)),
+          conversationReadRepositoryProvider.overrideWithValue(
+            FakeConversationReadRepository(),
+          ),
           agentDetailProvider('agent-1').overrideWith((ref) async => null),
         ],
         child: MaterialApp(
@@ -551,11 +550,14 @@ void main() {
             )).overrideWith((ref) => window.stream),
             spaceTurnRelayProvider('ch-1').overrideWith((ref) {}),
             codeFontFamilyProvider.overrideWith((ref) => 'monospace'),
-            spaceUserLastReadAtProvider('ch-1').overrideWith(
-              (ref) => Stream.value(FeedPosition(at: readCursor, seq: 0)),
+            conversationLastReadProvider((
+              spaceId: 'ch-1',
+              conversationId: 'ch-1',
+            )).overrideWithValue(
+              AsyncData(FeedPosition(at: readCursor, seq: 0)),
             ),
-            spaceReadRepositoryProvider.overrideWithValue(
-              _FakeSpaceReadRepository(),
+            conversationReadRepositoryProvider.overrideWithValue(
+              FakeConversationReadRepository(),
             ),
             agentDetailProvider('agent-1').overrideWith((ref) async => null),
           ],
@@ -606,11 +608,12 @@ void main() {
           ),
           spaceTurnRelayProvider('ch-1').overrideWith((ref) {}),
           codeFontFamilyProvider.overrideWith((ref) => 'monospace'),
-          spaceUserLastReadAtProvider('ch-1').overrideWith(
-            (ref) => Stream.value(FeedPosition(at: readCursor, seq: 0)),
-          ),
-          spaceReadRepositoryProvider.overrideWithValue(
-            _FakeSpaceReadRepository(),
+          conversationLastReadProvider((
+            spaceId: 'ch-1',
+            conversationId: 'ch-1',
+          )).overrideWithValue(AsyncData(FeedPosition(at: readCursor, seq: 0))),
+          conversationReadRepositoryProvider.overrideWithValue(
+            FakeConversationReadRepository(),
           ),
           agentDetailProvider('agent-1').overrideWith((ref) async => null),
         ],
@@ -654,10 +657,13 @@ void main() {
       ),
       spaceTurnRelayProvider('ch-1').overrideWith((ref) {}),
       codeFontFamilyProvider.overrideWith((ref) => 'monospace'),
-      spaceUserLastReadAtProvider(
-        'ch-1',
-      ).overrideWith((ref) => Stream.value(null)),
-      spaceReadRepositoryProvider.overrideWithValue(_FakeSpaceReadRepository()),
+      conversationLastReadProvider((
+        spaceId: 'ch-1',
+        conversationId: 'ch-1',
+      )).overrideWithValue(AsyncData(null)),
+      conversationReadRepositoryProvider.overrideWithValue(
+        FakeConversationReadRepository(),
+      ),
       agentDetailProvider('agent-1').overrideWith((ref) async => null),
     ];
 
@@ -752,11 +758,12 @@ void main() {
             }),
             spaceTurnRelayProvider('ch-1').overrideWith((ref) {}),
             codeFontFamilyProvider.overrideWith((ref) => 'monospace'),
-            spaceUserLastReadAtProvider(
-              'ch-1',
-            ).overrideWith((ref) => Stream.value(null)),
-            spaceReadRepositoryProvider.overrideWithValue(
-              _FakeSpaceReadRepository(),
+            conversationLastReadProvider((
+              spaceId: 'ch-1',
+              conversationId: 'ch-1',
+            )).overrideWithValue(AsyncData(null)),
+            conversationReadRepositoryProvider.overrideWithValue(
+              FakeConversationReadRepository(),
             ),
             agentDetailProvider('agent-1').overrideWith((ref) async => null),
           ],
@@ -841,6 +848,121 @@ void main() {
     });
   }
 
+  testWidgets('a turn that streamed here settles on the server transcript, '
+      'not the relay snapshot', (tester) async {
+    // The relay's last snapshot can stop short of what the server persisted.
+    // The feed used to settle on it and cut the turn off.
+    final streaming = Message(
+      id: 'turn-1',
+      spaceId: 'ch-1',
+      conversationId: 'ch-1',
+      senderId: 'agent-1',
+      senderType: SenderType.agent,
+      content: '',
+      messageType: MessageType.agentTurn,
+      metadata: const {
+        'agentName': 'Architect',
+        'streamComplete': false,
+        'segments_elided': true,
+      },
+      createdAt: DateTime(2024),
+    );
+    final finished = streaming.copyWith(
+      content: 'Opening paragraph. Closing paragraph.',
+      metadata: const {
+        'agentName': 'Architect',
+        'streamComplete': true,
+        'segments_elided': true,
+      },
+    );
+    final persisted = finished.copyWith(
+      metadata: {
+        'agentName': 'Architect',
+        'streamComplete': true,
+        'segments': encodeTranscript([
+          TextSegment(
+            text: 'Opening paragraph. Closing paragraph.',
+            startedAt: DateTime(2024),
+            durationMs: 10,
+          ),
+        ]),
+      },
+    );
+    final window =
+        StreamController<({List<Message> messages, bool hasMore})>.broadcast();
+    addTearDown(window.close);
+    final registry = ActiveStreamRegistry();
+    final transcripts = TranscriptLruCache();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          activeWorkspaceIdOverride(),
+          activeStreamRegistryProvider.overrideWithValue(registry),
+          transcriptCacheProvider.overrideWithValue(transcripts),
+          spaceFeedWindowedProvider((
+            spaceId: 'ch-1',
+            conversationId: 'ch-1',
+          )).overrideWith((ref) async* {
+            yield (messages: [streaming], hasMore: false);
+            yield* window.stream;
+          }),
+          messageDetailProvider(
+            'turn-1',
+          ).overrideWith((ref) => Stream.value(persisted)),
+          spaceTurnRelayProvider('ch-1').overrideWith((ref) {}),
+          codeFontFamilyProvider.overrideWith((ref) => 'monospace'),
+          conversationLastReadProvider((
+            spaceId: 'ch-1',
+            conversationId: 'ch-1',
+          )).overrideWithValue(AsyncData(null)),
+          conversationReadRepositoryProvider.overrideWithValue(
+            FakeConversationReadRepository(),
+          ),
+          agentDetailProvider('agent-1').overrideWith((ref) async => null),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: appLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: _wrap(
+            const SpaceMessageFeed(spaceId: 'ch-1', conversationId: 'ch-1'),
+          ),
+        ),
+      ),
+    );
+    registry
+      ..register('turn-1', spaceId: 'ch-1')
+      ..apply(
+        'turn-1',
+        SegmentOpened(0, TextSegment(text: '', startedAt: DateTime(2024))),
+      )
+      ..apply('turn-1', const SegmentDelta(0, 'Opening paragraph.'));
+    await tester.pumpAndSettle(const Duration(seconds: 5));
+    expect(
+      find.textContaining('Opening paragraph.', findRichText: true),
+      findsOneWidget,
+    );
+    // Laid out row by row, not as the single bubble that reads on its own.
+    expect(find.byType(TurnPartRowView), findsWidgets);
+    expect(find.byType(AgentTurn), findsNothing);
+
+    // What the relay does on TurnFinished: cache its last snapshot (here
+    // missing the tail), then drop the live stream.
+    transcripts.put('turn-1', registry.snapshot('turn-1')!);
+    await registry.unregister('turn-1');
+    window.add((messages: [finished], hasMore: false));
+    await tester.pumpAndSettle(const Duration(seconds: 5));
+
+    expect(tester.takeException(), isNull);
+    expect(
+      find.text('Opening paragraph. Closing paragraph.', findRichText: true),
+      findsOneWidget,
+    );
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle(const Duration(seconds: 5));
+  });
+
   testWidgets('opening a permalink (notification tap) throws nothing', (
     tester,
   ) async {
@@ -871,11 +993,12 @@ void main() {
         ),
         spaceTurnRelayProvider('ch-1').overrideWith((ref) {}),
         codeFontFamilyProvider.overrideWith((ref) => 'monospace'),
-        spaceUserLastReadAtProvider(
-          'ch-1',
-        ).overrideWith((ref) => Stream.value(null)),
-        spaceReadRepositoryProvider.overrideWithValue(
-          _FakeSpaceReadRepository(),
+        conversationLastReadProvider((
+          spaceId: 'ch-1',
+          conversationId: 'ch-1',
+        )).overrideWithValue(AsyncData(null)),
+        conversationReadRepositoryProvider.overrideWithValue(
+          FakeConversationReadRepository(),
         ),
         agentDetailProvider('agent-1').overrideWith((ref) async => null),
       ],
@@ -1043,11 +1166,12 @@ Future<void> _pumpLiveFeed(
         )).overrideWith((ref) => window.stream),
         spaceTurnRelayProvider('ch-1').overrideWith((ref) {}),
         codeFontFamilyProvider.overrideWith((ref) => 'monospace'),
-        spaceUserLastReadAtProvider(
-          'ch-1',
-        ).overrideWith((ref) => Stream.value(null)),
-        spaceReadRepositoryProvider.overrideWithValue(
-          _FakeSpaceReadRepository(),
+        conversationLastReadProvider((
+          spaceId: 'ch-1',
+          conversationId: 'ch-1',
+        )).overrideWithValue(AsyncData(null)),
+        conversationReadRepositoryProvider.overrideWithValue(
+          FakeConversationReadRepository(),
         ),
         agentDetailProvider('agent-1').overrideWith((ref) async => null),
       ],

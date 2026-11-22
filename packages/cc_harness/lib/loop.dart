@@ -10,7 +10,6 @@ export 'src/loop/checklist_supervisor.dart';
 export 'src/loop/completion_contract.dart';
 export 'src/loop/goal_budget.dart';
 export 'src/loop/goal_objective.dart';
-export 'src/loop/loop_limit.dart';
 export 'src/loop/magic_keywords.dart';
 export 'src/loop/pause_gate.dart';
 export 'src/loop/steering_message.dart';

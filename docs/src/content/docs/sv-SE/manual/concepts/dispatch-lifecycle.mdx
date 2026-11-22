@@ -2,23 +2,33 @@
 title: Livscykel för agentdispatch
 description: Vad som händer mellan att ett meddelande kommer in och att en körningslogg stängs — promptsammansättning, worktrees, identitet, vad som begränsar en körning och hur utfallet registreras ärligt.
 slug: sv-SE/handbok/koncept/livscykel-agentdispatch
-sourceHash: 13e7fe3ed86c8659c5fec818e0b89737241e2b9d
+sourceHash: 07c46e22e30f1a10e64b7fb949c78bdae9747efa
 ---
 
 ## Vad en dispatch är
 
 En dispatch är en körning av en agent, i ett samtal, på en adapter. Allt som rör den sker på `cc_server`: klienten skickar ett meddelande och tittar sedan på när händelser strömmar tillbaka. Det finns ingen dispatchväg i någon klient.
 
-Agenter väcks av sex anledningar, som körningen bär med sig som sin **väckningskontext** så att agenten vet _varför_ den är vaken:
+Varje körning bär en **väckningskontext** som säger _varför_ agenten är vaken. En körning du startar genom att skicka ett meddelande är `userMessage`; varje körning som servern startar av sig själv börjar som en varaktig **väckning** i arbetsytans kö och bär väckningens skäl (se [Scheman och väckningar](/sv-SE/handbok/how-to-guider/scheman-vackningar/)):
 
 | Väckningsorsak   | Utlösare                                                     |
-| ---------------- | ------------------------------------------------------------ |
-| `userMessage`    | Någon skickade ett meddelande i en yta, eller nämnde agenten |
+| -------------------- | ------- |
+| `userMessage`    | Någon skickade ett meddelande i en yta                       |
 | `assignment`     | Ett ärende tilldelades agenten                               |
 | `pipelineStep`   | Ett pipelinesteg dispatchade den                             |
-| `childCompleted` | Ett underärende slutfördes                                   |
-| `followUp`       | En schemalagd uppföljningspuls                               |
-| `recovery`       | Återställningsvägen dispatchade om efter ett fel             |
+| `childCompleted` | Ett delegerat eller underordnat ärende slutfördes, eller en teammedlems körning avslutades |
+| `schedule` | Ett schema eller en loop utlöstes |
+| `watch` | Något som en bevakning lyssnar efter inträffade (kontroller för en pull request, en granskning, en miljö, ett ärende, en pipelinekörning) |
+| `goalContinuation` | Ett måls nästa segment |
+| `goalVerification` | Ett måls kontroller eller granskning fann att det inte var klart än |
+| `goalReview` | Den skrivskyddade granskningen av ett måls påstående att det är klart |
+| `peerMessage` | En annan agent skickade den ett meddelande eller en fråga, eller den @-nämndes, eller den är ytans granskare |
+| `peerReply`      | Svaret på en fråga som den ställde till en annan agent       |
+| `limitReset` | En leverantörs användningsgräns som den stoppade vid har återställts |
+| `improvementReview` | Granskningen efter ett verifierat mål, eller `/refine` |
+| `recovery` | Arbete som en serveromstart eller ett fel avbröt |
+
+En väckning levereras in i en pågående körning av agenten i den konversationen när körningen tar emot indata och agerar för samma person; annars väntar den tills den körningen avslutas och startar sin egen. Slash-kommandon läses bara i ett meddelande som en person skrev; i alla andra körningar är samma text ett vanligt meddelande.
 
 Väckningskontexten bär de id:n som hör till orsaken — ärende, yta, meddelande, pipelinekörning — och de injiceras i agentens miljö och prompt.
 
@@ -104,17 +114,17 @@ Det finns medvetet **inget tak för antalet turer någonstans**. Ett hårt itera
 - **modellen stannar** av sig själv;
 - **en människa stoppar den**, eller tar över samtalet (vilket pausar den inbyggda harnessen vid nästa rena turbrytpunkt — en Claude Code-körning, som inte har någon säker brytpunkt, stoppas i stället);
 - **tystnadsvakten utlöses.** Ingen utdata under tröskelvärdet och sessionen avslutas med ett `silentRun`-fel. Standardvärdet är 15 minuter, som sjunker till 10 i de läsdominerade lägena (review och plan); en agent kan åsidosätta det mellan 1 och 240 minuter. Vakten aktiveras när en barnprocess rapporterar sitt PID, så den täcker Claude Code-CLI:t — **inte** den inbyggda harnessen, som inte startar några processer;
-- **ett kostnadstak slår till** — men bara för autonoma kommandon.
+- **ett kostnadstak slår till** – på målsegment och granskningar, schema- och bevakningskörningar, förbättringsgranskningen och pipelinekörningar under en orkestrering med tak.
 
 Doom-loop-skyddet är ingen terminator: tre identiska verktygsanrop i rad och loopen _styr_ agenten att byta angreppssätt.
 
 :::note[En vanlig tur har inget kostnadstak]
-Kostnadsskyddet i sessionen är bara kopplat för `/goal` och `/loop`; alla andra körningar skickar ingen budget alls. För dessa kommandon kan ett obevakat segment som standard bränna 500 cent ($5.00), med en mjuk styrning vid 80 % som ber agenten att avsluta snyggt före det hårda stoppet, och en hållbar målbudget på 5 000 cent ($50.00) över segmenten. En uttrycklig `/goal --budget` överskrids aldrig med ett helt segment.
+En körning du startar med ett meddelande har ingen budget. Ett målsegment får spendera 5 dollar, eller det som återstår av målets budget (50 dollar som standard) om det är mindre; en målgranskning 2 dollar; en körning som ett schema eller en bevakning startade 5 dollar; förbättringsgranskningen 1 dollar. Vid 90 % styr den inbyggda harnessen och Claude Code agenten att avsluta rent innan den hårda stoppgränsen; en ACP-agent avbryts vid taket. Se [Hantera kostnader](/sv-SE/handbok/how-to-guider/hantera-kostnader/#sätt-ett-kostnadstak-för-en-autonom-körning).
 :::
 
 Sammantaget har en vanlig interaktiv tur i den inbyggda harnessen inget tak för antalet turer, inget kostnadstak och ingen tystnadsvakt. Den tar slut när modellen stannar eller när du stoppar den. Det är en medveten avvägning — alternativen dödar allt legitimt långt arbete — men det betyder att en obevakad interaktiv körning inte begränsas av något annat än modellens egen bedömning.
 
-Under en körning köas ett meddelande som skickas till en körande agent som **styrning** och töms vid nästa turbrytpunkt, så du kan knuffa en körning utan att döda den. Styrning, pausning, subagenter och slutförandekontraktet är funktioner i den inbyggda harnessen; Claude Code har inga av dem.
+Under en körning köas ett meddelande som skickas till en körande agent som **styrning** och töms vid nästa turbrytpunkt, så du kan knuffa en körning utan att döda den. En körning som bara läser, till exempel en målgranskning, tar inget medan den pågår, och styrning av en körning som arbetar för någon annan kräver skrivåtkomst till ytans repositorier. Styrning, pausning, subagenter och slutförandekontraktet är funktioner i den inbyggda harnessen; Claude Code har inga av dem.
 
 ## Hur en körning registreras
 
@@ -130,11 +140,11 @@ När en körning slutar utan den leverabel dess läge krävde — en planlägesk
 Detta är avsiktligt. Att flippa statusen skulle flytta ärende- och pipelinestate-maskiner som inte har något med den saknade artefakten att göra. Det betyder också att "status: completed" ensamt aldrig räcker för att dra slutsatsen att en körning lyckades — läs sammanfattningen.
 :::
 
-Att stänga körningen publicerar `AgentRunCompleted`, och mycket hänger på den: upprullning av pipelinekostnad, återupptagning av ett pipelinesteg som väntade på körningen, slutförande av det bakomliggande ärendet, mappning av en orkestrering till ett terminaltillstånd, målövervakarens beslut att fortsätta eller stoppa, kontrollantrollen och budgetutvärderingen efter körningen. Närvarolistan följer separat, genom att titta på de senaste körningsloggarna i stället för på händelsen. Aviseringen ”Agenten är klar” finns inte med i den listan: händelsen utlöses när processens ström tar slut, innan svaret har skrivits, så aviseringen är turens `MessageReceived`, som publiceras när meddelandet har sparats.
+När körningens slutliga tillstånd har skrivits publicerar servern `AgentRunSettled` exakt en gång, med skälet till att körningen avslutades (`completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` eller `serverStopped`), och mycket hänger på den: upprullning av pipelinekostnad, återupptagning av ett pipelinesteg som väntade på körningen, slutförande av det bakomliggande ärendet, mappning av en orkestrering till ett terminaltillstånd, målövervakarens beslut att fortsätta eller stoppa, svaret på en fråga som en annan agent ställde, nästa varv av en självstyrd loop, pausen vid användningsgränsen, granskarrollen och budgetutvärderingen efter körningen. En körning som ett serverstopp avbröt (`serverStopped`) behandlas aldrig som ett fel; arbetet återupptas efter omstarten. `AgentRunCompleted` publiceras fortfarande, tidigare, enbart för pull request-bryggan och analys. Närvarolistan följer separat, genom att titta på de senaste körningsloggarna i stället för på händelsen. Aviseringen ”Agenten är klar” finns inte med i den listan: händelsen utlöses när processens ström tar slut, innan svaret har skrivits, så aviseringen är turens `MessageReceived`, som publiceras när meddelandet har sparats.
 
 ## Budgetar i efterhand
 
-Budgetupprätthållande är en _reaktion_, inte en grind. När en körning slutförs jämför utvärderaren agentens hittillsvarande månadsspendering mot dess effektiva tak (en länkad budgetpolicy om det finns en, annars agentens egen månadssiffra; noll betyder obegränsat). Att passera den mjuka tröskeln registrerar en varningsincident; att förbruka budgeten registrerar en hård incident och flippar agentens livscykelstatus till `paused` i organisationsschemat. Dispatch tar fortfarande emot arbete från den agenten. En pipelinetrigger för `BudgetThresholdCrossed` kan starta uppföljningsarbete från samma händelse.
+Budgetupprätthållande är en _reaktion_, inte en grind. När en körning slutförs jämför utvärderaren agentens hittillsvarande månadsspendering mot dess effektiva tak (en länkad budgetpolicy om det finns en, annars agentens egen månadssiffra; noll betyder obegränsat). Att passera den mjuka tröskeln registrerar en varningsincident; att förbruka budgeten registrerar en hård incident och flippar agentens livscykelstatus till `paused` i organisationsschemat. Dispatch tar fortfarande emot arbete du skickar till den agenten, men väckningar för den (scheman, målsegment, svar) väntar medan den är pausad, i högst 7 dagar. En pipelinetrigger för `BudgetThresholdCrossed` kan starta uppföljningsarbete från samma händelse.
 
 ## Omförsökskedja
 
@@ -147,4 +157,5 @@ Varje körningslogg kan bära en omförsökskedja — ett överordnat körnings-
 - [Räcken](/sv-SE/handbok/koncept/racken/): effektklasspolicyn som varje grindat anrop passerar
 - [Sandlåda och säkerhet](/sv-SE/handbok/koncept/sandlada-och-sakerhet/): hela isoleringshistorien
 - [Multiplayer och närvaro](/sv-SE/handbok/koncept/multiplayer/): styrning, övertagande och autonomivredet
-- [Domänhändelser](/sv-SE/handbok/koncept/domanhandelser/): vad `AgentRunCompleted` sätter igång
+- [Domänhändelser](/sv-SE/handbok/koncept/domanhandelser/): vad `AgentRunSettled` sätter igång
+- [Arbeta mot ett mål](/sv-SE/handbok/how-to-guider/arbeta-mot-mal/) och [Scheman och väckningar](/sv-SE/handbok/how-to-guider/scheman-vackningar/): körningar som servern startar på egen hand

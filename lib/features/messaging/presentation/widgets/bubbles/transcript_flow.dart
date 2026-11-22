@@ -19,6 +19,8 @@ import 'package:control_center/shared/widgets/markdown/markdown_image.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_links.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_registries.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
+import 'package:control_center/shared/widgets/transcript/util/nested_calls.dart';
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/widgets.dart';
 
 part 'transcript_flow_prose.dart';
@@ -123,7 +125,7 @@ class _TranscriptFlowState extends State<TranscriptFlow> {
 /// [TranscriptFlow], or the conversation feed for a turn it lays out row by
 /// row.
 class TranscriptRowRenderer {
-  final Map<int, (TranscriptSegment, Widget)> _memo = {};
+  final Map<int, (TranscriptSegment, List<ToolSegment>, Widget)> _memo = {};
   String? _memoFont;
   final Map<int, GlobalKey> _proseKeys = {};
   final Map<int, GlobalKey> _reasoningKeys = {};
@@ -155,7 +157,7 @@ class TranscriptRowRenderer {
     LiveTranscriptController? live,
   }) => switch (row) {
     SegmentRowPlan() =>
-      _segmentRow(row, codeFont: codeFont, live: live) ??
+      _segmentRow(row, segments: segments, codeFont: codeFont, live: live) ??
           const SizedBox.shrink(),
     InlineMessageRowPlan(:final message) =>
       message.isUserQuestion
@@ -168,9 +170,10 @@ class TranscriptRowRenderer {
     LiveStatusRowPlan() => _LiveStatusLine(segments: segments),
   };
 
-  /// One transcript row: memoized when closed, delta-live when open.
+  /// One row: memoized with its script calls when closed, delta-live open.
   Widget? _segmentRow(
     SegmentRowPlan plan, {
+    required List<TranscriptSegment> segments,
     required String codeFont,
     LiveTranscriptController? live,
   }) {
@@ -179,7 +182,13 @@ class TranscriptRowRenderer {
     if (plan.open) {
       _memo.remove(index);
       if (live == null) {
-        return _renderSegment(index, seg, codeFont: codeFont, open: true);
+        return _renderSegment(
+          index,
+          seg,
+          codeFont: codeFont,
+          open: true,
+          nestedCalls: nestedCallsAt(plan.children, segments),
+        );
       }
       // The open row re-reads its own segment per delta pulse; the registry
       // materializes only that index and Flutter coalesces pulses into one
@@ -198,6 +207,11 @@ class TranscriptRowRenderer {
                   current,
                   codeFont: codeFont,
                   open: true,
+                  nestedCalls: nestedCallsAt(
+                    plan.children,
+                    segments,
+                    fresh: live.segmentAt,
+                  ),
                 ) ??
                 const SizedBox.shrink();
           },
@@ -205,22 +219,24 @@ class TranscriptRowRenderer {
       );
     }
 
+    final nested = nestedCallsAt(plan.children, segments);
     final memoed = _memo[index];
-    if (memoed != null && memoed.$1 == seg) {
-      return memoed.$2;
+    if (memoed != null && memoed.$1 == seg && listEquals(memoed.$2, nested)) {
+      return memoed.$3;
     }
     final rendered = _renderSegment(
       index,
       seg,
       codeFont: codeFont,
       open: false,
+      nestedCalls: nested,
     );
     if (rendered == null) {
       _memo.remove(index);
       return null;
     }
     final row = RepaintBoundary(child: rendered);
-    _memo[index] = (seg, row);
+    _memo[index] = (seg, nested, row);
     return row;
   }
 
@@ -229,6 +245,7 @@ class TranscriptRowRenderer {
     TranscriptSegment seg, {
     required String codeFont,
     required bool open,
+    List<ToolSegment> nestedCalls = const [],
   }) {
     switch (seg) {
       case TextSegment(:final text):
@@ -272,6 +289,7 @@ class TranscriptRowRenderer {
         return TranscriptSegmentRow(
           segment: seg,
           codeFont: codeFont,
+          nestedCalls: nestedCalls,
           pending:
               open &&
               seg is ToolSegment &&

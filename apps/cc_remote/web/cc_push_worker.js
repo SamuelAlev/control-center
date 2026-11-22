@@ -11,16 +11,23 @@ function safeRoute(route) {
   if (parsed.origin !== self.location.origin || parsed.hash ||
       parsed.username || parsed.password) return null;
   const segments = parsed.pathname.split('/').slice(1);
-  const allowedPath = parsed.pathname === '/inbox' ||
-      (segments.length === 2 && segments[0] === 'spaces' &&
-       /^[a-zA-Z0-9_-]{1,128}$/.test(segments[1]));
+  // `/spaces/<id>`, `/goals/<id>` and `/schedules/<id>`: one opaque id,
+  // nothing after it. `/goals`, `/schedules` and `/activity` routes carry
+  // only `workspace_id`, as the server's safePushRoute writes them.
+  const detail = segments.length === 2 &&
+      ['spaces', 'goals', 'schedules'].includes(segments[0]) &&
+      /^[a-zA-Z0-9_-]{1,128}$/.test(segments[1]);
+  const workspaceOnly = parsed.pathname === '/inbox' ||
+      parsed.pathname === '/activity' ||
+      (detail && segments[0] !== 'spaces');
+  const allowedPath = detail || workspaceOnly;
   if (!allowedPath) return null;
   const keys = [...parsed.searchParams.keys()];
   if (!parsed.searchParams.has('workspace_id') ||
       !parsed.searchParams.get('workspace_id') ||
       keys.some((key) => !['workspace_id', 'conversation_id', 'message_id'].includes(key) ||
           parsed.searchParams.getAll(key).length !== 1)) return null;
-  if (parsed.pathname === '/inbox' && keys.some((key) => key !== 'workspace_id')) return null;
+  if (workspaceOnly && keys.some((key) => key !== 'workspace_id')) return null;
   if (keys.some((key) => (parsed.searchParams.get(key) || '').length > 128)) return null;
   return parsed.pathname + parsed.search;
 }
@@ -32,9 +39,16 @@ self.addEventListener('push', (event) => {
     if (!data || data.v !== 1) return;
     const route = safeRoute(data.route);
     if (!route || !['attention', 'activity'].includes(data.kind)) return;
+    // Only a frame the server marked quiet (a long-running work FYI) makes
+    // no sound; the kind never decides it.
+    const quiet = data.quiet === true;
     await self.registration.showNotification('Control Center', {
       // No notification text that needs a locale or exposes a workspace.
-      tag: 'cc-background-update',
+      // A quiet one has a tag of its own: with the shared tag it would
+      // silently replace a notification that still needs the person, and
+      // that one's route with it.
+      tag: quiet ? 'cc-background-quiet' : 'cc-background-update',
+      silent: quiet,
       data: { route },
     });
   })());

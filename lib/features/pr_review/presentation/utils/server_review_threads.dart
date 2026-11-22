@@ -48,12 +48,16 @@ class ServerReviewThread {
   /// Whether the conversation is resolved on the forge.
   bool get isResolved => root.isResolved;
 
+  /// Whether the conversation is on the file as a whole rather than a line.
+  bool get isFileLevel => root.isFileLevel;
+
   /// Whether the diff line this was left on is gone.
   ///
   /// An outdated conversation cannot be anchored to a row, so the diff can
   /// only show it in a side panel — the timeline is where it can still be read
-  /// in full.
-  bool get isOutdated => root.anchorLine == null;
+  /// in full. A file-level conversation has no line either, but is not
+  /// outdated: the diff shows it at the top of the file.
+  bool get isOutdated => !isFileLevel && root.anchorLine == null;
 
   /// Last line of the anchored range (where a forge shows the card), or null
   /// when outdated.
@@ -238,4 +242,39 @@ Map<int, List<ServerReviewReply>> serverReviewRepliesByReview(
     }
   }
   return out;
+}
+
+/// How many conversations on one file are still open: what the file header's
+/// badge counts, so a collapsed or scrolled-past file still says it has
+/// something waiting.
+///
+/// [serverThreads] are the forge's conversations on the file, outdated and
+/// file-level ones included (they are as open as any other). [resolvedOverride]
+/// is the diff's optimistic resolve state by thread id, so the count moves on
+/// the press, not a round trip later. [localThreads] are this viewer's threads
+/// on the file: a draft or a comment still posting counts, one whose forge copy
+/// is already in [serverThreads] does not count twice.
+int unresolvedConversationCount({
+  required Iterable<ServerReviewThread> serverThreads,
+  required Iterable<PrInlineThread> localThreads,
+  Map<String, bool> resolvedOverride = const {},
+}) {
+  final onForge = <int>{};
+  var open = 0;
+  for (final t in serverThreads) {
+    onForge.add(t.root.id);
+    if (!(resolvedOverride[t.id] ?? t.isResolved)) {
+      open++;
+    }
+  }
+  for (final t in localThreads) {
+    final serverId = t.serverId;
+    if (serverId != null && onForge.contains(serverId)) {
+      continue;
+    }
+    if (!t.resolved) {
+      open++;
+    }
+  }
+  return open;
 }

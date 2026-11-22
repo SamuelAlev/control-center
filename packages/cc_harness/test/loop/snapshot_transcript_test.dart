@@ -25,6 +25,7 @@ class _ProgrammedCompactor implements HarnessCompactor {
     String selfAgentName = 'assistant',
     bool force = false,
     CancellationToken cancel = CancellationToken.none,
+    Future<String?> Function()? focus,
   }) async {
     if (calls >= plan.length) {
       return const HarnessCompactionResult.unchanged(0);

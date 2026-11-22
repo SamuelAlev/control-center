@@ -2,7 +2,7 @@
 title: Pracujte v Plan Studio
 description: Projdi, uprav, odhadni, porovnej a schval plán v editoru Plan Studio a spusť parametrizované playbooky.
 slug: cs-CZ/prirucka/navody/plan-studio
-sourceHash: 04a6e193c6b57af3fce63c90673a0958b37552fb
+sourceHash: 9df96d8f10ca86584f3979b84af5eee250719752
 ---
 
 Tenhle návod ukazuje, jak pracovat s plány v Plan Studio. Co jsou
@@ -129,8 +129,7 @@ plán**, nebo **Odmítnout** v liště schválení. **Schválit plán** schvál�
 vždy každý krok. Podmnožinu předem vybrat nejde. Schválení je
 zablokované, dokud má návrh chyby ověření; ty se ukážou vedle tlačítek.
 
-Schvalovat smí jen operátor. Nástroj MCP na to není, takže agent umí
-plán navrhnout a revidovat, schválit ho ale nikdy.
+Schvalovat smí jen operátor. Nástroj MCP na to není, takže agent umí plán navrhnout a revidovat, schválit ho ale nikdy. Schválení plánu, uložení revize, **Schválit vybrané** a **Pokračovat v uzlu** vyžadují právo zápisu do repozitářů prostoru.
 
 Jakmile se orchestrace provádí, lišta se změní:
 
@@ -140,7 +139,9 @@ Jakmile se orchestrace provádí, lišta se změní:
   a na všechno, na čem tranzitivně závisí (krok bez svých závislostí
   schválit nejde). Ovládání je na liště provádění u každé orchestrace.
   Když byl plán schválený celý, nic neudělá.
-- **Zrušit běh** zastaví celou orchestraci.
+- **Zrušit běh** zastaví celou orchestraci. Může to kdokoli s přístupem k prostoru.
+
+**Pokračovat v uzlu** a **Schválit vybrané** patří osobě, za kterou běh jedná (když jedná za nikoho, pak správcům pracovního prostoru).
 
 Kroky mimo částečně schválenou množinu se vykreslí jako odložené a
 neběží, dokud množinu nerozšíříš.

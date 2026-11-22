@@ -2,7 +2,7 @@
 title: Kör en orkestrering
 description: Be en orkestrerare om en plan, granska och redigera den i Plan Studio, godkänn den en gång och låt en genererad pipeline göra jobbet.
 slug: sv-SE/handbok/how-to-guider/kor-orkestrering
-sourceHash: 086301be6c1957f6336294720967813c3050ed25
+sourceHash: cc4390cbac6c2122dd24c23bcef20693f40121bb
 ---
 
 Den här guiden visar hur du förvandlar ett stort mål till en plan för hela
@@ -65,21 +65,13 @@ varaktighet och spridningsradie innan du godkänner. Se
 [Arbeta i Plan Studio](/sv-SE/handbok/how-to-guider/plan-studio/) för hela
 redigeraren.
 
-:::note[Budgeten är ingen utgiftsgräns]
-Ett förslags budget jämförs med _uppskattningen_ i godkännandefältet: när
-uppskattningens övre gräns överstiger den blir totalen röd med en varning om
-över budget. Ingenting kontrollerar utgifterna medan planen körs, så den stoppar
-eller felförklarar inte en körning. För ett faktiskt utgiftsstopp använder du
-budgetpolicyer per agent – se
-[Hantera kostnader](/sv-SE/handbok/how-to-guider/hantera-kostnader/).
+:::note[Budgeten håller körningen]
+Ett förslags budget jämförs med _uppskattningen_ i godkännandefältet: när uppskattningens övre gräns överstiger den blir totalen röd med en varning om över budget. Medan planen körs kontrollerar servern utgifterna före varje nytt steg. När budgeten är nådd hålls körningen och inget nytt startar; steg som redan körs slutförs. Den som begärde körningen får ett meddelande och trycker på **Höj gräns** på pipelinekörningens sida för att fortsätta. Se [Hantera kostnader](/sv-SE/handbok/how-to-guider/hantera-kostnader/).
 :::
 
 ## Steg 3: Godkänn
 
-Godkänn planen, antingen från kortet i chatten eller från godkännandefältet i
-Plan Studio. **Det här är ditt enda beslut.** Godkännande är förbehållet en
-operatör – det finns inget MCP-verktyg för det, så en agent kan föreslå och
-revidera men aldrig godkänna sin egen plan.
+Godkänn planen, antingen från kortet i chatten eller från godkännandefältet i Plan Studio. **Det här är ditt enda beslut.** Godkännande är förbehållet en operatör – det finns inget MCP-verktyg för det, så en agent kan föreslå och revidera men aldrig godkänna sin egen plan. Att godkänna kräver skrivåtkomst till ytans repositorier, och körningen agerar sedan för den person som godkände den.
 
 Härifrån omvandlar en deterministisk materialiserare (en ren funktion, ingen
 LLM) förslaget till en riktig
@@ -116,12 +108,7 @@ markeras som slutfört, därefter `completed`.
 Tryck på **Avbryt orkestrering** på kortet i chatten, eller **Avbryt körning** i
 godkännandefältet i Plan Studio. Ett avbrott river ner arbetet som pågår.
 
-En orkestrering misslyckas när materialiseringen misslyckas, eller när dess
-genererade pipelinekörning misslyckas (forskning, diskussion, syntes eller
-persist – de stegen fortsätter inte vid fel). Genererade **arbetssteg** fortsätter
-alltid vid fel, så ett misslyckat underärende får inte körningen att misslyckas.
-Det finns ingen felfallsväg för överskriden budget och ingen tröskel för "alla
-underärenden misslyckades".
+En orkestrering misslyckas när materialiseringen misslyckas, eller när dess genererade pipelinekörning misslyckas (forskning, diskussion, syntes eller persist – de stegen fortsätter inte vid fel). Genererade **arbetssteg** fortsätter alltid vid fel, så ett misslyckat underärende får inte körningen att misslyckas. Att nå budgeten håller körningen i stället för att misslyckas med den, och det finns ingen tröskel för "alla underärenden misslyckades".
 
 ## Relaterade guider
 

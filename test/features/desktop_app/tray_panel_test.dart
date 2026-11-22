@@ -160,7 +160,6 @@ List<Override> _overrides({
     },
   ),
   spaceUnreadProvider.overrideWith((ref, id) => id == 's2'),
-  spaceUnreadConversationCountProvider.overrideWith((ref, id) => 0),
   spaceConversationsProvider.overrideWith(
     (ref, id) => Stream.value(
       id == 's2'

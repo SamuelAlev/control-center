@@ -2,7 +2,7 @@
 title: "Clasificar tu bandeja de entrada"
 description: "Trabaja con la bandeja de entrada unificada: despeja lo que te bloquea, revisa lo que te espera y sigue tus propias PR."
 slug: es-MX/manual/guias/clasificar-bandeja-de-entrada
-sourceHash: 8b1cedaef10bca4c784509cf67c82493c1baab35
+sourceHash: 78a60272d46bc865d25bd7bc98796a89978e3e7c
 ---
 
 Esta guía te muestra cómo trabajar con la bandeja de entrada: la superficie que
@@ -79,9 +79,9 @@ Cada tarjeta de la franja tiene una sola acción siguiente:
    conexión, su racha de fallas consecutivas y su resultado más reciente. En la
    bandeja de entrada solo aparece la última falla de cada proveedor, así que una
    sincronización recuperada limpia la tarjeta.
-3. Las tarjetas desaparecen solas una vez que se resuelve el estado subyacente
-   (se responde al agente, se recupera la sincronización): no hay nada que
-   descartar manualmente.
+3. Si una tarjeta dice **El objetivo espera revisión** o **El objetivo te necesita**, haz clic en **Revisar**: llegarás a la página del objetivo, donde lo apruebas, lo reanudas o respondes lo que espera. Reanudar es para la persona que inició el objetivo. Aprobar un objetivo que inició un pipeline es para la persona que inició esa ejecución (consulta [Perseguir un objetivo](/es-MX/manual/guias/perseguir-un-objetivo/)). Solo aparecen los objetivos en los que puedes actuar: uno que espera revisión, o uno que iniciaste y que necesita a una persona.
+4. Si una tarjeta dice **Mejora propuesta**, haz clic en **Revisar**: llegarás a la propuesta, donde la aceptas o la rechazas.
+3. Las tarjetas desaparecen solas una vez que se resuelve el estado subyacente (se responde al agente, se recupera la sincronización, el objetivo avanza, se decide la propuesta): no hay nada que descartar manualmente.
 
 :::note[Estas son confirmaciones por turno, no aprobaciones de gobernanza]
 Una tarjeta de «aprobación de agente» es un agente en ejecución que se detiene a

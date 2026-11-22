@@ -2,7 +2,7 @@
 title: ڈومین ایونٹس
 description: تمام 54 ڈومین ایونٹس، اُن کے پیلوڈز اور اُنہیں استعمال کرنے والے سرور سائیڈ سبسکرائبرز کی مکمل کیٹلاگ۔
 slug: ur-PK/ہدایت-نامہ/حوالہ/ڈومین-ایونٹس
-sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
+sourceHash: f58123448c0f31c95774bbaebee89f1509940896
 ---
 
 ## ایونٹ بس
@@ -24,7 +24,10 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 | ایونٹ               | پیلوڈ                                                  | کب جاری ہوتا ہے                                          |
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | ورک اسپیس بنتا ہے                                        |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | ایجنٹ ایک رن مکمل کرتا ہے (کامیابی یا ناکامی)             |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | ایجنٹ کا پروسیس اسٹریم ختم ہوتا ہے، حتمی حالت لکھے جانے سے پہلے۔ صرف PR گفتگو کے برج اور analytics کے لیے رکھا گیا |
+| `AgentRunSettled` | `agentId`, `workspaceId`, `runId`, `status`, `endReason`, `costMicros`, `wakeIds`, `spaceId?`, `conversationId?`, `limitResetsAt?`, `requestedByUserId?`, `wakeReason?` | رن کی حتمی حالت لکھی جاتی ہے؛ ہر رن کے لیے ایک بار شائع ہوتا ہے۔ `endReason` ہوتا ہے `completed`، `error`، `stoppedByUser`، `budget`، `silence`، `usageLimit` یا `serverStopped`۔ کسی سب ایجنٹ کا رن کچھ شائع نہیں کرتا |
+| `GoalSettled` | `goalId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `status`, `hold?`, `summary?`, `requestedByUserId?` | ہدف ختم ہوتا ہے، یا کسی شخص کے ریویو کا انتظار شروع کرتا ہے |
+| `WakeRuleEnded` | `ruleId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `reason`, `requestedByUserId?` | شیڈول یا واچ ختم ہوتا ہے (اپنی ایک بار کی باری پوری کی، میعاد ختم ہوئی، اپنے رن یا لاگت استعمال کر لی، منسوخ ہوا، اس کا ہدف ختم ہو گیا، یا اس کا شخص چلا گیا) |
 | `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | کوئی ایجنٹ کسی انسان کا انتظار شروع کرتا ہے: کوئی منظوری، کوئی `ask_user` سوال یا اسناد کی وجہ سے رکا ہوا رن (`kind` کی قدر `approval`، `question` یا `credential` ہوتی ہے) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | ایک ریپو رجسٹر ہوتا ہے؛ پس منظر میں کوڈ انڈیکسنگ شروع کرتا ہے |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | کوئی مہارت انسٹال یا تازہ ہوتی ہے اور اپنا سپلائی چین اسکین فیصلہ ساتھ لاتی ہے |
@@ -57,6 +60,16 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 | `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | کسی نے PR کمنٹ یا ریویو کمنٹ میں آپ کا ذکر کیا                                |
 | `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | کسی نے اُس ریویو تھریڈ میں جواب دیا جس میں آپ شامل ہیں                            |
 | `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | کسی نے اُس ریویو تھریڈ کو حل کیا جس میں آپ شامل ہیں                              |
+
+### pull request کی نگرانی
+
+یہ ہر اُس pull request کے لیے شائع ہوتا ہے جسے کھلا pull request پولر پول کرتا ہے، چاہے مصنف کوئی بھی ہو، ایجنٹس کی `on:pr_*` نگرانیوں کے لیے۔ تینوں میں `workspaceId`، `repoOwner`، `repoName`، `prNumber`، `prTitle`، `headRef` اور `authorLogin` ہوتے ہیں۔
+
+| ایونٹ | اضافی پیلوڈ | کب جاری ہوتا ہے |
+| ----------------------- | ----------------------------------------------- | ---------- |
+| `PrWatchChecksSettled` | `passing`, `failedChecks`, `failedCheckUrl?` | pull request کے ہیڈ کی ہر جانچ ختم ہو گئی |
+| `PrWatchReviewActivity` | `decision`, `decisionChanged`, `newComments` | pull request کو ریویو یا نئے تبصرے ملے |
+| `PrWatchClosed` | `merged` | pull request ضم ہو گئی یا بند ہو گئی |
 
 ## میسجنگ ایونٹس
 
@@ -167,14 +180,20 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 | چیٹ اسپیس پروویژننگ (ان لائن)        | `SpaceCreated`                                                                                       |
 | `PipelineTriggerDispatcher`         | ہر `DomainEvent`؛ ہر فعال ٹرگر اپنی قسم کے لیے فلٹر کرتا ہے                                          |
 | `SubPipelineResumeListener`         | `PipelineRunCompleted`, `PipelineRunFailed`                                                          |
-| `PipelineCostRollupListener`        | `AgentRunCompleted`                                                                                  |
-| `BudgetEvaluationListener`          | `AgentRunCompleted`                                                                                  |
+| `PipelineCostRollupListener`        | `AgentRunSettled`                                                                                    |
+| `BudgetEvaluationListener`          | `AgentRunSettled`                                                                                    |
 | `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (صرف `meeting_summary` رنز)      |
-| `PipelineStepResumeListener`        | `AgentRunCompleted`                                                                                  |
-| `AgentRunTaskCompleter`             | `AgentRunCompleted`                                                                                  |
-| `GoalSupervisor`                    | `AgentRunCompleted`                                                                                  |
-| `CheckerDispatchListener`           | `AgentRunCompleted`                                                                                  |
-| `TeamRoutingService`                | `AgentRunCompleted`, `TicketAssigned`                                                                |
+| `PipelineStepResumeListener`        | `AgentRunSettled`                                                                                    |
+| `AgentRunTaskCompleter`             | `AgentRunSettled`                                                                                    |
+| `GoalSupervisor`                    | `AgentRunSettled` — ہدف کا اگلا قدم طے کرتا ہے                                                       |
+| `CheckerDispatchListener`           | `AgentRunSettled` — چیکر کو بیداری کے طور پر قطار میں لگاتا ہے؛ ہدف کے سیگمنٹس اور ریویوز چھوڑ دیتا ہے |
+| `TeamRoutingService`                | `AgentRunSettled`, `TicketAssigned`                                                                  |
+| `WakeQueueService` | `AgentRunSettled` — ان بیداریوں کو پہنچاتا ہے جو رن کے ختم ہونے کا انتظار کر رہی تھیں |
+| `WakeRuleService` | `AgentRunSettled` (خود مختار لوپس)، `GoalSettled` (ہدف کے شیڈولز ختم کرتا ہے)، `PrWatch*`، `EnvironmentProcessExited`، `EnvironmentReady`، ٹکٹ اور پائپ لائن رن کا اختتام (نگرانیاں)، `WorkspaceMemberRemoved` (اس شخص کے شیڈولز ختم کرتا ہے) |
+| `PeerAskService` | `AgentRunSettled` — ایجنٹس کے ایک دوسرے سے پوچھے گئے سوالات طے کرتا ہے اور پوچھنے والے کو بیدار کرتا ہے |
+| `LimitParkService` | `usageLimit` کے ساتھ `AgentRunSettled` — فراہم کنندہ کی ری سیٹ کا انتظار کرتا ہے |
+| `ImprovementReviewService` | `GoalSettled` (تصدیق شدہ ہدف) اور `AgentRunSettled` — بہتری کا ریویو قطار میں لگاتا ہے اور اس کا نتیجہ پڑھتا ہے |
+| پائپ لائن ہدف کا قدم (`goal.pursue`) | `GoalSettled`، `AgentRunSettled`، `PipelineRunCompleted`، `PipelineRunFailed`، `PipelineRunCancelled` — قدم کو دوبارہ شروع کرتا ہے، آرکیسٹریشن کو لاگت دیتا ہے اور پائپ لائن رن کو فالو کرتا ہے |
 | `OrchestrationRunListener`          | `PipelineRunCancelled`, `PipelineRunFailed`                                                          |
 | `MultiVendorTicketSyncCoordinator`  | `TicketCreated`, `TicketAssigned`, `TicketReassigned`, `TicketStatusChanged`, `TicketDetailsUpdated` |
 | `WorktreeGcListener`                | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`         |
@@ -230,6 +249,8 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 `AgentAwaitingInput` کو `AgentAwaitingInputPublisher` شائع کرتا ہے، جو منظوریوں اور اسناد کی رکاوٹوں کی رجسٹریوں میں نئے اندراجات پر نظر رکھتا ہے، اور ہر `ask_user` سوال کی خبر اُسے `AgentQuestionService` دیتا ہے۔ ایک انتظار ایک ایونٹ ہے؛ انتظار ختم ہونے پر کچھ شائع نہیں ہوتا۔
 
 خود لکھے PR کی پانچ اقسام `forUserId` ساتھ رکھتی ہیں، اس لیے وہ ورک اسپیس میں سب کے بجائے مصنف تک پہنچتی ہیں۔
+
+طویل المدت کام کے لیے پانچ فریم، ہر ایک اس شخص کو بھیجا جاتا ہے جس سے وہ متعلق ہے (`for_user_id`): `notifications/goal_settled` (`GoalSettled` سے)، `notifications/wake_rule_ended` (`WakeRuleEnded` سے)، `notifications/improvement_proposed`، `notifications/pipeline_run_held` (وہ پائپ لائن رن جو اس کی آرکیسٹریشن کی لاگت کی حد پر روکا گیا) اور `notifications/waiting_digest` (دن میں ایک بار، جو کسی شخص کے انتظار میں ہے)۔ ہر ایک `notification_kind` رکھتا ہے: `notify` کا نقشہ `agentRunCompleted` ہے، اور `question` اور `review` کا `agentAwaitingInput`۔ اب ہر اطلاعی فریم `notification_kind` رکھتا ہے، اور `quiet: true` والا فریم (ختم ہونے والا شیڈول، ختم ہونے والا ہدف) بغیر ٹوسٹ، آواز یا تیز پش کے نوٹیفکیشن سینٹر تک جاتا ہے۔
 
 `RemoteEventForwarder` مزید `TicketReassigned` کو `notifications/ticket_reassigned` کے طور پر اور ہر `TaskLifecycleEvent` کو `notifications/task_<phase>` کے طور پر آگے بھیجتا ہے۔ اِن میں سے کوئی بھی اطلاع کی قسم پر میپ نہیں ہوتا — وہ لائیو UI چلاتے ہیں، اطلاعات کا مرکز نہیں۔ رکنیت ایونٹس فریمز کے طور پر آگے نہیں بھیجے جاتے: وہ فارورڈر کا کیشے باطل کرتے ہیں، اور سیشن ہوسٹس ہٹائے گئے رکن کی ورک اسپیس سبسکرپشنز گرا دیتے ہیں۔
 

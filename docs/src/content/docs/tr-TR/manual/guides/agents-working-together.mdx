@@ -1,0 +1,63 @@
+---
+title: Birlikte çalışan ajanlar
+description: Ajanların birbirine nasıl soru sorduğu, işi nasıl devrettiği ve yanıtla nasıl uyandırıldığı; bir ajanın başka bir ajandan neyi beklediğini nerede göreceğiniz.
+slug: tr-TR/kilavuz/nasil-yapilir/birlikte-calisan-ajanlar
+sourceHash: 36bb45cd480fb45d0380e8fd651845c59a7debcb
+---
+
+Bir çalışma alanındaki ajanlar birbirine soru sorabilir, bir uzmanına danışabilir, bir inceleme isteyebilir, mesaj gönderebilir ya da bir bileti devredebilir. Bunların hiçbiri bir ajanın oturup beklemesini gerektirmez: soru soran bir ajan devam edebilir ya da turunu bitirebilir ve yanıt geldiğinde kendi konuşmasında uyandırılır.
+
+## Başka bir ajana soru sorma
+
+Bir ajan `ask_agent` ile iki yoldan biriyle sorar:
+
+- **Bekle** (varsayılan): ajan yanıt gelene kadar engellenir; varsayılan olarak 600 saniyeye, en fazla 1.800 saniyeye kadar.
+- **Arka planda**: çağrı hemen döner ve ajan çalışmaya devam eder.
+
+İki yolda da soru, iletilmeden önce kaydedilir. Yanıt çağrıda geri gelmediyse, soran ajan, diğer ajanın çalıştırması bittiğinde tam bir kez uyandırılır: yanıtlandı, başarısız oldu ya da yanıt gelmeden 24 saat sonra süresi doldu. Bu arada, her biri en fazla bir kez, diğer ajanın bir yanıt vadettiğini, bir kişiyi beklediğini ya da bir kullanım sınırında durduğunu duyabilir. Bu üçü de yanıt sayılmaz.
+
+`consult_agent` (en uygun uzmanı devreye sokar), `request_peer_review` (bir inceleme bulgusu için ikinci bir bakış) ve `send_to_agent` (tek yönlü bir mesaj) aynı kuyruktan işler. `send_to_agent`, diğer ajanın uyandırılıp uyandırılmadığını, mesajın mevcut çalıştırmanın arkasında bekleyip beklemediğini ya da neden reddedildiğini söyler.
+
+Diğer ajan soruyu, başka bir ajandan gelen bilgi olarak okur; uymak zorunda olduğu bir talimat olarak değil. Ayrıca bir slash komutu çalıştıramaz.
+
+## İş devretme
+
+- **Devredilen bir bilet** (`delegate_task`), bilet sonuçlandığında, onu devreden ajanı, devrettiği konuşmada uyandırır.
+- Liderin bir `@mention` ya da bir mesajla başlattığı **bir ekip üyesinin çalıştırması**, bittiğinde, üyeyi uyandırdığı konuşmada lideri uyandırır. (Bir soru yanıtıyla, devredilen bir bilet ise biletiyle yanıtlanır.)
+- Yönetici modunda (`/vibe`) bir **arka plan worker'ı**, yönetici çalışmaya devam ederken sonucunu yöneticisine verir.
+- Bir ajanın **`@mention`** etiketi ve alanın denetleyicisi aynı şekilde, uyandırmalar olarak iletilir.
+
+Bir ajan, ona sormadan başka bir ajanın ne yaptığına bakabilir: `agent_activity` diğer ajanın durumunu, o anki aracını ve son mesajlarını gösterir ve kimseyi uyandırmaz.
+
+## Sınırlar
+
+Sunucu bunları, ajanlar ne derse desin uygular:
+
+| Sınır | Değer |
+| --- | --- |
+| Soru ve devir zincirinin ne kadar derin olabileceği | 3 |
+| Döngüler (bir ajanın, diğerleri aracılığıyla kendisini bekleyen birine soru sorması) | Reddedilir |
+| Soran ajan başına bekleyen sorular | 10 |
+| Sorulan ajan başına bekleyen sorular | 20 |
+| Aynı ajana aynı soru tekrar | 10 dakika içinde reddedilir |
+| Bir ajan çifti arasındaki mesajlar | Dakikada 10 |
+| Bir mesajın ya da yanıtın uzunluğu | 16.384 karakter |
+
+Devir, sorun ajanın özerkliğine ve bütçesine de uyar: bir ajan, sahip olduğundan daha fazla özerkliği ya da parası olan başka bir ajana iş devredemez. Sizin kendi gönderdiğiniz bir mesaj bu şekilde asla sınırlanmaz.
+
+Sorulan ajan bir sağlayıcının kullanım sınırında durursa, sıfırlanma sorunun süresi dolmadan önce geliyorsa çalıştırması sıfırlanmayı bekler. Aksi halde soru hemen başarısız olur ve soran ajana neden söylenir.
+
+## Bir ajanın neyi beklediğini görün
+
+Bir konuşmada **Genel** panelinin **Sorular** bölümü, ondan ajanların sorduğu soruları listeler: kime, hangi türden (**Soru**, **Danışma** ya da **İnceleme**), ne zaman ve durumu (**Bekliyor**, **Yanıtlandı**, **Başarısız**, **Süresi doldu** ya da **İptal edildi**); uygun olduğunda **Yanıt vereceğini söyledi** ya da **Arka planda** ile birlikte. Başarısız bir soru nedenini söyler, örneğin **Çalıştırması sağlayıcının kullanım sınırında durdu.**
+
+Alandaki herkes **Soruyu iptal et** yapabilir. Soran ajan o zaman uyandırılmaz ve diğer ajanın çalıştırması durdurulmaz.
+
+Bir ajan için bekleyen yanıtlar, mesajlar ve biten işler de yazma alanının üstündeki şeritte görünür; ajanın beklediği diğerleriyle birlikte (bkz. [Zamanlamalar ve uyandırmalar](/tr-TR/kilavuz/nasil-yapilir/zamanlamalar-ve-uyandirmalar/#neyin-beklediğini-görün)).
+
+## Ayrıca bakın
+
+- [İşi ajanlara devretme](/tr-TR/kilavuz/nasil-yapilir/biletleri-devretme/)
+- [Ajan ekibi kurma](/tr-TR/kilavuz/nasil-yapilir/ajan-ekibi-kurma/)
+- [Arka plan worker'larını yönetme](/tr-TR/kilavuz/nasil-yapilir/arka-plan-workerlarini-yonetme/)
+- [MCP araçları: ajanlar arası mesajlaşma ve devretme](/tr-TR/kilavuz/referans/mcp-araclari/#ajanlar-arası-mesajlaşma-ve-devretme)

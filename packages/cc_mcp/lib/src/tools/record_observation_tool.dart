@@ -16,6 +16,11 @@ class RecordObservationTool extends McpTool {
   @override
   String get name => 'record_observation';
 
+  /// `agent_id` names the calling agent, never a target: forced from the
+  /// call scope, so a run cannot act as another agent.
+  @override
+  Set<String> get forcedScopeKeys => const {'agent_id'};
+
   @override
   String get description =>
       'Records an observation into the agent\'s private working memory.';

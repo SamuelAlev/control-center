@@ -149,7 +149,7 @@ class RpcNotificationFeedRepository implements NotificationFeedRepository {
         'item_id': itemId,
       });
 
-  // Reached through `space_read.markSpaceRead`'s `conversation_id` instead:
+  // Reached through `conversation_read.markRead` instead:
   // reading a conversation is what acknowledges it.
   @override
   Future<void> markConversationMessagesRead(
@@ -159,6 +159,6 @@ class RpcNotificationFeedRepository implements NotificationFeedRepository {
     required String conversationId,
   }) => throw UnsupportedError(
     'conversation acknowledgement is host-side only; '
-    'use SpaceReadRepository.markSpaceRead with a conversationId',
+    'use ConversationReadRepository.markConversationRead',
   );
 }

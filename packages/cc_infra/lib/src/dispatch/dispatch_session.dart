@@ -22,29 +22,41 @@ import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_event.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_handle.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
+import 'package:cc_domain/core/domain/value_objects/script_call_origin.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/usage_scope.dart';
 import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
+import 'package:cc_domain/features/code_mode/domain/services/repl_tool_description.dart';
+import 'package:cc_domain/features/code_mode/domain/value_objects/code_mode_limits.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_domain/features/dispatch/domain/modes/mode_capability_profile.dart';
+import 'package:cc_domain/features/dispatch/domain/modes/read_only_run_profile.dart';
 import 'package:cc_domain/features/dispatch/domain/prompts/capability_preamble.dart';
 import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart'
     show AgentPromptParts, DeliveredPromptContext;
+import 'package:cc_domain/features/dispatch/domain/services/run_settlement.dart';
+import 'package:cc_domain/features/dispatch/domain/services/wake_frame.dart'
+    show nonCommandTurnInput;
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_approval_copy.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart'
-    show ActionGuardService, kProposeOnlyReason;
+    show ActionGuardService, kProposeOnlyReason, kUnansweredCardReason;
 import 'package:cc_domain/features/guardrails/domain/services/action_request_extractor.dart';
 import 'package:cc_domain/features/guardrails/domain/services/autonomy_composition.dart';
 import 'package:cc_domain/features/guardrails/domain/services/shell_action_classifier.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_request.dart';
 import 'package:cc_domain/features/mcp/domain/value_objects/mode_tool_policy.dart';
+import 'package:cc_domain/features/mcp/domain/value_objects/tool_taxonomy.dart'
+    show groupToolsByCategory;
 import 'package:cc_domain/features/messaging/domain/value_objects/autonomy_level.dart';
 import 'package:cc_domain/features/model_routing/domain/entities/model_info.dart';
 import 'package:cc_domain/features/observability/domain/run_stage.dart';
 import 'package:cc_domain/features/sandboxing/domain/command_policy/command_policy.dart';
 import 'package:cc_domain/features/sandboxing/domain/host_execution_posture.dart';
+import 'package:cc_domain/features/sandboxing/domain/services/sandbox_exec_grant_service.dart'
+    show ExecGrantAsker, ExecGrantRunAsks;
 import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/context.dart';
@@ -55,6 +67,8 @@ import 'package:cc_harness/slash_command.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/blobs/blob_store.dart';
+import 'package:cc_infra/src/code_mode/run_script_origins.dart';
+import 'package:cc_infra/src/code_mode/run_script_past.dart';
 import 'package:cc_infra/src/dispatch/acp/acp_client.dart';
 import 'package:cc_infra/src/dispatch/agent_environment_gateway.dart';
 import 'package:cc_infra/src/dispatch/agent_hook_folder.dart';
@@ -66,10 +80,15 @@ import 'package:cc_infra/src/dispatch/claude_run_state.dart';
 import 'package:cc_infra/src/dispatch/claude_subagent_runs.dart';
 import 'package:cc_infra/src/dispatch/dispatch_session_deps.dart';
 import 'package:cc_infra/src/dispatch/harness_run_controller.dart';
+import 'package:cc_infra/src/dispatch/nested_call_rows.dart';
 import 'package:cc_infra/src/dispatch/network_egress.dart';
 import 'package:cc_infra/src/dispatch/read_media_capture.dart';
 import 'package:cc_infra/src/dispatch/read_only_worktrees.dart';
 import 'package:cc_infra/src/dispatch/render_media_image_refs.dart';
+import 'package:cc_infra/src/dispatch/run_code_executions.dart';
+import 'package:cc_infra/src/dispatch/run_cost_tally.dart';
+import 'package:cc_infra/src/dispatch/run_private_output_store.dart';
+import 'package:cc_infra/src/dispatch/server_turn_hooks.dart';
 import 'package:cc_infra/src/dispatch/steering_session_view.dart';
 import 'package:cc_infra/src/dispatch/subagent_pilot_gate.dart';
 import 'package:cc_infra/src/eval/eval_kernel.dart';
@@ -78,6 +97,9 @@ import 'package:cc_infra/src/harness/harness_run_factory.dart';
 import 'package:cc_infra/src/harness/harness_system_prompt.dart';
 import 'package:cc_infra/src/harness/harness_tool_registry_builder.dart';
 import 'package:cc_infra/src/harness/harness_tool_surface.dart';
+import 'package:cc_infra/src/harness/repl_tool.dart';
+import 'package:cc_infra/src/harness/script_approval_check.dart'
+    show scriptApprovalDenial;
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/lsp/diagnostics_ledger.dart';
 import 'package:cc_infra/src/media/media_read_scope.dart';
@@ -104,33 +126,26 @@ export 'package:cc_infra/src/dispatch/dispatch_session_deps.dart';
 part 'dispatch_session_acp.dart';
 part 'dispatch_session_harness.dart';
 part 'dispatch_session_subagent.dart';
+part 'dispatch_session_scripts.dart';
 part 'dispatch_session_claude_cli.dart';
 part 'dispatch_session_claude_control.dart';
 part 'dispatch_session_claude_credentials.dart';
+part 'dispatch_session_environment.dart';
 part 'dispatch_session_gateway.dart';
 part 'dispatch_session_sandbox.dart';
 part 'dispatch_session_repo_grants.dart';
 part 'dispatch_session_run_log.dart';
 part 'dispatch_session_run_context.dart';
 part 'dispatch_session_account_pool.dart';
+part 'dispatch_session_run_end.dart';
+part 'dispatch_session_park.dart';
 
-/// Default per-run priced cost cap, in micro-dollars (5 USD): what one
-/// unattended segment of an autonomous command (/goal, /loop) may burn before
-/// the loop's external budget check stops it mid-run. The goal supervisor
-/// threads a goal's REMAINING budget (capped at this default) via
-/// [DispatchSession.costCapMicros] so an explicit `/goal --budget` is never
-/// overshot by a whole segment.
+/// The most one goal segment may spend, in micro-dollars (5 USD): the goal
+/// supervisor caps every segment's [DispatchSession.costCapMicros] at it.
 const defaultRunCostCapMicros = 5000000;
 
-/// The run summary for a run a person stopped, whichever stop path ran: the
-/// dispatch session's terminate and the dispatch service's run-row close.
-const kRunStoppedByUserSummary = 'Stopped by user';
-
-/// The run-log reason for runs still in flight when the server shut down.
-const kRunStoppedByShutdownSummary = 'Stopped: the server shut down';
-
 /// A session that dispatches and manages a single sandboxed agent run.
-class DispatchSession implements SteeringSessionView {
+class DispatchSession implements SteeringSessionView, BackgroundHoldView {
   /// Creates a [DispatchSession] for launching and monitoring a sandboxed
   /// agent process.
   DispatchSession({
@@ -143,6 +158,8 @@ class DispatchSession implements SteeringSessionView {
     this.userText,
     this.promptParts,
     this.claudeResumeReset = false,
+    required this.freshHistory,
+    required this.readOnly,
     DateTime? runStartedAt,
     this.promptImageRefs = const [],
     required this.agentDirHostPath,
@@ -185,10 +202,8 @@ class DispatchSession implements SteeringSessionView {
   /// variable's own declaration.
   void Function()? onHarnessStarted;
 
-  /// Per-run priced cost cap override, in micro-dollars. The goal supervisor
-  /// threads the goal's REMAINING budget (capped at the default) so an
-  /// explicit `/goal --budget` cannot be overshot by a full segment. Null
-  /// keeps [defaultRunCostCapMicros].
+  /// The run's priced cost cap, in micro-dollars, or null for no cap; every
+  /// backend is held to it ([_RunEnd]), and the run then ends `budget`.
   final int? costCapMicros;
 
   /// Per-agent silence-timeout override in minutes. When null the per-mode
@@ -283,6 +298,7 @@ class DispatchSession implements SteeringSessionView {
   final Map<String, String> callerEnv;
 
   /// Optional agent identifier for capability lookup.
+  @override
   final String? agentId;
 
   /// The agent's display name for lifecycle events and operator prompts.
@@ -291,6 +307,7 @@ class DispatchSession implements SteeringSessionView {
   /// The human on whose behalf this run executes. Resolves the Git author and
   /// committer, attribution preference and forge credential scope; null uses
   /// the server owner.
+  @override
   final String? requestedByUserId;
 
   /// Optional workspace identifier.
@@ -311,8 +328,46 @@ class DispatchSession implements SteeringSessionView {
   @override
   final String? runLogId;
 
+  /// Whether this run has an `agent_run_logs` row: [runLogId] is set.
+  ///
+  /// A code execution's audit row cascades with its run's row, so its
+  /// repository refuses one for a run without a row; a `repl` tool records
+  /// executions only when this is true.
+  bool get hasRunLogRow {
+    final id = runLogId;
+    return id != null && id.isNotEmpty;
+  }
+
+  /// The run id code mode uses for this run: [runLogId] when the run has a
+  /// row ([hasRunLogRow]), otherwise [dispatchId].
+  ///
+  /// The run id the execution service derives this run's execution ids from
+  /// (`CodeExecution.idFor(runId: …)`), and [scriptOrigins] falls back to.
+  /// A subagent's scripts run under the child's own run id, with origins of
+  /// their own.
+  String get codeModeRunId => hasRunLogRow ? runLogId! : dispatchId;
+
+  /// The scripts this run is running right now, by the `repl` call that
+  /// started each: where the approval card of a script's call, the form of a
+  /// script's question and a script's `bash` command learn which execution
+  /// to name. Whatever starts a script registers the execution id the
+  /// execution service chose (`begin`) and removes it when the script ends
+  /// (`end`). The top-level loop's only: each subagent has its own, so a
+  /// child reusing a tool call id never names this run's script.
+  late final RunScriptOrigins scriptOrigins = RunScriptOrigins(
+    runId: codeModeRunId,
+  );
+
   /// Conversation mode (e.g. `plan` or `execute`).
   final Mode mode;
+
+  /// No history from before this run; see `AgentDispatchPort.start`.
+  @override
+  final bool freshHistory;
+
+  /// Review-mode capabilities, sandbox only; see `AgentDispatchPort.start`.
+  @override
+  final bool readOnly;
 
   /// Optional ticketing system ticket identifier.
   final String? ticketId;
@@ -426,6 +481,16 @@ class DispatchSession implements SteeringSessionView {
   /// Claude then installs a blocking Bash hook instead of skipping policy.
   AgentRunLease? _gatewayLease;
 
+  /// What this run's `repl` tools run scripts with, set up once
+  /// (`_codeModeScripts`) and shared by its subagents: the session's view of
+  /// the execution service and the workspace's limits, or why there is none.
+  Future<_CodeModeScripts>? _codeModeScriptsSetup;
+
+  /// The session's view of the execution service, once a `repl` tool was set
+  /// up. Closed before the session reports itself finished, so no script
+  /// outlives its run.
+  RunCodeExecutions? _scripts;
+
   /// The directory holding this run's own programs, when it has any: git's
   /// signer and `gh`. First on its `PATH`, and granted exec like the
   /// environment shims.
@@ -490,6 +555,9 @@ class DispatchSession implements SteeringSessionView {
   /// even if its most recent output predates the time it spent waiting.
   DateTime? _lastHumanWaitResolvedAt;
 
+  /// The run's parked harness loops ([DispatchSessionPark]).
+  final _parks = _RunParks();
+
   /// Interval between silence checks.
   static const Duration silenceCheckInterval = Duration(seconds: 30);
 
@@ -547,6 +615,21 @@ class DispatchSession implements SteeringSessionView {
   @override
   SteeringQueue get steeringQueue => _steering;
 
+  /// Plain words until a harness run's surface binds its forms
+  /// (`_bindToolForms`); a Claude Code or ACP run's tools are MCP tools
+  /// under their own names, so they stay plain.
+  @override
+  ToolCallForms get toolForms => _toolForms;
+  ToolCallForms _toolForms = plainToolForm;
+
+  /// Where this run's tool outputs go: a read-only run's own scopes
+  /// ([RunPrivateOutputStore], retired when its harness run ends).
+  late final ToolOutputStore? _outputs = runOutputStore(
+    deps.toolOutputStore,
+    readOnly: readOnly,
+    runId: codeModeRunId,
+  );
+
   /// The built-in harness loop's turn-boundary control: its pause gate
   /// (take-over, PRD 16 §8), whether it is live, and what it restored and
   /// activated. Unused by external-CLI transports.
@@ -563,6 +646,10 @@ class DispatchSession implements SteeringSessionView {
   /// into a queue nobody reads.
   @override
   bool get acceptsSteering => _harness.isActive || _claude.stdin != null;
+  @override
+  bool get heldForBackgroundOnly => _claudeHeldIdle;
+  @override
+  void yieldBackgroundHold() => _yieldClaudeBackgroundHold();
 
   /// Lets sibling subagents of one prompt shape read the cache entry the
   /// first of them writes; see [SubagentPilotGate].
@@ -580,9 +667,8 @@ class DispatchSession implements SteeringSessionView {
       ToolResidencySpec(
         enabled: enabled,
         residentNames: {
-          ...ModeToolPolicy.residentBuiltins,
+          ...ModeToolPolicy.directTools,
           ...ModeToolPolicy.residentDiscovery,
-          ...ModeToolPolicy.residentMcpTools,
         },
       );
 
@@ -602,16 +688,15 @@ class DispatchSession implements SteeringSessionView {
   /// stop. Returns true when the run will take it ([acceptsSteering]); FALSE —
   /// with nothing enqueued — otherwise, since ACP has no input lane (accepting
   /// the message would park it in a queue nobody reads: the
-  /// silently-swallowed steering bug).
+  /// silently-swallowed steering bug). [source]: who pushed it; null only for
+  /// a signed-in person's own words, which a compaction keeps as theirs.
   bool steer(
     String content, {
+    required String? source,
     SteeringChannel channel = SteeringChannel.steering,
     String? ref,
   }) {
-    if (content.trim().isEmpty) {
-      return false;
-    }
-    if (!acceptsSteering) {
+    if (content.trim().isEmpty || !acceptsSteering) {
       return false;
     }
     _steering.enqueue(
@@ -619,6 +704,7 @@ class DispatchSession implements SteeringSessionView {
         content: content.trim(),
         channel: channel,
         enqueuedAt: DateTime.now(),
+        source: source,
         ref: ref,
       ),
     );
@@ -699,37 +785,6 @@ class DispatchSession implements SteeringSessionView {
       }
     }
     return [root];
-  }
-
-  /// Resolves the operator-approved exec roots for this session, asking once
-  /// per undecided tree. Returns empty when no grant service is wired, which
-  /// leaves the exec block fully closed.
-  ///
-  /// Also the harness `bash` tool's resolver (per command, so an answer lands
-  /// on the next one): the tool's own cwd is deliberately NOT the candidate —
-  /// it is a subdirectory of these roots, and naming it would make each `cd` a
-  /// fresh unknown tree and re-ask on it.
-  Future<List<String>> _resolveExecGrantRoots(String wsId) async {
-    final service = deps.execGrantService;
-    if (service == null || wsId.isEmpty) {
-      return const [];
-    }
-    try {
-      return await service.approvedRoots(
-        workspaceId: wsId,
-        candidateRoots: _execGrantCandidateRoots(),
-        managedRoots: await _managedExecGrantRoots(),
-        spaceId: spaceId,
-      );
-    } on Object catch (e) {
-      // A failed lookup must not take the dispatch down with it: the run
-      // proceeds under the stricter, pre-grant rules.
-      CcInfraLog.warning(
-        'dispatch $dispatchId: exec-grant resolution failed, '
-        'continuing without grants: $e',
-      );
-      return const [];
-    }
   }
 
   /// Where this dispatch's directories are, derived once.
@@ -875,8 +930,8 @@ class DispatchSession implements SteeringSessionView {
         // The system prompt is frozen for the life of a run, so the swap is
         // announced instead — on the STEERING lane, because an `aside` is a
         // system-role message and compaction drops those, which would silently
-        // lose the index mid-run.
-        steer(projection.announcement);
+        // lose the index mid-run. The server's words: summarised, not pinned.
+        steer(projection.announcement, source: 'repo-skills');
       } on Object catch (e) {
         CcInfraLog.warning('repo skill projection failed for $switched: $e');
       }
@@ -1028,11 +1083,12 @@ class DispatchSession implements SteeringSessionView {
   /// Keyed by AGENT as well as conversation: two agents in one conversation
   /// hold two different histories — they saw different tool results and were
   /// given different system prompts, so merging them would hand each the
-  /// other's reasoning as its own.
+  /// other's reasoning as its own. Null for a [freshHistory] run.
   String? get _transcriptKey {
     final workspace = workspaceId;
     final conversation = conversationId;
-    if (deps.transcriptStore == null ||
+    if (freshHistory ||
+        deps.transcriptStore == null ||
         workspace == null ||
         workspace.isEmpty ||
         conversation == null ||
@@ -1040,78 +1096,6 @@ class DispatchSession implements SteeringSessionView {
       return null;
     }
     return '$workspace/$conversation#$agentId';
-  }
-
-  /// Builds the base harness tool registry (built-in filesystem/command tools
-  /// first, then bridged CC MCP tools) for a given [mode]/[env]. The
-  /// `task` tool is NOT added here — the top-level run adds it explicitly and
-  /// subagents deliberately omit it so nesting is capped at one level.
-  ///
-  /// [personalMcp] is [_personalMcpAllowed], asked by the caller right before.
-  HarnessToolRegistry _buildHarnessRegistry({
-    required Mode mode,
-    required Map<String, String> env,
-    required bool personalMcp,
-  }) {
-    // The `eval` bridge resolves tools against the registry being built, which
-    // is why this is a block: a cell's `tool(...)` call must hit the SAME
-    // registry a model-issued call does, wrappers and guardrails included.
-    late final HarnessToolRegistry registry;
-    final toolProcesses = _toolProcesses(mode);
-    registry = buildHarnessToolRegistry(
-      mode: mode,
-      networkEnabled: _run.networkEnabled,
-      loopbackPorts: _gatewayLoopbackPorts,
-      environmentScope: _run.environment.scope,
-      env: env,
-      toolOutputStore: deps.toolOutputStore,
-      workspaceId: workspaceId,
-      agentId: agentId,
-      conversationId: conversationId,
-      sandboxManager: deps.sandboxManager,
-      confirmationPort: deps.confirmationPort,
-      // The SAME resolution the CLI profile uses, so both adapters get the
-      // same scoped exec roots — and the tool's own cwd never enters into it.
-      execGrantRootsResolver: () => _execGrants(workspaceId ?? ''),
-      sandboxSpec: (id) => _sandboxSpec(id, workspaceId ?? '', mode: mode),
-      // The operator's own `commandPrefix` rules reach the bash gate through
-      // this — before it, they were stored, resolvable, editable in the
-      // what-if probe, and never consulted at runtime.
-      actionGuard: deps.actionGuard,
-      fileSearch: deps.fileSearch,
-      mcpRegistry: deps.mcpRegistry,
-      includePersonalMcp: personalMcp,
-      protectedPaths: _protectedPaths,
-      // `ask_user` renders in this run's conversation within its space.
-      // Both scopes must reach the tool so the answer returns to this run.
-      agentQuestionPort: deps.agentQuestionPort,
-      spaceId: spaceId,
-      // The question names this run, so only this run's watchdog pauses.
-      runLogId: runLogId,
-      // Diagnostics + navigation. The ledger is PER RUN (a new run should hear
-      // the current state of the world once), while the supervisor is shared
-      // (its cost is indexing).
-      lspSupervisor: deps.lspSupervisor,
-      diagnosticsLedger: _diagnosticsLedger,
-      lspWorkingDirectory: agentDirHostPath,
-      // Structural search + rewrite. Null when the grammars are not staged, in
-      // which case the tools are not advertised at all.
-      treeSitterParser: deps.astParsers?.parserIfReady,
-      stagedEditStore: _stagedEdits,
-      debugSupervisor: deps.debugSupervisor,
-      evalKernelFor: deps.kernelLauncherFactory == null
-          ? null
-          : (language) => _kernelFor(
-              language,
-              registryForBridge: registry,
-              hostProcesses: toolProcesses,
-            ),
-      toolProcesses: toolProcesses,
-      debugProcesses: _debugProcesses(mode),
-      lspProcesses: _lspProcesses(mode),
-      harnessSandboxSessionId: _harnessSandboxSessionId,
-    );
-    return registry;
   }
 
   /// Whether this run may be handed the MCP servers discovered in the server
@@ -1435,52 +1419,6 @@ class DispatchSession implements SteeringSessionView {
     return parts.assemble();
   }
 
-  /// Builds the merged environment for a dispatch. Caller and adapter settings
-  /// cannot replace the resolved attribution policy, the requesting human's
-  /// identity or the gateway's routing. No forge token is in it: the run asks
-  /// the gateway for one.
-  Map<String, String> _mergedEnv({required Map<String, String> backendEnv}) {
-    final merged = <String, String>{
-      ...callerEnv,
-      ...backendEnv,
-      ...adapterEnvOverride,
-      if (wakeContext != null) ...wakeContext!.toEnvironment(),
-      // Which Claude Code account this run signs in as. It is the LAST word on
-      // the config dir — an `adapterEnvOverride` naming a different one would
-      // point the CLI somewhere the sandbox never made writable, which fails
-      // as a mid-run token refresh error rather than as a visible mistake.
-      if (claudeConfigDir != null && claudeConfigDir!.isNotEmpty)
-        'CLAUDE_CONFIG_DIR': claudeConfigDir!,
-    };
-    // Re-assert the identity keys LAST. The spread order above lets an
-    // adapter's configured env win for its own keys (which is the point of
-    // `adapterEnvOverride`), never for whose commits these are.
-    merged.addAll(_run.identity.gitEnv);
-    // Append gateway routing after adapter config. Shell preflight remains
-    // necessary: explicit URLs or command-local Git config can avoid rewrites.
-    final lease = _gatewayLease;
-    if (lease != null) {
-      merged.addAll(_leaseEnvironment(lease, merged));
-    }
-    return merged;
-  }
-
-  /// Directories the runner keeps its own state in, writable in every mode.
-  ///
-  /// Only the Claude Code config dir today. It is listed for EVERY transport,
-  /// not just `claudeCli`: an ACP agent or a structured CLI may shell out to
-  /// `claude`, and a run that can read the credential but not refresh it fails
-  /// later and more confusingly than one that cannot read it at all.
-  List<String> get _runnerStateDirs => {
-    if (claudeConfigDir != null && claudeConfigDir!.isNotEmpty)
-      claudeConfigDir!,
-    // EVERY pooled account, not just the active one: the sandbox profile is
-    // generated once, before the spawn, and a failover re-run inside the same
-    // session would otherwise land on a directory the profile never opened.
-    for (final a in claudeAccounts)
-      if (a.configDir.isNotEmpty) a.configDir,
-  }.toList();
-
   /// Resolves this run's sandbox handle and starts listening to nothing yet:
   /// the caller subscribes. An error-state handle is destroyed before the
   /// throw — it is already in the adapter's map, and the throw skips the
@@ -1508,29 +1446,6 @@ class DispatchSession implements SteeringSessionView {
     }
     _activeHandle = handle;
     return handle;
-  }
-
-  /// The space's autonomy dial for this run, read per decision (an operator
-  /// can turn it mid-run), or null when there is no space or no resolver.
-  /// Never throws: a failed read keeps the default, fail-closed posture.
-  Future<AutonomyLevel?> _resolveAutonomy() async {
-    final resolve = deps.autonomyResolver;
-    final ws = workspaceId;
-    final space = spaceId;
-    final agent = agentId;
-    if (resolve == null ||
-        ws == null ||
-        ws.isEmpty ||
-        space == null ||
-        agent == null) {
-      return null;
-    }
-    try {
-      return AutonomyLevel.tryFromWire(await resolve(ws, space, agent));
-    } on Object catch (e, st) {
-      CcInfraLog.error('dispatch $dispatchId: autonomy lookup failed', e, st);
-      return null;
-    }
   }
 
   /// Universal command preflight. Evaluates the resolved command string
@@ -1600,24 +1515,24 @@ class DispatchSession implements SteeringSessionView {
     }
   }
 
-  /// Stops the session for a server shutdown: cancels the run, kills its
-  /// child, revokes its credentials, closes its run log and the event stream.
-  ///
-  /// Quiet on purpose — no transcript rows, no terminal event: the server is
-  /// going away and the run row is reconciled by the orphan reaper at the next
-  /// boot. It used to only revoke and close, leaving the child (an ACP agent
-  /// in particular, which no sandbox supervises) running with nobody reading
-  /// its output.
-  Future<void> stop() async {
+  /// Stops the session for a server shutdown, quietly (no terminal event):
+  /// settles its row as a server stop ([_stampServerStop]) with [summary]
+  /// (another server reason: a person it acted for left the workspace),
+  /// kills its child, revokes its credentials, closes its run log and the
+  /// event stream.
+  Future<void> stop({required String summary}) async {
     _cancelSilenceWatchdog();
-    _abortLogError ??= kRunStoppedByShutdownSummary;
-    _lastTaskError ??= kRunStoppedByShutdownSummary;
+    _abortLogError ??= summary;
+    _lastTaskError ??= summary;
+    _stampServerStop(summary);
     _cancelSource.cancel('shutdown');
     try {
+      await _bestEffort('run-row stamp', () async => _failWrite);
       _claude.parser = null;
       unawaited(_bestEffort('subagent close', _closeClaudeSubagents));
       await _bestEffort('ACP teardown', _teardownAcp);
       await _bestEffort('process kill', () => _killActiveProcess('shutdown'));
+      await _bestEffort('script teardown', _endScripts);
       await _bestEffort('run-log close', _closeRunLog);
     } finally {
       await _bestEffort('credential release', _releaseRunCredentials);
@@ -1630,6 +1545,7 @@ class DispatchSession implements SteeringSessionView {
   /// stream finished.
   Future<void> terminate() => _abortRun(
     reason: 'terminate',
+    endReason: RunEndReason.stoppedByUser,
     failure: kRunStoppedByUserSummary,
     logError: kRunStoppedByUserSummary,
     debugLine: '[sandbox] dispatch $dispatchId stopped by request',
@@ -1645,6 +1561,7 @@ class DispatchSession implements SteeringSessionView {
   /// `unawaited(_abortRun(...))` then left the run hung with nothing to end it.
   Future<void> _abortRun({
     required String reason,
+    required RunEndReason endReason,
     required String failure,
     required String logError,
     required String debugLine,
@@ -1653,6 +1570,7 @@ class DispatchSession implements SteeringSessionView {
       return;
     }
     _abortStarted = true;
+    _markEndReason(endReason);
     _cancelSilenceWatchdog();
     // The stop's reason wins the run log over whatever the dying transport
     // closes it with (a harness that sees the cancel exits 0).
@@ -1676,7 +1594,12 @@ class DispatchSession implements SteeringSessionView {
       // this the CLI kept running after the stop, ignored by everything.
       await _bestEffort('process kill', () => _killActiveProcess(reason));
     } finally {
+      // A script of this run ends, and its runner is gone, before the run
+      // reports itself finished.
+      await _bestEffort('script teardown', _endScripts);
       await _bestEffort('credential release', _releaseRunCredentials);
+      // A Claude run's in-flight spend writes land before the terminal one.
+      await _bestEffort('usage write', () => _claude.costWrites);
       // Closes the run log too: it finalizes the DEBOUNCED `lastOutputAt`
       // write and writes the NDJSON `end` record.
       _finish(error: logError);
@@ -1686,6 +1609,8 @@ class DispatchSession implements SteeringSessionView {
 
   /// Set once [_abortRun] has begun; a second stop is a no-op.
   bool _abortStarted = false;
+
+  final _runEnd = _RunEnd(); // How the run is ending: reason, cost, cap.
 
   /// Why an outside stop ended the run, once one did. [_closeRunLog] records
   /// this rather than the exit code the dying transport reports.
@@ -1711,10 +1636,14 @@ class DispatchSession implements SteeringSessionView {
       () => _closeRunLog(exitCode: exitCode, error: error),
     ).then((_) => _bestEffort('tool sandbox release', _releaseToolProcesses));
     if (!emittedDone) {
-      addEvent(DoneEvent());
+      addEvent(_doneEvent);
       _completeRun();
     }
   }
+
+  /// Cancels every script this run (or a subagent of it) still runs, and
+  /// waits until each has ended and its runner process is gone.
+  Future<void> _endScripts() async => _scripts?.close();
 
   /// Runs one teardown step, logging (with its stack) instead of throwing.
   Future<void> _bestEffort(String what, Future<void> Function() step) async {
@@ -1776,6 +1705,7 @@ class DispatchSession implements SteeringSessionView {
     _humanWaitEndSub = null;
     _pendingHumanWaitIds.clear();
     _lastHumanWaitResolvedAt = null;
+    _parks.clear();
   }
 
   void _startSilenceWatchdog() {
@@ -1814,12 +1744,12 @@ class DispatchSession implements SteeringSessionView {
     // The baseline: a run that never prints anything is silent from the
     // moment the watchdog starts, not exempt from it.
     final startedAt = clock.now();
-    silenceTimer = Timer.periodic(silenceCheckInterval, (_) {
-      if (_pendingHumanWaitIds.isNotEmpty) {
+    silenceTimer = Timer.periodic(_parks.checkEvery, (_) {
+      if (_pendingHumanWaitIds.isNotEmpty || _parks.loops.isNotEmpty) {
         return;
       }
       var activeSince = startedAt;
-      for (final mark in [lastOutputAt, _lastHumanWaitResolvedAt]) {
+      for (final mark in _parks.marks(lastOutputAt, _lastHumanWaitResolvedAt)) {
         if (mark != null && mark.isAfter(activeSince)) {
           activeSince = mark;
         }
@@ -1829,6 +1759,7 @@ class DispatchSession implements SteeringSessionView {
         unawaited(
           _abortRun(
             reason: 'silence watchdog',
+            endReason: RunEndReason.silence,
             failure: 'Silent run (no output for $minutes min)',
             logError: 'silent for $minutes min',
             debugLine: '[sandbox] Agent silent for $minutes min — terminating',
@@ -1838,56 +1769,10 @@ class DispatchSession implements SteeringSessionView {
     });
   }
 
-  /// Exec targets already being asked about, so a retry storm inside one run
-  /// raises ONE prompt. The persisted decision covers every later run; this
-  /// only covers the window before the first answer lands.
-  final Set<String> _execGrantAsksInFlight = <String>{};
-
-  /// Offers a grant for a `process-exec` denial the sandbox reported.
-  ///
-  /// Deliberately AFTER the fact and deliberately not blocking: a Seatbelt
-  /// profile is fixed when the process starts, so the exec that was just
-  /// refused cannot be retried under a new answer. The approval applies from
-  /// the next command (the harness rebuilds its profile per command) or the
-  /// next dispatch — which the confirmation copy says outright, rather than
-  /// letting the operator approve and watch it fail again.
-  Future<void> _maybeOfferExecGrant(SandboxViolation v) async {
-    final service = deps.execGrantService;
-    final wsId = workspaceId ?? '';
-    final action = v.action;
-    final target = v.target;
-    if (service == null ||
-        wsId.isEmpty ||
-        !action.startsWith('process-exec') ||
-        target.isEmpty ||
-        !_execGrantAsksInFlight.add(target)) {
-      return;
-    }
-    try {
-      final granted = await service.recordDeniedExec(
-        workspaceId: wsId,
-        deniedPath: target,
-        candidateRoots: _execGrantCandidateRoots(),
-        managedRoots: await _managedExecGrantRoots(),
-        spaceId: spaceId,
-      );
-      if (granted != null) {
-        addEvent(
-          DebugEvent(
-            content:
-                '[sandbox] allowed running programs under $granted — '
-                'takes effect on the next command',
-          ),
-        );
-      }
-    } on Object catch (e) {
-      CcInfraLog.warning(
-        'dispatch $dispatchId: exec-grant prompt failed for $target: $e',
-      );
-    } finally {
-      _execGrantAsksInFlight.remove(target);
-    }
-  }
+  /// This run's exec-grant asks: offers in flight, cards shared by parallel
+  /// commands, and roots nobody answered (not asked again in this run). The
+  /// persisted decision covers every later run.
+  final ExecGrantRunAsks _execGrantAsks = ExecGrantRunAsks();
 
   void _forwardSandboxEvent(SandboxEvent event) {
     // The stop path owns completion. Late output from the dying process must
@@ -1983,15 +1868,9 @@ class DispatchSession implements SteeringSessionView {
     if (json == null) {
       return;
     }
-    final claudeParser = _claude.parser;
-    if (claudeParser != null) {
-      // The first stdout byte of this attempt: the one transport boundary the
-      // adapter can honestly time (the CLI hides the provider request).
-      _noteClaudeFirstStdout();
-      claudeParser.process(json);
-      return;
+    if (!_routeClaudeLine(json)) {
+      addEvent(TextEvent(content: line));
     }
-    addEvent(TextEvent(content: line));
   }
 
   void _completeRun() {
@@ -2057,6 +1936,8 @@ class DispatchSession implements SteeringSessionView {
     }
   }
 
+  final _nestedRows = NestedCallRows();
+
   late final _readMedia = ReadMediaCapture(
     emit: _emitEvent,
     workingDirectory: agentDirHostPath,
@@ -2070,13 +1951,18 @@ class DispatchSession implements SteeringSessionView {
 
   /// Emits an [AgentProcessEvent] to the session stream, updates the last
   /// output timestamp and logs the event for persistence.
-  void addEvent(AgentProcessEvent event) {
+  void addEvent(AgentProcessEvent raw) {
+    // A script's calls are kept bounded from here on (NestedCallRows).
+    final event = _nestedRows.bound(raw);
+    if (event == null) {
+      return;
+    }
     if (event is ToolCallEvent) {
       _observeRepoTouch(event);
     }
     lastOutputAt = clock.now();
     _updateRunLogLastOutput();
-    _readMedia.add(event);
+    _readMedia.add(_withUsageCounted(event));
   }
 
   void _emitEvent(AgentProcessEvent event) {

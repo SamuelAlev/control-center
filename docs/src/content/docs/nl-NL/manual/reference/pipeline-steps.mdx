@@ -2,7 +2,7 @@
 title: Pipeline-stapsoorten
 description: Referentie voor de stapsoorten van pipelines, de body-sleutels van stappen, hun configuratie en de stapresultaten.
 slug: nl-NL/handleiding/referentie/pipeline-stappen
-sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
+sourceHash: 0d2876bc1ac359f4d2cfe94902bd5f924d19d5d5
 ---
 
 Een pipelinestap heeft twee onafhankelijke assen:
@@ -58,6 +58,31 @@ Algemene prompt-en-dispatch-node: rendert de prompt, dispatcht de agent naar een
 | `extras.spaceId`           | Bestaand gesprek om in te werken (standaard: een verborgen gesprek) |
 | `extras.conversationTitle` | Benoemde stroom binnen die ruimte (optioneel)                |
 | `extras.mode`              | Wordt gelezen op de node die de ruimte *opent* (`messaging.createSpace`), niet hier. Standaard `review`. |
+
+### `goal.pursue`
+
+Start een duurzaam doel (zie [Een doel nastreven](/nl-NL/handleiding/gidsen/doel-nastreven/)) en wacht tot het doel eindigt. De editor toont het als **Pursue a goal**. Geen van de 25 ingezaaide stapdefinities hierboven; geregistreerd ernaast.
+
+| Configuratieveld | Beschrijving |
+| ---------------------- | ----------- |
+| `agentId` | De agent die het doel nastreeft (verplicht) |
+| `prompt` | Het doel; ondersteunt `{{key}}`-vervanging (verplicht) |
+| `outputKey` | Statussleutel voor het resultaat (verplicht) |
+| `extras.spaceId` | De ruimte waarin het doel werkt (verplicht, zoals elke agentstap) |
+| `extras.budgetMicros` | Het budget van het doel in microdollar, 1 tot 1.000.000.000 (verplicht) |
+| `extras.maxRuns` | Een segmentlimiet, 1 tot 1.000 (optioneel) |
+| `extras.deadlineHours` | Uren vanaf het moment dat de stap het doel start, 1 tot 2.160 (optioneel) |
+| `extras.contract` | Wat klaar betekent: criteria en controles (optioneel) |
+
+Het resultaat onder `outputKey` is `{summary, verdict}`, waarbij `verdict` het oordeel van de reviewer is met zijn punten en zorgen, of null.
+
+| Het doel | De stap |
+| -------- | -------- |
+| voltooid | voltooit |
+| mislukt, geannuleerd of budget uitgeput | mislukt (`retry` en `continueOnFail` gelden); een opnieuw geprobeerde stap start een nieuw doel |
+| gepauzeerd, ook wanneer het wacht op de review van een persoon | blijft opgeschort, uitgezonderd van de leefbaarheidscontrole van 24 uur |
+
+Een doel dat door een pipeline-run is gestart, wordt aan de orkestratie van die run aangerekend, inclusief de review. Wanneer de pipeline-run wordt geannuleerd, mislukt of voltooid terwijl het doel werkt, wordt het doel geannuleerd.
 
 ### `pipeline.condition`
 

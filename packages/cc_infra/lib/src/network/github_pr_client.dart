@@ -399,10 +399,7 @@ class GitHubPrClient {
         if (!wanted.contains(fullName.toLowerCase())) {
           continue;
         }
-        out.add((
-          repoFullName: fullName,
-          pr: GitHubPullRequest.fromJson(item),
-        ));
+        out.add((repoFullName: fullName, pr: GitHubPullRequest.fromJson(item)));
       }
       return out;
     } on RhttpException catch (e) {
@@ -1112,6 +1109,45 @@ class GitHubPrClient {
         rethrow;
       }
 
+      throw mapHttpException(e);
+    }
+  }
+
+  /// Posts a comment on [path] as a whole (`subject_type: file`) on the PR
+  /// head commit. GitHub anchors it to no line, which is the only way to
+  /// comment on a file whose diff has none (a rename without changes, a
+  /// binary). Not part of a pending review: the reviews endpoint's
+  /// `comments[]` takes line anchors only.
+  Future<GitHubReviewComment> postFileComment(
+    String owner,
+    String repo, {
+    required int prNumber,
+    required String commitSha,
+    required String path,
+    required String body,
+    CancelToken? cancelToken,
+  }) async {
+    _requireOwnerRepo(owner, repo);
+    try {
+      final response = await _httpClient.post(
+        '/repos/$owner/$repo/pulls/$prNumber/comments',
+        body: HttpBody.json(<String, dynamic>{
+          'commit_id': commitSha,
+          'path': path,
+          'body': body,
+          'subject_type': 'file',
+        }),
+        cancelToken: cancelToken,
+      );
+      final data = httpJsonBody(response);
+      if (data is Map<String, dynamic>) {
+        return GitHubReviewComment.fromJson(data);
+      }
+      throw const FormatException('Unexpected payload from file-comment POST');
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
+        rethrow;
+      }
       throw mapHttpException(e);
     }
   }

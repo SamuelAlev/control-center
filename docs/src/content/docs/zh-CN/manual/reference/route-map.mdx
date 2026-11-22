@@ -2,7 +2,7 @@
 title: 路由图
 description: Control Center 注册的每一条路由，及其界面与查询参数。
 slug: zh-CN/手册/参考/路由图
-sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
+sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
 ---
 
 ## 应用外壳
@@ -40,6 +40,12 @@ sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 | `/pipelines`                            | —                                         | 流水线运行列表                                                                                                                                                           |
 | `/pipelines/run`                        | `?templateId=<id>`                        | 手动运行启动器                                                                                                                                                           |
 | `/pipelines/:runId`                     | —                                         | 流水线运行详情（步骤时间线）                                                                                                                                             |
+| `/goals` | — | 目标列表，按等待评审、进行中和已结束分组 |
+| `/goals/:goalId` | `?edit=contract` | 单个目标：当前状态、完成的标准、验证、定时与唤醒；`edit=contract` 会在已暂停的目标上打开契约编辑器 |
+| `/schedules` | — | 定时与监视，按状态分组，并提供 **新建定时** |
+| `/schedules/:ruleId` | — | 单个定时：备注、详情、近期的唤醒与运行 |
+| `/improvements` | — | 改进提议，按状态分组 |
+| `/improvements/:proposalId` | — | 单个提议：会改变什么、证据、评估与决定 |
 | `/plans`                                | —                                         | Plan Studio 中心：活动计划、计划文档、剧本                                                                                                                               |
 | `/plans/:kind/:id`                      | —                                         | 单个计划的 Plan Studio；`kind` 为 `orchestration` 或 `document`                                                                                                          |
 | `/meetings`                             | —                                         | 会议列表                                                                                                                                                                 |
@@ -99,6 +105,7 @@ sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 | `/settings/workspace/skills`       | 技能配置                                                                                            |
 | `/settings/memory`                 | 工作区记忆：事实、策略、知识图谱                                                                    |
 | `/settings/workspace/permissions`  | 智能体权限：护栏矩阵和假设推演                                                                      |
+| `/settings/workspace/schedules` | 定时限制、cron 定时与摘要所用的时区，以及服务器启动的运行等待回答的时长（管理员可编辑；成员可阅读） |
 | `/settings/pipelines`              | 流水线模板                                                                                          |
 | `/settings/pipelines/:templateId`  | 流水线模板编辑器（拖放式画布）                                                                      |
 

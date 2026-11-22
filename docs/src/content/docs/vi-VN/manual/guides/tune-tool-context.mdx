@@ -2,7 +2,7 @@
 title: Điều chỉnh ngữ cảnh công cụ của agent
 description: Kiểm tra xem một lượt chạy thực sự gửi đi những gì, thay đổi công cụ nào được nạp sẵn, và xác định xem một lựa chọn công cụ tồi là do truy hồi trượt hay do vấn đề ở prompt.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/dieu-chinh-ngu-canh-cong-cu
-sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
+sourceHash: 22a4306a97aa8da0332f8e3e20e06ed86119f1d5
 ---
 
 Hướng dẫn này đề cập đến phần thực hành xoay quanh bề mặt công cụ hai tầng: xem một lượt chạy gửi đi những gì, thay đổi nó, và chẩn đoán một agent đã với tay lấy nhầm công cụ. Để hiểu vì sao nó hoạt động như vậy, hãy đọc [Ngữ cảnh công cụ và bộ nhớ đệm prompt](/vi-VN/so-tay/khai-niem/ngu-canh-cong-cu).
@@ -13,25 +13,26 @@ Mở một cuộc hội thoại và nhấn vào chỉ báo mức sử dụng ng�
 
 Ở đây có hai phân đoạn đáng chú ý:
 
-- **Định nghĩa công cụ** và **MCP và công cụ động** — tập thường trú, kèm chi phí token thật của từng công cụ.
+- **Định nghĩa công cụ** và **MCP và công cụ động** — tập trực tiếp, kèm chi phí token thật của từng công cụ.
 - **Công cụ tải khi cần** — chỉ mục bị trì hoãn. Mỗi mục chỉ bị tính đúng cái tên của nó, bởi yêu cầu chỉ mang theo tên; nhưng mở một mục vẫn hiển thị đầy đủ phần mô tả và lược đồ, để bạn thấy nó *sẽ* tốn bao nhiêu nếu lượt chạy kéo nó vào.
+
+Trong một lần chạy có `repl`, các công cụ mà một tập lệnh tiếp cận được nêu tên trong system prompt và không xuất hiện trong cả hai phần.
 
 Nếu phân đoạn bị trì hoãn trống, tính năng trì hoãn đang tắt trên máy chủ này. Hãy kiểm tra `--tool-deferral` trong [CLI `cc_server`](/vi-VN/so-tay/tham-chieu/cli-cc-server).
 
 ## Thay đổi công cụ nào được nạp sẵn
 
-Tập thường trú là chính sách, không phải cấu hình — nó nằm trong `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) và áp dụng cho mọi lượt chạy:
+Tập trực tiếp là chính sách, không phải cấu hình — nó nằm trong `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) và áp dụng cho mọi lượt chạy:
 
-- `residentBuiltins` — từ vựng về tệp và shell.
-- `residentDiscovery` — `search_tools` và `list_my_tools`. Đừng loại bỏ chúng; chúng là cách agent tiếp cận mọi thứ còn lại.
-- `residentMcpTools` — một số ít công cụ Control Center đáng để mang theo lược đồ trong mọi yêu cầu.
-- Một khối riêng cho từng chế độ, dành cho những công cụ mà một [chế độ](/vi-VN/so-tay/khai-niem/che-do) nhất định dùng trong gần như mọi lượt.
+- `directTools` — mười hai công cụ mà mọi lần chạy gọi trực tiếp: `read`, `write`, `edit`, `search`, `find`, `bash` và `read_output`; `ask_user` và `task`; `todo_write`, `search_memory` và `send_message`.
+- `residentDiscovery` — `search_tools` và `list_my_tools`. Đừng loại bỏ chúng; chúng là cách agent tiếp cận mọi thứ còn lại. Một lần chạy có `repl` nhận `search_tools` khi có công cụ nào đó được nạp khi dùng lần đầu, và không nhận `list_my_tools`.
+- `directNamesFor(mode)` — các công cụ mà một [chế độ](/vi-VN/so-tay/khai-niem/che-do/) nhất định thêm vào vòng lặp riêng của nó: các động từ rà soát trong chế độ Rà soát, `submit_plan` trong chế độ kế hoạch và `propose_orchestration` trong chế độ điều phối.
 
 Hai quy tắc khi chỉnh sửa nó:
 
-**Chỉ thêm một công cụ nếu hầu hết các lượt chạy đều dùng nó.** Mỗi cái tên đều khiến mọi yêu cầu của mọi lượt chạy phải trả giá bằng lược đồ của nó, mãi mãi. Một công cụ quan trọng khi được dùng nhưng tổng thể thì hiếm khi dùng nên nằm ở nửa bị trì hoãn — agent vẫn sẽ tìm thấy nó.
+**Chỉ thêm một công cụ nếu hầu hết các lượt chạy đều dùng nó.** Mỗi cái tên đều khiến mọi yêu cầu của mọi lượt chạy phải trả giá bằng lược đồ của nó, mãi mãi. Một công cụ quan trọng khi được dùng nhưng tổng thể thì hiếm khi dùng nên nằm ngoài tập công cụ trực tiếp — agent vẫn có thể tiếp cận nó, từ một tập lệnh hoặc bằng cách nạp nó khi dùng lần đầu.
 
-**Dùng tên thật của công cụ.** Một tên thường trú không khớp với công cụ nào là vô tác dụng: không lỗi, không cảnh báo, công cụ đơn giản là bị trì hoãn. `test/tooling/resident_tool_names_test.dart` bắt được điều này và cũng giữ mỗi chế độ dưới 40 công cụ thường trú, đó chính là mục đích của việc này — vượt qua ngưỡng đó, việc chọn công cụ xuống cấp thấy rõ.
+**Dùng tên thật của công cụ.** Một tên trực tiếp không khớp với công cụ nào là vô tác dụng: không lỗi, không cảnh báo, công cụ đơn giản vẫn nằm ngoài tập công cụ trực tiếp. `test/tooling/resident_tool_names_test.dart` bắt được điều này, giữ tập công cụ trực tiếp của mỗi chế độ tối đa 20 công cụ và giữ mỗi chế độ tối đa 40 công cụ được gửi ngay từ đầu, đó chính là mục đích của việc này — vượt qua ngưỡng đó, việc chọn công cụ xuống cấp thấy rõ.
 
 Các động từ bắt buộc và được ghim của một chế độ được thêm tự động, nên bạn không bao giờ cần liệt kê động từ đầu ra của chính chế độ đó.
 
@@ -73,4 +74,4 @@ Những nguyên nhân phổ biến, xếp theo mức độ khả dĩ:
 - **Thay đổi mô hình hoặc mức suy luận giữa cuộc hội thoại.** Cả hai đều thay đổi tiền tố. Agent con đặc biệt dễ bị làm sai ở điểm này: chạy các agent con ở mức suy luận thấp hơn để tiết kiệm tiền có thể tốn nhiều hơn ở phần chia sẻ bộ nhớ đệm bị mất so với khoản tiết kiệm được.
 - **Nén quá thường xuyên.** Việc nén viết lại lịch sử theo thiết kế, nên cái giá của nó là có thật; cách khắc phục là nén thưa và sâu, thay vì nén thường xuyên và nông.
 
-Tắt tính năng trì hoãn bằng `--tool-deferral=off` là một phép A/B hợp lệ để tách bạch xem một thay đổi hành vi có phải đến từ bề mặt hai tầng hay không. Nó tái tạo chính xác yêu cầu trước thời kỳ trì hoãn, nên nếu hành vi vẫn còn khi tắt nó đi, thì bề mặt không phải là nguyên nhân.
+Tắt tính năng trì hoãn bằng `--tool-deferral=off` là một phép A/B hợp lệ để tách bạch xem một thay đổi hành vi có phải đến từ bề mặt hai tầng hay không. Khi tắt, một lần chạy gửi định nghĩa của mọi công cụ được chấp nhận, ngoại trừ việc một lần chạy có `repl` vẫn gọi từ tập lệnh các công cụ mà tập lệnh được phép gọi, nên nếu hành vi vẫn còn khi tắt nó đi, thì trì hoãn không phải là nguyên nhân.

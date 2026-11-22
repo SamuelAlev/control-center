@@ -2,7 +2,7 @@
 title: Dostroj kontekst narzędzi agenta
 description: Sprawdź, co uruchomienie faktycznie wysyła, zmień, które narzędzia ładują się z góry, i ustal, czy zły wybór narzędzia to nietrafienie wyszukiwania, czy problem promptu.
 slug: pl-PL/podrecznik/poradniki/dostrajanie-kontekstu-narzedzi
-sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
+sourceHash: 22a4306a97aa8da0332f8e3e20e06ed86119f1d5
 ---
 
 Ten poradnik opisuje praktyczną pracę z dwuwarstwową powierzchnią narzędzi: co wysyła uruchomienie, jak to zmienić i jak zdiagnozować agenta, który sięgnął po niewłaściwe narzędzie. Dlaczego działa to właśnie tak, przeczytasz w artykule [Kontekst narzędzi i cache promptów](/pl-PL/podrecznik/koncepcje/kontekst-narzedzi).
@@ -13,25 +13,26 @@ Otwórz rozmowę i kliknij wskaźnik użycia kontekstu w nagłówku rozmowy. Odb
 
 Znaczenie mają tu dwa segmenty:
 
-- **Definicje narzędzi** i **Narzędzia MCP i dynamiczne** — zestaw rezydentny, z rzeczywistym kosztem tokenów każdego narzędzia.
+- **Definicje narzędzi** i **Narzędzia MCP i dynamiczne** — zestaw bezpośredni, z rzeczywistym kosztem tokenów każdego narzędzia.
 - **Narzędzia ładowane na żądanie** — odroczony indeks. Każda pozycja jest obciążana wyłącznie swoją nazwą, bo tylko nazwę niesie żądanie; otwarcie pozycji nadal pokazuje pełny opis i schemat, więc widzisz, ile by *kosztowała*, gdyby uruchomienie ją wciągnęło.
+
+W uruchomieniu z `repl` narzędzia, do których sięga skrypt, są wymienione w prompcie systemowym i nie pojawiają się w żadnym z dwóch segmentów.
 
 Jeśli segment odroczony jest pusty, odroczenie jest dla tego serwera wyłączone. Sprawdź `--tool-deferral` w [dokumentacji referencyjnej CLI `cc_server`](/pl-PL/podrecznik/dokumentacja-referencyjna/cc-server-cli).
 
 ## Zmień, które narzędzia ładują się z góry
 
-Zestaw rezydentny to polityka, a nie konfiguracja — żyje w `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) i dotyczy każdego uruchomienia:
+Zestaw bezpośredni to polityka, a nie konfiguracja — żyje w `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) i dotyczy każdego uruchomienia:
 
-- `residentBuiltins` — słownik plików i powłoki.
-- `residentDiscovery` — `search_tools` i `list_my_tools`. Nie usuwaj ich; to dzięki nim agent dociera do wszystkiego innego.
-- `residentMcpTools` — garść narzędzi Control Center, których schemat opłaca się na każdym żądaniu.
-- Blok dla danego [trybu](/pl-PL/podrecznik/koncepcje/tryby), obejmujący narzędzia, których ten tryb używa niemal w każdej turze.
+- `directTools` — dwanaście narzędzi, które każde uruchomienie wywołuje bezpośrednio: `read`, `write`, `edit`, `search`, `find`, `bash` i `read_output`; `ask_user` i `task`; `todo_write`, `search_memory` i `send_message`.
+- `residentDiscovery` — `search_tools` i `list_my_tools`. Nie usuwaj ich; to dzięki nim agent dociera do wszystkiego innego. Uruchomienie z `repl` dostaje `search_tools`, gdy jakieś narzędzie wczytuje się przy pierwszym użyciu, i nie dostaje `list_my_tools`.
+- `directNamesFor(mode)` — narzędzia, które dany [tryb](/pl-PL/podrecznik/koncepcje/tryby/) dodaje do własnej pętli: czasowniki przeglądu w trybie przeglądu, `submit_plan` w trybie planu i `propose_orchestration` w trybie orkiestracji.
 
 Przy jego edycji obowiązują dwie zasady:
 
-**Dodawaj narzędzie tylko wtedy, gdy używa go większość uruchomień.** Każda nazwa kosztuje swój schemat przy każdym żądaniu każdego uruchomienia, na zawsze. Narzędzie, które jest ważne, gdy się je stosuje, ale ogólnie rzadkie, należy do odroczonej połowy — agent i tak je znajdzie.
+**Dodawaj narzędzie tylko wtedy, gdy używa go większość uruchomień.** Każda nazwa kosztuje swój schemat przy każdym żądaniu każdego uruchomienia, na zawsze. Narzędzie, które jest ważne, gdy się je stosuje, ale ogólnie rzadkie, należy poza zestawem bezpośrednim — agent i tak do niego dotrze, ze skryptu albo wczytując je przy pierwszym użyciu.
 
-**Używaj rzeczywistej nazwy narzędzia.** Nazwa rezydentna, która nie pasuje do żadnego narzędzia, jest bezwładna: żadnego błędu, żadnego ostrzeżenia, narzędzie po prostu zostaje odroczone. `test/tooling/resident_tool_names_test.dart` to wychwytuje, a przy okazji trzyma każdy tryb poniżej 40 narzędzi rezydentnych, o co właśnie chodzi — powyżej tego przedziału wybór narzędzi mierzalnie się pogarsza.
+**Używaj rzeczywistej nazwy narzędzia.** Nazwa bezpośrednia, która nie pasuje do żadnego narzędzia, jest bezwładna: żadnego błędu, żadnego ostrzeżenia, narzędzie po prostu pozostaje poza zestawem bezpośrednim. `test/tooling/resident_tool_names_test.dart` to wychwytuje, utrzymuje zestaw bezpośredni każdego trybu na najwyżej 20 narzędziach i utrzymuje każdy tryb na najwyżej 40 narzędziach wysyłanych z góry — o to właśnie chodzi w tym ćwiczeniu; powyżej tego przedziału wybór narzędzi mierzalnie się pogarsza.
 
 Wymagane i przypięte czasowniki trybu są dodawane automatycznie, więc nigdy nie musisz wypisywać własnego czasownika wyjściowego trybu.
 
@@ -73,4 +74,4 @@ Typowe przyczyny, w kolejności prawdopodobieństwa:
 - **Zmiana modelu lub poziomu wysiłku w trakcie rozmowy.** Obie zmieniają prefiks. Podagentów szczególnie łatwo tu zepsuć: uruchamianie dzieci na niższym poziomie wysiłku, by oszczędzić pieniądze, może kosztować więcej na utraconym współdzieleniu cache, niż oszczędza.
 - **Częste kompaktowanie.** Kompaktowanie z założenia przepisuje historię, więc jego koszt jest realny; lekarstwem jest kompaktowanie rzadko i głęboko, a nie często i płytko.
 
-Wyłączenie odroczenia przez `--tool-deferral=off` to zasadny test A/B do wyizolowania, czy zmiana zachowania pochodzi z dwuwarstwowej powierzchni. Odtwarza dokładnie żądanie sprzed wprowadzenia odroczenia, więc jeśli zachowanie utrzymuje się po wyłączeniu, powierzchnia nie jest przyczyną.
+Wyłączenie odroczenia przez `--tool-deferral=off` to zasadny test A/B do wyizolowania, czy zmiana zachowania pochodzi z dwuwarstwowej powierzchni. Przy wyłączonym odroczeniu uruchomienie wysyła definicję każdego dopuszczonego narzędzia, z tym że uruchomienie z `repl` nadal wywołuje ze skryptów narzędzia, które skrypt może wywołać; jeśli zachowanie utrzymuje się przy wyłączonym odroczeniu, odroczenie nie jest przyczyną.

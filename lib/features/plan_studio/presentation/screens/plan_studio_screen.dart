@@ -6,14 +6,15 @@ import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_statu
 import 'package:cc_domain/features/plan_studio/domain/entities/plan_document.dart';
 import 'package:cc_domain/features/plan_studio/domain/services/plan_document_compiler.dart';
 import 'package:cc_domain/features/plan_studio/domain/value_objects/plan_graph.dart';
-import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/orchestration/providers/orchestration_providers.dart';
 import 'package:control_center/features/pipelines/providers/pipeline_providers.dart';
+import 'package:control_center/features/plan_studio/presentation/plan_studio_access.dart';
 import 'package:control_center/features/plan_studio/presentation/widgets/plan_approval_bar.dart';
 import 'package:control_center/features/plan_studio/presentation/widgets/plan_canvas.dart';
+import 'package:control_center/features/plan_studio/presentation/widgets/plan_clarifications.dart';
 import 'package:control_center/features/plan_studio/presentation/widgets/plan_node_inspector.dart';
 import 'package:control_center/features/plan_studio/presentation/widgets/plan_node_visuals.dart';
 import 'package:control_center/features/plan_studio/presentation/widgets/plan_version_panel.dart';
@@ -69,6 +70,7 @@ class _PlanStudioScreenState extends ConsumerState<PlanStudioScreen> {
   int? _selectedRevisionForDiff;
   bool _busy = false;
   String? _actionError;
+  PlanStudioAccess _access = const PlanStudioAccess();
   PlanTotalEstimate? _total;
 
   bool get _isOrchestration => widget.kind == 'orchestration';
@@ -123,6 +125,7 @@ class _PlanStudioScreenState extends ConsumerState<PlanStudioScreen> {
       : child;
 
   Widget _buildOrchestration(BuildContext context, Orchestration o) {
+    final l10n = AppLocalizations.of(context);
     final proposal = _draft ?? o.proposal;
     final graph = PlanGraph.fromProposal(proposal);
     final validationErrors = orchestrationValidate(ref, proposal);
@@ -177,7 +180,7 @@ class _PlanStudioScreenState extends ConsumerState<PlanStudioScreen> {
                     current: proposal,
                     currentRevision: _baseRevision,
                     selectedRevision: _selectedRevisionForDiff,
-                    canRewind: proposed,
+                    canRewind: proposed && _access.mayWrite,
                     onSelectRevision: (r) =>
                         setState(() => _selectedRevisionForDiff = r),
                     onRewind: (rev) => _run(() async {
@@ -195,7 +198,7 @@ class _PlanStudioScreenState extends ConsumerState<PlanStudioScreen> {
                     graph: graph,
                     selectedKey: _selectedKey,
                     onSelect: (k) => setState(() => _selectedKey = k),
-                    editable: proposed,
+                    editable: proposed && _access.mayWrite,
                     readOnlyKeys: readOnly,
                     divergedKeys: divergedKeys,
                     runStateOf: (k) => resolvePlanNodeRunState(
@@ -224,7 +227,7 @@ class _PlanStudioScreenState extends ConsumerState<PlanStudioScreen> {
                     graph: graph,
                     node: selected,
                     agents: agents,
-                    editable: proposed,
+                    editable: proposed && _access.mayWrite,
                     readOnly: readOnly.contains(selected.key),
                     onNodeChanged: _replaceNode,
                     liveInfo: _liveInfo(context, selected.key, o),
@@ -239,10 +242,11 @@ class _PlanStudioScreenState extends ConsumerState<PlanStudioScreen> {
             hasSelection: selected != null && selected.isWork,
             busy: _busy,
             validationError: validationErrors.isEmpty
-                ? _actionError
+                ? _actionError ?? _access.reason(l10n, executing: executing)
                 : validationErrors.first,
             showContinueNode:
                 !ref.watch(isDemoServerProvider) &&
+                _access.mayWiden &&
                 selected != null &&
                 divergedKeys.contains(selected.key),
             onContinueNode: () => _run(
@@ -257,7 +261,8 @@ class _PlanStudioScreenState extends ConsumerState<PlanStudioScreen> {
               setState(() => _total = PlanTotalEstimate.fromWire(wire));
             }),
             onApprovePlan: () => _saveThenApprove(o, null),
-            onApproveSelectedNodes: ref.watch(isDemoServerProvider)
+            onApproveSelectedNodes:
+                ref.watch(isDemoServerProvider) || !_access.mayWiden
                 ? null
                 : () => _run(
                     () => ref
@@ -273,6 +278,7 @@ class _PlanStudioScreenState extends ConsumerState<PlanStudioScreen> {
   }
 
   Widget _buildDocument(BuildContext context, PlanDocument doc) {
+    final l10n = AppLocalizations.of(context);
     final graph = doc.graph;
     final agents =
         ref.watch(workspaceAgentsProvider(widget.workspaceId)).value ??
@@ -312,7 +318,8 @@ class _PlanStudioScreenState extends ConsumerState<PlanStudioScreen> {
           // The clarifying questions the planner asked and the answers it got.
           // They shape the whole plan and were previously stored and never
           // shown, so a reviewer could not see what the plan was predicated on.
-          if (clarifications.isNotEmpty) _Clarifications(items: clarifications),
+          if (clarifications.isNotEmpty)
+            PlanClarifications(items: clarifications),
           Expanded(
             child: Row(
               children: [
@@ -358,7 +365,8 @@ class _PlanStudioScreenState extends ConsumerState<PlanStudioScreen> {
             isExecuting: executing,
             hasSelection: selected != null && selected.isWork,
             busy: _busy,
-            validationError: _actionError,
+            validationError:
+                _actionError ?? _access.reason(l10n, executing: executing),
             onEstimate: () => _run(() async {
               final wire = await ref
                   .read(planStudioRepositoryProvider)
@@ -475,7 +483,7 @@ class _PlanStudioScreenState extends ConsumerState<PlanStudioScreen> {
 
   Future<void> _saveRevision() async {
     final draft = _draft;
-    if (draft == null || _busy) {
+    if (draft == null || _busy || !_access.mayWrite) {
       return;
     }
     final errors = orchestrationValidate(ref, draft);
@@ -537,13 +545,18 @@ class _PlanStudioScreenState extends ConsumerState<PlanStudioScreen> {
     });
     try {
       await action();
-    } on RemoteRpcException catch (e) {
+    } on Object catch (e) {
+      // Refusals read by kind; a refusal about this person's rights also
+      // lowers what the studio offers from here on.
       if (mounted) {
-        setState(() => _actionError = e.message);
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _actionError = '$e');
+        final message = planActionFailureMessage(
+          AppLocalizations.of(context),
+          e,
+        );
+        setState(() {
+          _actionError = message;
+          _access = _access.after(e);
+        });
       }
     } finally {
       if (mounted) {
@@ -610,60 +623,6 @@ class _ReplanBanner extends StatelessWidget {
           color: ds.textWarningPrimary,
           decoration: TextDecoration.none,
         ),
-      ),
-    );
-  }
-}
-
-/// The planner's clarifying questions and the answers it received.
-class _Clarifications extends StatelessWidget {
-  const _Clarifications({required this.items});
-
-  final List<PlanClarification> items;
-
-  @override
-  Widget build(BuildContext context) {
-    final ds = context.designSystem ?? DesignSystemTokens.light();
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-      decoration: BoxDecoration(
-        color: ds.bgSecondary,
-        border: Border(bottom: BorderSide(color: ds.borderSecondary)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final c in items)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    c.question,
-                    style: TextStyle(
-                      fontFamily: CcFonts.uiFamily,
-                      fontSize: 12,
-                      height: 1.4,
-                      fontWeight: FontWeight.w600,
-                      color: ds.textSecondary,
-                    ),
-                  ),
-                  if (c.answer.isNotEmpty)
-                    Text(
-                      c.answer,
-                      style: TextStyle(
-                        fontFamily: CcFonts.uiFamily,
-                        fontSize: 12,
-                        height: 1.45,
-                        color: ds.textTertiary,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-        ],
       ),
     );
   }

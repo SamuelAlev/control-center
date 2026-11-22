@@ -204,7 +204,12 @@ extension _CommitSigning on AgentRunGateway {
     if (await signing.publicKeyOf(user) != key) {
       return refuse(HttpStatus.conflict, keyChanged);
     }
-    final verdict = await _commitVerdict(grant, secret);
+    final verdict = await _commitVerdict(
+      grant,
+      secret,
+      _callWaitOf(secret, request),
+      _callDecidedOf(secret, request),
+    );
     if (!verdict.allowed) {
       return AgentRunGateway._plain(
         request,
@@ -226,9 +231,12 @@ extension _CommitSigning on AgentRunGateway {
   }
 
   /// The policy's answer to signing one commit for [grant]'s run.
+  /// [onPersonWait] hears of an ask (see `_callWaitOf`).
   Future<GuardVerdict> _commitVerdict(
     AgentRunGrant grant,
     String secret,
+    PersonWaitListener? onPersonWait,
+    void Function(bool approved)? onDecided,
   ) async {
     const classes = {ActionClass.gitCommit};
     const summary = 'sign git commit';
@@ -253,14 +261,21 @@ extension _CommitSigning on AgentRunGateway {
           actionSummary: '$summary (approved at the shell prompt)',
           prompted: true,
           onBehalfOfUserId: grant.actingUserId,
-          runId: grant.runId,
+          runId: grant.runLogId,
         );
         return const GuardVerdict.allow(prompted: true);
       }
     }
-    return _askWithDeadline(
+    return _askWithinScripts(
+      grant,
       secret,
-      (withdrawn) async => _guard.check(
+      classes: classes,
+      request: const ActionRequest(classes: classes),
+      summary: summary,
+      onPersonWait: onPersonWait,
+      onDecided: onDecided,
+      deadline: AgentRunSigning.decisionDeadline,
+      ask: (withdrawn, onPersonWait, beforeCard, autonomy) => _guard.check(
         workspaceId: grant.workspaceId,
         classes: classes,
         spaceId: grant.spaceId,
@@ -269,12 +284,13 @@ extension _CommitSigning on AgentRunGateway {
         mode: grant.mode,
         actionSummary: summary,
         onBehalfOfUserId: grant.actingUserId,
-        runId: grant.runId,
+        runId: grant.runLogId,
         request: const ActionRequest(classes: classes),
-        autonomy: await AgentRunGateway._autonomyOf(grant),
+        autonomy: autonomy,
         withdrawn: withdrawn,
+        onPersonWait: onPersonWait,
+        beforeCard: beforeCard,
       ),
-      deadline: AgentRunSigning.decisionDeadline,
     );
   }
 

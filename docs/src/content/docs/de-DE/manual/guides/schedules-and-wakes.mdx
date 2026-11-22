@@ -1,0 +1,110 @@
+---
+title: Zeitpläne und Weckrufe
+description: Wecke einen Agenten später, nach Zeitplan oder wenn etwas passiert, sieh, was wartet, und was bei einem Neustart oder einem Nutzungslimit geschieht.
+slug: de-DE/handbuch/anleitungen/zeitplaene-weckrufe
+sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+---
+
+Ein Agent schläft nicht und fragt auch nicht ständig nach, während er wartet. Er oder du richtet einen **Weckruf** ein: eine dauerhafte Anfrage, den Lauf des Agenten in einer Konversation zu einem Zeitpunkt oder bei einem Ereignis zu starten oder fortzusetzen. Jeder Lauf, den der Server ohne Eingabe einer Person startet, beginnt als Weckruf: der nächste Abschnitt eines Ziels, ein Zeitplan, eine Überwachung, eine Antwort eines anderen Agenten, fertige delegierte Arbeit, das Ende eines Nutzungslimits oder die Arbeit, die nach einem Neustart übrig ist. Weckrufe werden in der Datenbank des Arbeitsbereichs gespeichert und überstehen daher einen Neustart.
+
+## Einen Agenten selbst planen
+
+Tippe einen davon in das Eingabefeld einer Konversation:
+
+```text
+/loop every 30m --days 3 check the deploy and fix what broke
+/loop keep the flaky tests green
+/schedule in 2h look at the overnight benchmark
+/schedule at 09:00 summarize what changed overnight
+/schedule cron "0 9 * * 1-5" --max 20 triage new tickets
+```
+
+| Befehl | Funktion |
+| --- | --- |
+| `/loop every <interval> <prompt>` | Weckt den Agenten jetzt mit dem Prompt und danach in jedem Intervall erneut (mindestens 60 Sekunden auseinander) |
+| `/loop <prompt>` | Eine selbst getaktete Schleife: weckt den Agenten jetzt, und nach jedem Lauf wählt der Agent die nächste Verzögerung, 1 bis 60 Minuten (standardmäßig 20) |
+| `/schedule in <duration> <prompt>` | Weckt den Agenten einmal, nach der Verzögerung |
+| `/schedule at <HH:MM or ISO time> <prompt>` | Weckt den Agenten einmal. `HH:MM` ist die nächste solche Uhrzeit in der Zeitzone des Arbeitsbereichs; eine ISO-Zeit ohne Versatz gilt als UTC |
+| `/schedule cron "<expression>" <prompt>` | Weckt den Agenten nach einem Cron-Ausdruck mit fünf Feldern, gelesen in der Zeitzone des Arbeitsbereichs. Die Anführungszeichen sind optional |
+
+- `--max <N>` begrenzt die Läufe, `--days <N>` beendet den Zeitplan nach so vielen Tagen (standardmäßig 30, höchstens 365), und `--budget <dollars>` begrenzt, was der Zeitplan insgesamt ausgeben darf (sonst das Standardbudget des Arbeitsbereichs, zu Beginn 50 Dollar).
+- `/loop` startet seinen ersten Lauf sofort. `/schedule` wartet auf seine Zeit.
+- Dauern verwenden `s`, `m`, `h` und `d`, etwa `90s`, `20m` oder `1h30m`.
+- Diese Befehle werden nur in einer Nachricht gelesen, die du selbst tippst.
+
+Der Composer hilft dir beim Schreiben. Nach `/loop` oder `/schedule` und einem Leerzeichen bietet die Vorschlagsliste an, wann er auslöst, und sie wird enger, während du tippst; tippe `--` nach der Uhrzeit für die Grenzen. Enter oder Tab übernimmt eine Zeile und sendet nichts. Eine Zeile über deinem Text liest den Befehl dann zurück: wann er auslöst, wann er endet und was noch fehlt. Drückst du Enter bei einem Befehl, der sich nicht lesen lässt, sagt diese Zeile, was nicht stimmt, und dein Entwurf bleibt erhalten.
+
+Du kannst einen Zeitplan auch auf der Seite **Zeitpläne** mit **Neuer Zeitplan** anlegen: Wähle Bereich, Konversation und Agent, wann er auslöst, womit jeder Lauf beginnt, ein Ende, eine Obergrenze für Läufe und eine Kostengrenze. **Wenn der Agent beschäftigt ist** legt fest, ob diese Auslösung übersprungen wird oder ob gewartet wird, bis der Agent frei ist. **Bei jedem Auslösen** legt fest, ob ein Lauf startet oder du nur mit der Notiz benachrichtigt wirst.
+
+## Was Agenten einrichten
+
+Agenten verwenden das Tool `wake_me` für dieselben Dinge und für Überwachungen:
+
+| Überwachung | Wird ausgelöst, wenn |
+| --- | --- |
+| `on:pr_checks` | Die Prüfungen der Pull-Request des Bereichs sind abgeschlossen |
+| `on:pr_review` | Die Pull-Request des Bereichs erhält ein Review oder eine Antwort |
+| `on:pr_merged` | Die Pull-Request des Bereichs wird gemergt |
+| `on:environment` | Eine Aufgabe der Environment des Bereichs endet, oder die Environment wird bereit |
+| `on:ticket:<id>` | Ein Ticket wird abgeschlossen |
+| `on:pipeline_run:<id>` | Ein Lauf einer Pipeline endet |
+
+- Eine Überwachung einer Pull-Request hört auf die eigene Pull-Request des Bereichs oder auf eine genannte Pull-Request (`on:pr_checks:acme/shop-ui#12`). Eine Überwachung auf etwas, das ihre Person nicht lesen kann, wird abgelehnt.
+- Die eigenen Aktionen des Agenten lösen seine Überwachungen nicht aus. Ein Ereignis, das eintrifft, während der Agent arbeitet, geht nicht verloren: Es wartet, bis der Lauf endet, und spätere Ereignisse werden in denselben Weckruf zusammengeführt.
+- Der Zeitplan eines Agenten braucht eine Obergrenze für Läufe oder ein Ende. Er endet standardmäßig nach 7 Tagen und höchstens nach 30. Eine Überwachung läuft standardmäßig 10-mal.
+- Ein Zeitplan, den ein Agent in einem Lauf anlegt, den einer seiner eigenen Zeitpläne gestartet hat, teilt sich Ende, Obergrenze für Läufe und Kostengrenze mit dem ersten Zeitplan, sodass eine Kette aus Zeitplänen eines Agenten den ersten nicht überdauern kann. Das Löschen des ersten Zeitplans beendet die ganze Kette; sein Pausieren pausiert nur diesen Zeitplan. Läufe, die die Kette über andere Agenten startet, zählen auf dieselbe Kostengrenze. Ein Zeitplan, den du angelegt hast, startet keine Kette: Was ein Agent in seinen Läufen festlegt, ist begrenzt wie alles, was er nach einer Nachricht von dir festlegt.
+- Ein Agent listet mit `list_wakes` auf, was bei ihm wartet, und bricht mit `cancel_wake` ab, was er selbst eingerichtet hat. Was du eingerichtet hast, kann er nicht abbrechen.
+
+## Sehen, was wartet
+
+**Oberhalb des Eingabefelds.** Wenn für einen Agenten in der Konversation Weckrufe warten, zeigt eine Leiste sie: **N Weckrufe warten**, woher jeder kommt (**Ziel**, **Zeitplan**, **Überwachung**, **Antwort von** einem Agenten, **Nutzungslimit zurückgesetzt**, **Wiederherstellung**, …), wann er fällig ist und warum er zurückgehalten wird.
+
+| Schaltfläche | Funktion | Wer kann |
+| --- | --- | --- |
+| **Jetzt zustellen** | Stellt einen ausstehenden Weckruf sofort zu | Nur die Person, für die der Weckruf handelt |
+| **Fortsetzen** | Gibt einen zurückgehaltenen Weckruf frei | Nur die Person, für die der Weckruf handelt |
+| **Weckruf abbrechen** | Bricht ihn ab | Jeder mit Zugriff auf den Bereich |
+
+Ein Weckruf, der nicht zugestellt wurde, hinterlässt eine Zeile in der Konversation, die sagt, warum, etwa **Der Agent ist pausiert.** oder **Ein Budget blockiert einen Lauf.**
+
+**Die Seite Zeitpläne.** Seitenleiste → **Zeitpläne** listet jeden Zeitplan und jede Überwachung, die du sehen kannst, nach Status gruppiert; ein Cron-Zeitplan zeigt seine nächsten drei Zeiten in deiner Zeitzone. Öffne einen, um seine Notiz, Eigentümer, nächste Auslösungen, Läufe, übersprungene Läufe, Ausgaben und Ende sowie **Letzte Weckrufe und Läufe** zu sehen. Jeder Zeitplan hat eine eigene Adresse (`/workspaces/<workspace>/schedules/<id>`).
+
+| Aktion | Wer kann |
+| --- | --- |
+| **Pausieren**, **Löschen** | Jeder mit Zugriff auf den Bereich |
+| **Fortsetzen**, **Verlängern** | Nur der Eigentümer (ein Admin des Arbeitsbereichs für einen Zeitplan, den ein Agent ohne Person angelegt hat) |
+
+Wenn jemand anderes als der Besitzer eines Zeitplans ihn pausiert, zeigt die Konversation eine Zeile, die diese Person nennt.
+
+Auf dem Telefon startet **Wiederholen** auf dem Zielbildschirm einen sich wiederholenden Prompt (alle so viele Minuten oder Stunden, oder selbst getaktet) mit einer Kostengrenze und einem Ende, und der Bildschirm **Zeitpläne** pausiert, setzt fort und löscht Zeitpläne. Die Fortschrittsansicht einer Konversation zeigt, was wartet, einschließlich Pausen am Nutzungslimit (**Jetzt fortsetzen**, **Abbrechen**) und Arbeit, die nach einem Serverstopp übrig ist.
+
+## Wie ein Zeitplan läuft
+
+- Jeder Lauf eines Zeitplans oder einer Überwachung ist auf 5 Dollar begrenzt, oder auf das, was der Zeitplan übrig hat, wenn das weniger ist, und der Zeitplan stoppt bei seiner Kostengrenze.
+- Eine Cron-Zeit in der Stunde, die beim Umstellen der Uhren nach vorn übersprungen wird, läuft an diesem Tag eine Stunde später (02:30 läuft um 03:30). Eine Zeit in der Stunde, die sich beim Umstellen der Uhren zurück wiederholt, läuft einmal.
+- Ein Lauf eines Zeitplans tritt nie einem bereits laufenden Lauf bei. Ist der Agent beschäftigt, wenn ein zeitgesteuerter Zeitplan auslöst, wird diese Auslösung still übersprungen, es sei denn, der Zeitplan wartet, bis der Agent frei ist.
+- Ein Lauf, den ein Zeitplan oder eine Überwachung gestartet hat und der ohne Probleme endet, benachrichtigt dich nicht, es sei denn, er erwähnt jemanden. Wenn ein Zeitplan endet, sagt die Glocke, warum (**Er hat seine Läufe aufgebraucht.**, **Er hat sein Enddatum erreicht.**, …), ohne Ton.
+- Höchstens 30 Läufe pro Stunde starten aus Weckrufen in einer Konversation und 300 in einem Arbeitsbereich.
+- Wenn die Person, für die ein Zeitplan handelt, den Arbeitsbereich verlässt, endet der Zeitplan. Alles andere, was für sie handelte, stoppt ebenfalls: Ihre wartenden Weckrufe werden abgebrochen, ihre eingereihten und zurückgehaltenen Nachrichten gelöscht und ihre laufenden Agenten gestoppt.
+
+## Stopp, Neustart und Nutzungslimits
+
+- **Stopp.** Drückst du **Stoppen** beim Lauf eines Agenten, werden seine ausstehenden Weckrufe (die nicht zu einem Ziel gehören) und die Nachrichten, die du für ihn eingereiht hast, zurückgehalten. Sie warten auf **Fortsetzen** oder **Zurückgehaltene Nachrichten senden**. Jede Person sendet ihre eigenen zurückgehaltenen Nachrichten; niemand sendet die einer anderen Person.
+- **Ein Neustart des Servers.** Weckrufe und Zeitpläne überstehen ihn. Ein Lauf, den ein Weckruf gestartet hat, wird nach dem Neustart fortgesetzt, mit höchstens 3 Versuchen. Ein Lauf, den du selbst gestartet hast, wird nicht von selbst erneut ausgeführt: Er hinterlässt einen zurückgehaltenen Weckruf **Wiederherstellung**, und er wird fortgesetzt, wenn du **Fortsetzen** drückst. Ein zeitgesteuerter Zeitplan, dessen Termine verpasst wurden, während der Server nicht lief, löst nur innerhalb einer kurzen Toleranz verspätet aus (die Hälfte seines Intervalls, höchstens 10 Minuten; bei einmaligen Zeitplänen 24 Stunden), andernfalls verzeichnet er einen übersprungenen Lauf: **Verpasst, während der Server nicht lief.**
+- **Ein Nutzungslimit des Anbieters.** Stoppt ein Lauf am Nutzungslimit eines Anbieters und nennt der Anbieter den Zeitpunkt des Zurücksetzens (innerhalb von 7 Tagen), wird der Lauf pausiert. Ein Lauf, den der Server gestartet hat, etwa ein Abschnitt eines Ziels oder der Lauf eines Zeitplans, wird 30 Sekunden nach dem Zurücksetzen von selbst fortgesetzt. Bei einem Lauf, den du selbst gestartet hast, wartet er auf dich: Die Konversation zeigt **Pausiert am Nutzungslimit des Anbieters. Das Limit wird um** eine Uhrzeit **zurückgesetzt**, mit **Fortsetzen** (nur du) und **Abbrechen** (jeder im Bereich). Nach **Fortsetzen** läuft er weiter, sobald das Limit zurückgesetzt ist. Eine Pause, die du nicht fortsetzt, läuft 7 Tage nach dem Zurücksetzen ab. Nachrichten, die du am Limit eingereiht hast, werden in den fortgesetzten Lauf gesendet; wartet der Lauf nicht auf das Zurücksetzen oder wird die Pause abgebrochen oder läuft sie ab, werden sie stattdessen für dich unter **Zurückgehaltene Nachrichten senden** zurückgehalten. Nachrichten anderer Leute, die eingereiht sind, werden sofort für sie zurückgehalten. Der nächste Auslösungstermin eines Zeitplans wartet, bis der pausierte Lauf fortgesetzt wird. ACP-Agenten melden kein Zurücksetzen, deshalb warten ihre Läufe nicht.
+
+## Grenzen des Arbeitsbereichs
+
+Ein Admin des Arbeitsbereichs legt die Grenzen unter **Einstellungen → Arbeitsbereich → Zeitpläne** fest:
+
+- **Grenzen für Zeitpläne**: wie viele aktive oder pausierte Zeitpläne ein Agent in einer Konversation (10), im Arbeitsbereich (50) und im gesamten Arbeitsbereich (500) haben darf; die Standard-Kostengrenze eines Zeitplans (50 Dollar); und die Zeitzone, die Cron-Zeitpläne und die tägliche Übersicht verwenden (zu Beginn UTC).
+- **Wenn niemand antwortet**: wie lange ein Lauf, den der Server gestartet hat, auf die Antwort oder Genehmigung einer Person wartet (standardmäßig 72 Stunden, 1 Stunde bis 7 Tage), bevor eine Genehmigung als abgelehnt und eine Frage als unbeantwortet gilt (danach wird alles andere, was derselbe Lauf fragt, sofort abgelehnt), und die Stunde der täglichen Übersicht darüber, was auf dich wartet, bei Zielen, Zeitplänen und anderen Läufen, die der Server gestartet hat.
+
+Mitglieder sehen die Seite nur lesend.
+
+## Siehe auch
+
+- [Ein Ziel verfolgen](/de-DE/handbuch/anleitungen/ziel-verfolgen/)
+- [Agenten arbeiten zusammen](/de-DE/handbuch/anleitungen/agenten-zusammenarbeit/)
+- [Slash-Befehle](/de-DE/handbuch/referenz/slash-befehle/)
+- [Tools für Weckrufe und Ziele](/de-DE/handbuch/referenz/mcp-tools/#tools-für-weckrufe-und-ziele)

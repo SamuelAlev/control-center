@@ -21,6 +21,7 @@ class PrCodeReviewComment {
     this.reviewId,
     this.threadId,
     this.isResolved = false,
+    this.isFileLevel = false,
   });
 
   /// Identifier.
@@ -76,6 +77,11 @@ class PrCodeReviewComment {
   /// forge. Never inferred from the body; it comes from [threadId]'s thread.
   final bool isResolved;
 
+  /// Whether the comment is on the file as a whole rather than a diff line
+  /// (GitHub's `subject_type: file`). A file-level comment has no line, and
+  /// that is not the same as an outdated one whose line is gone.
+  final bool isFileLevel;
+
   /// Anchor line for the comment.
   int? get anchorLine => line ?? originalLine;
 
@@ -112,6 +118,7 @@ class PrCodeReviewComment {
     reviewId: reviewId,
     threadId: threadId ?? this.threadId,
     isResolved: isResolved ?? this.isResolved,
+    isFileLevel: isFileLevel,
   );
 
   /// Equality comparison.

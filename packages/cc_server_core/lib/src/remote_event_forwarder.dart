@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/calendar_events.dart';
+import 'package:cc_domain/core/domain/events/digest_events.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/identity_events.dart';
+import 'package:cc_domain/core/domain/events/learning_events.dart';
 import 'package:cc_domain/core/domain/events/messaging_events.dart';
 import 'package:cc_domain/core/domain/events/pr_events.dart';
 import 'package:cc_domain/core/domain/events/rig_events.dart';
@@ -137,6 +139,33 @@ class RemoteEventForwarder {
         (e) => _forward(agentActionBlockedFrame(e)),
       ),
     );
+    // A durable goal finished, or paused on something only a person can do.
+    _subs.add(
+      _eventBus.on<GoalSettled>().listen((e) => _forward(goalSettledFrame(e))),
+    );
+    // Proposals waiting for a person, and a run held at its cost cap.
+    _subs
+      ..add(
+        _eventBus.on<ImprovementProposed>().listen(
+          (e) => _forward(improvementProposedFrame(e)),
+        ),
+      )
+      ..add(
+        _eventBus.on<PipelineRunHeld>().listen(
+          (e) => _forward(pipelineRunHeldFrame(e)),
+        ),
+      )
+      // A rule that ended, and the daily digest of what waits.
+      ..add(
+        _eventBus.on<WakeRuleEnded>().listen(
+          (e) => _forward(wakeRuleEndedFrame(e)),
+        ),
+      )
+      ..add(
+        _eventBus.on<WaitingDigest>().listen(
+          (e) => _forward(waitingDigestFrame(e)),
+        ),
+      );
     // Membership liveness: a cached verdict must not outlive the change.
     _subs.add(
       _eventBus.on<WorkspaceMemberAdded>().listen((e) {

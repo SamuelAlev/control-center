@@ -2,7 +2,7 @@
 title: Diagnostiquer un agent
 description: Déroulez le journal d’exécution, la sonde d’adaptateur, l’état du serveur et les diagnostics de l’hôte lorsqu’un agent cesse de produire des exécutions.
 slug: fr-FR/manuel/guides/diagnostiquer-agent
-sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
+sourceHash: 8cd7078bacfbfcd18d90512974eff3539366883c
 ---
 
 Ce guide vous montre comment déterminer pourquoi un agent ne produit pas d’exécutions.
@@ -90,7 +90,13 @@ Vérifiez **Paramètres → Serveur → Diagnostics et confidentialité → Rech
 
 ### Le serveur refuse de démarrer
 
-Les bibliothèques natives sont requises et il n’existe aucun mode dégradé. Une dylib manquante fait refuser le démarrage à `cc_server`, qui nomme le fautif dans l’erreur. Préparez les natives avec `scripts/natives/build_natives.sh` et recompilez le binaire du serveur.
+Les bibliothèques natives sont requises et il n’existe aucun mode dégradé. Une dylib manquante, ou un exécuteur du mode code manquant (`bin/codemode/cc_codemode`), fait refuser le démarrage à `cc_server`, qui nomme le fautif dans l’erreur. Préparez les natives avec `scripts/natives/build_natives.sh` et recompilez le binaire du serveur avec `scripts/build_server.sh`.
+
+### Un script a échoué, ou le mode code n’est pas proposé
+
+Pour voir ce qu’a fait un script du [mode code](/fr-FR/manuel/concepts/mode-code/), ouvrez son enregistrement depuis **Ouvrir l'enregistrement** sur sa ligne dans la conversation, ou depuis **Observabilité → Exécutions de code**. L’enregistrement indique en termes simples comment le script s’est terminé (temps épuisé, temps processeur épuisé, limite de mémoire atteinte, erreur levée) et liste chaque appel d’outil effectué, avec l’indication que les garde-fous l’ont autorisé, qu’une personne l’a approuvé ou qu’il a été refusé.
+
+Si l’agent ne dispose pas du tout de l’outil `repl`, ouvrez **Paramètres → Espace de travail → Mode code**. Sous **Statut**, **Sur ce serveur** indique **Disponible** ou **Indisponible** ; **Indisponible** signifie que le serveur ne peut pas verrouiller l’exécuteur de scripts sur son hôte, et la page indique la raison. Le journal de démarrage du serveur contient la même ligne (`code_mode=…`). Une exécution sans espace de travail, dont les limites de l’espace de travail n’ont pas pu être lues ou dont le journal n’a pas pu être écrit ne reçoit pas non plus de `repl` et appelle ses outils directement.
 
 ### Une action est refusée silencieusement
 

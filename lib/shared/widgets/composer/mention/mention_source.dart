@@ -16,6 +16,13 @@ abstract class MentionSource {
   /// Optional section header shown above the source's rows.
   String? sectionLabel(BuildContext context) => null;
 
+  /// A query this source opens by itself at [caret], or null: the next
+  /// argument of a command it knows, as a [MentionTrigger.argument] query
+  /// over the words being written there. Asked only when no trigger
+  /// character opened a query, and only worth answering when [suggest] has
+  /// rows for it (an open popup with nothing in it still takes Escape).
+  MentionQuery? detect(String text, int caret) => null;
+
   /// Returns suggestions for the [query]. May complete with an empty list.
   ///
   /// Implementations should cap their own result count; the popup caller

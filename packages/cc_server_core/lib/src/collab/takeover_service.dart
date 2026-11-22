@@ -30,7 +30,12 @@ class TakeoverService {
   final Future<bool> Function(String runLogId) _pauseRun;
   final Future<bool> Function(String runLogId) _resumeRun;
   final Future<void> Function(String workspaceId, String runLogId) _stopRun;
-  final Future<bool> Function(String runLogId, String message) _steerRun;
+  final Future<bool> Function(
+    String runLogId,
+    String message, {
+    required String? source,
+  })
+  _steerRun;
   final Future<List<PrFile>> Function(String workspaceId, String spaceId)
   _conversationChanges;
 
@@ -188,11 +193,23 @@ class TakeoverService {
       // message is drained at the top of the resumed turn. One run failing
       // to resume must not keep the others paused.
       try {
+        // The diff summary is the server's report of the worktree, not the
+        // person's words: a compaction summarises it. Only the person's own
+        // note is steered as theirs (`source: null`), so only it is pinned.
         await _steerRun(
           runId,
-          'The human took over the worktree and handed it back. $message '
+          'The human took over the worktree and handed it back. '
+          '$displayName handed the worktree back. $summary '
           'Re-read the recent changes before continuing.',
+          source: 'takeover',
         );
+        if (note.trim().isNotEmpty) {
+          await _steerRun(
+            runId,
+            'Note from $displayName: ${note.trim()}',
+            source: null,
+          );
+        }
         if (await _resumeRun(runId)) {
           resumed.add(runId);
         }

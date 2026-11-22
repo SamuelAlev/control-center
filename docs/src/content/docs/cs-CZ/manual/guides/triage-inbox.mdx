@@ -2,7 +2,7 @@
 title: Třídění doručené pošty
 description: Vyřiď sjednocenou doručenou poštu. Ukliď, co tě blokuje, zkontroluj, co na tebe čeká, a sleduj vlastní PR.
 slug: cs-CZ/prirucka/navody/trideni-dorucene-posty
-sourceHash: 8b1cedaef10bca4c784509cf67c82493c1baab35
+sourceHash: 78a60272d46bc865d25bd7bc98796a89978e3e7c
 ---
 
 Tenhle návod ukazuje, jak pracovat s doručenou poštou: jednou plochou, na které
@@ -75,8 +75,9 @@ Každá karta v pruhu má jednu další akci:
    synchronizaci, sérii po sobě jdoucích selhání a poslední výsledek. V
    doručené poště se u každého dodavatele objeví jen poslední selhání, takže
    obnovená synchronizace kartu odstraní.
-3. Karty zmizí samy, jakmile se podkladový stav vyřeší (agent dostane
-   odpověď, synchronizace se vzpamatuje) — ručně je zavírat nejde.
+3. Pokud karta říká **Cíl čeká na kontrolu**, nebo **Cíl potřebuje vás**, klikněte na **Kontrola** — dostanete se na stránku cíle, kde ho schválíte, obnovíte, nebo odpovíte na to, na co čeká. Obnovit cíl může jen osoba, která ho spustila. Schválit cíl, který spustila pipeline, může osoba, která ten běh spustila (viz [Usilujte o cíl](/cs-CZ/prirucka/navody/usilujte-o-cil/)). Zobrazují se jen cíle, se kterými můžete něco udělat: cíl čekající na kontrolu, nebo cíl, který jste spustili a který potřebuje osobu.
+4. Pokud karta říká **Navržena úprava**, klikněte na **Kontrola** — dostanete se na návrh, kde ho přijmete, nebo odmítnete.
+3. Karty zmizí samy, jakmile se podkladový stav vyřeší (agent dostane odpověď, synchronizace se vzpamatuje, cíl se posune dál, návrh se rozhodne) — ručně je zavírat nejde.
 
 :::note[Jsou to potvrzení na jeden tah, ne schválení ve správě]
 Karta „schválení agenta“ je běžící agent, který se ve vlastní konverzaci

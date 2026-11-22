@@ -2,7 +2,7 @@
 title: Alat MCP
 description: Katalog lengkap alat MCP yang didaftarkan `cc_server`, per keluarga.
 slug: id-ID/panduan-pengguna/referensi/alat-mcp
-sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
+sourceHash: 0ef9efd386b57c3a254e7f637b0436d9baff1719
 ---
 
 `cc_server` menghosting satu registri alat MCP (JSON-RPC 2.0), yang dilayani pada port server utama (bawaan `9030`) di `POST /mcp` dan `GET /sse`, versi protokol `2024-11-05`. Setiap klien menjangkau registri yang sama: desktop, build web, klien MCP eksternal, dan runtime agen bawaan. Server MCP eksternal dijembatani ke dalam registri yang sama di lapisannya sendiri: satu per ruang kerja untuk server yang dikonfigurasi admin-nya, dan satu untuk server pribadi pemiliknya. Endpoint ini hanya mencantumkan, memanggil, dan mencarinya untuk run agen: server milik ruang kerja tersebut, ditambah server pribadi ketika pemilik server bertanggung jawab atas run itu. Token MCP dan perangkat yang dipasangkan tidak pernah melihatnya (lihat [Server MCP yang digunakan agen Anda](/id-ID/panduan-pengguna/panduan-praktis/server-mcp/#server-mcp-yang-digunakan-agen-anda)).
@@ -11,21 +11,22 @@ sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
 
 | Ukuran                                                                    | Jumlah |
 | ------------------------------------------------------------------------- | ------ |
-| Alat yang didaftarkan oleh `cc_server`                                    | 110    |
-| Dari `packages/cc_mcp`                                                    | 108    |
+| Alat yang didaftarkan oleh `cc_server`                                    | 116    |
+| Dari `packages/cc_mcp`                                                    | 114    |
 | Dari `packages/cc_mcp_client` (penemuan alat)                             | 2      |
-| Didaftarkan di registri dasar (`server_mcp_registry.dart`)                | 63     |
-| Didaftarkan pasca-boot saat layanannya menyala (`cc_server_runtime.dart`) | 47     |
-| Dari 63 milik registri dasar, bergantung pada repo graf kode              | 5      |
+| Didaftarkan di registri dasar (`server_mcp_registry.dart`)                | 64     |
+| Didaftarkan pasca-boot saat layanannya menyala (`cc_server_runtime.dart`) | 52     |
+| Dari 64 milik registri dasar, bergantung pada repo graf kode              | 5      |
+| Dari 64 registri dasar, bersyarat pada runner mode kode (`repl`) | 1 |
 
-Kelima alat graf kode itu didaftarkan hanya ketika host meneruskan repo graf kode ke `buildServerMcpRegistry`. `cc_server` selalu meneruskannya, sehingga seluruh 110-nya aktif di biner yang dikirim.
+Kelima alat graf kode hanya didaftarkan ketika host meneruskan repo graf kode ke `buildServerMcpRegistry`, dan `repl` hanya ketika host meneruskan runner mode kode. `cc_server` selalu meneruskan keduanya (ia tidak akan mulai tanpa runner), sehingga seluruh 111 terdaftar di biner yang dikirim; server demo publik tidak mendaftarkan `repl`.
 
-Registri lengkapnya diumumkan di `tools/list` tanpa gerbang penemuan. Penyuntingan tiket adalah alat bertipe.
+Registri lengkapnya diumumkan di `tools/list` tanpa gerbang penemuan, kecuali untuk run agen yang dapat menjalankan skrip (di bawah). Penyuntingan tiket adalah alat bertipe.
 
 :::note[Klien eksternal selalu melihat seluruh katalog]
-`tools/list` tidak pernah dipangkas, kecuali server MCP pribadi milik pemilik server, yang tidak pernah dimuat di dalamnya. Klien MCP memvalidasi nama alat terhadap salinan cache-nya sendiri atas daftar itu dan menolak apa pun yang tidak terdaftar tanpa bertanya ke server, sehingga alat yang disembunyikan di sana menjadi tidak terjangkau, bukan sekadar diam.
+`tools/list` tidak pernah dipangkas, kecuali server MCP pribadi milik pemilik server, yang tidak pernah dimuatnya, dan [mode kode](/id-ID/panduan-pengguna/konsep/mode-kode/): `repl` hanya dicantumkan untuk run agen pada server yang dapat menjalankan skrip, dan run itu dicantumkan dengan `repl`, alat langsung (`read`, `write`, `edit`, `search`, `find`, `bash`, `read_output`, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` dan verba milik modenya, bila registri memilikinya) serta alat yang tidak boleh dipanggil skrip. Run itu memanggil sisanya dari skrip; panggilan langsung ke salah satunya dijawab dengan penjelasan cara memanggilnya dari `repl`. Klien MCP memvalidasi nama alat terhadap salinan cache-nya sendiri atas daftar itu dan menolak apa pun yang tidak terdaftar tanpa bertanya ke server, sehingga alat yang disembunyikan di sana menjadi tidak terjangkau, bukan sekadar diam.
 
-**Harness bawaan** berbeda: ia hanya memuat subset definisi residen per permintaan dan menarik sisanya saat pertama kali dipakai, yang merupakan perilaku di sisi harness dan tidak mengubah registri ini. Lihat [Konteks alat dan cache prompt](/id-ID/panduan-pengguna/konsep/konteks-alat).
+**Harness bawaan** berbeda: ia hanya memuat himpunan langsung kecil dari definisi per permintaan dan menjangkau sisanya dari skrip atau memuatnya saat pertama kali dipakai, yang merupakan perilaku di sisi harness dan tidak mengubah registri ini. Lihat [Konteks alat dan cache prompt](/id-ID/panduan-pengguna/konsep/konteks-alat/).
 :::
 
 :::note[Setiap kelas alat terdaftar]
@@ -51,6 +52,14 @@ Keduanya berasal dari `cc_mcp_client`, bukan `cc_mcp`, dan keduanya mengonsultas
 
 Alat penemuan ketiga, **`search_tools`**, hanya ada di dalam harness bawaan dan bukan bagian dari registri MCP ini. Alat itu memberi peringkat pada permukaan alat milik run itu sendiri dan, tidak seperti `search_tool_bm25`, **memuat** skema dari apa yang ditemukannya sehingga agen dapat memanggil kecocokan itu pada gilirannya berikutnya. Agen di harness sebaiknya memilihnya; klien MCP memiliki `search_tool_bm25`.
 
+## Mode kode
+
+| Alat | Deskripsi |
+| ------ | ----------- |
+| `repl` | Jalankan skrip JavaScript yang memanggil alat lain milik run sebagai `tools.<id>(args)` dan hanya mengembalikan yang dibutuhkan. Hanya dicantumkan untuk run agen pada server yang dapat menjalankan skrip [mode kode](/id-ID/panduan-pengguna/konsep/mode-kode/). Setiap panggilan bersarang melewati gerbang yang sama dengan `tools/call`. Menerima `code`, `description`, `timeout_ms?`, `max_output_tokens?`        |
+
+Skrip tidak dapat memanggil `repl`, `search_tool_bm25`, `list_my_tools`, atau alat apa pun yang memulai atau mengirim pesan ke run agen lain, menugaskan atau mengomentari tiket, mengirim pesan, membuat, memutuskan, atau mengomentari persetujuan, mengusulkan atau mengubah kebijakan, memasang atau mengubah skill, membuat profil runtime, mengajukan rencana, atau keluar dari mode rencana, menyelesaikan tujuan percakapan, atau mengirim keluaran run pipeline. Alat-alat itu menyatakan `scriptCallable` false dan selalu dipanggil langsung; dalam harness bawaan, satu alat di luar himpunan langsung dimuat saat pertama kali dipakai. `create_ticket` hanya dapat dipanggil dari skrip tanpa `assignee`.
+
 ## Alat agen
 
 | Alat          | Deskripsi                                  |
@@ -59,15 +68,29 @@ Alat penemuan ketiga, **`search_tools`**, hanya ada di dalam harness bawaan dan 
 
 ## Pesan antar rekan agen dan delegasi
 
-Agen saling berbicara melalui space (tahan lama, terlihat di daftar anggota). `ask_agent` bersifat permintaan/balasan dengan timeout wajib; `delegate_task` dijaga di sisi server oleh batas kedalaman, deteksi siklus, selubung anggaran, dan plafon otonomi.
+Agen saling berbicara lewat space (tahan lama, terlihat di daftar anggota). `ask_agent` menunggu balasan (`mode: wait`, 600 detik secara default, paling banyak 1.800) atau langsung kembali (`mode: background`); dalam kedua kasus, penanya dibangunkan sekali dengan jawabannya jika jawaban itu tidak kembali langsung. `send_to_agent`, `ask_agent`, `consult_agent`, `request_peer_review` dan `delegate_task` melewati gerbang sisi server yang sama: kedalaman (3), deteksi siklus, amplop anggaran, batas otonomi, dan batas laju per pasangan agen. Identitas pengirim selalu berasal dari run yang memanggil. Lihat [Agen bekerja bersama](/id-ID/panduan-pengguna/panduan-praktis/agen-bekerja-bersama/).
 
 | Alat            | Deskripsi                                                                                       |
 | --------------- | ----------------------------------------------------------------------------------------------- |
-| `send_to_agent` | Kirim pesan satu arah ke agen lain, dialamatkan dengan `to_agent_id` atau `to_agent_name` yang persis |
-| `ask_agent`     | Ajukan pertanyaan ke agen lain dan tunggu balasannya, atau habis waktu                          |
+| `send_to_agent` | Kirim pesan satu arah ke agen lain, dialamatkan dengan `to_agent_id` atau `to_agent_name` yang persis; memberi `delivery_status` berupa `woken`, `queued_behind_run` atau `refused` |
+| `ask_agent`     | Ajukan pertanyaan ke agen lain; tunggu balasannya atau lanjutkan dan dibangunkan saat balasan itu tiba |
 | `delegate_task` | Delegasikan tugas ke agen lain sebagai tiket anak yang dilacak                                  |
 | `consult_agent` | Tambahkan spesialis yang paling cocok berdasarkan skill ke space dan kirimkan dengan pengarahan yang terfokus |
 | `todo_read`     | Baca daftar tugas percakapan ini yang tersimpan                                                 |
+| `agent_activity` | Baca apa yang sedang dikerjakan agen lain sekarang dan apa yang dikerjakannya terakhir (status, alat saat ini, pesan terakhir), tanpa membangunkannya |
+
+## Alat pengingat dan tujuan
+
+Agen memakai ini alih-alih tidur atau melakukan polling. Masing-masing hanya bertindak untuk agen pemanggil di percakapannya sendiri; agen tidak pernah menjadi argumen. Lihat [Jadwal dan pengingat](/id-ID/panduan-pengguna/panduan-praktis/jadwal-dan-pengingat/) dan [Kejar tujuan](/id-ID/panduan-pengguna/panduan-praktis/kejar-tujuan/).
+
+| Alat | Deskripsi |
+| ------------- | ----------- |
+| `wake_me` | Atur untuk dibangunkan nanti: pada suatu waktu (`in:20m`, `at:<ISO time>`), pada interval (`every:30m`), pada cron (`cron:0 9 * * 1-5`, dengan `tz`), menurut ritmenya sendiri di dalam loop yang mengatur langkahnya sendiri (`next`, dengan `delay` dari 1 hingga 60 menit), atau saat sesuatu terjadi (`on:pr_checks`, `on:pr_review`, `on:pr_merged`, `on:environment`, `on:ticket:<id>`, `on:pipeline_run:<id>`). Opsional `note`, `max_runs`, `expires_in`, `when_busy` (`skip` atau `queue`) dan `deliver` (`run` atau `notify`) |
+| `list_wakes` | Daftar apa yang sedang menunggu agen dalam percakapan ini: jadwal, pantauan, pengingat yang menunggu, dan pertanyaan yang belum dijawab |
+| `cancel_wake` | Batalkan jadwal atau pantauan yang diatur agen untuk dirinya sendiri, dengan id-nya |
+| `goal_status` | Baca tujuan aktif agen: kontrak, segmen, pengeluaran dan anggaran yang tersisa, catatan tanpa kemajuan, penahanan, verifikasi terakhir, dan pengingat tujuan yang menunggu |
+
+`complete_goal` (di bawah [Alat rencana, playbook, dan artefak](#alat-rencana-playbook-dan-artefak)) adalah satu-satunya cara agen menyatakan tujuan selesai, dan itu sebuah klaim, bukan penyelesaian.
 
 ## Alat skill
 
@@ -94,7 +117,7 @@ Setiap instalasi dan pembaruan melewati gerbang pemindaian fail-closed sebelum k
 | `revise_artifact`  | Ganti konten artefak yang telah dipublikasikan                                                                         |
 | `list_artifacts`   | Tampilkan daftar artefak ruang kerja                                                                                    |
 | `get_artifact`     | Baca satu artefak                                                                                                      |
-| `complete_goal`    | Nyatakan tujuan tahan lama aktif percakapan (dimulai dengan `/goal` atau `/loop`) telah tercapai                      |
+| `complete_goal` | Klaim bahwa tujuan aktif agen sudah tercapai, dengan bukti untuk setiap kriteria; server kemudian menjalankan pemeriksaan dan tinjauan |
 
 ## Alat ruang kerja
 
@@ -162,10 +185,10 @@ Setiap instalasi dan pembaruan melewati gerbang pemindaian fail-closed sebelum k
 | `create_goal`                | Buat tujuan organisasi (tingkat perusahaan, tim, agen, atau tugas)                                      |
 | `list_goals`                 | Tampilkan daftar tujuan beserta tingkat, status, dan progres agregatnya                                 |
 | `update_goal_progress`       | Tetapkan progres sebuah tujuan                                                                          |
-| `create_approval`            | Buka persetujuan dewan untuk tindakan yang diatur (keluar dari rencana, merge, rilis, rekrutmen, kustom) |
+| `create_approval`            | Buka persetujuan dewan untuk tindakan yang diatur (keluar dari rencana, merge, rilis, rekrutmen, kustom) atas nama agen pemanggil. Hanya run agen |
 | `list_approvals`             | Tampilkan daftar persetujuan, dapat difilter berdasarkan status                                         |
-| `decide_approval`            | Catat keputusan: setujui, tolak, minta revisi, atau kirim ulang                                         |
-| `comment_approval`           | Komentari persetujuan dewan                                                                            |
+| `decide_approval`            | Catat keputusan agen pemanggil: setujui, tolak, minta revisi, atau kirim ulang. Hanya run agen          |
+| `comment_approval`           | Komentari persetujuan dewan sebagai agen pemanggil. Hanya run agen                                     |
 | `exit_plan_mode`             | Buka (dan, setelah disetujui, pakai) persetujuan `plan_exit`, mengalihkan percakapan keluar dari mode rencana |
 | `agent_heartbeat`            | Laporkan kelayakan hidup (hidup, menganggur, macet); berdiam diri mengalihkan kesehatan runtime menjadi recently-lost, lalu offline |
 | `list_runtime_health`        | Tampilkan daftar kesehatan runtime setiap agen                                                          |

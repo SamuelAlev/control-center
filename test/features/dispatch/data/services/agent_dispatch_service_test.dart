@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
+import 'package:cc_domain/core/domain/events/agent_events.dart';
+import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/ports/repo_workspace_provisioner_port.dart';
 import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
@@ -16,6 +18,9 @@ import 'package:cc_domain/features/dispatch/domain/registry/agent_ref.dart';
 import 'package:cc_domain/features/dispatch/domain/registry/agent_registry.dart';
 import 'package:cc_domain/features/dispatch/domain/usecases/dispatch_agent_use_case.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/mention_context.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
+import 'package:cc_domain/features/sandboxing/domain/host_execution_posture.dart';
+import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
 import 'package:cc_infra/src/dispatch/agent_dispatch_service.dart';
 import 'package:cc_infra/src/dispatch/agent_registry_impl.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -37,18 +42,26 @@ class _FakeDispatchUseCase implements DispatchAgentUseCase {
     required String workspaceId,
     required String agentId,
     required String prompt,
+    required bool freshHistory,
     String? spaceId,
     String? conversationId,
     String? adapterId,
     WakeContext? wakeContext,
     MentionContext? mentionContext,
   }) async {
+    freshHistoryCalls.add(freshHistory);
     return cannedResult;
   }
+
+  /// Each `execute`'s `freshHistory`, in call order.
+  final List<bool> freshHistoryCalls = [];
 }
 
 class _FakeAgentDispatchPort implements AgentDispatchPort {
   _FakeAgentDispatchPort(this.eventsController);
+
+  @override
+  bool get readOnlyRunsAvailable => true;
 
   /// Recorded `pauseDispatch` dispatch ids, in call order.
   final List<String> pausedDispatchIds = [];
@@ -87,8 +100,14 @@ class _FakeAgentDispatchPort implements AgentDispatchPort {
   String? lastClaudeConfigDir;
   AccountPoolRefusal? lastClaudeAccountsSpent;
 
+  /// The last `start`'s two run options.
+  bool? lastFreshHistory;
+  bool? lastReadOnly;
+
   @override
   DispatchHandle start({
+    required bool freshHistory,
+    required bool readOnly,
     required String cliName,
     required String prompt,
     AgentPromptParts? promptParts,
@@ -104,7 +123,7 @@ class _FakeAgentDispatchPort implements AgentDispatchPort {
     String? runLogId,
     String? ticketId,
     String? requestedByUserId,
-    WakeContext? wakeContext,
+    required WakeContext wakeContext,
     Mode? mode,
     int? silenceTimeoutMinutes,
     Map<String, String>? environment,
@@ -136,6 +155,8 @@ class _FakeAgentDispatchPort implements AgentDispatchPort {
     int? costCapMicros,
   }) {
     startCallCount++;
+    lastFreshHistory = freshHistory;
+    lastReadOnly = readOnly;
     lastClaudeConfigDir = claudeConfigDir;
     lastClaudeAccountsSpent = claudeAccountsSpent;
     final dispatchId = 'dispatch-$startCallCount';
@@ -155,8 +176,10 @@ class _FakeAgentDispatchPort implements AgentDispatchPort {
     stoppedAllForAgentIds.add(agentId);
   }
 
-  /// Recorded `steerDispatch` calls (dispatchId, message, followUp).
-  final List<({String dispatchId, String message, bool followUp})>
+  /// Recorded `steerDispatch` calls (dispatchId, message, followUp, source).
+  final List<
+    ({String dispatchId, String message, bool followUp, String? source})
+  >
   steeredDispatches = [];
 
   /// The value `steerDispatch` returns (default false — no live run).
@@ -166,12 +189,14 @@ class _FakeAgentDispatchPort implements AgentDispatchPort {
   Future<bool> steerDispatch(
     String dispatchId,
     String message, {
+    required String? source,
     bool followUp = false,
   }) async {
     steeredDispatches.add((
       dispatchId: dispatchId,
       message: message,
       followUp: followUp,
+      source: source,
     ));
     return steerReturn;
   }
@@ -243,6 +268,7 @@ class _FakeRunLogRepository implements AgentRunLogRepository {
       latency: completed.latency,
       nativeSessionId: completed.nativeSessionId,
       resumedNativeSession: completed.resumedNativeSession,
+      endReason: completed.endReason,
     );
     await upsert(updated);
     return true;
@@ -444,6 +470,7 @@ PreparedDispatch _cannedDispatch() => const PreparedDispatch(
   mode: Mode.chat,
   resolvedAdapterId: null,
   cliName: 'claude',
+  transport: AdapterTransport.claudeCli,
 );
 
 AgentRunLog _pendingRunLog({String id = 'run-1', String agentId = 'agent-1'}) =>
@@ -659,11 +686,13 @@ void main() {
       })?
       resolveClaudeConfigDir,
       RunCredentialGatePort? credentialGate,
+      DomainEventBus? eventBus,
     }) {
       return AgentDispatchService(
         agentDispatch: dispatchPort,
         dispatchUseCase: dispatchUseCase,
         runLogRepo: runLogRepo,
+        eventBus: eventBus,
         repoProvisioner: repoProvisioner,
         registry: registry,
         resolveClaudeConfigDir: resolveClaudeConfigDir,
@@ -690,6 +719,9 @@ void main() {
         final service = createService();
 
         final result = await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           workspaceId: _workspaceId,
           agentId: 'agent-1',
           prompt: 'do work',
@@ -699,6 +731,34 @@ void main() {
         expect(result.dispatchId, 'dispatch-1');
         expect(result.stream, isNotNull);
         expect(result.runLog, isNotNull);
+      },
+    );
+
+    test(
+      'the fresh-history and read-only options reach the use case and the '
+      'port unchanged',
+      timeout: const Timeout.factor(2),
+      () async {
+        final service = createService();
+        for (final (fresh, readOnly) in [
+          (true, false),
+          (false, true),
+          (true, true),
+          (false, false),
+        ]) {
+          await service.dispatch(
+            wakeContext: const WakeContext.userMessage(),
+            freshHistory: fresh,
+            readOnly: readOnly,
+            workspaceId: _workspaceId,
+            agentId: 'agent-1',
+            prompt: 'do work',
+            workingDirectory: '/tmp/work',
+          );
+          expect(dispatchUseCase.freshHistoryCalls.last, fresh);
+          expect(dispatchPort.lastFreshHistory, fresh);
+          expect(dispatchPort.lastReadOnly, readOnly);
+        }
       },
     );
 
@@ -756,6 +816,9 @@ void main() {
         );
 
         await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           workspaceId: _workspaceId,
           agentId: 'agent-1',
           prompt: 'do work',
@@ -794,6 +857,9 @@ void main() {
           );
 
           await service.dispatch(
+            wakeContext: const WakeContext.userMessage(),
+            freshHistory: false,
+            readOnly: false,
             workspaceId: _workspaceId,
             agentId: 'agent-1',
             prompt: 'do work',
@@ -814,6 +880,9 @@ void main() {
         );
 
         await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           workspaceId: _workspaceId,
           agentId: 'agent-1',
           prompt: 'do work',
@@ -832,6 +901,9 @@ void main() {
         final service = createService(resolveClaudeConfigDir: resolver.resolve);
 
         await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           workspaceId: _workspaceId,
           agentId: 'agent-1',
           prompt: 'do work',
@@ -853,6 +925,9 @@ void main() {
         final service = createService();
 
         await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           workspaceId: _workspaceId,
           agentId: 'agent-1',
           prompt: 'do work',
@@ -889,11 +964,15 @@ void main() {
             mode: Mode.chat,
             resolvedAdapterId: 'claude',
             cliName: 'claude',
+            transport: AdapterTransport.claudeCli,
           ),
         );
         final service = createService();
 
         await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           workspaceId: _workspaceId,
           agentId: 'agent-1',
           prompt: 'do work',
@@ -908,12 +987,70 @@ void main() {
     );
 
     test(
+      'a read-only run on a backend that cannot hold it to reading (ACP) '
+      'is refused before a run row exists',
+      timeout: const Timeout.factor(2),
+      () async {
+        PreparedDispatch on(AdapterTransport transport) => PreparedDispatch(
+          effectivePrompt: 'review',
+          promptParts: _testPromptParts,
+          effectiveConversationId: null,
+          agent: null,
+          mode: Mode.chat,
+          resolvedAdapterId: null,
+          cliName: 'acp-agent',
+          transport: transport,
+        );
+        dispatchUseCase = _FakeDispatchUseCase(on(AdapterTransport.acp));
+        final service = createService();
+        Future<void> review() => service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: true,
+          workspaceId: _workspaceId,
+          agentId: 'agent-1',
+          prompt: 'review',
+          workingDirectory: '/tmp/work',
+        );
+
+        await expectLater(
+          review(),
+          throwsA(
+            isA<ReadOnlyRunUnavailableException>().having(
+              (e) => e.code,
+              'code',
+              ReadOnlyRunUnavailableException.backendKind,
+            ),
+          ),
+        );
+        expect(runLogRepo.upserted, isEmpty);
+        expect(dispatchPort.startCallCount, 0);
+
+        // The same run on a backend that enforces it starts.
+        dispatchUseCase = _FakeDispatchUseCase(on(AdapterTransport.harness));
+        await createService().dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: true,
+          workspaceId: _workspaceId,
+          agentId: 'agent-1',
+          prompt: 'review',
+          workingDirectory: '/tmp/work',
+        );
+        expect(runLogRepo.upserted, isNotEmpty);
+      },
+    );
+
+    test(
       'dispatch stores runId-to-dispatchId mapping (verified via stopRun)',
       timeout: const Timeout.factor(2),
       () async {
         final service = createService();
 
         final result = await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           workspaceId: _workspaceId,
           agentId: 'agent-1',
           prompt: 'do work',
@@ -935,6 +1072,9 @@ void main() {
         final service = createService();
 
         final result = await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           workspaceId: _workspaceId,
           agentId: 'agent-1',
           prompt: 'do work',
@@ -970,6 +1110,9 @@ void main() {
         final service = createService();
 
         final result = await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           workspaceId: _workspaceId,
           agentId: 'agent-1',
           prompt: 'do work',
@@ -1006,6 +1149,9 @@ void main() {
         final service = createService();
 
         final result = await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           workspaceId: _workspaceId,
           agentId: 'agent-1',
           prompt: 'do work',
@@ -1019,6 +1165,209 @@ void main() {
       },
     );
 
+    group('settlement (AgentRunSettled)', () {
+      late DomainEventBus bus;
+      late List<AgentRunSettled> settled;
+
+      setUp(() {
+        bus = DomainEventBus();
+        settled = [];
+        bus.on<AgentRunSettled>().listen(settled.add);
+      });
+
+      tearDown(() => bus.dispose());
+
+      Future<void> flush() => Future<void>.delayed(Duration.zero);
+
+      test('a finished run is announced once, after its write', () async {
+        final service = createService(eventBus: bus);
+        final log = _pendingRunLog();
+        await runLogRepo.upsert(log);
+
+        await service.completeRun(
+          log,
+          'done',
+          cost: const RunCost(costMicros: 420),
+          endReason: RunEndReason.completed,
+        );
+        // A second terminal write (a late failure, a repeated finish) wins
+        // nothing and announces nothing.
+        await service.completeRun(log, null, endReason: RunEndReason.completed);
+        await service.failRun(log, 'late', endReason: RunEndReason.error, cost: null);
+        await flush();
+
+        expect(settled, hasLength(1));
+        final event = settled.single;
+        expect(event.runId, log.id);
+        expect(event.workspaceId, _workspaceId);
+        expect(event.status, RunStatus.completed);
+        expect(event.endReason, RunEndReason.completed);
+        expect(event.costMicros, 420);
+        expect(runLogRepo._logs[log.id]!.endReason, RunEndReason.completed);
+      });
+
+      for (final reason in [
+        RunEndReason.error,
+        RunEndReason.stoppedByUser,
+        RunEndReason.silence,
+      ]) {
+        test('a run that ended with ${reason.name} settles with what it '
+            'spent', () async {
+          final service = createService(eventBus: bus);
+          final log = _pendingRunLog();
+          await runLogRepo.upsert(log);
+
+          await service.failRun(
+            log,
+            'ended',
+            endReason: reason,
+            cost: const RunCost(inputTokens: 10, costMicros: 730),
+          );
+          await flush();
+
+          expect(settled.single.endReason, reason);
+          expect(settled.single.costMicros, 730);
+          expect(runLogRepo._logs[log.id]!.cost.costMicros, 730);
+        });
+      }
+
+      test('a failure carries its reason and the provider reset time', () async {
+        final service = createService(eventBus: bus);
+        final log = _pendingRunLog();
+        await runLogRepo.upsert(log);
+        final resets = DateTime.utc(2026, 7, 1, 18);
+
+        await service.failRun(
+          log,
+          'usage limit',
+          endReason: RunEndReason.usageLimit,
+          limitResetsAt: resets,
+          cost: null,
+        );
+        await flush();
+
+        expect(settled.single.status, RunStatus.error);
+        expect(settled.single.endReason, RunEndReason.usageLimit);
+        expect(settled.single.limitResetsAt, resets);
+        expect(runLogRepo._logs[log.id]!.endReason, RunEndReason.usageLimit);
+      });
+
+      for (final reason in [
+        RunEndReason.error,
+        RunEndReason.budget,
+        RunEndReason.silence,
+      ]) {
+        test('a failure ending with ${reason.name} is announced so', () async {
+          final service = createService(eventBus: bus);
+          final log = _pendingRunLog();
+          await runLogRepo.upsert(log);
+
+          await service.failRun(log, 'ended', endReason: reason, cost: null);
+          await flush();
+
+          expect(settled.single.endReason, reason);
+          expect(settled.single.limitResetsAt, isNull);
+        });
+      }
+
+      test("a person's stop is announced as stoppedByUser, for the person "
+          'who started the run, once', () async {
+        final service = createService(eventBus: bus);
+        final result = await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
+          workspaceId: _workspaceId,
+          agentId: 'agent-1',
+          prompt: 'do work',
+          workingDirectory: '/tmp/work',
+          requestedByUserId: 'user-1',
+        );
+
+        await service.stopRun(_workspaceId, result.runLog.id);
+        await service.stopRun(_workspaceId, result.runLog.id);
+        await flush();
+
+        expect(settled, hasLength(1));
+        expect(settled.single.endReason, RunEndReason.stoppedByUser);
+        expect(settled.single.status, RunStatus.error);
+        expect(settled.single.requestedByUserId, 'user-1');
+      });
+
+      test('the run row records who it is for; a server run records no '
+          'one', () async {
+        final service = createService(eventBus: bus);
+        final personal = await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
+          workspaceId: _workspaceId,
+          agentId: 'agent-1',
+          prompt: 'do work',
+          workingDirectory: '/tmp/work',
+          requestedByUserId: 'user-1',
+        );
+        final bot = await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
+          workspaceId: _workspaceId,
+          agentId: 'agent-1',
+          prompt: 'do work',
+          workingDirectory: '/tmp/work',
+        );
+
+        expect(
+          runLogRepo._logs[personal.runLog.id]!.requestedByUserId,
+          'user-1',
+        );
+        expect(runLogRepo._logs[bot.runLog.id]!.requestedByUserId, isNull);
+
+        await service.stopRun(_workspaceId, bot.runLog.id);
+        await flush();
+        expect(settled.single.requestedByUserId, isNull);
+      });
+
+      test('the requester survives a restart: a fresh service that ends the '
+          'run still names it', () async {
+        final before = createService(eventBus: bus);
+        final result = await before.dispatch(
+          freshHistory: false,
+          readOnly: false,
+          workspaceId: _workspaceId,
+          agentId: 'agent-1',
+          prompt: 'do work',
+          workingDirectory: '/tmp/work',
+          requestedByUserId: 'user-1',
+          wakeContext: const WakeContext.userMessage(),
+        );
+
+        // A new service holds nothing in memory about the run.
+        final after = createService(eventBus: bus);
+        await after.failRun(
+          runLogRepo._logs[result.runLog.id]!,
+          'lost',
+          endReason: RunEndReason.error,
+          cost: null,
+        );
+        await flush();
+
+        expect(settled.single.requestedByUserId, 'user-1');
+      });
+
+      test('a subagent row is written but not announced', () async {
+        final service = createService(eventBus: bus);
+        final log = _pendingRunLog().copyWith(parentRunId: 'run-parent');
+        await runLogRepo.upsert(log);
+
+        await service.completeRun(log, null, endReason: RunEndReason.completed);
+        await flush();
+
+        expect(runLogRepo._logs[log.id]!.status, RunStatus.completed);
+        expect(settled, isEmpty);
+      });
+    });
+
     test(
       'completeRun marks run as completed',
       timeout: const Timeout.factor(2),
@@ -1027,7 +1376,7 @@ void main() {
         final log = _pendingRunLog();
         await runLogRepo.upsert(log);
 
-        await service.completeRun(log, null);
+        await service.completeRun(log, null, endReason: RunEndReason.completed);
 
         // One seed upsert + one completeRun upsert.
         expect(runLogRepo.upserted.length, 2);
@@ -1051,6 +1400,7 @@ void main() {
           original,
           'done',
           cost: const RunCost(inputTokens: 5, costMicros: 230),
+          endReason: RunEndReason.completed,
         );
 
         final persisted = runLogRepo._logs[original.id]!;
@@ -1068,8 +1418,8 @@ void main() {
         final log = _pendingRunLog();
         await runLogRepo.upsert(log);
 
-        await service.completeRun(log, null);
-        await service.completeRun(log, null);
+        await service.completeRun(log, null, endReason: RunEndReason.completed);
+        await service.completeRun(log, null, endReason: RunEndReason.completed);
 
         // Seed upsert + exactly one completeRun upsert (second was no-op).
         expect(runLogRepo.upserted.length, 2);
@@ -1083,6 +1433,9 @@ void main() {
         final service = createService();
 
         final result = await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           workspaceId: _workspaceId,
           agentId: 'agent-1',
           prompt: 'do work',
@@ -1090,7 +1443,7 @@ void main() {
         );
 
         // completeRun deletes the mapping from _runToDispatch.
-        await service.completeRun(result.runLog, null);
+        await service.completeRun(result.runLog, null, endReason: RunEndReason.completed);
 
         // stopRun should find no mapping and therefore NOT call stopDispatch.
         await service.stopRun(_workspaceId, result.runLog.id);
@@ -1107,7 +1460,7 @@ void main() {
         final log = _pendingRunLog();
         await runLogRepo.upsert(log);
 
-        await service.failRun(log, 'something went wrong');
+        await service.failRun(log, 'something went wrong', endReason: RunEndReason.error, cost: null);
 
         expect(runLogRepo.upserted.length, 2);
         final failed = runLogRepo.upserted.last;
@@ -1125,8 +1478,8 @@ void main() {
         final log = _pendingRunLog();
         await runLogRepo.upsert(log);
 
-        await service.completeRun(log, null);
-        await service.failRun(log, 'should be ignored');
+        await service.completeRun(log, null, endReason: RunEndReason.completed);
+        await service.failRun(log, 'should be ignored', endReason: RunEndReason.error, cost: null);
 
         // Seed + completeRun only; failRun should not have upserted again.
         expect(runLogRepo.upserted.length, 2);
@@ -1142,6 +1495,9 @@ void main() {
         final service = createService();
 
         final result = await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           workspaceId: _workspaceId,
           agentId: 'agent-1',
           prompt: 'do work',
@@ -1168,13 +1524,16 @@ void main() {
         final service = createService();
 
         final result = await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           workspaceId: _workspaceId,
           agentId: 'agent-1',
           prompt: 'do work',
           workingDirectory: '/tmp/work',
         );
 
-        await service.completeRun(result.runLog, null);
+        await service.completeRun(result.runLog, null, endReason: RunEndReason.completed);
         // Reset tracking to clearly see whether stopRun calls stopDispatch.
         dispatchPort.stoppedDispatchIds.clear();
 
@@ -1208,6 +1567,9 @@ void main() {
         final service = createService(repoProvisioner: provisioner);
 
         await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           agentId: 'agent-1',
           prompt: 'do work',
           workingDirectory: '/fallback/work',
@@ -1230,6 +1592,9 @@ void main() {
         final service = createService(repoProvisioner: provisioner);
 
         await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           agentId: 'agent-1',
           prompt: 'do work',
           workingDirectory: '/fallback/work',
@@ -1252,6 +1617,9 @@ void main() {
         // An empty workspace id selects no database, so there is no conversation
         // worktree to provision into.
         await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           agentId: 'agent-1',
           prompt: 'do work',
           workingDirectory: '/fallback/work',
@@ -1274,6 +1642,7 @@ void main() {
           log,
           'Done!',
           cost: const RunCost(inputTokens: 42, outputTokens: 7),
+          endReason: RunEndReason.completed,
         );
 
         final completed = runLogRepo.upserted.last;
@@ -1298,6 +1667,7 @@ void main() {
           log,
           null,
           cost: const RunCost(inputTokens: 42),
+          endReason: RunEndReason.completed,
         );
 
         final completed = runLogRepo.upserted.last;
@@ -1321,6 +1691,7 @@ void main() {
           log,
           null,
           cost: const RunCost(inputTokens: 42, durationMs: 1234),
+          endReason: RunEndReason.completed,
         );
 
         expect(runLogRepo.upserted.last.cost.durationMs, 1234);
@@ -1335,7 +1706,7 @@ void main() {
         final log = _pendingRunLog();
         await runLogRepo.upsert(log);
 
-        await service.failRun(log, 'boom');
+        await service.failRun(log, 'boom', endReason: RunEndReason.error, cost: null);
 
         final failed = runLogRepo.upserted.last;
         expect(failed.status, RunStatus.error);
@@ -1351,6 +1722,9 @@ void main() {
         final service = createService();
 
         final result = await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           workspaceId: _workspaceId,
           agentId: 'agent-1',
           prompt: 'do work',
@@ -1358,7 +1732,7 @@ void main() {
         );
 
         // failRun deletes the mapping from _runToDispatch.
-        await service.failRun(result.runLog, 'error');
+        await service.failRun(result.runLog, 'error', endReason: RunEndReason.error, cost: null);
 
         // stopRun should find no mapping and therefore NOT call stopDispatch.
         await service.stopRun(_workspaceId, result.runLog.id);
@@ -1378,6 +1752,9 @@ void main() {
         final service = createService(repoProvisioner: provisioner);
 
         await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           agentId: 'agent-1',
           prompt: 'do work',
           workingDirectory: '/fallback/work',
@@ -1401,6 +1778,9 @@ void main() {
         );
 
         final result = await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           workspaceId: _workspaceId,
           agentId: 'agent-1',
           prompt: 'do work',
@@ -1422,7 +1802,7 @@ void main() {
         );
 
         // Should not throw.
-        await service.completeRun(_pendingRunLog(), null);
+        await service.completeRun(_pendingRunLog(), null, endReason: RunEndReason.completed);
       },
     );
 
@@ -1437,7 +1817,7 @@ void main() {
         );
 
         // Should not throw.
-        await service.failRun(_pendingRunLog(), 'error');
+        await service.failRun(_pendingRunLog(), 'error', endReason: RunEndReason.error, cost: null);
       },
     );
 
@@ -1452,6 +1832,9 @@ void main() {
         );
 
         final result = await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           workspaceId: _workspaceId,
           agentId: 'agent-1',
           prompt: 'do work',
@@ -1471,13 +1854,16 @@ void main() {
         final service = createService();
 
         final result = await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           workspaceId: _workspaceId,
           agentId: 'agent-1',
           prompt: 'do work',
           workingDirectory: '/tmp/work',
         );
 
-        await service.failRun(result.runLog, 'error');
+        await service.failRun(result.runLog, 'error', endReason: RunEndReason.error, cost: null);
         // Reset tracking.
         dispatchPort.stoppedDispatchIds.clear();
 
@@ -1495,15 +1881,23 @@ void main() {
         final service = createService();
 
         final result = await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           workspaceId: _workspaceId,
           agentId: 'agent-1',
           prompt: 'do work',
           workingDirectory: '/tmp/work',
         );
 
-        final delivered = await service.steerRun(result.runLog.id, 'nudge');
+        final delivered = await service.steerRun(
+          result.runLog.id,
+          'nudge',
+          source: 'rig:rig-1',
+        );
 
         expect(delivered, isTrue);
+        expect(dispatchPort.steeredDispatches.single.source, 'rig:rig-1');
         expect(
           dispatchPort.steeredDispatches.single.dispatchId,
           result.dispatchId,
@@ -1521,13 +1915,21 @@ void main() {
         final service = createService();
 
         final result = await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           workspaceId: _workspaceId,
           agentId: 'agent-1',
           prompt: 'do work',
           workingDirectory: '/tmp/work',
         );
 
-        await service.steerRun(result.runLog.id, 'later', followUp: true);
+        await service.steerRun(
+          result.runLog.id,
+          'later',
+          source: null,
+          followUp: true,
+        );
 
         expect(dispatchPort.steeredDispatches.single.followUp, isTrue);
       },
@@ -1540,7 +1942,11 @@ void main() {
         dispatchPort.steerReturn = true;
         final service = createService();
 
-        final delivered = await service.steerRun('never-dispatched', 'nudge');
+        final delivered = await service.steerRun(
+          'never-dispatched',
+          'nudge',
+          source: null,
+        );
 
         expect(delivered, isFalse);
         expect(dispatchPort.steeredDispatches, isEmpty);
@@ -1555,6 +1961,9 @@ void main() {
         final service = createService(registry: registry);
 
         final result = await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           agentId: 'agent-1',
           prompt: 'do work',
           workingDirectory: '/tmp/work',
@@ -1564,7 +1973,7 @@ void main() {
         // Dispatch registers the agent as running.
         expect(registry.get('agent-1')?.status, AgentStatus.running);
 
-        await service.completeRun(result.runLog, null);
+        await service.completeRun(result.runLog, null, endReason: RunEndReason.completed);
 
         expect(registry.get('agent-1')?.status, AgentStatus.idle);
       },
@@ -1578,13 +1987,16 @@ void main() {
         final service = createService(registry: registry);
 
         final result = await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           agentId: 'agent-1',
           prompt: 'do work',
           workingDirectory: '/tmp/work',
           workspaceId: 'ws-1',
         );
 
-        await service.failRun(result.runLog, 'boom');
+        await service.failRun(result.runLog, 'boom', endReason: RunEndReason.error, cost: null);
 
         expect(registry.get('agent-1')?.status, AgentStatus.idle);
       },
@@ -1598,6 +2010,9 @@ void main() {
         final service = createService(registry: registry);
 
         final result = await service.dispatch(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
+          readOnly: false,
           agentId: 'agent-1',
           prompt: 'do work',
           workingDirectory: '/tmp/work',
@@ -1661,6 +2076,7 @@ void main() {
           childLog,
           null,
           cost: const RunCost(costMicros: 420000),
+          endReason: RunEndReason.completed,
         );
 
         // The parent's run row gained the child cost.
@@ -1696,7 +2112,7 @@ void main() {
         final service = createService(registry: registry);
         final childLog = _pendingRunLog(id: 'child-run', agentId: 'child');
         await runLogRepo.upsert(childLog);
-        await service.completeRun(childLog, null);
+        await service.completeRun(childLog, null, endReason: RunEndReason.completed);
 
         // No cost to roll up — the parent's childCostMicros stays at 0.
         expect(runLogRepo._logs['parent-run']!.childCostMicros, 0);

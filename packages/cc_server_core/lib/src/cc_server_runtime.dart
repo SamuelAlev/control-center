@@ -47,14 +47,11 @@ import 'package:cc_domain/features/agents/domain/services/budget_policy_service.
 import 'package:cc_domain/features/agents/domain/services/orphan_run_reaper.dart';
 import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_provider.dart';
 import 'package:cc_domain/features/dispatch/domain/context/conversation_summarizer.dart';
-import 'package:cc_domain/features/dispatch/domain/entities/agent_goal_run.dart';
 import 'package:cc_domain/features/dispatch/domain/isolation/path_lock_manager.dart';
 import 'package:cc_domain/features/dispatch/domain/usecases/build_conversation_context_use_case.dart';
 import 'package:cc_domain/features/dispatch/domain/usecases/build_memory_context_use_case.dart';
 import 'package:cc_domain/features/dispatch/domain/usecases/dispatch_agent_use_case.dart';
 import 'package:cc_domain/features/evals/domain/services/starter_suites.dart';
-import 'package:cc_domain/features/evals/domain/value_objects/agent_config_hash.dart'
-    show canonicalHash;
 import 'package:cc_domain/features/fleet/domain/value_objects/worker_capabilities.dart';
 import 'package:cc_domain/features/governance/domain/services/agent_presence_service.dart';
 import 'package:cc_domain/features/governance/domain/services/approval_workflow_service.dart';
@@ -144,12 +141,9 @@ import 'package:cc_mcp/cc_mcp.dart';
 import 'package:cc_mcp_client/cc_mcp_client.dart';
 import 'package:cc_natives/cc_natives.dart'
     show
-        CcSaml,
         FffFileSearch,
         GrammarManager,
         MeetingDiarizationService,
-        NativeDirectoryWatcher,
-        Pty,
         RiftClient,
         SherpaOnnxTranscriber,
         nativeLibDirEnvVar,
@@ -158,17 +152,9 @@ import 'package:cc_natives/cc_natives.dart'
         inferenceLibraryLoads,
         initializeRhttp,
         resolveInferenceLibraryPath,
-        samlLibraryBaseName,
-        samlLibraryEnvVar,
         platformLibraryFileName,
-        ptyLibraryBaseName,
         raiseOpenFileLimit,
-        ptyLibraryEnvVar,
-        setPreferredInferenceLibPath,
-        tryOpenFirst,
-        watcherLibraryBaseName,
-        watcherLibraryEnvVar,
-        configureRigNatives;
+        setPreferredInferenceLibPath;
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_persistence/repositories/cron_execution_ledger_impl.dart';
 import 'package:cc_persistence/repositories/db_mode_resolver.dart';
@@ -200,6 +186,7 @@ import 'package:cc_server_core/src/chat/slack_chat_provider_plugin.dart';
 import 'package:cc_server_core/src/chat/slack_connect.dart';
 import 'package:cc_server_core/src/code_graph/pipeline_code_index_run_reporter.dart';
 import 'package:cc_server_core/src/code_graph_tree_service.dart';
+import 'package:cc_server_core/src/code_mode/server_code_mode_wiring.dart';
 import 'package:cc_server_core/src/collab/checker_listener.dart';
 import 'package:cc_server_core/src/collab/takeover_service.dart';
 import 'package:cc_server_core/src/connect/connect_client.dart';
@@ -254,6 +241,7 @@ import 'package:cc_server_core/src/forge/person_forge_access.dart';
 import 'package:cc_server_core/src/forge/repo_access_registry.dart';
 import 'package:cc_server_core/src/forge/skill_source_github.dart';
 import 'package:cc_server_core/src/google_calendar_server.dart';
+import 'package:cc_server_core/src/guard_audit_sink.dart';
 import 'package:cc_server_core/src/harness_model_override_cache.dart';
 import 'package:cc_server_core/src/identity/agent_commit_identities.dart';
 import 'package:cc_server_core/src/identity/approval_escalation_sweeper.dart';
@@ -284,7 +272,6 @@ import 'package:cc_server_core/src/media_proxy_guard.dart'
 import 'package:cc_server_core/src/meeting_alert_sweep.dart';
 import 'package:cc_server_core/src/models/managed_model_control.dart';
 import 'package:cc_server_core/src/models/selectable_voice_model_control.dart';
-import 'package:cc_server_core/src/native_preflight.dart';
 import 'package:cc_server_core/src/notification_feed_recorder.dart';
 import 'package:cc_server_core/src/orphaned_wait_sweep.dart';
 import 'package:cc_server_core/src/paired_device_registry_watch.dart';
@@ -320,14 +307,21 @@ import 'package:cc_server_core/src/review_fix_dispatch.dart';
 import 'package:cc_server_core/src/rig_event_listener.dart';
 import 'package:cc_server_core/src/rpc_exception_mapper.dart';
 import 'package:cc_server_core/src/run_log_reader.dart';
+import 'package:cc_server_core/src/runtime/boot_run_recovery.dart';
 import 'package:cc_server_core/src/runtime/claude_session_runtime.dart';
 import 'package:cc_server_core/src/runtime/host_execution.dart';
 import 'package:cc_server_core/src/runtime/review_impact_payloads.dart';
 import 'package:cc_server_core/src/runtime/server_exposure.dart';
 import 'package:cc_server_core/src/runtime/server_extra_ops.dart';
 import 'package:cc_server_core/src/runtime/server_fleet_wiring.dart';
+import 'package:cc_server_core/src/runtime/server_goal_wiring.dart';
+import 'package:cc_server_core/src/runtime/server_learning_wiring.dart';
 import 'package:cc_server_core/src/runtime/server_native_preflight.dart';
+import 'package:cc_server_core/src/runtime/server_peer_tools_wiring.dart';
 import 'package:cc_server_core/src/runtime/server_skill_evaluation_wiring.dart';
+import 'package:cc_server_core/src/runtime/server_unattended_wiring.dart';
+import 'package:cc_server_core/src/runtime/server_wake_queue_wiring.dart';
+import 'package:cc_server_core/src/runtime/server_wake_rules_wiring.dart';
 import 'package:cc_server_core/src/server_boot_refusal.dart';
 import 'package:cc_server_core/src/server_mcp_client_control.dart';
 import 'package:cc_server_core/src/server_mcp_control.dart';
@@ -355,6 +349,7 @@ import 'package:uuid/uuid.dart';
 
 part 'runtime/cc_server_instance.dart';
 part 'runtime/server_boot_logging.dart';
+part 'runtime/server_boot_sweeps.dart';
 part 'runtime/server_commit_identity_wiring.dart';
 part 'runtime/server_forge_wiring.dart';
 part 'runtime/server_github_wiring.dart';
@@ -387,6 +382,8 @@ Future<CcServer> runCcServer({
   DemoWiringBuilder? demoBuilder,
   EmbeddedConnectFactory? connectHost,
 }) async {
+  // Every run this process starts begins after this (the boot reaper's floor).
+  final bootStartedAt = DateTime.now();
   // Provider secrets come from the `.env` file or the settings UI, never the
   // exported environment every child and parent process can read. Checked on
   // the REAL environment, before the file is layered in.
@@ -403,6 +400,9 @@ Future<CcServer> runCcServer({
   // The data dir holds the identity seed, the secrets file and every database:
   // owner-only (0700) before anything in it is created or opened, or no boot.
   secureDataDirectory(config.dataDir);
+  // Every required native, before a log, a database or anything else in the
+  // data dir is written: a broken install is refused untouched (exit 78).
+  await refuseMissingNatives(config.dataDir);
   _configureBootLogging(config);
   // macOS starts a process at 256 open files. Databases, sockets, watchers and
   // the git children the IDE polls start reach that in ordinary use, and every
@@ -421,7 +421,7 @@ Future<CcServer> runCcServer({
   // the patched rhttp runtime, which must be resolved and initialized
   // explicitly — there is no fallback transport. Idempotent per isolate.
   //
-  // `appSupportRoot` is the SAME data dir the native preflight below resolves
+  // `appSupportRoot` is the SAME data dir the native preflight above resolves
   // the other libs against (buildNativeRequirements(dataDir: config.dataDir)),
   // so a staged `librhttp.*` is found where the preflight also looks:
   // cc_natives never guesses the host's storage layout, the caller owns it.
@@ -800,7 +800,7 @@ Future<CcServer> runCcServer({
   //
   // Resolve by FILE STAT, never `DynamicLibrary.open` (JIT hosts used to hang
   // opening sherpa at boot). Real load is lazy on the worker isolate; null
-  // refuses boot at the native preflight below.
+  // refused the boot at the native preflight above.
   final inferenceLibPath = resolveInferenceLibraryPath(
     appSupportRoot: config.dataDir,
   );
@@ -980,7 +980,9 @@ Future<CcServer> runCcServer({
   // so the run-log list watches never ship the fat segment payload.
   final runTranscriptRepository = DaoRunTranscriptRepository(workspaceDbs);
   final repoRepository = DaoRepoRepository(workspaceDbs);
-  final spaceReadRepository = DaoSpaceReadRepository(workspaceDbs);
+  final conversationReadRepository = DaoConversationReadRepository(
+    workspaceDbs,
+  );
   final memoryDomainRepository = DaoMemoryDomainRepository(workspaceDbs);
   final memoryAccessGrantRepository = DaoMemoryAccessGrantRepository(
     workspaceDbs,
@@ -1546,7 +1548,24 @@ Future<CcServer> runCcServer({
   );
   // Agents read spaces as their requester may (run gateway wired below).
   final agentSpaces = AgentSpaceVisibility(spaceData);
+  // Code mode (`repl`): see ServerCodeMode. A public demo runs nothing on its
+  // host, so code mode is unavailable there.
+  final codeMode = ServerCodeMode.start(
+    dataDir: config.dataDir,
+    workspaceDbs: workspaceDbs,
+    crossWorkspace: crossWorkspace,
+    embeddings: embeddingService,
+    maxProcesses: config.codeModeMaxProcesses,
+    maxHeapBytes: config.codeModeMaxHeapBytes,
+    demo: demoBuilder != null,
+    workspaces: workspaceRepository,
+    workspaceSettings: workspaceSettingsRepository,
+    hiddenSpaces: agentSpaces.hiddenFor,
+    events: eventBus,
+  );
+  final codeModeSettings = codeMode.settings;
   final mcpRegistry = buildServerMcpRegistry(
+    replTool: codeMode.replTool,
     pipelineTriggerRepository: pipelineTriggerRepository,
     hiddenSpacesForCaller: agentSpaces.hiddenFor,
     globalDb: globalDb,
@@ -1634,12 +1653,13 @@ Future<CcServer> runCcServer({
     timeout: const Duration(hours: 1),
   );
   final confirmationPort = RemoteConfirmationPort(pendingConfirmationRegistry);
-  // Runs parked on a credential that cannot serve them. Same bridge shape as
-  // the approvals registry above and a deliberately different deadline: an
-  // approval is a decision someone makes in seconds, while fixing a credential
-  // means opening a terminal, signing in and coming back. `--credential-gate=0`
-  // turns it off entirely, which restores the pre-gate behaviour exactly — a
-  // missing or spent credential ends the turn where it always did.
+  // The run queues: steering (a person's messages to a live run) and wakes
+  // (every run the server starts on its own); see ServerRunQueues.
+  final runQueues = ServerRunQueues();
+  // Runs parked on a credential that cannot serve them: the approvals' bridge
+  // with a longer deadline (fixing a credential means a terminal, a sign-in).
+  // `--credential-gate=0` turns it off: a spent credential ends the turn. A
+  // park until a usage limit's reset is also a durable wake (ServerRunQueues).
   final credentialGateRegistry = config.credentialGateSeconds <= 0
       ? null
       : PendingCredentialBlockRegistry(
@@ -1647,7 +1667,7 @@ Future<CcServer> runCcServer({
         );
   final credentialGate = credentialGateRegistry == null
       ? null
-      : RemoteRunCredentialGate(credentialGateRegistry);
+      : runQueues.limitParkGate(credentialGateRegistry, agentRunLogRepository);
   // Every pending approval and parked run also notifies the operator, so an
   // agent waiting on them is not discovered only by opening its space.
   agentAwaitingInput.watch(
@@ -1732,49 +1752,13 @@ Future<CcServer> runCcServer({
     repository: actionPolicyRepository,
     confirmationPort: confirmationPort,
     managedRules: managedPolicy.rules,
-    onAudit: (a) {
-      if (a.decision == ActionDecision.deny) {
-        CcHostLog.info(
-          'guardrail deny [${a.source}] ${a.actionSummary}: ${a.reason}',
-        );
-      }
-      agentActionBlocked.report(a);
-      // Fire-and-forget: this runs on the hot path of every gated tool call,
-      // so a slow append must never delay the agent — and a failed append is
-      // logged, never raised into the caller's verdict.
-      final decision = GuardDecision(
-        id: const Uuid().v4(),
-        workspaceId: a.workspaceId,
-        occurredAt: DateTime.now(),
-        // The guard's callers are agents; the repo-op dispatcher records its
-        // own human-lane rows with actorType 'user'.
-        actorType: a.agentId == null ? 'system' : 'agent',
-        actorId: a.agentId ?? 'server',
-        onBehalfOfUserId: a.onBehalfOfUserId,
-        spaceId: a.spaceId,
-        runId: a.runId,
-        surface: GuardSurface.harness,
-        actionName: a.actionSummary.isEmpty
-            ? (a.command ?? 'action')
-            : a.actionSummary,
-        actionClasses: a.actionClasses,
-        decision: a.decision,
-        sourceScope: a.source,
-        ruleId: a.ruleId,
-        prompted: a.prompted,
-        argsDigest: a.command == null
-            ? null
-            : canonicalHash({'command': a.command}),
-      );
-      unawaited(
-        guardDecisionRepository
-            .append(decision)
-            .catchError(_onGuardAuditAppendError),
-      );
-      // A COPY to the operator's SIEM, when one is configured. Never gates
-      // the decision: the durable, verifiable record is the local chain.
-      auditStream?.add(decision);
-    },
+    // Every verdict, bounded: the audit row, the SIEM copy, the log line
+    // and the blocked-action event (GuardAuditSink).
+    onAudit: GuardAuditSink(
+      decisions: guardDecisionRepository,
+      blocked: agentActionBlocked,
+      siem: auditStream?.add,
+    ).record,
   );
   final mcpDispatcher = McpToolDispatcher(
     registry: mcpRegistry,
@@ -1788,6 +1772,9 @@ Future<CcServer> runCcServer({
     modeGuard: mcpModeGuard,
     isWorkspaceReadOnly: (id) => workspaceDbs.integrityFailure(id) != null,
   );
+  // A script's nested calls go through this dispatcher's own gates (mode,
+  // action policy, approvals) exactly as direct calls do.
+  codeMode.replTool?.bind(mcpDispatcher);
 
   // The headless server runs its OWN MCP surface (real desktop/web parity):
   // the `mcp.*` ops the web settings section calls resolve to this control,
@@ -1804,6 +1791,8 @@ Future<CcServer> runCcServer({
   // `notifications/tools/list_changed` out to connected SSE clients so they
   // re-list instead of serving a stale cache forever.
   mcpRegistry.onToolsChanged = mcpControl.notifyToolsChanged;
+  // Scripts turning off or back on changes what the MCP endpoint lists.
+  codeMode.relistOnChange(() => mcpRegistry.onToolsChanged?.call());
 
   // PRD 01: the host-side control for the EXTERNAL MCP client subsystem — backs
   // the `mcp.client.*` ops so a connected web/thin client can list the
@@ -1836,9 +1825,8 @@ Future<CcServer> runCcServer({
     clientFactory: (workspaceId, publishTools) => McpClientService(
       publishTools: publishTools,
       publicOnlyConnection: pinnedPermittedConnection,
-      log: (level, message, {Object? error}) => CcHostLog.info(
-        'mcp-client[$workspaceId][$level]: $message',
-      ),
+      log: (level, message, {Object? error}) =>
+          CcHostLog.info('mcp-client[$workspaceId][$level]: $message'),
     ),
   );
   // Gone with its workspace: connections, tools and stored values.
@@ -2305,6 +2293,8 @@ Future<CcServer> runCcServer({
       if (locateDotenvDirectory() case final envDir?)
         '${envDir.path}${Platform.pathSeparator}.env',
     ],
+    // No sandbox may replace the code mode runner the host runs unconfined.
+    extraHostExecutableDirs: codeMode.hostExecutableDirs,
   );
   final nativeSandbox = NativeSandboxAdapter(manager: sandboxManager);
   // Sandbox DETECTION reports this host's real OS-native capabilities (which
@@ -2541,6 +2531,10 @@ Future<CcServer> runCcServer({
     // rest, which load on first use. `--tool-deferral=off` restores the
     // pre-deferral request byte for byte.
     toolDeferralEnabled: config.toolDeferralEnabled,
+    // Code mode: a run has `repl` while the service's runner passes its
+    // self-test; a null service (no runner, a public demo) gives none.
+    codeExecutions: codeMode.service,
+    codeModeLimits: codeModeSettings.limitsFor,
     // UAC approvals for prompt-tier commands + escalations, threaded to the
     // harness/dispatch session. Shares the registry above so the harness path
     // and MCP tools surface approvals through the same client-facing queue;
@@ -2566,6 +2560,7 @@ Future<CcServer> runCcServer({
     // the actual bytes its tools returned.
     transcriptStore: transcriptStore,
     toolOutputStore: toolOutputStore,
+    scriptPast: codeMode.scriptPast,
     claudeSessionStore: claudeSessionStore,
     claudeContextWindowOf: claudeCodeModels.contextWindowOf,
     onClaudeUsageWindows: claudeUsageCache.observe,
@@ -2620,7 +2615,6 @@ Future<CcServer> runCcServer({
     runLogRepository: agentRunLogRepository,
     // `/goal` records the invocation as the conversation's working goal so the
     // General pane shows it as the accordion the todos nest beneath.
-    todoRepository: todoRepository,
     // Subagent activity timelines: the child loop's events fold into transcript
     // segments streamed under the CHILD run id (same registry a parent turn
     // uses, so the relay and client renderers work unchanged) and flushed to
@@ -2691,6 +2685,9 @@ Future<CcServer> runCcServer({
               runToken: runToken,
             ),
   );
+  // A script an external adapter's run makes through the MCP endpoint: its
+  // nested calls reach that run's own transcript through the adapter.
+  mcpDispatcher.nestedEvents = agentDispatch.emitToRun;
   // Dispatch-time prompt context (memory preamble + conversation history) and
   // the conversation-mode resolver, so server-run agents get the same context
   // on every host that embeds this runtime.
@@ -2867,6 +2864,34 @@ Future<CcServer> runCcServer({
       return (usedFraction: worst, resetsAt: resetsAt);
     },
   );
+  // Durable goals (`/goal`): see ServerGoals for the three wiring steps.
+  final serverGoals = ServerGoals(
+    goals: DaoAgentGoalRunRepository(workspaceDbs),
+    conversations: conversationRepository,
+    filesystem: workspaceFilesystem,
+    todos: todoRepository,
+  );
+  // Learning from finished work (`/refine`, proposals) and `goal.pursue`.
+  final learning = ServerLearning(
+    goals: serverGoals,
+    workspaceDbs: workspaceDbs,
+    conversations: conversationRepository,
+    messages: messagingRepository,
+    agents: agentRepository,
+    runLogs: agentRunLogRepository,
+    facts: memoryFactRepository,
+    policies: memoryPolicyRepository,
+    notes: agentWorkingMemoryRepository,
+    repos: repoRepository,
+    reposExposedBy: spaceRepoAccess.exposedBy,
+    pipelineRuns: pipelineRunRepository,
+    filesystem: workspaceFilesystem,
+    scanner: skillScanner,
+    eventBus: eventBus,
+    workspaceIds: () async => [
+      for (final row in await globalDb.workspaceRegistryDao.getAll()) row.id,
+    ],
+  );
   final agentDispatchService = AgentDispatchService(
     agentDispatch: agentDispatch,
     dispatchUseCase: DispatchAgentUseCase(
@@ -2874,6 +2899,8 @@ Future<CcServer> runCcServer({
       memoryContextUseCase: memoryContextUseCase,
       conversationContextUseCase: conversationContextUseCase,
       modeResolver: conversationModeResolver,
+      goalTurnText: learning.turnTexts,
+      codeExecutions: codeMode.service,
     ),
     runLogRepo: agentRunLogRepository,
     // Builds the per-agent overlay cwd (AGENTS.md + .agents + repos symlinks)
@@ -2932,6 +2959,7 @@ Future<CcServer> runCcServer({
     // signed out) and re-resolves the plan once one is usable again, so the
     // resumed run reaches the sandbox with a directory the profile allows.
     credentialGate: credentialGate,
+    limitParks: () => runQueues.limitParksOrNull,
     resolveClaudeConfigDir:
         ({
           workspaceId,
@@ -3028,13 +3056,11 @@ Future<CcServer> runCcServer({
     // Tool-only flushes store the transcript without rewriting the list
     // projection, so the open chat does not rebuild on every tool call.
     flushMessage: messagingRepository.flushStreamingMessage,
+    toolActivity: serverGoals.toolActivity,
   );
-  // Durable goal supervisor (`/goal`, `/loop`): persists each objective in
-  // SQLite and keeps dispatching bounded runs until the agent calls
-  // `complete_goal`, a human stops it, or a budget wall hits. Declared `late`
-  // because the goal command handler wired into MessagingService routes into
-  // it, while its own dispatcher callback is MessagingService's dispatch.
-  final agentGoalRunRepository = DaoAgentGoalRunRepository(workspaceDbs);
+  // `late`: the goal command handler wired into MessagingService routes into
+  // the supervisor, which needs the messaging service and the run queues.
+  final agentGoalRunRepository = serverGoals.goals;
   late final GoalSupervisor goalSupervisor;
   // One tool-less prompt on any adapter, with none of a dispatch's machinery
   // but its sandbox for an ACP CLI (the dispatch's own confinement).
@@ -3098,6 +3124,31 @@ Future<CcServer> runCcServer({
   // provisioning service reads the messaging repositories, and messaging routes
   // "stop preparing this space" into the provisioning service.
   late final SpaceProvisioningService spaceProvisioningService;
+  // Schedules, loops and watches (`/loop`, `/schedule`, `wake_me`); attached
+  // to the wake queue below.
+  final wakeRules = ServerWakeRules(
+    workspaceDbs: workspaceDbs,
+    workspaceActive: (id) async =>
+        await globalDb.workspaceRegistryDao.getById(id) != null,
+    conversations: conversationRepository,
+    agents: agentRepository,
+    messaging: messagingRepository,
+    settings: workspaceSettingsRepository,
+    goals: agentGoalRunRepository,
+    runLogs: agentRunLogRepository,
+    repos: repoRepository,
+    spaceData: spaceData,
+    repoAccess: repoAccess,
+    tickets: ticketRepository,
+    pipelineRuns: pipelineRunRepository,
+    eventBus: eventBus,
+    mcpRegistry: mcpRegistry,
+    cacheTtl: claudeSessions.compactor.cacheTtlFor,
+  );
+  final personCommand = learning.personCommand(
+    supervisor: () => goalSupervisor,
+    wakeRules: wakeRules.command,
+  );
   final messagingService = MessagingService(
     messagingRepository,
     // Reply routing must not read every transcript. The two lookups are
@@ -3147,9 +3198,8 @@ Future<CcServer> runCcServer({
     // it are refused (PRD 16 §8 — no auto-resume into a half-finished edit).
     dispatchBlocked: (workspaceId, spaceId) async =>
         await takeoverHolder.value?.isActive(workspaceId, spaceId) ?? false,
-    // Human `@handle` mention resolution (PRD 16 §15): joins the workspace's
-    // membership rows to their user records so `sendAndDispatch` can match
-    // any `@token` that isn't an agent against a real teammate.
+    // Human `@handle` mention resolution (PRD 16 §15): membership rows joined
+    // to user records, so any `@token` that isn't an agent matches a teammate.
     listMembers: (workspaceId) async {
       final members = <MentionableMember>[];
       for (final m in await membershipRepository.getForWorkspace(workspaceId)) {
@@ -3164,139 +3214,45 @@ Future<CcServer> runCcServer({
       }
       return members;
     },
-    // Durable goals: a `/goal`/`/loop` prompt routes into the supervisor as a
-    // persistent objective instead of a one-off dispatch. The slash-token
-    // picks the kind; the body after it becomes the objective text.
-    goalCommandHandler:
-        ({
-          required workspaceId,
-          required spaceId,
-          required agentId,
-          required prompt,
-          conversationId,
-          requestedByUserId,
-        }) async {
-          final trimmed = prompt.trimLeft();
-          final kind = trimmed.startsWith('/loop')
-              ? AgentGoalKind.loop
-              : AgentGoalKind.goal;
-          final split = trimmed.indexOf(' ');
-          final userText = split < 0 ? '' : trimmed.substring(split + 1).trim();
-          if (userText.isEmpty) {
-            await messagingRepository.sendMessage(
-              workspaceId: workspaceId,
-              spaceId: spaceId,
-              content:
-                  'A goal needs an objective, e.g. '
-                  '"${kind == AgentGoalKind.loop ? '/loop' : '/goal'} '
-                  'keep the changelog current".',
-              senderId: 'system',
-              senderType: 'system',
-              messageType: 'system',
-            );
-            return null;
-          }
-          // No main-id aliasing: when the caller did not pin a stream,
-          // idempotently ensure the space has one and run the goal there.
-          final goalConversation =
-              conversationId ??
-              (await conversationRepository.ensure(
-                workspaceId: workspaceId,
-                spaceId: spaceId,
-              )).id;
-          final goal = await goalSupervisor.startGoal(
-            workspaceId: workspaceId,
-            spaceId: spaceId,
-            conversationId: goalConversation,
-            agentId: agentId,
-            userText: userText,
-            kind: kind,
-            requestedByUserId: requestedByUserId,
-          );
-          // The first run's message id; null when the supervisor refused (it
-          // narrates the refusal into the space itself).
-          return goal?.activeRunId;
-        },
+    // Durable goals: only a signed-in person's `/goal …` message starts one
+    // (the composer's send path; peer, pipeline and webhook prompts are
+    // ordinary text).
+    goalCommandHandler: personCommand,
   );
-  // The durable steering queue. Constructed AFTER the messaging and dispatch
-  // services (its lifecycle hooks are late-bound fields on them, so the
-  // dependency cannot run the other way at build time): harness runs report
-  // their drainable moment, run endings trigger the queued→message
-  // conversion, and the messaging service's `steering.*` port methods
-  // delegate here.
-  final steeringQueueService = SteeringQueueService(
+  final wakeRepository = DaoWakeRepository(workspaceDbs);
+  final steeringQueueService = runQueues.wireSteering(
     messagingRepository: messagingRepository,
     runLogRepository: agentRunLogRepository,
-    dispatchResponder: messagingService.dispatchResponderForText,
-    sessionsForConversation: agentDispatch.sessionsForConversation,
-    // Queue edits and run-start replay only need the queued cards.
-    queuedSteering: messagingRepository.queuedSteeringMessages,
-    resolveAttachmentPaths: messagingService.withAttachmentPaths,
-    // Every queue write is a state-conditional merge onto the current row.
-    patchSteering: messagingRepository.patchSteering,
-    // A run-end send that failed is said in the conversation, not just logged.
-    postNotice:
-        ({
-          required String workspaceId,
-          required String spaceId,
-          required String conversationId,
-          required String text,
-        }) => messagingRepository
-            .sendMessage(
-              workspaceId: workspaceId,
-              spaceId: spaceId,
-              conversationId: conversationId,
-              content: text,
-              senderId: 'system',
-              senderType: 'system',
-              messageType: 'system',
-            )
-            .then((_) {}),
-  );
-  messagingService.steeringQueueService = steeringQueueService;
-  agentDispatch.onSessionHarnessStarted =
-      steeringQueueService.handleHarnessStarted;
-  agentDispatchService.onRunEnded = (workspaceId, conversationId, spaceId) =>
-      unawaited(
-        steeringQueueService.handleRunEnded(
-          workspaceId,
-          conversationId,
-          spaceId,
-        ),
-      );
-  claudeSessions.compactThrough(messagingService.dispatchAgentRun);
-  goalSupervisor = GoalSupervisor(
-    goalRepository: agentGoalRunRepository,
-    runLogRepository: agentRunLogRepository,
+    messagingService: messagingService,
+    agentDispatch: agentDispatch,
     eventBus: eventBus,
-    // dispatchAgentRun, NOT dispatchAgent: the supervisor's first run
-    // re-sends the verbatim `/goal ...` prompt and dispatchAgent would
-    // route it straight back into the goal command handler above — an
-    // infinite refusal loop.
-    dispatcher: messagingService.dispatchAgentRun,
-    // Same message shape as the take-over refusal (senderId 'system',
-    // senderType 'system', messageType 'system').
-    systemMessageSender:
-        ({
-          required workspaceId,
-          required spaceId,
-          required content,
-          conversationId,
-        }) async {
-          await messagingService.postSystemMessage(
-            workspaceId,
-            spaceId,
-            content,
-            conversationId: conversationId,
-          );
-        },
+    writerName: (_, u) async => (await userRepository.getById(u))?.displayName,
+  );
+  claudeSessions.compactThrough(messagingService.dispatchAgentRun);
+  goalSupervisor = serverGoals.buildSupervisor(
+    workspaceDbs: workspaceDbs,
+    wakes: wakeRepository,
+    runQueues: runQueues,
+    messagingService: messagingService,
+    agents: agentRepository,
+    runLogs: agentRunLogRepository,
+    tickets: ticketRepository,
+    mcpRegistry: mcpRegistry,
+    eventBus: eventBus,
+    hostExecution: hostExecutionGate(
+      posture: hostExecutionPosture,
+      serverOwnerUserId: ownerUserId,
+      accountableHuman: githubClients.accountableHuman,
+    ),
+    sandboxManager: sandboxManager,
+    protectedPaths: protectedPathsResolver,
+    actionGuard: actionGuard,
+    environments: lateEnvironments,
   );
 
-  // One shared per-pair rate limiter across the peer-messaging tools
-  // (`send_to_agent`, `ask_agent`) so a burst that alternates between the two
-  // still trips the same ordered-pair window (PRD 22 §3).
+  // One shared per-pair rate limiter across every peer hand-off (see
+  // `registerPeerTools`), so alternating tools trip the same window.
   final peerRateLimiter = PairRateLimiter();
-  final pendingDelegationHops = PendingDelegationHops();
 
   // These replace the retired `ticket_cli` (CLI-args-in-JSON) surface with a
   // discoverable, schema-typed tool per verb. Registered post-construction
@@ -3311,12 +3267,6 @@ Future<CcServer> runCcServer({
     )
     ..register(
       UpdateTicketTool(service: ticketWorkflow, repository: ticketRepository),
-    )
-    ..register(
-      DelegateTicketTool(
-        service: ticketWorkflow,
-        pendingHops: pendingDelegationHops,
-      ),
     )
     ..register(FailTicketTool(service: ticketWorkflow))
     ..register(AssignTicketTool(service: ticketWorkflow))
@@ -3342,54 +3292,33 @@ Future<CcServer> runCcServer({
         messagingPort: messagingService,
       ),
     )
-    // Agent↔agent messaging (fire-and-forget + request/reply), guarded task
-    // delegation and the todo read-back half. The two peer-messaging tools
-    // share one `PairRateLimiter`. `consult_agent` existed but was never
-    // registered — wired in here beside its siblings.
     ..register(
       TodoReadTool(
         todoRepository: todoRepository,
         conversationRepository: conversationRepository,
       ),
-    )
-    ..register(
-      SendToAgentTool(
-        agents: agentRepository,
-        messaging: messagingRepository,
-        messagingPort: messagingService,
-        rateLimiter: peerRateLimiter,
-        pendingHops: pendingDelegationHops,
-        eventBus: eventBus,
-      ),
-    )
-    ..register(
-      AskAgentTool(
-        agents: agentRepository,
-        messaging: messagingRepository,
-        messagingPort: messagingService,
-        rateLimiter: peerRateLimiter,
-        service: ticketWorkflow,
-        pendingHops: pendingDelegationHops,
-        eventBus: eventBus,
-      ),
-    )
-    ..register(
-      DelegateTaskTool(
-        service: ticketWorkflow,
-        pendingHops: pendingDelegationHops,
-      ),
-    )
-    ..register(
-      ConsultAgentTool(
-        agents: agentRepository,
-        messaging: messagingRepository,
-        messagingPort: messagingService,
-      ),
-    )
-    // Durable goals (`/goal`, `/loop`): the agent-facing completion half of
-    // the supervisor — `complete_goal` resolves the caller's one active goal
-    // (the supervisor enforces one-per-agent) and declares it achieved.
-    ..register(CompleteGoalTool(supervisionPort: goalSupervisor));
+    );
+  final peers = registerPeerTools(
+    mcpRegistry,
+    workspaceDbs: workspaceDbs,
+    agents: agentRepository,
+    messaging: messagingRepository,
+    messagingService: messagingService,
+    conversations: conversationRepository,
+    ticketWorkflow: ticketWorkflow,
+    tickets: ticketRepository,
+    rateLimiter: peerRateLimiter,
+    eventBus: eventBus,
+    runLogs: agentRunLogRepository,
+    wakes: wakeRepository,
+    wakeRules: wakeRules.rules,
+    todos: todoRepository,
+    streams: streamRegistry,
+    hiddenSpaces: agentSpaces.hiddenFor,
+    agentDispatch: agentDispatch,
+    personWaits: agentAwaitingInput,
+    wakeQueue: () => runQueues.wakeQueueOrNull,
+  );
   // Background-provision a space's conversation workspace (repo worktrees +
   // per-agent overlay) at creation, so the first agent turn
   // doesn't pay the setup cost and the UI can show a "preparing" state. Runs
@@ -3495,62 +3424,11 @@ Future<CcServer> runCcServer({
           }),
     );
   });
-  // Space-provisioning reconciler: re-kick spaces a previous session left
-  // stranded in `provisioning`. The ready/failed flip only ever comes from the
-  // in-flight provisioning future, so a server exit mid-provision would
-  // otherwise leave the space behind an eternal "preparing workspace"
-  // spinner — dispatch gated, no retry affordance (retry only shows on
-  // `failed`). provision() is idempotent: existing worktrees are reused. One
-  // best-effort sweep at boot, mirroring the orphan-run reaper.
-  if (demo == null) {
-    unawaited(() async {
-      try {
-        // CROSS-WORKSPACE BY DESIGN: a boot reconciler, so it visits every
-        // workspace's database once. Each workspace's stranded spaces are
-        // resumed with that workspace's own id in hand.
-        await crossWorkspace.forEachWorkspace((wsDb) async {
-          final workspaceId = wsDb.workspaceId;
-          final stranded = await wsDb.messagingDao.spacesByProvisioningStatus(
-            'provisioning',
-          );
-          for (final row in stranded) {
-            CcHostLog.info(
-              'channel provisioning: resuming stranded channel ${row.id}',
-            );
-            unawaited(
-              spaceProvisioningService
-                  .provision(workspaceId: workspaceId, spaceId: row.id)
-                  .catchError((Object err, StackTrace st) {
-                    CcHostLog.error(
-                      'channel provisioning: resume failed for ${row.id}: $err',
-                      err,
-                      st,
-                    );
-                    wsDb.messagingDao.updateSpaceProvisioningStatus(
-                      row.id,
-                      'failed',
-                    );
-                  }),
-            );
-          }
-        });
-      } on Object catch (e, st) {
-        CcHostLog.error(
-          'cc_server: stranded-channel provisioning sweep failed: $e',
-          e,
-          st,
-        );
-      }
-    }());
-  }
-  // Waits a restart ended: close orphaned questions and resolve their bell
-  // rows, so `needsInput` (unanswered rows) and the pending views (live
-  // waiters) agree again. Rows newer than [bootedAt] are never touched.
-  unawaited(
-    sweepOrphanedWaits(crossWorkspace, bootedAt).catchError(
-      (Object e, StackTrace st) =>
-          CcHostLog.error('cc_server: orphaned-wait sweep failed: $e', e, st),
-    ),
+  // Boot reconcilers: stranded channels, and waits a restart ended.
+  _startBootSweeps(
+    crossWorkspace: crossWorkspace,
+    bootedAt: bootedAt,
+    provisioning: demo == null ? spaceProvisioningService : null,
   );
   // Enclosures (rigs): disposable VMs an agent or a human drives, and the
   // machines the interactive terminals move into. Constructed unconditionally
@@ -3842,79 +3720,9 @@ Future<CcServer> runCcServer({
   final diarizationService = MeetingDiarizationService(
     libPath: inferenceLibPath,
   );
-  // Backs the sandboxed terminal sessions (the `terminal.spawn` RPC body). Like rift/fff/tree-sitter, libccpty is a loose
-  // runtime dylib — no Flutter ffiPlugin bundles it into this pure-Dart binary —
-  // so point the PTY loader at the SAME data dir the other natives resolve from.
-  // `Pty`'s default resolver only checks `$CC_PTY_DYLIB` + the binary's own
-  // bundle layout (`<bundle>/lib`, `@executable_path/../Frameworks`), so on a
-  // dev / headless deploy — where libccpty is dropped beside control_center.db
-  // rather than embedded in the bundle — `terminal.spawn` would fail with
-  // `PtyUnavailable` even though the dylib is present. Adding the data dir as the
-  // app-support root closes that gap, mirroring fff/rift wiring.
-  Pty.libraryResolver = () => tryOpenFirst(
-    nativeLibraryCandidates(
-      ptyLibraryBaseName,
-      appSupportRoot: config.dataDir,
-      envVar: ptyLibraryEnvVar,
-    ),
-  );
-  // Backs the code-graph watch service's per-checkout watches. REQUIRED, like
-  // the other natives: there is no `package:watcher` fallback, because its
-  // per-arm full-tree scan (which cannot skip `node_modules`) is the 65s
-  // startup freeze this native exists to remove — silently degrading to it
-  // would be worse than refusing to boot. Same data-dir resolution as
-  // pty/fff/rift; the preflight below fails when it cannot load.
-  NativeDirectoryWatcher.libraryResolver = () => tryOpenFirst(
-    nativeLibraryCandidates(
-      watcherLibraryBaseName,
-      appSupportRoot: config.dataDir,
-      envVar: watcherLibraryEnvVar,
-    ),
-  );
-  // Backs SSO SAML login: AuthnRequest building, IdP metadata parsing and
-  // XML-DSig-verified Response consumption (pure-Rust `saml` crate behind a
-  // stateless C-ABI seam). REQUIRED with no degraded mode — a hand-rolled
-  // Dart XML-DSig is exactly where signature-wrapping vulnerabilities live,
-  // so a missing library refuses SAML login and the boot preflight below.
-  CcSaml.libraryResolver = () => tryOpenFirst(
-    nativeLibraryCandidates(
-      samlLibraryBaseName,
-      appSupportRoot: config.dataDir,
-      envVar: samlLibraryEnvVar,
-    ),
-  );
-  // Backs desktop app windows. Candidates rather than an opened library: the
-  // calls block in the OS, so each runs on a worker isolate that opens the
-  // library itself.
-  configureRigNatives(dataDir: config.dataDir);
-
-  // Loading onnxruntime + probing every bundled dylib: the slowest purely
-  // synchronous stretch of boot on a cold page cache.
-  _bootMark('loading native libraries');
-  // Natives ship in the server bundle; a miss refuses boot (no degraded mode).
-  // Only on-device MODELS download at runtime; every LIBRARY is required.
-  // Matrix lives in `native_preflight.dart` (same list as verify/package scripts).
-  // Built here so a missing grammar fails at boot, not on first index.
-  final grammarsRoot = (await paths.grammarsRoot()).path;
-  final missingNatives = await missingRequiredNatives(
-    buildNativeRequirements(
-      grammarsRoot: grammarsRoot,
-      dataDir: config.dataDir,
-      inferenceLibPath: inferenceLibPath,
-      grammarManager: grammarManager,
-    ),
-  );
-  if (missingNatives.isNotEmpty) {
-    throw StateError(
-      'cc_server: required native libraries are missing:\n'
-      '  - ${missingNatives.join('\n  - ')}\n'
-      'Looked in \$$nativeLibDirEnvVar, ${config.dataDir}, $grammarsRoot and '
-      'the server bundle. Stage them with scripts/natives/build_natives.sh and '
-      'rebuild the server with scripts/build_server.sh (`dart build cli` '
-      'bundles build/natives into <bundle>/lib/ but not media/ into '
-      '<bundle>/bin/media/), or drop them into the data dir. Refusing to boot '
-      'with a degraded feature set.',
-    );
+  // Whether the runner can confine itself here is what its self-test says.
+  if (await codeMode.startupLine() case final line?) {
+    _announce(line);
   }
 
   SherpaOnnxTranscriber? meetingTranscriber;
@@ -3982,7 +3790,8 @@ Future<CcServer> runCcServer({
     // The warm-up at the end of a real server boot fetches a missing model,
     // but this boot cannot serve speech ops until the server is restarted.
     CcHostLog.warning(
-      'cc_server: no speech model installed under ${config.dataDir} — meeting '
+      'cc_server: no speech model installed under '
+      '${printableText(config.dataDir, max: 1024)} \u2014 meeting '
       'recording and composer dictation over RPC are unavailable FOR THIS RUN '
       '(the `meeting.startRecording`/`ingestAudio`/`stopRecording` and '
       '`dictation.start`/`ingestAudio`/`stop` ops stay absent). The model is '
@@ -4304,6 +4113,7 @@ Future<CcServer> runCcServer({
     voiceProfileRepository: voiceProfileRepository,
     diarizationModelManager: diarizationModelManager,
     diarizationService: diarizationService,
+    goalPursuits: learning.pipelineGoals,
     // Public demo: a visitor who can author `bash.script` and start it is
     // executing code on this host. The body stays registered so a seeded
     // graph does not fail "unknown body"; it never `Process.start`.
@@ -4801,7 +4611,6 @@ Future<CcServer> runCcServer({
     // to a human pressing "Fixed" afterwards is bookkeeping nobody does.
     ..register(ResolveReviewNodeTool(status: reviewFindingStatusService))
     ..register(SubmitReviewerVerdictTool(repository: messagingRepository))
-    ..register(RequestPeerReviewTool(messaging: messagingRepository))
     ..register(DispatchReviewersTool(service: dispatchReviewersService))
     ..register(FinalizeReviewTool(finalizer: reviewFinalizer))
     ..register(PublishReviewToGithubTool(service: reviewPublisherService))
@@ -5021,28 +4830,15 @@ Future<CcServer> runCcServer({
     conversationChanges: repoIdeData.conversationChanges,
   );
 
-  // A space's named checker agent reviews every other agent's completed
-  // main run, in-thread.
+  // A space's named checker agent reviews every other agent's settled main
+  // run, in-thread (not a stopped run, not a goal segment).
   final checkerListener = CheckerDispatchListener(
     eventBus: eventBus,
     checkers: DaoSpaceCheckerRepository(workspaceDbs),
     runLogs: agentRunLogRepository,
-    dispatchChecker:
-        ({
-          required String spaceId,
-          required String? conversationId,
-          required String agentId,
-          required String prompt,
-          required String workspaceId,
-        }) async {
-          await messagingService.dispatchAgent(
-            spaceId: spaceId,
-            conversationId: conversationId,
-            agentId: agentId,
-            prompt: prompt,
-            workspaceId: workspaceId,
-          );
-        },
+    dispatchChecker: runQueues.wakeChecker,
+    // A goal's segments and reviews are the supervisor's, not the checker's.
+    isGoalRun: goalSupervisor.isGoalRun,
   )..start();
 
   // A take-over is enforced at the `RigService.act` chokepoint; without this
@@ -5106,11 +4902,8 @@ Future<CcServer> runCcServer({
     factory: demo?.harnessProviderFactory ?? const HarnessProviderFactory(),
     onWarning: CcHostLog.warning,
   );
-  await _bootStep(
-    'recovering skill evaluations',
-    skillEvaluationService.start,
-  );
-  fleetOps.addAll(buildSkillEvaluationOps(skillEvaluationService));
+  await _bootStep('recovering skill evaluations', skillEvaluationService.start);
+  fleetOps.addAll(learning.attachSkillEvaluation(skillEvaluationService));
   fleetWatchQueries.addAll(
     buildSkillEvaluationWatchQueries(skillEvaluationService),
   );
@@ -5633,6 +5426,8 @@ Future<CcServer> runCcServer({
   final backupTransferStagingDir = '${config.dataDir}/backups/transfer';
 
   final serverExtraOps = buildServerExtraOps(
+    conversationReads: conversationReadRepository,
+    notificationFeedRepository: notificationFeedRepository,
     // usectrl.dev/changelog.md (token-less). The thin client parses it with
     // `ChangelogRelease.parseMarkdown`.
     fetchChangelog: () => ChangelogService(createHttpClient()).fetchMarkdown(),
@@ -5645,6 +5440,9 @@ Future<CcServer> runCcServer({
     userActivity: userActivityRepository,
     isServerOwner: isServerOwner,
     prData: spaceData,
+    codeModeSettings: codeModeSettings,
+    codeModeHost: codeMode.hostFacts,
+    codeExecutions: codeMode.executions,
     // The headless server hosts its own MCP HTTP server; the `mcp.*` ops drive
     // this control so a connected client can start/stop it and the owner can
     // read or rotate its token. demo: no MCP server control, so /mcp and /sse
@@ -5654,6 +5452,15 @@ Future<CcServer> runCcServer({
     mcpClientControl: demo != null ? null : mcpClientControl,
     // demo: no owner to notify.
     serverNotices: demo != null ? null : DaoServerNoticeRepository(globalDb),
+    agentGoalRunRepository: agentGoalRunRepository,
+    guidedGoals: messagingService,
+    goalApproveCompletion: goalSupervisor.approveCompletion,
+    wakeQueue: () => runQueues.wakeQueue,
+    wakes: wakeRepository,
+    wakeRules: () => wakeRules.service,
+    wakeRuleRepository: wakeRules.rules,
+    peerAsks: peers.asks,
+    learning: learning,
     agentRepository: agentRepository,
     workspaceFilesystem: workspaceFilesystem,
     workspaceRepository: workspaceRepository,
@@ -5704,6 +5511,8 @@ Future<CcServer> runCcServer({
       filesystem: workspaceFilesystem,
       mcpRegistry: mcpRegistry,
       fileSearch: CcNativesFileSearchPort(fileSearch: ideFileSearch),
+      codeRunnerAvailability: () => codeMode.publicAvailability,
+      codeModeLimits: codeModeSettings.limitsFor,
       memoryContextUseCase: memoryContextUseCase,
       sandboxManager: useNativeSandbox ? sandboxManager : null,
       confirmationPort: confirmationPort,
@@ -5906,7 +5715,6 @@ Future<CcServer> runCcServer({
     ),
     // demo: no host processes.
     environments: environmentService,
-    spaceReadRepository: spaceReadRepository,
     memoryDomainRepository: memoryDomainRepository,
     memoryAccessGrantRepository: memoryAccessGrantRepository,
     agentWorkingMemoryRepository: agentWorkingMemoryRepository,
@@ -6452,6 +6260,7 @@ Future<CcServer> runCcServer({
     // `dispatch.*` ops are LIVE. Streamed replies land on message rows the
     // client already watches via `messaging.watchMessages`.
     messagingDispatch: messagingService,
+    personGoalCommand: personCommand,
     steeringQueue: steeringQueueService,
     // Conversation revert/unrevert (undo/redo) with worktree filesystem rollback:
     // this host owns the DB + the conversation's checkouts + the per-turn
@@ -6966,7 +6775,10 @@ Future<CcServer> runCcServer({
     securityContext = SecurityContext()
       ..useCertificateChain(config.tlsCertPath)
       ..usePrivateKey(config.tlsKeyPath);
-    CcHostLog.info('cc_server: TLS enabled (cert ${config.tlsCertPath})');
+    CcHostLog.info(
+      'cc_server: TLS enabled '
+      '(cert ${printableText(config.tlsCertPath, max: 1024)})',
+    );
   }
 
   // Inbound signed webhooks → pipeline runs. The token in `/webhooks/<token>`
@@ -7495,6 +7307,8 @@ Future<CcServer> runCcServer({
   }
 
   await _bootStep('starting RPC server', server.start);
+  // Records a restart left running, once this server holds its port.
+  codeMode.sweepOrphans(announce: _announce);
 
   // The descriptor advertises the ACTUAL bound port (differs from config
   // under `--port 0`, the desktop's ephemeral-port spawn).
@@ -7718,17 +7532,17 @@ Future<CcServer> runCcServer({
     }()),
   );
 
-  // Team leader-routing: when a ticket is assigned to a team, dispatch the
-  // leader with the operating protocol + skill-surfaced roster; re-wake it when
-  // a delegated member finishes (bounded by the no-action dedup guard).
+  // Team leader-routing: a ticket assigned to a team dispatches the leader in
+  // its routed space; a member run the leader woke wakes it again (no_action).
   final teamRoutingService = TeamRoutingService(
     eventBus: eventBus,
     teamRepository: teamRepository,
     agentRepository: agentRepository,
     ticketRepository: ticketRepository,
     runLogRepository: agentRunLogRepository,
+    wakeRepository: wakeRepository,
     activityRepository: TeamActivityRepositoryImpl(workspaceDbs),
-    leaderDispatch: MessagingTeamLeaderDispatch(messagingService),
+    leaderDispatch: peers.teamLeader,
   )..start();
   final pipelineTriggerDispatcher = PipelineTriggerDispatcher(
     eventBus: eventBus,
@@ -7864,109 +7678,140 @@ Future<CcServer> runCcServer({
     runRepository: pipelineRunRepository,
     meetingRepository: meetingRepository,
   )..start();
-  // Resume any in-flight pipelines from the last run (best-effort).
-  unawaited(() async {
-    try {
-      // BEFORE resumeAll, always: a background-index run row is a projection of
-      // work the code-graph watcher owns, not a resumable pipeline. Left in
-      // place, `resumeAll` would find its running `index` step and execute the
-      // template's own body — a full index of the LINKED checkout (never the
-      // worktree partition the row was for) during boot, which is precisely what
-      // deferring the watcher until after the ready banner exists to prevent.
-      final closed = await codeIndexRunReporter.reapInterrupted();
-      if (closed > 0) {
-        CcHostLog.info(
-          'cc_server: closed $closed interrupted code-index run(s)',
-        );
-      }
-      // Same rule for the skill-analysis projection runs: they are the scan
-      // ops' rows, not resumable pipelines — close them before resumeAll.
-      final closedSkillRuns = await skillAnalysisReporter.reapInterrupted();
-      if (closedSkillRuns > 0) {
-        CcHostLog.info(
-          'cc_server: closed $closedSkillRuns interrupted skill-analysis '
-          'run(s)',
-        );
-      }
-      // Resume against the RECONCILED graph, not whatever this workspace was
-      // last seeded with — a run stuck on a stale template only completes if
-      // the seed that fixes it is already written. Bounded: the reconcile is
-      // an ordering preference, not a prerequisite, and resume must never be
-      // the thing a slow/stuck seed pass takes down with it.
-      await templateReconcile.timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          CcHostLog.warning(
-            'cc_server: built-in template reconcile still running after 30s; '
-            'resuming pipelines against the templates as they stand',
-          );
-        },
+  // Resumes the pipelines in flight when the server stopped (best-effort).
+  Future<void> resumePipelines() async {
+    // BEFORE resumeAll, always: a background-index run row is a projection of
+    // work the code-graph watcher owns, not a resumable pipeline. Left in
+    // place, `resumeAll` would find its running `index` step and execute the
+    // template's own body — a full index of the LINKED checkout (never the
+    // worktree partition the row was for) during boot, which is precisely what
+    // deferring the watcher until after the ready banner exists to prevent.
+    final closed = await codeIndexRunReporter.reapInterrupted();
+    if (closed > 0) {
+      CcHostLog.info(
+        'cc_server: closed $closed interrupted code-index run(s)',
       );
-      if (demo == null) {
-        await pipeline.engine.resumeAll();
-        // The boot-time backstop again every 15 minutes, for a server that
-        // stays up longer than a stalled step's timeout.
-        pipeline.engine.startLivenessSweep();
-      }
-    } on Object catch (e, st) {
-      CcHostLog.error('cc_server: pipeline resumeAll failed: $e', e, st);
     }
-  }());
-  // Durable goals: re-dispatch every objective still active when the server
-  // stopped — the state lives in SQLite, so `/goal`/`/loop` survive restarts.
-  // Best-effort, mirroring the pipeline resume above.
-  unawaited(() async {
-    try {
-      await goalSupervisor.reconcileOnStartup();
-    } on Object catch (e, st) {
-      CcHostLog.error('cc_server: goal reconciliation failed: $e', e, st);
+    // Same rule for the skill-analysis projection runs: they are the scan
+    // ops' rows, not resumable pipelines — close them before resumeAll.
+    final closedSkillRuns = await skillAnalysisReporter.reapInterrupted();
+    if (closedSkillRuns > 0) {
+      CcHostLog.info(
+        'cc_server: closed $closedSkillRuns interrupted skill-analysis '
+        'run(s)',
+      );
     }
-  }());
-  // Crash recovery for agent RUNS and the tickets behind them.
-  //
-  // Both services existed and were unit-tested but were wired NOWHERE, so
-  // after a crash or SIGKILL runs stayed `running` and tickets stayed
-  // `inProgress` forever — the UI showed live work that no process was doing,
-  // and the ticket could never be picked up again. (The space-provisioning
-  // reconciler above even documents itself as "mirroring the orphan-run
-  // reaper", a reaper that was not running.)
-  //
-  // One best-effort sweep at boot, after the pipeline/goal resumes so a run
-  // legitimately resumed above is already `running` again by the time the
-  // reaper looks — and after the ready banner, like every other reconciler.
+    // Resume against the RECONCILED graph, not whatever this workspace was
+    // last seeded with — a run stuck on a stale template only completes if
+    // the seed that fixes it is already written. Bounded: the reconcile is
+    // an ordering preference, not a prerequisite, and resume must never be
+    // the thing a slow/stuck seed pass takes down with it.
+    await templateReconcile.timeout(
+      const Duration(seconds: 30),
+      onTimeout: () {
+        CcHostLog.warning(
+          'cc_server: built-in template reconcile still running after 30s; '
+          'resuming pipelines against the templates as they stand',
+        );
+      },
+    );
+    if (demo == null) {
+      await pipeline.engine.resumeAll();
+      // The boot-time backstop again every 15 minutes, for a server that
+      // stays up longer than a stalled step's timeout.
+      pipeline.engine.startLivenessSweep();
+    }
+  }
+
+  // Crash recovery for agent RUNS and the tickets behind them, once at boot
+  // after the ready banner: the reaper FINISHES first (it never ends a row
+  // this process started), then the pipeline resume, the goal reconcile
+  // (`/goal` survives restarts) and the stranded-ticket sweep.
   final budgetEnforcement = BudgetEnforcementService(
     agentRunLogRepository: agentRunLogRepository,
     agentRepository: agentRepository,
     eventBus: eventBus,
   );
-  unawaited(() async {
-    try {
-      await OrphanRunReaper(
-        runLogRepo: agentRunLogRepository,
-        ticketRepo: ticketRepository,
-        ticketWorkflow: ticketWorkflow,
-        processControl: const ProcessControlService(),
-        budgetEnforcement: budgetEnforcement,
-      ).reap();
-    } on Object catch (e, st) {
-      CcHostLog.error('cc_server: orphan-run reap failed: $e', e, st);
-    }
-    try {
-      await StrandedTicketReconciler(
-        ticketRepo: ticketRepository,
-        agentRepo: agentRepository,
-        runLogRepo: agentRunLogRepository,
-        ticketWorkflow: ticketWorkflow,
-        budgetEnforcement: budgetEnforcement,
-      ).reconcile();
-    } on Object catch (e, st) {
-      CcHostLog.error(
-        'cc_server: stranded-ticket reconciliation failed: $e',
-        e,
-        st,
-      );
-    }
-  }());
+  final wakeQueue = runQueues.buildWakeQueue(
+    wakes: wakeRepository,
+    conversations: conversationRepository,
+    eventBus: eventBus,
+    agents: agentRepository,
+    runLogs: agentRunLogRepository,
+    messagingRepository: messagingRepository,
+    messagingService: messagingService,
+    agentDispatch: agentDispatch,
+    workspaces: globalDb.workspaceRegistryDao,
+    isMember: (workspaceId, userId) async =>
+        await membershipRepository.getMember(workspaceId, userId) != null,
+    takenOver: (workspaceId, spaceId) async =>
+        await takeoverHolder.value?.isActive(workspaceId, spaceId) ?? false,
+    budgetBlocked: (workspaceId, agentId) async =>
+        await budgetEnforcement.checkInvocationBlock(
+          agentId: agentId,
+          workspaceId: workspaceId,
+        ) !=
+        null,
+  );
+  serverGoals.attachWakeQueue(runQueues, wakeQueue);
+  learning.attachWakeQueue(runQueues, wakeQueue, wakes: wakeRepository);
+  wakeRules.attach(wakes: wakeRepository, queue: wakeQueue);
+  peers.attach(wakeQueue);
+  ServerUnattended.wire(
+    eventBus: eventBus,
+    workspaceDbs: workspaceDbs,
+    settings: workspaceSettingsRepository,
+    questions: agentQuestions,
+    confirmations: pendingConfirmationRegistry,
+    runLogs: agentRunLogRepository,
+    agents: agentRepository,
+    goals: serverGoals,
+    wakes: wakeRepository,
+    runQueues: runQueues,
+    dispatch: agentDispatchService,
+    adapter: agentDispatch,
+    messagingService: messagingService,
+    messages: messagingRepository,
+    compaction: conversationCompactionService,
+    members: membershipRepository,
+    workspaceIds: globalDb.workspaceRegistryDao.liveIds,
+    spaces: spaceData,
+  );
+  unawaited(
+    recoverRunsAtBoot(
+      reapOrphans: (
+        name: 'orphan-run reap',
+        run: () => OrphanRunReaper(
+          runLogRepo: agentRunLogRepository,
+          ticketRepo: ticketRepository,
+          ticketWorkflow: ticketWorkflow,
+          processControl: const ProcessControlService(),
+          eventBus: eventBus,
+          budgetEnforcement: budgetEnforcement,
+          startedBefore: bootStartedAt,
+        ).reap(),
+      ),
+      afterReap: [
+        // The rules' guard is registered before the queue delivers anything.
+        (name: 'wake rules start', run: wakeRules.start),
+        (name: 'wake queue start', run: runQueues.startWakeQueue),
+        (name: 'peer ask sweep', run: peers.start),
+        (name: 'pipeline resumeAll', run: resumePipelines),
+        (name: 'goal sweep', run: () async => goalSupervisor.start()),
+        (name: 'improvement sweep', run: learning.start),
+        (
+          name: 'stranded-ticket reconciliation',
+          run: () => StrandedTicketReconciler(
+            ticketRepo: ticketRepository,
+            agentRepo: agentRepository,
+            runLogRepo: agentRunLogRepository,
+            ticketWorkflow: ticketWorkflow,
+            budgetEnforcement: budgetEnforcement,
+          ).reconcile(),
+        ),
+      ],
+    ),
+  );
 
   // Start the MCP surface when the persisted config has it enabled. A
   // companion bind failure (TLS topology, port in use) is logged but does not
@@ -8013,6 +7858,8 @@ Future<CcServer> runCcServer({
     .._networkRuntime = networkRuntime
     .._presenceHub = presenceHub
     .._checkerListener = checkerListener
+    .._runQueues = runQueues
+    .._learning = learning
     .._worktreeGcListener = worktreeGcListener
     .._rigEventListener = rigEventListener
     .._notificationFeedRecorder = notificationFeedRecorder
@@ -8025,6 +7872,7 @@ Future<CcServer> runCcServer({
     .._codeServer = codeServerSessions
     .._rigs = rigService
     .._agentDispatch = agentDispatch
+    .._codeExecutions = codeMode.service
     .._nativeSandbox = nativeSandbox
     .._sandboxManager = sandboxManager
     .._pendingConfirmations = pendingConfirmationRegistry
@@ -8300,8 +8148,12 @@ Future<CcServer> runCcServer({
   // directly like the booting line — always printed, no `[level]` prefix.
   _emitLog(
     false,
-    'cc_server ready on ${config.bindHost}:${server.boundPort} '
-    '(data: ${config.dataDir}, workspaces: ${initialWorkspaces.length})',
+    readyLine(
+      host: config.bindHost,
+      port: server.boundPort,
+      dataDir: config.dataDir,
+      workspaces: initialWorkspaces.length,
+    ),
   );
   _announceBootSummary();
   // What the process holds once the work boot started has settled, and again

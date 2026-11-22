@@ -34,6 +34,12 @@ class ReadTool extends HarnessTool {
   String get name => 'read';
 
   @override
+  String get resultNote =>
+      'Text: maybe `[file <path> hash=H lines=N]`, then '
+      '`<number><tab><line>` per line; a partial read ends `[showing lines '
+      'A-B of N; …]`.';
+
+  @override
   String get description =>
       'Read a file from the workspace and return its content with line '
       'numbers. Use offset/limit to page through large files, or sel for a '

@@ -19,10 +19,14 @@ class McpCallScope {
     this.spaceId,
     this.attested = false,
     this.personalMcp = false,
+    this.runId,
+    this.runLogId,
+    this.readOnly = false,
   }) : assert(
          !personalMcp || attested,
          'only a run grant can hand out the owner\'s personal MCP servers',
-       );
+       ),
+       assert(!readOnly || attested, 'only a run grant names a read-only run');
 
   /// Header carrying a run's own secret to the MCP transport.
   static const String runGrantHeader = 'X-CC-Agent-Run';
@@ -39,6 +43,21 @@ class McpCallScope {
   /// MCP servers: decided once per run, from whether the owner is accountable
   /// for it. Only an [attested] scope can say so.
   final bool personalMcp;
+
+  /// The run this scope proves (its dispatch id), or null for a caller that
+  /// is not an attested run. Only the agent run gateway sets it, from the
+  /// run's grant.
+  final String? runId;
+
+  /// Whether the run this scope proves is read-only: every call is admitted
+  /// only when `ReadOnlyRunProfile.admits` it, and `tools/list` shows only
+  /// those tools. Only an [attested] scope sets it, from the run's grant.
+  final bool readOnly;
+
+  /// The run's `agent_run_logs` row, when it has one. What audit rows that
+  /// cascade with the run (code executions) are keyed by; a run without a
+  /// run-log row writes none.
+  final String? runLogId;
 
   /// The external MCP layers this caller may see: an attested run gets its
   /// own workspace's servers, and the owner's when [personalMcp]; any other
@@ -174,9 +193,21 @@ class McpCallScope {
 
   /// Arguments that always name the calling agent and are therefore FORCED to
   /// [agentId] by [apply], whatever the tool's `forcedScopeKeys` say.
+  ///
+  /// A tool that names its caller under one of these keys gets the forcing,
+  /// and the hiding from the model-facing schema wherever the run can supply
+  /// the agent, by declaring the key; nothing else to opt into. A tool whose
+  /// caller argument is called `agent_id` lists it in `forcedScopeKeys`
+  /// instead (most tools use `agent_id` for a target). Every tool declaring
+  /// one of these keys means "the agent calling": the sender of a message
+  /// (`send_message`, `add_review_node`), the asker of a peer review, the
+  /// reviewer recording a verdict.
   static const Set<String> callerIdentityKeys = {
     'from_agent_id',
     'delegated_by_agent_id',
+    'sender_id',
+    'requester_id',
+    'reviewer_id',
   };
 
   @override
@@ -188,7 +219,9 @@ class McpCallScope {
           conversationId == other.conversationId &&
           spaceId == other.spaceId &&
           attested == other.attested &&
-          personalMcp == other.personalMcp;
+          personalMcp == other.personalMcp &&
+          runId == other.runId &&
+          runLogId == other.runLogId;
 
   @override
   int get hashCode => Object.hash(
@@ -198,5 +231,7 @@ class McpCallScope {
     spaceId,
     attested,
     personalMcp,
+    runId,
+    runLogId,
   );
 }

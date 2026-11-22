@@ -29,6 +29,11 @@ class StartAiReviewTool extends McpTool {
 
   @override
   String get name => 'start_ai_review';
+
+  /// Not for scripts: it starts reviewer agent runs (see
+  /// [McpTool.scriptCallable]).
+  @override
+  bool get scriptCallable => false;
   @override
   Set<ActionClass> get actionClasses => const {ActionClass.processSpawn};
 

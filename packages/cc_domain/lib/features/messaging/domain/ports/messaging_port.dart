@@ -218,6 +218,10 @@ abstract interface class MessagingPort {
   /// tokens to that member's access. A pipeline passes its requester; null
   /// (nobody asked) bounds the run by the workspace's accountable human,
   /// never by the server owner.
+  /// [wakeContext] is why the run exists (D1), from the server's own
+  /// knowledge of the caller: `userMessage` for a person's operation,
+  /// `assignment`, `pipelineStep`, `childCompleted`. It is never taken from a
+  /// client; a run the wake queue starts carries its wakes instead.
   /// Returns the run-log id of the dispatched run (the `submit_output` /
   /// resume key), or null when the agent could not be resolved.
   Future<String?> dispatchAgent({
@@ -230,7 +234,7 @@ abstract interface class MessagingPort {
     String? pipelineStepId,
     String? inReplyToAgentId,
     String? requestedByUserId,
-    WakeContext? wakeContext,
+    required WakeContext wakeContext,
     String? conversationId,
     Map<String, dynamic>? expectedOutputSchema,
     OutputContractMode outputContractMode = OutputContractMode.strict,

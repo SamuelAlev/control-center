@@ -1,18 +1,33 @@
 import 'dart:convert';
 
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
+import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_collaborator.dart';
 import 'package:cc_domain/features/ticketing/domain/repositories/ticket_repository.dart';
 import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_service.dart';
 import 'package:cc_harness/tools.dart';
+import 'package:cc_mcp/src/mcp_scoped_tool.dart';
 import 'package:cc_mcp/src/tools/ticket_access.dart';
 
-/// MCP tool to assign a ticket to an agent and/or team.
-class AssignTicketTool extends McpTool {
+/// MCP tool to assign a ticket to an agent and/or team. An attested run's
+/// call names the run on the assignment
+/// ([TicketWorkflowService.assignFromRun]): a run the assignment starts (a
+/// team leader's) records it as its starter, so it stays in that run's
+/// chain of wakes.
+class AssignTicketTool extends McpScopedTool {
   /// Creates an [AssignTicketTool].
   AssignTicketTool({required this._service});
   final TicketWorkflowService _service;
+
+  /// The in-process harness's call carries its run's attested scope.
+  @override
+  Future<CallResult> callForRun(
+    Map<String, dynamic> arguments,
+    McpCallScope scope, {
+    Future<void>? abandoned,
+  }) =>
+      callScoped(arguments, McpCallContext(scope: scope), abandoned: abandoned);
 
   @override
   bool get requiresApproval => true;
@@ -35,6 +50,11 @@ class AssignTicketTool extends McpTool {
 
   @override
   String get name => 'assign_ticket';
+
+  /// Not for scripts: an assignment can start the assignee's run (the
+  /// `TicketAssigned` trigger) (see [McpTool.scriptCallable]).
+  @override
+  bool get scriptCallable => false;
   @override
   Set<ActionClass> get actionClasses => const {
     ActionClass.vendorSyncWrite,
@@ -57,7 +77,11 @@ class AssignTicketTool extends McpTool {
   };
 
   @override
-  Future<CallResult> run(Map<String, dynamic> arguments) async {
+  Future<CallResult> runScoped(
+    Map<String, dynamic> arguments,
+    McpCallContext context, {
+    Future<void>? abandoned,
+  }) async {
     final workspaceId = arguments['workspace_id'];
     if (workspaceId is! String) {
       return CallResult.error('Missing or invalid argument: workspace_id');
@@ -70,12 +94,26 @@ class AssignTicketTool extends McpTool {
     if (missing != null) {
       return missing;
     }
-    await _service.assign(
-      ticketId,
-      workspaceId: workspaceId,
-      assigneeId: arguments['agent_id'] as String?,
-      teamId: arguments['team_id'] as String?,
-    );
+    final scope = context.scope;
+    final runId = scope != null && scope.attested ? scope.runLogId : null;
+    final assigneeId = arguments['agent_id'] as String?;
+    final teamId = arguments['team_id'] as String?;
+    if (runId == null) {
+      await _service.assign(
+        ticketId,
+        workspaceId: workspaceId,
+        assigneeId: assigneeId,
+        teamId: teamId,
+      );
+    } else {
+      await _service.assignFromRun(
+        ticketId,
+        workspaceId: workspaceId,
+        assigneeId: assigneeId,
+        teamId: teamId,
+        runId: runId,
+      );
+    }
     return CallResult.success(
       jsonEncode({'ticket_id': ticketId, 'status': 'assigned'}),
     );
@@ -102,6 +140,11 @@ class ReassignTicketTool extends McpTool {
 
   @override
   String get name => 'reassign_ticket';
+
+  /// Not for scripts: an assignment can start the assignee's run (the
+  /// `TicketAssigned` trigger) (see [McpTool.scriptCallable]).
+  @override
+  bool get scriptCallable => false;
   @override
   Set<ActionClass> get actionClasses => const {
     ActionClass.vendorSyncWrite,
@@ -217,6 +260,11 @@ class CommentOnTicketTool extends McpTool {
 
   @override
   String get name => 'comment_on_ticket';
+
+  /// Not for scripts: an @mention in the comment dispatches the mentioned agent
+  /// (see [McpTool.scriptCallable]).
+  @override
+  bool get scriptCallable => false;
   @override
   Set<ActionClass> get actionClasses => const {ActionClass.processSpawn};
 

@@ -1,5 +1,6 @@
 import 'package:cc_domain/core/logging/cc_domain_log.dart';
 import 'package:cc_domain/features/pipelines/domain/services/cron_schedule.dart';
+import 'package:cc_domain/features/pipelines/domain/services/schedule_spec.dart';
 import 'package:collection/collection.dart';
 
 const DeepCollectionEquality _deepEquality = DeepCollectionEquality();
@@ -39,7 +40,7 @@ enum CronCatchUpPolicy {
 /// Triggers are per-workspace, default-off. When a matching event fires
 /// and the trigger is enabled, the `PipelineTriggerDispatcher` calls
 /// `PipelineEngine.start` with the event payload.
-class PipelineTrigger {
+class PipelineTrigger implements ScheduleSpec {
   /// Creates a [PipelineTrigger].
   PipelineTrigger({
     required this.id,
@@ -106,6 +107,7 @@ class PipelineTrigger {
 
   /// IANA timezone name the [cronExpression] is evaluated in (e.g.
   /// `America/New_York`). `null` / empty means UTC.
+  @override
   final String? timezone;
 
   /// The next wall-clock instant (UTC) this scheduled trigger is due to fire.
@@ -171,6 +173,7 @@ class PipelineTrigger {
 
   /// The interval in seconds parsed from an `every:<seconds>` [cronExpression],
   /// or null if not an interval schedule.
+  @override
   int? get intervalSeconds {
     final expr = cronExpression;
     if (expr == null || !expr.startsWith('every:')) {
@@ -181,6 +184,7 @@ class PipelineTrigger {
 
   /// The parsed [CronSchedule] when [cronExpression] is a standard 5-field cron
   /// (not the `every:` interval form), or null.
+  @override
   CronSchedule? get cronSchedule {
     final expr = cronExpression;
     if (expr == null || expr.startsWith('every:')) {

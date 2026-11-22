@@ -1045,9 +1045,6 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get calendarAllDayGutter => 'Hele dag';
-
-  @override
   String calendarAllDayEventCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -2520,9 +2517,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get activityBackedUpServer => 'Back-up van servergegevens gemaakt';
-
-  @override
-  String get activityMarkedSpaceRead => 'Ruimte als gelezen gemarkeerd';
 
   @override
   String get activityRespondedToInvitation =>
@@ -13519,6 +13513,17 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String diffFileUnresolvedConversations(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count onopgeloste gesprekken',
+      one: '1 onopgelost gesprek',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get pendingReview => 'Review in wachtrij';
 
   @override
@@ -13876,9 +13881,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get spaceKeepAfterMergeHint =>
       'Je wordt voor deze ruimte niet opnieuw gevraagd.';
-
-  @override
-  String get spaceAllPrsMergedLabel => 'Alle pull requests samengevoegd';
 
   @override
   String get archiveSpace => 'Ruimte archiveren';
@@ -15445,7 +15447,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get skillEvalIncomplete => 'Onvolledig';
 
   @override
-  String get skillEvalInconclusive => 'Geen uitsluitsel';
+  String get skillEvalInconclusive => 'Geen beslissing (onvoldoende bewijs)';
 
   @override
   String get skillEvalInferred => 'Afgeleid';
@@ -19014,4 +19016,2948 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get mcpServerNotFound =>
       'Deze server bestaat niet meer. Mogelijk is hij verwijderd.';
+
+  @override
+  String get scriptToolCalls => 'Toolaanroepen';
+
+  @override
+  String scriptCallCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count aanroepen',
+      one: '1 aanroep',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scriptCallsRunning(int count) {
+    return '$count actief';
+  }
+
+  @override
+  String scriptCallsOk(int count) {
+    return '$count geslaagd';
+  }
+
+  @override
+  String scriptCallsFailed(int count) {
+    return '$count mislukt';
+  }
+
+  @override
+  String scriptCallsDenied(int count) {
+    return '$count geweigerd';
+  }
+
+  @override
+  String scriptCallsCancelled(int count) {
+    return '$count geannuleerd';
+  }
+
+  @override
+  String scriptCallsQueued(int count) {
+    return '$count in wachtrij';
+  }
+
+  @override
+  String scriptCallsSkipped(int count) {
+    return '$count overgeslagen';
+  }
+
+  @override
+  String get scriptStepQueued => 'In wachtrij';
+
+  @override
+  String get scriptStepSkipped => 'Overgeslagen';
+
+  @override
+  String get scriptGroupLoop => 'Lus';
+
+  @override
+  String get scriptGroupEach => 'Voor elk';
+
+  @override
+  String get scriptGroupParallel => 'Parallel';
+
+  @override
+  String get scriptGroupFunction => 'Functie';
+
+  @override
+  String scriptCallsHidden(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Nog $count aanroepen tonen',
+      one: 'Nog 1 aanroep tonen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptCallsUnplaced => 'Aanroepen niet in het script geplaatst';
+
+  @override
+  String get scriptToolComputed => 'Gereedschap';
+
+  @override
+  String scriptStepSemantics(String subject, String state) {
+    return '$subject, $state';
+  }
+
+  @override
+  String get scriptSourceLabel => 'Script';
+
+  @override
+  String scriptSourceLines(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count regels',
+      one: '1 regel',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptStateRunning => 'Actief';
+
+  @override
+  String get scriptStateCompleted => 'Voltooid';
+
+  @override
+  String get scriptStateFailed => 'Mislukt';
+
+  @override
+  String get scriptStateTimedOut => 'Tijd verstreken';
+
+  @override
+  String get scriptStateCancelled => 'Geannuleerd';
+
+  @override
+  String get scriptStateMemoryExceeded => 'Geheugenlimiet bereikt';
+
+  @override
+  String get scriptStateOutputExceeded => 'Te veel uitvoer';
+
+  @override
+  String get scriptStateSandboxError => 'Sandboxfout';
+
+  @override
+  String get scriptStateRefused => 'Geweigerd';
+
+  @override
+  String get transcriptToolDenied => 'Geweigerd';
+
+  @override
+  String get transcriptStatusRunningScript => 'Een script wordt uitgevoerd…';
+
+  @override
+  String get scriptOriginLine => 'Van een script dat de agent uitvoert';
+
+  @override
+  String get scriptOriginShow => 'Script tonen';
+
+  @override
+  String get codeModeTitle => 'Codemodus';
+
+  @override
+  String get codeModeSubtitle =>
+      'Agenten kunnen een kort script schrijven dat hun gereedschap aanroept, in plaats van het een voor een aan te roepen.';
+
+  @override
+  String get codeModeStatusLabel => 'Status';
+
+  @override
+  String get codeModeFactAvailability => 'Op deze server';
+
+  @override
+  String get codeModeAvailable => 'Beschikbaar';
+
+  @override
+  String get codeModeUnavailable => 'Niet beschikbaar';
+
+  @override
+  String get codeModeFactRunner => 'Runner';
+
+  @override
+  String codeModeUnavailableNote(String reason) {
+    return 'Deze server kan geen scripts uitvoeren, dus agenten hier roepen hun gereedschap een voor een aan. De server zegt: $reason';
+  }
+
+  @override
+  String get codeModeNoReason => 'er is geen reden opgegeven.';
+
+  @override
+  String get codeModeViewExecutions => 'Codeuitvoeringen bekijken';
+
+  @override
+  String get codeModeLimitsLabel => 'Limieten';
+
+  @override
+  String get codeModeLimitsSubtitle =>
+      'Hoe lang en hoe ver een script mag gaan. De standaardwaarden passen bij de meeste werkruimtes.';
+
+  @override
+  String get codeModeLimitsDisclosure => 'Limieten aanpassen';
+
+  @override
+  String get codeModeLimitsAtDefaults => 'Standaard';
+
+  @override
+  String codeModeLimitsChangedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count gewijzigd',
+      one: '1 gewijzigd',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeModeLimitsUseDefaults => 'Standaardwaarden gebruiken';
+
+  @override
+  String get codeModeLimitWallClock => 'Tijd per script';
+
+  @override
+  String get codeModeLimitWallClockHelp =>
+      'Tijd die wordt besteed aan wachten op een persoon telt niet mee.';
+
+  @override
+  String get codeModeLimitCpu => 'Processortijd';
+
+  @override
+  String get codeModeLimitCpuHelp =>
+      'Tijd die het script zelf besteedt aan rekenen.';
+
+  @override
+  String get codeModeLimitHeap => 'Geheugen';
+
+  @override
+  String get codeModeLimitHeapHelp =>
+      'Geheugen dat het script tijdens het uitvoeren mag gebruiken.';
+
+  @override
+  String get codeModeLimitNestedCalls => 'Toolaanroepen per script';
+
+  @override
+  String get codeModeLimitNestedCallsHelp =>
+      'Aanroepen daarboven worden geweigerd en het script krijgt te horen waarom.';
+
+  @override
+  String get codeModeLimitInFlight => 'Aanroepen tegelijk';
+
+  @override
+  String get codeModeLimitInFlightHelp =>
+      'Aanroepen die een script tegelijk actief mag hebben.';
+
+  @override
+  String get codeModeLimitOutputTokens => 'Uitvoer die de agent leest';
+
+  @override
+  String get codeModeLimitOutputTokensHelp =>
+      'Langere uitvoer wordt ingekort; de agent kan de rest op verzoek lezen.';
+
+  @override
+  String codeModeLimitRange(String defaultValue, String min, String max) {
+    return 'Standaard $defaultValue. Van $min tot $max.';
+  }
+
+  @override
+  String codeModeLimitOutOfRange(String min, String max) {
+    return 'Voer een geheel getal van $min tot $max in.';
+  }
+
+  @override
+  String get codeModeSuffixSeconds => 's';
+
+  @override
+  String get codeModeSuffixMebibytes => 'MiB';
+
+  @override
+  String get codeModeSuffixCalls => 'aanroepen';
+
+  @override
+  String get codeModeSuffixTokens => 'tokens';
+
+  @override
+  String codeModeServerCap(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Deze server voert er maximaal $count scripts tegelijk uit, over alle werkruimtes heen.',
+      one:
+          'Deze server voert er maximaal 1 script tegelijk uit, over alle werkruimtes heen.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String codeModeUnitMilliseconds(String value) {
+    return '$value ms';
+  }
+
+  @override
+  String codeModeUnitSeconds(String value) {
+    return '$value s';
+  }
+
+  @override
+  String codeModeUnitMinutesSeconds(String minutes, String seconds) {
+    return '$minutes min $seconds s';
+  }
+
+  @override
+  String get codeModeRefusedLimitUnknown =>
+      'De server kent een van deze limieten niet.';
+
+  @override
+  String get codeModeRefusedLimitOutOfRange =>
+      'Een van deze limieten valt buiten wat de server toestaat.';
+
+  @override
+  String get codeModeRefusedUnknownSetting =>
+      'De server herkende die instelling niet.';
+
+  @override
+  String get codeExecutionsTitle => 'Codeuitvoeringen';
+
+  @override
+  String get codeExecutionsSubtitle =>
+      'Scripts die agents in deze werkruimte hebben uitgevoerd, met alle toolaanroepen die ze deden.';
+
+  @override
+  String get codeExecutionsEmpty => 'Hier zijn nog geen scripts uitgevoerd.';
+
+  @override
+  String get codeExecutionsEmptyFiltered =>
+      'Geen scripts voldoen aan deze filters.';
+
+  @override
+  String get codeExecutionsStatusFilter => 'Resultaat';
+
+  @override
+  String get codeExecutionsAllOutcomes => 'Alle resultaten';
+
+  @override
+  String codeExecutionsOutcomeCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count resultaten',
+      one: '1 resultaat',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionsScopeRun => 'Scripts uit één run';
+
+  @override
+  String get codeExecutionsScopeConversation => 'Scripts uit één gesprek';
+
+  @override
+  String get codeExecutionsScopeAgent => 'Scripts van één agent';
+
+  @override
+  String get codeExecutionsShowAll => 'Alles tonen';
+
+  @override
+  String get codeExecutionUntitled => 'Script zonder titel';
+
+  @override
+  String get codeExecutionRecord => 'Opname';
+
+  @override
+  String get codeExecutionBackToList => 'Terug naar codeuitvoeringen';
+
+  @override
+  String get codeExecutionNotFound =>
+      'Deze codeuitvoering staat niet in deze werkruimte. Mogelijk is hij samen met zijn run verwijderd.';
+
+  @override
+  String get codeExecutionRefusedSpace =>
+      'Dit script draaide in een ruimte die je niet kunt openen, dus de opname blijft verborgen.';
+
+  @override
+  String get codeExecutionOpenRecord => 'Opname openen';
+
+  @override
+  String get codeExecutionFactStarted => 'Gestart';
+
+  @override
+  String get codeExecutionFactDuration => 'Duurde';
+
+  @override
+  String get codeExecutionFactCalls => 'Toolaanroepen';
+
+  @override
+  String get codeExecutionFactAgent => 'Agent';
+
+  @override
+  String get codeExecutionFactSurface => 'Uitgevoerd via';
+
+  @override
+  String get codeExecutionSurfaceHarness => 'Ingebouwde agent';
+
+  @override
+  String get codeExecutionSurfaceMcp => 'Externe agent';
+
+  @override
+  String get codeExecutionFactCpu => 'Processortijd';
+
+  @override
+  String get codeExecutionFactMemory => 'Piekgeheugen';
+
+  @override
+  String get codeExecutionOpenConversation => 'Gesprek openen';
+
+  @override
+  String get codeExecutionRunScripts => 'Scripts in deze run';
+
+  @override
+  String get codeExecutionAgentScripts => 'Scripts van deze agent';
+
+  @override
+  String get codeExecutionScript => 'Script';
+
+  @override
+  String get codeExecutionConsole => 'Console';
+
+  @override
+  String get codeExecutionOutputTruncated =>
+      'De uitvoer is ingekort zodat hij past in wat wordt bewaard.';
+
+  @override
+  String get codeExecutionNoPayload =>
+      'Het script en de uitvoer worden niet meer bewaard.';
+
+  @override
+  String codeExecutionCallsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count toolaanroepen',
+      one: '1 toolaanroep',
+      zero: 'Toolaanroepen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionNoCalls => 'Het script heeft geen tools aangeroepen.';
+
+  @override
+  String get codeExecutionCallCompleted => 'Voltooid';
+
+  @override
+  String get codeExecutionCallFailed => 'Mislukt';
+
+  @override
+  String get codeExecutionCallDenied => 'Geweigerd';
+
+  @override
+  String get codeExecutionCallCancelled => 'Geannuleerd';
+
+  @override
+  String get codeExecutionCallTimedOut => 'Tijd verstreken';
+
+  @override
+  String get codeExecutionCallUnknownTool => 'Onbekende tool';
+
+  @override
+  String get codeExecutionCallInvalidArgs => 'Ongeldige argumenten';
+
+  @override
+  String get codeExecutionGateAllowed => 'Toegestaan';
+
+  @override
+  String get codeExecutionGateApproved => 'Goedgekeurd door een persoon';
+
+  @override
+  String get codeExecutionGateDenied => 'Geweigerd';
+
+  @override
+  String get codeExecutionGateNotReached => 'Niet gecontroleerd';
+
+  @override
+  String codeExecutionCallWaited(String duration) {
+    return '$duration gewacht op een persoon';
+  }
+
+  @override
+  String get codeExecutionCallArguments => 'Argumenten';
+
+  @override
+  String get codeExecutionCallResult => 'Resultaat';
+
+  @override
+  String codeExecutionCallResultSize(String size) {
+    return '$size teruggegeven';
+  }
+
+  @override
+  String codeExecutionBytes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bytes',
+      one: '1 byte',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionEndedScriptError =>
+      'Het script gooide een fout die niemand heeft opgevangen.';
+
+  @override
+  String codeExecutionEndedScriptErrorNamed(String name) {
+    return 'Het script gooide $name en niets ving die op.';
+  }
+
+  @override
+  String get codeExecutionEndedStalled =>
+      'Het script wachtte op iets dat nooit af kon komen.';
+
+  @override
+  String get codeExecutionEndedCpu =>
+      'Het script heeft zijn processortijd opgebruikt.';
+
+  @override
+  String get codeExecutionEndedHeap =>
+      'Het script heeft zijn geheugenlimiet bereikt.';
+
+  @override
+  String get codeExecutionEndedOutput =>
+      'Het script schreef meer uitvoer dan is toegestaan.';
+
+  @override
+  String get codeExecutionEndedDeadline => 'De tijd van het script is op.';
+
+  @override
+  String get codeExecutionEndedCancelled =>
+      'Het script is geannuleerd voordat het klaar was.';
+
+  @override
+  String get codeExecutionEndedShutdown =>
+      'De server is uitgezet terwijl het script liep.';
+
+  @override
+  String get codeExecutionEndedServerStopped =>
+      'De server is gestopt terwijl het script liep. De registratie is afgesloten toen de server opnieuw startte.';
+
+  @override
+  String get codeExecutionEndedInternal =>
+      'Het programma dat scripts uitvoert is zelf mislukt.';
+
+  @override
+  String get codeExecutionEndedStart =>
+      'Het programma dat scripts uitvoert kon niet starten.';
+
+  @override
+  String get codeExecutionEndedLockdown =>
+      'Het programma dat scripts uitvoert kon zichzelf niet vergrendelen, dus het script is niet uitgevoerd.';
+
+  @override
+  String get codeExecutionEndedExited =>
+      'Het programma dat scripts uitvoert is gestopt voordat het script klaar was.';
+
+  @override
+  String get codeExecutionEndedRunnerBrokeRules =>
+      'Het programma dat scripts uitvoert heeft de regels overtreden waaronder het draait en is gestopt.';
+
+  @override
+  String get codeExecutionEndedUnresponsive =>
+      'Het programma dat scripts uitvoert reageerde niet meer en is gestopt.';
+
+  @override
+  String get codeExecutionEndedHostError =>
+      'De server is mislukt tijdens het uitvoeren van het script.';
+
+  @override
+  String get codeExecutionRunningNote =>
+      'Nog bezig. De toolaanroepen verschijnen hier zodra ze klaar zijn, en het resultaat wanneer het eindigt.';
+
+  @override
+  String codeModeServerWorkspaceShare(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'De scripts van één werkruimte gebruiken er hooguit $count.',
+      one: 'De scripts van één werkruimte gebruiken er hooguit 1.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get wakeOriginGoal => 'Doel';
+
+  @override
+  String get wakeOriginGoalCheck => 'Doelcontrole';
+
+  @override
+  String get wakeOriginGoalReview => 'Doel-review';
+
+  @override
+  String get wakeOriginSchedule => 'Schema';
+
+  @override
+  String get wakeOriginWatch => 'Bewaking';
+
+  @override
+  String wakeOriginReplyFrom(String agent) {
+    return 'Antwoord van $agent';
+  }
+
+  @override
+  String get wakeOriginReply => 'Antwoord';
+
+  @override
+  String wakeOriginMessageFrom(String agent) {
+    return 'Bericht van $agent';
+  }
+
+  @override
+  String get wakeOriginMessage => 'Bericht';
+
+  @override
+  String wakeOriginWorkFinishedBy(String agent) {
+    return 'Werk afgerond door $agent';
+  }
+
+  @override
+  String get wakeOriginWorkFinished => 'Werk afgerond';
+
+  @override
+  String get wakeOriginLimitReset => 'Limiet gereset';
+
+  @override
+  String get wakeOriginRecovery => 'Herstel';
+
+  @override
+  String get wakeOriginAssignment => 'Toewijzing';
+
+  @override
+  String get wakeOriginPipelineStep => 'Pipelinestap';
+
+  @override
+  String get wakeOriginImprovementReview => 'Review van verbeteringen';
+
+  @override
+  String get wakeKindStopped =>
+      'Vastgehouden omdat een persoon de run heeft gestopt.';
+
+  @override
+  String get wakeKindAttempts => 'De aflevering is drie keer mislukt.';
+
+  @override
+  String get wakeKindAgentDeleted => 'De agent bestaat niet meer.';
+
+  @override
+  String get wakeKindAgentNotDispatchable => 'De agent is gepensioneerd.';
+
+  @override
+  String get wakeKindAgentPaused => 'De agent is gepauzeerd.';
+
+  @override
+  String get wakeKindPersonRemoved =>
+      'De persoon voor wie dit handelt, heeft de werkruimte verlaten.';
+
+  @override
+  String get wakeKindBudgetBlocked => 'Een budget blokkeert een run.';
+
+  @override
+  String get wakeKindTakeOver => 'Een persoon heeft de worktree overgenomen.';
+
+  @override
+  String get wakeKindRateCapConversation =>
+      'Dit gesprek heeft in het afgelopen uur 30 runs gestart vanuit wekbeurten.';
+
+  @override
+  String get wakeKindRateCapWorkspace =>
+      'Deze werkruimte heeft in het afgelopen uur 300 runs gestart vanuit wekbeurten.';
+
+  @override
+  String get wakeKindLiveRunNoInput =>
+      'De live run van de agent hier neemt geen invoer aan.';
+
+  @override
+  String get wakeKindLiveRunOtherOptions =>
+      'De live run van de agent hier verloopt anders, dus dit start na die run een eigen run.';
+
+  @override
+  String get wakeKindLiveRunOtherPerson =>
+      'De live run van de agent hier handelt voor iemand anders, dus dit start na die run een eigen run.';
+
+  @override
+  String get wakeKindDispatchRefused => 'De run kon niet starten.';
+
+  @override
+  String get wakeKindSandboxUnavailable =>
+      'Er is geen sandbox beschikbaar voor een alleen-lezen run.';
+
+  @override
+  String get wakeKindReadOnlyUnavailable =>
+      'De backend van deze agent kan een run niet alleen-lezen houden.';
+
+  @override
+  String get wakeKindServerStopped =>
+      'Een herstart van de server heeft de run gestopt.';
+
+  @override
+  String get wakeKindServerRestarted =>
+      'De server is herstart tijdens de run van een persoon.';
+
+  @override
+  String get wakeKindGuardFailed =>
+      'Een controle vóór de aflevering is mislukt.';
+
+  @override
+  String get wakeKindLimit => 'Wacht op de gebruikslimiet van de provider.';
+
+  @override
+  String get wakeKindLimitRunLive =>
+      'Wacht tot de run bij de gebruikslimiet is afgelopen.';
+
+  @override
+  String get wakeKindWakeMissed => 'Gemist terwijl de server uit stond.';
+
+  @override
+  String get wakeKindPipelineRunEnded => 'De pipeline-run is beëindigd.';
+
+  @override
+  String get wakeKindGoalEnded => 'Het doel is beëindigd.';
+
+  @override
+  String get wakeKindGoalBudgetExhausted =>
+      'Het doel heeft zijn budget opgebruikt.';
+
+  @override
+  String get wakeKindGoalReviewStale =>
+      'Het doel is veranderd sinds deze review werd gevraagd.';
+
+  @override
+  String get wakeKindGoalPaused => 'Het doel is gepauzeerd.';
+
+  @override
+  String get wakeKindGoalHeld => 'Het doel staat in de wacht.';
+
+  @override
+  String get wakeKindGoalStopped => 'Het doel is gestopt.';
+
+  @override
+  String get wakeKindAskSettled =>
+      'De vraag die dit beantwoordt, is al afgehandeld.';
+
+  @override
+  String get wakeKindRuleEnded => 'Het schema is beëindigd.';
+
+  @override
+  String get wakeKindUnknown => 'Om een reden die deze versie niet benoemt:';
+
+  @override
+  String wakeStripHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count wekbeurten wachten',
+      one: '1 wekbeurt wacht',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String wakeStripDue(String time) {
+    return 'Gepland om $time';
+  }
+
+  @override
+  String get wakeStripDueNow => 'Nu gepland';
+
+  @override
+  String get wakeStripHeld => 'Vastgehouden';
+
+  @override
+  String wakeStripExpires(String time) {
+    return 'Vervalt $time';
+  }
+
+  @override
+  String wakeStripAttempt(int attempt) {
+    return 'Poging $attempt';
+  }
+
+  @override
+  String get wakeStripCancel => 'Wekbeurt annuleren';
+
+  @override
+  String get wakeStripDeliverNow => 'Nu afleveren';
+
+  @override
+  String get wakeStripResume => 'Hervatten';
+
+  @override
+  String get wakeStripDismiss => 'Negeren';
+
+  @override
+  String get wakeStripResumeAll => 'Alles hervatten';
+
+  @override
+  String get wakeStripResumeOnlyTheirs =>
+      'Alleen de persoon wiens run dit is, kan het hervatten.';
+
+  @override
+  String get wakeReceiptStarted => 'Er is een run gestart.';
+
+  @override
+  String get wakeReceiptPushed => 'Doorgegeven aan de live run.';
+
+  @override
+  String wakeReceiptWaiting(String reason) {
+    return 'Wacht nog steeds. $reason';
+  }
+
+  @override
+  String wakeReceiptSkipped(String reason) {
+    return 'Niet afgeleverd. $reason';
+  }
+
+  @override
+  String get wakeReceiptDuplicate => 'Was al afgeleverd.';
+
+  @override
+  String wakeReleased(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count wekbeurten hervat.',
+      one: '1 wekbeurt hervat.',
+      zero: 'Er is niets hervat.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get wakeRefusalNotYours =>
+      'Deze wekbeurt handelt voor een andere persoon. Alleen die kan hem afleveren of hervatten.';
+
+  @override
+  String get wakeRefusalSettled => 'Deze wekbeurt is al afgehandeld.';
+
+  @override
+  String heldSteeringHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count vastgehouden berichten',
+      one: '1 vastgehouden bericht',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get heldSteeringResume => 'Vastgehouden berichten verzenden';
+
+  @override
+  String get heldSteeringDelete => 'Vastgehouden bericht verwijderen';
+
+  @override
+  String heldSteeringReleased(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count vastgehouden berichten verzonden.',
+      one: '1 vastgehouden bericht verzonden.',
+      zero: 'Er was niets vastgehouden.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get workAgentUnknown => 'een agent';
+
+  @override
+  String workFeedWoke(int count, String agent) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$agent gewekt voor $count wachtende items',
+      one: '$agent gewekt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String workFeedWakeSkipped(String agent) {
+    return 'Een wekbeurt voor $agent is niet afgeleverd.';
+  }
+
+  @override
+  String workFeedWakeMissed(String agent) {
+    return 'Een wekbeurt voor $agent is gemist terwijl de server uit stond.';
+  }
+
+  @override
+  String workFeedScheduleCreated(String agent) {
+    return 'Schema ingesteld voor $agent.';
+  }
+
+  @override
+  String workFeedScheduleEnded(String agent) {
+    return 'Het schema voor $agent is beëindigd.';
+  }
+
+  @override
+  String get workFeedOpenSchedule => 'Schema openen';
+
+  @override
+  String workFeedNoteFromAgent(String agent) {
+    return '$agent liet deze notitie voor zichzelf achter, in eigen woorden:';
+  }
+
+  @override
+  String get workFeedNoteFromPerson =>
+      'Een herinnering die een persoon heeft ingesteld:';
+
+  @override
+  String workFeedLimitParkHeld(String provider, String time) {
+    return 'Gepauzeerd bij de gebruikslimiet van $provider. De limiet wordt gereset om $time.';
+  }
+
+  @override
+  String workFeedLimitParkPending(String provider, String time) {
+    return 'Gepauzeerd bij de gebruikslimiet van $provider. Wordt om $time vanzelf hervat.';
+  }
+
+  @override
+  String workFeedLimitParkResumed(String provider) {
+    return 'Hervat na de gebruikslimiet van $provider.';
+  }
+
+  @override
+  String workFeedLimitParkGone(String provider) {
+    return 'Wacht niet langer op de gebruikslimiet van $provider.';
+  }
+
+  @override
+  String get workFeedLimitParkResume => 'Hervatten';
+
+  @override
+  String get workFeedLimitParkCancel => 'Annuleren';
+
+  @override
+  String workFeedStillInFlight(String agent) {
+    return 'Status die na compactie aan $agent is overgedragen';
+  }
+
+  @override
+  String get workFeedShowDetails => 'Details tonen';
+
+  @override
+  String get workFeedHideDetails => 'Details verbergen';
+
+  @override
+  String get workFeedCommandRefused => 'De opdracht is geweigerd.';
+
+  @override
+  String get wakeRuleEndFired => 'Het is één keer uitgevoerd.';
+
+  @override
+  String get wakeRuleEndExpired => 'De einddatum is bereikt.';
+
+  @override
+  String get wakeRuleEndRunCap => 'Het aantal runs is op.';
+
+  @override
+  String get wakeRuleEndCostCap => 'De kostenlimiet is bereikt.';
+
+  @override
+  String get wakeRuleEndGoalEnded => 'Het doel is beëindigd.';
+
+  @override
+  String get wakeRuleEndCancelled => 'Het is geannuleerd.';
+
+  @override
+  String get wakeRuleEndMemberRemoved =>
+      'De persoon heeft de werkruimte verlaten.';
+
+  @override
+  String get wakeRuleEndInvalidRow =>
+      'De opgeslagen instellingen konden niet worden gelezen.';
+
+  @override
+  String get wakeRuleRefusalIntervalTooShort =>
+      'Het interval is te kort. Kies een langer interval.';
+
+  @override
+  String get wakeRuleRefusalTooSoon =>
+      'Dat tijdstip ligt te dichtbij. Kies een later tijdstip.';
+
+  @override
+  String get wakeRuleRefusalLineageEnded =>
+      'Deze keten van wekbeurten heeft zijn runs of zijn tijd opgebruikt.';
+
+  @override
+  String get wakeRuleRefusalWatchTargetUnreadable =>
+      'Wat dit zou bewaken, kun je niet lezen.';
+
+  @override
+  String get wakeRuleRefusalExpiryRequired =>
+      'Geef er een einde aan, bijvoorbeeld --days 3.';
+
+  @override
+  String get wakeRuleRefusalLimitReached =>
+      'Dit gesprek heeft al zoveel schema\'s als is toegestaan.';
+
+  @override
+  String get wakeRuleRefusalInvalidWhen =>
+      'Het tijdstip kan niet worden gelezen.';
+
+  @override
+  String get wakeRuleRefusalNoteTooLong => 'De notitie is te lang.';
+
+  @override
+  String get wakeRuleRefusalExpiryTooLong => 'Het einde ligt te ver weg.';
+
+  @override
+  String get wakeRuleRefusalLimitOutOfRange =>
+      'Een limiet voor runs, dagen of budget valt buiten het bereik.';
+
+  @override
+  String get wakeRuleRefusalNextOutsideLoop =>
+      'Alleen een lus kan zelf het volgende tijdstip kiezen.';
+
+  @override
+  String get wakeRuleRefusalWatchRefused => 'Dit kan niet worden bewaakt.';
+
+  @override
+  String get wakeRuleRefusalRuleEnded => 'Dat schema is al beëindigd.';
+
+  @override
+  String get wakeRuleRefusalNotYours => 'Dat schema hoort bij iemand anders.';
+
+  @override
+  String get workRefusalUnknown => 'De server heeft dit geweigerd:';
+
+  @override
+  String get goalRefusalAlreadyActive =>
+      'Dit gesprek heeft al een actief doel.';
+
+  @override
+  String get goalRefusalNotInReview => 'Dit doel wacht niet op een review.';
+
+  @override
+  String get goalRefusalEvidenceIncomplete =>
+      'Het bewijs voor het doel is onvolledig.';
+
+  @override
+  String get goalRefusalClaimPending =>
+      'Een claim dat het klaar is, wordt nog gecontroleerd.';
+
+  @override
+  String get goalRefusalNotActiveSegment =>
+      'Voor dit doel draait geen segment.';
+
+  @override
+  String get goalRefusalNotYours =>
+      'Alleen de persoon die dit doel is gestart, kan dat doen.';
+
+  @override
+  String get goalRefusalNotPaused => 'Pauzeer eerst het doel.';
+
+  @override
+  String get goalRefusalContractInvalid =>
+      'Het contract van het doel kan niet worden gelezen.';
+
+  @override
+  String get goalRefusalCheckerUnknown => 'Er heeft geen agent die naam.';
+
+  @override
+  String get goalRefusalCheckerAmbiguous =>
+      'Meer dan één agent heeft die naam. Gebruik het id van de agent.';
+
+  @override
+  String get goalRefusalCheckerIsGoalAgent =>
+      'De checker moet een andere agent zijn dan de agent die het werk doet.';
+
+  @override
+  String get goalRefusalCommandInvalid =>
+      'Deze /goal-opdracht kan niet worden gelezen.';
+
+  @override
+  String goalCardWorking(int segment) {
+    return 'Bezig · segment $segment';
+  }
+
+  @override
+  String get goalCardWaiting => 'Wacht op de volgende wekbeurt';
+
+  @override
+  String get goalCardVerifying => 'Controleren of het klaar is';
+
+  @override
+  String goalCardLimitUntil(String time) {
+    return 'Gepauzeerd bij de gebruikslimiet · wordt hervat om $time';
+  }
+
+  @override
+  String get goalCardLimit => 'Gepauzeerd bij de gebruikslimiet';
+
+  @override
+  String get goalCardPerson => 'Heeft een persoon nodig';
+
+  @override
+  String get goalCardByPerson => 'Gepauzeerd door een persoon';
+
+  @override
+  String get goalCardNeedsReview =>
+      'Wacht op review: het zegt dat het klaar is, en niets heeft dat bevestigd';
+
+  @override
+  String goalCardSegments(int run, int max) {
+    return 'Segment $run van $max';
+  }
+
+  @override
+  String goalCardSegmentsNoCap(int run) {
+    return 'Segment $run';
+  }
+
+  @override
+  String goalCardMoney(String spent, String cap) {
+    return '$spent van $cap';
+  }
+
+  @override
+  String goalCardTimeLeft(String time) {
+    return '$time over';
+  }
+
+  @override
+  String get goalCardOverdue => 'Over de deadline';
+
+  @override
+  String get goalCardDoneMeans => 'Klaar betekent';
+
+  @override
+  String get goalCardChecks => 'Controles';
+
+  @override
+  String get goalCardCheckPassed => 'Geslaagd';
+
+  @override
+  String goalCardCheckFailed(int code) {
+    return 'Mislukt · exitcode $code';
+  }
+
+  @override
+  String get goalCardCheckTimedOut => 'Tijd verstreken';
+
+  @override
+  String get goalCardCheckNotRerun =>
+      'Niet opnieuw uitgevoerd: er is niets veranderd';
+
+  @override
+  String get goalCardCheckBroken => 'Kan niet worden uitgevoerd';
+
+  @override
+  String get goalCardCheckNotRun => 'Nog niet uitgevoerd';
+
+  @override
+  String get goalCardCriterionMet => 'Voldaan';
+
+  @override
+  String get goalCardCriterionUnmet => 'Niet voldaan';
+
+  @override
+  String get goalCardCriterionCannotTell => 'Kan het niet zeggen';
+
+  @override
+  String get goalCardVerdictPass => 'Laatste controle: klaar';
+
+  @override
+  String get goalCardVerdictFail => 'Laatste controle: niet klaar';
+
+  @override
+  String get goalCardVerdictCannotVerify =>
+      'Laatste controle: kon het niet bepalen';
+
+  @override
+  String get goalCardConcerns => 'Bezwaren';
+
+  @override
+  String goalCardVerifiedBy(String agent) {
+    return 'Geverifieerd door $agent';
+  }
+
+  @override
+  String get goalCardVerifiedBySelf =>
+      'Zelf geverifieerd (geen aparte checker)';
+
+  @override
+  String get goalCardClosedByPerson =>
+      'Gesloten door een persoon zonder geslaagde controle';
+
+  @override
+  String get goalCardNoMachineCheck => 'Geen geautomatiseerde controle';
+
+  @override
+  String get goalCardAddCheck => 'Controle toevoegen';
+
+  @override
+  String get goalCardOpen => 'Doel openen';
+
+  @override
+  String get goalCardApprove => 'Afronden goedkeuren';
+
+  @override
+  String get goalCardApproveTitle => 'Dit doel als klaar sluiten?';
+
+  @override
+  String get goalCardApproveBody =>
+      'Geen controle heeft het bevestigd. Je sluit het op eigen woord, en het doel legt vast dat een persoon het ongeverifieerd heeft gesloten.';
+
+  @override
+  String get goalCardApproveConfirm => 'Als klaar sluiten';
+
+  @override
+  String get goalCardResumeNotYours =>
+      'Hervatten of het budget verhogen is aan wie het gestart heeft.';
+
+  @override
+  String get goalHoldDetailStalled => 'Geen voortgang in de laatste segmenten.';
+
+  @override
+  String get goalHoldDetailStalledWaiting =>
+      'Gewacht na segmenten zonder voortgang.';
+
+  @override
+  String get goalHoldDetailVerificationFailed =>
+      'De laatste controle is mislukt.';
+
+  @override
+  String get goalHoldDetailCannotVerify =>
+      'De checker kon niet bepalen of het klaar is.';
+
+  @override
+  String get goalHoldDetailSandboxUnavailable =>
+      'Er is geen sandbox beschikbaar om de controles uit te voeren.';
+
+  @override
+  String get goalHoldDetailCheckerUnavailable =>
+      'De checker-agent is niet beschikbaar. Kies een andere checker en hervat daarna.';
+
+  @override
+  String get goalHoldDetailCheckBroken => 'Deze controle kan niet draaien:';
+
+  @override
+  String get goalHoldDetailWakeSkipped => 'De wekbeurt is niet afgeleverd.';
+
+  @override
+  String get goalHoldDetailClaimPending =>
+      'De claim dat het klaar is, wacht op een controle.';
+
+  @override
+  String get goalHoldDetailUnanswered =>
+      'Een vraag of goedkeuringsverzoek aan een persoon is onbeantwoord.';
+
+  @override
+  String get goalHoldDetailLimitParks =>
+      'Het liep te vaak tegen gebruikslimieten aan. Bekijk het en hervat daarna.';
+
+  @override
+  String get goalHoldDetailInput => 'Wacht op een antwoord in het gesprek.';
+
+  @override
+  String get peerAsksSection => 'Vragen';
+
+  @override
+  String peerAskTo(String agent) {
+    return 'Aan $agent';
+  }
+
+  @override
+  String get peerAskKindAsk => 'Vraag';
+
+  @override
+  String get peerAskKindConsult => 'Overleg';
+
+  @override
+  String get peerAskKindReview => 'Review';
+
+  @override
+  String get peerAskStatusPending => 'Wacht';
+
+  @override
+  String get peerAskStatusAnswered => 'Beantwoord';
+
+  @override
+  String get peerAskStatusFailed => 'Mislukt';
+
+  @override
+  String get peerAskStatusExpired => 'Verlopen';
+
+  @override
+  String get peerAskStatusCancelled => 'Geannuleerd';
+
+  @override
+  String peerAskAsked(String time) {
+    return 'Gevraagd $time';
+  }
+
+  @override
+  String peerAskExpires(String time) {
+    return 'Vervalt $time';
+  }
+
+  @override
+  String get peerAskPromised => 'Beloofde een antwoord';
+
+  @override
+  String get peerAskBackground => 'Op de achtergrond';
+
+  @override
+  String get peerAskCancel => 'Vraag annuleren';
+
+  @override
+  String get peerAskAlreadySettled => 'Deze vraag is al afgehandeld.';
+
+  @override
+  String get slashHintGoal =>
+      'Werk aan een doel tot het klaar is. Vlaggen: --check, --checker, --fresh, --unattended';
+
+  @override
+  String get slashHintLoop =>
+      'Herhaal een taak met vaste intervallen of in het tempo van de agent';
+
+  @override
+  String get slashHintSchedule =>
+      'Voer een taak later uit: over 2u, om 09:00 of op een cron';
+
+  @override
+  String get slashHintRefine =>
+      'Bekijk het werk in dit gesprek en stel verbeteringen voor';
+
+  @override
+  String get notifGoalCompleted => 'Doel klaar';
+
+  @override
+  String get notifGoalFailed => 'Doel mislukt';
+
+  @override
+  String get notifGoalCancelled => 'Doel geannuleerd';
+
+  @override
+  String get notifGoalBudgetExhausted => 'Doel heeft zijn budget opgebruikt';
+
+  @override
+  String get notifGoalNeedsReview => 'Een doel wacht op jouw review';
+
+  @override
+  String get notifGoalNeedsPerson => 'Een doel heeft jou nodig';
+
+  @override
+  String get notifGoalOnHold => 'Een doel staat in de wacht';
+
+  @override
+  String get notifWakeRuleEnded => 'Een schema is beëindigd';
+
+  @override
+  String notifWaitingDigest(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dingen wachten op jou',
+      one: '1 ding wacht op jou',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notifImprovementProposed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Er zijn $count verbeteringen voorgesteld',
+      one: 'Er is een verbetering voorgesteld',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notifPipelineRunHeld =>
+      'Een pipeline-run staat vast bij zijn budget';
+
+  @override
+  String notifPipelineRunHeldBody(String spent, String cap) {
+    return 'Besteed: $spent van $cap';
+  }
+
+  @override
+  String get inboxGoalNeedsReview => 'Doel wacht op review';
+
+  @override
+  String get inboxGoalNeedsPerson => 'Doel heeft jou nodig';
+
+  @override
+  String get inboxImprovementProposed => 'Verbetering voorgesteld';
+
+  @override
+  String get improvementRefusalAlreadyDecided =>
+      'Iemand heeft al over dit voorstel beslist.';
+
+  @override
+  String get improvementRefusalCampaignRequired =>
+      'Deze wijziging is niet geslaagd bij een evaluatie tegen de huidige skill, of de skill is veranderd nadat die werd gemeten. Voer de evaluatie opnieuw uit.';
+
+  @override
+  String get improvementRefusalChangedSince =>
+      'Het doelwit is veranderd sinds dit werd voorgesteld. Wijs het af en laat de agent opnieuw een voorstel doen.';
+
+  @override
+  String get improvementRefusalTargetMissing =>
+      'Wat dit voorstel verandert, bestaat niet meer.';
+
+  @override
+  String get improvementRefusalCampaignState =>
+      'De evaluatie kan in de huidige staat niet starten of eindigen.';
+
+  @override
+  String get improvementRefusalReviewCooldown =>
+      'Dit gesprek is recent beoordeeld. Probeer het later opnieuw.';
+
+  @override
+  String get improvementRefusalAdminRequired =>
+      'Alleen een beheerder van de werkruimte kan over dit voorstel beslissen.';
+
+  @override
+  String get improvementKindMemoryFact => 'Geheugenfeit';
+
+  @override
+  String get improvementKindPolicy => 'Beleidsregel';
+
+  @override
+  String get improvementKindAgentNote => 'Agentnotitie';
+
+  @override
+  String get improvementKindSkillEdit => 'Skillwijziging';
+
+  @override
+  String get improvementKindSkillNew => 'Nieuwe skill';
+
+  @override
+  String get improvementScopeAgent => 'Deze agent';
+
+  @override
+  String get improvementScopeRepository => 'Deze repository';
+
+  @override
+  String get improvementScopeWorkspace => 'De hele werkruimte';
+
+  @override
+  String get improvementStatusProposed => 'Voorgesteld';
+
+  @override
+  String get improvementStatusAccepted => 'Geaccepteerd';
+
+  @override
+  String get improvementStatusRejected => 'Afgewezen';
+
+  @override
+  String get improvementStatusRolledBack => 'Teruggedraaid';
+
+  @override
+  String get improvementStatusExpired => 'Verlopen';
+
+  @override
+  String get improvementOperationAdd => 'Voegt toe';
+
+  @override
+  String get improvementOperationReplace => 'Vervangt';
+
+  @override
+  String get improvementOperationRemove => 'Verwijdert';
+
+  @override
+  String scheduleTriggerOnce(String time) {
+    return 'Eenmaal, $time';
+  }
+
+  @override
+  String scheduleTriggerEvery(String interval) {
+    return 'Elke $interval';
+  }
+
+  @override
+  String scheduleTriggerCron(String cron, String zone) {
+    return 'Volgens het rooster $cron ($zone)';
+  }
+
+  @override
+  String get scheduleTriggerSelfPaced =>
+      'Wanneer de agent kiest, 1 tot 60 minuten ertussen';
+
+  @override
+  String get scheduleTriggerPrChecks =>
+      'Wanneer de controles van de pull request klaar zijn';
+
+  @override
+  String scheduleTriggerPrChecksOf(String pr) {
+    return 'Wanneer de controles van $pr klaar zijn';
+  }
+
+  @override
+  String get scheduleTriggerPrReview =>
+      'Wanneer de pull request een review of antwoord krijgt';
+
+  @override
+  String scheduleTriggerPrReviewOf(String pr) {
+    return 'Wanneer $pr een review of antwoord krijgt';
+  }
+
+  @override
+  String get scheduleTriggerPrMerged =>
+      'Wanneer de pull request wordt samengevoegd';
+
+  @override
+  String scheduleTriggerPrMergedOf(String pr) {
+    return 'Wanneer $pr wordt samengevoegd';
+  }
+
+  @override
+  String get scheduleTriggerEnvironment =>
+      'Wanneer een taak van de omgeving stopt of klaar is';
+
+  @override
+  String scheduleTriggerTicket(String id) {
+    return 'Wanneer ticket $id is afgehandeld';
+  }
+
+  @override
+  String scheduleTriggerPipelineRun(String id) {
+    return 'Wanneer pipeline-run $id eindigt';
+  }
+
+  @override
+  String get goalNextWaiting =>
+      'Het gaat verder zodra waar het op wacht, binnenkomt.';
+
+  @override
+  String get goalNextVerifying =>
+      'Wanneer de controles en de review klaar zijn, wordt het afgerond of gaat het door met werken.';
+
+  @override
+  String get goalNextLimit =>
+      'Het hervat wanneer de gebruikslimiet wordt gereset.';
+
+  @override
+  String get goalNextPerson =>
+      'Het gaat verder zodra iemand de vraag of het goedkeuringsverzoek beantwoordt.';
+
+  @override
+  String get goalNextByPerson => 'Het blijft gepauzeerd tot iemand het hervat.';
+
+  @override
+  String get goalNextNeedsReview =>
+      'Keur het goed als klaar, of hervat het om verder te werken.';
+
+  @override
+  String get goalNextWorking =>
+      'Het blijft werken, segment per segment, tot het klaar is of een limiet bereikt.';
+
+  @override
+  String get goalContractAddCheck => 'Controle toevoegen';
+
+  @override
+  String goalContractChecksFull(int max) {
+    return 'Een doel heeft ten hoogste $max controles.';
+  }
+
+  @override
+  String goalContractChecksCount(int count, int max) {
+    return '$count van $max controles';
+  }
+
+  @override
+  String get goalContractCheckTaskHint =>
+      'Naam van een omgevingstaak, zoals test';
+
+  @override
+  String get goalContractCheckCommandHint => 'Opdracht, zoals make test';
+
+  @override
+  String get goalContractCheckWhere => 'Waar het draait';
+
+  @override
+  String get goalContractCheckInWorktree => 'In de worktree';
+
+  @override
+  String get goalContractCheckInEnvironment => 'Omgevingstaak';
+
+  @override
+  String get goalContractSecondsSuffix => 's';
+
+  @override
+  String goalContractTimeoutRange(int max) {
+    return '1 tot $max seconden';
+  }
+
+  @override
+  String get goalContractRemoveCheck => 'Controle verwijderen';
+
+  @override
+  String get goalContractDoneMeans => 'Klaar betekent';
+
+  @override
+  String get goalContractDoneMeansHelp =>
+      'Elk criterium is één ding dat een reviewer kan bevestigen.';
+
+  @override
+  String get goalContractCriterionHint =>
+      'De release-notes vermelden elke samengevoegde wijziging';
+
+  @override
+  String goalContractCriterionTooLong(int max) {
+    return 'Maximaal $max tekens.';
+  }
+
+  @override
+  String get goalContractRemoveCriterion => 'Criterium verwijderen';
+
+  @override
+  String get goalContractAddCriterion => 'Criterium toevoegen';
+
+  @override
+  String goalContractCriteriaFull(int max) {
+    return 'Een doel heeft ten hoogste $max criteria.';
+  }
+
+  @override
+  String goalContractCriteriaCount(int count, int max) {
+    return '$count van $max criteria';
+  }
+
+  @override
+  String get goalContractChecks => 'Controles';
+
+  @override
+  String get goalContractChecksHelp =>
+      'De server voert deze uit wanneer de agent zegt dat het klaar is. Een doel zonder controle steunt alleen op review.';
+
+  @override
+  String get goalContractBoundaries => 'Grenzen';
+
+  @override
+  String get goalContractBoundariesHint => 'Wijzig de publieke API niet';
+
+  @override
+  String get goalContractStopWhen => 'Stoppen en vragen wanneer';
+
+  @override
+  String get goalContractStopWhenHint =>
+      'Een migratie zou gegevens verwijderen';
+
+  @override
+  String get goalContractEditTitle => 'Bewerk wat klaar betekent';
+
+  @override
+  String get goalCheckerTitle => 'Wie controleert dit doel';
+
+  @override
+  String get goalCheckerLabel => 'Checker';
+
+  @override
+  String get goalCheckerNone => 'Geen aparte checker';
+
+  @override
+  String get goalCheckerNoneWeaker =>
+      'Zonder aparte checker beoordeelt de agent zijn eigen werk, en dat vangt minder.';
+
+  @override
+  String goalCheckerRecommend(String agent) {
+    return 'Bijvoorbeeld $agent: een checker bij een andere provider heeft minder kans dezelfde blinde vlekken te hebben.';
+  }
+
+  @override
+  String get goalCheckerRecommendGeneric =>
+      'Een checker bij een andere provider dan de doelagent heeft minder kans op dezelfde blinde vlekken.';
+
+  @override
+  String raiseCapSpentOf(String spent, String cap) {
+    return 'Tot nu toe $spent van $cap besteed.';
+  }
+
+  @override
+  String get raiseCapNewCap => 'Nieuwe limiet in dollars';
+
+  @override
+  String raiseCapMustExceed(String cap) {
+    return 'Voer meer in dan $cap.';
+  }
+
+  @override
+  String get raiseCapConfirm => 'Limiet verhogen';
+
+  @override
+  String get goalsBackToList => 'Alle doelen';
+
+  @override
+  String goalPursuedBy(String agent) {
+    return 'Wordt nagestreefd door $agent';
+  }
+
+  @override
+  String get goalOpenConversation => 'Het gesprek openen';
+
+  @override
+  String goalStarted(String time) {
+    return 'Gestart $time';
+  }
+
+  @override
+  String get goalStopTitle => 'Dit doel stoppen?';
+
+  @override
+  String get goalStopBody =>
+      'De agent stopt er definitief mee. Het werk tot nu toe blijft in het gesprek.';
+
+  @override
+  String get goalRaiseBudgetTitle => 'Het budget verhogen en hervatten';
+
+  @override
+  String get goalRaiseBudgetAction => 'Budget verhogen';
+
+  @override
+  String get goalSectionNow => 'Nu';
+
+  @override
+  String get goalFactSegments => 'Segmenten';
+
+  @override
+  String get goalFactMoney => 'Besteed';
+
+  @override
+  String get goalFactDeadline => 'Deadline';
+
+  @override
+  String get goalFactNoProgress => 'Geen voortgang';
+
+  @override
+  String get goalNoDeadline => 'Geen';
+
+  @override
+  String goalDeadlineWithLeft(String time, String left) {
+    return '$time, nog $left';
+  }
+
+  @override
+  String goalNoProgressCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'De laatste $count segmenten brachten geen voortgang',
+      one: 'Het laatste segment bracht geen voortgang',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get goalObjective => 'Doelstelling';
+
+  @override
+  String get goalSectionContract => 'Wat klaar betekent';
+
+  @override
+  String get goalContractPauseFirst =>
+      'Pauzeer het doel om te wijzigen wat klaar betekent of wie controleert.';
+
+  @override
+  String get goalContractEdit => 'Bewerken';
+
+  @override
+  String get goalCheckerChange => 'Checker wijzigen';
+
+  @override
+  String get goalContractNone =>
+      'Nog niets vastgelegd. De agent bepaalt wanneer het klaar is.';
+
+  @override
+  String get goalCheckerSelf =>
+      'Geen aparte checker: de agent controleert zijn eigen werk.';
+
+  @override
+  String goalCheckerIs(String agent) {
+    return 'Gecontroleerd door $agent';
+  }
+
+  @override
+  String goalCheckWorktree(int seconds) {
+    return 'In de worktree, tot $seconds s';
+  }
+
+  @override
+  String goalCheckEnvironmentTask(int seconds) {
+    return 'Omgevingstaak, tot $seconds s';
+  }
+
+  @override
+  String get goalSectionVerification => 'Verificatie';
+
+  @override
+  String get goalNotVerifiedYet =>
+      'Nog niet geverifieerd. De agent heeft nog niet gezegd dat het klaar is.';
+
+  @override
+  String goalVerificationRound(int round, int total, String time) {
+    return 'Ronde $round van $total, $time';
+  }
+
+  @override
+  String get goalVerificationClaim => 'Wat de agent beweert';
+
+  @override
+  String get goalCheckOutputTail => 'Uitvoer (laatste regels)';
+
+  @override
+  String goalCheckExitCode(int code) {
+    return 'Geslaagd · exitcode $code';
+  }
+
+  @override
+  String get goalVerificationReview => 'Review';
+
+  @override
+  String get goalVerificationNoVerdict => 'Nog geen review.';
+
+  @override
+  String goalVerdictItem(String criterion, String state) {
+    return '$criterion · $state';
+  }
+
+  @override
+  String get goalSectionSchedules => 'Schema\'s en wekbeurten';
+
+  @override
+  String get goalNoSchedules => 'Geen schema en geen wachtende wekbeurt.';
+
+  @override
+  String get goalPendingWakes => 'Wachtende wekbeurten';
+
+  @override
+  String workListGroup(String label, int count) {
+    return '$label · $count';
+  }
+
+  @override
+  String get goalNotFound =>
+      'Dit doel bestaat niet, of het staat in een ruimte die je niet kunt openen.';
+
+  @override
+  String get goalsTitle => 'Doelen';
+
+  @override
+  String get goalsSubtitle =>
+      'Werk waar een agent aan blijft werken tot aan wat klaar betekent.';
+
+  @override
+  String get goalsEmpty => 'Nog geen doelen';
+
+  @override
+  String get goalsEmptyHint => 'Start er een met /goal in een gesprek.';
+
+  @override
+  String get goalsGroupReview => 'Wacht op review';
+
+  @override
+  String get goalsGroupOpen => 'Open';
+
+  @override
+  String get goalsGroupEnded => 'Beëindigd';
+
+  @override
+  String get scheduleStatusActive => 'Actief';
+
+  @override
+  String get scheduleStatusPaused => 'Gepauzeerd';
+
+  @override
+  String get scheduleStatusEnded => 'Beëindigd';
+
+  @override
+  String get scheduleWhenBusySkip =>
+      'Slaat een aanroep over terwijl de agent bezig is';
+
+  @override
+  String get scheduleWhenBusyQueue => 'Wacht tot de agent vrij is';
+
+  @override
+  String get scheduleDeliverRun => 'Start een run';
+
+  @override
+  String get scheduleDeliverNotify => 'Stuurt alleen een melding';
+
+  @override
+  String get scheduleNew => 'Nieuw schema';
+
+  @override
+  String get schedulesEmpty => 'Geen schema\'s of bewakingen';
+
+  @override
+  String get schedulesEmptyHint =>
+      'Agents stellen ze in met /loop en /schedule, of je maakt zelf een schema aan.';
+
+  @override
+  String scheduleOwnedBy(String name) {
+    return 'Eigenaar: $name';
+  }
+
+  @override
+  String scheduleRunsSkips(int runs, int skips) {
+    String _temp0 = intl.Intl.pluralLogic(
+      runs,
+      locale: localeName,
+      other: '$runs runs',
+      one: '1 run',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      skips,
+      locale: localeName,
+      other: '$skips overslagen',
+      one: '1 overslag',
+      zero: 'geen overslagen',
+    );
+    return '$_temp0, $_temp1';
+  }
+
+  @override
+  String scheduleExpires(String time) {
+    return 'Eindigt $time';
+  }
+
+  @override
+  String scheduleNextFires(String times) {
+    return 'Volgende: $times';
+  }
+
+  @override
+  String get schedulesTitle => 'Schema\'s';
+
+  @override
+  String get schedulesSubtitle =>
+      'Schema\'s, lussen en bewakingen die agents wekken.';
+
+  @override
+  String get scheduleWhenLabel => 'Wanneer het afgaat';
+
+  @override
+  String get scheduleWhenEvery => 'Herhaaldelijk, elke…';
+
+  @override
+  String get scheduleWhenCron => 'Volgens een cron-schema';
+
+  @override
+  String get scheduleWhenOnceIn => 'Eenmaal, na…';
+
+  @override
+  String get scheduleWhenOnceAt => 'Eenmaal, bij de volgende…';
+
+  @override
+  String get scheduleDurationLabel => 'Interval';
+
+  @override
+  String get scheduleDurationHelp =>
+      'Gebruik s, m, h of d, zoals 30m of 1h30m. Herhalingen liggen minstens 60 s uit elkaar.';
+
+  @override
+  String get scheduleDurationInvalid => 'Dit is geen duur, zoals 30m of 2h.';
+
+  @override
+  String get scheduleHour => 'Uur';
+
+  @override
+  String get scheduleMinute => 'Minuut';
+
+  @override
+  String get scheduleCronLabel => 'Cron (minuut uur dag maand weekdag)';
+
+  @override
+  String get scheduleCronInvalid => 'Dit is geen vijfvelden-cron die afgaat.';
+
+  @override
+  String get scheduleTimeInvalid =>
+      'Dit is geen tijd in de toekomst, zoals 09:00 of 2026-11-21T09:00Z.';
+
+  @override
+  String scheduleDaysRange(int max) {
+    return '1 tot $max dagen.';
+  }
+
+  @override
+  String scheduleOptionUnknown(String option) {
+    return '$option is geen optie.';
+  }
+
+  @override
+  String get scheduleLimits => 'Limieten';
+
+  @override
+  String get schedulePresetWeekdays => 'Werkdagen om 09:00';
+
+  @override
+  String get schedulePresetDaily => 'Elke dag om 09:00';
+
+  @override
+  String get schedulePresetHourly => 'Elk uur, precies op het hele uur';
+
+  @override
+  String get scheduleZoneLabel => 'Tijdzone';
+
+  @override
+  String get scheduleZoneHelp => 'Leeg betekent de tijdzone van de werkruimte.';
+
+  @override
+  String get scheduleZoneInvalid =>
+      'Dit is geen tijdzone, zoals Europe/Berlin.';
+
+  @override
+  String get scheduleCreateTitle => 'Nieuw schema';
+
+  @override
+  String get scheduleSpaceLabel => 'Ruimte';
+
+  @override
+  String get scheduleSpaceHint => 'Kies een ruimte';
+
+  @override
+  String get scheduleConversationLabel => 'Gesprek';
+
+  @override
+  String get scheduleConversationHint => 'Kies een gesprek';
+
+  @override
+  String get scheduleAgentLabel => 'Agent';
+
+  @override
+  String get scheduleAgentHint => 'Kies wie er wordt gewekt';
+
+  @override
+  String get scheduleNoteLabel => 'Waarmee elke run begint';
+
+  @override
+  String get scheduleNoteHint =>
+      'Vat samen wat er \'s nachts is veranderd en markeer wat geblokkeerd is.';
+
+  @override
+  String get scheduleExpiresInDays => 'Eindigt na (dagen)';
+
+  @override
+  String get scheduleExpiresInDaysHelp => 'Leeg: 30 dagen, maximaal 365.';
+
+  @override
+  String get scheduleMaxRuns => 'Runlimiet';
+
+  @override
+  String scheduleMaxRunsHelp(int max) {
+    return 'Leeg: geen limiet, maximaal $max.';
+  }
+
+  @override
+  String get scheduleCostCap => 'Kostenlimiet (dollars)';
+
+  @override
+  String get scheduleCostCapHelp => 'Leeg: de standaard van de werkruimte.';
+
+  @override
+  String get scheduleWhenBusyLabel => 'Als de agent bezig is';
+
+  @override
+  String get scheduleWhenBusyDefault => 'De standaard voor dit type';
+
+  @override
+  String get scheduleDeliverLabel => 'Bij elke aanroep';
+
+  @override
+  String get scheduleCreate => 'Schema aanmaken';
+
+  @override
+  String get scheduleExtendTitle => 'Dit schema verlengen';
+
+  @override
+  String scheduleExtendNow(String current, String latest) {
+    return 'Het eindigt $current. Het kan hooguit tot $latest doorlopen.';
+  }
+
+  @override
+  String get scheduleExtendDays => 'Dagen toevoegen';
+
+  @override
+  String scheduleExtendTooLong(String latest) {
+    return 'Het kan uiterlijk $latest eindigen.';
+  }
+
+  @override
+  String scheduleMaxRunsRange(int max) {
+    return '1 tot $max runs.';
+  }
+
+  @override
+  String scheduleCostCapRange(String max) {
+    return 'Minstens 1 dollar en hoogstens $max.';
+  }
+
+  @override
+  String get scheduleExtend => 'Verlengen';
+
+  @override
+  String get scheduleRemoveTitle => 'Dit schema verwijderen?';
+
+  @override
+  String get scheduleDeleteTitle => 'Dit schema beëindigen?';
+
+  @override
+  String get scheduleRemoveBody =>
+      'Het verdwijnt uit de lijst. De runs blijven in het gesprek.';
+
+  @override
+  String get scheduleDeleteBody =>
+      'Het stopt er definitief mee. De runs blijven in het gesprek.';
+
+  @override
+  String get scheduleRemove => 'Verwijderen';
+
+  @override
+  String get scheduleDelete => 'Beëindigen';
+
+  @override
+  String get scheduleOwnerOnly =>
+      'Alleen de eigenaar kan het hervatten of verlengen.';
+
+  @override
+  String get schedulesBackToList => 'Alle schema\'s';
+
+  @override
+  String get scheduleNoteByAgent => 'Notitie, geschreven door de agent';
+
+  @override
+  String get scheduleNoteByPerson => 'Notitie, geschreven door een persoon';
+
+  @override
+  String scheduleNoteEditedBy(String name) {
+    return 'Notitie, het laatst bewerkt door $name';
+  }
+
+  @override
+  String get scheduleNoNote => 'Geen notitie.';
+
+  @override
+  String get schedulePause => 'Pauzeren';
+
+  @override
+  String get scheduleResume => 'Hervatten';
+
+  @override
+  String get scheduleOpenChainRoot => 'Open het eerste schema van deze keten';
+
+  @override
+  String get scheduleSectionFacts => 'Details';
+
+  @override
+  String get scheduleFactAgent => 'Wekt';
+
+  @override
+  String get scheduleFactConversation => 'In';
+
+  @override
+  String get scheduleConversationUnknown =>
+      'Een gesprek dat je misschien niet ziet';
+
+  @override
+  String get scheduleFactOwner => 'Eigenaar';
+
+  @override
+  String get scheduleNoOwner => 'Niemand';
+
+  @override
+  String get scheduleFactNextFires => 'Volgende aanroepen';
+
+  @override
+  String get scheduleFactNext => 'Volgende aanroep';
+
+  @override
+  String get scheduleFactLast => 'Laatst afgegaan';
+
+  @override
+  String get scheduleFactRuns => 'Runs';
+
+  @override
+  String scheduleRunsNoCap(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count runs, geen limiet',
+      one: '1 run, geen limiet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleRunsOfCap(int count, int max) {
+    return '$count van $max runs';
+  }
+
+  @override
+  String get scheduleFactSkips => 'Overgeslagen';
+
+  @override
+  String scheduleSkips(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count aanroepen overgeslagen',
+      one: '1 aanroep overgeslagen',
+      zero: 'Geen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scheduleFactSpent => 'Besteed';
+
+  @override
+  String get scheduleFactEnds => 'Eindigt';
+
+  @override
+  String get scheduleFactWhenBusy => 'Als de agent bezig is';
+
+  @override
+  String get scheduleFactDeliver => 'Bij elke aanroep';
+
+  @override
+  String get scheduleFactChain => 'Keten';
+
+  @override
+  String scheduleChainLeft(int runs, String time) {
+    String _temp0 = intl.Intl.pluralLogic(
+      runs,
+      locale: localeName,
+      other: '$runs runs over',
+      one: '1 run over',
+    );
+    return '$_temp0 in de keten, die eindigt $time';
+  }
+
+  @override
+  String get scheduleFactCreated => 'Aangemaakt';
+
+  @override
+  String get scheduleSectionHistory => 'Recente wekbeurten en runs';
+
+  @override
+  String get scheduleNoRuns => 'Nog geen runs.';
+
+  @override
+  String scheduleRunLine(String status, String cost) {
+    return '$status · $cost';
+  }
+
+  @override
+  String get scheduleRunPending => 'Wacht om te starten';
+
+  @override
+  String get scheduleRunRunning => 'Bezig';
+
+  @override
+  String get scheduleRunCompleted => 'Voltooid';
+
+  @override
+  String get scheduleRunFailed => 'Mislukt';
+
+  @override
+  String get scheduleNotFound =>
+      'Dit schema bestaat niet, of het staat in een ruimte die je niet kunt openen.';
+
+  @override
+  String get improvementCampaignTitle => 'Een evaluatie uitvoeren';
+
+  @override
+  String improvementCampaignCost(int repetitions, String budget) {
+    String _temp0 = intl.Intl.pluralLogic(
+      repetitions,
+      locale: localeName,
+      other: 'Elke taak draait $repetitions keer',
+      one: 'Elke taak draait één keer',
+    );
+    return '$_temp0 met de huidige skill en met de wijziging. Er wordt hooguit $budget uitgegeven, ten laste van deze werkruimte.';
+  }
+
+  @override
+  String get improvementCampaignCostUnknown =>
+      'De evaluatie draait het corpus met de huidige skill en met de wijziging, tot het budget dat je instelt.';
+
+  @override
+  String get improvementCampaignUnavailable =>
+      'Evaluaties kunnen nu niet draaien op deze server.';
+
+  @override
+  String get improvementCampaignCorpus => 'Corpus';
+
+  @override
+  String get improvementCampaignProvider => 'Provider';
+
+  @override
+  String get improvementCampaignModel => 'Model';
+
+  @override
+  String get improvementCampaignRepetitions => 'Runs per taak';
+
+  @override
+  String get improvementCampaignBudget => 'Budget (dollars)';
+
+  @override
+  String improvementCampaignRange(int max) {
+    return '1 tot $max.';
+  }
+
+  @override
+  String get improvementCampaignStart => 'Evaluatie starten';
+
+  @override
+  String get improvementRollbackTitle => 'Deze wijziging terugdraaien?';
+
+  @override
+  String get improvementRollbackBody =>
+      'De tekst die het verving, komt terug, zolang niemand die sindsdien heeft gewijzigd.';
+
+  @override
+  String get improvementRollback => 'Terugdraaien';
+
+  @override
+  String get improvementRolledBackDone => 'Teruggedraaid.';
+
+  @override
+  String get improvementNeedsAdmin =>
+      'Alleen een beheerder van de werkruimte kan hierover beslissen: het wijzigt een skill of beleidsregel voor de hele werkruimte.';
+
+  @override
+  String get improvementAdminDecides =>
+      'Als beheerder beslis jij hierover: het wijzigt een skill of beleidsregel voor de hele werkruimte.';
+
+  @override
+  String get improvementNeedsCampaign =>
+      'Voer een evaluatie uit die slaagt voordat je deze skillwijziging accepteert.';
+
+  @override
+  String get improvementsBackToList => 'Alle verbeteringen';
+
+  @override
+  String improvementMeta(String kind, String scope, String agent) {
+    return '$kind · $scope · voorgesteld door $agent';
+  }
+
+  @override
+  String get improvementAccept => 'Accepteren';
+
+  @override
+  String get improvementAcceptedDone => 'Geaccepteerd.';
+
+  @override
+  String get improvementReject => 'Afwijzen';
+
+  @override
+  String get improvementRejectedDone => 'Afgewezen.';
+
+  @override
+  String get improvementRunEvaluation => 'Evaluatie uitvoeren';
+
+  @override
+  String get improvementSectionChange => 'Wat verandert';
+
+  @override
+  String get improvementTarget => 'Doelwit';
+
+  @override
+  String improvementScopeLine(String scope) {
+    return 'Geldt voor: $scope';
+  }
+
+  @override
+  String get improvementNewText => 'Nieuwe tekst';
+
+  @override
+  String get improvementRemovedText => 'Verwijderde tekst';
+
+  @override
+  String get improvementExpected => 'Verwacht effect';
+
+  @override
+  String get improvementSectionEvidence => 'Bewijs en besluit';
+
+  @override
+  String get improvementNoEvidence => 'Geen bewijs toegevoegd.';
+
+  @override
+  String get improvementEvidenceRuns => 'Runs';
+
+  @override
+  String get improvementEvidenceMessages => 'Berichten';
+
+  @override
+  String improvementOpenMessage(int index) {
+    return 'Bericht $index';
+  }
+
+  @override
+  String get improvementEvidenceChecks => 'Controleresultaten';
+
+  @override
+  String get improvementEvaluation => 'Evaluatie';
+
+  @override
+  String get improvementCampaignNone => 'Nog niet geëvalueerd.';
+
+  @override
+  String get improvementCampaignRunning => 'De evaluatie loopt.';
+
+  @override
+  String get improvementCampaignPassed =>
+      'De evaluatie is geslaagd: ze liep volledig en de wijziging heeft minstens zoveel runs opgelost als de huidige skill, wat niet bewijst dat ze beter is. Ze kan worden geaccepteerd.';
+
+  @override
+  String get improvementCampaignFailed =>
+      'De evaluatie is niet geslaagd, of de skill is veranderd nadat die werd gemeten. Voer hem opnieuw uit, of wijs de wijziging af.';
+
+  @override
+  String improvementDecided(String status, String name, String time) {
+    return '$status door $name, $time';
+  }
+
+  @override
+  String get improvementSomeone => 'iemand';
+
+  @override
+  String improvementExpires(String time) {
+    return 'Vervalt $time, tenzij iemand beslist.';
+  }
+
+  @override
+  String get improvementOpenApplied => 'Open wat het heeft gewijzigd';
+
+  @override
+  String get improvementsTitle => 'Verbeteringen';
+
+  @override
+  String get improvementsSubtitle =>
+      'Wijzigingen die agents hebben voorgesteld aan hun geheugen, notities, beleidsregels en skills.';
+
+  @override
+  String get improvementsEmpty => 'Geen voorstellen';
+
+  @override
+  String get improvementsEmptyHint =>
+      'Agents stellen verbeteringen voor na het bekijken van hun werk, bijvoorbeeld met /refine.';
+
+  @override
+  String get improvementRowNeedsAdmin => 'Een beheerder beslist';
+
+  @override
+  String get improvementNotFound =>
+      'Dit voorstel bestaat niet, of het staat in een ruimte die je niet kunt openen.';
+
+  @override
+  String get dispatchSettingsTitle => 'Schema\'s';
+
+  @override
+  String get dispatchSettingsSubtitle =>
+      'Limieten voor schema\'s en bewakingen, en wat er gebeurt met verzoeken waar niemand op antwoordt.';
+
+  @override
+  String get dispatchLimitsLabel => 'Limieten voor schema\'s';
+
+  @override
+  String get dispatchLimitsSubtitle =>
+      'Maxima voor het aantal schema\'s en bewakingen dat agents mogen hebben, en hun standaarden.';
+
+  @override
+  String dispatchLimitRange(int max) {
+    return '1 tot $max';
+  }
+
+  @override
+  String get dispatchLimitPerConversation => 'Per agent in een gesprek';
+
+  @override
+  String get dispatchLimitPerConversationHelp =>
+      'Actieve of gepauzeerde schema\'s die één agent in één gesprek mag hebben.';
+
+  @override
+  String get dispatchLimitPerAgent => 'Per agent';
+
+  @override
+  String get dispatchLimitPerAgentHelp =>
+      'Actieve of gepauzeerde schema\'s die één agent in de hele werkruimte mag hebben.';
+
+  @override
+  String get dispatchLimitPerWorkspace => 'In de werkruimte';
+
+  @override
+  String get dispatchLimitPerWorkspaceHelp =>
+      'Actieve of gepauzeerde schema\'s in de hele werkruimte.';
+
+  @override
+  String get dispatchLimitCostCap => 'Standaard kostenlimiet (dollars)';
+
+  @override
+  String get dispatchLimitCostCapHelp =>
+      'Wat een schema in totaal mag uitgeven als het zelf geen limiet instelt.';
+
+  @override
+  String get dispatchLimitZone => 'Tijdzone';
+
+  @override
+  String get dispatchLimitZoneHelp =>
+      'De zone waarin een cron-schema wordt gelezen als het er geen noemt, en de zone van het dagoverzicht.';
+
+  @override
+  String get dispatchUnattendedLabel => 'Als niemand antwoordt';
+
+  @override
+  String get dispatchUnattendedSubtitle =>
+      'Hoe lang een run die de server startte op een persoon wacht, en wanneer het dagoverzicht van wat wacht wordt verstuurd.';
+
+  @override
+  String get dispatchUnattendedExpiry => 'Verzoeken wachten (uren)';
+
+  @override
+  String get dispatchUnattendedExpiryHelp =>
+      'Daarna telt een goedkeuring als geweigerd en een vraag als onbeantwoord. Doelen die zijn ingesteld om hun eigen vragen te beantwoorden, doen dat na 10 minuten.';
+
+  @override
+  String dispatchUnattendedExpiryRange(int min, int max) {
+    return '$min tot $max uur';
+  }
+
+  @override
+  String get dispatchDigestHour => 'Dagoverzicht om (uur)';
+
+  @override
+  String dispatchDigestHourHelp(String zone) {
+    return 'In $zone, de tijdzone hierboven.';
+  }
+
+  @override
+  String get dispatchDigestHourRange => '0 tot 23';
+
+  @override
+  String get goalRecordCrumb => 'Doel';
+
+  @override
+  String get scheduleRecordCrumb => 'Schema';
+
+  @override
+  String get improvementRecordCrumb => 'Voorstel';
+
+  @override
+  String get goalNodeNeedsAgent => 'Kies de agent die het doel nastreeft.';
+
+  @override
+  String get goalNodeNeedsObjective => 'Schrijf de doelstelling.';
+
+  @override
+  String get goalNodeContractInvalid =>
+      'Het contract heeft een veld boven de limiet; het wordt pas opgeslagen als dat is opgelost.';
+
+  @override
+  String get goalNodeBudget => 'Budget (dollars)';
+
+  @override
+  String get goalNodeBudgetHelp =>
+      'Het meeste dat het doel mag uitgeven. Als het op is, wacht het doel op een persoon.';
+
+  @override
+  String goalNodeBudgetRange(int max) {
+    return 'Verplicht: meer dan 0, tot $max.';
+  }
+
+  @override
+  String get goalNodeMaxRuns => 'Segmentlimiet';
+
+  @override
+  String get goalNodeMaxRunsHelp =>
+      'Optioneel. Het meeste aantal segmenten (agentruns) dat het doel mag nemen.';
+
+  @override
+  String get goalNodeDeadline => 'Deadline (uren)';
+
+  @override
+  String get goalNodeDeadlineHelp =>
+      'Optioneel. Uren vanaf het moment dat de stap het doel start.';
+
+  @override
+  String goalNodeRange(int max) {
+    return '1 tot $max, of leeg.';
+  }
+
+  @override
+  String get goalNodeContract => 'Contract';
+
+  @override
+  String get goalNodeContractHelp =>
+      'Wat klaar betekent: criteria die de reviewer controleert, en opdrachten die moeten slagen.';
+
+  @override
+  String get nodeConfigObjective => 'Doelstelling';
+
+  @override
+  String pipelineRunGoalStep(String step) {
+    return 'Stap $step streeft een doel na';
+  }
+
+  @override
+  String get pipelineRunOpenGoal => 'Doel openen';
+
+  @override
+  String get pipelineRunHeldBudget =>
+      'Deze run staat vast: de orkestratie heeft zijn kostenlimiet bereikt.';
+
+  @override
+  String pipelineRunHeldOther(String reason) {
+    return 'Deze run staat vast ($reason).';
+  }
+
+  @override
+  String pipelineRunHeldSpent(String spent, String cap) {
+    return '$spent van $cap besteed. Verhoog de limiet en de run gaat door.';
+  }
+
+  @override
+  String get pipelineRunRaiseCap => 'Limiet verhogen';
+
+  @override
+  String get pipelineRunRaiseCapTitle => 'De orkestratielimiet verhogen';
+
+  @override
+  String get pipelineRunCapRaised =>
+      'Limiet verhoogd. De run gaat zo meteen verder.';
+
+  @override
+  String get goalLaunchChecks => 'Controles';
+
+  @override
+  String get goalLaunchChecksHelp =>
+      'Opdrachten die moeten slagen voordat het doel kan eindigen. Optioneel.';
+
+  @override
+  String get goalLaunchFresh => 'Elk segment opnieuw beginnen';
+
+  @override
+  String get goalLaunchFreshHelp =>
+      'Elke run begint zonder de geschiedenis van het gesprek, alleen vanuit het doel en de notities.';
+
+  @override
+  String get goalLaunchAssume =>
+      'Eigen vragen beantwoorden als niemand dat doet';
+
+  @override
+  String get goalLaunchAssumeHelp =>
+      'Na 10 minuten zonder antwoord zet de agent zijn aanname uiteen en gaat door, als de stopvoorwaarden dat toelaten.';
+
+  @override
+  String workFeedLimitParkOutcomeResumed(String provider, String time) {
+    return 'Hervat om $time na de gebruikslimiet van $provider.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeCancelled(String provider, String time) {
+    return 'Geannuleerd om $time. Het is na de gebruikslimiet van $provider niet hervat.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeExpired(String provider, String time) {
+    return 'Verlopen om $time zonder hervatting na de gebruikslimiet van $provider.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeSkipped(String provider, String time) {
+    return 'Niet hervat na de gebruikslimiet van $provider ($time).';
+  }
+
+  @override
+  String workFeedCommandRefusedNamed(String command) {
+    return 'De opdracht /$command is geweigerd.';
+  }
+
+  @override
+  String get improvementRefusalQueued =>
+      'Een review van dit gesprek wacht al om te draaien.';
+
+  @override
+  String get improvementRefusalAgentNotFound =>
+      'Die agent hoort niet bij deze werkruimte.';
+
+  @override
+  String get workRefusalWakeQueueFull =>
+      'Er wachten hier al te veel wekbeurten. Probeer het opnieuw zodra er een paar zijn gedraaid.';
+
+  @override
+  String get orchestrationRefusalNotYours =>
+      'Alleen de persoon voor wie deze run werkt, kan die wijzigen.';
+
+  @override
+  String get orchestrationRefusalCapInvalid =>
+      'De nieuwe limiet moet hoger zijn dan de huidige limiet en wat is besteed, en hooguit \$1,000 bedragen.';
+
+  @override
+  String get orchestrationRefusalCapChanged =>
+      'Iemand heeft de limiet eerder verhoogd. Controleer de nieuwe limiet en probeer het opnieuw.';
+
+  @override
+  String workFeedCapRaised(String person, String oldCap, String newCap) {
+    return '$person heeft de limiet van de run verhoogd van $oldCap naar $newCap.';
+  }
+
+  @override
+  String get workFeedPersonUnknown => 'Een persoon';
+
+  @override
+  String workFeedApplyIncomplete(String skill) {
+    return 'Een geaccepteerde wijziging aan de skill $skill kon niet worden afgerond, omdat de skill intussen is veranderd. Het voorstel is teruggedraaid.';
+  }
+
+  @override
+  String get workFeedOpenImprovement => 'Verbetering openen';
+
+  @override
+  String get peerAskFailNoOutput => 'Het eindigde zonder antwoord.';
+
+  @override
+  String get peerAskFailRunFailed => 'De run is mislukt.';
+
+  @override
+  String get peerAskFailStoppedByPerson => 'Een persoon heeft de run gestopt.';
+
+  @override
+  String get peerAskFailBudget => 'De run heeft zijn budget bereikt.';
+
+  @override
+  String get peerAskFailSilence => 'De run werd stil en is gestopt.';
+
+  @override
+  String get peerAskFailUsageLimit =>
+      'De run is gestopt bij de gebruikslimiet van de provider.';
+
+  @override
+  String get peerAskFailNotDelivered => 'De vraag is nooit afgeleverd.';
+
+  @override
+  String heldSteeringLimitHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count berichten vastgehouden bij de gebruikslimiet',
+      one: '1 bericht vastgehouden bij de gebruikslimiet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get heldSteeringLimitNote =>
+      'Deze worden verstuurd wanneer de persoon voor wie de run werkt, hem hervat. Als hij niet binnen 7 dagen na de reset wordt hervat, worden ze voor die persoon vastgehouden.';
+
+  @override
+  String get wakeKindRuleFolded =>
+      'Een latere gebeurtenis heeft het vervangen.';
+
+  @override
+  String goalCardWaitingNext(String time) {
+    return 'Wacht op wat het heeft opgezet · kijkt weer om $time';
+  }
+
+  @override
+  String raiseCapAtMost(String max) {
+    return 'Voer maximaal $max in.';
+  }
+
+  @override
+  String raiseCapNowAt(String cap) {
+    return 'De limiet is nu $cap.';
+  }
+
+  @override
+  String get scheduleWakeReasonSchedule => 'Gepland';
+
+  @override
+  String get scheduleWakeReasonWatch => 'Bewaking';
+
+  @override
+  String get scheduleWakeReasonLimitReset => 'Na een gebruikslimiet';
+
+  @override
+  String get scheduleWakeStatePending => 'Wacht';
+
+  @override
+  String get scheduleWakeStateHeld => 'Vastgehouden';
+
+  @override
+  String get scheduleWakeStateClaimed => 'Start';
+
+  @override
+  String get scheduleWakeStateDelivered => 'Afgeleverd';
+
+  @override
+  String get scheduleWakeStateSkipped => 'Overgeslagen';
+
+  @override
+  String get scheduleWakeStateExpired => 'Verlopen';
+
+  @override
+  String get scheduleWakeStateCancelled => 'Geannuleerd';
+
+  @override
+  String scheduleWakeLine(String reason, String state) {
+    return '$reason · $state';
+  }
+
+  @override
+  String scheduleWakeExit(int code) {
+    return 'exitcode $code';
+  }
+
+  @override
+  String scheduleWakeEvents(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count gebeurtenissen',
+      one: '1 gebeurtenis',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scheduleWakesNone => 'Nog geen wekbeurten.';
+
+  @override
+  String get scheduleWakesOlder => 'Oudere tonen';
+
+  @override
+  String get improvementCandidateStaged =>
+      'De voorgestelde skill wordt opgeslagen als aparte revisie. Evalueren laat de actieve skill ongewijzigd; de skill verandert pas als het voorstel is geaccepteerd.';
+
+  @override
+  String goalNextWaitingFallback(String time) {
+    return 'Het gaat verder zodra waar het op wacht binnenkomt, of kijkt om $time opnieuw als er niets komt.';
+  }
+
+  @override
+  String get steeringRefusalHeldByLimit =>
+      'Berichten die een pauze door de gebruikslimiet vasthoudt, kunnen tijdens het wachten niet met de hand worden verzonden.';
+
+  @override
+  String steeringRefusalHeldByLimitAt(String time) {
+    return 'Berichten die een pauze door de gebruikslimiet vasthoudt, kunnen tijdens het wachten niet met de hand worden verzonden. De limiet wordt gereset om $time.';
+  }
+
+  @override
+  String heldSteeringLimitResetsAt(String time) {
+    return 'De limiet wordt gereset om $time. Deze worden verstuurd wanneer de persoon voor wie de run werkt, hem hervat.';
+  }
+
+  @override
+  String heldSteeringFromPerson(String name) {
+    return 'Van $name';
+  }
+
+  @override
+  String get heldSteeringFromSomeoneElse => 'Van iemand anders';
+
+  @override
+  String get heldSteeringOnlyWriterSends =>
+      'Alleen de persoon die een vastgehouden bericht heeft geschreven, kan het verzenden.';
+
+  @override
+  String get steeringRefusalNotYours =>
+      'Deze vastgehouden berichten zijn van iemand anders. Alleen de persoon die er een schreef, kan het verzenden.';
+
+  @override
+  String improvementEvaluationSolved(
+    int pairedRuns,
+    int candidateSolved,
+    int baselineSolved,
+  ) {
+    String _temp0 = intl.Intl.pluralLogic(
+      pairedRuns,
+      locale: localeName,
+      other: 'In $pairedRuns gekoppelde runs',
+      one: 'In 1 gekoppelde run',
+    );
+    return '$_temp0, de wijziging loste $candidateSolved op en de huidige skill loste $baselineSolved op.';
+  }
+
+  @override
+  String improvementEvaluationWorse(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count taken deden het slechter met de wijziging.',
+      one: '1 taak deed het slechter met de wijziging.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String improvementEvaluationCostlier(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count taken kostten meer met de wijziging.',
+      one: '1 taak kostte meer met de wijziging.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String improvementEvaluationHarnessErrors(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count runs liepen op een harness-fout.',
+      one: '1 run liep op een harness-fout.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get improvementEvaluationIncomplete =>
+      'De evaluatie is niet volledig uitgevoerd.';
+
+  @override
+  String workFeedLimitParkExpires(String time) {
+    return 'Vervalt $time';
+  }
+
+  @override
+  String workFeedSchedulePaused(String person, String agent) {
+    return '$person heeft het schema voor $agent gepauzeerd.';
+  }
+
+  @override
+  String get goalCardApproveNotYours =>
+      'Alleen de persoon die de pipeline-run startte, kan het voltooien van dit doel goedkeuren.';
+
+  @override
+  String get goalCardObjective => 'De doelstelling';
+
+  @override
+  String get planNeedsWrite =>
+      'Goedkeuren of wijzigen van dit plan vereist schrijftoegang tot elke repository in deze ruimte. Een werkruimtebeheerder kan die toekennen.';
+
+  @override
+  String scheduleSpentWithChain(String spent, String cap) {
+    return '$spent van $cap, inclusief elk schema in de keten';
+  }
 }

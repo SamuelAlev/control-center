@@ -386,25 +386,21 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
       if (!_document.showsBody(f)) {
         continue;
       }
+      // Threads on the file as a whole, and a composer for one, stack at the
+      // top of the body (under the preview when the file shows one).
+      final fileThreads = _fileLevelThreadsFor(f, ctl);
+      final open = _activeComposer;
+      final fileComposer =
+          ctl != null && open != null && open.fileIndex == f && open.isFileLevel
+          ? open
+          : null;
       if (_document.isPreviewing(f)) {
-        // Reserve the preview body height. Image files can still host a
-        // file-level composer under the pictures; Markdown preview stays
-        // comment-free (its rows are gone).
-        const previewComposerKey = 'composer';
-        final composer = _activeComposer?.fileIndex == f
-            ? _activeComposer
-            : null;
-        final blocks = <DiffCommentBlock>[];
-        if (composer != null && ctl != null) {
-          blocks.add(
-            DiffCommentBlock(
-              key: previewComposerKey,
-              anchorLine: -1,
-              height: _composerLayoutHeight(),
-            ),
-          );
-        }
-        _document.setCommentBlocks(f, blocks);
+        // Reserve the preview body height. Line threads have no rows to hang
+        // on here; file-level ones sit under the preview.
+        _document.setCommentBlocks(
+          f,
+          _fileLevelBlocks(fileThreads, fileComposer),
+        );
         final previewH =
             _previewHeights[filename] ??
             (_document.files[f].isImage ? kImageDiffEstimateHeight : 240.0);
@@ -418,21 +414,17 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
             height: _document.previewHeightOf(f),
           ),
         );
-        if (composer != null && ctl != null) {
-          slots.add(
-            DiffSlot(
-              kind: DiffSlotKind.composer,
-              key: previewComposerKey,
-              fileIndex: f,
-              offset:
-                  _document.offsetOfFile(f) +
-                  kFastFileHeaderHeight +
-                  _document.previewHeightOf(f),
-              height: _composerSlotHeight(),
-              anchorDisplayLine: 0,
-            ),
-          );
-        }
+        _emitFileLevelSlots(
+          slots,
+          threadOut,
+          f,
+          fileThreads,
+          fileComposer,
+          top:
+              _document.offsetOfFile(f) +
+              kFastFileHeaderHeight +
+              _document.previewHeightOf(f),
+        );
         continue;
       }
       final raw = _document.structureOf(f);
@@ -441,16 +433,18 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
       }
       final count = _document.lineCountOf(f);
 
-      // The open composer (if any) anchored in this file.
-      final composer = _activeComposer?.fileIndex == f ? _activeComposer : null;
-      final composerLine = composer?.anchorDisplayLine ?? -1;
+      // The open line composer (if any) anchored in this file.
+      final composerLine =
+          open != null && open.fileIndex == f && !open.isFileLevel
+          ? open.anchorDisplayLine
+          : null;
       const composerKey = 'composer';
 
       // Pass A: resolve anchored threads + reserve their heights (and the
       // composer's) so the document's offsetOfLine reflects them before we
       // read slot offsets.
       final threadByLine = <int, PrInlineThread>{};
-      final blocks = <DiffCommentBlock>[];
+      final blocks = _fileLevelBlocks(fileThreads, fileComposer);
       for (var d = 0; d < count; d++) {
         final r = _document.rawIndexOf(f, d);
         final thread = _threadAnchoredAt(raw, r, f, d, ctl, filename);
@@ -477,6 +471,14 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
       _document.setCommentBlocks(f, blocks);
 
       // Pass B: emit gap + comment + composer slots with now-exact offsets.
+      _emitFileLevelSlots(
+        slots,
+        threadOut,
+        f,
+        fileThreads,
+        fileComposer,
+        top: _document.offsetOfFile(f) + kFastFileHeaderHeight,
+      );
       for (var d = 0; d < count; d++) {
         final r = _document.rawIndexOf(f, d);
         if (raw.kindAt(r) == DiffLineKind.expandGap) {
@@ -532,6 +534,66 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
       }
     }
     return slots;
+  }
+
+  /// Height reservations for file [threads] and a file-level [composer], all
+  /// at [kFileLevelAnchor] so they sit above the first row.
+  List<DiffCommentBlock> _fileLevelBlocks(
+    List<PrInlineThread> threads,
+    ComposerRequest? composer,
+  ) => [
+    for (final t in threads)
+      DiffCommentBlock(
+        key: t.id,
+        anchorLine: kFileLevelAnchor,
+        height: _commentHeights[t.id] ?? _estimateThreadHeight(t),
+      ),
+    if (composer != null)
+      DiffCommentBlock(
+        key: 'composer',
+        anchorLine: kFileLevelAnchor,
+        height: _composerLayoutHeight(),
+      ),
+  ];
+
+  /// Emits the slots for [_fileLevelBlocks], stacked downward from [top].
+  void _emitFileLevelSlots(
+    List<DiffSlot> slots,
+    Map<String, PrInlineThread> threadOut,
+    int fileIndex,
+    List<PrInlineThread> threads,
+    ComposerRequest? composer, {
+    required double top,
+  }) {
+    var y = top;
+    for (final t in threads) {
+      final key = 'thread:${t.id}';
+      threadOut[key] = t;
+      final h = _commentHeights[t.id] ?? _estimateThreadHeight(t);
+      slots.add(
+        DiffSlot(
+          kind: DiffSlotKind.comment,
+          key: key,
+          fileIndex: fileIndex,
+          offset: y,
+          height: h,
+          anchorDisplayLine: kFileLevelAnchor,
+        ),
+      );
+      y += h;
+    }
+    if (composer != null) {
+      slots.add(
+        DiffSlot(
+          kind: DiffSlotKind.composer,
+          key: 'composer',
+          fileIndex: fileIndex,
+          offset: y,
+          height: _composerSlotHeight(),
+          anchorDisplayLine: kFileLevelAnchor,
+        ),
+      );
+    }
   }
 
   /// First-frame height reservation for the open composer, replaced by the
@@ -682,6 +744,8 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
   /// re-partitioned 300 comments 200 times per build.
   final Map<String, List<ServerThreadSpan>> _serverSpansMemo = {};
   final Map<String, Map<String, ServerThreadSpan>> _serverSpanByLineMemo = {};
+  final Map<String, List<ServerReviewThread>> _fileLevelServerMemo = {};
+  Map<String, List<ServerReviewThread>>? _serverThreadsByPathMemo;
   Object? _serverSpansMemoSource;
 
   /// Drops both memos when the server-comment list is replaced.
@@ -691,7 +755,31 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
     }
     _serverSpansMemo.clear();
     _serverSpanByLineMemo.clear();
+    _fileLevelServerMemo.clear();
+    _serverThreadsByPathMemo = null;
     _serverSpansMemoSource = widget.serverComments;
+  }
+
+  /// Open conversations on [filename], for the badge on its header: the
+  /// forge's (outdated and file-level ones too, with the optimistic resolve
+  /// state) plus this viewer's drafts and comments still posting.
+  int _unresolvedConversations(String filename) {
+    _invalidateServerSpansIfStale();
+    // Grouped once and bucketed by path: per file, a 200-file PR would
+    // re-walk every comment once per header build.
+    final byPath = _serverThreadsByPathMemo ??= () {
+      final out = <String, List<ServerReviewThread>>{};
+      for (final t in groupServerReviewThreads(widget.serverComments)) {
+        (out[t.path] ??= []).add(t);
+      }
+      return out;
+    }();
+    return unresolvedConversationCount(
+      serverThreads: byPath[filename] ?? const [],
+      localThreads:
+          widget.inlineCommentsController?.forFile(filename) ?? const [],
+      resolvedOverride: _resolvedOverride,
+    );
   }
 
   /// Server review conversations for [filename], each with the LINE RANGE it
@@ -723,6 +811,90 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
   /// being dropped from the review.
   List<PrCodeReviewComment> _outdatedServerComments(String filename) =>
       partitionServerCommentsForFile(widget.serverComments, filename).outdated;
+
+  /// Forge conversations on [filename] as a whole, oldest first.
+  List<ServerReviewThread> _fileLevelServerThreads(String filename) {
+    _invalidateServerSpansIfStale();
+    return _fileLevelServerMemo[filename] ??= groupServerReviewThreads(
+      partitionServerCommentsForFile(widget.serverComments, filename).fileLevel,
+    );
+  }
+
+  /// The threads shown at the top of file [fileIndex]'s body: forge
+  /// conversations on the whole file, then this viewer's own. A local thread
+  /// that has posted shadows its forge copy, the way a draft wins over the
+  /// server thread at a row. Empty without a comments controller, which is
+  /// what hosts a thread card.
+  List<PrInlineThread> _fileLevelThreadsFor(
+    int fileIndex,
+    PrInlineCommentsController? ctl,
+  ) {
+    if (ctl == null) {
+      return const [];
+    }
+    final filename = _document.files[fileIndex].filename;
+    final local = [
+      for (final t in ctl.forFile(filename))
+        if (t.isFileLevel) t,
+    ];
+    final posted = {
+      for (final t in local)
+        if (t.serverId != null) t.serverId,
+    };
+    return [
+      for (final thread in _fileLevelServerThreads(filename))
+        if (!posted.contains(thread.root.id))
+          _synthesizeFileLevelThread(thread, filename),
+      ...local,
+    ];
+  }
+
+  PrInlineThread _synthesizeFileLevelThread(
+    ServerReviewThread thread,
+    String filename,
+  ) => PrInlineThread(
+    id: thread.id,
+    filePath: filename,
+    line: 0,
+    side: 'RIGHT',
+    kind: PrInlineThreadKind.comment,
+    originalCode: '',
+    suggestedCode: '',
+    serverId: thread.root.id,
+    threadId: thread.threadId,
+    resolved: _resolvedOverride[thread.id] ?? thread.isResolved,
+    syncState: PrInlineSyncState.synced,
+    isFileLevel: true,
+    entries: inlineEntriesFromServerComments(
+      thread.comments,
+      unknownAuthorLabel: AppLocalizations.of(context).unknownAuthor,
+    ),
+  );
+
+  /// Whether file [index] has anything to show under its header, i.e.
+  /// whether expanding or collapsing it means anything. A rename without
+  /// changes (or a mode-only or binary change) has no rows, no preview and,
+  /// until someone comments on it, no threads.
+  bool _fileHasBody(int index) {
+    final file = _document.files[index];
+    if (file.patch.isNotEmpty ||
+        file.isImage ||
+        _canPreview(file) ||
+        _activeComposer?.fileIndex == index) {
+      return true;
+    }
+    return _fileLevelThreadsFor(
+      index,
+      widget.inlineCommentsController,
+    ).isNotEmpty;
+  }
+
+  /// Whether [file] offers the diff/preview toggle.
+  bool _canPreview(PrFile file) =>
+      (file.isMarkdown &&
+          file.status != PrFileStatus.removed &&
+          widget.fetchFileContent != null) ||
+      (file.isSvg && file.patch.isNotEmpty);
 
   /// The thread anchored at raw row [rawIndex] (draft preferred, else a
   /// synthesised server thread), or null. A thread anchors at the LAST line of
@@ -965,7 +1137,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
           : null,
       onToggleCollapseForPath: (path) {
         final i = _document.indexOfFile(path);
-        if (i >= 0) {
+        if (i >= 0 && _fileHasBody(i)) {
           _toggleExpanded(i);
         }
       },
@@ -1529,7 +1701,8 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
   void _togglePreview(int index) {
     final next = !_document.isPreviewing(index);
     if (next) {
-      if (!widget.files[index].isImage && _activeComposer?.fileIndex == index) {
+      final open = _activeComposer;
+      if (open != null && open.fileIndex == index && !open.isFileLevel) {
         _activeComposer = null;
         _commentHeights.remove('composer');
         _haltComposerMotion();
@@ -1545,47 +1718,57 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
     setState(() => _revision++);
   }
 
-  /// Opens an inline composer for a new file-level comment, anchored at the
-  /// file's first code row (triggered by the header "+"). Image files have no
-  /// code rows, so they get a synthetic `RIGHT:1` file-level anchor.
+  /// Opens an inline composer for a new comment on file [fileIndex]
+  /// (triggered by the header button), anchored at the file's first code row.
+  /// A file with no code rows (an image, a rename without changes, a binary)
+  /// gets a composer on the file as a whole, which posts as a file comment.
   void _openFileComment(int fileIndex) {
     final file = _document.files[fileIndex];
-    if (file.isImage) {
+    _store.ensureStructure(fileIndex);
+    final d = file.isImage ? null : _firstCodeDisplayLine(fileIndex);
+    if (d == null) {
       _openFileLevelComposer(fileIndex);
       return;
     }
-    final d = _firstCodeDisplayLine(fileIndex);
-    if (d != null) {
-      _openComposerForRange(
-        fileIndex,
-        d,
-        d,
-        null,
-        null,
-        PrInlineThreadKind.comment,
-      );
-    }
+    _openComposerForRange(
+      fileIndex,
+      d,
+      d,
+      null,
+      null,
+      PrInlineThreadKind.comment,
+    );
   }
 
   void _openFileLevelComposer(int fileIndex) {
     if (widget.inlineCommentsController == null) {
       return;
     }
-    if (_composerAlreadyOpen(fileIndex, 0, 0, PrInlineThreadKind.comment)) {
+    if (_composerAlreadyOpen(
+      fileIndex,
+      kFileLevelAnchor,
+      kFileLevelAnchor,
+      PrInlineThreadKind.comment,
+    )) {
       return;
+    }
+    // A collapsed file (marked viewed) shows nothing under its header, so the
+    // composer would open out of sight.
+    if (!_document.isExpanded(fileIndex)) {
+      _setFileExpanded(fileIndex, expanded: true);
     }
     setState(() {
       _armComposerEntrance();
       _activeComposer = ComposerRequest(
         fileIndex: fileIndex,
-        anchorDisplayLine: 0,
-        startDisplayLine: 0,
-        endDisplayLine: 0,
+        anchorDisplayLine: kFileLevelAnchor,
+        startDisplayLine: kFileLevelAnchor,
+        endDisplayLine: kFileLevelAnchor,
         startCol: null,
         endCol: null,
         side: 'RIGHT',
-        lineNoStart: 1,
-        lineNoEnd: 1,
+        lineNoStart: 0,
+        lineNoEnd: 0,
         originalCode: '',
         kind: PrInlineThreadKind.comment,
       );
@@ -1735,6 +1918,14 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
     String body, {
     required bool batched,
   }) {
+    if (req.isFileLevel) {
+      widget.inlineCommentsController?.createFileComment(
+        filePath: _document.files[req.fileIndex].filename,
+        authorBody: body,
+      );
+      _cancelComposer(animate: false);
+      return;
+    }
     widget.inlineCommentsController?.create(
       filePath: _document.files[req.fileIndex].filename,
       line: req.lineNoStart,
@@ -1799,8 +1990,8 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
         prompt: commentAgentPrompt(
           body: body,
           path: _document.files[req.fileIndex].filename,
-          startLine: req.lineNoStart,
-          endLine: req.lineNoEnd,
+          startLine: req.isFileLevel ? null : req.lineNoStart,
+          endLine: req.isFileLevel ? null : req.lineNoEnd,
         ),
       );
     } catch (_) {
@@ -2741,7 +2932,8 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
               }
               final thread = _threadBySlotKey[slot.key];
               final anchorLine = slot.anchorDisplayLine;
-              if (thread == null) {
+              // A file-level thread hangs off no row.
+              if (thread == null || anchorLine == kFileLevelAnchor) {
                 continue;
               }
               if (hover?.$1 == slot.fileIndex && hover?.$2 == anchorLine) {
@@ -3393,8 +3585,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
       if (i == null || _slots[i].fileIndex != fileIndex) {
         return null;
       }
-      final line = _slots[i].anchorDisplayLine;
-      return line < 0 ? null : line;
+      return _slots[i].anchorDisplayLine;
     }
 
     int? line;
@@ -3414,7 +3605,10 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
     var lastLine = line;
     await _scrollSettled(() {
       lastLine = anchorLine() ?? lastLine;
-      return _sliver?.revealOffsetForLine(fileIndex, lastLine);
+      // A file-level thread sits right under the header.
+      return lastLine == kFileLevelAnchor
+          ? _sliver?.revealOffsetForFile(fileIndex)
+          : _sliver?.revealOffsetForLine(fileIndex, lastLine);
     });
     if (!mounted) {
       return true;
@@ -3638,6 +3832,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
           final file = _document.files[slot.fileIndex];
           final l10n = AppLocalizations.of(context);
           final svgSource = file.isSvg && file.patch.isNotEmpty;
+          final hasBody = _fileHasBody(slot.fileIndex);
           // The docked (pinned) header drops its own top border — the same
           // flush contract as the first file under a bordered toolbar —
           // otherwise the line above the pinned position doubles to 2px.
@@ -3648,16 +3843,15 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
               file: file,
               expanded: _document.isExpanded(slot.fileIndex),
               isViewed: _viewed.contains(file.filename),
-              canPreview:
-                  (file.isMarkdown &&
-                      file.status != PrFileStatus.removed &&
-                      widget.fetchFileContent != null) ||
-                  svgSource,
+              canPreview: _canPreview(file),
               isPreview: _document.isPreviewing(slot.fileIndex),
               onTogglePreview: () => _togglePreview(slot.fileIndex),
               previewOffLabel: svgSource ? l10n.imageDiffSource : null,
               previewOnLabel: svgSource ? l10n.imageDiffPictures : null,
-              onToggleExpanded: () => _toggleExpanded(slot.fileIndex),
+              // Nothing to fold: no toggle, so the row is not a button.
+              onToggleExpanded: hasBody
+                  ? () => _toggleExpanded(slot.fileIndex)
+                  : null,
               onToggleViewed: widget.onToggleViewed != null
                   ? () => _toggleViewed(slot.fileIndex)
                   : null,
@@ -3670,6 +3864,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
                   ? () => widget.onOpenFileInEditor!(file.filename)
                   : null,
               outdatedComments: _outdatedServerComments(file.filename),
+              unresolvedConversations: _unresolvedConversations(file.filename),
               showTopBorder:
                   !(widget.flushTop && slot.fileIndex == 0) &&
                   pinnedFile != slot.fileIndex,
@@ -3773,11 +3968,15 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
                         prRef: widget.inlineCommentsController?.pr,
                         draftDestination: _commentDestination(req),
                         reviewInProgress: reviewInProgress,
-                        onSuggest: (comment) =>
-                            _switchComposerToSuggestion(req, comment),
+                        // A file comment has no lines to suggest a change to,
+                        // and the forge's review takes line comments only.
+                        onSuggest: req.isFileLevel
+                            ? null
+                            : (comment) =>
+                                  _switchComposerToSuggestion(req, comment),
                         onSubmit: (body) =>
                             _submitComment(req, body, batched: false),
-                        onSubmitBatched: canBatch
+                        onSubmitBatched: canBatch && !req.isFileLevel
                             ? (body) => _submitComment(req, body, batched: true)
                             : null,
                         onSendToAgent: (body) =>

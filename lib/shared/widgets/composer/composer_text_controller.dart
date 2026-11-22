@@ -6,8 +6,9 @@ import 'package:control_center/shared/widgets/composer/file_reference.dart';
 import 'package:flutter/widgets.dart';
 
 /// The composer's text controller, which paints `@[file:…]` references as
-/// pills and the draft's Markdown as it will read (see
-/// [scanComposerMarkdown]).
+/// pills, the draft's Markdown as it will read (see [scanComposerMarkdown])
+/// and, where the host takes slash commands, the leading `/command` in the
+/// accent (see [paintsCommand]).
 ///
 /// Styling only — the characters are untouched, so the caret, selection, undo
 /// and the platform's input connection all see exactly the text the user typed.
@@ -41,6 +42,36 @@ class ComposerTextController extends TextEditingController {
   /// Tokens are painted in this color family; supplied by the host so the
   /// controller stays free of a `BuildContext` lookup on every keystroke.
   DesignSystemTokens? tokens;
+
+  /// Whether a leading `/command` is painted in the accent: a built-in, a
+  /// skill (`/skill:name`) or any other name, as soon as it is typed. Set by
+  /// a host whose sources take slash commands; off elsewhere, so a prompt or
+  /// a comment that happens to open with a slash stays plain.
+  ///
+  /// Only the first word counts, and only when it is a whole word:
+  /// `/usr/bin/env` is a path, not a command.
+  bool get paintsCommand => _paintsCommand;
+  bool _paintsCommand = false;
+  set paintsCommand(bool value) {
+    if (value == _paintsCommand) {
+      return;
+    }
+    _paintsCommand = value;
+    _scannedText = null;
+  }
+
+  /// The grammar of `parseSlashCommand` (`cc_harness`), held to a whole word.
+  static final RegExp _command = RegExp(r'^\s*(/[A-Za-z0-9_:.-]+)(?=\s|$)');
+
+  /// The half-open range of [source]'s leading `/command`, or null.
+  static ({int start, int end})? commandRange(String source) {
+    final match = _command.firstMatch(source);
+    if (match == null) {
+      return null;
+    }
+    final token = match.group(1)!;
+    return (start: match.end - token.length, end: match.end);
+  }
 
   /// True for the duration of [replaceAll].
   ///
@@ -83,10 +114,21 @@ class ComposerTextController extends TextEditingController {
     final source = text;
     if (!identical(source, _scannedText) && source != _scannedText) {
       _scannedRefs = findFileRefs(source);
+      final command = _paintsCommand ? commandRange(source) : null;
+      // Opaque to the Markdown pass: a skill name with underscores in it is
+      // one token, not emphasis.
       _scannedFlags = scanComposerMarkdown(
         source,
-        opaque: [for (final m in _scannedRefs) (start: m.start, end: m.end)],
+        opaque: [
+          for (final m in _scannedRefs) (start: m.start, end: m.end),
+          ?command,
+        ],
       );
+      if (command != null) {
+        for (var i = command.start; i < command.end; i++) {
+          _scannedFlags[i] |= _commandFlag;
+        }
+      }
       _scannedText = source;
     }
     final refs = _scannedRefs;
@@ -164,6 +206,7 @@ class ComposerTextController extends TextEditingController {
     return TextSpan(style: style, children: children);
   }
 
+  static const int _commandFlag = 1 << 13;
   static const int _pillKey = 1 << 14;
   static const int _composingFlag = 1 << 15;
 
@@ -216,6 +259,11 @@ class ComposerTextController extends TextEditingController {
     // Last, so a delimiter inside bold or a quote still reads as scaffolding.
     if (key & ComposerMarkdownFlag.marker != 0) {
       style = style.copyWith(color: ds.textPlaceholder);
+    }
+    // Color alone: a weight change would shift every character after the
+    // token the moment its first letter is typed.
+    if (key & _commandFlag != 0) {
+      style = style.copyWith(color: ds.accent);
     }
     if (decorations.isNotEmpty) {
       style = style.copyWith(decoration: TextDecoration.combine(decorations));

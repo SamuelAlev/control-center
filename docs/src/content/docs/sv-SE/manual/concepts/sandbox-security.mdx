@@ -2,7 +2,7 @@
 title: Sandlåda och säkerhet
 description: Vad som faktiskt begränsar en agent i Control Center i dag, hur långt OS-sandlådan når och vilka gränser som håller på en värd som saknar backend.
 slug: sv-SE/handbok/koncept/sandlada-och-sakerhet
-sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
+sourceHash: 7644c97911f685ef5084875fb16f1006f21ea940
 ---
 
 :::note[Var OS-sandlådan når och inte når]
@@ -79,6 +79,8 @@ Samma regel gäller de mindre sakerna som startar en process åt dig:
 - **Verktygsprocesser och `bash`** i en körning faller aldrig tillbaka till värden.
   Om servern är inställd att sandlåda agenter men inte har någon sandlåda att ge en
   körning, nekas de.
+- **Ett målets kontroller** körs i en engångssandlåda över konversationens worktree, begränsade som agentens egna `bash`. Utan sandlåda körs de inte och målet stoppas för en person; under `--sandbox off` körs de som agentens `bash` gör.
+- **Ett målets granskning** körs skrivskyddad på varje adapter: bara läsning, worktrees monterade skrivskyddat, ingen `bash`, inga underagenter, ingen webb. En adapter som inte kan hålla en körning skrivskyddad (en ACP-agent) används inte som granskare.
 
 ## Vad som faktiskt begränsar en agent
 
@@ -324,6 +326,24 @@ händelseström, så ett nekat systemanrop syns i transkriptet i stället för b
 en logg. Telemetrin finns bara medan en inbyggd sandlåda faktiskt lindar in
 processen — på en värd utan backend finns inget att observera. Den är inte heller kopplad till räckena: en överträdelse kommer från ett nekat systemanrop, aldrig från en regeluppslagning.
 
+## Skript i kodläge
+
+[Kodläge](/sv-SE/handbok/koncept/kodlage/)-skript är ett separat fall, och de beror inte alls på agentens sandlåda. Ett skript körs aldrig inne i servern och aldrig i agentens sandlåda. Det körs i sin egen process, `cc_codemode`, ett program som följer med servern. Programmet låser sig självt innan det läser skriptet och rapporterar vilka av låsningens steg som trädde i kraft. Servern skickar bara skriptet när låsningen är komplett.
+
+| Värd | Vad köraren tillämpar på sig själv |
+| --- | --- |
+| Linux | En tillåtlista för systemanrop (seccomp) som knappast låter den göra mer än att läsa sin indata, skriva sin utdata, hantera sitt eget minne, läsa klockor och avsluta; inga nya privilegier och inga capabilities; inga core dumps; inga filskrivningar, inga nya processer och högst tre öppna filer; 3 GiB adressutrymme; en hård gräns för processortid. Landlock läggs till där kärnan stöder det. |
+| macOS | En sandlådeprofil som nekar allt som inte uttryckligen tillåts och som också nekar processinformation, kontroller av om filer finns, system- och hårdvaruinformation samt närliggande kärnanrop; inga core dumps, inga filskrivningar och en hård gräns för processortid. |
+| Windows | Ett nytt AppContainer för varje skript, i ett jobb som tillåter en process, 3 GiB minne och inget användargränssnitt, med dynamisk kod, barnprocesser och win32k-anrop avstängda. **Ännu inte körd på Windows.** |
+
+Köraren startar utan miljövariabler, utan öppna filer utöver sin indata och utdata och utan några autentiseringsuppgifter. Det enda den kan göra utanför sitt eget minne är att be servern köra ett verktyg, och servern kör anropet genom samma lägesfilter, [räcken](/sv-SE/handbok/koncept/racken/) och godkännanden som ett direkt anrop.
+
+Servern kontrollerar allt detta när den startar: den kör körarens självtest, som tillämpar låsningen, försöker läsa och skapa filer, öppna en nätverksanslutning och starta en process (och mer på varje system), och kör riktiga skript under den. Om något inte nekas kör servern inga skript på den maskinen: ingen körning får `repl`, och servern säger varför både vid start och på inställningssidan för kodläget. En körare som inte är ett release-bygge nekas på samma sätt. Det finns ingen svagare reservlösning.
+
+Körningen rapporterar också var i skriptet varje anrop gjordes, så att konversationen kan visa skriptets struktur. Servern kontrollerar den positionen mot skriptet och använder den bara för visning: den avgör aldrig om ett anrop är tillåtet, och den finns inte i räckenas granskningslogg.
+
+Vad detta inte täcker: ett skript kan fortfarande göra allt som körningens verktyg tillåter, eftersom dess verktygsanrop är riktiga verktygsanrop. På macOS kan det fortfarande ta reda på om ett processid finns. Ett fel i JavaScript-motorn eller i kärnan innesluts av låsningen, men utesluts inte av den.
+
 ## Bekräftelser kommer från räckena, inte sandlådan
 
 Sandlådan har ingen godkännandeväg. Den startar, kör, sänder ut händelser och rivs
@@ -344,6 +364,7 @@ som anger vad som kan kontrolleras för hand.
 
 ## Relaterade koncept
 
+- [Kodläge](/sv-SE/handbok/koncept/kodlage/): skript som anropar verktyg, och den körare som begränsar dem
 - [Stationer och avskilda miljöer](/sv-SE/handbok/koncept/stationer/): steget ovanför sandlådan — när arbetet behöver en hel engångsmaskin med en kärngräns, inte en inlindad process
 - [Räcken](/sv-SE/handbok/koncept/racken/): policylagret ovanför OS-golvet och var godkännanden faktiskt kommer ifrån
 - [Livscykel för agentdispatch](/sv-SE/handbok/koncept/livscykel-agentdispatch/): var isoleringen passar in i dispatchflödet

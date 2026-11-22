@@ -2,7 +2,7 @@
 title: Chẩn đoán một agent
 description: Lần theo nhật ký chạy, thăm dò adapter, trạng thái máy chủ và chẩn đoán máy đang chạy khi một agent không còn tạo ra lần chạy nào.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/chan-doan-agent
-sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
+sourceHash: 8cd7078bacfbfcd18d90512974eff3539366883c
 ---
 
 Hướng dẫn này chỉ cách tìm ra vì sao một agent không tạo ra lần chạy nào.
@@ -90,7 +90,13 @@ Kiểm tra **Cài đặt → Máy chủ → Chẩn đoán & quyền riêng tư �
 
 ### Máy chủ hoàn toàn không khởi động
 
-Cần có các thư viện native và không có chế độ suy giảm. Một dylib bị thiếu khiến `cc_server` từ chối khởi động và nêu tên thư viện đó trong lỗi. Hãy chuẩn bị các thư viện native bằng `scripts/natives/build_natives.sh` rồi xây lại binary máy chủ.
+Cần có các thư viện native và không có chế độ suy giảm. Một dylib, hoặc trình chạy chế độ code (`bin/codemode/cc_codemode`), bị thiếu khiến `cc_server` từ chối khởi động và nêu tên thành phần đó trong lỗi. Hãy chuẩn bị các thư viện native bằng `scripts/natives/build_natives.sh` rồi xây lại binary máy chủ bằng `scripts/build_server.sh`.
+
+### Một tập lệnh bị lỗi, hoặc chế độ code không được cung cấp
+
+Để xem một tập lệnh [chế độ code](/vi-VN/so-tay/khai-niem/che-do-code/) đã làm gì, hãy mở bản ghi của tập lệnh đó từ **Mở bản ghi** trên hàng của nó trong cuộc hội thoại, hoặc từ **Quan sát → Thực thi code**. Bản ghi nói bằng lời thường tập lệnh đã kết thúc ra sao (hết thời gian, dùng hết thời gian xử lý, chạm giới hạn bộ nhớ, ném lỗi), và liệt kê mọi lệnh gọi công cụ nó đã thực hiện, cùng việc rào chắn có cho phép không, người dùng có phê duyệt không hay lệnh gọi bị từ chối.
+
+Nếu agent hoàn toàn không có công cụ `repl`, hãy mở **Cài đặt → Không gian làm việc → Chế độ code**. Dưới **Trạng thái**, **Trên máy chủ này** ghi **Khả dụng** hoặc **Không khả dụng**; **Không khả dụng** nghĩa là máy chủ không thể khóa trình chạy tập lệnh trên máy chủ của nó, và trang nêu lý do. Nhật ký khởi động của máy chủ có cùng dòng (`code_mode=…`). Một lần chạy không có không gian làm việc, có giới hạn của không gian làm việc không đọc được hoặc có nhật ký lần chạy không ghi được cũng không nhận `repl`, và gọi các công cụ của nó trực tiếp.
 
 ### Một hành động bị từ chối âm thầm
 

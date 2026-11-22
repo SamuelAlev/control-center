@@ -26,6 +26,7 @@ class MessageReceived implements DomainEvent {
     this.senderUserId,
     this.conversationId,
     this.inAgentOnlySpace = false,
+    this.quietRun = false,
   });
 
   /// Space the message was posted in.
@@ -92,6 +93,12 @@ class MessageReceived implements DomainEvent {
   /// Whether [spaceId] is an agent-only space ([SpaceKind.isAgentOnly]).
   /// Agent chatter there reaches no human unless one is `@mentioned`.
   final bool inAgentOnlySpace;
+
+  /// Whether the message closes a run a schedule or a watch started and that
+  /// finished cleanly: such a run's message reaches no one's notifications
+  /// unless it `@mentions` them (the conversation still shows it). False for
+  /// a run that failed or waits for a person, which always notifies.
+  final bool quietRun;
 
   @override
   final DateTime occurredAt;

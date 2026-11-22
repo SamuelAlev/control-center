@@ -16,6 +16,7 @@ cd "$REPO_ROOT"
 source "$REPO_ROOT/scripts/lib/common.sh"
 source "$REPO_ROOT/scripts/lib/artifact_names.sh"
 source "$REPO_ROOT/scripts/lib/media.sh"
+source "$REPO_ROOT/scripts/lib/codemode.sh"
 
 VERSION="${1:-${VERSION:?VERSION is required}}"
 ARCH="$(cc_windows_arch "${2:-x64}")"
@@ -55,6 +56,7 @@ cp -r "$CC_SERVER_BUNDLE/." "$OUT/cc_server/"
 # go next to cc_server.exe rather than in a lib/ dir.
 stage_natives "$NATIVES" "$OUT/cc_server/bin" dll
 cc_media_stage "$NATIVES" "$OUT/cc_server/bin/media" windows "$ARCH"
+cc_codemode_stage "$NATIVES" "$OUT/cc_server/bin/codemode" windows "$ARCH"
 
 # 3. Verify both native sets before building an installer that would otherwise
 # fail on the user's machine. The matrix lives in scripts/lib/natives.sh, pinned
@@ -62,6 +64,7 @@ cc_media_stage "$NATIVES" "$OUT/cc_server/bin/media" windows "$ARCH"
 bash scripts/release/verify_natives.sh "$OUT" windows desktop
 bash scripts/release/verify_natives.sh "$OUT/cc_server/bin" windows server
 cc_media_verify "$OUT/cc_server/bin/media" windows "$ARCH"
+cc_codemode_verify "$OUT/cc_server/bin/codemode" windows "$ARCH"
 # arm64: every PE image in the app directory — the runner, Flutter's and every
 # plugin's DLLs, our natives, the embedded cc_server — must be an Arm64 image.
 # Presence is not loadability: an x64 DLL (a plugin that downloads an x64-only
@@ -91,7 +94,8 @@ if [ -n "${WINDOWS_CERT:-}" ]; then
   SECRETS_DIR="$SCRATCH_DIR"
   printf '%s' "$WINDOWS_CERT" | base64 --decode > "$SECRETS_DIR/cert.pfx"
   for f in "$OUT/cc_server/bin/media/"*.exe \
-           "$OUT/cc_server/bin/media/pdfium.dll"; do
+           "$OUT/cc_server/bin/media/pdfium.dll" \
+           "$OUT/cc_server/bin/codemode/cc_codemode.exe"; do
     signtool sign -f "$SECRETS_DIR/cert.pfx" -p "${WINDOWS_CERT_PWD:-}" \
       -tr http://timestamp.digicert.com -td sha256 -fd sha256 "$f"
   done

@@ -15,6 +15,11 @@ class PinSkillTool extends McpTool {
 
   @override
   String get name => 'pin_skill';
+
+  /// Not for scripts: it records which skill content is trusted (see
+  /// [McpTool.scriptCallable]).
+  @override
+  bool get scriptCallable => false;
   @override
   Set<ActionClass> get actionClasses => const {
     ActionClass.fileWriteOutsideWorktree,

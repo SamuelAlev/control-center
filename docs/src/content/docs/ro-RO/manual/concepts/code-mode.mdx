@@ -1,0 +1,178 @@
+---
+title: Mod cod
+description: Cum scrie un agent un script scurt care apelează instrumentele sale, în loc să le apeleze pe rând, care instrumente le apelează direct și care dintr-un script, limitele sub care rulează un script, cum se citește un script în conversație și cum este izolat și înregistrat.
+slug: ro-RO/manual/concepte/mod-cod
+sourceHash: d41fe2f38c216949847fc7c4768fdf96bed2dc83
+---
+
+Un agent apelează de obicei instrumentele pe rând. Fiecare apel este o rundă a modelului: agentul cere apelul, rezultatul revine în contextul lui, iar agentul îl citește înainte să ceară următorul. Pentru munca mai degrabă mecanică, cum ar fi citirea a douăzeci de fișiere ca să găsească cele trei care contează sau verificarea fiecărui tichet deschis pentru o anumită etichetă, cea mai mare parte a acestor runde și a acestui context se consumă pe rezultate pe care agentul le aruncă.
+
+Modul cod este un singur instrument, `repl`. Cu el, agentul scrie un script scurt în JavaScript care apelează celelalte instrumente, face bucle, filtrează și combină rezultatele lor și returnează doar ce are nevoie. Un singur apel `repl` poate face munca a zeci de runde de instrumente, iar în context intră doar răspunsul scriptului.
+
+Fiecare rulare are `repl` atunci când serverul poate rula scripturi. Nu există nimic de activat: vezi [Când o rulare are `repl`](#când-o-rulare-are-repl).
+
+## Ce poate face un script
+
+Un script este JavaScript simplu, scris ca un corp de funcție async, așa că `await` și `return` funcționează la nivel superior. Fiecare apel `repl` pornește un interpretor nou, gol.
+
+- **Apelează instrumente.** `await tools.read({ path: "README.md" })` apelează un instrument și se rezolvă cu rezultatul lui sau eșuează cu o eroare, când apelul eșuează sau este refuzat. Apelurile independente pot rula împreună cu `Promise.allSettled`.
+- **Găsește instrumente.** `ALL_TOOLS` listează fiecare instrument pe care îl poate apela scriptul. `searchTools(query)` găsește instrumente după ce fac, `describeTool(name)` returnează descrierea și argumentele unui instrument, iar `describeNamespace(name)` listează instrumentele unui grup. Instrumentele serverelor MCP conectate sunt accesibile și ele în acest fel.
+- **Returnează rezultate.** Vine înapoi la agent doar ce returnează scriptul sau transmite către `text()`, `image()` sau `console.log()`. Până la patru imagini ajung la model.
+- **Păstrează valori.** `store(key, value)` și `load(key)` păstrează valori JSON mici între scripturile aceleiași conversații și ale aceluiași agent. Valorile se salvează doar când scriptul se încheie. Subagenții nu au depozit.
+- **Întreabă o persoană.** `await tools.ask_user({ question, options })` pune o întrebare și așteaptă răspunsul.
+- **Folosește embedding-uri pe dispozitiv.** `models.embed`, `models.rank` și `models.classify` folosesc modelul de embedding al serverului, când este instalat.
+- **Așteaptă.** `sleep(ms)` și `setTimeout`, în limita de timp a scriptului. `limits()` returnează limitele sub care rulează scriptul.
+
+Un script nu are acces la sistemul de fișiere, la rețea, la procese, la module sau la mediu: fără `fetch`, `require`, `import` sau `process`. Singura ieșire este un apel de instrument, iar fiecare apel de instrument trece prin aceleași verificări ca un apel pe care agentul l-ar fi făcut direct.
+
+Apelurile de instrumente pe care un script le-a făcut deja nu sunt anulate dacă scriptul eșuează după aceea.
+
+## Ce instrumente apelează agentul direct
+
+Fiecare rulare a agentului integrat primește același set mic de instrumente pe care le apelează pe nume:
+
+- `repl`, primul;
+- instrumentele de fișiere și de shell `read`, `write`, `edit`, `search`, `find`, `bash` și `read_output`;
+- `ask_user` și `task`;
+- `todo_write`, `search_memory` și `send_message`;
+- verbele de care are nevoie [modul](/ro-RO/manual/concepte/moduri/) conversației ca să-și livreze rezultatul sau să îl părăsească, cum ar fi `submit_plan` în modul plan;
+- `search_tools`, când se încarcă un instrument la prima utilizare (explicat mai jos).
+
+Fiecare alt instrument pe care îl poate folosi rularea este accesat în una dintre două moduri:
+
+- **Doar din script**, când un script îl poate apela. Agentul îl găsește cu `searchTools()` sau `describeTool()` și îl apelează ca `tools.<name>(args)`. Descrierea unui instrument disponibil doar din script nu ajunge niciodată la model, deci nu costă nimic în prompt. Dacă agentul apelează totuși unul direct, răspunsul îi spune să apeleze instrumentul dintr-un script. Dacă serverul nu poate rula scripturile rulării, se încarcă la prima utilizare în schimb ([Când scripturile nu pot rula](#când-scripturile-nu-pot-rula)).
+- **Încărcat la prima utilizare**, când un script nu îl poate apela. Agentul vede numele lui, iar apelarea lui după nume sau găsirea lui cu `search_tools` îl încarcă.
+
+Unele instrumente nu pot fi apelate niciodată dintr-un script, printre ele `repl` însuși (un script nu poate porni un script), `eval`, `task`, `checkpoint`, `rewind`, verbele `vibe_*` și instrumentele care pornesc sau trimit mesaje altor rulări de agenți, creează, decid sau comentează aprobări, modifică politica sau skill-urile ori părăsesc modul plan. Agentul le apelează direct.
+
+O rulare fără `repl` primește aceleași instrumente directe, iar restul se încarcă la prima utilizare. [Contextul instrumentelor și cache-ul prompturilor](/ro-RO/manual/concepte/contextul-instrumentelor/) explică de ce setul este același în ambele cazuri.
+
+Modul cod nu adaugă niciodată un instrument pe care modul conversației nu-l permite. Filtrul de instrumente al modului se aplică primul, iar un script poate apela doar ce a rămas.
+
+## Când o rulare are `repl`
+
+O rulare are `repl` când rulatorul de scripturi al serverului a trecut verificarea de blocare la pornire ([Cum sunt izolate scripturile](#cum-sunt-izolate-scripturile)). Nicio setare de spațiu de lucru, agent sau server nu schimbă asta. O rulare tot nu are `repl` când:
+
+- rulatorul nu se poate bloca singur pe mașina serverului; serverul nu rulează atunci niciun script;
+- serverul este o demonstrație publică, care nu rulează scripturi;
+- rularea nu aparține niciunui spațiu de lucru;
+- limitele spațiului de lucru nu pot fi citite, pentru că rularea sub valorile implicite ar putea depăși limite pe care un admin le-a coborât;
+- jurnalul rulării nu a putut fi scris, pentru că fiecare script este înregistrat sub rularea sa înainte să pornească.
+
+O astfel de rulare apelează toate instrumentele sale direct.
+
+Modul cod funcționează pentru rulările agentului integrat și pentru agenții care ajung la instrumentele Control Center prin endpoint-ul lui MCP, cum este Claude Code. Pentru un agent MCP, lista de instrumente pe care o primește conține `repl`, instrumentele directe și instrumentele pe care un script nu le poate apela; restul le apelează din scripturi. Doar o rulare pe care Control Center a pornit-o și pentru care păstrează un jurnal primește aici `repl`; orice alt client primește fiecare instrument, cu excepția lui `repl`.
+
+**Setări → Spațiu de lucru → Mod cod** arată sub **Stare** dacă acest server rulează scripturi (**Disponibil** sau **Indisponibil**, cu motivul serverului) și ce versiune de **Runner** este instalată. **Vezi execuțiile de cod** deschide lista scripturilor care au rulat.
+
+Proprietarul serverului nu poate dezactiva scripturile. Poate să le limiteze: câte rulează simultan și cât memorie poate folosi unul (vezi [Limite](#limite)).
+
+### Când scripturile nu pot rula
+
+O rulare nu pierde niciodată un instrument pentru că serverul nu poate rula scripturile sale. Când serverul refuză un script dintr-un motiv pe care niciun alt script nu l-ar fi putut evita (de exemplu scripturile nu sunt disponibile, scriptul a așteptat jumătate din timpul său un loc liber, înregistrarea sa nu poate fi scrisă, lista de instrumente a rulării este prea mare ca să fie dată unui script, sau runner-ul nu poate porni ori nu se poate bloca singur), rularea nu mai folosește scripturi pentru tot restul duratei sale:
+
+- o rulare a agentului integrat păstrează `repl`, iar fiecare instrument la care ajungea doar dintr-un script se încarcă acum la prima utilizare: agentul îl apelează după nume sau îl găsește cu `search_tools`;
+- o rulare de pe endpoint-ul MCP primește o listă de instrumente cu fiecare instrument și fără `repl`, iar clientul său este anunțat că lista s-a schimbat. Serverul ține minte ultimele 1.024 de astfel de rulări; una mai veche revine la scripturi.
+
+Aceste instrumente trec prin același filtru de mod, aceleași guardrail-uri și aceleași aprobări ca înainte, deci nimic nu devine apelabil care nu era. Un script care eșuează din propria vină, aruncând o eroare, depășind o limită sau având un apel refuzat, nu schimbă nimic.
+
+Serverul verifică în continuare că scripturile pot rula. Când runner-ul nu pornește dintr-un motiv care nu ține de script, serverul repetă verificarea de blocare, cel mult o dată pe minut. Dacă verificarea eșuează, serverul nu rulează niciun script și scrie aceeași linie `code_mode=unavailable` ca la pornire; rulările care pornesc între timp nu primesc `repl`. Continuă să verifice, cel mult o dată pe minut, iar când o verificare trece, rulează din nou scripturi și scrie linia `code_mode=available`. Doar o verificare care a eșuat la pornirea serverului cere o repornire.
+
+## Limite
+
+Fiecare script rulează sub limite. Un admin al spațiului de lucru poate modifica șase dintre ele sub **Limite** în **Setări → Spațiu de lucru → Mod cod** (**Ajustează limitele**); agentul poate cere mai puțin timp sau un buget de ieșire mai mic pentru un singur script, niciodată mai mult.
+
+| Limită | Implicit | Interval | Ce se întâmplă când se epuizează |
+| --- | --- | --- | --- |
+| Timp per script | 5 min | 1 s până la 25 min | Scriptul este oprit, iar agentul este informat că a rămas fără timp. |
+| Timp de procesor | 30 s | 1 s până la 2 min | Scriptul este oprit. |
+| Memorie | 256 MiB | 16 MiB până la 1 GiB | Scriptul este oprit. Proprietarul serverului poate stabili un plafon mai mic pentru tot serverul. |
+| Apeluri de instrumente per script | 500 | 1 până la 5.000 | Apelurile următoare sunt refuzate, iar scriptul este informat din ce motiv. |
+| Apeluri simultane | 8 | 1 până la 32 | Apelurile doar de citire peste această limită așteaptă rândul lor. Apelurile care modifică ceva rulează întotdeauna pe rând. |
+| Ieșirea citită de agent | 10.000 de tokeni | 100 până la 50.000 | Ieșirea este scurtată la început și la sfârșit, iar agentul poate citi restul la cerere. |
+
+Timpul pe care un script îl petrece așteptând o persoană, la o aprobare sau o întrebare, nu se scade din limita lui de timp. Cât timp așteaptă, scriptul nu pornește niciun alt apel de instrument: apelurile pe care le face între timp pornesc, în ordine, după ce ai răspuns.
+
+Unele limite sunt fixe: un script are cel mult 256 KiB de cod sursă, argumentele unui apel de instrument cel mult 1 MiB și 16.384 de valori, o comandă pe care un script o transmite unui instrument încorporat care o execută cel mult 16 KiB (numele instrumentului se numără în această limită), iar un rezultat transmis scriptului cel mult 4 MiB; o valoare stocată are cel mult 256 KiB, iar tot ce stochează împreună o conversație și un agent are cel mult 1 MiB. O rulare execută un singur script pe rând.
+
+Și lookup-urile de instrumente ale unui script sunt limitate: o interogare `searchTools` de cel mult 1.024 de caractere, un nume de instrument sau de namespace de cel mult 256, cel mult 50 de rezultate și cel mult 200 de lookup-uri care iau în total 2 secunde din timpul serverului; peste asta, lookup-urile următoare eșuează. Toate scripturile unui spațiu de lucru împart și ele 2 secunde de timp de lookup, care se refac cu un sfert de secundă pe fiecare secundă. Indexul de căutare dă fiecărui instrument o parte egală de aproximativ un milion de caractere, cheltuită mai întâi pe numele argumentelor și apoi pe descriere, și indexează întotdeauna numele fiecărui instrument, deci chiar și într-un catalog foarte mare un instrument se găsește după nume.
+
+Proprietarul serverului mai limitează câte scripturi rulează simultan pe server (`--code-mode-max-processes`, implicit de două ori numărul de nuclee de procesor, cel mult 16) și memoria pe care o poate folosi un script (`--code-mode-max-heap-mb`); scripturile care așteaptă o persoană sunt numărate separat, până la de patru ori acest număr. Când această limită este mai mare decât unu, un spațiu de lucru poate folosi cel mult aproximativ trei sferturi din ea, ca niciun spațiu de lucru să nu poată lua fiecare loc. O rulare și subagenții ei folosesc împreună cel mult jumătate din locurile spațiului lor de lucru (cel puțin unul), astfel încât scripturile lor următoare așteaptă, în timp ce scripturile celorlalte rulări ale spațiului de lucru trec înainte. Vezi [CLI `cc_server`](/ro-RO/manual/referinta/cc-server-cli/#modul-cod).
+
+## Aprobări și întrebări
+
+Un apel de instrument dintr-un script este verificat exact ca un apel direct: filtrul de instrumente al modului, [guardrail-urile pentru acțiuni](/ro-RO/manual/concepte/guardrail-uri/), cererea de aprobare și verificările proprii ale instrumentului. Un script nu poate face nimic ce agentul n-ar fi putut face apelând instrumentul direct.
+
+Când un apel al unui script are nevoie de aprobare, cardul de aprobare afișează **Dintr-un script pe care îl rulează agentul**, iar **Afișează scriptul** deschide scriptul în conversație. Ca un script să nu te inunde cu carduri:
+
+- un script poate cere aprobare de cel mult 10 ori și poate pune cel mult 10 întrebări;
+- odată ce refuzi unul dintre apelurile sale, apelurile lui ulterioare care cer aprobare sunt refuzate fără să mai întrebe.
+
+Pentru rulările agentului integrat, cererile de aprobare provocate de comenzile pe care le rulează un script, cum ar fi un git push, se numără în aceeași limită și se opresc după un refuz în același mod. Când scriptul unui subagent rulează în același timp, o astfel de cerere se numără pentru ambele scripturi, iar un refuz le oprește pe amândouă.
+
+În rularea agentului integrat, o aprobare pentru un instrument al unui server MCP extern nu este reținută: fiecare apel cere din nou aprobarea, indiferent dacă îl face un script sau agentul însuși, cu excepția cazului în care autonomia spațiului este setată pe **Acționează liber**. Fiecare astfel de cerere provocată de un script se numără în limita lui de cel mult 10 ori.
+
+Dacă scriptul se încheie înainte să răspunzi, cardul este retras, iar un răspuns dat după aceea nu aprobă nimic.
+
+## În conversație
+
+Un apel `repl` apare în conversație ca un singur rând, etichetat cu descrierea scriptului. Când îl extinzi, vezi scriptul și rezultatul lui, iar apelurile de instrumente făcute de script apar sub **Apeluri de instrumente**, cu un număr al celor în rulare, reușite, eșuate, refuzate, anulate, în coadă sau sărite.
+
+### Cum se citește un script
+
+Apelurile de instrumente sunt aranjate după cum este scris scriptul, nu ca o listă lungă. Runnerul raportează linia și coloana din care a fost făcut fiecare apel, iar aplicația citește scriptul pentru a găsi buclele, ramurile și funcțiile:
+
+- **O buclă** (`for`, `while`) apare ca un grup **Buclă** cu antetul pe prima ei linie, iar o funcție de apel transmisă unui apel precum `map` sau `forEach` ca un grup **Pentru fiecare**. O linie subțire separă o trecere a buclei de următoarea atunci când aplicația le poate deosebi.
+- **Apelurile rulate împreună** cu `Promise.all`, `Promise.allSettled` sau un combinator asemănător apar ca un grup **În paralel**.
+- **O ramură** (`if`/`else`, `switch`, `try`/`catch`) arată câte un grup pentru fiecare braț, cu antetul dat de condiția sa.
+- **O funcție** pe care scriptul o definește și o apelează apare ca un grup **Funcție**.
+
+Un grup aflat într-un alt grup este indentat cu un pas mai mult, până la opt pași; grupurile mai adânci rămân la acest indent.
+
+Fiecare antet de grup arată cum s-au încheiat până acum apelurile sale. Înainte ca un apel să ruleze, rândul lui arată instrumentul și argumentele așa cum sunt scrise în script:
+
+| Rând | Sens |
+| --- | --- |
+| **În coadă** | Scriptul nu a ajuns încă la acest apel. |
+| În rulare | Apelul rulează. |
+| Încheiat | Apelul s-a încheiat; rândul arată rezultatul său și cât a durat. |
+| **Sărit** | Scriptul a trecut peste acest apel, cum ar fi brațul unui `if` care nu a fost ales, sau s-a încheiat fără să ajungă la el. |
+
+Un apel scris în argumentele unui apel către același instrument este raportat din același loc din script ca acel apel. Când aplicația nu poate spune dacă apelul exterior a fost făcut, rândul său nu arată niciun cuvânt de stare în locul lui **Sărit**.
+
+Când un grup a făcut mai mult de opt apeluri, partea din mijloc se restrânge: primele două și ultimele trei rămân vizibile, la fel ca fiecare apel care încă rulează, a eșuat sau a fost refuzat, împreună cu apelul care a început trecerea sa prin buclă. **Afișează N de apeluri în plus** deschide încă 100 de fiecare dată când apeși și numește până la patru instrumente ale apelurilor ascunse, cu câte unul din fiecare, cele mai rare primele, cum ar fi **Afișează 12 apeluri în plus** · Bash 1 · Read 11. Un nume de instrument mai lung de 24 de caractere este scurtat acolo.
+
+Un apel pe care aplicația nu îl poate așeza în script, cum ar fi unul făcut de un callback `then`, este listat după arbore sub **Apeluri nepoziționate în script**. Când aplicația nu poate citi scriptul sau niciun apel nu spune unde a fost făcut, apelurile apar ca o listă simplă, în ordinea în care au fost făcute.
+
+Fiecare rând de apel arată începutul argumentelor apelului și al rezultatului său, până la 8 KiB fiecare; odată ce rândurile unui script au 256 KiB din acestea, rândurile ulterioare arată doar instrumentul și cum s-a încheiat apelul. Odată ce scriptul s-a încheiat, **Deschide înregistrarea** deschide înregistrarea completă; dacă aceasta nu poate fi găsită, se deschide lista scripturilor din acea rulare. Un script refuzat înainte să pornească (de exemplu pentru că alt script din aceeași rulare încă rula) nu are înregistrare și nici link.
+
+## Înregistrarea
+
+Fiecare script care rulează este înregistrat în spațiul său de lucru înainte să pornească, iar înregistrarea se completează când se încheie. **Observabilitate → Execuții de cod** le listează, cele mai noi primele, și le poți filtra după rezultat. Linkurile **Scripturi din această rulare** și **Scripturi ale acestui agent** dintr-o înregistrare restrâng lista la o rulare sau la un agent. O înregistrare arată:
+
+- scriptul, ieșirea și consola lui;
+- când a pornit, cât a durat, timpul de procesor și memoria de vârf folosite și dacă a rulat prin agentul integrat sau printr-unul extern;
+- cum s-a încheiat, în cuvinte simple (de exemplu, a rămas fără timp sau a aruncat o eroare pe care nimic nu a prins-o);
+- fiecare apel de instrument, în ordine, cu rezultatul lui: dacă a fost permis, aprobat de o persoană sau refuzat, cât a așteptat o persoană să decidă, argumentele lui (secretele eliminate, tăiate la 8 KiB) și dimensiunea rezultatului. Rezultatul în sine nu se păstrează.
+
+Înregistrarea păstrează unde în script a fost făcut fiecare apel, astfel că apelurile sale de instrumente sunt aranjate la fel ca în conversație. Un apel aprobat de o persoană nu este niciodată ascuns acolo.
+
+Un script care încă rulează apare ca în execuție, cu apelurile de instrumente terminate până atunci; ieșirea, durata și consumul de resurse apar când se încheie. Dacă serverul se oprește cât timp rulează un script, înregistrarea se închide la următoarea pornire a serverului, iar acest lucru este menționat în ea; niciun script nu rulează în acel spațiu de lucru până când este închisă.
+
+Înregistrările sunt păstrate împreună cu rularea lor: ștergerea rulării sau a spațiului ei le șterge. Membrii văd înregistrările spațiilor pe care le pot deschide.
+
+## Cum sunt izolate scripturile
+
+Scripturile nu rulează niciodată în interiorul serverului. Fiecare script rulează în propriul proces, un program mic livrat împreună cu serverul, `cc_codemode`, care rulează JavaScript în motorul QuickJS-NG. Înainte să citească scriptul, programul se blochează singur cu controalele sistemului de operare: pe Linux un filtru de apeluri de sistem și limite de resurse, pe macOS un profil de sandbox care refuză implicit, pe Windows un AppContainer și un job object. După aceea nu poate deschide fișiere, nu poate folosi rețeaua, nu poate porni procese și nu poate vedea alte programe. Pornește fără variabile de mediu, nu deține credențiale, iar singurul lui canal este serverul, care răspunde la apelurile sale de instrumente.
+
+Serverul verifică blocarea la pornire, rulând autotestul programului. Dacă blocarea nu se ține pe mașina respectivă, de exemplu într-un container al cărui profil de securitate refuză unul dintre pași, serverul nu rulează acolo niciun script: nicio rulare nu primește `repl`, iar pagina de setări arată **Indisponibil** cu motivul. Un script nu rulează niciodată cu mai puțină izolare. Blocarea pentru Windows nu a fost încă rulată pe Windows.
+
+Locul în care a fost făcut un apel în script este raportat de runner, deci este folosit doar pentru a așeza conversația și înregistrarea. Nu decide niciodată dacă un apel este permis.
+
+Vezi [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/#scripturi-în-modul-cod) pentru ce acoperă blocarea și ce nu acoperă.
+
+## Vezi și
+
+- [Contextul instrumentelor și cache-ul prompturilor](/ro-RO/manual/concepte/contextul-instrumentelor/): de ce setul direct este mic și același cu sau fără `repl`.
+- [Instrumente agent integrate](/ro-RO/manual/referinta/instrumente-agent/#repl--rulează-un-script-care-apelează-instrumentele-tale): intrarea instrumentului `repl`.
+- [CLI `cc_server`](/ro-RO/manual/referinta/cc-server-cli/#modul-cod): limitele pe care le stabilește proprietarul serverului.

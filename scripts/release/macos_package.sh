@@ -11,6 +11,7 @@ cd "$REPO_ROOT"
 source "$REPO_ROOT/scripts/lib/common.sh"
 source "$REPO_ROOT/scripts/lib/artifact_names.sh"
 source "$REPO_ROOT/scripts/lib/media.sh"
+source "$REPO_ROOT/scripts/lib/codemode.sh"
 
 VERSION="${1:-${VERSION:?VERSION is required}}"
 RUNNER_TEMP="${RUNNER_TEMP:-$(mktemp -d)}"
@@ -57,6 +58,7 @@ mkdir -p "$APP/Contents/Resources/cc_server"
 cp -R "$CC_SERVER_BUNDLE/." "$APP/Contents/Resources/cc_server/"
 stage_natives "$NATIVES" "$APP/Contents/Resources/cc_server/Frameworks" dylib
 cc_media_stage "$NATIVES" "$APP/Contents/Resources/cc_server/bin/media" macos
+cc_codemode_stage "$NATIVES" "$APP/Contents/Resources/cc_server/bin/codemode" macos
 
 # 1c. Verify both native sets before signing. Every native is required (there is
 # no degraded mode), so a bundle that is missing one either crashes the desktop's
@@ -67,6 +69,7 @@ cc_media_stage "$NATIVES" "$APP/Contents/Resources/cc_server/bin/media" macos
 bash scripts/release/verify_natives.sh "$APP/Contents/Frameworks" macos desktop
 bash scripts/release/verify_natives.sh "$APP/Contents/Resources/cc_server/Frameworks" macos server
 cc_media_verify "$APP/Contents/Resources/cc_server/bin/media" macos
+cc_codemode_verify "$APP/Contents/Resources/cc_server/bin/codemode" macos
 
 # 1b. Legal notices, INSIDE the bundle so they travel with a copied .app.
 #
@@ -192,6 +195,13 @@ for f in "$APP/Contents/Resources/cc_server/bin/media/ffmpeg" \
          "$APP/Contents/Resources/cc_server/bin/media/libpdfium.dylib"; do
   echo "  sign cc_server/bin/media/$(basename "$f")"; sign "$f"
 done
+# Code mode's runner: hardened runtime and NO entitlements. It confines itself
+# with a deny-default Seatbelt profile at run time and needs no exception; in
+# particular it must never get cc_server's allow-unsigned-executable-memory
+# (QuickJS-NG is an interpreter and maps no executable memory) or the
+# app's network/device entitlements.
+echo "  sign cc_server/bin/codemode/cc_codemode"
+sign "$APP/Contents/Resources/cc_server/bin/codemode/cc_codemode"
 # The Dart AOT executable maps its embedded snapshot as executable memory, so
 # under the hardened runtime it MUST carry the allow-unsigned-executable-memory
 # exception. Signed bare it notarizes fine and is then SIGKILLed (CODESIGNING:
@@ -278,6 +288,11 @@ Every nested Mach-O must be signed with the Developer ID identity under the
 hardened runtime. Something is embedding code the signing pass above does not
 reach — extend it rather than relaxing this check."
   log "All embedded Mach-Os are Developer-ID signed + hardened"
+
+  # The sweep above checks signature flags, not behaviour. Run the re-signed
+  # runner once more: its lockdown self-test must still pass under the
+  # Developer ID signature and hardened runtime the user will run.
+  cc_codemode_verify "$APP/Contents/Resources/cc_server/bin/codemode" macos
 fi
 
 # 3. Build the DMG, then sign it.

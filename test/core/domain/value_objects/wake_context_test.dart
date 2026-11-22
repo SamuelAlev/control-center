@@ -3,33 +3,40 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('WakeReason', () {
-    test('has all 6 values', () {
-      expect(WakeReason.values, hasLength(6));
+    test('has all 14 values', () {
+      expect(WakeReason.values, hasLength(14));
       expect(WakeReason.values, contains(WakeReason.userMessage));
       expect(WakeReason.values, contains(WakeReason.assignment));
       expect(WakeReason.values, contains(WakeReason.recovery));
       expect(WakeReason.values, contains(WakeReason.childCompleted));
-      expect(WakeReason.values, contains(WakeReason.followUp));
+      expect(WakeReason.values, contains(WakeReason.schedule));
       expect(WakeReason.values, contains(WakeReason.pipelineStep));
+      expect(WakeReason.values, contains(WakeReason.goalContinuation));
+      expect(WakeReason.values, contains(WakeReason.improvementReview));
+    });
+
+    test('wire names are snake_case and parse back', () {
+      for (final reason in WakeReason.values) {
+        expect(reason.wire, matches(RegExp(r'^[a-z]+(_[a-z]+)*$')));
+        expect(WakeReasonWire.tryParse(reason.wire), reason);
+      }
+      expect(WakeReason.goalContinuation.wire, 'goal_continuation');
+      expect(WakeReasonWire.tryParse('follow_up'), isNull);
+      expect(WakeReasonWire.tryParse(null), isNull);
     });
   });
 
   group('WakeContext', () {
     WakeContext makeSubject({
       String? ticketId,
-      String runId = 'run-1',
-      String agentId = 'agent-1',
-      String workspaceId = 'ws-1',
       String? spaceId,
       WakeReason wakeReason = WakeReason.userMessage,
       String? messageId,
       String? pipelineRunId,
     }) {
       return WakeContext(
+        startedByRunId: null,
         ticketId: ticketId,
-        runId: runId,
-        agentId: agentId,
-        workspaceId: workspaceId,
         spaceId: spaceId,
         wakeReason: wakeReason,
         messageId: messageId,
@@ -37,13 +44,14 @@ void main() {
       );
     }
 
+    Map<String, String> env(WakeContext ctx) =>
+        ctx.toEnvironment(runId: 'run-42', agentId: 'agent-x', workspaceId: 'ws-99');
+
     group('constructor', () {
       test('sets all fields', () {
         const ctx = WakeContext(
+          startedByRunId: null,
           ticketId: 'ticket-1',
-          runId: 'run-1',
-          agentId: 'agent-1',
-          workspaceId: 'ws-1',
           spaceId: 'chan-1',
           wakeReason: WakeReason.assignment,
           messageId: 'msg-1',
@@ -51,13 +59,12 @@ void main() {
         );
 
         expect(ctx.ticketId, 'ticket-1');
-        expect(ctx.runId, 'run-1');
-        expect(ctx.agentId, 'agent-1');
-        expect(ctx.workspaceId, 'ws-1');
         expect(ctx.spaceId, 'chan-1');
         expect(ctx.wakeReason, WakeReason.assignment);
         expect(ctx.messageId, 'msg-1');
         expect(ctx.pipelineRunId, 'pipe-1');
+        expect(ctx.hasWakes, isFalse);
+        expect(ctx.nonce, isNull);
       });
 
       test('leaves optional fields null by default', () {
@@ -67,64 +74,55 @@ void main() {
         expect(ctx.spaceId, isNull);
         expect(ctx.messageId, isNull);
         expect(ctx.pipelineRunId, isNull);
+        expect(ctx.wakeIds, isEmpty);
       });
     });
 
     group('toEnvironment', () {
-      test('includes all required fields', () {
-        final env = makeSubject(
-          runId: 'run-42',
-          agentId: 'agent-x',
-          workspaceId: 'ws-99',
-          wakeReason: WakeReason.recovery,
-        ).toEnvironment();
+      test('includes the run identity and the wire reason', () {
+        final e = env(makeSubject(wakeReason: WakeReason.goalContinuation));
 
-        expect(env['CC_RUN_ID'], 'run-42');
-        expect(env['CC_AGENT_ID'], 'agent-x');
-        expect(env['CC_WORKSPACE_ID'], 'ws-99');
-        expect(env['CC_WAKE_REASON'], 'recovery');
+        expect(e['CC_RUN_ID'], 'run-42');
+        expect(e['CC_AGENT_ID'], 'agent-x');
+        expect(e['CC_WORKSPACE_ID'], 'ws-99');
+        expect(e['CC_WAKE_REASON'], 'goal_continuation');
       });
 
       test('includes optional fields when provided', () {
-        final env = makeSubject(
-          ticketId: 'ticket-7',
-          spaceId: 'chan-3',
-          messageId: 'msg-5',
-          pipelineRunId: 'pipe-9',
-        ).toEnvironment();
+        final e = env(
+          makeSubject(
+            ticketId: 'ticket-7',
+            spaceId: 'chan-3',
+            messageId: 'msg-5',
+            pipelineRunId: 'pipe-9',
+          ),
+        );
 
-        expect(env['CC_TASK_ID'], 'ticket-7');
-        expect(env['CC_SPACE_ID'], 'chan-3');
-        expect(env['CC_MESSAGE_ID'], 'msg-5');
-        expect(env['CC_PIPELINE_RUN_ID'], 'pipe-9');
+        expect(e['CC_TASK_ID'], 'ticket-7');
+        expect(e['CC_SPACE_ID'], 'chan-3');
+        expect(e['CC_MESSAGE_ID'], 'msg-5');
+        expect(e['CC_PIPELINE_RUN_ID'], 'pipe-9');
       });
 
       test('omits null optional fields from map', () {
-        final env = makeSubject().toEnvironment();
+        final e = env(makeSubject());
 
-        expect(env.containsKey('CC_SPACE_ID'), isFalse);
-        expect(env.containsKey('CC_MESSAGE_ID'), isFalse);
-        expect(env.containsKey('CC_PIPELINE_RUN_ID'), isFalse);
+        expect(e.containsKey('CC_SPACE_ID'), isFalse);
+        expect(e.containsKey('CC_MESSAGE_ID'), isFalse);
+        expect(e.containsKey('CC_PIPELINE_RUN_ID'), isFalse);
+        expect(e.containsKey('CC_WAKE_IDS'), isFalse);
       });
 
       test('uses empty string for null ticketId', () {
-        final env = makeSubject().toEnvironment();
-
-        expect(env['CC_TASK_ID'], '');
+        expect(env(makeSubject())['CC_TASK_ID'], '');
       });
     });
 
     group('toString', () {
-      test('returns expected format', () {
-        final ctx = makeSubject(
-          runId: 'run-1',
-          agentId: 'agent-1',
-          wakeReason: WakeReason.followUp,
-        );
-
+      test('names the reason and the wakes', () {
         expect(
-          ctx.toString(),
-          'WakeContext(runId=run-1, agentId=agent-1, reason=followUp)',
+          makeSubject(wakeReason: WakeReason.schedule).toString(),
+          'WakeContext(reason=schedule, wakes=)',
         );
       });
     });
@@ -133,9 +131,6 @@ void main() {
       test('equal when all fields match', () {
         final a = makeSubject(
           ticketId: 't1',
-          runId: 'r1',
-          agentId: 'a1',
-          workspaceId: 'w1',
           spaceId: 'c1',
           wakeReason: WakeReason.pipelineStep,
           messageId: 'm1',
@@ -143,9 +138,6 @@ void main() {
         );
         final b = makeSubject(
           ticketId: 't1',
-          runId: 'r1',
-          agentId: 'a1',
-          workspaceId: 'w1',
           spaceId: 'c1',
           wakeReason: WakeReason.pipelineStep,
           messageId: 'm1',
@@ -154,77 +146,20 @@ void main() {
 
         expect(a, equals(b));
         expect(a.hashCode, equals(b.hashCode));
+        expect(const WakeContext.userMessage(), makeSubject());
       });
 
-      test('not equal when ticketId differs', () {
-        final a = makeSubject(ticketId: 't1');
-        final b = makeSubject(ticketId: 't2');
-
-        expect(a, isNot(equals(b)));
-      });
-
-      test('not equal when runId differs', () {
-        final a = makeSubject(runId: 'r1');
-        final b = makeSubject(runId: 'r2');
-
-        expect(a, isNot(equals(b)));
-      });
-
-      test('not equal when agentId differs', () {
-        final a = makeSubject(agentId: 'a1');
-        final b = makeSubject(agentId: 'a2');
-
-        expect(a, isNot(equals(b)));
-      });
-
-      test('not equal when workspaceId differs', () {
-        final a = makeSubject(workspaceId: 'w1');
-        final b = makeSubject(workspaceId: 'w2');
-
-        expect(a, isNot(equals(b)));
-      });
-
-      test('not equal when spaceId differs', () {
-        final a = makeSubject(spaceId: 'c1');
-        final b = makeSubject(spaceId: null);
-
-        expect(a, isNot(equals(b)));
-      });
-
-      test('not equal when wakeReason differs', () {
-        final a = makeSubject(wakeReason: WakeReason.userMessage);
-        final b = makeSubject(wakeReason: WakeReason.childCompleted);
-
-        expect(a, isNot(equals(b)));
-      });
-
-      test('not equal when messageId differs', () {
-        final a = makeSubject(messageId: 'm1');
-        final b = makeSubject(messageId: null);
-
-        expect(a, isNot(equals(b)));
-      });
-
-      test('not equal when pipelineRunId differs', () {
-        final a = makeSubject(pipelineRunId: 'p1');
-        final b = makeSubject(pipelineRunId: null);
-
-        expect(a, isNot(equals(b)));
-      });
-
-      test('hashCode is consistent across multiple calls', () {
-        final ctx = makeSubject(
-          ticketId: 't1',
-          runId: 'r1',
-          agentId: 'a1',
-          workspaceId: 'w1',
-          spaceId: 'c1',
-          wakeReason: WakeReason.recovery,
-          messageId: 'm1',
-          pipelineRunId: 'p1',
-        );
-
-        expect(ctx.hashCode, equals(ctx.hashCode));
+      test('not equal when any field differs', () {
+        final base = makeSubject();
+        for (final other in [
+          makeSubject(ticketId: 't2'),
+          makeSubject(spaceId: 'c1'),
+          makeSubject(wakeReason: WakeReason.childCompleted),
+          makeSubject(messageId: 'm1'),
+          makeSubject(pipelineRunId: 'p1'),
+        ]) {
+          expect(base, isNot(equals(other)));
+        }
       });
 
       test('identical instances are equal', () {

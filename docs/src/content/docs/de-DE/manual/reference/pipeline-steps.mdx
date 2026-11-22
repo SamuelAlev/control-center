@@ -2,7 +2,7 @@
 title: Pipeline-Schrittarten
 description: Referenz zu Schrittarten, Body-Schlüsseln, ihrer Konfiguration und den Schrittergebnissen.
 slug: de-DE/handbuch/referenz/pipeline-schritte
-sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
+sourceHash: 0d2876bc1ac359f4d2cfe94902bd5f924d19d5d5
 ---
 
 Ein Pipeline-Schritt hat zwei unabhängige Achsen:
@@ -58,6 +58,31 @@ Allgemeiner Knoten für Prompt und Dispatch: rendert den Prompt, schickt den Age
 | `extras.spaceId`           | Bestehender Bereich, in dem gearbeitet wird (Vorgabe: ein versteckter)                               |
 | `extras.conversationTitle` | Benannte Unterhaltung in diesem Bereich (optional)                                                   |
 | `extras.mode`              | Wird am Knoten gelesen, der den Bereich *öffnet* (`messaging.createSpace`), nicht hier. Vorgabe `review`. |
+
+### `goal.pursue`
+
+Startet ein dauerhaftes Ziel (siehe [Ein Ziel verfolgen](/de-DE/handbuch/anleitungen/ziel-verfolgen/)) und wartet, bis das Ziel endet. Der Editor zeigt es als **Pursue a goal**. Er gehört nicht zu den 25 mitgelieferten Schritten oben; er wird neben ihnen registriert.
+
+| Konfigurationsfeld | Beschreibung |
+| ---------------------- | ----------- |
+| `agentId` | Der Agent, der das Ziel verfolgt (Pflichtfeld) |
+| `prompt` | Das Ziel; unterstützt die Ersetzung `{{key}}` (Pflichtfeld) |
+| `outputKey` | Zustandsschlüssel für das Ergebnis (Pflichtfeld) |
+| `extras.spaceId` | Der Bereich, in dem das Ziel arbeitet (Pflichtfeld, wie bei jedem Agentenschritt) |
+| `extras.budgetMicros` | Das Budget des Ziels in Mikrodollar, 1 bis 1.000.000.000 (Pflichtfeld) |
+| `extras.maxRuns` | Eine Obergrenze für Abschnitte, 1 bis 1.000 (optional) |
+| `extras.deadlineHours` | Stunden ab dem Start des Ziels durch den Schritt, 1 bis 2.160 (optional) |
+| `extras.contract` | Was fertig heißt: Kriterien und Prüfungen (optional) |
+
+Das Ergebnis unter `outputKey` ist `{summary, verdict}`, wobei `verdict` das Urteil des Reviewers mit seinen Punkten und Bedenken ist oder null.
+
+| Das Ziel | Der Schritt |
+| -------- | -------- |
+| abgeschlossen | schließt ab |
+| fehlgeschlagen, abgebrochen oder Budget erschöpft | scheitert (`retry` und `continueOnFail` gelten); ein wiederholter Schritt startet ein neues Ziel |
+| pausiert, einschließlich Warten auf das Review einer Person | bleibt suspendiert, ausgenommen von der 24-Stunden-Lebendigkeitsprüfung |
+
+Ein Ziel, das ein Pipeline-Lauf gestartet hat, wird dessen Orchestrierung belastet, einschließlich seines Reviews. Wird der Pipeline-Lauf abgebrochen, schlägt fehl oder schließt ab, während das Ziel arbeitet, wird das Ziel abgebrochen.
 
 ### `pipeline.condition`
 

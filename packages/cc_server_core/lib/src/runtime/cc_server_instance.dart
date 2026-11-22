@@ -22,6 +22,10 @@ class CcServer {
   /// without it a stopped server left agent children running unsupervised.
   SandboxedAgentDispatchAdapter? _agentDispatch;
 
+  /// Code mode's execution service: every live script runner. Disposed on
+  /// [shutdown] right after the agent runs, so no runner outlives the server.
+  CodeExecutionService? _codeExecutions;
+
   /// The OS sandbox's per-session proxies, bridges and denial monitor, reset
   /// on [shutdown] once nothing sandboxed is left running.
   NativeSandboxAdapter? _nativeSandbox;
@@ -220,6 +224,8 @@ class CcServer {
   NetworkRuntime? _networkRuntime;
   PresenceHub? _presenceHub;
   CheckerDispatchListener? _checkerListener;
+  ServerRunQueues? _runQueues;
+  ServerLearning? _learning;
   WorktreeGcListener? _worktreeGcListener;
 
   /// Steers the agent driving a rig when the machine is taken over or
@@ -345,6 +351,10 @@ class CcServer {
       // A fresh pool slot can take longer than the default 3-second step cap.
       timeout: const Duration(seconds: 10),
     );
+    // The wake queue first stops delivering: the runs stopped below settle
+    // as server stops, which reopen their wakes for the next boot instead of
+    // re-dispatching them into an adapter that is shutting down.
+    await guard('wakeQueue', () async => _runQueues?.beginStopping());
     // Agent runs next, while everything they write to is still open: each run
     // is cancelled, its child killed (SIGTERM, then SIGKILL after 3s), its
     // credentials revoked and its run log closed, then every warm sandbox is
@@ -352,6 +362,13 @@ class CcServer {
     await guard(
       'agentRuns',
       () async => _agentDispatch?.shutdown(),
+      timeout: const Duration(seconds: 10),
+    );
+    // Script runners a cancelled run left behind (or a script still waiting
+    // on its nested calls' settle grace) are killed and awaited here.
+    await guard(
+      'codeRunners',
+      () async => _codeExecutions?.dispose(),
       timeout: const Duration(seconds: 10),
     );
     await step('approvals', () async {
@@ -419,6 +436,7 @@ class CcServer {
     await step('presence', () async => _presenceHub?.dispose());
     await step('dataSync', () async {
       await _checkerListener?.stop();
+      await _runQueues?.stop();
       _worktreeGcListener?.dispose();
       await _rigEventListener?.dispose();
       await _agentAwaitingInput?.dispose();
@@ -476,6 +494,7 @@ class CcServer {
     // running (a skill scan a new workspace's seeding started, say) finishes
     // now: after the close below its next statement would open the workspace
     // database again, on a server that has shut down.
+    await guard('learning', () async => _learning?.dispose());
     await guard(
       'pipelines',
       () async => _stopPipelines?.call(),

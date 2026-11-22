@@ -33,6 +33,8 @@ class ToolOutputWrite {
     required this.content,
     this.isError = false,
     this.toolUseId,
+    this.handle,
+    this.label,
   });
 
   /// The run scope the handle will be bound to.
@@ -50,6 +52,52 @@ class ToolOutputWrite {
   /// The tool call this observation answers, when known (provenance for
   /// post-hoc inspection of the store).
   final String? toolUseId;
+
+  /// The handle to store under, chosen before the write
+  /// ([newToolOutputHandle]); null lets the store mint one. A script's
+  /// `keep()` hands its handle to the script at once and writes only when the
+  /// script completes. A store refuses (returns null for) a handle that is
+  /// not [isToolOutputHandle]'s shape or is already taken in the scope.
+  final String? handle;
+
+  /// A short name the writer gave the output (a script's `keep(value,
+  /// label)`), listed by [ToolOutputStore.list]; null for a tool's output.
+  final String? label;
+}
+
+/// One stored output, as [ToolOutputStore.list] describes it.
+class ToolOutputEntry {
+  /// Creates an entry.
+  const ToolOutputEntry({
+    required this.handle,
+    required this.toolName,
+    required this.label,
+    required this.chars,
+    required this.bytes,
+    required this.isError,
+    required this.createdAt,
+  });
+
+  /// The handle `read_output` reads it with.
+  final String handle;
+
+  /// The tool that produced it (`keep` for a script's kept value).
+  final String toolName;
+
+  /// The writer's label ([ToolOutputWrite.label]), or null.
+  final String? label;
+
+  /// Its length in UTF-16 code units.
+  final int chars;
+
+  /// Its length in UTF-8 bytes.
+  final int bytes;
+
+  /// Whether the tool reported an error.
+  final bool isError;
+
+  /// When it was stored.
+  final DateTime createdAt;
 }
 
 /// One bounded slice of a stored output.
@@ -183,6 +231,10 @@ abstract class ToolOutputStore {
     int limitChars = kToolOutputReadDefaultChars,
   });
 
+  /// Every output stored for [scope], newest first: [scope]'s own entries
+  /// only, never another scope's, and never the stored text.
+  Future<List<ToolOutputEntry>> list(ToolOutputScope scope);
+
   /// Removes everything stored for [scope].
   ///
   /// The explicit retirement path: the host calls it when a conversation's
@@ -287,10 +339,18 @@ class InMemoryToolOutputStore implements ToolOutputStore {
       // transcript may still reference.
       return null;
     }
-    final handle = newToolOutputHandle();
+    final chosen = write.handle;
+    if (chosen != null &&
+        (!isToolOutputHandle(chosen) || bucket.containsKey(chosen))) {
+      return null;
+    }
+    final handle = chosen ?? newToolOutputHandle();
     bucket[handle] = _InMemoryEntry(
       toolName: write.toolName,
       content: write.content,
+      label: write.label,
+      isError: write.isError,
+      createdAt: DateTime.now().toUtc(),
     );
     return ToolOutputReference(
       handle: handle,
@@ -328,6 +388,24 @@ class InMemoryToolOutputStore implements ToolOutputStore {
   }
 
   @override
+  Future<List<ToolOutputEntry>> list(ToolOutputScope scope) async => [
+    for (final MapEntry(key: handle, value: e)
+        in (_entries[scope.key] ?? const <String, _InMemoryEntry>{})
+            .entries
+            .toList()
+            .reversed)
+      ToolOutputEntry(
+        handle: handle,
+        toolName: e.toolName,
+        label: e.label,
+        chars: e.content.length,
+        bytes: utf8LengthOf(e.content),
+        isError: e.isError,
+        createdAt: e.createdAt,
+      ),
+  ];
+
+  @override
   Future<void> clearScope(ToolOutputScope scope) async {
     _entries.remove(scope.key);
   }
@@ -341,10 +419,19 @@ class InMemoryToolOutputStore implements ToolOutputStore {
 }
 
 class _InMemoryEntry {
-  const _InMemoryEntry({required this.toolName, required this.content});
+  const _InMemoryEntry({
+    required this.toolName,
+    required this.content,
+    required this.label,
+    required this.isError,
+    required this.createdAt,
+  });
 
   final String toolName;
   final String content;
+  final String? label;
+  final bool isError;
+  final DateTime createdAt;
 }
 
 /// Clamps a ranged-read request to the port's bounds.

@@ -9,7 +9,9 @@ import 'package:cc_domain/features/dispatch/domain/context/conversation_summariz
 import 'package:cc_domain/features/dispatch/domain/context/conversation_token_estimator.dart';
 import 'package:cc_domain/features/dispatch/domain/context/tool_output_pruning.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/still_in_flight_row.dart';
 import 'package:cc_harness/context.dart';
+import 'package:cc_infra/src/messaging/still_in_flight_notes.dart';
 
 /// What a `/shake` pass may drop.
 enum ShakeTarget {
@@ -101,6 +103,10 @@ class ConversationCompactionService {
   /// The active compaction configuration.
   CompactionConfig get config => _config;
 
+  /// Writes the agent's "Still in flight" block after a summary; the server
+  /// sets it at boot. Null writes none.
+  StillInFlightNotes? stillInFlight;
+
   /// Runs a context-maintenance pass for [spaceId] within [workspaceId],
   /// against a model with a [contextWindowTokens] window. Under pressure (or when [force]) it first
   /// prunes fat tool output, then — if still over budget — folds the older
@@ -109,11 +115,15 @@ class ConversationCompactionService {
   /// [conversationId] selects the stream within the space (defaults to the
   /// space's STANDING conversation); a manual `/compact` fired from a thread
   /// must fold that thread, not the standing transcript.
+  ///
+  /// [self] is the agent whose context this is: its name labels its turns
+  /// for the summarizer, and its id (when known) gets the "Still in flight"
+  /// block after a summary.
   Future<CompactionOutcome> maintain({
     required String workspaceId,
     required String spaceId,
     required int contextWindowTokens,
-    required String selfAgentName,
+    required ({String? id, String name}) self,
     String? conversationId,
     bool force = false,
   }) async {
@@ -177,9 +187,14 @@ class ConversationCompactionService {
 
     final summary = await _summarizer.summarize(
       CompactionInput(
-        messages: plan.messagesToCompact,
+        // An earlier block is the server's state, not history: the new
+        // block below replaces it.
+        messages: [
+          for (final m in plan.messagesToCompact)
+            if (stillInFlightRowAgent(m) == null) m,
+        ],
         previousSummary: plan.previousSummary,
-        selfAgentName: selfAgentName,
+        selfAgentName: self.name,
       ),
     );
     if (summary.trim().isEmpty) {
@@ -207,12 +222,38 @@ class ConversationCompactionService {
     );
 
     _embed(workspaceId, messageId, summary);
+    await _writeStillInFlight(workspaceId, spaceId, self.id, messages);
 
     return CompactionOutcome(
       compactionMessageId: messageId,
       prunedTokens: prunedTokens,
       compactedMessageCount: plan.idsToCompact.length,
     );
+  }
+
+  /// Appends [agentId]'s "Still in flight" block after a summary of
+  /// [messages]' conversation. Best effort: the summary stands without it.
+  Future<void> _writeStillInFlight(
+    String workspaceId,
+    String spaceId,
+    String? agentId,
+    List<Message> messages,
+  ) async {
+    final notes = stillInFlight;
+    if (notes == null || agentId == null || messages.isEmpty) {
+      return;
+    }
+    try {
+      await notes.writeAfterCompaction(
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+        conversationId: messages.last.conversationId,
+        agentId: agentId,
+        claude: false,
+      );
+    } on Object {
+      // The block is a convenience; the compaction already happened.
+    }
   }
 
   /// Live (non-compacted) token estimate for [messages], counting the prior
@@ -326,18 +367,11 @@ class ConversationCompactionService {
         if (segment is ToolSegment && segment.images.isNotEmpty) {
           dropped += segment.images.length;
           changed = true;
-          rewritten.add(
-            ToolSegment(
-              toolName: segment.toolName,
-              toolCallId: segment.toolCallId,
-              inputs: segment.inputs,
-              outputs: segment.outputs,
-              status: segment.status,
-              startedAt: segment.startedAt,
-              durationMs: segment.durationMs,
-              prunedAt: segment.prunedAt,
-            ),
-          );
+          // Only the image references go: everything else, a nested call's
+          // parent, outcome and call site included, is the row as it was.
+          // Attachments stay too: nothing replays them to the model, so
+          // dropping them would save no context and lose the person's view.
+          rewritten.add(segment.copyWith(images: const []));
         } else {
           rewritten.add(segment);
         }

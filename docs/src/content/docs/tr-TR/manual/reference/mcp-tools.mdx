@@ -2,7 +2,7 @@
 title: MCP araçları
 description: cc_server'ın kaydettiği MCP araçlarının ailelere göre eksiksiz kataloğu.
 slug: tr-TR/kilavuz/referans/mcp-araclari
-sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
+sourceHash: 0ef9efd386b57c3a254e7f637b0436d9baff1719
 ---
 
 `cc_server` tek bir MCP (JSON-RPC 2.0) araç kayıt defteri barındırır; bu kayıt defteri ana sunucu portunda (varsayılan `9030`) `POST /mcp` ve `GET /sse` üzerinden sunulur ve protokol sürümü `2024-11-05`'tir. Her istemci aynı kayıt defterine ulaşır: masaüstü, web derlemesi, harici MCP istemcileri ve yerleşik ajan çalışma zamanı. Harici MCP sunucuları kendi katmanlarında aynı kayıt defterine köprülenir: çalışma alanı yöneticilerinin yapılandırdığı sunucular için çalışma alanı başına bir katman, sunucu sahibinin kişisel sunucuları için ise bir katman. Bu uç nokta, bunları yalnızca bir ajan çalıştırması için listeler, çağırır ve arar: kendi çalışma alanının sunucuları ve sunucu sahibi çalıştırmadan sorumluysa kişisel sunucular. MCP belirteci ve eşlenmiş cihazlar bunları hiçbir zaman görmez (bkz. [Ajanlarınızın kullandığı MCP sunucuları](/tr-TR/kilavuz/nasil-yapilir/mcp-sunucusu/#ajanlarınızın-kullandığı-mcp-sunucuları)).
@@ -11,21 +11,22 @@ sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
 
 | Ölçüm                                                                              | Sayı |
 | ---------------------------------------------------------------------------------- | ----- |
-| `cc_server` tarafından kaydedilen araçlar                                          | 110   |
-| `packages/cc_mcp` kaynaklı                                                         | 108   |
+| `cc_server` tarafından kaydedilen araçlar                                          | 116   |
+| `packages/cc_mcp` kaynaklı                                                         | 114   |
 | `packages/cc_mcp_client` kaynaklı (araç keşfi)                                     | 2     |
-| Temel kayıt defterinde kayıtlı (`server_mcp_registry.dart`)                        | 63    |
-| Servisleri ayağa kalktıkça önyükleme sonrası kaydedilen (`cc_server_runtime.dart`) | 47    |
-| Temel kayıt defterindeki 63 araçtan kod grafiği deposuna bağlı olanlar             | 5     |
+| Temel kayıt defterinde kayıtlı (`server_mcp_registry.dart`)                        | 64    |
+| Servisleri ayağa kalktıkça önyükleme sonrası kaydedilen (`cc_server_runtime.dart`) | 52    |
+| Temel kayıt defterindeki 64 araçtan kod grafiği deposuna bağlı olanlar             | 5     |
+| Temel kayıt defterinin 64'ünden, kod modu runner'ına (`repl`) koşullu olan | 1 |
 
-Beş kod grafiği aracı yalnızca ana makine `buildServerMcpRegistry`'ye bir kod grafiği deposu geçirdiğinde kaydedilir. `cc_server` her zaman bir tane geçirir; bu yüzden dağıtılan ikili dosyada 110 aracın tamamı etkindir.
+Beş kod grafiği aracı yalnızca ana makine `buildServerMcpRegistry`'ye bir kod grafiği deposu geçirdiğinde kaydedilir ve `repl` yalnızca kod modu runner'ını geçirdiğinde. `cc_server` her zaman ikisini de geçirir (runner olmadan başlamaz); bu yüzden dağıtılan ikilide 111 aracın tamamı kayıtlıdır; herkese açık demo sunucusu `repl` kaydetmez.
 
-Kayıt defterinin tamamı `tools/list` içinde duyurulur ve hiçbir keşif kapısına takılmaz. Bilet düzenlemeleri tipli araçlardır.
+Kayıt defterinin tamamı `tools/list` içinde duyurulur ve betik çalıştırabilen bir ajan çalıştırması hariç (aşağıda), hiçbir keşif kapısına takılmaz. Bilet düzenlemeleri tipli araçlardır.
 
 :::note[Harici istemciler her zaman kataloğun tamamını görür]
-`tools/list` hiçbir zaman kırpılmaz; yalnızca sunucu sahibinin kişisel MCP sunucuları bundan istisnadır ve bunları hiçbir zaman taşımaz. MCP istemcileri araç adlarını bu listenin kendi önbelleğe alınmış kopyasına göre doğrular ve sunucuya sormadan listelenmemiş olan her şeyi reddeder; dolayısıyla orada gizlenen bir araç yalnızca sessiz kalmaz, erişilemez olur.
+`tools/list` hiçbir zaman kırpılmaz; yalnızca sunucu sahibinin kişisel MCP sunucuları bunun dışındadır ve bunları hiçbir zaman taşımaz; ayrıca [kod modu](/tr-TR/kilavuz/kavramlar/kod-modu/): `repl`, yalnızca sunucu betik çalıştırabildiğinde bir ajan çalıştırmasının listesinde yer alır; bu çalıştırmaya `repl`, doğrudan araçlar (`read`, `write`, `edit`, `search`, `find`, `bash`, `read_output`, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` ve modunun kendi çıktı fiilleri, kayıt defterinde bulunanlar) ve bir betiğin çağıramayacağı araçlar listelenir. Geri kalanını bir betikten çağırır; onlardan birine yapılan doğrudan bir çağrı, `repl` ile nasıl çağrılacağını söyleyen bir yanıtla karşılanır. MCP istemcileri araç adlarını bu listenin kendi önbelleğe alınmış kopyasına göre doğrular ve sunucuya sormadan listelenmemiş olan her şeyi reddeder; dolayısıyla orada gizlenen bir araç yalnızca sessiz kalmaz, erişilemez olur.
 
-**Yerleşik harness** farklıdır: her istekte tanımların yalnızca sürekli bellekte tutulan bir alt kümesini yükler ve geri kalanını ilk kullanımda çeker; bu, harness tarafındaki bir davranıştır ve bu kayıt defterini değiştirmez. Bkz. [Araç bağlamı ve istem önbelleği](/tr-TR/kilavuz/kavramlar/arac-baglami).
+**Yerleşik harness** farklıdır: her istekte yalnızca küçük bir doğrudan küme tanımı yükler ve geri kalanına betiklerden ulaşır ya da ilk kullanımda yükler; bu, harness tarafındaki bir davranıştır ve bu kayıt defterini değiştirmez. Bkz. [Araç bağlamı ve istem önbelleği](/tr-TR/kilavuz/kavramlar/arac-baglami/).
 :::
 
 :::note[Her araç sınıfı kaydedilir]
@@ -52,6 +53,14 @@ Her ikisi de `cc_mcp`'den değil `cc_mcp_client`'tan gelir ve ikisi de mod korum
 
 Üçüncü bir keşif aracı olan **`search_tools`** yalnızca yerleşik harness'ın içinde bulunur ve bu MCP kayıt defterinin parçası değildir. Çalıştırmanın kendi araç yüzeyini sıralar ve `search_tool_bm25`'ten farklı olarak bulduklarının şemalarını **yükler**; böylece ajan bir sonraki turunda eşleşen bir aracı çağırabilir. Harness üzerindeki ajanlar bunu tercih etmelidir; MCP istemcilerinde ise `search_tool_bm25` vardır.
 
+## Kod modu
+
+| Araç | Açıklama |
+| ------ | ----------- |
+| `repl` | Çalıştırmanın diğer araçlarını `tools.<id>(args)` olarak çağıran ve yalnızca ihtiyaç duyduğunu döndüren bir JavaScript betiğini çalıştırır. Yalnızca [kod modu](/tr-TR/kilavuz/kavramlar/kod-modu/) betiklerini çalıştırabilen bir sunucudaki bir ajan çalıştırmasına listelenir. Her iç çağrı, bir `tools/call` ile aynı kapıdan geçer. `code`, `description`, `timeout_ms?` ve `max_output_tokens?` alır. |
+
+Bir betik `repl`, `search_tool_bm25` ya da `list_my_tools` aracını çağıramaz; ayrıca başka bir ajan çalıştırmasını başlatan ya da ona mesaj gönderen, bir bilete atama yapan ya da yorum ekleyen, bir onay oluşturan, karara bağlayan ya da onay üzerine yorum yapan, bir ilke öneren ya da değiştiren, beceri kuran ya da değiştiren, bir çalışma zamanı profili oluşturan, bir plan sunan, plan modundan çıkan, konuşmanın hedefini tamamlayan ya da bir pipeline çalıştırmasının çıktısını teslim eden hiçbir araç çağıramaz. Bu araçlar `scriptCallable` değerini false olarak bildirir ve doğrudan çağrılır; yerleşik harness'ta doğrudan kümenin dışında olan bir araç ilk kullanımda yüklenir. `create_ticket` yalnızca `assignee` olmadan bir betikten çağrılabilir.
+
 ## Ajan araçları
 
 | Araç          | Açıklama                                     |
@@ -60,15 +69,29 @@ Her ikisi de `cc_mcp`'den değil `cc_mcp_client`'tan gelir ve ikisi de mod korum
 
 ## Ajanlar arası mesajlaşma ve devretme
 
-Ajanlar birbirleriyle alanlar üzerinden konuşur (kalıcı ve kadroya görünür). `ask_agent` zorunlu bir zaman aşımıyla istek/yanıt biçimindedir; `delegate_task` ise sunucu tarafında derinlik sınırı, döngü algılama, bütçe zarfı ve özerklik tavanıyla korunur.
+Ajanlar birbirleriyle alanlar üzerinden konuşur (kalıcıdır, kadroda görünür). `ask_agent` ya yanıtı bekler (`mode: wait`, varsayılan 600 saniye, en fazla 1.800) ya da hemen döner (`mode: background`); her iki durumda da yanıt satır içi dönmediyse soran, yanıtla bir kez uyandırılır. `send_to_agent`, `ask_agent`, `consult_agent`, `request_peer_review` ve `delegate_task` aynı sunucu tarafı kapıdan geçer: derinlik (3), döngü tespiti, bütçe zarfı, özerklik tavanı ve her ajan çifti için bir hız sınırı. Gönderenin kimliği her zaman çağıran çalıştırmadan gelir. Bkz. [Birlikte çalışan ajanlar](/tr-TR/kilavuz/nasil-yapilir/birlikte-calisan-ajanlar/).
 
 | Araç            | Açıklama                                                                                       |
 | --------------- | ---------------------------------------------------------------------------------------------- |
-| `send_to_agent` | `to_agent_id` ya da tam `to_agent_name` ile adreslenen başka bir ajana tek yönlü ileti gönderir |
-| `ask_agent`     | Başka bir ajana soru sorar ve yanıtını bekler ya da zaman aşımına uğrar                         |
+| `send_to_agent` | `to_agent_id` ya da tam `to_agent_name` ile adreslenen başka bir ajana tek yönlü ileti gönderir; `delivery_status` olarak `woken`, `queued_behind_run` ya da `refused` döndürür |
+| `ask_agent`     | Başka bir ajana bir soru sorar; yanıtı bekler ya da devam eder ve yanıt geldiğinde uyandırılır  |
 | `delegate_task` | Bir görevi başka bir ajana izlenen bir alt bilet olarak devreder                                |
 | `consult_agent` | Yeteneklerine göre en iyi eşleşen uzmanı alana ekler ve onu odaklanmış bir brifingle gönderir  |
 | `todo_read`     | Bu konuşmanın kalıcı görev kontrol listesini okur                                               |
+| `agent_activity` | Başka bir ajanın şu anda ne yaptığını ve son ne yaptığını (durum, geçerli araç, son mesajlar) onu uyandırmadan okur |
+
+## Uyandırma ve hedef araçları
+
+Bir ajan bunları uyumak ya da yoklamak yerine kullanır. Her biri yalnızca çağıran ajan için, kendi konuşmasında etki eder; ajan hiçbir zaman bir argüman değildir. Bkz. [Zamanlamalar ve uyandırmalar](/tr-TR/kilavuz/nasil-yapilir/zamanlamalar-ve-uyandirmalar/) ve [Bir hedefi yürütme](/tr-TR/kilavuz/nasil-yapilir/hedef-yurutme/).
+
+| Araç | Açıklama |
+| ------------- | ----------- |
+| `wake_me` | Daha sonra uyandırılmak üzere ayarlar: bir zamanda (`in:20m`, `at:<ISO time>`), bir aralıkta (`every:30m`), bir cron ile (`cron:0 9 * * 1-5`, `tz` ile), kendi kendine zamanlayan bir döngü içinde kendi temposunda (`next`, `delay` ile 1 ila 60 dakika) ya da bir şey olduğunda (`on:pr_checks`, `on:pr_review`, `on:pr_merged`, `on:environment`, `on:ticket:<id>`, `on:pipeline_run:<id>`). İsteğe bağlı `note`, `max_runs`, `expires_in`, `when_busy` (`skip` ya da `queue`) ve `deliver` (`run` ya da `notify`) |
+| `list_wakes` | Ajanın bu konuşmada beklettiği şeyleri listeler: zamanlamalar, izlemeler, bekleyen uyandırmalar ve yanıtsız sorular |
+| `cancel_wake` | Ajanın kendisi için ayarladığı bir zamanlamayı ya da izlemeyi, kimliğiyle iptal eder |
+| `goal_status` | Ajanın etkin hedefini okur: sözleşme, bölüm, harcama ve kalan bütçe, ilerleme yok uyarıları, bekletme, son doğrulama ve bekleyen hedef uyandırmaları |
+
+`complete_goal` ([Plan, playbook ve artifact araçları](#plan-playbook-ve-artifact-araçları) altında) bir ajanın bir hedefin bittiğini söylediği tek yoldur ve bu bir tamamlanma değil, bir iddiadır.
 
 ## Beceri araçları
 
@@ -95,7 +118,7 @@ Her kurulum ve güncelleme, herhangi bir beceri içeriği diske ya da bir ajan i
 | `revise_artifact`  | Yayımlanmış bir artifact'ın içeriğini değiştirir                                                                       |
 | `list_artifacts`   | Çalışma alanının artifact'larını listeler                                                                              |
 | `get_artifact`     | Bir artifact'ı okur                                                                                                    |
-| `complete_goal`    | Konuşmanın etkin kalıcı hedefinin (`/goal` ya da `/loop` ile başlatılan) gerçekleştiğini bildirir                      |
+| `complete_goal` | Ajanın etkin hedefinin başarıldığını iddia eder; her ölçüt için kanıtla birlikte. Sunucu bundan sonra kontrolleri ve bir incelemeyi çalıştırır. |
 
 ## Çalışma alanı araçları
 
@@ -163,10 +186,10 @@ Her kurulum ve güncelleme, herhangi bir beceri içeriği diske ya da bir ajan i
 | `create_goal`                | Kurumsal bir hedef oluşturur (şirket, ekip, ajan veya görev düzeyi)                                    |
 | `list_goals`                 | Hedefleri düzey, durum ve toplulaştırılmış ilerlemeyle listeler                                        |
 | `update_goal_progress`       | Bir hedefin ilerlemesini ayarlar                                                                       |
-| `create_approval`            | Yönetilen bir eylem için kurul onayı açar (plan çıkışı, birleştirme, sürüm, işe alım, özel)             |
+| `create_approval`            | Yönetilen bir eylem için çağıran ajanın adına kurul onayı açar (plan çıkışı, birleştirme, sürüm, işe alım, özel). Yalnızca ajan çalıştırmaları |
 | `list_approvals`             | Onayları listeler, isteğe bağlı olarak duruma göre filtreler                                           |
-| `decide_approval`            | Bir kararı kaydeder: onayla, reddet, revizyon iste ya da yeniden gönder                                |
-| `comment_approval`           | Bir kurul onayına yorum yapar                                                                          |
+| `decide_approval`            | Çağıran ajanın kararını kaydeder: onayla, reddet, revizyon iste ya da yeniden gönder. Yalnızca ajan çalıştırmaları |
+| `comment_approval`           | Bir kurul onayına çağıran ajan olarak yorum yapar. Yalnızca ajan çalıştırmaları                        |
 | `exit_plan_mode`             | Bir `plan_exit` onayı açar (ve onaylandıktan sonra tüketir); konuşmayı plan modundan çıkarır            |
 | `agent_heartbeat`            | Canlılık bildirir (canlı, boşta, takılı); sessizleşmek çalışma zamanı sağlığını önce yeni kayıp, sonra çevrimdışı durumuna çevirir |
 | `list_runtime_health`        | Her ajanın çalışma zamanı sağlığını listeler                                                           |

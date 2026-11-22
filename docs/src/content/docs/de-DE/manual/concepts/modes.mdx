@@ -2,7 +2,7 @@
 title: Modi
 description: Warum ein Bereich und nicht ein Agent einen Modus trägt, was jeder der vier Modi zusichert und wo diese Zusicherung strukturell gilt, statt nur im Prompt zu stehen.
 slug: de-DE/handbuch/konzepte/modi
-sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
+sourceHash: 4450ebc86d95efb0366bc3f0ab4ddebc6d3a3adb
 ---
 
 ## Was ein Modus ist
@@ -41,7 +41,7 @@ Ein Lauf, der ohne seinen Plan endet, wird trotzdem mit dem Status `completed` a
 
 Es gibt einen zweiten, getrennten Ausgang: `exit_plan_mode`. Es ist ein hartes Freigabetor und kein Ausgabe-Verb. Ein Agent, der es statt `submit_plan` aufruft, hat nichts geliefert. Der erste Aufruf öffnet eine dauerhafte `plan_exit`-Freigabe, gibt `pending` zurück, und der Bereich bleibt schreibgeschützt. Weitere Aufrufe bleiben `pending` und öffnen kein zweites Tor. Erst nach erteilter Freigabe schaltet ein folgender Aufruf den Bereich auf Chat. Eine Ablehnung lässt den Agenten eine neue Anfrage für einen überarbeiteten Plan öffnen.
 
-Den Plan-Modus verlässt du selbst über das Dropdown im Composer (oder Umschalt+Tab). Über `exit_plan_mode` wird mit dem MCP-Tool `decide_approval` entschieden. Zeilen „Agentenfreigabe“ im Posteingang sind etwas anderes: Bestätigungsfragen pro Zug von einem laufenden Agenten.
+Den Plan-Modus verlässt du selbst über das Dropdown im Composer (oder Umschalt+Tab). Über `exit_plan_mode` wird von einem Agentenlauf mit dem MCP-Tool `decide_approval` entschieden. Zeilen „Agentenfreigabe“ im Posteingang sind etwas anderes: Bestätigungsfragen pro Zug von einem laufenden Agenten.
 
 ### Review – schreibgeschützt, kein Vertrag
 
@@ -65,6 +65,8 @@ Nichts im Vorschlag läuft, bis du ihn freigibst. Bei der Freigabe stellt ein de
 
 **Nur-Lese-Modi sperren weder den Netzwerkzugriff noch Geheimnisse.** Die Effektklassen, die Review, Plan und Orchestrate ablehnen, sind die, die die Welt verändern: Dateien löschen, Schreiben außerhalb des Worktrees, Commits, Pushes, Pull Requests anlegen und veröffentlichen, Schreibzugriffe der Anbieter-Synchronisierung, Paketinstallationen, Prozesse starten, Änderungen am Arbeitsbereich und Kapselsteuerung. Netzwerkausgang und Zugriff auf Geheimnisse bleiben absichtlich bei ihren Vorgaben. Recherche ist der ganze Sinn eines Nur-Lese-Modus.
 
+**Der Code-Modus erweitert nie einen Modus.** Zuerst wird der Tool-Filter des Modus angewendet, und ein [Code-Modus](/de-DE/handbuch/konzepte/code-modus/)-`repl`-Skript kann nur die danach übrig gebliebenen Tools aufrufen, durch dasselbe Gate wie ein direkter Aufruf. Die festgelegten Verben des Modus (sein Ausgabeverb, `exit_plan_mode`, `ask_user`) und seine eigene Schleife (die Verben der Review-Knoten im Review-Modus) werden immer direkt aufgerufen, sodass ein Lauf nie ein Skript schreiben muss, um sein Ergebnis abzuliefern oder eine Frage zu stellen. Im [Vibe-Modus](/de-DE/handbuch/anleitungen/hintergrund-worker-steuern/) behält der steuernde Lauf nur Lese-Tools und keine Tools, die nur aus Skripten aufrufbar sind, sodass seine Skripte nur diese erreichen.
+
 ## Einen Modus wählen und wechseln
 
 Das Modus-Dropdown im Composer bietet **drei** Optionen: Agent (chat), Plan und Orchestrate. `review` ist **nicht wählbar**. Das System setzt es, wenn ein PR-Review-Bereich entsteht, und Pipeline-Schritte tun dasselbe.
@@ -87,4 +89,5 @@ Die Zulassungslisten beschränken Werkzeuge ab der Schreibstufe. Die Lesestufe d
 - [Das Agentenmodell](/de-DE/handbuch/konzepte/agentenmodell/): welche Transporte einen Modus durchsetzen können
 - [Schutzregeln](/de-DE/handbuch/konzepte/schutzregeln/): die Effektklassen-Richtlinie, in die die Voreinstellung eines Modus mündet
 - [Orchestrierung](/de-DE/handbuch/konzepte/orchestrierung/): was ein freigegebener Orchestrate-Vorschlag bewirkt
+- [Code-Modus](/de-DE/handbuch/konzepte/code-modus/): Skripte, die die Tools des Modus aufrufen
 - [Planmodus nutzen](/de-DE/handbuch/anleitungen/planmodus/): die praktische Anleitung

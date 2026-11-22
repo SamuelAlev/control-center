@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 #
 # Builds Windows native FFI libs into build/natives/ (fff, cc_watcher, ccpty,
-# tree-sitter + grammars, aec, lame, cc_inference, cc_saml, rhttp). rift is the
-# sole intentional gap (git worktree backend). All listed libs are REQUIRED — the
+# tree-sitter + grammars, aec, lame, cc_inference, cc_saml, rhttp), plus the code
+# mode runner (codemode/cc_codemode.exe) and the media helpers. rift is the sole
+# intentional gap (git worktree backend). All listed libs are REQUIRED — the
 # first failure aborts. Pins from scripts/lib/native_pins.env (env overrides).
 # Needs cargo, cmake, clang, MSVC, and vcpkg/LAME_PREFIX for LAME; on arm64 also
 # clang-cl (the AEC build, see that block).
@@ -501,6 +502,121 @@ if [ "$WIN_ARCH" = arm64 ]; then
   log "Built sqlite_vector/vector_windows_arm64.dll"
 )
 fi
+
+# --- cc_codemode (first-party, in-repo source; boot-REQUIRED) ---------------
+# Code mode's runner: an executable, not a DLL, staged as
+# build/natives/codemode/cc_codemode.exe like the media helpers under media/.
+# It relaunches itself inside an AppContainer whose child disables win32k
+# system calls, so three properties are checked here rather than trusted:
+#   * static CRT. runner/build.rs refuses to build without it: the confined
+#     child must not load a VC++ runtime DLL from beside the executable.
+#   * imports only from an allowlist of system DLLs (kernel32, ntdll,
+#     advapi32, bcryptprimitives, the synchronization API set). Above all no
+#     user32.dll / gdi32.dll: under the win32k lockdown such an import stops
+#     the child before main(), which reads as a lockdown failure. A DLL that
+#     is not on the list fails the build until someone reviews it.
+#   * imports load from System32 only (/DEPENDENTLOADFLAG:0x800, set by
+#     runner/build.rs), never from beside the executable: the load config's
+#     dependent load flag says so.
+#   * no build path in the image: the cargo home, the checkout and the home
+#     directory are remapped for Rust (--remap-path-prefix). MSVC has no
+#     prefix map for C, so QuickJS-NG's assertion file names (__FILE__, wide
+#     strings in MSVC's assert; the sources are compiled from the target
+#     directory) are trimmed with /d1trimfile, the front end's switch for
+#     exactly that; cl's D9002 (option ignored) fails the build. The image
+#     is then searched for each prefix, the target directory included, as
+#     bytes and as UTF-16, in both path styles (scripts/lib/codemode.sh).
+#   * the lockdown self-test passes on this host. Its output goes to a pipe
+#     (command substitution), never a file.
+#   * Control Flow Guard. Rust code gets it from -Ccontrol-flow-guard, which
+#     also links with /guard:cf; QuickJS-NG's C code from /guard:cf in
+#     CFLAGS_<target> (the cc crate's per-target variable: rquickjs-sys
+#     overwrites plain CFLAGS on MSVC). /GS (buffer security checks, MSVC's
+#     stack protector) is MSVC's default and is named anyway. The other
+#     platforms' hardening is in scripts/natives/build_codemode.sh. The
+#     confined child reads the CFG policy back and refuses to run without
+#     it; runner/build.rs refuses to build without either flag; dumpbin
+#     proves the image is CFG-instrumented.
+(
+  trap '[ $? -eq 0 ] || echo "ERROR: cc_codemode.exe not built — cc_server REFUSES TO BOOT without it (code mode has no fallback runner)" >&2' EXIT
+  CODEMODE_TRIPLE="$(rustc -vV | sed -n 's/^host: //p')"
+  case "$CODEMODE_TRIPLE" in
+    x86_64-pc-windows-msvc | aarch64-pc-windows-msvc) ;;
+    *) echo "cc_codemode: unexpected Rust host $CODEMODE_TRIPLE"; exit 1 ;;
+  esac
+  # rustc and cl see Windows paths; Git Bash's HOME and REPO_ROOT are POSIX.
+  CODEMODE_HOME_W="$(cygpath -w "$HOME")"
+  CODEMODE_CARGO_HOME_W="$(cygpath -w "${CARGO_HOME:-$HOME/.cargo}")"
+  CODEMODE_TARGET="$RUNNER_TEMP/cc_codemode_target"
+  CODEMODE_TARGET_W="$(cygpath -w "$CODEMODE_TARGET")"
+  # rquickjs-sys copies the C sources into its OUT_DIR under the target
+  # directory and compiles them there, so that is the prefix to trim.
+  export "CFLAGS_${CODEMODE_TRIPLE//-/_}=/guard:cf /GS /d1trimfile:$CODEMODE_TARGET_W\\"
+  CODEMODE_REPO_W="$(cygpath -w "$REPO_ROOT")"
+  CODEMODE_RUSTFLAGS=()
+  read -r -a CODEMODE_RUSTFLAGS <<<"${RUSTFLAGS:-}"
+  CODEMODE_RUSTFLAGS+=(
+    -Ctarget-feature=+crt-static -Ccontrol-flow-guard
+    "--remap-path-prefix=$CODEMODE_HOME_W=C:\\build\\home"
+    "--remap-path-prefix=$CODEMODE_CARGO_HOME_W=C:\\build\\cargo"
+    "--remap-path-prefix=$CODEMODE_REPO_W=C:\\build\\src"
+    "--remap-path-prefix=$CODEMODE_TARGET_W=C:\\build\\target"
+  )
+  # One argument per field, so a path with spaces stays whole.
+  CARGO_ENCODED_RUSTFLAGS="$(IFS=$'\x1f'; printf '%s' "${CODEMODE_RUSTFLAGS[*]}")" \
+  RUSTFLAGS= \
+  CARGO_TARGET_DIR="$CODEMODE_TARGET" \
+    cargo build --release --locked \
+    --manifest-path packages/cc_natives/native/codemode/Cargo.toml -p cc_codemode
+  mkdir -p build/natives/codemode
+  cp -f "$RUNNER_TEMP/cc_codemode_target/release/cc_codemode.exe" build/natives/codemode/cc_codemode.exe
+  CODEMODE_HEADERS="$(dumpbin //nologo //headers //loadconfig "$(cygpath -w build/natives/codemode/cc_codemode.exe)")" \
+    || { echo "dumpbin failed on cc_codemode.exe"; exit 1; }
+  grep -q 'Control Flow Guard' <<<"$CODEMODE_HEADERS" \
+    || { echo "cc_codemode.exe is not marked for Control Flow Guard"; exit 1; }
+  grep -q 'CF Instrumented' <<<"$CODEMODE_HEADERS" \
+    || { echo "cc_codemode.exe has no Control Flow Guard instrumentation"; exit 1; }
+  grep -Ei 'dependent load flag' <<<"$CODEMODE_HEADERS" | grep -q '800' \
+    || { echo "cc_codemode.exe does not restrict its imports to System32 (/DEPENDENTLOADFLAG:0x800):"; grep -Ei 'dependent load' <<<"$CODEMODE_HEADERS"; exit 1; }
+  CODEMODE_IMPORTS="$(dumpbin //nologo //imports "$(cygpath -w build/natives/codemode/cc_codemode.exe)")" \
+    || { echo "dumpbin failed on cc_codemode.exe"; exit 1; }
+  CODEMODE_DLLS="$(grep -Eio '^[[:space:]]*[a-z0-9_.-]+\.dll[[:space:]]*$' <<<"$CODEMODE_IMPORTS" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]' | sort -u)"
+  [ -n "$CODEMODE_DLLS" ] || { echo "dumpbin listed no imports for cc_codemode.exe:"; echo "$CODEMODE_IMPORTS"; exit 1; }
+  while IFS= read -r dll; do
+    case "$dll" in
+      kernel32.dll | ntdll.dll | advapi32.dll | bcryptprimitives.dll | api-ms-win-core-synch-l1-2-0.dll) ;;
+      *)
+        echo "cc_codemode.exe imports $dll, which is not on the reviewed list (user32/gdi32 would stop its win32k-locked child):"
+        echo "$CODEMODE_DLLS"
+        exit 1 ;;
+    esac
+  done <<<"$CODEMODE_DLLS"
+  # cl reports an option it does not know as warning D9002 and carries on,
+  # which would leave every QuickJS-NG file name untrimmed. The cc crate
+  # forwards compiler output as cargo:warning lines into the build script's
+  # output file, which cargo keeps even when it does not print them.
+  CODEMODE_CC_OUTPUT="$(cat "$CODEMODE_TARGET"/release/build/rquickjs-sys*/output 2>/dev/null || true)"
+  [ -n "$CODEMODE_CC_OUTPUT" ] \
+    || { echo "no rquickjs-sys build script output under $CODEMODE_TARGET/release/build"; exit 1; }
+  if grep -q 'D9002' <<<"$CODEMODE_CC_OUTPUT"; then
+    echo "cl ignored an option while compiling QuickJS-NG (D9002); /d1trimfile did not apply:"
+    grep 'D9002' <<<"$CODEMODE_CC_OUTPUT"
+    exit 1
+  fi
+  # Build paths, as bytes and as UTF-16, in both path styles. The target
+  # directory (under RUNNER_TEMP) is the prefix /d1trimfile removes from the
+  # C file names, so it is checked by name here; the generic checks run
+  # again whenever the runner is staged (scripts/lib/codemode.sh).
+  # shellcheck source=../lib/codemode.sh
+  source "$REPO_ROOT/scripts/lib/codemode.sh"
+  cc_codemode_check_paths build/natives/codemode/cc_codemode.exe windows \
+    "$CODEMODE_TARGET_W" "$(cygpath -w "$RUNNER_TEMP")" \
+    "$CODEMODE_HOME_W" "$CODEMODE_CARGO_HOME_W" "$CODEMODE_REPO_W"
+  CODEMODE_SELFTEST="$(build/natives/codemode/cc_codemode.exe --self-test 2>&1)" \
+    || { echo "cc_codemode.exe lockdown self-test failed:"; echo "$CODEMODE_SELFTEST"; exit 1; }
+  echo "$CODEMODE_SELFTEST"
+  log "Built codemode/cc_codemode.exe"
+)
 
 # --- tree-sitter .scm queries ----------------------------------------------
 # The hand-authored queries travel beside the grammar DLLs — GrammarManager

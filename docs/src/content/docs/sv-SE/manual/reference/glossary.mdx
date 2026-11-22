@@ -2,7 +2,7 @@
 title: Ordlista
 description: Definitioner av centrala begrepp som används i Control Center.
 slug: sv-SE/handbok/referens/ordlista
-sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
+sourceHash: ba09880357171a4fcbb82201798578de3856cbe6
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -36,7 +36,13 @@ export const glossaryTerms = [
 ['Station', 'En tillfällig maskin som en agent kör i realtid: en avskild webbläsare eller ett Linux-skrivbord, en värdhanterad Android-emulator eller iOS Simulator, eller en avskild terminal. Bevakas live över sin egen kanal i full upplösning, med övertagande framtvingat på serversidan. Avgränsad till ett samtal så att människans flik och agentens verktyg adresserar en och samma maskin.'],
 ['Avskild miljö', 'Den starkare isoleringsegenskap som är tillgänglig för VM-baserade stationer: en kärngräns, en tillfällig overlaydisk, en nätverksgrind som nekar som standard och en broker för autentiseringsuppgifter. Android- och iOS-stationer är tillfälliga men använder värdhanterat nätverk, så de gör inte anspråk på den här gränsen. Att styra en station använder åtgärdsklassen enclosureControl.'],
 ['RunCost', 'Token- och kostnadsräkning (indata-tokens, utdata-tokens, uppskattad kostnad i mikrodollar) för en enskild agentkörning.'],
-['WakeReason', 'Varför en agent dispatchades. Sex värden: användarmeddelande, ärendetilldelning, återdispatch efter ett fel, underärende slutfört, schemalagt uppföljningshjärtslag och pipelinesteg.'],
+['WakeReason', 'Varför en agentkörning finns. Ett personligt meddelande, en ärendetilldelning eller ett pipelinesteg; eller, för en körning som servern startar av sig själv, väckningens skäl: ett schema, en bevakning, ett måls segment, kontroll eller granskning, en annan agents meddelande eller svar, färdigt underarbete, en användningsgräns som återställdes, en förbättringsgranskning eller återställning efter en omstart.'],
+['Väckning', 'En varaktig begäran, sparad i arbetsytans databas, om att starta eller fortsätta en agents körning i en konversation, med ett skäl och den person den agerar för. Varje körning som servern startar utan att någon skriver något börjar som en sådan; väckningar överlever en omstart.'],
+['Mål', 'Arbete som en agent fortsätter med, i segment, tills servern verifierar att villkoren för klart är uppfyllda eller en person stänger det. Startas med /goal; ett per agent åt gången. Agenten påstår att det är klart; kontroller och en skrivskyddad granskning avgör.'],
+['Schema', 'En regel som väcker en agent vid en tidpunkt, med ett intervall, med en cron eller i agentens egen takt, med ett slut, ett körningstak och ett kostnadstak. Skapas med /loop, /schedule, sidan Scheman eller agentens verktyg wake_me.'],
+['Bevakning', 'En regel som väcker en agent när något händer: en pull requests kontroller blir klara, den får en granskning eller mergas, en miljöuppgift avslutas, ett ärende avgörs eller en pipelinekörning slutar.'],
+['Fråga', 'En agents fråga till en annan, sparad innan den levereras. Frågeställaren väcks en gång med svaret, eller med varför det inte finns något svar.'],
+['Förbättringsförslag', 'En ändring av minne, en policy, en agentanteckning eller en skill som en granskning föreslår efter ett verifierat mål eller med /refine. Den ändrar ingenting förrän en person godkänner den; en ändring av en skill utvärderas först.'],
 ['SandboxPort', 'Hanterar sandlådans livscykel (probe, launch, events, exec, destroy).'],
 ['CredentialBrokerPort', 'Präglar avgränsade autentiseringsuppgifter för sandlådestart (en token för ett enda repo för en agents miljö, skrivning bara för pushvägen på servern) och släpper dem vid nedrivning.'],
 ['GitRepoInspectorPort', 'Extraherar metadata (ägare, repo, gren) från en lokal Git-reposökväg.'],
@@ -94,6 +100,11 @@ export const glossaryTerms = [
 ['Installations-id', 'En servers identitet mot en Connect-adress, härledd från dess installationsnyckel. Connect godkänner servrar per installations-id; att byta nyckeln ändrar det och loggar ut alla från Connect-spåren.'],
 ['Installationsbindning', 'Connects register över den enda server som ett Slack-team är bundet till. GitHub-installationer har ingen: vilken server som helst där en medlem loggar in kan använda dem.'],
 ['Inloggningsspår', 'En leverantörs inloggning i webbläsaren: github, google, linear, linear_app eller slack. Med egna appar körs ett spår på den egna appen när den är helt konfigurerad, annars är det otillgängligt; med Connect valt kör Connect spåret. Ingen av dem faller tillbaka på den andra.'],
+['Kodläge', 'repl-verktyget, som kör ett JavaScript-skript som anropar körningens övriga verktyg och returnerar bara det agenten behöver. Varje körning har det när servern kan köra skript; det finns ingen inställning.'],
+['Direkt verktyg', 'Ett verktyg som en körning anropar med namn, med sitt schema i varje förfrågan, oavsett om den har repl eller inte: fil- och skalverktygen, ask_user, task, uppgiftschecklistan, minnessökningen, send_message och lägets egna verb.'],
+['Verktyg som bara anropas från skript', 'Ett verktyg utanför den direkta uppsättningen som en körning med repl bara kan anropa från ett skript, tills servern inte kan köra körningens skript och det läses in vid första användning i stället. Fram till dess når dess beskrivning aldrig modellen.'],
+['Kodlägeskörare', 'cc_codemode, programmet som följer med servern och kör ett skript i QuickJS-NG-motorn efter att ha låst sig självt med operativsystemets kontroller. Servern startar inte utan det och kör inget skript om det inte är ett release-bygge och dess låsning är komplett.'],
+['Kodkörning', 'Posten för ett skript: dess källkod, utdata, gränser och varje verktygsanrop det gjorde, sparad i dess arbetsyta och listad under Observability → Kodkörningar.'],
 ];
 
 <StructuredData
@@ -157,7 +168,19 @@ export const glossaryTerms = [
 
 **RunCost**: Token- och kostnadsräkning (indata-tokens, utdata-tokens, uppskattad kostnad i mikrodollar) för en enskild agentkörning.
 
-**WakeReason**: Varför en agent dispatchades. Sex värden: användarmeddelande, ärendetilldelning, återdispatch efter ett fel, underärende slutfört, schemalagt uppföljningshjärtslag och pipelinesteg.
+**WakeReason**: Varför en agentkörning finns. Ett personligt meddelande, en ärendetilldelning eller ett pipelinesteg; eller, för en körning som servern startar av sig själv, väckningens skäl: ett schema, en bevakning, ett måls segment, kontroll eller granskning, en annan agents meddelande eller svar, färdigt underarbete, en användningsgräns som återställdes, en förbättringsgranskning eller återställning efter en omstart.
+
+**Väckning**: En varaktig begäran, sparad i arbetsytans databas, om att starta eller fortsätta en agents körning i en konversation, med ett skäl och den person den agerar för. Varje körning som servern startar utan att någon skriver något börjar som en sådan; väckningar överlever en omstart.
+
+**Mål**: Arbete som en agent fortsätter med, i segment, tills servern verifierar att villkoren för klart är uppfyllda eller en person stänger det. Startas med `/goal`; ett per agent åt gången. Agenten påstår att det är klart; kontroller och en skrivskyddad granskning avgör.
+
+**Schema**: En regel som väcker en agent vid en tidpunkt, med ett intervall, med en cron eller i agentens egen takt, med ett slut, ett körningstak och ett kostnadstak. Skapas med `/loop`, `/schedule`, sidan Scheman eller agentens verktyg `wake_me`.
+
+**Bevakning**: En regel som väcker en agent när något händer: en pull requests kontroller blir klara, den får en granskning eller mergas, en miljöuppgift avslutas, ett ärende avgörs eller en pipelinekörning slutar.
+
+**Fråga**: En agents fråga till en annan, sparad innan den levereras. Frågeställaren väcks en gång med svaret, eller med varför det inte finns något svar.
+
+**Förbättringsförslag**: En ändring av minne, en policy, en agentanteckning eller en skill som en granskning föreslår efter ett verifierat mål eller med `/refine`. Den ändrar ingenting förrän en person godkänner den; en ändring av en skill utvärderas först.
 
 ## Portar
 
@@ -258,6 +281,20 @@ export const glossaryTerms = [
 **Granskningsaxel**: En av fem bedömningsbanor per granskning: `correctness`, `security` och `testGap` hämtas ur granskarnas fynd; `visual` och `apiContract` är deterministiska. Grindade axlar vävs in i utfallet och kan bara göra det mer allvarligt – en `partial`- eller `unavailable`-grind håller kvar utfallet i stället för att passera det.
 
 **Granskningsutfall**: `ship`, `hold` eller `block`. Varje P0-fynd med konfidens ≥ 0.7 blockerar; varje annat P0 eller något P1 håller; annars ship. En grindad axel som fallerar tvingar fram block och kan inte överröstas av fynd.
+
+## Kodläge
+
+**Kodläge**: `repl`-verktyget, som kör ett JavaScript-skript som anropar körningens övriga verktyg och returnerar bara det agenten behöver. Varje körning har det när servern kan köra skript; det finns ingen inställning. **Inställningar → Arbetsyta → Kodläge** visar om den här servern kör skript och anger de gränser ett skript körs under. Se [Kodläge](/sv-SE/handbok/koncept/kodlage/).
+
+**Direkt verktyg**: Ett verktyg som en körning anropar med namn, med sitt schema i varje förfrågan, oavsett om den har `repl` eller inte: fil- och skalverktygen, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` och lägets egna verb.
+
+**Verktyg som bara anropas från skript**: Ett verktyg utanför den direkta uppsättningen som en körning med `repl` bara kan anropa från ett skript, tills servern inte kan köra körningens skript och det läses in vid första användning i stället ([När skript inte kan köras](/sv-SE/handbok/koncept/kodlage/#när-skript-inte-kan-köras)). Fram till dess når dess beskrivning aldrig modellen, och ett direkt anrop besvaras med hur det anropas från ett skript. Ett verktyg som ett skript inte får anropa är aldrig bara från skript: det läses in vid första användning.
+
+**Kapslat anrop**: ett verktygsanrop som ett skript gör. Det passerar samma lägesfilter, räcken och godkännande som ett direkt anrop.
+
+**Kodlägeskörare**: `cc_codemode`, programmet som följer med servern och kör ett skript i QuickJS-NG-motorn efter att ha låst sig självt (dess **låsning**). Servern startar inte utan det och kör inget skript om den inte är ett release-bygge och dess låsning är komplett.
+
+**Kodkörning**: posten för ett skript: dess källkod, utdata, gränser och varje verktygsanrop det gjorde, sparad i dess arbetsyta och listad under **Observability → Kodkörningar**.
 
 ## Flotta och utvärderingar
 

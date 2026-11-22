@@ -16,7 +16,7 @@ Names and distinctions used across the domain. This is not a field inventory; en
 - **Space:** workspace-scoped participant container. A DM and a room differ only by participant count. A space has a mode and provisioning state.
 - **Conversation:** a peer message stream within a space; none is the primary stream. A **thread** is a conversation anchored to one message in a sibling conversation of the same space. Threads do not nest. **ThreadSummary** is a derived reply/participant rollup for its anchor, not independent state.
 - **Message:** one conversation entry, typed for rendering by **MessageType** (`text`, `agentTurn`, `reviewNode`, `plan`, etc.); `agentTurn` contains a completed turn's segments. **SenderType** is a human `user`, an `agent`, or `system` for what the server itself posts (sender id `system`).
-- **SpaceParticipant:** an agent or human principal in a space, with a role and individual read cursor. **MessageMention** is a resolved @mention referencing either principal type.
+- **SpaceParticipant:** an agent or human principal in a space, with a role. Read state is not kept here: each person has a read cursor per conversation, and a space is unread when one of its listed conversations is. **MessageMention** is a resolved @mention referencing either principal type.
 - **Space repo selection:** the repos chosen for a space's worktrees; with none selected, every linked workspace repo; PR spaces use their PR repo.
 - **MessageReaction:** a principal's emoji reaction on a space message, unique per message/principal/emoji. Do not confuse it with GitHub PR **ReactionGroup**.
 - **ThinkingEvent:** reasoning subtype of the live **AgentProcessEvent** stream, grouped with tool calls/results for display.
@@ -26,7 +26,7 @@ Names and distinctions used across the domain. This is not a field inventory; en
 - **AgentDispatchService:** provisions repos, assembles a prompt, creates the run record and streams process events; also finalizes/stops runs. **AgentProcessEvent** is a timestamped thinking/text/tool/error/done event, not a persisted message.
 - **DispatchAgentUseCase:** resolves effective agent, mode and runtime. **BuildAgentPromptUseCase** combines mode prompts with conversation and memory context. **PromptBuilder** supplies mode/role protocol text.
 - **MentionContext / MentionRosterEntry:** who summoned an agent and the eligible space roster for mention resolution.
-- **AgentGoalRun:** durable supervised `/goal` or `/loop`, redispatched as bounded runs until completion, stop or budget wall; at most one active per agent, recovered after restart. Not the organization-level **Goal** or the conversation's **ConversationGoal**.
+- **AgentGoalRun:** a durable supervised `/goal`, pursued in **segments** until verification passes, a person closes it, it is stopped or it reaches its budget; at most one active per agent, recovered after restart. `/loop` is a wake rule, not a goal. Not the organization-level **Goal** or the conversation's **ConversationGoal**.
 
 ## PR Review Bounded Context
 
@@ -56,7 +56,7 @@ Names and distinctions used across the domain. This is not a field inventory; en
 
 ## Orchestration Bounded Context
 
-- **Orchestration:** a workspace-scoped, parent-ticket-backed large request. An agent proposes a plan; a person approves it; deterministic materialization creates a pipeline, team/project and child tickets. Its `revision` and `approvedRevision` keep replans from changing an approved plan silently.
+- **Orchestration:** a parent-ticket-backed large request in one workspace, read and moved only by members who can read its space (one with no space is the workspace's). An agent proposes a plan; a person approves it; deterministic materialization creates a pipeline, team/project and child tickets. Its `revision` and `approvedRevision` keep replans from changing an approved plan silently.
 - **OrchestrationProposal:** typed goal, roles, sub-ticket DAG, optional research/discussion/synthesis and budget, validated before execution. **ProposedRole / ProposedHire / ProposedSubTicket / BudgetSpec:** the plan's staffing, work and spending inputs.
 - **OrchestrationMaterializer:** pure plan-to-pipeline translation for an approved proposal and role map; same inputs produce the same DAG. **OrchestrationProposalValidator** validates input; approval/cancel use cases govern transition; **OrchestrationRunListener** maps terminal pipeline state to orchestration and parent ticket.
 
@@ -146,6 +146,39 @@ Names and distinctions used across the domain. This is not a field inventory; en
 - **Harness:** in-process agent loop calling model providers and tools directly, not an external CLI subprocess. `cc_harness` is the portable kernel, `cc_harness_runtime` hosts VM-only providers/tools; server adapters live in `cc_infra`. A model *provider* (including Cursor) is not an adapter process.
 - **AgentLoop / AgentLoopRunner:** event-sourced turn interface and implementation, emitting text/reasoning/tool/turn events. **LlmProviderPort / HarnessProviderFactory:** provider contract and credential resolution. **Tool / ToolRegistry:** in-process tools available to the loop; external MCP tools are bridged in. **ReasoningEffort:** provider-mapped reasoning setting.
 
+## Code Mode Bounded Context
+
+- **Code mode:** the `repl` tool and the scripts it runs. A run gets it when the server's runner passed its boot self-test (`CodeRunnerAvailability`); there is no setting, and a workspace sets only its limits (`code_mode_limits`). See [SECURITY.md](SECURITY.md#code-mode).
+- **`repl`:** the tool a run calls to run a script. Takes `code`, `description` and optional `timeout_ms`/`max_output_tokens`, which can only lower the workspace's limits.
+- **Script:** the JavaScript of one `repl` call, the body of an async function, run in a fresh interpreter. It calls tools as `tools.<id>(args)`, can keep small values for later scripts of the same conversation and agent (`store`/`load`) and returns only what the model needs.
+- **Nested call:** a tool call a script makes. It passes the same gate as a direct call (`ToolReentry`, `McpToolDispatcher.callNested`); its tool call id is `<parent tool call id>/<n>`.
+- **Direct tool:** a tool a run calls by name with its schema in every request, with or without `repl`: `ModeToolPolicy.directTools`, the mode's own loop and its pinned verbs.
+- **Script-only tool:** an admitted tool outside the direct set that a run with `repl` may call only from a script, until one of the run's scripts is refused for a reason no other script would escape (`CodeExecutionErrorKind.withdrawsScripts`) and it loads on first use for the rest of the run; until then its schema never reaches the model. A tool whose `scriptCallable` is false is never script-only: it loads on first use instead.
+- **Call site (`ScriptCallSite`):** the line and column in a script a nested call was made from, as the runner reports it (`at`). A display hint kept on the call's record row and transcript row only.
+- **Runner (`cc_codemode`):** the bundled Rust executable that runs one script in QuickJS-NG and talks NDJSON over stdio. One process per script; the server needs it to boot.
+- **Lockdown:** the runner's confinement of itself before it reads input (Linux seccomp and rlimits, macOS Seatbelt, Windows AppContainer and job object). Only `full` lockdown runs a script; the boot self-test (`--self-test`) proves it per host.
+- **Code execution (record):** the audit record of one admitted script in its workspace (`code_executions`, payload and call rows), id `<runId>/<toolCallId>` with `#<n>` on a repeated tool call id. Written as `running` at admission, finished once; call rows are insert-only.
+- **Origin (`ScriptCallOrigin`):** the `repl` call (and execution id) a nested call came from; approval cards, questions and pushed commands carry it so a person sees the call came from a script.
+
+## Wakes and Long-Running Work Bounded Context
+
+- **Wake:** a durable request to start or continue one agent's run in one conversation, with a reason (`WakeReason`), a lane, the accountable person and a dedup key (`agent_wakes`). Every run the server starts without a person typing begins as one. It is delivered into a live run of the same person or starts its own run; a skipped, expired or cancelled wake posts one row.
+- **Lane:** where a wake enters a live run: **aside** (at the next turn boundary, as a system message) or **follow-up** (when the agent would end its turn).
+- **Wake rule:** a durable rule that makes wakes for an agent (`wake_rules`): a time rule (one-off, interval, cron, self-paced) or a **watch**. It acts for one person, has an expiry, a run cap and a cost cap, and ends with `WakeRuleEnded`.
+- **Schedule:** a time wake rule, made with `/schedule`, `/loop` or `wake_me`. `/loop` without an interval is self-paced: the agent picks the next delay. The reason of the runs it starts is `schedule`.
+- **Watch:** an event wake rule (`on:pr_checks`, `on:pr_review`, `on:pr_merged`, `on:environment`, `on:ticket:<id>`, `on:pipeline_run:<id>`). Events while the agent is busy are folded into one wake for after its run; the agent's own actions do not fire it.
+- **Hold (`GoalHold`):** why an active goal is not running a segment: `waiting` (on owed work), `verifying`, `limit`, `person`, `byPerson` (a person paused it) or `needsReview`. The goal's status stays `running` or `paused`; a hold detail (`stalled`, `unanswered`, `check_broken`, …) says more.
+- **Segment:** one bounded run of a goal, started by a `goalContinuation` wake and capped at the lower of 5 USD and what is left of the budget.
+- **Contract (`GoalContract`):** what done means for a goal: success criteria, boundaries, stop conditions and checks. A claim must cite evidence for every criterion.
+- **Check:** a command in a one-shot sandbox over the worktree, or a named environment task, that the server runs when the agent claims the goal is done. A failing check is a failed round; a check that cannot run (exit 126 or 127, a spawn failure) is broken and stops the goal for a person.
+- **Verdict (`GoalVerdict`):** the reviewer's answer: `pass` (the goal completes), `fail` (the worker gets the findings and another round) or `cannot_verify` (a person decides).
+- **Checker:** the agent that reviews a goal's claim, read-only and with fresh history: the goal's checker, else the space's, else the goal's own agent. Distinct from the space checker that reviews ordinary turns, which skips goal runs.
+- **Ask (`PeerAsk`):** one agent's question, consultation or review request to another, recorded before delivery, with exactly one settling reply wake when it was not answered inline. Depth, cycles and pending caps are checked against ask rows.
+- **Park (`LimitPark`):** a run stopped by a provider usage limit that reported a reset, kept as a `limitReset` wake due shortly after the reset. A goal parks at most 8 times between Resumes. A person's park expires at the reset plus 7 days, and only that person's steering cards wait with it.
+- **Improvement proposal:** a change the learning review suggests after a verified goal or on `/refine` (memory fact, policy, agent note, skill edit or new skill), applied only when a person accepts it, with rollback; a skill change is staged and evaluated first.
+- **State block:** the "Still in flight" block the server appends after a compaction, built from rows: the goal, pending wakes, open asks, background commands, the checklist and stored keys, each with the call that recovers it.
+- **AgentRunSettled / RunEndReason:** the one event for a run's end, published after its terminal write, and why it ended (`completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit`, `serverStopped`). `AgentRunCompleted` remains only for the pull request bridge and analytics.
+
 ## Model Routing Bounded Context
 
 - **ModelCatalog:** provider/model metadata including context limits, reasoning support and prices. **ProviderPolicyEngine:** per-provider availability and context-promotion policy. **SmallModelRouter:** routes eligible subtasks to cheaper/faster models within quality constraints.
@@ -222,6 +255,10 @@ Names and distinctions used across the domain. This is not a field inventory; en
 - **SessionRecording:** opt-in redacted run event stream and model/HTTP/tool cassettes with retention policy. **AgentConfigHash:** versioned canonical hash of effective prompt, tools, model and policy inputs.
 - **Deterministic replay:** stubbed cassettes, no execution, testing the harness. **Live replay:** real model and sandbox, testing agent behavior. Never label one as evidence for the other.
 - **EvalSuite / EvalRun / Scorecard:** fixture and graders, repeated run, and pass/cost/latency/variance results. Prefer deterministic grading; flag a model judging its own family. **GoldenSession:** blessed recording pinned per agent/playbook; live goldens are advisory without batching. **Reliability score:** evidence from replay/evals informing autonomy.
+- **False completion:** an attempt that completed (or claimed completion) while its authoritative hidden check ran and failed; `cc_eval` reports them per arm, descriptively. **Paid-run ceiling:** `cc_eval run --max-spend-usd <n>`, required for a live run; it stops scheduling once known spend reaches it, and an unpriced attempt stops the campaign. **`history_none`:** the `session_continuity` mode in which every turn after the first starts with no history, the evaluation form of `/goal --fresh`.
+- **Hypothesis (`EvaluationHypothesis`):** the question an evaluation plan declares: `superiority`, `non_inferiority` (with a margin), `regression_screen` (the skill plan: a change passes when no regression is observed) or `calibration` (one arm, descriptive tables only, no verdict). **Primary outcome (`EvaluationOutcomeMeasure`):** what each attempt is scored on, `verified_success` or `false_completion`. **Attempt end (`EvaluationAttemptEnd`):** how an attempt ended, `finished`, `agent_stopped`, `harness_fault` or `ceiling_stopped`; a ceiling stop is missing data, not a harness fault.
+- **Task block:** one task's planned repetitions for one arm. A task is used only when both arms scored every repetition. **Informative task:** a used task that is not 0 of k or k of k in both arms; fewer than half informative is a saturated task set and no claim. **`minTasks`:** the used tasks a plan needs before the gate claims anything (10 for the campaigns, 3 for the skill screen); below it a report reads "No decision (not enough evidence)", "N tasks, M needed".
+- **Task-cluster gate (`TaskClusterJudge`):** the evaluation gate: per-task mean differences, a paired t test (df N−1) with an exact sign-flip check beside it, Holm's correction across treatments and at most one interim look at p < 0.001. **Calibration plan:** `eval/plans/calibration-baseline.json`, the corpus on one arm, to read rates and costs before a campaign.
 
 ## Action Guardrails Bounded Context
 

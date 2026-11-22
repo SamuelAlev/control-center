@@ -18,6 +18,7 @@ import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
 import 'package:cc_domain/features/sandboxing/domain/host_execution_posture.dart';
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/loop.dart';
@@ -113,6 +114,7 @@ class _MemRunLogRepo implements AgentRunLogRepository {
         status: completed.status,
         summary: completed.summary,
         cost: writeCost ? completed.cost : null,
+        endReason: completed.endReason,
       ),
     );
     return true;
@@ -238,6 +240,7 @@ class _TaskInvokingLoop implements AgentLoop {
     required String userMessage,
     required List<HarnessTool> tools,
     List<HarnessTool> deferredTools = const [],
+    List<HarnessTool> scriptTools = const [],
     required LlmProviderPort provider,
     HarnessToolContext? context,
     AgentLoopConfig config = const AgentLoopConfig(),
@@ -334,6 +337,8 @@ _Harness _buildSession({
   );
 
   final session = DispatchSession(
+    freshHistory: false,
+    readOnly: false,
     deps: deps,
     onResolveHandle:
         ({
@@ -504,6 +509,19 @@ void main() {
     final child = h.runLogs.rows[_childRunId(h.runLogs)]!;
     expect(child.spawnToolCallId, 'call-task-1');
     expect(child.parentRunId, 'run-parent');
+  });
+
+  test('the child row ends through the settlement, with an end reason',
+      () async {
+    final h = _buildSession(
+      childEvents: [const LoopDone(LoopDoneReason.completed)],
+    );
+
+    await _drain(h.session);
+
+    final child = h.runLogs.rows[_childRunId(h.runLogs)]!;
+    expect(child.status, RunStatus.completed);
+    expect(child.endReason, RunEndReason.completed);
   });
 
   test(

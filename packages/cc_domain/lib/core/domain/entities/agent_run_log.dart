@@ -2,6 +2,8 @@ import 'package:cc_domain/core/domain/value_objects/agent_run_role.dart';
 import 'package:cc_domain/core/domain/value_objects/output_contract_mode.dart';
 import 'package:cc_domain/core/domain/value_objects/retry_meta.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
+import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
 import 'package:cc_domain/features/observability/domain/run_stage.dart';
 import 'package:cc_domain/features/observability/domain/run_verification.dart';
 
@@ -136,12 +138,24 @@ class AgentRunLog {
     this.resumedNativeSession = false,
     RunVerification? verification,
     RunLatencyProfile? latency,
+    this.endReason,
+    List<String> wakeIds = const [],
+    this.requestedByUserId,
+    this.wakeReason,
+    this.startedByRunId,
   }) : cost = cost ?? RunCost.zero,
+       wakeIds = List.unmodifiable(wakeIds),
        retry = retry ?? const RetryMeta(),
        verification = verification ?? RunVerification.none,
        latency = latency ?? RunLatencyProfile.empty {
     if (agentId.isEmpty) {
       throw ArgumentError('AgentRunLog agentId must not be empty');
+    }
+    if (requestedByUserId != null && requestedByUserId!.isEmpty) {
+      throw ArgumentError('AgentRunLog requestedByUserId must not be empty');
+    }
+    if (startedByRunId != null && startedByRunId!.isEmpty) {
+      throw ArgumentError('AgentRunLog startedByRunId must not be empty');
     }
   }
 
@@ -299,6 +313,39 @@ class AgentRunLog {
   /// Absent stages are unknown, never zero.
   final RunLatencyProfile latency;
 
+  /// Why the run ended, written with its terminal row. Null while the run is
+  /// live, and for a run that ended before end reasons were recorded.
+  final RunEndReason? endReason;
+
+  /// Ids of the wakes (`agent_wakes`) this run was started to deliver, in
+  /// delivery order. Empty for a run a person or a pipeline started. A wake
+  /// whose id is on a run log counts as delivered, so a restart never sends it
+  /// again.
+  final List<String> wakeIds;
+
+  /// The person the run acts for, recorded with the run row. Null for a run
+  /// the server started on its own (a bot run). Server-owned: it decides
+  /// whether a recovery after a crash needs that person, so a client never
+  /// sets it.
+  final String? requestedByUserId;
+
+  /// Why the run was started: the dispatch-time `WakeContext.wakeReason`
+  /// (`userMessage` for a person's own message), written with the run row and
+  /// never changed. Null for a run started without a wake context (a
+  /// subagent). Server-owned: after a restart it tells a person's run from a
+  /// wake-started one, which [wakeIds] cannot (a person's run also drains
+  /// wakes pushed into its lane).
+  final WakeReason? wakeReason;
+
+  /// The run whose tool call started this run by a direct dispatch
+  /// (`WakeContext.startedByRunId`: a reviewer `dispatch_reviewers` started,
+  /// a team leader an agent's `assign_ticket` routed to), written with the
+  /// run row and never changed. Null for any other run. Not a parent link:
+  /// it nests nothing, changes no cost rollup, and the run settles like any
+  /// other. Server-owned: the wake rules read it to keep such a run in the
+  /// starting run's chain of wakes.
+  final String? startedByRunId;
+
   /// True when the run finished successfully AND an independent verifier
   /// accepted the output.
   bool get isVerifiedSuccess =>
@@ -361,7 +408,24 @@ class AgentRunLog {
           nativeSessionId == other.nativeSessionId &&
           resumedNativeSession == other.resumedNativeSession &&
           verification == other.verification &&
-          latency == other.latency;
+          latency == other.latency &&
+          endReason == other.endReason &&
+          _sameIds(wakeIds, other.wakeIds) &&
+          requestedByUserId == other.requestedByUserId &&
+          wakeReason == other.wakeReason &&
+          startedByRunId == other.startedByRunId;
+
+  static bool _sameIds(List<String> a, List<String> b) {
+    if (a.length != b.length) {
+      return false;
+    }
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   @override
   int get hashCode => Object.hashAll([
@@ -402,6 +466,11 @@ class AgentRunLog {
     resumedNativeSession,
     verification,
     latency,
+    endReason,
+    Object.hashAll(wakeIds),
+    requestedByUserId,
+    wakeReason,
+    startedByRunId,
   ]);
 
   /// Copy with.
@@ -458,6 +527,12 @@ class AgentRunLog {
     bool? resumedNativeSession,
     RunVerification? verification,
     RunLatencyProfile? latency,
+    RunEndReason? endReason,
+    bool removeEndReason = false,
+    List<String>? wakeIds,
+    String? requestedByUserId,
+    bool removeRequestedByUserId = false,
+    WakeReason? wakeReason,
   }) {
     return AgentRunLog(
       id: id ?? this.id,
@@ -503,6 +578,13 @@ class AgentRunLog {
       resumedNativeSession: resumedNativeSession ?? this.resumedNativeSession,
       verification: verification ?? this.verification,
       latency: latency ?? this.latency,
+      endReason: removeEndReason ? null : (endReason ?? this.endReason),
+      wakeIds: wakeIds ?? this.wakeIds,
+      requestedByUserId: removeRequestedByUserId
+          ? null
+          : (requestedByUserId ?? this.requestedByUserId),
+      wakeReason: wakeReason ?? this.wakeReason,
+      startedByRunId: startedByRunId,
     );
   }
 }

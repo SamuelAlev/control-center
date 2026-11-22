@@ -2,7 +2,7 @@
 title: Urus kos
 description: Lihat apa yang dibelanjakan oleh ejen anda, hadkan larian autonomi dan kurangkan penggunaan token.
 slug: ms-MY/manual-pengguna/panduan-cara/urus-kos
-sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
+sourceHash: 040176a3840653a57c823ce4ff7e3ed9cf071c07
 ---
 
 Panduan ini menunjukkan cara melihat kos larian ejen dan cara menghadkan larian autonomi.
@@ -40,21 +40,30 @@ Kad **Penggunaan & kos** pada halaman ini menunjukkan perbelanjaan yang diperhat
 
 ## Hadkan larian autonomi
 
-Dua perintah slash, yang ditaip dalam komposer ruang, ialah satu-satunya larian yang mempunyai had perbelanjaan:
+Larian ini mempunyai had perbelanjaan. Larian yang anda mulakan dengan menghantar mesej tidak mempunyainya.
 
 ```
 /goal ship the auth refactor --budget 20
-/loop keep the flaky tests green
+/loop every 1h --budget 10 keep the flaky tests green
 ```
 
-- Setiap segmen larian `/goal` atau `/loop` berhenti apabila perbelanjaan berharganya mencapai **500 sen ($5.00)**. Pada 80% daripadanya, gelung itu mula-mula mengemudi model supaya menyelesaikan kerja dan meninggalkan serahan yang bersih, jadi ia tidak mati di pertengahan tugasan.
-- Keseluruhan matlamat tahan lama dihadkan pada **5000 sen ($50.00)** melainkan anda menghantar `--budget <dollars>`. Penyelia menyalurkan belanjawan matlamat yang _tinggal_ ke dalam setiap segmen, jadi belanjawan eksplisit tidak pernah dilampaui oleh keseluruhan segmen.
-- `--days N` menambah tarikh akhir masa sebenar dan `--max N` siling bilangan larian. Kedua-duanya pilihan; tanpanya, matlamat hanya dibatasi oleh kos.
-- Matlamat yang mencapai dindingnya berhenti pada `budgetExhausted` dan hanya boleh disambung semula dengan menaikkan belanjawan.
+| Larian | Had |
+| --- | --- |
+| Segmen matlamat | 5 dolar, atau baki bajet matlamat jika lebih rendah |
+| Matlamat | 50 dolar melainkan anda menghantar `--budget <dollars>` |
+| Kajian matlamat | 2 dolar, atau baki yang tinggal, dicaj kepada matlamat |
+| Larian yang dimulakan oleh jadual atau pantauan | 5 dolar; jadual berhenti pada had kosnya sendiri (50 dolar melainkan anda menghantar `--budget`, atau lalai ruang kerja) |
+| Kajian selepas matlamat, atau `/refine` | 1 dolar |
 
-Kerana had itu berasaskan harga, model yang tidak dapat dihargakan oleh katalog tidak pernah mencapainya. Larian sedemikian sebaliknya dibatasi oleh pengawal pengulangan gelung malapetaka, penyerahan penyelia selepas tiga kegagalan berturut-turut dan anda.
+- Larian yang ada had berhenti apabila perbelanjaan berharganya mencapai had itu, pada harness terbina dalam, Claude Code dan ejen ACP. Pada 90%, harness terbina dalam dan Claude Code mula-mula mengemudi ejen supaya menyelesaikan kerja dan meninggalkan serahan yang bersih, jadi ia tidak mati di pertengahan tugasan. Ejen ACP dibatalkan pada had itu.
+- Belanjawan _yang tinggal_ bagi matlamat disalurkan ke dalam setiap segmen, jadi belanjawan eksplisit tidak pernah dilampaui oleh keseluruhan segmen.
+- `--days N` menambah tarikh akhir dan `--max N` siling segmen. Kedua-duanya pilihan; tanpanya, matlamat dibatasi oleh kos dan oleh henti tiada kemajuannya.
+- Matlamat yang mencapai bajetnya berhenti pada **Bajet habis** dan hanya disambung dengan bajet yang lebih tinggi, yang hanya orang yang memulakannya boleh berikan.
+- Larian pipeline yang ditahan pada had orkestrasinya menunggu sehingga pemohonnya menekan **Naikkan had** pada halaman larian pipeline. Had baharu mesti melebihi had lama dan jumlah yang telah dibelanjakan, paling banyak 1,000 dolar, dan had tidak pernah dibuang.
 
-Mesej dalam ruang, @-sebutan, atau langkah pipeline tiada had perbelanjaan. Larian tamat apabila model berhenti, apabila anda menghentikannya, atau apabila pengawal gelung malapetaka mengemudinya.
+Kerana had itu berasaskan harga, model yang tidak dapat dihargakan oleh katalog tidak pernah mencapainya. Larian sedemikian sebaliknya dibatasi oleh pengawal pengulangan gelung malapetaka, henti tiada kemajuan bagi matlamat, penyerahannya selepas tiga kegagalan berturut-turut, dan anda.
+
+Mesej dalam ruang, @-sebutan, atau langkah pipeline di luar orkestrasi berhad tiada had perbelanjaan sendiri. Larian tamat apabila model berhenti, apabila anda menghentikannya, atau apabila pengawal gelung malapetaka mengemudinya.
 
 ## Kurangkan penggunaan token
 

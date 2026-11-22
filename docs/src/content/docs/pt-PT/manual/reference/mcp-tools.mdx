@@ -2,7 +2,7 @@
 title: Ferramentas MCP
 description: Catálogo completo das ferramentas MCP que o cc_server regista, por família.
 slug: pt-PT/manual/referencia/ferramentas-mcp
-sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
+sourceHash: 0ef9efd386b57c3a254e7f637b0436d9baff1719
 ---
 
 O `cc_server` aloja um único registo de ferramentas MCP (JSON-RPC 2.0), servido na porta principal do servidor (predefinida: `9030`) em `POST /mcp` e `GET /sse`, com a versão de protocolo `2024-11-05`. Todos os clientes chegam ao mesmo registo: a aplicação de ambiente de trabalho, a build web, os clientes MCP externos e o runtime de agentes integrado. Os servidores MCP externos são ligados ao mesmo registo em camadas próprias: uma por espaço de trabalho, para os servidores que os respetivos administradores configuram, e uma para os servidores pessoais do proprietário do servidor. Este endpoint só os lista, chama e pesquisa numa execução de agente: os servidores do próprio espaço de trabalho e, quando o proprietário do servidor é responsável pela execução, os pessoais. O token MCP e os dispositivos emparelhados nunca os veem (veja [Servidores MCP usados pelos seus agentes](/pt-PT/manual/guias/servidor-mcp/#servidores-mcp-usados-pelos-seus-agentes)).
@@ -11,21 +11,22 @@ O `cc_server` aloja um único registo de ferramentas MCP (JSON-RPC 2.0), servido
 
 | Medida                                                                                             | Quantidade |
 | -------------------------------------------------------------------------------------------------- | ---------- |
-| Ferramentas registadas pelo `cc_server`                                                            | 110        |
-| De `packages/cc_mcp`                                                                               | 108        |
+| Ferramentas registadas pelo `cc_server`                                                            | 116        |
+| De `packages/cc_mcp`                                                                               | 114        |
 | De `packages/cc_mcp_client` (deteção de ferramentas)                                               | 2          |
-| Registadas no registo base (`server_mcp_registry.dart`)                                            | 63         |
-| Registadas após o arranque, à medida que os respetivos serviços ficam operacionais (`cc_server_runtime.dart`) | 47 |
-| Das 63 do registo base, condicionais a um repositório de grafo de código                           | 5          |
+| Registadas no registo base (`server_mcp_registry.dart`)                                            | 64         |
+| Registadas após o arranque, à medida que os respetivos serviços ficam operacionais (`cc_server_runtime.dart`) | 52 |
+| Das 64 do registo base, condicionais a um repositório de grafo de código                           | 5          |
+| Dos 64 do registo base, condicionado ao executor do modo de código (`repl`) | 1 |
 
-As cinco ferramentas de grafo de código só são registadas quando o anfitrião passa um repositório de grafo de código a `buildServerMcpRegistry`. O `cc_server` passa sempre um, pelo que todas as 110 estão ativas no binário distribuído.
+As cinco ferramentas de grafo de código só são registadas quando o anfitrião passa um repositório de grafo de código a `buildServerMcpRegistry`, e `repl` só quando passa o executor do modo de código. O `cc_server` passa sempre ambos (não arranca sem o executor), pelo que todas as 111 estão registadas no binário distribuído; o servidor de demonstração público não regista `repl`.
 
-O registo completo é anunciado em `tools/list`, sem restrição de deteção. As edições de tickets são ferramentas tipadas.
+O registo completo é anunciado em `tools/list`, sem restrição de deteção, exceto por uma execução de agente que consegue executar scripts (abaixo). As edições de tickets são ferramentas tipadas.
 
 :::note[Os clientes externos veem sempre o catálogo completo]
-O `tools/list` nunca é reduzido, exceto pelos servidores MCP pessoais do proprietário do servidor, que nunca são incluídos. Os clientes MCP validam os nomes das ferramentas face à sua própria cópia em cache dessa lista e recusam tudo o que não esteja listado sem perguntar ao servidor, pelo que uma ferramenta aí oculta é inalcançável, e não apenas silenciosa.
+O `tools/list` nunca é reduzido, exceto pelos servidores MCP pessoais do proprietário do servidor, que nunca são incluídos, e o [modo de código](/pt-PT/manual/conceitos/modo-de-codigo/): `repl` só é listado a uma execução de agente num servidor que consegue executar scripts, e essa execução recebe na lista `repl`, as ferramentas diretas (`read`, `write`, `edit`, `search`, `find`, `bash`, `read_output`, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` e os verbos próprios do seu modo, quando o registo os tem) e as ferramentas que um script não pode chamar. Chama o resto a partir de um script; uma chamada direta a uma delas é respondida com a forma de a chamar a partir de `repl`. Os clientes MCP validam os nomes das ferramentas face à sua própria cópia em cache dessa lista e recusam tudo o que não esteja listado sem perguntar ao servidor, pelo que uma ferramenta aí oculta é inalcançável, e não apenas silenciosa.
 
-O **harness integrado** é diferente: carrega apenas um subconjunto residente de definições por pedido e vai buscar o resto no primeiro uso, o que é um comportamento do lado do harness e não altera este registo. Ver [Contexto de ferramentas e cache de prompts](/pt-PT/manual/conceitos/contexto-de-ferramentas/).
+O **harness integrado** é diferente: carrega apenas um conjunto direto de definições por pedido e alcança o resto a partir de scripts ou carrega-o na primeira utilização, o que é um comportamento do lado do harness e não altera este registo. Ver [Contexto de ferramentas e cache de prompts](/pt-PT/manual/conceitos/contexto-de-ferramentas/).
 :::
 
 :::note[Todas as classes de ferramentas são registadas]
@@ -49,6 +50,14 @@ Ambas vêm do `cc_mcp_client`, não do `cc_mcp`, e ambas consultam a proteção 
 
 Uma terceira ferramenta de deteção, **`search_tools`**, existe apenas dentro do harness integrado e não faz parte deste registo MCP. Classifica a própria superfície de ferramentas da execução e, ao contrário de `search_tool_bm25`, **carrega** os esquemas do que encontra, para que o agente possa invocar uma correspondência no turno seguinte. Os agentes no harness devem preferi-la; os clientes MCP têm `search_tool_bm25`.
 
+## Modo de código
+
+| Ferramenta | Descrição |
+| ------ | ----------- |
+| `repl` | Executa um script JavaScript que chama as outras ferramentas da execução como `tools.<id>(args)` e devolve apenas o que precisa. Listado apenas a uma execução de agente, num servidor que consegue executar scripts do [modo de código](/pt-PT/manual/conceitos/modo-de-codigo/). Cada chamada aninhada passa pelo mesmo portão de um `tools/call`. Recebe `code`, `description`, `timeout_ms?`, `max_output_tokens?` |
+
+Um script não pode chamar `repl`, `search_tool_bm25`, `list_my_tools`, nem qualquer ferramenta que inicie ou envie mensagens a outra execução de agente, atribua ou comente um ticket, envie uma mensagem, crie, decida ou comente uma aprovação, proponha ou altere uma política, instale ou altere skills, crie um perfil de runtime, submeta um plano, saia do modo plano, conclua o objetivo da conversa ou submeta o resultado de uma execução de pipeline. Essas ferramentas declaram `scriptCallable` como falso e são sempre chamadas diretamente; no harness integrado, uma que esteja fora do conjunto direto é carregada na primeira utilização. `create_ticket` só é chamável a partir de um script quando não define `assignee`.
+
 ## Ferramentas de agente
 
 | Ferramenta    | Descrição                                       |
@@ -57,15 +66,29 @@ Uma terceira ferramenta de deteção, **`search_tools`**, existe apenas dentro d
 
 ## Mensagens e delegação entre agentes pares
 
-Os agentes comunicam entre si através de espaços (duráveis, visíveis no roster). O `ask_agent` é um pedido/resposta com um tempo limite obrigatório; o `delegate_task` é protegido do lado do servidor por limite de profundidade, deteção de ciclos, envelope orçamental e teto de autonomia.
+Os agentes falam entre si através de espaços (duráveis, visíveis na lista de membros). `ask_agent` ou espera pela resposta (`mode: wait`, 600 segundos por predefinição, 1 800 no máximo) ou devolve de imediato (`mode: background`); em qualquer dos casos, quem perguntou é acordado uma vez com a resposta quando esta não voltou na mesma linha. `send_to_agent`, `ask_agent`, `consult_agent`, `request_peer_review` e `delegate_task` passam pela mesma porta do lado do servidor: profundidade (3), deteção de ciclos, envelope de orçamento, teto de autonomia e limite de frequência por par de agentes. A identidade do remetente vem sempre da execução que faz a chamada. Veja [Agentes a trabalhar em conjunto](/pt-PT/manual/guias/agentes-em-conjunto/).
 
 | Ferramenta      | Descrição                                                                                          |
 | --------------- | -------------------------------------------------------------------------------------------------- |
-| `send_to_agent` | Envia uma mensagem unidirecional a outro agente, endereçada por `to_agent_id` ou por `to_agent_name` exato |
-| `ask_agent`     | Coloca uma pergunta a outro agente e aguarda a resposta, ou expira                                 |
+| `send_to_agent` | Envia uma mensagem unidirecional a outro agente, endereçada por `to_agent_id` ou por `to_agent_name` exato; responde com `delivery_status` `woken`, `queued_behind_run` ou `refused` |
+| `ask_agent`     | Coloca uma pergunta a outro agente; aguarda a resposta ou continua e é acordado quando ela chega   |
 | `delegate_task` | Delega uma tarefa a outro agente como ticket acompanhado                                           |
 | `consult_agent` | Adiciona ao espaço o especialista que melhor corresponde em termos de skills e despacha-o com um briefing focado |
 | `todo_read`     | Lê a lista de tarefas persistida desta conversa                                                    |
+| `agent_activity` | Lê o que outro agente está a fazer agora e fez há pouco (estado, ferramenta atual, últimas mensagens), sem o acordar |
+
+## Ferramentas de despertar e de objetivo
+
+Um agente usa estas em vez de dormir ou de sondar. Cada uma atua apenas para o agente que chama, na sua própria conversa; o agente nunca é um argumento. Veja [Programações e despertares](/pt-PT/manual/guias/programacoes-despertares/) e [Perseguir um objetivo](/pt-PT/manual/guias/perseguir-objetivo/).
+
+| Ferramenta | Descrição |
+| ------------- | ----------- |
+| `wake_me` | Organiza-se para ser acordado mais tarde: a uma hora (`in:20m`, `at:<ISO time>`), num intervalo (`every:30m`), num cron (`cron:0 9 * * 1-5`, com `tz`), ao ritmo próprio dentro de um ciclo com ritmo próprio (`next`, com `delay` de 1 a 60 minutos), ou quando algo acontece (`on:pr_checks`, `on:pr_review`, `on:pr_merged`, `on:environment`, `on:ticket:<id>`, `on:pipeline_run:<id>`). Opcionais: `note`, `max_runs`, `expires_in`, `when_busy` (`skip` ou `queue`) e `deliver` (`run` ou `notify`) |
+| `list_wakes` | Lista o que o agente tem à espera nesta conversa: programações, monitores, despertares pendentes e perguntas sem resposta |
+| `cancel_wake` | Cancela uma programação ou um monitor que o agente definiu para si, pelo seu id |
+| `goal_status` | Lê o objetivo ativo do agente: contrato, segmento, gasto e orçamento restante, avisos por falta de progresso, retenção, última verificação e despertares de objetivo pendentes |
+
+`complete_goal` (em [Ferramentas de planos, playbooks e artefactos](#ferramentas-de-planos-playbooks-e-artefactos)) é a única forma de o agente dizer que um objetivo está concluído, e é uma afirmação, não uma conclusão.
 
 ## Ferramentas de skills
 
@@ -92,7 +115,7 @@ Todas as instalações e atualizações passam por uma verificação que falha e
 | `revise_artifact`  | Substitui o conteúdo de um artefacto publicado                                                                        |
 | `list_artifacts`   | Lista os artefactos do espaço de trabalho                                                                             |
 | `get_artifact`     | Lê um artefacto                                                                                                       |
-| `complete_goal`    | Declara alcançado o objetivo duradouro ativo da conversa (iniciado com `/goal` ou `/loop`)                            |
+| `complete_goal` | Afirma que o objetivo ativo do agente foi alcançado, com provas para cada critério; o servidor então executa as verificações e uma revisão |
 
 ## Ferramentas de espaços de trabalho
 
@@ -160,10 +183,10 @@ Todas as instalações e atualizações passam por uma verificação que falha e
 | `create_goal`                | Cria um objetivo organizacional (ao nível da empresa, da equipa, do agente ou da tarefa)              |
 | `list_goals`                 | Lista objetivos com o nível, o estado e o progresso agregado                                          |
 | `update_goal_progress`       | Define o progresso de um objetivo                                                                     |
-| `create_approval`            | Abre uma aprovação do conselho para uma ação governada (saída do modo de plano, merge, lançamento, contratação, personalizada) |
+| `create_approval`            | Abre uma aprovação do conselho para uma ação governada (saída do modo de plano, merge, lançamento, contratação, personalizada) em nome do agente que chama a ferramenta. Apenas execuções de agente |
 | `list_approvals`             | Lista as aprovações, opcionalmente filtradas por estado                                               |
-| `decide_approval`            | Regista uma decisão: aprovar, rejeitar, pedir revisão ou reenviar                                      |
-| `comment_approval`           | Comenta uma aprovação do conselho                                                                     |
+| `decide_approval`            | Regista a decisão do agente que chama a ferramenta: aprovar, rejeitar, pedir revisão ou reenviar. Apenas execuções de agente |
+| `comment_approval`           | Comenta uma aprovação do conselho em nome do agente que chama a ferramenta. Apenas execuções de agente |
 | `exit_plan_mode`             | Abre (e, depois de aprovada, consome) uma aprovação `plan_exit`, retirando a conversa do modo de plano |
 | `agent_heartbeat`            | Comunica a vivacidade (alive, idle, stuck); o silêncio faz a saúde do runtime passar a recently-lost e depois a offline |
 | `list_runtime_health`        | Lista a saúde do runtime de cada agente                                                               |

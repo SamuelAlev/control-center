@@ -2,23 +2,33 @@
 title: Ajan gönderim yaşam döngüsü
 description: Bir mesajın gelmesiyle bir çalıştırma günlüğünün kapanması arasında olanlar — istem birleştirme, çalışma ağaçları, kimlik, bir çalıştırmayı neyin sınırladığı ve sonucunun dürüstçe nasıl kaydedildiği.
 slug: tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu
-sourceHash: 13e7fe3ed86c8659c5fec818e0b89737241e2b9d
+sourceHash: 07c46e22e30f1a10e64b7fb949c78bdae9747efa
 ---
 
 ## Gönderim nedir
 
 Bir gönderim, bir ajanın tek bir konuşmada, tek bir adaptör üzerinde yaptığı tek bir çalıştırmadır. Onunla ilgili her şey `cc_server` üzerinde gerçekleşir: istemci bir mesaj gönderir, ardından olayların geri akışını izler. Hiçbir istemcide gönderim yolu yoktur.
 
-Ajanlar altı nedenden dolayı uyandırılır; çalıştırma bunları **uyandırma bağlamı** olarak taşır, böylece ajan _neden_ uyanık olduğunu bilir:
+Her çalıştırma, ajanın neden uyanık olduğunu söyleyen bir **uyandırma bağlamı** taşır. Bir mesaj göndererek başlattığınız çalıştırma `userMessage`'dır; sunucunun kendiliğinden başlattığı her çalıştırma, çalışma alanının kuyruğunda kalıcı bir **uyandırma** olarak başlar ve uyandırmanın nedenini taşır (bkz. [Zamanlamalar ve uyandırmalar](/tr-TR/kilavuz/nasil-yapilir/zamanlamalar-ve-uyandirmalar/)):
 
 | Uyandırma nedeni | Tetikleyici                                                  |
-| ---------------- | ------------------------------------------------------------ |
-| `userMessage`    | Birisi bir alana mesaj gönderdi veya ajanı andı              |
+| -------------------- | ------- |
+| `userMessage`    | Birisi bir alana mesaj gönderdi                              |
 | `assignment`     | Ajana bir bilet atandı                                       |
 | `pipelineStep`   | Bir pipeline adımı onu gönderdi                              |
-| `childCompleted` | Bir alt bilet tamamlandı                                     |
-| `followUp`       | Zamanlanmış bir takip kalp atışı                             |
-| `recovery`       | Kurtarma yolu bir başarısızlıktan sonra yeniden gönderdi     |
+| `childCompleted` | Devredilen ya da alt bir bilet tamamlandı veya bir ekip üyesinin çalıştırması sona erdi |
+| `schedule` | Bir zamanlama ya da döngü tetiklendi |
+| `watch` | Bir izlemenin dinlediği bir şey gerçekleşti (çekme isteği kontrolleri, bir inceleme, bir ortam, bir bilet, bir pipeline çalıştırması) |
+| `goalContinuation` | Bir hedefin bir sonraki bölümü |
+| `goalVerification` | Bir hedefin kontrolleri ya da incelemesi, hedefin henüz tamamlanmadığını gördü |
+| `goalReview` | Bir hedefin tamamlandı iddiasının salt okunur incelemesi |
+| `peerMessage` | Başka bir ajan ona bir mesaj ya da soru gönderdi, ona @ ile seslenildi ya da o, alanın denetleyicisidir |
+| `peerReply`      | Başka bir ajana sorduğu sorunun yanıtı                       |
+| `limitReset` | Durduğu bir sağlayıcı kullanım sınırı sıfırlandı |
+| `improvementReview` | Doğrulanmış bir hedeften sonraki inceleme ya da `/refine` |
+| `recovery` | Bir sunucu yeniden başlatması ya da bir hatanın yarıda kestiği iş |
+
+Bir uyandırma, o konuşmadaki ajanın canlı bir çalıştırmasına, o çalıştırma girdi alıyorsa ve aynı kişi adına hareket ediyorsa iletilir; aksi halde o çalıştırmanın bitmesini bekler ve kendi çalıştırmasını başlatır. Eğik çizgi komutları yalnızca bir kişinin yazdığı mesajda okunur; diğer çalıştırmalarda aynı metin sıradan bir mesajdır.
 
 Uyandırma bağlamı, nedene eşlik eden ID'leri taşır — bilet, alan, mesaj, pipeline çalıştırması — ve bunlar ajanın ortamına ve istemine enjekte edilir.
 
@@ -104,17 +114,17 @@ Kasıtlı olarak **hiçbir yerde tur tavanı yoktur**. Katı bir yineleme sayıs
 - **model kendi kendine durduğunda**;
 - **bir insan onu durdurduğunda** ya da konuşmayı devraldığında (bu, yerleşik harness'ı bir sonraki temiz tur sınırında duraklatır — güvenli sınırı olmayan bir Claude Code çalıştırması ise bunun yerine durdurulur);
 - **sessizlik gözcüsü tetiklendiğinde.** Eşik boyunca çıktı olmazsa oturum bir `silentRun` hatasıyla sonlandırılır. Varsayılan 15 dakikadır ve ağırlıklı olarak okuma yapılan modlarda (inceleme ve plan) 10'a düşer; bir ajan bunu 1 ile 240 dakika arasında geçersiz kılabilir. Gözcü, bir alt süreç PID'sini bildirdiğinde kurulur, böylece Claude Code CLI'yı kapsar — hiçbir şey başlatmayan yerleşik harness'ı **kapsamaz**;
-- **bir maliyet sınırı devreye girdiğinde** — ama yalnızca özerk komutlar için.
+- **bir maliyet sınırı devreye girdiğinde** — hedef bölümlerinde ve incelemelerde, zamanlama ve izleme çalıştırmalarında, iyileştirme incelemesinde ve sınırlı bir orkestrasyon altındaki pipeline çalıştırmalarında.
 
 Kısır döngü koruması bir sonlandırıcı değildir: arka arkaya üç özdeş araç çağrısı olduğunda döngü ajanı yaklaşımını değiştirmeye _yönlendirir_.
 
 :::note[Normal bir turun maliyet sınırı yoktur]
-Oturum içi maliyet koruması yalnızca `/goal` ve `/loop` için bağlanmıştır; diğer her çalıştırma hiçbir bütçe geçirmez. Bu komutlarda, gözetimsiz tek bir segment varsayılan olarak 500 sent ($5.00) yakabilir; %80'de ajanı katı duruştan önce işi temiz biçimde toparlamaya çağıran yumuşak bir yönlendirme ve segmentler boyunca kalıcı 5000 sent ($50.00) hedef bütçesi vardır. Açıkça verilen bir `/goal --budget` hiçbir zaman bir segmentin tamamı kadar aşılmaz.
+Bir mesajla başlattığınız çalıştırmanın bütçesi yoktur. Bir hedefin bir bölümü 5 dolar harcayabilir ya da hedef bütçesinden kalan (varsayılan 50 dolar) bundan azsa o kadar; bir hedefin incelemesi 2 dolar; bir zamanlamanın ya da izlemenin başlattığı bir çalıştırma 5 dolar; iyileştirme incelemesi 1 dolar. Yerleşik harness ve Claude Code yüzde 90'da, sert durdurmadan önce ajanı temiz biçimde toparlanmaya yönlendirir; bir ACP ajanı sınırda iptal edilir. Bkz. [Maliyetleri yönetme](/tr-TR/kilavuz/nasil-yapilir/maliyetleri-yonetme/#özerk-bir-çalıştırmaya-üst-sınır-koyun).
 :::
 
 Bir araya getirildiğinde, yerleşik harness üzerindeki sıradan etkileşimli bir turun tur tavanı, maliyet sınırı ve sessizlik gözcüsü yoktur. Model durduğunda ya da siz durdurduğunuzda biter. Bu bilinçli bir tercihtir — alternatiflerin hepsi meşru uzun işleri öldürür — ama gözetimsiz etkileşimli bir çalıştırmanın modelin kendi muhakemesinden başka hiçbir şeyle sınırlanmadığı anlamına da gelir.
 
-Çalıştırma sırasında, çalışan bir ajana gönderilen mesaj **yönlendirme** olarak kuyruğa alınır ve bir sonraki tur sınırında boşaltılır; böylece bir çalıştırmayı öldürmeden dürtükleyebilirsiniz. Yönlendirme, duraklatma, alt ajanlar ve tamamlama sözleşmesi yerleşik harness'ın özellikleridir; Claude Code'da bunların hiçbiri yoktur.
+Çalıştırma sırasında, çalışan bir ajana gönderilen mesaj **yönlendirme** olarak kuyruğa alınır ve bir sonraki tur sınırında boşaltılır; böylece bir çalıştırmayı öldürmeden dürtükleyebilirsiniz. Salt okunur bir çalıştırma, örneğin bir hedefin incelemesi, çalışırken hiçbir yönlendirme almaz; başkası adına çalışan bir çalıştırmayı yönlendirmek ise alanın depolarına yazma erişimi gerektirir. Yönlendirme, duraklatma, alt ajanlar ve tamamlama sözleşmesi yerleşik harness'ın özellikleridir; Claude Code'da bunların hiçbiri yoktur.
 
 ## Çalıştırma nasıl kaydedilir
 
@@ -130,11 +140,11 @@ Bir çalıştırma, modunun gerektirdiği teslimatı üretmeden bittiğinde — 
 Bu bilinçlidir. Durumu ters çevirmek, eksik çıktıyla hiç ilgisi olmayan bilet ve pipeline durum makinelerini hareket ettirirdi. Ayrıca "status: completed" ifadesi tek başına bir çalıştırmanın başarılı olduğu sonucuna varmak için asla yeterli değildir — özeti okuyun.
 :::
 
-Çalıştırmayı kapatmak `AgentRunCompleted` olayını yayımlar ve ona çok şey bağlıdır: pipeline maliyet toplaması, çalıştırmayı bekleyen bir pipeline adımının sürdürülmesi, arkasındaki bileti tamamlama, bir orkestrasyonu son duruma eşleme, hedef gözetmeninin devam et ya da dur kararı, denetleyici rolü ve çalıştırma sonrası bütçe değerlendirmesi. Varlık listesi ise olayı değil, son çalıştırma günlüklerini izleyerek ayrıca güncellenir. “Ajan tamamlandı” bildirimi bu listede yer almaz: olay, süreç akışı sona erdiğinde, yanıt yazılmadan önce tetiklenir; bu yüzden bildirim, mesaj kalıcı olarak kaydedildikten sonra yayımlanan turun `MessageReceived` olayıdır.
+Çalıştırma son durumunu yazdıktan sonra sunucu `AgentRunSettled` olayını tam bir kez yayımlar; olay, çalıştırmanın neden bittiğini de taşır (`completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` veya `serverStopped`). Buna çok şey bağlıdır: pipeline maliyet toplaması, çalıştırmayı bekleyen bir pipeline adımının sürdürülmesi, arkasındaki bileti tamamlama, bir orkestrasyonu son duruma eşleme, hedef gözetmeninin devam et ya da dur kararı, bir ajanın başka bir ajana sorduğu sorunun yanıtı, kendi kendine zamanlayan bir döngünün bir sonraki tetiklemesi, kullanım sınırı duraklatması, denetleyici rolü ve çalıştırma sonrası bütçe değerlendirmesi. Sunucu durdurmasının kestiği bir çalıştırma (`serverStopped`) asla başarısızlık sayılmaz; iş yeniden başlatmadan sonra sürdürülür. `AgentRunCompleted` ise daha önce, yalnızca çekme isteği köprüsü ve analitik için yine yayımlanır. Varlık listesi ise olayı değil, son çalıştırma günlüklerini izleyerek ayrıca güncellenir. “Ajan tamamlandı” bildirimi bu listede yer almaz: olay, süreç akışı sona erdiğinde, yanıt yazılmadan önce tetiklenir; bu yüzden bildirim, mesaj kalıcı olarak kaydedildikten sonra yayımlanan turun `MessageReceived` olayıdır.
 
 ## Bütçeler, iş bittikten sonra
 
-Bütçe uygulaması bir _tepkidir_, bir kapı değil. Bir çalıştırma tamamlandığında değerlendirici, ajanın ay başından bugüne harcamasını etkin üst sınırıyla karşılaştırır (varsa bağlı bir bütçe politikası, yoksa ajanın kendi aylık rakamı; sıfır sınırsız demektir). Yumuşak eşiğin aşılması bir uyarı olayı kaydeder; bütçenin tükenmesi katı bir olay kaydeder ve ajanın yaşam döngüsü durumunu organizasyon şemasında `paused` olarak değiştirir. Gönderim o ajandan hâlâ iş kabul eder. Bir `BudgetThresholdCrossed` pipeline tetikleyicisi aynı olaydan takip işi başlatabilir.
+Bütçe uygulaması bir _tepkidir_, bir kapı değil. Bir çalıştırma tamamlandığında değerlendirici, ajanın ay başından bugüne harcamasını etkin üst sınırıyla karşılaştırır (varsa bağlı bir bütçe politikası, yoksa ajanın kendi aylık rakamı; sıfır sınırsız demektir). Yumuşak eşiğin aşılması bir uyarı olayı kaydeder; bütçenin tükenmesi katı bir olay kaydeder ve ajanın yaşam döngüsü durumunu organizasyon şemasında `paused` olarak değiştirir. Gönderim o ajana gönderdiğiniz işi hâlâ kabul eder, ancak onun uyandırmaları (zamanlamalar, hedef bölümleri, yanıtlar) o duraklatılmışken en fazla 7 gün boyunca beklemeye alınır. Bir `BudgetThresholdCrossed` pipeline tetikleyicisi aynı olaydan takip işi başlatabilir.
 
 ## Yeniden deneme soyu
 
@@ -147,4 +157,5 @@ Her çalıştırma günlüğü yeniden deneme soyu taşıyabilir — bir üst ç
 - [Korumalar](/tr-TR/kilavuz/kavramlar/korumalar/): kapılanan her çağrının geçtiği etki sınıfı politikası
 - [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/): yalıtım hikâyesinin tamamı
 - [Çok oyunculu](/tr-TR/kilavuz/kavramlar/cok-oyunculu/): yönlendirme, devralma ve özerklik kadranı
-- [Alan olayları](/tr-TR/kilavuz/kavramlar/alan-olaylari/): `AgentRunCompleted` olayının tetikledikleri
+- [Alan olayları](/tr-TR/kilavuz/kavramlar/alan-olaylari/): `AgentRunSettled` olayının tetikledikleri
+- [Bir hedefi yürütme](/tr-TR/kilavuz/nasil-yapilir/hedef-yurutme/) ve [Zamanlamalar ve uyandırmalar](/tr-TR/kilavuz/nasil-yapilir/zamanlamalar-ve-uyandirmalar/): sunucunun kendiliğinden başlattığı çalıştırmalar

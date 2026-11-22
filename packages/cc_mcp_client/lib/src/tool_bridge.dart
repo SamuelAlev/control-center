@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cc_domain/features/code_mode/domain/value_objects/script_tool_descriptor.dart';
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 import 'package:cc_domain/features/mcp/domain/value_objects/capability_tier.dart';
 import 'package:cc_mcp_client/src/config/mcp_client_models.dart';
@@ -45,6 +46,7 @@ class BridgedMcpTool extends McpTool {
   final BridgedTierResolver? _tierResolver;
 
   /// The server this tool belongs to.
+  @override
   final String serverName;
 
   /// The remote tool definition.
@@ -67,12 +69,19 @@ class BridgedMcpTool extends McpTool {
       remoteTool.description,
       maxChars: maxDescriptionChars,
     ).trim();
-    final prefix = '[$serverName] ';
+    // The same label a script's catalog uses: a server named like a
+    // first-party namespace is never labelled as one.
+    final prefix = '[${ScriptToolNamespace.external(serverName)}] ';
     return base.isEmpty ? '${prefix}external MCP tool' : '$prefix$base';
   }
 
   @override
   Map<String, dynamic> get inputSchema => remoteTool.inputSchema;
+
+  /// The server's declared result type, so a code mode script's
+  /// declaration of this tool says what a call resolves to.
+  @override
+  Map<String, dynamic>? get outputSchema => remoteTool.outputSchema;
 
   @override
   ToolApproval toolApproval(Map<String, dynamic> arguments) {
@@ -125,6 +134,12 @@ class BridgedMcpTool extends McpTool {
   }
 
   /// Converts a remote `tools/call` result into a CC [CallResult].
+  ///
+  /// The server's `structuredContent`, when it sent one, rides along as
+  /// [CallResult.structured] (what a code mode script's call resolves to),
+  /// with every string in it put through [sanitizeExternalText]. One whose
+  /// JSON is larger than [maxResultChars] is dropped rather than cut, since a
+  /// cut value is not the value the server sent; the text still carries it.
   static CallResult _resultFromRemote(Map<String, dynamic> raw) {
     final isError = raw['isError'] == true;
     final content = raw['content'];
@@ -153,10 +168,42 @@ class BridgedMcpTool extends McpTool {
       buffer.toString(),
       maxChars: maxResultChars,
     ).trimRight();
-    return isError
-        ? CallResult.error(text.isEmpty ? 'remote tool error' : text)
-        : CallResult.success(text);
+    if (isError) {
+      return CallResult.error(text.isEmpty ? 'remote tool error' : text);
+    }
+    return CallResult.success(
+      text,
+      structured: _structuredFromRemote(raw['structuredContent']),
+    );
   }
+
+  /// [value] with its strings sanitised, or null when it is absent, not a
+  /// JSON object, or too large.
+  static Object? _structuredFromRemote(Object? value) {
+    if (value is! Map) {
+      return null;
+    }
+    final clean = _sanitizeJson(value);
+    try {
+      if (jsonEncode(clean).length > maxResultChars) {
+        return null;
+      }
+    } on JsonUnsupportedObjectError {
+      return null;
+    }
+    return clean;
+  }
+
+  static Object? _sanitizeJson(Object? value) => switch (value) {
+    final String s => sanitizeExternalText(s, maxChars: maxResultChars),
+    final Map<Object?, Object?> m => {
+      for (final e in m.entries)
+        sanitizeExternalText('${e.key}', maxChars: maxResultChars):
+            _sanitizeJson(e.value),
+    },
+    final List<Object?> l => [for (final v in l) _sanitizeJson(v)],
+    _ => value,
+  };
 
   /// Sanitises text originating from an untrusted external MCP server before it
   /// reaches the agent's context: strips ANSI/OSC escape sequences and C0/C1

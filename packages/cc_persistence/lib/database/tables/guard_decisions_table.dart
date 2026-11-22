@@ -116,6 +116,10 @@ class GuardDecisionsTable extends Table {
   /// Whether a human was asked (a `prompt` that reached a responder).
   BoolColumn get prompted => boolean().withDefault(const Constant(false))();
 
+  /// Whether the prompt came down with nobody's answer (its deadline, an
+  /// expiry, a withdrawal, a shutdown): a `deny` that no person decided.
+  BoolColumn get unanswered => boolean().withDefault(const Constant(false))();
+
   /// The human who answered a prompt (approve or deny).
   TextColumn get responderUserId => text().nullable()();
 

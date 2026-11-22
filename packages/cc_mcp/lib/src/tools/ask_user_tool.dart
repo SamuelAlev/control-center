@@ -1,5 +1,6 @@
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
+import 'package:cc_mcp/src/mcp_scoped_tool.dart';
 
 /// Asks the operator a structured question and blocks until they answer.
 ///
@@ -10,7 +11,7 @@ import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 /// missing and then guesses. Both halves call the same [AgentQuestionPort],
 /// so the form renders in the run's space and the answer completes the same
 /// in-process waiter.
-class AskUserTool extends McpTool {
+class AskUserTool extends McpScopedTool {
   /// Creates an [AskUserTool] that blocks on [port].
   AskUserTool({required this.port, this.maxOptions = 8});
 
@@ -22,6 +23,10 @@ class AskUserTool extends McpTool {
 
   @override
   String get name => 'ask_user';
+
+  @override
+  String get resultNote =>
+      '{selected: string[], text: string | null, skipped: boolean}.';
 
   @override
   String get description =>
@@ -104,23 +109,43 @@ class AskUserTool extends McpTool {
     'required': ['workspace_id', 'question'],
   };
 
+  /// What a code mode script's `await tools.ask_user(...)` resolves to.
   @override
-  Future<CallResult> run(Map<String, dynamic> arguments) =>
-      _ask(arguments, null);
+  Map<String, dynamic> get outputSchema => const {
+    'type': 'object',
+    'properties': {
+      'selected': {
+        'type': 'array',
+        'items': {'type': 'string'},
+        'description': 'The labels of the options the person picked.',
+      },
+      'text': {
+        'type': ['string', 'null'],
+        'description': 'What the person typed, or null.',
+      },
+      'skipped': {
+        'type': 'boolean',
+        'description': 'Whether the person left the choice to you.',
+      },
+    },
+    'required': ['selected', 'text', 'skipped'],
+  };
+
+  /// The call is the person's time: a script's deadline is held while the
+  /// form is open.
+  @override
+  bool get waitsOnPerson => true;
 
   /// The MCP client giving up (its own request timeout, or the run being
   /// stopped) closes the form, so it does not wait out the server timeout
-  /// offering an answer the agent will never read.
+  /// offering an answer the agent will never read. A question a script asked
+  /// carries the script's origin, so the form can say so.
   @override
-  Future<CallResult> runUntilAbandoned(
+  Future<CallResult> runScoped(
     Map<String, dynamic> arguments,
-    Future<void> abandoned,
-  ) => _ask(arguments, abandoned);
-
-  Future<CallResult> _ask(
-    Map<String, dynamic> arguments,
+    McpCallContext context, {
     Future<void>? abandoned,
-  ) async {
+  }) async {
     final (workspaceId, workspaceErr) = McpTool.requireString(
       arguments,
       'workspace_id',
@@ -162,6 +187,7 @@ class AskUserTool extends McpTool {
           askedByAgentId: rawAgent is String && rawAgent.isNotEmpty
               ? rawAgent
               : null,
+          origin: context.origin,
         ),
         abandoned: abandoned,
       );
@@ -170,8 +196,16 @@ class AskUserTool extends McpTool {
     }
 
     final outcome = AskUserOutcome.fromAnswer(answer);
-    return outcome.isError
-        ? CallResult.error(outcome.text)
-        : CallResult.success(outcome.text);
+    if (outcome.isError || answer == null) {
+      return CallResult.error(outcome.text);
+    }
+    return CallResult.success(
+      outcome.text,
+      structured: {
+        'selected': answer.selectedLabels,
+        'text': answer.freeText,
+        'skipped': answer.skipped,
+      },
+    );
   }
 }

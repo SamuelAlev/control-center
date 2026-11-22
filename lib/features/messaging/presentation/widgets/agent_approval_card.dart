@@ -1,5 +1,6 @@
 import 'package:cc_domain/cc_domain.dart' show ConfirmationRequestDto;
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/messaging/presentation/widgets/script_origin_line.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
@@ -36,6 +37,7 @@ class ApprovalCard extends StatelessWidget {
     required this.onApprove,
     required this.onApproveAndRemember,
     required this.onDeny,
+    this.onShowScript,
   });
 
   /// The request this card answers.
@@ -52,6 +54,10 @@ class ApprovalCard extends StatelessWidget {
 
   /// Refuse.
   final VoidCallback onDeny;
+
+  /// Opens the conversation at the script that raised the request; null
+  /// when no script did, or there is nowhere to show it.
+  final VoidCallback? onShowScript;
 
   bool get _destructive => request.severity == 'destructive';
 
@@ -109,6 +115,14 @@ class ApprovalCard extends StatelessWidget {
                   ),
                 ],
               ),
+              if (request.origin != null) ...[
+                const SizedBox(height: AppSpacing.xxs),
+                ScriptOriginLine(
+                  onShow: onShowScript,
+                  origin: request.origin,
+                  workspaceId: request.workspaceId,
+                ),
+              ],
               // Keep the decision visible while the full intent and script scroll.
               Flexible(
                 child: CcScrollbar(

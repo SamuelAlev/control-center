@@ -114,12 +114,12 @@ class ModeCapabilityProfile {
     deniedActionClasses: deniedClasses,
   );
 
-  /// Which of this mode's admitted tools ride every request, and which wait to
-  /// be asked for.
+  /// Which of this mode's admitted tools ride every request (the direct set,
+  /// [ModeToolPolicy.directNamesFor], and the discovery tools), and which do
+  /// not.
   ///
-  /// [enabled] is the field kill switch (`--tool-deferral=off`): false makes
-  /// every admitted tool resident, i.e. byte-identical requests to the
-  /// pre-deferral behaviour.
+  /// [enabled] is the field kill switch (`--tool-deferral=off`): false means
+  /// nothing is deferred.
   ///
   /// The mode's pinned verbs are unioned in unconditionally. A run must never
   /// have to DISCOVER the call that delivers its deliverable, and the same goes
@@ -128,8 +128,10 @@ class ModeCapabilityProfile {
       ToolResidencySpec(
         enabled: enabled,
         residentNames: {
-          ...ModeToolPolicy.residentNamesFor(mode),
+          ...ModeToolPolicy.directNamesFor(mode),
+          ...ModeToolPolicy.residentDiscovery,
           ...pinnedVerbs,
+          ...interactionVerbs,
         },
       );
 
@@ -212,7 +214,6 @@ const Map<Mode, ModeCapabilityProfile> modeCapabilityProfiles = {
       'edit',
       'apply_patch',
       'bash',
-      'hire_agent',
       'delegate_ticket',
       'create_ticket',
       'close_ticket',

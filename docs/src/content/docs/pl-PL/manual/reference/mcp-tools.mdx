@@ -2,7 +2,7 @@
 title: Narzędzia MCP
 description: Kompletny katalog narzędzi MCP, które rejestruje cc_server, według rodzin.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/narzedzia-mcp
-sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
+sourceHash: 0ef9efd386b57c3a254e7f637b0436d9baff1719
 ---
 
 `cc_server` hostuje jeden rejestr narzędzi MCP (JSON-RPC 2.0), udostępniany na głównym porcie serwera (domyślnie `9030`) pod `POST /mcp` i `GET /sse`, w wersji protokołu `2024-11-05`. Każdy klient trafia do tego samego rejestru: aplikacja desktopowa, wersja webowa, zewnętrzni klienci MCP i wbudowany runtime agentów. Zewnętrzne serwery MCP są podłączane do tego samego rejestru we własnych warstwach: jedna na każdy obszar roboczy dla serwerów, które konfigurują jego administratorzy, i jedna dla osobistych serwerów właściciela serwera. Ten endpoint wylicza je, wywołuje i przeszukuje tylko dla uruchomienia agenta: serwery własnego obszaru roboczego oraz osobiste, gdy za uruchomienie odpowiada właściciel serwera. Token MCP i sparowane urządzenia nigdy ich nie widzą (zob. [Serwery MCP używane przez agentów](/pl-PL/podrecznik/poradniki/serwer-mcp/#serwery-mcp-używane-przez-agentów)).
@@ -11,21 +11,22 @@ sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
 
 | Miara                                                                      | Liczba |
 | -------------------------------------------------------------------------- | ------ |
-| Narzędzia zarejestrowane przez `cc_server`                                 | 110    |
-| Z `packages/cc_mcp`                                                        | 108    |
+| Narzędzia zarejestrowane przez `cc_server`                                 | 116    |
+| Z `packages/cc_mcp`                                                        | 114    |
 | Z `packages/cc_mcp_client` (odkrywanie narzędzi)                           | 2      |
-| Zarejestrowane w rejestrze podstawowym (`server_mcp_registry.dart`)        | 63     |
-| Zarejestrowane po starcie wraz z uruchamianiem ich usług (`cc_server_runtime.dart`) | 47     |
-| Z 63 w rejestrze podstawowym — warunkowe wobec repozytorium grafu kodu     | 5      |
+| Zarejestrowane w rejestrze podstawowym (`server_mcp_registry.dart`)        | 64     |
+| Zarejestrowane po starcie wraz z uruchamianiem ich usług (`cc_server_runtime.dart`) | 52     |
+| Z 64 w rejestrze podstawowym — warunkowe wobec repozytorium grafu kodu     | 5      |
+| Z 64 w rejestrze bazowym, zależnie od runnera trybu kodu (`repl`) | 1 |
 
-Pięć narzędzi grafu kodu jest rejestrowanych tylko wtedy, gdy host przekaże repozytorium grafu kodu do `buildServerMcpRegistry`. `cc_server` zawsze je przekazuje, więc w dostarczanym pliku binarnym wszystkie 110 są aktywne.
+Pięć narzędzi grafu kodu jest rejestrowanych tylko wtedy, gdy host przekaże repozytorium grafu kodu do `buildServerMcpRegistry`, a `repl` tylko wtedy, gdy przekaże runner trybu kodu. `cc_server` zawsze przekazuje oba (nie startuje bez runnera), więc w dostarczanym pliku binarnym zarejestrowanych jest wszystkich 111; publiczny serwer demo nie rejestruje `repl`.
 
-Pełny rejestr jest ogłaszany w `tools/list` bez bramkowania wykrywania. Narzędzia edytujące zgłoszenia są typowane.
+Pełny rejestr jest ogłaszany w `tools/list` bez bramkowania wykrywania, poza uruchomieniem agenta, które może uruchamiać skrypty (niżej). Narzędzia edytujące zgłoszenia są typowane.
 
 :::note[Zewnętrzni klienci zawsze widzą cały katalog]
-`tools/list` nigdy nie jest przycinana, poza osobistymi serwerami MCP właściciela serwera, których ta lista nigdy nie zawiera. Klienci MCP weryfikują nazwy narzędzi względem własnej zbuforowanej kopii tej listy i odrzucają wszystko, czego na niej nie ma, nie pytając serwera — ukryte tam narzędzie jest więc nieosiągalne, a nie tylko ciche.
+`tools/list` nigdy nie jest przycinana, poza osobistymi serwerami MCP właściciela serwera, których ta lista nigdy nie zawiera, oraz [tryb kodu](/pl-PL/podrecznik/koncepcje/tryb-kodu/): `repl` jest na liście tylko dla uruchomienia agenta na serwerze, który może uruchamiać skrypty, a to uruchomienie ma na liście `repl`, narzędzia bezpośrednie (`read`, `write`, `edit`, `search`, `find`, `bash`, `read_output`, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` oraz czasowniki własnego trybu, o ile rejestr je ma) oraz narzędzia, których skrypt nie może wywołać. Resztę wywołuje ze skryptu; bezpośrednie wywołanie jednego z nich dostaje odpowiedź, jak wywołać je przez `repl`. Klienci MCP weryfikują nazwy narzędzi względem własnej zbuforowanej kopii tej listy i odrzucają wszystko, czego na niej nie ma, nie pytając serwera — ukryte tam narzędzie jest więc nieosiągalne, a nie tylko ciche.
 
-**Wbudowany harness** działa inaczej: wczytuje na żądanie tylko rezydentny podzbiór definicji, a resztę dociąga przy pierwszym użyciu — to zachowanie po stronie harnessu, które nie zmienia tego rejestru. Zobacz [Kontekst narzędzi i cache promptów](/pl-PL/podrecznik/koncepcje/kontekst-narzedzi).
+**Wbudowany harness** działa inaczej: wczytuje na żądanie tylko mały zestaw bezpośredni definicji i dociera do reszty ze skryptów albo wczytuje ją przy pierwszym użyciu — to zachowanie po stronie harnessu, które nie zmienia tego rejestru. Zobacz [Kontekst narzędzi i cache promptów](/pl-PL/podrecznik/koncepcje/kontekst-narzedzi/).
 :::
 
 :::note[Każda klasa narzędzi jest rejestrowana]
@@ -51,6 +52,14 @@ Oba pochodzą z `cc_mcp_client`, a nie z `cc_mcp`, i oba konsultują strażnika 
 
 Trzecie narzędzie odkrywania, **`search_tools`**, istnieje wyłącznie wewnątrz wbudowanego harnessu i nie należy do tego rejestru MCP. Uszeregowuje własną powierzchnię narzędzi danego uruchomienia i, w odróżnieniu od `search_tool_bm25`, **wczytuje** schematy znalezionych pozycji, aby agent mógł wywołać dopasowanie w następnej turze. Agenci działający na harnessie powinni je preferować; klienci MCP mają `search_tool_bm25`.
 
+## Tryb kodu
+
+| Narzędzie | Opis |
+| ------ | ----------- |
+| `repl` | Uruchamia skrypt w JavaScripcie, który wywołuje pozostałe narzędzia uruchomienia jako `tools.<id>(args)` i zwraca tylko to, czego potrzebuje. Dostępne tylko dla uruchomienia agenta na serwerze, który może uruchamiać skrypty w [trybie kodu](/pl-PL/podrecznik/koncepcje/tryb-kodu/). Każde wywołanie zagnieżdżone przechodzi tę samą bramkę co `tools/call`. Przyjmuje `code`, `description`, `timeout_ms?`, `max_output_tokens?` |
+
+Skrypt nie może wywołać `repl`, `search_tool_bm25`, `list_my_tools` ani żadnego narzędzia, które uruchamia lub wysyła wiadomości do innego uruchomienia agenta, przypisuje lub komentuje zgłoszenie, wysyła wiadomość, tworzy, rozstrzyga lub komentuje zatwierdzenie, proponuje lub zmienia politykę, instaluje lub zmienia umiejętności, tworzy profil środowiska uruchomieniowego, składa plan albo opuszcza tryb planu, oznacza cel rozmowy jako osiągnięty albo wysyła wynik uruchomienia potoku. Te narzędzia deklarują `scriptCallable` jako false i są zawsze wywoływane bezpośrednio; w wbudowanym harnessie jedno spoza zestawu bezpośredniego wczytuje się przy pierwszym użyciu. `create_ticket` jest wywoływalne ze skryptu tylko bez `assignee`.
+
 ## Narzędzia agentów
 
 | Narzędzie     | Opis                                            |
@@ -59,15 +68,29 @@ Trzecie narzędzie odkrywania, **`search_tools`**, istnieje wyłącznie wewnątr
 
 ## Komunikacja między agentami i delegowanie
 
-Agenci rozmawiają ze sobą przez przestrzenie (trwałe, widoczne na liście obecności). `ask_agent` to żądanie i odpowiedź z obowiązkowym limitem czasu; `delegate_task` jest chronione po stronie serwera przez pułap głębokości, wykrywanie cykli, kopertę budżetu i pułap autonomii.
+Agenci rozmawiają ze sobą przez przestrzenie (trwałe, widoczne w liście uczestników). `ask_agent` albo czeka na odpowiedź (`mode: wait`, domyślnie 600 sekund, co najwyżej 1 800), albo od razu wraca (`mode: background`); tak czy inaczej pytający zostaje wybudzony raz z odpowiedzią, gdy nie wróciła od razu. `send_to_agent`, `ask_agent`, `consult_agent`, `request_peer_review` i `delegate_task` przechodzą przez tę samą bramkę po stronie serwera: głębokość (3), wykrywanie cykli, koperta budżetu, pułap autonomii oraz limit szybkości na parę agentów. Tożsamość nadawcy zawsze pochodzi z uruchomienia, które wywołuje narzędzie. Zobacz [Agenci współpracują](/pl-PL/podrecznik/poradniki/agenci-wspolpracuja/).
 
 | Narzędzie       | Opis                                                                                            |
 | --------------- | ----------------------------------------------------------------------------------------------- |
-| `send_to_agent` | Wysyła jednokierunkową wiadomość do innego agenta, adresowaną przez `to_agent_id` lub dokładną `to_agent_name` |
-| `ask_agent`     | Zadaje innemu agentowi pytanie i czeka na jego odpowiedź albo kończy się przekroczeniem limitu czasu |
+| `send_to_agent` | Wysyła jednokierunkową wiadomość do innego agenta, adresowaną przez `to_agent_id` lub dokładną `to_agent_name`; odpowiada `delivery_status` `woken`, `queued_behind_run` albo `refused` |
+| `ask_agent`     | Zadaje innemu agentowi pytanie; czeka na odpowiedź albo kontynuuje i zostaje wybudzony, gdy ta nadejdzie |
 | `delegate_task` | Deleguje zadanie innemu agentowi jako śledzone zgłoszenie podrzędne                             |
 | `consult_agent` | Dodaje najlepiej dopasowanego specjalistę według skilli do przestrzeni i wysyła go ze skoncentrowanym briefem |
 | `todo_read`     | Odczytuje zapisaną listę kontrolną zadań tej rozmowy                                            |
+| `agent_activity` | Odczytuje, co inny agent robi teraz i co robił ostatnio (status, bieżące narzędzie, ostatnie wiadomości), bez wybudzania go |
+
+## Narzędzia wybudzeń i celów
+
+Agent używa ich zamiast uśpienia lub odpytywania. Każde działa wyłącznie dla wywołującego agenta w jego własnej rozmowie; agent nigdy nie jest argumentem. Zobacz [Harmonogramy i wybudzenia](/pl-PL/podrecznik/poradniki/harmonogramy-i-wybudzenia/) i [Realizuj cel](/pl-PL/podrecznik/poradniki/realizuj-cel/).
+
+| Narzędzie | Opis |
+| ------------- | ----------- |
+| `wake_me` | Ustaw wybudzenie na później: o czasie (`in:20m`, `at:<ISO time>`), w odstępach (`every:30m`), według crona (`cron:0 9 * * 1-5`, z `tz`), we własnym tempie w pętli z samodzielnym tempem (`next`, z `delay` od 1 do 60 minut) albo gdy coś się wydarzy (`on:pr_checks`, `on:pr_review`, `on:pr_merged`, `on:environment`, `on:ticket:<id>`, `on:pipeline_run:<id>`). Opcjonalnie `note`, `max_runs`, `expires_in`, `when_busy` (`skip` albo `queue`) i `deliver` (`run` albo `notify`) |
+| `list_wakes` | Wypisuje, co agent ma w tej rozmowie w oczekiwaniu: harmonogramy, obserwacje, oczekujące wybudzenia i pytania bez odpowiedzi |
+| `cancel_wake` | Anuluje harmonogram albo obserwację, które agent ustawił sobie sam, po ich identyfikatorze |
+| `goal_status` | Odczytuje aktywny cel agenta: kontrakt, segment, wydatki i pozostały budżet, ostrzeżenia o braku postępu, wstrzymanie, ostatnią weryfikację i oczekujące wybudzenia celu |
+
+`complete_goal` (w sekcji [Narzędzia planów, playbooków i artefaktów](#narzędzia-planów-playbooków-i-artefaktów)) to jedyny sposób, w jaki agent mówi, że cel jest gotowy, i jest to twierdzenie, a nie ukończenie.
 
 ## Narzędzia skilli
 
@@ -94,7 +117,7 @@ Każda instalacja i aktualizacja przechodzi przez bramkę skanowania z domyślny
 | `revise_artifact`  | Zastępuje treść opublikowanego artefaktu                                                                                |
 | `list_artifacts`   | Wylicza artefakty obszaru roboczego                                                                                     |
 | `get_artifact`     | Odczytuje jeden artefakt                                                                                                |
-| `complete_goal`    | Ogłasza osiągnięcie aktywnego trwałego celu rozmowy (rozpoczętego przez `/goal` lub `/loop`)                            |
+| `complete_goal` | Twierdzi, że aktywny cel agenta jest osiągnięty, z dowodami dla każdego kryterium; serwer następnie uruchamia sprawdzenia i recenzję |
 
 ## Narzędzia obszaru roboczego
 
@@ -162,10 +185,10 @@ Każda instalacja i aktualizacja przechodzi przez bramkę skanowania z domyślny
 | `create_goal`                | Tworzy cel organizacyjny (na poziomie firmy, zespołu, agenta lub zadania)                              |
 | `list_goals`                 | Wylicza cele wraz z poziomem, statusem i zagregowanym postępem                                         |
 | `update_goal_progress`       | Ustawia postęp celu                                                                                    |
-| `create_approval`            | Otwiera zatwierdzenie zarządcze dla akcji objętej nadzorem (wyjście z planu, scalenie, wydanie, zatrudnienie, niestandardowa) |
+| `create_approval`            | Otwiera zatwierdzenie zarządcze dla akcji objętej nadzorem (wyjście z planu, scalenie, wydanie, zatrudnienie, niestandardowa) w imieniu wywołującego agenta. Tylko uruchomienia agenta |
 | `list_approvals`             | Wylicza zatwierdzenia, opcjonalnie przefiltrowane według statusu                                       |
-| `decide_approval`            | Zapisuje decyzję: zatwierdź, odrzuć, poproś o poprawę lub prześlij ponownie                            |
-| `comment_approval`           | Komentuje zatwierdzenie zarządcze                                                                      |
+| `decide_approval`            | Zapisuje decyzję wywołującego agenta: zatwierdź, odrzuć, poproś o poprawę lub prześlij ponownie. Tylko uruchomienia agenta |
+| `comment_approval`           | Komentuje zatwierdzenie zarządcze jako wywołujący agent. Tylko uruchomienia agenta                     |
 | `exit_plan_mode`             | Otwiera (a po zatwierdzeniu zużywa) zatwierdzenie `plan_exit`, przełączając rozmowę poza tryb planu     |
 | `agent_heartbeat`            | Raportuje żywotność (żywy, bezczynny, zablokowany); cisza przełącza zdrowie runtime na „niedawno utracony”, a następnie na offline |
 | `list_runtime_health`        | Wylicza zdrowie runtime każdego agenta                                                                 |

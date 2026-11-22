@@ -3,6 +3,8 @@ import 'package:cc_remote/app_icons.dart';
 import 'package:cc_remote/format.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/widgets/activity/activity_presentation.dart';
+import 'package:cc_remote/widgets/activity/digest_items.dart';
+import 'package:cc_remote/widgets/activity/work_notifications.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 
@@ -27,7 +29,14 @@ class ActivityItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final l = AppLocalizations.of(context);
-    final body = activityBody(item);
+    final body = workActivityBody(context, item) ?? activityBody(item);
+    final kind = workNotificationKind(item);
+    final needsYou =
+        kind == WorkNotificationKind.question ||
+        kind == WorkNotificationKind.review;
+    // Only the server's `quiet` field makes an unread frame calm; the kind
+    // never does.
+    final quiet = read || isQuietNotification(item);
     return CcCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -35,9 +44,9 @@ class ActivityItemCard extends StatelessWidget {
           Row(
             children: [
               Icon(
-                read ? AppIcons.circleCheck : AppIcons.triangleAlert,
+                quiet ? AppIcons.circleCheck : AppIcons.triangleAlert,
                 size: 16,
-                color: read ? t.fgTertiary : t.accent,
+                color: quiet ? t.fgTertiary : t.accent,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -49,6 +58,8 @@ class ActivityItemCard extends StatelessWidget {
                   ),
                 ),
               ),
+              if (needsYou && !item.isResolved)
+                CcBadge(label: l.notifNeedsYou, variant: CcBadgeVariant.brand),
             ],
           ),
           Text(
@@ -60,6 +71,7 @@ class ActivityItemCard extends StatelessWidget {
               padding: const EdgeInsetsDirectional.only(top: 8),
               child: Text(body, style: TextStyle(color: t.textSecondary)),
             ),
+          DigestItems(item: item),
           if (item.isResolved)
             Padding(
               padding: const EdgeInsetsDirectional.only(top: 8),

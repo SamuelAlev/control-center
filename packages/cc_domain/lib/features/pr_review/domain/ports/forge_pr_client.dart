@@ -528,6 +528,21 @@ abstract interface class ForgePrClient {
     ForgeCancelToken? cancelToken,
   });
 
+  /// Posts a comment on [path] as a whole, anchored to no diff line, and
+  /// returns it as stored by the forge.
+  ///
+  /// This is how a file with no diff rows (a rename without changes, a binary
+  /// or image) gets commented on. Adapters translate it to their own
+  /// file-level shape (GitHub `subject_type: file`, GitLab `position_type:
+  /// file`, Bitbucket an inline anchor with only a path).
+  Future<PrCodeReviewComment?> postFileComment({
+    required int prNumber,
+    required String commitSha,
+    required String path,
+    required String body,
+    ForgeCancelToken? cancelToken,
+  });
+
   /// Replies to an existing inline comment thread.
   Future<void> replyToReviewComment({
     required int prNumber,

@@ -41,6 +41,7 @@ export 'src/providers/openai_provider.dart';
 export 'src/providers/provider_http.dart';
 export 'src/providers/sse.dart';
 export 'src/shell_agent_loop_hooks.dart';
+export 'src/tools/background_command_tools.dart';
 export 'src/tools/bash_tool.dart';
 export 'src/tools/context_control_tools.dart';
 export 'src/tools/edit_tool.dart';

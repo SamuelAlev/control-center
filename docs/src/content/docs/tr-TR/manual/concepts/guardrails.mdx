@@ -2,7 +2,7 @@
 title: Korumalar — her değiştirici eylem için tek ilke
 description: Control Center her ajan yan etkisini neden tek bir izin/soru/ret motorundan geçiriyor, ActionClass sınıflandırması bilinçli olarak nasıl küçük kalıyor ve özerklik kadranı gerçekte neyi değiştiriyor.
 slug: tr-TR/kilavuz/kavramlar/korumalar
-sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
+sourceHash: bb98b2ca26ae104ab7701d4d381cd5c41d25d32f
 ---
 
 Control Center'daki ajanlar dosya silebilir, dal push edebilir, pull request
@@ -28,6 +28,17 @@ verir; sandbox ise ortaya çıkan sürecin nerelere erişebileceğini sınırlar
 `cc_server`, ana makine bir arka uç sunduğunda sandbox'ı uygular — ancak
 [Windows hiçbir şey sunmaz ve Linux `bwrap` ile `socat` gerektirir](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/). Bu
 ana makinelerde yalnızca sunucu sahibinin çalıştırmaları başlar; sahip, `--sandbox off` ile herkes için sandbox'ı kapatmadıysa. Sandbox olmadan başlayan her çalıştırma için korumalar, bir tabanın üzerinde oturan bir ilke değil, en dıştaki uygulama katmanıdır; ne kadar izin verici olacağınıza karar verirken bunu bilmek faydalıdır.
+
+### Bir betiğin yaptığı çağrılar
+
+Bir [kod modu](/tr-TR/kilavuz/kavramlar/kod-modu/) betiği araçları kod içinde, birçok birden çağırır; ama her çağrısı motora giden ayrı bir araç çağrısıdır. Doğrudan bir çağrıyla aynı harness kapısını ya da MCP dispatcher kapısını geçer; aynı kuralları, aynı onay istemini ve aynı denetim kaydını kullanır. Betiğin yaptığı hiçbir şey, onu başlatan `repl` çağrısı onaylandı diye onaylanmış sayılmaz.
+
+Bir betikten gelen çağrılar için iki ek kural geçerlidir, çünkü tek bir betik yüzlerce çağrı yapabilir ve her reddi yakalayabilir:
+
+- en fazla 10 çağrısı bir kişiye onay için ulaşır; bir kişinin onayını gerektiren sonraki çağrılar kart gösterilmeden reddedilir;
+- bir kişi çağrılarından birini reddettiğinde, onay gerektiren kalan çağrıları sormadan reddedilir.
+
+Bir betiğin açtığı kart bunu söyler ve betiği açmanıza izin verir. Betik kart açıkken biterse kart geri çekilir ve bundan sonra gelen bir yanıt red olarak kaydedilir ve hiçbir şeyi onaylamaz.
 
 ## ActionClass: bilinçli olarak kapalı bir sınıflandırma
 
@@ -250,5 +261,6 @@ aynı eylem, aynı kapsam, aynı karar — sorgunun yanıtı, ajanın alacağı 
 ## İlgili kavramlar
 
 - [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/): bir ajan çalıştırmasını gerçekte neyin kısıtladığı ve bu motorun altındaki işletim sistemi tabanının ne kadar eriştiği
+- [Kod modu](/tr-TR/kilavuz/kavramlar/kod-modu/): her araç çağrısı bu motordan geçen betikler
 - [Çok oyunculu — kimlik, üyelik ve varlık](/tr-TR/kilavuz/kavramlar/cok-oyunculu/): alanlar, asıl kimlikler ve özerklik kadranının nerede yaşadığı
 - [Korumaları yapılandırma](/tr-TR/kilavuz/nasil-yapilir/korumalari-yapilandirma/): kuralları pratikte yazma ve test etme

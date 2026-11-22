@@ -1,6 +1,8 @@
 import 'dart:convert';
 
+import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
 import 'package:cc_domain/features/pipelines/domain/ports/dispatch_reviewers_port.dart';
+import 'package:cc_mcp/src/mcp_scoped_tool.dart';
 import 'package:cc_mcp/src/tools/dispatch_reviewers_tool.dart';
 import 'package:test/test.dart';
 
@@ -15,6 +17,7 @@ class _FakeDispatchReviewersPort implements DispatchReviewersPort {
     required String spaceId,
     required String workspaceId,
     required List<Map<String, dynamic>> reviewers,
+    required String? startedByRunId,
     int? concurrency,
     String? cohortBrief,
   }) async {
@@ -23,6 +26,7 @@ class _FakeDispatchReviewersPort implements DispatchReviewersPort {
         spaceId: spaceId,
         workspaceId: workspaceId,
         reviewers: reviewers,
+        startedByRunId: startedByRunId,
         concurrency: concurrency,
       ),
     );
@@ -35,11 +39,13 @@ class _DispatchCall {
     required this.spaceId,
     required this.workspaceId,
     required this.reviewers,
+    required this.startedByRunId,
     this.concurrency,
   });
   final String spaceId;
   final String workspaceId;
   final List<Map<String, dynamic>> reviewers;
+  final String? startedByRunId;
   final int? concurrency;
 }
 
@@ -355,6 +361,43 @@ void main() {
       });
     });
 
+    group('the starting run', () {
+      final args = {
+        'space_id': 'ch-1',
+        'workspace_id': 'ws-1',
+        'reviewers': [
+          {'role': 'security'},
+        ],
+      };
+
+      test("an attested run's call passes that run to the reviewers", () async {
+        await tool.callScoped(
+          args,
+          const McpCallContext(
+            scope: McpCallScope(
+              workspaceId: 'ws-1',
+              attested: true,
+              runId: 'dispatch-7',
+              runLogId: 'run-7',
+            ),
+          ),
+        );
+        expect(service.calls.single.startedByRunId, 'run-7');
+      });
+
+      test('a caller that proved no run passes none', () async {
+        // Headers the caller wrote prove no run.
+        await tool.callScoped(
+          args,
+          const McpCallContext(
+            scope: McpCallScope(workspaceId: 'ws-1', runLogId: 'run-8'),
+          ),
+        );
+        await tool.call(args);
+        expect(service.calls.map((c) => c.startedByRunId), [null, null]);
+      });
+    });
+
     group('error propagation', () {
       test('wraps service exception into CallResult.error', () async {
         // Replace the fake with a throwing one.
@@ -381,6 +424,7 @@ class _ThrowingDispatchReviewersPort implements DispatchReviewersPort {
     required String spaceId,
     required String workspaceId,
     required List<Map<String, dynamic>> reviewers,
+    required String? startedByRunId,
     int? concurrency,
     String? cohortBrief,
   }) async {

@@ -1,8 +1,8 @@
 ---
 title: Explorer des données dans un noyau persistant
-description: Donnez à un agent un interpréteur Python ou JavaScript qui conserve ses variables entre les appels, trace des graphiques directement dans le clavardage et peut appeler vos propres outils depuis l’intérieur d’une cellule.
+description: Donnez à un agent un interpréteur Python ou JavaScript qui conserve ses variables entre les appels et trace des graphiques dans le clavardage.
 slug: fr-CA/manuel/guides/explorer-donnees-noyau
-sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
+sourceHash: 8fcd77019bfae5088223822a12ef91c8a6879c5d
 ---
 
 Ce guide vous montre comment amener un agent à charger une fois quelque chose de coûteux, puis à l’interroger à plusieurs reprises, au lieu de payer le chargement à chaque question.
@@ -62,22 +62,9 @@ Ceux-ci sont réécrits en code ordinaire plutôt que de produire une erreur :
 
 L’éviction du cache de `%pip` est celle qui compte : installer dans un interpréteur en cours d’exécution ne change rien pour un module déjà importé, donc sans elle, la version que vous venez d’installer n’est pas celle qui s’exécute.
 
-## Appeler vos propres outils depuis l’intérieur d’une cellule
+## Appeler des outils depuis du code
 
-```python
-paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
-for path in paths.splitlines()[:100]:
-    contents = tool("read", {"path": path})
-    ...
-```
-
-`tool(name, args)` revient dans le propre registre d’outils de l’agent. Une cellule peut donc se ramifier sur une centaine de fichiers, ou déléguer par l’entremise de `task`, sans que le modèle dépense un tour par élément.
-
-:::caution[Le pont ne contourne pas vos garde-fous]
-Un appel relayé par le pont est résolu dans le **même** registre d’outils qu’un appel émis par le modèle, de sorte que la politique `ActionClass`, les invites d’approbation et chaque enveloppe s’appliquent de façon identique. Un pont qui dépasserait le registre serait un trou de la forme exacte de « écrire un one-liner en Python ».
-:::
-
-Un appel relayé par le pont **suspend le délai d’expiration de la cellule** tant qu’il est en cours. Le budget mesure l’inactivité, pas le temps réel — une cellule qui se ramifie vers des sous-agents et attend quatre minutes n’est pas figée, et la tuer en pleine ramification ferait perdre l’état de tout le noyau.
+Une cellule ne peut pas appeler les outils de l’agent. Pour boucler sur des outils en code, l’agent écrit plutôt un script [`repl`](/fr-CA/manuel/concepts/mode-code/). Un script ne peut pas non plus appeler `eval` : l’agent l’appelle directement.
 
 ## Repartir à zéro
 

@@ -2,7 +2,7 @@
 title: In Plan Studio arbeiten
 description: Prüfe, bearbeite, schätze, vergleiche und gib einen Plan im Editor von Plan Studio frei und führe parametrisierte Playbooks aus.
 slug: de-DE/handbuch/anleitungen/plan-studio
-sourceHash: 04a6e193c6b57af3fce63c90673a0958b37552fb
+sourceHash: 9df96d8f10ca86584f3979b84af5eee250719752
 ---
 
 Diese Anleitung zeigt dir, wie du mit Plänen in Plan Studio arbeitest. Was
@@ -137,9 +137,7 @@ Freigabeleiste. **Plan genehmigen** genehmigt immer jeden Schritt. Eine
 Teilmenge lässt sich vorher nicht wählen. Die Freigabe bleibt gesperrt, solange
 der Vorschlag Validierungsfehler hat. Sie stehen neben den Schaltflächen.
 
-Freigeben ist dem Menschen vorbehalten. Ein MCP-Tool dafür gibt es nicht. Ein
-Agent kann einen Plan vorschlagen und überarbeiten, freigeben kann er ihn
-nicht.
+Freigeben ist dem Menschen vorbehalten. Ein MCP-Tool dafür gibt es nicht. Ein Agent kann einen Plan vorschlagen und überarbeiten, freigeben kann er ihn nicht. Das Freigeben eines Plans, das Speichern einer Überarbeitung, **Auswahl genehmigen** und **Knoten fortsetzen** brauchen Schreibzugriff auf die Repositories des Bereichs.
 
 Sobald eine Orchestrierung läuft, ändert sich die Leiste:
 
@@ -150,7 +148,9 @@ Sobald eine Orchestrierung läuft, ändert sich die Leiste:
   lässt sich nie ohne seine Abhängigkeiten freigeben). Die Steuerung sitzt bei
   jeder Orchestrierung auf der Ausführungsleiste. War der Plan als Ganzes
   freigegeben, tut sie nichts.
-- Drücke **Lauf abbrechen**, um die ganze Orchestrierung zu stoppen.
+- Drücke **Lauf abbrechen**, um die ganze Orchestrierung zu stoppen. Jeder mit Zugriff auf den Bereich kann das.
+
+**Knoten fortsetzen** und **Auswahl genehmigen** gehören der Person, für die der Lauf handelt (einem Admin des Arbeitsbereichs, wenn er für niemanden handelt).
 
 Schritte außerhalb einer teilweise freigegebenen Menge erscheinen als
 zurückgestellt und laufen erst, wenn du die Menge erweiterst.

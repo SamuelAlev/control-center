@@ -2,10 +2,10 @@
 title: Alat ejen terbina
 description: Permukaan alat yang diberikan oleh harness terbina kepada ejen — pelayan bahasa, carian struktur, nyahpepijat, kernel dan kawalan pekerja — dengan setiap operasi dan argumennya.
 slug: ms-MY/manual-pengguna/rujukan/alat-ejen
-sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
+sourceHash: e99183fd4b257a60f94444101e1d39a7d6c77249
 ---
 
-Ini ialah alat **terikat pelayan** yang didaftarkan secara langsung oleh masa jalan ejen terbina — pelayan bahasa, carian struktur, nyahpepijat, kernel, soalan dan kawalan pekerja — berbanding [alat MCP](/ms-MY/manual-pengguna/rujukan/alat-mcp/) yang dijambatkannya masuk serta alat fail, carian dan shell generik daripada masa jalan harness. Alat-alat ini tiada dalam daftar MCP: klien MCP luaran tidak akan melihatnya, kerana setiap satunya terikat pada sumber sisi pelayan yang hidup — proses pelayan bahasa, penyesuai nyahpepijat, penterjemah — yang dimiliki oleh satu larian.
+Ini ialah alat **terikat pelayan** yang didaftarkan secara langsung oleh masa jalan ejen terbina — pelayan bahasa, carian struktur, nyahpepijat, kernel, skrip mod kod, soalan dan kawalan pekerja — berbanding [alat MCP](/ms-MY/manual-pengguna/rujukan/alat-mcp/) yang dijambatkannya masuk serta alat fail, carian dan shell generik daripada masa jalan harness. Alat-alat ini tiada dalam daftar MCP: klien MCP luaran tidak akan melihatnya, kerana setiap satunya terikat pada sumber sisi pelayan yang hidup — proses pelayan bahasa, penyesuai nyahpepijat, penterjemah — yang dimiliki oleh satu larian.
 
 Setiap alat di sini didaftarkan hanya apabila sumber sokongannya disambungkan untuk larian itu — penyelia pelayan bahasa atau nyahpepijat, penghurai tree-sitter, kilang kernel, port soalan, senarai pekerja vibe. Pengesanan pelayan bahasa atau penyesuai nyahpepijat bagi *checkout ini* ialah pemeriksaan berasingan yang kemudian (`status` / `adapters`): alat itu kekal di permukaan supaya ejen boleh bertanya mengapa tiada apa yang boleh digunakan, dan bukannya meneka.
 
@@ -15,9 +15,23 @@ Setiap alat menyatakan satu tahap, dan tahap itu menentukan **permukaan mana yan
 
 | Tahap   | Maksud                                 | Alat di sini                                       |
 | ------- | -------------------------------------- | -------------------------------------------------- |
-| `read`  | Tiada kesan sampingan                  | `lsp`, `ast_grep`, `ask_user`, kelima-lima `vibe_*` |
+| `read`  | Tiada kesan sampingan                  | `lsp`, `ast_grep`, `ask_user`, `repl`, kelima-lima `vibe_*` |
 | `write` | Mengubah fail                          | `lsp_rename`, `ast_edit`, `resolve`                |
 | `exec`  | Memulakan atau mengawal satu proses    | `debug`, `eval`                                    |
+
+## Langsung, khusus skrip atau dimuatkan pada penggunaan pertama
+
+Apabila pelayan boleh menjalankan skrip, larian memanggil beberapa alat secara langsung dan mencapai selebihnya daripada skrip [`repl`](#repl--jalankan-skrip-yang-memanggil-alat-anda); lihat [Mod kod](/ms-MY/manual-pengguna/konsep/mod-kod/#alat-yang-ejen-panggil-secara-langsung) untuk keseluruhan peraturan. Bagi alat dalam halaman ini:
+
+| Alat | Dengan `repl` | Tanpa `repl` |
+| ---- | ----------- | -------------- |
+| `repl` | Langsung | Tidak hadir |
+| `ask_user` | Langsung | Langsung |
+| `lsp`, `lsp_rename`, `ast_grep`, `ast_edit`, `resolve`, `debug` | Daripada skrip sahaja | Dimuatkan pada penggunaan pertama |
+| `eval` | Dimuatkan pada penggunaan pertama (skrip tidak boleh memanggilnya) | Dimuatkan pada penggunaan pertama |
+| `vibe_*` | Langsung dalam mod vibe, tidak sekali-kali daripada skrip | Langsung dalam mod vibe |
+
+Alat yang ditandai "Daripada skrip sahaja" dimuatkan pada penggunaan pertama sebaliknya apabila pelayan tidak boleh menjalankan skrip larian itu ([Apabila skrip tidak boleh dijalankan](/ms-MY/manual-pengguna/konsep/mod-kod/#apabila-skrip-tidak-boleh-dijalankan)).
 
 ---
 
@@ -152,9 +166,49 @@ Satu sesi bagi setiap perbualan, dengan TTL keras (30 minit). `launch` kedua dit
 
 ---
 
+## `repl` — jalankan skrip yang memanggil alat anda
+
+Hadir pada setiap larian apabila pelayan boleh menjalankan skrip ([Apabila larian mempunyai `repl`](/ms-MY/manual-pengguna/konsep/mod-kod/#apabila-larian-mempunyai-repl)). Skrip ialah JavaScript biasa, badan fungsi async, dan berjalan dalam jurubahasa baharu yang dikunci dalam prosesnya sendiri: tiada akses kepada sistem fail, rangkaian, proses atau modul. `repl` itu sendiri tergolong dalam peringkat `read`, kerana setiap panggilan alat yang dibuat oleh skrip diperiksa sendiri. Juga terdapat pada titik akhir MCP, untuk larian ejen pada pelayan yang boleh menjalankan skrip.
+
+| Argumen | Maksud |
+| ------------------- | --------------------------------------------------------------------------------------------- |
+| `code` | Skrip itu. Paling banyak 256 KiB |
+| `description` | Diperlukan. Label pendek untuk baris transkrip |
+| `timeout_ms` | Pilihan. Had masa yang lebih pendek daripada had ruang kerja; tidak pernah yang lebih panjang |
+| `max_output_tokens` | Pilihan. Belanjawan output yang lebih kecil daripada ruang kerja; tidak pernah yang lebih besar |
+
+```js
+// Read three files together and report only which ones failed.
+const paths = ["lib/a.dart", "lib/b.dart", "lib/c.dart"];
+const results = await Promise.allSettled(paths.map((path) => tools.read({ path })));
+return results
+  .map((r, i) => (r.status === "rejected" ? `${paths[i]}: ${r.reason.message}` : null))
+  .filter(Boolean);
+```
+
+Penerangan `repl` memberitahu ejen: "Alat yang bukan salah satu alat langsung anda tidak mempunyai definisi dalam permintaan ini. Sebelum panggilan pertama kepada mana-mana satu, cari dengan `describeTool(name)` atau `searchTools(query)`, melainkan bentuk panggilan tepatnya telah ditunjukkan kepada anda dalam perbualan ini."
+
+`describeTool(name)` memulangkan perihalan alat, pengisytiharannya, skema input dan outputnya, serta nota hasilnya apabila ada: apa yang diterima oleh skrip daripada panggilan yang selesai, dalam kata-kata alat itu sendiri. Penerangan `repl` menyenaraikan nota bagi alat langsung yang boleh dipanggil oleh skrip. Hasil alat yang berupa teks JSON tiba sudah dihuraikan, melainkan ia mengandungi lebih daripada 131,072 nilai: maka ia tiba sebagai teks, dan skrip menghuraikannya dengan `JSON.parse`. Teks hasil daripada alat pelayan MCP luaran dipotong pada 262,144 aksara, dan teks yang dipotong tidak lagi boleh dihuraikan.
+
+- `tools.<name>(args)` memanggil alat melalui penapis, guardrail dan kelulusan yang sama seperti panggilan langsung, dan menolak dengan ralat apabila ia ditolak atau gagal. Panggilan baca-sahaja boleh dijalankan bersama; panggilan yang mengubah sesuatu dijalankan satu demi satu, mengikut urutan skrip membuatnya. Semasa salah satu panggilannya menunggu seseorang, tiada panggilan lain skrip itu bermula.
+- `ALL_TOOLS`, `searchTools(query, { limit, namespace })`, `describeTool(name)` dan `describeNamespace(name)` mencari alat, termasuk alat pelayan MCP yang bersambung. Alat di luar set langsung yang boleh dipanggil oleh skrip hanya boleh dipanggil daripada skrip; memanggil salah satunya secara langsung memulangkan cara memanggilnya daripada `repl`. Apabila pelayan tidak boleh menjalankan skrip larian itu, alat sebegitu dimuatkan pada penggunaan pertama sebaliknya.
+- Carian dihadkan: pertanyaan sehingga 1,024 aksara, nama atau ruang nama sehingga 256, `limit` dari 0 hingga 50, dan paling banyak 200 carian yang mengambil masa 2 saat masa pelayan secara keseluruhan bagi setiap skrip, manakala semua skrip satu ruang kerja berkongsi 2 saat masa carian, yang dikembalikan sebanyak satu perempat saat setiap saat; selepas mana-mana satu, carian lanjut ditolak. Dalam katalog yang sangat besar, huraian dalam `ALL_TOOLS` berkongsi kira-kira satu juta aksara secara sama rata dan huraian yang dipotong berakhir dengan `…`; `describeTool` sentiasa memulangkan huraian penuh. Jenis yang terlalu besar untuk dipaparkan dibaca `unknown /* too large to show */`, dan nama yang tidak diketahui dijawab dengan nama yang paling hampir.
+- Alat dikumpulkan dalam ruang nama: `builtin` (alat harness itu sendiri), `control-center` (alat Control Center) dan satu untuk setiap pelayan MCP yang bersambung, dinamakan mengikut pelayan itu. Pelayan yang dinamakan `builtin`, `control-center` atau `script`, atau yang namanya bermula dengan `external-`, dalam sebarang gabungan huruf besar dan dengan atau tanpa ruang di sekelilingnya, disenaraikan sebagai `external-` diikuti namanya, dan tiada alat pernah berada dalam `script`.
+- Hanya apa yang dipulangkan oleh skrip, atau dihantar kepada `text()`, `image()` atau `console.*`, dikembalikan. Output melebihi belanjawan mengekalkan permulaan dan penghujungnya, dan `read_output` membaca selebihnya.
+- `store(key, value)` / `load(key)` menyimpan nilai JSON untuk skrip kemudian bagi perbualan dan ejen yang sama, disimpan hanya apabila skrip selesai. Skrip subejen tidak mempunyai storan.
+- `await tools.ask_user(...)` mengajukan soalan; jawapannya juga ditambah kepada hasil. `sleep(ms)`, `setTimeout`, `limits()` dan `models.embed` / `rank` / `classify` (embedding pada peranti) juga tersedia.
+- `describeTool(name)` dan `searchTools(query)` juga menjawab untuk fungsi skrip sendiri, yang bukan alat: `text`, `image`, `store`, `load`, `sleep`, `setTimeout`, `clearTimeout`, `limits`, `exit` dan `models.*`, di bawah ruang nama `script`.
+- Tidak boleh dipanggil daripada skrip: `repl`, `eval`, `task`, `checkpoint`, `rewind`, `compact`, `search_tools` dan kata kerja `vibe_*`.
+- Skrip membaca masa lalu larian sendiri: `history({start, role, tool, limit})` memaparkan transkrip perbualan secara halaman (paling banyak 50 baris setiap panggilan; hantar `next_start` halaman sebelumnya sebagai `start`), `outputs()` menyenaraikan output alat yang disimpan untuk perbualan dan ejen ini, dan `loadOutput(handle)` membaca 16,384 aksara bagi satu output. `storedKeys()` menyenaraikan kunci yang disimpan beserta saiznya. `keep(value, label)` menyimpan nilai besar sebagai output yang boleh dibaca oleh skrip kemudian atau `read_output`, disimpan hanya apabila skrip selesai (1 MiB setiap nilai, 64 nilai dan 16 MiB setiap larian). `limits().returnBudgetChars` menyatakan berapa banyak bajet output yang tinggal. Larian baca sahaja (kajian matlamat) boleh membaca tetapi tidak boleh menyimpan atau keep. Pada Claude Code dan ACP, `history()` berfungsi dan `outputs()`, `loadOutput()` dan `keep()` menolak, kerana Control Center tidak menyimpan output alat bagi larian tersebut.
+- Ralat daripada tamat masa, limpahan output atau had panggilan memberitahu cara membetulkannya.
+
+Satu larian menjalankan satu skrip pada satu masa. Had dan apa yang berlaku pada setiap satu terdapat pada halaman [mod kod](/ms-MY/manual-pengguna/konsep/mod-kod/#had); setiap skrip direkodkan di bawah **Kebolehcerapan → Pelaksanaan kod**.
+
+---
+
 ## `eval` — penterjemah berterusan
 
-Sel Python atau JavaScript yang pemboleh ubah, import dan data yang dimuatkannya terus kekal antara panggilan. Tahap `exec`; tidak selamat selari.
+Sel Python atau JavaScript yang pemboleh ubah, import dan data yang dimuatkannya terus kekal antara panggilan. Tahap `exec`; tidak selamat selari. Tidak boleh dipanggil daripada skrip `repl`, dan sel tidak boleh memanggil alat larian itu: untuk memanggil alat daripada kod, gunakan [`repl`](#repl--jalankan-skrip-yang-memanggil-alat-anda).
 
 | Argumen       | Maksud                                           |
 | ------------- | ------------------------------------------------ |
@@ -166,20 +220,34 @@ Sel Python atau JavaScript yang pemboleh ubah, import dan data yang dimuatkannya
 - Ungkapan terakhir digaungkan seperti cara notebook melakukannya.
 - `display()` berfungsi, bingkai pandas dijadikan jadual, dan rajah matplotlib kembali sebagai **imej yang dipaparkan oleh transkrip**.
 - Idiom IPython yang orang taip secara refleks — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — ditulis semula menjadi kod biasa. `%pip` juga mengosongkan `sys.modules`, jadi `import` seterusnya melihat apa yang baru dipasang.
-
-### Memanggil alat anda sendiri dari dalam sel
-
-```python
-contents = tool("read", {"path": "lib/auth.dart"})
-```
-
-Jambatan itu **masuk semula ke dalam daftar alat harness**, jadi guardrail, kelulusan dan setiap pembalut terpakai tepat seperti pada panggilan yang dikeluarkan oleh model. Ia menunggang paip kernel sendiri dan bukan soket gelung balik: tiada port, tiada rahsia, tiada peraturan keluar.
-
-Timeout sel itu ialah belanjawan *ketakaktifan* (lalai 5 minit) dan ia **digantung** selagi panggilan berjambatan belum selesai, jadi sel yang menyebar ke subejen tidak dibunuh di pertengahan penyebaran.
+- Sel yang mencetak lebih daripada bajet outputnya menyimpan tiga suku pertama dan suku terakhir, dengan satu baris yang menyatakan berapa aksara dan imej yang digugurkan.
+- Apabila penterjemah mati tanpa diminta, sel seterusnya diberitahu sekali bahawa pembolehubah sebelumnya telah hilang.
 
 :::note[Di mana kernel berjalan]
 Dalam persekitaran terasing perbualan apabila perbualan itu memilikinya, jika tidak dalam kotak pasir OS larian itu pada hos. Dengan kotak pasir dimatikan atau tidak tersedia ia berjalan tanpa kurungan dan `eval` meminta kelulusan pelaksanaan hos. Ia tidak memulakan persekitaran terasing untuk sampai ke sana, peraturan yang sama yang menghalang tab stesen daripada bermula secara automatik.
 :::
+
+---
+
+## `bash` di latar belakang
+
+`bash` dengan `run_in_background: true` memulakan arahan dan segera kembali dengan pengendali (`b1`, `b2`, …) dan bukannya menunggu. Ejen terus bekerja, atau menamatkan gilirannya dan dibangunkan apabila arahan itu keluar.
+
+| Argumen | Maksud |
+| ------------------- | ------- |
+| `run_in_background` | `true` untuk mula dan kembali serta-merta |
+| `timeout_seconds` | Saat sebelum arahan dibunuh: 600 secara lalai, paling tinggi 3,600 |
+| `notify` | Pilihan. Corak ringkas; setiap baris output yang sepadan dihantar kepada ejen semasa arahan berjalan (seperti `listening on\|FAILED`) |
+
+- Paling banyak 4 arahan latar belakang berjalan serentak dalam satu larian. Setiap satu dibunuh pada tamat masanya dan apabila larian tamat, bersama setiap proses yang dimulakannya.
+- Apabila arahan keluar, ejen menerima notis dengan kod keluar, 2,000 aksara terakhir output dan pengendali `read_output` untuk bakinya.
+- Ejen yang kerja yang tinggal hanyalah arahan latar belakang menunggu tanpa memanggil model, dan pemantau senyap larian itu berjeda semasa ia menunggu.
+- `bash_output(handle)` membaca keadaan dan output terkini arahan; `bash_kill(handle)` menghentikannya. Kedua-duanya memberitahu apabila hasil telah pun dihantar.
+- Skrip tidak boleh memulakan arahan latar belakang. Claude Code mempunyai Bash latar belakangnya sendiri; Control Center mengekalkan larian itu terbuka paling lama 10 minit selepas giliran yang meninggalkan tugas berjalan.
+
+## `compact` — kosongkan ruang dalam tetingkap konteks
+
+Memadatkan konteks lama perbualan sebelum panggilan model seterusnya, sambil mengekalkan apa yang dinamakan oleh `focus` (paling banyak 1,000 aksara). Giliran terbaru kekal sebagaimana adanya. Baris bajet setiap giliran ejen menunjukkan penggunaan konteks pada 70, 80 dan 90%, dan alat ini berbaloi dipanggil selepas kira-kira 70% sebelum fasa kerja baharu yang panjang. Cangkuk `preCompact` milik pemilik pelayan boleh menambah kepada fokus ([Cangkuk shell](/ms-MY/manual-pengguna/rujukan/konfigurasi-ejen/#cangkuk-shell)). Selepas pemadatan, pelayan menambah blok "Still in flight": matlamat, panggilan bangun yang menunggu, soalan terbuka, arahan latar belakang, senarai semak dan kunci yang disimpan, setiap satu dengan panggilan yang memulihkannya.
 
 ---
 

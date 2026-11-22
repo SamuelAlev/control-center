@@ -2,7 +2,7 @@
 title: Kotak pasir dan keselamatan
 description: Apa yang sebenarnya membataskan ejen dalam Control Center hari ini, sejauh mana kotak pasir OS menjangkau dan sempadan mana yang kekal pada hos yang tiada bahagian belakang.
 slug: ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan
-sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
+sourceHash: 7644c97911f685ef5084875fb16f1006f21ea940
 ---
 
 :::note[Di mana kotak pasir OS menjangkau dan tidak menjangkau]
@@ -53,6 +53,8 @@ Perkara kecil yang memulakan proses untuk anda juga tertakluk kepada peraturan y
 - **Pembantu pantas yang berjalan melalui CLI ACP**: tajuk perbualan, `/btw`, `/handoff` dan `/goal`. Apabila pelayan mengotak pasirkan ejen, ia berjalan dalam kotak pasir, dalam sesi sendiri. Di bawah `--sandbox off` ia berjalan tanpa kurungan. Tanpa kotak pasir yang tersedia ia hanya berjalan untuk permintaan yang pemilik pelayan bertanggungjawab ke atasnya; untuk orang lain ia dilangkau, jadi tiada tajuk dijana dan soalan sampingan melaporkan bahawa synthesizer Kandungan tiada pelari yang berfungsi. Pembantu yang tidak memulakan sebarang alat tidak terjejas.
 - **Ujian golden bagi pull request** dalam semakan visual Review Studio mengikut peraturan yang sama.
 - **Proses alat dan `bash`** dalam sesuatu larian tidak sekali-kali jatuh kembali ke hos. Jika pelayan ditetapkan untuk mengotak pasirkan ejen tetapi tiada kotak pasir untuk diberikan kepada sesuatu larian, larian itu ditolak.
+- **Semakan matlamat** dijalankan dalam kotak pasir sekali guna ke atas worktree perbualan, dikurung seperti `bash` ejen itu sendiri. Tanpa kotak pasir ia tidak dijalankan dan matlamat berhenti untuk seseorang; di bawah `--sandbox off` ia dijalankan seperti `bash` ejen.
+- **Kajian matlamat** dijalankan baca sahaja pada setiap adapter: baca sahaja, worktree dilekapkan baca sahaja, tiada `bash`, tiada subagen, tiada web. Adapter yang tidak dapat mengekalkan larian baca sahaja (ejen ACP) tidak digunakan sebagai pengkaji.
 
 ## Apa yang sebenarnya membataskan ejen
 
@@ -292,6 +294,24 @@ sistem yang ditolak muncul dalam transkrip dan bukan hanya dalam log. Telemetri
 itu hanya wujud semasa kotak pasir natif benar-benar membalut proses itu — pada
 hos tanpa bahagian belakang tiada apa-apa untuk diperhatikan. Ia juga tidak berkaitan dengan guardrail: pelanggaran datang daripada panggilan sistem yang ditolak, tidak pernah daripada carian peraturan.
 
+## Skrip dalam mod kod
+
+Skrip [mod kod](/ms-MY/manual-pengguna/konsep/mod-kod/) ialah kes yang berasingan, dan ia tidak bergantung pada kotak pasir ejen sama sekali. Skrip tidak pernah berjalan di dalam pelayan dan tidak pernah berjalan dalam kotak pasir ejen. Ia berjalan dalam prosesnya sendiri, `cc_codemode`, program yang dibundel bersama pelayan, yang mengunci dirinya sebelum ia membaca skrip dan melaporkan sejauh mana kunci itu berjaya. Pelayan hanya menghantar skrip apabila kunci itu lengkap.
+
+| Hos | Apa yang dikenakan oleh pelari ke atas dirinya sendiri |
+| --- | --- |
+| Linux | Senarai benar panggilan sistem (seccomp) yang membenarkannya lebih kurang membaca inputnya, menulis outputnya, menguruskan memorinya sendiri, membaca jam sistem dan keluar; tiada hak baharu dan tiada capabilities; tiada core dump; tiada penulisan fail, tiada proses baharu dan paling banyak tiga fail terbuka; 3 GiB ruang alamat; had masa pemproses keras. Landlock ditambah di mana kernel menyediakannya. |
+| macOS | Profil kotak pasir yang menafikan secara lalai, yang juga menolak maklumat proses, semakan kewujudan fail, maklumat sistem dan perkakasan serta panggilan kernel yang berkaitan; tiada core dump, tiada penulisan fail dan had masa pemproses keras. |
+| Windows | AppContainer baharu untuk setiap skrip, dalam satu job yang membenarkan satu proses, 3 GiB memori dan tiada antara muka pengguna, dengan kod dinamik, proses anak dan panggilan win32k dimatikan. **Belum dijalankan pada Windows.** |
+
+Pelari bermula tanpa pembolehubah persekitaran, tanpa fail terbuka selain input dan outputnya, dan tanpa kelayakan. Apa-apa yang boleh dilakukannya di luar memorinya sendiri hanyalah meminta pelayan menjalankan alat, dan pelayan menjalankan panggilan itu melalui penapis modus, [guardrail](/ms-MY/manual-pengguna/konsep/guardrail/) dan kelulusan yang sama seperti panggilan langsung.
+
+Pelayan menyemak semua ini apabila ia bermula: ia menjalankan ujian kendiri pelari, yang mengenakan kunci itu, cuba membaca dan mencipta fail, membuka sambungan rangkaian dan memulakan proses (dan lebih banyak lagi bagi setiap sistem), dan menjalankan skrip sebenar di bawahnya. Jika ada yang tidak ditolak, pelayan tidak menjalankan skrip pada mesin itu: tiada larian mendapat `repl`, dan pelayan menyatakan sebabnya semasa bermula dan pada halaman tetapan mod kod. Pelari yang bukan binaan keluaran juga ditolak dengan cara yang sama. Tiada cara alternatif yang lebih lemah.
+
+Pelari juga melaporkan di mana dalam skrip setiap panggilan dibuat, supaya perbualan boleh menunjukkan struktur skrip. Pelayan menyemak kedudukan itu terhadap skrip dan menggunakannya hanya untuk paparan: ia tidak sekali-kali menentukan sama ada panggilan dibenarkan, dan ia tidak terdapat dalam audit guardrail.
+
+Yang tidak dilindungi: skrip masih boleh melakukan apa sahaja yang dibenarkan oleh alat larian, kerana panggilan alatnya ialah panggilan alat sebenar; pada macOS ia masih boleh mengetahui sama ada ID proses wujud; dan kelemahan dalam enjin JavaScript atau kernel dikandung oleh kunci itu, bukan dihapuskan olehnya.
+
 ## Pengesahan datang daripada guardrail, bukan kotak pasir
 
 Kotak pasir tiada laluan kelulusan. Ia melancarkan, melaksanakan, mengeluarkan
@@ -312,6 +332,7 @@ ialah satu-satunya tempat yang menyatakan apa yang boleh diperiksa secara manual
 
 ## Konsep berkaitan
 
+- [Mod kod](/ms-MY/manual-pengguna/konsep/mod-kod/): skrip yang memanggil alat, dan pelari yang mengurungnya
 - [Stesen dan persekitaran terasing](/ms-MY/manual-pengguna/konsep/stesen/): langkah di atas kotak pasir — apabila kerja memerlukan mesin pakai buang sepenuhnya dengan sempadan kernel, bukan proses yang dibalut
 - [Guardrail](/ms-MY/manual-pengguna/konsep/guardrail/): lapisan polisi di atas lantai OS dan tempat kelulusan sebenarnya datang
 - [Kitaran hayat penghantaran ejen](/ms-MY/manual-pengguna/konsep/kitaran-hayat-penghantaran/): di mana pengasingan berada dalam aliran penghantaran

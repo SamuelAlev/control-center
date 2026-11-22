@@ -2,7 +2,7 @@
 title: CLI do cc_server
 description: Todas as flags, variáveis de ambiente, subcomandos e caminhos do diretório de dados do servidor headless.
 slug: pt-PT/manual/referencia/cc-server-cli
-sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
+sourceHash: ee71514a1721599da299a81b5702bc7cdb372330
 ---
 
 Cada flag de processo aceita uma flag de CLI ou uma variável de ambiente; a flag
@@ -11,10 +11,7 @@ dos fornecedores são a exceção — veja
 [Aplicações de fornecedor e Connect](#aplicações-de-fornecedor-e-connect).
 
 :::caution[As flags desconhecidas são ignoradas em silêncio]
-O analisador de argumentos é feito à mão e ignora tudo o que não reconhece, pelo que uma
-gralha (`--tls-key-file`, `--bindany`) não produz erro nenhum — o servidor arranca
-simplesmente com o valor predefinido. Verifique as linhas do registo de arranque quando
-uma flag parecer não ter efeito.
+O analisador de argumentos é feito à mão e ignora tudo o que não reconhece, pelo que uma gralha (`--tls-key-file`, `--bindany`) não produz erro nenhum — o servidor arranca simplesmente com o valor predefinido. Verifique as linhas do registo de arranque quando uma flag parecer não ter efeito. Uma [flag do modo de código](#modo-de-código) com um valor que não aceita é diferente: o servidor recusa-se a arrancar.
 :::
 
 ## Principais
@@ -52,8 +49,10 @@ uma flag parecer não ter efeito.
 | `--sandbox`          | `CC_SERVER_SANDBOX`          | `on`         | `on` envolve as execuções de agentes na sandbox nativa do sistema operativo do anfitrião, e num anfitrião sem uma arranca apenas as execuções do proprietário do servidor. `off` executa as execuções de todos os membros sem confinamento neste anfitrião. Veja abaixo |
 | `--code-index`       | `CC_SERVER_CODE_INDEX`       | `on`         | Interruptor de emergência no terreno para a indexação do grafo de código em segundo plano. `off` arranca de forma limpa, sem recompilação                                         |
 | `--code-index-defer` | `CC_SERVER_CODE_INDEX_DEFER` | `15`         | Segundos de espera antes da primeira varredura de indexação após o banner de prontidão (limitado a 0–300)                                                                         |
-| `--tool-deferral`    | `CC_SERVER_TOOL_DEFERRAL`    | `on`         | Se as execuções do harness enviam um pequeno conjunto residente de ferramentas mais um índice de nomes, carregando o resto na primeira utilização. Veja abaixo                    |
+| `--tool-deferral`    | `CC_SERVER_TOOL_DEFERRAL`    | `on`         | Se as execuções do harness enviam um pequeno conjunto direto de ferramentas mais um índice de nomes, carregando o resto na primeira utilização. Veja abaixo                       |
 | `--credential-gate`  | `CC_SERVER_CREDENTIAL_GATE`  | `900`        | Segundos que uma execução fica em espera à espera de que uma pessoa corrija uma credencial que não a consegue servir (limitado a 0–3600). Veja abaixo                             |
+| `--code-mode-max-processes` | `CC_SERVER_CODE_MODE_MAX_PROCESSES` | `min(16, 2 × cores)` | Scripts do modo de código em execução simultânea neste servidor, sem contar os que esperam por uma pessoa, 1–64. Veja abaixo |
+| `--code-mode-max-heap-mb` | `CC_SERVER_CODE_MODE_MAX_HEAP_MB` | `1024` | A memória máxima que um script pode usar, 16–1024 MiB. O limite de memória mais alto de um espaço de trabalho é reduzido a este valor |
 
 ## Aplicações de fornecedor e Connect
 
@@ -124,20 +123,9 @@ fique em silêncio.
 
 ### `--tool-deferral`
 
-As execuções do harness integrado enviam um pequeno conjunto residente de
-definições de ferramentas mais um índice apenas de nomes do resto, que carregam
-os seus esquemas na primeira vez que são utilizadas. Reduz o bloco de ferramentas
-em cerca de 78 % e mantém o conjunto sempre visível dentro da faixa em que os
-modelos selecionam ferramentas de forma fiável. As ferramentas diferidas
-continuam a poder ser chamadas pelo nome durante toda a execução, e o
-`search_tools` encontra-as por intenção. Ver
-[Contexto de ferramentas e cache de prompts](/pt-PT/manual/conceitos/contexto-de-ferramentas).
+As execuções do harness integrado enviam um pequeno conjunto direto de definições de ferramentas mais um índice apenas de nomes do resto, que carregam os seus esquemas na primeira vez que são utilizadas, ou são chamadas a partir de um script `repl`. Mantém o conjunto sempre visível dentro da faixa em que os modelos selecionam ferramentas de forma fiável. Medido no registo que os testes constroem, as ferramentas de chat padrão do agente integrado somam 14 definições: cerca de 16,5 KB com `repl` (cerca de 4 KB deles de `repl`, cuja definição não pode exceder 4 096 bytes), cerca de 13 KB num servidor que não consegue executar scripts. As ferramentas diferidas continuam a poder ser chamadas pelo nome durante toda a execução, e o `search_tools` encontra-as por intenção. Ver [Contexto de ferramentas e cache de prompts](/pt-PT/manual/conceitos/contexto-de-ferramentas/).
 
-O `--tool-deferral off` volta a tornar residentes todas as ferramentas admitidas,
-reproduzindo os pedidos que o servidor fazia antes de o diferimento existir. É o
-interruptor de emergência para um modelo que lida mal com a superfície de dois
-níveis — uma flag em vez de uma recompilação. Afeta apenas o harness integrado; o
-`tools/list` do MCP que os clientes externos veem é sempre o catálogo completo.
+`--tool-deferral off` envia a definição de cada ferramenta admitida à partida, exceto que uma execução com `repl` continua a chamar a partir de scripts as ferramentas que um script pode chamar. É o interruptor de emergência para um modelo que lida mal com a superfície de dois níveis — uma flag em vez de uma recompilação. Afeta apenas o harness integrado; o `tools/list` do MCP que os clientes externos veem é o catálogo completo, exceto numa execução de agente, num servidor que consegue executar scripts do [modo de código](/pt-PT/manual/conceitos/modo-de-codigo/).
 
 ### `--credential-gate`
 
@@ -156,6 +144,25 @@ a execução falha com a mensagem com que teria falhado de qualquer forma.
 O `--credential-gate=0` é o interruptor de emergência: nada fica alguma vez em
 espera e uma credencial inválida termina o turno exatamente como acontecia antes
 de o portão existir.
+
+### Modo de código
+
+O [modo de código](/pt-PT/manual/conceitos/modo-de-codigo/) permite que um agente execute um script JavaScript que chama as suas ferramentas. Não há nenhuma flag que o ligue ou desligue: cada execução recebe a ferramenta `repl` quando o servidor consegue executar scripts, e um servidor de demonstração público não executa nenhum.
+
+Os scripts são executados em `cc_codemode`, um programa incluído com o servidor em `bin/codemode/`. O servidor não arranca sem ele: imprime uma linha a indicar o que falta e sai com o código `78`. Ao arrancar, executa o autoteste de bloqueio do programa e imprime uma linha (silenciada apenas por `--log-level error`):
+
+```text
+cc_server: code_mode=available (cc_codemode 0.1.0 quickjs-ng 0.16.2 protocol 2; 16 scripts at once, at most 12 per workspace; up to 64 more runners kept for scripts waiting on a person; heap at most 1024 MiB per script)
+cc_server: code_mode=unavailable (<reason>) — runs on this host get no repl tool; scripts never run without full lockdown
+```
+
+`unavailable` significa que o programa não consegue bloquear-se neste anfitrião, por exemplo num contentor cujo perfil de segurança recusa um dos seus passos, ou que não é uma compilação de lançamento. O servidor arranca normalmente, nenhuma execução recebe `repl`, e as definições de modo de código do espaço de trabalho mostram o motivo.
+
+O servidor continua a verificar enquanto corre. Quando o programa não arranca por uma razão que não é a do script, o servidor volta a executar o autoteste, no máximo uma vez por minuto. Se esse falhar, o servidor imprime a linha `unavailable` com o seu motivo e não executa scripts: as execuções que arrancam entretanto não recebem `repl`, e uma execução que já o tem chama as suas ferramentas diretamente ([Quando os scripts não podem correr](/pt-PT/manual/conceitos/modo-de-codigo/#quando-os-scripts-não-podem-correr)). Continua a verificar, no máximo uma vez por minuto, e quando o autoteste volta a passar imprime a linha `available` e volta a executar scripts. Só um autoteste que falhou ao arrancar exige um reinício. O motivo mostrado nas definições do espaço de trabalho não tem os caminhos do host; a linha de registo tem-no completo.
+
+As duas flags do modo de código limitam o que os scripts podem usar. `--code-mode-max-processes` limita os scripts em execução simultânea em todos os espaços de trabalho (predefinição: o dobro dos núcleos do processador, no máximo 16; aceita 1–64). Com um limite de 2 ou mais, um espaço de trabalho usa no máximo o limite menos um quarto dele, para que nenhum espaço de trabalho possa ocupar todos os lugares, e os scripts em espera são admitidos por turnos entre espaços de trabalho. Um script à espera da aprovação ou da resposta de uma pessoa cede o seu lugar a outro script e não começa nenhuma chamada de ferramenta até ser respondido; são mantidos até quatro vezes o limite desses scripts em espera, no máximo três quartos deles de um só espaço de trabalho, e cada um pode continuar a calcular dentro do seu próprio limite de tempo de processador. `--code-mode-max-heap-mb` é a memória máxima que um script pode usar.
+
+Um valor que estas flags não aceitam (um número fora do intervalo, ou que não é um número) faz o servidor parar ao arrancar (código de saída `78`), com uma mensagem que indica os valores aceites. Nunca é lido como a predefinição.
 
 ## Subcomandos
 
@@ -265,6 +272,7 @@ O servidor mantém o diretório de dados privado à sua própria conta (`0700`).
 | `backups/exports/`                | Exportações de um único espaço de trabalho, `<workspaceId>-<timestamp>.db`                                         |
 | `backups/transfer/`               | Área de preparação para transferências e carregamentos de cópias de segurança; varrida pela rota que a escreve     |
 | `models/`                         | Modelos de embedding, diarização e fala no dispositivo                                                             |
+| `codemode/` | Uma cópia de desenvolvimento do executor do modo de código, instalada por `scripts/natives/build_codemode.sh`; os pacotes de lançamento a incluem em `bin/codemode/` |
 | `meetings/<meetingId>/`           | Áudio de reunião retido                                                                                            |
 | `rigs/images/`                    | Imagens de disco de rigs importadas (a superfície de ambiente de trabalho QEMU)                                    |
 | `rigs/smolvm/<rigId>/`            | Estado de execução do microVM por rig (o segredo do broker, `0600`)                                                |

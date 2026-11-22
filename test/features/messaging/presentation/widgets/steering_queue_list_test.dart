@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cc_domain/cc_domain.dart' show UserDto;
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
@@ -8,6 +9,7 @@ import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/providers.dart'
     show agentRunLogRepositoryProvider;
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/steering_queue_list.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/messaging/providers/steering_queue_providers.dart';
@@ -90,8 +92,14 @@ class _SteeringPort implements MessagingPort {
   }) async {
     calls.add('deliver');
     delivers.add(messageId);
+    if (deliverError case final error?) {
+      throw error;
+    }
     return deliverResult;
   }
+
+  /// A non-null [deliverError] is thrown by `steering.deliver`.
+  RemoteRpcException? deliverError;
 
   /// What `steering.forceSend` answers; a non-null [forceError] throws it.
   String forceOutcome = 'stopping';
@@ -149,11 +157,16 @@ class _ActiveRuns implements AgentRunLogRepository {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
-Message _queued(String id, String content, {int order = 0}) => Message(
+Message _queued(
+  String id,
+  String content, {
+  int order = 0,
+  String sender = 'user-1',
+}) => Message(
   id: id,
   spaceId: _kSpaceId,
   conversationId: _kConversationId,
-  senderId: 'user-1',
+  senderId: sender,
   senderType: SenderType.user,
   content: content,
   messageType: MessageType.steering,
@@ -161,11 +174,16 @@ Message _queued(String id, String content, {int order = 0}) => Message(
   createdAt: DateTime.utc(2026, 8, 29, 12, 0, id.hashCode % 60),
 );
 
-Widget _host(Widget child) => MaterialApp(
+Widget _host(Widget child, {TextDirection? textDirection}) => MaterialApp(
   localizationsDelegates: appLocalizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
   home: Scaffold(
-    body: CcTheme(data: CcThemeData.light(), child: child),
+    body: CcTheme(
+      data: CcThemeData.light(),
+      child: textDirection == null
+          ? child
+          : Directionality(textDirection: textDirection, child: child),
+    ),
   ),
 );
 
@@ -174,9 +192,18 @@ Future<ProviderContainer> _pump(
   required List<Message> windowMessages,
   _SteeringPort? port,
   List<String> activeRunIds = const [],
+  TextDirection? textDirection,
 }) async {
   final container = ProviderContainer(
     overrides: [
+      // The viewer wrote the cards `_queued` makes by default; user-2 is a
+      // member the client knows by name.
+      currentUserIdProvider.overrideWithValue('user-1'),
+      usersByIdProvider.overrideWith(
+        (ref) => Stream.value({
+          'user-2': UserDto(id: 'user-2', handle: 'grace', displayName: 'Grace'),
+        }),
+      ),
       activeWorkspaceIdProvider.overrideWith(
         () => _TestActiveWorkspaceNotifier(_kWorkspaceId),
       ),
@@ -200,6 +227,7 @@ Future<ProviderContainer> _pump(
             conversationId: _kConversationId,
           ),
         ),
+        textDirection: textDirection,
       ),
     ),
   );
@@ -349,6 +377,67 @@ void main() {
     );
   });
 
+  group("someone else's card", () {
+    testWidgets('no lane can take it: no forced send, and it says whose it '
+        'is; delete stays', (tester) async {
+      final container = await _pump(
+        tester,
+        windowMessages: [_queued('a', 'their nudge', sender: 'user-2')],
+      );
+      container.read(steeringSteerableProvider(_kRef).notifier).set(false);
+      await tester.pumpAndSettle();
+      expect(find.text('Stop and send'), findsNothing);
+      expect(find.text('Steer'), findsNothing);
+      expect(find.text('From Grace'), findsOneWidget);
+      expect(find.byIcon(AppIcons.trash2), findsOneWidget);
+    });
+
+    testWidgets('a lane can take it: Steer stays and delivers it', (
+      tester,
+    ) async {
+      final port = _SteeringPort();
+      await _pump(
+        tester,
+        windowMessages: [_queued('a', 'their nudge', sender: 'user-9')],
+        port: port,
+      );
+      expect(find.text('From someone else'), findsOneWidget);
+      await tester.tap(find.text('Steer'));
+      await tester.pump();
+      await tester.pump();
+      expect(port.delivers, ['a']);
+      expect(port.forced, isEmpty);
+    });
+
+    testWidgets('my own card beside it keeps Stop and send', (tester) async {
+      final container = await _pump(
+        tester,
+        windowMessages: [
+          _queued('a', 'their nudge', sender: 'user-2'),
+          _queued('b', 'my nudge', order: 1),
+        ],
+      );
+      container.read(steeringSteerableProvider(_kRef).notifier).set(false);
+      await tester.pumpAndSettle();
+      expect(find.text('Stop and send'), findsOneWidget);
+      expect(find.text('From Grace'), findsOneWidget);
+    });
+
+    testWidgets('right to left: the writer mark sits on the start side of '
+        'the actions, after the text', (tester) async {
+      await _pump(
+        tester,
+        windowMessages: [_queued('a', 'their nudge', sender: 'user-2')],
+        textDirection: TextDirection.rtl,
+      );
+      final text = tester.getCenter(find.text('their nudge'));
+      final mark = tester.getCenter(find.text('From Grace'));
+      final steer = tester.getCenter(find.text('Steer'));
+      expect(mark.dx, lessThan(text.dx));
+      expect(steer.dx, lessThan(mark.dx));
+    });
+  });
+
   group('getting a card in', () {
     Future<_SteeringPort> pressOn(
       WidgetTester tester, {
@@ -436,6 +525,33 @@ void main() {
         find.text("Couldn't send that now: your role may not stop runs"),
         findsOneWidget,
       );
+      await drainToast(tester);
+    });
+
+    testWidgets('a steering_not_yours refusal reads by its kind, never the '
+        "server's sentence", (tester) async {
+      final port = _SteeringPort()
+        ..forceError = RemoteRpcException(-33004, 'server words: not yours', {
+          'kind': 'steering_not_yours',
+          'others_held': 1,
+        });
+      final container = await _pump(
+        tester,
+        windowMessages: [_queued('a', 'first', order: 0)],
+        port: port,
+      );
+      container.read(steeringSteerableProvider(_kRef).notifier).set(false);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Stop and send').last);
+      await tester.pump();
+      await tester.pump();
+      expect(
+        find.text(
+          'No running agent can take that right now — it stays queued.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('server words'), findsNothing);
       await drainToast(tester);
     });
 
@@ -527,6 +643,72 @@ void main() {
     await tester.tap(find.byIcon(AppIcons.trash2));
     await tester.pumpAndSettle();
     expect(port.deletes, ['a']);
+  });
+
+  testWidgets("edit is offered only on the viewer's own cards", (tester) async {
+    await _pump(
+      tester,
+      windowMessages: [
+        _queued('a', 'my nudge', order: 0),
+        _queued('b', 'their nudge', order: 1, sender: 'user-2'),
+      ],
+    );
+    expect(find.byIcon(AppIcons.pencil), findsOneWidget);
+    expect(find.byIcon(AppIcons.trash2), findsNWidgets(2));
+    final pencil = tester.getCenter(find.byIcon(AppIcons.pencil));
+    final mine = tester.getCenter(find.text('my nudge'));
+    final theirs = tester.getCenter(find.text('their nudge'));
+    expect(
+      (pencil.dy - mine.dy).abs(),
+      lessThan((pencil.dy - theirs.dy).abs()),
+      reason: "the pencil sits on the viewer's own card",
+    );
+  });
+
+  group('a run acting for someone else needs the write grant', () {
+    RemoteRpcException noWrite() => RemoteRpcException(
+      -33002,
+      'server words: write needed',
+      {'kind': 'repo_grant_required', 'level': 'write'},
+    );
+    const wording =
+        'You can read this repository but not change it. A workspace admin '
+        'can grant write access.';
+
+    testWidgets('Steer: worded as the forge refusals are; the card stays', (
+      tester,
+    ) async {
+      final port = _SteeringPort()..deliverError = noWrite();
+      await _pump(
+        tester,
+        windowMessages: [_queued('a', 'nudge', order: 0)],
+        port: port,
+      );
+      await tester.tap(find.text('Steer'));
+      await tester.pump();
+      await tester.pump();
+      expect(find.text(wording), findsOneWidget);
+      expect(find.textContaining('server words'), findsNothing);
+      expect(find.text('nudge'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 7));
+    });
+
+    testWidgets('Stop and send: worded the same way', (tester) async {
+      final port = _SteeringPort()..forceError = noWrite();
+      final container = await _pump(
+        tester,
+        windowMessages: [_queued('a', 'nudge', order: 0)],
+        port: port,
+      );
+      container.read(steeringSteerableProvider(_kRef).notifier).set(false);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Stop and send'));
+      await tester.pump();
+      await tester.pump();
+      expect(find.text(wording), findsOneWidget);
+      expect(find.textContaining('server words'), findsNothing);
+      await tester.pump(const Duration(seconds: 7));
+    });
   });
 
   testWidgets('edit rewrites the card through the port', (tester) async {

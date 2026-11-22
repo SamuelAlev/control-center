@@ -2,7 +2,7 @@
 title: Pantau eksekusi pipeline
 description: Tangani antrean eksekusi, baca waterfall waktu dan panel langkah sebuah eksekusi, serta pulihkan dari langkah yang gagal atau macet.
 slug: id-ID/panduan-pengguna/panduan-praktis/pantau-pipeline
-sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
+sourceHash: 48d44ae3ca3e23c1123ef282ccffece35b542b96
 ---
 
 Halaman ini membahas semua hal setelah sebuah eksekusi dimulai: menemukannya,
@@ -73,6 +73,8 @@ eksekusi alih-alih melanjutkannya: langkah yang ditangguhkan lebih lama daripada
 24 jam (`extras.awaitApproval` — badan `orchestration.awaitApproval` —
 dikecualikan; `human.gate` tidak) dan langkah non-idempoten yang sedang
 berjalan ketika server berhenti.
+
+Langkah **Pursue a goal** juga dikecualikan dari cadangan 24 jam: ia tetap **Ditangguhkan** selama tujuannya bekerja, dan halamannya menautkan ke tujuan itu. Seluruh run juga bisa ditangguhkan karena orkestrasinya mencapai batas biayanya; halaman run lalu menampilkan berapa yang sudah dibelanjakan dari batas itu dan, bagi peminta run, **Naikkan batas**.
 
 ## Memeriksa sebuah langkah
 

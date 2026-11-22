@@ -2,7 +2,7 @@
 title: Montar uma equipe de agentes
 description: Agrupe agentes sob um líder para que o trabalho atribuído passe por um único coordenador.
 slug: pt-BR/manual/guias/montar-equipe
-sourceHash: fc5e2b8c8a49e398ff1b322fcfb25c4aed84bbb4
+sourceHash: 55add2d16bf90650b7d4cbda7aa78f0fdf1b72e2
 ---
 
 Este guia mostra como criar uma equipe, definir um líder para ela e direcionar trabalho a ela.
@@ -51,7 +51,7 @@ Quando um ticket realmente traz uma atribuição de equipe:
 
 1. O líder da equipe é despachado com o ticket, suas instruções operacionais e o quadro de membros.
 2. O líder delega aos membros e registra sua avaliação com a ferramenta `record_team_activity` — `action` (delegado), `no_action` (não há mais nada a fazer, o que interrompe novos acionamentos) ou `failed`.
-3. Cada execução de membro concluída desperta o líder novamente, com o limite da proteção de ausência de ação.
+3. Uma execução de membro que o líder iniciou com um `@mention` ou uma mensagem acorda o líder de novo quando termina, na conversa de onde o líder foi acordado, limitada pela guarda de ausência de ação. Um trabalho que o líder repassou com `delegate_task` desperta o líder quando o ticket é concluído, e uma pergunta que ele fez com `ask_agent` o desperta com a resposta (veja [Agentes trabalhando juntos](/pt-BR/manual/guias/agentes-juntos/)).
 
 O nó **Team dispatch** de pipeline é o outro ponto de entrada. Ele recebe um id de equipe, um prompt e um modo de despacho:
 

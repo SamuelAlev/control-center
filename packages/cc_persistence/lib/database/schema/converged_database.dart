@@ -228,6 +228,7 @@ mixin ConvergedDatabase on GeneratedDatabase {
   /// generated column, trigger or view somebody added to the file is gone.
   /// Must not run inside a transaction.
   Future<SchemaConvergeReport> convergeSchema() async {
+    await prepareForConverge();
     final report = await SchemaConverger(
       db: this,
       declared: (await loadDeclaredSchema()).without(extensionTables),
@@ -239,6 +240,14 @@ mixin ConvergedDatabase on GeneratedDatabase {
     _lastConvergeReport = report;
     return report;
   }
+
+  /// Row fixes the declared schema needs before the converger rebuilds the
+  /// file, such as settling rows a new unique index would otherwise make the
+  /// converger delete. Runs on every converge (upgrade and import), after the
+  /// upgrade copy is taken, outside a transaction; each fix must be
+  /// idempotent and must check that the tables it touches exist. Nothing by
+  /// default.
+  Future<void> prepareForConverge() async {}
 
   /// How this file's schema differs from the declared one. Empty when equal.
   Future<List<String>> schemaDifferences() async {

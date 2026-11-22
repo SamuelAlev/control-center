@@ -1,0 +1,178 @@
+---
+title: Code-Modus
+description: Wie ein Agent ein kurzes Skript schreibt, das seine Tools aufruft, statt sie einzeln aufzurufen, welche Tools er direkt aufruft und welche aus einem Skript, die Grenzwerte, unter denen ein Skript läuft, wie ein Skript im Gespräch gelesen wird, und wie es eingegrenzt und aufgezeichnet wird.
+slug: de-DE/handbuch/konzepte/code-modus
+sourceHash: d41fe2f38c216949847fc7c4768fdf96bed2dc83
+---
+
+Ein Agent ruft seine Tools normalerweise einzeln auf. Jeder Aufruf ist ein Modellzug: Der Agent fordert den Aufruf an, das Ergebnis kommt in seinen Kontext zurück, und der Agent liest es, bevor er den nächsten anfordert. Bei Arbeit, die größtenteils mechanisch ist, etwa wenn zwanzig Dateien gelesen werden, um die drei wichtigen zu finden, oder wenn jedes offene Ticket auf ein bestimmtes Label geprüft wird, gehen die meisten dieser Züge und der größte Teil dieses Kontexts für Ergebnisse drauf, die der Agent ohnehin wegwirft.
+
+Der Code-Modus ist ein Tool, `repl`. Damit schreibt der Agent ein kurzes JavaScript-Skript, das seine anderen Tools aufruft, Schleifen bildet, Ergebnisse filtert und kombiniert und nur zurückgibt, was er braucht. Ein `repl`-Aufruf kann die Arbeit von Dutzenden Tool-Zügen erledigen, und nur die Antwort des Skripts gelangt in den Kontext.
+
+Jeder Lauf hat `repl`, wenn der Server Skripte ausführen kann. Es gibt nichts einzuschalten: siehe [Wann ein Lauf `repl` hat](#wann-ein-lauf-repl-hat).
+
+## Was ein Skript tun kann
+
+Ein Skript ist einfaches JavaScript, geschrieben als Rumpf einer async-Funktion, sodass `await` und `return` auf oberster Ebene funktionieren. Jeder `repl`-Aufruf startet einen neuen, leeren Interpreter.
+
+- **Tools aufrufen.** `await tools.read({ path: "README.md" })` ruft ein Tool auf und liefert sein Ergebnis, oder die Promise wird mit einem Fehler abgelehnt, wenn der Aufruf fehlschlägt oder abgelehnt wird. Unabhängige Aufrufe können mit `Promise.allSettled` gleichzeitig laufen.
+- **Tools finden.** `ALL_TOOLS` listet jedes Tool, das das Skript aufrufen darf. `searchTools(query)` findet Tools anhand dessen, was sie tun, `describeTool(name)` liefert die Beschreibung und die Argumente eines Tools, und `describeNamespace(name)` listet die Tools einer Gruppe. Auch die Tools verbundener MCP-Server sind so erreichbar.
+- **Ergebnisse zurückgeben.** Nur was das Skript zurückgibt oder an `text()`, `image()` oder `console.log()` übergibt, kommt zum Agenten zurück. Höchstens vier Bilder erreichen das Modell.
+- **Werte behalten.** `store(key, value)` und `load(key)` behalten kleine JSON-Werte zwischen Skripten derselben Unterhaltung und desselben Agenten. Werte werden erst gespeichert, wenn das Skript abgeschlossen ist. Subagenten haben keinen Speicher.
+- **Eine Person fragen.** `await tools.ask_user({ question, options })` stellt eine Frage und wartet auf die Antwort.
+- **Einbettungen auf dem Gerät nutzen.** `models.embed`, `models.rank` und `models.classify` verwenden das Einbettungsmodell des Servers, sofern es installiert ist.
+- **Warten.** `sleep(ms)` und `setTimeout`, innerhalb der Zeitgrenze des Skripts. `limits()` liefert die Grenzwerte, unter denen das Skript läuft.
+
+Ein Skript hat keinen Zugriff auf Dateisystem, Netzwerk, Prozesse, Module oder Umgebung: kein `fetch`, `require`, `import` oder `process`. Der einzige Weg nach außen ist ein Tool-Aufruf, und jeder Tool-Aufruf durchläuft dieselben Prüfungen wie ein Aufruf, den der Agent direkt macht.
+
+Tool-Aufrufe, die ein Skript bereits ausgeführt hat, werden nicht rückgängig gemacht, wenn das Skript danach fehlschlägt.
+
+## Welche Tools der Agent direkt aufruft
+
+Jeder Lauf des eingebauten Agenten erhält dieselbe kleine Menge von Tools, die er beim Namen aufruft:
+
+- `repl`, zuerst;
+- die Datei- und Shell-Tools `read`, `write`, `edit`, `search`, `find`, `bash` und `read_output`;
+- `ask_user` und `task`;
+- `todo_write`, `search_memory` und `send_message`;
+- die Verben, die der [Modus](/de-DE/handbuch/konzepte/modi/) der Unterhaltung braucht, um seine Ausgabe abzugeben oder ihn zu verlassen, etwa `submit_plan` im Planmodus;
+- `search_tools`, wenn ein Tool erst bei der ersten Verwendung geladen wird (weiter unten erklärt).
+
+Jedes andere Tool, das ein Lauf nutzen darf, wird auf einem von zwei Wegen erreicht:
+
+- **Nur aus einem Skript**, wenn ein Skript es aufrufen darf. Der Agent findet es mit `searchTools()` oder `describeTool()` und ruft es als `tools.<name>(args)` auf. Seine Beschreibung erreicht das Modell nie, daher kostet sie nichts im Prompt. Ruft der Agent eines davon trotzdem direkt auf, sagt ihm die Antwort, dass er das Tool aus einem Skript aufrufen soll. Kann der Server die Skripte des Laufs nicht ausführen, wird es stattdessen beim ersten Gebrauch geladen ([Wenn Skripte nicht laufen können](#wenn-skripte-nicht-laufen-können)).
+- **Beim ersten Gebrauch geladen**, wenn ein Skript es nicht aufrufen darf. Der Agent sieht seinen Namen, und ein Aufruf über den Namen oder das Finden über `search_tools` lädt es.
+
+Einige Tools sind aus einem Skript nie aufrufbar, darunter `repl` selbst (ein Skript kann kein Skript starten), `eval`, `task`, `checkpoint`, `rewind`, die `vibe_*`-Verben sowie Tools, die andere Agentenläufe starten oder ihnen Nachrichten schicken, Genehmigungen anlegen, entscheiden oder kommentieren, Richtlinien oder Skills ändern oder den Planmodus verlassen. Der Agent ruft diese direkt auf.
+
+Ein Lauf ohne `repl` erhält dieselben direkten Tools, und alles Übrige wird beim ersten Gebrauch geladen. [Tool-Kontext und Prompt-Caching](/de-DE/handbuch/konzepte/tool-kontext/) erklärt, warum die Menge in beiden Fällen gleich ist.
+
+Der Code-Modus fügt nie ein Tool hinzu, das der Modus der Unterhaltung nicht erlaubt. Der Tool-Filter des Modus wird zuerst angewendet, und ein Skript kann nur aufrufen, was übrig bleibt.
+
+## Wann ein Lauf `repl` hat
+
+Ein Lauf hat `repl`, wenn der Skript-Runner des Servers beim Start seine Abschirmungsprüfung bestanden hat ([Wie Skripte eingegrenzt werden](#wie-skripte-eingegrenzt-werden)). Keine Einstellung des Arbeitsbereichs, des Agenten oder des Servers ändert das. Ein Lauf hat trotzdem kein `repl`, wenn:
+
+- der Runner die Abschirmung auf dem Rechner des Servers nicht halten kann; der Server führt dann überhaupt keine Skripte aus;
+- der Server eine öffentliche Demo ist, die keine Skripte ausführt;
+- der Lauf zu keinem Arbeitsbereich gehört;
+- die Grenzwerte des Arbeitsbereichs nicht gelesen werden können, weil ein Lauf mit den Vorgaben über Grenzwerte hinausgehen könnte, die ein Admin niedriger gesetzt hat;
+- das Protokoll des Laufs nicht geschrieben werden konnte, weil jedes Skript vor seinem Start unter seinem Lauf aufgezeichnet wird.
+
+Ein solcher Lauf ruft alle seine Tools direkt auf.
+
+Der Code-Modus funktioniert für Läufe des eingebauten Agenten und für Agenten, die die Tools von Control Center über dessen MCP-Endpunkt erreichen, etwa Claude Code. Für einen MCP-Agenten enthält die Tool-Liste, die er erhält, `repl`, die direkten Tools und die Tools, die ein Skript nicht aufrufen darf; den Rest ruft er aus Skripten auf. Nur ein Lauf, den Control Center gestartet hat und in einem Protokoll führt, erhält dort `repl`; jeder andere Client bekommt alle Tools außer `repl`.
+
+**Einstellungen → Arbeitsbereich → Code-Modus** zeigt unter **Status**, ob dieser Server Skripte ausführt (**Verfügbar** oder **Nicht verfügbar**, mit dem Grund des Servers) und welche **Runner**-Version installiert ist. **Code-Ausführungen anzeigen** öffnet die Liste der Skripte, die gelaufen sind.
+
+Ein Serverinhaber kann Skripte nicht abschalten. Er kann sie aber begrenzen: wie viele gleichzeitig laufen und wie viel Speicher eines nutzen darf (siehe [Grenzwerte](#grenzwerte)).
+
+### Wenn Skripte nicht laufen können
+
+Ein Lauf verliert nie ein Tool, weil der Server seine Skripte nicht ausführen kann. Lehnt der Server ein Skript aus einem Grund ab, dem auch kein anderes Skript entgangen wäre (etwa wenn Skripte nicht verfügbar sind, das Skript die halbe Zeit auf einen freien Platz gewartet hat, seine Aufzeichnung nicht geschrieben werden kann, die Tool-Liste des Laufs zu groß ist, um sie einem Skript zu übergeben, oder der Runner nicht starten oder sich nicht abschirmen kann), verwendet der Lauf bis zu seinem Ende keine Skripte mehr:
+
+- ein Lauf des eingebauten Agenten behält `repl`, und jedes Tool, das er nur aus einem Skript erreichte, wird jetzt beim ersten Gebrauch geladen: Der Agent ruft es beim Namen auf oder findet es mit `search_tools`;
+- ein Lauf am MCP-Endpunkt erhält eine Tool-Liste mit allen Tools und ohne `repl`, und sein Client wird darüber informiert, dass sich die Liste geändert hat. Der Server merkt sich die letzten 1.024 solcher Läufe; ein älterer kehrt zu Skripten zurück.
+
+Für diese Tools gelten weiterhin derselbe Modusfilter, dieselben Schutzregeln und Genehmigungen wie zuvor, sodass nichts aufrufbar wird, was es vorher nicht war. Ein Skript, das aus eigenem Verschulden scheitert, etwa durch einen Fehler, den es wirft, durch das Erreichen eines Grenzwerts oder durch einen abgelehnten Aufruf, ändert nichts.
+
+Der Server prüft außerdem laufend, dass Skripte laufen können. Startet der Runner aus einem Grund nicht, der nicht beim Skript liegt, wiederholt der Server seine Abschirmungsprüfung, höchstens einmal pro Minute. Schlägt sie fehl, führt der Server keine Skripte aus und protokolliert dieselbe Zeile `code_mode=unavailable` wie beim Start; Läufe, die inzwischen starten, erhalten kein `repl`. Er prüft weiter, höchstens einmal pro Minute, und wenn eine Prüfung besteht, führt er Skripte wieder aus und protokolliert die Zeile `code_mode=available`. Nur eine Prüfung, die beim Start fehlgeschlagen ist, erfordert einen Neustart.
+
+## Grenzwerte
+
+Jedes Skript läuft unter Grenzwerten. Ein Admin des Arbeitsbereichs kann sechs davon unter **Grenzwerte** auf der Seite **Einstellungen → Arbeitsbereich → Code-Modus** ändern (**Grenzwerte anpassen**). Der Agent kann für ein einzelnes Skript nur weniger Zeit oder ein kleineres Ausgabebudget anfordern, nie mehr.
+
+| Grenzwert | Standard | Bereich | Wenn er erschöpft ist |
+| --- | --- | --- | --- |
+| Zeit pro Skript | 5 min | 1 s bis 25 min | Das Skript wird angehalten, und der Agent wird darüber informiert, dass die Zeit abgelaufen ist. |
+| Prozessorzeit | 30 s | 1 s bis 2 min | Das Skript wird angehalten. |
+| Speicher | 256 MiB | 16 MiB bis 1 GiB | Das Skript wird angehalten. Der Serverinhaber kann für den ganzen Server eine niedrigere Obergrenze setzen. |
+| Werkzeugaufrufe pro Skript | 500 | 1 bis 5.000 | Weitere Aufrufe werden abgelehnt, und das Skript erfährt den Grund. |
+| Aufrufe gleichzeitig | 8 | 1 bis 32 | Schreibgeschützte Aufrufe darüber hinaus warten, bis sie an der Reihe sind. Aufrufe, die etwas ändern, laufen immer nacheinander. |
+| Ausgabe, die der Agent liest | 10.000 Tokens | 100 bis 50.000 | Die Ausgabe wird auf ihren Anfang und ihr Ende gekürzt, und der Rest kann vom Agenten auf Anfrage gelesen werden. |
+
+Die Zeit, die ein Skript auf eine Person wartet, etwa auf eine Genehmigung oder eine Frage, zählt nicht gegen sein Zeitlimit. Solange es wartet, startet das Skript keinen weiteren Tool-Aufruf: Aufrufe, die es in der Zwischenzeit macht, starten der Reihe nach, sobald du geantwortet hast.
+
+Einige Grenzwerte sind fest: Der Quelltext eines Skripts ist höchstens 256 KiB groß, die Argumente eines Tool-Aufrufs 1 MiB und 16.384 Werte, ein Befehl, den ein Skript an ein eingebautes Tool übergibt, das ihn ausführt, 16 KiB (der Name des Tools zählt mit), ein Ergebnis, das dem Skript übergeben wird, 4 MiB, ein gespeicherter Wert 256 KiB, und alles, was eine Unterhaltung und ein Agent zusammen speichern, 1 MiB. Ein Lauf führt immer nur ein Skript gleichzeitig aus.
+
+Auch die Tool-Abfragen eines Skripts sind begrenzt: eine `searchTools`-Anfrage mit höchstens 1.024 Zeichen, ein Tool- oder Namensraum-Name mit höchstens 256 Zeichen, höchstens 50 Ergebnisse und höchstens 200 Abfragen, die insgesamt 2 Sekunden der Serverzeit beanspruchen; danach schlagen weitere Abfragen fehl. Alle Skripte eines Arbeitsbereichs teilen sich außerdem 2 Sekunden Abfragezeit, die mit einer Viertelsekunde pro Sekunde zurückgegeben wird. Der Suchindex gibt jedem Tool einen gleichen Anteil von etwa einer Million Zeichen, zuerst für seine Argumentnamen und dann für seine Beschreibung, und indiziert immer den Namen jedes Tools; daher wird ein Tool auch in einem sehr großen Katalog über seinen Namen gefunden.
+
+Der Serverinhaber begrenzt außerdem, wie viele Skripte auf dem Server gleichzeitig laufen (`--code-mode-max-processes`, standardmäßig das Doppelte der Prozessorkerne, höchstens 16) und wie viel Speicher ein Skript nutzen darf (`--code-mode-max-heap-mb`). Auf eine Person Wartende werden getrennt gezählt, bis zum Vierfachen dieser Zahl. Liegt diese Grenze über eins, kann ein Arbeitsbereich höchstens etwa drei Viertel davon nutzen, sodass kein einzelner Arbeitsbereich jeden Platz belegen kann. Ein Lauf und seine Subagenten zusammen nutzen höchstens die Hälfte der Plätze ihres Arbeitsbereichs (mindestens einen), sodass ihre weiteren Skripte warten, während Skripte der übrigen Läufe des Arbeitsbereichs vorankommen. Siehe die [`cc_server` CLI-Referenz](/de-DE/handbuch/referenz/cc-server-cli/#code-modus).
+
+## Genehmigungen und Fragen
+
+Ein Tool-Aufruf aus einem Skript wird genauso geprüft wie ein direkter Aufruf: der Tool-Filter des Modus, die [Schutzregeln für Aktionen](/de-DE/handbuch/konzepte/schutzregeln/), die Genehmigungsabfrage und die eigenen Prüfungen des Tools. Ein Skript kann nichts tun, was der Agent nicht selbst durch den direkten Aufruf des Tools tun könnte.
+
+Braucht der Aufruf eines Skripts eine Genehmigung, steht auf der Genehmigungskarte **Von einem Skript, das der Agent ausführt**, und **Skript anzeigen** öffnet das Skript in der Unterhaltung. Damit ein Skript dich nicht mit Karten überflutet:
+
+- ein Skript kann höchstens 10-mal um Genehmigung bitten und höchstens 10 Fragen stellen;
+- sobald du einen seiner Aufrufe ablehnst, werden seine späteren Aufrufe, die eine Genehmigung brauchen, ohne Nachfrage abgelehnt.
+
+Bei Läufen des eingebauten Agenten zählen Genehmigungsabfragen, die durch Befehle eines Skripts ausgelöst werden, etwa ein git push, zum selben Limit und werden nach einer Ablehnung genauso ohne Nachfrage abgelehnt. Läuft gleichzeitig das Skript eines Subagenten, zählt eine solche Abfrage für beide Skripte, und eine Ablehnung stoppt beide.
+
+Bei Läufen des eingebauten Agenten wird eine Genehmigung für ein Tool eines externen MCP-Servers nicht gespeichert: Jeder Aufruf fragt erneut nach, egal ob ihn ein Skript oder der Agent selbst macht, es sei denn, der Autonomieregler des Bereichs steht auf **Frei handeln**. Jede solche Genehmigungsabfrage, die ein Skript auslöst, zählt zu dessen Limit von 10.
+
+Beendet sich das Skript, bevor du antwortest, wird die Karte zurückgezogen, und eine Antwort, die danach kommt, genehmigt nichts.
+
+## In der Unterhaltung
+
+Ein `repl`-Aufruf erscheint in der Unterhaltung als eine Zeile, deren Titel die kurze Beschreibung des Skripts ist. Aufgeklappt zeigt sie das Skript und seine Ausgabe sowie die Tool-Aufrufe, die das Skript gemacht hat, unter **Werkzeugaufrufe**, mit einer Anzahl, wie viele laufen, erfolgreich, fehlgeschlagen, abgelehnt, abgebrochen, in Warteschlange oder übersprungen sind.
+
+### Wie ein Skript gelesen wird
+
+Die Tool-Aufrufe sind so angeordnet, wie das Skript geschrieben ist, nicht als eine lange Liste. Der Runner meldet Zeile und Spalte, an denen jeder Aufruf gemacht wurde, und die App liest das Skript, um seine Schleifen, Verzweigungen und Funktionen zu finden:
+
+- **Eine Schleife** (`for`, `while`) erscheint als Gruppe **Schleife**, deren Kopf die erste Zeile der Schleife zeigt, und ein Rückruf, der an einen Aufruf wie `map` oder `forEach` übergeben wird, als Gruppe **Für jedes**. Eine dünne Linie trennt einen Durchlauf der Schleife vom nächsten, wenn die App sie unterscheiden kann.
+- **Gemeinsam ausgeführte Aufrufe** mit `Promise.all`, `Promise.allSettled` oder einer ähnlichen Kombinierfunktion erscheinen als Gruppe **Parallel**.
+- **Eine Verzweigung** (`if`/`else`, `switch`, `try`/`catch`) zeigt pro Zweig eine Gruppe, deren Kopf die Bedingung ist.
+- **Eine Funktion**, die das Skript definiert und aufruft, erscheint als Gruppe **Funktion**.
+
+Eine Gruppe in einer anderen ist um einen weiteren Schritt eingerückt, bis zu acht Schritte; tiefere Gruppen bleiben bei dieser Einrückung.
+
+Der Kopf jeder Gruppe zeigt, wie ihre Aufrufe bisher geendet haben. Bevor ein Aufruf läuft, zeigt seine Zeile das Tool und die Argumente, so wie sie im Skript geschrieben sind:
+
+| Zeile | Bedeutung |
+| --- | --- |
+| **In Warteschlange** | Das Skript hat diesen Aufruf noch nicht erreicht. |
+| Läuft | Der Aufruf läuft. |
+| Fertig | Der Aufruf ist beendet; die Zeile zeigt sein Ergebnis und wie lange er gedauert hat. |
+| **Übersprungen** | Das Skript hat diesen Aufruf übergangen, etwa den Zweig eines `if`, der nicht genommen wurde, oder es endete, ohne ihn zu erreichen. |
+
+Ein Aufruf, der in den Argumenten eines Aufrufs desselben Tools steht, wird von derselben Stelle im Skript gemeldet wie dieser Aufruf. Kann die App nicht feststellen, ob der äußere Aufruf gemacht wurde, zeigt seine Zeile kein Statuswort statt **Übersprungen**.
+
+Hat eine Gruppe mehr als acht Aufrufe gemacht, klappt ihre Mitte ein: Die ersten zwei und die letzten drei bleiben sichtbar, ebenso jeder Aufruf, der noch läuft, fehlgeschlagen ist oder abgelehnt wurde, zusammen mit dem Aufruf, der seinen Durchlauf der Schleife begonnen hat. **N weitere Aufrufe anzeigen** öffnet jedes Mal 100 weitere, wenn man darauf drückt, und nennt bis zu vier Tools der verborgenen Aufrufe mit der Anzahl jedes Tools, die seltensten zuerst, etwa **12 weitere Aufrufe anzeigen** · Bash 1 · Read 11. Ein Tool-Name, der länger als 24 Zeichen ist, wird dort im Schaltflächentext gekürzt.
+
+Ein Aufruf, den die App im Skript nicht platzieren kann, etwa einer, den ein `then`-Rückruf gemacht hat, wird nach dem Baum unter **Aufrufe, die im Skript nicht platziert sind** aufgelistet. Kann die App das Skript nicht lesen oder zeigt kein Aufruf, wo er gemacht wurde, erscheinen die Aufrufe als einfache Liste in der Reihenfolge, in der sie gemacht wurden.
+
+Jede Aufrufzeile zeigt den Anfang der Argumente des Aufrufs und den Anfang seines Ergebnisses, jeweils höchstens 8 KiB; sobald die Zeilen eines Skripts zusammen 256 KiB davon enthalten, zeigen seine späteren Zeilen nur das Tool und wie der Aufruf endete. Sobald das Skript fertig ist, öffnet **Aufzeichnung öffnen** seine vollständige Aufzeichnung; wenn sie nicht gefunden wird, öffnet sich stattdessen die Liste der Skripte aus diesem Lauf. Ein Skript, das schon vor dem Start abgelehnt wurde (etwa weil ein anderes Skript desselben Laufs noch lief), hat keine Aufzeichnung und keinen Link.
+
+## Die Aufzeichnung
+
+Jedes Skript, das läuft, wird vor seinem Start in seinem Arbeitsbereich aufgezeichnet, und die Aufzeichnung wird beim Ende abgeschlossen. **Observability → Code-Ausführungen** listet sie, neueste zuerst, und lässt sich nach Ergebnis filtern. Die Links **Skripte in diesem Lauf** und **Skripte dieses Agenten** in einer Aufzeichnung grenzen die Liste auf einen Lauf oder einen Agenten ein. Eine Aufzeichnung zeigt:
+
+- das Skript, seine Ausgabe und seine Konsole;
+- wann es startete, wie lange es dauerte, welche Prozessorzeit und welchen Spitzenspeicher es brauchte und ob es über den eingebauten Agenten oder einen externen lief;
+- wie es endete, in einfachen Worten (etwa, dass die Zeit abgelaufen ist oder ein nicht abgefangener Fehler auftrat);
+- jeder Tool-Aufruf in Reihenfolge mit seinem Ergebnis, ob er erlaubt war, von einer Person genehmigt oder abgelehnt wurde, wie lange eine Person zur Entscheidung brauchte, seine Argumente (Geheimnisse entfernt, auf 8 KiB gekürzt) und die Größe seines Ergebnisses. Das Ergebnis selbst wird nicht gespeichert.
+
+Die Aufzeichnung hält fest, wo im Skript jeder Aufruf gemacht wurde, sodass ihre Tool-Aufrufe genauso angeordnet sind wie im Gespräch. Ein Aufruf, den eine Person genehmigt hat, wird dort nie eingeklappt.
+
+Ein Skript, das noch läuft, wird als laufend angezeigt, mit den Tool-Aufrufen, die bisher abgeschlossen sind. Seine Ausgabe, Dauer und Ressourcennutzung erscheinen, wenn es endet. Hält der Server an, während ein Skript läuft, wird die Aufzeichnung beim nächsten Start des Servers geschlossen, und das wird darin vermerkt. Bis sie geschlossen ist, läuft in diesem Arbeitsbereich kein Skript.
+
+Aufzeichnungen werden mit ihrem Lauf aufbewahrt: Wird der Lauf oder sein Bereich gelöscht, werden sie mitgelöscht. Mitglieder sehen die Aufzeichnungen der Bereiche, die sie öffnen können.
+
+## Wie Skripte eingegrenzt werden
+
+Skripte laufen nie im Server. Jedes Skript läuft in einem eigenen Prozess, einem kleinen Programm, das mit dem Server ausgeliefert wird, `cc_codemode`, und führt JavaScript in der QuickJS-NG-Engine aus. Bevor es das Skript liest, sperrt sich das Programm mit den eigenen Kontrollen des Betriebssystems ab: unter Linux mit einem Systemaufruf-Filter und Ressourcengrenzen, unter macOS mit einem standardmäßig verweigernden Sandbox-Profil, unter Windows mit einem AppContainer und einem Job-Objekt. Danach kann es keine Dateien öffnen, das Netzwerk nicht nutzen, keine Prozesse starten und keine anderen Programme sehen. Es startet ohne Umgebungsvariablen und hält keine Zugangsdaten; sein einziger Kanal ist der Server, der seine Tool-Aufrufe beantwortet.
+
+Der Server prüft die Abschirmung beim Start, indem er den Selbsttest des Programms ausführt. Hält die Abschirmung auf diesem Rechner nicht, etwa in einem Container, dessen Sicherheitsprofil einen der Schritte ablehnt, führt der Server dort keine Skripte aus: Kein Lauf erhält `repl`, und die Einstellungsseite zeigt **Nicht verfügbar** mit dem Grund. Ein Skript läuft nie mit weniger Abschirmung. Die Abschirmung unter Windows wurde auf Windows noch nicht ausgeführt.
+
+Wo ein Aufruf im Skript gemacht wurde, meldet der Runner. Das dient nur dazu, das Gespräch und die Aufzeichnung zu gliedern. Es entscheidet nie, ob ein Aufruf erlaubt ist.
+
+Siehe [Sandbox und Sicherheit](/de-DE/handbuch/konzepte/sandbox-und-sicherheit/#skripte-im-code-modus) dazu, was die Abschirmung abdeckt und was nicht.
+
+## Siehe auch
+
+- [Tool-Kontext und Prompt-Caching](/de-DE/handbuch/konzepte/tool-kontext/): warum die direkte Menge klein ist und mit oder ohne `repl` gleich bleibt.
+- [Eingebaute Agenten-Tools](/de-DE/handbuch/referenz/agenten-tools/#repl--ein-skript-ausführen-das-deine-tools-aufruft): die Eingabe des `repl`-Tools.
+- [`cc_server` CLI](/de-DE/handbuch/referenz/cc-server-cli/#code-modus): die Grenzwerte, die der Serverinhaber setzt.

@@ -3,6 +3,8 @@ import 'package:cc_domain/core/domain/value_objects/message_attachment.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/usage_scope.dart';
+import 'package:cc_domain/features/code_mode/domain/value_objects/script_call_site.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
 import 'package:cc_domain/features/observability/domain/run_stage.dart';
 
 /// Agent process event type discriminant.
@@ -186,6 +188,8 @@ class ToolCallEvent extends AgentProcessEvent {
     required this.toolName,
     required this.toolCallId,
     this.inputs,
+    this.parentToolCallId,
+    this.callSite,
     super.timestamp,
   });
 
@@ -204,11 +208,22 @@ class ToolCallEvent extends AgentProcessEvent {
   /// Structured tool input arguments.
   final Map<String, dynamic>? inputs;
 
+  /// The `repl` call whose script made this call, or null for a call the
+  /// model made directly. Nested ids are `<parentToolCallId>/<n>`.
+  final String? parentToolCallId;
+
+  /// Where in the script a nested call was made, or null (a call the model
+  /// made, or a nested call without a position). A display hint for the
+  /// call's transcript row ([ToolSegment.callSite]) only. Optional, like
+  /// [parentToolCallId]: most tool calls are the model's and have none.
+  final ScriptCallSite? callSite;
+
   /// The call as a metadata map (run logs, transcripts).
   Map<String, dynamic> get metadata => {
     'toolName': toolName,
     'toolCallId': toolCallId,
     if (inputs != null) 'inputs': inputs,
+    'parentToolCallId': ?parentToolCallId,
   };
 }
 
@@ -223,6 +238,8 @@ class ToolResultEvent extends AgentProcessEvent {
     this.isPartial = false,
     this.images = const [],
     this.attachments = const [],
+    this.parentToolCallId,
+    this.outcome,
     super.timestamp,
   });
 
@@ -255,6 +272,15 @@ class ToolResultEvent extends AgentProcessEvent {
   /// Original read media, externalized before publishing the final result.
   final List<MessageAttachment> attachments;
 
+  /// The `repl` call whose script made this call, or null for a call the
+  /// model made directly.
+  final String? parentToolCallId;
+
+  /// How the call ended when that is finer than ok or error: `denied`,
+  /// `cancelled` or `timed_out` from the gate, or a script's execution
+  /// status on a `repl` call. Null when there is nothing finer to say.
+  final String? outcome;
+
   /// The result as a metadata map (run logs, transcripts).
   Map<String, dynamic> get metadata => {
     'toolCallId': toolCallId,
@@ -267,6 +293,8 @@ class ToolResultEvent extends AgentProcessEvent {
       'attachments': [
         for (final attachment in attachments) attachment.toJson(),
       ],
+    'parentToolCallId': ?parentToolCallId,
+    'outcome': ?outcome,
   };
 }
 
@@ -581,11 +609,28 @@ class DoneEvent extends AgentProcessEvent {
   /// NOT as a plain completion (e.g. the loop hit its turn ceiling). Null
   /// means a normal completion; consumers that only care about "the process
   /// finished" can ignore it.
-  DoneEvent({this.outcome, super.timestamp});
+  ///
+  /// [endReason] is why the run ended when the session knows it better than
+  /// "finished or failed": a person's stop, the cost cap, the silence
+  /// watchdog, a usage limit on the last account. Null leaves the reason to
+  /// the run's outcome (`completed`, or `error` for a failed turn).
+  /// [limitResetsAt] is the provider's reset time for a usage-limit end.
+  DoneEvent({
+    this.outcome,
+    this.endReason,
+    this.limitResetsAt,
+    super.timestamp,
+  });
 
   @override
   AgentProcessEventType get type => AgentProcessEventType.done;
 
   /// Terminal outcome override, when the run ended without delivering.
   final TurnOutcome? outcome;
+
+  /// Why the run ended, when the session decided it.
+  final RunEndReason? endReason;
+
+  /// When the provider's usage limit resets, for a usage-limit end.
+  final DateTime? limitResetsAt;
 }

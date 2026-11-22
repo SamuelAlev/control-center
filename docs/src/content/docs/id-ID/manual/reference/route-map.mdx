@@ -2,7 +2,7 @@
 title: Peta rute
 description: Setiap rute yang didaftarkan Control Center, beserta layar dan parameter kuerinya.
 slug: id-ID/panduan-pengguna/referensi/peta-rute
-sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
+sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
 ---
 
 ## Shell aplikasi
@@ -40,6 +40,12 @@ Jalur di bawah ini menghilangkan prefiks `/workspaces/:workspaceId`.
 | `/pipelines`                            | —                                         | Daftar eksekusi pipeline                                                                                                                                                       |
 | `/pipelines/run`                        | `?templateId=<id>`                        | Peluncur eksekusi manual                                                                                                                                                       |
 | `/pipelines/:runId`                     | —                                         | Detail eksekusi pipeline (linimasa langkah)                                                                                                                                    |
+| `/goals` | — | Daftar tujuan, dikelompokkan menjadi menunggu tinjauan, terbuka, dan berakhir |
+| `/goals/:goalId` | `?edit=contract` | Satu tujuan: sekarang, arti selesai, verifikasi, jadwal dan pengingat; `edit=contract` membuka editor kontrak pada tujuan yang dijeda |
+| `/schedules` | — | Jadwal dan pantauan, dikelompokkan menurut status, dengan **Jadwal baru** |
+| `/schedules/:ruleId` | — | Satu jadwal: catatan, detail, pengingat dan run terbaru |
+| `/improvements` | — | Usulan perbaikan, dikelompokkan menurut status |
+| `/improvements/:proposalId` | — | Satu usulan: apa yang berubah, bukti, evaluasi dan keputusan |
 | `/plans`                                | —                                         | Pusat Plan Studio: rencana aktif, dokumen rencana, playbook                                                                                                                    |
 | `/plans/:kind/:id`                      | —                                         | Plan Studio untuk satu rencana; `kind` adalah `orchestration` atau `document`                                                                                                   |
 | `/meetings`                             | —                                         | Daftar rapat                                                                                                                                                                   |
@@ -99,6 +105,7 @@ Jalur Pengaturan diberi ruang nama berdasarkan **cakupan** — `you/`, `workspac
 | `/settings/workspace/skills`       | Konfigurasi skill                                                                                    |
 | `/settings/memory`                 | Memori ruang kerja: fakta, kebijakan, graf pengetahuan                                               |
 | `/settings/workspace/permissions`  | Izin agen: matriks pagar pengaman dan uji “Bagaimana jika?”                                          |
+| `/settings/workspace/schedules` | Batas jadwal, zona waktu untuk jadwal cron dan ringkasan, dan berapa lama run yang dimulai server menunggu jawaban (admin mengubah; anggota membaca) |
 | `/settings/pipelines`              | Templat pipeline                                                                                     |
 | `/settings/pipelines/:templateId`  | Editor templat pipeline (kanvas seret-lepas)                                                         |
 

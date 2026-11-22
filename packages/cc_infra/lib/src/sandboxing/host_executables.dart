@@ -23,11 +23,16 @@ import 'package:path/path.dart' as p;
 /// writable root, a [protectedRoots] entry or one of the directories
 /// themselves (an SDK whose `bin` is on `PATH`) is dropped, and only the
 /// child's target file is kept.
+///
+/// [extraDirs] are further directories the host runs programs from without
+/// a `PATH` entry naming them (the code mode runner's directories); they are
+/// treated exactly like `PATH` entries.
 HostExecutableDirs scanHostExecutables({
   String? path,
   String? home,
   List<String>? scanRoots,
   List<String> protectedRoots = const [],
+  List<String> extraDirs = const [],
 }) {
   final env = Platform.environment;
   final homeDir = home ?? env['HOME'] ?? '';
@@ -37,6 +42,8 @@ HostExecutableDirs scanHostExecutables({
       if (entry.isNotEmpty && p.isAbsolute(entry)) p.normalize(entry),
     for (final candidate in candidateBinaryPaths(_probeName))
       p.dirname(candidate),
+    for (final dir in extraDirs)
+      if (dir.isNotEmpty && p.isAbsolute(dir)) p.normalize(dir),
   };
   final roots = [
     for (final root in scanRoots ?? _defaultScanRoots(homeDir))

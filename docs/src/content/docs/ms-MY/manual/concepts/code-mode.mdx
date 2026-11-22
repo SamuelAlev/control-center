@@ -1,0 +1,178 @@
+---
+title: Mod kod
+description: Cara ejen menulis skrip pendek yang memanggil alatnya dan bukannya memanggilnya satu demi satu, alat mana yang dipanggilnya secara langsung dan mana yang daripada skrip, had yang dikenakan ke atas skrip semasa ia dijalankan, cara skrip dibaca dalam perbualan, dan cara skrip dikurung serta direkodkan.
+slug: ms-MY/manual-pengguna/konsep/mod-kod
+sourceHash: d41fe2f38c216949847fc7c4768fdf96bed2dc83
+---
+
+Ejen biasanya memanggil alatnya satu demi satu. Setiap panggilan ialah satu giliran model: ejen meminta panggilan itu, hasilnya kembali ke dalam konteks, dan ejen membacanya sebelum meminta yang seterusnya. Bagi kerja yang kebanyakannya mekanikal, seperti membaca dua puluh fail untuk mencari tiga yang penting atau menyemak setiap tiket terbuka untuk satu label, kebanyakan giliran itu dan kebanyakan konteks itu dihabiskan untuk hasil yang ejen buang.
+
+Mod kod ialah satu alat, `repl`. Dengannya ejen menulis skrip JavaScript pendek yang memanggil alat lainnya, menggelung, menapis dan menggabungkan hasilnya, dan memulangkan hanya apa yang diperlukan. Satu panggilan `repl` boleh melakukan kerja berpuluh-puluh giliran alat, dan hanya jawapan skrip itu yang masuk ke dalam konteks.
+
+Setiap larian mempunyai `repl` apabila pelayan boleh menjalankan skrip. Tiada apa yang perlu dihidupkan: lihat [Apabila larian mempunyai `repl`](#apabila-larian-mempunyai-repl).
+
+## Apa yang boleh dilakukan oleh skrip
+
+Skrip ialah JavaScript biasa, ditulis sebagai badan fungsi async, jadi `await` dan `return` berfungsi pada peringkat atas. Setiap panggilan `repl` memulakan jurubahasa baharu yang kosong.
+
+- **Panggil alat.** `await tools.read({ path: "README.md" })` memanggil alat dan menyelesaikan kepada hasilnya, atau menolak dengan ralat apabila panggilan gagal atau ditolak. Panggilan yang tidak bergantung antara satu sama lain boleh dijalankan serentak dengan `Promise.allSettled`.
+- **Cari alat.** `ALL_TOOLS` menyenaraikan setiap alat yang boleh dipanggil oleh skrip. `searchTools(query)` mencari alat mengikut apa yang dilakukannya, `describeTool(name)` memulangkan perihalan dan argumen satu alat, dan `describeNamespace(name)` menyenaraikan alat bagi satu kumpulan. Alat pelayan MCP yang bersambung juga boleh dicapai dengan cara ini.
+- **Pulangkan hasil.** Hanya apa yang dipulangkan oleh skrip, atau dihantar kepada `text()`, `image()` atau `console.log()`, kembali kepada ejen. Sehingga empat imej sampai kepada model.
+- **Simpan nilai.** `store(key, value)` dan `load(key)` menyimpan nilai JSON kecil antara skrip bagi perbualan dan ejen yang sama. Nilai hanya disimpan apabila skrip selesai. Subejen tidak mempunyai storan.
+- **Tanya seseorang.** `await tools.ask_user({ question, options })` mengajukan soalan dan menunggu jawapan.
+- **Guna embedding pada peranti.** `models.embed`, `models.rank` dan `models.classify` menggunakan model embedding pelayan, apabila ia dipasang.
+- **Tunggu.** `sleep(ms)` dan `setTimeout`, dalam had masa skrip. `limits()` memulangkan had yang dikenakan ke atas skrip.
+
+Skrip tidak mempunyai akses kepada sistem fail, rangkaian, proses, modul atau persekitaran: tiada `fetch`, `require`, `import` atau `process`. Satu-satunya jalan keluar ialah panggilan alat, dan setiap panggilan alat melalui semakan yang sama seperti panggilan yang dibuat ejen secara langsung.
+
+Panggilan alat yang telah dibuat oleh skrip tidak dibatalkan apabila skrip gagal kemudian.
+
+## Alat yang ejen panggil secara langsung
+
+Setiap larian ejen terbina mendapat set kecil alat yang dipanggilnya mengikut nama:
+
+- `repl`, dahulu;
+- alat fail dan shell `read`, `write`, `edit`, `search`, `find`, `bash` dan `read_output`;
+- `ask_user` dan `task`;
+- `todo_write`, `search_memory` dan `send_message`;
+- kata kerja yang diperlukan [modus](/ms-MY/manual-pengguna/konsep/modus/) perbualan untuk menghantar outputnya atau keluar daripadanya, seperti `submit_plan` dalam mod pelan;
+- `search_tools`, apabila ada alat yang dimuatkan pada penggunaan pertama (diterangkan di bawah).
+
+Setiap alat lain yang mungkin digunakan oleh larian dicapai dengan salah satu daripada dua cara:
+
+- **Daripada skrip sahaja**, apabila skrip boleh memanggilnya. Ejen mencarinya dengan `searchTools()` atau `describeTool()` dan memanggilnya sebagai `tools.<name>(args)`. Perihalannya tidak pernah sampai kepada model, jadi ia tidak menambah kos dalam prompt. Jika ejen tetap memanggilnya secara langsung, jawapannya memberitahu ejen supaya memanggil alat itu daripada skrip. Jika pelayan tidak boleh menjalankan skrip bagi larian itu, alat ini dimuatkan pada penggunaan pertama sebaliknya ([Apabila skrip tidak boleh dijalankan](#apabila-skrip-tidak-boleh-dijalankan)).
+- **Dimuatkan pada penggunaan pertama**, apabila skrip tidak boleh memanggilnya. Ejen melihat namanya, dan memanggilnya dengan nama, atau mencarinya dengan `search_tools`, akan memuatkannya.
+
+Beberapa alat tidak pernah boleh dipanggil daripada skrip, antaranya `repl` itu sendiri (skrip tidak boleh memulakan skrip), `eval`, `task`, `checkpoint`, `rewind`, kata kerja `vibe_*`, dan alat yang memulakan atau menghantar mesej kepada larian ejen lain, mencipta, memutuskan atau mengulas kelulusan, menukar polisi atau kemahiran, atau keluar daripada mod pelan. Ejen memanggil alat-alat itu secara langsung.
+
+Larian tanpa `repl` mendapat alat langsung yang sama, dan semua yang lain dimuatkan pada penggunaan pertama. [Konteks alat dan caching prompt](/ms-MY/manual-pengguna/konsep/konteks-alat/) menerangkan sebab set itu sama dalam kedua-dua keadaan.
+
+Mod kod tidak pernah menambah alat yang tidak dibenarkan oleh modus perbualan. Penapis alat modus digunakan dahulu, dan skrip hanya boleh memanggil apa yang tinggal.
+
+## Apabila larian mempunyai `repl`
+
+Larian mempunyai `repl` apabila pelari skrip pelayan lulus semakan kuncinya semasa bermula ([Cara skrip dikurung](#cara-skrip-dikurung)). Tiada tetapan ruang kerja, ejen atau pelayan yang mengubahnya. Larian masih tiada `repl` apabila:
+
+- pelari tidak dapat mengunci dirinya pada mesin pelayan; pelayan kemudian tidak menjalankan sebarang skrip;
+- pelayan ialah demo awam, yang tidak menjalankan sebarang skrip;
+- larian itu tidak tergolong dalam mana-mana ruang kerja;
+- had ruang kerja tidak dapat dibaca, kerana menjalankan di bawah lalai boleh melebihi had yang diturunkan oleh pentadbir;
+- log larian tidak dapat ditulis, kerana setiap skrip direkodkan di bawah larian itu sebelum ia bermula.
+
+Larian sebegini memanggil semua alatnya secara langsung.
+
+Mod kod berfungsi untuk larian ejen terbina dan untuk ejen yang mencapai alat Control Center melalui titik akhir MCPnya, seperti Claude Code. Bagi ejen MCP, senarai alat yang diterimanya mengandungi `repl`, alat langsung dan alat yang tidak boleh dipanggil oleh skrip; selebihnya dipanggilnya daripada skrip. Hanya larian yang dimulakan dan disimpan lognya oleh Control Center yang mendapat `repl` di sana; mana-mana klien lain dihantar setiap alat kecuali `repl`.
+
+**Tetapan → Ruang kerja → Mod kod** menunjukkan di bawah **Status** sama ada pelayan ini menjalankan skrip (**Tersedia** atau **Tidak tersedia**, dengan sebab yang diberikan pelayan), dan **Pelari** menunjukkan versi yang dipasang. **Lihat pelaksanaan kod** membuka senarai skrip yang telah dijalankan.
+
+Pemilik pelayan tidak boleh mematikan skrip. Pemilik boleh mengehadkannya: berapa banyak yang berjalan serentak dan berapa banyak memori yang boleh digunakan oleh satu skrip (lihat [Had](#had)).
+
+### Apabila skrip tidak boleh dijalankan
+
+Larian tidak sekali-kali kehilangan alat kerana pelayan tidak boleh menjalankan skripnya. Apabila pelayan menolak skrip atas sebab yang mana-mana skrip lain juga tidak dapat elak (contohnya skrip tidak tersedia, skrip telah menunggu separuh masanya untuk mendapat tempat yang kosong, rekodnya tidak dapat ditulis, senarai alat larian terlalu besar untuk diserahkan kepada skrip, atau pelari tidak dapat dimulakan atau tidak dapat mengunci dirinya), larian itu berhenti menggunakan skrip sepanjang hayatnya:
+
+- larian ejen terbina mengekalkan `repl`, dan setiap alat yang sebelum ini hanya dicapai daripada skrip kini dimuatkan pada penggunaan pertama: ejen memanggilnya mengikut nama atau mencarinya dengan `search_tools`;
+- larian pada titik akhir MCP dihantar senarai alat dengan setiap alat dan tanpa `repl`, dan kliennya diberitahu bahawa senarai itu telah berubah. Pelayan mengingati 1,024 larian terakhir sebegitu; larian yang lebih lama kembali menggunakan skrip.
+
+Alat-alat itu melalui penapis modus, guardrail dan kelulusan yang sama seperti sebelum ini, jadi tiada yang menjadi boleh dipanggil jika tidak boleh sebelum ini. Skrip yang gagal disebabkan oleh skrip itu sendiri, misalnya dengan membaling ralat, mencapai had atau panggilannya ditolak, tidak mengubah apa-apa.
+
+Pelayan juga terus memastikan bahawa skrip boleh dijalankan. Apabila pelari gagal dimulakan atas sebab yang bukan disebabkan skrip, pelayan mengulang semakan kuncinya, paling kerap sekali seminit. Jika semakan itu gagal, pelayan tidak menjalankan sebarang skrip dan mencatat baris `code_mode=unavailable` yang sama seperti semasa bermula; larian yang bermula sementara itu tidak mendapat `repl`. Ia terus menyemak, paling kerap sekali seminit, dan apabila semakan lulus, ia menjalankan skrip semula dan mencatat baris `code_mode=available`. Hanya semakan yang gagal semasa pelayan dimulakan memerlukan permulaan semula.
+
+## Had
+
+Setiap skrip dijalankan di bawah had. Pentadbir ruang kerja boleh menukar enam daripadanya di bawah **Had** dalam **Tetapan → Ruang kerja → Mod kod** (**Laras had**); ejen hanya boleh meminta masa yang lebih singkat atau belanjawan output yang lebih kecil untuk satu skrip, tidak pernah lebih.
+
+| Had | Lalai | Julat | Apabila habis |
+| --- | --- | --- | --- |
+| Masa setiap skrip | 5 minit | 1 s hingga 25 min | Skrip dihentikan dan ejen diberitahu bahawa masanya telah habis. |
+| Masa pemproses | 30 s | 1 s hingga 2 min | Skrip dihentikan. |
+| Memori | 256 MiB | 16 MiB hingga 1 GiB | Skrip dihentikan. Pemilik pelayan boleh menetapkan had atas yang lebih rendah untuk seluruh pelayan. |
+| Panggilan alat setiap skrip | 500 | 1 hingga 5,000 | Panggilan selanjutnya ditolak, dan skrip diberitahu sebabnya. |
+| Panggilan serentak | 8 | 1 hingga 32 | Panggilan baca-sahaja melebihi had ini menunggu giliran. Panggilan yang mengubah sesuatu sentiasa dijalankan satu demi satu. |
+| Output yang dibaca ejen | 10,000 token | 100 hingga 50,000 | Output dipendekkan kepada permulaan dan penghujungnya, dan ejen boleh membaca selebihnya atas permintaan. |
+
+Masa yang dihabiskan oleh skrip menunggu seseorang, untuk kelulusan atau soalan, tidak dikira dengan had masanya. Semasa ia menunggu, skrip tidak memulakan panggilan alat lain: panggilan yang dibuatnya sementara itu bermula, mengikut urutan, selepas anda menjawab.
+
+Sesetengah had adalah tetap: sumber skrip paling banyak 256 KiB, argumen satu panggilan alat 1 MiB dan 16,384 nilai, perintah yang diserahkan oleh skrip kepada alat terbina dalam yang menjalankannya, 16 KiB (nama alat itu turut dikira), satu hasil yang diserahkan kepada skrip 4 MiB, nilai tersimpan 256 KiB, dan semua yang satu perbualan dan ejen simpan bersama 1 MiB. Satu larian menjalankan satu skrip pada satu masa.
+
+Carian alat sesuatu skrip juga dihadkan: pertanyaan `searchTools` sehingga 1,024 aksara, nama alat atau ruang nama sehingga 256 aksara, paling banyak 50 hasil, dan paling banyak 200 carian yang mengambil masa 2 saat masa pelayan secara keseluruhan; selepas itu, carian lanjut gagal. Semua skrip satu ruang kerja juga berkongsi 2 saat masa carian, yang dikembalikan sebanyak satu perempat saat bagi setiap saat. Indeks carian memberi setiap alat bahagian yang sama, kira-kira satu juta aksara, yang dibelanjakan pada nama argumennya dahulu dan kemudian pada huraiannya, dan sentiasa mengindeks nama setiap alat, jadi walaupun dalam katalog yang sangat besar sesuatu alat ditemui dengan namanya.
+
+Pemilik pelayan juga mengehadkan berapa banyak skrip yang dijalankan serentak pada pelayan (`--code-mode-max-processes`, secara lalai dua kali bilangan teras pemproses, paling banyak 16) dan memori yang boleh digunakan oleh satu skrip (`--code-mode-max-heap-mb`); skrip yang menunggu seseorang dikira berasingan, sehingga empat kali nombor itu. Apabila had itu lebih daripada satu, satu ruang kerja boleh menggunakan paling banyak kira-kira tiga perempat daripadanya, supaya tiada satu ruang kerja pun boleh mengambil setiap tempat. Satu larian dan subejen-subejennya bersama-sama menggunakan paling banyak separuh daripada tempat ruang kerjanya (sekurang-kurangnya satu), jadi skrip selanjutnya mereka menunggu manakala skrip bagi larian lain dalam ruang kerja itu diteruskan dahulu. Lihat [rujukan CLI `cc_server`](/ms-MY/manual-pengguna/rujukan/cli-cc-server/#mod-kod).
+
+## Kelulusan dan soalan
+
+Panggilan alat daripada skrip diperiksa sama seperti panggilan langsung: penapis alat modus, [guardrail tindakan](/ms-MY/manual-pengguna/konsep/guardrail/), gesaan kelulusan dan semakan alat itu sendiri. Skrip tidak boleh melakukan apa-apa yang ejen tidak boleh lakukan dengan memanggil alat itu sendiri.
+
+Apabila panggilan skrip memerlukan kelulusan, kad kelulusan menyatakan **Daripada skrip yang sedang dijalankan oleh ejen**, dan **Tunjuk skrip** membuka skrip dalam perbualan. Untuk mengelakkan skrip membanjiri anda dengan kad:
+
+- satu skrip boleh meminta kelulusan paling banyak 10 kali, dan bertanya paling banyak 10 soalan;
+- apabila anda menolak salah satu panggilannya, panggilan seterusnya yang memerlukan kelulusan ditolak tanpa bertanya.
+
+Bagi larian ejen terbina, gesaan kelulusan yang dicetuskan oleh arahan yang dijalankan skrip, seperti push, dikira dalam had yang sama dan berhenti selepas penolakan dengan cara yang sama. Apabila skrip subejen berjalan serentak, gesaan sebegini dikira untuk kedua-dua skrip, dan satu penolakan menghentikan kedua-duanya.
+
+Dalam larian ejen terbina, kelulusan bagi alat pelayan MCP luaran tidak diingati: setiap panggilan meminta lagi, sama ada skrip atau ejen sendiri yang membuatnya, melainkan autonomi ruang itu ditetapkan kepada **Bertindak bebas**. Setiap gesaan sebegini yang dicetuskan oleh skrip dikira dalam had skrip itu untuk meminta kelulusan, iaitu paling banyak 10 kali.
+
+Jika skrip tamat sebelum anda menjawab, kad itu ditarik balik, dan jawapan yang diberi selepas itu tidak meluluskan apa-apa.
+
+## Dalam perbualan
+
+Panggilan `repl` muncul dalam perbualan sebagai satu baris yang dilabelkan dengan perihal skrip. Mengembangkannya menunjukkan skrip dan outputnya, dan panggilan alat yang dibuat oleh skrip di bawah **Panggilan alat**, dengan kiraan berapa banyak yang sedang berjalan, berjaya, gagal, ditolak, dibatalkan, dalam barisan atau dilangkau.
+
+### Bagaimana skrip dibaca
+
+Panggilan alat disusun mengikut cara skrip ditulis, bukan sebagai satu senarai panjang. Pelari melaporkan baris dan lajur tempat setiap panggilan dibuat, dan aplikasi membaca skrip untuk mencari gelung, cabang dan fungsinya:
+
+- **Gelung** (`for`, `while`) dipaparkan sebagai kumpulan **Gelung** yang dilabelkan dengan baris pertamanya, dan callback yang dihantar kepada panggilan seperti `map` atau `forEach` sebagai kumpulan **Untuk setiap**. Garisan nipis memisahkan setiap pusingan gelung daripada yang seterusnya apabila aplikasi boleh membezakannya.
+- **Panggilan dijalankan serentak** dengan `Promise.all`, `Promise.allSettled` atau gabungan yang serupa dipaparkan sebagai kumpulan **Selari**.
+- **Cabang** (`if`/`else`, `switch`, `try`/`catch`) menunjukkan satu kumpulan bagi setiap lengan, dengan pengepala ialah syaratnya.
+- **Fungsi** yang ditakrifkan dan dipanggil oleh skrip dipaparkan sebagai kumpulan **Fungsi**.
+
+Kumpulan di dalam kumpulan lain diinden satu langkah lagi, sehingga lapan langkah; kumpulan yang lebih dalam kekal pada inden itu.
+
+Pengepala setiap kumpulan menunjukkan bagaimana panggilannya tamat setakat ini. Sebelum panggilan dijalankan, barisnya menunjukkan alat dan argumen seperti yang ditulis dalam skrip:
+
+| Baris | Maksud |
+| --- | --- |
+| **Dalam barisan** | Skrip belum sampai kepada panggilan ini. |
+| Berjalan | Panggilan sedang berjalan. |
+| Selesai | Panggilan telah tamat; baris menunjukkan hasilnya dan berapa lama ia mengambil masa. |
+| **Dilangkau** | Skrip melangkau panggilan ini, seperti lengan `if` yang tidak diambil, atau tamat tanpa sampai kepadanya. |
+
+Panggilan yang ditulis di dalam argumen panggilan kepada alat yang sama dilaporkan dari tempat yang sama dalam skrip seperti panggilan itu. Apabila aplikasi tidak dapat memastikan sama ada panggilan luar itu dibuat, barisnya tidak menunjukkan perkataan status dan bukannya **Dilangkau**.
+
+Apabila sesuatu kumpulan telah membuat lebih daripada lapan panggilan, bahagian tengahnya dilipat: dua yang pertama dan tiga yang terakhir kekal kelihatan, begitu juga setiap panggilan yang masih berjalan, gagal atau ditolak, bersama panggilan yang memulakan pusingan gelung itu. **Tunjuk N panggilan lagi** membuka 100 lagi setiap kali ditekan, dan menamakan sehingga empat alat bagi panggilan tersembunyi beserta bilangan setiap satu, yang paling jarang dahulu, contohnya **Tunjuk 12 panggilan lagi** · Bash 1 · Read 11. Nama alat yang lebih panjang daripada 24 aksara dipotong pendek di situ.
+
+Panggilan yang tidak dapat diletakkan oleh aplikasi dalam skrip, seperti yang dibuat oleh callback `then`, disenaraikan selepas pepohon di bawah **Panggilan yang tidak diletakkan dalam skrip**. Apabila aplikasi tidak dapat membaca skrip, atau tiada panggilan yang menyatakan tempat ia dibuat, panggilan dipaparkan sebagai senarai biasa mengikut urutan ia dibuat.
+
+Setiap baris panggilan menunjukkan permulaan argumen panggilan dan permulaan hasilnya, sehingga 8 KiB setiap satu; apabila baris-baris sesuatu skrip memegang 256 KiB daripadanya, baris-baris kemudiannya hanya menunjukkan alat dan bagaimana panggilan itu tamat. Apabila skrip selesai, **Buka rekod** membuka rekod penuhnya; jika rekod tidak dapat dijumpai, ia membuka senarai skrip daripada larian itu. Skrip yang ditolak sebelum sempat dijalankan (contohnya kerana skrip lain daripada larian yang sama masih berjalan) tidak mempunyai rekod dan tiada pautan.
+
+## Rekod
+
+Setiap skrip yang dijalankan direkodkan dalam ruang kerjanya sebelum ia bermula, dan rekod itu dilengkapkan apabila ia tamat. **Kebolehcerapan → Pelaksanaan kod** menyenaraikannya, terbaru dahulu, dan boleh ditapis mengikut hasil. Pautan **Skrip dalam larian ini** dan **Skrip oleh ejen ini** pada rekod menapis senarai kepada satu larian atau satu ejen. Rekod menunjukkan:
+
+- skrip, outputnya dan konsolnya;
+- bila ia bermula, berapa lama ia mengambil masa, masa pemproses dan memori puncak yang digunakannya, dan sama ada ia berjalan melalui ejen terbina atau ejen luaran;
+- bagaimana ia tamat, dalam bahasa mudah (contohnya, masanya habis atau ia membuang ralat yang tidak ditangkap);
+- setiap panggilan alat, mengikut urutan, dengan hasilnya, sama ada ia dibenarkan, diluluskan oleh seseorang atau ditolak, berapa lama seseorang mengambil masa untuk memutuskan, argumennya (rahsia dibuang, dipotong kepada 8 KiB) dan saiz hasilnya. Hasil itu sendiri tidak disimpan.
+
+Rekod menyimpan di mana dalam skrip setiap panggilan dibuat, supaya panggilan alatnya disusun dengan cara yang sama seperti dalam perbualan. Panggilan yang diluluskan oleh seseorang tidak sekali-kali dilipat di situ.
+
+Skrip yang masih berjalan dipaparkan sebagai sedang berjalan, dengan panggilan alat yang telah selesai setakat ini; outputnya, tempohnya dan penggunaan sumbernya muncul apabila ia tamat. Jika pelayan berhenti semasa skrip berjalan, rekod ditutup apabila pelayan dimulakan semula dan rekod itu menyatakannya; tiada skrip berjalan dalam ruang kerja itu sehingga rekod ditutup.
+
+Rekod disimpan bersama larian mereka: memadam larian atau ruangnya turut memadam rekod. Ahli boleh melihat rekod bagi ruang yang boleh mereka buka.
+
+## Cara skrip dikurung
+
+Skrip tidak pernah berjalan di dalam pelayan. Setiap skrip berjalan dalam prosesnya sendiri, iaitu program kecil yang dibundel bersama pelayan, `cc_codemode`, yang menjalankan JavaScript dalam enjin QuickJS-NG. Sebelum ia membaca skrip, program itu mengunci dirinya dengan kawalan sistem operasi sendiri: pada Linux, penapis panggilan sistem dan had sumber; pada macOS, profil kotak pasir yang menafikan secara lalai; pada Windows, AppContainer dan job object. Selepas itu ia tidak boleh membuka fail, menggunakan rangkaian, memulakan proses atau melihat program lain. Ia bermula tanpa pembolehubah persekitaran dan tidak memegang kelayakan; satu-satunya salurannya ialah pelayan, yang menjawab panggilan alatnya.
+
+Pelayan menyemak kunci itu apabila ia bermula, dengan menjalankan ujian kendiri program. Jika kunci itu tidak berfungsi pada mesin tersebut, contohnya dalam bekas yang profil keselamatannya menolak salah satu langkah, pelayan tidak menjalankan skrip di sana: tiada larian mendapat `repl`, dan halaman tetapan menunjukkan **Tidak tersedia** dengan sebabnya. Skrip tidak sekali-kali berjalan dengan kurungan yang kurang. Kunci Windows belum dijalankan pada Windows.
+
+Tempat panggilan dibuat dalam skrip dilaporkan oleh pelari, jadi ia hanya digunakan untuk menyusun perbualan dan rekod. Ia tidak sekali-kali menentukan sama ada panggilan dibenarkan.
+
+Lihat [Kotak pasir dan keselamatan](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/#skrip-dalam-mod-kod) untuk perkara yang dilindungi dan tidak dilindungi oleh kunci ini.
+
+## Lihat juga
+
+- [Konteks alat dan caching prompt](/ms-MY/manual-pengguna/konsep/konteks-alat/): sebab set langsung kecil dan sama dengan atau tanpa `repl`.
+- [Alat ejen terbina](/ms-MY/manual-pengguna/rujukan/alat-ejen/#repl--jalankan-skrip-yang-memanggil-alat-anda): input alat `repl`.
+- [CLI `cc_server`](/ms-MY/manual-pengguna/rujukan/cli-cc-server/#mod-kod): had yang ditetapkan oleh pemilik pelayan.

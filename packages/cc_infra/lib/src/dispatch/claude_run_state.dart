@@ -81,6 +81,22 @@ class ClaudeRunState {
   /// the attempts already made).
   ClaudeDispatchTotals dispatchTotals = ClaudeDispatchTotals();
 
+  /// This dispatch's model calls that no `result` has reported yet, from the
+  /// stream. Added to [dispatchTotals] in the run's cumulative report until a
+  /// result settles them, and folded into it for good when the process dies
+  /// before one does.
+  ClaudeUnreportedUsage unreported = ClaudeUnreportedUsage();
+
+  /// The run row's cost writes, in order: the run's spend so far, written as
+  /// it grows so a stopped or crashed run keeps it and a running one shows
+  /// it. Awaited before the run's terminal event, so the terminal write is
+  /// the last.
+  Future<void> costWrites = Future<void>.value();
+
+  /// Whether a cost write is queued and not yet started. A queued write reads
+  /// the spend when it runs, so a burst of reports costs one write.
+  bool costWriteQueued = false;
+
   /// The delta prompt this dispatch sends when it resumes, or null when it does
   /// not resume (the full prompt is sent then).
   String? deltaPrompt;
@@ -140,4 +156,27 @@ class ClaudeRunState {
   /// names the FIRST account's config directory, so a session id learned on
   /// another account must not be written under it.
   bool persistDisabled = false;
+
+  /// The CLI's background Bash tasks that started and have not ended (task
+  /// ids, from the stream's task lifecycle lines). Never agent rows.
+  final Set<String> backgroundTasks = {};
+
+  /// When the latest turn ended with a background task live and stdin was
+  /// kept open for it; null when no turn waits on one.
+  DateTime? backgroundIdleSince;
+
+  /// Whether a turn began during that wait (steering written, or the CLI
+  /// printed): the wait is not idle until that turn's result.
+  bool backgroundTurnActive = false;
+
+  /// Whether the wait was ended for work waiting on this agent: the run
+  /// reports itself held until it settles.
+  bool backgroundYielded = false;
+
+  /// When the last background task of a held turn ended; null while one is
+  /// live.
+  DateTime? backgroundEndedAt;
+
+  /// Checks a held turn's bound and its tasks' end.
+  Timer? backgroundCheck;
 }

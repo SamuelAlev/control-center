@@ -2,7 +2,7 @@
 title: Sandbox and security
 description: What actually constrains an agent in Control Center today, how far the OS sandbox reaches and which boundaries hold on a host that has no backend.
 slug: en-GB/manual/concepts/sandbox-security
-sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
+sourceHash: 7644c97911f685ef5084875fb16f1006f21ea940
 ---
 
 :::note[Where the OS sandbox does and does not reach]
@@ -80,6 +80,8 @@ The same rule covers the smaller things that start a process for you:
 - **Tool processes and `bash`** in a run never fall back to the host. If the
   server is set to sandbox agents but has no sandbox to give a run, they are
   refused.
+- **A goal's checks** run in a one-shot sandbox over the conversation's worktree, confined like the agent's own `bash`. With no sandbox they do not run and the goal stops for a person; under `--sandbox off` they run as the agent's `bash` does.
+- **A goal's review** runs read-only on every adapter: reads only, worktrees mounted read-only, no `bash`, no subagents, no web. An adapter that cannot keep a run read-only (an ACP agent) is not used as a reviewer.
 
 ## What actually constrains an agent
 
@@ -343,6 +345,36 @@ native sandbox is actually wrapping the process — on a host with no backend
 there is nothing to observe. It is also unrelated to the guardrails: a
 violation comes from a denied syscall, never from a rule lookup.
 
+## Scripts in code mode
+
+[Code mode](/en-GB/manual/concepts/code-mode/) scripts are a separate case, and they do
+not depend on the agent sandbox at all. A script never runs inside the server and
+never runs in the agent's sandbox. It runs in its own process, `cc_codemode`, a
+program bundled with the server, which locks itself down before it reads the
+script and reports how far the lockdown got. The server sends the script only
+when the lockdown is complete.
+
+| Host | What the runner applies to itself |
+| --- | --- |
+| Linux | A system call allowlist (seccomp) that leaves it little more than reading its input, writing its output, managing its own memory, reading clocks and exiting; no new privileges and no capabilities; no core dumps; no file writes, no new processes and three open files at most; 3 GiB of address space; a hard processor-time limit. Landlock is added where the kernel has it. |
+| macOS | A deny-by-default sandbox profile that also refuses process information, file existence checks, system and hardware information and the related kernel calls; no core dumps, no file writes and a hard processor-time limit. |
+| Windows | A new AppContainer for every script, in a job that allows one process, 3 GiB of memory and no user interface, with dynamic code, child processes and win32k calls disabled. **Not yet run on Windows.** |
+
+The runner starts with no environment variables, no open files besides its
+input and output, and no credentials. Everything it can do outside its own
+memory is ask the server to run a tool, and the server runs that call through
+the same mode filter, [guardrails](/en-GB/manual/concepts/guardrails/) and approvals as
+a direct call.
+
+The server checks all of this when it starts: it runs the runner's self-test, which applies the lockdown, tries to read and create files, open a network connection and start a process (and more on each system), and runs real scripts under it. If anything is not refused, the server runs no scripts on that machine: no run gets `repl`, and the server says why at start and on the code mode settings page. A runner that is not a release build is refused in the same way. There is no weaker fallback.
+
+The runner also reports where in the script each call was made, so the conversation can show the script's structure. The server checks that position against the script and uses it only for display: it never decides whether a call is allowed, and it is not in the guardrails' audit.
+
+What this does not cover: a script can still do whatever the run's tools allow,
+because its tool calls are real tool calls; on macOS it can still learn whether
+a process id exists; and a flaw in the JavaScript engine or the kernel is
+contained by the lockdown, not ruled out by it.
+
 ## Confirmations come from the guardrails, not the sandbox
 
 The sandbox has no approval path. It launches, executes, emits events and tears
@@ -363,6 +395,7 @@ that states what can be checked by hand.
 
 ## Related concepts
 
+- [Code mode](/en-GB/manual/concepts/code-mode/): scripts that call tools, and the runner that confines them
 - [Rigs and enclosures](/en-GB/manual/concepts/rigs/): the step above the sandbox — when the work needs a whole disposable machine with a kernel boundary, not a wrapped process
 - [Guardrails](/en-GB/manual/concepts/guardrails/): the policy layer above the OS floor and where approvals actually come from
 - [Agent dispatch lifecycle](/en-GB/manual/concepts/dispatch-lifecycle/): where isolation fits in the dispatch flow

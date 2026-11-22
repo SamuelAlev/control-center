@@ -17,17 +17,31 @@ library;
 
 import 'package:cc_harness/src/context/tool_output_reference.dart';
 import 'package:cc_harness/src/context/tool_output_store.dart';
+import 'package:cc_harness/src/tools/background_commands.dart';
 import 'package:cc_harness/src/tools/tool.dart';
 
 /// Reads a bounded character range of a stored tool output by handle.
-class ToolOutputReadTool extends HarnessTool {
-  /// Creates a retrieval tool backed by the supplied output store.
-  ToolOutputReadTool(this._store);
+///
+/// A background command's output handle is served from the run's
+/// [BackgroundCommandRegistry] (live while the command runs, and for the rest
+/// of the run after it ends); every other handle from the store.
+class ToolOutputReadTool extends HarnessTool implements BackgroundCommandTool {
+  /// Creates a retrieval tool backed by the supplied output store and, when
+  /// the run has them, its background commands.
+  ToolOutputReadTool(this._store, {this.backgroundCommands});
 
   final ToolOutputStore? _store;
 
   @override
+  final BackgroundCommandRegistry? backgroundCommands;
+
+  @override
   String get name => 'read_output';
+
+  @override
+  String get resultNote =>
+      'Text: `[output <handle> …: chars A-B of N]`, the text, then '
+      '`[+K chars remain; …]` if more is left.';
 
   @override
   String get description =>
@@ -90,6 +104,27 @@ class ToolOutputReadTool extends HarnessTool {
         'omitted-output marker)',
       );
     }
+    final offset = (args['offset'] as num?)?.toInt() ?? 0;
+    final limit =
+        (args['limit'] as num?)?.toInt() ?? kToolOutputReadDefaultChars;
+    if (limit < 1) {
+      return HarnessToolResult.error('Invalid limit: must be at least 1 char.');
+    }
+    // A background command of THIS run: its registry is the run's own, so
+    // the handle cannot name another run's command.
+    final live = backgroundCommands?.byOutputHandle(handle);
+    if (live != null) {
+      final chunk = live.read(offsetChars: offset, limitChars: limit);
+      return HarnessToolResult.success(
+        _render(
+          handle,
+          chunk,
+          note: live.isLive
+              ? '${live.stateLine}; output so far'
+              : live.stateLine,
+        ),
+      );
+    }
     final store = _store;
     if (store == null) {
       return HarnessToolResult.error(
@@ -104,13 +139,6 @@ class ToolOutputReadTool extends HarnessTool {
         'Output retrieval is unavailable for this run: the run has no '
         'workspace scope.',
       );
-    }
-
-    final offset = (args['offset'] as num?)?.toInt() ?? 0;
-    final limit =
-        (args['limit'] as num?)?.toInt() ?? kToolOutputReadDefaultChars;
-    if (limit < 1) {
-      return HarnessToolResult.error('Invalid limit: must be at least 1 char.');
     }
 
     final result = await store.read(
@@ -148,10 +176,15 @@ class ToolOutputReadTool extends HarnessTool {
       }
     }
 
+    return HarnessToolResult.success(_render(handle, chunk));
+  }
+
+  static String _render(String handle, ToolOutputChunk chunk, {String? note}) {
     final buffer = StringBuffer()
       ..writeln(
         '[output $handle'
-        '${chunk.toolName.isEmpty ? '' : ' (${chunk.toolName})'}: '
+        '${chunk.toolName.isEmpty ? '' : ' (${chunk.toolName})'}'
+        '${note == null ? '' : ', $note'}: '
         'chars ${chunk.offsetChars}-${chunk.offsetChars + chunk.text.length} '
         'of ${chunk.totalChars}'
         '${chunk.byteLength == chunk.totalChars ? '' : ', ${chunk.byteLength} bytes'}]',
@@ -165,6 +198,6 @@ class ToolOutputReadTool extends HarnessTool {
           'continue with offset=${chunk.nextOffsetChars}]',
         );
     }
-    return HarnessToolResult.success(buffer.toString());
+    return buffer.toString();
   }
 }

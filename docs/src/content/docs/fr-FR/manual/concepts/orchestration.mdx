@@ -2,7 +2,7 @@
 title: Orchestration
 description: Comment une « grosse demande » devient un plan de toute l'équipe que vous approuvez une seule fois, puis un pipeline généré qui l'exécute.
 slug: fr-FR/manuel/concepts/orchestration
-sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
+sourceHash: db1bbceaba025b64539588004eebb65d944d5933
 ---
 
 Un agent seul est bon pour une seule chose. Certaines demandes vont au-delà :
@@ -39,13 +39,8 @@ valider et exécuter, plutôt que de la prose libre. Une proposition comporte :
 - **Synthèse** : l'étape finale qui produit le livrable.
 - **Budget** : un plafond de coût déclaré.
 
-:::caution[Le budget est indicatif]
-Le plafond de coût de la proposition est comparé au total estimé du plan et
-signale un plan au-dessus du budget dans la barre d'approbation _avant_ que vous
-approuviez. Plus rien ne le lit une fois l'exécution lancée : il n'arrête donc
-pas une orchestration qui dépasse son budget et ne la fait pas échouer. Les
-politiques de budget par agent et par espace de travail relèvent d'un mécanisme
-distinct, et ce sont elles qui suspendent réellement les dépenses.
+:::caution[Le budget retient l'exécution, il ne la tue pas]
+Le plafond de coût de la proposition est comparé au total estimé du plan et signale un plan au-dessus du budget dans la barre d'approbation _avant_ que vous approuviez. Une fois l'exécution lancée, le serveur vérifie ce qu'elle a dépensé avant chaque nouvelle étape : au plafond, l'exécution de pipeline est retenue (`suspended`, raison `orchestration_budget`) et plus rien ne démarre, tandis que les étapes déjà en cours se terminent. La personne qui a demandé l'exécution est prévenue et la reprend avec **Relever le plafond** sur la page de l'exécution de pipeline (un admin de l'espace de travail lorsque personne ne l'a demandée). Un relèvement doit dépasser l'ancien plafond et ce qui a été dépensé, sans dépasser 1 000 dollars, et un plafond n'est jamais supprimé. Les objectifs poursuivis par l'exécution comptent contre elle, revues comprises. Les politiques de budget par agent et par espace de travail relèvent d'un mécanisme distinct.
 :::
 
 ## Où l'examiner

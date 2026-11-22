@@ -2,8 +2,11 @@ import 'dart:convert';
 
 import 'package:cc_domain/features/pr_review/domain/ports/review_finding_status_port.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/review_node_payload.dart';
+import 'package:cc_mcp/src/mcp_script_surface.dart';
 import 'package:cc_mcp/src/tools/resolve_review_node_tool.dart';
 import 'package:test/test.dart';
+
+import 'result_note_expect.dart';
 
 /// Records what the tool asked the port for. The behaviour behind the port —
 /// the typed write, the trace in the room, the write-back onto the finalized
@@ -94,6 +97,33 @@ void main() {
       expect(json['previous_status'], 'open');
       expect(json['resolved_by'], 'engineer');
     });
+
+    test(
+      'what a script receives is the object its result note states',
+      () async {
+        final result = await tool.call({
+          'workspace_id': 'ws',
+          'space_id': 'ch-1',
+          'node_message_id': 'msg-1',
+          'agent_id': 'engineer',
+        });
+        final value =
+            asScriptSees(nestedResultValue(result))! as Map<String, Object?>;
+        expectNotedObject(
+          tool.resultNote,
+          value,
+          required: {
+            'node_message_id',
+            'status',
+            'previous_status',
+            'resolved_by',
+          },
+        );
+        for (final v in value.values) {
+          expect(v, isA<String>());
+        }
+      },
+    );
 
     test('needs no reason, unlike a dismissal', () async {
       // A dismissal has to explain itself because it becomes a suppression

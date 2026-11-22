@@ -123,6 +123,12 @@ McpToolRegistry buildServerMcpRegistry({
   // in the caller's conversation mode. Null → the tools report everything as
   // callable. The dispatcher enforces the same guard independently.
   ModeToolGuard? modeGuard,
+  // Code mode's `repl`, built by the runtime because it is bound to the
+  // dispatcher this registry is handed to. Null on a public demo, and on a
+  // server that cannot reach this point with a runner (the boot preflight
+  // refuses to start without one); the dispatcher lists and admits it only
+  // for an attested run, while the runner passes its self-test.
+  required ReplMcpTool? replTool,
 }) {
   final workspaceRepository = DaoWorkspaceRepository(
     globalDb.workspaceRegistryDao,
@@ -334,6 +340,8 @@ McpToolRegistry buildServerMcpRegistry({
     GetArtifactTool(repository: workProductRepository),
     CreateRuntimeProfileTool(repository: runtimeProfileRepository),
     ListRuntimeProfilesTool(repository: runtimeProfileRepository),
+    // ── Code mode ──
+    ?replTool,
     // ── Code graph (semantic code search) ──
     if (codeGraphRepository != null) ...[
       SearchCodeTool(
@@ -365,14 +373,30 @@ McpToolRegistry buildServerMcpRegistry({
     ],
   ]);
 
+  // The discovery tools list `repl` only while this server runs scripts.
+  final ReplAvailableFn? replAvailable = replTool == null
+      ? null
+      : () => replTool.executions.availability.isAvailable;
   // Discovery aids over the (large, fully listed) catalogue. Both take the
   // mode guard so they can tell the agent which tools are callable *right now*
   // in its conversation mode — the fix for "search says it exists, the call
   // then fails". `search_tool_bm25` finds by intent; `list_my_tools` is the
   // authoritative "what can I call" view.
   registry
-    ..register(SearchToolBm25(catalog: registry, modeGuard: modeGuard))
-    ..register(ListMyToolsTool(catalog: registry, modeGuard: modeGuard));
+    ..register(
+      SearchToolBm25(
+        catalog: registry,
+        modeGuard: modeGuard,
+        replAvailable: replAvailable,
+      ),
+    )
+    ..register(
+      ListMyToolsTool(
+        catalog: registry,
+        modeGuard: modeGuard,
+        replAvailable: replAvailable,
+      ),
+    );
   return registry;
 }
 

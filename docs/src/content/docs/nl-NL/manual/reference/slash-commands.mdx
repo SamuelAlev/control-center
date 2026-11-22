@@ -2,7 +2,7 @@
 title: Slash-commando’s
 description: Elk commando dat je in de composer kunt typen, wat het doet en waar het draait.
 slug: nl-NL/handleiding/referentie/slash-commandos
-sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
+sourceHash: 38430a6315b112c92a7806d1c28dff8a0285e363
 ---
 
 Commando’s die je in de composer van een ruimte typt. Ze vallen in drie groepen op basis van waar ze effect hebben, en dat verschil is belangrijk: een **lokaal** commando reist nooit als bericht mee, dus het verschijnt niet in het transcript en bereikt geen agent.
@@ -21,23 +21,35 @@ Commando’s die je in de composer van een ruimte typt. Ze vallen in drie groepe
 
 **Lokaal → dispatch.** Zet planmodus aan voor het gesprek: een volledig alleen-lezen worktree en een tooloppervlak dat beperkt is tot `read`. De oplevering van de agent is een plan, geen bewerking. Een kale `/plan` zet alleen de modus om en reist nooit als bericht mee; met een prompt is de rest van de regel wat de run start.
 
-### `/goal <objective>`
+### `/goal [flags] <objective>`
 
-**Dispatch.** Start een autonoom doel dat de doelsupervisor over segmenten en herstarts opnieuw dispatcht.
+**Dispatch.** Start een duurzaam doel: de agent werkt aan het doel in segmenten, over herstarts heen, tot de server verifieert dat het klaar is, een persoon het sluit, of het een limiet bereikt. Zie [Een doel nastreven](/nl-NL/handleiding/gidsen/doel-nastreven/).
 
-Als je `/goal` met tekst typt, opent eerst het **doelinterview** — een korte ronde die een concept pas accepteert als het alle vijf heeft: succescriteria die een beoordelaar zonder eigen oordeel kan vaststellen, een exact verificatiecommando, een limiet op het aantal pogingen, een afbakening van het bereik en stopvoorwaarden. Elke stap biedt *Overslaan en uitvoeren zoals geschreven*: het interview is een standaard, geen poort.
+Als je `/goal` met tekst typt, opent eerst het **doelinterview** — een korte ronde die vraagt naar succescriteria die een beoordelaar zonder eigen oordeel kan vaststellen, de controles die moeten slagen, afbakening van het bereik en stopvoorwaarden, en daarna een aparte checker, nieuwe segmenten en het beantwoorden van zijn eigen vragen aanbiedt. Elke stap biedt *Overslaan en uitvoeren zoals geschreven*: het interview is een standaard, geen poort.
 
-`/goal pause`, `/goal resume` en `/goal drop` zijn geen slash-commando’s. Pauzeren, hervatten en stoppen staan in de doelenlijst van het gesprek in de zijbalk. De startflags van het doel zelf zijn `--budget <dollars>`, `--max <N>` (runbudget) en `--days <N>` (deadline). Een doel dat zijn kostenlimiet heeft bereikt, wordt alleen hervat door die limiet te verhogen, via hetzelfde bedieningselement in de zijbalk.
+Vlaggen mogen overal in het bericht staan: `--budget <dollars>` (het budget van het doel, standaard 50), `--max <N>` (een segmentlimiet), `--days <N>` (een deadline), `--check "<command>"` (maximaal 5), `--checker <agent>`, `--fresh` en `--unattended wait|assume`. Een onbekende of herhaalde vlag wordt geweigerd en het concept blijft in het invoerveld. Een getal aan het begin van het doel is onderdeel van het doel. De secties `## Success criteria`, `## Boundaries`, `## Stop conditions` en `## Checks` worden het contract van het doel.
+
+`/goal pause`, `/goal resume` en `/goal drop` zijn geen slash-commando’s. Pauzeren, hervatten en stoppen staan op de doelkaart in het paneel **Algemeen** van het gesprek en op de pagina van het doel (zijbalk → **Doelen**). Hervatten en het budget verhogen horen bij de persoon die het doel heeft gestart.
 
 :::note[Waarom het überhaupt onderbreekt]
 Een autonoom doel is de enige plek waar een vage opdracht echt duur is. De run werkt uren aan een doel waarvan niemand heeft gedefinieerd wat “klaar” is, en meldt daarna succes volgens zijn eigen maatstaven. Vijf vragen zijn goedkoper dan één nachtelijke run die stopte wanneer hij zelf vond dat het genoeg was.
 :::
 
-### `/loop [budget] [task]`
+### `/loop [every <interval>] [flags] <prompt>`
 
-**Dispatch.** Werkt iteratief tot het klaar is. Accepteert een grens: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**Dispatch.** Maakt een schema dat de agent nu met de prompt wekt, en daarna opnieuw: elk interval (minimaal 60 seconden), of, zonder `every`, na een vertraging die de agent elke keer kiest (1 tot 60 minuten). `--max <N>` begrenst de runs, `--days <N>` beëindigt het (standaard 30 dagen), `--budget <dollars>` begrenst de uitgaven. Zie [Schema's en wekbeurten](/nl-NL/handleiding/gidsen/schemas-en-wekbeurten/).
 
-Een token dat *op* een limiet *lijkt* (begint met een cijfer of een teken) en niet te parsen is, is een harde fout. Proza is gewoon proza, dus `/loop keep going until the tests pass` is een onbegrensde loop met een inline prompt in plaats van een verkeerde parse.
+`/loop` start niet langer een doel, en een getal vooraan is geen aantal runs.
+
+### `/schedule <when> [flags] <prompt>`
+
+**Dispatch.** Maakt een schema dat de agent later wekt: `in 2h`, `at 09:00` (de eerstvolgende zodanige tijd in de tijdzone van de werkruimte), `at <ISO time>` of `cron "0 9 * * 1-5"` (de aanhalingstekens zijn optioneel). Neemt dezelfde `--max`, `--days` en `--budget` als `/loop`. Het wacht op zijn eerste tijdstip.
+
+### `/refine`
+
+**Dispatch.** Vraagt om een korte alleen-lezen review van het werk in het gesprek, die verbeteringen aan geheugen, beleid, agentnotities of skills kan voorstellen. Voorstellen wachten op de pagina **Verbeteringen** tot iemand ze accepteert. Hoogstens één review per gesprek elke 20 minuten.
+
+`/goal`, `/loop`, `/schedule` en `/refine` werken alleen in een bericht dat je zelf typt; vanuit een agent, een pipeline of een wekbeurt is dezelfde tekst een gewoon bericht. Een `/goal`, `/loop` of `/schedule` die niet gelezen kan worden, houdt je concept vast, en een regel boven de tekst in de composer zegt wat er mis is.
 
 ### `/vibe [task]`
 

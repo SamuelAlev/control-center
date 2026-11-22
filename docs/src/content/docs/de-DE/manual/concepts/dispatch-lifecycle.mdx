@@ -2,23 +2,33 @@
 title: Lebenszyklus der Agenten-Ausführung
 description: Was zwischen einer eintreffenden Nachricht und dem Schließen eines Laufprotokolls passiert, von Prompt-Aufbau und Worktrees über Identität bis zu den Grenzen eines Laufs und der ehrlichen Aufzeichnung seines Ergebnisses.
 slug: de-DE/handbuch/konzepte/ausfuehrungs-lebenszyklus
-sourceHash: 13e7fe3ed86c8659c5fec818e0b89737241e2b9d
+sourceHash: 07c46e22e30f1a10e64b7fb949c78bdae9747efa
 ---
 
 ## Was eine Ausführung ist
 
 Eine Ausführung ist ein Lauf eines Agenten, in einer Unterhaltung, auf einem Adapter. Alles daran passiert auf `cc_server`: Der Client schickt eine Nachricht und beobachtet danach den Ereignisstrom. In keinem Client gibt es einen Ausführungspfad.
 
-Agenten werden aus sechs Gründen geweckt. Der Lauf trägt sie als **Aufwachkontext**, damit der Agent weiß, *warum* er wach ist:
+Jeder Lauf trägt einen **Aufwachkontext**, der sagt, _warum_ der Agent aufgewacht ist. Ein Lauf, den du durch das Senden einer Nachricht startest, ist `userMessage`; jeder Lauf, den der Server von selbst startet, beginnt als dauerhafter **Weckruf** in der Warteschlange des Arbeitsbereichs und trägt den Grund des Weckrufs (siehe [Zeitpläne und Weckrufe](/de-DE/handbuch/anleitungen/zeitplaene-weckrufe/)):
 
 | Aufwachgrund     | Auslöser                                                         |
-| ---------------- | ---------------------------------------------------------------- |
-| `userMessage`    | Jemand hat in einem Bereich eine Nachricht geschickt oder den Agenten erwähnt |
+| -------------------- | ------- |
+| `userMessage`    | Jemand hat in einem Bereich eine Nachricht geschickt                          |
 | `assignment`     | Ein Ticket wurde dem Agenten zugewiesen                          |
 | `pipelineStep`   | Ein Pipeline-Schritt hat ihn ausgeführt                          |
-| `childCompleted` | Ein untergeordnetes Ticket ist fertig                            |
-| `followUp`       | Ein geplanter Folge-Heartbeat                                    |
-| `recovery`       | Der Wiederherstellungspfad hat nach einem Fehler erneut ausgeführt |
+| `childCompleted` | Ein delegiertes oder untergeordnetes Ticket ist fertig oder der Lauf eines Teammitglieds ist beendet |
+| `schedule` | Ein Zeitplan oder eine Schleife wurde ausgelöst |
+| `watch` | Etwas, auf das eine Überwachung lauscht, ist eingetreten (Pull-Request-Prüfungen, ein Review, eine Umgebung, ein Ticket, ein Pipeline-Lauf) |
+| `goalContinuation` | Der nächste Abschnitt eines Ziels |
+| `goalVerification` | Die Prüfungen oder das Review eines Ziels haben ergeben, dass es noch nicht fertig ist |
+| `goalReview` | Das schreibgeschützte Review der Behauptung eines Ziels, dass es fertig ist |
+| `peerMessage` | Ein anderer Agent hat ihm eine Nachricht oder eine Frage geschickt, es wurde @-erwähnt, oder es ist der Checker des Bereichs |
+| `peerReply`      | Die Antwort auf eine Frage, die er an einen anderen Agenten gestellt hat |
+| `limitReset` | Ein Nutzungslimit des Anbieters, bei dem er angehalten hat, wurde zurückgesetzt |
+| `improvementReview` | Das Review nach einem verifizierten Ziel oder `/refine` |
+| `recovery` | Arbeit, die ein Serverneustart oder ein Fehler unterbrochen hat |
+
+Ein Weckruf wird in einen laufenden Lauf des Agenten in dieser Unterhaltung zugestellt, wenn der Lauf Eingaben annimmt und im Auftrag derselben Person handelt; andernfalls wartet er, bis dieser Lauf endet, und startet seinen eigenen. Slash-Befehle werden nur in einer Nachricht gelesen, die eine Person getippt hat; in jedem anderen Lauf ist derselbe Text eine gewöhnliche Nachricht.
 
 Der Aufwachkontext trägt die IDs zum Grund, also Ticket, Bereich, Nachricht und Pipeline-Lauf, und sie werden in die Umgebung und den Prompt des Agenten geschrieben.
 
@@ -104,17 +114,17 @@ Es gibt bewusst **nirgends eine Obergrenze für Turns**. Eine feste Iterationsza
 - **das Modell von sich aus stoppt**;
 - **ein Mensch ihn stoppt** oder die Unterhaltung übernimmt (das pausiert den eingebauten Harness an der nächsten sauberen Turn-Grenze; ein Claude-Code-Lauf ohne sichere Grenze wird stattdessen gestoppt);
 - **der Stille-Watchdog auslöst.** Bleibt die Ausgabe über die Schwelle aus, endet die Sitzung mit einem Fehler `silentRun`. Vorgabe sind 15 Minuten, in den überwiegend lesenden Modi (Review und Plan) 10. Ein Agent darf den Wert zwischen 1 und 240 Minuten setzen. Der Watchdog wird scharf, sobald ein Kindprozess seine PID meldet. Er deckt damit die Claude-Code-CLI ab, **nicht** den eingebauten Harness, der nichts startet;
-- **eine Kostenobergrenze greift**, aber nur bei autonomen Befehlen.
+- **eine Kostenobergrenze greift** — bei Abschnitten eines Ziels und Reviews, bei Zeitplan- und Überwachungsläufen, beim Verbesserungs-Review und bei Pipeline-Läufen unter einer begrenzten Orchestrierung.
 
 Der Schutz vor Endlosschleifen beendet den Lauf nicht: drei gleiche Werkzeugaufrufe hintereinander, und die Schleife *steuert* den Agenten auf einen anderen Ansatz.
 
 :::note[Ein normaler Turn hat keine Kostenobergrenze]
-Der Kostenwächter in der Sitzung hängt nur an `/goal` und `/loop`. Jeder andere Lauf gibt gar kein Budget mit. Bei diesen Befehlen darf ein unbeaufsichtigtes Segment standardmäßig 500 Cent (5,00 $) verbrauchen, mit einer weichen Steuerung bei 80 %, die den Agenten bittet, vor dem harten Stopp sauber abzuschließen, und einem dauerhaften Zielbudget von 5.000 Cent (50,00 $) über die Segmente. Ein ausdrückliches `/goal --budget` wird nie um ein ganzes Segment überschritten.
+Ein Lauf, den du mit einer Nachricht startest, hat kein Budget. Ein Abschnitt eines Ziels darf 5 Dollar ausgeben oder den Rest des Ziel-Budgets (standardmäßig 50 Dollar), falls das weniger ist; ein Review eines Ziels 2 Dollar; ein Lauf, den ein Zeitplan oder eine Überwachung gestartet hat, 5 Dollar; das Verbesserungs-Review 1 Dollar. Bei 90 % steuern der eingebaute Harness und Claude Code den Agenten dazu, sauber abzuschließen, bevor der harte Stopp greift; ein ACP-Agent wird bei der Obergrenze abgebrochen. Siehe [Kosten verwalten](/de-DE/handbuch/anleitungen/kosten-verwalten/#einen-autonomen-lauf-begrenzen).
 :::
 
 Ein gewöhnlicher interaktiver Turn auf dem eingebauten Harness hat damit keine Turn-Obergrenze, keine Kostenobergrenze und keinen Stille-Watchdog. Er endet, wenn das Modell stoppt oder wenn du ihn stoppst. Das ist eine bewusste Abwägung, denn die Alternativen brechen legitime lange Arbeit ab. Ein unbeaufsichtigter interaktiver Lauf ist dadurch nur durch das eigene Urteil des Modells begrenzt.
 
-Mitten im Lauf landet eine Nachricht an einen laufenden Agenten als **Steuerung** in der Warteschlange und wird an der nächsten Turn-Grenze abgearbeitet. So kannst du einen Lauf nachsteuern, ohne ihn abzubrechen. Steuerung, Pausieren, Subagenten und der Abschlusskontrakt gehören zum eingebauten Harness. Claude Code hat nichts davon.
+Mitten im Lauf landet eine Nachricht an einen laufenden Agenten als **Steuerung** in der Warteschlange und wird an der nächsten Turn-Grenze abgearbeitet. So kannst du einen Lauf nachsteuern, ohne ihn abzubrechen. Ein rein lesender Lauf, etwa das Review eines Ziels, nimmt währenddessen keine Steuerung an, und das Steuern eines Laufs, der für jemand anderen arbeitet, braucht Schreibzugriff auf die Repositories des Bereichs. Steuerung, Pausieren, Subagenten und der Abschlusskontrakt gehören zum eingebauten Harness. Claude Code hat nichts davon.
 
 ## Wie ein Lauf protokolliert wird
 
@@ -130,11 +140,11 @@ Endet ein Lauf ohne das Ergebnis, das sein Modus verlangt, bleibt der Status `co
 Das ist Absicht. Den Status umzulegen würde Zustandsmaschinen von Tickets und Pipelines bewegen, die mit dem fehlenden Artefakt nichts zu tun haben. „status: completed“ allein reicht nie, um einen gelungenen Lauf zu schließen. Lies die Zusammenfassung.
 :::
 
-Beim Schließen veröffentlicht der Lauf `AgentRunCompleted`, und daran hängt einiges: die Kostenaufsummierung der Pipeline, das Fortsetzen eines Pipeline-Schritts, der auf den Lauf gewartet hat, das Abschließen des zugehörigen Tickets, das Abbilden einer Orchestrierung auf einen Endzustand, die Entscheidung des Zielwächters weiterzumachen oder zu stoppen, die Prüferrolle und die Budgetauswertung nach dem Lauf. Die Präsenzliste folgt getrennt: Sie beobachtet die jüngsten Laufprotokolle, nicht das Ereignis. Die Benachrichtigung „Agent abgeschlossen“ gehört nicht dazu: Das Ereignis feuert, wenn der Prozess-Stream endet, also bevor die Antwort geschrieben ist. Die Benachrichtigung ist deshalb das `MessageReceived` des Turns, veröffentlicht, sobald die Nachricht gespeichert ist.
+Sobald der endgültige Zustand des Laufs geschrieben ist, veröffentlicht der Server `AgentRunSettled` genau einmal, mit dem Grund, warum der Lauf endete (`completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` oder `serverStopped`), und daran hängt einiges: die Kostenaufsummierung der Pipeline, das Fortsetzen eines Pipeline-Schritts, der auf den Lauf gewartet hat, das Abschließen des zugehörigen Tickets, das Abbilden einer Orchestrierung auf einen Endzustand, die Entscheidung des Zielwächters weiterzumachen oder zu stoppen, die Antwort auf eine Frage, die ein anderer Agent gestellt hat, die nächste Auslösung einer selbstgesteuerten Schleife, die Pause am Nutzungslimit, die Prüferrolle und die Budgetauswertung nach dem Lauf. Ein Lauf, den ein Serverstopp unterbrochen hat (`serverStopped`), gilt nie als Fehler; die Arbeit wird nach dem Neustart fortgesetzt. `AgentRunCompleted` wird weiterhin früher veröffentlicht, nur für die Pull-Request-Brücke und die Analyse. Die Präsenzliste folgt getrennt: Sie beobachtet die jüngsten Laufprotokolle, nicht das Ereignis. Die Benachrichtigung „Agent abgeschlossen“ gehört nicht dazu: Das Ereignis feuert, wenn der Prozess-Stream endet, also bevor die Antwort geschrieben ist. Die Benachrichtigung ist deshalb das `MessageReceived` des Turns, veröffentlicht, sobald die Nachricht gespeichert ist.
 
 ## Budgets im Nachhinein
 
-Die Durchsetzung des Budgets ist eine *Reaktion*, kein vorgelagertes Tor. Wenn ein Lauf endet, vergleicht die Auswertung die Ausgaben des Agenten seit Monatsbeginn mit seiner wirksamen Obergrenze (eine verknüpfte Budgetrichtlinie, falls vorhanden, sonst die eigene Monatszahl des Agenten; null heißt unbegrenzt). Beim Überschreiten der weichen Schwelle entsteht ein Warnvorfall. Ist das Budget aufgebraucht, entsteht ein harter Vorfall, und der Lebenszyklusstatus des Agenten im Organigramm wechselt auf `paused`. Die Ausführung nimmt von diesem Agenten weiter Arbeit an. Ein Pipeline-Trigger `BudgetThresholdCrossed` kann aus demselben Ereignis Folgearbeit starten.
+Die Durchsetzung des Budgets ist eine *Reaktion*, kein vorgelagertes Tor. Wenn ein Lauf endet, vergleicht die Auswertung die Ausgaben des Agenten seit Monatsbeginn mit seiner wirksamen Obergrenze (eine verknüpfte Budgetrichtlinie, falls vorhanden, sonst die eigene Monatszahl des Agenten; null heißt unbegrenzt). Beim Überschreiten der weichen Schwelle entsteht ein Warnvorfall. Ist das Budget aufgebraucht, entsteht ein harter Vorfall, und der Lebenszyklusstatus des Agenten im Organigramm wechselt auf `paused`. Die Ausführung nimmt Arbeit, die du diesem Agenten schickst, weiter an, aber Weckrufe für ihn (Zeitpläne, Abschnitte von Zielen, Antworten) warten, solange er pausiert ist, höchstens 7 Tage. Ein Pipeline-Trigger `BudgetThresholdCrossed` kann aus demselben Ereignis Folgearbeit starten.
 
 ## Wiederholungsherkunft
 
@@ -147,4 +157,5 @@ Jedes Laufprotokoll kann eine Wiederholungsherkunft tragen: die ID des Elternlau
 - [Schutzregeln](/de-DE/handbuch/konzepte/schutzregeln/): die Effektklassen-Richtlinie, die jeder gegatete Aufruf durchläuft
 - [Sandbox und Sicherheit](/de-DE/handbuch/konzepte/sandbox-und-sicherheit/): die Isolierung im Ganzen
 - [Multiplayer](/de-DE/handbuch/konzepte/multiplayer/): Steuerung, Übernahme und der Autonomieregler
-- [Domain-Ereignisse](/de-DE/handbuch/konzepte/domain-ereignisse/): was `AgentRunCompleted` auslöst
+- [Domain-Ereignisse](/de-DE/handbuch/konzepte/domain-ereignisse/): was `AgentRunSettled` auslöst
+- [Ein Ziel verfolgen](/de-DE/handbuch/anleitungen/ziel-verfolgen/) und [Zeitpläne und Weckrufe](/de-DE/handbuch/anleitungen/zeitplaene-weckrufe/): vom Server selbst gestartete Läufe

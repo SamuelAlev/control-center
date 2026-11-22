@@ -11,6 +11,13 @@ import 'package:cc_harness/provider.dart';
 /// failure: the request is abandoned and [CancelledException] propagates, so
 /// the compactor commits nothing.
 ///
+/// The pinned evidence (the person's original request, their later requests
+/// and steering, and the loop's system steering) is re-attached to the
+/// model's text verbatim ([withPinnedEvidence]), exactly as the structural
+/// digest carries it: a model paraphrase must not be the only copy of the
+/// requirements the next fold sees. Pin markers the model writes itself are
+/// neutralised, so its text can never forge the block.
+///
 /// Uses the run's own provider so no extra credential/model resolution is
 /// needed; the call is one-shot (non-streaming drain) and cache-free.
 ///
@@ -90,7 +97,10 @@ class LlmHarnessSummarizer implements HarnessSummarizerPort {
       final text = buf.toString().trim();
       return text.isEmpty
           ? await _fallback.summarize(input)
-          : HarnessSummary(text, modelWritten: true);
+          : HarnessSummary(
+              withPinnedEvidence(text, input, budget: budget),
+              modelWritten: true,
+            );
     } on CancelledException {
       rethrow;
     } on Object {
@@ -148,6 +158,18 @@ class LlmHarnessSummarizer implements HarnessSummarizerPort {
         ),
       )
       ..writeln('</conversation-history>');
+    final focus = input.focus?.trim();
+    if (focus != null && focus.isNotEmpty) {
+      buf
+        ..writeln()
+        ..writeln('<focus>')
+        ..writeln(focus)
+        ..writeln('</focus>')
+        ..writeln(
+          'The focus above says what must survive this summary: keep '
+          'everything it names, in full.',
+        );
+    }
     return buf.toString();
   }
 }

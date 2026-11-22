@@ -2,7 +2,7 @@
 title: Orchestrace
 description: Jak se z jednoho velkého zadání stane plán pro celý tým, který schválíš jednou, a vygenerovaná pipeline, která ho provede.
 slug: cs-CZ/prirucka/koncepty/orchestrace
-sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
+sourceHash: db1bbceaba025b64539588004eebb65d944d5933
 ---
 
 Jeden agent umí jednu věc. Některá zadání jsou větší: „prozkoumej trh
@@ -37,13 +37,8 @@ spustit. Volný text to není. Návrh má:
 - **Syntéza**: poslední krok, který vytvoří výstup.
 - **Rozpočet**: deklarovaný strop nákladů.
 
-:::caution[Rozpočet je poradní]
-Strop nákladů v návrhu se porovná s odhadovaným součtem plánu. Lišta
-schválení plán nad stropem označí jako „nad rozpočtem“, a to _ještě než_
-ho schválíš. Jakmile běh začne, strop už nikdo nečte, takže orchestraci,
-která ho překročí, nezastaví ani neukončí chybou. Výdaje doopravdy
-pozastaví až politiky rozpočtu na agenta a na pracovní prostor. To je
-jiný mechanismus.
+:::caution[Rozpočet drží běh, nezabíjí ho]
+Strop nákladů v návrhu se porovná s odhadovaným součtem plánu. Lišta schválení plán nad stropem označí jako „nad rozpočtem“, a to _ještě než_ ho schválíte. Jakmile běh začne, server před každým novým krokem zkontroluje, kolik utratil: na stropu se běh pipeline podrží (`suspended`, důvod `orchestration_budget`), nic nového nezačne, ale kroky, které už běží, dokončí. Kdo běh spustil, dostane oznámení a pokračuje v něm tlačítkem **Zvýšit limit** na stránce běhu pipeline (když ho nikdo nespustil, správce pracovního prostoru). Zvýšení musí být nad původním stropem i nad utraceným, nejvýš 1 000 dolarů, a strop se nikdy neodstraňuje. Cíle, které běh sleduje, se do něj počítají, včetně jejich kontrol. Politiky rozpočtu na agenta a na pracovní prostor jsou samostatný mechanismus.
 :::
 
 ## Kde ho kontroluješ

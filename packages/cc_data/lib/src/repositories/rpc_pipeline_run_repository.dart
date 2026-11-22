@@ -57,6 +57,7 @@ class RpcPipelineRunRepository implements PipelineRunReader {
     totalCostMicros: d.totalCostMicros,
     totalTokens: d.totalTokens,
     dryRun: d.dryRun,
+    canRaiseCap: d.canRaiseCap,
   );
 
   /// The pinned graph, or null when the host sent none (list views) or sent

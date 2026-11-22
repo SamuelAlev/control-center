@@ -16,6 +16,15 @@
 ; a per-user installer with Start-menu + optional desktop shortcuts and an
 ; uninstaller. The installer is unsigned unless WINDOWS_CERT is configured, so
 ; first-run shows a SmartScreen warning (More info -> Run anyway).
+;
+; Code mode's runner (cc_server\bin\codemode\cc_codemode.exe, staged by
+; windows_package.sh) starts its sandboxed child only if its own file grants
+; the child's capability read and execute access. Copying the file drops that
+; entry, and in an all-users install the user cannot add it back at launch, so
+; [Run] has the runner add it (`--grant-runner-access`) after every copy, in
+; both install modes. It prints one line and exits 0 or 1; a failure does not
+; fail the install. The runner then fails its `runner_access` control, whose
+; detail names this command, and the server reports the runner unavailable.
 
 #ifndef AppVersion
   #define AppVersion "0.0.0"
@@ -94,4 +103,7 @@ Name: "{group}\{cm:UninstallProgram,{#AppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: desktopicon
 
 [Run]
+; No postinstall flag: runs during the install, as the installer's user
+; (elevated in an all-users install), hidden, and waited for.
+Filename: "{app}\cc_server\bin\codemode\cc_codemode.exe"; Parameters: "--grant-runner-access"; StatusMsg: "Granting code mode's sandbox access to its runner..."; Flags: runhidden waituntilterminated
 Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent

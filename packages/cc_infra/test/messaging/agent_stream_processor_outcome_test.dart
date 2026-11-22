@@ -9,6 +9,7 @@ import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/observability/domain/run_stage.dart';
@@ -381,6 +382,7 @@ class FakeAgentDispatchService implements AgentDispatchService {
     AgentRunLog runLog,
     String? summary, {
     RunCost? cost,
+    required RunEndReason endReason,
     RunLatencyProfile? latency,
     RunVerification? verification,
     String? nativeSessionId,
@@ -393,7 +395,10 @@ class FakeAgentDispatchService implements AgentDispatchService {
   Future<void> failRun(
     AgentRunLog runLog,
     String error, {
+    required RunEndReason endReason,
+    required RunCost? cost,
     String? errorCode,
+    DateTime? limitResetsAt,
   }) async {
     failedRuns.add(runLog);
   }

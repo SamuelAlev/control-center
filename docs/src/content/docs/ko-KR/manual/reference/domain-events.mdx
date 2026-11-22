@@ -2,7 +2,7 @@
 title: 도메인 이벤트
 description: 54개 도메인 이벤트의 전체 목록, 각 이벤트의 페이로드, 그리고 이를 소비하는 서버 측 구독자를 정리합니다.
 slug: ko-KR/매뉴얼/레퍼런스/도메인-이벤트
-sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
+sourceHash: f58123448c0f31c95774bbaebee89f1509940896
 ---
 
 ## 이벤트 버스
@@ -24,7 +24,10 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 | 이벤트              | 페이로드                                               | 발생 시점                                               |
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | 워크스페이스가 생성될 때                                |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | 에이전트가 실행을 마칠 때(성공 또는 실패)               |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | 에이전트의 프로세스 스트림이 끝날 때, 최종 상태가 기록되기 전. PR 대화 브리지와 분석용으로만 유지됨 |
+| `AgentRunSettled` | `agentId`, `workspaceId`, `runId`, `status`, `endReason`, `costMicros`, `wakeIds`, `spaceId?`, `conversationId?`, `limitResetsAt?`, `requestedByUserId?`, `wakeReason?` | 실행의 최종 상태가 기록될 때. 실행마다 정확히 한 번 발행됩니다. `endReason`은 `completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` 또는 `serverStopped`입니다. 서브 에이전트의 실행은 아무것도 발행하지 않습니다. |
+| `GoalSettled` | `goalId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `status`, `hold?`, `summary?`, `requestedByUserId?` | 목표가 끝나거나 사람의 리뷰를 기다리기 시작할 때 |
+| `WakeRuleEnded` | `ruleId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `reason`, `requestedByUserId?` | 일정 또는 감시가 끝날 때(한 번 실행되고 끝남, 만료, 실행 횟수나 비용 소진, 취소, 목표 종료, 담당자가 떠남) |
 | `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | 에이전트가 사람을 기다리기 시작할 때: 승인, `ask_user` 질문 또는 자격 증명 때문에 멈춘 실행(`kind`는 `approval`, `question`, `credential` 중 하나) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | 저장소가 등록될 때이며, 백그라운드 코드 인덱싱을 트리거합니다 |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | 스킬이 설치되거나 업데이트될 때이며, 공급망 스캔 판정을 함께 전달합니다 |
@@ -57,6 +60,16 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 | `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | 누군가 PR 댓글이나 리뷰 댓글에서 나를 멘션할 때                     |
 | `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | 내가 참여한 리뷰 스레드에 누군가 답글을 달 때                                 |
 | `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | 내가 참여한 리뷰 스레드를 누군가 해결할 때                                    |
+
+### 풀 리퀘스트 감시
+
+열린 풀 리퀘스트 폴러가 폴링하는 모든 풀 리퀘스트에 대해, 작성자가 누구든 발행하며, 에이전트의 `on:pr_*` 감시를 위한 것입니다. 세 이벤트 모두 `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `headRef`, `authorLogin`을 담습니다.
+
+| 이벤트 | 추가 페이로드 | 발생 시점 |
+| ----------------------- | ----------------------------------------------- | ---------- |
+| `PrWatchChecksSettled` | `passing`, `failedChecks`, `failedCheckUrl?` | 풀 리퀘스트 헤드의 모든 검사가 끝남 |
+| `PrWatchReviewActivity` | `decision`, `decisionChanged`, `newComments` | 풀 리퀘스트에 리뷰나 새 댓글이 달림 |
+| `PrWatchClosed` | `merged` | 풀 리퀘스트가 병합되거나 닫힘 |
 
 ## 메시징 이벤트
 
@@ -167,14 +180,20 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 | 채팅 스페이스 프로비저닝(인라인)    | `SpaceCreated`                                                                                       |
 | `PipelineTriggerDispatcher`         | 모든 `DomainEvent`; 활성화된 각 트리거가 자신의 유형으로 필터링합니다                                |
 | `SubPipelineResumeListener`         | `PipelineRunCompleted`, `PipelineRunFailed`                                                          |
-| `PipelineCostRollupListener`        | `AgentRunCompleted`                                                                                  |
-| `BudgetEvaluationListener`          | `AgentRunCompleted`                                                                                  |
+| `PipelineCostRollupListener`        | `AgentRunSettled`                                                                                    |
+| `BudgetEvaluationListener`          | `AgentRunSettled`                                                                                    |
 | `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled`(`meeting_summary` 실행만)        |
-| `PipelineStepResumeListener`        | `AgentRunCompleted`                                                                                  |
-| `AgentRunTaskCompleter`             | `AgentRunCompleted`                                                                                  |
-| `GoalSupervisor`                    | `AgentRunCompleted`                                                                                  |
-| `CheckerDispatchListener`           | `AgentRunCompleted`                                                                                  |
-| `TeamRoutingService`                | `AgentRunCompleted`, `TicketAssigned`                                                                |
+| `PipelineStepResumeListener`        | `AgentRunSettled`                                                                                    |
+| `AgentRunTaskCompleter`             | `AgentRunSettled`                                                                                    |
+| `GoalSupervisor`                    | `AgentRunSettled` — 목표의 다음 단계를 결정함                                                                   |
+| `CheckerDispatchListener`           | `AgentRunSettled` — 검사기를 깨우기로 큐에 넣고, 목표 구간과 리뷰는 건너뜀                                                  |
+| `TeamRoutingService`                | `AgentRunSettled`, `TicketAssigned`                                                                  |
+| `WakeQueueService` | `AgentRunSettled` — 실행이 끝나기를 기다리던 깨우기를 전달함 |
+| `WakeRuleService` | `AgentRunSettled`(자체 진행 루프), `GoalSettled`(목표의 일정을 종료), `PrWatch*`, `EnvironmentProcessExited`, `EnvironmentReady`, 티켓과 파이프라인 실행의 종료(감시), `WorkspaceMemberRemoved`(해당 사람의 일정을 종료) |
+| `PeerAskService` | `AgentRunSettled` — 에이전트들이 서로 한 질문을 마무리하고 질문한 쪽을 깨움 |
+| `LimitParkService` | `usageLimit`인 `AgentRunSettled` — 제공업체의 한도 초기화를 기다림 |
+| `ImprovementReviewService` | `GoalSettled`(검증된 목표)와 `AgentRunSettled` — 개선 리뷰를 큐에 넣고 그 결과를 읽음 |
+| 파이프라인 목표 단계(`goal.pursue`) | `GoalSettled`, `AgentRunSettled`, `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` — 단계를 재개하고, 오케스트레이션에 비용을 부과하며, 파이프라인 실행을 따라감 |
 | `OrchestrationRunListener`          | `PipelineRunCancelled`, `PipelineRunFailed`                                                          |
 | `MultiVendorTicketSyncCoordinator`  | `TicketCreated`, `TicketAssigned`, `TicketReassigned`, `TicketStatusChanged`, `TicketDetailsUpdated` |
 | `WorktreeGcListener`                | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`         |
@@ -227,6 +246,8 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 `AgentAwaitingInput`은 `AgentAwaitingInputPublisher`가 발행합니다. 이 발행자는 승인 레지스트리와 자격 증명 차단 레지스트리에 새 항목이 생기는지 감시하고, 각 `ask_user` 질문은 `AgentQuestionService`로부터 전달받습니다. 대기 하나가 이벤트 하나이며, 대기가 끝날 때는 아무것도 발행되지 않습니다.
 
 작성한 PR 관련 다섯 범주는 `forUserId`를 전달하므로, 워크스페이스의 모든 사람이 아니라 작성자에게 도달합니다.
+
+장기 실행 작업을 위한 프레임은 다섯 가지이며, 각각 그것과 관련된 사람(`for_user_id`)에게 전달됩니다: `notifications/goal_settled`(`GoalSettled`에서), `notifications/wake_rule_ended`(`WakeRuleEnded`에서), `notifications/improvement_proposed`, `notifications/pipeline_run_held`(오케스트레이션의 비용 상한에서 보류된 파이프라인 실행), `notifications/waiting_digest`(하루에 한 번, 사람을 기다리는 항목). 각 프레임은 `notification_kind`를 담습니다. `notify`는 `agentRunCompleted`에, `question`과 `review`는 `agentAwaitingInput`에 매핑됩니다. 이제 알림을 보내는 모든 프레임은 `notification_kind`를 담으며, `quiet: true`인 프레임(끝난 일정, 끝난 목표)은 토스트, 소리, 큰 푸시 없이 알림 센터로 갑니다.
 
 `RemoteEventForwarder`는 추가로 `TicketReassigned`를 `notifications/ticket_reassigned`로, 모든 `TaskLifecycleEvent`를 `notifications/task_<phase>`로 전달합니다. 어느 것도 알림 범주에 매핑되지 않습니다 — 알림 센터가 아니라 라이브 UI를 구동합니다. 멤버십 이벤트는 프레임으로 전달되지 않습니다. 포워더의 캐시를 무효화하고, 세션 호스트가 제거된 멤버의 워크스페이스 구독을 끊습니다.
 

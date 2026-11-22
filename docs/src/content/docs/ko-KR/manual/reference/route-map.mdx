@@ -2,7 +2,7 @@
 title: 라우트 맵
 description: Control Center가 등록하는 모든 라우트를 화면 및 쿼리 매개변수와 함께 정리합니다.
 slug: ko-KR/매뉴얼/레퍼런스/라우트-맵
-sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
+sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
 ---
 
 ## 앱 셸
@@ -40,6 +40,12 @@ sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 | `/pipelines`                            | —                                         | 파이프라인 실행 목록                                                                                                                                                     |
 | `/pipelines/run`                        | `?templateId=<id>`                        | 수동 실행 런처                                                                                                                                                           |
 | `/pipelines/:runId`                     | —                                         | 파이프라인 실행 상세(단계 타임라인)                                                                                                                                      |
+| `/goals` | — | 목표 목록. 리뷰 대기 중, 진행 중, 종료됨으로 묶여 있음 |
+| `/goals/:goalId` | `?edit=contract` | 목표 하나: 현재 상태, 완료의 기준, 검증, 일정과 깨우기. `edit=contract`는 일시 중지된 목표에서 계약 편집기를 엽니다 |
+| `/schedules` | — | 상태별로 묶인 일정과 감시 목록, 그리고 **새 일정** |
+| `/schedules/:ruleId` | — | 일정 하나: 메모, 세부 정보, 최근 깨우기와 실행 |
+| `/improvements` | — | 개선 제안 목록, 상태별로 묶여 있음 |
+| `/improvements/:proposalId` | — | 제안 하나: 바뀌는 내용, 근거, 평가, 결정 |
 | `/plans`                                | —                                         | Plan Studio 허브: 활성 플랜, 플랜 문서, 플레이북                                                                                                                          |
 | `/plans/:kind/:id`                      | —                                         | 플랜 하나를 위한 Plan Studio. `kind`는 `orchestration` 또는 `document`입니다                                                                                              |
 | `/meetings`                             | —                                         | 회의 목록                                                                                                                                                                |
@@ -99,6 +105,7 @@ sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 | `/settings/workspace/skills`       | 스킬 구성                                                                                           |
 | `/settings/memory`                 | 워크스페이스 메모리: 팩트, 정책, 지식 그래프                                                        |
 | `/settings/workspace/permissions`  | 에이전트 권한: 가드레일 매트릭스와 가정 시나리오 프로브                                             |
+| `/settings/workspace/schedules` | 일정 한도, cron 일정과 요약의 시간대, 그리고 서버가 시작한 실행이 답을 기다리는 시간(관리자는 편집, 구성원은 읽기) |
 | `/settings/pipelines`              | 파이프라인 템플릿                                                                                   |
 | `/settings/pipelines/:templateId`  | 파이프라인 템플릿 편집기(드래그 앤 드롭 캔버스)                                                     |
 

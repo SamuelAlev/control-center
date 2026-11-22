@@ -2,23 +2,33 @@
 title: Ciclul de viață al trimiterii agenților
 description: Ce se întâmplă între sosirea unui mesaj și închiderea unui jurnal de rulare — asamblarea promptului, worktree-urile, identitatea, ce limitează o rulare și cum este înregistrat cu onestitate rezultatul ei.
 slug: ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii
-sourceHash: 13e7fe3ed86c8659c5fec818e0b89737241e2b9d
+sourceHash: 07c46e22e30f1a10e64b7fb949c78bdae9747efa
 ---
 
 ## Ce este o trimitere
 
 O trimitere este o rulare a unui agent, într-o conversație, pe un adaptor. Tot ce ține de ea se întâmplă pe `cc_server`: clientul trimite un mesaj și apoi urmărește cum vin evenimentele înapoi. Nu există nicio cale de trimitere în vreun client.
 
-Agenții sunt treziți din șase motive, pe care rularea le poartă drept **context de trezire**, ca agentul să știe _de ce_ este treaz:
+Fiecare rulare poartă un **context de trezire** care spune _de ce_ este trezit agentul. O rulare pe care o pornești trimițând un mesaj este `userMessage`; fiecare rulare pornită de server din proprie inițiativă începe ca o **trezire** durabilă în coada spațiului de lucru și poartă motivul trezirii (vezi [Programe și treziri](/ro-RO/manual/ghiduri-practice/programe-si-treziri/)):
 
 | Motiv de trezire | Declanșator                                                  |
-| ---------------- | ------------------------------------------------------------ |
-| `userMessage`    | Cineva a trimis un mesaj într-un spațiu sau a menționat agentul |
+| -------------------- | ------- |
+| `userMessage`    | Cineva a trimis un mesaj într-un spațiu                         |
 | `assignment`     | Un tichet a fost atribuit agentului                          |
 | `pipelineStep`   | Un pas de pipeline l-a trimis                                |
-| `childCompleted` | Un tichet copil s-a terminat                                 |
-| `followUp`       | Un puls de urmărire programat                                |
-| `recovery`       | Calea de recuperare a retrimis după o eroare                 |
+| `childCompleted` | Un tichet delegat sau copil s-a terminat, sau s-a încheiat rularea unui membru al echipei |
+| `schedule` | Un program sau o buclă a pornit |
+| `watch` | Ceva ce ascultă o urmărire s-a întâmplat (verificările unui pull request, o revizuire, un mediu, un tichet, o rulare de pipeline) |
+| `goalContinuation` | Următorul segment al unui obiectiv |
+| `goalVerification` | Verificările sau revizuirea unui obiectiv au constatat că nu este încă terminat |
+| `goalReview` | Revizuirea doar în citire a afirmației unui obiectiv că este terminat |
+| `peerMessage` | Un alt agent i-a trimis un mesaj sau o întrebare, sau a fost menționat cu @, sau este verificatorul spațiului |
+| `peerReply`      | Răspunsul la o întrebare pe care a adresat-o unui alt agent  |
+| `limitReset` | Limita de utilizare a providerului la care s-a oprit s-a resetat |
+| `improvementReview` | Revizuirea după un obiectiv verificat, sau `/refine` |
+| `recovery` | Munca întreruptă de o repornire a serverului sau de un eșec |
+
+O trezire este livrată într-o rulare activă a agentului din acea conversație când rularea primește input și acționează pentru aceeași persoană; altfel, așteaptă ca rularea respectivă să se încheie și pornește una proprie. Comenzile slash sunt citite doar dintr-un mesaj scris de o persoană; în orice altă rulare același text este un mesaj obișnuit.
 
 Contextul de trezire poartă identificatorii care însoțesc motivul — tichet, spațiu, mesaj, rulare de pipeline — iar aceștia sunt injectați în mediul și în promptul agentului.
 
@@ -104,17 +114,17 @@ Nu există în mod deliberat **niciun plafon de tururi nicăieri**. Un număr fi
 - **modelul se oprește** de la sine;
 - **un om o oprește** sau preia conversația (ceea ce pune pe pauză harnessul încorporat la următoarea limită de tur curată — o rulare Claude Code, care nu are o limită sigură, este oprită în schimb);
 - **se declanșează supraveghetorul de tăcere.** Fără nicio ieșire pe durata pragului, iar sesiunea este terminată cu o eroare `silentRun`. Valoarea implicită este de 15 minute, coborând la 10 în modurile predominant de citire (revizuire și plan); un agent o poate suprascrie între 1 și 240 de minute. Supraveghetorul este armat când un proces copil își raportează PID-ul, așa că acoperă CLI-ul Claude Code — **nu** harnessul încorporat, care nu generează niciun proces;
-- **intervine un plafon de cost** — dar doar pentru comenzile autonome.
+- **intervine un plafon de cost** — la segmentele și revizuirile obiectivelor, la rulările programelor și urmăririlor, la revizuirea de îmbunătățire și la rulările de pipeline sub o orchestrare plafonată.
 
 Gardul împotriva buclei fatale nu este un terminator: trei apeluri identice de instrument la rând și bucla _direcționează_ agentul să schimbe abordarea.
 
 :::note[Un tur normal nu are plafon de cost]
-Gardul de cost din sesiune este conectat doar pentru `/goal` și `/loop`; orice altă rulare nu primește niciun buget. Pentru acele comenzi, un segment nesupravegheat poate consuma implicit 500 de cenți (5,00 $), cu un îndemn soft la 80% care cere agentului să încheie curat înainte de oprirea dură și cu un buget de obiectiv durabil de 5.000 de cenți (50,00 $) de-a lungul segmentelor. Un `/goal --budget` explicit nu este niciodată depășit cu un segment întreg.
+O rulare pe care o pornești cu un mesaj nu are buget. Un segment de obiectiv poate cheltui 5 dolari, sau ce a rămas din bugetul obiectivului (50 de dolari implicit), dacă e mai puțin; o revizuire a obiectivului 2 dolari; o rulare pornită de un program sau de o urmărire 5 dolari; revizuirea de îmbunătățire 1 dolar. La 90%, harnessul încorporat și Claude Code îndrumă agentul să încheie curat înainte de oprirea fermă; un agent ACP este anulat la plafon. Vezi [Gestionează costurile](/ro-RO/manual/ghiduri-practice/gestioneaza-costuri/#plafonează-o-rulare-autonomă).
 :::
 
 Puse împreună, un tur interactiv obișnuit pe harnessul încorporat nu are plafon de tururi, plafon de cost sau supraveghetor de tăcere. Se termină când modelul se oprește sau când îl oprești tu. Acesta este un compromis deliberat — alternativele ucid toate munca lungă legitimă — dar înseamnă că o rulare interactivă nesupravegheată nu este limitată de nimic altceva decât de judecata modelului însuși.
 
-La mijlocul rulării, un mesaj trimis unui agent aflat în rulare este pus în coadă ca **direcționare** și consumat la următoarea limită de tur, așa că poți îndrepta o rulare fără să o omori. Direcționarea, pauzarea, subagenții și contractul de finalizare sunt funcții ale harnessului încorporat; Claude Code nu are niciuna dintre ele.
+La mijlocul rulării, un mesaj trimis unui agent aflat în rulare este pus în coadă ca **direcționare** și consumat la următoarea limită de tur, așa că poți îndrepta o rulare fără să o omori. O rulare doar în citire, cum este revizuirea unui obiectiv, nu primește niciun mesaj cât timp rulează, iar direcționarea unei rulări care lucrează pentru altcineva necesită acces de scriere la depozitele spațiului. Direcționarea, pauzarea, subagenții și contractul de finalizare sunt funcții ale harnessului încorporat; Claude Code nu are niciuna dintre ele.
 
 ## Cum este înregistrată o rulare
 
@@ -130,11 +140,11 @@ Când o rulare se termină fără livrabilul cerut de modul ei — o rulare în 
 Acest lucru este deliberat. Schimbarea stării ar mișca mașini de stări de tichete și pipeline-uri care nu au nimic de-a face cu artefactul lipsă. Înseamnă și că „stare: completed” singur nu este niciodată suficient pentru a concluziona că o rulare a reușit — citește rezumatul.
 :::
 
-Închiderea rulării publică `AgentRunCompleted` și multe depind de el: cumulul de cost al pipeline-ului, reluarea unui pas de pipeline care aștepta rularea, finalizarea tichetului suport, maparea unei orchestrări către o stare terminală, decizia de continuare sau oprire a supraveghetorului de obiective, rolul de verificator și evaluarea bugetului de după rulare. Lista de prezență urmează separat, urmărind jurnalele de rulare recente, nu evenimentul. Notificarea „Agentul a terminat” nu se află pe această listă: evenimentul se declanșează când se încheie fluxul procesului, înainte ca răspunsul să fie scris, așa că notificarea este `MessageReceived` al turei, publicat după ce mesajul este persistat.
+Odată ce starea finală a rulării este scrisă, serverul publică `AgentRunSettled` exact o dată, cu motivul pentru care rularea s-a încheiat (`completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` sau `serverStopped`), iar de el depind multe: cumulul de cost al pipeline-ului, reluarea unui pas de pipeline care aștepta rularea, finalizarea tichetului suport, maparea unei orchestrări către o stare terminală, decizia de continuare sau oprire a supraveghetorului de obiective, răspunsul la o întrebare pe care a pus-o un alt agent, următoarea pornire a unei bucle care își stabilește singură ritmul, pauza la limita de utilizare, rolul de verificator și evaluarea bugetului de după rulare. O rulare întreruptă de o oprire a serverului (`serverStopped`) nu este tratată niciodată ca un eșec; lucrul reia după repornire. `AgentRunCompleted` este publicat în continuare, mai devreme, doar pentru puntea pull request-urilor și analiză. Lista de prezență urmează separat, urmărind jurnalele de rulare recente, nu evenimentul. Notificarea „Agentul a terminat” nu se află pe această listă: evenimentul se declanșează când se încheie fluxul procesului, înainte ca răspunsul să fie scris, așa că notificarea este `MessageReceived` al turei, publicat după ce mesajul este persistat.
 
 ## Bugete, după fapt
 
-Aplicarea bugetului este o _reacție_, nu o poartă. Când o rulare se încheie, evaluatorul compară cheltuiala agentului de la începutul lunii cu plafonul lui efectiv (o politică de buget legată, dacă există, altfel cifra lunară proprie a agentului; zero înseamnă nelimitat). Depășirea pragului soft înregistrează un incident de avertizare; epuizarea bugetului înregistrează un incident sever și comută starea ciclului de viață al agentului în `paused` pe organigramă. Trimiterea acceptă în continuare lucru de la acel agent. Un trigger de pipeline `BudgetThresholdCrossed` poate porni muncă de continuare din același eveniment.
+Aplicarea bugetului este o _reacție_, nu o poartă. Când o rulare se încheie, evaluatorul compară cheltuiala agentului de la începutul lunii cu plafonul lui efectiv (o politică de buget legată, dacă există, altfel cifra lunară proprie a agentului; zero înseamnă nelimitat). Depășirea pragului soft înregistrează un incident de avertizare; epuizarea bugetului înregistrează un incident sever și comută starea ciclului de viață al agentului în `paused` pe organigramă. Trimiterea acceptă în continuare lucrul pe care îl trimiți acelui agent, dar trezirile pentru el (programe, segmente de obiective, răspunsuri) așteaptă cât timp este pus pe pauză, cel mult 7 zile. Un trigger de pipeline `BudgetThresholdCrossed` poate porni muncă de continuare din același eveniment.
 
 ## Descendența reîncercărilor
 
@@ -147,4 +157,5 @@ Fiecare jurnal de rulare poate purta descendența reîncercărilor — un id de 
 - [Guardrail-uri](/ro-RO/manual/concepte/guardrail-uri/): politica de clase de efect prin care trece fiecare apel controlat
 - [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/): povestea izolării, în întregime
 - [Multiplayer](/ro-RO/manual/concepte/multiplayer/): direcționare, preluare și cadranul de autonomie
-- [Evenimente de domeniu](/ro-RO/manual/concepte/evenimente-de-domeniu/): ce declanșează `AgentRunCompleted`
+- [Evenimente de domeniu](/ro-RO/manual/concepte/evenimente-de-domeniu/): ce declanșează `AgentRunSettled`
+- [Urmărește un obiectiv](/ro-RO/manual/ghiduri-practice/urmareste-obiectiv/) și [Programe și treziri](/ro-RO/manual/ghiduri-practice/programe-si-treziri/): rulări pe care serverul le pornește singur

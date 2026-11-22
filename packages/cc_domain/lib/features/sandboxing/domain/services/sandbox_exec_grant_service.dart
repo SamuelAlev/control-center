@@ -2,6 +2,32 @@ import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/features/sandboxing/domain/entities/sandbox_exec_grant.dart';
 import 'package:cc_domain/features/sandboxing/domain/repositories/sandbox_exec_grant_repository.dart';
 
+/// The run, agent and conversation that need a tree opened, when the caller
+/// knows them ([SandboxExecGrantService.approvedRoots]).
+typedef ExecGrantAsker = ({
+  String? runId,
+  String? agentId,
+  String? conversationId,
+});
+
+/// One run's exec-grant asks, kept by the session for the run's life.
+///
+/// A card nobody answered stores nothing, so the next run asks again; within
+/// the run, the root is not asked about again ([SandboxExecGrantService]
+/// withholds it at once), and commands that need the same root at the same
+/// time share one card instead of raising one each.
+final class ExecGrantRunAsks {
+  /// Exec targets an after-the-fact offer is asking about, so a retry storm
+  /// inside one run raises one offer. Kept by the session.
+  final Set<String> offering = <String>{};
+
+  final Map<String, Future<bool?>> _pending = {};
+  final Set<String> _unanswered = <String>{};
+
+  /// Whether a card about [root] went unanswered in this run.
+  bool unanswered(String root) => _unanswered.contains(root);
+}
+
 /// Operator conversation for running binaries from an agent's worktree →
 /// sandbox exec roots.
 ///
@@ -69,6 +95,13 @@ class SandboxExecGrantService {
   /// unmanaged candidate is withheld and nothing is recorded — fail-closed,
   /// matching the action guard's "prompt with no approver ⇒ deny" — while a
   /// managed candidate is still granted, because it never needed an answer.
+  ///
+  /// [asker] names the run, agent and conversation that need the tree, when
+  /// the caller knows them: the card carries them, so a run the server
+  /// started waits the workspace's unattended expiry and the awaiting-input
+  /// consumers see which run waits. A card nobody answered (expired,
+  /// withdrawn) refuses this attempt and records nothing: the tree is asked
+  /// about again next time. Only a person's answer is stored.
   Future<List<String>> approvedRoots({
     required String workspaceId,
     required List<String> candidateRoots,
@@ -76,6 +109,8 @@ class SandboxExecGrantService {
     String? spaceId,
     String? principalId,
     String? label,
+    ExecGrantAsker? asker,
+    ExecGrantRunAsks? runAsks,
   }) async {
     final approved = <String>[];
     // Read lazily: a denied or undecided unmanaged candidate needs no full scan.
@@ -102,15 +137,20 @@ class SandboxExecGrantService {
         }
         continue;
       }
-      final granted = await _ask(
-        workspaceId: workspaceId,
-        path: root,
-        spaceId: spaceId,
-        principalId: principalId,
-        title: label == null
-            ? 'Let agents run programs from this workspace copy?'
-            : 'Let agents run programs from $label?',
-        detail: _eagerDetail(root, label),
+      final granted = await _askOnce(
+        runAsks,
+        root,
+        () => _ask(
+          workspaceId: workspaceId,
+          path: root,
+          spaceId: spaceId,
+          principalId: principalId,
+          asker: asker,
+          title: label == null
+              ? 'Let agents run programs from this workspace copy?'
+              : 'Let agents run programs from $label?',
+          detail: _eagerDetail(root, label),
+        ),
       );
       if (granted) {
         approved.add(root);
@@ -135,6 +175,8 @@ class SandboxExecGrantService {
   /// about. A stored decision — including a deny, and including one on a
   /// descendant, which [approvedRoots] answers by withholding the root — still
   /// wins; a tree held closed that way has nothing to announce.
+  ///
+  /// [asker] and an unanswered card follow [approvedRoots].
   Future<String?> recordDeniedExec({
     required String workspaceId,
     required String deniedPath,
@@ -142,6 +184,8 @@ class SandboxExecGrantService {
     List<String> managedRoots = const [],
     String? spaceId,
     String? principalId,
+    ExecGrantAsker? asker,
+    ExecGrantRunAsks? runAsks,
   }) async {
     final root = _enclosingRoot(deniedPath, candidateRoots);
     if (root == null) {
@@ -161,13 +205,18 @@ class SandboxExecGrantService {
       final decisions = await _repo.grants(workspaceId);
       return _hasDeniedDescendant(decisions, root) ? null : root;
     }
-    final granted = await _ask(
-      workspaceId: workspaceId,
-      path: root,
-      spaceId: spaceId,
-      principalId: principalId,
-      title: 'Allow agents to run programs from this workspace copy?',
-      detail: _lazyDetail(deniedPath, root),
+    final granted = await _askOnce(
+      runAsks,
+      root,
+      () => _ask(
+        workspaceId: workspaceId,
+        path: root,
+        spaceId: spaceId,
+        principalId: principalId,
+        asker: asker,
+        title: 'Allow agents to run programs from this workspace copy?',
+        detail: _lazyDetail(deniedPath, root),
+      ),
     );
     return granted ? root : null;
   }
@@ -184,13 +233,46 @@ class SandboxExecGrantService {
   Future<void> revoke(String workspaceId, String id) =>
       _repo.revoke(workspaceId, id);
 
-  Future<bool> _ask({
+  /// Asks about [root] at most once at a time in a run, and not again in it
+  /// once a card went unanswered: such a root is withheld at once, without a
+  /// card and without waiting. Only a stored decision answers later runs.
+  static Future<bool> _askOnce(
+    ExecGrantRunAsks? asks,
+    String root,
+    Future<bool?> Function() ask,
+  ) async {
+    if (asks == null) {
+      return await ask() ?? false;
+    }
+    if (asks._unanswered.contains(root)) {
+      return false;
+    }
+    // Marked unanswered inside the shared future, before any waiter resumes,
+    // so a command arriving after the card came down never raises another.
+    final answer = await (asks._pending[root] ??= ask()
+        .then((a) {
+          if (a == null) {
+            asks._unanswered.add(root);
+          }
+          return a;
+        })
+        // A block body: `remove` returns this very future, and a
+        // `whenComplete` that returned it would wait on itself.
+        .whenComplete(() {
+          asks._pending.remove(root);
+        }));
+    return answer ?? false;
+  }
+
+  /// A person's answer, false with no approver, or null when nobody answered.
+  Future<bool?> _ask({
     required String workspaceId,
     required String path,
     required String title,
     required String detail,
     String? spaceId,
     String? principalId,
+    ExecGrantAsker? asker,
   }) async {
     final port = _confirm;
     if (port == null) {
@@ -203,17 +285,28 @@ class SandboxExecGrantService {
     // Approve below is already a stored, revocable grant for this folder,
     // asked once, so there is no later prompt for a standing approval to
     // spare.
+    var unanswered = false;
     final approved = await port.requestApproval(
       ConfirmationRequest(
         spaceId: spaceId ?? '',
         workspaceId: workspaceId,
+        conversationId: asker?.conversationId,
+        agentId: asker?.agentId,
+        runId: asker?.runId,
         title: title,
         detail: detail,
         severity: ConfirmationSeverity.warning,
         kind: ConfirmationKind.capabilityEscalation,
         fingerprint: 'sandbox-exec-grant:$path',
+        onUnanswered: () => unanswered = true,
       ),
     );
+    if (unanswered) {
+      // Nobody answered (expired, withdrawn): this attempt is refused and
+      // nothing is stored, so the tree is asked about again next run. A
+      // missing answer is never a grant, and never a standing deny.
+      return null;
+    }
     await _repo.upsert(
       SandboxExecGrant(
         id: _idFactory(),

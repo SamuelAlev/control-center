@@ -22,6 +22,12 @@ void main() {
         memoryRoute(workspaceIdParam),
         apiKeysRoute(workspaceIdParam),
         observabilityRoute(workspaceIdParam),
+        goalsRoute(workspaceIdParam),
+        goalRoute(workspaceIdParam, ':recordId'),
+        schedulesRoute(workspaceIdParam),
+        scheduleRoute(workspaceIdParam, ':recordId'),
+        improvementsRoute(workspaceIdParam),
+        improvementRoute(workspaceIdParam, ':recordId'),
         // Every settings destination, derived from the IA rather than listed
         // by hand — the hand-written copy is exactly what used to drift.
         for (final entry in kSettingsNavItems) entry.route(workspaceIdParam),

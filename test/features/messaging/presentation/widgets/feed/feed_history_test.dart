@@ -1,6 +1,4 @@
 import 'package:cc_domain/core/domain/entities/message.dart';
-import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
-import 'package:cc_domain/features/messaging/domain/repositories/space_read_repository.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/conversation_outline_entry.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/font_settings.dart';
@@ -17,29 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../../helpers/active_workspace.dart';
-
-class _FakeSpaceReadRepository implements SpaceReadRepository {
-  @override
-  Future<void> markSpaceRead(
-    String workspaceId,
-    String spaceId,
-    String userId, {
-    String? conversationId,
-  }) async {}
-
-  @override
-  Stream<FeedPosition?> watchUserLastReadAt(
-    String workspaceId,
-    String spaceId,
-    String userId,
-  ) => Stream.value(null);
-
-  @override
-  Stream<Map<String, FeedPosition>> watchUserSpaceReads(
-    String workspaceId,
-    String userId,
-  ) => Stream.value(const {});
-}
+import '../../../../../helpers/fake_conversation_read_repository.dart';
 
 const int _total = 200;
 const int _live = 20;
@@ -120,10 +96,9 @@ Future<ProviderContainer> _pumpFeed(
         }),
       spaceTurnRelayProvider('ch-1').overrideWith((ref) {}),
       codeFontFamilyProvider.overrideWith((ref) => 'monospace'),
-      spaceUserLastReadAtProvider(
-        'ch-1',
-      ).overrideWith((ref) => Stream.value(null)),
-      spaceReadRepositoryProvider.overrideWithValue(_FakeSpaceReadRepository()),
+      conversationReadRepositoryProvider.overrideWithValue(
+        FakeConversationReadRepository(),
+      ),
       agentDetailProvider('agent-1').overrideWith((ref) async => null),
     ],
   );

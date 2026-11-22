@@ -13,6 +13,7 @@ import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart'
     show currentUserIdProvider;
 import 'package:control_center/features/inbox/presentation/models/inbox_attention_item.dart';
+import 'package:control_center/features/inbox/providers/work_attention_sources.dart';
 import 'package:control_center/features/messaging/providers/pending_confirmations_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_lane_providers.dart';
@@ -142,7 +143,12 @@ class _SyncFailureSource implements InboxAttentionSource {
 /// The registered attention sources. Features add theirs here (or via a DI
 /// override) exactly like the command-palette sources.
 final inboxAttentionSourcesProvider = Provider<List<InboxAttentionSource>>(
-  (_) => [_AgentApprovalsSource(), _SyncFailureSource()],
+  (_) => [
+    _AgentApprovalsSource(),
+    _SyncFailureSource(),
+    GoalsNeedingPersonSource(),
+    ImprovementsProposedSource(),
+  ],
 );
 
 /// The aggregated, sorted attention strip. Rebuilds reactively as its sources'
@@ -386,6 +392,31 @@ final collapsedInboxSectionsProvider =
     NotifierProvider<CollapsedInboxSectionsNotifier, Set<PrInboxSection>>(
       CollapsedInboxSectionsNotifier.new,
     );
+
+/// The inbox list's last scroll offset per workspace id, kept for the
+/// session. Opening a pull request replaces the inbox route (the detail is
+/// a sibling route under the shell, not pushed over it), so the route's own
+/// `PageStorage` bucket goes with it and a `PageStorageKey` alone restores
+/// nothing on the way back.
+///
+/// Deliberately not reactive state: nothing rebuilds on it, and the screen
+/// saves from `deactivate`, where modifying a provider's state is refused
+/// (the tree is locked).
+class InboxScrollOffsets {
+  final Map<String, double> _offsets = {};
+
+  /// The remembered offset for [workspaceId], or 0 when none is.
+  double of(String? workspaceId) => _offsets[workspaceId] ?? 0;
+
+  /// Remembers [offset] as the inbox position for [workspaceId].
+  void remember(String workspaceId, double offset) =>
+      _offsets[workspaceId] = offset;
+}
+
+/// Last inbox scroll offset per workspace id.
+final inboxScrollOffsetsProvider = Provider<InboxScrollOffsets>(
+  (ref) => InboxScrollOffsets(),
+);
 
 // Data
 

@@ -2,7 +2,7 @@
 title: Barreiras — uma única política para todas as ações mutáveis
 description: Por que motivo o Control Center encaminha todos os efeitos secundários dos agentes através de um único motor allow/prompt/deny, como a taxonomia de ActionClass se mantém pequena de propósito e o que o dial de autonomia realmente altera.
 slug: pt-PT/manual/conceitos/barreiras
-sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
+sourceHash: bb98b2ca26ae104ab7701d4d381cd5c41d25d32f
 ---
 
 Os agentes do Control Center podem eliminar ficheiros, fazer push de branches,
@@ -34,6 +34,17 @@ desligado a sandbox para todos com `--sandbox off`. Para qualquer execução que
 arranque sem sandbox, as barreiras são a camada de aplicação mais exterior, e não
 uma política assente sobre um piso, o que vale a pena saber quando decide quão
 permissivo quer ser.
+
+### Chamadas que um script faz
+
+Um script de [modo de código](/pt-PT/manual/conceitos/modo-de-codigo/) chama ferramentas em código, muitas de cada vez, mas cada uma das suas chamadas é uma chamada de ferramenta separada para o motor. Passa pelo mesmo portão do harness ou pelo mesmo portão do despachador MCP que uma chamada direta, com as mesmas regras, o mesmo pedido de aprovação e a mesma entrada de auditoria, e nada do que faz fica aprovado só porque a chamada `repl` que o iniciou foi aprovada.
+
+Duas regras extra aplicam-se às chamadas feitas a partir de um script, porque um só script pode fazer centenas de chamadas e apanhar cada recusa:
+
+- no máximo 10 das suas chamadas chegam a uma pessoa para aprovação; as seguintes que precisariam de uma pessoa são recusadas sem cartão de aprovação;
+- depois de uma pessoa recusar uma das suas chamadas, as restantes chamadas que precisem de aprovação são recusadas sem perguntar.
+
+Um cartão aberto por um script indica-o e permite abrir o script. Se o script terminar enquanto o cartão estiver aberto, o cartão é retirado, e uma resposta que chegue depois disso fica registada como recusa e não aprova nada.
 
 ## ActionClass: uma taxonomia deliberadamente fechada
 
@@ -269,6 +280,7 @@ receber.
 - [Sandbox e segurança](/pt-PT/manual/conceitos/sandbox-e-seguranca/): o que
   realmente limita uma execução de agente e até onde chega o piso do sistema
   operativo por baixo deste motor
+- [Modo de código](/pt-PT/manual/conceitos/modo-de-codigo/): scripts cujas chamadas de ferramentas passam todas por este motor
 - [Multijogador — identidade, pertença e presença](/pt-PT/manual/conceitos/multijogador/):
   espaços, principais e onde vive o dial de autonomia
 - [Configurar guardrails](/pt-PT/manual/guias/configurar-guardrails/): escrever e

@@ -2,7 +2,7 @@
 title: Mode
 description: Mengapa sebuah space, bukan agen, yang membawa sebuah mode; apa yang dijamin oleh masing-masing dari keempat mode; dan di mana jaminan itu bersifat struktural alih-alih sekadar berupa prompt.
 slug: id-ID/panduan-pengguna/konsep/mode
-sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
+sourceHash: 4450ebc86d95efb0366bc3f0ab4ddebc6d3a3adb
 ---
 
 ## Apa itu mode
@@ -87,10 +87,7 @@ Baru setelah persetujuan diberikan, panggilan berikutnya mengalihkan space ke
 chat. Penolakan memungkinkan agen membuka permintaan baru untuk rencana yang
 direvisi.
 
-Untuk keluar dari mode rencana sendiri, ganti dropdown penyusun pesan (atau
-Shift+Tab). `exit_plan_mode` diputuskan dengan alat MCP `decide_approval`.
-Baris "persetujuan agen" di Kotak masuk adalah hal yang berbeda: prompt
-konfirmasi per giliran dari agen yang sedang berjalan.
+Untuk keluar dari mode rencana sendiri, ganti dropdown penyusun pesan (atau Shift+Tab). `exit_plan_mode` diputuskan oleh run agen dengan alat MCP `decide_approval`. Baris "persetujuan agen" di Kotak masuk adalah hal yang berbeda: prompt konfirmasi per giliran dari agen yang sedang berjalan.
 
 ### Tinjauan — hanya-baca, tanpa kontrak
 
@@ -162,6 +159,8 @@ proses, mutasi ruang kerja, dan kontrol enclosure. Egress jaringan dan akses
 rahasia memang sengaja dibiarkan pada defaultnya — riset adalah inti dari mode
 hanya-baca.
 
+**Mode kode tidak pernah memperluas sebuah mode.** Filter alat mode diterapkan lebih dulu, dan skrip [mode kode](/id-ID/panduan-pengguna/konsep/mode-kode/) `repl` hanya dapat memanggil alat yang tersisa sesudahnya, melalui gerbang yang sama dengan panggilan langsung. Verba yang dipatok mode (verba keluarannya, `exit_plan_mode`, `ask_user`) dan siklusnya sendiri (verba node tinjauan dalam mode tinjauan) selalu dipanggil langsung, sehingga sebuah run tidak perlu menulis skrip untuk menyerahkan hasilnya atau mengajukan pertanyaan. Dalam [mode vibe](/id-ID/panduan-pengguna/panduan-praktis/arahkan-pekerja-latar-belakang/), run pengarah hanya menyimpan alat baca dan tanpa alat khusus skrip, sehingga skripnya hanya menjangkau alat-alat baca itu.
+
 ## Memilih dan mengganti mode
 
 Dropdown mode di penyusun pesan menawarkan **tiga** opsi: Agent (chat), Plan,
@@ -203,4 +202,5 @@ tidaknya di server.
 - [Model agen](/id-ID/panduan-pengguna/konsep/model-agen/): transport mana yang dapat menegakkan mode
 - [Pagar pengaman](/id-ID/panduan-pengguna/konsep/pagar-pengaman/): kebijakan kelas efek yang menjadi sasaran preset sebuah mode
 - [Orkestrasi](/id-ID/panduan-pengguna/konsep/orkestrasi/): apa yang dilakukan proposal orkestrasi yang disetujui
+- [Mode kode](/id-ID/panduan-pengguna/konsep/mode-kode/): skrip yang memanggil alat-alat mode
 - [Gunakan mode rencana](/id-ID/panduan-pengguna/panduan-praktis/mode-rencana/): panduan praktisnya

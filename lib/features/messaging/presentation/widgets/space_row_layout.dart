@@ -3,27 +3,26 @@ import 'dart:math' as math;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row_adornments.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row_label.dart';
-import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:flutter/rendering.dart' show OverflowBoxFit;
 import 'package:flutter/widgets.dart';
 
 export 'package:control_center/features/messaging/presentation/widgets/space_row_adornments.dart'
-    show kSpaceSidebarTrailingControl;
+    show kSpaceRowSignalSize, kSpaceSidebarTrailingControl;
 
 /// Horizontal inset of a space row.
 const double kSpaceSidebarPad = 10;
 
-/// Status-mark column. The title starts one gap to its end.
+/// Air above and below a space card's title. The title row keeps both insets
+/// whether or not its list is open, so opening does not resize the title
+/// block. Kept tight so the space list reads as one list, not separate cards.
+const double kSpaceSidebarCardInset = AppSpacing.xs;
+
+/// Icon column of a row that leads with an icon (the tray's link rows).
+/// Space and conversation rows have none: their title starts at the inset.
 const double kSpaceSidebarMarkSlot = 16;
 
-/// Gap after the status mark, wide enough to clear the unread count.
+/// Gap after that icon column.
 const double kSpaceSidebarMarkGap = 16;
-
-/// Nested-conversation status column: a dot or spinner, no hanging PR count.
-const double kConversationMarkSlot = 12;
-
-/// Gap after a conversation mark. Nothing hangs past the dot.
-const double kConversationMarkGap = AppSpacing.xs;
 
 /// Conversation titles. One step under the space name: [CcTypography.bodySm].
 const double kConversationLabelFontSize = 13;
@@ -34,7 +33,7 @@ const double kConversationRowExtent = 24;
 /// Width the overflow trigger occupies, including its leading gap.
 const double kSpaceSidebarOverflowSlot = kSpaceSidebarTrailingControl + 4;
 
-/// Air inside a two-line row, so the branch shares the title's wash.
+/// Air inside a two-line row, so the subtitle shares the title's wash.
 const double _kTwoLinePad = AppSpacing.xxs;
 
 /// Title, optional subtitle, and an overflow slot that does not shift text.
@@ -43,7 +42,8 @@ class SpaceRowLayout extends StatelessWidget {
   const SpaceRowLayout({
     super.key,
     required this.tokens,
-    required this.leading,
+    this.leading,
+    this.signal,
     required this.label,
     this.labelScrambling = false,
     required this.contentColor,
@@ -54,10 +54,6 @@ class SpaceRowLayout extends StatelessWidget {
     required this.transitioning,
     required this.hasMenu,
     required this.showMenu,
-    required this.status,
-    required this.unread,
-    required this.leadingHandlesRunning,
-    required this.muted,
     required this.hoverColor,
     this.markSlot = kSpaceSidebarMarkSlot,
     this.markGap = kSpaceSidebarMarkGap,
@@ -73,8 +69,12 @@ class SpaceRowLayout extends StatelessWidget {
   /// Tokens for the brand fill and its border.
   final DesignSystemTokens tokens;
 
-  /// Status mark, spinner, or badge.
-  final Widget leading;
+  /// An icon column before the title. Null leaves no column.
+  final Widget? leading;
+
+  /// The running spinner or attention dot in front of a space's or
+  /// conversation's title. Null leaves the title at the inset.
+  final Widget? signal;
 
   /// Primary line.
   final String label;
@@ -106,15 +106,6 @@ class SpaceRowLayout extends StatelessWidget {
   /// Whether the trigger is painted in that slot.
   final bool showMenu;
 
-  /// Drives the trailing unread / needs-input indicator.
-  final SpaceStatus status;
-
-  /// Whether the unread dot should show.
-  final bool unread;
-
-  /// Whether the leading slot already shows the running signal.
-  final bool leadingHandlesRunning;
-
   /// Width of the leading column.
   final double markSlot;
 
@@ -127,14 +118,11 @@ class SpaceRowLayout extends StatelessWidget {
   /// Single-line height. Spaces use the sidebar item extent.
   final double extent;
 
-  /// Muted agent-DM row. Hides the trailing indicator.
-  final bool muted;
-
   /// Hover wash, already resolved against the fluid-hover group.
   final Color hoverColor;
 
   /// Second line under the title.
-  final String? subtitle;
+  final Widget? subtitle;
 
   /// Short trailing caption.
   final String? trailingLabel;
@@ -148,14 +136,16 @@ class SpaceRowLayout extends StatelessWidget {
   /// Accessible name for the overflow trigger.
   final String? menuSemanticLabel;
 
-  bool get _twoLine => subtitle != null && subtitle!.isNotEmpty;
+  bool get _twoLine => subtitle != null;
 
   @override
   Widget build(BuildContext context) {
     final t = tokens;
     // Fixed columns. The rail is narrower than these mid-animation.
+    final leading = this.leading;
     final minRowWidth =
-        markSlot + markGap + (hasMenu ? kSpaceSidebarOverflowSlot : 0);
+        (leading == null ? 0.0 : markSlot + markGap) +
+        (hasMenu ? kSpaceSidebarOverflowSlot : 0);
     // Selecting snaps — the pressed row reads as current on the next frame —
     // while the row being left and hover keep the CcMotion.fast fade. The
     // hover wash under an opaque fill is invisible, so it snaps along.
@@ -205,20 +195,22 @@ class SpaceRowLayout extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    SizedBox(
-                      width: markSlot,
-                      height: markSlot,
-                      child: Center(
-                        child: IconTheme.merge(
-                          data: IconThemeData(
-                            color: contentColor,
-                            size: markSlot,
+                    if (leading != null) ...[
+                      SizedBox(
+                        width: markSlot,
+                        height: markSlot,
+                        child: Center(
+                          child: IconTheme.merge(
+                            data: IconThemeData(
+                              color: contentColor,
+                              size: markSlot,
+                            ),
+                            child: leading,
                           ),
-                          child: leading,
                         ),
                       ),
-                    ),
-                    SizedBox(width: markGap),
+                      SizedBox(width: markGap),
+                    ],
                     Expanded(
                       child: AnimatedOpacity(
                         opacity: transitioning ? 0 : 1,
@@ -232,10 +224,7 @@ class SpaceRowLayout extends StatelessWidget {
                           caption: caption,
                           filled: filled,
                           transitioning: transitioning,
-                          status: status,
-                          unread: unread,
-                          leadingHandlesRunning: leadingHandlesRunning,
-                          muted: muted,
+                          signal: signal,
                           subtitle: subtitle,
                           trailingLabel: trailingLabel,
                           count: count,

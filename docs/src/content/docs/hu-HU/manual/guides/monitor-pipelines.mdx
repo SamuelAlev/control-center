@@ -2,7 +2,7 @@
 title: Pipeline-futtatások figyelése
 description: A futtatási várólista kezelése, egy futtatás vízesés- és lépéspaneljének elolvasása, valamint egy sikertelen vagy elakadt lépés helyreállítása.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/pipeline-ok-figyelese
-sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
+sourceHash: 48d44ae3ca3e23c1123ef282ccffece35b542b96
 ---
 
 Ez az oldal mindarról szól, ami egy futtatás elindulása után következik:
@@ -73,6 +73,8 @@ buktatja el a folytatás helyett: a 24 óránál tovább felfüggesztett lépés
 (`extras.awaitApproval` — az `orchestration.awaitApproval` törzs — kivétel;
 a `human.gate` nem az), valamint az a nem idempotens lépés, amely éppen menet
 közben volt, amikor a szerver leállt.
+
+Egy **Pursue a goal** lépés a 24 órás tartalék alól is ki van véve: amíg a célja dolgozik, felfüggesztve marad, az oldala pedig a célra hivatkozik. Egy egész futtatás is lehet **Felfüggesztve**, mert az orkesztrációja elérte a költési plafonját; ilyenkor a futtatás oldala megmutatja, mennyit költöttek a plafonból, a futtatás kérőjének pedig a **Plafon emelése** gombot.
 
 ## Egy lépés vizsgálata
 

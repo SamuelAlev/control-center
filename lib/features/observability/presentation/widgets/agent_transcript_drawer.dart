@@ -3,9 +3,11 @@ import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/features/dispatch/domain/registry/agent_ref.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/agents/providers/run_activity_providers.dart';
-import 'package:control_center/features/observability/presentation/tool_render/tool_renderers.dart';
+import 'package:control_center/features/code_mode/presentation/widgets/code_execution_record_link.dart';
+import 'package:control_center/features/observability/presentation/tool_render/tool_call_card.dart';
 import 'package:control_center/features/observability/presentation/widgets/run_activity_stats.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/transcript/widgets/script_record_link.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -140,7 +142,18 @@ class AgentTranscriptDrawer extends ConsumerWidget {
                     style: CcTypography.caption.copyWith(color: t.textTertiary),
                   ),
                   const SizedBox(height: AppSpacing.sm),
-                  TranscriptToolList(segments: segments),
+                  if (latestRun != null && workspaceId != null)
+                    // A finished script links to its execution record,
+                    // looked up within this run.
+                    ScriptRecordLinkScope(
+                      builder: codeExecutionRecordLinkBuilder(
+                        workspaceId: workspaceId,
+                        runId: latestRun!.id,
+                      ),
+                      child: TranscriptToolList(segments: segments),
+                    )
+                  else
+                    TranscriptToolList(segments: segments),
                 ],
               ),
             ),

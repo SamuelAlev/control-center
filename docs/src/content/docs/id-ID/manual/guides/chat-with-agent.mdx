@@ -2,7 +2,7 @@
 title: Chat dengan agen
 description: Buat space bersama agen, kirimkan pekerjaan kepadanya, arahkan saat sedang berjalan, lalu hentikan.
 slug: id-ID/panduan-pengguna/panduan-praktis/chat-dengan-agen
-sourceHash: 0dbc01158345074d818cec6084501abc03323fea
+sourceHash: 3e899c417e120a7cc741e802d577d0182210115b
 ---
 
 Panduan ini menunjukkan cara bekerja dengan agen di dalam sebuah space.
@@ -42,6 +42,8 @@ Teks itu menjadi kartu pengarahan dalam antrean di strip di atas composer dan
 disuntikkan ke run yang sedang berjalan pada batas giliran berikutnya. Tidak ada
 toast — kartunya sendiri adalah umpan baliknya.
 
+Untuk mengarahkan run yang bekerja untuk orang lain, Anda memerlukan akses tulis ke repositori space; tanpa itu pesan ditolak dan tetap berada di composer. Run hanya-baca, seperti tinjauan tujuan, tidak menerima pesan selama berjalan: saat run berakhir, pesan dikirim sebagai pesan biasa, dan setelah tinjauan tujuan, pesan menunggu segmen berikutnya dari tujuan itu.
+
 Tiga hal mengubah perilaku itu:
 
 - Pesan yang berisi **@mention** selalu dikirim sebagai pesan, bukan sebagai
@@ -75,9 +77,9 @@ blokir agen tanpa harus mencari space-nya. Overlay menyembunyikan permintaan
 begitu percakapan space tersebut tampil di layar, jadi Anda tidak pernah menjawab
 permintaan yang sama dua kali.
 
-Tidak ada batas waktu: agen yang diblokir menunggu sampai ada yang memutuskan.
-Permintaan yang sama juga muncul di strip perhatian kotak masuk dan di klien
-ponsel.
+Run yang Anda mulai menunggu satu jam untuk persetujuan; setelah itu persetujuan dihitung sebagai ditolak. Permintaan yang sama juga muncul di strip perhatian kotak masuk dan di klien ponsel.
+
+Run yang dimulai server (segmen tujuan, jadwal, atau balasan dari agen lain) menunggu 72 jam secara bawaan, yang diatur oleh admin ruang kerja; setelah itu persetujuan dihitung sebagai ditolak dan pertanyaan sebagai belum dijawab. Lihat [Saat tidak ada yang menjawab](/id-ID/panduan-pengguna/panduan-praktis/kejar-tujuan/#saat-tidak-ada-yang-menjawab).
 
 ## Jawab pertanyaan agen
 
@@ -115,6 +117,8 @@ setiap agen yang berjalan di ruang kerja dengan kontrol yang sama.
 Run yang dihentikan ditandai sebagai berhenti. Kirim pesan baru untuk mengirim
 lagi.
 
+Menghentikan juga menahan apa yang diantrekan untuk agen itu: kartu pengarahan Anda (**Kirim pesan yang ditahan** mengirimkannya) dan pengingatnya yang menunggu (**Lanjutkan** di strip di atas kolom penulisan). Tujuan yang sedang dikerjakan agen dijeda sampai seseorang melanjutkannya.
+
 ## Gunakan perintah slash
 
 Ketik `/` di composer untuk melihat daftar perintah. Perintah yang mengubah
@@ -123,8 +127,10 @@ perilaku percakapan:
 | Perintah       | Yang dilakukannya                                                                                                                    |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | `/plan`        | Mengalihkan space ke mode rencana. `/plan` saja hanya mengaktifkan mode; `/plan <request>` mengaktifkannya sekaligus mengirim sisanya sebagai pesan Anda |
-| `/goal <text>` | Mencatat tujuan kerja percakapan ini                                                                                                 |
-| `/loop <text>` | Mengiterasi suatu tugas sampai selesai                                                                                               |
+| `/goal <text>` | Memulai tujuan tahan lama yang terus dikerjakan agen hingga terverifikasi selesai ([Kejar tujuan](/id-ID/panduan-pengguna/panduan-praktis/kejar-tujuan/)) |
+| `/loop <text>` | Membangunkan agen dengan teks itu sewaktu-waktu, dengan interval atau pada iramanya sendiri ([Jadwal dan pengingat](/id-ID/panduan-pengguna/panduan-praktis/jadwal-dan-pengingat/)) |
+| `/schedule <when> <text>` | Membangunkan agen nanti, sekali atau sesuai cron |
+| `/refine`      | Meminta tinjauan atas pekerjaan percakapan yang mungkin mengusulkan perbaikan                                                        |
 | `/compact`     | Melipat riwayat lama menjadi ringkasan berjangkar dan melanjutkan pada konteks yang telah dipadatkan                                  |
 | `/todo …`      | Melihat dan mengedit daftar todo percakapan ini yang tersimpan                                                                        |
 

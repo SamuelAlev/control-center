@@ -1,4 +1,5 @@
 import 'package:cc_harness/cancellation.dart';
+import 'package:cc_harness/context.dart';
 import 'package:cc_harness/loop.dart';
 import 'package:cc_harness/messages.dart';
 import 'package:cc_harness/provider.dart';
@@ -379,6 +380,16 @@ void main() {
           .firstWhere((t) => t.contains('<advisory'), orElse: () => '');
       expect(injected, contains('severity="blocker"'));
       expect(injected, contains('you left a resource open'));
+      // Another model's words: tagged, so a compaction summarises the note
+      // instead of pinning it as steering.
+      final advisory = history.firstWhere(
+        (m) => m.textContent.contains('<advisory'),
+      );
+      expect(advisory.origin, HarnessMessageOrigin.notice);
+      expect(
+        splitPinnedEvidence(serializeHarnessHistory(history)).pinned,
+        isNot(contains('you left a resource open')),
+      );
     },
   );
 }

@@ -2,29 +2,45 @@
 title: Araç bağlamı ve istem önbelleği
 description: Bir ajana neden tümü yerine küçük bir araç kümesi gösterildiğini, kalan araçlara nasıl ulaştığını ve sağlayıcının istem önbelleğini bir çalıştırma boyunca sıcak tutan kuralları açıklar.
 slug: tr-TR/kilavuz/kavramlar/arac-baglami
-sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
+sourceHash: 74ad7fcb903772d007ba9bd7ec85153fcf668335
 ---
 
 Yerleşik harness'ın yaptığı her istek için iki şey doğrudur: araç tanımları o istekteki en büyük sabit maliyettir ve neredeyse hiçbiri kullanılmayacaktır. Bu sayfa, Control Center'ın bu konuda ne yaptığını ve yanıtın neden basitçe "daha az araç gönder" olmadığını açıklar.
 
 ## Sorun bayt değil, dikkat
 
-Control Center yaklaşık 126 araç kaydeder. Tamamı gönderildiğinde tanımları **her istekte kabaca 23.000 token'a** mal olur — hiçbir sıkıştırmanın dokunamayacağı bir maliyet, çünkü araç tanımları istekte konuşmadan ayrı bir bölümde yol alır.
+Control Center kendi bünyesinde yaklaşık 160 araç barındırır. Tamamı gönderildiğinde tanımları **her istekte** birlikte taşınır — hiçbir sıkıştırmanın dokunamayacağı bir maliyet, çünkü araç tanımları istekte konuşmadan ayrı bir bölümde yol alır.
 
 Token faturası bariz şikâyettir ve istem önbelleğiyle birlikte aynı zamanda daha küçük olanıdır. Asıl maliyet **seçim doğruluğudur**. Yayımlanmış araç çağırma değerlendirmeleri, modellerin bağlamda 30–50 araç civarına kadar doğru aracı güvenilir biçimde seçtiği, bunun ötesinde giderek kötüleştiği konusunda hemfikirdir. Adı konulan neden token sayısı değil **anlamsal örtüşmedir**: bir katalogda açıklamaları birbirine benzeyen birkaç araç bulunduğunda, model bir yeteneği hatırlamak yerine benzer görünenler arasında seçim yapar.
 
-126 araçta bir ajan, her turda bu bandın çok ötesindedir — yalnızca bir dosya okuması gereken birçok tur dahil.
+yaklaşık 160 araçta bir ajan, her turda bu bandın çok ötesindedir — yalnızca bir dosya okuması gereken birçok tur dahil.
 
-## İki katmanlı yüzey
+## Tek, küçük bir doğrudan küme
 
 Bu nedenle bir çalıştırmaya iki şey gösterilir:
 
-- **yerleşik** bir küme — her istekte tam şemalarıyla gönderilen, yaklaşık iki düzine araç;
+- her istekte tam şemalarıyla gönderilen, yaklaşık on beş araçlık **doğrudan** bir küme;
 - geri kalan her şeyin bir **ad dizini**, "Biletler ve projeler" ya da "Bellek ve bilgi" gibi başlıklar altında gruplanmış ve tüm katalog için birkaç yüz tokene mal olan.
 
-Güncel katalog üzerinde ölçüldüğünde bu, araç bloğunu **~23,1 bin tokendan ~5,0 bin tokene, yaklaşık %78 daha küçüğe** indirir ve her zaman görünür kalan kümeyi, seçimin güvenilir olduğu bandın içine yerleştirir.
+Testlerin oluşturduğu kayıt defteri üzerinde ölçüldüğünde, yerleşik ajanın standart sohbet araçları `repl` ile 14 araç tanımı ve yaklaşık 16,5 KB eder; bunun yaklaşık 4 KB kadarı `repl`'a aittir (tanımı en fazla 4.096 bayt olabilir). Betik çalıştıramayan bir sunucuda ise 14 tanım ve yaklaşık 13 KB eder. Bu, her kurulum için değil, tek bir yüzey için bir ölçümdür. Diğer her araca bir betikten ulaşılır ya da ilk kullanımda yüklenir.
 
-Yerleşik küme, bir çalıştırmanın *çoğu* çalıştırmada kullandığı araçlardır: dosya ve kabuk sözcük dağarcığı (`read`, `write`, `edit`, `search`, `bash`, …), keşif araçları, görev kontrol listesi, bellek araması ve geçerli [modun](/tr-TR/kilavuz/kavramlar/modlar) çıktısını teslim etmek için çağırmak zorunda olduğu fiil. Bir modun kendi çıktı fiili her zaman yerleşiktir — bir çalıştırma, teslimatını üreten tek çağrıyı aramak zorunda kalmamalıdır.
+Doğrudan küme, çoğu çalıştırmanın ilk turlarında kullandığı ve bir çalıştırmanın asla aramak zorunda kalmaması gereken araçlardır: `read`, `write`, `edit`, `search`, `find`, `bash` ve `read_output`; `ask_user` ve `task`; `todo_write`, `search_memory` ve `send_message`; ve geçerli [modun](/tr-TR/kilavuz/kavramlar/modlar/) çıktısını teslim etmek için çağırmak zorunda olduğu fiil. Bir modun kendi çıktı fiili her zaman doğrudandır; bir çalıştırma, teslimatını üreten tek çağrıyı aramak zorunda kalmamalıdır. Bir araç, yalnızca kullanıldığında önemli olmasıyla değil, çoğu çalıştırmada kullanılmasıyla bu kümeye girer: kümedeki her ad, her çalıştırmanın her turunda bir tanımdır.
+
+### Betikler geri kalanlara ulaşır
+
+Sunucu betik çalıştırabildiğinde, her çalıştırmada ayrıca [`repl`](/tr-TR/kilavuz/kavramlar/kod-modu/) bulunur ve listede ilk sıradadır. Kataloğun geri kalanı için kural şudur:
+
+- bir betiğin çağırabildiği bir araca **yalnızca bir betikten** ulaşılır: ad dizinindedir ve bir `repl` betiği, `searchTools()` ya da `describeTool()` ile bulduktan sonra onu `tools.<name>(args)` olarak çağırır; sunucu çalıştırmanın betiklerini çalıştıramadığında ise araç bunun yerine ilk kullanımda yüklenir ([Betikler çalıştırılamadığında](/tr-TR/kilavuz/kavramlar/kod-modu/#betikler-çalıştırılamadığında));
+- bir betiğin çağıramadığı bir araç (`eval`, `task`, onaylar, devretme ve birkaç diğeri) **ertelenir**: aşağıda anlatıldığı gibi ilk kullanımda yüklenir;
+- bir şey ertelendiğinde `search_tools` eklenir.
+
+`repl` olmayan bir çalıştırma aynı doğrudan kümeyi alır; geri kalan her şey ertelenir.
+
+Doğrudan küme, `repl` olsun ya da olmasın aynıdır; bilerek böyledir. Ajan tek bir yüzey öğrenir, her isteğin başı aynı sırayla aynı araçlardır ve `repl` eklemek ajanın zaten güvendiği hiçbir şeyi değiştirmez.
+
+Ne kazandırdığı: yalnızca bir betikten çağrılabilen bir aracın şeması hiçbir zaman sağlayıcıya gönderilmez; bu yüzden doğrudan kümenin dışındaki yüz kadar araç yalnızca adlarının maliyetini öder. Bunlardan on tanesine ihtiyaç duyan bir betik hiçbirinin şemasının bedelini ödemez ve ara sonuçları bağlama hiç girmez.
+
+Maliyeti: doğrudan kümenin dışındaki bir aracın çağrılması için bir betik gerekir ve betik önce aracın argümanlarını aramak zorundadır. Tek ve hızlı bir çağrı için bu, doğrudan bir çağrının gerektirmeyeceği ekstra bir adımdır. Bu yüzden çoğu çalıştırmanın ilk turlarında çağırdığı araçlar doğrudan kalır.
 
 ### İstek üzerine yüklenen araç, kullanılamaz demek değildir
 
@@ -32,19 +48,21 @@ Tasarımı yalnızca ucuz değil güvenli kılan kısım burasıdır. **İstek �
 
 Ajan adı isteminde görür. Bu adı doğrudan çağırırsa, harness şemayı yükler ve aracı aynı adımda çalıştırır — hata yok, gidiş-dönüş yok. Modelin, aracın bir zamanlar "boşaltılmış" olduğunu bilmesine gerek yoktur.
 
-Ajan görevi bilip adı bilmediğinde, `search_tools` düz dille bir açıklama alır ("bir bileti birine ata"), çalıştırmanın tüm yüzeyini sıralar ve eşleşmeleri *şemaları zaten yüklenmiş olarak* döndürür; böylece bir sonraki tur bunlardan birini çağırabilir. Bir arama hiçbir şey bulamazsa bunu açıkça söyler ve farklı bir ifade ya da daha geniş bir arama önerir — bu bilinçlidir, çünkü boş bir aramayı "bu yetenek yok" diye okuyan bir ajan yeniden bakmak yerine bir ikame uydurur.
+Ajan görevi bilip adı bilmediğinde, `search_tools` düz dille bir açıklama alır ("bir bileti birine ata"), çalıştırmanın tüm yüzeyini sıralar ve eşleşmeleri *şemaları zaten yüklenmiş olarak* döndürür; böylece bir sonraki tur bunlardan birini çağırabilir. Yalnızca bir betikten çağrılabilen bir eşleşme, bunun yerine bir betikten nasıl çağrılacağıyla birlikte döndürülür; ancak çalıştırmanın betikleri artık çalışamıyorsa, diğer eşleşmeler gibi yüklenir. Bir arama hiçbir şey bulamazsa bunu açıkça söyler ve farklı bir ifade ya da daha geniş bir arama önerir — bu bilinçlidir, çünkü boş bir aramayı "bu yetenek yok" diye okuyan bir ajan yeniden bakmak yerine bir ikame uydurur.
 
 `search_tools` yalnızca yerleşik harness'ta bulunur. Harici MCP istemcileri bunun yerine aynı dizini sıralayan ama yalnızca eşleşmeleri betimleyen `search_tool_bm25`'e sahiptir — o istemciler tüm şemaları zaten `tools/list`'ten almıştır, dolayısıyla yüklenecek bir şey yoktur.
 
-### İstek üzerine yüklemenin asla yapmadığı
+### Yüzeyin asla yapmadığı şeyler
 
-İstek üzerine yükleme, modun araç filtresinden **sonra** uygulanır, asla onun yerine değil. Bir şemayı gizler; modun reddettiği bir aracı açığa çıkaramaz. Etkinleştirilen bir araç yine onay isteminden ve [eylem korumalarından](/tr-TR/kilavuz/kavramlar/korumalar) tıpkı yerleşik bir araç gibi geçer ve bir araç, başlangıçta çalıştırmanın yüzeyinde olmayan bir adı yükleyemez.
+Erteleme ve betikler, modun araç filtresinden **sonra** uygulanır, asla onun yerine değil. Şemayı gizlerler; modun reddettiği bir aracı açığa çıkaramazlar. Yüklenen bir araç ve bir betiğin çağrısı yine de onay isteminden ve [eylem korumalarından](/tr-TR/kilavuz/kavramlar/korumalar/) tıpkı doğrudan bir çağrı gibi geçer; ikisi de çalıştırmanın yüzeyinde başlangıçta olmayan bir adına ulaşamaz.
 
-Harici istemcilerin gördüğü MCP yüzeyi **etkilenmez**. `tools/list` yine tam kataloğu döndürür. Bunu kırpmaya yönelik daha erken bir girişim ajanları tamamen bozdu: MCP istemcileri araç adlarını kendi önbelleğe alınmış listelerine göre doğrular ve sunucuya hiç sormadan listelenmemiş olan her şeyi reddeder; böylece "gizli ama çağrılabilir" bir araç basitçe erişilemezdi. İstek üzerine yükleme, bir aracı çalıştırma ortasında yüklemenin harness'ın gerçekten yapabildiği bir şey olduğu harness'ta yaşar.
+Harici istemcilerin gördüğü MCP yüzeyi **ertelenmez**. `tools/list` tam kataloğu döndürür, çünkü MCP istemcileri araç adlarını kendi önbelleğe alınmış listelerine göre doğrular ve sunucuya hiç sormadan listelenmemiş olan her şeyi reddeder; böylece "gizli ama çağrılabilir" bir araç basitçe erişilemez olurdu. İstek üzerine yükleme, bir aracı çalıştırma ortasında yüklemenin harness'ın gerçekten yapabildiği bir şey olduğu harness'ta yaşar.
 
-### Kapatma
+Bir ajan çalıştırması, sunucu betik çalıştırabildiği sürece MCP uç noktası üzerinden Control Center'a ulaşıyorsa tek istisnadır. Onun `tools/list` listesi `repl`'i, doğrudan araçları ve bir betiğin çağıramadığı her aracı içerir; geri kalanını betiklerden çağırır. Bunlardan birine yapılan doğrudan bir çağrı, onu bir betikten nasıl çağıracağı yanıtıyla karşılanır.
 
-`--tool-deferral=off` (veya `CC_SERVER_TOOL_DEFERRAL=off`) kabul edilen her aracı yeniden yerleşik yapar ve sunucunun istek üzerine yükleme var olmadan önce yaptığı isteklerin aynısını üretir. [`cc_server` CLI başvurusuna](/tr-TR/kilavuz/referans/cc-server-cli) bakın.
+### Ertelemeyi kapatma
+
+`--tool-deferral=off` (ya da `CC_SERVER_TOOL_DEFERRAL=off`) ertelemeyi kapatır: `repl` olmayan bir çalıştırma kabul edilen her aracı tam olarak alır; `repl` olan bir çalıştırma ise bir betiğin çağıramadığı araçları tam olarak alırken geri kalanları yalnızca betikten çağrılabilir kalır. [`cc_server` CLI başvurusuna](/tr-TR/kilavuz/referans/cc-server-cli/) bakın.
 
 ## İstem önbelleği
 
@@ -64,7 +82,7 @@ Bir sağlayıcı sınırlı sayıda önbellek işaretçisine izin verir ve Contr
 
 | İşaretçi               | Kapsadığı                        | Ömür    |
 | ---------------------- | -------------------------------- | ------- |
-| Son **yerleşik** araç  | Araç bloğu                       | 1 saat  |
+| Son **doğrudan** araç  | Araç bloğu                       | 1 saat  |
 | Son sistem bloğu       | Araçlar + sistem istemi          | 1 saat  |
 | Önceki turun kuyruğu   | Son isteğe kadarki geçmiş        | 5 dk    |
 | Geçerli turun kuyruğu  | Geçmişin tamamı                  | 5 dk    |
@@ -77,12 +95,12 @@ Araçlar-ve-sistem öneki uzun ömrü alır çünkü tüm çalıştırma boyunca
 
 Aynı türden alt ajanlar bayt düzeyinde özdeş istem önekleri üretir, dolayısıyla her biri kendi girdisini yazmak yerine tek bir önbellek girdisini okumalıdır. Ancak bir girdi, ancak onu yazan istek yanıt vermeye başladığında okunabilir hale gelir; bu yüzden tek seferde başlatılan bir yayılımda her alt ajan, hepsinin paylaştığı bir önek için primi öder.
 
-Harness, belirli bir biçimdeki ilk alt ajanın başlamasına izin verir, sonra o akış yapmaya başlar başlamaz kardeşlerini serbest bırakır. Bekleme sınırlıdır: yavaş bir ilk alt ajan bir önbellek isabetine mal olur, asla yayılımın kendisine değil. Aynı nedenle, her alt ajan profilinden bağımsız olarak aynı yerleşik araç kümesini alır — bunu profile göre değiştirmek, paylaşılan öneki hiçbir kazanç olmadan parçalara ayırırdı, çünkü profil zaten alt ajanın neyi çağırabileceğine karar vermiştir.
+Harness, belirli bir biçimdeki ilk alt ajanın başlamasına izin verir, sonra o akış yapmaya başlar başlamaz kardeşlerini serbest bırakır. Bekleme sınırlıdır: yavaş bir ilk alt ajan bir önbellek isabetine mal olur, asla yayılımın kendisine değil. Aynı nedenle, her alt ajan profilinden bağımsız olarak aynı doğrudan araç kümesini alır — bunu profile göre değiştirmek, paylaşılan öneki hiçbir kazanç olmadan parçalara ayırırdı, çünkü profil zaten alt ajanın neyi çağırabileceğine karar vermiştir.
 
 ## İşleyişini izlemek
 
 Her iki yarı da varsayılmak yerine gözlemlenebilir:
 
-- Bir konuşmadaki **bağlam gezgini**, yerleşik araçları, istek üzerine yüklenen dizini ve saklanan her şemanın *maliyetinin ne olacağını*, gerçek bir çalıştırmanın kullandığı aynı kod yolundan derleyerek bildirir.
+- Bir konuşmadaki **bağlam gezgini**, doğrudan araçları, istek üzerine yüklenen dizini ve saklanan her şemanın *maliyetinin ne olacağını*, gerçek bir çalıştırmanın kullandığı aynı kod yolundan derleyerek bildirir.
 - Her çalıştırma, hangi istek üzerine yüklenen araçları yüklediğini ve buna neyin yol açtığını kaydeder; böylece hiçbir şey bulamayan bir arama, sessizce başka bir şey yapan bir ajanın içinde kaybolmak yerine bir erişim ıskası olarak görünür.
 - Gözlemlenebilirlik, **Önbellek oranı**'nı önbellek yazımları dahil işlenen tüm istem token'larına oranla önbellek okumaları olarak bildirir — öneki sürekli yeniden inşa eden bir çalıştırma, hiç önbelleğe ihtiyaç duymamış gibi puanlamak yerine düşük puan alır.

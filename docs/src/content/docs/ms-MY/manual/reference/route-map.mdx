@@ -2,7 +2,7 @@
 title: Peta laluan
 description: Setiap laluan yang didaftarkan Control Center, berserta skrin dan parameter pertanyaannya.
 slug: ms-MY/manual-pengguna/rujukan/peta-laluan
-sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
+sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
 ---
 
 ## Cangkerang aplikasi
@@ -40,6 +40,12 @@ Laluan di bawah menggugurkan awalan `/workspaces/:workspaceId`.
 | `/pipelines`                            | —                                         | Senarai larian pipeline                                                                                                                                                  |
 | `/pipelines/run`                        | `?templateId=<id>`                        | Pelancar larian manual                                                                                                                                                   |
 | `/pipelines/:runId`                     | —                                         | Butiran larian pipeline (garis masa langkah)                                                                                                                             |
+| `/goals` | — | Senarai matlamat, dikumpulkan sebagai menunggu kajian, terbuka dan tamat |
+| `/goals/:goalId` | `?edit=contract` | Satu matlamat: kini, maksud siap, pengesahan, jadual dan panggilan bangun; `edit=contract` membuka penyunting kontrak pada matlamat yang dijeda |
+| `/schedules` | — | Jadual dan pantauan, dikumpulkan mengikut status, dengan **Jadual baharu** |
+| `/schedules/:ruleId` | — | Satu jadual: nota, butiran, panggilan bangun dan larian terkini |
+| `/improvements` | — | Cadangan penambahbaikan, dikumpulkan mengikut status |
+| `/improvements/:proposalId` | — | Satu cadangan: apa yang berubah, bukti, penilaian dan keputusan |
 | `/plans`                                | —                                         | Hab Plan Studio: rancangan aktif, dokumen rancangan, buku panduan                                                                                                         |
 | `/plans/:kind/:id`                      | —                                         | Plan Studio untuk satu rancangan; `kind` ialah `orchestration` atau `document`                                                                                            |
 | `/meetings`                             | —                                         | Senarai mesyuarat                                                                                                                                                        |
@@ -99,6 +105,7 @@ Laluan tetapan menggunakan ruang nama mengikut **skop** — `you/`, `workspace/`
 | `/settings/workspace/skills`       | Konfigurasi kemahiran                                                                                |
 | `/settings/memory`                 | Memori ruang kerja: fakta, polisi, graf pengetahuan                                                  |
 | `/settings/workspace/permissions`  | Kebenaran ejen: matriks guardrail dan prob Bagaimana jika?                                           |
+| `/settings/workspace/schedules` | Had jadual, zon masa untuk jadual cron dan ringkasan, dan berapa lama larian yang dimulakan pelayan menunggu jawapan (pentadbir menyunting; ahli membaca) |
 | `/settings/pipelines`              | Templat pipeline                                                                                     |
 | `/settings/pipelines/:templateId`  | Editor templat pipeline (kanvas seret dan lepas)                                                     |
 

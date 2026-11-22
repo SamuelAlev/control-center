@@ -2,7 +2,7 @@
 title: Esegui un'orchestrazione
 description: Chiedi un piano a un orchestratore, rivedilo e modificalo in Plan Studio, approvalo una volta e lascia che una pipeline generata faccia il lavoro.
 slug: it-IT/manuale/guide/esegui-orchestrazione
-sourceHash: 086301be6c1957f6336294720967813c3050ed25
+sourceHash: cc4390cbac6c2122dd24c23bcef20693f40121bb
 ---
 
 Questa guida mostra come trasformare un unico grande obiettivo in un piano per
@@ -65,21 +65,13 @@ Premi **Stima** nella barra di approvazione per ottenere intervalli di costo,
 durata e raggio d'impatto prima di confermare. Per l'editor completo, vedi
 [Lavora in Plan Studio](/it-IT/manuale/guide/plan-studio/).
 
-:::note[Il budget non è un limite di spesa]
-Il budget di una proposta viene confrontato con la _stima_ nella barra di
-approvazione: quando l'estremo superiore della stima lo supera, il totale diventa
-rosso con un avviso di budget superato. Nessuno controlla la spesa mentre il
-piano viene eseguito, quindi non fermerà né farà fallire un'esecuzione. Per un
-vero stop della spesa, usa le policy di budget per agente — vedi
-[Gestisci i costi](/it-IT/manuale/guide/gestisci-costi/).
+:::note[Il budget trattiene l'esecuzione]
+Il budget di una proposta viene confrontato con la _stima_ nella barra di approvazione: quando l'estremo superiore della stima lo supera, il totale diventa rosso con un avviso di budget superato. Mentre il piano viene eseguito, il server controlla la spesa prima di ogni nuovo passaggio. Al budget l'esecuzione viene trattenuta e non parte nulla di nuovo; i passaggi già in corso terminano. Chi ha richiesto l'esecuzione riceve una notifica e preme **Alza limite** nella pagina dell'esecuzione della pipeline per proseguire. Vedi [Gestisci i costi](/it-IT/manuale/guide/gestisci-costi/).
 :::
 
 ## Passo 3: approva
 
-Approva il piano, dalla scheda in chat o dalla barra di approvazione di Plan
-Studio. **Questa è l'unica decisione che prendi.** L'approvazione è riservata
-agli operatori — non esiste uno strumento MCP per farlo, quindi un agente può
-proporre e rivedere, ma non approvare mai il proprio piano.
+Approva il piano, dalla scheda in chat o dalla barra di approvazione di Plan Studio. **Questa è l'unica decisione che prendi.** L'approvazione è riservata agli operatori — non esiste uno strumento MCP per farlo, quindi un agente può proporre e rivedere, ma non approvare mai il proprio piano. Approvare richiede l'accesso in scrittura ai repository dello spazio, e l'esecuzione agisce poi per la persona che ha approvato.
 
 Da qui un materializzatore deterministico (una funzione pura, senza LLM)
 trasforma la proposta in una vera
@@ -118,12 +110,7 @@ Premi **Annulla orchestrazione** sulla scheda in chat, oppure **Annulla
 esecuzione** nella barra di approvazione di Plan Studio. L'annullamento smonta il
 lavoro in corso.
 
-Un'orchestrazione fallisce quando fallisce la materializzazione, oppure quando
-fallisce l'esecuzione della pipeline generata (ricerca, discussione, sintesi o
-persist — quei passaggi non continuano in caso di errore). I passaggi di
-**lavoro** generati continuano sempre in caso di errore, quindi un sotto-ticket
-fallito non fa fallire l'esecuzione. Non esiste un percorso di fallimento per
-budget superato né una soglia "tutti i sotto-ticket sono falliti".
+Un'orchestrazione fallisce quando fallisce la materializzazione, oppure quando fallisce l'esecuzione della pipeline generata (ricerca, discussione, sintesi o persist — quei passaggi non continuano in caso di errore). I passaggi di **lavoro** generati continuano sempre in caso di errore, quindi un sotto-ticket fallito non fa fallire l'esecuzione. Il raggiungimento del budget trattiene l'esecuzione invece di farla fallire, e non esiste una soglia "tutti i sotto-ticket sono falliti".
 
 ## Guide correlate
 

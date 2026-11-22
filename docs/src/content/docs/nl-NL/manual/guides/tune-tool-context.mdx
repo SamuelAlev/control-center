@@ -2,7 +2,7 @@
 title: De toolcontext van een agent afstemmen
 description: Inspecteer wat een run echt verstuurt, wijzig welke tools vooraf laden en bepaal of een slechte toolkeuze een gemiste ophaling of een promptprobleem was.
 slug: nl-NL/handleiding/gidsen/toolcontext-afstemmen
-sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
+sourceHash: 22a4306a97aa8da0332f8e3e20e06ed86119f1d5
 ---
 
 Deze gids behandelt het praktische werk rond het tooloppervlak met twee niveaus: zien wat een run verstuurt, dat wijzigen en een agent diagnosticeren die naar de verkeerde tool greep. Lees [Toolcontext en promptcaching](/nl-NL/handleiding/concepten/toolcontext) voor het waarom achter dit ontwerp.
@@ -13,25 +13,26 @@ Open een gesprek en tik in de kop van het gesprek op de indicator voor contextge
 
 Twee segmenten zijn hier van belang:
 
-- **Tooldefinities** en **MCP & dynamische tools** — de residente set, met de echte tokenkosten van elke tool.
+- **Tooldefinities** en **MCP & dynamische tools** — de directe set, met de echte tokenkosten van elke tool.
 - **Tools die op aanvraag laden** — de uitgestelde index. Elke vermelding kost alleen zijn naam, want een naam is alles wat het verzoek meedraagt; open je er een, dan zie je nog steeds de volledige beschrijving en het schema, zodat je kunt zien wat die *zou* kosten als de run hem erbij haalde.
+
+In een run met `repl` worden de tools die een script bereikt genoemd in de systeemprompt, en verschijnen ze in geen van beide segmenten.
 
 Als het uitgestelde segment leeg is, staat uitstelling uit voor deze server. Controleer `--tool-deferral` op de [`cc_server` CLI](/nl-NL/handleiding/referentie/cc-server-cli).
 
 ## Wijzig welke tools vooraf laden
 
-De residente set is beleid, geen configuratie — hij staat in `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) en geldt voor elke run:
+De directe set is beleid, geen configuratie — hij staat in `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) en geldt voor elke run:
 
-- `residentBuiltins` — het bestands- en shellvocabulaire.
-- `residentDiscovery` — `search_tools` en `list_my_tools`. Verwijder deze niet; zo bereikt een agent al het overige.
-- `residentMcpTools` — het handjevol Control Center-tools waarvan het schema bij elk verzoek de moeite waard is.
-- Een blok per modus, voor de tools die een bepaalde [modus](/nl-NL/handleiding/concepten/modi) in bijna elke beurt gebruikt.
+- `directTools` — de twaalf tools die elke run direct aanroept: `read`, `write`, `edit`, `search`, `find`, `bash` en `read_output`; `ask_user` en `task`; `todo_write`, `search_memory` en `send_message`.
+- `residentDiscovery` — `search_tools` en `list_my_tools`. Verwijder deze niet; zo bereikt een agent al het overige. Een run met `repl` krijgt `search_tools` zodra een tool bij eerste gebruik wordt geladen, en geen `list_my_tools`.
+- `directNamesFor(mode)` — de tools die een bepaalde [modus](/nl-NL/handleiding/concepten/modi/) voor de eigen lus toevoegt: de reviewwerkwoorden in reviewmodus, `submit_plan` in planmodus en `propose_orchestration` in orkestratiemodus.
 
 Twee regels bij het bewerken ervan:
 
-**Voeg een tool alleen toe als de meeste runs hem gebruiken.** Elke naam kost zijn schema bij elk verzoek van elke run, voor altijd. Een tool die belangrijk is wanneer hij wordt gebruikt, maar over het geheel genomen zeldzaam, hoort in de uitgestelde helft — de agent vindt hem nog steeds.
+**Voeg een tool alleen toe als de meeste runs hem gebruiken.** Elke naam kost zijn schema bij elk verzoek van elke run, voor altijd. Een tool die belangrijk is wanneer hij wordt gebruikt, maar over het geheel genomen zeldzaam, hoort buiten de directe set — de agent kan hem nog steeds bereiken, vanuit een script of door hem bij eerste gebruik te laden.
 
-**Gebruik de echte naam van de tool.** Een residente naam die op geen enkele tool matcht, is inert: geen fout, geen waarschuwing, de tool wordt simpelweg uitgesteld. `test/tooling/resident_tool_names_test.dart` vangt dit af en houdt elke modus ook onder 40 residente tools, en dat is precies het doel van de oefening — voorbij die band gaat de toolselectie meetbaar achteruit.
+**Gebruik de echte naam van de tool.** Een directe naam die op geen enkele tool matcht, is inert: geen fout, geen waarschuwing, de tool blijft simpelweg buiten de directe set. `test/tooling/resident_tool_names_test.dart` vangt dit af, houdt de directe set van elke modus op hooguit 20 tools en houdt elke modus op hooguit 40 tools die vooraf worden meegestuurd; dat is precies het doel van de oefening — voorbij die band gaat de toolselectie meetbaar achteruit.
 
 De vereiste en vastgezette werkwoorden van een modus worden automatisch toegevoegd, dus je hoeft het eigen outputwerkwoord van een modus nooit te vermelden.
 
@@ -73,4 +74,4 @@ Veelvoorkomende oorzaken, in volgorde van waarschijnlijkheid:
 - **Een wijziging van model of inspanning midden in een gesprek.** Beide wijzigen het voorvoegsel. Bij subagenten gaat dit extra makkelijk mis: kinderen op een lagere inspanning laten draaien om geld te sparen kan meer kosten aan verloren cachedeling dan het oplevert.
 - **Frequente compactie.** Compactie herschrijft de geschiedenis per ontwerp, dus de kosten zijn reëel; de oplossing is om zelden en diep te compacteren in plaats van vaak en oppervlakkig.
 
-Uitstelling uitzetten met `--tool-deferral=off` is een geldige A/B-test om te isoleren of een gedragswijziging van het oppervlak met twee niveaus kwam. Het reproduceert het verzoek van vóór de uitstelling exact, dus als het gedrag met uitstelling uit aanhoudt, is het oppervlak niet de oorzaak.
+Uitstelling uitzetten met `--tool-deferral=off` is een geldige A/B-test om te isoleren of een gedragswijziging van het oppervlak met twee niveaus kwam. Met die flag uit stuurt een run de definitie van elke toegelaten tool mee, behalve dat een run met `repl` de tools die een script mag aanroepen nog steeds vanuit scripts aanroept; als het gedrag met uitstelling uit aanhoudt, is uitstelling dus niet de oorzaak.

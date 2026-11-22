@@ -175,6 +175,16 @@ class RunPlaybookTool extends McpTool {
 
   @override
   String get name => 'run_playbook';
+
+  /// `agent_id` names the calling agent, never a target: forced from the
+  /// call scope, so a run cannot act as another agent.
+  @override
+  Set<String> get forcedScopeKeys => const {'agent_id'};
+
+  /// Not for scripts: it creates a plan for a person to approve, which then
+  /// runs agents (see [McpTool.scriptCallable]).
+  @override
+  bool get scriptCallable => false;
   @override
   Set<ActionClass> get actionClasses => const {ActionClass.vendorSyncWrite};
 

@@ -2,7 +2,7 @@
 title: Kelola biaya
 description: Lihat berapa pengeluaran agen Anda, batasi run otonom, dan pangkas pemakaian token.
 slug: id-ID/panduan-pengguna/panduan-praktis/kelola-biaya
-sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
+sourceHash: 040176a3840653a57c823ce4ff7e3ed9cf071c07
 ---
 
 Panduan ini menunjukkan cara melihat biaya run agen dan cara membatasi run otonom.
@@ -40,21 +40,30 @@ Kartu **Pemakaian & biaya** di halaman ini menampilkan pengeluaran teramati tuju
 
 ## Batasi run otonom
 
-Dua perintah slash, yang diketik di penyusun pesan sebuah space, adalah satu-satunya run dengan batas pengeluaran:
+Run ini punya batas pengeluaran. Run yang Anda mulai dengan mengirim pesan tidak.
 
 ```
 /goal ship the auth refactor --budget 20
-/loop keep the flaky tests green
+/loop every 1h --budget 10 keep the flaky tests green
 ```
 
-- Setiap segmen dari run `/goal` atau `/loop` berhenti ketika pengeluaran yang dihargai mencapai **500 sen ($5,00)**. Pada 80% dari angka itu, loop terlebih dahulu mengarahkan model untuk merampungkan pekerjaan dan meninggalkan serah terima yang bersih, sehingga ia tidak mati di tengah tugas.
-- Satu goal tahan lama secara keseluruhan dibatasi pada **5.000 sen ($50,00)** kecuali Anda meneruskan `--budget <dollars>`. Supervisor meneruskan anggaran _tersisa_ goal ke setiap segmen, sehingga anggaran yang eksplisit tidak pernah dilampaui sebanyak satu segmen penuh.
-- `--days N` menambahkan tenggat waktu nyata dan `--max N` plafon jumlah run. Keduanya bersifat opsional; tanpanya, goal hanya dibatasi oleh biaya.
-- Goal yang menabrak batas kerasnya berhenti pada `budgetExhausted` dan hanya dapat dilanjutkan dengan menaikkan anggaran.
+| Run | Batas |
+| --- | --- |
+| Segmen tujuan | 5 dolar, atau sisa anggaran tujuan jika lebih kecil |
+| Tujuan | 50 dolar kecuali Anda meneruskan `--budget <dollars>` |
+| Tinjauan tujuan | 2 dolar, atau sisanya, dibebankan ke tujuan |
+| Run yang dimulai jadwal atau pantauan | 5 dolar; jadwal berhenti pada batas biayanya sendiri (50 dolar kecuali Anda meneruskan `--budget`, atau bawaan ruang kerja) |
+| Tinjauan setelah tujuan, atau `/refine` | 1 dolar |
 
-Karena batasnya berbasis harga, model yang tidak dapat diberi harga oleh katalog tidak akan pernah mencapainya. Run seperti itu justru dibatasi oleh pagar pengulangan doom-loop, menyerahnya supervisor setelah tiga kegagalan berturut-turut, dan Anda.
+- Run yang diberi batas berhenti ketika pengeluaran yang dihargai mencapai batas itu, pada harness bawaan, Claude Code, dan agen ACP. Pada 90%, harness bawaan dan Claude Code terlebih dahulu mengarahkan agen untuk merampungkan pekerjaan dan meninggalkan serah terima yang bersih, sehingga ia tidak mati di tengah tugas. Agen ACP dibatalkan pada batas itu.
+- Anggaran _tersisa_ tujuan diteruskan ke setiap segmen, sehingga anggaran yang eksplisit tidak pernah dilampaui sebanyak satu segmen penuh.
+- `--days N` menambahkan tenggat waktu dan `--max N` plafon segmen. Keduanya bersifat opsional; tanpanya, tujuan dibatasi oleh biaya dan oleh penghentian karena tidak ada kemajuan.
+- Tujuan yang mencapai anggarannya berhenti pada **Anggaran habis** dan hanya dilanjutkan dengan anggaran yang lebih tinggi, yang hanya bisa diberikan oleh orang yang memulainya.
+- Run pipeline yang ditahan pada batas orkestrasinya menunggu sampai peminta menekan **Naikkan batas** di halaman run pipeline. Batas baru harus di atas yang lama dan di atas yang sudah dibelanjakan, paling banyak 1.000 dolar, dan batas tidak pernah dihapus.
 
-Pesan di sebuah space, @-mention, atau langkah pipeline tidak punya batas pengeluaran. Run berakhir ketika model berhenti, ketika Anda menghentikannya, atau ketika pagar doom-loop mengarahkannya.
+Karena batasnya berbasis harga, model yang tidak dapat diberi harga oleh katalog tidak akan pernah mencapainya. Run seperti itu justru dibatasi oleh pagar pengulangan doom-loop, penghentian tujuan karena tidak ada kemajuan, menyerahnya tujuan setelah tiga kegagalan berturut-turut, dan Anda.
+
+Pesan di sebuah space, @-mention, atau langkah pipeline di luar orkestrasi yang diberi batas tidak punya batas pengeluaran sendiri. Run berakhir ketika model berhenti, ketika Anda menghentikannya, atau ketika pagar doom-loop mengarahkannya.
 
 ## Pangkas pemakaian token
 

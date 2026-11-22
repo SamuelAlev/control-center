@@ -2,7 +2,7 @@
 title: Guardrail — una sola policy per ogni azione che modifica lo stato
 description: Perché Control Center instrada ogni effetto collaterale di un agente attraverso un unico motore allow/prompt/deny, perché la tassonomia ActionClass resta piccola di proposito e cosa cambia davvero il selettore dell'autonomia.
 slug: it-IT/manuale/concetti/guardrail
-sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
+sourceHash: bb98b2ca26ae104ab7701d4d381cd5c41d25d32f
 ---
 
 Gli agenti in Control Center possono eliminare file, fare push di branch,
@@ -36,6 +36,17 @@ abbia disattivato il sandbox per tutti con `--sandbox off`. Per ogni esecuzione
 che parte senza sandbox, i guardrail sono lo strato di applicazione più esterno,
 non una policy che poggia su una base: cosa utile da sapere quando decidi quanto
 essere permissivo.
+
+### Chiamate effettuate da uno script
+
+Uno script della [modalità codice](/it-IT/manuale/concetti/modalita-codice/) chiama gli strumenti nel codice, molti alla volta, ma ciascuna sua chiamata è una chiamata separata al motore. Passa dallo stesso gate dell'harness o del dispatcher MCP di una chiamata diretta, con le stesse regole, la stessa richiesta di approvazione e la stessa voce di audit, e nulla di ciò che fa viene approvato perché lo è stata la chiamata `repl` che lo ha avviato.
+
+Due regole in più valgono per le chiamate da uno script, perché uno script può fare centinaia di chiamate e intercettare ogni rifiuto:
+
+- al massimo 10 delle sue chiamate raggiungono una persona per l'approvazione; quelle successive che richiederebbero una persona vengono rifiutate senza scheda;
+- una volta che una persona nega una delle sue chiamate, le restanti chiamate che richiedono approvazione vengono rifiutate senza chiedere.
+
+Una scheda aperta da uno script lo dichiara e permette di aprire lo script. Se lo script termina mentre la scheda è aperta, la scheda viene ritirata, e una risposta che arriva dopo viene registrata come diniego e non approva nulla.
 
 ## ActionClass: una tassonomia chiusa di proposito
 
@@ -280,5 +291,6 @@ risposta che riceverà l'agente.
 ## Concetti correlati
 
 - [Sandbox e sicurezza](/it-IT/manuale/concetti/sandbox-e-sicurezza/): cosa vincola davvero l'esecuzione di un agente e fin dove arriva la base del sistema operativo sotto questo motore
+- [Modalità codice](/it-IT/manuale/concetti/modalita-codice/): script i cui strumenti passano tutti da questo motore
 - [Multigiocatore e presenza](/it-IT/manuale/concetti/multigiocatore/): spazi, identità e dove si trova il selettore dell'autonomia
 - [Configura i guardrail](/it-IT/manuale/guide/configura-guardrail/): scrivere e provare le regole nella pratica

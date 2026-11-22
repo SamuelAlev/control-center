@@ -2,23 +2,33 @@
 title: "Ciclo de vida del despacho de agentes"
 description: "Qué ocurre entre la llegada de un mensaje y el cierre de un registro de ejecución: el montaje del prompt, los worktrees, la identidad, qué delimita una ejecución y cómo se registra su resultado con honestidad."
 slug: es-ES/manual/conceptos/ciclo-de-vida-del-despacho
-sourceHash: 13e7fe3ed86c8659c5fec818e0b89737241e2b9d
+sourceHash: 07c46e22e30f1a10e64b7fb949c78bdae9747efa
 ---
 
 ## Qué es un despacho
 
 Un despacho es una ejecución de un agente, en una conversación y sobre un adaptador. Todo lo relativo a él ocurre en `cc_server`: el cliente envía un mensaje y después observa cómo llegan los eventos en flujo. Ningún cliente tiene una ruta de despacho.
 
-Los agentes se despiertan por seis motivos, que la ejecución lleva consigo como su **contexto de activación** para que el agente sepa _por qué_ está activo:
+Cada ejecución lleva un **contexto de activación** que indica _por qué_ el agente está activo. Una ejecución que inicias enviando un mensaje es `userMessage`; cada ejecución que el servidor inicia por su cuenta empieza como una **reactivación** duradera en la cola del espacio de trabajo y lleva el motivo de la reactivación (véase [Programaciones y reactivaciones](/es-ES/manual/guias/programaciones-reactivaciones/)):
 
 | Motivo de la activación | Desencadenante                                       |
-| ----------------------- | ---------------------------------------------------- |
-| `userMessage`           | Alguien envió un mensaje en un espacio o mencionó al agente |
+| -------------------- | ------- |
+| `userMessage`           | Alguien envió un mensaje en un espacio                      |
 | `assignment`            | Se asignó un ticket al agente                        |
 | `pipelineStep`          | Un paso de un pipeline lo despachó                   |
-| `childCompleted`        | Un ticket hijo terminó                               |
-| `followUp`              | Un latido de seguimiento programado                  |
-| `recovery`              | La ruta de recuperación volvió a despachar tras un fallo |
+| `childCompleted`        | Terminó un ticket delegado o hijo, o terminó la ejecución de un miembro del equipo |
+| `schedule` | Se activó una programación o un bucle |
+| `watch` | Ocurrió algo que escucha una vigilancia (comprobaciones de una solicitud de cambios, una revisión, un entorno, un ticket, una ejecución de pipeline) |
+| `goalContinuation` | El siguiente segmento de un objetivo |
+| `goalVerification` | Las comprobaciones o la revisión de un objetivo han determinado que todavía no está terminado |
+| `goalReview` | La revisión de solo lectura de la afirmación de que un objetivo está terminado |
+| `peerMessage` | Otro agente le envió un mensaje o una pregunta, o fue mencionado con @, o es el verificador del espacio |
+| `peerReply`             | La respuesta a una pregunta que hizo a otro agente       |
+| `limitReset` | Un límite de uso del proveedor en el que se detuvo se ha restablecido |
+| `improvementReview` | La revisión tras un objetivo verificado, o `/refine` |
+| `recovery` | Trabajo que interrumpió un reinicio del servidor o un fallo |
+
+Una reactivación se entrega a una ejecución activa del agente en esa conversación cuando la ejecución recibe entrada y actúa para la misma persona; si no, espera a que esa ejecución termine y arranca la suya propia. Los comandos slash solo se leen en un mensaje que escribió una persona; en cualquier otra ejecución, el mismo texto es un mensaje corriente.
 
 El contexto de activación lleva los identificadores que acompañan al motivo (ticket, espacio, mensaje, ejecución de pipeline) y se inyectan en el entorno y el prompt del agente.
 
@@ -104,17 +114,17 @@ Deliberadamente **no hay ningún techo de turnos en ningún sitio**. Un recuento
 - **el modelo se detiene** por sí solo;
 - **una persona la detiene** o toma el control de la conversación (lo que pausa el arnés integrado en su siguiente límite de turno limpio; en su lugar, una ejecución de Claude Code, que no tiene un límite seguro, se detiene);
 - **salta el vigilante de silencio.** Si no hay salida durante el umbral, la sesión se termina con un fallo `silentRun`. El valor predeterminado son 15 minutos, que bajan a 10 en los modos predominantemente de lectura (revisión y plan); un agente puede anularlo entre 1 y 240 minutos. El vigilante se arma cuando un proceso hijo informa de su PID, así que cubre la CLI de Claude Code, **no** el arnés integrado, que no lanza nada;
-- **actúa un tope de coste**, pero solo para los comandos autónomos.
+- **actúa un tope de coste** — en los segmentos y revisiones de objetivos, las ejecuciones de programaciones y vigilancias, la revisión de mejoras y las ejecuciones de pipeline bajo una orquestación con tope.
 
 La protección contra bucles infinitos no es un terminador: tras tres llamadas idénticas a herramientas seguidas, el bucle _orienta_ al agente para que cambie de enfoque.
 
 :::note[Un turno normal no tiene tope de coste]
-La protección de coste dentro de la sesión solo está conectada para `/goal` y `/loop`; cualquier otra ejecución no pasa presupuesto alguno. Para esos comandos, un segmento sin supervisión puede consumir 500 céntimos (5,00 $) de forma predeterminada, con una orientación suave al 80 % que pide al agente que cierre limpiamente antes de la parada dura, y un presupuesto de objetivo duradero de 5000 céntimos (50,00 $) entre segmentos. Un `/goal --budget` explícito nunca se supera en un segmento entero.
+Una ejecución que inicias con un mensaje no tiene presupuesto. Un segmento de un objetivo puede gastar 5 dólares, o lo que quede del presupuesto del objetivo (50 dólares por defecto) si es menos; una revisión de objetivo, 2 dólares; una ejecución que inició una programación o una vigilancia, 5 dólares; la revisión de mejoras, 1 dólar. Al 90 %, el arnés integrado y Claude Code orientan al agente para cerrar limpiamente antes del límite definitivo; un agente ACP se cancela en el tope. Consulta [Gestionar costes](/es-ES/manual/guias/gestionar-costes/#poner-un-tope-a-una-ejecución-autónoma).
 :::
 
 En conjunto, un turno interactivo normal en el arnés integrado no tiene techo de turnos, ni tope de coste, ni vigilante de silencio. Termina cuando el modelo se detiene o cuando lo detienes tú. Es una contrapartida deliberada (las alternativas matan trabajo largo legítimo), pero sí significa que una ejecución interactiva sin supervisión no está limitada por nada salvo el propio criterio del modelo.
 
-A mitad de ejecución, un mensaje enviado a un agente en marcha se pone en cola como **orientación** y se consume en el siguiente límite de turno, así que puedes reconducir una ejecución sin matarla. La orientación, la pausa, los subagentes y el contrato de finalización son características del arnés integrado; Claude Code no tiene ninguna de ellas.
+A mitad de ejecución, un mensaje enviado a un agente en marcha se pone en cola como **orientación** y se consume en el siguiente límite de turno, así que puedes reconducir una ejecución sin matarla. Una ejecución de solo lectura, como la revisión de un objetivo, no admite ningún mensaje mientras se ejecuta, y reconducir una ejecución que trabaja para otra persona requiere acceso de escritura a los repositorios del espacio. La orientación, la pausa, los subagentes y el contrato de finalización son características del arnés integrado; Claude Code no tiene ninguna de ellas.
 
 ## Cómo se registra una ejecución
 
@@ -130,11 +140,11 @@ Cuando una ejecución termina sin el entregable que exigía su modo (una ejecuci
 Esto es deliberado. Cambiar el estado movería máquinas de estados de tickets y pipelines que no tienen nada que ver con el artefacto ausente. También significa que «status: completed» por sí solo nunca basta para concluir que una ejecución tuvo éxito: lee el resumen.
 :::
 
-Cerrar la ejecución publica `AgentRunCompleted`, y de él cuelgan muchas cosas: la acumulación de costes del pipeline, la reanudación de un paso de pipeline que esperaba a la ejecución, la finalización del ticket de respaldo, la asignación de una orquestación a un estado terminal, la decisión de continuar o detenerse del supervisor de objetivos, el rol de verificador y la evaluación de presupuesto posterior a la ejecución. La lista de presencia llega aparte, observando los registros de ejecución recientes en lugar del evento. La notificación «Agente finalizado» no está en esa lista: el evento se dispara cuando termina el flujo del proceso, antes de que se escriba la respuesta, así que la notificación es el `MessageReceived` del turno, que se publica en cuanto se persiste el mensaje.
+Cuando el estado final de la ejecución está escrito, el servidor publica `AgentRunSettled` exactamente una vez, con el motivo por el que terminó la ejecución (`completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` o `serverStopped`), y de él cuelgan muchas cosas: la acumulación de costes del pipeline, la reanudación de un paso de pipeline que esperaba a la ejecución, la finalización del ticket de respaldo, la asignación de una orquestación a un estado terminal, la decisión de continuar o detenerse del supervisor de objetivos, la respuesta a una pregunta que otro agente hizo, la siguiente activación de un bucle que marca su propio ritmo, la pausa por límite de uso, el rol de verificador y la evaluación de presupuesto posterior a la ejecución. Una ejecución que interrumpió una parada del servidor (`serverStopped`) nunca se trata como un fallo; el trabajo se reanuda tras el reinicio. `AgentRunCompleted` se sigue publicando, antes, solo para el puente de pull requests y para analítica. La lista de presencia llega aparte, observando los registros de ejecución recientes en lugar del evento. La notificación «Agente finalizado» no está en esa lista: el evento se dispara cuando termina el flujo del proceso, antes de que se escriba la respuesta, así que la notificación es el `MessageReceived` del turno, que se publica en cuanto se persiste el mensaje.
 
 ## Presupuestos, a posteriori
 
-La aplicación del presupuesto es una _reacción_, no una puerta. Cuando una ejecución termina, el evaluador compara el gasto del agente en lo que va de mes con su techo efectivo (una política de presupuesto vinculada, si existe; si no, la cifra mensual propia del agente; cero significa ilimitado). Cruzar el umbral suave registra un incidente de advertencia; agotar el presupuesto registra un incidente grave y cambia el estado del ciclo de vida del agente a `paused` en el organigrama. El despacho sigue aceptando trabajo de ese agente. Un disparador de pipeline `BudgetThresholdCrossed` puede iniciar trabajo de seguimiento a partir del mismo evento.
+La aplicación del presupuesto es una _reacción_, no una puerta. Cuando una ejecución termina, el evaluador compara el gasto del agente en lo que va de mes con su techo efectivo (una política de presupuesto vinculada, si existe; si no, la cifra mensual propia del agente; cero significa ilimitado). Cruzar el umbral suave registra un incidente de advertencia; agotar el presupuesto registra un incidente grave y cambia el estado del ciclo de vida del agente a `paused` en el organigrama. El despacho sigue aceptando el trabajo que le envías a ese agente, pero las reactivaciones para él (programaciones, segmentos de objetivos, respuestas) esperan mientras está en pausa, durante 7 días como máximo. Un disparador de pipeline `BudgetThresholdCrossed` puede iniciar trabajo de seguimiento a partir del mismo evento.
 
 ## Linaje de reintentos
 
@@ -147,4 +157,5 @@ Cada registro de ejecución puede llevar un linaje de reintentos: un id de ejecu
 - [Barandillas](/es-ES/manual/conceptos/barandillas/): la política de clases de efecto por la que pasa toda llamada condicionada
 - [Entorno aislado y seguridad](/es-ES/manual/conceptos/entorno-aislado-y-seguridad/): el relato completo del aislamiento
 - [Multijugador](/es-ES/manual/conceptos/multijugador/): la orientación, la toma de control y el dial de autonomía
-- [Eventos de dominio](/es-ES/manual/conceptos/eventos-de-dominio/): qué desencadena `AgentRunCompleted`
+- [Eventos de dominio](/es-ES/manual/conceptos/eventos-de-dominio/): qué desencadena `AgentRunSettled`
+- [Perseguir un objetivo](/es-ES/manual/guias/perseguir-objetivo/) y [Programaciones y reactivaciones](/es-ES/manual/guias/programaciones-reactivaciones/): ejecuciones que el servidor inicia por su cuenta

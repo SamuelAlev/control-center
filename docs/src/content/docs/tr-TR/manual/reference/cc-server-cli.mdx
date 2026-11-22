@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: Headless sunucunun her bayrağı, ortam değişkeni, alt komutu ve veri dizini yolu.
 slug: tr-TR/kilavuz/referans/cc-server-cli
-sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
+sourceHash: ee71514a1721599da299a81b5702bc7cdb372330
 ---
 
 Her süreç bayrağı bir CLI bayrağı ya da bir ortam değişkeni alır; önce bayrak,
@@ -10,10 +10,7 @@ sonra ortam, en son varsayılan geçerlidir. Sağlayıcı kimlik bilgileri bunun
 istisnasıdır — bkz. [Sağlayıcı uygulamaları ve Connect](#sağlayıcı-uygulamaları-ve-connect).
 
 :::caution[Bilinmeyen bayraklar sessizce yok sayılır]
-Bağımsız değişken ayrıştırıcı elle yazılmıştır ve tanımadığı her şeyi atlar; bu
-yüzden bir yazım hatası (`--tls-key-file`, `--bindany`) hata üretmez — sunucu
-yalnızca varsayılanla başlar. Bir bayrağın etkisi yokmuş gibi göründüğünde
-başlangıç günlük satırlarını denetleyin.
+Bağımsız değişken ayrıştırıcı elle yazılmıştır ve tanımadığı her şeyi atlar; bu yüzden bir yazım hatası (`--tls-key-file`, `--bindany`) hata üretmez — sunucu yalnızca varsayılanla başlar. Bir bayrağın etkisi yokmuş gibi göründüğünde başlangıç günlük satırlarını denetleyin. Kabul etmediği bir değerle verilen [kod modu bayrağı](#kod-modu) farklıdır: sunucu başlamayı reddeder.
 :::
 
 ## Çekirdek
@@ -51,8 +48,10 @@ başlangıç günlük satırlarını denetleyin.
 | `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | `on`, ajan çalıştırmalarını ana makinenin işletim sistemi sandbox'ına sarar; sandbox'ı olmayan bir ana makinede yalnızca sunucu sahibinin çalıştırmalarını başlatır. `off`, her üyenin ajanlarını bu ana makinede sınırlandırılmadan çalıştırır. Aşağıya bakın |
 | `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Arka planda kod grafiği dizinlemesi için sahadaki kapatma anahtarı. `off` yeniden derleme olmadan temiz başlatır                        |
 | `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Hazır bildiriminden sonra ilk dizin taramasının bekletileceği saniye (0–300 aralığına sınırlanır)                                     |
-| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Harness çalıştırmalarının küçük bir yerleşik araç kümesi ile bir ad dizini gönderip kalanları ilk kullanımda yükleyip yüklemediği. Aşağıya bakın |
+| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Harness çalıştırmalarının küçük bir doğrudan araç kümesi ile bir ad dizini gönderip kalanları ilk kullanımda yükleyip yüklemediği. Aşağıya bakın |
 | `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Kendisine hizmet edemeyen bir kimlik bilgisini bir insanın düzeltmesini beklerken bir çalıştırmanın parkta kalacağı saniye (0–3600 aralığına sınırlanır). Aşağıya bakın |
+| `--code-mode-max-processes` | `CC_SERVER_CODE_MODE_MAX_PROCESSES` | `min(16, 2 × cores)` | Bu sunucuda aynı anda çalışan kod modu betikleri, bir kişiyi bekleyenler sayılmadan, 1–64. Aşağıya bakın |
+| `--code-mode-max-heap-mb` | `CC_SERVER_CODE_MODE_MAX_HEAP_MB` | `1024` | Bir betiğin kullanabileceği en fazla bellek, 16–1024 MiB. Bir çalışma alanının daha yüksek bellek sınırı buna indirilir |
 
 ## Sağlayıcı uygulamaları ve Connect
 
@@ -117,18 +116,9 @@ kalmaz.
 
 ### `--tool-deferral`
 
-Yerleşik harness çalıştırmaları, küçük bir yerleşik araç tanımı kümesi ile
-kalanların yalnızca adlardan oluşan bir dizinini gönderir; bu araçlar şemalarını
-ilk kullanıldıklarında yükler. Bu, araç bloğunu yaklaşık %78 küçültür ve her
-zaman görünen kümeyi, modellerin araçları güvenilir biçimde seçtiği aralıkta
-tutar. Ertelenen araçlar baştan sona adlarıyla çağrılabilir kalır ve `search_tools`
-onları amaca göre bulur. Bkz. [Araç bağlamı ve istem önbelleği](/tr-TR/kilavuz/kavramlar/arac-baglami).
+Yerleşik harness çalıştırmaları, küçük bir doğrudan araç tanımı kümesi ile kalanların yalnızca adlardan oluşan bir dizinini gönderir; bu araçlar şemalarını ilk kullanıldıklarında yükler ya da bir `repl` betiğinden çağrılır. Her zaman görünen kümeyi, modellerin araçları güvenilir biçimde seçtiği aralıkta tutar. Testlerin oluşturduğu kayıt defteri üzerinde ölçüldüğünde, yerleşik ajanın standart sohbet araçları 14 tanım eder: `repl` ile yaklaşık 16,5 KB (bunun yaklaşık 4 KB kadarı `repl`'a aittir; tanımı en fazla 4.096 bayt olabilir), betik çalıştıramayan bir sunucuda ise yaklaşık 13 KB. Ertelenen araçlar baştan sona adlarıyla çağrılabilir kalır ve `search_tools` onları amaca göre bulur. Bkz. [Araç bağlamı ve istem önbelleği](/tr-TR/kilavuz/kavramlar/arac-baglami/).
 
-`--tool-deferral off`, kabul edilen her aracı yeniden yerleşik hale getirir ve
-sunucunun erteleme var olmadan önce yaptığı istekleri yeniden üretir. İki
-katmanlı yüzeyle kötü baş eden bir model için kapatma anahtarıdır — yeniden
-derleme yerine bir bayrak. Yalnızca yerleşik harness'ı etkiler; dış istemcilerin
-MCP `tools/list` üzerinden gördüğü şey her zaman tam katalogdur.
+`--tool-deferral off` kabul edilen her aracın tanımını baştan gönderir; ancak `repl` olan bir çalıştırma, betiğin çağırabileceği araçları yine betiklerden çağırır. İki katmanlı yüzeyle kötü baş eden bir model için kapatma anahtarıdır — yeniden derleme yerine bir bayrak. Yalnızca yerleşik harness'ı etkiler; dış istemcilerin MCP `tools/list` üzerinden gördüğü şey tam katalogdur, [kod modu](/tr-TR/kilavuz/kavramlar/kod-modu/) betiklerini çalıştırabilen bir sunucudaki bir ajan çalıştırması hariç.
 
 ### `--credential-gate`
 
@@ -146,6 +136,25 @@ webhook — uyuyan birini beklemesini engelleyen şeydir. Süre dolduğunda
 
 `--credential-gate=0` kapatma anahtarıdır: hiçbir şey asla park edilmez ve kötü
 bir kimlik bilgisi, bu kapı var olmadan önce olduğu gibi turu sonlandırır.
+
+### Kod modu
+
+[Kod modu](/tr-TR/kilavuz/kavramlar/kod-modu/), bir ajanın araçlarını çağıran bir JavaScript betiği çalıştırmasına izin verir. Bunu açıp kapatan bir bayrak yoktur: sunucu betik çalıştırabildiğinde her çalıştırma `repl` aracını alır; herkese açık bir demo sunucusu ise hiç betik çalıştırmaz.
+
+Betikler, `bin/codemode/` içinde sunucuyla birlikte paketlenmiş bir program olan `cc_codemode` içinde çalışır. Bu program olmadan sunucu başlamaz: eksik olanı adlandıran bir satır yazdırır ve `78` çıkış koduyla çıkar. Başlangıçta programın kilitleme öz-sınamasını çalıştırır ve tek bir satır yazdırır (yalnızca `--log-level error` ile susturulur):
+
+```text
+cc_server: code_mode=available (cc_codemode 0.1.0 quickjs-ng 0.16.2 protocol 2; 16 scripts at once, at most 12 per workspace; up to 64 more runners kept for scripts waiting on a person; heap at most 1024 MiB per script)
+cc_server: code_mode=unavailable (<reason>) — runs on this host get no repl tool; scripts never run without full lockdown
+```
+
+`unavailable`, programın bu ana makinede kendini kilitleyemediği anlamına gelir; örneğin adımlarından birini reddeden bir güvenlik profiline sahip bir konteynerde ya da programın yayın derlemesi olmadığında. Sunucu normal çalışır, hiçbir çalıştırma `repl` almaz ve çalışma alanının kod modu ayarları nedeni gösterir.
+
+Sunucu çalışırken denetlemeye devam eder. Program, betiğin nedeni olmayan bir sebeple başlayamadığında, sunucu kendi kendini sınamayı yeniden çalıştırır; dakikada en fazla bir kez. Bu başarısız olursa, sunucu `unavailable` satırını nedeniyle birlikte yazdırır ve hiçbir betik çalıştırmaz: bu arada başlayan çalıştırmalar `repl` almaz, zaten ona sahip olan bir çalıştırma ise araçlarını doğrudan çağırır ([Betikler çalıştırılamadığında](/tr-TR/kilavuz/kavramlar/kod-modu/#betikler-çalıştırılamadığında)). Dakikada en fazla bir kez denetlemeye devam eder ve kendi kendini sınama yeniden geçtiğinde `available` satırını yazdırır ve betikleri yeniden çalıştırır. Yalnızca başlangıçta başarısız olan bir kendi kendini sınama yeniden başlatma gerektirir. Çalışma alanının ayarlarında gösterilen neden, ana makine yollarından arındırılmıştır; günlük satırında ise tamamı yer alır.
+
+İki kod modu bayrağı, betiklerin ne kullanabileceğini sınırlar. `--code-mode-max-processes`, tüm çalışma alanlarında aynı anda çalışan betikleri sınırlar (varsayılanı işlemci çekirdeği sayısının iki katı, en fazla 16; kabul edilen değer 1–64). Sınır 2 veya daha büyükse, bir çalışma alanı en fazla sınır eksi sınırın dörtte biri kadarını kullanabilir; böylece tek bir çalışma alanı tüm yerleri alamaz ve bekleyen betikler çalışma alanları arasında sırayla kabul edilir. Bir kişinin onayını ya da yanıtını bekleyen bir betik yerini başka bir betiğe bırakır ve yanıtlanana kadar hiçbir araç çağrısı başlatmaz; bu tür bekleyen betiklerden sınırın en fazla dört katı tutulur; bunların en fazla dörtte üçü tek bir çalışma alanından gelir ve her biri kendi işlemci süresi sınırı içinde hesaplama yapmaya devam edebilir. `--code-mode-max-heap-mb`, tek bir betiğin kullanabileceği en yüksek bellektir.
+
+Bu bayrakların kabul etmediği bir değer (aralık dışı ya da hiç sayı olmayan bir değer), sunucuyu başlangıçta durdurur (çıkış kodu `78`) ve kabul edilen değerleri adlandıran bir mesaj verir. Asla varsayılan olarak okunmaz.
 
 ## Alt komutlar
 
@@ -252,6 +261,7 @@ Sunucu veri dizinini kendi hesabına özel tutar (`0700`). Bunu yapamazsa, `glob
 | `backups/exports/`                | Tek çalışma alanı dışa aktarımları, `<workspaceId>-<timestamp>.db`              |
 | `backups/transfer/`               | Yedek indirme ve yüklemeleri için hazırlık alanı; onu yazan rota tarafından temizlenir |
 | `models/`                         | Cihaz üzerindeki gömme, diarizasyon ve konuşma modelleri                        |
+| `codemode/` | Kod modu runner'ının bir geliştirme kopyası, `scripts/natives/build_codemode.sh` ile kurulur; sürüm paketleri bunu `bin/codemode/` içinde taşır |
 | `meetings/<meetingId>/`           | Saklanan toplantı sesi                                                          |
 | `rigs/images/`                    | İçe aktarılmış rig disk imajları (QEMU masaüstü yüzeyi)                         |
 | `rigs/smolvm/<rigId>/`            | Rig başına microVM çalışma zamanı durumu (aracı sırrı, `0600`)                  |

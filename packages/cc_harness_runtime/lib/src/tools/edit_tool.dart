@@ -19,6 +19,11 @@ class EditTool extends HarnessTool {
   String get name => 'edit';
 
   @override
+  String get resultNote =>
+      'Text: `Edited <path> (N changes).` or `Edited K files: <path> (N), '
+      '….`';
+
+  @override
   String get description =>
       'Apply find/replace edits to files. Pass a single edit '
       '(path, old_text, new_text) or a batch via `edits`. Each old_text must '

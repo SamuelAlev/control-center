@@ -2,7 +2,7 @@
 title: Jenis langkah pipeline
 description: Rujukan untuk jenis langkah pipeline, kunci badan langkah, konfigurasinya dan hasil langkah.
 slug: ms-MY/manual-pengguna/rujukan/langkah-pipeline
-sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
+sourceHash: 0d2876bc1ac359f4d2cfe94902bd5f924d19d5d5
 ---
 
 Satu langkah pipeline mempunyai dua paksi bebas:
@@ -58,6 +58,31 @@ Nod prompt-dan-hantar generik: menjana prompt, menghantar ejen ke dalam perbuala
 | `extras.spaceId`           | Perbualan sedia ada untuk digunakan (lalai: perbualan tersembunyi) |
 | `extras.conversationTitle` | Strim bernama dalam ruang itu (pilihan)                       |
 | `extras.mode`              | Dibaca pada nod yang *membuka* ruang itu (`messaging.createSpace`), bukan di sini. Lalai `review`. |
+
+### `goal.pursue`
+
+Memulakan matlamat tahan lama (lihat [Kejar matlamat](/ms-MY/manual-pengguna/panduan-cara/kejar-matlamat/)) dan menggantung sehingga matlamat tamat. Editor menunjukkannya sebagai **Pursue a goal**. Bukan salah satu daripada 25 badan langkah yang disemai di atas; didaftarkan bersebelahannya.
+
+| Medan konfigurasi | Keterangan |
+| ---------------------- | ----------- |
+| `agentId` | Ejen yang mengejar matlamat (diperlukan) |
+| `prompt` | Objektif; menyokong penggantian `{{key}}` (diperlukan) |
+| `outputKey` | Kunci keadaan bagi hasil (diperlukan) |
+| `extras.spaceId` | Bilik tempat matlamat itu berfungsi (diperlukan, seperti setiap langkah ejen) |
+| `extras.budgetMicros` | Bajet matlamat dalam mikrodolar, 1 hingga 1,000,000,000 (diperlukan) |
+| `extras.maxRuns` | Had segmen, 1 hingga 1,000 (pilihan) |
+| `extras.deadlineHours` | Jam dari saat langkah memulakan matlamat, 1 hingga 2,160 (pilihan) |
+| `extras.contract` | Maksud siap: kriteria dan semakan (pilihan) |
+
+Hasil di bawah `outputKey` ialah `{summary, verdict}`, dengan `verdict` ialah keputusan pengkaji bersama item dan kebimbangannya, atau null.
+
+| Matlamat | Langkah |
+| -------- | -------- |
+| selesai | selesai |
+| gagal, dibatalkan atau bajet habis | gagal (`retry` dan `continueOnFail` terpakai); langkah yang dicuba semula memulakan matlamat baharu |
+| dijeda, termasuk menunggu kajian seseorang | kekal digantung, dikecualikan daripada sapuan kesegaran 24 jam |
+
+Matlamat yang dimulakan oleh larian pipeline dikenakan kepada orkestrasi larian itu, termasuk kajiannya. Apabila larian pipeline dibatalkan, gagal atau selesai semasa matlamat berfungsi, matlamat itu dibatalkan.
 
 ### `pipeline.condition`
 

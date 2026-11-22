@@ -2,7 +2,7 @@
 title: Configurarea agenților
 description: Fiecare câmp al entității de agent și enumerările pe care le folosește.
 slug: ro-RO/manual/referinta/configurarea-agentilor
-sourceHash: e77edc905bed16d2f7d5bcd19a62541d885f6aab
+sourceHash: 708808ecdf4d2fc769600241c46f85db411550a8
 ---
 
 Această referință listează fiecare câmp al entității de agent, plus enumerările și flag-urile pe care le folosește. Pentru un parcurs pas cu pas de creare sau editare a unui agent în aplicație, vezi [Creează și configurează un agent](/ro-RO/manual/ghiduri-practice/creeaza-agent/).
@@ -81,7 +81,7 @@ Un set imuabil, insensibil la majuscule, de identificatori de skill-uri. La trim
 
 ## Hook-uri de shell
 
-Hook-urile de shell îi permit proprietarului serverului să ruleze propriile scripturi în jurul unei rulări de harness integrat: o dată la pornirea sesiunii, înainte de fiecare apel de unealtă și după fiecare apel de unealtă. Un hook este cod arbitrar, deci hook-urile sunt configurație a gazdei. Doar proprietarul serverului le configurează, manual, pe mașina serverului. Nu există nicio setare în aplicație și nicio operație care să le scrie.
+Hook-urile de shell îi permit proprietarului serverului să ruleze propriile scripturi în jurul unei rulări de agent: o dată la pornirea sesiunii, înainte de fiecare apel de unealtă, după fiecare apel de unealtă, când agentul ar încheia tura și înainte de o compactare. Un hook este cod arbitrar, deci hook-urile sunt configurație a gazdei. Doar proprietarul serverului le configurează, manual, pe mașina serverului. Nu există nicio setare în aplicație și nicio operație care să le scrie.
 
 Pentru un agent, hook-urile se află în propriul folder din directorul de date al serverului:
 
@@ -91,22 +91,31 @@ Pentru un agent, hook-urile se află în propriul folder din directorul de date 
 
 `<agent slug>` este numele folderului agentului din spațiul de lucru (`agents/<slug>/`). Acest folder se află în afara spațiului de stocare al fiecărui spațiu de lucru, iar fiecare sandbox ascunde directorul de date, deci niciun membru, nicio rulare și niciun terminal nu îl poate scrie.
 
-`hooks.json` asociază oricare dintre cele trei chei cu un script, printr-o cale relativă la folderul hook-ului:
+`hooks.json` asociază oricare dintre cele cinci chei cu un script, printr-o cale relativă la folderul hook-ului:
 
 | Cheie          | Când rulează                 | Ce înseamnă codul lui de ieșire                  |
 | -------------- | ---------------------------- | ------------------------------------------------ |
 | `sessionStart` | O dată, când începe rularea  | Nimic; hook-ul doar observă                      |
 | `preTool`      | Înainte de fiecare apel de unealtă | `0` permite apelul; orice altceva îl refuză |
 | `postTool`     | După fiecare apel de unealtă | Nimic; hook-ul doar observă                      |
+| `stop` | Când agentul ar încheia tura | `2` cu text la ieșirea standard păstrează rularea în curs cu acel text; orice altceva lasă tura să se încheie |
+| `preCompact` | Înainte de o compactare | `0`: ieșirea standard se adaugă la ce trebuie să păstreze rezumatul |
 
 - Fiecare script este pornit ca executabil propriu, fără shell și fără argumente, deci trebuie să fie executabil și să înceapă cu o linie shebang. Primește evenimentul ca JSON pe stdin: numele evenimentului și, pentru hook-urile de unelte, numele uneltei cu argumentele ei (`preTool`) sau rezultatul ei (`postTool`).
 - Un hook rulează ca unul dintre procesele de unelte ale rulării, în folderul agentului pentru rulare. Când serverul pune agenții în sandbox, rulează în sandbox-ul rulării. Primește un mediu minimal și niciuna dintre credențialele rulării: niciun token de forge sau de provider și niciun acces la gateway.
-- Fiecare hook are 30 de secunde. Ieșirea lui este citită și aruncată.
+- Fiecare hook are 30 de secunde. Ieșirea hook-urilor `sessionStart`, `preTool` și `postTool` este citită și aruncată.
 - `preTool` eșuează închis. Un cod de ieșire diferit de zero, un timeout sau un script care nu poate porni refuză apelul de unealtă.
 - O cale absolută, lipsă sau care iese din folderul hook-ului (legăturile fiind rezolvate) este refuzată, iar jurnalul rulării spune ce hook a fost refuzat și de ce. Un hook `preTool` refuzat sau ilizibil refuză fiecare apel de unealtă până este reparat.
 - Un bloc `hooks` din `.agents/harness.json`, fie într-un repository, fie în folderul propriu al agentului, este ignorat. Un repository este adesea cod al altcuiva, iar folderul agentului poate fi scris de membri și de rulări. Jurnalul rulării spune că blocul a fost ignorat și de unde sunt citite hook-urile în schimb.
 
-Hook-urile de shell se aplică doar harness-ului integrat. Un hook `preTool` sau `postTool` configurat face ca rularea să-și cheme uneltele unul câte unul.
+### Hook-urile stop și preCompact
+
+- `stop` primește `event: "stop"`, ultimul mesaj al agentului (`last_message`), `stop_hook_active` (adevărat când această oprire urmează unei continuări provocate de hook) și `block_count` (de câte ori a păstrat rularea în curs până acum, de la 0). Ca să păstreze rularea în curs, iese cu `2` și afișează ce trebuie să facă agentul în continuare. Textul, tăiat la 2.000 de caractere, ajunge la agent ca mesaj de sistem.
+- Un hook `stop` păstrează o rulare în curs de cel mult 3 ori într-o rulare. După aceea nu mai este rulat din nou, iar tura se încheie.
+- `stop` eșuează deschis. Un timeout, un script care nu poate porni, orice ieșire diferită de `2` sau o ieșire `2` fără nimic la ieșirea standard lasă tura să se încheie, astfel încât un hook defect nu poate ține o rulare deschisă.
+- `preCompact` primește `event: "pre_compact"`. Ieșirea lui standard, tăiată la 1.000 de caractere, se adaugă la focalizarea compactării. Un script care eșuează nu adaugă nimic.
+
+Hook-urile de shell se aplică harness-ului integrat. Pe Claude Code, hook-urile `stop` și `preCompact` rulează și ele: hook-urile proprii `Stop` și `PreCompact` ale Claude Code cer serverului, iar serverul rulează scripturile proprietarului în același mod. Celelalte trei chei se aplică doar harness-ului integrat. Un hook `preTool` sau `postTool` configurat face ca rularea să-și cheme uneltele unul câte unul.
 
 ## AgentLiveState (derivat)
 

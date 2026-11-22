@@ -2,7 +2,7 @@
 title: Orkestrering
 description: Hvordan én «stor oppgave» blir en plan for hele teamet som du godkjenner én gang, og deretter en generert pipeline som kjører den.
 slug: nb-NO/handbok/konsepter/orkestrering
-sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
+sourceHash: db1bbceaba025b64539588004eebb65d944d5933
 ---
 
 En enkelt agent er god til én ting. Noen oppgaver er større enn som så: «undersøk
@@ -37,12 +37,8 @@ for fri prosa. Et forslag har:
 - **Syntese**: det siste steget som produserer leveransen.
 - **Budsjett**: et oppgitt kostnadstak.
 
-:::caution[Budsjettet er veiledende]
-Forslagets kostnadstak sammenlignes med planens estimerte total og markerer en
-plan over budsjett i godkjenningslinjen _før_ du godkjenner. Ingenting leser det
-når kjøringen først har startet, så det stopper eller feiler ikke en orkestrering
-som overskrider. Budsjettpolicyer per agent og per arbeidsområde er en egen
-mekanisme og er det som faktisk setter forbruket på pause.
+:::caution[Budsjettet holder kjøringen, det dreper den ikke]
+Forslagets kostnadstak sammenlignes med planens estimerte total og markerer en plan over budsjett i godkjenningslinjen _før_ du godkjenner. Når kjøringen har startet, sjekker serveren hva den har brukt før hvert nytt steg: ved taket holdes pipeline-kjøringen (`suspended`, årsak `orchestration_budget`), og ingenting nytt starter, mens steg som allerede kjører, fullføres. Den som ba om kjøringen varsles og fortsetter den med **Øk grensen** på pipeline-kjøringens side (en arbeidsområdeadministrator når ingen ba om den). En økning må være over den gamle grensen og det som er brukt, høyst 1 000 dollar, og et tak fjernes aldri. Mål som kjøringen forfølger, teller mot den, også gjennomgangene deres. Budsjettpolicyer per agent og per arbeidsområde er en egen mekanisme.
 :::
 
 ## Hvor du gjennomgår den

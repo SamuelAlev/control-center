@@ -2,7 +2,7 @@
 title: Diagnostiser en agent
 description: Gå gjennom kjøreloggen, adaptersonderingen, serverstatusen og vertsdiagnostikken når en agent slutter å produsere kjøringer.
 slug: nb-NO/handbok/slik-gjor-du/diagnostiser-agent
-sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
+sourceHash: 8cd7078bacfbfcd18d90512974eff3539366883c
 ---
 
 Denne guiden viser deg hvordan du finner ut hvorfor en agent ikke produserer kjøringer.
@@ -90,7 +90,13 @@ Sjekk **Innstillinger → Server → Diagnostikk og personvern → Semantisk sø
 
 ### Serveren starter ikke i det hele tatt
 
-Native biblioteker kreves, og det finnes ingen redusert modus. En manglende dylib gjør at `cc_server` nekter å starte og navngir synderen i feilen. Klargjør de native bibliotekene med `scripts/natives/build_natives.sh` og bygg serverbinærfilen på nytt.
+Native biblioteker kreves, og det finnes ingen redusert modus. En manglende dylib, eller en manglende kjører for kodemodus (`bin/codemode/cc_codemode`), gjør at `cc_server` nekter å starte og navngir synderen i feilen. Klargjør de native bibliotekene med `scripts/natives/build_natives.sh` og bygg serverbinærfilen på nytt med `scripts/build_server.sh`.
+
+### Et skript feilet, eller kodemodus tilbys ikke
+
+For å se hva et [kodemodus](/nb-NO/handbok/konsepter/kodemodus/)-skript gjorde, åpne skriptets opptak fra **Åpne opptak** på raden i samtalen, eller fra **Observabilitet → Kodekjøringer**. Opptaket sier med vanlige ord hvordan skriptet endte (gikk tom for tid, brukte opp prosessortiden, nådde minnegrensen eller kastet en feil), og lister hvert verktøykall det gjorde, med om tillatelsesreglene tillot det, en person godkjente det, eller det ble nektet.
+
+Hvis agenten ikke har noe `repl`-verktøy i det hele tatt, åpne **Innstillinger → Arbeidsområde → Kodemodus**. Under **Status** sier **På denne serveren** **Tilgjengelig** eller **Utilgjengelig**; **Utilgjengelig** betyr at serveren ikke kan innesperre skriptkjøreren på verten, og siden sier årsaken. Serverens oppstartslogg har den samme linjen (`code_mode=…`). En kjøring uten arbeidsområde, der arbeidsområdets grenser ikke kunne leses, eller der kjøringsloggen ikke kunne skrives, får heller ingen `repl`, og kaller verktøyene sine direkte.
 
 ### En handling avvises i stillhet
 

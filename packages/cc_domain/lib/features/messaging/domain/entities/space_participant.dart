@@ -4,8 +4,8 @@ import 'package:cc_domain/core/domain/value_objects/principal.dart';
 ///
 /// Humans are first-class participants ([participantType] ==
 /// [PrincipalType.user] with [principalId] holding their user id) — there is
-/// no sentinel value. Each human member keeps their own row (and therefore
-/// their own read cursor) per space.
+/// no sentinel value. Each human member keeps their own row per space; read
+/// state is per conversation (`ConversationReadRepository`), not here.
 class SpaceParticipant {
   /// Creates a new [SpaceParticipant].
   SpaceParticipant({
@@ -15,7 +15,6 @@ class SpaceParticipant {
     required this.participantType,
     required this.role,
     required this.joinedAt,
-    this.lastReadAt,
   }) {
     if (principalId.isEmpty) {
       throw ArgumentError('SpaceParticipant principalId must not be empty');
@@ -40,12 +39,6 @@ class SpaceParticipant {
   /// When the participant joined.
   final DateTime joinedAt;
 
-  /// When this participant last read the space (their read cursor). Null
-  /// until the space is first opened — never-opened rows are treated as
-  /// "nothing unseen yet". Drives the sidebar unread indicator: an agent
-  /// message newer than this (while no run is in flight) surfaces a dot.
-  final DateTime? lastReadAt;
-
   /// Whether this participant is a human user.
   bool get isUser => participantType == PrincipalType.user;
 
@@ -62,8 +55,7 @@ class SpaceParticipant {
           principalId == other.principalId &&
           participantType == other.participantType &&
           role == other.role &&
-          joinedAt == other.joinedAt &&
-          lastReadAt == other.lastReadAt;
+          joinedAt == other.joinedAt;
 
   @override
   int get hashCode => Object.hash(
@@ -73,7 +65,6 @@ class SpaceParticipant {
     participantType,
     role,
     joinedAt,
-    lastReadAt,
   );
 
   /// Returns a copy with optional overrides.
@@ -84,8 +75,6 @@ class SpaceParticipant {
     PrincipalType? participantType,
     String? role,
     DateTime? joinedAt,
-    DateTime? lastReadAt,
-    bool clearLastReadAt = false,
   }) {
     return SpaceParticipant(
       id: id ?? this.id,
@@ -94,7 +83,6 @@ class SpaceParticipant {
       participantType: participantType ?? this.participantType,
       role: role ?? this.role,
       joinedAt: joinedAt ?? this.joinedAt,
-      lastReadAt: clearLastReadAt ? null : (lastReadAt ?? this.lastReadAt),
     );
   }
 }

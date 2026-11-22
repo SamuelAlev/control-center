@@ -2,7 +2,7 @@
 title: "Slash-parancsok"
 description: "Minden parancs, amelyet beírhat az üzenetszerkesztőbe: mit tesz, és hol fut."
 slug: hu-HU/kezikonyv/referencia/slash-parancsok
-sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
+sourceHash: 38430a6315b112c92a7806d1c28dff8a0285e363
 ---
 
 A tér üzenetszerkesztőjébe beírt parancsok. Aszerint, hogy hol fejtik ki hatásukat, három csoportba esnek, és a különbség számít: egy **helyi** parancs soha nem utazik üzenetként, így sem az átiratban nem jelenik meg, sem ügynökhöz nem jut el.
@@ -21,23 +21,35 @@ A tér üzenetszerkesztőjébe beírt parancsok. Aszerint, hogy hol fejtik ki ha
 
 **Helyi → kiosztás.** Bekapcsolja a beszélgetés tervmódját: egy teljesen csak olvasható worktree-t és `read`-re korlátozott eszközfelületet. Az ügynök leszállítandója egy terv, nem egy szerkesztés. Az önmagában álló `/plan` csak átváltja a módot, és soha nem utazik üzenetként; prompttal a sor többi része indítja el a futtatást.
 
-### `/goal <objective>`
+### `/goal [flags] <objective>`
 
-**Kiosztás.** Elindít egy autonóm célkitűzést, amelyet a célfelügyelő szegmensek között oszt ki újra, és indít újra.
+**Kiosztás.** Tartós célt indít: az ügynök szakaszokban dolgozik a célkitűzésen, újraindításokon át, amíg a szerver ellenőrzi, hogy kész, egy személy le nem zárja, vagy el nem éri egy korlátot. Lásd: [Cél követése](/hu-HU/kezikonyv/gyakorlati-utmutatok/cel-kovetese/).
 
-Ha a `/goal` után szöveget ír, először a **célkitűzési interjú** nyílik meg — egy rövid menet, amely addig nem fogad el piszkozatot, amíg mind az öt elem meg nem van: olyan sikerességi kritériumok, amelyeket egy értékelő mérlegelés nélkül el tud dönteni; egy pontos ellenőrző parancs; a próbálkozások felső korlátja; a hatókör határai; és a leállási feltételek. Minden lépés felkínálja a *Kihagyás és futtatás ahogy írva van* lehetőséget: az interjú alapértelmezés, nem kapu.
+Ha a `/goal` után szöveget ír, először a **célkitűzési interjú** nyílik meg — egy rövid menet, amely arra kéri, hogy adjon meg sikerességi kritériumokat, amelyeket egy értékelő mérlegelés nélkül el tud dönteni, az ellenőrzéseket, amelyeknek át kell menniük, a hatókör határait és a leállási feltételeket, majd felkínál egy külön ellenőrzőt, friss szakaszokat és azt, hogy válaszoljon a saját kérdéseire. Minden lépés felkínálja a *Kihagyás és futtatás ahogy írva van* lehetőséget: az interjú alapértelmezés, nem kapu.
 
-A `/goal pause`, a `/goal resume` és a `/goal drop` nem slash-parancs. A szüneteltetés, a folytatás és a leállítás a beszélgetés céljainak oldalsávbeli listáján található. Magán a célkitűzésen az indítási kapcsolók: `--budget <dollars>`, `--max <N>` (futtatási keret) és `--days <N>` (határidő). Az a cél, amely elérte a költségkeretét, csak a keret emelésével folytatható, ugyanattól az oldalsávbeli vezérlőtől.
+A kapcsolók az üzenet bármely helyén állhatnak: `--budget <dollars>` (a cél költségkerete, alapértelmezés szerint 50), `--max <N>` (egy szakaszkorlát), `--days <N>` (határidő), `--check "<command>"` (legfeljebb 5), `--checker <agent>`, `--fresh` és `--unattended wait|assume`. Ismeretlen vagy ismétlődő kapcsoló visszautasításra kerül, a piszkozat pedig a szerkesztőben marad. A célkitűzés elején álló szám a célkitűzés része. A `## Success criteria`, `## Boundaries`, `## Stop conditions` és `## Checks` szakaszok lesznek a cél szerződése.
+
+A `/goal pause`, a `/goal resume` és a `/goal drop` nem slash-parancs. A szüneteltetés, a folytatás és a leállítás a beszélgetés **Általános** paneljén lévő célkártyán és a cél oldalán érhető el (oldalsáv → **Célok**). A folytatás és a költségkeret emelése annak a személynek jár, aki a célt indította.
 
 :::note[Miért szakítja meg egyáltalán]
 Egy autonóm cél az egyetlen hely, ahol a homályos feladatkiírás valóban drága. A futtatás órákig dolgozik egy olyan célkitűzésen, amelynek a „kész” fogalmát senki sem definiálta, majd a saját feltételei szerint sikert jelent. Öt kérdés olcsóbb, mint egy egész éjszakás futtatás, amely akkor fejeződött be, amikor éppen úgy érezte, hogy befejezte.
 :::
 
-### `/loop [budget] [task]`
+### `/loop [every <interval>] [flags] <prompt>`
 
-**Kiosztás.** Iteratívan dolgozik, amíg be nem fejeződik. Elfogad egy korlátot: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**Kiosztás.** Ütemezést hoz létre, amely most, a prompttal ébreszti fel az ügynököt, majd utána újra és újra: minden intervallumban (legalább 60 másodperc), vagy `every` nélkül egy késleltetés után, amelyet az ügynök minden alkalommal maga választ (1 és 60 perc között). A `--max <N>` a futtatásokat korlátozza, a `--days <N>` véget vet neki (alapértelmezés szerint 30 nap), a `--budget <dollars>` a költését korlátozza. Lásd: [Ütemezések és ébresztők](/hu-HU/kezikonyv/gyakorlati-utmutatok/utemezesek-ebresztok/).
 
-Egy token, amely *úgy néz ki*, mint egy korlát (számmal vagy előjellel kezdődik), és nem sikerül értelmezni, kemény hiba. A prózai szöveg egyszerűen prózai szöveg, így a `/loop keep going until the tests pass` egy korlátlan ciklus beágyazott prompttal, nem pedig félreértelmezés.
+A `/loop` nem indít célt, és a vezető szám nem futtatási szám.
+
+### `/schedule <when> [flags] <prompt>`
+
+**Kiosztás.** Ütemezést hoz létre, amely később ébreszti az ügynököt: `in 2h`, `at 09:00` (a következő ilyen időpont a munkaterület időzónájában), `at <ISO time>` vagy `cron "0 9 * * 1-5"` (az idézőjelek elhagyhatók). Ugyanazokat a `--max`, `--days` és `--budget` kapcsolókat fogadja, mint a `/loop`. Az első időpontjára vár.
+
+### `/refine`
+
+**Kiosztás.** Rövid, csak olvasható átnézést kér a beszélgetés munkájáról, amely javaslatot tehet a memóriára, szabályzatokra, ügynökjegyzetekre vagy képességekre. A javaslatok a **Fejlesztések** oldalon várnak, amíg valaki el nem fogadja őket. Beszélgetésenként legfeljebb egy átnézés lehet 20 percenként.
+
+A `/goal`, a `/loop`, a `/schedule` és a `/refine` csak olyan üzenetben működik, amelyet Ön maga gépel be; egy ügynöktől, egy pipeline-tól vagy egy ébresztőből ugyanaz a szöveg közönséges üzenet. Egy olyan `/goal`, `/loop` vagy `/schedule` parancs, amelyet nem lehet beolvasni, megtartja a piszkozatot, a beviteli mező feletti sor pedig megmondja, mi a baj.
 
 ### `/vibe [task]`
 

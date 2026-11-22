@@ -69,7 +69,6 @@ class _FakeHost {
   final List<Map<String, dynamic>> sentFacts = [];
   final List<Map<String, dynamic>> sentPolicies = [];
   final List<Map<String, dynamic>> sentReviewSpaces = [];
-  final List<Map<String, dynamic>> sentRunLogs = [];
   final List<Map<String, dynamic>> sentIsolatedRepos = [];
   final List<Map<String, dynamic>> sentVoiceProfiles = [];
   final List<Map<String, dynamic>> sentProjects = [];
@@ -293,7 +292,7 @@ class _FakeHost {
         _replyData(id, op, {'ok': true});
       case 'newsfeed.addFeed':
         _replyData(id, op, {'feed': _feedJson('f1', 'My Feed')});
-      case 'space_read.markSpaceRead':
+      case 'conversation_read.markRead':
         sentReadCursors.add(args);
         _replyData(id, op, {'ok': true});
       case 'memory_domain.getByWorkspace':
@@ -411,9 +410,6 @@ class _FakeHost {
             ),
           ],
         });
-      case 'agent_run_log.upsert':
-        sentRunLogs.add(args);
-        _replyData(id, op, {'ok': true});
       case 'isolated_repo.forUnitRepo':
         _replyData(id, op, {
           'repo': _isolatedRepoJson(
@@ -582,6 +578,7 @@ class _FakeHost {
         _replyData(id, op, {'ok': true});
       case 'orchestration.insert':
       case 'orchestration.update':
+        // No such ops: recorded so a test sees a client that sent one.
         sentOrchestrations.add(args);
         _replyData(id, op, {'ok': true});
       case 'orchestration.getById':
@@ -826,11 +823,14 @@ class _FakeHost {
       'newsfeed.watchFeeds' => {
         'feeds': [_feedJson('f1', 'Live feed')],
       },
-      'space_read.watchUserLastReadAt' => _spaceReadJson(
-        params['args'] is Map
-            ? (params['args'] as Map)['space_id'] as String? ?? 'c1'
-            : 'c1',
-      ),
+      'conversation_read.watchUserReads' => {
+        'reads': [
+          {
+            'conversation_id': 'conv-1',
+            'last_read': {'at': '2026-01-03T00:00:00.000Z', 'seq': 17},
+          },
+        ],
+      },
       'memory_domain.watchForWorkspace' => {
         'domains': [_memoryDomainJson('d1', 'architecture')],
       },
@@ -1108,11 +1108,6 @@ class _FakeHost {
     'review_concurrency': 5,
     'created_at': '2026-01-01T00:00:00.000Z',
     'updated_at': '2026-01-02T00:00:00.000Z',
-  };
-
-  Map<String, dynamic> _spaceReadJson(String spaceId) => {
-    'space_id': spaceId,
-    'last_read': {'at': '2026-01-03T00:00:00.000Z', 'seq': 17},
   };
 
   Map<String, dynamic> _memoryDomainJson(String id, String name) => {
@@ -1825,6 +1820,13 @@ void main() {
     await repo.upsert(agent);
     expect(host.sentAgents.last['agent'], isA<Map<dynamic, dynamic>>());
     expect((host.sentAgents.last['agent'] as Map)['id'], 'a9');
+    expect(
+      (host.sentAgents.last['agent'] as Map).containsKey('code_mode'),
+      isFalse,
+    );
+    // The agent reads back from the wire shape the host sends.
+    final sent = (host.sentAgents.last['agent'] as Map).cast<String, dynamic>();
+    expect(RpcAgentRepository.fromDto(AgentDto.fromJson(sent)), agent);
 
     await repo.delete('ws1', 'a9');
     expect(host.sentAgents.last['agent_id'], 'a9');
@@ -1861,32 +1863,28 @@ void main() {
     expect(host.sentRepos.last['workspace_id'], 'ws1');
   });
 
-  test('RpcSpaceReadRepository marks read + maps watch to a position', () async {
-    final repo = RpcSpaceReadRepository(client);
+  test('RpcConversationReadRepository marks one conversation read + maps the '
+      'workspace cursors', () async {
+    final repo = RpcConversationReadRepository(client);
 
-    await repo.markSpaceRead('w1', 'c1', 'user-1');
-    expect(host.sentReadCursors.single['space_id'], 'c1');
-    // The cursor lives in the named workspace's database file, so the mutation
-    // carries it too — not just the read subscription below.
-    expect(host.sentReadCursors.single['workspace_id'], 'w1');
-    // Selecting a space names no conversation, so the host leaves the bell
-    // alone; reading one names it, and the host clears its notifications.
-    expect(host.sentReadCursors.single.containsKey('conversation_id'), isFalse);
-    await repo.markSpaceRead('w1', 'c1', 'user-1', conversationId: 'conv-1');
-    expect(host.sentReadCursors.last['conversation_id'], 'conv-1');
+    await repo.markConversationRead('w1', 'conv-1', 'user-1');
+    final sent = host.sentReadCursors.single;
+    expect(sent['conversation_id'], 'conv-1');
+    // The cursor lives in the named workspace's database file, so the
+    // mutation carries it; the acting person is the session's, never sent.
+    expect(sent['workspace_id'], 'w1');
+    expect(sent.containsKey('user_id'), isFalse);
 
-    final cursor = await repo.watchUserLastReadAt('w1', 'c1', 'user-1').first;
-    expect(
-      cursor,
-      FeedPosition(at: DateTime.parse('2026-01-03T00:00:00.000Z'), seq: 17),
-    );
-    // The subscription must carry the caller-validated workspace explicitly
-    // (not rely on the client's ambient active workspace) so a workspace switch
-    // can't pair this space with a different workspace server-side.
-    final spaceReadSub = host.subscribeArgs.singleWhere(
-      (a) => a['space_id'] == 'c1',
-    );
-    expect(spaceReadSub['workspace_id'], 'w1');
+    final reads = await repo.watchUserConversationReads('w1', 'user-1').first;
+    expect(reads, {
+      'conv-1': FeedPosition(
+        at: DateTime.parse('2026-01-03T00:00:00.000Z'),
+        seq: 17,
+      ),
+    });
+    // The subscription carries the caller's workspace explicitly, not the
+    // client's ambient active one.
+    expect(host.subscribeArgs.last['workspace_id'], 'w1');
   });
 
   test(
@@ -2079,7 +2077,7 @@ void main() {
     },
   );
 
-  test('RpcAgentRunLogRepository round-trips reads/watches/upsert', () async {
+  test('RpcAgentRunLogRepository round-trips reads/watches', () async {
     final repo = RpcAgentRunLogRepository(client);
 
     final live = await repo.watchByAgent('ws1', 'a1').first;
@@ -2110,17 +2108,6 @@ void main() {
     final byStep = await repo.forPipelineStep('ws1', 'pr-1', 'step-1');
     expect(byStep.single.pipelineRunId, 'pr-1');
     expect(byStep.single.pipelineStepId, 'step-1');
-
-    final log = AgentRunLog(
-      id: 'rl9',
-      agentId: 'a1',
-      workspaceId: 'ws1',
-      startedAt: DateTime.utc(2026),
-      status: RunStatus.completed,
-    );
-    await repo.upsert(log);
-    expect((host.sentRunLogs.last['log'] as Map)['id'], 'rl9');
-    expect((host.sentRunLogs.last['log'] as Map)['status'], 'completed');
   });
 
   test(
@@ -2583,7 +2570,8 @@ void main() {
   });
 
   test(
-    'RpcOrchestrationRepository round-trips reads/watches/insert/update',
+    'RpcOrchestrationRepository round-trips reads and watches, and writes '
+        'nothing',
     () async {
       final repo = RpcOrchestrationRepository(client);
 
@@ -2613,6 +2601,7 @@ void main() {
       final approved = await repo.approvedNeedingMaterialization();
       expect(approved.single.status, OrchestrationStatus.approved);
 
+      // Rows are the server's to write: the client sends nothing.
       final orc = Orchestration(
         id: 'orc9',
         workspaceId: 'ws1',
@@ -2629,17 +2618,9 @@ void main() {
         createdAt: DateTime.utc(2026),
         updatedAt: DateTime.utc(2026),
       );
-      await repo.insert(orc);
-      expect(
-        (host.sentOrchestrations.last['orchestration'] as Map)['id'],
-        'orc9',
-      );
-
-      await repo.update(orc.copyWith(status: OrchestrationStatus.approved));
-      expect(
-        (host.sentOrchestrations.last['orchestration'] as Map)['status'],
-        'approved',
-      );
+      expect(() => repo.insert(orc), throwsUnsupportedError);
+      expect(() => repo.update(orc, read: orc), throwsUnsupportedError);
+      expect(host.sentOrchestrations, isEmpty);
     },
   );
 

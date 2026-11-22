@@ -90,6 +90,19 @@ class DaoMemoryFactRepository implements MemoryFactRepository {
     });
   }
 
+  /// Stores [fact] without computing a vector, for a write that runs inside
+  /// a caller's transaction (inference must not hold the writer): a stored
+  /// vector of other text is dropped, and the backfill embeds it later.
+  Future<void> writeUnembedded(MemoryFact fact) async {
+    final dao = _dao(fact.workspaceId);
+    await dao.dropEmbeddingUnlessText(
+      fact.id,
+      topic: fact.topic,
+      content: fact.content,
+    );
+    await dao.upsert(_companionOf(fact));
+  }
+
   db.MemoryFactsTableCompanion _companionOf(MemoryFact fact) =>
       db.MemoryFactsTableCompanion(
         id: Value(fact.id),
@@ -162,6 +175,33 @@ class DaoMemoryFactRepository implements MemoryFactRepository {
         return stored;
       }
     }
+  }
+
+  /// Embeds fact [factId] of [workspaceId] now, when it is active and has
+  /// no vector yet: the follow-up of a [writeUnembedded] once its
+  /// transaction committed. The vector is stored only while the fact still
+  /// says what was embedded. Returns whether one was stored (false, too,
+  /// when the model is not installed: the backfill embeds it later).
+  Future<bool> embedIfMissing(String workspaceId, String factId) async {
+    final service = _embeddingService;
+    if (service == null || !service.isReady) {
+      return false;
+    }
+    final dao = _dao(workspaceId);
+    final row = await dao.getById(workspaceId, factId);
+    if (row == null || row.supersededBy != null) {
+      return false;
+    }
+    final vector = await service.embed(_embedTextOf(row.topic, row.content));
+    return await dao.putBackfilledEmbeddings([
+          (
+            factId: row.id,
+            topic: row.topic,
+            content: row.content,
+            embedding: Uint8List.view(vector.buffer),
+          ),
+        ]) ==
+        1;
   }
 
   /// The text a fact is embedded from: the one definition, used on write and

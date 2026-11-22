@@ -2,7 +2,7 @@
 title: Modes
 description: Pourquoi un mode est porté par un espace, et non par un agent ; ce que garantit chacun des quatre modes ; et où cette garantie est structurelle plutôt que simplement demandée dans le prompt.
 slug: fr-FR/manuel/concepts/modes
-sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
+sourceHash: 4450ebc86d95efb0366bc3f0ab4ddebc6d3a3adb
 ---
 
 ## Ce qu’est un mode
@@ -41,7 +41,7 @@ Une exécution qui se termine sans son plan est tout de même consignée avec le
 
 Il existe une deuxième sortie, distincte : `exit_plan_mode`. Il s’agit d’un contrôle d’approbation strict, et non d’un verbe de sortie — un agent qui l’appelle au lieu de `submit_plan` n’a rien livré. Le premier appel ouvre une approbation `plan_exit` durable et renvoie `pending`, et l’espace reste en lecture seule ; les appels répétés restent `pending` plutôt que d’ouvrir un second contrôle. Ce n’est qu’une fois l’approbation accordée qu’un appel ultérieur fait basculer l’espace en mode discussion. Un refus permet à l’agent d’ouvrir une nouvelle demande pour un plan révisé.
 
-Pour quitter vous-même le mode plan, changez le menu déroulant du compositeur (ou Shift+Tab). `exit_plan_mode` se décide avec l’outil MCP `decide_approval`. Les lignes « approbation d’agent » de la boîte de réception sont autre chose : des demandes de confirmation par tour, émises par un agent en cours d’exécution.
+Pour quitter vous-même le mode plan, changez le menu déroulant du compositeur (ou Shift+Tab). `exit_plan_mode` se décide par une exécution d’agent avec l’outil MCP `decide_approval`. Les lignes « approbation d’agent » de la boîte de réception sont autre chose : des demandes de confirmation par tour, émises par un agent en cours d’exécution.
 
 ### Revue — lecture seule, sans contrat
 
@@ -65,6 +65,8 @@ Rien dans la proposition ne s’exécute avant que vous l’approuviez. À l’a
 
 **Les modes en lecture seule ne refusent ni l’accès réseau ni les secrets.** Les classes d’effets que refusent les modes revue, plan et orchestration sont celles qui changent le monde : la suppression de fichiers, les écritures hors de l’arbre de travail, les commits, les push, la création et la publication de PR, les écritures de synchronisation vers des outils de suivi externes, l’installation de paquets, le lancement de processus, la mutation de l’espace de travail et le contrôle d’enceinte. La sortie réseau et l’accès aux secrets restent volontairement à leurs valeurs par défaut — la recherche est toute la raison d’être d’un mode en lecture seule.
 
+**Le mode code n’élargit jamais un mode.** Le filtre d’outils du mode est appliqué en premier, et un script `repl` du [mode code](/fr-FR/manuel/concepts/mode-code/) ne peut appeler que les outils qui restent après lui, par la même porte que pour un appel direct. Les verbes épinglés du mode (son verbe de sortie, `exit_plan_mode`, `ask_user`) et sa propre boucle (les verbes des nœuds de revue en mode revue) sont toujours appelés directement, de sorte qu’une exécution n’a jamais besoin d’écrire un script pour remettre son livrable ou poser une question. Dans le [mode vibe](/fr-FR/manuel/guides/diriger-workers-arriere-plan/), l’exécution directrice ne conserve que les outils de lecture et aucun outil réservé aux scripts, si bien que ses scripts n’atteignent que ceux-là.
+
 ## Choisir et changer de mode
 
 Le menu déroulant des modes du compositeur propose **trois** options : Agent (chat), Plan et Orchestrate. `review` n’est **pas sélectionnable par l’utilisateur** — il est défini par le système à la création d’un espace de revue de PR et par les étapes de pipeline.
@@ -87,4 +89,5 @@ Les listes d’autorisation contraignent les outils du palier écriture et des p
 - [Le modèle d’agent](/fr-FR/manuel/concepts/modele-agent/) : quels transports peuvent appliquer un mode
 - [Garde-fous](/fr-FR/manuel/concepts/garde-fous/) : la politique de classes d’effets dans laquelle s’insère le préréglage d’un mode
 - [Orchestration](/fr-FR/manuel/concepts/orchestration/) : ce que fait une proposition d’orchestration approuvée
+- [Mode code](/fr-FR/manuel/concepts/mode-code/) : scripts qui appellent les outils du mode
 - [Utiliser le mode plan](/fr-FR/manuel/guides/mode-plan/) : le guide pratique

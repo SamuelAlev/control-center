@@ -2,7 +2,7 @@
 title: Bruk planmodus
 description: Bytt et område til planmodus, få en typet plan og godkjenn den til arbeid som kjører.
 slug: nb-NO/handbok/slik-gjor-du/planmodus
-sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
+sourceHash: accf49606e5e8597d3ea76e3274f08d3854996dc
 ---
 
 Denne veiledningen viser deg hvordan du får en strukturert plan ut av en agent før
@@ -110,11 +110,7 @@ bytter agentens neste `exit_plan_mode`-kall området fra plan- til agentmodus og
 låser opp de muterende verktøyene. En avvisning lar den åpne en ny forespørsel mot
 en revidert plan.
 
-For å forlate planmodus bytter du nedtrekksmenyen i skrivefeltet (eller Shift+Tab),
-eller godkjenner den innsendte planen. `exit_plan_mode` åpner en varig godkjenning
-som avgjøres med MCP-verktøyet `decide_approval`. Overlegget for tillatelsesregler
-for blokkerte verktøykall er en annen kø i minnet og bærer ikke
-plan-utgangsforespørsler.
+For å forlate planmodus bytter du nedtrekksmenyen i skrivefeltet (eller Shift+Tab), eller godkjenner den innsendte planen. `exit_plan_mode` åpner en varig godkjenning, som en agentkjøring avgjør med MCP-verktøyet `decide_approval`. Overlegget for tillatelsesregler for blokkerte verktøykall er en annen kø i minnet og bærer ikke plan-utgangsforespørsler.
 
 ## Planmodus i et pipeline-steg
 

@@ -2,6 +2,7 @@ import 'package:cc_harness/src/cancellation_token.dart';
 import 'package:cc_harness/src/messages.dart';
 import 'package:cc_harness/src/provider/llm_provider_port.dart';
 import 'package:cc_harness/src/tools/action_class.dart';
+import 'package:cc_harness/src/tools/tool_reentry.dart';
 
 /// Approval sensitivity of a [HarnessTool], used to gate execution.
 ///
@@ -32,17 +33,24 @@ class HarnessToolResult {
     this.images = const [],
     this.activateTools = const {},
     this.refusal,
+    this.structured,
+    this.outcome,
+    this.guardVerdict,
+    this.withdrawsScripts = false,
   });
 
-  /// Successful result text, optionally with [images] the model should see.
+  /// Successful result text, optionally with [images] the model should see
+  /// and a [structured] value a script receives instead of the text.
   factory HarnessToolResult.success(
     String content, {
     List<HarnessImageBlock> images = const [],
     Set<String> activateTools = const {},
+    Object? structured,
   }) => HarnessToolResult(
     content: content,
     images: images,
     activateTools: activateTools,
+    structured: structured,
   );
 
   /// Error result text (surfaced to the model as an errored tool result).
@@ -84,6 +92,73 @@ class HarnessToolResult {
   /// `{kind, level}` error data), when it was refused for a reason the host
   /// named; null otherwise.
   final Map<String, Object?>? refusal;
+
+  /// The result as a JSON-serialisable value (maps, lists, strings, numbers,
+  /// booleans and null only), shaped by [HarnessTool.outputSchema], or null
+  /// when the tool has none.
+  ///
+  /// The model never sees it: [content] stays what the model reads. A script
+  /// calling the tool through a [ToolReentry] gets this value instead, so it
+  /// can filter the fields it needs rather than parsing the text the tool
+  /// formatted for a model.
+  final Object? structured;
+
+  /// How the call ended when that is finer than ok or error, as a short
+  /// lower-snake word ([ToolOutcome] names the gate's own): `denied` for a
+  /// refusal the gate produced, `cancelled` or `timed_out` where the loop
+  /// ended the call that way, or a tool's own status (a script's execution
+  /// status). Null when there is nothing finer to say.
+  ///
+  /// It is what a transcript records and a client reads to tell a refusal
+  /// from a failure, instead of parsing [content].
+  final String? outcome;
+
+  /// What the tool's own guard decided, for a tool that guards itself
+  /// ([HarnessTool.selfGuards]) and asked a person or refused the call:
+  /// [ToolGateVerdict.approved] when a person approved every card raised for
+  /// the call (its own, or one the host raised for something the call did),
+  /// [ToolGateVerdict.denied] when its guard refused the call or a person
+  /// declined one of those cards, with the reason in [content]. Null when
+  /// it asked nobody and let the call through. The loop's gate records this
+  /// as the call's decision when its own was a plain allow, so a script's
+  /// record says what actually let the tool act or stopped it.
+  final ToolGateVerdict? guardVerdict;
+
+  /// Whether the run's scripts can no longer run: set by the run's script
+  /// tool when the host refused a script for a reason no other script would
+  /// have escaped (the server is busy, cannot record it, runs no scripts).
+  /// The loop then makes the run's script-only tools callable directly, as
+  /// deferred tools that load on first use, for the rest of the run. It
+  /// widens nothing: those tools were admitted to the run, and a direct call
+  /// passes the same gate a script's call does.
+  final bool withdrawsScripts;
+
+  /// This result with [outcome] set, every other field kept.
+  HarnessToolResult withOutcome(String? outcome) => HarnessToolResult(
+    content: content,
+    isError: isError,
+    images: images,
+    activateTools: activateTools,
+    refusal: refusal,
+    structured: structured,
+    outcome: outcome,
+    guardVerdict: guardVerdict,
+    withdrawsScripts: withdrawsScripts,
+  );
+}
+
+/// The [HarnessToolResult.outcome] words the loop's gate sets.
+// ignore: avoid_classes_with_only_static_members
+abstract final class ToolOutcome {
+  /// The gate refused the call: a policy hook, an approver, no approver, or
+  /// a person declining.
+  static const String denied = 'denied';
+
+  /// The loop ended the call because the run or its caller stopped waiting.
+  static const String cancelled = 'cancelled';
+
+  /// The loop abandoned the call at its time limit.
+  static const String timedOut = 'timed_out';
 }
 
 /// A directory inside the workspace the run may read but not change, and what
@@ -126,6 +201,9 @@ class HarnessToolContext {
     this.spaceId,
     this.cancel,
     this.toolCallId,
+    this.parentToolCallId,
+    this.reentry,
+    this.personWait,
   });
 
   /// The current working directory for filesystem and command tools.
@@ -172,6 +250,33 @@ class HarnessToolContext {
   /// parent's transcript open the child's own activity.
   final String? toolCallId;
 
+  /// Id of the call that made this one through its [ToolReentry], or null for
+  /// a call the model issued itself. Lets a tool tell that a script called it
+  /// and which call ran that script; the same value as
+  /// `ToolCallOrigin.parentToolUseId`.
+  final String? parentToolCallId;
+
+  /// The gate through which this call may call the run's other tools, or null
+  /// when it may not.
+  ///
+  /// The loop sets it for each call the model makes and leaves it null for a
+  /// call made through a reentry, so a script cannot start a script and a tool
+  /// called from a script cannot bridge any further: the call tree stays two
+  /// levels deep and every nested call passed the gate a direct call passes.
+  final ToolReentry? reentry;
+
+  /// Tells the loop when this call starts (`true`) and stops (`false`) waiting
+  /// on a person, or null when nothing is listening.
+  ///
+  /// A tool that asks a person inside its own execution (a command runner's
+  /// confirmation, say) reports the wait here, itself or through whatever it
+  /// delegates to. While it waits, the call's own deadline is paused, and for
+  /// a call made through a reentry so are the calling tool's deadline and the
+  /// caller's clock: a person deciding is not a tool running late. Waits
+  /// nest; the loop ends any wait still open when the call settles, and
+  /// ignores reports that arrive after it.
+  final PersonWaitListener? personWait;
+
   /// Returns a copy of this context with [cancel] set — used by the loop to
   /// hand its cancellation token to tools without the caller having to thread it.
   HarnessToolContext withCancel(CancellationToken? cancel) =>
@@ -185,6 +290,9 @@ class HarnessToolContext {
         spaceId: spaceId,
         cancel: cancel,
         toolCallId: toolCallId,
+        parentToolCallId: parentToolCallId,
+        reentry: reentry,
+        personWait: personWait,
       );
 
   /// Returns a copy of this context scoped to the tool call [toolCallId].
@@ -198,7 +306,63 @@ class HarnessToolContext {
     spaceId: spaceId,
     cancel: cancel,
     toolCallId: toolCallId,
+    parentToolCallId: parentToolCallId,
+    reentry: reentry,
+    personWait: personWait,
   );
+
+  /// Returns a copy of this context whose [reentry] is exactly [reentry]; null
+  /// removes it.
+  HarnessToolContext withReentry(ToolReentry? reentry) => HarnessToolContext(
+    workingDirectory: workingDirectory,
+    sharedRoots: sharedRoots,
+    readOnlyRoots: readOnlyRoots,
+    agentId: agentId,
+    workspaceId: workspaceId,
+    conversationId: conversationId,
+    spaceId: spaceId,
+    cancel: cancel,
+    toolCallId: toolCallId,
+    parentToolCallId: parentToolCallId,
+    reentry: reentry,
+    personWait: personWait,
+  );
+
+  /// Returns a copy of this context whose [parentToolCallId] is exactly
+  /// [parentToolCallId]; null marks a call the model issued itself.
+  HarnessToolContext withParentToolCallId(String? parentToolCallId) =>
+      HarnessToolContext(
+        workingDirectory: workingDirectory,
+        sharedRoots: sharedRoots,
+        readOnlyRoots: readOnlyRoots,
+        agentId: agentId,
+        workspaceId: workspaceId,
+        conversationId: conversationId,
+        spaceId: spaceId,
+        cancel: cancel,
+        toolCallId: toolCallId,
+        parentToolCallId: parentToolCallId,
+        reentry: reentry,
+        personWait: personWait,
+      );
+
+  /// Returns a copy of this context whose [personWait] is exactly
+  /// [personWait]; null removes it.
+  HarnessToolContext withPersonWait(PersonWaitListener? personWait) =>
+      HarnessToolContext(
+        workingDirectory: workingDirectory,
+        sharedRoots: sharedRoots,
+        readOnlyRoots: readOnlyRoots,
+        agentId: agentId,
+        workspaceId: workspaceId,
+        conversationId: conversationId,
+        spaceId: spaceId,
+        cancel: cancel,
+        toolCallId: toolCallId,
+        parentToolCallId: parentToolCallId,
+        reentry: reentry,
+        personWait: personWait,
+      );
 }
 
 /// A tool the agent loop can call.
@@ -244,6 +408,64 @@ abstract class HarnessTool {
   /// self-guard, parallel safety and an uninterrupted prefix of safe calls.
   /// Merely being parallel-safe (for example a subagent) is not sufficient.
   bool get speculativeReadSafe => false;
+
+  /// Whether a script may call this tool through a [ToolReentry].
+  ///
+  /// True for nearly every tool: a nested call passes the same gate a direct
+  /// call passes, so allowing it widens nothing. False for a tool that only
+  /// means something as the model's own move (`checkpoint` and `rewind` mark
+  /// and cut the model's history), which a script would call with no effect
+  /// the model could see.
+  bool get scriptCallable => true;
+
+  /// Why a script may not make this call with [args], or null when it may.
+  ///
+  /// For a tool a script may call ([scriptCallable]) that takes an argument
+  /// a script may not use: one that assigns work to another agent run,
+  /// starts or messages one. The gate asks it before the approval step, for
+  /// a script's call only (never a direct call), so a
+  /// refused call raises no card; the refusal is what the script reads, and
+  /// it says to make the call directly instead. A bridged MCP tool answers
+  /// with the MCP tool's own rule.
+  String? scriptArgumentRefusal(Map<String, dynamic> args) => null;
+
+  /// What this call runs that the caller handed it, or null when it runs
+  /// nothing of the caller's: the shell command, the code cell, the program
+  /// and its arguments (an argv as its JSON list), the expression.
+  ///
+  /// The gate audits the call as `<name>: <content>` and digests the content,
+  /// and refuses a script's call whose summary is over the 16 KiB the audit
+  /// stores whole, before policy or a card. A script-callable tool of the
+  /// [ToolApprovalTier.exec] tier, or one that spawns a process or runs on
+  /// the host, states it, or states that it runs nothing it is handed, in
+  /// `script_executed_content_pin_test.dart`; a wrapper answers what it
+  /// wraps.
+  String? executedContent(Map<String, dynamic> args) => null;
+
+  /// JSON Schema of [HarnessToolResult.structured], or null when the tool
+  /// returns no structured value.
+  ///
+  /// Shown to a script author as the declaration of what a call resolves to.
+  Map<String, dynamic>? get outputSchema => null;
+
+  /// What a script receives from a completed call, in one or two sentences a
+  /// script author can code against: parsed JSON (its keys and their types)
+  /// or text (its line format, and where an error or an exit code shows), or
+  /// null when the tool states none.
+  ///
+  /// `repl`'s description shows it for each direct tool a script may also
+  /// call, and `describeTool` returns it. Required for every such tool by
+  /// `result_note_pin_test.dart`, and each note is held to what the tool
+  /// returns by a test that calls it. A wrapper answers what it wraps.
+  String? get resultNote => null;
+
+  /// Whether running this tool itself waits for a person, as a question to
+  /// the user does.
+  ///
+  /// A nested call to such a tool takes the serial lane, so a person never
+  /// faces two forms from one script at once, and the time it takes is not
+  /// charged to the calling tool's deadline.
+  bool get waitsOnPerson => false;
 
   /// The unified-guardrail effect classes this tool can produce (PRD 24 §1).
   /// Every tool DECLARES its worst-case classes; a ratchet test holds the line.

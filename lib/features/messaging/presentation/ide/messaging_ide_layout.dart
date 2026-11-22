@@ -32,6 +32,7 @@ import 'package:control_center/features/messaging/providers/editor_layout_cache_
 import 'package:control_center/features/messaging/providers/ide_sidebar_prefs_provider.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/messaging/providers/space_browser_tabs_provider.dart';
+import 'package:control_center/features/messaging/providers/space_conversation_tab_order_provider.dart';
 import 'package:control_center/features/messaging/providers/space_takeover_provider.dart';
 import 'package:control_center/features/messaging/providers/space_worktrees_provider.dart';
 import 'package:control_center/features/rigs/presentation/rig_tab_surfaces.dart';
@@ -316,6 +317,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
     _canPersist = warm != null;
     _layout.addListener(_onLayoutChanged);
     _windowPool.attach(_layout);
+    _scheduleTabOrderPublish();
     _wireActions(widget.actions);
     _tabUrl = EditorTabUrlTracker(
       initialKey: widget.focusedTabKey,
@@ -574,6 +576,37 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
     _layout = next;
     _layout.addListener(_onLayoutChanged);
     _reconcileBodyHost();
+    _scheduleTabOrderPublish();
+  }
+
+  bool _tabOrderPublishScheduled = false;
+
+  /// Publishes the chat tabs' order to [spaceConversationTabOrderProvider]
+  /// so the sidebar lists the conversations the way the tab strip shows
+  /// them. Deferred and coalesced: layout changes land during build, where a
+  /// provider write is refused, and a mirror pass makes several in a row.
+  void _scheduleTabOrderPublish() {
+    if (_tabOrderPublishScheduled) {
+      return;
+    }
+    _tabOrderPublishScheduled = true;
+    scheduleMicrotask(() {
+      _tabOrderPublishScheduled = false;
+      if (mounted) {
+        _publishTabOrder();
+      }
+    });
+  }
+
+  void _publishTabOrder() {
+    final orders = conversationTabOrders(
+      _layout.allTabs(),
+      openSpaceId: widget.selectedSpaceId,
+      standingId: _conversations.standingId,
+    );
+    for (final MapEntry(key: spaceId, value: order) in orders.entries) {
+      ref.read(spaceConversationTabOrderProvider(spaceId).notifier).set(order);
+    }
   }
 
   /// Persists the outgoing conversation, then loads (or seeds) the incoming
@@ -759,6 +792,8 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
     } finally {
       _syncingConversationTabs = false;
     }
+    // The standing id has arrived by now, so the no-arg tab can be placed.
+    _scheduleTabOrderPublish();
     _syncRestoredTabUrl();
   }
 
@@ -778,6 +813,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
     // workbench. Rebuilding this host too used to rebuild the sidebar and every
     // visited body a second time for each tab press.
     _schedulePersist();
+    _scheduleTabOrderPublish();
     if (!_syncingConversationTabs) {
       _tabUrl.writeFromLayout(_layout);
     }

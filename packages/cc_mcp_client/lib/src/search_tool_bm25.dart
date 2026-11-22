@@ -1,10 +1,13 @@
 import 'dart:convert';
 
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
+import 'package:cc_domain/features/code_mode/domain/services/repl_tool_description.dart';
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
 import 'package:cc_domain/features/mcp/domain/services/mode_tool_guard.dart';
 import 'package:cc_domain/features/mcp/domain/services/tool_index.dart';
+import 'package:cc_mcp_client/src/list_my_tools_tool.dart'
+    show ReplAvailableFn, callerHasRepl;
 
 /// The agent-facing tool-discovery search tool.
 ///
@@ -26,16 +29,29 @@ class SearchToolBm25 extends McpTool {
   /// callable/restricted status for the caller's conversation mode. Without it
   /// (e.g. the MCP Inspector, or a non-scoped transport), every hit is reported
   /// as callable.
-  SearchToolBm25({required this._catalog, this._modeGuard});
+  ///
+  /// [_replAvailable] answers whether this server runs scripts; `repl`
+  /// (code mode's script tool) is a hit only then, and only for a caller
+  /// that names its workspace. Without it, `repl` is never one.
+  SearchToolBm25({
+    required this._catalog,
+    this._modeGuard,
+    this._replAvailable,
+  });
 
   final ToolCatalog _catalog;
   final ModeToolGuard? _modeGuard;
+  final ReplAvailableFn? _replAvailable;
 
   /// The canonical name agents call.
   static const String toolName = 'search_tool_bm25';
 
   @override
   String get name => toolName;
+
+  /// A script has `searchTools()` and `ALL_TOOLS` of its own.
+  @override
+  bool get scriptCallable => false;
 
   @override
   String get description =>
@@ -80,33 +96,12 @@ class SearchToolBm25 extends McpTool {
     'required': ['query'],
   };
 
-  /// The BM25 index, rebuilt only when the tool catalog changes.
-  ///
-  /// `ToolIndex.build` re-tokenizes every tool's name, description and schema
-  /// keys — ~80+ bridged tools — and it ran on EVERY `search_tools` call, for
-  /// a catalog that changes when an MCP server connects or disconnects and at
-  /// no other time.
-  ///
-  /// Keyed on the definition LIST's identity plus its length: the registry
-  /// hands back the same list instance while the catalog is unchanged, and the
-  /// length guards the case where a registry rebuilds the list in place.
-  static ToolIndex? _cachedIndex;
-  static Object? _cachedIndexSource;
-  static int _cachedIndexLength = -1;
-
-  static ToolIndex _indexFor(List<ToolDef> definitions) {
-    final cached = _cachedIndex;
-    if (cached != null &&
-        identical(_cachedIndexSource, definitions) &&
-        _cachedIndexLength == definitions.length) {
-      return cached;
-    }
-    final index = ToolIndex.build(definitions);
-    _cachedIndex = index;
-    _cachedIndexSource = definitions;
-    _cachedIndexLength = definitions.length;
-    return index;
-  }
+  /// The BM25 index of [definitions]: the shared one
+  /// ([ToolIndex.shared]), built once per distinct tool set as indexed and
+  /// handed to every caller with the same set, so a call pays only for
+  /// comparing the set, not for indexing it again.
+  static ToolIndex _indexFor(List<ToolDef> definitions) =>
+      ToolIndex.shared(definitions);
 
   @override
   Future<CallResult> run(Map<String, dynamic> arguments) async {
@@ -115,15 +110,28 @@ class SearchToolBm25 extends McpTool {
       return CallResult.error('Missing or invalid argument: query');
     }
     final limit = (arguments['limit'] as num?)?.toInt() ?? 8;
+    final wanted = limit <= 0 ? 8 : limit;
     final definitions = _catalog.allToolDefinitions();
     final index = _indexFor(definitions);
-    final hits = index.search(query, limit: limit <= 0 ? 8 : limit);
-
-    // Resolve the caller's conversation mode ONCE, then classify each hit
-    // in-memory (avoids a DB round-trip per hit).
     final agentId = arguments['agent_id'];
     final spaceId = arguments['space_id'];
     final workspaceId = arguments['workspace_id'];
+    // The index covers the shared catalogue; `repl` is dropped from the hits
+    // for a caller that cannot run scripts (one extra hit asked for keeps
+    // the count).
+    final withRepl = callerHasRepl(_replAvailable, workspaceId: workspaceId);
+    final hits = [
+      for (final hit in index.search(query, limit: wanted + 1))
+        if (withRepl || hit.name != ReplToolDescription.toolName) hit,
+    ].take(wanted).toList();
+    final totalTools = withRepl
+        ? definitions.length
+        : definitions
+              .where((d) => d.name != ReplToolDescription.toolName)
+              .length;
+
+    // Resolve the caller's conversation mode ONCE, then classify each hit
+    // in-memory (avoids a DB round-trip per hit).
     // The space whose mode classifies each hit lives in one workspace's
     // database, so without a workspace there is no mode and every hit reports as
     // callable. Honest for a search aid: each tool enforces its own workspace and
@@ -150,16 +158,17 @@ class SearchToolBm25 extends McpTool {
       jsonEncode({
         'query': query,
         'limit': limit,
-        'total_tools': definitions.length,
+        'total_tools': totalTools,
         if (mode != null) 'conversation_mode': mode.name,
         'matches': hits.map((h) => h.name).toList(),
         'tools': tools,
         'note': mode == null
             ? 'Every hit is directly callable by its `name`.'
+            // Names no other tool: the caller may not have one (a run with
+            // `repl` has no `list_my_tools`).
             : 'This conversation is in ${mode.name} mode. Hits with '
-                  '`"callable": false` are restricted here — see '
-                  '`restricted_reason`. Call `list_my_tools` for the full set '
-                  'you can use right now.',
+                  '`"callable": false` are restricted here; see '
+                  '`restricted_reason`.',
       }),
     );
   }

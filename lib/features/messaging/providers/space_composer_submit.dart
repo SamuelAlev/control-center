@@ -4,8 +4,10 @@ import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_status.dart';
 import 'package:cc_domain/features/telemetry/telemetry.dart';
 import 'package:cc_harness/slash_command.dart';
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
+import 'package:control_center/features/forge/presentation/repo_code_refusal.dart';
 import 'package:control_center/features/messaging/presentation/widgets/composer/messaging_mention_sources.dart';
 import 'package:control_center/features/messaging/presentation/widgets/composer/messaging_slash_commands.dart';
 import 'package:control_center/features/messaging/presentation/widgets/composer/space_local_command_dispatch.dart';
@@ -15,6 +17,7 @@ import 'package:control_center/features/messaging/providers/pending_space_sends_
 import 'package:control_center/features/messaging/providers/space_message_send_provider.dart';
 import 'package:control_center/features/messaging/providers/steering_queue_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
+import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/composer/composer_models.dart';
 import 'package:control_center/shared/widgets/composer/file_reference.dart';
 import 'package:flutter/widgets.dart';
@@ -110,13 +113,30 @@ Future<void> submitSpaceComposer({
           .read(spaceMessageSendProvider.notifier)
           .attachmentMetadata(submission.attachments);
       final port = ref.read(messagingServiceProvider);
-      final queued = await port.enqueueSteering(
-        workspaceId: workspaceId,
-        spaceId: spaceId,
-        conversationId: conversationId,
-        content: content,
-        attachments: attachmentRefs,
-      );
+      final ({String messageId, bool steerable})? queued;
+      try {
+        queued = await port.enqueueSteering(
+          workspaceId: workspaceId,
+          spaceId: spaceId,
+          conversationId: conversationId,
+          content: content,
+          attachments: attachmentRefs,
+        );
+      } on Object catch (e) {
+        // Steering a run that acts for someone else needs the write grant
+        // (`repo_grant_required`, `level: write`): say so as the forge
+        // refusals do, and keep the draft (the composer keeps it when the
+        // submit throws). Never fall through to a send.
+        final refusal = context.mounted
+            ? repoCodeRefusalMessage(AppLocalizations.of(context), e)
+            : null;
+        if (refusal != null && context.mounted) {
+          CcToastScope.maybeOf(
+            context,
+          )?.show(refusal, variant: CcToastVariant.danger);
+        }
+        rethrow;
+      }
       if (queued != null) {
         // Remember whether ANY live run can inject mid-run: the strip's
         // "steer now" button is hidden for external-CLI transports (their

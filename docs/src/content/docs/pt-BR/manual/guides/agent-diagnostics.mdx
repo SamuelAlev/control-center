@@ -2,7 +2,7 @@
 title: Diagnosticar um agente
 description: Percorra o log de execução, a sondagem de adaptadores, o status do servidor e o diagnóstico do host quando um agente para de produzir execuções.
 slug: pt-BR/manual/guias/diagnosticar-agente
-sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
+sourceHash: 8cd7078bacfbfcd18d90512974eff3539366883c
 ---
 
 Este guia mostra como descobrir por que um agente não está produzindo execuções.
@@ -90,7 +90,13 @@ Verifique **Configurações → Servidor → Diagnóstico e privacidade → Busc
 
 ### O servidor não inicia de forma alguma
 
-As bibliotecas nativas são obrigatórias e não existe modo degradado. Uma dylib ausente faz o `cc_server` se recusar a iniciar e nomear o culpado no erro. Prepare os nativos com `scripts/natives/build_natives.sh` e recompile o binário do servidor.
+As bibliotecas nativas são obrigatórias e não existe modo degradado. Uma dylib ausente, ou um executor do modo de código ausente (`bin/codemode/cc_codemode`), faz o `cc_server` se recusar a iniciar e nomear o culpado no erro. Prepare os nativos com `scripts/natives/build_natives.sh` e recompile o binário do servidor com `scripts/build_server.sh`.
+
+### Um script falhou, ou o modo de código não é oferecido
+
+Para ver o que um script do [modo de código](/pt-BR/manual/conceitos/modo-de-codigo/) fez, abra o registro dele pelo **Abrir registro** na linha dele na conversa, ou em **Observabilidade → Execuções de código**. O registro diz como o script terminou, em palavras simples (esgotou o tempo, usou todo o tempo de processador, atingiu o limite de memória, lançou um erro), e lista cada chamada de ferramenta feita por ele, com a indicação de se as barreiras a permitiram, uma pessoa a aprovou ou ela foi negada.
+
+Se o agente não tiver nenhuma ferramenta `repl`, abra **Configurações → Espaço de trabalho → Modo de código**. Em **Status**, **Neste servidor** diz **Disponível** ou **Indisponível**; **Indisponível** significa que o servidor não consegue bloquear o executor de scripts no host dele, e a página cita o motivo. O log de inicialização do servidor tem a mesma linha (`code_mode=…`). Uma execução sem espaço de trabalho, cujos limites do espaço de trabalho não puderam ser lidos ou cujo log não pôde ser gravado também não recebe `repl` e chama as ferramentas diretamente.
 
 ### Uma ação é negada silenciosamente
 

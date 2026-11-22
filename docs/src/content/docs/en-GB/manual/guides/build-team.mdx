@@ -2,7 +2,7 @@
 title: Build an agent team
 description: Group agents under a leader so assigned work routes through one coordinator.
 slug: en-GB/manual/guides/build-team
-sourceHash: fc5e2b8c8a49e398ff1b322fcfb25c4aed84bbb4
+sourceHash: 55add2d16bf90650b7d4cbda7aa78f0fdf1b72e2
 ---
 
 This guide shows you how to create a team, give it a leader and route work to it.
@@ -51,7 +51,7 @@ When a ticket does carry a team assignment:
 
 1. The team's leader is dispatched with the ticket, its operating instructions and the member roster.
 2. The leader delegates to members and records its evaluation with the `record_team_activity` tool — `action` (delegated), `no_action` (nothing more to do, which stops further re-triggers) or `failed`.
-3. Each member run that completes re-wakes the leader, bounded by the no-action guard.
+3. A member run the leader started with an `@mention` or a message wakes the leader again when it ends, in the conversation the leader woke it from, bounded by the no-action guard. Work the leader handed over with `delegate_task` wakes it when the ticket settles, and a question it asked with `ask_agent` wakes it with the reply (see [Agents working together](/en-GB/manual/guides/agents-working-together/)).
 
 The pipeline **Team dispatch** node is the other entry point. It takes a team id, a prompt and a dispatch mode:
 

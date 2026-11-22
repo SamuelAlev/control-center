@@ -97,6 +97,59 @@ class ChecklistSupervisor {
     return _note();
   }
 
+  /// How many characters of an item's text [retainedWrite] keeps: the steering
+  /// note quotes it, and a quote needs no more.
+  static const int retainedItemChars = 1024;
+
+  /// What [observeTurn] reads of a call to [toolName] with [args], as a small
+  /// argument map that [observeTurn] reads exactly as it reads [args], or null
+  /// when [name] is not the checklist tool.
+  ///
+  /// For a call made inside another tool (a script's nested call), whose
+  /// arguments must not be kept until the turn ends: the result holds at most
+  /// two items, the first `in_progress` and the first `pending` one, each
+  /// text clipped to [retainedItemChars]. Arguments without a `todos` list
+  /// stay a write that changes no state.
+  Map<String, dynamic>? retainedWrite(String name, Map<String, dynamic> args) {
+    if (_normalize(name) != _normalize(toolName)) {
+      return null;
+    }
+    final raw = args['todos'];
+    if (raw is! List) {
+      return const {};
+    }
+    String? active;
+    String? nextPending;
+    for (final item in raw) {
+      if (item is! Map) {
+        continue;
+      }
+      final content = item['content'];
+      final status = item['status'];
+      if (content is! String || status is! String) {
+        continue;
+      }
+      if (status == _inProgress) {
+        active ??= content;
+      } else if (status == _pending) {
+        nextPending ??= content;
+      }
+      if (active != null && nextPending != null) {
+        break;
+      }
+    }
+    String clip(String text) => text.length > retainedItemChars
+        ? text.substring(0, retainedItemChars)
+        : text;
+    return {
+      'todos': [
+        if (active != null) {'content': clip(active), 'status': _inProgress},
+        if (nextPending != null)
+          {'content': clip(nextPending), 'status': _pending},
+      ],
+    };
+  }
+
   /// Drops the staleness counter without forgetting the checklist state — for
   /// history rewrites (compaction, rewind), where the turn count no longer
   /// describes how long the agent has been ignoring its list. The list itself is
@@ -181,6 +234,36 @@ class ChecklistSupervisor {
     );
     return buf.toString();
   }
+
+  /// How many items of a checklist write are open (pending or in progress)
+  /// and how many it has in all, or null when [args] carries no list.
+  static ({int open, int total})? countsOf(Map<String, dynamic> args) {
+    final raw = args['todos'];
+    if (raw is! List) {
+      return null;
+    }
+    var open = 0;
+    var total = 0;
+    for (final item in raw) {
+      if (item is! Map) {
+        continue;
+      }
+      final status = item['status'];
+      if (item['content'] is! String || status is! String) {
+        continue;
+      }
+      total++;
+      if (status == _pending || status == _inProgress) {
+        open++;
+      }
+    }
+    return (open: open, total: total);
+  }
+
+  /// Whether a call named [name] writes the checklist kept by [toolName]
+  /// (an `mcp__<server>__` prefix is ignored).
+  static bool isChecklistWrite(String name, {String toolName = 'todo_write'}) =>
+      _normalize(name) == _normalize(toolName);
 
   /// Folds a wire tool name to its bare, lowercase form: strips an
   /// `mcp__<server>__` prefix so a bridged tool matches its own name.

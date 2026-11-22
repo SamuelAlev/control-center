@@ -221,7 +221,7 @@ void main() {
           provider: provider,
           config: AgentLoopConfig(
             tools: LoopToolConfig(
-              approvalCallback: (t, a) async => const ToolGateDecision.deny(),
+              approvalCallback: (_) async => const ToolGateDecision.deny(),
             ),
           ),
         )
@@ -256,7 +256,7 @@ void main() {
             provider: provider,
             config: AgentLoopConfig(
               tools: LoopToolConfig(
-                approvalCallback: (t, a) async => const ToolGateDecision.deny(
+                approvalCallback: (_) async => const ToolGateDecision.deny(
                   reason: 'plan mode denies fileWriteOutsideWorktree',
                   remediation: 'Call `submit_plan` instead.',
                 ),

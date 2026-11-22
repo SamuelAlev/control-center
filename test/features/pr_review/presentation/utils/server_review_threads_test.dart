@@ -1,4 +1,5 @@
 import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_inline_thread.dart';
 import 'package:control_center/features/pr_review/presentation/utils/server_review_threads.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -12,6 +13,7 @@ PrCodeReviewComment _c(
   int hour = 0,
   bool resolved = false,
   String? threadId,
+  bool fileLevel = false,
 }) => PrCodeReviewComment(
   id: id,
   body: 'body $id',
@@ -25,6 +27,7 @@ PrCodeReviewComment _c(
   reviewId: reviewId,
   threadId: threadId,
   isResolved: resolved,
+  isFileLevel: fileLevel,
 );
 
 void main() {
@@ -108,6 +111,13 @@ void main() {
 
       expect(threads.single.isOutdated, isTrue);
       expect(threads.single.endLine, isNull);
+    });
+
+    test('a file-level conversation has no line but is not outdated', () {
+      final threads = groupServerReviewThreads([_c(1, fileLevel: true)]);
+
+      expect(threads.single.isFileLevel, isTrue);
+      expect(threads.single.isOutdated, isFalse);
     });
 
     test('the id matches the diff\'s synthesised thread id', () {
@@ -267,6 +277,75 @@ void main() {
       expect(inline.entries, hasLength(1));
       expect(inline.line, 0);
       expect(inline.lineEnd, 0);
+    });
+  });
+
+  group('unresolvedConversationCount', () {
+    PrInlineThread local(String id, {int? serverId, bool resolved = false}) =>
+        PrInlineThread(
+          id: id,
+          filePath: 'lib/a.dart',
+          line: 1,
+          side: 'RIGHT',
+          kind: PrInlineThreadKind.comment,
+          originalCode: '',
+          suggestedCode: '',
+          entries: [PrInlineEntry(id: '$id-e', author: 'me', body: 'b')],
+          serverId: serverId,
+          resolved: resolved,
+        );
+
+    test('counts open forge conversations, not their replies', () {
+      final threads = groupServerReviewThreads([
+        _c(1, line: 10, hour: 1),
+        _c(2, inReplyTo: 1, line: 10, hour: 2),
+        _c(3, line: 20, hour: 3, resolved: true),
+        // Outdated and file-level conversations are still open ones.
+        _c(4, hour: 4),
+        _c(5, hour: 5, fileLevel: true),
+      ]);
+
+      expect(
+        unresolvedConversationCount(
+          serverThreads: threads,
+          localThreads: const [],
+        ),
+        3,
+      );
+    });
+
+    test('the optimistic resolve state wins over the forge', () {
+      final threads = groupServerReviewThreads([
+        _c(1, line: 10, hour: 1),
+        _c(2, line: 20, hour: 2, resolved: true),
+      ]);
+
+      expect(
+        unresolvedConversationCount(
+          serverThreads: threads,
+          localThreads: const [],
+          resolvedOverride: {'server-1': true, 'server-2': false},
+        ),
+        1,
+      );
+    });
+
+    test('a local thread counts until its forge copy arrives', () {
+      final threads = groupServerReviewThreads([_c(1, line: 10, hour: 1)]);
+
+      expect(
+        unresolvedConversationCount(
+          serverThreads: threads,
+          localThreads: [
+            local('draft'),
+            local('posting', serverId: 9),
+            local('posted', serverId: 1),
+            local('settled', resolved: true),
+          ],
+        ),
+        // The forge's #1, the draft and the one still posting.
+        3,
+      );
     });
   });
 }

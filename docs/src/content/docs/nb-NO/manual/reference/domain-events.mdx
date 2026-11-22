@@ -2,7 +2,7 @@
 title: Domenehendelser
 description: Fullstendig katalog over de 54 domenehendelsene, nyttelastene deres og abonnentene på serversiden som konsumerer dem.
 slug: nb-NO/handbok/referanse/domenehendelser
-sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
+sourceHash: f58123448c0f31c95774bbaebee89f1509940896
 ---
 
 ## Hendelsesbuss
@@ -24,7 +24,10 @@ Hver hendelse i katalogen nedenfor ligger i denne ene mappen; det finnes ingen d
 | Hendelse            | Nyttelast                                              | Utløses når                                             |
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | Arbeidsområdet opprettes                                |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | En agent fullfører en kjøring (vellykket eller mislykket) |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Agentens prosessstrøm avsluttes, før den endelige tilstanden skrives. Beholdes bare for PR-samtalebroen og analyse |
+| `AgentRunSettled` | `agentId`, `workspaceId`, `runId`, `status`, `endReason`, `costMicros`, `wakeIds`, `spaceId?`, `conversationId?`, `limitResetsAt?`, `requestedByUserId?`, `wakeReason?` | Den endelige tilstanden til en kjøring er skrevet; publiseres nøyaktig én gang per kjøring. `endReason` er `completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` eller `serverStopped`. En underagents kjøring publiserer ingen |
+| `GoalSettled` | `goalId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `status`, `hold?`, `summary?`, `requestedByUserId?` | Et mål avsluttes, eller begynner å vente på en persons gjennomgang |
+| `WakeRuleEnded` | `ruleId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `reason`, `requestedByUserId?` | En tidsplan eller overvåking avsluttes (kjørte sin ene gang, utløp, brukte opp kjøringene eller kostnaden, ble avbrutt, målet ble avsluttet, eller personen forlot) |
 | `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | En agent begynner å vente på et menneske: en godkjenning, et `ask_user`-spørsmål eller en kjøring som står fast på påloggingsinformasjon (`kind` er `approval`, `question` eller `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Et repo registreres; utløser kodeindeksering i bakgrunnen |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | En skill installeres eller oppdateres, og bærer verdikten fra leverandørkjedeskanneringen |
@@ -57,6 +60,16 @@ Alle seks bærer `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle` o
 | `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | Noen nevnte deg i en PR-kommentar eller gjennomgangskommentar          |
 | `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | Noen svarte i en gjennomgangstråd du er med i                                 |
 | `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | Noen løste en gjennomgangstråd du er med i                                    |
+
+### Overvåking av pull requests
+
+Publiseres av den åpne pull request-avspørreren for hver pull request den avspør, uansett hvem som skrev den, for agentenes `on:pr_*`-overvåkinger. Alle tre bærer `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `headRef` og `authorLogin`.
+
+| Hendelse | Ekstra nyttelast | Utløses når |
+| ----------------------- | ----------------------------------------------- | ---------- |
+| `PrWatchChecksSettled` | `passing`, `failedChecks`, `failedCheckUrl?` | Alle sjekker på pull requestens hode ble ferdige |
+| `PrWatchReviewActivity` | `decision`, `decisionChanged`, `newComments` | Pull requesten fikk en gjennomgang eller nye kommentarer |
+| `PrWatchClosed` | `merged` | Pull requesten ble slått sammen eller lukket |
 
 ## Meldingshendelser
 
@@ -167,14 +180,20 @@ Alle abonnentene nedenfor konstrueres inne i `runCcServer` (eller en tjeneste de
 | Klargjøring av chatområde (innebygd) | `SpaceCreated`                                                                                      |
 | `PipelineTriggerDispatcher`         | Hver `DomainEvent`; hver aktiverte utløser filtrerer på sin egen type                                |
 | `SubPipelineResumeListener`         | `PipelineRunCompleted`, `PipelineRunFailed`                                                          |
-| `PipelineCostRollupListener`        | `AgentRunCompleted`                                                                                  |
-| `BudgetEvaluationListener`          | `AgentRunCompleted`                                                                                  |
+| `PipelineCostRollupListener`        | `AgentRunSettled`                                                                                    |
+| `BudgetEvaluationListener`          | `AgentRunSettled`                                                                                    |
 | `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (bare `meeting_summary`-kjøringer) |
-| `PipelineStepResumeListener`        | `AgentRunCompleted`                                                                                  |
-| `AgentRunTaskCompleter`             | `AgentRunCompleted`                                                                                  |
-| `GoalSupervisor`                    | `AgentRunCompleted`                                                                                  |
-| `CheckerDispatchListener`           | `AgentRunCompleted`                                                                                  |
-| `TeamRoutingService`                | `AgentRunCompleted`, `TicketAssigned`                                                                |
+| `PipelineStepResumeListener`        | `AgentRunSettled`                                                                                    |
+| `AgentRunTaskCompleter`             | `AgentRunSettled`                                                                                    |
+| `GoalSupervisor`                    | `AgentRunSettled` — avgjør målets neste steg                                                         |
+| `CheckerDispatchListener`           | `AgentRunSettled` — legger kontrollagenten i kø som en vekking; hopper over målsegmenter og gjennomganger |
+| `TeamRoutingService`                | `AgentRunSettled`, `TicketAssigned`                                                                  |
+| `WakeQueueService` | `AgentRunSettled` — leverer vekkinger som ventet på at kjøringen skulle avslutte |
+| `WakeRuleService` | `AgentRunSettled` (selvstyrte løkker), `GoalSettled` (avslutter et måls tidsplaner), `PrWatch*`, `EnvironmentProcessExited`, `EnvironmentReady`, avslutninger av saker og pipeline-kjøringer (overvåkinger), `WorkspaceMemberRemoved` (avslutter den personens tidsplaner) |
+| `PeerAskService` | `AgentRunSettled` — besvarer spørsmål agenter stilte til hverandre og vekker den som spurte |
+| `LimitParkService` | `AgentRunSettled` med `usageLimit` — venter på leverandørens nullstilling |
+| `ImprovementReviewService` | `GoalSettled` (et verifisert mål) og `AgentRunSettled` — legger forbedringsgjennomgangen i kø og leser resultatet |
+| Pipeline-målsteg (`goal.pursue`) | `GoalSettled`, `AgentRunSettled`, `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` — gjenopptar steget, belaster orkestreringen og følger pipeline-kjøringen |
 | `OrchestrationRunListener`          | `PipelineRunCancelled`, `PipelineRunFailed`                                                          |
 | `MultiVendorTicketSyncCoordinator`  | `TicketCreated`, `TicketAssigned`, `TicketReassigned`, `TicketStatusChanged`, `TicketDetailsUpdated` |
 | `WorktreeGcListener`                | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`         |
@@ -234,6 +253,8 @@ oppføringer, og som får beskjed om hvert `ask_user`-spørsmål fra
 ventingen tar slutt.
 
 De fem kategoriene for egne PR-er bærer `forUserId`, så de når forfatteren i stedet for alle i arbeidsområdet.
+
+Fem rammer for langvarig arbeid, hver adressert til personen den gjelder (`for_user_id`): `notifications/goal_settled` (fra `GoalSettled`), `notifications/wake_rule_ended` (fra `WakeRuleEnded`), `notifications/improvement_proposed`, `notifications/pipeline_run_held` (en pipeline-kjøring holdt ved kostnadstaket i orkestreringen) og `notifications/waiting_digest` (én gang i døgnet, hva som venter på en person). Hver bærer `notification_kind`: `notify` tilsvarer `agentRunCompleted`, og `question` og `review` tilsvarer `agentAwaitingInput`. Hver varslende ramme bærer nå `notification_kind`, og en ramme med `quiet: true` (en tidsplan som ble avsluttet, et mål som ble avsluttet) går til varslingssenteret uten OS-toast, lyd eller høyt push.
 
 `RemoteEventForwarder` videresender i tillegg `TicketReassigned` som `notifications/ticket_reassigned` og hver `TaskLifecycleEvent` som `notifications/task_<phase>`. Ingen av dem tilordnes en varselkategori — de driver levende brukergrensesnitt, ikke varselsenteret. Medlemskapshendelser videresendes ikke som rammer: de ugyldiggjør cachen til videresenderen, og øktvertene dropper arbeidsområdeabonnementene til det fjernede medlemmet.
 

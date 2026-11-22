@@ -4,6 +4,24 @@ part of 'dispatch_session.dart';
 /// delivered-context cursor (a host concern the loop never interprets).
 const _promptCursorMetadataKey = 'cc.promptCursor';
 
+/// Who wrote the message a harness run starts with, which decides whether a
+/// compaction pins it: a signed-in person's own message ([userText]) and a
+/// pipeline step's or an assignment's prompt are the run's request; a wake
+/// frame and a peer's text are data, never pinned.
+HarnessMessageOrigin harnessRequestOrigin(
+  String? userText,
+  WakeContext? wakeContext,
+) => userText != null
+    ? HarnessMessageOrigin.person
+    : (wakeContext?.hasWakes ?? false)
+    ? HarnessMessageOrigin.wake
+    : switch (wakeContext?.wakeReason) {
+        WakeReason.peerMessage ||
+        WakeReason.peerReply ||
+        WakeReason.childCompleted => HarnessMessageOrigin.peer,
+        _ => HarnessMessageOrigin.person,
+      };
+
 ReasoningEffort? _raiseEffort(
   ReasoningEffort? configured,
   ReasoningEffort? requested,
@@ -17,7 +35,98 @@ ReasoningEffort? _raiseEffort(
   return requested.index > configured.index ? requested : configured;
 }
 
+/// What a run's `repl` tools run scripts with: the session's view of the
+/// execution service and the workspace's limits. `executions` is null when
+/// the run gets no script tool, and `error` then says why: the server runs
+/// no scripts, the run has no workspace, or the limits could not be read.
+typedef _CodeModeScripts = ({
+  RunCodeExecutions? executions,
+  CodeModeLimits limits,
+  String? error,
+});
+
 extension _DispatchSessionHarness on DispatchSession {
+  /// Builds the base harness tool registry (built-in filesystem/command tools
+  /// first, then bridged CC MCP tools) for a given [mode]/[env]. The
+  /// `task` tool is NOT added here — the top-level run adds it explicitly and
+  /// subagents deliberately omit it so nesting is capped at one level.
+  ///
+  /// [personalMcp] is [_personalMcpAllowed], asked by the caller right before.
+  ///
+  /// [scriptOrigins] are the origins of the loop the registry is for (the
+  /// session's own for the top-level run, the child's for a subagent): where
+  /// its `ask_user` and its command runner learn which script a nested call
+  /// belongs to.
+  ///
+  /// [replSlot] gives the registry a `repl` slot, which the run binds to its
+  /// own `ReplTool` once its surface is known (`bindReplTool`).
+  HarnessToolRegistry _buildHarnessRegistry({
+    required Mode mode,
+    required Map<String, String> env,
+    required bool personalMcp,
+    required RunScriptOrigins scriptOrigins,
+    bool replSlot = false,
+  }) {
+    final toolProcesses = _toolProcesses(mode);
+    return buildHarnessToolRegistry(
+      mode: mode,
+      networkEnabled: _run.networkEnabled,
+      loopbackPorts: _gatewayLoopbackPorts,
+      environmentScope: _run.environment.scope,
+      env: env,
+      toolOutputStore: _outputs,
+      workspaceId: workspaceId,
+      agentId: agentId,
+      conversationId: conversationId,
+      sandboxManager: deps.sandboxManager,
+      confirmationPort: deps.confirmationPort,
+      // The SAME resolution the CLI profile uses, so both adapters get the
+      // same scoped exec roots — and the tool's own cwd never enters into it.
+      execGrantRootsResolver: () => _execGrants(workspaceId ?? ''),
+      sandboxSpec: (id) => _sandboxSpec(id, workspaceId ?? '', mode: mode),
+      // The operator's own `commandPrefix` rules reach the bash gate through
+      // this — before it, they were stored, resolvable, editable in the
+      // what-if probe, and never consulted at runtime.
+      actionGuard: deps.actionGuard,
+      fileSearch: deps.fileSearch,
+      mcpRegistry: deps.mcpRegistry,
+      includePersonalMcp: personalMcp,
+      protectedPaths: _protectedPaths,
+      // `ask_user` renders in this run's conversation within its space.
+      // Both scopes must reach the tool so the answer returns to this run.
+      agentQuestionPort: deps.agentQuestionPort,
+      spaceId: spaceId,
+      // The question names this run, so only this run's watchdog pauses, and
+      // `bash`'s guard rows name it and the person it acts for.
+      runLogId: runLogId,
+      onBehalfOfUserId: requestedByUserId,
+      // Diagnostics + navigation. The ledger is PER RUN (a new run should hear
+      // the current state of the world once), while the supervisor is shared
+      // (its cost is indexing).
+      lspSupervisor: deps.lspSupervisor,
+      diagnosticsLedger: _diagnosticsLedger,
+      lspWorkingDirectory: agentDirHostPath,
+      // Structural search + rewrite. Null when the grammars are not staged, in
+      // which case the tools are not advertised at all.
+      treeSitterParser: deps.astParsers?.parserIfReady,
+      stagedEditStore: _stagedEdits,
+      debugSupervisor: deps.debugSupervisor,
+      evalKernelFor: deps.kernelLauncherFactory == null
+          ? null
+          : (language) => _kernelFor(language, hostProcesses: toolProcesses),
+      toolProcesses: toolProcesses,
+      debugProcesses: _debugProcesses(mode),
+      lspProcesses: _lspProcesses(mode),
+      harnessSandboxSessionId: _harnessSandboxSessionId,
+      // A script's question and a script's command name the script's own
+      // execution, and a push the gateway holds stops the calling tool's
+      // clocks.
+      scriptOrigins: scriptOrigins,
+      callWaits: _gatewayLease,
+      replSlot: replSlot,
+    );
+  }
+
   Future<void> _runHarness({required String wsId}) async {
     _harness.begin();
     // The moment a harness loop becomes drainable: the steering queue service
@@ -75,6 +184,12 @@ extension _DispatchSessionHarness on DispatchSession {
         if (await _gateOnHarnessPool(e)) {
           continue;
         }
+        if (e.refusal.reason == RunCredentialReason.planSpent) {
+          _markEndReason(
+            RunEndReason.usageLimit,
+            limitResetsAt: e.refusal.earliestReset,
+          );
+        }
         addEvent(ErrorEvent(content: e.toString(), source: 'harness'));
         _finish(exitCode: 126);
         return;
@@ -104,9 +219,10 @@ extension _DispatchSessionHarness on DispatchSession {
         compactions: compactions,
       ),
     );
+    _runEnd.accounting = accounting;
     final provider = accounting.observe(built, providerId: providerId);
 
-    // 1b. Slash commands: /plan, /goal, /loop change how the run behaves;
+    // 1b. Slash commands: /plan and /vibe change how the run behaves;
     //     /skill:<name> (or /skill:<repo>:<name>) injects that skill's
     //     instructions; anything else is plain text.
     //
@@ -114,8 +230,12 @@ extension _DispatchSessionHarness on DispatchSession {
     //     a space dispatch layers `prompt` into `<context>…</context>\n\n…`,
     //     which has no leading slash, so parsing it made every built-in
     //     command silently inert on the path that matters most.
-    final parsedCommand = parseSlashCommand(userText ?? prompt);
-    var effectiveMode = mode;
+    // Null for every run that is not a signed-in person's message: a
+    // peer's text or a wake's payload is never a command.
+    final parsedCommand = parseSlashCommand(userText ?? '');
+    // A read-only run has the review mode's capabilities whatever it was
+    // started with (the adapter starts it so; this holds it here too).
+    var effectiveMode = readOnly ? Mode.review : mode;
     var effectivePrompt = prompt;
     // No turn ceiling anywhere: interactive and autonomous runs alike end
     // when the model stops, a budget bites, or a human stops them — the
@@ -125,7 +245,8 @@ extension _DispatchSessionHarness on DispatchSession {
     final commandDirectives = StringBuffer();
     if (parsedCommand.isCommand) {
       final applied = await _applySlashCommand(parsedCommand);
-      effectiveMode = applied.mode ?? mode;
+      // A read-only run stays read-only whatever its text asks for.
+      effectiveMode = readOnly ? Mode.review : applied.mode ?? mode;
       effectivePrompt = _spliceUserText(applied.userTextOverride);
       commandMaxTurns = applied.maxTurns;
       if (applied.directive != null) {
@@ -138,7 +259,7 @@ extension _DispatchSessionHarness on DispatchSession {
 
     // Magic keywords: a standalone lowercase word in the user's own prose that
     // attaches a hidden instruction to THIS turn.
-    final magic = detectMagicKeywords(userText ?? prompt);
+    final magic = detectMagicKeywords(userText ?? '');
     if (magic.isNotEmpty) {
       commandDirectives.writeln(magicKeywordDirective(magic));
       addEvent(
@@ -152,13 +273,44 @@ extension _DispatchSessionHarness on DispatchSession {
     final port = deps.confirmationPort;
     final guard = deps.actionGuard;
     final profile = profileFor(effectiveMode);
-    Future<ToolGateDecision> approval(
-      HarnessTool tool,
-      Map<String, dynamic> args,
+    // A script's call whose summary the audit could not hold whole is
+    // refused, and audited, before anything else: no pre-tool hook, no
+    // policy, no card, no budget. Every loop of the run asks it
+    // ([LoopToolConfig.nestedCallRefusal]).
+    String? scriptRefusal(HarnessTool tool, Map<String, dynamic> args) {
+      final executed = tool.executedContent(args);
+      final summary = ActionGuardService.toolActionSummary(tool.name, executed);
+      return guard == null
+          ? ActionGuardService.scriptActionRefusal(summary)
+          : guard.refuseScriptAction(
+              workspaceId: wsId,
+              classes: tool.actionClasses,
+              actionSummary: summary,
+              command: executed,
+              spaceId: spaceId,
+              agentId: agentId,
+              onBehalfOfUserId: requestedByUserId,
+              runId: runLogId,
+            );
+    }
+
+    // One decision for every loop of the run; only the origins a script's
+    // call is resolved against are the loop's own.
+    Future<ToolGateDecision> approvalWith(
+      RunScriptOrigins origins,
+      ToolApprovalRequest request,
     ) async {
+      final tool = request.tool;
+      final args = request.args;
+      final origin = request.origin;
       if (DispatchSession._harnessInteractionTools.contains(tool.name)) {
         return const ToolGateDecision.allow();
       }
+      // What the call runs, audited whole under the tool's name and digested
+      // (a script's that is too long never gets here: [scriptRefusal]).
+      final executed = tool.executedContent(args);
+      final summary = ActionGuardService.toolActionSummary(tool.name, executed);
+      final parent = origin.parentToolUseId;
       String? autonomy;
       final resolveAutonomy = deps.autonomyResolver;
       final autonomyWorkspaceId = workspaceId;
@@ -174,6 +326,31 @@ extension _DispatchSessionHarness on DispatchSession {
         );
       }
 
+      // A script's call: what that script may still ask of a person. A direct call has no budget.
+      final budget = parent == null || parent.isEmpty
+          ? null
+          : origins.approvalsOf(parent);
+      // Asks a person, telling the gate exactly when one is asked. Null when
+      // the card came down unanswered: nobody's answer, and no decline.
+      var unanswered = false;
+      Future<bool?> ask(ConfirmationPort port, ConfirmationRequest card) async {
+        budget?.asking();
+        request.onPersonWait(true);
+        final bool approved;
+        try {
+          approved = await port.requestApproval(card);
+        } finally {
+          request.onPersonWait(false);
+        }
+        if (request.withdrawn.isCancelled || unanswered) {
+          return null;
+        }
+        budget?.answered(approved: approved, unanswered: false);
+        return approved;
+      }
+
+      const withdrawnReason = 'the call stopped waiting before anyone answered';
+      const unansweredReason = kUnansweredCardReason;
       if (guard != null && tool.actionClasses.isNotEmpty) {
         final actionRequest = const ActionRequestExtractor().extract(
           args,
@@ -188,18 +365,26 @@ extension _DispatchSessionHarness on DispatchSession {
           mode: effectiveMode,
           request: actionRequest,
         );
-        void auditOutcome(ActionDecision applied, {bool asked = false}) {
+        void auditOutcome(
+          ActionDecision applied, {
+          bool asked = false,
+          String? budgetRefusal,
+        }) {
           guard.recordOutcome(
             workspaceId: wsId,
-            resolution: resolution,
+            resolution: budgetRefusal == null
+                ? resolution
+                : scriptApprovalDenial(resolution, budgetRefusal),
             applied: applied,
             classes: tool.actionClasses,
             agentId: agentId,
             spaceId: spaceId,
-            actionSummary: tool.name,
+            actionSummary: summary,
             prompted: asked,
+            unanswered: unanswered || (asked && request.withdrawn.isCancelled),
             onBehalfOfUserId: requestedByUserId,
             runId: runLogId,
+            command: executed,
           );
         }
 
@@ -241,10 +426,21 @@ extension _DispatchSessionHarness on DispatchSession {
             reason: 'approval is required but no approver is connected',
           );
         }
+        // Nobody waits for this decision any more: raise no card for it.
+        if (request.withdrawn.isCancelled) {
+          return const ToolGateDecision.deny(reason: withdrawnReason);
+        }
+        // A script that already used its asks, or was declined once, is
+        // refused without a card: a denial nobody was asked about.
+        if (budget?.refusal case final refusal?) {
+          auditOutcome(ActionDecision.deny, budgetRefusal: refusal);
+          return ToolGateDecision.deny(reason: refusal);
+        }
         // Policy asks here (the dial never asks on its own once policy
         // allows), and the resolution above already let a live standing
         // approval answer it.
-        final approved = await port.requestApproval(
+        final approved = await ask(
+          port,
           ActionGuardService.approvalRequest(
             resolution: resolution,
             classes: tool.actionClasses,
@@ -257,16 +453,27 @@ extension _DispatchSessionHarness on DispatchSession {
             kind: tool.approvalTier == ToolApprovalTier.exec
                 ? ConfirmationKind.command
                 : ConfirmationKind.fileWrite,
+            withdrawn: request.withdrawn.whenCancelled,
+            origin: _scriptOriginOf(origin, origins),
+            runId: runLogId,
+            onUnanswered: () => unanswered = true,
           ),
         );
+        if (approved == null) {
+          // The card came down unanswered. Whatever the port said, no
+          // person allowed this, and the call is not run.
+          auditOutcome(ActionDecision.deny, asked: true);
+          return const ToolGateDecision.deny(reason: unansweredReason);
+        }
         auditOutcome(
           approved ? ActionDecision.allow : ActionDecision.deny,
           asked: true,
         );
         return approved
-            ? const ToolGateDecision.allow()
+            ? const ToolGateDecision.allow(askedPerson: true)
             : const ToolGateDecision.deny(
                 reason: 'the operator declined this action',
+                askedPerson: true,
               );
       }
 
@@ -289,9 +496,16 @@ extension _DispatchSessionHarness on DispatchSession {
           reason: 'approval is required but no approver is connected',
         );
       }
+      if (request.withdrawn.isCancelled) {
+        return const ToolGateDecision.deny(reason: withdrawnReason);
+      }
+      if (budget?.refusal case final refusal?) {
+        return ToolGateDecision.deny(reason: refusal);
+      }
       // No policy was consulted (no guard, or a tool with no effect
       // classes), so there is nothing a standing approval could rest on.
-      final approved = await port.requestApproval(
+      final approved = await ask(
+        port,
         ActionGuardService.approvalRequest(
           resolution: null,
           classes: tool.actionClasses,
@@ -308,14 +522,27 @@ extension _DispatchSessionHarness on DispatchSession {
           kind: tool.approvalTier == ToolApprovalTier.exec
               ? ConfirmationKind.command
               : ConfirmationKind.fileWrite,
+          runId: runLogId,
+          withdrawn: request.withdrawn.whenCancelled,
+          origin: _scriptOriginOf(origin, origins),
+          onUnanswered: () => unanswered = true,
         ),
       );
+      if (approved == null) {
+        return const ToolGateDecision.deny(reason: unansweredReason);
+      }
       return approved
-          ? const ToolGateDecision.allow()
+          ? const ToolGateDecision.allow(askedPerson: true)
           : const ToolGateDecision.deny(
               reason: 'the operator declined this action',
+              askedPerson: true,
             );
     }
+
+    // The top-level loop's binding; each subagent binds [approvalWith] to
+    // its own origins.
+    Future<ToolGateDecision> approval(ToolApprovalRequest request) =>
+        approvalWith(scriptOrigins, request);
 
     final harnessToolEnv = <String, String>{..._run.identity.gitEnv};
     // `bash` pushes through the gateway exactly like a CLI adapter's shell.
@@ -329,23 +556,29 @@ extension _DispatchSessionHarness on DispatchSession {
       agentDirHostPath,
       agentConfigDir,
     ], hookBase: hookFolder);
-    final sessionCostCapMicros = costCapMicros ?? defaultRunCostCapMicros;
-    final bool Function()? budgetExceeded = switch (parsedCommand.command) {
-      'goal' ||
-      'loop' => () => accounting.subtreeCostMicros >= sessionCostCapMicros,
-      _ => null,
-    };
+    // The run's cost cap, whatever started it: the loop stops at the cap and
+    // is told to wrap up at [kRunCostWrapUpTenths] of it. No cap, no check.
+    final sessionCostCapMicros = costCapMicros;
+    final bool Function()? budgetExceeded = sessionCostCapMicros == null
+        ? null
+        : () => accounting.subtreeCostMicros >= sessionCostCapMicros;
 
     // Built further down; declared here so the subagent spawners (which run
     // only once the loop is going) hand them to every nested run.
     Advisor? advisor;
     AgentLoopHooks? hooks;
 
-    // 2. Assemble tools.
+    // 2. Assemble tools. Whether the run has `repl` is decided once, here,
+    //    for the run and every subagent it spawns: exactly when this server
+    //    runs scripts.
+    final scripts = await _codeModeScripts();
+    final scriptExecutions = scripts.executions;
     final registry = _buildHarnessRegistry(
       mode: effectiveMode,
       env: harnessToolEnv,
       personalMcp: await _personalMcpAllowed(),
+      scriptOrigins: scriptOrigins,
+      replSlot: scriptExecutions != null,
     );
 
     final subagentCatalog = await _subagentCatalog();
@@ -365,25 +598,30 @@ extension _DispatchSessionHarness on DispatchSession {
             runConfig: runConfig,
             budgetExceeded: budgetExceeded,
             baseSystemPrompt: baseSystem,
-            approval: approval,
+            approvalWith: approvalWith,
+            scriptRefusal: scriptRefusal,
             parentAdvisor: advisor,
             parentHooks: hooks,
           ),
         ),
       ),
     );
-    final surface = profile.toToolSurfaceSpec();
-    final partition = materializeHarnessToolSurface(
+    // A read-only run calls only what changes nothing, whatever its mode.
+    final surface = readOnly
+        ? ReadOnlyRunProfile.toolSurfaceOver(registry.tools)
+        : profile.toToolSurfaceSpec();
+    final toolSurface = materializeHarnessToolSurface(
       registry: registry,
       surface: surface,
       residency: profile.toToolResidencySpec(enabled: deps.toolDeferralEnabled),
     );
-    var tools = partition.resident;
-    var deferredTools = partition.deferred;
+    var tools = toolSurface.resident;
+    var deferredTools = toolSurface.deferred;
+    var scriptTools = toolSurface.scriptOnly;
 
     final vibeRoster = _vibeRoster;
     final workerRuns = <Future<SubagentResult>>{};
-    if (vibeRoster != null) {
+    if (vibeRoster != null && !readOnly) {
       final vibeTools = buildVibeTools(
         roster: vibeRoster,
         runner: _ClosureVibeRunner((worker, brief, ctx, type, model) async {
@@ -408,7 +646,8 @@ extension _DispatchSessionHarness on DispatchSession {
             runConfig: runConfig,
             budgetExceeded: budgetExceeded,
             baseSystemPrompt: baseSystem,
-            approval: approval,
+            approvalWith: approvalWith,
+            scriptRefusal: scriptRefusal,
             parentAdvisor: advisor,
             parentHooks: hooks,
           );
@@ -421,14 +660,49 @@ extension _DispatchSessionHarness on DispatchSession {
         }),
       );
       tools = [
-        for (final tool in partition.resident)
+        for (final tool in toolSurface.resident)
           if (tool.approvalTier == ToolApprovalTier.read && tool.name != 'task')
             tool,
         ...vibeTools,
       ];
       deferredTools = const [];
+      // The orchestrator keeps only read-tier residents, so a script there
+      // can call only those: `repl` is read tier and stays, the script-only
+      // list goes with the deferred one.
+      scriptTools = const [];
+    }
+    // The run's own `repl`, built for exactly what the loop will admit for a
+    // nested call. After the vibe narrowing, so a script there is told about
+    // the read-tier tools it can actually reach.
+    // A script is recorded under its run's row before it starts, so a run
+    // without one (its row could not be written) gets no `repl`: its tools
+    // are all called directly instead.
+    if (scriptExecutions != null &&
+        !hasRunLogRow &&
+        tools.any((t) => t.name == ReplToolDescription.toolName)) {
+      tools = withoutReplTool(resident: tools, scriptOnly: scriptTools);
+      scriptTools = const [];
+      addEvent(
+        DebugEvent(
+          content:
+              '[harness] this run has no run log, so its scripts could not be '
+              'recorded: it has no repl, and calls its tools directly.',
+        ),
+      );
+    } else if (scriptExecutions != null) {
+      tools = bindReplTool(
+        resident: tools,
+        scriptOnly: scriptTools,
+        binding: ReplBinding(
+          executions: scriptExecutions.forLoop(scriptOrigins),
+          run: _replRun(wsId, codeModeRunId),
+          limits: scripts.limits,
+          fullOutputSink: _replOutputSink(agentId),
+        ),
+      );
     }
 
+    _bindToolForms(tools, deferredTools, scriptTools);
     // 4. Run the loop, translating events to AgentProcessEvents.
     final qualifiedModel =
         '$providerId/${parsed.model ?? provider.defaultModel}';
@@ -441,6 +715,8 @@ extension _DispatchSessionHarness on DispatchSession {
       profile,
       materializedToolNames: [for (final t in tools) t.name],
       deferredToolNames: [for (final t in deferredTools) t.name],
+      hasRepl: tools.any((t) => t.name == ReplToolDescription.toolName),
+      scriptToolNames: [for (final t in scriptTools) t.name],
     );
     final systemPrompt = [
       baseSystem,
@@ -456,6 +732,13 @@ extension _DispatchSessionHarness on DispatchSession {
       systemPrompt: systemPrompt,
       toolSchemaTokens: estimateToolSchemaTokens(tools),
       effort: effectiveEffort?.name,
+      scriptsUnavailable:
+          tools.any((t) => t.name == ReplToolDescription.toolName)
+          ? null
+          : scripts.error ??
+                'this run has no run log, so its scripts could not be '
+                    'recorded',
+      scriptToolNames: [for (final t in scriptTools) t.name],
     );
 
     _reportHookConfig(runConfig, hookFolder);
@@ -537,7 +820,10 @@ extension _DispatchSessionHarness on DispatchSession {
             sessionStartScript: runConfig.hookSessionStart,
             preToolScript: runConfig.hookPreTool,
             postToolScript: runConfig.hookPostTool,
+            stopScript: runConfig.hookStop,
+            preCompactScript: runConfig.hookPreCompact,
             denyTools: runConfig.preToolRefused,
+            onWarning: (message) => CcInfraLog.warning('harness hooks: $message'),
           )
         : null;
 
@@ -569,10 +855,11 @@ extension _DispatchSessionHarness on DispatchSession {
       tools: LoopToolConfig(
         toolTimeout: const Duration(minutes: 30),
         approvalCallback: approval,
+        nestedCallRefusal: scriptRefusal,
         maxParallelToolCalls: runConfig.maxParallelToolCalls,
         overlapReadOnlyTools: runConfig.overlapReadOnlyTools,
         observationIngest: ToolObservationIngest(
-          store: deps.toolOutputStore,
+          store: _outputs,
           retainMinTokens:
               runConfig.compaction.policy == CompactionPolicy.current
               ? 0
@@ -584,11 +871,11 @@ extension _DispatchSessionHarness on DispatchSession {
         callLedger: accounting.ledger,
         contract: profile.toCompletionContract(),
         externalBudgetExceeded: budgetExceeded,
-        externalBudgetPressure: switch (parsedCommand.command) {
-          'goal' || 'loop' =>
-            () => accounting.subtreeCostMicros * 5 >= sessionCostCapMicros * 4,
-          _ => null,
-        },
+        externalBudgetPressure: sessionCostCapMicros == null
+            ? null
+            : () =>
+                  accounting.subtreeCostMicros * 10 >=
+                  sessionCostCapMicros * kRunCostWrapUpTenths,
       ),
       compaction: LoopCompactionConfig(
         tokenCalibration: deps.tokenCalibration,
@@ -605,6 +892,8 @@ extension _DispatchSessionHarness on DispatchSession {
           retainedSnapshotSource: resumed?.retainedSnapshotSource,
           preferSnapshots: runConfig.snapshotCompaction,
         ),
+        inFlightLines: stillInFlightLines,
+        clock: clock.now,
       ),
       steering: LoopSteeringConfig(
         pauseGate: _harness.pauseGate,
@@ -612,7 +901,16 @@ extension _DispatchSessionHarness on DispatchSession {
         advisor: advisor,
         advisorEveryTurns: runConfig.advisorEveryTurns,
         hooks: hooks,
+        // The owner's `stop` and `preCompact` scripts: the main run only (a
+        // subagent's config sets none, so it never inherits them).
+        // The server's would-stop handlers first, then the owner's.
+        turnHooks: ServerTurnHooks.compose(
+          deps.wouldStopHandlers,
+          this,
+          owner: hooks,
+        ),
         queue: _steering,
+        requestOrigin: harnessRequestOrigin(userText, wakeContext),
       ),
       transcript: LoopTranscriptConfig(
         store: deps.transcriptStore,
@@ -680,6 +978,7 @@ extension _DispatchSessionHarness on DispatchSession {
         userImages: await _loadPromptImages(),
         tools: tools,
         deferredTools: deferredTools,
+        scriptTools: scriptTools,
         provider: provider,
         context: context,
         config: config,
@@ -760,10 +1059,17 @@ extension _DispatchSessionHarness on DispatchSession {
                     '$tokensBefore→$tokensAfter tokens.',
               ),
             );
-          case LoopError():
+          case LoopError(:final message, :final code):
             exitCode = 1;
+            // A spent balance or quota after the provider chain ran out of
+            // credentials to fall back to: the run ended on a usage limit.
+            if (LlmErrorKind.classify(code: code, message: message) ==
+                LlmErrorKind.quota) {
+              _markEndReason(RunEndReason.usageLimit);
+            }
           case LoopDone(:final reason, :final unmetContractId):
             if (reason == LoopDoneReason.budgetExhausted) {
+              _markEndReason(RunEndReason.budget);
               addEvent(
                 DebugEvent(content: '[harness] stopped: budget exhausted.'),
               );
@@ -797,6 +1103,18 @@ extension _DispatchSessionHarness on DispatchSession {
             }
           case LoopTurnComplete():
             break;
+          case LoopCompacting(:final started):
+            _noteCompacting(started: started);
+          case LoopPark(:final parked, :final reason):
+            _noteLoopPark('main', parked: parked);
+            addEvent(
+              DebugEvent(
+                content: parked
+                    ? '[harness] waiting for $reason to finish before the '
+                          'turn ends (no model call meanwhile).'
+                    : '[harness] done waiting for $reason.',
+              ),
+            );
         }
       }
       final unmetAtClose = contractUnmet;
@@ -808,6 +1126,8 @@ extension _DispatchSessionHarness on DispatchSession {
       runFailure = e;
       addEvent(ErrorEvent(content: '[harness] $e', source: 'harness'));
     } finally {
+      _noteLoopPark('main', parked: false);
+      _noteCompacting(started: false);
       _harness.end();
       for (final kernel in _kernels.values) {
         unawaited(kernel.dispose());
@@ -827,6 +1147,11 @@ extension _DispatchSessionHarness on DispatchSession {
           CcInfraLog.warning('Worker shutdown failed: $error');
         }
       }
+      // A script still running (the loop ended under it, or threw) is
+      // cancelled, and its runner is gone, before the run reports itself
+      // finished.
+      await _bestEffort('script teardown', _endScripts);
+      await _retireOutputs();
       await accounting.flush();
       // Also after a stop already finished the run: a tool call still
       // unwinding then may have opened a session again.
@@ -834,6 +1159,111 @@ extension _DispatchSessionHarness on DispatchSession {
       _finish(exitCode: exitCode, error: runFailure);
       await _finishing;
     }
+  }
+
+  /// What this run's `repl` tools run scripts with, set up once and shared by
+  /// its subagents (each binds its own loop's origins with
+  /// [RunCodeExecutions.forLoop]), so one close ends every loop's scripts.
+  /// No script tool when this server runs no scripts (no execution service,
+  /// or a runner that failed its self-test) or the run has no workspace;
+  /// none either when the workspace's limits cannot be read, because running
+  /// under the built-in defaults could exceed limits a workspace admin
+  /// lowered.
+  Future<_CodeModeScripts> _codeModeScripts() =>
+      _codeModeScriptsSetup ??= _openCodeModeScripts();
+
+  Future<_CodeModeScripts> _openCodeModeScripts() async {
+    final service = deps.codeExecutions;
+    final ws = workspaceId;
+    String? unavailable;
+    if (service == null) {
+      unavailable = 'this server runs no scripts';
+    } else if (!service.availability.isAvailable) {
+      // The runner's own reason can name a host path; the status page
+      // gives the public one.
+      unavailable = 'the script runner is unavailable on this server';
+    } else if (ws == null || ws.isEmpty) {
+      unavailable = 'the run has no workspace';
+    }
+    if (service == null || unavailable != null || ws == null) {
+      return (
+        executions: null,
+        limits: CodeModeLimits.defaults,
+        error: unavailable,
+      );
+    }
+    final CodeModeLimits limits;
+    try {
+      limits = await deps.codeModeLimits?.call(ws) ?? CodeModeLimits.defaults;
+    } on Object catch (e, st) {
+      // Workspace members read both texts below; what the store threw can
+      // name a host path, so it goes to the server log only.
+      CcInfraLog.error('code mode limits could not be read', e, st);
+      addEvent(
+        DebugEvent(
+          content:
+              '[harness] code mode limits could not be read (the server log '
+              'has the reason); the run has no script tool.',
+        ),
+      );
+      return (
+        executions: null,
+        limits: CodeModeLimits.defaults,
+        error:
+            'code mode limits could not be read (the server log has the '
+            'reason)',
+      );
+    }
+    return (
+      executions: _scripts ??= RunCodeExecutions(
+        service,
+        gateway: _gatewayLease,
+      ),
+      limits: limits,
+      error: null,
+    );
+  }
+
+  /// Where a `repl` result's full output goes when it is over its budget: the
+  /// run's tool-output store, under the scope `read_output` reads with for a
+  /// tool context whose agent is [contextAgentId]. Null without a store or a
+  /// workspace.
+  ReplFullOutputSink? _replOutputSink(String? contextAgentId) {
+    final store = _outputs;
+    final ws = workspaceId;
+    if (store == null || ws == null || ws.isEmpty) {
+      return null;
+    }
+    final scope = ToolOutputScope(
+      workspaceId: ws,
+      conversationId: conversationId,
+      agentId: contextAgentId,
+    );
+    return (text) => store.put(
+      ToolOutputWrite(
+        scope: scope,
+        toolName: ReplToolDescription.toolName,
+        content: text,
+      ),
+    );
+  }
+
+  /// [id] when it names something, else null: a code execution records real
+  /// ids or none.
+  static String? _realId(String? id) => id == null || id.isEmpty ? null : id;
+
+  /// The origin an approval card shows for a call a script made, or null for
+  /// a call the model made directly. The execution is the one the script
+  /// runs as, in [origins]: the origins of the loop that made the call.
+  ScriptCallOrigin? _scriptOriginOf(
+    ToolCallOrigin origin,
+    RunScriptOrigins origins,
+  ) {
+    final parent = origin.parentToolUseId;
+    if (parent == null || parent.isEmpty) {
+      return null;
+    }
+    return origins.originOf(parent);
   }
 
   void _emitHarnessProviderCall(

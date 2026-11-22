@@ -5,6 +5,7 @@ import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/core/logging/cc_domain_log.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_engine.dart';
 
 /// Resumes a suspended pipeline step once every agent run it dispatched has
@@ -12,7 +13,8 @@ import 'package:cc_domain/features/pipelines/domain/services/pipeline_engine.dar
 /// the work surface is now a hidden conversation and the output contract lives
 /// on the `AgentRunLog`, so step completion keys off runs, not tickets.
 ///
-/// Listens to [AgentRunCompleted], resolves the finished run's pipeline
+/// Listens to [AgentRunSettled] (published after the run's terminal write),
+/// resolves the finished run's pipeline
 /// coupling, groups runs by `(pipelineRunId, pipelineStepId)` and — once
 /// all of them are terminal — asks the engine to harvest their `outputJson`
 /// and advance the step.
@@ -41,11 +43,11 @@ class PipelineStepResumeListener {
   })?
   _driftGate;
 
-  StreamSubscription<AgentRunCompleted>? _sub;
+  StreamSubscription<AgentRunSettled>? _sub;
 
-  /// Start listening for terminal agent-run events.
+  /// Start listening for settled agent runs.
   void start() {
-    _sub = _eventBus.on<AgentRunCompleted>().listen(_onCompleted);
+    _sub = _eventBus.on<AgentRunSettled>().listen(_onCompleted);
   }
 
   /// Stop listening.
@@ -53,12 +55,15 @@ class PipelineStepResumeListener {
     _sub?.cancel();
   }
 
-  Future<void> _onCompleted(AgentRunCompleted event) async {
-    final runId = event.runId;
-    final workspaceId = event.workspaceId;
-    if (runId == null || workspaceId == null) {
+  Future<void> _onCompleted(AgentRunSettled event) async {
+    // The server went away under the run (a shutdown, or the reaper at the
+    // next boot): not the step's outcome. The step stays `running`, and boot
+    // recovery (`resumeAll`) fires it again as a new attempt.
+    if (event.endReason == RunEndReason.serverStopped) {
       return;
     }
+    final runId = event.runId;
+    final workspaceId = event.workspaceId;
     try {
       final run = await _runLogs.getById(workspaceId, runId);
       if (run == null) {
@@ -78,17 +83,11 @@ class PipelineStepResumeListener {
       if (runs.isEmpty) {
         return;
       }
-      // Advance only when every run the step dispatched is terminal. The run
-      // named by THIS event is terminal by definition, but the DB write that
-      // flips its status to `completed` (agent_stream_processor._onDone →
-      // AgentDispatchService.completeRun) races the event publish and usually
-      // lands *after* it — both the CLI-session and process data-source paths
-      // publish AgentRunCompleted, then close the stream and only the ensuing
-      // `onDone` persists the status. Without treating the event's own run as
-      // terminal here, a lone-agent step reads its still-`running` row, bails,
-      // and is stranded forever (nothing re-fires). Sibling runs stay gated on
-      // their persisted status; each completion fires its own event, so the
-      // last one resumes once the earlier writes have landed.
+      // Advance only when every run the step dispatched is terminal. The
+      // event is published after this run's terminal write, so its row is
+      // terminal; it is still counted as such by id, which costs nothing.
+      // Sibling runs are gated on their persisted status; each settlement
+      // fires its own event, so the last one resumes the step.
       final allTerminal = runs.every(
         (r) =>
             r.id == runId ||

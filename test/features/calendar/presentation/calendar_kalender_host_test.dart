@@ -237,16 +237,46 @@ void main() {
     /// A Wednesday, inside the week [_midMorning] falls in.
     final day = DateTime(2026, 3, 4);
 
-    testWidgets('the week band is one row tall with nothing in it', (
-      tester,
-    ) async {
+    testWidgets('a week without all-day events has no strip — the day labels '
+        'sit straight on the grid', (tester) async {
       await tester.pumpWidget(hostWith(CalendarViewMode.week, const []));
       await tester.pumpAndSettle();
 
-      // Day labels (56) + a single 24px row. The strip is a labelled band, not
-      // a block of reserved space the events may or may not grow into.
-      expect(bandHeight(tester), 80);
+      expect(gridTop(tester), 56);
+      expect(find.byType(CalendarAllDayGutter), findsNothing);
+    });
+
+    testWidgets('the strip appears when the week gains an all-day event and '
+        'goes again when it loses it', (tester) async {
+      await tester.pumpWidget(hostWith(CalendarViewMode.week, const []));
+      await tester.pumpAndSettle();
+      expect(gridTop(tester), 56);
+
+      await tester.pumpWidget(
+        hostWith(CalendarViewMode.week, [allDayEvent('one', day)]),
+      );
+      await tester.pumpAndSettle();
+      // Day labels (56) + the strip's one reserved row.
       expect(gridTop(tester), 80);
+      expect(bandHeight(tester), 80);
+
+      await tester.pumpWidget(hostWith(CalendarViewMode.week, const []));
+      await tester.pumpAndSettle();
+      expect(gridTop(tester), 56);
+      expect(find.byType(CalendarAllDayGutter), findsNothing);
+    });
+
+    testWidgets('an all-day event outside the visible week leaves the strip '
+        'hidden', (tester) async {
+      await tester.pumpWidget(
+        hostWith(CalendarViewMode.week, [
+          allDayEvent('next', DateTime(2026, 3, 11)),
+        ]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(gridTop(tester), 56);
+      expect(find.byType(CalendarAllDayGutter), findsNothing);
     });
 
     testWidgets('the week band grows one row per stacked event and stops at '
@@ -286,11 +316,13 @@ void main() {
 
     testWidgets('the timed grid stays put however tall the band grows — it '
         'hangs over the grid rather than pushing it down', (tester) async {
-      await tester.pumpWidget(hostWith(CalendarViewMode.week, const []));
+      await tester.pumpWidget(
+        hostWith(CalendarViewMode.week, [allDayEvent('one', day)]),
+      );
       await tester.pumpAndSettle();
       final resting = gridTop(tester);
 
-      for (final count in [1, 2, 3, 6]) {
+      for (final count in [2, 3, 6]) {
         await tester.pumpWidget(
           hostWith(CalendarViewMode.week, [
             for (var i = 0; i < count; i++) allDayEvent('e$i', day),
@@ -408,24 +440,14 @@ void main() {
       // kalender lays the gutter out beside the WHOLE header, day labels
       // included, so the cell has to offset itself past them by a height it was
       // told rather than one it can see. If that constant and the day-labels
-      // block ever drift apart, the label floats off its row — which is
-      // invisible in a screenshot of an empty week and obvious next to a tile.
+      // block ever drift apart, the toggle floats off its row — easy
+      // to miss on its own and obvious next to a tile.
       final toggle = tester.getRect(
         find.bySemanticsLabel('Collapse all-day events').first,
       );
       final tile = tester.getRect(find.text('Event one'));
       expect(toggle.center.dy, greaterThan(tile.top - 12));
       expect(toggle.center.dy, lessThan(tile.bottom + 12));
-    });
-
-    testWidgets('the gutter labels an empty strip and offers no fold', (
-      tester,
-    ) async {
-      await tester.pumpWidget(hostWith(CalendarViewMode.week, const []));
-      await tester.pumpAndSettle();
-
-      expect(find.text('All-day'), findsOneWidget);
-      expect(find.bySemanticsLabel('Collapse all-day events'), findsNothing);
     });
 
     testWidgets('the gutter folds a populated strip down to a per-day summary '
@@ -437,8 +459,6 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(bandHeight(tester), 104);
-      // The label gives way to the fold control once there is something to fold.
-      expect(find.text('All-day'), findsNothing);
 
       await tester.tap(find.bySemanticsLabel('Collapse all-day events'));
       await tester.pumpAndSettle();
@@ -804,5 +824,126 @@ void main() {
 
       expect(moves, isEmpty);
     }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+  });
+
+  group('CalendarKalenderHost view switch', () {
+    /// A Thursday, so the week it falls in starts on another day (Monday the
+    /// 16th) and its month's dominant date is another day again (the 1st).
+    final thursday = DateTime(2026, 11, 19, 9, 30);
+
+    Widget host(
+      CalendarViewMode mode,
+      DateTime focused, {
+      List<CalendarEvent> events = const [],
+    }) => testWrap(
+      CalendarKalenderHost(
+        mode: mode,
+        focusedDate: focused,
+        events: events,
+        now: thursday,
+        onOpenEvent: (_) {},
+      ),
+    );
+
+    /// The range kalender itself is showing, not the one the host derives.
+    k.FloatingDateTimeRange shown(WidgetTester tester) => tester
+        .widget<k.KalenderView>(find.byType(k.KalenderView))
+        .kalenderController
+        .floatingVisibleRange
+        .value;
+
+    DateTime day(DateTime d) => DateTime(d.year, d.month, d.day);
+
+    testWidgets('month to day opens on the focused day, not the 1st', (
+      tester,
+    ) async {
+      await tester.pumpWidget(host(CalendarViewMode.month, thursday));
+      await tester.pumpAndSettle();
+      await tester.pumpWidget(host(CalendarViewMode.day, thursday));
+      await tester.pumpAndSettle();
+
+      expect(day(shown(tester).start), DateTime(2026, 11, 19));
+    });
+
+    testWidgets('week to day opens on the focused day, not the week start', (
+      tester,
+    ) async {
+      await tester.pumpWidget(host(CalendarViewMode.week, thursday));
+      await tester.pumpAndSettle();
+      await tester.pumpWidget(host(CalendarViewMode.day, thursday));
+      await tester.pumpAndSettle();
+
+      expect(day(shown(tester).start), DateTime(2026, 11, 19));
+    });
+
+    testWidgets('a switch that also moves the date lands on the new date', (
+      tester,
+    ) async {
+      await tester.pumpWidget(host(CalendarViewMode.week, thursday));
+      await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        host(CalendarViewMode.month, DateTime(2027, 2, 10)),
+      );
+      await tester.pumpAndSettle();
+
+      final range = shown(tester);
+      expect(range.dominantMonthDate.month, 2);
+      expect(range.dominantMonthDate.year, 2027);
+    });
+
+    testWidgets('a month cell leaves room under its day number for events', (
+      tester,
+    ) async {
+      final noon = DateTime(2026, 10, 7, 12);
+      await tester.pumpWidget(
+        host(
+          CalendarViewMode.month,
+          noon,
+          events: [
+            CalendarEvent(
+              id: 'standup',
+              workspaceId: 'ws',
+              accountId: 'acc',
+              externalEventId: 'ext-standup',
+              calendarId: 'primary',
+              title: 'Standup',
+              startTime: noon,
+              endTime: noon.add(const Duration(minutes: 15)),
+              updatedAt: noon,
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Standup'), findsOneWidget);
+    });
+
+    testWidgets('week to month shows the month the focused date is in, with '
+        'its events', (tester) async {
+      final late = DateTime(2026, 10, 30, 12);
+      final lunch = CalendarEvent(
+        id: 'lunch',
+        workspaceId: 'ws',
+        accountId: 'acc',
+        externalEventId: 'ext-lunch',
+        calendarId: 'primary',
+        title: 'Lunch',
+        startTime: late,
+        endTime: late.add(const Duration(minutes: 30)),
+        updatedAt: late,
+      );
+      await tester.pumpWidget(
+        host(CalendarViewMode.week, late, events: [lunch]),
+      );
+      await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        host(CalendarViewMode.month, late, events: [lunch]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(shown(tester).dominantMonthDate.month, 10);
+      expect(find.text('Lunch'), findsOneWidget);
+    });
   });
 }

@@ -2,7 +2,7 @@
 title: Slash příkazy
 description: Každý příkaz, který můžeš napsat do composeru, co dělá a kde běží.
 slug: cs-CZ/prirucka/referencni-prirucka/slash-prikazy
-sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
+sourceHash: 38430a6315b112c92a7806d1c28dff8a0285e363
 ---
 
 Příkazy, které se píšou do composeru prostoru. Padají do tří skupin podle toho, kde účinkují, a ten rozdíl je podstatný: **místní** příkaz neputuje jako zpráva, takže se neobjeví v přepisu a k agentovi se nedostane.
@@ -21,23 +21,35 @@ Příkazy, které se píšou do composeru prostoru. Padají do tří skupin podl
 
 **Místní → odeslání.** Zapne na konverzaci režim Plan: worktree jen pro čtení a plocha nástrojů zastropovaná na `read`. Agent doručí plán a soubory nechá být. Holé `/plan` režim jen přepne a jako zpráva neputuje; když za ním je text, běh spustí zbytek řádku.
 
-### `/goal <objective>`
+### `/goal [flags] <objective>`
 
-**Odeslání.** Spustí autonomní cíl. Supervisor cíle ho po segmentech znovu odesílá a umí ho znovu spustit.
+**Odeslání.** Spustí trvalý cíl: agent pracuje na cíli po segmentech, napříč restarty, dokud server neověří, že je hotovo, dokud ho osoba neuzavře, nebo dokud nedosáhne limitu. Viz [Usilujte o cíl](/cs-CZ/prirucka/navody/usilujte-o-cil/).
 
-Napsání `/goal` s textem nejdřív otevře **zpřesnění cíle**. Je to krátký průchod, který návrh nepřijme, dokud v něm není všech pět věcí: kritéria úspěchu, která umí hodnotitel uzavřít bez vlastního úsudku, přesný ověřovací příkaz, strop pokusů, hranice rozsahu a podmínky zastavení. Na každém kroku je *Přeskočit a spustit jak je napsáno*. Průchod je výchozí a na každém kroku se dá přeskočit.
+Napsání `/goal` s textem nejdřív otevře **zpřesnění cíle**. Je to krátký průchod, který se ptá na kritéria úspěchu, která umí hodnotitel uzavřít bez vlastního úsudku, na kontroly, které musí projít, hranice rozsahu a podmínky zastavení, a pak nabídne samostatného ověřovatele, čerstvé segmenty a odpovídání na vlastní otázky. Na každém kroku je *Přeskočit a spustit jak je napsáno*. Průchod je výchozí a na každém kroku se dá přeskočit.
 
-`/goal pause`, `/goal resume` a `/goal drop` nejsou slash příkazy. Pozastavení, obnovení a zastavení jsou v seznamu **Cíle** u konverzace v postranním panelu. Příznaky, kterými se cíl spouští, jsou `--budget <dollars>`, `--max <N>` (strop počtu běhů) a `--days <N>` (termín). Cíl, který narazil na strop nákladů, se obnoví jen zvýšením toho stropu, a to ze stejného ovládání v postranním panelu.
+Příznaky mohou být kdekoli ve zprávě: `--budget <dollars>` (rozpočet cíle, výchozích 50), `--max <N>` (strop segmentů), `--days <N>` (termín), `--check "<command>"` (až 5), `--checker <agent>`, `--fresh` a `--unattended wait|assume`. Neznámý nebo opakovaný příznak se odmítne a návrh zůstane v editoru. Číslo na začátku cíle je jeho součástí. Sekce `## Success criteria`, `## Boundaries`, `## Stop conditions` a `## Checks` se stanou kontraktem cíle.
+
+`/goal pause`, `/goal resume` a `/goal drop` nejsou slash příkazy. Pozastavení, obnovení a zastavení jsou na kartě cíle v panelu **Obecné** konverzace a na stránce cíle (postranní panel → **Cíle**). Obnovit a zvýšit rozpočet smí jen osoba, která cíl spustila.
 
 :::note[Proč vůbec přerušuje]
 Autonomní cíl je jediné místo, kde vágní zadání opravdu něco stojí. Běh pracuje hodiny na cíli, u kterého nikdo neřekl, co je „hotovo“, a pak ohlásí úspěch podle sebe. Pět otázek vyjde levněji než jeden noční běh, který skončil, když mu přišlo, že skončil.
 :::
 
-### `/loop [budget] [task]`
+### `/loop [every <interval>] [flags] <prompt>`
 
-**Odeslání.** Pracuje po iteracích, dokud není hotovo. Bere mez: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**Odeslání.** Vytvoří plán, který agenta probudí s promptem hned a pak znovu: v každém intervalu (nejméně 60 sekund), nebo bez `every` po prodlevě, kterou agent pokaždé zvolí (1 až 60 minut). `--max <N>` omezí počet běhů, `--days <N>` ho ukončí (výchozích 30 dní), `--budget <dollars>` omezí jeho útratu. Viz [Plány a probuzení](/cs-CZ/prirucka/navody/plany-a-probuzeni/).
 
-Token, který *vypadá* jako mez (začíná číslicí nebo znaménkem) a nepodaří se ho rozebrat, je tvrdá chyba. Obyčejný text mezí není, takže `/loop keep going until the tests pass` zůstane neomezená smyčka s promptem na stejném řádku.
+`/loop` už nespouští cíl a číslo na začátku není počet běhů.
+
+### `/schedule <when> [flags] <prompt>`
+
+**Odeslání.** Vytvoří plán, který agenta probudí později: `in 2h`, `at 09:00` (nejbližší takový čas v časovém pásmu pracovního prostoru), `at <ISO time>` nebo `cron "0 9 * * 1-5"` (uvozovky jsou volitelné). Přijímá stejné `--max`, `--days` a `--budget` jako `/loop`. Čeká na svůj první čas.
+
+### `/refine`
+
+**Odeslání.** Požádá o krátkou kontrolu jen pro čtení nad prací v konverzaci, která může navrhnout vylepšení paměti, politik, poznámek agenta nebo dovedností. Návrhy čekají na stránce **Vylepšení**, dokud je někdo nepřijme. Nejvýš jedna kontrola na konverzaci každých 20 minut.
+
+`/goal`, `/loop`, `/schedule` a `/refine` působí jen ve zprávě, kterou napíšete sami; z agenta, pipeline nebo probuzení je stejný text obyčejnou zprávou. `/goal`, `/loop` nebo `/schedule`, které nelze přečíst, ponechá váš návrh a řádek nad textem v editoru říká, co je špatně.
 
 ### `/vibe [task]`
 

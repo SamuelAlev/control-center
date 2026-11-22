@@ -2,10 +2,10 @@
 title: Vestavěné nástroje agentů
 description: Plocha nástrojů, kterou vestavěný harness dává agentovi — jazykový server, strukturální hledání, debugger, kernely a řízení workerů — s každou operací a jejími argumenty.
 slug: cs-CZ/prirucka/referencni-prirucka/nastroje-agentu
-sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
+sourceHash: e99183fd4b257a60f94444101e1d39a7d6c77249
 ---
 
-Tohle jsou nástroje **vázané na server**, které vestavěný runtime agenta registruje přímo — jazykový server, strukturální hledání, debugger, kernely, otázky a řízení workerů — na rozdíl od [nástrojů MCP](/cs-CZ/prirucka/referencni-prirucka/nastroje-mcp/), které si přemosťuje, a od obecných nástrojů na soubory, hledání a shell z runtime harnessu. Na registru MCP nejsou: externí klient MCP je neuvidí, protože každý je vázaný na živý prostředek na straně serveru — proces jazykového serveru, ladicí adaptér, interpret — a ten patří jednomu běhu.
+Tohle jsou nástroje **vázané na server**, které vestavěný runtime agenta registruje přímo — jazykový server, strukturální hledání, debugger, kernely, skripty režimu kódu, otázky a řízení workerů — na rozdíl od [nástrojů MCP](/cs-CZ/prirucka/referencni-prirucka/nastroje-mcp/), které si přemosťuje, a od obecných nástrojů na soubory, hledání a shell z runtime harnessu. Na registru MCP nejsou: externí klient MCP je neuvidí, protože každý je vázaný na živý prostředek na straně serveru — proces jazykového serveru, ladicí adaptér, interpret — a ten patří jednomu běhu.
 
 Každý nástroj se tu registruje jen tehdy, když je pro běh zapojený prostředek, na kterém stojí — dohled jazykového serveru nebo debuggeru, parser tree-sitter, továrna kernelů, port pro otázky, sestava režimu vibe. Zjištění, jestli pro *tenhle checkout* existuje jazykový server nebo ladicí adaptér, je samostatná pozdější kontrola (`status` / `adapters`): ty nástroje na ploše zůstanou, aby se agent mohl zeptat, proč nejde nic použít, místo aby hádal.
 
@@ -15,9 +15,23 @@ Každý nástroj deklaruje úroveň a ta rozhoduje, **které plochy ho vidí** �
 
 | Úroveň  | Význam                                 | Nástroje tady                                      |
 | ------- | -------------------------------------- | -------------------------------------------------- |
-| `read`  | Bez vedlejších účinků                  | `lsp`, `ast_grep`, `ask_user`, pětice `vibe_*`     |
+| `read`  | Bez vedlejších účinků                  | `lsp`, `ast_grep`, `ask_user`, `repl`, pětice `vibe_*` |
 | `write` | Mění soubory                           | `lsp_rename`, `ast_edit`, `resolve`                |
 | `exec`  | Spouští nebo řídí proces               | `debug`, `eval`                                    |
+
+## Přímo, jen ze skriptu, nebo načtené až při prvním použití
+
+Když server umí spouštět skripty, běh volá několik nástrojů přímo a zbytek dosáhne z [`repl`](#repl--spusťte-skript-který-volá-vaše-nástroje) skriptu; celé pravidlo je v [Režim kódu](/cs-CZ/prirucka/koncepty/rezim-kodu/#které-nástroje-agent-volá-přímo). U nástrojů na této stránce:
+
+| Nástroj | S `repl` | Bez `repl` |
+| ---- | ----------- | -------------- |
+| `repl` | Přímo | Není přítomen |
+| `ask_user` | Přímo | Přímo |
+| `lsp`, `lsp_rename`, `ast_grep`, `ast_edit`, `resolve`, `debug` | Jen ze skriptu | Načte se až při prvním použití |
+| `eval` | Načte se až při prvním použití (skript ho volat nemůže) | Načte se až při prvním použití |
+| `vibe_*` | Přímo v režimu vibe, nikdy ze skriptu | Přímo v režimu vibe |
+
+Nástroj označený „Jen ze skriptu“ se místo toho načte až při prvním použití, jakmile server nemůže spouštět skripty běhu ([Když skripty nemohou běžet](/cs-CZ/prirucka/koncepty/rezim-kodu/#když-skripty-nemohou-běžet)).
 
 ---
 
@@ -152,9 +166,49 @@ Jedna relace na konverzaci, s tvrdou TTL (30 minut). Druhý `launch` se odmítne
 
 ---
 
+## `repl` — spusťte skript, který volá vaše nástroje
+
+Přítomen v každém běhu, když server umí spouštět skripty ([Kdy má běh `repl`](/cs-CZ/prirucka/koncepty/rezim-kodu/#kdy-má-běh-repl)). Skript je prostý JavaScript, tělo asynchronní funkce, a běží v novém, uzamčeném interpretu ve vlastním procesu: bez přístupu k souborovému systému, síti, procesům nebo modulům. Samotný `repl` patří do úrovně `read` a hlídá se sám, protože každé volání nástroje, které skript provede, se kontroluje samostatně. Je také na koncovém bodu MCP, pro běhy agentů na serveru, který umí spouštět skripty.
+
+| Argument | Význam |
+| ------------------- | --------------------------------------------------------------------------------------------- |
+| `code` | Skript. Nejvýše 256 KiB |
+| `description` | Povinné. Krátký popisek řádku v přepisu |
+| `timeout_ms` | Volitelné. Kratší časový limit, než má pracovní prostor; nikdy delší |
+| `max_output_tokens` | Volitelné. Menší výstupní rozpočet, než má pracovní prostor; nikdy větší |
+
+```js
+// Read three files together and report only which ones failed.
+const paths = ["lib/a.dart", "lib/b.dart", "lib/c.dart"];
+const results = await Promise.allSettled(paths.map((path) => tools.read({ path })));
+return results
+  .map((r, i) => (r.status === "rejected" ? `${paths[i]}: ${r.reason.message}` : null))
+  .filter(Boolean);
+```
+
+Popis `repl` říká agentovi: „Nástroj, který není z tvých přímých nástrojů, nemá v tomto požadavku žádnou definici. Před prvním voláním takového nástroje ho vyhledej přes `describeTool(name)` nebo `searchTools(query)`, pokud jeho přesný tvar volání už nebyl v této konverzaci ukázán.
+
+`describeTool(name)` vrací popis nástroje, jeho deklaraci, vstupní a výstupní schémata a poznámku k výsledku, pokud ji má: to, co skript dostane z dokončeného volání, vlastními slovy nástroje. Popis `repl` vypisuje poznámky přímých nástrojů, které skript smí volat. Výsledek nástroje, který je textem JSON, dorazí už zpracovaný, pokud neobsahuje více než 131 072 hodnot; pak dorazí jako text a skript ho zpracuje sám pomocí `JSON.parse`. Text výsledku z nástroje externího serveru MCP se zkrátí na 262 144 znaků a zkrácený text už nejde zpracovat jako JSON.
+
+- `tools.<name>(args)` volá nástroj stejným filtrem, guardraily a schválením jako přímé volání a při zamítnutí nebo selhání skončí chybou. Volání jen pro čtení mohou běžet současně; volání, která něco mění, běží jedno po druhém, v pořadí, v jakém je skript vytvořil. Zatímco jedno z jeho volání čeká na člověka, žádné další volání skriptu nezačne.
+- `ALL_TOOLS`, `searchTools(query, { limit, namespace })`, `describeTool(name)` a `describeNamespace(name)` najdou nástroje, včetně nástrojů připojených serverů MCP. Nástroj mimo přímou sadu, který skript smí volat, je volatelný jen ze skriptu; přímé volání takového nástroje vrátí, jak ho volat přes `repl`. Jakmile server nemůže spouštět skripty běhu, načte se takový nástroj místo toho až při prvním použití.
+- Vyhledávání jsou omezená: dotaz nejvýše 1 024 znaků, název nebo jmenný prostor nejvýše 256, `limit` od 0 do 50 a nejvýše 200 vyhledávání trvajících celkem 2 sekundy času serveru na skript; zároveň všechny skripty jednoho pracovního prostoru sdílejí 2 sekundy času na vyhledávání, které se vracejí rychlostí čtvrt sekundy za každou sekundu; po překročení kteréhokoli z nich se další vyhledávání odmítnou. Ve velmi velkém katalogu sdílejí popisy v `ALL_TOOLS` rovným dílem zhruba jeden milion znaků a přeříznutý popis končí na `…`; `describeTool` vrací vždy celý popis. Typ, který je příliš velký na zobrazení, se ukáže jako `unknown /* too large to show */` a neznámý název je odpovězen nejbližšími názvy.
+- Nástroje jsou seskupené do jmenných prostorů: `builtin` (vlastní nástroje harnessu), `control-center` (nástroje Control Center) a jeden pro každý připojený server MCP, pojmenovaný podle serveru. Server pojmenovaný `builtin`, `control-center` nebo `script`, nebo jehož název začíná na `external-`, v libovolné kombinaci velkých a malých písmen a s mezerami kolem nebo bez nich, se zobrazí jako `external-` následované jeho názvem a žádný nástroj není nikdy v `script`.
+- Vrátí se jen to, co skript vrátí, nebo předá funkcím `text()`, `image()` nebo `console.*`. Výstup nad rozpočet si ponechá začátek a konec a zbytek přečte `read_output`.
+- `store(key, value)` / `load(key)` uchovávají JSON hodnoty pro pozdější skripty téže konverzace a agenta; ukládají se až po dokončení skriptu. Skripty subagenta úložiště nemají.
+- `await tools.ask_user(...)` položí otázku; její odpověď se také přidá do výsledku. Dostupné jsou také `sleep(ms)`, `setTimeout`, `limits()` a `models.embed` / `rank` / `classify` (embeddingy na zařízení).
+- `describeTool(name)` a `searchTools(query)` odpovídají také pro vlastní funkce skriptu, které nejsou nástroje: `text`, `image`, `store`, `load`, `sleep`, `setTimeout`, `clearTimeout`, `limits`, `exit` a `models.*`, pod jmenným prostorem `script`.
+- Nevolatelné ze skriptu: `repl`, `eval`, `task`, `checkpoint`, `rewind`, `compact`, `search_tools` a slovesa `vibe_*`.
+- Skript čte minulost vlastního běhu: `history({start, role, tool, limit})` stránkuje přepis konverzace (nejvýš 50 řádků na volání; předejte `next_start` předchozí stránky jako `start`), `outputs()` vypíše výstupy nástrojů uložené pro tuto konverzaci a agenta a `loadOutput(handle)` přečte 16 384 znaků z jednoho z nich. `storedKeys()` vypíše uložené klíče s jejich velikostmi. `keep(value, label)` uloží velkou hodnotu jako výstup, který může pozdější skript nebo `read_output` číst; uloží se, až skript doběhne (1 MiB na hodnotu, 64 hodnot a 16 MiB na běh). `limits().returnBudgetChars` říká, kolik zbývá z rozpočtu výstupu. Běh jen pro čtení (kontrola cíle) může číst, ale neukládat ani použít keep. Na Claude Code a ACP `history()` funguje, zatímco `outputs()`, `loadOutput()` a `keep()` odmítnou, protože Control Center u těchto běhů žádné výstupy nástrojů neukládá.
+- Chyba z časového limitu, přetečení výstupu nebo limitu volání říká, jak ji opravit.
+
+Jeden běh spouští najednou jeden skript. Limity a to, co se děje při každém, jsou na stránce [režim kódu](/cs-CZ/prirucka/koncepty/rezim-kodu/#limity); každý skript je zaznamenán pod **Observabilita → Spuštění kódu**.
+
+---
+
 ## `eval` — persistentní interprety
 
-Buňka Pythonu nebo JavaScriptu, jejíž proměnné, importy a načtená data mezi voláními přežijí. Úroveň `exec`; není bezpečný pro paralelní volání.
+Buňka Pythonu nebo JavaScriptu, jejíž proměnné, importy a načtená data mezi voláními přežijí. Úroveň `exec`; není bezpečný pro paralelní volání. Nelze ji volat ze skriptu `repl` a buňka nemůže volat nástroje běhu: volání nástrojů z kódu zajistí [`repl`](#repl--spusťte-skript-který-volá-vaše-nástroje).
 
 | Argument      | Význam                                           |
 | ------------- | ------------------------------------------------ |
@@ -166,20 +220,34 @@ Buňka Pythonu nebo JavaScriptu, jejíž proměnné, importy a načtená data me
 - Poslední výraz se vypíše jako v notebooku.
 - `display()` funguje, frame z pandas se vykreslí jako tabulka a figura z matplotlib se vrátí jako **obrázek, který ukáže přepis**.
 - Idiomy IPython, které se píšou reflexivně — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — se přepíšou na obyčejný kód. `%pip` navíc vyklidí `sys.modules`, takže další `import` uvidí právě nainstalované.
-
-### Volání vlastních nástrojů z buňky
-
-```python
-contents = tool("read", {"path": "lib/auth.dart"})
-```
-
-Most **znovu vstoupí do registru nástrojů harnessu**, takže guardraily, schválení i každý obal platí přesně jako u volání, které vydal model. Jede po vlastní rouře kernelu, ne po loopback socketu: žádný port, žádné tajemství, žádné pravidlo odchozího provozu.
-
-Časový limit buňky je rozpočet *nečinnosti* (výchozí 5 minut) a po dobu nevyřízeného volání přes most je **pozastavený**, takže buňka, která se rozvětví na podagenty, se uprostřed rozvětvení nezabije.
+- Buňka, která vypíše víc, než je její rozpočet výstupu, si ponechá první tři čtvrtiny a poslední čtvrtinu; jeden řádek říká, kolik znaků a obrázků vypadlo.
+- Když interpret zemřel, aniž o to někdo žádal, dostane další buňka jednou zprávu, že její dřívější proměnné jsou pryč.
 
 :::note[Kde kernel běží]
 V izolovaném prostředí konverzace, pokud nějaké má, jinak v sandboxu operačního systému pro běh na hostiteli. Bez sandboxu nebo když není k dispozici, běží bez omezení a `eval` žádá o schválení spuštění na hostiteli. Izolované prostředí kvůli tomu nenabootuje — stejné pravidlo, které brání kartě stanice naběhnout sama.
 :::
+
+---
+
+## `bash` na pozadí
+
+`bash` s `run_in_background: true` spustí příkaz a hned vrátí handle (`b1`, `b2`, …) místo čekání. Agent pracuje dál, nebo ukončí svůj tah a probudí se, až příkaz skončí.
+
+| Argument | Význam |
+| ------------------- | ------- |
+| `run_in_background` | `true`, aby se spustilo a hned se vrátilo |
+| `timeout_seconds` | Počet sekund, než se příkaz ukončí: výchozích 600, nejvýš 3 600 |
+| `notify` | Volitelné. Jednoduchý vzor; každý výstupní řádek, který odpovídá, se během běhu příkazu pošle agentovi (například `listening on\|FAILED`) |
+
+- Ve jednom běhu běží nejvýš 4 příkazy na pozadí současně. Každý se ukončí při svém časovém limitu a při konci běhu, spolu se všemi procesy, které spustil.
+- Když příkaz skončí, agent dostane oznámení s ukončovacím kódem, posledními 2 000 znaky výstupu a handle `read_output` pro zbytek.
+- Agent, jehož jediná zbývající práce je příkaz na pozadí, čeká bez volání modelu a hlídač mlčení běhu se během čekání pozastaví.
+- `bash_output(handle)` přečte stav příkazu a poslední výstup; `bash_kill(handle)` ho zastaví. Obojí řekne, zda byl výsledek už doručen.
+- Skript nemůže spustit příkaz na pozadí. Claude Code má vlastní Bash na pozadí; Control Center takový běh udrží otevřený nejvýš 10 minut po tahu, který nechal úlohu běžet.
+
+## `compact` — uvolnění místa v okně kontextu
+
+Zhutní starší kontext konverzace před dalším voláním modelu a ponechá to, co pojmenuje `focus` (nejvýš 1 000 znaků). Nejnovější tahy zůstanou doslova. Řádek rozpočtu na tah u agenta ukazuje využití kontextu při 70, 80 a 90 %; tento nástroj stojí za zavolání i po zhruba 70 % před dlouhou novou fází práce. Hook `preCompact` vlastníka serveru může zaměření doplnit ([Shell hooky](/cs-CZ/prirucka/referencni-prirucka/konfigurace-agentu/#shell-hooky)). Po kompakci server přidá blok „Still in flight“: cíl, čekající probuzení, otevřené dotazy, příkazy na pozadí, kontrolní seznam a uložené klíče, každé s voláním, které to obnoví.
 
 ---
 

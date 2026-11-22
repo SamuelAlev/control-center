@@ -2,7 +2,7 @@
 title: Sandbox a zabezpečení
 description: Co dnes agenta v Control Center skutečně omezuje, kam až sahá sandbox operačního systému a které hranice drží na hostiteli bez backendu.
 slug: cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni
-sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
+sourceHash: 7644c97911f685ef5084875fb16f1006f21ea940
 ---
 
 :::note[Kam sandbox operačního systému sahá a kam ne]
@@ -54,6 +54,8 @@ Stejné pravidlo platí pro menší věci, které za tebe spouští proces:
 - **Rychlí pomocníci běžící přes CLI ACP**: názvy konverzací, `/btw`, `/handoff` a `/goal`. Když server agenty obaluje sandboxem, běží uvnitř sandboxu, ve vlastní relaci. Při `--sandbox off` běží bez omezení. Bez dostupného sandboxu běží jen u požadavků, za které odpovídá vlastník serveru; u ostatních se přeskočí, takže nevznikne žádný název konverzace a postranní otázka ohlásí, že Content synthesizer nemá funkční runner. Pomocníci, kteří nespouštějí žádný nástroj, se nedotknou.
 - **Golden testy pull requestu** ve vizuální kontrole Review Studia se řídí stejným pravidlem.
 - **Procesy nástrojů a `bash`** v běhu se nikdy nevracejí na hostitele. Pokud je server nastaven tak, aby agenty obaloval sandboxem, ale běhu sandbox dát nemůže, jsou odmítnuty.
+- **Kontroly cíle** běží v jednorázovém sandboxu nad pracovním stromem konverzace, omezeny stejně jako `bash` agenta. Bez sandboxu neběží a cíl čeká na osobu; při `--sandbox off` běží stejně jako `bash` agenta.
+- **Kontrola cíle** běží jen pro čtení na každém adaptéru: pouze čtení, pracovní stromy připojené jen pro čtení, žádný `bash`, žádní subagenti, žádný web. Adaptér, který nedokáže běh udržet jen pro čtení (agent ACP), se jako kontrolor nepoužije.
 
 ## Co agenta skutečně omezuje
 
@@ -287,6 +289,24 @@ takže se odepřené systémové volání ukáže v přepisu, ne jen v logu. Tel
 existuje jen dokud nativní sandbox proces opravdu obaluje. Na hostiteli bez
 backendu není co pozorovat. S guardraily to taky nesouvisí. Porušení pochází z odepřeného systémového volání, nikdy z vyhledání pravidla.
 
+## Skripty v režimu kódu
+
+[Skripty režimu kódu](/cs-CZ/prirucka/koncepty/rezim-kodu/) jsou samostatný případ a na sandboxu agenta vůbec nezávisí. Skript nikdy neběží uvnitř serveru ani v sandboxu agenta. Běží ve vlastním procesu, `cc_codemode`, programu dodávaném se serverem, který se před čtením skriptu sám uzamkne a hlásí, jak daleko uzamčení zašlo. Server skript pošle, jen když je uzamčení úplné.
+
+| Hostitel | Co runner aplikuje sám na sebe |
+| --- | --- |
+| Linux | Seznam povolených systémových volání (seccomp), který mu ponechá o málo víc než čtení vstupu, zápis výstupu, správu vlastní paměti, čtení hodin a ukončení; bez nových oprávnění a bez capabilities; bez výpisů paměti (core dumps); bez zápisu do souborů, bez nových procesů a nejvýše tři otevřené soubory; 3 GiB adresního prostoru; pevný limit času procesoru. Landlock se přidá tam, kde ho jádro má. |
+| macOS | Sandboxový profil s výchozím zamítnutím, který také odmítá informace o procesech, kontroly existence souborů, systémové a hardwarové informace a související volání jádra; bez výpisů paměti (core dumps), bez zápisu do souborů a s pevným limitem času procesoru. |
+| Windows | Nový AppContainer pro každý skript, v jobu, který povoluje jeden proces, 3 GiB paměti a bez uživatelského rozhraní, se zakázanými dynamickým kódem, dětskými procesy a voláními win32k. **Zatím nespuštěno na Windows.** |
+
+Runner startuje bez proměnných prostředí, bez otevřených souborů kromě vstupu a výstupu a bez přihlašovacích údajů. Mimo vlastní paměť dokáže jen požádat server, aby spustil nástroj, a server to volání provede stejným filtrem režimu, [guardraily](/cs-CZ/prirucka/koncepty/guardraily/) a schvalováním jako přímé volání.
+
+Server to vše kontroluje při svém startu: spustí samotestování runneru, které uplatní uzamčení, pokusí se číst a vytvářet soubory, otevřít síťové spojení a spustit proces (a na každém systému ještě další věci) a pod ním spustí skutečné skripty. Pokud něco není odmítnuto, server na tomto počítači nespouští žádné skripty, žádný běh nedostane `repl` a server důvod uvede při startu i na stránce nastavení režimu kódu. Runner, který není release sestavení, se odmítne stejným způsobem. Slabší záložní varianta neexistuje.
+
+Runner také hlásí, kde ve skriptu bylo každé volání provedeno, aby konverzace mohla ukázat strukturu skriptu. Server tuto pozici ověřuje proti skriptu a používá ji jen k zobrazení: nikdy nerozhoduje o tom, zda je volání povoleno, a není obsažena v auditu guardrailů.
+
+Co to nepokrývá: skript může dělat cokoli, co dovolují nástroje běhu, protože jeho volání nástrojů jsou skutečná volání nástrojů; na macOS se stále může dozvědět, zda existuje identifikátor procesu; a chyba v enginu JavaScriptu nebo v jádře je uzamčením omezena, ne jím vyloučena.
+
 ## Potvrzení přicházejí z guardrailů, ne ze sandboxu
 
 Sandbox nemá cestu schválení. Spustí se, provede práci, vypíše události
@@ -307,6 +327,7 @@ místo, které říká, co se dá zkontrolovat ručně.
 
 ## Související koncepty
 
+- [Režim kódu](/cs-CZ/prirucka/koncepty/rezim-kodu/): skripty, které volají nástroje, a runner, který je omezuje
 - [Stanice a izolovaná prostředí](/cs-CZ/prirucka/koncepty/stanice/): stupeň nad sandboxem, když práce potřebuje celý jednorázový stroj s hranicí jádra, ne obalený proces
 - [Guardraily](/cs-CZ/prirucka/koncepty/guardraily/): vrstva politiky nad spodní hranicí operačního systému a místo, odkud schválení skutečně přicházejí
 - [Životní cyklus odeslání agenta](/cs-CZ/prirucka/koncepty/zivotni-cyklus-odeslani/): kam izolace zapadá do toku odeslání

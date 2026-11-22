@@ -2,7 +2,7 @@
 title: Configurează notificările
 description: Activează sau dezactivează categorii, setează orele de liniște și un sunet și află ce notificări te ajung și unde.
 slug: ro-RO/manual/ghiduri-practice/notificari
-sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
+sourceHash: b1e5bb3b8a13bbbbd169916ab8e7cd7bdd403c1a
 ---
 
 Acest ghid arată cum să configurezi notificările și ce controlează de fapt
@@ -49,6 +49,8 @@ suprafață de notificări.
 
 Orice în afara acestei liste nu poate fi notificat sau filtrat — nu există o
 categorie „toate celelalte”.
+
+Munca de lungă durată folosește primele două categorii. Un obiectiv care s-a încheiat și un program care s-a încheiat contează ca **Agentul a terminat**; un obiectiv care așteaptă revizuirea ta, o propunere de îmbunătățire, o rulare de pipeline reținută la plafonul ei de cost și digestul zilnic al celor care te așteaptă contează ca **Un agent te așteaptă**. Fiecare ajunge la persoana care o privește: cine a pornit obiectivul, programul sau rularea.
 
 **Un agent te așteaptă** se declanșează când începe o așteptare: o aprobare în
 așteptare (inclusiv acordările de execuție în sandbox și aprobările de
@@ -122,6 +124,8 @@ adevărată:
 Aceste verificări se aplică toast-urilor OS. Clopoțelul durabil înregistrează
 totuși evenimentul.
 
+Unele notificări sunt **silențioase**: serverul le marchează ca să ajungă la clopoțel fără toast, sunet sau notificare push zgomotoasă pe telefon. Un program care s-a încheiat și un obiectiv care s-a încheiat sunt silențioase. Un obiectiv care așteaptă revizuirea ta nu este.
+
 Încă două suprimări există mai în amonte, în ceea ce trimite serverul de la bun
 început:
 
@@ -132,10 +136,7 @@ totuși evenimentul.
 - Spațiile agent-la-agent sunt dezactivate în bara laterală, așa că nu
   incrementează niciodată badge-ul de necitite al persoanei
 
-Într-un spațiu nu există niciun colț liniștit: fiecare conversație notifică la
-fel, inclusiv firele. Starea de citire este limitată la spațiu, așa că necititele
-se cumulează pe conversațiile unui spațiu, în loc să fie urmărite per
-conversație.
+Într-un spațiu nu există niciun colț liniștit: fiecare conversație notifică la fel, inclusiv firele. Starea de citire se urmărește per conversație, iar un spațiu este necitit cât timp oricare dintre conversațiile lui este necitită.
 
 ## Citește și golește centrul de notificări
 
@@ -188,6 +189,8 @@ Verifică dacă nu erai deja în spațiul în care s-a întâmplat — o rută a
 suprimă propriul toast OS. Într-un spațiu partajat, o rulare pornită de altcineva
 îl anunță pe acela, nu pe tine. O tură încheiată fără răspuns și fără eroare nu
 trimite nimic.
+
+O rulare pe care a pornit-o un program sau o urmărire și care se încheie fără probleme nu trimite nimic, decât dacă menționează pe cineva. Un obiectiv terminat sau un program încheiat ajunge la clopoțel fără toast.
 
 ## Ghiduri conexe
 

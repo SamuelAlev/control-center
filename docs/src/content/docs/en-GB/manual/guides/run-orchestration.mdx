@@ -2,7 +2,7 @@
 title: Run an orchestration
 description: Ask an orchestrator for a plan, review and edit it in Plan Studio, approve it once and let a generated pipeline do the work.
 slug: en-GB/manual/guides/run-orchestration
-sourceHash: 086301be6c1957f6336294720967813c3050ed25
+sourceHash: cc4390cbac6c2122dd24c23bcef20693f40121bb
 ---
 
 This guide shows you how to turn one big goal into a whole-team plan that runs
@@ -59,20 +59,13 @@ Press **Estimate** in the approval bar for cost, duration and blast-radius
 ranges before you commit. See
 [Work in Plan Studio](/en-GB/manual/guides/plan-studio/) for the full editor.
 
-:::note[The budget is not a spending limit]
-A proposal's budget is compared against the _estimate_ in the approval bar: when
-the estimate's high end exceeds it, the total turns red with an over-budget
-warning. Nothing checks spend while the plan executes, so it will not stop or
-fail a run. For an actual spend stop, use per-agent budget policies — see
-[Manage costs](/en-GB/manual/guides/manage-costs/).
+:::note[The budget holds the run]
+A proposal's budget is compared against the _estimate_ in the approval bar: when the estimate's high end exceeds it, the total turns red with an over-budget warning. While the plan executes, the server checks the spend before each new step. At the budget the run is held and nothing new starts; steps already running finish. Whoever requested the run gets a notification and presses **Raise cap** on the pipeline run's page to continue. See [Manage costs](/en-GB/manual/guides/manage-costs/).
 :::
 
 ## Step 3: Approve
 
-Approve the plan, from the chat card or from Plan Studio's approval bar.
-**This is the only decision you make.** Approving is operator-only — there is no
-MCP tool for it, so an agent can propose and revise but never approve its own
-plan.
+Approve the plan, from the chat card or from Plan Studio's approval bar. **This is the only decision you make.** Approving is operator-only — there is no MCP tool for it, so an agent can propose and revise but never approve its own plan. Approving needs write access to the space's repositories, and the run then acts for the person who approved it.
 
 From here a deterministic materializer (a pure function, no LLM) turns the
 proposal into a real [pipeline](/en-GB/manual/concepts/pipelines/) and creates the
@@ -107,11 +100,7 @@ space and the parent ticket is marked complete, then `completed`.
 Press **Cancel orchestration** on the in-chat card, or **Cancel run** in Plan
 Studio's approval bar. Cancellation tears down the in-flight work.
 
-An orchestration fails when materialization fails, or when its generated
-pipeline run fails (research, discussion, synthesis, or persist — those steps
-do not continue on fail). Generated **work** steps always continue on fail, so
-one failed sub-ticket does not fail the run. There is no budget-exceeded
-failure path and no "every sub-ticket failed" threshold.
+An orchestration fails when materialization fails, or when its generated pipeline run fails (research, discussion, synthesis, or persist — those steps do not continue on fail). Generated **work** steps always continue on fail, so one failed sub-ticket does not fail the run. Reaching the budget holds the run rather than failing it, and there is no "every sub-ticket failed" threshold.
 
 ## Related guides
 

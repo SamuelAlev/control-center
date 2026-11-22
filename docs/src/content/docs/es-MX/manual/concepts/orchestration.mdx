@@ -2,7 +2,7 @@
 title: Orquestación
 description: Cómo una «petición grande» se convierte en un plan de todo el equipo que apruebas una sola vez y luego en un pipeline generado que lo ejecuta.
 slug: es-MX/manual/conceptos/orquestacion
-sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
+sourceHash: db1bbceaba025b64539588004eebb65d944d5933
 ---
 
 Un solo agente es bueno para una sola cosa. Algunas peticiones son más grandes
@@ -37,13 +37,8 @@ validar y ejecutar, en lugar de prosa libre. Una propuesta tiene:
 - **Síntesis**: el paso final que produce el entregable.
 - **Presupuesto**: un techo de costo declarado.
 
-:::caution[El presupuesto es orientativo]
-El techo de costo de la propuesta se compara con el total estimado del plan y
-marca un plan que se pasa de presupuesto en la barra de aprobación _antes_ de
-que apruebes. Nada lo lee una vez iniciada la ejecución, así que no detiene ni
-hace fallar una orquestación que se excede. Las políticas de presupuesto por
-agente y por espacio de trabajo son un mecanismo aparte y son las que realmente
-pausan el gasto.
+:::caution[El presupuesto retiene la ejecución, no la termina]
+El techo de costo de la propuesta se compara con el total estimado del plan y marca un plan que se pasa de presupuesto en la barra de aprobación _antes_ de que apruebes. Una vez iniciada la ejecución, el servidor revisa cuánto gastó antes de cada paso nuevo: al llegar al techo, la ejecución del pipeline queda retenida (`suspended`, razón `orchestration_budget`) y no empieza nada nuevo, mientras los pasos que ya están corriendo terminan. Quien pidió la ejecución recibe un aviso y la reanuda con **Subir límite** en la página de la ejecución del pipeline (o un admin del espacio de trabajo si nadie la pidió). Un aumento debe quedar por encima del límite anterior y de lo gastado, como máximo 1,000 dólares, y un límite nunca se quita. Los objetivos que la ejecución persigue cuentan contra él, incluidas sus revisiones. Las políticas de presupuesto por agente y por espacio de trabajo son un mecanismo aparte.
 :::
 
 ## Dónde lo revisas

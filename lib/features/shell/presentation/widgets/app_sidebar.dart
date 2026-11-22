@@ -198,6 +198,24 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                 selected,
               ),
             ),
+            _ShellNavItem(
+              icon: AppIcons.target,
+              label: l10n.goalsTitle,
+              logicalPath: '/goals',
+              target: goalsRoute(workspaceId),
+            ),
+            _ShellNavItem(
+              icon: AppIcons.calendarClock,
+              label: l10n.schedulesTitle,
+              logicalPath: '/schedules',
+              target: schedulesRoute(workspaceId),
+            ),
+            _ShellNavItem(
+              icon: AppIcons.lightbulb,
+              label: l10n.improvementsTitle,
+              logicalPath: '/improvements',
+              target: improvementsRoute(workspaceId),
+            ),
             // No "Plans" destination: a plan belongs to the conversation that
             // produced it, so Plan Studio opens as an editor tab from the plan's
             // own row in the chat (see `openPlanStudio`). The `/plans` hub stays

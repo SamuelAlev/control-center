@@ -2,7 +2,7 @@
 title: Configuration des agents
 description: Tous les champs de l’entité agent et les énumérations qu’elle utilise.
 slug: fr-FR/manuel/reference/configuration-des-agents
-sourceHash: e77edc905bed16d2f7d5bcd19a62541d885f6aab
+sourceHash: 708808ecdf4d2fc769600241c46f85db411550a8
 ---
 
 Cette référence énumère tous les champs de l’entité agent, ainsi que les énumérations et les indicateurs qu’elle utilise. Pour un pas à pas de création ou de modification d’un agent dans l’application, consultez [Créer et configurer un agent](/fr-FR/manuel/guides/creer-agent/).
@@ -81,7 +81,7 @@ Un ensemble immuable et insensible à la casse d’identifiants de skills. Au la
 
 ## Hooks de shell
 
-Les hooks de shell permettent au propriétaire du serveur d'exécuter ses propres scripts autour d'une exécution du harnais intégré : une fois au démarrage de la session, avant chaque appel d'outil, et après chaque appel d'outil. Un hook est du code arbitraire ; les hooks relèvent donc de la configuration de l'hôte. Seul le propriétaire du serveur les configure, à la main, sur la machine du serveur. Il n'existe aucun réglage dans l'application ni aucune opération qui les écrit.
+Les hooks de shell permettent au propriétaire du serveur d'exécuter ses propres scripts autour d'une exécution de l'agent : une fois au démarrage de la session, avant chaque appel d'outil, après chaque appel d'outil, lorsque l'agent s'apprête à terminer son tour, et avant une compaction. Un hook est du code arbitraire ; les hooks relèvent donc de la configuration de l'hôte. Seul le propriétaire du serveur les configure, à la main, sur la machine du serveur. Il n'existe aucun réglage dans l'application ni aucune opération qui les écrit.
 
 Pour un agent, les hooks se trouvent dans son propre dossier, sous le répertoire de données du serveur :
 
@@ -91,22 +91,31 @@ Pour un agent, les hooks se trouvent dans son propre dossier, sous le répertoir
 
 `<agent slug>` est le nom du dossier de l'agent dans l'espace de travail (`agents/<slug>/`). Ce dossier se trouve hors du stockage de chaque espace de travail, et chaque bac à sable masque le répertoire de données : aucun membre, aucune exécution ni aucun terminal ne peut donc l'écrire.
 
-`hooks.json` associe l'une de trois clés à un script, par un chemin relatif au dossier des hooks :
+`hooks.json` associe l'une de cinq clés à un script, par un chemin relatif au dossier des hooks :
 
 | Clé            | Quand il s'exécute                    | Ce que signifie son code de sortie                             |
 | -------------- | ------------------------------------- | -------------------------------------------------------------- |
 | `sessionStart` | Une fois, au démarrage de l'exécution | Rien ; le hook ne fait qu'observer                             |
 | `preTool`      | Avant chaque appel d'outil            | `0` autorise l'appel ; toute autre valeur le refuse            |
 | `postTool`     | Après chaque appel d'outil            | Rien ; le hook ne fait qu'observer                             |
+| `stop` | Lorsque l'agent s'apprête à terminer son tour | `2` avec du texte sur la sortie standard fait continuer l'exécution avec ce texte ; tout autre code laisse le tour se terminer |
+| `preCompact` | Avant une compaction | `0` : sa sortie standard est ajoutée à ce que le résumé doit conserver |
 
 - Chaque script est lancé comme son propre exécutable, sans shell ni argument ; il doit donc être exécutable et commencer par une ligne shebang. Il reçoit l'événement en JSON sur stdin : le nom de l'événement, et pour les hooks d'outil le nom de l'outil avec ses arguments (`preTool`) ou son résultat (`postTool`).
 - Un hook s'exécute comme l'un des processus d'outil de l'exécution, dans le répertoire de l'agent pour cette exécution. Lorsque le serveur met les agents en bac à sable, il s'exécute dans le bac à sable de l'exécution. Il reçoit un environnement minimal et aucun identifiant de l'exécution : ni jeton de forge ou de fournisseur, ni accès à la passerelle.
-- Chaque hook dispose de 30 secondes. Sa sortie est lue puis ignorée.
+- Chaque hook dispose de 30 secondes. La sortie de `sessionStart`, `preTool` et `postTool` est lue puis ignorée.
 - `preTool` échoue en mode fermé. Un code de sortie non nul, un dépassement de délai ou un script qui ne peut pas démarrer refuse l'appel d'outil.
 - Un chemin absolu, absent, ou qui sort du dossier des hooks (liens résolus) est refusé, et le journal de l'exécution indique quel hook a été refusé et pourquoi. Un hook `preTool` refusé ou illisible refuse chaque appel d'outil jusqu'à sa correction.
 - Un bloc `hooks` dans `.agents/harness.json`, qu'il se trouve dans un dépôt ou dans le dossier propre de l'agent, est ignoré. Un dépôt appartient souvent à quelqu'un d'autre, et le dossier de l'agent peut être écrit par les membres et par les exécutions. Le journal de l'exécution indique que le bloc a été ignoré et d'où les hooks sont lus à la place.
 
-Les hooks de shell ne s'appliquent qu'au harnais intégré. Un hook `preTool` ou `postTool` configuré fait appeler ses outils à l'exécution un par un.
+### Les hooks stop et preCompact
+
+- `stop` reçoit `event: "stop"`, le dernier message de l'agent (`last_message`), `stop_hook_active` (vrai lorsque cet arrêt suit une poursuite provoquée par le hook) et `block_count` (le nombre de fois où il a fait continuer l'exécution jusqu'ici, à partir de 0). Pour faire continuer l'exécution, il quitte avec `2` et affiche ce que l'agent doit faire ensuite. Le texte, tronqué à 2 000 caractères, parvient à l'agent sous forme de message système.
+- Un hook `stop` fait continuer une exécution au plus 3 fois dans une même exécution. Ensuite il n'est plus lancé, et le tour se termine.
+- `stop` échoue en mode ouvert. Un délai dépassé, un script qui ne peut pas démarrer, tout code de sortie autre que `2`, ou un code `2` sans rien sur la sortie standard laisse le tour se terminer, de sorte qu'un hook défaillant ne peut pas maintenir une exécution ouverte.
+- `preCompact` reçoit `event: "pre_compact"`. Sa sortie standard, tronquée à 1 000 caractères, est ajoutée au focus de la compaction. Un script en échec n'ajoute rien.
+
+Les hooks de shell s'appliquent au harnais intégré. Sur Claude Code, les hooks `stop` et `preCompact` s'exécutent aussi : les hooks `Stop` et `PreCompact` de Claude Code demandent au serveur, qui lance les scripts du propriétaire de la même façon. Les trois autres clés ne s'appliquent qu'au harnais intégré. Un hook `preTool` ou `postTool` configuré fait appeler ses outils à l'exécution un par un.
 
 ## AgentLiveState (dérivé)
 

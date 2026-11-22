@@ -2,14 +2,17 @@ import 'dart:convert';
 
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
+import 'package:cc_domain/features/code_mode/domain/value_objects/script_approval_budget.dart';
 import 'package:cc_domain/features/environments/domain/ports/environment_port.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_component.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_definition.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_request.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/autonomy_level.dart';
-import 'package:cc_harness/tools.dart' show ActionClass;
+import 'package:cc_harness/tools.dart' show ActionClass, PersonWaitListener;
 import 'package:cc_infra/src/environments/environment_host_approval.dart';
+import 'package:cc_infra/src/harness/script_approval_check.dart'
+    show checkWithinScriptApprovals;
 import 'package:meta/meta.dart';
 
 /// Who is asking, taken from the run's lease and never from the request.
@@ -20,10 +23,13 @@ class AgentEnvironmentCaller {
     required this.spaceId,
     required this.conversationId,
     required this.runId,
+    required this.scriptApprovals,
     this.agentId,
     this.mode,
     this.actingUserId,
     this.autonomy,
+    this.onPersonWait,
+    this.onDecided,
   });
 
   /// Workspace of the run.
@@ -35,7 +41,7 @@ class AgentEnvironmentCaller {
   /// Conversation of the run.
   final String conversationId;
 
-  /// The run.
+  /// The run's `agent_run_logs` row: what its guard rows name.
   final String? runId;
 
   /// The agent.
@@ -49,6 +55,24 @@ class AgentEnvironmentCaller {
 
   /// The run's space autonomy dial when the command was asked, or null.
   final AutonomyLevel? autonomy;
+
+  /// The calling tool's person-wait listener, when the command came from a
+  /// tool call still registered on its run: told while an approval card
+  /// waits on a person, so that call's clocks stop for the wait. It only
+  /// reaches the guard's `onPersonWait`; it never changes a decision. Null
+  /// when the command named no call, or one the run does not know.
+  final PersonWaitListener? onPersonWait;
+
+  /// Hears what was decided about this command's request when it was denied
+  /// or a person approved it (`checkWithinScriptApprovals`'s `onDecided`),
+  /// so the tool call that ran the command is recorded with the decision. It
+  /// never changes one. Null when the request names no registered command.
+  final void Function(bool approved)? onDecided;
+
+  /// The approval budgets of the run's code mode scripts in flight when the
+  /// command was asked: a card this command raises counts against each, and
+  /// none is raised once one of them refuses. Empty when no script runs.
+  final List<ScriptApprovalBudget> scriptApprovals;
 
   /// The principal changes are attributed to.
   Principal get principal => AgentPrincipal(agentId ?? runId ?? conversationId);
@@ -276,20 +300,42 @@ class AgentEnvironmentGateway {
     if (classes.isEmpty) {
       return null;
     }
-    final verdict = await _guard.check(
+    // The summary is the command line the agent ran: command rules see it,
+    // the card shows it, and "Approve for 8 hours" covers exactly it. As
+    // what runs (`executed`), the audit row digests all of it, cut or not.
+    final request = ActionRequest(classes: classes, command: summary);
+    final verdict = await checkWithinScriptApprovals(
+      guard: _guard,
+      approvals: caller.scriptApprovals,
       workspaceId: caller.workspaceId,
       classes: classes,
+      request: request,
+      actionSummary: summary,
+      executed: summary,
       spaceId: caller.spaceId,
-      conversationId: caller.conversationId,
       agentId: caller.agentId,
       mode: caller.mode ?? Mode.chat,
-      actionSummary: summary,
+      autonomy: caller.autonomy,
       onBehalfOfUserId: caller.actingUserId,
       runId: caller.runId,
-      // The summary is the command line the agent ran: command rules see it,
-      // the card shows it, and "Approve for 8 hours" covers exactly it.
-      request: ActionRequest(classes: classes, command: summary),
-      autonomy: caller.autonomy,
+      onPersonWait: caller.onPersonWait,
+      onDecided: caller.onDecided,
+      check: (onPersonWait, beforeCard) => _guard.check(
+        workspaceId: caller.workspaceId,
+        classes: classes,
+        spaceId: caller.spaceId,
+        conversationId: caller.conversationId,
+        agentId: caller.agentId,
+        mode: caller.mode ?? Mode.chat,
+        actionSummary: summary,
+        onBehalfOfUserId: caller.actingUserId,
+        runId: caller.runId,
+        request: request,
+        autonomy: caller.autonomy,
+        onPersonWait: onPersonWait,
+        beforeCard: beforeCard,
+        executed: summary,
+      ),
     );
     if (verdict.allowed) {
       return null;

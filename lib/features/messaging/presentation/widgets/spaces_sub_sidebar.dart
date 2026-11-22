@@ -56,10 +56,6 @@ class _SpacesSubSidebarState extends ConsumerState<SpacesSubSidebar> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
-    // Keeps the read-cursor side effect alive while the directory is mounted:
-    // in rail mode the global sidebar's inline space list is gone, so this
-    // is the watcher that stamps the read cursor on selection.
-    ref.watch(selectedSpaceReadCursorEffectProvider);
     final workspaceId = ref.watch(activeWorkspaceIdProvider);
     final spaces = workspaceId != null
         ? ref.watch(workspaceVisibleSpacesProvider(workspaceId))

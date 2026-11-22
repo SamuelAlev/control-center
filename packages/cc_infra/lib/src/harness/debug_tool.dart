@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:cc_harness/tools.dart';
 import 'package:cc_infra/src/dap/dap_adapter_registry.dart';
@@ -81,6 +82,20 @@ class DebugTool extends HarnessTool {
   /// already moved.
   @override
   bool get parallelSafe => false;
+
+  /// `launch`: the program and its arguments, as the argv the adapter
+  /// starts; `evaluate`: the expression. Every other op runs nothing it is
+  /// handed (`attach` joins a process already running).
+  @override
+  String? executedContent(Map<String, dynamic> args) =>
+      switch ((args['op'], args['program'], args['expression'])) {
+        ('launch', final String program, _) => jsonEncode([
+          program,
+          if (args['args'] case final List rest) ...rest.whereType<String>(),
+        ]),
+        ('evaluate', _, final String expression) => expression,
+        _ => null,
+      };
 
   @override
   Map<String, dynamic> get inputSchema => {
@@ -387,7 +402,6 @@ class DebugTool extends HarnessTool {
     }
   }
 
-
   /// Breakpoints the model set, per file.
   ///
   /// Held here rather than in the session because they legitimately outlive
@@ -472,7 +486,6 @@ class DebugTool extends HarnessTool {
                 'those lines (blank, comment, or not compiled).'}',
     );
   }
-
 
   int? _threadId(Map<String, dynamic> args, DebugSession session) {
     final explicit = args['thread_id'];

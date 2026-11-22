@@ -1,10 +1,11 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_domain/features/code_mode/domain/services/utf8_bounds.dart';
 import 'package:cc_infra/src/eval/kernel_runners.dart';
 import 'package:cc_infra/src/eval/magics_transform.dart';
-import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/sandboxing/tool_process_launcher.dart';
 import 'package:path/path.dart' as p;
 
@@ -73,12 +74,22 @@ class KernelRunOutcome {
   /// Creates a [KernelRunOutcome].
   const KernelRunOutcome({
     required this.outputs,
+    required this.restarted,
     this.error,
     this.timedOut = false,
   });
 
-  /// Everything the cell emitted, in order.
+  /// Everything the cell emitted, in order. A cell that printed more than
+  /// the kernel's `maxOutputChars` keeps its first three quarters and its
+  /// last quarter, with one [KernelText] between them that says how many
+  /// characters were dropped there.
   final List<KernelOutput> outputs;
+
+  /// Whether this is the first cell since the interpreter died unasked (it
+  /// exited or was killed between cells, not a `reset`) and was started
+  /// again: every variable, import and loaded file of the session is gone.
+  /// True for that one cell only.
+  final bool restarted;
 
   /// The traceback, when it raised.
   final String? error;
@@ -89,13 +100,6 @@ class KernelRunOutcome {
   /// Whether it completed cleanly.
   bool get isError => error != null || timedOut;
 }
-
-/// Runs one of the agent's tools on behalf of code inside a cell.
-typedef KernelToolBridge =
-    Future<({String content, bool isError})> Function(
-      String name,
-      Map<String, dynamic> arguments,
-    );
 
 /// How a kernel process is started. Host or enclosure.
 abstract interface class KernelLauncher {
@@ -215,18 +219,14 @@ class LazyKernelLauncher implements KernelLauncher {
 /// the load on every question, so an agent exploring data asks fewer questions
 /// than it should. Here the second cell starts where the first stopped.
 ///
-/// **The timeout is an INACTIVITY budget, and it pauses during a bridged
-/// call.** A cell that fans out to `task` and waits four minutes for subagents
-/// is not a hung cell — but a wall-clock timeout cannot tell the difference and
-/// kills it mid-fanout, losing the whole kernel's state. So the budget is
-/// suspended while a bridged call is outstanding and resumes when it returns.
-/// That is a bug you only find in production.
+/// **The timeout is an INACTIVITY budget.** A cell that keeps producing
+/// output keeps running; one that goes quiet for [inactivityTimeout] is left
+/// running and reported, and the kernel keeps its state.
 class EvalKernel {
   /// Creates an [EvalKernel].
   EvalKernel({
     required this.language,
     required this._launcher,
-    this._bridge,
     this.inactivityTimeout = const Duration(minutes: 5),
     this.maxOutputChars = 100000,
   });
@@ -241,7 +241,6 @@ class EvalKernel {
   final int maxOutputChars;
 
   final KernelLauncher _launcher;
-  final KernelToolBridge? _bridge;
 
   Process? _process;
   StreamSubscription<String>? _stdoutSub;
@@ -252,6 +251,10 @@ class EvalKernel {
 
   _Cell? _cell;
   bool _disposed = false;
+
+  /// Whether the interpreter died unasked after it had run a cell, so the
+  /// next cell starts in a fresh one ([KernelRunOutcome.restarted]).
+  bool _lostState = false;
 
   /// Whether the interpreter is running.
   bool get isRunning => _process != null && !_disposed;
@@ -295,6 +298,9 @@ class EvalKernel {
           return;
         }
         _process = null;
+        // Unasked (a `dispose` nulls the handle first): what the cells built
+        // is gone, and the next cell is told so once.
+        _lostState = _nextId > 1;
         _cell?.failHard('the kernel exited with code $code');
         if (!_ready.isCompleted) {
           _ready.completeError(
@@ -328,6 +334,8 @@ class EvalKernel {
     if (process == null) {
       throw StateError('the kernel is not running');
     }
+    final restarted = _lostState;
+    _lostState = false;
 
     final cell = _Cell(
       id: _nextId++,
@@ -343,7 +351,15 @@ class EvalKernel {
           'code': language.transform(source),
         }),
       );
-      return await cell.completed.future;
+      final outcome = await cell.completed.future;
+      return restarted
+          ? KernelRunOutcome(
+              outputs: outcome.outputs,
+              restarted: true,
+              error: outcome.error,
+              timedOut: outcome.timedOut,
+            )
+          : outcome;
     } finally {
       cell.dispose();
       _cell = null;
@@ -376,6 +392,8 @@ class EvalKernel {
     }
     _disposed = true;
     _process = null;
+    // Asked for: the caller knows the state is gone.
+    _lostState = false;
     _cell?.failHard('the kernel was shut down');
     try {
       process?.stdin.writeln(jsonEncode({'type': 'shutdown'}));
@@ -425,53 +443,11 @@ class EvalKernel {
             base64Data: '${decoded['data']}',
           ),
         );
-      case 'bridge_call':
-        _onBridgeCall(decoded);
       case 'error':
         _cell?.finish(error: '${decoded['text']}');
       case 'done':
         _cell?.finish();
     }
-  }
-
-  void _onBridgeCall(Map<String, dynamic> message) {
-    final cell = _cell;
-    final process = _process;
-    final bridge = _bridge;
-    if (cell == null || process == null) {
-      return;
-    }
-    if (bridge == null) {
-      process.stdin.writeln(
-        jsonEncode({
-          'is_error': true,
-          'content': 'no tool bridge is wired for this kernel',
-        }),
-      );
-      return;
-    }
-    // The budget is suspended for exactly as long as the tool takes. Without
-    // this a cell that fans out to subagents is killed mid-fanout.
-    cell.pauseTimeout();
-    unawaited(() async {
-      ({String content, bool isError}) reply;
-      try {
-        reply = await bridge(
-          '${message['name']}',
-          (message['arguments'] as Map?)?.cast<String, dynamic>() ?? const {},
-        );
-      } on Object catch (e) {
-        reply = (content: '$e', isError: true);
-      }
-      cell.resumeTimeout();
-      try {
-        process.stdin.writeln(
-          jsonEncode({'content': reply.content, 'is_error': reply.isError}),
-        );
-      } on Object catch (e) {
-        CcInfraLog.warning('kernel bridge reply failed: $e');
-      }
-    }());
   }
 }
 
@@ -492,62 +468,113 @@ class _Cell {
   final outputs = <KernelOutput>[];
 
   Timer? _timer;
+
+  /// Characters the head keeps: three quarters of [maxOutputChars].
+  late final int _headCap = maxOutputChars * 3 ~/ 4;
+
+  /// Characters the rolling tail keeps: the last quarter.
+  late final int _tailCap = maxOutputChars - _headCap;
   var _chars = 0;
-  var _truncated = false;
-  var _paused = false;
+  var _cut = false;
+  final _tail = ListQueue<KernelOutput>();
+  var _tailChars = 0;
+
+  /// UTF-16 units of text (and result) output dropped from the tail.
+  var _dropped = 0;
+
+  /// Images dropped from the tail: they take no characters, so they are
+  /// counted apart.
+  var _droppedImages = 0;
 
   void _arm() {
     _timer?.cancel();
     _timer = Timer(timeout, () {
       if (!completed.isCompleted) {
         completed.complete(
-          KernelRunOutcome(outputs: List.of(outputs), timedOut: true),
+          KernelRunOutcome(
+            outputs: _assembled(),
+            restarted: false,
+            timedOut: true,
+          ),
         );
       }
     });
   }
 
-  void touch() {
-    if (!_paused) {
-      _arm();
-    }
-  }
+  void touch() => _arm();
 
-  void pauseTimeout() {
-    _paused = true;
-    _timer?.cancel();
-    _timer = null;
-  }
-
-  void resumeTimeout() {
-    _paused = false;
-    if (!completed.isCompleted) {
-      _arm();
-    }
-  }
-
+  /// Adds [output]. Bounded: a cell in a print loop would otherwise fill the
+  /// context window the tool result lands in. The first three quarters of
+  /// [maxOutputChars] are kept as they came; past them a rolling tail keeps
+  /// the last quarter, where a loop's end (and its error) usually is.
   void add(KernelOutput output) {
     touch();
-    if (output is KernelText) {
-      // Bounded: a cell in a print loop would otherwise fill the context
-      // window the tool result lands in.
-      if (_chars >= maxOutputChars) {
-        if (!_truncated) {
-          _truncated = true;
-          outputs.add(const KernelText('\n… output truncated\n'));
-        }
+    var rest = output;
+    if (!_cut) {
+      final size = _sizeOf(output);
+      if (_chars + size <= _headCap) {
+        _chars += size;
+        outputs.add(output);
         return;
       }
-      _chars += output.text.length;
+      _cut = true;
+      if (output is KernelText) {
+        final at = safeCutBefore(output.text, _headCap - _chars);
+        if (at > 0) {
+          outputs.add(
+            KernelText(output.text.substring(0, at), isError: output.isError),
+          );
+        }
+        _chars += at;
+        rest = KernelText(output.text.substring(at), isError: output.isError);
+      }
     }
-    outputs.add(output);
+    _tail.add(rest);
+    _tailChars += _sizeOf(rest);
+    while (_tailChars > _tailCap && _tail.isNotEmpty) {
+      final first = _tail.removeFirst();
+      final size = _sizeOf(first);
+      final over = _tailChars - _tailCap;
+      if (first is KernelText && size > over) {
+        final at = safeCutAfter(first.text, over);
+        _tail.addFirst(
+          KernelText(first.text.substring(at), isError: first.isError),
+        );
+        _tailChars -= at;
+        _dropped += at;
+      } else {
+        _tailChars -= size;
+        _dropped += size;
+        if (first is KernelImage) {
+          _droppedImages++;
+        }
+      }
+    }
   }
+
+  static int _sizeOf(KernelOutput o) => switch (o) {
+    KernelText(:final text) => text.length,
+    KernelResult(:final text) => text.length,
+    KernelImage() => 0,
+  };
+
+  /// The head, what was dropped when anything was, and the tail.
+  List<KernelOutput> _assembled() => [
+    ...outputs,
+    if (_dropped > 0 || _droppedImages > 0)
+      KernelText(
+        '\n… dropped here: ${[if (_dropped > 0) '$_dropped characters (UTF-16 units) of text', if (_droppedImages > 0) '$_droppedImages image${_droppedImages == 1 ? '' : 's'}'].join(' and ')}. The cell printed more than $maxOutputChars '
+        'characters of text; its first $_headCap and last $_tailCap are '
+        'kept …\n',
+      ),
+    ..._tail,
+  ];
 
   void finish({String? error}) {
     _timer?.cancel();
     if (!completed.isCompleted) {
       completed.complete(
-        KernelRunOutcome(outputs: List.of(outputs), error: error),
+        KernelRunOutcome(outputs: _assembled(), restarted: false, error: error),
       );
     }
   }
@@ -556,7 +583,11 @@ class _Cell {
     _timer?.cancel();
     if (!completed.isCompleted) {
       completed.complete(
-        KernelRunOutcome(outputs: List.of(outputs), error: message),
+        KernelRunOutcome(
+          outputs: _assembled(),
+          restarted: false,
+          error: message,
+        ),
       );
     }
   }

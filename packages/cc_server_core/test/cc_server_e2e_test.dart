@@ -938,108 +938,79 @@ void main() {
         }),
         throwsA(isA<RemoteRpcException>()),
       );
-      // Partial cost writes are member-gated and bound to the registered
-      // workspace, not to a client-supplied run id or a forged log.workspaceId.
-      await client.call('agent_run_log.updateCost', const {
-        'run_id': 'run-active',
-        'cost': {'input_tokens': 8, 'cost_micros': 1200},
-      });
-      await Future.wait([
-        for (var i = 0; i < 6; i++)
-          client.call('agent_run_log.addChildCostMicros', const {
+      // A client writes no run log: no row, cost, descendant cost, runtime
+      // classification or end. The server that runs a run records it, and
+      // the settlement moves goals, pipeline steps and steering.
+      final before =
+          (await client.call('agent_run_log.get', const {
+                'id': 'run-active',
+              }))['log']
+              as Map;
+      for (final (op, args) in <(String, Map<String, dynamic>)>[
+        (
+          'agent_run_log.upsert',
+          {
+            'log': {
+              ...before.cast<String, dynamic>(),
+              'status': 'completed',
+              'completed_at': finishedAt.toIso8601String(),
+            },
+          },
+        ),
+        (
+          'agent_run_log.updateCost',
+          {
             'run_id': 'run-active',
-            'amount_micros': 1500,
-          }),
-      ]);
-      final active =
-          (await client.call('agent_run_log.get', const {
-                'id': 'run-active',
-              }))['log']
-              as Map;
-      expect(active['cost_micros'], 1200);
-      expect(active['child_cost_micros'], 9000);
-      final completed = await client.call('agent_run_log.completeIfActive', {
-        'log': {
-          ...active.cast<String, dynamic>(),
-          'status': 'completed',
-          'summary': 'done',
-          'completed_at': finishedAt.toIso8601String(),
-        },
-        'write_cost': false,
-      });
-      expect(completed['completed'], true);
-      await client.call('agent_run_log.addChildCostMicros', const {
-        'run_id': 'run-active',
-        'amount_micros': 2000,
-      });
-      final finalRun =
-          (await client.call('agent_run_log.get', const {
-                'id': 'run-active',
-              }))['log']
-              as Map;
-      expect(finalRun['child_cost_micros'], 11000);
-      expect(finalRun['input_tokens'], 8);
-      expect(finalRun['summary'], 'done');
-
-      final refusedStart = await client.call(
-        'agent_run_log.updateRuntime',
-        const {'run_id': 'run-active', 'mark_running': true},
-      );
-      expect(refusedStart['updated'], false);
-      final runtime = await client.call('agent_run_log.updateRuntime', const {
-        'run_id': 'run-active',
-        'context_snapshot_json': '{"tools":["read"]}',
-      });
-      expect(runtime['updated'], true);
-      final runtimeRow =
-          (await client.call('agent_run_log.get', const {
-                'id': 'run-active',
-              }))['log']
-              as Map;
-      expect(runtimeRow['status'], 'completed');
-      expect(runtimeRow['child_cost_micros'], 11000);
-      expect(runtimeRow['cost_micros'], 1200);
-      expect(runtimeRow['context_snapshot_json'], '{"tools":["read"]}');
-
-      for (final op in [
-        'agent_run_log.updateCost',
-        'agent_run_log.addChildCostMicros',
+            'cost': {'input_tokens': 8, 'cost_micros': 1200},
+          },
+        ),
+        (
+          'agent_run_log.addChildCostMicros',
+          {'run_id': 'run-active', 'amount_micros': 1500},
+        ),
+        (
+          'agent_run_log.updateRuntime',
+          {'run_id': 'run-active', 'summary': 'forged'},
+        ),
+        (
+          'agent_run_log.completeIfActive',
+          {
+            'log': {
+              ...before.cast<String, dynamic>(),
+              'status': 'completed',
+              'completed_at': finishedAt.toIso8601String(),
+            },
+            'write_cost': false,
+          },
+        ),
       ]) {
         await expectLater(
-          client.call(op, {
-            'run_id': 'run-other',
-            if (op.endsWith('updateCost'))
-              'cost': {'input_tokens': 999}
-            else
-              'amount_micros': 999,
-          }),
+          client.call(op, args),
           throwsA(isA<RemoteRpcException>()),
+          reason: op,
         );
       }
+      final after =
+          (await client.call('agent_run_log.get', const {
+                'id': 'run-active',
+              }))['log']
+              as Map;
+      expect(after['completed_at'], isNull);
+      expect(after['summary'], before['summary']);
+      expect(after['cost_micros'], before['cost_micros']);
+      expect(after['child_cost_micros'], before['child_cost_micros']);
+
+      // A person's stop is bound to the registered workspace: another
+      // workspace's run is not found, by exact id or a forged workspace. (No
+      // stop of `run-active` here: its pid is this test process.)
       await expectLater(
-        client.call('agent_run_log.updateRuntime', const {
-          'run_id': 'run-other',
-          'summary': 'cross-workspace mutation',
-        }),
+        client.call('agent_run_log.stop', const {'run_id': 'run-other'}),
         throwsA(isA<RemoteRpcException>()),
       );
       await expectLater(
-        client.call('agent_run_log.completeIfActive', {
-          'log': {
-            ...active.cast<String, dynamic>(),
-            'workspace_id': otherWorkspace,
-            'completed_at': finishedAt.toIso8601String(),
-            'status': 'completed',
-          },
-          'write_cost': false,
-        }),
-        throwsA(isA<RemoteRpcException>()),
-      );
-      await expectLater(
-        client.call('agent_run_log.addChildCostMicros', const {
+        client.call('agent_run_log.stop', const {
           'workspace_id': 'ws-ghost',
           'run_id': 'run-active',
-          'amount_micros': 1,
         }),
         throwsA(
           isA<RemoteRpcException>().having(
@@ -1081,24 +1052,9 @@ void main() {
       addTearDown(guest.close);
       await guest.initialize();
       await expectLater(
-        guest.call('agent_run_log.addChildCostMicros', const {
+        guest.call('agent_run_log.stop', const {
           'workspace_id': ownWorkspace,
           'run_id': 'run-active',
-          'amount_micros': 100,
-        }),
-        throwsA(
-          isA<RemoteRpcException>().having(
-            (e) => e.code,
-            'code',
-            RpcErrorCodes.unauthorized,
-          ),
-        ),
-      );
-      await expectLater(
-        guest.call('agent_run_log.updateRuntime', const {
-          'workspace_id': ownWorkspace,
-          'run_id': 'run-active',
-          'summary': 'forged',
         }),
         throwsA(
           isA<RemoteRpcException>().having(

@@ -2,7 +2,7 @@
 title: Configura le notifiche
 description: Attiva o disattiva le categorie, imposta un orario di silenzio e un suono e scopri quali notifiche ti arrivano e dove.
 slug: it-IT/manuale/guide/notifiche
-sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
+sourceHash: b1e5bb3b8a13bbbbd169916ab8e7cd7bdd403c1a
 ---
 
 Questa guida ti mostra come configurare le notifiche e che cosa controlla
@@ -49,6 +49,8 @@ notifica.
 
 Tutto ciò che è fuori da questa lista non può essere notificato né filtrato — non
 esiste una categoria «tutto il resto».
+
+Il lavoro di lunga durata usa le prime due categorie. Un obiettivo terminato e una pianificazione terminata contano come **Agente completato**; un obiettivo in attesa della tua revisione, una proposta di miglioramento, un'esecuzione di pipeline trattenuta al tetto di costo e il riepilogo giornaliero di ciò che ti aspetta contano come **Un agente ti aspetta**. Ciascuno raggiunge la persona che lo riguarda: chi ha avviato l'obiettivo, la pianificazione o l'esecuzione.
 
 **Un agente ti aspetta** si attiva quando inizia un'attesa: un'approvazione in sospeso (comprese le concessioni di esecuzione nel
 sandbox e le approvazioni degli strumenti di Claude Code), una domanda
@@ -123,6 +125,8 @@ condizioni:
 Questi controlli valgono per i toast di sistema. La campanella durevole registra
 comunque l'evento.
 
+Alcune notifiche sono **silenziose**: il server le segna perché arrivino alla campanella senza toast, suono o notifica push rumorosa sul telefono. Una pianificazione terminata e un obiettivo terminato sono silenziosi. Un obiettivo in attesa della tua revisione non lo è.
+
 Altre due soppressioni avvengono più a monte, in ciò che il server invia del
 tutto:
 
@@ -133,10 +137,7 @@ tutto:
 - Gli spazi agente-agente sono silenziati nella barra laterale, quindi non
   incrementano mai il badge dei non letti delle persone
 
-All'interno di uno spazio non c'è un angolo tranquillo: ogni conversazione
-notifica allo stesso modo, discussioni comprese. Lo stato di lettura è limitato
-allo spazio, quindi i non letti si aggregano tra le conversazioni di uno spazio
-invece di essere tracciati per singola conversazione.
+All'interno di uno spazio non c'è un angolo tranquillo: ogni conversazione notifica allo stesso modo, discussioni comprese. Lo stato di lettura è tracciato per conversazione, e uno spazio è non letto finché una delle sue conversazioni lo è.
 
 ## Leggi e cancella il centro notifiche
 
@@ -190,6 +191,8 @@ Verifica di non essere già stato nello spazio in cui è successo — una route
 attiva sopprime il proprio toast di sistema. In uno spazio condiviso,
 un'esecuzione avviata da qualcun altro notifica quella persona, non te. Un turno
 terminato senza risposta e senza errori non invia nulla.
+
+Un'esecuzione avviata da una pianificazione o da un monitoraggio che termina senza problemi non invia nulla, a meno che non menzioni qualcuno. Un obiettivo concluso o una pianificazione terminata arrivano alla campanella senza toast.
 
 ## Guide correlate
 

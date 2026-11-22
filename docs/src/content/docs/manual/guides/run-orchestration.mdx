@@ -57,11 +57,13 @@ Press **Estimate** in the approval bar for cost, duration and blast-radius
 ranges before you commit. See
 [Work in Plan Studio](/manual/guides/plan-studio/) for the full editor.
 
-:::note[The budget is not a spending limit]
+:::note[The budget holds the run]
 A proposal's budget is compared against the _estimate_ in the approval bar: when
 the estimate's high end exceeds it, the total turns red with an over-budget
-warning. Nothing checks spend while the plan executes, so it will not stop or
-fail a run. For an actual spend stop, use per-agent budget policies — see
+warning. While the plan executes, the server checks the spend before each new
+step. At the budget the run is held and nothing new starts; steps already
+running finish. Whoever requested the run gets a notification and presses
+**Raise cap** on the pipeline run's page to continue. See
 [Manage costs](/manual/guides/manage-costs/).
 :::
 
@@ -70,7 +72,8 @@ fail a run. For an actual spend stop, use per-agent budget policies — see
 Approve the plan, from the chat card or from Plan Studio's approval bar.
 **This is the only decision you make.** Approving is operator-only — there is no
 MCP tool for it, so an agent can propose and revise but never approve its own
-plan.
+plan. Approving needs write access to the space's repositories, and the run
+then acts for the person who approved it.
 
 From here a deterministic materializer (a pure function, no LLM) turns the
 proposal into a real [pipeline](/manual/concepts/pipelines/) and creates the
@@ -108,8 +111,8 @@ Studio's approval bar. Cancellation tears down the in-flight work.
 An orchestration fails when materialization fails, or when its generated
 pipeline run fails (research, discussion, synthesis, or persist — those steps
 do not continue on fail). Generated **work** steps always continue on fail, so
-one failed sub-ticket does not fail the run. There is no budget-exceeded
-failure path and no "every sub-ticket failed" threshold.
+one failed sub-ticket does not fail the run. Reaching the budget holds the run
+rather than failing it, and there is no "every sub-ticket failed" threshold.
 
 ## Related guides
 

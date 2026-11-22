@@ -43,6 +43,18 @@ class ControlledEvaluationBashTool extends HarnessTool {
   ToolApprovalTier get approvalTier => _delegate.approvalTier;
   @override
   bool get selfGuards => _delegate.selfGuards;
+  @override
+  bool get scriptCallable => _delegate.scriptCallable;
+  @override
+  String? executedContent(Map<String, dynamic> args) =>
+      _delegate.executedContent(args);
+  @override
+  Map<String, dynamic>? get outputSchema => _delegate.outputSchema;
+
+  @override
+  String? get resultNote => _delegate.resultNote;
+  @override
+  bool get waitsOnPerson => _delegate.waitsOnPerson;
 
   @override
   Future<HarnessToolResult> execute(
@@ -94,6 +106,24 @@ class _ControlledFileTool extends HarnessTool {
   ToolApprovalTier get approvalTier => schema.approvalTier;
   @override
   bool get speculativeReadSafe => approvalTier == ToolApprovalTier.read;
+  @override
+  bool get scriptCallable => schema.scriptCallable;
+  @override
+  String? executedContent(Map<String, dynamic> args) =>
+      schema.executedContent(args);
+  @override
+  bool get waitsOnPerson => schema.waitsOnPerson;
+
+  /// None, whatever [schema] declares: the enclosure's adapter answers with
+  /// text only, so promising a script the schema tool's structured result
+  /// would describe a value this tool never returns.
+  @override
+  Map<String, dynamic>? get outputSchema => null;
+
+  /// None, for the same reason as [outputSchema]: the adapter's text is not
+  /// what [schema]'s note describes.
+  @override
+  String? get resultNote => null;
 
   @override
   Future<HarnessToolResult> execute(

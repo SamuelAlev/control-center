@@ -21,10 +21,23 @@ extension _DispatchSessionGateway on DispatchSession {
     final signProgram = identity?.signingKey == null
         ? null
         : await _writeSignShim(gateway.client);
+    final backend = deps.backendRegistry.backendFor(cliName);
+    final claudeCli = backend?.transport == AdapterTransport.claudeCli;
     final lease = _gatewayLease = await gateway.open(
       AgentRunGrant(
         workspaceId: ws,
         conversationId: conversationId ?? dispatchId,
+        // Only an agent CLI is handed the MCP endpoint and the secret for it;
+        // the harness calls its tools in-process.
+        mcpEndpoint:
+            backend != null && backend.transport != AdapterTransport.harness,
+        // Only Claude Code gets the PreToolUse hook that asks the gateway
+        // (`AgentRunLease.claudeHookSettings`); no other run asks there.
+        claudeHook: claudeCli,
+        readOnly: readOnly,
+        // The owner's `stop` and `preCompact` scripts, which the settings
+        // file then registers as Claude Code's own Stop and PreCompact hooks.
+        claudeTurnHooks: claudeCli ? await _claudeTurnHooks() : null,
         agentId: agentId,
         spaceId: spaceId,
         mode: mode,
@@ -39,6 +52,7 @@ extension _DispatchSessionGateway on DispatchSession {
         runnerStateDirs: _runnerStateDirs,
         autonomy: _resolveAutonomy,
         personalMcp: await _personalMcpAllowed(),
+        runLogId: hasRunLogRow ? runLogId : null,
       ),
     );
     final github = lease?.repos.where((r) => r.forge == ForgeHost.github);
@@ -76,6 +90,32 @@ extension _DispatchSessionGateway on DispatchSession {
     }
     addEvent(DebugEvent(content: said));
     return _openEnvironmentAccess();
+  }
+
+  /// The owner's `stop` and `preCompact` scripts from this agent's hook
+  /// folder, run the way the harness runs its hooks (tool processes of the
+  /// run, sandboxed, empty environment), or null when neither is configured.
+  Future<ClaudeTurnHookScripts?> _claudeTurnHooks() async {
+    final hookFolder = _hookFolder;
+    if (hookFolder == null) {
+      return null;
+    }
+    final config = await HarnessRunConfig.load(
+      const [],
+      hookBase: hookFolder,
+    );
+    if (config.hookStop == null && config.hookPreCompact == null) {
+      return null;
+    }
+    return _ShellClaudeTurnHooks(
+      ShellAgentLoopHooks(
+        cwd: agentDirHostPath,
+        start: _hookProcesses(mode, hookFolder).start,
+        stopScript: config.hookStop,
+        preCompactScript: config.hookPreCompact,
+        onWarning: (message) => CcInfraLog.warning('agent run hooks: $message'),
+      ),
+    );
   }
 
   /// Gives this run what it needs to use its space's environment.
@@ -253,4 +293,27 @@ class _RunEnvironmentAccess {
   /// writable in the sandbox: they forward to the gateway and do nothing
   /// else, so running them grants nothing the gateway doesn't.
   final String? shimDir;
+}
+
+/// [ClaudeTurnHookScripts] over the harness's own [ShellAgentLoopHooks], so
+/// both lanes run the scripts, cut their output and count `stop` blocks
+/// (three per run) the same way.
+class _ShellClaudeTurnHooks implements ClaudeTurnHookScripts {
+  _ShellClaudeTurnHooks(this._hooks);
+
+  final ShellAgentLoopHooks _hooks;
+
+  @override
+  bool get hasStop => _hooks.stopScript != null;
+
+  @override
+  bool get hasPreCompact => _hooks.preCompactScript != null;
+
+  @override
+  Future<String?> stop(Map<String, Object?> event) =>
+      _hooks.stopBlock(event: event);
+
+  @override
+  Future<String?> preCompact(Map<String, Object?> event) =>
+      _hooks.preCompactFocus(event: event);
 }

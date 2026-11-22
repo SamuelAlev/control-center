@@ -279,6 +279,45 @@ void main() {
     expect(result.checkpoints, 1);
   });
 
+  test('a card nobody answered is stored apart from a decline, is covered '
+      'by the chain, and a row without it hashes as it always did', () async {
+    GuardDecision prompted(String id, {required bool unanswered}) =>
+        GuardDecision(
+          id: id,
+          workspaceId: ws,
+          occurredAt: DateTime.utc(2026, 1, 1, 12),
+          actorType: 'agent',
+          actorId: 'agent-7',
+          surface: GuardSurface.harness,
+          actionName: 'git.push',
+          decision: ActionDecision.deny,
+          prompted: true,
+          unanswered: unanswered,
+        );
+    await repo.append(decision('d1'));
+    await repo.append(prompted('d2', unanswered: true));
+    await repo.append(prompted('d3', unanswered: false));
+
+    final rows = {for (final r in await repo.recent(ws)) r.id: r};
+    expect(rows['d2']!.unanswered, isTrue);
+    expect(rows['d3']!.unanswered, isFalse);
+    expect(rows['d3']!.prompted, isTrue);
+    expect((await repo.verifyChain(ws)).intact, isTrue);
+    // The key is in the hash only when set.
+    expect(rows['d3']!.hashPayload().containsKey('unanswered'), isFalse);
+    expect(rows['d2']!.hashPayload()['unanswered'], isTrue);
+
+    // Turning an unanswered card into a decline after the fact is caught.
+    await dbs
+        .of(ws)
+        .customStatement(
+          'UPDATE guard_decisions SET unanswered = 0 WHERE seq = 2',
+        );
+    final result = await repo.verifyChain(ws);
+    expect(result.intact, isFalse);
+    expect(result.brokenAtSeq, 2);
+  });
+
   test('recent returns newest first and round-trips every field', () async {
     await repo.append(
       decision('d1', action: 'git.push', verdict: ActionDecision.deny),

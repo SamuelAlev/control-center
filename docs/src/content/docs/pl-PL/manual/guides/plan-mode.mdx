@@ -2,7 +2,7 @@
 title: Używaj trybu planu
 description: Przełącz przestrzeń w tryb planu, uzyskaj typowany plan i zatwierdź go, aby ruszyła praca.
 slug: pl-PL/podrecznik/poradniki/tryb-planu
-sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
+sourceHash: accf49606e5e8597d3ea76e3274f08d3854996dc
 ---
 
 Ten poradnik pokazuje, jak wydobyć z agenta ustrukturyzowany plan, zanim napisze
@@ -108,10 +108,7 @@ zatwierdzone, następne wywołanie `exit_plan_mode` przez agenta przełącza prz
 na tryb agenta i odblokowuje jego narzędzia mutujące. Odrzucenie pozwala mu otworzyć nowe
 żądanie wobec zmienionego planu.
 
-Aby opuścić tryb planu, przełącz listę rozwijaną w polu tworzenia wiadomości (albo Shift+Tab)
-lub zatwierdź przesłany plan. `exit_plan_mode` otwiera trwałe zatwierdzenie rozstrzygane
-narzędziem MCP `decide_approval`. Nakładka guardrailów dla zablokowanych wywołań narzędzi to
-inna, trzymana w pamięci kolejka i nie przenosi żądań wyjścia z trybu planu.
+Aby opuścić tryb planu, przełącz listę rozwijaną w polu tworzenia wiadomości (albo Shift+Tab) lub zatwierdź przesłany plan. `exit_plan_mode` otwiera trwałe zatwierdzenie, które uruchomienie agenta rozstrzyga narzędziem MCP `decide_approval`. Nakładka guardrailów dla zablokowanych wywołań narzędzi to inna, trzymana w pamięci kolejka i nie przenosi żądań wyjścia z trybu planu.
 
 ## Tryb planu w kroku potoku
 

@@ -2,7 +2,7 @@
 title: Comandi slash
 description: Ogni comando che puoi digitare nel composer, cosa fa e dove viene eseguito.
 slug: it-IT/manuale/riferimento/comandi-slash
-sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
+sourceHash: 38430a6315b112c92a7806d1c28dff8a0285e363
 ---
 
 Comandi che si digitano nel composer di uno spazio. Si dividono in tre gruppi in base a dove hanno effetto, e la differenza conta: un comando **locale** non viaggia mai come messaggio, quindi non compare nella trascrizione e non raggiunge alcun agente.
@@ -21,23 +21,35 @@ Comandi che si digitano nel composer di uno spazio. Si dividono in tre gruppi in
 
 **Locale → invio.** Attiva la modalità piano sulla conversazione: un worktree completamente in sola lettura e una superficie degli strumenti limitata a `read`. Il risultato dell'agente è un piano, non una modifica. Un `/plan` da solo si limita ad attivare la modalità e non viaggia mai come messaggio; con un prompt, è il resto della riga ad avviare l'esecuzione.
 
-### `/goal <objective>`
+### `/goal [flags] <objective>`
 
-**Invio.** Avvia un obiettivo autonomo che il supervisore degli obiettivi rinvia attraverso segmenti e riavvii.
+**Invio.** Avvia un obiettivo durevole: l'agente lavora sull'obiettivo a segmenti, attraverso i riavvii, finché il server non ne verifica il completamento, una persona non lo chiude o non raggiunge un limite. Vedi [Persegui un obiettivo](/it-IT/manuale/guide/persegui-obiettivo/).
 
-Digitare `/goal` con del testo prima apre l'**intervista sull'obiettivo** — una breve sessione che rifiuta di accettare una bozza finché non ha tutti e cinque questi elementi: criteri di successo che un valutatore può verificare senza discrezionalità, un comando di verifica esatto, un tetto di tentativi, confini di ambito e condizioni di arresto. Ogni passaggio offre *Salta ed esegui così com'è*: l'intervista è un'impostazione predefinita, non un cancello.
+Digitare `/goal` con del testo prima apre l'**intervista sull'obiettivo** — una breve sessione che chiede criteri di successo che un valutatore può verificare senza discrezionalità, i controlli che devono superare, i confini di ambito e le condizioni di arresto, poi propone un checker separato, segmenti nuovi e la risposta alle sue domande. Ogni passaggio offre *Salta ed esegui così com'è*: l'intervista è un'impostazione predefinita, non un cancello.
 
-`/goal pause`, `/goal resume` e `/goal drop` non sono comandi slash. Metti in pausa, riprendi e ferma si trovano nell'elenco degli obiettivi della conversazione nella barra laterale. I flag iniziali dell'obiettivo stesso sono `--budget <dollars>`, `--max <N>` (budget di esecuzione) e `--days <N>` (scadenza). Un obiettivo che ha raggiunto il suo tetto di costo riprende solo alzando quel tetto, dallo stesso controllo nella barra laterale.
+I flag possono stare ovunque nel messaggio: `--budget <dollars>` (il budget dell'obiettivo, 50 per impostazione predefinita), `--max <N>` (un limite di segmenti), `--days <N>` (una scadenza), `--check "<command>"` (fino a 5), `--checker <agent>`, `--fresh` e `--unattended wait|assume`. Un flag sconosciuto o ripetuto viene rifiutato e la bozza resta nel compositore. Un numero all'inizio dell'obiettivo fa parte dell'obiettivo. Le sezioni `## Success criteria`, `## Boundaries`, `## Stop conditions` e `## Checks` diventano il contratto dell'obiettivo.
+
+`/goal pause`, `/goal resume` e `/goal drop` non sono comandi slash. Metti in pausa, riprendi e ferma si trovano sulla scheda dell'obiettivo nel pannello **Generale** della conversazione e nella pagina dell'obiettivo (barra laterale → **Obiettivi**). Riprendere e aumentare il budget spettano alla persona che ha avviato l'obiettivo.
 
 :::note[Perché interrompe]
 Un obiettivo autonomo è l'unico caso in cui un brief vago è davvero costoso. L'esecuzione lavora per ore su un obiettivo il cui «fatto» nessuno ha definito, poi dichiara il successo secondo i propri criteri. Cinque domande costano meno di un'unica esecuzione notturna che si è conclusa quando le è sembrato di aver finito.
 :::
 
-### `/loop [budget] [task]`
+### `/loop [every <interval>] [flags] <prompt>`
 
-**Invio.** Lavora in modo iterativo fino al completamento. Accetta un limite: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**Invio.** Crea una pianificazione che sveglia l'agente con il prompt subito e poi di nuovo: a ogni intervallo (di almeno 60 secondi) oppure, senza `every`, dopo un ritardo che l'agente sceglie ogni volta (da 1 a 60 minuti). `--max <N>` limita le esecuzioni, `--days <N>` la termina (30 giorni per impostazione predefinita), `--budget <dollars>` limita la sua spesa. Vedi [Pianificazioni e risvegli](/it-IT/manuale/guide/pianificazioni-risvegli/).
 
-Un token che *sembra* un limite (inizia con una cifra o un segno) e non riesce a essere analizzato è un errore esplicito. La prosa resta prosa, quindi `/loop keep going until the tests pass` è un ciclo senza limite con un prompt inline, non un'analisi errata.
+`/loop` non avvia più un obiettivo, e un numero iniziale non è un conteggio di esecuzioni.
+
+### `/schedule <when> [flags] <prompt>`
+
+**Invio.** Crea una pianificazione che sveglia l'agente più tardi: `in 2h`, `at 09:00` (la prossima occorrenza nel fuso orario dello spazio di lavoro), `at <ISO time>` oppure `cron "0 9 * * 1-5"` (le virgolette sono facoltative). Accetta gli stessi `--max`, `--days` e `--budget` di `/loop`. Attende il suo primo orario.
+
+### `/refine`
+
+**Invio.** Chiede una breve revisione in sola lettura del lavoro della conversazione, che può proporre miglioramenti a memoria, policy, note degli agenti o skill. Le proposte attendono nella pagina **Miglioramenti** finché qualcuno non le accetta. Al massimo una revisione per conversazione ogni 20 minuti.
+
+`/goal`, `/loop`, `/schedule` e `/refine` agiscono solo in un messaggio che digiti tu stesso; da un agente, una pipeline o un risveglio lo stesso testo è un messaggio normale. Un `/goal`, `/loop` o `/schedule` che non può essere letto mantiene la tua bozza, e una riga sopra il testo nel compositore indica cosa non va.
 
 ### `/vibe [task]`
 

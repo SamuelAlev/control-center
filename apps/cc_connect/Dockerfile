@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.28
+# syntax=docker/dockerfile:1.29
 
 # =============================================================================
 # Dockerfile for Control Center Connect.
@@ -25,7 +25,7 @@
 # ---- Build stage: compile native AOT executables ----------------------------
 # Pinned by digest. Keep the tag in sync with the `environment:` of
 # apps/cc_connect/pubspec.yaml.
-FROM dart:3.14-sdk@sha256:9ba97850b3154383a90f67844b09ea77751f7835836d8b2662ad2ffe03f60c8c AS builder
+FROM dart:3.14-sdk@sha256:36176bf7b6400bdc4aa77ba07b733b2eabf22640f71afd1b83eba679a26d5698 AS builder
 
 WORKDIR /build
 COPY --from=core lib ./packages/cc_connect_core/lib

@@ -168,6 +168,11 @@ class TicketsTable extends Table {
     onDelete: KeyAction.setNull,
   )();
 
+  /// The conversation the delegating agent delegated from: where the
+  /// completion wake goes when the ticket settles. A value, not a key: a
+  /// wake to a deleted conversation is dropped by the wake queue.
+  TextColumn get delegatedFromConversationId => text().nullable()();
+
   /// Linked discussion space. `SET NULL`: the ticket outlives the space.
   TextColumn get spaceId => text().nullable().references(
     SpacesTable,

@@ -39,7 +39,7 @@ single agent. Your job is to PLAN, not to execute.
    then the system hires, forms the team, creates the project + sub-tickets,
    and runs everything for you.
 
-Do NOT call `hire_agent`, `delegate_ticket`, `create_ticket`, `close_ticket`,
-or `fail_ticket` — those are not available in this mode and would be redundant
+Do NOT call `delegate_ticket`, `create_ticket`, `close_ticket` or
+`fail_ticket` — those are not available in this mode and would be redundant
 with the deterministic execution that follows approval.$revisionNote''';
 }

@@ -36,7 +36,6 @@ lib/features/forge/presentation/widgets/github_installations_group.dart
 lib/features/forge/providers/forge_providers.dart
 lib/features/forge/providers/workspace_github_providers.dart
 lib/features/identity/providers/identity_providers.dart
-lib/features/messaging/presentation/ide/panels/goals_section.dart
 lib/features/messaging/presentation/ide/panels/rigs_sections.dart
 lib/features/messaging/presentation/ide/panels/source_control_panel.dart
 lib/features/messaging/providers/context_inspection_provider.dart

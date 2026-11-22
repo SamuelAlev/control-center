@@ -346,16 +346,15 @@ class DaoMessagingRepository implements MessagingRepository {
     for (final row in rows) {
       final acc = bySpace.putIfAbsent(row.spaceId, _SpaceActivityAcc.new);
       acc.openQuestionCount += row.openQuestionCount;
+      if (row.openQuestionCount > 0) {
+        acc.conversationsNeedingInput.add(row.conversationId);
+      }
       final lastAt = acc.lastMessageAt;
       if (lastAt == null || row.lastMessageAt.isAfter(lastAt)) {
         acc.lastMessageAt = row.lastMessageAt;
       }
       final agent = row.lastAgentMessage;
       if (agent != null) {
-        final newest = acc.lastAgentMessage;
-        if (newest == null || agent.isAfter(newest)) {
-          acc.lastAgentMessage = agent;
-        }
         acc.lastAgentMessageByConversation[row.conversationId] = agent;
       }
     }
@@ -364,11 +363,13 @@ class DaoMessagingRepository implements MessagingRepository {
         SpaceActivity(
           spaceId: e.key,
           lastMessageAt: e.value.lastMessageAt,
-          lastAgentMessage: e.value.lastAgentMessage,
           lastAgentMessageByConversation: Map.unmodifiable(
             e.value.lastAgentMessageByConversation,
           ),
           openQuestionCount: e.value.openQuestionCount,
+          conversationsNeedingInput: Set.unmodifiable(
+            e.value.conversationsNeedingInput,
+          ),
         ),
     ];
   }
@@ -854,6 +855,25 @@ class DaoMessagingRepository implements MessagingRepository {
       ..sort((a, b) => a.steerOrder.compareTo(b.steerOrder));
     return queued;
   }
+
+  /// See [MessagingDao.heldSteeringMessages]: the workspace's held steering
+  /// cards, every conversation.
+  Future<List<Message>> heldSteeringMessages(String workspaceId) async =>
+      _mapper.messagesToDomain(await _dao(workspaceId).heldSteeringMessages());
+
+  /// See [MessagingDao.openSteeringMessagesOf]: the queued and held
+  /// steering cards [senderId] wrote in [workspaceId].
+  Future<List<Message>> openSteeringMessagesOf(
+    String workspaceId,
+    String senderId,
+  ) async => _mapper.messagesToDomain(
+    await _dao(workspaceId).openSteeringMessagesOf(senderId),
+  );
+
+  /// See [MessagingDao.openLimitParkRows]: the workspace's usage-limit park
+  /// rows with no outcome yet.
+  Future<List<Message>> openLimitParkRows(String workspaceId) async =>
+      _mapper.messagesToDomain(await _dao(workspaceId).openLimitParkRows());
 
   /// See [MessagingDao.patchSteering]: a conditional merge onto the card's
   /// current metadata, applied only while it is in [fromState].
@@ -1434,7 +1454,7 @@ class DaoMessagingRepository implements MessagingRepository {
 /// Mutable fold of one space's per-conversation activity rows.
 class _SpaceActivityAcc {
   DateTime? lastMessageAt;
-  FeedPosition? lastAgentMessage;
   int openQuestionCount = 0;
+  final Set<String> conversationsNeedingInput = {};
   final Map<String, FeedPosition> lastAgentMessageByConversation = {};
 }

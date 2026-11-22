@@ -5,8 +5,11 @@ import 'dart:io';
 import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
+import 'package:cc_domain/core/domain/value_objects/script_call_origin.dart';
+import 'package:cc_domain/features/code_mode/domain/value_objects/script_approval_budget.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
 import 'package:cc_domain/features/guardrails/domain/services/shell_action_classifier.dart';
+import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_request.dart';
 import 'package:cc_domain/features/pr_review/domain/ports/agent_pull_request_comment_port.dart'
     show kAgentShellGitHubWriteRefusal;
@@ -16,12 +19,61 @@ import 'package:cc_domain/features/sandboxing/domain/command_policy/command_poli
 import 'package:cc_domain/features/sandboxing/domain/sandbox_config.dart';
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/tools.dart';
+import 'package:cc_infra/src/code_mode/run_script_origins.dart';
+import 'package:cc_infra/src/harness/script_approval_check.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/process/agent_shell_process_service.dart';
 import 'package:cc_infra/src/process/child_process.dart';
+import 'package:cc_infra/src/process/process_tree.dart';
+import 'package:cc_infra/src/sandboxing/process_group_supervisor.dart';
 import 'package:cc_infra/src/sandboxing/process_sandbox.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
 import 'package:cc_infra/src/sandboxing/tool_process_launcher.dart';
+
+/// Hands the waits on a person that something outside the runner holds while
+/// a command runs (the agent run gateway asking about a `git push` the
+/// command makes) to the tool call that started the command, so that call's
+/// clocks stop for them as they do for the runner's own asks.
+abstract interface class CommandWaitRelay {
+  /// Registers [listener] for one command whose environment is [env].
+  ///
+  /// The returned [CommandWait.environment] is what the command's environment
+  /// gains so its requests name this registration; [CommandWait.release] ends
+  /// it. The registration authorizes nothing and decides nothing: [listener]
+  /// hears only of asks the holder makes on its own account, and [decided]
+  /// of what the holder decided about a request naming it: `false` when it
+  /// denied one (a person declined, a script's budget refused it, the policy
+  /// denied it), `true` when a person approved a card for one. A process can
+  /// drop or borrow the name, so this labels the call's record and decides
+  /// nothing.
+  CommandWait register(
+    PersonWaitListener listener,
+    Map<String, String> env, {
+    required void Function(bool approved) decided,
+  });
+
+  /// Holds [approvals], the budget of a code mode script of the run, until
+  /// the returned call ends the hold.
+  ///
+  /// While it is held, every approval card the holder raises for the run
+  /// counts against it and stops once it refuses, whichever of the run's
+  /// commands the request comes from and whether or not it names one: a
+  /// process in the sandbox can drop or borrow the name. The end call is
+  /// idempotent; a closed holder holds nothing.
+  void Function() holdScriptApprovals(ScriptApprovalBudget approvals);
+}
+
+/// One command's registration with a [CommandWaitRelay].
+final class CommandWait {
+  /// Creates a registration.
+  const CommandWait({required this.environment, required this.release});
+
+  /// Variables the command's environment gains.
+  final Map<String, String> environment;
+
+  /// Ends the registration. Idempotent.
+  final void Function() release;
+}
 
 /// Runs the harness `bash` tool's commands through CC's command policy, the OS
 /// sandbox and (for `prompt`-tier commands) the confirmation flow — the same
@@ -49,11 +101,31 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
     this.agentId,
     this.conversationId,
     this.spaceId,
+    this.runId,
+    this.onBehalfOfUserId,
     this._protectedPaths,
     this._baseEnv = const {},
     this._maxOutputChars = 16000,
     HarnessShellRegistry? shellRegistry,
+    this.scriptOrigins,
+    this.callWaits,
+    this.killTree = ChildProcess.killTree,
   }) : _shellRegistry = shellRegistry ?? HarnessShellRegistry.shared;
+
+  /// Ends a command's tree on a stop, a timeout or a kill. Never called for
+  /// a command whose exit was seen, except to end a background command's
+  /// daemons once its run ended ([HarnessCommandObserver.sweepAfterExit]).
+  final ProcessTreeKill killTree;
+
+  /// The scripts running in this run, which name the execution an approval
+  /// card raised by a script's command links to. Null leaves such a card
+  /// without an origin.
+  final RunScriptOrigins? scriptOrigins;
+
+  /// Where a running command's person waits that the agent run gateway holds
+  /// are registered, so the calling tool's clocks stop for them too. Null
+  /// when the run has no gateway lease.
+  final CommandWaitRelay? callWaits;
 
   /// Where each spawned command is recorded while it runs, so the space's
   /// TERMINALS list can show it and a person can stop it.
@@ -116,6 +188,13 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
   /// Conversation identity used for the sandbox session.
   final String? conversationId;
 
+  /// The run's `agent_run_logs` row, and the person it acts for: every guard
+  /// row a command's check writes names both, as the harness gate's rows do.
+  final String? runId;
+
+  /// The person the run acts for, when one requested it.
+  final String? onBehalfOfUserId;
+
   /// Space containing the conversation; guard rules, approvals and exec
   /// grants are scoped to this id, not to the conversation's own id.
   final String? spaceId;
@@ -146,8 +225,50 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
     int timeoutSeconds = 120,
     Map<String, String>? env,
     CancellationToken? cancel,
+    PersonWaitListener? personWait,
+    String? parentToolCallId,
+    HarnessCommandObserver? observer,
   }) async {
     var preApproved = false;
+    // What a person decided for this command, and whether a request it made
+    // was denied while it ran ([HarnessCommandResult.personVerdict]).
+    var approvedByPerson = false;
+    var deniedWhileRunning = false;
+    // A script's command: its approval cards name the script, and what the
+    // script may still ask of a person bounds them.
+    final scripted = parentToolCallId != null && parentToolCallId.isNotEmpty;
+    final origin = scripted ? scriptOrigins?.originOf(parentToolCallId) : null;
+    final budget = scripted
+        ? scriptOrigins?.approvalsOf(parentToolCallId)
+        : null;
+    // The command's caller stopped waiting: a card it raised comes down, and
+    // an answer that arrives afterwards spawns nothing.
+    final withdrawn = cancel?.whenCancelled;
+    bool gone() => cancel?.isCancelled ?? false;
+    // A script's command longer than the guard audit stores whole is refused
+    // (and audited) before it is classified, asked about or spawned. A run's
+    // loop refuses it first, before its hooks (`nestedCallRefusal`); this
+    // holds for a runner a loop drives without that refusal.
+    if (scripted) {
+      final summary = 'bash: $command';
+      if (ActionGuardService.scriptActionRefusal(summary) case final refusal?) {
+        if (actionGuard != null && workspaceId != null) {
+          await actionGuard!.check(
+            workspaceId: workspaceId!,
+            classes: {ActionClass.processSpawn},
+            command: command,
+            spaceId: spaceId,
+            runId: runId,
+            onBehalfOfUserId: onBehalfOfUserId,
+            agentId: agentId,
+            actionSummary: summary,
+            origin:
+                origin ?? ScriptCallOrigin(parentToolCallId: parentToolCallId),
+          );
+        }
+        return HarnessCommandResult.deny(refusal);
+      }
+    }
     // 0. Pull requests are opened by the server's `open_pull_request` tool,
     // as the person who requested the run; the run's token cannot open
     // one. Refused before any approval is raised.
@@ -182,20 +303,102 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
     );
     GuardVerdict? verdict;
     if (guard != null && workspaceId != null) {
-      verdict = await guard.check(
-        workspaceId: workspaceId!,
-        classes: classes,
-        command: command,
-        spaceId: spaceId,
-        conversationId: conversationId,
-        agentId: agentId,
-        mode: _mode,
-        actionSummary: 'bash: $command',
-        request: request,
-      );
+      // A script's call that would ask a person counts its ask before the
+      // check can raise the card ([reserveScriptAsk]), or, when the script
+      // may not ask any more, is refused without asking: a denial nobody
+      // was asked about. The ask is given back when no card went up.
+      var reserved = false;
+      if (budget != null) {
+        final resolution = await guard.resolve(
+          workspaceId: workspaceId!,
+          classes: classes,
+          command: command,
+          spaceId: spaceId,
+          agentId: agentId,
+          mode: _mode,
+          request: request,
+        );
+        if (guardWouldAsk(resolution)) {
+          if (reserveScriptAsk([budget]) case final refusal?) {
+            guard.recordOutcome(
+              workspaceId: workspaceId!,
+              resolution: scriptApprovalDenial(resolution, refusal),
+              applied: ActionDecision.deny,
+              classes: classes,
+              agentId: agentId,
+              spaceId: spaceId,
+              runId: runId,
+              onBehalfOfUserId: onBehalfOfUserId,
+              actionSummary: 'bash: $command',
+              command: command,
+            );
+            return HarnessCommandResult.deny(
+              'Command denied by policy: $refusal',
+            );
+          }
+          reserved = true;
+        }
+      }
+      // A stored `prompt` rule asks the person inside the check, which tells
+      // [personWait] exactly when it does.
+      var asked = false;
+      try {
+        verdict = await guard.check(
+          workspaceId: workspaceId!,
+          classes: classes,
+          command: command,
+          spaceId: spaceId,
+          runId: runId,
+          onBehalfOfUserId: onBehalfOfUserId,
+          conversationId: conversationId,
+          agentId: agentId,
+          mode: _mode,
+          actionSummary: 'bash: $command',
+          request: request,
+          withdrawn: withdrawn,
+          origin: origin,
+          onPersonWait: (waiting) {
+            if (waiting) {
+              asked = true;
+            }
+            personWait?.call(waiting);
+          },
+          // A card the resolution above did not foresee (the policy changed
+          // in between) takes the same step just before it goes up: counted,
+          // or refused without a card.
+          beforeCard: budget == null
+              ? null
+              : () {
+                  if (reserved) {
+                    return null;
+                  }
+                  final refusal = reserveScriptAsk([budget]);
+                  reserved = refusal == null;
+                  return refusal;
+                },
+        );
+      } finally {
+        if (reserved && !asked) {
+          budget?.release();
+        }
+      }
+      if (gone()) {
+        return HarnessCommandResult.deny(_cancelledBeforeRun(command));
+      }
+      if (asked) {
+        budget?.answered(
+          approved: verdict.allowed,
+          unanswered: verdict.unanswered,
+        );
+        approvedByPerson = verdict.allowed;
+      }
       if (!verdict.allowed) {
         return HarnessCommandResult.deny(
           'Command denied by policy: ${verdict.reason ?? command}',
+          // A card nobody answered is no person's verdict.
+          personVerdict: asked && !verdict.unanswered
+              ? ToolGateVerdict.denied
+              : null,
         );
       }
       // The guard already asked and the human said yes, or a person approved
@@ -221,24 +424,71 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
             'Command requires approval but no approver is connected: $command',
           );
         }
-        final approved = await port.requestApproval(
-          ActionGuardService.approvalRequest(
-            resolution: verdict?.resolution,
-            classes: classes,
-            askedByPolicy: false,
-            request: request,
-            spaceId: spaceId,
-            conversationId: conversationId,
-            workspaceId: workspaceId,
-            agentId: agentId,
-            actionSummary: 'bash: $command',
-            severity: ConfirmationSeverity.warning,
-            kind: ConfirmationKind.command,
+        if (gone()) {
+          return HarnessCommandResult.deny(_cancelledBeforeRun(command));
+        }
+        if (reserveScriptAsk([?budget]) case final refusal?) {
+          if (guard != null && workspaceId != null) {
+            if (verdict?.resolution case final resolution?) {
+              guard.recordOutcome(
+                workspaceId: workspaceId!,
+                resolution: scriptApprovalDenial(resolution, refusal),
+                applied: ActionDecision.deny,
+                classes: classes,
+                agentId: agentId,
+                spaceId: spaceId,
+                runId: runId,
+                onBehalfOfUserId: onBehalfOfUserId,
+                actionSummary: 'bash: $command',
+                command: command,
+              );
+            }
+          }
+          return HarnessCommandResult.deny(
+            'Command denied by policy: $refusal',
+          );
+        }
+        var unanswered = false;
+        final approved = await _waitingOnPerson(
+          personWait,
+          () => port.requestApproval(
+            ActionGuardService.approvalRequest(
+              resolution: verdict?.resolution,
+              classes: classes,
+              askedByPolicy: false,
+              request: request,
+              spaceId: spaceId,
+              conversationId: conversationId,
+              workspaceId: workspaceId,
+              agentId: agentId,
+              actionSummary: 'bash: $command',
+              severity: ConfirmationSeverity.warning,
+              kind: ConfirmationKind.command,
+              withdrawn: withdrawn,
+              origin: origin,
+              runId: runId,
+              onUnanswered: () => unanswered = true,
+            ),
           ),
         );
-        if (!approved) {
-          return HarnessCommandResult.deny('Command denied by user: $command');
+        if (gone()) {
+          // Answered, or withdrawn, after the caller stopped waiting: the
+          // command is never spawned.
+          return HarnessCommandResult.deny(_cancelledBeforeRun(command));
         }
+        budget?.answered(approved: approved, unanswered: unanswered);
+        if (!approved) {
+          // A card nobody answered is no person's verdict.
+          return unanswered
+              ? HarnessCommandResult.deny(
+                  'Command not run, $kUnansweredCardReason: $command',
+                )
+              : HarnessCommandResult.deny(
+                  'Command denied by user: $command',
+                  personVerdict: ToolGateVerdict.denied,
+                );
+        }
+        approvedByPerson = true;
       case CommandDecision.allow:
         break;
     }
@@ -247,6 +497,44 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
     final cwd = workdir ?? Directory.current.path;
     final argv = ['bash', '-lc', command];
 
+    // While the command runs, a wait on a person the agent run gateway holds
+    // for it (a push waiting for approval) reaches this call's listener.
+    // Released when the command returns, so a process it left behind holds a
+    // registration that is gone.
+    final relay = callWaits;
+    CommandWait? wait;
+    Map<String, String> withWait(Map<String, String> environment) {
+      if (relay == null || personWait == null) {
+        return environment;
+      }
+      final registered = wait ??= relay.register(
+        personWait,
+        environment,
+        decided: (approved) {
+          if (approved) {
+            approvedByPerson = true;
+          } else {
+            deniedWhileRunning = true;
+          }
+        },
+      );
+      return {...environment, ...registered.environment};
+    }
+
+    // The command runs in a process group of its own, under the watcher
+    // (outside the OS sandbox), so a kill reaches everything it started and
+    // a server that dies takes the group down with it. Windows has no
+    // watcher; `ChildProcess.killTree` ends the tree there.
+    ({String executable, List<String> argv}) grouped(
+      String executable,
+      List<String> args,
+    ) => canSuperviseProcessGroup
+        ? superviseProcessGroup(executable, args)
+        : (executable: executable, argv: args);
+
+    // Every process the command starts carries this in its environment, so a
+    // kill still finds one that left its tree (a daemon).
+    final marker = newProcessTreeMarker();
     try {
       final manager = sandboxManager;
       final Process process;
@@ -257,19 +545,30 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
           argv: argv,
           workingDirectory: cwd,
         );
+        final launch = grouped(wrap.executable, wrap.argv);
         process = await ChildProcess.start(
-          wrap.executable,
-          wrap.argv,
+          launch.executable,
+          launch.argv,
           workingDirectory: cwd,
-          environment: {...wrap.environment, ..._baseEnv, ...?env},
+          environment: withWait({
+            ...wrap.environment,
+            ..._baseEnv,
+            ...?env,
+            processTreeMarkerVariable: marker,
+          }),
           toolchain: true,
         );
       } else if (hostProcesses case final launcher?) {
+        final launch = grouped(argv.first, argv.skip(1).toList());
         process = await launcher.start(
-          argv.first,
-          argv.skip(1).toList(),
+          launch.executable,
+          launch.argv,
           workingDirectory: cwd,
-          environment: {..._baseEnv, ...?env},
+          environment: withWait({
+            ..._baseEnv,
+            ...?env,
+            processTreeMarkerVariable: marker,
+          }),
         );
       } else {
         return HarnessCommandResult.deny(
@@ -277,6 +576,7 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
         );
       }
 
+      observer?.onStarted?.call();
       String? outputId;
       final unregister = _shellRegistry.register(
         pid: process.pid,
@@ -300,41 +600,68 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
       final errSink = _BoundedOutput(_maxOutputChars);
       final outSub = process.stdout.transform(decoder).listen((chunk) {
         outSink.add(chunk);
+        observer?.onOutput?.call(chunk);
         if (outputId case final id?) {
           _shellRegistry.append(id, chunk);
         }
       });
       final errSub = process.stderr.transform(decoder).listen((chunk) {
         errSink.add(chunk);
+        observer?.onOutput?.call(chunk);
         if (outputId case final id?) {
           _shellRegistry.append(id, chunk);
         }
       });
 
-      // Kill the process as soon as the run is cancelled (the user stopped the
-      // agent) — otherwise a long command would keep running until its own
-      // timeout. Idempotent with the timeout kill below.
+      // Kill the command's whole tree as soon as the run is cancelled (the
+      // user stopped the agent, or a background command was killed or ended
+      // with its run) — otherwise a long command would keep running until its
+      // own timeout, and what it started would outlive it. Idempotent with
+      // the timeout kill below.
+      //
+      // Never for a command whose exit was seen: its pid may belong to
+      // another process by now. The token outlives the command (a run's
+      // token, a script's), so a cancel long after the exit is normal and
+      // sends nothing; only a background command's run end still ends its
+      // daemons, found by [marker] alone.
+      var exited = false;
+      unawaited(process.exitCode.then((_) => exited = true));
+      Future<void>? treeKill;
+      Future<void> endTree() => treeKill ??= killTree(
+        process.pid,
+        exited: () => exited,
+        marker: marker,
+      );
       var cancelled = false;
-      final cancelSub = cancel?.whenCancelled.then((_) {
-        cancelled = true;
-        process.kill(ProcessSignal.sigkill);
-      });
+      void onCancel() {
+        if (!exited) {
+          cancelled = true;
+          unawaited(endTree());
+        } else if (observer?.sweepAfterExit ?? false) {
+          unawaited(endTree());
+        }
+      }
+
+      final cancelSub = cancel?.whenCancelled.then((_) => onCancel());
       if (cancel != null && cancel.isCancelled) {
-        cancelled = true;
-        process.kill(ProcessSignal.sigkill);
+        onCancel();
       }
 
       var timedOut = false;
       final exitCode = await process.exitCode.timeout(
         Duration(seconds: timeoutSeconds),
-        onTimeout: () {
+        onTimeout: () async {
           timedOut = true;
-          process.kill(ProcessSignal.sigkill);
+          await endTree();
           return 124;
         },
       );
       // Stop listening for cancellation once the process has exited.
       unawaited(cancelSub);
+      // A kill returns once the whole tree is gone, not only the command.
+      if (treeKill case final kill?) {
+        await kill;
+      }
       // Give the pipes a brief grace to flush the last bytes, then stop waiting.
       // Orphaned grandchildren can hold the pipe open forever; we must not hang
       // the run on them (the OS sandbox reaps them where it can).
@@ -368,6 +695,11 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
         stdout: stdout,
         stderr: stderr,
         timedOut: timedOut,
+        personVerdict: deniedWhileRunning
+            ? ToolGateVerdict.denied
+            : approvedByPerson
+            ? ToolGateVerdict.approved
+            : null,
       );
     } on Object catch (e) {
       return HarnessCommandResult(
@@ -375,6 +707,8 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
         stdout: '',
         stderr: 'Failed to run command: $e',
       );
+    } finally {
+      wait?.release();
     }
   }
 
@@ -393,6 +727,23 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
       return _SpillFile(file, sink, rel);
     } on Object {
       return null;
+    }
+  }
+
+  static String _cancelledBeforeRun(String command) =>
+      'Command cancelled before it ran: $command';
+
+  /// Runs [ask], which may wait on a person, with [personWait] told when the
+  /// wait starts and ends, so the caller's clocks stop for exactly that time.
+  static Future<T> _waitingOnPerson<T>(
+    PersonWaitListener? personWait,
+    Future<T> Function() ask,
+  ) async {
+    personWait?.call(true);
+    try {
+      return await ask();
+    } finally {
+      personWait?.call(false);
     }
   }
 

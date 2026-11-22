@@ -2,29 +2,45 @@
 title: Verktygskontext och promptcache
 description: Varför en agent bara får se en liten delmängd av sina verktyg i stället för alla, hur den når resten, och reglerna som håller leverantörens promptcache varm under en körning.
 slug: sv-SE/handbok/koncept/verktygskontext
-sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
+sourceHash: 74ad7fcb903772d007ba9bd7ec85153fcf668335
 ---
 
 Två saker gäller för varje förfrågan som den inbyggda harnessen skickar: verktygsdefinitionerna är den största fasta kostnaden i den, och nästan inga av dem kommer att användas. Den här sidan förklarar vad Control Center gör åt det, och varför svaret inte helt enkelt är ”skicka färre verktyg”.
 
 ## Problemet är uppmärksamhet, inte byte
 
-Control Center registrerar omkring 126 verktyg. Skickade i sin helhet kostar deras definitioner ungefär **23 000 tokens vid varje förfrågan** — en kostnad som ingen komprimering kan röra, eftersom verktygsdefinitionerna färdas i en annan del av förfrågan än samtalet.
+Control Center har omkring 160 egna verktyg. Skickade i sin helhet skulle deras definitioner följa med vid **varje förfrågan** — en kostnad som ingen komprimering kan röra, eftersom verktygsdefinitionerna färdas i en annan del av förfrågan än samtalet.
 
 Tokensnotan är det självklara klagomålet, och med promptcache är den också den mindre. Den verkliga kostnaden är **träffsäkerheten i valet**. Publicerade utvärderingar av verktygsanrop är ense om att modeller väljer rätt verktyg pålitligt upp till någonstans kring 30–50 verktyg i kontexten, och blir successivt sämre bortom det. Den angivna orsaken är inte antalet tokens utan **semantisk överlappning**: när en katalog innehåller flera verktyg vars beskrivningar läser likadant väljer modellen mellan snarlika alternativ i stället för att minnas en förmåga.
 
-Med 126 verktyg ligger en agent långt förbi det intervallet i varje enskild tur — inklusive de många turer där den bara behövde läsa en fil.
+Med omkring 160 verktyg ligger en agent långt förbi det intervallet i varje enskild tur — inklusive de många turer där den bara behövde läsa en fil.
 
-## Ytan i två nivåer
+## En liten direkt uppsättning
 
 En körning visas därför två saker:
 
-- en **resident** uppsättning — ett tjugotal verktyg, som skickas med fullständiga scheman vid varje förfrågan;
+- en **direkt** uppsättning med ungefär femton verktyg, som skickas med fullständiga scheman vid varje förfrågan;
 - ett **namnindex** över allt annat, grupperat under rubriker som ”Ärenden och projekt” eller ”Minne och kunskap”, som kostar några hundra tokens för hela katalogen.
 
-Mätt på den aktuella katalogen tar det verktygsblocket från **~23,1k tokens till ~5,0k, cirka 78 % mindre**, och placerar den ständigt synliga uppsättningen inom det intervall där valet är pålitligt.
+Mätt på registret som testerna bygger har den inbyggda agentens vanliga chattverktyg 14 verktygsdefinitioner och omkring 16,5 KB med `repl`, varav `repl` är omkring 4 KB (dess definition får inte överstiga 4 096 byte), och 14 definitioner och omkring 13 KB på en server som inte kan köra skript. Det är en mätning av en yta, inte av varje installation. Alla andra verktyg nås från ett skript eller läses in vid första användning.
 
-Den residenta uppsättningen är de verktyg en körning använder i *de flesta* körningar: fil- och skalordförrådet (`read`, `write`, `edit`, `search`, `bash`, …), upptäcktsverktygen, uppgiftschecklistan, minnessökningen och vilket verb som helst som det aktuella [läget](/sv-SE/handbok/koncept/lagen) måste anropa för att leverera sin utdata. Ett läges eget utdataverb är alltid resident — en körning ska aldrig behöva leta efter det anrop som producerar dess leverans.
+Den direkta uppsättningen är de verktyg de flesta körningar använder i sina första turer och de som en körning aldrig ska behöva leta efter: `read`, `write`, `edit`, `search`, `find`, `bash` och `read_output`; `ask_user` och `task`; `todo_write`, `search_memory` och `send_message`; och vilket verb som helst som det aktuella [läget](/sv-SE/handbok/koncept/lagen/) måste anropa för att leverera sitt resultat. Ett läges eget utdataverb är alltid direkt — en körning ska aldrig behöva leta efter det anrop som producerar dess leverans. Ett verktyg förtjänar en plats genom att användas i de flesta körningar, inte genom att vara viktigt när det används: varje namn i uppsättningen är en definition i varje tur i varje körning.
+
+### Skript når resten
+
+När servern kan köra skript har varje körning också [`repl`](/sv-SE/handbok/koncept/kodlage/), först i listan. Regeln för resten av katalogen är då:
+
+- ett verktyg som ett skript får anropa nås **bara från ett skript**: det finns i namnindexet, och ett `repl`-skript anropar det som `tools.<name>(args)` efter att ha slagit upp det med `searchTools()` eller `describeTool()`, tills servern inte kan köra körningens skript och det läses in vid första användning i stället ([När skript inte kan köras](/sv-SE/handbok/koncept/kodlage/#när-skript-inte-kan-köras));
+- ett verktyg som ett skript inte får anropa (`eval`, `task`, godkännanden, delegering och några andra) är **uppskjutet**: det läses in vid första användning, så som beskrivs nedan;
+- `search_tools` läggs till när något är uppskjutet.
+
+En körning utan `repl` får samma direkta uppsättning, och allt annat är uppskjutet.
+
+Den direkta uppsättningen är densamma med eller utan `repl`, med avsikt. Agenten lär sig en yta, början på varje förfrågan är samma verktyg i samma ordning, och att lägga till `repl` ändrar ingenting som agenten redan förlitade sig på.
+
+Det den sparar: ett verktygs schema som bara går att anropa från skript skickas aldrig till leverantören, så de hundra eller så verktygen utanför den direkta uppsättningen kostar bara sina namn. Ett skript som behöver tio av dem betalar för inga av deras scheman, och dess mellanresultat kommer aldrig in i kontexten.
+
+Det som det kostar: ett verktyg utanför den direkta uppsättningen kräver ett skript för att anropas, och skriptet måste slå upp verktygets argument först. För ett enstaka snabbt anrop är det ett extra steg som ett direkt anrop inte skulle behöva. Därför stannar de verktyg som de flesta körningar anropar i sina första turer direkta.
 
 ### Uppskjutet betyder inte otillgängligt
 
@@ -32,19 +48,21 @@ Det här är delen som gör designen säker och inte bara billig. **Ett uppskjut
 
 Agenten ser namnet i sin prompt. Om den anropar namnet direkt läser harnessen in schemat och kör verktyget i samma steg — inget fel, ingen tur och retur. Modellen behöver inte veta att verktyget någonsin var ”urladdat”.
 
-När agenten känner till uppgiften men inte namnet tar `search_tools` en beskrivning i klartext (”tilldela någon ett ärende”), rangordnar körningens hela yta och returnerar träffarna *med schemana redan inlästa*, så att nästa tur kan anropa ett av dem. Om en sökning inte hittar något säger den det rakt ut och föreslår andra formuleringar eller en bredare sökning — med avsikt, eftersom en agent som tolkar en tom sökning som ”den här förmågan finns inte” hittar på en ersättning i stället för att leta igen.
+När agenten känner till uppgiften men inte namnet tar `search_tools` en beskrivning i klartext (”tilldela någon ett ärende”), rangordnar körningens hela yta och returnerar träffarna *med schemana redan inlästa*, så att nästa tur kan anropa ett av dem. En träff som bara går att anropa från ett skript returneras med hur den anropas från ett skript i stället, men bara så länge körningens skript kan köras; annars läses den in som vilken annan träff som helst. Om en sökning inte hittar något säger den det rakt ut och föreslår andra formuleringar eller en bredare sökning — med avsikt, eftersom en agent som tolkar en tom sökning som ”den här förmågan finns inte” hittar på en ersättning i stället för att leta igen.
 
 `search_tools` finns bara i den inbyggda harnessen. Externa MCP-klienter har `search_tool_bm25` i stället, som rangordnar samma index men bara beskriver träffarna — de klienterna har redan fått varje schema från `tools/list`, så det finns inget att läsa in.
 
-### Vad uppskjutning aldrig gör
+### Vad ytan aldrig gör
 
-Uppskjutning tillämpas **efter** lägets verktygsfilter, aldrig i stället för det. Den döljer ett schema; den kan inte avslöja ett verktyg som läget har nekat. Ett aktiverat verktyg passerar fortfarande godkännandegrinden och [åtgärdsräcken](/sv-SE/handbok/koncept/racken) precis som ett resident verktyg skulle göra, och ett verktyg kan inte läsa in ett namn som inte fanns på körningens yta från början.
+Uppskjutning och skript tillämpas **efter** lägets verktygsfilter, aldrig i stället för det. De döljer ett schema; de kan inte avslöja ett verktyg som läget har nekat. Ett inläst verktyg och ett skripts anrop passerar fortfarande godkännandeprompten och [åtgärdsräcken](/sv-SE/handbok/koncept/racken/) precis som ett direkt anrop skulle göra, och ingen av dem kan nå ett namn som inte fanns på körningens yta från början.
 
-MCP-ytan som externa klienter ser påverkas **inte**. `tools/list` returnerar fortfarande hela katalogen. Ett tidigare försök att banta den slog sönder agenter helt och hållet: MCP-klienter validerar verktygsnamn mot sin egen cachade lista och avvisar allt som inte står där utan att någonsin fråga servern, så ett ”dolt men anropbart” verktyg var helt enkelt onåbart. Uppskjutningen bor i harnessen, där det att läsa in ett verktyg mitt i en körning är något harnessen faktiskt kan göra.
+MCP-ytan som externa klienter ser är **inte** uppskjuten. `tools/list` returnerar hela katalogen, eftersom MCP-klienter validerar verktygsnamn mot sin egen cachade lista och avvisar allt som inte står där utan att någonsin fråga servern, så ett ”dolt men anropbart” verktyg skulle helt enkelt vara onåbart. Uppskjutningen bor i harnessen, där det att läsa in ett verktyg mitt i en körning är något harnessen faktiskt kan göra.
 
-### Stänga av det
+En agentkörning som når Control Center via dess MCP-slutpunkt, medan servern kan köra skript, är det enda undantaget. Dess `tools/list` innehåller `repl`, de direkta verktygen och varje verktyg som ett skript inte får anropa, och den anropar resten från skript. Ett direkt anrop till något av dem besvaras med hur det anropas från ett skript.
 
-`--tool-deferral=off` (eller `CC_SERVER_TOOL_DEFERRAL=off`) gör varje tillåtet verktyg resident igen och producerar exakt de förfrågningar som servern skickade innan uppskjutningen fanns. Se [CLI-referensen för `cc_server`](/sv-SE/handbok/referens/cc-server-cli).
+### Stänga av uppskjutning
+
+`--tool-deferral=off` (eller `CC_SERVER_TOOL_DEFERRAL=off`) stänger av uppskjutningen: en körning utan `repl` får varje tillåtet verktyg fullt ut, och en körning med `repl` får de verktyg som ett skript inte får anropa fullt ut medan resten förblir bara anropbara från ett skript. Se [CLI-referensen för `cc_server`](/sv-SE/handbok/referens/cc-server-cli/).
 
 ## Promptcache
 
@@ -64,7 +82,7 @@ En leverantör tillåter ett begränsat antal cachemarkörer, och Control Center
 
 | Markör                    | Täcker                            | Livstid |
 | ------------------------- | --------------------------------- | ------- |
-| Sista **residenta** verktyget | Verktygsblocket               | 1 timme |
+| Sista **direkta** verktyget   | Verktygsblocket               | 1 timme |
 | Sista systemblocket       | Verktyg + systemprompt            | 1 timme |
 | Föregående turs svans     | Historik fram till den senaste förfrågan | 5 min   |
 | Aktuell turs svans        | Hela historiken                   | 5 min   |
@@ -77,12 +95,12 @@ Prefixet för verktyg och system får den långa livstiden eftersom det är kons
 
 Subagenter av samma typ producerar byte-identiska promptprefix, så de bör läsa en gemensam cachepost i stället för att var och en skriver sin egen. Men en post blir läsbar först när förfrågan som skrev den börjar svara, så en fan-out som startas på en gång får varje barn att betala överpriset för ett prefix de alla delar.
 
-Harnessen låter det första barnet av en given form starta och släpper sedan dess syskon så snart det börjar streama. Väntan är begränsad: ett långsamt första barn kostar en cacheträff, aldrig själva fan-outen. Av samma skäl får varje subagent samma residenta verktygsuppsättning oavsett sin profil — att variera den per profil skulle fragmentera det delade prefixet utan vinst, eftersom profilen redan har avgjort vad barnet får anropa.
+Harnessen låter det första barnet av en given form starta och släpper sedan dess syskon så snart det börjar streama. Väntan är begränsad: ett långsamt första barn kostar en cacheträff, aldrig själva fan-outen. Av samma skäl får varje subagent samma direkta verktygsuppsättning oavsett sin profil — att variera den per profil skulle fragmentera det delade prefixet utan vinst, eftersom profilen redan har avgjort vad barnet får anropa.
 
 ## Se hur det fungerar
 
 Båda halvorna går att observera i stället för att antas:
 
-- **Kontextutforskaren** i ett samtal rapporterar de residenta verktygen, det uppskjutna indexet och vad varje tillbakahållet schema *skulle* kosta, byggd från samma kodväg som en verklig körning använder.
+- **Kontextutforskaren** i ett samtal rapporterar de direkta verktygen, det uppskjutna indexet och vad varje tillbakahållet schema *skulle* kosta, byggd från samma kodväg som en verklig körning använder.
 - Varje körning registrerar vilka uppskjutna verktyg den läste in och vad som utlöste det, så en sökning som inte hittar något syns som en hämtningsmiss i stället för att försvinna in i en agent som tyst gör något angränsande.
 - Observability rapporterar **Cachefrekvens** som cacheläsningar över alla bearbetade prompttokens, inklusive cacheskrivningar — en körning som ständigt bygger om sitt prefix får låg siffra i stället för att se ut som en som aldrig behövde någon cache.

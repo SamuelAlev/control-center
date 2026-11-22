@@ -2,7 +2,7 @@
 title: Doménové události
 description: Úplný katalog 54 doménových událostí, jejich payloadů a serverových odběratelů, kteří je konzumují.
 slug: cs-CZ/prirucka/referencni-prirucka/domenove-udalosti
-sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
+sourceHash: f58123448c0f31c95774bbaebee89f1509940896
 ---
 
 ## Sběrnice událostí
@@ -24,7 +24,10 @@ Každá událost v katalogu níže žije v tom jednom adresáři. Jinde se domé
 | Událost             | Payload                                                | Kdy se spustí                                              |
 | ------------------- | ------------------------------------------------------ | ---------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | Vytvoří se pracovní prostor                                |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Agent dokončí běh (úspěch i selhání)                       |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Proud procesu agenta skončí, dřív než se zapíše konečný stav. Ponecháno jen pro most konverzace pull requestu a analytiku |
+| `AgentRunSettled` | `agentId`, `workspaceId`, `runId`, `status`, `endReason`, `costMicros`, `wakeIds`, `spaceId?`, `conversationId?`, `limitResetsAt?`, `requestedByUserId?`, `wakeReason?` | Konečný stav běhu se zapíše; publikuje se přesně jednou za běh. `endReason` je `completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` nebo `serverStopped`. Běh subagenta nepublikuje nic |
+| `GoalSettled` | `goalId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `status`, `hold?`, `summary?`, `requestedByUserId?` | Cíl skončí, nebo začne čekat na kontrolu od osoby |
+| `WakeRuleEnded` | `ruleId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `reason`, `requestedByUserId?` | Plán nebo sledování skončí (spustilo se svůj jeden čas, vypršelo, vyčerpalo své běhy nebo náklady, bylo zrušeno, jeho cíl skončil, nebo jeho osoba odešla) |
 | `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | Agent začne čekat na člověka: na schválení, na odpověď na otázku `ask_user`, nebo na přihlašovací údaje, kvůli kterým stojí běh (`kind` je `approval`, `question` nebo `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Zaregistruje se repozitář a spustí se indexace kódu na pozadí |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Nainstaluje se nebo aktualizuje skill a nese verdikt skenu dodavatelského řetězce |
@@ -57,6 +60,16 @@ Všech šest nese `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle` 
 | `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | Někdo tě zmínil v komentáři k PR nebo v komentáři kontroly         |
 | `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`       | Někdo odpověděl ve vlákně kontroly, ve kterém jsi                                |
 | `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                     | Někdo vyřešil vlákno kontroly, ve kterém jsi                                     |
+
+### Sledování pull requestu
+
+Publikuje otevřený poller pull requestů pro každý pull request, který prochází, bez ohledu na autora, pro sledování `on:pr_*` agentů. Všechny tři nesou `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `headRef` a `authorLogin`.
+
+| Událost | Další payload | Kdy se spustí |
+| ----------------------- | ----------------------------------------------- | ---------- |
+| `PrWatchChecksSettled` | `passing`, `failedChecks`, `failedCheckUrl?` | Dokončila se každá kontrola na hlavě pull requestu |
+| `PrWatchReviewActivity` | `decision`, `decisionChanged`, `newComments` | Pull request dostal recenzi nebo nové komentáře |
+| `PrWatchClosed` | `merged` | Pull request byl sloučen nebo zavřen |
 
 ## Události zpráv
 
@@ -167,14 +180,20 @@ Každý odběratel níže se konstruuje uvnitř `runCcServer` (nebo ve službě,
 | Zřizování chatového prostoru (přímo v kódu) | `SpaceCreated`                                                                                       |
 | `PipelineTriggerDispatcher`          | Každá `DomainEvent`. Každý zapnutý spouštěč filtruje na svůj vlastní typ                                   |
 | `SubPipelineResumeListener`          | `PipelineRunCompleted`, `PipelineRunFailed`                                                                 |
-| `PipelineCostRollupListener`         | `AgentRunCompleted`                                                                                         |
-| `BudgetEvaluationListener`           | `AgentRunCompleted`                                                                                         |
+| `PipelineCostRollupListener`         | `AgentRunSettled`                                                                                           |
+| `BudgetEvaluationListener`           | `AgentRunSettled`                                                                                           |
 | `MeetingSummaryReconciler`           | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (jen běhy `meeting_summary`)            |
-| `PipelineStepResumeListener`         | `AgentRunCompleted`                                                                                         |
-| `AgentRunTaskCompleter`              | `AgentRunCompleted`                                                                                         |
-| `GoalSupervisor`                     | `AgentRunCompleted`                                                                                         |
-| `CheckerDispatchListener`            | `AgentRunCompleted`                                                                                         |
-| `TeamRoutingService`                 | `AgentRunCompleted`, `TicketAssigned`                                                                       |
+| `PipelineStepResumeListener`         | `AgentRunSettled`                                                                                           |
+| `AgentRunTaskCompleter`              | `AgentRunSettled`                                                                                           |
+| `GoalSupervisor`                     | `AgentRunSettled` — rozhodne o dalším kroku cíle                                                            |
+| `CheckerDispatchListener`            | `AgentRunSettled` — zařadí ověřovatele jako probuzení; přeskočí segmenty cíle a kontroly                    |
+| `TeamRoutingService`                 | `AgentRunSettled`, `TicketAssigned`                                                                         |
+| `WakeQueueService` | `AgentRunSettled` — doručí probuzení, která čekala na konec běhu |
+| `WakeRuleService` | `AgentRunSettled` (smyčky, které agent řídí sám), `GoalSettled` (ukončí plány cíle), `PrWatch*`, `EnvironmentProcessExited`, `EnvironmentReady`, konce ticketů a běhů pipeline (sledování), `WorkspaceMemberRemoved` (ukončí plány té osoby) |
+| `PeerAskService` | `AgentRunSettled` — uzavírá dotazy, které si agenti kladli navzájem, a probouzí tazatele |
+| `LimitParkService` | `AgentRunSettled` s `usageLimit` — čeká na obnovení u poskytovatele |
+| `ImprovementReviewService` | `GoalSettled` (ověřený cíl) a `AgentRunSettled` — zařadí kontrolu vylepšení a přečte její výsledek |
+| Krok pipeline pro cíl (`goal.pursue`) | `GoalSettled`, `AgentRunSettled`, `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` — obnoví krok, naúčtuje orchestraci a sleduje běh pipeline |
 | `OrchestrationRunListener`           | `PipelineRunCancelled`, `PipelineRunFailed`                                                                 |
 | `MultiVendorTicketSyncCoordinator`   | `TicketCreated`, `TicketAssigned`, `TicketReassigned`, `TicketStatusChanged`, `TicketDetailsUpdated`        |
 | `WorktreeGcListener`                 | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`                |
@@ -227,6 +246,8 @@ Rámec převzetí stanice se nevrací tomu, kdo řízení převzal. Uvolnění s
 `AgentAwaitingInput` publikuje `AgentAwaitingInputPublisher`. Sleduje nové záznamy v registrech schválení a blokací přihlašovacích údajů a o každé otázce `ask_user` mu dá vědět `AgentQuestionService`. Jedno čekání je jedna událost. Když čekání skončí, nepublikuje se nic.
 
 Pět kategorií vlastních PR nese `forUserId`, takže dorazí k autorovi, ne ke všem v pracovním prostoru.
+
+Pět rámců pro dlouhotrvající práci, každý adresovaný osobě, které se týká (`for_user_id`): `notifications/goal_settled` (z `GoalSettled`), `notifications/wake_rule_ended` (z `WakeRuleEnded`), `notifications/improvement_proposed`, `notifications/pipeline_run_held` (běh pipeline podržený na nákladovém stropu své orchestrace) a `notifications/waiting_digest` (jednou denně, co čeká na osobu). Každý nese `notification_kind`: `notify` se mapuje na `agentRunCompleted`, `question` a `review` na `agentAwaitingInput`. Každý rámec s oznámením nyní nese `notification_kind` a rámec s `quiet: true` (plán, který skončil, cíl, který skončil) jde do centra oznámení bez toastu, zvuku nebo hlasitého push.
 
 `RemoteEventForwarder` navíc přeposílá `TicketReassigned` jako `notifications/ticket_reassigned` a každou `TaskLifecycleEvent` jako `notifications/task_<phase>`. Ani jedno se nemapuje na kategorii oznámení. Pohánějí živé rozhraní, ne centrum oznámení. Události členství se jako rámce nepřeposílají: zneplatní cache přeposílače a hostitelé relací zahodí odběry pracovního prostoru odebraného člena.
 

@@ -2,7 +2,7 @@
 title: Munka a Plan Studióban
 description: Terv átnézése, szerkesztése, becslése, diffelése és jóváhagyása a Plan Studio szerkesztőjében, valamint paraméterezett playbookok futtatása.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/plan-studio
-sourceHash: 04a6e193c6b57af3fce63c90673a0958b37552fb
+sourceHash: 9df96d8f10ca86584f3979b84af5eee250719752
 ---
 
 Ez az útmutató bemutatja, hogyan dolgozhat a tervekkel a Plan Studióban. Arról,
@@ -134,8 +134,7 @@ mindig minden lépést jóváhagy — nincs mód előbb egy részhalmaz kijelöl
 jóváhagyás blokkolva van, amíg a javaslatnak érvényesítési hibái vannak,
 amelyek a gombok mellett jelennek meg.
 
-A jóváhagyás csak operátorok számára érhető el. Nincs hozzá MCP-eszköz, így az
-ügynök javasolhat és módosíthat egy tervet, de soha nem hagyhatja jóvá.
+A jóváhagyás csak operátorok számára érhető el. Nincs hozzá MCP-eszköz, így az ügynök javasolhat és módosíthat egy tervet, de soha nem hagyhatja jóvá. A terv jóváhagyása, egy átdolgozás mentése, a **Kijelöltek jóváhagyása** és a **Csomópont folytatása** írási hozzáférést igényel a tér tárolóihoz.
 
 Amint egy orchestráció végrehajtás alatt áll, a sáv megváltozik:
 
@@ -146,8 +145,9 @@ Amint egy orchestráció végrehajtás alatt áll, a sáv megváltozik:
   függ (egy lépés soha nem hagyható jóvá a függőségei nélkül). A vezérlő minden
   orchestráció végrehajtó sávján megtalálható; nem csinál semmit, ha a tervet
   egészében hagyták jóvá.
-- Nyomja meg a **Futtatás megszakítása** gombot a teljes orchestráció
-  leállításához.
+- Nyomja meg a **Futtatás megszakítása** gombot a teljes orchestráció leállításához. Ezt bárki megteheti, akinek hozzáférése van a térhez.
+
+A **Csomópont folytatása** és a **Kijelöltek jóváhagyása** annak a személynek a nevében működik, akinek a nevében a futtatás fut (munkaterület-adminisztrátor, ha a futtatás senki nevében nem fut).
 
 A részlegesen jóváhagyott halmazon kívüli lépések elhalasztottként jelennek meg,
 és nem futnak, amíg ki nem terjeszti a halmazt.

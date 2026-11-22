@@ -55,6 +55,21 @@ class DiagnosticsOnWriteTool extends HarnessTool {
   bool get selfGuards => _inner.selfGuards;
   @override
   bool get parallelSafe => _inner.parallelSafe;
+  @override
+  bool get scriptCallable => _inner.scriptCallable;
+  @override
+  String? scriptArgumentRefusal(Map<String, dynamic> args) =>
+      _inner.scriptArgumentRefusal(args);
+  @override
+  String? executedContent(Map<String, dynamic> args) =>
+      _inner.executedContent(args);
+  @override
+  Map<String, dynamic>? get outputSchema => _inner.outputSchema;
+
+  @override
+  String? get resultNote => _inner.resultNote;
+  @override
+  bool get waitsOnPerson => _inner.waitsOnPerson;
 
   @override
   Future<HarnessToolResult> execute(
@@ -67,17 +82,25 @@ class DiagnosticsOnWriteTool extends HarnessTool {
     if (result.isError) {
       return result;
     }
-    final report = await _report(args).timeout(
-      budget + const Duration(seconds: 2),
-      onTimeout: () => '',
-    );
+    final report = await _report(
+      args,
+    ).timeout(budget + const Duration(seconds: 2), onTimeout: () => '');
     if (report.isEmpty) {
       return result;
     }
+    // Only the text grows: everything else the edit returned (its images, the
+    // tools it activates, the structured result a script reads, its outcome
+    // and its guard's decision)
+    // is the wrapped tool's and passes through untouched.
     return HarnessToolResult(
       content: '${result.content}\n\n$report',
       isError: false,
       images: result.images,
+      activateTools: result.activateTools,
+      refusal: result.refusal,
+      structured: result.structured,
+      outcome: result.outcome,
+      guardVerdict: result.guardVerdict,
     );
   }
 
@@ -108,10 +131,7 @@ class DiagnosticsOnWriteTool extends HarnessTool {
     if (!file.existsSync()) {
       return '';
     }
-    final root = findProjectRoot(
-      p.dirname(path),
-      ceiling: _workingDirectory,
-    );
+    final root = findProjectRoot(p.dirname(path), ceiling: _workingDirectory);
     // No server for this language is the common case (markdown, JSON, YAML)
     // and must cost nothing — notably NOT a server start.
     if (_supervisor.serversForFile(root, path, _launcher).isEmpty) {

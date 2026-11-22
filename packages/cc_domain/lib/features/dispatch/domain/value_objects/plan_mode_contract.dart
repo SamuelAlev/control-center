@@ -46,7 +46,6 @@ const Set<String> planModeForbiddenVerbs = {
   'edit',
   'apply_patch',
   'bash',
-  'hire_agent',
   'delegate_ticket',
   'create_ticket',
 };

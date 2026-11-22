@@ -1045,9 +1045,6 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get calendarAllDayGutter => 'Heldag';
-
-  @override
   String calendarAllDayEventCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -2518,9 +2515,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get activityBackedUpServer => 'Säkerhetskopierade serverdatan';
-
-  @override
-  String get activityMarkedSpaceRead => 'Markerade ytan som läst';
 
   @override
   String get activityRespondedToInvitation => 'Svarade på evenemangsinbjudan';
@@ -13482,6 +13476,17 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String diffFileUnresolvedConversations(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count olösta samtal',
+      one: '1 olöst samtal',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get pendingReview => 'Väntande granskning';
 
   @override
@@ -13836,9 +13841,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get spaceKeepAfterMergeHint =>
       'Du får inte frågan igen för den här ytan.';
-
-  @override
-  String get spaceAllPrsMergedLabel => 'Alla pull-förfrågningar sammanslagna';
 
   @override
   String get archiveSpace => 'Arkivera yta';
@@ -15402,7 +15404,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get skillEvalIncomplete => 'Ofullständig';
 
   @override
-  String get skillEvalInconclusive => 'Inget entydigt resultat';
+  String get skillEvalInconclusive => 'Inget beslut (för lite underlag)';
 
   @override
   String get skillEvalInferred => 'Härledd';
@@ -18959,4 +18961,2937 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get mcpServerNotFound =>
       'Den här servern finns inte längre. Någon kan ha tagit bort den.';
+
+  @override
+  String get scriptToolCalls => 'Verktygsanrop';
+
+  @override
+  String scriptCallCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count anrop',
+      one: '1 anrop',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scriptCallsRunning(int count) {
+    return '$count körs';
+  }
+
+  @override
+  String scriptCallsOk(int count) {
+    return '$count ok';
+  }
+
+  @override
+  String scriptCallsFailed(int count) {
+    return '$count misslyckades';
+  }
+
+  @override
+  String scriptCallsDenied(int count) {
+    return '$count nekade';
+  }
+
+  @override
+  String scriptCallsCancelled(int count) {
+    return '$count avbrutna';
+  }
+
+  @override
+  String scriptCallsQueued(int count) {
+    return '$count i kö';
+  }
+
+  @override
+  String scriptCallsSkipped(int count) {
+    return '$count hoppade över';
+  }
+
+  @override
+  String get scriptStepQueued => 'I kö';
+
+  @override
+  String get scriptStepSkipped => 'Hoppad över';
+
+  @override
+  String get scriptGroupLoop => 'Loop';
+
+  @override
+  String get scriptGroupEach => 'För varje';
+
+  @override
+  String get scriptGroupParallel => 'Parallellt';
+
+  @override
+  String get scriptGroupFunction => 'Funktion';
+
+  @override
+  String scriptCallsHidden(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Visa ytterligare $count anrop',
+      one: 'Visa ytterligare 1 anrop',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptCallsUnplaced => 'Anrop som inte placerats i skriptet';
+
+  @override
+  String get scriptToolComputed => 'Verktyg';
+
+  @override
+  String scriptStepSemantics(String subject, String state) {
+    return '$subject, $state';
+  }
+
+  @override
+  String get scriptSourceLabel => 'Skript';
+
+  @override
+  String scriptSourceLines(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count rader',
+      one: '1 rad',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptStateRunning => 'Körs';
+
+  @override
+  String get scriptStateCompleted => 'Slutförd';
+
+  @override
+  String get scriptStateFailed => 'Misslyckades';
+
+  @override
+  String get scriptStateTimedOut => 'Tiden gick ut';
+
+  @override
+  String get scriptStateCancelled => 'Avbruten';
+
+  @override
+  String get scriptStateMemoryExceeded => 'Slut på minne';
+
+  @override
+  String get scriptStateOutputExceeded => 'För mycket utdata';
+
+  @override
+  String get scriptStateSandboxError => 'Fel i sandlådan';
+
+  @override
+  String get scriptStateRefused => 'Nekad';
+
+  @override
+  String get transcriptToolDenied => 'Nekad';
+
+  @override
+  String get transcriptStatusRunningScript => 'Kör ett skript…';
+
+  @override
+  String get scriptOriginLine => 'Från ett skript som agenten kör';
+
+  @override
+  String get scriptOriginShow => 'Visa skript';
+
+  @override
+  String get codeModeTitle => 'Kodläge';
+
+  @override
+  String get codeModeSubtitle =>
+      'Agenter kan skriva ett kort skript som anropar deras verktyg i stället för att anropa dem ett i taget.';
+
+  @override
+  String get codeModeStatusLabel => 'Status';
+
+  @override
+  String get codeModeFactAvailability => 'På den här servern';
+
+  @override
+  String get codeModeAvailable => 'Tillgänglig';
+
+  @override
+  String get codeModeUnavailable => 'Otillgänglig';
+
+  @override
+  String get codeModeFactRunner => 'Körare';
+
+  @override
+  String codeModeUnavailableNote(String reason) {
+    return 'Den här servern kan inte köra skript, så agenter här anropar sina verktyg ett i taget. Servern säger: $reason';
+  }
+
+  @override
+  String get codeModeNoReason => 'ingen anledning angavs.';
+
+  @override
+  String get codeModeViewExecutions => 'Visa kodkörningar';
+
+  @override
+  String get codeModeLimitsLabel => 'Gränser';
+
+  @override
+  String get codeModeLimitsSubtitle =>
+      'Hur lång tid och hur långt ett skript får gå. Standardvärdena passar de flesta arbetsytor.';
+
+  @override
+  String get codeModeLimitsDisclosure => 'Justera gränser';
+
+  @override
+  String get codeModeLimitsAtDefaults => 'Standard';
+
+  @override
+  String codeModeLimitsChangedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ändrade',
+      one: '1 ändrad',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeModeLimitsUseDefaults => 'Använd standardvärden';
+
+  @override
+  String get codeModeLimitWallClock => 'Tid per skript';
+
+  @override
+  String get codeModeLimitWallClockHelp =>
+      'Tid som går åt till att vänta på en person räknas inte.';
+
+  @override
+  String get codeModeLimitCpu => 'Processortid';
+
+  @override
+  String get codeModeLimitCpuHelp =>
+      'Tid som skriptet självt använder för beräkningar.';
+
+  @override
+  String get codeModeLimitHeap => 'Minne';
+
+  @override
+  String get codeModeLimitHeapHelp =>
+      'Minne som skriptet får använda medan det körs.';
+
+  @override
+  String get codeModeLimitNestedCalls => 'Verktygsanrop per skript';
+
+  @override
+  String get codeModeLimitNestedCallsHelp =>
+      'Anrop över gränsen nekas och skriptet får veta varför.';
+
+  @override
+  String get codeModeLimitInFlight => 'Anrop samtidigt';
+
+  @override
+  String get codeModeLimitInFlightHelp =>
+      'Anrop ett skript får ha igång samtidigt.';
+
+  @override
+  String get codeModeLimitOutputTokens => 'Utdata som agenten läser';
+
+  @override
+  String get codeModeLimitOutputTokensHelp =>
+      'Längre utdata kortas ned; agenten kan läsa resten på begäran.';
+
+  @override
+  String codeModeLimitRange(String defaultValue, String min, String max) {
+    return 'Standard $defaultValue. Från $min till $max.';
+  }
+
+  @override
+  String codeModeLimitOutOfRange(String min, String max) {
+    return 'Ange ett heltal från $min till $max.';
+  }
+
+  @override
+  String get codeModeSuffixSeconds => 's';
+
+  @override
+  String get codeModeSuffixMebibytes => 'MiB';
+
+  @override
+  String get codeModeSuffixCalls => 'anrop';
+
+  @override
+  String get codeModeSuffixTokens => 'tokens';
+
+  @override
+  String codeModeServerCap(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Den här servern kör högst $count skript åt gången, över alla arbetsytor.',
+      one:
+          'Den här servern kör högst 1 skript åt gången, över alla arbetsytor.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String codeModeUnitMilliseconds(String value) {
+    return '$value ms';
+  }
+
+  @override
+  String codeModeUnitSeconds(String value) {
+    return '$value s';
+  }
+
+  @override
+  String codeModeUnitMinutesSeconds(String minutes, String seconds) {
+    return '$minutes min $seconds s';
+  }
+
+  @override
+  String get codeModeRefusedLimitUnknown =>
+      'Servern känner inte igen en av de här gränserna.';
+
+  @override
+  String get codeModeRefusedLimitOutOfRange =>
+      'En av de här gränserna ligger utanför vad servern tillåter.';
+
+  @override
+  String get codeModeRefusedUnknownSetting =>
+      'Servern kände inte igen den inställningen.';
+
+  @override
+  String get codeExecutionsTitle => 'Kodkörningar';
+
+  @override
+  String get codeExecutionsSubtitle =>
+      'Skript som agenter körde i den här arbetsytan, med alla verktygsanrop de gjorde.';
+
+  @override
+  String get codeExecutionsEmpty => 'Inga skript har körts här ännu.';
+
+  @override
+  String get codeExecutionsEmptyFiltered =>
+      'Inga skript matchar de här filtren.';
+
+  @override
+  String get codeExecutionsStatusFilter => 'Resultat';
+
+  @override
+  String get codeExecutionsAllOutcomes => 'Alla resultat';
+
+  @override
+  String codeExecutionsOutcomeCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count resultat',
+      one: '1 resultat',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionsScopeRun => 'Skript från en körning';
+
+  @override
+  String get codeExecutionsScopeConversation => 'Skript från ett samtal';
+
+  @override
+  String get codeExecutionsScopeAgent => 'Skript av en agent';
+
+  @override
+  String get codeExecutionsShowAll => 'Visa alla';
+
+  @override
+  String get codeExecutionUntitled => 'Namnlöst skript';
+
+  @override
+  String get codeExecutionRecord => 'Post';
+
+  @override
+  String get codeExecutionBackToList => 'Tillbaka till kodkörningar';
+
+  @override
+  String get codeExecutionNotFound =>
+      'Den här kodkörningen finns inte i den här arbetsytan. Den kan ha tagits bort tillsammans med sin körning.';
+
+  @override
+  String get codeExecutionRefusedSpace =>
+      'Skriptet kördes i en yta som du inte kan öppna, så dess post förblir dold.';
+
+  @override
+  String get codeExecutionOpenRecord => 'Öppna post';
+
+  @override
+  String get codeExecutionFactStarted => 'Startad';
+
+  @override
+  String get codeExecutionFactDuration => 'Tog';
+
+  @override
+  String get codeExecutionFactCalls => 'Verktygsanrop';
+
+  @override
+  String get codeExecutionFactAgent => 'Agent';
+
+  @override
+  String get codeExecutionFactSurface => 'Kördes via';
+
+  @override
+  String get codeExecutionSurfaceHarness => 'Inbyggd agent';
+
+  @override
+  String get codeExecutionSurfaceMcp => 'Extern agent';
+
+  @override
+  String get codeExecutionFactCpu => 'Processortid';
+
+  @override
+  String get codeExecutionFactMemory => 'Högsta minne';
+
+  @override
+  String get codeExecutionOpenConversation => 'Öppna samtal';
+
+  @override
+  String get codeExecutionRunScripts => 'Skript i den här körningen';
+
+  @override
+  String get codeExecutionAgentScripts => 'Skript av den här agenten';
+
+  @override
+  String get codeExecutionScript => 'Skript';
+
+  @override
+  String get codeExecutionConsole => 'Konsol';
+
+  @override
+  String get codeExecutionOutputTruncated =>
+      'Utdata kortades för att få plats i det som sparas.';
+
+  @override
+  String get codeExecutionNoPayload =>
+      'Skriptet och dess utdata sparas inte längre.';
+
+  @override
+  String codeExecutionCallsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count verktygsanrop',
+      one: '1 verktygsanrop',
+      zero: 'Verktygsanrop',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionNoCalls => 'Skriptet anropade inga verktyg.';
+
+  @override
+  String get codeExecutionCallCompleted => 'Slutförd';
+
+  @override
+  String get codeExecutionCallFailed => 'Misslyckades';
+
+  @override
+  String get codeExecutionCallDenied => 'Nekad';
+
+  @override
+  String get codeExecutionCallCancelled => 'Avbruten';
+
+  @override
+  String get codeExecutionCallTimedOut => 'Tiden gick ut';
+
+  @override
+  String get codeExecutionCallUnknownTool => 'Okänt verktyg';
+
+  @override
+  String get codeExecutionCallInvalidArgs => 'Ogiltiga argument';
+
+  @override
+  String get codeExecutionGateAllowed => 'Tillåten';
+
+  @override
+  String get codeExecutionGateApproved => 'Godkänd av en person';
+
+  @override
+  String get codeExecutionGateDenied => 'Nekad';
+
+  @override
+  String get codeExecutionGateNotReached => 'Inte kontrollerad';
+
+  @override
+  String codeExecutionCallWaited(String duration) {
+    return 'Väntade $duration på en person';
+  }
+
+  @override
+  String get codeExecutionCallArguments => 'Argument';
+
+  @override
+  String get codeExecutionCallResult => 'Resultat';
+
+  @override
+  String codeExecutionCallResultSize(String size) {
+    return 'Returnerade $size';
+  }
+
+  @override
+  String codeExecutionBytes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count byte',
+      one: '1 byte',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionEndedScriptError =>
+      'Skriptet kastade ett fel och ingenting fångade upp det.';
+
+  @override
+  String codeExecutionEndedScriptErrorNamed(String name) {
+    return 'Skriptet kastade $name och ingenting fångade upp det.';
+  }
+
+  @override
+  String get codeExecutionEndedStalled =>
+      'Skriptet väntade på något som aldrig kunde bli klart.';
+
+  @override
+  String get codeExecutionEndedCpu => 'Skriptet använde upp sin processortid.';
+
+  @override
+  String get codeExecutionEndedHeap => 'Skriptet nådde sin minnesgräns.';
+
+  @override
+  String get codeExecutionEndedOutput =>
+      'Skriptet skrev mer utdata än vad som är tillåtet.';
+
+  @override
+  String get codeExecutionEndedDeadline => 'Skriptet fick slut på tid.';
+
+  @override
+  String get codeExecutionEndedCancelled =>
+      'Skriptet avbröts innan det var klart.';
+
+  @override
+  String get codeExecutionEndedShutdown =>
+      'Servern stängdes av medan skriptet kördes.';
+
+  @override
+  String get codeExecutionEndedServerStopped =>
+      'Servern stoppades medan skriptet kördes. Registreringen stängdes när servern startade igen.';
+
+  @override
+  String get codeExecutionEndedInternal =>
+      'Programmet som kör skript misslyckades på egen hand.';
+
+  @override
+  String get codeExecutionEndedStart =>
+      'Programmet som kör skript kunde inte starta.';
+
+  @override
+  String get codeExecutionEndedLockdown =>
+      'Programmet som kör skript kunde inte låsa sig självt, så skriptet kördes inte.';
+
+  @override
+  String get codeExecutionEndedExited =>
+      'Programmet som kör skript avslutades innan skriptet var klart.';
+
+  @override
+  String get codeExecutionEndedRunnerBrokeRules =>
+      'Programmet som kör skript bröt mot reglerna det körs under och stoppades.';
+
+  @override
+  String get codeExecutionEndedUnresponsive =>
+      'Programmet som kör skript slutade svara och stoppades.';
+
+  @override
+  String get codeExecutionEndedHostError =>
+      'Servern misslyckades när skriptet kördes.';
+
+  @override
+  String get codeExecutionRunningNote =>
+      'Körs fortfarande. Verktygsanropen visas här när de är klara, och resultatet när skriptet avslutas.';
+
+  @override
+  String codeModeServerWorkspaceShare(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Skripten i en arbetsyta använder högst $count av dem.',
+      one: 'Skripten i en arbetsyta använder högst 1 av dem.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get wakeOriginGoal => 'Mål';
+
+  @override
+  String get wakeOriginGoalCheck => 'Målkontroll';
+
+  @override
+  String get wakeOriginGoalReview => 'Målgranskning';
+
+  @override
+  String get wakeOriginSchedule => 'Schema';
+
+  @override
+  String get wakeOriginWatch => 'Bevakning';
+
+  @override
+  String wakeOriginReplyFrom(String agent) {
+    return 'Svar från $agent';
+  }
+
+  @override
+  String get wakeOriginReply => 'Svar';
+
+  @override
+  String wakeOriginMessageFrom(String agent) {
+    return 'Meddelande från $agent';
+  }
+
+  @override
+  String get wakeOriginMessage => 'Meddelande';
+
+  @override
+  String wakeOriginWorkFinishedBy(String agent) {
+    return 'Klart arbete från $agent';
+  }
+
+  @override
+  String get wakeOriginWorkFinished => 'Klart arbete';
+
+  @override
+  String get wakeOriginLimitReset => 'Gränsen återställd';
+
+  @override
+  String get wakeOriginRecovery => 'Återställning';
+
+  @override
+  String get wakeOriginAssignment => 'Tilldelning';
+
+  @override
+  String get wakeOriginPipelineStep => 'Pipelinesteg';
+
+  @override
+  String get wakeOriginImprovementReview => 'Förbättringsgranskning';
+
+  @override
+  String get wakeKindStopped =>
+      'Parkerad eftersom en person stoppade körningen.';
+
+  @override
+  String get wakeKindAttempts => 'Leveransen misslyckades tre gånger.';
+
+  @override
+  String get wakeKindAgentDeleted => 'Agenten finns inte längre.';
+
+  @override
+  String get wakeKindAgentNotDispatchable => 'Agenten är pensionerad.';
+
+  @override
+  String get wakeKindAgentPaused => 'Agenten är pausad.';
+
+  @override
+  String get wakeKindPersonRemoved =>
+      'Personen den agerar för har lämnat arbetsytan.';
+
+  @override
+  String get wakeKindBudgetBlocked => 'En budget blockerar en körning.';
+
+  @override
+  String get wakeKindTakeOver => 'En person har tagit över arbetskopian.';
+
+  @override
+  String get wakeKindRateCapConversation =>
+      'Det här samtalet har startat 30 körningar från väckningar den senaste timmen.';
+
+  @override
+  String get wakeKindRateCapWorkspace =>
+      'Den här arbetsytan har startat 300 körningar från väckningar den senaste timmen.';
+
+  @override
+  String get wakeKindLiveRunNoInput =>
+      'Agentens pågående körning här tar inte emot indata.';
+
+  @override
+  String get wakeKindLiveRunOtherOptions =>
+      'Agentens pågående körning här körs på ett annat sätt, så den här startar en egen körning efter den.';
+
+  @override
+  String get wakeKindLiveRunOtherPerson =>
+      'Agentens pågående körning här agerar för någon annan, så den här startar en egen körning efter den.';
+
+  @override
+  String get wakeKindDispatchRefused => 'Körningen kunde inte starta.';
+
+  @override
+  String get wakeKindSandboxUnavailable =>
+      'Ingen sandlåda är tillgänglig för en skrivskyddad körning.';
+
+  @override
+  String get wakeKindReadOnlyUnavailable =>
+      'Agentens backend kan inte hålla en körning skrivskyddad.';
+
+  @override
+  String get wakeKindServerStopped =>
+      'En omstart av servern stoppade körningen.';
+
+  @override
+  String get wakeKindServerRestarted =>
+      'Servern startade om under en persons körning.';
+
+  @override
+  String get wakeKindGuardFailed => 'En kontroll före leverans misslyckades.';
+
+  @override
+  String get wakeKindLimit => 'Väntar på leverantörens användningsgräns.';
+
+  @override
+  String get wakeKindLimitRunLive =>
+      'Väntar på att körningen vid användningsgränsen ska avslutas.';
+
+  @override
+  String get wakeKindWakeMissed => 'Missades medan servern var nere.';
+
+  @override
+  String get wakeKindPipelineRunEnded => 'Dess pipelinekörning avslutades.';
+
+  @override
+  String get wakeKindGoalEnded => 'Dess mål avslutades.';
+
+  @override
+  String get wakeKindGoalBudgetExhausted => 'Dess mål använde sin budget.';
+
+  @override
+  String get wakeKindGoalReviewStale =>
+      'Målet ändrades sedan granskningen begärdes.';
+
+  @override
+  String get wakeKindGoalPaused => 'Dess mål är pausat.';
+
+  @override
+  String get wakeKindGoalHeld => 'Dess mål är parkerat.';
+
+  @override
+  String get wakeKindGoalStopped => 'Dess mål stoppades.';
+
+  @override
+  String get wakeKindAskSettled => 'Frågan den svarar på är redan avgjord.';
+
+  @override
+  String get wakeKindRuleEnded => 'Dess schema avslutades.';
+
+  @override
+  String get wakeKindUnknown =>
+      'Av en orsak som den här versionen inte känner igen:';
+
+  @override
+  String wakeStripHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count väckningar väntar',
+      one: '1 väckning väntar',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String wakeStripDue(String time) {
+    return 'Förfaller $time';
+  }
+
+  @override
+  String get wakeStripDueNow => 'Förfaller nu';
+
+  @override
+  String get wakeStripHeld => 'Parkerad';
+
+  @override
+  String wakeStripExpires(String time) {
+    return 'Går ut $time';
+  }
+
+  @override
+  String wakeStripAttempt(int attempt) {
+    return 'Försök $attempt';
+  }
+
+  @override
+  String get wakeStripCancel => 'Avbryt väckning';
+
+  @override
+  String get wakeStripDeliverNow => 'Leverera nu';
+
+  @override
+  String get wakeStripResume => 'Återuppta';
+
+  @override
+  String get wakeStripDismiss => 'Avfärda';
+
+  @override
+  String get wakeStripResumeAll => 'Återuppta alla';
+
+  @override
+  String get wakeStripResumeOnlyTheirs =>
+      'Bara personen vars körning det här är kan återuppta den.';
+
+  @override
+  String get wakeReceiptStarted => 'Startade en körning.';
+
+  @override
+  String get wakeReceiptPushed => 'Överlämnad till den pågående körningen.';
+
+  @override
+  String wakeReceiptWaiting(String reason) {
+    return 'Väntar fortfarande. $reason';
+  }
+
+  @override
+  String wakeReceiptSkipped(String reason) {
+    return 'Inte levererad. $reason';
+  }
+
+  @override
+  String get wakeReceiptDuplicate => 'Redan levererad.';
+
+  @override
+  String wakeReleased(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Återupptog $count väckningar.',
+      one: 'Återupptog 1 väckning.',
+      zero: 'Ingen återupptogs.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get wakeRefusalNotYours =>
+      'Den här väckningen agerar för en annan person. Bara de kan leverera eller återuppta den.';
+
+  @override
+  String get wakeRefusalSettled => 'Den här väckningen har redan avslutats.';
+
+  @override
+  String heldSteeringHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count parkerade meddelanden',
+      one: '1 parkerat meddelande',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get heldSteeringResume => 'Skicka parkerade meddelanden';
+
+  @override
+  String get heldSteeringDelete => 'Ta bort parkerat meddelande';
+
+  @override
+  String heldSteeringReleased(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Skickade $count parkerade meddelanden.',
+      one: 'Skickade 1 parkerat meddelande.',
+      zero: 'Inget var parkerat.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get workAgentUnknown => 'en agent';
+
+  @override
+  String workFeedWoke(int count, String agent) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Väckte $agent för $count väntande poster',
+      one: 'Väckte $agent',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String workFeedWakeSkipped(String agent) {
+    return 'En väckning för $agent levererades inte.';
+  }
+
+  @override
+  String workFeedWakeMissed(String agent) {
+    return 'En väckning för $agent missades medan servern var nere.';
+  }
+
+  @override
+  String workFeedScheduleCreated(String agent) {
+    return 'Schema satt för $agent.';
+  }
+
+  @override
+  String workFeedScheduleEnded(String agent) {
+    return 'Schemat för $agent avslutades.';
+  }
+
+  @override
+  String get workFeedOpenSchedule => 'Öppna schema';
+
+  @override
+  String workFeedNoteFromAgent(String agent) {
+    return '$agent lämnade den här anteckningen till sig själv, med egna ord:';
+  }
+
+  @override
+  String get workFeedNoteFromPerson => 'En påminnelse som en person satte:';
+
+  @override
+  String workFeedLimitParkHeld(String provider, String time) {
+    return 'Pausad vid ${provider}s användningsgräns. Gränsen återställs $time.';
+  }
+
+  @override
+  String workFeedLimitParkPending(String provider, String time) {
+    return 'Pausad vid ${provider}s användningsgräns. Återupptas $time.';
+  }
+
+  @override
+  String workFeedLimitParkResumed(String provider) {
+    return 'Återupptogs efter ${provider}s användningsgräns.';
+  }
+
+  @override
+  String workFeedLimitParkGone(String provider) {
+    return 'Väntar inte längre på ${provider}s användningsgräns.';
+  }
+
+  @override
+  String get workFeedLimitParkResume => 'Återuppta';
+
+  @override
+  String get workFeedLimitParkCancel => 'Avbryt';
+
+  @override
+  String workFeedStillInFlight(String agent) {
+    return 'Tillstånd överlämnat till $agent efter kompaktering';
+  }
+
+  @override
+  String get workFeedShowDetails => 'Visa detaljer';
+
+  @override
+  String get workFeedHideDetails => 'Dölj detaljer';
+
+  @override
+  String get workFeedCommandRefused => 'Kommandot nekades.';
+
+  @override
+  String get wakeRuleEndFired => 'Den kördes en gång.';
+
+  @override
+  String get wakeRuleEndExpired => 'Den nådde sitt slutdatum.';
+
+  @override
+  String get wakeRuleEndRunCap => 'Den använde sina körningar.';
+
+  @override
+  String get wakeRuleEndCostCap => 'Den nådde sin kostnadsgräns.';
+
+  @override
+  String get wakeRuleEndGoalEnded => 'Dess mål avslutades.';
+
+  @override
+  String get wakeRuleEndCancelled => 'Den avbröts.';
+
+  @override
+  String get wakeRuleEndMemberRemoved => 'Dess person har lämnat arbetsytan.';
+
+  @override
+  String get wakeRuleEndInvalidRow =>
+      'Dess sparade inställningar kunde inte läsas.';
+
+  @override
+  String get wakeRuleRefusalIntervalTooShort =>
+      'Intervallet är för kort. Välj ett längre.';
+
+  @override
+  String get wakeRuleRefusalTooSoon => 'Tiden är för nära. Välj en senare.';
+
+  @override
+  String get wakeRuleRefusalLineageEnded =>
+      'Den här kedjan av väckningar har använt sina körningar eller sin tid.';
+
+  @override
+  String get wakeRuleRefusalWatchTargetUnreadable =>
+      'Du kan inte läsa det här bevakningen skulle gälla.';
+
+  @override
+  String get wakeRuleRefusalExpiryRequired =>
+      'Ge den ett slutdatum, till exempel --days 3.';
+
+  @override
+  String get wakeRuleRefusalLimitReached =>
+      'Det här samtalet har redan så många scheman som det får ha.';
+
+  @override
+  String get wakeRuleRefusalInvalidWhen => 'Tiden kan inte läsas.';
+
+  @override
+  String get wakeRuleRefusalNoteTooLong => 'Anteckningen är för lång.';
+
+  @override
+  String get wakeRuleRefusalExpiryTooLong =>
+      'Slutdatumet ligger för långt bort.';
+
+  @override
+  String get wakeRuleRefusalLimitOutOfRange =>
+      'En gräns för körningar, dagar eller budget ligger utanför intervallet.';
+
+  @override
+  String get wakeRuleRefusalNextOutsideLoop =>
+      'Bara en loop kan välja sin egen nästa tid.';
+
+  @override
+  String get wakeRuleRefusalWatchRefused => 'Det här kan inte bevakas.';
+
+  @override
+  String get wakeRuleRefusalRuleEnded => 'Schemat har redan avslutats.';
+
+  @override
+  String get wakeRuleRefusalNotYours => 'Schemat tillhör någon annan.';
+
+  @override
+  String get workRefusalUnknown => 'Servern nekade det här:';
+
+  @override
+  String get goalRefusalAlreadyActive =>
+      'Det här samtalet har redan ett aktivt mål.';
+
+  @override
+  String get goalRefusalNotInReview => 'Målet väntar inte på granskning.';
+
+  @override
+  String get goalRefusalEvidenceIncomplete =>
+      'Målets underlag är ofullständigt.';
+
+  @override
+  String get goalRefusalClaimPending =>
+      'Ett påstående om att det är klart kontrolleras fortfarande.';
+
+  @override
+  String get goalRefusalNotActiveSegment => 'Målet har inget segment igång.';
+
+  @override
+  String get goalRefusalNotYours =>
+      'Bara personen som startade målet kan göra det.';
+
+  @override
+  String get goalRefusalNotPaused => 'Pausa målet först.';
+
+  @override
+  String get goalRefusalContractInvalid => 'Målets kontrakt kan inte läsas.';
+
+  @override
+  String get goalRefusalCheckerUnknown => 'Ingen agent har det namnet.';
+
+  @override
+  String get goalRefusalCheckerAmbiguous =>
+      'Mer än en agent har det namnet. Använd dess id.';
+
+  @override
+  String get goalRefusalCheckerIsGoalAgent =>
+      'Granskaren måste vara en annan agent än den som utför arbetet.';
+
+  @override
+  String get goalRefusalCommandInvalid =>
+      'Det här /goal-kommandot kan inte läsas.';
+
+  @override
+  String goalCardWorking(int segment) {
+    return 'Arbetar · segment $segment';
+  }
+
+  @override
+  String get goalCardWaiting => 'Väntar på nästa väckning';
+
+  @override
+  String get goalCardVerifying => 'Kontrollerar om det är klart';
+
+  @override
+  String goalCardLimitUntil(String time) {
+    return 'Pausad vid användningsgränsen · återupptas $time';
+  }
+
+  @override
+  String get goalCardLimit => 'Pausad vid användningsgränsen';
+
+  @override
+  String get goalCardPerson => 'Behöver en person';
+
+  @override
+  String get goalCardByPerson => 'Pausad av en person';
+
+  @override
+  String get goalCardNeedsReview =>
+      'Väntar på granskning: det säger att det är klart, och ingenting har bekräftat det';
+
+  @override
+  String goalCardSegments(int run, int max) {
+    return 'Segment $run av $max';
+  }
+
+  @override
+  String goalCardSegmentsNoCap(int run) {
+    return 'Segment $run';
+  }
+
+  @override
+  String goalCardMoney(String spent, String cap) {
+    return '$spent av $cap';
+  }
+
+  @override
+  String goalCardTimeLeft(String time) {
+    return '$time kvar';
+  }
+
+  @override
+  String get goalCardOverdue => 'Förbi sin deadline';
+
+  @override
+  String get goalCardDoneMeans => 'Klart innebär';
+
+  @override
+  String get goalCardChecks => 'Kontroller';
+
+  @override
+  String get goalCardCheckPassed => 'Godkänd';
+
+  @override
+  String goalCardCheckFailed(int code) {
+    return 'Misslyckades · slutkod $code';
+  }
+
+  @override
+  String get goalCardCheckTimedOut => 'Tiden gick ut';
+
+  @override
+  String get goalCardCheckNotRerun => 'Körs inte om: inget har ändrats';
+
+  @override
+  String get goalCardCheckBroken => 'Kan inte köras';
+
+  @override
+  String get goalCardCheckNotRun => 'Inte körd ännu';
+
+  @override
+  String get goalCardCriterionMet => 'Uppfylld';
+
+  @override
+  String get goalCardCriterionUnmet => 'Inte uppfylld';
+
+  @override
+  String get goalCardCriterionCannotTell => 'Kan inte avgöra';
+
+  @override
+  String get goalCardVerdictPass => 'Senaste kontroll: klart';
+
+  @override
+  String get goalCardVerdictFail => 'Senaste kontroll: inte klart';
+
+  @override
+  String get goalCardVerdictCannotVerify =>
+      'Senaste kontroll: kunde inte avgöra';
+
+  @override
+  String get goalCardConcerns => 'Invändningar';
+
+  @override
+  String goalCardVerifiedBy(String agent) {
+    return 'Verifierad av $agent';
+  }
+
+  @override
+  String get goalCardVerifiedBySelf =>
+      'Verifierad av sig själv (ingen separat granskare)';
+
+  @override
+  String get goalCardClosedByPerson =>
+      'Stängd av en person utan godkänd kontroll';
+
+  @override
+  String get goalCardNoMachineCheck => 'Ingen maskinkontroll';
+
+  @override
+  String get goalCardAddCheck => 'Lägg till kontroll';
+
+  @override
+  String get goalCardOpen => 'Öppna mål';
+
+  @override
+  String get goalCardApprove => 'Godkänn slutförande';
+
+  @override
+  String get goalCardApproveTitle => 'Stäng det här målet som klart?';
+
+  @override
+  String get goalCardApproveBody =>
+      'Ingen kontroll bekräftade det. Du stänger det på ditt eget ord, och målet noterar att en person stängde det overifierat.';
+
+  @override
+  String get goalCardApproveConfirm => 'Stäng som klart';
+
+  @override
+  String get goalCardResumeNotYours =>
+      'Att återuppta det eller höja dess budget tillhör den som startade det.';
+
+  @override
+  String get goalHoldDetailStalled =>
+      'Inga framsteg under dess senaste segment.';
+
+  @override
+  String get goalHoldDetailStalledWaiting =>
+      'Väntar, efter segment utan framsteg.';
+
+  @override
+  String get goalHoldDetailVerificationFailed =>
+      'Den senaste kontrollen misslyckades.';
+
+  @override
+  String get goalHoldDetailCannotVerify =>
+      'Granskaren kunde inte avgöra om det är klart.';
+
+  @override
+  String get goalHoldDetailSandboxUnavailable =>
+      'Ingen sandlåda är tillgänglig för att köra dess kontroller.';
+
+  @override
+  String get goalHoldDetailCheckerUnavailable =>
+      'Dess granskningsagent är inte tillgänglig. Välj en annan granskare och återuppta sedan.';
+
+  @override
+  String get goalHoldDetailCheckBroken => 'Den här kontrollen kan inte köras:';
+
+  @override
+  String get goalHoldDetailWakeSkipped => 'Dess väckning levererades inte.';
+
+  @override
+  String get goalHoldDetailClaimPending =>
+      'Dess påstående att det är klart väntar på en kontroll.';
+
+  @override
+  String get goalHoldDetailUnanswered =>
+      'En fråga eller godkännandebegäran till en person har inte fått något svar.';
+
+  @override
+  String get goalHoldDetailLimitParks =>
+      'Det nådde användningsgränser för ofta. Titta igenom det och återuppta sedan.';
+
+  @override
+  String get goalHoldDetailInput => 'Väntar på ett svar i samtalet.';
+
+  @override
+  String get peerAsksSection => 'Frågor';
+
+  @override
+  String peerAskTo(String agent) {
+    return 'Till $agent';
+  }
+
+  @override
+  String get peerAskKindAsk => 'Fråga';
+
+  @override
+  String get peerAskKindConsult => 'Rådfråga';
+
+  @override
+  String get peerAskKindReview => 'Granskning';
+
+  @override
+  String get peerAskStatusPending => 'Väntar';
+
+  @override
+  String get peerAskStatusAnswered => 'Besvarad';
+
+  @override
+  String get peerAskStatusFailed => 'Misslyckades';
+
+  @override
+  String get peerAskStatusExpired => 'Utgången';
+
+  @override
+  String get peerAskStatusCancelled => 'Avbruten';
+
+  @override
+  String peerAskAsked(String time) {
+    return 'Frågade $time';
+  }
+
+  @override
+  String peerAskExpires(String time) {
+    return 'Går ut $time';
+  }
+
+  @override
+  String get peerAskPromised => 'Lovade ett svar';
+
+  @override
+  String get peerAskBackground => 'I bakgrunden';
+
+  @override
+  String get peerAskCancel => 'Avbryt fråga';
+
+  @override
+  String get peerAskAlreadySettled => 'Den frågan har redan avgjorts.';
+
+  @override
+  String get slashHintGoal =>
+      'Arbeta mot ett mål tills det är klart. Flaggor: --check, --checker, --fresh, --unattended';
+
+  @override
+  String get slashHintLoop =>
+      'Upprepa en uppgift, med ett visst intervall eller i agentens takt';
+
+  @override
+  String get slashHintSchedule =>
+      'Kör en uppgift senare: om 2h, kl. 09:00 eller enligt en cron';
+
+  @override
+  String get slashHintRefine =>
+      'Granska samtalets arbete och föreslå förbättringar';
+
+  @override
+  String get notifGoalCompleted => 'Mål klart';
+
+  @override
+  String get notifGoalFailed => 'Målet misslyckades';
+
+  @override
+  String get notifGoalCancelled => 'Målet avbröts';
+
+  @override
+  String get notifGoalBudgetExhausted => 'Målet använde sin budget';
+
+  @override
+  String get notifGoalNeedsReview => 'Ett mål väntar på din granskning';
+
+  @override
+  String get notifGoalNeedsPerson => 'Ett mål behöver dig';
+
+  @override
+  String get notifGoalOnHold => 'Ett mål är parkerat';
+
+  @override
+  String get notifWakeRuleEnded => 'Ett schema avslutades';
+
+  @override
+  String notifWaitingDigest(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count saker väntar på dig',
+      one: '1 sak väntar på dig',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notifImprovementProposed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count förbättringsförslag lades fram',
+      one: 'Ett förbättringsförslag lades fram',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notifPipelineRunHeld =>
+      'En pipelinekörning är parkerad vid sin budget';
+
+  @override
+  String notifPipelineRunHeldBody(String spent, String cap) {
+    return 'Använt $spent av $cap';
+  }
+
+  @override
+  String get inboxGoalNeedsReview => 'Mål väntar på granskning';
+
+  @override
+  String get inboxGoalNeedsPerson => 'Målet behöver dig';
+
+  @override
+  String get inboxImprovementProposed => 'Förbättring föreslagen';
+
+  @override
+  String get improvementRefusalAlreadyDecided =>
+      'Någon har redan beslutat om det här förslaget.';
+
+  @override
+  String get improvementRefusalCampaignRequired =>
+      'Den här ändringen har inte godkänts i en utvärdering mot den nuvarande färdigheten, eller så ändrades färdigheten efter att den mättes. Kör utvärderingen igen.';
+
+  @override
+  String get improvementRefusalChangedSince =>
+      'Målet ändrades sedan det här föreslogs. Avvisa det och låt agenten föreslå igen.';
+
+  @override
+  String get improvementRefusalTargetMissing =>
+      'Det som det här förslaget ändrar finns inte längre.';
+
+  @override
+  String get improvementRefusalCampaignState =>
+      'Utvärderingen kan inte starta eller slutföras i sitt nuvarande läge.';
+
+  @override
+  String get improvementRefusalReviewCooldown =>
+      'Det här samtalet granskades nyligen. Försök igen senare.';
+
+  @override
+  String get improvementRefusalAdminRequired =>
+      'Bara en arbetsytadministratör kan besluta om det här förslaget.';
+
+  @override
+  String get improvementKindMemoryFact => 'Minnesfakta';
+
+  @override
+  String get improvementKindPolicy => 'Policy';
+
+  @override
+  String get improvementKindAgentNote => 'Agentanteckning';
+
+  @override
+  String get improvementKindSkillEdit => 'Färdighetsändring';
+
+  @override
+  String get improvementKindSkillNew => 'Ny färdighet';
+
+  @override
+  String get improvementScopeAgent => 'Den här agenten';
+
+  @override
+  String get improvementScopeRepository => 'Det här arkivet';
+
+  @override
+  String get improvementScopeWorkspace => 'Hela arbetsytan';
+
+  @override
+  String get improvementStatusProposed => 'Föreslagen';
+
+  @override
+  String get improvementStatusAccepted => 'Godkänd';
+
+  @override
+  String get improvementStatusRejected => 'Avvisad';
+
+  @override
+  String get improvementStatusRolledBack => 'Återställd';
+
+  @override
+  String get improvementStatusExpired => 'Utgången';
+
+  @override
+  String get improvementOperationAdd => 'Lägger till';
+
+  @override
+  String get improvementOperationReplace => 'Ersätter';
+
+  @override
+  String get improvementOperationRemove => 'Tar bort';
+
+  @override
+  String scheduleTriggerOnce(String time) {
+    return 'En gång, $time';
+  }
+
+  @override
+  String scheduleTriggerEvery(String interval) {
+    return 'Var $interval';
+  }
+
+  @override
+  String scheduleTriggerCron(String cron, String zone) {
+    return 'Enligt schemat $cron ($zone)';
+  }
+
+  @override
+  String get scheduleTriggerSelfPaced =>
+      'När agenten väljer, 1 till 60 minuter emellan';
+
+  @override
+  String get scheduleTriggerPrChecks =>
+      'När pull requestens kontroller är klara';
+
+  @override
+  String scheduleTriggerPrChecksOf(String pr) {
+    return 'När kontrollerna för $pr är klara';
+  }
+
+  @override
+  String get scheduleTriggerPrReview =>
+      'När pull requesten får en granskning eller ett svar';
+
+  @override
+  String scheduleTriggerPrReviewOf(String pr) {
+    return 'När $pr får en granskning eller ett svar';
+  }
+
+  @override
+  String get scheduleTriggerPrMerged => 'När pull requesten slås samman';
+
+  @override
+  String scheduleTriggerPrMergedOf(String pr) {
+    return 'När $pr slås samman';
+  }
+
+  @override
+  String get scheduleTriggerEnvironment =>
+      'När en uppgift i miljön avslutas eller när den blir redo';
+
+  @override
+  String scheduleTriggerTicket(String id) {
+    return 'När ärendet $id avgörs';
+  }
+
+  @override
+  String scheduleTriggerPipelineRun(String id) {
+    return 'När pipelinekörningen $id avslutas';
+  }
+
+  @override
+  String get goalNextWaiting => 'Den fortsätter när det den väntar på kommer.';
+
+  @override
+  String get goalNextVerifying =>
+      'När kontrollerna och granskningen är klara slutförs den eller fortsätter arbeta.';
+
+  @override
+  String get goalNextLimit =>
+      'Den återupptas när användningsgränsen återställs.';
+
+  @override
+  String get goalNextPerson =>
+      'Den fortsätter när någon har svarat på dess fråga eller godkännandebegäran.';
+
+  @override
+  String get goalNextByPerson =>
+      'Den förblir pausad tills någon återupptar den.';
+
+  @override
+  String get goalNextNeedsReview =>
+      'Godkänn den som klar, eller återuppta den för att fortsätta arbeta.';
+
+  @override
+  String get goalNextWorking =>
+      'Den fortsätter arbeta, ett segment i taget, tills den är klar eller når en gräns.';
+
+  @override
+  String get goalContractAddCheck => 'Lägg till kontroll';
+
+  @override
+  String goalContractChecksFull(int max) {
+    return 'Ett mål har högst $max kontroller.';
+  }
+
+  @override
+  String goalContractChecksCount(int count, int max) {
+    return '$count av $max kontroller';
+  }
+
+  @override
+  String get goalContractCheckTaskHint =>
+      'Namn på miljöuppgift, till exempel test';
+
+  @override
+  String get goalContractCheckCommandHint => 'Kommando, till exempel make test';
+
+  @override
+  String get goalContractCheckWhere => 'Var den körs';
+
+  @override
+  String get goalContractCheckInWorktree => 'I arbetskopian';
+
+  @override
+  String get goalContractCheckInEnvironment => 'Miljöuppgift';
+
+  @override
+  String get goalContractSecondsSuffix => 's';
+
+  @override
+  String goalContractTimeoutRange(int max) {
+    return '1 till $max sekunder';
+  }
+
+  @override
+  String get goalContractRemoveCheck => 'Ta bort kontroll';
+
+  @override
+  String get goalContractDoneMeans => 'Klart innebär';
+
+  @override
+  String get goalContractDoneMeansHelp =>
+      'Varje kriterium är en sak som en granskare kan bekräfta.';
+
+  @override
+  String get goalContractCriterionHint =>
+      'Versionsanteckningarna listar varje sammanslagen ändring';
+
+  @override
+  String goalContractCriterionTooLong(int max) {
+    return 'Högst $max tecken.';
+  }
+
+  @override
+  String get goalContractRemoveCriterion => 'Ta bort kriterium';
+
+  @override
+  String get goalContractAddCriterion => 'Lägg till kriterium';
+
+  @override
+  String goalContractCriteriaFull(int max) {
+    return 'Ett mål har högst $max kriterier.';
+  }
+
+  @override
+  String goalContractCriteriaCount(int count, int max) {
+    return '$count av $max kriterier';
+  }
+
+  @override
+  String get goalContractChecks => 'Kontroller';
+
+  @override
+  String get goalContractChecksHelp =>
+      'Servern kör dessa när agenten säger att den är klar. Ett mål utan kontroll förlitar sig bara på granskning.';
+
+  @override
+  String get goalContractBoundaries => 'Gränser';
+
+  @override
+  String get goalContractBoundariesHint => 'Ändra inte det publika API:et';
+
+  @override
+  String get goalContractStopWhen => 'Stoppa och fråga när';
+
+  @override
+  String get goalContractStopWhenHint => 'En migrering skulle ta bort data';
+
+  @override
+  String get goalContractEditTitle => 'Redigera vad klart innebär';
+
+  @override
+  String get goalCheckerTitle => 'Vem som kontrollerar det här målet';
+
+  @override
+  String get goalCheckerLabel => 'Granskare';
+
+  @override
+  String get goalCheckerNone => 'Ingen separat granskare';
+
+  @override
+  String get goalCheckerNoneWeaker =>
+      'Utan en separat granskare granskar agenten sitt eget arbete, vilket fångar mindre.';
+
+  @override
+  String goalCheckerRecommend(String agent) {
+    return 'Till exempel $agent: en granskare hos en annan leverantör har mindre sannolikt samma blinda fläckar.';
+  }
+
+  @override
+  String get goalCheckerRecommendGeneric =>
+      'En granskare hos en annan leverantör än målagenten har mindre sannolikt samma blinda fläckar.';
+
+  @override
+  String raiseCapSpentOf(String spent, String cap) {
+    return 'Använt $spent av $cap.';
+  }
+
+  @override
+  String get raiseCapNewCap => 'Ny gräns i dollar';
+
+  @override
+  String raiseCapMustExceed(String cap) {
+    return 'Ange mer än $cap.';
+  }
+
+  @override
+  String get raiseCapConfirm => 'Höj gränsen';
+
+  @override
+  String get goalsBackToList => 'Alla mål';
+
+  @override
+  String goalPursuedBy(String agent) {
+    return 'Drivs av $agent';
+  }
+
+  @override
+  String get goalOpenConversation => 'Öppna samtalet';
+
+  @override
+  String goalStarted(String time) {
+    return 'Startade $time';
+  }
+
+  @override
+  String get goalStopTitle => 'Stoppa det här målet?';
+
+  @override
+  String get goalStopBody =>
+      'Agenten slutar arbeta med det för gott. Dess arbete hittills finns kvar i samtalet.';
+
+  @override
+  String get goalRaiseBudgetTitle => 'Höj budgeten och återuppta';
+
+  @override
+  String get goalRaiseBudgetAction => 'Höj budget';
+
+  @override
+  String get goalSectionNow => 'Nu';
+
+  @override
+  String get goalFactSegments => 'Segment';
+
+  @override
+  String get goalFactMoney => 'Använt';
+
+  @override
+  String get goalFactDeadline => 'Deadline';
+
+  @override
+  String get goalFactNoProgress => 'Inga framsteg';
+
+  @override
+  String get goalNoDeadline => 'Ingen';
+
+  @override
+  String goalDeadlineWithLeft(String time, String left) {
+    return '$time, $left kvar';
+  }
+
+  @override
+  String goalNoProgressCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'De senaste $count segmenten gav inga framsteg',
+      one: 'Det senaste segmentet gav inga framsteg',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get goalObjective => 'Mål';
+
+  @override
+  String get goalSectionContract => 'Vad klart innebär';
+
+  @override
+  String get goalContractPauseFirst =>
+      'Pausa målet för att ändra vad klart innebär eller vem som kontrollerar det.';
+
+  @override
+  String get goalContractEdit => 'Redigera';
+
+  @override
+  String get goalCheckerChange => 'Ändra granskare';
+
+  @override
+  String get goalContractNone =>
+      'Inget nedskrivet ännu. Agenten avgör när det är klart.';
+
+  @override
+  String get goalCheckerSelf =>
+      'Ingen separat granskare: agenten verifierar sitt eget arbete.';
+
+  @override
+  String goalCheckerIs(String agent) {
+    return 'Granskas av $agent';
+  }
+
+  @override
+  String goalCheckWorktree(int seconds) {
+    return 'I arbetskopian, högst $seconds s';
+  }
+
+  @override
+  String goalCheckEnvironmentTask(int seconds) {
+    return 'Miljöuppgift, högst $seconds s';
+  }
+
+  @override
+  String get goalSectionVerification => 'Verifiering';
+
+  @override
+  String get goalNotVerifiedYet =>
+      'Inte verifierat ännu. Agenten har inte sagt att den är klar.';
+
+  @override
+  String goalVerificationRound(int round, int total, String time) {
+    return 'Omgång $round av $total, $time';
+  }
+
+  @override
+  String get goalVerificationClaim => 'Vad agenten påstår';
+
+  @override
+  String get goalCheckOutputTail => 'Utdata (sista raderna)';
+
+  @override
+  String goalCheckExitCode(int code) {
+    return 'Godkänd · slutkod $code';
+  }
+
+  @override
+  String get goalVerificationReview => 'Granskning';
+
+  @override
+  String get goalVerificationNoVerdict => 'Ingen granskning ännu.';
+
+  @override
+  String goalVerdictItem(String criterion, String state) {
+    return '$criterion · $state';
+  }
+
+  @override
+  String get goalSectionSchedules => 'Scheman och väckningar';
+
+  @override
+  String get goalNoSchedules => 'Inget schema eller någon väntande väckning.';
+
+  @override
+  String get goalPendingWakes => 'Väntande väckningar';
+
+  @override
+  String workListGroup(String label, int count) {
+    return '$label · $count';
+  }
+
+  @override
+  String get goalNotFound =>
+      'Målet finns inte, eller så ligger det i en yta du inte kan öppna.';
+
+  @override
+  String get goalsTitle => 'Mål';
+
+  @override
+  String get goalsSubtitle =>
+      'Arbete som en agent fortsätter med tills det som klart innebär är uppfyllt.';
+
+  @override
+  String get goalsEmpty => 'Inga mål ännu';
+
+  @override
+  String get goalsEmptyHint => 'Starta ett med /goal i ett samtal.';
+
+  @override
+  String get goalsGroupReview => 'Väntar på granskning';
+
+  @override
+  String get goalsGroupOpen => 'Öppna';
+
+  @override
+  String get goalsGroupEnded => 'Avslutade';
+
+  @override
+  String get scheduleStatusActive => 'Aktiv';
+
+  @override
+  String get scheduleStatusPaused => 'Pausad';
+
+  @override
+  String get scheduleStatusEnded => 'Avslutat';
+
+  @override
+  String get scheduleWhenBusySkip =>
+      'Hoppar över en körning medan agenten är upptagen';
+
+  @override
+  String get scheduleWhenBusyQueue => 'Väntar tills agenten är ledig';
+
+  @override
+  String get scheduleDeliverRun => 'Startar en körning';
+
+  @override
+  String get scheduleDeliverNotify => 'Aviserar bara';
+
+  @override
+  String get scheduleNew => 'Nytt schema';
+
+  @override
+  String get schedulesEmpty => 'Inga scheman eller bevakningar';
+
+  @override
+  String get schedulesEmptyHint =>
+      'Agenter sätter dem med /loop och /schedule, eller så kan du skapa ett.';
+
+  @override
+  String scheduleOwnedBy(String name) {
+    return 'Ägare: $name';
+  }
+
+  @override
+  String scheduleRunsSkips(int runs, int skips) {
+    String _temp0 = intl.Intl.pluralLogic(
+      runs,
+      locale: localeName,
+      other: '$runs körningar',
+      one: '1 körning',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      skips,
+      locale: localeName,
+      other: '$skips överhoppningar',
+      one: '1 överhoppning',
+      zero: 'inga överhoppningar',
+    );
+    return '$_temp0, $_temp1';
+  }
+
+  @override
+  String scheduleExpires(String time) {
+    return 'Slutar $time';
+  }
+
+  @override
+  String scheduleNextFires(String times) {
+    return 'Nästa: $times';
+  }
+
+  @override
+  String get schedulesTitle => 'Scheman';
+
+  @override
+  String get schedulesSubtitle =>
+      'Scheman, loopar och bevakningar som väcker agenter.';
+
+  @override
+  String get scheduleWhenLabel => 'När det körs';
+
+  @override
+  String get scheduleWhenEvery => 'Återkommande, var…';
+
+  @override
+  String get scheduleWhenCron => 'Enligt ett cron-schema';
+
+  @override
+  String get scheduleWhenOnceIn => 'En gång, efter…';
+
+  @override
+  String get scheduleWhenOnceAt => 'En gång, vid nästa…';
+
+  @override
+  String get scheduleDurationLabel => 'Intervall';
+
+  @override
+  String get scheduleDurationHelp =>
+      'Använd s, m, h eller d, till exempel 30m eller 1h30m. Upprepningar ligger minst 60 s från varandra.';
+
+  @override
+  String get scheduleDurationInvalid =>
+      'Det här är inte en varaktighet, till exempel 30m eller 2h.';
+
+  @override
+  String get scheduleHour => 'Timme';
+
+  @override
+  String get scheduleMinute => 'Minut';
+
+  @override
+  String get scheduleCronLabel => 'Cron (minut timme dag månad veckodag)';
+
+  @override
+  String get scheduleCronInvalid =>
+      'Det här är inte ett cron-uttryck med fem fält som kan köras.';
+
+  @override
+  String get scheduleTimeInvalid =>
+      'Det här är inte en tid framåt, till exempel 09:00 eller 2026-11-21T09:00Z.';
+
+  @override
+  String scheduleDaysRange(int max) {
+    return '1 till $max dagar.';
+  }
+
+  @override
+  String scheduleOptionUnknown(String option) {
+    return '$option är inte ett alternativ.';
+  }
+
+  @override
+  String get scheduleLimits => 'Gränser';
+
+  @override
+  String get schedulePresetWeekdays => 'Vardagar kl. 09:00';
+
+  @override
+  String get schedulePresetDaily => 'Varje dag kl. 09:00';
+
+  @override
+  String get schedulePresetHourly => 'Varje timme, på hel timme';
+
+  @override
+  String get scheduleZoneLabel => 'Tidszon';
+
+  @override
+  String get scheduleZoneHelp => 'Tomt betyder arbetsytans zon.';
+
+  @override
+  String get scheduleZoneInvalid =>
+      'Det här är inte en tidszon, till exempel Europe/Berlin.';
+
+  @override
+  String get scheduleCreateTitle => 'Nytt schema';
+
+  @override
+  String get scheduleSpaceLabel => 'Yta';
+
+  @override
+  String get scheduleSpaceHint => 'Välj en yta';
+
+  @override
+  String get scheduleConversationLabel => 'Samtal';
+
+  @override
+  String get scheduleConversationHint => 'Välj ett samtal';
+
+  @override
+  String get scheduleAgentLabel => 'Agent';
+
+  @override
+  String get scheduleAgentHint => 'Välj vem som väcks';
+
+  @override
+  String get scheduleNoteLabel => 'Vad varje körning utgår från';
+
+  @override
+  String get scheduleNoteHint =>
+      'Sammanfatta vad som ändrades över natten och flagga allt som är blockerat.';
+
+  @override
+  String get scheduleExpiresInDays => 'Slutar efter (dagar)';
+
+  @override
+  String get scheduleExpiresInDaysHelp => 'Tomt: 30 dagar, högst 365.';
+
+  @override
+  String get scheduleMaxRuns => 'Körningsgräns';
+
+  @override
+  String scheduleMaxRunsHelp(int max) {
+    return 'Tomt: ingen gräns, högst $max.';
+  }
+
+  @override
+  String get scheduleCostCap => 'Kostnadsgräns (dollar)';
+
+  @override
+  String get scheduleCostCapHelp => 'Tomt: arbetsytans standard.';
+
+  @override
+  String get scheduleWhenBusyLabel => 'Om agenten är upptagen';
+
+  @override
+  String get scheduleWhenBusyDefault => 'Standarden för den här typen';
+
+  @override
+  String get scheduleDeliverLabel => 'Vid varje körning';
+
+  @override
+  String get scheduleCreate => 'Skapa schema';
+
+  @override
+  String get scheduleExtendTitle => 'Förläng det här schemat';
+
+  @override
+  String scheduleExtendNow(String current, String latest) {
+    return 'Det slutar $current. Det kan pågå till högst $latest.';
+  }
+
+  @override
+  String get scheduleExtendDays => 'Lägg till dagar';
+
+  @override
+  String scheduleExtendTooLong(String latest) {
+    return 'Det kan sluta senast $latest.';
+  }
+
+  @override
+  String scheduleMaxRunsRange(int max) {
+    return '1 till $max körningar.';
+  }
+
+  @override
+  String scheduleCostCapRange(String max) {
+    return 'Minst 1 dollar och högst $max.';
+  }
+
+  @override
+  String get scheduleExtend => 'Förläng';
+
+  @override
+  String get scheduleRemoveTitle => 'Ta bort det här schemat?';
+
+  @override
+  String get scheduleDeleteTitle => 'Ta bort det här schemat?';
+
+  @override
+  String get scheduleRemoveBody =>
+      'Det försvinner från listan. Dess körningar finns kvar i samtalet.';
+
+  @override
+  String get scheduleDeleteBody =>
+      'Det slutar köras för gott. Dess körningar finns kvar i samtalet.';
+
+  @override
+  String get scheduleRemove => 'Ta bort';
+
+  @override
+  String get scheduleDelete => 'Ta bort';
+
+  @override
+  String get scheduleOwnerOnly =>
+      'Bara dess ägare kan återuppta eller förlänga det.';
+
+  @override
+  String get schedulesBackToList => 'Alla scheman';
+
+  @override
+  String get scheduleNoteByAgent => 'Anteckning, skriven av agenten';
+
+  @override
+  String get scheduleNoteByPerson => 'Anteckning, skriven av en person';
+
+  @override
+  String scheduleNoteEditedBy(String name) {
+    return 'Anteckning, senast redigerad av $name';
+  }
+
+  @override
+  String get scheduleNoNote => 'Ingen anteckning.';
+
+  @override
+  String get schedulePause => 'Pausa';
+
+  @override
+  String get scheduleResume => 'Återuppta';
+
+  @override
+  String get scheduleOpenChainRoot =>
+      'Öppna det första schemat i den här kedjan';
+
+  @override
+  String get scheduleSectionFacts => 'Detaljer';
+
+  @override
+  String get scheduleFactAgent => 'Väcker';
+
+  @override
+  String get scheduleFactConversation => 'I';
+
+  @override
+  String get scheduleConversationUnknown => 'Ett samtal du inte kan se';
+
+  @override
+  String get scheduleFactOwner => 'Ägare';
+
+  @override
+  String get scheduleNoOwner => 'Ingen';
+
+  @override
+  String get scheduleFactNextFires => 'Nästa körningar';
+
+  @override
+  String get scheduleFactNext => 'Nästa körning';
+
+  @override
+  String get scheduleFactLast => 'Senast körd';
+
+  @override
+  String get scheduleFactRuns => 'Körningar';
+
+  @override
+  String scheduleRunsNoCap(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count körningar, ingen gräns',
+      one: '1 körning, ingen gräns',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleRunsOfCap(int count, int max) {
+    return '$count av $max körningar';
+  }
+
+  @override
+  String get scheduleFactSkips => 'Överhoppningar';
+
+  @override
+  String scheduleSkips(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count körningar överhoppade',
+      one: '1 körning överhoppad',
+      zero: 'Inga',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scheduleFactSpent => 'Använt';
+
+  @override
+  String get scheduleFactEnds => 'Slutar';
+
+  @override
+  String get scheduleFactWhenBusy => 'Om agenten är upptagen';
+
+  @override
+  String get scheduleFactDeliver => 'Vid varje körning';
+
+  @override
+  String get scheduleFactChain => 'Kedja';
+
+  @override
+  String scheduleChainLeft(int runs, String time) {
+    String _temp0 = intl.Intl.pluralLogic(
+      runs,
+      locale: localeName,
+      other: '$runs körningar kvar',
+      one: '1 körning kvar',
+    );
+    return '$_temp0 i kedjan, som slutar $time';
+  }
+
+  @override
+  String get scheduleFactCreated => 'Skapad';
+
+  @override
+  String get scheduleSectionHistory => 'Senaste väckningar och körningar';
+
+  @override
+  String get scheduleNoRuns => 'Inga körningar ännu.';
+
+  @override
+  String scheduleRunLine(String status, String cost) {
+    return '$status · $cost';
+  }
+
+  @override
+  String get scheduleRunPending => 'Väntar på att starta';
+
+  @override
+  String get scheduleRunRunning => 'Körs';
+
+  @override
+  String get scheduleRunCompleted => 'Klar';
+
+  @override
+  String get scheduleRunFailed => 'Misslyckades';
+
+  @override
+  String get scheduleNotFound =>
+      'Schemat finns inte, eller så ligger det i en yta du inte kan öppna.';
+
+  @override
+  String get improvementCampaignTitle => 'Kör en utvärdering';
+
+  @override
+  String improvementCampaignCost(int repetitions, String budget) {
+    String _temp0 = intl.Intl.pluralLogic(
+      repetitions,
+      locale: localeName,
+      other: 'Varje uppgift körs $repetitions gånger',
+      one: 'Varje uppgift körs en gång',
+    );
+    return '$_temp0 med den nuvarande färdigheten och med ändringen. Den spenderar högst $budget och debiteras den här arbetsytan.';
+  }
+
+  @override
+  String get improvementCampaignCostUnknown =>
+      'Utvärderingen kör korpusen med den nuvarande färdigheten och med ändringen, upp till den budget du anger.';
+
+  @override
+  String get improvementCampaignUnavailable =>
+      'Utvärderingar kan inte köras på den här servern just nu.';
+
+  @override
+  String get improvementCampaignCorpus => 'Korpus';
+
+  @override
+  String get improvementCampaignProvider => 'Leverantör';
+
+  @override
+  String get improvementCampaignModel => 'Modell';
+
+  @override
+  String get improvementCampaignRepetitions => 'Körningar per uppgift';
+
+  @override
+  String get improvementCampaignBudget => 'Budget (dollar)';
+
+  @override
+  String improvementCampaignRange(int max) {
+    return '1 till $max.';
+  }
+
+  @override
+  String get improvementCampaignStart => 'Starta utvärdering';
+
+  @override
+  String get improvementRollbackTitle => 'Återställa den här ändringen?';
+
+  @override
+  String get improvementRollbackBody =>
+      'Texten den ersatte kommer tillbaka, så länge ingen har ändrat den sedan dess.';
+
+  @override
+  String get improvementRollback => 'Återställ';
+
+  @override
+  String get improvementRolledBackDone => 'Återställd.';
+
+  @override
+  String get improvementNeedsAdmin =>
+      'Bara en arbetsytadministratör kan besluta om den här: den ändrar en färdighet eller en policy för hela arbetsytan.';
+
+  @override
+  String get improvementAdminDecides =>
+      'Som administratör beslutar du om den här: den ändrar en färdighet eller en policy för hela arbetsytan.';
+
+  @override
+  String get improvementNeedsCampaign =>
+      'Kör en utvärdering som godkänns innan du godkänner den här färdighetsändringen.';
+
+  @override
+  String get improvementsBackToList => 'Alla förbättringar';
+
+  @override
+  String improvementMeta(String kind, String scope, String agent) {
+    return '$kind · $scope · föreslagen av $agent';
+  }
+
+  @override
+  String get improvementAccept => 'Godkänn';
+
+  @override
+  String get improvementAcceptedDone => 'Godkänd.';
+
+  @override
+  String get improvementReject => 'Avvisa';
+
+  @override
+  String get improvementRejectedDone => 'Avvisad.';
+
+  @override
+  String get improvementRunEvaluation => 'Kör utvärdering';
+
+  @override
+  String get improvementSectionChange => 'Vad som ändras';
+
+  @override
+  String get improvementTarget => 'Mål';
+
+  @override
+  String improvementScopeLine(String scope) {
+    return 'Gäller: $scope';
+  }
+
+  @override
+  String get improvementNewText => 'Ny text';
+
+  @override
+  String get improvementRemovedText => 'Borttagen text';
+
+  @override
+  String get improvementExpected => 'Förväntad effekt';
+
+  @override
+  String get improvementSectionEvidence => 'Underlag och beslut';
+
+  @override
+  String get improvementNoEvidence => 'Inget underlag bifogat.';
+
+  @override
+  String get improvementEvidenceRuns => 'Körningar';
+
+  @override
+  String get improvementEvidenceMessages => 'Meddelanden';
+
+  @override
+  String improvementOpenMessage(int index) {
+    return 'Meddelande $index';
+  }
+
+  @override
+  String get improvementEvidenceChecks => 'Kontrollresultat';
+
+  @override
+  String get improvementEvaluation => 'Utvärdering';
+
+  @override
+  String get improvementCampaignNone => 'Inte utvärderad ännu.';
+
+  @override
+  String get improvementCampaignRunning => 'Utvärderingen pågår.';
+
+  @override
+  String get improvementCampaignPassed =>
+      'Utvärderingen godkändes: den kördes i sin helhet och ändringen löste minst lika många körningar som den nuvarande färdigheten, vilket inte visar att den är bättre. Den kan godkännas.';
+
+  @override
+  String get improvementCampaignFailed =>
+      'Utvärderingen godkändes inte, eller så ändrades färdigheten efter att den mättes. Kör den igen, eller avvisa ändringen.';
+
+  @override
+  String improvementDecided(String status, String name, String time) {
+    return '$status av $name, $time';
+  }
+
+  @override
+  String get improvementSomeone => 'någon';
+
+  @override
+  String improvementExpires(String time) {
+    return 'Går ut $time om inte någon beslutar.';
+  }
+
+  @override
+  String get improvementOpenApplied => 'Öppna det som ändrades';
+
+  @override
+  String get improvementsTitle => 'Förbättringar';
+
+  @override
+  String get improvementsSubtitle =>
+      'Ändringar som agenter föreslagit för sitt minne, sina anteckningar, policyer och färdigheter.';
+
+  @override
+  String get improvementsEmpty => 'Inga förslag';
+
+  @override
+  String get improvementsEmptyHint =>
+      'Agenter föreslår förbättringar efter att de granskat sitt arbete, till exempel med /refine.';
+
+  @override
+  String get improvementRowNeedsAdmin => 'En administratör beslutar';
+
+  @override
+  String get improvementNotFound =>
+      'Förslaget finns inte, eller så ligger det i en yta du inte kan öppna.';
+
+  @override
+  String get dispatchSettingsTitle => 'Scheman';
+
+  @override
+  String get dispatchSettingsSubtitle =>
+      'Gränser för scheman och bevakningar, och vad som händer med förfrågningar som ingen besvarar.';
+
+  @override
+  String get dispatchLimitsLabel => 'Gränser för scheman';
+
+  @override
+  String get dispatchLimitsSubtitle =>
+      'Tak för hur många scheman och bevakningar agenter får ha, och deras standardvärden.';
+
+  @override
+  String dispatchLimitRange(int max) {
+    return '1 till $max';
+  }
+
+  @override
+  String get dispatchLimitPerConversation => 'Per agent i ett samtal';
+
+  @override
+  String get dispatchLimitPerConversationHelp =>
+      'Aktiva eller pausade scheman som en agent får ha i ett samtal.';
+
+  @override
+  String get dispatchLimitPerAgent => 'Per agent';
+
+  @override
+  String get dispatchLimitPerAgentHelp =>
+      'Aktiva eller pausade scheman som en agent får ha över hela arbetsytan.';
+
+  @override
+  String get dispatchLimitPerWorkspace => 'På arbetsytan';
+
+  @override
+  String get dispatchLimitPerWorkspaceHelp =>
+      'Aktiva eller pausade scheman på hela arbetsytan.';
+
+  @override
+  String get dispatchLimitCostCap => 'Standard kostnadsgräns (dollar)';
+
+  @override
+  String get dispatchLimitCostCapHelp =>
+      'Hur mycket ett schema totalt får spendera när det inte anger någon egen gräns.';
+
+  @override
+  String get dispatchLimitZone => 'Tidszon';
+
+  @override
+  String get dispatchLimitZoneHelp =>
+      'Zonen som ett cron-schema läses i när det inte anger någon, och zonen för den dagliga sammanfattningen.';
+
+  @override
+  String get dispatchUnattendedLabel => 'När ingen svarar';
+
+  @override
+  String get dispatchUnattendedSubtitle =>
+      'Hur länge en körning som servern startat väntar på en person, och när den dagliga sammanfattningen av det som väntar skickas.';
+
+  @override
+  String get dispatchUnattendedExpiry => 'Förfrågningar väntar (timmar)';
+
+  @override
+  String get dispatchUnattendedExpiryHelp =>
+      'Efter det räknas ett godkännande som nekat och en fråga som obesvarad. Mål som är satta att besvara sina egna frågor gör det efter 10 minuter.';
+
+  @override
+  String dispatchUnattendedExpiryRange(int min, int max) {
+    return '$min till $max timmar';
+  }
+
+  @override
+  String get dispatchDigestHour => 'Daglig sammanfattning kl. (timme)';
+
+  @override
+  String dispatchDigestHourHelp(String zone) {
+    return 'I $zone, tidszonen ovan.';
+  }
+
+  @override
+  String get dispatchDigestHourRange => '0 till 23';
+
+  @override
+  String get goalRecordCrumb => 'Mål';
+
+  @override
+  String get scheduleRecordCrumb => 'Schema';
+
+  @override
+  String get improvementRecordCrumb => 'Förslag';
+
+  @override
+  String get goalNodeNeedsAgent => 'Välj agenten som driver målet.';
+
+  @override
+  String get goalNodeNeedsObjective => 'Skriv målet.';
+
+  @override
+  String get goalNodeContractInvalid =>
+      'Kontraktet har ett fält över sin gräns; det sparas inte förrän det är rättat.';
+
+  @override
+  String get goalNodeBudget => 'Budget (dollar)';
+
+  @override
+  String get goalNodeBudgetHelp =>
+      'Det högsta målet får spendera. När den tar slut parkeras målet för en person.';
+
+  @override
+  String goalNodeBudgetRange(int max) {
+    return 'Krävs: mer än 0, upp till $max.';
+  }
+
+  @override
+  String get goalNodeMaxRuns => 'Segmentgräns';
+
+  @override
+  String get goalNodeMaxRunsHelp =>
+      'Valfritt. Det högsta antalet segment (agentkörningar) målet får ta.';
+
+  @override
+  String get goalNodeDeadline => 'Deadline (timmar)';
+
+  @override
+  String get goalNodeDeadlineHelp =>
+      'Valfritt. Timmar från när steget startar målet.';
+
+  @override
+  String goalNodeRange(int max) {
+    return '1 till $max, eller tomt.';
+  }
+
+  @override
+  String get goalNodeContract => 'Kontrakt';
+
+  @override
+  String get goalNodeContractHelp =>
+      'Vad klart innebär: kriterier som granskaren kontrollerar, och kommandon som måste lyckas.';
+
+  @override
+  String get nodeConfigObjective => 'Mål';
+
+  @override
+  String pipelineRunGoalStep(String step) {
+    return 'Steg $step driver ett mål';
+  }
+
+  @override
+  String get pipelineRunOpenGoal => 'Öppna mål';
+
+  @override
+  String get pipelineRunHeldBudget =>
+      'Den här körningen är parkerad: dess orkestrering nådde sin kostnadsgräns.';
+
+  @override
+  String pipelineRunHeldOther(String reason) {
+    return 'Den här körningen är parkerad ($reason).';
+  }
+
+  @override
+  String pipelineRunHeldSpent(String spent, String cap) {
+    return 'Använt $spent av $cap. Höj gränsen så fortsätter körningen.';
+  }
+
+  @override
+  String get pipelineRunRaiseCap => 'Höj gräns';
+
+  @override
+  String get pipelineRunRaiseCapTitle => 'Höj orkestreringsgränsen';
+
+  @override
+  String get pipelineRunCapRaised =>
+      'Gränsen höjdes. Körningen fortsätter strax.';
+
+  @override
+  String get goalLaunchChecks => 'Kontroller';
+
+  @override
+  String get goalLaunchChecksHelp =>
+      'Kommandon som måste lyckas innan målet kan slutföras. Valfritt.';
+
+  @override
+  String get goalLaunchFresh => 'Starta varje segment på nytt';
+
+  @override
+  String get goalLaunchFreshHelp =>
+      'Varje körning startar utan samtalets historik, bara från målet och dess anteckningar.';
+
+  @override
+  String get goalLaunchAssume => 'Besvara sina egna frågor när ingen gör det';
+
+  @override
+  String get goalLaunchAssumeHelp =>
+      'Efter 10 minuter utan svar anger agenten sitt antagande och fortsätter, om stoppvillkoren tillåter det.';
+
+  @override
+  String workFeedLimitParkOutcomeResumed(String provider, String time) {
+    return 'Återupptogs $time efter ${provider}s användningsgräns.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeCancelled(String provider, String time) {
+    return 'Avbröts $time. Den återupptogs inte efter ${provider}s användningsgräns.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeExpired(String provider, String time) {
+    return 'Gick ut $time utan att återupptas efter ${provider}s användningsgräns.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeSkipped(String provider, String time) {
+    return 'Återupptogs inte efter ${provider}s användningsgräns ($time).';
+  }
+
+  @override
+  String workFeedCommandRefusedNamed(String command) {
+    return 'Kommandot /$command nekades.';
+  }
+
+  @override
+  String get improvementRefusalQueued =>
+      'En granskning av det här samtalet väntar redan på att köras.';
+
+  @override
+  String get improvementRefusalAgentNotFound =>
+      'Den agenten finns inte i den här arbetsytan.';
+
+  @override
+  String get workRefusalWakeQueueFull =>
+      'Det väntar redan för många väckningar här. Försök igen när några har körts.';
+
+  @override
+  String get orchestrationRefusalNotYours =>
+      'Bara personen som körningen agerar för kan ändra den.';
+
+  @override
+  String get orchestrationRefusalCapInvalid =>
+      'Den nya gränsen måste vara över den nuvarande gränsen och det som har använts, och högst 1 000 \$.';
+
+  @override
+  String get orchestrationRefusalCapChanged =>
+      'Någon höjde gränsen först. Kontrollera den nya gränsen och försök igen.';
+
+  @override
+  String workFeedCapRaised(String person, String oldCap, String newCap) {
+    return '$person höjde körningens gräns från $oldCap till $newCap.';
+  }
+
+  @override
+  String get workFeedPersonUnknown => 'En person';
+
+  @override
+  String workFeedApplyIncomplete(String skill) {
+    return 'En godkänd ändring av färdigheten $skill kunde inte slutföras, eftersom färdigheten ändrades under tiden. Förslaget återställdes.';
+  }
+
+  @override
+  String get workFeedOpenImprovement => 'Öppna förbättring';
+
+  @override
+  String get peerAskFailNoOutput => 'Den avslutades utan svar.';
+
+  @override
+  String get peerAskFailRunFailed => 'Dess körning misslyckades.';
+
+  @override
+  String get peerAskFailStoppedByPerson => 'En person stoppade dess körning.';
+
+  @override
+  String get peerAskFailBudget => 'Dess körning nådde sin budget.';
+
+  @override
+  String get peerAskFailSilence => 'Dess körning blev tyst och stoppades.';
+
+  @override
+  String get peerAskFailUsageLimit =>
+      'Dess körning stoppades vid leverantörens användningsgräns.';
+
+  @override
+  String get peerAskFailNotDelivered => 'Frågan levererades aldrig.';
+
+  @override
+  String heldSteeringLimitHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count meddelanden parkerades vid användningsgränsen',
+      one: '1 meddelande parkerades vid användningsgränsen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get heldSteeringLimitNote =>
+      'Dessa skickas när personen som körningen arbetar för återupptar den. Om den inte återupptas inom 7 dagar efter återställningen parkeras de för den personen.';
+
+  @override
+  String get wakeKindRuleFolded => 'En senare händelse ersatte den.';
+
+  @override
+  String goalCardWaitingNext(String time) {
+    return 'Väntar på det den satte igång · tittar igen senast $time';
+  }
+
+  @override
+  String raiseCapAtMost(String max) {
+    return 'Ange högst $max.';
+  }
+
+  @override
+  String raiseCapNowAt(String cap) {
+    return 'Gränsen är nu $cap.';
+  }
+
+  @override
+  String get scheduleWakeReasonSchedule => 'Schemalagd';
+
+  @override
+  String get scheduleWakeReasonWatch => 'Bevakning';
+
+  @override
+  String get scheduleWakeReasonLimitReset => 'Efter en användningsgräns';
+
+  @override
+  String get scheduleWakeStatePending => 'Väntar';
+
+  @override
+  String get scheduleWakeStateHeld => 'Parkerad';
+
+  @override
+  String get scheduleWakeStateClaimed => 'Startar';
+
+  @override
+  String get scheduleWakeStateDelivered => 'Levererad';
+
+  @override
+  String get scheduleWakeStateSkipped => 'Överhoppad';
+
+  @override
+  String get scheduleWakeStateExpired => 'Utgången';
+
+  @override
+  String get scheduleWakeStateCancelled => 'Avbruten';
+
+  @override
+  String scheduleWakeLine(String reason, String state) {
+    return '$reason · $state';
+  }
+
+  @override
+  String scheduleWakeExit(int code) {
+    return 'slutkod $code';
+  }
+
+  @override
+  String scheduleWakeEvents(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count händelser',
+      one: '1 händelse',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scheduleWakesNone => 'Inga väckningar ännu.';
+
+  @override
+  String get scheduleWakesOlder => 'Visa äldre';
+
+  @override
+  String get improvementCandidateStaged =>
+      'Den föreslagna färdigheten lagras som en separat version. Att utvärdera den lämnar den levande färdigheten oförändrad; färdigheten ändras först när förslaget godkänns.';
+
+  @override
+  String goalNextWaitingFallback(String time) {
+    return 'Den fortsätter när det den väntar på kommer, eller tittar igen $time om ingenting kommer.';
+  }
+
+  @override
+  String get steeringRefusalHeldByLimit =>
+      'Meddelanden som en pausen vid användningsgränsen håller kan inte skickas för hand medan den väntar.';
+
+  @override
+  String steeringRefusalHeldByLimitAt(String time) {
+    return 'Meddelanden som en pausen vid användningsgränsen håller kan inte skickas för hand medan den väntar. Gränsen återställs $time.';
+  }
+
+  @override
+  String heldSteeringLimitResetsAt(String time) {
+    return 'Gränsen återställs $time. Dessa skickas när personen som körningen arbetar för återupptar den.';
+  }
+
+  @override
+  String heldSteeringFromPerson(String name) {
+    return 'Från $name';
+  }
+
+  @override
+  String get heldSteeringFromSomeoneElse => 'Från någon annan';
+
+  @override
+  String get heldSteeringOnlyWriterSends =>
+      'Bara den som skrev ett parkerat meddelande kan skicka det.';
+
+  @override
+  String get steeringRefusalNotYours =>
+      'De här parkerade meddelandena är någon annans. Bara den som skrev ett av dem kan skicka det.';
+
+  @override
+  String improvementEvaluationSolved(
+    int pairedRuns,
+    int candidateSolved,
+    int baselineSolved,
+  ) {
+    String _temp0 = intl.Intl.pluralLogic(
+      pairedRuns,
+      locale: localeName,
+      other: 'I $pairedRuns parade körningar',
+      one: 'I 1 parad körning',
+    );
+    return '$_temp0, ändringen löste $candidateSolved och den nuvarande färdigheten löste $baselineSolved.';
+  }
+
+  @override
+  String improvementEvaluationWorse(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count uppgifter blev sämre med ändringen.',
+      one: '1 uppgift blev sämre med ändringen.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String improvementEvaluationCostlier(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count uppgifter kostade mer med ändringen.',
+      one: '1 uppgift kostade mer med ändringen.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String improvementEvaluationHarnessErrors(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count körningar fick ett harnessfel.',
+      one: '1 körning fick ett harnessfel.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get improvementEvaluationIncomplete =>
+      'Utvärderingen kördes inte i sin helhet.';
+
+  @override
+  String workFeedLimitParkExpires(String time) {
+    return 'Går ut $time';
+  }
+
+  @override
+  String workFeedSchedulePaused(String person, String agent) {
+    return '$person pausade schemat för $agent.';
+  }
+
+  @override
+  String get goalCardApproveNotYours =>
+      'Bara personen som startade pipeline-körningen kan godkänna att det här målet är slutfört.';
+
+  @override
+  String get goalCardObjective => 'Målet';
+
+  @override
+  String get planNeedsWrite =>
+      'Att godkänna eller ändra den här planen kräver skrivåtkomst till alla arkiv i den här ytan. En arbetsytadministratör kan ge den.';
+
+  @override
+  String scheduleSpentWithChain(String spent, String cap) {
+    return '$spent av $cap, med alla scheman i dess kedja räknade';
+  }
 }

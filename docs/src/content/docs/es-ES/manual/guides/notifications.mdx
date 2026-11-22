@@ -2,7 +2,7 @@
 title: Configurar notificaciones
 description: Activa o desactiva categorías, define el horario de silencio y un sonido, y averigua qué notificaciones te llegan y dónde.
 slug: es-ES/manual/guias/notificaciones
-sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
+sourceHash: b1e5bb3b8a13bbbbd169916ab8e7cd7bdd403c1a
 ---
 
 Esta guía te muestra cómo configurar las notificaciones y qué controla de verdad
@@ -49,6 +49,8 @@ notificaciones.
 
 Nada que quede fuera de esta lista puede notificarse ni filtrarse: no existe una
 categoría de «todo lo demás».
+
+El trabajo de larga duración usa las dos primeras categorías. Un objetivo que terminó y una programación que terminó cuentan como **Agente finalizado**; un objetivo que espera tu revisión, una propuesta de mejora, una ejecución de pipeline retenida en su tope de coste y el resumen diario de lo que te espera cuentan como **Un agente te espera**. Cada una llega a la persona a la que concierne: quien inició el objetivo, la programación o la ejecución.
 
 **Un agente te espera** se activa en cuanto empieza una espera: una
 aprobación pendiente (incluidos los permisos de ejecución del entorno aislado y las
@@ -125,6 +127,8 @@ condiciones:
 Esas comprobaciones se aplican a los toasts del sistema operativo. La campana
 duradera sigue registrando el evento.
 
+Algunas notificaciones son **silenciosas**: el servidor las marca para que lleguen a la campana sin aviso emergente, sin sonido ni notificación push ruidosa en el teléfono. Una programación que terminó y un objetivo que terminó son silenciosos. Un objetivo que espera tu revisión no lo es.
+
 Hay dos supresiones más que actúan más arriba, en lo que el servidor llega a
 enviar:
 
@@ -135,10 +139,7 @@ enviar:
 - Los espacios entre agentes están silenciados en la barra lateral, así que
   nunca incrementan la insignia de no leídos de los humanos
 
-Dentro de un espacio no hay ningún rincón tranquilo: todas las conversaciones
-notifican por igual, hilos incluidos. El estado de lectura tiene como ámbito el
-espacio, así que lo no leído se agrega entre las conversaciones de un espacio en
-lugar de llevarse por conversación.
+Dentro de un espacio no hay ningún rincón tranquilo: todas las conversaciones notifican por igual, hilos incluidos. El estado de lectura se lleva por conversación, y un espacio está no leído mientras cualquiera de sus conversaciones lo esté.
 
 ## Leer y vaciar el centro de notificaciones
 
@@ -192,6 +193,8 @@ Comprueba que no estuvieras ya en el espacio donde ocurrió: una ruta activa
 suprime su propio toast del sistema operativo. En un espacio compartido, una
 ejecución que inició otra persona le avisa a ella, no a ti. Un turno que terminó
 sin respuesta y sin error no envía nada.
+
+Una ejecución que inició una programación o una vigilancia y que termina sin problemas no envía nada, salvo que mencione a alguien. Un objetivo terminado o una programación finalizada llega a la campana sin aviso emergente.
 
 ## Guías relacionadas
 

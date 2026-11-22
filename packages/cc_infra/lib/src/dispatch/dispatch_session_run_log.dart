@@ -102,6 +102,10 @@ extension _DispatchSessionRunLog on DispatchSession {
   /// The prompt is stored by length and digest, not verbatim — it can carry
   /// repo contents and memory facts and a run log is not the place for a copy
   /// of them. The digest is still enough to tell two runs apart.
+  ///
+  /// The `scripts` entry records whether the run has `repl` and, when it has
+  /// not, why ([scriptsUnavailable], null when it has); the tools only a
+  /// script can call are listed beside it.
   void _recordRunComposition({
     required List<String> toolNames,
     required String mode,
@@ -111,6 +115,8 @@ extension _DispatchSessionRunLog on DispatchSession {
     List<String> deferredToolNames = const [],
     int toolSchemaTokens = 0,
     String? effort,
+    required String? scriptsUnavailable,
+    List<String> scriptToolNames = const [],
   }) {
     final id = runLogId;
     final repo = deps.runLogRepo;
@@ -129,6 +135,12 @@ extension _DispatchSessionRunLog on DispatchSession {
       'tools': toolNames,
       'deferredToolCount': deferredToolNames.length,
       'deferredTools': deferredToolNames,
+      'scripts': {
+        'available': scriptsUnavailable == null,
+        'reason': ?scriptsUnavailable,
+      },
+      'scriptOnlyToolCount': scriptToolNames.length,
+      'scriptOnlyTools': scriptToolNames,
       'toolSchemaTokens': toolSchemaTokens,
       'systemPromptChars': systemPrompt.length,
       'systemPromptSha256': sha256
@@ -160,7 +172,13 @@ extension _DispatchSessionRunLog on DispatchSession {
   /// one (a refusal's `AppException.code`, e.g. `sandbox_unavailable`): the
   /// run log row's `summary`/`errorCode` and the transcript's `ErrorEvent`
   /// carry the same pair, so a client can key its notice on the code.
-  void _failRun(String message, {String? code}) {
+  ///
+  /// The row is stamped through [RunSettlement] with the reason the session
+  /// decided ([_endReason]: a person's stop, the watchdog, a shutdown), or
+  /// [RunEndReason.error]; when this write is the one that ends the run, it
+  /// publishes `AgentRunSettled`. [quiet] skips the transcript error (a
+  /// server shutdown writes nothing to the stream).
+  void _failRun(String message, {String? code, bool quiet = false}) {
     final id = runLogId;
     final repo = deps.runLogRepo;
     // The run log lives in this session's workspace; without one there is no
@@ -168,18 +186,32 @@ extension _DispatchSessionRunLog on DispatchSession {
     // error event below is still emitted.
     final ws = workspaceId;
     if (id != null && repo != null && ws != null && ws.isNotEmpty) {
-      unawaited(() async {
+      final reason = _endReason ?? RunEndReason.error;
+      final resetsAt = _limitResetsAt;
+      // What the run spent so far. The built-in harness's accounting writes
+      // it to the row as each model call lands (flushed below); any other
+      // backend's row holds no cost until the run completes, so a stopped,
+      // silenced or shut-down run carries its own usage reports' total.
+      final accounting = _runEnd.accounting;
+      final cost = accounting == null ? _runEnd.usage.total : null;
+      final write = () async {
         try {
+          // The harness's cost writes in flight, and its subagents' rollups
+          // into this row, land before the settlement reads the row back.
+          await accounting?.flush();
           final existing = await repo.getById(ws, id);
           if (existing != null && existing.completedAt == null) {
-            await repo.completeIfActive(
+            await RunSettlement(runLogs: repo, eventBus: deps.eventBus).settle(
               existing.copyWith(
                 status: RunStatus.error,
                 summary: message,
                 errorCode: code,
                 completedAt: DateTime.now(),
+                cost: cost,
               ),
-              writeCost: false,
+              endReason: reason,
+              writeCost: cost != null,
+              limitResetsAt: resetsAt,
             );
           }
         } on Object catch (e, st) {
@@ -189,8 +221,12 @@ extension _DispatchSessionRunLog on DispatchSession {
             st,
           );
         }
-      }());
+      }();
+      _failWrite ??= write;
+      unawaited(write);
     }
-    addEvent(ErrorEvent(content: message, code: code));
+    if (!quiet) {
+      addEvent(ErrorEvent(content: message, code: code));
+    }
   }
 }

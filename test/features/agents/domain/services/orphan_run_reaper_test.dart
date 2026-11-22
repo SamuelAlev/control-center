@@ -1,5 +1,6 @@
 import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
+import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/ports/process_control_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
@@ -7,6 +8,7 @@ import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart
 import 'package:cc_domain/core/domain/value_objects/retry_meta.dart';
 import 'package:cc_domain/features/agents/domain/services/budget_policy_service.dart';
 import 'package:cc_domain/features/agents/domain/services/orphan_run_reaper.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_status.dart';
 import 'package:cc_domain/features/ticketing/domain/repositories/ticket_repository.dart';
@@ -198,6 +200,9 @@ AgentRunLog _makeRun({
   retry: RetryMeta(attempt: retryAttempt),
 );
 
+/// When the server under test started: every seeded run is older.
+final _bootedAt = DateTime(2026, 7, 1);
+
 Ticket _makeTicket({
   String id = 'ticket-1',
   TicketStatus status = TicketStatus.inProgress,
@@ -228,6 +233,8 @@ void main() {
         ticketRepo: ticketRepo,
         ticketWorkflow: ticketWorkflow,
         processControl: processControl,
+        eventBus: null,
+        startedBefore: _bootedAt,
       );
     });
 
@@ -239,6 +246,23 @@ void main() {
         expect(ticketWorkflow.failedTicketIds, isEmpty);
       },
     );
+
+    test('never reaps a run this process started, whatever its pid says',
+        () async {
+      // A goal segment or pipeline step boot recovery just dispatched: its
+      // harness row has no pid, and it is no orphan.
+      final own = _makeRun(
+        id: 'run-own',
+        pid: null,
+      ).copyWith(startedAt: _bootedAt.add(const Duration(seconds: 1)));
+      runLogRepo.seed(own);
+
+      await reaper.reap();
+
+      final row = await runLogRepo.getById('ws-1', 'run-own');
+      expect(row!.status, RunStatus.running);
+      expect(row.completedAt, isNull);
+    });
 
     test(
       'marks run failed when pid is null',
@@ -255,6 +279,51 @@ void main() {
         expect(updated!.status, RunStatus.error);
         expect(updated.errorFamily, RunErrorFamily.processLost);
         expect(updated.liveness, RunLiveness.dead);
+      },
+    );
+
+    test(
+      'a reaped run is announced once as serverStopped, for the person its '
+      'row names',
+      timeout: const Timeout.factor(2),
+      () async {
+        final bus = DomainEventBus();
+        addTearDown(bus.dispose);
+        final settled = <AgentRunSettled>[];
+        bus.on<AgentRunSettled>().listen(settled.add);
+        reaper = OrphanRunReaper(
+          runLogRepo: runLogRepo,
+          ticketRepo: ticketRepo,
+          ticketWorkflow: ticketWorkflow,
+          processControl: processControl,
+          eventBus: bus,
+          startedBefore: _bootedAt,
+        );
+        // The requester was recorded on the row at dispatch, before the
+        // restart; nothing in memory knows it any more.
+        runLogRepo
+          ..seed(
+            _makeRun(
+              id: 'r-reaped',
+              pid: null,
+            ).copyWith(requestedByUserId: 'olga'),
+          )
+          ..seed(_makeRun(id: 'r-bot', pid: null));
+
+        await reaper.reap();
+        await reaper.reap();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(settled, hasLength(2));
+        final byRun = {for (final e in settled) e.runId: e};
+        final reaped = byRun['r-reaped']!;
+        expect(reaped.status, RunStatus.error);
+        expect(reaped.endReason, RunEndReason.serverStopped);
+        expect(reaped.requestedByUserId, 'olga');
+        expect(byRun['r-bot']!.requestedByUserId, isNull);
+        final row = await runLogRepo.getById('ws-1', 'r-reaped');
+        expect(row!.endReason, RunEndReason.serverStopped);
+        expect(row.requestedByUserId, 'olga');
       },
     );
 
@@ -297,6 +366,8 @@ void main() {
           ticketRepo: ticketRepo,
           ticketWorkflow: ticketWorkflow,
           processControl: processControl,
+          eventBus: null,
+          startedBefore: _bootedAt,
         );
 
         final run = _makeRun(id: 'r3', pid: 99999);
@@ -388,6 +459,8 @@ void main() {
           ticketRepo: ticketRepo,
           ticketWorkflow: ticketWorkflow,
           processControl: processControl,
+          eventBus: null,
+          startedBefore: _bootedAt,
         );
 
         await reaper.reap();
@@ -436,6 +509,8 @@ void main() {
             ticketRepo: ticketRepo,
             ticketWorkflow: ticketWorkflow,
             processControl: processControl,
+            eventBus: null,
+            startedBefore: _bootedAt,
             budgetEnforcement: budget,
           );
 
@@ -460,6 +535,8 @@ void main() {
             ticketRepo: ticketRepo,
             ticketWorkflow: ticketWorkflow,
             processControl: processControl,
+            eventBus: null,
+            startedBefore: _bootedAt,
             budgetEnforcement: budget,
           );
 
@@ -518,6 +595,8 @@ void main() {
           ticketRepo: ticketRepo,
           ticketWorkflow: ticketWorkflow,
           processControl: processControl,
+          eventBus: null,
+          startedBefore: _bootedAt,
         );
 
         final aliveRun = _makeRun(id: 'r-alive', pid: 88888);

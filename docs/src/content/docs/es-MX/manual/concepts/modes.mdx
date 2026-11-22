@@ -2,7 +2,7 @@
 title: Modos
 description: Por qué el modo lo lleva un espacio y no un agente; qué garantiza cada uno de los cuatro modos; y dónde esa garantía es estructural en lugar de solo una indicación en el prompt.
 slug: es-MX/manual/conceptos/modos
-sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
+sourceHash: 4450ebc86d95efb0366bc3f0ab4ddebc6d3a3adb
 ---
 
 ## Qué es un modo
@@ -41,7 +41,7 @@ Una ejecución que termina sin su plan se registra de todos modos con el estado 
 
 Hay una segunda salida, distinta: `exit_plan_mode`. Es una puerta de aprobación estricta, no un verbo de salida: un agente que la llama en lugar de `submit_plan` no ha entregado nada. La primera llamada abre una aprobación duradera `plan_exit` y devuelve `pending`, y el espacio sigue en solo lectura; las llamadas repetidas siguen en `pending` en vez de abrir una segunda puerta. Solo cuando se concede la aprobación, una llamada posterior cambia el espacio a chat. Si se rechaza, el agente puede abrir una nueva solicitud con un plan revisado.
 
-Para salir tú mismo del modo plan, cambia el desplegable del compositor (o presiona Shift+Tab). `exit_plan_mode` se decide con la herramienta MCP `decide_approval`. Las filas de «aprobación de agente» de la bandeja de entrada son otra cosa: solicitudes de confirmación por turno de un agente en ejecución.
+Para salir tú mismo del modo plan, cambia el desplegable del compositor (o presiona Shift+Tab). `exit_plan_mode` lo decide una ejecución de agente con la herramienta MCP `decide_approval`. Las filas de «aprobación de agente» de la bandeja de entrada son otra cosa: solicitudes de confirmación por turno de un agente en ejecución.
 
 ### Revisión — solo lectura, sin contrato
 
@@ -65,6 +65,8 @@ Nada de la propuesta se ejecuta hasta que la apruebas. Al aprobarla, un material
 
 **Los modos de solo lectura no deniegan el acceso a la red ni a los secretos.** Las clases de efecto que revisión, plan y orquestación rechazan son las que cambian el mundo: borrado de archivos, escrituras fuera del worktree, commits, pushes, creación y publicación de PR, escrituras de sincronización con proveedores, instalación de paquetes, lanzamiento de procesos, mutación del espacio de trabajo y control de recintos. La salida a la red y el acceso a secretos se quedan en sus valores predeterminados a propósito: la investigación es justo el objetivo de un modo de solo lectura.
 
+**El modo código nunca amplía un modo.** Primero se aplica el filtro de herramientas del modo, y un script de [modo código](/es-MX/manual/conceptos/modo-codigo/) `repl` solo puede llamar las herramientas que quedan después de él, a través de la misma compuerta que una llamada directa. Los verbos fijados del modo (su verbo de salida, `exit_plan_mode`, `ask_user`) y su propio ciclo (los verbos del nodo de revisión en el modo de revisión) se llaman siempre directamente, así que una ejecución nunca tiene que escribir un script para entregar su resultado o hacer una pregunta. En [modo vibe](/es-MX/manual/guias/dirigir-workers-en-segundo-plano/), la ejecución que dirige conserva solo herramientas de lectura y ninguna herramienta exclusiva de scripts, así que sus scripts solo llegan a esas.
+
 ## Elegir y cambiar de modo
 
 El desplegable de modo del compositor ofrece **tres** opciones: Agente (chat), Plan y Orquestación. `review` **no lo puede seleccionar el usuario**: lo fija el sistema cuando se crea un espacio de revisión de PR y también lo fijan los pasos de pipeline.
@@ -87,4 +89,5 @@ Las listas de permitidos restringen las herramientas de nivel de escritura y sup
 - [El modelo de agentes](/es-MX/manual/conceptos/modelo-de-agentes/): qué transportes pueden aplicar un modo
 - [Barandillas](/es-MX/manual/conceptos/barandillas/): la política de clases de efecto a la que alimenta el preajuste de un modo
 - [Orquestación](/es-MX/manual/conceptos/orquestacion/): qué hace una propuesta de orquestación aprobada
+- [Modo código](/es-MX/manual/conceptos/modo-codigo/): scripts que llaman a las herramientas del modo
 - [Usar el modo plan](/es-MX/manual/guias/modo-plan/): el recorrido práctico

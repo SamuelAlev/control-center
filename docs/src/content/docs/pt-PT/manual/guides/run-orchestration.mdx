@@ -2,7 +2,7 @@
 title: Executar uma orquestração
 description: Peça um plano a um orquestrador, reveja-o e edite-o no Plan Studio, aprove-o uma única vez e deixe um pipeline gerado fazer o trabalho.
 slug: pt-PT/manual/guias/executar-orquestracao
-sourceHash: 086301be6c1957f6336294720967813c3050ed25
+sourceHash: cc4390cbac6c2122dd24c23bcef20693f40121bb
 ---
 
 Este guia mostra-lhe como transformar um único grande objetivo num plano de toda
@@ -65,21 +65,13 @@ raio de impacto antes de confirmar. Consulte
 [Trabalhar no Plan Studio](/pt-PT/manual/guias/plan-studio/) para conhecer o
 editor completo.
 
-:::note[O orçamento não é um limite de gastos]
-O orçamento de uma proposta é comparado com a _estimativa_ da barra de aprovação:
-quando o limite superior da estimativa o ultrapassa, o total fica vermelho com um
-aviso de orçamento excedido. Nada verifica os gastos enquanto o plano é
-executado, pelo que não para nem faz falhar uma execução. Para um travão real aos
-gastos, use políticas de orçamento por agente — consulte
-[Gerir custos](/pt-PT/manual/guias/gerir-custos/).
+:::note[O orçamento retém a execução]
+O orçamento de uma proposta é comparado com a _estimativa_ da barra de aprovação: quando o limite superior da estimativa o ultrapassa, o total fica vermelho com um aviso de orçamento excedido. Enquanto o plano é executado, o servidor verifica os gastos antes de cada novo passo. Ao atingir o orçamento, a execução fica retida e nada novo começa; os passos já em curso terminam. Quem pediu a execução recebe uma notificação e carrega em **Aumentar limite** na página da execução do pipeline para continuar. Consulte [Gerir custos](/pt-PT/manual/guias/gerir-custos/).
 :::
 
 ## Passo 3: Aprovar
 
-Aprove o plano, a partir do cartão da conversa ou da barra de aprovação do Plan
-Studio. **Esta é a única decisão que toma.** A aprovação é exclusiva do operador
-— não existe nenhuma ferramenta MCP para isso, pelo que um agente pode propor e
-rever, mas nunca aprovar o seu próprio plano.
+Aprove o plano, a partir do cartão da conversa ou da barra de aprovação do Plan Studio. **Esta é a única decisão que toma.** A aprovação é exclusiva do operador — não existe nenhuma ferramenta MCP para isso, pelo que um agente pode propor e rever, mas nunca aprovar o seu próprio plano. Aprovar exige acesso de escrita aos repositórios do espaço, e a execução passa então a agir em nome da pessoa que o aprovou.
 
 A partir daí, um materializador determinístico (uma função pura, sem LLM)
 transforma a proposta num [pipeline](/pt-PT/manual/conceitos/pipelines/) real e
@@ -117,12 +109,7 @@ ticket principal é marcado como concluído e, em seguida, como `completed`.
 Prima **Cancelar orquestração** no cartão da conversa ou **Cancelar execução** na
 barra de aprovação do Plan Studio. O cancelamento desmancha o trabalho em curso.
 
-Uma orquestração falha quando a materialização falha, ou quando falha a execução
-do pipeline gerado (investigação, discussão, síntese ou persistência — esses
-passos não continuam em caso de falha). Os passos de **trabalho** gerados
-continuam sempre em caso de falha, pelo que uma subtarefa com falha não faz
-falhar a execução. Não existe nenhum caminho de falha por orçamento excedido nem
-um limiar de «todas as subtarefas falharam».
+Uma orquestração falha quando a materialização falha, ou quando falha a execução do pipeline gerado (investigação, discussão, síntese ou persistência — esses passos não continuam em caso de falha). Os passos de **trabalho** gerados continuam sempre em caso de falha, pelo que uma subtarefa com falha não faz falhar a execução. Atingir o orçamento retém a execução em vez de a fazer falhar, e não existe um limiar de «todas as subtarefas falharam».
 
 ## Guias relacionados
 

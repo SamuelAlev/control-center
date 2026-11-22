@@ -2,7 +2,7 @@
 title: Monitoruj uruchomienia potoków
 description: Pracuj z kolejką uruchomień, czytaj kaskadę czasu i panel kroków uruchomienia oraz podnoś z awarii krok, który zakończył się niepowodzeniem albo utknął.
 slug: pl-PL/podrecznik/poradniki/monitorowanie-potokow
-sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
+sourceHash: 48d44ae3ca3e23c1123ef282ccffece35b542b96
 ---
 
 Ta strona dotyczy wszystkiego, co dzieje się po rozpoczęciu uruchomienia:
@@ -72,6 +72,8 @@ Dwa zabezpieczenia silnika kończą awarią całe uruchomienie zamiast je wznawi
 krok wstrzymany dłużej niż 24 godziny (`extras.awaitApproval` — treść
 `orchestration.awaitApproval` — jest wyłączony; `human.gate` już nie) oraz krok
 nieidempotentny, który był w trakcie wykonania, gdy serwer się zatrzymał.
+
+Krok **Pursue a goal** jest też wyłączony z 24-godzinnego zabezpieczenia: pozostaje wstrzymany, dopóki jego cel działa, a jego strona prowadzi do celu. Całe uruchomienie może też być **Wstrzymane**, ponieważ jego orkiestracja osiągnęła limit kosztów; strona uruchomienia pokazuje wtedy, ile z limitu wydano, a zlecający widzi **Podnieś limit**.
 
 ## Sprawdź krok
 

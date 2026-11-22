@@ -2,7 +2,7 @@
 title: Konfigurera aviseringar
 description: Slå på eller av kategorier, ställ in tysta timmar och ett ljud och få veta vilka aviseringar som når dig var.
 slug: sv-SE/handbok/how-to-guider/aviseringar
-sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
+sourceHash: b1e5bb3b8a13bbbbd169916ab8e7cd7bdd403c1a
 ---
 
 Den här guiden visar hur du konfigurerar aviseringar och vad varje inställning
@@ -48,6 +48,8 @@ Telefonklienten har ingen aviseringsyta alls.
 
 Allt utanför den här listan går varken att avisera om eller filtrera — det finns
 ingen kategori för ”allt annat”.
+
+Långvarigt arbete använder de två första kategorierna. Ett mål som avslutades och ett schema som avslutades räknas som **Agenten är klar**; ett mål som väntar på din granskning, ett förbättringsförslag, en pipelinekörning som hålls vid sitt kostnadstak och den dagliga sammanfattningen av vad som väntar på dig räknas som **En agent väntar på dig**. Var och en når den person det gäller: den som startade målet, schemat eller körningen.
 
 **En agent väntar på dig** utlöses när en väntan börjar: ett väntande
 godkännande (inklusive exekveringsbeviljanden i sandlådan och
@@ -119,6 +121,8 @@ En avisering tappas bort, tyst, när något av följande stämmer:
 De kontrollerna gäller OS-toastar. Den beständiga klockan registrerar fortfarande
 händelsen.
 
+Vissa aviseringar är **tysta**: servern markerar dem så att de når klockan utan en toast, ett ljud eller en högljudd push till telefonen. Ett schema som avslutades och ett mål som avslutades är tysta. Ett mål som väntar på din granskning är det inte.
+
 Ytterligare två undertryckningar finns längre uppströms, i vad servern
 överhuvudtaget skickar:
 
@@ -129,9 +133,7 @@ Ytterligare två undertryckningar finns längre uppströms, i vad servern
 - Ytor mellan agenter är dämpade i sidopanelen, så de höjer aldrig människans
   oläst-badge
 
-Inom en yta finns ingen tyst vrå: varje samtal aviserar lika mycket, trådar
-inräknade. Lässtatus gäller per yta, så olästa summeras över en ytas samtal i
-stället för att spåras per samtal.
+Inom en yta finns ingen tyst vrå: varje samtal aviserar lika mycket, trådar inräknade. Lässtatus spåras per samtal, och en yta är oläst så länge något av dess samtal är oläst.
 
 ## Läs och rensa aviseringscentralen
 
@@ -183,6 +185,8 @@ Kontrollera att du inte redan var i ytan där det hände — en aktiv rutt
 undertrycker sin egen OS-toast. I en delad yta pingar en körning som någon annan
 startade den personen, inte dig. En tur som slutade utan svar och utan fel skickar
 ingenting.
+
+En körning som ett schema eller en bevakning startade och som slutar utan problem skickar ingenting, om den inte nämner någon. Ett avslutat mål eller ett avslutat schema går till klockan utan toast.
 
 ## Relaterade guider
 

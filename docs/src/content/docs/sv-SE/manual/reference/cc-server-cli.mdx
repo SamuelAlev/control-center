@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: Varje flagga, miljövariabel, underkommando och datakatalogsökväg hos headless-servern.
 slug: sv-SE/handbok/referens/cc-server-cli
-sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
+sourceHash: ee71514a1721599da299a81b5702bc7cdb372330
 ---
 
 Varje processflagga styrs av en CLI-flagga eller en miljövariabel; flaggan vinner,
@@ -10,9 +10,7 @@ sedan miljön och sist standardvärdet. Undantaget är leverantörernas
 autentiseringsuppgifter – se [Leverantörsappar och Connect](#leverantörsappar-och-connect).
 
 :::caution[Okända flaggor ignoreras tyst]
-Argumentparsern är handskriven och hoppar över allt den inte känner igen, så en
-felstavning (`--tls-key-file`, `--bindany`) ger inget fel – servern startar bara med
-standardvärdet. Kontrollera loggraderna vid start när en flagga verkar sakna effekt.
+Argumentparsern är handskriven och hoppar över allt den inte känner igen, så en felstavning (`--tls-key-file`, `--bindany`) ger inget fel – servern startar bara med standardvärdet. Kontrollera loggraderna vid start när en flagga verkar sakna effekt. En [flagga för kodläge](#kodläge) med ett värde den inte accepterar är annorlunda: servern vägrar starta.
 :::
 
 ## Kärnflaggor
@@ -50,8 +48,10 @@ standardvärdet. Kontrollera loggraderna vid start när en flagga verkar sakna e
 | `--sandbox`           | `CC_SERVER_SANDBOX`              | `on`     | `on` lindar in agentkörningar i värdens inbyggda OS-sandlåda, och på en värd utan någon startar bara serverägarens körningar. `off` kör alla medlemmars agenter obegränsade på den här värden. Se nedan |
 | `--code-index`        | `CC_SERVER_CODE_INDEX`           | `on`     | Dödarknapp i fält för bakgrundsindexering av kodgrafen. `off` startar rent utan ombyggnad                                                                    |
 | `--code-index-defer`  | `CC_SERVER_CODE_INDEX_DEFER`     | `15`     | Sekunder som det första indexsvepet hålls tillbaka efter redo-bannern (begränsat 0–300)                                                                      |
-| `--tool-deferral`     | `CC_SERVER_TOOL_DEFERRAL`        | `on`     | Om harnesskörningar skickar en liten resident verktygsuppsättning plus ett namnindex och läser in resten vid första användning. Se nedan                     |
+| `--tool-deferral`     | `CC_SERVER_TOOL_DEFERRAL`        | `on`     | Om harnesskörningar skickar en liten direkt verktygsuppsättning plus ett namnindex och läser in resten vid första användning. Se nedan                       |
 | `--credential-gate`   | `CC_SERVER_CREDENTIAL_GATE`      | `900`    | Sekunder som en körning parkeras i väntan på att en människa åtgärdar en autentiseringsuppgift som inte kan betjäna den (begränsat 0–3600). Se nedan         |
+| `--code-mode-max-processes` | `CC_SERVER_CODE_MODE_MAX_PROCESSES` | `min(16, 2 × cores)` | Kodlägesskript som körs samtidigt på den här servern, utom de som väntar på en person, 1–64. Se nedan |
+| `--code-mode-max-heap-mb` | `CC_SERVER_CODE_MODE_MAX_HEAP_MB` | `1024` | Det högsta minne ett skript får använda, 16–1024 MiB. En arbetsytas högre minnesgräns sänks till det |
 
 ## Leverantörsappar och Connect
 
@@ -117,18 +117,9 @@ hela processens livstid så att tillståndet aldrig är tyst.
 
 ### `--tool-deferral`
 
-Inbyggda harnesskörningar skickar en liten resident uppsättning verktygsdefinitioner
-plus ett index med bara namn över resten, som läser in sina scheman första gången de
-används. Det skär ner verktygsblocket med ungefär 78 % och håller den alltid synliga
-uppsättningen inom det intervall där modeller väljer verktyg tillförlitligt.
-Uppskjutna verktyg går fortfarande att anropa vid namn hela tiden, och `search_tools`
-hittar dem utifrån avsikt. Se [Verktygskontext och promptcache](/sv-SE/handbok/koncept/verktygskontext).
+Inbyggda harnesskörningar skickar en liten direkt uppsättning verktygsdefinitioner plus ett index med bara namn över resten, som läser in sina scheman första gången de används eller anropas från ett `repl`-skript. Det håller den alltid synliga uppsättningen inom det intervall där modeller väljer verktyg tillförlitligt. Mätt på registret som testerna bygger kommer den inbyggda agentens vanliga chattverktyg till 14 definitioner: omkring 16,5 KB med `repl` (omkring 4 KB av dem är `repl`s, vars definition inte får överstiga 4 096 byte), omkring 13 KB på en server som inte kan köra skript. Uppskjutna verktyg går fortfarande att anropa vid namn hela tiden, och `search_tools` hittar dem utifrån avsikt. Se [Verktygskontext och promptcache](/sv-SE/handbok/koncept/verktygskontext/).
 
-`--tool-deferral off` gör varje tillåtet verktyg resident igen och återskapar de
-förfrågningar servern skickade innan uppskjutningen fanns. Det är dödarknappen för en
-modell som hanterar ytan i två nivåer dåligt – en flagga i stället för en ombyggnad.
-Den påverkar bara den inbyggda harnessen; den MCP-`tools/list` som externa klienter
-ser är alltid hela katalogen.
+`--tool-deferral off` skickar varje tillåtet verktygs definition i förväg, förutom att en körning med `repl` fortfarande anropar från skript de verktyg som ett skript får anropa. Det är dödarknappen för en modell som hanterar ytan i två nivåer dåligt – en flagga i stället för en ombyggnad. Den påverkar bara den inbyggda harnessen; den MCP-`tools/list` som externa klienter ser är hela katalogen, utom för en agentkörning på en server som kan köra skript i [Kodläge](/sv-SE/handbok/koncept/kodlage/).
 
 ### `--credential-gate`
 
@@ -146,6 +137,25 @@ ha misslyckats med.
 
 `--credential-gate=0` är dödarknappen: inget parkeras någonsin och en dålig
 autentiseringsuppgift avslutar turen precis som innan grinden fanns.
+
+### Kodläge
+
+[Kodläge](/sv-SE/handbok/koncept/kodlage/) låter en agent köra ett JavaScript-skript som anropar sina verktyg. Det finns ingen flagga som slår på eller av det: varje körning får verktyget `repl` när servern kan köra skript, och en offentlig demoserver kör inga.
+
+Skript körs i `cc_codemode`, ett program som följer med servern i `bin/codemode/`. Servern startar inte utan det: den skriver ut en rad med vad som saknas och avslutas med kod `78`. Vid start kör den programmets låsningsself-test och skriver ut en rad (tystas bara av `--log-level error`):
+
+```text
+cc_server: code_mode=available (cc_codemode 0.1.0 quickjs-ng 0.16.2 protocol 2; 16 scripts at once, at most 12 per workspace; up to 64 more runners kept for scripts waiting on a person; heap at most 1024 MiB per script)
+cc_server: code_mode=unavailable (<reason>) — runs on this host get no repl tool; scripts never run without full lockdown
+```
+
+`unavailable` betyder att programmet inte kan låsa sig självt på den här värden, till exempel i en container vars säkerhetsprofil nekar ett av sina steg, eller att det inte är ett release-bygge. Servern körs normalt, ingen körning får `repl`, och arbetsytans inställningar för kodläge visar skälet.
+
+Servern fortsätter att kontrollera medan den körs. När programmet inte startar av en orsak som inte beror på skriptet kör servern självtestet igen, högst en gång per minut. Om det misslyckas skriver servern ut raden `unavailable` med sitt skäl och kör inga skript: körningar som startar under tiden får ingen `repl`, och en körning som redan har den anropar sina verktyg direkt ([När skript inte kan köras](/sv-SE/handbok/koncept/kodlage/#när-skript-inte-kan-köras)). Den fortsätter att kontrollera, högst en gång per minut, och när självtestet lyckas igen skriver den ut raden `available` och kör skript igen. Bara ett självtest som misslyckades vid start kräver en omstart. Skälet som arbetsytans inställningar visar har värdsökvägar borttagna; loggraden har det helt.
+
+De två flaggorna för kodläge begränsar vad skript får använda. `--code-mode-max-processes` begränsar skripten som körs samtidigt över alla arbetsytor (standard dubbelt så många som processorkärnorna, högst 16; accepteras 1–64). Med ett tak på 2 eller mer använder en arbetsyta högst taket minus en fjärdedel av taket, så att ingen enskild arbetsyta kan ta alla platser, och väntande skript släpps in om tur över arbetsytorna. Ett skript som väntar på en persons godkännande eller svar ger sin plats till ett annat skript och startar inget verktygsanrop förrän det har fått svar; upp till fyra gånger taket av sådana väntande skript behålls, högst tre fjärdedelar av dem från en och samma arbetsyta, och var och en kan fortfarande räkna inom sin egen processortidsgräns. `--code-mode-max-heap-mb` är det högsta minne ett enskilt skript får använda.
+
+Ett värde som dessa flaggor inte accepterar (ett tal utanför intervallet, eller inte ett tal) stoppar servern vid start (utgångskod `78`) med ett meddelande som anger de godkända värdena. Det tolkas aldrig som standardvärdet.
 
 ## Underkommandon
 
@@ -251,6 +261,7 @@ Servern håller datakatalogen privat för sitt eget konto (`0700`). Den vägrar 
 | `backups/exports/`                | Exporter av enstaka arbetsytor, `<workspaceId>-<timestamp>.db`                   |
 | `backups/transfer/`               | Mellanlagring för ned- och uppladdning av säkerhetskopior; städas av rutten som skriver den |
 | `models/`                         | Inbäddnings-, diariserings- och talmodeller på enheten                           |
+| `codemode/` | En utvecklingskopia av kodlägeskörare, installerad av `scripts/natives/build_codemode.sh`; releasepaket bär den i `bin/codemode/` |
 | `meetings/<meetingId>/`           | Bevarat mötesljud                                                                |
 | `rigs/images/`                    | Importerade skivavbildningar för stationer (QEMU-skrivbordsytan)                 |
 | `rigs/smolvm/<rigId>/`            | Körtidstillstånd per station för microVM:er (brokerns hemlighet, `0600`)         |

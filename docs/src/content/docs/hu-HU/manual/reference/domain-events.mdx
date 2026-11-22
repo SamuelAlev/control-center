@@ -2,7 +2,7 @@
 title: Domainesemények
 description: Az 54 domainesemény teljes katalógusa, a payloadjaik és az őket fogyasztó szerveroldali előfizetők.
 slug: hu-HU/kezikonyv/referencia/domainesemenyek
-sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
+sourceHash: f58123448c0f31c95774bbaebee89f1509940896
 ---
 
 ## Eseménybusz
@@ -24,7 +24,10 @@ Az alábbi katalógus minden eseménye ebben az egy könyvtárban él; máshol n
 | Esemény | Payload | Akkor tüzel, amikor |
 | --- | --- | --- |
 | `WorkspaceCreated` | `workspaceId` | Létrejön a munkaterület |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Az ügynök befejez egy futást (sikeresen vagy sikertelenül) |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Az ügynök folyamatfolyama véget ér, mielőtt a végső állapot megíródna. Csak a PR-beszélgetés-hídhoz és az elemzéshez marad meg |
+| `AgentRunSettled` | `agentId`, `workspaceId`, `runId`, `status`, `endReason`, `costMicros`, `wakeIds`, `spaceId?`, `conversationId?`, `limitResetsAt?`, `requestedByUserId?`, `wakeReason?` | A futtatás végső állapota megíródik; futtatásonként pontosan egyszer teszik közzé. Az `endReason` értéke `completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` vagy `serverStopped`. Egy al-ügynök futtatása egyet sem tesz közzé |
+| `GoalSettled` | `goalId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `status`, `hold?`, `summary?`, `requestedByUserId?` | Egy cél véget ér, vagy egy személy átnézésére kezd várni |
+| `WakeRuleEnded` | `ruleId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `reason`, `requestedByUserId?` | Egy ütemezés vagy figyelő véget ér (egyszer lefutott, lejárt, kimerítette a futtatásait vagy költségét, törölték, a célja véget ért, vagy a személye kilépett) |
 | `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | Egy ügynök elkezd egy emberre várni: jóváhagyásra, egy `ask_user` kérdés megválaszolására, vagy egy futás egy hitelesítő adat miatt áll (a `kind` értéke `approval`, `question` vagy `credential`) |
 | `RepoAdded` | `repoId`, `path`, `workspaceId` | Regisztrálnak egy repót; elindítja a háttérbeli kódindexelést |
 | `SkillUpdated` | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Telepítenek vagy frissítenek egy készséget, hordozva az ellátásilánc-vizsgálat ítéletét |
@@ -57,6 +60,16 @@ Mind a hat hordozza a `workspaceId`, a `repoOwner`, a `repoName`, a `prNumber` �
 | `PrCommentMentioned` | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | Valaki megemlítette Önt egy PR-megjegyzésben vagy átnézési megjegyzésben |
 | `PrThreadReplied` | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?` | Valaki válaszolt egy olyan átnézési szálban, amelyben Ön benne van |
 | `PrThreadResolved` | `threadId`, `commentId?`, `path?`, `line?` | Valaki lezárt egy olyan átnézési szálat, amelyben Ön benne van |
+
+### A pull request-figyelő
+
+A nyitott pull request-lekérdező minden általa lekérdezett pull requestről közzéteszi, bárki írta is, az ügynökök `on:pr_*` figyelőihez. Mindhárom hordozza a `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `headRef` és `authorLogin` mezőt.
+
+| Esemény | További payload | Akkor tüzel, amikor |
+| ----------------------- | ----------------------------------------------- | ---------- |
+| `PrWatchChecksSettled` | `passing`, `failedChecks`, `failedCheckUrl?` | A pull request fejének minden ellenőrzése véget ért |
+| `PrWatchReviewActivity` | `decision`, `decisionChanged`, `newComments` | A pull requestre átnézés érkezett, vagy új hozzászólások |
+| `PrWatchClosed` | `merged` | A pull requestet összevonták vagy lezárták |
 
 ## Üzenetküldési események
 
@@ -167,14 +180,20 @@ Az alábbi előfizetők mindegyike a `runCcServer` belsejében jön létre (vagy
 | Csevegőtér-provisionálás (soron belüli) | `SpaceCreated` |
 | `PipelineTriggerDispatcher` | Minden `DomainEvent`; minden engedélyezett eseményindító a saját típusára szűr |
 | `SubPipelineResumeListener` | `PipelineRunCompleted`, `PipelineRunFailed` |
-| `PipelineCostRollupListener` | `AgentRunCompleted` |
-| `BudgetEvaluationListener` | `AgentRunCompleted` |
+| `PipelineCostRollupListener` | `AgentRunSettled`   |
+| `BudgetEvaluationListener` | `AgentRunSettled`   |
 | `MeetingSummaryReconciler` | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (csak `meeting_summary` futtatások esetén) |
-| `PipelineStepResumeListener` | `AgentRunCompleted` |
-| `AgentRunTaskCompleter` | `AgentRunCompleted` |
-| `GoalSupervisor` | `AgentRunCompleted` |
-| `CheckerDispatchListener` | `AgentRunCompleted` |
-| `TeamRoutingService` | `AgentRunCompleted`, `TicketAssigned` |
+| `PipelineStepResumeListener` | `AgentRunSettled`   |
+| `AgentRunTaskCompleter` | `AgentRunSettled`   |
+| `GoalSupervisor` | `AgentRunSettled` — eldönti a cél következő lépését |
+| `CheckerDispatchListener` | `AgentRunSettled` — ébresztésként sorba állítja az ellenőrzőt; kihagyja a célszakaszokat és átnézéseket |
+| `TeamRoutingService` | `AgentRunSettled`, `TicketAssigned`   |
+| `WakeQueueService` | `AgentRunSettled` — kézbesíti azokat az ébresztéseket, amelyek a futtatás végére vártak |
+| `WakeRuleService` | `AgentRunSettled` (magát ütemező ciklusok), `GoalSettled` (egy cél ütemezéseit lezárja), `PrWatch*`, `EnvironmentProcessExited`, `EnvironmentReady`, jegyek és pipeline-futtatások végei (figyelők), `WorkspaceMemberRemoved` (lezárja annak a személynek az ütemezéseit) |
+| `PeerAskService` | `AgentRunSettled` — lezárja azokat a kérdéseket, amelyeket az ügynökök egymásnak tettek fel, és felébreszti a kérdezőt |
+| `LimitParkService` | `AgentRunSettled` a `usageLimit`-tel — a szolgáltató visszaállására vár |
+| `ImprovementReviewService` | `GoalSettled` (egy ellenőrzött cél) és `AgentRunSettled` — sorba állítja a fejlesztési átnézést, és olvassa annak eredményét |
+| Pipeline-célú lépés (`goal.pursue`) | `GoalSettled`, `AgentRunSettled`, `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` — folytatja a lépést, terheli az orchestrációt, és követi a pipeline-futtatást |
 | `OrchestrationRunListener` | `PipelineRunCancelled`, `PipelineRunFailed` |
 | `MultiVendorTicketSyncCoordinator` | `TicketCreated`, `TicketAssigned`, `TicketReassigned`, `TicketStatusChanged`, `TicketDetailsUpdated` |
 | `WorktreeGcListener` | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged` |
@@ -227,6 +246,8 @@ Az állomás átvételéről szóló keretet nem kézbesítjük vissza annak, ak
 Az `AgentAwaitingInput` eseményt az `AgentAwaitingInputPublisher` teszi közzé, amely új bejegyzéseket keresve figyeli a jóváhagyások és a hitelesítőadat-blokkolások nyilvántartásait, az egyes `ask_user` kérdésekről pedig az `AgentQuestionService` értesíti. Egy várakozás egy esemény; amikor a várakozás véget ér, semmi sem kerül közzétételre.
 
 Az öt saját PR-höz tartozó kategória hordozza a `forUserId` értéket, így azok a szerzőhöz jutnak el, nem a munkaterület minden tagjához.
+
+Öt keret a hosszú futású munkához, mindegyik ahhoz a személyhez címezve, akit érint (`for_user_id`): `notifications/goal_settled` (a `GoalSettled`-ből), `notifications/wake_rule_ended` (a `WakeRuleEnded`-ből), `notifications/improvement_proposed`, `notifications/pipeline_run_held` (egy pipeline-futtatás, amelyet az orchestrációja költségplafonjánál visszatartottak) és `notifications/waiting_digest` (naponta egyszer: mi vár egy személyre). Mindegyik hordozza a `notification_kind` mezőt: a `notify` az `agentRunCompleted`-re, a `question` és a `review` az `agentAwaitingInput`-ra képződik le. Minden értesítő keret mostantól hordozza a `notification_kind` mezőt, és a `quiet: true` jelzésű keret (egy véget ért ütemezés, egy véget ért cél) toast, hang vagy hangos push nélkül kerül az értesítési központba.
 
 A `RemoteEventForwarder` ezenfelül továbbítja a `TicketReassigned` eseményt `notifications/ticket_reassigned` néven, és minden `TaskLifecycleEvent` eseményt `notifications/task_<phase>` néven. Egyik sem képeződik le értesítési kategóriára — élő felületet vezérelnek, nem az értesítési központot. A tagsági események nem kerülnek továbbításra keretként: érvénytelenítik a továbbító gyorsítótárát, a munkamenet-gazdák pedig eldobják az eltávolított tag munkaterület-előfizetéseit.
 

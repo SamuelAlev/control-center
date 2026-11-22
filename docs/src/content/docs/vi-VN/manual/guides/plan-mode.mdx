@@ -2,7 +2,7 @@
 title: Dùng chế độ kế hoạch
 description: Chuyển một space sang chế độ kế hoạch, nhận một kế hoạch có kiểu và phê duyệt nó thành công việc đang chạy.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/che-do-ke-hoach
-sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
+sourceHash: accf49606e5e8597d3ea76e3274f08d3854996dc
 ---
 
 Hướng dẫn này chỉ cho bạn cách lấy một kế hoạch có cấu trúc từ một agent trước
@@ -114,11 +114,7 @@ hoạch và agent không được hành động. Khi yêu cầu được phê du
 agent và mở khóa các công cụ thay đổi của nó. Một lần từ chối cho phép nó mở một
 yêu cầu mới cho một kế hoạch đã chỉnh sửa.
 
-Để rời chế độ kế hoạch, hãy đổi hộp chọn của trình soạn (hoặc Shift+Tab), hay phê
-duyệt kế hoạch đã gửi. `exit_plan_mode` mở một phê duyệt bền vững được quyết định
-bằng công cụ MCP `decide_approval`. Lớp phủ rào chắn cho các lời gọi công cụ bị
-chặn là một hàng đợi khác, nằm trong bộ nhớ, và không mang các yêu cầu thoát chế
-độ kế hoạch.
+Để rời chế độ kế hoạch, hãy đổi hộp chọn của trình soạn (hoặc Shift+Tab), hay phê duyệt kế hoạch đã gửi. `exit_plan_mode` mở một phê duyệt bền vững, mà một lần chạy agent quyết định bằng công cụ MCP `decide_approval`. Lớp phủ rào chắn cho các lời gọi công cụ bị chặn là một hàng đợi khác, nằm trong bộ nhớ, và không mang các yêu cầu thoát chế độ kế hoạch.
 
 ## Chế độ kế hoạch trong một bước quy trình
 

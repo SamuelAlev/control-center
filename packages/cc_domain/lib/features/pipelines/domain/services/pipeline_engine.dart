@@ -19,6 +19,7 @@ import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_statu
 import 'package:cc_domain/features/pipelines/domain/entities/step_kind.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/step_result.dart'
     show StepResult;
+import 'package:cc_domain/features/pipelines/domain/ports/pipeline_budget_gate.dart';
 import 'package:cc_domain/features/pipelines/domain/ports/pipeline_engine_port.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_run_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_template_repository.dart';
@@ -32,12 +33,15 @@ import 'package:cc_domain/features/pipelines/domain/services/step_process_regist
 import 'package:cc_domain/features/pipelines/domain/services/template_renderer.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart'
     show BuiltInBodyKeys;
+import 'package:cc_domain/features/pipelines/domain/templates/goal_pursue_config.dart'
+    show goalPursueStateKey, kGoalPursueBodyKey;
 import 'package:cc_domain/src/errors/app_exceptions.dart'
     show ValidationException;
 import 'package:uuid/uuid.dart';
 
 part 'pipeline_engine_admission.dart';
 part 'pipeline_engine_downstream.dart';
+part 'pipeline_engine_holds.dart';
 part 'pipeline_engine_recovery.dart';
 part 'pipeline_engine_steps.dart';
 
@@ -158,7 +162,7 @@ class PipelineEngine implements PipelineEnginePort {
   /// [resumeChildFlow].
   ///
   /// A fan-out step dispatches N agent runs and every one of them publishes
-  /// `AgentRunCompleted`; the listener asks whether they are ALL terminal, and
+  /// `AgentRunSettled`; the listener asks whether they are ALL terminal, and
   /// the last two to finish can both answer yes. Unserialized, both reach the
   /// resume path and — with a dozen awaits between reading the step's open row
   /// and writing it completed — both harvest. An `override` node hides that;
@@ -310,6 +314,53 @@ class PipelineEngine implements PipelineEnginePort {
   @override
   Future<void> resumeAll() => _resumeAll();
 
+  PipelineBudgetGate? _budgetGate;
+
+  /// Registers the gate checked before each step is dispatched (the
+  /// orchestration cap). Once; a second registration throws [StateError].
+  void registerBudgetGate(PipelineBudgetGate gate) {
+    if (_budgetGate != null) {
+      throw StateError('A budget gate is already registered');
+    }
+    _budgetGate = gate;
+  }
+
+  /// Resumes a run held by its budget gate once the gate lets it continue
+  /// (its cap was raised). False when it is not held or still at its cap.
+  Future<bool> resumeHeld(String workspaceId, String pipelineRunId) =>
+      _resumeHeld(workspaceId, pipelineRunId);
+
+  /// Holds [pipelineRunId] when its budget gate finds the cap reached (as
+  /// before a step dispatch) and returns whether it is held: a goal pursued
+  /// by one of its steps asks before each of its segments. False for a run
+  /// not in [workspaceId] or already ended.
+  Future<bool> holdIfOverBudget(
+    String workspaceId,
+    String pipelineRunId,
+  ) async {
+    final run = await repository.getRun(pipelineRunId);
+    if (run == null || run.workspaceId != workspaceId || run.isTerminal) {
+      return false;
+    }
+    return _heldByBudget(run);
+  }
+
+  /// Settles the open row of a step that waits on something outside a
+  /// dispatched run (`goal.pursue`) with what [result] makes of the step's
+  /// definition in the run's pinned graph. False when there is nothing to
+  /// settle.
+  Future<bool> settleSuspendedStep({
+    required String workspaceId,
+    required String pipelineRunId,
+    required String stepId,
+    required StepResult Function(PipelineStepDefinition step) result,
+  }) => _settleSuspended(
+    workspaceId: workspaceId,
+    pipelineRunId: pipelineRunId,
+    stepId: stepId,
+    outcome: result,
+  );
+
   /// Cancels a running pipeline: flips the run + step rows to cancelled and
   /// interrupts each in-flight step's live work via its registered kill
   /// callback — the same cleanup the per-step Stop button runs (`promptAgent`
@@ -459,9 +510,10 @@ class PipelineEngine implements PipelineEnginePort {
   ///
   /// Exempt: a step whose body is executing here (it is working, and its node
   /// timeout governs it), an approval gate or human gate (waiting days for a
-  /// person is its job), and a sub-pipeline call (the child run is swept on
-  /// its own). Waiting rows are kept `running` so the canvas doesn't say
-  /// "suspended" while an agent works, so both statuses are swept.
+  /// person is its job), a sub-pipeline call (the child run is swept on
+  /// its own) and a pursued goal (its own budget and deadline end it).
+  /// Waiting rows are kept `running` so the canvas doesn't say "suspended"
+  /// while an agent works, so both statuses are swept.
   Future<void> sweepStalledSteps() async {
     final now = DateTime.now();
     for (final run in await repository.nonTerminalRuns()) {
@@ -485,7 +537,8 @@ class PipelineEngine implements PipelineEnginePort {
         if (stepDef == null ||
             stepDef.config.extras['awaitApproval'] == true ||
             stepDef.bodyKey == BuiltInBodyKeys.humanGate ||
-            stepDef.bodyKey == BuiltInBodyKeys.callFlow) {
+            stepDef.bodyKey == BuiltInBodyKeys.callFlow ||
+            stepDef.bodyKey == kGoalPursueBodyKey) {
           continue;
         }
         final latest = await repository.getRun(run.id);

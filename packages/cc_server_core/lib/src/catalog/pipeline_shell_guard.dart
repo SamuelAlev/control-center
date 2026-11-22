@@ -1,6 +1,7 @@
 import 'package:cc_domain/cc_domain.dart'
     show AuthException, NotFoundException, ValidationException;
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_definition.dart';
+import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_definition.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_trigger.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_template_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_trigger_repository.dart';
@@ -17,6 +18,10 @@ bool hasShellStep(PipelineDefinition? template) =>
     pipelineHasShellStep(template);
 
 bool _isAdmin(RepoOpContext ctx) => ctx.role?.isAdmin ?? false;
+
+/// Whether [step] runs one of the server's `orchestration.*` bodies.
+bool _isOrchestrationStep(PipelineStepDefinition step) =>
+    step.bodyKey.startsWith('orchestration.');
 
 /// A trigger fires its pipeline with no RPC behind it, so arming one that
 /// runs a shell step — or editing one that does — is an admin decision, the
@@ -170,6 +175,10 @@ Future<PipelineTrigger> preparePipelineTriggerWrite(
 /// * Putting a step a member could not arm behind a trigger that is already
 ///   armed needs an admin too, or editing the template would bypass the gate
 ///   [preparePipelineTriggerWrite] puts on arming.
+/// * An `orchestration.*` step is the server's: only an orchestration's
+///   approval generates one. A client save, an admin's included, may keep
+///   the ones the stored template already has, unchanged, and adds none
+///   (refused as the unknown body it is to a client).
 Future<PipelineDefinition> preparePipelineTemplateWrite(
   RepoOpContext ctx, {
   required PipelineTemplateRepository templates,
@@ -183,6 +192,14 @@ Future<PipelineDefinition> preparePipelineTemplateWrite(
       stored.isBuiltIn &&
       incoming.copyWith(isBuiltIn: true, isEnabled: stored.isEnabled) == stored;
   final definition = incoming.copyWith(isBuiltIn: toggleOnly);
+  final generated = {...?stored?.steps.where(_isOrchestrationStep)};
+  for (final step in definition.steps.where(_isOrchestrationStep)) {
+    if (!generated.contains(step)) {
+      throw ValidationException(
+        'Step "${step.id}" uses unknown body "${step.bodyKey}".',
+      );
+    }
+  }
   if (_isAdmin(ctx)) {
     return definition;
   }

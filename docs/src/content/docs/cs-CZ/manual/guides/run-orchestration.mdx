@@ -2,7 +2,7 @@
 title: Spusťte orchestaci
 description: Požádej orchestrátora o plán, projdi ho a uprav v Plan Studio, schval jednou a nech vygenerovanou pipeline udělat práci.
 slug: cs-CZ/prirucka/navody/spusteni-orchestrace
-sourceHash: 086301be6c1957f6336294720967813c3050ed25
+sourceHash: cc4390cbac6c2122dd24c23bcef20693f40121bb
 ---
 
 Tenhle návod ukáže, jak z jednoho velkého cíle udělat plán pro celý tým, který
@@ -60,20 +60,13 @@ Než se rozhodneš, stiskni na liště schválení **Odhadnout**. Dostaneš rozs
 nákladů, trvání a dosahu dopadu. Celý editor je v
 [Pracujte v Plan Studio](/cs-CZ/prirucka/navody/plan-studio/).
 
-:::note[Rozpočet není limit útraty]
-Rozpočet návrhu se porovná s _odhadem_ na liště schválení. Když horní konec
-odhadu strop překročí, součet zčervená s varováním „nad rozpočtem“. Během
-provádění plánu útratu nikdo nehlídá, takže běh se kvůli tomu nezastaví ani
-neselže. Skutečné zastavení útraty zařídí politiky rozpočtu na agenta. Viz
-[Spravujte náklady](/cs-CZ/prirucka/navody/sprava-nakladu/).
+:::note[Rozpočet drží běh]
+Rozpočet návrhu se porovná s _odhadem_ na liště schválení. Když horní konec odhadu strop překročí, součet zčervená s varováním „nad rozpočtem“. Během provádění plánu server před každým novým krokem zkontroluje útratu. Na rozpočtu se běh podrží a nic nového nezačne; kroky, které už běží, dokončí. Kdo běh spustil, dostane oznámení a pokračuje tlačítkem **Zvýšit limit** na stránce běhu pipeline. Viz [Spravujte náklady](/cs-CZ/prirucka/navody/sprava-nakladu/).
 :::
 
 ## Krok 3: Schval
 
-Plán schval z karty v konverzaci, nebo z lišty schválení v Plan Studio.
-**Tohle je jediné rozhodnutí, které uděláš.** Schválit smí jen operátor:
-nástroj MCP na to není. Agent návrh podá a revize pošle. Schválení zůstane
-na tobě.
+Plán schval z karty v konverzaci, nebo z lišty schválení v Plan Studio. **Tohle je jediné rozhodnutí, které uděláš.** Schválit smí jen operátor: nástroj MCP na to není. Agent návrh podá a revize pošle. Schválení zůstane na tobě. Schválení vyžaduje právo zápisu do repozitářů prostoru a běh pak jedná za osobu, která plán schválila.
 
 Odtud deterministický materializátor (čistá funkce, bez LLM) udělá z návrhu
 skutečnou [pipeline](/cs-CZ/prirucka/koncepty/pipelines/) a postaví kostru:
@@ -108,11 +101,7 @@ ticket se označí jako dokončený a stav přejde na `completed`.
 Na kartě v konverzaci stiskni **Zrušit orchestraci**, nebo na liště schválení
 v Plan Studio **Zrušit běh**. Zrušení strhne práci, která právě běží.
 
-Orchestrace selže, když selže materializace, nebo když selže její vygenerovaný
-běh pipeline (průzkum, diskuse, syntéza nebo persist; tyhle kroky při selhání
-nepokračují). Vygenerované kroky **práce** při selhání vždy pokračují, takže
-jeden spadlý podřízený ticket běh neshodí. Překročení rozpočtu běh chybou
-neukončí a práh „selhaly všechny podřízené tickety“ orchestrace nemá.
+Orchestrace selže, když selže materializace, nebo když selže její vygenerovaný běh pipeline (průzkum, diskuse, syntéza nebo persist; tyhle kroky při selhání nepokračují). Vygenerované kroky **práce** při selhání vždy pokračují, takže jeden spadlý podřízený ticket běh neshodí. Dosažení rozpočtu běh pouze podrží, nemění ho na selhání, a prahu „selhaly všechny podřízené tickety“ orchestrace nemá.
 
 ## Související návody
 

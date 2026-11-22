@@ -5,7 +5,10 @@ import 'package:cc_domain/core/domain/ports/schema_validator_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_run.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_run_status.dart';
+import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_definition.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_trigger.dart';
+import 'package:cc_domain/features/pipelines/domain/entities/step_result.dart';
+import 'package:cc_domain/features/pipelines/domain/ports/pipeline_budget_gate.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_run_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_template_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_trigger_repository.dart';
@@ -152,6 +155,21 @@ class _FakePipelineEngine implements PipelineEngine {
       _stub();
   @override
   Future<void> sweepStalledSteps() => _stub();
+  @override
+  void registerBudgetGate(PipelineBudgetGate gate) => _stub();
+  @override
+  Future<bool> resumeHeld(String workspaceId, String pipelineRunId) =>
+      _stub();
+  @override
+  Future<bool> holdIfOverBudget(String workspaceId, String pipelineRunId) =>
+      _stub();
+  @override
+  Future<bool> settleSuspendedStep({
+    required String workspaceId,
+    required String pipelineRunId,
+    required String stepId,
+    required StepResult Function(PipelineStepDefinition step) result,
+  }) => _stub();
 
   Never _stub() => throw UnimplementedError('not called by dispatcher');
 }
@@ -314,6 +332,7 @@ void main() {
         dispatcher.start();
 
         final event = TicketAssigned(
+          assigningRunId: null,
           ticketId: 't-1',
           ticketTitle: 'Test',
           workspaceId: 'ws-1',
@@ -353,6 +372,7 @@ void main() {
         dispatcher.start();
 
         final event = TicketAssigned(
+          assigningRunId: null,
           ticketId: 't-1',
           ticketTitle: 'Test',
           workspaceId: 'ws-1',
@@ -385,6 +405,7 @@ void main() {
         dispatcher.start();
 
         final event = TicketAssigned(
+          assigningRunId: null,
           ticketId: 't-1',
           ticketTitle: 'Test',
           workspaceId: 'ws-1',
@@ -421,6 +442,7 @@ void main() {
         // TicketAssigned doesn't have 'status' in its payload, so trigger.matches
         // will compare payload['status'] (null) != 'done' → returns false.
         final event = TicketAssigned(
+          assigningRunId: null,
           ticketId: 't-1',
           ticketTitle: 'Test',
           workspaceId: 'ws-1',
@@ -453,6 +475,7 @@ void main() {
         dispatcher.start();
 
         final event = TicketAssigned(
+          assigningRunId: null,
           ticketId: 't-1',
           ticketTitle: 'Test',
           workspaceId: 'ws-1',
@@ -490,6 +513,7 @@ void main() {
         dispatcher.start();
 
         final event = TicketAssigned(
+          assigningRunId: null,
           ticketId: 't-1',
           ticketTitle: 'Test',
           workspaceId: 'ws-1',
@@ -524,6 +548,7 @@ void main() {
         dispatcher.start();
 
         final event = TicketAssigned(
+          assigningRunId: null,
           ticketId: 't-1',
           ticketTitle: 'Test',
           workspaceId: 'ws-1',
@@ -559,6 +584,7 @@ void main() {
         dispatcher.start();
 
         final event = TicketAssigned(
+          assigningRunId: null,
           ticketId: 't-42',
           ticketTitle: 'Fix Bug',
           ticketBody: 'body text',
@@ -612,6 +638,7 @@ void main() {
         dispatcher.start();
 
         final event = TicketAssigned(
+          assigningRunId: null,
           ticketId: 't-1',
           ticketTitle: 'Test',
           workspaceId: 'ws-1',
@@ -646,6 +673,7 @@ void main() {
         dispatcher.start();
 
         final event = TicketAssigned(
+          assigningRunId: null,
           ticketId: 't-1',
           ticketTitle: 'Test',
           workspaceId: 'ws-1',
@@ -664,6 +692,7 @@ void main() {
         // (We use a fresh _FakePipelineEngine because the dispatcher's engine
         // reference is shared — same instance.)
         final event2 = TicketAssigned(
+          assigningRunId: null,
           ticketId: 't-2',
           ticketTitle: 'Test 2',
           workspaceId: 'ws-1',
@@ -711,6 +740,7 @@ void main() {
 
         // Not started yet — publish an event.
         final event = TicketAssigned(
+          assigningRunId: null,
           ticketId: 't-1',
           ticketTitle: 'Test',
           workspaceId: 'ws-1',
@@ -750,6 +780,7 @@ void main() {
 
         // Fire one event — should be handled.
         final event = TicketAssigned(
+          assigningRunId: null,
           ticketId: 't-1',
           ticketTitle: 'Test',
           workspaceId: 'ws-1',
@@ -870,6 +901,7 @@ void main() {
 
       eventBus.publish(
         TicketAssigned(
+          assigningRunId: null,
           ticketId: 't-1',
           ticketTitle: 'Test',
           workspaceId: 'ws-1',

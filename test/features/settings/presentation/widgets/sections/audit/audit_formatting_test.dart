@@ -51,10 +51,6 @@ void main() {
         describeActivity(l10n, entry('server.backupNow')),
         'Backed up the server data',
       );
-      expect(
-        describeActivity(l10n, entry('space_read.markSpaceRead')),
-        'Marked the space as read',
-      );
     });
   });
 

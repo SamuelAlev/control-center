@@ -1644,54 +1644,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get mobileGoalBudgetExhausted => 'Buget atins';
 
   @override
-  String get mobileGoalGoal => 'Obiectiv';
-
-  @override
-  String get mobileGoalLoop => 'Ciclu';
-
-  @override
-  String mobileGoalKind(String kind) {
-    return 'Tip: $kind';
-  }
-
-  @override
-  String mobileGoalRuns(String count) {
-    return 'Rulări: $count';
-  }
-
-  @override
-  String get mobileGoalNoRunLimit => 'nelimitat';
-
-  @override
-  String mobileGoalProgress(
-    String runs,
-    String maxRuns,
-    String spent,
-    String cap,
-  ) {
-    return 'Rulări: $runs / $maxRuns · Cheltuit: $spent / $cap';
-  }
-
-  @override
-  String mobileGoalDeadline(String date) {
-    return 'Termen-limită: $date';
-  }
-
-  @override
   String mobileGoalFailures(String count) {
     return 'Rulări eșuate consecutiv: $count';
   }
 
   @override
-  String get mobileGoalSummary => 'Rezumatul finalizării';
-
-  @override
   String get mobileGoalFailedDescription =>
       'Supraveghetorul s-a oprit după eșecuri repetate. Verifică detaliile în conversație.';
-
-  @override
-  String get mobileGoalBudgetWall =>
-      'Termenul-limită sau numărul maxim de rulări a fost atins. Acest obiectiv nu poate fi reluat prin mărirea limitei de cost.';
 
   @override
   String get mobileGoalPause => 'Pune obiectivul în pauză';
@@ -2831,4 +2790,1346 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get runSandboxUnavailable =>
       'Acest server nu are sandbox, deci doar proprietarul lui poate rula aici agenți. Proprietarul poate instala sandbox-ul sau poate dezactiva sandboxing-ul pentru toată lumea.';
+
+  @override
+  String get scriptToolCalls => 'Apeluri de instrumente';
+
+  @override
+  String scriptCallCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de apeluri',
+      few: '$count apeluri',
+      one: '1 apel',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scriptCallsRunning(int count) {
+    return '$count în rulare';
+  }
+
+  @override
+  String scriptCallsOk(int count) {
+    return '$count reușite';
+  }
+
+  @override
+  String scriptCallsFailed(int count) {
+    return '$count eșuate';
+  }
+
+  @override
+  String scriptCallsDenied(int count) {
+    return '$count refuzate';
+  }
+
+  @override
+  String scriptCallsCancelled(int count) {
+    return '$count anulate';
+  }
+
+  @override
+  String scriptCallsQueued(int count) {
+    return '$count în coadă';
+  }
+
+  @override
+  String scriptCallsSkipped(int count) {
+    return '$count sărite';
+  }
+
+  @override
+  String get scriptStepQueued => 'În coadă';
+
+  @override
+  String get scriptStepSkipped => 'Sărit';
+
+  @override
+  String get scriptGroupLoop => 'Buclă';
+
+  @override
+  String get scriptGroupEach => 'Pentru fiecare';
+
+  @override
+  String get scriptGroupParallel => 'În paralel';
+
+  @override
+  String get scriptGroupFunction => 'Funcție';
+
+  @override
+  String scriptCallsHidden(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Afișează $count de apeluri în plus',
+      few: 'Afișează $count apeluri în plus',
+      one: 'Afișează 1 apel în plus',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptCallsUnplaced => 'Apeluri nepoziționate în script';
+
+  @override
+  String get scriptToolComputed => 'Instrument';
+
+  @override
+  String scriptStepSemantics(String subject, String state) {
+    return '$subject, $state';
+  }
+
+  @override
+  String get scriptSourceLabel => 'Script';
+
+  @override
+  String scriptSourceLines(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de linii',
+      few: '$count linii',
+      one: '1 linie',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptStateRunning => 'În rulare';
+
+  @override
+  String get scriptStateCompleted => 'Finalizat';
+
+  @override
+  String get scriptStateFailed => 'Eșuat';
+
+  @override
+  String get scriptStateTimedOut => 'Timpul a expirat';
+
+  @override
+  String get scriptStateCancelled => 'Anulat';
+
+  @override
+  String get scriptStateMemoryExceeded => 'Memorie insuficientă';
+
+  @override
+  String get scriptStateOutputExceeded => 'Prea multă ieșire';
+
+  @override
+  String get scriptStateSandboxError => 'Eroare sandbox';
+
+  @override
+  String get scriptStateRefused => 'Refuzat';
+
+  @override
+  String get scriptOriginLine => 'Dintr-un script pe care îl rulează agentul';
+
+  @override
+  String get codeModeTitle => 'Mod cod';
+
+  @override
+  String get codeModeAvailable => 'Disponibil';
+
+  @override
+  String get codeModeUnavailable => 'Indisponibil';
+
+  @override
+  String codeModeUnavailableNote(String reason) {
+    return 'Acest server nu poate rula scripturi, deci agenții de aici apelează instrumentele unul câte unul. Serverul spune: $reason';
+  }
+
+  @override
+  String get codeModeNoReason => 'nu a fost dat niciun motiv.';
+
+  @override
+  String get workKindUnknown =>
+      'Dintr-un motiv pe care această versiune nu îl cunoaște:';
+
+  @override
+  String get workRefusalUnknown => 'Serverul a refuzat acest lucru:';
+
+  @override
+  String workActionFailed(String error) {
+    return 'Nu a reușit: $error';
+  }
+
+  @override
+  String get wakeKindStopped => 'Reținută deoarece o persoană a oprit rularea.';
+
+  @override
+  String get wakeKindAttempts => 'Livrarea a eșuat de trei ori.';
+
+  @override
+  String get wakeKindAgentDeleted => 'Agentul nu mai există.';
+
+  @override
+  String get wakeKindAgentNotDispatchable => 'Agentul este retras.';
+
+  @override
+  String get wakeKindAgentPaused => 'Agentul este pus pe pauză.';
+
+  @override
+  String get wakeKindPersonRemoved =>
+      'Persoana în numele căreia acționează a părăsit spațiul de lucru.';
+
+  @override
+  String get wakeKindBudgetBlocked => 'Un buget blochează o rulare.';
+
+  @override
+  String get wakeKindTakeOver => 'O persoană a preluat worktree-ul.';
+
+  @override
+  String get wakeKindRateCapConversation =>
+      'Această conversație a pornit 30 de rulări din treziri în ultima oră.';
+
+  @override
+  String get wakeKindRateCapWorkspace =>
+      'Acest spațiu de lucru a pornit 300 de rulări din treziri în ultima oră.';
+
+  @override
+  String get wakeKindLiveRunNoInput =>
+      'Rularea live a agentului de aici nu primește intrare.';
+
+  @override
+  String get wakeKindLiveRunOtherOptions =>
+      'Rularea live a agentului de aici rulează altfel, deci aceasta pornește propria rulare după ea.';
+
+  @override
+  String get wakeKindLiveRunOtherPerson =>
+      'Rularea live a agentului de aici acționează pentru altcineva, deci aceasta pornește propria rulare după ea.';
+
+  @override
+  String get wakeKindDispatchRefused => 'Rularea nu a putut porni.';
+
+  @override
+  String get wakeKindSandboxUnavailable =>
+      'Niciun sandbox nu este disponibil pentru o rulare doar în citire.';
+
+  @override
+  String get wakeKindReadOnlyUnavailable =>
+      'Backend-ul acestui agent nu poate menține o rulare doar în citire.';
+
+  @override
+  String get wakeKindServerStopped =>
+      'O repornire a serverului a oprit rularea.';
+
+  @override
+  String get wakeKindServerRestarted =>
+      'Serverul a fost repornit în timpul rulării unei persoane.';
+
+  @override
+  String get wakeKindGuardFailed => 'O verificare înainte de livrare a eșuat.';
+
+  @override
+  String get wakeKindLimit =>
+      'Se așteaptă ca limita de utilizare a providerului să se reseteze.';
+
+  @override
+  String get wakeKindLimitRunLive =>
+      'Se așteaptă ca rularea de la limita de utilizare să se încheie.';
+
+  @override
+  String get wakeKindWakeMissed => 'Ratată cât timp serverul a fost oprit.';
+
+  @override
+  String get wakeKindPipelineRunEnded => 'Rularea sa de pipeline s-a încheiat.';
+
+  @override
+  String get wakeKindGoalEnded => 'Obiectivul său s-a încheiat.';
+
+  @override
+  String get wakeKindGoalBudgetExhausted =>
+      'Obiectivul său și-a consumat bugetul.';
+
+  @override
+  String get wakeKindGoalReviewStale =>
+      'Obiectivul s-a schimbat de la cererea acestei revizuiri.';
+
+  @override
+  String get wakeKindGoalPaused => 'Obiectivul său este pus pe pauză.';
+
+  @override
+  String get wakeKindGoalHeld => 'Obiectivul său este reținut.';
+
+  @override
+  String get wakeKindGoalStopped => 'Obiectivul său a fost oprit.';
+
+  @override
+  String get wakeKindAskSettled =>
+      'Întrebarea la care răspunde a fost deja rezolvată.';
+
+  @override
+  String get wakeKindRuleEnded => 'Programul său s-a încheiat.';
+
+  @override
+  String get wakeRefusalNotYours =>
+      'Această trezire acționează pentru altă persoană. Doar ea o poate livra sau relua.';
+
+  @override
+  String get wakeRefusalSettled => 'Această trezire s-a încheiat deja.';
+
+  @override
+  String get goalRefusalAlreadyActive =>
+      'Acest agent are deja un obiectiv activ.';
+
+  @override
+  String get goalRefusalNotInReview => 'Acest obiectiv nu așteaptă revizuire.';
+
+  @override
+  String get goalRefusalEvidenceIncomplete =>
+      'Dovezile obiectivului sunt incomplete.';
+
+  @override
+  String get goalRefusalClaimPending =>
+      'Afirmația că este terminat este încă verificată.';
+
+  @override
+  String get goalRefusalNotActiveSegment =>
+      'Acest obiectiv nu are niciun segment în rulare.';
+
+  @override
+  String get goalRefusalNotYours =>
+      'Doar persoana care a pornit acest obiectiv poate face asta.';
+
+  @override
+  String get goalRefusalNotPaused => 'Pune mai întâi obiectivul pe pauză.';
+
+  @override
+  String get goalRefusalContractInvalid =>
+      'Contractul obiectivului nu poate fi citit.';
+
+  @override
+  String get goalRefusalCheckerUnknown => 'Niciun agent nu are acest nume.';
+
+  @override
+  String get goalRefusalCheckerAmbiguous => 'Mai mulți agenți au acest nume.';
+
+  @override
+  String get goalRefusalCheckerIsGoalAgent =>
+      'Verificatorul trebuie să fie alt agent decât cel care face lucrul.';
+
+  @override
+  String get goalRefusalCommandInvalid => 'Acest obiectiv nu poate fi citit:';
+
+  @override
+  String get wakeRuleRefusalIntervalTooShort =>
+      'Intervalul este prea scurt. Alege cel puțin un minut.';
+
+  @override
+  String get wakeRuleRefusalTooSoon =>
+      'Ora aceasta este prea devreme. Alege una mai târziu.';
+
+  @override
+  String get wakeRuleRefusalLineageEnded =>
+      'Acest lanț de treziri și-a consumat rulările sau timpul.';
+
+  @override
+  String get wakeRuleRefusalWatchTargetUnreadable =>
+      'Nu poți citi ce ar urmări asta.';
+
+  @override
+  String get wakeRuleRefusalExpiryRequired =>
+      'Stabilește o dată de sfârșit sau un număr de rulări.';
+
+  @override
+  String get wakeRuleRefusalLimitReached =>
+      'Această conversație sau acest agent are deja câte programe i se permit.';
+
+  @override
+  String get wakeRuleRefusalInvalidWhen => 'Ora nu poate fi citită.';
+
+  @override
+  String get wakeRuleRefusalNoteTooLong => 'Nota este prea lungă.';
+
+  @override
+  String get wakeRuleRefusalExpiryTooLong => 'Sfârșitul este prea departe.';
+
+  @override
+  String get wakeRuleRefusalLimitOutOfRange =>
+      'O limită de rulări, zile sau buget este în afara intervalului.';
+
+  @override
+  String get wakeRuleRefusalNextOutsideLoop =>
+      'Doar o buclă își poate alege singură următoarea oră.';
+
+  @override
+  String get wakeRuleRefusalWatchRefused => 'Asta nu poate fi urmărită.';
+
+  @override
+  String get wakeRuleRefusalRuleEnded => 'Acest program s-a încheiat deja.';
+
+  @override
+  String get wakeRuleRefusalNotYours => 'Acest program aparține altcuiva.';
+
+  @override
+  String get wakeRuleEndFired => 'A rulat o singură dată.';
+
+  @override
+  String get wakeRuleEndExpired => 'A ajuns la data de sfârșit.';
+
+  @override
+  String get wakeRuleEndRunCap => 'Și-a consumat rulările.';
+
+  @override
+  String get wakeRuleEndCostCap => 'A ajuns la plafonul de cost.';
+
+  @override
+  String get wakeRuleEndGoalEnded => 'Obiectivul său s-a încheiat.';
+
+  @override
+  String get wakeRuleEndCancelled => 'A fost anulat.';
+
+  @override
+  String get wakeRuleEndMemberRemoved =>
+      'Persoana sa a părăsit spațiul de lucru.';
+
+  @override
+  String get wakeRuleEndInvalidRow => 'Setările salvate nu au putut fi citite.';
+
+  @override
+  String goalHoldWorking(int segment) {
+    final intl.NumberFormat segmentNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String segmentString = segmentNumberFormat.format(segment);
+
+    return 'Lucrează la segmentul $segmentString. Nu trebuie să facă nimeni nimic.';
+  }
+
+  @override
+  String get goalHoldWaiting =>
+      'Așteaptă lucrul care îi este datorat. Continuă singur.';
+
+  @override
+  String goalHoldWaitingUntil(String time) {
+    return 'Așteaptă lucrul care îi este datorat. Continuă singur cel târziu la $time.';
+  }
+
+  @override
+  String get goalHoldVerifying =>
+      'Spune că este terminat. Serverul își rulează verificările, apoi un revizor decide.';
+
+  @override
+  String get goalHoldLimit =>
+      'Pus pe pauză la limita de utilizare a providerului. Se reia singur după resetare.';
+
+  @override
+  String goalHoldLimitUntil(String time) {
+    return 'Pus pe pauză la limita de utilizare a providerului. Se reia singur la $time.';
+  }
+
+  @override
+  String get goalHoldPerson =>
+      'Se așteaptă ca o persoană să răspundă în conversație. Continuă după ce cineva răspunde.';
+
+  @override
+  String get goalHoldByPerson =>
+      'Pus pe pauză de o persoană. Rămâne pe pauză până când cineva îl reia.';
+
+  @override
+  String get goalHoldNeedsReview =>
+      'Așteaptă revizuire: nu poate continua singur. Aprobă-l ca terminat, reia-l sau anulează-l.';
+
+  @override
+  String get goalHoldBudget =>
+      'Și-a consumat bugetul. Mărește bugetul ca să poată continua.';
+
+  @override
+  String goalHoldLimitParks(int count, int max) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return 'Pauze la limita de utilizare: $countString din $maxString';
+  }
+
+  @override
+  String get goalHoldDetailStalled => 'Niciun progres în ultimele segmente.';
+
+  @override
+  String get goalHoldDetailStalledWaiting =>
+      'A așteptat 24 de ore pentru aceeași muncă, fără progres.';
+
+  @override
+  String get goalHoldDetailVerificationFailed => 'Ultima verificare a eșuat.';
+
+  @override
+  String get goalHoldDetailCannotVerify =>
+      'Verificatorul nu a putut stabili dacă este terminat.';
+
+  @override
+  String get goalHoldDetailSandboxUnavailable =>
+      'Nu este disponibil niciun sandbox pentru a-și rula verificările.';
+
+  @override
+  String get goalHoldDetailCheckerUnavailable =>
+      'Agentul verificator nu este disponibil. Alege alt verificator, apoi reia.';
+
+  @override
+  String get goalHoldDetailCheckBroken => 'Această verificare nu poate rula:';
+
+  @override
+  String get goalHoldDetailWakeSkipped => 'Trezirea sa nu a fost livrată.';
+
+  @override
+  String get goalHoldDetailClaimPending =>
+      'Afirmația sa că este terminat așteaptă o verificare.';
+
+  @override
+  String get goalHoldDetailUnanswered =>
+      'O întrebare sau o cerere de aprobare adresată unei persoane a rămas fără răspuns.';
+
+  @override
+  String get goalHoldDetailLimitParks =>
+      'A atins limitele de utilizare prea des. Verifică-l, apoi reia.';
+
+  @override
+  String get goalHoldDetailInput => 'Se așteaptă un răspuns în conversație.';
+
+  @override
+  String goalSegments(int run, int max) {
+    final intl.NumberFormat runNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String runString = runNumberFormat.format(run);
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return 'Segmentul $runString din $maxString';
+  }
+
+  @override
+  String goalSegmentsNoCap(int run) {
+    final intl.NumberFormat runNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String runString = runNumberFormat.format(run);
+
+    return 'Segmentul $runString, fără plafon';
+  }
+
+  @override
+  String goalMoney(String spent, String cap) {
+    return 'Cheltuit $spent din $cap';
+  }
+
+  @override
+  String goalDeadline(String time) {
+    return 'Termen $time';
+  }
+
+  @override
+  String get goalPipelineStep => 'Un pas de pipeline urmărește acest obiectiv.';
+
+  @override
+  String get goalSummaryHeading => 'Ultimul rezumat';
+
+  @override
+  String get goalDoneMeans => 'Terminat înseamnă';
+
+  @override
+  String get goalChecks => 'Verificări';
+
+  @override
+  String get goalBoundaries => 'Limite';
+
+  @override
+  String get goalStopWhen => 'Oprește-te și întreabă când';
+
+  @override
+  String get goalNoMachineCheck =>
+      'Nicio verificare automată. Un revizor judecă din ce poate citi.';
+
+  @override
+  String get goalCheckEnvironment => 'Sarcină de mediu';
+
+  @override
+  String goalLastCheck(int round, String time) {
+    final intl.NumberFormat roundNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String roundString = roundNumberFormat.format(round);
+
+    return 'Ultima verificare, runda $roundString, $time';
+  }
+
+  @override
+  String get goalClaim => 'Ce a afirmat';
+
+  @override
+  String get goalCheckPassed => 'Promovată';
+
+  @override
+  String goalCheckFailed(int code) {
+    return 'Eșuată, cod de ieșire $code';
+  }
+
+  @override
+  String get goalCheckTimedOut => 'Timpul a expirat';
+
+  @override
+  String get goalCheckNotRerun => 'Nerulată din nou: nimic nu s-a schimbat';
+
+  @override
+  String get goalCheckBroken => 'Nu poate rula';
+
+  @override
+  String get goalCriterionMet => 'Îndeplinit';
+
+  @override
+  String get goalCriterionUnmet => 'Neîndeplinit';
+
+  @override
+  String get goalCriterionCannotTell => 'Nu se poate spune';
+
+  @override
+  String get goalVerdictPass => 'Verdict: terminat';
+
+  @override
+  String get goalVerdictFail => 'Verdict: nu este terminat';
+
+  @override
+  String get goalVerdictCannotVerify => 'Verdict: nu s-a putut stabili';
+
+  @override
+  String get goalConcerns => 'Îngrijorări';
+
+  @override
+  String goalVerifiedBy(String agent) {
+    return 'Verificat de $agent';
+  }
+
+  @override
+  String get goalVerifiedBySelf =>
+      'Verificat de el însuși (fără verificator separat)';
+
+  @override
+  String get goalClosedByPerson =>
+      'Închis de o persoană fără o verificare reușită';
+
+  @override
+  String get goalApprove => 'Aprobă finalizarea';
+
+  @override
+  String get goalApproveTitle => 'Închizi acest obiectiv ca terminat?';
+
+  @override
+  String get goalApproveBody =>
+      'Nicio verificare nu l-a confirmat. Îl închizi pe cuvântul tău, iar obiectivul înregistrează că o persoană l-a închis neverificat.';
+
+  @override
+  String get goalApproveConfirm => 'Închide ca terminat';
+
+  @override
+  String get goalResumeNotYours =>
+      'Reluarea lui sau mărirea bugetului aparțin celui care l-a pornit.';
+
+  @override
+  String get goalChooseChecker => 'Alege alt verificator';
+
+  @override
+  String goalCheckerSet(String agent) {
+    return '$agent îl verifică acum. Reia ca să verifice din nou.';
+  }
+
+  @override
+  String get goalSchedules => 'Programe';
+
+  @override
+  String get goalRepeat => 'Repetă';
+
+  @override
+  String get goalCreateChecks => 'Verificări (opțional)';
+
+  @override
+  String get goalCreateCheckHint =>
+      'O comandă care reușește când lucrul este terminat';
+
+  @override
+  String get goalCreateAddCheck => 'Adaugă verificare';
+
+  @override
+  String get goalCreateRemoveCheck => 'Elimină verificarea';
+
+  @override
+  String get goalCreateSegmentCap => 'Plafon de segmente (opțional)';
+
+  @override
+  String get goalCreateSegmentInvalid =>
+      'Plafonul de segmente trebuie să fie un număr întreg, de cel puțin 1.';
+
+  @override
+  String get scheduleCreateTitle => 'Repetă un prompt';
+
+  @override
+  String get scheduleCadence => 'Cât de des';
+
+  @override
+  String get scheduleEveryMinutes => 'La fiecare N minute';
+
+  @override
+  String get scheduleEveryHours => 'La fiecare N ore';
+
+  @override
+  String get scheduleSelfPaced => 'În ritmul agentului';
+
+  @override
+  String get scheduleSelfPacedHint =>
+      'Agentul alege întârzierea după fiecare rulare, între 1 minut și 1 oră.';
+
+  @override
+  String get scheduleInterval => 'Interval';
+
+  @override
+  String get scheduleNote => 'Ce ar trebui să facă fiecare rulare?';
+
+  @override
+  String get scheduleCostCap => 'Plafon de cost în USD (opțional)';
+
+  @override
+  String get scheduleExpiryDays => 'Se termină după N zile (opțional)';
+
+  @override
+  String get scheduleCreateInvalid =>
+      'Alege un spațiu și un agent, scrie ce ar trebui să facă fiecare rulare și folosește numere întregi de cel puțin 1.';
+
+  @override
+  String get scheduleCreateButton => 'Pornește programul';
+
+  @override
+  String get scheduleCreateConfirmTitle => 'Pornești acest program?';
+
+  @override
+  String scheduleCreateConfirmEveryMinutes(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Rulează la fiecare $countString de minute, începând acum.',
+      few: 'Rulează la fiecare $countString minute, începând acum.',
+      one: 'Rulează în fiecare minut, începând acum.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleCreateConfirmEveryHours(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Rulează la fiecare $countString de ore, începând acum.',
+      few: 'Rulează la fiecare $countString ore, începând acum.',
+      one: 'Rulează în fiecare oră, începând acum.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scheduleCreateConfirmSelfPaced =>
+      'Rulează acum, apoi agentul alege când să ruleze din nou.';
+
+  @override
+  String get scheduleCreated => 'Programul a pornit. Apare în Programe.';
+
+  @override
+  String get schedulesTitle => 'Programe';
+
+  @override
+  String get schedulesLoadFailed => 'Programele nu au putut fi încărcate';
+
+  @override
+  String get schedulesEmpty => 'Niciun program sau urmărire';
+
+  @override
+  String get schedulesEmptyDescription =>
+      'Repetă un prompt din ecranul obiectivelor sau trimite /loop ori /schedule într-o conversație.';
+
+  @override
+  String get scheduleMissing =>
+      'Acest program nu mai este disponibil în acest spațiu de lucru.';
+
+  @override
+  String scheduleEvery(String interval) {
+    return 'La fiecare $interval';
+  }
+
+  @override
+  String get scheduleSelfPacedLoop => 'Buclă în ritmul agentului';
+
+  @override
+  String get scheduleCron => 'Program cron';
+
+  @override
+  String scheduleOnce(String time) {
+    return 'O dată, la $time';
+  }
+
+  @override
+  String scheduleWatch(String event) {
+    return 'Urmărire: $event';
+  }
+
+  @override
+  String get scheduleWatchPrChecks => 'verificările pull request-ului';
+
+  @override
+  String get scheduleWatchPrReview => 'revizuirile pull request-ului';
+
+  @override
+  String get scheduleWatchPrMerged => 'integrarea pull request-ului';
+
+  @override
+  String get scheduleWatchEnvironment => 'mediul';
+
+  @override
+  String get scheduleWatchTicket => 'tichetul';
+
+  @override
+  String get scheduleWatchPipelineRun => 'rularea de pipeline';
+
+  @override
+  String get scheduleStatusActive => 'Activ';
+
+  @override
+  String get scheduleStatusPaused => 'Pauză';
+
+  @override
+  String get scheduleStatusEnded => 'Încheiat';
+
+  @override
+  String scheduleWakes(String agent) {
+    return 'Trezește $agent';
+  }
+
+  @override
+  String scheduleNext(String time) {
+    return 'Următoarea rulare $time';
+  }
+
+  @override
+  String scheduleLast(String time) {
+    return 'Ultima rulare $time';
+  }
+
+  @override
+  String scheduleRuns(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString de rulări',
+      few: '$countString rulări',
+      one: '1 rulare',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleRunsOf(int count, int max) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return '$countString din $maxString rulări';
+  }
+
+  @override
+  String scheduleSkipped(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString de sărituri',
+      few: '$countString sărituri',
+      one: '1 săritură',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleEnds(String time) {
+    return 'Se termină $time';
+  }
+
+  @override
+  String scheduleChain(int count, String time) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return 'Parte dintr-un lanț: $countString rulări rămase, se termină $time';
+  }
+
+  @override
+  String get scheduleNoteAgent => 'Nota agentului, în cuvintele lui:';
+
+  @override
+  String get scheduleNotePerson => 'Nota unei persoane:';
+
+  @override
+  String scheduleActsFor(String name) {
+    return 'Acționează pentru $name';
+  }
+
+  @override
+  String get scheduleActsForBot => 'Nu acționează pentru nicio persoană';
+
+  @override
+  String get scheduleGoalBound => 'Se termină odată cu obiectivul său.';
+
+  @override
+  String get schedulePause => 'Pune pe pauză';
+
+  @override
+  String get scheduleResume => 'Reia';
+
+  @override
+  String get scheduleDelete => 'Șterge';
+
+  @override
+  String get scheduleRemove => 'Elimină';
+
+  @override
+  String get scheduleDeleteTitle => 'Ștergi acest program?';
+
+  @override
+  String get scheduleDeleteBody =>
+      'Nu mai pornește niciodată. Ce a făcut deja nu se anulează.';
+
+  @override
+  String get scheduleRemoveTitle => 'Elimini acest program?';
+
+  @override
+  String get scheduleRemoveBody => 'Dispare din listă.';
+
+  @override
+  String get scheduleResumeNotYours =>
+      'Doar persoana în numele căreia acționează acest program o poate relua.';
+
+  @override
+  String get scheduleResumeAdminOnly =>
+      'Doar un admin al spațiului de lucru poate relua un program pe care nicio persoană nu îl deține.';
+
+  @override
+  String get scheduleOpenConversation => 'Deschide conversația';
+
+  @override
+  String get progressWaiting => 'În așteptare';
+
+  @override
+  String get progressNothingWaiting => 'Nimic nu așteaptă.';
+
+  @override
+  String get wakeOriginGoal => 'Obiectiv';
+
+  @override
+  String get wakeOriginGoalCheck => 'Verificare obiectiv';
+
+  @override
+  String get wakeOriginGoalReview => 'Revizuire obiectiv';
+
+  @override
+  String get wakeOriginSchedule => 'Program';
+
+  @override
+  String get wakeOriginWatch => 'Urmărire';
+
+  @override
+  String get wakeOriginReply => 'Răspuns';
+
+  @override
+  String get wakeOriginMessage => 'Mesaj';
+
+  @override
+  String get wakeOriginWorkFinished => 'Lucru terminat';
+
+  @override
+  String get wakeOriginLimitReset => 'Limită resetată';
+
+  @override
+  String get wakeOriginRecovery => 'Recuperare';
+
+  @override
+  String get wakeOriginAssignment => 'Atribuire';
+
+  @override
+  String get wakeOriginPipelineStep => 'Pas de pipeline';
+
+  @override
+  String get wakeOriginImprovementReview => 'Revizuire de îmbunătățiri';
+
+  @override
+  String wakeOriginReplyFrom(String agent) {
+    return 'Răspuns de la $agent';
+  }
+
+  @override
+  String wakeOriginMessageFrom(String agent) {
+    return 'Mesaj de la $agent';
+  }
+
+  @override
+  String wakeOriginWorkFinishedBy(String agent) {
+    return 'Lucru terminat de $agent';
+  }
+
+  @override
+  String wakeFor(String agent) {
+    return 'Pentru $agent';
+  }
+
+  @override
+  String wakeDue(String time) {
+    return 'Scadentă $time';
+  }
+
+  @override
+  String get wakeDueNow => 'Scadentă acum';
+
+  @override
+  String get wakeHeld => 'Reținută';
+
+  @override
+  String wakeExpires(String time) {
+    return 'Expiră $time';
+  }
+
+  @override
+  String wakeAttempt(int attempt) {
+    final intl.NumberFormat attemptNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String attemptString = attemptNumberFormat.format(attempt);
+
+    return 'Încercarea $attemptString';
+  }
+
+  @override
+  String get wakeCancel => 'Anulează';
+
+  @override
+  String get wakeDeliverNow => 'Livrează acum';
+
+  @override
+  String get wakeResume => 'Reia';
+
+  @override
+  String get wakeDismiss => 'Renunță';
+
+  @override
+  String get wakeResumeOnlyTheirs =>
+      'Doar persoana a cărei rulare este aceasta o poate relua.';
+
+  @override
+  String get wakeRecovery =>
+      'Serverul a fost repornit în timpul acestei rulări. Reia-o ca să continue, sau renunță.';
+
+  @override
+  String limitParkTitle(String provider, String time) {
+    return 'Pusă pe pauză la limita de utilizare a $provider, care se resetează la $time. Rularea așteaptă ca Reia să fie apăsat, timp de până la 7 zile după resetare.';
+  }
+
+  @override
+  String limitParkTitleUnnamed(String time) {
+    return 'Pusă pe pauză la limita de utilizare a providerului, care se resetează la $time. Rularea așteaptă ca Reia să fie apăsat, timp de până la 7 zile după resetare.';
+  }
+
+  @override
+  String get limitParkResumeNow => 'Reia acum';
+
+  @override
+  String get limitParkCancel => 'Anulează';
+
+  @override
+  String limitParkResumed(String provider) {
+    return 'Reluat după limita de utilizare a $provider.';
+  }
+
+  @override
+  String limitParkGone(String provider) {
+    return 'Nu mai așteaptă la limita de utilizare a $provider.';
+  }
+
+  @override
+  String get limitParkProviderUnknown => 'providerului';
+
+  @override
+  String get mobileHeldMessages => 'Mesaje reținute';
+
+  @override
+  String get heldSteeringTitle =>
+      'Reținute deoarece rularea s-a încheiat înainte să le poată prelua. Trimite-le pe ale tale acum sau elimină-le.';
+
+  @override
+  String get heldSteeringRelease => 'Trimite mesajele reținute';
+
+  @override
+  String get notifGoalCompleted => 'Obiectiv terminat';
+
+  @override
+  String get notifGoalFailed => 'Obiectiv eșuat';
+
+  @override
+  String get notifGoalCancelled => 'Obiectiv anulat';
+
+  @override
+  String get notifGoalBudgetExhausted => 'Obiectivul și-a consumat bugetul';
+
+  @override
+  String get notifGoalNeedsReview => 'Un obiectiv așteaptă revizuirea ta';
+
+  @override
+  String get notifGoalNeedsPerson => 'Un obiectiv are nevoie de tine';
+
+  @override
+  String get notifGoalOnHold => 'Un obiectiv este reținut';
+
+  @override
+  String get notifWakeRuleEnded => 'Un program s-a încheiat';
+
+  @override
+  String notifWaitingDigest(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString de lucruri te așteaptă',
+      few: '$countString lucruri te așteaptă',
+      one: '1 lucru te așteaptă',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notifImprovementProposed(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Au fost propuse $countString de îmbunătățiri',
+      few: 'Au fost propuse $countString îmbunătățiri',
+      one: 'A fost propusă o îmbunătățire',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notifPipelineRunHeld =>
+      'O rulare de pipeline este reținută la buget';
+
+  @override
+  String notifPipelineRunHeldBody(String spent, String cap) {
+    return 'Cheltuit $spent din $cap';
+  }
+
+  @override
+  String get notifNeedsYou => 'Are nevoie de tine';
+
+  @override
+  String get notifDigestGoalReview => 'Obiectivul așteaptă revizuire';
+
+  @override
+  String get notifDigestGoalPerson => 'Obiectivul are nevoie de o persoană';
+
+  @override
+  String get notifDigestHeldWake => 'Trezire reținută';
+
+  @override
+  String get notifDigestImprovement => 'Îmbunătățire propusă';
+
+  @override
+  String get wakeKindRulePaused => 'Programul său a fost pus pe pauză.';
+
+  @override
+  String get wakeKindRuleBusy =>
+      'Agentul era ocupat, iar acest program sare peste o pornire când se întâmplă asta.';
+
+  @override
+  String get wakeKindRuleFolded =>
+      'A luat locul unui eveniment ulterior al aceleiași urmăriri.';
+
+  @override
+  String get wakeKindRuleSuperseded =>
+      'A fost înlocuită de un moment ulterior al programului său.';
+
+  @override
+  String get wakeKindRuleNotified =>
+      'Programul său doar trimite o notificare, deci nu a pornit nicio rulare.';
+
+  @override
+  String get wakeKindRuleLimitParked =>
+      'Programul său așteaptă ca limita de utilizare a providerului să se reseteze.';
+
+  @override
+  String get improvementRefusalCooldown =>
+      'O revizuire a îmbunătățirilor a rulat în această conversație nu cu mult timp în urmă. Încearcă din nou mai târziu.';
+
+  @override
+  String get improvementRefusalQueued =>
+      'O revizuire a îmbunătățirilor din această conversație așteaptă deja să ruleze.';
+
+  @override
+  String get improvementRefusalAgentNotFound =>
+      'Acest agent nu face parte din acest spațiu de lucru.';
+
+  @override
+  String get steeringRefusalHeldByLimit =>
+      'Mesajele reținute la limita de utilizare nu pot fi trimise manual. Așteaptă ca rularea pusă pe pauză să reia.';
+
+  @override
+  String limitParkCancelled(String provider) {
+    return 'Așteptarea la limita de utilizare a $provider a fost anulată.';
+  }
+
+  @override
+  String limitParkExpired(String provider) {
+    return 'Așteptarea la limita de utilizare a $provider a expirat înainte ca rularea să reia.';
+  }
+
+  @override
+  String limitParkSkipped(String provider) {
+    return 'Rularea nu a reluat după limita de utilizare a $provider.';
+  }
+
+  @override
+  String get heldSteeringLimitTitle =>
+      'Reținute cât timp rularea așteaptă resetarea limitei de utilizare. Sunt trimise când persoana pentru care rulează o reia.';
+
+  @override
+  String heldSteeringLimitAt(String time) {
+    return 'Reținute până când limita de utilizare se resetează la $time. Sunt trimise când persoana pentru care rulează o reia.';
+  }
+
+  @override
+  String get heldSteeringOtherTitle => 'Reținute de server. Le poți elimina.';
+
+  @override
+  String workRowWoke(int count, String agent) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'A trezit $agent pentru $countString de elemente în așteptare',
+      few: 'A trezit $agent pentru $countString elemente în așteptare',
+      one: 'A trezit $agent',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String workRowWakeMissed(String agent) {
+    return 'O trezire pentru $agent a fost ratată cât timp serverul era oprit.';
+  }
+
+  @override
+  String workRowWakeSkipped(String agent) {
+    return 'O trezire pentru $agent nu a fost livrată.';
+  }
+
+  @override
+  String workRowScheduleCreated(String agent) {
+    return 'Program setat pentru $agent.';
+  }
+
+  @override
+  String workRowScheduleEnded(String agent) {
+    return 'Programul lui $agent s-a încheiat.';
+  }
+
+  @override
+  String workRowNoteFromAgent(String agent) {
+    return 'Notă de program de la $agent:';
+  }
+
+  @override
+  String get workRowNoteFromPerson => 'Notă de program de la o persoană:';
+
+  @override
+  String workRowCommandRefusedNamed(String command) {
+    return 'Comanda $command a fost refuzată.';
+  }
+
+  @override
+  String get workRowCommandRefused => 'O comandă a fost refuzată.';
+
+  @override
+  String workRowCapRaised(String person, String from, String to) {
+    return '$person a mărit plafonul de cheltuieli al pipeline-ului de la $from la $to.';
+  }
+
+  @override
+  String workRowCapRaisedNoAmounts(String person) {
+    return '$person a mărit plafonul de cheltuieli al pipeline-ului.';
+  }
+
+  @override
+  String get workRowApplyIncomplete =>
+      'O modificare acceptată a acestei abilități nu a putut fi finalizată, deoarece abilitatea s-a schimbat între timp. Propunerea a fost anulată.';
+
+  @override
+  String get workRowOpenSchedule => 'Deschide programul';
+
+  @override
+  String get heldSteeringOthersTitle =>
+      'Reținute deoarece rularea s-a încheiat înainte să le poată prelua. Doar persoana care a scris un mesaj îl poate trimite.';
+
+  @override
+  String get heldSteeringOnlyYours =>
+      'Trimite doar mesajele tale. Celelalte așteaptă persoanele care le-au scris.';
+
+  @override
+  String heldSteeringWrittenBy(String name) {
+    return 'Scris de $name';
+  }
+
+  @override
+  String get steeringRefusalNotYours =>
+      'Doar persoana care a scris un mesaj reținut îl poate trimite, iar niciunul dintre acestea nu este al tău.';
+
+  @override
+  String get steeringRefusalNeedsWrite =>
+      'Ai nevoie de acces de scriere la depozitele acestui spațiu pentru a direcționa o rulare care acționează în numele altcuiva.';
+
+  @override
+  String workRowSchedulePaused(String name, String agent) {
+    return '$name a pus pe pauză programul pentru $agent.';
+  }
+
+  @override
+  String get goalVerdictObjective => 'Obiectivul în ansamblu';
+
+  @override
+  String get notifDigestRequest => 'Așteaptă răspunsul tău';
 }

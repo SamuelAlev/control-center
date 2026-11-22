@@ -1,13 +1,18 @@
 import 'dart:typed_data';
 
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_domain/core/domain/value_objects/message_attachment.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
+import 'package:cc_domain/features/code_mode/domain/value_objects/script_call_site.dart';
 import 'package:cc_domain/features/dispatch/domain/context/conversation_summarizer.dart';
 import 'package:cc_domain/features/dispatch/domain/context/conversation_token_estimator.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/still_in_flight_row.dart';
 import 'package:cc_harness/context.dart';
+import 'package:cc_infra/src/dispatch/still_in_flight_lines.dart';
 import 'package:cc_infra/src/messaging/conversation_compaction_service.dart';
+import 'package:cc_infra/src/messaging/still_in_flight_notes.dart';
 import 'package:test/test.dart';
 
 /// Minimal in-memory [MessagingRepository] covering only the methods the
@@ -40,10 +45,7 @@ class _FakeRepo implements MessagingRepository {
   }
 
   @override
-  Future<Message?> getMessageById(
-    String workspaceId,
-    String messageId,
-  ) async {
+  Future<Message?> getMessageById(String workspaceId, String messageId) async {
     for (final m in _messages) {
       if (m.id == messageId) {
         return m;
@@ -82,13 +84,13 @@ class _FakeRepo implements MessagingRepository {
         spaceId: spaceId,
         conversationId: conversationId ?? spaceId,
         senderId: senderId,
-        senderType: senderType == 'user'
-            ? SenderType.user
-            : SenderType.agent,
+        senderType: senderType == 'user' ? SenderType.user : SenderType.agent,
         content: content,
-        messageType: messageType == 'compaction'
-            ? MessageType.compaction
-            : MessageType.text,
+        messageType: switch (messageType) {
+          'compaction' => MessageType.compaction,
+          'system' => MessageType.system,
+          _ => MessageType.text,
+        },
         metadata: metadata,
         createdAt: DateTime.utc(2026, 1, 1, 0, 0, _seq),
       ),
@@ -213,7 +215,7 @@ void main() {
       workspaceId: ws,
       spaceId: 'c',
       contextWindowTokens: 8000,
-      selfAgentName: 'architect',
+      self: (id: null, name: 'architect'),
     );
 
     expect(outcome.compactionMessageId, isNotNull);
@@ -242,7 +244,7 @@ void main() {
       workspaceId: ws,
       spaceId: 'c',
       contextWindowTokens: 200000,
-      selfAgentName: 'a',
+      self: (id: null, name: 'a'),
     );
     expect(outcome.didSomething, isFalse);
   });
@@ -268,45 +270,48 @@ void main() {
       workspaceId: ws,
       spaceId: 'c',
       contextWindowTokens: 20000,
-      selfAgentName: 'a',
+      self: (id: null, name: 'a'),
     );
     expect(outcome.prunedTokens, greaterThan(0));
   });
 
-  test('pruning re-stamps transcriptChars from the rewritten segments', () async {
-    final fat = _turn('a0', 'ok', 1, fat: 'Z' * 200000);
-    final messages = <Message>[
-      _user('u0', 'go', 0),
-      fat.copyWith(
-        metadata: {
-          ...?fat.metadata,
-          'transcriptChars': transcriptCharCount(fat.transcript),
-        },
-      ),
-      _user('u1', 'more', 2),
-      _turn('a1', 'sure', 3),
-      _user('u2', 'again', 4),
-      _turn('a2', 'yes', 5),
-    ];
-    final repo = _FakeRepo(messages);
-    final service = ConversationCompactionService(
-      repo: repo,
-      summarizer: const StructuralConversationSummarizer(),
-      config: const CompactionConfig(keepTurns: 2, buffer: 500),
-      now: () => DateTime.utc(2026, 1, 2),
-    );
-    await service.maintain(
-      workspaceId: ws,
-      spaceId: 'c',
-      contextWindowTokens: 20000,
-      selfAgentName: 'a',
-    );
+  test(
+    'pruning re-stamps transcriptChars from the rewritten segments',
+    () async {
+      final fat = _turn('a0', 'ok', 1, fat: 'Z' * 200000);
+      final messages = <Message>[
+        _user('u0', 'go', 0),
+        fat.copyWith(
+          metadata: {
+            ...?fat.metadata,
+            'transcriptChars': transcriptCharCount(fat.transcript),
+          },
+        ),
+        _user('u1', 'more', 2),
+        _turn('a1', 'sure', 3),
+        _user('u2', 'again', 4),
+        _turn('a2', 'yes', 5),
+      ];
+      final repo = _FakeRepo(messages);
+      final service = ConversationCompactionService(
+        repo: repo,
+        summarizer: const StructuralConversationSummarizer(),
+        config: const CompactionConfig(keepTurns: 2, buffer: 500),
+        now: () => DateTime.utc(2026, 1, 2),
+      );
+      await service.maintain(
+        workspaceId: ws,
+        spaceId: 'c',
+        contextWindowTokens: 20000,
+        self: (id: null, name: 'a'),
+      );
 
-    final pruned = (await repo.getMessageById(ws, 'a0'))!;
-    final stamped = pruned.metadata!['transcriptChars'] as int;
-    expect(stamped, transcriptCharCount(pruned.transcript));
-    expect(stamped, lessThan(200000));
-  });
+      final pruned = (await repo.getMessageById(ws, 'a0'))!;
+      final stamped = pruned.metadata!['transcriptChars'] as int;
+      expect(stamped, transcriptCharCount(pruned.transcript));
+      expect(stamped, lessThan(200000));
+    },
+  );
 
   test('heals a stale transcriptChars left by an earlier prune', () async {
     final prunedTool = ToolSegment(
@@ -347,12 +352,80 @@ void main() {
       workspaceId: ws,
       spaceId: 'c',
       contextWindowTokens: 200000,
-      selfAgentName: 'a',
+      self: (id: null, name: 'a'),
     );
 
     expect(outcome.didSomething, isFalse);
     final healed = (await repo.getMessageById(ws, 'a0'))!;
     expect(healed.metadata!['transcriptChars'], transcriptCharCount(segments));
+  });
+
+  test('shaking images keeps the rest of a nested row: its parent, outcome, '
+      'call site and attachments', () async {
+    const attachment = MessageAttachment(
+      id: 'att-1',
+      path: 'blobs/att-1',
+      name: 'shot.png',
+      kind: AttachmentKind.image,
+    );
+    final nested = ToolSegment(
+      toolName: 'browser_use',
+      toolCallId: 'n1',
+      outputs: 'clicked',
+      status: ToolSegmentStatus.ok,
+      startedAt: DateTime.utc(2026),
+      durationMs: 4,
+      images: const [ToolImageRef(ref: 'blob-shot')],
+      attachments: const [attachment],
+      parentToolCallId: 'repl-1',
+      callSite: ScriptCallSite(3, 7),
+      outcome: 'denied',
+    );
+    final old = Message(
+      id: 'a0',
+      spaceId: 'c',
+      conversationId: 'c',
+      senderId: 'agent',
+      senderType: SenderType.agent,
+      content: 'ok',
+      messageType: MessageType.agentTurn,
+      metadata: {
+        'segments': encodeTranscript([
+          nested,
+          TextSegment(text: 'ok', startedAt: DateTime.utc(2026)),
+        ]),
+      },
+      createdAt: DateTime.utc(2026, 1, 1, 0, 0, 1),
+    );
+    final repo = _FakeRepo([
+      _user('u0', 'go', 0),
+      old,
+      _user('u1', 'more', 2),
+      _turn('a1', 'sure', 3),
+    ]);
+    final service = ConversationCompactionService(
+      repo: repo,
+      summarizer: const StructuralConversationSummarizer(),
+    );
+
+    final outcome = await service.shake(
+      workspaceId: ws,
+      spaceId: 'c',
+      target: ShakeTarget.images,
+    );
+
+    expect(outcome.imagesDropped, 1);
+    final shaken = (await repo.getMessageById(
+      ws,
+      'a0',
+    ))!.transcript.whereType<ToolSegment>().single;
+    expect(shaken.images, isEmpty);
+    // Field by field, as stored (a read-back start time is local, not UTC).
+    expect(shaken.toJson(), nested.copyWith(images: const []).toJson());
+    expect(shaken.parentToolCallId, 'repl-1');
+    expect(shaken.outcome, 'denied');
+    expect(shaken.callSite, ScriptCallSite(3, 7));
+    expect(shaken.attachments, [attachment]);
   });
 
   test(
@@ -384,7 +457,7 @@ void main() {
         spaceId: 'c',
         conversationId: 'thread-1',
         contextWindowTokens: 8000,
-        selfAgentName: 'architect',
+        self: (id: null, name: 'architect'),
         force: true,
       );
 
@@ -399,4 +472,174 @@ void main() {
       expect(summary.compactionReason, 'manual');
     },
   );
+
+  group('the Still in flight block on the conversation lane', () {
+    List<Message> history() {
+      final messages = <Message>[
+        _user('u0', 'IMPORTANT: tabs not spaces', 0),
+        _turn('a0', 'noted', 1, fat: 'X' * 40000),
+      ];
+      var sec = 2;
+      for (var i = 0; i < 12; i++) {
+        messages.add(_user('u${i + 1}', 'step $i', sec++));
+        messages.add(
+          _turn('a${i + 1}', 'did step $i', sec++, fat: 'Y' * 40000),
+        );
+      }
+      return messages;
+    }
+
+    var questions = <PendingPersonQuestion>[];
+    var keys = <String>[];
+    StillInFlightLines lines() => StillInFlightLines(
+      localTime: (at) => 'T',
+      ports: StillInFlightPorts(
+        activeGoal: (_, _) async => null,
+        rules: (_, _) async => const [],
+        pendingAsks: (_, _, _) async => const [],
+        messageText: (_, _) async => null,
+        agentName: (_, _) async => null,
+        personQuestions: (_, _, _) async => questions,
+        storedKeys: (_, _, _) async => keys,
+      ),
+    );
+
+    ConversationCompactionService service(_FakeRepo repo) =>
+        ConversationCompactionService(
+            repo: repo,
+            summarizer: const StructuralConversationSummarizer(),
+            config: const CompactionConfig(
+              keepTurns: 3,
+              buffer: 1000,
+              prune: false,
+            ),
+            now: () => DateTime.utc(2026, 1, 2),
+          )
+          ..stillInFlight = StillInFlightNotes(
+            messages: repo,
+            lines: lines(),
+            now: () => DateTime.utc(2026, 1, 2, 9, 30),
+          );
+
+    List<Message> blocks(_FakeRepo repo, {bool live = true}) => [
+      for (final m in repo._messages)
+        if (stillInFlightRowAgent(m) == 'agent-1' && (!live || !m.compacted))
+          m,
+    ];
+
+    test('a summary is followed by one block, built from rows, that the '
+        'next compaction supersedes instead of stacking', () async {
+      questions = [
+        (text: 'Which database should the cache use?', askedAt: DateTime(2026)),
+      ];
+      keys = ['plan', 'notes'];
+      final repo = _FakeRepo(history());
+      final compactor = service(repo);
+      final first = await compactor.maintain(
+        workspaceId: ws,
+        spaceId: 'c',
+        contextWindowTokens: 8000,
+        self: (id: 'agent-1', name: 'architect'),
+        force: true,
+      );
+      expect(first.compactionMessageId, isNotNull);
+      final block = blocks(repo).single;
+      expect(block.isSystem, isTrue);
+      expect(isStillInFlightBlock(block.content), isTrue);
+      expect(
+        block.content,
+        startsWith(
+          '## Still in flight (from the server at 2026-01-02 09:30 UTC; '
+          'refresh before relying on it)',
+        ),
+      );
+      expect(
+        block.content,
+        contains(
+          '- Asked: a person "Which database should the cache use?" '
+          '(unanswered since T) → the answer comes back to you',
+        ),
+      );
+      expect(
+        block.content,
+        contains('- Stored: "notes", "plan" → load(key) in a repl script'),
+      );
+      // The block comes after the summary, in the summary's conversation.
+      expect(repo._messages.last.id, block.id);
+
+      repo._messages.addAll([
+        for (var i = 0; i < 8; i++) _user('v$i', 'more $i ${'Z' * 30000}', 100 + i),
+      ]);
+      await compactor.maintain(
+        workspaceId: ws,
+        spaceId: 'c',
+        contextWindowTokens: 8000,
+        self: (id: 'agent-1', name: 'architect'),
+        force: true,
+      );
+      expect(blocks(repo), hasLength(1), reason: 'only one block is live');
+      expect(blocks(repo, live: false), hasLength(2));
+      expect(blocks(repo).single.id, isNot(block.id));
+    });
+
+    test('nothing in flight writes no block and retires the old one', () async {
+      questions = [(text: 'Old question?', askedAt: DateTime(2026))];
+      keys = [];
+      final repo = _FakeRepo(history());
+      final compactor = service(repo);
+      await compactor.maintain(
+        workspaceId: ws,
+        spaceId: 'c',
+        contextWindowTokens: 8000,
+        self: (id: 'agent-1', name: 'architect'),
+        force: true,
+      );
+      expect(blocks(repo), hasLength(1));
+
+      questions = [];
+      repo._messages.addAll([
+        for (var i = 0; i < 8; i++) _user('v$i', 'more $i ${'Z' * 30000}', 100 + i),
+      ]);
+      await compactor.maintain(
+        workspaceId: ws,
+        spaceId: 'c',
+        contextWindowTokens: 8000,
+        self: (id: 'agent-1', name: 'architect'),
+        force: true,
+      );
+      expect(blocks(repo), isEmpty);
+    });
+
+    test('an unknown agent gets no block', () async {
+      questions = [(text: 'Q?', askedAt: DateTime(2026))];
+      final repo = _FakeRepo(history());
+      await service(repo).maintain(
+        workspaceId: ws,
+        spaceId: 'c',
+        contextWindowTokens: 8000,
+        self: (id: null, name: 'architect'),
+        force: true,
+      );
+      expect(blocks(repo, live: false), isEmpty);
+    });
+
+    test('the block is capped at 1,500 characters', () async {
+      questions = [
+        for (var i = 0; i < 5; i++) (text: 'Q$i ${'w' * 200}', askedAt: DateTime(2026)),
+      ];
+      keys = [for (var i = 0; i < 40; i++) 'key_number_$i${'k' * 30}'];
+      final repo = _FakeRepo(history());
+      await service(repo).maintain(
+        workspaceId: ws,
+        spaceId: 'c',
+        contextWindowTokens: 8000,
+        self: (id: 'agent-1', name: 'architect'),
+        force: true,
+      );
+      expect(
+        blocks(repo).single.content.length,
+        lessThanOrEqualTo(stillInFlightMaxChars),
+      );
+    });
+  });
 }

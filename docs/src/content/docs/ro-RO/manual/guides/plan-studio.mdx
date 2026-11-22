@@ -2,7 +2,7 @@
 title: Lucrează în Plan Studio
 description: Revizuiește, editează, estimează, compară și aprobă un plan în editorul Plan Studio și rulează playbook-uri parametrizate.
 slug: ro-RO/manual/ghiduri-practice/plan-studio
-sourceHash: 04a6e193c6b57af3fce63c90673a0958b37552fb
+sourceHash: 9df96d8f10ca86584f3979b84af5eee250719752
 ---
 
 Acest ghid îți arată cum să lucrezi cu planuri în Plan Studio. Pentru a afla ce
@@ -135,9 +135,7 @@ aprobă întotdeauna fiecare pas — nu există nicio modalitate de a selecta ma
 întâi un subset. Aprobarea este blocată cât timp propunerea are erori de
 validare, care sunt afișate lângă butoane.
 
-Aprobarea este exclusiv pentru operatori. Nu există un instrument MCP pentru
-ea, așa că un agent poate propune și revizui un plan, dar nu îl poate aproba
-niciodată.
+Aprobarea este exclusiv pentru operatori. Nu există un instrument MCP pentru ea, așa că un agent poate propune și revizui un plan, dar nu îl poate aproba niciodată. Aprobarea unui plan, salvarea unei revizuiri, **Aprobă selecția** și **Continuă nodul** necesită acces de scriere la depozitele spațiului.
 
 Odată ce o orchestrare se execută, bara se schimbă:
 
@@ -148,7 +146,9 @@ Odată ce o orchestrare se execută, bara se schimbă:
   niciodată aprobat fără dependențele sale). Controlul se află pe bara de
   execuție pentru fiecare orchestrare; nu are niciun efect atunci când planul a
   fost aprobat în întregime.
-- Apasă **Anulează rularea** pentru a opri întreaga orchestrare.
+- Apasă **Anulează rularea** pentru a opri întreaga orchestrare. Oricine are acces la spațiu poate face asta.
+
+**Continuă nodul** și **Aprobă selecția** aparțin persoanei în numele căreia acționează rularea (un admin al spațiului de lucru, când rularea nu acționează pentru nimeni).
 
 Pașii din afara unui set aprobat parțial se randează ca amânați și nu rulează
 până când extinzi setul.

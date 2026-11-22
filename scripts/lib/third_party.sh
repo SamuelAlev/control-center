@@ -39,6 +39,27 @@ CC_THIRD_PARTY=(
   "FFmpeg (managed media CLI)|@FFMPEG_MEDIA_VERSION|GPL-3.0-or-later|https://ffmpeg.org/|ffmpeg-GPL-3.0.txt|bundled|server"
   "PDFium binaries (managed PDF renderer)|@PDFIUM_MEDIA_VERSION|MIT|https://github.com/bblanchon/pdfium-binaries|pdfium-binaries-MIT.txt|bundled|server"
   "resvg (managed SVG renderer)|0.50.0|Apache-2.0 OR MIT|https://github.com/linebender/resvg|resvg-MIT.txt|static|server"
+  # Code mode's runner, bin/codemode/cc_codemode: QuickJS-NG through rquickjs
+  # plus every crate compiled into it (packages/cc_natives/native/codemode/
+  # PROVENANCE.md; build-only crates are not redistributed). Dual-licensed
+  # crates are taken under MIT, memchr under MIT, seccompiler under
+  # BSD-3-Clause. native_pins_test.dart holds these rows to the runner's
+  # Cargo.lock, so an added or bumped crate cannot ship unattributed.
+  "QuickJS-NG (code mode runner)|@CODEMODE_QUICKJS_NG_VERSION|MIT|https://github.com/quickjs-ng/quickjs|quickjs-ng-MIT.txt|static|server"
+  "rquickjs (code mode runner)|@CODEMODE_RQUICKJS_VERSION|MIT|https://github.com/DelSkayn/rquickjs|rquickjs-MIT.txt|static|server"
+  "hashbrown (Rust crate)|0.17.1|MIT OR Apache-2.0|https://github.com/rust-lang/hashbrown|hashbrown-MIT.txt|static|server"
+  "allocator-api2 (Rust crate)|0.2.21|MIT OR Apache-2.0|https://github.com/zakarumych/allocator-api2|allocator-api2-MIT.txt|static|server"
+  "equivalent (Rust crate)|1.0.3|Apache-2.0 OR MIT|https://github.com/indexmap-rs/equivalent|equivalent-MIT.txt|static|server"
+  "foldhash (Rust crate)|0.2.0|Zlib|https://github.com/orlp/foldhash|foldhash-Zlib.txt|static|server"
+  "serde_json (Rust crate)|1.0.149|MIT OR Apache-2.0|https://github.com/serde-rs/json|serde_json-MIT.txt|static|server"
+  "serde_core (Rust crate)|1.0.229|MIT OR Apache-2.0|https://github.com/serde-rs/serde|serde_core-MIT.txt|static|server"
+  "itoa (Rust crate)|1.0.19|MIT OR Apache-2.0|https://github.com/dtolnay/itoa|itoa-MIT.txt|static|server"
+  "zmij (Rust crate)|1.0.23|MIT|https://github.com/dtolnay/zmij|zmij-MIT.txt|static|server"
+  "memchr (Rust crate)|2.8.3|Unlicense OR MIT|https://github.com/BurntSushi/memchr|memchr-MIT.txt|static|server"
+  "libc (Rust crate)|0.2.191|MIT OR Apache-2.0|https://github.com/rust-lang/libc|libc-MIT.txt|static|server"
+  "seccompiler (Rust crate)|0.5.0|Apache-2.0 OR BSD-3-Clause|https://github.com/rust-vmm/seccompiler|seccompiler-BSD-3-Clause.txt|static|server"
+  # windows-sys and its windows-link dependency: one repository, one notice.
+  "windows-sys (Rust crate)|0.61.2|MIT OR Apache-2.0|https://github.com/microsoft/windows-rs|windows-rs-MIT.txt|static|server"
   # Fonts. The server's SVG helper also ships the two text fonts as fallbacks;
   # no system font installation is required. These notices match the ones
   # alongside the source .ttf files, which is where a

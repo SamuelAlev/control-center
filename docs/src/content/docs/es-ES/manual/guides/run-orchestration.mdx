@@ -2,7 +2,7 @@
 title: Ejecutar una orquestación
 description: Pídele un plan a un orquestador, revísalo y edítalo en Plan Studio, apruébalo una sola vez y deja que un pipeline generado haga el trabajo.
 slug: es-ES/manual/guias/ejecutar-orquestacion
-sourceHash: 086301be6c1957f6336294720967813c3050ed25
+sourceHash: cc4390cbac6c2122dd24c23bcef20693f40121bb
 ---
 
 Esta guía te muestra cómo convertir un objetivo grande en un plan de todo el
@@ -65,21 +65,13 @@ radio de impacto antes de comprometerte. Consulta
 [Trabajar en Plan Studio](/es-ES/manual/guias/plan-studio/) para conocer el editor
 completo.
 
-:::note[El presupuesto no es un límite de gasto]
-El presupuesto de una propuesta se compara con la _estimación_ de la barra de
-aprobación: cuando el extremo superior de la estimación lo supera, el total se
-pone en rojo con un aviso de presupuesto excedido. Nada comprueba el gasto
-mientras el plan se ejecuta, así que no detendrá ni hará fallar una ejecución.
-Para detener el gasto de verdad, usa las políticas de presupuesto por agente;
-consulta [Gestionar costes](/es-ES/manual/guias/gestionar-costes/).
+:::note[El presupuesto retiene la ejecución]
+El presupuesto de una propuesta se compara con la _estimación_ de la barra de aprobación: cuando el extremo superior de la estimación lo supera, el total se pone en rojo con un aviso de presupuesto excedido. Mientras el plan se ejecuta, el servidor comprueba el gasto antes de cada paso nuevo. Al llegar al presupuesto, la ejecución se retiene y no empieza nada nuevo; los pasos ya en marcha terminan. Quien pidió la ejecución recibe un aviso y pulsa **Subir límite** en la página de la ejecución del pipeline para continuar. Consulta [Gestionar costes](/es-ES/manual/guias/gestionar-costes/).
 :::
 
 ## Paso 3: Aprueba
 
-Aprueba el plan desde la tarjeta del chat o desde la barra de aprobación de Plan
-Studio. **Esta es la única decisión que tomas.** Aprobar es competencia
-exclusiva del operador: no hay ninguna herramienta MCP para ello, así que un
-agente puede proponer y revisar, pero nunca aprobar su propio plan.
+Aprueba el plan desde la tarjeta del chat o desde la barra de aprobación de Plan Studio. **Esta es la única decisión que tomas.** Aprobar es competencia exclusiva del operador: no hay ninguna herramienta MCP para ello, así que un agente puede proponer y revisar, pero nunca aprobar su propio plan. Aprobar requiere acceso de escritura a los repositorios del espacio, y la ejecución pasa entonces a actuar en nombre de la persona que lo aprobó.
 
 A partir de aquí, un materializador determinista (una función pura, sin LLM)
 convierte la propuesta en un [pipeline](/es-ES/manual/conceptos/pipelines/) real y
@@ -117,12 +109,7 @@ Pulsa **Cancelar orquestación** en la tarjeta del chat, o **Cancelar ejecución
 en la barra de aprobación de Plan Studio. La cancelación desmonta el trabajo en
 curso.
 
-Una orquestación falla cuando falla la materialización, o cuando falla la
-ejecución del pipeline generado (investigación, debate, síntesis o persistencia:
-esos pasos no continúan si fallan). Los pasos de **trabajo** generados siempre
-continúan aunque fallen, así que un subticket fallido no hace fallar la
-ejecución. No hay ninguna vía de fallo por presupuesto excedido ni ningún umbral
-de «todos los subtickets han fallado».
+Una orquestación falla cuando falla la materialización, o cuando falla la ejecución del pipeline generado (investigación, debate, síntesis o persistencia: esos pasos no continúan si fallan). Los pasos de **trabajo** generados siempre continúan aunque fallen, así que un subticket fallido no hace fallar la ejecución. Llegar al presupuesto retiene la ejecución en lugar de hacerla fallar, y no existe ningún umbral de «todos los subtickets han fallado».
 
 ## Guías relacionadas
 

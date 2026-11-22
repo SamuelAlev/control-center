@@ -2,7 +2,7 @@
 title: Folosește modul plan
 description: Comută un spațiu în modul plan, obține un plan tipizat și aprobă-l pentru a-l transforma în muncă în rulare.
 slug: ro-RO/manual/ghiduri-practice/modul-plan
-sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
+sourceHash: accf49606e5e8597d3ea76e3274f08d3854996dc
 ---
 
 Acest ghid îți arată cum să obții un plan structurat de la un agent înainte ca
@@ -118,11 +118,7 @@ aprobată, următorul apel `exit_plan_mode` al agentului comută spațiul din mo
 plan în modul agent și îi deblochează instrumentele care modifică starea. O
 respingere îi permite să deschidă o cerere nouă pentru un plan revizuit.
 
-Ca să ieși din modul plan, schimbă lista derulantă din zona de compunere (sau
-Shift+Tab) ori aprobă planul trimis. `exit_plan_mode` deschide o aprobare
-durabilă decisă cu instrumentul MCP `decide_approval`. Suprapunerea de
-guardrail-uri pentru apelurile de instrumente blocate este o coadă diferită,
-ținută în memorie, și nu transportă cereri de ieșire din modul plan.
+Ca să ieși din modul plan, schimbă lista derulantă din zona de compunere (sau Shift+Tab) ori aprobă planul trimis. `exit_plan_mode` deschide o aprobare durabilă, pe care o decide o rulare de agent cu instrumentul MCP `decide_approval`. Suprapunerea de guardrail-uri pentru apelurile de instrumente blocate este o coadă diferită, ținută în memorie, și nu transportă cereri de ieșire din modul plan.
 
 ## Modul plan într-un pas de pipeline
 

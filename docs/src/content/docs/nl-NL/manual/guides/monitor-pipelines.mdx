@@ -2,7 +2,7 @@
 title: Pipeline-runs monitoren
 description: Werk de wachtrij met runs af, lees de tijdlijn en het stappenpaneel van een run en herstel een mislukte of vastgelopen stap.
 slug: nl-NL/handleiding/gidsen/pipelines-monitoren
-sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
+sourceHash: 48d44ae3ca3e23c1123ef282ccffece35b542b96
 ---
 
 Deze pagina gaat over alles wat er na de start van een run gebeurt: hem vinden,
@@ -71,6 +71,8 @@ mislukken in plaats van hem te hervatten: een stap die langer dan 24 uur
 suspended is (`extras.awaitApproval` — de body `orchestration.awaitApproval` —
 is uitgezonderd; `human.gate` niet) en een niet-idempotente stap die nog liep
 toen de server stopte.
+
+Ook een stap **Pursue a goal** valt buiten het vangnet van 24 uur: hij blijft suspended zolang zijn doel werkt, en zijn pagina linkt naar het doel. Een hele run kan ook **Suspended** zijn omdat zijn orkestratie de kostenlimiet heeft bereikt; de pagina van de run toont dan wat van de limiet is uitgegeven en, voor de aanvrager van de run, **Limiet verhogen**.
 
 ## Een stap inspecteren
 

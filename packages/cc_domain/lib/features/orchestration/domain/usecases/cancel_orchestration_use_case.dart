@@ -32,12 +32,16 @@ class CancelOrchestrationUseCase {
       await _engine.cancel(workspaceId, runId);
     }
     final now = DateTime.now();
-    await _orchestrations.update(
-      o.copyWith(
-        status: OrchestrationStatus.cancelled,
-        completedAt: now,
-        updatedAt: now,
-      ),
+    await _orchestrations.change(
+      workspaceId,
+      orchestrationId,
+      (current) => current.status.isTerminal
+          ? null
+          : current.copyWith(
+              status: OrchestrationStatus.cancelled,
+              completedAt: now,
+              updatedAt: now,
+            ),
     );
     final parentTicketId = o.parentTicketId;
     if (parentTicketId != null && parentTicketId.isNotEmpty) {

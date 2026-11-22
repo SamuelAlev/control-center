@@ -43,8 +43,8 @@ abstract interface class AgentDispatchPort {
   /// attributes the run to the server owner.
   /// [userText] is the verbatim message for slash detection (`/plan`, `/goal`,
   /// `/loop`, `/skill:<name>`). [prompt] arrives wrapped in `<context>`, so a
-  /// leading-slash test against it never matches; null [userText] falls back
-  /// to [prompt].
+  /// leading-slash test against it never matches. Null for every run that is
+  /// not a signed-in person's message: nothing is parsed as a command then.
   /// [promptParts] is the same prompt split into its standing brief, per-turn
   /// delta and conversation window, with a revision fingerprint of each. A
   /// runner that resumes a stored native session sends a delta built from it
@@ -65,8 +65,20 @@ abstract interface class AgentDispatchPort {
   /// a runner that sizes its own window (the built-in harness) caps it there,
   /// and every runner reports usage against it. Null leaves the model's window
   /// in charge.
+  /// [freshHistory] starts the run with no transcript or context from before
+  /// it: the harness loads and keeps no transcript, Claude Code starts a new
+  /// native session and leaves the conversation's stored one in place for
+  /// the next ordinary run, and ACP opens a new session (it always does). The
+  /// worktree, checklist, notes, memory and repository stay; the turn posts
+  /// as usual.
+  /// [readOnly] runs with the review mode's capabilities whatever the space's
+  /// mode: no tool that changes the worktree, the worktree mounted read-only
+  /// and the shell confined. It needs the sandbox: without one the run is
+  /// refused with `sandbox_unavailable`, never started bare.
   /// Returns a [DispatchHandle] whose `dispatchId` stops only this dispatch.
   DispatchHandle start({
+    required bool freshHistory,
+    required bool readOnly,
     required String cliName,
     required String prompt,
     required String workingDirectory,
@@ -82,7 +94,7 @@ abstract interface class AgentDispatchPort {
     String? runLogId,
     String? ticketId,
     String? requestedByUserId,
-    WakeContext? wakeContext,
+    required WakeContext wakeContext,
     Mode? mode,
     int? silenceTimeoutMinutes,
     Map<String, String>? environment,
@@ -114,6 +126,12 @@ abstract interface class AgentDispatchPort {
     int? costCapMicros,
   });
 
+  /// Whether a [start] with `readOnly` can run here: the host has a sandbox
+  /// (posture `sandboxed` and a sandbox manager). Asked before a run row is
+  /// written, so a read-only run that cannot start is refused with
+  /// `sandbox_unavailable` and never leaves a failed run behind.
+  bool get readOnlyRunsAvailable;
+
   /// Stops the specific dispatch identified by [dispatchId].
   /// Other concurrent dispatches are unaffected.
   Future<void> stopDispatch(String dispatchId);
@@ -126,9 +144,15 @@ abstract interface class AgentDispatchPort {
   /// safe turn boundary so a user can nudge a running agent without starting a
   /// new dispatch; [followUp] true routes it to run only once the agent would
   /// otherwise stop. Returns true when a live dispatch received it.
+  ///
+  /// [source] names who pushed it when it is not a person's own words (a rig
+  /// event: `rig:<id>`; an unanswered request: `unattended`): a compaction
+  /// drops such a message instead of pinning it as the person's. Null only
+  /// where a signed-in person's message is forwarded.
   Future<bool> steerDispatch(
     String dispatchId,
     String message, {
+    required String? source,
     bool followUp = false,
   });
 

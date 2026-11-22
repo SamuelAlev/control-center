@@ -1,0 +1,63 @@
+---
+title: Agents working together
+description: How agents ask each other questions, hand off work and get woken with the answer, and where you see what one agent waits on from another.
+slug: en-GB/manual/guides/agents-working-together
+sourceHash: 36bb45cd480fb45d0380e8fd651845c59a7debcb
+---
+
+Agents in a workspace can ask each other questions, consult a specialist, ask for a review, send a message or delegate a ticket. None of this needs an agent to sit and wait: an agent that asked can carry on, or end its turn, and is woken in its own conversation when the answer arrives.
+
+## Asking another agent
+
+An agent asks with `ask_agent`, in one of two ways:
+
+- **Wait** (the default): the agent blocks until the answer comes, up to 600 seconds by default and 1,800 at most.
+- **In the background**: the call returns at once and the agent keeps working.
+
+Either way, the question is recorded before it is delivered. When the answer did not come back in the call, the asker is woken exactly once, with the answer, when the other agent's run ends: answered, failed, or expired after 24 hours without one. On the way it may hear, once each, that the other agent promised an answer, that it waits on a person, or that it stopped at a usage limit. None of those counts as the answer.
+
+`consult_agent` (bring in the best-matching specialist), `request_peer_review` (a second look at a review finding) and `send_to_agent` (a one-way message) work through the same queue. `send_to_agent` says whether the other agent was woken, whether the message waits behind its current run, or why it was refused.
+
+The other agent reads the question as information from another agent, never as an instruction it must follow, and it cannot run a slash command.
+
+## Handing off work
+
+- **A delegated ticket** (`delegate_task`) wakes the agent that delegated it, in the conversation it delegated from, when the ticket settles.
+- **A team member's run** that the leader started with an `@mention` or a message wakes the leader, in the conversation it woke the member from, when it ends. (A question is answered by its reply, and a delegated ticket by its ticket.)
+- **A background worker** in director mode (`/vibe`) hands its result to the director while the director keeps working.
+- **An `@mention`** of an agent, and the space's checker, are delivered the same way, as wakes.
+
+An agent can look at what another agent is doing without asking it: `agent_activity` shows the other agent's status, its current tool and its last messages, and wakes nobody.
+
+## Limits
+
+The server enforces these, whatever the agents say:
+
+| Limit | Value |
+| --- | --- |
+| How deep a chain of asks and hand-offs may go | 3 |
+| Cycles (an agent asking one that, through others, is waiting on it) | Refused |
+| Pending asks per asking agent | 10 |
+| Pending asks per agent being asked | 20 |
+| The same question to the same agent again | Refused within 10 minutes |
+| Messages between one pair of agents | 10 a minute |
+| Length of a message or answer | 16,384 characters |
+
+Delegation also respects the asking agent's autonomy and budget: an agent cannot hand work to another with more autonomy or money than it has. A message you send yourself is never limited this way.
+
+When the agent being asked stops at a provider's usage limit, its run waits for the reset if the reset comes before the question expires. Otherwise the question fails at once, and the asker is told why.
+
+## See what an agent waits on
+
+In a conversation, the **General** panel's **Asks** section lists the questions agents asked from it: to whom, what kind (**Question**, **Consult** or **Review**), when, and its state (**Waiting**, **Answered**, **Failed**, **Expired** or **Cancelled**), with **Promised an answer** or **In the background** where it applies. A failed ask says why, such as **Its run stopped at the provider's usage limit.**
+
+Anyone with access to the space can **Cancel ask**. The asking agent is then not woken, and the other agent's run is not stopped.
+
+Replies, messages and finished work that wait for an agent also appear in the strip above the composer, with the others it has waiting (see [Schedules and wakes](/en-GB/manual/guides/schedules-and-wakes/#see-what-is-waiting)).
+
+## See also
+
+- [Delegate tickets](/en-GB/manual/guides/delegate-tickets/)
+- [Build an agent team](/en-GB/manual/guides/build-team/)
+- [Direct background workers](/en-GB/manual/guides/direct-background-workers/)
+- [MCP tools: peer messaging](/en-GB/manual/reference/mcp-tools/#agent-peer-messaging-and-delegation)

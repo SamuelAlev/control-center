@@ -2,7 +2,7 @@
 title: Sandbox và bảo mật
 description: Điều gì thực sự ràng buộc một agent trong Control Center hiện nay, sandbox hệ điều hành vươn tới đâu và những ranh giới nào vẫn đứng vững trên một máy chủ không có backend.
 slug: vi-VN/so-tay/khai-niem/sandbox-va-bao-mat
-sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
+sourceHash: 7644c97911f685ef5084875fb16f1006f21ea940
 ---
 
 :::note[Sandbox hệ điều hành vươn tới đâu và không vươn tới đâu]
@@ -78,6 +78,8 @@ Quy tắc tương tự áp dụng cho những thứ nhỏ hơn tự khởi tạo
 - **Tiến trình công cụ và `bash`** trong một lượt chạy không bao giờ quay về chạy trên máy
   chủ. Nếu máy chủ được đặt để bọc agent trong sandbox mà không có sandbox nào để cấp cho
   một lượt chạy, lượt chạy đó bị từ chối.
+- **Các kiểm chứng của một mục tiêu** chạy trong một sandbox dùng một lần trên worktree của cuộc hội thoại, bị giới hạn như `bash` của chính agent. Khi không có sandbox, chúng không chạy và mục tiêu dừng để chờ một người; khi chạy với `--sandbox off`, chúng chạy như `bash` của agent.
+- **Đánh giá của một mục tiêu** chạy chỉ đọc trên mọi adapter: chỉ đọc, các worktree được gắn ở chế độ chỉ đọc, không `bash`, không subagent, không web. Một adapter không thể giữ lần chạy ở chế độ chỉ đọc (một agent ACP) thì không được dùng làm người đánh giá.
 
 ## Điều gì thực sự ràng buộc một agent
 
@@ -334,6 +336,24 @@ thuật chứ không chỉ trong một log. Telemetry chỉ tồn tại khi mộ
 thực sự đang bọc tiến trình — trên một máy chủ không có backend thì không có gì
 để quan sát. Nó cũng không liên quan gì tới rào chắn: một vi phạm đến từ một syscall bị từ chối, không bao giờ từ một lần tra cứu quy tắc.
 
+## Tập lệnh trong chế độ code
+
+Các tập lệnh của [chế độ code](/vi-VN/so-tay/khai-niem/che-do-code/) là một trường hợp riêng, và chúng hoàn toàn không phụ thuộc vào sandbox của agent. Một tập lệnh không bao giờ chạy bên trong máy chủ và không bao giờ chạy trong sandbox của agent. Nó chạy trong tiến trình riêng của mình, `cc_codemode`, một chương trình đi kèm máy chủ, tự khóa mình trước khi đọc tập lệnh và báo cáo cơ chế khóa đã có hiệu lực đến đâu. Máy chủ chỉ gửi tập lệnh khi việc khóa đã hoàn tất.
+
+| Máy chủ | Trình chạy tự áp dụng những gì lên mình |
+| --- | --- |
+| Linux | Một danh sách cho phép lời gọi hệ thống (seccomp) chỉ để nó làm gần như không gì khác ngoài việc đọc đầu vào, ghi đầu ra, quản lý bộ nhớ của chính nó, đọc đồng hồ và thoát; không có đặc quyền mới và không có capabilities; không có core dump; không ghi tệp, không tạo tiến trình mới và tối đa ba tệp mở; 3 GiB không gian địa chỉ; giới hạn cứng về thời gian xử lý. Landlock được thêm vào ở nơi kernel hỗ trợ. |
+| macOS | Một hồ sơ sandbox mặc định từ chối, cũng từ chối thông tin tiến trình, kiểm tra sự tồn tại của tệp, thông tin hệ thống và phần cứng cùng các lời gọi kernel liên quan; không có core dump, không ghi tệp và một giới hạn cứng về thời gian xử lý. |
+| Windows | Một AppContainer mới cho mỗi tập lệnh, trong một job chỉ cho phép một tiến trình, 3 GiB bộ nhớ và không có giao diện người dùng, với mã động, tiến trình con và các lời gọi win32k bị tắt. **Chưa chạy thử trên Windows.** |
+
+Trình chạy khởi động không có biến môi trường, không có tệp mở nào ngoài đầu vào và đầu ra của nó, và không có thông tin xác thực. Mọi thứ nó có thể làm bên ngoài bộ nhớ của chính nó chỉ là yêu cầu máy chủ chạy một công cụ, và máy chủ chạy lệnh gọi đó qua cùng bộ lọc chế độ, [rào chắn](/vi-VN/so-tay/khai-niem/rao-chan/) và phê duyệt như một lệnh gọi trực tiếp.
+
+Máy chủ kiểm tra tất cả những điều này khi khởi động: nó chạy tự kiểm tra của trình chạy, tức là áp dụng cơ chế khóa, thử đọc và tạo tệp, mở kết nối mạng và khởi động một tiến trình (và nhiều hơn nữa trên mỗi hệ thống), rồi chạy các tập lệnh thật dưới cơ chế đó. Nếu có bất kỳ điều gì không bị từ chối, máy chủ không chạy tập lệnh nào trên máy đó: không lần chạy nào nhận `repl`, và máy chủ nói rõ lý do khi khởi động và trên trang cài đặt chế độ code. Một runner không phải bản dựng phát hành cũng bị từ chối theo cách tương tự. Không có phương án dự phòng nào yếu hơn.
+
+Trình chạy cũng báo cáo vị trí trong tập lệnh nơi mỗi lệnh gọi được thực hiện, để cuộc hội thoại có thể hiện cấu trúc của tập lệnh. Máy chủ đối chiếu vị trí đó với tập lệnh và chỉ dùng nó để hiển thị: nó không bao giờ quyết định một lệnh gọi có được phép hay không, và nó không nằm trong nhật ký kiểm toán của rào chắn.
+
+Điều này không bao phủ: một tập lệnh vẫn có thể làm bất cứ điều gì các công cụ của lần chạy cho phép, vì các lệnh gọi công cụ của nó là lệnh gọi công cụ thật; trên macOS nó vẫn có thể biết một id tiến trình có tồn tại hay không; và một lỗi trong động cơ JavaScript hoặc kernel được cơ chế khóa giới hạn thiệt hại, chứ không loại trừ được.
+
 ## Xác nhận đến từ rào chắn, không phải từ sandbox
 
 Sandbox không có đường phê duyệt nào. Nó khởi chạy, thực thi, phát sự kiện và kết
@@ -354,6 +374,7 @@ duy nhất nêu rõ những gì có thể kiểm tra bằng tay.
 
 ## Khái niệm liên quan
 
+- [Chế độ code](/vi-VN/so-tay/khai-niem/che-do-code/): các tập lệnh gọi công cụ, và trình chạy giam giữ chúng
 - [Rigs và môi trường cách ly](/vi-VN/so-tay/khai-niem/rigs/): bước nằm trên sandbox — khi công việc cần cả một cỗ máy dùng-một-lần với ranh giới kernel, chứ không phải một tiến trình được bọc
 - [Rào chắn](/vi-VN/so-tay/khai-niem/rao-chan/): lớp chính sách nằm trên sàn hệ điều hành và nơi các phê duyệt thực sự đến từ đó
 - [Vòng đời điều phối agent](/vi-VN/so-tay/khai-niem/vong-doi-dieu-phoi-agent/): nơi cô lập khớp vào luồng điều phối

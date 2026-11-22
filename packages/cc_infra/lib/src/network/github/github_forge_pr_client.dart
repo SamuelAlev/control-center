@@ -319,7 +319,10 @@ class GitHubForgePrClient
   }
 
   @override
-  Future<String> getPullRequestDiff(int prNumber, {ForgeCancelToken? cancelToken}) {
+  Future<String> getPullRequestDiff(
+    int prNumber, {
+    ForgeCancelToken? cancelToken,
+  }) {
     return _client.pr.getPullRequestDiff(
       owner,
       repo,
@@ -870,7 +873,9 @@ class GitHubForgePrClient
   /// `PULL_REQUEST_TEMPLATE/` directory keep their humanized filename, which
   /// cannot collide with that key (the humanizer turns `_` into a space).
   @override
-  Future<Map<String, String>> listPrTemplates({ForgeCancelToken? cancelToken}) async {
+  Future<Map<String, String>> listPrTemplates({
+    ForgeCancelToken? cancelToken,
+  }) async {
     final templates = await _client.graphql.fetchPullRequestTemplates(
       owner,
       repo,
@@ -973,6 +978,26 @@ class GitHubForgePrClient
       body: body,
       startLine: startLine,
       startSide: startSide,
+      cancelToken: _token(cancelToken),
+    );
+    return prCodeReviewCommentFromGitHub(comment);
+  }
+
+  @override
+  Future<PrCodeReviewComment?> postFileComment({
+    required int prNumber,
+    required String commitSha,
+    required String path,
+    required String body,
+    ForgeCancelToken? cancelToken,
+  }) async {
+    final comment = await _client.pr.postFileComment(
+      owner,
+      repo,
+      prNumber: prNumber,
+      commitSha: commitSha,
+      path: path,
+      body: body,
       cancelToken: _token(cancelToken),
     );
     return prCodeReviewCommentFromGitHub(comment);
@@ -1134,7 +1159,10 @@ class GitHubForgePrClient
   }
 
   @override
-  Future<void> closePullRequest(int prNumber, {ForgeCancelToken? cancelToken}) async {
+  Future<void> closePullRequest(
+    int prNumber, {
+    ForgeCancelToken? cancelToken,
+  }) async {
     await _client.pr.closePullRequest(
       owner,
       repo,
@@ -1628,7 +1656,10 @@ class GitHubForgePrClient
   // ── Stacks ─────────────────────────────────────────────────────────────
 
   @override
-  Future<List<PrStack>> listStacks({int? prNumber, ForgeCancelToken? cancelToken}) async {
+  Future<List<PrStack>> listStacks({
+    int? prNumber,
+    ForgeCancelToken? cancelToken,
+  }) async {
     // Single page (100 stacks): a repo realistically has a handful and the
     // [prNumber] filter always fits in one page.
     final result = await _client.pr.listStacks(

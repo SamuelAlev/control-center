@@ -1,0 +1,178 @@
+---
+title: Mode kode
+description: Bagaimana agen menulis skrip pendek yang memanggil alatnya alih-alih memanggilnya satu per satu, alat mana yang dipanggilnya secara langsung dan mana dari skrip, batas yang berlaku untuk sebuah skrip, bagaimana skrip tampil dalam percakapan, serta bagaimana skrip dibatasi dan direkam.
+slug: id-ID/panduan-pengguna/konsep/mode-kode
+sourceHash: d41fe2f38c216949847fc7c4768fdf96bed2dc83
+---
+
+Agen biasanya memanggil alatnya satu per satu. Setiap panggilan adalah satu giliran model: agen meminta panggilan itu, hasilnya masuk kembali ke konteks, dan agen membacanya sebelum meminta yang berikutnya. Untuk pekerjaan yang sebagian besar bersifat mekanis, seperti membaca dua puluh berkas untuk menemukan tiga yang penting atau memeriksa setiap tiket terbuka untuk satu label, sebagian besar giliran itu dan sebagian besar konteks tersebut habis untuk hasil yang kemudian dibuang oleh agen.
+
+Mode kode adalah satu alat, `repl`. Dengan alat ini agen menulis skrip JavaScript pendek yang memanggil alat lainnya, melakukan perulangan, menyaring dan menggabungkan hasilnya, lalu hanya mengembalikan yang dibutuhkan. Satu panggilan `repl` dapat melakukan pekerjaan dari puluhan giliran alat, dan hanya jawaban skrip yang masuk ke konteks.
+
+Setiap run memiliki `repl` ketika server dapat menjalankan skrip. Tidak ada yang perlu diaktifkan: lihat [Saat run memiliki `repl`](#saat-run-memiliki-repl).
+
+## Apa yang bisa dilakukan skrip
+
+Skrip adalah JavaScript biasa, ditulis sebagai isi fungsi async, sehingga `await` dan `return` berfungsi di tingkat atas. Setiap panggilan `repl` memulai interpreter baru yang kosong.
+
+- **Panggil alat.** `await tools.read({ path: "README.md" })` memanggil sebuah alat dan menghasilkan hasilnya, atau menolak dengan galat ketika panggilan gagal atau ditolak. Panggilan yang tidak saling bergantung dapat dijalankan bersamaan dengan `Promise.allSettled`.
+- **Temukan alat.** `ALL_TOOLS` mencantumkan setiap alat yang boleh dipanggil skrip. `searchTools(query)` menemukan alat berdasarkan apa yang dilakukannya, `describeTool(name)` mengembalikan deskripsi dan argumen satu alat, dan `describeNamespace(name)` mencantumkan alat dari satu grup. Alat dari server MCP yang terhubung juga dapat dijangkau dengan cara ini.
+- **Kembalikan hasil.** Hanya yang dikembalikan skrip, atau diteruskan ke `text()`, `image()` atau `console.log()`, yang kembali ke agen. Paling banyak empat gambar sampai ke model.
+- **Simpan nilai.** `store(key, value)` dan `load(key)` menyimpan nilai JSON kecil di antara skrip dalam percakapan dan agen yang sama. Nilai hanya disimpan ketika skrip selesai. Subagen tidak memiliki penyimpanan.
+- **Tanya seseorang.** `await tools.ask_user({ question, options })` mengajukan pertanyaan dan menunggu jawabannya.
+- **Gunakan embedding di perangkat.** `models.embed`, `models.rank` dan `models.classify` memakai model embedding server, bila sudah terpasang.
+- **Tunggu.** `sleep(ms)` dan `setTimeout`, dalam batas waktu skrip. `limits()` mengembalikan batas yang berlaku untuk skrip.
+
+Skrip tidak memiliki akses ke sistem berkas, jaringan, proses, modul, atau lingkungan: tidak ada `fetch`, `require`, `import`, atau `process`. Satu-satunya jalan keluar adalah panggilan alat, dan setiap panggilan alat melewati pemeriksaan yang sama dengan panggilan yang dibuat agen secara langsung.
+
+Panggilan alat yang sudah dibuat skrip tidak dibatalkan ketika skrip gagal setelahnya.
+
+## Alat mana yang dipanggil agen secara langsung
+
+Setiap run agen bawaan mendapat kumpulan kecil alat yang dipanggilnya dengan namanya:
+
+- `repl`, pertama;
+- alat berkas dan shell `read`, `write`, `edit`, `search`, `find`, `bash` dan `read_output`;
+- `ask_user` dan `task`;
+- `todo_write`, `search_memory` dan `send_message`;
+- verba yang dibutuhkan [mode](/id-ID/panduan-pengguna/konsep/mode/) percakapan untuk menyerahkan keluarannya atau keluar darinya, misalnya `submit_plan` dalam mode rencana;
+- `search_tools`, ketika ada alat yang dimuat saat pertama kali dipakai (lihat di bawah).
+
+Setiap alat lain yang boleh dipakai run dijangkau dengan salah satu dari dua cara:
+
+- **Hanya dari skrip**, ketika skrip boleh memanggilnya. Agen menemukannya dengan `searchTools()` atau `describeTool()` dan memanggilnya sebagai `tools.<name>(args)`. Deskripsinya tidak pernah sampai ke model, sehingga tidak menambah biaya di prompt. Jika agen tetap memanggilnya secara langsung, jawabannya menyuruh agen memanggil alat itu dari skrip. Jika server tidak dapat menjalankan skrip run tersebut, alat ini dimuat saat pertama kali dipakai sebagai gantinya ([Saat skrip tidak dapat dijalankan](#saat-skrip-tidak-dapat-dijalankan)).
+- **Dimuat saat pertama kali dipakai**, ketika skrip tidak boleh memanggilnya. Agen hanya melihat namanya, dan memanggilnya dengan nama itu, atau menemukannya dengan `search_tools`, akan memuatnya.
+
+Beberapa alat tidak pernah dapat dipanggil dari skrip, di antaranya `repl` itu sendiri (skrip tidak dapat memulai skrip), `eval`, `task`, `checkpoint`, `rewind`, verba `vibe_*`, dan alat yang memulai atau mengirim pesan ke run agen lain, membuat, memutuskan atau mengomentari persetujuan, mengubah kebijakan atau skill, atau keluar dari mode rencana. Agen memanggil alat-alat itu secara langsung.
+
+Run tanpa `repl` mendapat himpunan langsung yang sama, dan semua yang lain dimuat saat pertama kali dipakai. [Konteks alat dan cache prompt](/id-ID/panduan-pengguna/konsep/konteks-alat/) menjelaskan mengapa himpunannya sama dalam kedua keadaan.
+
+Mode kode tidak pernah menambahkan alat yang tidak diizinkan mode percakapan. Filter alat mode diterapkan lebih dulu, dan skrip hanya dapat memanggil apa yang tersisa.
+
+## Saat run memiliki `repl`
+
+Sebuah run memiliki `repl` ketika runner skrip server lolos pemeriksaan kuncinya saat mulai ([Cara skrip dibatasi](#cara-skrip-dibatasi)). Tidak ada pengaturan ruang kerja, agen, atau server yang mengubahnya. Sebuah run tetap tidak memiliki `repl` ketika:
+
+- runner tidak dapat mengunci dirinya di mesin server; server kemudian tidak menjalankan skrip sama sekali;
+- server adalah demo publik, yang tidak menjalankan skrip;
+- run tidak termasuk ke ruang kerja mana pun;
+- batas ruang kerja tidak dapat dibaca, karena menjalankan dengan default bisa melampaui batas yang diturunkan admin;
+- catatan run tidak dapat ditulis, karena setiap skrip dicatat di bawah runnya sebelum mulai.
+
+Run seperti itu memanggil semua alatnya secara langsung.
+
+Mode kode berfungsi untuk run agen bawaan dan untuk agen yang menjangkau alat Control Center melalui endpoint MCP-nya, seperti Claude Code. Untuk agen MCP, daftar alat yang diterimanya berisi `repl`, alat langsung, dan alat yang tidak boleh dipanggil skrip; sisanya dipanggil dari skrip. Hanya run yang dimulai dan dicatat oleh Control Center yang mendapat `repl` di sana; klien lain menerima setiap alat kecuali `repl`.
+
+**Pengaturan → Ruang kerja → Mode kode** menampilkan di bawah **Status** apakah server ini menjalankan skrip (**Tersedia** atau **Tidak tersedia**, dengan alasan dari server) dan versi **Runner** yang terpasang. **Lihat eksekusi kode** membuka daftar skrip yang telah dijalankan.
+
+Pemilik server tidak dapat mematikan skrip. Pemilik dapat membatasinya: berapa banyak yang berjalan sekaligus dan berapa memori yang boleh dipakai satu skrip (lihat [Batas](#batas)).
+
+### Saat skrip tidak dapat dijalankan
+
+Sebuah run tidak pernah kehilangan alat karena server tidak dapat menjalankan skripnya. Ketika server menolak sebuah skrip karena alasan yang tidak akan lolos oleh skrip mana pun (misalnya skrip tidak tersedia, skrip sudah menunggu setengah dari waktunya untuk mendapat tempat kosong, rekamnya tidak dapat ditulis, daftar alat run terlalu besar untuk diserahkan ke skrip, atau runner tidak dapat dimulai atau mengunci dirinya), run berhenti menggunakan skrip sepanjang sisa hidupnya:
+
+- sebuah run built-in agent tetap memiliki `repl`, dan setiap alat yang sebelumnya hanya dapat dijangkau dari skrip sekarang dimuat saat pertama kali dipakai: agen memanggilnya dengan nama atau menemukannya dengan `search_tools`;
+- sebuah run pada endpoint MCP menerima daftar alat dengan setiap alat dan tanpa `repl`, dan klien-nya diberi tahu bahwa daftar itu berubah. Server mengingat 1.024 run terakhir seperti itu; run yang lebih lama kembali menggunakan skrip.
+
+Alat-alat itu melewati filter mode, pagar pengaman, dan persetujuan yang sama seperti sebelumnya, sehingga tidak ada yang menjadi dapat dipanggil jika sebelumnya tidak. Skrip yang gagal karena dirinya sendiri, misalnya dengan melempar galat, kehabisan batas, atau panggilannya ditolak, tidak mengubah apa pun.
+
+Server juga terus memeriksa bahwa skrip dapat dijalankan. Ketika runner gagal dimulai karena alasan yang bukan dari skrip, server mengulangi pemeriksaan kuncinya, paling banyak sekali per menit. Jika pemeriksaan gagal, server tidak menjalankan skrip apa pun dan mencatat baris `code_mode=unavailable` yang sama seperti saat mulai; run yang mulai sementara itu tidak mendapat `repl`. Server terus memeriksa, paling banyak sekali per menit, dan ketika sebuah pemeriksaan lolos ia kembali menjalankan skrip dan mencatat baris `code_mode=available`. Hanya pemeriksaan yang gagal saat server mulai yang memerlukan restart.
+
+## Batas
+
+Setiap skrip berjalan dengan batas. Admin ruang kerja dapat mengubah enam di antaranya di bawah **Batas** di **Pengaturan → Ruang kerja → Mode kode** (**Sesuaikan batas**); agen hanya dapat meminta waktu yang lebih singkat atau anggaran keluaran yang lebih kecil untuk satu skrip, tidak pernah lebih.
+
+| Batas | Default | Rentang | Saat habis |
+| --- | --- | --- | --- |
+| Waktu per skrip | 5 menit | 1 dtk sampai 25 menit | Skrip dihentikan dan agen diberi tahu bahwa waktunya habis. |
+| Waktu prosesor | 30 dtk | 1 dtk sampai 2 menit | Skrip dihentikan. |
+| Memori | 256 MiB | 16 MiB sampai 1 GiB | Skrip dihentikan. Pemilik server dapat menetapkan batas yang lebih rendah untuk seluruh server. |
+| Panggilan alat per skrip | 500 | 1 sampai 5.000 | Panggilan berikutnya ditolak, dan skrip diberi tahu alasannya. |
+| Panggilan sekaligus | 8 | 1 sampai 32 | Panggilan baca-saja di luar batas ini menunggu gilirannya. Panggilan yang mengubah sesuatu selalu berjalan satu per satu. |
+| Output yang dibaca agen | 10.000 token | 100 sampai 50.000 | Keluaran dipangkas hanya menyisakan awal dan akhirnya, dan agen dapat membaca sisanya jika diminta. |
+
+Waktu yang dihabiskan skrip untuk menunggu seseorang, pada persetujuan atau pertanyaan, tidak dihitung terhadap batas waktunya. Selagi menunggu, skrip tidak memulai panggilan alat lain: panggilan yang dibuatnya sementara itu dimulai, berurutan, setelah Anda menjawab.
+
+Beberapa batas bersifat tetap: sumber skrip paling besar 256 KiB, argumen satu panggilan alat 1 MiB dan 16.384 nilai, perintah yang diserahkan skrip ke alat bawaan yang menjalankannya 16 KiB (nama alat ikut dihitung), satu hasil yang diserahkan ke skrip 4 MiB, sebuah nilai tersimpan 256 KiB, dan semua yang disimpan bersama oleh satu percakapan dan agen 1 MiB. Satu run hanya menjalankan satu skrip pada satu waktu.
+
+Pencarian alat dalam skrip juga dibatasi: query `searchTools` paling banyak 1.024 karakter, nama alat atau namespace paling banyak 256, paling banyak 50 hasil, dan paling banyak 200 pencarian yang memakan total 2 detik waktu server; setelah itu, pencarian berikutnya gagal. Semua skrip dalam satu ruang kerja juga berbagi 2 detik waktu pencarian, yang dikembalikan sebesar seperempat detik setiap detik. Indeks pencarian memberi setiap alat porsi yang sama, sekitar satu juta karakter, yang dihabiskan untuk nama argumennya lebih dulu lalu deskripsinya, dan selalu mengindeks nama setiap alat, sehingga bahkan dalam katalog yang sangat besar sebuah alat tetap ditemukan dengan namanya.
+
+Pemilik server juga membatasi berapa banyak skrip yang berjalan bersamaan di server (`--code-mode-max-processes`, secara default dua kali jumlah inti prosesor, paling banyak 16) dan memori yang boleh dipakai satu skrip (`--code-mode-max-heap-mb`); skrip yang menunggu seseorang dihitung terpisah, hingga empat kali jumlah itu. Bila batas itu lebih dari satu, satu ruang kerja paling banyak dapat memakai sekitar tiga perempat darinya, sehingga tidak ada satu ruang kerja pun yang dapat mengambil semua tempat. Sebuah run beserta subagennya bersama-sama memakai paling banyak setengah dari tempat ruang kerjanya (minimal satu), sehingga skrip mereka yang berikutnya menunggu sementara skrip dari run lain di ruang kerja itu dapat jalan terus. Lihat [CLI `cc_server`](/id-ID/panduan-pengguna/referensi/cli-cc-server/#mode-kode).
+
+## Persetujuan dan pertanyaan
+
+Panggilan alat dari skrip diperiksa persis seperti panggilan langsung: filter alat mode, [pagar pengaman tindakan](/id-ID/panduan-pengguna/konsep/pagar-pengaman/), kartu persetujuan, dan pemeriksaan milik alat itu sendiri. Skrip tidak dapat melakukan sesuatu yang tidak bisa dilakukan agen dengan memanggil alat itu sendiri.
+
+Ketika panggilan skrip memerlukan persetujuan, kartu persetujuan menampilkan **Dari skrip yang dijalankan agen**, dan **Tampilkan skrip** membuka skrip dalam percakapan. Untuk mencegah skrip membanjiri Anda dengan kartu:
+
+- satu skrip dapat meminta persetujuan paling banyak 10 kali, dan mengajukan paling banyak 10 pertanyaan;
+- setelah Anda menolak salah satu panggilannya, panggilan berikutnya yang memerlukan persetujuan ditolak tanpa bertanya.
+
+Untuk run agen bawaan, permintaan persetujuan yang disebabkan oleh perintah yang dijalankan skrip, seperti git push, dihitung terhadap batas yang sama dan berhenti setelah penolakan dengan cara yang sama. Ketika skrip subagen berjalan bersamaan, permintaan seperti itu dihitung terhadap batas kedua skrip, dan penolakan menghentikan keduanya.
+
+Dalam run agen bawaan, persetujuan untuk alat dari server MCP eksternal tidak diingat: setiap panggilan meminta persetujuan lagi, baik dibuat oleh skrip maupun langsung oleh agen, kecuali otonomi space diatur ke **Bertindak bebas**. Setiap permintaan persetujuan seperti itu yang disebabkan skrip dihitung terhadap batas satu skrip untuk meminta persetujuan, yaitu 10 kali.
+
+Jika skrip berakhir sebelum Anda menjawab, kartu ditarik, dan jawaban yang diberikan setelah itu tidak menyetujui apa pun.
+
+## Dalam percakapan
+
+Panggilan `repl` tampil dalam percakapan sebagai satu baris dengan label deskripsi skrip. Saat diperluas, baris itu menampilkan skrip dan keluarannya, serta panggilan alat yang dibuat skrip di bawah **Panggilan alat**, dengan jumlah yang sedang berjalan, berhasil, gagal, ditolak, dibatalkan, dalam antrean, atau dilewati.
+
+### Cara skrip ditampilkan
+
+Panggilan alat disusun mengikuti cara skrip ditulis, bukan sebagai satu daftar panjang. Runner melaporkan baris dan kolom tempat setiap panggilan dibuat, dan aplikasi membaca skrip untuk menemukan perulangan, cabang, dan fungsinya:
+
+- **Perulangan** (`for`, `while`) tampil sebagai grup **Loop** yang diberi judul dengan baris pertamanya, dan callback yang diteruskan ke panggilan seperti `map` atau `forEach` tampil sebagai grup **Untuk setiap**. Garis tipis memisahkan satu putaran perulangan dari putaran berikutnya bila aplikasi dapat membedakannya.
+- **Panggilan yang dijalankan bersama** dengan `Promise.all`, `Promise.allSettled` atau kombinator serupa tampil sebagai grup **Secara paralel**.
+- **Sebuah cabang** (`if`/`else`, `switch`, `try`/`catch`) menampilkan satu grup per cabang, yang judulnya berupa kondisinya.
+- **Sebuah fungsi** yang didefinisikan dan dipanggil skrip tampil sebagai grup **Fungsi**.
+
+Grup yang berada di dalam grup lain menjorok satu langkah lebih dalam, hingga delapan langkah; grup yang lebih dalam tetap pada jorokan itu.
+
+Judul setiap grup menampilkan bagaimana panggilannya berakhir sejauh ini. Sebelum sebuah panggilan berjalan, barisnya menampilkan alat dan argumennya seperti yang tertulis dalam skrip:
+
+| Baris | Arti |
+| --- | --- |
+| **Dalam antrean** | Skrip belum sampai ke panggilan ini. |
+| Berjalan | Panggilan sedang berjalan. |
+| Selesai | Panggilan telah berakhir; baris menampilkan hasilnya dan berapa lama waktu yang dibutuhkan. |
+| **Dilewati** | Skrip melewati panggilan ini, misalnya cabang `if` yang tidak diambil, atau berakhir tanpa mencapainya. |
+
+Panggilan yang ditulis di dalam argumen panggilan ke alat yang sama dilaporkan dari tempat yang sama dalam skrip dengan panggilan itu. Ketika aplikasi tidak dapat memastikan apakah panggilan luar dibuat, barisnya tidak menampilkan kata status apa pun, bukan **Dilewati**.
+
+Ketika sebuah grup telah membuat lebih dari delapan panggilan, bagian tengahnya dilipat: dua yang pertama dan tiga yang terakhir tetap terlihat, begitu pula setiap panggilan yang masih berjalan, gagal atau ditolak, bersama panggilan yang memulai putarannya dalam perulangan. **Tampilkan N panggilan lagi** membuka 100 panggilan lagi setiap kali ditekan, dan menyebutkan hingga empat alat dari panggilan yang tersembunyi beserta jumlah masing-masing, yang paling jarang lebih dulu, misalnya **Tampilkan 12 panggilan lagi** · Bash 1 · Read 11. Nama alat yang lebih dari 24 karakter dipotong di sana.
+
+Panggilan yang tidak dapat ditempatkan aplikasi dalam skrip, misalnya yang dibuat oleh callback `then`, dicantumkan setelah pohon di bawah **Panggilan yang tidak ditempatkan dalam skrip**. Ketika aplikasi tidak dapat membaca skrip, atau tidak ada panggilan yang menyatakan di mana ia dibuat, panggilan-panggilan tampil sebagai daftar biasa sesuai urutan dibuatnya.
+
+Setiap baris panggilan menampilkan awal argumen panggilan dan awal hasilnya, paling banyak 8 KiB masing-masing; setelah baris-baris sebuah skrip memuat 256 KiB dari potongan ini, baris berikutnya hanya menampilkan alat dan bagaimana panggilan itu berakhir. Setelah skrip selesai, **Buka rekam** membuka rekam lengkapnya; jika rekam tidak ditemukan, yang terbuka adalah daftar skrip dari run tersebut. Skrip yang ditolak sebelum berjalan (misalnya karena skrip lain dari run yang sama masih berjalan) tidak memiliki rekam dan tidak memiliki tautan.
+
+## Rekam
+
+Setiap skrip yang berjalan direkam di ruang kerjanya sebelum mulai, dan rekamannya dilengkapi ketika selesai. **Observabilitas → Eksekusi kode** mencantumkannya, dari yang terbaru, dan dapat difilter menurut hasil. Tautan **Skrip dalam run ini** dan **Skrip oleh agen ini** pada sebuah rekam mempersempit daftar ke satu run atau satu agen. Sebuah rekam menampilkan:
+
+- skrip, keluarannya, dan konsolnya;
+- kapan mulai, berapa lama berjalan, waktu prosesor dan memori puncak yang dipakai, serta apakah berjalan lewat agen bawaan atau agen eksternal;
+- bagaimana akhirnya, dengan bahasa sehari-hari (misalnya, kehabisan waktu atau melempar galat yang tidak tertangkap);
+- setiap panggilan alat, berurutan, dengan hasilnya: diizinkan, disetujui seseorang, atau ditolak; berapa lama seseorang memutuskan; argumennya (rahasia dihapus, dipotong hingga 8 KiB); dan ukuran hasilnya. Hasilnya sendiri tidak disimpan.
+
+Rekam menyimpan di mana dalam skrip setiap panggilan dibuat, sehingga panggilan alatnya ditampilkan dengan susunan yang sama seperti dalam percakapan. Panggilan yang disetujui seseorang tidak pernah dilipat di sana.
+
+Skrip yang masih berjalan tampil sebagai sedang berjalan, dengan panggilan alat yang sudah selesai sejauh ini; keluaran, durasi, dan pemakaian sumber dayanya muncul ketika selesai. Jika server berhenti saat skrip berjalan, rekam ditutup ketika server dinyalakan kembali dan menyatakan hal itu; tidak ada skrip yang berjalan di ruang kerja itu sampai rekamnya ditutup.
+
+Rekam disimpan bersama run-nya: menghapus run atau space-nya ikut menghapus rekamnya. Anggota melihat rekam dari space yang dapat mereka buka.
+
+## Cara skrip dibatasi
+
+Skrip tidak pernah berjalan di dalam server. Setiap skrip berjalan di prosesnya sendiri, sebuah program kecil yang dikemas bersama server, `cc_codemode`, yang menjalankan JavaScript di mesin QuickJS-NG. Sebelum membaca skrip, program itu mengunci dirinya dengan kendali bawaan sistem operasi: di Linux, filter panggilan sistem dan batas sumber daya; di macOS, profil sandbox tolak-secara-default; di Windows, AppContainer dan job object. Setelah itu ia tidak dapat membuka berkas, memakai jaringan, memulai proses, atau melihat program lain. Ia mulai tanpa variabel lingkungan dan tidak memegang kredensial; satu-satunya saluran keluarnya adalah server, yang menjawab panggilan alatnya.
+
+Server memeriksa kunci ini saat mulai, dengan menjalankan self-test program. Jika kunci tidak berlaku di mesin itu, misalnya di dalam kontainer yang profil keamanannya menolak salah satu langkah, server tidak menjalankan skrip di sana: tidak ada run yang mendapat `repl`, dan halaman pengaturan menampilkan **Tidak tersedia** beserta alasannya. Skrip tidak pernah berjalan dengan pengurungan yang lebih lemah. Kunci Windows belum diuji di Windows.
+
+Di mana sebuah panggilan dibuat dalam skrip dilaporkan oleh runner, sehingga hanya digunakan untuk menata percakapan dan rekam. Itu tidak pernah menentukan apakah sebuah panggilan diizinkan.
+
+Lihat [Sandbox dan keamanan](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/#skrip-dalam-mode-kode) untuk apa yang dicakup dan tidak dicakup oleh kunci ini.
+
+## Lihat juga
+
+- [Konteks alat dan cache prompt](/id-ID/panduan-pengguna/konsep/konteks-alat/): mengapa himpunan langsung kecil dan sama dengan atau tanpa `repl`.
+- [Alat agen bawaan](/id-ID/panduan-pengguna/referensi/alat-agen/#repl--jalankan-skrip-yang-memanggil-alat-anda): masukan alat `repl`.
+- [CLI `cc_server`](/id-ID/panduan-pengguna/referensi/cli-cc-server/#mode-kode): batas yang ditetapkan pemilik server.

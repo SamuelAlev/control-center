@@ -28,6 +28,35 @@ class _RunGuards {
           : s.config.steering.advisorEveryTurns {
     // Seeded so the first eligible turn reviews, then it throttles.
     _turnsSinceAdvice = _advisorEveryTurns - 1;
+    // A resumed run still holds its last checklist write in history.
+    for (final m in s.history.reversed) {
+      final counts = _checklistCountsIn([
+        for (final b in m.content)
+          if (b is HarnessToolUseBlock) (name: b.name, args: b.input),
+      ]);
+      if (counts != null) {
+        checklistCounts = counts;
+        break;
+      }
+    }
+  }
+
+  /// Open and total items of the run's latest checklist write, for the
+  /// "Still in flight" block; null before the run wrote one.
+  ({int open, int total})? checklistCounts;
+
+  static ({int open, int total})? _checklistCountsIn(
+    List<({String name, Map<String, dynamic> args})> calls,
+  ) {
+    for (final call in calls.reversed) {
+      if (ChecklistSupervisor.isChecklistWrite(call.name)) {
+        final counts = ChecklistSupervisor.countsOf(call.args);
+        if (counts != null) {
+          return counts;
+        }
+      }
+    }
+    return null;
   }
 
   final _RunState s;
@@ -99,7 +128,15 @@ class _RunGuards {
   /// turn's. Period-2 (A-B-A-B): the classic "edit, revert, edit, revert"
   /// loop a period-1 check never sees. Past the limit, nudge the model to
   /// change approach (fires once per breach, then re-arms).
-  Stream<AgentLoopEvent> afterToolTurn(List<_PendingTool> pending) async* {
+  ///
+  /// The repetition guard keys on the model's own calls ([pending]): a script
+  /// run twice is the same move twice, whatever it called inside. The
+  /// checklist sees [observed], which adds the calls a tool made through its
+  /// reentry, so a script that writes the checklist counts as a write.
+  Stream<AgentLoopEvent> afterToolTurn(
+    List<_PendingTool> pending,
+    List<_ObservedCall> observed,
+  ) async* {
     final signature = [
       for (final t in pending) '${t.name}:${jsonEncode(t.args)}',
     ].join('|');
@@ -139,11 +176,10 @@ class _RunGuards {
       );
     }
 
+    checklistCounts = _checklistCountsIn(observed) ?? checklistCounts;
     final checklist = this.checklist;
     if (checklist != null) {
-      final steer = checklist.observeTurn([
-        for (final t in pending) (name: t.name, args: t.args),
-      ]);
+      final steer = checklist.observeTurn(observed);
       if (steer != null) {
         s.history.add(HarnessMessage.system(steer));
         yield const LoopNotice(
@@ -181,7 +217,14 @@ class _RunGuards {
       return;
     }
     if (note != null) {
-      s.history.add(HarnessMessage.system(_formatAdvisory(note)));
+      // Another model's words, drawn from the history's tool output: data a
+      // compaction summarises, never steering it pins.
+      s.history.add(
+        HarnessMessage.system(
+          _formatAdvisory(note),
+          origin: HarnessMessageOrigin.notice,
+        ),
+      );
       yield LoopAdvisorNote(note.note, severity: note.severity);
     }
   }

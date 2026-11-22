@@ -65,6 +65,7 @@ final class SpaceRepoAccess implements SpaceReadGate {
 
   /// The repositories [spaceId] exposes in [workspaceId]; every linked one
   /// when [spaceId] is null (a host shell can reach each of them).
+  @override
   Future<List<String>> exposedBy(String workspaceId, String? spaceId) async {
     final dbs = _dbs;
     if (dbs == null) {
@@ -79,12 +80,14 @@ final class SpaceRepoAccess implements SpaceReadGate {
     );
   }
 
-  /// A check of [userId]'s reads in [workspaceId], one repository at a time,
-  /// sharing one membership lookup. Throws the refusal the code ops give.
+  /// A check of [userId]'s [level] grant (and forge read) in [workspaceId],
+  /// one repository at a time, sharing one membership lookup. Throws the
+  /// refusal the code ops give.
   Future<Future<void> Function(String repoId)> _reader(
     String workspaceId,
-    String userId,
-  ) async {
+    String userId, {
+    RepoGrantLevel level = RepoGrantLevel.read,
+  }) async {
     final members = _members;
     if (members == null) {
       throw const AuthException(
@@ -101,10 +104,10 @@ final class SpaceRepoAccess implements SpaceReadGate {
         : await members.getRepoGrants(workspaceId, userId);
     return (repoId) async {
       if (grants != null &&
-          !(grants[repoId] ?? RepoGrantLevel.none).allowsRead) {
-        throw const RepoGrantRequiredException(
-          RepoGrantLevel.read,
-          'No read access to this repo',
+          !(grants[repoId] ?? RepoGrantLevel.none).atLeast(level)) {
+        throw RepoGrantRequiredException(
+          level,
+          'No ${level.wireName} access to this repo',
         );
       }
       await _forgeRead(
@@ -128,6 +131,29 @@ final class SpaceRepoAccess implements SpaceReadGate {
     final read = await _reader(workspaceId, userId);
     for (final repoId in exposed) {
       await read(repoId);
+    }
+  }
+
+  /// Refuses [userId] changing what space [spaceId] exposes (steering a
+  /// run that acts on someone else's forge sign-in) unless they hold the
+  /// write grant on every repository it exposes; a space with none passes.
+  /// Throws the dispatcher's own refusal ([RepoGrantRequiredException]).
+  Future<void> requireWrite(
+    String workspaceId,
+    String userId,
+    String spaceId,
+  ) async {
+    final exposed = await exposedBy(workspaceId, spaceId);
+    if (exposed.isEmpty) {
+      return;
+    }
+    final write = await _reader(
+      workspaceId,
+      userId,
+      level: RepoGrantLevel.write,
+    );
+    for (final repoId in exposed) {
+      await write(repoId);
     }
   }
 

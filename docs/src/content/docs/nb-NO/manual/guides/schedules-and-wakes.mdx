@@ -1,0 +1,110 @@
+---
+title: Tidsplaner og vekkinger
+description: Vekk en agent senere, etter en tidsplan eller når noe skjer, se hva som venter, og hva som skjer ved en omstart eller en bruksgrense.
+slug: nb-NO/handbok/slik-gjor-du/tidsplaner-vekkinger
+sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+---
+
+Mens den venter, sover ikke en agent og spør ikke stadig etter status. Den, eller du, setter opp en **vekking**: en varig forespørsel om å starte eller fortsette agentens kjøring i en samtale på et tidspunkt eller når noe skjer. Hver kjøring serveren starter uten at noen skriver, begynner som en vekking: et målets neste segment, en tidsplan, en overvåking, et svar fra en annen agent, ferdig delegert arbeid, slutten på en bruksgrense, arbeidet som er igjen etter en omstart. Vekkinger lagres i arbeidsområdets database, så de overlever en omstart.
+
+## Sett opp en tidsplan for en agent selv
+
+Skriv en av disse i en samtales skrivefelt:
+
+```text
+/loop every 30m --days 3 check the deploy and fix what broke
+/loop keep the flaky tests green
+/schedule in 2h look at the overnight benchmark
+/schedule at 09:00 summarize what changed overnight
+/schedule cron "0 9 * * 1-5" --max 20 triage new tickets
+```
+
+| Kommando | Hva den gjør |
+| --- | --- |
+| `/loop every <interval> <prompt>` | Vekker agenten med prompten nå, og deretter hvert intervall (minst 60 sekunder mellom hver) |
+| `/loop <prompt>` | En selvstyrt løkke: vekker agenten nå, og etter hver kjøring velger agenten selv forsinkelsen til neste, 1 til 60 minutter (20 som standard) |
+| `/schedule in <duration> <prompt>` | Vekker agenten én gang, etter forsinkelsen |
+| `/schedule at <HH:MM or ISO time> <prompt>` | Vekker agenten én gang. `HH:MM` er neste slike tidspunkt i arbeidsområdets tidssone; et ISO-tidspunkt uten forskyvning er UTC |
+| `/schedule cron "<expression>" <prompt>` | Vekker agenten etter et cron-uttrykk med fem felt, lest i arbeidsområdets tidssone. Anførselstegnene er valgfrie |
+
+- `--max <N>` begrenser kjøringene, `--days <N>` avslutter tidsplanen etter så mange dager (30 som standard, høyst 365), og `--budget <dollars>` begrenser hva tidsplanen kan bruke totalt (ellers arbeidsområdets standard, 50 dollar til å begynne med).
+- `/loop` starter sin første kjøring med en gang. `/schedule` venter på sitt tidspunkt.
+- Varigheter bruker `s`, `m`, `h` og `d`, for eksempel `90s`, `20m` eller `1h30m`.
+- Disse kommandoene leses bare i en melding du skriver selv.
+
+Skrivefeltet hjelper deg å skrive dem. Etter `/loop` eller `/schedule` og et mellomrom viser forslagslisten når den utløses, og den snevres inn etter hvert som du skriver; skriv `--` etter tidspunktet for grensene. Enter eller Tab velger en rad og sender ingenting. En linje over teksten din leser deretter kommandoen tilbake: når den utløses, når den avsluttes, og hva som fortsatt mangler. Hvis du trykker Enter på en kommando som ikke kan leses, sier den linjen hva som er galt, og utkastet ditt blir stående.
+
+Du kan også lage en tidsplan på siden **Tidsplaner** med **Ny tidsplan**: velg området, samtalen og agenten, når den utløses, hva hver kjøring starter fra, en slutt, en grense for kjøringer og en kostnadsgrense. **Hvis agenten er opptatt** velger mellom å hoppe over den utløsningen og å vente til agenten er ledig. **Hver kjøring** velger mellom å starte en kjøring og bare å varsle deg med notatet.
+
+## Hva agenter setter opp
+
+Agenter bruker verktøyet `wake_me` til de samme tingene, og til overvåkinger:
+
+| Overvåking | Utløses når |
+| --- | --- |
+| `on:pr_checks` | Sjekkene i områdets pull request er ferdige |
+| `on:pr_review` | Områdets pull request får en gjennomgang eller et svar |
+| `on:pr_merged` | Områdets pull request blir slått sammen |
+| `on:environment` | En oppgave i områdets miljø avsluttes, eller miljøet blir klart |
+| `on:ticket:<id>` | En sak blir avgjort |
+| `on:pipeline_run:<id>` | En pipeline-kjøring avsluttes |
+
+- En overvåking av pull request hører på områdets egen pull request, eller én pull request den nevner (`on:pr_checks:acme/shop-ui#12`). En overvåking på noe personen den handler for ikke kan lese, avvises.
+- Agentens egne handlinger utløser ikke overvåkingene. En hendelse som kommer mens agenten arbeider, går ikke tapt: den venter til kjøringen er over, og senere hendelser slås sammen i samme vekking.
+- En tidsplan en agent setter opp, må ha en grense for kjøringer eller en slutt. Den avsluttes etter 7 dager som standard og høyst 30. En overvåking kjører 10 ganger som standard.
+- En tidsplan agenten setter i en kjøring som startet en av sine egne tidsplaner, deler den første tidsplanens slutt, grense for kjøringer og kostnadsgrense, så en kjede av agentens tidsplaner ikke kan overleve den første. Å slette den første tidsplanen avslutter hele kjeden; å sette den på pause, setter bare den tidsplanen på pause. Kjøringer kjeden starter gjennom andre agenter teller mot den samme kostnadsgrensen. En tidsplan du lagde starter ingen kjede: det agenten setter i sine kjøringer, begrenses som alt den setter etter en melding fra deg.
+- En agent lister det som venter med `list_wakes`, og avbryter det den selv satte opp med `cancel_wake`. Den kan ikke avbryte det du satte opp.
+
+## Se hva som venter
+
+**Over skrivefeltet.** Når vekkinger venter på en agent i samtalen, viser en stripe dem: **N vekkinger venter**, der hver kommer fra (**Mål**, **Tidsplan**, **Overvåking**, **Svar fra** en agent, **Bruksgrense nullstilt**, **Gjenoppretting**, …), når den forfaller, og hvorfor den holdes.
+
+| Knapp | Hva den gjør | Hvem kan |
+| --- | --- | --- |
+| **Lever nå** | Leverer en ventende vekking med en gang | Bare personen vekkingen handler for |
+| **Fortsett** | Frigir en holdt vekking | Bare personen vekkingen handler for |
+| **Avbryt vekking** | Avbryter den | Alle med tilgang til området |
+
+En vekking som ikke ble levert, etterlater én rad i samtalen som sier hvorfor, for eksempel **Agenten er pauset.** eller **Et budsjett blokkerer en kjøring.**
+
+**Siden for tidsplaner.** Sidemenyen → **Tidsplaner** lister alle tidsplaner og overvåkinger du kan se, gruppert etter status; en cron-tidsplan viser sine neste tre tidspunkter i din tidssone. Åpne en for å se notatet, eieren, neste utløsninger, kjøringer, hoppede over, forbruk og slutt, og **Nylige vekkinger og kjøringer**. Hver tidsplan har sin egen adresse (`/workspaces/<workspace>/schedules/<id>`).
+
+| Handling | Hvem kan |
+| --- | --- |
+| **Pause**, **Slett** | Alle med tilgang til området |
+| **Fortsett**, **Forleng** | Bare eieren (en arbeidsområdeadministrator for en tidsplan en agent lagde uten en person) |
+
+Når noen andre enn en tidsplans eier setter den på pause, viser samtalen en rad som nevner dem.
+
+På telefonen starter **Gjenta** på målskjermen en gjentagende ledetekst (hvert så mange minutt eller time, eller selvstyrt) med en kostnadsgrense og en slutt, og skjermen **Tidsplaner** setter tidsplaner på pause, fortsetter dem og sletter dem. Samtalens fremdriftsvisning viser hva som venter, inkludert pauser ved bruksgrensen (**Fortsett nå**, **Avbryt**) og arbeid som er igjen etter at serveren stoppet.
+
+## Hvordan en tidsplan kjører
+
+- Hver kjøring av en tidsplan eller overvåking er begrenset til 5 dollar, eller til det tidsplanen har igjen når det er mindre, og tidsplanen stopper ved sin kostnadsgrense.
+- Et klokkeslett i timen som hoppes over når klokkene stilles fram, kjøres en time senere den dagen (02:30 kjøres kl. 03:30). Et klokkeslett i timen som gjentas når klokkene stilles tilbake, kjøres én gang.
+- En tidsplans kjøring slår seg aldri sammen med en kjøring som allerede går. Hvis agenten er opptatt når en tidsbestemt tidsplan utløses, hoppes den utløsningen over stille, med mindre tidsplanen venter til agenten er ledig.
+- En kjøring en tidsplan eller overvåking startet, som avsluttes uten problemer, varsler deg ikke, med mindre den nevner noen. Når en tidsplan avsluttes, sier klokken hvorfor (**Den brukte opp kjøringene sine.**, **Den nådde sluttdatoen sin.**, …) uten lyd.
+- Høyst 30 kjøringer i timen starter fra vekkinger i én samtale, og 300 i et arbeidsområde.
+- Når personen en tidsplan handler for forlater arbeidsområdet, avsluttes tidsplanen. Alt annet som handlet for dem stopper også: deres ventende vekkinger avbrytes, deres køede og holdte meldinger slettes, og deres kjørende agenter stoppes.
+
+## Stopp, omstart og bruksgrenser
+
+- **Stopp.** Å trykke **Stopp** på en agents kjøring holder dens ventende vekkinger (de som ikke hører til et mål) og meldingene du har satt i kø til den. De venter på **Fortsett** eller **Send holdte meldinger**. Hver person sender sine egne holdte meldinger; ingen sender en annen persons.
+- **En omstart av serveren.** Vekkinger og tidsplaner overlever. En kjøring en vekking startet, fortsetter etter omstarten, med høyst 3 forsøk. En kjøring du startet selv, kjøres ikke på nytt av seg selv: den etterlater en holdt **Gjenoppretting**-vekking, og den fortsetter når du trykker **Fortsett**. En tidsbestemt tidsplan som gikk glipp av sine tidspunkter mens serveren var nede, utløses sent bare innen en kort toleranse (halvparten av intervallet, høyst 10 minutter; 24 timer for en engangstidsplan), ellers noteres én hopp over: **Gikk glipp av mens serveren var nede.**
+- **En leverandørs bruksgrense.** Når en kjøring stopper ved en leverandørs bruksgrense og leverandøren sier når den nullstilles (innen 7 dager), settes kjøringen på pause. En kjøring serveren startet, som et måls segment eller en tidsplans kjøring, fortsetter av seg selv 30 sekunder etter nullstillingen. For en kjøring du startet, venter den på deg: samtalen viser **Pauset ved** leverandørens **bruksgrense. Grensen nullstilles** et tidspunkt, med **Fortsett** (bare du) og **Avbryt** (alle i området). Etter **Fortsett** fortsetter den når grensen er nullstilt. En pause du ikke fortsetter, utløper 7 dager etter nullstillingen. Meldinger du har satt i kø ved grensen, sendes inn i den gjenopptatte kjøringen; hvis kjøringen ikke venter på nullstillingen, eller pausen avbrytes eller utløper, holdes de for deg under **Send holdte meldinger** i stedet. Andres køede meldinger holdes for dem med en gang. Tidsplanens neste utløsning venter til den pausede kjøringen fortsetter. ACP-agenter rapporterer ingen nullstilling, så kjøringene deres venter ikke.
+
+## Grenser for arbeidsområdet
+
+En arbeidsområdeadministrator setter grensene under **Innstillinger → Arbeidsområde → Tidsplaner**:
+
+- **Grenser for tidsplaner**: hvor mange aktive eller pauset tidsplaner én agent kan ha i én samtale (10), på tvers av arbeidsområdet (50) og i hele arbeidsområdet (500); standard kostnadsgrense for en tidsplan (50 dollar); og tidssonen cron-tidsplaner og det daglige sammendraget bruker (UTC til å begynne med).
+- **Når ingen svarer**: hvor lenge en kjøring serveren startet venter på en persons svar eller godkjenning (72 timer som standard, 1 time til 7 dager) før en godkjenning regnes som avslått og et spørsmål som ubesvart (etter det avvises alt annet den samme kjøringen spør om med en gang), og klokkeslettet for det daglige sammendraget av det som venter på deg i mål, tidsplaner og andre kjøringer serveren startet.
+
+Medlemmer ser siden skrivebeskyttet.
+
+## Se også
+
+- [Forfølg et mål](/nb-NO/handbok/slik-gjor-du/forfolg-et-mal/)
+- [Agenter som samarbeider](/nb-NO/handbok/slik-gjor-du/agenter-samarbeider/)
+- [Skråstrekkommandoer](/nb-NO/handbok/referanse/skrastrekkommandoer/)
+- [Verktøy for vekking og mål](/nb-NO/handbok/referanse/mcp-verktoy/#verktøy-for-vekking-og-mål)

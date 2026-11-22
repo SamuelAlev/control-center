@@ -23,6 +23,11 @@ class ProposeFactTool extends McpTool {
   @override
   String get name => 'propose_fact';
 
+  /// `agent_id` names the calling agent, never a target: forced from the
+  /// call scope, so a run cannot act as another agent.
+  @override
+  Set<String> get forcedScopeKeys => const {'agent_id'};
+
   @override
   String get description =>
       'Stores a fact in shared workspace memory. NOT a triple store — '

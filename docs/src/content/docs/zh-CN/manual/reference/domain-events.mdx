@@ -2,7 +2,7 @@
 title: 领域事件
 description: 全部 54 个领域事件的完整目录、它们的载荷，以及消费这些事件的服务端订阅方。
 slug: zh-CN/手册/参考/领域事件
-sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
+sourceHash: f58123448c0f31c95774bbaebee89f1509940896
 ---
 
 ## 事件总线
@@ -24,7 +24,10 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 | 事件               | 载荷                                                | 触发时机                                              |
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | 创建工作区                                    |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | 智能体完成一次运行（无论成功还是失败）               |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | 智能体的进程流结束，早于最终状态写入。仅为 PR 对话桥接和分析而保留 |
+| `AgentRunSettled` | `agentId`, `workspaceId`, `runId`, `status`, `endReason`, `costMicros`, `wakeIds`, `spaceId?`, `conversationId?`, `limitResetsAt?`, `requestedByUserId?`, `wakeReason?` | 运行的最终状态写入时发布；每次运行仅发布一次。`endReason` 为 `completed`、`error`、`stoppedByUser`、`budget`、`silence`、`usageLimit` 或 `serverStopped`。子智能体的运行不发布任何事件 |
+| `GoalSettled` | `goalId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `status`, `hold?`, `summary?`, `requestedByUserId?` | 目标结束，或开始等待人工评审 |
+| `WakeRuleEnded` | `ruleId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `reason`, `requestedByUserId?` | 定时或监视结束（一次性触发完毕、已过期、用完运行次数或费用、已取消、其目标已结束，或其所属的人已离开） |
 | `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | 智能体开始等待人工处理：一项批准、一个 `ask_user` 问题，或一次因凭据而挂起的运行（`kind` 为 `approval`、`question` 或 `credential`） |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | 注册了一个仓库；会触发后台代码索引 |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | 安装或更新了一个技能，并携带其供应链扫描结论 |
@@ -57,6 +60,16 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 | `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | 有人在 PR 评论或审查评论中提到了你          |
 | `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | 有人在你参与的审查线程中回复                                 |
 | `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | 有人解决了你参与的审查线程                                   |
+
+### 拉取请求监视
+
+由开放拉取请求轮询器对其轮询的每个拉取请求发布，无论作者是谁，供智能体的 `on:pr_*` 监视使用。三者都携带 `workspaceId`、`repoOwner`、`repoName`、`prNumber`、`prTitle`、`headRef` 和 `authorLogin`。
+
+| 事件 | 附加载荷 | 触发时机 |
+| ----------------------- | ----------------------------------------------- | ---------- |
+| `PrWatchChecksSettled` | `passing`, `failedChecks`, `failedCheckUrl?` | 拉取请求头部的所有检查都已完成 |
+| `PrWatchReviewActivity` | `decision`, `decisionChanged`, `newComments` | 拉取请求收到了评审或新评论 |
+| `PrWatchClosed` | `merged` | 拉取请求被合并或关闭 |
 
 ## 消息事件
 
@@ -167,14 +180,20 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 | 聊天空间预配（内联）    | `SpaceCreated`                                                                                       |
 | `PipelineTriggerDispatcher`         | 每个 `DomainEvent`；每个启用的触发器会按自己的类型过滤                                   |
 | `SubPipelineResumeListener`         | `PipelineRunCompleted`, `PipelineRunFailed`                                                          |
-| `PipelineCostRollupListener`        | `AgentRunCompleted`                                                                                  |
-| `BudgetEvaluationListener`          | `AgentRunCompleted`                                                                                  |
+| `PipelineCostRollupListener`        | `AgentRunSettled`                                                                                    |
+| `BudgetEvaluationListener`          | `AgentRunSettled`                                                                                    |
 | `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled`（仅 `meeting_summary` 运行）    |
-| `PipelineStepResumeListener`        | `AgentRunCompleted`                                                                                  |
-| `AgentRunTaskCompleter`             | `AgentRunCompleted`                                                                                  |
-| `GoalSupervisor`                    | `AgentRunCompleted`                                                                                  |
-| `CheckerDispatchListener`           | `AgentRunCompleted`                                                                                  |
-| `TeamRoutingService`                | `AgentRunCompleted`, `TicketAssigned`                                                                |
+| `PipelineStepResumeListener`        | `AgentRunSettled`                                                                                    |
+| `AgentRunTaskCompleter`             | `AgentRunSettled`                                                                                    |
+| `GoalSupervisor`                    | `AgentRunSettled` — 决定目标的下一步                                                                         |
+| `CheckerDispatchListener`           | `AgentRunSettled` — 将检查者排入队列作为一次唤醒；跳过目标的段和评审                                                         |
+| `TeamRoutingService`                | `AgentRunSettled`, `TicketAssigned`                                                                  |
+| `WakeQueueService` | `AgentRunSettled` — 投递那些等待运行结束的唤醒 |
+| `WakeRuleService` | `AgentRunSettled`（自定节奏循环）、`GoalSettled`（结束目标的定时）、`PrWatch*`、`EnvironmentProcessExited`、`EnvironmentReady`、工单和流水线运行的结束（监视），以及 `WorkspaceMemberRemoved`（结束该成员的定时） |
+| `PeerAskService` | `AgentRunSettled` — 结算智能体之间互相提出的问题，并唤醒提问者 |
+| `LimitParkService` | `AgentRunSettled` 且 `usageLimit` — 等待提供商重置限额 |
+| `ImprovementReviewService` | `GoalSettled`（已验证的目标）和 `AgentRunSettled` — 将改进审阅排入队列并读取其结果 |
+| 流水线目标步骤（`goal.pursue`） | `GoalSettled`、`AgentRunSettled`、`PipelineRunCompleted`、`PipelineRunFailed`、`PipelineRunCancelled` — 恢复该步骤、向编排计费并跟随该流水线运行 |
 | `OrchestrationRunListener`          | `PipelineRunCancelled`, `PipelineRunFailed`                                                          |
 | `MultiVendorTicketSyncCoordinator`  | `TicketCreated`, `TicketAssigned`, `TicketReassigned`, `TicketStatusChanged`, `TicketDetailsUpdated` |
 | `WorktreeGcListener`                | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`         |
@@ -227,6 +246,8 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 `AgentAwaitingInput` 由 `AgentAwaitingInputPublisher` 发布：它监视批准注册表和凭据阻塞注册表中的新条目，并由 `AgentQuestionService` 告知每个 `ask_user` 问题。一次等待对应一个事件；等待结束时不发布任何事件。
 
 五个自己创作的 PR 类别携带 `forUserId`，因此它们到达作者本人，而不是工作区里的所有人。
+
+长时间运行工作的五个帧，每个都发送给与其相关的人（`for_user_id`）：`notifications/goal_settled`（来自 `GoalSettled`）、`notifications/wake_rule_ended`（来自 `WakeRuleEnded`）、`notifications/improvement_proposed`、`notifications/pipeline_run_held`（在其编排的费用上限处挂起的流水线运行）和 `notifications/waiting_digest`（每天一次，列出等待某人处理的事项）。每个帧都携带 `notification_kind`：`notify` 映射为 `agentRunCompleted`，`question` 和 `review` 映射为 `agentAwaitingInput`。现在每个通知帧都携带 `notification_kind`；带有 `quiet: true` 的帧（已结束的定时、已结束的目标）会进入通知中心，不弹出 Toast、不发声，也不做响亮的推送。
 
 `RemoteEventForwarder` 还会把 `TicketReassigned` 作为 `notifications/ticket_reassigned` 转发，并把每个 `TaskLifecycleEvent` 作为 `notifications/task_<phase>` 转发。两者都不映射到通知类别——它们驱动实时界面，而不是通知中心。成员关系事件不会作为帧被转发：它们使转发器的缓存失效，而会话宿主机则丢弃被移除成员的工作区订阅。
 

@@ -129,94 +129,63 @@ mixin _SpaceRows
             ..where((t) => t.principalId.equals(principalId)))
           .go();
 
-  /// Moves [userId]'s read cursor on [spaceId] to the newest live message
-  /// in the space, as the position `(created_at, rowid)`.
+  /// Moves [userId]'s read cursor in [conversationId] to the newest live
+  /// message in the conversation, as the position `(created_at, rowid)`.
   ///
   /// A cursor holding only the time would treat a message landing later in
   /// the same second as already read, because `created_at` has whole-second
-  /// resolution. A space without messages gets the current time and
+  /// resolution. A conversation without messages gets the current time and
   /// sequence 0, which every later message follows.
   ///
-  /// Idempotent and cheap (one index probe and a write against that user's
-  /// participant row). Lazily creates the row the first time a user opens a
-  /// space they weren't an original participant of (hidden/pipeline
-  /// spaces). Powers the sidebar unread indicator: an agent message after
-  /// the cursor is unseen until the next read.
-  Future<void> markSpaceRead(String spaceId, String userId) =>
+  /// Idempotent and cheap: one index probe and an upsert of that user's row.
+  Future<void> markConversationRead(String conversationId, String userId) =>
       transaction(() async {
         final newest = await customSelect(
           'SELECT created_at, rowid AS seq FROM conversation_messages '
-          'WHERE space_id = ? AND reverted = 0 '
+          'WHERE conversation_id = ? AND reverted = 0 '
           'ORDER BY created_at DESC, rowid DESC LIMIT 1',
-          variables: [Variable.withString(spaceId)],
+          variables: [Variable.withString(conversationId)],
           readsFrom: {conversationMessagesTable},
         ).getSingleOrNull();
         final at = newest == null
             ? DateTime.now()
             : _fromSeconds(newest.read<int>('created_at'));
         final seq = newest?.read<int>('seq') ?? 0;
-        await into(spaceParticipantsTable).insert(
-          SpaceParticipantsTableCompanion(
-            id: Value('$spaceId-user-$userId'),
-            spaceId: Value(spaceId),
-            principalId: Value(userId),
-            participantType: const Value('user'),
-            lastReadAt: Value(at),
-            lastReadSeq: Value(seq),
-          ),
-          onConflict: DoUpdate(
-            (_) => SpaceParticipantsTableCompanion(
-              lastReadAt: Value(at),
-              lastReadSeq: Value(seq),
-            ),
-            target: [
-              spaceParticipantsTable.spaceId,
-              spaceParticipantsTable.principalId,
-            ],
+        await into(conversationReadsTable).insertOnConflictUpdate(
+          ConversationReadsTableCompanion.insert(
+            conversationId: conversationId,
+            userId: userId,
+            lastReadAt: at,
+            lastReadSeq: seq,
           ),
         );
       });
 
-  static FeedPosition? _cursorOf(SpaceParticipantsTableData? row) {
-    final at = row?.lastReadAt;
-    return at == null ? null : FeedPosition(at: at, seq: row!.lastReadSeq);
-  }
-
-  /// Watches [userId]'s read cursor on [spaceId], or null when no row
-  /// exists yet / it has never been set.
-  Stream<FeedPosition?> watchUserLastReadAt(String spaceId, String userId) {
-    return (select(spaceParticipantsTable)..where(
-          (t) =>
-              t.spaceId.equals(spaceId) &
-              t.participantType.equals('user') &
-              t.principalId.equals(userId),
-        ))
-        .watchSingleOrNull()
-        .map(_cursorOf);
-  }
-
-  /// One workspace-wide snapshot of the authenticated user's read cursors.
-  /// Missing rows stay absent so never-opened spaces never show as unread.
-  Stream<Map<String, FeedPosition>> watchUserSpaceReads(
+  /// Watches [userId]'s read cursors across this workspace's conversations,
+  /// keyed by conversation id. A conversation missing from the map has never
+  /// been read by that user.
+  Stream<Map<String, FeedPosition>> watchUserConversationReads(
     String workspaceId,
     String userId,
   ) {
     final query =
-        select(spaceParticipantsTable).join([
+        select(conversationReadsTable).join([
           innerJoin(
-            spacesTable,
-            spacesTable.id.equalsExp(spaceParticipantsTable.spaceId),
+            conversationsTable,
+            conversationsTable.id.equalsExp(
+              conversationReadsTable.conversationId,
+            ),
           ),
         ])..where(
-          spacesTable.workspaceId.equals(workspaceId) &
-              spaceParticipantsTable.participantType.equals('user') &
-              spaceParticipantsTable.principalId.equals(userId),
+          conversationsTable.workspaceId.equals(workspaceId) &
+              conversationReadsTable.userId.equals(userId),
         );
     return query.watch().map(
       (rows) => {
         for (final row in rows)
-          row.readTable(spaceParticipantsTable).spaceId: ?_cursorOf(
-            row.readTable(spaceParticipantsTable),
+          row.readTable(conversationReadsTable).conversationId: FeedPosition(
+            at: row.readTable(conversationReadsTable).lastReadAt,
+            seq: row.readTable(conversationReadsTable).lastReadSeq,
           ),
       },
     );

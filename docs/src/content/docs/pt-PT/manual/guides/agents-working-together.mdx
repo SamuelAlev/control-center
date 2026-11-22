@@ -1,0 +1,63 @@
+---
+title: Agentes a trabalhar em conjunto
+description: Como os agentes se fazem perguntas uns aos outros, passam trabalho e são despertados com a resposta, e onde vê o que um agente aguarda de outro.
+slug: pt-PT/manual/guias/agentes-em-conjunto
+sourceHash: 36bb45cd480fb45d0380e8fd651845c59a7debcb
+---
+
+Os agentes de um espaço de trabalho podem fazer perguntas uns aos outros, consultar um especialista, pedir uma revisão, enviar uma mensagem ou delegar um ticket. Nada disto exige que um agente fique parado à espera: um agente que perguntou pode continuar o trabalho ou terminar a sua vez, e é despertado na sua própria conversa quando a resposta chega.
+
+## Perguntar a outro agente
+
+Um agente pergunta com `ask_agent`, de duas formas:
+
+- **Esperar** (predefinição): o agente fica bloqueado até chegar a resposta, até 600 segundos por predefinição e 1 800 no máximo.
+- **Em segundo plano**: a chamada devolve o controlo de imediato e o agente continua a trabalhar.
+
+Em qualquer dos casos, a pergunta é registada antes de ser entregue. Quando a resposta não regressou na chamada, o agente que perguntou é despertado exatamente uma vez, com a resposta, quando a execução do outro agente termina: respondida, falhou, ou expirou após 24 horas sem resposta. Pelo caminho pode ouvir, uma vez cada, que o outro agente prometeu uma resposta, que está a aguardar uma pessoa, ou que parou num limite de utilização. Nenhuma dessas mensagens conta como resposta.
+
+`consult_agent` (traz o especialista mais adequado), `request_peer_review` (um segundo olhar sobre uma conclusão de revisão) e `send_to_agent` (uma mensagem sem resposta) passam pela mesma fila. `send_to_agent` diz se o outro agente foi despertado, se a mensagem espera atrás da sua execução atual, ou porque foi recusada.
+
+O outro agente lê a pergunta como informação vinda de outro agente, nunca como uma instrução que tenha de seguir, e não pode executar um comando slash.
+
+## Passar trabalho
+
+- **Um ticket delegado** (`delegate_task`) desperta o agente que o delegou, na conversa de onde o delegou, quando o ticket atinge um estado final.
+- **A execução de um membro da equipa** que o líder iniciou com um `@mention` ou uma mensagem desperta o líder, na conversa de onde o despertou, quando termina. (Uma pergunta é respondida pela sua resposta, e um ticket delegado pelo seu ticket.)
+- **Um worker em segundo plano** em modo de diretor (`/vibe`) entrega o seu resultado ao diretor, enquanto o diretor continua a trabalhar.
+- **Uma `@mention`** de um agente, e o verificador do espaço, são entregues da mesma forma, como despertares.
+
+Um agente pode ver o que outro agente está a fazer sem lhe perguntar: `agent_activity` mostra o estado do outro agente, a sua ferramenta atual e as suas últimas mensagens, e não desperta ninguém.
+
+## Limites
+
+O servidor aplica estes limites, qualquer que seja o que os agentes digam:
+
+| Limite | Valor |
+| --- | --- |
+| Até que profundidade pode ir uma cadeia de perguntas e passagens de trabalho | 3 |
+| Ciclos (um agente que pergunta a outro que, através de outros, está à espera dele) | Recusado |
+| Perguntas pendentes por agente que pergunta | 10 |
+| Perguntas pendentes por agente que é perguntado | 20 |
+| A mesma pergunta ao mesmo agente outra vez | Recusada nos 10 minutos seguintes |
+| Mensagens entre um par de agentes | 10 por minuto |
+| Tamanho de uma mensagem ou resposta | 16 384 caracteres |
+
+A delegação também respeita a autonomia e o orçamento do agente que pergunta: um agente não pode passar trabalho a outro com mais autonomia ou mais orçamento do que tem. Uma mensagem que você envia diretamente nunca é limitada desta forma.
+
+Quando o agente que é perguntado para num limite de utilização do fornecedor, a sua execução aguarda pela redefinição se ela chegar antes de a pergunta expirar. Caso contrário, a pergunta falha de imediato, e o agente que perguntou é informado do motivo.
+
+## Ver o que um agente aguarda
+
+Numa conversa, a secção **Perguntas** do painel **Geral** lista as perguntas que os agentes lhe fizeram: a quem, que tipo (**Pergunta**, **Consulta** ou **Revisão**), quando, e o seu estado (**A aguardar**, **Respondida**, **Falhou**, **Expirada** ou **Cancelada**), com **Prometeu uma resposta** ou **Em segundo plano** quando se aplica. Uma pergunta que falhou diz porquê, como **A execução dele parou no limite de utilização do fornecedor.**
+
+Qualquer pessoa com acesso ao espaço pode **Cancelar pergunta**. O agente que perguntou não é então despertado, e a execução do outro agente não é parada.
+
+Respostas, mensagens e trabalho concluído que aguardam um agente também aparecem na faixa acima do compositor, com os restantes que ele tem à espera (ver [Programações e despertares](/pt-PT/manual/guias/programacoes-despertares/#ver-o-que-está-à-espera)).
+
+## Ver também
+
+- [Delegar trabalho a agentes](/pt-PT/manual/guias/delegar-tickets/)
+- [Formar uma equipa de agentes](/pt-PT/manual/guias/formar-equipa/)
+- [Dirigir workers em segundo plano](/pt-PT/manual/guias/dirigir-workers-em-segundo-plano/)
+- [Ferramentas MCP: mensagens e delegação entre agentes pares](/pt-PT/manual/referencia/ferramentas-mcp/#mensagens-e-delegação-entre-agentes-pares)

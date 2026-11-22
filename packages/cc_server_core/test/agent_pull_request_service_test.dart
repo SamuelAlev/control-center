@@ -111,6 +111,9 @@ void main() {
     grant: AgentRunGrant(
       workspaceId: workspaceId,
       conversationId: 'c1',
+      mcpEndpoint: true,
+      claudeHook: true,
+      readOnly: false,
       spaceId: spaceId,
       actingUserId: actingUserId,
       repos: const [(forge: ForgeHost.github, owner: 'acme', name: 'widgets')],
@@ -402,6 +405,9 @@ void main() {
       grant: AgentRunGrant(
         workspaceId: 'w1',
         conversationId: 'c1',
+        mcpEndpoint: true,
+        claudeHook: true,
+        readOnly: false,
         actingUserId: 'alice',
         identity: identity,
       ),
@@ -753,6 +759,9 @@ void main() {
           grant: const AgentRunGrant(
             workspaceId: 'w1',
             conversationId: 'c1',
+            mcpEndpoint: true,
+            claudeHook: true,
+            readOnly: false,
             actingUserId: 'alice',
             repos: [(forge: ForgeHost.github, owner: 'acme', name: 'shop-ui')],
           ),

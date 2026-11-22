@@ -2,7 +2,7 @@
 title: Bir ajanı tanılama
 description: Bir ajan çalıştırma üretmeyi bıraktığında çalıştırma günlüğü, adaptör yoklaması, sunucu durumu ve ana makine tanılamaları üzerinden ilerleyin.
 slug: tr-TR/kilavuz/nasil-yapilir/ajan-tanilama
-sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
+sourceHash: 8cd7078bacfbfcd18d90512974eff3539366883c
 ---
 
 Bu kılavuz, bir ajanın neden çalıştırma üretmediğini nasıl bulacağınızı gösterir.
@@ -90,7 +90,13 @@ Git'in ya da ajanın ne yazdırdığını okuyun. `Control Center policy: …`, 
 
 ### Sunucu hiç önyüklenmiyor
 
-Yerel kitaplıklar zorunludur ve bozulmuş bir mod yoktur. Eksik bir dylib yüzünden `cc_server` başlamayı reddeder ve hatada sorunlu dosyayı adıyla belirtir. Yerel dosyaları `scripts/natives/build_natives.sh` ile hazırlayın ve sunucu ikili dosyasını yeniden derleyin.
+Yerel kitaplıklar zorunludur ve bozulmuş bir mod yoktur. Eksik bir dylib veya eksik bir kod modu runner'ı (`bin/codemode/cc_codemode`) yüzünden `cc_server` başlamayı reddeder ve hatada sorunlu dosyayı adıyla belirtir. Yerel dosyaları `scripts/natives/build_natives.sh` ile hazırlayın ve sunucu ikili dosyasını `scripts/build_server.sh` ile yeniden derleyin.
+
+### Bir betik başarısız oldu ya da kod modu sunulmuyor
+
+Bir [kod modu](/tr-TR/kilavuz/kavramlar/kod-modu/) betiğinin ne yaptığını görmek için, konuşmadaki satırında **Kaydı aç** üzerinden ya da **Gözlemlenebilirlik → Kod çalıştırmaları** üzerinden betiğin kaydını açın. Kayıt, betiğin nasıl bittiğini sade bir dille söyler (süresi doldu, işlemci süresini tüketti, bellek sınırına ulaştı, bir hata fırlattı) ve yaptığı her araç çağrısını, korumaların izin verdiğini, bir kişinin onayladığını ya da reddedildiğini göstererek listeler.
+
+Ajanın hiç `repl` aracı yoksa **Ayarlar → Çalışma alanı → Kod modu** bölümünü açın. **Durum** altında **Bu sunucuda** satırı **Kullanılabilir** ya da **Kullanılamıyor** der; **Kullanılamıyor** sunucunun betik runner'ını bu ana makinede kilitleyemediği anlamına gelir ve sayfa nedenini belirtir. Sunucunun başlangıç günlüğünde aynı satır vardır (`code_mode=…`). Çalışma alanı olmayan, çalışma alanı sınırları okunamayan ya da çalıştırma günlüğü yazılamayan bir çalıştırma da `repl` almaz ve araçlarını doğrudan çağırır.
 
 ### Bir eylem sessizce reddediliyor
 

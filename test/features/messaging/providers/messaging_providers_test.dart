@@ -8,7 +8,6 @@ import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space_participant.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
-import 'package:cc_domain/features/messaging/domain/repositories/space_read_repository.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_activity.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dart';
 import 'package:control_center/di/providers.dart';
@@ -19,6 +18,8 @@ import 'package:control_center/features/messaging/providers/messaging_providers.
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../../helpers/fake_conversation_read_repository.dart';
 
 /// Records every conversation watch it is asked for, so a test can assert
 /// which `(workspaceId, spaceId)` pairs ever reached the transport. Every
@@ -58,42 +59,6 @@ class _RecordingConversationRepository implements ConversationRepository {
   @override
   dynamic noSuchMethod(Invocation invocation) =>
       throw UnimplementedError('${invocation.memberName} is not under test');
-}
-
-/// Records every read-cursor watch it is asked for, so a test can assert which
-/// `(workspaceId, spaceId)` pairs ever reached the transport.
-class _RecordingSpaceReadRepository implements SpaceReadRepository {
-  final List<({String workspaceId, String spaceId})> watched = [];
-
-  @override
-  Future<void> markSpaceRead(
-    String workspaceId,
-    String spaceId,
-    String userId, {
-    String? conversationId,
-  }) async {}
-
-  @override
-  Stream<FeedPosition?> watchUserLastReadAt(
-    String workspaceId,
-    String spaceId,
-    String userId,
-  ) {
-    watched.add((workspaceId: workspaceId, spaceId: spaceId));
-    return Stream<FeedPosition?>.value(
-      FeedPosition(at: DateTime(2024), seq: 0),
-    );
-  }
-
-  @override
-  Stream<Map<String, FeedPosition>> watchUserSpaceReads(
-    String workspaceId,
-    String userId,
-  ) => Stream.value({
-    for (final entry in watched)
-      if (entry.workspaceId == workspaceId)
-        entry.spaceId: FeedPosition(at: DateTime(2024), seq: 0),
-  });
 }
 
 void main() {
@@ -276,8 +241,9 @@ void main() {
     });
   });
 
-  group('spaceUserLastReadAtProvider', () {
+  group('conversationLastReadProvider', () {
     const ws = 'ws-1';
+    final read = FeedPosition(at: DateTime(2024), seq: 0);
 
     Space space(String id, {String? workspaceId = ws}) => Space(
       id: id,
@@ -289,13 +255,13 @@ void main() {
 
     ProviderContainer containerWith(
       List<Space> spaces,
-      _RecordingSpaceReadRepository repo,
+      FakeConversationReadRepository repo,
     ) {
       final container = ProviderContainer(
         overrides: [
           activeWorkspaceIdProvider.overrideWith(_StubActiveWorkspaceId.new),
           workspaceSpacesProvider(ws).overrideWithValue(AsyncData(spaces)),
-          spaceReadRepositoryProvider.overrideWithValue(repo),
+          conversationReadRepositoryProvider.overrideWithValue(repo),
           currentUserIdProvider.overrideWithValue('user-1'),
         ],
       );
@@ -303,44 +269,59 @@ void main() {
       return container;
     }
 
-    /// Reads the cursor while holding a listener open — the provider is
-    /// autoDispose, so a bare `read(...future)` would dispose it mid-loading.
+    /// Reads the cursor once it settles, holding a listener open: the
+    /// provider is autoDispose.
     Future<FeedPosition?> readCursor(
       ProviderContainer container,
-      String spaceId,
+      ConversationRef key,
     ) async {
       final sub = container.listen(
-        spaceUserLastReadAtProvider(spaceId),
+        conversationLastReadProvider(key),
         (_, _) {},
       );
       addTearDown(sub.close);
-      return container.read(spaceUserLastReadAtProvider(spaceId).future);
+      await container.read(userConversationReadsProvider(ws).future);
+      return container.read(conversationLastReadProvider(key)).value;
     }
 
-    test('watches the cursor for a space of the active workspace', () async {
-      final repo = _RecordingSpaceReadRepository();
+    test('reads the conversation\'s cursor from the workspace watch', () async {
+      final repo = FakeConversationReadRepository(reads: {'conv-1': read});
       final container = containerWith([space('ch-1')], repo);
 
-      await readCursor(container, 'ch-1');
-
-      expect(repo.watched, [(workspaceId: ws, spaceId: 'ch-1')]);
+      expect(
+        await readCursor(container, (
+          spaceId: 'ch-1',
+          conversationId: 'conv-1',
+        )),
+        read,
+      );
+      expect(
+        await readCursor(container, (
+          spaceId: 'ch-1',
+          conversationId: 'conv-2',
+        )),
+        isNull,
+      );
+      // One workspace subscription serves every conversation.
+      expect(repo.watched, [ws]);
     });
 
-    test('never watches a space belonging to another workspace', () async {
-      // The space list is the answer to a workspace-scoped subscription, but
-      // a mis-scoped one can hand back a FOREIGN workspace's spaces (the
-      // switch-race this guard backstops). Matching on the space's own
-      // workspaceId — not merely on its presence in the list — keeps the pair
-      // the server would reject ("Space belongs to a different workspace")
-      // off the wire, instead of re-issuing it on every resubscribe.
-      final repo = _RecordingSpaceReadRepository();
+    test('never answers for a space belonging to another workspace', () async {
+      // A mis-scoped space list can hand back a FOREIGN workspace's spaces
+      // (the switch race this guard backstops); matching on the space's own
+      // workspaceId keeps that space from reading this workspace's cursors.
+      final repo = FakeConversationReadRepository(reads: {'conv-1': read});
       final container = containerWith([
         space('ch-foreign', workspaceId: 'ws-2'),
       ], repo);
+      final key = (spaceId: 'ch-foreign', conversationId: 'conv-1');
+      final sub = container.listen(
+        conversationLastReadProvider(key),
+        (_, _) {},
+      );
+      addTearDown(sub.close);
 
-      final cursor = await readCursor(container, 'ch-foreign');
-
-      expect(cursor, isNull);
+      expect(container.read(conversationLastReadProvider(key)).value, isNull);
       expect(repo.watched, isEmpty);
     });
   });
@@ -1036,8 +1017,9 @@ void main() {
     final sameSecondLater = FeedPosition(at: DateTime(2024, 6, 1, 12), seq: 11);
 
     ProviderContainer containerWith({
-      required FeedPosition? lastReadAt,
+      required Map<String, FeedPosition>? reads,
       required Map<String, FeedPosition> lastAgentByConversation,
+      Set<String> conversationsNeedingInput = const {},
     }) {
       final container = ProviderContainer(
         overrides: [
@@ -1053,20 +1035,19 @@ void main() {
               ),
             ]),
           ),
-          spaceUserLastReadAtProvider(
-            spaceId,
-          ).overrideWithValue(AsyncData(lastReadAt)),
+          // Null keeps the cursors loading.
+          userConversationReadsProvider(ws).overrideWithValue(
+            reads == null
+                ? const AsyncLoading<Map<String, FeedPosition>>()
+                : AsyncData(reads),
+          ),
           workspaceSpaceActivityProvider(ws).overrideWithValue(
             AsyncData({
               spaceId: SpaceActivity(
                 spaceId: spaceId,
-                lastAgentMessage: lastAgentByConversation.values
-                    .fold<FeedPosition?>(
-                      null,
-                      (best, at) =>
-                          best == null || at.isAfter(best) ? at : best,
-                    ),
                 lastAgentMessageByConversation: lastAgentByConversation,
+                openQuestionCount: conversationsNeedingInput.length,
+                conversationsNeedingInput: conversationsNeedingInput,
               ),
             }),
           ),
@@ -1076,83 +1057,80 @@ void main() {
       return container;
     }
 
-    test(
-      'space badge counts distinct unread conversations at the cursor boundary',
-      () {
-        final container = containerWith(
-          lastReadAt: cursor,
-          lastAgentByConversation: {
-            'c-new': after,
-            'c-other-new': after,
-            'c-same-second': sameSecondLater,
-            'c-at-cursor': cursor,
-            'c-old': before,
-          },
+    bool conversationUnread(ProviderContainer container, String id) =>
+        container.read(
+          conversationUnreadProvider((spaceId: spaceId, conversationId: id)),
         );
-        expect(
-          container.read(spaceUnreadConversationCountProvider(spaceId)),
-          3,
-        );
-      },
-    );
 
-    test(
-      'space badge stays quiet without a read cursor or conversation mail',
-      () {
-        final unopened = containerWith(
-          lastReadAt: null,
-          lastAgentByConversation: {'c-new': after},
-        );
-        final empty = containerWith(
-          lastReadAt: cursor,
-          lastAgentByConversation: const {},
-        );
-        expect(unopened.read(spaceUnreadConversationCountProvider(spaceId)), 0);
-        expect(empty.read(spaceUnreadConversationCountProvider(spaceId)), 0);
-      },
-    );
-
-    test('is true only for conversations with agent mail after the cursor', () {
+    test('needs input is true only for the conversation that asked', () {
       final container = containerWith(
-        lastReadAt: cursor,
-        lastAgentByConversation: {'c-new': after, 'c-old': before},
+        reads: {'c-asked': cursor, 'c-other': cursor},
+        lastAgentByConversation: {'c-asked': after, 'c-other': after},
+        conversationsNeedingInput: {'c-asked'},
       );
-
-      expect(
-        container.read(
-          conversationUnreadProvider((
-            spaceId: spaceId,
-            conversationId: 'c-new',
-          )),
-        ),
-        isTrue,
+      bool needsInput(String id) => container.read(
+        conversationNeedsInputProvider((spaceId: spaceId, conversationId: id)),
       );
-      expect(
-        container.read(
-          conversationUnreadProvider((
-            spaceId: spaceId,
-            conversationId: 'c-old',
-          )),
-        ),
-        isFalse,
-      );
+      expect(needsInput('c-asked'), isTrue);
+      expect(needsInput('c-other'), isFalse);
     });
 
-    test('is false when the space has never been opened', () {
+    test('a conversation is unread past its own cursor', () {
+      final lastAgent = {
+        'c-new': after,
+        'c-same-second': sameSecondLater,
+        'c-at-cursor': cursor,
+        'c-old': before,
+      };
       final container = containerWith(
-        lastReadAt: null,
+        reads: {for (final id in lastAgent.keys) id: cursor},
+        lastAgentByConversation: lastAgent,
+      );
+
+      for (final (id, unread) in [
+        ('c-new', true),
+        ('c-same-second', true),
+        ('c-at-cursor', false),
+        ('c-old', false),
+      ]) {
+        expect(conversationUnread(container, id), unread, reason: id);
+      }
+    });
+
+    test('a conversation never read is unread once an agent wrote in it', () {
+      final container = containerWith(
+        reads: const {},
         lastAgentByConversation: {'c-new': after},
       );
 
-      expect(
-        container.read(
-          conversationUnreadProvider((
-            spaceId: spaceId,
-            conversationId: 'c-new',
-          )),
-        ),
-        isFalse,
+      expect(conversationUnread(container, 'c-new'), isTrue);
+      // No agent message there (an archived conversation reports none).
+      expect(conversationUnread(container, 'c-quiet'), isFalse);
+    });
+
+    test('nothing is unread while the cursors load', () {
+      final container = containerWith(
+        reads: null,
+        lastAgentByConversation: {'c-new': after},
       );
+
+      expect(conversationUnread(container, 'c-new'), isFalse);
+      expect(container.read(spaceUnreadProvider(spaceId)), isFalse);
+    });
+
+    test('a space is unread while any of its conversations is', () {
+      final lastAgent = {'c-read': cursor, 'c-unread': after};
+      final oneUnread = containerWith(
+        reads: {'c-read': cursor, 'c-unread': cursor},
+        lastAgentByConversation: lastAgent,
+      );
+      final allRead = containerWith(
+        reads: {'c-read': cursor, 'c-unread': after},
+        lastAgentByConversation: lastAgent,
+      );
+
+      expect(oneUnread.read(spaceUnreadProvider(spaceId)), isTrue);
+      expect(allRead.read(spaceUnreadProvider(spaceId)), isFalse);
     });
   });
 

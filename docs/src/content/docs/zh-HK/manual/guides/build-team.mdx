@@ -2,7 +2,7 @@
 title: 組成代理團隊
 description: 把代理歸組於一位負責人之下，讓指派的工作都經由同一個協調者路由。
 slug: zh-HK/手冊/操作指南/組成代理團隊
-sourceHash: fc5e2b8c8a49e398ff1b322fcfb25c4aed84bbb4
+sourceHash: 55add2d16bf90650b7d4cbda7aa78f0fdf1b72e2
 ---
 
 本指南說明如何建立團隊、為團隊指派負責人，以及把工作路由到團隊。
@@ -51,7 +51,7 @@ sourceHash: fc5e2b8c8a49e398ff1b322fcfb25c4aed84bbb4
 
 1. 團隊的負責人會連同該工單、團隊的運作說明與成員名冊一起被派發。
 2. 負責人會向成員委派工作，並用 `record_team_activity` 工具記錄自己的評估 —— `action`（已委派）、`no_action`（沒有更多要做的事，這會停止後續再次觸發）或 `failed`。
-3. 每個完成的成員執行都會再次喚醒負責人，並受 no_action 護欄約束。
+3. 負責人以 `@mention` 或訊息啟動的成員執行，在結束時會再次喚醒負責人，回到負責人被喚醒時所在的對話，並受無行動防護限制。負責人以 `delegate_task` 交出的工作，會在工單結算時喚醒它；它以 `ask_agent` 提出的問題，則會在收到回覆時喚醒它（見[代理協作](/zh-HK/手冊/操作指南/代理協作/)）。
 
 管線的 **Team dispatch** 節點是另一個入口。它接收團隊 id、提示詞與派發模式：
 

@@ -74,9 +74,9 @@ abstract interface class NotificationFeedRepository {
   /// the bell said about it. An explicit "mark as unread" survives. The stamp
   /// is the server clock.
   ///
-  /// Host-side only: the host calls it while stamping the space read cursor
-  /// (`space_read.markSpaceRead` with a `conversation_id`), so there is no op
-  /// of its own for a client to reach.
+  /// Host-side only: the host calls it while stamping the conversation read
+  /// cursor (`conversation_read.markRead`), so there is no op of its own for
+  /// a client to reach.
   Future<void> markConversationMessagesRead(
     String workspaceId,
     String userId, {

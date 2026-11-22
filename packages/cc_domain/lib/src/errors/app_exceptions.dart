@@ -217,6 +217,184 @@ class DelegationRefusedException extends AppException {
   String toString() => message;
 }
 
+/// Thrown when a goal would become the second active goal of one agent in a
+/// workspace. One active goal per agent is enforced by a partial unique index
+/// on `agent_goal_runs`; the repository translates its violation into this,
+/// so callers refuse with the `goal_already_active` kind instead of reading a
+/// storage error.
+class GoalAlreadyActiveException extends AppException {
+  /// Creates a [GoalAlreadyActiveException] for [agentId] in [workspaceId].
+  const GoalAlreadyActiveException({
+    required this.workspaceId,
+    required this.agentId,
+  }) : super(
+         'This agent already has an active goal. Pause, complete or cancel '
+         'it first.',
+         code: kind,
+       );
+
+  /// The refusal kind clients localize.
+  static const String kind = 'goal_already_active';
+
+  /// The workspace the goals are in.
+  final String workspaceId;
+
+  /// The agent that already has an active goal.
+  final String agentId;
+
+  @override
+  String toString() => message;
+}
+
+/// Thrown when `complete_goal` is called by anything but the goal's active
+/// segment: another agent, another conversation, or a run of the agent that
+/// is not the goal's `activeRunId` (or when the agent has no active goal).
+class GoalNotActiveSegmentException extends AppException {
+  /// Creates a [GoalNotActiveSegmentException] with an agent-readable
+  /// [message].
+  const GoalNotActiveSegmentException(super.message) : super(code: kind);
+
+  /// The refusal kind.
+  static const String kind = 'goal_not_active_segment';
+
+  @override
+  String toString() => message;
+}
+
+/// Thrown when the server refuses a goal action and says why in [message]
+/// (for the agent or the person) with its [code] as the refusal kind:
+/// `complete_goal`'s evidence does not cover every "Done means" item
+/// ([evidenceIncompleteKind]), a claim is already being verified
+/// ([claimPendingKind]), or `agentGoalRuns.approveCompletion` named a goal
+/// that is not waiting for a person's review ([notInReviewKind]).
+class GoalRefusedException extends AppException {
+  /// Creates a refusal with a readable [message] and its [kind].
+  const GoalRefusedException(super.message, {required String kind})
+    : super(code: kind);
+
+  /// The evidence leaves a criterion of the contract uncovered.
+  static const String evidenceIncompleteKind = 'goal_evidence_incomplete';
+
+  /// The goal already holds a claim the server is verifying.
+  static const String claimPendingKind = 'goal_claim_pending';
+
+  /// The goal is not paused for a person's review (`hold: needsReview`).
+  static const String notInReviewKind = 'goal_not_in_review';
+
+  @override
+  String toString() => message;
+}
+
+/// `steering.release` named the cards a provider's usage-limit pause holds
+/// (`limit:<runId>`): they go out only through the pause's own resume.
+/// [resetsAt] is the provider's reported reset, when a card carries it.
+class SteeringHeldByLimitException extends AppException {
+  /// Creates the refusal.
+  const SteeringHeldByLimitException({this.resetsAt})
+    : super(
+        'These messages wait for the usage limit to reset; they are sent '
+        'when the paused work resumes.',
+        code: kind,
+      );
+
+  /// The `data.kind` a client localizes.
+  static const String kind = 'steering_held_by_limit';
+
+  /// When the provider said its limit resets, or null.
+  final DateTime? resetsAt;
+}
+
+/// `steering.release` with `held_by: stop` by someone none of whose cards
+/// are held there, while other people's are: a release starts a run on the
+/// writer's sign-in, so only the writer sends a held card. [othersHeld] is
+/// how many of other people's cards stay held.
+class SteeringNotYoursException extends AppException {
+  /// Creates the refusal.
+  const SteeringNotYoursException({required this.othersHeld})
+    : super(
+        'These held messages were written by someone else; only the person '
+        'who wrote a message can send it.',
+        code: kind,
+      );
+
+  /// The `data.kind` a client localizes.
+  static const String kind = 'steering_not_yours';
+
+  /// How many held cards of other people stay held.
+  final int othersHeld;
+}
+
+/// A move on an improvement proposal its state refuses, or a review that
+/// cannot start; [code] is the `data.kind` a client localizes.
+class ImprovementRefusedException extends AppException {
+  /// Creates a refusal with a readable [message] and its [kind].
+  const ImprovementRefusedException(super.message, {required String kind})
+    : super(code: kind);
+
+  /// The proposal was already decided (accepted, rejected, expired).
+  static const String alreadyDecidedKind = 'improvement_already_decided';
+
+  /// A skill change is accepted only after a campaign reported no
+  /// regression.
+  static const String campaignRequiredKind = 'improvement_campaign_required';
+
+  /// The text changed after the proposal was applied; rollback refuses.
+  static const String changedSinceKind = 'improvement_changed_since';
+
+  /// What the proposal changes is gone or no longer matches.
+  static const String targetMissingKind = 'improvement_target_missing';
+
+  /// A campaign is already running or passed for the proposal.
+  static const String campaignStateKind = 'improvement_campaign_state';
+
+  /// A review ran in the conversation less than the cooldown ago.
+  static const String cooldownKind = 'improvement_review_cooldown';
+
+  /// A review of the conversation is already waiting to run.
+  static const String reviewQueuedKind = 'improvement_review_queued';
+
+  /// The agent asked to review is not an agent of the workspace.
+  static const String agentNotFoundKind = 'improvement_agent_not_found';
+
+  /// A workspace-scoped policy or a skill change needs a workspace admin.
+  static const String adminRequiredKind = 'improvement_admin_required';
+
+  @override
+  String toString() => message;
+}
+
+/// A raise of an orchestration's cost cap (`orchestration.raiseCap`)
+/// refused. [code] is the `data.kind` clients
+/// localize; [currentMicros] is the cap as stored when the refusal was made
+/// (`data.max_cost_micros`), so a client that lost a race shows the fresh
+/// value.
+class OrchestrationCapRefusedException extends AppException {
+  /// Creates a refusal with a readable [message], its [kind] and the stored
+  /// cap.
+  const OrchestrationCapRefusedException(
+    super.message, {
+    required String kind,
+    required this.currentMicros,
+  }) : super(code: kind);
+
+  /// The cap as stored, or null when there is none.
+  final int? currentMicros;
+
+  /// Only the run's requester (a workspace admin when the run has none)
+  /// raises its cap.
+  static const String notYoursKind = 'orchestration_not_yours';
+
+  /// Not an integer above both the current cap and what was spent, above
+  /// the ceiling, a removal, or a raise of an orchestration with no cap.
+  static const String invalidKind = 'orchestration_cap_invalid';
+
+  /// Another raise landed first; [currentMicros] is the cap it set.
+  static const String changedKind = 'orchestration_cap_changed';
+
+  @override
+  String toString() => message;
+}
+
 /// Thrown when an agent attempts to check out (claim for exclusive work) a task
 /// that is already held by a different agent.
 ///

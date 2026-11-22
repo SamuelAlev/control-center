@@ -6,6 +6,7 @@ import 'package:cc_domain/features/settings/domain/entities/acp_model.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/agents/presentation/agent_markdown.dart';
 import 'package:control_center/features/agents/presentation/widgets/agent_effort_slider.dart';
 import 'package:control_center/features/agents/presentation/widgets/claude_accounts_notice.dart';
 import 'package:control_center/features/agents/presentation/widgets/skill_assignment_section.dart';
@@ -683,7 +684,11 @@ class _AgentSettingsFormState extends ConsumerState<AgentSettingsForm> {
       if (workspaceId != null && !ref.read(isDemoServerProvider)) {
         final fs = ref.read(workspaceFilesystemPortProvider);
         final newPath = await fs.agentFilePath(workspaceId, newSlug);
-        await fs.writeAgentFile(workspaceId, newSlug, _buildAgentMd(updated));
+        await fs.writeAgentFile(
+          workspaceId,
+          newSlug,
+          buildAgentMarkdown(updated),
+        );
         if (nameChanged && oldSlug != newSlug) {
           await fs.deleteAgentDir(workspaceId, oldSlug);
         }
@@ -716,31 +721,5 @@ class _AgentSettingsFormState extends ConsumerState<AgentSettingsForm> {
         setState(() => _saving = false);
       }
     }
-  }
-
-  String _buildAgentMd(Agent agent) {
-    final buf = StringBuffer();
-    buf.writeln('---');
-    buf.writeln('name: ${agent.name}');
-    buf.writeln('title: ${agent.title}');
-    if (agent.reportsTo != null && agent.reportsTo!.isNotEmpty) {
-      buf.writeln('reportsTo: ${agent.reportsTo}');
-    }
-    if (agent.skills.isNotEmpty) {
-      buf.writeln('skills:');
-      for (final skill in agent.skills.toList()) {
-        buf.writeln('  - $skill');
-      }
-    }
-    buf.writeln('---');
-    buf.writeln();
-    if (agent.persona != null && agent.persona!.isNotEmpty) {
-      buf.writeln(agent.persona);
-    } else {
-      buf.writeln('# ${agent.title}');
-      buf.writeln();
-      buf.writeln('Agent profile for **${agent.name}**.');
-    }
-    return buf.toString();
   }
 }

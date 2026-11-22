@@ -1,0 +1,178 @@
+---
+title: Kodläge
+description: Hur en agent skriver ett kort skript som anropar sina verktyg i stället för att anropa dem ett i taget, vilka verktyg den anropar direkt och vilka från ett skript, gränserna ett skript körs under, hur ett skript visas i konversationen och hur det begränsas och registreras.
+slug: sv-SE/handbok/koncept/kodlage
+sourceHash: d41fe2f38c216949847fc7c4768fdf96bed2dc83
+---
+
+En agent anropar normalt sina verktyg ett i taget. Varje anrop är en modellomgång: agenten begär anropet, resultatet kommer tillbaka in i dess kontext och agenten läser det innan den begär nästa. För arbete som mest är mekaniskt, till exempel att läsa tjugo filer för att hitta de tre som spelar roll eller kontrollera varje öppet ärende efter en etikett, går större delen av dessa omgångar och större delen av kontexten åt till resultat som agenten kastar bort.
+
+Kodläget är ett verktyg, `repl`. Med det skriver agenten ett kort JavaScript-skript som anropar dess övriga verktyg, loopar, filtrerar och kombinerar deras resultat och bara returnerar det som behövs. Ett enda `repl`-anrop kan göra jobbet för dussintals verktygsomgångar, och bara skriptets svar kommer in i kontexten.
+
+Varje körning har `repl` när servern kan köra skript. Där finns inget att slå på: se [När en körning har `repl`](#när-en-körning-har-repl).
+
+## Vad ett skript kan göra
+
+Ett skript är vanligt JavaScript, skrivet som kroppen i en async-funktion, så `await` och `return` fungerar på översta nivån. Varje `repl`-anrop startar en ny, tom tolk.
+
+- **Anropa verktyg.** `await tools.read({ path: "README.md" })` anropar ett verktyg och returnerar dess resultat, eller avvisas med ett fel när anropet misslyckas eller nekas. Oberoende anrop kan köras tillsammans med `Promise.allSettled`.
+- **Hitta verktyg.** `ALL_TOOLS` listar varje verktyg som skriptet får anropa. `searchTools(query)` hittar verktyg utifrån vad de gör, `describeTool(name)` returnerar ett verktygs beskrivning och argument, och `describeNamespace(name)` listar verktygen i en grupp. Verktygen från anslutna MCP-servrar nås också på det sättet.
+- **Returnera resultat.** Bara det skriptet returnerar, eller skickar till `text()`, `image()` eller `console.log()`, kommer tillbaka till agenten. Högst fyra bilder når modellen.
+- **Spara värden.** `store(key, value)` och `load(key)` sparar små JSON-värden mellan skript i samma konversation och för samma agent. Värden sparas först när skriptet är klart. Subagenter har ingen lagring.
+- **Fråga en person.** `await tools.ask_user({ question, options })` ställer en fråga och väntar på svaret.
+- **Använd inbäddningar på enheten.** `models.embed`, `models.rank` och `models.classify` använder serverns inbäddningsmodell, när den är installerad.
+- **Vänta.** `sleep(ms)` och `setTimeout`, inom skriptets tidsgräns. `limits()` returnerar de gränser skriptet körs under.
+
+Ett skript har ingen åtkomst till filsystem, nätverk, processer, moduler eller miljön: inga `fetch`, `require`, `import` eller `process`. Den enda vägen ut är ett verktygsanrop, och varje verktygsanrop går genom samma kontroller som ett anrop agenten gör direkt.
+
+Verktygsanrop som ett skript redan har gjort ångras inte när skriptet senare misslyckas.
+
+## Vilka verktyg agenten anropar direkt
+
+Varje körning av den inbyggda agenten får samma lilla uppsättning verktyg som den anropar direkt:
+
+- `repl`, först;
+- fil- och skalverktygen `read`, `write`, `edit`, `search`, `find`, `bash` och `read_output`;
+- `ask_user` och `task`;
+- `todo_write`, `search_memory` och `send_message`;
+- de verb som konversationens [läge](/sv-SE/handbok/koncept/lagen/) behöver för att leverera sitt resultat eller lämna det, till exempel `submit_plan` i planläge;
+- `search_tools`, när något verktyg läses in vid första användning (nedan).
+
+Alla andra verktyg som körningen får använda nås på ett av två sätt:
+
+- **Bara från ett skript**, när ett skript får anropa det. Agenten hittar det med `searchTools()` eller `describeTool()` och anropar det som `tools.<name>(args)`. Dess beskrivning når aldrig modellen, så det kostar ingenting i prompten. Om agenten ändå anropar ett sådant verktyg direkt, säger svaret åt den att anropa verktyget från ett skript. Om servern inte kan köra körningens skript läses det in vid första användning i stället ([När skript inte kan köras](#när-skript-inte-kan-köras)).
+- **Läses in vid första användning**, när ett skript inte får anropa det. Agenten ser dess namn, och att anropa det med namn, eller hitta det med `search_tools`, läser in det.
+
+Vissa verktyg kan aldrig anropas från ett skript, bland dem `repl` själv (ett skript kan inte starta ett skript), `eval`, `task`, `checkpoint`, `rewind`, `vibe_*`-verben och verktyg som startar eller meddelar andra agentkörningar, skapar, beslutar eller kommenterar godkännanden, ändrar policy eller färdigheter, eller lämnar planläge. Agenten anropar dem direkt.
+
+En körning utan `repl` får samma direkta verktyg, och allt annat läses in vid första användning. [Verktygskontext och promptcache](/sv-SE/handbok/koncept/verktygskontext/) förklarar varför uppsättningen är densamma i båda fallen.
+
+Kodläget lägger aldrig till ett verktyg som konversationens läge inte tillåter. Lägets verktygsfilter tillämpas först, och ett skript kan bara anropa det som är kvar.
+
+## När en körning har `repl`
+
+En körning har `repl` när serverns skriptkörare klarade sin låsningskontroll vid start ([Hur skript begränsas](#hur-skript-begränsas)). Ingen inställning på arbetsyta, agent eller server ändrar det. En körning har ändå ingen `repl` när:
+
+- skriptköraren inte kan låsa in sig själv på serverns maskin; servern kör då inga skript alls;
+- servern är en offentlig demo, som inte kör några skript;
+- körningen tillhör ingen arbetsyta;
+- arbetsytans gränser inte kan läsas, eftersom en körning med standardgränserna kunde gå över gränser som en admin har sänkt;
+- körningens logg inte kunde skrivas, eftersom varje skript registreras under sin körning innan det startar.
+
+En sådan körning anropar alla sina verktyg direkt.
+
+Kodläget fungerar för körningar av den inbyggda agenten och för agenter som når Control Centers verktyg via dess MCP-slutpunkt, till exempel Claude Code. För en MCP-agent innehåller verktygslistan som den får `repl`, de direkta verktygen och de verktyg ett skript inte får anropa; resten anropar den från skript. Bara en körning som Control Center startade och för en logg över får `repl` där; alla andra klienter får alla verktyg utom `repl`.
+
+**Inställningar → Arbetsyta → Kodläge** visar under **Status** om den här servern kör skript (**Tillgänglig** eller **Otillgänglig**, med serverns skäl) och vilken version av **Körare** som är installerad. **Visa kodkörningar** öppnar listan över skript som har körts.
+
+En serverägare kan inte stänga av skript. Ägaren kan begränsa dem: hur många som körs samtidigt och hur mycket minne ett får använda (se [Gränser](#gränser)).
+
+### När skript inte kan köras
+
+En körning förlorar aldrig ett verktyg för att servern inte kan köra dess skript. När servern vägrar ett skript av en orsak som inget annat skript hade undkommit (till exempel att skript inte är tillgängliga, att skriptet har väntat halva sin tid på en ledig plats, att dess post inte kan skrivas, att körningens verktygslista är för stor för att ges till ett skript, eller att köraren inte kan starta eller låsa in sig själv), slutar körningen använda skript för resten av sin livstid:
+
+- en körning av den inbyggda agenten behåller `repl`, och varje verktyg den bara nådde från ett skript läses nu in vid första användning: agenten anropar det med namn eller hittar det med `search_tools`;
+- en körning på MCP-slutpunkten får en verktygslista med alla verktyg och utan `repl`, och dess klient får veta att listan har ändrats. Servern kommer ihåg de senaste 1 024 sådana körningarna; en äldre går tillbaka till skript.
+
+De verktygen passerar samma lägesfilter, räcken och godkännanden som förut, så ingenting blir anropbart som inte var det. Ett skript som misslyckas av egen orsak, genom att kasta ett fel, nå en gräns eller få ett anrop nekat, ändrar ingenting.
+
+Servern kontrollerar också löpande att skript kan köras. När köraren inte startar av en orsak som inte beror på skriptet, kör servern sin låsningskontroll igen, högst en gång per minut. Om kontrollen misslyckas kör servern inga skript och loggar samma `code_mode=unavailable`-rad som vid start; körningar som startar under tiden får ingen `repl`. Den fortsätter att kontrollera, högst en gång per minut, och när en kontroll lyckas kör den skript igen och loggar raden `code_mode=available`. Bara en kontroll som misslyckades vid serverstart kräver en omstart.
+
+## Gränser
+
+Varje skript körs under gränser. En admin för arbetsytan kan ändra sex av dem under **Gränser** i **Inställningar → Arbetsyta → Kodläge** (**Justera gränser**); agenten kan begära mindre tid eller en mindre utdatabudget för ett enskilt skript, aldrig mer.
+
+| Gräns | Standard | Intervall | När den tar slut |
+| --- | --- | --- | --- |
+| Tid per skript | 5 min | 1 s till 25 min | Skriptet stoppas och agenten får veta att tiden tog slut. |
+| Processortid | 30 s | 1 s till 2 min | Skriptet stoppas. |
+| Minne | 256 MiB | 16 MiB till 1 GiB | Skriptet stoppas. Serverägaren kan sätta ett lägre tak för hela servern. |
+| Verktygsanrop per skript | 500 | 1 till 5 000 | Fler anrop nekas, och skriptet får veta varför. |
+| Anrop samtidigt | 8 | 1 till 32 | Skrivskyddade anrop över gränsen väntar på sin tur. Anrop som ändrar något körs alltid ett i taget. |
+| Utdata som agenten läser | 10 000 tokens | 100 till 50 000 | Utdata kortas till sin början och sitt slut, och agenten kan läsa resten på begäran. |
+
+Tid som ett skript väntar på en person, på ett godkännande eller en fråga, räknas inte mot dess tidsgräns. Medan den väntar startar skriptet inget annat verktygsanrop: anrop som det gör under tiden startar i ordning när du har svarat.
+
+Vissa gränser är fasta: ett skripts källkod är högst 256 KiB, argumenten till ett verktygsanrop 1 MiB och 16 384 värden, ett kommando som ett skript skickar till ett inbyggt verktyg som kör det 16 KiB (verktygets namn räknas med), ett resultat som lämnas till skriptet 4 MiB, ett lagrat värde 256 KiB och allt en konversation och agent lagrar tillsammans 1 MiB. En körning kör ett skript i taget.
+
+Ett skripts verktygsuppslag är också begränsade: en `searchTools`-fråga på högst 1 024 tecken, ett verktygs- eller namnrymdsnamn på högst 256, högst 50 resultat och högst 200 uppslag som sammanlagt tar 2 sekunder av serverns tid; efter det misslyckas fler uppslag. Alla skript i en arbetsyta delar också 2 sekunder uppslagstid, som återlämnas med en fjärdedels sekund per sekund. Sökindexet ger varje verktyg en lika stor andel av ungefär en miljon tecken, som först går till dess argumentnamn och sedan till dess beskrivning, och indexerar alltid varje verktygs namn, så att ett verktyg hittas på sitt namn även i en mycket stor katalog.
+
+Serverägaren begränsar också hur många skript som körs samtidigt på servern (`--code-mode-max-processes`, som standard dubbelt så många som processorkärnorna, högst 16) och minnet ett skript får använda (`--code-mode-max-heap-mb`); skript som väntar på en person räknas separat, upp till fyra gånger det antalet. När taket är mer än ett kan en arbetsyta använda högst ungefär tre fjärdedelar av det, så att ingen enskild arbetsyta kan ta alla platser. En körning och dess subagenter använder tillsammans högst hälften av sin arbetsytas platser (minst en), så att deras ytterligare skript väntar medan skript från arbetsytans andra körningar går före. Se [`cc_server` CLI](/sv-SE/handbok/referens/cc-server-cli/#kodläge).
+
+## Godkännanden och frågor
+
+Ett verktygsanrop från ett skript kontrolleras precis som ett direkt anrop: lägets verktygsfilter, [åtgärdsräckena](/sv-SE/handbok/koncept/racken/), godkännandefrågan och verktygets egna kontroller. Ett skript kan inte göra något som agenten inte kunde göra genom att anropa verktyget själv.
+
+När ett skripts anrop behöver godkännande visar godkännandekortet **Från ett skript som agenten kör**, och **Visa skript** öppnar skriptet i konversationen. För att ett skript inte ska översvämma dig med kort:
+
+- ett skript kan begära godkännande högst 10 gånger och ställa högst 10 frågor;
+- när du har nekat ett av dess anrop, nekas dess senare anrop som kräver godkännande utan att fråga.
+
+För körningar av den inbyggda agenten gäller att godkännandekort som orsakas av de kommandon ett skript kör, till exempel en git push, räknas mot samma gräns och upphör efter ett avslag på samma sätt. När en subagents skript kör samtidigt räknas ett sådant kort för båda skripten, och ett avslag stoppar båda.
+
+I en körning av den inbyggda agenten sparas inte ett godkännande för ett verktyg från en extern MCP-server: varje anrop frågar på nytt, oavsett om ett skript eller agenten själv gör det, om inte ytans autonomi är satt till **Agera fritt**. Varje sådant godkännandekort som ett skript orsakar räknas mot dess gräns på 10.
+
+Om skriptet slutar innan du svarar dras kortet tillbaka, och ett svar som ges efter det godkänner ingenting.
+
+## I konversationen
+
+Ett `repl`-anrop visas i konversationen som en rad med skriptets beskrivning som rubrik. När du expanderar den visas skriptet och dess utdata, och de verktygsanrop skriptet gjorde under **Verktygsanrop**, med en räkning av hur många som körs, lyckades, misslyckades, nekades, avbröts, står i kö eller hoppades över.
+
+### Så läses ett skript
+
+Verktygsanropen placeras enligt hur skriptet är skrivet, inte som en lång lista. Körningen rapporterar raden och kolumnen där varje anrop gjordes, och appen läser skriptet för att hitta dess loopar, grenar och funktioner:
+
+- **En loop** (`for`, `while`) visas som en grupp **Loop** med sin första rad som rubrik, och en callback som skickas till ett anrop som `map` eller `forEach` visas som en grupp **För varje**. En tunn linje skiljer ett varv i loopen från nästa när appen kan urskilja dem.
+- **Anrop körs tillsammans** med `Promise.all`, `Promise.allSettled` eller en liknande kombinator visas som en grupp **Parallellt**.
+- **En gren** (`if`/`else`, `switch`, `try`/`catch`) visar en grupp per gren, med sitt villkor som rubrik.
+- **En funktion** som skriptet definierar och anropar visas som en grupp **Funktion**.
+
+En grupp inuti en annan dras in ett steg till, upp till åtta steg; djupare grupper stannar vid det indraget.
+
+Varje grupprubrik visar hur dess anrop har avslutats hittills. Innan ett anrop körs visar dess rad verktyget och argumenten så som de står i skriptet:
+
+| Rad | Betydelse |
+| --- | --- |
+| **I kö** | Skriptet har inte nått detta anrop ännu. |
+| Körs | Anropet körs. |
+| Klart | Anropet avslutades; raden visar dess utfall och hur lång tid det tog. |
+| **Hoppad över** | Skriptet hoppade över detta anrop, till exempel grenen i en `if` som inte togs, eller avslutades utan att nå det. |
+
+Ett anrop som skrivs inuti argumenten till ett anrop till samma verktyg rapporteras från samma plats i skriptet som det anropet. När appen inte kan avgöra om det yttre anropet gjordes, visar dess rad inget tillståndsord i stället för **Hoppad över**.
+
+När en grupp har gjort fler än åtta anrop viks dess mitt ihop: de två första och de tre sista förblir synliga, liksom varje anrop som fortfarande körs, misslyckades eller nekades, tillsammans med anropet som startade dess varv i loopen. **Visa ytterligare N anrop** öppnar 100 till varje gång du trycker på den och anger upp till fyra verktyg bland de dolda anropen med hur många av vardera, de sällsyntaste först, till exempel **Visa ytterligare 12 anrop** · Bash 1 · Read 11. Ett verktygsnamn som är längre än 24 tecken kapas där.
+
+Ett anrop som appen inte kan placera i skriptet, till exempel ett som gjorts av en `then`-callback, listas efter trädet under **Anrop som inte placerats i skriptet**. När appen inte kan läsa skriptet, eller inget anrop säger var det gjordes, visas anropen som en enkel lista i den ordning de gjordes.
+
+Varje anropsrad visar början på anropets argument och på dess resultat, högst 8 KiB vardera; när ett skripts rader tillsammans håller 256 KiB av detta visar dess senare rader bara verktyget och utfallet. När skriptet är klart öppnar **Öppna post** dess fullständiga post; om posten inte kan hittas öppnas i stället listan över skript från den körningen. Ett skript som nekades innan det kördes (till exempel för att ett annat skript i samma körning fortfarande kördes) har ingen post och ingen länk.
+
+## Posten
+
+Varje skript som körs registreras i sin arbetsyta innan det startar, och posten slutförs när det slutar. **Observability → Kodkörningar** listar dem, nyast först, och kan filtreras på utfall. Länkarna **Skript i den här körningen** och **Skript av den här agenten** i en post begränsar listan till en körning eller en agent. En post visar:
+
+- skriptet, dess utdata och dess konsol;
+- när det startade, hur lång tid det tog, vilken processortid och vilket högsta minne det använde, och om det kördes genom den inbyggda agenten eller en extern;
+- hur det slutade, med vanliga ord (till exempel att tiden tog slut eller att det kastade ett fel som ingenting fångade);
+- varje verktygsanrop, i ordning, med sitt utfall: om det tilläts, godkändes av en person eller nekades, hur lång tid en person tog på sig att besluta, dess argument (hemligheter borttagna, kapade till 8 KiB) och storleken på dess resultat. Resultatet i sig sparas inte.
+
+Posten behåller var i skriptet varje anrop gjordes, så dess verktygsanrop är uppställda på samma sätt som i konversationen. Ett anrop som en person godkände döljs aldrig där.
+
+Ett skript som fortfarande kör visas som pågående, med de verktygsanrop som hunnit bli klara. Dess utdata, varaktighet och resursförbrukning visas när det slutar. Om servern stannar medan ett skript körs stängs posten när servern startar igen, och posten anger det; inget skript körs i den arbetsytan förrän posten är stängd.
+
+Poster sparas tillsammans med sin körning: att radera körningen eller dess yta raderar dem. Medlemmar ser posterna för de ytor de kan öppna.
+
+## Hur skript begränsas
+
+Skript körs aldrig inne i servern. Varje skript körs i en egen process, ett litet program som följer med servern, `cc_codemode`, som kör JavaScript i QuickJS-NG-motorn. Innan det läser skriptet låser programmet sig självt med operativsystemets egna kontroller: på Linux ett filter för systemanrop och resursgränser, på macOS en sandlådeprofil som nekar allt som inte uttryckligen tillåts, på Windows ett AppContainer och ett jobbobjekt. Därefter kan det inte öppna filer, använda nätverket, starta processer eller se andra program. Det startar utan miljövariabler och har inga autentiseringsuppgifter. Dess enda kanal är servern, som svarar på dess verktygsanrop.
+
+Servern kontrollerar låsningen när den startar genom att köra programmets självtest. Om låsningen inte håller på den maskinen, till exempel i en container vars säkerhetsprofil nekar ett av stegen, kör servern inga skript där: ingen körning får `repl`, och inställningssidan visar **Otillgänglig** med skälet. Ett skript körs aldrig med mindre inneslutning. Windows-låsningen har ännu inte körts på Windows.
+
+Var i skriptet ett anrop gjordes rapporteras av körningen, så det används bara för att ordna konversationen och posten. Det avgör aldrig om ett anrop är tillåtet.
+
+Se [Sandlåda och säkerhet](/sv-SE/handbok/koncept/sandlada-och-sakerhet/#skript-i-kodläge) för vad låsningen täcker och inte täcker.
+
+## Se även
+
+- [Verktygskontext och promptcache](/sv-SE/handbok/koncept/verktygskontext/): varför den direkta uppsättningen är liten och densamma med eller utan `repl`.
+- [Inbyggda agentverktyg](/sv-SE/handbok/referens/agentverktyg/#repl--kör-ett-skript-som-anropar-dina-verktyg): indata till verktyget `repl`.
+- [`cc_server` CLI](/sv-SE/handbok/referens/cc-server-cli/#kodläge): de gränser serverägaren sätter.

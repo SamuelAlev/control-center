@@ -2,7 +2,7 @@
 title: Guardraile — jedna polityka dla każdej mutującej akcji
 description: Dlaczego Control Center prowadzi każdy efekt uboczny agenta przez jeden silnik allow/prompt/deny, dlaczego taksonomia ActionClass celowo pozostaje mała i co tak naprawdę zmienia suwak autonomii.
 slug: pl-PL/podrecznik/koncepcje/guardraile
-sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
+sourceHash: bb98b2ca26ae104ab7701d4d381cd5c41d25d32f
 ---
 
 Agenty w Control Center mogą usuwać pliki, wypychać gałęzie, publikować pull
@@ -30,6 +30,17 @@ ogranicza, gdzie może dotrzeć powstały proces. `cc_server` stosuje sandbox
 tam, gdzie host oferuje backend — ale [Windows nie oferuje żadnego, a Linux
 wymaga `bwrap` i `socat`](/pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo/). Na takich hostach
 startują tylko uruchomienia właściciela serwera, chyba że właściciel wyłączył sandbox dla wszystkich opcją `--sandbox off`. Dla każdego uruchomienia, które startuje bez sandboxa, guardraile są najzewnętrzniejszą warstwą egzekwowania, a nie polityką posadowioną na podłodze — warto o tym wiedzieć, decydując, jak liberalne ma być ustawienie.
+
+### Wywołania wykonywane przez skrypt
+
+[Skrypt trybu kodu](/pl-PL/podrecznik/koncepcje/tryb-kodu/) wywołuje narzędzia w kodzie, wiele naraz, ale każde jego wywołanie jest osobnym wywołaniem narzędzia dla silnika. Przechodzi przez tę samą bramkę harnessu lub bramkę dispatchera MCP co wywołanie bezpośrednie, z tymi samymi regułami, tym samym oknem zatwierdzenia i tym samym wpisem w audycie, a nic z tego, co robi, nie jest zatwierdzone dlatego, że zatwierdzono wywołanie `repl`, które go uruchomiło.
+
+Dwie dodatkowe reguły dotyczą wywołań ze skryptu, bo jeden skrypt może wykonać setki wywołań i złapać każdą odmowę:
+
+- najwyżej 10 jego wywołań trafia do człowieka po zatwierdzenie; późniejsze, które wymagałyby człowieka, są odrzucane bez karty;
+- gdy człowiek odmówi jednego z jego wywołań, reszta wywołań wymagających zatwierdzenia jest odrzucana bez pytania.
+
+Karta zgłoszona przez skrypt to mówi i pozwala otworzyć skrypt. Jeśli skrypt zakończy się, gdy karta jest otwarta, karta zostaje wycofana, a odpowiedź, która przyjdzie później, zapisuje się jako odmowa i niczego nie zatwierdza.
 
 ## ActionClass: celowo zamknięta taksonomia
 
@@ -262,5 +273,6 @@ odpowiedź sondy to odpowiedź, którą dostanie agent.
 ## Powiązane koncepcje
 
 - [Sandbox i bezpieczeństwo](/pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo/): co tak naprawdę ogranicza uruchomienie agenta i jak daleko sięga podłoga systemu operacyjnego pod tym silnikiem
+- [Tryb kodu](/pl-PL/podrecznik/koncepcje/tryb-kodu/): skrypty, których każde wywołanie narzędzia przechodzi przez ten silnik
 - [Wieloosobowość — tożsamość, członkostwo i obecność](/pl-PL/podrecznik/koncepcje/wieloosobowosc/): przestrzenie, podmioty i gdzie mieszka suwak autonomii
 - [Skonfiguruj guardraile](/pl-PL/podrecznik/poradniki/konfiguracja-guardraili/): jak w praktyce pisać reguły i je testować

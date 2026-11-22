@@ -12,15 +12,22 @@ import 'package:control_center/shared/widgets/markdown/markdown_registries.dart'
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
 import 'package:control_center/shared/widgets/transcript/tool_body.dart';
 import 'package:control_center/shared/widgets/transcript/tool_presentation.dart';
+import 'package:control_center/shared/widgets/transcript/util/nested_calls.dart';
+import 'package:control_center/shared/widgets/transcript/widgets/nested_tool_calls.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 part 'transcript_segment_row_text.dart';
+part 'transcript_segment_row_trailing.dart';
 part 'transcript_status_dot.dart';
 
 /// One row in the transcript process timeline: a reasoning span, tool call,
 /// error, or sandbox violation. Collapsed by default; tools and long prose
 /// expand to a rich body (code, diff, terminal, or JSON).
+///
+/// A call that ran a script lists the calls the script made inside its body,
+/// each drawn by this same row, so a nested edit shows the diff a direct one
+/// does.
 class TranscriptSegmentRow extends ConsumerStatefulWidget {
   /// Creates a [TranscriptSegmentRow].
   const TranscriptSegmentRow({
@@ -28,6 +35,8 @@ class TranscriptSegmentRow extends ConsumerStatefulWidget {
     required this.segment,
     required this.codeFont,
     this.pending = false,
+    this.nestedCalls = const [],
+    this.nested = false,
   });
 
   /// The segment to render.
@@ -38,6 +47,13 @@ class TranscriptSegmentRow extends ConsumerStatefulWidget {
 
   /// Whether this is the live, currently-running tail segment.
   final bool pending;
+
+  /// The calls a script made from this call, in the order it made them.
+  final List<ToolSegment> nestedCalls;
+
+  /// Whether this row is one of those calls, inside its script's row. A
+  /// script can make hundreds, so they start closed whatever their kind.
+  final bool nested;
 
   @override
   ConsumerState<TranscriptSegmentRow> createState() =>
@@ -73,6 +89,9 @@ class _TranscriptSegmentRowState extends ConsumerState<TranscriptSegmentRow> {
 
   bool get _defaultOpen {
     final seg = widget.segment;
+    if (widget.nested) {
+      return false;
+    }
     if (seg is ErrorSegment || seg is ViolationSegment) {
       return true;
     }
@@ -91,7 +110,7 @@ class _TranscriptSegmentRowState extends ConsumerState<TranscriptSegmentRow> {
     final tokens = resolveTokens(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
     final seg = widget.segment;
-    final canExpand = _hasExpandable(seg);
+    final canExpand = _hasExpandable(seg) || widget.nestedCalls.isNotEmpty;
     // The blob URL is signed per workspace, and `shared/` may not reach into
     // a feature to find out which one — so it is read here and passed down.
     // Watched in this build, not the lazily built body below.
@@ -165,65 +184,6 @@ class _TranscriptSegmentRowState extends ConsumerState<TranscriptSegmentRow> {
     );
   }
 
-  List<Widget> _trailing(
-    TranscriptSegment seg,
-    DesignSystemTokens tokens,
-    DesignSystemTokens t,
-  ) {
-    final out = <Widget>[];
-    if (seg is ToolSegment) {
-      final stats = toolDiffStats(seg, whenReady: _onDeferredDiff);
-      if (stats != null && (stats.adds > 0 || stats.dels > 0)) {
-        out.add(
-          Padding(
-            padding: const EdgeInsetsDirectional.only(start: 6),
-            child: Text.rich(
-              // A base style on the root span matters: an unstyled child
-              // (e.g. a bare ' ' spacer) would inherit the ambient
-              // DefaultTextStyle, inflate the line box and lift the stats
-              // off the shared baseline with the duration beside it.
-              TextSpan(
-                style: CcTypography.caption.copyWith(fontSize: 10),
-                children: [
-                  TextSpan(
-                    text: '+${stats.adds}',
-                    style: CcTypography.caption.copyWith(
-                      color: tokens.textSuccessPrimary,
-                      fontSize: 10,
-                    ),
-                  ),
-                  const TextSpan(text: ' '),
-                  TextSpan(
-                    text: '−${stats.dels}',
-                    style: CcTypography.caption.copyWith(
-                      color: tokens.textErrorPrimary,
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      }
-    }
-    if (seg.durationMs != null) {
-      out.add(
-        Padding(
-          padding: const EdgeInsetsDirectional.only(start: 6),
-          child: Text(
-            _formatDuration(Duration(milliseconds: seg.durationMs!)),
-            style: CcTypography.caption.copyWith(
-              color: tokens.textQuaternary,
-              fontSize: 10,
-            ),
-          ),
-        ),
-      );
-    }
-    return out;
-  }
-
   TextSpan _summaryText(
     TranscriptSegment seg,
     DesignSystemTokens tokens,
@@ -289,6 +249,7 @@ class _TranscriptSegmentRowState extends ConsumerState<TranscriptSegmentRow> {
         codeFont: widget.codeFont,
         tokens: tokens,
         workspaceId: workspaceId,
+        nestedCalls: _nestedListOf(seg),
       );
     }
     final text = switch (seg) {
@@ -324,6 +285,9 @@ Color _iconColor(TranscriptSegment seg, DesignSystemTokens tokens) =>
     switch (seg) {
       ErrorSegment() => tokens.fgErrorPrimary,
       ViolationSegment() => tokens.fgWarningPrimary,
+      // Refused before it ran: a policy outcome, not a tool that broke.
+      ToolSegment() when nestedCallStateOf(seg) == NestedCallState.denied =>
+        tokens.fgWarningPrimary,
       ToolSegment(:final status) when status == ToolSegmentStatus.error =>
         tokens.fgErrorPrimary,
       ToolSegment() => tokens.textPrimary,

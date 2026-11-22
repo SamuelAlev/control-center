@@ -165,9 +165,10 @@ void main() {
               spaceId: 'space',
               conversationId: 'conversation',
             )).overrideWith((ref) => window.stream),
-            spaceUserLastReadAtProvider(
-              'space',
-            ).overrideWith((ref) => Stream.value(null)),
+            conversationLastReadProvider((
+              spaceId: 'space',
+              conversationId: 'conversation',
+            )).overrideWithValue(const AsyncData(null)),
             codeFontFamilyProvider.overrideWith((ref) => 'monospace'),
             agentDetailProvider('agent-1').overrideWith((ref) async => null),
             messageDetailProvider('run').overrideWith(
@@ -220,10 +221,7 @@ void main() {
       await tester.pump();
       expect(find.byType(AskUserCard), findsOneWidget);
       expect(
-        find.ancestor(
-          of: find.byType(QuestionBubble),
-          matching: _insideTurn,
-        ),
+        find.ancestor(of: find.byType(QuestionBubble), matching: _insideTurn),
         findsNothing,
       );
       window.add((messages: [run(), question(answered: true)], hasMore: false));
@@ -232,10 +230,7 @@ void main() {
       expect(find.byType(AskUserCard), findsNothing);
       expect(find.byType(AskUserSummary), findsOneWidget);
       expect(
-        find.ancestor(
-          of: find.byType(QuestionBubble),
-          matching: _insideTurn,
-        ),
+        find.ancestor(of: find.byType(QuestionBubble), matching: _insideTurn),
         findsOneWidget,
       );
 

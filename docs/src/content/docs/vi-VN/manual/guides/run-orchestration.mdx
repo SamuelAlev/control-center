@@ -2,7 +2,7 @@
 title: Chạy một điều phối
 description: Hỏi agent điều phối để lấy một kế hoạch, xem xét và chỉnh sửa nó trong Plan Studio, phê duyệt một lần rồi để một quy trình đã sinh làm nốt công việc.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/chay-dieu-phoi
-sourceHash: 086301be6c1957f6336294720967813c3050ed25
+sourceHash: cc4390cbac6c2122dd24c23bcef20693f40121bb
 ---
 
 Hướng dẫn này chỉ cho bạn cách biến một mục tiêu lớn thành một kế hoạch cho cả
@@ -64,21 +64,13 @@ Nhấn **Ước tính** trên thanh phê duyệt để xem khoảng chi phí, th
 phạm vi ảnh hưởng trước khi bạn chốt. Xem
 [Làm việc trong Plan Studio](/vi-VN/so-tay/huong-dan-thuc-hanh/plan-studio/) để biết đầy đủ về trình chỉnh sửa.
 
-:::note[Ngân sách không phải là giới hạn chi tiêu]
-Ngân sách của một đề xuất được so với _ước tính_ trên thanh phê duyệt: khi mức
-cao nhất của ước tính vượt quá ngân sách, tổng số chuyển đỏ kèm cảnh báo vượt
-ngân sách. Không có gì kiểm tra chi tiêu trong khi kế hoạch thực thi, nên nó sẽ
-không dừng hay làm thất bại một lần chạy. Muốn thực sự dừng chi tiêu, hãy dùng
-chính sách ngân sách theo từng agent — xem
-[Quản lý chi phí](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-chi-phi/).
+:::note[Ngân sách giữ lại lần chạy]
+Ngân sách của một đề xuất được so với _ước tính_ trên thanh phê duyệt: khi mức cao nhất của ước tính vượt quá ngân sách, tổng số chuyển đỏ kèm cảnh báo vượt ngân sách. Khi kế hoạch đang thực thi, máy chủ kiểm tra chi tiêu trước mỗi bước mới. Khi chạm ngân sách, lần chạy bị giữ và không có gì mới bắt đầu; các bước đang chạy sẽ hoàn tất. Người đã yêu cầu lần chạy sẽ nhận một thông báo và nhấn **Tăng giới hạn** trên trang lần chạy quy trình để tiếp tục. Xem [Quản lý chi phí](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-chi-phi/).
 :::
 
 ## Bước 3: Phê duyệt
 
-Hãy phê duyệt kế hoạch, từ thẻ trong cuộc hội thoại hoặc từ thanh phê duyệt của
-Plan Studio. **Đây là quyết định duy nhất bạn đưa ra.** Việc phê duyệt chỉ dành
-cho người vận hành — không có công cụ MCP nào cho việc đó, nên một agent có thể
-đề xuất và sửa đổi nhưng không bao giờ tự phê duyệt kế hoạch của mình.
+Hãy phê duyệt kế hoạch, từ thẻ trong cuộc hội thoại hoặc từ thanh phê duyệt của Plan Studio. **Đây là quyết định duy nhất bạn đưa ra.** Việc phê duyệt chỉ dành cho người vận hành — không có công cụ MCP nào cho việc đó, nên một agent có thể đề xuất và sửa đổi nhưng không bao giờ tự phê duyệt kế hoạch của mình. Phê duyệt cần quyền ghi vào các kho mã của không gian, và khi đó lần chạy hành động thay cho người đã phê duyệt.
 
 Từ đây, một bộ hiện thực hóa tất định (một hàm thuần túy, không dùng LLM) biến
 đề xuất thành một [quy trình](/vi-VN/so-tay/khai-niem/quy-trinh/) thật và tạo bộ
@@ -115,12 +107,7 @@ phiếu cha được đánh dấu hoàn tất, rồi trạng thái chuyển sang
 Nhấn **Hủy điều phối** trên thẻ trong cuộc hội thoại, hoặc **Hủy lần chạy**
 trên thanh phê duyệt của Plan Studio. Việc hủy sẽ dỡ bỏ công việc đang chạy.
 
-Một điều phối thất bại khi bước hiện thực hóa thất bại, hoặc khi lần chạy quy
-trình đã sinh của nó thất bại (nghiên cứu, thảo luận, tổng hợp hoặc persist —
-những bước này không tiếp tục khi thất bại). Các bước **công việc** đã sinh thì
-luôn tiếp tục khi thất bại, nên một phiếu con thất bại không làm cả lần chạy
-thất bại. Không có nhánh thất bại do vượt ngân sách và không có ngưỡng "mọi
-phiếu con đều thất bại".
+Một điều phối thất bại khi bước hiện thực hóa thất bại, hoặc khi lần chạy quy trình đã sinh của nó thất bại (nghiên cứu, thảo luận, tổng hợp hoặc persist — những bước này không tiếp tục khi thất bại). Các bước **công việc** đã sinh thì luôn tiếp tục khi thất bại, nên một phiếu con thất bại không làm cả lần chạy thất bại. Chạm ngân sách giữ lần chạy lại chứ không làm nó thất bại, và không có ngưỡng “mọi phiếu con đều thất bại”.
 
 ## Hướng dẫn liên quan
 

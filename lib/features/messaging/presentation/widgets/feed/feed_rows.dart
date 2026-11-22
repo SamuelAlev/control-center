@@ -2,6 +2,8 @@ import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/conversation_outline_entry.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/transcript_plan.dart';
 import 'package:control_center/features/messaging/presentation/widgets/feed/feed_items.dart';
+import 'package:control_center/shared/widgets/transcript/util/nested_calls.dart'
+    show isScriptTool;
 
 /// One slot of the feed's list.
 ///
@@ -167,4 +169,34 @@ List<FeedRow> expandFeedRows(
     out.add(TurnFootRow(item));
   }
   return out;
+}
+
+/// The index in [rows] (oldest first) of the newest transcript row that shows
+/// the script whose call is [toolCallId], or -1 when none does: where "Show
+/// script" on an approval or a question a script raised lands.
+///
+/// The newest, not the first: tool call ids repeat (local models reuse
+/// `call_0` on every turn), and a request a script raises comes from the
+/// script running now, which is the latest row with that id. Only a script's
+/// row (`repl`, [isScriptTool]) counts: on the MCP lane the caller
+/// names the script's id, and an id another call of the run also holds must
+/// never land the person on that call's row instead of the script's.
+int latestRowShowingToolCall(List<FeedRow> rows, String toolCallId) =>
+    rows.lastIndexWhere(
+      (row) => row is TurnPartRow && _rowShowsScript(row, toolCallId),
+    );
+
+bool _rowShowsScript(TurnPartRow row, String toolCallId) {
+  final plan = row.plan;
+  if (plan is! SegmentRowPlan) {
+    return false;
+  }
+  bool isScript(TranscriptSegment seg) =>
+      seg is ToolSegment &&
+      seg.toolCallId == toolCallId &&
+      isScriptTool(seg.toolName);
+  return isScript(plan.segment) ||
+      plan.children.any(
+        (i) => i < row.segments.length && isScript(row.segments[i]),
+      );
 }

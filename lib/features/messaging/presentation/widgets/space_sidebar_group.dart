@@ -6,21 +6,17 @@ import 'package:control_center/features/messaging/presentation/widgets/space_con
 import 'package:control_center/features/messaging/presentation/widgets/space_height_reveal.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_hover_prefetch.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_route_selection.dart';
-import 'package:control_center/features/messaging/presentation/widgets/space_row.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row_adornments.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_row_layout.dart'
+    show kSpaceSidebarCardInset;
 import 'package:control_center/features/messaging/presentation/widgets/space_sidebar_item.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
-import 'package:control_center/features/messaging/providers/space_worktrees_provider.dart';
+import 'package:control_center/features/messaging/providers/space_conversation_tab_order_provider.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/gestures.dart' show kPrimaryButton, kTouchSlop;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-/// Air above and below the title. The title row keeps both insets whether
-/// or not its list is open, so opening does not resize the title block.
-/// Kept tight so the space list reads as one list, not separate cards.
-const double _kCardInset = AppSpacing.xs;
 
 /// Air under the last conversation, closing the open card.
 const double _kCardBottom = AppSpacing.sm;
@@ -97,16 +93,6 @@ class _SpaceSidebarGroupState extends ConsumerState<SpaceSidebarGroup> {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final selected = watchRouteSpaceSelected(context, ref, space.id);
     final workspaceId = ref.watch(activeWorkspaceIdProvider);
-    final branch = workspaceId == null
-        ? null
-        : ref
-              .watch(
-                spaceSidebarBranchProvider((
-                  workspaceId: workspaceId,
-                  spaceId: space.id,
-                )),
-              )
-              .value;
     // Conversations, the count, and the accordion belong to the open space.
     // An inactive row is only the space itself, so it does not subscribe.
     // A press warms the list (see [SpaceHoverPrefetch]), so it is usually in
@@ -115,9 +101,14 @@ class _SpaceSidebarGroupState extends ConsumerState<SpaceSidebarGroup> {
         ? ref.watch(spaceConversationsProvider(space.id)).value ??
               const <Conversation>[]
         : const <Conversation>[];
-    final active = conversations
-        .where((c) => !c.isArchived)
-        .toList(growable: false);
+    // Listed the way the open space's tab strip shows them, so dragging a
+    // tab moves its row here too.
+    final active = orderByConversationTabs(
+      conversations.where((c) => !c.isArchived).toList(growable: false),
+      selected
+          ? ref.watch(spaceConversationTabOrderProvider(space.id))
+          : const <String>[],
+    );
     final listed = active.length > 1;
     final busyIds = listed
         ? ref.watch(spaceBusyConversationIdsProvider(space.id))
@@ -153,14 +144,15 @@ class _SpaceSidebarGroupState extends ConsumerState<SpaceSidebarGroup> {
         space: space,
         selected: selected,
         quietSelection: selected,
-        subtitle: branch,
-        absentLeading: const SpaceStatusMark(),
         runningShownOnConversations: childCarriesRunning,
         unreadShownOnConversations: unreadOnChild,
         // The air under the title stays on the row. Moving it onto the list
         // when the accordion opens would change the row's height in the same
         // frames the list is growing.
-        cardInset: const EdgeInsets.only(top: _kCardInset, bottom: _kCardInset),
+        cardInset: const EdgeInsets.only(
+          top: kSpaceSidebarCardInset,
+          bottom: kSpaceSidebarCardInset,
+        ),
         interactive: false,
         onPress: open,
       ),

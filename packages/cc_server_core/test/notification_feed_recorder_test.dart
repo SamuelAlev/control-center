@@ -2,6 +2,7 @@ import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/messaging_events.dart';
 import 'package:cc_domain/core/domain/events/pr_events.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/agent_goal_status.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_server_core/src/notification_feed_recorder.dart';
@@ -146,6 +147,31 @@ void main() {
     expect(item.params['agent_name'], 'Ada');
     expect(item.params['wait_id'], 'm-q');
     expect(item.isResolved, isFalse);
+  });
+
+  test("records a goal's outcome for the person who started it", () async {
+    bus.publish(
+      GoalSettled(
+        goalId: 'goal-1',
+        workspaceId: 'ws-1',
+        spaceId: 'space-1',
+        conversationId: 'conv-1',
+        agentId: 'agent-1',
+        status: AgentGoalStatus.budgetExhausted,
+        hold: null,
+        summary: 'Durable /goal stopped: the cost cap was reached.',
+        requestedByUserId: 'user-1',
+        occurredAt: DateTime(2026, 10, 9),
+      ),
+    );
+    await _pump();
+
+    final item = (await _feed(repository, 'ws-1')).single;
+    expect(item.method, 'notifications/goal_settled');
+    expect(item.params['status'], 'budget_exhausted');
+    expect(item.params['notification_kind'], 'notify');
+    expect(item.params['for_user_id'], 'user-1');
+    expect(item.params['space_id'], 'space-1');
   });
 
   test('records a policy refusal with no wait to resolve', () async {

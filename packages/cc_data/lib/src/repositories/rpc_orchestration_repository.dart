@@ -3,6 +3,7 @@ import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/features/orchestration/domain/entities/orchestration.dart';
 import 'package:cc_domain/features/orchestration/domain/entities/orchestration_proposal.dart';
 import 'package:cc_domain/features/orchestration/domain/entities/orchestration_status.dart';
+import 'package:cc_domain/features/orchestration/domain/ports/orchestration_cap_raiser.dart';
 import 'package:cc_domain/features/orchestration/domain/repositories/orchestration_repository.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 
@@ -15,7 +16,8 @@ import 'package:cc_rpc/cc_rpc.dart';
 /// [Orchestration]. The host owns persistence and enforces workspace ownership;
 /// this client never touches a database. The required `workspaceId` arguments
 /// ride in the request args, so the client does not repeat them per call.
-class RpcOrchestrationRepository implements OrchestrationRepository {
+class RpcOrchestrationRepository
+    implements OrchestrationRepository, OrchestrationCapRaiser {
   /// Creates an [RpcOrchestrationRepository] over [client].
   RpcOrchestrationRepository(RemoteRpcClient client)
     : _remote = RemoteOrchestrationRepository(client);
@@ -47,36 +49,28 @@ class RpcOrchestrationRepository implements OrchestrationRepository {
     completedAt: d.completedAt == null ? null : DateTime.parse(d.completedAt!),
   );
 
-  static OrchestrationDto _toDto(Orchestration o) => OrchestrationDto(
-    id: o.id,
-    workspaceId: o.workspaceId,
-    proposalJson: o.proposal.toJsonString(),
-    parentTicketId: o.parentTicketId,
-    spaceId: o.spaceId,
-    orchestratorAgentId: o.orchestratorAgentId,
-    status: o.status.toStorageString(),
-    revision: o.revision,
-    approvedRevision: o.approvedRevision,
-    pipelineTemplateId: o.pipelineTemplateId,
-    pipelineRunId: o.pipelineRunId,
-    teamId: o.teamId,
-    projectId: o.projectId,
-    estimatedCostMicros: o.estimatedCostMicros,
-    maxCostMicros: o.maxCostMicros,
-    hiredAgentIds: o.hiredAgentIds,
-    errorMessage: o.errorMessage,
-    createdAt: o.createdAt.toIso8601String(),
-    updatedAt: o.updatedAt.toIso8601String(),
-    completedAt: o.completedAt?.toIso8601String(),
-  );
-
+  /// Orchestrations are written by the server's use cases only.
   @override
   Future<void> insert(Orchestration orchestration) =>
-      _remote.insert(_toDto(orchestration));
+      throw UnsupportedError('orchestration writes are host-side only');
+
+  /// Orchestrations are written by the server's use cases only.
+  @override
+  Future<bool> update(Orchestration next, {required Orchestration read}) =>
+      throw UnsupportedError('orchestration writes are host-side only');
 
   @override
-  Future<void> update(Orchestration orchestration) =>
-      _remote.update(_toDto(orchestration));
+  Future<OrchestrationCapRaise> raiseCap(
+    String workspaceId,
+    String orchestrationId,
+    int maxCostMicros,
+  ) async {
+    final data = await _remote.raiseCap(orchestrationId, maxCostMicros);
+    return (
+      oldMicros: (data['old_micros'] as num?)?.toInt() ?? 0,
+      newMicros: (data['new_micros'] as num?)?.toInt() ?? maxCostMicros,
+    );
+  }
 
   @override
   Future<Orchestration?> getById(String workspaceId, String id) async {

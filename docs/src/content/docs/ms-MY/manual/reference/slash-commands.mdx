@@ -2,7 +2,7 @@
 title: Perintah slash
 description: Setiap perintah yang boleh anda taip dalam komposer, apa yang dilakukannya dan di mana ia berjalan.
 slug: ms-MY/manual-pengguna/rujukan/perintah-slash
-sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
+sourceHash: 38430a6315b112c92a7806d1c28dff8a0285e363
 ---
 
 Perintah yang ditaip dalam komposer sesuatu ruang. Ia terbahagi kepada tiga kumpulan mengikut tempat ia berkuat kuasa, dan perbezaan itu penting: perintah **setempat** tidak pernah bergerak sebagai mesej, jadi ia tidak muncul dalam transkrip dan tidak sampai kepada ejen.
@@ -21,23 +21,35 @@ Perintah yang ditaip dalam komposer sesuatu ruang. Ia terbahagi kepada tiga kump
 
 **Setempat → penghantaran.** Menyediakan modus pelan pada perbualan: worktree baca sahaja sepenuhnya dan permukaan alat yang terhad kepada `read`. Serahan ejen ialah pelan, bukan suntingan. `/plan` kosong hanya menukar modus dan tidak pernah bergerak sebagai mesej; dengan gesaan, selebihnya baris itulah yang memulakan larian.
 
-### `/goal <objective>`
+### `/goal [flags] <objective>`
 
-**Penghantaran.** Memulakan objektif autonomi yang dihantar semula oleh penyelia matlamat merentas segmen dan permulaan semula.
+**Penghantaran.** Memulakan matlamat tahan lama: ejen berfungsi pada objektif dalam segmen, merentasi pemulaan semula, sehingga pelayan mengesahkan ia telah siap, seseorang menutupnya, atau ia mencapai had. Lihat [Kejar matlamat](/ms-MY/manual-pengguna/panduan-cara/kejar-matlamat/).
 
-Menaip `/goal` bersama teks terlebih dahulu membuka **temu bual objektif** — satu pusingan singkat yang enggan menerima draf sehingga ia mempunyai kesemua lima perkara berikut: kriteria kejayaan yang boleh diputuskan oleh penilai tanpa pertimbangan, perintah pengesahan yang tepat, had percubaan, sempadan skop, dan syarat berhenti. Setiap langkah menawarkan *Langkau dan jalankan seperti ditulis*: temu bual itu ialah nilai lalai, bukan gerbang.
+Menaip `/goal` bersama teks terlebih dahulu membuka **temu bual objektif** — satu pusingan singkat yang meminta kriteria kejayaan yang boleh diputuskan oleh penilai tanpa pertimbangan, semakan yang mesti lulus, sempadan skop dan syarat berhenti, kemudian menawarkan penyemak berasingan, segmen baharu dan menjawab soalannya sendiri. Setiap langkah menawarkan *Langkau dan jalankan seperti ditulis*: temu bual itu ialah nilai lalai, bukan gerbang.
 
-`/goal pause`, `/goal resume` dan `/goal drop` bukan perintah slash. Jeda, sambung dan henti terletak pada senarai matlamat perbualan itu di bar sisi. Flag permulaan pada objektif itu sendiri ialah `--budget <dollars>`, `--max <N>` (belanjawan larian) dan `--days <N>` (tarikh akhir). Matlamat yang mencapai had kosnya hanya boleh disambung dengan menaikkan had itu, daripada kawalan bar sisi yang sama.
+Bendera boleh berada di mana-mana dalam mesej: `--budget <dollars>` (bajet matlamat, 50 secara lalai), `--max <N>` (had segmen), `--days <N>` (tarikh akhir), `--check "<command>"` (sehingga 5), `--checker <agent>`, `--fresh` dan `--unattended wait|assume`. Bendera yang tidak diketahui atau diulang ditolak dan draf kekal dalam penulis mesej. Nombor di permulaan objektif ialah sebahagian daripada objektif. Bahagian `## Success criteria`, `## Boundaries`, `## Stop conditions` dan `## Checks` menjadi kontrak matlamat.
+
+`/goal pause`, `/goal resume` dan `/goal drop` bukan perintah slash. Jeda, sambung dan henti terletak pada kad matlamat dalam panel **Umum** perbualan dan pada halaman matlamat (bar sisi → **Matlamat**). Menyambung, dan menaikkan bajet, adalah milik orang yang memulakan matlamat.
 
 :::note[Mengapa ia menyampuk sama sekali]
 Objektif autonomi ialah satu-satunya tempat ringkasan yang kabur benar-benar mahal. Larian itu bekerja berjam-jam pada objektif yang "selesai"-nya tidak ditakrifkan oleh sesiapa, kemudian melaporkan kejayaan mengikut ukurannya sendiri. Lima soalan lebih murah daripada satu larian sepanjang malam yang tamat apabila ia rasa sudah tamat.
 :::
 
-### `/loop [budget] [task]`
+### `/loop [every <interval>] [flags] <prompt>`
 
-**Penghantaran.** Bekerja secara berulang sehingga selesai. Menerima satu had: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**Penghantaran.** Mencipta jadual yang membangunkan ejen dengan gesaan sekarang dan kemudian lagi: setiap sela (sekurang-kurangnya 60 saat), atau, tanpa `every`, selepas kelewatan yang ejen pilih setiap kali (1 hingga 60 minit). `--max <N>` mengehadkan larian, `--days <N>` menamatkannya (30 hari secara lalai), `--budget <dollars>` mengehadkan perbelanjaannya. Lihat [Jadual dan panggilan bangun](/ms-MY/manual-pengguna/panduan-cara/jadual-panggilan-bangun/).
 
-Token yang *kelihatan* seperti had (bermula dengan digit atau tanda) dan gagal dihuraikan ialah ralat keras. Prosa hanyalah prosa, jadi `/loop keep going until the tests pass` ialah gelung tanpa had dengan gesaan sebaris dan bukannya salah hurai.
+`/loop` tidak lagi memulakan matlamat, dan nombor di permulaan bukan kiraan larian.
+
+### `/schedule <when> [flags] <prompt>`
+
+**Penghantaran.** Mencipta jadual yang membangunkan ejen kemudian: `in 2h`, `at 09:00` (masa seterusnya sebegitu dalam zon masa ruang kerja), `at <ISO time>` atau `cron "0 9 * * 1-5"` (tanda petikan adalah pilihan). Menerima `--max`, `--days` dan `--budget` yang sama seperti `/loop`. Ia menunggu masa pertamanya.
+
+### `/refine`
+
+**Penghantaran.** Meminta kajian baca sahaja yang ringkas terhadap kerja perbualan, yang mungkin mencadangkan penambahbaikan kepada memori, polisi, nota ejen atau kemahiran. Cadangan menunggu di halaman **Penambahbaikan** sehingga seseorang menerimanya. Paling banyak satu kajian setiap perbualan setiap 20 minit.
+
+`/goal`, `/loop`, `/schedule` dan `/refine` hanya bertindak dalam mesej yang anda taip sendiri; daripada ejen, pipeline atau panggilan bangun, teks yang sama ialah mesej biasa. `/goal`, `/loop` atau `/schedule` yang tidak dapat dibaca mengekalkan draf anda, dan satu baris di atas teks dalam penggubah menyatakan apa yang salah.
 
 ### `/vibe [task]`
 

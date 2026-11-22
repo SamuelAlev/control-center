@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
+import 'package:cc_domain/core/domain/value_objects/script_call_origin.dart';
 import 'package:cc_host/cc_host.dart';
 import 'package:test/test.dart';
 
@@ -31,6 +32,136 @@ void main() {
     expect(registry.snapshot, isEmpty);
     // Answering after the withdrawal changes nothing.
     expect(registry.respond(reg.id, approved: true), isFalse);
+  });
+
+  group('only a person\'s answer is an answer', () {
+    // Each way a request can end, and whether the producer heard it went
+    // unanswered. A producer that stores a decision stores none for those.
+    ConfirmationRequest told(
+      List<String> heard,
+      String name, [
+      Future<void>? w,
+    ]) => ConfirmationRequest(
+      spaceId: 'c1',
+      title: name,
+      detail: name,
+      withdrawn: w,
+      onUnanswered: () => heard.add(name),
+    );
+
+    test('a timeout, a withdrawal, an expiry and a shutdown are unanswered; '
+        'a person\'s deny and approval are not', () async {
+      final heard = <String>[];
+      final registry = PendingConfirmationRegistry(
+        timeout: const Duration(milliseconds: 20),
+      );
+      final timedOut = registry.register(told(heard, 'timeout'));
+      expect(await timedOut.approved, isFalse);
+
+      final withdraw = Completer<void>();
+      final withdrawn = registry.register(
+        told(heard, 'withdrawn', withdraw.future),
+      );
+      withdraw.complete();
+      expect(await withdrawn.approved, isFalse);
+
+      final expired = registry.register(told(heard, 'expired'));
+      expect(registry.expire(expired.id), isTrue);
+      expect(await expired.approved, isFalse);
+      expect(registry.expire(expired.id), isFalse);
+
+      final denied = registry.register(told(heard, 'denied'));
+      registry.respond(denied.id, approved: false);
+      expect(await denied.approved, isFalse);
+      final approved = registry.register(told(heard, 'approved'));
+      registry.respond(approved.id, approved: true);
+      expect(await approved.approved, isTrue);
+
+      final atShutdown = registry.register(told(heard, 'shutdown'));
+      registry.dispose();
+      expect(await atShutdown.approved, isFalse);
+
+      expect(heard, ['timeout', 'withdrawn', 'expired', 'shutdown']);
+    });
+  });
+
+  test('a request the server refuses before asking shows no card, resolves '
+      'false at once and is unanswered; a failing check shows the card',
+      () async {
+    final registry = PendingConfirmationRegistry();
+    addTearDown(registry.dispose);
+    final snapshots = <int>[];
+    final sub = registry.pending.listen((s) => snapshots.add(s.length));
+    addTearDown(sub.cancel);
+    var unanswered = false;
+    registry.refuseUnasked = (r) => r.runId == 'run-expired';
+    final refused = registry.register(
+      ConfirmationRequest(
+        spaceId: 'c1',
+        title: 'Deploy',
+        detail: 'deploy',
+        runId: 'run-expired',
+        onUnanswered: () => unanswered = true,
+      ),
+    );
+    expect(await refused.approved, isFalse);
+    expect(unanswered, isTrue);
+    expect(registry.snapshot, isEmpty);
+    expect(registry.respond(refused.id, approved: true), isFalse);
+
+    // Another run's request is shown.
+    registry.register(
+      const ConfirmationRequest(
+        spaceId: 'c1',
+        title: 'Deploy',
+        detail: 'deploy',
+        runId: 'run-other',
+      ),
+    );
+    expect(registry.snapshot, hasLength(1));
+    registry.refuseUnasked = (_) => throw StateError('broken');
+    registry.register(_req());
+    expect(registry.snapshot, hasLength(2));
+    await Future<void>.delayed(Duration.zero);
+    expect(snapshots, [0, 1, 2], reason: 'the refused one never showed');
+  });
+
+  group('a moved deadline (a run the server started)', () {
+    test('outlasts the registry timeout, then denies: never approves', () async {
+      final registry = PendingConfirmationRegistry(
+        timeout: const Duration(milliseconds: 20),
+      );
+      addTearDown(registry.dispose);
+      final reg = registry.register(_req());
+      expect(
+        registry.denyAfter(reg.id, const Duration(milliseconds: 150)),
+        isTrue,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 60));
+      expect(registry.pendingById(reg.id), isNotNull, reason: 'still waiting');
+      expect(await reg.approved, isFalse);
+      expect(registry.snapshot, isEmpty);
+      expect(registry.denyAfter(reg.id, Duration.zero), isFalse);
+    });
+
+    test('a person who answers first still decides', () async {
+      final registry = PendingConfirmationRegistry();
+      addTearDown(registry.dispose);
+      final reg = registry.register(_req());
+      registry.denyAfter(reg.id, const Duration(milliseconds: 20));
+      expect(registry.respond(reg.id, approved: true), isTrue);
+      expect(await reg.approved, isTrue);
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+      expect(registry.snapshot, isEmpty);
+    });
+
+    test('a deadline already past denies at once', () async {
+      final registry = PendingConfirmationRegistry();
+      addTearDown(registry.dispose);
+      final reg = registry.register(_req());
+      registry.denyAfter(reg.id, const Duration(hours: -1));
+      expect(await reg.approved, isFalse);
+    });
   });
 
   group('PendingConfirmationRegistry', () {
@@ -222,6 +353,36 @@ void main() {
       final wire = pendingConfirmationToWire(registry.snapshot.single);
       expect(wire['conversation_id'], 'conv-1');
       expect(ConfirmationRequestDto.fromJson(wire).conversationId, 'conv-1');
+    });
+
+    test('names the script a nested call came from, and only then', () {
+      final registry = PendingConfirmationRegistry();
+      addTearDown(registry.dispose);
+      registry
+        ..register(_req())
+        ..register(
+          ConfirmationRequest(
+            spaceId: 's1',
+            title: 'Push',
+            detail: '',
+            origin: ScriptCallOrigin(
+              parentToolCallId: 'r',
+              executionId: 'run-1/r',
+            ),
+          ),
+        );
+      final direct = pendingConfirmationToWire(registry.snapshot.first);
+      final nested = pendingConfirmationToWire(registry.snapshot.last);
+
+      expect(direct.containsKey('origin'), isFalse);
+      expect(nested['origin'], {
+        'parent_tool_call_id': 'r',
+        'execution_id': 'run-1/r',
+      });
+      expect(
+        ConfirmationRequestDto.fromJson(nested).origin,
+        ScriptCallOrigin(parentToolCallId: 'r', executionId: 'run-1/r'),
+      );
     });
   });
 

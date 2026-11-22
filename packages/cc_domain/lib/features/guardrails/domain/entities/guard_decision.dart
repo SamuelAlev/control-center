@@ -1,3 +1,4 @@
+import 'package:cc_domain/features/code_mode/domain/services/utf8_bounds.dart';
 import 'package:cc_domain/features/evals/domain/value_objects/agent_config_hash.dart'
     show canonicalHash;
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
@@ -114,6 +115,7 @@ class GuardDecision {
     this.sourceScope,
     this.ruleId,
     this.prompted = false,
+    this.unanswered = false,
     this.responderUserId,
     this.overrideReason,
     this.correlationId,
@@ -164,8 +166,43 @@ class GuardDecision {
   /// Which chokepoint decided.
   final GuardSurface surface;
 
-  /// The op/tool name that was gated.
+  /// The op/tool name that was gated, with the action's summary (a shell
+  /// command in full, for instance), as [boundActionName] stores it.
   final String actionName;
+
+  /// The most UTF-8 bytes of an action's summary a row stores whole. A
+  /// longer one is stored as its first this many bytes and a marker
+  /// ([boundActionName]), so no action can grow the chain without bound. A
+  /// call a code mode script makes is refused before it runs when its
+  /// summary is longer (`ActionGuardService.maxScriptActionSummaryBytes`),
+  /// so what a script's call ran is always stored whole.
+  static const int maxActionNameBytes = 16 * 1024;
+
+  /// [summary] whole when it is at most [maxBytes] UTF-8 bytes, otherwise
+  /// its first [maxBytes] bytes, cut on a character boundary, and a marker
+  /// that states its full length. [digested] says the row's [argsDigest]
+  /// hashes the whole command, which the marker then says too.
+  ///
+  /// For a row written since this bound, length, never text, tells a cut
+  /// name: one longer than [maxBytes] bytes was cut, and one at or under it
+  /// is whole, whatever it says. A command may end in text shaped like the
+  /// marker, and it is stored as it came. A row an earlier server wrote is
+  /// whole at any length; no column says which server wrote a row, so only
+  /// its [occurredAt] against the upgrade's time (not stored) separates them.
+  /// [argsDigest] hashes the full command either way.
+  static String boundActionName(
+    String summary, {
+    int maxBytes = maxActionNameBytes,
+    bool digested = false,
+  }) {
+    final bytes = utf8Length(summary);
+    if (bytes <= maxBytes) {
+      return summary;
+    }
+    final whole = digested ? '; argsDigest hashes all of it' : '';
+    return '${cutToUtf8Bytes(summary, maxBytes)} … [cut, $bytes bytes in '
+        'full$whole]';
+  }
 
   /// ActionClass wire names involved.
   final List<String> actionClasses;
@@ -173,7 +210,9 @@ class GuardDecision {
   /// The derived permission (`domain:tier`) for human-lane decisions.
   final String? permission;
 
-  /// SHA-256 over the redacted extracted arguments.
+  /// The canonical hash of `{'command': …}`: the whole command or what the
+  /// call runs, as it was handed over (nothing redacted). Null when the check
+  /// named neither.
   final String? argsDigest;
 
   /// Human-readable summary of the constraint that matched.
@@ -194,6 +233,11 @@ class GuardDecision {
 
   /// Whether a human was asked.
   final bool prompted;
+
+  /// Whether the human asked never answered: the prompt came down with
+  /// nobody's answer (its deadline, an expiry, a withdrawal, a shutdown).
+  /// Such a [prompted] `deny` is no person's decision; one without it is.
+  final bool unanswered;
 
   /// Who answered the prompt.
   final String? responderUserId;
@@ -252,6 +296,9 @@ class GuardDecision {
     'source_scope': sourceScope,
     'rule_id': ruleId,
     'prompted': prompted,
+    // Only when set: every row without it hashes as it always did, so the
+    // chains written before the field verify unchanged.
+    if (unanswered) 'unanswered': true,
     'responder_user_id': responderUserId,
     'override_reason': overrideReason,
     'correlation_id': correlationId,
@@ -320,6 +367,7 @@ class GuardDecision {
     sourceScope: sourceScope,
     ruleId: ruleId,
     prompted: prompted,
+    unanswered: unanswered,
     responderUserId: responderUserId,
     overrideReason: overrideReason,
     correlationId: correlationId ?? this.correlationId,

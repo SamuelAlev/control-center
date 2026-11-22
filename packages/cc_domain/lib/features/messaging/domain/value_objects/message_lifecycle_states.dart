@@ -31,7 +31,12 @@ enum SteeringState {
   injected('injected'),
 
   /// The run ended before taking it, so it was turned into a plain message.
-  converted('converted');
+  converted('converted'),
+
+  /// A person stopped the run before it took the card: the card waits, kept
+  /// out of every run, until they release it (`steering.release`, which puts
+  /// it back to [queued] and sends it when no run is live) or delete it.
+  held('held');
 
   const SteeringState(this.wire);
 

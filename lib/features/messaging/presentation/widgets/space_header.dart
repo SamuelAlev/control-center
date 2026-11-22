@@ -25,7 +25,6 @@ class SpaceHeader extends ConsumerWidget {
     super.key,
     required this.space,
     required this.onManage,
-    required this.onArchive,
     this.conversation,
   });
 
@@ -37,9 +36,6 @@ class SpaceHeader extends ConsumerWidget {
 
   /// Callback to manage participants.
   final VoidCallback onManage;
-
-  /// Callback to archive the space.
-  final VoidCallback onArchive;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -130,12 +126,6 @@ class SpaceHeader extends ConsumerWidget {
         label: l10n.manageParticipants,
         foldRank: 4,
         onPressed: onManage,
-      ),
-      SpaceHeaderAction(
-        icon: AppIcons.archive,
-        label: l10n.archiveSpace,
-        foldRank: 0,
-        onPressed: onArchive,
       ),
     ];
 

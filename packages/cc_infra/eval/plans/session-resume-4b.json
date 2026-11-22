@@ -25,9 +25,11 @@
     }
   ],
   "randomizedOrder": true,
-  "minPairs": 8,
+  "hypothesis": "non_inferiority",
+  "primaryOutcome": "verified_success",
+  "minTasks": 10,
   "alpha": 0.05,
-  "nonInferiorityMargin": 0.05,
+  "nonInferiorityMargin": 0.1,
   "maxCostRatio": 1.0,
   "contextWindowTokens": 32000,
   "caveats": [
@@ -36,5 +38,5 @@
       "message": "The baseline arm reconstructs the conversation in the prompt; the native arm sends only the delta. The difference in prompt tokens is the thing being measured, so a cost win here is expected rather than surprising."
     }
   ],
-  "notes": "Report 4B. Only multi-turn tasks (long_context) exercise the difference; on single-turn tasks the arms are identical by construction, which the report's per-task table shows."
+  "notes": "Report 4B. Only multi-turn tasks (long_context) exercise the difference; on single-turn tasks the arms are identical by construction, which the report's per-task table shows. Non-inferiority on verified success with an absolute margin of 0.10 (10 points); the margin and the cost ceiling are the owner's to change."
 }

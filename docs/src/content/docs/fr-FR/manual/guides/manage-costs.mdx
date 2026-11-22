@@ -2,7 +2,7 @@
 title: Gérer les coûts
 description: Voyez ce que dépensent vos agents, plafonnez une exécution autonome et réduisez la consommation de jetons.
 slug: fr-FR/manuel/guides/gerer-couts
-sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
+sourceHash: 040176a3840653a57c823ce4ff7e3ed9cf071c07
 ---
 
 Ce guide vous montre comment voir ce que coûtent les exécutions d’agents et comment plafonner une exécution autonome.
@@ -40,21 +40,30 @@ La carte **Utilisation et coût** de cette page affiche les sept derniers jours 
 
 ## Plafonner une exécution autonome
 
-Deux commandes slash, saisies dans le compositeur d’un espace, sont les seules exécutions dotées d’un plafond de dépenses :
+Ces exécutions ont un plafond de dépenses. Une exécution que vous lancez en envoyant un message n’en a pas.
 
 ```
 /goal ship the auth refactor --budget 20
-/loop keep the flaky tests green
+/loop every 1h --budget 10 keep the flaky tests green
 ```
 
-- Chaque segment d’une exécution `/goal` ou `/loop` s’arrête lorsque ses dépenses tarifées atteignent **500 cents (5,00 $)**. À 80 % de ce montant, la boucle oriente d’abord le modèle pour qu’il conclue et laisse une passation propre, afin qu’elle ne meure pas en pleine tâche.
-- Un objectif durable entier est plafonné à **5 000 cents (50,00 $)**, sauf si vous passez `--budget <dollars>`. Le superviseur propage le budget _restant_ de l’objectif dans chaque segment, de sorte qu’un budget explicite n’est jamais dépassé d’un segment entier.
-- `--days N` ajoute une échéance en temps réel et `--max N` un plafond de nombre d’exécutions. Les deux sont facultatifs ; sans eux, l’objectif n’est borné que par le coût.
-- Un objectif qui heurte son plafond s’arrête à `budgetExhausted` et ne peut être repris qu’en augmentant le budget.
+| Exécution | Plafond |
+| --- | --- |
+| Un segment d’objectif | 5 dollars, ou ce qui reste du budget de l’objectif si c’est moins |
+| Un objectif | 50 dollars, sauf si vous passez `--budget <dollars>` |
+| La revue d’un objectif | 2 dollars, ou ce qui reste, imputés à l’objectif |
+| Une exécution qu’une planification ou une surveillance démarre | 5 dollars ; la planification s’arrête à son propre plafond de coût (50 dollars, sauf si vous passez `--budget`, ou la valeur par défaut de l’espace de travail) |
+| La revue après un objectif, ou `/refine` | 1 dollar |
 
-Comme le plafond repose sur une tarification, un modèle que le catalogue ne peut pas tarifer ne l’atteint jamais. Une telle exécution est plutôt bornée par le garde-fou de répétition contre les boucles infernales, par l’abandon du superviseur après trois échecs consécutifs et par vous.
+- Une exécution plafonnée s’arrête lorsque ses dépenses tarifées atteignent le plafond, dans le harnais intégré, Claude Code et les agents ACP. À 90 % du plafond, le harnais intégré et Claude Code orientent d’abord l’agent pour qu’il conclue et laisse une passation propre, afin qu’il ne meure pas en pleine tâche. Un agent ACP est annulé au plafond.
+- Le budget _restant_ de l’objectif est propagé dans chaque segment, de sorte qu’un budget explicite n’est jamais dépassé d’un segment entier.
+- `--days N` ajoute une échéance et `--max N` un plafond de segments. Les deux sont facultatifs ; sans eux, l’objectif est borné par le coût et par son arrêt sans progression.
+- Un objectif qui atteint son budget s’arrête à **Budget épuisé** et ne reprend qu’avec un budget plus élevé, que seule la personne qui l’a lancé peut accorder.
+- Une exécution de pipeline retenue à la limite de son orchestration attend que son demandeur appuie sur **Relever le plafond** sur la page de l’exécution du pipeline. Le nouveau plafond doit être supérieur à l’ancien et à ce qui a été dépensé, 1 000 dollars au maximum, et un plafond n’est jamais supprimé.
 
-Un message dans un espace, une @-mention ou une étape de pipeline n’a aucun plafond de dépenses. L’exécution se termine lorsque le modèle s’arrête, lorsque vous l’arrêtez, ou lorsque le garde-fou contre les boucles infernales la réoriente.
+Comme le plafond repose sur une tarification, un modèle que le catalogue ne peut pas tarifer ne l’atteint jamais. Une telle exécution est plutôt bornée par le garde-fou de répétition contre les boucles infernales, par l’arrêt d’un objectif sans progression, par son abandon après trois échecs consécutifs, et par vous.
+
+Un message dans un espace, une @-mention ou une étape de pipeline en dehors d’une orchestration plafonnée n’a aucun plafond de dépenses propre. L’exécution se termine lorsque le modèle s’arrête, lorsque vous l’arrêtez, ou lorsque le garde-fou contre les boucles infernales la réoriente.
 
 ## Réduire la consommation de jetons
 

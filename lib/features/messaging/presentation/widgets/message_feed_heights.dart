@@ -29,10 +29,11 @@ extension _HeightMethods on _SpaceMessageFeedState {
       item.collapseHeader,
       item.message.metadata?['inReplyToAgentName'],
     ),
-    TurnPartRow(:final plan, :final isFirst) => Object.hash(
+    TurnPartRow(:final plan, :final isFirst, :final segments) => Object.hash(
       isFirst,
       plan.gapBefore,
       _planRevision(plan),
+      _nestedRevision(plan, segments),
     ),
     TurnFootRow(:final item) => Object.hash(
       _messageRevision(item.message),
@@ -55,6 +56,20 @@ extension _HeightMethods on _SpaceMessageFeedState {
     m.metadata?['error'],
     m.metadata?['retried'],
   );
+
+  /// A script row's height follows the calls folded into it: how many there
+  /// are and how each stands.
+  static int _nestedRevision(
+    TranscriptRowPlan plan,
+    List<TranscriptSegment> segments,
+  ) => switch (plan) {
+    SegmentRowPlan(:final children) when children.isNotEmpty => Object.hashAll([
+      for (final i in children)
+        if (i < segments.length)
+          if (segments[i] case ToolSegment(:final status)) status,
+    ]),
+    _ => 0,
+  };
 
   static int _planRevision(TranscriptRowPlan plan) => switch (plan) {
     SegmentRowPlan(:final segment, :final open) => Object.hash(

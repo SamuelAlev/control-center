@@ -2,29 +2,45 @@
 title: Kontekst narzędzi i cache promptów
 description: Dlaczego agentowi pokazuje się niewielki zestaw narzędzi zamiast wszystkich, jak dociera do pozostałych oraz jakie zasady utrzymują cache promptów dostawcy w gotowości przez całe uruchomienie.
 slug: pl-PL/podrecznik/koncepcje/kontekst-narzedzi
-sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
+sourceHash: 74ad7fcb903772d007ba9bd7ec85153fcf668335
 ---
 
 Dwie rzeczy są prawdą o każdym żądaniu wysyłanym przez wbudowany harness: definicje narzędzi to największy stały koszt, a niemal żadne z nich nie zostanie użyte. Ta strona wyjaśnia, co Control Center z tym robi i dlaczego odpowiedzią nie jest po prostu „wysyłanie mniejszej liczby narzędzi”.
 
 ## Problemem jest uwaga, nie bajty
 
-Control Center rejestruje około 126 narzędzi. Wysłane w całości, ich definicje kosztują mniej więcej **23 000 tokenów przy każdym żądaniu** — koszt, którego żadna kompresja nie tknie, bo definicje narzędzi podróżują w innej części żądania niż rozmowa.
+Control Center ma około 160 własnych narzędzi. Wysłane w całości, ich definicje wędrowałyby z **każdym żądaniem** — koszt, którego żadna kompresja nie tknie, bo definicje narzędzi podróżują w innej części żądania niż rozmowa.
 
 Rachunek za tokeny to najbardziej oczywisty zarzut, a przy cache promptów jest też tym mniejszym. Prawdziwym kosztem jest **trafność wyboru**. Publikowane ewaluacje wywoływania narzędzi zgadzają się, że modele niezawodnie wybierają właściwe narzędzie do około 30–50 narzędzi w kontekście, a powyżej tej liczby radzą sobie coraz gorzej. Wskazywana przyczyna to nie liczba tokenów, lecz **semantyczne nakładanie się**: gdy katalog zawiera kilka narzędzi o podobnie brzmiących opisach, model wybiera między podobnymi opisami, zamiast przypominać sobie o jakiejś możliwości.
 
-Przy 126 narzędziach agent jest znacznie powyżej tego przedziału w każdej pojedynczej turze — także w tych wielu turach, w których potrzebował tylko odczytać plik.
+Przy około 160 narzędziach agent jest znacznie powyżej tego przedziału w każdej pojedynczej turze — także w tych wielu turach, w których potrzebował tylko odczytać plik.
 
-## Dwuwarstwowa powierzchnia
+## Jeden mały zestaw bezpośredni
 
 Uruchomienie widzi więc dwie rzeczy:
 
-- **rezydentny** zestaw — około dwudziestu kilku narzędzi, wysyłanych z pełnymi schematami przy każdym żądaniu;
+- **bezpośredni** zestaw około piętnastu narzędzi, wysyłanych z pełnymi schematami przy każdym żądaniu;
 - **indeks nazw** całej reszty, pogrupowany pod nagłówkami takimi jak „Tickets and projects” czy „Memory and knowledge”, kosztujący kilkaset tokenów za cały katalog.
 
-Zmierzone na obecnym katalogu, zmniejsza to blok narzędzi **z ~23,1 tys. tokenów do ~5,0 tys., czyli o około 78%**, i umieszcza stale widoczny zestaw w przedziale, w którym wybór jest niezawodny.
+Zmierzone na rejestrze, który budują testy, standardowe narzędzia czatu wbudowanego agenta to 14 definicji narzędzi i około 16,5 KB z `repl`, z czego `repl` to około 4 KB (jego definicja nie może przekroczyć 4 096 bajtów), oraz 14 definicji i około 13 KB na serwerze, który nie może uruchamiać skryptów. To pomiar jednej powierzchni, a nie każdej instalacji. Każde inne narzędzie jest osiągane ze skryptu albo wczytuje się przy pierwszym użyciu.
 
-Zestaw rezydentny to narzędzia, których uruchomienie używa w *większości* uruchomień: narzędzia plikowe i powłoki (`read`, `write`, `edit`, `search`, `bash`, …), narzędzia odkrywania, lista zadań, wyszukiwanie w pamięci oraz czasownik, który bieżący [tryb](/pl-PL/podrecznik/koncepcje/tryby) musi wywołać, aby dostarczyć swój wynik. Własny czasownik wyjściowy trybu jest zawsze rezydentny — uruchomienie nigdy nie może szukać tego jednego wywołania, które tworzy jego rezultat.
+Zestaw bezpośredni to narzędzia, których większość uruchomień używa w pierwszych turach i których uruchomienie nigdy nie powinno szukać: `read`, `write`, `edit`, `search`, `find`, `bash` i `read_output`; `ask_user` i `task`; `todo_write`, `search_memory` i `send_message`; oraz czasownik, który bieżący [tryb](/pl-PL/podrecznik/koncepcje/tryby/) musi wywołać, aby dostarczyć swój wynik. Własny czasownik wyjściowy trybu jest zawsze bezpośredni — uruchomienie nigdy nie może szukać tego jednego wywołania, które tworzy jego wynik. Narzędzie zdobywa miejsce dzięki temu, że używa go większość uruchomień, a nie dzięki temu, że jest ważne, gdy się je używa: każda nazwa w zestawie to pełna definicja w każdej turze każdego uruchomienia.
+
+### Skrypty docierają do reszty
+
+Gdy serwer może uruchamiać skrypty, każde uruchomienie ma też [`repl`](/pl-PL/podrecznik/koncepcje/tryb-kodu/), na pierwszym miejscu na liście. Zasada dla reszty katalogu jest wtedy następująca:
+
+- narzędzie, które skrypt może wywołać, jest osiągane **tylko ze skryptu**: znajduje się w indeksie nazw, a skrypt `repl` wywołuje je jako `tools.<name>(args)` po wyszukaniu przez `searchTools()` lub `describeTool()`, dopóki serwer nie może uruchamiać skryptów uruchomienia, po czym wczytuje się przy pierwszym użyciu zamiast tego ([Gdy skrypty nie mogą działać](/pl-PL/podrecznik/koncepcje/tryb-kodu/#gdy-skrypty-nie-mogą-działać));
+- narzędzie, którego skrypt nie może wywołać (`eval`, `task`, zatwierdzenia, delegowanie i kilka innych), jest **odroczone**: wczytuje się przy pierwszym użyciu, jak opisano niżej;
+- `search_tools` jest dodawane, gdy cokolwiek jest odroczone.
+
+Uruchomienie bez `repl` dostaje ten sam zestaw bezpośredni, a wszystko inne jest odroczone.
+
+Zestaw bezpośredni jest taki sam z `repl` i bez niego, celowo. Agent poznaje jedną powierzchnię, początek każdego żądania to te same narzędzia w tej samej kolejności, a dodanie `repl` nie zmienia niczego, na czym agent już polegał.
+
+Oszczędność: schemat narzędzia dostępnego tylko ze skryptu nigdy nie jest wysyłany do dostawcy, więc około setki narzędzi poza zestawem bezpośrednim kosztuje tylko swoje nazwy. Skrypt, który potrzebuje dziesięciu z nich, nie płaci za żaden ich schemat, a jego wyniki pośrednie nigdy nie trafiają do kontekstu.
+
+Koszt: narzędzie spoza zestawu bezpośredniego wymaga skryptu, a skrypt najpierw musi sprawdzić argumenty narzędzia. Przy jednym szybkim wywołaniu to dodatkowy krok, którego wywołanie bezpośrednie by nie potrzebowało. Dlatego narzędzia, których większość uruchomień używa w pierwszych turach, pozostają bezpośrednie.
 
 ### Odroczenie nie oznacza niedostępności
 
@@ -32,19 +48,21 @@ To właśnie ten element sprawia, że projekt jest bezpieczny, a nie tylko tani.
 
 Agent widzi nazwę w swoim prompcie. Jeśli wywoła tę nazwę bezpośrednio, harness wczytuje schemat i uruchamia narzędzie w tym samym kroku — bez błędu, bez dodatkowej rundy. Model nie musi wiedzieć, że narzędzie było kiedykolwiek „wyładowane”.
 
-Gdy agent zna zadanie, ale nie zna nazwy, `search_tools` przyjmuje opis w naturalnym języku („przypisz komuś zgłoszenie”), szereguje całą powierzchnię uruchomienia i zwraca dopasowania *z już wczytanymi schematami*, dzięki czemu już następna tura może jedno z nich wywołać. Jeśli wyszukiwanie nic nie znajdzie, mówi o tym wprost i proponuje inne sformułowanie albo szersze wyszukiwanie — celowo, bo agent, który odczyta puste wyszukiwanie jako „ta możliwość nie istnieje”, wymyśli zamiennik, zamiast szukać dalej.
+Gdy agent zna zadanie, ale nie zna nazwy, `search_tools` przyjmuje opis w naturalnym języku („przypisz komuś zgłoszenie”), szereguje całą powierzchnię uruchomienia i zwraca dopasowania *z już wczytanymi schematami*, dzięki czemu już następna tura może jedno z nich wywołać. Dopasowanie, które można wywołać tylko ze skryptu, jest zwracane wraz z opisem, jak wywołać je ze skryptu, chyba że skrypty uruchomienia nie mogą już działać: wtedy wczytuje się jak każde inne dopasowanie. Jeśli wyszukiwanie nic nie znajdzie, mówi o tym wprost i proponuje inne sformułowanie albo szersze wyszukiwanie — celowo, bo agent, który odczyta puste wyszukiwanie jako „ta możliwość nie istnieje”, wymyśli zamiennik, zamiast szukać dalej.
 
 `search_tools` istnieje tylko we wbudowanym harnessie. Zewnętrzni klienci MCP mają zamiast tego `search_tool_bm25`, który szereguje ten sam indeks, ale jedynie opisuje dopasowania — ci klienci otrzymali już wszystkie schematy z `tools/list`, więc nie ma czego wczytywać.
 
-### Czego odroczenie nigdy nie robi
+### Czego powierzchnia nigdy nie robi
 
-Odroczenie stosuje się **po** filtrze narzędzi trybu, nigdy zamiast niego. Ukrywa schemat; nie może ujawnić narzędzia, którego tryb odmówił. Aktywowane narzędzie nadal przechodzi przez prośbę o zatwierdzenie i [guardraile akcji](/pl-PL/podrecznik/koncepcje/guardraile) dokładnie tak samo jak narzędzie rezydentne, a narzędzie nie może wczytać nazwy, której od początku nie było na powierzchni uruchomienia.
+Odroczenie i skrypty stosują się **po** filtrze narzędzi trybu, nigdy zamiast niego. Ukrywają schemat; nie mogą ujawnić narzędzia, którego tryb odmówił. Wczytane narzędzie i wywołanie ze skryptu nadal przechodzą przez prośbę o zatwierdzenie i [guardraile akcji](/pl-PL/podrecznik/koncepcje/guardraile/) dokładnie tak samo jak wywołanie bezpośrednie, a żadne z nich nie może osiągnąć nazwy, której od początku nie było na powierzchni uruchomienia.
 
-Powierzchnia MCP widziana przez zewnętrznych klientów **nie** jest tym dotknięta. `tools/list` nadal zwraca pełny katalog. Wcześniejsza próba jej okrojenia całkowicie popsuła agentów: klienci MCP weryfikują nazwy narzędzi względem własnej zbuforowanej listy i odrzucają wszystko, czego na niej nie ma, nawet nie pytając serwera — narzędzie „ukryte, ale wywoływalne” było więc po prostu nieosiągalne. Odroczenie żyje w harnessie, gdzie wczytanie narzędzia w trakcie uruchomienia jest czymś, co harness faktycznie potrafi zrobić.
+Powierzchnia MCP widziana przez zewnętrznych klientów **nie** jest odroczona. `tools/list` zwraca pełny katalog, ponieważ klienci MCP weryfikują nazwy narzędzi względem własnej zbuforowanej listy i odrzucają wszystko, czego na niej nie ma, nie pytając serwera, więc narzędzie „ukryte, ale wywoływalne” byłoby po prostu nieosiągalne. Odroczenie żyje w harnessie, gdzie wczytanie narzędzia w trakcie uruchomienia jest czymś, co harness faktycznie potrafi zrobić.
 
-### Jak to wyłączyć
+Uruchomienie agenta, które dociera do Control Center przez jego endpoint MCP, gdy serwer może uruchamiać skrypty, jest jedynym wyjątkiem. Jego `tools/list` zawiera `repl`, narzędzia bezpośrednie i każde narzędzie, którego skrypt nie może wywołać, a resztę wywołuje ze skryptów. Bezpośrednie wywołanie któregokolwiek z nich dostaje odpowiedź z informacją, jak wywołać je ze skryptu.
 
-`--tool-deferral=off` (albo `CC_SERVER_TOOL_DEFERRAL=off`) przywraca rezydentność każdego dopuszczonego narzędzia, generując dokładnie te żądania, które serwer wysyłał, zanim odroczenie powstało. Zobacz [dokumentację referencyjną CLI `cc_server`](/pl-PL/podrecznik/dokumentacja-referencyjna/cc-server-cli).
+### Jak wyłączyć odraczanie
+
+`--tool-deferral=off` (albo `CC_SERVER_TOOL_DEFERRAL=off`) wyłącza odraczanie: uruchomienie bez `repl` dostaje każde dopuszczone narzędzie w pełni, a uruchomienie z `repl` dostaje w pełni narzędzia, których skrypt nie może wywołać, podczas gdy reszta pozostaje dostępna tylko ze skryptu. Zobacz [dokumentację referencyjną CLI `cc_server`](/pl-PL/podrecznik/dokumentacja-referencyjna/cc-server-cli/).
 
 ## Cache promptów
 
@@ -64,7 +82,7 @@ Dostawca pozwala na ograniczoną liczbę znaczników cache, a Control Center wyd
 
 | Znacznik                     | Co obejmuje                        | Czas życia |
 | ---------------------------- | ---------------------------------- | ---------- |
-| Ostatnie narzędzie **rezydentne** | Blok narzędzi                  | 1 godzina  |
+| Ostatnie narzędzie **bezpośrednie** | Blok narzędzi                  | 1 godzina  |
 | Ostatni blok systemowy       | Narzędzia + prompt systemowy       | 1 godzina  |
 | Koniec poprzedniej tury      | Historia do ostatniego żądania     | 5 min      |
 | Koniec bieżącej tury         | Pełna historia                     | 5 min      |
@@ -77,12 +95,12 @@ Prefiks narzędzi i systemu dostaje długi czas życia, bo jest stały przez ca�
 
 Podagenci tego samego typu tworzą identyczne co do bajtu prefiksy promptów, więc powinni odczytywać jeden wpis cache, zamiast każdy zapisywać własny. Wpis staje się jednak czytelny dopiero wtedy, gdy żądanie, które go zapisało, zacznie odpowiadać — dlatego przy fan-outcie uruchomionym za jednym razem każde dziecko płaci wyższą cenę za prefiks, który wszystkie dzielą.
 
-Harness pozwala wystartować pierwszemu dziecku danego kształtu, a potem zwalnia jego rodzeństwo, gdy tylko zacznie ono strumieniować. Oczekiwanie jest ograniczone: wolne pierwsze dziecko kosztuje trafienie cache, nigdy sam fan-out. Z tego samego powodu każdy podagent dostaje ten sam zestaw narzędzi rezydentnych niezależnie od swojego profilu — różnicowanie go według profilu rozdrobniby wspólny prefiks bez żadnej korzyści, skoro profil już zdecydował, co dziecko może wywoływać.
+Harness pozwala wystartować pierwszemu dziecku danego kształtu, a potem zwalnia jego rodzeństwo, gdy tylko zacznie ono strumieniować. Oczekiwanie jest ograniczone: wolne pierwsze dziecko kosztuje trafienie cache, nigdy sam fan-out. Z tego samego powodu każdy podagent dostaje ten sam zestaw narzędzi bezpośrednich niezależnie od swojego profilu — różnicowanie go według profilu rozdrobniłoby wspólny prefiks bez żadnej korzyści, skoro profil już zdecydował, co dziecko może wywoływać.
 
 ## Jak to obserwować
 
 Obie połowy są obserwowalne, a nie zakładane:
 
-- **Eksplorator kontekstu** przy rozmowie raportuje narzędzia rezydentne, odroczony indeks oraz to, ile *kosztowałby* każdy wstrzymany schemat; powstaje na tej samej ścieżce kodu, której używa rzeczywiste uruchomienie.
+- **Eksplorator kontekstu** przy rozmowie raportuje narzędzia bezpośrednie, odroczony indeks oraz to, ile *kosztowałby* każdy wstrzymany schemat; powstaje na tej samej ścieżce kodu, której używa rzeczywiste uruchomienie.
 - Każde uruchomienie zapisuje, które odroczone narzędzia wczytało i co to wyzwoliło, dzięki czemu wyszukiwanie, które nic nie znajduje, jest widoczne jako nietrafienie wyszukiwania, a nie znika w agencie po cichu robiącym coś pokrewnego.
 - Obserwowalność podaje **Trafność cache** jako odczyty z cache w stosunku do wszystkich przetworzonych tokenów promptu, wraz z zapisami do cache — uruchomienie, które ciągle odbudowuje swój prefiks, wypada nisko, zamiast wypadać jak takie, które cache nigdy nie potrzebowało.

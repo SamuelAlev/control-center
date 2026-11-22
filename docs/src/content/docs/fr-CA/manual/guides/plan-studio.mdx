@@ -2,7 +2,7 @@
 title: Travailler dans Plan Studio
 description: Examinez, modifiez, estimez, comparez et approuvez un plan dans l’éditeur Plan Studio, puis exécutez des playbooks paramétrés.
 slug: fr-CA/manuel/guides/plan-studio
-sourceHash: 04a6e193c6b57af3fce63c90673a0958b37552fb
+sourceHash: 9df96d8f10ca86584f3979b84af5eee250719752
 ---
 
 Ce guide explique comment travailler avec les plans dans Plan Studio. Pour savoir
@@ -144,8 +144,7 @@ sélectionner d’abord un sous-ensemble. L’approbation est bloquée tant que 
 proposition comporte des erreurs de validation, qui sont affichées à côté des
 boutons.
 
-L’approbation est réservée aux opérateurs. Il n’existe aucun outil MCP pour
-cela; un agent peut donc proposer et réviser un plan, mais jamais l’approuver.
+L’approbation est réservée aux opérateurs. Il n’existe aucun outil MCP pour cela; un agent peut donc proposer et réviser un plan, mais jamais l’approuver. Approuver un plan, enregistrer une révision, **Approuver la sélection** et **Continuer le nœud** exigent un accès en écriture aux dépôts de l’espace.
 
 Une fois une orchestration en cours d’exécution, la barre change :
 
@@ -156,7 +155,9 @@ Une fois une orchestration en cours d’exécution, la barre change :
   ne peut jamais être approuvée sans ses dépendances). Le contrôle se trouve sur
   la barre d’exécution de toutes les orchestrations; il est sans effet lorsque le
   plan a été approuvé en bloc.
-- Appuyez sur **Annuler l’exécution** pour arrêter toute l’orchestration.
+- Appuyez sur **Annuler l’exécution** pour arrêter toute l’orchestration. Toute personne ayant accès à l’espace peut le faire.
+
+**Continuer le nœud** et **Approuver la sélection** appartiennent à la personne pour qui l’exécution agit (un admin de l’espace de travail lorsqu’elle n’agit pour personne).
 
 Les étapes qui ne font pas partie d’un ensemble partiellement approuvé s’affichent
 en attente et ne s’exécutent pas avant que vous élargissiez l’ensemble.

@@ -2,29 +2,45 @@
 title: Ngữ cảnh công cụ và bộ nhớ đệm prompt
 description: Vì sao agent chỉ được hiển thị một tập công cụ nhỏ thay vì toàn bộ, cách nó tiếp cận phần còn lại, và những quy tắc giữ cho bộ nhớ đệm prompt của nhà cung cấp luôn ấm suốt một lượt chạy.
 slug: vi-VN/so-tay/khai-niem/ngu-canh-cong-cu
-sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
+sourceHash: 74ad7fcb903772d007ba9bd7ec85153fcf668335
 ---
 
 Có hai điều luôn đúng với mọi yêu cầu mà harness tích hợp sẵn gửi đi: định nghĩa công cụ là khoản chi phí cố định lớn nhất trong đó, và gần như không công cụ nào trong số đó sẽ được dùng đến. Trang này giải thích Control Center làm gì trước tình trạng ấy, và vì sao câu trả lời không đơn giản chỉ là “gửi ít công cụ hơn”.
 
 ## Vấn đề nằm ở sự chú ý, không phải số byte
 
-Control Center đăng ký khoảng 126 công cụ. Nếu gửi đầy đủ, định nghĩa của chúng tốn khoảng **23.000 token trong mỗi yêu cầu** — một khoản chi phí mà không phép nén nào chạm tới được, bởi định nghĩa công cụ đi trong một phần riêng của yêu cầu, tách khỏi phần hội thoại.
+Control Center có khoảng 160 công cụ riêng. Nếu gửi đầy đủ, định nghĩa của chúng sẽ đi kèm trong **mỗi yêu cầu** — một khoản chi phí mà không phép nén nào chạm tới được, bởi định nghĩa công cụ đi trong một phần riêng của yêu cầu, tách khỏi phần hội thoại.
 
 Hóa đơn token là lời phàn nàn hiển nhiên, và khi đã có bộ nhớ đệm prompt thì nó cũng là khoản nhỏ hơn. Chi phí thật sự nằm ở **độ chính xác khi chọn lựa**. Các đánh giá đã công bố về việc gọi công cụ đều nhất trí rằng mô hình chọn đúng công cụ một cách đáng tin cậy cho tới khoảng 30–50 công cụ trong ngữ cảnh, rồi càng vượt qua mức đó càng kém dần. Nguyên nhân được chỉ ra không phải số lượng token mà là **chồng lấn ngữ nghĩa**: một khi danh mục có vài công cụ với phần mô tả đọc giống nhau, mô hình đang phải chọn giữa những thứ na ná nhau thay vì nhớ ra một năng lực.
 
-Ở mức 126 công cụ, agent đã vượt xa vùng đó trong từng lượt một — kể cả nhiều lượt mà nó chỉ cần đọc một tệp.
+Ở mức khoảng 160 công cụ, agent đã vượt xa vùng đó trong từng lượt một — kể cả nhiều lượt mà nó chỉ cần đọc một tệp.
 
-## Bề mặt hai tầng
+## Một tập công cụ trực tiếp nhỏ
 
 Vì vậy một lượt chạy được hiển thị hai thứ:
 
-- một tập **thường trú** — khoảng hai chục công cụ, được gửi kèm lược đồ đầy đủ trong mọi yêu cầu;
+- một **tập công cụ trực tiếp** gồm khoảng mười lăm công cụ, được gửi kèm lược đồ đầy đủ trong mọi yêu cầu;
 - một **chỉ mục tên** của mọi thứ còn lại, được nhóm dưới các tiêu đề như “Tickets and projects” hay “Memory and knowledge”, tốn vài trăm token cho toàn bộ danh mục.
 
-Đo trên danh mục hiện tại, cách này đưa khối công cụ từ **~23,1k token xuống ~5,0k, tức nhỏ hơn khoảng 78%**, đồng thời đặt tập luôn hiển thị vào đúng vùng mà việc chọn lựa diễn ra đáng tin cậy.
+Đo trên sổ đăng ký mà các bài kiểm thử tạo ra, các công cụ chat chuẩn của agent tích hợp có 14 định nghĩa công cụ và khoảng 16,5 KB khi có `repl`, trong đó `repl` chiếm khoảng 4 KB (định nghĩa của nó không được vượt quá 4.096 byte), và 14 định nghĩa với khoảng 13 KB trên máy chủ không thể chạy tập lệnh. Đó là phép đo một bề mặt, không phải của mọi cài đặt. Mọi công cụ khác đều được gọi từ một tập lệnh hoặc được nạp khi dùng lần đầu.
 
-Tập thường trú là những công cụ mà một lượt chạy dùng trong *hầu hết* các lượt: từ vựng về tệp và shell (`read`, `write`, `edit`, `search`, `bash`, …), các công cụ khám phá, danh sách việc cần làm, tìm kiếm bộ nhớ, và động từ bất kỳ mà [chế độ](/vi-VN/so-tay/khai-niem/che-do) hiện tại phải gọi để tạo ra kết quả của nó. Động từ đầu ra của chính một chế độ luôn thường trú — một lượt chạy không bao giờ phải đi tìm lời gọi duy nhất tạo ra sản phẩm giao nộp của nó.
+Tập công cụ trực tiếp gồm các công cụ mà hầu hết các lần chạy dùng trong những lượt đầu, và những công cụ mà một lần chạy không bao giờ phải đi tìm: `read`, `write`, `edit`, `search`, `find`, `bash` và `read_output`; `ask_user` và `task`; `todo_write`, `search_memory` và `send_message`; và động từ mà [chế độ](/vi-VN/so-tay/khai-niem/che-do/) hiện tại phải gọi để giao đầu ra của nó. Động từ đầu ra của một chế độ luôn trực tiếp — một lần chạy không bao giờ phải đi tìm lệnh gọi duy nhất tạo ra sản phẩm giao nộp của nó. Một công cụ có chỗ trong tập này nhờ được dùng trong hầu hết các lần chạy, chứ không nhờ quan trọng khi được dùng: mọi tên trong tập đều là một định nghĩa ở mọi lượt của mọi lần chạy.
+
+### Tập lệnh tiếp cận phần còn lại
+
+Khi máy chủ có thể chạy tập lệnh, mọi lần chạy cũng có [`repl`](/vi-VN/so-tay/khai-niem/che-do-code/), đứng đầu danh sách. Quy tắc cho phần còn lại của danh mục khi đó là:
+
+- một công cụ mà tập lệnh được phép gọi thì **chỉ gọi được từ tập lệnh**: nó nằm trong chỉ mục tên, và một tập lệnh `repl` gọi nó dưới dạng `tools.<name>(args)` sau khi tra cứu bằng `searchTools()` hoặc `describeTool()`, cho đến khi máy chủ không thể chạy tập lệnh của lần chạy và công cụ đó được nạp khi dùng lần đầu thay thế ([Khi không thể chạy tập lệnh](/vi-VN/so-tay/khai-niem/che-do-code/#khi-không-thể-chạy-tập-lệnh));
+- một công cụ mà tập lệnh không được gọi (`eval`, `task`, phê duyệt, ủy thác và vài công cụ khác) là **được trì hoãn**: nó được nạp khi dùng lần đầu, như mô tả bên dưới;
+- `search_tools` được thêm khi có bất kỳ thứ gì bị trì hoãn.
+
+Lần chạy không có `repl` nhận cùng tập công cụ trực tiếp, còn mọi thứ khác bị trì hoãn.
+
+Tập công cụ trực tiếp giống nhau dù có hay không có `repl`, và điều này là cố ý. Agent chỉ học một bề mặt, phần đầu của mọi yêu cầu luôn là cùng các công cụ theo cùng thứ tự, và việc thêm `repl` không thay đổi điều gì mà agent đã dựa vào.
+
+Điều nó tiết kiệm: lược đồ của một công cụ chỉ dành cho tập lệnh không bao giờ được gửi tới nhà cung cấp, nên khoảng một trăm công cụ ngoài tập công cụ trực tiếp chỉ tốn tên của chúng. Một tập lệnh cần mười trong số đó không trả tiền cho lược đồ nào của chúng, và các kết quả trung gian của nó không bao giờ đi vào ngữ cảnh.
+
+Điều nó tốn: một công cụ nằm ngoài tập công cụ trực tiếp cần một tập lệnh để gọi, và tập lệnh phải tra cứu đối số của công cụ trước. Với một lệnh gọi nhanh, đó là một bước thêm mà lệnh gọi trực tiếp không cần. Vì vậy, các công cụ mà hầu hết lần chạy gọi trong những lượt đầu vẫn ở dạng trực tiếp.
 
 ### Bị trì hoãn không có nghĩa là không dùng được
 
@@ -32,19 +48,21 @@ Tập thường trú là những công cụ mà một lượt chạy dùng trong
 
 Agent nhìn thấy cái tên ấy trong prompt của mình. Nếu nó gọi thẳng tên đó, harness nạp lược đồ và chạy công cụ ngay trong cùng một bước — không lỗi, không phải đi thêm một vòng. Mô hình không cần biết rằng công cụ từng bị “dỡ ra”.
 
-Khi agent biết việc cần làm nhưng không biết tên công cụ, `search_tools` nhận một mô tả bằng ngôn ngữ tự nhiên (“gán một phiếu cho ai đó”), xếp hạng toàn bộ bề mặt của lượt chạy, rồi trả về các kết quả khớp *cùng với lược đồ đã được nạp sẵn*, để lượt kế tiếp có thể gọi thẳng một trong số đó. Nếu tìm kiếm không ra gì, nó nói rõ điều đó và gợi ý cách diễn đạt khác hoặc một phạm vi tìm rộng hơn — một cách có chủ đích, bởi một agent đọc kết quả tìm kiếm rỗng thành “năng lực này không tồn tại” sẽ tự bịa ra thứ thay thế thay vì tìm lại.
+Khi agent biết việc cần làm nhưng không biết tên công cụ, `search_tools` nhận một mô tả bằng ngôn ngữ tự nhiên (“gán một phiếu cho ai đó”), xếp hạng toàn bộ bề mặt của lượt chạy, rồi trả về các kết quả khớp *cùng với lược đồ đã được nạp sẵn*, để lượt kế tiếp có thể gọi thẳng một trong số đó. Kết quả khớp chỉ gọi được từ tập lệnh được trả về kèm cách gọi nó từ tập lệnh, trừ khi tập lệnh của lần chạy không còn chạy được: khi đó nó được nạp như mọi kết quả khớp khác. Nếu tìm kiếm không ra gì, nó nói rõ điều đó và gợi ý cách diễn đạt khác hoặc một phạm vi tìm rộng hơn — một cách có chủ đích, bởi một agent đọc kết quả tìm kiếm rỗng thành “năng lực này không tồn tại” sẽ tự bịa ra thứ thay thế thay vì tìm lại.
 
 `search_tools` chỉ tồn tại trong harness tích hợp sẵn. Máy khách MCP bên ngoài thì có `search_tool_bm25`, công cụ này xếp hạng cùng chỉ mục đó nhưng chỉ mô tả các kết quả khớp — những máy khách ấy đã nhận mọi lược đồ từ `tools/list` rồi, nên không có gì để nạp.
 
-### Việc trì hoãn không bao giờ làm gì
+### Bề mặt không bao giờ làm gì
 
-Việc trì hoãn được áp dụng **sau** bộ lọc công cụ của chế độ, chứ không bao giờ thay thế nó. Nó giấu một lược đồ; nó không thể để lộ ra một công cụ mà chế độ đã từ chối. Một công cụ được kích hoạt vẫn phải qua lời nhắc phê duyệt và [rào chắn hành động](/vi-VN/so-tay/khai-niem/rao-chan) đúng như một công cụ thường trú, và một công cụ không thể nạp một cái tên vốn không nằm trên bề mặt của lượt chạy ngay từ đầu.
+Việc trì hoãn và tập lệnh được áp dụng **sau** bộ lọc công cụ của chế độ, chứ không bao giờ thay thế nó. Chúng giấu một lược đồ; chúng không thể để lộ ra một công cụ mà chế độ đã từ chối. Một công cụ được nạp và một lệnh gọi từ tập lệnh vẫn phải qua lời nhắc phê duyệt và [rào chắn hành động](/vi-VN/so-tay/khai-niem/rao-chan/) đúng như một lệnh gọi trực tiếp, và cả hai đều không thể tới một tên vốn không nằm trên bề mặt của lượt chạy ngay từ đầu.
 
-Bề mặt MCP mà máy khách bên ngoài nhìn thấy **không** bị ảnh hưởng. `tools/list` vẫn trả về danh mục đầy đủ. Một nỗ lực trước đây nhằm cắt gọn nó đã làm hỏng agent hoàn toàn: máy khách MCP đối chiếu tên công cụ với danh sách đã lưu trong bộ nhớ đệm của chúng và từ chối mọi thứ không có trong danh sách mà không hề hỏi máy chủ, nên một công cụ “bị ẩn nhưng vẫn gọi được” đơn giản là không thể tiếp cận. Việc trì hoãn nằm trong harness, nơi mà việc nạp một công cụ giữa lượt chạy là điều harness thực sự làm được.
+Bề mặt MCP mà máy khách bên ngoài nhìn thấy **không** bị trì hoãn. `tools/list` trả về danh mục đầy đủ, vì máy khách MCP đối chiếu tên công cụ với danh sách đã lưu trong bộ nhớ đệm của chúng và từ chối mọi thứ không có trong danh sách mà không hề hỏi máy chủ, nên một công cụ “bị ẩn nhưng vẫn gọi được” sẽ đơn giản là không thể tiếp cận. Việc trì hoãn nằm trong harness, nơi mà việc nạp một công cụ giữa lượt chạy là điều harness thực sự làm được.
 
-### Tắt tính năng này
+Một lần chạy agent truy cập Control Center qua endpoint MCP của nó trong khi máy chủ có thể chạy tập lệnh là ngoại lệ duy nhất. `tools/list` của nó gồm `repl`, các công cụ trực tiếp và mọi công cụ mà tập lệnh không được gọi, còn phần còn lại nó gọi từ tập lệnh. Một lệnh gọi trực tiếp tới một trong số đó được trả lời bằng cách gọi nó từ một tập lệnh.
 
-`--tool-deferral=off` (hoặc `CC_SERVER_TOOL_DEFERRAL=off`) khiến mọi công cụ được chấp nhận trở lại thường trú, tạo ra đúng những yêu cầu mà máy chủ đã gửi trước khi có tính năng trì hoãn. Xem [tham chiếu CLI `cc_server`](/vi-VN/so-tay/tham-chieu/cli-cc-server).
+### Tắt trì hoãn
+
+`--tool-deferral=off` (hoặc `CC_SERVER_TOOL_DEFERRAL=off`) tắt trì hoãn: một lần chạy không có `repl` nhận đầy đủ mọi công cụ được chấp nhận, còn một lần chạy có `repl` nhận đầy đủ các công cụ mà tập lệnh không được gọi, trong khi phần còn lại vẫn chỉ gọi được từ tập lệnh. Xem [tham chiếu CLI `cc_server`](/vi-VN/so-tay/tham-chieu/cli-cc-server/).
 
 ## Bộ nhớ đệm prompt
 
@@ -64,7 +82,7 @@ Mỗi nhà cung cấp chỉ cho phép một số lượng điểm đánh dấu b
 
 | Điểm đánh dấu                     | Bao phủ                             | Thời hạn |
 | --------------------------------- | ----------------------------------- | -------- |
-| Công cụ **thường trú** cuối cùng  | Khối công cụ                        | 1 giờ    |
+| Công cụ **trực tiếp** cuối cùng   | Khối công cụ                        | 1 giờ    |
 | Khối hệ thống cuối cùng           | Công cụ + system prompt             | 1 giờ    |
 | Đuôi lượt trước                   | Lịch sử tính đến yêu cầu cuối cùng  | 5 phút   |
 | Đuôi lượt hiện tại                | Toàn bộ lịch sử                     | 5 phút   |
@@ -77,12 +95,12 @@ Tiền tố công cụ-và-hệ thống nhận thời hạn dài bởi nó khôn
 
 Các agent con cùng loại tạo ra những tiền tố prompt giống nhau đến từng byte, nên chúng nên cùng đọc một mục bộ nhớ đệm thay vì mỗi agent tự ghi mục riêng. Nhưng một mục chỉ trở nên đọc được sau khi yêu cầu đã ghi nó bắt đầu phản hồi, nên một đợt khởi chạy tỏa rộng cùng lúc sẽ khiến mọi agent con đều phải trả giá đắt cho một tiền tố mà tất cả cùng chia sẻ.
 
-Harness cho agent con đầu tiên của một hình dạng nhất định khởi chạy trước, rồi thả các anh em của nó ngay khi nó bắt đầu phát trực tiếp. Thời gian chờ là có giới hạn: một agent con đầu tiên chậm chạp chỉ khiến mất một lần trúng bộ nhớ đệm, chứ không bao giờ làm hỏng cả đợt tỏa rộng. Vì cùng lý do, mọi agent con đều nhận cùng một tập công cụ thường trú bất kể hồ sơ của nó — thay đổi theo từng hồ sơ sẽ chia cắt tiền tố dùng chung mà chẳng được lợi gì, bởi hồ sơ vốn đã quyết định agent con được gọi những gì.
+Harness cho agent con đầu tiên của một hình dạng nhất định khởi chạy trước, rồi thả các anh em của nó ngay khi nó bắt đầu phát trực tiếp. Thời gian chờ là có giới hạn: một agent con đầu tiên chậm chạp chỉ khiến mất một lần trúng bộ nhớ đệm, chứ không bao giờ làm hỏng cả đợt tỏa rộng. Vì cùng lý do, mọi agent con đều nhận cùng một tập công cụ trực tiếp bất kể hồ sơ của nó — thay đổi theo từng hồ sơ sẽ chia cắt tiền tố dùng chung mà chẳng được lợi gì, bởi hồ sơ vốn đã quyết định agent con được gọi những gì.
 
 ## Quan sát nó hoạt động
 
 Cả hai nửa đều quan sát được chứ không phải giả định:
 
-- **Trình khám phá ngữ cảnh** trên một cuộc hội thoại báo cáo các công cụ thường trú, chỉ mục bị trì hoãn và việc mỗi lược đồ bị giữ lại *sẽ* tốn bao nhiêu, được dựng từ đúng đường mã mà một lượt chạy thật dùng.
+- **Trình khám phá ngữ cảnh** trên một cuộc hội thoại báo cáo các công cụ trực tiếp, chỉ mục bị trì hoãn và việc mỗi lược đồ bị giữ lại *sẽ* tốn bao nhiêu, được dựng từ đúng đường mã mà một lượt chạy thật dùng.
 - Mỗi lượt chạy ghi lại những công cụ bị trì hoãn mà nó đã nạp và điều gì đã kích hoạt việc đó, nên một tìm kiếm không ra kết quả sẽ hiện lên như một lần truy hồi trượt, thay vì biến mất vào một agent đang lặng lẽ làm một việc gì đó na ná.
 - Trang **Quan sát** báo cáo **Tỷ lệ cache** là số lần đọc từ bộ nhớ đệm trên toàn bộ token prompt đã xử lý, kể cả các lần ghi vào bộ nhớ đệm — một lượt chạy cứ mãi dựng lại tiền tố của mình sẽ đạt điểm thấp, thay vì được điểm như một lượt chạy chưa từng cần bộ nhớ đệm.

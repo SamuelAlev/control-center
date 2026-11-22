@@ -1,8 +1,8 @@
 ---
 title: Khám phá dữ liệu trong kernel bền vững
-description: Cho một agent trình thông dịch Python hoặc JavaScript giữ nguyên các biến giữa các lần gọi, vẽ biểu đồ ngay vào chat và có thể gọi chính công cụ của bạn từ bên trong một ô.
+description: Cho một agent trình thông dịch Python hoặc JavaScript giữ nguyên các biến giữa các lần gọi và vẽ biểu đồ ngay vào chat.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/kham-pha-du-lieu-trong-kernel
-sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
+sourceHash: 8fcd77019bfae5088223822a12ef91c8a6879c5d
 ---
 
 Hướng dẫn này chỉ cách để một agent nạp một thứ tốn kém đúng một lần rồi hỏi nó vài câu hỏi, thay vì phải trả giá cho việc nạp ở mỗi câu hỏi.
@@ -62,22 +62,9 @@ Những cú pháp này được viết lại thành mã thuần thay vì báo l�
 
 Việc xóa bộ nhớ đệm của `%pip` mới là điều quan trọng: cài đặt vào một trình thông dịch đang chạy không có tác dụng gì với một module đã được import từ trước, nên nếu thiếu bước này thì phiên bản bạn vừa cài không phải là phiên bản đang chạy.
 
-## Gọi công cụ của chính bạn từ bên trong một ô
+## Gọi công cụ từ mã
 
-```python
-paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
-for path in paths.splitlines()[:100]:
-    contents = tool("read", {"path": path})
-    ...
-```
-
-`tool(name, args)` đi vào lại sổ đăng ký công cụ của chính agent. Nghĩa là một ô có thể tỏa ra trên hàng trăm tệp, hoặc ủy thác qua `task`, mà mô hình không phải tiêu tốn một lượt cho mỗi mục.
-
-:::caution[Cầu nối không đi vòng qua rào chắn của bạn]
-Một lệnh gọi qua cầu được phân giải dựa trên **cùng** sổ đăng ký công cụ như một lệnh gọi do mô hình phát ra, nên chính sách `ActionClass`, lời nhắc phê duyệt và mọi lớp bọc đều áp dụng y hệt. Một cầu nối vượt qua sổ đăng ký sẽ là một lỗ hổng đúng kiểu “viết một dòng Python”.
-:::
-
-Một lệnh gọi qua cầu sẽ **tạm ngưng thời gian chờ của ô** trong khi lệnh đó còn đang chờ xử lý. Ngân sách này đo sự không hoạt động, chứ không đo đồng hồ thực — một ô tỏa ra tới các subagent rồi chờ bốn phút không phải là bị treo, và giết nó giữa lúc tỏa ra sẽ làm mất toàn bộ trạng thái của kernel.
+Một ô không thể gọi công cụ của agent. Để lặp qua công cụ trong mã, agent viết một tập lệnh [`repl`](/vi-VN/so-tay/khai-niem/che-do-code/) thay thế. Một tập lệnh cũng không thể gọi `eval`: agent gọi nó trực tiếp.
 
 ## Bắt đầu lại
 

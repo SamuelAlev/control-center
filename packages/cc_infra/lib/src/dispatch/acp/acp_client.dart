@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
+import 'package:cc_domain/core/domain/value_objects/usage_scope.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 
 /// A minimal Agent Client Protocol (JSON-RPC 2.0 over newline-delimited
@@ -106,6 +108,22 @@ class AcpClient {
     });
     // The prompt result signals turn completion.
     onDone?.call();
+  }
+
+  /// Sends the `session/cancel` notification: the agent stops the turn of
+  /// [sessionId] and answers its pending `session/prompt` with the stop
+  /// reason `cancelled`. A notification, so there is nothing to await.
+  void sessionCancel(String sessionId) {
+    if (_closed) {
+      return;
+    }
+    _send(
+      jsonEncode({
+        'jsonrpc': '2.0',
+        'method': 'session/cancel',
+        'params': {'sessionId': sessionId},
+      }),
+    );
   }
 
   /// Feeds one decoded JSON-RPC line from the agent's stdout. Routes it as a
@@ -235,6 +253,9 @@ class AcpClient {
   ///   - `agent_thought_chunk` → reasoning / thinking text
   ///   - `tool_call` → a tool invocation
   ///   - `tool_call_update` → a partial tool result
+  ///   - `usage_update` → the session's cost so far, when the agent reports
+  ///     one in US dollars (`cost: {amount, currency}`), as an absolute
+  ///     [UsageScope.runCumulative] snapshot
   void _mapUpdate(Map<String, dynamic> params) {
     final update = params['update'];
     if (update is! Map) {
@@ -273,6 +294,24 @@ class AcpClient {
             isPartial: true,
           ),
         );
+        break;
+      case 'usage_update':
+        final cost = u['cost'];
+        if (cost is Map) {
+          final amount = cost['amount'];
+          final currency = cost['currency']?.toString().toUpperCase();
+          if (amount is num && (currency == null || currency == 'USD')) {
+            _events.add(
+              UsageEvent(
+                scope: UsageScope.runCumulative,
+                usage: RunUsage(
+                  costMicros: (amount * 1000000).round(),
+                  costBasis: CostBasis.providerReported,
+                ),
+              ),
+            );
+          }
+        }
         break;
       default:
         break;

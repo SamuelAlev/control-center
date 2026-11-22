@@ -2,7 +2,7 @@
 title: Làm việc trong Plan Studio
 description: Xem xét, chỉnh sửa, ước tính, diff và phê duyệt một kế hoạch trong trình soạn thảo Plan Studio và chạy playbook có tham số.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/plan-studio
-sourceHash: 04a6e193c6b57af3fce63c90673a0958b37552fb
+sourceHash: 9df96d8f10ca86584f3979b84af5eee250719752
 ---
 
 Bài hướng dẫn này chỉ cho bạn cách làm việc với kế hoạch trong Plan Studio. Để
@@ -132,9 +132,7 @@ duyệt kế hoạch** luôn phê duyệt mọi bước — không có cách nà
 trước. Việc phê duyệt bị chặn khi đề xuất có lỗi xác thực, và những lỗi này được
 hiển thị bên cạnh các nút.
 
-Việc phê duyệt chỉ dành cho người vận hành. Không có công cụ MCP nào cho việc
-này, nên một agent có thể đề xuất và sửa đổi một kế hoạch nhưng không bao giờ
-phê duyệt được nó.
+Việc phê duyệt chỉ dành cho người vận hành. Không có công cụ MCP nào cho việc này, nên một agent có thể đề xuất và sửa đổi một kế hoạch nhưng không bao giờ phê duyệt được nó. Phê duyệt một kế hoạch, lưu một bản sửa đổi, **Phê duyệt mục đã chọn** và **Tiếp tục nút** cần quyền ghi vào các kho mã của không gian.
 
 Khi một điều phối đang thực thi, thanh này thay đổi:
 
@@ -145,7 +143,9 @@ Khi một điều phối đang thực thi, thanh này thay đổi:
   giờ được phê duyệt mà thiếu các phụ thuộc của nó). Điều khiển này nằm trên
   thanh thực thi của mọi điều phối; nó không làm gì khi kế hoạch đã được phê
   duyệt trọn vẹn.
-- Nhấn **Hủy lần chạy** để dừng toàn bộ điều phối.
+- Nhấn **Hủy lần chạy** để dừng toàn bộ điều phối. Bất kỳ ai có quyền truy cập không gian đều có thể làm vậy.
+
+**Tiếp tục nút** và **Phê duyệt mục đã chọn** thuộc về người mà lần chạy hành động thay (quản trị viên không gian làm việc khi nó không hành động thay ai).
 
 Những bước nằm ngoài một tập đã phê duyệt một phần sẽ hiển thị ở dạng bị hoãn và
 không chạy cho tới khi bạn mở rộng tập đó.

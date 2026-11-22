@@ -2,7 +2,7 @@
 title: Een agententeam opbouwen
 description: Groepeer agenten onder één leider, zodat toegewezen werk via één coördinator loopt.
 slug: nl-NL/handleiding/gidsen/agententeam-opbouwen
-sourceHash: fc5e2b8c8a49e398ff1b322fcfb25c4aed84bbb4
+sourceHash: 55add2d16bf90650b7d4cbda7aa78f0fdf1b72e2
 ---
 
 Deze gids laat je zien hoe je een team aanmaakt, er een leider aan geeft en werk erheen routeert.
@@ -51,7 +51,7 @@ Wanneer een ticket wél een teamtoewijzing heeft:
 
 1. De leider van het team wordt gedispatcht met het ticket, de werkinstructies en de ledenlijst.
 2. De leider delegeert aan leden en legt zijn evaluatie vast met de tool `record_team_activity` — `action` (gedelegeerd), `no_action` (niets meer te doen, wat verdere hertriggeringen stopt) of `failed`.
-3. Elke run van een lid die wordt afgerond, wekt de leider opnieuw, begrensd door de no-action-beveiliging.
+3. Een lidrun die de leider met een `@mention` of een bericht heeft gestart, wekt de leider opnieuw wanneer die eindigt, in het gesprek waaruit de leider hem wekte, begrensd door de no-action-guard. Werk dat de leider met `delegate_task` heeft overgedragen, wekt hem wanneer het ticket is afgehandeld, en een vraag die hij met `ask_agent` heeft gesteld, wekt hem met het antwoord (zie [Agents laten samenwerken](/nl-NL/handleiding/gidsen/agents-laten-samenwerken/)).
 
 De pipeline-node **Team dispatch** is het andere toegangspunt. Die neemt een team-id, een prompt en een dispatchmodus:
 

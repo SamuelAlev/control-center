@@ -2,7 +2,7 @@
 title: Jobb i Plan Studio
 description: Gjennomgå, rediger, estimer, sammenlign og godkjenn en plan i Plan Studio-redigeringen, og kjør parametriserte playbooks.
 slug: nb-NO/handbok/slik-gjor-du/plan-studio
-sourceHash: 04a6e193c6b57af3fce63c90673a0958b37552fb
+sourceHash: 9df96d8f10ca86584f3979b84af5eee250719752
 ---
 
 Denne veiledningen viser hvordan du jobber med planer i Plan Studio. For hva
@@ -132,8 +132,7 @@ steg — det finnes ingen måte å velge ut en delmengde først. Godkjenning er
 blokkert så lenge forslaget har valideringsfeil, som vises ved siden av
 knappene.
 
-Godkjenning er forbeholdt operatøren. Det finnes ikke noe MCP-verktøy for det, så
-en agent kan foreslå og revidere en plan, men aldri godkjenne en.
+Godkjenning er forbeholdt operatøren. Det finnes ikke noe MCP-verktøy for det, så en agent kan foreslå og revidere en plan, men aldri godkjenne en. Å godkjenne en plan, lagre en revisjon, **Godkjenn valgte** og **Fortsett node** krever skrivetilgang til områdets repositorier.
 
 Når en orkestrering kjører, endres linjen:
 
@@ -143,7 +142,9 @@ Når en orkestrering kjører, endres linjen:
   steget pluss alt det avhenger av transitivt (et steg kan aldri godkjennes uten
   avhengighetene sine). Kontrollen finnes på kjøringslinjen for alle
   orkestreringer; den gjør ingenting når planen ble godkjent som helhet.
-- Trykk **Avbryt kjøring** for å stoppe hele orkestreringen.
+- Trykk **Avbryt kjøring** for å stoppe hele orkestreringen. Alle med tilgang til området kan.
+
+**Fortsett node** og **Godkjenn valgte** tilhører personen kjøringen handler for (en arbeidsområdeadministrator når den ikke handler for noen).
 
 Steg utenfor et delvis godkjent sett vises som utsatte og kjører ikke før du
 utvider settet.

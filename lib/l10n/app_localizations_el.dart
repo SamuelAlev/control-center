@@ -1055,9 +1055,6 @@ class AppLocalizationsEl extends AppLocalizations {
   }
 
   @override
-  String get calendarAllDayGutter => 'Ολοήμ.';
-
-  @override
   String calendarAllDayEventCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -2537,9 +2534,6 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get activityBackedUpServer =>
       'Δημιούργησε αντίγραφο ασφαλείας των δεδομένων του διακομιστή';
-
-  @override
-  String get activityMarkedSpaceRead => 'Σήμανε τον χώρο ως αναγνωσμένο';
 
   @override
   String get activityRespondedToInvitation =>
@@ -13596,6 +13590,17 @@ class AppLocalizationsEl extends AppLocalizations {
   }
 
   @override
+  String diffFileUnresolvedConversations(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count μη επιλυμένες συνομιλίες',
+      one: '1 μη επιλυμένη συνομιλία',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get pendingReview => 'Ανασκόπηση σε εκκρεμότητα';
 
   @override
@@ -13954,10 +13959,6 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get spaceKeepAfterMergeHint =>
       'Δεν θα ερωτηθείτε ξανά για αυτόν τον χώρο.';
-
-  @override
-  String get spaceAllPrsMergedLabel =>
-      'Όλα τα αιτήματα ενσωμάτωσης συγχωνεύτηκαν';
 
   @override
   String get archiveSpace => 'Αρχειοθέτηση χώρου';
@@ -15541,7 +15542,7 @@ class AppLocalizationsEl extends AppLocalizations {
   String get skillEvalIncomplete => 'Ελλιπές';
 
   @override
-  String get skillEvalInconclusive => 'Χωρίς σαφές συμπέρασμα';
+  String get skillEvalInconclusive => 'Χωρίς απόφαση (ανεπαρκή στοιχεία)';
 
   @override
   String get skillEvalInferred => 'Συνάγεται';
@@ -19133,4 +19134,2963 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get mcpServerNotFound =>
       'Αυτός ο διακομιστής δεν υπάρχει πια. Ίσως κάποιος τον αφαίρεσε.';
+
+  @override
+  String get scriptToolCalls => 'Κλήσεις εργαλείων';
+
+  @override
+  String scriptCallCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count κλήσεις',
+      one: '1 κλήση',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scriptCallsRunning(int count) {
+    return '$count σε εκτέλεση';
+  }
+
+  @override
+  String scriptCallsOk(int count) {
+    return '$count επιτυχείς';
+  }
+
+  @override
+  String scriptCallsFailed(int count) {
+    return '$count με αποτυχία';
+  }
+
+  @override
+  String scriptCallsDenied(int count) {
+    return '$count απορρίφθηκαν';
+  }
+
+  @override
+  String scriptCallsCancelled(int count) {
+    return '$count ακυρώθηκαν';
+  }
+
+  @override
+  String scriptCallsQueued(int count) {
+    return '$count σε ουρά';
+  }
+
+  @override
+  String scriptCallsSkipped(int count) {
+    return '$count παραλείφθηκαν';
+  }
+
+  @override
+  String get scriptStepQueued => 'Σε ουρά';
+
+  @override
+  String get scriptStepSkipped => 'Παραλείφθηκε';
+
+  @override
+  String get scriptGroupLoop => 'Βρόχος';
+
+  @override
+  String get scriptGroupEach => 'Για κάθε';
+
+  @override
+  String get scriptGroupParallel => 'Παράλληλα';
+
+  @override
+  String get scriptGroupFunction => 'Συνάρτηση';
+
+  @override
+  String scriptCallsHidden(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Εμφάνιση $count ακόμη κλήσεων',
+      one: 'Εμφάνιση 1 ακόμη κλήσης',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptCallsUnplaced => 'Κλήσεις χωρίς θέση στο σενάριο';
+
+  @override
+  String get scriptToolComputed => 'Εργαλείο';
+
+  @override
+  String scriptStepSemantics(String subject, String state) {
+    return '$subject, $state';
+  }
+
+  @override
+  String get scriptSourceLabel => 'Σενάριο';
+
+  @override
+  String scriptSourceLines(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count γραμμές',
+      one: '1 γραμμή',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptStateRunning => 'Σε εκτέλεση';
+
+  @override
+  String get scriptStateCompleted => 'Ολοκληρώθηκε';
+
+  @override
+  String get scriptStateFailed => 'Απέτυχε';
+
+  @override
+  String get scriptStateTimedOut => 'Έληξε ο χρόνος';
+
+  @override
+  String get scriptStateCancelled => 'Ακυρώθηκε';
+
+  @override
+  String get scriptStateMemoryExceeded => 'Εξάντληση μνήμης';
+
+  @override
+  String get scriptStateOutputExceeded => 'Υπερβολική έξοδος';
+
+  @override
+  String get scriptStateSandboxError => 'Σφάλμα sandbox';
+
+  @override
+  String get scriptStateRefused => 'Απορρίπτεται';
+
+  @override
+  String get transcriptToolDenied => 'Απορρίφθηκε';
+
+  @override
+  String get transcriptStatusRunningScript => 'Εκτελεί ένα σενάριο…';
+
+  @override
+  String get scriptOriginLine => 'Από ένα σενάριο που εκτελεί ο πράκτορας';
+
+  @override
+  String get scriptOriginShow => 'Εμφάνιση σεναρίου';
+
+  @override
+  String get codeModeTitle => 'Λειτουργία κώδικα';
+
+  @override
+  String get codeModeSubtitle =>
+      'Οι πράκτορες μπορούν να γράφουν ένα σύντομο σενάριο που καλεί τα εργαλεία τους, αντί να τα καλούν ένα κάθε φορά.';
+
+  @override
+  String get codeModeStatusLabel => 'Κατάσταση';
+
+  @override
+  String get codeModeFactAvailability => 'Σε αυτόν τον διακομιστή';
+
+  @override
+  String get codeModeAvailable => 'Διαθέσιμο';
+
+  @override
+  String get codeModeUnavailable => 'Μη διαθέσιμο';
+
+  @override
+  String get codeModeFactRunner => 'Runner';
+
+  @override
+  String codeModeUnavailableNote(String reason) {
+    return 'Αυτός ο διακομιστής δεν μπορεί να εκτελέσει σενάρια, οπότε οι πράκτορες εδώ καλούν τα εργαλεία τους ένα κάθε φορά. Ο διακομιστής λέει: $reason';
+  }
+
+  @override
+  String get codeModeNoReason => 'δεν δόθηκε αιτιολογία.';
+
+  @override
+  String get codeModeViewExecutions => 'Προβολή εκτελέσεων κώδικα';
+
+  @override
+  String get codeModeLimitsLabel => 'Όρια';
+
+  @override
+  String get codeModeLimitsSubtitle =>
+      'Πόσο μεγάλο και πόσο μακριά μπορεί να φτάσει ένα σενάριο. Οι προεπιλογές ταιριάζουν στους περισσότερους χώρους εργασίας.';
+
+  @override
+  String get codeModeLimitsDisclosure => 'Προσαρμογή ορίων';
+
+  @override
+  String get codeModeLimitsAtDefaults => 'Προεπιλογές';
+
+  @override
+  String codeModeLimitsChangedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count αλλαγές',
+      one: '1 αλλαγή',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeModeLimitsUseDefaults => 'Χρήση προεπιλογών';
+
+  @override
+  String get codeModeLimitWallClock => 'Χρόνος ανά σενάριο';
+
+  @override
+  String get codeModeLimitWallClockHelp =>
+      'Ο χρόνος αναμονής για έναν άνθρωπο δεν μετράει.';
+
+  @override
+  String get codeModeLimitCpu => 'Χρόνος επεξεργαστή';
+
+  @override
+  String get codeModeLimitCpuHelp =>
+      'Ο χρόνος που το ίδιο το σενάριο αφιερώνει σε υπολογισμούς.';
+
+  @override
+  String get codeModeLimitHeap => 'Μνήμη';
+
+  @override
+  String get codeModeLimitHeapHelp =>
+      'Η μνήμη που μπορεί να χρησιμοποιεί το σενάριο όσο εκτελείται.';
+
+  @override
+  String get codeModeLimitNestedCalls => 'Κλήσεις εργαλείων ανά σενάριο';
+
+  @override
+  String get codeModeLimitNestedCallsHelp =>
+      'Οι κλήσεις πέρα από αυτό το όριο απορρίπτονται, και το σενάριο ενημερώνεται για τον λόγο.';
+
+  @override
+  String get codeModeLimitInFlight => 'Κλήσεις ταυτόχρονα';
+
+  @override
+  String get codeModeLimitInFlightHelp =>
+      'Οι κλήσεις που μπορεί να είναι σε εκτέλεση ταυτόχρονα για ένα σενάριο.';
+
+  @override
+  String get codeModeLimitOutputTokens => 'Έξοδος που διαβάζει ο πράκτορας';
+
+  @override
+  String get codeModeLimitOutputTokensHelp =>
+      'Η μεγαλύτερη έξοδος περικόπτεται· ο πράκτορας μπορεί να διαβάσει τα υπόλοιπα κατόπιν αιτήματος.';
+
+  @override
+  String codeModeLimitRange(String defaultValue, String min, String max) {
+    return 'Προεπιλογή $defaultValue. Από $min έως $max.';
+  }
+
+  @override
+  String codeModeLimitOutOfRange(String min, String max) {
+    return 'Εισαγάγετε έναν ακέραιο αριθμό από $min έως $max.';
+  }
+
+  @override
+  String get codeModeSuffixSeconds => 'δευτ.';
+
+  @override
+  String get codeModeSuffixMebibytes => 'MiB';
+
+  @override
+  String get codeModeSuffixCalls => 'κλήσεις';
+
+  @override
+  String get codeModeSuffixTokens => 'tokens';
+
+  @override
+  String codeModeServerCap(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Αυτός ο διακομιστής εκτελεί το πολύ $count σενάρια τη φορά, σε όλους τους χώρους εργασίας.',
+      one:
+          'Αυτός ο διακομιστής εκτελεί το πολύ 1 σενάριο τη φορά, σε όλους τους χώρους εργασίας.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String codeModeUnitMilliseconds(String value) {
+    return '$value ms';
+  }
+
+  @override
+  String codeModeUnitSeconds(String value) {
+    return '$value δευτ.';
+  }
+
+  @override
+  String codeModeUnitMinutesSeconds(String minutes, String seconds) {
+    return '$minutes λεπτ. $seconds δευτ.';
+  }
+
+  @override
+  String get codeModeRefusedLimitUnknown =>
+      'Ο διακομιστής δεν γνωρίζει ένα από αυτά τα όρια.';
+
+  @override
+  String get codeModeRefusedLimitOutOfRange =>
+      'Ένα από αυτά τα όρια είναι εκτός των τιμών που επιτρέπει ο διακομιστής.';
+
+  @override
+  String get codeModeRefusedUnknownSetting =>
+      'Ο διακομιστής δεν αναγνώρισε αυτή τη ρύθμιση.';
+
+  @override
+  String get codeExecutionsTitle => 'Εκτελέσεις κώδικα';
+
+  @override
+  String get codeExecutionsSubtitle =>
+      'Σενάρια που εκτέλεσαν πράκτορες σε αυτόν τον χώρο εργασίας, με κάθε κλήση εργαλείου που έκαναν.';
+
+  @override
+  String get codeExecutionsEmpty =>
+      'Δεν έχει εκτελεστεί ακόμη κανένα σενάριο εδώ.';
+
+  @override
+  String get codeExecutionsEmptyFiltered =>
+      'Δεν υπάρχουν σενάρια που να ταιριάζουν σε αυτά τα φίλτρα.';
+
+  @override
+  String get codeExecutionsStatusFilter => 'Αποτέλεσμα';
+
+  @override
+  String get codeExecutionsAllOutcomes => 'Όλα τα αποτελέσματα';
+
+  @override
+  String codeExecutionsOutcomeCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count αποτελέσματα',
+      one: '1 αποτέλεσμα',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionsScopeRun => 'Σενάρια από μία εκτέλεση';
+
+  @override
+  String get codeExecutionsScopeConversation => 'Σενάρια από μία συνομιλία';
+
+  @override
+  String get codeExecutionsScopeAgent => 'Σενάρια από έναν πράκτορα';
+
+  @override
+  String get codeExecutionsShowAll => 'Εμφάνιση όλων';
+
+  @override
+  String get codeExecutionUntitled => 'Σενάριο χωρίς τίτλο';
+
+  @override
+  String get codeExecutionRecord => 'Εγγραφή';
+
+  @override
+  String get codeExecutionBackToList => 'Πίσω στις εκτελέσεις κώδικα';
+
+  @override
+  String get codeExecutionNotFound =>
+      'Αυτή η εκτέλεση κώδικα δεν βρίσκεται σε αυτόν τον χώρο εργασίας. Ίσως αφαιρέθηκε μαζί με την εκτέλεση στην οποία ανήκε.';
+
+  @override
+  String get codeExecutionRefusedSpace =>
+      'Αυτό το σενάριο εκτελέστηκε σε χώρο που δεν μπορείτε να ανοίξετε, οπότε η εγγραφή του παραμένει κρυφή.';
+
+  @override
+  String get codeExecutionOpenRecord => 'Άνοιγμα εγγραφής';
+
+  @override
+  String get codeExecutionFactStarted => 'Ξεκίνησε';
+
+  @override
+  String get codeExecutionFactDuration => 'Διάρκεια';
+
+  @override
+  String get codeExecutionFactCalls => 'Κλήσεις εργαλείων';
+
+  @override
+  String get codeExecutionFactAgent => 'Πράκτορας';
+
+  @override
+  String get codeExecutionFactSurface => 'Εκτελέστηκε μέσω';
+
+  @override
+  String get codeExecutionSurfaceHarness => 'Ενσωματωμένος πράκτορας';
+
+  @override
+  String get codeExecutionSurfaceMcp => 'Εξωτερικός πράκτορας';
+
+  @override
+  String get codeExecutionFactCpu => 'Χρόνος επεξεργαστή';
+
+  @override
+  String get codeExecutionFactMemory => 'Μέγιστη μνήμη';
+
+  @override
+  String get codeExecutionOpenConversation => 'Άνοιγμα συνομιλίας';
+
+  @override
+  String get codeExecutionRunScripts => 'Σενάρια σε αυτήν την εκτέλεση';
+
+  @override
+  String get codeExecutionAgentScripts => 'Σενάρια αυτού του πράκτορα';
+
+  @override
+  String get codeExecutionScript => 'Σενάριο';
+
+  @override
+  String get codeExecutionConsole => 'Κονσόλα';
+
+  @override
+  String get codeExecutionOutputTruncated =>
+      'Η έξοδος περικόπηκε ώστε να χωρέσει σε ό,τι διατηρείται.';
+
+  @override
+  String get codeExecutionNoPayload =>
+      'Το σενάριο και η έξοδός του δεν διατηρούνται πλέον.';
+
+  @override
+  String codeExecutionCallsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count κλήσεις εργαλείων',
+      one: '1 κλήση εργαλείου',
+      zero: 'Κλήσεις εργαλείων',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionNoCalls => 'Το σενάριο δεν κάλεσε κανένα εργαλείο.';
+
+  @override
+  String get codeExecutionCallCompleted => 'Ολοκληρώθηκε';
+
+  @override
+  String get codeExecutionCallFailed => 'Απέτυχε';
+
+  @override
+  String get codeExecutionCallDenied => 'Απορρίφθηκε';
+
+  @override
+  String get codeExecutionCallCancelled => 'Ακυρώθηκε';
+
+  @override
+  String get codeExecutionCallTimedOut => 'Έληξε ο χρόνος';
+
+  @override
+  String get codeExecutionCallUnknownTool => 'Άγνωστο εργαλείο';
+
+  @override
+  String get codeExecutionCallInvalidArgs => 'Μη έγκυρα ορίσματα';
+
+  @override
+  String get codeExecutionGateAllowed => 'Επιτρέπεται';
+
+  @override
+  String get codeExecutionGateApproved => 'Εγκρίθηκε από άνθρωπο';
+
+  @override
+  String get codeExecutionGateDenied => 'Απορρίφθηκε';
+
+  @override
+  String get codeExecutionGateNotReached => 'Δεν ελέγχθηκε';
+
+  @override
+  String codeExecutionCallWaited(String duration) {
+    return 'Αναμονή $duration για άνθρωπο';
+  }
+
+  @override
+  String get codeExecutionCallArguments => 'Ορίσματα';
+
+  @override
+  String get codeExecutionCallResult => 'Αποτέλεσμα';
+
+  @override
+  String codeExecutionCallResultSize(String size) {
+    return 'Επέστρεψε $size';
+  }
+
+  @override
+  String codeExecutionBytes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bytes',
+      one: '1 byte',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionEndedScriptError =>
+      'Το σενάριο προκάλεσε σφάλμα και δεν το χειρίστηκε κανείς.';
+
+  @override
+  String codeExecutionEndedScriptErrorNamed(String name) {
+    return 'Το σενάριο προκάλεσε $name και δεν το χειρίστηκε κανείς.';
+  }
+
+  @override
+  String get codeExecutionEndedStalled =>
+      'Το σενάριο περίμενε κάτι που δεν μπορούσε ποτέ να ολοκληρωθεί.';
+
+  @override
+  String get codeExecutionEndedCpu =>
+      'Το σενάριο εξάντλησε τον χρόνο επεξεργαστή του.';
+
+  @override
+  String get codeExecutionEndedHeap => 'Το σενάριο έφτασε το όριο μνήμης του.';
+
+  @override
+  String get codeExecutionEndedOutput =>
+      'Το σενάριο έγραψε περισσότερη έξοδο από όση επιτρέπεται σε ένα σενάριο.';
+
+  @override
+  String get codeExecutionEndedDeadline => 'Το σενάριο ξέμεινε από χρόνο.';
+
+  @override
+  String get codeExecutionEndedCancelled =>
+      'Το σενάριο ακυρώθηκε πριν ολοκληρωθεί.';
+
+  @override
+  String get codeExecutionEndedShutdown =>
+      'Ο διακομιστής τερματίστηκε ενώ εκτελούνταν το σενάριο.';
+
+  @override
+  String get codeExecutionEndedServerStopped =>
+      'Ο διακομιστής σταμάτησε ενώ εκτελούνταν το σενάριο. Η εγγραφή έκλεισε όταν ξεκίνησε ξανά ο διακομιστής.';
+
+  @override
+  String get codeExecutionEndedInternal =>
+      'Το πρόγραμμα που εκτελεί σενάρια απέτυχε από μόνο του.';
+
+  @override
+  String get codeExecutionEndedStart =>
+      'Το πρόγραμμα που εκτελεί σενάρια δεν μπόρεσε να ξεκινήσει.';
+
+  @override
+  String get codeExecutionEndedLockdown =>
+      'Το πρόγραμμα που εκτελεί σενάρια δεν μπόρεσε να περιοριστεί πλήρως, οπότε το σενάριο δεν εκτελέστηκε.';
+
+  @override
+  String get codeExecutionEndedExited =>
+      'Το πρόγραμμα που εκτελεί σενάρια σταμάτησε πριν ολοκληρωθεί το σενάριο.';
+
+  @override
+  String get codeExecutionEndedRunnerBrokeRules =>
+      'Το πρόγραμμα που εκτελεί σενάρια παραβίασε τους κανόνες λειτουργίας του και διακόπηκε.';
+
+  @override
+  String get codeExecutionEndedUnresponsive =>
+      'Το πρόγραμμα που εκτελεί σενάρια έπαψε να ανταποκρίνεται και διακόπηκε.';
+
+  @override
+  String get codeExecutionEndedHostError =>
+      'Ο διακομιστής απέτυχε κατά την εκτέλεση του σεναρίου.';
+
+  @override
+  String get codeExecutionRunningNote =>
+      'Εκτελείται ακόμα. Οι κλήσεις εργαλείων του εμφανίζονται εδώ καθώς ολοκληρώνονται, και το αποτέλεσμά του όταν τελειώσει.';
+
+  @override
+  String codeModeServerWorkspaceShare(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Τα σενάρια ενός χώρου εργασίας χρησιμοποιούν το πολύ $count από αυτά.',
+      one: 'Τα σενάρια ενός χώρου εργασίας χρησιμοποιούν το πολύ 1 από αυτά.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get wakeOriginGoal => 'Στόχος';
+
+  @override
+  String get wakeOriginGoalCheck => 'Έλεγχος στόχου';
+
+  @override
+  String get wakeOriginGoalReview => 'Ανασκόπηση στόχου';
+
+  @override
+  String get wakeOriginSchedule => 'Χρονοδιάγραμμα';
+
+  @override
+  String get wakeOriginWatch => 'Παρακολούθηση';
+
+  @override
+  String wakeOriginReplyFrom(String agent) {
+    return 'Απάντηση από $agent';
+  }
+
+  @override
+  String get wakeOriginReply => 'Απάντηση';
+
+  @override
+  String wakeOriginMessageFrom(String agent) {
+    return 'Μήνυμα από $agent';
+  }
+
+  @override
+  String get wakeOriginMessage => 'Μήνυμα';
+
+  @override
+  String wakeOriginWorkFinishedBy(String agent) {
+    return 'Ολοκληρωμένη εργασία από $agent';
+  }
+
+  @override
+  String get wakeOriginWorkFinished => 'Ολοκληρωμένη εργασία';
+
+  @override
+  String get wakeOriginLimitReset => 'Επαναφορά ορίου';
+
+  @override
+  String get wakeOriginRecovery => 'Ανάκτηση';
+
+  @override
+  String get wakeOriginAssignment => 'Ανάθεση';
+
+  @override
+  String get wakeOriginPipelineStep => 'Βήμα pipeline';
+
+  @override
+  String get wakeOriginImprovementReview => 'Ανασκόπηση βελτιώσεων';
+
+  @override
+  String get wakeKindStopped =>
+      'Κρατήθηκε επειδή ένα άτομο σταμάτησε την εκτέλεση.';
+
+  @override
+  String get wakeKindAttempts => 'Η παράδοση απέτυχε τρεις φορές.';
+
+  @override
+  String get wakeKindAgentDeleted => 'Ο πράκτορας δεν υπάρχει πια.';
+
+  @override
+  String get wakeKindAgentNotDispatchable => 'Ο πράκτορας έχει αποσυρθεί.';
+
+  @override
+  String get wakeKindAgentPaused => 'Ο πράκτορας είναι σε παύση.';
+
+  @override
+  String get wakeKindPersonRemoved =>
+      'Το άτομο για το οποίο ενεργεί έφυγε από τον χώρο εργασίας.';
+
+  @override
+  String get wakeKindBudgetBlocked =>
+      'Ένας προϋπολογισμός μπλοκάρει μια εκτέλεση.';
+
+  @override
+  String get wakeKindTakeOver => 'Ένα άτομο ανέλαβε το worktree.';
+
+  @override
+  String get wakeKindRateCapConversation =>
+      'Αυτή η συνομιλία ξεκίνησε 30 εκτελέσεις από αφυπνίσεις την τελευταία ώρα.';
+
+  @override
+  String get wakeKindRateCapWorkspace =>
+      'Αυτός ο χώρος εργασίας ξεκίνησε 300 εκτελέσεις από αφυπνίσεις την τελευταία ώρα.';
+
+  @override
+  String get wakeKindLiveRunNoInput =>
+      'Η ζωντανή εκτέλεση του πράκτορα εδώ δεν δέχεται είσοδο.';
+
+  @override
+  String get wakeKindLiveRunOtherOptions =>
+      'Η ζωντανή εκτέλεση του πράκτορα εδώ λειτουργεί διαφορετικά, γι\' αυτό αυτή ξεκινά τη δική της εκτέλεση μετά από εκείνη.';
+
+  @override
+  String get wakeKindLiveRunOtherPerson =>
+      'Η ζωντανή εκτέλεση του πράκτορα εδώ ενεργεί για άλλο άτομο, γι\' αυτό αυτή ξεκινά τη δική της εκτέλεση μετά από εκείνη.';
+
+  @override
+  String get wakeKindDispatchRefused => 'Η εκτέλεση δεν μπόρεσε να ξεκινήσει.';
+
+  @override
+  String get wakeKindSandboxUnavailable =>
+      'Δεν υπάρχει διαθέσιμο sandbox για εκτέλεση μόνο για ανάγνωση.';
+
+  @override
+  String get wakeKindReadOnlyUnavailable =>
+      'Το backend αυτού του πράκτορα δεν μπορεί να κρατήσει μια εκτέλεση μόνο για ανάγνωση.';
+
+  @override
+  String get wakeKindServerStopped =>
+      'Μια επανεκκίνηση του διακομιστή σταμάτησε την εκτέλεση.';
+
+  @override
+  String get wakeKindServerRestarted =>
+      'Ο διακομιστής επανεκκινήθηκε κατά τη διάρκεια εκτέλεσης ενός ατόμου.';
+
+  @override
+  String get wakeKindGuardFailed =>
+      'Ένας έλεγχος πριν από την παράδοση απέτυχε.';
+
+  @override
+  String get wakeKindLimit => 'Αναμονή στο όριο χρήσης του παρόχου.';
+
+  @override
+  String get wakeKindLimitRunLive =>
+      'Αναμονή να τελειώσει η εκτέλεση στο όριο χρήσης.';
+
+  @override
+  String get wakeKindWakeMissed =>
+      'Χάθηκε όσο ο διακομιστής ήταν εκτός λειτουργίας.';
+
+  @override
+  String get wakeKindPipelineRunEnded =>
+      'Η εκτέλεση του pipeline της τελείωσε.';
+
+  @override
+  String get wakeKindGoalEnded => 'Ο στόχος της τελείωσε.';
+
+  @override
+  String get wakeKindGoalBudgetExhausted =>
+      'Ο στόχος της εξάντλησε τον προϋπολογισμό του.';
+
+  @override
+  String get wakeKindGoalReviewStale =>
+      'Ο στόχος άλλαξε από τότε που ζητήθηκε αυτή η ανασκόπηση.';
+
+  @override
+  String get wakeKindGoalPaused => 'Ο στόχος της είναι σε παύση.';
+
+  @override
+  String get wakeKindGoalHeld => 'Ο στόχος της είναι σε αναμονή.';
+
+  @override
+  String get wakeKindGoalStopped => 'Ο στόχος της διακόπηκε.';
+
+  @override
+  String get wakeKindAskSettled => 'Η ερώτηση που απαντά έχει ήδη κλείσει.';
+
+  @override
+  String get wakeKindRuleEnded => 'Το χρονοδιάγραμμά της τελείωσε.';
+
+  @override
+  String get wakeKindUnknown =>
+      'Για έναν λόγο που αυτή η έκδοση δεν αναγνωρίζει:';
+
+  @override
+  String wakeStripHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count αφυπνίσεις σε αναμονή',
+      one: '1 αφύπνιση σε αναμονή',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String wakeStripDue(String time) {
+    return 'Προγραμματισμένη για $time';
+  }
+
+  @override
+  String get wakeStripDueNow => 'Έφτασε η ώρα';
+
+  @override
+  String get wakeStripHeld => 'Κρατημένη';
+
+  @override
+  String wakeStripExpires(String time) {
+    return 'Λήγει $time';
+  }
+
+  @override
+  String wakeStripAttempt(int attempt) {
+    return 'Προσπάθεια $attempt';
+  }
+
+  @override
+  String get wakeStripCancel => 'Ακύρωση αφύπνισης';
+
+  @override
+  String get wakeStripDeliverNow => 'Παράδοση τώρα';
+
+  @override
+  String get wakeStripResume => 'Συνέχεια';
+
+  @override
+  String get wakeStripDismiss => 'Απόρριψη';
+
+  @override
+  String get wakeStripResumeAll => 'Συνέχεια όλων';
+
+  @override
+  String get wakeStripResumeOnlyTheirs =>
+      'Μόνο το άτομο του οποίου είναι αυτή η εκτέλεση μπορεί να τη συνεχίσει.';
+
+  @override
+  String get wakeReceiptStarted => 'Ξεκίνησε μια εκτέλεση.';
+
+  @override
+  String get wakeReceiptPushed => 'Παραδόθηκε στη ζωντανή εκτέλεση.';
+
+  @override
+  String wakeReceiptWaiting(String reason) {
+    return 'Ακόμα σε αναμονή. $reason';
+  }
+
+  @override
+  String wakeReceiptSkipped(String reason) {
+    return 'Δεν παραδόθηκε. $reason';
+  }
+
+  @override
+  String get wakeReceiptDuplicate => 'Έχει ήδη παραδοθεί.';
+
+  @override
+  String wakeReleased(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Συνεχίστηκαν $count αφυπνίσεις.',
+      one: 'Συνεχίστηκε 1 αφύπνιση.',
+      zero: 'Δεν συνεχίστηκε τίποτα.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get wakeRefusalNotYours =>
+      'Αυτή η αφύπνιση ενεργεί για άλλο άτομο. Μόνο εκείνο μπορεί να την παραδώσει ή να τη συνεχίσει.';
+
+  @override
+  String get wakeRefusalSettled => 'Αυτή η αφύπνιση έχει ήδη ολοκληρωθεί.';
+
+  @override
+  String heldSteeringHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count κρατημένα μηνύματα',
+      one: '1 κρατημένο μήνυμα',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get heldSteeringResume => 'Αποστολή κρατημένων μηνυμάτων';
+
+  @override
+  String get heldSteeringDelete => 'Διαγραφή κρατημένου μηνύματος';
+
+  @override
+  String heldSteeringReleased(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Στάλθηκαν $count κρατημένα μηνύματα.',
+      one: 'Στάλθηκε 1 κρατημένο μήνυμα.',
+      zero: 'Δεν κρατήθηκε τίποτα.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get workAgentUnknown => 'ένας πράκτορας';
+
+  @override
+  String workFeedWoke(int count, String agent) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ξύπνησε ο $agent για $count αναμένοντα στοιχεία',
+      one: 'Ξύπνησε ο $agent',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String workFeedWakeSkipped(String agent) {
+    return 'Μια αφύπνιση για τον $agent δεν παραδόθηκε.';
+  }
+
+  @override
+  String workFeedWakeMissed(String agent) {
+    return 'Μια αφύπνιση για τον $agent χάθηκε όσο ο διακομιστής ήταν εκτός λειτουργίας.';
+  }
+
+  @override
+  String workFeedScheduleCreated(String agent) {
+    return 'Ορίστηκε χρονοδιάγραμμα για τον $agent.';
+  }
+
+  @override
+  String workFeedScheduleEnded(String agent) {
+    return 'Το χρονοδιάγραμμα για τον $agent τελείωσε.';
+  }
+
+  @override
+  String get workFeedOpenSchedule => 'Άνοιγμα χρονοδιαγράμματος';
+
+  @override
+  String workFeedNoteFromAgent(String agent) {
+    return 'Ο $agent άφησε αυτή τη σημείωση για τον εαυτό του, με τα δικά του λόγια:';
+  }
+
+  @override
+  String get workFeedNoteFromPerson => 'Μια υπενθύμιση που όρισε ένα άτομο:';
+
+  @override
+  String workFeedLimitParkHeld(String provider, String time) {
+    return 'Σε παύση στο όριο χρήσης του $provider. Το όριο επαναφέρεται στις $time.';
+  }
+
+  @override
+  String workFeedLimitParkPending(String provider, String time) {
+    return 'Σε παύση στο όριο χρήσης του $provider. Συνεχίζει στις $time.';
+  }
+
+  @override
+  String workFeedLimitParkResumed(String provider) {
+    return 'Συνεχίστηκε μετά το όριο χρήσης του $provider.';
+  }
+
+  @override
+  String workFeedLimitParkGone(String provider) {
+    return 'Δεν αναμένει πια στο όριο χρήσης του $provider.';
+  }
+
+  @override
+  String get workFeedLimitParkResume => 'Συνέχεια';
+
+  @override
+  String get workFeedLimitParkCancel => 'Ακύρωση';
+
+  @override
+  String workFeedStillInFlight(String agent) {
+    return 'Κατάσταση που παραδόθηκε στον $agent μετά τη συμπύκνωση';
+  }
+
+  @override
+  String get workFeedShowDetails => 'Εμφάνιση λεπτομερειών';
+
+  @override
+  String get workFeedHideDetails => 'Απόκρυψη λεπτομερειών';
+
+  @override
+  String get workFeedCommandRefused => 'Η εντολή απορρίφθηκε.';
+
+  @override
+  String get wakeRuleEndFired => 'Εκτελέστηκε η μία φορά της.';
+
+  @override
+  String get wakeRuleEndExpired => 'Έφτασε την ημερομηνία λήξης της.';
+
+  @override
+  String get wakeRuleEndRunCap => 'Εξάντλησε τις εκτελέσεις της.';
+
+  @override
+  String get wakeRuleEndCostCap => 'Έφτασε το όριο κόστους της.';
+
+  @override
+  String get wakeRuleEndGoalEnded => 'Ο στόχος της τελείωσε.';
+
+  @override
+  String get wakeRuleEndCancelled => 'Ακυρώθηκε.';
+
+  @override
+  String get wakeRuleEndMemberRemoved =>
+      'Το άτομό της έφυγε από τον χώρο εργασίας.';
+
+  @override
+  String get wakeRuleEndInvalidRow =>
+      'Οι αποθηκευμένες ρυθμίσεις της δεν μπορούσαν να διαβαστούν.';
+
+  @override
+  String get wakeRuleRefusalIntervalTooShort =>
+      'Το διάστημα είναι πολύ σύντομο. Επιλέξτε μεγαλύτερο.';
+
+  @override
+  String get wakeRuleRefusalTooSoon =>
+      'Αυτή η ώρα είναι πολύ σύντομα. Επιλέξτε μεταγενέστερη.';
+
+  @override
+  String get wakeRuleRefusalLineageEnded =>
+      'Αυτή η αλυσίδα αφυπνίσεων εξάντλησε τις εκτελέσεις ή τον χρόνο της.';
+
+  @override
+  String get wakeRuleRefusalWatchTargetUnreadable =>
+      'Δεν μπορείτε να διαβάσετε όσα θα παρακολουθούσε αυτό.';
+
+  @override
+  String get wakeRuleRefusalExpiryRequired =>
+      'Ορίστε λήξη, για παράδειγμα --days 3.';
+
+  @override
+  String get wakeRuleRefusalLimitReached =>
+      'Αυτή η συνομιλία έχει ήδη όσα χρονοδιαγράμματα επιτρέπονται.';
+
+  @override
+  String get wakeRuleRefusalInvalidWhen => 'Η ώρα δεν μπορεί να διαβαστεί.';
+
+  @override
+  String get wakeRuleRefusalNoteTooLong => 'Η σημείωση είναι πολύ μεγάλη.';
+
+  @override
+  String get wakeRuleRefusalExpiryTooLong => 'Η λήξη είναι πολύ μακριά.';
+
+  @override
+  String get wakeRuleRefusalLimitOutOfRange =>
+      'Ένα όριο εκτελέσεων, ημερών ή προϋπολογισμού είναι εκτός εύρους.';
+
+  @override
+  String get wakeRuleRefusalNextOutsideLoop =>
+      'Μόνο ένας βρόχος μπορεί να επιλέξει τη δική του επόμενη ώρα.';
+
+  @override
+  String get wakeRuleRefusalWatchRefused =>
+      'Αυτό δεν μπορεί να παρακολουθηθεί.';
+
+  @override
+  String get wakeRuleRefusalRuleEnded =>
+      'Αυτό το χρονοδιάγραμμα έχει ήδη τελειώσει.';
+
+  @override
+  String get wakeRuleRefusalNotYours =>
+      'Αυτό το χρονοδιάγραμμα ανήκει σε άλλο άτομο.';
+
+  @override
+  String get workRefusalUnknown => 'Ο διακομιστής απέρριψε αυτό:';
+
+  @override
+  String get goalRefusalAlreadyActive =>
+      'Αυτή η συνομιλία έχει ήδη έναν ενεργό στόχο.';
+
+  @override
+  String get goalRefusalNotInReview =>
+      'Αυτός ο στόχος δεν αναμένει ανασκόπηση.';
+
+  @override
+  String get goalRefusalEvidenceIncomplete =>
+      'Τα τεκμήρια του στόχου είναι ελλιπή.';
+
+  @override
+  String get goalRefusalClaimPending =>
+      'Ο ισχυρισμός ότι ολοκληρώθηκε ελέγχεται ακόμα.';
+
+  @override
+  String get goalRefusalNotActiveSegment =>
+      'Αυτός ο στόχος δεν έχει τμήμα σε εκτέλεση.';
+
+  @override
+  String get goalRefusalNotYours =>
+      'Μόνο το άτομο που ξεκίνησε αυτόν τον στόχο μπορεί να το κάνει αυτό.';
+
+  @override
+  String get goalRefusalNotPaused => 'Βάλτε πρώτα τον στόχο σε παύση.';
+
+  @override
+  String get goalRefusalContractInvalid =>
+      'Το συμβόλαιο του στόχου δεν μπορεί να διαβαστεί.';
+
+  @override
+  String get goalRefusalCheckerUnknown =>
+      'Δεν υπάρχει πράκτορας με αυτό το όνομα.';
+
+  @override
+  String get goalRefusalCheckerAmbiguous =>
+      'Περισσότεροι από ένας πράκτορες έχουν αυτό το όνομα. Χρησιμοποιήστε το αναγνωριστικό του.';
+
+  @override
+  String get goalRefusalCheckerIsGoalAgent =>
+      'Ο ελεγκτής πρέπει να είναι άλλος πράκτορας από αυτόν που κάνει τη δουλειά.';
+
+  @override
+  String get goalRefusalCommandInvalid =>
+      'Αυτή η εντολή /goal δεν μπορεί να διαβαστεί.';
+
+  @override
+  String goalCardWorking(int segment) {
+    return 'Σε εξέλιξη · τμήμα $segment';
+  }
+
+  @override
+  String get goalCardWaiting => 'Αναμονή για την επόμενη αφύπνισή του';
+
+  @override
+  String get goalCardVerifying => 'Έλεγχος αν έχει ολοκληρωθεί';
+
+  @override
+  String goalCardLimitUntil(String time) {
+    return 'Σε παύση στο όριο χρήσης · συνεχίζει $time';
+  }
+
+  @override
+  String get goalCardLimit => 'Σε παύση στο όριο χρήσης';
+
+  @override
+  String get goalCardPerson => 'Χρειάζεται άτομο';
+
+  @override
+  String get goalCardByPerson => 'Σε παύση από άτομο';
+
+  @override
+  String get goalCardNeedsReview =>
+      'Αναμονή ανασκόπησης: δηλώνει ότι ολοκληρώθηκε και τίποτα δεν το επιβεβαίωσε';
+
+  @override
+  String goalCardSegments(int run, int max) {
+    return 'Τμήμα $run από $max';
+  }
+
+  @override
+  String goalCardSegmentsNoCap(int run) {
+    return 'Τμήμα $run';
+  }
+
+  @override
+  String goalCardMoney(String spent, String cap) {
+    return '$spent από $cap';
+  }
+
+  @override
+  String goalCardTimeLeft(String time) {
+    return 'Απομένουν $time';
+  }
+
+  @override
+  String get goalCardOverdue => 'Πέρασε η προθεσμία του';
+
+  @override
+  String get goalCardDoneMeans => 'Ολοκλήρωση σημαίνει';
+
+  @override
+  String get goalCardChecks => 'Έλεγχοι';
+
+  @override
+  String get goalCardCheckPassed => 'Επιτυχής';
+
+  @override
+  String goalCardCheckFailed(int code) {
+    return 'Απέτυχε · κωδικός εξόδου $code';
+  }
+
+  @override
+  String get goalCardCheckTimedOut => 'Έληξε ο χρόνος';
+
+  @override
+  String get goalCardCheckNotRerun => 'Δεν εκτελέστηκε ξανά: δεν άλλαξε τίποτα';
+
+  @override
+  String get goalCardCheckBroken => 'Δεν μπορεί να εκτελεστεί';
+
+  @override
+  String get goalCardCheckNotRun => 'Δεν έχει εκτελεστεί ακόμα';
+
+  @override
+  String get goalCardCriterionMet => 'Ικανοποιήθηκε';
+
+  @override
+  String get goalCardCriterionUnmet => 'Δεν ικανοποιήθηκε';
+
+  @override
+  String get goalCardCriterionCannotTell => 'Δεν μπορεί να κριθεί';
+
+  @override
+  String get goalCardVerdictPass => 'Τελευταίος έλεγχος: ολοκληρώθηκε';
+
+  @override
+  String get goalCardVerdictFail => 'Τελευταίος έλεγχος: δεν ολοκληρώθηκε';
+
+  @override
+  String get goalCardVerdictCannotVerify =>
+      'Τελευταίος έλεγχος: δεν μπόρεσε να κριθεί';
+
+  @override
+  String get goalCardConcerns => 'Ανησυχίες';
+
+  @override
+  String goalCardVerifiedBy(String agent) {
+    return 'Επαληθεύτηκε από τον $agent';
+  }
+
+  @override
+  String get goalCardVerifiedBySelf =>
+      'Επαληθεύτηκε από τον ίδιο (χωρίς ξεχωριστό ελεγκτή)';
+
+  @override
+  String get goalCardClosedByPerson => 'Έκλεισε από άτομο χωρίς επιτυχή έλεγχο';
+
+  @override
+  String get goalCardNoMachineCheck => 'Χωρίς αυτόματο έλεγχο';
+
+  @override
+  String get goalCardAddCheck => 'Προσθήκη ελέγχου';
+
+  @override
+  String get goalCardOpen => 'Άνοιγμα στόχου';
+
+  @override
+  String get goalCardApprove => 'Έγκριση ολοκλήρωσης';
+
+  @override
+  String get goalCardApproveTitle =>
+      'Να κλείσει αυτός ο στόχος ως ολοκληρωμένος;';
+
+  @override
+  String get goalCardApproveBody =>
+      'Κανένας έλεγχος δεν το επιβεβαίωσε. Το κλείνετε με δική σας ευθύνη, και ο στόχος καταγράφει ότι το έκλεισε άτομο χωρίς επαλήθευση.';
+
+  @override
+  String get goalCardApproveConfirm => 'Κλείσιμο ως ολοκληρωμένος';
+
+  @override
+  String get goalCardResumeNotYours =>
+      'Η συνέχιση ή η αύξηση του προϋπολογισμού του ανήκει σε όποιον τον ξεκίνησε.';
+
+  @override
+  String get goalHoldDetailStalled =>
+      'Καμία πρόοδος στα τελευταία του τμήματα.';
+
+  @override
+  String get goalHoldDetailStalledWaiting =>
+      'Αναμονή, μετά από τμήματα χωρίς πρόοδο.';
+
+  @override
+  String get goalHoldDetailVerificationFailed =>
+      'Ο τελευταίος έλεγχος απέτυχε.';
+
+  @override
+  String get goalHoldDetailCannotVerify =>
+      'Ο ελεγκτής δεν μπόρεσε να κρίνει αν έχει ολοκληρωθεί.';
+
+  @override
+  String get goalHoldDetailSandboxUnavailable =>
+      'Δεν υπάρχει διαθέσιμο sandbox για την εκτέλεση των ελέγχων του.';
+
+  @override
+  String get goalHoldDetailCheckerUnavailable =>
+      'Ο πράκτορας ελεγκτής του δεν είναι διαθέσιμος. Επιλέξτε άλλον ελεγκτή και μετά συνεχίστε.';
+
+  @override
+  String get goalHoldDetailCheckBroken =>
+      'Αυτός ο έλεγχος δεν μπορεί να εκτελεστεί:';
+
+  @override
+  String get goalHoldDetailWakeSkipped => 'Η αφύπνισή του δεν παραδόθηκε.';
+
+  @override
+  String get goalHoldDetailClaimPending =>
+      'Ο ισχυρισμός ότι ολοκληρώθηκε περιμένει έλεγχο.';
+
+  @override
+  String get goalHoldDetailUnanswered =>
+      'Μια ερώτηση ή ένα αίτημα έγκρισης προς άτομο έμεινε αναπάντητο.';
+
+  @override
+  String get goalHoldDetailLimitParks =>
+      'Έφτασε τα όρια χρήσης πολύ συχνά. Ελέγξτε τον και μετά συνεχίστε.';
+
+  @override
+  String get goalHoldDetailInput => 'Αναμονή για απάντηση στη συνομιλία.';
+
+  @override
+  String get peerAsksSection => 'Ερωτήσεις';
+
+  @override
+  String peerAskTo(String agent) {
+    return 'Προς $agent';
+  }
+
+  @override
+  String get peerAskKindAsk => 'Ερώτηση';
+
+  @override
+  String get peerAskKindConsult => 'Διαβούλευση';
+
+  @override
+  String get peerAskKindReview => 'Ανασκόπηση';
+
+  @override
+  String get peerAskStatusPending => 'Σε αναμονή';
+
+  @override
+  String get peerAskStatusAnswered => 'Απαντήθηκε';
+
+  @override
+  String get peerAskStatusFailed => 'Απέτυχε';
+
+  @override
+  String get peerAskStatusExpired => 'Έληξε';
+
+  @override
+  String get peerAskStatusCancelled => 'Ακυρώθηκε';
+
+  @override
+  String peerAskAsked(String time) {
+    return 'Ρωτήθηκε $time';
+  }
+
+  @override
+  String peerAskExpires(String time) {
+    return 'Λήγει $time';
+  }
+
+  @override
+  String get peerAskPromised => 'Υποσχέθηκε απάντηση';
+
+  @override
+  String get peerAskBackground => 'Στο παρασκήνιο';
+
+  @override
+  String get peerAskCancel => 'Ακύρωση ερώτησης';
+
+  @override
+  String get peerAskAlreadySettled => 'Αυτή η ερώτηση έχει ήδη ολοκληρωθεί.';
+
+  @override
+  String get slashHintGoal =>
+      'Δουλέψτε προς έναν στόχο μέχρι να ολοκληρωθεί. Επιλογές: --check, --checker, --fresh, --unattended';
+
+  @override
+  String get slashHintLoop =>
+      'Επανάληψη μιας εργασίας, σε κάθε διάστημα ή με τον ρυθμό του πράκτορα';
+
+  @override
+  String get slashHintSchedule =>
+      'Εκτέλεση μιας εργασίας αργότερα: in 2h, at 09:00 ή on a cron';
+
+  @override
+  String get slashHintRefine =>
+      'Ανασκόπηση της δουλειάς αυτής της συνομιλίας και πρόταση βελτιώσεων';
+
+  @override
+  String get notifGoalCompleted => 'Ο στόχος ολοκληρώθηκε';
+
+  @override
+  String get notifGoalFailed => 'Ο στόχος απέτυχε';
+
+  @override
+  String get notifGoalCancelled => 'Ο στόχος ακυρώθηκε';
+
+  @override
+  String get notifGoalBudgetExhausted =>
+      'Ο στόχος εξάντλησε τον προϋπολογισμό του';
+
+  @override
+  String get notifGoalNeedsReview => 'Ένας στόχος περιμένει την ανασκόπησή σας';
+
+  @override
+  String get notifGoalNeedsPerson => 'Ένας στόχος σάς χρειάζεται';
+
+  @override
+  String get notifGoalOnHold => 'Ένας στόχος είναι σε αναμονή';
+
+  @override
+  String get notifWakeRuleEnded => 'Ένα χρονοδιάγραμμα τελείωσε';
+
+  @override
+  String notifWaitingDigest(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count εκκρεμότητες περιμένουν εσάς',
+      one: '1 εκκρεμότητα περιμένει εσάς',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notifImprovementProposed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Προτάθηκαν $count βελτιώσεις',
+      one: 'Προτάθηκε μια βελτίωση',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notifPipelineRunHeld =>
+      'Μια εκτέλεση pipeline είναι σε αναμονή στον προϋπολογισμό της';
+
+  @override
+  String notifPipelineRunHeldBody(String spent, String cap) {
+    return 'Δαπάνη $spent από $cap';
+  }
+
+  @override
+  String get inboxGoalNeedsReview => 'Ο στόχος περιμένει ανασκόπηση';
+
+  @override
+  String get inboxGoalNeedsPerson => 'Ο στόχος σάς χρειάζεται';
+
+  @override
+  String get inboxImprovementProposed => 'Προτάθηκε βελτίωση';
+
+  @override
+  String get improvementRefusalAlreadyDecided =>
+      'Κάποιος έχει ήδη αποφασίσει για αυτήν την πρόταση.';
+
+  @override
+  String get improvementRefusalCampaignRequired =>
+      'Αυτή η αλλαγή δεν πέρασε αξιολόγηση έναντι της τρέχουσας δεξιότητας, ή η δεξιότητα άλλαξε αφού μετρήθηκε. Εκτελέστε ξανά την αξιολόγηση.';
+
+  @override
+  String get improvementRefusalChangedSince =>
+      'Ο στόχος άλλαξε από τότε που προτάθηκε. Απορρίψτε την και αφήστε τον πράκτορα να προτείνει ξανά.';
+
+  @override
+  String get improvementRefusalTargetMissing =>
+      'Αυτό που αλλάζει αυτή η πρόταση δεν υπάρχει πια.';
+
+  @override
+  String get improvementRefusalCampaignState =>
+      'Η αξιολόγηση δεν μπορεί να ξεκινήσει ή να τελειώσει στην τρέχουσα κατάστασή της.';
+
+  @override
+  String get improvementRefusalReviewCooldown =>
+      'Αυτή η συνομιλία ανασκοπήθηκε πρόσφατα. Δοκιμάστε ξανά αργότερα.';
+
+  @override
+  String get improvementRefusalAdminRequired =>
+      'Μόνο ένας διαχειριστής του χώρου εργασίας μπορεί να αποφασίσει για αυτήν την πρόταση.';
+
+  @override
+  String get improvementKindMemoryFact => 'Γεγονός μνήμης';
+
+  @override
+  String get improvementKindPolicy => 'Πολιτική';
+
+  @override
+  String get improvementKindAgentNote => 'Σημείωση πράκτορα';
+
+  @override
+  String get improvementKindSkillEdit => 'Αλλαγή δεξιότητας';
+
+  @override
+  String get improvementKindSkillNew => 'Νέα δεξιότητα';
+
+  @override
+  String get improvementScopeAgent => 'Αυτός ο πράκτορας';
+
+  @override
+  String get improvementScopeRepository => 'Αυτό το αποθετήριο';
+
+  @override
+  String get improvementScopeWorkspace => 'Ολόκληρος ο χώρος εργασίας';
+
+  @override
+  String get improvementStatusProposed => 'Προτάθηκε';
+
+  @override
+  String get improvementStatusAccepted => 'Αποδεκτό';
+
+  @override
+  String get improvementStatusRejected => 'Απορρίφθηκε';
+
+  @override
+  String get improvementStatusRolledBack => 'Επαναφέρθηκε';
+
+  @override
+  String get improvementStatusExpired => 'Έληξε';
+
+  @override
+  String get improvementOperationAdd => 'Προσθέτει';
+
+  @override
+  String get improvementOperationReplace => 'Αντικαθιστά';
+
+  @override
+  String get improvementOperationRemove => 'Αφαιρεί';
+
+  @override
+  String scheduleTriggerOnce(String time) {
+    return 'Μία φορά, $time';
+  }
+
+  @override
+  String scheduleTriggerEvery(String interval) {
+    return 'Κάθε $interval';
+  }
+
+  @override
+  String scheduleTriggerCron(String cron, String zone) {
+    return 'Με το χρονοδιάγραμμα $cron ($zone)';
+  }
+
+  @override
+  String get scheduleTriggerSelfPaced =>
+      'Όταν επιλέγει ο πράκτορας, με διάστημα 1 έως 60 λεπτών';
+
+  @override
+  String get scheduleTriggerPrChecks =>
+      'Όταν ολοκληρωθούν οι έλεγχοι του pull request';
+
+  @override
+  String scheduleTriggerPrChecksOf(String pr) {
+    return 'Όταν ολοκληρωθούν οι έλεγχοι του $pr';
+  }
+
+  @override
+  String get scheduleTriggerPrReview =>
+      'Όταν το pull request λάβει έλεγχο ή απάντηση';
+
+  @override
+  String scheduleTriggerPrReviewOf(String pr) {
+    return 'Όταν το $pr λάβει έλεγχο ή απάντηση';
+  }
+
+  @override
+  String get scheduleTriggerPrMerged => 'Όταν συγχωνευθεί το pull request';
+
+  @override
+  String scheduleTriggerPrMergedOf(String pr) {
+    return 'Όταν συγχωνευθεί το $pr';
+  }
+
+  @override
+  String get scheduleTriggerEnvironment =>
+      'Όταν μια εργασία του περιβάλλοντος τελειώσει ή γίνει έτοιμη';
+
+  @override
+  String scheduleTriggerTicket(String id) {
+    return 'Όταν ολοκληρωθεί το εισιτήριο $id';
+  }
+
+  @override
+  String scheduleTriggerPipelineRun(String id) {
+    return 'Όταν τελειώσει η εκτέλεση pipeline $id';
+  }
+
+  @override
+  String get goalNextWaiting => 'Θα συνεχίσει όταν φτάσει αυτό που περιμένει.';
+
+  @override
+  String get goalNextVerifying =>
+      'Όταν τελειώσουν οι έλεγχοι και η ανασκόπηση, θα ολοκληρωθεί ή θα συνεχίσει να δουλεύει.';
+
+  @override
+  String get goalNextLimit => 'Θα συνεχίσει όταν επαναφερθεί το όριο χρήσης.';
+
+  @override
+  String get goalNextPerson =>
+      'Θα συνεχίσει αφού κάποιος απαντήσει στην ερώτησή του ή στο αίτημα έγκρισης.';
+
+  @override
+  String get goalNextByPerson =>
+      'Θα μείνει σε παύση μέχρι να τον συνεχίσει κάποιος.';
+
+  @override
+  String get goalNextNeedsReview =>
+      'Εγκρίνετέ τον ως ολοκληρωμένο ή συνεχίστε τον για να συνεχίσει να δουλεύει.';
+
+  @override
+  String get goalNextWorking =>
+      'Θα συνεχίσει να δουλεύει, ένα τμήμα τη φορά, μέχρι να ολοκληρωθεί ή να φτάσει σε όριο.';
+
+  @override
+  String get goalContractAddCheck => 'Προσθήκη ελέγχου';
+
+  @override
+  String goalContractChecksFull(int max) {
+    return 'Ένας στόχος έχει το πολύ $max ελέγχους.';
+  }
+
+  @override
+  String goalContractChecksCount(int count, int max) {
+    return '$count από $max έλεγχοι';
+  }
+
+  @override
+  String get goalContractCheckTaskHint =>
+      'Όνομα εργασίας περιβάλλοντος, για παράδειγμα test';
+
+  @override
+  String get goalContractCheckCommandHint => 'Εντολή, για παράδειγμα make test';
+
+  @override
+  String get goalContractCheckWhere => 'Πού εκτελείται';
+
+  @override
+  String get goalContractCheckInWorktree => 'Στο worktree';
+
+  @override
+  String get goalContractCheckInEnvironment => 'Εργασία περιβάλλοντος';
+
+  @override
+  String get goalContractSecondsSuffix => 'δευτ.';
+
+  @override
+  String goalContractTimeoutRange(int max) {
+    return '1 έως $max δευτερόλεπτα';
+  }
+
+  @override
+  String get goalContractRemoveCheck => 'Αφαίρεση ελέγχου';
+
+  @override
+  String get goalContractDoneMeans => 'Ολοκλήρωση σημαίνει';
+
+  @override
+  String get goalContractDoneMeansHelp =>
+      'Κάθε κριτήριο είναι κάτι που ένας ανασκοπητής μπορεί να επιβεβαιώσει.';
+
+  @override
+  String get goalContractCriterionHint =>
+      'Οι σημειώσεις έκδοσης καταγράφουν κάθε συγχωνευμένη αλλαγή';
+
+  @override
+  String goalContractCriterionTooLong(int max) {
+    return 'Το πολύ $max χαρακτήρες.';
+  }
+
+  @override
+  String get goalContractRemoveCriterion => 'Αφαίρεση κριτηρίου';
+
+  @override
+  String get goalContractAddCriterion => 'Προσθήκη κριτηρίου';
+
+  @override
+  String goalContractCriteriaFull(int max) {
+    return 'Ένας στόχος έχει το πολύ $max κριτήρια.';
+  }
+
+  @override
+  String goalContractCriteriaCount(int count, int max) {
+    return '$count από $max κριτήρια';
+  }
+
+  @override
+  String get goalContractChecks => 'Έλεγχοι';
+
+  @override
+  String get goalContractChecksHelp =>
+      'Ο διακομιστής τα εκτελεί όταν ο πράκτορας δηλώσει ότι τελείωσε. Ένας στόχος χωρίς έλεγχο βασίζεται μόνο στην ανασκόπηση.';
+
+  @override
+  String get goalContractBoundaries => 'Όρια';
+
+  @override
+  String get goalContractBoundariesHint => 'Μην αλλάξετε το δημόσιο API';
+
+  @override
+  String get goalContractStopWhen => 'Σταμάτα και ρώτα όταν';
+
+  @override
+  String get goalContractStopWhenHint =>
+      'Μια μετεγκατάσταση θα διέγραφε δεδομένα';
+
+  @override
+  String get goalContractEditTitle => 'Επεξεργασία του τι σημαίνει ολοκλήρωση';
+
+  @override
+  String get goalCheckerTitle => 'Ποιος ελέγχει αυτόν τον στόχο';
+
+  @override
+  String get goalCheckerLabel => 'Ελεγκτής';
+
+  @override
+  String get goalCheckerNone => 'Χωρίς ξεχωριστό ελεγκτή';
+
+  @override
+  String get goalCheckerNoneWeaker =>
+      'Χωρίς ξεχωριστό ελεγκτή, ο πράκτορας ελέγχει τη δική του δουλειά, και αυτό εντοπίζει λιγότερα.';
+
+  @override
+  String goalCheckerRecommend(String agent) {
+    return 'Για παράδειγμα ο $agent: ένας ελεγκτής από άλλον πάροχο είναι λιγότερο πιθανό να έχει τα ίδια τυφλά σημεία.';
+  }
+
+  @override
+  String get goalCheckerRecommendGeneric =>
+      'Ένας ελεγκτής από άλλον πάροχο από αυτόν του στόχου είναι λιγότερο πιθανό να έχει τα ίδια τυφλά σημεία.';
+
+  @override
+  String raiseCapSpentOf(String spent, String cap) {
+    return 'Δαπάνη $spent από $cap.';
+  }
+
+  @override
+  String get raiseCapNewCap => 'Νέο όριο σε δολάρια';
+
+  @override
+  String raiseCapMustExceed(String cap) {
+    return 'Εισαγάγετε ποσό μεγαλύτερο από $cap.';
+  }
+
+  @override
+  String get raiseCapConfirm => 'Αύξηση ορίου';
+
+  @override
+  String get goalsBackToList => 'Όλοι οι στόχοι';
+
+  @override
+  String goalPursuedBy(String agent) {
+    return 'Τον επιδιώκει ο $agent';
+  }
+
+  @override
+  String get goalOpenConversation => 'Άνοιγμα της συνομιλίας';
+
+  @override
+  String goalStarted(String time) {
+    return 'Ξεκίνησε $time';
+  }
+
+  @override
+  String get goalStopTitle => 'Διακοπή αυτού του στόχου;';
+
+  @override
+  String get goalStopBody =>
+      'Ο πράκτορας σταματά να δουλεύει πάνω του οριστικά. Η δουλειά που έχει γίνει μέχρι τώρα μένει στη συνομιλία.';
+
+  @override
+  String get goalRaiseBudgetTitle => 'Αύξηση του προϋπολογισμού και συνέχεια';
+
+  @override
+  String get goalRaiseBudgetAction => 'Αύξηση προϋπολογισμού';
+
+  @override
+  String get goalSectionNow => 'Τώρα';
+
+  @override
+  String get goalFactSegments => 'Τμήματα';
+
+  @override
+  String get goalFactMoney => 'Δαπάνη';
+
+  @override
+  String get goalFactDeadline => 'Προθεσμία';
+
+  @override
+  String get goalFactNoProgress => 'Χωρίς πρόοδο';
+
+  @override
+  String get goalNoDeadline => 'Καμία';
+
+  @override
+  String goalDeadlineWithLeft(String time, String left) {
+    return '$time, απομένουν $left';
+  }
+
+  @override
+  String goalNoProgressCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Τα τελευταία $count τμήματα δεν έφεραν πρόοδο',
+      one: 'Το τελευταίο τμήμα δεν έφερε πρόοδο',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get goalObjective => 'Στόχος';
+
+  @override
+  String get goalSectionContract => 'Τι σημαίνει ολοκλήρωση';
+
+  @override
+  String get goalContractPauseFirst =>
+      'Βάλτε τον στόχο σε παύση για να αλλάξετε τι σημαίνει ολοκλήρωση ή ποιος τον ελέγχει.';
+
+  @override
+  String get goalContractEdit => 'Επεξεργασία';
+
+  @override
+  String get goalCheckerChange => 'Αλλαγή ελεγκτή';
+
+  @override
+  String get goalContractNone =>
+      'Τίποτα δεν έχει γραφτεί ακόμα. Ο πράκτορας αποφασίζει πότε έχει τελειώσει.';
+
+  @override
+  String get goalCheckerSelf =>
+      'Χωρίς ξεχωριστό ελεγκτή: ο πράκτορας επαληθεύει τη δική του δουλειά.';
+
+  @override
+  String goalCheckerIs(String agent) {
+    return 'Ελέγχεται από τον $agent';
+  }
+
+  @override
+  String goalCheckWorktree(int seconds) {
+    return 'Στο worktree, έως $seconds δευτ.';
+  }
+
+  @override
+  String goalCheckEnvironmentTask(int seconds) {
+    return 'Εργασία περιβάλλοντος, έως $seconds δευτ.';
+  }
+
+  @override
+  String get goalSectionVerification => 'Επαλήθευση';
+
+  @override
+  String get goalNotVerifiedYet =>
+      'Δεν έχει επαληθευτεί ακόμα. Ο πράκτορας δεν έχει δηλώσει ότι τελείωσε.';
+
+  @override
+  String goalVerificationRound(int round, int total, String time) {
+    return 'Γύρος $round από $total, $time';
+  }
+
+  @override
+  String get goalVerificationClaim => 'Τι ισχυρίζεται ο πράκτορας';
+
+  @override
+  String get goalCheckOutputTail => 'Έξοδος (τελευταίες γραμμές)';
+
+  @override
+  String goalCheckExitCode(int code) {
+    return 'Επιτυχής · κωδικός εξόδου $code';
+  }
+
+  @override
+  String get goalVerificationReview => 'Ανασκόπηση';
+
+  @override
+  String get goalVerificationNoVerdict => 'Δεν υπάρχει ανασκόπηση ακόμα.';
+
+  @override
+  String goalVerdictItem(String criterion, String state) {
+    return '$criterion · $state';
+  }
+
+  @override
+  String get goalSectionSchedules => 'Χρονοδιαγράμματα και αφυπνίσεις';
+
+  @override
+  String get goalNoSchedules => 'Κανένα χρονοδιάγραμμα ή αναμενόμενη αφύπνιση.';
+
+  @override
+  String get goalPendingWakes => 'Αναμενόμενες αφυπνίσεις';
+
+  @override
+  String workListGroup(String label, int count) {
+    return '$label · $count';
+  }
+
+  @override
+  String get goalNotFound =>
+      'Αυτός ο στόχος δεν υπάρχει, ή βρίσκεται σε χώρο στον οποίο δεν έχετε πρόσβαση.';
+
+  @override
+  String get goalsTitle => 'Στόχοι';
+
+  @override
+  String get goalsSubtitle =>
+      'Δουλειά στην οποία ένας πράκτορας επιμένει μέχρι να πληρωθεί το κριτήριο ολοκλήρωσης.';
+
+  @override
+  String get goalsEmpty => 'Δεν υπάρχουν στόχοι ακόμα';
+
+  @override
+  String get goalsEmptyHint => 'Ξεκινήστε έναν με /goal σε μια συνομιλία.';
+
+  @override
+  String get goalsGroupReview => 'Αναμονή ανασκόπησης';
+
+  @override
+  String get goalsGroupOpen => 'Ανοιχτοί';
+
+  @override
+  String get goalsGroupEnded => 'Έληξαν';
+
+  @override
+  String get scheduleStatusActive => 'Ενεργό';
+
+  @override
+  String get scheduleStatusPaused => 'Σε παύση';
+
+  @override
+  String get scheduleStatusEnded => 'Έληξε';
+
+  @override
+  String get scheduleWhenBusySkip =>
+      'Παραλείπει μια ενεργοποίηση όσο ο πράκτορας είναι απασχολημένος';
+
+  @override
+  String get scheduleWhenBusyQueue =>
+      'Περιμένει μέχρι να είναι ελεύθερος ο πράκτορας';
+
+  @override
+  String get scheduleDeliverRun => 'Ξεκινά μια εκτέλεση';
+
+  @override
+  String get scheduleDeliverNotify => 'Μόνο ειδοποιεί';
+
+  @override
+  String get scheduleNew => 'Νέο χρονοδιάγραμμα';
+
+  @override
+  String get schedulesEmpty =>
+      'Δεν υπάρχουν χρονοδιαγράμματα ή παρακολουθήσεις';
+
+  @override
+  String get schedulesEmptyHint =>
+      'Οι πράκτορες τα ορίζουν με /loop και /schedule, ή μπορείτε να δημιουργήσετε ένα.';
+
+  @override
+  String scheduleOwnedBy(String name) {
+    return 'Υπεύθυνος: $name';
+  }
+
+  @override
+  String scheduleRunsSkips(int runs, int skips) {
+    String _temp0 = intl.Intl.pluralLogic(
+      runs,
+      locale: localeName,
+      other: '$runs εκτελέσεις',
+      one: '1 εκτέλεση',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      skips,
+      locale: localeName,
+      other: '$skips παραλείψεις',
+      one: '1 παράλειψη',
+      zero: 'καμία παράλειψη',
+    );
+    return '$_temp0, $_temp1';
+  }
+
+  @override
+  String scheduleExpires(String time) {
+    return 'Λήγει $time';
+  }
+
+  @override
+  String scheduleNextFires(String times) {
+    return 'Επόμενα: $times';
+  }
+
+  @override
+  String get schedulesTitle => 'Χρονοδιαγράμματα';
+
+  @override
+  String get schedulesSubtitle =>
+      'Χρονοδιαγράμματα, βρόχοι και παρακολουθήσεις που ξυπνούν πράκτορες.';
+
+  @override
+  String get scheduleWhenLabel => 'Πότε ενεργοποιείται';
+
+  @override
+  String get scheduleWhenEvery => 'Επαναλαμβανόμενα, κάθε…';
+
+  @override
+  String get scheduleWhenCron => 'Με χρονοδιάγραμμα cron';
+
+  @override
+  String get scheduleWhenOnceIn => 'Μία φορά, μετά από…';
+
+  @override
+  String get scheduleWhenOnceAt => 'Μία φορά, στην επόμενη…';
+
+  @override
+  String get scheduleDurationLabel => 'Διάστημα';
+
+  @override
+  String get scheduleDurationHelp =>
+      'Χρησιμοποιήστε s, m, h ή d, όπως 30m ή 1h30m. Οι επαναλήψεις απέχουν τουλάχιστον 60 δευτ.';
+
+  @override
+  String get scheduleDurationInvalid =>
+      'Αυτό δεν είναι διάρκεια, όπως 30m ή 2h.';
+
+  @override
+  String get scheduleHour => 'Ώρα';
+
+  @override
+  String get scheduleMinute => 'Λεπτό';
+
+  @override
+  String get scheduleCronLabel => 'Cron (λεπτό ώρα ημέρα μήνας εβδομάδα)';
+
+  @override
+  String get scheduleCronInvalid =>
+      'Αυτό δεν είναι πεντάπεδο cron που ενεργοποιείται.';
+
+  @override
+  String get scheduleTimeInvalid =>
+      'Αυτή δεν είναι μελλοντική ώρα, όπως 09:00 ή 2026-11-21T09:00Z.';
+
+  @override
+  String scheduleDaysRange(int max) {
+    return 'Από 1 έως $max ημέρες.';
+  }
+
+  @override
+  String scheduleOptionUnknown(String option) {
+    return 'Το $option δεν είναι επιλογή.';
+  }
+
+  @override
+  String get scheduleLimits => 'Όρια';
+
+  @override
+  String get schedulePresetWeekdays => 'Καθημερινές στις 09:00';
+
+  @override
+  String get schedulePresetDaily => 'Κάθε μέρα στις 09:00';
+
+  @override
+  String get schedulePresetHourly => 'Κάθε ώρα, στην ώρα της';
+
+  @override
+  String get scheduleZoneLabel => 'Ζώνη ώρας';
+
+  @override
+  String get scheduleZoneHelp => 'Κενό σημαίνει η ζώνη του χώρου εργασίας.';
+
+  @override
+  String get scheduleZoneInvalid =>
+      'Αυτό δεν είναι ζώνη ώρας, όπως Europe/Berlin.';
+
+  @override
+  String get scheduleCreateTitle => 'Νέο χρονοδιάγραμμα';
+
+  @override
+  String get scheduleSpaceLabel => 'Χώρος';
+
+  @override
+  String get scheduleSpaceHint => 'Επιλέξτε έναν χώρο';
+
+  @override
+  String get scheduleConversationLabel => 'Συνομιλία';
+
+  @override
+  String get scheduleConversationHint => 'Επιλέξτε μια συνομιλία';
+
+  @override
+  String get scheduleAgentLabel => 'Πράκτορας';
+
+  @override
+  String get scheduleAgentHint => 'Επιλέξτε ποιος ξυπνά';
+
+  @override
+  String get scheduleNoteLabel => 'Από τι ξεκινά κάθε εκτέλεση';
+
+  @override
+  String get scheduleNoteHint =>
+      'Συνοψίστε τι άλλαξε κατά τη διάρκεια της νύχτας και επισημάνετε ό,τι έχει μπλοκαριστεί.';
+
+  @override
+  String get scheduleExpiresInDays => 'Λήγει μετά από (ημέρες)';
+
+  @override
+  String get scheduleExpiresInDaysHelp => 'Κενό: 30 ημέρες, το πολύ 365.';
+
+  @override
+  String get scheduleMaxRuns => 'Όριο εκτελέσεων';
+
+  @override
+  String scheduleMaxRunsHelp(int max) {
+    return 'Κενό: χωρίς όριο, το πολύ $max.';
+  }
+
+  @override
+  String get scheduleCostCap => 'Όριο κόστους (δολάρια)';
+
+  @override
+  String get scheduleCostCapHelp => 'Κενό: η προεπιλογή του χώρου εργασίας.';
+
+  @override
+  String get scheduleWhenBusyLabel => 'Αν ο πράκτορας είναι απασχολημένος';
+
+  @override
+  String get scheduleWhenBusyDefault => 'Η προεπιλογή για αυτό το είδος';
+
+  @override
+  String get scheduleDeliverLabel => 'Κάθε ενεργοποίηση';
+
+  @override
+  String get scheduleCreate => 'Δημιουργία χρονοδιαγράμματος';
+
+  @override
+  String get scheduleExtendTitle => 'Επέκταση αυτού του χρονοδιαγράμματος';
+
+  @override
+  String scheduleExtendNow(String current, String latest) {
+    return 'Λήγει $current. Μπορεί να διαρκέσει το πολύ έως $latest.';
+  }
+
+  @override
+  String get scheduleExtendDays => 'Προσθήκη ημερών';
+
+  @override
+  String scheduleExtendTooLong(String latest) {
+    return 'Μπορεί να λήξει $latest το αργότερο.';
+  }
+
+  @override
+  String scheduleMaxRunsRange(int max) {
+    return '1 έως $max εκτελέσεις.';
+  }
+
+  @override
+  String scheduleCostCapRange(String max) {
+    return 'Τουλάχιστον 1 δολάριο και το πολύ $max.';
+  }
+
+  @override
+  String get scheduleExtend => 'Επέκταση';
+
+  @override
+  String get scheduleRemoveTitle => 'Αφαίρεση αυτού του χρονοδιαγράμματος;';
+
+  @override
+  String get scheduleDeleteTitle => 'Διαγραφή αυτού του χρονοδιαγράμματος;';
+
+  @override
+  String get scheduleRemoveBody =>
+      'Εξαφανίζεται από τη λίστα. Οι εκτελέσεις του μένουν στη συνομιλία.';
+
+  @override
+  String get scheduleDeleteBody =>
+      'Σταματά να ενεργοποιείται οριστικά. Οι εκτελέσεις του μένουν στη συνομιλία.';
+
+  @override
+  String get scheduleRemove => 'Αφαίρεση';
+
+  @override
+  String get scheduleDelete => 'Διαγραφή';
+
+  @override
+  String get scheduleOwnerOnly =>
+      'Μόνο ο υπεύθυνος μπορεί να το συνεχίσει ή να το επεκτείνει.';
+
+  @override
+  String get schedulesBackToList => 'Όλα τα χρονοδιαγράμματα';
+
+  @override
+  String get scheduleNoteByAgent => 'Σημείωση, γραμμένη από τον πράκτορα';
+
+  @override
+  String get scheduleNoteByPerson => 'Σημείωση, γραμμένη από άτομο';
+
+  @override
+  String scheduleNoteEditedBy(String name) {
+    return 'Σημείωση, τελευταία επεξεργασία από $name';
+  }
+
+  @override
+  String get scheduleNoNote => 'Χωρίς σημείωση.';
+
+  @override
+  String get schedulePause => 'Παύση';
+
+  @override
+  String get scheduleResume => 'Συνέχεια';
+
+  @override
+  String get scheduleOpenChainRoot =>
+      'Άνοιγμα του πρώτου χρονοδιαγράμματος αυτής της αλυσίδας';
+
+  @override
+  String get scheduleSectionFacts => 'Λεπτομέρειες';
+
+  @override
+  String get scheduleFactAgent => 'Ξυπνά';
+
+  @override
+  String get scheduleFactConversation => 'Σε';
+
+  @override
+  String get scheduleConversationUnknown =>
+      'Μια συνομιλία που ίσως δεν βλέπετε';
+
+  @override
+  String get scheduleFactOwner => 'Υπεύθυνος';
+
+  @override
+  String get scheduleNoOwner => 'Κανείς';
+
+  @override
+  String get scheduleFactNextFires => 'Επόμενες ενεργοποιήσεις';
+
+  @override
+  String get scheduleFactNext => 'Επόμενη ενεργοποίηση';
+
+  @override
+  String get scheduleFactLast => 'Τελευταία ενεργοποίηση';
+
+  @override
+  String get scheduleFactRuns => 'Εκτελέσεις';
+
+  @override
+  String scheduleRunsNoCap(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count εκτελέσεις, χωρίς όριο',
+      one: '1 εκτέλεση, χωρίς όριο',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleRunsOfCap(int count, int max) {
+    return '$count από $max εκτελέσεις';
+  }
+
+  @override
+  String get scheduleFactSkips => 'Παραλείψεις';
+
+  @override
+  String scheduleSkips(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ενεργοποιήσεις παραλείφθηκαν',
+      one: '1 ενεργοποίηση παραλείφθηκε',
+      zero: 'Καμία',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scheduleFactSpent => 'Δαπάνη';
+
+  @override
+  String get scheduleFactEnds => 'Λήγει';
+
+  @override
+  String get scheduleFactWhenBusy => 'Αν ο πράκτορας είναι απασχολημένος';
+
+  @override
+  String get scheduleFactDeliver => 'Κάθε ενεργοποίηση';
+
+  @override
+  String get scheduleFactChain => 'Αλυσίδα';
+
+  @override
+  String scheduleChainLeft(int runs, String time) {
+    String _temp0 = intl.Intl.pluralLogic(
+      runs,
+      locale: localeName,
+      other: 'Απομένουν $runs εκτελέσεις',
+      one: 'Απομένει 1 εκτέλεση',
+    );
+    return '$_temp0 στην αλυσίδα, που λήγει $time';
+  }
+
+  @override
+  String get scheduleFactCreated => 'Δημιουργήθηκε';
+
+  @override
+  String get scheduleSectionHistory => 'Πρόσφατες αφυπνίσεις και εκτελέσεις';
+
+  @override
+  String get scheduleNoRuns => 'Δεν υπάρχουν εκτελέσεις ακόμα.';
+
+  @override
+  String scheduleRunLine(String status, String cost) {
+    return '$status · $cost';
+  }
+
+  @override
+  String get scheduleRunPending => 'Αναμονή για έναρξη';
+
+  @override
+  String get scheduleRunRunning => 'Σε εκτέλεση';
+
+  @override
+  String get scheduleRunCompleted => 'Ολοκληρώθηκε';
+
+  @override
+  String get scheduleRunFailed => 'Απέτυχε';
+
+  @override
+  String get scheduleNotFound =>
+      'Αυτό το χρονοδιάγραμμα δεν υπάρχει, ή βρίσκεται σε χώρο στον οποίο δεν έχετε πρόσβαση.';
+
+  @override
+  String get improvementCampaignTitle => 'Εκτέλεση αξιολόγησης';
+
+  @override
+  String improvementCampaignCost(int repetitions, String budget) {
+    String _temp0 = intl.Intl.pluralLogic(
+      repetitions,
+      locale: localeName,
+      other: 'Κάθε εργασία εκτελείται $repetitions φορές',
+      one: 'Κάθε εργασία εκτελείται μία φορά',
+    );
+    return '$_temp0 με την τρέχουσα δεξιότητα και με την αλλαγή. Δαπανά το πολύ $budget, χρεώνεται σε αυτόν τον χώρο εργασίας.';
+  }
+
+  @override
+  String get improvementCampaignCostUnknown =>
+      'Η αξιολόγηση εκτελεί το σύνολο εργασιών με την τρέχουσα δεξιότητα και με την αλλαγή, έως τον προϋπολογισμό που ορίζετε.';
+
+  @override
+  String get improvementCampaignUnavailable =>
+      'Οι αξιολογήσεις δεν μπορούν να εκτελεστούν αυτή τη στιγμή σε αυτόν τον διακομιστή.';
+
+  @override
+  String get improvementCampaignCorpus => 'Σύνολο δεδομένων';
+
+  @override
+  String get improvementCampaignProvider => 'Πάροχος';
+
+  @override
+  String get improvementCampaignModel => 'Μοντέλο';
+
+  @override
+  String get improvementCampaignRepetitions => 'Εκτελέσεις ανά εργασία';
+
+  @override
+  String get improvementCampaignBudget => 'Προϋπολογισμός (δολάρια)';
+
+  @override
+  String improvementCampaignRange(int max) {
+    return '1 έως $max.';
+  }
+
+  @override
+  String get improvementCampaignStart => 'Έναρξη αξιολόγησης';
+
+  @override
+  String get improvementRollbackTitle => 'Επαναφορά αυτής της αλλαγής;';
+
+  @override
+  String get improvementRollbackBody =>
+      'Επανέρχεται το κείμενο που αντικατέστησε, εφόσον δεν το έχει αλλάξει κανείς από τότε.';
+
+  @override
+  String get improvementRollback => 'Επαναφορά';
+
+  @override
+  String get improvementRolledBackDone => 'Επαναφέρθηκε.';
+
+  @override
+  String get improvementNeedsAdmin =>
+      'Μόνο ένας διαχειριστής του χώρου εργασίας μπορεί να αποφασίσει για αυτήν την πρόταση: αλλάζει μια δεξιότητα ή μια πολιτική για ολόκληρο τον χώρο εργασίας.';
+
+  @override
+  String get improvementAdminDecides =>
+      'Ως διαχειριστής, αποφασίζετε για αυτήν την πρόταση: αλλάζει μια δεξιότητα ή μια πολιτική για ολόκληρο τον χώρο εργασίας.';
+
+  @override
+  String get improvementNeedsCampaign =>
+      'Εκτελέστε μια επιτυχημένη αξιολόγηση πριν από την αποδοχή αυτής της αλλαγής δεξιότητας.';
+
+  @override
+  String get improvementsBackToList => 'Όλες οι βελτιώσεις';
+
+  @override
+  String improvementMeta(String kind, String scope, String agent) {
+    return '$kind · $scope · προτάθηκε από τον $agent';
+  }
+
+  @override
+  String get improvementAccept => 'Αποδοχή';
+
+  @override
+  String get improvementAcceptedDone => 'Έγινε αποδεκτό.';
+
+  @override
+  String get improvementReject => 'Απόρριψη';
+
+  @override
+  String get improvementRejectedDone => 'Απορρίφθηκε.';
+
+  @override
+  String get improvementRunEvaluation => 'Εκτέλεση αξιολόγησης';
+
+  @override
+  String get improvementSectionChange => 'Τι αλλάζει';
+
+  @override
+  String get improvementTarget => 'Στόχος';
+
+  @override
+  String improvementScopeLine(String scope) {
+    return 'Ισχύει για: $scope';
+  }
+
+  @override
+  String get improvementNewText => 'Νέο κείμενο';
+
+  @override
+  String get improvementRemovedText => 'Αφαιρεμένο κείμενο';
+
+  @override
+  String get improvementExpected => 'Αναμενόμενο αποτέλεσμα';
+
+  @override
+  String get improvementSectionEvidence => 'Τεκμήρια και απόφαση';
+
+  @override
+  String get improvementNoEvidence => 'Δεν έχει επισυναφθεί τεκμήριο.';
+
+  @override
+  String get improvementEvidenceRuns => 'Εκτελέσεις';
+
+  @override
+  String get improvementEvidenceMessages => 'Μηνύματα';
+
+  @override
+  String improvementOpenMessage(int index) {
+    return 'Μήνυμα $index';
+  }
+
+  @override
+  String get improvementEvidenceChecks => 'Αποτελέσματα ελέγχων';
+
+  @override
+  String get improvementEvaluation => 'Αξιολόγηση';
+
+  @override
+  String get improvementCampaignNone => 'Δεν έχει αξιολογηθεί ακόμα.';
+
+  @override
+  String get improvementCampaignRunning => 'Η αξιολόγηση εκτελείται.';
+
+  @override
+  String get improvementCampaignPassed =>
+      'Η αξιολόγηση πέρασε: εκτελέστηκε πλήρως και η αλλαγή έλυσε τουλάχιστον όσες εκτελέσεις έλυσε η τρέχουσα δεξιότητα, κάτι που δεν αποδεικνύει ότι είναι καλύτερη. Μπορεί να γίνει αποδεκτή.';
+
+  @override
+  String get improvementCampaignFailed =>
+      'Η αξιολόγηση δεν πέρασε, ή η δεξιότητα άλλαξε αφού μετρήθηκε. Εκτελέστε την ξανά ή απορρίψτε την αλλαγή.';
+
+  @override
+  String improvementDecided(String status, String name, String time) {
+    return '$status από τον $name, $time';
+  }
+
+  @override
+  String get improvementSomeone => 'κάποιος';
+
+  @override
+  String improvementExpires(String time) {
+    return 'Λήγει $time, εκτός αν αποφασίσει κάποιος.';
+  }
+
+  @override
+  String get improvementOpenApplied => 'Άνοιγμα του τι άλλαξε';
+
+  @override
+  String get improvementsTitle => 'Βελτιώσεις';
+
+  @override
+  String get improvementsSubtitle =>
+      'Αλλαγές που πρότειναν οι πράκτορες στη μνήμη, στις σημειώσεις, στις πολιτικές και στις δεξιότητές τους.';
+
+  @override
+  String get improvementsEmpty => 'Δεν υπάρχουν προτάσεις';
+
+  @override
+  String get improvementsEmptyHint =>
+      'Οι πράκτορες προτείνουν βελτιώσεις μετά την ανασκόπηση της δουλειάς τους, για παράδειγμα με /refine.';
+
+  @override
+  String get improvementRowNeedsAdmin => 'Αποφασίζει ένας διαχειριστής';
+
+  @override
+  String get improvementNotFound =>
+      'Αυτή η πρόταση δεν υπάρχει, ή βρίσκεται σε χώρο στον οποίο δεν έχετε πρόσβαση.';
+
+  @override
+  String get dispatchSettingsTitle => 'Χρονοδιαγράμματα';
+
+  @override
+  String get dispatchSettingsSubtitle =>
+      'Όρια για χρονοδιαγράμματα και παρακολουθήσεις, και τι γίνεται με τα αιτήματα που δεν απαντά κανείς.';
+
+  @override
+  String get dispatchLimitsLabel => 'Όρια χρονοδιαγραμμάτων';
+
+  @override
+  String get dispatchLimitsSubtitle =>
+      'Όρια στο πλήθος χρονοδιαγραμμάτων και παρακολουθήσεων που μπορούν να έχουν οι πράκτορες, και οι προεπιλογές τους.';
+
+  @override
+  String dispatchLimitRange(int max) {
+    return '1 έως $max';
+  }
+
+  @override
+  String get dispatchLimitPerConversation => 'Ανά πράκτορα σε μια συνομιλία';
+
+  @override
+  String get dispatchLimitPerConversationHelp =>
+      'Ενεργά ή σε παύση χρονοδιαγράμματα που μπορεί να έχει ένας πράκτορας σε μια συνομιλία.';
+
+  @override
+  String get dispatchLimitPerAgent => 'Ανά πράκτορα';
+
+  @override
+  String get dispatchLimitPerAgentHelp =>
+      'Ενεργά ή σε παύση χρονοδιαγράμματα που μπορεί να έχει ένας πράκτορας σε όλο τον χώρο εργασίας.';
+
+  @override
+  String get dispatchLimitPerWorkspace => 'Στον χώρο εργασίας';
+
+  @override
+  String get dispatchLimitPerWorkspaceHelp =>
+      'Ενεργά ή σε παύση χρονοδιαγράμματα σε ολόκληρο τον χώρο εργασίας.';
+
+  @override
+  String get dispatchLimitCostCap => 'Προεπιλεγμένο όριο κόστους (δολάρια)';
+
+  @override
+  String get dispatchLimitCostCapHelp =>
+      'Όσα μπορεί να δαπανήσει συνολικά ένα χρονοδιάγραμμα, όταν δεν ορίζει δικό του όριο.';
+
+  @override
+  String get dispatchLimitZone => 'Ζώνη ώρας';
+
+  @override
+  String get dispatchLimitZoneHelp =>
+      'Η ζώνη στην οποία διαβάζεται ένα χρονοδιάγραμμα cron όταν δεν ορίζει καμία, και η ζώνη της ημερήσιας σύνοψης.';
+
+  @override
+  String get dispatchUnattendedLabel => 'Όταν δεν απαντά κανείς';
+
+  @override
+  String get dispatchUnattendedSubtitle =>
+      'Πόση ώρα περιμένει μια εκτέλεση που ξεκίνησε ο διακομιστής για ένα άτομο, και πότε στέλνεται η ημερήσια σύνοψη των εκκρεμοτήτων.';
+
+  @override
+  String get dispatchUnattendedExpiry => 'Τα αιτήματα περιμένουν (ώρες)';
+
+  @override
+  String get dispatchUnattendedExpiryHelp =>
+      'Μετά από αυτό, μια έγκριση θεωρείται απορριπτική και μια ερώτηση αναπάντητη. Οι στόχοι που ορίζονται να απαντούν μόνοι τους στις ερωτήσεις τους το κάνουν μετά από 10 λεπτά.';
+
+  @override
+  String dispatchUnattendedExpiryRange(int min, int max) {
+    return '$min έως $max ώρες';
+  }
+
+  @override
+  String get dispatchDigestHour => 'Ημερήσια σύνοψη στις (ώρα)';
+
+  @override
+  String dispatchDigestHourHelp(String zone) {
+    return 'Σε $zone, η ζώνη ώρας παραπάνω.';
+  }
+
+  @override
+  String get dispatchDigestHourRange => '0 έως 23';
+
+  @override
+  String get goalRecordCrumb => 'Στόχος';
+
+  @override
+  String get scheduleRecordCrumb => 'Χρονοδιάγραμμα';
+
+  @override
+  String get improvementRecordCrumb => 'Πρόταση';
+
+  @override
+  String get goalNodeNeedsAgent =>
+      'Επιλέξτε τον πράκτορα που επιδιώκει τον στόχο.';
+
+  @override
+  String get goalNodeNeedsObjective => 'Γράψτε τον αντικειμενικό σκοπό.';
+
+  @override
+  String get goalNodeContractInvalid =>
+      'Το συμβόλαιο έχει ένα πεδίο πάνω από το όριό του· δεν αποθηκεύεται μέχρι να διορθωθεί.';
+
+  @override
+  String get goalNodeBudget => 'Προϋπολογισμός (δολάρια)';
+
+  @override
+  String get goalNodeBudgetHelp =>
+      'Το πολύ που μπορεί να δαπανήσει ο στόχος. Όταν εξαντληθεί, ο στόχος περιμένει για άτομο.';
+
+  @override
+  String goalNodeBudgetRange(int max) {
+    return 'Υποχρεωτικό: περισσότερο από 0, έως $max.';
+  }
+
+  @override
+  String get goalNodeMaxRuns => 'Όριο τμημάτων';
+
+  @override
+  String get goalNodeMaxRunsHelp =>
+      'Προαιρετικό. Τα περισσότερα τμήματα (εκτελέσεις πράκτορα) που μπορεί να πάρει ο στόχος.';
+
+  @override
+  String get goalNodeDeadline => 'Προθεσμία (ώρες)';
+
+  @override
+  String get goalNodeDeadlineHelp =>
+      'Προαιρετικό. Ώρες από τότε που το βήμα ξεκινά τον στόχο.';
+
+  @override
+  String goalNodeRange(int max) {
+    return '1 έως $max, ή κενό.';
+  }
+
+  @override
+  String get goalNodeContract => 'Συμβόλαιο';
+
+  @override
+  String get goalNodeContractHelp =>
+      'Τι σημαίνει ολοκλήρωση: κριτήρια που ελέγχει ο ανασκοπητής, και εντολές που πρέπει να περνούν.';
+
+  @override
+  String get nodeConfigObjective => 'Αντικειμενικός σκοπός';
+
+  @override
+  String pipelineRunGoalStep(String step) {
+    return 'Το βήμα $step επιδιώκει έναν στόχο';
+  }
+
+  @override
+  String get pipelineRunOpenGoal => 'Άνοιγμα στόχου';
+
+  @override
+  String get pipelineRunHeldBudget =>
+      'Αυτή η εκτέλεση είναι σε αναμονή: η ενορχήστρωσή της έφτασε το όριο κόστους.';
+
+  @override
+  String pipelineRunHeldOther(String reason) {
+    return 'Αυτή η εκτέλεση είναι σε αναμονή ($reason).';
+  }
+
+  @override
+  String pipelineRunHeldSpent(String spent, String cap) {
+    return 'Δαπάνη $spent από $cap. Αυξήστε το όριο και η εκτέλεση συνεχίζεται.';
+  }
+
+  @override
+  String get pipelineRunRaiseCap => 'Αύξηση ορίου';
+
+  @override
+  String get pipelineRunRaiseCapTitle => 'Αύξηση του ορίου ενορχήστρωσης';
+
+  @override
+  String get pipelineRunCapRaised =>
+      'Το όριο αυξήθηκε. Η εκτέλεση συνεχίζεται σύντομα.';
+
+  @override
+  String get goalLaunchChecks => 'Έλεγχοι';
+
+  @override
+  String get goalLaunchChecksHelp =>
+      'Εντολές που πρέπει να περάσουν πριν μπορέσει να ολοκληρωθεί ο στόχος. Προαιρετικό.';
+
+  @override
+  String get goalLaunchFresh => 'Κάθε τμήμα ξεκινά από την αρχή';
+
+  @override
+  String get goalLaunchFreshHelp =>
+      'Κάθε εκτέλεση ξεκινά χωρίς το ιστορικό της συνομιλίας, μόνο από τον στόχο και τις σημειώσεις του.';
+
+  @override
+  String get goalLaunchAssume =>
+      'Να απαντά μόνος του στις ερωτήσεις του όταν δεν απαντά κανείς';
+
+  @override
+  String get goalLaunchAssumeHelp =>
+      'Μετά από 10 λεπτά χωρίς απάντηση, ο πράκτορας δηλώνει την υπόθεσή του και συνεχίζει, αν το επιτρέπουν οι συνθήκες διακοπής.';
+
+  @override
+  String workFeedLimitParkOutcomeResumed(String provider, String time) {
+    return 'Συνεχίστηκε στις $time μετά το όριο χρήσης του $provider.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeCancelled(String provider, String time) {
+    return 'Ακυρώθηκε στις $time. Δεν συνεχίστηκε μετά το όριο χρήσης του $provider.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeExpired(String provider, String time) {
+    return 'Έληξε στις $time χωρίς να συνεχιστεί μετά το όριο χρήσης του $provider.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeSkipped(String provider, String time) {
+    return 'Δεν συνεχίστηκε μετά το όριο χρήσης του $provider ($time).';
+  }
+
+  @override
+  String workFeedCommandRefusedNamed(String command) {
+    return 'Η εντολή /$command απορρίφθηκε.';
+  }
+
+  @override
+  String get improvementRefusalQueued =>
+      'Μια ανασκόπηση αυτής της συνομιλίας περιμένει ήδη να εκτελεστεί.';
+
+  @override
+  String get improvementRefusalAgentNotFound =>
+      'Αυτός ο πράκτορας δεν ανήκει σε αυτόν τον χώρο εργασίας.';
+
+  @override
+  String get workRefusalWakeQueueFull =>
+      'Ήδη περιμένουν πολλές αφυπνίσεις εδώ. Δοκιμάστε ξανά όταν εκτελεστούν μερικές.';
+
+  @override
+  String get orchestrationRefusalNotYours =>
+      'Μόνο το πρόσωπο για το οποίο ενεργεί αυτή η εκτέλεση μπορεί να την αλλάξει.';
+
+  @override
+  String get orchestrationRefusalCapInvalid =>
+      'Το νέο όριο πρέπει να είναι μεγαλύτερο από το τρέχον όριο και από όσα έχουν δαπανηθεί, και το πολύ \$1,000.';
+
+  @override
+  String get orchestrationRefusalCapChanged =>
+      'Κάποιος αύξησε πρώτος το όριο. Ελέγξτε το νέο όριο και δοκιμάστε ξανά.';
+
+  @override
+  String workFeedCapRaised(String person, String oldCap, String newCap) {
+    return '$person αύξησε το όριο της εκτέλεσης από $oldCap σε $newCap.';
+  }
+
+  @override
+  String get workFeedPersonUnknown => 'Ένα άτομο';
+
+  @override
+  String workFeedApplyIncomplete(String skill) {
+    return 'Μια αποδεκτή αλλαγή στη δεξιότητα $skill δεν μπόρεσε να ολοκληρωθεί, επειδή η δεξιότητα άλλαξε στο μεταξύ. Η πρόταση επαναφέρθηκε.';
+  }
+
+  @override
+  String get workFeedOpenImprovement => 'Άνοιγμα βελτίωσης';
+
+  @override
+  String get peerAskFailNoOutput => 'Τελείωσε χωρίς απάντηση.';
+
+  @override
+  String get peerAskFailRunFailed => 'Η εκτέλεσή του απέτυχε.';
+
+  @override
+  String get peerAskFailStoppedByPerson =>
+      'Ένα άτομο σταμάτησε την εκτέλεσή του.';
+
+  @override
+  String get peerAskFailBudget =>
+      'Η εκτέλεσή του έφτασε τον προϋπολογισμό της.';
+
+  @override
+  String get peerAskFailSilence => 'Η εκτέλεσή του σιώπησε και σταμάτησε.';
+
+  @override
+  String get peerAskFailUsageLimit =>
+      'Η εκτέλεσή του σταμάτησε στο όριο χρήσης του παρόχου.';
+
+  @override
+  String get peerAskFailNotDelivered => 'Η ερώτηση δεν παραδόθηκε ποτέ.';
+
+  @override
+  String heldSteeringLimitHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count μηνύματα κρατήθηκαν στο όριο χρήσης',
+      one: '1 μήνυμα κρατήθηκε στο όριο χρήσης',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get heldSteeringLimitNote =>
+      'Αυτά αποστέλλονται όταν το πρόσωπο για το οποίο εργάζεται η εκτέλεση πατήσει Συνέχεια. Αν δεν γίνει συνέχεια μέσα σε 7 ημέρες από την επαναφορά του ορίου, παραμένουν κρατημένα για αυτό το πρόσωπο.';
+
+  @override
+  String get wakeKindRuleFolded =>
+      'Την αντικατέστησε ένα μεταγενέστερο γεγονός.';
+
+  @override
+  String goalCardWaitingNext(String time) {
+    return 'Αναμονή για όσα όρισε · ελέγχει ξανά έως $time';
+  }
+
+  @override
+  String raiseCapAtMost(String max) {
+    return 'Εισαγάγετε το πολύ $max.';
+  }
+
+  @override
+  String raiseCapNowAt(String cap) {
+    return 'Το όριο είναι τώρα $cap.';
+  }
+
+  @override
+  String get scheduleWakeReasonSchedule => 'Προγραμματισμένη';
+
+  @override
+  String get scheduleWakeReasonWatch => 'Παρακολούθηση';
+
+  @override
+  String get scheduleWakeReasonLimitReset => 'Μετά από όριο χρήσης';
+
+  @override
+  String get scheduleWakeStatePending => 'Σε αναμονή';
+
+  @override
+  String get scheduleWakeStateHeld => 'Κρατημένη';
+
+  @override
+  String get scheduleWakeStateClaimed => 'Εκκινεί';
+
+  @override
+  String get scheduleWakeStateDelivered => 'Παραδόθηκε';
+
+  @override
+  String get scheduleWakeStateSkipped => 'Παραλείφθηκε';
+
+  @override
+  String get scheduleWakeStateExpired => 'Έληξε';
+
+  @override
+  String get scheduleWakeStateCancelled => 'Ακυρώθηκε';
+
+  @override
+  String scheduleWakeLine(String reason, String state) {
+    return '$reason · $state';
+  }
+
+  @override
+  String scheduleWakeExit(int code) {
+    return 'κωδικός εξόδου $code';
+  }
+
+  @override
+  String scheduleWakeEvents(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count γεγονότα',
+      one: '1 γεγονός',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scheduleWakesNone => 'Καμία αφύπνιση ακόμα.';
+
+  @override
+  String get scheduleWakesOlder => 'Εμφάνιση παλαιότερων';
+
+  @override
+  String get improvementCandidateStaged =>
+      'Η προτεινόμενη δεξιότητα αποθηκεύεται ως ξεχωριστή αναθεώρηση. Η αξιολόγησή της αφήνει αμετάβλητη τη ζωντανή δεξιότητα· η δεξιότητα αλλάζει μόνο όταν γίνει αποδεκτή η πρόταση.';
+
+  @override
+  String goalNextWaitingFallback(String time) {
+    return 'Συνεχίζει όταν φτάσει αυτό που περιμένει, ή ελέγχει ξανά στις $time αν δεν έχει φτάσει τίποτα.';
+  }
+
+  @override
+  String get steeringRefusalHeldByLimit =>
+      'Τα μηνύματα που κρατά μια παύση λόγω ορίου χρήσης δεν μπορούν να σταλούν με το χέρι όσο περιμένει.';
+
+  @override
+  String steeringRefusalHeldByLimitAt(String time) {
+    return 'Τα μηνύματα που κρατά μια παύση λόγω ορίου χρήσης δεν μπορούν να σταλούν με το χέρι όσο περιμένει. Το όριο επαναφέρεται στις $time.';
+  }
+
+  @override
+  String heldSteeringLimitResetsAt(String time) {
+    return 'Το όριο επαναφέρεται στις $time. Αυτά αποστέλλονται όταν το πρόσωπο για το οποίο εργάζεται η εκτέλεση πατήσει Συνέχεια.';
+  }
+
+  @override
+  String heldSteeringFromPerson(String name) {
+    return 'Από $name';
+  }
+
+  @override
+  String get heldSteeringFromSomeoneElse => 'Από άλλον';
+
+  @override
+  String get heldSteeringOnlyWriterSends =>
+      'Μόνο το άτομο που έγραψε ένα κρατημένο μήνυμα μπορεί να το στείλει.';
+
+  @override
+  String get steeringRefusalNotYours =>
+      'Αυτά τα κρατημένα μηνύματα ανήκουν σε άλλους. Μόνο το άτομο που έγραψε ένα μήνυμα μπορεί να το στείλει.';
+
+  @override
+  String improvementEvaluationSolved(
+    int pairedRuns,
+    int candidateSolved,
+    int baselineSolved,
+  ) {
+    String _temp0 = intl.Intl.pluralLogic(
+      pairedRuns,
+      locale: localeName,
+      other: 'Σε $pairedRuns ζευγαρωμένες εκτελέσεις',
+      one: 'Σε 1 ζευγαρωμένη εκτέλεση',
+    );
+    return '$_temp0, η αλλαγή έλυσε $candidateSolved και η τρέχουσα δεξιότητα έλυσε $baselineSolved.';
+  }
+
+  @override
+  String improvementEvaluationWorse(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count εργασίες απέδωσαν χειρότερα με την αλλαγή.',
+      one: '1 εργασία απέδωσε χειρότερα με την αλλαγή.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String improvementEvaluationCostlier(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count εργασίες κόστισαν περισσότερο με την αλλαγή.',
+      one: '1 εργασία κόστισε περισσότερο με την αλλαγή.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String improvementEvaluationHarnessErrors(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count εκτελέσεις έπεσαν σε σφάλμα του harness.',
+      one: '1 εκτέλεση έπεσε σε σφάλμα του harness.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get improvementEvaluationIncomplete =>
+      'Η αξιολόγηση δεν εκτελέστηκε πλήρως.';
+
+  @override
+  String workFeedLimitParkExpires(String time) {
+    return 'Λήγει $time';
+  }
+
+  @override
+  String workFeedSchedulePaused(String person, String agent) {
+    return 'Το χρονοδιάγραμμα για το $agent τέθηκε σε παύση από $person.';
+  }
+
+  @override
+  String get goalCardApproveNotYours =>
+      'Μόνο το πρόσωπο που ξεκίνησε την εκτέλεση pipeline μπορεί να εγκρίνει την ολοκλήρωση αυτού του στόχου.';
+
+  @override
+  String get goalCardObjective => 'Ο αντικειμενικός σκοπός';
+
+  @override
+  String get planNeedsWrite =>
+      'Η έγκριση ή η αλλαγή αυτού του σχεδίου απαιτεί πρόσβαση εγγραφής σε κάθε αποθετήριο αυτού του χώρου. Ένας διαχειριστής χώρου εργασίας μπορεί να τη χορηγήσει.';
+
+  @override
+  String scheduleSpentWithChain(String spent, String cap) {
+    return '$spent από $cap, υπολογίζοντας κάθε χρονοδιάγραμμα της αλυσίδας του';
+  }
 }

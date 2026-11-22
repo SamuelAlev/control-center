@@ -38,11 +38,9 @@ extension _SpaceMessages on _SpaceScreenState {
       try {
         final client = ref.read(rpcClientProvider).value;
         if (client == null) throw StateError('Connection unavailable');
-        await RemoteSpaceReadRepository(client).markSpaceRead(
-          widget.workspaceId,
-          widget.spaceId,
-          conversationId: widget.conversationId,
-        );
+        await RpcConversationReadRepository(
+          client,
+        ).markConversationRead(widget.workspaceId, widget.conversationId, '');
         _lastReadId = id;
       } catch (error) {
         _set(() => _readError = error);
@@ -208,3 +206,8 @@ bool _sameValue(Object? a, Object? b) {
   }
   return a == b;
 }
+
+bool _queued(MessageDto message) =>
+    message.messageType == 'steering' &&
+    message.metadata is Map &&
+    const {'queued', 'held'}.contains((message.metadata as Map)['steerState']);

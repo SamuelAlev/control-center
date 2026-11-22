@@ -77,9 +77,15 @@
 # where churn and age join the meta line. The newsfeed article card moved its
 # thumbnails to article_thumbnail.dart instead. Lowered notification_bell.dart,
 # which lazy-loading the notifications shrank.
+# Lowered 2026-11-20 (goal.pursue step): node_config_editor.dart lost its
+# agent picker to node_agent_picker.dart, and node_type_visuals.dart falls
+# back to a step kind's visual.
+# Lowered 2026-11-20 (review round): agent_logs_tab.dart is within budget
+# (its run row and run viewer are agent_run_row.dart and
+# agent_run_viewer_dialog.dart), and plan_studio_screen.dart lost its
+# clarifications list to plan_clarifications.dart.
 lib/features/agents/presentation/screens/agent_registry_screen.dart  628
-lib/features/agents/presentation/widgets/agent_form_dialog.dart  746
-lib/features/agents/presentation/widgets/agent_logs_tab.dart  483
+lib/features/agents/presentation/widgets/agent_form_dialog.dart  737
 lib/features/agents/presentation/widgets/org_chart_view.dart  509
 lib/features/calendar/presentation/screens/calendar_screen.dart  524
 lib/features/calendar/presentation/widgets/calendar_event_detail_panel.dart  977
@@ -99,7 +105,7 @@ lib/features/meetings/presentation/widgets/detail/meeting_playback_bar.dart  422
 lib/features/meetings/presentation/widgets/detail/meeting_transcript_tab.dart  846
 lib/features/memory/presentation/widgets/knowledge_graph_layout.dart  391
 lib/features/messaging/presentation/widgets/bubbles/agent_turn.dart  486
-lib/features/messaging/presentation/widgets/bubbles/transcript_segment_row.dart  376
+lib/features/messaging/presentation/widgets/bubbles/transcript_segment_row.dart  340
 lib/features/messaging/presentation/widgets/context_usage_flyout.dart  304
 lib/features/messaging/presentation/widgets/conversations_sidebar_section.dart  530
 lib/features/messaging/presentation/widgets/message_feed.dart  307
@@ -122,8 +128,8 @@ lib/features/pipelines/presentation/screens/pipeline_run_screen.dart  616
 lib/features/pipelines/presentation/screens/pipeline_template_editor_screen.dart  1086
 lib/features/pipelines/presentation/screens/pipelines_screen.dart  510
 lib/features/pipelines/presentation/widgets/condition_config_editor.dart  447
-lib/features/pipelines/presentation/widgets/node_config_editor.dart  776
-lib/features/pipelines/presentation/widgets/node_type_visuals.dart  354
+lib/features/pipelines/presentation/widgets/node_config_editor.dart  734
+lib/features/pipelines/presentation/widgets/node_type_visuals.dart  353
 lib/features/pipelines/presentation/widgets/pipeline_canvas.dart  429
 lib/features/pipelines/presentation/widgets/pipeline_editor_canvas.dart  536
 lib/features/pipelines/presentation/widgets/pipeline_editor_geometry.dart  407
@@ -133,7 +139,7 @@ lib/features/pipelines/presentation/widgets/pipeline_quick_insert.dart  428
 lib/features/pipelines/presentation/widgets/pipeline_run_waterfall.dart  456
 lib/features/pipelines/presentation/widgets/pipeline_step_detail_panel.dart  905
 lib/features/pipelines/presentation/widgets/trigger_node_panel.dart  388
-lib/features/plan_studio/presentation/screens/plan_studio_screen.dart  670
+lib/features/plan_studio/presentation/screens/plan_studio_screen.dart  629
 lib/features/plan_studio/presentation/screens/plans_screen.dart  344
 lib/features/plan_studio/presentation/widgets/plan_canvas.dart  652
 lib/features/plan_studio/presentation/widgets/plan_node_inspector.dart  624

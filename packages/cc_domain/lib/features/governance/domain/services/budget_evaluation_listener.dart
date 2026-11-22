@@ -9,37 +9,31 @@ import 'package:cc_domain/features/governance/domain/services/budget_governance_
 
 /// Evaluates an agent's budget the moment one of its runs completes.
 ///
-/// On [AgentRunCompleted] it asks the [BudgetGovernanceService] to evaluate the
+/// On [AgentRunSettled] it asks the [BudgetGovernanceService] to evaluate the
 /// agent: a spend that crosses the soft threshold records a warning incident,
 /// and a spend that exhausts the budget records a hard incident AND auto-pauses
 /// the agent (its lifecycle flips to `paused`, so it stops being dispatchable).
-/// The completed run's cost is already persisted by the time the event fires,
-/// so the evaluation sees the up-to-date monthly spend.
+/// The event is published after the run's terminal write, so the evaluation
+/// sees the up-to-date monthly spend.
 class BudgetEvaluationListener {
   /// Creates a [BudgetEvaluationListener].
   BudgetEvaluationListener({required this.eventBus, required this.governance});
 
-  /// Bus carrying [AgentRunCompleted].
+  /// Bus carrying [AgentRunSettled].
   final DomainEventBus eventBus;
 
   /// Performs the spend evaluation + hard-stop / warning bookkeeping.
   final BudgetGovernanceService governance;
 
-  StreamSubscription<DomainEvent>? _sub;
+  StreamSubscription<AgentRunSettled>? _sub;
 
   /// Starts listening.
   void start() {
-    _sub = eventBus.on<DomainEvent>().listen(_onEvent);
+    _sub = eventBus.on<AgentRunSettled>().listen(_onEvent);
   }
 
-  Future<void> _onEvent(DomainEvent event) async {
-    if (event is! AgentRunCompleted) {
-      return;
-    }
+  Future<void> _onEvent(AgentRunSettled event) async {
     final workspaceId = event.workspaceId;
-    if (workspaceId == null) {
-      return;
-    }
     try {
       await governance.evaluateAgent(
         workspaceId: workspaceId,

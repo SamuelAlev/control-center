@@ -180,6 +180,45 @@ void main() {
         equals(kSettingsFieldLabelWidth + AppSpacing.lg),
       );
     });
+
+    for (final direction in TextDirection.values) {
+      testWidgets('an inline note sits straight under its control, not under '
+          'a taller label block, in ${direction.name}', (tester) async {
+        tester.view.physicalSize = const Size(900, 700);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+        await tester.pumpWidget(
+          testWrap(
+            const SingleChildScrollView(
+              child: SettingsField(
+                label: 'Time per script',
+                // Long enough to wrap the label column past the control.
+                description:
+                    'Time spent waiting for a person does not count, and '
+                    'neither does time spent queued behind other scripts.',
+                hint: 'Default 300. From 1 to 1,500.',
+                controlWidth: 200,
+                child: SizedBox(key: Key('control'), height: 40),
+              ),
+            ),
+            textDirection: direction,
+          ),
+        );
+
+        final control = tester.getRect(find.byKey(const Key('control')));
+        final note = tester.getRect(find.text('Default 300. From 1 to 1,500.'));
+        final description = tester.getRect(
+          find.textContaining('Time spent waiting'),
+        );
+        expect(description.bottom, greaterThan(control.bottom + AppSpacing.sm));
+        expect(note.top, equals(control.bottom + AppSpacing.xs));
+        if (direction == TextDirection.ltr) {
+          expect(note.left, equals(control.left));
+        } else {
+          expect(note.right, equals(control.right));
+        }
+      });
+    }
   });
 
   group('SettingsToggle', () {

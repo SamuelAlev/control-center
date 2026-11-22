@@ -2,7 +2,7 @@
 title: Usa la modalità piano
 description: Porta uno spazio in modalità piano, ottieni un piano tipizzato e approvalo per trasformarlo in lavoro in esecuzione.
 slug: it-IT/manuale/guide/modalita-piano
-sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
+sourceHash: accf49606e5e8597d3ea76e3274f08d3854996dc
 ---
 
 Questa guida mostra come ottenere da un agente un piano strutturato prima che scriva
@@ -122,11 +122,7 @@ richiesta, la successiva chiamata a `exit_plan_mode` dell'agente porta lo spazio
 dalla modalità piano alla modalità agente e sblocca i suoi strumenti che mutano. Un
 rifiuto gli permette di aprire una nuova richiesta su un piano rivisto.
 
-Per uscire dalla modalità piano, cambia il menu a discesa del composer (oppure
-Shift+Tab), o approva il piano inviato. `exit_plan_mode` apre un'approvazione
-durevole, decisa con lo strumento MCP `decide_approval`. L'overlay dei guardrail
-per le chiamate agli strumenti bloccate è una coda diversa, in memoria, e non
-trasporta le richieste di uscita dal piano.
+Per uscire dalla modalità piano, cambia il menu a discesa del composer (oppure Shift+Tab), o approva il piano inviato. `exit_plan_mode` apre un'approvazione durevole, che un'esecuzione di agente decide con lo strumento MCP `decide_approval`. L'overlay dei guardrail per le chiamate agli strumenti bloccate è una coda diversa, in memoria, e non trasporta le richieste di uscita dal piano.
 
 ## La modalità piano in un passaggio di pipeline
 

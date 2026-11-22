@@ -14,6 +14,10 @@ class SupersedePolicyTool extends McpTool {
   @override
   String get name => 'supersede_policy';
 
+  /// Not for scripts: it changes policy (see [McpTool.scriptCallable]).
+  @override
+  bool get scriptCallable => false;
+
   @override
   String get description =>
       'Retires a memory policy that is no longer accurate — marks it inactive '

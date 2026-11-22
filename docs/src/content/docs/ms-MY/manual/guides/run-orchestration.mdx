@@ -2,7 +2,7 @@
 title: Jalankan orkestrasi
 description: Minta rancangan daripada orkestrator, semak dan suntingnya dalam Plan Studio, luluskannya sekali dan biarkan pipeline yang dijana melakukan kerja itu.
 slug: ms-MY/manual-pengguna/panduan-cara/jalankan-orkestrasi
-sourceHash: 086301be6c1957f6336294720967813c3050ed25
+sourceHash: cc4390cbac6c2122dd24c23bcef20693f40121bb
 ---
 
 Panduan ini menunjukkan cara mengubah satu matlamat besar menjadi rancangan
@@ -64,21 +64,13 @@ Tekan **Anggar** pada bar kelulusan untuk julat kos, tempoh dan jejari letupan
 sebelum anda meluluskan. Lihat
 [Bekerja dalam Plan Studio](/ms-MY/manual-pengguna/panduan-cara/plan-studio/) untuk editor penuh.
 
-:::note[Bajet bukan had perbelanjaan]
-Bajet sesuatu cadangan dibandingkan dengan _anggaran_ pada bar kelulusan:
-apabila hujung tinggi anggaran melebihi bajet itu, jumlahnya bertukar merah
-dengan amaran melebihi bajet. Tiada apa-apa menyemak perbelanjaan semasa
-rancangan dilaksanakan, jadi ia tidak akan menghentikan atau menggagalkan
-sesuatu larian. Untuk hentian perbelanjaan yang sebenar, gunakan polisi bajet
-setiap ejen — lihat [Urus kos](/ms-MY/manual-pengguna/panduan-cara/urus-kos/).
+:::note[Bajet menahan larian]
+Bajet sesuatu cadangan dibandingkan dengan _anggaran_ pada bar kelulusan: apabila hujung tinggi anggaran melebihi bajet itu, jumlahnya bertukar merah dengan amaran melebihi bajet. Sebaik sahaja rancangan dilaksanakan, pelayan menyemak perbelanjaan sebelum setiap langkah baharu. Pada bajet, larian itu ditahan dan tiada yang baharu bermula; langkah yang sedang berjalan akan selesai. Sesiapa yang memohon larian itu mendapat pemberitahuan dan menekan **Naikkan had** pada halaman larian pipeline untuk meneruskannya. Lihat [Urus kos](/ms-MY/manual-pengguna/panduan-cara/urus-kos/).
 :::
 
 ## Langkah 3: Luluskan
 
-Luluskan rancangan itu, daripada kad sembang atau daripada bar kelulusan Plan
-Studio. **Inilah satu-satunya keputusan yang anda buat.** Meluluskan adalah
-khusus pengendali — tiada alat MCP untuknya, jadi ejen boleh mencadangkan dan
-menyemak semula tetapi tidak pernah meluluskan rancangannya sendiri.
+Luluskan rancangan itu, daripada kad sembang atau daripada bar kelulusan Plan Studio. **Inilah satu-satunya keputusan yang anda buat.** Meluluskan adalah khusus pengendali — tiada alat MCP untuknya, jadi ejen boleh mencadangkan dan menyemak semula tetapi tidak pernah meluluskan rancangannya sendiri. Meluluskan memerlukan akses tulis kepada repositori ruang, dan larian itu kemudiannya bertindak untuk orang yang meluluskannya.
 
 Dari sini, satu pematerial deterministik (fungsi tulen, tanpa LLM) menukar
 cadangan itu menjadi [pipeline](/ms-MY/manual-pengguna/konsep/pipeline/) sebenar dan mencipta
@@ -116,12 +108,7 @@ induk ditanda lengkap, kemudian `completed`.
 Tekan **Batal orkestrasi** pada kad dalam sembang, atau **Batal larian** pada
 bar kelulusan Plan Studio. Pembatalan meruntuhkan kerja yang sedang berjalan.
 
-Sesuatu orkestrasi gagal apabila pematerialan gagal, atau apabila larian
-pipeline yang dijananya gagal (kajian, perbincangan, sintesis atau persist —
-langkah-langkah itu tidak diteruskan apabila gagal). Langkah **kerja** yang
-dijana sentiasa diteruskan apabila gagal, jadi satu sub-tiket yang gagal tidak
-menggagalkan larian itu. Tiada laluan kegagalan melebihi bajet dan tiada ambang
-"setiap sub-tiket gagal".
+Sesuatu orkestrasi gagal apabila pematerialan gagal, atau apabila larian pipeline yang dijananya gagal (kajian, perbincangan, sintesis atau persist — langkah-langkah itu tidak diteruskan apabila gagal). Langkah **kerja** yang dijana sentiasa diteruskan apabila gagal, jadi satu sub-tiket yang gagal tidak menggagalkan larian itu. Mencapai bajet menahan larian dan bukannya menggagalkannya; dan tiada ambang "setiap sub-tiket gagal".
 
 ## Panduan berkaitan
 

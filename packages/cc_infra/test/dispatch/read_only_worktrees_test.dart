@@ -119,6 +119,32 @@ void main() {
       );
     });
 
+    test('a read-only run binds every worktree read-only and asks for no '
+        'grant, even for a person who may write both', () async {
+      final asked = <(String, String, String?)>[];
+      for (final writable in <List<String> Function(
+        (String, String, String?),
+      )?>[
+        (call) {
+          asked.add(call);
+          return [tree.alpha, tree.beta];
+        },
+        null,
+      ]) {
+        final spec = await tree
+            .session(writable: writable, readOnly: true)
+            .sandboxSpecForTesting();
+        expect(
+          {
+            for (final m in spec.bindMounts)
+              if (m.readOnly && _inRepos(tree, m)) m.hostPath,
+          },
+          {tree.alpha, tree.beta},
+        );
+      }
+      expect(asked, isEmpty);
+    });
+
     test('a grant change between two runs changes the spec, so no warm '
         'sandbox is reused', () async {
       final before = await tree
@@ -283,6 +309,7 @@ class _WritingLoop implements AgentLoop {
     required String userMessage,
     required List<HarnessTool> tools,
     List<HarnessTool> deferredTools = const [],
+    List<HarnessTool> scriptTools = const [],
     required LlmProviderPort provider,
     HarnessToolContext? context,
     AgentLoopConfig config = const AgentLoopConfig(),
@@ -344,7 +371,9 @@ final class _Tree {
     List<String> Function((String, String, String?) call)? writable,
     String? requestedBy = 'olga',
     AgentLoop? loop,
+    bool readOnly = false,
   }) => DispatchSession(
+    freshHistory: false,
     deps: SandboxDispatchDeps(
       hostExecution: const HostExecutionGate(
         posture: HostExecutionPosture.offByOwner,
@@ -391,6 +420,7 @@ final class _Tree {
     runLogId: 'run-1',
     requestedByUserId: requestedBy,
     mode: Mode.chat,
+    readOnly: readOnly,
   );
 }
 

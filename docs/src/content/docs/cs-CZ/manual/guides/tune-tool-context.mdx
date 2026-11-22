@@ -2,7 +2,7 @@
 title: Laděte kontext nástrojů agenta
 description: Podívej se, co běh opravdu posílá, změň, které nástroje se načtou předem, a rozliš, jestli špatná volba nástroje byla minutí vyhledání, nebo problém promptu.
 slug: cs-CZ/prirucka/navody/ladeni-kontextu-nastroju
-sourceHash: e19fcf434fe3f249cbb44b3702b530202f1c9dcf
+sourceHash: 22a4306a97aa8da0332f8e3e20e06ed86119f1d5
 ---
 
 Tenhle návod je o praktické práci s dvouúrovňovou plochou nástrojů: co běh posílá, jak to změnit a jak diagnostikovat agenta, který sáhl po špatném nástroji. Proč to funguje právě tak, čti v [Kontext nástrojů a cache promptů](/cs-CZ/prirucka/koncepty/kontext-nastroju/).
@@ -13,25 +13,26 @@ Otevři konverzaci a klepni na ukazatel využití kontextu v záhlaví konverzac
 
 Tady záleží na dvou segmentech:
 
-- **Definice nástrojů** a **MCP a dynamické nástroje** — rezidentní sada, s reálnou cenou každého nástroje v tokenech.
+- **Definice nástrojů** a **MCP a dynamické nástroje** — přímá sada, s reálnou cenou každého nástroje v tokenech.
 - **Nástroje načtené na vyžádání** — odložený index. Každá položka se účtuje jen za jméno, protože požadavek nese jen to; když ji otevřeš, pořád uvidíš celý popis a schéma, takže víš, kolik by *stála*, kdyby ji běh načetl.
+
+V běhu s `repl` jsou nástroje, kterých skript dosáhne, pojmenovány v systémovém promptu, ale neobjevují se v žádném ze dvou segmentů.
 
 Když je odložený segment prázdný, má tenhle server odložení vypnuté. Zkontroluj `--tool-deferral` v [CLI `cc_server`](/cs-CZ/prirucka/referencni-prirucka/cc-server-cli/).
 
 ## Změň, které nástroje se načtou předem
 
-Rezidentní sada je politika, ne konfigurace — žije v `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) a platí pro každý běh:
+Přímá sada je politika, ne konfigurace — žije v `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) a platí pro každý běh:
 
-- `residentBuiltins` — slovník souborů a shellu.
-- `residentDiscovery` — `search_tools` a `list_my_tools`. Neodstraňuj je; přes ně se agent dostane ke všemu ostatnímu.
-- `residentMcpTools` — hrstka nástrojů Control Center, u kterých se schéma vyplatí na každém požadavku.
-- Blok daného režimu, pro nástroje, které ten [režim](/cs-CZ/prirucka/koncepty/rezimy/) použije skoro na každém tahu.
+- `directTools` — dvanáct nástrojů, které každý běh volá přímo: `read`, `write`, `edit`, `search`, `find`, `bash` a `read_output`; `ask_user` a `task`; `todo_write`, `search_memory` a `send_message`.
+- `residentDiscovery` — `search_tools` a `list_my_tools`. Neodstraňuj je; přes ně se agent dostane ke všemu ostatnímu. Běh s `repl` dostane `search_tools`, když se nějaký nástroj načítá až při prvním použití, a nedostane `list_my_tools`.
+- `directNamesFor(mode)` — nástroje, které daný [režim](/cs-CZ/prirucka/koncepty/rezimy/) přidává do vlastní smyčky: slovesa revize v režimu review, `submit_plan` v režimu Plan a `propose_orchestration` v režimu Orchestrate.
 
 Při úpravě platí dvě pravidla:
 
-**Přidej nástroj jen tehdy, když ho používá většina běhů.** Každé jméno stojí své schéma na každém požadavku každého běhu, a to natrvalo. Nástroj, který je důležitý, když přijde na řadu, ale celkově vzácný, patří do odložené poloviny — agent ho pořád najde.
+**Přidej nástroj jen tehdy, když ho používá většina běhů.** Každé jméno stojí své schéma na každém požadavku každého běhu, a to natrvalo. Nástroj, který je důležitý, když přijde na řadu, ale celkově vzácný, patří mimo přímou sadu — agent se k němu pořád dostane, ze skriptu nebo načtením při prvním použití.
 
-**Používej skutečné jméno nástroje.** Rezidentní jméno, které neodpovídá žádnému nástroji, je inertní: žádná chyba, žádné varování, nástroj se prostě odloží. `test/tooling/resident_tool_names_test.dart` to chytí a zároveň drží každý režim pod 40 rezidentními nástroji. O to tu jde — za tím pásmem se výběr nástrojů měřitelně zhoršuje.
+**Používej skutečné jméno nástroje.** Přímé jméno, které neodpovídá žádnému nástroji, je inertní: žádná chyba, žádné varování, nástroj prostě zůstane mimo přímou sadu. `test/tooling/resident_tool_names_test.dart` to chytí a zároveň drží přímou sadu každého režimu nejvýše na 20 nástrojích a každý režim nejvýše na 40 nástrojích poslaných předem. O to tu jde — za tím pásmem se výběr nástrojů měřitelně zhoršuje.
 
 Povinná a připnutá slovesa režimu se doplní sama, takže vlastní výstupní sloveso režimu vypisovat nemusíš.
 
@@ -73,4 +74,4 @@ Obvyklé příčiny, od nejpravděpodobnější:
 - **Změna modelu nebo úsilí uprostřed konverzace.** Obě změní prefix. Subagenti se tu zvlášť snadno pokazí: pouštět potomky na nižším úsilí kvůli úspoře může stát víc na ztraceném sdílení cache, než to ušetří.
 - **Častá komprimace.** Komprimace historii přepisuje schválně, takže její cena je reálná; oprava je komprimovat zřídka a do hloubky, ne často a mělce.
 
-Vypnutí odložení přes `--tool-deferral=off` je platné A/B, když chceš izolovat, jestli změna chování přišla z dvouúrovňové plochy. Vyrobí přesně požadavek z doby před odložením, takže když chování přetrvá i po vypnutí, plocha není příčina.
+Vypnutí odložení přes `--tool-deferral=off` je platné A/B, když chceš izolovat, jestli změna chování přišla z dvouúrovňové plochy. Při vypnutí běh posílá definici každého připuštěného nástroje, s tím rozdílem, že běh s `repl` pořád volá ze skriptů ty nástroje, které skript volat smí, takže když chování přetrvá i při vypnutí, odložení není příčina.

@@ -13,6 +13,11 @@ class GetMyNotesTool extends McpTool {
   @override
   String get name => 'get_my_notes';
 
+  /// `agent_id` names the calling agent, never a target: forced from the
+  /// call scope, so a run cannot act as another agent.
+  @override
+  Set<String> get forcedScopeKeys => const {'agent_id'};
+
   @override
   String get description =>
       'Retrieves the agent\'s private working memory notes.';

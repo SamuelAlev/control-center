@@ -70,14 +70,21 @@ class OrchestrationRunListener {
           (cancelled
               ? 'Orchestration run cancelled.'
               : 'Orchestration run failed.');
-      await _orchestrations.update(
-        o.copyWith(
-          status: status,
-          errorMessage: failed ? message : null,
-          completedAt: now,
-          updatedAt: now,
-        ),
+      final written = await _orchestrations.change(
+        o.workspaceId,
+        o.id,
+        (current) => current.status.isTerminal
+            ? null
+            : current.copyWith(
+                status: status,
+                errorMessage: failed ? message : null,
+                completedAt: now,
+                updatedAt: now,
+              ),
       );
+      if (written == null) {
+        return;
+      }
       await _failParentTicket(o, cancelled: cancelled, message: message);
     } on Object catch (e, st) {
       CcDomainLog.error(

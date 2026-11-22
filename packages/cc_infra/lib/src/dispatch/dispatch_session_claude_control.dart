@@ -15,9 +15,10 @@ const _claudeInterruptGrace = Duration(seconds: 3);
 /// with, stopping it, and what it reports about its plan and its session.
 extension _ClaudeControlMethods on DispatchSession {
   /// Whether this run is the idle compaction of a session rather than a turn.
-  /// See [kClaudeIdleCompactionPrompt].
+  /// See [kClaudeIdleCompactionPrompt]. Read from [userText], which only a
+  /// signed-in person's run carries: another agent's `/compact` is a message.
   bool get _claudeCompactOnly =>
-      (promptParts?.userText ?? prompt).trim() == kClaudeIdleCompactionPrompt;
+      userText?.trim() == kClaudeIdleCompactionPrompt;
 
   /// The MCP servers to hand `claude` over stdin, or null when no resolver is
   /// wired. Same scope and credentials as [_resolveMcpConfigPath].
@@ -65,6 +66,9 @@ extension _ClaudeControlMethods on DispatchSession {
   }) {
     final stdin = StreamController<String>();
     _claude.stdin = stdin;
+    // A task a late line of the last attempt reported is not this one's.
+    _claude.backgroundTasks.clear();
+    _claude.backgroundYielded = false;
     final lines = [
       _claudeUserLine(firstMessage),
       for (final text in _claude.steered) _claudeUserLine(text),
@@ -146,6 +150,11 @@ extension _ClaudeControlMethods on DispatchSession {
     // Closed by the Claude transport when its turn ends.
     // ignore: close_sinks
     final stdin = _claude.stdin;
+    if (_claudeHeldIdle) {
+      // No turn to interrupt: the wait on background tasks ends at once.
+      _closeClaudeStdin();
+      return;
+    }
     if (stdin == null || _claude.init == null || _claude.heldLines != null) {
       return;
     }
@@ -178,6 +187,8 @@ extension _ClaudeControlMethods on DispatchSession {
   void _closeClaudeStdin() {
     final stdin = _claude.stdin;
     _claude.stdin = null;
+    _endClaudeBackgroundHold();
+    _claude.backgroundTasks.clear();
     _claude.mcpAnswerTimer?.cancel();
     _claude.mcpAnswerTimer = null;
     _claude.mcpRequestId = null;
@@ -228,9 +239,14 @@ extension _ClaudeControlMethods on DispatchSession {
     if (messages.isEmpty) {
       return;
     }
+    // A turn begins: a wait on background tasks is no longer idle.
+    _noteClaudeBackgroundTurn();
+    // Steering is never a command, whoever pushed it (a person mid-run, a
+    // wake, the server): Claude Code would run a slash-leading line as one.
     for (final message in messages) {
-      _claude.steered.add(message.content);
-      stdin.add(_claudeUserLine(message.content));
+      final text = nonCommandTurnInput(message.content);
+      _claude.steered.add(text);
+      stdin.add(_claudeUserLine(text));
     }
     addEvent(
       DebugEvent(
@@ -308,6 +324,220 @@ extension _ClaudeControlMethods on DispatchSession {
     // account this moment, and the failure is still a round trip away.
     if (attempt.accountId.isNotEmpty) {
       unawaited(_reportClaudeAccountExhausted(attempt.accountId, reset));
+    }
+  }
+}
+
+/// The longest a turn keeps `claude`'s stdin open for its background Bash
+/// tasks, from the turn's end: the default the built-in harness gives a
+/// background command (`BackgroundCommandRegistry.defaultTimeoutSeconds`,
+/// 600 s). The stream reports no task's own timeout, so this bound is the
+/// only one; a task whose end the stream never reports costs at most this
+/// much of an idle run, and nothing waits behind it (the run yields).
+const _claudeBackgroundBound = Duration(
+  seconds: BackgroundCommandRegistry.defaultTimeoutSeconds,
+);
+
+/// After the last background task ended, how long `claude` gets to start
+/// its next turn by itself before stdin closes as at any turn end.
+const _claudeBackgroundGrace = Duration(minutes: 1);
+
+/// The park name the silence watchdog skips while a turn waits, idle, on
+/// its background tasks.
+const _claudeBackgroundPark = 'claude-background';
+
+/// Background Bash tasks of the Claude Code lane (plan section 11, defect
+/// 24): a turn that ends while one is live keeps stdin open, so the CLI can
+/// continue when the task finishes.
+///
+/// - The wait is idle: the silence watchdog is paused only while nothing
+///   happens; steering written to the CLI, or any line it prints (a new
+///   turn), runs the watchdog again until that turn's result.
+/// - It is bounded by [_claudeBackgroundBound] from the turn's end.
+/// - It blocks nothing: the run reports itself held for background tasks
+///   only (`BackgroundHoldView`), and the wake queue makes it yield when
+///   work for this agent here waits; a person's stop ends it at once.
+extension _ClaudeBackgroundTasks on DispatchSession {
+  /// Routes one decoded stdout line to the Claude parser, when this run is
+  /// a Claude Code run. False otherwise.
+  bool _routeClaudeLine(Map<String, dynamic> json) {
+    final parser = _claude.parser;
+    if (parser == null) {
+      return false;
+    }
+    // The first stdout byte of this attempt: the one transport boundary the
+    // adapter can honestly time (the CLI hides the provider request).
+    _noteClaudeFirstStdout();
+    if (json['type'] != 'system') {
+      // A turn's line (a task's lifecycle line or an init is not the CLI at
+      // work): during a background wait, the CLI continued by itself.
+      _noteClaudeBackgroundTurn();
+    }
+    parser.process(json);
+    return true;
+  }
+
+  /// The first structured stdout line of the current attempt — the transport
+  /// boundary the adapter can see. Called from [_routeClaudeLine].
+  void _noteClaudeFirstStdout() {
+    if (!_claude.sawFirstStdout) {
+      _claude.sawFirstStdout = true;
+      addEvent(
+        StageTimingEvent(
+          stage: RunStage.firstResponseByte,
+          offsetMs: _claudeOffsetMs(),
+          durationMs: _claudeAttemptDurationMs(),
+          source: RunTimingSource.transport,
+          provider: _claudeProvider,
+          modelId: _claude.init?.model ?? modelId,
+        ),
+      );
+    }
+  }
+
+  /// Whether this run is live only because its turn waits, idle, on its
+  /// background tasks, or is yielding that wait.
+  bool get _claudeHeldIdle =>
+      _claude.backgroundYielded ||
+      (_claude.backgroundIdleSince != null && !_claude.backgroundTurnActive);
+
+  /// The stream's report of a background Bash task.
+  void _onClaudeBackgroundTask(ClaudeBackgroundTaskEvent event) {
+    switch (event) {
+      case ClaudeBackgroundTaskStarted(:final taskId):
+        _claude.backgroundTasks.add(taskId);
+        addEvent(
+          DebugEvent(content: '[claude] background task $taskId started'),
+        );
+      case ClaudeBackgroundTaskEnded(:final taskId, :final status):
+        if (!_claude.backgroundTasks.remove(taskId)) {
+          return;
+        }
+        addEvent(
+          DebugEvent(
+            content:
+                '[claude] background task $taskId ended'
+                '${status == null ? '' : ' ($status)'}',
+          ),
+        );
+        if (_claude.backgroundTasks.isEmpty &&
+            _claude.backgroundIdleSince != null) {
+          _claude.backgroundEndedAt = clock.now();
+        }
+    }
+  }
+
+  /// At a successful turn's end with nothing queued: keeps stdin open while
+  /// a background task is live. True when the turn now waits.
+  bool _holdClaudeForBackground() {
+    final live = _claude.backgroundTasks.length;
+    if (live == 0 || _claude.stdin == null) {
+      return false;
+    }
+    _claude.backgroundCheck?.cancel();
+    _claude
+      ..backgroundIdleSince = clock.now()
+      ..backgroundTurnActive = false
+      ..backgroundEndedAt = null;
+    _noteLoopPark(_claudeBackgroundPark, parked: true);
+    addEvent(
+      DebugEvent(
+        content:
+            '[claude] waiting for $live background task(s) to finish before '
+            'the turn ends (at most ${_claudeBackgroundBound.inMinutes} min).',
+      ),
+    );
+    _claude.backgroundCheck = Timer.periodic(
+      _parks.checkEvery,
+      (_) => _checkClaudeBackgroundHold(),
+    );
+    return true;
+  }
+
+  /// A turn began during the wait (steering was written, or the CLI
+  /// printed): the silence watchdog runs again until its result.
+  void _noteClaudeBackgroundTurn() {
+    if (_claude.backgroundIdleSince == null || _claude.backgroundTurnActive) {
+      return;
+    }
+    _claude.backgroundTurnActive = true;
+    _noteLoopPark(_claudeBackgroundPark, parked: false);
+  }
+
+  /// Ends the idle wait now, for work that waits for this agent here.
+  void _yieldClaudeBackgroundHold() {
+    if (!_claudeHeldIdle || _claude.backgroundYielded) {
+      return;
+    }
+    _claude.backgroundYielded = true;
+    addEvent(
+      DebugEvent(
+        content:
+            '[claude] work is waiting for this agent: ending the wait for '
+            'background tasks.',
+      ),
+    );
+    _closeClaudeStdin();
+  }
+
+  void _checkClaudeBackgroundHold() {
+    // Closed by `_closeClaudeStdin`.
+    // ignore: close_sinks
+    final stdin = _claude.stdin;
+    final since = _claude.backgroundIdleSince;
+    if (stdin == null || since == null) {
+      _endClaudeBackgroundHold();
+      return;
+    }
+    if (_cancelSource.isCancelled) {
+      _closeClaudeStdin();
+      return;
+    }
+    if (_claude.backgroundTurnActive) {
+      // A turn runs: its result decides.
+      return;
+    }
+    // Follow-ups wait for a turn's end; this one ended already.
+    final followUps = _steering.drainFollowUp();
+    if (followUps.isNotEmpty) {
+      _writeClaudeSteering(stdin, followUps);
+      return;
+    }
+    final now = clock.now();
+    if (_claude.backgroundTasks.isNotEmpty) {
+      if (now.difference(since) >= _claudeBackgroundBound) {
+        addEvent(
+          DebugEvent(
+            content:
+                '[claude] background tasks still running '
+                '${_claudeBackgroundBound.inMinutes} min after the turn; '
+                'ending the turn.',
+          ),
+        );
+        _closeClaudeStdin();
+      }
+      return;
+    }
+    final ended = _claude.backgroundEndedAt ?? now;
+    if (now.difference(ended) >= _claudeBackgroundGrace) {
+      _closeClaudeStdin();
+    }
+  }
+
+  /// Ends a turn's wait on its background tasks (none: a no-op).
+  void _endClaudeBackgroundHold() {
+    _claude.backgroundCheck?.cancel();
+    _claude.backgroundCheck = null;
+    if (_claude.backgroundIdleSince == null) {
+      return;
+    }
+    final wasIdle = !_claude.backgroundTurnActive;
+    _claude
+      ..backgroundIdleSince = null
+      ..backgroundEndedAt = null
+      ..backgroundTurnActive = false;
+    if (wasIdle) {
+      _noteLoopPark(_claudeBackgroundPark, parked: false);
     }
   }
 }

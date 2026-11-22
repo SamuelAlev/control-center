@@ -1,8 +1,8 @@
 ---
 title: Adatok feltárása tartós kernelben
-description: Adjon egy ügynöknek olyan Python- vagy JavaScript-értelmezőt, amely megtartja a változóit a hívások között, diagramokat rajzol a csevegésbe, és a cellából hívhatja a saját eszközeit.
+description: Adjon egy ügynöknek olyan Python- vagy JavaScript-értelmezőt, amely megtartja a változóit a hívások között és diagramokat rajzol a csevegésbe.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/adatok-feltarasa-kernelben
-sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
+sourceHash: 8fcd77019bfae5088223822a12ef91c8a6879c5d
 ---
 
 Ez az útmutató bemutatja, hogyan érheti el, hogy egy ügynök egyszer betöltsön valami költséges dolgot, majd több kérdést is feltegyen róla, ahelyett hogy minden kérdésnél megfizetné a betöltés árát.
@@ -62,22 +62,9 @@ Ezeket a rendszer egyszerű kódra írja át, ahelyett hogy hibát adna:
 
 A `%pip` gyorsítótár-ürítése a lényeges: egy már importált modul esetében a futó értelmezőbe telepítés nem tesz semmit, így enélkül nem az imént telepített verzió fut.
 
-## Saját eszközök hívása a cellán belülről
+## Eszközök hívása kódból
 
-```python
-paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
-for path in paths.splitlines()[:100]:
-    contents = tool("read", {"path": path})
-    ...
-```
-
-A `tool(name, args)` visszalép az ügynök saját eszközregiszterébe. Ez azt jelenti, hogy egy cella szétágazhat akár száz fájlra, vagy a `task`-on keresztül delegálhat, anélkül hogy a modell tételenként egy-egy kört költene.
-
-:::caution[A híd nem kerüli meg a korlátokat]
-Egy hídon átmenő hívás ugyanahhoz az eszközregiszterhez oldódik fel, mint egy modell által kiadott hívás, így az `ActionClass`-szabályzat, a jóváhagyási kérések és minden burkoló ugyanúgy érvényesül. Egy olyan híd, amely átnyúlna a regiszteren, pontosan olyan rés lenne, mint amilyen a „írj egy egysoros Python-t”.
-:::
-
-A hídon átmenő hívás **felfüggeszti a cella időtúllépését**, amíg az függőben van. A keret a tétlenséget méri, nem a falióra szerinti időt — egy cella, amely alügynökökre ágazik szét, és négy percig vár, nem akadt meg, és a szétágazás közbeni leállítása a teljes kernel állapotát elveszítené.
+Egy cella nem hívhatja az ügynök eszközeit. Ha eszközökön kell ciklust futtatni kódban, az ügynök ehelyett egy [`repl`](/hu-HU/kezikonyv/fogalmak/kodmod/) szkriptet ír. Egy szkript sem hívhatja az `eval`-t: azt az ügynök közvetlenül hívja.
 
 ## Újrakezdés
 

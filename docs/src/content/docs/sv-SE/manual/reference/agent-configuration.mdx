@@ -2,7 +2,7 @@
 title: Agentkonfiguration
 description: Alla fält på agententiteten och de uppräkningar den använder.
 slug: sv-SE/handbok/referens/agentkonfiguration
-sourceHash: e77edc905bed16d2f7d5bcd19a62541d885f6aab
+sourceHash: 708808ecdf4d2fc769600241c46f85db411550a8
 ---
 
 Den här referensen listar alla fält på agententiteten, plus de uppräkningar och flaggor den använder. En steg-för-steg-genomgång av att skapa eller redigera en agent i appen finns i [Skapa och konfigurera en agent](/sv-SE/handbok/how-to-guider/skapa-agent/).
@@ -81,7 +81,7 @@ En oföränderlig, skiftlägesokänslig uppsättning skillidentifierare. Vid dis
 
 ## Skalhookar
 
-Skalhookar låter serverägaren köra egna skript runt en inbyggd harness-körning: en gång vid sessionsstart, före varje verktygsanrop och efter varje verktygsanrop. En hook är godtycklig kod, så hookar är värdkonfiguration. Bara serverägaren ställer in dem, för hand, på serverns maskin. Det finns ingen inställning i appen och ingen operation som skriver dem.
+Skalhookar låter serverägaren köra egna skript runt en agentkörning: en gång vid sessionsstart, före varje verktygsanrop och efter varje verktygsanrop, när agenten skulle avsluta sin tur, och före en komprimering. En hook är godtycklig kod, så hookar är värdkonfiguration. Bara serverägaren ställer in dem, för hand, på serverns maskin. Det finns ingen inställning i appen och ingen operation som skriver dem.
 
 För en agent ligger hookarna i dess egna mapp under serverns datakatalog:
 
@@ -91,22 +91,31 @@ För en agent ligger hookarna i dess egna mapp under serverns datakatalog:
 
 `<agent slug>` är namnet på agentens mapp i arbetsytan (`agents/<slug>/`). Den mappen ligger utanför varje arbetsytas lagring, och varje sandlåda döljer datakatalogen, så ingen medlem, körning eller terminal kan skriva i den.
 
-`hooks.json` kopplar någon av tre nycklar till ett skript, med en sökväg relativt hookmappen:
+`hooks.json` kopplar någon av fem nycklar till ett skript, med en sökväg relativt hookmappen:
 
 | Nyckel         | När den körs             | Vad dess exitkod betyder                                       |
 | -------------- | ------------------------ | -------------------------------------------------------------- |
 | `sessionStart` | En gång, när körningen startar | Inget; hooken observerar bara                            |
 | `preTool`      | Före varje verktygsanrop | `0` tillåter anropet; allt annat nekar det                     |
 | `postTool`     | Efter varje verktygsanrop | Inget; hooken observerar bara                                 |
+| `stop` | När agenten skulle avsluta sin tur | `2` med text på stdout håller körningen igång med den texten; allt annat låter turen avslutas |
+| `preCompact` | Före en komprimering | `0`: dess stdout läggs till det som sammanfattningen ska behålla |
 
 - Varje skript startas som en egen körbar fil, utan skal och utan argument, så det måste vara körbart och börja med en shebang-rad. Det tar emot händelsen som JSON på stdin: händelsens namn och, för verktygshookarna, verktygets namn med dess argument (`preTool`) eller dess resultat (`postTool`).
 - En hook körs som en av körningens verktygsprocesser, i agentens mapp för körningen. När servern sandlåder agenter körs den i körningens sandlåda. Den får en minimal miljö och inga av körningens inloggningsuppgifter: ingen forge- eller leverantörstoken och ingen gatewayåtkomst.
-- Varje hook har 30 sekunder. Dess utdata läses och kastas.
+- Varje hook har 30 sekunder. Utdata från `sessionStart`, `preTool` och `postTool` läses och kastas.
 - `preTool` stänger vid fel. En icke-noll-exitkod, en timeout eller ett skript som inte kan startas nekar verktygsanropet.
 - En sökväg som är absolut, saknas eller lämnar hookmappen (länkar lösta) nekas, och körningens logg säger vilken hook som nekades och varför. En nekad eller oläsbar `preTool`-hook nekar varje verktygsanrop tills den åtgärdas.
 - Ett `hooks`-block i `.agents/harness.json`, antingen i ett repo eller i agentens egen mapp, ignoreras. Ett repo är ofta någon annans kod, och agentens mapp kan skrivas av medlemmar och av körningar. Körningens logg säger att blocket ignorerades och var hookar i stället läses från.
 
-Skalhookar gäller bara den inbyggda harnessen. En konfigurerad `preTool`- eller `postTool`-hook gör att körningen anropar sina verktyg ett i taget.
+### Hookarna stop och preCompact
+
+- `stop` får `event: "stop"`, agentens sista meddelande (`last_message`), `stop_hook_active` (sant när det här stoppet följer en fortsättning som hooken orsakade) och `block_count` (hur många gånger den har hållit körningen igång hittills, från 0). För att hålla körningen igång avslutar den med `2` och skriver ut vad agenten ska göra härnäst. Texten, kapad till 2 000 tecken, når agenten som ett systemmeddelande.
+- En `stop`-hook håller en körning igång högst 3 gånger i en körning. Därefter körs den inte igen, och turen avslutas.
+- `stop` släpper igenom vid fel. En timeout, ett skript som inte kan starta, en exitkod som inte är `2`, eller en exitkod `2` med ingenting på stdout låter turen avslutas, så en trasig hook kan inte hålla en körning öppen.
+- `preCompact` får `event: "pre_compact"`. Dess stdout, kapad till 1 000 tecken, läggs till komprimeringens fokus. Ett skript som misslyckas bidrar med ingenting.
+
+Skalhookar gäller den inbyggda harnessen. På Claude Code körs också hookarna `stop` och `preCompact`: Claude Codes egna `Stop`- och `PreCompact`-hookar frågar servern, och servern kör ägarens skript på samma sätt. De andra tre nycklarna gäller bara den inbyggda harnessen. En konfigurerad `preTool`- eller `postTool`-hook gör att körningen anropar sina verktyg ett i taget.
 
 ## AgentLiveState (härledd)
 

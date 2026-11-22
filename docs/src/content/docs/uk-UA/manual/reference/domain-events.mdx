@@ -2,7 +2,7 @@
 title: Доменні події
 description: Повний каталог 54 доменних подій, їхніх корисних навантажень і серверних підписників, які їх споживають.
 slug: uk-UA/керівництво/довідка/доменні-події
-sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
+sourceHash: f58123448c0f31c95774bbaebee89f1509940896
 ---
 
 ## Шина подій
@@ -24,7 +24,10 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 | Подія               | Корисне навантаження                                   | Спрацьовує, коли                                         |
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | Робочий простір створено                                |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Агент завершує запуск (успішно або з помилкою)          |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Потік процесу агента завершується, до запису кінцевого стану. Зберігається лише для мосту PR-розмови й аналітики |
+| `AgentRunSettled` | `agentId`, `workspaceId`, `runId`, `status`, `endReason`, `costMicros`, `wakeIds`, `spaceId?`, `conversationId?`, `limitResetsAt?`, `requestedByUserId?`, `wakeReason?` | Кінцевий стан запуску записано; публікується рівно один раз на запуск. `endReason` — це `completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` або `serverStopped`. Запуск субагента не публікує жодного |
+| `GoalSettled` | `goalId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `status`, `hold?`, `summary?`, `requestedByUserId?` | Ціль завершується або починає чекати рев’ю людини |
+| `WakeRuleEnded` | `ruleId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `reason`, `requestedByUserId?` | Розклад або спостереження завершується: спрацював свій єдиний раз, минув строк, вичерпав запуски або витрати, скасований, його ціль завершилася, його людина вийшла |
 | `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | Агент починає чекати на людину: схвалення, відповідь на запитання `ask_user` або облікові дані для зупиненого запуску (`kind` — `approval`, `question` або `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Репозиторій зареєстровано; запускає фонову індексацію коду |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Навичку встановлено або оновлено; подія несе вердикт сканування її ланцюга постачання |
@@ -57,6 +60,16 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 | `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | Хтось згадав вас у коментарі до PR або коментарі рев’ю             |
 | `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | Хтось відповів у гілці рев’ю, у якій ви берете участь                          |
 | `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | Хтось закрив гілку рев’ю, у якій ви берете участь                              |
+
+### Спостереження за pull request
+
+Публікується відкритим опитувачем pull request для кожного pull request, який він опитує, незалежно від автора, для спостережень агентів `on:pr_*`. Усі три несуть `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `headRef` і `authorLogin`.
+
+| Подія | Додаткове корисне навантаження | Спрацьовує, коли |
+| ----------------------- | ----------------------------------------------- | ---------- |
+| `PrWatchChecksSettled` | `passing`, `failedChecks`, `failedCheckUrl?` | Завершилася кожна перевірка head-коміту pull request |
+| `PrWatchReviewActivity` | `decision`, `decisionChanged`, `newComments` | До pull request додано рев’ю або нові коментарі |
+| `PrWatchClosed` | `merged` | Pull request злито або закрито |
 
 ## Події повідомлень
 
@@ -167,14 +180,20 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 | Підготовка чат-простору (вбудовано) | `SpaceCreated`                                                                                       |
 | `PipelineTriggerDispatcher`         | Усі `DomainEvent`; кожен увімкнений тригер фільтрує за власним типом                                 |
 | `SubPipelineResumeListener`         | `PipelineRunCompleted`, `PipelineRunFailed`                                                          |
-| `PipelineCostRollupListener`        | `AgentRunCompleted`                                                                                  |
-| `BudgetEvaluationListener`          | `AgentRunCompleted`                                                                                  |
+| `PipelineCostRollupListener`        | `AgentRunSettled`                                                                                    |
+| `BudgetEvaluationListener`          | `AgentRunSettled`                                                                                    |
 | `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (лише запуски `meeting_summary`) |
-| `PipelineStepResumeListener`        | `AgentRunCompleted`                                                                                  |
-| `AgentRunTaskCompleter`             | `AgentRunCompleted`                                                                                  |
-| `GoalSupervisor`                    | `AgentRunCompleted`                                                                                  |
-| `CheckerDispatchListener`           | `AgentRunCompleted`                                                                                  |
-| `TeamRoutingService`                | `AgentRunCompleted`, `TicketAssigned`                                                                |
+| `PipelineStepResumeListener`        | `AgentRunSettled`                                                                                    |
+| `AgentRunTaskCompleter`             | `AgentRunSettled`                                                                                    |
+| `GoalSupervisor`                    | `AgentRunSettled` — вирішує наступний крок цілі                                                      |
+| `CheckerDispatchListener`           | `AgentRunSettled` — ставить перевіряльника в чергу як пробудження; пропускає сегменти цілі та рев’ю  |
+| `TeamRoutingService`                | `AgentRunSettled`, `TicketAssigned`                                                                  |
+| `WakeQueueService` | `AgentRunSettled` — доставляє пробудження, які чекали завершення запуску |
+| `WakeRuleService` | `AgentRunSettled` (цикли з власним темпом), `GoalSettled` (завершує розклади цілі), `PrWatch*`, `EnvironmentProcessExited`, `EnvironmentReady`, завершення тікетів і запусків конвеєра (спостереження), `WorkspaceMemberRemoved` (завершує розклади цієї людини) |
+| `PeerAskService` | `AgentRunSettled` — закриває запитання, які агенти ставили одне одному, і пробуджує того, хто питав |
+| `LimitParkService` | `AgentRunSettled` з `usageLimit` — чекає на скидання ліміту провайдера |
+| `ImprovementReviewService` | `GoalSettled` (перевірена ціль) і `AgentRunSettled` — ставить рев’ю покращення в чергу й читає його результат |
+| Крок цілі конвеєра (`goal.pursue`) | `GoalSettled`, `AgentRunSettled`, `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` — відновлює крок, зараховує витрати оркестрації й стежить за запуском конвеєра |
 | `OrchestrationRunListener`          | `PipelineRunCancelled`, `PipelineRunFailed`                                                          |
 | `MultiVendorTicketSyncCoordinator`  | `TicketCreated`, `TicketAssigned`, `TicketReassigned`, `TicketStatusChanged`, `TicketDetailsUpdated` |
 | `WorktreeGcListener`                | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`         |
@@ -227,6 +246,8 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 `AgentAwaitingInput` публікує `AgentAwaitingInputPublisher`: він стежить за новими записами в реєстрах схвалень і блокувань через облікові дані, а про кожне запитання `ask_user` йому повідомляє `AgentQuestionService`. Одне очікування — одна подія; коли очікування завершується, нічого не публікується.
 
 П’ять категорій авторських PR несуть `forUserId`, тож доходять до автора, а не до всіх у робочому просторі.
+
+П’ять кадрів для довготривалої роботи, кожен адресований людині, якої він стосується (`for_user_id`): `notifications/goal_settled` (з `GoalSettled`), `notifications/wake_rule_ended` (з `WakeRuleEnded`), `notifications/improvement_proposed`, `notifications/pipeline_run_held` (запуск конвеєра, утриманий на межі витрат оркестрації) і `notifications/waiting_digest` (раз на день, що чекає на людину). Кожен несе `notification_kind`: `notify` відповідає `agentRunCompleted`, `question` і `review` — `agentAwaitingInput`. Тепер кожен кадр сповіщення несе `notification_kind`, а кадр із `quiet: true` (розклад, що завершився, або ціль, що завершилася) потрапляє в центр сповіщень без тосту, звуку чи гучного push.
 
 `RemoteEventForwarder` додатково пересилає `TicketReassigned` як `notifications/ticket_reassigned`, а кожен `TaskLifecycleEvent` — як `notifications/task_<phase>`. Жодне з них не відображається на категорію сповіщень — вони керують живим інтерфейсом, а не центром сповіщень. Події членства не пересилаються як фрейми: вони анулюють кеш пересилача, а хости сесій відкидають підписки на робочі простори видаленого учасника.
 

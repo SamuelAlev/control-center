@@ -2,23 +2,33 @@
 title: Siklus hidup pengiriman agen
 description: Apa yang terjadi antara pesan yang masuk dan penutupan log run — perakitan prompt, worktree, identitas, apa yang membatasi sebuah run, dan bagaimana hasilnya dicatat secara jujur.
 slug: id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman
-sourceHash: 13e7fe3ed86c8659c5fec818e0b89737241e2b9d
+sourceHash: 07c46e22e30f1a10e64b7fb949c78bdae9747efa
 ---
 
 ## Apa itu pengiriman
 
 Pengiriman adalah satu run dari satu agen, dalam satu percakapan, pada satu adapter. Semuanya terjadi di `cc_server`: klien mengirim pesan lalu menyaksikan peristiwa mengalir kembali. Tidak ada jalur pengiriman di klien mana pun.
 
-Agen dibangkitkan karena enam alasan, yang dibawa run sebagai **konteks kebangkitan**-nya agar agen tahu _mengapa_ ia bangun:
+Setiap run membawa **konteks kebangkitan** yang menjelaskan _mengapa_ agen terbangun. Run yang Anda mulai dengan mengirim pesan adalah `userMessage`; setiap run yang dimulai server sendiri diawali sebagai **pengingat** yang tahan lama di antrean ruang kerja dan membawa alasan pengingat itu (lihat [Jadwal dan pengingat](/id-ID/panduan-pengguna/panduan-praktis/jadwal-dan-pengingat/)):
 
 | Alasan kebangkitan | Pemicu                                                       |
-| ------------------ | ------------------------------------------------------------ |
-| `userMessage`      | Seseorang mengirim pesan di sebuah space, atau menyebut agen  |
+| -------------------- | ------- |
+| `userMessage`      | Seseorang mengirim pesan di sebuah space                      |
 | `assignment`       | Sebuah tiket ditugaskan ke agen                              |
 | `pipelineStep`     | Sebuah langkah pipeline mengirimnya                          |
-| `childCompleted`   | Tiket anak selesai                                           |
-| `followUp`         | Detak tindak lanjut yang terjadwal                           |
-| `recovery`         | Jalur pemulihan mengirim ulang setelah kegagalan             |
+| `childCompleted`   | Tiket yang didelegasikan atau tiket anak selesai, atau run anggota tim berakhir |
+| `schedule` | Sebuah jadwal atau loop terpicu |
+| `watch` | Sesuatu yang didengarkan oleh pantauan terjadi (pemeriksaan pull request, tinjauan, lingkungan, tiket, atau run pipeline) |
+| `goalContinuation` | Segmen berikutnya dari sebuah tujuan |
+| `goalVerification` | Pemeriksaan atau tinjauan tujuan menemukan bahwa tujuan belum selesai |
+| `goalReview` | Tinjauan hanya-baca atas klaim sebuah tujuan bahwa ia sudah selesai |
+| `peerMessage` | Agen lain mengirimkannya pesan atau pertanyaan, atau ia disebut dengan @, atau ia adalah pemeriksa space |
+| `peerReply`        | Jawaban atas pertanyaan yang diajukannya kepada agen lain    |
+| `limitReset` | Batas penggunaan penyedia tempat ia berhenti sudah direset |
+| `improvementReview` | Tinjauan setelah sebuah tujuan terverifikasi, atau `/refine` |
+| `recovery` | Pekerjaan yang terganggu oleh restart server atau kegagalan |
+
+Sebuah pengingat dikirim ke dalam run yang sedang berjalan milik agen di percakapan itu jika run tersebut menerima masukan dan bertindak atas nama orang yang sama; jika tidak, pengingat menunggu run itu berakhir lalu memulai run sendiri. Perintah slash hanya dibaca dalam pesan yang diketik seseorang; di run lain, teks yang sama adalah pesan biasa.
 
 Konteks kebangkitan membawa id yang menyertai alasan tersebut — tiket, space, pesan, eksekusi pipeline — dan semuanya disuntikkan ke lingkungan dan prompt agen.
 
@@ -104,17 +114,17 @@ Sengaja **tidak ada plafon giliran di mana pun**. Jumlah iterasi yang dipatok ak
 - **model berhenti** sendiri;
 - **manusia menghentikannya**, atau mengambil alih percakapan (yang menjeda harness bawaan pada batas giliran bersih berikutnya — run Claude Code, yang tidak punya batas aman, justru dihentikan);
 - **pengawas keheningan menyala.** Tidak ada keluaran selama ambang waktu dan sesi dihentikan dengan kegagalan `silentRun`. Default-nya 15 menit, turun menjadi 10 menit di mode yang sebagian besar membaca (Tinjauan dan Rencana); agen dapat menimpanya antara 1 dan 240 menit. Pengawas ini diaktifkan saat proses anak melaporkan PID-nya, jadi ia mencakup CLI Claude Code — **bukan** harness bawaan, yang tidak menjalankan proses apa pun;
-- **batas biaya terpicu** — tetapi hanya untuk perintah otonom.
+- **batas biaya terpicu** — pada segmen dan tinjauan tujuan, run jadwal dan pantauan, tinjauan perbaikan, dan run pipeline di bawah orkestrasi yang dibatasi.
 
 Pagar doom-loop bukan terminator: tiga pemanggilan alat yang identik berturut-turut dan loop akan _mengarahkan_ agen untuk mengubah pendekatannya.
 
 :::note[Giliran biasa tidak punya batas biaya]
-Pagar biaya dalam sesi hanya terpasang untuk `/goal` dan `/loop`; run lainnya tidak meneruskan anggaran sama sekali. Untuk perintah tersebut, satu segmen tanpa pengawasan dapat menghabiskan 500 sen ($5,00) secara default, dengan pengarahan lunak di 80% yang meminta agen merampungkan pekerjaan dengan rapi sebelum penghentian keras dan anggaran goal yang tahan lama sebesar 5.000 sen ($50,00) lintas segmen. `/goal --budget` yang eksplisit tidak pernah dilampaui sebanyak satu segmen penuh.
+Run yang Anda mulai dengan pesan tidak dikenai anggaran apa pun. Segmen sebuah tujuan boleh menghabiskan 5 dolar, atau sisa anggaran tujuan (50 dolar secara default) jika itu lebih kecil; tinjauan tujuan 2 dolar; run yang dimulai jadwal atau pantauan 5 dolar; tinjauan perbaikan 1 dolar. Pada 90%, harness bawaan dan Claude Code mengarahkan agen untuk menyelesaikan pekerjaannya dengan rapi sebelum batas keras; agen ACP dibatalkan pada batas itu. Lihat [Kelola biaya](/id-ID/panduan-pengguna/panduan-praktis/kelola-biaya/#batasi-run-otonom).
 :::
 
 Secara keseluruhan, giliran interaktif biasa pada harness bawaan tidak punya plafon giliran, tidak punya batas biaya, dan tidak punya pengawas keheningan. Ia berakhir saat model berhenti atau saat Anda menghentikannya. Itu adalah pertukaran yang disengaja — semua alternatifnya mematikan pekerjaan panjang yang sah — tetapi memang berarti run interaktif tanpa pengawasan hanya dibatasi oleh penilaian model itu sendiri.
 
-Di tengah run, pesan yang dikirim ke agen yang sedang berjalan diantrekan sebagai **pengarahan** dan dikuras pada batas giliran berikutnya, sehingga Anda dapat mendorong run tanpa mematikannya. Pengarahan, penjedaan, subagen, dan kontrak penyelesaian adalah fitur harness bawaan; Claude Code tidak memiliki satu pun darinya.
+Di tengah run, pesan yang dikirim ke agen yang sedang berjalan diantrekan sebagai **pengarahan** dan dikuras pada batas giliran berikutnya, sehingga Anda dapat mendorong run tanpa mematikannya. Run hanya-baca, seperti tinjauan tujuan, tidak menerima pesan apa pun selama berjalan, dan mengarahkan run yang bekerja untuk orang lain memerlukan akses tulis ke repositori space. Pengarahan, penjedaan, subagen, dan kontrak penyelesaian adalah fitur harness bawaan; Claude Code tidak memiliki satu pun darinya.
 
 ## Bagaimana run dicatat
 
@@ -130,11 +140,11 @@ Ketika sebuah run berakhir tanpa hasil yang diwajibkan modenya — run mode Renc
 Ini disengaja. Membalik statusnya akan menggerakkan mesin keadaan tiket dan pipeline yang sama sekali tidak terkait dengan artefak yang hilang. Ini juga berarti "status: completed" saja tidak pernah cukup untuk menyimpulkan sebuah run berhasil — bacalah ringkasannya.
 :::
 
-Menutup run menerbitkan `AgentRunCompleted` dan banyak hal bergantung padanya: akumulasi biaya pipeline, melanjutkan langkah pipeline yang menunggu run tersebut, menyelesaikan tiket yang mendasarinya, memetakan orkestrasi ke keadaan terminal, keputusan lanjut-atau-berhenti dari pengawas goal, peran pemeriksa, dan evaluasi anggaran setelah run. Daftar kehadiran menyusul secara terpisah, dengan mengamati log run terbaru alih-alih peristiwanya. Notifikasi "agen selesai" tidak ada dalam daftar itu: peristiwa tersebut terpicu saat aliran proses berakhir, sebelum balasannya ditulis, sehingga notifikasinya adalah `MessageReceived` milik giliran tersebut, yang diterbitkan setelah pesannya disimpan.
+Setelah keadaan akhir run ditulis, server menerbitkan `AgentRunSettled` tepat satu kali, dengan alasan run itu berakhir (`completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` atau `serverStopped`), dan banyak hal bergantung padanya: akumulasi biaya pipeline, melanjutkan langkah pipeline yang menunggu run tersebut, menyelesaikan tiket yang mendasarinya, memetakan orkestrasi ke keadaan terminal, keputusan lanjut-atau-berhenti dari pengawas tujuan, jawaban atas pertanyaan yang diajukan agen lain, pemicuan berikutnya dari loop yang mengatur langkahnya sendiri, jeda batas penggunaan, peran pemeriksa, dan evaluasi anggaran setelah run. Run yang dihentikan oleh penghentian server (`serverStopped`) tidak pernah dianggap sebagai kegagalan; pekerjaannya dilanjutkan setelah restart. `AgentRunCompleted` tetap diterbitkan, lebih awal, hanya untuk jembatan pull request dan analitik. Daftar kehadiran menyusul secara terpisah, dengan mengamati log run terbaru alih-alih peristiwanya. Notifikasi "agen selesai" tidak ada dalam daftar itu: peristiwa tersebut terpicu saat aliran proses berakhir, sebelum balasannya ditulis, sehingga notifikasinya adalah `MessageReceived` milik giliran tersebut, yang diterbitkan setelah pesannya disimpan.
 
 ## Anggaran, setelah kejadian
 
-Penegakan anggaran adalah _reaksi_, bukan gerbang. Saat run selesai, pengevaluasi membandingkan pengeluaran agen sejak awal bulan dengan plafon efektifnya (kebijakan anggaran yang ditautkan jika ada, jika tidak maka angka bulanan agen itu sendiri; nol berarti tanpa batas). Melewati ambang lunak mencatat insiden peringatan; menghabiskan anggaran mencatat insiden keras dan membalik status siklus hidup agen menjadi `paused` di bagan organisasi. Pengiriman tetap menerima pekerjaan dari agen tersebut. Pemicu pipeline `BudgetThresholdCrossed` dapat memulai pekerjaan tindak lanjut dari peristiwa yang sama.
+Penegakan anggaran adalah _reaksi_, bukan gerbang. Saat run selesai, pengevaluasi membandingkan pengeluaran agen sejak awal bulan dengan plafon efektifnya (kebijakan anggaran yang ditautkan jika ada, jika tidak maka angka bulanan agen itu sendiri; nol berarti tanpa batas). Melewati ambang lunak mencatat insiden peringatan; menghabiskan anggaran mencatat insiden keras dan membalik status siklus hidup agen menjadi `paused` di bagan organisasi. Pengiriman tetap menerima pekerjaan yang Anda kirim ke agen itu, tetapi pengingatnya (jadwal, segmen tujuan, balasan) menunggu selama agen itu dijeda, paling lama 7 hari. Pemicu pipeline `BudgetThresholdCrossed` dapat memulai pekerjaan tindak lanjut dari peristiwa yang sama.
 
 ## Silsilah percobaan ulang
 
@@ -147,4 +157,5 @@ Setiap log run dapat membawa silsilah percobaan ulang — id run induk, penghitu
 - [Pagar pengaman](/id-ID/panduan-pengguna/konsep/pagar-pengaman/): kebijakan kelas efek yang dilalui setiap panggilan bergerbang
 - [Sandbox dan keamanan](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/): kisah isolasi selengkapnya
 - [Multiplayer](/id-ID/panduan-pengguna/konsep/multiplayer/): pengarahan, pengambilalihan, dan dial otonomi
-- [Peristiwa domain](/id-ID/panduan-pengguna/konsep/peristiwa-domain/): apa yang dipicu oleh `AgentRunCompleted`
+- [Peristiwa domain](/id-ID/panduan-pengguna/konsep/peristiwa-domain/): apa yang dipicu oleh `AgentRunSettled`
+- [Kejar tujuan](/id-ID/panduan-pengguna/panduan-praktis/kejar-tujuan/) dan [Jadwal dan pengingat](/id-ID/panduan-pengguna/panduan-praktis/jadwal-dan-pengingat/): run yang dimulai server sendiri

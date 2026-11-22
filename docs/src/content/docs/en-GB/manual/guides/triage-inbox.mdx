@@ -2,7 +2,7 @@
 title: Triage your inbox
 description: Work the unified inbox — clear what blocks you, review what waits on you and track your own PRs.
 slug: en-GB/manual/guides/triage-inbox
-sourceHash: 8b1cedaef10bca4c784509cf67c82493c1baab35
+sourceHash: 78a60272d46bc865d25bd7bc98796a89978e3e7c
 ---
 
 This guide shows you how to work the inbox: the one surface that collects
@@ -72,8 +72,9 @@ Each strip card has one next action:
    connection's last sync, consecutive-failure streak and latest outcome. Only
    the latest failure per vendor appears in the inbox, so a recovered sync
    clears the card.
-3. Cards disappear on their own once the underlying state resolves (the agent
-   is answered, the sync recovers) — there is nothing to dismiss manually.
+3. If a card says **Goal waits for review** or **Goal needs you**, click **Review** — you land on the goal's page, where you approve it, resume it or answer what it waits on. Resuming is for the person who started the goal. Approving a goal a pipeline started is for the person who started that run (see [Pursue a goal](/en-GB/manual/guides/pursue-a-goal/)). Only goals you may act on are listed: a goal waiting for review, or one you started that needs a person.
+4. If a card says **Improvement proposed**, click **Review** — you land on the proposal, where you accept or reject it.
+3. Cards disappear on their own once the underlying state resolves (the agent is answered, the sync recovers, the goal moves on, the proposal is decided) — there is nothing to dismiss manually.
 
 :::note[These are per-turn confirmations, not governance approvals]
 An "agent approval" card is a running agent pausing to ask permission for one

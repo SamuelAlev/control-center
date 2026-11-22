@@ -27,6 +27,10 @@ class UpdateSkillTool extends McpTool {
   @override
   String get name => 'update_skill';
 
+  /// Not for scripts: it updates a skill (see [McpTool.scriptCallable]).
+  @override
+  bool get scriptCallable => false;
+
   @override
   String get description =>
       'Updates an installed GitHub skill to a new ref (use a 40-hex commit SHA '
@@ -45,13 +49,6 @@ class UpdateSkillTool extends McpTool {
       'ref': {
         'type': 'string',
         'description': 'Commit SHA (preferred), tag, or branch to pin to.',
-      },
-      'allow_quarantine_override': {
-        'type': 'boolean',
-        'description':
-            'When true, apply the update even if the scan gate returns a '
-            'quarantine verdict (an explicit, recorded operator override). '
-            'Defaults to false.',
       },
     },
     'required': ['workspace_id', 'slug', 'ref'],
@@ -75,7 +72,9 @@ class UpdateSkillTool extends McpTool {
         workspaceId: workspaceId,
         slug: slug,
         ref: ref,
-        allowQuarantineOverride: arguments['allow_quarantine_override'] == true,
+        // A quarantine verdict blocks a model's update; overriding it is a
+        // person's decision (`skills.updateSkill`), never a tool argument.
+        allowQuarantineOverride: false,
         spaceId: str('space_id'),
         agentId: str('agent_id'),
       );

@@ -2071,6 +2071,24 @@ class CachedPrReviewRepository implements PrReviewRepository {
     return {'id': result?.id ?? 0};
   }
 
+  /// Posts a comment on a file as a whole (no diff line).
+  @override
+  Future<Map<String, dynamic>> postFileComment({
+    required int prNumber,
+    required String commitSha,
+    required String path,
+    required String body,
+  }) async {
+    final result = await _client.postFileComment(
+      prNumber: prNumber,
+      commitSha: commitSha,
+      path: path,
+      body: body,
+    );
+    await _invalidatePrKinds(prNumber, const [_Kind.prReviewComments]);
+    return {'id': result?.id ?? 0};
+  }
+
   /// Replies to an existing review comment on a PR.
   @override
   Future<void> replyToReviewComment({

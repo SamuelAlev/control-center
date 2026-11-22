@@ -2976,76 +2976,17 @@ abstract class AppLocalizations {
   /// **'Budget reached'**
   String get mobileGoalBudgetExhausted;
 
-  /// No description provided for @mobileGoalGoal.
-  ///
-  /// In en, this message translates to:
-  /// **'Goal'**
-  String get mobileGoalGoal;
-
-  /// No description provided for @mobileGoalLoop.
-  ///
-  /// In en, this message translates to:
-  /// **'Loop'**
-  String get mobileGoalLoop;
-
-  /// No description provided for @mobileGoalKind.
-  ///
-  /// In en, this message translates to:
-  /// **'Type: {kind}'**
-  String mobileGoalKind(String kind);
-
-  /// No description provided for @mobileGoalRuns.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} runs'**
-  String mobileGoalRuns(String count);
-
-  /// No description provided for @mobileGoalNoRunLimit.
-  ///
-  /// In en, this message translates to:
-  /// **'unlimited'**
-  String get mobileGoalNoRunLimit;
-
-  /// No description provided for @mobileGoalProgress.
-  ///
-  /// In en, this message translates to:
-  /// **'Runs: {runs} / {maxRuns} · Spent: {spent} / {cap}'**
-  String mobileGoalProgress(
-    String runs,
-    String maxRuns,
-    String spent,
-    String cap,
-  );
-
-  /// No description provided for @mobileGoalDeadline.
-  ///
-  /// In en, this message translates to:
-  /// **'Deadline: {date}'**
-  String mobileGoalDeadline(String date);
-
   /// No description provided for @mobileGoalFailures.
   ///
   /// In en, this message translates to:
   /// **'Consecutive failed runs: {count}'**
   String mobileGoalFailures(String count);
 
-  /// No description provided for @mobileGoalSummary.
-  ///
-  /// In en, this message translates to:
-  /// **'Completion summary'**
-  String get mobileGoalSummary;
-
   /// No description provided for @mobileGoalFailedDescription.
   ///
   /// In en, this message translates to:
   /// **'The supervisor stopped after repeated failed runs. Review the conversation for details.'**
   String get mobileGoalFailedDescription;
-
-  /// No description provided for @mobileGoalBudgetWall.
-  ///
-  /// In en, this message translates to:
-  /// **'The deadline or run limit was reached. This goal cannot resume by raising the cost cap.'**
-  String get mobileGoalBudgetWall;
 
   /// No description provided for @mobileGoalPause.
   ///
@@ -4924,6 +4865,1968 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This server has no sandbox, so only its owner can run agents here. The owner can install the sandbox or turn sandboxing off for everyone.'**
   String get runSandboxUnavailable;
+
+  /// Section label above the list of tool calls a code mode script made, inside the script's transcript row
+  ///
+  /// In en, this message translates to:
+  /// **'Tool calls'**
+  String get scriptToolCalls;
+
+  /// How many tool calls a code mode script made, shown on its collapsed transcript row
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 call} other{{count} calls}}'**
+  String scriptCallCount(int count);
+
+  /// How many of a script's tool calls are still running. Joined with other counts by a middle dot
+  ///
+  /// In en, this message translates to:
+  /// **'{count} running'**
+  String scriptCallsRunning(int count);
+
+  /// How many of a script's tool calls completed successfully. Short status word
+  ///
+  /// In en, this message translates to:
+  /// **'{count} ok'**
+  String scriptCallsOk(int count);
+
+  /// How many of a script's tool calls ran and failed
+  ///
+  /// In en, this message translates to:
+  /// **'{count} failed'**
+  String scriptCallsFailed(int count);
+
+  /// How many of a script's tool calls were refused before running (by a person, a policy or a hook)
+  ///
+  /// In en, this message translates to:
+  /// **'{count} denied'**
+  String scriptCallsDenied(int count);
+
+  /// How many of a script's tool calls were stopped before they produced a result
+  ///
+  /// In en, this message translates to:
+  /// **'{count} cancelled'**
+  String scriptCallsCancelled(int count);
+
+  /// How many of a script's tool calls have not been reached yet while the script runs. Joined with other counts by a middle dot
+  ///
+  /// In en, this message translates to:
+  /// **'{count} queued'**
+  String scriptCallsQueued(int count);
+
+  /// How many of a script's tool calls were not reached and will not be (another branch was taken, or the script ended). Joined with other counts by a middle dot
+  ///
+  /// In en, this message translates to:
+  /// **'{count} skipped'**
+  String scriptCallsSkipped(int count);
+
+  /// Status word on a tool call a running script has not reached yet, shown where the call's duration would be
+  ///
+  /// In en, this message translates to:
+  /// **'Queued'**
+  String get scriptStepQueued;
+
+  /// Status word on a tool call, or a branch of a script, that was not reached and will not be (another branch was taken, or the script ended)
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped'**
+  String get scriptStepSkipped;
+
+  /// Header of a group of tool calls a script makes inside a loop (for, while). Followed by the loop's code
+  ///
+  /// In en, this message translates to:
+  /// **'Loop'**
+  String get scriptGroupLoop;
+
+  /// Header of a group of tool calls a script makes once per item of a list (array.map, forEach). Followed by the code that names the list
+  ///
+  /// In en, this message translates to:
+  /// **'For each'**
+  String get scriptGroupEach;
+
+  /// Header of a group of tool calls a script runs at the same time (Promise.all). Followed by the code
+  ///
+  /// In en, this message translates to:
+  /// **'In parallel'**
+  String get scriptGroupParallel;
+
+  /// Header of a group of tool calls a script makes inside a function it defined. Followed by the function's name
+  ///
+  /// In en, this message translates to:
+  /// **'Function'**
+  String get scriptGroupFunction;
+
+  /// Button inside a long group of a script's tool calls that shows the calls hidden from the middle of the group
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Show 1 more call} other{Show {count} more calls}}'**
+  String scriptCallsHidden(int count);
+
+  /// Caption above tool calls a script made that could not be matched to a place in its code, listed after the script's structure
+  ///
+  /// In en, this message translates to:
+  /// **'Calls not placed in the script'**
+  String get scriptCallsUnplaced;
+
+  /// Stands in for the tool's name on a not-yet-run call whose tool the script chooses while it runs
+  ///
+  /// In en, this message translates to:
+  /// **'Tool'**
+  String get scriptToolComputed;
+
+  /// Screen reader label of one step of a script: what it is (a tool name, a loop, a branch) and its state (queued, skipped, a count of calls)
+  ///
+  /// In en, this message translates to:
+  /// **'{subject}, {state}'**
+  String scriptStepSemantics(String subject, String state);
+
+  /// Label of the collapsible section that shows the source code of a script the agent ran
+  ///
+  /// In en, this message translates to:
+  /// **'Script'**
+  String get scriptSourceLabel;
+
+  /// Length of a script's source code, beside its collapsed section
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 line} other{{count} lines}}'**
+  String scriptSourceLines(int count);
+
+  /// Status tag: the agent's script is still running
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get scriptStateRunning;
+
+  /// Status tag: the agent's script ran to the end
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get scriptStateCompleted;
+
+  /// Status tag: the agent's script threw an error
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get scriptStateFailed;
+
+  /// Status tag: the agent's script hit its time limit
+  ///
+  /// In en, this message translates to:
+  /// **'Timed out'**
+  String get scriptStateTimedOut;
+
+  /// Status tag: the agent's script was stopped before it finished
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get scriptStateCancelled;
+
+  /// Status tag: the agent's script hit its memory limit
+  ///
+  /// In en, this message translates to:
+  /// **'Out of memory'**
+  String get scriptStateMemoryExceeded;
+
+  /// Status tag: the agent's script was stopped because it wrote more output than allowed
+  ///
+  /// In en, this message translates to:
+  /// **'Too much output'**
+  String get scriptStateOutputExceeded;
+
+  /// Status tag: the isolated environment the script runs in failed. 'Sandbox' = the isolation scripts run in
+  ///
+  /// In en, this message translates to:
+  /// **'Sandbox error'**
+  String get scriptStateSandboxError;
+
+  /// Status tag: the server did not run the agent's script at all
+  ///
+  /// In en, this message translates to:
+  /// **'Refused'**
+  String get scriptStateRefused;
+
+  /// Quiet line on an approval request or a question: the request came from a tool call inside a script the agent wrote, not from the agent directly
+  ///
+  /// In en, this message translates to:
+  /// **'From a script the agent is running'**
+  String get scriptOriginLine;
+
+  /// Section label on the phone's settings: code mode lets an agent write a short script that calls its tools
+  ///
+  /// In en, this message translates to:
+  /// **'Code mode'**
+  String get codeModeTitle;
+
+  /// Tag: this server can run agents' scripts
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get codeModeAvailable;
+
+  /// Tag: this server cannot run agents' scripts
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get codeModeUnavailable;
+
+  /// Note when the server cannot run scripts. {reason} is the server's own explanation, in English
+  ///
+  /// In en, this message translates to:
+  /// **'This server can\'t run scripts, so agents here call their tools one at a time. The server says: {reason}'**
+  String codeModeUnavailableNote(String reason);
+
+  /// Stands in for the server's explanation when it gave none; ends the sentence of codeModeUnavailableNote
+  ///
+  /// In en, this message translates to:
+  /// **'no reason was given.'**
+  String get codeModeNoReason;
+
+  /// Lead-in before a raw machine kind in code style, when the phone does not know a reason the server sent
+  ///
+  /// In en, this message translates to:
+  /// **'For a reason this version doesn\'t name:'**
+  String get workKindUnknown;
+
+  /// Lead-in before a raw refusal kind in code style, when the phone does not know why the server refused an action
+  ///
+  /// In en, this message translates to:
+  /// **'The server refused this:'**
+  String get workRefusalUnknown;
+
+  /// Shown when an action on a goal, wake or schedule failed for a reason that is not a refusal. {error} is the technical error text, in English
+  ///
+  /// In en, this message translates to:
+  /// **'That did not work: {error}'**
+  String workActionFailed(String error);
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'Held because a person stopped the run.'**
+  String get wakeKindStopped;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery failed three times.'**
+  String get wakeKindAttempts;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'The agent no longer exists.'**
+  String get wakeKindAgentDeleted;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'The agent is retired.'**
+  String get wakeKindAgentNotDispatchable;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'The agent is paused.'**
+  String get wakeKindAgentPaused;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'The person it acts for left the workspace.'**
+  String get wakeKindPersonRemoved;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'A budget blocks a run.'**
+  String get wakeKindBudgetBlocked;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'A person has taken over the worktree.'**
+  String get wakeKindTakeOver;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation started 30 runs from wakes in the last hour.'**
+  String get wakeKindRateCapConversation;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'This workspace started 300 runs from wakes in the last hour.'**
+  String get wakeKindRateCapWorkspace;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'The agent\'s live run here takes no input.'**
+  String get wakeKindLiveRunNoInput;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'The agent\'s live run here runs differently, so this starts its own run after it.'**
+  String get wakeKindLiveRunOtherOptions;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'The agent\'s live run here acts for someone else, so this starts its own run after it.'**
+  String get wakeKindLiveRunOtherPerson;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'The run could not start.'**
+  String get wakeKindDispatchRefused;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'No sandbox is available for a read-only run.'**
+  String get wakeKindSandboxUnavailable;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'This agent\'s backend cannot keep a run read-only.'**
+  String get wakeKindReadOnlyUnavailable;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'A server restart stopped the run.'**
+  String get wakeKindServerStopped;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'The server restarted during a person\'s run.'**
+  String get wakeKindServerRestarted;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'A check before delivery failed.'**
+  String get wakeKindGuardFailed;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the provider\'s usage limit to reset.'**
+  String get wakeKindLimit;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the run at the usage limit to end.'**
+  String get wakeKindLimitRunLive;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'Missed while the server was down.'**
+  String get wakeKindWakeMissed;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'Its pipeline run ended.'**
+  String get wakeKindPipelineRunEnded;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'Its goal ended.'**
+  String get wakeKindGoalEnded;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'Its goal used its budget.'**
+  String get wakeKindGoalBudgetExhausted;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'The goal changed since this review was asked for.'**
+  String get wakeKindGoalReviewStale;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'Its goal is paused.'**
+  String get wakeKindGoalPaused;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'Its goal is on hold.'**
+  String get wakeKindGoalHeld;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'Its goal was stopped.'**
+  String get wakeKindGoalStopped;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'The question it answers was already settled.'**
+  String get wakeKindAskSettled;
+
+  /// Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A "wake" is something that will start or continue an agent's work later
+  ///
+  /// In en, this message translates to:
+  /// **'Its schedule ended.'**
+  String get wakeKindRuleEnded;
+
+  /// Shown when the server refused delivering, resuming or cancelling a wake
+  ///
+  /// In en, this message translates to:
+  /// **'This wake acts for another person. Only they can deliver or resume it.'**
+  String get wakeRefusalNotYours;
+
+  /// Shown when the server refused delivering, resuming or cancelling a wake
+  ///
+  /// In en, this message translates to:
+  /// **'This wake has already settled.'**
+  String get wakeRefusalSettled;
+
+  /// Shown when the server refused an action on a goal (a long-running task an agent pursues until it is verified done)
+  ///
+  /// In en, this message translates to:
+  /// **'This agent already has an active goal.'**
+  String get goalRefusalAlreadyActive;
+
+  /// Shown when the server refused an action on a goal (a long-running task an agent pursues until it is verified done)
+  ///
+  /// In en, this message translates to:
+  /// **'This goal is not waiting for review.'**
+  String get goalRefusalNotInReview;
+
+  /// Shown when the server refused an action on a goal (a long-running task an agent pursues until it is verified done)
+  ///
+  /// In en, this message translates to:
+  /// **'The goal\'s evidence is incomplete.'**
+  String get goalRefusalEvidenceIncomplete;
+
+  /// Shown when the server refused an action on a goal (a long-running task an agent pursues until it is verified done)
+  ///
+  /// In en, this message translates to:
+  /// **'A claim that it is done is still being checked.'**
+  String get goalRefusalClaimPending;
+
+  /// Shown when the server refused an action on a goal (a long-running task an agent pursues until it is verified done)
+  ///
+  /// In en, this message translates to:
+  /// **'This goal has no segment running.'**
+  String get goalRefusalNotActiveSegment;
+
+  /// Shown when the server refused an action on a goal (a long-running task an agent pursues until it is verified done)
+  ///
+  /// In en, this message translates to:
+  /// **'Only the person who started this goal can do that.'**
+  String get goalRefusalNotYours;
+
+  /// Shown when the server refused an action on a goal (a long-running task an agent pursues until it is verified done)
+  ///
+  /// In en, this message translates to:
+  /// **'Pause the goal first.'**
+  String get goalRefusalNotPaused;
+
+  /// Shown when the server refused an action on a goal (a long-running task an agent pursues until it is verified done)
+  ///
+  /// In en, this message translates to:
+  /// **'The goal\'s contract can\'t be read.'**
+  String get goalRefusalContractInvalid;
+
+  /// Shown when the server refused an action on a goal (a long-running task an agent pursues until it is verified done)
+  ///
+  /// In en, this message translates to:
+  /// **'No agent has that name.'**
+  String get goalRefusalCheckerUnknown;
+
+  /// Shown when the server refused an action on a goal (a long-running task an agent pursues until it is verified done)
+  ///
+  /// In en, this message translates to:
+  /// **'More than one agent has that name.'**
+  String get goalRefusalCheckerAmbiguous;
+
+  /// Shown when the server refused an action on a goal (a long-running task an agent pursues until it is verified done)
+  ///
+  /// In en, this message translates to:
+  /// **'The checker must be another agent than the one doing the work.'**
+  String get goalRefusalCheckerIsGoalAgent;
+
+  /// Shown when the server refused an action on a goal (a long-running task an agent pursues until it is verified done)
+  ///
+  /// In en, this message translates to:
+  /// **'This goal can\'t be read:'**
+  String get goalRefusalCommandInvalid;
+
+  /// Shown when the server refused creating or changing a schedule (a prompt an agent runs again and again)
+  ///
+  /// In en, this message translates to:
+  /// **'The interval is too short. Pick at least one minute.'**
+  String get wakeRuleRefusalIntervalTooShort;
+
+  /// Shown when the server refused creating or changing a schedule (a prompt an agent runs again and again)
+  ///
+  /// In en, this message translates to:
+  /// **'That time is too soon. Pick a later one.'**
+  String get wakeRuleRefusalTooSoon;
+
+  /// Shown when the server refused creating or changing a schedule (a prompt an agent runs again and again)
+  ///
+  /// In en, this message translates to:
+  /// **'This chain of wakes has used its runs or its time.'**
+  String get wakeRuleRefusalLineageEnded;
+
+  /// Shown when the server refused creating or changing a schedule (a prompt an agent runs again and again)
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t read what this would watch.'**
+  String get wakeRuleRefusalWatchTargetUnreadable;
+
+  /// Shown when the server refused creating or changing a schedule (a prompt an agent runs again and again)
+  ///
+  /// In en, this message translates to:
+  /// **'Give it an end date or a number of runs.'**
+  String get wakeRuleRefusalExpiryRequired;
+
+  /// Shown when the server refused creating or changing a schedule (a prompt an agent runs again and again)
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation or agent already has as many schedules as it may.'**
+  String get wakeRuleRefusalLimitReached;
+
+  /// Shown when the server refused creating or changing a schedule (a prompt an agent runs again and again)
+  ///
+  /// In en, this message translates to:
+  /// **'The time can\'t be read.'**
+  String get wakeRuleRefusalInvalidWhen;
+
+  /// Shown when the server refused creating or changing a schedule (a prompt an agent runs again and again)
+  ///
+  /// In en, this message translates to:
+  /// **'The note is too long.'**
+  String get wakeRuleRefusalNoteTooLong;
+
+  /// Shown when the server refused creating or changing a schedule (a prompt an agent runs again and again)
+  ///
+  /// In en, this message translates to:
+  /// **'The end is too far away.'**
+  String get wakeRuleRefusalExpiryTooLong;
+
+  /// Shown when the server refused creating or changing a schedule (a prompt an agent runs again and again)
+  ///
+  /// In en, this message translates to:
+  /// **'A run, day or budget limit is out of range.'**
+  String get wakeRuleRefusalLimitOutOfRange;
+
+  /// Shown when the server refused creating or changing a schedule (a prompt an agent runs again and again)
+  ///
+  /// In en, this message translates to:
+  /// **'Only a loop can pick its own next time.'**
+  String get wakeRuleRefusalNextOutsideLoop;
+
+  /// Shown when the server refused creating or changing a schedule (a prompt an agent runs again and again)
+  ///
+  /// In en, this message translates to:
+  /// **'That can\'t be watched.'**
+  String get wakeRuleRefusalWatchRefused;
+
+  /// Shown when the server refused creating or changing a schedule (a prompt an agent runs again and again)
+  ///
+  /// In en, this message translates to:
+  /// **'That schedule has already ended.'**
+  String get wakeRuleRefusalRuleEnded;
+
+  /// Shown when the server refused creating or changing a schedule (a prompt an agent runs again and again)
+  ///
+  /// In en, this message translates to:
+  /// **'That schedule belongs to someone else.'**
+  String get wakeRuleRefusalNotYours;
+
+  /// Why a schedule ended, on the schedules list and in a notification
+  ///
+  /// In en, this message translates to:
+  /// **'It ran its one time.'**
+  String get wakeRuleEndFired;
+
+  /// Why a schedule ended, on the schedules list and in a notification
+  ///
+  /// In en, this message translates to:
+  /// **'It reached its end date.'**
+  String get wakeRuleEndExpired;
+
+  /// Why a schedule ended, on the schedules list and in a notification
+  ///
+  /// In en, this message translates to:
+  /// **'It used its runs.'**
+  String get wakeRuleEndRunCap;
+
+  /// Why a schedule ended, on the schedules list and in a notification
+  ///
+  /// In en, this message translates to:
+  /// **'It reached its cost cap.'**
+  String get wakeRuleEndCostCap;
+
+  /// Why a schedule ended, on the schedules list and in a notification
+  ///
+  /// In en, this message translates to:
+  /// **'Its goal ended.'**
+  String get wakeRuleEndGoalEnded;
+
+  /// Why a schedule ended, on the schedules list and in a notification
+  ///
+  /// In en, this message translates to:
+  /// **'It was cancelled.'**
+  String get wakeRuleEndCancelled;
+
+  /// Why a schedule ended, on the schedules list and in a notification
+  ///
+  /// In en, this message translates to:
+  /// **'Its person left the workspace.'**
+  String get wakeRuleEndMemberRemoved;
+
+  /// Why a schedule ended, on the schedules list and in a notification
+  ///
+  /// In en, this message translates to:
+  /// **'Its stored settings could not be read.'**
+  String get wakeRuleEndInvalidRow;
+
+  /// What a running goal is doing. A goal runs in segments (one agent run each). {segment} is the current segment number
+  ///
+  /// In en, this message translates to:
+  /// **'Working on segment {segment}. Nobody needs to act.'**
+  String goalHoldWorking(int segment);
+
+  /// A goal waits for a reply, a wake or a watched event, and nobody needs to act
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for work it is owed. It continues by itself.'**
+  String get goalHoldWaiting;
+
+  /// A goal waits, and will continue by itself. {time} is a short date and clock time
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for work it is owed. It continues by itself at {time} at the latest.'**
+  String goalHoldWaitingUntil(String time);
+
+  /// A goal claimed completion and is being verified; nobody needs to act
+  ///
+  /// In en, this message translates to:
+  /// **'It says it is done. The server runs its checks, then a reviewer decides.'**
+  String get goalHoldVerifying;
+
+  /// A goal waits for an AI provider usage limit to reset
+  ///
+  /// In en, this message translates to:
+  /// **'Paused at the provider\'s usage limit. It resumes by itself after the reset.'**
+  String get goalHoldLimit;
+
+  /// A goal waits for an AI provider usage limit to reset. {time} is a short date and clock time
+  ///
+  /// In en, this message translates to:
+  /// **'Paused at the provider\'s usage limit. It resumes by itself at {time}.'**
+  String goalHoldLimitUntil(String time);
+
+  /// A goal waits for a person to answer a question or an approval in its conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for a person to answer in the conversation. It continues once someone answers.'**
+  String get goalHoldPerson;
+
+  /// A person paused the goal
+  ///
+  /// In en, this message translates to:
+  /// **'Paused by a person. It stays paused until someone resumes it.'**
+  String get goalHoldByPerson;
+
+  /// A goal stopped and a person must decide what happens
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for review: it cannot go on by itself. Approve it as done, resume it or cancel it.'**
+  String get goalHoldNeedsReview;
+
+  /// A goal spent its whole cost cap
+  ///
+  /// In en, this message translates to:
+  /// **'It used its budget. Raise the budget to let it continue.'**
+  String get goalHoldBudget;
+
+  /// How often a goal has paused at a provider usage limit, against the most it may. Both are numbers
+  ///
+  /// In en, this message translates to:
+  /// **'Usage limit pauses: {count} of {max}'**
+  String goalHoldLimitParks(int count, int max);
+
+  /// Detail under a goal's hold sentence: why the goal is held. Some are followed by a command or a machine kind in code style
+  ///
+  /// In en, this message translates to:
+  /// **'No progress in its last segments.'**
+  String get goalHoldDetailStalled;
+
+  /// Detail under a goal's hold sentence: why the goal is held. Some are followed by a command or a machine kind in code style
+  ///
+  /// In en, this message translates to:
+  /// **'It waited 24 hours on the same work without progress.'**
+  String get goalHoldDetailStalledWaiting;
+
+  /// Detail under a goal's hold sentence: why the goal is held. Some are followed by a command or a machine kind in code style
+  ///
+  /// In en, this message translates to:
+  /// **'The last check failed.'**
+  String get goalHoldDetailVerificationFailed;
+
+  /// Detail under a goal's hold sentence: why the goal is held. Some are followed by a command or a machine kind in code style
+  ///
+  /// In en, this message translates to:
+  /// **'The checker couldn\'t tell whether it is done.'**
+  String get goalHoldDetailCannotVerify;
+
+  /// Detail under a goal's hold sentence: why the goal is held. Some are followed by a command or a machine kind in code style
+  ///
+  /// In en, this message translates to:
+  /// **'No sandbox is available to run its checks.'**
+  String get goalHoldDetailSandboxUnavailable;
+
+  /// Detail under a goal's hold sentence: why the goal is held. Some are followed by a command or a machine kind in code style
+  ///
+  /// In en, this message translates to:
+  /// **'Its checker agent is unavailable. Pick another checker, then resume.'**
+  String get goalHoldDetailCheckerUnavailable;
+
+  /// Detail under a goal's hold sentence: why the goal is held. Some are followed by a command or a machine kind in code style
+  ///
+  /// In en, this message translates to:
+  /// **'This check can\'t run:'**
+  String get goalHoldDetailCheckBroken;
+
+  /// Detail under a goal's hold sentence: why the goal is held. Some are followed by a command or a machine kind in code style
+  ///
+  /// In en, this message translates to:
+  /// **'Its wake was not delivered.'**
+  String get goalHoldDetailWakeSkipped;
+
+  /// Detail under a goal's hold sentence: why the goal is held. Some are followed by a command or a machine kind in code style
+  ///
+  /// In en, this message translates to:
+  /// **'Its claim that it is done waits for a check.'**
+  String get goalHoldDetailClaimPending;
+
+  /// Detail under a goal's hold sentence: why the goal is held. Some are followed by a command or a machine kind in code style
+  ///
+  /// In en, this message translates to:
+  /// **'A question or approval request to a person went unanswered.'**
+  String get goalHoldDetailUnanswered;
+
+  /// Detail under a goal's hold sentence: why the goal is held. Some are followed by a command or a machine kind in code style
+  ///
+  /// In en, this message translates to:
+  /// **'It hit usage limits too often. Look it over, then resume.'**
+  String get goalHoldDetailLimitParks;
+
+  /// Detail under a goal's hold sentence: why the goal is held. Some are followed by a command or a machine kind in code style
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for an answer in the conversation.'**
+  String get goalHoldDetailInput;
+
+  /// How many segments (agent runs) a goal used of its cap
+  ///
+  /// In en, this message translates to:
+  /// **'Segment {run} of {max}'**
+  String goalSegments(int run, int max);
+
+  /// How many segments (agent runs) a goal used; it has no cap
+  ///
+  /// In en, this message translates to:
+  /// **'Segment {run}, no cap'**
+  String goalSegmentsNoCap(int run);
+
+  /// Money a goal or schedule spent against its cost cap. Both are formatted amounts
+  ///
+  /// In en, this message translates to:
+  /// **'Spent {spent} of {cap}'**
+  String goalMoney(String spent, String cap);
+
+  /// When a goal must be done by. {time} is a short date and clock time
+  ///
+  /// In en, this message translates to:
+  /// **'Deadline {time}'**
+  String goalDeadline(String time);
+
+  /// Shown when a pipeline started this goal
+  ///
+  /// In en, this message translates to:
+  /// **'A pipeline step pursues this goal.'**
+  String get goalPipelineStep;
+
+  /// Heading above the text the goal's agent last wrote about it (shown as plain text)
+  ///
+  /// In en, this message translates to:
+  /// **'Last summary'**
+  String get goalSummaryHeading;
+
+  /// Heading above the list of criteria that make a goal done
+  ///
+  /// In en, this message translates to:
+  /// **'Done means'**
+  String get goalDoneMeans;
+
+  /// Heading above the commands the server runs to check whether a goal is done
+  ///
+  /// In en, this message translates to:
+  /// **'Checks'**
+  String get goalChecks;
+
+  /// Heading above what the goal's agent must not change
+  ///
+  /// In en, this message translates to:
+  /// **'Boundaries'**
+  String get goalBoundaries;
+
+  /// Heading above the conditions on which the agent stops and asks a person
+  ///
+  /// In en, this message translates to:
+  /// **'Stop and ask when'**
+  String get goalStopWhen;
+
+  /// Shown when a goal has no check commands
+  ///
+  /// In en, this message translates to:
+  /// **'No machine check. A reviewer judges from what it can read.'**
+  String get goalNoMachineCheck;
+
+  /// Label before a check that is a named task of the environment rather than a command
+  ///
+  /// In en, this message translates to:
+  /// **'Environment task'**
+  String get goalCheckEnvironment;
+
+  /// Heading above the results of the last verification. {round} is a number, {time} a short date and clock time
+  ///
+  /// In en, this message translates to:
+  /// **'Last check, round {round}, {time}'**
+  String goalLastCheck(int round, String time);
+
+  /// Heading above the agent's own words about why the goal is done (shown as quoted text)
+  ///
+  /// In en, this message translates to:
+  /// **'What it claimed'**
+  String get goalClaim;
+
+  /// A check command passed
+  ///
+  /// In en, this message translates to:
+  /// **'Passed'**
+  String get goalCheckPassed;
+
+  /// A check command failed. {code} is its exit code
+  ///
+  /// In en, this message translates to:
+  /// **'Failed, exit {code}'**
+  String goalCheckFailed(int code);
+
+  /// A check command ran out of time
+  ///
+  /// In en, this message translates to:
+  /// **'Timed out'**
+  String get goalCheckTimedOut;
+
+  /// A check was not run again because nothing changed since it last passed
+  ///
+  /// In en, this message translates to:
+  /// **'Not rerun: nothing changed'**
+  String get goalCheckNotRerun;
+
+  /// A check command cannot run at all
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot run'**
+  String get goalCheckBroken;
+
+  /// The reviewer found this criterion met
+  ///
+  /// In en, this message translates to:
+  /// **'Met'**
+  String get goalCriterionMet;
+
+  /// The reviewer found this criterion not met
+  ///
+  /// In en, this message translates to:
+  /// **'Not met'**
+  String get goalCriterionUnmet;
+
+  /// The reviewer could not tell whether this criterion is met
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t tell'**
+  String get goalCriterionCannotTell;
+
+  /// The reviewer decided the goal is done
+  ///
+  /// In en, this message translates to:
+  /// **'Verdict: done'**
+  String get goalVerdictPass;
+
+  /// The reviewer decided the goal is not done
+  ///
+  /// In en, this message translates to:
+  /// **'Verdict: not done'**
+  String get goalVerdictFail;
+
+  /// The reviewer could not tell whether the goal is done
+  ///
+  /// In en, this message translates to:
+  /// **'Verdict: couldn\'t tell'**
+  String get goalVerdictCannotVerify;
+
+  /// Heading above the reviewer's concerns (shown as quoted text)
+  ///
+  /// In en, this message translates to:
+  /// **'Concerns'**
+  String get goalConcerns;
+
+  /// Which agent reviewed the claim. {agent} is the agent's name
+  ///
+  /// In en, this message translates to:
+  /// **'Verified by {agent}'**
+  String goalVerifiedBy(String agent);
+
+  /// The goal's own agent reviewed its claim
+  ///
+  /// In en, this message translates to:
+  /// **'Verified by itself (no separate checker)'**
+  String get goalVerifiedBySelf;
+
+  /// A person approved completion without a passing verification
+  ///
+  /// In en, this message translates to:
+  /// **'Closed by a person without a passing check'**
+  String get goalClosedByPerson;
+
+  /// Button: close a goal that waits for review as done
+  ///
+  /// In en, this message translates to:
+  /// **'Approve completion'**
+  String get goalApprove;
+
+  /// Title of the confirmation before approving completion
+  ///
+  /// In en, this message translates to:
+  /// **'Close this goal as done?'**
+  String get goalApproveTitle;
+
+  /// Body of the confirmation before approving completion
+  ///
+  /// In en, this message translates to:
+  /// **'No check confirmed it. You close it on your own word, and the goal records that a person closed it unverified.'**
+  String get goalApproveBody;
+
+  /// Confirm button: approve completion
+  ///
+  /// In en, this message translates to:
+  /// **'Close as done'**
+  String get goalApproveConfirm;
+
+  /// Shown instead of the resume button when the viewer did not start the goal
+  ///
+  /// In en, this message translates to:
+  /// **'Resuming it or raising its budget belongs to whoever started it.'**
+  String get goalResumeNotYours;
+
+  /// Heading above the agents that could review the goal's claim instead of the unavailable one
+  ///
+  /// In en, this message translates to:
+  /// **'Pick another checker'**
+  String get goalChooseChecker;
+
+  /// Shown after picking a new checker. {agent} is the agent's name
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} checks it now. Resume to verify again.'**
+  String goalCheckerSet(String agent);
+
+  /// Button on the goals screen that opens the list of schedules and watches
+  ///
+  /// In en, this message translates to:
+  /// **'Schedules'**
+  String get goalSchedules;
+
+  /// Button on the goals screen: start a schedule, a prompt an agent runs again and again
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat'**
+  String get goalRepeat;
+
+  /// Label above the commands that must pass for a new goal to count as done
+  ///
+  /// In en, this message translates to:
+  /// **'Checks (optional)'**
+  String get goalCreateChecks;
+
+  /// Placeholder of a check command field
+  ///
+  /// In en, this message translates to:
+  /// **'A command that passes when the work is done'**
+  String get goalCreateCheckHint;
+
+  /// Button: add another check command field
+  ///
+  /// In en, this message translates to:
+  /// **'Add check'**
+  String get goalCreateAddCheck;
+
+  /// Accessible label of the button that removes a check command field
+  ///
+  /// In en, this message translates to:
+  /// **'Remove check'**
+  String get goalCreateRemoveCheck;
+
+  /// Label of the field for the most segments (agent runs) a new goal may use
+  ///
+  /// In en, this message translates to:
+  /// **'Segment cap (optional)'**
+  String get goalCreateSegmentCap;
+
+  /// Shown when the segment cap is not a whole number
+  ///
+  /// In en, this message translates to:
+  /// **'The segment cap is a whole number, at least 1.'**
+  String get goalCreateSegmentInvalid;
+
+  /// Title of the form that starts a schedule
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat a prompt'**
+  String get scheduleCreateTitle;
+
+  /// Label above the choices of how often a schedule runs
+  ///
+  /// In en, this message translates to:
+  /// **'How often'**
+  String get scheduleCadence;
+
+  /// Choice: run every few minutes
+  ///
+  /// In en, this message translates to:
+  /// **'Every N minutes'**
+  String get scheduleEveryMinutes;
+
+  /// Choice: run every few hours
+  ///
+  /// In en, this message translates to:
+  /// **'Every N hours'**
+  String get scheduleEveryHours;
+
+  /// Choice: the agent picks the delay before its next run
+  ///
+  /// In en, this message translates to:
+  /// **'Self-paced'**
+  String get scheduleSelfPaced;
+
+  /// Explains the self-paced choice
+  ///
+  /// In en, this message translates to:
+  /// **'The agent picks the delay after each run, between 1 minute and 1 hour.'**
+  String get scheduleSelfPacedHint;
+
+  /// Label of the number field for how many minutes or hours between runs
+  ///
+  /// In en, this message translates to:
+  /// **'Interval'**
+  String get scheduleInterval;
+
+  /// Placeholder of the field with the prompt each run starts from
+  ///
+  /// In en, this message translates to:
+  /// **'What should each run do?'**
+  String get scheduleNote;
+
+  /// Label of the field for the most a schedule may spend in all
+  ///
+  /// In en, this message translates to:
+  /// **'Cost cap in USD (optional)'**
+  String get scheduleCostCap;
+
+  /// Label of the field for how many days a schedule lasts
+  ///
+  /// In en, this message translates to:
+  /// **'Ends after N days (optional)'**
+  String get scheduleExpiryDays;
+
+  /// Shown when the schedule form is incomplete
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a space and an agent, write what each run should do, and give whole numbers of at least 1.'**
+  String get scheduleCreateInvalid;
+
+  /// Button: start the schedule
+  ///
+  /// In en, this message translates to:
+  /// **'Start schedule'**
+  String get scheduleCreateButton;
+
+  /// Title of the confirmation before a schedule starts
+  ///
+  /// In en, this message translates to:
+  /// **'Start this schedule?'**
+  String get scheduleCreateConfirmTitle;
+
+  /// Confirmation body for a schedule that runs every few minutes
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{It runs every minute, starting now.} other{It runs every {count} minutes, starting now.}}'**
+  String scheduleCreateConfirmEveryMinutes(int count);
+
+  /// Confirmation body for a schedule that runs every few hours
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{It runs every hour, starting now.} other{It runs every {count} hours, starting now.}}'**
+  String scheduleCreateConfirmEveryHours(int count);
+
+  /// Confirmation body for a self-paced schedule
+  ///
+  /// In en, this message translates to:
+  /// **'It runs now, then the agent picks when to run again.'**
+  String get scheduleCreateConfirmSelfPaced;
+
+  /// Shown after a schedule started
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule started. It is listed under Schedules.'**
+  String get scheduleCreated;
+
+  /// Title of the list of the workspace's schedules and watches
+  ///
+  /// In en, this message translates to:
+  /// **'Schedules'**
+  String get schedulesTitle;
+
+  /// Shown when the schedules list failed to load
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load schedules'**
+  String get schedulesLoadFailed;
+
+  /// Empty schedules list
+  ///
+  /// In en, this message translates to:
+  /// **'No schedules or watches'**
+  String get schedulesEmpty;
+
+  /// Empty schedules list: how to make one
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat a prompt from the goals screen, or send /loop or /schedule in a conversation.'**
+  String get schedulesEmptyDescription;
+
+  /// Shown when a schedule opened by link no longer exists
+  ///
+  /// In en, this message translates to:
+  /// **'This schedule is no longer available in this workspace.'**
+  String get scheduleMissing;
+
+  /// A schedule that runs at a fixed interval. {interval} is a short duration such as 30m or 2h
+  ///
+  /// In en, this message translates to:
+  /// **'Every {interval}'**
+  String scheduleEvery(String interval);
+
+  /// A schedule whose agent picks its next time
+  ///
+  /// In en, this message translates to:
+  /// **'Self-paced loop'**
+  String get scheduleSelfPacedLoop;
+
+  /// A schedule with a cron expression; the expression follows in code style
+  ///
+  /// In en, this message translates to:
+  /// **'Cron schedule'**
+  String get scheduleCron;
+
+  /// A schedule that runs one time. {time} is a short date and clock time
+  ///
+  /// In en, this message translates to:
+  /// **'Once at {time}'**
+  String scheduleOnce(String time);
+
+  /// A schedule that waits for an event. {event} is one of the watch event names
+  ///
+  /// In en, this message translates to:
+  /// **'Watch: {event}'**
+  String scheduleWatch(String event);
+
+  /// Watch event name: the checks on a pull request finished
+  ///
+  /// In en, this message translates to:
+  /// **'pull request checks'**
+  String get scheduleWatchPrChecks;
+
+  /// Watch event name: a pull request got a review or comments
+  ///
+  /// In en, this message translates to:
+  /// **'pull request reviews'**
+  String get scheduleWatchPrReview;
+
+  /// Watch event name: a pull request merged
+  ///
+  /// In en, this message translates to:
+  /// **'pull request merge'**
+  String get scheduleWatchPrMerged;
+
+  /// Watch event name: the conversation's environment changed
+  ///
+  /// In en, this message translates to:
+  /// **'environment'**
+  String get scheduleWatchEnvironment;
+
+  /// Watch event name: a ticket settled
+  ///
+  /// In en, this message translates to:
+  /// **'ticket'**
+  String get scheduleWatchTicket;
+
+  /// Watch event name: a pipeline run settled
+  ///
+  /// In en, this message translates to:
+  /// **'pipeline run'**
+  String get scheduleWatchPipelineRun;
+
+  /// Status of a schedule that runs
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get scheduleStatusActive;
+
+  /// Status of a paused schedule
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get scheduleStatusPaused;
+
+  /// Status of a schedule that ended for good
+  ///
+  /// In en, this message translates to:
+  /// **'Ended'**
+  String get scheduleStatusEnded;
+
+  /// Which agent a schedule wakes. {agent} is the agent's name
+  ///
+  /// In en, this message translates to:
+  /// **'Wakes {agent}'**
+  String scheduleWakes(String agent);
+
+  /// When a schedule runs next. {time} is a short date and clock time
+  ///
+  /// In en, this message translates to:
+  /// **'Next run {time}'**
+  String scheduleNext(String time);
+
+  /// When a schedule last ran. {time} is a short date and clock time
+  ///
+  /// In en, this message translates to:
+  /// **'Last run {time}'**
+  String scheduleLast(String time);
+
+  /// How many runs a schedule started
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 run} other{{count} runs}}'**
+  String scheduleRuns(int count);
+
+  /// How many runs a schedule started, against its cap
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of {max} runs'**
+  String scheduleRunsOf(int count, int max);
+
+  /// How many times a schedule skipped a run because the agent was busy or the server was down
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 skipped} other{{count} skipped}}'**
+  String scheduleSkipped(int count);
+
+  /// When a schedule ends. {time} is a short date and clock time
+  ///
+  /// In en, this message translates to:
+  /// **'Ends {time}'**
+  String scheduleEnds(String time);
+
+  /// A schedule set inside a run another schedule started shares that chain's limits. {count} is a number, {time} a short date and clock time
+  ///
+  /// In en, this message translates to:
+  /// **'Part of a chain: {count} runs left, ends {time}'**
+  String scheduleChain(int count, String time);
+
+  /// Heading above a schedule's note the agent wrote for itself (shown as quoted text, not a request)
+  ///
+  /// In en, this message translates to:
+  /// **'The agent\'s own note, in its words:'**
+  String get scheduleNoteAgent;
+
+  /// Heading above a schedule's note a person wrote (shown as quoted text)
+  ///
+  /// In en, this message translates to:
+  /// **'A person\'s note:'**
+  String get scheduleNotePerson;
+
+  /// Whose sign-in a schedule's runs use. {name} is a person's name
+  ///
+  /// In en, this message translates to:
+  /// **'Acts for {name}'**
+  String scheduleActsFor(String name);
+
+  /// A schedule whose runs act for no person (an agent set it in a run nobody started)
+  ///
+  /// In en, this message translates to:
+  /// **'Acts for no person'**
+  String get scheduleActsForBot;
+
+  /// Shown when a schedule belongs to a goal
+  ///
+  /// In en, this message translates to:
+  /// **'It ends with its goal.'**
+  String get scheduleGoalBound;
+
+  /// Button: pause a schedule
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get schedulePause;
+
+  /// Button: resume a paused schedule
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get scheduleResume;
+
+  /// Button: end a schedule for good
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get scheduleDelete;
+
+  /// Button: remove an ended schedule from the list
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get scheduleRemove;
+
+  /// Title of the confirmation before ending a schedule
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this schedule?'**
+  String get scheduleDeleteTitle;
+
+  /// Body of the confirmation before ending a schedule
+  ///
+  /// In en, this message translates to:
+  /// **'It stops for good. Nothing it already did is undone.'**
+  String get scheduleDeleteBody;
+
+  /// Title of the confirmation before removing an ended schedule
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this schedule?'**
+  String get scheduleRemoveTitle;
+
+  /// Body of the confirmation before removing an ended schedule
+  ///
+  /// In en, this message translates to:
+  /// **'It disappears from the list.'**
+  String get scheduleRemoveBody;
+
+  /// Shown instead of Resume when the viewer may not resume the schedule
+  ///
+  /// In en, this message translates to:
+  /// **'Only the person this schedule acts for can resume it.'**
+  String get scheduleResumeNotYours;
+
+  /// Shown instead of Resume on a schedule that acts for no person, to a viewer who is not an admin
+  ///
+  /// In en, this message translates to:
+  /// **'Only a workspace admin can resume a schedule no person owns.'**
+  String get scheduleResumeAdminOnly;
+
+  /// Button: open the conversation a schedule wakes
+  ///
+  /// In en, this message translates to:
+  /// **'Open conversation'**
+  String get scheduleOpenConversation;
+
+  /// Heading of the section listing what will start or continue an agent's work later in this conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting'**
+  String get progressWaiting;
+
+  /// Shown when no wake waits in this conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is waiting.'**
+  String get progressNothingWaiting;
+
+  /// Label naming what raised a waiting wake
+  ///
+  /// In en, this message translates to:
+  /// **'Goal'**
+  String get wakeOriginGoal;
+
+  /// Label naming what raised a waiting wake
+  ///
+  /// In en, this message translates to:
+  /// **'Goal check'**
+  String get wakeOriginGoalCheck;
+
+  /// Label naming what raised a waiting wake
+  ///
+  /// In en, this message translates to:
+  /// **'Goal review'**
+  String get wakeOriginGoalReview;
+
+  /// Label naming what raised a waiting wake
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule'**
+  String get wakeOriginSchedule;
+
+  /// Label naming what raised a waiting wake
+  ///
+  /// In en, this message translates to:
+  /// **'Watch'**
+  String get wakeOriginWatch;
+
+  /// Label naming what raised a waiting wake
+  ///
+  /// In en, this message translates to:
+  /// **'Reply'**
+  String get wakeOriginReply;
+
+  /// Label naming what raised a waiting wake
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get wakeOriginMessage;
+
+  /// Label naming what raised a waiting wake
+  ///
+  /// In en, this message translates to:
+  /// **'Finished work'**
+  String get wakeOriginWorkFinished;
+
+  /// Label naming what raised a waiting wake
+  ///
+  /// In en, this message translates to:
+  /// **'Limit reset'**
+  String get wakeOriginLimitReset;
+
+  /// Label naming what raised a waiting wake
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery'**
+  String get wakeOriginRecovery;
+
+  /// Label naming what raised a waiting wake
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment'**
+  String get wakeOriginAssignment;
+
+  /// Label naming what raised a waiting wake
+  ///
+  /// In en, this message translates to:
+  /// **'Pipeline step'**
+  String get wakeOriginPipelineStep;
+
+  /// Label naming what raised a waiting wake
+  ///
+  /// In en, this message translates to:
+  /// **'Improvement review'**
+  String get wakeOriginImprovementReview;
+
+  /// Label: a wake raised by another agent's reply. {agent} is that agent's name
+  ///
+  /// In en, this message translates to:
+  /// **'Reply from {agent}'**
+  String wakeOriginReplyFrom(String agent);
+
+  /// Label: a wake raised by another agent's message. {agent} is that agent's name
+  ///
+  /// In en, this message translates to:
+  /// **'Message from {agent}'**
+  String wakeOriginMessageFrom(String agent);
+
+  /// Label: a wake raised by another agent finishing work. {agent} is that agent's name
+  ///
+  /// In en, this message translates to:
+  /// **'Finished work from {agent}'**
+  String wakeOriginWorkFinishedBy(String agent);
+
+  /// Which agent a waiting wake will wake. {agent} is the agent's name
+  ///
+  /// In en, this message translates to:
+  /// **'For {agent}'**
+  String wakeFor(String agent);
+
+  /// When a wake is due. {time} is a short date and clock time
+  ///
+  /// In en, this message translates to:
+  /// **'Due {time}'**
+  String wakeDue(String time);
+
+  /// A wake is due now
+  ///
+  /// In en, this message translates to:
+  /// **'Due now'**
+  String get wakeDueNow;
+
+  /// A wake is held until a person resumes it
+  ///
+  /// In en, this message translates to:
+  /// **'Held'**
+  String get wakeHeld;
+
+  /// When a wake expires. {time} is a short date and clock time
+  ///
+  /// In en, this message translates to:
+  /// **'Expires {time}'**
+  String wakeExpires(String time);
+
+  /// How many times delivering a wake was tried
+  ///
+  /// In en, this message translates to:
+  /// **'Attempt {attempt}'**
+  String wakeAttempt(int attempt);
+
+  /// Button: cancel a waiting wake
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get wakeCancel;
+
+  /// Button: deliver a waiting wake now instead of at its time
+  ///
+  /// In en, this message translates to:
+  /// **'Deliver now'**
+  String get wakeDeliverNow;
+
+  /// Button: resume a held wake
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get wakeResume;
+
+  /// Button: drop the recovery wake left after a server restart
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get wakeDismiss;
+
+  /// Shown instead of Resume when the viewer may not resume a held wake
+  ///
+  /// In en, this message translates to:
+  /// **'Only the person whose run this is can resume it.'**
+  String get wakeResumeOnlyTheirs;
+
+  /// Card for the wake a server restart left behind
+  ///
+  /// In en, this message translates to:
+  /// **'The server restarted during this run. Resume to continue it, or dismiss.'**
+  String get wakeRecovery;
+
+  /// Card: an agent run waits for an AI provider's usage limit to reset. {provider} is the provider's name, {time} a clock time
+  ///
+  /// In en, this message translates to:
+  /// **'Paused at {provider}\'s usage limit, which resets at {time}. The run waits for Resume, for up to 7 days after the reset.'**
+  String limitParkTitle(String provider, String time);
+
+  /// Card: an agent run waits for an AI provider's usage limit to reset; the provider is unknown. {time} is a clock time
+  ///
+  /// In en, this message translates to:
+  /// **'Paused at the provider\'s usage limit, which resets at {time}. The run waits for Resume, for up to 7 days after the reset.'**
+  String limitParkTitleUnnamed(String time);
+
+  /// Button: resume the run without waiting for the reset
+  ///
+  /// In en, this message translates to:
+  /// **'Resume now'**
+  String get limitParkResumeNow;
+
+  /// Button: stop waiting for the usage limit
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get limitParkCancel;
+
+  /// The run waiting at a usage limit has resumed. {provider} is the provider's name
+  ///
+  /// In en, this message translates to:
+  /// **'Resumed after {provider}\'s usage limit.'**
+  String limitParkResumed(String provider);
+
+  /// The run no longer waits at a usage limit (it was cancelled or resumed). {provider} is the provider's name
+  ///
+  /// In en, this message translates to:
+  /// **'No longer waiting at {provider}\'s usage limit.'**
+  String limitParkGone(String provider);
+
+  /// Stands in for the provider's name in limitParkResumed and limitParkGone when the name is unknown
+  ///
+  /// In en, this message translates to:
+  /// **'the provider'**
+  String get limitParkProviderUnknown;
+
+  /// Button above the composer when messages are held because a person stopped the run
+  ///
+  /// In en, this message translates to:
+  /// **'Held messages'**
+  String get mobileHeldMessages;
+
+  /// Above messages that were held when a person stopped the agent's run
+  ///
+  /// In en, this message translates to:
+  /// **'Held because the run ended before it could take them. Send yours now or remove them.'**
+  String get heldSteeringTitle;
+
+  /// Button: send every held message to the agent
+  ///
+  /// In en, this message translates to:
+  /// **'Send held messages'**
+  String get heldSteeringRelease;
+
+  /// Activity title: a goal completed
+  ///
+  /// In en, this message translates to:
+  /// **'Goal done'**
+  String get notifGoalCompleted;
+
+  /// Activity title: a goal failed
+  ///
+  /// In en, this message translates to:
+  /// **'Goal failed'**
+  String get notifGoalFailed;
+
+  /// Activity title: a goal was cancelled
+  ///
+  /// In en, this message translates to:
+  /// **'Goal cancelled'**
+  String get notifGoalCancelled;
+
+  /// Activity title: a goal spent its whole budget
+  ///
+  /// In en, this message translates to:
+  /// **'Goal used its budget'**
+  String get notifGoalBudgetExhausted;
+
+  /// Activity title: a goal stopped and a person must decide
+  ///
+  /// In en, this message translates to:
+  /// **'A goal waits for your review'**
+  String get notifGoalNeedsReview;
+
+  /// Activity title: a goal waits for a person's answer
+  ///
+  /// In en, this message translates to:
+  /// **'A goal needs you'**
+  String get notifGoalNeedsPerson;
+
+  /// Activity title: a goal is held for another reason
+  ///
+  /// In en, this message translates to:
+  /// **'A goal is on hold'**
+  String get notifGoalOnHold;
+
+  /// Activity title: a schedule ended for good
+  ///
+  /// In en, this message translates to:
+  /// **'A schedule ended'**
+  String get notifWakeRuleEnded;
+
+  /// Activity title of the daily digest of what waits for the person
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 thing waits for you} other{{count} things wait for you}}'**
+  String notifWaitingDigest(int count);
+
+  /// Activity title: agents proposed improvements to review
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{An improvement was proposed} other{{count} improvements were proposed}}'**
+  String notifImprovementProposed(int count);
+
+  /// Activity title: a pipeline run stopped at its cost cap
+  ///
+  /// In en, this message translates to:
+  /// **'A pipeline run is held at its budget'**
+  String get notifPipelineRunHeld;
+
+  /// Activity body of a held pipeline run. Both are formatted amounts
+  ///
+  /// In en, this message translates to:
+  /// **'Spent {spent} of {cap}'**
+  String notifPipelineRunHeldBody(String spent, String cap);
+
+  /// Tag on an activity entry that asks the person to act
+  ///
+  /// In en, this message translates to:
+  /// **'Needs you'**
+  String get notifNeedsYou;
+
+  /// Label of a digest entry: a goal waits for review
+  ///
+  /// In en, this message translates to:
+  /// **'Goal waits for review'**
+  String get notifDigestGoalReview;
+
+  /// Label of a digest entry: a goal waits for a person
+  ///
+  /// In en, this message translates to:
+  /// **'Goal needs a person'**
+  String get notifDigestGoalPerson;
+
+  /// Label of a digest entry: a wake is held until someone resumes it
+  ///
+  /// In en, this message translates to:
+  /// **'Held wake'**
+  String get notifDigestHeldWake;
+
+  /// Label of a digest entry: an improvement waits for review
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed improvement'**
+  String get notifDigestImprovement;
+
+  /// Why a wake from a schedule did not run: the schedule was paused
+  ///
+  /// In en, this message translates to:
+  /// **'Its schedule was paused.'**
+  String get wakeKindRulePaused;
+
+  /// Why a wake from a schedule was skipped: the agent was already running and the schedule is set to skip in that case
+  ///
+  /// In en, this message translates to:
+  /// **'The agent was busy, and this schedule skips a time when it is.'**
+  String get wakeKindRuleBusy;
+
+  /// Why a wake from a watch was cancelled: it was merged into a newer wake for the same watch
+  ///
+  /// In en, this message translates to:
+  /// **'A later event of the same watch took its place.'**
+  String get wakeKindRuleFolded;
+
+  /// Why a wake from a schedule did not run: a newer scheduled time replaced it
+  ///
+  /// In en, this message translates to:
+  /// **'A later time of its schedule replaced it.'**
+  String get wakeKindRuleSuperseded;
+
+  /// Why a wake from a schedule started no run: the schedule is set to notify only
+  ///
+  /// In en, this message translates to:
+  /// **'Its schedule only sends a notification, so no run started.'**
+  String get wakeKindRuleNotified;
+
+  /// Why a wake from a schedule is waiting: the provider usage limit was reached
+  ///
+  /// In en, this message translates to:
+  /// **'Its schedule waits for the provider\'s usage limit to reset.'**
+  String get wakeKindRuleLimitParked;
+
+  /// Why a /refine command was refused: a review of this conversation ran recently
+  ///
+  /// In en, this message translates to:
+  /// **'An improvement review ran in this conversation a short while ago. Try again later.'**
+  String get improvementRefusalCooldown;
+
+  /// Why a /refine command was refused: a review is already queued
+  ///
+  /// In en, this message translates to:
+  /// **'An improvement review of this conversation is already waiting to run.'**
+  String get improvementRefusalQueued;
+
+  /// Why a /refine command was refused: the named agent is not in this workspace
+  ///
+  /// In en, this message translates to:
+  /// **'That agent is not an agent of this workspace.'**
+  String get improvementRefusalAgentNotFound;
+
+  /// Why sending held messages was refused: they are held by a usage-limit pause, not by a stop
+  ///
+  /// In en, this message translates to:
+  /// **'Messages held at a usage limit can\'t be sent by hand. They wait for the paused run to resume.'**
+  String get steeringRefusalHeldByLimit;
+
+  /// A finished usage-limit pause that someone cancelled. {provider} is the provider name, or the fallback "the provider"
+  ///
+  /// In en, this message translates to:
+  /// **'The wait at {provider}\'s usage limit was cancelled.'**
+  String limitParkCancelled(String provider);
+
+  /// A finished usage-limit pause that ran out of time. {provider} is the provider name, or the fallback "the provider"
+  ///
+  /// In en, this message translates to:
+  /// **'The wait at {provider}\'s usage limit expired before the run resumed.'**
+  String limitParkExpired(String provider);
+
+  /// A finished usage-limit pause whose resume was skipped; the reason follows. {provider} is the provider name, or the fallback "the provider"
+  ///
+  /// In en, this message translates to:
+  /// **'The run did not resume after {provider}\'s usage limit.'**
+  String limitParkSkipped(String provider);
+
+  /// Heading over messages a usage-limit pause holds, when the reset time is unknown
+  ///
+  /// In en, this message translates to:
+  /// **'Held while the run waits for the usage limit to reset. They are sent when the person it runs for resumes it.'**
+  String get heldSteeringLimitTitle;
+
+  /// Heading over messages a usage-limit pause holds. {time} is when the provider said the limit resets
+  ///
+  /// In en, this message translates to:
+  /// **'Held until the usage limit resets at {time}. They are sent when the person it runs for resumes it.'**
+  String heldSteeringLimitAt(String time);
+
+  /// Heading over held messages that neither a stop nor a usage-limit pause holds
+  ///
+  /// In en, this message translates to:
+  /// **'Held by the server. You can remove them.'**
+  String get heldSteeringOtherTitle;
+
+  /// Conversation row: an agent was woken to run. {agent} is the agent name; {count} is how many wakes the run delivered
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Woke {agent}} other{Woke {agent} for {count} waiting items}}'**
+  String workRowWoke(int count, String agent);
+
+  /// Conversation row: a scheduled wake was missed while the server was down. {agent} is the agent name
+  ///
+  /// In en, this message translates to:
+  /// **'A wake for {agent} was missed while the server was down.'**
+  String workRowWakeMissed(String agent);
+
+  /// Conversation row: a wake was skipped; the reason follows. {agent} is the agent name
+  ///
+  /// In en, this message translates to:
+  /// **'A wake for {agent} was not delivered.'**
+  String workRowWakeSkipped(String agent);
+
+  /// Conversation row: a schedule was created. {agent} is the agent name
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule set for {agent}.'**
+  String workRowScheduleCreated(String agent);
+
+  /// Conversation row: a schedule ended; the reason follows. {agent} is the agent name
+  ///
+  /// In en, this message translates to:
+  /// **'{agent}\'s schedule ended.'**
+  String workRowScheduleEnded(String agent);
+
+  /// Conversation row heading over the note an agent left on its schedule. {agent} is the agent name
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule note from {agent}:'**
+  String workRowNoteFromAgent(String agent);
+
+  /// Conversation row heading over the note a person left on a schedule
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule note from a person:'**
+  String get workRowNoteFromPerson;
+
+  /// Conversation row: a slash command was refused; the reason follows. {command} is the command, such as /goal
+  ///
+  /// In en, this message translates to:
+  /// **'The {command} command was refused.'**
+  String workRowCommandRefusedNamed(String command);
+
+  /// Conversation row: a slash command was refused; the reason follows
+  ///
+  /// In en, this message translates to:
+  /// **'A command was refused.'**
+  String get workRowCommandRefused;
+
+  /// Conversation row: a person raised a pipeline run budget. {person} is their name; {from} and {to} are amounts of money
+  ///
+  /// In en, this message translates to:
+  /// **'{person} raised the pipeline\'s spending cap from {from} to {to}.'**
+  String workRowCapRaised(String person, String from, String to);
+
+  /// Conversation row: a person raised a pipeline run budget (amounts unknown). {person} is their name
+  ///
+  /// In en, this message translates to:
+  /// **'{person} raised the pipeline\'s spending cap.'**
+  String workRowCapRaisedNoAmounts(String person);
+
+  /// Conversation row: an accepted improvement to a skill was undone at startup; the skill name follows
+  ///
+  /// In en, this message translates to:
+  /// **'An accepted change to this skill could not be finished, because the skill changed in the meantime. The proposal was rolled back.'**
+  String get workRowApplyIncomplete;
+
+  /// Button on a conversation row that opens the schedule it is about
+  ///
+  /// In en, this message translates to:
+  /// **'Open schedule'**
+  String get workRowOpenSchedule;
+
+  /// Heading over held messages when none of them were written by the viewer, so the viewer cannot send them
+  ///
+  /// In en, this message translates to:
+  /// **'Held because the run ended before it could take them. Only the person who wrote a message can send it.'**
+  String get heldSteeringOthersTitle;
+
+  /// Note above the Send held messages button when some held messages were written by other people
+  ///
+  /// In en, this message translates to:
+  /// **'Sends only your messages. The others wait for the people who wrote them.'**
+  String get heldSteeringOnlyYours;
+
+  /// Caption under a held message someone else wrote. {name} is that person's name
+  ///
+  /// In en, this message translates to:
+  /// **'Written by {name}'**
+  String heldSteeringWrittenBy(String name);
+
+  /// Why sending held messages was refused: every held message belongs to someone else
+  ///
+  /// In en, this message translates to:
+  /// **'Only the person who wrote a held message can send it, and none of these are yours.'**
+  String get steeringRefusalNotYours;
+
+  /// Why queuing or sending a steering message was refused: the viewer lacks write access and the live run acts for another person
+  ///
+  /// In en, this message translates to:
+  /// **'You need write access to this space\'s repositories to steer a run that acts for someone else.'**
+  String get steeringRefusalNeedsWrite;
+
+  /// Conversation row: a person paused a schedule. {name} is that person; {agent} is the agent the schedule wakes
+  ///
+  /// In en, this message translates to:
+  /// **'{name} paused the schedule for {agent}.'**
+  String workRowSchedulePaused(String name, String agent);
+
+  /// Verification row label when the reviewer judged a goal with no criteria as one item: the objective itself
+  ///
+  /// In en, this message translates to:
+  /// **'The objective as a whole'**
+  String get goalVerdictObjective;
+
+  /// Label of a digest entry: an agent asked a question or for approval and waits for an answer
+  ///
+  /// In en, this message translates to:
+  /// **'Waits for your answer'**
+  String get notifDigestRequest;
 }
 
 class _AppLocalizationsDelegate

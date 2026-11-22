@@ -1,4 +1,4 @@
-import 'package:cc_domain/features/dispatch/domain/entities/agent_goal_run.dart';
+import 'package:cc_domain/features/dispatch/domain/repositories/goal_run_view.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_goal_status.dart';
 import 'package:cc_remote/app_icons.dart';
 import 'package:cc_remote/format.dart';
@@ -6,12 +6,20 @@ import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/operation_scope.dart';
 import 'package:cc_remote/widgets/plan_goal/goal_create.dart';
 import 'package:cc_remote/widgets/plan_goal/goal_detail.dart';
+import 'package:cc_remote/widgets/plan_goal/goal_hold_line.dart';
+import 'package:cc_remote/widgets/plan_goal/schedule_create.dart';
+import 'package:cc_remote/widgets/work/work_text.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
-/// Workspace or conversation goal inventory, sorted with live goals first.
+/// Which creation form the goals screen shows.
+enum PhoneGoalsForm { goal, schedule }
+
+/// Workspace or conversation goal inventory: goals that wait for a person
+/// first, then live goals, then ended ones. Each row says what the goal is
+/// doing in words. The header starts a goal or a schedule ("Repeat") and
+/// opens the schedules list.
 class PhoneGoalsList extends StatelessWidget {
   const PhoneGoalsList({
     super.key,
@@ -19,16 +27,22 @@ class PhoneGoalsList extends StatelessWidget {
     required this.workspaceId,
     required this.conversationId,
     required this.writable,
-    required this.creating,
-    required this.onToggleCreate,
+    required this.form,
+    required this.onForm,
   });
 
-  final List<AgentGoalRun> goals;
+  final List<GoalRunView> goals;
   final String workspaceId;
   final String? conversationId;
   final bool writable;
-  final bool creating;
-  final VoidCallback onToggleCreate;
+  final PhoneGoalsForm? form;
+  final ValueChanged<PhoneGoalsForm> onForm;
+
+  static int _rank(GoalRunView v) => goalNeedsPerson(v.goal)
+      ? 0
+      : v.goal.status.isTerminal
+      ? 2
+      : 1;
 
   @override
   Widget build(BuildContext context) {
@@ -36,42 +50,56 @@ class PhoneGoalsList extends StatelessWidget {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final sorted = [...goals]
       ..sort((a, b) {
-        final priority = (a.status.isTerminal ? 1 : 0).compareTo(
-          b.status.isTerminal ? 1 : 0,
-        );
-        return priority != 0 ? priority : b.updatedAt.compareTo(a.updatedAt);
+        final priority = _rank(a).compareTo(_rank(b));
+        return priority != 0
+            ? priority
+            : b.goal.updatedAt.compareTo(a.goal.updatedAt);
       });
-    final numbers = NumberFormat.decimalPattern(
-      Localizations.localeOf(context).toLanguageTag(),
+    Widget toggle(PhoneGoalsForm which, String label) => CcButton(
+      size: CcButtonSize.lg,
+      variant: form == which
+          ? CcButtonVariant.primary
+          : CcButtonVariant.secondary,
+      onPressed: () => onForm(which),
+      child: Text(form == which ? l10n.cancel : label),
     );
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Row(
+        Text(
+          l10n.mobileGoalsTitle,
+          style: CcTypography.title.copyWith(color: t.textPrimary),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
           children: [
-            Expanded(
-              child: Text(
-                l10n.mobileGoalsTitle,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: t.textPrimary,
-                ),
+            if (writable) toggle(PhoneGoalsForm.goal, l10n.mobileGoalCreate),
+            if (writable) toggle(PhoneGoalsForm.schedule, l10n.goalRepeat),
+            CcButton(
+              size: CcButtonSize.lg,
+              variant: CcButtonVariant.ghost,
+              icon: AppIcons.repeat,
+              onPressed: () => context.push(
+                remoteWorkspaceLocation('/schedules', workspaceId),
               ),
+              child: Text(l10n.goalSchedules),
             ),
-            if (writable)
-              CcButton(
-                size: CcButtonSize.lg,
-                variant: CcButtonVariant.secondary,
-                onPressed: onToggleCreate,
-                child: Text(creating ? l10n.cancel : l10n.mobileGoalCreate),
-              ),
           ],
         ),
-        if (creating && writable) ...[
+        if (writable && form == PhoneGoalsForm.goal) ...[
           const SizedBox(height: 16),
           PhoneGoalCreate(
-            key: ValueKey('$workspaceId:${conversationId ?? ''}'),
+            key: ValueKey('goal:$workspaceId:${conversationId ?? ''}'),
+            workspaceId: workspaceId,
+            conversationId: conversationId,
+          ),
+        ],
+        if (writable && form == PhoneGoalsForm.schedule) ...[
+          const SizedBox(height: 16),
+          PhoneScheduleCreate(
+            key: ValueKey('schedule:$workspaceId:${conversationId ?? ''}'),
             workspaceId: workspaceId,
             conversationId: conversationId,
           ),
@@ -85,78 +113,74 @@ class PhoneGoalsList extends StatelessWidget {
             description: l10n.mobileGoalsEmptyDescription,
           ),
         ],
-        for (final goal in sorted)
+        for (final view in sorted)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: CcCard(
-              interactive: true,
-              semanticLabel: goal.userText,
-              onPressed: () => context.push(
-                remoteWorkspaceLocation(
-                  '/goals/${Uri.encodeComponent(goal.id)}',
-                  workspaceId,
-                ),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(AppIcons.circleDot, size: 18, color: t.textSecondary),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          goal.userText,
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: t.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 4,
-                          children: [
-                            CcBadge(
-                              label: phoneGoalStatus(l10n, goal.status),
-                              variant: goal.status == AgentGoalStatus.active
-                                  ? CcBadgeVariant.success
-                                  : goal.status == AgentGoalStatus.failed
-                                  ? CcBadgeVariant.danger
-                                  : CcBadgeVariant.neutral,
-                            ),
-                            Text(
-                              l10n.mobileGoalRuns(
-                                numbers.format(goal.runCount),
-                              ),
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: t.textSecondary,
-                              ),
-                            ),
-                            Text(
-                              shortDate(context, goal.updatedAt),
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: t.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(AppIcons.chevronRight, size: 16, color: t.textSecondary),
-                ],
-              ),
-            ),
+            child: _GoalRow(view: view, workspaceId: workspaceId),
           ),
       ],
+    );
+  }
+}
+
+class _GoalRow extends StatelessWidget {
+  const _GoalRow({required this.view, required this.workspaceId});
+
+  final GoalRunView view;
+  final String workspaceId;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final t = context.designSystem ?? DesignSystemTokens.light();
+    final goal = view.goal;
+    final caption = CcTypography.caption.copyWith(color: t.textSecondary);
+    return CcCard(
+      interactive: true,
+      semanticLabel: inertText(goal.userText, singleLine: true),
+      onPressed: () => context.push(
+        remoteWorkspaceLocation(
+          '/goals/${Uri.encodeComponent(goal.id)}',
+          workspaceId,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            inertText(goal.userText),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: CcTypography.body.copyWith(
+              color: t.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              CcBadge(
+                label: phoneGoalStatus(l10n, goal.status),
+                variant: phoneGoalStatusVariant(goal.status),
+              ),
+              Text(
+                goal.maxRuns == null
+                    ? l10n.goalSegmentsNoCap(goal.runCount)
+                    : l10n.goalSegments(goal.runCount, goal.maxRuns!),
+                style: caption,
+              ),
+              Text(shortDate(context, goal.updatedAt), style: caption),
+            ],
+          ),
+          if (goalHoldSentence(context, goal) != null) ...[
+            const SizedBox(height: 8),
+            GoalHoldLine(goal: goal, compact: true),
+          ],
+        ],
+      ),
     );
   }
 }

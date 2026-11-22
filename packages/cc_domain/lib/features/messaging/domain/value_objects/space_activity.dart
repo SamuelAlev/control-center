@@ -2,17 +2,19 @@ import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
 import 'package:collection/collection.dart';
 
 /// Per-space activity signals for the conversation list, computed
-/// SERVER-side as one workspace-wide aggregate — the sidebar's unread dot,
+/// SERVER-side as one workspace-wide aggregate — the sidebar's unread dots,
 /// needs-input badge and attention count read this instead of holding one
-/// full message-list subscription per space row.
+/// full message-list subscription per space row. Read state is per person
+/// and per conversation (`ConversationReadRepository`); the client compares
+/// it against [lastAgentMessageByConversation].
 class SpaceActivity {
   /// Creates a [SpaceActivity].
   const SpaceActivity({
     required this.spaceId,
     this.lastMessageAt,
-    this.lastAgentMessage,
     this.lastAgentMessageByConversation = const {},
     this.openQuestionCount = 0,
+    this.conversationsNeedingInput = const {},
   });
 
   /// The space these signals describe.
@@ -21,16 +23,10 @@ class SpaceActivity {
   /// When the newest (non-reverted) message landed, or null for empty.
   final DateTime? lastMessageAt;
 
-  /// Position of the newest agent message in the space (any conversation —
-  /// the signals are space-wide) — the unread-dot signal on a space that
-  /// does not list its conversations. It is unseen when it
-  /// [FeedPosition.isAfter] the user's read cursor.
-  final FeedPosition? lastAgentMessage;
-
-  /// Position of the newest agent message in each conversation. Empty when
-  /// the space has no agent messages. The sidebar uses this to put the unread
-  /// dot on the conversation that actually has unseen work, not on every
-  /// child and not only on the parent space.
+  /// Position of the newest agent message in each listed (not archived)
+  /// conversation. Empty when the space has no agent messages. A
+  /// conversation is unread when this is after the person's cursor there or
+  /// they have none; the space is unread when any of its conversations is.
   final Map<String, FeedPosition> lastAgentMessageByConversation;
 
   /// Count of agent questions in the space still awaiting the user's answer —
@@ -40,24 +36,38 @@ class SpaceActivity {
   /// Whether an agent question awaits the user.
   bool get needsInput => openQuestionCount > 0;
 
-  /// Whether the newest agent message is unseen by a reader whose cursor is
-  /// [lastRead]. A null cursor (never opened) is never unread.
-  bool unreadAfter(FeedPosition? lastRead) {
-    final agent = lastAgentMessage;
-    return lastRead != null && agent != null && agent.isAfter(lastRead);
+  /// The conversations holding at least one of those open questions, so the
+  /// sidebar can mark the conversation that asked, not every child.
+  final Set<String> conversationsNeedingInput;
+
+  /// Whether [conversationId] has an agent message unseen by a reader whose
+  /// cursor there is [lastRead]. A conversation they never read is unread
+  /// once an agent has written in it.
+  bool conversationUnread(String conversationId, FeedPosition? lastRead) {
+    final agent = lastAgentMessageByConversation[conversationId];
+    return agent != null && (lastRead == null || agent.isAfter(lastRead));
   }
+
+  /// Whether any listed conversation is unread for a reader with the cursors
+  /// [reads], keyed by conversation id. The space keeps no read state of its
+  /// own.
+  bool unreadFor(Map<String, FeedPosition> reads) =>
+      lastAgentMessageByConversation.keys.any(
+        (id) => conversationUnread(id, reads[id]),
+      );
 
   /// Wire shape for the `messaging.watchSpaceActivity` subscription.
   Map<String, dynamic> toJson() => {
     'space_id': spaceId,
     'last_message_at': ?lastMessageAt?.toIso8601String(),
-    'last_agent_message': ?lastAgentMessage?.toJson(),
     'open_question_count': openQuestionCount,
     if (lastAgentMessageByConversation.isNotEmpty)
       'conversations': [
         for (final e in lastAgentMessageByConversation.entries)
           {'conversation_id': e.key, 'last_agent_message': e.value.toJson()},
       ],
+    if (conversationsNeedingInput.isNotEmpty)
+      'needs_input_conversations': [...conversationsNeedingInput],
   };
 
   /// Decodes the wire shape; returns null when malformed.
@@ -85,9 +95,13 @@ class SpaceActivity {
       lastMessageAt: DateTime.tryParse(
         json['last_message_at'] as String? ?? '',
       ),
-      lastAgentMessage: FeedPosition.fromJson(json['last_agent_message']),
       lastAgentMessageByConversation: conversations,
       openQuestionCount: (json['open_question_count'] as num?)?.toInt() ?? 0,
+      conversationsNeedingInput: {
+        if (json['needs_input_conversations'] case final List ids)
+          for (final id in ids)
+            if (id is String) id,
+      },
     );
   }
 
@@ -97,8 +111,11 @@ class SpaceActivity {
       other is SpaceActivity &&
           spaceId == other.spaceId &&
           lastMessageAt == other.lastMessageAt &&
-          lastAgentMessage == other.lastAgentMessage &&
           openQuestionCount == other.openQuestionCount &&
+          const SetEquality<String>().equals(
+            conversationsNeedingInput,
+            other.conversationsNeedingInput,
+          ) &&
           const MapEquality<String, FeedPosition>().equals(
             lastAgentMessageByConversation,
             other.lastAgentMessageByConversation,
@@ -108,8 +125,8 @@ class SpaceActivity {
   int get hashCode => Object.hash(
     spaceId,
     lastMessageAt,
-    lastAgentMessage,
     openQuestionCount,
+    const SetEquality<String>().hash(conversationsNeedingInput),
     const MapEquality<String, FeedPosition>().hash(
       lastAgentMessageByConversation,
     ),

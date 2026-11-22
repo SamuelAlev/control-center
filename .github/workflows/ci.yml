@@ -476,6 +476,16 @@ jobs:
         if: steps.gate.outputs.run == 'true'
         run: bash scripts/release/verify_natives.sh build/natives linux server
 
+      # The server refuses to boot without code mode's runner. `--self-test`
+      # also proves the lockdown on this runner's kernel.
+      - name: Verify the code mode runner
+        if: steps.gate.outputs.run == 'true'
+        shell: bash
+        run: |
+          source scripts/lib/common.sh
+          source scripts/lib/codemode.sh
+          cc_codemode_verify build/natives/codemode linux
+
       - name: Server boot e2e
         # Two files boot cc_server at once. Native preflight loads ONNX, and
         # on a cold runner that stretch blows the 30s default while the other

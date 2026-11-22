@@ -460,4 +460,84 @@ void main() {
       expect(isMaskedObservation(''), isFalse);
     });
   });
+
+  group('list, a chosen handle and a label', () {
+    const other = ToolOutputScope(
+      workspaceId: 'ws1',
+      conversationId: 'c2',
+      agentId: 'a1',
+    );
+
+    test('lists its own scope newest first, without the text', () async {
+      final store = InMemoryToolOutputStore();
+      final first = await store.put(
+        const ToolOutputWrite(scope: scope, toolName: 'bash', content: 'one'),
+      );
+      final second = await store.put(
+        const ToolOutputWrite(
+          scope: scope,
+          toolName: 'keep',
+          content: 'twö',
+          label: 'rows',
+          isError: true,
+        ),
+      );
+      await store.put(
+        const ToolOutputWrite(scope: other, toolName: 'bash', content: 'x'),
+      );
+      final listed = await store.list(scope);
+      expect(
+        [for (final e in listed) e.handle],
+        [second!.handle, first!.handle],
+      );
+      expect(listed.first.label, 'rows');
+      expect(listed.first.toolName, 'keep');
+      expect(listed.first.chars, 3);
+      expect(listed.first.bytes, 4);
+      expect(listed.first.isError, isTrue);
+      expect(listed.last.label, isNull);
+      expect(await store.list(other), hasLength(1));
+    });
+
+    test(
+      'stores under a chosen handle; refuses a malformed or taken one',
+      () async {
+        final store = InMemoryToolOutputStore();
+        final handle = newToolOutputHandle();
+        final put = await store.put(
+          ToolOutputWrite(
+            scope: scope,
+            toolName: 'keep',
+            content: 'v',
+            handle: handle,
+          ),
+        );
+        expect(put!.handle, handle);
+        expect((await store.read(scope, handle)).chunk!.text, 'v');
+        expect(
+          await store.put(
+            ToolOutputWrite(
+              scope: scope,
+              toolName: 'keep',
+              content: 'again',
+              handle: handle,
+            ),
+          ),
+          isNull,
+        );
+        expect((await store.read(scope, handle)).chunk!.text, 'v');
+        expect(
+          await store.put(
+            const ToolOutputWrite(
+              scope: scope,
+              toolName: 'keep',
+              content: 'v',
+              handle: '../escape',
+            ),
+          ),
+          isNull,
+        );
+      },
+    );
+  });
 }

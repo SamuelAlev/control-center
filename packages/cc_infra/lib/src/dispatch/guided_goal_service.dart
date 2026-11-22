@@ -1,3 +1,5 @@
+import 'package:cc_domain/cc_domain.dart' show ValidationException;
+import 'package:cc_domain/features/dispatch/domain/value_objects/goal_command.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_harness/loop.dart';
 import 'package:cc_infra/src/dispatch/adapter_one_shot_runner.dart';
@@ -112,12 +114,26 @@ class GuidedGoalService {
     // the objective "looks complete" is exactly what ends an interview early.
     final review = reviewGoalObjective(text);
     final looksLikeObjective = text.contains('## Objective');
+    final pastCap = transcript.length >= maxTurns * 2;
+    if (looksLikeObjective && (review.isReady || pastCap)) {
+      // The sections become the goal's contract when it starts: one past its
+      // limits (more than 12 success criteria, one longer than 300
+      // characters) would be refused then, so the interview asks for the
+      // fix now, naming the limit. Never cut to fit.
+      if (_contractRefusal(text) case final refusal?) {
+        return GuidedGoalStep(
+          question: refusal,
+          missing: review.missing,
+          weaknesses: review.weaknesses,
+        );
+      }
+    }
     if (looksLikeObjective && review.isReady) {
       return GuidedGoalStep(objective: text);
     }
     // Past the turn cap, emit what there is WITH the gaps named, rather than
     // asking a seventh question nobody will answer.
-    if (transcript.length >= maxTurns * 2 && looksLikeObjective) {
+    if (pastCap && looksLikeObjective) {
       return GuidedGoalStep(
         objective: text,
         missing: review.missing,
@@ -134,6 +150,17 @@ class GuidedGoalService {
       missing: review.missing,
       weaknesses: review.weaknesses,
     );
+  }
+
+  /// Why [objective] could not start as a goal (its contract sections past
+  /// their limits, or text `/goal` would refuse), or null when it can.
+  static String? _contractRefusal(String objective) {
+    try {
+      GoalCommand.parse(objective);
+      return null;
+    } on ValidationException catch (e) {
+      return '${e.message} Can you change the objective so it fits?';
+    }
   }
 
   /// The first question-shaped line in [text].

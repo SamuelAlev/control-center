@@ -14,6 +14,8 @@ import 'package:cc_domain/core/domain/value_objects/sandbox_event.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_handle.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_domain/core/domain/value_objects/usage_scope.dart';
+import 'package:cc_domain/features/code_mode/domain/ports/code_execution_port.dart';
+import 'package:cc_domain/features/code_mode/domain/value_objects/code_mode.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
 import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart';
@@ -144,6 +146,18 @@ String _result({
       },
 });
 
+/// A script runner that is never asked to run anything: only whether it
+/// passed its self-test matters to the launch policy.
+class _Runner implements CodeExecutionPort {
+  _Runner(this.availability);
+
+  @override
+  final CodeRunnerAvailability availability;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 class _UnusedAgentRepo implements AgentRepository {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -220,6 +234,7 @@ void main() {
     String prompt = 'hello',
     AgentPromptParts? promptParts,
     bool claudeResumeReset = false,
+    bool freshHistory = false,
     String? effortLevel,
     String conversationId = 'conv-1',
     String? claudeConfigDir,
@@ -233,7 +248,9 @@ void main() {
     Map<String, String> callerEnv = const {},
     ClaudeMcpDiscoveryCachePolicy discoveryCache =
         ClaudeMcpDiscoveryCachePolicy.disabled,
+    CodeExecutionPort? codeExecutions,
   }) => DispatchSession(
+    readOnly: false,
     deps: SandboxDispatchDeps(
       hostExecution: const HostExecutionGate(
         posture: HostExecutionPosture.offByOwner,
@@ -245,6 +262,7 @@ void main() {
       backendRegistry: BackendRegistry({'claude': const ClaudeCliBackend()}),
       claudeSessionStore: store,
       claudeMcpDiscoveryCache: discoveryCache,
+      codeExecutions: codeExecutions,
       resolveCommitIdentity: (_, {workspaceId, runLogId, forge}) async {
         if (identityFailure != null) {
           throw identityFailure;
@@ -273,6 +291,7 @@ void main() {
     prompt: prompt,
     promptParts: promptParts,
     claudeResumeReset: claudeResumeReset,
+    freshHistory: freshHistory,
     runStartedAt: runStartedAt,
     effortLevel: effortLevel,
     agentDirHostPath: agentDirHostPath,
@@ -460,6 +479,55 @@ void main() {
       },
     );
 
+    test('a fresh run starts a new native session and leaves the stored one '
+        'for the next ordinary run', () async {
+      final store = InMemoryClaudeNativeSessionStore();
+      final firstSandbox = _ScriptedClaude();
+      await runAnswering(
+        firstSandbox,
+        buildSession(
+          firstSandbox,
+          store: store,
+          promptParts: partsOf('delta-only'),
+        ),
+        sessionId: 'sess-A',
+      );
+
+      final freshSandbox = _ScriptedClaude();
+      await runAnswering(
+        freshSandbox,
+        buildSession(
+          freshSandbox,
+          store: store,
+          prompt: 'full fresh prompt',
+          promptParts: partsOf('delta-only'),
+          freshHistory: true,
+        ),
+        sessionId: 'sess-B',
+      );
+      // No resume, and the whole prompt: nothing from before this run.
+      expect(freshSandbox.argv, isNot(contains('--resume')));
+      expect(freshSandbox.argv, isNot(contains('--continue')));
+      expect(freshSandbox.received, ['full fresh prompt']);
+      // The conversation's session survives the fresh run.
+      expect(store.records.values.single.sessionId, 'sess-A');
+
+      final nextSandbox = _ScriptedClaude();
+      await runAnswering(
+        nextSandbox,
+        buildSession(
+          nextSandbox,
+          store: store,
+          prompt: 'full next prompt',
+          promptParts: partsOf('delta-only'),
+        ),
+        sessionId: 'sess-A',
+      );
+      final i = nextSandbox.argv.indexOf('--resume');
+      expect(i, isNot(-1));
+      expect(nextSandbox.argv[i + 1], 'sess-A');
+    });
+
     test('a follow-up turn resumes that id and sends only the delta', () async {
       final store = InMemoryClaudeNativeSessionStore();
 
@@ -555,7 +623,11 @@ void main() {
           ),
         );
         session.onHarnessStarted = () {
-          session.steer('second', channel: SteeringChannel.followUp);
+          session.steer(
+            'second',
+            source: null,
+            channel: SteeringChannel.followUp,
+          );
         };
         sandbox.onMessage = (text) {
           if (text == 'hello') {
@@ -710,7 +782,11 @@ void main() {
         final sub = session.controller.stream.listen(events.add);
 
         session.onHarnessStarted = () {
-          session.steer('second', channel: SteeringChannel.followUp);
+          session.steer(
+            'second',
+            source: null,
+            channel: SteeringChannel.followUp,
+          );
         };
         sandbox.onMessage = (text) {
           sandbox.emit(_init('sess-A'));
@@ -856,6 +932,61 @@ void main() {
         expect(secondSandbox.env?['MCP_DISCOVERY_CACHE_MAX_STALE_S'], '3600');
       },
     );
+  });
+
+  group('repl in the launch policy', () {
+    test('gaining repl forks the native session and withholds the discovery '
+        'cache; the same surface resumes', () async {
+      final store = InMemoryClaudeNativeSessionStore();
+      const policy = ClaudeMcpDiscoveryCachePolicy(enabled: true);
+      Future<_ScriptedClaude> runWith(
+        CodeExecutionPort? codeExecutions,
+        String id,
+      ) async {
+        final sandbox = _ScriptedClaude();
+        await runAnswering(
+          sandbox,
+          buildSession(
+            sandbox,
+            store: store,
+            promptParts: partsOf('delta-$id'),
+            discoveryCache: policy,
+            codeExecutions: codeExecutions,
+          ),
+          sessionId: id,
+        );
+        return sandbox;
+      }
+
+      // No runner, and a runner that failed its self-test, are the same
+      // surface: no repl.
+      await runWith(null, 'sess-none');
+      final unavailable = await runWith(
+        _Runner(const CodeRunnerAvailability.unavailable('no seccomp')),
+        'sess-none',
+      );
+      expect(unavailable.argv, contains('--resume'));
+      expect(store.records, hasLength(1));
+
+      final repl = await runWith(
+        _Runner(const CodeRunnerAvailability.available()),
+        'sess-repl',
+      );
+      expect(repl.argv, isNot(contains('--resume')));
+      expect(repl.env?['MCP_DISCOVERY_CACHE'], '0');
+      expect(store.records, hasLength(2));
+
+      final replAgain = await runWith(
+        _Runner(const CodeRunnerAvailability.available()),
+        'sess-repl',
+      );
+      expect(replAgain.argv, contains('--resume'));
+      expect(replAgain.env?['MCP_DISCOVERY_CACHE'], '1');
+      final fingerprints = {
+        for (final record in store.records.values) record.policyFingerprint,
+      };
+      expect(fingerprints, hasLength(2));
+    });
   });
 
   group('review boundaries', () {

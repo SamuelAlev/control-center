@@ -46,6 +46,12 @@ The phone client has no notification surface at all.
 Anything outside this list cannot be notified or filtered — there is no
 "everything else" category.
 
+Long-running work uses the first two categories. A goal that ended and a
+schedule that ended count as **Agent finished**; a goal waiting for your
+review, an improvement proposal, a pipeline run held at its cost cap and the
+daily digest of what waits for you count as **Agent waiting on you**. Each reaches
+the person it concerns: whoever started the goal, the schedule or the run.
+
 **Agent waiting on you** fires when a wait starts: a pending
 approval (including sandbox exec grants and Claude Code tool approvals), an
 `ask_user` question, or a run held because its credential cannot serve it. It
@@ -112,6 +118,10 @@ A notification is dropped, silently, when any of these is true:
 
 Those checks apply to OS toasts. The durable bell still records the event.
 
+Some notifications are **quiet**: the server marks them so they reach the
+bell without a toast, a sound or a loud phone push. A schedule that ended and a
+goal that ended are quiet. A goal waiting for your review is not.
+
 Two more suppressions live further upstream, in what the server sends at all:
 
 - An un-mentioned message from another **human** never becomes a notification
@@ -121,8 +131,8 @@ Two more suppressions live further upstream, in what the server sends at all:
   unread badge
 
 Within a space there is no quiet corner: every conversation notifies equally,
-threads included. Read state is space-scoped, so unread aggregates across a
-space's conversations rather than being tracked per conversation.
+threads included. Read state is tracked per conversation, and a space is
+unread while any of its conversations is.
 
 ## Read and clear the notification centre
 
@@ -170,6 +180,10 @@ avoid a badge that flashes and then empties. It settles once the mark loads.
 Check that you were not already on the space it happened in — an active route
 suppresses its own OS toast. In a shared space, a run someone else started
 pings them, not you. A turn that ended with no reply and no error sends nothing.
+
+A run a schedule or watch started that ends without trouble sends nothing
+unless it mentions someone. A finished goal or an ended schedule goes to the
+bell without a toast.
 
 ## Related guides
 

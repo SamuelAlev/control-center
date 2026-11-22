@@ -75,6 +75,38 @@ void main() {
       );
     });
 
+    test(
+      'two rows naming one run: the oldest answers, never a throw',
+      () async {
+        await db.orchestrationDao.insert(
+          OrchestrationsTableCompanion.insert(
+            id: 'o-new',
+            workspaceId: 'w-1',
+            proposalJson: '{}',
+            pipelineRunId: const Value('run-1'),
+            createdAt: Value(DateTime.utc(2026, 2)),
+          ),
+        );
+        await db.orchestrationDao.insert(
+          OrchestrationsTableCompanion.insert(
+            id: 'o-old',
+            workspaceId: 'w-1',
+            proposalJson: '{}',
+            pipelineRunId: const Value('run-1'),
+            createdAt: Value(DateTime.utc(2026)),
+          ),
+        );
+        expect(
+          (await db.orchestrationDao.forPipelineRun('w-1', 'run-1'))?.id,
+          'o-old',
+        );
+        expect(
+          (await db.orchestrationDao.forPipelineRunAnyWorkspace('run-1'))?.id,
+          'o-old',
+        );
+      },
+    );
+
     test('forPipelineRunAnyWorkspace spans every workspace', () async {
       await seed(id: 'o-1', ws: 'w-2', pipelineRunId: 'run-x');
       expect(
@@ -97,9 +129,24 @@ void main() {
             'o-1',
             'w-2',
             const OrchestrationsTableCompanion(status: Value('approved')),
+            revision: 1,
+            status: 'proposed',
           ),
           0,
         );
+        // A writer that read another revision or status writes nothing.
+        for (final (revision, status) in [(2, 'proposed'), (1, 'approved')]) {
+          expect(
+            await db.orchestrationDao.updateById(
+              'o-1',
+              'w-1',
+              const OrchestrationsTableCompanion(status: Value('executing')),
+              revision: revision,
+              status: status,
+            ),
+            0,
+          );
+        }
         expect(
           (await db.orchestrationDao.getById('o-1', 'w-1'))?.status,
           'proposed',
@@ -113,6 +160,8 @@ void main() {
               status: Value('approved'),
               pipelineRunId: Value('run-1'),
             ),
+            revision: 1,
+            status: 'proposed',
           ),
           1,
         );

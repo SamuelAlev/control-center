@@ -253,11 +253,17 @@ sys.exit(1 if failures else 0)
     int timeoutSeconds = 120,
     Map<String, String>? env,
     CancellationToken? cancel,
+    PersonWaitListener? personWait,
+    String? parentToolCallId,
+    HarnessCommandObserver? observer,
   }) async {
     final reason = await commandGuard?.call(command);
     if (reason != null) {
       return HarnessCommandResult.deny(reason);
     }
+    // This runner collects output at the end: the observer hears the start
+    // now and the whole output once, when the command is done.
+    observer?.onStarted?.call();
     final result = await execute(
       '/bin/bash',
       ['-c', command],
@@ -265,6 +271,13 @@ sys.exit(1 if failures else 0)
       timeout: Duration(seconds: timeoutSeconds),
       cancel: cancel ?? cancellation,
     );
+    final output = [
+      result.stdout,
+      result.stderr,
+    ].where((part) => part.isNotEmpty).join('\n');
+    if (output.isNotEmpty) {
+      observer?.onOutput?.call(output);
+    }
     return HarnessCommandResult(
       exitCode: result.exitCode,
       stdout: result.stdout,

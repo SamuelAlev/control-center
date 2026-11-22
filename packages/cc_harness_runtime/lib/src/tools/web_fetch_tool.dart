@@ -82,6 +82,38 @@ class WebFetchTool extends HarnessTool {
   };
 
   @override
+  Map<String, dynamic> get outputSchema => const {
+    'type': 'object',
+    'properties': {
+      'url': {'type': 'string', 'description': 'The URL asked for.'},
+      'final_url': {
+        'type': 'string',
+        'description': 'The URL the content came from, after redirects.',
+      },
+      'status': {'type': 'integer', 'description': 'HTTP status code.'},
+      'content_type': {'type': 'string'},
+      'text': {
+        'type': 'string',
+        'description':
+            'The readable text of the page, without the length cap the '
+            'model-facing text has.',
+      },
+      'truncated': {
+        'type': 'boolean',
+        'description': 'Whether the response body exceeded the size limit.',
+      },
+    },
+    'required': [
+      'url',
+      'final_url',
+      'status',
+      'content_type',
+      'text',
+      'truncated',
+    ],
+  };
+
+  @override
   Future<HarnessToolResult> execute(
     Map<String, dynamic> args,
     HarnessToolContext context,
@@ -194,8 +226,19 @@ class WebFetchTool extends HarnessTool {
       final text = contentType.contains('html')
           ? (extractSiteContent(uri, body) ?? _htmlToText(body))
           : body.trim();
+      final structured = {
+        'url': url,
+        'final_url': current.toString(),
+        'status': response.statusCode,
+        'content_type': contentType,
+        'text': text,
+        'truncated': overflowed,
+      };
       if (text.isEmpty) {
-        return HarnessToolResult.success('(no readable text at $url)');
+        return HarnessToolResult.success(
+          '(no readable text at $url)',
+          structured: structured,
+        );
       }
       final capped = text.length > maxChars
           ? '${text.substring(0, maxChars)}\n…[truncated ${text.length - maxChars} chars]'
@@ -204,7 +247,10 @@ class WebFetchTool extends HarnessTool {
           ? '\n…[response exceeded ${_maxBodyBytes ~/ (1024 * 1024)}MB; '
                 'truncated]'
           : '';
-      return HarnessToolResult.success('# $url\n\n$capped$suffix');
+      return HarnessToolResult.success(
+        '# $url\n\n$capped$suffix',
+        structured: structured,
+      );
     } on Object catch (e) {
       return HarnessToolResult.error('Failed to fetch $url: $e');
     } finally {

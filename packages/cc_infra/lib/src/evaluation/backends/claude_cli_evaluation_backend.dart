@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_attempt.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_backend_port.dart';
+import 'package:cc_domain/features/evals/domain/evaluation/evaluation_outcome.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_plan.dart';
 import 'package:cc_domain/features/evals/domain/value_objects/agent_config_hash.dart';
 
@@ -125,6 +126,15 @@ class ClaudeCliEvaluationBackend implements EvaluationBackendPort {
         !capabilities.supportsResume) {
       return 'the pinned CLI cannot resume an explicit native session';
     }
+    if (effective.goalVerification != null) {
+      return 'goal arms run on the builtin harness: the attempt offers '
+          'complete_goal and runs the review inside its own loop, which this '
+          'adapter cannot host';
+    }
+    if (effective.codeMode != null) {
+      return 'code mode arms run on the builtin harness: this adapter has no '
+          'repl surface to switch';
+    }
     if (effective.mcpDiscoveryCache == McpDiscoveryCacheMode.enabled) {
       final path = mcpConfigPath;
       if (path == null || path.isEmpty) {
@@ -171,7 +181,8 @@ class ClaudeCliEvaluationBackend implements EvaluationBackendPort {
     var pendingCompactions = 0;
     var compactionContinuations = 0;
     var apiRetries = 0;
-    var completed = false;
+    // How the attempt ended: harness fault until a turn proves otherwise.
+    var end = EvaluationAttemptEnd.harnessFault;
     String? error;
     String? sessionId;
     String? servedModel;
@@ -210,9 +221,20 @@ class ClaudeCliEvaluationBackend implements EvaluationBackendPort {
           // Old CLIs restart their counters even when their history resumes.
           ledger = ClaudeAccountingLedger();
         }
+        // `history_none` sends the brief and this turn only, as a run
+        // dispatched with `freshHistory` starts.
         final prompt = resume
             ? turns[index]
-            : _reconstructedPrompt(turns, index, traces);
+            : _reconstructedPrompt(
+                turns,
+                index,
+                traces,
+                from:
+                    request.effective.sessionContinuity ==
+                        SessionContinuityMode.historyNone
+                    ? index
+                    : 0,
+              );
         final args = buildTurnArgs(
           modelId: _bareModel(request.effective.modelId),
           effortLevel: request.effective.effortLevel,
@@ -228,7 +250,11 @@ class ClaudeCliEvaluationBackend implements EvaluationBackendPort {
           final remaining = cap - costMicros / 1000000;
           if (remaining <= 0 || costUnavailable) {
             error = 'attempt cost budget exhausted or remaining spend unknown';
-            completed = false;
+            // Spent its own cap: the agent ran out of budget. Unknown spend
+            // is the harness's failure to price, not the agent's.
+            end = costUnavailable
+                ? EvaluationAttemptEnd.harnessFault
+                : EvaluationAttemptEnd.agentStopped;
             break;
           }
           args.addAll([
@@ -240,6 +266,7 @@ class ClaudeCliEvaluationBackend implements EvaluationBackendPort {
         }
         resumedSession = resumedSession || resume;
         var receivedFinalResult = false;
+        String? errorSubtype;
         final trace = _TurnTrace.empty();
         final turn = await _runTurn(
           args: args,
@@ -319,6 +346,7 @@ class ClaudeCliEvaluationBackend implements EvaluationBackendPort {
             if (accounting.subtype != null &&
                 accounting.subtype!.startsWith('error')) {
               error = 'claude result subtype: ${accounting.subtype}';
+              errorSubtype = accounting.subtype;
             }
           },
           onCompact: () {
@@ -339,7 +367,19 @@ class ClaudeCliEvaluationBackend implements EvaluationBackendPort {
         }
         if (turn.timedOut) {
           error = 'turn timed out after ${turnTimeout.inSeconds}s';
-          completed = false;
+          // A wall-clock budget, like the built-in loop's time budget: the
+          // CLI cannot tell a slow agent from a hung one, and reading it as
+          // missing data would reward the slower arm.
+          end = EvaluationAttemptEnd.agentStopped;
+          break;
+        }
+        // The CLI's own stops for turns and budget (it exits non-zero with
+        // them) are the agent running out, scored as a failure.
+        if (errorSubtype == 'error_max_turns' ||
+            errorSubtype == 'error_max_budget_usd') {
+          end = errorSubtype == 'error_max_budget_usd' && costUnavailable
+              ? EvaluationAttemptEnd.harnessFault
+              : EvaluationAttemptEnd.agentStopped;
           break;
         }
         if (turn.exitCode != 0) {
@@ -347,24 +387,26 @@ class ClaudeCliEvaluationBackend implements EvaluationBackendPort {
               ? '"$claudePath" not found on PATH'
               : 'claude exited with code ${turn.exitCode}: '
                     '${_excerpt(turn.stderr)}';
-          completed = false;
+          end = EvaluationAttemptEnd.harnessFault;
           break;
         }
         if (!receivedFinalResult) {
           error ??= 'Claude exited without a final accounting result';
           costUnavailable = true;
-          completed = false;
+          end = EvaluationAttemptEnd.harnessFault;
           break;
         }
         if (error != null) {
-          completed = false;
+          // error_during_execution, an unknown error subtype, or a stream /
+          // SDK error the CLI reported.
+          end = EvaluationAttemptEnd.harnessFault;
           break;
         }
-        completed = true;
+        end = EvaluationAttemptEnd.finished;
       }
     } on Object catch (exception) {
       error = '$exception';
-      completed = false;
+      end = EvaluationAttemptEnd.harnessFault;
     }
     stopwatch.stop();
 
@@ -399,7 +441,7 @@ class ClaudeCliEvaluationBackend implements EvaluationBackendPort {
       ),
       observedCliVersion: observedCliVersion,
       observedToolSurfaceHash: observedToolSurfaceHash,
-      completed: completed,
+      end: end,
       error: error,
       tokens: tokens,
       cost: costUnavailable
@@ -469,14 +511,15 @@ class ClaudeCliEvaluationBackend implements EvaluationBackendPort {
   String _reconstructedPrompt(
     List<String> turns,
     int index,
-    List<_TurnTrace> traces,
-  ) {
+    List<_TurnTrace> traces, {
+    required int from,
+  }) {
     final buffer = StringBuffer()
       ..writeln('<cc-eval-brief>')
       ..writeln(systemPrompt)
       ..writeln('</cc-eval-brief>')
       ..writeln();
-    for (var i = 0; i <= index; i++) {
+    for (var i = from; i <= index; i++) {
       buffer.writeln('user: ${turns[i]}');
       final trace = i < traces.length ? traces[i] : null;
       if (trace == null) {

@@ -3,6 +3,7 @@ import 'package:cc_domain/features/messaging/domain/repositories/conversation_re
 import 'package:cc_domain/features/todos/domain/entities/todo_item.dart';
 import 'package:cc_domain/features/todos/domain/repositories/todo_repository.dart';
 import 'package:cc_domain/features/todos/domain/value_objects/todo_status.dart';
+import 'package:cc_mcp/src/mcp_script_surface.dart';
 import 'package:cc_mcp/src/tools/todo_write_tool.dart';
 import 'package:test/test.dart';
 
@@ -55,6 +56,27 @@ void main() {
     expect(todos.items.single.id, id);
     expect(todos.items.single.createdAt, createdAt);
     expect(todos.items.single.status, TodoStatus.inProgress);
+  });
+
+  test('what a script receives is the text its result note states', () async {
+    final result = await tool.run({
+      'workspace_id': 'ws-1',
+      'conversation_id': 'conv-1',
+      'todos': [
+        {'content': 'Ship it', 'status': 'completed'},
+        {'content': 'Tell them', 'status': 'in_progress'},
+        {'content': 'Rest', 'status': 'pending'},
+      ],
+    });
+    expect(result.isError, isFalse);
+    final value = nestedResultValue(result);
+    expect(value, isA<String>());
+    expect(
+      value,
+      startsWith('Task list (1/3 done):\n[x] Ship it\n[~] Tell them\n[ ] Rest'),
+    );
+    expect(tool.resultNote, contains('`Task list (D/N done):`'));
+    expect(tool.resultNote, contains('`[x]`, `[~]` or `[ ]`'));
   });
 }
 

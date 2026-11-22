@@ -2,7 +2,7 @@
 title: Orkestrasi
 description: Bagaimana satu "permintaan besar" menjadi rancangan seluruh pasukan yang anda luluskan sekali, kemudian pipeline yang dijana yang melaksanakannya.
 slug: ms-MY/manual-pengguna/konsep/orkestrasi
-sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
+sourceHash: db1bbceaba025b64539588004eebb65d944d5933
 ---
 
 Satu ejen bagus untuk satu perkara. Sesetengah permintaan lebih besar daripada
@@ -37,13 +37,8 @@ dan dilaksanakan oleh aplikasi, bukan prosa bebas. Sesuatu cadangan mempunyai:
 - **Sintesis**: langkah akhir yang menghasilkan dapatan.
 - **Bajet**: siling kos yang diisytiharkan.
 
-:::caution[Bajet bersifat nasihat]
-Siling kos cadangan dibandingkan dengan jumlah anggaran rancangan dan menandakan
-rancangan yang melebihi bajet pada bar kelulusan _sebelum_ anda meluluskannya.
-Tiada apa-apa yang membacanya selepas larian bermula, jadi ia tidak
-menghentikan atau menggagalkan sesuatu orkestrasi yang melebihi had. Polisi
-bajet setiap ejen dan setiap ruang kerja ialah mekanisme yang berasingan dan
-itulah yang benar-benar menjeda perbelanjaan.
+:::caution[Bajet menahan larian, ia tidak membunuhnya]
+Siling kos cadangan dibandingkan dengan jumlah anggaran rancangan dan menandakan rancangan yang melebihi bajet pada bar kelulusan _sebelum_ anda meluluskannya. Sebaik sahaja larian bermula, pelayan menyemak apa yang telah dibelanjakan sebelum setiap langkah baharu: pada siling, larian pipeline itu ditahan (`suspended`, sebab `orchestration_budget`) dan tiada yang baharu bermula, manakala langkah yang sedang berjalan akan selesai. Sesiapa yang memohon larian itu dimaklumkan dan menyambungnya semula dengan **Naikkan had** pada halaman larian pipeline (pentadbir ruang kerja jika tiada sesiapa memohonnya). Had baharu mesti melebihi had lama dan jumlah yang telah dibelanjakan, paling tinggi 1,000 dolar, dan had tidak pernah dibuang. Matlamat yang dikejar oleh larian itu dikira terhadapnya, termasuk kajiannya. Polisi bajet setiap ejen dan setiap ruang kerja ialah mekanisme yang berasingan.
 :::
 
 ## Di mana anda menyemaknya

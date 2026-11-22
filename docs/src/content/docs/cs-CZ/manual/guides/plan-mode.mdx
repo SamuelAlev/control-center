@@ -2,7 +2,7 @@
 title: Používejte režim plánu
 description: Přepni prostor do režimu Plan, získej typovaný plán a schválením ho spusť jako práci.
 slug: cs-CZ/prirucka/navody/rezim-planu
-sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
+sourceHash: accf49606e5e8597d3ea76e3274f08d3854996dc
 ---
 
 Tenhle návod ukáže, jak z agenta dostat strukturovaný plán, než napíše
@@ -107,11 +107,7 @@ volání `exit_plan_mode` přepne prostor z režimu Plan do režimu agenta
 a odemkne mu měnící nástroje. Odmítnutí mu dovolí otevřít novou žádost
 k upravenému plánu.
 
-Z režimu Plan odejdeš přepnutím rozbalovací nabídky v composeru (nebo Shift+Tab),
-nebo tím, že schválíš odeslaný plán. `exit_plan_mode` otevře trvalé schválení,
-o kterém rozhodne nástroj MCP `decide_approval`. Překryv guardrailů pro
-zablokovaná volání nástrojů je jiná fronta, jen v paměti, a žádosti o odchod
-z režimu Plan nenosí.
+Z režimu Plan odejdeš přepnutím rozbalovací nabídky v composeru (nebo Shift+Tab), nebo tím, že schválíš odeslaný plán. `exit_plan_mode` otevře trvalé schválení, o kterém rozhoduje běh agenta nástrojem MCP `decide_approval`. Překryv guardrailů pro zablokovaná volání nástrojů je jiná fronta, jen v paměti, a žádosti o odchod z režimu Plan nenosí.
 
 ## Režim Plan v kroku pipeline
 

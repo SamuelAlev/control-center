@@ -18,6 +18,10 @@ class InstallSkillTool extends McpTool {
 
   @override
   String get name => 'install_skill';
+
+  /// Not for scripts: it installs a skill (see [McpTool.scriptCallable]).
+  @override
+  bool get scriptCallable => false;
   @override
   Set<ActionClass> get actionClasses => const {
     ActionClass.packageInstall,
@@ -49,13 +53,6 @@ class InstallSkillTool extends McpTool {
         'type': 'string',
         'description': 'Commit SHA (preferred), tag, or branch to pin to.',
       },
-      'allow_quarantine_override': {
-        'type': 'boolean',
-        'description':
-            'When true, install even if the mandatory scan gate returns a '
-            'quarantine verdict (an explicit, recorded operator override). '
-            'Defaults to false — quarantined skills are blocked.',
-      },
     },
     'required': ['workspace_id', 'slug', 'owner', 'repo', 'path', 'ref'],
   };
@@ -84,9 +81,6 @@ class InstallSkillTool extends McpTool {
       );
     }
 
-    final allowQuarantineOverride =
-        arguments['allow_quarantine_override'] == true;
-
     try {
       final entry = await _bundles.installFromGitHub(
         workspaceId: workspaceId,
@@ -95,7 +89,9 @@ class InstallSkillTool extends McpTool {
         repo: repo,
         path: path,
         ref: ref,
-        allowQuarantineOverride: allowQuarantineOverride,
+        // A quarantine verdict blocks a model's install; overriding it is a
+        // person's decision (`skills.sourceInstall`), never a tool argument.
+        allowQuarantineOverride: false,
         // Thread the caller's scope so the install-time capability→policy check
         // resolves space/agent rules (falls back to workspace scope).
         spaceId: str('space_id'),

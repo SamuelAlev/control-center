@@ -896,6 +896,26 @@ void main() {
       expect(comment.reactions.single.content, '+1');
     });
 
+    test('a file-subject comment maps as file-level', () {
+      final comment = prCodeReviewCommentFromGitHub(
+        GitHubReviewComment.fromJson(const {
+          'id': 4,
+          'body': 'b',
+          'path': 'moved.dart',
+          'subject_type': 'file',
+          'line': null,
+        }),
+      );
+      expect(comment.isFileLevel, isTrue);
+      expect(comment.anchorLine, isNull);
+      expect(
+        prCodeReviewCommentFromGitHub(
+          GitHubReviewComment.fromJson(const {'id': 5, 'line': 3}),
+        ).isFileLevel,
+        isFalse,
+      );
+    });
+
     test('falls back to originalLine when line is null', () {
       const c = GitHubReviewComment(
         id: 1,

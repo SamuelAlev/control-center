@@ -98,6 +98,7 @@ class _FoldingCompactor implements HarnessCompactor {
     String selfAgentName = 'assistant',
     bool force = false,
     CancellationToken cancel = CancellationToken.none,
+    Future<String?> Function()? focus,
   }) async {
     if (folded) {
       return const HarnessCompactionResult.unchanged(0);

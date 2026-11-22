@@ -2,7 +2,7 @@
 title: Sandbox und Sicherheit
 description: Was einen Agenten in Control Center heute tatsächlich begrenzt, wie weit die Betriebssystem-Sandbox reicht und welche Grenzen auf einem Host ohne Backend halten.
 slug: de-DE/handbuch/konzepte/sandbox-und-sicherheit
-sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
+sourceHash: 7644c97911f685ef5084875fb16f1006f21ea940
 ---
 
 :::note[Wo die Betriebssystem-Sandbox reicht und wo nicht]
@@ -53,6 +53,8 @@ Dasselbe gilt für die kleineren Dinge, die für dich einen Prozess starten:
 - **Schnelle Helfer, die über eine ACP-CLI laufen**: Unterhaltungstitel, `/btw`, `/handoff` und `/goal`. Wenn der Server Agenten sandboxt, laufen sie in der Sandbox, in einer eigenen Sitzung. Unter `--sandbox off` laufen sie unbegrenzt. Ohne verfügbare Sandbox laufen sie nur für Anfragen, für die der Serverinhaber verantwortlich ist; für alle anderen werden sie übersprungen: Es wird kein Titel erzeugt, und eine Nebenfrage meldet, dass dem Content synthesizer kein funktionierender Runner zur Verfügung steht. Helfer, die kein Werkzeug starten, sind nicht betroffen.
 - **Golden-Tests eines Pull Requests** in der visuellen Prüfung des Review Studios folgen derselben Regel.
 - **Werkzeugprozesse und `bash`** in einem Lauf fallen nie auf den Host zurück. Ist der Server so eingestellt, dass er Agenten sandboxt, aber für einen Lauf keine Sandbox hat, werden sie abgelehnt.
+- **Die Prüfungen eines Ziels** laufen in einer einmaligen Sandbox über den Worktree der Unterhaltung, eingeschränkt wie das `bash` des Agenten selbst. Ohne Sandbox laufen sie nicht, und das Ziel wartet auf eine Person; unter `--sandbox off` laufen sie so, wie das `bash` des Agenten läuft.
+- **Das Review eines Ziels** läuft bei jedem Adapter nur lesend: nur Lesezugriff, Worktrees schreibgeschützt eingebunden, kein `bash`, keine Subagenten, kein Web. Ein Adapter, der einen Lauf nicht nur lesend halten kann (ein ACP-Agent), wird nicht als Reviewer verwendet.
 
 ## Was einen Agenten tatsächlich begrenzt
 
@@ -312,6 +314,24 @@ in einem Log. Die Telemetrie gibt es nur, solange eine native Sandbox den
 Prozess wirklich umhüllt. Auf einem Host ohne Backend gibt es nichts zu
 beobachten. Mit den Schutzregeln hat sie außerdem nichts zu tun: Eine Verletzung kommt von einem abgelehnten Syscall, nie von einer Regelabfrage.
 
+## Skripte im Code-Modus
+
+Skripte im [Code-Modus](/de-DE/handbuch/konzepte/code-modus/) sind ein eigener Fall und hängen überhaupt nicht von der Agenten-Sandbox ab. Ein Skript läuft nie im Server und nie in der Sandbox des Agenten. Es läuft in einem eigenen Prozess, `cc_codemode`, einem Programm, das mit dem Server ausgeliefert wird und sich abschirmt, bevor es das Skript liest, und meldet, wie weit die Abschirmung gekommen ist. Der Server schickt das Skript nur, wenn die Abschirmung vollständig ist.
+
+| Host | Was der Runner an sich selbst anwendet |
+| --- | --- |
+| Linux | Eine Systemaufruf-Zulassungsliste (seccomp), die ihm kaum mehr als das Lesen seiner Eingabe, das Schreiben seiner Ausgabe, die Verwaltung des eigenen Speichers, das Lesen der Uhren und das Beenden erlaubt; keine neuen Rechte und keine Capabilities; keine Core-Dumps; keine Dateischreibvorgänge, keine neuen Prozesse und höchstens drei offene Dateien; 3 GiB Adressraum; eine harte Prozessorzeitgrenze. Landlock wird ergänzt, wo der Kernel es unterstützt. |
+| macOS | Ein standardmäßig verweigerndes Sandbox-Profil, das außerdem Prozessinformationen, Dateiexistenzprüfungen, System- und Hardwareinformationen sowie die zugehörigen Kernel-Aufrufe verweigert; keine Core-Dumps, keine Dateischreibvorgänge und eine harte Prozessorzeitgrenze. |
+| Windows | Ein neuer AppContainer für jedes Skript, in einem Job, der einen Prozess, 3 GiB Speicher und keine Benutzeroberfläche erlaubt, mit deaktiviertem dynamischem Code, Kindprozessen und win32k-Aufrufen. **Noch nicht auf Windows ausgeführt.** |
+
+Der Runner startet ohne Umgebungsvariablen, ohne offene Dateien außer seiner Ein- und Ausgabe und ohne Zugangsdaten. Alles, was er außerhalb seines eigenen Speichers tun kann, ist den Server zu bitten, ein Tool auszuführen. Der Server führt diesen Aufruf durch denselben Modus-Filter, dieselben [Schutzregeln](/de-DE/handbuch/konzepte/schutzregeln/) und Genehmigungen aus wie einen direkten Aufruf.
+
+Der Server prüft all das beim Start: Er führt den Selbsttest des Runners aus, der die Abschirmung anwendet, versucht Dateien zu lesen und anzulegen, eine Netzwerkverbindung zu öffnen und einen Prozess zu starten (und mehr, je nach System), und führt echte Skripte darunter aus. Wird irgendetwas nicht verweigert, führt der Server auf diesem Rechner keine Skripte aus: Kein Lauf erhält `repl`, und der Server nennt den Grund beim Start und auf der Einstellungsseite des Code-Modus. Ein Runner, der kein Release-Build ist, wird auf dieselbe Weise abgelehnt. Eine schwächere Rückfalloption gibt es nicht.
+
+Der Runner meldet außerdem, wo im Skript jeder Aufruf gemacht wurde, damit das Gespräch die Struktur des Skripts zeigen kann. Der Server prüft diese Position gegen das Skript und nutzt sie nur zur Anzeige: Sie entscheidet nie, ob ein Aufruf erlaubt ist, und sie steht nicht im Prüfprotokoll der Schutzregeln.
+
+Was dies nicht abdeckt: Ein Skript kann weiterhin alles tun, was die Tools des Laufs erlauben, denn seine Tool-Aufrufe sind echte Tool-Aufrufe. Auf macOS kann es weiterhin erfahren, ob eine Prozess-ID existiert. Und ein Fehler in der JavaScript-Engine oder im Kernel wird durch die Abschirmung eingedämmt, nicht durch sie ausgeschlossen.
+
 ## Bestätigungen kommen von den Schutzregeln, nicht von der Sandbox
 
 Die Sandbox hat keinen Freigabepfad. Sie startet, führt aus, sendet Ereignisse
@@ -333,6 +353,7 @@ ist die eine Stelle, an der steht, was sich von Hand prüfen lässt.
 
 ## Verwandte Konzepte
 
+- [Code-Modus](/de-DE/handbuch/konzepte/code-modus/): Skripte, die Tools aufrufen, und der Runner, der sie eingrenzt
 - [Rigs und Kapseln](/de-DE/handbuch/konzepte/rigs/): die Stufe über der Sandbox, wenn die Arbeit eine ganze Wegwerfmaschine mit einer Kernel-Grenze braucht, nicht einen umhüllten Prozess
 - [Schutzregeln](/de-DE/handbuch/konzepte/schutzregeln/): die Richtlinienschicht über der Untergrenze des Betriebssystems, und woher die Freigaben tatsächlich kommen
 - [Lebenszyklus der Agenten-Ausführung](/de-DE/handbuch/konzepte/ausfuehrungs-lebenszyklus/): wo die Isolation im Ablauf der Ausführung sitzt

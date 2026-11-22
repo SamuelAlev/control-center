@@ -124,7 +124,9 @@ there is no way to select a subset first. Approval is blocked while the
 proposal has validation errors, which are shown next to the buttons.
 
 Approving is operator-only. There is no MCP tool for it, so an agent can
-propose and revise a plan but never approve one.
+propose and revise a plan but never approve one. Approving a plan, saving a
+revision, **Approve selected** and **Continue node** need write access to the
+space's repositories.
 
 Once an orchestration is executing, the bar changes:
 
@@ -134,7 +136,11 @@ Once an orchestration is executing, the bar changes:
   step plus everything it transitively depends on (a step can never be
   approved without its dependencies). The control is on the executing bar
   for every orchestration; it is a no-op when the plan was approved whole.
-- Press **Cancel run** to stop the whole orchestration.
+- Press **Cancel run** to stop the whole orchestration. Anyone with access to
+  the space can.
+
+**Continue node** and **Approve selected** belong to the person the run acts
+for (a workspace admin when it acts for nobody).
 
 Steps outside a partial approved set render as deferred and do not run until
 you widen the set.

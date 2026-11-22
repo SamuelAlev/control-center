@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cc_harness/src/cancellation_token.dart';
+import 'package:cc_harness/src/context/wake_data.dart';
 import 'package:cc_harness/src/tools/subagent_profile.dart';
 import 'package:cc_harness/src/tools/subagent_spawner.dart';
 import 'package:cc_harness/src/tools/tool.dart';
@@ -79,6 +80,10 @@ class VibeWorker {
   /// Completes when the current turn settles.
   Completer<void> settled = Completer<void>();
 
+  /// How many `vibe_wait` calls are blocked on it: a result one of them
+  /// returns is not pushed into the director's lane as well.
+  int waiters = 0;
+
   final CancellationTokenSource _cancellation = CancellationTokenSource();
 
   /// Stops the worker's current operation, not merely its roster status.
@@ -94,7 +99,13 @@ class VibeWorker {
 /// kills every worker.
 class VibeRoster {
   /// Creates a [VibeRoster].
-  VibeRoster({this.maxWorkers = 8});
+  VibeRoster({this.maxWorkers = 8, this.onSettled});
+
+  /// Called when a worker's turn settles with a result nobody waits for
+  /// (no `vibe_wait` blocked on it, not killed): the session pushes
+  /// [vibeSettledNotice] into the director's aside lane, so "the result
+  /// arrives on its own" is true.
+  final void Function(VibeWorker worker)? onSettled;
 
   /// How many workers may run at once.
   ///
@@ -156,6 +167,9 @@ class VibeRoster {
     }
     if (!worker.settled.isCompleted) {
       worker.settled.complete();
+    }
+    if (worker.waiters == 0 && worker.status != VibeWorkerStatus.killed) {
+      onSettled?.call(worker);
     }
   }
 
@@ -289,4 +303,27 @@ abstract interface class VibeWorkerRunner {
     required SubagentType type,
     String? modelOverride,
   });
+}
+
+/// The longest worker result [vibeSettledNotice] carries.
+const int vibeNoticeMaxResult = 2000;
+
+/// What the director reads in its aside lane when [worker] settles: the
+/// worker, its status, its result (cut to [vibeNoticeMaxResult] characters,
+/// inside the data envelope with [nonce]) and how to read the rest.
+String vibeSettledNotice(VibeWorker worker, {required String nonce}) {
+  final result = worker.result ?? '(no result)';
+  final cut = result.length <= vibeNoticeMaxResult
+      ? result
+      : '${result.substring(0, vibeNoticeMaxResult - 1)}…';
+  final label = wakeDataOutsideLine(worker.label).trim();
+  final more = result.length > vibeNoticeMaxResult
+      ? 'Cut to $vibeNoticeMaxResult characters; read all of it with '
+            'vibe_wait({worker_id: "${worker.id}"}).'
+      : 'vibe_list shows every worker.';
+  return 'Background worker ${worker.id} "$label" finished '
+      '(${worker.status.name}). $more\n'
+      '${wakeDataEnvelope(cut, nonce: nonce)}\n'
+      'Verify by reading the files it named: the report is a claim, not '
+      'evidence.';
 }

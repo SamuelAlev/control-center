@@ -1,0 +1,63 @@
+---
+title: Agenter som samarbeider
+description: Hvordan agenter stiller hverandre spørsmål, overleverer arbeid og blir vekket med svaret, og hvor du ser hva én agent venter på fra en annen.
+slug: nb-NO/handbok/slik-gjor-du/agenter-samarbeider
+sourceHash: 36bb45cd480fb45d0380e8fd651845c59a7debcb
+---
+
+Agenter i et arbeidsområde kan stille hverandre spørsmål, konsultere en spesialist, be om en gjennomgang, sende en melding eller delegere en sak. Ingen av disse krever at en agent sitter og venter: en agent som har spurt, kan fortsette, eller avslutte sin tur, og den blir vekket i sin egen samtale når svaret kommer.
+
+## Spør en annen agent
+
+En agent spør med `ask_agent`, på en av to måter:
+
+- **Vent** (standard): agenten blokkeres til svaret kommer, opptil 600 sekunder som standard og høyst 1,800.
+- **I bakgrunnen**: kallet returnerer med en gang, og agenten fortsetter å arbeide.
+
+Uansett blir spørsmålet registrert før det leveres. Når svaret ikke kom tilbake i kallet, blir den som spør, vekket nøyaktig én gang, med svaret, når den andre agentens kjøring slutter: besvart, mislyktes, eller utløpt etter 24 timer uten svar. Underveis kan den høre, én gang hver, at den andre agenten lovet et svar, at den venter på en person, eller at den stoppet ved en bruksgrense. Ingen av disse regnes som svaret.
+
+`consult_agent` (henter inn den best passende spesialisten), `request_peer_review` (en ny titt på et gjennomgangsfunn) og `send_to_agent` (en enveismelding) går gjennom samme kø. `send_to_agent` sier om den andre agenten ble vekket, om meldingen venter bak dens nåværende kjøring, eller hvorfor den ble avvist.
+
+Den andre agenten leser spørsmålet som informasjon fra en annen agent, aldri som en instruks den må følge, og den kan ikke kjøre en skråstrekkommando.
+
+## Overlevering av arbeid
+
+- **En delegert sak** (`delegate_task`) vekker agenten som delegerte den, i samtalen den delegerte fra, når saken avgjøres.
+- **En teammedlems kjøring** som lederen startet med en `@mention` eller en melding, vekker lederen, i samtalen den vekket medlemmet fra, når den avsluttes. (Et spørsmål besvares av sitt svar, og en delegert sak av sin sak.)
+- **En bakgrunnsarbeider** i regissørmodus (`/vibe`) leverer resultatet sitt til regissøren mens regissøren fortsetter å arbeide.
+- **En `@mention`** av en agent, og områdets kontrollagent, leveres på samme måte, som vekkinger.
+
+En agent kan se hva en annen agent gjør uten å spørre den: `agent_activity` viser den andre agentens status, nåværende verktøy og siste meldinger, og vekker ingen.
+
+## Grenser
+
+Serveren håndhever disse, uansett hva agentene sier:
+
+| Grense | Verdi |
+| --- | --- |
+| Hvor dypt en kjede av spørsmål og overleveringer kan gå | 3 |
+| Sykluser (en agent som spør en som, gjennom andre, venter på den) | Avvist |
+| Ventende spørsmål per spørrende agent | 10 |
+| Ventende spørsmål per agent som spørres | 20 |
+| Samme spørsmål til samme agent igjen | Avvist innen 10 minutter |
+| Meldinger mellom ett par agenter | 10 i minuttet |
+| Lengde på en melding eller et svar | 16,384 tegn |
+
+Delegering respekterer også den spørrende agentens autonomi og budsjett: en agent kan ikke overlevere arbeid til en annen med mer autonomi eller penger enn den selv har. En melding du sender selv, begrenses aldri på denne måten.
+
+Når agenten som spørres, stopper ved en leverandørs bruksgrense, venter kjøringen på nullstillingen hvis nullstillingen kommer før spørsmålet utløper. Ellers mislykkes spørsmålet med en gang, og den som spurte, får vite hvorfor.
+
+## Se hva en agent venter på
+
+I en samtale lister seksjonen **Spørsmål** i panelet **Generelt** spørsmålene agenter har stilt fra den: til hvem, hva slags (**Spørsmål**, **Konsultasjon** eller **Gjennomgang**), når, og tilstanden (**Venter**, **Besvart**, **Mislyktes**, **Utløpt** eller **Avbrutt**), med **Lovet et svar** eller **I bakgrunnen** der det gjelder. Et mislykket spørsmål sier hvorfor, for eksempel **Kjøringen stoppet ved leverandørens bruksgrense.**
+
+Alle med tilgang til området kan **Avbryt spørsmål**. Den spørrende agenten vekkes da ikke, og den andre agentens kjøring stoppes ikke.
+
+Svar, meldinger og ferdig arbeid som venter på en agent, vises også i stripen over skrivefeltet, med de andre den har å vente på (se [Tidsplaner og vekkinger](/nb-NO/handbok/slik-gjor-du/tidsplaner-vekkinger/#se-hva-som-venter)).
+
+## Se også
+
+- [Deleger arbeid til agenter](/nb-NO/handbok/slik-gjor-du/deleger-saker/)
+- [Bygg et agentteam](/nb-NO/handbok/slik-gjor-du/bygg-agentteam/)
+- [Styr bakgrunnsworkere](/nb-NO/handbok/slik-gjor-du/styr-bakgrunnsworkere/)
+- [MCP-verktøy: agent-til-agent-meldinger og delegering](/nb-NO/handbok/referanse/mcp-verktoy/#agent-til-agent-meldinger-og-delegering)

@@ -2,7 +2,7 @@
 title: Chatta med en agent
 description: Skapa en yta med en agent, skicka arbete till den, styr den mitt i en körning och stoppa den.
 slug: sv-SE/handbok/how-to-guider/chatta-med-agent
-sourceHash: 0dbc01158345074d818cec6084501abc03323fea
+sourceHash: 3e899c417e120a7cc741e802d577d0182210115b
 ---
 
 Den här guiden visar hur du arbetar med en agent i en yta.
@@ -42,6 +42,8 @@ ett köat styrningskort i remsan ovanför meddelandefältet och injiceras i den
 pågående körningen vid nästa turbrytpunkt. Det visas ingen toast — kortet är
 återkopplingen.
 
+För att styra en körning som arbetar för någon annan behöver du skrivåtkomst till ytans repositorier; utan den nekas meddelandet och ligger kvar i skrivfältet. En körning som bara läser, till exempel en målgranskning, tar inget meddelande medan den pågår: när den slutar skickas meddelandet som ett vanligt, och efter en målgranskning väntar det i stället på målets nästa segment.
+
 Tre saker ändrar det beteendet:
 
 - Ett meddelande som innehåller ett **@-omnämnande** skickas alltid som ett
@@ -74,9 +76,9 @@ skalet fortfarande vad som väntar, så att du kan avblockera agenten utan att l
 efter ytan. Överlägget döljer en begäran i samma stund som ytans samtal visas på
 skärmen, så du svarar aldrig på samma fråga två gånger.
 
-Det finns ingen tidsgräns: en blockerad agent väntar tills någon fattar ett
-beslut. Samma begäran visas också i inkorgens uppmärksamhetsrad och i
-telefonklienten.
+En körning du startade väntar en timme på ett godkännande; sedan räknas godkännandet som nekat. Samma begäran visas också i inkorgens uppmärksamhetsrad och i telefonklienten.
+
+En körning som servern startade (ett målsegment, ett schema, ett svar från en annan agent) väntar i stället 72 timmar som standard, en tid som en administratör för arbetsytan anger; sedan räknas ett godkännande som nekat och en fråga som obesvarad. Se [När ingen svarar](/sv-SE/handbok/how-to-guider/arbeta-mot-mal/#när-ingen-svarar).
 
 ## Svara på en agents fråga
 
@@ -114,6 +116,8 @@ arbetsytan med samma kontroll.
 En stoppad körning markeras som stoppad. Skicka ett nytt meddelande för att
 dispatchera igen.
 
+Stopp håller också det som köats för agenten: dina styrmeddelanden (**Skicka parkerade meddelanden** skickar dem) och dess väntande väckningar (**Återuppta** i remsan ovanför skrivfältet). Ett mål som agenten arbetade med pausas tills någon återupptar det.
+
 ## Använd slash-kommandon
 
 Skriv `/` i meddelandefältet för att se kommandolistan. De som ändrar hur
@@ -122,8 +126,10 @@ samtalet beter sig:
 | Kommando       | Vad det gör                                                                                                                      |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | `/plan`        | Växlar ytan till planläge. Ett bart `/plan` aktiverar bara läget; `/plan <request>` aktiverar det och skickar resten som ditt meddelande |
-| `/goal <text>` | Registrerar samtalets arbetsmål                                                                                                  |
-| `/loop <text>` | Itererar över en uppgift tills den är klar                                                                                       |
+| `/goal <text>` | Startar ett varaktigt mål som agenten fortsätter arbeta med tills det verifierats som klart ([Arbeta mot ett mål](/sv-SE/handbok/how-to-guider/arbeta-mot-mal/)) |
+| `/loop <text>` | Väcker agenten med texten nu och då, med ett intervall eller i sin egen takt ([Scheman och väckningar](/sv-SE/handbok/how-to-guider/scheman-vackningar/)) |
+| `/schedule <when> <text>` | Väcker agenten senare, en gång eller enligt en cron |
+| `/refine`      | Begär en granskning av konversationens arbete som kan föreslå förbättringar                                                      |
 | `/compact`     | Fogar samman äldre historik till en förankrad sammanfattning och fortsätter på den komprimerade kontexten                        |
 | `/todo …`      | Visar och redigerar samtalets sparade att-göra-lista                                                                             |
 

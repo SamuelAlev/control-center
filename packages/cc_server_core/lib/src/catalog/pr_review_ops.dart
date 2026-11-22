@@ -407,6 +407,27 @@ List<RepoOp> buildPrReviewOps({
     },
   ),
   RepoOp(
+    name: 'pr_review.postFileComment',
+    kind: RepoOpKind.mutate,
+    requiredArgs: ['owner', 'repo', 'pr_number', 'commit_sha', 'path', 'body'],
+    handler: (ctx) async {
+      final c = requireRepoCoords(ctx.args);
+      final repo = await resolvePrReviewRepository(
+        ctx.workspaceId!,
+        c.owner,
+        c.repo,
+        userId: ctx.userId,
+      );
+      final result = await repo.postFileComment(
+        prNumber: (ctx.args['pr_number'] as num).toInt(),
+        commitSha: ctx.args['commit_sha'] as String,
+        path: ctx.args['path'] as String,
+        body: ctx.args['body'] as String,
+      );
+      return {'result': result};
+    },
+  ),
+  RepoOp(
     name: 'pr_review.replyToReviewComment',
     kind: RepoOpKind.mutate,
     requiredArgs: ['owner', 'repo', 'pr_number', 'parent_comment_id', 'body'],

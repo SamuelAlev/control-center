@@ -2,7 +2,7 @@
 title: Orkestrasi
 description: Bagaimana satu "permintaan besar" menjadi rencana seluruh tim yang Anda setujui sekali, lalu pipeline yang dihasilkan yang menjalankannya.
 slug: id-ID/panduan-pengguna/konsep/orkestrasi
-sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
+sourceHash: db1bbceaba025b64539588004eebb65d944d5933
 ---
 
 Satu agen bagus untuk satu hal. Sebagian permintaan lebih besar dari itu: "riset
@@ -37,13 +37,8 @@ divalidasi dan dijalankan aplikasi, bukan prosa bebas. Sebuah proposal memuat:
 - **Sintesis**: langkah terakhir yang menghasilkan hasil kerja.
 - **Anggaran**: batas biaya yang dinyatakan.
 
-:::caution[Anggaran bersifat anjuran]
-Batas biaya proposal dibandingkan dengan estimasi total rencana dan menandai
-rencana yang melebihi anggaran di bilah persetujuan _sebelum_ Anda menyetujuinya.
-Tidak ada yang membacanya setelah proses berjalan, jadi nilainya tidak
-menghentikan atau menggagalkan orkestrasi yang melewati batas. Kebijakan
-anggaran per agen dan per ruang kerja adalah mekanisme terpisah, dan itulah yang
-sebenarnya menghentikan pengeluaran.
+:::caution[Anggaran menahan run, tidak mematikannya]
+Batas biaya proposal dibandingkan dengan estimasi total rencana dan menandai rencana yang melebihi anggaran di bilah persetujuan _sebelum_ Anda menyetujuinya. Setelah run dimulai, server memeriksa apa yang sudah dibelanjakan sebelum setiap langkah baru: pada batas, run pipeline ditahan (`suspended`, alasan `orchestration_budget`) dan tidak ada yang baru dimulai, sementara langkah yang sudah berjalan tetap selesai. Pihak yang meminta run diberi tahu dan melanjutkannya dengan **Naikkan batas** di halaman run pipeline (admin ruang kerja jika tidak ada yang memintanya). Kenaikan harus di atas batas lama dan di atas jumlah yang sudah dibelanjakan, paling banyak 1.000 dolar, dan batas tidak pernah dihapus. Tujuan yang dikejar run ini dihitung terhadap batas itu, termasuk tinjauannya. Kebijakan anggaran per agen dan per ruang kerja adalah mekanisme terpisah.
 :::
 
 ## Tempat Anda meninjaunya

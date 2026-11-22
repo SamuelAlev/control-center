@@ -66,6 +66,16 @@ final spaceNeedsInputProvider = Provider.autoDispose.family<bool, String>((
   return spaceActivityOf(ref, spaceId)?.needsInput ?? false;
 });
 
+/// Whether an agent question in this conversation awaits the user's answer.
+final conversationNeedsInputProvider = Provider.autoDispose
+    .family<bool, ConversationRef>((ref, key) {
+      return spaceActivityOf(
+            ref,
+            key.spaceId,
+          )?.conversationsNeedingInput.contains(key.conversationId) ??
+          false;
+    });
+
 /// Combined live status for a space row: needsInput > running > idle. Reads
 /// the SPACE-scoped run signal — every conversation in the space, threads
 /// included — so it reflects real agent activity, not decoration.

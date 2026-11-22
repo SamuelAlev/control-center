@@ -2,7 +2,7 @@
 title: Diagnostikujte agenta
 description: Když agent přestane produkovat běhy, projdi záznam běhu, sondu adaptéru, stav serveru a diagnostiku hostitele.
 slug: cs-CZ/prirucka/navody/diagnostika-agenta
-sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
+sourceHash: 8cd7078bacfbfcd18d90512974eff3539366883c
 ---
 
 Tenhle návod ukáže, jak zjistit, proč agent nevytváří běhy.
@@ -90,7 +90,13 @@ Zkontroluj **Nastavení → Server → Diagnostika a soukromí → Sémantické 
 
 ### Server se vůbec nespustí
 
-Nativní knihovny jsou povinné a degradovaný režim není. Chybějící dylib způsobí, že `cc_server` odmítne naběhnout a v chybě jmenuje viníka. Nativní knihovny připrav skriptem `scripts/natives/build_natives.sh` a binárku serveru sestav znovu.
+Nativní knihovny jsou povinné a degradovaný režim není. Chybějící dylib nebo chybějící runner režimu kódu (`bin/codemode/cc_codemode`) způsobí, že `cc_server` odmítne naběhnout a v chybě jmenuje viníka. Nativní knihovny připrav skriptem `scripts/natives/build_natives.sh` a binárku serveru sestav znovu skriptem `scripts/build_server.sh`.
+
+### Skript selhal, nebo se režim kódu nenabízí
+
+Chcete-li vidět, co udělal skript [režimu kódu](/cs-CZ/prirucka/koncepty/rezim-kodu/), otevřete záznam skriptu tlačítkem **Otevřít záznam** u jeho řádku v konverzaci, nebo z **Observabilita → Spuštění kódu**. Záznam prostými slovy popisuje, jak skript skončil (došel mu čas, vyčerpal čas procesoru, dosáhl limitu paměti, vyhodil chybu), a vypisuje každé volání nástroje, které provedl, s tím, zda ho guardraily povolily, člověk schválil, nebo bylo zamítnuto.
+
+Pokud agent nemá vůbec nástroj `repl`, otevřete **Nastavení → Pracovní prostor → Režim kódu**. Pod **Stav** ukazuje **Na tomto serveru**, zda je **Dostupné**, nebo **Nedostupné**; **Nedostupné** znamená, že server nemůže na svém hostiteli uzamknout runner skriptů, a stránka uvádí důvod. Stejný řádek je v protokolu startu serveru (`code_mode=…`). Běh bez pracovního prostoru, jehož limity pracovního prostoru nešlo přečíst, nebo jehož záznam běhu nešlo zapsat, také nedostane `repl` a volá své nástroje přímo.
 
 ### Akce se potichu zamítne
 

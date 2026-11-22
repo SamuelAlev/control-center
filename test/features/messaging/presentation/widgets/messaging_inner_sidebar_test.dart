@@ -16,15 +16,15 @@ import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/conversations_sidebar_section.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_folders_list.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_pr_subtitle.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row.dart';
-import 'package:control_center/features/messaging/presentation/widgets/space_row_adornments.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row_layout.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_sidebar_group.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_sidebar_item.dart';
 import 'package:control_center/features/messaging/presentation/widgets/spaces_sub_sidebar.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
+import 'package:control_center/features/messaging/providers/space_conversation_tab_order_provider.dart';
 import 'package:control_center/features/messaging/providers/space_folder_providers.dart';
-import 'package:control_center/features/messaging/providers/space_worktrees_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
@@ -49,6 +49,22 @@ class _ActiveWorkspaceIdNotifier extends ActiveWorkspaceIdNotifier {
   @override
   String? build() => _workspaceId;
 }
+
+PullRequest _pullRequest(int number) => PullRequest(
+  id: number,
+  number: number,
+  title: 'PR $number',
+  body: '',
+  state: PrState.open,
+  isDraft: false,
+  author: null,
+  createdAt: DateTime.utc(2026),
+  updatedAt: DateTime.utc(2026),
+  repoFullName: 'acme/shop-ui',
+  htmlUrl: 'https://example.invalid/acme/shop-ui/pull/$number',
+  headRef: 'space/6b2256bb',
+  baseRef: 'main',
+);
 
 final _space = Space(
   id: 'g-1',
@@ -100,7 +116,6 @@ Repo _repo(String id, String fullName) => Repo(
 List<Override> _commonOverrides({
   required List<Space> spaces,
   Set<String> unreadSpaceIds = const {},
-  String? branch,
   Map<String, List<SpaceParticipant>> participants = const {},
   Map<String, List<PullRequest>> pullRequests = const {},
   FakeRpcHost? rpcHost,
@@ -118,7 +133,6 @@ List<Override> _commonOverrides({
   for (final c in spaces) ...[
     spaceStatusProvider(c.id).overrideWithValue(SpaceStatus.idle),
     spaceUnreadProvider(c.id).overrideWithValue(unreadSpaceIds.contains(c.id)),
-    spaceUnreadConversationCountProvider(c.id).overrideWithValue(0),
     spacePrsProvider(c.id).overrideWithValue(pullRequests[c.id] ?? const []),
     spacePrsResolvedProvider(c.id).overrideWithValue(true),
     spaceBranchPullRequestsProvider(
@@ -128,7 +142,6 @@ List<Override> _commonOverrides({
       (ref) => Stream.value(participants[c.id] ?? const <SpaceParticipant>[]),
     ),
   ],
-  spaceSidebarBranchProvider.overrideWith((ref, _) async => branch),
 ];
 
 /// A space with two live conversations — the sidebar lists them under the
@@ -1098,14 +1111,16 @@ void main() {
       await tester.pumpWidget(Container());
     });
 
-    testWidgets('a space shows its checked-out branch under the name', (
+    testWidgets('a space shows its pull requests under the name', (
       tester,
     ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: _commonOverrides(
             spaces: [_space],
-            branch: 'fix/checks-detail-link',
+            pullRequests: {
+              _space.id: [_pullRequest(761)],
+            },
           ),
           child: _wrap(_router(spacesRoute(_workspaceId))),
         ),
@@ -1114,20 +1129,19 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Dev Team'), findsOneWidget);
-      expect(find.text('fix/checks-detail-link'), findsOneWidget);
-      final branch = tester.getRect(find.text('fix/checks-detail-link'));
+      final subtitle = find.byType(SpacePrSubtitle);
+      expect(subtitle, findsOneWidget);
+      expect(find.byIcon(AppIcons.gitPullRequest), findsOneWidget);
+      final prs = tester.getRect(subtitle);
       final row = tester.getRect(
-        find.ancestor(
-          of: find.text('fix/checks-detail-link'),
-          matching: find.byType(SpaceRow),
-        ),
+        find.ancestor(of: subtitle, matching: find.byType(SpaceRow)),
       );
       expect(
         row.top,
-        lessThanOrEqualTo(branch.top),
-        reason: 'The hover wash is the whole row, including the branch.',
+        lessThanOrEqualTo(prs.top),
+        reason: 'The hover wash is the whole row, including the subtitle.',
       );
-      expect(row.bottom, greaterThanOrEqualTo(branch.bottom));
+      expect(row.bottom, greaterThanOrEqualTo(prs.bottom));
       await tester.pumpWidget(Container());
       await tester.pump(const Duration(milliseconds: 100));
     });
@@ -1139,7 +1153,10 @@ void main() {
         ProviderScope(
           overrides: _commonOverrides(
             spaces: [_space, _spaceB],
-            branch: 'conv/6b2256bb',
+            pullRequests: {
+              _space.id: [_pullRequest(761)],
+              _spaceB.id: [_pullRequest(762)],
+            },
           ),
           child: _wrap(_router(spaceRoute(_workspaceId, 'g-2'))),
         ),
@@ -1766,6 +1783,39 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     });
 
+    testWidgets('conversations follow the tab strip as its tabs move', (
+      tester,
+    ) async {
+      final container = ProviderContainer(
+        overrides: [
+          ..._commonOverrides(spaces: [_space]),
+          ..._listedConversationOverrides(),
+        ],
+      );
+      addTearDown(container.dispose);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: _wrap(_router(spaceRoute(_workspaceId, 'g-1'))),
+        ),
+      );
+      await _pumpOpenCard(tester);
+
+      double top(String title) => tester.getTopLeft(find.text(title)).dy;
+      // No tab order yet: the list's own order.
+      expect(top('Main thread'), lessThan(top('Design review')));
+
+      // The IDE publishes the tab strip with the second tab dragged first.
+      container.read(spaceConversationTabOrderProvider('g-1').notifier).set(
+        const ['conv-2', 'conv-1'],
+      );
+      await tester.pump();
+      expect(top('Design review'), lessThan(top('Main thread')));
+
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 100));
+    });
+
     testWidgets('the conversation count collapses and expands conversations', (
       tester,
     ) async {
@@ -2245,10 +2295,78 @@ void main() {
             of: find.text('Main thread'),
             matching: find.byType(SpaceRow),
           ),
-          matching: find.byType(SpaceStatusMark),
+          matching: find.byType(AttentionDot),
         ),
-        findsOneWidget,
+        findsNothing,
       );
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 100));
+    });
+
+    testWidgets('a run waiting on an answer shows the dot, not the spinner', (
+      tester,
+    ) async {
+      final now = DateTime.now();
+      final conversations = [
+        Conversation(
+          id: 'conv-1',
+          workspaceId: _workspaceId,
+          spaceId: 'g-1',
+          title: 'Main thread',
+          createdAt: now,
+          updatedAt: now,
+        ),
+        Conversation(
+          id: 'conv-2',
+          workspaceId: _workspaceId,
+          spaceId: 'g-1',
+          title: 'Design review',
+          createdAt: now,
+          updatedAt: now,
+        ),
+      ];
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ..._commonOverrides(spaces: [_space]),
+            spaceConversationsProvider(
+              'g-1',
+            ).overrideWith((ref) => Stream.value(conversations)),
+            spaceBusyConversationIdsProvider(
+              'g-1',
+            ).overrideWithValue(const <String>{}),
+            spaceRunStartedAtProvider('g-1').overrideWithValue({
+              'conv-1': now.subtract(const Duration(minutes: 3)),
+              'conv-2': now.subtract(const Duration(minutes: 3)),
+            }),
+            for (final c in conversations) ...[
+              conversationUnreadProvider((
+                spaceId: 'g-1',
+                conversationId: c.id,
+              )).overrideWithValue(false),
+              conversationNeedsInputProvider((
+                spaceId: 'g-1',
+                conversationId: c.id,
+              )).overrideWithValue(c.id == 'conv-2'),
+            ],
+          ],
+          child: _wrap(_router(spaceRoute(_workspaceId, 'g-1'))),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      Finder on(String label, Type type) => find.descendant(
+        of: find.ancestor(
+          of: find.text(label),
+          matching: find.byType(SpaceRow),
+        ),
+        matching: find.byType(type),
+      );
+      expect(on('Design review', AttentionDot), findsOneWidget);
+      expect(on('Design review', CcSpinner), findsNothing);
+      expect(on('Main thread', CcSpinner), findsOneWidget);
+      expect(on('Main thread', AttentionDot), findsNothing);
       await tester.pumpWidget(Container());
       await tester.pump(const Duration(milliseconds: 100));
     });
@@ -2268,26 +2386,17 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        Finder trailingOn(String label) => find.descendant(
+        Finder dotOn(String label) => find.descendant(
           of: find.ancestor(
             of: find.text(label),
             matching: find.byType(SpaceRow),
           ),
-          matching: find.byType(SpaceTrailingIndicator),
-        );
-        Finder markOn(String label, Type type) => find.descendant(
-          of: find.ancestor(
-            of: find.text(label),
-            matching: find.byType(SpaceRow),
-          ),
-          matching: find.byType(type),
+          matching: find.byType(AttentionDot),
         );
 
-        expect(trailingOn('Dev Team'), findsNothing);
-        expect(trailingOn('Main thread'), findsNothing);
-        expect(markOn('Main thread', ConversationUnreadMark), findsOneWidget);
-        expect(markOn('Design review', ConversationUnreadMark), findsNothing);
-        expect(markOn('Design review', SpaceStatusMark), findsOneWidget);
+        expect(dotOn('Dev Team'), findsNothing);
+        expect(dotOn('Main thread'), findsOneWidget);
+        expect(dotOn('Design review'), findsNothing);
         expect(
           tester.widget<Text>(find.text('Main thread')).style?.fontSize,
           kConversationLabelFontSize,
@@ -2317,7 +2426,7 @@ void main() {
               of: find.text('Dev Team'),
               matching: find.byType(SpaceRow),
             ),
-            matching: find.byType(SpaceTrailingIndicator),
+            matching: find.byType(AttentionDot),
           ),
           findsOneWidget,
         );

@@ -2,7 +2,7 @@
 title: Constituer une équipe d’agents
 description: Regroupez des agents sous un responsable pour que le travail assigné soit acheminé via un seul coordinateur.
 slug: fr-FR/manuel/guides/constituer-equipe
-sourceHash: fc5e2b8c8a49e398ff1b322fcfb25c4aed84bbb4
+sourceHash: 55add2d16bf90650b7d4cbda7aa78f0fdf1b72e2
 ---
 
 Ce guide explique comment créer une équipe, lui donner un responsable et y acheminer du travail.
@@ -51,7 +51,7 @@ Quand un ticket porte bien une assignation à une équipe :
 
 1. Le responsable de l’équipe est lancé avec le ticket, ses instructions de fonctionnement et la liste des membres.
 2. Le responsable délègue aux membres et consigne son évaluation avec l’outil `record_team_activity` — `action` (délégué), `no_action` (plus rien à faire, ce qui arrête les nouvelles réactivations) ou `failed`.
-3. Chaque exécution de membre qui se termine réveille de nouveau le responsable, dans la limite du garde-fou no-action.
+3. Une exécution de membre que le leader a lancée avec un `@mention` ou un message réveille à nouveau le leader à sa fin, dans la conversation d’où le leader l’a réveillé, dans la limite du garde-fou sans action. Le travail que le leader a confié avec `delegate_task` le réveille quand le ticket se règle, et une question qu’il a posée avec `ask_agent` le réveille avec la réponse (voir [Agents qui collaborent](/fr-FR/manuel/guides/agents-collaborent/)).
 
 Le nœud de pipeline **Team dispatch** est l’autre point d’entrée. Il prend un identifiant d’équipe, un prompt et un mode de répartition :
 

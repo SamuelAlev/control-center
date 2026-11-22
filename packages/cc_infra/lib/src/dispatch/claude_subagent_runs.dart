@@ -6,6 +6,8 @@ import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart
 import 'package:cc_domain/core/domain/value_objects/agent_run_role.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
+import 'package:cc_domain/features/dispatch/domain/services/run_settlement.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
 import 'package:cc_infra/src/blobs/blob_store.dart';
 import 'package:cc_infra/src/dispatch/read_media_capture.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
@@ -197,6 +199,9 @@ class ClaudeSubagentRuns {
     final closing = child.close(
       status: status,
       outcome: outcome,
+      endReason: status == RunStatus.completed
+          ? RunEndReason.completed
+          : RunEndReason.error,
       summary: answer == null || answer.isEmpty ? null : answer,
     );
     _closing.add(closing);
@@ -208,15 +213,20 @@ class ClaudeSubagentRuns {
   }
 
   /// Closes every child still open — the parent process ended, or was
-  /// stopped, before their spawn calls returned.
-  Future<void> closeAll() async {
+  /// stopped, before their spawn calls returned. [endReason] is the parent's:
+  /// a child cut short by a person's stop ended by that stop.
+  Future<void> closeAll({required RunEndReason endReason}) async {
     final open = [..._children.values];
     _closedSpawns.addAll(_children.keys);
     _children.clear();
     await Future.wait([
       ..._closing,
       for (final child in open)
-        child.close(status: RunStatus.error, outcome: TurnOutcome.interrupted),
+        child.close(
+          status: RunStatus.error,
+          outcome: TurnOutcome.interrupted,
+          endReason: endReason,
+        ),
     ]);
   }
 
@@ -320,21 +330,38 @@ class _ChildRun {
     });
   }
 
+  /// Ends the child's row through the terminal write every run end shares
+  /// ([RunSettlement]): conditional, so a row something else already ended
+  /// keeps its outcome, and stamped with an end reason. A child's settlement
+  /// announces nothing; its parent's end is the run's.
   Future<void> close({
     required RunStatus status,
     required TurnOutcome outcome,
+    required RunEndReason endReason,
     String? summary,
   }) async {
     await media.drained;
     await recording?.finish(outcome);
-    write(
-      row.copyWith(
-        status: status,
-        completedAt: DateTime.now(),
-        summary: summary == null ? null : _clip(summary, 2000),
-      ),
+    final terminal = row.copyWith(
+      status: status,
+      completedAt: DateTime.now(),
+      summary: summary == null ? null : _clip(summary, 2000),
     );
+    row = terminal;
+    // The start (and every update) lands before the end.
     await _writes;
+    final repo = this.repo;
+    if (repo == null) {
+      return;
+    }
+    try {
+      await RunSettlement(
+        runLogs: repo,
+        eventBus: null,
+      ).settle(terminal, endReason: endReason);
+    } catch (e) {
+      CcInfraLog.warning('Failed to end Claude subagent run "$runId": $e');
+    }
   }
 
   static String _clip(String text, int max) =>

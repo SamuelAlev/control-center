@@ -2,7 +2,7 @@
 title: Hantera kostnader
 description: Se vad dina agenter gör av med, sätt ett tak för en autonom körning och minska tokenanvändningen.
 slug: sv-SE/handbok/how-to-guider/hantera-kostnader
-sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
+sourceHash: 040176a3840653a57c823ce4ff7e3ed9cf071c07
 ---
 
 Den här guiden visar hur du ser vad agentkörningar kostar och hur du sätter ett tak för en autonom körning.
@@ -40,21 +40,30 @@ Kortet **Användning och kostnad** på den här sidan visar de senaste sju dagar
 
 ## Sätt ett kostnadstak för en autonom körning
 
-Två slash-kommandon, som skrivs i en ytas meddelandefält, är de enda körningarna med ett kostnadstak:
+Dessa körningar har ett kostnadstak. En körning du startar genom att skicka ett meddelande har inget.
 
 ```
 /goal ship the auth refactor --budget 20
-/loop keep the flaky tests green
+/loop every 1h --budget 10 keep the flaky tests green
 ```
 
-- Varje segment av en `/goal`- eller `/loop`-körning stoppar när dess prissatta utgift når **500 cent ($5.00)**. Vid 80 % av det styr loopen först modellen att varva ner och lämna en ren överlämning, så att den inte dör mitt i en uppgift.
-- Ett helt hållbart mål har ett tak på **5 000 cent ($50.00)** om du inte anger `--budget <dollars>`. Målövervakaren trär in målens _återstående_ budget i varje segment, så en uttrycklig budget överskrids aldrig med ett helt segment.
-- `--days N` lägger till en absolut tidsfrist och `--max N` ett tak för antalet körningar. Båda är valfria; utan dem begränsas målet bara av kostnaden.
-- Ett mål som når sin gräns stannar vid `budgetExhausted` och kan bara återupptas genom att höja budgeten.
+| Körning | Tak |
+| --- | --- |
+| Ett måls segment | 5 dollar, eller det som återstår av målets budget om det är mindre |
+| Ett mål | 50 dollar om du inte anger `--budget <dollars>` |
+| Ett måls granskning | 2 dollar, eller det som återstår, debiterat målet |
+| En körning som ett schema eller en bevakning startar | 5 dollar; schemat stoppar vid sin egen kostnadsgräns (50 dollar om du inte anger `--budget`, eller arbetsytans standard) |
+| Granskningen efter ett mål, eller `/refine` | 1 dollar |
 
-Eftersom taket är prissatt når en modell som katalogen inte kan prissätta det aldrig. En sådan körning begränsas i stället av doom-loop-skyddet mot upprepningar, av att målövervakaren ger upp efter tre misslyckanden i följd – och av dig.
+- En körning med tak stoppar när dess prissatta utgift når taket, i den inbyggda harnessen, i Claude Code och hos ACP-agenter. Vid 90 % styr den inbyggda harnessen och Claude Code först agenten att varva ner och lämna en ren överlämning, så att den inte dör mitt i en uppgift. En ACP-agent avbryts vid taket.
+- Målets _återstående_ budget trär in i varje segment, så en uttrycklig budget överskrids aldrig med ett helt segment.
+- `--days N` lägger till en tidsfrist och `--max N` ett tak för antalet segment. Båda är valfria; utan dem begränsas målet av kostnaden och av sitt stopp vid brist på framsteg.
+- Ett mål som når sin budget stannar vid **Budgeten är slut** och återupptas bara med en högre budget, som bara den person som startade det kan ge.
+- En pipeline-körning som hålls vid sin orkestrerings tak väntar tills dess begärare trycker på **Höj gräns** på pipeline-körningens sida. Den nya gränsen måste vara över den gamla och över det som spenderats, högst 1 000 dollar, och ett tak tas aldrig bort.
 
-Ett meddelande i en yta, en @-nämning eller ett pipelinesteg har inget kostnadstak. Körningen tar slut när modellen stannar, när du stoppar den eller när doom-loop-skyddet styr om den.
+Eftersom taket är prissatt når en modell som katalogen inte kan prissätta det aldrig. En sådan körning begränsas i stället av doom-loop-skyddet mot upprepningar, av ett måls stopp vid brist på framsteg och dess uppgivande efter tre misslyckanden i följd – och av dig.
+
+Ett meddelande i en yta, en @-nämning eller ett pipelinesteg utanför en orkestrering med tak har inget eget kostnadstak. Körningen tar slut när modellen stannar, när du stoppar den eller när doom-loop-skyddet styr om den.
 
 ## Minska tokenanvändningen
 

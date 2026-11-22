@@ -11,6 +11,7 @@ import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_harness/cc_harness.dart' show ParsedSlashCommand;
 import 'package:control_center/features/messaging/presentation/widgets/composer/context_command.dart';
 import 'package:control_center/features/messaging/presentation/widgets/composer/local_slash_commands.dart';
+import 'package:control_center/features/messaging/providers/conversation_goal_agent.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/todos/providers/todo_command_controller.dart';
 import 'package:flutter/widgets.dart';
@@ -144,6 +145,12 @@ Future<String?> dispatchLocalSlashCommand({
       ref: ref,
       context: context,
       rough: parsed.args,
+      goalAgentId: goalAgentIdFor(
+        ref,
+        text: rawContent,
+        spaceId: spaceId,
+        conversationId: conversationId,
+      ),
     );
     if (sharpened == null) {
       return null;

@@ -1,647 +1,307 @@
-import 'dart:async';
 import 'dart:convert';
 
-import 'package:cc_domain/core/domain/entities/agent.dart';
-import 'package:cc_domain/core/domain/entities/message.dart';
-import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
-import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
-import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
-import 'package:cc_domain/features/messaging/domain/entities/space.dart';
-import 'package:cc_domain/features/messaging/domain/entities/space_participant.dart';
-import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
-import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
+import 'package:cc_domain/features/dispatch/domain/services/peer_ask_text.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/peer_ask_values.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
 import 'package:cc_domain/features/messaging/domain/services/peer_delegation_guards.dart';
-import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dart';
-import 'package:cc_domain/features/ticketing/domain/entities/ticket.dart';
-import 'package:cc_domain/features/ticketing/domain/entities/ticket_status.dart';
-import 'package:cc_domain/features/ticketing/domain/repositories/ticket_repository.dart';
-import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_service.dart';
 import 'package:cc_mcp/src/tools/ask_agent_tool.dart';
-import 'package:cc_mcp/src/tools/delegate_task_tool.dart';
-import 'package:cc_mcp/src/tools/pending_delegation_hops.dart';
-import 'package:cc_mcp/src/tools/ticket_lifecycle_tools.dart';
 import 'package:test/test.dart';
 
-/// `ask_agent` blocks on the recipient's reply in the pair's DM space. The
-/// ask and the dispatch both land in the space's STANDING conversation (its
-/// own uuid — never the space id), so the reply watch must stream the space,
-/// not a conversation keyed on the space id: the old `watchMessages(spaceId)`
-/// watched a row that never exists and every question burned the whole
-/// timeout even when the reply had landed seconds in.
+import 'peer_tool_kit.dart';
+
+/// `ask_agent` posts the question in the pair's DM space and wakes the
+/// recipient through the wake queue (plan section 10): a `wait` ask returns
+/// the answer inline when it lands in time, otherwise the ask stays pending
+/// and its answer wakes the asker once in the asker's own conversation.
 void main() {
-  const workspaceId = 'ws-1';
-
-  late _FakeAgentRepository agents;
-  late _FakeMessagingRepository messaging;
-  late _FakeMessagingPort messagingPort;
+  late PeerKit kit;
+  late KitMessaging messaging;
   late AskAgentTool tool;
-  late _FakeTickets tickets;
-
-  late int? remainingBudget;
   late AutonomyLevel askerAutonomy;
-  late AutonomyLevel recipientAutonomy;
+  late int? remainingBudget;
 
-  setUp(() {
-    agents = _FakeAgentRepository();
-    messaging = _FakeMessagingRepository();
-    tickets = _FakeTickets();
-    messagingPort = _FakeMessagingPort();
-    remainingBudget = null;
+  AskAgentTool build({PairRateLimiter? limiter}) => AskAgentTool(
+    agents: KitAgents(kit),
+    messaging: messaging,
+    rateLimiter: limiter ?? PairRateLimiter(),
+    service: openGate(
+      autonomy: (agent) =>
+          agent == 'agent-a' ? askerAutonomy : AutonomyLevel.actWithApproval,
+      remainingBudget: () => remainingBudget,
+    ),
+    peerAsks: kit.service,
+  );
+
+  setUp(() async {
+    kit = PeerKit();
+    messaging = KitMessaging(kit);
     askerAutonomy = AutonomyLevel.actWithApproval;
-    recipientAutonomy = AutonomyLevel.actWithApproval;
-    tool = AskAgentTool(
-      agents: agents,
-      messaging: messaging,
-      messagingPort: messagingPort,
-      rateLimiter: PairRateLimiter(),
-      service: TicketWorkflowService(
-        repository: tickets,
-        eventBus: DomainEventBus(),
-        resolveEffectiveAutonomy:
-            ({required workspaceId, required agentId, spaceId}) async =>
-                agentId == 'agent-a' ? askerAutonomy : recipientAutonomy,
-        resolveRemainingBudgetMicros:
-            ({required workspaceId, required agentId}) async => remainingBudget,
-      ),
-      pendingHops: PendingDelegationHops(),
+    remainingBudget = null;
+    kit
+      ..agent('agent-a', 'Ada')
+      ..agent('agent-b', 'Bo')
+      ..agent('agent-c', 'Cy');
+    messaging.space('sp-a', agentIds: ['agent-a']);
+    kit.run(
+      'run-a',
+      agentId: 'agent-a',
+      conversationId: 'c-sp-a',
+      requester: 'user-1',
     );
-    agents.add(
-      Agent(
-        id: 'agent-b',
-        name: 'reviewer',
-        title: 'Reviewer',
-        agentMdPath: '$workspaceId/agents/reviewer/AGENTS.md',
-        workspaceId: workspaceId,
-        skills: AgentSkills(const []),
-        createdAt: DateTime(2025),
-      ),
-    );
+    tool = build();
+    await kit.start();
   });
 
-  Future<Map<String, dynamic>> ask({int timeoutSeconds = 5}) async {
-    final result = await tool.run({
-      'workspace_id': workspaceId,
-      'to_agent_id': 'agent-b',
-      'message': 'Is the cast safe?',
-      'from_agent_id': 'agent-a',
-      'timeout_seconds': timeoutSeconds,
-    });
-    expect(result.isError, isFalse);
+  Map<String, Object?> args({
+    String message = 'Is the cast safe?',
+    String mode = 'wait',
+    int timeoutSeconds = 30,
+    String to = 'agent-b',
+    String from = 'agent-a',
+  }) => {
+    'workspace_id': PeerKit.ws,
+    'to_agent_id': to,
+    'from_agent_id': from,
+    'message': message,
+    'mode': mode,
+    'timeout_seconds': timeoutSeconds,
+  };
+
+  Future<Map<String, dynamic>> call(
+    Map<String, Object?> arguments, {
+    String runId = 'run-a',
+    String agentId = 'agent-a',
+    String conversationId = 'c-sp-a',
+    bool isError = false,
+  }) async {
+    final result = await tool.callForRun(
+      arguments,
+      runScope(agentId: agentId, runId: runId, conversationId: conversationId),
+    );
+    expect(result.isError, isError, reason: result.content.first.text);
     return jsonDecode(result.content.first.text) as Map<String, dynamic>;
   }
 
-  test('a reply in the DM space resolves as replied, not a timeout', () async {
-    // The recipient answers from its dispatch — into the standing
-    // conversation, like every dispatch that names no stream.
-    messagingPort.onDispatched = (agentId, prompt) {
-      messaging.post(
-        id: 'run-1',
-        senderId: 'agent-b',
-        senderType: SenderType.agent,
-        content: 'Yes — the payload is guarded upstream.',
-      );
-    };
-
-    final answer = await ask();
-    expect(messaging.watchedConversations, ['standing-1']);
-
-    expect(answer['status'], 'replied');
-    expect(answer['reply'], contains('guarded upstream'));
-    expect(answer['recipient_agent_id'], 'agent-b');
-  });
-
-  test('no reply resolves to the structured pending result', () async {
-    final answer = await ask(timeoutSeconds: 1);
-
-    expect(answer['status'], 'timeout');
-    expect(answer['recipient_agent_id'], 'agent-b');
-    expect(answer['pending_message_id'], isNotEmpty);
-  });
-
-  test('the DM space checks out no repos', () async {
-    await ask(timeoutSeconds: 1);
-
-    expect(messaging.createSpaceCalled, isTrue);
+  test('an answer inside the blocking call is returned inline and wakes '
+      'nobody', () async {
+    final pending = call(args());
+    await kit.pump();
+    expect(kit.dispatched, hasLength(1));
+    final started = kit.dispatched.single;
+    expect(started.agentId, 'agent-b');
+    expect(started.wakeContext.wakeReason, WakeReason.peerMessage);
     expect(
-      messaging.createdWithRepoIds,
+      started.requestedByUserId,
+      isNull,
+      reason: 'a peer run is a bot run',
+    );
+    expect(started.mentionChain, ['agent-a']);
+
+    await kit.finish('run-1', answer: 'Yes, it is guarded upstream.');
+    final answer = await pending;
+
+    expect(answer['status'], 'answered');
+    expect(answer['reply'], 'Yes, it is guarded upstream.');
+    expect(answer['reply_inline'], isTrue);
+    final ask = kit.asks.all(PeerKit.ws).single;
+    expect(ask.status, PeerAskStatus.answered);
+    expect(ask.replyInline, isTrue);
+    await kit.pump();
+    expect(kit.dispatched, hasLength(1), reason: 'no reply wake');
+    expect(
+      kit.wakes.all(PeerKit.ws).where((w) => w.agentId == 'agent-a'),
       isEmpty,
-      reason:
-          'An agent DM is a message channel. A null scope means EVERY '
-          'workspace repo to the provisioner, so the first sentence one agent '
-          'sent another copied the whole workspace onto disk.',
     );
   });
+
+  test('a reply after the timeout wakes the asker once, in its own '
+      'conversation, for whoever its run acted for', () async {
+    final answer = await call(args(timeoutSeconds: 1));
+    expect(answer['status'], 'pending');
+    expect(answer['note'], contains('stays open'));
+    expect(answer['note'], isNot(contains('get_messages')));
+    final ask = kit.asks.all(PeerKit.ws).single;
+    expect(ask.status, PeerAskStatus.pending);
+
+    await kit.finish('run-1', answer: 'Guarded.');
+    await kit.finish('run-1', answer: 'Guarded.');
+    await kit.deliver();
+
+    final replies = [
+      for (final w in kit.wakes.all(PeerKit.ws))
+        if (w.reason == WakeReason.peerReply) w,
+    ];
+    expect(replies, hasLength(1));
+    final reply = replies.single;
+    expect(reply.agentId, 'agent-a');
+    expect(reply.conversationId, 'c-sp-a');
+    expect(reply.requestedByUserId, 'user-1');
+    expect(reply.detail.askId, ask.id);
+    expect(reply.detail.status, 'answered');
+    expect(reply.payload, 'Guarded.');
+    expect(kit.dispatched.last.agentId, 'agent-a');
+    expect(kit.dispatched.last.requestedByUserId, 'user-1');
+  });
+
+  test('background mode returns at once with the ask id', () async {
+    final answer = await call(args(mode: 'background'));
+    expect(answer['status'], 'pending');
+    expect(answer['ask_id'], kit.asks.all(PeerKit.ws).single.id);
+    expect(kit.asks.all(PeerKit.ws).single.mode, PeerAskMode.background);
+  });
+
+  test('a failed run fails the ask with the recipient named', () async {
+    final pending = call(args());
+    await kit.pump();
+    await kit.finish('run-1', endReason: RunEndReason.error, summary: 'boom');
+    final answer = await pending;
+    expect(answer['status'], 'failed');
+    expect(answer['error'], 'run_failed');
+  });
+
+  test(
+    'a run that ends with no final message is a no_output failure',
+    () async {
+      final pending = call(args());
+      await kit.pump();
+      await kit.finish('run-1');
+      final answer = await pending;
+      expect(answer['status'], 'failed');
+      expect(answer['error'], 'no_output');
+    },
+  );
+
+  test(
+    'the same question within 10 minutes is refused with the ask id',
+    () async {
+      await call(args(mode: 'background'));
+      final first = kit.asks.all(PeerKit.ws).single;
+      final again = await tool.callForRun(
+        args(message: '  is THE cast   safe? '),
+        runScope(agentId: 'agent-a', runId: 'run-a', conversationId: 'c-sp-a'),
+      );
+      // Case and spacing do not make a new question.
+      expect(again.isError, isTrue);
+      expect(refusalField(again, 'kind'), PeerAskRefusals.duplicate);
+      expect(refusalField(again, 'ask_id'), first.id);
+    },
+  );
+
+  test('ten pending asks from one asker refuse the eleventh', () async {
+    for (var i = 0; i < PeerAskLimits.maxPendingPerAsker; i++) {
+      kit.agent('agent-$i', 'Peer $i');
+      await call(args(mode: 'background', to: 'agent-$i', message: 'q$i'));
+    }
+    final refused = await tool.callForRun(
+      args(mode: 'background', message: 'one more'),
+      runScope(agentId: 'agent-a', runId: 'run-a', conversationId: 'c-sp-a'),
+    );
+    expect(refused.isError, isTrue);
+    expect(refusalField(refused, 'kind'), PeerAskRefusals.limitReached);
+  });
+
+  test('A asks B, B asks A in the background: refused as a cycle', () async {
+    await call(args(mode: 'background'));
+    await kit.pump();
+    // B's run answering A's ask asks A back.
+    final back = await tool.callForRun(
+      args(to: 'agent-a', from: 'agent-b', mode: 'background', message: 'Why?'),
+      runScope(agentId: 'agent-b', runId: 'run-1', conversationId: 'c-dm-2'),
+    );
+    expect(back.isError, isTrue);
+    expect(refusalField(back, 'kind'), PeerAskRefusals.cycle);
+    expect(kit.asks.all(PeerKit.ws), hasLength(1));
+  });
+
+  test('a read-only run may not ask', () async {
+    kit.sessions.add(
+      KitSession(
+        agentId: 'agent-a',
+        conversationId: 'c-sp-a',
+        runLogId: 'run-a',
+        readOnly: true,
+      ),
+    );
+    kit.service.readOnlyRunOf = (conversation, run) => kit.sessions.any(
+      (s) =>
+          s.conversationId == conversation && s.runLogId == run && s.readOnly,
+    );
+    final refused = await tool.callForRun(
+      args(),
+      runScope(agentId: 'agent-a', runId: 'run-a', conversationId: 'c-sp-a'),
+    );
+    expect(refused.isError, isTrue);
+    expect(refusalField(refused, 'kind'), PeerAskRefusals.readOnlyRun);
+    expect(messaging.posted, isEmpty);
+  });
+
+  test('a call with no run conversation is refused', () async {
+    final refused = await tool.run(args());
+    expect(refused.isError, isTrue);
+    expect(refusalField(refused, 'kind'), PeerAskRefusals.noConversation);
+    expect(messaging.posted, isEmpty);
+  });
+
+  test(
+    'the first ask of a run carries the reference, later ones do not',
+    () async {
+      final first = await call(args(mode: 'background'));
+      final second = await call(args(mode: 'background', message: 'Another?'));
+      expect(first['reference'], askAgentReference);
+      expect(second.containsKey('reference'), isFalse);
+    },
+  );
+
+  test('an agent of another workspace is not found', () async {
+    kit.agent('agent-x', 'Xi', workspaceId: PeerKit.other);
+    final refused = await tool.callForRun(
+      args(to: 'agent-x'),
+      runScope(agentId: 'agent-a', runId: 'run-a', conversationId: 'c-sp-a'),
+    );
+    expect(refused.isError, isTrue);
+    expect(kit.asks.all(PeerKit.ws), isEmpty);
+    expect(kit.dispatched, isEmpty);
+  });
+
   test('autonomy ceiling and exhausted budget refuse before posting', () async {
     askerAutonomy = AutonomyLevel.proposeOnly;
-    recipientAutonomy = AutonomyLevel.actFreely;
-    final args = {
-      'workspace_id': workspaceId,
-      'from_agent_id': 'agent-a',
-      'to_agent_id': 'agent-b',
-      'message': 'Can you check?',
-    };
-    final autonomy = await tool.run(args);
-    expect(autonomy.isError, isTrue);
-    expect(autonomy.content.first.text, contains('ceiling'));
-    askerAutonomy = recipientAutonomy;
+    final ceiling = await tool.callForRun(
+      args(),
+      runScope(agentId: 'agent-a', runId: 'run-a', conversationId: 'c-sp-a'),
+    );
+    expect(ceiling.isError, isTrue);
+    expect(ceiling.content.first.text, contains('ceiling'));
+    askerAutonomy = AutonomyLevel.actWithApproval;
     remainingBudget = 0;
-    final budget = await tool.run(args);
+    final budget = await tool.callForRun(
+      args(),
+      runScope(agentId: 'agent-a', runId: 'run-a', conversationId: 'c-sp-a'),
+    );
     expect(budget.isError, isTrue);
     expect(budget.content.first.text, contains('budget'));
-    expect(messaging._messages, isEmpty);
-    expect(messagingPort.dispatchCount, 0);
-    expect(
-      messaging.createSpaceCalled,
-      isFalse,
-      reason: 'a refused ask must not mint a DM space',
-    );
+    expect(messaging.posted, isEmpty);
+    expect(messaging.spaces.keys, ['sp-a']);
   });
 
   test('a refused ask spends no rate-limit slot', () async {
     final limiter = PairRateLimiter(maxPerWindow: 1);
-    final guarded = AskAgentTool(
-      agents: agents,
-      messaging: messaging,
-      messagingPort: messagingPort,
-      rateLimiter: limiter,
-      service: TicketWorkflowService(
-        repository: tickets,
-        eventBus: DomainEventBus(),
-        resolveEffectiveAutonomy:
-            ({required workspaceId, required agentId, spaceId}) async =>
-                AutonomyLevel.actWithApproval,
-        resolveRemainingBudgetMicros:
-            ({required workspaceId, required agentId}) async => 0,
-      ),
-      pendingHops: PendingDelegationHops(),
+    tool = build(limiter: limiter);
+    remainingBudget = 0;
+    await tool.callForRun(
+      args(),
+      runScope(agentId: 'agent-a', runId: 'run-a', conversationId: 'c-sp-a'),
     );
-    await guarded.run({
-      'workspace_id': workspaceId,
-      'from_agent_id': 'agent-a',
-      'to_agent_id': 'agent-b',
-      'message': 'Can you check?',
-    });
     expect(limiter.tryAcquire('agent-a', 'agent-b', DateTime.now()), isTrue);
   });
 
-  test(
-    'another message from the recipient is not taken for the reply',
-    () async {
-      messagingPort.onDispatched = (agentId, prompt) {
-        // A reply to a DIFFERENT, concurrent ask lands first.
-        messaging.post(
-          id: 'run-other',
-          senderId: 'agent-b',
-          senderType: SenderType.agent,
-          content: 'Unrelated answer',
-        );
-        messaging.post(
-          id: 'run-1',
-          senderId: 'agent-b',
-          senderType: SenderType.agent,
-          content: 'The real answer',
-        );
-      };
-      final answer = await ask();
-      expect(answer['reply'], 'The real answer');
-    },
-  );
-
-  test('a broken reply stream is reported, not waited out', () async {
-    messaging.watchError = StateError('socket closed');
-    final result = await tool.run({
-      'workspace_id': workspaceId,
-      'to_agent_id': 'agent-b',
-      'message': 'Is the cast safe?',
-      'from_agent_id': 'agent-a',
-      'timeout_seconds': 600,
-    });
-    expect(result.isError, isTrue);
-    expect(result.content.first.text, contains('socket closed'));
+  test('the DM space checks out no repos', () async {
+    await call(args(mode: 'background'));
+    expect(messaging.createdWithRepoIds, isEmpty);
   });
 
-  test(
-    'ticket ancestry consumes depth and foreign parent fails closed',
-    () async {
-      tickets.store['parent'] = Ticket(
-        id: 'parent',
-        workspaceId: workspaceId,
-        title: 'Current ticket',
-        assignedAgentId: 'agent-a',
-        status: TicketStatus.open,
-        delegationDepth: 3,
-        createdAt: DateTime(2026),
-        updatedAt: DateTime(2026),
-      );
-      final args = {
-        'workspace_id': workspaceId,
-        'from_agent_id': 'agent-a',
-        'to_agent_id': 'agent-b',
-        'message': 'Need help',
-        'parent_ticket_id': 'parent',
-      };
-      final depth = await tool.run(args);
-      expect(depth.isError, isTrue);
-      expect(depth.content.first.text, contains('depth'));
-      tickets.store['parent'] = Ticket(
-        id: 'parent',
-        workspaceId: 'ws-other',
-        title: 'Foreign ticket',
-        assignedAgentId: 'agent-a',
-        status: TicketStatus.open,
-        createdAt: DateTime(2026),
-        updatedAt: DateTime(2026),
-      );
-      final foreign = await tool.run(args);
-      expect(foreign.isError, isTrue);
-      expect(foreign.content.first.text, contains('workspace'));
-      expect(messaging._messages, isEmpty);
-      expect(messagingPort.dispatchCount, 0);
-    },
-  );
-
-  test('an active A→B ask refuses B→A without dispatching the cycle', () async {
-    agents.add(
-      Agent(
-        id: 'agent-a',
-        name: 'architect',
-        title: 'Architect',
-        agentMdPath: '$workspaceId/agents/architect/AGENTS.md',
-        workspaceId: workspaceId,
-        skills: AgentSkills(const []),
-        createdAt: DateTime(2025),
-      ),
-    );
-    final refused = Completer<bool>();
-    messagingPort.onDispatched = (agentId, prompt) {
-      () async {
-        final result = await tool.run({
-          'workspace_id': workspaceId,
-          'from_agent_id': 'agent-b',
-          'to_agent_id': 'agent-a',
-          'message': 'Please answer me first',
-        });
-        refused.complete(
-          result.isError && result.content.first.text.contains('cycle'),
-        );
-        messaging.post(
-          id: 'run-1',
-          senderId: 'agent-b',
-          senderType: SenderType.agent,
-          content: 'Answer sent',
-        );
-      }();
-    };
-    final answer = await ask();
-    expect(answer['status'], 'replied');
-    expect(await refused.future, isTrue);
-    expect(messagingPort.dispatchCount, 1);
+  test('the description ends with the peer guidance', () {
+    expect(tool.description, endsWith(peerMessageGuidance));
+    expect(tool.description, contains(askAgentModeText));
   });
-
-  group('one gate for every agent hand-off', () {
-    late PendingDelegationHops hops;
-    late TicketWorkflowService service;
-
-    setUp(() {
-      hops = PendingDelegationHops();
-      service = TicketWorkflowService(
-        repository: tickets,
-        eventBus: DomainEventBus(),
-        resolveEffectiveAutonomy:
-            ({required workspaceId, required agentId, spaceId}) async =>
-                AutonomyLevel.actWithApproval,
-        resolveRemainingBudgetMicros:
-            ({required workspaceId, required agentId}) async => remainingBudget,
-      );
-    });
-
-    /// agent-a → agent-b through `ask_agent`, `delegate_task` and
-    /// `delegate_ticket`, returning each refusal text.
-    Future<List<String>> refusals() async {
-      final ask = AskAgentTool(
-        agents: agents,
-        messaging: messaging,
-        messagingPort: messagingPort,
-        rateLimiter: PairRateLimiter(),
-        service: service,
-        pendingHops: hops,
-      );
-      final delegateTask = DelegateTaskTool(
-        service: service,
-        pendingHops: hops,
-      );
-      final delegateTicket = DelegateTicketTool(
-        service: service,
-        pendingHops: hops,
-      );
-      final results = [
-        await ask.run({
-          'workspace_id': workspaceId,
-          'from_agent_id': 'agent-a',
-          'to_agent_id': 'agent-b',
-          'message': 'Can you check?',
-        }),
-        await delegateTask.run({
-          'workspace_id': workspaceId,
-          'title': 'Check',
-          'from_agent_id': 'agent-a',
-          'to_agent_id': 'agent-b',
-        }),
-        await delegateTicket.run({
-          'workspace_id': workspaceId,
-          'title': 'Check',
-          'delegated_by_agent_id': 'agent-a',
-          'assigned_agent_id': 'agent-b',
-        }),
-      ];
-      for (final result in results) {
-        expect(result.isError, isTrue);
-      }
-      expect(messagingPort.dispatchCount, 0);
-      return [for (final result in results) result.content.first.text];
-    }
-
-    test('a cycle is refused with the same reason by all three', () async {
-      // agent-b is blocked on an ask to agent-a.
-      final release = hops.enter(workspaceId, 'agent-b', 'agent-a');
-      addTearDown(release);
-      final texts = await refusals();
-      expect(texts.toSet(), hasLength(1), reason: texts.join('\n'));
-      expect(texts.first, contains('cycle detected'));
-    });
-
-    test(
-      'an exhausted budget is refused with the same reason by all three',
-      () async {
-        remainingBudget = 0;
-        final texts = await refusals();
-        expect(texts.toSet(), hasLength(1), reason: texts.join('\n'));
-        expect(texts.first, contains('budget envelope is exhausted'));
-      },
-    );
-  });
-}
-
-class _FakeTickets implements TicketRepository {
-  final Map<String, Ticket> store = {};
-
-  @override
-  Future<Ticket?> getById(String workspaceId, String id) async {
-    final ticket = store[id];
-    return ticket?.workspaceId == workspaceId ? ticket : null;
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) {}
-}
-
-class _FakeAgentRepository implements AgentRepository {
-  final List<Agent> _agents = [];
-
-  void add(Agent agent) => _agents.add(agent);
-
-  @override
-  Stream<List<Agent>> watchByWorkspace(String workspaceId) =>
-      Stream.value(_agents.where((a) => a.workspaceId == workspaceId).toList());
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) {}
-}
-
-class _FakeMessagingRepository implements MessagingRepository {
-  final _controller = StreamController<List<Message>>.broadcast();
-  final List<Message> _messages = [];
-  var _seq = 0;
-
-  /// Simulates an agent answering: persists the message and emits the new
-  /// space state on the space-wide watch, exactly as a real write would.
-  void post({
-    required String senderId,
-    required SenderType senderType,
-    required String content,
-    String? id,
-  }) {
-    _messages.add(
-      Message(
-        id: id ?? 'm${++_seq}',
-        spaceId: 'dm-1',
-        conversationId: 'standing-1',
-        senderId: senderId,
-        senderType: senderType,
-        content: content,
-        messageType: MessageType.text,
-        createdAt: DateTime(2026),
-      ),
-    );
-    _controller.add(List.unmodifiable(_messages));
-  }
-
-  @override
-  Stream<List<Message>> watchSpaceMessages(
-    String workspaceId,
-    String spaceId,
-  ) async* {
-    // Drift semantics: an initial snapshot, then live updates — a reply that
-    // landed BEFORE the subscription (a synchronous recipient) is still seen.
-    yield List.unmodifiable(_messages);
-    yield* _controller.stream;
-  }
-
-  @override
-  Future<List<Message>> getMessages(
-    String workspaceId,
-    String spaceId, {
-    String? conversationId,
-  }) async => List.unmodifiable(_messages);
-
-  @override
-  Future<Message?> getMessageById(String workspaceId, String messageId) async {
-    for (final m in _messages) {
-      if (m.id == messageId) {
-        return m;
-      }
-    }
-    return null;
-  }
-
-  /// Set to make the conversation watch fail, as a dropped subscription does.
-  Object? watchError;
-
-  /// The conversations the reply wait subscribed to.
-  final watchedConversations = <String>[];
-
-  @override
-  Stream<List<Message>> watchMessages(
-    String workspaceId,
-    String spaceId,
-    String conversationId,
-  ) async* {
-    watchedConversations.add(conversationId);
-    if (watchError case final error?) {
-      throw error;
-    }
-    yield [
-      for (final m in _messages)
-        if (m.conversationId == conversationId) m,
-    ];
-    yield* _controller.stream.map(
-      (all) => [
-        for (final m in all)
-          if (m.conversationId == conversationId) m,
-      ],
-    );
-  }
-
-  @override
-  Future<String> sendMessage({
-    required String workspaceId,
-    required String spaceId,
-    required String content,
-    required String senderId,
-    required String senderType,
-    String? conversationId,
-    String messageType = 'text',
-    Map<String, dynamic>? metadata,
-    String? id,
-  }) async {
-    final messageId = id ?? 'm${++_seq}';
-    _messages.add(
-      Message(
-        id: messageId,
-        spaceId: spaceId,
-        conversationId: conversationId ?? 'standing-1',
-        senderId: senderId,
-        senderType: SenderType.agent,
-        content: content,
-        messageType: MessageType.text,
-        createdAt: DateTime(2026),
-      ),
-    );
-    return messageId;
-  }
-
-  @override
-  Stream<List<Space>> watchSpacesByWorkspace(String workspaceId) =>
-      Stream.value(const []);
-
-  @override
-  Future<List<SpaceParticipant>> getParticipants(
-    String workspaceId,
-    String spaceId,
-  ) async => const [];
-
-  /// The repo scope the DM space was created with, so a test can pin that an
-  /// agent-to-agent channel does not drag the workspace's checkouts onto disk.
-  List<String>? createdWithRepoIds;
-  bool createSpaceCalled = false;
-
-  @override
-  Future<Space> createSpace(
-    String workspaceId,
-    String name,
-    List<String> agentIds, {
-    dynamic mode,
-    List<String>? repoIds,
-    Map<String, String>? repoBranches,
-    String? pipelineRunId,
-    String? createdByUserId,
-    SpaceKind kind = SpaceKind.topic,
-  }) async {
-    createSpaceCalled = true;
-    createdWithRepoIds = repoIds;
-    return Space(
-      id: 'dm-1',
-      name: name,
-      workspaceId: workspaceId,
-      kind: kind,
-      createdAt: DateTime(2026),
-      updatedAt: DateTime(2026),
-    );
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) {}
-
-  /// The tree is not exercised by this fake — a branch it silently accepted
-  /// would be a pointer move nothing could observe, so it refuses instead.
-  @override
-  Future<ConversationTree> conversationTree({
-    required String workspaceId,
-    required String conversationId,
-  }) async => throw UnimplementedError();
-
-  @override
-  Future<void> branchConversationAt({
-    required String workspaceId,
-    required String conversationId,
-    required String messageId,
-  }) async => throw UnimplementedError();
-
-  @override
-  Future<String> forkConversation({
-    required String workspaceId,
-    required String spaceId,
-    required String conversationId,
-    String? messageId,
-    String? title,
-  }) async => throw UnimplementedError();
-}
-
-class _FakeMessagingPort implements MessagingPort {
-  /// Invoked by [dispatchAgent]: the test's chance to play the recipient.
-  void Function(String agentId, String prompt)? onDispatched;
-
-  int dispatchCount = 0;
-
-  @override
-  Future<String?> dispatchAgent({
-    required String workspaceId,
-    required String spaceId,
-    required String agentId,
-    required String prompt,
-    String? ticketId,
-    String? pipelineRunId,
-    String? pipelineStepId,
-    String? inReplyToAgentId,
-    String? requestedByUserId,
-    dynamic wakeContext,
-    String? conversationId,
-    Map<String, dynamic>? expectedOutputSchema,
-    dynamic outputContractMode,
-  }) async {
-    dispatchCount++;
-    onDispatched?.call(agentId, prompt);
-    return 'run-1';
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) {}
-
-  /// Context and branch surfaces this fake does not exercise.
-  @override
-  Future<ConversationShakeResult> shakeConversation({
-    required String workspaceId,
-    required String spaceId,
-    String? conversationId,
-    String target = 'tool_output',
-  }) async => const ConversationShakeResult();
-
-  @override
-  Future<ConversationSideChannelResult> askAside({
-    required String workspaceId,
-    required String spaceId,
-    String? conversationId,
-    required String kind,
-    String input = '',
-    String? requestedByUserId,
-  }) async => const ConversationSideChannelResult();
-
-  @override
-  Future<GuidedGoalStepResult> guidedGoalStep({
-    required String workspaceId,
-    required String rough,
-    List<String> transcript = const [],
-    String? requestedByUserId,
-  }) async => const GuidedGoalStepResult();
 }

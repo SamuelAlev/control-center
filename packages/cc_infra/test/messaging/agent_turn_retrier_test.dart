@@ -121,6 +121,7 @@ void main() {
       requestedByUserId,
       conversationId,
       modelOverride,
+      required wakeContext,
     }) async {
       dispatched.add({
         'workspaceId': workspaceId,

@@ -55,15 +55,21 @@ class McpRemoteTool {
     required this.name,
     required this.description,
     required this.inputSchema,
+    this.outputSchema,
   });
 
-  /// Parses one entry from a `tools/list` result.
+  /// Parses one entry from a `tools/list` result. An `outputSchema` that is
+  /// not a JSON object is ignored: the tool then declares no result type.
   factory McpRemoteTool.fromJson(Map<String, dynamic> json) => McpRemoteTool(
     name: json['name'] as String? ?? '',
     description: json['description'] as String? ?? '',
     inputSchema:
         (json['inputSchema'] as Map?)?.cast<String, dynamic>() ??
         const {'type': 'object', 'properties': <String, dynamic>{}},
+    outputSchema: switch (json['outputSchema']) {
+      final Map<dynamic, dynamic> schema => schema.cast<String, dynamic>(),
+      _ => null,
+    },
   );
 
   /// The server-local tool name (un-namespaced).
@@ -75,12 +81,17 @@ class McpRemoteTool {
   /// JSON Schema for the tool's arguments.
   final Map<String, dynamic> inputSchema;
 
+  /// JSON Schema for the tool's `structuredContent`, when the server
+  /// declares one (MCP `outputSchema`). Null when it declares none.
+  final Map<String, dynamic>? outputSchema;
+
   /// Round-trips through [McpRemoteTool.fromJson]. Used by the tool-list cache
   /// so a still-connecting server can still advertise its last-known tools.
   Map<String, dynamic> toJson() => {
     'name': name,
     'description': description,
     'inputSchema': inputSchema,
+    'outputSchema': ?outputSchema,
   };
 }
 

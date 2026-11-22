@@ -38,6 +38,18 @@ class _StatusDot extends StatelessWidget {
           size: 12,
           color: tokens.fgSuccessPrimary,
         ),
+        // Refused before it ran (by a person, a policy or a hook) is not a
+        // tool that failed: a shield says who stopped it.
+        ToolSegmentStatus.error
+            when nestedCallStateOf(seg) == NestedCallState.denied =>
+          Semantics(
+            label: AppLocalizations.of(context).transcriptToolDenied,
+            child: Icon(
+              AppIcons.shieldOff,
+              size: 12,
+              color: tokens.fgWarningPrimary,
+            ),
+          ),
         ToolSegmentStatus.error => Icon(
           AppIcons.circleX,
           size: 12,

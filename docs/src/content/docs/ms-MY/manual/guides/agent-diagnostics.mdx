@@ -2,7 +2,7 @@
 title: Diagnosis ejen
 description: Telusuri log larian, pemeriksaan penyesuai, status pelayan dan diagnostik hos apabila ejen berhenti menghasilkan larian.
 slug: ms-MY/manual-pengguna/panduan-cara/diagnosis-ejen
-sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
+sourceHash: 8cd7078bacfbfcd18d90512974eff3539366883c
 ---
 
 Panduan ini menunjukkan cara mengetahui mengapa sesuatu ejen tidak menghasilkan larian.
@@ -90,7 +90,13 @@ Semak **Tetapan → Pelayan → Diagnostik & privasi → Carian semantik**. Sehi
 
 ### Pelayan langsung tidak but
 
-Pustaka natif diperlukan dan tiada modus terdegradasi. dylib yang hilang menyebabkan `cc_server` enggan dimulakan dan menamakan pesalah itu dalam ralat. Sediakan natif dengan `scripts/natives/build_natives.sh` dan bina semula binari pelayan.
+Pustaka natif diperlukan dan tiada modus terdegradasi. dylib, atau pelari mod kod (`bin/codemode/cc_codemode`) yang hilang, menyebabkan `cc_server` enggan dimulakan dan menamakan pesalah itu dalam ralat. Sediakan natif dengan `scripts/natives/build_natives.sh` dan bina semula binari pelayan dengan `scripts/build_server.sh`.
+
+### Skrip gagal, atau mod kod tidak ditawarkan
+
+Untuk melihat apa yang dilakukan skrip [mod kod](/ms-MY/manual-pengguna/konsep/mod-kod/), buka rekod skrip daripada **Buka rekod** pada barisnya dalam perbualan, atau daripada **Kebolehcerapan → Pelaksanaan kod**. Rekod itu menyatakan bagaimana skrip tamat dalam bahasa mudah (kehabisan masa, kehabisan masa pemproses, mencapai had memori, membuang ralat), dan menyenaraikan setiap panggilan alat yang dibuatnya bersama sama ada guardrail membenarkannya, seseorang meluluskannya atau ia ditolak.
+
+Jika ejen tidak mempunyai alat `repl` langsung, buka **Tetapan → Ruang kerja → Mod kod**. Di bawah **Status**, **Pada pelayan ini** menyatakan **Tersedia** atau **Tidak tersedia**; **Tidak tersedia** bermakna pelayan tidak dapat mengunci pelari skrip pada hosnya, dan halaman itu memetik sebabnya. Log permulaan pelayan mempunyai baris yang sama (`code_mode=…`). Larian tanpa ruang kerja, yang had ruang kerjanya tidak dapat dibaca atau yang log larian tidak dapat ditulis juga tidak mendapat `repl`, dan memanggil alatnya secara langsung.
 
 ### Sesuatu tindakan ditolak secara senyap
 

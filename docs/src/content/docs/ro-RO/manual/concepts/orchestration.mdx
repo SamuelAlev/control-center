@@ -2,7 +2,7 @@
 title: Orchestrare
 description: Cum devine o „cerere mare” un plan pentru toată echipa, pe care îl aprobi o singură dată, apoi un pipeline generat care îl execută.
 slug: ro-RO/manual/concepte/orchestrare
-sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
+sourceHash: db1bbceaba025b64539588004eebb65d944d5933
 ---
 
 Un singur agent este bun la un singur lucru. Unele cereri sunt mai mari de atât:
@@ -37,12 +37,8 @@ valida și executa, în loc de proză liberă. O propunere are:
 - **Sinteză**: pasul final care produce livrabilul.
 - **Buget**: un plafon de cost declarat.
 
-:::caution[Bugetul este orientativ]
-Plafonul de cost al propunerii este comparat cu totalul estimat al planului și
-semnalizează un plan peste buget în bara de aprobare _înainte_ să aprobi. Nimic
-nu îl citește după ce rularea a pornit, așa că nu oprește și nu face să eșueze o
-orchestrare care depășește bugetul. Politicile de buget pe agent și pe spațiu de
-lucru sunt un mecanism separat și ele sunt cele care opresc efectiv cheltuiala.
+:::caution[Bugetul reține rularea, nu o oprește definitiv]
+Plafonul de cost al propunerii este comparat cu totalul estimat al planului și semnalizează un plan peste buget în bara de aprobare _înainte_ să aprobi. Odată ce rularea a pornit, serverul verifică ce a cheltuit înainte de fiecare pas nou: la plafon, rularea de pipeline este reținută (`suspended`, motiv `orchestration_budget`) și nu mai pornește nimic nou, în timp ce pașii deja în curs se termină. Cel care a cerut rularea este anunțat și o reia cu **Mărește plafonul** pe pagina rulării de pipeline (sau un admin de spațiu de lucru, când nimeni nu a cerut-o). O mărire trebuie să fie peste plafonul vechi și peste ce s-a cheltuit, cel mult 1.000 de dolari, iar un plafon nu se elimină niciodată. Obiectivele pe care le urmărește rularea se numără împotriva lui, inclusiv revizuirile lor. Politicile de buget pe agent și pe spațiu de lucru sunt un mecanism separat.
 :::
 
 ## Unde îl revizuiești

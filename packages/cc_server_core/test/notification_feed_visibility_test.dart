@@ -277,4 +277,8 @@ class _SpaceRead implements SpaceReadGate {
   @override
   Future<Set<String>> unreadable(String workspaceId, String userId) =>
       _unreadable(userId);
+
+  @override
+  Future<List<String>> exposedBy(String workspaceId, String? spaceId) async =>
+      const [];
 }

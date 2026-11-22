@@ -30,6 +30,11 @@ abstract class _VibeTool extends HarnessTool {
   @override
   bool get selfGuards => true;
 
+  /// The director's verbs start, steer and stop workers that run loops of
+  /// their own, so only the model calls them, never a script.
+  @override
+  bool get scriptCallable => false;
+
   /// The worker named by [args], or an error result explaining what is there.
   ({VibeWorker? worker, HarnessToolResult? error}) _resolve(
     Map<String, dynamic> args,
@@ -125,7 +130,8 @@ class VibeSpawnTool extends _VibeTool {
     _start(worker, context);
     return HarnessToolResult.success(
       'Started ${worker.id} [${tier.name}] ${worker.label}. It is running in '
-      'the background — carry on, and check `vibe_list` for its result.',
+      'the background — carry on; its result arrives on its own at your next '
+      'turn boundary (or block on it with `vibe_wait`).',
     );
   }
 
@@ -279,6 +285,7 @@ class VibeWaitTool extends _VibeTool {
     final raw = args['timeout_seconds'];
     final timeout = Duration(seconds: raw is int ? raw.clamp(1, 1800) : 300);
     if (worker.isRunning) {
+      worker.waiters++;
       try {
         await worker.settled.future.timeout(timeout);
       } on TimeoutException {
@@ -286,6 +293,8 @@ class VibeWaitTool extends _VibeTool {
           '${worker.id} is still running after ${timeout.inSeconds}s. It has '
           'not failed — carry on with something else and check vibe_list.',
         );
+      } finally {
+        worker.waiters--;
       }
     }
     return HarnessToolResult.success(

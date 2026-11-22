@@ -1,4 +1,5 @@
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_trigger.dart';
+import 'package:cc_domain/features/pipelines/domain/services/schedule_spec.dart';
 
 /// Converts a UTC instant to/from a named timezone's wall-clock. Injected so
 /// the scheduler stays pure-Dart: the server passes `TimezoneZoneConverter`
@@ -43,6 +44,9 @@ class CronEvaluation {
 ///   (driven by `lastFiredAt`).
 /// * standard cron triggers (driven by `nextRunAt`, evaluated in the trigger's
 ///   timezone via the injected [ZoneConverter]s).
+///
+/// The slot arithmetic itself ([slotOf], [nextSlotAfter]) works on any
+/// [ScheduleSpec], so wake rules (`every:` and `cron:`) share it.
 class PipelineCronScheduler {
   /// Creates a [PipelineCronScheduler]. Without converters every schedule is
   /// evaluated in UTC.
@@ -52,6 +56,40 @@ class PipelineCronScheduler {
 
   final ZoneConverter _toLocal;
   final ZoneConverter _toUtc;
+
+  /// The slot of the interval schedule [spec] that contains [t]: the latest
+  /// multiple of its period since the Unix epoch at or before [t] (UTC).
+  /// Null when [spec] is not an interval schedule with a positive period.
+  DateTime? slotOf(ScheduleSpec spec, DateTime t) {
+    final seconds = spec.intervalSeconds;
+    if (seconds == null || seconds <= 0) {
+      return null;
+    }
+    return _slotOf(Duration(seconds: seconds), t);
+  }
+
+  /// The first slot of [spec] strictly after [afterUtc] (UTC): the next
+  /// epoch-aligned interval boundary, or the next cron match read in the
+  /// schedule's time zone. Null when [spec] has no slots or its cron never
+  /// matches again.
+  DateTime? nextSlotAfter(ScheduleSpec spec, DateTime afterUtc) {
+    final after = afterUtc.toUtc();
+    final seconds = spec.intervalSeconds;
+    if (seconds != null) {
+      if (seconds <= 0) {
+        return null;
+      }
+      final period = Duration(seconds: seconds);
+      return _slotOf(period, after).add(period);
+    }
+    return _nextRunAt(spec, after);
+  }
+
+  static DateTime _slotOf(Duration period, DateTime t) {
+    final ms = t.toUtc().millisecondsSinceEpoch;
+    final step = period.inMilliseconds;
+    return DateTime.fromMillisecondsSinceEpoch(ms - (ms % step), isUtc: true);
+  }
 
   /// Evaluates [trigger] against [nowUtc].
   CronEvaluation evaluate(PipelineTrigger trigger, DateTime nowUtc) {
@@ -85,11 +123,7 @@ class PipelineCronScheduler {
       return const CronEvaluation.idle();
     }
     final period = Duration(seconds: intervalSeconds);
-    DateTime slotOf(DateTime t) {
-      final ms = t.toUtc().millisecondsSinceEpoch;
-      final step = period.inMilliseconds;
-      return DateTime.fromMillisecondsSinceEpoch(ms - (ms % step), isUtc: true);
-    }
+    DateTime slotOf(DateTime t) => _slotOf(period, t);
 
     final current = slotOf(now);
     final last = trigger.lastFiredAt?.toUtc();
@@ -162,16 +196,16 @@ class PipelineCronScheduler {
     );
   }
 
-  /// The next cron fire (UTC) strictly after [fromUtc], honouring the trigger's
-  /// timezone, or `null` if the expression is unsatisfiable.
-  DateTime? _nextRunAt(PipelineTrigger trigger, DateTime fromUtc) {
-    final schedule = trigger.cronSchedule;
+  /// The next cron fire (UTC) strictly after [fromUtc], honouring the
+  /// schedule's timezone, or `null` if the expression is unsatisfiable.
+  DateTime? _nextRunAt(ScheduleSpec spec, DateTime fromUtc) {
+    final schedule = spec.cronSchedule;
     if (schedule == null) {
       return null;
     }
-    final tz = (trigger.timezone == null || trigger.timezone!.isEmpty)
+    final tz = (spec.timezone == null || spec.timezone!.isEmpty)
         ? 'UTC'
-        : trigger.timezone!;
+        : spec.timezone!;
     final localFrom = _toLocal(fromUtc, tz);
     final localNext = schedule.nextAfter(localFrom);
     if (localNext == null) {

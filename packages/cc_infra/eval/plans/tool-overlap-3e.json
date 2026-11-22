@@ -25,9 +25,11 @@
     }
   ],
   "randomizedOrder": true,
-  "minPairs": 8,
+  "hypothesis": "non_inferiority",
+  "primaryOutcome": "verified_success",
+  "minTasks": 10,
   "alpha": 0.05,
-  "nonInferiorityMargin": 0.05,
+  "nonInferiorityMargin": 0.1,
   "maxCostRatio": 1.0,
   "contextWindowTokens": 32000,
   "overlapExperiment": {
@@ -38,5 +40,5 @@
     "requiresBarrierCoverage": true,
     "notes": "Report 3E. Only tools that declare speculativeReadSafe take part; barriers around mutations, dependencies, approvals and hooks stay in force, which is what the barrier-mutation-order corpus task checks."
   },
-  "notes": "Opt-in tool-scheduling experiment. The corpus must contain the barrier task (tag: barrier) or the run is refused, because an overlap arm measured without its safety property would report a latency win it did not earn."
+  "notes": "Opt-in tool-scheduling experiment. The corpus must contain the barrier task (tag: barrier) or the run is refused, because an overlap arm measured without its safety property would report a latency win it did not earn. Non-inferiority on verified success with an absolute margin of 0.10 (10 points); the margin and the cost ceiling are the owner's to change."
 }

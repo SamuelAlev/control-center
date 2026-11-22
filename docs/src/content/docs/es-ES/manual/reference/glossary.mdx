@@ -2,7 +2,7 @@
 title: Glosario
 description: Definiciones de los términos clave que se usan en todo Control Center.
 slug: es-ES/manual/referencia/glosario
-sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
+sourceHash: ba09880357171a4fcbb82201798578de3856cbe6
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -36,7 +36,13 @@ export const glossaryTerms = [
 ['Rig', 'Una máquina desechable que un agente dirige en tiempo real: un navegador o escritorio Linux con recinto, un emulador de Android o simulador de iOS gestionado por el host, o un terminal con recinto. Se observa en directo por su propio canal a resolución completa, con la toma de control impuesta en el servidor. Tiene el ámbito de una conversación, de modo que la pestaña humana y la herramienta del agente apuntan a una única máquina.'],
 ['Recinto', 'La propiedad de aislamiento más fuerte disponible para los rigs respaldados por VM: una frontera de kernel, un disco de superposición desechable, una puerta de red que deniega por defecto y un bróker de credenciales. Los rigs de Android y iOS son desechables, pero usan red gestionada por el host, así que no reclaman esta frontera. Dirigir cualquier rig usa la clase de barandilla enclosureControl.'],
 ['RunCost', 'La cuenta de tokens y coste (tokens de entrada, tokens de salida, coste estimado en microdólares) de una única ejecución de agente.'],
-['WakeReason', 'Por qué se despachó a un agente. Seis valores: mensaje del usuario, asignación de un ticket, nuevo despacho de recuperación tras un fallo, ticket hijo completado, latido de seguimiento programado y paso de pipeline.'],
+['WakeReason', 'Motivo por el que existe una ejecución de agente. Un mensaje de una persona, una asignación de ticket o un paso de pipeline; o, para una ejecución que el servidor inicia por su cuenta, el motivo de su reactivación: una programación, una vigilancia, un segmento de objetivo, una comprobación o revisión, el mensaje o la respuesta de otro agente, trabajo hijo terminado, un límite de uso restablecido, una revisión de mejoras o la recuperación tras un reinicio.'],
+['Reactivación', 'Una solicitud duradera, guardada en la base de datos del espacio de trabajo, para iniciar o continuar la ejecución de un agente en una conversación, con un motivo y la persona en cuyo nombre actúa. Toda ejecución que el servidor inicia sin que alguien escriba empieza como una; las reactivaciones sobreviven a un reinicio.'],
+['Objetivo', 'Trabajo que un agente sigue haciendo, por segmentos, hasta que el servidor verifica que se cumple lo que significa terminado o una persona lo cierra. Se inicia con /goal; uno por agente a la vez. El agente afirma que ha terminado; las comprobaciones y una revisión de solo lectura deciden.'],
+['Programación', 'Una regla que reactiva a un agente a una hora, en un intervalo, con un cron o a su propio ritmo, con un fin, un límite de ejecuciones y un tope de coste. Se crea con /loop, /schedule, la página Programaciones o la herramienta wake_me del agente.'],
+['Vigilancia', 'Una regla que reactiva a un agente cuando ocurre algo: terminan las comprobaciones de una pull request, recibe una revisión o se fusiona, sale una tarea de un entorno, se resuelve un ticket o termina una ejecución de pipeline.'],
+['Pregunta', 'La pregunta de un agente a otro, registrada antes de entregarse. Quien preguntó se reactiva una vez con la respuesta, o con el motivo de que no la haya.'],
+['Propuesta de mejora', 'Un cambio en la memoria, una política, una nota de agente o una skill que una revisión sugiere tras un objetivo verificado o con /refine. No cambia nada hasta que una persona lo acepta; un cambio de skill se evalúa primero.'],
 ['SandboxPort', 'Gestiona el ciclo de vida del entorno aislado (probe, launch, events, exec, destroy).'],
 ['CredentialBrokerPort', 'Emite credenciales con ámbito para lanzar el entorno aislado (un token de un solo repositorio para el entorno de un agente, de escritura solo para la ruta de push del servidor) y las libera al desmontarlo.'],
 ['GitRepoInspectorPort', 'Extrae metadatos (propietario, repo, rama) de la ruta de un repo Git local.'],
@@ -94,6 +100,11 @@ export const glossaryTerms = [
 ['ID de instalación', 'La identidad de un servidor ante una dirección de Connect, derivada de su clave de instalación. Connect admite servidores por id de instalación; rotar la clave lo cambia y cierra la sesión de todo el mundo en los carriles de Connect.'],
 ['Vinculación de instalación', 'El registro de Connect (install_binding) del único servidor al que está vinculado un equipo de Slack. Las instalaciones de GitHub no tienen ninguno: cualquier servidor en el que inicie sesión un miembro puede usarlas.'],
 ['Carril de inicio de sesión', 'El inicio de sesión en el navegador de un proveedor: github, google, linear, linear_app o slack. Con apps propias, un carril funciona con la app propia cuando está completamente configurada; si no, no está disponible; con Connect elegido, lo ejecuta Connect. Ninguno recurre al otro.'],
+['Modo código', 'La herramienta repl, que ejecuta un script de JavaScript que llama a las demás herramientas de la ejecución. Cada ejecución la tiene cuando el servidor puede ejecutar scripts; no hay ningún ajuste.'],
+['Herramienta directa', 'Herramienta que una ejecución llama por su nombre, con su esquema en cada petición, tenga o no repl: las herramientas de archivos y de shell, ask_user, task, la lista de tareas, la búsqueda en memoria, send_message y los verbos propios del modo.'],
+['Herramienta solo de script', 'Una herramienta fuera del conjunto directo que una ejecución con repl solo puede llamar desde un script, hasta que el servidor no pueda ejecutar los scripts de la ejecución y entonces se cargue al primer uso en su lugar. Hasta entonces su descripción nunca llega al modelo.'],
+['Ejecutor del modo código', 'cc_codemode, el programa incluido que ejecuta un script en el motor QuickJS-NG después de bloquearse con los controles del sistema operativo. El servidor no arranca sin él y no ejecuta ningún script a menos que sea una compilación de versión y su bloqueo esté completo.'],
+['Ejecución de código', 'El registro de un script: su código fuente, su salida, sus límites y cada llamada a herramienta que hizo, guardado en su espacio de trabajo y listado en Observabilidad → Ejecuciones de código.'],
 ];
 
 <StructuredData
@@ -157,7 +168,19 @@ export const glossaryTerms = [
 
 **RunCost**: La cuenta de tokens y coste (tokens de entrada, tokens de salida, coste estimado en microdólares) de una única ejecución de agente.
 
-**WakeReason**: Por qué se despachó a un agente. Seis valores: mensaje del usuario, asignación de un ticket, nuevo despacho de recuperación tras un fallo, ticket hijo completado, latido de seguimiento programado y paso de pipeline.
+**WakeReason**: Motivo por el que existe una ejecución de agente. Un mensaje de una persona, una asignación de ticket o un paso de pipeline; o, para una ejecución que el servidor inicia por su cuenta, el motivo de su reactivación: una programación, una vigilancia, un segmento de objetivo, una comprobación o revisión, el mensaje o la respuesta de otro agente, trabajo hijo terminado, un límite de uso restablecido, una revisión de mejoras o la recuperación tras un reinicio.
+
+**Reactivación**: Una solicitud duradera, guardada en la base de datos del espacio de trabajo, para iniciar o continuar la ejecución de un agente en una conversación, con un motivo y la persona en cuyo nombre actúa. Toda ejecución que el servidor inicia sin que alguien escriba empieza como una; las reactivaciones sobreviven a un reinicio.
+
+**Objetivo**: Trabajo que un agente sigue haciendo, por segmentos, hasta que el servidor verifica que se cumple lo que significa terminado o una persona lo cierra. Se inicia con `/goal`; uno por agente a la vez. El agente afirma que ha terminado; las comprobaciones y una revisión de solo lectura deciden.
+
+**Programación**: Una regla que reactiva a un agente a una hora, en un intervalo, con un cron o a su propio ritmo, con un fin, un límite de ejecuciones y un tope de coste. Se crea con `/loop`, `/schedule`, la página Programaciones o la herramienta `wake_me` del agente.
+
+**Vigilancia**: Una regla que reactiva a un agente cuando ocurre algo: terminan las comprobaciones de una pull request, recibe una revisión o se fusiona, sale una tarea de un entorno, se resuelve un ticket o termina una ejecución de pipeline.
+
+**Pregunta**: La pregunta de un agente a otro, registrada antes de entregarse. Quien preguntó se reactiva una vez con la respuesta, o con el motivo de que no la haya.
+
+**Propuesta de mejora**: Un cambio en la memoria, una política, una nota de agente o una skill que una revisión sugiere tras un objetivo verificado o con `/refine`. No cambia nada hasta que una persona lo acepta; un cambio de skill se evalúa primero.
 
 ## Puertos
 
@@ -258,6 +281,20 @@ export const glossaryTerms = [
 **Eje de revisión**: Una de las cinco sendas de puntuación por revisión: `correctness`, `security` y `testGap` se obtienen de los hallazgos de los revisores; `visual` y `apiContract` son deterministas. Los ejes con compuerta se incorporan al veredicto y solo pueden hacerlo más grave: una compuerta `partial` o `unavailable` retiene el veredicto en lugar de aprobarlo.
 
 **Veredicto de revisión**: `ship`, `hold` o `block`. Cualquier hallazgo P0 con confianza ≥ 0,7 da block; cualquier otro P0 o cualquier P1 da hold; si no, ship. Un eje con compuerta que falla fuerza block y los hallazgos no pueden ganarle por votos.
+
+## Modo código
+
+**Modo código**: La herramienta `repl`, que ejecuta un script de JavaScript que llama a las demás herramientas de la ejecución y devuelve solo lo que necesita el agente. Cada ejecución la tiene cuando el servidor puede ejecutar scripts; no hay ningún ajuste. **Ajustes → Espacio de trabajo → Modo código** muestra si este servidor ejecuta scripts y define los límites con los que se ejecuta un script. Consulta [Modo código](/es-ES/manual/conceptos/modo-codigo/).
+
+**Herramienta directa**: Herramienta que una ejecución llama por su nombre, con su esquema en cada petición, tenga o no `repl`: las herramientas de archivos y de shell, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` y los verbos propios del modo.
+
+**Herramienta solo de script**: Una herramienta fuera del conjunto directo que una ejecución con `repl` solo puede llamar desde un script, hasta que el servidor no pueda ejecutar los scripts de la ejecución y se cargue al primer uso en su lugar ([Cuando no se pueden ejecutar scripts](/es-ES/manual/conceptos/modo-codigo/#cuando-no-se-pueden-ejecutar-scripts)). Hasta entonces su descripción nunca llega al modelo, y una llamada directa se responde con cómo llamarla desde un script. Una herramienta que un script no puede llamar nunca es solo de script: se carga al primer uso.
+
+**Llamada anidada**: una llamada a herramienta que hace un script. Pasa por el mismo filtro de modo, las mismas barandillas y la misma aprobación que una llamada directa.
+
+**Ejecutor del modo código**: `cc_codemode`, el programa incluido con el servidor que ejecuta un script en el motor QuickJS-NG después de bloquearse (su **bloqueo**). El servidor no arranca sin él y no ejecuta ningún script a menos que sea una compilación de versión y su bloqueo esté completo.
+
+**Ejecución de código**: el registro de un script: su código fuente, su salida, sus límites y cada llamada a herramienta que hizo, guardado en su espacio de trabajo y listado en **Observabilidad → Ejecuciones de código**.
 
 ## Flota y evaluaciones
 

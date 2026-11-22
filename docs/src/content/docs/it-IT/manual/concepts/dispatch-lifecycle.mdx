@@ -2,23 +2,33 @@
 title: "Ciclo di vita dell'invio degli agenti"
 description: "Cosa accade tra l'arrivo di un messaggio e la chiusura di un log di esecuzione: composizione del prompt, worktree, identità, cosa delimita un'esecuzione e come il suo esito viene registrato con onestà."
 slug: it-IT/manuale/concetti/ciclo-di-vita-invio
-sourceHash: 13e7fe3ed86c8659c5fec818e0b89737241e2b9d
+sourceHash: 07c46e22e30f1a10e64b7fb949c78bdae9747efa
 ---
 
 ## Che cos'è un invio
 
 Un invio è una singola esecuzione di un singolo agente, in una singola conversazione, su un singolo adapter. Tutto ciò che lo riguarda accade su `cc_server`: il client invia un messaggio e poi osserva gli eventi che tornano in streaming. Non esiste alcun percorso di invio in nessun client.
 
-Gli agenti vengono risvegliati per sei motivi, che l'esecuzione porta con sé come **contesto di risveglio** così che l'agente sappia _perché_ è sveglio:
+Ogni esecuzione porta con sé un **contesto di risveglio** che dice _perché_ l'agente è sveglio. Un'esecuzione che avvii inviando un messaggio è `userMessage`; ogni esecuzione che il server avvia da solo parte come un **risveglio** durevole nella coda dello spazio di lavoro e porta con sé il motivo del risveglio (vedi [Pianificazioni e risvegli](/it-IT/manuale/guide/pianificazioni-risvegli/)):
 
 | Motivo del risveglio | Attivazione |
-| -------------------- | ---------- |
-| `userMessage`    | Qualcuno ha inviato un messaggio in uno spazio, oppure ha menzionato l'agente |
+| -------------------- | ------- |
+| `userMessage`    | Qualcuno ha inviato un messaggio in uno spazio                                |
 | `assignment`     | Un ticket è stato assegnato all'agente                           |
 | `pipelineStep`   | Un passaggio di pipeline lo ha inviato                                |
-| `childCompleted` | Un ticket figlio è terminato                                      |
-| `followUp`       | Un heartbeat di follow-up pianificato                              |
-| `recovery`       | Il percorso di ripristino ha rilanciato l'invio dopo un errore              |
+| `childCompleted` | Un ticket delegato o figlio è terminato, oppure è terminata l'esecuzione di un membro del team |
+| `schedule` | Una pianificazione o un loop si è attivato |
+| `watch` | Si è verificato qualcosa che un monitoraggio ascolta (controlli di una pull request, una revisione, un ambiente, un ticket, un'esecuzione di pipeline) |
+| `goalContinuation` | Il segmento successivo di un obiettivo |
+| `goalVerification` | I controlli di un obiettivo o la revisione hanno stabilito che non è ancora completato |
+| `goalReview` | La revisione in sola lettura della dichiarazione di completamento di un obiettivo |
+| `peerMessage` | Un altro agente gli ha inviato un messaggio o una domanda, oppure è stato menzionato con @, oppure è il checker dello spazio |
+| `peerReply`      | La risposta a una domanda che ha posto a un altro agente                    |
+| `limitReset` | Un limite di utilizzo del provider a cui si era fermato è stato ripristinato |
+| `improvementReview` | La revisione dopo un obiettivo verificato, oppure `/refine` |
+| `recovery` | Lavoro che un riavvio del server o un errore ha interrotto |
+
+Un risveglio viene consegnato in un'esecuzione attiva dell'agente in quella conversazione quando l'esecuzione accetta input e agisce per la stessa persona; altrimenti attende che quell'esecuzione finisca e ne avvia una propria. I comandi slash vengono letti solo in un messaggio digitato da una persona; in qualsiasi altra esecuzione lo stesso testo è un messaggio normale.
 
 Il contesto di risveglio porta con sé gli id che accompagnano il motivo — ticket, spazio, messaggio, esecuzione di pipeline — e vengono iniettati nell'ambiente e nel prompt dell'agente.
 
@@ -104,17 +114,17 @@ Non esiste deliberatamente **alcun tetto di turni, da nessuna parte**. Un conteg
 - **il modello si ferma** da solo;
 - **una persona la ferma**, oppure prende il controllo della conversazione (il che mette in pausa l'harness integrato al suo prossimo confine di turno pulito — un'esecuzione di Claude Code, che non ha un confine sicuro, viene invece fermata);
 - **scatta il watchdog del silenzio.** Nessun output per la soglia e la sessione viene terminata con un errore `silentRun`. Il valore predefinito è 15 minuti, che scende a 10 nelle modalità prevalentemente in lettura (review e plan); un agente può sovrascriverlo tra 1 e 240 minuti. Il watchdog viene armato quando un processo figlio segnala il proprio PID, quindi copre la CLI di Claude Code — **non** l'harness integrato, che non genera alcun processo;
-- **scatta un limite di costo** — ma solo per i comandi autonomi.
+- **un limite di costo scatta** — sui segmenti e le revisioni di obiettivi, sulle esecuzioni di pianificazioni e monitoraggi, sulla revisione dei miglioramenti e sulle esecuzioni di pipeline sotto un'orchestrazione con limite.
 
 La protezione anti doom-loop non è un terminatore: tre chiamate di strumento identiche di fila e il ciclo _guida_ l'agente a cambiare approccio.
 
 :::note[Un turno normale non ha alcun limite di costo]
-La protezione dei costi nella sessione è cablata solo per `/goal` e `/loop`; ogni altra esecuzione non passa alcun budget. Per quei comandi, un segmento non presidiato può consumare 500 centesimi ($5.00) per impostazione predefinita, con una guida soft all'80% che chiede all'agente di concludere in modo pulito prima dell'arresto definitivo e un budget duraturo dell'obiettivo di 5000 centesimi ($50.00) distribuito sui segmenti. Un `/goal --budget` esplicito non viene mai superato di un intero segmento.
+Un'esecuzione che avvii con un messaggio non ha alcun budget. Un segmento di obiettivo può spendere 5 dollari, o quanto resta del budget dell'obiettivo (50 dollari per impostazione predefinita) se è meno; una revisione di obiettivo 2 dollari; un'esecuzione avviata da una pianificazione o da un monitoraggio 5 dollari; la revisione dei miglioramenti 1 dollaro. Al 90% l'harness integrato e Claude Code guidano l'agente a chiudere in modo pulito prima dell'arresto definitivo; un agente ACP viene annullato al limite. Vedi [Gestisci i costi](/it-IT/manuale/guide/gestisci-costi/#imponi-un-limite-a-unesecuzione-autonoma).
 :::
 
 Messi insieme, un normale turno interattivo sull'harness integrato non ha tetto di turni, né limite di costo, né watchdog del silenzio. Termina quando il modello si ferma o quando lo fermi tu. È uno scambio deliberato — le alternative uccidono tutte il lavoro lungo legittimo — ma significa davvero che un'esecuzione interattiva non presidiata è delimitata da nient'altro che dal giudizio del modello stesso.
 
-A metà esecuzione, un messaggio inviato a un agente in corso viene accodato come **guida** e consumato al confine del turno successivo, così puoi sollecitare un'esecuzione senza ucciderla. La guida, la pausa, i sottoagenti e il contratto di completamento sono funzionalità dell'harness integrato; Claude Code non ne ha nessuna.
+A metà esecuzione, un messaggio inviato a un agente in corso viene accodato come **guida** e consumato al confine del turno successivo, così puoi sollecitare un'esecuzione senza ucciderla. Un'esecuzione in sola lettura, come la revisione di un obiettivo, non ne accetta alcuno mentre è in corso, e guidare un'esecuzione che lavora per qualcun altro richiede l'accesso in scrittura ai repository dello spazio. La guida, la pausa, i sottoagenti e il contratto di completamento sono funzionalità dell'harness integrato; Claude Code non ne ha nessuna.
 
 ## Come viene registrata un'esecuzione
 
@@ -130,11 +140,11 @@ Quando un'esecuzione termina senza il risultato che la sua modalità richiedeva 
 Ciò è deliberato. Cambiare lo stato farebbe avanzare macchine a stati di ticket e pipeline che non hanno nulla a che vedere con l'artefatto mancante. Significa anche che «status: completed» da solo non basta mai per concludere che un'esecuzione sia riuscita — leggi il riepilogo.
 :::
 
-La chiusura dell'esecuzione pubblica `AgentRunCompleted` e da essa dipende molto: l'aggregazione dei costi della pipeline, la ripresa di un passaggio di pipeline che era in attesa dell'esecuzione, il completamento del ticket sottostante, la mappatura di un'orchestrazione su uno stato terminale, la decisione di continuare o fermarsi del supervisore degli obiettivi, il ruolo di revisore e la valutazione del budget a esecuzione conclusa. L'elenco della presenza segue separatamente, osservando i log di esecuzione recenti anziché l'evento. La notifica «agente completato» non è in questo elenco: l'evento scatta quando termina lo stream del processo, prima che la risposta venga scritta, quindi la notifica è il `MessageReceived` del turno, pubblicato una volta che il messaggio è stato salvato.
+Una volta scritto lo stato finale dell'esecuzione, il server pubblica `AgentRunSettled` esattamente una volta, con il motivo per cui l'esecuzione è terminata (`completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` o `serverStopped`), e da esso dipende molto: l'aggregazione dei costi della pipeline, la ripresa di un passaggio di pipeline che era in attesa dell'esecuzione, il completamento del ticket sottostante, la mappatura di un'orchestrazione su uno stato terminale, la decisione di continuare o fermarsi del supervisore degli obiettivi, la risposta a una domanda che un altro agente ha posto, il prossimo avvio di un loop a ritmo autonomo, la pausa al limite di utilizzo, il ruolo di revisore e la valutazione del budget a esecuzione conclusa. Un'esecuzione interrotta da un arresto del server (`serverStopped`) non viene mai trattata come un errore; il lavoro riprende dopo il riavvio. `AgentRunCompleted` viene comunque pubblicato, prima, solo per il ponte delle pull request e per le analisi. L'elenco della presenza segue separatamente, osservando i log di esecuzione recenti anziché l'evento. La notifica «agente completato» non è in questo elenco: l'evento scatta quando termina lo stream del processo, prima che la risposta venga scritta, quindi la notifica è il `MessageReceived` del turno, pubblicato una volta che il messaggio è stato salvato.
 
 ## I budget, a posteriori
 
-L'applicazione del budget è una _reazione_, non un cancello. Quando un'esecuzione termina, il valutatore confronta la spesa dell'agente dall'inizio del mese con il suo tetto effettivo (una policy di budget collegata, se esiste, altrimenti la cifra mensile dell'agente stesso; zero significa illimitato). Superare la soglia soft registra un incidente di avviso; esaurire il budget registra un incidente hard e porta lo stato del ciclo di vita dell'agente a `paused` sull'organigramma. L'invio accetta comunque lavoro da quell'agente. Un trigger di pipeline `BudgetThresholdCrossed` può avviare lavoro di follow-up dallo stesso evento.
+L'applicazione del budget è una _reazione_, non un cancello. Quando un'esecuzione termina, il valutatore confronta la spesa dell'agente dall'inizio del mese con il suo tetto effettivo (una policy di budget collegata, se esiste, altrimenti la cifra mensile dell'agente stesso; zero significa illimitato). Superare la soglia soft registra un incidente di avviso; esaurire il budget registra un incidente hard e porta lo stato del ciclo di vita dell'agente a `paused` sull'organigramma. L'invio accetta comunque il lavoro che gli invii, ma i risvegli per l'agente (pianificazioni, segmenti di obiettivi, risposte) attendono mentre è in pausa, per al massimo 7 giorni. Un trigger di pipeline `BudgetThresholdCrossed` può avviare lavoro di follow-up dallo stesso evento.
 
 ## Discendenza dei tentativi
 
@@ -147,4 +157,5 @@ Ogni log di esecuzione può portare con sé una discendenza di tentativi — un 
 - [Guardrail](/it-IT/manuale/concetti/guardrail/): la policy delle classi di effetto che ogni chiamata controllata attraversa
 - [Sandbox e sicurezza](/it-IT/manuale/concetti/sandbox-e-sicurezza/): la storia dell'isolamento per intero
 - [Multigiocatore](/it-IT/manuale/concetti/multigiocatore/): guida, presa di controllo e selettore dell'autonomia
-- [Eventi di dominio](/it-IT/manuale/concetti/eventi-di-dominio/): cosa innesca `AgentRunCompleted`
+- [Eventi di dominio](/it-IT/manuale/concetti/eventi-di-dominio/): cosa innesca `AgentRunSettled`
+- [Persegui un obiettivo](/it-IT/manuale/guide/persegui-obiettivo/) e [Pianificazioni e risvegli](/it-IT/manuale/guide/pianificazioni-risvegli/): esecuzioni che il server avvia da solo

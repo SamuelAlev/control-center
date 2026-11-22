@@ -161,7 +161,7 @@ extension _Fetch on AgentRunGateway {
         spaceId: grant.spaceId,
         actionSummary: summary,
         onBehalfOfUserId: grant.actingUserId,
-        runId: grant.runId,
+        runId: grant.runLogId,
       );
       return AgentRunGateway._plain(
         request,

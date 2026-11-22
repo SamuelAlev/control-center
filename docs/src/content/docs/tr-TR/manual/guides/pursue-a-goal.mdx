@@ -1,0 +1,143 @@
+---
+title: Bir hedefi yürütme
+description: Bir ajana, çalıştırmalar ve yeniden başlatmalar boyunca üzerinde çalışmaya devam edeceği bir amaç verin, tamamlanmanın ne anlama geldiğini tanımlayın ve ne zaman bittiğine karar verin.
+slug: tr-TR/kilavuz/nasil-yapilir/hedef-yurutme
+sourceHash: 0ea77964bd9e3044e168624bc67325de0fd1d1e5
+---
+
+Hedef, tamamlanmanın ne anlama geldiği koşul karşılanana kadar bir ajanın üzerinde çalışmaya devam ettiği iştir. Ajan işi **bölümler** halinde yürütür: sunucunun art arda, yeniden başlatmalar boyunca başlattığı sınırlı çalıştırmalardır. Hedef doğrulanana, bir kişi kapatana ya da bir sınıra ulaşana kadar bu sürer. Ajan işi bitirdiğini söyleyerek hedefi kapatamaz. Önce sunucu hedefin kontrollerini çalıştırır ve bir inceleyici sonucu değerlendirir.
+
+## Hedef başlatma
+
+Bir konuşmanın yazma alanına `/goal` ve amacı yazın:
+
+```text
+/goal --budget 20 --days 2 --check "make test" make the importer handle files over 2 GB
+```
+
+Mesaj `/goal` ile ve ardından metinle başlarsa amaç görüşmesi açılır. Bu görüşme başarı ölçütlerini, geçmesi gereken kontrolleri, sınırları ve durma koşullarını sorar; ayrı bir denetleyici, her bölümü baştan başlatma ve ajanın kendi sorularını kendisinin yanıtlaması seçeneklerini sunar. Her adım atlanabilir.
+
+| Bayrak | Anlamı |
+| --- | --- |
+| `--budget <dollars>` | Hedefin toplam harcayabileceği tutar. Varsayılan olarak 50 dolar |
+| `--max <N>` | Hedefin alabileceği en fazla bölüm sayısı. Varsayılan olarak sınır yok |
+| `--days <N>` | Şu andan itibaren bu kadar gün sonrası için bir son tarih |
+| `--check "<command>"` | Hedef bitmeden önce geçmesi gereken bir komut, çalışma ağacında çalıştırılır. Daha fazlası için tekrarlayın, en fazla 5 tane |
+| `--checker <agent>` | Hedefin tamamlandığı iddiasını inceleyen başka bir ajan, adı ya da kimliğiyle |
+| `--fresh` | Her bölümü yalnızca hedef ve notlarıyla, konuşmanın geçmişi olmadan başlatır |
+| `--unattended wait` veya `--unattended assume` | Kimse yanıtlamadığında ajanın sorularına ne olacağı (bkz. [Kimse yanıtlamadığında](#kimse-yanıtlamadığında)) |
+
+- Bayraklar mesajın herhangi bir yerinde olabilir. Bilinmeyen bir bayrak, tekrarlanan bir bayrak, hatalı bir değer ve 5'ten fazla kontrol reddedilir; taslağınız, nedeniyle birlikte yazma alanında kalır.
+- Amacın başındaki bir sayı amacın parçasıdır. Bölümleri sınırlamak için `--max` kullanın.
+- `/goal` yalnızca kendi yazdığınız mesajda okunur. Bir ajandan, bir pipeline'dan ya da bir uyandırmadan gelen aynı metin sıradan bir mesajdır.
+- Bir ajan bir çalışma alanında aynı anda yalnızca bir hedef yürütür. Aynı ajan için ikinci bir `/goal`, birincisi etkinken reddedilir.
+
+### Tamamlanmanın ne anlama geldiği
+
+Amaç, hedefin sözleşmesi olan bölümler içerebilir:
+
+```text
+/goal make the importer handle files over 2 GB
+
+## Success criteria
+- A 3 GB fixture imports without running out of memory
+- The progress bar reaches 100%
+
+## Boundaries
+- Don't change the public API
+
+## Stop conditions
+- A migration would drop data
+
+## Checks
+- `make test` (300 s)
+- environment task `test` (600 s)
+```
+
+- **Başarı ölçütleri**: en fazla 12, her biri en fazla 300 karakter. Her biri bir incelemecinin doğrulayabileceği bir şeydir.
+- **Kontroller**: en fazla 5. Bir kontrol çalışma ağacında ya da alanın [ortamında](/tr-TR/kilavuz/nasil-yapilir/ortamlar/) adlandırılmış bir görev olarak çalışır. Her birinin varsayılan süresi 300 saniyedir, en fazla 1.800 saniye.
+- Sınırı aşan bir bölüm kesilmez, reddedilir.
+
+Ölçütü olmayan bir hedef, ajanın ne zaman bittiğine karar vermesine izin verir; kontrolü olmayan bir hedef yalnızca incelemeye dayanır. Hedef sayfası bunu belirtir.
+
+## Hedef nasıl devam eder
+
+Her bölüm, 5 dolar ya da bütçeden kalanla, hangisi düşükse, sınırlanmış bir çalıştırmadır. Her bölümden sonra sunucu, bölümün yaptıklarına bakarak sıradakini belirler:
+
+- **İlerleme kaydetti.** Sonraki bölüm başlar.
+- **Kurduğu bir şeyi bekliyor**: bir zamanlama, bir izleme, başka bir ajana bir soru ya da devredilmiş bir bilet. Hedef onu bekler. Hiçbir şey gelmezse sunucu 20 dakika, sonra 40, 80, 160 ve her 240 dakikada bir tekrar bakar. Kartta **Kurduğu işi bekliyor · tekrar bakar** yazısı ve bir saat görünür.
+- **İlerleme kaydetmedi.** İlerleme, çalışma ağacının bölümün kendi işiyle değişmesi, kontrol listesinin değişmesi ya da ajanın yeni bir şey yapması demektir. 3 bölüm üst üste ilerleme kaydetmezse hedef duraklatılır: **Son bölümlerinde ilerleme yok.**
+- **Çok uzun bekledi.** 24 saat beklemeden sonra ya da aralarında ilerleme olmadan kurduğu yeni şeyleri beklediği 6 beklemeden sonra hedef duraklatılır: **Bölümlerde ilerleme olmadan beklemede.**
+- **Başarısız oldu.** Sunucu 30 saniye sonra, ardından daha uzun bir süre sonra, en fazla 15 dakikaya kadar yeniden dener. Art arda 3 başarısızlıktan sonra hedef başarısız olur.
+- **Bir kişiye soru sordu.** Bir kişi yanıtlayana kadar hedef bekler: **Bir kişiye ihtiyaç var**.
+
+Hedef ayrıca bütçesinde (**Bütçe tükendi**), bölüm sınırında ya da son tarihinde durur.
+
+## Ajan işin bittiğini söylediğinde
+
+Ajan hedefin bittiğini her ölçüt için kanıtla iddia eder. Sonra:
+
+1. **Sunucu kontrolleri çalıştırır**, doğrudan sunucunun makinesinde değil, bir sandbox içinde. Sıfır olmayan çıkış veren bir kontrol başarısız olur. Hiç çalıştırılamayan bir kontrol (komut bulunamadı, çalıştırılabilir değil, var olmayan bir ortam görevi) bozuktur: hedef, komutla birlikte **Bu kontrol çalıştırılamıyor:** yazısıyla bir kişi için durur. Sunucuda sandbox yoksa hedef **Kontrollerini çalıştırmak için sandbox kullanılamıyor.** yazısıyla durur. (Sunucunun sahibi her çalıştırma için sandbox'ı kapatmışsa bu istisnadır: kontroller, ajanın kendi komutlarının çalıştığı şekilde orada çalışır.) Bir kontrol başarısız olduktan sonra çalışma ağacında hiçbir şey değişmediyse yeniden çalıştırılmaz.
+2. **Bir inceleyici sonucu değerlendirir**, tüm kontroller geçtiğinde ya da hiç kontrol yoksa. İnceleyici hedefin denetleyicisidir; yoksa alanın denetleyicisi; o da yoksa hedefin kendi ajanıdır. Salt okunur çalışır, konuşma geçmişi olmadan: dosyaları ve kontrollerin çıktısını okuyabilir, ama hiçbir şeyi değiştiremez, komut çalıştıramaz ya da başka ajanları uyandıramaz. Ayrıca ajanın değiştirdiği testlerin ve kontrol betiklerinin tam diff’ini alır; ajanın konuşmada ve notlarında yazdıklarını kanıt değil, iddia olarak değerlendirir. Ölçütü olmayan bir hedef için amacı bütün olarak yargılar. Hedefin tamamlandığını, tamamlanmadığını ya da bunu anlayamadığını yanıtlar.
+3. **Tamam**: hedef tamamlanır. **Tamam değil**: ajan inceleyicinin bulgularını alır ve çalışmaya devam eder. 3 tur "tamam değil" sonucundan ya da inceleyici anlayamadığında hedef sizin karar vermenizi bekler: **İnceleme bekliyor: tamamlandığını söylüyor, ama hiçbir şey bunu doğrulamadı**.
+
+İnceleyici çalışırken yazdığınız bir ileti inceleyiciye iletilmez ve inceleme bittiğinde gönderilmez. Ajanın bir sonraki bölümü için kuyrukta kalır. Bundan sonra bölüm gelmezse, sizin için **Tutulan iletileri gönder** altında tutulur.
+
+Çalıştırılamayan bir inceleyici (silinmiş ya da çalışmayı salt okunur tutamayan bir adaptörde, örneğin bir ACP ajanında) hedefi duraklatır: **Denetleyici ajanı kullanılamıyor. Başka bir denetleyici seçin, sonra sürdürün.** Hiçbir başka ajan siz olmadan devreye girmez.
+
+Hedefin ajanından farklı bir sağlayıcıdaki bir denetleyici, kör noktalarını paylaşma olasılığı daha düşüktür. Ayrı bir denetleyici olmadan ajan kendi işini inceler ve hedef **Kendisi doğruladı (ayrı denetleyici yok)** kaydı tutar.
+
+## Hedefi izleme
+
+- **Konuşmada**: **Genel** panelindeki hedef kartı bekletmeyi, bölümü, bütçeye göre harcamayı, kalan süreyi, tamamlanmanın ne anlama geldiğini, kontrolleri ve son kararı gösterir.
+- **Hedefler sayfası**: kenar çubuğu → **Hedefler**. Hedefler **İnceleme bekliyor**, **Açık** ve **Sona erdi** olarak gruplanır.
+- **Hedef sayfası**: bir hedefi açarak **Şimdi** (bölümler, harcama, son tarih, ilerleme yok sayacı ve sonra ne olacağı), **Tamamlanmanın ne anlama geldiği**, **Doğrulama** (son tur: iddia, her kontrol ve çıktısı, ölçüt başına inceleme) ve **Zamanlamalar ve uyandırmalar** bölümlerini görün. Her hedefin kendi adresi vardır (`/workspaces/<workspace>/goals/<goal id>`), böylece bağlantısını paylaşabilirsiniz.
+
+Telefonda hedefler ekranı kontrollü ve bölüm sınırlı bir hedef başlatır, aynı hedefleri ve tutulanları gösterir.
+
+## Hedefi değiştirme ya da durdurma
+
+| Eylem | Kimler yapabilir |
+| --- | --- |
+| **Hedefi duraklat**, **Hedefi durdur** | Alanın erişimi olan herkes |
+| **Hedefe devam et**, **Bütçeyi artır** | Yalnızca hedefi başlatan kişi (kimsenin başlatmadığı bir hedef için bir çalışma alanı yöneticisi) |
+| **Düzenle** tamamlanmanın ne anlama geldiği, **Denetleyiciyi değiştir** | Yalnızca hedefi başlatan kişi (kimsenin başlatmadığı bir hedef için bir çalışma alanı yöneticisi), alanın depolarına yazma erişimiyle, duraklatılmış hedef sırasında |
+| **Tamamlanmayı onayla** | Hedef inceleme beklerken, alanın erişimi olan herkes. Bir pipeline’ın başlattığı bir hedef: yalnızca o çalıştırmayı başlatan kişi (kimse başlatmadıysa bir çalışma alanı yöneticisi) |
+
+- Ajanın çalıştırmasında **Durdur** düğmesine basmak hedefi duraklatır (**Bir kişi tarafından duraklatıldı**). Bekleyen uyandırmaları, siz sürdürene kadar bekler.
+- **Tamamlanmayı onayla** hedefi sizin sözünüzle tamamlanmış olarak kapatır. Hedef **Geçen bir kontrol olmadan bir kişi tarafından kapatıldı** kaydı tutar.
+- Bütçesini tüketmiş bir hedef yalnızca daha yüksek bir bütçeyle sürer.
+- Bir hedefi başlatan kişi çalışma alanından ayrıldığında, hedef hemen inceleme bekler durumuna geçer ve çalışan ajanı durdurulur. Onu kimse sürdüremez; alana erişimi olan herkes durdurabilir. Günlük özet, onu çalışma alanı yöneticileri için listeler.
+
+## Kimse yanıtlamadığında
+
+Bir bölüm bir kişiye soru ya da onay isterse ve kimse yanıtlamazsa, istek varsayılan olarak 72 saat bekler. Sonra bir onay reddedilmiş, bir soru yanıtsız sayılır ve hedef duraklar: **Bir kişiye sorulan soru veya onay isteği yanıtsız kaldı.** Soruyu soran çalıştırma başka yanıt almaz: istediği başka her şey hemen reddedilir ve yapabildiğini bitirir. Bir çalışma alanı yöneticisi süreyi (1 saat ile 7 gün arası) **Ayarlar → Çalışma alanı → Zamanlamalar → Kimse yanıtlamadığında** altında belirler. Her gün, ayarlanan saatte, sizi bekleyen her şeyin tek bir özetini alırsınız.
+
+`--unattended assume` ile ajan varsayımını belirtir ve yanıt gelmeden 10 dakika sonra, durma koşulları izin verirse devam eder. Bu yalnızca sorular için geçerlidir. Bir onay asla varsayılmaz, bir inceleme de hiçbir şeyi varsaymaz.
+
+## Kullanım sınırları ve yeniden başlatmalar
+
+- **Sağlayıcının kullanım sınırı.** Bir bölüm bir sağlayıcının kullanım sınırında durursa ve sağlayıcı sıfırlanma zamanını söylerse (7 gün içinde), hedef bir hata sayılmadan duraklar: **Kullanım sınırında duraklatıldı · sürdürülecek** ve bir saat görünür. Sıfırlanmadan 30 saniye sonra devam eder. Bu tür 8 duraklamadan sonra hedef sizi bekler: **Kullanım sınırlarına çok sık takıldı. Gözden geçirin, sonra sürdürün.** Her sürdürme sayacı yeniden başlatır. ACP ajanları sıfırlanma zamanı bildirmez, bu yüzden hedefleri bir sınırda beklemez.
+- **Sunucu yeniden başlatması.** Hedef yeniden başlatmadan sağ çıkar. Yeniden başlatmanın kestiği bir bölüm yeniden başlatılır; hedefin zamanlamaları ve bekleyen uyandırmaları korunur.
+
+## Hedeften sonra iyileştirmeler
+
+Bir hedef doğrulamadan geçtikten sonra, kısa ve salt okunur bir inceleme (en fazla 1 dolar) iyileştirme önerebilir: bir bellek bilgisi, bir politika, ajan hakkında bir not ya da bir becerideki bir değişiklik. Konuşmanın işi için aynı incelemeyi istemek üzere `/refine` yazın. Bir konuşma için 20 dakikada en fazla bir inceleme çalışır.
+
+Öneriler **İyileştirmeler** sayfasında görünür (kenar çubuğu → **İyileştirmeler**). Birini açarak neyi değiştirdiğini, kanıtını ve **Kabul et**, **Reddet** ya da **Geri al** seçeneklerini görün.
+
+- Bir öneri biri kabul edene kadar hiçbir şeyi değiştirmez. 30 gün sonra süresi dolar.
+- Bir beceride ya da tüm çalışma alanı için bir politikadaki değişiklik bir çalışma alanı yöneticisi gerektirir (**Bir yönetici karar verir**).
+- Bir beceri değişikliği ayrı bir revizyon olarak saklanır. Geçerli beceriyle karşılaştırmak için **Değerlendirme çalıştır** düğmesine basın; **Kabul et** yalnızca bir değerlendirme geçtikten sonra mümkündür. Bir değerlendirme, tam olarak çalıştığında ve ajan değişiklikle en az geçerli beceriyle aynı sayıda çalıştırmayı başarıyla tamamladığında geçer; sayfa iki sayıyı da gösterir. Beceri değerlendirmeden sonra değişirse yeniden çalıştırın.
+- **Geri al**, kimse değiştirmediği sürece önceki metni geri yükler.
+
+## Bir pipeline'da
+
+Bir pipeline, **Pursue a goal** adımıyla (`goal.pursue`) bir hedef başlatabilir. Adım, hedef bitene kadar bekler ve özetini ve kararını aktarır. Bkz. [Pipeline adımları](/tr-TR/kilavuz/referans/pipeline-adimlari/).
+
+## Ayrıca bakın
+
+- [Zamanlamalar ve uyandırmalar](/tr-TR/kilavuz/nasil-yapilir/zamanlamalar-ve-uyandirmalar/)
+- [Birlikte çalışan ajanlar](/tr-TR/kilavuz/nasil-yapilir/birlikte-calisan-ajanlar/)
+- [Maliyetleri yönetme](/tr-TR/kilavuz/nasil-yapilir/maliyetleri-yonetme/)
+- [Slash komutları](/tr-TR/kilavuz/referans/slash-komutlari/)

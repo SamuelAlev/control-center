@@ -547,10 +547,6 @@
       }
     }
   },
-  "calendarAllDayGutter": "All-day",
-  "@calendarAllDayGutter": {
-    "description": "Timeline-gutter label beside the week view's all-day events strip. Kept short: the gutter is only as wide as an hour label, so a longer wording ellipsizes (the full wording is on the tooltip)."
-  },
   "calendarAllDayEventCount": "{count, plural, =1{1 event} other{{count} events}}",
   "@calendarAllDayEventCount": {
     "description": "Collapsed all-day strip: how many all-day events a day holds",
@@ -1706,7 +1702,6 @@
   "activityHandedBackSession": "Handed back the session",
   "activityCommittedAndPushed": "Committed and pushed",
   "activityBackedUpServer": "Backed up the server data",
-  "activityMarkedSpaceRead": "Marked the space as read",
   "activityRespondedToInvitation": "Responded to the event invitation",
   "activityDisconnectedCalendar": "Disconnected the calendar",
   "activityMarkedFileViewed": "Marked a file as viewed",
@@ -12087,6 +12082,15 @@
       }
     }
   },
+  "diffFileUnresolvedConversations": "{count, plural, =1{1 unresolved conversation} other{{count} unresolved conversations}}",
+  "@diffFileUnresolvedConversations": {
+    "description": "Tooltip and screen-reader label of the count badge on a diff file header: how many review conversations on that file are still open (not resolved)",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "pendingReview": "Pending review",
   "@pendingReview": {
     "description": "Badge on an inline comment that is queued to be published with the next review submission"
@@ -12475,10 +12479,6 @@
   "spaceKeepAfterMergeHint": "You won’t be asked again for this space.",
   "@spaceKeepAfterMergeHint": {
     "description": "Explains that declining the archive prompt suppresses future prompts for this space"
-  },
-  "spaceAllPrsMergedLabel": "All pull requests merged",
-  "@spaceAllPrsMergedLabel": {
-    "description": "Sidebar status for a space whose pull requests have all been merged"
   },
   "archiveSpace": "Archive space",
   "@archiveSpace": {
@@ -13963,7 +13963,7 @@
   "@skillEvalImproved": {"description": "Skill campaign operator interface."},
   "skillEvalIncomplete": "Incomplete",
   "@skillEvalIncomplete": {"description": "Skill campaign operator interface."},
-  "skillEvalInconclusive": "Inconclusive",
+  "skillEvalInconclusive": "No decision (not enough evidence)",
   "@skillEvalInconclusive": {"description": "Skill campaign operator interface."},
   "skillEvalInferred": "Inferred",
   "@skillEvalInferred": {"description": "Skill campaign operator interface."},
@@ -17890,5 +17890,3904 @@
   "mcpServerNotFound": "This server no longer exists. Someone may have removed it.",
   "@mcpServerNotFound": {
     "description": "Shown when an MCP server action targets a server that was removed"
+  },
+  "scriptToolCalls": "Tool calls",
+  "@scriptToolCalls": {
+    "description": "Section label above the list of tool calls a code mode script made, inside the script's transcript row"
+  },
+  "scriptCallCount": "{count, plural, =1{1 call} other{{count} calls}}",
+  "@scriptCallCount": {
+    "description": "How many tool calls a code mode script made, shown on its collapsed transcript row",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scriptCallsRunning": "{count} running",
+  "@scriptCallsRunning": {
+    "description": "How many of a script's tool calls are still running. Joined with other counts by a middle dot",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scriptCallsOk": "{count} ok",
+  "@scriptCallsOk": {
+    "description": "How many of a script's tool calls completed successfully. Short status word",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scriptCallsFailed": "{count} failed",
+  "@scriptCallsFailed": {
+    "description": "How many of a script's tool calls ran and failed",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scriptCallsDenied": "{count} denied",
+  "@scriptCallsDenied": {
+    "description": "How many of a script's tool calls were refused before running (by a person, a policy or a hook)",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scriptCallsCancelled": "{count} cancelled",
+  "@scriptCallsCancelled": {
+    "description": "How many of a script's tool calls were stopped before they produced a result",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scriptCallsQueued": "{count} queued",
+  "@scriptCallsQueued": {
+    "description": "How many of a script's tool calls have not been reached yet while the script runs. Joined with other counts by a middle dot",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scriptCallsSkipped": "{count} skipped",
+  "@scriptCallsSkipped": {
+    "description": "How many of a script's tool calls were not reached and will not be (another branch was taken, or the script ended). Joined with other counts by a middle dot",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scriptStepQueued": "Queued",
+  "@scriptStepQueued": {
+    "description": "Status word on a tool call a running script has not reached yet, shown where the call's duration would be"
+  },
+  "scriptStepSkipped": "Skipped",
+  "@scriptStepSkipped": {
+    "description": "Status word on a tool call, or a branch of a script, that was not reached and will not be (another branch was taken, or the script ended)"
+  },
+  "scriptGroupLoop": "Loop",
+  "@scriptGroupLoop": {
+    "description": "Header of a group of tool calls a script makes inside a loop (for, while). Followed by the loop's code"
+  },
+  "scriptGroupEach": "For each",
+  "@scriptGroupEach": {
+    "description": "Header of a group of tool calls a script makes once per item of a list (array.map, forEach). Followed by the code that names the list"
+  },
+  "scriptGroupParallel": "In parallel",
+  "@scriptGroupParallel": {
+    "description": "Header of a group of tool calls a script runs at the same time (Promise.all). Followed by the code"
+  },
+  "scriptGroupFunction": "Function",
+  "@scriptGroupFunction": {
+    "description": "Header of a group of tool calls a script makes inside a function it defined. Followed by the function's name"
+  },
+  "scriptCallsHidden": "{count, plural, =1{Show 1 more call} other{Show {count} more calls}}",
+  "@scriptCallsHidden": {
+    "description": "Button inside a long group of a script's tool calls that shows the calls hidden from the middle of the group",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scriptCallsUnplaced": "Calls not placed in the script",
+  "@scriptCallsUnplaced": {
+    "description": "Caption above tool calls a script made that could not be matched to a place in its code, listed after the script's structure"
+  },
+  "scriptToolComputed": "Tool",
+  "@scriptToolComputed": {
+    "description": "Stands in for the tool's name on a not-yet-run call whose tool the script chooses while it runs"
+  },
+  "scriptStepSemantics": "{subject}, {state}",
+  "@scriptStepSemantics": {
+    "description": "Screen reader label of one step of a script: what it is (a tool name, a loop, a branch) and its state (queued, skipped, a count of calls)",
+    "placeholders": {
+      "subject": {
+        "type": "String"
+      },
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "scriptSourceLabel": "Script",
+  "@scriptSourceLabel": {
+    "description": "Label of the collapsible section that shows the source code of a script the agent ran"
+  },
+  "scriptSourceLines": "{count, plural, =1{1 line} other{{count} lines}}",
+  "@scriptSourceLines": {
+    "description": "Length of a script's source code, beside its collapsed section",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scriptStateRunning": "Running",
+  "@scriptStateRunning": {
+    "description": "Status tag: the agent's script is still running"
+  },
+  "scriptStateCompleted": "Completed",
+  "@scriptStateCompleted": {
+    "description": "Status tag: the agent's script ran to the end"
+  },
+  "scriptStateFailed": "Failed",
+  "@scriptStateFailed": {
+    "description": "Status tag: the agent's script threw an error"
+  },
+  "scriptStateTimedOut": "Timed out",
+  "@scriptStateTimedOut": {
+    "description": "Status tag: the agent's script hit its time limit"
+  },
+  "scriptStateCancelled": "Cancelled",
+  "@scriptStateCancelled": {
+    "description": "Status tag: the agent's script was stopped before it finished"
+  },
+  "scriptStateMemoryExceeded": "Out of memory",
+  "@scriptStateMemoryExceeded": {
+    "description": "Status tag: the agent's script hit its memory limit"
+  },
+  "scriptStateOutputExceeded": "Too much output",
+  "@scriptStateOutputExceeded": {
+    "description": "Status tag: the agent's script was stopped because it wrote more output than allowed"
+  },
+  "scriptStateSandboxError": "Sandbox error",
+  "@scriptStateSandboxError": {
+    "description": "Status tag: the isolated environment the script runs in failed. 'Sandbox' = the isolation scripts run in"
+  },
+  "scriptStateRefused": "Refused",
+  "@scriptStateRefused": {
+    "description": "Status tag: the server did not run the agent's script at all"
+  },
+  "transcriptToolDenied": "Denied",
+  "@transcriptToolDenied": {
+    "description": "Screen-reader label of the status icon on a tool call that was refused before it ran"
+  },
+  "transcriptStatusRunningScript": "Running a script…",
+  "@transcriptStatusRunningScript": {
+    "description": "Live status line while the agent is running a script that calls other tools"
+  },
+  "scriptOriginLine": "From a script the agent is running",
+  "@scriptOriginLine": {
+    "description": "Quiet line on an approval request or a question: the request came from a tool call inside a script the agent wrote, not from the agent directly"
+  },
+  "scriptOriginShow": "Show script",
+  "@scriptOriginShow": {
+    "description": "Link beside that line: scrolls the conversation to the script's row in the transcript"
+  },
+  "codeModeTitle": "Code mode",
+  "@codeModeTitle": {
+    "description": "Name of the code mode settings page and its nav entry. Code mode lets an agent write a short script that calls its tools"
+  },
+  "codeModeSubtitle": "Agents can write a short script that calls their tools instead of calling them one at a time.",
+  "@codeModeSubtitle": {
+    "description": "Subtitle of the code mode settings page"
+  },
+  "codeModeStatusLabel": "Status",
+  "@codeModeStatusLabel": {
+    "description": "Card heading: whether this server can run scripts and what runs get"
+  },
+  "codeModeFactAvailability": "On this server",
+  "@codeModeFactAvailability": {
+    "description": "Fact label: whether this server can run agents' scripts"
+  },
+  "codeModeAvailable": "Available",
+  "@codeModeAvailable": {
+    "description": "Fact value: this server can run agents' scripts"
+  },
+  "codeModeUnavailable": "Unavailable",
+  "@codeModeUnavailable": {
+    "description": "Fact value: this server cannot run agents' scripts"
+  },
+  "codeModeFactRunner": "Runner",
+  "@codeModeFactRunner": {
+    "description": "Fact label: the version of the program that runs scripts"
+  },
+  "codeModeUnavailableNote": "This server can't run scripts, so agents here call their tools one at a time. The server says: {reason}",
+  "@codeModeUnavailableNote": {
+    "description": "Note under the status when the server cannot run scripts. {reason} is the server's own explanation, in English",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "codeModeNoReason": "no reason was given.",
+  "@codeModeNoReason": {
+    "description": "Stands in for the server's explanation when it gave none; ends the sentence of codeModeUnavailableNote"
+  },
+  "codeModeViewExecutions": "View code executions",
+  "@codeModeViewExecutions": {
+    "description": "Button: opens the list of scripts agents ran"
+  },
+  "codeModeLimitsLabel": "Limits",
+  "@codeModeLimitsLabel": {
+    "description": "Card heading: how long and how far one script may go"
+  },
+  "codeModeLimitsSubtitle": "How long and how far one script may go. The defaults suit most workspaces.",
+  "@codeModeLimitsSubtitle": {
+    "description": "Subtitle of the limits card"
+  },
+  "codeModeLimitsDisclosure": "Adjust limits",
+  "@codeModeLimitsDisclosure": {
+    "description": "Title of the folded section holding the limit fields"
+  },
+  "codeModeLimitsAtDefaults": "Defaults",
+  "@codeModeLimitsAtDefaults": {
+    "description": "Shown on the folded limits section when no limit was changed"
+  },
+  "codeModeLimitsChangedCount": "{count, plural, =1{1 changed} other{{count} changed}}",
+  "@codeModeLimitsChangedCount": {
+    "description": "Shown on the folded limits section: how many limits differ from the defaults",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "codeModeLimitsUseDefaults": "Use defaults",
+  "@codeModeLimitsUseDefaults": {
+    "description": "Button: puts every limit back to its default (still needs Save)"
+  },
+  "codeModeLimitWallClock": "Time per script",
+  "@codeModeLimitWallClock": {
+    "description": "Limit field: how long one script may run"
+  },
+  "codeModeLimitWallClockHelp": "Time spent waiting for a person doesn't count.",
+  "@codeModeLimitWallClockHelp": {
+    "description": "Help under the time-per-script field"
+  },
+  "codeModeLimitCpu": "Processor time",
+  "@codeModeLimitCpu": {
+    "description": "Limit field: how much processor time one script may use"
+  },
+  "codeModeLimitCpuHelp": "Time the script itself spends computing.",
+  "@codeModeLimitCpuHelp": {
+    "description": "Help under the processor-time field"
+  },
+  "codeModeLimitHeap": "Memory",
+  "@codeModeLimitHeap": {
+    "description": "Limit field: how much memory one script may use"
+  },
+  "codeModeLimitHeapHelp": "Memory the script may use while it runs.",
+  "@codeModeLimitHeapHelp": {
+    "description": "Help under the memory field"
+  },
+  "codeModeLimitNestedCalls": "Tool calls per script",
+  "@codeModeLimitNestedCalls": {
+    "description": "Limit field: how many tool calls one script may make"
+  },
+  "codeModeLimitNestedCallsHelp": "Calls past this are refused and the script is told why.",
+  "@codeModeLimitNestedCallsHelp": {
+    "description": "Help under the tool-calls field"
+  },
+  "codeModeLimitInFlight": "Calls at once",
+  "@codeModeLimitInFlight": {
+    "description": "Limit field: how many tool calls one script may have running at the same time"
+  },
+  "codeModeLimitInFlightHelp": "Calls a script may have running at the same time.",
+  "@codeModeLimitInFlightHelp": {
+    "description": "Help under the calls-at-once field"
+  },
+  "codeModeLimitOutputTokens": "Output the agent reads",
+  "@codeModeLimitOutputTokens": {
+    "description": "Limit field: how much of a script's output goes back to the agent"
+  },
+  "codeModeLimitOutputTokensHelp": "Longer output is shortened; the agent can read the rest on request.",
+  "@codeModeLimitOutputTokensHelp": {
+    "description": "Help under the output field"
+  },
+  "codeModeLimitRange": "Default {defaultValue}. From {min} to {max}.",
+  "@codeModeLimitRange": {
+    "description": "Hint under a limit field. The values are already formatted numbers; the unit is shown in the field",
+    "placeholders": {
+      "defaultValue": {
+        "type": "String"
+      },
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "codeModeLimitOutOfRange": "Enter a whole number from {min} to {max}.",
+  "@codeModeLimitOutOfRange": {
+    "description": "Error under a limit field whose value is not allowed",
+    "placeholders": {
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "codeModeSuffixSeconds": "s",
+  "@codeModeSuffixSeconds": {
+    "description": "Unit shown after a number of seconds in a limit field"
+  },
+  "codeModeSuffixMebibytes": "MiB",
+  "@codeModeSuffixMebibytes": {
+    "description": "Unit shown after a number of mebibytes in a limit field"
+  },
+  "codeModeSuffixCalls": "calls",
+  "@codeModeSuffixCalls": {
+    "description": "Unit shown after a number of tool calls in a limit field"
+  },
+  "codeModeSuffixTokens": "tokens",
+  "@codeModeSuffixTokens": {
+    "description": "Unit shown after a number of model tokens in a limit field"
+  },
+  "codeModeServerCap": "{count, plural, =1{This server runs at most 1 script at a time, across every workspace.} other{This server runs at most {count} scripts at a time, across every workspace.}}",
+  "@codeModeServerCap": {
+    "description": "Read-only line under the limits: a server-wide cap the server owner sets",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "codeModeUnitMilliseconds": "{value} ms",
+  "@codeModeUnitMilliseconds": {
+    "description": "A duration in milliseconds; {value} is a formatted number",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "codeModeUnitSeconds": "{value} s",
+  "@codeModeUnitSeconds": {
+    "description": "A duration in seconds; {value} is a formatted number",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "codeModeUnitMinutesSeconds": "{minutes} min {seconds} s",
+  "@codeModeUnitMinutesSeconds": {
+    "description": "A duration in minutes and seconds; both are formatted numbers",
+    "placeholders": {
+      "minutes": {
+        "type": "String"
+      },
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
+  "codeModeRefusedLimitUnknown": "The server doesn't know one of these limits.",
+  "@codeModeRefusedLimitUnknown": {
+    "description": "Error: the limits were refused because one is not known to the server"
+  },
+  "codeModeRefusedLimitOutOfRange": "One of these limits is outside what the server allows.",
+  "@codeModeRefusedLimitOutOfRange": {
+    "description": "Error: the limits were refused because one is out of range"
+  },
+  "codeModeRefusedUnknownSetting": "The server didn't recognise that setting.",
+  "@codeModeRefusedUnknownSetting": {
+    "description": "Error: the server refused a code mode setting it does not know"
+  },
+  "codeExecutionsTitle": "Code executions",
+  "@codeExecutionsTitle": {
+    "description": "Page title: the scripts agents ran in this workspace"
+  },
+  "codeExecutionsSubtitle": "Scripts agents ran in this workspace, with every tool call they made.",
+  "@codeExecutionsSubtitle": {
+    "description": "Subtitle of the code executions page"
+  },
+  "codeExecutionsEmpty": "No scripts have run here yet.",
+  "@codeExecutionsEmpty": {
+    "description": "Empty list: no agent has run a script in this workspace"
+  },
+  "codeExecutionsEmptyFiltered": "No scripts match these filters.",
+  "@codeExecutionsEmptyFiltered": {
+    "description": "Empty list when an outcome filter or a scope is applied"
+  },
+  "codeExecutionsStatusFilter": "Outcome",
+  "@codeExecutionsStatusFilter": {
+    "description": "Screen-reader label of the outcome filter"
+  },
+  "codeExecutionsAllOutcomes": "All outcomes",
+  "@codeExecutionsAllOutcomes": {
+    "description": "Outcome filter placeholder when nothing is picked (all are shown)"
+  },
+  "codeExecutionsOutcomeCount": "{count, plural, =1{1 outcome} other{{count} outcomes}}",
+  "@codeExecutionsOutcomeCount": {
+    "description": "Outcome filter label when some outcomes are picked",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "codeExecutionsScopeRun": "Scripts from one run",
+  "@codeExecutionsScopeRun": {
+    "description": "Shown when the list is limited to one agent run"
+  },
+  "codeExecutionsScopeConversation": "Scripts from one conversation",
+  "@codeExecutionsScopeConversation": {
+    "description": "Shown when the list is limited to one conversation"
+  },
+  "codeExecutionsScopeAgent": "Scripts by one agent",
+  "@codeExecutionsScopeAgent": {
+    "description": "Shown when the list is limited to one agent"
+  },
+  "codeExecutionsShowAll": "Show all",
+  "@codeExecutionsShowAll": {
+    "description": "Button: drops the run, conversation or agent limit from the list"
+  },
+  "codeExecutionUntitled": "Untitled script",
+  "@codeExecutionUntitled": {
+    "description": "Shown when the agent gave its script no description"
+  },
+  "codeExecutionRecord": "Record",
+  "@codeExecutionRecord": {
+    "description": "Breadcrumb for one execution's record page"
+  },
+  "codeExecutionBackToList": "Back to code executions",
+  "@codeExecutionBackToList": {
+    "description": "Button: back to the list of scripts"
+  },
+  "codeExecutionNotFound": "This code execution isn't in this workspace. It may have been removed with its run.",
+  "@codeExecutionNotFound": {
+    "description": "Shown when a record does not exist"
+  },
+  "codeExecutionRefusedSpace": "This script ran in a space you can't open, so its record stays hidden.",
+  "@codeExecutionRefusedSpace": {
+    "description": "Shown when the reader may not read the space the script ran in"
+  },
+  "codeExecutionOpenRecord": "Open record",
+  "@codeExecutionOpenRecord": {
+    "description": "Link from a script's transcript row or an approval to the script's durable record"
+  },
+  "codeExecutionFactStarted": "Started",
+  "@codeExecutionFactStarted": {
+    "description": "Record fact label: when the script started"
+  },
+  "codeExecutionFactDuration": "Took",
+  "@codeExecutionFactDuration": {
+    "description": "Record fact label: how long the script ran"
+  },
+  "codeExecutionFactCalls": "Tool calls",
+  "@codeExecutionFactCalls": {
+    "description": "Record fact label: how many tool calls the script made"
+  },
+  "codeExecutionFactAgent": "Agent",
+  "@codeExecutionFactAgent": {
+    "description": "Record fact label: the agent that ran the script"
+  },
+  "codeExecutionFactSurface": "Ran through",
+  "@codeExecutionFactSurface": {
+    "description": "Record fact label: which part of the system ran the script"
+  },
+  "codeExecutionSurfaceHarness": "Built-in agent",
+  "@codeExecutionSurfaceHarness": {
+    "description": "Fact value: the script ran in Control Center's own agent loop"
+  },
+  "codeExecutionSurfaceMcp": "External agent",
+  "@codeExecutionSurfaceMcp": {
+    "description": "Fact value: the script ran for an external agent (Claude Code, Codex, ACP) through the tool server"
+  },
+  "codeExecutionFactCpu": "Processor time",
+  "@codeExecutionFactCpu": {
+    "description": "Record fact label: processor time the script used"
+  },
+  "codeExecutionFactMemory": "Peak memory",
+  "@codeExecutionFactMemory": {
+    "description": "Record fact label: the most memory the script used"
+  },
+  "codeExecutionOpenConversation": "Open conversation",
+  "@codeExecutionOpenConversation": {
+    "description": "Button: opens the conversation the script ran in"
+  },
+  "codeExecutionRunScripts": "Scripts in this run",
+  "@codeExecutionRunScripts": {
+    "description": "Button: the list limited to this script's run"
+  },
+  "codeExecutionAgentScripts": "Scripts by this agent",
+  "@codeExecutionAgentScripts": {
+    "description": "Button: the list limited to this script's agent"
+  },
+  "codeExecutionScript": "Script",
+  "@codeExecutionScript": {
+    "description": "Heading above the script's source code"
+  },
+  "codeExecutionConsole": "Console",
+  "@codeExecutionConsole": {
+    "description": "Label of the block holding what the script logged"
+  },
+  "codeExecutionOutputTruncated": "The output was cut to fit what is kept.",
+  "@codeExecutionOutputTruncated": {
+    "description": "Note when the stored output was shortened"
+  },
+  "codeExecutionNoPayload": "The script and its output are no longer kept.",
+  "@codeExecutionNoPayload": {
+    "description": "Shown when retention already dropped the script's source and output"
+  },
+  "codeExecutionCallsHeading": "{count, plural, =0{Tool calls} =1{1 tool call} other{{count} tool calls}}",
+  "@codeExecutionCallsHeading": {
+    "description": "Heading above the list of tool calls the script made",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "codeExecutionNoCalls": "The script called no tools.",
+  "@codeExecutionNoCalls": {
+    "description": "Shown when the script made no tool calls"
+  },
+  "codeExecutionCallCompleted": "Completed",
+  "@codeExecutionCallCompleted": {
+    "description": "Tool call outcome"
+  },
+  "codeExecutionCallFailed": "Failed",
+  "@codeExecutionCallFailed": {
+    "description": "Tool call outcome"
+  },
+  "codeExecutionCallDenied": "Denied",
+  "@codeExecutionCallDenied": {
+    "description": "Tool call outcome: refused before it ran"
+  },
+  "codeExecutionCallCancelled": "Cancelled",
+  "@codeExecutionCallCancelled": {
+    "description": "Tool call outcome: stopped before it finished"
+  },
+  "codeExecutionCallTimedOut": "Timed out",
+  "@codeExecutionCallTimedOut": {
+    "description": "Tool call outcome"
+  },
+  "codeExecutionCallUnknownTool": "Unknown tool",
+  "@codeExecutionCallUnknownTool": {
+    "description": "Tool call outcome: the script named a tool that is not available"
+  },
+  "codeExecutionCallInvalidArgs": "Invalid arguments",
+  "@codeExecutionCallInvalidArgs": {
+    "description": "Tool call outcome: the tool rejected its arguments before running"
+  },
+  "codeExecutionGateAllowed": "Allowed",
+  "@codeExecutionGateAllowed": {
+    "description": "What the permission check decided: ran without asking anyone"
+  },
+  "codeExecutionGateApproved": "Approved by a person",
+  "@codeExecutionGateApproved": {
+    "description": "What the permission check decided: a person allowed it"
+  },
+  "codeExecutionGateDenied": "Denied",
+  "@codeExecutionGateDenied": {
+    "description": "What the permission check decided: refused"
+  },
+  "codeExecutionGateNotReached": "Not checked",
+  "@codeExecutionGateNotReached": {
+    "description": "The call never reached the permission check (unknown tool or bad arguments)"
+  },
+  "codeExecutionCallWaited": "Waited {duration} for a person",
+  "@codeExecutionCallWaited": {
+    "description": "How long a tool call waited for someone to approve it; {duration} is formatted",
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "codeExecutionCallArguments": "Arguments",
+  "@codeExecutionCallArguments": {
+    "description": "Label above a tool call's arguments"
+  },
+  "codeExecutionCallResult": "Result",
+  "@codeExecutionCallResult": {
+    "description": "Label above a summary of a tool call's result"
+  },
+  "codeExecutionCallResultSize": "Returned {size}",
+  "@codeExecutionCallResultSize": {
+    "description": "Summary of a tool call's result: its size; {size} is formatted (\"12 KB\", \"300 bytes\")",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "codeExecutionBytes": "{count, plural, =1{1 byte} other{{count} bytes}}",
+  "@codeExecutionBytes": {
+    "description": "A small size in bytes",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "codeExecutionEndedScriptError": "The script threw an error and nothing caught it.",
+  "@codeExecutionEndedScriptError": {
+    "description": "Why a script ended, on its record: it raised an error it did not handle"
+  },
+  "codeExecutionEndedScriptErrorNamed": "The script threw {name} and nothing caught it.",
+  "@codeExecutionEndedScriptErrorNamed": {
+    "description": "Why a script ended, on its record: it raised an error it did not handle. {name} is the error's name as the script gave it (for example TypeError), not translated",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "codeExecutionEndedStalled": "The script waited on something that could never finish.",
+  "@codeExecutionEndedStalled": {
+    "description": "Why a script ended, on its record: it awaited a promise nothing could settle"
+  },
+  "codeExecutionEndedCpu": "The script used up its processor time.",
+  "@codeExecutionEndedCpu": {
+    "description": "Why a script ended, on its record: its CPU time limit ran out"
+  },
+  "codeExecutionEndedHeap": "The script reached its memory limit.",
+  "@codeExecutionEndedHeap": {
+    "description": "Why a script ended, on its record: it used all the memory it may use"
+  },
+  "codeExecutionEndedOutput": "The script wrote more output than a script may.",
+  "@codeExecutionEndedOutput": {
+    "description": "Why a script ended, on its record: it produced too much output"
+  },
+  "codeExecutionEndedDeadline": "The script ran out of time.",
+  "@codeExecutionEndedDeadline": {
+    "description": "Why a script ended, on its record: its wall-clock time limit ran out"
+  },
+  "codeExecutionEndedCancelled": "The script was cancelled before it finished.",
+  "@codeExecutionEndedCancelled": {
+    "description": "Why a script ended, on its record: the run, the agent or a person cancelled it"
+  },
+  "codeExecutionEndedShutdown": "The server shut down while the script ran.",
+  "@codeExecutionEndedShutdown": {
+    "description": "Why a script ended, on its record: the server was shut down in an orderly way"
+  },
+  "codeExecutionEndedServerStopped": "The server stopped while the script ran. The record was closed when the server started again.",
+  "@codeExecutionEndedServerStopped": {
+    "description": "Why a script ended, on its record: the server crashed or was killed mid-script, and the record was finished on the next start"
+  },
+  "codeExecutionEndedInternal": "The program that runs scripts failed on its own.",
+  "@codeExecutionEndedInternal": {
+    "description": "Why a script ended, on its record: the script runner reported an internal failure"
+  },
+  "codeExecutionEndedStart": "The program that runs scripts could not start.",
+  "@codeExecutionEndedStart": {
+    "description": "Why a script ended, on its record: the script runner failed to start"
+  },
+  "codeExecutionEndedLockdown": "The program that runs scripts could not lock itself down, so the script did not run.",
+  "@codeExecutionEndedLockdown": {
+    "description": "Why a script ended, on its record: the script runner could not restrict itself fully, so it was not trusted to run the script"
+  },
+  "codeExecutionEndedExited": "The program that runs scripts stopped before the script finished.",
+  "@codeExecutionEndedExited": {
+    "description": "Why a script ended, on its record: the script runner exited or was killed"
+  },
+  "codeExecutionEndedRunnerBrokeRules": "The program that runs scripts broke the rules it runs under and was stopped.",
+  "@codeExecutionEndedRunnerBrokeRules": {
+    "description": "Why a script ended, on its record: the script runner sent something it must not (a malformed or oversized message, too many calls or too much data)"
+  },
+  "codeExecutionEndedUnresponsive": "The program that runs scripts stopped responding and was stopped.",
+  "@codeExecutionEndedUnresponsive": {
+    "description": "Why a script ended, on its record: the script runner neither finished nor exited in time"
+  },
+  "codeExecutionEndedHostError": "The server failed while running the script.",
+  "@codeExecutionEndedHostError": {
+    "description": "Why a script ended, on its record: the server itself hit an error"
+  },
+  "codeExecutionRunningNote": "Still running. Its tool calls appear here as they finish, and its outcome when it ends.",
+  "@codeExecutionRunningNote": {
+    "description": "Note on the record of a script that is still running; the page refreshes itself"
+  },
+  "codeModeServerWorkspaceShare": "{count, plural, =1{One workspace's scripts use at most 1 of them.} other{One workspace's scripts use at most {count} of them.}}",
+  "@codeModeServerWorkspaceShare": {
+    "description": "Read-only sentence after codeModeServerCap: how many of the server's script slots one workspace may hold at once",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "wakeOriginGoal": "Goal",
+  "@wakeOriginGoal": {
+    "description": "Origin chip on a waiting wake: it continues a goal"
+  },
+  "wakeOriginGoalCheck": "Goal check",
+  "@wakeOriginGoalCheck": {
+    "description": "Origin chip on a waiting wake: it verifies whether a goal is done"
+  },
+  "wakeOriginGoalReview": "Goal review",
+  "@wakeOriginGoalReview": {
+    "description": "Origin chip on a waiting wake: it reviews a finished goal"
+  },
+  "wakeOriginSchedule": "Schedule",
+  "@wakeOriginSchedule": {
+    "description": "Origin chip on a waiting wake: a schedule or loop fired it"
+  },
+  "wakeOriginWatch": "Watch",
+  "@wakeOriginWatch": {
+    "description": "Origin chip on a waiting wake: a watch on something fired it"
+  },
+  "wakeOriginReplyFrom": "Reply from {agent}",
+  "@wakeOriginReplyFrom": {
+    "description": "Origin chip on a waiting wake: another agent answered a question; agent is that agent's name",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "wakeOriginReply": "Reply",
+  "@wakeOriginReply": {
+    "description": "Origin chip on a waiting wake: another agent answered a question (agent unknown)"
+  },
+  "wakeOriginMessageFrom": "Message from {agent}",
+  "@wakeOriginMessageFrom": {
+    "description": "Origin chip on a waiting wake: another agent sent a message; agent is its name",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "wakeOriginMessage": "Message",
+  "@wakeOriginMessage": {
+    "description": "Origin chip on a waiting wake: a message arrived (sender unknown)"
+  },
+  "wakeOriginWorkFinishedBy": "Finished work from {agent}",
+  "@wakeOriginWorkFinishedBy": {
+    "description": "Origin chip on a waiting wake: work the agent handed to another agent finished; agent is that agent's name",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "wakeOriginWorkFinished": "Finished work",
+  "@wakeOriginWorkFinished": {
+    "description": "Origin chip on a waiting wake: handed-off work finished (agent unknown)"
+  },
+  "wakeOriginLimitReset": "Limit reset",
+  "@wakeOriginLimitReset": {
+    "description": "Origin chip on a waiting wake: it resumes a run after a provider usage limit resets"
+  },
+  "wakeOriginRecovery": "Recovery",
+  "@wakeOriginRecovery": {
+    "description": "Origin chip on a waiting wake: it resumes a run a server restart interrupted"
+  },
+  "wakeOriginAssignment": "Assignment",
+  "@wakeOriginAssignment": {
+    "description": "Origin chip on a waiting wake: work was assigned to the agent"
+  },
+  "wakeOriginPipelineStep": "Pipeline step",
+  "@wakeOriginPipelineStep": {
+    "description": "Origin chip on a waiting wake: a pipeline step starts the agent"
+  },
+  "wakeOriginImprovementReview": "Improvement review",
+  "@wakeOriginImprovementReview": {
+    "description": "Origin chip on a waiting wake: a review that proposes improvements"
+  },
+  "wakeKindStopped": "Held because a person stopped the run.",
+  "@wakeKindStopped": {
+    "description": "Why a wake is held or was not delivered"
+  },
+  "wakeKindAttempts": "Delivery failed three times.",
+  "@wakeKindAttempts": {
+    "description": "Why a wake was not delivered"
+  },
+  "wakeKindAgentDeleted": "The agent no longer exists.",
+  "@wakeKindAgentDeleted": {
+    "description": "Why a wake was not delivered"
+  },
+  "wakeKindAgentNotDispatchable": "The agent is retired.",
+  "@wakeKindAgentNotDispatchable": {
+    "description": "Why a wake was not delivered"
+  },
+  "wakeKindAgentPaused": "The agent is paused.",
+  "@wakeKindAgentPaused": {
+    "description": "Why a wake waits or was not delivered"
+  },
+  "wakeKindPersonRemoved": "The person it acts for left the workspace.",
+  "@wakeKindPersonRemoved": {
+    "description": "Why a wake was not delivered"
+  },
+  "wakeKindBudgetBlocked": "A budget blocks a run.",
+  "@wakeKindBudgetBlocked": {
+    "description": "Why a wake waits or was not delivered"
+  },
+  "wakeKindTakeOver": "A person has taken over the worktree.",
+  "@wakeKindTakeOver": {
+    "description": "Why a wake waits"
+  },
+  "wakeKindRateCapConversation": "This conversation started 30 runs from wakes in the last hour.",
+  "@wakeKindRateCapConversation": {
+    "description": "Why a wake waits: per-conversation rate cap"
+  },
+  "wakeKindRateCapWorkspace": "This workspace started 300 runs from wakes in the last hour.",
+  "@wakeKindRateCapWorkspace": {
+    "description": "Why a wake waits: per-workspace rate cap"
+  },
+  "wakeKindLiveRunNoInput": "The agent's live run here takes no input.",
+  "@wakeKindLiveRunNoInput": {
+    "description": "Why a wake waits"
+  },
+  "wakeKindLiveRunOtherOptions": "The agent's live run here runs differently, so this starts its own run after it.",
+  "@wakeKindLiveRunOtherOptions": {
+    "description": "Why a wake waits"
+  },
+  "wakeKindLiveRunOtherPerson": "The agent's live run here acts for someone else, so this starts its own run after it.",
+  "@wakeKindLiveRunOtherPerson": {
+    "description": "Why a wake waits"
+  },
+  "wakeKindDispatchRefused": "The run could not start.",
+  "@wakeKindDispatchRefused": {
+    "description": "Why a wake was not delivered"
+  },
+  "wakeKindSandboxUnavailable": "No sandbox is available for a read-only run.",
+  "@wakeKindSandboxUnavailable": {
+    "description": "Why a wake was not delivered"
+  },
+  "wakeKindReadOnlyUnavailable": "This agent's backend cannot keep a run read-only.",
+  "@wakeKindReadOnlyUnavailable": {
+    "description": "Why a wake was not delivered"
+  },
+  "wakeKindServerStopped": "A server restart stopped the run.",
+  "@wakeKindServerStopped": {
+    "description": "Why a wake was not delivered"
+  },
+  "wakeKindServerRestarted": "The server restarted during a person's run.",
+  "@wakeKindServerRestarted": {
+    "description": "Why a recovery wake is held"
+  },
+  "wakeKindGuardFailed": "A check before delivery failed.",
+  "@wakeKindGuardFailed": {
+    "description": "Why a wake was not delivered"
+  },
+  "wakeKindLimit": "Waiting at the provider's usage limit.",
+  "@wakeKindLimit": {
+    "description": "Why a wake is held"
+  },
+  "wakeKindLimitRunLive": "Waiting for the run at the usage limit to end.",
+  "@wakeKindLimitRunLive": {
+    "description": "Why a wake waits"
+  },
+  "wakeKindWakeMissed": "Missed while the server was down.",
+  "@wakeKindWakeMissed": {
+    "description": "Why a wake was not delivered"
+  },
+  "wakeKindPipelineRunEnded": "Its pipeline run ended.",
+  "@wakeKindPipelineRunEnded": {
+    "description": "Why a wake was not delivered"
+  },
+  "wakeKindGoalEnded": "Its goal ended.",
+  "@wakeKindGoalEnded": {
+    "description": "Why a wake was not delivered"
+  },
+  "wakeKindGoalBudgetExhausted": "Its goal used its budget.",
+  "@wakeKindGoalBudgetExhausted": {
+    "description": "Why a wake was not delivered"
+  },
+  "wakeKindGoalReviewStale": "The goal changed since this review was asked for.",
+  "@wakeKindGoalReviewStale": {
+    "description": "Why a wake was not delivered"
+  },
+  "wakeKindGoalPaused": "Its goal is paused.",
+  "@wakeKindGoalPaused": {
+    "description": "Why a wake waits or was not delivered"
+  },
+  "wakeKindGoalHeld": "Its goal is on hold.",
+  "@wakeKindGoalHeld": {
+    "description": "Why a wake waits or was not delivered"
+  },
+  "wakeKindGoalStopped": "Its goal was stopped.",
+  "@wakeKindGoalStopped": {
+    "description": "Why a wake was not delivered"
+  },
+  "wakeKindAskSettled": "The question it answers was already settled.",
+  "@wakeKindAskSettled": {
+    "description": "Why a wake was not delivered"
+  },
+  "wakeKindRuleEnded": "Its schedule ended.",
+  "@wakeKindRuleEnded": {
+    "description": "Why a wake was not delivered"
+  },
+  "wakeKindUnknown": "For a reason this version doesn't name:",
+  "@wakeKindUnknown": {
+    "description": "Lead-in before an unrecognized reason code shown in code style"
+  },
+  "wakeStripHeader": "{count, plural, =1{1 wake waiting} other{{count} wakes waiting}}",
+  "@wakeStripHeader": {
+    "description": "Header of the strip of waiting wakes above the composer",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "wakeStripDue": "Due {time}",
+  "@wakeStripDue": {
+    "description": "When a waiting wake is due; time is a formatted local time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "wakeStripDueNow": "Due now",
+  "@wakeStripDueNow": {
+    "description": "A waiting wake is already due"
+  },
+  "wakeStripHeld": "Held",
+  "@wakeStripHeld": {
+    "description": "Status chip on a held wake (it waits for a person to resume it)"
+  },
+  "wakeStripExpires": "Expires {time}",
+  "@wakeStripExpires": {
+    "description": "When a waiting wake expires; time is a formatted local time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "wakeStripAttempt": "Attempt {attempt}",
+  "@wakeStripAttempt": {
+    "description": "Delivery attempt number of a waiting wake",
+    "placeholders": {
+      "attempt": {
+        "type": "int"
+      }
+    }
+  },
+  "wakeStripCancel": "Cancel wake",
+  "@wakeStripCancel": {
+    "description": "Action: cancel a waiting wake"
+  },
+  "wakeStripDeliverNow": "Deliver now",
+  "@wakeStripDeliverNow": {
+    "description": "Action: deliver a waiting wake now, whatever its due time"
+  },
+  "wakeStripResume": "Resume",
+  "@wakeStripResume": {
+    "description": "Action: resume a held wake"
+  },
+  "wakeStripDismiss": "Dismiss",
+  "@wakeStripDismiss": {
+    "description": "Action: drop a recovery wake instead of resuming the interrupted run"
+  },
+  "wakeStripResumeAll": "Resume all",
+  "@wakeStripResumeAll": {
+    "description": "Action: resume every held wake in the conversation the person may resume"
+  },
+  "wakeStripResumeOnlyTheirs": "Only the person whose run this is can resume it.",
+  "@wakeStripResumeOnlyTheirs": {
+    "description": "Shown on a held wake the viewer may not resume"
+  },
+  "wakeReceiptStarted": "Started a run.",
+  "@wakeReceiptStarted": {
+    "description": "Toast after Deliver now: a run started"
+  },
+  "wakeReceiptPushed": "Handed to the live run.",
+  "@wakeReceiptPushed": {
+    "description": "Toast after Deliver now: the live run took it"
+  },
+  "wakeReceiptWaiting": "Still waiting. {reason}",
+  "@wakeReceiptWaiting": {
+    "description": "Toast after Deliver now: it still waits; reason is a sentence",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "wakeReceiptSkipped": "Not delivered. {reason}",
+  "@wakeReceiptSkipped": {
+    "description": "Toast after Deliver now: it was skipped; reason is a sentence",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "wakeReceiptDuplicate": "Already delivered.",
+  "@wakeReceiptDuplicate": {
+    "description": "Toast after Deliver now: it had already been delivered"
+  },
+  "wakeReleased": "{count, plural, =0{Nothing was resumed.} =1{Resumed 1 wake.} other{Resumed {count} wakes.}}",
+  "@wakeReleased": {
+    "description": "Toast after resuming held wakes",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "wakeRefusalNotYours": "This wake acts for another person. Only they can deliver or resume it.",
+  "@wakeRefusalNotYours": {
+    "description": "Refusal kind wake_not_yours"
+  },
+  "wakeRefusalSettled": "This wake has already settled.",
+  "@wakeRefusalSettled": {
+    "description": "Refusal kind wake_settled, or a cancel that found nothing to cancel"
+  },
+  "heldSteeringHeader": "{count, plural, =1{1 held message} other{{count} held messages}}",
+  "@heldSteeringHeader": {
+    "description": "Header of the steering messages held for their writers (by a person's Stop, or when a run ended at a usage limit with no pause)",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "heldSteeringResume": "Send held messages",
+  "@heldSteeringResume": {
+    "description": "Action: put the held messages back in the queue (sent now, or to the live run)"
+  },
+  "heldSteeringDelete": "Delete held message",
+  "@heldSteeringDelete": {
+    "description": "Action: delete one held steering message"
+  },
+  "heldSteeringReleased": "{count, plural, =0{Nothing was held.} =1{Sent 1 held message.} other{Sent {count} held messages.}}",
+  "@heldSteeringReleased": {
+    "description": "Toast after sending held steering messages",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "workAgentUnknown": "an agent",
+  "@workAgentUnknown": {
+    "description": "Stands in for an agent whose name is not known, inside a sentence"
+  },
+  "workFeedWoke": "{count, plural, =1{Woke {agent}} other{Woke {agent} for {count} waiting items}}",
+  "@workFeedWoke": {
+    "description": "Conversation row: the queue started the agent; agent is its name",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "workFeedWakeSkipped": "A wake for {agent} was not delivered.",
+  "@workFeedWakeSkipped": {
+    "description": "Conversation row: a wake was skipped; the reason follows",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "workFeedWakeMissed": "A wake for {agent} was missed while the server was down.",
+  "@workFeedWakeMissed": {
+    "description": "Conversation row: a scheduled wake was missed",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "workFeedScheduleCreated": "Schedule set for {agent}.",
+  "@workFeedScheduleCreated": {
+    "description": "Conversation row: a schedule, loop or watch was created",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "workFeedScheduleEnded": "The schedule for {agent} ended.",
+  "@workFeedScheduleEnded": {
+    "description": "Conversation row: a schedule ended; the reason follows",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "workFeedOpenSchedule": "Open schedule",
+  "@workFeedOpenSchedule": {
+    "description": "Action on a schedule row: open the schedule's page"
+  },
+  "workFeedNoteFromAgent": "{agent} left this note for itself, in its own words:",
+  "@workFeedNoteFromAgent": {
+    "description": "Conversation row: a schedule fired and shows the note its agent wrote; the note follows as a quotation",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "workFeedNoteFromPerson": "A reminder a person set:",
+  "@workFeedNoteFromPerson": {
+    "description": "Conversation row: a schedule fired and shows the note a person wrote; the note follows as a quotation"
+  },
+  "workFeedLimitParkHeld": "Paused at {provider}'s usage limit. The limit resets at {time}.",
+  "@workFeedLimitParkHeld": {
+    "description": "Card: a person's run stopped at a provider usage limit and waits for their Resume",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "workFeedLimitParkPending": "Paused at {provider}'s usage limit. Resumes at {time}.",
+  "@workFeedLimitParkPending": {
+    "description": "Card: the run will resume by itself at the given time",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "workFeedLimitParkResumed": "Resumed after {provider}'s usage limit.",
+  "@workFeedLimitParkResumed": {
+    "description": "Card: the paused run resumed",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "workFeedLimitParkGone": "No longer waiting at {provider}'s usage limit.",
+  "@workFeedLimitParkGone": {
+    "description": "Card: the pause ended (resumed or cancelled)",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "workFeedLimitParkResume": "Resume",
+  "@workFeedLimitParkResume": {
+    "description": "Action on the usage-limit card"
+  },
+  "workFeedLimitParkCancel": "Cancel",
+  "@workFeedLimitParkCancel": {
+    "description": "Action on the usage-limit card: drop the paused run"
+  },
+  "workFeedStillInFlight": "State handed to {agent} after compaction",
+  "@workFeedStillInFlight": {
+    "description": "Collapsed conversation row: what was still in flight when the conversation was compacted",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "workFeedShowDetails": "Show details",
+  "@workFeedShowDetails": {
+    "description": "Action: expand a collapsed row"
+  },
+  "workFeedHideDetails": "Hide details",
+  "@workFeedHideDetails": {
+    "description": "Action: collapse an expanded row"
+  },
+  "workFeedCommandRefused": "The command was refused.",
+  "@workFeedCommandRefused": {
+    "description": "Conversation row: the server refused a /goal, /loop or /schedule command; the reason follows"
+  },
+  "wakeRuleEndFired": "It ran its one time.",
+  "@wakeRuleEndFired": {
+    "description": "Why a schedule ended"
+  },
+  "wakeRuleEndExpired": "It reached its end date.",
+  "@wakeRuleEndExpired": {
+    "description": "Why a schedule ended"
+  },
+  "wakeRuleEndRunCap": "It used its runs.",
+  "@wakeRuleEndRunCap": {
+    "description": "Why a schedule ended"
+  },
+  "wakeRuleEndCostCap": "It reached its cost cap.",
+  "@wakeRuleEndCostCap": {
+    "description": "Why a schedule ended"
+  },
+  "wakeRuleEndGoalEnded": "Its goal ended.",
+  "@wakeRuleEndGoalEnded": {
+    "description": "Why a schedule ended"
+  },
+  "wakeRuleEndCancelled": "It was cancelled.",
+  "@wakeRuleEndCancelled": {
+    "description": "Why a schedule ended"
+  },
+  "wakeRuleEndMemberRemoved": "Its person left the workspace.",
+  "@wakeRuleEndMemberRemoved": {
+    "description": "Why a schedule ended"
+  },
+  "wakeRuleEndInvalidRow": "Its stored settings could not be read.",
+  "@wakeRuleEndInvalidRow": {
+    "description": "Why a schedule ended"
+  },
+  "wakeRuleRefusalIntervalTooShort": "The interval is too short. Pick a longer one.",
+  "@wakeRuleRefusalIntervalTooShort": {
+    "description": "Refusal kind wake_interval_too_short"
+  },
+  "wakeRuleRefusalTooSoon": "That time is too soon. Pick a later one.",
+  "@wakeRuleRefusalTooSoon": {
+    "description": "Refusal kind wake_too_soon"
+  },
+  "wakeRuleRefusalLineageEnded": "This chain of wakes has used its runs or its time.",
+  "@wakeRuleRefusalLineageEnded": {
+    "description": "Refusal kind wake_lineage_ended"
+  },
+  "wakeRuleRefusalWatchTargetUnreadable": "You can't read what this would watch.",
+  "@wakeRuleRefusalWatchTargetUnreadable": {
+    "description": "Refusal kind watch_target_unreadable"
+  },
+  "wakeRuleRefusalExpiryRequired": "Give it an end, for example --days 3.",
+  "@wakeRuleRefusalExpiryRequired": {
+    "description": "Refusal kind wake_expiry_required"
+  },
+  "wakeRuleRefusalLimitReached": "This conversation already has as many schedules as it may.",
+  "@wakeRuleRefusalLimitReached": {
+    "description": "Refusal kind wake_limit_reached"
+  },
+  "wakeRuleRefusalInvalidWhen": "The time can't be read.",
+  "@wakeRuleRefusalInvalidWhen": {
+    "description": "Refusal kind wake_invalid_when"
+  },
+  "wakeRuleRefusalNoteTooLong": "The note is too long.",
+  "@wakeRuleRefusalNoteTooLong": {
+    "description": "Refusal kind wake_note_too_long"
+  },
+  "wakeRuleRefusalExpiryTooLong": "The end is too far away.",
+  "@wakeRuleRefusalExpiryTooLong": {
+    "description": "Refusal kind wake_expiry_too_long"
+  },
+  "wakeRuleRefusalLimitOutOfRange": "A run, day or budget limit is out of range.",
+  "@wakeRuleRefusalLimitOutOfRange": {
+    "description": "Refusal kind wake_limit_out_of_range"
+  },
+  "wakeRuleRefusalNextOutsideLoop": "Only a loop can pick its own next time.",
+  "@wakeRuleRefusalNextOutsideLoop": {
+    "description": "Refusal kind wake_next_outside_loop"
+  },
+  "wakeRuleRefusalWatchRefused": "That can't be watched.",
+  "@wakeRuleRefusalWatchRefused": {
+    "description": "Refusal kind wake_watch_refused"
+  },
+  "wakeRuleRefusalRuleEnded": "That schedule has already ended.",
+  "@wakeRuleRefusalRuleEnded": {
+    "description": "Refusal kind wake_rule_ended"
+  },
+  "wakeRuleRefusalNotYours": "That schedule belongs to someone else.",
+  "@wakeRuleRefusalNotYours": {
+    "description": "Refusal kind wake_not_yours on a schedule"
+  },
+  "workRefusalUnknown": "The server refused this:",
+  "@workRefusalUnknown": {
+    "description": "Lead-in before an unrecognized refusal code shown in code style"
+  },
+  "goalRefusalAlreadyActive": "This conversation already has an active goal.",
+  "@goalRefusalAlreadyActive": {
+    "description": "Refusal kind goal_already_active"
+  },
+  "goalRefusalNotInReview": "This goal is not waiting for review.",
+  "@goalRefusalNotInReview": {
+    "description": "Refusal kind goal_not_in_review"
+  },
+  "goalRefusalEvidenceIncomplete": "The goal's evidence is incomplete.",
+  "@goalRefusalEvidenceIncomplete": {
+    "description": "Refusal kind goal_evidence_incomplete"
+  },
+  "goalRefusalClaimPending": "A claim that it is done is still being checked.",
+  "@goalRefusalClaimPending": {
+    "description": "Refusal kind goal_claim_pending"
+  },
+  "goalRefusalNotActiveSegment": "This goal has no segment running.",
+  "@goalRefusalNotActiveSegment": {
+    "description": "Refusal kind goal_not_active_segment"
+  },
+  "goalRefusalNotYours": "Only the person who started this goal can do that.",
+  "@goalRefusalNotYours": {
+    "description": "Refusal kind goal_not_yours"
+  },
+  "goalRefusalNotPaused": "Pause the goal first.",
+  "@goalRefusalNotPaused": {
+    "description": "Refusal kind goal_not_paused"
+  },
+  "goalRefusalContractInvalid": "The goal's contract can't be read.",
+  "@goalRefusalContractInvalid": {
+    "description": "Refusal kind goal_contract_invalid"
+  },
+  "goalRefusalCheckerUnknown": "No agent has that name.",
+  "@goalRefusalCheckerUnknown": {
+    "description": "Refusal kind goal_checker_unknown"
+  },
+  "goalRefusalCheckerAmbiguous": "More than one agent has that name. Use its id.",
+  "@goalRefusalCheckerAmbiguous": {
+    "description": "Refusal kind goal_checker_ambiguous"
+  },
+  "goalRefusalCheckerIsGoalAgent": "The checker must be another agent than the one doing the work.",
+  "@goalRefusalCheckerIsGoalAgent": {
+    "description": "Refusal kind goal_checker_is_goal_agent"
+  },
+  "goalRefusalCommandInvalid": "This /goal command can't be read.",
+  "@goalRefusalCommandInvalid": {
+    "description": "Refusal kind goal_command_invalid"
+  },
+  "goalCardWorking": "Working · segment {segment}",
+  "@goalCardWorking": {
+    "description": "Goal status line while it runs; segment is the current segment number",
+    "placeholders": {
+      "segment": {
+        "type": "int"
+      }
+    }
+  },
+  "goalCardWaiting": "Waiting for its next wake",
+  "@goalCardWaiting": {
+    "description": "Goal hold waiting, without a time"
+  },
+  "goalCardVerifying": "Checking whether it is done",
+  "@goalCardVerifying": {
+    "description": "Goal hold verifying"
+  },
+  "goalCardLimitUntil": "Paused at the usage limit · resumes {time}",
+  "@goalCardLimitUntil": {
+    "description": "Goal hold limit, with the resume time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "goalCardLimit": "Paused at the usage limit",
+  "@goalCardLimit": {
+    "description": "Goal hold limit, without a time"
+  },
+  "goalCardPerson": "Needs a person",
+  "@goalCardPerson": {
+    "description": "Goal hold person"
+  },
+  "goalCardByPerson": "Paused by a person",
+  "@goalCardByPerson": {
+    "description": "Goal hold by_person"
+  },
+  "goalCardNeedsReview": "Waiting for review: it says it is done, and nothing confirmed it",
+  "@goalCardNeedsReview": {
+    "description": "Goal hold needs_review"
+  },
+  "goalCardSegments": "Segment {run} of {max}",
+  "@goalCardSegments": {
+    "description": "Goal budget: segments used of the cap",
+    "placeholders": {
+      "run": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "goalCardSegmentsNoCap": "Segment {run}",
+  "@goalCardSegmentsNoCap": {
+    "description": "Goal budget: segments used, no cap",
+    "placeholders": {
+      "run": {
+        "type": "int"
+      }
+    }
+  },
+  "goalCardMoney": "{spent} of {cap}",
+  "@goalCardMoney": {
+    "description": "Goal budget: money spent of the cap; both are formatted amounts",
+    "placeholders": {
+      "spent": {
+        "type": "String"
+      },
+      "cap": {
+        "type": "String"
+      }
+    }
+  },
+  "goalCardTimeLeft": "{time} left",
+  "@goalCardTimeLeft": {
+    "description": "Goal budget: time left before its deadline; time is a short duration such as 3h",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "goalCardOverdue": "Past its deadline",
+  "@goalCardOverdue": {
+    "description": "Goal budget: the deadline has passed"
+  },
+  "goalCardDoneMeans": "Done means",
+  "@goalCardDoneMeans": {
+    "description": "Heading of the goal's success criteria"
+  },
+  "goalCardChecks": "Checks",
+  "@goalCardChecks": {
+    "description": "Heading of the goal's machine checks"
+  },
+  "goalCardCheckPassed": "Passed",
+  "@goalCardCheckPassed": {
+    "description": "A check's last result: exit code 0"
+  },
+  "goalCardCheckFailed": "Failed · exit {code}",
+  "@goalCardCheckFailed": {
+    "description": "A check's last result: a nonzero exit code",
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
+  },
+  "goalCardCheckTimedOut": "Timed out",
+  "@goalCardCheckTimedOut": {
+    "description": "A check's last result"
+  },
+  "goalCardCheckNotRerun": "Not rerun: nothing changed",
+  "@goalCardCheckNotRerun": {
+    "description": "A check's last result: skipped because nothing changed since it last ran"
+  },
+  "goalCardCheckBroken": "Cannot run",
+  "@goalCardCheckBroken": {
+    "description": "A check's last result: the check itself is broken"
+  },
+  "goalCardCheckNotRun": "Not run yet",
+  "@goalCardCheckNotRun": {
+    "description": "A check that has no result yet"
+  },
+  "goalCardCriterionMet": "Met",
+  "@goalCardCriterionMet": {
+    "description": "Last verdict on one success criterion"
+  },
+  "goalCardCriterionUnmet": "Not met",
+  "@goalCardCriterionUnmet": {
+    "description": "Last verdict on one success criterion"
+  },
+  "goalCardCriterionCannotTell": "Can't tell",
+  "@goalCardCriterionCannotTell": {
+    "description": "Last verdict on one success criterion"
+  },
+  "goalCardVerdictPass": "Last check: done",
+  "@goalCardVerdictPass": {
+    "description": "Last verification verdict"
+  },
+  "goalCardVerdictFail": "Last check: not done",
+  "@goalCardVerdictFail": {
+    "description": "Last verification verdict"
+  },
+  "goalCardVerdictCannotVerify": "Last check: couldn't tell",
+  "@goalCardVerdictCannotVerify": {
+    "description": "Last verification verdict"
+  },
+  "goalCardConcerns": "Concerns",
+  "@goalCardConcerns": {
+    "description": "Heading of the checker's concerns"
+  },
+  "goalCardVerifiedBy": "Verified by {agent}",
+  "@goalCardVerifiedBy": {
+    "description": "Who verified the goal; agent is the checker agent's name",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "goalCardVerifiedBySelf": "Verified by itself (no separate checker)",
+  "@goalCardVerifiedBySelf": {
+    "description": "The goal's own agent verified it"
+  },
+  "goalCardClosedByPerson": "Closed by a person without a passing check",
+  "@goalCardClosedByPerson": {
+    "description": "A person approved completion of an unverified goal"
+  },
+  "goalCardNoMachineCheck": "No machine check",
+  "@goalCardNoMachineCheck": {
+    "description": "The goal has no command that checks it"
+  },
+  "goalCardAddCheck": "Add a check",
+  "@goalCardAddCheck": {
+    "description": "Action: open the goal's contract editor to add a check"
+  },
+  "goalCardOpen": "Open goal",
+  "@goalCardOpen": {
+    "description": "Action: open the goal's page"
+  },
+  "goalCardApprove": "Approve completion",
+  "@goalCardApprove": {
+    "description": "Action on a goal waiting for review: close it as done"
+  },
+  "goalCardApproveTitle": "Close this goal as done?",
+  "@goalCardApproveTitle": {
+    "description": "Confirmation dialog title"
+  },
+  "goalCardApproveBody": "No check confirmed it. You close it on your own word, and the goal records that a person closed it unverified.",
+  "@goalCardApproveBody": {
+    "description": "Confirmation dialog body for approving an unverified goal"
+  },
+  "goalCardApproveConfirm": "Close as done",
+  "@goalCardApproveConfirm": {
+    "description": "Confirm button"
+  },
+  "goalCardResumeNotYours": "Resuming it or raising its budget belongs to whoever started it.",
+  "@goalCardResumeNotYours": {
+    "description": "Shown on a paused goal the viewer may not resume"
+  },
+  "goalHoldDetailStalled": "No progress in its last segments.",
+  "@goalHoldDetailStalled": {
+    "description": "Goal hold detail stalled"
+  },
+  "goalHoldDetailStalledWaiting": "Waiting, after segments without progress.",
+  "@goalHoldDetailStalledWaiting": {
+    "description": "Goal hold detail stalled_waiting"
+  },
+  "goalHoldDetailVerificationFailed": "The last check failed.",
+  "@goalHoldDetailVerificationFailed": {
+    "description": "Goal hold detail verification_failed"
+  },
+  "goalHoldDetailCannotVerify": "The checker couldn't tell whether it is done.",
+  "@goalHoldDetailCannotVerify": {
+    "description": "Goal hold detail cannot_verify"
+  },
+  "goalHoldDetailSandboxUnavailable": "No sandbox is available to run its checks.",
+  "@goalHoldDetailSandboxUnavailable": {
+    "description": "Goal hold detail sandbox_unavailable"
+  },
+  "goalHoldDetailCheckerUnavailable": "Its checker agent is unavailable. Pick another checker, then resume.",
+  "@goalHoldDetailCheckerUnavailable": {
+    "description": "Goal hold detail checker_unavailable"
+  },
+  "goalHoldDetailCheckBroken": "This check can't run:",
+  "@goalHoldDetailCheckBroken": {
+    "description": "Goal hold detail check_broken; the command follows in code style"
+  },
+  "goalHoldDetailWakeSkipped": "Its wake was not delivered.",
+  "@goalHoldDetailWakeSkipped": {
+    "description": "Goal hold detail wake_skipped; the reason follows"
+  },
+  "goalHoldDetailClaimPending": "Its claim that it is done waits for a check.",
+  "@goalHoldDetailClaimPending": {
+    "description": "Goal hold detail claim_pending"
+  },
+  "goalHoldDetailUnanswered": "A question or approval request to a person went unanswered.",
+  "@goalHoldDetailUnanswered": {
+    "description": "Goal hold detail unanswered"
+  },
+  "goalHoldDetailLimitParks": "It hit usage limits too often. Look it over, then resume.",
+  "@goalHoldDetailLimitParks": {
+    "description": "Goal hold detail limit_parks"
+  },
+  "goalHoldDetailInput": "Waiting for an answer in the conversation.",
+  "@goalHoldDetailInput": {
+    "description": "Goal hold detail input"
+  },
+  "peerAsksSection": "Asks",
+  "@peerAsksSection": {
+    "description": "Sidebar section: questions this conversation's agents asked other agents"
+  },
+  "peerAskTo": "To {agent}",
+  "@peerAskTo": {
+    "description": "Who an ask went to; agent is its name",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "peerAskKindAsk": "Question",
+  "@peerAskKindAsk": {
+    "description": "Kind of ask"
+  },
+  "peerAskKindConsult": "Consult",
+  "@peerAskKindConsult": {
+    "description": "Kind of ask"
+  },
+  "peerAskKindReview": "Review",
+  "@peerAskKindReview": {
+    "description": "Kind of ask"
+  },
+  "peerAskStatusPending": "Waiting",
+  "@peerAskStatusPending": {
+    "description": "Ask status"
+  },
+  "peerAskStatusAnswered": "Answered",
+  "@peerAskStatusAnswered": {
+    "description": "Ask status"
+  },
+  "peerAskStatusFailed": "Failed",
+  "@peerAskStatusFailed": {
+    "description": "Ask status"
+  },
+  "peerAskStatusExpired": "Expired",
+  "@peerAskStatusExpired": {
+    "description": "Ask status"
+  },
+  "peerAskStatusCancelled": "Cancelled",
+  "@peerAskStatusCancelled": {
+    "description": "Ask status"
+  },
+  "peerAskAsked": "Asked {time}",
+  "@peerAskAsked": {
+    "description": "When an ask was made; time is a formatted local time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "peerAskExpires": "Expires {time}",
+  "@peerAskExpires": {
+    "description": "When a pending ask expires; time is a formatted local time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "peerAskPromised": "Promised an answer",
+  "@peerAskPromised": {
+    "description": "The recipient said it will answer later"
+  },
+  "peerAskBackground": "In the background",
+  "@peerAskBackground": {
+    "description": "The asker did not wait for the answer"
+  },
+  "peerAskCancel": "Cancel ask",
+  "@peerAskCancel": {
+    "description": "Action: cancel a pending ask"
+  },
+  "peerAskAlreadySettled": "That ask has already settled.",
+  "@peerAskAlreadySettled": {
+    "description": "Toast when cancelling an ask that already settled"
+  },
+  "slashHintGoal": "Work toward a goal until it is done. Flags: --check, --checker, --fresh, --unattended",
+  "@slashHintGoal": {
+    "description": "Slash command hint for /goal"
+  },
+  "slashHintLoop": "Repeat a task, every interval or at the agent's pace",
+  "@slashHintLoop": {
+    "description": "Slash command hint for /loop"
+  },
+  "slashHintSchedule": "Run a task later: in 2h, at 09:00 or on a cron",
+  "@slashHintSchedule": {
+    "description": "Slash command hint for /schedule"
+  },
+  "slashHintRefine": "Review this conversation's work and propose improvements",
+  "@slashHintRefine": {
+    "description": "Slash command hint for /refine"
+  },
+  "notifGoalCompleted": "Goal done",
+  "@notifGoalCompleted": {
+    "description": "Notification title"
+  },
+  "notifGoalFailed": "Goal failed",
+  "@notifGoalFailed": {
+    "description": "Notification title"
+  },
+  "notifGoalCancelled": "Goal cancelled",
+  "@notifGoalCancelled": {
+    "description": "Notification title"
+  },
+  "notifGoalBudgetExhausted": "Goal used its budget",
+  "@notifGoalBudgetExhausted": {
+    "description": "Notification title"
+  },
+  "notifGoalNeedsReview": "A goal waits for your review",
+  "@notifGoalNeedsReview": {
+    "description": "Notification title"
+  },
+  "notifGoalNeedsPerson": "A goal needs you",
+  "@notifGoalNeedsPerson": {
+    "description": "Notification title"
+  },
+  "notifGoalOnHold": "A goal is on hold",
+  "@notifGoalOnHold": {
+    "description": "Notification title"
+  },
+  "notifWakeRuleEnded": "A schedule ended",
+  "@notifWakeRuleEnded": {
+    "description": "Notification title"
+  },
+  "notifWaitingDigest": "{count, plural, =1{1 thing waits for you} other{{count} things wait for you}}",
+  "@notifWaitingDigest": {
+    "description": "Daily digest notification title",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notifImprovementProposed": "{count, plural, =1{An improvement was proposed} other{{count} improvements were proposed}}",
+  "@notifImprovementProposed": {
+    "description": "Notification title",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notifPipelineRunHeld": "A pipeline run is held at its budget",
+  "@notifPipelineRunHeld": {
+    "description": "Notification title"
+  },
+  "notifPipelineRunHeldBody": "Spent {spent} of {cap}",
+  "@notifPipelineRunHeldBody": {
+    "description": "Notification body; amounts are formatted",
+    "placeholders": {
+      "spent": {
+        "type": "String"
+      },
+      "cap": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxGoalNeedsReview": "Goal waits for review",
+  "@inboxGoalNeedsReview": {
+    "description": "Inbox attention item title"
+  },
+  "inboxGoalNeedsPerson": "Goal needs you",
+  "@inboxGoalNeedsPerson": {
+    "description": "Inbox attention item title"
+  },
+  "inboxImprovementProposed": "Improvement proposed",
+  "@inboxImprovementProposed": {
+    "description": "Inbox attention item title"
+  },
+  "improvementRefusalAlreadyDecided": "Someone already decided on this proposal.",
+  "@improvementRefusalAlreadyDecided": {
+    "description": "Refusal: the improvement proposal was accepted, rejected or rolled back already"
+  },
+  "improvementRefusalCampaignRequired": "This change has not passed an evaluation against the current skill, or the skill changed after it was measured. Run the evaluation again.",
+  "@improvementRefusalCampaignRequired": {
+    "description": "Refusal: a skill change needs a passing evaluation campaign before it can be accepted"
+  },
+  "improvementRefusalChangedSince": "The target changed since this was proposed. Reject it and let the agent propose again.",
+  "@improvementRefusalChangedSince": {
+    "description": "Refusal: the text the proposal replaces has changed"
+  },
+  "improvementRefusalTargetMissing": "What this proposal changes no longer exists.",
+  "@improvementRefusalTargetMissing": {
+    "description": "Refusal: the memory, policy or skill the proposal targets was deleted"
+  },
+  "improvementRefusalCampaignState": "The evaluation can't start or finish in its current state.",
+  "@improvementRefusalCampaignState": {
+    "description": "Refusal: the evaluation campaign is in the wrong state for the action"
+  },
+  "improvementRefusalReviewCooldown": "This conversation was reviewed recently. Try again later.",
+  "@improvementRefusalReviewCooldown": {
+    "description": "Refusal: a review of the same conversation ran too recently"
+  },
+  "improvementRefusalAdminRequired": "Only a workspace admin can decide on this proposal.",
+  "@improvementRefusalAdminRequired": {
+    "description": "Refusal: a workspace-wide improvement needs an admin"
+  },
+  "improvementKindMemoryFact": "Memory fact",
+  "@improvementKindMemoryFact": {
+    "description": "Improvement kind label"
+  },
+  "improvementKindPolicy": "Policy",
+  "@improvementKindPolicy": {
+    "description": "Improvement kind label"
+  },
+  "improvementKindAgentNote": "Agent note",
+  "@improvementKindAgentNote": {
+    "description": "Improvement kind label"
+  },
+  "improvementKindSkillEdit": "Skill change",
+  "@improvementKindSkillEdit": {
+    "description": "Improvement kind label"
+  },
+  "improvementKindSkillNew": "New skill",
+  "@improvementKindSkillNew": {
+    "description": "Improvement kind label"
+  },
+  "improvementScopeAgent": "This agent",
+  "@improvementScopeAgent": {
+    "description": "Improvement scope label: applies to one agent"
+  },
+  "improvementScopeRepository": "This repository",
+  "@improvementScopeRepository": {
+    "description": "Improvement scope label: applies to one repository"
+  },
+  "improvementScopeWorkspace": "The whole workspace",
+  "@improvementScopeWorkspace": {
+    "description": "Improvement scope label: applies workspace-wide"
+  },
+  "improvementStatusProposed": "Proposed",
+  "@improvementStatusProposed": {
+    "description": "Improvement status tag"
+  },
+  "improvementStatusAccepted": "Accepted",
+  "@improvementStatusAccepted": {
+    "description": "Improvement status tag"
+  },
+  "improvementStatusRejected": "Rejected",
+  "@improvementStatusRejected": {
+    "description": "Improvement status tag"
+  },
+  "improvementStatusRolledBack": "Rolled back",
+  "@improvementStatusRolledBack": {
+    "description": "Improvement status tag"
+  },
+  "improvementStatusExpired": "Expired",
+  "@improvementStatusExpired": {
+    "description": "Improvement status tag"
+  },
+  "improvementOperationAdd": "Adds",
+  "@improvementOperationAdd": {
+    "description": "What an improvement does to its target: adds text"
+  },
+  "improvementOperationReplace": "Replaces",
+  "@improvementOperationReplace": {
+    "description": "What an improvement does to its target: replaces text"
+  },
+  "improvementOperationRemove": "Removes",
+  "@improvementOperationRemove": {
+    "description": "What an improvement does to its target: removes text"
+  },
+  "scheduleTriggerOnce": "Once, {time}",
+  "@scheduleTriggerOnce": {
+    "description": "Schedule trigger in words: fires one time; time is a localized date/time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleTriggerEvery": "Every {interval}",
+  "@scheduleTriggerEvery": {
+    "description": "Schedule trigger in words: repeats; interval is a short duration such as 30m or 2h",
+    "placeholders": {
+      "interval": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleTriggerCron": "On the schedule {cron} ({zone})",
+  "@scheduleTriggerCron": {
+    "description": "Schedule trigger in words: a five-field cron expression read in a time zone (an IANA name)",
+    "placeholders": {
+      "cron": {
+        "type": "String"
+      },
+      "zone": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleTriggerSelfPaced": "When the agent chooses, 1 to 60 minutes apart",
+  "@scheduleTriggerSelfPaced": {
+    "description": "Schedule trigger in words: a self-paced loop"
+  },
+  "scheduleTriggerPrChecks": "When the pull request's checks finish",
+  "@scheduleTriggerPrChecks": {
+    "description": "Schedule trigger in words: a watch on the conversation's pull request checks"
+  },
+  "scheduleTriggerPrChecksOf": "When the checks of {pr} finish",
+  "@scheduleTriggerPrChecksOf": {
+    "description": "Schedule trigger in words: pr is owner/name#number",
+    "placeholders": {
+      "pr": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleTriggerPrReview": "When the pull request gets a review or reply",
+  "@scheduleTriggerPrReview": {
+    "description": "Schedule trigger in words: a watch on pull request reviews"
+  },
+  "scheduleTriggerPrReviewOf": "When {pr} gets a review or reply",
+  "@scheduleTriggerPrReviewOf": {
+    "description": "Schedule trigger in words: pr is owner/name#number",
+    "placeholders": {
+      "pr": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleTriggerPrMerged": "When the pull request merges",
+  "@scheduleTriggerPrMerged": {
+    "description": "Schedule trigger in words: a watch on a merge"
+  },
+  "scheduleTriggerPrMergedOf": "When {pr} merges",
+  "@scheduleTriggerPrMergedOf": {
+    "description": "Schedule trigger in words: pr is owner/name#number",
+    "placeholders": {
+      "pr": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleTriggerEnvironment": "When a task of the environment exits or it becomes ready",
+  "@scheduleTriggerEnvironment": {
+    "description": "Schedule trigger in words: a watch on the environment"
+  },
+  "scheduleTriggerTicket": "When ticket {id} settles",
+  "@scheduleTriggerTicket": {
+    "description": "Schedule trigger in words: a watch on a ticket; id is the ticket id",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleTriggerPipelineRun": "When pipeline run {id} ends",
+  "@scheduleTriggerPipelineRun": {
+    "description": "Schedule trigger in words: a watch on a pipeline run",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "goalNextWaiting": "It continues when what it waits for arrives.",
+  "@goalNextWaiting": {
+    "description": "What happens next to a goal that waits for an event"
+  },
+  "goalNextVerifying": "When the checks and the review finish, it completes or keeps working.",
+  "@goalNextVerifying": {
+    "description": "What happens next to a goal being verified"
+  },
+  "goalNextLimit": "It resumes when the usage limit resets.",
+  "@goalNextLimit": {
+    "description": "What happens next to a goal held at a provider usage limit"
+  },
+  "goalNextPerson": "It continues once someone answers its question or approval request.",
+  "@goalNextPerson": {
+    "description": "What happens next to a goal waiting on a person"
+  },
+  "goalNextByPerson": "It stays paused until someone resumes it.",
+  "@goalNextByPerson": {
+    "description": "What happens next to a goal a person paused"
+  },
+  "goalNextNeedsReview": "Approve it as done, or resume it to keep working.",
+  "@goalNextNeedsReview": {
+    "description": "What happens next to a goal waiting for review"
+  },
+  "goalNextWorking": "It keeps working, one segment at a time, until it is done or reaches a limit.",
+  "@goalNextWorking": {
+    "description": "What happens next to a goal that is working"
+  },
+  "goalContractAddCheck": "Add check",
+  "@goalContractAddCheck": {
+    "description": "Button: add a machine check to a goal contract"
+  },
+  "goalContractChecksFull": "A goal has at most {max} checks.",
+  "@goalContractChecksFull": {
+    "description": "Shown when the contract has the most checks allowed",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "goalContractChecksCount": "{count} of {max} checks",
+  "@goalContractChecksCount": {
+    "description": "How many checks the contract has out of the most allowed",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "goalContractCheckTaskHint": "Environment task name, such as test",
+  "@goalContractCheckTaskHint": {
+    "description": "Hint in the check field when the check is an environment task"
+  },
+  "goalContractCheckCommandHint": "Command, such as make test",
+  "@goalContractCheckCommandHint": {
+    "description": "Hint in the check field when the check runs in the worktree"
+  },
+  "goalContractCheckWhere": "Where it runs",
+  "@goalContractCheckWhere": {
+    "description": "Label of the select choosing where a check runs"
+  },
+  "goalContractCheckInWorktree": "In the worktree",
+  "@goalContractCheckInWorktree": {
+    "description": "Option: the check command runs in the goal conversation worktree"
+  },
+  "goalContractCheckInEnvironment": "Environment task",
+  "@goalContractCheckInEnvironment": {
+    "description": "Option: the check is a task of the environment"
+  },
+  "goalContractSecondsSuffix": "s",
+  "@goalContractSecondsSuffix": {
+    "description": "Unit suffix after a timeout in seconds"
+  },
+  "goalContractTimeoutRange": "1 to {max} seconds",
+  "@goalContractTimeoutRange": {
+    "description": "Error under a check timeout outside the allowed range",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "goalContractRemoveCheck": "Remove check",
+  "@goalContractRemoveCheck": {
+    "description": "Tooltip of the button removing a check"
+  },
+  "goalContractDoneMeans": "Done means",
+  "@goalContractDoneMeans": {
+    "description": "Heading of the success criteria of a goal contract"
+  },
+  "goalContractDoneMeansHelp": "Each criterion is one thing a reviewer can confirm.",
+  "@goalContractDoneMeansHelp": {
+    "description": "Help under the Done means heading"
+  },
+  "goalContractCriterionHint": "The release notes list every merged change",
+  "@goalContractCriterionHint": {
+    "description": "Hint in a success criterion field"
+  },
+  "goalContractCriterionTooLong": "At most {max} characters.",
+  "@goalContractCriterionTooLong": {
+    "description": "Error under a criterion that is too long",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "goalContractRemoveCriterion": "Remove criterion",
+  "@goalContractRemoveCriterion": {
+    "description": "Tooltip of the button removing a success criterion"
+  },
+  "goalContractAddCriterion": "Add criterion",
+  "@goalContractAddCriterion": {
+    "description": "Button: add a success criterion"
+  },
+  "goalContractCriteriaFull": "A goal has at most {max} criteria.",
+  "@goalContractCriteriaFull": {
+    "description": "Shown when the contract has the most criteria allowed",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "goalContractCriteriaCount": "{count} of {max} criteria",
+  "@goalContractCriteriaCount": {
+    "description": "How many criteria the contract has out of the most allowed",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "goalContractChecks": "Checks",
+  "@goalContractChecks": {
+    "description": "Heading of the machine checks of a goal contract"
+  },
+  "goalContractChecksHelp": "The server runs these when the agent says it is done. A goal without a check relies on review alone.",
+  "@goalContractChecksHelp": {
+    "description": "Help under the Checks heading"
+  },
+  "goalContractBoundaries": "Boundaries",
+  "@goalContractBoundaries": {
+    "description": "Label of the field: what the agent must not do"
+  },
+  "goalContractBoundariesHint": "Don't change the public API",
+  "@goalContractBoundariesHint": {
+    "description": "Hint in the boundaries field"
+  },
+  "goalContractStopWhen": "Stop and ask when",
+  "@goalContractStopWhen": {
+    "description": "Label of the field: when the agent should stop and ask a person"
+  },
+  "goalContractStopWhenHint": "A migration would drop data",
+  "@goalContractStopWhenHint": {
+    "description": "Hint in the stop conditions field"
+  },
+  "goalContractEditTitle": "Edit what done means",
+  "@goalContractEditTitle": {
+    "description": "Title of the dialog editing a goal contract"
+  },
+  "goalCheckerTitle": "Who checks this goal",
+  "@goalCheckerTitle": {
+    "description": "Title of the dialog choosing the goal checker agent"
+  },
+  "goalCheckerLabel": "Checker",
+  "@goalCheckerLabel": {
+    "description": "Label of the select choosing the agent that verifies a goal"
+  },
+  "goalCheckerNone": "No separate checker",
+  "@goalCheckerNone": {
+    "description": "Option: the goal agent reviews its own work"
+  },
+  "goalCheckerNoneWeaker": "Without a separate checker the agent reviews its own work, which catches less.",
+  "@goalCheckerNoneWeaker": {
+    "description": "Shown when no separate checker is chosen"
+  },
+  "goalCheckerRecommend": "For example {agent}: a checker on a different provider is less likely to share the same blind spots.",
+  "@goalCheckerRecommend": {
+    "description": "Recommends a checker agent on another provider; agent is an agent name",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "goalCheckerRecommendGeneric": "A checker on a different provider from the goal agent is less likely to share its blind spots.",
+  "@goalCheckerRecommendGeneric": {
+    "description": "Recommends a checker on another provider when none is known"
+  },
+  "raiseCapSpentOf": "Spent {spent} of {cap}.",
+  "@raiseCapSpentOf": {
+    "description": "Raise-cap dialog: money spent so far out of the current cap; amounts are formatted",
+    "placeholders": {
+      "spent": {
+        "type": "String"
+      },
+      "cap": {
+        "type": "String"
+      }
+    }
+  },
+  "raiseCapNewCap": "New cap in dollars",
+  "@raiseCapNewCap": {
+    "description": "Label of the field for the new spending cap"
+  },
+  "raiseCapMustExceed": "Enter more than {cap}.",
+  "@raiseCapMustExceed": {
+    "description": "Error: the new cap must be above the current one",
+    "placeholders": {
+      "cap": {
+        "type": "String"
+      }
+    }
+  },
+  "raiseCapConfirm": "Raise cap",
+  "@raiseCapConfirm": {
+    "description": "Button confirming a higher spending cap"
+  },
+  "goalsBackToList": "All goals",
+  "@goalsBackToList": {
+    "description": "Back button on a goal page, returning to the goals list"
+  },
+  "goalPursuedBy": "Pursued by {agent}",
+  "@goalPursuedBy": {
+    "description": "Who works on the goal; agent is an agent name",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "goalOpenConversation": "Open the conversation",
+  "@goalOpenConversation": {
+    "description": "Accessible label of the link to the goal conversation"
+  },
+  "goalStarted": "Started {time}",
+  "@goalStarted": {
+    "description": "When the goal started; time is a localized time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "goalStopTitle": "Stop this goal?",
+  "@goalStopTitle": {
+    "description": "Title of the confirmation before stopping a goal"
+  },
+  "goalStopBody": "The agent stops working on it for good. Its work so far stays in the conversation.",
+  "@goalStopBody": {
+    "description": "Body of the confirmation before stopping a goal"
+  },
+  "goalRaiseBudgetTitle": "Raise the budget and resume",
+  "@goalRaiseBudgetTitle": {
+    "description": "Title of the dialog raising a goal budget"
+  },
+  "goalRaiseBudgetAction": "Raise budget",
+  "@goalRaiseBudgetAction": {
+    "description": "Button: raise a goal budget and resume it"
+  },
+  "goalSectionNow": "Now",
+  "@goalSectionNow": {
+    "description": "Heading of the goal page section on where the goal stands"
+  },
+  "goalFactSegments": "Segments",
+  "@goalFactSegments": {
+    "description": "Label: how many segments (runs) the goal used"
+  },
+  "goalFactMoney": "Spent",
+  "@goalFactMoney": {
+    "description": "Label: money the goal spent of its cap"
+  },
+  "goalFactDeadline": "Deadline",
+  "@goalFactDeadline": {
+    "description": "Label: the goal deadline"
+  },
+  "goalFactNoProgress": "No progress",
+  "@goalFactNoProgress": {
+    "description": "Label: segments in a row without progress"
+  },
+  "goalNoDeadline": "None",
+  "@goalNoDeadline": {
+    "description": "The goal has no deadline"
+  },
+  "goalDeadlineWithLeft": "{time}, {left} left",
+  "@goalDeadlineWithLeft": {
+    "description": "A future deadline and the time left; time is a localized time, left a short duration",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "left": {
+        "type": "String"
+      }
+    }
+  },
+  "goalNoProgressCount": "{count, plural, =1{The last segment made no progress} other{The last {count} segments made no progress}}",
+  "@goalNoProgressCount": {
+    "description": "How many segments in a row made no progress",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "goalObjective": "Objective",
+  "@goalObjective": {
+    "description": "Label above the goal objective text"
+  },
+  "goalSectionContract": "What done means",
+  "@goalSectionContract": {
+    "description": "Heading of the goal contract section"
+  },
+  "goalContractPauseFirst": "Pause the goal to change what done means or who checks it.",
+  "@goalContractPauseFirst": {
+    "description": "Why editing the contract or checker is unavailable while the goal runs"
+  },
+  "goalContractEdit": "Edit",
+  "@goalContractEdit": {
+    "description": "Button: edit the goal contract"
+  },
+  "goalCheckerChange": "Change checker",
+  "@goalCheckerChange": {
+    "description": "Button: choose another checker agent for the goal"
+  },
+  "goalContractNone": "Nothing written down yet. The agent decides when it is done.",
+  "@goalContractNone": {
+    "description": "Shown when a goal has no contract"
+  },
+  "goalCheckerSelf": "No separate checker: the agent verifies its own work.",
+  "@goalCheckerSelf": {
+    "description": "Shown when the goal has no checker agent"
+  },
+  "goalCheckerIs": "Checked by {agent}",
+  "@goalCheckerIs": {
+    "description": "Who verifies the goal; agent is an agent name",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "goalCheckWorktree": "In the worktree, up to {seconds} s",
+  "@goalCheckWorktree": {
+    "description": "Where a check runs and its timeout",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "goalCheckEnvironmentTask": "Environment task, up to {seconds} s",
+  "@goalCheckEnvironmentTask": {
+    "description": "A check that is an environment task, and its timeout",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "goalSectionVerification": "Verification",
+  "@goalSectionVerification": {
+    "description": "Heading of the goal verification section"
+  },
+  "goalNotVerifiedYet": "Not verified yet. The agent has not said it is done.",
+  "@goalNotVerifiedYet": {
+    "description": "Shown when the goal has no verification"
+  },
+  "goalVerificationRound": "Round {round} of {total}, {time}",
+  "@goalVerificationRound": {
+    "description": "Which verification round is shown; time is a localized time",
+    "placeholders": {
+      "round": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "goalVerificationClaim": "What the agent claims",
+  "@goalVerificationClaim": {
+    "description": "Label above the agent completion claim"
+  },
+  "goalCheckOutputTail": "Output (last lines)",
+  "@goalCheckOutputTail": {
+    "description": "Label of the code view with the end of a check output"
+  },
+  "goalCheckExitCode": "Passed · exit {code}",
+  "@goalCheckExitCode": {
+    "description": "A check passed with its exit code",
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
+  },
+  "goalVerificationReview": "Review",
+  "@goalVerificationReview": {
+    "description": "Label above the reviewer verdict"
+  },
+  "goalVerificationNoVerdict": "No review yet.",
+  "@goalVerificationNoVerdict": {
+    "description": "Shown when the verification has no reviewer verdict"
+  },
+  "goalVerdictItem": "{criterion} · {state}",
+  "@goalVerdictItem": {
+    "description": "A criterion and the reviewer verdict on it; criterion is agent text, state a short label such as Met",
+    "placeholders": {
+      "criterion": {
+        "type": "String"
+      },
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "goalSectionSchedules": "Schedules and wakes",
+  "@goalSectionSchedules": {
+    "description": "Heading of the goal section listing its schedules and pending wakes"
+  },
+  "goalNoSchedules": "No schedule or pending wake.",
+  "@goalNoSchedules": {
+    "description": "Shown when the goal has no schedules and no pending wakes"
+  },
+  "goalPendingWakes": "Pending wakes",
+  "@goalPendingWakes": {
+    "description": "Label above the wakes waiting for the goal"
+  },
+  "workListGroup": "{label} · {count}",
+  "@workListGroup": {
+    "description": "A list group heading and how many rows it has",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "goalNotFound": "This goal doesn't exist, or it is in a space you can't open.",
+  "@goalNotFound": {
+    "description": "Shown on a goal page for a missing goal"
+  },
+  "goalsTitle": "Goals",
+  "@goalsTitle": {
+    "description": "Title of the goals page; also the sidebar, command palette and breadcrumb entry"
+  },
+  "goalsSubtitle": "Work an agent keeps at until what done means is met.",
+  "@goalsSubtitle": {
+    "description": "Subtitle of the goals page"
+  },
+  "goalsEmpty": "No goals yet",
+  "@goalsEmpty": {
+    "description": "Empty state of the goals list"
+  },
+  "goalsEmptyHint": "Start one with /goal in a conversation.",
+  "@goalsEmptyHint": {
+    "description": "Hint under the empty goals list"
+  },
+  "goalsGroupReview": "Waiting for review",
+  "@goalsGroupReview": {
+    "description": "Goals list group: goals that wait for a person to review"
+  },
+  "goalsGroupOpen": "Open",
+  "@goalsGroupOpen": {
+    "description": "Goals list group: active and paused goals"
+  },
+  "goalsGroupEnded": "Ended",
+  "@goalsGroupEnded": {
+    "description": "Goals list group: finished goals"
+  },
+  "scheduleStatusActive": "Active",
+  "@scheduleStatusActive": {
+    "description": "Schedule status tag"
+  },
+  "scheduleStatusPaused": "Paused",
+  "@scheduleStatusPaused": {
+    "description": "Schedule status tag"
+  },
+  "scheduleStatusEnded": "Ended",
+  "@scheduleStatusEnded": {
+    "description": "Schedule status tag"
+  },
+  "scheduleWhenBusySkip": "Skips a fire while the agent is busy",
+  "@scheduleWhenBusySkip": {
+    "description": "What a schedule does when the agent is busy: skip"
+  },
+  "scheduleWhenBusyQueue": "Waits until the agent is free",
+  "@scheduleWhenBusyQueue": {
+    "description": "What a schedule does when the agent is busy: queue"
+  },
+  "scheduleDeliverRun": "Starts a run",
+  "@scheduleDeliverRun": {
+    "description": "What a schedule fire does: starts an agent run"
+  },
+  "scheduleDeliverNotify": "Only notifies",
+  "@scheduleDeliverNotify": {
+    "description": "What a schedule fire does: notifies without a run"
+  },
+  "scheduleNew": "New schedule",
+  "@scheduleNew": {
+    "description": "Button: create a schedule"
+  },
+  "schedulesEmpty": "No schedules or watches",
+  "@schedulesEmpty": {
+    "description": "Empty state of the schedules list"
+  },
+  "schedulesEmptyHint": "Agents set them with /loop and /schedule, or you can create one.",
+  "@schedulesEmptyHint": {
+    "description": "Hint under the empty schedules list"
+  },
+  "scheduleOwnedBy": "Owner: {name}",
+  "@scheduleOwnedBy": {
+    "description": "The person accountable for a schedule; name is a person name",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleRunsSkips": "{runs, plural, =1{1 run} other{{runs} runs}}, {skips, plural, =0{no skips} =1{1 skip} other{{skips} skips}}",
+  "@scheduleRunsSkips": {
+    "description": "How often a schedule fired and was skipped",
+    "placeholders": {
+      "runs": {
+        "type": "int"
+      },
+      "skips": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleExpires": "Ends {time}",
+  "@scheduleExpires": {
+    "description": "When a schedule expires; time is a localized time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleNextFires": "Next: {times}",
+  "@scheduleNextFires": {
+    "description": "The next fire times of a cron schedule, in the viewer time zone; times is a comma-separated list",
+    "placeholders": {
+      "times": {
+        "type": "String"
+      }
+    }
+  },
+  "schedulesTitle": "Schedules",
+  "@schedulesTitle": {
+    "description": "Title of the schedules page; also the sidebar, command palette and breadcrumb entry"
+  },
+  "schedulesSubtitle": "Schedules, loops and watches that wake agents.",
+  "@schedulesSubtitle": {
+    "description": "Subtitle of the schedules page"
+  },
+  "scheduleWhenLabel": "When it fires",
+  "@scheduleWhenLabel": {
+    "description": "Label of the select choosing how a new schedule fires"
+  },
+  "scheduleWhenEvery": "Repeatedly, every…",
+  "@scheduleWhenEvery": {
+    "description": "Option: the schedule repeats at an interval"
+  },
+  "scheduleWhenCron": "On a cron schedule",
+  "@scheduleWhenCron": {
+    "description": "Option: the schedule follows a cron expression"
+  },
+  "scheduleWhenOnceIn": "Once, after…",
+  "@scheduleWhenOnceIn": {
+    "description": "Option: the schedule fires once after a delay"
+  },
+  "scheduleWhenOnceAt": "Once, at the next…",
+  "@scheduleWhenOnceAt": {
+    "description": "Option: the schedule fires once at the next given time of day"
+  },
+  "scheduleDurationLabel": "Interval",
+  "@scheduleDurationLabel": {
+    "description": "Label of the duration field of a schedule"
+  },
+  "scheduleDurationHelp": "Use s, m, h or d, such as 30m or 1h30m. Repeats are at least 60 s apart.",
+  "@scheduleDurationHelp": {
+    "description": "Help under the schedule duration field"
+  },
+  "scheduleDurationInvalid": "This isn't a duration, such as 30m or 2h.",
+  "@scheduleDurationInvalid": {
+    "description": "Error under an unreadable schedule duration"
+  },
+  "scheduleHour": "Hour",
+  "@scheduleHour": {
+    "description": "Label of the hour field (0 to 23)"
+  },
+  "scheduleMinute": "Minute",
+  "@scheduleMinute": {
+    "description": "Label of the minute field (0 to 59)"
+  },
+  "scheduleCronLabel": "Cron (minute hour day month weekday)",
+  "@scheduleCronLabel": {
+    "description": "Label of the cron expression field"
+  },
+  "scheduleCronInvalid": "This isn't a five-field cron that fires.",
+  "@scheduleCronInvalid": {
+    "description": "Error under an unreadable cron expression"
+  },
+  "scheduleTimeInvalid": "This isn't a time ahead, such as 09:00 or 2026-11-21T09:00Z.",
+  "@scheduleTimeInvalid": {
+    "description": "Error for an unreadable or past time after 'at' in a /schedule command; the two examples are literal"
+  },
+  "scheduleDaysRange": "1 to {max} days.",
+  "@scheduleDaysRange": {
+    "description": "Error for a number of days out of range",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleOptionUnknown": "{option} isn't an option.",
+  "@scheduleOptionUnknown": {
+    "description": "Error for an unknown option of a /loop or /schedule command; option is the literal flag typed, such as --fast",
+    "placeholders": {
+      "option": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleLimits": "Limits",
+  "@scheduleLimits": {
+    "description": "Tooltip of the control that adds a run cap, an end date or a cost cap to a /loop or /schedule being written"
+  },
+  "schedulePresetWeekdays": "Weekdays at 09:00",
+  "@schedulePresetWeekdays": {
+    "description": "Name of a ready-made schedule: Monday to Friday at 09:00"
+  },
+  "schedulePresetDaily": "Every day at 09:00",
+  "@schedulePresetDaily": {
+    "description": "Name of a ready-made schedule: every day at 09:00"
+  },
+  "schedulePresetHourly": "Every hour, on the hour",
+  "@schedulePresetHourly": {
+    "description": "Name of a ready-made schedule: at minute 0 of every hour"
+  },
+  "scheduleZoneLabel": "Time zone",
+  "@scheduleZoneLabel": {
+    "description": "Label of the time zone field"
+  },
+  "scheduleZoneHelp": "Empty means the workspace's zone.",
+  "@scheduleZoneHelp": {
+    "description": "Help under the time zone field"
+  },
+  "scheduleZoneInvalid": "This isn't a time zone, such as Europe/Berlin.",
+  "@scheduleZoneInvalid": {
+    "description": "Error under an unknown time zone name"
+  },
+  "scheduleCreateTitle": "New schedule",
+  "@scheduleCreateTitle": {
+    "description": "Title of the dialog creating a schedule"
+  },
+  "scheduleSpaceLabel": "Space",
+  "@scheduleSpaceLabel": {
+    "description": "Label of the space select in the new schedule dialog"
+  },
+  "scheduleSpaceHint": "Choose a space",
+  "@scheduleSpaceHint": {
+    "description": "Hint of the space select"
+  },
+  "scheduleConversationLabel": "Conversation",
+  "@scheduleConversationLabel": {
+    "description": "Label of the conversation select in the new schedule dialog"
+  },
+  "scheduleConversationHint": "Choose a conversation",
+  "@scheduleConversationHint": {
+    "description": "Hint of the conversation select"
+  },
+  "scheduleAgentLabel": "Agent",
+  "@scheduleAgentLabel": {
+    "description": "Label of the agent select in the new schedule dialog"
+  },
+  "scheduleAgentHint": "Choose who wakes",
+  "@scheduleAgentHint": {
+    "description": "Hint of the agent select"
+  },
+  "scheduleNoteLabel": "What each run starts from",
+  "@scheduleNoteLabel": {
+    "description": "Label of the note a schedule run starts from"
+  },
+  "scheduleNoteHint": "Summarize what changed overnight and flag anything blocked.",
+  "@scheduleNoteHint": {
+    "description": "Hint in the schedule note field"
+  },
+  "scheduleExpiresInDays": "Ends after (days)",
+  "@scheduleExpiresInDays": {
+    "description": "Label: how many days the schedule lives"
+  },
+  "scheduleExpiresInDaysHelp": "Empty: 30 days, at most 365.",
+  "@scheduleExpiresInDaysHelp": {
+    "description": "Help under the schedule lifetime field"
+  },
+  "scheduleMaxRuns": "Run cap",
+  "@scheduleMaxRuns": {
+    "description": "Label: the most runs the schedule may start"
+  },
+  "scheduleMaxRunsHelp": "Empty: no cap, at most {max}.",
+  "@scheduleMaxRunsHelp": {
+    "description": "Help under the run cap field",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleCostCap": "Cost cap (dollars)",
+  "@scheduleCostCap": {
+    "description": "Label: the most the schedule may spend, in dollars"
+  },
+  "scheduleCostCapHelp": "Empty: the workspace's default.",
+  "@scheduleCostCapHelp": {
+    "description": "Help under the cost cap field"
+  },
+  "scheduleWhenBusyLabel": "If the agent is busy",
+  "@scheduleWhenBusyLabel": {
+    "description": "Label of the select: what a fire does while the agent is busy"
+  },
+  "scheduleWhenBusyDefault": "The default for this kind",
+  "@scheduleWhenBusyDefault": {
+    "description": "Option: use the default busy behavior for the trigger kind"
+  },
+  "scheduleDeliverLabel": "Each fire",
+  "@scheduleDeliverLabel": {
+    "description": "Label of the select: what a fire delivers"
+  },
+  "scheduleCreate": "Create schedule",
+  "@scheduleCreate": {
+    "description": "Button creating the schedule"
+  },
+  "scheduleExtendTitle": "Extend this schedule",
+  "@scheduleExtendTitle": {
+    "description": "Title of the dialog extending a schedule"
+  },
+  "scheduleExtendNow": "It ends {current}. It can live until {latest} at most.",
+  "@scheduleExtendNow": {
+    "description": "Current end and the latest allowed end of a schedule; both are localized times",
+    "placeholders": {
+      "current": {
+        "type": "String"
+      },
+      "latest": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleExtendDays": "Add days",
+  "@scheduleExtendDays": {
+    "description": "Label: how many days to add to the schedule end"
+  },
+  "scheduleExtendTooLong": "It can end {latest} at the latest.",
+  "@scheduleExtendTooLong": {
+    "description": "Error: the new end is past the longest allowed life",
+    "placeholders": {
+      "latest": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleMaxRunsRange": "1 to {max} runs.",
+  "@scheduleMaxRunsRange": {
+    "description": "Error under a run cap out of range",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleCostCapRange": "At least 1 dollar and at most {max}.",
+  "@scheduleCostCapRange": {
+    "description": "Error under a cost cap out of range; max is a formatted amount",
+    "placeholders": {
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleExtend": "Extend",
+  "@scheduleExtend": {
+    "description": "Button: extend a schedule"
+  },
+  "scheduleRemoveTitle": "Remove this schedule?",
+  "@scheduleRemoveTitle": {
+    "description": "Title of the confirmation before removing an ended schedule from the list"
+  },
+  "scheduleDeleteTitle": "Delete this schedule?",
+  "@scheduleDeleteTitle": {
+    "description": "Title of the confirmation before ending a schedule"
+  },
+  "scheduleRemoveBody": "It disappears from the list. Its runs stay in the conversation.",
+  "@scheduleRemoveBody": {
+    "description": "Body of the confirmation before removing an ended schedule"
+  },
+  "scheduleDeleteBody": "It stops firing for good. Its runs stay in the conversation.",
+  "@scheduleDeleteBody": {
+    "description": "Body of the confirmation before ending a schedule"
+  },
+  "scheduleRemove": "Remove",
+  "@scheduleRemove": {
+    "description": "Button: remove an ended schedule"
+  },
+  "scheduleDelete": "Delete",
+  "@scheduleDelete": {
+    "description": "Button: end a schedule"
+  },
+  "scheduleOwnerOnly": "Only its owner can resume or extend it.",
+  "@scheduleOwnerOnly": {
+    "description": "Why resume and extend are unavailable to a member who does not own the schedule"
+  },
+  "schedulesBackToList": "All schedules",
+  "@schedulesBackToList": {
+    "description": "Back button on a schedule page"
+  },
+  "scheduleNoteByAgent": "Note, written by the agent",
+  "@scheduleNoteByAgent": {
+    "description": "Label above a schedule note the agent wrote"
+  },
+  "scheduleNoteByPerson": "Note, written by a person",
+  "@scheduleNoteByPerson": {
+    "description": "Label above a schedule note a person wrote"
+  },
+  "scheduleNoteEditedBy": "Note, last edited by {name}",
+  "@scheduleNoteEditedBy": {
+    "description": "Label above a schedule note a person edited; name is a person name",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleNoNote": "No note.",
+  "@scheduleNoNote": {
+    "description": "Shown when a schedule has no note"
+  },
+  "schedulePause": "Pause",
+  "@schedulePause": {
+    "description": "Button: pause a schedule"
+  },
+  "scheduleResume": "Resume",
+  "@scheduleResume": {
+    "description": "Button: resume a schedule"
+  },
+  "scheduleOpenChainRoot": "Open the first schedule of this chain",
+  "@scheduleOpenChainRoot": {
+    "description": "Button: open the chain's root schedule, where the chain is extended"
+  },
+  "scheduleSectionFacts": "Details",
+  "@scheduleSectionFacts": {
+    "description": "Heading of the schedule facts section"
+  },
+  "scheduleFactAgent": "Wakes",
+  "@scheduleFactAgent": {
+    "description": "Label: the agent a schedule wakes"
+  },
+  "scheduleFactConversation": "In",
+  "@scheduleFactConversation": {
+    "description": "Label: the space and conversation a schedule wakes"
+  },
+  "scheduleConversationUnknown": "A conversation you may not see",
+  "@scheduleConversationUnknown": {
+    "description": "Shown when the schedule conversation title is not available"
+  },
+  "scheduleFactOwner": "Owner",
+  "@scheduleFactOwner": {
+    "description": "Label: the person accountable for a schedule"
+  },
+  "scheduleNoOwner": "Nobody",
+  "@scheduleNoOwner": {
+    "description": "Shown when a schedule has no owner"
+  },
+  "scheduleFactNextFires": "Next fires",
+  "@scheduleFactNextFires": {
+    "description": "Label: the next fire times of a cron schedule"
+  },
+  "scheduleFactNext": "Next fire",
+  "@scheduleFactNext": {
+    "description": "Label: when the schedule fires next"
+  },
+  "scheduleFactLast": "Last fired",
+  "@scheduleFactLast": {
+    "description": "Label: when the schedule last fired"
+  },
+  "scheduleFactRuns": "Runs",
+  "@scheduleFactRuns": {
+    "description": "Label: how many runs the schedule started"
+  },
+  "scheduleRunsNoCap": "{count, plural, =1{1 run, no cap} other{{count} runs, no cap}}",
+  "@scheduleRunsNoCap": {
+    "description": "Runs a schedule started, without a run cap",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleRunsOfCap": "{count} of {max} runs",
+  "@scheduleRunsOfCap": {
+    "description": "Runs a schedule started out of its cap",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleFactSkips": "Skips",
+  "@scheduleFactSkips": {
+    "description": "Label: how many fires were skipped"
+  },
+  "scheduleSkips": "{count, plural, =0{None} =1{1 fire skipped} other{{count} fires skipped}}",
+  "@scheduleSkips": {
+    "description": "How many fires of a schedule were skipped",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleFactSpent": "Spent",
+  "@scheduleFactSpent": {
+    "description": "Label: money a schedule spent of its cap"
+  },
+  "scheduleFactEnds": "Ends",
+  "@scheduleFactEnds": {
+    "description": "Label: when the schedule expires"
+  },
+  "scheduleFactWhenBusy": "If the agent is busy",
+  "@scheduleFactWhenBusy": {
+    "description": "Label: what a fire does while the agent is busy"
+  },
+  "scheduleFactDeliver": "Each fire",
+  "@scheduleFactDeliver": {
+    "description": "Label: what each fire does"
+  },
+  "scheduleFactChain": "Chain",
+  "@scheduleFactChain": {
+    "description": "Label: the chain of schedules this one belongs to"
+  },
+  "scheduleChainLeft": "{runs, plural, =1{1 run left} other{{runs} runs left}} in the chain, which ends {time}",
+  "@scheduleChainLeft": {
+    "description": "Runs left and end of the chain a schedule belongs to; time is a localized time",
+    "placeholders": {
+      "runs": {
+        "type": "int"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleFactCreated": "Created",
+  "@scheduleFactCreated": {
+    "description": "Label: when the schedule was created"
+  },
+  "scheduleSectionHistory": "Recent wakes and runs",
+  "@scheduleSectionHistory": {
+    "description": "Heading of the schedule history section"
+  },
+  "scheduleNoRuns": "No runs yet.",
+  "@scheduleNoRuns": {
+    "description": "Shown when there are no such runs"
+  },
+  "scheduleRunLine": "{status} · {cost}",
+  "@scheduleRunLine": {
+    "description": "One run: its status and its cost (formatted)",
+    "placeholders": {
+      "status": {
+        "type": "String"
+      },
+      "cost": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleRunPending": "Waiting to start",
+  "@scheduleRunPending": {
+    "description": "Run status"
+  },
+  "scheduleRunRunning": "Running",
+  "@scheduleRunRunning": {
+    "description": "Run status"
+  },
+  "scheduleRunCompleted": "Finished",
+  "@scheduleRunCompleted": {
+    "description": "Run status"
+  },
+  "scheduleRunFailed": "Failed",
+  "@scheduleRunFailed": {
+    "description": "Run status"
+  },
+  "scheduleNotFound": "This schedule doesn't exist, or it is in a space you can't open.",
+  "@scheduleNotFound": {
+    "description": "Shown on a schedule page for a missing schedule"
+  },
+  "improvementCampaignTitle": "Run an evaluation",
+  "@improvementCampaignTitle": {
+    "description": "Title of the dialog starting an evaluation of a skill change"
+  },
+  "improvementCampaignCost": "{repetitions, plural, =1{Each task runs once} other{Each task runs {repetitions} times}} with the current skill and with the change. It spends at most {budget}, charged to this workspace.",
+  "@improvementCampaignCost": {
+    "description": "What the evaluation costs; budget is a formatted amount",
+    "placeholders": {
+      "repetitions": {
+        "type": "int"
+      },
+      "budget": {
+        "type": "String"
+      }
+    }
+  },
+  "improvementCampaignCostUnknown": "The evaluation runs the corpus with the current skill and with the change, up to the budget you set.",
+  "@improvementCampaignCostUnknown": {
+    "description": "What the evaluation does, before a budget is set"
+  },
+  "improvementCampaignUnavailable": "Evaluations can't run on this server right now.",
+  "@improvementCampaignUnavailable": {
+    "description": "Shown when the server cannot run evaluations"
+  },
+  "improvementCampaignCorpus": "Corpus",
+  "@improvementCampaignCorpus": {
+    "description": "Label of the evaluation corpus select"
+  },
+  "improvementCampaignProvider": "Provider",
+  "@improvementCampaignProvider": {
+    "description": "Label of the provider select"
+  },
+  "improvementCampaignModel": "Model",
+  "@improvementCampaignModel": {
+    "description": "Label of the model select"
+  },
+  "improvementCampaignRepetitions": "Runs per task",
+  "@improvementCampaignRepetitions": {
+    "description": "Label: how many times each task runs"
+  },
+  "improvementCampaignBudget": "Budget (dollars)",
+  "@improvementCampaignBudget": {
+    "description": "Label: the most the evaluation may spend"
+  },
+  "improvementCampaignRange": "1 to {max}.",
+  "@improvementCampaignRange": {
+    "description": "Error under a number out of range",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "improvementCampaignStart": "Start evaluation",
+  "@improvementCampaignStart": {
+    "description": "Button starting the paid evaluation"
+  },
+  "improvementRollbackTitle": "Roll back this change?",
+  "@improvementRollbackTitle": {
+    "description": "Title of the confirmation before rolling back an accepted improvement"
+  },
+  "improvementRollbackBody": "The text it replaced comes back, as long as nobody changed it since.",
+  "@improvementRollbackBody": {
+    "description": "Body of the rollback confirmation"
+  },
+  "improvementRollback": "Roll back",
+  "@improvementRollback": {
+    "description": "Button: roll back an accepted improvement"
+  },
+  "improvementRolledBackDone": "Rolled back.",
+  "@improvementRolledBackDone": {
+    "description": "Confirmation after a rollback"
+  },
+  "improvementNeedsAdmin": "Only a workspace admin can decide on this one: it changes a skill or a policy for the whole workspace.",
+  "@improvementNeedsAdmin": {
+    "description": "Why a member cannot accept, reject or roll back an improvement"
+  },
+  "improvementAdminDecides": "As an admin, you decide on this one: it changes a skill or a policy for the whole workspace.",
+  "@improvementAdminDecides": {
+    "description": "Shown to an admin on an improvement that needs an admin"
+  },
+  "improvementNeedsCampaign": "Run an evaluation that passes before accepting this skill change.",
+  "@improvementNeedsCampaign": {
+    "description": "Why Accept is disabled on a skill change without a passing evaluation"
+  },
+  "improvementsBackToList": "All improvements",
+  "@improvementsBackToList": {
+    "description": "Back button on an improvement page"
+  },
+  "improvementMeta": "{kind} · {scope} · proposed by {agent}",
+  "@improvementMeta": {
+    "description": "What kind of change, where it applies, and the agent that proposed it",
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "scope": {
+        "type": "String"
+      },
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "improvementAccept": "Accept",
+  "@improvementAccept": {
+    "description": "Button: accept an improvement proposal"
+  },
+  "improvementAcceptedDone": "Accepted.",
+  "@improvementAcceptedDone": {
+    "description": "Confirmation after accepting"
+  },
+  "improvementReject": "Reject",
+  "@improvementReject": {
+    "description": "Button: reject an improvement proposal"
+  },
+  "improvementRejectedDone": "Rejected.",
+  "@improvementRejectedDone": {
+    "description": "Confirmation after rejecting"
+  },
+  "improvementRunEvaluation": "Run evaluation",
+  "@improvementRunEvaluation": {
+    "description": "Button: start an evaluation of a skill change"
+  },
+  "improvementSectionChange": "What changes",
+  "@improvementSectionChange": {
+    "description": "Heading of the improvement change section"
+  },
+  "improvementTarget": "Target",
+  "@improvementTarget": {
+    "description": "Label before what the improvement changes (an identifier)"
+  },
+  "improvementScopeLine": "Applies to: {scope}",
+  "@improvementScopeLine": {
+    "description": "Where the improvement applies; scope is a label such as This agent",
+    "placeholders": {
+      "scope": {
+        "type": "String"
+      }
+    }
+  },
+  "improvementNewText": "New text",
+  "@improvementNewText": {
+    "description": "Label of the code view with the text an improvement adds"
+  },
+  "improvementRemovedText": "Removed text",
+  "@improvementRemovedText": {
+    "description": "Label of the code view with the text an improvement removes"
+  },
+  "improvementExpected": "Expected effect",
+  "@improvementExpected": {
+    "description": "Label above what the agent expects the change to do"
+  },
+  "improvementSectionEvidence": "Evidence and decision",
+  "@improvementSectionEvidence": {
+    "description": "Heading of the improvement evidence section"
+  },
+  "improvementNoEvidence": "No evidence attached.",
+  "@improvementNoEvidence": {
+    "description": "Shown when an improvement cites no runs, messages or checks"
+  },
+  "improvementEvidenceRuns": "Runs",
+  "@improvementEvidenceRuns": {
+    "description": "Label above the runs an improvement cites"
+  },
+  "improvementEvidenceMessages": "Messages",
+  "@improvementEvidenceMessages": {
+    "description": "Label above the messages an improvement cites"
+  },
+  "improvementOpenMessage": "Message {index}",
+  "@improvementOpenMessage": {
+    "description": "Button opening a cited message in its conversation",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "improvementEvidenceChecks": "Check results",
+  "@improvementEvidenceChecks": {
+    "description": "Label above the check results an improvement cites"
+  },
+  "improvementEvaluation": "Evaluation",
+  "@improvementEvaluation": {
+    "description": "Label above the evaluation state of a skill change"
+  },
+  "improvementCampaignNone": "Not evaluated yet.",
+  "@improvementCampaignNone": {
+    "description": "Evaluation state"
+  },
+  "improvementCampaignRunning": "The evaluation is running.",
+  "@improvementCampaignRunning": {
+    "description": "Evaluation state"
+  },
+  "improvementCampaignPassed": "The evaluation passed: it ran in full and the change solved at least as many runs as the current skill, which does not prove it is better. It can be accepted.",
+  "@improvementCampaignPassed": {
+    "description": "Evaluation state"
+  },
+  "improvementCampaignFailed": "The evaluation did not pass, or the skill changed after it was measured. Run it again, or reject the change.",
+  "@improvementCampaignFailed": {
+    "description": "Evaluation state"
+  },
+  "improvementDecided": "{status} by {name}, {time}",
+  "@improvementDecided": {
+    "description": "Who decided on an improvement and when; status is a label such as Accepted, time a localized time",
+    "placeholders": {
+      "status": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "improvementSomeone": "someone",
+  "@improvementSomeone": {
+    "description": "Stands in for a person who is no longer a member"
+  },
+  "improvementExpires": "Expires {time} unless someone decides.",
+  "@improvementExpires": {
+    "description": "When an undecided improvement expires",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "improvementOpenApplied": "Open what it changed",
+  "@improvementOpenApplied": {
+    "description": "Button opening the memory, policy or skill the improvement changed"
+  },
+  "improvementsTitle": "Improvements",
+  "@improvementsTitle": {
+    "description": "Title of the improvements page; also the sidebar, command palette and breadcrumb entry"
+  },
+  "improvementsSubtitle": "Changes agents proposed to their memory, notes, policies and skills.",
+  "@improvementsSubtitle": {
+    "description": "Subtitle of the improvements page"
+  },
+  "improvementsEmpty": "No proposals",
+  "@improvementsEmpty": {
+    "description": "Empty state of the improvements inbox"
+  },
+  "improvementsEmptyHint": "Agents propose improvements after reviewing their work, for example with /refine.",
+  "@improvementsEmptyHint": {
+    "description": "Hint under the empty improvements inbox"
+  },
+  "improvementRowNeedsAdmin": "An admin decides",
+  "@improvementRowNeedsAdmin": {
+    "description": "Row note: deciding on this proposal needs a workspace admin"
+  },
+  "improvementNotFound": "This proposal doesn't exist, or it is in a space you can't open.",
+  "@improvementNotFound": {
+    "description": "Shown on an improvement page for a missing proposal"
+  },
+  "dispatchSettingsTitle": "Schedules",
+  "@dispatchSettingsTitle": {
+    "description": "Title of the workspace settings page for schedules and unattended requests; also its settings nav label"
+  },
+  "dispatchSettingsSubtitle": "Limits on schedules and watches, and what happens to requests nobody answers.",
+  "@dispatchSettingsSubtitle": {
+    "description": "Subtitle of the schedules settings page"
+  },
+  "dispatchLimitsLabel": "Schedule limits",
+  "@dispatchLimitsLabel": {
+    "description": "Heading of the schedule limits card"
+  },
+  "dispatchLimitsSubtitle": "Caps on how many schedules and watches agents may hold, and their defaults.",
+  "@dispatchLimitsSubtitle": {
+    "description": "Subtitle of the schedule limits card"
+  },
+  "dispatchLimitRange": "1 to {max}",
+  "@dispatchLimitRange": {
+    "description": "Allowed range of a schedule limit",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "dispatchLimitPerConversation": "Per agent in a conversation",
+  "@dispatchLimitPerConversation": {
+    "description": "Label: schedules one agent may hold in one conversation"
+  },
+  "dispatchLimitPerConversationHelp": "Active or paused schedules one agent may hold in one conversation.",
+  "@dispatchLimitPerConversationHelp": {
+    "description": "Help for the per-conversation limit"
+  },
+  "dispatchLimitPerAgent": "Per agent",
+  "@dispatchLimitPerAgent": {
+    "description": "Label: schedules one agent may hold in the workspace"
+  },
+  "dispatchLimitPerAgentHelp": "Active or paused schedules one agent may hold across the workspace.",
+  "@dispatchLimitPerAgentHelp": {
+    "description": "Help for the per-agent limit"
+  },
+  "dispatchLimitPerWorkspace": "In the workspace",
+  "@dispatchLimitPerWorkspace": {
+    "description": "Label: schedules the whole workspace may hold"
+  },
+  "dispatchLimitPerWorkspaceHelp": "Active or paused schedules in the whole workspace.",
+  "@dispatchLimitPerWorkspaceHelp": {
+    "description": "Help for the per-workspace limit"
+  },
+  "dispatchLimitCostCap": "Default cost cap (dollars)",
+  "@dispatchLimitCostCap": {
+    "description": "Label: the cost cap a schedule gets when it names none"
+  },
+  "dispatchLimitCostCapHelp": "What a schedule may spend in all when it sets no cap of its own.",
+  "@dispatchLimitCostCapHelp": {
+    "description": "Help for the default cost cap"
+  },
+  "dispatchLimitZone": "Time zone",
+  "@dispatchLimitZone": {
+    "description": "Label: the workspace time zone for cron schedules and the digest"
+  },
+  "dispatchLimitZoneHelp": "The zone a cron schedule is read in when it names none, and the zone of the daily digest.",
+  "@dispatchLimitZoneHelp": {
+    "description": "Help for the workspace time zone"
+  },
+  "dispatchUnattendedLabel": "When nobody answers",
+  "@dispatchUnattendedLabel": {
+    "description": "Heading of the unattended requests card"
+  },
+  "dispatchUnattendedSubtitle": "How long a run the server started waits on a person, and when the daily digest of what waits goes out.",
+  "@dispatchUnattendedSubtitle": {
+    "description": "Subtitle of the unattended requests card"
+  },
+  "dispatchUnattendedExpiry": "Requests wait (hours)",
+  "@dispatchUnattendedExpiry": {
+    "description": "Label: how long a request waits for a person"
+  },
+  "dispatchUnattendedExpiryHelp": "After this, an approval counts as denied and a question as unanswered. Goals set to assume answer their own questions after 10 minutes.",
+  "@dispatchUnattendedExpiryHelp": {
+    "description": "Help for the request expiry"
+  },
+  "dispatchUnattendedExpiryRange": "{min} to {max} hours",
+  "@dispatchUnattendedExpiryRange": {
+    "description": "Allowed range of the request expiry",
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "dispatchDigestHour": "Daily digest at (hour)",
+  "@dispatchDigestHour": {
+    "description": "Label: the hour the daily digest goes out"
+  },
+  "dispatchDigestHourHelp": "In {zone}, the time zone above.",
+  "@dispatchDigestHourHelp": {
+    "description": "Help for the digest hour; zone is an IANA zone name",
+    "placeholders": {
+      "zone": {
+        "type": "String"
+      }
+    }
+  },
+  "dispatchDigestHourRange": "0 to 23",
+  "@dispatchDigestHourRange": {
+    "description": "Allowed range of the digest hour"
+  },
+  "goalRecordCrumb": "Goal",
+  "@goalRecordCrumb": {
+    "description": "Breadcrumb for one open goal"
+  },
+  "scheduleRecordCrumb": "Schedule",
+  "@scheduleRecordCrumb": {
+    "description": "Breadcrumb for one open schedule or watch"
+  },
+  "improvementRecordCrumb": "Proposal",
+  "@improvementRecordCrumb": {
+    "description": "Breadcrumb for one open improvement proposal"
+  },
+  "goalNodeNeedsAgent": "Pick the agent that pursues the goal.",
+  "@goalNodeNeedsAgent": {
+    "description": "Validation on a pipeline goal node without an agent"
+  },
+  "goalNodeNeedsObjective": "Write the objective.",
+  "@goalNodeNeedsObjective": {
+    "description": "Validation on a pipeline goal node without an objective"
+  },
+  "goalNodeContractInvalid": "The contract has a field over its limit; it is not saved until fixed.",
+  "@goalNodeContractInvalid": {
+    "description": "Validation on a pipeline goal node whose contract is over a limit"
+  },
+  "goalNodeBudget": "Budget (dollars)",
+  "@goalNodeBudget": {
+    "description": "Label: the goal cost cap on a pipeline goal node"
+  },
+  "goalNodeBudgetHelp": "The most the goal may spend. When it runs out, the goal holds for a person.",
+  "@goalNodeBudgetHelp": {
+    "description": "Help for the goal node budget"
+  },
+  "goalNodeBudgetRange": "Required: more than 0, up to {max}.",
+  "@goalNodeBudgetRange": {
+    "description": "Error under the goal node budget",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "goalNodeMaxRuns": "Segment cap",
+  "@goalNodeMaxRuns": {
+    "description": "Label: the most agent runs the goal may take"
+  },
+  "goalNodeMaxRunsHelp": "Optional. The most segments (agent runs) the goal may take.",
+  "@goalNodeMaxRunsHelp": {
+    "description": "Help for the goal node segment cap"
+  },
+  "goalNodeDeadline": "Deadline (hours)",
+  "@goalNodeDeadline": {
+    "description": "Label: hours from the start until the goal deadline"
+  },
+  "goalNodeDeadlineHelp": "Optional. Hours from when the step starts the goal.",
+  "@goalNodeDeadlineHelp": {
+    "description": "Help for the goal node deadline"
+  },
+  "goalNodeRange": "1 to {max}, or empty.",
+  "@goalNodeRange": {
+    "description": "Error under an optional goal node number",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "goalNodeContract": "Contract",
+  "@goalNodeContract": {
+    "description": "Label of the contract editor on a pipeline goal node"
+  },
+  "goalNodeContractHelp": "What done means: criteria the reviewer checks, and commands that must pass.",
+  "@goalNodeContractHelp": {
+    "description": "Help for the goal node contract"
+  },
+  "nodeConfigObjective": "Objective",
+  "@nodeConfigObjective": {
+    "description": "Label of the prompt field on a pipeline goal node"
+  },
+  "pipelineRunGoalStep": "Step {step} pursues a goal",
+  "@pipelineRunGoalStep": {
+    "description": "A pipeline run step waiting on a durable goal; step is the step label",
+    "placeholders": {
+      "step": {
+        "type": "String"
+      }
+    }
+  },
+  "pipelineRunOpenGoal": "Open goal",
+  "@pipelineRunOpenGoal": {
+    "description": "Button opening the goal a pipeline step waits on"
+  },
+  "pipelineRunHeldBudget": "This run is held: its orchestration reached its cost cap.",
+  "@pipelineRunHeldBudget": {
+    "description": "A pipeline run held on its orchestration budget"
+  },
+  "pipelineRunHeldOther": "This run is held ({reason}).",
+  "@pipelineRunHeldOther": {
+    "description": "A pipeline run held for another reason; reason is a machine word",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "pipelineRunHeldSpent": "Spent {spent} of {cap}. Raise the cap and the run continues.",
+  "@pipelineRunHeldSpent": {
+    "description": "What a held run spent of its cap; both formatted amounts",
+    "placeholders": {
+      "spent": {
+        "type": "String"
+      },
+      "cap": {
+        "type": "String"
+      }
+    }
+  },
+  "pipelineRunRaiseCap": "Raise cap",
+  "@pipelineRunRaiseCap": {
+    "description": "Button raising the orchestration cost cap of a held run"
+  },
+  "pipelineRunRaiseCapTitle": "Raise the orchestration cap",
+  "@pipelineRunRaiseCapTitle": {
+    "description": "Title of the dialog raising a held run cap"
+  },
+  "pipelineRunCapRaised": "Cap raised. The run continues shortly.",
+  "@pipelineRunCapRaised": {
+    "description": "Confirmation after raising a held run cap"
+  },
+  "goalLaunchChecks": "Checks",
+  "@goalLaunchChecks": {
+    "description": "Heading of the checks editor in the guided goal dialog"
+  },
+  "goalLaunchChecksHelp": "Commands that must pass before the goal can finish. Optional.",
+  "@goalLaunchChecksHelp": {
+    "description": "Help under the checks heading in the guided goal dialog"
+  },
+  "goalLaunchFresh": "Start each segment fresh",
+  "@goalLaunchFresh": {
+    "description": "Option: every goal segment starts without the conversation history"
+  },
+  "goalLaunchFreshHelp": "Each run starts without the conversation's history, from the goal and its notes only.",
+  "@goalLaunchFreshHelp": {
+    "description": "Help for the fresh option"
+  },
+  "goalLaunchAssume": "Answer its own questions when nobody does",
+  "@goalLaunchAssume": {
+    "description": "Option: release unanswered questions after 10 minutes"
+  },
+  "goalLaunchAssumeHelp": "After 10 minutes without an answer, the agent states its assumption and goes on, if the stop conditions allow it.",
+  "@goalLaunchAssumeHelp": {
+    "description": "Help for the unattended assume option"
+  },
+  "workFeedLimitParkOutcomeResumed": "Resumed at {time} after {provider}'s usage limit.",
+  "@workFeedLimitParkOutcomeResumed": {
+    "description": "Usage-limit pause card, settled: the run resumed. time is when (local clock); provider is the model provider's name",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "workFeedLimitParkOutcomeCancelled": "Cancelled at {time}. It did not resume after {provider}'s usage limit.",
+  "@workFeedLimitParkOutcomeCancelled": {
+    "description": "Usage-limit pause card, settled: a person cancelled the resume",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "workFeedLimitParkOutcomeExpired": "Expired at {time} without resuming after {provider}'s usage limit.",
+  "@workFeedLimitParkOutcomeExpired": {
+    "description": "Usage-limit pause card, settled: the resume expired before it ran",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "workFeedLimitParkOutcomeSkipped": "Not resumed after {provider}'s usage limit ({time}).",
+  "@workFeedLimitParkOutcomeSkipped": {
+    "description": "Usage-limit pause card, settled: the resume was skipped; the reason follows on its own line",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "workFeedCommandRefusedNamed": "The /{command} command was refused.",
+  "@workFeedCommandRefusedNamed": {
+    "description": "Feed row: the server refused a slash command; command is goal, loop, schedule or refine (shown as code)",
+    "placeholders": {
+      "command": {
+        "type": "String"
+      }
+    }
+  },
+  "improvementRefusalQueued": "A review of this conversation is already waiting to run.",
+  "@improvementRefusalQueued": {
+    "description": "Refusal of /refine: a review is already queued"
+  },
+  "improvementRefusalAgentNotFound": "That agent is not an agent of this workspace.",
+  "@improvementRefusalAgentNotFound": {
+    "description": "Refusal of /refine: the agent to review is not in the workspace"
+  },
+  "workRefusalWakeQueueFull": "Too many wakes already wait here. Try again once some have run.",
+  "@workRefusalWakeQueueFull": {
+    "description": "Refusal: the wake queue for this conversation is full"
+  },
+  "orchestrationRefusalNotYours": "Only the person this run acts for can change it.",
+  "@orchestrationRefusalNotYours": {
+    "description": "Refusal (orchestration_not_yours): raising a pipeline run's cap, approving more of its nodes or continuing a held node belongs to the person the run acts for (a workspace admin for a run that acts for no one)"
+  },
+  "orchestrationRefusalCapInvalid": "The new cap must be above the current cap and what was spent, and at most $1,000.",
+  "@orchestrationRefusalCapInvalid": {
+    "description": "Refusal of raising a pipeline run cap: the amount is not allowed"
+  },
+  "orchestrationRefusalCapChanged": "Someone raised the cap first. Check the new cap and try again.",
+  "@orchestrationRefusalCapChanged": {
+    "description": "Refusal of raising a pipeline run cap: another raise landed first"
+  },
+  "workFeedCapRaised": "{person} raised the run's cap from {oldCap} to {newCap}.",
+  "@workFeedCapRaised": {
+    "description": "Feed row: a person raised a held pipeline run's spending cap; caps are formatted money",
+    "placeholders": {
+      "person": {
+        "type": "String"
+      },
+      "oldCap": {
+        "type": "String"
+      },
+      "newCap": {
+        "type": "String"
+      }
+    }
+  },
+  "workFeedPersonUnknown": "A person",
+  "@workFeedPersonUnknown": {
+    "description": "Stand-in for a person whose name is not known, at the start of a sentence"
+  },
+  "workFeedApplyIncomplete": "An accepted change to the skill {skill} could not be finished, because the skill changed meanwhile. The proposal was rolled back.",
+  "@workFeedApplyIncomplete": {
+    "description": "Feed row: an accepted improvement to a skill could not be applied; skill is the skill's name (shown as code)",
+    "placeholders": {
+      "skill": {
+        "type": "String"
+      }
+    }
+  },
+  "workFeedOpenImprovement": "Open improvement",
+  "@workFeedOpenImprovement": {
+    "description": "Tooltip of the button that opens an improvement proposal from a feed row"
+  },
+  "peerAskFailNoOutput": "It ended without an answer.",
+  "@peerAskFailNoOutput": {
+    "description": "Why a question to another agent failed"
+  },
+  "peerAskFailRunFailed": "Its run failed.",
+  "@peerAskFailRunFailed": {
+    "description": "Why a question to another agent failed"
+  },
+  "peerAskFailStoppedByPerson": "A person stopped its run.",
+  "@peerAskFailStoppedByPerson": {
+    "description": "Why a question to another agent failed"
+  },
+  "peerAskFailBudget": "Its run reached its budget.",
+  "@peerAskFailBudget": {
+    "description": "Why a question to another agent failed"
+  },
+  "peerAskFailSilence": "Its run went silent and was stopped.",
+  "@peerAskFailSilence": {
+    "description": "Why a question to another agent failed"
+  },
+  "peerAskFailUsageLimit": "Its run stopped at the provider's usage limit.",
+  "@peerAskFailUsageLimit": {
+    "description": "Why a question to another agent failed"
+  },
+  "peerAskFailNotDelivered": "The question was never delivered.",
+  "@peerAskFailNotDelivered": {
+    "description": "Why a question to another agent failed"
+  },
+  "heldSteeringLimitHeader": "{count, plural, =1{1 message held at the usage limit} other{{count} messages held at the usage limit}}",
+  "@heldSteeringLimitHeader": {
+    "description": "Header of steering messages held while a run waits at a provider usage limit",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "heldSteeringLimitNote": "These are sent when the person the run works for resumes it. If it is not resumed within 7 days of the reset, they are held for that person.",
+  "@heldSteeringLimitNote": {
+    "description": "Note under the steering messages a usage-limit pause holds: its resume sends only the run's person's messages"
+  },
+  "wakeKindRuleFolded": "A later event replaced it.",
+  "@wakeKindRuleFolded": {
+    "description": "Why a watch wake was not delivered: a newer event folded into a later wake"
+  },
+  "goalCardWaitingNext": "Waiting on what it set up · looks again by {time}",
+  "@goalCardWaitingNext": {
+    "description": "Goal status: waiting for owed work; time is when it checks again anyway",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "raiseCapAtMost": "Enter at most {max}.",
+  "@raiseCapAtMost": {
+    "description": "Raise-cap dialog: the entered cap is above the ceiling; max is formatted money",
+    "placeholders": {
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "raiseCapNowAt": "The cap is now {cap}.",
+  "@raiseCapNowAt": {
+    "description": "Raise-cap dialog: another raise landed first; cap is the fresh cap, formatted money",
+    "placeholders": {
+      "cap": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleWakeReasonSchedule": "Scheduled",
+  "@scheduleWakeReasonSchedule": {
+    "description": "What a schedule's wake was for: its time came"
+  },
+  "scheduleWakeReasonWatch": "Watch",
+  "@scheduleWakeReasonWatch": {
+    "description": "What a schedule's wake was for: a watched event"
+  },
+  "scheduleWakeReasonLimitReset": "After a usage limit",
+  "@scheduleWakeReasonLimitReset": {
+    "description": "What a schedule's wake was for: resuming after a provider usage limit reset"
+  },
+  "scheduleWakeStatePending": "Waiting",
+  "@scheduleWakeStatePending": {
+    "description": "A schedule wake's state: not due or not admitted yet"
+  },
+  "scheduleWakeStateHeld": "Held",
+  "@scheduleWakeStateHeld": {
+    "description": "A schedule wake's state: waits for a person to release it"
+  },
+  "scheduleWakeStateClaimed": "Starting",
+  "@scheduleWakeStateClaimed": {
+    "description": "A schedule wake's state: its run is starting"
+  },
+  "scheduleWakeStateDelivered": "Delivered",
+  "@scheduleWakeStateDelivered": {
+    "description": "A schedule wake's state: handed to a run"
+  },
+  "scheduleWakeStateSkipped": "Skipped",
+  "@scheduleWakeStateSkipped": {
+    "description": "A schedule wake's state: skipped"
+  },
+  "scheduleWakeStateExpired": "Expired",
+  "@scheduleWakeStateExpired": {
+    "description": "A schedule wake's state: expired before it ran"
+  },
+  "scheduleWakeStateCancelled": "Cancelled",
+  "@scheduleWakeStateCancelled": {
+    "description": "A schedule wake's state: cancelled"
+  },
+  "scheduleWakeLine": "{reason} · {state}",
+  "@scheduleWakeLine": {
+    "description": "One wake of a schedule: what it was for and how it stands",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      },
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleWakeExit": "exit {code}",
+  "@scheduleWakeExit": {
+    "description": "A watched process's exit code, in a schedule wake row",
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleWakeEvents": "{count, plural, =1{1 event} other{{count} events}}",
+  "@scheduleWakeEvents": {
+    "description": "How many watched events one schedule wake gathered",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleWakesNone": "No wakes yet.",
+  "@scheduleWakesNone": {
+    "description": "Schedule page: the schedule has not woken its agent yet"
+  },
+  "scheduleWakesOlder": "Show older",
+  "@scheduleWakesOlder": {
+    "description": "Schedule page: loads the next page of older wakes"
+  },
+  "improvementCandidateStaged": "The proposed skill is stored as a separate revision. Evaluating it leaves the live skill unchanged; the skill changes only when the proposal is accepted.",
+  "@improvementCandidateStaged": {
+    "description": "Improvement page and evaluation dialog: what is true about a skill change's candidate before it is accepted"
+  },
+  "goalNextWaitingFallback": "It continues when what it waits for arrives, or looks again at {time} if nothing does.",
+  "@goalNextWaitingFallback": {
+    "description": "Goal page: what happens next while a goal waits on work it set up; time is when the server looks again anyway (the doubling fallback)",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "steeringRefusalHeldByLimit": "Messages a usage-limit pause holds can't be sent by hand while it waits.",
+  "@steeringRefusalHeldByLimit": {
+    "description": "Refusal steering_held_by_limit: held steering messages of a usage-limit pause can't be sent by hand"
+  },
+  "steeringRefusalHeldByLimitAt": "Messages a usage-limit pause holds can't be sent by hand while it waits. The limit resets at {time}.",
+  "@steeringRefusalHeldByLimitAt": {
+    "description": "Refusal steering_held_by_limit with the provider's reset time",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "14:30"
+      }
+    }
+  },
+  "heldSteeringLimitResetsAt": "The limit resets at {time}. These are sent when the person the run works for resumes it.",
+  "@heldSteeringLimitResetsAt": {
+    "description": "Note under the steering messages a usage-limit pause holds, with when the provider's limit resets",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "14:30"
+      }
+    }
+  },
+  "heldSteeringFromPerson": "From {name}",
+  "@heldSteeringFromPerson": {
+    "description": "Marks a held steering message someone else wrote; name is its writer",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Ada"
+      }
+    }
+  },
+  "heldSteeringFromSomeoneElse": "From someone else",
+  "@heldSteeringFromSomeoneElse": {
+    "description": "Marks a held steering message someone else wrote, when their name is not known"
+  },
+  "heldSteeringOnlyWriterSends": "Only the person who wrote a held message can send it.",
+  "@heldSteeringOnlyWriterSends": {
+    "description": "Note under held steering messages when some were written by someone else"
+  },
+  "steeringRefusalNotYours": "These held messages are someone else's. Only the person who wrote one can send it.",
+  "@steeringRefusalNotYours": {
+    "description": "Refusal steering_not_yours: the viewer has no held messages of their own to send"
+  },
+  "improvementEvaluationSolved": "{pairedRuns, plural, =1{In 1 paired run} other{In {pairedRuns} paired runs}}, the change solved {candidateSolved} and the current skill solved {baselineSolved}.",
+  "@improvementEvaluationSolved": {
+    "description": "A skill change's evaluation numbers: paired runs (each task run with the current skill and with the change), and how many each side solved",
+    "placeholders": {
+      "pairedRuns": {"type": "int"},
+      "candidateSolved": {"type": "int"},
+      "baselineSolved": {"type": "int"}
+    }
+  },
+  "improvementEvaluationWorse": "{count, plural, =1{1 task did worse with the change.} other{{count} tasks did worse with the change.}}",
+  "@improvementEvaluationWorse": {
+    "description": "A skill change's evaluation: tasks whose quality dropped with the change",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "improvementEvaluationCostlier": "{count, plural, =1{1 task cost more with the change.} other{{count} tasks cost more with the change.}}",
+  "@improvementEvaluationCostlier": {
+    "description": "A skill change's evaluation: tasks that cost more with the change",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "improvementEvaluationHarnessErrors": "{count, plural, =1{1 run hit a harness error.} other{{count} runs hit a harness error.}}",
+  "@improvementEvaluationHarnessErrors": {
+    "description": "A skill change's evaluation: runs of the change that hit a harness error (the agent harness failed, not the task)",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "improvementEvaluationIncomplete": "The evaluation did not run in full.",
+  "@improvementEvaluationIncomplete": {
+    "description": "A skill change's evaluation: not every planned run finished, or the campaign broke its plan"
+  },
+  "workFeedLimitParkExpires": "Expires {time}",
+  "@workFeedLimitParkExpires": {
+    "description": "Under a person's usage-limit pause that waits for their Resume: when it expires unresumed (7 days after the reset)",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "Nov 27, 14:30"
+      }
+    }
+  },
+  "workFeedSchedulePaused": "{person} paused the schedule for {agent}.",
+  "@workFeedSchedulePaused": {
+    "description": "Conversation row: someone other than its person paused a schedule; person is who paused it, agent is the schedule's agent",
+    "placeholders": {
+      "person": {
+        "type": "String",
+        "example": "Grace"
+      },
+      "agent": {
+        "type": "String",
+        "example": "Ada"
+      }
+    }
+  },
+  "goalCardApproveNotYours": "Only the person who started the pipeline run can approve this goal's completion.",
+  "@goalCardApproveNotYours": {
+    "description": "Tooltip on the disabled Approve completion button when this viewer may not close the goal"
+  },
+  "goalCardObjective": "The objective",
+  "@goalCardObjective": {
+    "description": "Goal card: the single item a review judges when the goal has no criteria (the goal's objective as a whole)"
+  },
+  "planNeedsWrite": "Approving or changing this plan needs write access to every repository in this space. A workspace admin can grant it.",
+  "@planNeedsWrite": {
+    "description": "Plan Studio: shown, with Approve and editing disabled, once the server refused this person for want of a write grant on the plan's space repositories"
+  },
+  "scheduleSpentWithChain": "{spent} of {cap}, counting every schedule in its chain",
+  "@scheduleSpentWithChain": {
+    "description": "Schedule page Spent fact for the first schedule of a chain: the figure includes the runs of every schedule it started",
+    "placeholders": {
+      "spent": {"type": "String"},
+      "cap": {"type": "String"}
+    }
   }
 }

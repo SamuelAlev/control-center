@@ -2,7 +2,7 @@
 title: Slovník
 description: Definice klíčových pojmů, které se v Control Center používají.
 slug: cs-CZ/prirucka/referencni-prirucka/slovnik
-sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
+sourceHash: ba09880357171a4fcbb82201798578de3856cbe6
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -36,7 +36,13 @@ export const glossaryTerms = [
 ['Stanice', 'Jednorázový stroj, který agent řídí v reálném čase: uzavřený prohlížeč nebo linuxová plocha, emulátor Androidu nebo simulátor iOS spravovaný hostitelem, nebo uzavřený terminál. Sleduje se živě po vlastním kanálu v plném rozlišení a převzetí vynucuje server. V rozsahu konverzace, takže záložka člověka i nástroj agenta míří na jeden stroj.'],
 ['Izolované prostředí', 'Silnější izolace, kterou mají stanice na virtuálním stroji: hranice jádra, jednorázový překryvový disk, síťová brána s výchozím odmítnutím a broker přihlašovacích údajů. Stanice pro Android a iOS jsou jednorázové, ale síť jim spravuje hostitel, takže tuhle hranici nenárokují. Řízení jakékoli stanice používá třídu guardrailu enclosureControl.'],
 ['RunCost', 'Součet tokenů a nákladů (vstupní tokeny, výstupní tokeny, odhadovaný náklad v mikrodolarech) jednoho běhu agenta.'],
-['WakeReason', 'Proč se agent odeslal. Šest hodnot: zpráva uživatele, přiřazení ticketu, opětovné odeslání při obnově po selhání, dokončení dceřiného ticketu, naplánovaný kontrolní tep a krok pipeline.'],
+['WakeReason', 'Proč běh agenta existuje. Zpráva osoby, přiřazení ticketu nebo krok pipeline; u běhu, který server spustí sám, důvod jeho probuzení: plán, sledování, segment cíle, kontroly cíle nebo jeho kontrola, zpráva nebo odpověď od jiného agenta, dokončená práce dceřiného úkolu, obnovený limit využití, kontrola vylepšení, nebo obnovení po restartu.'],
+['Probuzení', 'Trvalý požadavek uložený v databázi pracovního prostoru, aby se spustil nebo pokračoval běh jednoho agenta v jedné konverzaci, s důvodem a osobou, pro kterou jedná. Každý běh, který server spustí bez toho, aby někdo něco psal, začíná jako probuzení; probuzení přežijí restart.'],
+['Cíl', 'Práce, na které agent vytrvává po segmentech, dokud server neověří, že je splněno, co znamená hotovo, nebo ji osoba neuzavře. Spustí se příkazem /goal; každý agent má najednou jeden. Agent tvrdí, že je hotovo; rozhodují kontroly a kontrola jen pro čtení.'],
+['Plán', 'Pravidlo, které probudí agenta v určitý čas, v intervalu, podle cronu nebo v jeho vlastním tempu, s koncem, stropem počtu běhů a stropem nákladů. Vytvoří se příkazy /loop, /schedule, stránkou Plány nebo nástrojem agenta wake_me.'],
+['Sledování', 'Pravidlo, které probudí agenta, když se něco stane: dokončí se kontroly pull requestu, pull request dostane recenzi nebo se sloučí, skončí úloha prostředí, ticket se uzavře nebo skončí běh pipeline.'],
+['Dotaz', 'Otázka jednoho agenta druhému, zapsaná dřív, než se doručí. Tazatel se probudí jednou s odpovědí, nebo s důvodem, proč žádná není.'],
+['Návrh vylepšení', 'Změna paměti, politiky, poznámky agenta nebo dovednosti, kterou navrhne kontrola po ověřeném cíli nebo na /refine. Nic nemění, dokud ji osoba nepřijme; změna dovednosti se nejdřív vyhodnotí.'],
 ['SandboxPort', 'Řídí životní cyklus sandboxu (probe, launch, events, exec, destroy).'],
 ['CredentialBrokerPort', 'Vystavuje vymezená pověření pro spuštění sandboxu (token pro jediný repozitář do prostředí agenta, se zápisem jen pro cestu pushe na serveru) a při úklidu je uvolní.'],
 ['GitRepoInspectorPort', 'Z cesty k místnímu Git repozitáři vytáhne metadata (vlastník, repozitář, větev).'],
@@ -94,6 +100,11 @@ export const glossaryTerms = [
 ['ID instalace', 'Identita serveru vůči jedné adrese Connect, odvozená z jeho instalačního klíče. Connect povoluje servery podle ID instalace; výměna klíče ho změní a odhlásí všechny z drah přes Connect.'],
 ['Vazba instalace', 'Záznam Connect (install_binding) o tom, ke kterému jedinému serveru je vázaný tým Slacku. Instalace GitHubu žádnou nemají: kterýkoli server, na kterém se člen přihlásí, je může použít.'],
 ['Dráha přihlášení', 'Přihlášení v prohlížeči u jednoho poskytovatele: github, google, linear, linear_app nebo slack. Při vlastních aplikacích dráha běží na vlastní aplikaci (serveru nebo pracovního prostoru), když je plně nastavená, jinak není dostupná; když je zvolen Connect, běží přes něj. Ani jedno nepřechází na druhé.'],
+['Režim kódu', 'Nástroj repl, který spouští JavaScriptový skript volající další nástroje běhu. Každý běh ho má, když server umí spouštět skripty; není to žádné nastavení.'],
+['Přímý nástroj', 'Nástroj, který běh volá jménem, se schématem v každém požadavku, ať má repl, nebo ne: nástroje pro soubory a shell, ask_user, task, seznam úkolů, hledání v paměti, send_message a slovesa režimu.'],
+['Nástroj dostupný jen ze skriptu', 'Nástroj mimo přímou sadu, který běh s repl smí volat jen ze skriptu, dokud server nemůže spouštět skripty běhu; pak se načte až při prvním použití. Dokud tak není, jeho popis se k modelu nikdy nedostane.'],
+['Runner režimu kódu', 'cc_codemode, program dodávaný se serverem, který spouští jeden skript v enginu QuickJS-NG poté, co se uzamkne pomocí ovládacích prvků operačního systému. Server bez něj nenastartuje a skript spustí, jen když je to release sestavení a jeho uzamčení je úplné.'],
+['Spuštění kódu', 'Záznam jednoho skriptu: jeho zdrojový kód, výstup, limity a každé volání nástroje, které provedl; uchovává se v jeho pracovním prostoru a je vypsán pod Observabilita → Spuštění kódu.'],
 ];
 
 <StructuredData
@@ -157,7 +168,19 @@ export const glossaryTerms = [
 
 **RunCost**: Součet tokenů a nákladů (vstupní tokeny, výstupní tokeny, odhadovaný náklad v mikrodolarech) jednoho běhu agenta.
 
-**WakeReason**: Proč se agent odeslal. Šest hodnot: zpráva uživatele, přiřazení ticketu, opětovné odeslání při obnově po selhání, dokončení dceřiného ticketu, naplánovaný kontrolní tep a krok pipeline.
+**WakeReason**: Proč běh agenta existuje. Zpráva osoby, přiřazení ticketu nebo krok pipeline; u běhu, který server spustí sám, důvod jeho probuzení: plán, sledování, segment cíle, kontroly cíle nebo jeho kontrola, zpráva nebo odpověď od jiného agenta, dokončená práce dceřiného úkolu, obnovený limit využití, kontrola vylepšení, nebo obnovení po restartu.
+
+**Probuzení**: Trvalý požadavek uložený v databázi pracovního prostoru, aby se spustil nebo pokračoval běh jednoho agenta v jedné konverzaci, s důvodem a osobou, pro kterou jedná. Každý běh, který server spustí bez toho, aby někdo něco psal, začíná jako probuzení; probuzení přežijí restart.
+
+**Cíl**: Práce, na které agent vytrvává po segmentech, dokud server neověří, že je splněno, co znamená hotovo, nebo ji osoba neuzavře. Spustí se příkazem `/goal`; každý agent má najednou jeden. Agent tvrdí, že je hotovo; rozhodují kontroly a kontrola jen pro čtení.
+
+**Plán**: Pravidlo, které probudí agenta v určitý čas, v intervalu, podle cronu nebo v jeho vlastním tempu, s koncem, stropem počtu běhů a stropem nákladů. Vytvoří se příkazy `/loop`, `/schedule`, stránkou Plány nebo nástrojem agenta `wake_me`.
+
+**Sledování**: Pravidlo, které probudí agenta, když se něco stane: dokončí se kontroly pull requestu, pull request dostane recenzi nebo se sloučí, skončí úloha prostředí, ticket se uzavře nebo skončí běh pipeline.
+
+**Dotaz**: Otázka jednoho agenta druhému, zapsaná dřív, než se doručí. Tazatel se probudí jednou s odpovědí, nebo s důvodem, proč žádná není.
+
+**Návrh vylepšení**: Změna paměti, politiky, poznámky agenta nebo dovednosti, kterou navrhne kontrola po ověřeném cíli nebo na `/refine`. Nic nemění, dokud ji osoba nepřijme; změna dovednosti se nejdřív vyhodnotí.
 
 ## Porty
 
@@ -258,6 +281,20 @@ export const glossaryTerms = [
 **Osa kontroly**: Jedna z pěti hodnoticích drah jedné kontroly: `correctness`, `security` a `testGap` ze zjištění recenzentů; `visual` a `apiContract` deterministicky. Osy s bránou se složí do verdiktu a umějí ho jen zpřísnit. Brána `partial` nebo `unavailable` verdikt podrží a dál ho nepustí.
 
 **Verdikt kontroly**: `ship`, `hold` nebo `block`. Jakékoli zjištění P0 s jistotou ≥ 0.7 znamená **Block**; jakékoli jiné P0 nebo jakékoli P1 znamená **Hold**; jinak **Ship**. Selhání osy s bránou vynutí **Block** a zjištění ho nepřehlasují.
+
+## Režim kódu
+
+**Režim kódu**: nástroj `repl`, který spouští JavaScriptový skript volající další nástroje běhu a vrací jen to, co agent potřebuje. Každý běh ho má, když server umí spouštět skripty; není to žádné nastavení. **Nastavení → Pracovní prostor → Režim kódu** ukazuje, zda tento server spouští skripty, a nastavuje limity, pod kterými skript běží. Viz [režim kódu](/cs-CZ/prirucka/koncepty/rezim-kodu/).
+
+**Přímý nástroj**: nástroj, který běh volá jménem, se schématem v každém požadavku, ať má `repl`, nebo ne: nástroje pro soubory a shell, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` a slovesa režimu.
+
+**Nástroj dostupný jen ze skriptu**: nástroj mimo přímou sadu, který běh s `repl` smí volat jen ze skriptu, dokud server nemůže spouštět skripty běhu; pak se načte až při prvním použití ([Když skripty nemohou běžet](/cs-CZ/prirucka/koncepty/rezim-kodu/#když-skripty-nemohou-běžet)). Dokud tak není, jeho popis se k modelu nikdy nedostane a přímé volání dostane odpověď, jak ho volat ze skriptu. Nástroj, který skript volat nesmí, nikdy není dostupný jen ze skriptu: načte se až při prvním použití.
+
+**Vnořené volání**: volání nástroje, které skript provede. Prochází stejným filtrem režimu, guardraily a schvalováním jako přímé volání.
+
+**Runner režimu kódu**: `cc_codemode`, program dodávaný se serverem, který spouští jeden skript v enginu QuickJS-NG poté, co se uzamkne (jeho **uzamčení**). Server bez něj nenastartuje a skript spustí, jen když je to release sestavení a jeho uzamčení je úplné.
+
+**Spuštění kódu**: záznam jednoho skriptu: jeho zdrojový kód, výstup, limity a každé volání nástroje, které provedl; uchovává se v jeho pracovním prostoru a je vypsán pod **Observabilita → Spuštění kódu**.
 
 ## Flotila a evaly
 

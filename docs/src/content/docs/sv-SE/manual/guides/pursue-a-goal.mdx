@@ -1,0 +1,143 @@
+---
+title: Arbeta mot ett mål
+description: Ge en agent ett mål som den arbetar vidare på över körningar och omstarter, definiera vad klart innebär och bestäm när den är klar.
+slug: sv-SE/handbok/how-to-guider/arbeta-mot-mal
+sourceHash: 0ea77964bd9e3044e168624bc67325de0fd1d1e5
+---
+
+Ett mål är arbete som en agent fortsätter med tills vad klart innebär är uppfyllt. Agenten arbetar i **segment**: avgränsade körningar som servern startar en efter en, över omstarter, tills målet är verifierat, en person stänger det eller det når en gräns. Agenten kan inte stänga ett mål genom att säga att det är klart. Servern kör målets kontroller och en granskare tittar först på resultatet.
+
+## Starta ett mål
+
+Skriv `/goal` och målet i en konversations skrivfält:
+
+```text
+/goal --budget 20 --days 2 --check "make test" make the importer handle files over 2 GB
+```
+
+Om meddelandet börjar med `/goal` följt av text öppnas en intervju om målet. Den frågar efter framgångskriterier, kontroller som måste passera, avgränsningar och stoppvillkor, och erbjuder en separat granskare, att starta varje segment på nytt och att besvara sina egna frågor. Varje steg kan hoppas över.
+
+| Flagga | Betydelse |
+| --- | --- |
+| `--budget <dollars>` | Vad hela målet får spendera. 50 dollar som standard |
+| `--max <N>` | Det största antalet segment målet får ta. Ingen gräns som standard |
+| `--days <N>` | En deadline, så många dagar från nu |
+| `--check "<command>"` | Ett kommando som måste lyckas innan målet kan bli klart, körs i worktree. Upprepa för fler, högst 5 |
+| `--checker <agent>` | En annan agent som granskar påståendet att målet är klart, anges med namn eller id |
+| `--fresh` | Starta varje segment utan konversationens historik, enbart från målet och dess anteckningar |
+| `--unattended wait` or `--unattended assume` | Vad som händer med agentens frågor när ingen svarar (se [När ingen svarar](#när-ingen-svarar)) |
+
+- Flaggor kan stå var som helst i meddelandet. En okänd flagga, en upprepad flagga, ett felaktigt värde och fler än 5 kontroller avvisas, och ditt utkast ligger kvar i skrivfältet med skälet under sig.
+- Ett tal i början av målformuleringen är en del av målet. För att begränsa segment, använd `--max`.
+- `/goal` läses bara i ett meddelande du skriver själv. Samma text från en agent, en pipeline eller en väckning är ett vanligt meddelande.
+- En agent driver ett mål i taget i en arbetsyta. En andra `/goal` för samma agent avvisas medan det första är aktivt.
+
+### Vad klart innebär
+
+Målformuleringen kan innehålla avsnitt som blir målets kontrakt:
+
+```text
+/goal make the importer handle files over 2 GB
+
+## Success criteria
+- A 3 GB fixture imports without running out of memory
+- The progress bar reaches 100%
+
+## Boundaries
+- Don't change the public API
+
+## Stop conditions
+- A migration would drop data
+
+## Checks
+- `make test` (300 s)
+- environment task `test` (600 s)
+```
+
+- **Framgångskriterier**: högst 12, vart och ett högst 300 tecken. Varje ett är något en granskare kan bekräfta.
+- **Kontroller**: högst 5. En kontroll körs i worktree eller som en namngiven uppgift i ytans [miljö](/sv-SE/handbok/how-to-guider/miljoer/). Var och en har 300 sekunder som standard och högst 1 800.
+- Ett avsnitt över sin gräns avvisas, aldrig kapat.
+
+Ett mål utan kriterier låter agenten avgöra när det är klart, och ett mål utan kontroll förlitar sig enbart på granskning. Målsidan säger det.
+
+## Hur ett mål fortsätter
+
+Varje segment är en körning begränsad till 5 dollar eller det som återstår av budgeten, beroende på vad som är lägst. Efter varje segment avgör servern vad som kommer härnäst, utifrån vad segmentet gjorde:
+
+- **Det gjorde framsteg.** Nästa segment startar.
+- **Det väntar på något det satte igång**: ett schema, en bevakning, en fråga till en annan agent eller ett delegerat ärende. Målet väntar på det. Om inget kommer tittar servern igen efter 20 minuter, sedan efter 40, 80, 160 och därefter var 240:e minut. Kortet visar **Väntar på det den satte igång · tittar igen senast** en tid.
+- **Det gjorde inga framsteg.** Framsteg betyder att worktree ändrades genom segmentets eget arbete, checklistan ändrades eller agenten gjorde något nytt. Efter 3 segment utan framsteg pausas målet: **Inga framsteg under dess senaste segment.**
+- **Det väntade för länge.** Efter 24 timmars väntan, eller 6 väntanden på nya saker det satte igång utan framsteg mellan, pausas målet: **Väntar, efter segment utan framsteg.**
+- **Det misslyckades.** Servern försöker igen efter 30 sekunder, sedan längre, upp till 15 minuter. Efter 3 misslyckanden i rad misslyckas målet.
+- **Det frågade en person.** Målet håller tills någon svarar: **Behöver en person**.
+
+Målet stannar också vid sin budget (**Budgeten är slut**), sin segmentgräns eller sin deadline.
+
+## När agenten säger att den är klar
+
+Agenten påstår att målet är klart med belägg för varje kriterium. Sedan:
+
+1. **Servern kör kontrollerna** i en sandlåda, aldrig direkt på serverns maskin. En kontroll som avslutas med icke-noll fallerar. En kontroll som inte alls kan köras (kommandot finns inte, det är inte körbart, en miljöuppgift finns inte) är trasig: målet stoppas för en person med **Den här kontrollen kan inte köras:** och kommandot. Utan sandlåda på servern stoppas målet med **Ingen sandlåda är tillgänglig för att köra dess kontroller.** (En server vars ägare stängde av sandlådan för varje körning är undantaget: kontroller körs där på samma sätt som agentens egna kommandon.) När inget i worktree har ändrats sedan en kontroll misslyckades körs den inte om.
+2. **En granskare tittar på resultatet**, när alla kontroller har passerat eller det inte finns några. Granskaren är målets granskare, annars ytans granskare, annars målets egen agent. Den körs skrivskyddad utan konversationens historik: den kan läsa filer och kontrollernas utdata, men kan inte ändra något, köra kommandon eller väcka andra agenter. Den får också hela diffen av de tester och kontrollskript som agenten ändrade, och den behandlar det agenten skrev i konversationen och i sina anteckningar som påståenden, inte som bevis. För ett mål utan kriterier bedömer den målet som helhet. Den svarar att målet är klart, inte klart, eller att den inte kan avgöra.
+3. **Klart**: målet blir klart. **Inte klart**: agenten får granskarens fynd och fortsätter arbeta. Efter 3 omgångar som är inte klart, eller när granskaren inte kan avgöra, väntar målet på dig: **Väntar på granskning: det säger att det är klart, och ingenting har bekräftat det**.
+
+Ett meddelande du skriver medan granskaren körs ges inte till granskaren och skickas inte när granskningen slutar. Det står kvar köat för agentens nästa segment. När inget segment följer hålls det för dig under **Skicka parkerade meddelanden**.
+
+En granskare som inte kan köras (borttagen, eller på en adapter som inte kan hålla en körning skrivskyddad, till exempel en ACP-agent) pausar målet: **Dess granskningsagent är inte tillgänglig. Välj en annan granskare och återuppta sedan.** Ingen annan agent träder in utan dig.
+
+En granskare från en annan leverantör än målets agent delar mindre sannolikt dess blinda fläckar. Utan separat granskare granskar agenten sitt eget arbete, och målet noterar **Verifierad av sig själv (ingen separat granskare)**.
+
+## Följ ett mål
+
+- **I konversationen**: målkortet i panelen **Allmänt** visar vad som håller målet, segmentet, vad som spenderats mot budgeten, återstående tid, vad klart innebär, kontrollerna och senaste bedömningen.
+- **Målsidan**: sidomenyn → **Mål**. Mål grupperas som **Väntar på granskning**, **Öppna** och **Avslutade**.
+- **Sidan för målet**: öppna ett mål för att se **Nu** (segment, spenderat, deadline, antal utan framsteg och vad som händer härnäst), **Vad klart innebär**, **Verifiering** (den senaste omgången: påståendet, varje kontroll med sitt utdata, granskningen per kriterium) och **Scheman och väckningar**. Varje mål har en egen adress (`/workspaces/<workspace>/goals/<goal id>`), så du kan dela en länk.
+
+På telefonen startar målvyn ett mål med kontroller och en segmentgräns, och visar samma mål och vad som håller dem.
+
+## Ändra eller stoppa ett mål
+
+| Åtgärd | Vem som kan |
+| --- | --- |
+| **Pausa mål**, **Stoppa mål** | Alla med åtkomst till ytan |
+| **Återuppta mål**, **Höj budget** | Bara den som startade målet (en administratör för arbetsytan för ett mål som ingen startade) |
+| **Redigera** vad klart innebär, **Ändra granskare** | Endast den person som startade målet (en administratör för arbetsytan för ett mål som ingen startade), med skrivåtkomst till ytans repositorier, medan målet är pausat |
+| **Godkänn slutförande** | Alla med åtkomst till ytan, medan målet väntar på granskning. Ett mål som en pipeline startade: bara den person som startade körningen (en administratör för arbetsytan när ingen gjorde det) |
+
+- Om du trycker **Stoppa** på agentens körning pausas målet (**Pausad av en person**). Dess väntande väckningar väntar tills du återupptar det.
+- **Godkänn slutförande** stänger målet som klart på ditt ord. Målet noterar **Stängd av en person utan godkänd kontroll**.
+- Ett mål som använt sin budget återupptas bara med en högre budget.
+- När personen som startade ett mål lämnar arbetsytan pausas målet för granskning direkt och dess körande agent stoppas. Ingen kan återuppta det; alla med åtkomst till ytan kan stoppa det. Den dagliga sammanfattningen listar det för arbetsytans administratörer.
+
+## När ingen svarar
+
+När ett segment ställer en person en fråga eller begär ett godkännande och ingen svarar, väntar begäran i 72 timmar som standard. Då räknas ett godkännande som nekat, en fråga som obesvarad, och målet pausas: **En fråga eller godkännandebegäran till en person har inte fått något svar.** Den körning som frågade får inga fler svar: allt annat den frågar avvisas direkt, och den slutför det den kan. En administratör för arbetsytan anger tiden (1 timme till 7 dagar) under **Inställningar → Arbetsyta → Scheman → När ingen svarar**. En gång per dag, vid den timme som anges där, får du en sammanfattning av allt som väntar på dig.
+
+Med `--unattended assume` säger agenten sitt antagande och fortsätter efter 10 minuter utan svar, när dess stoppvillkor tillåter det. Detta gäller bara frågor. Ett godkännande antas aldrig, och en granskning antar aldrig något.
+
+## Användningsgränser och omstarter
+
+- **En leverantörs användningsgräns.** När ett segment stannar vid en leverantörs användningsgräns och leverantören säger när den återställs (inom 7 dagar) pausas målet utan streck: **Pausad vid användningsgränsen · återupptas** en tid. Det fortsätter 30 sekunder efter återställningen. Efter 8 sådana pauser väntar målet på dig: **Det nådde användningsgränser för ofta. Titta igenom det och återuppta sedan.** Varje återupptagning startar räkningen på nytt. ACP-agenter rapporterar ingen återställning, så deras mål väntar inte vid en gräns.
+- **En serveromstart.** Ett mål överlever en omstart. Ett segment som omstarten avbröt startas om, och målets scheman och väntande väckningar behålls.
+
+## Förbättringar efter ett mål
+
+Efter att ett mål godkänts i verifieringen kan en kort skrivskyddad granskning (högst 1 dollar) föreslå förbättringar: ett minnesfakta, en policy, en anteckning om agenten eller en ändring av en skill. Skriv `/refine` för att begära samma granskning av konversationens arbete. Högst en granskning körs per konversation var 20:e minut.
+
+Förslagen visas på sidan **Förbättringar** (sidomenyn → **Förbättringar**). Öppna ett för att se vad det ändrar, underlaget och **Godkänn**, **Avvisa** eller **Återställ**.
+
+- Ett förslag ändrar ingenting förrän någon godkänner det. Det går ut efter 30 dagar.
+- En ändring av en skill, eller av en policy för hela arbetsytan, kräver en administratör (**En administratör beslutar**).
+- En ändring av en skill lagras som en separat revision. Tryck **Kör utvärdering** för att jämföra den med den nuvarande skillen; **Godkänn** går bara efter att en utvärdering passerat. En utvärdering passerar när den kördes i sin helhet och agenten löste minst lika många körningar med ändringen som med den nuvarande skillen; sidan visar båda talen. Om skillen ändras efter utvärderingen, kör den igen.
+- **Återställ** återställer den tidigare texten, så länge ingen ändrat den sedan dess.
+
+## I en pipeline
+
+En pipeline kan starta ett mål med steget **Pursue a goal** (`goal.pursue`). Steget väntar tills målet tar slut och skickar vidare dess sammanfattning och bedömning. Se [Pipeline-stegtyper](/sv-SE/handbok/referens/pipeline-steg/).
+
+## Se även
+
+- [Scheman och väckningar](/sv-SE/handbok/how-to-guider/scheman-vackningar/)
+- [Agenter som samarbetar](/sv-SE/handbok/how-to-guider/agenter-samarbetar/)
+- [Hantera kostnader](/sv-SE/handbok/how-to-guider/hantera-kostnader/)
+- [Slash-kommandon](/sv-SE/handbok/referens/slash-kommandon/)

@@ -1,0 +1,110 @@
+---
+title: Lịch và lượt đánh thức
+description: Đánh thức một agent sau, theo lịch hoặc khi có điều gì đó xảy ra, xem những gì đang chờ, và điều gì xảy ra khi máy chủ khởi động lại hoặc khi chạm giới hạn sử dụng.
+slug: vi-VN/so-tay/huong-dan-thuc-hanh/lich-va-danh-thuc
+sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+---
+
+Agent không ngủ hay liên tục hỏi lại trong lúc chờ. Agent, hoặc bạn, thiết lập một **lượt đánh thức**: một yêu cầu bền vững để bắt đầu hoặc tiếp tục lần chạy của agent trong một cuộc trò chuyện vào một thời điểm hoặc khi có điều gì xảy ra. Mọi lần chạy mà máy chủ bắt đầu khi không có ai gõ đều bắt đầu từ một lượt đánh thức: phân đoạn tiếp theo của một mục tiêu, một lịch, một theo dõi, một phản hồi từ agent khác, công việc đã ủy thác đã xong, lúc giới hạn sử dụng được đặt lại, hoặc công việc còn lại sau khi khởi động lại. Lượt đánh thức được giữ trong cơ sở dữ liệu của không gian làm việc, nên chúng vẫn còn sau khi khởi động lại.
+
+## Tự lập lịch cho một agent
+
+Gõ một trong các lệnh sau trong ô soạn của cuộc trò chuyện:
+
+```text
+/loop every 30m --days 3 check the deploy and fix what broke
+/loop keep the flaky tests green
+/schedule in 2h look at the overnight benchmark
+/schedule at 09:00 summarize what changed overnight
+/schedule cron "0 9 * * 1-5" --max 20 triage new tickets
+```
+
+| Lệnh | Tác dụng |
+| --- | --- |
+| `/loop every <interval> <prompt>` | Đánh thức agent với prompt ngay bây giờ, rồi sau mỗi khoảng thời gian (cách nhau ít nhất 60 giây) |
+| `/loop <prompt>` | Một vòng lặp tự điều chỉnh nhịp: đánh thức agent ngay, và sau mỗi lần chạy agent chọn độ trễ tiếp theo, từ 1 đến 60 phút (mặc định 20 phút) |
+| `/schedule in <duration> <prompt>` | Đánh thức agent một lần, sau độ trễ |
+| `/schedule at <HH:MM or ISO time> <prompt>` | Đánh thức agent một lần. `HH:MM` là thời điểm như vậy gần nhất theo múi giờ của không gian làm việc; một thời điểm ISO không có độ lệch múi giờ là UTC |
+| `/schedule cron "<expression>" <prompt>` | Đánh thức agent theo biểu thức cron năm trường, đọc theo múi giờ của không gian làm việc. Dấu nháy kép là không bắt buộc |
+
+- `--max <N>` giới hạn số lần chạy, `--days <N>` kết thúc lịch sau số ngày đó (mặc định 30, tối đa 365), và `--budget <dollars>` giới hạn tổng chi tiêu của lịch (nếu không thì là ngân sách mặc định của không gian làm việc, ban đầu là 50 đô la).
+- `/loop` kích hoạt lần chạy đầu tiên ngay. `/schedule` chờ đến thời điểm của nó.
+- Khoảng thời gian dùng `s`, `m`, `h` và `d`, chẳng hạn `90s`, `20m` hoặc `1h30m`.
+- Các lệnh này chỉ được đọc trong tin nhắn do chính bạn gõ.
+
+Ô soạn giúp bạn viết chúng. Sau `/loop` hoặc `/schedule` và một khoảng trắng, danh sách gợi ý đưa ra thời điểm kích hoạt và thu hẹp khi bạn gõ; gõ `--` sau thời điểm để xem các giới hạn. Enter hoặc Tab chọn một dòng và không gửi gì. Một dòng phía trên văn bản của bạn khi đó đọc lại lệnh: khi nào nó kích hoạt, khi nào nó kết thúc, và còn thiếu gì. Nếu bạn nhấn Enter với một lệnh không đọc được, dòng đó cho biết điều gì sai và bản nháp của bạn vẫn còn.
+
+Bạn cũng có thể tạo lịch từ trang **Lịch** bằng **Lịch mới**: chọn không gian, cuộc trò chuyện và agent, khi nào kích hoạt, mỗi lần chạy bắt đầu từ đâu, thời điểm kết thúc, giới hạn số lần chạy và giới hạn chi phí. **Nếu agent đang bận** chọn giữa việc bỏ qua lần kích hoạt đó và chờ đến khi agent rảnh. **Mỗi lần kích hoạt** chọn giữa việc bắt đầu một lần chạy và chỉ thông báo cho bạn kèm ghi chú.
+
+## Những gì agent thiết lập
+
+Agent dùng công cụ `wake_me` cho những việc tương tự, và cho các theo dõi:
+
+| Theo dõi | Kích hoạt khi |
+| --- | --- |
+| `on:pr_checks` | Các kiểm chứng của pull request của không gian hoàn tất |
+| `on:pr_review` | Pull request của không gian nhận được một đánh giá hoặc một phản hồi |
+| `on:pr_merged` | Pull request của không gian được merge |
+| `on:environment` | Một tác vụ của môi trường của không gian kết thúc, hoặc môi trường sẵn sàng |
+| `on:ticket:<id>` | Một ticket kết thúc xử lý |
+| `on:pipeline_run:<id>` | Một lần chạy quy trình kết thúc |
+
+- Một theo dõi pull request nghe pull request của không gian, hoặc một pull request cụ thể mà nó nêu tên (`on:pr_checks:acme/shop-ui#12`). Theo dõi một thứ mà người mà nó đại diện không đọc được sẽ bị từ chối.
+- Các hành động của chính agent không kích hoạt theo dõi của nó. Sự kiện đến trong khi agent đang làm việc không bị mất: nó chờ đến khi lần chạy kết thúc, và các sự kiện sau đó được gộp vào cùng một lượt đánh thức.
+- Lịch do agent đặt phải có giới hạn số lần chạy hoặc thời điểm kết thúc. Mặc định nó kết thúc sau 7 ngày và tối đa 30 ngày. Một theo dõi chạy 10 lần theo mặc định.
+- Lịch mà agent đặt trong một lần chạy do một trong các lịch của chính nó khởi động sẽ dùng chung thời điểm kết thúc, giới hạn số lần chạy và giới hạn chi phí với lịch đầu tiên, nên một chuỗi lịch của agent không thể sống lâu hơn lịch đầu tiên. Hủy lịch đầu tiên sẽ kết thúc toàn bộ chuỗi; tạm dừng nó chỉ tạm dừng lịch đó. Các lần chạy mà chuỗi khởi động thông qua agent khác được tính vào cùng giới hạn chi phí. Lịch do bạn tạo không khởi động chuỗi nào: những gì agent đặt trong lần chạy của nó bị giới hạn như bất kỳ thứ gì nó đặt sau một tin nhắn của bạn.
+- Agent liệt kê những gì đang chờ bằng `list_wakes`, và hủy những gì nó tự đặt bằng `cancel_wake`. Nó không thể hủy những gì bạn đặt.
+
+## Xem những gì đang chờ
+
+**Phía trên ô soạn.** Khi có lượt đánh thức đang chờ một agent trong cuộc trò chuyện, một dải hiển thị chúng: **N lượt đánh thức đang chờ**, mỗi lượt đến từ đâu (**Mục tiêu**, **Lịch**, **Theo dõi**, **Phản hồi từ** một agent, **Đặt lại giới hạn**, **Khôi phục**, …), khi nào đến hạn, và vì sao nó bị giữ.
+
+| Nút | Tác dụng | Ai có thể |
+| --- | --- | --- |
+| **Gửi ngay** | Gửi ngay một lượt đánh thức đang chờ | Chỉ người mà lượt đánh thức đại diện |
+| **Tiếp tục** | Thả một lượt đánh thức đang bị giữ | Chỉ người mà lượt đánh thức đại diện |
+| **Hủy lượt đánh thức** | Hủy nó | Bất kỳ ai có quyền truy cập không gian |
+
+Một lượt đánh thức không được gửi sẽ để lại một dòng trong cuộc trò chuyện nói rõ lý do, chẳng hạn **Agent đang tạm dừng.** hoặc **Ngân sách đang chặn lần chạy.**
+
+**Trang Lịch.** Thanh bên → **Lịch** liệt kê mọi lịch và theo dõi bạn có thể xem, nhóm theo trạng thái; một lịch cron hiển thị ba thời điểm kế tiếp theo múi giờ của bạn. Mở một lịch để xem ghi chú, chủ sở hữu, các lần kích hoạt tiếp theo, lần chạy, lần bỏ qua, chi tiêu và thời điểm kết thúc, và **Lượt đánh thức và lần chạy gần đây**. Mỗi lịch có địa chỉ riêng (`/workspaces/<workspace>/schedules/<id>`).
+
+| Hành động | Ai có thể |
+| --- | --- |
+| **Tạm dừng**, **Hủy lịch** | Bất kỳ ai có quyền truy cập không gian |
+| **Tiếp tục**, **Gia hạn** | Chỉ chủ sở hữu của nó (quản trị viên không gian làm việc với lịch do agent tạo mà không có người) |
+
+Khi người khác ngoài chủ sở hữu của một lịch tạm dừng nó, cuộc trò chuyện hiển thị một dòng nêu tên họ.
+
+Trên điện thoại, **Lặp lại** ở màn hình mục tiêu bắt đầu một prompt lặp lại (mỗi số phút hoặc giờ, hoặc tự điều chỉnh nhịp) với giới hạn chi phí và thời điểm kết thúc, và màn hình **Lịch** tạm dừng, tiếp tục và hủy lịch. Khung tiến trình của cuộc trò chuyện hiển thị những gì đang chờ, gồm các lần tạm dừng do giới hạn sử dụng (**Tiếp tục ngay**, **Hủy**) và công việc còn lại sau khi máy chủ dừng.
+
+## Lịch chạy như thế nào
+
+- Mỗi lần chạy của một lịch hoặc theo dõi được giới hạn ở 5 đô la, hoặc ở số còn lại của lịch khi số đó nhỏ hơn, và lịch dừng khi chạm giới hạn chi phí.
+- Một thời điểm cron nằm trong giờ bị bỏ qua khi đồng hồ chuyển tiến sẽ chạy muộn một giờ trong ngày đó (02:30 chạy lúc 03:30). Một thời điểm nằm trong giờ bị lặp lại khi đồng hồ lùi lại sẽ chạy một lần.
+- Một lần chạy của lịch không bao giờ nhập vào một lần chạy đang diễn ra. Nếu agent đang bận khi một lịch theo giờ kích hoạt, lần kích hoạt đó được bỏ qua lặng lẽ, trừ khi lịch chờ đến khi agent rảnh.
+- Một lần chạy mà lịch hoặc theo dõi bắt đầu và kết thúc êm đẹp sẽ không thông báo cho bạn, trừ khi nó nhắc đến ai đó. Khi một lịch kết thúc, chuông cho biết lý do (**Lịch đã dùng hết số lần chạy.**, **Lịch đã đến ngày kết thúc.**, …) mà không có âm thanh.
+- Tối đa 30 lần chạy mỗi giờ bắt đầu từ các lượt đánh thức trong một cuộc trò chuyện, và 300 trong một không gian làm việc.
+- Khi người mà một lịch đại diện rời khỏi không gian làm việc, lịch kết thúc. Mọi thứ khác đang hành động thay họ cũng dừng: các lượt đánh thức đang chờ của họ bị hủy, các tin nhắn đang xếp hàng và đang giữ của họ bị xóa, và các agent đang chạy của họ bị dừng.
+
+## Dừng, khởi động lại và giới hạn sử dụng
+
+- **Dừng.** Nhấn **Dừng** trên lần chạy của một agent sẽ giữ các lượt đánh thức đang chờ của nó (những cái không thuộc mục tiêu) và các tin nhắn bạn đã xếp hàng gửi cho nó. Chúng chờ **Tiếp tục** hoặc **Gửi các tin nhắn đang giữ**. Mỗi người gửi các tin nhắn đang giữ của chính mình; không ai gửi tin nhắn của người khác.
+- **Máy chủ khởi động lại.** Lượt đánh thức và lịch vẫn được giữ. Lần chạy do một lượt đánh thức bắt đầu sẽ tiếp tục sau khi khởi động lại, tối đa 3 lần thử. Lần chạy do chính bạn bắt đầu không tự chạy lại: nó để lại một lượt đánh thức **Khôi phục** đang bị giữ, và nó tiếp tục khi bạn nhấn **Tiếp tục**. Một lịch theo giờ đã bỏ lỡ các khe thời gian trong lúc máy chủ tắt chỉ kích hoạt trễ trong một khoảng ân hạn ngắn (một nửa khoảng lặp, tối đa 10 phút; 24 giờ với lịch chỉ chạy một lần), nếu không thì nó chỉ ghi một lần bỏ qua: **Bị bỏ lỡ khi máy chủ đang tắt.**
+- **Giới hạn sử dụng của nhà cung cấp.** Khi một lần chạy dừng ở giới hạn sử dụng của nhà cung cấp và nhà cung cấp cho biết khi nào nó được đặt lại (trong vòng 7 ngày), lần chạy đó bị tạm dừng. Một lần chạy do máy chủ bắt đầu, chẳng hạn như phân đoạn của một mục tiêu hoặc lần chạy của một lịch, tự tiếp tục 30 giây sau khi đặt lại. Một lần chạy do bạn bắt đầu chờ bạn: cuộc trò chuyện hiển thị **Tạm dừng ở** giới hạn sử dụng của nhà cung cấp. **Giới hạn sẽ được đặt lại lúc** một thời điểm, kèm **Tiếp tục** (chỉ bạn) và **Hủy** (bất kỳ ai trong không gian). Sau **Tiếp tục**, nó tiếp tục khi giới hạn đã được đặt lại. Một lần tạm dừng mà bạn không tiếp tục sẽ hết hạn 7 ngày sau khi đặt lại. Các tin nhắn bạn đã xếp hàng khi chạm giới hạn sẽ được gửi vào lần chạy được tiếp tục; nếu lần chạy không chờ đến lúc đặt lại, hoặc lần tạm dừng bị hủy hay hết hạn, thì các tin nhắn đó thay vào đó được giữ cho bạn dưới **Gửi các tin nhắn đang giữ**. Tin nhắn đang xếp hàng của người khác được giữ cho họ ngay lập tức. Lần kích hoạt tiếp theo của một lịch chờ đến khi lần chạy đang tạm dừng được tiếp tục. Agent ACP không báo thời điểm đặt lại, nên lần chạy của chúng không chờ.
+
+## Giới hạn của không gian làm việc
+
+Quản trị viên không gian làm việc đặt các giới hạn tại **Cài đặt → Không gian làm việc → Lịch**:
+
+- **Giới hạn lịch**: số lịch đang hoạt động hoặc đang tạm dừng mà một agent được giữ trong một cuộc trò chuyện (10), trên khắp không gian làm việc (50), và trong toàn bộ không gian làm việc (500); giới hạn chi phí mặc định của một lịch (50 đô la); và múi giờ mà lịch cron và tóm tắt hằng ngày dùng (ban đầu là UTC).
+- **Khi không ai trả lời**: một lần chạy do máy chủ bắt đầu chờ câu trả lời hoặc phê duyệt của một người bao lâu (mặc định 72 giờ, từ 1 giờ đến 7 ngày) trước khi một phê duyệt được coi là bị từ chối và một câu hỏi là chưa được trả lời (sau đó, mọi điều khác mà cùng lần chạy hỏi đều bị từ chối ngay), và giờ của bản tóm tắt hằng ngày về những gì đang chờ bạn trong các mục tiêu, lịch và các lần chạy khác do máy chủ bắt đầu.
+
+Thành viên chỉ xem trang này ở chế độ chỉ đọc.
+
+## Xem thêm
+
+- [Theo đuổi một mục tiêu](/vi-VN/so-tay/huong-dan-thuc-hanh/theo-duoi-muc-tieu/)
+- [Các agent phối hợp](/vi-VN/so-tay/huong-dan-thuc-hanh/agent-phoi-hop/)
+- [Lệnh slash](/vi-VN/so-tay/tham-chieu/lenh-slash/)
+- [Công cụ đánh thức và mục tiêu](/vi-VN/so-tay/tham-chieu/cong-cu-mcp/#công-cụ-đánh-thức-và-mục-tiêu)

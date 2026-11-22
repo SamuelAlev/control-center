@@ -2,10 +2,10 @@
 title: Alat agen bawaan
 description: Permukaan alat yang diberikan harness bawaan kepada agen — server bahasa, pencarian struktural, debugger, kernel, dan kontrol pekerja — beserta setiap operasi dan argumennya.
 slug: id-ID/panduan-pengguna/referensi/alat-agen
-sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
+sourceHash: e99183fd4b257a60f94444101e1d39a7d6c77249
 ---
 
-Berikut adalah alat **terikat server** yang didaftarkan langsung oleh runtime agen bawaan — server bahasa, pencarian struktural, debugger, kernel, pertanyaan, dan kontrol pekerja — berbeda dengan [alat MCP](/id-ID/panduan-pengguna/referensi/alat-mcp/) yang dijembatani ke dalamnya serta alat berkas, pencarian, dan shell generik dari runtime harness. Alat-alat ini tidak ada di registri MCP: klien MCP eksternal tidak akan melihatnya, karena masing-masing terikat pada sumber daya sisi server yang hidup — proses server bahasa, adapter debug, interpreter — yang menjadi milik satu run.
+Berikut adalah alat **terikat server** yang didaftarkan langsung oleh runtime agen bawaan — server bahasa, pencarian struktural, debugger, kernel, skrip mode kode, pertanyaan, dan kontrol pekerja — berbeda dengan [alat MCP](/id-ID/panduan-pengguna/referensi/alat-mcp/) yang dijembatani ke dalamnya serta alat berkas, pencarian, dan shell generik dari runtime harness. Alat-alat ini tidak ada di registri MCP: klien MCP eksternal tidak akan melihatnya, karena masing-masing terikat pada sumber daya sisi server yang hidup — proses server bahasa, adapter debug, interpreter — yang menjadi milik satu run.
 
 Setiap alat di sini hanya didaftarkan ketika sumber daya pendukungnya tersambung untuk run tersebut — supervisor server bahasa atau debug, parser tree-sitter, pabrik kernel, port pertanyaan, roster vibe. Deteksi server bahasa atau adapter debug untuk *checkout ini* adalah pemeriksaan terpisah yang berlangsung belakangan (`status` / `adapters`): alat-alat itu tetap ada di permukaan agar agen dapat menanyakan mengapa tidak ada yang bisa dipakai, alih-alih menebak.
 
@@ -15,9 +15,23 @@ Setiap alat mendeklarasikan sebuah tingkat, dan tingkat itulah yang menentukan *
 
 | Tingkat | Arti                         | Alat di sini                                     |
 | ------- | ---------------------------- | ------------------------------------------------ |
-| `read`  | Tanpa efek samping           | `lsp`, `ast_grep`, `ask_user`, kelima `vibe_*`   |
+| `read`  | Tanpa efek samping           | `lsp`, `ast_grep`, `ask_user`, `repl`, kelima `vibe_*` |
 | `write` | Mengubah berkas              | `lsp_rename`, `ast_edit`, `resolve`              |
 | `exec`  | Memulai atau mengendalikan proses | `debug`, `eval`                             |
+
+## Langsung, hanya dari skrip, atau dimuat saat pertama kali dipakai
+
+Ketika server dapat menjalankan skrip, sebuah run memanggil beberapa alat secara langsung dan menjangkau sisanya dari sebuah skrip [`repl`](#repl--jalankan-skrip-yang-memanggil-alat-anda); lihat [Mode kode](/id-ID/panduan-pengguna/konsep/mode-kode/#alat-mana-yang-dipanggil-agen-secara-langsung) untuk aturan lengkapnya. Untuk alat-alat di halaman ini:
+
+| Alat | Dengan `repl` | Tanpa `repl` |
+| ---- | ----------- | -------------- |
+| `repl` | Langsung | Tidak ada |
+| `ask_user` | Langsung | Langsung |
+| `lsp`, `lsp_rename`, `ast_grep`, `ast_edit`, `resolve`, `debug` | Hanya dari skrip | Dimuat saat pertama kali dipakai |
+| `eval` | Dimuat saat pertama kali dipakai (skrip tidak dapat memanggilnya) | Dimuat saat pertama kali dipakai |
+| `vibe_*` | Langsung dalam mode vibe, tidak pernah dari skrip | Langsung dalam mode vibe |
+
+Alat yang bertanda "Hanya dari skrip" dimuat saat pertama kali dipakai sebagai gantinya, begitu server tidak dapat menjalankan skrip run tersebut ([Saat skrip tidak dapat dijalankan](/id-ID/panduan-pengguna/konsep/mode-kode/#saat-skrip-tidak-dapat-dijalankan)).
 
 ---
 
@@ -152,9 +166,49 @@ Satu sesi per percakapan, dengan TTL yang tegas (30 menit). `launch` kedua ditol
 
 ---
 
+## `repl` — jalankan skrip yang memanggil alat Anda
+
+Tersedia di setiap run ketika server dapat menjalankan skrip ([Saat run memiliki `repl`](/id-ID/panduan-pengguna/konsep/mode-kode/#saat-run-memiliki-repl)). Skrip adalah JavaScript biasa, isi fungsi async, dan berjalan di interpreter baru yang terkunci di prosesnya sendiri: tanpa akses ke sistem berkas, jaringan, proses, atau modul. `repl` sendiri termasuk tingkat `read` dan menjaga dirinya sendiri, karena setiap panggilan alat yang dibuat skrip diperiksa sendiri-sendiri. Juga tersedia di endpoint MCP, untuk run agen pada server yang dapat menjalankan skrip.
+
+| Argumen | Arti |
+| ------------------- | --------------------------------------------------------------------------------------------- |
+| `code` | Skripnya. Paling banyak 256 KiB |
+| `description` | Wajib. Label pendek untuk baris transkrip |
+| `timeout_ms` | Opsional. Batas waktu yang lebih pendek dari batas ruang kerja; tidak pernah lebih panjang |
+| `max_output_tokens` | Opsional. Anggaran keluaran yang lebih kecil dari ruang kerja; tidak pernah lebih besar |
+
+```js
+// Read three files together and report only which ones failed.
+const paths = ["lib/a.dart", "lib/b.dart", "lib/c.dart"];
+const results = await Promise.allSettled(paths.map((path) => tools.read({ path })));
+return results
+  .map((r, i) => (r.status === "rejected" ? `${paths[i]}: ${r.reason.message}` : null))
+  .filter(Boolean);
+```
+
+Deskripsi `repl` memberi tahu agen: "Alat yang bukan salah satu alat langsung Anda tidak memiliki definisi dalam permintaan ini. Sebelum panggilan pertama ke alat seperti itu, cari dengan `describeTool(name)` atau `searchTools(query)`, kecuali bentuk panggilan persisnya sudah ditunjukkan kepada Anda dalam percakapan ini."
+
+`describeTool(name)` mengembalikan deskripsi alat, deklarasinya, skema masukan dan keluarannya, serta catatan hasilnya bila ada: apa yang diterima skrip dari panggilan yang selesai, dengan kata-kata alat itu sendiri. Deskripsi `repl` mencantumkan catatan dari alat langsung yang boleh dipanggil skrip. Hasil yang berupa teks JSON tiba sudah terurai, kecuali jika memuat lebih dari 131.072 nilai: maka ia tiba sebagai teks, dan skrip menguraikannya dengan `JSON.parse`. Teks hasil dari alat server MCP eksternal dipotong pada 262.144 karakter, dan teks yang dipotong tidak lagi dapat diurai.
+
+- `tools.<name>(args)` memanggil alat melalui filter, pagar pengaman, dan persetujuan yang sama dengan panggilan langsung, dan menolak dengan galat ketika panggilan ditolak atau gagal. Panggilan baca-saja dapat dijalankan bersamaan; panggilan yang mengubah sesuatu dijalankan satu per satu, sesuai urutan yang dibuat skrip. Selagi salah satu panggilannya menunggu seseorang, tidak ada panggilan lain dari skrip yang dimulai.
+- `ALL_TOOLS`, `searchTools(query, { limit, namespace })`, `describeTool(name)` dan `describeNamespace(name)` menemukan alat, termasuk alat dari server MCP yang terhubung. Alat di luar himpunan langsung yang boleh dipanggil skrip hanya dapat dipanggil dari skrip; memanggilnya secara langsung mengembalikan cara memanggilnya dari `repl`. Setelah server tidak dapat menjalankan skrip run tersebut, alat seperti itu dimuat saat pertama kali dipakai sebagai gantinya.
+- Pencarian dibatasi: query paling banyak 1.024 karakter, nama atau namespace paling banyak 256, `limit` dari 0 sampai 50, dan paling banyak 200 pencarian yang memakan total 2 detik waktu server per skrip, sementara semua skrip dalam satu ruang kerja berbagi 2 detik waktu pencarian, yang dikembalikan sebesar seperempat detik setiap detik; setelah salah satunya habis, pencarian berikutnya ditolak. Dalam katalog yang sangat besar, deskripsi di `ALL_TOOLS` berbagi sekitar satu juta karakter secara merata dan deskripsi yang terpotong berakhir dengan `…`; `describeTool` selalu mengembalikan deskripsi lengkap. Tipe yang terlalu besar untuk ditampilkan dibaca `unknown /* too large to show */`, dan nama yang tidak dikenal dijawab dengan nama-nama yang paling mirip.
+- Alat dikelompokkan dalam namespace: `builtin` (alat milik harness), `control-center` (alat Control Center) dan satu namespace untuk setiap server MCP yang terhubung, dinamai sesuai server itu. Server yang bernama `builtin`, `control-center` atau `script`, atau yang namanya diawali `external-`, dalam kombinasi huruf kapital apa pun dan dengan atau tanpa spasi di sekelilingnya, dicantumkan sebagai `external-` diikuti namanya, dan tidak ada alat yang pernah berada di `script`.
+- Hanya yang dikembalikan skrip, atau diteruskan ke `text()`, `image()` atau `console.*`, yang kembali ke agen. Keluaran melebihi anggaran menyisakan awal dan akhirnya, dan `read_output` membaca sisanya.
+- `store(key, value)` / `load(key)` menyimpan nilai JSON untuk skrip berikutnya dalam percakapan dan agen yang sama, disimpan hanya ketika skrip selesai. Skrip subagen tidak memiliki penyimpanan.
+- `await tools.ask_user(...)` mengajukan pertanyaan; jawabannya juga ditambahkan ke hasil. `sleep(ms)`, `setTimeout`, `limits()` dan `models.embed` / `rank` / `classify` (embedding di perangkat) juga tersedia.
+- `describeTool(name)` dan `searchTools(query)` juga menjawab untuk fungsi milik skrip, yang bukan alat: `text`, `image`, `store`, `load`, `sleep`, `setTimeout`, `clearTimeout`, `limits`, `exit` dan `models.*`, di bawah namespace `script`.
+- Tidak dapat dipanggil dari skrip: `repl`, `eval`, `task`, `checkpoint`, `rewind`, `compact`, `search_tools` dan verba `vibe_*`.
+- Sebuah skrip membaca masa lalu run-nya sendiri: `history({start, role, tool, limit})` memberi halaman pada transkrip percakapan (paling banyak 50 baris per pemanggilan; teruskan `next_start` halaman sebelumnya sebagai `start`), `outputs()` mencantumkan keluaran alat yang disimpan untuk percakapan dan agen ini, dan `loadOutput(handle)` membaca 16.384 karakter dari satu keluaran. `storedKeys()` mencantumkan kunci yang disimpan beserta ukurannya. `keep(value, label)` menyimpan nilai besar sebagai keluaran yang dapat dibaca skrip nanti atau `read_output`, disimpan hanya ketika skrip selesai (1 MiB per nilai, 64 nilai dan 16 MiB per run). `limits().returnBudgetChars` menunjukkan berapa banyak anggaran keluaran yang tersisa. Run hanya-baca (tinjauan tujuan) dapat membaca tetapi tidak dapat menyimpan atau memakai keep. Di Claude Code dan ACP, `history()` berfungsi sementara `outputs()`, `loadOutput()` dan `keep()` menolak, karena Control Center tidak menyimpan keluaran alat dari run tersebut.
+- Galat dari timeout, luapan keluaran, atau batas pemanggilan menjelaskan cara memperbaikinya.
+
+Satu run hanya menjalankan satu skrip pada satu waktu. Batas dan apa yang terjadi di masing-masing ada di halaman [Mode kode](/id-ID/panduan-pengguna/konsep/mode-kode/#batas); setiap skrip direkam di bawah **Observabilitas → Eksekusi kode**.
+
+---
+
 ## `eval` — interpreter persisten
 
-Sel Python atau JavaScript yang variabel, impor, dan data termuatnya bertahan di antara panggilan. Bertingkat `exec`; tidak aman untuk paralel.
+Sel Python atau JavaScript yang variabel, impor, dan data termuatnya bertahan di antara panggilan. Bertingkat `exec`; tidak aman untuk paralel.. Tidak dapat dipanggil dari skrip `repl`, dan sel tidak dapat memanggil alat run: untuk memanggil alat dari kode, gunakan [`repl`](#repl--jalankan-skrip-yang-memanggil-alat-anda).
 
 | Argumen       | Arti                                             |
 | ------------- | ------------------------------------------------ |
@@ -166,20 +220,34 @@ Sel Python atau JavaScript yang variabel, impor, dan data termuatnya bertahan di
 - Ekspresi terakhir ditampilkan kembali seperti yang dilakukan notebook.
 - `display()` berfungsi, frame pandas dirender sebagai tabel, dan gambar matplotlib kembali sebagai **gambar yang ditampilkan transkrip**.
 - Idiom IPython yang refleksif diketik orang — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — ditulis ulang menjadi kode biasa. `%pip` juga menggusur `sys.modules`, sehingga `import` berikutnya melihat apa yang baru saja dipasang.
-
-### Memanggil alat Anda sendiri dari dalam sel
-
-```python
-contents = tool("read", {"path": "lib/auth.dart"})
-```
-
-Jembatan itu **masuk kembali ke registri alat harness**, sehingga pagar pengaman, persetujuan, dan setiap wrapper berlaku persis seperti pada panggilan yang dikeluarkan model. Jembatan ini menumpang pipa milik kernel sendiri alih-alih soket loopback: tanpa port, tanpa rahasia, tanpa aturan egress.
-
-Batas waktu sel adalah anggaran *ketidakaktifan* (default 5 menit) dan **ditangguhkan** selama panggilan yang dijembatani belum selesai, sehingga sel yang menyebar ke subagen tidak dimatikan di tengah penyebaran.
+- Sel yang mencetak lebih dari anggaran keluarannya mempertahankan tiga perempat pertama dan seperempat terakhir, dengan satu baris yang menyebutkan berapa karakter dan gambar yang dibuang.
+- Ketika interpreter mati tanpa diminta, sel berikutnya diberi tahu sekali bahwa variabel sebelumnya sudah hilang.
 
 :::note[Di mana kernel berjalan]
 Di dalam enclosure percakapan bila percakapan itu memilikinya; bila tidak, di dalam sandbox OS run di host. Dengan sandbox dimatikan atau tidak tersedia, ia berjalan tanpa kurungan dan `eval` meminta persetujuan eksekusi host. Ia tidak menyalakan enclosure untuk sampai ke sana — aturan yang sama yang mencegah tab rig memulai otomatis.
 :::
+
+---
+
+## `bash` di latar belakang
+
+`bash` dengan `run_in_background: true` memulai perintah dan langsung kembali dengan handle (`b1`, `b2`, …) alih-alih menunggu. Agen terus bekerja, atau mengakhiri gilirannya dan dibangunkan saat perintah berakhir.
+
+| Argumen | Arti |
+| ------------------- | ------- |
+| `run_in_background` | `true` untuk memulai dan langsung kembali |
+| `timeout_seconds` | Detik sebelum perintah dihentikan: 600 secara default, paling banyak 3.600 |
+| `notify` | Opsional. Pola sederhana; setiap baris keluaran yang cocok dikirim ke agen selagi perintah berjalan (misalnya `listening on\|FAILED`) |
+
+- Paling banyak 4 perintah latar belakang berjalan sekaligus dalam satu run. Masing-masing dihentikan pada timeout-nya dan saat run berakhir, bersama setiap proses yang dimulainya.
+- Ketika sebuah perintah berakhir, agen menerima pemberitahuan dengan kode keluar, 2.000 karakter terakhir keluaran, dan handle `read_output` untuk sisanya.
+- Agen yang satu-satunya pekerjaan tersisanya adalah perintah latar belakang menunggu tanpa memanggil model, dan pengawas diam run dijeda selama menunggu.
+- `bash_output(handle)` membaca status dan keluaran terbaru sebuah perintah; `bash_kill(handle)` menghentikannya. Keduanya menyebutkan kapan hasilnya sudah dikirim.
+- Skrip tidak dapat memulai perintah latar belakang. Claude Code memiliki Bash latar belakangnya sendiri; Control Center membiarkan run itu terbuka paling lama 10 menit setelah giliran yang meninggalkan tugas berjalan.
+
+## `compact` — mengosongkan ruang di jendela konteks
+
+Memadatkan konteks lama percakapan sebelum pemanggilan model berikutnya, dengan mempertahankan apa yang disebut `focus` (paling banyak 1.000 karakter). Giliran terbaru tetap utuh. Baris anggaran per giliran agen menunjukkan pemakaian konteks pada 70, 80 dan 90%, dan alat ini layak dipanggil setelah sekitar 70% sebelum fase kerja baru yang panjang. Hook `preCompact` milik pemilik server dapat menambahkan ke fokus ([Hook shell](/id-ID/panduan-pengguna/referensi/konfigurasi-agen/#hook-shell)). Setelah kompaksi, server menambahkan blok "Still in flight": tujuan, pengingat yang menunggu, pertanyaan yang terbuka, perintah latar belakang, daftar periksa dan kunci yang disimpan, masing-masing dengan pemanggilan yang memulihkannya.
 
 ---
 

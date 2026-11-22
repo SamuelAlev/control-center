@@ -2,7 +2,7 @@
 title: Bekerja di Plan Studio
 description: Tinjau, edit, estimasikan, bandingkan, dan setujui rencana di editor Plan Studio serta jalankan playbook berparameter.
 slug: id-ID/panduan-pengguna/panduan-praktis/plan-studio
-sourceHash: 04a6e193c6b57af3fce63c90673a0958b37552fb
+sourceHash: 9df96d8f10ca86584f3979b84af5eee250719752
 ---
 
 Panduan ini menunjukkan cara bekerja dengan rencana di Plan Studio. Untuk apa
@@ -136,9 +136,7 @@ rencana** selalu menyetujui setiap langkah — tidak ada cara untuk memilih
 sebagian lebih dulu. Persetujuan dihalangi selama proposal memiliki kesalahan
 validasi, yang ditampilkan di samping tombol.
 
-Menyetujui hanya dapat dilakukan operator. Tidak ada alat MCP untuk itu, jadi
-agen dapat mengusulkan dan merevisi rencana tetapi tidak pernah bisa
-menyetujuinya.
+Menyetujui hanya dapat dilakukan operator. Tidak ada alat MCP untuk itu, jadi agen dapat mengusulkan dan merevisi rencana tetapi tidak pernah bisa menyetujuinya. Menyetujui rencana, menyimpan revisi, **Setujui yang dipilih** dan **Lanjutkan node** memerlukan akses tulis ke repositori space.
 
 Setelah orkestrasi dieksekusi, bilah tersebut berubah:
 
@@ -149,7 +147,9 @@ Setelah orkestrasi dieksekusi, bilah tersebut berubah:
   langkah tidak pernah bisa disetujui tanpa dependensinya). Kontrol ini ada di
   bilah eksekusi untuk setiap orkestrasi; kontrol ini tidak melakukan apa pun
   jika rencana disetujui secara utuh.
-- Tekan **Batalkan eksekusi** untuk menghentikan seluruh orkestrasi.
+- Tekan **Batalkan eksekusi** untuk menghentikan seluruh orkestrasi. Siapa pun yang punya akses ke space dapat melakukannya.
+
+**Lanjutkan node** dan **Setujui yang dipilih** menjadi milik orang yang diwakili run (admin ruang kerja jika run tidak mewakili siapa pun).
 
 Langkah di luar kumpulan yang disetujui sebagian ditampilkan sebagai ditunda
 dan tidak berjalan sampai Anda memperluas kumpulan tersebut.

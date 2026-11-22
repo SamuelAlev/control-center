@@ -3,8 +3,10 @@ import 'dart:io';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_attempt.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_backend_port.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_manifest.dart';
+import 'package:cc_domain/features/evals/domain/evaluation/evaluation_outcome.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_plan.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_task.dart';
+import 'package:cc_domain/features/evals/domain/evaluation/paired_evaluation.dart';
 import 'package:cc_domain/features/evals/domain/services/eval_graders.dart';
 import 'package:cc_domain/features/observability/domain/benchmark.dart';
 import 'package:cc_infra/src/evaluation/backends/replay_evaluation_backend.dart';
@@ -21,7 +23,9 @@ import 'package:test/test.dart';
 class _ScriptedBackend implements EvaluationBackendPort {
   _ScriptedBackend({
     this.writes = const {},
+    this.armWrites = const {},
     this.throwForTask = const {},
+    this.ceilingForTask = const {},
     this.refuseNatively = const {},
     this.priced = true,
     this.servedModel,
@@ -37,8 +41,17 @@ class _ScriptedBackend implements EvaluationBackendPort {
   /// taskId → (workspace-relative path, content) written by the "agent".
   final Map<String, Map<String, String>> writes;
 
+  /// armId → (workspace-relative path, content) written on every task.
+  final Map<String, Map<String, String>> armWrites;
+
   /// taskIds whose attempt faults in the backend.
   final Set<String> throwForTask;
+
+  /// taskIds whose attempt the campaign ceiling refuses.
+  final Set<String> ceilingForTask;
+
+  /// The order attempts started in, as `task/arm`.
+  final List<String> started = [];
 
   /// Whether attempts report a clean terminal state.
   final bool completes;
@@ -59,10 +72,17 @@ class _ScriptedBackend implements EvaluationBackendPort {
 
   @override
   Future<EvaluationAttempt> execute(EvaluationAttemptRequest request) async {
+    started.add('${request.task.id}/${request.arm.id}');
     if (throwForTask.contains(request.task.id)) {
       throw StateError('scripted harness fault for ${request.task.id}');
     }
-    for (final entry in (writes[request.task.id] ?? const {}).entries) {
+    if (ceilingForTask.contains(request.task.id)) {
+      throw const EvaluationCeilingReached('scripted ceiling');
+    }
+    for (final entry in {
+      ...?writes[request.task.id],
+      ...?armWrites[request.arm.id],
+    }.entries) {
       final file = File(p.join(request.workspaceRoot, entry.key));
       file.parent.createSync(recursive: true);
       await file.writeAsString(entry.value);
@@ -78,7 +98,9 @@ class _ScriptedBackend implements EvaluationBackendPort {
       seed: request.seed,
       ordinal: request.ordinal,
       startedAtEpochMs: DateTime.now().millisecondsSinceEpoch,
-      completed: completes,
+      end: completes
+          ? EvaluationAttemptEnd.finished
+          : EvaluationAttemptEnd.harnessFault,
       servedModel: servedModel,
       error: completes ? null : 'scripted incomplete',
       cost: priced
@@ -109,6 +131,9 @@ EvaluationPlan twoArmPlan({
   ToolOverlapExperiment? overlapExperiment,
 }) => EvaluationPlan(
   id: 'engine-test',
+  hypothesis: EvaluationHypothesis.regressionScreen,
+  primaryOutcome: EvaluationOutcomeMeasure.verifiedSuccess,
+  minTasks: 3,
   seed: 11,
   arms: const [
     EvaluationArm(id: 'baseline', axis: EvaluationAxis.baseline),
@@ -119,7 +144,6 @@ EvaluationPlan twoArmPlan({
     ),
   ],
   strata: [StratumSpec(stratum: CacheStratum.cold, repetitions: repetitions)],
-  minPairs: 2,
   overlapExperiment: overlapExperiment,
 );
 
@@ -277,6 +301,62 @@ void main() {
     },
   );
 
+  test('runs the schedule in task blocks and stops at the interim look on '
+      'p < 0.001', () async {
+    final tasks = [for (var i = 0; i < 12; i++) answerTask(id: 'task$i')];
+    final corpus = corpusOf(tasks);
+    final backend = _ScriptedBackend(
+      armWrites: {
+        'cheap': {'answer.txt': 'right\n'},
+      },
+    );
+    final result = await runEngine(
+      backend: backend,
+      corpus: corpus,
+      plan: EvaluationPlan(
+        id: 'interim',
+        hypothesis: EvaluationHypothesis.superiority,
+        primaryOutcome: EvaluationOutcomeMeasure.verifiedSuccess,
+        minTasks: 10,
+        interimAtTasks: 10,
+        seed: 3,
+        arms: twoArmPlan().arms,
+        strata: const [StratumSpec(stratum: CacheStratum.cold)],
+      ),
+    );
+    // Each task's two arms run back to back.
+    for (var i = 0; i < backend.started.length; i += 2) {
+      expect(
+        backend.started[i].split('/').first,
+        backend.started[i + 1].split('/').first,
+      );
+    }
+    expect(result.report.attempts, hasLength(20));
+    expect(result.report.stoppedAtInterim, isTrue);
+    expect(result.report.coverageComplete, isFalse);
+    final verdict = result.report.verdicts.single;
+    expect(verdict.verdict, QualityVerdict.superior);
+    expect(verdict.effectiveTaskCount, 10);
+    expect(verdict.reason, startsWith('stopped at the interim look'));
+  });
+
+  test('a ceiling refusal is a ceiling stop, not a harness fault', () async {
+    final corpus = corpusOf([answerTask()]);
+    final result = await runEngine(
+      backend: _ScriptedBackend(ceilingForTask: {'answer'}),
+      corpus: corpus,
+      plan: twoArmPlan(repetitions: 1),
+    );
+    expect(
+      result.report.attempts.map((a) => a.end),
+      everyElement(EvaluationAttemptEnd.ceilingStopped),
+    );
+    expect(
+      result.report.taskOutcomes.every((o) => o.harnessErrors == 0),
+      isTrue,
+    );
+  });
+
   test('writes the manifest, attempts stream, recordings and report', () async {
     final corpus = corpusOf([answerTask()]);
     final result = await runEngine(
@@ -375,6 +455,9 @@ void main() {
     final corpus = corpusOf([answerTask()]);
     const unsafe = EvaluationPlan(
       id: 'unsafe',
+      hypothesis: EvaluationHypothesis.superiority,
+      primaryOutcome: EvaluationOutcomeMeasure.verifiedSuccess,
+      minTasks: 10,
       arms: [
         EvaluationArm(
           id: 'overlap',
@@ -420,6 +503,10 @@ void main() {
       final corpus = corpusOf([answerTask()]);
       const plan = EvaluationPlan(
         id: 'masking',
+        hypothesis: EvaluationHypothesis.nonInferiority,
+        primaryOutcome: EvaluationOutcomeMeasure.verifiedSuccess,
+        minTasks: 10,
+        nonInferiorityMargin: 0.1,
         seed: 1,
         arms: [
           EvaluationArm(id: 'baseline', axis: EvaluationAxis.baseline),
@@ -431,11 +518,10 @@ void main() {
         ],
         strata: [StratumSpec(stratum: CacheStratum.cold, repetitions: 1)],
         contextWindowTokens: 8192,
-        minPairs: 2,
         memoryExperiment: MemoryPolicyExperiment(
           id: 'masking',
           enabled: true,
-          mode: MemoryPolicyMode.masking,
+          modes: [MemoryPolicyMode.masking],
         ),
       );
       final outDir = p.join(scratch.path, 'refused');
@@ -536,10 +622,12 @@ void main() {
       corpus: corpus,
       plan: EvaluationPlan(
         id: 'nocost',
+        hypothesis: EvaluationHypothesis.regressionScreen,
+        primaryOutcome: EvaluationOutcomeMeasure.verifiedSuccess,
+        minTasks: 3,
         seed: 1,
         arms: twoArmPlan().arms,
         strata: [const StratumSpec(stratum: CacheStratum.cold)],
-        minPairs: 2,
       ),
     );
     expect(result.report.attempts.first.cost.isEmpty, isTrue);

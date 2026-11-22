@@ -2,7 +2,7 @@
 title: Sandbox ve güvenlik
 description: Bugün Control Center'da bir ajanı gerçekte neyin kısıtladığı, işletim sistemi sandbox'ının ne kadar eriştiği ve arka ucu olmayan bir ana makinede hangi sınırların geçerli kaldığı.
 slug: tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik
-sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
+sourceHash: 7644c97911f685ef5084875fb16f1006f21ea940
 ---
 
 :::note[İşletim sistemi sandbox'ının eriştiği ve erişmediği yerler]
@@ -57,6 +57,8 @@ Aynı kural, sizin için bir süreç başlatan daha küçük şeylere de uygulan
 - **ACP CLI üzerinden çalışan hızlı yardımcılar**: konuşma başlıkları, `/btw`, `/handoff` ve `/goal`. Sunucu ajanları sandbox'lıyorsa bunlar, kendi oturumlarında sandbox içinde çalışır. `--sandbox off` altında sınırlandırılmadan çalışırlar. Kullanılabilir bir sandbox yokken yalnızca sunucu sahibinin sorumlu olduğu isteklerde çalışırlar; diğerleri için atlanırlar: hiçbir başlık üretilmez ve bir yan soru, Content synthesizer'ın çalışan bir çalıştırıcısı olmadığını bildirir. Hiçbir araç başlatmayan yardımcılar etkilenmez.
 - **Review Studio'nun görsel denetimindeki bir pull request'in altın testleri** aynı kurala uyar.
 - **Bir çalıştırmadaki araç süreçleri ve `bash`** asla ana makineye geri düşmez. Sunucu ajanları sandbox'lamaya ayarlıysa ama bir çalıştırmaya verecek bir sandbox yoksa, reddedilirler.
+- **Bir hedefin kontrolleri**, konuşmanın worktree'si üzerinde tek seferlik bir sandbox'ta çalışır ve ajanın kendi `bash`'i gibi kısıtlanır. Sandbox yoksa çalışmazlar ve hedef bir kişi için durur; `--sandbox off` altında ise ajanın `bash`'i gibi çalışırlar.
+- **Bir hedefin incelemesi** her adaptörde salt okunur çalışır: yalnızca okuma, worktree'ler salt okunur bağlanır, `bash` yok, alt ajan yok, web yok. Çalıştırmayı salt okunur tutamayan bir adaptör (bir ACP ajanı) inceleyici olarak kullanılmaz.
 
 ## Bir ajanı gerçekte ne kısıtlıyor
 
@@ -306,6 +308,24 @@ yalnızca bir günlükte değil, dökümde de görünür. Telemetri yalnızca ye
 sandbox süreci gerçekten sararken vardır — arka ucu olmayan bir ana makinede
 gözlemlenecek bir şey yoktur. Ayrıca korumalarla ilgisizdir: bir ihlal, bir kural sorgusundan değil, reddedilen bir sistem çağrısından gelir.
 
+## Kod modundaki betikler
+
+[Kod modu](/tr-TR/kilavuz/kavramlar/kod-modu/) betikleri ayrı bir durumdur ve hiç ajan sandbox'ına bağlı değildir. Bir betik hiçbir zaman sunucunun içinde çalışmaz ve ajanın sandbox'ında da çalışmaz. Kendi sürecinde, sunucuyla birlikte paketlenmiş bir program olan `cc_codemode` içinde çalışır; program betiği okumadan önce kendini kilitler ve kilitlemenin hangi adımlarının uygulandığını bildirir. Sunucu betiği yalnızca kilitleme tamamlandığında gönderir.
+
+| Ana makine | Runner'ın kendisine uyguladıkları |
+| --- | --- |
+| Linux | Neredeyse yalnızca girdisini okumasına, çıktısını yazmasına, kendi belleğini yönetmesine, saatlerini okumasına ve çıkmasına izin veren bir sistem çağrısı izin listesi (seccomp); yeni ayrıcalık ve yetenek (capabilities) yok; core dump yok; dosya yazma yok, yeni süreç yok ve en fazla üç açık dosya; 3 GiB adres alanı; sert bir işlemci süresi sınırı. Çekirdekte destek varsa Landlock de eklenir. |
+| macOS | Süreç bilgisini, dosya varlık denetimlerini, sistem ve donanım bilgisini ve ilgili çekirdek çağrılarını da reddeden, varsayılan olarak reddeden bir sandbox profili; core dump yok, dosya yazma yok ve sert bir işlemci süresi sınırı. |
+| Windows | Her betik için yeni bir AppContainer; bir süreç, 3 GiB bellek ve kullanıcı arayüzü olmayan bir job içinde; dinamik kod, alt süreçler ve win32k çağrıları kapalı. **Windows'ta henüz çalıştırılmadı.** |
+
+Runner, hiçbir ortam değişkeni, açık dosya (girdisi ve çıktısı dışında) ve kimlik bilgisi olmadan başlar. Kendi belleği dışında yapabildiği tek şey, sunucudan bir aracı çalıştırmasını istemektir; sunucu bu çağrıyı doğrudan bir çağrıyla aynı mod filtresi, [korumalar](/tr-TR/kilavuz/kavramlar/korumalar/) ve onaylardan geçirerek çalıştırır.
+
+Sunucu bunların hepsini başlarken denetler: runner'ın kendi kendini sınamasını çalıştırır; bu, kilitlemeyi uygular, dosya okumaya ve oluşturmaya, bir ağ bağlantısı açmaya ve süreç başlatmaya çalışır (her sistemde daha fazlası da dahil) ve altında gerçek betikler çalıştırır. Reddedilmeyen bir şey varsa sunucu o makinede hiç betik çalıştırmaz: hiçbir çalıştırma `repl` almaz ve sunucu nedenini başlangıçta ve kod modu ayarları sayfasında söyler. Yayın derlemesi olmayan bir runner da aynı şekilde reddedilir. Daha zayıf bir yedek yol yoktur.
+
+Runner, betikte her çağrının nerede yapıldığını da bildirir; böylece konuşma betiğin yapısını gösterebilir. Sunucu o konumu betikle karşılaştırır ve yalnızca gösterim için kullanır: bir çağrının izin verilip verilmeyeceğine hiçbir zaman karar vermez ve korumaların denetim kaydında yer almaz.
+
+Bunun kapsamadıkları: bir betik, çalıştırmanın araçlarının izin verdiği her şeyi yine yapabilir, çünkü tek tek araç çağrıları gerçek araç çağrılarıdır; macOS'ta bir süreç kimliğinin var olup olmadığını yine öğrenebilir; ve JavaScript motorundaki ya da çekirdekteki bir hata, kilitleme tarafından önlenmez, yalnızca sınırlandırılır.
+
 ## Onaylar sandbox'tan değil, korumalardan gelir
 
 Sandbox'ın onay yolu yoktur. Başlatır, yürütür, olaylar yayar ve yıkılır; içinde
@@ -326,6 +346,7 @@ denetlenebileceğini belirten tek yerdir.
 
 ## İlgili kavramlar
 
+- [Kod modu](/tr-TR/kilavuz/kavramlar/kod-modu/): araç çağıran betikler ve bunları sınırlandıran runner
 - [Rig'ler ve yalıtılmış ortamlar](/tr-TR/kilavuz/kavramlar/rigler/): sandbox'ın bir üstündeki adım — iş, sarmalanmış bir süreç değil de çekirdek sınırı olan tek kullanımlık bir makinenin tamamını gerektirdiğinde
 - [Korumalar](/tr-TR/kilavuz/kavramlar/korumalar/): işletim sistemi zemininin üzerindeki politika katmanı ve onayların gerçekte nereden geldiği
 - [Ajan gönderim yaşam döngüsü](/tr-TR/kilavuz/kavramlar/gonderim-yasam-dongusu/): yalıtımın gönderim akışına nerede oturduğu

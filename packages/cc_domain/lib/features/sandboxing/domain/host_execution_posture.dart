@@ -55,3 +55,34 @@ class HostSandboxUnavailableException extends AuthException {
       'This server has no sandbox, so only its owner can run agents here. '
       'The owner can install the sandbox or turn sandboxing off for everyone.';
 }
+
+/// A run that may only read, refused before its run row: this server has no
+/// sandbox (its worktree is read-only only because the sandbox mounts it so,
+/// so it never runs bare, whoever asked; [sandboxKind]), or the agent's
+/// backend cannot hold a run to reading ([backendKind]: ACP negotiates no
+/// permissions, so its agent's own tools would run unchecked).
+class ReadOnlyRunUnavailableException extends AuthException {
+  /// Creates a [ReadOnlyRunUnavailableException]: no sandbox.
+  const ReadOnlyRunUnavailableException()
+    : super(refusal, code: sandboxKind);
+
+  /// The agent's backend does not enforce a read-only run.
+  const ReadOnlyRunUnavailableException.backend()
+    : super(backendRefusal, code: backendKind);
+
+  /// The kind of a refusal for want of a sandbox.
+  static const String sandboxKind = 'sandbox_unavailable';
+
+  /// The kind of a refusal on a backend that cannot hold a run to reading.
+  static const String backendKind = 'read_only_unavailable';
+
+  /// The text the run's conversation shows.
+  static const String refusal =
+      'This run may only read, and only the sandbox can hold its worktree '
+      'read-only. This server has no sandbox, so the run did not start.';
+
+  /// The text for [ReadOnlyRunUnavailableException.backend].
+  static const String backendRefusal =
+      "This run may only read, and this agent's backend cannot hold a run to "
+      'reading, so the run did not start.';
+}

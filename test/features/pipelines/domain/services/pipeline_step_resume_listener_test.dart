@@ -2,6 +2,7 @@ import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_engine.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_step_resume_listener.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -73,13 +74,21 @@ void main() {
 
   tearDown(() => listener.dispose());
 
-  Future<void> complete(String? runId, {String? workspaceId = 'ws-1'}) async {
+  Future<void> complete(String runId, {String workspaceId = 'ws-1'}) async {
     bus.publish(
-      AgentRunCompleted(
+      AgentRunSettled(
         agentId: 'agent-1',
         workspaceId: workspaceId,
+        spaceId: null,
         conversationId: 'chan-1',
         runId: runId,
+        status: RunStatus.completed,
+        endReason: RunEndReason.completed,
+        costMicros: 0,
+        limitResetsAt: null,
+        wakeIds: const [],
+        requestedByUserId: null,
+        wakeReason: null,
         occurredAt: DateTime.now(),
       ),
     );
@@ -87,11 +96,6 @@ void main() {
       await Future.microtask(() {});
     }
   }
-
-  test('no runId → ignored', () async {
-    await complete(null);
-    expect(engine.resumes, isEmpty);
-  });
 
   test('run not found → ignored', () async {
     runLogs.byIdReturn = null;

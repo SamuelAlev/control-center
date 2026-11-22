@@ -90,6 +90,54 @@ void main() {
     expect(events.whereType<LoopTextDelta>().last.text, 'final answer');
   });
 
+  test('steering the person sent in the rewound span stays theirs', () async {
+    final queue = SteeringQueue();
+    final provider = _Provider([
+      [
+        const LlmToolUseDelta(
+          id: 'e1',
+          name: 'checkpoint',
+          argumentsJson: '{}',
+        ),
+        const LlmDone(),
+      ],
+      [
+        const LlmToolUseDelta(id: 'r1', name: 'rewind', argumentsJson: '{}'),
+        const LlmDone(),
+      ],
+      [const LlmTextDelta('final answer'), const LlmDone()],
+    ]);
+    // Delivered at the second turn's boundary: inside the span the rewind
+    // drops.
+    var pushed = false;
+    final history = <HarnessMessage>[];
+    await runner
+        .run(
+          history: history,
+          userMessage: 'do the task',
+          tools: [_NoopTool()],
+          provider: provider,
+          config: AgentLoopConfig(steering: LoopSteeringConfig(queue: queue)),
+        )
+        .map((e) {
+          if (!pushed && e is LoopToolCallStart) {
+            pushed = true;
+            queue.pushSteering('use approach B');
+          }
+          return e;
+        })
+        .toList();
+    final rewound = history.singleWhere(
+      (m) => m.textContent.startsWith('[Rewound'),
+    );
+    expect(rewound.carriedPersonTexts, ['use approach B']);
+    expect(
+      history.where((m) => m.origin == HarnessMessageOrigin.person).length,
+      1,
+      reason: 'the steering message itself was dropped with the span',
+    );
+  });
+
   test('rewind re-primes the advisor (its cursor was left in a rewritten '
       'timeline)', () async {
     final advisor = _ResetRecordingAdvisor();

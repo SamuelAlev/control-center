@@ -10,6 +10,7 @@ import 'package:control_center/features/messaging/presentation/ide/editor/messag
 import 'package:control_center/features/messaging/presentation/ide/panels/agent_run_target.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/agents_section.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/goals_section.dart';
+import 'package:control_center/features/messaging/presentation/ide/panels/peer_asks_section.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/rigs_sections.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/terminals_section.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
@@ -94,6 +95,11 @@ class GeneralPanel extends ConsumerWidget {
         // the standing orders every run below works toward.
         if (conversationId != null)
           GoalsSection(
+            conversationId: conversationId,
+            workspaceId: workspaceId,
+          ),
+        if (conversationId != null)
+          PeerAsksSection(
             conversationId: conversationId,
             workspaceId: workspaceId,
           ),

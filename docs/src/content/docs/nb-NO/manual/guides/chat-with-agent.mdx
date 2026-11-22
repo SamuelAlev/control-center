@@ -2,7 +2,7 @@
 title: Chat med en agent
 description: Opprett et område med en agent, send den arbeid, styr den midt i en kjøring og stopp den.
 slug: nb-NO/handbok/slik-gjor-du/chat-med-agent
-sourceHash: 0dbc01158345074d818cec6084501abc03323fea
+sourceHash: 3e899c417e120a7cc741e802d577d0182210115b
 ---
 
 Denne veiledningen viser hvordan du jobber med en agent i et område.
@@ -42,6 +42,8 @@ et kølagt styringskort i stripen over skrivefeltet og injiseres i den aktive
 kjøringen ved neste turgrense. Det kommer ingen toast — kortet er
 tilbakemeldingen.
 
+For å styre en kjøring som arbeider for noen andre trenger du skrivetilgang til områdets repositorier; uten den avvises meldingen og blir stående i skrivefeltet. En skrivebeskyttet kjøring, som et måls gjennomgang, tar ingen melding mens den kjører: når den avslutter, sendes meldingen som en vanlig, og etter et måls gjennomgang venter den i stedet på målets neste segment.
+
 Tre ting endrer denne atferden:
 
 - En melding som inneholder en **@-omtale**, sendes alltid som en melding,
@@ -75,9 +77,9 @@ skallet, fortsatt hva som venter, slik at du kan låse opp agenten uten å lete
 etter området. Overlegget skjuler en forespørsel i det øyeblikket områdets
 samtale er synlig på skjermen, så du svarer aldri på samme prompt to ganger.
 
-Det finnes ingen tidsavbrudd: en blokkert agent venter til noen bestemmer seg.
-Den samme forespørselen vises også i oppmerksomhetsstripen i innboksen og i
-telefonklienten.
+En kjøring du startet, venter en time på en godkjenning; deretter regnes godkjenningen som avslått. Den samme forespørselen vises også i oppmerksomhetsstripen i innboksen og i telefonklienten.
+
+En kjøring serveren startet (et segment i et mål, en tidsplan, et svar fra en annen agent) venter i stedet 72 timer som standard, satt av en arbeidsområdeadministrator; deretter regnes en godkjenning som avslått og et spørsmål som ubesvart. Se [Når ingen svarer](/nb-NO/handbok/slik-gjor-du/forfolg-et-mal/#når-ingen-svarer).
 
 ## Svar på et spørsmål fra en agent
 
@@ -115,6 +117,8 @@ viser hver kjørende agent i arbeidsområdet med den samme kontrollen.
 En stoppet kjøring merkes som stoppet. Send en ny melding for å sende ut på
 nytt.
 
+Stopp holder også det som er satt i kø for den agenten: styringskortene dine (**Send holdte meldinger** sender dem) og dens ventende vekkinger (**Fortsett** i stripen over skrivefeltet). Et mål agenten arbeidet med, settes på pause til noen fortsetter det.
+
 ## Bruk skråstrekkommandoer
 
 Skriv `/` i skrivefeltet for å se kommandolisten. Disse endrer hvordan samtalen
@@ -123,8 +127,10 @@ oppfører seg:
 | Kommando       | Hva den gjør                                                                                                                        |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | `/plan`        | Bytter området til planmodus. En bar `/plan` armer bare modusen; `/plan <request>` armer den og sender resten som meldingen din |
-| `/goal <text>` | Registrerer samtalens arbeidsmål                                                                                                     |
-| `/loop <text>` | Itererer på en oppgave til den er fullført                                                                                           |
+| `/goal <text>` | Starter et varig mål som agenten fortsetter å arbeide med til det er verifisert ferdig ([Forfølg et mål](/nb-NO/handbok/slik-gjor-du/forfolg-et-mal/)) |
+| `/loop <text>` | Vekker agenten med teksten nå og da, med et intervall eller i sitt eget tempo ([Tidsplaner og vekkinger](/nb-NO/handbok/slik-gjor-du/tidsplaner-vekkinger/)) |
+| `/schedule <when> <text>` | Vekker agenten senere, én gang eller etter et cron-uttrykk |
+| `/refine`      | Ber om en gjennomgang av samtalens arbeid, som kan foreslå forbedringer                                                              |
 | `/compact`     | Folder eldre historikk inn i et forankret sammendrag og fortsetter på den komprimerte konteksten                                     |
 | `/todo …`      | Viser og redigerer denne samtalens lagrede gjøremålsliste                                                                            |
 

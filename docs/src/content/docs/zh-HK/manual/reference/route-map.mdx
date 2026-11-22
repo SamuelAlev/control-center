@@ -2,7 +2,7 @@
 title: 路由圖
 description: Control Center 註冊的每條路由，連同其畫面與查詢參數。
 slug: zh-HK/手冊/參考/路由圖
-sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
+sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
 ---
 
 ## 應用程式外殼
@@ -40,6 +40,12 @@ sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 | `/pipelines`                            | —                                         | 管線執行清單                                                                                                                                                             |
 | `/pipelines/run`                        | `?templateId=<id>`                        | 手動執行啟動器                                                                                                                                                           |
 | `/pipelines/:runId`                     | —                                         | 管線執行詳情（步驟時間軸）                                                                                                                                                 |
+| `/goals` | — | 目標列表，依等待審核、進行中與已結束分組 |
+| `/goals/:goalId` | `?edit=contract` | 單一目標：目前狀況、完成的標準、驗證、排程與喚醒；`edit=contract` 會在已暫停的目標上開啟契約編輯器 |
+| `/schedules` | — | 排程與監看，依狀態分組，並提供 **新增排程** |
+| `/schedules/:ruleId` | — | 單一排程：備註、詳情、最近的喚醒與執行 |
+| `/improvements` | — | 改進提案，依狀態分組 |
+| `/improvements/:proposalId` | — | 單一提案：變更內容、證據、評估與決定 |
 | `/plans`                                | —                                         | Plan Studio 中樞：作用中的計劃、計劃文件、劇本                                                                                                                             |
 | `/plans/:kind/:id`                      | —                                         | 單一計劃的 Plan Studio；`kind` 為 `orchestration` 或 `document`                                                                                                          |
 | `/meetings`                             | —                                         | 會議清單                                                                                                                                                                 |
@@ -99,6 +105,7 @@ sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 | `/settings/workspace/skills`       | 技能設定                                                                                            |
 | `/settings/memory`                 | 工作區記憶：事實、政策、知識圖譜                                                                    |
 | `/settings/workspace/permissions`  | 代理權限：護欄矩陣與假設情境探測                                                                    |
+| `/settings/workspace/schedules` | 排程限制、cron 排程與摘要所用的時區，以及由伺服器啟動的執行等待答覆的時間長短（管理員可編輯；成員只能閱讀） |
 | `/settings/pipelines`              | 管線範本                                                                                            |
 | `/settings/pipelines/:templateId`  | 管線範本編輯器（拖放式畫布）                                                                        |
 

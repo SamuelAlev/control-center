@@ -202,11 +202,11 @@ class _SpaceMessageFeedState extends ConsumerState<SpaceMessageFeed> {
   bool _pendingRevealReconcile = false;
   int _newWhileAway = 0;
   String? _highlightedMessageId;
+  String? _highlightedRowKey;
 
-  /// Permalink target this feed has already claimed, so the one-shot is acted
-  /// on exactly once even though the provider write that clears it is deferred
-  /// out of [build].
-  String? _consumedFocusMessageId;
+  /// One-shot focus targets this feed has already claimed: a permalink, or
+  /// a tool call to show ([_FocusClaims]).
+  final _claims = _FocusClaims();
 
   /// Cutoff the unread divider is drawn against: agent messages created after
   /// it are "new". Seeded from the open-time read cursor when the cursor

@@ -12,12 +12,16 @@ import 'package:cc_domain/features/dispatch/domain/prompts/output_contract_promp
 import 'package:cc_domain/features/dispatch/domain/prompts/protocol_documentation.dart';
 import 'package:cc_domain/features/dispatch/domain/prompts/role_personas.dart';
 import 'package:cc_domain/features/dispatch/domain/prompts/uncertainty_protocol.dart';
+import 'package:cc_domain/features/dispatch/domain/services/peer_ask_text.dart'
+    show peerAskSummonsFor;
+import 'package:cc_domain/features/dispatch/domain/services/wake_frame.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/mention_context.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/plan_mode_contract.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/teammate_brief.dart';
 import 'package:cc_domain/features/mcp/domain/value_objects/mode_tool_policy.dart';
 import 'package:cc_domain/features/settings/domain/entities/adapter.dart'
     show AdapterTransport;
+import 'package:cc_harness/context.dart' show ToolCallForms;
 import 'package:crypto/crypto.dart';
 
 /// Whether a prompt span is standing — stable across the turns of a
@@ -744,37 +748,79 @@ class PromptBuilder {
     return this;
   }
 
-  /// Describes why the agent was woken and the target context.
-  PromptBuilder wakeContext(WakeContext? wc) {
-    if (wc == null) {
+  /// The one paragraph every backend gets about runs the server starts
+  /// (plan section 17), in the standing brief: the same bytes on every run,
+  /// woken or not, so the cached prefix never depends on a wake.
+  PromptBuilder wakes() {
+    _section(wakesLabel);
+    _buf.writeln(wakeSystemParagraph);
+    return this;
+  }
+
+  /// The "Why you were woken" section of a run the wake queue started: one
+  /// item per delivered wake, payloads framed with the run's nonce
+  /// ([renderWakeItems]). A run with a cause of its own (a person's message,
+  /// an assignment, a pipeline step) carries no wakes and gets no section.
+  /// [items]: a wake id to the item that replaces its generic line (a failed
+  /// verification's notice, rendered from the goal's row). [forms]: how
+  /// the run calls the tools an item's follow-up names.
+  PromptBuilder wakeContext(
+    WakeContext? wc, {
+    required ToolCallForms forms,
+    Map<String, String> items = const {},
+  }) {
+    final nonce = wc?.nonce;
+    if (wc == null || !wc.hasWakes || nonce == null) {
       return this;
     }
     _section(wakeContextLabel);
     _buf.writeln(
-      'You were dispatched for the following reason: ${wc.wakeReason.name}.',
+      renderWakeItems(
+        wc.wakes,
+        nonce: nonce,
+        forms: forms,
+        replacements: items,
+      ),
     );
-    if (wc.ticketId != null) {
-      _buf.writeln('- Target ticket: ${wc.ticketId}');
+    return this;
+  }
+
+  /// The goal a run pursues or reviews (`GoalTurnText.section`: the goal
+  /// block of a segment, the reviewer's prompt), per turn and never in the
+  /// cached prefix. The text carries its own heading.
+  PromptBuilder goal(String? section) {
+    if (section == null || section.trim().isEmpty) {
+      return this;
     }
-    if (wc.spaceId != null) {
-      _buf.writeln('- Source space: ${wc.spaceId}');
-    }
-    if (wc.messageId != null) {
-      _buf.writeln('- Triggering message: ${wc.messageId}');
-    }
-    if (wc.pipelineRunId != null) {
-      _buf.writeln('- Pipeline run: ${wc.pipelineRunId}');
-    }
-    _buf.writeln('Your run ID is ${wc.runId}.');
+    _mark(goalLabel);
+    _buf
+      ..writeln()
+      ..writeln(section.trim());
+    _hasContent = true;
     return this;
   }
 
   /// Injects @-mention context: who summoned the agent and the space roster.
-  PromptBuilder mentions(MentionContext? mentionContext, String agentName) {
-    if (mentionContext == null) {
+  /// A run that answers another agent's ask ([wakeContext] holds a
+  /// `peerMessage` wake that expects a reply) opens the block with what the
+  /// agent that was asked must know (`peerAskSummonsFor`).
+  PromptBuilder mentions(
+    MentionContext? mentionContext,
+    String agentName, {
+    required ToolCallForms forms,
+    WakeContext? wakeContext,
+  }) {
+    final asked = peerAskSummonsFor(wakeContext, forms: forms);
+    if (mentionContext == null && asked == null) {
       return this;
     }
     _section(summonsLabel);
+    if (asked != null) {
+      _buf.writeln(asked);
+    }
+    if (mentionContext == null) {
+      return this;
+    }
     _buf.writeln(
       'You are responding because @$agentName was mentioned by '
       '${mentionContext.summonedBy} in this space.',
@@ -936,9 +982,11 @@ class PromptBuilder {
                 'turn:${section.label}#'
                 '${promptRevisionOf(section.text)}',
             text: section.text,
-            // The wake reason is the run's CAUSE: a resumed turn must always
-            // carry it, even when the text is unchanged.
-            alwaysDeliver: section.label == wakeContextLabel,
+            // The wake reason is the run's CAUSE and the goal its task: a
+            // resumed turn must always carry them, even when unchanged.
+            alwaysDeliver:
+                section.label == wakeContextLabel ||
+                section.label == goalLabel,
           ),
         );
       }
@@ -1001,6 +1049,7 @@ class PromptBuilder {
   /// the injected conversation window. Everything else is standing framing.
   static PromptPartScope scopeForLabel(String label) => switch (label) {
     wakeContextLabel ||
+    goalLabel ||
     summonsLabel ||
     memoryLabel ||
     conversationLabel => PromptPartScope.turn,
@@ -1054,6 +1103,12 @@ class PromptBuilder {
 
   /// See [identityLabel].
   static const String wakeContextLabel = 'Why you were woken';
+
+  /// Label of the goal text a segment or a review run gets (per turn).
+  static const String goalLabel = 'Goal';
+
+  /// Section label for the standing paragraph about server-started runs.
+  static const String wakesLabel = 'Runs the system starts';
 
   /// See [identityLabel].
   static const String summonsLabel = 'Summons';

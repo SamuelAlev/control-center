@@ -2,9 +2,8 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/desktop_app/presentation/tray/tray_panel_actions.dart';
 import 'package:control_center/features/desktop_app/presentation/tray/tray_panel_rows.dart';
 import 'package:control_center/features/desktop_app/providers/tray_status_providers.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_pr_subtitle.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row.dart';
-import 'package:control_center/features/messaging/presentation/widgets/space_row_adornments.dart';
-import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -82,18 +81,12 @@ class _WaitingSpace extends ConsumerWidget implements CcFluidHoverTarget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final prs = ref.watch(spaceRowPrsProvider(space.spaceId));
     return SpaceRow(
-      leading: SpaceLeadingIcon(
-        spaceId: space.spaceId,
-        running: false,
-        selected: false,
-        absent: const SpaceStatusMark(),
-      ),
+      signal: const AttentionDot(selected: false),
       label: space.name.isEmpty ? l10n.spaceLabel : space.name,
+      subtitle: prs.isEmpty ? null : SpacePrSubtitle(prs: prs, selected: false),
       selected: false,
-      status: SpaceStatus.needsInput,
-      unread: false,
-      leadingHandlesRunning: true,
       trailingLabel: count,
       onPress: onPress,
     );

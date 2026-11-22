@@ -2,7 +2,7 @@
 title: Pipeline-stegtyper
 description: Referens för pipeline-stegtyper, kroppsnycklar för steg, deras konfiguration och stegresultat.
 slug: sv-SE/handbok/referens/pipeline-steg
-sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
+sourceHash: 0d2876bc1ac359f4d2cfe94902bd5f924d19d5d5
 ---
 
 Ett pipelinesteg har två oberoende axlar:
@@ -58,6 +58,31 @@ Generisk nod för prompt och utskick: renderar prompten, skickar ut agenten i et
 | `extras.spaceId`           | Befintligt samtal att arbeta i (standard: ett dolt)           |
 | `extras.conversationTitle` | Namngiven ström i den ytan (valfritt)                         |
 | `extras.mode`              | Läses på den nod som *öppnar* rummet (`messaging.createSpace`), inte här. Standard `review`. |
+
+### `goal.pursue`
+
+Startar ett varaktigt mål (se [Arbeta mot ett mål](/sv-SE/handbok/how-to-guider/arbeta-mot-mal/)) och pausar tills målet avslutas. Redigeraren visar det som **Pursue a goal**. Inte en av de 25 inbyggda stegkropparna ovan; registreras bredvid dem.
+
+| Konfigurationsfält | Beskrivning |
+| ---------------------- | ----------- |
+| `agentId` | Agenten som driver målet (krävs) |
+| `prompt` | Målet; stöder ersättning av `{{key}}` (krävs) |
+| `outputKey` | Tillståndsnyckel för resultatet (krävs) |
+| `extras.spaceId` | Rummet som målet arbetar i (krävs, som varje agentsteg) |
+| `extras.budgetMicros` | Målets budget i mikrodollar, 1 till 1 000 000 000 (krävs) |
+| `extras.maxRuns` | Ett segmenttak, 1 till 1 000 (valfritt) |
+| `extras.deadlineHours` | Timmar från när steget startar målet, 1 till 2 160 (valfritt) |
+| `extras.contract` | Vad klart innebär: kriterier och kontroller (valfritt) |
+
+Resultatet under `outputKey` är `{summary, verdict}`, där `verdict` är granskarens utslag med dess punkter och farhågor, eller null.
+
+| Målet | Steget |
+| -------- | -------- |
+| slutförd | slutförs |
+| misslyckades, avbröts eller budgeten är slut | misslyckas (`retry` och `continueOnFail` gäller); ett steg som försöks på nytt startar ett nytt mål |
+| pausad, inklusive väntan på en persons granskning | förblir suspenderat, undantaget från det 24-timmars livskontrollsvepet |
+
+Ett mål som startas av en pipelinekörning debiteras den körningens orkestrering, granskningen inräknad. När pipelinekörningen avbryts, misslyckas eller slutförs medan målet arbetar, avbryts målet.
 
 ### `pipeline.condition`
 

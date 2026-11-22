@@ -11,5 +11,8 @@ export 'src/log/cc_mcp_log.dart';
 export 'src/mcp_http_server.dart';
 export 'src/mcp_protocol.dart';
 export 'src/mcp_request_handler.dart';
+export 'src/mcp_run_tool_surface.dart' show McpRunToolSurface;
+export 'src/mcp_scoped_tool.dart';
+export 'src/mcp_script_surface.dart';
 export 'src/mcp_tool_dispatcher.dart';
 export 'src/tools/tools.dart';

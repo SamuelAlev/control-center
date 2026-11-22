@@ -47,6 +47,10 @@ class _CountingStore implements ToolOutputStore {
   }
 
   @override
+  Future<List<ToolOutputEntry>> list(ToolOutputScope scope) =>
+      delegate.list(scope);
+
+  @override
   Future<void> clearScope(ToolOutputScope scope) => delegate.clearScope(scope);
 
   @override
@@ -264,6 +268,9 @@ class _DenyingStore implements ToolOutputStore {
     int offsetChars = 0,
     int limitChars = kToolOutputReadDefaultChars,
   }) async => ToolOutputReadResult.denied('recorded to a different scope');
+
+  @override
+  Future<List<ToolOutputEntry>> list(ToolOutputScope scope) async => const [];
 
   @override
   Future<void> clearScope(ToolOutputScope scope) async {}

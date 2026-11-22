@@ -2,7 +2,7 @@
 title: Guardrail — satu polisi untuk setiap tindakan yang mengubah keadaan
 description: Mengapa Control Center menyalurkan setiap kesan sampingan ejen melalui satu enjin allow/prompt/deny, mengapa taksonomi ActionClass sengaja dibiarkan kecil dan apa yang sebenarnya diubah oleh dail autonomi.
 slug: ms-MY/manual-pengguna/konsep/guardrail
-sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
+sourceHash: bb98b2ca26ae104ab7701d4d381cd5c41d25d32f
 ---
 
 Ejen dalam Control Center boleh memadam fail, push cawangan, menerbitkan pull
@@ -33,6 +33,17 @@ backend — tetapi [Windows tidak menawarkannya dan Linux memerlukan `bwrap` dan
 seperti itu, hanya larian pemilik pelayan yang dimulakan, melainkan pemilik mematikan kotak pasir untuk semua orang dengan `--sandbox off`. Bagi mana-mana larian yang dimulakan tanpa kotak pasir, guardrail ialah lapisan penguatkuasaan paling luar dan bukan polisi
 yang berdiri di atas lantai, dan itu wajar diketahui apabila anda memutuskan
 sejauh mana kebebasan yang ingin diberikan.
+
+### Panggilan yang dibuat oleh skrip
+
+Skrip [mod kod](/ms-MY/manual-pengguna/konsep/mod-kod/) memanggil alat dalam kod, banyak pada satu masa, tetapi setiap panggilannya ialah panggilan alat berasingan kepada enjin. Ia melalui gate harness atau gate penghantar MCP yang sama seperti panggilan langsung, dengan peraturan yang sama, gesaan kelulusan yang sama dan entri audit yang sama, dan tiada apa yang dilakukannya diluluskan kerana panggilan `repl` yang memulakannya diluluskan.
+
+Dua peraturan tambahan terpakai kepada panggilan daripada skrip, kerana satu skrip boleh membuat ratusan panggilan dan menangkap setiap penolakan:
+
+- paling banyak 10 panggilannya sampai kepada seseorang untuk kelulusan; panggilan berikutnya yang memerlukan seseorang ditolak tanpa kad;
+- apabila seseorang menolak salah satu panggilannya, baki panggilannya yang memerlukan kelulusan ditolak tanpa bertanya.
+
+Kad yang dibangkitkan oleh skrip memberitahu anda demikian dan membenarkan anda membuka skrip. Jika skrip tamat semasa kad itu terbuka, kad itu ditarik balik, dan jawapan yang tiba selepas itu direkodkan sebagai penolakan dan tidak meluluskan apa-apa.
 
 ## ActionClass: taksonomi yang sengaja ditutup
 
@@ -273,5 +284,6 @@ sama — jawapan ujian itu ialah jawapan yang akan diterima oleh ejen.
 ## Konsep berkaitan
 
 - [Kotak pasir dan keselamatan](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/): apa yang sebenarnya mengehadkan larian ejen dan sejauh mana lantai OS di bawah enjin ini menjangkau
+- [Mod kod](/ms-MY/manual-pengguna/konsep/mod-kod/): skrip yang setiap panggilan alatnya melalui enjin ini
 - [Multipemain — identiti, keahlian dan kehadiran](/ms-MY/manual-pengguna/konsep/multipemain/): ruang, prinsipal dan tempat dail autonomi berada
 - [Konfigurasikan guardrail](/ms-MY/manual-pengguna/panduan-cara/konfigurasikan-guardrail/): menulis dan menguji peraturan dalam praktik

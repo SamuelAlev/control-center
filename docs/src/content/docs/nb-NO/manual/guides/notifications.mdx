@@ -2,7 +2,7 @@
 title: Konfigurer varsler
 description: Slå kategorier av eller på, angi Quiet hours og en lyd, og få oversikt over hvilke varsler som når deg hvor.
 slug: nb-NO/handbok/slik-gjor-du/varsler
-sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
+sourceHash: b1e5bb3b8a13bbbbd169916ab8e7cd7bdd403c1a
 ---
 
 Denne veiledningen viser hvordan du konfigurerer varsler og hva hver innstilling
@@ -48,6 +48,8 @@ Telefonklienten har ingen varselflate i det hele tatt.
 
 Alt utenfor denne listen kan det verken varsles om eller filtreres på — det
 finnes ingen «alt annet»-kategori.
+
+Langvarig arbeid bruker de to første kategoriene. Et mål som ble avsluttet og en tidsplan som ble avsluttet, teller som **Agent ferdig**; et mål som venter på gjennomgangen din, et forbedringsforslag, en pipeline-kjøring som er holdt ved kostnadstaket, og det daglige sammendraget av hva som venter på deg, teller som **En agent venter på deg**. Hver når personen den gjelder: den som startet målet, tidsplanen eller kjøringen.
 
 **En agent venter på deg** utløses når en venting starter: en ventende godkjenning (inkludert sandkasse-tillatelser og verktøygodkjenninger
 i Claude Code), et `ask_user`-spørsmål eller en kjøring som holdes tilbake fordi
@@ -115,6 +117,8 @@ Et varsel forkastes i stillhet når ett av disse er sant:
 Disse sjekkene gjelder OS-toasts. Den varige bjella registrerer fortsatt
 hendelsen.
 
+Noen varsler er **stille**: serveren merker dem slik at de når klokken uten OS-toast, en lyd eller et høyt telefonvarsel. En tidsplan som ble avsluttet og et mål som ble avsluttet, er stille. Et mål som venter på gjennomgangen din, er ikke det.
+
 To flere undertrykkinger ligger lenger oppstrøms, i det serveren i det hele tatt
 sender:
 
@@ -124,9 +128,7 @@ sender:
 - Områder mellom agenter er dempet i sidestolpen, så de øker aldri badgen for
   uleste hos et menneske
 
-Innenfor et område finnes det ingen stille krok: hver samtale varsler like mye,
-tråder inkludert. Lesestatus gjelder for hele området, så ulest samles på tvers av
-samtalene i et område i stedet for å spores per samtale.
+Innenfor et område finnes det ingen stille krok: hver samtale varsler like mye, tråder inkludert. Lesestatus spores per samtale, og et område er ulest så lenge en av samtalene er det.
 
 ## Les og tøm varslingssentralen
 
@@ -176,6 +178,8 @@ lastet.
 Sjekk at du ikke allerede var i området det skjedde i — en aktiv rute undertrykker
 sin egen OS-toast. I et delt område varsler en kjøring som noen andre startet,
 dem og ikke deg. En tur som endte uten svar og uten feil, sender ingenting.
+
+En kjøring en tidsplan eller overvåking startet, som slutter uten problemer, sender ingenting med mindre den nevner noen. Et fullført mål eller en avsluttet tidsplan går til klokken uten OS-toast.
 
 ## Relaterte veiledninger
 

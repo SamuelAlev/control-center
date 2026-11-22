@@ -2,7 +2,7 @@
 title: Configuración de agentes
 description: Todos los campos de la entidad de agente y las enumeraciones que usa.
 slug: es-MX/manual/referencia/configuracion-de-agentes
-sourceHash: e77edc905bed16d2f7d5bcd19a62541d885f6aab
+sourceHash: 708808ecdf4d2fc769600241c46f85db411550a8
 ---
 
 Esta referencia enumera todos los campos de la entidad de agente, además de las enumeraciones y los indicadores que usa. Para ver un recorrido paso a paso de cómo crear o editar un agente en la aplicación, consulta [Crear y configurar un agente](/es-MX/manual/guias/crear-agente/).
@@ -81,7 +81,7 @@ Un conjunto inmutable de identificadores de skills que no distingue mayúsculas 
 
 ## Hooks de shell
 
-Los hooks de shell permiten al propietario del servidor ejecutar sus propios scripts alrededor de una ejecución del arnés integrado: una vez al iniciar la sesión, antes de cada llamada a una herramienta y después de cada una. Un hook es código arbitrario, así que los hooks son configuración del host. Solo el propietario del servidor los configura, a mano, en la máquina del servidor. No hay ningún ajuste en la app ni ninguna operación que los escriba.
+Los hooks de shell permiten al propietario del servidor ejecutar sus propios scripts alrededor de una ejecución de agente: una vez al iniciar la sesión, antes de cada llamada a una herramienta y después de cada una, cuando el agente terminaría su turno, y antes de una compactación. Un hook es código arbitrario, así que los hooks son configuración del host. Solo el propietario del servidor los configura, a mano, en la máquina del servidor. No hay ningún ajuste en la app ni ninguna operación que los escriba.
 
 Para un agente, los hooks viven en su propia carpeta dentro del directorio de datos del servidor:
 
@@ -91,22 +91,31 @@ Para un agente, los hooks viven en su propia carpeta dentro del directorio de da
 
 `<agent slug>` es el nombre de la carpeta del agente en el espacio de trabajo (`agents/<slug>/`). Esa carpeta queda fuera del almacenamiento de todos los espacios de trabajo, y todo sandbox oculta el directorio de datos, así que ningún miembro, ejecución ni terminal puede escribirla.
 
-`hooks.json` asocia cualquiera de tres claves con un script, mediante una ruta relativa a la carpeta de hooks:
+`hooks.json` asocia cualquiera de cinco claves con un script, mediante una ruta relativa a la carpeta de hooks:
 
 | Clave          | Cuándo se ejecuta                       | Qué significa su código de salida                              |
 | -------------- | --------------------------------------- | -------------------------------------------------------------- |
 | `sessionStart` | Una vez, al iniciar la ejecución        | Nada; el hook solo observa                                     |
 | `preTool`      | Antes de cada llamada a una herramienta | `0` permite la llamada; cualquier otro valor la deniega        |
 | `postTool`     | Después de cada llamada a una herramienta | Nada; el hook solo observa                                   |
+| `stop` | Cuando el agente terminaría su turno | `2` con texto en la salida estándar mantiene la ejecución en marcha con ese texto; cualquier otro resultado deja terminar el turno |
+| `preCompact` | Antes de una compactación | `0`: su salida estándar se agrega a lo que el resumen debe conservar |
 
 - Cada script se inicia como su propio ejecutable, sin shell y sin argumentos, así que debe ser ejecutable y empezar con una línea shebang. Recibe el evento como JSON por stdin: el nombre del evento y, en los hooks de herramientas, el nombre de la herramienta con sus argumentos (`preTool`) o su resultado (`postTool`).
 - Un hook se ejecuta como uno de los procesos de herramienta de la ejecución, en el directorio del agente para esa ejecución. Cuando el servidor pone a los agentes en sandbox, se ejecuta dentro del sandbox de la ejecución. Recibe un entorno mínimo y ninguna de las credenciales de la ejecución: ningún token de forja o de proveedor y ningún acceso a la pasarela.
-- Cada hook tiene 30 segundos. Su salida se lee y se descarta.
+- Cada hook tiene 30 segundos. La salida de `sessionStart`, `preTool` y `postTool` se lee y se descarta.
 - `preTool` falla cerrado. Un código de salida distinto de cero, un tiempo agotado o un script que no puede iniciarse deniegan la llamada a la herramienta.
 - Una ruta absoluta, inexistente o que sale de la carpeta de hooks (con los enlaces resueltos) se rechaza, y el registro de la ejecución indica qué hook se rechazó y por qué. Un hook `preTool` rechazado o ilegible deniega cada llamada a una herramienta hasta que se corrija.
 - Un bloque `hooks` en `.agents/harness.json`, ya sea en un repositorio o en la carpeta propia del agente, se ignora. Un repositorio suele ser código de otra persona, y la carpeta del agente puede escribirla cualquier miembro y cualquier ejecución. El registro de la ejecución indica que el bloque se ignoró y de dónde se leen los hooks en su lugar.
 
-Los hooks de shell se aplican solo al arnés integrado. Un hook `preTool` o `postTool` configurado hace que la ejecución llame a sus herramientas una a una.
+### Los hooks stop y preCompact
+
+- `stop` recibe `event: "stop"`, el último mensaje del agente (`last_message`), `stop_hook_active` (verdadero cuando esta detención sigue a una continuación que causó el hook) y `block_count` (cuántas veces ha mantenido la ejecución en marcha hasta ahora, desde 0). Para mantener la ejecución en marcha, sale con `2` e imprime lo que el agente debe hacer después. El texto, cortado a 2,000 caracteres, llega al agente como mensaje del sistema.
+- Un hook `stop` mantiene una ejecución en marcha como máximo 3 veces en una ejecución. Después, ya no se ejecuta y el turno termina.
+- `stop` falla abierto. Un tiempo de espera, un script que no puede arrancar, cualquier salida distinta de `2` o una salida `2` sin nada en la salida estándar deja terminar el turno, así que un hook roto no puede mantener abierta una ejecución.
+- `preCompact` recibe `event: "pre_compact"`. Su salida estándar, cortada a 1,000 caracteres, se agrega al foco de la compactación. Un script que falla no agrega nada.
+
+Los hooks de shell se aplican al arnés integrado. En Claude Code, los hooks `stop` y `preCompact` también se ejecutan: los hooks `Stop` y `PreCompact` propios de Claude Code le piden al servidor, y el servidor ejecuta los scripts del propietario de la misma forma. Las otras tres claves se aplican solo al arnés integrado. Un hook `preTool` o `postTool` configurado hace que la ejecución llame a sus herramientas una a una.
 
 ## AgentLiveState (derivado)
 

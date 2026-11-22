@@ -38,6 +38,9 @@ class LocalEvaluationCommandRunner implements HarnessCommandRunner {
     int timeoutSeconds = 120,
     Map<String, String>? env,
     CancellationToken? cancel,
+    PersonWaitListener? personWait,
+    String? parentToolCallId,
+    HarnessCommandObserver? observer,
   }) async {
     if (cancel?.isCancelled ?? false) {
       return HarnessCommandResult.deny('cancelled before start');
@@ -68,16 +71,23 @@ class LocalEvaluationCommandRunner implements HarnessCommandRunner {
       );
     }
 
+    observer?.onStarted?.call();
     final stdoutBuffer = StringBuffer();
     final stderrBuffer = StringBuffer();
     final done = Completer<int>();
     final stdoutDone = process.stdout
         .transform(utf8.decoder)
-        .listen(stdoutBuffer.write)
+        .listen((chunk) {
+          stdoutBuffer.write(chunk);
+          observer?.onOutput?.call(chunk);
+        })
         .asFuture<void>();
     final stderrDone = process.stderr
         .transform(utf8.decoder)
-        .listen(stderrBuffer.write)
+        .listen((chunk) {
+          stderrBuffer.write(chunk);
+          observer?.onOutput?.call(chunk);
+        })
         .asFuture<void>();
     unawaited(
       process.exitCode.then((code) {

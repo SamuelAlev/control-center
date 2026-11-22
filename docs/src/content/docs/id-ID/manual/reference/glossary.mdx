@@ -2,7 +2,7 @@
 title: Glosarium
 description: Definisi istilah-istilah penting yang digunakan di seluruh Control Center.
 slug: id-ID/panduan-pengguna/referensi/glosarium
-sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
+sourceHash: ba09880357171a4fcbb82201798578de3856cbe6
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -36,7 +36,13 @@ export const glossaryTerms = [
 ['Rig', 'Mesin sekali pakai yang dikendalikan agen secara real time: browser atau desktop Linux tertutup, emulator Android atau Simulator iOS yang dikelola host, atau terminal tertutup. Dipantau langsung melalui jalur resolusi penuhnya sendiri, dengan pengambilalihan yang ditegakkan di sisi server. Bercakupan satu percakapan sehingga tab manusia dan alat agen menuju satu mesin yang sama.'],
 ['Lingkungan terisolasi', 'Properti isolasi yang lebih kuat yang tersedia bagi rig berbasis VM: batas kernel, disk overlay sekali pakai, gerbang jaringan yang menolak secara default, dan broker kredensial. Rig Android dan iOS bersifat sekali pakai tetapi memakai jaringan yang dikelola host, sehingga tidak mengklaim batas ini. Mengendalikan rig apa pun memakai kelas pagar pengaman enclosureControl.'],
 ['RunCost', 'Rekap token/biaya (token masukan, token keluaran, perkiraan biaya dalam mikrodolar) untuk satu run agen.'],
-['WakeReason', 'Alasan agen dikirim. Enam nilai: pesan pengguna, penugasan tiket, pengiriman ulang pemulihan setelah kegagalan, tiket anak selesai, detak lanjutan terjadwal, dan langkah pipeline.'],
+['WakeReason', 'Mengapa sebuah run agen ada. Pesan seseorang, penugasan tiket, atau langkah pipeline; atau, untuk run yang dimulai server sendiri, alasan pengingatnya: jadwal, pantauan, segmen, pemeriksaan atau tinjauan sebuah tujuan, pesan atau balasan dari agen lain, pekerjaan anak yang selesai, batas penggunaan yang sudah direset, tinjauan perbaikan, atau pemulihan setelah restart.'],
+['Pengingat', 'Permintaan yang tahan lama, disimpan di database ruang kerja, untuk memulai atau melanjutkan run satu agen dalam satu percakapan, dengan alasan dan orang yang diwakilinya. Setiap run yang dimulai server tanpa ada yang mengetik diawali sebagai pengingat; pengingat bertahan setelah restart.'],
+['Tujuan', 'Pekerjaan yang terus dikerjakan agen, dalam segmen, sampai server memverifikasi bahwa arti selesai terpenuhi atau seseorang menutupnya. Dimulai dengan /goal; satu per agen dalam satu waktu. Agen mengklaim tujuan itu selesai; pemeriksaan dan tinjauan hanya-baca yang memutuskan.'],
+['Jadwal', 'Aturan yang membangunkan agen pada waktu tertentu, pada interval, pada cron, atau menurut ritme agen sendiri, dengan batas akhir, batas run, dan batas biaya. Dibuat dengan /loop, /schedule, halaman Jadwal, atau alat wake_me milik agen.'],
+['Pantauan', 'Aturan yang membangunkan agen saat sesuatu terjadi: pemeriksaan pull request selesai, pull request mendapat tinjauan atau digabung, tugas lingkungan keluar, tiket selesai, atau run pipeline berakhir.'],
+['Pertanyaan', 'Pertanyaan satu agen kepada agen lain, dicatat sebelum dikirim. Penanya dibangunkan sekali dengan jawabannya, atau dengan alasan mengapa tidak ada jawaban.'],
+['Usulan perbaikan', 'Perubahan pada memori, kebijakan, catatan agen, atau skill yang disarankan oleh tinjauan setelah tujuan terverifikasi atau lewat /refine. Tidak ada yang berubah sebelum seseorang menerimanya; perubahan skill dievaluasi lebih dulu.'],
 ['SandboxPort', 'Mengelola siklus hidup sandbox (probe, launch, events, exec, destroy).'],
 ['CredentialBrokerPort', 'Menerbitkan kredensial bercakupan untuk peluncuran sandbox (token satu-repositori untuk lingkungan agen, tulis hanya untuk jalur push di sisi server), lalu melepaskannya saat pembongkaran.'],
 ['GitRepoInspectorPort', 'Mengekstrak metadata (owner, repo, branch) dari jalur repo Git lokal.'],
@@ -94,6 +100,11 @@ export const glossaryTerms = [
 ['Id instalasi', 'Identitas sebuah server terhadap satu alamat Connect, diturunkan dari kunci instalasinya. Connect mengizinkan server berdasarkan id instalasi; memutar kunci mengubahnya dan mengeluarkan semua orang dari jalur Connect.'],
 ['Pengikatan instalasi', 'Catatan Connect tentang satu server tempat sebuah tim Slack terikat. Instalasi GitHub tidak memilikinya: server mana pun tempat anggota masuk dapat memakainya.'],
 ['Jalur proses masuk', 'Proses masuk peramban satu penyedia: `github`, `google`, `linear`, `linear_app`, atau `slack`. Di bawah app milik sendiri, sebuah jalur berjalan di app milik sendiri ketika app itu terkonfigurasi lengkap, jika tidak tidak tersedia; dengan Connect yang dipilih, Connect yang menjalankannya. Keduanya tidak saling menjadi cadangan.'],
+['Mode kode', 'Alat repl, yang menjalankan skrip JavaScript yang memanggil alat lain milik run. Setiap run memilikinya ketika server dapat menjalankan skrip; tidak ada pengaturannya.'],
+['Alat langsung', 'Alat yang dipanggil run dengan namanya, dengan skemanya dalam setiap permintaan, baik ia memiliki repl maupun tidak: alat berkas dan shell, ask_user, task, daftar tugas, pencarian memori, send_message, dan verba milik mode.'],
+['Alat khusus skrip', 'Alat di luar himpunan langsung yang dapat dipanggil run dengan repl hanya dari skrip, sampai server tidak dapat menjalankan skrip run tersebut dan alat itu dimuat saat pertama kali dipakai sebagai gantinya. Hingga saat itu deskripsinya tidak pernah sampai ke model.'],
+['Runner mode kode', 'cc_codemode, program yang dikemas bersama server dan menjalankan satu skrip di mesin QuickJS-NG setelah mengunci dirinya dengan kendali sistem operasi. Server tidak akan mulai tanpanya, dan tidak menjalankan skrip kecuali ia build rilis dan kuncinya lengkap.'],
+['Eksekusi kode', 'Rekam dari satu skrip: sumbernya, keluarannya, batasnya, dan setiap panggilan alat yang dibuatnya, disimpan di ruang kerjanya dan tercantum di bawah Observabilitas → Eksekusi kode.'],
 ];
 
 <StructuredData
@@ -157,7 +168,19 @@ export const glossaryTerms = [
 
 **RunCost**: Rekap token/biaya (token masukan, token keluaran, perkiraan biaya dalam mikrodolar) untuk satu run agen.
 
-**WakeReason**: Alasan agen dikirim. Enam nilai: pesan pengguna, penugasan tiket, pengiriman ulang pemulihan setelah kegagalan, tiket anak selesai, detak lanjutan terjadwal, dan langkah pipeline.
+**WakeReason**: Mengapa sebuah run agen ada. Pesan seseorang, penugasan tiket, atau langkah pipeline; atau, untuk run yang dimulai server sendiri, alasan pengingatnya: jadwal, pantauan, segmen, pemeriksaan atau tinjauan sebuah tujuan, pesan atau balasan dari agen lain, pekerjaan anak yang selesai, batas penggunaan yang sudah direset, tinjauan perbaikan, atau pemulihan setelah restart.
+
+**Pengingat**: Permintaan yang tahan lama, disimpan di database ruang kerja, untuk memulai atau melanjutkan run satu agen dalam satu percakapan, dengan alasan dan orang yang diwakilinya. Setiap run yang dimulai server tanpa ada yang mengetik diawali sebagai pengingat; pengingat bertahan setelah restart.
+
+**Tujuan**: Pekerjaan yang terus dikerjakan agen, dalam segmen, sampai server memverifikasi bahwa arti selesai terpenuhi atau seseorang menutupnya. Dimulai dengan `/goal`; satu per agen dalam satu waktu. Agen mengklaim tujuan itu selesai; pemeriksaan dan tinjauan hanya-baca yang memutuskan.
+
+**Jadwal**: Aturan yang membangunkan agen pada waktu tertentu, pada interval, pada cron, atau menurut ritme agen sendiri, dengan batas akhir, batas run, dan batas biaya. Dibuat dengan `/loop`, `/schedule`, halaman Jadwal, atau alat `wake_me` milik agen.
+
+**Pantauan**: Aturan yang membangunkan agen saat sesuatu terjadi: pemeriksaan pull request selesai, pull request mendapat tinjauan atau digabung, tugas lingkungan keluar, tiket selesai, atau run pipeline berakhir.
+
+**Pertanyaan**: Pertanyaan satu agen kepada agen lain, dicatat sebelum dikirim. Penanya dibangunkan sekali dengan jawabannya, atau dengan alasan mengapa tidak ada jawaban.
+
+**Usulan perbaikan**: Perubahan pada memori, kebijakan, catatan agen, atau skill yang disarankan oleh tinjauan setelah tujuan terverifikasi atau lewat `/refine`. Tidak ada yang berubah sebelum seseorang menerimanya; perubahan skill dievaluasi lebih dulu.
 
 ## Port
 
@@ -258,6 +281,20 @@ export const glossaryTerms = [
 **Sumbu tinjauan**: Salah satu dari lima jalur penilaian per tinjauan: `correctness`, `security`, dan `testGap` diambil dari temuan peninjau; `visual` dan `apiContract` deterministik. Sumbu bergerbang dilipat ke dalam putusan dan hanya dapat membuatnya lebih berat — gerbang `partial` atau `unavailable` menahan putusan alih-alih meloloskannya.
 
 **Putusan tinjauan**: `ship`, `hold`, atau `block`. Setiap temuan P0 dengan keyakinan ≥ 0.7 memblokir; P0 lain atau P1 mana pun menahan; selain itu ship. Sumbu bergerbang yang gagal memaksa block dan tidak dapat dikalahkan suara oleh temuan.
+
+## Mode kode
+
+**Mode kode**: alat `repl`, yang menjalankan skrip JavaScript yang memanggil alat lain milik run dan hanya mengembalikan yang dibutuhkan agen. Setiap run memilikinya ketika server dapat menjalankan skrip; tidak ada pengaturannya. **Pengaturan → Ruang kerja → Mode kode** menampilkan apakah server ini menjalankan skrip dan menetapkan batas yang berlaku untuk sebuah skrip. Lihat [Mode kode](/id-ID/panduan-pengguna/konsep/mode-kode/).
+
+**Alat langsung**: Alat yang dipanggil run dengan namanya, dengan skemanya dalam setiap permintaan, baik ia memiliki `repl` maupun tidak: alat berkas dan shell, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message`, dan verba milik mode.
+
+**Alat khusus skrip**: alat di luar himpunan langsung yang dapat dipanggil run dengan `repl` hanya dari skrip, sampai server tidak dapat menjalankan skrip run tersebut dan alat itu dimuat saat pertama kali dipakai sebagai gantinya ([Saat skrip tidak dapat dijalankan](/id-ID/panduan-pengguna/konsep/mode-kode/#saat-skrip-tidak-dapat-dijalankan)). Hingga saat itu deskripsinya tidak pernah sampai ke model, dan panggilan langsung dijawab dengan penjelasan cara memanggilnya dari skrip. Alat yang tidak boleh dipanggil skrip tidak pernah khusus skrip: ia dimuat saat pertama kali dipakai.
+
+**Panggilan bersarang**: panggilan alat yang dibuat skrip. Panggilan itu melewati filter mode, pagar pengaman, dan persetujuan yang sama dengan panggilan langsung.
+
+**Runner mode kode**: `cc_codemode`, program yang dikemas bersama server yang menjalankan satu skrip di mesin QuickJS-NG setelah mengunci dirinya (**kunci**). Server tidak akan mulai tanpanya, dan tidak menjalankan skrip kecuali ia build rilis dan kuncinya lengkap.
+
+**Eksekusi kode**: rekam dari satu skrip: sumbernya, keluarannya, batasnya, dan setiap panggilan alat yang dibuatnya, disimpan di ruang kerjanya dan tercantum di **Observabilitas → Eksekusi kode**.
 
 ## Fleet dan eval
 

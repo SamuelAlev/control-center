@@ -7,6 +7,7 @@ import 'package:cc_domain/features/messaging/domain/value_objects/space_provisio
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/code_mode/presentation/widgets/code_execution_record_link.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_host.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/presentation/utils/conversation_display_name.dart';
@@ -17,14 +18,13 @@ import 'package:control_center/features/messaging/presentation/widgets/manage_sp
 import 'package:control_center/features/messaging/presentation/widgets/message_feed.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_header.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_input_bar.dart';
-import 'package:control_center/features/messaging/presentation/widgets/space_route_selection.dart';
 import 'package:control_center/features/messaging/presentation/widgets/steering_queue_list.dart';
 import 'package:control_center/features/messaging/presentation/widgets/takeover_banner.dart';
 import 'package:control_center/features/messaging/presentation/widgets/visible_conversation_registrar.dart';
+import 'package:control_center/features/messaging/presentation/widgets/work/conversation_wake_strip.dart';
 import 'package:control_center/features/messaging/providers/composer_expanded_provider.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/messaging/providers/pending_space_sends_provider.dart';
-import 'package:control_center/features/messaging/providers/space_folder_providers.dart';
 import 'package:control_center/features/presence/presentation/widgets/spotlight_banner.dart';
 import 'package:control_center/features/presence/providers/presence_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -34,6 +34,7 @@ import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/composer/composer.dart'
     show composerHorizontalMargin;
+import 'package:control_center/shared/widgets/transcript/widgets/script_record_link.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -119,7 +120,6 @@ class ConversationPane extends ConsumerWidget {
           SpaceHeader(
             space: space,
             onManage: () => _handleManage(context, ref),
-            onArchive: () => unawaited(_handleArchiveSpace(context, ref)),
           ),
           const CcDivider(),
           const Expanded(child: Center(child: CcSpinner())),
@@ -175,6 +175,10 @@ class ConversationPane extends ConsumerWidget {
                 // composer's top edge, so it owns its own insets rather than
                 // being padded from here. Renders nothing when the
                 // conversation's queue is empty.
+                // What waits to wake an agent here (goal continuations,
+                // schedules, replies, limit resets, recoveries) and the
+                // steering a person's Stop held. Nothing when nothing waits.
+                ConversationWakeStrip(spaceId: spaceId, conversationId: convId),
                 SteeringQueueList(spaceId: spaceId, conversationId: convId),
                 ConversationPermissionPrompt(
                   spaceId: spaceId,
@@ -205,7 +209,6 @@ class ConversationPane extends ConsumerWidget {
                 space: space,
                 conversation: conversation,
                 onManage: () => _handleManage(context, ref),
-                onArchive: () => unawaited(_handleArchiveSpace(context, ref)),
               ),
               // Thread parent link: when this pane shows a thread, a compact row
               // points back at the anchor message's conversation.
@@ -216,15 +219,25 @@ class ConversationPane extends ConsumerWidget {
               // A take-over of this space's worktree is active (PRD 16 §8).
               TakeoverBanner(spaceId: spaceId),
               Expanded(
-                child: SpaceMessageFeed(
-                  key: ValueKey('feed-$convId'),
-                  spaceId: spaceId,
-                  conversationId: convId,
-                  onStartThread: (message) =>
-                      _startThread(context, ref, message),
-                  // A thread opens exactly the way the switcher opens any
-                  // conversation — it IS one.
-                  onOpenThread: onSelectConversation,
+                // A finished script's row links to its execution record,
+                // looked up within this conversation.
+                child: ScriptRecordLinkScope(
+                  builder: workspaceId == null
+                      ? (_, _) => null
+                      : codeExecutionRecordLinkBuilder(
+                          workspaceId: workspaceId,
+                          conversationId: convId,
+                        ),
+                  child: SpaceMessageFeed(
+                    key: ValueKey('feed-$convId'),
+                    spaceId: spaceId,
+                    conversationId: convId,
+                    onStartThread: (message) =>
+                        _startThread(context, ref, message),
+                    // A thread opens exactly the way the switcher opens any
+                    // conversation — it IS one.
+                    onOpenThread: onSelectConversation,
+                  ),
                 ),
               ),
               const CcDivider(),
@@ -247,22 +260,6 @@ class ConversationPane extends ConsumerWidget {
       context: context,
       builder: (_) => ManageSpaceDialog(spaceId: spaceId),
     );
-  }
-
-  /// Archives the space and unlinks its personal folder. The URL drops back
-  /// to the list, while messages, participants and worktrees remain restorable.
-  Future<void> _handleArchiveSpace(BuildContext context, WidgetRef ref) async {
-    final workspaceId = ref.requireWorkspaceId();
-    final router = GoRouter.of(context);
-    await archiveSpaceAndUnlink(ref, workspaceId, spaceId);
-    // The archive stream can unmount the pane before the folder write returns.
-    if (selectedSpaceIdFromLocation(
-          router.routeInformationProvider.value.uri.path,
-          workspaceId,
-        ) ==
-        spaceId) {
-      router.go(spacesRoute(workspaceId));
-    }
   }
 
   /// Opens a thread anchored to [anchor]: a fresh conversation seeded with the

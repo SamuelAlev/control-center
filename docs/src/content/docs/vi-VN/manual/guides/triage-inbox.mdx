@@ -2,7 +2,7 @@
 title: Phân loại hộp thư
 description: Làm việc với hộp thư hợp nhất — xử lý những gì chặn bạn, đánh giá những gì đang chờ bạn và theo dõi các PR của chính bạn.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/phan-loai-hop-thu
-sourceHash: 8b1cedaef10bca4c784509cf67c82493c1baab35
+sourceHash: 78a60272d46bc865d25bd7bc98796a89978e3e7c
 ---
 
 Hướng dẫn này chỉ cho bạn cách làm việc với hộp thư: bề mặt duy nhất tập hợp
@@ -75,8 +75,9 @@ Mỗi thẻ trong dải có một hành động kế tiếp duy nhất:
    và kết quả mới nhất của từng kết nối. Chỉ lần thất bại mới nhất của mỗi nhà
    cung cấp xuất hiện trong hộp thư, nên một lần đồng bộ đã hồi phục sẽ xóa thẻ
    đó.
-3. Các thẻ tự biến mất khi trạng thái bên dưới được giải quyết (agent được trả
-   lời, lần đồng bộ hồi phục) — không có gì phải tự tay bỏ đi.
+3. Nếu một thẻ ghi **Mục tiêu đang chờ đánh giá** hoặc **Mục tiêu cần bạn**, hãy bấm **Đánh giá** — bạn sẽ vào trang của mục tiêu, nơi bạn phê duyệt, tiếp tục hoặc trả lời điều nó đang chờ. Chỉ người đã khởi động mục tiêu mới được tiếp tục nó. Phê duyệt một mục tiêu do một quy trình khởi động là việc của người đã khởi động lần chạy đó (xem [Theo đuổi một mục tiêu](/vi-VN/so-tay/huong-dan-thuc-hanh/theo-duoi-muc-tieu/)). Chỉ các mục tiêu bạn được phép xử lý mới được liệt kê: một mục tiêu đang chờ đánh giá, hoặc một mục tiêu do bạn khởi động mà cần một người.
+4. Nếu một thẻ ghi **Đã đề xuất cải tiến**, hãy bấm **Đánh giá** — bạn sẽ vào đề xuất, nơi bạn chấp nhận hoặc từ chối nó.
+3. Các thẻ tự biến mất khi trạng thái bên dưới được giải quyết (agent được trả lời, lần đồng bộ hồi phục, mục tiêu tiến tiếp, đề xuất được quyết định) — không có gì phải tự tay bỏ đi.
 
 :::note[Đây là những xác nhận theo từng lượt, không phải phê duyệt quản trị]
 Một thẻ "phê duyệt agent" là một agent đang chạy tạm dừng để xin phép cho một

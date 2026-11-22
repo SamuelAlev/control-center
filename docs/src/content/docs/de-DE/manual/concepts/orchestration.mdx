@@ -2,7 +2,7 @@
 title: Orchestrierung
 description: Wie eine große Bitte zu einem Plan für das ganze Team wird, den du einmal freigibst, und danach zu einer erzeugten Pipeline, die ihn ausführt.
 slug: de-DE/handbuch/konzepte/orchestrierung
-sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
+sourceHash: db1bbceaba025b64539588004eebb65d944d5933
 ---
 
 Ein einzelner Agent kann eine Sache gut. Manche Aufträge sind größer: „recherchiere
@@ -35,13 +35,8 @@ ausführen kann, statt freier Prosa. Ein Vorschlag enthält:
 - **Synthese**: der letzte Schritt, der das Lieferergebnis erzeugt.
 - **Budget**: ein erklärter Kostendeckel.
 
-:::caution[Das Budget ist nur ein Hinweis]
-Der Kostendeckel des Vorschlags wird mit der geschätzten Summe des Plans
-verglichen und markiert einen Plan über dem Budget in der Freigabeleiste,
-_bevor_ du freigibst. Sobald der Lauf gestartet ist, wertet ihn niemand mehr
-aus. Eine Orchestrierung, die den Deckel überschreitet, wird dadurch weder
-angehalten noch als fehlgeschlagen gewertet. Budgetregeln je Agent und je
-Arbeitsbereich sind ein eigener Mechanismus, und sie pausieren die Ausgaben.
+:::caution[Das Budget hält den Lauf an, es bricht ihn nicht ab]
+Der Kostendeckel des Vorschlags wird mit der geschätzten Summe des Plans verglichen und markiert einen Plan über dem Budget in der Freigabeleiste, _bevor_ du freigibst. Sobald der Lauf gestartet ist, prüft der Server vor jedem neuen Schritt, was ausgegeben wurde: Beim Deckel wird der Pipeline-Lauf angehalten (`suspended`, Grund `orchestration_budget`), und nichts Neues startet, während bereits laufende Schritte fertig werden. Wer den Lauf angestoßen hat, wird benachrichtigt und setzt ihn mit **Grenze erhöhen** auf der Seite des Pipeline-Laufs fort (ein Admin des Arbeitsbereichs, wenn niemand ihn angestoßen hat). Eine Erhöhung muss über der alten Grenze und dem bereits Ausgegebenen liegen, höchstens 1.000 Dollar betragen, und eine Grenze wird nie entfernt. Ziele, die der Lauf verfolgt, werden darauf angerechnet, einschließlich ihrer Reviews. Budgetregeln je Agent und je Arbeitsbereich sind ein eigener Mechanismus.
 :::
 
 ## Wo du ihn prüfst

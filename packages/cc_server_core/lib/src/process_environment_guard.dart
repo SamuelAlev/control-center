@@ -1,5 +1,6 @@
 import 'package:cc_connect_core/cc_connect_core.dart'
     show isConnectSecretEnvKey;
+import 'package:cc_server_core/src/server_boot_refusal.dart' show quotedName;
 
 /// Provider secrets the server takes only from its `.env` file or the settings
 /// UI, never from the exported process environment.
@@ -36,7 +37,7 @@ class ProviderSecretInEnvironmentException implements Exception {
 
   /// What the operator reads.
   String get message =>
-      'cc_server: refusing to start — ${keys.join(', ')} '
+      'cc_server: refusing to start — ${keys.map(quotedName).join(', ')} '
       '${keys.length == 1 ? 'is' : 'are'} exported in the process '
       'environment, where every child process and the shell that started '
       'this one can read ${keys.length == 1 ? 'it' : 'them'}.\n'

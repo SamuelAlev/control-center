@@ -1,0 +1,178 @@
+---
+title: Tryb kodu
+description: Jak agent pisze krótki skrypt, który wywołuje jego narzędzia zamiast wywoływać je jedno po drugim, które narzędzia wywołuje bezpośrednio, a które ze skryptu, jakim limitom podlega skrypt, jak skrypt czyta się w rozmowie oraz jak jest ograniczany i zapisywany.
+slug: pl-PL/podrecznik/koncepcje/tryb-kodu
+sourceHash: d41fe2f38c216949847fc7c4768fdf96bed2dc83
+---
+
+Agent zwykle wywołuje swoje narzędzia jedno po drugim. Każde wywołanie to tura modelu: agent prosi o wywołanie, wynik wraca do jego kontekstu, a agent go czyta, zanim poprosi o następne. Przy pracy, która w większości jest mechaniczna, na przykład przy czytaniu dwudziestu plików, żeby znaleźć trzy istotne, albo przy sprawdzaniu każdego otwartego zgłoszenia pod kątem jednej etykiety, większość tych tur i większość tego kontekstu idzie na wyniki, które agent i tak odrzuca.
+
+Tryb kodu to jedno narzędzie, `repl`. Dzięki niemu agent pisze krótki skrypt w JavaScripcie, który wywołuje jego inne narzędzia, przechodzi po wynikach w pętli, filtruje je i łączy, a na koniec zwraca tylko to, czego potrzebuje. Jedno wywołanie `repl` może wykonać pracę kilkudziesięciu tur narzędzi, a do kontekstu trafia wyłącznie odpowiedź skryptu.
+
+Każde uruchomienie ma `repl`, gdy serwer może uruchamiać skrypty. Nie trzeba niczego włączać: zobacz [Kiedy uruchomienie ma `repl`](#kiedy-uruchomienie-ma-repl).
+
+## Co może zrobić skrypt
+
+Skrypt to zwykły JavaScript, zapisany jako treść funkcji async, więc `await` i `return` działają na najwyższym poziomie. Każde wywołanie `repl` uruchamia nowy, pusty interpreter.
+
+- **Wywoływanie narzędzi.** `await tools.read({ path: "README.md" })` wywołuje narzędzie i zwraca jego wynik albo kończy się błędem, gdy wywołanie się nie powiedzie lub zostanie odmówione. Niezależne wywołania mogą działać równolegle dzięki `Promise.allSettled`.
+- **Wyszukiwanie narzędzi.** `ALL_TOOLS` wylicza wszystkie narzędzia, które skrypt może wywołać. `searchTools(query)` znajduje narzędzia po tym, co robią, `describeTool(name)` zwraca opis jednego narzędzia i jego argumenty, a `describeNamespace(name)` wylicza narzędzia jednej grupy. Tak samo osiągalne są narzędzia podłączonych serwerów MCP.
+- **Zwracanie wyników.** Do agenta wraca tylko to, co skrypt zwróci albo przekaże do `text()`, `image()` lub `console.log()`. Do modelu trafia najwyżej cztery obrazy.
+- **Zapamiętywanie wartości.** `store(key, value)` i `load(key)` przechowują małe wartości JSON między skryptami tej samej rozmowy i tego samego agenta. Wartości są zapisywane dopiero po zakończeniu skryptu. Subagenci nie mają magazynu.
+- **Pytanie człowieka.** `await tools.ask_user({ question, options })` zadaje pytanie i czeka na odpowiedź.
+- **Osadzenia na urządzeniu.** `models.embed`, `models.rank` i `models.classify` korzystają z modelu osadzeń serwera, jeśli jest zainstalowany.
+- **Czekanie.** `sleep(ms)` i `setTimeout`, w ramach limitu czasu skryptu. `limits()` zwraca limity, w jakich działa skrypt.
+
+Skrypt nie ma dostępu do systemu plików, sieci, procesów, modułów ani środowiska: nie ma `fetch`, `require`, `import` ani `process`. Jedynym wyjściem jest wywołanie narzędzia, a każde wywołanie narzędzia przechodzi te same kontrole co wywołanie wykonane przez agenta bezpośrednio.
+
+Wywołania narzędzi, które skrypt już wykonał, nie są cofane, jeśli skrypt później zakończy się błędem.
+
+## Które narzędzia agent wywołuje bezpośrednio
+
+Każde uruchomienie wbudowanego agenta dostaje ten sam mały zestaw narzędzi, które wywołuje po nazwie:
+
+- `repl`, jako pierwsze;
+- narzędzia plikowe i powłoki `read`, `write`, `edit`, `search`, `find`, `bash` i `read_output`;
+- `ask_user` i `task`;
+- `todo_write`, `search_memory` i `send_message`;
+- czasowniki, których potrzebuje [tryb](/pl-PL/podrecznik/koncepcje/tryby/) rozmowy, aby dostarczyć swój wynik albo go opuścić, na przykład `submit_plan` w trybie planu;
+- `search_tools`, gdy jakieś narzędzie wczytuje się przy pierwszym użyciu (poniżej).
+
+Każde inne narzędzie, które uruchomienie może użyć, osiąga się na jeden z dwóch sposobów:
+
+- **Tylko ze skryptu**, gdy skrypt może je wywołać. Agent znajduje je za pomocą `searchTools()` lub `describeTool()` i wywołuje jako `tools.<name>(args)`. Jego opis nigdy nie trafia do modelu, więc nic nie kosztuje w prompcie. Jeśli agent mimo to wywoła takie narzędzie bezpośrednio, odpowiedź każe mu wywołać je ze skryptu. Jeśli serwer nie może uruchamiać skryptów uruchomienia, narzędzie zamiast tego wczytuje się przy pierwszym użyciu ([Gdy skrypty nie mogą działać](#gdy-skrypty-nie-mogą-działać)).
+- **Ładowane przy pierwszym użyciu**, gdy skrypt nie może go wywołać. Agent widzi jego nazwę; wywołanie go po nazwie albo znalezienie go przez `search_tools` ładuje jego definicję.
+
+Niektórych narzędzi nigdy nie można wywołać ze skryptu, między innymi samego `repl` (skrypt nie może uruchomić skryptu), `eval`, `task`, `checkpoint`, `rewind`, czasowniki `vibe_*` oraz narzędzia, które uruchamiają inne uruchomienia agentów lub wysyłają do nich wiadomości, tworzą zatwierdzenia, rozstrzygają je lub je komentują, zmieniają politykę albo umiejętności, albo opuszczają tryb planu. Agent wywołuje je bezpośrednio.
+
+Uruchomienie bez `repl` dostaje ten sam zestaw bezpośrednich narzędzi, a wszystko inne wczytuje się przy pierwszym użyciu. [Kontekst narzędzi i cache promptów](/pl-PL/podrecznik/koncepcje/kontekst-narzedzi/) wyjaśnia, dlaczego zestaw jest taki sam w obu przypadkach.
+
+Tryb kodu nigdy nie dodaje narzędzia, na które nie pozwala tryb rozmowy. Najpierw stosowany jest filtr narzędzi trybu, a skrypt może wywołać tylko to, co po nim zostało.
+
+## Kiedy uruchomienie ma `repl`
+
+Uruchomienie ma `repl`, gdy runner skryptów serwera przeszedł sprawdzenie blokady przy starcie ([Jak skrypty są ograniczane](#jak-skrypty-są-ograniczane)). Żadne ustawienie obszaru roboczego, agenta ani serwera tego nie zmienia. Uruchomienie nadal nie ma `repl`, gdy:
+
+- runner nie może zablokować się na maszynie serwera; serwer wtedy nie uruchamia w ogóle żadnych skryptów;
+- serwer jest publicznym demo, które nie uruchamia skryptów;
+- uruchomienie nie należy do żadnego obszaru roboczego;
+- limitów obszaru roboczego nie da się odczytać, bo uruchomienie na domyślnych wartościach mogłoby przekroczyć limity, które administrator obniżył;
+- nie udało się zapisać dziennika uruchomienia, bo każdy skrypt jest zapisywany w tym uruchomieniu przed startem.
+
+Takie uruchomienie wywołuje wszystkie swoje narzędzia bezpośrednio.
+
+Tryb kodu działa dla uruchomień wbudowanego agenta oraz dla agentów, które docierają do narzędzi Control Center przez jego endpoint MCP, na przykład Claude Code. Dla agenta MCP lista narzędzi, którą dostaje, zawiera `repl`, narzędzia bezpośrednie i narzędzia, których skrypt nie może wywołać; resztę wywołuje ze skryptów. Tylko uruchomienie, które Control Center rozpoczął i dla którego prowadzi dziennik, dostaje tam `repl`; każdy inny klient dostaje wszystkie narzędzia z wyjątkiem `repl`.
+
+**Ustawienia → Obszar roboczy → Tryb kodu** pokazuje w sekcji **Stan**, czy ten serwer uruchamia skrypty (**Dostępne** albo **Niedostępne**, wraz z powodem podanym przez serwer) oraz jaka wersja **Runner** jest zainstalowana. **Zobacz wykonania kodu** otwiera listę uruchomionych skryptów.
+
+Właściciel serwera nie może wyłączyć skryptów. Może je ograniczyć: ile działa naraz i ile pamięci jeden może zużyć (zobacz [Limity](#limity)).
+
+### Gdy skrypty nie mogą działać
+
+Uruchomienie nigdy nie traci narzędzia, bo serwer nie może uruchamiać jego skryptów. Gdy serwer odrzuca skrypt z powodu, którego nie uniknąłby żaden inny skrypt (na przykład skrypty są niedostępne, skrypt czekał połowę swojego czasu na wolne miejsce, jego zapis nie może zostać zapisany, lista narzędzi uruchomienia jest za duża, by przekazać ją skryptowi, albo runner nie może wystartować ani się zablokować), uruchomienie przestaje używać skryptów do końca uruchomienia:
+
+- uruchomienie wbudowanego agenta zachowuje `repl`, a każde narzędzie, do którego sięgało tylko ze skryptu, teraz wczytuje się przy pierwszym użyciu: agent wywołuje je po nazwie albo znajduje je za pomocą `search_tools`;
+- uruchomienie na endpoincie MCP dostaje listę narzędzi ze wszystkimi narzędziami i bez `repl`, a jego klient jest informowany, że lista się zmieniła. Serwer pamięta ostatnie 1 024 takie uruchomienia; starsze wracają do skryptów.
+
+Te narzędzia przechodzą ten sam filtr trybu, guardraile i zatwierdzenia co wcześniej, więc nic nie staje się wywoływalne, czego nie było. Skrypt, który zawodzi z własnej winy, rzucając błąd, przekraczając limit albo mając odrzucone wywołanie, niczego nie zmienia.
+
+Serwer też stale sprawdza, czy skrypty mogą działać. Gdy runner nie wystartuje z powodu innego niż skrypt, serwer powtarza sprawdzenie blokady, najwyżej raz na minutę. Jeśli sprawdzenie się nie powiedzie, serwer nie uruchamia skryptów i zapisuje tę samą linię `code_mode=unavailable` co przy starcie; uruchomienia startujące w międzyczasie nie dostają `repl`. Dalej sprawdza, najwyżej raz na minutę, a gdy sprawdzenie przejdzie, znów uruchamia skrypty i zapisuje linię `code_mode=available`. Tylko sprawdzenie, które nie przeszło przy starcie serwera, wymaga restartu.
+
+## Limity
+
+Każdy skrypt działa w ramach limitów. Administrator obszaru roboczego może zmienić sześć z nich w sekcji **Limity** w **Ustawienia → Obszar roboczy → Tryb kodu** (**Dostosuj limity**); agent może poprosić o krótszy czas lub mniejszy budżet wyjścia dla jednego skryptu, nigdy o dłuższy.
+
+| Limit | Domyślnie | Zakres | Co się dzieje, gdy się wyczerpie |
+| --- | --- | --- | --- |
+| Czas na skrypt | 5 min | 1 s do 25 min | Skrypt zostaje zatrzymany, a agent dostaje informację, że skończył mu się czas. |
+| Czas procesora | 30 s | 1 s do 2 min | Skrypt zostaje zatrzymany. |
+| Pamięć | 256 MiB | 16 MiB do 1 GiB | Skrypt zostaje zatrzymany. Właściciel serwera może ustawić niższy sufit dla całego serwera. |
+| Wywołania narzędzi na skrypt | 500 | 1 do 5 000 | Kolejne wywołania są odrzucane, a skrypt dostaje informację dlaczego. |
+| Wywołania jednocześnie | 8 | 1 do 32 | Wywołania tylko do odczytu ponad ten limit czekają na swoją kolej. Wywołania, które coś zmieniają, zawsze działają jedno po drugim. |
+| Wyjście, które czyta agent | 10 000 tokenów | 100 do 50 000 | Wyjście zostaje skrócone do początku i końca, a agent może przeczytać resztę na żądanie. |
+
+Czas, który skrypt spędza na czekaniu na człowieka, na zatwierdzeniu lub pytaniu, nie wlicza się do jego limitu czasu. Podczas czekania skrypt nie startuje żadnego innego wywołania narzędzia: wywołania, które wykona w tym czasie, startują po kolei, gdy odpowiesz.
+
+Niektóre limity są stałe: kod źródłowy skryptu ma najwyżej 256 KiB, argumenty jednego wywołania narzędzia 1 MiB i 16 384 wartości, polecenie, które skrypt przekazuje wbudowanemu narzędziu uruchamiającemu je, 16 KiB (nazwa narzędzia wlicza się do tego limitu), a jeden wynik przekazany skryptowi 4 MiB; zapisana wartość ma 256 KiB, a wszystko, co jedna rozmowa i agent przechowują razem, 1 MiB. Jedno uruchomienie wykonuje naraz jeden skrypt.
+
+Wyszukiwania narzędzi w skryptach też są ograniczone: zapytanie `searchTools` do 1 024 znaków, nazwa narzędzia lub przestrzeni nazw do 256, najwyżej 50 wyników i najwyżej 200 wyszukiwań zajmujących łącznie 2 sekundy czasu serwera; po przekroczeniu tego kolejne wyszukiwania się nie powiodą. Wszystkie skrypty jednego obszaru roboczego dzielą też 2 sekundy czasu wyszukiwania, odzyskiwane w tempie ćwierć sekundy na każdą sekundę. Indeks wyszukiwania przydziela każdemu narzędziu równy udział, około miliona znaków, wydawany najpierw na nazwy jego argumentów, a potem na opis, i zawsze indeksuje nazwę każdego narzędzia, więc nawet w bardzo dużym katalogu narzędzie znajdziesz po nazwie.
+
+Właściciel serwera ogranicza też, ilu skryptów może działać jednocześnie na serwerze (`--code-mode-max-processes`, domyślnie dwukrotność liczby rdzeni procesora, najwyżej 16) i pamięć, jaką może zużyć jeden skrypt (`--code-mode-max-heap-mb`); skrypty czekające na człowieka są liczone osobno, do czterokrotności tej liczby. Gdy ten limit wynosi więcej niż jeden, jeden obszar roboczy może wykorzystać najwyżej około trzech czwartych tej wartości, więc żaden pojedynczy obszar roboczy nie może zająć każdego miejsca. Uruchomienie wraz ze swoimi podagentami zajmuje łącznie najwyżej połowę miejsc swojego obszaru roboczego (co najmniej jedno), więc ich kolejne skrypty czekają, podczas gdy skrypty pozostałych uruchomień obszaru roboczego ruszają naprzód. Zobacz [CLI `cc_server`](/pl-PL/podrecznik/dokumentacja-referencyjna/cc-server-cli/#tryb-kodu).
+
+## Zatwierdzenia i pytania
+
+Wywołanie narzędzia ze skryptu jest sprawdzane dokładnie tak jak wywołanie bezpośrednie: filtr narzędzi trybu, [guardraile dla akcji](/pl-PL/podrecznik/koncepcje/guardraile/), prośba o zatwierdzenie i własne kontrole narzędzia. Skrypt nie może zrobić niczego, czego agent nie mógłby zrobić, wywołując narzędzie sam.
+
+Gdy wywołanie skryptu wymaga zatwierdzenia, karta zatwierdzenia pokazuje **Z skryptu, który uruchomił agent**, a **Pokaż skrypt** otwiera skrypt w rozmowie. Aby skrypt nie zalewał cię kartami:
+
+- jeden skrypt może poprosić o zatwierdzenie najwyżej 10 razy i zadać najwyżej 10 pytań;
+- gdy odmówisz jednego z jego wywołań, jego późniejsze wywołania wymagające zatwierdzenia są odrzucane bez pytania.
+
+W uruchomieniach wbudowanego agenta monity o zatwierdzenie wywołane przez polecenia, które uruchamia skrypt, na przykład wypchnięcie (git push), liczą się do tego samego limitu i kończą się po odmowie w ten sam sposób. Gdy skrypt podagenta działa w tym samym czasie, taki monit liczy się do limitu obu skryptów, a odmowa zatrzymuje oba.
+
+W uruchomieniu wbudowanego agenta zatwierdzenie dla narzędzia zewnętrznego serwera MCP nie jest zapamiętywane: każde wywołanie pyta ponownie, niezależnie od tego, czy wykonuje je skrypt, czy sam agent, chyba że suwak autonomii przestrzeni jest ustawiony na **Działa swobodnie**. Każdy taki monit wywołany przez skrypt liczy się do jego limitu: najwyżej 10 próśb o zatwierdzenie.
+
+Jeśli skrypt zakończy się, zanim odpowiesz, karta zostaje wycofana, a odpowiedź udzielona później nic nie zatwierdza.
+
+## W rozmowie
+
+Wywołanie `repl` pojawia się w rozmowie jako jeden wiersz oznaczony opisem skryptu. Po rozwinięciu widać skrypt i jego wynik oraz wywołania narzędzi wykonane przez skrypt, pod **Wywołania narzędzi**, z liczbą tych, które działają, zakończyły się, nie powiodły, zostały odmówione, anulowano, czekają w kolejce albo zostały pominięte.
+
+### Jak czytać skrypt
+
+Wywołania narzędzi są ułożone tak, jak napisano skrypt, a nie jako jedna długa lista. Runner podaje wiersz i kolumnę, z których pochodzi każde wywołanie, a aplikacja czyta skrypt, aby znaleźć jego pętle, rozgałęzienia i funkcje:
+
+- **Pętla** (`for`, `while`) pojawia się jako grupa **Pętla**, a nagłówkiem jest jej pierwszy wiersz; funkcja zwrotna przekazana do wywołania, takiego jak `map` albo `forEach`, pojawia się jako grupa **Dla każdego**. Cienka linia oddziela jeden przebieg pętli od następnego, gdy aplikacja potrafi je rozróżnić.
+- **Wywołania uruchamiane razem** za pomocą `Promise.all`, `Promise.allSettled` lub podobnego łącznika pojawiają się jako grupa **Równolegle**.
+- **Rozgałęzienie** (`if`/`else`, `switch`, `try`/`catch`) pokazuje jedną grupę na każdą gałąź, z nagłówkiem będącym jej warunkiem.
+- **Funkcja**, którą skrypt definiuje i wywołuje, pojawia się jako grupa **Funkcja**.
+
+Grupa zagnieżdżona w innej jest wcięta o jeden poziom dalej, najwyżej o osiem poziomów; głębsze grupy zostają na tym wcięciu.
+
+Nagłówek każdej grupy pokazuje, jak zakończyły się dotąd jej wywołania. Zanim wywołanie się wykona, jego wiersz pokazuje narzędzie i argumenty zapisane w skrypcie:
+
+| Wiersz | Znaczenie |
+| --- | --- |
+| **W kolejce** | Skrypt nie doszedł jeszcze do tego wywołania. |
+| Działa | Wywołanie działa. |
+| Ukończono | Wywołanie się zakończyło; wiersz pokazuje jego wynik i czas trwania. |
+| **Pominięte** | Skrypt pominął to wywołanie, na przykład gałąź `if`, która nie została wykonana, albo zakończył się, nie docierając do niego. |
+
+Wywołanie zapisane wewnątrz argumentów innego wywołania tego samego narzędzia jest raportowane z tego samego miejsca w skrypcie co to wywołanie. Gdy aplikacja nie potrafi ustalić, czy zewnętrzne wywołanie zostało wykonane, jego wiersz nie pokazuje słowa stanu zamiast **Pominięte**.
+
+Gdy grupa ma więcej niż osiem wywołań, jej środek się zwija: pierwsze dwa i ostatnie trzy pozostają widoczne, podobnie jak każde wywołanie, które wciąż działa, nie powiodło się albo zostało odmówione, wraz z wywołaniem, które rozpoczęło przebieg pętli. **Pokaż N wywołania więcej** otwiera kolejne 100 za każdym naciśnięciem i podaje najwyżej cztery narzędzia ukrytych wywołań wraz z liczbą każdego, od najrzadszego, na przykład **Pokaż 12 wywołań więcej** · Bash 1 · Read 11. Nazwa narzędzia dłuższa niż 24 znaki jest tam skracana.
+
+Wywołanie, którego aplikacja nie może umieścić w skrypcie, na przykład wykonane przez funkcję zwrotną `then`, jest wymienione po drzewie pod nagłówkiem **Wywołania nieprzypisane do skryptu**. Gdy aplikacja nie może odczytać skryptu albo żadne wywołanie nie mówi, skąd pochodzi, wywołania pokazują się jako zwykła lista w kolejności, w jakiej je wykonano.
+
+Każdy wiersz wywołania pokazuje początek argumentów wywołania i początek jego wyniku, do 8 KiB każdego; gdy wiersze jednego skryptu zawierają łącznie 256 KiB takich fragmentów, jego późniejsze wiersze pokazują tylko narzędzie i to, jak zakończyło się wywołanie. Gdy skrypt się zakończy, **Otwórz zapis** otwiera jego pełny zapis; jeśli zapisu nie da się znaleźć, otwiera listę skryptów z tego uruchomienia. Skrypt odrzucony przed startem (na przykład dlatego, że inny skrypt tego samego uruchomienia wciąż działał) nie ma zapisu ani odnośnika.
+
+## Zapis
+
+Każdy uruchamiany skrypt jest zapisywany w swoim obszarze roboczym przed startem, a zapis zostaje dokończony po jego zakończeniu. **Obserwowalność → Wykonania kodu** wymienia je od najnowszego i można je filtrować według wyniku. Odnośniki **Skrypty w tym uruchomieniu** i **Skrypty tego agenta** w zapisie zawężają listę do jednego uruchomienia albo jednego agenta. Zapis pokazuje:
+
+- skrypt, jego wynik i jego konsolę;
+- kiedy wystartował, ile trwał, zużyty czas procesora i szczytową pamięć oraz czy działał przez wbudowanego agenta, czy przez zewnętrznego;
+- jak się zakończył, prostymi słowami (na przykład skończył mu się czas albo rzucił błąd, którego nic nie złapało);
+- każde wywołanie narzędzia, po kolei, z wynikiem, informacją, czy było dozwolone, zatwierdzone przez człowieka czy odrzucone, ile czasu człowiek potrzebował na decyzję, jego argumentami (sekrety usunięte, obcięte do 8 KiB) i rozmiarem jego wyniku. Sam wynik nie jest przechowywany.
+
+Zapis pamięta, w którym miejscu skryptu wykonano każde wywołanie, więc jego wywołania narzędzi są ułożone tak samo jak w rozmowie. Wywołanie, które zatwierdził człowiek, nigdy nie jest tam zwijane.
+
+Skrypt, który wciąż działa, pokazuje się jako działający, z wywołaniami narzędzi, które już się zakończyły; jego wynik, czas trwania i zużycie zasobów pojawiają się po zakończeniu. Jeśli serwer zatrzyma się w trakcie działania skryptu, zapis zostaje zamknięty po ponownym starcie serwera, a zapis to zaznacza; dopóki zapis nie zostanie zamknięty, w tym obszarze roboczym nie działa żaden skrypt.
+
+Zapisy są przechowywane razem z uruchomieniem: usunięcie uruchomienia lub jego przestrzeni usuwa też zapisy. Członkowie widzą zapisy tych przestrzeni, które mogą otworzyć.
+
+## Jak skrypty są ograniczane
+
+Skrypty nigdy nie działają wewnątrz serwera. Każdy skrypt działa we własnym procesie, małym programie dołączonym do serwera, `cc_codemode`, który uruchamia JavaScript w silniku QuickJS-NG. Zanim odczyta skrypt, program blokuje się sam przy pomocy mechanizmów systemu operacyjnego: w Linux filtrem wywołań systemowych i limitami zasobów, na macOS profilem sandboxa odmawiającym domyślnie, a w Windows AppContainerem i obiektem job. Potem nie może otwierać plików, korzystać z sieci, uruchamiać procesów ani widzieć innych programów. Startuje bez zmiennych środowiskowych i nie ma żadnych poświadczeń; jego jedynym kanałem jest serwer, który odpowiada na jego wywołania narzędzi.
+
+Serwer sprawdza blokadę przy starcie, uruchamiając autotest programu. Jeśli blokada na danej maszynie nie działa, na przykład wewnątrz kontenera, którego profil bezpieczeństwa odrzuca jeden z kroków, serwer nie uruchamia tam żadnych skryptów: żadne uruchomienie nie dostaje `repl`, a strona ustawień pokazuje **Niedostępne** wraz z powodem. Skrypt nigdy nie działa przy mniejszym ograniczeniu. Blokada dla Windows nie została jeszcze przetestowana na Windows.
+
+Miejsce wywołania w skrypcie podaje runner, więc służy tylko do ułożenia rozmowy i zapisu. Nigdy nie decyduje, czy wywołanie jest dozwolone.
+
+Co blokada obejmuje, a czego nie, opisuje [Sandbox i bezpieczeństwo](/pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo/#skrypty-w-trybie-kodu).
+
+## Zobacz także
+
+- [Kontekst narzędzi i cache promptów](/pl-PL/podrecznik/koncepcje/kontekst-narzedzi/): dlaczego zestaw bezpośredni jest mały i taki sam z `repl` i bez niego.
+- [Wbudowane narzędzia agentów](/pl-PL/podrecznik/dokumentacja-referencyjna/narzedzia-agentow/#repl--uruchamianie-skryptu-wywołującego-twoje-narzędzia): dane wejściowe narzędzia `repl`.
+- [CLI `cc_server`](/pl-PL/podrecznik/dokumentacja-referencyjna/cc-server-cli/#tryb-kodu): limity, które ustawia właściciel serwera.

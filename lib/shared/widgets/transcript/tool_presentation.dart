@@ -140,6 +140,19 @@ ToolPresentation resolveToolPresentation(ToolSegment seg) {
         category: ToolCategory.run,
         subtitle: evalDescription != null ? 'Eval' : _firstLine(str('code')),
       );
+    // Code mode: a script that calls the run's other tools. Its language is
+    // the subtitle, the way `Bash` names a shell call; the calls it makes
+    // render under it.
+    case 'repl':
+      final replDescription = _firstLine(str('description'));
+      return ToolPresentation(
+        icon: AppIcons.code,
+        verb: replDescription ?? 'JavaScript',
+        category: ToolCategory.run,
+        subtitle: replDescription != null
+            ? 'JavaScript'
+            : _firstLine(str('code')),
+      );
     case 'grep':
     case 'search':
     case 'ripgrep':

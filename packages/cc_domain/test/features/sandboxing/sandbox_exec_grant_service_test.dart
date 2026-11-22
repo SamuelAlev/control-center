@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/features/sandboxing/domain/entities/sandbox_exec_grant.dart';
 import 'package:cc_domain/features/sandboxing/domain/repositories/sandbox_exec_grant_repository.dart';
@@ -65,14 +67,43 @@ class _FakeRepo implements SandboxExecGrantRepository {
 }
 
 class _FakePort implements ConfirmationPort {
-  _FakePort(this.answer);
+  _FakePort(this.answer, {this.unanswered = false});
   final bool answer;
+
+  /// Nobody answers: the card expires, as the registry tells it.
+  final bool unanswered;
   final List<ConfirmationRequest> asked = [];
 
   @override
   Future<bool> requestApproval(ConfirmationRequest request) async {
     asked.add(request);
+    if (unanswered) {
+      request.onUnanswered?.call();
+      return false;
+    }
     return answer;
+  }
+}
+
+/// Holds every card until the test answers or expires it.
+class _HeldPort implements ConfirmationPort {
+  final List<(ConfirmationRequest, Completer<bool>)> cards = [];
+
+  @override
+  Future<bool> requestApproval(ConfirmationRequest request) {
+    final answer = Completer<bool>();
+    cards.add((request, answer));
+    return answer.future;
+  }
+
+  /// Nobody answered: as the registry ends an expired card.
+  void expireAll() {
+    for (final (request, answer) in cards) {
+      if (!answer.isCompleted) {
+        request.onUnanswered?.call();
+        answer.complete(false);
+      }
+    }
   }
 }
 
@@ -157,6 +188,114 @@ void main() {
       );
       expect(port.asked, hasLength(1));
       expect(repo.rows.single.decision, SandboxExecGrantDecision.deny);
+    });
+
+    test('an expired card refuses this attempt and records nothing: the next '
+        'run is asked again', () async {
+      final port = _FakePort(false, unanswered: true);
+      final service = serviceWith(port);
+      for (var i = 0; i < 2; i++) {
+        expect(
+          await service.approvedRoots(
+            workspaceId: 'ws1',
+            candidateRoots: const [worktree],
+          ),
+          isEmpty,
+        );
+      }
+      expect(port.asked, hasLength(2));
+      expect(repo.rows, isEmpty);
+    });
+
+    group('within one run', () {
+      Future<List<String>> command(
+        SandboxExecGrantService service,
+        ExecGrantRunAsks run,
+      ) => service.approvedRoots(
+        workspaceId: 'ws1',
+        candidateRoots: const [worktree],
+        runAsks: run,
+      );
+
+      test('a card nobody answered is not raised again: the next command '
+          'is refused at once, and a new run asks again', () async {
+        final port = _HeldPort();
+        final service = serviceWith(port);
+        final run = ExecGrantRunAsks();
+
+        final first = command(service, run);
+        await pumpEventQueue();
+        expect(port.cards, hasLength(1));
+        port.expireAll();
+        expect(await first, isEmpty);
+        expect(run.unanswered(worktree), isTrue);
+
+        // The second command: no card, no wait.
+        expect(await command(service, run), isEmpty);
+        expect(port.cards, hasLength(1));
+        // The after-the-fact offer does not re-ask either.
+        expect(
+          await service.recordDeniedExec(
+            workspaceId: 'ws1',
+            deniedPath: tool,
+            candidateRoots: const [worktree],
+            runAsks: run,
+          ),
+          isNull,
+        );
+        expect(port.cards, hasLength(1));
+        expect(repo.rows, isEmpty);
+
+        // The next run asks again.
+        final next = command(service, ExecGrantRunAsks());
+        await pumpEventQueue();
+        expect(port.cards, hasLength(2));
+        port.cards.last.$2.complete(true);
+        expect(await next, [worktree]);
+      });
+
+      test('parallel commands share one card, and its answer', () async {
+        final port = _HeldPort();
+        final service = serviceWith(port);
+        final run = ExecGrantRunAsks();
+
+        final a = command(service, run);
+        final b = command(service, run);
+        await pumpEventQueue();
+        expect(port.cards, hasLength(1));
+        port.cards.single.$2.complete(true);
+        expect(await a, [worktree]);
+        expect(await b, [worktree]);
+        expect(repo.rows.single.decision, SandboxExecGrantDecision.allow);
+      });
+
+      test('parallel commands share one unanswered card', () async {
+        final port = _HeldPort();
+        final service = serviceWith(port);
+        final run = ExecGrantRunAsks();
+
+        final a = command(service, run);
+        final b = command(service, run);
+        await pumpEventQueue();
+        port.expireAll();
+        expect(await a, isEmpty);
+        expect(await b, isEmpty);
+        expect(port.cards, hasLength(1));
+        expect(repo.rows, isEmpty);
+      });
+    });
+
+    test('the card names the run, agent and conversation that asked', () async {
+      final port = _FakePort(true);
+      await serviceWith(port).approvedRoots(
+        workspaceId: 'ws1',
+        candidateRoots: const [worktree],
+        asker: (runId: 'run-1', agentId: 'agent-1', conversationId: 'conv-1'),
+      );
+      final card = port.asked.single;
+      expect(card.runId, 'run-1');
+      expect(card.agentId, 'agent-1');
+      expect(card.conversationId, 'conv-1');
     });
 
     test('with no approver it grants nothing and records nothing', () async {
@@ -506,6 +645,22 @@ void main() {
         isNull,
       );
       expect(port.asked, isEmpty);
+      expect(repo.rows, isEmpty);
+    });
+
+    test('an expired card records nothing and offers no grant', () async {
+      final port = _FakePort(false, unanswered: true);
+      final service = serviceWith(port);
+      expect(
+        await service.recordDeniedExec(
+          workspaceId: 'ws1',
+          deniedPath: tool,
+          candidateRoots: const [worktree],
+          asker: (runId: 'run-1', agentId: null, conversationId: null),
+        ),
+        isNull,
+      );
+      expect(port.asked.single.runId, 'run-1');
       expect(repo.rows, isEmpty);
     });
 

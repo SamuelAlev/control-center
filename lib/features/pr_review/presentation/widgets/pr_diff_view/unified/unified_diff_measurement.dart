@@ -57,6 +57,10 @@ class ComposerRequest {
 
   /// Comment draft shown alongside the editable replacement.
   final String initialComment;
+
+  /// Whether this composes a comment on the file as a whole (anchored at
+  /// `kFileLevelAnchor`, -1) rather than on display rows.
+  bool get isFileLevel => anchorDisplayLine < 0;
 }
 
 /// Reports its child's laid-out height once per frame via [onMeasured].

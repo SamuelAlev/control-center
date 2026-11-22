@@ -2,7 +2,7 @@
 title: Tervmód használata
 description: Váltsa a teret tervmódba, kérjen típusos tervet, majd hagyja jóvá, hogy futó munkává váljon.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/tervmod
-sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
+sourceHash: accf49606e5e8597d3ea76e3274f08d3854996dc
 ---
 
 Ez az útmutató bemutatja, hogyan kérhet strukturált tervet egy ügynöktől, még
@@ -120,11 +120,7 @@ cselekednie. Amint a kérést jóváhagyják, az ügynök következő `exit_plan
 hívása tervmódból ügynökmódba váltja a teret, és feloldja a módosító eszközeit.
 Elutasítás esetén új kérést nyithat egy módosított tervhez.
 
-A tervmódból való kilépéshez váltson az üzenetszerkesztő legördülő menüjében
-(vagy nyomjon Shift+Tab-ot), vagy hagyja jóvá a benyújtott tervet. Az
-`exit_plan_mode` egy tartós jóváhagyást nyit meg, amelyről a `decide_approval`
-MCP-eszköz dönt. A blokkolt eszközhívásokhoz tartozó műveletőr-overlay egy másik,
-memóriabeli sor, és nem hordoz tervkilépési kéréseket.
+A tervmódból való kilépéshez váltson az üzenetszerkesztő legördülő menüjében (vagy nyomjon Shift+Tab-ot), vagy hagyja jóvá a benyújtott tervet. Az `exit_plan_mode` egy tartós jóváhagyást nyit meg, amelyről egy ügynökfuttatás dönt a `decide_approval` MCP-eszközzel. A blokkolt eszközhívásokhoz tartozó műveletőr-overlay egy másik, memóriabeli sor, és nem hordoz tervkilépési kéréseket.
 
 ## Tervmód egy pipeline-lépésben
 

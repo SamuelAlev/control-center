@@ -8,5 +8,17 @@
   "credentialsAtlassianEmail": "Courriel du compte Atlassian",
   "credentialsAtlassianEmailInvalid": "Saisissez l'adresse courriel de votre compte Atlassian.",
   "repoAccessAutomationTokenMissing": "Aucun jeton d'automatisation ne peut lire {names}, le travail en arrière-plan y est donc en pause. Un admin peut en ajouter un dans Paramètres → Dépôts.",
-  "credentialsTokenNarrowScope": "Ce jeton n’a pas la portée {scope}, nécessaire pour relire et commenter. Créez-en un qui l’a."
+  "credentialsTokenNarrowScope": "Ce jeton n’a pas la portée {scope}, nécessaire pour relire et commenter. Créez-en un qui l’a.",
+  "wakeKindGoalReviewStale": "L'objectif a changé depuis la demande de cette révision.",
+  "goalRefusalNotInReview": "Cet objectif n'attend pas de révision.",
+  "goalHoldNeedsReview": "En attente de révision : il ne peut pas continuer seul. Approuvez-le comme terminé, reprenez-le ou annulez-le.",
+  "scheduleWatchPrChecks": "vérifications de demande de tirage",
+  "scheduleWatchPrReview": "révisions de demande de tirage",
+  "scheduleWatchPrMerged": "fusion de demande de tirage",
+  "wakeOriginGoalReview": "Révision de l'objectif",
+  "wakeOriginImprovementReview": "Révision d'amélioration",
+  "notifGoalNeedsReview": "Un objectif attend votre révision",
+  "notifDigestGoalReview": "Objectif en attente de révision",
+  "improvementRefusalCooldown": "Une révision d'amélioration a été lancée dans cette conversation il y a peu. Réessayez plus tard.",
+  "improvementRefusalQueued": "Une révision d'amélioration de cette conversation attend déjà d'être lancée."
 }

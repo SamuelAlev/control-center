@@ -2,8 +2,11 @@ import 'dart:convert';
 
 import 'package:cc_domain/features/pr_review/domain/ports/review_finding_status_port.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/review_node_payload.dart';
+import 'package:cc_mcp/src/mcp_script_surface.dart';
 import 'package:cc_mcp/src/tools/dismiss_review_node_tool.dart';
 import 'package:test/test.dart';
+
+import 'result_note_expect.dart';
 
 /// Records what the tool asked the port for. The behaviour behind the port —
 /// writing the status through the typed payload, tracing it in the room and
@@ -94,6 +97,43 @@ void main() {
       expect(json['suppression_recorded'], isTrue);
       expect(json['dismissed_by'], 'architect');
     });
+
+    test(
+      'what a script receives is the object its result note states',
+      () async {
+        final result = await tool.call({
+          'workspace_id': 'ws',
+          'space_id': 'ch-1',
+          'node_message_id': 'msg-1',
+          'agent_id': 'architect',
+          'reason': 'Handled by the framework.',
+        });
+        final value =
+            asScriptSees(nestedResultValue(result))! as Map<String, Object?>;
+        expectNotedObject(
+          tool.resultNote,
+          value,
+          required: {
+            'node_message_id',
+            'status',
+            'previous_status',
+            'dismissed_by',
+            'reason',
+            'suppression_recorded',
+          },
+        );
+        for (final key in [
+          'node_message_id',
+          'status',
+          'previous_status',
+          'dismissed_by',
+          'reason',
+        ]) {
+          expect(value[key], isA<String>(), reason: key);
+        }
+        expect(value['suppression_recorded'], isA<bool>());
+      },
+    );
 
     test('requires a reason', () async {
       // The reason IS the suppression fact — a dismissal without one hides a

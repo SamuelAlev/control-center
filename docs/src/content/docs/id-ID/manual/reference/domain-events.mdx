@@ -2,7 +2,7 @@
 title: Peristiwa domain
 description: Katalog lengkap dari 54 peristiwa domain, payload-nya, dan pelanggan sisi server yang mengonsumsinya.
 slug: id-ID/panduan-pengguna/referensi/peristiwa-domain
-sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
+sourceHash: f58123448c0f31c95774bbaebee89f1509940896
 ---
 
 ## Bus peristiwa
@@ -24,7 +24,10 @@ Setiap peristiwa dalam katalog di bawah ini berada di satu direktori tersebut; t
 | Peristiwa           | Payload                                                | Dipicu saat                                            |
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | Ruang kerja dibuat                                      |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Agen menyelesaikan sebuah run (berhasil atau gagal)     |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Aliran proses agen berakhir, sebelum keadaan akhir ditulis. Dipertahankan hanya untuk jembatan percakapan PR dan analitik |
+| `AgentRunSettled` | `agentId`, `workspaceId`, `runId`, `status`, `endReason`, `costMicros`, `wakeIds`, `spaceId?`, `conversationId?`, `limitResetsAt?`, `requestedByUserId?`, `wakeReason?` | Keadaan akhir run ditulis; diterbitkan tepat sekali per run. `endReason` adalah `completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` atau `serverStopped`. Run subagen tidak menerbitkan apa pun |
+| `GoalSettled` | `goalId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `status`, `hold?`, `summary?`, `requestedByUserId?` | Sebuah tujuan berakhir, atau mulai menunggu tinjauan seseorang |
+| `WakeRuleEnded` | `ruleId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `reason`, `requestedByUserId?` | Sebuah jadwal atau pantauan berakhir (terpicu sekali, kedaluwarsa, menghabiskan jatah run atau biayanya, dibatalkan, tujuannya berakhir, atau orangnya keluar) |
 | `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | Agen mulai menunggu manusia: persetujuan, pertanyaan `ask_user`, atau run yang tertahan oleh kredensial (`kind` bernilai `approval`, `question`, atau `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Repo didaftarkan; memicu pengindeksan kode di latar belakang |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Sebuah skill dipasang atau diperbarui, membawa putusan pemindaian rantai pasoknya |
@@ -57,6 +60,16 @@ Keenamnya membawa `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle` 
 | `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | Seseorang menyebut Anda di komentar PR atau komentar tinjauan          |
 | `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | Seseorang membalas di thread tinjauan tempat Anda berada                      |
 | `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | Seseorang menyelesaikan thread tinjauan tempat Anda berada                    |
+
+### Pantauan pull request
+
+Diterbitkan oleh poller pull request terbuka untuk setiap pull request yang di-poll, siapa pun penulisnya, untuk pantauan `on:pr_*` milik agen. Ketiganya membawa `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `headRef` dan `authorLogin`.
+
+| Peristiwa | Payload tambahan | Dipicu saat |
+| ----------------------- | ----------------------------------------------- | ---------- |
+| `PrWatchChecksSettled` | `passing`, `failedChecks`, `failedCheckUrl?` | Setiap pemeriksaan pada head pull request selesai |
+| `PrWatchReviewActivity` | `decision`, `decisionChanged`, `newComments` | Pull request mendapat tinjauan atau komentar baru |
+| `PrWatchClosed` | `merged` | Pull request digabung atau ditutup |
 
 ## Peristiwa pesan
 
@@ -167,14 +180,20 @@ Setiap pelanggan di bawah ini dikonstruksi di dalam `runCcServer` (atau layanan 
 | Penyediaan space chat (inline)      | `SpaceCreated`                                                                                       |
 | `PipelineTriggerDispatcher`         | Setiap `DomainEvent`; setiap pemicu yang aktif memfilter untuk tipenya sendiri                       |
 | `SubPipelineResumeListener`         | `PipelineRunCompleted`, `PipelineRunFailed`                                                          |
-| `PipelineCostRollupListener`        | `AgentRunCompleted`                                                                                  |
-| `BudgetEvaluationListener`          | `AgentRunCompleted`                                                                                  |
+| `PipelineCostRollupListener`        | `AgentRunSettled`                                                                                    |
+| `BudgetEvaluationListener`          | `AgentRunSettled`                                                                                    |
 | `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (hanya run `meeting_summary`)    |
-| `PipelineStepResumeListener`        | `AgentRunCompleted`                                                                                  |
-| `AgentRunTaskCompleter`             | `AgentRunCompleted`                                                                                  |
-| `GoalSupervisor`                    | `AgentRunCompleted`                                                                                  |
-| `CheckerDispatchListener`           | `AgentRunCompleted`                                                                                  |
-| `TeamRoutingService`                | `AgentRunCompleted`, `TicketAssigned`                                                                |
+| `PipelineStepResumeListener`        | `AgentRunSettled`                                                                                    |
+| `AgentRunTaskCompleter`             | `AgentRunSettled`                                                                                    |
+| `GoalSupervisor`                    | `AgentRunSettled` — memutuskan langkah berikutnya tujuan                                             |
+| `CheckerDispatchListener`           | `AgentRunSettled` — mengantrekan pemeriksa sebagai pengingat; melewati segmen dan tinjauan tujuan    |
+| `TeamRoutingService`                | `AgentRunSettled`, `TicketAssigned`                                                                  |
+| `WakeQueueService` | `AgentRunSettled` — mengirimkan pengingat yang menunggu run berakhir |
+| `WakeRuleService` | `AgentRunSettled` (loop yang mengatur langkahnya sendiri), `GoalSettled` (mengakhiri jadwal sebuah tujuan), `PrWatch*`, `EnvironmentProcessExited`, `EnvironmentReady`, akhir tiket dan run pipeline (pantauan), `WorkspaceMemberRemoved` (mengakhiri jadwal orang itu) |
+| `PeerAskService` | `AgentRunSettled` — menyelesaikan pertanyaan yang diajukan agen satu sama lain dan membangunkan penanya |
+| `LimitParkService` | `AgentRunSettled` dengan `usageLimit` — menunggu reset dari penyedia |
+| `ImprovementReviewService` | `GoalSettled` (tujuan yang terverifikasi) dan `AgentRunSettled` — mengantrekan tinjauan perbaikan dan membaca hasilnya |
+| Langkah tujuan pipeline (`goal.pursue`) | `GoalSettled`, `AgentRunSettled`, `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` — melanjutkan langkah, membebankan orkestrasi, dan mengikuti run pipeline |
 | `OrchestrationRunListener`          | `PipelineRunCancelled`, `PipelineRunFailed`                                                          |
 | `MultiVendorTicketSyncCoordinator`  | `TicketCreated`, `TicketAssigned`, `TicketReassigned`, `TicketStatusChanged`, `TicketDetailsUpdated` |
 | `WorktreeGcListener`                | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`         |
@@ -227,6 +246,8 @@ Frame pengambilalihan rig tidak dikirim kembali kepada siapa pun yang mengambil 
 `AgentAwaitingInput` diterbitkan oleh `AgentAwaitingInputPublisher`, yang memantau registri persetujuan dan registri blokir kredensial untuk entri baru, serta diberi tahu tentang setiap pertanyaan `ask_user` oleh `AgentQuestionService`. Satu penantian adalah satu peristiwa; tidak ada yang diterbitkan saat penantian berakhir.
 
 Kelima kategori PR yang Anda tulis membawa `forUserId`, sehingga sampai ke penulisnya alih-alih ke semua orang di ruang kerja.
+
+Lima bingkai untuk pekerjaan jangka panjang, masing-masing dialamatkan kepada orang yang bersangkutan (`for_user_id`): `notifications/goal_settled` (dari `GoalSettled`), `notifications/wake_rule_ended` (dari `WakeRuleEnded`), `notifications/improvement_proposed`, `notifications/pipeline_run_held` (run pipeline yang ditahan pada batas biaya orkestrasinya) dan `notifications/waiting_digest` (sekali sehari, apa yang menunggu seseorang). Setiap bingkai membawa `notification_kind`: `notify` dipetakan ke `agentRunCompleted`, `question` dan `review` ke `agentAwaitingInput`. Setiap bingkai pemberitahuan kini membawa `notification_kind`, dan bingkai dengan `quiet: true` (jadwal yang berakhir, tujuan yang berakhir) masuk ke pusat notifikasi tanpa toast, suara, atau push keras.
 
 `RemoteEventForwarder` juga meneruskan `TicketReassigned` sebagai `notifications/ticket_reassigned` dan setiap `TaskLifecycleEvent` sebagai `notifications/task_<phase>`. Keduanya tidak dipetakan ke kategori notifikasi — keduanya menggerakkan UI langsung, bukan pusat notifikasi. Peristiwa keanggotaan tidak diteruskan sebagai frame: peristiwa itu membatalkan cache forwarder, dan host sesi menjatuhkan langganan ruang kerja anggota yang dihapus.
 

@@ -172,6 +172,7 @@ class _ScriptedLoop implements AgentLoop {
     required String userMessage,
     required List<HarnessTool> tools,
     List<HarnessTool> deferredTools = const [],
+    List<HarnessTool> scriptTools = const [],
     required LlmProviderPort provider,
     HarnessToolContext? context,
     AgentLoopConfig config = const AgentLoopConfig(),
@@ -260,6 +261,8 @@ class _OneKey implements CommitSigningPort {
     agentRunGateway: gateway,
   );
   final session = DispatchSession(
+    freshHistory: false,
+    readOnly: false,
     deps: deps,
     onResolveHandle:
         ({

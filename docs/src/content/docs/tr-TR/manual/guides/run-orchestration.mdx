@@ -2,7 +2,7 @@
 title: Bir orkestrasyon çalıştırma
 description: Bir orkestratörden plan isteyin, Plan Studio’da inceleyip düzenleyin, bir kez onaylayın ve işi üretilen bir pipeline’ın yapmasına izin verin.
 slug: tr-TR/kilavuz/nasil-yapilir/orkestrasyon-calistirma
-sourceHash: 086301be6c1957f6336294720967813c3050ed25
+sourceHash: cc4390cbac6c2122dd24c23bcef20693f40121bb
 ---
 
 Bu kılavuz, tek bir büyük hedefi kendi kendine yürüyen ekip çapında bir plana nasıl
@@ -62,21 +62,13 @@ Onaylamadan önce maliyet, süre ve etki yarıçapı aralıkları için onay çu
 **Tahmin et**’e basın. Düzenleyicinin tamamı için
 [Plan Studio’da çalışma](/tr-TR/kilavuz/nasil-yapilir/plan-studio/) sayfasına bakın.
 
-:::note[Bütçe bir harcama sınırı değildir]
-Bir önerinin bütçesi, onay çubuğundaki _tahminle_ karşılaştırılır: tahminin üst
-ucu bütçeyi aştığında toplam, bütçe aşımı uyarısıyla birlikte kırmızıya döner.
-Plan yürütülürken harcamayı hiçbir şey denetlemez; bu yüzden bir çalıştırmayı
-durdurmaz veya başarısız kılmaz. Harcamayı gerçekten durdurmak için ajan başına
-bütçe politikalarını kullanın — bkz.
-[Maliyetleri yönetme](/tr-TR/kilavuz/nasil-yapilir/maliyetleri-yonetme/).
+:::note[Bütçe çalıştırmayı tutar]
+Bir önerinin bütçesi, onay çubuğundaki _tahminle_ karşılaştırılır: tahminin üst ucu bütçeyi aştığında toplam, bütçe aşımı uyarısıyla birlikte kırmızıya döner. Plan yürütülürken sunucu her yeni adımdan önce harcamayı denetler. Bütçeye ulaşıldığında çalıştırma tutulur ve yeni hiçbir şey başlamaz; zaten çalışan adımlar biter. Çalıştırmayı başlatan kişiye bildirim gider ve devam etmek için pipeline çalıştırmasının sayfasında **Sınırı artır** düğmesine basar. Bkz. [Maliyetleri yönetme](/tr-TR/kilavuz/nasil-yapilir/maliyetleri-yonetme/).
 :::
 
 ## 3. Adım: Onaylayın
 
-Planı sohbet kartından ya da Plan Studio’nun onay çubuğundan onaylayın.
-**Verdiğiniz tek karar budur.** Onaylama yalnızca operatöre aittir — bunun için
-bir MCP aracı yoktur; dolayısıyla bir ajan öneri sunabilir ve revize edebilir ama
-kendi planını asla onaylayamaz.
+Planı sohbet kartından ya da Plan Studio’nun onay çubuğundan onaylayın. **Verdiğiniz tek karar budur.** Onaylama yalnızca operatöre aittir — bunun için bir MCP aracı yoktur; dolayısıyla bir ajan öneri sunabilir ve revize edebilir ama kendi planını asla onaylayamaz. Onaylamak alanın depolarına yazma erişimi gerektirir ve çalıştırma o zaman onaylayan kişi adına hareket eder.
 
 Buradan itibaren deterministik bir materyalize edici (saf bir işlev, LLM yok)
 öneriyi gerçek bir [pipeline’a](/tr-TR/kilavuz/kavramlar/pipelinelar/) dönüştürür
@@ -112,12 +104,7 @@ işaretlenir, ardından durum `completed` olur.
 Sohbet içindeki kartta **Orkestrasyonu iptal et**’e ya da Plan Studio’nun onay
 çubuğunda **Çalıştırmayı iptal et**’e basın. İptal, yürüyen işi söker.
 
-Bir orkestrasyon, materyalizasyon başarısız olduğunda ya da ürettiği pipeline
-çalıştırması başarısız olduğunda başarısız olur (araştırma, tartışma, sentez veya
-persist — bu adımlar başarısızlıkta devam etmez). Üretilen **iş** adımları her
-zaman başarısızlıkta devam eder; böylece başarısız olan tek bir alt bilet
-çalıştırmayı başarısız kılmaz. Bütçe aşımı diye bir başarısızlık yolu ve “tüm alt
-biletler başarısız oldu” diye bir eşik yoktur.
+Bir orkestrasyon, materyalizasyon başarısız olduğunda ya da ürettiği pipeline çalıştırması başarısız olduğunda başarısız olur (araştırma, tartışma, sentez veya persist — bu adımlar başarısızlıkta devam etmez). Üretilen **iş** adımları her zaman başarısızlıkta devam eder; böylece başarısız olan tek bir alt bilet çalıştırmayı başarısız kılmaz. Bütçeye ulaşmak çalıştırmayı başarısız kılmaz, tutar; “tüm alt biletler başarısız oldu” diye bir eşik de yoktur.
 
 ## İlgili kılavuzlar
 

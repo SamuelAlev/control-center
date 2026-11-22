@@ -106,6 +106,27 @@ void main() {
     expect(resolved.single.workspaceId, 'ws-1');
   });
 
+  test('an approval names the run and the conversation that asked', () async {
+    approvals.register(
+      const ConfirmationRequest(
+        spaceId: 'space-1',
+        workspaceId: 'ws-1',
+        conversationId: 'conv-side',
+        runId: 'run-7',
+        title: 'Push to main',
+        detail: 'git push origin main',
+        agentId: 'agent-1',
+      ),
+    );
+    await _pump();
+
+    // What a peer's asker and the push route read: the run that waits and
+    // the conversation its card is in, not only the space.
+    expect(published.single.kind, AgentInputKind.approval);
+    expect(published.single.runId, 'run-7');
+    expect(published.single.conversationId, 'conv-side');
+  });
+
   test('a denied approval ends the wait too', () async {
     final entry = approvals.register(
       const ConfirmationRequest(

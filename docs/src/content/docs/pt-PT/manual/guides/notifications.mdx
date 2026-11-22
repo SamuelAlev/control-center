@@ -2,7 +2,7 @@
 title: Configurar notificações
 description: Ative ou desative categorias, defina um horário de silêncio e um som e saiba que notificações lhe chegam e onde.
 slug: pt-PT/manual/guias/notificacoes
-sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
+sourceHash: b1e5bb3b8a13bbbbd169916ab8e7cd7bdd403c1a
 ---
 
 Este guia mostra como configurar as notificações e o que cada opção controla de
@@ -49,6 +49,8 @@ telemóvel não tem nenhuma superfície de notificação.
 
 Nada fora desta lista pode gerar notificação nem ser filtrado — não existe
 nenhuma categoria «tudo o resto».
+
+O trabalho de longa duração usa as duas primeiras categorias. Um objetivo que terminou e uma programação que terminou contam como **Agente finalizado**; um objetivo que aguarda a sua revisão, uma proposta de melhoria, uma execução de pipeline retida no limite de custo e o resumo diário do que espera por si contam como **Um agente está à sua espera**. Cada um chega à pessoa a quem diz respeito: quem iniciou o objetivo, a programação ou a execução.
 
 **Um agente está à sua espera** dispara quando uma espera começa: uma aprovação pendente (incluindo concessões de execução em sandbox e aprovações
 de ferramentas do Claude Code), uma pergunta `ask_user` ou uma execução retida
@@ -123,6 +125,8 @@ se verifica:
 Estas verificações aplicam-se às notificações do sistema operativo. O sino
 duradouro continua a registar o evento.
 
+Algumas notificações são **silenciosas**: o servidor marca-as para chegarem ao sino sem aviso no ecrã, sem som e sem notificação push ruidosa no telemóvel. Uma programação que terminou e um objetivo que terminou são silenciosos. Um objetivo que aguarda a sua revisão não é.
+
 Há mais duas supressões a montante, naquilo que o servidor chega a enviar:
 
 - Uma mensagem não mencionada de outro **humano** nunca se torna uma notificação
@@ -131,10 +135,7 @@ Há mais duas supressões a montante, naquilo que o servidor chega a enviar:
 - Os espaços entre agentes estão silenciados na barra lateral, pelo que nunca
   fazem subir o distintivo de não lidos dos humanos
 
-Dentro de um espaço não há nenhum recanto tranquilo: todas as conversas notificam
-por igual, incluindo as threads. O estado de leitura é ao nível do espaço, pelo
-que os não lidos agregam-se em todas as conversas do espaço, em vez de serem
-seguidos por conversa.
+Dentro de um espaço não há nenhum recanto tranquilo: todas as conversas notificam por igual, incluindo as threads. O estado de leitura é seguido por conversa, e um espaço está por ler enquanto alguma das suas conversas estiver por ler.
 
 ## Ler e limpar o centro de notificações
 
@@ -188,6 +189,8 @@ Verifique se não estava já no espaço onde isso aconteceu — uma rota ativa s
 a sua própria notificação do sistema operativo. Num espaço partilhado, uma
 execução iniciada por outra pessoa avisa essa pessoa, não a si. Um turno que
 terminou sem resposta e sem erro não envia nada.
+
+Uma execução iniciada por uma programação ou por um monitor que termina sem problemas não envia nada, a menos que mencione alguém. Um objetivo concluído ou uma programação terminada vai para o sino sem aviso no ecrã.
 
 ## Guias relacionados
 

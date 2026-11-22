@@ -1,4 +1,3 @@
-import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
 import 'package:cc_domain/features/guardrails/domain/entities/action_policy_rule.dart'
     show ActionPolicyRule;
 import 'package:cc_domain/features/guardrails/domain/entities/guard_decision.dart'
@@ -223,6 +222,7 @@ void main() {
         'lifecycle_status': 'dormant',
         'budget_policy_id': 'bp',
         'runtime_profile_id': 'rp',
+        'code_mode': 'hybrid',
         'created_at': 'ca',
       });
       expect(dto.skills, ['s1']);
@@ -230,8 +230,10 @@ void main() {
       expect(dto.maxConcurrentTasks, 3);
       expect(dto.visibility, 'private');
       final out = dto.toJson();
-      // A stale client's capability blob is dropped, not carried.
+      // A stale client's capability blob and code mode override are
+      // dropped, not carried.
       expect(out.containsKey('capabilities'), isFalse);
+      expect(out.containsKey('code_mode'), isFalse);
       expect(out['strict_mode'], isTrue);
     });
 
@@ -383,7 +385,6 @@ void main() {
         'participant_type': 'user',
         'role': 'owner',
         'joined_at': '2025-01-01T00:00:00',
-        'last_read_at': '2025-01-02T00:00:00',
       });
       expect(dto.participantType, 'user');
       expect(dto.joinedAt, DateTime(2025, 1, 1));
@@ -517,22 +518,6 @@ void main() {
       expect(dto.summary, 'sum');
       expect(dto.publishedAt, DateTime(2025, 1, 1));
       expect(dto.isRead, isTrue);
-    });
-  });
-
-  group('SpaceReadDto', () {
-    test('round-trip', () {
-      final position = {'at': '2025-01-02T00:00:00.000Z', 'seq': 7};
-      final dto = SpaceReadDto.fromJson({
-        'space_id': 'c',
-        'last_read': position,
-      });
-      expect(dto.spaceId, 'c');
-      expect(dto.lastRead, FeedPosition(at: DateTime.utc(2025, 1, 2), seq: 7));
-      expect(dto.toJson()['last_read'], position);
-      final d2 = SpaceReadDto.fromJson({});
-      expect(d2.spaceId, '');
-      expect(d2.toJson().containsKey('last_read'), isFalse);
     });
   });
 
@@ -1424,6 +1409,19 @@ void main() {
       final d = PrCodeReviewCommentDto.fromJson({'id': 0});
       expect(d.side, 'RIGHT');
       expect(d.diffHunk, '');
+      expect(d.isFileLevel, isFalse);
+      expect(d.toJson(), isNot(contains('file_level')));
+    });
+
+    test('a file-level comment carries its subject over the wire', () {
+      final dto = PrCodeReviewCommentDto.fromJson({
+        'id': 1,
+        'body': 'b',
+        'path': 'p',
+        'file_level': true,
+      });
+      expect(dto.isFileLevel, isTrue);
+      expect(dto.toJson()['file_level'], isTrue);
     });
   });
 

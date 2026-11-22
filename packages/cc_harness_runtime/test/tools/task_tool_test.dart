@@ -1,3 +1,6 @@
+import 'package:cc_harness/loop.dart';
+import 'package:cc_harness/messages.dart';
+import 'package:cc_harness/provider.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_harness_runtime/src/tools/task_tool.dart';
 import 'package:test/test.dart';
@@ -19,11 +22,97 @@ class _FakeSpawner implements SubagentSpawner {
   }
 }
 
+/// Calls `script` once, then answers in text.
+class _ScriptProvider extends LlmProviderPort {
+  int calls = 0;
+
+  @override
+  String get displayName => 'Script';
+  @override
+  String get defaultModel => 'controlled';
+  @override
+  Future<List<ProviderModel>> listModels() async => const [];
+
+  @override
+  Stream<LlmEvent> complete({
+    required List<HarnessMessage> messages,
+    List<LlmToolSchema> tools = const [],
+    LlmCompleteConfig config = const LlmCompleteConfig(),
+  }) async* {
+    if (calls++ == 0) {
+      yield const LlmToolUseDelta(
+        id: 'call_script',
+        name: 'script',
+        argumentsJson: '{}',
+      );
+      yield const LlmDone(stopReason: LlmStopReason.toolUse);
+    } else {
+      yield const LlmTextDelta('Done.');
+      yield const LlmDone(stopReason: LlmStopReason.endTurn);
+    }
+  }
+}
+
+/// Runs its body with its reentry, the way `repl` runs a script.
+class _ScriptTool extends HarnessTool {
+  _ScriptTool(this.body);
+
+  final Future<void> Function(ToolReentry reentry) body;
+
+  @override
+  String get name => 'script';
+  @override
+  String get description => 'Runs a script.';
+  @override
+  Map<String, dynamic> get inputSchema => const {'type': 'object'};
+  @override
+  ToolApprovalTier get approvalTier => ToolApprovalTier.read;
+  @override
+  bool get selfGuards => true;
+
+  @override
+  Future<HarnessToolResult> execute(
+    Map<String, dynamic> args,
+    HarnessToolContext context,
+  ) async {
+    await body(context.reentry!);
+    return HarnessToolResult.success('script finished');
+  }
+}
+
 HarnessToolContext _ctx() =>
     const HarnessToolContext(workingDirectory: '/tmp/work');
 
 void main() {
   group('TaskTool', () {
+    test('a script cannot start a subagent', () async {
+      final spawner = _FakeSpawner();
+      final task = TaskTool(spawner);
+      expect(task.scriptCallable, isFalse);
+      ToolReentryOutcome? outcome;
+      final script = _ScriptTool((reentry) async {
+        expect(reentry.callable.containsKey('task'), isFalse);
+        outcome = await reentry.call('task', const {
+          'description': 'look around',
+          'label': 'explore',
+        });
+      });
+      await const AgentLoopRunner()
+          .run(
+            history: <HarnessMessage>[],
+            userMessage: 'Run the script.',
+            tools: [script, task],
+            provider: _ScriptProvider(),
+          )
+          .drain<void>();
+      expect(outcome!.status, ToolReentryStatus.unknownTool);
+      expect(
+        outcome!.result.content,
+        '"task" cannot be called from a script. Call it directly.',
+      );
+      expect(spawner.lastRequest, isNull);
+    });
+
     test('metadata', () {
       final tool = TaskTool(_FakeSpawner());
       expect(tool.name, 'task');

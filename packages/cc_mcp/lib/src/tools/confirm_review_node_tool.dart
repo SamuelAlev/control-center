@@ -17,6 +17,16 @@ class ConfirmReviewNodeTool extends McpTool {
   @override
   String get name => 'confirm_review_node';
 
+  /// `agent_id` names the calling agent, never a target: forced from the
+  /// call scope, so a run cannot act as another agent.
+  @override
+  Set<String> get forcedScopeKeys => const {'agent_id'};
+
+  @override
+  String get resultNote =>
+      '{node_message_id: string, confirmed_by: string[], '
+      'confirmation_count: number, status: string}.';
+
   @override
   String get description =>
       'Confirms a review node finding by another agent (peer confirmation). '

@@ -15,6 +15,8 @@ mixin _$MessagingDaoMixin on DatabaseAccessor<WorkspaceDatabase> {
       attachedDatabase.conversationMessagesTable;
   $ConversationActivityTableTable get conversationActivityTable =>
       attachedDatabase.conversationActivityTable;
+  $ConversationReadsTableTable get conversationReadsTable =>
+      attachedDatabase.conversationReadsTable;
   $ConversationMessageEmbeddingsTableTable
   get conversationMessageEmbeddingsTable =>
       attachedDatabase.conversationMessageEmbeddingsTable;
@@ -50,6 +52,11 @@ class MessagingDaoManager {
       $$ConversationActivityTableTableTableManager(
         _db.attachedDatabase,
         _db.conversationActivityTable,
+      );
+  $$ConversationReadsTableTableTableManager get conversationReadsTable =>
+      $$ConversationReadsTableTableTableManager(
+        _db.attachedDatabase,
+        _db.conversationReadsTable,
       );
   $$ConversationMessageEmbeddingsTableTableTableManager
   get conversationMessageEmbeddingsTable =>

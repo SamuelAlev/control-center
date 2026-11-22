@@ -235,7 +235,8 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
   void didUpdateWidget(CalendarKalenderHost oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.mode != widget.mode) {
-      // A new configuration switches the view, opening it on the focused date.
+      // A new configuration switches the view, opening it on the focused date
+      // (through its date resolver — see [_buildConfiguration]).
       _calendarController.viewConfiguration = _buildConfiguration();
       _visibleRange = null;
       // The recreated timed body carries the outgoing view's time-of-day over
@@ -380,15 +381,29 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
     // extent-clamped one before the body is revealed. It stays the resting
     // position if that can't run at all (e.g. the body never gets a size).
     final nowTimeOfDay = k.KalenderTime.fromDateTime(widget.now);
+    // kalender reads `initialDateTime` only when the controller is constructed.
+    // A configuration set on it later (every mode switch) opens on the outgoing
+    // view's own date instead — a week's Monday, a month's 1st — so switching
+    // month → day on the 19th used to land on the 1st, with the events loaded
+    // for the 19th nowhere on screen. The resolver pins every switch to the
+    // screen's focused date. It reads `widget` when kalender calls it, inside
+    // the switch, so it always sees the date being switched to.
+    k.FloatingDateTime focused(k.ViewTransitionContext transition) =>
+        k.FloatingDateTime.fromExternal(
+          widget.focusedDate,
+          location: transition.location,
+        );
     return switch (widget.mode) {
       CalendarViewMode.week => k.MultiDayViewConfiguration.week(
         firstDayOfWeek: DateTime.monday,
         initialDateTime: widget.focusedDate,
+        dateResolver: focused,
         initialHeightPerMinute: _heightPerMinute,
         initialTimeOfDay: nowTimeOfDay,
       ),
       CalendarViewMode.day => k.MultiDayViewConfiguration.singleDay(
         initialDateTime: widget.focusedDate,
+        dateResolver: focused,
         initialHeightPerMinute: _heightPerMinute,
         initialTimeOfDay: nowTimeOfDay,
       ),
@@ -396,6 +411,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
       CalendarViewMode.agenda => k.MonthViewConfiguration.singleMonth(
         firstDayOfWeek: DateTime.monday,
         initialDateTime: widget.focusedDate,
+        dateResolver: focused,
       ),
     };
   }
@@ -483,12 +499,15 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
 
   /// The height of the all-day strip for [rows] of events.
   ///
-  /// Empty and collapsed both come out at a single row: an empty strip is a
-  /// labelled band rather than a gap, and a collapsed one holds the per-day
+  /// An empty range has no strip at all — the day labels sit straight on the
+  /// timed grid. A collapsed strip is a single row holding the per-day
   /// "N events" summaries. Beyond [_allDayLaneRows] the strip stops growing and
   /// the remainder moves into the overflow row.
   double _laneHeight(int rows, {required bool collapsed}) {
-    if (collapsed || rows == 0) {
+    if (rows == 0) {
+      return 0;
+    }
+    if (collapsed) {
       return _allDayTileHeight;
     }
     final shown = math.min(rows, _allDayLaneRows);
@@ -507,14 +526,18 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
         : _dayLabelsHeight + laneHeight;
   }
 
-  /// What the header takes from the timed grid, whatever the strip needs.
+  /// What the header takes from the timed grid for a range with [rows] of
+  /// all-day events.
   ///
-  /// A constant: the strip at its resting size, one row. Everything past that
-  /// hangs over the grid instead of pushing it (see [CalendarFloatingBand]), so the
-  /// hour the grid opens on is decided by the time of day and nothing else —
-  /// not by how many people put an all-day event in this particular week.
-  double get _reservedHeaderHeight => _headerHeight(
-    widget.mode == CalendarViewMode.day ? _dayLaneMinHeight : _allDayTileHeight,
+  /// The strip at its resting size: one row when the range has any all-day
+  /// events, none when it has nothing to show (week view drops the strip). Everything
+  /// past that hangs over the grid instead of pushing it (see [CalendarFloatingBand]),
+  /// so how busy a week's strip is never moves the grid — only whether it has one.
+  /// Day view always reserves its floor, which its gutter's day label needs anyway.
+  double _reservedHeaderHeight(int rows) => _headerHeight(
+    widget.mode == CalendarViewMode.day
+        ? _dayLaneMinHeight
+        : (rows > 0 ? _allDayTileHeight : 0),
   );
 
   /// Queues a [_positionOnNow] for after the next frame — the first point at
@@ -603,8 +626,8 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
         widget.mode == CalendarViewMode.week ||
         widget.mode == CalendarViewMode.day;
     final rows = hasAllDayStrip ? _allDayRows(_effectiveRange) : 0;
-    // Only week view can fold: its gutter holds the toggle. And there is
-    // nothing to fold when the strip is already at its one-row resting size.
+    // Only week view can fold: its gutter holds the toggle. And a week with
+    // no all-day events has no strip to fold.
     final collapsed =
         _allDayCollapsed && rows > 0 && widget.mode == CalendarViewMode.week;
     final laneHeight = widget.mode == CalendarViewMode.day
@@ -652,6 +675,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
             header: _allDayHeader(
               t,
               laneHeight: laneHeight,
+              rows: rows,
               collapsed: collapsed,
             ),
             body: Opacity(
@@ -701,18 +725,19 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
 
   /// The week/day header: a band that grows with the all-day strip it actually has, hanging
   /// over the timed grid rather than pushing it down.
-  /// It reserves [_reservedHeaderHeight] — one strip row — from the layout and paints the
-  /// rest over the grid, so the hour the grid opens on never depends on how busy the week's
-  /// all-day strip is.
+  /// It reserves [_reservedHeaderHeight] — one strip row, or none for a week without
+  /// all-day events — from the layout and paints the rest over the grid, so the hour the
+  /// grid opens on never depends on how busy the week's all-day strip is.
   /// The height is derived (see [_allDayRows]), never measured, so it is settled on the frame
   /// the events arrive — no reflow behind the user.
   Widget _allDayHeader(
     DesignSystemTokens t, {
     required double laneHeight,
+    required int rows,
     required bool collapsed,
   }) {
     final reducedMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
-    final reserved = _reservedHeaderHeight;
+    final reserved = _reservedHeaderHeight(rows);
     final target = _headerHeight(laneHeight);
     final header = _calendarHeader(
       t,
@@ -720,15 +745,18 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
       // the summary row, which is the same "+N more" portal the overflow uses.
       maxRows: collapsed ? 0 : _allDayLaneRows,
     );
-    return CalendarFloatingBand(
-      reservedHeight: reserved,
-      child: TweenAnimationBuilder<double>(
-        tween: Tween<double>(begin: target, end: target),
-        duration: reducedMotion
-            ? Duration.zero
-            : const Duration(milliseconds: 180),
-        curve: Curves.easeOutCubic,
-        builder: (context, height, child) => DecoratedBox(
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: target, end: target),
+      duration: reducedMotion
+          ? Duration.zero
+          : const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      // The reservation rides the animation while the band is still shorter
+      // than it — a strip appearing in a week that had none slides the grid
+      // down with it instead of opening a blank gap under the band first.
+      builder: (context, height, child) => CalendarFloatingBand(
+        reservedHeight: math.min(height, reserved),
+        child: DecoratedBox(
           decoration: BoxDecoration(
             // Opaque, because the grid runs underneath it: a translucent band
             // would put hour lines through the event titles.
@@ -745,8 +773,8 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
             child: child!,
           ),
         ),
-        child: header,
       ),
+      child: header,
     );
   }
 
@@ -856,7 +884,8 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
       }
       // Week view stacks the day-name row above the all-day events strip, so a
       // rule under each day header reads as the strip's upper edge (its lower
-      // edge is the header's bottom border). Month's grid needs no rule.
+      // edge is the header's bottom border). A week with no strip has only the
+      // header's border, and month's grid needs no rule.
       //
       // Pinned to [_dayLabelsHeight] rather than left to its font metrics: the
       // strip's gutter cell offsets itself by that constant to line up with the
@@ -864,7 +893,9 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
       if (widget.mode == CalendarViewMode.week) {
         return DecoratedBox(
           decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: t.borderSecondary)),
+            border: rows > 0
+                ? Border(bottom: BorderSide(color: t.borderSecondary))
+                : null,
           ),
           child: SizedBox(height: _dayLabelsHeight, child: header),
         );
@@ -875,6 +906,11 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
     Widget monthDayHeader(BuildContext _, DateTime date) {
       return Align(
         alignment: Alignment.topCenter,
+        // Only as tall as the badge. kalender caps the header at the row's
+        // height and gives the events what is left, so an Align that expanded
+        // to that cap took the whole cell: no room for a single tile, or even
+        // the "+N more" button, and every month rendered empty.
+        heightFactor: 1,
         child: Padding(
           padding: const EdgeInsets.only(top: 3),
           child: dayBadge(date.day, today: isToday(date), fontSize: 12),
@@ -921,15 +957,15 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
           dayHeaderBuilder: weekDayHeader,
           // kalender's week-number badge is dropped — the focused week is
           // already named in the screen header — and the slot it leaves, the
-          // gutter beside the all-day strip, is where the strip names itself
-          // and offers its fold. Week view only: day view spends this slot on
-          // the day label above.
-          weekNumberBuilder: (_, _) => widget.mode == CalendarViewMode.week
+          // gutter beside the all-day strip, is where the strip offers its
+          // fold. Week view only (day view spends this slot on the day label
+          // above), and only while the week has a strip to fold.
+          weekNumberBuilder: (_, _) =>
+              widget.mode == CalendarViewMode.week && rows > 0
               ? CalendarAllDayGutter(
                   topInset: _dayLabelsHeight,
                   laneHeight: laneHeight,
                   rowHeight: _allDayTileHeight,
-                  collapsible: rows > 0,
                   collapsed: collapsed,
                   onToggle: () =>
                       setState(() => _allDayCollapsed = !_allDayCollapsed),

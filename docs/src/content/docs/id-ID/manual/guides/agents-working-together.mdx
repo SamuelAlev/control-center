@@ -1,0 +1,63 @@
+---
+title: Agen bekerja bersama
+description: Cara agen saling mengajukan pertanyaan, menyerahkan pekerjaan, dan dibangunkan dengan jawabannya, serta tempat Anda melihat apa yang ditunggu satu agen dari agen lain.
+slug: id-ID/panduan-pengguna/panduan-praktis/agen-bekerja-bersama
+sourceHash: 36bb45cd480fb45d0380e8fd651845c59a7debcb
+---
+
+Agen dalam ruang kerja dapat saling mengajukan pertanyaan, berkonsultasi dengan spesialis, meminta tinjauan, mengirim pesan, atau mendelegasikan tiket. Tidak satu pun dari ini mengharuskan agen duduk menunggu: agen yang bertanya dapat terus bekerja, atau mengakhiri gilirannya, dan dibangunkan di percakapannya sendiri saat jawaban tiba.
+
+## Bertanya kepada agen lain
+
+Agen bertanya dengan `ask_agent`, dengan dua cara:
+
+- **Tunggu** (bawaan): agen terblokir sampai jawaban datang, hingga 600 detik secara bawaan dan paling banyak 1.800.
+- **Di latar belakang**: panggilan langsung kembali dan agen terus bekerja.
+
+Apa pun caranya, pertanyaan dicatat sebelum dikirim. Jika jawaban tidak kembali dalam panggilan, si penanya dibangunkan tepat satu kali, dengan jawabannya, saat run agen lain berakhir: dijawab, gagal, atau kedaluwarsa setelah 24 jam tanpa jawaban. Dalam perjalanan, ia mungkin mendengar, masing-masing paling banyak sekali, bahwa agen lain menjanjikan jawaban, bahwa agen itu menunggu seseorang, atau bahwa agen itu berhenti di batas penggunaan. Tidak satu pun dari itu dihitung sebagai jawaban.
+
+`consult_agent` (melibatkan spesialis yang paling cocok), `request_peer_review` (pandangan kedua atas temuan tinjauan) dan `send_to_agent` (pesan satu arah) bekerja melalui antrean yang sama. `send_to_agent` menyatakan apakah agen lain dibangunkan, apakah pesan menunggu di belakang run-nya saat ini, atau mengapa pesan ditolak.
+
+Agen lain membaca pertanyaan sebagai informasi dari agen lain, tidak pernah sebagai instruksi yang harus diikutinya, dan ia tidak bisa menjalankan perintah slash.
+
+## Menyerahkan pekerjaan
+
+- **Tiket yang didelegasikan** (`delegate_task`) membangunkan agen yang mendelegasikannya, di percakapan tempat ia mendelegasikan, saat tiket itu mencapai keadaan final.
+- **Run anggota tim** yang dimulai pemimpin dengan `@mention` atau pesan membangunkan pemimpin, di percakapan tempat ia membangunkan anggota itu, saat run berakhir. (Pertanyaan dijawab dengan balasannya, dan tiket yang didelegasikan dengan tiketnya.)
+- **Pekerja latar belakang** dalam mode direktur (`/vibe`) menyerahkan hasilnya kepada direktur, sementara direktur terus bekerja.
+- **Sebuah `@mention`** dari agen, dan pemeriksa space, dikirim dengan cara yang sama, sebagai pengingat.
+
+Agen dapat melihat apa yang sedang dilakukan agen lain tanpa bertanya: `agent_activity` menampilkan status agen lain, alat saat ini, dan pesan terakhirnya, serta tidak membangunkan siapa pun.
+
+## Batas
+
+Server menegakkan batas-batas ini, apa pun kata agen:
+
+| Batas | Nilai |
+| --- | --- |
+| Seberapa dalam rantai pertanyaan dan serah terima boleh berjalan | 3 |
+| Siklus (agen yang bertanya kepada agen yang, melalui yang lain, menunggunya) | Ditolak |
+| Pertanyaan tertunda per agen penanya | 10 |
+| Pertanyaan tertunda per agen yang ditanya | 20 |
+| Pertanyaan yang sama kepada agen yang sama lagi | Ditolak dalam 10 menit |
+| Pesan antara satu pasangan agen | 10 per menit |
+| Panjang pesan atau jawaban | 16.384 karakter |
+
+Delegasi juga menghormati otonomi dan anggaran agen yang bertanya: agen tidak bisa menyerahkan pekerjaan kepada agen lain yang memiliki otonomi atau uang lebih banyak daripada dirinya. Pesan yang Anda kirim sendiri tidak pernah dibatasi dengan cara ini.
+
+Saat agen yang ditanya berhenti di batas penggunaan penyedia, run-nya menunggu reset jika reset datang sebelum pertanyaan kedaluwarsa. Jika tidak, pertanyaan langsung gagal, dan si penanya diberi tahu alasannya.
+
+## Melihat apa yang ditunggu agen
+
+Dalam percakapan, bagian **Pertanyaan** di panel **Umum** mencantumkan pertanyaan yang diajukan agen kepadanya: kepada siapa, jenisnya (**Pertanyaan**, **Konsultasi** atau **Tinjauan**), kapan, dan statusnya (**Menunggu**, **Dijawab**, **Gagal**, **Kedaluwarsa** atau **Dibatalkan**), dengan **Dijanjikan jawaban** atau **Di latar belakang** jika berlaku. Pertanyaan yang gagal menyebutkan alasannya, misalnya **Run-nya berhenti di batas penggunaan penyedia.**
+
+Siapa pun yang punya akses ke space bisa **Batalkan pertanyaan**. Agen penanya kemudian tidak dibangunkan, dan run agen lain tidak dihentikan.
+
+Balasan, pesan, dan pekerjaan yang selesai yang menunggu agen juga muncul di strip di atas kolom penulisan, bersama agen lain yang ditunggunya (lihat [Jadwal dan pengingat](/id-ID/panduan-pengguna/panduan-praktis/jadwal-dan-pengingat/#lihat-apa-yang-menunggu)).
+
+## Lihat juga
+
+- [Delegasikan pekerjaan ke agen](/id-ID/panduan-pengguna/panduan-praktis/delegasikan-tiket/)
+- [Bangun tim agen](/id-ID/panduan-pengguna/panduan-praktis/bangun-tim-agen/)
+- [Arahkan pekerja latar belakang](/id-ID/panduan-pengguna/panduan-praktis/arahkan-pekerja-latar-belakang/)
+- [Alat MCP: pesan antar rekan agen dan delegasi](/id-ID/panduan-pengguna/referensi/alat-mcp/#pesan-antar-rekan-agen-dan-delegasi)

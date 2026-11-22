@@ -53,6 +53,9 @@ void main() {
     grant: AgentRunGrant(
       workspaceId: 'w1',
       conversationId: 'c1',
+      mcpEndpoint: true,
+      claudeHook: true,
+      readOnly: false,
       spaceId: 's1',
       actingUserId: actingUserId,
       repos: const [(forge: ForgeHost.github, owner: 'acme', name: 'widgets')],

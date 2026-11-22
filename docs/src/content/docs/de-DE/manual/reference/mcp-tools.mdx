@@ -2,7 +2,7 @@
 title: MCP-Tools
 description: Vollständiger Katalog der MCP-Tools, die cc_server registriert, nach Familie.
 slug: de-DE/handbuch/referenz/mcp-tools
-sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
+sourceHash: 0ef9efd386b57c3a254e7f637b0436d9baff1719
 ---
 
 `cc_server` betreibt eine MCP-Registrierung (JSON-RPC 2.0) und stellt sie auf dem Hauptport des Servers (Standard `9030`) unter `POST /mcp` und `GET /sse` bereit, Protokollversion `2024-11-05`. Jeder Client erreicht dieselbe Registrierung: der Desktop, der Web-Build, externe MCP-Clients und die eingebaute Agentenlaufzeit. Externe MCP-Server werden in eigenen Schichten in dieselbe Registrierung eingebunden: eine pro Arbeitsbereich für die Server, die dessen Admins einrichten, und eine für die persönlichen Server des Serverinhabers. Dieser Endpunkt listet, ruft und durchsucht sie nur für einen Agentenlauf: die Server des eigenen Arbeitsbereichs sowie die persönlichen Server, wenn der Serverinhaber für den Lauf einsteht. MCP-Token und gekoppelte Geräte sehen sie nie (siehe [MCP-Server, die Agenten nutzen](/de-DE/handbuch/anleitungen/mcp-server/#mcp-server-die-agenten-nutzen)).
@@ -11,21 +11,22 @@ sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
 
 | Kennzahl                                                                              | Anzahl |
 | ------------------------------------------------------------------------------------- | ------ |
-| Tools, die `cc_server` registriert                                                    | 110    |
-| Aus `packages/cc_mcp`                                                                 | 108    |
+| Tools, die `cc_server` registriert                                                    | 116    |
+| Aus `packages/cc_mcp`                                                                 | 114    |
 | Aus `packages/cc_mcp_client` (Tool-Suche)                                             | 2      |
-| In der Basisregistrierung registriert (`server_mcp_registry.dart`)                   | 63     |
-| Nach dem Start registriert, sobald ihre Dienste hochkommen (`cc_server_runtime.dart`) | 47     |
-| Von den 63 der Basisregistrierung nur bei einem Code-Graph-Repository                | 5      |
+| In der Basisregistrierung registriert (`server_mcp_registry.dart`)                   | 64     |
+| Nach dem Start registriert, sobald ihre Dienste hochkommen (`cc_server_runtime.dart`) | 52     |
+| Von den 64 der Basisregistrierung nur bei einem Code-Graph-Repository                | 5      |
+| Von den 64 der Basisregistrierung, abhängig vom Code-Modus-Runner (`repl`) | 1 |
 
-Die fünf Code-Graph-Tools werden nur registriert, wenn der Host ein Code-Graph-Repository an `buildServerMcpRegistry` übergibt. `cc_server` übergibt immer eines, deshalb sind im ausgelieferten Binary alle 110 live.
+Die fünf Code-Graph-Tools werden nur registriert, wenn der Host ein Code-Graph-Repository an `buildServerMcpRegistry` übergibt, und `repl` nur, wenn er den Code-Modus-Runner übergibt. `cc_server` übergibt immer beides (ohne Runner startet er nicht), deshalb sind im ausgelieferten Binary alle 111 registriert; der öffentliche Demo-Server registriert kein `repl`.
 
-Die volle Registrierung wird in `tools/list` ohne Suchfilter angeboten. Ticketbearbeitungen sind typisierte Tools.
+Die volle Registrierung wird in `tools/list` ohne Suchfilter angeboten, abgesehen von einem Agentenlauf, der Skripte ausführen kann (unten). Ticketbearbeitungen sind typisierte Tools.
 
 :::note[Externe Clients sehen immer den ganzen Katalog]
-`tools/list` wird nie beschnitten, außer bei den persönlichen MCP-Servern des Serverinhabers, die es nie enthält. MCP-Clients prüfen Tool-Namen gegen ihre eigene zwischengespeicherte Kopie dieser Liste und lehnen alles ab, was dort fehlt, ohne den Server zu fragen. Ein dort verstecktes Tool ist unerreichbar, nicht bloß still.
+`tools/list` wird nie beschnitten, außer bei den persönlichen MCP-Servern des Serverinhabers, die es nie enthält, und beim [Code-Modus](/de-DE/handbuch/konzepte/code-modus/): `repl` steht nur in der Liste eines Agentenlaufs auf einem Server, der Skripte ausführen kann, und dieser Lauf erhält `repl`, die direkten Tools (`read`, `write`, `edit`, `search`, `find`, `bash`, `read_output`, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` und die Verben seines Modus, soweit die Registrierung sie hat) und die Tools, die ein Skript nicht aufrufen darf. Er ruft den Rest aus einem Skript auf; ein direkter Aufruf eines davon wird mit dem Hinweis beantwortet, wie man es aus `repl` aufruft. MCP-Clients prüfen Tool-Namen gegen ihre eigene zwischengespeicherte Kopie dieser Liste und lehnen alles ab, was dort fehlt, ohne den Server zu fragen. Ein dort verstecktes Tool ist deshalb unerreichbar, nicht bloß still.
 
-Der **eingebaute Harness** arbeitet anders: Er lädt je Anfrage nur eine residente Teilmenge der Definitionen und holt den Rest beim ersten Gebrauch nach. Das bleibt Verhalten des Harness und lässt diese Registrierung unangetastet. Siehe [Tool-Kontext und Prompt-Caching](/de-DE/handbuch/konzepte/tool-kontext).
+Der **eingebaute Harness** arbeitet anders: Er lädt je Anfrage nur eine kleine direkte Menge von Definitionen und erreicht den Rest aus Skripten oder lädt ihn beim ersten Gebrauch. Das ist Verhalten des Harness und ändert nichts an dieser Registrierung. Siehe [Tool-Kontext und Prompt-Caching](/de-DE/handbuch/konzepte/tool-kontext/).
 :::
 
 :::note[Jede Tool-Klasse ist registriert]
@@ -52,6 +53,14 @@ Beide kommen aus `cc_mcp_client`, nicht aus `cc_mcp`, und beide fragen die Modus
 
 Ein drittes Such-Tool, **`search_tools`**, gibt es nur im eingebauten Harness, und es gehört nicht zu dieser MCP-Registrierung. Es ordnet die eigene Tool-Oberfläche des Laufs und **lädt**, anders als `search_tool_bm25`, die Schemas dessen, was es findet, damit der Agent einen Treffer im nächsten Zug aufrufen kann. Agenten auf dem Harness sollten es vorziehen; MCP-Clients haben `search_tool_bm25`.
 
+## Code-Modus
+
+| Tool | Beschreibung |
+| ------ | ----------- |
+| `repl` | Führt ein JavaScript-Skript aus, das die übrigen Tools des Laufs als `tools.<id>(args)` aufruft, und gibt nur zurück, was es braucht. Nur in der Liste eines Agentenlaufs auf einem Server, der [Code-Modus](/de-DE/handbuch/konzepte/code-modus/)-Skripte ausführen kann. Jeder verschachtelte Aufruf durchläuft dasselbe Gate wie ein `tools/call`. Nimmt `code`, `description`, `timeout_ms?`, `max_output_tokens?`      |
+
+Ein Skript kann weder `repl`, `search_tool_bm25` oder `list_my_tools` aufrufen noch ein Tool, das einen anderen Agentenlauf startet oder ihm eine Nachricht schickt, ein Ticket zuweist oder kommentiert, eine Nachricht sendet, eine Genehmigung anlegt, entscheidet oder kommentiert, Richtlinien vorschlägt oder ändert, Skills installiert oder ändert, ein Laufzeitprofil anlegt, einen Plan einreicht, den Planmodus verlässt, das Ziel der Unterhaltung abschließt oder die Ausgabe eines Pipeline-Laufs abgibt. Diese Tools deklarieren `scriptCallable` als false und werden immer direkt aufgerufen; im eingebauten Harness wird ein Tool außerhalb der direkten Menge beim ersten Gebrauch geladen. `create_ticket` ist aus einem Skript nur ohne `assignee` aufrufbar.
+
 ## Agenten-Tools
 
 | Tool          | Beschreibung                                      |
@@ -60,15 +69,29 @@ Ein drittes Such-Tool, **`search_tools`**, gibt es nur im eingebauten Harness, u
 
 ## Nachrichten und Delegation zwischen Agenten
 
-Agenten sprechen miteinander über Bereiche (dauerhaft, in der Teilnehmerliste sichtbar). `ask_agent` ist Anfrage und Antwort mit einer Pflicht-Zeitüberschreitung; `delegate_task` wird serverseitig durch Tiefenobergrenze, Zykluserkennung, Budgetrahmen und Autonomieobergrenze geschützt.
+Agenten sprechen über Bereiche miteinander (dauerhaft, in der Mitgliederliste sichtbar). `ask_agent` wartet entweder auf die Antwort (`mode: wait`, standardmäßig 600 Sekunden, höchstens 1.800) oder kehrt sofort zurück (`mode: background`); in beiden Fällen wird der Fragende einmal mit der Antwort geweckt, wenn sie nicht direkt zurückkam. `send_to_agent`, `ask_agent`, `consult_agent`, `request_peer_review` und `delegate_task` laufen durch dasselbe serverseitige Tor: Tiefe (3), Erkennung von Zyklen, Budgethülle, Autonomiegrenze und eine Ratenbegrenzung pro Agentenpaar. Die Identität des Absenders kommt immer aus dem aufrufenden Lauf. Siehe [Agenten arbeiten zusammen](/de-DE/handbuch/anleitungen/agenten-zusammenarbeit/).
 
 | Tool            | Beschreibung                                                                                     |
 | --------------- | ------------------------------------------------------------------------------------------------ |
-| `send_to_agent` | Sendet eine Einwegnachricht an einen anderen Agenten, adressiert über `to_agent_id` oder exaktes `to_agent_name` |
-| `ask_agent`     | Stellt einem anderen Agenten eine Frage und wartet auf die Antwort, oder läuft in die Zeitüberschreitung |
+| `send_to_agent` | Sendet eine Einwegnachricht an einen anderen Agenten, adressiert über `to_agent_id` oder exaktes `to_agent_name`; antwortet mit `delivery_status` `woken`, `queued_behind_run` oder `refused` |
+| `ask_agent`     | Stellt einem anderen Agenten eine Frage; wartet auf die Antwort oder macht weiter und wird geweckt, wenn sie eintrifft |
 | `delegate_task` | Delegiert eine Aufgabe an einen anderen Agenten als verfolgtes Unterticket                      |
 | `consult_agent` | Nimmt den nach Skills am besten passenden Spezialisten in den Bereich auf und startet ihn mit einem engen Auftrag |
 | `todo_read`     | Liest die gespeicherte Aufgabenliste dieser Unterhaltung                                         |
+| `agent_activity` | Liest, was ein anderer Agent gerade tut und zuletzt getan hat (Status, aktuelles Tool, letzte Nachrichten), ohne ihn zu wecken |
+
+## Tools für Weckrufe und Ziele
+
+Ein Agent nutzt diese statt zu schlafen oder abzufragen. Jedes wirkt nur für den aufrufenden Agenten in dessen eigener Unterhaltung; der Agent ist nie ein Argument. Siehe [Zeitpläne und Weckrufe](/de-DE/handbuch/anleitungen/zeitplaene-weckrufe/) und [Ein Ziel verfolgen](/de-DE/handbuch/anleitungen/ziel-verfolgen/).
+
+| Tool | Beschreibung |
+| ------------- | ----------- |
+| `wake_me` | Später geweckt werden: zu einer Zeit (`in:20m`, `at:<ISO time>`), in einem Intervall (`every:30m`), per Cron (`cron:0 9 * * 1-5`, mit `tz`), im eigenen Tempo innerhalb einer selbstgesteuerten Schleife (`next`, mit `delay` von 1 bis 60 Minuten) oder wenn etwas passiert (`on:pr_checks`, `on:pr_review`, `on:pr_merged`, `on:environment`, `on:ticket:<id>`, `on:pipeline_run:<id>`). Optional: `note`, `max_runs`, `expires_in`, `when_busy` (`skip` oder `queue`) und `deliver` (`run` oder `notify`) |
+| `list_wakes` | Listet auf, was der Agent in dieser Unterhaltung wartend hat: Zeitpläne, Überwachungen, ausstehende Weckrufe und unbeantwortete Anfragen |
+| `cancel_wake` | Bricht einen Zeitplan oder eine Überwachung ab, die der Agent sich selbst gesetzt hat, über ihre ID |
+| `goal_status` | Liest das aktive Ziel des Agenten: Vertrag, Abschnitt, Ausgaben und verbleibendes Budget, Versuche ohne Fortschritt, Grund des Zurückhaltens, letzte Prüfung und ausstehende Weckrufe des Ziels |
+
+`complete_goal` (unter [Plan-, Playbook- und Artefakt-Tools](#plan--playbook--und-artefakt-tools)) ist der einzige Weg, auf dem ein Agent sagt, ein Ziel sei fertig, und es ist eine Behauptung, kein Abschluss.
 
 ## Skill-Tools
 
@@ -95,7 +118,7 @@ Jedes Installieren und Aktualisieren läuft durch ein fail-closed Scan-Tor, bevo
 | `revise_artifact`  | Ersetzt den Inhalt eines veröffentlichten Artefakts                                                                   |
 | `list_artifacts`   | Listet die Artefakte des Arbeitsbereichs                                                                              |
 | `get_artifact`     | Liest ein Artefakt                                                                                                    |
-| `complete_goal`    | Erklärt das aktive dauerhafte Ziel der Unterhaltung (gestartet mit `/goal` oder `/loop`) für erreicht                 |
+| `complete_goal` | Behauptet, das aktive Ziel des Agenten sei erreicht, mit Belegen für jedes Kriterium; der Server führt danach die Prüfungen und ein Review aus |
 
 ## Arbeitsbereichs-Tools
 
@@ -163,10 +186,10 @@ Jedes Installieren und Aktualisieren läuft durch ein fail-closed Scan-Tor, bevo
 | `create_goal`                | Legt ein Organisationsziel an (Ebene Unternehmen, Team, Agent oder Aufgabe)                           |
 | `list_goals`                 | Listet Ziele mit Ebene, Status und zusammengefasstem Fortschritt                                      |
 | `update_goal_progress`       | Setzt den Fortschritt eines Ziels                                                                     |
-| `create_approval`            | Öffnet eine Board-Freigabe für eine gesteuerte Aktion (plan exit, merge, release, hire, custom)       |
+| `create_approval`            | Öffnet eine Board-Freigabe für eine gesteuerte Aktion (plan exit, merge, release, hire, custom) im Namen des aufrufenden Agenten. Nur Agentenläufe |
 | `list_approvals`             | Listet Freigaben, optional nach Status gefiltert                                                      |
-| `decide_approval`            | Hält eine Entscheidung fest: approve, reject, request revision oder resubmit                          |
-| `comment_approval`           | Kommentiert eine Board-Freigabe                                                                       |
+| `decide_approval`            | Hält die Entscheidung des aufrufenden Agenten fest: approve, reject, request revision oder resubmit. Nur Agentenläufe |
+| `comment_approval`           | Kommentiert eine Board-Freigabe im Namen des aufrufenden Agenten. Nur Agentenläufe                    |
 | `exit_plan_mode`             | Öffnet eine `plan_exit`-Freigabe (und verbraucht sie nach der Freigabe) und schaltet die Unterhaltung aus dem Planmodus |
 | `agent_heartbeat`            | Meldet Lebendigkeit (alive, idle, stuck); wird es still, wechselt die Laufzeitgesundheit zu recently-lost und dann zu offline |
 | `list_runtime_health`        | Listet die Laufzeitgesundheit jedes Agenten                                                           |

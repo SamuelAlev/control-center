@@ -12,6 +12,8 @@ import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/core/domain/repositories/llm_call_record_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
+import 'package:cc_domain/features/code_mode/domain/ports/code_execution_port.dart';
+import 'package:cc_domain/features/code_mode/domain/value_objects/code_mode_limits.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_domain/features/environments/domain/ports/environment_port.dart';
@@ -22,17 +24,19 @@ import 'package:cc_domain/features/sandboxing/domain/services/sandbox_exec_grant
 import 'package:cc_domain/features/settings/domain/entities/claude_session_settings.dart';
 import 'package:cc_domain/features/skills/domain/ports/skill_scan_port.dart';
 import 'package:cc_domain/features/subscriptions/subscriptions.dart';
-import 'package:cc_domain/features/todos/domain/repositories/todo_repository.dart';
 import 'package:cc_harness/context.dart' show TokenCalibration, ToolOutputStore;
 import 'package:cc_harness/loop.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_harness/tools.dart' show FileSearchPort;
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/blobs/blob_store.dart';
+import 'package:cc_infra/src/code_mode/run_script_past.dart';
 import 'package:cc_infra/src/dap/debug_session.dart';
 import 'package:cc_infra/src/dispatch/agent_run_gateway.dart';
 import 'package:cc_infra/src/dispatch/claude_idle_compactor.dart';
 import 'package:cc_infra/src/dispatch/host_execution_gate.dart';
+import 'package:cc_infra/src/dispatch/server_turn_hooks.dart';
+import 'package:cc_infra/src/dispatch/still_in_flight_hooks.dart';
 import 'package:cc_infra/src/eval/eval_kernel.dart';
 import 'package:cc_infra/src/harness/ast_parser_provider.dart';
 import 'package:cc_infra/src/harness/cc_natives_file_search_port.dart';
@@ -61,7 +65,6 @@ class SandboxDispatchDeps {
     this.llmCallRecordRepo,
     required this.eventBus,
     required this.backendRegistry,
-    this.todoRepo,
     this.runTranscriptRecorder,
     this.mcpConfigPathResolver,
     this.mcpServersResolver,
@@ -79,6 +82,7 @@ class SandboxDispatchDeps {
     this.astParsers,
     this.transcriptStore,
     this.toolOutputStore,
+    this.scriptPast,
     this.claudeSessionStore,
     this.claudeMcpDiscoveryCache = ClaudeMcpDiscoveryCachePolicy.disabled,
     this.claudeContextWindowOf,
@@ -104,10 +108,21 @@ class SandboxDispatchDeps {
     this.autonomyResolver,
     this.processControl,
     this.toolDeferralEnabled = true,
+    this.codeExecutions,
+    this.codeModeLimits,
     FileSearchPort? fileSearch,
     TokenCalibration? tokenCalibration,
   }) : tokenCalibration = tokenCalibration ?? TokenCalibration(),
        fileSearch = fileSearch ?? CcNativesFileSearchPort();
+
+  /// Server code that may keep a main harness run from ending its turn,
+  /// asked before the owner's `stop` hook ([ServerTurnHooks]). The server
+  /// registers its handlers once at boot.
+  final WouldStopHandlers wouldStopHandlers = WouldStopHandlers();
+
+  /// The server's "Still in flight" state for a run's compactions. The
+  /// server sets its hooks once at boot.
+  final StillInFlightHooks stillInFlight = StillInFlightHooks();
 
   /// Whether a harness run withholds the schemas of tools it is unlikely to
   /// need until it asks for them (`--tool-deferral`, default on).
@@ -116,6 +131,19 @@ class SandboxDispatchDeps {
   /// the pre-deferral behaviour byte for byte — so if a model ever handles the
   /// two-tier surface badly, the fix is a flag rather than a release.
   final bool toolDeferralEnabled;
+
+  /// Runs a `repl` call's script: the server's one execution service.
+  ///
+  /// A run has `repl` exactly when this is set and its runner passed the
+  /// boot self-test ([CodeExecutionPort.availability]). Null means this
+  /// host runs no scripts (no runner, or a public demo): no run gets
+  /// `repl`.
+  final CodeExecutionPort? codeExecutions;
+
+  /// The limits a workspace's scripts run under (its stored overrides over
+  /// the built-in defaults, already clamped). Null means
+  /// [CodeModeLimits.defaults].
+  final Future<CodeModeLimits> Function(String workspaceId)? codeModeLimits;
 
   /// Empirical token-estimate buckets shared by this host's dispatches.
   final TokenCalibration tokenCalibration;
@@ -169,11 +197,6 @@ class SandboxDispatchDeps {
   /// Null on a host with no dispatch stack / no live registry — subagent activity
   /// then stays unrecorded (the pre-existing behavior) and the child still runs.
   final RunTranscriptRecorder? runTranscriptRecorder;
-
-  /// Optional per-conversation todo repository. When set, `/goal` records the
-  /// invocation as the conversation's working goal (surfaced in the General
-  /// pane with the todos nested beneath it). Null skips goal persistence.
-  final TodoRepository? todoRepo;
 
   /// Optional domain event bus.
   final DomainEventBus? eventBus;
@@ -311,6 +334,11 @@ class SandboxDispatchDeps {
 
   /// Authorized full observations referenced by persisted harness transcripts.
   final ToolOutputStore? toolOutputStore;
+
+  /// What a run's scripts read of its past (`history`, `outputs`,
+  /// `loadOutput`) and keep (`keep`): the session binds one port to each run.
+  /// Null on a server without it: those calls then reject saying so.
+  final ScriptPastSources? scriptPast;
 
   /// Where native Claude Code session ids (and their cumulative-accounting
   /// baselines) are persisted between dispatches.

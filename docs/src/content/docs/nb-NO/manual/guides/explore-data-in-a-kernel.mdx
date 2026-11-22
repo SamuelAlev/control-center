@@ -1,8 +1,8 @@
 ---
 title: Utforsk data i en vedvarende kernel
-description: Gi en agent en Python- eller JavaScript-tolk som beholder variablene sine mellom kall, tegner diagrammer inn i samtalen og kan kalle dine egne verktøy fra innsiden av en celle.
+description: Gi en agent en Python- eller JavaScript-tolk som beholder variablene sine mellom kall og tegner diagrammer inn i samtalen.
 slug: nb-NO/handbok/slik-gjor-du/utforsk-data-i-kernel
-sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
+sourceHash: 8fcd77019bfae5088223822a12ef91c8a6879c5d
 ---
 
 Denne veiledningen viser hvordan du lar en agent laste inn noe dyrt én gang og deretter stille flere spørsmål til det, i stedet for å betale for innlastingen ved hvert spørsmål.
@@ -62,22 +62,9 @@ Disse skrives om til ren kode i stedet for å gi feil:
 
 Det er tømmingen av modulcachen for `%pip` som betyr noe: å installere i en levende tolk gjør ingenting for en modul som allerede er importert, så uten den er ikke versjonen du nettopp installerte, den som kjører.
 
-## Kalle dine egne verktøy fra innsiden av en celle
+## Kalle verktøy fra kode
 
-```python
-paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
-for path in paths.splitlines()[:100]:
-    contents = tool("read", {"path": path})
-    ...
-```
-
-`tool(name, args)` går inn i agentens eget verktøyregister på nytt. Det betyr at en celle kan spre seg over hundre filer, eller delegere via `task`, uten at modellen bruker en tur per element.
-
-:::caution[Broen går ikke utenom tillatelsesreglene dine]
-Et brokall løses mot det **samme** verktøyregisteret som et kall fra modellen, så policyen for `ActionClass`, godkjenningsprompter og hver innpakning gjelder likt. En bro som nådde forbi registeret, ville være et hull formet akkurat som «skriv en Python-one-liner».
-:::
-
-Et brokall **setter cellens tidsavbrudd på pause** så lenge det pågår. Budsjettet måler inaktivitet, ikke reell tid — en celle som sprer seg ut til underagenter og venter i fire minutter, henger ikke, og å drepe den midt i utsendelsen ville miste hele tilstanden i kernelen.
+En celle kan ikke kalle agentens verktøy. For å gå gjennom verktøy i kode, skriver agenten i stedet et [`repl`](/nb-NO/handbok/konsepter/kodemodus/)-skript. Et skript kan heller ikke kalle `eval`: agenten kaller det direkte.
 
 ## Starte på nytt
 

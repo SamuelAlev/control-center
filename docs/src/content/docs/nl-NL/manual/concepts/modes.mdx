@@ -2,7 +2,7 @@
 title: Modi
 description: Waarom een ruimte, en niet een agent, een modus draagt; wat elk van de vier modi garandeert; en waar die garantie structureel is in plaats van louter in de prompt.
 slug: nl-NL/handleiding/concepten/modi
-sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
+sourceHash: 4450ebc86d95efb0366bc3f0ab4ddebc6d3a3adb
 ---
 
 ## Wat een modus is
@@ -41,7 +41,7 @@ Een run die zonder zijn plan eindigt, wordt nog steeds vastgelegd met status `co
 
 Er is een tweede, aparte uitweg: `exit_plan_mode`. Het is een harde goedkeuringspoort, geen uitvoerwerkwoord — een agent die het aanroept in plaats van `submit_plan`, heeft niets opgeleverd. De eerste aanroep opent een duurzame goedkeuring `plan_exit` en geeft `pending` terug, en de ruimte blijft alleen-lezen; herhaalde aanroepen blijven `pending` in plaats van een tweede poort te openen. Pas nadat de goedkeuring is verleend, zet een volgende aanroep de ruimte om naar chat. Bij een afwijzing kan de agent een nieuw verzoek openen voor een herzien plan.
 
-Om planmodus zelf te verlaten, wissel je de vervolgkeuzelijst in de composer (of Shift+Tab). `exit_plan_mode` wordt besloten met de MCP-tool `decide_approval`. Rijen met "agentgoedkeuring" in Postvak in zijn iets anders: bevestigingsvragen per beurt van een draaiende agent.
+Om planmodus zelf te verlaten, wissel je de vervolgkeuzelijst in de composer (of Shift+Tab). `exit_plan_mode` wordt besloten door een agentrun met de MCP-tool `decide_approval`. Rijen met "agentgoedkeuring" in Postvak in zijn iets anders: bevestigingsvragen per beurt van een draaiende agent.
 
 ### Review — alleen-lezen, geen contract
 
@@ -65,6 +65,8 @@ Niets in het voorstel wordt uitgevoerd totdat je het goedkeurt. Bij goedkeuring 
 
 **Alleen-lezen modi weigeren geen netwerktoegang of secrets.** De effectsoorten die review, plan en orkestratie weigeren, zijn de soorten die de wereld veranderen: bestanden verwijderen, schrijven buiten de worktree, commits, pushes, het aanmaken en publiceren van PR's, schrijfacties bij het synchroniseren met externe systemen, pakketinstallaties, processen starten, werkruimtestructuur wijzigen en omhullingen aansturen. Netwerktoegang naar buiten en toegang tot secrets blijven bewust op hun standaardwaarden — onderzoek is juist het hele doel van een alleen-lezen modus.
 
+**Codemodus breidt een modus nooit uit.** Het toolfilter van de modus wordt eerst toegepast, en een `repl`-script van [codemodus](/nl-NL/handleiding/concepten/codemodus/) kan alleen de tools aanroepen die daarna overblijven, via dezelfde poort als een directe aanroep. De vaste werkwoorden van de modus (de uitvoertool, `exit_plan_mode`, `ask_user`) en de eigen lus ervan (de werkwoorden van de reviewknooppunten in de reviewmodus) worden altijd direct aangeroepen, zodat een run nooit een script hoeft te schrijven om zijn resultaat af te leveren of een vraag te stellen. In de [vibe-modus](/nl-NL/handleiding/gidsen/achtergrondworkers-sturen/) houdt de sturende run alleen leestools en geen alleen-via-script-tools over, dus zijn scripts bereiken alleen die.
+
 ## Een modus kiezen en wijzigen
 
 De modusvervolgkeuzelijst van de composer biedt **drie** opties: Agent (chat), Plan en Orkestratie. `review` is **niet door de gebruiker te selecteren** — die wordt door het systeem ingesteld wanneer een PR-reviewruimte wordt aangemaakt, en door pipelinestappen.
@@ -87,4 +89,5 @@ De toelatingslijsten begrenzen tools vanaf schrijfniveau. Het leesniveau van de 
 - [Het agentmodel](/nl-NL/handleiding/concepten/agentmodel/): welke transporten een modus kunnen afdwingen
 - [Beveiligingen](/nl-NL/handleiding/concepten/beveiligingen/): het effectsoortenbeleid waarin de voorinstelling van een modus uitmondt
 - [Orkestratie](/nl-NL/handleiding/concepten/orkestratie/): wat een goedgekeurd orkestratievoorstel doet
+- [Codemodus](/nl-NL/handleiding/concepten/codemodus/): scripts die de tools van de modus aanroepen
 - [Planmodus gebruiken](/nl-NL/handleiding/gidsen/planmodus/): de praktische handleiding

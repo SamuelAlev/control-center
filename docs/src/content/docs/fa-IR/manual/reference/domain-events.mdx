@@ -2,7 +2,7 @@
 title: رویدادهای دامنه
 description: فهرست کامل ۵۴ رویداد دامنه، بار داده‌هایشان و مشترکان سمت سرور که آن‌ها را مصرف می‌کنند.
 slug: fa-IR/راهنمای-کاربر/مرجع/رویدادهای-دامنه
-sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
+sourceHash: f58123448c0f31c95774bbaebee89f1509940896
 ---
 
 ## گذرگاه رویداد
@@ -24,7 +24,10 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 | رویداد              | بار داده                                               | زمان انتشار                                            |
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | فضای کاری ساخته می‌شود                                  |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | عامل یک اجرا را تمام می‌کند (موفق یا ناموفق)             |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | جریان فرایند عامل تمام می‌شود، پیش از نوشته‌شدن وضعیت نهایی. فقط برای پل گفتگوی درخواست ادغام و تحلیل‌ها نگه داشته شده است |
+| `AgentRunSettled` | `agentId`, `workspaceId`, `runId`, `status`, `endReason`, `costMicros`, `wakeIds`, `spaceId?`, `conversationId?`, `limitResetsAt?`, `requestedByUserId?`, `wakeReason?` | وضعیت نهایی یک اجرا نوشته می‌شود؛ برای هر اجرا دقیقاً یک بار منتشر می‌شود. `endReason` یکی از `completed`، `error`، `stoppedByUser`، `budget`، `silence`، `usageLimit` یا `serverStopped` است. اجرای یک زیرعامل هیچ رویدادی منتشر نمی‌کند |
+| `GoalSettled` | `goalId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `status`, `hold?`, `summary?`, `requestedByUserId?` | یک هدف تمام می‌شود، یا منتظر بازبینی یک شخص می‌شود |
+| `WakeRuleEnded` | `ruleId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `reason`, `requestedByUserId?` | یک زمان‌بندی یا پایش پایان می‌یابد (یک‌بار شلیک شده، منقضی شده، اجراها یا هزینه‌اش تمام شده، لغو شده، هدفش تمام شده، یا شخصش ترک کرده است) |
 | `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | عاملی شروع به انتظار برای یک انسان می‌کند: یک تأیید، یک پرسش `ask_user` یا اجرایی که به‌خاطر اعتبارنامه متوقف مانده (`kind` یکی از `approval`، `question` یا `credential` است) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | مخزنی ثبت می‌شود؛ ایندکس‌کردن کد در پس‌زمینه را راه می‌اندازد |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | مهارتی نصب یا به‌روزرسانی می‌شود، همراه با حکم اسکن زنجیرهٔ تأمین آن |
@@ -57,6 +60,16 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 | `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | کسی شما را در یک دیدگاه PR یا دیدگاه بازبینی منشن کرده است         |
 | `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | کسی در رشتهٔ بازبینی‌ای که شما در آن هستید پاسخ داده است                      |
 | `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | کسی رشتهٔ بازبینی‌ای که شما در آن هستید را حل کرده است                        |
+
+### پایش درخواست ادغام
+
+توسط نظرسنجی‌کنندهٔ درخواست‌های ادغام باز، برای هر درخواست ادغامی که نظرسنجی می‌کند، هرکس آن را نوشته باشد، برای پایش‌های `on:pr_*` عامل‌ها منتشر می‌شود. هر سه `workspaceId`، `repoOwner`، `repoName`، `prNumber`، `prTitle`، `headRef` و `authorLogin` را حمل می‌کنند.
+
+| رویداد | بار دادهٔ افزوده | زمان انتشار |
+| ----------------------- | ----------------------------------------------- | ---------- |
+| `PrWatchChecksSettled` | `passing`, `failedChecks`, `failedCheckUrl?` | هر بررسی سرِ درخواست ادغام تمام شده است |
+| `PrWatchReviewActivity` | `decision`, `decisionChanged`, `newComments` | درخواست ادغام بازبینی یا نظر جدید دریافت کرده است |
+| `PrWatchClosed` | `merged` | درخواست ادغام ادغام شده یا بسته شده است |
 
 ## رویدادهای پیام‌رسانی
 
@@ -167,14 +180,20 @@ enum `TaskPhase` عضوی به نام `queued` هم دارد، اما هیچ‌�
 | تأمین فضای گفتگو (درون‌خط)          | `SpaceCreated`                                                                                       |
 | `PipelineTriggerDispatcher`         | هر `DomainEvent`؛ هر تریگر فعال برای نوع خودش فیلتر می‌کند                                            |
 | `SubPipelineResumeListener`         | `PipelineRunCompleted`, `PipelineRunFailed`                                                          |
-| `PipelineCostRollupListener`        | `AgentRunCompleted`                                                                                  |
-| `BudgetEvaluationListener`          | `AgentRunCompleted`                                                                                  |
+| `PipelineCostRollupListener`        | `AgentRunSettled`                                                                                    |
+| `BudgetEvaluationListener`          | `AgentRunSettled`                                                                                    |
 | `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (تنها اجراهای `meeting_summary`)   |
-| `PipelineStepResumeListener`        | `AgentRunCompleted`                                                                                  |
-| `AgentRunTaskCompleter`             | `AgentRunCompleted`                                                                                  |
-| `GoalSupervisor`                    | `AgentRunCompleted`                                                                                  |
-| `CheckerDispatchListener`           | `AgentRunCompleted`                                                                                  |
-| `TeamRoutingService`                | `AgentRunCompleted`, `TicketAssigned`                                                                |
+| `PipelineStepResumeListener`        | `AgentRunSettled`                                                                                    |
+| `AgentRunTaskCompleter`             | `AgentRunSettled`                                                                                    |
+| `GoalSupervisor`                    | `AgentRunSettled` — تصمیم می‌گیرد گام بعدی هدف چه باشد                                               |
+| `CheckerDispatchListener`           | `AgentRunSettled` — بررسی‌کننده را به‌عنوان بیدارباش در صف می‌گذارد؛ از گام‌ها و بازبینی‌های هدف می‌گذرد |
+| `TeamRoutingService`                | `AgentRunSettled`, `TicketAssigned`                                                                  |
+| `WakeQueueService` | `AgentRunSettled` — بیدارباش‌هایی را که منتظر پایان اجرا بودند تحویل می‌دهد |
+| `WakeRuleService` | `AgentRunSettled` (حلقه‌های خودتنظیم)، `GoalSettled` (به زمان‌بندی‌های یک هدف پایان می‌دهد)، `PrWatch*`، `EnvironmentProcessExited`، `EnvironmentReady`، پایان تیکت و اجرای پایپ‌لاین (پایش‌ها)، `WorkspaceMemberRemoved` (به زمان‌بندی‌های آن شخص پایان می‌دهد) |
+| `PeerAskService` | `AgentRunSettled` — پرسش‌هایی را که عامل‌ها از هم پرسیده‌اند تسویه می‌کند و پرسنده را بیدار می‌کند |
+| `LimitParkService` | `AgentRunSettled` با `usageLimit` — منتظر بازنشانی ارائه‌دهنده می‌ماند |
+| `ImprovementReviewService` | `GoalSettled` (یک هدف تأییدشده) و `AgentRunSettled` — بازبینی بهبود را در صف می‌گذارد و نتیجه‌اش را می‌خواند |
+| گام هدف پایپ‌لاین (`goal.pursue`) | `GoalSettled`, `AgentRunSettled`, `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` — گام را ازسرمی‌گیرد، ارکستراسیون را هزینه‌گذاری می‌کند و اجرای پایپ‌لاین را دنبال می‌کند |
 | `OrchestrationRunListener`          | `PipelineRunCancelled`, `PipelineRunFailed`                                                          |
 | `MultiVendorTicketSyncCoordinator`  | `TicketCreated`, `TicketAssigned`, `TicketReassigned`, `TicketStatusChanged`, `TicketDetailsUpdated` |
 | `WorktreeGcListener`                | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`         |
@@ -233,6 +252,8 @@ enum `TaskPhase` عضوی به نام `queued` هم دارد، اما هیچ‌�
 یک رویداد است؛ وقتی انتظار تمام می‌شود، چیزی منتشر نمی‌شود.
 
 پنج دستهٔ PRهای تألیف‌شده `forUserId` را با خود دارند، پس به نویسنده می‌رسند نه به همهٔ اعضای فضای کاری.
+
+پنج قاب برای کار بلندمدت، هرکدام به شخصی که به او مربوط است (`for_user_id`) خطاب می‌شود: `notifications/goal_settled` (از `GoalSettled`)، `notifications/wake_rule_ended` (از `WakeRuleEnded`)، `notifications/improvement_proposed`، `notifications/pipeline_run_held` (یک اجرای پایپ‌لاین که در سقف هزینهٔ ارکستراسیونش نگه‌داشته شده) و `notifications/waiting_digest` (روزی یک‌بار، آنچه منتظر یک شخص است). هر کدام `notification_kind` را حمل می‌کند: `notify` به `agentRunCompleted` نگاشت می‌شود، و `question` و `review` به `agentAwaitingInput`. هر قاب اعلان‌دهنده اکنون `notification_kind` را حمل می‌کند، و قابی با `quiet: true` (زمان‌بندی‌ای که پایان یافته، هدفی که تمام شده) بدون تست، صدا یا پوش بلند به مرکز اعلان می‌رسد.
 
 `RemoteEventForwarder` به‌علاوهٔ `TicketReassigned` را به‌عنوان `notifications/ticket_reassigned` و هر `TaskLifecycleEvent` را به‌عنوان `notifications/task_<phase>` بازپخش می‌کند. هیچ‌یک به دستهٔ اعلانی نگاشت نمی‌شوند — آن‌ها رابط کاربری زنده را به حرکت درمی‌آورند، نه مرکز اعلان‌ها را. رویدادهای عضویت به‌صورت فریم بازپخش نمی‌شوند: کش بازپخش‌کننده را باطل می‌کنند و میزبان‌های نشست اشتراک‌های فضای کاری عضو حذف‌شده را می‌اندازند.
 

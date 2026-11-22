@@ -1,35 +1,17 @@
 import 'package:cc_domain/cc_domain.dart';
-import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
-import 'package:cc_domain/core/domain/ports/media_render_port.dart';
-import 'package:cc_domain/core/domain/ports/secret_store_port.dart';
-import 'package:cc_domain/core/domain/services/memory_access_policy.dart';
-import 'package:cc_domain/core/domain/services/webhook_secret_vault.dart';
+import 'package:cc_domain/features/code_mode/domain/ports/code_execution_port.dart';
+import 'package:cc_domain/features/code_mode/domain/ports/code_execution_repository.dart';
+import 'package:cc_domain/features/code_mode/domain/value_objects/code_mode.dart';
+import 'package:cc_domain/features/code_mode/domain/value_objects/code_mode_limits.dart';
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
-import 'package:cc_domain/features/memory/domain/services/fact_extraction.dart';
-import 'package:cc_domain/features/memory/domain/services/memory_consolidation_service.dart';
-import 'package:cc_domain/features/memory/domain/usecases/extract_memory_use_case.dart';
-import 'package:cc_domain/features/memory/domain/usecases/harmonize_memory_use_case.dart';
-import 'package:cc_domain/features/memory/domain/usecases/promote_facts_to_policy_use_case.dart';
-import 'package:cc_domain/features/memory/domain/usecases/record_memory_fact_use_case.dart';
-import 'package:cc_domain/features/memory/domain/usecases/resolve_or_create_domain_use_case.dart';
-import 'package:cc_domain/features/memory/domain/usecases/supersede_fact_use_case.dart';
-import 'package:cc_domain/features/memory/domain/usecases/supersede_policy_use_case.dart';
-import 'package:cc_infra/cc_infra.dart';
+import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
+import 'package:cc_harness/cancellation.dart';
 import 'package:cc_mcp/cc_mcp.dart';
 import 'package:cc_persistence/cc_persistence.dart';
-import 'package:cc_server_core/src/dao_newsfeed_repository.dart';
-import 'package:cc_server_core/src/server_mcp_registry.dart';
-import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
+import 'helpers/server_mcp_registry_fixture.dart';
 import 'helpers/test_database.dart';
-
-/// Never touches the network: the newsfeed HTTP path is not exercised here, so
-/// this client only satisfies the `RssFetcherService` constructor.
-class _NullRhttpClient implements RhttpClient {
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
 
 /// Proves the headless `cc_server` now serves a REAL MCP tool surface over
 /// `tools/list` — it used to mount `NoToolsRpcDispatcher` (method-not-found for
@@ -49,91 +31,9 @@ void main() {
   });
 
   test('server MCP dispatcher lists the data-backed tools', () async {
-    final memoryFactRepository = DaoMemoryFactRepository(dbs);
-    final memoryPolicyRepository = DaoMemoryPolicyRepository(dbs);
-    final memoryDomainRepository = DaoMemoryDomainRepository(dbs);
-    final memoryAccessGrantRepository = DaoMemoryAccessGrantRepository(dbs);
-    final agentWorkingMemoryRepository = DaoAgentWorkingMemoryRepository(dbs);
-    final memoryConflictRepository = DaoMemoryConflictRepository(dbs);
-    final episodicEdgeRepository = DaoEpisodicEdgeRepository(dbs);
-    final workingMemoryItemRepository = DaoWorkingMemoryItemRepository(dbs);
-    final memoryBeliefRepository = DaoMemoryBeliefRepository(dbs);
-    final resolveDomainUseCase = ResolveOrCreateDomainUseCase(
-      domainRepository: memoryDomainRepository,
-      grantRepository: memoryAccessGrantRepository,
-    );
-    final recordFactUseCase = RecordMemoryFactUseCase(
-      factRepository: memoryFactRepository,
-      resolveDomainUseCase: resolveDomainUseCase,
-      conflictRepository: memoryConflictRepository,
-      edgeRepository: episodicEdgeRepository,
-    );
-    final extractMemoryUseCase = ExtractMemoryUseCase(
-      extractor: const MemoryExtractor(),
-      recordFact: recordFactUseCase,
-    );
-    final consolidationService = MemoryConsolidationService(
-      workingMemory: workingMemoryItemRepository,
-      recordFact: recordFactUseCase,
-    );
-    final harmonizeMemoryUseCase = HarmonizeMemoryUseCase(
-      factRepository: memoryFactRepository,
-      beliefRepository: memoryBeliefRepository,
-      conflictRepository: memoryConflictRepository,
-    );
-
-    final runLogs = DaoAgentRunLogRepository(dbs);
-    final registry = buildServerMcpRegistry(
-      globalDb: global,
-      workspaceDbs: dbs,
-      pipelineTriggerRepository: PipelineTriggerRepositoryImpl(
-        dbs,
-        global.workspaceRouteDao,
-        WebhookSecretVault(InMemorySecretStore()),
-      ),
-      servedRepos: DaoRepoRepository(dbs),
-      codeGraphRepos: (workspaceId, repoId) async => true,
-      newsfeedRepository: DaoNewsfeedRepository(
-        global.rssDao,
-        RssFetcherService(_NullRhttpClient()),
-      ),
-      newsfeedOwnerUserId: 'owner-user',
-      ticketRepository: DaoTicketRepository(dbs, global.workspaceRouteDao),
-      messagingRepository: DaoMessagingRepository(dbs),
-      hiddenSpacesForCaller:
-          ({required workspaceId, required callerConversationId}) async =>
-              const <String>{},
-      agentQuestions: _SilentQuestions(),
-      mediaRenderer: _NoopRenderer(),
-      todoRepository: DaoTodoRepository(dbs),
-      agentRunLogRepository: runLogs,
-      agentRunOutputs: runLogs,
-      memoryFactRepository: memoryFactRepository,
-      memoryPolicyRepository: memoryPolicyRepository,
-      memoryDomainRepository: memoryDomainRepository,
-      memoryAccessGrantRepository: memoryAccessGrantRepository,
-      agentWorkingMemoryRepository: agentWorkingMemoryRepository,
-      resolveDomainUseCase: resolveDomainUseCase,
-      promoteFactsUseCase: PromoteFactsToPolicyUseCase(
-        factRepository: memoryFactRepository,
-        policyRepository: memoryPolicyRepository,
-        grantRepository: memoryAccessGrantRepository,
-        accessPolicy: const MemoryAccessPolicy(),
-      ),
-      supersedeFactUseCase: SupersedeFactUseCase(
-        factRepository: memoryFactRepository,
-      ),
-      supersedePolicyUseCase: SupersedePolicyUseCase(
-        policyRepository: memoryPolicyRepository,
-      ),
-      recordFactUseCase: recordFactUseCase,
-      memoryConflictRepository: memoryConflictRepository,
-      workingMemoryItemRepository: workingMemoryItemRepository,
-      extractMemoryUseCase: extractMemoryUseCase,
-      consolidationService: consolidationService,
-      harmonizeMemoryUseCase: harmonizeMemoryUseCase,
-      schemaValidator: const JsonSchemaValidator(),
-    );
+    McpToolRegistry build(ReplMcpTool? repl) =>
+        buildTestServerMcpRegistry(global: global, dbs: dbs, repl: repl);
+    final registry = build(null);
     final dispatcher = McpToolDispatcher(registry: registry);
 
     final response = await dispatcher.handleRequest(
@@ -202,19 +102,123 @@ void main() {
       names,
       reason: 'BM25 catalogue must mirror tools/list exactly',
     );
+
+    // Code mode's `repl`, registered the way the runtime does it. It is a
+    // tool only an attested agent run can see or call: a paired phone or a
+    // person's token (no scope, or a scope that is not a run's) never gets
+    // it.
+    final withRepl = build(
+      ReplMcpTool(
+        executions: _NeverRuns(),
+        limitsFor: (_) async => CodeModeLimits.defaults,
+        records: _NoRecords(),
+        past: null,
+      ),
+    );
+    final replDispatcher = McpToolDispatcher(registry: withRepl);
+    (withRepl.lookup('repl', view: McpToolView.shared)! as ReplMcpTool).bind(
+      replDispatcher,
+    );
+    Future<Set<String>> listed(McpCallScope? scope) async {
+      final response = await replDispatcher.handleScopedRequest(
+        JsonRpcRequest(method: 'tools/list', params: const {}, id: 2),
+        scope: scope,
+      );
+      return {
+        for (final t
+            in (response['result'] as Map<String, dynamic>)['tools'] as List)
+          (t as Map<String, dynamic>)['name'] as String,
+      };
+    }
+
+    McpCallScope scope({required bool attested}) => McpCallScope(
+      workspaceId: 'ws-1',
+      agentId: 'agent-1',
+      conversationId: 'conv-1',
+      spaceId: 'space-1',
+      attested: attested,
+      runId: 'dispatch-1',
+      runLogId: 'log-1',
+    );
+
+    expect(await listed(null), names, reason: 'not a run: no repl');
+    expect(
+      await listed(scope(attested: false)),
+      names,
+      reason: 'a scope nobody attested is not a run',
+    );
+    // An attested run sees repl, the direct set and what a script may not
+    // call; everything else is reached from a script.
+    final run = await listed(scope(attested: true));
+    expect(
+      run,
+      containsAll(['repl', 'ask_user', 'todo_write', 'send_message']),
+    );
+    expect(run, isNot(contains('list_tickets')));
+    expect(run, isNot(contains('list_my_tools')));
+    // Not callable either: a caller that is not a run is refused before the
+    // tool runs (the fake executor would throw).
+    for (final callerScope in [null, scope(attested: false)]) {
+      final response = await replDispatcher.handleScopedRequest(
+        JsonRpcRequest(
+          method: 'tools/call',
+          params: {
+            'name': 'repl',
+            'arguments': {'code': 'return 1;', 'description': 'one'},
+          },
+          id: 3,
+        ),
+        scope: callerScope,
+      );
+      final error = response['error'];
+      final result = response['result'] as Map<String, dynamic>?;
+      expect(
+        error != null || result?['isError'] == true,
+        isTrue,
+        reason: 'repl ran for a caller that is not a run: $response',
+      );
+    }
+
+    // What a script may call on this lane: never `repl` itself and never
+    // the discovery tools (the script catalog is the discovery).
+    final scriptable = {
+      for (final d in await replDispatcher.scriptToolsFor(
+        scope(attested: true),
+      ))
+        d.name,
+    };
+    expect(scriptable, isNotEmpty);
+    // Nothing is lost: what the run does not list, a script reaches.
+    expect(
+      names
+          .difference(run)
+          .difference({'list_my_tools', 'search_tool_bm25'})
+          .difference(scriptable),
+      isEmpty,
+    );
+    expect(
+      scriptable.intersection({'repl', 'search_tool_bm25', 'list_my_tools'}),
+      isEmpty,
+    );
   });
 }
 
-class _NoopRenderer implements MediaRenderPort {
+/// An executor a test must never reach.
+class _NeverRuns implements CodeExecutionPort {
   @override
-  Future<MediaRenderResult> render(MediaRenderRequest request) =>
-      throw UnimplementedError('Registry listing must not render media.');
+  CodeRunnerAvailability get availability =>
+      const CodeRunnerAvailability.available();
+
+  @override
+  Future<CodeExecutionResult> execute(
+    CodeExecutionRequest request, {
+    required ScriptNestedCall callNested,
+    CancellationToken cancel = CancellationToken.none,
+  }) => throw StateError('repl ran for a caller that is not a run');
 }
 
-class _SilentQuestions implements AgentQuestionPort {
+class _NoRecords implements CodeExecutionRepository {
   @override
-  Future<AgentQuestionAnswer?> ask(
-    AgentQuestionRequest request, {
-    Future<void>? abandoned,
-  }) async => null;
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw StateError('repl ran for a caller that is not a run');
 }

@@ -9,6 +9,7 @@ import 'package:control_center/features/pipelines/presentation/widgets/pipeline_
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_run_formatting.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_run_history_menu.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_run_waterfall.dart';
+import 'package:control_center/features/pipelines/presentation/widgets/pipeline_run_work_notices.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/trigger_labels.dart';
 import 'package:control_center/features/pipelines/providers/pipeline_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -57,7 +58,6 @@ class _PipelineRunDetailScreenState
     }
     final stepRuns = stepsAsync.value ?? const <PipelineStepRun>[];
     ref.watch(pipelineClockProvider); // tick for live duration display
-
     if (run == null && runAsync.isLoading) {
       return _RunDetailSkeleton(tokens: tokens);
     }
@@ -71,7 +71,6 @@ class _PipelineRunDetailScreenState
         ),
       );
     }
-
     final ordered = _orderedSteps(stepRuns, definition);
     final failed = ordered.firstWhereOrNull(
       (s) => s.status == PipelineStepStatus.failed,
@@ -108,6 +107,7 @@ class _PipelineRunDetailScreenState
                     .retry(run.workspaceId, widget.runId),
           onDelete: () => _deleteRun(run),
         ),
+        PipelineRunWorkNotices(run: run),
         if (ordered.isNotEmpty)
           PipelineRunWaterfall(
             run: run,

@@ -8,8 +8,11 @@ import 'package:cc_domain/features/pipelines/domain/entities/step_kind.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/step_trigger.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart'
     show BuiltInBodyKeys;
+import 'package:cc_domain/features/pipelines/domain/templates/goal_pursue_config.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/condition_config_editor.dart';
+import 'package:control_center/features/pipelines/presentation/widgets/goal_pursue_extras_section.dart';
+import 'package:control_center/features/pipelines/presentation/widgets/node_agent_picker.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/node_field_label.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/node_repo_scope_field.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -204,9 +207,11 @@ class _NodeConfigEditorState extends State<NodeConfigEditor> {
     BuiltInBodyKeys.teamDispatch,
     BuiltInBodyKeys.forEach,
     BuiltInBodyKeys.humanGate,
+    kGoalPursueBodyKey,
   }.contains(widget.step.bodyKey);
 
-  void _emit({String? agentId}) {
+  void _emit({String? agentId, Map<String, dynamic>? extras}) {
+    _extras = extras ?? _extras;
     final title = _conversationTitleCtrl.text.trim();
     // The conversation TOGGLE lives on the space node only. Its title is shared
     // vocabulary: on a space node it names the stream the node opens, on an
@@ -363,7 +368,8 @@ class _NodeConfigEditorState extends State<NodeConfigEditor> {
     };
     final bodyKey = widget.step.bodyKey;
     final isBashScript = bodyKey == 'pipeline.bashScript';
-    final usesAgent = bodyKey == 'conversation.promptAgent';
+    final isGoal = bodyKey == kGoalPursueBodyKey;
+    final usesAgent = bodyKey == 'conversation.promptAgent' || isGoal;
     final usesPrompt = usesAgent;
     final isCondition = bodyKey == 'pipeline.condition';
     // Repo scope belongs to the node that OPENS the conversation, because a
@@ -420,7 +426,7 @@ class _NodeConfigEditorState extends State<NodeConfigEditor> {
             const SizedBox(height: 12),
             NodeFieldLabel(
               label: l10n.nodeConfigAgent,
-              child: _AgentPicker(
+              child: NodeAgentPicker(
                 // Re-seed the field when the selected node (and thus its staged
                 // agent) changes.
                 key: ValueKey('agent-${widget.step.id}'),
@@ -541,7 +547,7 @@ class _NodeConfigEditorState extends State<NodeConfigEditor> {
           if (usesPrompt) ...[
             const SizedBox(height: 12),
             NodeFieldLabel(
-              label: l10n.nodeConfigPrompt,
+              label: isGoal ? l10n.nodeConfigObjective : l10n.nodeConfigPrompt,
               description: l10n.nodeConfigPromptHelp,
               child: CcTextArea(
                 controller: _promptCtrl,
@@ -550,6 +556,14 @@ class _NodeConfigEditorState extends State<NodeConfigEditor> {
               ),
             ),
           ],
+          if (isGoal)
+            GoalPursueExtrasSection(
+              key: ValueKey('goal-${widget.step.id}'),
+              extras: _extras,
+              agentId: widget.step.config.agentId,
+              objective: widget.step.config.prompt,
+              onChanged: (extras) => _emit(extras: extras),
+            ),
           if (isBashScript) ...[
             const SizedBox(height: 12),
             NodeFieldLabel(
@@ -713,62 +727,6 @@ class _NodeConfigEditorState extends State<NodeConfigEditor> {
           ),
         ),
     ];
-  }
-}
-
-/// A typeahead agent picker. [agents] maps each agent's display label to its
-/// id. The field is seeded with the label of [selectedAgentId] (when present),
-/// and selecting a row emits that agent's id.
-class _AgentPicker extends StatefulWidget {
-  const _AgentPicker({
-    super.key,
-    required this.agents,
-    required this.selectedAgentId,
-    required this.hint,
-    required this.onSelected,
-  });
-
-  /// Maps each agent's display label to its id.
-  final Map<String, String> agents;
-  final String? selectedAgentId;
-  final String hint;
-  final ValueChanged<String> onSelected;
-
-  @override
-  State<_AgentPicker> createState() => _AgentPickerState();
-}
-
-class _AgentPickerState extends State<_AgentPicker> {
-  late final TextEditingController _controller = TextEditingController(
-    text: _initialLabel(),
-  );
-
-  String _initialLabel() {
-    for (final entry in widget.agents.entries) {
-      if (entry.value == widget.selectedAgentId) {
-        return entry.key;
-      }
-    }
-    return '';
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return CcAutocomplete<String>(
-      controller: _controller,
-      hintText: widget.hint,
-      options: [
-        for (final entry in widget.agents.entries)
-          CcSelectOption<String>(value: entry.value, label: entry.key),
-      ],
-      onSelected: widget.onSelected,
-    );
   }
 }
 

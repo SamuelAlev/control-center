@@ -2,7 +2,7 @@
 title: Các bước quy trình
 description: Tài liệu tham chiếu về các loại bước quy trình, khóa body của bước, cấu hình và kết quả của bước.
 slug: vi-VN/so-tay/tham-chieu/buoc-quy-trinh
-sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
+sourceHash: 0d2876bc1ac359f4d2cfe94902bd5f924d19d5d5
 ---
 
 Một bước quy trình có hai trục độc lập:
@@ -58,6 +58,31 @@ Nút tổng quát gửi prompt rồi điều phối: kết xuất prompt, điề
 | `extras.spaceId`           | Hội thoại đã có để làm việc trong đó (mặc định: một hội thoại ẩn) |
 | `extras.conversationTitle` | Stream có tên bên trong space đó (tùy chọn)                  |
 | `extras.mode`              | Được đọc trên nút *mở* phòng (`messaging.createSpace`), không phải ở đây. Mặc định `review`. |
+
+### `goal.pursue`
+
+Bắt đầu một mục tiêu bền vững (xem [Theo đuổi một mục tiêu](/vi-VN/so-tay/huong-dan-thuc-hanh/theo-duoi-muc-tieu/)) và tạm dừng cho đến khi mục tiêu kết thúc. Trình chỉnh sửa hiển thị bước này là **Pursue a goal**. Không nằm trong 25 thân bước có sẵn ở trên; được đăng ký bên cạnh chúng.
+
+| Trường cấu hình | Mô tả |
+| ---------------------- | ----------- |
+| `agentId` | Agent theo đuổi mục tiêu (bắt buộc) |
+| `prompt` | Mục tiêu; hỗ trợ thay thế `{{key}}` (bắt buộc) |
+| `outputKey` | Khóa trạng thái cho kết quả (bắt buộc) |
+| `extras.spaceId` | Không gian mà mục tiêu làm việc trong đó (bắt buộc, như mọi bước agent) |
+| `extras.budgetMicros` | Ngân sách của mục tiêu tính bằng micro-đô la, từ 1 đến 1.000.000.000 (bắt buộc) |
+| `extras.maxRuns` | Giới hạn segment, từ 1 đến 1.000 (tùy chọn) |
+| `extras.deadlineHours` | Số giờ tính từ lúc bước bắt đầu mục tiêu, từ 1 đến 2.160 (tùy chọn) |
+| `extras.contract` | Hoàn thành khi nghĩa là gì: tiêu chí và kiểm chứng (tùy chọn) |
+
+Kết quả dưới `outputKey` là `{summary, verdict}`, trong đó `verdict` là phán quyết của người đánh giá cùng các mục và mối lo ngại của nó, hoặc null.
+
+| Mục tiêu | Bước |
+| -------- | -------- |
+| đã hoàn tất | hoàn tất |
+| thất bại, bị hủy hoặc hết ngân sách | thất bại (`retry` và `continueOnFail` áp dụng); một bước được thử lại sẽ bắt đầu một mục tiêu mới |
+| tạm dừng, kể cả khi đang chờ người đánh giá | vẫn ở trạng thái tạm dừng, được miễn quét 24 giờ kiểm tra còn sống |
+
+Một mục tiêu do lần chạy quy trình khởi động được tính vào điều phối của lần chạy đó, kể cả phần đánh giá. Khi lần chạy quy trình bị hủy, thất bại hoặc hoàn tất trong lúc mục tiêu đang làm việc, mục tiêu sẽ bị hủy.
 
 ### `pipeline.condition`
 

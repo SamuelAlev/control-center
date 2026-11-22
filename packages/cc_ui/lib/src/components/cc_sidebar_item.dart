@@ -32,6 +32,7 @@ class CcSidebarItem extends StatelessWidget implements CcFluidHoverTarget {
     this.badge,
     this.badgeBesideLabel = false,
     this.collapsed = false,
+    this.extent = kCcSidebarItemExtent,
   });
 
   /// The leading nav icon (an [IconData] from the bundled icon font —
@@ -69,6 +70,10 @@ class CcSidebarItem extends StatelessWidget implements CcFluidHoverTarget {
 
   /// Icon-only rail mode fallback when there is no [CcSidebarScope] ancestor.
   final bool collapsed;
+
+  /// Expanded row height. [kCcSidebarItemExtent] unless the row sits in a
+  /// list of taller rows it has to match (a folder among the space cards).
+  final double extent;
 
   @override
   bool get fluidHoverEnabled => onPressed != null;
@@ -211,9 +216,10 @@ class CcSidebarItem extends StatelessWidget implements CcFluidHoverTarget {
           // so snapping it with the selection costs nothing visible.
           duration: selection,
           curve: CcMotion.standard,
-          // The expanded row height is fixed at 32px (design rule); the 18px
-          // icon and label center vertically inside it.
-          height: collapsed ? null : kCcSidebarItemExtent,
+          // The expanded row height is fixed at 32px (design rule) unless a
+          // list of taller rows asks for [extent]; the 18px icon and label
+          // center vertically inside it.
+          height: collapsed ? null : extent,
           decoration: BoxDecoration(
             color: hoverFill,
             borderRadius: AppRadii.brSm,

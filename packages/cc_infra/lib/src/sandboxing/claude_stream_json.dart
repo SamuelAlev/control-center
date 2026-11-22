@@ -1,12 +1,16 @@
 import 'dart:convert';
 
 import 'package:cc_infra/src/dispatch/render_media_image_refs.dart';
+import 'package:cc_infra/src/sandboxing/claude_call_usage.dart';
 import 'package:cc_infra/src/sandboxing/claude_native_session.dart';
 import 'package:cc_infra/src/sandboxing/claude_rate_limit.dart';
 import 'package:cc_infra/src/sandboxing/claude_stream_events.dart';
 
+export 'package:cc_infra/src/sandboxing/claude_call_usage.dart';
 export 'package:cc_infra/src/sandboxing/claude_rate_limit.dart';
 export 'package:cc_infra/src/sandboxing/claude_stream_events.dart';
+
+part 'claude_task_lifecycle.dart';
 
 /// What ONE `claude -p` turn's terminal `result` event reports.
 ///
@@ -329,27 +333,6 @@ class ClaudeModelUsage {
     costUsd: costUsd,
     costBasis: costBasis,
   );
-}
-
-/// The size of ONE main-thread model call, from its `message_start` /
-/// `message_delta` stream events.
-///
-/// Unlike [ClaudeUsage] (the invocation's summed spend), this is occupancy:
-/// [promptTokens] is everything the model read on that call — uncached input
-/// plus cache read plus cache write — and [outputTokens] what it has written
-/// back so far, which the next call carries forward.
-class ClaudeCallUsage {
-  /// Creates a [ClaudeCallUsage].
-  const ClaudeCallUsage({required this.promptTokens, this.outputTokens = 0});
-
-  /// Input tokens the call read, cached or not.
-  final int promptTokens;
-
-  /// Output tokens produced by the call so far.
-  final int outputTokens;
-
-  /// Tokens in the window once this call's output joins the context.
-  int get contextTokens => promptTokens + outputTokens;
 }
 
 /// One MCP server as `system/init` reports it.
@@ -684,6 +667,19 @@ class ClaudeDispatchTotals {
     _cacheWriteTokens += delta.cacheWriteTokens;
   }
 
+  /// Folds in the calls a process streamed and no `result` will ever report
+  /// (it died first), at their streamed counts and catalog-priced estimate.
+  /// The caller settles [calls] afterwards, so they count once.
+  void addUnreported(ClaudeUnreportedUsage calls) {
+    _costMicros += calls.pricedMicros;
+    _costUnavailable = _costUnavailable || calls.hasUnpriced;
+    _hasTokenData = true;
+    _inputTokens += calls.inputTokens;
+    _outputTokens += calls.outputTokens;
+    _cacheReadTokens += calls.cacheReadTokens;
+    _cacheWriteTokens += calls.cacheWriteTokens;
+  }
+
   /// The dispatch's totals as one snapshot, for the cumulative event.
   ClaudeModelUsageSnapshot get snapshot => ClaudeModelUsageSnapshot(
     inputTokens: _inputTokens,
@@ -974,6 +970,7 @@ class ClaudeStreamJsonCallbacks {
     this.onToolResult,
     this.onUsage,
     this.onCallUsage,
+    this.onSubagentCallUsage,
     this.onCompactBoundary,
     this.onInit,
     this.onConversationReset,
@@ -983,6 +980,7 @@ class ClaudeStreamJsonCallbacks {
     this.onError,
     this.onTerminalError,
     this.onSubagent,
+    this.onBackgroundTask,
     this.onResult,
   });
 
@@ -1023,6 +1021,12 @@ class ClaudeStreamJsonCallbacks {
   /// its `message_delta` reports output. Subagent (`Task`) calls are skipped:
   /// they run in their own window, not the one the meter describes.
   final void Function(ClaudeCallUsage usage)? onCallUsage;
+
+  /// A subagent call's usage, from each of its streamed `assistant` lines.
+  /// Spend only, never occupancy: a subagent runs in its own window, so
+  /// [onCallUsage]'s meter must not see it. Partial by nature, see
+  /// [ClaudeCallUsage.subagent].
+  final void Function(ClaudeCallUsage usage)? onSubagentCallUsage;
 
   /// `claude` auto-compacted (or was asked to compact) its own context.
   /// The argument is the size it compacted from, when reported.
@@ -1065,6 +1069,10 @@ class ClaudeStreamJsonCallbacks {
   /// the parent, and a subagent's tool rows merged into it would read as the
   /// parent's own work.
   final void Function(ClaudeSubagentEvent event)? onSubagent;
+
+  /// A background Bash task started or ended ([ClaudeBackgroundTaskEvent]).
+  /// Never an agent row: it shares the subagents' task lifecycle lines only.
+  final void Function(ClaudeBackgroundTaskEvent event)? onBackgroundTask;
 
   /// The turn ended: a terminal `result` event, successful or not, after
   /// [onUsage] and [onTerminalError] have seen it. With `--input-format
@@ -1208,9 +1216,16 @@ class ClaudeStreamJsonParser {
   final Map<String, ({String spawnId, String? runId})> _subagentTasks = {};
   final Set<String> _subagentSpawnIds = {};
 
+  /// Background Bash tasks started and not yet ended (task ids).
+  final Set<String> _bashTasks = {};
+
   /// Prompt size of the main-thread call in flight, so its `message_delta`
   /// (which carries output only) can report the whole call.
-  int? _callPromptTokens;
+  ClaudeCallUsage? _callStart;
+
+  /// Calls whose `message_start` carried no message id, numbered so each
+  /// still counts once.
+  int _unnamedCalls = 0;
 
   /// Feeds one decoded NDJSON line. Unknown event shapes are ignored.
   void process(Map<String, dynamic> obj) {
@@ -1256,6 +1271,9 @@ class ClaudeStreamJsonParser {
       return;
     }
     if (parent is String && parent.isNotEmpty) {
+      if (type == 'assistant') {
+        _handleSubagentCallUsage(obj);
+      }
       _handleSubagentLine(parent, type, obj);
       return;
     }
@@ -1328,135 +1346,6 @@ class ClaudeStreamJsonParser {
     // conversation_reset, api_retry) are handled above.
   }
 
-  bool _handleSubagentTask(Map<String, dynamic> obj) {
-    final subtype = obj['subtype'];
-    if (subtype == 'task_started') {
-      final spawnId = obj['tool_use_id'];
-      final subagentType = obj['subagent_type'];
-      // Bash tasks share this lane but must never open an agent row.
-      if (spawnId is String &&
-          spawnId.isNotEmpty &&
-          (subagentType is String || obj['task_type'] == 'local_agent')) {
-        _subagentSpawnIds.add(spawnId);
-        final taskId = obj['task_id'];
-        if (taskId is String && taskId.isNotEmpty) {
-          _subagentTasks[taskId] = (
-            spawnId: spawnId,
-            runId: obj['run_id'] as String?,
-          );
-        }
-        _callbacks.onSubagent?.call(
-          ClaudeSubagentStarted(
-            spawnId,
-            description: obj['description'] as String?,
-            subagentType: subagentType is String ? subagentType : null,
-          ),
-        );
-      }
-      return true;
-    }
-    if (subtype != 'task_notification' && subtype != 'task_updated') {
-      return false;
-    }
-    final task = _subagentTasks[obj['task_id']];
-    final runId = obj['run_id'];
-    if (task != null &&
-        task.runId != null &&
-        runId is String &&
-        runId != task.runId) {
-      return true;
-    }
-    final spawnId = obj['tool_use_id'] ?? task?.spawnId;
-    if (spawnId is! String || !_subagentSpawnIds.contains(spawnId)) {
-      return true;
-    }
-    final patch = obj['patch'];
-    final data = subtype == 'task_updated' && patch is Map ? patch : obj;
-    final status = switch (data['status']) {
-      'completed' => ClaudeSubagentStatus.completed,
-      'failed' => ClaudeSubagentStatus.failed,
-      'stopped' || 'killed' => ClaudeSubagentStatus.stopped,
-      _ => null,
-    };
-    if (status != null) {
-      _callbacks.onSubagent?.call(
-        ClaudeSubagentFinished(
-          spawnId,
-          status: status,
-          summary: (data['summary'] ?? data['error']) as String?,
-        ),
-      );
-    }
-    return true;
-  }
-
-  /// Routes one subagent line: its `assistant` blocks become text, thinking
-  /// and tool calls, its `user` tool results close them. The `user` text that
-  /// opens a subagent is the parent's prompt, already on the spawn call.
-  void _handleSubagentLine(
-    String spawnId,
-    Object? type,
-    Map<String, dynamic> obj,
-  ) {
-    final onSubagent = _callbacks.onSubagent;
-    final message = obj['message'];
-    if (onSubagent == null || message is! Map<String, dynamic>) {
-      return;
-    }
-    final content = message['content'];
-    if (content is! List) {
-      return;
-    }
-    _subagentSpawnIds.add(spawnId);
-    for (final block in content) {
-      if (block is! Map<String, dynamic>) {
-        continue;
-      }
-      switch ((type, block['type'])) {
-        case ('assistant', 'text'):
-          final text = block['text'] as String? ?? '';
-          if (text.isNotEmpty) {
-            onSubagent(ClaudeSubagentText(spawnId, text));
-          }
-        case ('assistant', 'thinking'):
-          final text = block['thinking'] as String? ?? '';
-          if (text.isNotEmpty) {
-            onSubagent(ClaudeSubagentThinking(spawnId, text));
-          }
-        case ('assistant', 'tool_use'):
-          final toolId = block['id'];
-          if (toolId is String) {
-            _openToolNames[toolId] = block['name'] as String? ?? '';
-          }
-          onSubagent(
-            ClaudeSubagentToolCall(
-              spawnId,
-              ClaudeToolUse(
-                id: block['id'] as String? ?? '',
-                name: block['name'] as String? ?? '',
-                input: block['input'],
-              ),
-            ),
-          );
-        case ('user', 'tool_result'):
-          final toolId = block['tool_use_id'] as String? ?? '';
-          final toolName = _openToolNames.remove(toolId);
-          onSubagent(
-            ClaudeSubagentToolResult(
-              spawnId,
-              ClaudeToolResult(
-                id: block['tool_use_id'] as String? ?? '',
-                outputs: _flattenResult(block['content']),
-                images: renderMediaImageRefs(toolName, block['content']),
-                isError: block['is_error'] == true,
-                isAsync: _isAsyncResult(obj['tool_use_result']),
-              ),
-            ),
-          );
-      }
-    }
-  }
-
   /// Reads one call's size off its `message_start` (prompt) and
   /// `message_delta` (output so far). A missing field reads as zero, matching
   /// [ClaudeUsage.tryFromResult].
@@ -1473,30 +1362,66 @@ class ClaudeStreamJsonParser {
         if (usage is! Map) {
           return;
         }
-        final prompt =
-            count(usage, 'input_tokens') +
-            count(usage, 'cache_read_input_tokens') +
-            count(usage, 'cache_creation_input_tokens');
-        _callPromptTokens = prompt;
-        _callbacks.onCallUsage?.call(
-          ClaudeCallUsage(
-            promptTokens: prompt,
-            outputTokens: count(usage, 'output_tokens'),
-          ),
+        final id = (message as Map)['id'];
+        final model = message['model'];
+        final start = _callStart = ClaudeCallUsage(
+          messageId: id is String && id.isNotEmpty
+              ? id
+              // Per parser too: a dispatch's attempts each get their own.
+              : 'unnamed-call-${identityHashCode(this)}-${++_unnamedCalls}',
+          model: model is String && model.isNotEmpty ? model : null,
+          inputTokens: count(usage, 'input_tokens'),
+          cacheReadTokens: count(usage, 'cache_read_input_tokens'),
+          cacheWriteTokens: count(usage, 'cache_creation_input_tokens'),
+          callStarted: true,
+          outputTokens: count(usage, 'output_tokens'),
         );
+        _callbacks.onCallUsage?.call(start);
       case 'message_delta':
         final usage = event['usage'];
-        final prompt = _callPromptTokens;
-        if (usage is! Map || prompt == null) {
+        final start = _callStart;
+        if (usage is! Map || start == null) {
           return;
         }
         _callbacks.onCallUsage?.call(
-          ClaudeCallUsage(
-            promptTokens: prompt,
-            outputTokens: count(usage, 'output_tokens'),
-          ),
+          start.withOutput(count(usage, 'output_tokens')),
         );
     }
+  }
+
+  /// Reads a subagent call's usage off one of its `assistant` lines. The CLI
+  /// streams a subagent's calls only as these lines, only for the messages
+  /// that hold a tool call, each line with the output count at its block —
+  /// see [ClaudeCallUsage.subagent].
+  void _handleSubagentCallUsage(Map<String, dynamic> obj) {
+    final onUsage = _callbacks.onSubagentCallUsage;
+    final message = obj['message'];
+    if (onUsage == null || message is! Map) {
+      return;
+    }
+    final id = message['id'];
+    final usage = message['usage'];
+    if (id is! String || id.isEmpty || usage is! Map) {
+      return;
+    }
+    int count(String key) {
+      final value = usage[key];
+      return value is num ? value.toInt() : 0;
+    }
+
+    final model = message['model'];
+    onUsage(
+      ClaudeCallUsage(
+        messageId: id,
+        model: model is String && model.isNotEmpty ? model : null,
+        inputTokens: count('input_tokens'),
+        cacheReadTokens: count('cache_read_input_tokens'),
+        cacheWriteTokens: count('cache_creation_input_tokens'),
+        outputTokens: count('output_tokens'),
+        callStarted: false,
+        subagent: true,
+      ),
+    );
   }
 
   void _handleToolResults(Object? content, {bool isAsync = false}) {

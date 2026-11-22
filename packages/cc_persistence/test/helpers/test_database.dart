@@ -54,6 +54,7 @@ GlobalDatabase createTestGlobalDatabase() {
 /// reads the registry rather than the set of databases handed out so far.
 WorkspaceDatabaseManager createTestWorkspaceDatabases({
   GlobalDatabase? global,
+  void Function(String tag, String message)? onWarn,
 }) {
   sqlite3.sqlite3.tempDirectory = Directory.systemTemp.path;
   // Holding several `WorkspaceDatabase` instances at once is the whole point of
@@ -65,6 +66,7 @@ WorkspaceDatabaseManager createTestWorkspaceDatabases({
     dataDir: Directory.systemTemp.path,
     global: global ?? createTestGlobalDatabase(),
     executorFactory: (_) => NativeDatabase.memory(),
+    onWarn: onWarn,
   );
 }
 

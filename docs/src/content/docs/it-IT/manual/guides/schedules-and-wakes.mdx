@@ -1,0 +1,110 @@
+---
+title: Pianificazioni e risvegli
+description: Risveglia un agente più tardi, su una pianificazione o quando succede qualcosa, vedi cosa è in attesa e cosa succede al riavvio o al limite di utilizzo.
+slug: it-IT/manuale/guide/pianificazioni-risvegli
+sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+---
+
+Un agente non dorme né controlla in continuo mentre attende. L'agente, o tu, imposta un **risveglio**: una richiesta durevole di avviare o proseguire l'esecuzione dell'agente in una conversazione, a un orario o quando succede qualcosa. Ogni esecuzione che il server avvia senza che qualcuno scriva inizia come un risveglio: il prossimo segmento di un obiettivo, una pianificazione, un monitoraggio, una risposta di un altro agente, un lavoro delegato concluso, la fine di un limite di utilizzo, il lavoro rimasto dopo un riavvio. I risvegli sono conservati nel database dello spazio di lavoro, quindi sopravvivono a un riavvio.
+
+## Pianifica tu stesso un agente
+
+Scrivi uno di questi comandi nel compositore di una conversazione:
+
+```text
+/loop every 30m --days 3 check the deploy and fix what broke
+/loop keep the flaky tests green
+/schedule in 2h look at the overnight benchmark
+/schedule at 09:00 summarize what changed overnight
+/schedule cron "0 9 * * 1-5" --max 20 triage new tickets
+```
+
+| Comando | Cosa fa |
+| --- | --- |
+| `/loop every <interval> <prompt>` | Risveglia l'agente con il prompt subito e poi ogni intervallo (a non meno di 60 secondi di distanza) |
+| `/loop <prompt>` | Un ciclo a ritmo autonomo: risveglia l'agente subito, e dopo ogni esecuzione l'agente sceglie il ritardo successivo, da 1 a 60 minuti (20 per impostazione predefinita) |
+| `/schedule in <duration> <prompt>` | Risveglia l'agente una sola volta, dopo il ritardo |
+| `/schedule at <HH:MM or ISO time> <prompt>` | Risveglia l'agente una sola volta. `HH:MM` è il prossimo orario di questo tipo nel fuso orario dello spazio di lavoro; un orario ISO senza offset è in UTC |
+| `/schedule cron "<expression>" <prompt>` | Risveglia l'agente secondo un cron a cinque campi, letto nel fuso orario dello spazio di lavoro. Le virgolette sono facoltative |
+
+- `--max <N>` limita le esecuzioni, `--days <N>` termina la pianificazione dopo quel numero di giorni (30 per impostazione predefinita, 365 al massimo) e `--budget <dollars>` limita la spesa totale della pianificazione (altrimenti il budget predefinito dello spazio di lavoro, inizialmente 50 dollari).
+- `/loop` esegue la prima esecuzione subito. `/schedule` aspetta il suo orario.
+- Le durate usano `s`, `m`, `h` e `d`, come `90s`, `20m` o `1h30m`.
+- Questi comandi vengono letti solo in un messaggio che scrivi tu.
+
+Il compositore ti aiuta a scriverli. Dopo `/loop` o `/schedule` e uno spazio, l'elenco dei suggerimenti propone quando si attiva e si restringe man mano che digiti; digita `--` dopo l'orario per i limiti. Invio o Tab sceglie una riga e non invia nulla. Una riga sopra il testo riporta poi il comando: quando si attiva, quando termina e cosa manca ancora. Se premi Invio su un comando che non può essere letto, quella riga dice cosa non va e la tua bozza resta.
+
+Puoi anche creare una pianificazione dalla pagina **Pianificazioni** con **Nuova pianificazione**: scegli lo spazio, la conversazione e l'agente, quando si attiva, da cosa parte ogni esecuzione, una fine, un limite di esecuzioni e un limite di spesa. **Se l'agente è occupato** sceglie tra saltare quell'attivazione e attendere che l'agente sia libero. **Ad ogni attivazione** sceglie tra avviare un'esecuzione e limitarsi a notificarti con la nota.
+
+## Cosa pianificano gli agenti
+
+Gli agenti usano lo strumento `wake_me` per le stesse cose, e per i monitoraggi:
+
+| Monitoraggio | Si attiva quando |
+| --- | --- |
+| `on:pr_checks` | I controlli della pull request dello spazio terminano |
+| `on:pr_review` | La pull request dello spazio riceve una revisione o una risposta |
+| `on:pr_merged` | La pull request dello spazio viene unita |
+| `on:environment` | Un'attività dell'ambiente dello spazio termina, oppure l'ambiente diventa pronto |
+| `on:ticket:<id>` | Un ticket raggiunge uno stato finale |
+| `on:pipeline_run:<id>` | Un'esecuzione di pipeline termina |
+
+- Un monitoraggio sulla pull request ascolta la pull request dello spazio, o una pull request che indica (`on:pr_checks:acme/shop-ui#12`). Un monitoraggio su qualcosa che la sua persona non può leggere viene rifiutato.
+- Le azioni dell'agente stesso non attivano i suoi monitoraggi. Un evento che arriva mentre l'agente lavora non va perso: attende la fine dell'esecuzione, e gli eventi successivi confluiscono nello stesso risveglio.
+- La pianificazione di un agente deve avere un limite di esecuzioni o una fine. Termina dopo 7 giorni per impostazione predefinita e 30 al massimo. Un monitoraggio viene eseguito 10 volte per impostazione predefinita.
+- Una pianificazione che un agente imposta in un'esecuzione avviata da una delle sue pianificazioni condivide fine, limite di esecuzioni e limite di spesa della prima, quindi una catena di pianificazioni di un agente non può sopravvivere alla prima. Eliminare la prima pianificazione termina l'intera catena; metterla in pausa interrompe solo quella pianificazione. Le esecuzioni che la catena avvia tramite altri agenti contano nello stesso limite di spesa. Una pianificazione creata da te non avvia alcuna catena: ciò che un agente imposta nelle sue esecuzioni è limitato come qualsiasi cosa imposti dopo un tuo messaggio.
+- Un agente elenca ciò che ha in attesa con `list_wakes` e annulla ciò che ha impostato lui con `cancel_wake`. Non può annullare ciò che hai impostato tu.
+
+## Vedi cosa è in attesa
+
+**Sopra il compositore.** Quando dei risvegli attendono un agente nella conversazione, una striscia li mostra: **N risvegli in attesa**, da dove arriva ciascuno (**Obiettivo**, **Pianificazione**, **Monitoraggio**, **Risposta da** un agente, **Limite ripristinato**, **Ripristino**, …), quando è previsto e perché è trattenuto.
+
+| Pulsante | Cosa fa | Chi può |
+| --- | --- | --- |
+| **Consegna ora** | Consegna subito un risveglio in attesa | Solo la persona per cui agisce il risveglio |
+| **Riprendi** | Rilascia un risveglio trattenuto | Solo la persona per cui agisce il risveglio |
+| **Annulla risveglio** | Lo annulla | Chiunque abbia accesso allo spazio |
+
+Un risveglio non consegnato lascia una riga nella conversazione che dice perché, come **L'agente è in pausa.** o **Un budget blocca un'esecuzione.**
+
+**La pagina Pianificazioni.** Barra laterale → **Pianificazioni** elenca ogni pianificazione e monitoraggio che puoi vedere, raggruppati per stato; una pianificazione cron mostra le sue prossime tre volte nel tuo fuso orario. Aprine una per vedere la sua nota, il proprietario, le prossime attivazioni, le esecuzioni, i salti, la spesa e la fine, e **Risvegli ed esecuzioni recenti**. Ogni pianificazione ha un proprio indirizzo (`/workspaces/<workspace>/schedules/<id>`).
+
+| Azione | Chi può |
+| --- | --- |
+| **Pausa**, **Elimina** | Chiunque abbia accesso allo spazio |
+| **Riprendi**, **Prolunga** | Solo il suo proprietario (un admin dello spazio di lavoro per una pianificazione creata da un agente senza una persona) |
+
+Quando qualcuno diverso dal proprietario di una pianificazione la mette in pausa, la conversazione mostra una riga che ne riporta il nome.
+
+Sul telefono, **Ripeti** nella schermata degli obiettivi avvia un prompt ripetuto (ogni tot minuti o ore, oppure a ritmo autonomo) con un limite di spesa e una fine, e la schermata **Pianificazioni** mette in pausa, riprende ed elimina le pianificazioni. La vista di avanzamento di una conversazione mostra ciò che attende, incluse le pause al limite di utilizzo (**Riprendi ora**, **Annulla**) e il lavoro rimasto dopo un arresto del server.
+
+## Come viene eseguita una pianificazione
+
+- Ogni esecuzione di una pianificazione o di un monitoraggio è limitata a 5 dollari, o a ciò che alla pianificazione resta quando è meno, e la pianificazione si ferma al suo limite di spesa.
+- Un orario di cron nell'ora saltata quando gli orologi vanno avanti viene eseguito un'ora dopo quel giorno (02:30 viene eseguito alle 03:30). Un orario nell'ora che si ripete quando gli orologi tornano indietro viene eseguito una sola volta.
+- L'esecuzione di una pianificazione non si unisce mai a un'esecuzione già in corso. Se l'agente è occupato quando scatta una pianificazione a orario, quell'attivazione viene saltata in silenzio, a meno che la pianificazione non attenda che l'agente sia libero.
+- Un'esecuzione avviata da una pianificazione o da un monitoraggio che termina senza problemi non ti notifica, a meno che non nomini qualcuno. Quando una pianificazione termina, la campanella dice il motivo (**Ha esaurito le sue esecuzioni.**, **Ha raggiunto la data di fine.**, …) senza suono.
+- Al massimo 30 esecuzioni all'ora partono da risvegli in una conversazione, e 300 in uno spazio di lavoro.
+- Quando la persona per cui agisce una pianificazione lascia lo spazio di lavoro, la pianificazione termina. Tutto il resto che agiva per lei si ferma: i suoi risvegli in attesa vengono annullati, i suoi messaggi in coda e trattenuti vengono eliminati, e i suoi agenti in esecuzione vengono fermati.
+
+## Arresto, riavvio e limiti di utilizzo
+
+- **Ferma.** Premere **Ferma** sull'esecuzione di un agente trattiene i suoi risvegli in attesa (quelli che non appartengono a un obiettivo) e i messaggi che hai messo in coda per lui. Attendono **Riprendi** o **Invia i messaggi trattenuti**. Ogni persona invia i propri messaggi trattenuti; nessuno invia quelli di un'altra persona.
+- **Un riavvio del server.** I risvegli e le pianificazioni sopravvivono. Un'esecuzione avviata da un risveglio riprende dopo il riavvio, con al massimo 3 tentativi. Un'esecuzione che hai avviato tu non viene rieseguita da sola: lascia un risveglio **Ripristino** trattenuto, e prosegue quando premi **Riprendi**. Una pianificazione a orario che ha perso i suoi slot mentre il server era spento si attiva in ritardo solo entro una breve tolleranza (metà del suo intervallo, al massimo 10 minuti; 24 ore per una pianificazione una tantum), altrimenti registra un solo salto: **Perso mentre il server era spento.**
+- **Un limite di utilizzo del provider.** Quando un'esecuzione si ferma al limite di utilizzo di un provider e il provider indica quando si ripristina (entro 7 giorni), l'esecuzione viene messa in pausa. Un'esecuzione avviata dal server, come un segmento di un obiettivo o l'esecuzione di una pianificazione, riprende da sola 30 secondi dopo il ripristino. Un'esecuzione che hai avviato tu attende te: la conversazione mostra **In pausa al limite di utilizzo del provider.** **Il limite si ripristina alle** un orario, con **Riprendi** (solo tu) e **Annulla** (chiunque nello spazio). Dopo **Riprendi** continua una volta che il limite si è ripristinato. Una pausa che non riprendi scade 7 giorni dopo il ripristino. I messaggi che hai messo in coda al limite vengono inviati nell'esecuzione ripresa; se l'esecuzione non attende il ripristino, oppure la pausa viene annullata o scade, vengono trattenuti per te sotto **Invia i messaggi trattenuti**. I messaggi in coda di altre persone vengono subito trattenuti per loro. Il prossimo attivarsi di una pianificazione attende che l'esecuzione in pausa riprenda. Gli agenti ACP non comunicano alcun ripristino, quindi le loro esecuzioni non attendono.
+
+## Limiti dello spazio di lavoro
+
+Un admin dello spazio di lavoro imposta i limiti in **Impostazioni → Spazio di lavoro → Pianificazioni**:
+
+- **Limiti delle pianificazioni**: quante pianificazioni attive o in pausa un agente può avere in una conversazione (10), nello spazio di lavoro (50) e in tutto lo spazio di lavoro (500); il limite di spesa predefinito di una pianificazione (50 dollari); e il fuso orario usato dalle pianificazioni cron e dal riepilogo giornaliero (UTC inizialmente).
+- **Quando nessuno risponde**: quanto attende un'esecuzione avviata dal server la risposta o l'approvazione di una persona (72 ore per impostazione predefinita, da 1 ora a 7 giorni) prima che un'approvazione conti come negata e una domanda come senza risposta (dopo, qualsiasi altra cosa la stessa esecuzione chieda viene subito rifiutata), e l'ora del riepilogo giornaliero di ciò che ti attende tra obiettivi, pianificazioni e altre esecuzioni avviate dal server.
+
+I membri vedono la pagina in sola lettura.
+
+## Vedi anche
+
+- [Persegui un obiettivo](/it-IT/manuale/guide/persegui-obiettivo/)
+- [Agenti che lavorano insieme](/it-IT/manuale/guide/agenti-insieme/)
+- [Comandi slash](/it-IT/manuale/riferimento/comandi-slash/)
+- [Strumenti di risveglio e obiettivo](/it-IT/manuale/riferimento/strumenti-mcp/#strumenti-di-risveglio-e-obiettivo)

@@ -1,0 +1,143 @@
+---
+title: Theo đuổi một mục tiêu
+description: Giao cho agent một mục tiêu mà nó tiếp tục thực hiện qua nhiều lần chạy và khi khởi động lại, xác định thế nào là hoàn thành, và quyết định khi nào nó đã xong.
+slug: vi-VN/so-tay/huong-dan-thuc-hanh/theo-duoi-muc-tieu
+sourceHash: 0ea77964bd9e3044e168624bc67325de0fd1d1e5
+---
+
+Mục tiêu là công việc mà agent tiếp tục thực hiện cho đến khi đáp ứng phần Hoàn thành khi của nó. Agent làm việc theo **phân đoạn**: các lần chạy có giới hạn mà máy chủ khởi động lần lượt, qua cả các lần khởi động lại, cho đến khi mục tiêu được xác minh, một người đóng nó, hoặc nó chạm một giới hạn. Agent không thể đóng mục tiêu bằng cách nói rằng nó đã xong. Máy chủ chạy các kiểm chứng của mục tiêu, và một agent đánh giá xem kết quả trước.
+
+## Bắt đầu một mục tiêu
+
+Gõ `/goal` và mục tiêu vào ô soạn của cuộc trò chuyện:
+
+```text
+/goal --budget 20 --days 2 --check "make test" make the importer handle files over 2 GB
+```
+
+Gõ `/goal` kèm văn bản ngay sau đó sẽ mở phần phỏng vấn mục tiêu. Phần này hỏi về tiêu chí thành công, các kiểm chứng phải đạt, ranh giới và điều kiện dừng, và đề nghị một bộ kiểm tra riêng, bắt đầu mỗi phân đoạn mới, và để agent tự trả lời các câu hỏi của chính nó. Có thể bỏ qua mọi bước.
+
+| Cờ | Ý nghĩa |
+| --- | --- |
+| `--budget <dollars>` | Tổng chi tiêu được phép của toàn bộ mục tiêu. Mặc định là 50 đô la |
+| `--max <N>` | Số phân đoạn nhiều nhất mà mục tiêu được có. Mặc định không giới hạn |
+| `--days <N>` | Một hạn chót, tính bằng số ngày đó kể từ bây giờ |
+| `--check "<command>"` | Một lệnh phải chạy đạt trước khi mục tiêu có thể hoàn thành, chạy trong worktree. Lặp lại để thêm kiểm chứng, tối đa 5 |
+| `--checker <agent>` | Một agent khác đánh giá khẳng định rằng mục tiêu đã xong, theo tên hoặc id |
+| `--fresh` | Bắt đầu mỗi phân đoạn mà không có lịch sử của cuộc trò chuyện, chỉ dựa vào mục tiêu và ghi chú của nó |
+| `--unattended wait` hoặc `--unattended assume` | Điều gì xảy ra với các câu hỏi của agent khi không ai trả lời (xem [Khi không ai trả lời](#khi-không-ai-trả-lời)) |
+
+- Cờ có thể đặt ở bất kỳ đâu trong tin nhắn. Cờ không rõ, cờ lặp lại, giá trị sai và hơn 5 kiểm chứng đều bị từ chối, và bản nháp của bạn vẫn nằm trong ô soạn kèm lý do bên dưới.
+- Một số ở đầu mục tiêu là một phần của mục tiêu. Để giới hạn số phân đoạn, dùng `--max`.
+- `/goal` chỉ được đọc trong tin nhắn do chính bạn gõ. Cùng nội dung đó từ một agent, một quy trình hoặc một lượt đánh thức là một tin nhắn thông thường.
+- Một agent theo đuổi một mục tiêu tại một thời điểm trong một không gian làm việc. Lệnh `/goal` thứ hai cho cùng agent sẽ bị từ chối khi mục tiêu đầu tiên còn đang hoạt động.
+
+### Hoàn thành khi
+
+Mục tiêu có thể chứa các phần trở thành hợp đồng của nó:
+
+```text
+/goal make the importer handle files over 2 GB
+
+## Success criteria
+- A 3 GB fixture imports without running out of memory
+- The progress bar reaches 100%
+
+## Boundaries
+- Don't change the public API
+
+## Stop conditions
+- A migration would drop data
+
+## Checks
+- `make test` (300 s)
+- environment task `test` (600 s)
+```
+
+- **Tiêu chí thành công**: tối đa 12, mỗi tiêu chí tối đa 300 ký tự. Mỗi tiêu chí là một điều mà người đánh giá có thể xác nhận.
+- **Kiểm chứng**: tối đa 5. Một kiểm chứng chạy trong worktree hoặc như một tác vụ có tên trong [môi trường](/vi-VN/so-tay/huong-dan-thuc-hanh/moi-truong/) của không gian. Mỗi kiểm chứng có 300 giây mặc định và tối đa 1.800 giây.
+- Một phần vượt giới hạn sẽ bị từ chối, không bao giờ bị cắt bớt.
+
+Mục tiêu không có tiêu chí sẽ để agent tự quyết định khi nào nó xong, và mục tiêu không có kiểm chứng chỉ dựa vào đánh giá. Trang mục tiêu có nói rõ điều này.
+
+## Cách một mục tiêu tiếp tục
+
+Mỗi phân đoạn là một lần chạy được giới hạn ở 5 đô la hoặc phần ngân sách còn lại, tùy số nào thấp hơn. Sau mỗi phân đoạn, máy chủ quyết định bước tiếp theo dựa trên những gì phân đoạn đã làm:
+
+- **Có tiến triển.** Phân đoạn tiếp theo bắt đầu.
+- **Đang chờ thứ nó đã thiết lập**: một lịch, một theo dõi, một câu hỏi gửi agent khác hoặc một ticket đã ủy thác. Mục tiêu chờ nó. Nếu chưa có gì đến, máy chủ kiểm tra lại sau 20 phút, rồi 40, 80, 160 và sau đó mỗi 240 phút. Thẻ hiển thị **Đang chờ điều nó đã thiết lập · sẽ kiểm tra lại lúc** một thời điểm.
+- **Không có tiến triển.** Tiến triển nghĩa là worktree đã thay đổi qua chính công việc của phân đoạn, danh sách việc cần làm đã thay đổi, hoặc agent đã làm điều gì đó mới. Sau 3 phân đoạn không có tiến triển, mục tiêu tạm dừng: **Không có tiến triển trong các phân đoạn gần nhất.**
+- **Đã chờ quá lâu.** Sau 24 giờ chờ, hoặc sau 6 lần chờ những thứ mới nó đã thiết lập mà không có tiến triển xen giữa, mục tiêu tạm dừng: **Đang chờ, sau các phân đoạn không có tiến triển.**
+- **Thất bại.** Máy chủ thử lại sau 30 giây, rồi lâu hơn, tối đa 15 phút. Sau 3 lần thất bại liên tiếp, mục tiêu thất bại.
+- **Agent hỏi một người.** Mục tiêu giữ cho đến khi có người trả lời: **Cần một người**.
+
+Mục tiêu cũng dừng khi hết ngân sách (**Hết ngân sách**), khi chạm giới hạn số phân đoạn, hoặc khi đến hạn chót.
+
+## Khi agent nói rằng nó đã xong
+
+Agent khẳng định mục tiêu đã xong, kèm bằng chứng cho từng tiêu chí. Khi đó:
+
+1. **Máy chủ chạy các kiểm chứng** trong một sandbox, không bao giờ trực tiếp trên máy của máy chủ. Kiểm chứng thoát với mã khác 0 thì thất bại. Kiểm chứng không thể chạy được (không tìm thấy lệnh, không thực thi được, hoặc tác vụ môi trường không tồn tại) là bị hỏng: mục tiêu dừng chờ một người với **Kiểm chứng này không thể chạy:** cùng lệnh. Nếu máy chủ không có sandbox, mục tiêu dừng với **Không có sandbox để chạy các kiểm chứng.** (Một máy chủ mà chủ sở hữu đã tắt sandbox cho mọi lần chạy là ngoại lệ: các kiểm chứng chạy ở đó giống như lệnh của chính agent.) Khi không có gì trong worktree thay đổi kể từ lần kiểm chứng thất bại, nó không được chạy lại.
+2. **Một agent đánh giá xem kết quả**, khi mọi kiểm chứng đã đạt hoặc không có kiểm chứng nào. Agent đánh giá là bộ kiểm tra của mục tiêu, nếu không có thì là bộ kiểm tra của không gian, nếu không có nữa thì là chính agent của mục tiêu. Nó chạy ở chế độ chỉ đọc, không có lịch sử cuộc trò chuyện: nó có thể đọc tệp và đầu ra của kiểm chứng, nhưng không thể thay đổi gì, chạy lệnh hay đánh thức agent khác. Nó cũng nhận toàn bộ diff của các bài kiểm thử và tập lệnh kiểm chứng mà agent đã thay đổi, và coi những gì agent viết trong cuộc trò chuyện và trong ghi chú của nó là lời khẳng định, không phải bằng chứng. Với một mục tiêu không có tiêu chí nào, nó đánh giá mục tiêu như một tổng thể. Nó trả lời rằng mục tiêu đã xong, chưa xong, hoặc không thể xác định.
+3. **Xong**: mục tiêu hoàn thành. **Chưa xong**: agent nhận các phát hiện của agent đánh giá và tiếp tục làm việc. Sau 3 vòng chưa xong, hoặc khi agent đánh giá không thể xác định, mục tiêu chờ bạn: **Đang chờ đánh giá: mục tiêu nói đã xong, nhưng chưa có gì xác nhận**.
+
+Tin nhắn bạn nhập trong khi agent đánh giá đang chạy sẽ không được gửi cho agent đánh giá, và cũng không được gửi khi đánh giá kết thúc. Tin nhắn đó vẫn được xếp hàng cho phân đoạn tiếp theo của agent. Nếu không có phân đoạn nào tiếp theo, tin nhắn được giữ cho bạn dưới **Gửi các tin nhắn đang giữ**.
+
+Một agent đánh giá không thể chạy (đã bị xóa, hoặc chạy trên một adapter không thể giữ lần chạy ở chế độ chỉ đọc, như agent ACP) sẽ tạm dừng mục tiêu: **Agent kiểm tra không khả dụng. Hãy chọn bộ kiểm tra khác, rồi tiếp tục.** Không có agent nào khác thay thế nếu không có bạn.
+
+Một bộ kiểm tra từ nhà cung cấp khác với agent của mục tiêu ít có khả năng chung điểm mù. Nếu không có bộ kiểm tra riêng, agent tự đánh giá công việc của chính nó, và mục tiêu ghi **Tự xác minh (không có bộ kiểm tra riêng)**.
+
+## Theo dõi một mục tiêu
+
+- **Trong cuộc trò chuyện**: thẻ mục tiêu trong bảng **Chung** hiển thị trạng thái tạm giữ, phân đoạn, chi tiêu so với ngân sách, thời gian còn lại, hoàn thành khi, các kiểm chứng và kết luận gần nhất.
+- **Trang Mục tiêu**: thanh bên → **Mục tiêu**. Các mục tiêu được nhóm thành **Đang chờ đánh giá**, **Đang mở** và **Đã kết thúc**.
+- **Trang mục tiêu**: mở một mục tiêu để xem **Hiện tại** (các phân đoạn, chi tiêu, hạn chót, số lần không có tiến triển và điều gì xảy ra tiếp theo), **Hoàn thành khi**, **Xác minh** (vòng gần nhất: khẳng định, từng kiểm chứng kèm đầu ra, đánh giá theo từng tiêu chí) và **Lịch và lượt đánh thức**. Mỗi mục tiêu có địa chỉ riêng (`/workspaces/<workspace>/goals/<goal id>`), nên bạn có thể chia sẻ liên kết.
+
+Trên điện thoại, màn hình mục tiêu bắt đầu một mục tiêu với các kiểm chứng và giới hạn phân đoạn, và hiển thị cùng các mục tiêu và các phần đang giữ.
+
+## Thay đổi hoặc dừng một mục tiêu
+
+| Hành động | Ai có thể |
+| --- | --- |
+| **Tạm dừng mục tiêu**, **Dừng mục tiêu** | Bất kỳ ai có quyền truy cập không gian |
+| **Tiếp tục mục tiêu**, **Tăng ngân sách** | Chỉ người đã bắt đầu mục tiêu (quản trị viên không gian làm việc với mục tiêu mà không ai bắt đầu) |
+| **Sửa** điều kiện hoàn thành, **Đổi bộ kiểm tra** | Chỉ người đã khởi động mục tiêu (quản trị viên không gian làm việc với mục tiêu không ai khởi động), có quyền ghi vào các kho mã của không gian, trong khi mục tiêu đang tạm dừng |
+| **Phê duyệt hoàn thành** | Bất kỳ ai có quyền truy cập không gian, trong khi mục tiêu đang chờ đánh giá. Mục tiêu do một quy trình khởi động: chỉ người đã khởi động lần chạy đó (quản trị viên không gian làm việc khi không ai khởi động) |
+
+- Nhấn **Dừng** trên lần chạy của agent sẽ tạm dừng mục tiêu (**Một người đã tạm dừng**). Các lượt đánh thức đang chờ của nó sẽ đợi cho đến khi bạn tiếp tục mục tiêu.
+- **Phê duyệt hoàn thành** đóng mục tiêu là đã xong theo lời bạn. Mục tiêu ghi **Một người đã đóng mà không có kiểm chứng đạt**.
+- Mục tiêu đã dùng hết ngân sách chỉ tiếp tục khi có ngân sách cao hơn.
+- Khi người đã khởi động một mục tiêu rời khỏi không gian làm việc, mục tiêu tạm dừng để đánh giá ngay và agent đang chạy của nó bị dừng. Không ai có thể tiếp tục nó; bất kỳ ai có quyền truy cập không gian đều có thể dừng nó. Tóm tắt hằng ngày liệt kê nó cho các quản trị viên không gian làm việc.
+
+## Khi không ai trả lời
+
+Khi một phân đoạn hỏi một người một câu hỏi hoặc xin phê duyệt và không ai trả lời, yêu cầu chờ 72 giờ theo mặc định. Sau đó, một phê duyệt được coi là bị từ chối, một câu hỏi là chưa được trả lời, và mục tiêu tạm dừng: **Một câu hỏi hoặc yêu cầu phê duyệt gửi cho người đã không được trả lời.** Lần chạy đã hỏi không nhận thêm câu trả lời nào: bất kỳ điều gì khác nó hỏi đều bị từ chối ngay, và nó hoàn tất những gì có thể. Quản trị viên không gian làm việc đặt thời gian (từ 1 giờ đến 7 ngày) tại **Cài đặt → Không gian làm việc → Lịch → Khi không ai trả lời**. Mỗi ngày một lần, vào giờ đặt ở đó, bạn nhận một bản tóm tắt gồm mọi thứ đang chờ bạn.
+
+Với `--unattended assume`, agent nêu giả định của nó và tiếp tục sau 10 phút không có câu trả lời, khi các điều kiện dừng của nó cho phép. Điều này chỉ áp dụng cho câu hỏi. Một phê duyệt không bao giờ được giả định, và đánh giá không bao giờ giả định gì cả.
+
+## Giới hạn sử dụng và khởi động lại
+
+- **Giới hạn sử dụng của nhà cung cấp.** Khi một phân đoạn dừng ở giới hạn sử dụng của nhà cung cấp và nhà cung cấp cho biết khi nào nó được đặt lại (trong vòng 7 ngày), mục tiêu tạm dừng mà không tính là lỗi: **Tạm dừng ở giới hạn sử dụng · tiếp tục lúc** một thời điểm. Nó tiếp tục 30 giây sau khi đặt lại. Sau 8 lần tạm dừng như vậy, mục tiêu chờ bạn: **Nó đã chạm giới hạn sử dụng quá thường xuyên. Hãy xem lại, rồi tiếp tục.** Mọi lần tiếp tục sẽ bắt đầu lại việc đếm. Agent ACP không báo thời điểm đặt lại, nên mục tiêu của chúng không chờ ở giới hạn.
+- **Máy chủ khởi động lại.** Mục tiêu vẫn tồn tại qua lần khởi động lại. Một phân đoạn bị lần khởi động lại làm gián đoạn sẽ được bắt đầu lại, và các lịch cùng lượt đánh thức đang chờ của mục tiêu được giữ nguyên.
+
+## Cải tiến sau một mục tiêu
+
+Sau khi một mục tiêu vượt qua xác minh, một đánh giá chỉ đọc ngắn (tối đa 1 đô la) có thể đề xuất cải tiến: một dữ kiện bộ nhớ, một chính sách, một ghi chú về agent, hoặc một thay đổi cho skill. Gõ `/refine` để yêu cầu cùng đánh giá đó cho công việc của cuộc trò chuyện. Tối đa một lượt đánh giá chạy trong mỗi cuộc trò chuyện cứ 20 phút một lần.
+
+Các đề xuất xuất hiện ở trang **Cải tiến** (thanh bên → **Cải tiến**). Mở một đề xuất để xem nó thay đổi gì, bằng chứng, và **Chấp nhận**, **Từ chối** hoặc **Hoàn tác**.
+
+- Một đề xuất không thay đổi gì cho đến khi có người chấp nhận. Nó hết hạn sau 30 ngày.
+- Thay đổi một skill, hoặc một chính sách cho toàn bộ không gian làm việc, cần quản trị viên không gian làm việc (**Quản trị viên quyết định**).
+- Thay đổi skill được lưu thành một bản sửa đổi riêng. Nhấn **Chạy đánh giá** để so sánh với skill hiện tại; **Chấp nhận** chỉ có thể dùng sau khi một lần đánh giá đã đạt. Một lần đánh giá đạt khi nó chạy đầy đủ và agent giải được ít nhất số lần chạy với thay đổi bằng với skill hiện tại; trang hiển thị cả hai con số. Nếu skill thay đổi sau lần đánh giá, hãy chạy lại.
+- **Hoàn tác** khôi phục văn bản trước đó, miễn là chưa ai thay đổi nó kể từ đó.
+
+## Trong một quy trình
+
+Một quy trình có thể bắt đầu một mục tiêu bằng bước **Pursue a goal** (`goal.pursue`). Bước này chờ cho đến khi mục tiêu kết thúc và chuyển tiếp bản tóm tắt và kết luận của nó. Xem [Các bước quy trình](/vi-VN/so-tay/tham-chieu/buoc-quy-trinh/).
+
+## Xem thêm
+
+- [Lịch và lượt đánh thức](/vi-VN/so-tay/huong-dan-thuc-hanh/lich-va-danh-thuc/)
+- [Các agent phối hợp](/vi-VN/so-tay/huong-dan-thuc-hanh/agent-phoi-hop/)
+- [Quản lý chi phí](/vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-chi-phi/)
+- [Lệnh slash](/vi-VN/so-tay/tham-chieu/lenh-slash/)

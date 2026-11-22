@@ -362,6 +362,37 @@ void main() {
       expect(text, isNot(contains('private deliberation')));
       expect(text, contains('the answer'));
     });
+
+    test('says which tools a script ran and what they touched', () {
+      final text = renderMessagesAsText([
+        const HarnessMessage(
+          role: HarnessRole.assistant,
+          content: [
+            HarnessToolUseBlock(
+              id: 'r',
+              name: 'repl',
+              input: {'code': 'await tools.edit(...)'},
+            ),
+          ],
+        ),
+        HarnessMessage.toolResults([
+          const HarnessToolResultBlock(
+            toolUseId: 'r',
+            content: 'Script completed',
+            nestedCalls: [
+              HarnessNestedToolCall(name: 'edit', args: {'path': 'lib/a.dart'}),
+              HarnessNestedToolCall(
+                name: 'bash',
+                args: {'command': 'git push'},
+                isError: true,
+              ),
+            ],
+          ),
+        ]),
+      ]);
+      expect(text, contains('[nested call edit] {"path":"lib/a.dart"}'));
+      expect(text, contains('[nested call bash error] {"command":"git push"}'));
+    });
   });
 
   group('Snapcompactor pair-safe boundaries', () {

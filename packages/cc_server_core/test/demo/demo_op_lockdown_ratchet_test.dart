@@ -194,6 +194,24 @@ void main() {
     );
   });
 
+  test('the schedule reads, including the cron preview, are admitted', () {
+    RepoOp op(String name) => RepoOp(
+      name: name,
+      kind: RepoOpKind.read,
+      handler: (_) async => const <String, dynamic>{},
+    );
+    // `wakeRules.previewCron` reads no row and runs nothing: it computes a
+    // draft's next times from the server clock and zone rules.
+    for (final name in [
+      'wakeRules.get',
+      'wakeRules.getLimits',
+      'wakeRules.listRuns',
+      'wakeRules.previewCron',
+    ]) {
+      expect(profile.admits(op(name)), isTrue, reason: name);
+    }
+  });
+
   test('only fictional usage read escapes the subscriptions prefix', () {
     RepoOp op(String name, RepoOpKind kind) => RepoOp(
       name: name,
@@ -305,6 +323,28 @@ void main() {
       'orchestration.continueNode',
       'plan.approve',
       'review_hub.start',
+      // Turning code mode on: scripts on the host's runner.
+      'codeMode.setWorkspaceSetting',
+      // Wakes start or feed agent runs.
+      'wakes.cancel',
+      'wakes.release',
+      'wakes.deliverNow',
+      // Cancelling an ask settles an agent's wait.
+      'peerAsks.cancel',
+      // Accepting writes memory, notes or a skill; a campaign spends money.
+      'improvements.accept',
+      'improvements.reject',
+      'improvements.rollback',
+      'improvements.startCampaign',
+      // A raised cap lets a held run spend again.
+      'orchestration.raiseCap',
+      // Wake rules schedule agent runs.
+      'wakeRules.create',
+      'wakeRules.update',
+      'wakeRules.pause',
+      'wakeRules.resume',
+      'wakeRules.delete',
+      'wakeRules.setLimits',
     ]) {
       final kind = ops[name];
       if (kind == null) {

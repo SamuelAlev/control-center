@@ -166,7 +166,6 @@ void main() {
                       space: space,
                       conversation: conversation,
                       onManage: () {},
-                      onArchive: () {},
                     ),
                   ),
                 ],

@@ -300,6 +300,45 @@ class AgentRunLogsTable extends Table {
   /// tool call id is not a row.
   TextColumn get spawnToolCallId => text().nullable()();
 
+  /// Why the run ended: a `RunEndReason` wire name, written with the
+  /// terminal row. Null while the run is live and for a run that ended
+  /// before end reasons were recorded.
+  TextColumn get endReason =>
+      text().nullable()
+      // ignore: recursive_getters
+      .check(endReason.isIn(AgentsStoredValues.runEndReason))();
+
+  /// JSON array of the ids of the wakes (`agent_wakes.id`) this run was
+  /// started to deliver, in delivery order; `[]` for a run nothing woke. No
+  /// foreign key: a wake row is deleted by retention long before its run.
+  TextColumn get wakeIds => text()
+      // ignore: recursive_getters
+      .check(isJsonArray(wakeIds))
+      .withDefault(const Constant('[]'))();
+
+  /// The person the run acts for, written with the run row; null for a run
+  /// the server started on its own. No foreign key: users live in the global
+  /// database.
+  TextColumn get requestedByUserId => text().nullable()();
+
+  /// Why the run was started: the wire name of the dispatch-time
+  /// `WakeContext.wakeReason` (`user_message` for a person's own message),
+  /// written with the run row and never changed. Null for a run started
+  /// without one (a subagent).
+  TextColumn get wakeReason =>
+      text().nullable()
+      // ignore: recursive_getters
+      .check(wakeReason.isIn(AgentsStoredValues.wakeReason))();
+
+  /// The run whose tool call started this run by a direct dispatch (a
+  /// reviewer `dispatch_reviewers` started, a team leader an agent's
+  /// `assign_ticket` routed to): written with the run row and never
+  /// changed. Null for every other run (a person's operation, a pipeline
+  /// step, a wake). Not a parent link: it nests nothing, changes no cost
+  /// rollup, and the run settles like any other. No foreign key: the
+  /// starting run's row is retained on its own schedule.
+  TextColumn get startedByRunId => text().nullable()();
+
   @override
   String get tableName => 'agent_run_logs';
 

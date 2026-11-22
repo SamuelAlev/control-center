@@ -14,6 +14,7 @@ void main() {
     test('metadata + schema', () {
       expect(t.name, 'checkpoint');
       expect(t.approvalTier, ToolApprovalTier.read);
+      expect(t.scriptCallable, isFalse);
       expect(t.description, contains('rewind'));
       final props = t.inputSchema['properties'] as Map<String, dynamic>;
       expect(props.keys, contains('label'));
@@ -32,6 +33,7 @@ void main() {
     test('metadata + schema', () {
       expect(t.name, 'rewind');
       expect(t.approvalTier, ToolApprovalTier.read);
+      expect(t.scriptCallable, isFalse);
       expect(t.description, contains('Discard'));
       final props = t.inputSchema['properties'] as Map<String, dynamic>;
       expect(props.keys, contains('checkpoint'));

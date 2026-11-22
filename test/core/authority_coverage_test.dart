@@ -222,8 +222,7 @@ void main() {
       'messaging.watchSpaceTurns', 'messaging.watchSpaces',
       'notes.watchForSpace', 'notifications.watch',
       'notifications.watchItemStates', 'notifications.watchReadMark',
-      'reactions.watchForSpace', 'space_read.watchUserLastReadAt',
-      'space_read.watchUserSpaceReads',
+      'reactions.watchForSpace', 'conversation_read.watchUserReads',
       'presence.watch',
       // The take-over marker, the stream twin of the `takeover.status` read.
       'takeover.watch',

@@ -9,6 +9,7 @@ import 'package:cc_domain/features/messaging/domain/value_objects/message_lifecy
 import 'package:cc_persistence/database/tables/conversation_activity.dart';
 import 'package:cc_persistence/database/tables/conversation_message_embeddings_table.dart';
 import 'package:cc_persistence/database/tables/conversation_messages.dart';
+import 'package:cc_persistence/database/tables/conversation_reads.dart';
 import 'package:cc_persistence/database/tables/conversations.dart';
 import 'package:cc_persistence/database/tables/space_participants.dart';
 import 'package:cc_persistence/database/tables/spaces.dart';
@@ -49,6 +50,7 @@ const _rowid = CustomExpression<int>('rowid');
     SpaceParticipantsTable,
     ConversationMessagesTable,
     ConversationActivityTable,
+    ConversationReadsTable,
     ConversationMessageEmbeddingsTable,
   ],
 )
@@ -422,14 +424,16 @@ GROUP BY conversation_id, space_id
   ///
   /// An agent-only space (`SpaceKind.isAgentOnly`, stored as `'agentPeer'`)
   /// never reports `last_agent_message_at`: agent chatter must not raise a
-  /// human unread dot, the same rule the notification wire applies.
+  /// human unread dot, the same rule the notification wire applies. Nor does
+  /// an archived conversation: a space is unread when one of the
+  /// conversations it lists is, and it does not list archived ones.
   static const spaceActivitySql = r'''
 SELECT a.space_id AS space_id,
        a.conversation_id AS conversation_id,
        a.last_message_at AS last_message_at,
-       CASE WHEN s.kind = 'agentPeer' THEN NULL
+       CASE WHEN s.kind = 'agentPeer' OR c.status = 'archived' THEN NULL
             ELSE a.last_agent_message_at END AS last_agent_message_at,
-       CASE WHEN s.kind = 'agentPeer' THEN NULL
+       CASE WHEN s.kind = 'agentPeer' OR c.status = 'archived' THEN NULL
             ELSE a.last_agent_message_seq END AS last_agent_message_seq,
        a.open_question_count AS open_question_count
 FROM conversation_activity a
@@ -720,6 +724,43 @@ LIMIT 1
     );
     return true;
   });
+
+  /// Every held steering card of this workspace (`steer_state = 'held'`),
+  /// across its conversations: the boot sweep of a usage-limit pause's
+  /// cards. Held cards are few; the scan runs once per boot.
+  Future<List<ConversationMessagesTableData>> heldSteeringMessages() =>
+      (select(
+        conversationMessagesTable,
+      )..where((t) => t.steerState.equals('held'))).get();
+
+  /// Every queued or held steering card [senderId] wrote in this
+  /// workspace, across its conversations: what a person's removal from the
+  /// workspace deletes. Read once per removal.
+  Future<List<ConversationMessagesTableData>> openSteeringMessagesOf(
+    String senderId,
+  ) =>
+      (select(conversationMessagesTable)..where(
+            (t) =>
+                t.senderId.equals(senderId) &
+                t.steerState.isIn(const ['queued', 'held']),
+          ))
+          .get();
+
+  /// The workspace's usage-limit park rows (`metadata.kind = limit_park`)
+  /// with no `outcome` yet: the boot pass stamps those whose wake settled
+  /// while their settlement was lost. Few rows; read once per boot.
+  Future<List<ConversationMessagesTableData>> openLimitParkRows() =>
+      customSelect(
+        "SELECT * FROM conversation_messages WHERE message_type = 'system' "
+        'AND json_valid(list_metadata) '
+        "AND json_extract(list_metadata, '\$.kind') = 'limit_park' "
+        "AND json_extract(list_metadata, '\$.outcome') IS NULL",
+        readsFrom: {conversationMessagesTable},
+      ).get().then(
+        (rows) => rows
+            .map((r) => conversationMessagesTable.map(r.data))
+            .toList(growable: false),
+      );
 
   /// Rows for [queuedSteeringSql]. Order is not delivery order; callers sort
   /// by `steerOrder`.

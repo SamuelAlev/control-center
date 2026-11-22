@@ -69,6 +69,7 @@ class _FakeCompactor implements HarnessCompactor {
     String selfAgentName = 'assistant',
     bool force = false,
     CancellationToken cancel = CancellationToken.none,
+    Future<String?> Function()? focus,
   }) async {
     if (force) {
       forced++;
@@ -417,7 +418,7 @@ void main() {
             provider: provider,
             config: AgentLoopConfig(
               tools: LoopToolConfig(
-                approvalCallback: (_, _) async =>
+                approvalCallback: (_) async =>
                     const ToolGateDecision.deny(reason: 'not this time'),
               ),
             ),

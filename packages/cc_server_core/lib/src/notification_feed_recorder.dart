@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/calendar_events.dart';
+import 'package:cc_domain/core/domain/events/digest_events.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
+import 'package:cc_domain/core/domain/events/learning_events.dart';
 import 'package:cc_domain/core/domain/events/messaging_events.dart';
 import 'package:cc_domain/core/domain/events/pr_events.dart';
 import 'package:cc_domain/core/domain/events/rig_events.dart';
@@ -146,6 +148,32 @@ class NotificationFeedRecorder {
       ..add(
         _eventBus.on<AgentActionBlocked>().listen(
           (e) => _record(agentActionBlockedFrame(e)),
+        ),
+      )
+      // A goal's outcome, or a pause only a person can lift.
+      ..add(
+        _eventBus.on<GoalSettled>().listen((e) => _record(goalSettledFrame(e))),
+      )
+      // Proposals waiting for a person, and a run held at its cost cap.
+      ..add(
+        _eventBus.on<ImprovementProposed>().listen(
+          (e) => _record(improvementProposedFrame(e)),
+        ),
+      )
+      ..add(
+        _eventBus.on<PipelineRunHeld>().listen(
+          (e) => _record(pipelineRunHeldFrame(e)),
+        ),
+      )
+      // A rule that ended, and the daily digest of what waits.
+      ..add(
+        _eventBus.on<WakeRuleEnded>().listen(
+          (e) => _record(wakeRuleEndedFrame(e)),
+        ),
+      )
+      ..add(
+        _eventBus.on<WaitingDigest>().listen(
+          (e) => _record(waitingDigestFrame(e)),
         ),
       )
       ..add(

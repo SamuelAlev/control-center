@@ -237,8 +237,8 @@ void main() {
         tools: LoopToolConfig(
           maxParallelToolCalls: 2,
           autoApprove: false,
-          approvalCallback: (tool, _) async {
-            approvals.add(tool.name);
+          approvalCallback: (request) async {
+            approvals.add(request.tool.name);
             return const ToolGateDecision.allow();
           },
         ),

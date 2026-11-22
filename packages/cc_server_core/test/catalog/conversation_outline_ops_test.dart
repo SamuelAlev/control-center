@@ -260,4 +260,8 @@ class _RefuseUser implements SpaceReadGate {
   @override
   Future<Set<String>> unreadable(String workspaceId, String userId) async =>
       const {};
+
+  @override
+  Future<List<String>> exposedBy(String workspaceId, String? spaceId) async =>
+      const [];
 }

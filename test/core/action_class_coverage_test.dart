@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:cc_domain/features/dispatch/domain/modes/read_only_run_profile.dart';
+import 'package:cc_harness/tools.dart' show ActionClass;
 import 'package:test/test.dart';
 
 /// ActionClass ratchet: every harness/MCP tool's effective `actionClasses`
@@ -33,6 +35,12 @@ void main() {
     'task': <String>{}, // spawns an in-process subagent loop, not a process
     'checkpoint': <String>{},
     'rewind': <String>{},
+    'compact': <String>{}, // loop-handled; folds the run's own context
+    // Background commands. `bash_output` is exec tier only to follow `bash`
+    // onto the surface; it reads, so it has no class. `bash_kill` stops a
+    // process the run started, the process effect `bash` itself carries.
+    'bash_output': <String>{},
+    'bash_kill': {'processSpawn'},
     // Commits a change another tool staged. Write tier and a plain file write:
     // it rewrites whole files but never removes one, so `fileDelete` would
     // overstate it.
@@ -46,12 +54,20 @@ void main() {
     'vibe_wait': <String>{},
     'vibe_kill': <String>{},
     'vibe_list': <String>{},
+    // Code mode: the interpreter has no effect of its own. Every effect a
+    // script has is a nested call, gated under that tool's own name and
+    // classes, so a class here would only double-gate (or, worse, stand in
+    // for) the real check.
+    'repl': <String>{},
   };
 
   // MCP tools. Non-empty entries are mutating tools whose worst case reaches an
   // external/dangerous effect; every other tool is a pure read/query or a
   // local-DB-only write (neither is an ActionClass) and inherits the {} default.
   const expectedMcp = <String, Set<String>>{
+    // Code mode, for runs on the MCP lane: no effect of its own; each nested
+    // call goes through the dispatcher's gates under its own name.
+    'repl': <String>{},
     // --- Publishing / dispatch / external network ---
     'publish_review_to_github': {'prPublish'},
     // Opens a pull request on the server as the run's requester; the shell's
@@ -169,16 +185,16 @@ void main() {
     'add_review_diagram': <String>{},
     'add_review_node': <String>{},
     'add_ticket_collaborator': <String>{},
+    'agent_activity': <String>{},
     'agent_heartbeat': <String>{},
     'code_callees': <String>{},
     'code_callers': <String>{},
     'code_impact': <String>{},
     'code_symbol': <String>{},
     'comment_approval': <String>{},
-    // Terminates the caller's own durable goal: upserts the goal row and posts
-    // one system message to its space. Both are local-DB writes and it only
-    // ever REDUCES activity (cancels the supervisor's timer, so no further runs
-    // are dispatched) — same shape as its sibling `update_goal_progress`.
+    // Records a claim on the caller's own durable goal (one local-DB write:
+    // `hold: verifying` and the claim). It closes nothing and starts nothing
+    // itself; the server's verification runs when the segment ends.
     'complete_goal': <String>{},
     'confirm_review_node': <String>{},
     'consolidate_memory': <String>{},
@@ -203,6 +219,7 @@ void main() {
     'get_org_chart': <String>{},
     'get_ticket': <String>{},
     'get_work_product': <String>{},
+    'goal_status': <String>{}, // read: the caller's own goal and its wakes
     'harmonize_memory': <String>{},
     'list_agent_presence': <String>{},
     'list_agents': <String>{},
@@ -223,6 +240,7 @@ void main() {
     'list_skills': <String>{},
     'list_ticket_relations': <String>{},
     'list_tickets': <String>{},
+    'list_wakes': <String>{}, // read: the caller's own rules, wakes and asks
     'list_work_products': <String>{},
     'list_workspaces': <String>{},
     'preview_trigger': <String>{}, // dry-run, read-only
@@ -264,6 +282,12 @@ void main() {
     'update_my_notes': <String>{},
     'verify_skills':
         <String>{}, // reads + hashes on-disk skills, writes nothing
+    // Schedules a later run of the caller itself in its own conversation
+    // (one local-DB rule row and its pending wake); the run it starts is
+    // checked under its own tools.
+    'wake_me': <String>{},
+    // Cancels the caller's own rule or wake (local-DB state moves only).
+    'cancel_wake': <String>{},
   };
 
   test('harness tools declare exactly their curated ActionClass sets', () {
@@ -271,14 +295,25 @@ void main() {
     // CC-coupled apply_patch (Edit/FileEditService) stays in cc_infra.
     final declared =
         _scanTools(
-          dir: '${root.path}/packages/cc_harness_runtime/lib/src/tools',
-          base: 'HarnessTool',
-        )..addAll(
-          _scanTools(
-            dir: '${root.path}/packages/cc_infra/lib/src/harness/tools',
+            dir: '${root.path}/packages/cc_harness_runtime/lib/src/tools',
             base: 'HarnessTool',
-          ),
-        );
+          )
+          ..addAll(
+            _scanTools(
+              dir: '${root.path}/packages/cc_infra/lib/src/harness/tools',
+              base: 'HarnessTool',
+            ),
+          )
+          // Code mode's `repl` sits beside the registry builder, not under
+          // `tools/`: it is built per run with that run's tools.
+          ..addAll(
+            _scanTools(
+              dir: '${root.path}/packages/cc_infra/lib/src/harness',
+              base: 'HarnessTool',
+              only: const {'repl_tool.dart'},
+            ),
+          );
+    expect(declared, contains('repl'), reason: 'the harness repl was not seen');
     _assertMatches(declared, expectedHarness, scope: 'harness');
   });
 
@@ -286,8 +321,85 @@ void main() {
     final declared = _scanTools(
       dir: '${root.path}/packages/cc_mcp/lib/src/tools',
       base: 'McpTool',
+      // `McpScopedTool` (the base of the tools that read the caller's
+      // attested scope) lives beside the tools directory, not in it.
+      intermediateDirs: ['${root.path}/packages/cc_mcp/lib/src'],
+    );
+    expect(
+      declared.keys,
+      containsAll(['ask_user', 'repl']),
+      reason: 'tools on McpScopedTool were not seen',
     );
     _assertMatches(declared, expectedMcp, scope: 'MCP');
+  });
+
+  // A read-only run (a goal's review, an improvement review) calls only what
+  // changes nothing. Every tool is decided for it: admitted as a read,
+  // refused by one of its classes, or listed as a state change. A new tool
+  // fails here until someone decides it.
+  test('every tool is decided for a read-only run', () {
+    final declared = {
+      ..._scanTools(
+        dir: '${root.path}/packages/cc_harness_runtime/lib/src/tools',
+        base: 'HarnessTool',
+      ),
+      ..._scanTools(
+        dir: '${root.path}/packages/cc_infra/lib/src/harness/tools',
+        base: 'HarnessTool',
+      ),
+      ..._scanTools(
+        dir: '${root.path}/packages/cc_infra/lib/src/harness',
+        base: 'HarnessTool',
+        only: const {'repl_tool.dart'},
+      ),
+      ..._scanTools(
+        dir: '${root.path}/packages/cc_mcp/lib/src/tools',
+        base: 'McpTool',
+        intermediateDirs: ['${root.path}/packages/cc_mcp/lib/src'],
+      ),
+    };
+    Set<ActionClass> classesOf(Set<String> wires) => {
+      for (final w in wires) ActionClass.fromWire(w)!,
+    };
+    final undecided = [
+      for (final e in declared.entries)
+        if (!ReadOnlyRunProfile.decides(e.key, classesOf(e.value))) e.key,
+    ]..sort();
+    expect(
+      undecided,
+      isEmpty,
+      reason:
+          'These tools are neither a read nor refused for a read-only run: '
+          '$undecided. Add each to ReadOnlyRunProfile.readTools when it '
+          'changes nothing, or to stateTools when it changes anything.',
+    );
+    final readWithDeniedClass = [
+      for (final e in declared.entries)
+        if (ReadOnlyRunProfile.readTools.contains(e.key) &&
+            classesOf(e.value).any(ReadOnlyRunProfile.deniedClasses.contains))
+          e.key,
+    ];
+    expect(
+      readWithDeniedClass,
+      isEmpty,
+      reason: 'A read tool may not carry a class that changes state.',
+    );
+    // Names the profile decides that no scanned tool has: the loop's own
+    // tools (no HarnessTool class) and nothing else.
+    const loopTools = {
+      'search_tools',
+      'list_my_tools',
+      'search_tool_bm25',
+      'read_output',
+    };
+    final stale = [
+      for (final name in {
+        ...ReadOnlyRunProfile.readTools,
+        ...ReadOnlyRunProfile.stateTools,
+      })
+        if (!declared.containsKey(name) && !loopTools.contains(name)) name,
+    ]..sort();
+    expect(stale, isEmpty, reason: 'Decided tools that no longer exist.');
   });
 
   // RepoOps share the same guardrail store. Ratchet: (1) every op that
@@ -305,6 +417,9 @@ void main() {
     // Configured MCP servers: a saved (owner) or approved stdio server is a
     // command the server starts on the host as its OS user.
     'mcpServers.save': {'processSpawn'},
+    // A skill proposal's campaign launches a skill evaluation: the same
+    // evaluation runs and model calls as `evals.startSkillCampaign`.
+    'improvements.startCampaign': {'networkEgress', 'processSpawn'},
     'mcpServers.approve': {'processSpawn'},
     'mcp.client.saveServer': {'processSpawn'},
     'environments.testDefinition': {
@@ -615,7 +730,40 @@ Map<String, _RepoOpDecl> _scanRepoOps(String path) {
 // -----------------------------------------------------------------------------
 
 /// A tool's effective ActionClass set (its override or inherited default).
-final _nameRe = RegExp(r"String\s+get\s+name\s*=>\s*'([^']+)'");
+///
+/// A name is a literal or a `Class.constant` that [_namedConstants] resolves.
+final _nameRe = RegExp(
+  r"String\s+get\s+name\s*=>\s*(?:'([^']+)'|(\w+\.\w+)\s*;)",
+);
+
+/// The `Class.constant` tool names, read from where they are declared so a
+/// renamed constant fails here instead of dropping the tool from the scan.
+final Map<String, String> _namedConstants = {
+  'ReplToolDescription.toolName': _readConstant(
+    'packages/cc_domain/lib/features/code_mode/domain/services/'
+        'repl_tool_description.dart',
+    'toolName',
+  ),
+};
+
+String _readConstant(String relativePath, String member) {
+  final file = File('${_repoRoot().path}/$relativePath');
+  final match = RegExp(
+    "static\\s+const\\s+String\\s+$member\\s*=\\s*'([^']+)'",
+  ).firstMatch(file.readAsStringSync());
+  expect(match, isNotNull, reason: '$member not found in $relativePath');
+  return match!.group(1)!;
+}
+
+/// Tools whose EMPTY `actionClasses` override is deliberate and reviewed.
+///
+/// `repl` (both surfaces) states that it has no effect of its own: every
+/// effect is a nested call, gated under that tool's own name and classes.
+/// The override is there so a later default change cannot give it one.
+/// `bash_output` is exec tier only so it is on the surface exactly where
+/// `bash` is; it reads a background command's state and output and has no
+/// effect, which the empty override states against the exec default.
+const _deliberatelyEmpty = {'repl', 'bash_output'};
 final _tierRe = RegExp(
   r'ToolApprovalTier\s+get\s+approvalTier\s*=>\s*ToolApprovalTier\.(\w+)',
 );
@@ -631,6 +779,8 @@ final _memberRe = RegExp(r'ActionClass\.(\w+)');
 Map<String, Set<String>> _scanTools({
   required String dir,
   required String base,
+  Set<String>? only,
+  List<String> intermediateDirs = const [],
 }) {
   // Tools that extend an ABSTRACT INTERMEDIATE rather than the base directly
   // (the three `*_use` rig tools share a `RigUseTool` that declares their
@@ -639,7 +789,10 @@ Map<String, Set<String>> _scanTools({
   // the highest-privilege tools in the app. So the scan runs twice: once to
   // learn which intermediates exist and what they declare, then again to pick
   // up their subclasses with the inherited set.
-  final intermediates = _findIntermediates(dir: dir, base: base);
+  final intermediates = {
+    for (final d in [dir, ...intermediateDirs])
+      ..._findIntermediates(dir: d, base: base),
+  };
   final bases = <String>[base, ...intermediates.keys];
   final classRe = RegExp(
     'class\\s+(\\w+)\\s+extends\\s+(${bases.join('|')})\\b',
@@ -650,6 +803,7 @@ Map<String, Set<String>> _scanTools({
       .listSync()
       .whereType<File>()
       .where((f) => f.path.endsWith('.dart'))
+      .where((f) => only == null || only.contains(f.uri.pathSegments.last))
       .toList();
 
   for (final file in files) {
@@ -664,7 +818,13 @@ Map<String, Set<String>> _scanTools({
       if (nameMatch == null) {
         continue; // abstract intermediate (none exist today), skip.
       }
-      final name = nameMatch.group(1)!;
+      final name =
+          nameMatch.group(1) ??
+          _namedConstants[nameMatch.group(2)] ??
+          fail(
+            'Tool name ${nameMatch.group(2)} in ${file.path} is a constant '
+            'this ratchet cannot resolve; add it to _namedConstants.',
+          );
 
       final override = _overrideRe.firstMatch(body);
       final Set<String> effective;
@@ -674,8 +834,8 @@ Map<String, Set<String>> _scanTools({
             .map((m) => m.group(1)!)
             .toSet();
         expect(
-          effective,
-          isNotEmpty,
+          effective.isNotEmpty || _deliberatelyEmpty.contains(name),
+          isTrue,
           reason:
               'Tool "$name" declares an EMPTY actionClasses override. Do not '
               'add an empty override — delete it and inherit the default.',

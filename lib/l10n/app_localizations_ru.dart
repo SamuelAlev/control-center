@@ -1049,9 +1049,6 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get calendarAllDayGutter => 'Весь день';
-
-  @override
   String calendarAllDayEventCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -2532,9 +2529,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get activityBackedUpServer => 'Создана резервная копия данных сервера';
-
-  @override
-  String get activityMarkedSpaceRead => 'Пространство отмечено как прочитанное';
 
   @override
   String get activityRespondedToInvitation => 'Ответ на приглашение на событие';
@@ -13647,6 +13641,19 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String diffFileUnresolvedConversations(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count нерешённых бесед',
+      many: '$count нерешённых бесед',
+      few: '$count нерешённые беседы',
+      one: '$count нерешённая беседа',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get pendingReview => 'Ожидает ревью';
 
   @override
@@ -14009,9 +14016,6 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get spaceKeepAfterMergeHint =>
       'Вас больше не спросят об этом пространстве.';
-
-  @override
-  String get spaceAllPrsMergedLabel => 'Все запросы на слияние объединены';
 
   @override
   String get archiveSpace => 'Архивировать пространство';
@@ -15596,7 +15600,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get skillEvalIncomplete => 'Не завершено';
 
   @override
-  String get skillEvalInconclusive => 'Нет однозначного результата';
+  String get skillEvalInconclusive => 'Решения нет (недостаточно данных)';
 
   @override
   String get skillEvalInferred => 'Выведено косвенно';
@@ -19187,4 +19191,2998 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get mcpServerNotFound =>
       'Этого сервера больше нет. Возможно, его удалили.';
+
+  @override
+  String get scriptToolCalls => 'Вызовы инструментов';
+
+  @override
+  String scriptCallCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count вызова',
+      many: '$count вызовов',
+      few: '$count вызова',
+      one: '1 вызов',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scriptCallsRunning(int count) {
+    return '$count выполняется';
+  }
+
+  @override
+  String scriptCallsOk(int count) {
+    return '$count успешно';
+  }
+
+  @override
+  String scriptCallsFailed(int count) {
+    return '$count с ошибкой';
+  }
+
+  @override
+  String scriptCallsDenied(int count) {
+    return '$count запрещено';
+  }
+
+  @override
+  String scriptCallsCancelled(int count) {
+    return '$count отменено';
+  }
+
+  @override
+  String scriptCallsQueued(int count) {
+    return '$count в очереди';
+  }
+
+  @override
+  String scriptCallsSkipped(int count) {
+    return '$count пропущено';
+  }
+
+  @override
+  String get scriptStepQueued => 'В очереди';
+
+  @override
+  String get scriptStepSkipped => 'Пропущен';
+
+  @override
+  String get scriptGroupLoop => 'Цикл';
+
+  @override
+  String get scriptGroupEach => 'Для каждого';
+
+  @override
+  String get scriptGroupParallel => 'Параллельно';
+
+  @override
+  String get scriptGroupFunction => 'Функция';
+
+  @override
+  String scriptCallsHidden(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Показать ещё $count вызова',
+      many: 'Показать ещё $count вызовов',
+      few: 'Показать ещё $count вызова',
+      one: 'Показать ещё 1 вызов',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptCallsUnplaced => 'Вызовы, не привязанные к коду скрипта';
+
+  @override
+  String get scriptToolComputed => 'Инструмент';
+
+  @override
+  String scriptStepSemantics(String subject, String state) {
+    return '$subject, $state';
+  }
+
+  @override
+  String get scriptSourceLabel => 'Скрипт';
+
+  @override
+  String scriptSourceLines(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count строки',
+      many: '$count строк',
+      few: '$count строки',
+      one: '1 строка',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptStateRunning => 'Выполняется';
+
+  @override
+  String get scriptStateCompleted => 'Завершён';
+
+  @override
+  String get scriptStateFailed => 'Сбой';
+
+  @override
+  String get scriptStateTimedOut => 'Время истекло';
+
+  @override
+  String get scriptStateCancelled => 'Отменён';
+
+  @override
+  String get scriptStateMemoryExceeded => 'Нехватка памяти';
+
+  @override
+  String get scriptStateOutputExceeded => 'Слишком большой вывод';
+
+  @override
+  String get scriptStateSandboxError => 'Ошибка песочницы';
+
+  @override
+  String get scriptStateRefused => 'Отклонён';
+
+  @override
+  String get transcriptToolDenied => 'Запрещено';
+
+  @override
+  String get transcriptStatusRunningScript => 'Выполняется скрипт…';
+
+  @override
+  String get scriptOriginLine => 'Из скрипта, который запустил агент';
+
+  @override
+  String get scriptOriginShow => 'Показать скрипт';
+
+  @override
+  String get codeModeTitle => 'Режим кода';
+
+  @override
+  String get codeModeSubtitle =>
+      'Агенты могут написать короткий скрипт, который вызывает их инструменты, вместо того чтобы вызывать их по одному.';
+
+  @override
+  String get codeModeStatusLabel => 'Статус';
+
+  @override
+  String get codeModeFactAvailability => 'На этом сервере';
+
+  @override
+  String get codeModeAvailable => 'Доступен';
+
+  @override
+  String get codeModeUnavailable => 'Недоступен';
+
+  @override
+  String get codeModeFactRunner => 'Раннер';
+
+  @override
+  String codeModeUnavailableNote(String reason) {
+    return 'Этот сервер не может выполнять скрипты, поэтому агенты здесь вызывают инструменты по одному. Сервер сообщает: $reason';
+  }
+
+  @override
+  String get codeModeNoReason => 'причина не указана.';
+
+  @override
+  String get codeModeViewExecutions => 'Открыть выполнения кода';
+
+  @override
+  String get codeModeLimitsLabel => 'Лимиты';
+
+  @override
+  String get codeModeLimitsSubtitle =>
+      'Как долго и как далеко может зайти один скрипт. Значения по умолчанию подходят большинству рабочих пространств.';
+
+  @override
+  String get codeModeLimitsDisclosure => 'Настроить лимиты';
+
+  @override
+  String get codeModeLimitsAtDefaults => 'По умолчанию';
+
+  @override
+  String codeModeLimitsChangedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count изменено',
+      many: '$count изменено',
+      few: '$count изменены',
+      one: '1 изменён',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeModeLimitsUseDefaults => 'Вернуть значения по умолчанию';
+
+  @override
+  String get codeModeLimitWallClock => 'Время на скрипт';
+
+  @override
+  String get codeModeLimitWallClockHelp =>
+      'Время ожидания человека не учитывается.';
+
+  @override
+  String get codeModeLimitCpu => 'Время процессора';
+
+  @override
+  String get codeModeLimitCpuHelp =>
+      'Время, которое сам скрипт тратит на вычисления.';
+
+  @override
+  String get codeModeLimitHeap => 'Память';
+
+  @override
+  String get codeModeLimitHeapHelp =>
+      'Память, которую скрипт может использовать во время работы.';
+
+  @override
+  String get codeModeLimitNestedCalls => 'Вызовы инструментов на скрипт';
+
+  @override
+  String get codeModeLimitNestedCallsHelp =>
+      'Вызовы сверх этого лимита отклоняются, и скрипт получает объяснение.';
+
+  @override
+  String get codeModeLimitInFlight => 'Вызовов одновременно';
+
+  @override
+  String get codeModeLimitInFlightHelp =>
+      'Сколько вызовов инструментов скрипт может выполнять одновременно.';
+
+  @override
+  String get codeModeLimitOutputTokens => 'Вывод, который читает агент';
+
+  @override
+  String get codeModeLimitOutputTokensHelp =>
+      'Длинный вывод сокращается; остальное агент может запросить.';
+
+  @override
+  String codeModeLimitRange(String defaultValue, String min, String max) {
+    return 'По умолчанию $defaultValue. От $min до $max.';
+  }
+
+  @override
+  String codeModeLimitOutOfRange(String min, String max) {
+    return 'Введите целое число от $min до $max.';
+  }
+
+  @override
+  String get codeModeSuffixSeconds => 'с';
+
+  @override
+  String get codeModeSuffixMebibytes => 'МиБ';
+
+  @override
+  String get codeModeSuffixCalls => 'вызовов';
+
+  @override
+  String get codeModeSuffixTokens => 'токенов';
+
+  @override
+  String codeModeServerCap(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Этот сервер выполняет не более $count скриптов одновременно, во всех рабочих пространствах.',
+      many:
+          'Этот сервер выполняет не более $count скриптов одновременно, во всех рабочих пространствах.',
+      few:
+          'Этот сервер выполняет не более $count скриптов одновременно, во всех рабочих пространствах.',
+      one:
+          'Этот сервер выполняет не более 1 скрипта одновременно, во всех рабочих пространствах.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String codeModeUnitMilliseconds(String value) {
+    return '$value мс';
+  }
+
+  @override
+  String codeModeUnitSeconds(String value) {
+    return '$value с';
+  }
+
+  @override
+  String codeModeUnitMinutesSeconds(String minutes, String seconds) {
+    return '$minutes мин $seconds с';
+  }
+
+  @override
+  String get codeModeRefusedLimitUnknown =>
+      'Сервер не знает один из этих лимитов.';
+
+  @override
+  String get codeModeRefusedLimitOutOfRange =>
+      'Один из этих лимитов выходит за пределы допустимого сервером.';
+
+  @override
+  String get codeModeRefusedUnknownSetting =>
+      'Сервер не распознал эту настройку.';
+
+  @override
+  String get codeExecutionsTitle => 'Выполнения кода';
+
+  @override
+  String get codeExecutionsSubtitle =>
+      'Скрипты, которые агенты запускали в этом рабочем пространстве, со всеми вызовами инструментов.';
+
+  @override
+  String get codeExecutionsEmpty => 'Здесь ещё не запускался ни один скрипт.';
+
+  @override
+  String get codeExecutionsEmptyFiltered =>
+      'Ни один скрипт не подходит под эти фильтры.';
+
+  @override
+  String get codeExecutionsStatusFilter => 'Результат';
+
+  @override
+  String get codeExecutionsAllOutcomes => 'Все результаты';
+
+  @override
+  String codeExecutionsOutcomeCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count результата',
+      many: '$count результатов',
+      few: '$count результата',
+      one: '1 результат',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionsScopeRun => 'Скрипты одного запуска';
+
+  @override
+  String get codeExecutionsScopeConversation => 'Скрипты одного разговора';
+
+  @override
+  String get codeExecutionsScopeAgent => 'Скрипты одного агента';
+
+  @override
+  String get codeExecutionsShowAll => 'Показать все';
+
+  @override
+  String get codeExecutionUntitled => 'Скрипт без названия';
+
+  @override
+  String get codeExecutionRecord => 'Запись';
+
+  @override
+  String get codeExecutionBackToList => 'Назад к выполнениям кода';
+
+  @override
+  String get codeExecutionNotFound =>
+      'Этого выполнения кода нет в этом рабочем пространстве. Возможно, оно было удалено вместе со своим запуском.';
+
+  @override
+  String get codeExecutionRefusedSpace =>
+      'Этот скрипт работал в пространстве, которое вы не можете открыть, поэтому его запись скрыта.';
+
+  @override
+  String get codeExecutionOpenRecord => 'Открыть запись';
+
+  @override
+  String get codeExecutionFactStarted => 'Начато';
+
+  @override
+  String get codeExecutionFactDuration => 'Длительность';
+
+  @override
+  String get codeExecutionFactCalls => 'Вызовы инструментов';
+
+  @override
+  String get codeExecutionFactAgent => 'Агент';
+
+  @override
+  String get codeExecutionFactSurface => 'Запущен через';
+
+  @override
+  String get codeExecutionSurfaceHarness => 'Встроенный агент';
+
+  @override
+  String get codeExecutionSurfaceMcp => 'Внешний агент';
+
+  @override
+  String get codeExecutionFactCpu => 'Время процессора';
+
+  @override
+  String get codeExecutionFactMemory => 'Пиковая память';
+
+  @override
+  String get codeExecutionOpenConversation => 'Открыть разговор';
+
+  @override
+  String get codeExecutionRunScripts => 'Скрипты в этом запуске';
+
+  @override
+  String get codeExecutionAgentScripts => 'Скрипты этого агента';
+
+  @override
+  String get codeExecutionScript => 'Скрипт';
+
+  @override
+  String get codeExecutionConsole => 'Консоль';
+
+  @override
+  String get codeExecutionOutputTruncated =>
+      'Вывод сокращён, чтобы поместиться в сохранённое.';
+
+  @override
+  String get codeExecutionNoPayload => 'Скрипт и его вывод больше не хранятся.';
+
+  @override
+  String codeExecutionCallsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count вызова инструментов',
+      many: '$count вызовов инструментов',
+      few: '$count вызова инструментов',
+      one: '1 вызов инструмента',
+      zero: 'Вызовы инструментов',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionNoCalls => 'Скрипт не вызывал инструменты.';
+
+  @override
+  String get codeExecutionCallCompleted => 'Завершён';
+
+  @override
+  String get codeExecutionCallFailed => 'Сбой';
+
+  @override
+  String get codeExecutionCallDenied => 'Запрещено';
+
+  @override
+  String get codeExecutionCallCancelled => 'Отменён';
+
+  @override
+  String get codeExecutionCallTimedOut => 'Время истекло';
+
+  @override
+  String get codeExecutionCallUnknownTool => 'Неизвестный инструмент';
+
+  @override
+  String get codeExecutionCallInvalidArgs => 'Неверные аргументы';
+
+  @override
+  String get codeExecutionGateAllowed => 'Разрешено';
+
+  @override
+  String get codeExecutionGateApproved => 'Одобрено человеком';
+
+  @override
+  String get codeExecutionGateDenied => 'Запрещено';
+
+  @override
+  String get codeExecutionGateNotReached => 'Не проверялось';
+
+  @override
+  String codeExecutionCallWaited(String duration) {
+    return 'Ожидание человека: $duration';
+  }
+
+  @override
+  String get codeExecutionCallArguments => 'Аргументы';
+
+  @override
+  String get codeExecutionCallResult => 'Результат';
+
+  @override
+  String codeExecutionCallResultSize(String size) {
+    return 'Возвращено $size';
+  }
+
+  @override
+  String codeExecutionBytes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count байта',
+      many: '$count байт',
+      few: '$count байта',
+      one: '1 байт',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionEndedScriptError =>
+      'Скрипт выдал ошибку, и её никто не перехватил.';
+
+  @override
+  String codeExecutionEndedScriptErrorNamed(String name) {
+    return 'Скрипт выдал $name, и никто это не перехватил.';
+  }
+
+  @override
+  String get codeExecutionEndedStalled =>
+      'Скрипт ждал чего-то, что никогда не завершится.';
+
+  @override
+  String get codeExecutionEndedCpu =>
+      'Скрипт израсходовал своё время процессора.';
+
+  @override
+  String get codeExecutionEndedHeap => 'Скрипт достиг лимита памяти.';
+
+  @override
+  String get codeExecutionEndedOutput =>
+      'Скрипт вывел больше данных, чем разрешено.';
+
+  @override
+  String get codeExecutionEndedDeadline => 'Скрипту не хватило времени.';
+
+  @override
+  String get codeExecutionEndedCancelled => 'Скрипт был отменён до завершения.';
+
+  @override
+  String get codeExecutionEndedShutdown =>
+      'Сервер был выключен во время работы скрипта.';
+
+  @override
+  String get codeExecutionEndedServerStopped =>
+      'Сервер остановился во время работы скрипта. Запись закрыта при следующем запуске сервера.';
+
+  @override
+  String get codeExecutionEndedInternal =>
+      'Программа для запуска скриптов завершилась с внутренней ошибкой.';
+
+  @override
+  String get codeExecutionEndedStart =>
+      'Программе для запуска скриптов не удалось стартовать.';
+
+  @override
+  String get codeExecutionEndedLockdown =>
+      'Программа для запуска скриптов не смогла ограничить себя, поэтому скрипт не был запущен.';
+
+  @override
+  String get codeExecutionEndedExited =>
+      'Программа для запуска скриптов остановилась до завершения скрипта.';
+
+  @override
+  String get codeExecutionEndedRunnerBrokeRules =>
+      'Программа для запуска скриптов нарушила правила, по которым работает, и была остановлена.';
+
+  @override
+  String get codeExecutionEndedUnresponsive =>
+      'Программа для запуска скриптов перестала отвечать и была остановлена.';
+
+  @override
+  String get codeExecutionEndedHostError =>
+      'Сервер дал сбой при выполнении скрипта.';
+
+  @override
+  String get codeExecutionRunningNote =>
+      'Ещё выполняется. Вызовы инструментов появляются здесь по мере завершения, а результат — когда скрипт закончится.';
+
+  @override
+  String codeModeServerWorkspaceShare(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Скрипты одного рабочего пространства могут использовать не более $count из них.',
+      many:
+          'Скрипты одного рабочего пространства могут использовать не более $count из них.',
+      few:
+          'Скрипты одного рабочего пространства могут использовать не более $count из них.',
+      one:
+          'Скрипты одного рабочего пространства могут использовать не более 1 из них.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get wakeOriginGoal => 'Цель';
+
+  @override
+  String get wakeOriginGoalCheck => 'Проверка цели';
+
+  @override
+  String get wakeOriginGoalReview => 'Ревью цели';
+
+  @override
+  String get wakeOriginSchedule => 'Расписание';
+
+  @override
+  String get wakeOriginWatch => 'Наблюдение';
+
+  @override
+  String wakeOriginReplyFrom(String agent) {
+    return 'Ответ от $agent';
+  }
+
+  @override
+  String get wakeOriginReply => 'Ответ';
+
+  @override
+  String wakeOriginMessageFrom(String agent) {
+    return 'Сообщение от $agent';
+  }
+
+  @override
+  String get wakeOriginMessage => 'Сообщение';
+
+  @override
+  String wakeOriginWorkFinishedBy(String agent) {
+    return 'Готовая работа от $agent';
+  }
+
+  @override
+  String get wakeOriginWorkFinished => 'Готовая работа';
+
+  @override
+  String get wakeOriginLimitReset => 'Сброс лимита';
+
+  @override
+  String get wakeOriginRecovery => 'Восстановление';
+
+  @override
+  String get wakeOriginAssignment => 'Назначение';
+
+  @override
+  String get wakeOriginPipelineStep => 'Шаг конвейера';
+
+  @override
+  String get wakeOriginImprovementReview => 'Ревью улучшений';
+
+  @override
+  String get wakeKindStopped =>
+      'Задержано, потому что человек остановил запуск.';
+
+  @override
+  String get wakeKindAttempts => 'Доставка не удалась трижды.';
+
+  @override
+  String get wakeKindAgentDeleted => 'Агент больше не существует.';
+
+  @override
+  String get wakeKindAgentNotDispatchable => 'Агент выведен из работы.';
+
+  @override
+  String get wakeKindAgentPaused => 'Агент на паузе.';
+
+  @override
+  String get wakeKindPersonRemoved =>
+      'Человек, от имени которого действует пробуждение, покинул рабочее пространство.';
+
+  @override
+  String get wakeKindBudgetBlocked => 'Бюджет блокирует запуск.';
+
+  @override
+  String get wakeKindTakeOver => 'Человек взял рабочее дерево на себя.';
+
+  @override
+  String get wakeKindRateCapConversation =>
+      'Этот разговор начал 30 запусков из пробуждений за последний час.';
+
+  @override
+  String get wakeKindRateCapWorkspace =>
+      'Это рабочее пространство начало 300 запусков из пробуждений за последний час.';
+
+  @override
+  String get wakeKindLiveRunNoInput =>
+      'Текущий запуск агента здесь не принимает ввод.';
+
+  @override
+  String get wakeKindLiveRunOtherOptions =>
+      'Текущий запуск агента здесь работает иначе, поэтому это запустит свой запуск после него.';
+
+  @override
+  String get wakeKindLiveRunOtherPerson =>
+      'Текущий запуск агента здесь действует от имени другого человека, поэтому это запустит свой запуск после него.';
+
+  @override
+  String get wakeKindDispatchRefused => 'Запуск не удалось начать.';
+
+  @override
+  String get wakeKindSandboxUnavailable =>
+      'Для запуска только на чтение песочница недоступна.';
+
+  @override
+  String get wakeKindReadOnlyUnavailable =>
+      'Бэкенд этого агента не может держать запуск только на чтение.';
+
+  @override
+  String get wakeKindServerStopped => 'Перезапуск сервера остановил запуск.';
+
+  @override
+  String get wakeKindServerRestarted =>
+      'Сервер перезапустился во время запуска человека.';
+
+  @override
+  String get wakeKindGuardFailed => 'Проверка перед доставкой не прошла.';
+
+  @override
+  String get wakeKindLimit => 'Ожидание на лимите использования у провайдера.';
+
+  @override
+  String get wakeKindLimitRunLive =>
+      'Ожидание окончания запуска на лимите использования.';
+
+  @override
+  String get wakeKindWakeMissed => 'Пропущено, пока сервер был выключен.';
+
+  @override
+  String get wakeKindPipelineRunEnded => 'Его запуск конвейера завершился.';
+
+  @override
+  String get wakeKindGoalEnded => 'Его цель завершена.';
+
+  @override
+  String get wakeKindGoalBudgetExhausted => 'Его цель израсходовала бюджет.';
+
+  @override
+  String get wakeKindGoalReviewStale =>
+      'Цель изменилась с тех пор, как запросили это ревью.';
+
+  @override
+  String get wakeKindGoalPaused => 'Его цель на паузе.';
+
+  @override
+  String get wakeKindGoalHeld => 'Его цель задержана.';
+
+  @override
+  String get wakeKindGoalStopped => 'Его цель остановлена.';
+
+  @override
+  String get wakeKindAskSettled =>
+      'Вопрос, на который оно отвечает, уже решён.';
+
+  @override
+  String get wakeKindRuleEnded => 'Его расписание завершено.';
+
+  @override
+  String get wakeKindUnknown => 'По причине, которую эта версия не называет:';
+
+  @override
+  String wakeStripHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count пробуждения ждут',
+      many: '$count пробуждений ждут',
+      few: '$count пробуждения ждут',
+      one: '$count пробуждение ждёт',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String wakeStripDue(String time) {
+    return 'Срок: $time';
+  }
+
+  @override
+  String get wakeStripDueNow => 'Срок настал';
+
+  @override
+  String get wakeStripHeld => 'Задержано';
+
+  @override
+  String wakeStripExpires(String time) {
+    return 'Истекает $time';
+  }
+
+  @override
+  String wakeStripAttempt(int attempt) {
+    return 'Попытка $attempt';
+  }
+
+  @override
+  String get wakeStripCancel => 'Отменить пробуждение';
+
+  @override
+  String get wakeStripDeliverNow => 'Доставить сейчас';
+
+  @override
+  String get wakeStripResume => 'Продолжить';
+
+  @override
+  String get wakeStripDismiss => 'Отклонить';
+
+  @override
+  String get wakeStripResumeAll => 'Продолжить все';
+
+  @override
+  String get wakeStripResumeOnlyTheirs =>
+      'Продолжить может только тот человек, чей это запуск.';
+
+  @override
+  String get wakeReceiptStarted => 'Запуск начат.';
+
+  @override
+  String get wakeReceiptPushed => 'Передано текущему запуску.';
+
+  @override
+  String wakeReceiptWaiting(String reason) {
+    return 'Всё ещё ждёт. $reason';
+  }
+
+  @override
+  String wakeReceiptSkipped(String reason) {
+    return 'Не доставлено. $reason';
+  }
+
+  @override
+  String get wakeReceiptDuplicate => 'Уже доставлено.';
+
+  @override
+  String wakeReleased(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Продолжено $count пробуждения.',
+      many: 'Продолжено $count пробуждений.',
+      few: 'Продолжено $count пробуждения.',
+      one: 'Продолжено $count пробуждение.',
+      zero: 'Ничего не продолжено.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get wakeRefusalNotYours =>
+      'Это пробуждение действует от имени другого человека. Доставить или продолжить его может только он.';
+
+  @override
+  String get wakeRefusalSettled => 'Это пробуждение уже завершено.';
+
+  @override
+  String heldSteeringHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count задержанных сообщения',
+      many: '$count задержанных сообщений',
+      few: '$count задержанных сообщения',
+      one: '$count задержанное сообщение',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get heldSteeringResume => 'Отправить задержанные сообщения';
+
+  @override
+  String get heldSteeringDelete => 'Удалить задержанное сообщение';
+
+  @override
+  String heldSteeringReleased(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Отправлено $count задержанных сообщения.',
+      many: 'Отправлено $count задержанных сообщений.',
+      few: 'Отправлено $count задержанных сообщения.',
+      one: 'Отправлено $count задержанное сообщение.',
+      zero: 'Ничего не было задержано.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get workAgentUnknown => 'агент';
+
+  @override
+  String workFeedWoke(int count, String agent) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Запущен агент $agent для $count ожидающих элементов',
+      many: 'Запущен агент $agent для $count ожидающих элементов',
+      few: 'Запущен агент $agent для $count ожидающих элементов',
+      one: 'Запущен агент $agent для $count ожидающего элемента',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String workFeedWakeSkipped(String agent) {
+    return 'Пробуждение для $agent не доставлено.';
+  }
+
+  @override
+  String workFeedWakeMissed(String agent) {
+    return 'Пробуждение для $agent пропущено, пока сервер был выключен.';
+  }
+
+  @override
+  String workFeedScheduleCreated(String agent) {
+    return 'Расписание задано для $agent.';
+  }
+
+  @override
+  String workFeedScheduleEnded(String agent) {
+    return 'Расписание для $agent завершено.';
+  }
+
+  @override
+  String get workFeedOpenSchedule => 'Открыть расписание';
+
+  @override
+  String workFeedNoteFromAgent(String agent) {
+    return '$agent оставил себе заметку своими словами:';
+  }
+
+  @override
+  String get workFeedNoteFromPerson => 'Напоминание, которое задал человек:';
+
+  @override
+  String workFeedLimitParkHeld(String provider, String time) {
+    return 'Приостановлено на лимите использования у $provider. Лимит сбрасывается в $time.';
+  }
+
+  @override
+  String workFeedLimitParkPending(String provider, String time) {
+    return 'Приостановлено на лимите использования у $provider. Продолжится в $time.';
+  }
+
+  @override
+  String workFeedLimitParkResumed(String provider) {
+    return 'Продолжено после лимита использования у $provider.';
+  }
+
+  @override
+  String workFeedLimitParkGone(String provider) {
+    return 'Больше не ждёт на лимите использования у $provider.';
+  }
+
+  @override
+  String get workFeedLimitParkResume => 'Продолжить';
+
+  @override
+  String get workFeedLimitParkCancel => 'Отменить';
+
+  @override
+  String workFeedStillInFlight(String agent) {
+    return 'Состояние передано агенту $agent после сжатия';
+  }
+
+  @override
+  String get workFeedShowDetails => 'Показать подробности';
+
+  @override
+  String get workFeedHideDetails => 'Скрыть подробности';
+
+  @override
+  String get workFeedCommandRefused => 'Команда отклонена.';
+
+  @override
+  String get wakeRuleEndFired => 'Сработало свой один раз.';
+
+  @override
+  String get wakeRuleEndExpired => 'Достигнута дата окончания.';
+
+  @override
+  String get wakeRuleEndRunCap => 'Израсходованы его запуски.';
+
+  @override
+  String get wakeRuleEndCostCap => 'Достигнут предел стоимости.';
+
+  @override
+  String get wakeRuleEndGoalEnded => 'Его цель завершена.';
+
+  @override
+  String get wakeRuleEndCancelled => 'Отменено.';
+
+  @override
+  String get wakeRuleEndMemberRemoved =>
+      'Человек, которому оно принадлежит, покинул рабочее пространство.';
+
+  @override
+  String get wakeRuleEndInvalidRow =>
+      'Не удалось прочитать сохранённые настройки.';
+
+  @override
+  String get wakeRuleRefusalIntervalTooShort =>
+      'Интервал слишком короткий. Выберите более длинный.';
+
+  @override
+  String get wakeRuleRefusalTooSoon =>
+      'Это время слишком близко. Выберите более позднее.';
+
+  @override
+  String get wakeRuleRefusalLineageEnded =>
+      'Эта цепочка пробуждений израсходовала свои запуски или время.';
+
+  @override
+  String get wakeRuleRefusalWatchTargetUnreadable =>
+      'Вы не можете прочитать, за чем это будет наблюдать.';
+
+  @override
+  String get wakeRuleRefusalExpiryRequired =>
+      'Укажите окончание, например --days 3.';
+
+  @override
+  String get wakeRuleRefusalLimitReached =>
+      'В этом разговоре уже максимум допустимых расписаний.';
+
+  @override
+  String get wakeRuleRefusalInvalidWhen => 'Не удалось разобрать время.';
+
+  @override
+  String get wakeRuleRefusalNoteTooLong => 'Заметка слишком длинная.';
+
+  @override
+  String get wakeRuleRefusalExpiryTooLong => 'Окончание слишком далеко.';
+
+  @override
+  String get wakeRuleRefusalLimitOutOfRange =>
+      'Лимит запусков, дней или бюджета вне допустимого диапазона.';
+
+  @override
+  String get wakeRuleRefusalNextOutsideLoop =>
+      'Выбрать следующее время может только цикл.';
+
+  @override
+  String get wakeRuleRefusalWatchRefused => 'Это нельзя отслеживать.';
+
+  @override
+  String get wakeRuleRefusalRuleEnded => 'Это расписание уже завершено.';
+
+  @override
+  String get wakeRuleRefusalNotYours =>
+      'Это расписание принадлежит другому человеку.';
+
+  @override
+  String get workRefusalUnknown => 'Сервер отклонил это:';
+
+  @override
+  String get goalRefusalAlreadyActive =>
+      'В этом разговоре уже есть активная цель.';
+
+  @override
+  String get goalRefusalNotInReview => 'Эта цель не ждёт ревью.';
+
+  @override
+  String get goalRefusalEvidenceIncomplete => 'Доказательства цели неполны.';
+
+  @override
+  String get goalRefusalClaimPending =>
+      'Утверждение, что цель выполнена, ещё проверяется.';
+
+  @override
+  String get goalRefusalNotActiveSegment =>
+      'У этой цели не запущен ни один сегмент.';
+
+  @override
+  String get goalRefusalNotYours =>
+      'Это может сделать только тот человек, который начал цель.';
+
+  @override
+  String get goalRefusalNotPaused => 'Сначала приостановите цель.';
+
+  @override
+  String get goalRefusalContractInvalid => 'Условия цели нельзя прочитать.';
+
+  @override
+  String get goalRefusalCheckerUnknown => 'Нет агента с таким именем.';
+
+  @override
+  String get goalRefusalCheckerAmbiguous =>
+      'Несколько агентов с таким именем. Укажите его id.';
+
+  @override
+  String get goalRefusalCheckerIsGoalAgent =>
+      'Чекер должен быть другим агентом, а не тем, который выполняет работу.';
+
+  @override
+  String get goalRefusalCommandInvalid => 'Эту команду /goal нельзя прочитать.';
+
+  @override
+  String goalCardWorking(int segment) {
+    return 'Работает · сегмент $segment';
+  }
+
+  @override
+  String get goalCardWaiting => 'Ожидание следующего пробуждения';
+
+  @override
+  String get goalCardVerifying => 'Проверка, выполнена ли цель';
+
+  @override
+  String goalCardLimitUntil(String time) {
+    return 'Приостановлено на лимите использования · продолжится $time';
+  }
+
+  @override
+  String get goalCardLimit => 'Приостановлено на лимите использования';
+
+  @override
+  String get goalCardPerson => 'Нужен человек';
+
+  @override
+  String get goalCardByPerson => 'Приостановлено человеком';
+
+  @override
+  String get goalCardNeedsReview =>
+      'Ждёт ревью: цель заявлена как выполненная, но ничто это не подтвердило';
+
+  @override
+  String goalCardSegments(int run, int max) {
+    return 'Сегмент $run из $max';
+  }
+
+  @override
+  String goalCardSegmentsNoCap(int run) {
+    return 'Сегмент $run';
+  }
+
+  @override
+  String goalCardMoney(String spent, String cap) {
+    return '$spent из $cap';
+  }
+
+  @override
+  String goalCardTimeLeft(String time) {
+    return 'Осталось $time';
+  }
+
+  @override
+  String get goalCardOverdue => 'Срок прошёл';
+
+  @override
+  String get goalCardDoneMeans => 'Критерии готовности';
+
+  @override
+  String get goalCardChecks => 'Проверки';
+
+  @override
+  String get goalCardCheckPassed => 'Пройдена';
+
+  @override
+  String goalCardCheckFailed(int code) {
+    return 'Не пройдена · код $code';
+  }
+
+  @override
+  String get goalCardCheckTimedOut => 'Время истекло';
+
+  @override
+  String get goalCardCheckNotRerun => 'Не перезапущена: ничего не изменилось';
+
+  @override
+  String get goalCardCheckBroken => 'Не может запуститься';
+
+  @override
+  String get goalCardCheckNotRun => 'Ещё не запускалась';
+
+  @override
+  String get goalCardCriterionMet => 'Выполнен';
+
+  @override
+  String get goalCardCriterionUnmet => 'Не выполнен';
+
+  @override
+  String get goalCardCriterionCannotTell => 'Не понятно';
+
+  @override
+  String get goalCardVerdictPass => 'Последняя проверка: готово';
+
+  @override
+  String get goalCardVerdictFail => 'Последняя проверка: не готово';
+
+  @override
+  String get goalCardVerdictCannotVerify =>
+      'Последняя проверка: не удалось определить';
+
+  @override
+  String get goalCardConcerns => 'Замечания';
+
+  @override
+  String goalCardVerifiedBy(String agent) {
+    return 'Проверил: $agent';
+  }
+
+  @override
+  String get goalCardVerifiedBySelf => 'Проверил сам (отдельного чекера нет)';
+
+  @override
+  String get goalCardClosedByPerson =>
+      'Закрыто человеком без пройденной проверки';
+
+  @override
+  String get goalCardNoMachineCheck => 'Нет машинной проверки';
+
+  @override
+  String get goalCardAddCheck => 'Добавить проверку';
+
+  @override
+  String get goalCardOpen => 'Открыть цель';
+
+  @override
+  String get goalCardApprove => 'Подтвердить выполнение';
+
+  @override
+  String get goalCardApproveTitle => 'Закрыть эту цель как выполненную?';
+
+  @override
+  String get goalCardApproveBody =>
+      'Ни одна проверка это не подтвердила. Вы закрываете цель по собственному слову, и цель запишет, что её закрыл человек без проверки.';
+
+  @override
+  String get goalCardApproveConfirm => 'Закрыть как выполненную';
+
+  @override
+  String get goalCardResumeNotYours =>
+      'Продолжить её или повысить бюджет может только тот, кто её начал.';
+
+  @override
+  String get goalHoldDetailStalled => 'Нет прогресса в последних сегментах.';
+
+  @override
+  String get goalHoldDetailStalledWaiting =>
+      'Ожидание после сегментов без прогресса.';
+
+  @override
+  String get goalHoldDetailVerificationFailed =>
+      'Последняя проверка не пройдена.';
+
+  @override
+  String get goalHoldDetailCannotVerify =>
+      'Чекер не смог определить, выполнена ли цель.';
+
+  @override
+  String get goalHoldDetailSandboxUnavailable =>
+      'Для запуска её проверок песочница недоступна.';
+
+  @override
+  String get goalHoldDetailCheckerUnavailable =>
+      'Агент-чекер недоступен. Выберите другого чекера и продолжите.';
+
+  @override
+  String get goalHoldDetailCheckBroken => 'Эту проверку нельзя запустить:';
+
+  @override
+  String get goalHoldDetailWakeSkipped => 'Её пробуждение не доставлено.';
+
+  @override
+  String get goalHoldDetailClaimPending =>
+      'Утверждение о выполнении ждёт проверки.';
+
+  @override
+  String get goalHoldDetailUnanswered =>
+      'Вопрос или запрос на одобрение к человеку остался без ответа.';
+
+  @override
+  String get goalHoldDetailLimitParks =>
+      'Слишком часто упиралась в лимиты использования. Просмотрите её и продолжите.';
+
+  @override
+  String get goalHoldDetailInput => 'Ожидает ответа в разговоре.';
+
+  @override
+  String get peerAsksSection => 'Запросы';
+
+  @override
+  String peerAskTo(String agent) {
+    return 'Агенту $agent';
+  }
+
+  @override
+  String get peerAskKindAsk => 'Вопрос';
+
+  @override
+  String get peerAskKindConsult => 'Консультация';
+
+  @override
+  String get peerAskKindReview => 'Ревью';
+
+  @override
+  String get peerAskStatusPending => 'Ожидает';
+
+  @override
+  String get peerAskStatusAnswered => 'Получен ответ';
+
+  @override
+  String get peerAskStatusFailed => 'Ошибка';
+
+  @override
+  String get peerAskStatusExpired => 'Истёк срок';
+
+  @override
+  String get peerAskStatusCancelled => 'Отменён';
+
+  @override
+  String peerAskAsked(String time) {
+    return 'Задан $time';
+  }
+
+  @override
+  String peerAskExpires(String time) {
+    return 'Истекает $time';
+  }
+
+  @override
+  String get peerAskPromised => 'Обещан ответ';
+
+  @override
+  String get peerAskBackground => 'В фоне';
+
+  @override
+  String get peerAskCancel => 'Отменить запрос';
+
+  @override
+  String get peerAskAlreadySettled => 'Этот запрос уже завершён.';
+
+  @override
+  String get slashHintGoal =>
+      'Работать над целью, пока она не будет выполнена. Флаги: --check, --checker, --fresh, --unattended';
+
+  @override
+  String get slashHintLoop =>
+      'Повторять задачу через интервал или в темпе агента';
+
+  @override
+  String get slashHintSchedule =>
+      'Запустить задачу позже: in 2h, в 09:00 или по cron';
+
+  @override
+  String get slashHintRefine =>
+      'Просмотреть работу в этом разговоре и предложить улучшения';
+
+  @override
+  String get notifGoalCompleted => 'Цель выполнена';
+
+  @override
+  String get notifGoalFailed => 'Цель не выполнена';
+
+  @override
+  String get notifGoalCancelled => 'Цель отменена';
+
+  @override
+  String get notifGoalBudgetExhausted => 'Цель израсходовала бюджет';
+
+  @override
+  String get notifGoalNeedsReview => 'Цель ждёт вашего ревью';
+
+  @override
+  String get notifGoalNeedsPerson => 'Цель нуждается в вас';
+
+  @override
+  String get notifGoalOnHold => 'Цель удерживается';
+
+  @override
+  String get notifWakeRuleEnded => 'Расписание завершено';
+
+  @override
+  String notifWaitingDigest(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count дела ждут вас',
+      many: '$count дел ждут вас',
+      few: '$count дела ждут вас',
+      one: '$count дело ждёт вас',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notifImprovementProposed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Предложено $count улучшения',
+      many: 'Предложено $count улучшений',
+      few: 'Предложено $count улучшения',
+      one: 'Предложено $count улучшение',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notifPipelineRunHeld => 'Запуск конвейера задержан из-за бюджета';
+
+  @override
+  String notifPipelineRunHeldBody(String spent, String cap) {
+    return 'Потрачено $spent из $cap';
+  }
+
+  @override
+  String get inboxGoalNeedsReview => 'Цель ждёт ревью';
+
+  @override
+  String get inboxGoalNeedsPerson => 'Цель нуждается в вас';
+
+  @override
+  String get inboxImprovementProposed => 'Предложено улучшение';
+
+  @override
+  String get improvementRefusalAlreadyDecided =>
+      'По этому предложению уже приняли решение.';
+
+  @override
+  String get improvementRefusalCampaignRequired =>
+      'Это изменение не прошло оценку против текущего навыка, или навык изменился после замера. Запустите оценку заново.';
+
+  @override
+  String get improvementRefusalChangedSince =>
+      'Цель изменилась с тех пор, как это предложили. Отклоните предложение, и агент предложит его снова.';
+
+  @override
+  String get improvementRefusalTargetMissing =>
+      'То, что меняет это предложение, больше не существует.';
+
+  @override
+  String get improvementRefusalCampaignState =>
+      'Оценка не может начаться или завершиться в её текущем состоянии.';
+
+  @override
+  String get improvementRefusalReviewCooldown =>
+      'Этот разговор недавно проверяли. Попробуйте позже.';
+
+  @override
+  String get improvementRefusalAdminRequired =>
+      'Решение по этому предложению может принять только администратор рабочего пространства.';
+
+  @override
+  String get improvementKindMemoryFact => 'Факт памяти';
+
+  @override
+  String get improvementKindPolicy => 'Политика';
+
+  @override
+  String get improvementKindAgentNote => 'Заметка агента';
+
+  @override
+  String get improvementKindSkillEdit => 'Изменение навыка';
+
+  @override
+  String get improvementKindSkillNew => 'Новый навык';
+
+  @override
+  String get improvementScopeAgent => 'Этот агент';
+
+  @override
+  String get improvementScopeRepository => 'Этот репозиторий';
+
+  @override
+  String get improvementScopeWorkspace => 'Всё рабочее пространство';
+
+  @override
+  String get improvementStatusProposed => 'Предложено';
+
+  @override
+  String get improvementStatusAccepted => 'Принято';
+
+  @override
+  String get improvementStatusRejected => 'Отклонено';
+
+  @override
+  String get improvementStatusRolledBack => 'Откачено';
+
+  @override
+  String get improvementStatusExpired => 'Истекло';
+
+  @override
+  String get improvementOperationAdd => 'Добавляет';
+
+  @override
+  String get improvementOperationReplace => 'Заменяет';
+
+  @override
+  String get improvementOperationRemove => 'Удаляет';
+
+  @override
+  String scheduleTriggerOnce(String time) {
+    return 'Один раз, $time';
+  }
+
+  @override
+  String scheduleTriggerEvery(String interval) {
+    return 'Каждые $interval';
+  }
+
+  @override
+  String scheduleTriggerCron(String cron, String zone) {
+    return 'По расписанию $cron ($zone)';
+  }
+
+  @override
+  String get scheduleTriggerSelfPaced =>
+      'Когда выберет агент, с интервалом от 1 до 60 минут';
+
+  @override
+  String get scheduleTriggerPrChecks =>
+      'Когда проверки pull request завершатся';
+
+  @override
+  String scheduleTriggerPrChecksOf(String pr) {
+    return 'Когда проверки $pr завершатся';
+  }
+
+  @override
+  String get scheduleTriggerPrReview =>
+      'Когда pull request получит ревью или ответ';
+
+  @override
+  String scheduleTriggerPrReviewOf(String pr) {
+    return 'Когда $pr получит ревью или ответ';
+  }
+
+  @override
+  String get scheduleTriggerPrMerged => 'Когда pull request будет слит';
+
+  @override
+  String scheduleTriggerPrMergedOf(String pr) {
+    return 'Когда $pr будет слит';
+  }
+
+  @override
+  String get scheduleTriggerEnvironment =>
+      'Когда задача окружения завершится или окружение станет готово';
+
+  @override
+  String scheduleTriggerTicket(String id) {
+    return 'Когда тикет $id завершится';
+  }
+
+  @override
+  String scheduleTriggerPipelineRun(String id) {
+    return 'Когда запуск конвейера $id завершится';
+  }
+
+  @override
+  String get goalNextWaiting => 'Продолжится, когда придёт то, чего она ждёт.';
+
+  @override
+  String get goalNextVerifying =>
+      'Когда проверки и ревью завершатся, цель будет выполнена или продолжит работу.';
+
+  @override
+  String get goalNextLimit =>
+      'Продолжится, когда лимит использования сбросится.';
+
+  @override
+  String get goalNextPerson =>
+      'Она продолжит, когда кто-то ответит на её вопрос или запрос на одобрение.';
+
+  @override
+  String get goalNextByPerson =>
+      'Останется на паузе, пока кто-то её не продолжит.';
+
+  @override
+  String get goalNextNeedsReview =>
+      'Подтвердите её как выполненную или продолжите, чтобы она дальше работала.';
+
+  @override
+  String get goalNextWorking =>
+      'Она продолжает работать, по одному сегменту за раз, пока не будет выполнена или не достигнет лимита.';
+
+  @override
+  String get goalContractAddCheck => 'Добавить проверку';
+
+  @override
+  String goalContractChecksFull(int max) {
+    return 'У цели не может быть больше $max проверок.';
+  }
+
+  @override
+  String goalContractChecksCount(int count, int max) {
+    return 'Проверок: $count из $max';
+  }
+
+  @override
+  String get goalContractCheckTaskHint => 'Имя задачи окружения, например test';
+
+  @override
+  String get goalContractCheckCommandHint => 'Команда, например make test';
+
+  @override
+  String get goalContractCheckWhere => 'Где запускается';
+
+  @override
+  String get goalContractCheckInWorktree => 'В рабочем дереве';
+
+  @override
+  String get goalContractCheckInEnvironment => 'Задача окружения';
+
+  @override
+  String get goalContractSecondsSuffix => 'с';
+
+  @override
+  String goalContractTimeoutRange(int max) {
+    return 'От 1 до $max секунд';
+  }
+
+  @override
+  String get goalContractRemoveCheck => 'Удалить проверку';
+
+  @override
+  String get goalContractDoneMeans => 'Критерии готовности';
+
+  @override
+  String get goalContractDoneMeansHelp =>
+      'Каждый критерий — это одно утверждение, которое ревьюер может подтвердить.';
+
+  @override
+  String get goalContractCriterionHint =>
+      'В заметках к релизу перечислено каждое слитое изменение';
+
+  @override
+  String goalContractCriterionTooLong(int max) {
+    return 'Не больше $max символов.';
+  }
+
+  @override
+  String get goalContractRemoveCriterion => 'Удалить критерий';
+
+  @override
+  String get goalContractAddCriterion => 'Добавить критерий';
+
+  @override
+  String goalContractCriteriaFull(int max) {
+    return 'У цели не может быть больше $max критериев.';
+  }
+
+  @override
+  String goalContractCriteriaCount(int count, int max) {
+    return 'Критериев: $count из $max';
+  }
+
+  @override
+  String get goalContractChecks => 'Проверки';
+
+  @override
+  String get goalContractChecksHelp =>
+      'Сервер запускает их, когда агент говорит, что закончил. Цель без проверки опирается только на ревью.';
+
+  @override
+  String get goalContractBoundaries => 'Границы';
+
+  @override
+  String get goalContractBoundariesHint => 'Не менять публичный API';
+
+  @override
+  String get goalContractStopWhen => 'Остановиться и спросить, когда';
+
+  @override
+  String get goalContractStopWhenHint => 'Миграция удалит данные';
+
+  @override
+  String get goalContractEditTitle => 'Изменить критерии готовности';
+
+  @override
+  String get goalCheckerTitle => 'Кто проверяет эту цель';
+
+  @override
+  String get goalCheckerLabel => 'Чекер';
+
+  @override
+  String get goalCheckerNone => 'Без отдельного чекера';
+
+  @override
+  String get goalCheckerNoneWeaker =>
+      'Без отдельного чекера агент проверяет собственную работу, а это замечает меньше.';
+
+  @override
+  String goalCheckerRecommend(String agent) {
+    return 'Например, $agent: чекер у другого провайдера с меньшей вероятностью разделяет те же слепые зоны.';
+  }
+
+  @override
+  String get goalCheckerRecommendGeneric =>
+      'Чекер у другого провайдера, чем агент цели, с меньшей вероятностью разделяет его слепые зоны.';
+
+  @override
+  String raiseCapSpentOf(String spent, String cap) {
+    return 'Потрачено $spent из $cap.';
+  }
+
+  @override
+  String get raiseCapNewCap => 'Новый лимит в долларах';
+
+  @override
+  String raiseCapMustExceed(String cap) {
+    return 'Введите сумму больше $cap.';
+  }
+
+  @override
+  String get raiseCapConfirm => 'Повысить лимит';
+
+  @override
+  String get goalsBackToList => 'Все цели';
+
+  @override
+  String goalPursuedBy(String agent) {
+    return 'Над ней работает $agent';
+  }
+
+  @override
+  String get goalOpenConversation => 'Открыть разговор';
+
+  @override
+  String goalStarted(String time) {
+    return 'Начата $time';
+  }
+
+  @override
+  String get goalStopTitle => 'Остановить эту цель?';
+
+  @override
+  String get goalStopBody =>
+      'Агент окончательно прекратит над ней работу. Сделанная до этого работа останется в разговоре.';
+
+  @override
+  String get goalRaiseBudgetTitle => 'Повысить бюджет и продолжить';
+
+  @override
+  String get goalRaiseBudgetAction => 'Повысить бюджет';
+
+  @override
+  String get goalSectionNow => 'Сейчас';
+
+  @override
+  String get goalFactSegments => 'Сегменты';
+
+  @override
+  String get goalFactMoney => 'Потрачено';
+
+  @override
+  String get goalFactDeadline => 'Срок';
+
+  @override
+  String get goalFactNoProgress => 'Без прогресса';
+
+  @override
+  String get goalNoDeadline => 'Нет';
+
+  @override
+  String goalDeadlineWithLeft(String time, String left) {
+    return '$time, осталось $left';
+  }
+
+  @override
+  String goalNoProgressCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count сегмента подряд не дали прогресса',
+      many: '$count сегментов подряд не дали прогресса',
+      few: '$count сегмента подряд не дали прогресса',
+      one: '$count сегмент подряд не дал прогресса',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get goalObjective => 'Задача';
+
+  @override
+  String get goalSectionContract => 'Что означает «готово»';
+
+  @override
+  String get goalContractPauseFirst =>
+      'Приостановите цель, чтобы изменить критерии готовности или того, кто проверяет.';
+
+  @override
+  String get goalContractEdit => 'Изменить';
+
+  @override
+  String get goalCheckerChange => 'Изменить чекера';
+
+  @override
+  String get goalContractNone =>
+      'Пока ничего не записано. Агент сам решает, когда работа готова.';
+
+  @override
+  String get goalCheckerSelf =>
+      'Отдельного чекера нет: агент проверяет собственную работу.';
+
+  @override
+  String goalCheckerIs(String agent) {
+    return 'Проверяет: $agent';
+  }
+
+  @override
+  String goalCheckWorktree(int seconds) {
+    return 'В рабочем дереве, до $seconds с';
+  }
+
+  @override
+  String goalCheckEnvironmentTask(int seconds) {
+    return 'Задача окружения, до $seconds с';
+  }
+
+  @override
+  String get goalSectionVerification => 'Проверка';
+
+  @override
+  String get goalNotVerifiedYet =>
+      'Ещё не проверено. Агент не говорил, что закончил.';
+
+  @override
+  String goalVerificationRound(int round, int total, String time) {
+    return 'Раунд $round из $total, $time';
+  }
+
+  @override
+  String get goalVerificationClaim => 'Что утверждает агент';
+
+  @override
+  String get goalCheckOutputTail => 'Вывод (последние строки)';
+
+  @override
+  String goalCheckExitCode(int code) {
+    return 'Пройдена · код $code';
+  }
+
+  @override
+  String get goalVerificationReview => 'Ревью';
+
+  @override
+  String get goalVerificationNoVerdict => 'Ревью пока нет.';
+
+  @override
+  String goalVerdictItem(String criterion, String state) {
+    return '$criterion · $state';
+  }
+
+  @override
+  String get goalSectionSchedules => 'Расписания и пробуждения';
+
+  @override
+  String get goalNoSchedules => 'Нет расписания и ожидающих пробуждений.';
+
+  @override
+  String get goalPendingWakes => 'Ожидающие пробуждения';
+
+  @override
+  String workListGroup(String label, int count) {
+    return '$label · $count';
+  }
+
+  @override
+  String get goalNotFound =>
+      'Этой цели нет или она находится в пространстве, которое вы не можете открыть.';
+
+  @override
+  String get goalsTitle => 'Цели';
+
+  @override
+  String get goalsSubtitle =>
+      'Работа, над которой агент продолжает трудиться, пока не выполнены критерии готовности.';
+
+  @override
+  String get goalsEmpty => 'Целей пока нет';
+
+  @override
+  String get goalsEmptyHint => 'Начните с /goal в разговоре.';
+
+  @override
+  String get goalsGroupReview => 'Ждут ревью';
+
+  @override
+  String get goalsGroupOpen => 'Открытые';
+
+  @override
+  String get goalsGroupEnded => 'Завершённые';
+
+  @override
+  String get scheduleStatusActive => 'Активно';
+
+  @override
+  String get scheduleStatusPaused => 'На паузе';
+
+  @override
+  String get scheduleStatusEnded => 'Завершено';
+
+  @override
+  String get scheduleWhenBusySkip =>
+      'Пропускает срабатывание, пока агент занят';
+
+  @override
+  String get scheduleWhenBusyQueue => 'Ждёт, пока агент освободится';
+
+  @override
+  String get scheduleDeliverRun => 'Запускает новый запуск';
+
+  @override
+  String get scheduleDeliverNotify => 'Только уведомляет';
+
+  @override
+  String get scheduleNew => 'Новое расписание';
+
+  @override
+  String get schedulesEmpty => 'Нет расписаний и наблюдений';
+
+  @override
+  String get schedulesEmptyHint =>
+      'Агенты задают их через /loop и /schedule, или вы можете создать своё.';
+
+  @override
+  String scheduleOwnedBy(String name) {
+    return 'Ответственный: $name';
+  }
+
+  @override
+  String scheduleRunsSkips(int runs, int skips) {
+    String _temp0 = intl.Intl.pluralLogic(
+      runs,
+      locale: localeName,
+      other: '$runs запуска',
+      many: '$runs запусков',
+      few: '$runs запуска',
+      one: '$runs запуск',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      skips,
+      locale: localeName,
+      other: '$skips пропуска',
+      many: '$skips пропусков',
+      few: '$skips пропуска',
+      one: '$skips пропуск',
+      zero: 'без пропусков',
+    );
+    return '$_temp0, $_temp1';
+  }
+
+  @override
+  String scheduleExpires(String time) {
+    return 'Заканчивается $time';
+  }
+
+  @override
+  String scheduleNextFires(String times) {
+    return 'Далее: $times';
+  }
+
+  @override
+  String get schedulesTitle => 'Расписания';
+
+  @override
+  String get schedulesSubtitle =>
+      'Расписания, циклы и наблюдения, которые пробуждают агентов.';
+
+  @override
+  String get scheduleWhenLabel => 'Когда срабатывает';
+
+  @override
+  String get scheduleWhenEvery => 'Регулярно, каждые…';
+
+  @override
+  String get scheduleWhenCron => 'По расписанию cron';
+
+  @override
+  String get scheduleWhenOnceIn => 'Один раз, через…';
+
+  @override
+  String get scheduleWhenOnceAt => 'Один раз, в ближайшее…';
+
+  @override
+  String get scheduleDurationLabel => 'Интервал';
+
+  @override
+  String get scheduleDurationHelp =>
+      'Используйте s, m, h или d, например 30m или 1h30m. Повторы идут не чаще, чем через 60 с.';
+
+  @override
+  String get scheduleDurationInvalid =>
+      'Это не длительность, например 30m или 2h.';
+
+  @override
+  String get scheduleHour => 'Час';
+
+  @override
+  String get scheduleMinute => 'Минута';
+
+  @override
+  String get scheduleCronLabel => 'Cron (минута час день месяц день недели)';
+
+  @override
+  String get scheduleCronInvalid =>
+      'Это не пятизначное cron-выражение, которое срабатывает.';
+
+  @override
+  String get scheduleTimeInvalid =>
+      'Это не время в будущем, например 09:00 или 2026-11-21T09:00Z.';
+
+  @override
+  String scheduleDaysRange(int max) {
+    return 'От 1 до $max дней.';
+  }
+
+  @override
+  String scheduleOptionUnknown(String option) {
+    return '$option не является параметром.';
+  }
+
+  @override
+  String get scheduleLimits => 'Ограничения';
+
+  @override
+  String get schedulePresetWeekdays => 'По будням в 09:00';
+
+  @override
+  String get schedulePresetDaily => 'Каждый день в 09:00';
+
+  @override
+  String get schedulePresetHourly => 'Каждый час, в начале часа';
+
+  @override
+  String get scheduleZoneLabel => 'Часовой пояс';
+
+  @override
+  String get scheduleZoneHelp => 'Пусто — часовой пояс рабочего пространства.';
+
+  @override
+  String get scheduleZoneInvalid =>
+      'Это не часовой пояс, например Europe/Berlin.';
+
+  @override
+  String get scheduleCreateTitle => 'Новое расписание';
+
+  @override
+  String get scheduleSpaceLabel => 'Пространство';
+
+  @override
+  String get scheduleSpaceHint => 'Выберите пространство';
+
+  @override
+  String get scheduleConversationLabel => 'Разговор';
+
+  @override
+  String get scheduleConversationHint => 'Выберите разговор';
+
+  @override
+  String get scheduleAgentLabel => 'Агент';
+
+  @override
+  String get scheduleAgentHint => 'Выберите, кого пробуждать';
+
+  @override
+  String get scheduleNoteLabel => 'С чего начинается каждый запуск';
+
+  @override
+  String get scheduleNoteHint =>
+      'Кратко опишите, что изменилось за ночь, и отметьте всё заблокированное.';
+
+  @override
+  String get scheduleExpiresInDays => 'Заканчивается через (дней)';
+
+  @override
+  String get scheduleExpiresInDaysHelp => 'Пусто: 30 дней, не больше 365.';
+
+  @override
+  String get scheduleMaxRuns => 'Лимит запусков';
+
+  @override
+  String scheduleMaxRunsHelp(int max) {
+    return 'Пусто: без предела, не больше $max.';
+  }
+
+  @override
+  String get scheduleCostCap => 'Лимит стоимости (доллары)';
+
+  @override
+  String get scheduleCostCapHelp =>
+      'Пусто — значение рабочего пространства по умолчанию.';
+
+  @override
+  String get scheduleWhenBusyLabel => 'Если агент занят';
+
+  @override
+  String get scheduleWhenBusyDefault => 'По умолчанию для этого типа';
+
+  @override
+  String get scheduleDeliverLabel => 'Каждое срабатывание';
+
+  @override
+  String get scheduleCreate => 'Создать расписание';
+
+  @override
+  String get scheduleExtendTitle => 'Продлить это расписание';
+
+  @override
+  String scheduleExtendNow(String current, String latest) {
+    return 'Заканчивается $current. Может действовать не дольше $latest.';
+  }
+
+  @override
+  String get scheduleExtendDays => 'Добавить дней';
+
+  @override
+  String scheduleExtendTooLong(String latest) {
+    return 'Самый поздний срок окончания — $latest.';
+  }
+
+  @override
+  String scheduleMaxRunsRange(int max) {
+    return 'От 1 до $max запусков.';
+  }
+
+  @override
+  String scheduleCostCapRange(String max) {
+    return 'Минимум 1 доллар и не больше $max.';
+  }
+
+  @override
+  String get scheduleExtend => 'Продлить';
+
+  @override
+  String get scheduleRemoveTitle => 'Убрать это расписание?';
+
+  @override
+  String get scheduleDeleteTitle => 'Удалить это расписание?';
+
+  @override
+  String get scheduleRemoveBody =>
+      'Оно исчезнет из списка. Его запуски останутся в разговоре.';
+
+  @override
+  String get scheduleDeleteBody =>
+      'Оно перестанет срабатывать окончательно. Его запуски останутся в разговоре.';
+
+  @override
+  String get scheduleRemove => 'Убрать';
+
+  @override
+  String get scheduleDelete => 'Удалить';
+
+  @override
+  String get scheduleOwnerOnly =>
+      'Возобновить или продлить его может только владелец.';
+
+  @override
+  String get schedulesBackToList => 'Все расписания';
+
+  @override
+  String get scheduleNoteByAgent => 'Заметка, написанная агентом';
+
+  @override
+  String get scheduleNoteByPerson => 'Заметка, написанная человеком';
+
+  @override
+  String scheduleNoteEditedBy(String name) {
+    return 'Заметка, последний раз изменена: $name';
+  }
+
+  @override
+  String get scheduleNoNote => 'Заметки нет.';
+
+  @override
+  String get schedulePause => 'Пауза';
+
+  @override
+  String get scheduleResume => 'Продолжить';
+
+  @override
+  String get scheduleOpenChainRoot => 'Открыть первое расписание этой цепочки';
+
+  @override
+  String get scheduleSectionFacts => 'Подробности';
+
+  @override
+  String get scheduleFactAgent => 'Пробуждает';
+
+  @override
+  String get scheduleFactConversation => 'Где';
+
+  @override
+  String get scheduleConversationUnknown =>
+      'Разговор, который вы не можете видеть';
+
+  @override
+  String get scheduleFactOwner => 'Ответственный';
+
+  @override
+  String get scheduleNoOwner => 'Никто';
+
+  @override
+  String get scheduleFactNextFires => 'Следующие срабатывания';
+
+  @override
+  String get scheduleFactNext => 'Следующее срабатывание';
+
+  @override
+  String get scheduleFactLast => 'Последнее срабатывание';
+
+  @override
+  String get scheduleFactRuns => 'Запуски';
+
+  @override
+  String scheduleRunsNoCap(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count запуска без предела',
+      many: '$count запусков без предела',
+      few: '$count запуска без предела',
+      one: '$count запуск без предела',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleRunsOfCap(int count, int max) {
+    return '$count из $max запусков';
+  }
+
+  @override
+  String get scheduleFactSkips => 'Пропуски';
+
+  @override
+  String scheduleSkips(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count срабатывания пропущены',
+      many: '$count срабатываний пропущено',
+      few: '$count срабатывания пропущены',
+      one: '$count срабатывание пропущено',
+      zero: 'Нет',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scheduleFactSpent => 'Потрачено';
+
+  @override
+  String get scheduleFactEnds => 'Заканчивается';
+
+  @override
+  String get scheduleFactWhenBusy => 'Если агент занят';
+
+  @override
+  String get scheduleFactDeliver => 'Каждое срабатывание';
+
+  @override
+  String get scheduleFactChain => 'Цепочка';
+
+  @override
+  String scheduleChainLeft(int runs, String time) {
+    String _temp0 = intl.Intl.pluralLogic(
+      runs,
+      locale: localeName,
+      other: 'Осталось $runs запуска',
+      many: 'Осталось $runs запусков',
+      few: 'Осталось $runs запуска',
+      one: 'Осталось $runs запуск',
+    );
+    return '$_temp0 в цепочке, которая заканчивается $time';
+  }
+
+  @override
+  String get scheduleFactCreated => 'Создано';
+
+  @override
+  String get scheduleSectionHistory => 'Последние пробуждения и запуски';
+
+  @override
+  String get scheduleNoRuns => 'Запусков пока нет.';
+
+  @override
+  String scheduleRunLine(String status, String cost) {
+    return '$status · $cost';
+  }
+
+  @override
+  String get scheduleRunPending => 'Ждёт запуска';
+
+  @override
+  String get scheduleRunRunning => 'Выполняется';
+
+  @override
+  String get scheduleRunCompleted => 'Завершён';
+
+  @override
+  String get scheduleRunFailed => 'Ошибка';
+
+  @override
+  String get scheduleNotFound =>
+      'Этого расписания нет или оно находится в пространстве, которое вы не можете открыть.';
+
+  @override
+  String get improvementCampaignTitle => 'Запустить оценку';
+
+  @override
+  String improvementCampaignCost(int repetitions, String budget) {
+    String _temp0 = intl.Intl.pluralLogic(
+      repetitions,
+      locale: localeName,
+      other: 'Каждая задача запускается $repetitions раза',
+      many: 'Каждая задача запускается $repetitions раз',
+      few: 'Каждая задача запускается $repetitions раза',
+      one: 'Каждая задача запускается $repetitions раз',
+    );
+    return '$_temp0 с текущим навыком и с изменением. Расходует не больше $budget, списывается с этого рабочего пространства.';
+  }
+
+  @override
+  String get improvementCampaignCostUnknown =>
+      'Оценка прогоняет корпус с текущим навыком и с изменением, не превышая заданный вами бюджет.';
+
+  @override
+  String get improvementCampaignUnavailable =>
+      'Оценки сейчас не могут запускаться на этом сервере.';
+
+  @override
+  String get improvementCampaignCorpus => 'Корпус';
+
+  @override
+  String get improvementCampaignProvider => 'Провайдер';
+
+  @override
+  String get improvementCampaignModel => 'Модель';
+
+  @override
+  String get improvementCampaignRepetitions => 'Запусков на задачу';
+
+  @override
+  String get improvementCampaignBudget => 'Бюджет (доллары)';
+
+  @override
+  String improvementCampaignRange(int max) {
+    return 'От 1 до $max.';
+  }
+
+  @override
+  String get improvementCampaignStart => 'Начать оценку';
+
+  @override
+  String get improvementRollbackTitle => 'Откатить это изменение?';
+
+  @override
+  String get improvementRollbackBody =>
+      'Текст, который оно заменило, вернётся, если никто его с тех пор не менял.';
+
+  @override
+  String get improvementRollback => 'Откатить';
+
+  @override
+  String get improvementRolledBackDone => 'Откачено.';
+
+  @override
+  String get improvementNeedsAdmin =>
+      'Решить может только администратор рабочего пространства: это меняет навык или политику для всего рабочего пространства.';
+
+  @override
+  String get improvementAdminDecides =>
+      'Как администратор, решение по этому принимаете вы: это меняет навык или политику для всего рабочего пространства.';
+
+  @override
+  String get improvementNeedsCampaign =>
+      'Прежде чем принять это изменение навыка, запустите успешную оценку.';
+
+  @override
+  String get improvementsBackToList => 'Все улучшения';
+
+  @override
+  String improvementMeta(String kind, String scope, String agent) {
+    return '$kind · $scope · предложил $agent';
+  }
+
+  @override
+  String get improvementAccept => 'Принять';
+
+  @override
+  String get improvementAcceptedDone => 'Принято.';
+
+  @override
+  String get improvementReject => 'Отклонить';
+
+  @override
+  String get improvementRejectedDone => 'Отклонено.';
+
+  @override
+  String get improvementRunEvaluation => 'Запустить оценку';
+
+  @override
+  String get improvementSectionChange => 'Что меняется';
+
+  @override
+  String get improvementTarget => 'Объект';
+
+  @override
+  String improvementScopeLine(String scope) {
+    return 'Применяется к: $scope';
+  }
+
+  @override
+  String get improvementNewText => 'Новый текст';
+
+  @override
+  String get improvementRemovedText => 'Удалённый текст';
+
+  @override
+  String get improvementExpected => 'Ожидаемый эффект';
+
+  @override
+  String get improvementSectionEvidence => 'Доказательства и решение';
+
+  @override
+  String get improvementNoEvidence => 'Доказательств не приложено.';
+
+  @override
+  String get improvementEvidenceRuns => 'Запуски';
+
+  @override
+  String get improvementEvidenceMessages => 'Сообщения';
+
+  @override
+  String improvementOpenMessage(int index) {
+    return 'Сообщение $index';
+  }
+
+  @override
+  String get improvementEvidenceChecks => 'Результаты проверок';
+
+  @override
+  String get improvementEvaluation => 'Оценка';
+
+  @override
+  String get improvementCampaignNone => 'Ещё не оценивалось.';
+
+  @override
+  String get improvementCampaignRunning => 'Оценка выполняется.';
+
+  @override
+  String get improvementCampaignPassed =>
+      'Оценка пройдена: она выполнена полностью, и изменение решило не меньше запусков, чем текущий навык. Это не доказывает, что оно лучше. Его можно принять.';
+
+  @override
+  String get improvementCampaignFailed =>
+      'Оценка не пройдена или навык изменился после замера. Запустите её снова или отклоните изменение.';
+
+  @override
+  String improvementDecided(String status, String name, String time) {
+    return '$status: $name, $time';
+  }
+
+  @override
+  String get improvementSomeone => 'кто-то';
+
+  @override
+  String improvementExpires(String time) {
+    return 'Истекает $time, если никто не решит.';
+  }
+
+  @override
+  String get improvementOpenApplied => 'Открыть то, что оно изменило';
+
+  @override
+  String get improvementsTitle => 'Улучшения';
+
+  @override
+  String get improvementsSubtitle =>
+      'Изменения, которые агенты предложили для своей памяти, заметок, политик и навыков.';
+
+  @override
+  String get improvementsEmpty => 'Предложений нет';
+
+  @override
+  String get improvementsEmptyHint =>
+      'Агенты предлагают улучшения после ревью своей работы, например через /refine.';
+
+  @override
+  String get improvementRowNeedsAdmin => 'Решает администратор';
+
+  @override
+  String get improvementNotFound =>
+      'Этого предложения нет или оно находится в пространстве, которое вы не можете открыть.';
+
+  @override
+  String get dispatchSettingsTitle => 'Расписания';
+
+  @override
+  String get dispatchSettingsSubtitle =>
+      'Лимиты для расписаний и наблюдений, а также что происходит с запросами, на которые никто не ответил.';
+
+  @override
+  String get dispatchLimitsLabel => 'Лимиты расписаний';
+
+  @override
+  String get dispatchLimitsSubtitle =>
+      'Сколько расписаний и наблюдений могут держать агенты и какие значения по умолчанию.';
+
+  @override
+  String dispatchLimitRange(int max) {
+    return 'От 1 до $max';
+  }
+
+  @override
+  String get dispatchLimitPerConversation => 'На агента в разговоре';
+
+  @override
+  String get dispatchLimitPerConversationHelp =>
+      'Активные или приостановленные расписания, которые один агент может держать в одном разговоре.';
+
+  @override
+  String get dispatchLimitPerAgent => 'На агента';
+
+  @override
+  String get dispatchLimitPerAgentHelp =>
+      'Активные или приостановленные расписания, которые один агент может держать во всём рабочем пространстве.';
+
+  @override
+  String get dispatchLimitPerWorkspace => 'В рабочем пространстве';
+
+  @override
+  String get dispatchLimitPerWorkspaceHelp =>
+      'Активные или приостановленные расписания во всём рабочем пространстве.';
+
+  @override
+  String get dispatchLimitCostCap => 'Лимит стоимости по умолчанию (доллары)';
+
+  @override
+  String get dispatchLimitCostCapHelp =>
+      'Сколько расписание может потратить в сумме, если не задало собственный лимит.';
+
+  @override
+  String get dispatchLimitZone => 'Часовой пояс';
+
+  @override
+  String get dispatchLimitZoneHelp =>
+      'Пояс, в котором читается cron-расписание без своего пояса, и пояс ежедневной сводки.';
+
+  @override
+  String get dispatchUnattendedLabel => 'Если никто не отвечает';
+
+  @override
+  String get dispatchUnattendedSubtitle =>
+      'Сколько запуск, начатый сервером, ждёт человека и когда отправляется ежедневная сводка того, что ждёт.';
+
+  @override
+  String get dispatchUnattendedExpiry => 'Запросы ждут (часы)';
+
+  @override
+  String get dispatchUnattendedExpiryHelp =>
+      'По истечении этого срока одобрение считается отказом, а вопрос — без ответа. Цели, настроенные на ответ на свои вопросы, отвечают сами через 10 минут.';
+
+  @override
+  String dispatchUnattendedExpiryRange(int min, int max) {
+    return 'От $min до $max часов';
+  }
+
+  @override
+  String get dispatchDigestHour => 'Ежедневная сводка в (час)';
+
+  @override
+  String dispatchDigestHourHelp(String zone) {
+    return 'В $zone, в часовом поясе выше.';
+  }
+
+  @override
+  String get dispatchDigestHourRange => 'От 0 до 23';
+
+  @override
+  String get goalRecordCrumb => 'Цель';
+
+  @override
+  String get scheduleRecordCrumb => 'Расписание';
+
+  @override
+  String get improvementRecordCrumb => 'Предложение';
+
+  @override
+  String get goalNodeNeedsAgent => 'Выберите агента, который ведёт цель.';
+
+  @override
+  String get goalNodeNeedsObjective => 'Опишите задачу.';
+
+  @override
+  String get goalNodeContractInvalid =>
+      'В условиях есть поле вне лимита; оно не сохранится, пока не будет исправлено.';
+
+  @override
+  String get goalNodeBudget => 'Бюджет (доллары)';
+
+  @override
+  String get goalNodeBudgetHelp =>
+      'Больше всего, что цель может потратить. Когда бюджет закончится, цель будет ждать человека.';
+
+  @override
+  String goalNodeBudgetRange(int max) {
+    return 'Обязательно: больше 0, не больше $max.';
+  }
+
+  @override
+  String get goalNodeMaxRuns => 'Лимит сегментов';
+
+  @override
+  String get goalNodeMaxRunsHelp =>
+      'Необязательно. Больше всего сегментов (запусков агента), которые может занять цель.';
+
+  @override
+  String get goalNodeDeadline => 'Срок (часы)';
+
+  @override
+  String get goalNodeDeadlineHelp =>
+      'Необязательно. Часы с момента, когда шаг запускает цель.';
+
+  @override
+  String goalNodeRange(int max) {
+    return 'От 1 до $max или пусто.';
+  }
+
+  @override
+  String get goalNodeContract => 'Условия';
+
+  @override
+  String get goalNodeContractHelp =>
+      'Что значит «готово»: критерии, которые проверяет ревьюер, и команды, которые должны пройти.';
+
+  @override
+  String get nodeConfigObjective => 'Задача';
+
+  @override
+  String pipelineRunGoalStep(String step) {
+    return 'Шаг $step ведёт цель';
+  }
+
+  @override
+  String get pipelineRunOpenGoal => 'Открыть цель';
+
+  @override
+  String get pipelineRunHeldBudget =>
+      'Запуск задержан: его оркестрация достигла лимита стоимости.';
+
+  @override
+  String pipelineRunHeldOther(String reason) {
+    return 'Запуск задержан ($reason).';
+  }
+
+  @override
+  String pipelineRunHeldSpent(String spent, String cap) {
+    return 'Потрачено $spent из $cap. Повысьте лимит, и запуск продолжится.';
+  }
+
+  @override
+  String get pipelineRunRaiseCap => 'Повысить лимит';
+
+  @override
+  String get pipelineRunRaiseCapTitle => 'Повысить лимит оркестрации';
+
+  @override
+  String get pipelineRunCapRaised => 'Лимит повышен. Запуск скоро продолжится.';
+
+  @override
+  String get goalLaunchChecks => 'Проверки';
+
+  @override
+  String get goalLaunchChecksHelp =>
+      'Команды, которые должны пройти, прежде чем цель сможет завершиться. Необязательно.';
+
+  @override
+  String get goalLaunchFresh => 'Начинать каждый сегмент с чистого листа';
+
+  @override
+  String get goalLaunchFreshHelp =>
+      'Каждый запуск начинается без истории разговора, только с цели и её заметок.';
+
+  @override
+  String get goalLaunchAssume =>
+      'Отвечать на свои вопросы, если никто не отвечает';
+
+  @override
+  String get goalLaunchAssumeHelp =>
+      'Через 10 минут без ответа агент фиксирует своё допущение и продолжает, если это позволяют условия остановки.';
+
+  @override
+  String workFeedLimitParkOutcomeResumed(String provider, String time) {
+    return 'Продолжено в $time после лимита использования у $provider.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeCancelled(String provider, String time) {
+    return 'Отменено в $time. Не продолжено после лимита использования у $provider.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeExpired(String provider, String time) {
+    return 'Истекло в $time, так и не продолжившись после лимита использования у $provider.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeSkipped(String provider, String time) {
+    return 'Не продолжено после лимита использования у $provider ($time).';
+  }
+
+  @override
+  String workFeedCommandRefusedNamed(String command) {
+    return 'Команда /$command отклонена.';
+  }
+
+  @override
+  String get improvementRefusalQueued =>
+      'Ревью этого разговора уже ждёт, когда его запустят.';
+
+  @override
+  String get improvementRefusalAgentNotFound =>
+      'Этого агента нет в рабочем пространстве.';
+
+  @override
+  String get workRefusalWakeQueueFull =>
+      'Здесь уже ждёт слишком много пробуждений. Попробуйте, когда часть из них запустится.';
+
+  @override
+  String get orchestrationRefusalNotYours =>
+      'Изменить это может только человек, от имени которого работает запуск.';
+
+  @override
+  String get orchestrationRefusalCapInvalid =>
+      'Новый лимит должен быть выше текущего и уже потраченной суммы, и не больше \$1,000.';
+
+  @override
+  String get orchestrationRefusalCapChanged =>
+      'Лимит уже повысил кто-то другой. Проверьте новый лимит и попробуйте снова.';
+
+  @override
+  String workFeedCapRaised(String person, String oldCap, String newCap) {
+    return '$person повысил лимит запуска с $oldCap до $newCap.';
+  }
+
+  @override
+  String get workFeedPersonUnknown => 'Человек';
+
+  @override
+  String workFeedApplyIncomplete(String skill) {
+    return 'Принятое изменение навыка $skill не удалось завершить, потому что навык тем временем изменился. Предложение откатили.';
+  }
+
+  @override
+  String get workFeedOpenImprovement => 'Открыть улучшение';
+
+  @override
+  String get peerAskFailNoOutput => 'Он завершился без ответа.';
+
+  @override
+  String get peerAskFailRunFailed => 'Его запуск завершился с ошибкой.';
+
+  @override
+  String get peerAskFailStoppedByPerson => 'Человек остановил его запуск.';
+
+  @override
+  String get peerAskFailBudget => 'Его запуск достиг бюджета.';
+
+  @override
+  String get peerAskFailSilence => 'Его запуск замолчал и был остановлен.';
+
+  @override
+  String get peerAskFailUsageLimit =>
+      'Его запуск остановился на лимите использования у провайдера.';
+
+  @override
+  String get peerAskFailNotDelivered => 'Вопрос так и не был доставлен.';
+
+  @override
+  String heldSteeringLimitHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count сообщения задержаны на лимите использования',
+      many: '$count сообщений задержано на лимите использования',
+      few: '$count сообщения задержаны на лимите использования',
+      one: '$count сообщение задержано на лимите использования',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get heldSteeringLimitNote =>
+      'Они будут отправлены, когда человек, для которого работает запуск, продолжит его. Если его не продолжат в течение 7 дней после сброса лимита, они останутся задержаны для этого человека.';
+
+  @override
+  String get wakeKindRuleFolded => 'Его заменило более позднее событие.';
+
+  @override
+  String goalCardWaitingNext(String time) {
+    return 'Ждёт того, что сама настроила · проверит снова к $time';
+  }
+
+  @override
+  String raiseCapAtMost(String max) {
+    return 'Введите не больше $max.';
+  }
+
+  @override
+  String raiseCapNowAt(String cap) {
+    return 'Теперь лимит — $cap.';
+  }
+
+  @override
+  String get scheduleWakeReasonSchedule => 'По расписанию';
+
+  @override
+  String get scheduleWakeReasonWatch => 'Наблюдение';
+
+  @override
+  String get scheduleWakeReasonLimitReset =>
+      'После сброса лимита использования';
+
+  @override
+  String get scheduleWakeStatePending => 'Ожидает';
+
+  @override
+  String get scheduleWakeStateHeld => 'Задержано';
+
+  @override
+  String get scheduleWakeStateClaimed => 'Запускается';
+
+  @override
+  String get scheduleWakeStateDelivered => 'Доставлено';
+
+  @override
+  String get scheduleWakeStateSkipped => 'Пропущено';
+
+  @override
+  String get scheduleWakeStateExpired => 'Истекло';
+
+  @override
+  String get scheduleWakeStateCancelled => 'Отменено';
+
+  @override
+  String scheduleWakeLine(String reason, String state) {
+    return '$reason · $state';
+  }
+
+  @override
+  String scheduleWakeExit(int code) {
+    return 'код $code';
+  }
+
+  @override
+  String scheduleWakeEvents(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count события',
+      many: '$count событий',
+      few: '$count события',
+      one: '$count событие',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scheduleWakesNone => 'Пробуждений пока нет.';
+
+  @override
+  String get scheduleWakesOlder => 'Показать более ранние';
+
+  @override
+  String get improvementCandidateStaged =>
+      'Предложенный навык хранится как отдельная ревизия. Оценка не меняет действующий навык; он меняется только после принятия предложения.';
+
+  @override
+  String goalNextWaitingFallback(String time) {
+    return 'Она продолжит, когда придёт то, чего она ждёт, или снова проверит в $time, если ничего не придёт.';
+  }
+
+  @override
+  String get steeringRefusalHeldByLimit =>
+      'Сообщения, которые держит пауза на лимите использования, нельзя отправить вручную, пока она ждёт.';
+
+  @override
+  String steeringRefusalHeldByLimitAt(String time) {
+    return 'Сообщения, которые держит пауза на лимите использования, нельзя отправить вручную, пока она ждёт. Лимит сбросится в $time.';
+  }
+
+  @override
+  String heldSteeringLimitResetsAt(String time) {
+    return 'Лимит сбрасывается в $time. Они будут отправлены, когда человек, для которого работает запуск, продолжит его.';
+  }
+
+  @override
+  String heldSteeringFromPerson(String name) {
+    return 'От $name';
+  }
+
+  @override
+  String get heldSteeringFromSomeoneElse => 'От другого человека';
+
+  @override
+  String get heldSteeringOnlyWriterSends =>
+      'Отправить задержанное сообщение может только тот, кто его написал.';
+
+  @override
+  String get steeringRefusalNotYours =>
+      'Эти задержанные сообщения принадлежат другим людям. Отправить может только тот, кто написал сообщение.';
+
+  @override
+  String improvementEvaluationSolved(
+    int pairedRuns,
+    int candidateSolved,
+    int baselineSolved,
+  ) {
+    String _temp0 = intl.Intl.pluralLogic(
+      pairedRuns,
+      locale: localeName,
+      other: 'В $pairedRuns парных запусках',
+      many: 'В $pairedRuns парных запусках',
+      few: 'В $pairedRuns парных запусках',
+      one: 'В $pairedRuns парном запуске',
+    );
+    return '$_temp0, изменение решило $candidateSolved, а текущий навык — $baselineSolved.';
+  }
+
+  @override
+  String improvementEvaluationWorse(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count задачи стали хуже с изменением.',
+      many: '$count задач стали хуже с изменением.',
+      few: '$count задачи стали хуже с изменением.',
+      one: '$count задача стала хуже с изменением.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String improvementEvaluationCostlier(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count задачи стали дороже с изменением.',
+      many: '$count задач стали дороже с изменением.',
+      few: '$count задачи стали дороже с изменением.',
+      one: '$count задача стала дороже с изменением.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String improvementEvaluationHarnessErrors(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count запуска изменения завершились ошибкой раннера.',
+      many: '$count запусков изменения завершились ошибкой раннера.',
+      few: '$count запуска изменения завершились ошибкой раннера.',
+      one: '$count запуск изменения завершился ошибкой раннера.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get improvementEvaluationIncomplete =>
+      'Оценка выполнилась не полностью.';
+
+  @override
+  String workFeedLimitParkExpires(String time) {
+    return 'Истекает $time';
+  }
+
+  @override
+  String workFeedSchedulePaused(String person, String agent) {
+    return '$person поставил на паузу расписание для $agent.';
+  }
+
+  @override
+  String get goalCardApproveNotYours =>
+      'Одобрить завершение этой цели может только тот, кто запустил конвейер.';
+
+  @override
+  String get goalCardObjective => 'Задача';
+
+  @override
+  String get planNeedsWrite =>
+      'Одобрять или менять этот план можно только с доступом на запись ко всем репозиториям этого пространства. Такой доступ может предоставить администратор рабочего пространства.';
+
+  @override
+  String scheduleSpentWithChain(String spent, String cap) {
+    return '$spent из $cap, с учётом каждого расписания в его цепочке';
+  }
 }

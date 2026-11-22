@@ -13,6 +13,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/ports/forge_pr_client.dart'
     show ClosedPrOutcome;
 import 'package:cc_domain/features/pr_review/domain/services/pr_change_signals.dart';
+import 'package:cc_domain/features/pr_review/domain/usecases/detect_pr_watch_events.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_server_core/src/forge/github_rate_budget.dart';
 import 'package:cc_server_core/src/forge/repo_access_registry.dart';
@@ -465,6 +466,63 @@ void main() {
     expect(events.single.workspaceId, 'ws1');
 
     await sub.cancel();
+  });
+
+  // Watch edges: for every polled pull request, whoever opened it, with no
+  // member to tell (this poller knows no member logins).
+  group('pull request watch edges', () {
+    late List<PrWatchEvent> heard;
+    late StreamSubscription<PrWatchEvent> sub;
+
+    setUp(() {
+      heard = [];
+      sub = bus.on<PrWatchEvent>().listen(heard.add);
+    });
+
+    tearDown(() => sub.cancel());
+
+    Future<void> sweep(List<PullRequest> prs) async {
+      port.groups = [(repo: repo1, prs: prs, hasMore: false, totalCount: null)];
+      await poller.refreshNow('ws1');
+      await pump();
+    }
+
+    test('checks settle once, a failure names its check from the one '
+        'lookup, and a re-run settles again', () async {
+      port.failingChecks[1] = (name: 'build', url: 'https://ci/1');
+      await sweep([_pr(1, checks: 'pending', author: 'builder-bot[bot]')]);
+      expect(heard, isEmpty, reason: 'the baseline sweep is no edge');
+      await sweep([_pr(1, checks: 'failing', author: 'builder-bot[bot]')]);
+      final failed = heard.whereType<PrWatchChecksSettled>().single;
+      expect(failed.passing, isFalse);
+      expect(failed.failedChecks, ['build']);
+      expect(failed.authorLogin, 'builder-bot[bot]');
+      expect(port.firstFailingCheckCalls, 1);
+      await sweep([_pr(1, checks: 'failing', author: 'builder-bot[bot]')]);
+      expect(heard.whereType<PrWatchChecksSettled>(), hasLength(1));
+      await sweep([_pr(1, checks: 'passing', author: 'builder-bot[bot]')]);
+      expect(
+        heard.whereType<PrWatchChecksSettled>().last.passing,
+        isTrue,
+      );
+    });
+
+    test('a review decision is review activity', () async {
+      await sweep([_pr(1)]);
+      await sweep([_pr(1, reviewDecision: PrReviewDecision.approved)]);
+      final review = heard.whereType<PrWatchReviewActivity>().single;
+      expect(review.decisionChanged, isTrue);
+    });
+
+    test('a merge is a closed edge that merged', () async {
+      await sweep([_pr(1), _pr(2)]);
+      now = now.add(const Duration(minutes: 5));
+      port.mergedNumbers.add(2);
+      await sweep([_pr(1)]);
+      final closed = heard.whereType<PrWatchClosed>().single;
+      expect(closed.prNumber, 2);
+      expect(closed.merged, isTrue);
+    });
   });
 
   test('a vanished PR the forge 404s for publishes closed', () async {

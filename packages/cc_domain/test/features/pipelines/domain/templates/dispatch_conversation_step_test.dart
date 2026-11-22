@@ -34,6 +34,9 @@ class _FakeMessagingPort implements MessagingPort {
   userMessages = [];
   final List<({String spaceId, String agentId, String? conversationId})>
   dispatched = [];
+
+  /// The wake context of each dispatch, in order.
+  final List<WakeContext?> wakeContexts = [];
   Mode? createdWithMode;
 
   /// Conversations opened inside an existing space, in order.
@@ -154,6 +157,7 @@ class _FakeMessagingPort implements MessagingPort {
     OutputContractMode outputContractMode = OutputContractMode.strict,
   }) async {
     seenWorkspaceIds.add(workspaceId);
+    wakeContexts.add(wakeContext);
     dispatched.add((
       spaceId: spaceId,
       agentId: agentId,
@@ -299,6 +303,12 @@ void main() {
         );
         expect(messaging.userMessages.single.spaceId, 'chan-plan');
         expect(messaging.dispatched.single.spaceId, 'chan-plan');
+        // The step's run is the pipeline's: no agent run started it.
+        expect(
+          messaging.wakeContexts.single?.wakeReason,
+          WakeReason.pipelineStep,
+        );
+        expect(messaging.wakeContexts.single?.startedByRunId, isNull);
         // The agent joins the room's roster (so the space sidebar shows it),
         // without renaming the operator's conversation; the step-run links back.
         expect(messaging.addedAgents.single, (

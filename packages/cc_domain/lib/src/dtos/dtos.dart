@@ -11,7 +11,14 @@ import 'dart:convert';
 
 import 'package:cc_domain/core/domain/value_objects/agent_role.dart'
     show AgentRole;
-import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
+import 'package:cc_domain/features/code_mode/domain/entities/code_execution.dart'
+    show CodeExecution, CodeExecutionPayload;
+import 'package:cc_domain/features/code_mode/domain/entities/code_execution_call.dart'
+    show CodeExecutionCall;
+import 'package:cc_domain/features/code_mode/domain/ports/code_execution_repository.dart'
+    show CodeExecutionDetail, CodeExecutionPage;
+import 'package:cc_domain/features/code_mode/domain/value_objects/code_mode_limits.dart'
+    show CodeModeLimits;
 import 'package:cc_domain/features/fonts/domain/entities/font_family_info.dart'
     show FontFamilyInfo;
 import 'package:cc_domain/features/guardrails/domain/entities/action_policy_rule.dart'
@@ -32,7 +39,10 @@ import 'package:cc_domain/features/weather/domain/entities/weather_snapshot.dart
     show WeatherCondition, WeatherSnapshot;
 import 'package:cc_harness/tools.dart' show ActionClass;
 
+part 'agent_dtos.dart';
+part 'agent_run_log_dtos.dart';
 part 'calendar_dtos.dart';
+part 'code_mode_dtos.dart';
 part 'pipeline_dtos.dart';
 
 /// Thrown when a remote tool call returns an MCP error envelope.
@@ -230,6 +240,7 @@ class TicketDto {
     this.projectId,
     this.assignedTeamId,
     this.delegatedByAgentId,
+    this.delegatedFromConversationId,
     this.spaceId,
     this.errorMessage,
     this.linkedPrIds = const [],
@@ -265,6 +276,8 @@ class TicketDto {
     projectId: json['project_id'] as String?,
     assignedTeamId: json['assigned_team_id'] as String?,
     delegatedByAgentId: json['delegated_by_agent_id'] as String?,
+    delegatedFromConversationId:
+        json['delegated_from_conversation_id'] as String?,
     spaceId: json['space_id'] as String?,
     errorMessage: json['error_message'] as String?,
     linkedPrIds:
@@ -314,6 +327,10 @@ class TicketDto {
   final String? projectId;
   final String? assignedTeamId;
   final String? delegatedByAgentId;
+
+  /// The conversation the delegation's completion wake goes to.
+  final String? delegatedFromConversationId;
+
   final String? spaceId;
   final String? errorMessage;
   final List<String> linkedPrIds;
@@ -355,6 +372,7 @@ class TicketDto {
     'project_id': ?projectId,
     'assigned_team_id': ?assignedTeamId,
     'delegated_by_agent_id': ?delegatedByAgentId,
+    'delegated_from_conversation_id': ?delegatedFromConversationId,
     'space_id': ?spaceId,
     'error_message': ?errorMessage,
     'linked_pr_ids': linkedPrIds,
@@ -368,118 +386,6 @@ class TicketDto {
     'completed_at': ?completedAt,
     'finished_at': ?finishedAt,
     'updated_at': ?updatedAt,
-  };
-}
-
-/// Agent wire DTO — the full shape needed to reconstruct an `Agent` entity on a
-/// thin client (richer than the lossy `list_agents` MCP tool output).
-class AgentDto {
-  AgentDto({
-    required this.id,
-    required this.name,
-    required this.title,
-    required this.agentMdPath,
-    required this.workspaceId,
-    required this.skills,
-    this.reportsTo,
-    this.persona,
-    this.systemPrompt,
-    this.adapterId,
-    this.modelId,
-    this.strictMode = false,
-    this.effort,
-    this.contextSize,
-    this.role,
-    this.monthlyBudgetMicros = 0,
-    this.silenceTimeoutMinutes,
-    this.maxConcurrentTasks = 1,
-    this.visibility = 'workspace',
-    this.lifecycleStatus = 'active',
-    this.budgetPolicyId,
-    this.runtimeProfileId,
-    this.createdAt,
-  });
-
-  factory AgentDto.fromJson(Map<String, dynamic> json) => AgentDto(
-    id: json['id'] as String,
-    name: json['name'] as String? ?? '',
-    title: json['title'] as String? ?? '',
-    agentMdPath: json['agent_md_path'] as String? ?? '',
-    workspaceId: json['workspace_id'] as String? ?? '',
-    skills: ((json['skills'] as List?) ?? const [])
-        .map((s) => s.toString())
-        .toList(),
-    reportsTo: json['reports_to'] as String?,
-    persona: json['persona'] as String?,
-    systemPrompt: json['system_prompt'] as String?,
-    adapterId: json['adapter_id'] as String?,
-    modelId: json['model_id'] as String?,
-    strictMode: json['strict_mode'] as bool? ?? false,
-    effort: json['effort'] as String?,
-    contextSize: (json['context_size'] as num?)?.toInt(),
-    role: json['role'] as String?,
-    monthlyBudgetMicros: (json['monthly_budget_micros'] as num?)?.toInt() ?? 0,
-    silenceTimeoutMinutes: (json['silence_timeout_minutes'] as num?)?.toInt(),
-    maxConcurrentTasks: (json['max_concurrent_tasks'] as num?)?.toInt() ?? 1,
-    visibility: json['visibility'] as String? ?? 'workspace',
-    lifecycleStatus: json['lifecycle_status'] as String? ?? 'active',
-    budgetPolicyId: json['budget_policy_id'] as String?,
-    runtimeProfileId: json['runtime_profile_id'] as String?,
-    createdAt: json['created_at'] as String?,
-  );
-
-  final String id;
-  final String name;
-  final String title;
-  final String agentMdPath;
-  final String workspaceId;
-  final List<String> skills;
-  final String? reportsTo;
-  final String? persona;
-  final String? systemPrompt;
-  final String? adapterId;
-  final String? modelId;
-  final bool strictMode;
-  final String? effort;
-  final int? contextSize;
-  final String? role;
-  final int monthlyBudgetMicros;
-  final int? silenceTimeoutMinutes;
-
-  /// Governance capability profile (PRD 09).
-  final int maxConcurrentTasks;
-  final String visibility;
-  final String lifecycleStatus;
-  final String? budgetPolicyId;
-  final String? runtimeProfileId;
-
-  /// ISO-8601 creation timestamp, when the host includes it.
-  final String? createdAt;
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'title': title,
-    'agent_md_path': agentMdPath,
-    'workspace_id': workspaceId,
-    'skills': skills,
-    'reports_to': ?reportsTo,
-    'persona': ?persona,
-    'system_prompt': ?systemPrompt,
-    'adapter_id': ?adapterId,
-    'model_id': ?modelId,
-    'strict_mode': strictMode,
-    'effort': ?effort,
-    'context_size': ?contextSize,
-    'role': ?role,
-    'monthly_budget_micros': monthlyBudgetMicros,
-    'silence_timeout_minutes': ?silenceTimeoutMinutes,
-    'max_concurrent_tasks': maxConcurrentTasks,
-    'visibility': visibility,
-    'lifecycle_status': lifecycleStatus,
-    'budget_policy_id': ?budgetPolicyId,
-    'runtime_profile_id': ?runtimeProfileId,
-    'created_at': ?createdAt,
   };
 }
 
@@ -682,8 +588,7 @@ class MessageDto {
   };
 }
 
-/// Space participant wire DTO: `{id, space_id, agent_id, role, joined_at,
-/// last_read_at?}`.
+/// Space participant wire DTO: `{id, space_id, agent_id, role, joined_at}`.
 class SpaceParticipantDto {
   SpaceParticipantDto({
     required this.id,
@@ -692,7 +597,6 @@ class SpaceParticipantDto {
     required this.participantType,
     required this.role,
     this.joinedAt,
-    this.lastReadAt,
   });
 
   factory SpaceParticipantDto.fromJson(Map<String, dynamic> json) =>
@@ -704,9 +608,6 @@ class SpaceParticipantDto {
         role: json['role'] as String? ?? '',
         joinedAt: json['joined_at'] is String
             ? DateTime.tryParse(json['joined_at'] as String)
-            : null,
-        lastReadAt: json['last_read_at'] is String
-            ? DateTime.tryParse(json['last_read_at'] as String)
             : null,
       );
 
@@ -720,7 +621,6 @@ class SpaceParticipantDto {
   final String participantType;
   final String role;
   final DateTime? joinedAt;
-  final DateTime? lastReadAt;
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -729,7 +629,6 @@ class SpaceParticipantDto {
     'participant_type': participantType,
     'role': role,
     if (joinedAt != null) 'joined_at': joinedAt!.toIso8601String(),
-    if (lastReadAt != null) 'last_read_at': lastReadAt!.toIso8601String(),
   };
 }
 
@@ -1135,30 +1034,6 @@ class ArticleDto {
     if (publishedAt != null) 'published_at': publishedAt!.toIso8601String(),
     'is_read': isRead,
     'is_saved': isSaved,
-  };
-}
-
-/// Space read-cursor wire DTO — the user participant's `lastReadAt` for a
-/// single space. The cursor is keyed by `space_id` (the space is the
-/// workspace-scoped entity); `last_read_at` is null when the space has never
-/// been opened under the user.
-class SpaceReadDto {
-  SpaceReadDto({required this.spaceId, this.lastRead});
-
-  factory SpaceReadDto.fromJson(Map<String, dynamic> json) => SpaceReadDto(
-    spaceId: json['space_id'] as String? ?? '',
-    lastRead: FeedPosition.fromJson(json['last_read']),
-  );
-
-  final String spaceId;
-
-  /// The read cursor (position of the newest message seen), or null when
-  /// never set.
-  final FeedPosition? lastRead;
-
-  Map<String, dynamic> toJson() => {
-    'space_id': spaceId,
-    'last_read': ?lastRead?.toJson(),
   };
 }
 
@@ -1594,243 +1469,6 @@ class CostSummaryDto {
     'next_reset_at': ?nextResetAt,
     'by_provider': byProvider,
     'by_model': byModel,
-  };
-}
-
-/// Agent run log wire DTO — a single agent execution record. Mirrors
-/// `agentRunLogToWire`/`agentRunLogFromWire` in the host catalog. Enum fields
-/// (`status`, `liveness`, `error_family`, `output_contract_mode`) are encoded
-/// as `.name`; timestamps are ISO-8601 strings; the structured-output payloads
-/// (`expected_output_schema`, `output_json`) travel as raw JSON maps.
-class AgentRunLogDto {
-  AgentRunLogDto({
-    required this.id,
-    required this.agentId,
-    this.workspaceId,
-    this.conversationId,
-    this.ticketId,
-    this.spaceId,
-    required this.startedAt,
-    this.completedAt,
-    required this.status,
-    this.summary,
-    this.adapter,
-    this.modelId,
-    this.pid,
-    this.logPath,
-    this.inputTokens = 0,
-    this.outputTokens = 0,
-    this.thoughtTokens = 0,
-    this.cachedReadTokens = 0,
-    this.cachedWriteTokens = 0,
-    this.costMicros = 0,
-    this.costBasis,
-    this.childCostMicros = 0,
-    this.effort,
-    this.taskFamily,
-    this.latency,
-    this.verification,
-    this.nativeSessionId,
-    this.resumedNativeSession = false,
-    this.agentRole,
-    this.durationMs,
-    this.timeToFirstTokenMs,
-    this.liveness,
-    this.errorFamily,
-    this.lastOutputAt,
-    this.contextSnapshotJson,
-    this.pipelineRunId,
-    this.pipelineStepId,
-    this.errorCode,
-    this.expectedOutputSchema,
-    this.outputContractMode = 'strict',
-    this.outputJson,
-    this.outputRejections = 0,
-    this.retryOfRunId,
-    this.retryAttempt = 0,
-    this.parentRunId,
-    this.spawnToolCallId,
-  });
-
-  factory AgentRunLogDto.fromJson(Map<String, dynamic> json) => AgentRunLogDto(
-    id: json['id'] as String,
-    agentId: json['agent_id'] as String? ?? '',
-    workspaceId: json['workspace_id'] as String?,
-    conversationId: json['conversation_id'] as String?,
-    ticketId: json['ticket_id'] as String?,
-    spaceId: json['space_id'] as String?,
-    startedAt: json['started_at'] as String? ?? '',
-    completedAt: json['completed_at'] as String?,
-    status: json['status'] as String? ?? 'pending',
-    summary: json['summary'] as String?,
-    adapter: json['adapter'] as String?,
-    modelId: json['model_id'] as String?,
-    pid: (json['pid'] as num?)?.toInt(),
-    logPath: json['log_path'] as String?,
-    inputTokens: (json['input_tokens'] as num?)?.toInt() ?? 0,
-    outputTokens: (json['output_tokens'] as num?)?.toInt() ?? 0,
-    thoughtTokens: (json['thought_tokens'] as num?)?.toInt() ?? 0,
-    cachedReadTokens: (json['cached_read_tokens'] as num?)?.toInt() ?? 0,
-    cachedWriteTokens: (json['cached_write_tokens'] as num?)?.toInt() ?? 0,
-    costMicros: (json['cost_micros'] as num?)?.toInt() ?? 0,
-    costBasis: json['cost_basis'] as String?,
-    childCostMicros: (json['child_cost_micros'] as num?)?.toInt() ?? 0,
-    effort: json['effort'] as String?,
-    taskFamily: json['task_family'] as String?,
-    latency: json['latency'] is List
-        ? (json['latency'] as List)
-              .map((e) => (e as Map).cast<String, dynamic>())
-              .toList()
-        : null,
-    verification: json['verification'] is Map
-        ? (json['verification'] as Map).cast<String, dynamic>()
-        : null,
-    nativeSessionId: json['native_session_id'] as String?,
-    resumedNativeSession: json['resumed_native_session'] as bool? ?? false,
-    agentRole: json['agent_role'] as String?,
-    durationMs: (json['duration_ms'] as num?)?.toInt(),
-    timeToFirstTokenMs: (json['time_to_first_token_ms'] as num?)?.toInt(),
-    liveness: json['liveness'] as String?,
-    errorFamily: json['error_family'] as String?,
-    lastOutputAt: json['last_output_at'] as String?,
-    contextSnapshotJson: json['context_snapshot_json'] as String?,
-    pipelineRunId: json['pipeline_run_id'] as String?,
-    pipelineStepId: json['pipeline_step_id'] as String?,
-    errorCode: json['error_code'] as String?,
-    expectedOutputSchema: json['expected_output_schema'] is Map
-        ? (json['expected_output_schema'] as Map).cast<String, dynamic>()
-        : null,
-    outputContractMode: json['output_contract_mode'] as String? ?? 'strict',
-    outputJson: json['output_json'] is Map
-        ? (json['output_json'] as Map).cast<String, dynamic>()
-        : null,
-    outputRejections: (json['output_rejections'] as num?)?.toInt() ?? 0,
-    retryOfRunId: json['retry_of_run_id'] as String?,
-    retryAttempt: (json['retry_attempt'] as num?)?.toInt() ?? 0,
-    parentRunId: json['parent_run_id'] as String?,
-    spawnToolCallId: json['spawn_tool_call_id'] as String?,
-  );
-
-  final String id;
-  final String agentId;
-  final String? workspaceId;
-  final String? conversationId;
-  final String? ticketId;
-  final String? spaceId;
-  final String startedAt;
-  final String? completedAt;
-  final String status;
-  final String? summary;
-  final String? adapter;
-  final String? modelId;
-  final int? pid;
-  final String? logPath;
-  final int inputTokens;
-  final int outputTokens;
-  final int thoughtTokens;
-  final int cachedReadTokens;
-  final int cachedWriteTokens;
-
-  /// Exact cost in micro-USD when a provider reported one; 0 when unknown.
-  final int costMicros;
-
-  /// Wire spelling of `CostBasis`
-  /// (`estimated` | `providerReported` | `subscription` | `mixed`).
-  final String? costBasis;
-
-  /// Exact cost of the child (subagent) runs in micro-USD.
-  final int childCostMicros;
-
-  /// Reasoning-effort tier the run requested, e.g. `low` | `medium` | `high`.
-  final String? effort;
-
-  /// Task family the run was classified into (for per-family analytics).
-  final String? taskFamily;
-
-  /// `RunLatencyProfile.toJson()` — null/empty when no stage was observed.
-  final List<Map<String, dynamic>>? latency;
-
-  /// `RunVerification.toJson()` — null when no verifier ran.
-  final Map<String, dynamic>? verification;
-
-  /// The provider/CLI's own session (thread) id this run was bound to; null
-  /// when the adapter exposes no native session.
-  final String? nativeSessionId;
-
-  /// Whether this run RESUMED [nativeSessionId] rather than starting fresh.
-  final bool resumedNativeSession;
-
-  /// Run role for per-role cost attribution: `main` | `sub` | `advisor`.
-  final String? agentRole;
-  final int? durationMs;
-  final int? timeToFirstTokenMs;
-  final String? liveness;
-  final String? errorFamily;
-  final String? lastOutputAt;
-  final String? contextSnapshotJson;
-  final String? pipelineRunId;
-  final String? pipelineStepId;
-  final String? errorCode;
-  final Map<String, dynamic>? expectedOutputSchema;
-  final String outputContractMode;
-  final Map<String, dynamic>? outputJson;
-  final int outputRejections;
-  final String? retryOfRunId;
-  final int retryAttempt;
-
-  /// Run id of the parent run that spawned this one as an ephemeral subagent.
-  final String? parentRunId;
-
-  /// Id of the parent's `task` tool call that spawned this subagent run.
-  final String? spawnToolCallId;
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'agent_id': agentId,
-    'workspace_id': ?workspaceId,
-    'conversation_id': ?conversationId,
-    'ticket_id': ?ticketId,
-    'space_id': ?spaceId,
-    'started_at': startedAt,
-    'completed_at': ?completedAt,
-    'status': status,
-    'summary': ?summary,
-    'adapter': ?adapter,
-    'model_id': ?modelId,
-    'pid': ?pid,
-    'log_path': ?logPath,
-    'input_tokens': inputTokens,
-    'output_tokens': outputTokens,
-    'thought_tokens': thoughtTokens,
-    'cached_read_tokens': cachedReadTokens,
-    'cached_write_tokens': cachedWriteTokens,
-    'cost_micros': costMicros,
-    'cost_basis': ?costBasis,
-    'child_cost_micros': childCostMicros,
-    'effort': ?effort,
-    'task_family': ?taskFamily,
-    'latency': ?latency,
-    'verification': ?verification,
-    'native_session_id': ?nativeSessionId,
-    if (resumedNativeSession) 'resumed_native_session': true,
-    'agent_role': ?agentRole,
-    'duration_ms': ?durationMs,
-    'time_to_first_token_ms': ?timeToFirstTokenMs,
-    'liveness': ?liveness,
-    'error_family': ?errorFamily,
-    'last_output_at': ?lastOutputAt,
-    'context_snapshot_json': ?contextSnapshotJson,
-    'pipeline_run_id': ?pipelineRunId,
-    'pipeline_step_id': ?pipelineStepId,
-    'error_code': ?errorCode,
-    'expected_output_schema': ?expectedOutputSchema,
-    'output_contract_mode': outputContractMode,
-    'output_json': ?outputJson,
-    'output_rejections': outputRejections,
-    'retry_of_run_id': ?retryOfRunId,
-    'retry_attempt': retryAttempt,
-    'parent_run_id': ?parentRunId,
-    'spawn_tool_call_id': ?spawnToolCallId,
   };
 }
 
@@ -2831,6 +2469,7 @@ class PrCodeReviewCommentDto {
     this.reactions = const [],
     this.threadId,
     this.isResolved = false,
+    this.isFileLevel = false,
   });
 
   factory PrCodeReviewCommentDto.fromJson(Map<String, dynamic> json) =>
@@ -2852,6 +2491,7 @@ class PrCodeReviewCommentDto {
         originalLine: (json['original_line'] as num?)?.toInt(),
         threadId: json['thread_id'] as String?,
         isResolved: json['is_resolved'] as bool? ?? false,
+        isFileLevel: json['file_level'] as bool? ?? false,
         reactions: ((json['reactions'] as List?) ?? const [])
             .whereType<Map>()
             .map((r) => ReactionGroupDto.fromJson(r.cast<String, dynamic>()))
@@ -2878,6 +2518,9 @@ class PrCodeReviewCommentDto {
 
   /// Whether the thread this comment belongs to is resolved on the forge.
   final bool isResolved;
+
+  /// Whether the comment is on the whole file rather than a diff line.
+  final bool isFileLevel;
   final List<ReactionGroupDto> reactions;
 
   Map<String, dynamic> toJson() => {
@@ -2896,6 +2539,7 @@ class PrCodeReviewCommentDto {
     'original_line': ?originalLine,
     'thread_id': ?threadId,
     if (isResolved) 'is_resolved': true,
+    if (isFileLevel) 'file_level': true,
     'reactions': reactions.map((r) => r.toJson()).toList(),
   };
 }

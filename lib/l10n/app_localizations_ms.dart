@@ -1043,9 +1043,6 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String get calendarAllDayGutter => 'Sepanjang hari';
-
-  @override
   String calendarAllDayEventCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -2517,9 +2514,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get activityBackedUpServer => 'Menyandarkan data pelayan';
-
-  @override
-  String get activityMarkedSpaceRead => 'Menandakan ruang sebagai dibaca';
 
   @override
   String get activityRespondedToInvitation => 'Membalas jemputan acara';
@@ -13492,6 +13486,17 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
+  String diffFileUnresolvedConversations(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count perbualan belum selesai',
+      one: '1 perbualan belum selesai',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get pendingReview => 'Semakan tertunda';
 
   @override
@@ -13848,10 +13853,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get spaceKeepAfterMergeHint =>
       'Anda tidak akan ditanya lagi tentang ruang ini.';
-
-  @override
-  String get spaceAllPrsMergedLabel =>
-      'Semua permintaan tarik telah digabungkan';
 
   @override
   String get archiveSpace => 'Arkibkan ruang';
@@ -15414,7 +15415,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get skillEvalIncomplete => 'Tidak lengkap';
 
   @override
-  String get skillEvalInconclusive => 'Tiada kesimpulan';
+  String get skillEvalInconclusive => 'Tiada keputusan (bukti tidak mencukupi)';
 
   @override
   String get skillEvalInferred => 'Disimpulkan';
@@ -18966,4 +18967,2944 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get mcpServerNotFound =>
       'Pelayan ini tidak wujud lagi. Mungkin seseorang telah membuangnya.';
+
+  @override
+  String get scriptToolCalls => 'Panggilan alat';
+
+  @override
+  String scriptCallCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count panggilan',
+      one: '1 panggilan',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scriptCallsRunning(int count) {
+    return '$count sedang berjalan';
+  }
+
+  @override
+  String scriptCallsOk(int count) {
+    return '$count berjaya';
+  }
+
+  @override
+  String scriptCallsFailed(int count) {
+    return '$count gagal';
+  }
+
+  @override
+  String scriptCallsDenied(int count) {
+    return '$count ditolak';
+  }
+
+  @override
+  String scriptCallsCancelled(int count) {
+    return '$count dibatalkan';
+  }
+
+  @override
+  String scriptCallsQueued(int count) {
+    return '$count dalam barisan';
+  }
+
+  @override
+  String scriptCallsSkipped(int count) {
+    return '$count dilangkau';
+  }
+
+  @override
+  String get scriptStepQueued => 'Dalam barisan';
+
+  @override
+  String get scriptStepSkipped => 'Dilangkau';
+
+  @override
+  String get scriptGroupLoop => 'Gelung';
+
+  @override
+  String get scriptGroupEach => 'Untuk setiap';
+
+  @override
+  String get scriptGroupParallel => 'Selari';
+
+  @override
+  String get scriptGroupFunction => 'Fungsi';
+
+  @override
+  String scriptCallsHidden(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Tunjuk $count panggilan lagi',
+      one: 'Tunjuk 1 panggilan lagi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptCallsUnplaced =>
+      'Panggilan yang tidak diletakkan dalam skrip';
+
+  @override
+  String get scriptToolComputed => 'Alat';
+
+  @override
+  String scriptStepSemantics(String subject, String state) {
+    return '$subject, $state';
+  }
+
+  @override
+  String get scriptSourceLabel => 'Skrip';
+
+  @override
+  String scriptSourceLines(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count baris',
+      one: '1 baris',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptStateRunning => 'Berjalan';
+
+  @override
+  String get scriptStateCompleted => 'Selesai';
+
+  @override
+  String get scriptStateFailed => 'Gagal';
+
+  @override
+  String get scriptStateTimedOut => 'Masa tamat';
+
+  @override
+  String get scriptStateCancelled => 'Dibatalkan';
+
+  @override
+  String get scriptStateMemoryExceeded => 'Memori habis';
+
+  @override
+  String get scriptStateOutputExceeded => 'Output terlalu banyak';
+
+  @override
+  String get scriptStateSandboxError => 'Ralat kotak pasir';
+
+  @override
+  String get scriptStateRefused => 'Ditolak';
+
+  @override
+  String get transcriptToolDenied => 'Ditolak';
+
+  @override
+  String get transcriptStatusRunningScript => 'Menjalankan skrip…';
+
+  @override
+  String get scriptOriginLine =>
+      'Daripada skrip yang sedang dijalankan oleh ejen';
+
+  @override
+  String get scriptOriginShow => 'Tunjuk skrip';
+
+  @override
+  String get codeModeTitle => 'Mod kod';
+
+  @override
+  String get codeModeSubtitle =>
+      'Ejen boleh menulis skrip pendek yang memanggil alatnya, bukannya memanggilnya satu demi satu.';
+
+  @override
+  String get codeModeStatusLabel => 'Status';
+
+  @override
+  String get codeModeFactAvailability => 'Pada pelayan ini';
+
+  @override
+  String get codeModeAvailable => 'Tersedia';
+
+  @override
+  String get codeModeUnavailable => 'Tidak tersedia';
+
+  @override
+  String get codeModeFactRunner => 'Pelari';
+
+  @override
+  String codeModeUnavailableNote(String reason) {
+    return 'Pelayan ini tidak boleh menjalankan skrip, jadi ejen di sini memanggil alatnya satu demi satu. Pelayan berkata: $reason';
+  }
+
+  @override
+  String get codeModeNoReason => 'tiada sebab diberikan.';
+
+  @override
+  String get codeModeViewExecutions => 'Lihat pelaksanaan kod';
+
+  @override
+  String get codeModeLimitsLabel => 'Had';
+
+  @override
+  String get codeModeLimitsSubtitle =>
+      'Berapa lama dan sejauh mana satu skrip boleh pergi. Lalai sesuai untuk kebanyakan ruang kerja.';
+
+  @override
+  String get codeModeLimitsDisclosure => 'Laras had';
+
+  @override
+  String get codeModeLimitsAtDefaults => 'Lalai';
+
+  @override
+  String codeModeLimitsChangedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count diubah',
+      one: '1 diubah',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeModeLimitsUseDefaults => 'Guna lalai';
+
+  @override
+  String get codeModeLimitWallClock => 'Masa setiap skrip';
+
+  @override
+  String get codeModeLimitWallClockHelp =>
+      'Masa yang dihabiskan menunggu seseorang tidak dikira.';
+
+  @override
+  String get codeModeLimitCpu => 'Masa pemproses';
+
+  @override
+  String get codeModeLimitCpuHelp =>
+      'Masa yang dihabiskan oleh skrip itu sendiri untuk mengira.';
+
+  @override
+  String get codeModeLimitHeap => 'Memori';
+
+  @override
+  String get codeModeLimitHeapHelp =>
+      'Memori yang boleh digunakan oleh skrip semasa ia berjalan.';
+
+  @override
+  String get codeModeLimitNestedCalls => 'Panggilan alat setiap skrip';
+
+  @override
+  String get codeModeLimitNestedCallsHelp =>
+      'Panggilan melebihi had ini ditolak dan skrip diberitahu sebabnya.';
+
+  @override
+  String get codeModeLimitInFlight => 'Panggilan serentak';
+
+  @override
+  String get codeModeLimitInFlightHelp =>
+      'Panggilan yang boleh dijalankan serentak oleh skrip.';
+
+  @override
+  String get codeModeLimitOutputTokens => 'Output yang dibaca ejen';
+
+  @override
+  String get codeModeLimitOutputTokensHelp =>
+      'Output yang lebih panjang akan dipendekkan; ejen boleh membaca bahagian selebihnya atas permintaan.';
+
+  @override
+  String codeModeLimitRange(String defaultValue, String min, String max) {
+    return 'Lalai $defaultValue. Dari $min hingga $max.';
+  }
+
+  @override
+  String codeModeLimitOutOfRange(String min, String max) {
+    return 'Masukkan nombor bulat dari $min hingga $max.';
+  }
+
+  @override
+  String get codeModeSuffixSeconds => 's';
+
+  @override
+  String get codeModeSuffixMebibytes => 'MiB';
+
+  @override
+  String get codeModeSuffixCalls => 'panggilan';
+
+  @override
+  String get codeModeSuffixTokens => 'token';
+
+  @override
+  String codeModeServerCap(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Pelayan ini menjalankan paling banyak $count skrip pada satu-satu masa, merentasi setiap ruang kerja.',
+      one:
+          'Pelayan ini menjalankan paling banyak 1 skrip pada satu-satu masa, merentasi setiap ruang kerja.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String codeModeUnitMilliseconds(String value) {
+    return '$value ms';
+  }
+
+  @override
+  String codeModeUnitSeconds(String value) {
+    return '$value s';
+  }
+
+  @override
+  String codeModeUnitMinutesSeconds(String minutes, String seconds) {
+    return '$minutes min $seconds s';
+  }
+
+  @override
+  String get codeModeRefusedLimitUnknown =>
+      'Pelayan tidak mengenali salah satu had ini.';
+
+  @override
+  String get codeModeRefusedLimitOutOfRange =>
+      'Salah satu had ini berada di luar apa yang dibenarkan pelayan.';
+
+  @override
+  String get codeModeRefusedUnknownSetting =>
+      'Pelayan tidak mengenali tetapan itu.';
+
+  @override
+  String get codeExecutionsTitle => 'Pelaksanaan kod';
+
+  @override
+  String get codeExecutionsSubtitle =>
+      'Skrip yang dijalankan oleh ejen dalam ruang kerja ini, dengan setiap panggilan alat yang mereka buat.';
+
+  @override
+  String get codeExecutionsEmpty => 'Belum ada skrip dijalankan di sini.';
+
+  @override
+  String get codeExecutionsEmptyFiltered =>
+      'Tiada skrip sepadan dengan penapis ini.';
+
+  @override
+  String get codeExecutionsStatusFilter => 'Hasil';
+
+  @override
+  String get codeExecutionsAllOutcomes => 'Semua hasil';
+
+  @override
+  String codeExecutionsOutcomeCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hasil',
+      one: '1 hasil',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionsScopeRun => 'Skrip daripada satu larian';
+
+  @override
+  String get codeExecutionsScopeConversation => 'Skrip daripada satu perbualan';
+
+  @override
+  String get codeExecutionsScopeAgent => 'Skrip oleh satu ejen';
+
+  @override
+  String get codeExecutionsShowAll => 'Tunjuk semua';
+
+  @override
+  String get codeExecutionUntitled => 'Skrip tanpa tajuk';
+
+  @override
+  String get codeExecutionRecord => 'Rekod';
+
+  @override
+  String get codeExecutionBackToList => 'Kembali ke pelaksanaan kod';
+
+  @override
+  String get codeExecutionNotFound =>
+      'Pelaksanaan kod ini tiada dalam ruang kerja ini. Ia mungkin telah dibuang bersama larian dengannya.';
+
+  @override
+  String get codeExecutionRefusedSpace =>
+      'Skrip ini dijalankan dalam ruang yang anda tidak boleh buka, jadi rekodnya kekal tersembunyi.';
+
+  @override
+  String get codeExecutionOpenRecord => 'Buka rekod';
+
+  @override
+  String get codeExecutionFactStarted => 'Dimulakan';
+
+  @override
+  String get codeExecutionFactDuration => 'Mengambil masa';
+
+  @override
+  String get codeExecutionFactCalls => 'Panggilan alat';
+
+  @override
+  String get codeExecutionFactAgent => 'Ejen';
+
+  @override
+  String get codeExecutionFactSurface => 'Dijalankan melalui';
+
+  @override
+  String get codeExecutionSurfaceHarness => 'Ejen terbina';
+
+  @override
+  String get codeExecutionSurfaceMcp => 'Ejen luaran';
+
+  @override
+  String get codeExecutionFactCpu => 'Masa pemproses';
+
+  @override
+  String get codeExecutionFactMemory => 'Memori puncak';
+
+  @override
+  String get codeExecutionOpenConversation => 'Buka perbualan';
+
+  @override
+  String get codeExecutionRunScripts => 'Skrip dalam larian ini';
+
+  @override
+  String get codeExecutionAgentScripts => 'Skrip oleh ejen ini';
+
+  @override
+  String get codeExecutionScript => 'Skrip';
+
+  @override
+  String get codeExecutionConsole => 'Konsol';
+
+  @override
+  String get codeExecutionOutputTruncated =>
+      'Output telah dipotong supaya muat dengan apa yang disimpan.';
+
+  @override
+  String get codeExecutionNoPayload =>
+      'Skrip dan outputnya tidak lagi disimpan.';
+
+  @override
+  String codeExecutionCallsHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count panggilan alat',
+      one: '1 panggilan alat',
+      zero: 'Panggilan alat',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionNoCalls => 'Skrip tidak memanggil sebarang alat.';
+
+  @override
+  String get codeExecutionCallCompleted => 'Selesai';
+
+  @override
+  String get codeExecutionCallFailed => 'Gagal';
+
+  @override
+  String get codeExecutionCallDenied => 'Ditolak';
+
+  @override
+  String get codeExecutionCallCancelled => 'Dibatalkan';
+
+  @override
+  String get codeExecutionCallTimedOut => 'Masa tamat';
+
+  @override
+  String get codeExecutionCallUnknownTool => 'Alat tidak diketahui';
+
+  @override
+  String get codeExecutionCallInvalidArgs => 'Argumen tidak sah';
+
+  @override
+  String get codeExecutionGateAllowed => 'Dibenarkan';
+
+  @override
+  String get codeExecutionGateApproved => 'Diluluskan oleh seseorang';
+
+  @override
+  String get codeExecutionGateDenied => 'Ditolak';
+
+  @override
+  String get codeExecutionGateNotReached => 'Tidak disemak';
+
+  @override
+  String codeExecutionCallWaited(String duration) {
+    return 'Menunggu $duration untuk seseorang';
+  }
+
+  @override
+  String get codeExecutionCallArguments => 'Argumen';
+
+  @override
+  String get codeExecutionCallResult => 'Hasil';
+
+  @override
+  String codeExecutionCallResultSize(String size) {
+    return 'Memulangkan $size';
+  }
+
+  @override
+  String codeExecutionBytes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bait',
+      one: '1 bait',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get codeExecutionEndedScriptError =>
+      'Skrip membuang ralat dan tiada yang menangkapnya.';
+
+  @override
+  String codeExecutionEndedScriptErrorNamed(String name) {
+    return 'Skrip membuang $name dan tiada yang menangkapnya.';
+  }
+
+  @override
+  String get codeExecutionEndedStalled =>
+      'Skrip menunggu sesuatu yang tidak akan pernah selesai.';
+
+  @override
+  String get codeExecutionEndedCpu =>
+      'Skrip telah menghabiskan masa pemprosesnya.';
+
+  @override
+  String get codeExecutionEndedHeap => 'Skrip mencapai had memorinya.';
+
+  @override
+  String get codeExecutionEndedOutput =>
+      'Skrip menghasilkan output lebih banyak daripada yang dibenarkan untuk skrip.';
+
+  @override
+  String get codeExecutionEndedDeadline => 'Masa skrip sudah habis.';
+
+  @override
+  String get codeExecutionEndedCancelled => 'Skrip dibatalkan sebelum selesai.';
+
+  @override
+  String get codeExecutionEndedShutdown =>
+      'Pelayan dimatikan semasa skrip berjalan.';
+
+  @override
+  String get codeExecutionEndedServerStopped =>
+      'Pelayan berhenti semasa skrip berjalan. Rakaman ditutup apabila pelayan dimulakan semula.';
+
+  @override
+  String get codeExecutionEndedInternal =>
+      'Program yang menjalankan skrip gagal dengan sendirinya.';
+
+  @override
+  String get codeExecutionEndedStart =>
+      'Program yang menjalankan skrip tidak dapat dimulakan.';
+
+  @override
+  String get codeExecutionEndedLockdown =>
+      'Program yang menjalankan skrip tidak dapat mengunci dirinya, jadi skrip tidak dijalankan.';
+
+  @override
+  String get codeExecutionEndedExited =>
+      'Program yang menjalankan skrip berhenti sebelum skrip selesai.';
+
+  @override
+  String get codeExecutionEndedRunnerBrokeRules =>
+      'Program yang menjalankan skrip melanggar peraturan operasinya dan dihentikan.';
+
+  @override
+  String get codeExecutionEndedUnresponsive =>
+      'Program yang menjalankan skrip tidak bertindak balas dan dihentikan.';
+
+  @override
+  String get codeExecutionEndedHostError =>
+      'Pelayan gagal semasa menjalankan skrip.';
+
+  @override
+  String get codeExecutionRunningNote =>
+      'Masih berjalan. Panggilan alatnya muncul di sini apabila selesai, dan hasilnya apabila tamat.';
+
+  @override
+  String codeModeServerWorkspaceShare(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Skrip satu ruang kerja menggunakan paling banyak $count daripadanya.',
+      one: 'Skrip satu ruang kerja menggunakan paling banyak 1 daripadanya.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get wakeOriginGoal => 'Matlamat';
+
+  @override
+  String get wakeOriginGoalCheck => 'Semakan matlamat';
+
+  @override
+  String get wakeOriginGoalReview => 'Kajian matlamat';
+
+  @override
+  String get wakeOriginSchedule => 'Jadual';
+
+  @override
+  String get wakeOriginWatch => 'Pantauan';
+
+  @override
+  String wakeOriginReplyFrom(String agent) {
+    return 'Balasan daripada $agent';
+  }
+
+  @override
+  String get wakeOriginReply => 'Balasan';
+
+  @override
+  String wakeOriginMessageFrom(String agent) {
+    return 'Mesej daripada $agent';
+  }
+
+  @override
+  String get wakeOriginMessage => 'Mesej';
+
+  @override
+  String wakeOriginWorkFinishedBy(String agent) {
+    return 'Kerja selesai daripada $agent';
+  }
+
+  @override
+  String get wakeOriginWorkFinished => 'Kerja selesai';
+
+  @override
+  String get wakeOriginLimitReset => 'Had ditetapkan semula';
+
+  @override
+  String get wakeOriginRecovery => 'Pemulihan';
+
+  @override
+  String get wakeOriginAssignment => 'Tugasan';
+
+  @override
+  String get wakeOriginPipelineStep => 'Langkah pipeline';
+
+  @override
+  String get wakeOriginImprovementReview => 'Kajian penambahbaikan';
+
+  @override
+  String get wakeKindStopped => 'Ditahan kerana seseorang menghentikan larian.';
+
+  @override
+  String get wakeKindAttempts => 'Penghantaran gagal tiga kali.';
+
+  @override
+  String get wakeKindAgentDeleted => 'Ejen itu tidak wujud lagi.';
+
+  @override
+  String get wakeKindAgentNotDispatchable => 'Ejen itu telah bersara.';
+
+  @override
+  String get wakeKindAgentPaused => 'Ejen itu dijeda.';
+
+  @override
+  String get wakeKindPersonRemoved =>
+      'Orang yang diwakilinya telah keluar daripada ruang kerja.';
+
+  @override
+  String get wakeKindBudgetBlocked => 'Bajet menyekat larian.';
+
+  @override
+  String get wakeKindTakeOver => 'Seseorang telah mengambil alih worktree.';
+
+  @override
+  String get wakeKindRateCapConversation =>
+      'Perbualan ini telah memulakan 30 larian daripada panggilan bangun dalam sejam yang lalu.';
+
+  @override
+  String get wakeKindRateCapWorkspace =>
+      'Ruang kerja ini telah memulakan 300 larian daripada panggilan bangun dalam sejam yang lalu.';
+
+  @override
+  String get wakeKindLiveRunNoInput =>
+      'Larian langsung ejen di sini tidak menerima input.';
+
+  @override
+  String get wakeKindLiveRunOtherOptions =>
+      'Larian langsung ejen di sini berjalan dengan cara yang berbeza, jadi ini memulakan larian sendiri selepas itu.';
+
+  @override
+  String get wakeKindLiveRunOtherPerson =>
+      'Larian langsung ejen di sini bertindak untuk orang lain, jadi ini memulakan larian sendiri selepas itu.';
+
+  @override
+  String get wakeKindDispatchRefused => 'Larian tidak dapat dimulakan.';
+
+  @override
+  String get wakeKindSandboxUnavailable =>
+      'Tiada kotak pasir tersedia untuk larian baca sahaja.';
+
+  @override
+  String get wakeKindReadOnlyUnavailable =>
+      'Backend ejen ini tidak dapat mengekalkan larian sebagai baca sahaja.';
+
+  @override
+  String get wakeKindServerStopped =>
+      'Pemulaan semula pelayan menghentikan larian.';
+
+  @override
+  String get wakeKindServerRestarted =>
+      'Pelayan dimulakan semula semasa larian seseorang.';
+
+  @override
+  String get wakeKindGuardFailed => 'Satu semakan sebelum penghantaran gagal.';
+
+  @override
+  String get wakeKindLimit => 'Menunggu di had penggunaan penyedia.';
+
+  @override
+  String get wakeKindLimitRunLive => 'Menunggu larian di had penggunaan tamat.';
+
+  @override
+  String get wakeKindWakeMissed => 'Terlepas semasa pelayan tidak aktif.';
+
+  @override
+  String get wakeKindPipelineRunEnded => 'Larian pipelinenya telah tamat.';
+
+  @override
+  String get wakeKindGoalEnded => 'Matlamatnya telah tamat.';
+
+  @override
+  String get wakeKindGoalBudgetExhausted =>
+      'Matlamatnya telah menggunakan bajetnya.';
+
+  @override
+  String get wakeKindGoalReviewStale =>
+      'Matlamat telah berubah sejak kajian ini diminta.';
+
+  @override
+  String get wakeKindGoalPaused => 'Matlamatnya dijeda.';
+
+  @override
+  String get wakeKindGoalHeld => 'Matlamatnya sedang ditahan.';
+
+  @override
+  String get wakeKindGoalStopped => 'Matlamatnya telah dihentikan.';
+
+  @override
+  String get wakeKindAskSettled => 'Soalan yang dijawabnya telah diselesaikan.';
+
+  @override
+  String get wakeKindRuleEnded => 'Jadualnya telah tamat.';
+
+  @override
+  String get wakeKindUnknown => 'Atas sebab yang versi ini tidak namakan:';
+
+  @override
+  String wakeStripHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count panggilan bangun menunggu',
+      one: '1 panggilan bangun menunggu',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String wakeStripDue(String time) {
+    return 'Tiba pada $time';
+  }
+
+  @override
+  String get wakeStripDueNow => 'Tiba sekarang';
+
+  @override
+  String get wakeStripHeld => 'Ditahan';
+
+  @override
+  String wakeStripExpires(String time) {
+    return 'Tamat pada $time';
+  }
+
+  @override
+  String wakeStripAttempt(int attempt) {
+    return 'Percubaan $attempt';
+  }
+
+  @override
+  String get wakeStripCancel => 'Batalkan panggilan bangun';
+
+  @override
+  String get wakeStripDeliverNow => 'Hantar sekarang';
+
+  @override
+  String get wakeStripResume => 'Sambung';
+
+  @override
+  String get wakeStripDismiss => 'Tolak';
+
+  @override
+  String get wakeStripResumeAll => 'Sambung semua';
+
+  @override
+  String get wakeStripResumeOnlyTheirs =>
+      'Hanya orang yang larian ini milik boleh menyambungnya.';
+
+  @override
+  String get wakeReceiptStarted => 'Larian dimulakan.';
+
+  @override
+  String get wakeReceiptPushed => 'Diserahkan kepada larian langsung.';
+
+  @override
+  String wakeReceiptWaiting(String reason) {
+    return 'Masih menunggu. $reason';
+  }
+
+  @override
+  String wakeReceiptSkipped(String reason) {
+    return 'Tidak dihantar. $reason';
+  }
+
+  @override
+  String get wakeReceiptDuplicate => 'Sudah dihantar.';
+
+  @override
+  String wakeReleased(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Menyambung $count panggilan bangun.',
+      one: 'Menyambung 1 panggilan bangun.',
+      zero: 'Tiada yang disambung.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get wakeRefusalNotYours =>
+      'Panggilan bangun ini bertindak untuk orang lain. Hanya mereka boleh menghantar atau menyambungnya.';
+
+  @override
+  String get wakeRefusalSettled => 'Panggilan bangun ini telah selesai.';
+
+  @override
+  String heldSteeringHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count mesej ditahan',
+      one: '1 mesej ditahan',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get heldSteeringResume => 'Hantar mesej yang ditahan';
+
+  @override
+  String get heldSteeringDelete => 'Padam mesej yang ditahan';
+
+  @override
+  String heldSteeringReleased(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Menghantar $count mesej yang ditahan.',
+      one: 'Menghantar 1 mesej yang ditahan.',
+      zero: 'Tiada yang ditahan.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get workAgentUnknown => 'satu ejen';
+
+  @override
+  String workFeedWoke(int count, String agent) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Membangunkan $agent untuk $count item menunggu',
+      one: 'Membangunkan $agent',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String workFeedWakeSkipped(String agent) {
+    return 'Panggilan bangun untuk $agent tidak dihantar.';
+  }
+
+  @override
+  String workFeedWakeMissed(String agent) {
+    return 'Panggilan bangun untuk $agent terlepas semasa pelayan tidak aktif.';
+  }
+
+  @override
+  String workFeedScheduleCreated(String agent) {
+    return 'Jadual ditetapkan untuk $agent.';
+  }
+
+  @override
+  String workFeedScheduleEnded(String agent) {
+    return 'Jadual untuk $agent telah tamat.';
+  }
+
+  @override
+  String get workFeedOpenSchedule => 'Buka jadual';
+
+  @override
+  String workFeedNoteFromAgent(String agent) {
+    return '$agent meninggalkan nota ini untuk dirinya sendiri, dengan kata-katanya sendiri:';
+  }
+
+  @override
+  String get workFeedNoteFromPerson =>
+      'Peringatan yang ditetapkan oleh seseorang:';
+
+  @override
+  String workFeedLimitParkHeld(String provider, String time) {
+    return 'Dijeda di had penggunaan $provider. Had itu ditetapkan semula pada $time.';
+  }
+
+  @override
+  String workFeedLimitParkPending(String provider, String time) {
+    return 'Dijeda di had penggunaan $provider. Disambung pada $time.';
+  }
+
+  @override
+  String workFeedLimitParkResumed(String provider) {
+    return 'Disambung selepas had penggunaan $provider.';
+  }
+
+  @override
+  String workFeedLimitParkGone(String provider) {
+    return 'Tidak lagi menunggu di had penggunaan $provider.';
+  }
+
+  @override
+  String get workFeedLimitParkResume => 'Sambung';
+
+  @override
+  String get workFeedLimitParkCancel => 'Batal';
+
+  @override
+  String workFeedStillInFlight(String agent) {
+    return 'Keadaan yang diserahkan kepada $agent selepas pemadatan';
+  }
+
+  @override
+  String get workFeedShowDetails => 'Tunjuk butiran';
+
+  @override
+  String get workFeedHideDetails => 'Sembunyikan butiran';
+
+  @override
+  String get workFeedCommandRefused => 'Arahan itu ditolak.';
+
+  @override
+  String get wakeRuleEndFired => 'Ia berjalan sekali.';
+
+  @override
+  String get wakeRuleEndExpired => 'Ia telah sampai tarikh tamatnya.';
+
+  @override
+  String get wakeRuleEndRunCap =>
+      'Ia telah menggunakan larian yang dibenarkan.';
+
+  @override
+  String get wakeRuleEndCostCap => 'Ia telah mencapai had kosnya.';
+
+  @override
+  String get wakeRuleEndGoalEnded => 'Matlamatnya telah tamat.';
+
+  @override
+  String get wakeRuleEndCancelled => 'Ia telah dibatalkan.';
+
+  @override
+  String get wakeRuleEndMemberRemoved =>
+      'Orang yang diwakilinya telah keluar daripada ruang kerja.';
+
+  @override
+  String get wakeRuleEndInvalidRow =>
+      'Tetapan yang disimpan tidak dapat dibaca.';
+
+  @override
+  String get wakeRuleRefusalIntervalTooShort =>
+      'Sela itu terlalu pendek. Pilih yang lebih panjang.';
+
+  @override
+  String get wakeRuleRefusalTooSoon =>
+      'Masa itu terlalu awal. Pilih masa yang lebih lewat.';
+
+  @override
+  String get wakeRuleRefusalLineageEnded =>
+      'Rantaian panggilan bangun ini telah menggunakan larian atau masanya.';
+
+  @override
+  String get wakeRuleRefusalWatchTargetUnreadable =>
+      'Anda tidak dapat membaca perkara yang akan dipantau ini.';
+
+  @override
+  String get wakeRuleRefusalExpiryRequired =>
+      'Berikan tarikh tamat, contohnya --days 3.';
+
+  @override
+  String get wakeRuleRefusalLimitReached =>
+      'Perbualan ini sudah mempunyai seberapa banyak jadual yang dibenarkan.';
+
+  @override
+  String get wakeRuleRefusalInvalidWhen => 'Masa itu tidak dapat dibaca.';
+
+  @override
+  String get wakeRuleRefusalNoteTooLong => 'Nota itu terlalu panjang.';
+
+  @override
+  String get wakeRuleRefusalExpiryTooLong => 'Tarikh tamat itu terlalu jauh.';
+
+  @override
+  String get wakeRuleRefusalLimitOutOfRange =>
+      'Had larian, hari atau bajet berada di luar julat.';
+
+  @override
+  String get wakeRuleRefusalNextOutsideLoop =>
+      'Hanya gelung boleh memilih masa seterusnya sendiri.';
+
+  @override
+  String get wakeRuleRefusalWatchRefused => 'Itu tidak boleh dipantau.';
+
+  @override
+  String get wakeRuleRefusalRuleEnded => 'Jadual itu telah tamat.';
+
+  @override
+  String get wakeRuleRefusalNotYours => 'Jadual itu milik orang lain.';
+
+  @override
+  String get workRefusalUnknown => 'Pelayan menolak ini:';
+
+  @override
+  String get goalRefusalAlreadyActive =>
+      'Perbualan ini sudah mempunyai matlamat yang aktif.';
+
+  @override
+  String get goalRefusalNotInReview =>
+      'Matlamat ini tidak sedang menunggu kajian.';
+
+  @override
+  String get goalRefusalEvidenceIncomplete =>
+      'Bukti matlamat ini tidak lengkap.';
+
+  @override
+  String get goalRefusalClaimPending =>
+      'Dakwaan bahawa ia telah selesai masih disemak.';
+
+  @override
+  String get goalRefusalNotActiveSegment =>
+      'Tiada segmen sedang berjalan untuk matlamat ini.';
+
+  @override
+  String get goalRefusalNotYours =>
+      'Hanya orang yang memulakan matlamat ini boleh melakukannya.';
+
+  @override
+  String get goalRefusalNotPaused => 'Jedakan matlamat dahulu.';
+
+  @override
+  String get goalRefusalContractInvalid =>
+      'Kontrak matlamat tidak dapat dibaca.';
+
+  @override
+  String get goalRefusalCheckerUnknown => 'Tiada ejen dengan nama itu.';
+
+  @override
+  String get goalRefusalCheckerAmbiguous =>
+      'Lebih daripada satu ejen mempunyai nama itu. Gunakan idnya.';
+
+  @override
+  String get goalRefusalCheckerIsGoalAgent =>
+      'Penyemak mesti ejen yang lain daripada ejen yang membuat kerja.';
+
+  @override
+  String get goalRefusalCommandInvalid =>
+      'Arahan /goal ini tidak dapat dibaca.';
+
+  @override
+  String goalCardWorking(int segment) {
+    return 'Berfungsi · segmen $segment';
+  }
+
+  @override
+  String get goalCardWaiting => 'Menunggu panggilan bangun seterusnya';
+
+  @override
+  String get goalCardVerifying => 'Menyemak sama ada ia telah selesai';
+
+  @override
+  String goalCardLimitUntil(String time) {
+    return 'Dijeda di had penggunaan · disambung $time';
+  }
+
+  @override
+  String get goalCardLimit => 'Dijeda di had penggunaan';
+
+  @override
+  String get goalCardPerson => 'Memerlukan seseorang';
+
+  @override
+  String get goalCardByPerson => 'Dijeda oleh seseorang';
+
+  @override
+  String get goalCardNeedsReview =>
+      'Menunggu kajian: ia mendakwa telah selesai dan tiada apa yang mengesahkannya';
+
+  @override
+  String goalCardSegments(int run, int max) {
+    return 'Segmen $run daripada $max';
+  }
+
+  @override
+  String goalCardSegmentsNoCap(int run) {
+    return 'Segmen $run';
+  }
+
+  @override
+  String goalCardMoney(String spent, String cap) {
+    return '$spent daripada $cap';
+  }
+
+  @override
+  String goalCardTimeLeft(String time) {
+    return 'Tinggal $time';
+  }
+
+  @override
+  String get goalCardOverdue => 'Melepasi tarikh akhirnya';
+
+  @override
+  String get goalCardDoneMeans => 'Maksud siap';
+
+  @override
+  String get goalCardChecks => 'Semakan';
+
+  @override
+  String get goalCardCheckPassed => 'Lulus';
+
+  @override
+  String goalCardCheckFailed(int code) {
+    return 'Gagal · kod keluar $code';
+  }
+
+  @override
+  String get goalCardCheckTimedOut => 'Masa tamat';
+
+  @override
+  String get goalCardCheckNotRerun =>
+      'Tidak dijalankan semula: tiada yang berubah';
+
+  @override
+  String get goalCardCheckBroken => 'Tidak dapat dijalankan';
+
+  @override
+  String get goalCardCheckNotRun => 'Belum dijalankan';
+
+  @override
+  String get goalCardCriterionMet => 'Dipenuhi';
+
+  @override
+  String get goalCardCriterionUnmet => 'Tidak dipenuhi';
+
+  @override
+  String get goalCardCriterionCannotTell => 'Tidak pasti';
+
+  @override
+  String get goalCardVerdictPass => 'Semakan terakhir: selesai';
+
+  @override
+  String get goalCardVerdictFail => 'Semakan terakhir: belum selesai';
+
+  @override
+  String get goalCardVerdictCannotVerify => 'Semakan terakhir: tidak pasti';
+
+  @override
+  String get goalCardConcerns => 'Kebimbangan';
+
+  @override
+  String goalCardVerifiedBy(String agent) {
+    return 'Disahkan oleh $agent';
+  }
+
+  @override
+  String get goalCardVerifiedBySelf =>
+      'Disahkan oleh dirinya sendiri (tiada penyemak berasingan)';
+
+  @override
+  String get goalCardClosedByPerson =>
+      'Ditutup oleh seseorang tanpa semakan yang lulus';
+
+  @override
+  String get goalCardNoMachineCheck => 'Tiada semakan mesin';
+
+  @override
+  String get goalCardAddCheck => 'Tambah semakan';
+
+  @override
+  String get goalCardOpen => 'Buka matlamat';
+
+  @override
+  String get goalCardApprove => 'Luluskan penyiapan';
+
+  @override
+  String get goalCardApproveTitle => 'Tutup matlamat ini sebagai selesai?';
+
+  @override
+  String get goalCardApproveBody =>
+      'Tiada semakan yang mengesahkannya. Anda menutupnya berdasarkan kata anda sendiri, dan matlamat itu merekodkan bahawa seseorang menutupnya tanpa pengesahan.';
+
+  @override
+  String get goalCardApproveConfirm => 'Tutup sebagai selesai';
+
+  @override
+  String get goalCardResumeNotYours =>
+      'Hanya orang yang memulakannya boleh menyambungnya atau menaikkan bajetnya.';
+
+  @override
+  String get goalHoldDetailStalled =>
+      'Tiada kemajuan dalam segmen terakhirnya.';
+
+  @override
+  String get goalHoldDetailStalledWaiting =>
+      'Menunggu, selepas segmen tanpa kemajuan.';
+
+  @override
+  String get goalHoldDetailVerificationFailed => 'Semakan terakhir gagal.';
+
+  @override
+  String get goalHoldDetailCannotVerify =>
+      'Penyemak tidak pasti sama ada ia telah selesai.';
+
+  @override
+  String get goalHoldDetailSandboxUnavailable =>
+      'Tiada kotak pasir tersedia untuk menjalankan semakannya.';
+
+  @override
+  String get goalHoldDetailCheckerUnavailable =>
+      'Ejen penyemaknya tidak tersedia. Pilih penyemak lain, kemudian sambung.';
+
+  @override
+  String get goalHoldDetailCheckBroken => 'Semakan ini tidak dapat dijalankan:';
+
+  @override
+  String get goalHoldDetailWakeSkipped => 'Panggilan bangunnya tidak dihantar.';
+
+  @override
+  String get goalHoldDetailClaimPending =>
+      'Dakwaannya bahawa ia telah selesai sedang menunggu semakan.';
+
+  @override
+  String get goalHoldDetailUnanswered =>
+      'Soalan atau permintaan kelulusan kepada seseorang tidak dijawab.';
+
+  @override
+  String get goalHoldDetailLimitParks =>
+      'Ia terlalu kerap mencapai had penggunaan. Semak, kemudian sambung.';
+
+  @override
+  String get goalHoldDetailInput => 'Menunggu jawapan dalam perbualan.';
+
+  @override
+  String get peerAsksSection => 'Soalan';
+
+  @override
+  String peerAskTo(String agent) {
+    return 'Kepada $agent';
+  }
+
+  @override
+  String get peerAskKindAsk => 'Soalan';
+
+  @override
+  String get peerAskKindConsult => 'Rundingan';
+
+  @override
+  String get peerAskKindReview => 'Kajian';
+
+  @override
+  String get peerAskStatusPending => 'Menunggu';
+
+  @override
+  String get peerAskStatusAnswered => 'Dijawab';
+
+  @override
+  String get peerAskStatusFailed => 'Gagal';
+
+  @override
+  String get peerAskStatusExpired => 'Luput';
+
+  @override
+  String get peerAskStatusCancelled => 'Dibatalkan';
+
+  @override
+  String peerAskAsked(String time) {
+    return 'Ditanya $time';
+  }
+
+  @override
+  String peerAskExpires(String time) {
+    return 'Tamat pada $time';
+  }
+
+  @override
+  String get peerAskPromised => 'Berjanji akan menjawab';
+
+  @override
+  String get peerAskBackground => 'Di latar belakang';
+
+  @override
+  String get peerAskCancel => 'Batalkan soalan';
+
+  @override
+  String get peerAskAlreadySettled => 'Soalan itu telah selesai.';
+
+  @override
+  String get slashHintGoal =>
+      'Usaha ke arah matlamat sehingga ia selesai. Bendera: --check, --checker, --fresh, --unattended';
+
+  @override
+  String get slashHintLoop =>
+      'Ulang tugasan, setiap sela atau mengikut rentak ejen';
+
+  @override
+  String get slashHintSchedule =>
+      'Jalankan tugasan kemudian: dalam 2h, pada 09:00 atau mengikut cron';
+
+  @override
+  String get slashHintRefine =>
+      'Semak kerja perbualan ini dan cadangkan penambahbaikan';
+
+  @override
+  String get notifGoalCompleted => 'Matlamat selesai';
+
+  @override
+  String get notifGoalFailed => 'Matlamat gagal';
+
+  @override
+  String get notifGoalCancelled => 'Matlamat dibatalkan';
+
+  @override
+  String get notifGoalBudgetExhausted => 'Matlamat telah menggunakan bajetnya';
+
+  @override
+  String get notifGoalNeedsReview => 'Satu matlamat menunggu kajian anda';
+
+  @override
+  String get notifGoalNeedsPerson => 'Satu matlamat memerlukan anda';
+
+  @override
+  String get notifGoalOnHold => 'Satu matlamat sedang ditahan';
+
+  @override
+  String get notifWakeRuleEnded => 'Satu jadual telah tamat';
+
+  @override
+  String notifWaitingDigest(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count perkara menunggu anda',
+      one: '1 perkara menunggu anda',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notifImprovementProposed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count penambahbaikan dicadangkan',
+      one: 'Satu penambahbaikan dicadangkan',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notifPipelineRunHeld =>
+      'Satu larian pipeline ditahan pada bajetnya';
+
+  @override
+  String notifPipelineRunHeldBody(String spent, String cap) {
+    return 'Dibelanjakan $spent daripada $cap';
+  }
+
+  @override
+  String get inboxGoalNeedsReview => 'Matlamat menunggu kajian';
+
+  @override
+  String get inboxGoalNeedsPerson => 'Matlamat memerlukan anda';
+
+  @override
+  String get inboxImprovementProposed => 'Penambahbaikan dicadangkan';
+
+  @override
+  String get improvementRefusalAlreadyDecided =>
+      'Seseorang telah membuat keputusan mengenai cadangan ini.';
+
+  @override
+  String get improvementRefusalCampaignRequired =>
+      'Perubahan ini belum lulus penilaian terhadap kemahiran semasa, atau kemahiran berubah selepas ia diukur. Jalankan penilaian semula.';
+
+  @override
+  String get improvementRefusalChangedSince =>
+      'Sasaran telah berubah sejak cadangan ini dibuat. Tolak cadangan ini dan biarkan ejen mencadangkan semula.';
+
+  @override
+  String get improvementRefusalTargetMissing =>
+      'Apa yang diubah oleh cadangan ini sudah tidak wujud.';
+
+  @override
+  String get improvementRefusalCampaignState =>
+      'Penilaian tidak dapat dimulakan atau selesai dalam keadaannya sekarang.';
+
+  @override
+  String get improvementRefusalReviewCooldown =>
+      'Perbualan ini baru sahaja dikaji. Cuba lagi kemudian.';
+
+  @override
+  String get improvementRefusalAdminRequired =>
+      'Hanya pentadbir ruang kerja boleh membuat keputusan mengenai cadangan ini.';
+
+  @override
+  String get improvementKindMemoryFact => 'Fakta memori';
+
+  @override
+  String get improvementKindPolicy => 'Polisi';
+
+  @override
+  String get improvementKindAgentNote => 'Nota ejen';
+
+  @override
+  String get improvementKindSkillEdit => 'Perubahan kemahiran';
+
+  @override
+  String get improvementKindSkillNew => 'Kemahiran baharu';
+
+  @override
+  String get improvementScopeAgent => 'Ejen ini';
+
+  @override
+  String get improvementScopeRepository => 'Repositori ini';
+
+  @override
+  String get improvementScopeWorkspace => 'Seluruh ruang kerja';
+
+  @override
+  String get improvementStatusProposed => 'Dicadangkan';
+
+  @override
+  String get improvementStatusAccepted => 'Diterima';
+
+  @override
+  String get improvementStatusRejected => 'Ditolak';
+
+  @override
+  String get improvementStatusRolledBack => 'Dikembalikan';
+
+  @override
+  String get improvementStatusExpired => 'Luput';
+
+  @override
+  String get improvementOperationAdd => 'Menambah';
+
+  @override
+  String get improvementOperationReplace => 'Menggantikan';
+
+  @override
+  String get improvementOperationRemove => 'Membuang';
+
+  @override
+  String scheduleTriggerOnce(String time) {
+    return 'Sekali, $time';
+  }
+
+  @override
+  String scheduleTriggerEvery(String interval) {
+    return 'Setiap $interval';
+  }
+
+  @override
+  String scheduleTriggerCron(String cron, String zone) {
+    return 'Mengikut jadual $cron ($zone)';
+  }
+
+  @override
+  String get scheduleTriggerSelfPaced =>
+      'Apabila ejen memilih, 1 hingga 60 minit selang';
+
+  @override
+  String get scheduleTriggerPrChecks => 'Apabila semakan pull request selesai';
+
+  @override
+  String scheduleTriggerPrChecksOf(String pr) {
+    return 'Apabila semakan $pr selesai';
+  }
+
+  @override
+  String get scheduleTriggerPrReview =>
+      'Apabila pull request menerima ulasan atau balasan';
+
+  @override
+  String scheduleTriggerPrReviewOf(String pr) {
+    return 'Apabila $pr menerima ulasan atau balasan';
+  }
+
+  @override
+  String get scheduleTriggerPrMerged => 'Apabila pull request digabungkan';
+
+  @override
+  String scheduleTriggerPrMergedOf(String pr) {
+    return 'Apabila $pr digabungkan';
+  }
+
+  @override
+  String get scheduleTriggerEnvironment =>
+      'Apabila tugasan persekitaran tamat atau sedia';
+
+  @override
+  String scheduleTriggerTicket(String id) {
+    return 'Apabila tiket $id selesai';
+  }
+
+  @override
+  String scheduleTriggerPipelineRun(String id) {
+    return 'Apabila larian pipeline $id tamat';
+  }
+
+  @override
+  String get goalNextWaiting =>
+      'Ia diteruskan apabila perkara yang ditunggunya tiba.';
+
+  @override
+  String get goalNextVerifying =>
+      'Apabila semakan dan kajian selesai, ia akan siap atau terus bekerja.';
+
+  @override
+  String get goalNextLimit =>
+      'Ia disambung apabila had penggunaan ditetapkan semula.';
+
+  @override
+  String get goalNextPerson =>
+      'Ia diteruskan selepas seseorang menjawab soalan atau permintaan kelulusannya.';
+
+  @override
+  String get goalNextByPerson =>
+      'Ia kekal dijeda sehingga seseorang menyambungnya.';
+
+  @override
+  String get goalNextNeedsReview =>
+      'Luluskan sebagai selesai, atau sambung untuk terus bekerja.';
+
+  @override
+  String get goalNextWorking =>
+      'Ia terus bekerja, satu segmen pada satu masa, sehingga ia selesai atau mencapai had.';
+
+  @override
+  String get goalContractAddCheck => 'Tambah semakan';
+
+  @override
+  String goalContractChecksFull(int max) {
+    return 'Satu matlamat mempunyai paling banyak $max semakan.';
+  }
+
+  @override
+  String goalContractChecksCount(int count, int max) {
+    return '$count daripada $max semakan';
+  }
+
+  @override
+  String get goalContractCheckTaskHint =>
+      'Nama tugasan persekitaran, seperti test';
+
+  @override
+  String get goalContractCheckCommandHint => 'Arahan, seperti make test';
+
+  @override
+  String get goalContractCheckWhere => 'Tempat ia dijalankan';
+
+  @override
+  String get goalContractCheckInWorktree => 'Dalam worktree';
+
+  @override
+  String get goalContractCheckInEnvironment => 'Tugasan persekitaran';
+
+  @override
+  String get goalContractSecondsSuffix => 's';
+
+  @override
+  String goalContractTimeoutRange(int max) {
+    return '1 hingga $max saat';
+  }
+
+  @override
+  String get goalContractRemoveCheck => 'Buang semakan';
+
+  @override
+  String get goalContractDoneMeans => 'Maksud siap';
+
+  @override
+  String get goalContractDoneMeansHelp =>
+      'Setiap kriteria ialah satu perkara yang boleh disahkan oleh penyemak.';
+
+  @override
+  String get goalContractCriterionHint =>
+      'Nota keluaran menyenaraikan setiap perubahan yang digabungkan';
+
+  @override
+  String goalContractCriterionTooLong(int max) {
+    return 'Paling banyak $max aksara.';
+  }
+
+  @override
+  String get goalContractRemoveCriterion => 'Buang kriteria';
+
+  @override
+  String get goalContractAddCriterion => 'Tambah kriteria';
+
+  @override
+  String goalContractCriteriaFull(int max) {
+    return 'Satu matlamat mempunyai paling banyak $max kriteria.';
+  }
+
+  @override
+  String goalContractCriteriaCount(int count, int max) {
+    return '$count daripada $max kriteria';
+  }
+
+  @override
+  String get goalContractChecks => 'Semakan';
+
+  @override
+  String get goalContractChecksHelp =>
+      'Pelayan menjalankannya apabila ejen berkata ia telah selesai. Matlamat tanpa semakan hanya bergantung pada kajian.';
+
+  @override
+  String get goalContractBoundaries => 'Sempadan';
+
+  @override
+  String get goalContractBoundariesHint => 'Jangan ubah API awam';
+
+  @override
+  String get goalContractStopWhen => 'Berhenti dan tanya apabila';
+
+  @override
+  String get goalContractStopWhenHint => 'Migrasi akan memadamkan data';
+
+  @override
+  String get goalContractEditTitle => 'Sunting maksud siap';
+
+  @override
+  String get goalCheckerTitle => 'Siapa yang menyemak matlamat ini';
+
+  @override
+  String get goalCheckerLabel => 'Penyemak';
+
+  @override
+  String get goalCheckerNone => 'Tiada penyemak berasingan';
+
+  @override
+  String get goalCheckerNoneWeaker =>
+      'Tanpa penyemak berasingan, ejen menyemak kerjanya sendiri, yang kurang menangkap kesilapan.';
+
+  @override
+  String goalCheckerRecommend(String agent) {
+    return 'Contohnya $agent: penyemak daripada penyedia yang berbeza kurang berkemungkinan berkongsi titik buta yang sama.';
+  }
+
+  @override
+  String get goalCheckerRecommendGeneric =>
+      'Penyemak daripada penyedia yang berbeza daripada ejen matlamat kurang berkemungkinan berkongsi titik butanya.';
+
+  @override
+  String raiseCapSpentOf(String spent, String cap) {
+    return 'Dibelanjakan $spent daripada $cap.';
+  }
+
+  @override
+  String get raiseCapNewCap => 'Had baharu dalam dolar';
+
+  @override
+  String raiseCapMustExceed(String cap) {
+    return 'Masukkan jumlah yang melebihi $cap.';
+  }
+
+  @override
+  String get raiseCapConfirm => 'Naikkan had';
+
+  @override
+  String get goalsBackToList => 'Semua matlamat';
+
+  @override
+  String goalPursuedBy(String agent) {
+    return 'Diusahakan oleh $agent';
+  }
+
+  @override
+  String get goalOpenConversation => 'Buka perbualan';
+
+  @override
+  String goalStarted(String time) {
+    return 'Dimulakan $time';
+  }
+
+  @override
+  String get goalStopTitle => 'Hentikan matlamat ini?';
+
+  @override
+  String get goalStopBody =>
+      'Ejen berhenti bekerja padanya selama-lamanya. Kerjanya setakat ini kekal dalam perbualan.';
+
+  @override
+  String get goalRaiseBudgetTitle => 'Naikkan bajet dan sambung';
+
+  @override
+  String get goalRaiseBudgetAction => 'Naikkan bajet';
+
+  @override
+  String get goalSectionNow => 'Kini';
+
+  @override
+  String get goalFactSegments => 'Segmen';
+
+  @override
+  String get goalFactMoney => 'Dibelanjakan';
+
+  @override
+  String get goalFactDeadline => 'Tarikh akhir';
+
+  @override
+  String get goalFactNoProgress => 'Tiada kemajuan';
+
+  @override
+  String get goalNoDeadline => 'Tiada';
+
+  @override
+  String goalDeadlineWithLeft(String time, String left) {
+    return '$time, tinggal $left';
+  }
+
+  @override
+  String goalNoProgressCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count segmen terakhir tidak membawa kemajuan',
+      one: 'Segmen terakhir tidak membawa kemajuan',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get goalObjective => 'Objektif';
+
+  @override
+  String get goalSectionContract => 'Maksud siap';
+
+  @override
+  String get goalContractPauseFirst =>
+      'Jedakan matlamat untuk menukar maksud siap atau siapa yang menyemaknya.';
+
+  @override
+  String get goalContractEdit => 'Sunting';
+
+  @override
+  String get goalCheckerChange => 'Tukar penyemak';
+
+  @override
+  String get goalContractNone =>
+      'Belum ditulis apa-apa. Ejen memutuskan bila ia selesai.';
+
+  @override
+  String get goalCheckerSelf =>
+      'Tiada penyemak berasingan: ejen mengesahkan kerjanya sendiri.';
+
+  @override
+  String goalCheckerIs(String agent) {
+    return 'Disemak oleh $agent';
+  }
+
+  @override
+  String goalCheckWorktree(int seconds) {
+    return 'Dalam worktree, sehingga $seconds s';
+  }
+
+  @override
+  String goalCheckEnvironmentTask(int seconds) {
+    return 'Tugasan persekitaran, sehingga $seconds s';
+  }
+
+  @override
+  String get goalSectionVerification => 'Pengesahan';
+
+  @override
+  String get goalNotVerifiedYet =>
+      'Belum disahkan. Ejen belum berkata ia telah selesai.';
+
+  @override
+  String goalVerificationRound(int round, int total, String time) {
+    return 'Pusingan $round daripada $total, $time';
+  }
+
+  @override
+  String get goalVerificationClaim => 'Apa yang didakwa ejen';
+
+  @override
+  String get goalCheckOutputTail => 'Output (baris terakhir)';
+
+  @override
+  String goalCheckExitCode(int code) {
+    return 'Lulus · kod keluar $code';
+  }
+
+  @override
+  String get goalVerificationReview => 'Kajian';
+
+  @override
+  String get goalVerificationNoVerdict => 'Belum ada kajian.';
+
+  @override
+  String goalVerdictItem(String criterion, String state) {
+    return '$criterion · $state';
+  }
+
+  @override
+  String get goalSectionSchedules => 'Jadual dan panggilan bangun';
+
+  @override
+  String get goalNoSchedules =>
+      'Tiada jadual atau panggilan bangun yang menunggu.';
+
+  @override
+  String get goalPendingWakes => 'Panggilan bangun yang menunggu';
+
+  @override
+  String workListGroup(String label, int count) {
+    return '$label · $count';
+  }
+
+  @override
+  String get goalNotFound =>
+      'Matlamat ini tidak wujud, atau ia berada dalam ruang yang tidak dapat anda buka.';
+
+  @override
+  String get goalsTitle => 'Matlamat';
+
+  @override
+  String get goalsSubtitle =>
+      'Kerja yang diteruskan oleh ejen sehingga maksud siap dipenuhi.';
+
+  @override
+  String get goalsEmpty => 'Belum ada matlamat';
+
+  @override
+  String get goalsEmptyHint => 'Mulakan satu dengan /goal dalam perbualan.';
+
+  @override
+  String get goalsGroupReview => 'Menunggu kajian';
+
+  @override
+  String get goalsGroupOpen => 'Terbuka';
+
+  @override
+  String get goalsGroupEnded => 'Tamat';
+
+  @override
+  String get scheduleStatusActive => 'Aktif';
+
+  @override
+  String get scheduleStatusPaused => 'Dijeda';
+
+  @override
+  String get scheduleStatusEnded => 'Tamat';
+
+  @override
+  String get scheduleWhenBusySkip => 'Melangkau satu cetusan semasa ejen sibuk';
+
+  @override
+  String get scheduleWhenBusyQueue => 'Menunggu sehingga ejen bebas';
+
+  @override
+  String get scheduleDeliverRun => 'Memulakan larian';
+
+  @override
+  String get scheduleDeliverNotify => 'Hanya memberi notifikasi';
+
+  @override
+  String get scheduleNew => 'Jadual baharu';
+
+  @override
+  String get schedulesEmpty => 'Tiada jadual atau pantauan';
+
+  @override
+  String get schedulesEmptyHint =>
+      'Ejen menetapkannya dengan /loop dan /schedule, atau anda boleh mencipta satu.';
+
+  @override
+  String scheduleOwnedBy(String name) {
+    return 'Pemilik: $name';
+  }
+
+  @override
+  String scheduleRunsSkips(int runs, int skips) {
+    String _temp0 = intl.Intl.pluralLogic(
+      runs,
+      locale: localeName,
+      other: '$runs larian',
+      one: '1 larian',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      skips,
+      locale: localeName,
+      other: '$skips langkau',
+      one: '1 langkau',
+      zero: 'tiada langkau',
+    );
+    return '$_temp0, $_temp1';
+  }
+
+  @override
+  String scheduleExpires(String time) {
+    return 'Tamat pada $time';
+  }
+
+  @override
+  String scheduleNextFires(String times) {
+    return 'Seterusnya: $times';
+  }
+
+  @override
+  String get schedulesTitle => 'Jadual';
+
+  @override
+  String get schedulesSubtitle =>
+      'Jadual, gelung dan pantauan yang mengejutkan ejen.';
+
+  @override
+  String get scheduleWhenLabel => 'Bila ia dicetuskan';
+
+  @override
+  String get scheduleWhenEvery => 'Berulang, setiap…';
+
+  @override
+  String get scheduleWhenCron => 'Pada jadual cron';
+
+  @override
+  String get scheduleWhenOnceIn => 'Sekali, selepas…';
+
+  @override
+  String get scheduleWhenOnceAt => 'Sekali, pada masa seterusnya…';
+
+  @override
+  String get scheduleDurationLabel => 'Sela';
+
+  @override
+  String get scheduleDurationHelp =>
+      'Guna s, m, h atau d, seperti 30m atau 1h30m. Ulangan sekurang-kurangnya 60 s antara satu sama lain.';
+
+  @override
+  String get scheduleDurationInvalid =>
+      'Ini bukan tempoh, seperti 30m atau 2h.';
+
+  @override
+  String get scheduleHour => 'Jam';
+
+  @override
+  String get scheduleMinute => 'Minit';
+
+  @override
+  String get scheduleCronLabel => 'Cron (minit jam hari bulan hari minggu)';
+
+  @override
+  String get scheduleCronInvalid =>
+      'Ini bukan cron lima medan yang boleh dicetuskan.';
+
+  @override
+  String get scheduleTimeInvalid =>
+      'Ini bukan masa akan datang, seperti 09:00 atau 2026-11-21T09:00Z.';
+
+  @override
+  String scheduleDaysRange(int max) {
+    return '1 hingga $max hari.';
+  }
+
+  @override
+  String scheduleOptionUnknown(String option) {
+    return '$option bukan pilihan.';
+  }
+
+  @override
+  String get scheduleLimits => 'Had';
+
+  @override
+  String get schedulePresetWeekdays => 'Hari bekerja pada 09:00';
+
+  @override
+  String get schedulePresetDaily => 'Setiap hari pada 09:00';
+
+  @override
+  String get schedulePresetHourly => 'Setiap jam, tepat pada minit 0';
+
+  @override
+  String get scheduleZoneLabel => 'Zon masa';
+
+  @override
+  String get scheduleZoneHelp => 'Kosong bermakna zon ruang kerja.';
+
+  @override
+  String get scheduleZoneInvalid =>
+      'Ini bukan zon masa, seperti Europe/Berlin.';
+
+  @override
+  String get scheduleCreateTitle => 'Jadual baharu';
+
+  @override
+  String get scheduleSpaceLabel => 'Ruang';
+
+  @override
+  String get scheduleSpaceHint => 'Pilih ruang';
+
+  @override
+  String get scheduleConversationLabel => 'Perbualan';
+
+  @override
+  String get scheduleConversationHint => 'Pilih perbualan';
+
+  @override
+  String get scheduleAgentLabel => 'Ejen';
+
+  @override
+  String get scheduleAgentHint => 'Pilih siapa yang dibangunkan';
+
+  @override
+  String get scheduleNoteLabel => 'Setiap larian bermula daripada';
+
+  @override
+  String get scheduleNoteHint =>
+      'Ringkaskan apa yang berubah semalaman dan tandakan apa-apa yang tersekat.';
+
+  @override
+  String get scheduleExpiresInDays => 'Tamat selepas (hari)';
+
+  @override
+  String get scheduleExpiresInDaysHelp => 'Kosong: 30 hari, paling banyak 365.';
+
+  @override
+  String get scheduleMaxRuns => 'Had larian';
+
+  @override
+  String scheduleMaxRunsHelp(int max) {
+    return 'Kosong: tiada had, paling banyak $max.';
+  }
+
+  @override
+  String get scheduleCostCap => 'Had kos (dolar)';
+
+  @override
+  String get scheduleCostCapHelp => 'Kosong: lalai ruang kerja.';
+
+  @override
+  String get scheduleWhenBusyLabel => 'Jika ejen sibuk';
+
+  @override
+  String get scheduleWhenBusyDefault => 'Lalai untuk jenis ini';
+
+  @override
+  String get scheduleDeliverLabel => 'Setiap cetusan';
+
+  @override
+  String get scheduleCreate => 'Cipta jadual';
+
+  @override
+  String get scheduleExtendTitle => 'Lanjutkan jadual ini';
+
+  @override
+  String scheduleExtendNow(String current, String latest) {
+    return 'Ia tamat pada $current. Ia boleh berterusan sehingga $latest paling lewat.';
+  }
+
+  @override
+  String get scheduleExtendDays => 'Tambah hari';
+
+  @override
+  String scheduleExtendTooLong(String latest) {
+    return 'Ia boleh tamat paling lewat $latest.';
+  }
+
+  @override
+  String scheduleMaxRunsRange(int max) {
+    return '1 hingga $max larian.';
+  }
+
+  @override
+  String scheduleCostCapRange(String max) {
+    return 'Sekurang-kurangnya 1 dolar dan paling banyak $max.';
+  }
+
+  @override
+  String get scheduleExtend => 'Lanjutkan';
+
+  @override
+  String get scheduleRemoveTitle => 'Buang jadual ini?';
+
+  @override
+  String get scheduleDeleteTitle => 'Padam jadual ini?';
+
+  @override
+  String get scheduleRemoveBody =>
+      'Ia hilang daripada senarai. Larian-lariannya kekal dalam perbualan.';
+
+  @override
+  String get scheduleDeleteBody =>
+      'Ia berhenti mencetus selama-lamanya. Larian-lariannya kekal dalam perbualan.';
+
+  @override
+  String get scheduleRemove => 'Buang';
+
+  @override
+  String get scheduleDelete => 'Padam';
+
+  @override
+  String get scheduleOwnerOnly =>
+      'Hanya pemiliknya boleh menyambung atau melanjutkannya.';
+
+  @override
+  String get schedulesBackToList => 'Semua jadual';
+
+  @override
+  String get scheduleNoteByAgent => 'Nota, ditulis oleh ejen';
+
+  @override
+  String get scheduleNoteByPerson => 'Nota, ditulis oleh seseorang';
+
+  @override
+  String scheduleNoteEditedBy(String name) {
+    return 'Nota, kali terakhir disunting oleh $name';
+  }
+
+  @override
+  String get scheduleNoNote => 'Tiada nota.';
+
+  @override
+  String get schedulePause => 'Jeda';
+
+  @override
+  String get scheduleResume => 'Sambung';
+
+  @override
+  String get scheduleOpenChainRoot => 'Buka jadual pertama dalam rantaian ini';
+
+  @override
+  String get scheduleSectionFacts => 'Butiran';
+
+  @override
+  String get scheduleFactAgent => 'Membangunkan';
+
+  @override
+  String get scheduleFactConversation => 'Dalam';
+
+  @override
+  String get scheduleConversationUnknown =>
+      'Perbualan yang mungkin tidak anda lihat';
+
+  @override
+  String get scheduleFactOwner => 'Pemilik';
+
+  @override
+  String get scheduleNoOwner => 'Tiada sesiapa';
+
+  @override
+  String get scheduleFactNextFires => 'Cetusan seterusnya';
+
+  @override
+  String get scheduleFactNext => 'Cetusan seterusnya';
+
+  @override
+  String get scheduleFactLast => 'Terakhir dicetus';
+
+  @override
+  String get scheduleFactRuns => 'Larian';
+
+  @override
+  String scheduleRunsNoCap(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count larian, tanpa had',
+      one: '1 larian, tanpa had',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleRunsOfCap(int count, int max) {
+    return '$count daripada $max larian';
+  }
+
+  @override
+  String get scheduleFactSkips => 'Dilangkau';
+
+  @override
+  String scheduleSkips(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count cetusan dilangkau',
+      one: '1 cetusan dilangkau',
+      zero: 'Tiada',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scheduleFactSpent => 'Dibelanjakan';
+
+  @override
+  String get scheduleFactEnds => 'Tamat';
+
+  @override
+  String get scheduleFactWhenBusy => 'Jika ejen sibuk';
+
+  @override
+  String get scheduleFactDeliver => 'Setiap cetusan';
+
+  @override
+  String get scheduleFactChain => 'Rantaian';
+
+  @override
+  String scheduleChainLeft(int runs, String time) {
+    String _temp0 = intl.Intl.pluralLogic(
+      runs,
+      locale: localeName,
+      other: 'tinggal $runs larian',
+      one: 'tinggal 1 larian',
+    );
+    return '$_temp0 dalam rantaian, yang tamat pada $time';
+  }
+
+  @override
+  String get scheduleFactCreated => 'Dicipta';
+
+  @override
+  String get scheduleSectionHistory => 'Panggilan bangun dan larian terkini';
+
+  @override
+  String get scheduleNoRuns => 'Belum ada larian.';
+
+  @override
+  String scheduleRunLine(String status, String cost) {
+    return '$status · $cost';
+  }
+
+  @override
+  String get scheduleRunPending => 'Menunggu untuk dimulakan';
+
+  @override
+  String get scheduleRunRunning => 'Berjalan';
+
+  @override
+  String get scheduleRunCompleted => 'Selesai';
+
+  @override
+  String get scheduleRunFailed => 'Gagal';
+
+  @override
+  String get scheduleNotFound =>
+      'Jadual ini tidak wujud, atau ia berada dalam ruang yang tidak dapat anda buka.';
+
+  @override
+  String get improvementCampaignTitle => 'Jalankan penilaian';
+
+  @override
+  String improvementCampaignCost(int repetitions, String budget) {
+    String _temp0 = intl.Intl.pluralLogic(
+      repetitions,
+      locale: localeName,
+      other: 'Setiap tugasan dijalankan $repetitions kali',
+      one: 'Setiap tugasan dijalankan sekali',
+    );
+    return '$_temp0 dengan kemahiran semasa dan dengan perubahan. Ia membelanjakan paling banyak $budget, dicaj kepada ruang kerja ini.';
+  }
+
+  @override
+  String get improvementCampaignCostUnknown =>
+      'Penilaian menjalankan korpus dengan kemahiran semasa dan dengan perubahan, sehingga bajet yang anda tetapkan.';
+
+  @override
+  String get improvementCampaignUnavailable =>
+      'Penilaian tidak dapat dijalankan pada pelayan ini buat masa ini.';
+
+  @override
+  String get improvementCampaignCorpus => 'Korpus';
+
+  @override
+  String get improvementCampaignProvider => 'Penyedia';
+
+  @override
+  String get improvementCampaignModel => 'Model';
+
+  @override
+  String get improvementCampaignRepetitions => 'Larian setiap tugasan';
+
+  @override
+  String get improvementCampaignBudget => 'Bajet (dolar)';
+
+  @override
+  String improvementCampaignRange(int max) {
+    return '1 hingga $max.';
+  }
+
+  @override
+  String get improvementCampaignStart => 'Mulakan penilaian';
+
+  @override
+  String get improvementRollbackTitle => 'Kembalikan perubahan ini?';
+
+  @override
+  String get improvementRollbackBody =>
+      'Teks yang digantikannya akan kembali, selagi tiada sesiapa mengubahnya sejak itu.';
+
+  @override
+  String get improvementRollback => 'Kembalikan';
+
+  @override
+  String get improvementRolledBackDone => 'Dikembalikan.';
+
+  @override
+  String get improvementNeedsAdmin =>
+      'Hanya pentadbir ruang kerja boleh membuat keputusan mengenai ini: ia menukar kemahiran atau polisi untuk seluruh ruang kerja.';
+
+  @override
+  String get improvementAdminDecides =>
+      'Sebagai pentadbir, anda membuat keputusan mengenai ini: ia menukar kemahiran atau polisi untuk seluruh ruang kerja.';
+
+  @override
+  String get improvementNeedsCampaign =>
+      'Jalankan penilaian yang lulus sebelum menerima perubahan kemahiran ini.';
+
+  @override
+  String get improvementsBackToList => 'Semua penambahbaikan';
+
+  @override
+  String improvementMeta(String kind, String scope, String agent) {
+    return '$kind · $scope · dicadangkan oleh $agent';
+  }
+
+  @override
+  String get improvementAccept => 'Terima';
+
+  @override
+  String get improvementAcceptedDone => 'Diterima.';
+
+  @override
+  String get improvementReject => 'Tolak';
+
+  @override
+  String get improvementRejectedDone => 'Ditolak.';
+
+  @override
+  String get improvementRunEvaluation => 'Jalankan penilaian';
+
+  @override
+  String get improvementSectionChange => 'Apa yang berubah';
+
+  @override
+  String get improvementTarget => 'Sasaran';
+
+  @override
+  String improvementScopeLine(String scope) {
+    return 'Terpakai kepada: $scope';
+  }
+
+  @override
+  String get improvementNewText => 'Teks baharu';
+
+  @override
+  String get improvementRemovedText => 'Teks yang dibuang';
+
+  @override
+  String get improvementExpected => 'Kesan dijangka';
+
+  @override
+  String get improvementSectionEvidence => 'Bukti dan keputusan';
+
+  @override
+  String get improvementNoEvidence => 'Tiada bukti dilampirkan.';
+
+  @override
+  String get improvementEvidenceRuns => 'Larian';
+
+  @override
+  String get improvementEvidenceMessages => 'Mesej';
+
+  @override
+  String improvementOpenMessage(int index) {
+    return 'Mesej $index';
+  }
+
+  @override
+  String get improvementEvidenceChecks => 'Keputusan semakan';
+
+  @override
+  String get improvementEvaluation => 'Penilaian';
+
+  @override
+  String get improvementCampaignNone => 'Belum dinilai.';
+
+  @override
+  String get improvementCampaignRunning => 'Penilaian sedang berjalan.';
+
+  @override
+  String get improvementCampaignPassed =>
+      'Penilaian lulus: ia dijalankan sepenuhnya dan perubahan itu menyelesaikan sekurang-kurangnya sebanyak larian yang diselesaikan oleh kemahiran semasa, yang tidak membuktikan ia lebih baik. Ia boleh diterima.';
+
+  @override
+  String get improvementCampaignFailed =>
+      'Penilaian tidak lulus, atau kemahiran berubah selepas ia diukur. Jalankan semula, atau tolak perubahan ini.';
+
+  @override
+  String improvementDecided(String status, String name, String time) {
+    return '$status oleh $name, $time';
+  }
+
+  @override
+  String get improvementSomeone => 'seseorang';
+
+  @override
+  String improvementExpires(String time) {
+    return 'Tamat pada $time melainkan seseorang membuat keputusan.';
+  }
+
+  @override
+  String get improvementOpenApplied => 'Buka apa yang diubahnya';
+
+  @override
+  String get improvementsTitle => 'Penambahbaikan';
+
+  @override
+  String get improvementsSubtitle =>
+      'Perubahan yang dicadangkan ejen kepada memori, nota, polisi dan kemahiran mereka.';
+
+  @override
+  String get improvementsEmpty => 'Tiada cadangan';
+
+  @override
+  String get improvementsEmptyHint =>
+      'Ejen mencadangkan penambahbaikan selepas menyemak kerja mereka, contohnya dengan /refine.';
+
+  @override
+  String get improvementRowNeedsAdmin => 'Pentadbir membuat keputusan';
+
+  @override
+  String get improvementNotFound =>
+      'Cadangan ini tidak wujud, atau ia berada dalam ruang yang tidak dapat anda buka.';
+
+  @override
+  String get dispatchSettingsTitle => 'Jadual';
+
+  @override
+  String get dispatchSettingsSubtitle =>
+      'Had untuk jadual dan pantauan, dan apa yang berlaku kepada permintaan yang tiada sesiapa jawab.';
+
+  @override
+  String get dispatchLimitsLabel => 'Had jadual';
+
+  @override
+  String get dispatchLimitsSubtitle =>
+      'Had bilangan jadual dan pantauan yang boleh dimiliki ejen, serta lalainya.';
+
+  @override
+  String dispatchLimitRange(int max) {
+    return '1 hingga $max';
+  }
+
+  @override
+  String get dispatchLimitPerConversation => 'Setiap ejen dalam satu perbualan';
+
+  @override
+  String get dispatchLimitPerConversationHelp =>
+      'Jadual aktif atau dijeda yang boleh dimiliki seorang ejen dalam satu perbualan.';
+
+  @override
+  String get dispatchLimitPerAgent => 'Setiap ejen';
+
+  @override
+  String get dispatchLimitPerAgentHelp =>
+      'Jadual aktif atau dijeda yang boleh dimiliki seorang ejen merentas ruang kerja.';
+
+  @override
+  String get dispatchLimitPerWorkspace => 'Dalam ruang kerja';
+
+  @override
+  String get dispatchLimitPerWorkspaceHelp =>
+      'Jadual aktif atau dijeda dalam seluruh ruang kerja.';
+
+  @override
+  String get dispatchLimitCostCap => 'Had kos lalai (dolar)';
+
+  @override
+  String get dispatchLimitCostCapHelp =>
+      'Jumlah yang boleh dibelanjakan oleh jadual secara keseluruhan apabila ia tidak menetapkan had sendiri.';
+
+  @override
+  String get dispatchLimitZone => 'Zon masa';
+
+  @override
+  String get dispatchLimitZoneHelp =>
+      'Zon yang digunakan untuk membaca jadual cron apabila tiada zon dinyatakan, dan zon bagi ringkasan harian.';
+
+  @override
+  String get dispatchUnattendedLabel => 'Apabila tiada sesiapa menjawab';
+
+  @override
+  String get dispatchUnattendedSubtitle =>
+      'Berapa lama larian yang dimulakan pelayan menunggu seseorang, dan bila ringkasan harian tentang apa yang menunggu dihantar.';
+
+  @override
+  String get dispatchUnattendedExpiry => 'Permintaan menunggu (jam)';
+
+  @override
+  String get dispatchUnattendedExpiryHelp =>
+      'Selepas ini, kelulusan dikira sebagai ditolak dan soalan sebagai tidak dijawab. Matlamat yang ditetapkan untuk menjawab soalannya sendiri akan berbuat demikian selepas 10 minit.';
+
+  @override
+  String dispatchUnattendedExpiryRange(int min, int max) {
+    return '$min hingga $max jam';
+  }
+
+  @override
+  String get dispatchDigestHour => 'Ringkasan harian pada (jam)';
+
+  @override
+  String dispatchDigestHourHelp(String zone) {
+    return 'Dalam $zone, zon masa di atas.';
+  }
+
+  @override
+  String get dispatchDigestHourRange => '0 hingga 23';
+
+  @override
+  String get goalRecordCrumb => 'Matlamat';
+
+  @override
+  String get scheduleRecordCrumb => 'Jadual';
+
+  @override
+  String get improvementRecordCrumb => 'Cadangan';
+
+  @override
+  String get goalNodeNeedsAgent => 'Pilih ejen yang mengusahakan matlamat ini.';
+
+  @override
+  String get goalNodeNeedsObjective => 'Tulis objektif.';
+
+  @override
+  String get goalNodeContractInvalid =>
+      'Kontrak ada medan yang melebihi had; ia tidak disimpan sehingga dibetulkan.';
+
+  @override
+  String get goalNodeBudget => 'Bajet (dolar)';
+
+  @override
+  String get goalNodeBudgetHelp =>
+      'Jumlah paling banyak yang boleh dibelanjakan oleh matlamat. Apabila habis, matlamat ditahan untuk seseorang.';
+
+  @override
+  String goalNodeBudgetRange(int max) {
+    return 'Diperlukan: lebih daripada 0, sehingga $max.';
+  }
+
+  @override
+  String get goalNodeMaxRuns => 'Had segmen';
+
+  @override
+  String get goalNodeMaxRunsHelp =>
+      'Pilihan. Jumlah segmen (larian ejen) paling banyak yang boleh diambil oleh matlamat.';
+
+  @override
+  String get goalNodeDeadline => 'Tarikh akhir (jam)';
+
+  @override
+  String get goalNodeDeadlineHelp =>
+      'Pilihan. Jam dari bila langkah memulakan matlamat.';
+
+  @override
+  String goalNodeRange(int max) {
+    return '1 hingga $max, atau kosong.';
+  }
+
+  @override
+  String get goalNodeContract => 'Kontrak';
+
+  @override
+  String get goalNodeContractHelp =>
+      'Maksud siap: kriteria yang disemak oleh penyemak, dan arahan yang mesti lulus.';
+
+  @override
+  String get nodeConfigObjective => 'Objektif';
+
+  @override
+  String pipelineRunGoalStep(String step) {
+    return 'Langkah $step mengusahakan matlamat';
+  }
+
+  @override
+  String get pipelineRunOpenGoal => 'Buka matlamat';
+
+  @override
+  String get pipelineRunHeldBudget =>
+      'Larian ini ditahan: orkestrasinya telah mencapai had kosnya.';
+
+  @override
+  String pipelineRunHeldOther(String reason) {
+    return 'Larian ini ditahan ($reason).';
+  }
+
+  @override
+  String pipelineRunHeldSpent(String spent, String cap) {
+    return 'Dibelanjakan $spent daripada $cap. Naikkan had dan larian akan diteruskan.';
+  }
+
+  @override
+  String get pipelineRunRaiseCap => 'Naikkan had';
+
+  @override
+  String get pipelineRunRaiseCapTitle => 'Naikkan had orkestrasi';
+
+  @override
+  String get pipelineRunCapRaised =>
+      'Had dinaikkan. Larian akan diteruskan sebentar lagi.';
+
+  @override
+  String get goalLaunchChecks => 'Semakan';
+
+  @override
+  String get goalLaunchChecksHelp =>
+      'Arahan yang mesti lulus sebelum matlamat boleh selesai. Pilihan.';
+
+  @override
+  String get goalLaunchFresh => 'Mulakan setiap segmen daripada awal';
+
+  @override
+  String get goalLaunchFreshHelp =>
+      'Setiap larian bermula tanpa sejarah perbualan, hanya daripada matlamat dan notanya.';
+
+  @override
+  String get goalLaunchAssume =>
+      'Jawab soalannya sendiri apabila tiada sesiapa menjawab';
+
+  @override
+  String get goalLaunchAssumeHelp =>
+      'Selepas 10 minit tanpa jawapan, ejen menyatakan andaiannya dan meneruskan, jika syarat berhenti membenarkannya.';
+
+  @override
+  String workFeedLimitParkOutcomeResumed(String provider, String time) {
+    return 'Disambung pada $time selepas had penggunaan $provider.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeCancelled(String provider, String time) {
+    return 'Dibatalkan pada $time. Ia tidak disambung selepas had penggunaan $provider.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeExpired(String provider, String time) {
+    return 'Luput pada $time tanpa disambung selepas had penggunaan $provider.';
+  }
+
+  @override
+  String workFeedLimitParkOutcomeSkipped(String provider, String time) {
+    return 'Tidak disambung selepas had penggunaan $provider ($time).';
+  }
+
+  @override
+  String workFeedCommandRefusedNamed(String command) {
+    return 'Arahan /$command ditolak.';
+  }
+
+  @override
+  String get improvementRefusalQueued =>
+      'Kajian perbualan ini sudah menunggu untuk dijalankan.';
+
+  @override
+  String get improvementRefusalAgentNotFound =>
+      'Ejen itu bukan ejen dalam ruang kerja ini.';
+
+  @override
+  String get workRefusalWakeQueueFull =>
+      'Terlalu banyak panggilan bangun sudah menunggu di sini. Cuba lagi selepas sebahagiannya dijalankan.';
+
+  @override
+  String get orchestrationRefusalNotYours =>
+      'Hanya orang yang larian ini bertindak untuk boleh menukarnya.';
+
+  @override
+  String get orchestrationRefusalCapInvalid =>
+      'Had baharu mesti lebih tinggi daripada had semasa dan jumlah yang telah dibelanjakan, dan paling banyak \$1,000.';
+
+  @override
+  String get orchestrationRefusalCapChanged =>
+      'Seseorang telah menaikkan had dahulu. Semak had baharu dan cuba lagi.';
+
+  @override
+  String workFeedCapRaised(String person, String oldCap, String newCap) {
+    return '$person menaikkan had belanjawan larian itu daripada $oldCap kepada $newCap.';
+  }
+
+  @override
+  String get workFeedPersonUnknown => 'Seseorang';
+
+  @override
+  String workFeedApplyIncomplete(String skill) {
+    return 'Perubahan yang diterima kepada kemahiran $skill tidak dapat diselesaikan, kerana kemahiran itu berubah sementara itu. Cadangan itu telah dikembalikan.';
+  }
+
+  @override
+  String get workFeedOpenImprovement => 'Buka penambahbaikan';
+
+  @override
+  String get peerAskFailNoOutput => 'Ia tamat tanpa jawapan.';
+
+  @override
+  String get peerAskFailRunFailed => 'Lariannya gagal.';
+
+  @override
+  String get peerAskFailStoppedByPerson => 'Seseorang menghentikan larian itu.';
+
+  @override
+  String get peerAskFailBudget => 'Lariannya mencapai bajetnya.';
+
+  @override
+  String get peerAskFailSilence => 'Lariannya senyap dan telah dihentikan.';
+
+  @override
+  String get peerAskFailUsageLimit =>
+      'Lariannya berhenti di had penggunaan penyedia.';
+
+  @override
+  String get peerAskFailNotDelivered => 'Soalan itu tidak pernah dihantar.';
+
+  @override
+  String heldSteeringLimitHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count mesej ditahan di had penggunaan',
+      one: '1 mesej ditahan di had penggunaan',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get heldSteeringLimitNote =>
+      'Ini dihantar apabila orang yang larian ini bekerja untuk menyambungkannya. Jika tidak disambung dalam masa 7 hari selepas tetapan semula, ia ditahan untuk orang itu.';
+
+  @override
+  String get wakeKindRuleFolded => 'Peristiwa kemudian menggantikannya.';
+
+  @override
+  String goalCardWaitingNext(String time) {
+    return 'Menunggu perkara yang disediakannya · memeriksa semula menjelang $time';
+  }
+
+  @override
+  String raiseCapAtMost(String max) {
+    return 'Masukkan paling banyak $max.';
+  }
+
+  @override
+  String raiseCapNowAt(String cap) {
+    return 'Had kini ialah $cap.';
+  }
+
+  @override
+  String get scheduleWakeReasonSchedule => 'Dijadualkan';
+
+  @override
+  String get scheduleWakeReasonWatch => 'Pantauan';
+
+  @override
+  String get scheduleWakeReasonLimitReset => 'Selepas had penggunaan';
+
+  @override
+  String get scheduleWakeStatePending => 'Menunggu';
+
+  @override
+  String get scheduleWakeStateHeld => 'Ditahan';
+
+  @override
+  String get scheduleWakeStateClaimed => 'Sedang dimulakan';
+
+  @override
+  String get scheduleWakeStateDelivered => 'Dihantar';
+
+  @override
+  String get scheduleWakeStateSkipped => 'Dilangkau';
+
+  @override
+  String get scheduleWakeStateExpired => 'Luput';
+
+  @override
+  String get scheduleWakeStateCancelled => 'Dibatalkan';
+
+  @override
+  String scheduleWakeLine(String reason, String state) {
+    return '$reason · $state';
+  }
+
+  @override
+  String scheduleWakeExit(int code) {
+    return 'kod keluar $code';
+  }
+
+  @override
+  String scheduleWakeEvents(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count peristiwa',
+      one: '1 peristiwa',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scheduleWakesNone => 'Belum ada panggilan bangun.';
+
+  @override
+  String get scheduleWakesOlder => 'Tunjuk yang lebih lama';
+
+  @override
+  String get improvementCandidateStaged =>
+      'Kemahiran yang dicadangkan disimpan sebagai semakan berasingan. Menilainya tidak mengubah kemahiran yang sedang digunakan; kemahiran hanya berubah apabila cadangan diterima.';
+
+  @override
+  String goalNextWaitingFallback(String time) {
+    return 'Ia diteruskan apabila perkara yang ditunggunya tiba, atau memeriksa semula pada $time jika tiada apa yang tiba.';
+  }
+
+  @override
+  String get steeringRefusalHeldByLimit =>
+      'Mesej yang ditahan oleh jeda had penggunaan tidak boleh dihantar secara manual semasa ia menunggu.';
+
+  @override
+  String steeringRefusalHeldByLimitAt(String time) {
+    return 'Mesej yang ditahan oleh jeda had penggunaan tidak boleh dihantar secara manual semasa ia menunggu. Had itu ditetapkan semula pada $time.';
+  }
+
+  @override
+  String heldSteeringLimitResetsAt(String time) {
+    return 'Had ditetapkan semula pada $time. Ini dihantar apabila orang yang larian ini bekerja untuk menyambungkannya.';
+  }
+
+  @override
+  String heldSteeringFromPerson(String name) {
+    return 'Daripada $name';
+  }
+
+  @override
+  String get heldSteeringFromSomeoneElse => 'Daripada orang lain';
+
+  @override
+  String get heldSteeringOnlyWriterSends =>
+      'Hanya orang yang menulis mesej ditahan boleh menghantarnya.';
+
+  @override
+  String get steeringRefusalNotYours =>
+      'Mesej ditahan ini milik orang lain. Hanya orang yang menulis satu mesej boleh menghantarnya.';
+
+  @override
+  String improvementEvaluationSolved(
+    int pairedRuns,
+    int candidateSolved,
+    int baselineSolved,
+  ) {
+    String _temp0 = intl.Intl.pluralLogic(
+      pairedRuns,
+      locale: localeName,
+      other: 'Dalam $pairedRuns larian berpasangan',
+      one: 'Dalam 1 larian berpasangan',
+    );
+    return '$_temp0, perubahan itu menyelesaikan $candidateSolved dan kemahiran semasa menyelesaikan $baselineSolved.';
+  }
+
+  @override
+  String improvementEvaluationWorse(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tugasan menjadi lebih teruk dengan perubahan.',
+      one: '1 tugasan menjadi lebih teruk dengan perubahan.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String improvementEvaluationCostlier(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tugasan menelan kos lebih dengan perubahan.',
+      one: '1 tugasan menelan kos lebih dengan perubahan.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String improvementEvaluationHarnessErrors(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count larian menghadapi ralat harness.',
+      one: '1 larian menghadapi ralat harness.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get improvementEvaluationIncomplete =>
+      'Penilaian tidak dijalankan sepenuhnya.';
+
+  @override
+  String workFeedLimitParkExpires(String time) {
+    return 'Tamat pada $time';
+  }
+
+  @override
+  String workFeedSchedulePaused(String person, String agent) {
+    return '$person menjeda jadual untuk $agent.';
+  }
+
+  @override
+  String get goalCardApproveNotYours =>
+      'Hanya orang yang memulakan larian saluran paip ini boleh meluluskan penyelesaian matlamat ini.';
+
+  @override
+  String get goalCardObjective => 'Objektif';
+
+  @override
+  String get planNeedsWrite =>
+      'Meluluskan atau menukar pelan ini memerlukan akses tulis kepada setiap repositori dalam ruang ini. Pentadbir ruang kerja boleh memberikannya.';
+
+  @override
+  String scheduleSpentWithChain(String spent, String cap) {
+    return '$spent daripada $cap, termasuk setiap jadual dalam rantaiannya';
+  }
 }

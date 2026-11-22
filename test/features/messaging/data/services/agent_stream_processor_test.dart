@@ -20,6 +20,7 @@ import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart'
     hide ThinkingEvent;
 import 'package:cc_domain/features/dispatch/domain/value_objects/mention_context.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space_participant.dart';
@@ -304,6 +305,8 @@ class _FakeAgentDispatchService implements AgentDispatchService {
 
   bool completeRunCalled = false;
   bool failRunCalled = false;
+  RunEndReason? lastEndReason;
+  DateTime? lastLimitResetsAt;
   String? lastCompleteRunSummary;
   RunCost? lastCompleteRunCost;
   RunLatencyProfile? lastCompleteRunLatency;
@@ -314,12 +317,14 @@ class _FakeAgentDispatchService implements AgentDispatchService {
     AgentRunLog runLog,
     String? summary, {
     RunCost? cost,
+    required RunEndReason endReason,
     RunLatencyProfile? latency,
     RunVerification? verification,
     String? nativeSessionId,
     bool resumedNativeSession = false,
   }) async {
     completeRunCalled = true;
+    lastEndReason = endReason;
     lastCompleteRunSummary = summary;
     lastCompleteRunCost = cost;
     lastCompleteRunLatency = latency;
@@ -329,10 +334,15 @@ class _FakeAgentDispatchService implements AgentDispatchService {
   Future<void> failRun(
     AgentRunLog runLog,
     String error, {
+    required RunEndReason endReason,
+    required RunCost? cost,
     String? errorCode,
+    DateTime? limitResetsAt,
   }) async {
     failRunCalled = true;
     lastFailError = error;
+    lastEndReason = endReason;
+    lastLimitResetsAt = limitResetsAt;
   }
 
   @override
@@ -358,6 +368,8 @@ class _FakeAgentDispatchService implements AgentDispatchService {
     int? costCapMicros,
     String? modelOverride,
     List<String> promptImageRefs = const [],
+    required bool freshHistory,
+    required bool readOnly,
   }) async => throw UnimplementedError();
 
   @override
@@ -369,6 +381,7 @@ class _FakeAgentDispatchService implements AgentDispatchService {
     String runLogId,
     String message, {
     bool followUp = false,
+    required String? source,
   }) async => throw UnimplementedError();
 }
 
@@ -755,6 +768,39 @@ void main() {
         expect(r.segments.single, isA<ErrorSegment>());
       },
     );
+
+    test('the session\'s end reason reaches the terminal write', () async {
+      final plain = await _run([
+        TextEvent(content: 'done', timestamp: _t(1)),
+        DoneEvent(timestamp: _t(2)),
+      ]);
+      expect(plain.dispatch.lastEndReason, RunEndReason.completed);
+
+      final capped = await _run([
+        TextEvent(content: 'partial', timestamp: _t(1)),
+        DoneEvent(endReason: RunEndReason.budget, timestamp: _t(2)),
+      ]);
+      expect(capped.dispatch.lastEndReason, RunEndReason.budget);
+
+      final resets = DateTime.utc(2026, 7, 1, 18);
+      final limited = await _run([
+        ErrorEvent(content: 'usage limit', source: 'harness', timestamp: _t(1)),
+        DoneEvent(
+          endReason: RunEndReason.usageLimit,
+          limitResetsAt: resets,
+          timestamp: _t(2),
+        ),
+      ]);
+      expect(limited.dispatch.failRunCalled, isTrue);
+      expect(limited.dispatch.lastEndReason, RunEndReason.usageLimit);
+      expect(limited.dispatch.lastLimitResetsAt, resets);
+
+      final failed = await _run([
+        ErrorEvent(content: 'boom', source: 'harness', timestamp: _t(1)),
+        DoneEvent(timestamp: _t(2)),
+      ]);
+      expect(failed.dispatch.lastEndReason, RunEndReason.error);
+    });
 
     test('an error the turn recovered from still completes', () async {
       // ErrorEvent doubles as the stderr space for subprocess adapters, so a

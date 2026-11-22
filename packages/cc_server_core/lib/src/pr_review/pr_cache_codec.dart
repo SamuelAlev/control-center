@@ -340,6 +340,7 @@ class PrCacheCodec {
     if (c.originalLine != null) 'original_line': c.originalLine,
     if (c.threadId != null) 'thread_id': c.threadId,
     if (c.isResolved) 'is_resolved': true,
+    if (c.isFileLevel) 'file_level': true,
     'reactions': reactionsToCache(c.reactions),
   };
 
@@ -361,6 +362,7 @@ class PrCacheCodec {
         originalLine: _intOrNull(m['original_line']),
         threadId: _str(m['thread_id']),
         isResolved: m['is_resolved'] == true,
+        isFileLevel: m['file_level'] == true,
         reactions: reactionsFromCache(m['reactions']),
       );
 

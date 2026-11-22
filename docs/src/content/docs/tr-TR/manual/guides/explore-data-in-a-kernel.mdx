@@ -1,8 +1,8 @@
 ---
 title: Kalıcı bir kernel’de veri keşfetme
-description: Bir ajana, çağrılar arasında değişkenlerini koruyan, sohbete grafik çizen ve bir hücrenin içinden kendi araçlarınızı çağırabilen bir Python veya JavaScript yorumlayıcısı verin.
+description: Bir ajana, çağrılar arasında değişkenlerini koruyan ve sohbete grafik çizen bir Python veya JavaScript yorumlayıcısı verin.
 slug: tr-TR/kilavuz/nasil-yapilir/kernelde-veri-kesfetme
-sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
+sourceHash: 8fcd77019bfae5088223822a12ef91c8a6879c5d
 ---
 
 Bu kılavuz, bir ajana pahalı bir şeyi bir kez yükletip ardından ona birkaç soru sordurmayı — her soruda yükleme bedelini ödemek yerine — nasıl yapacağınızı gösterir.
@@ -62,22 +62,9 @@ Bunlar hata vermek yerine düz koda dönüştürülür:
 
 Asıl önemli olan, `%pip`'in önbelleği boşaltmasıdır: canlı bir yorumlayıcıya kurulum yapmak, zaten içe aktarılmış bir modül için hiçbir şey değiştirmez; bu yüzden o olmadan, az önce kurduğunuz sürüm çalışmakta olan sürüm değildir.
 
-## Kendi araçlarınızı bir hücrenin içinden çağırma
+## Koddan araç çağırma
 
-```python
-paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
-for path in paths.splitlines()[:100]:
-    contents = tool("read", {"path": path})
-    ...
-```
-
-`tool(name, args)`, ajanın kendi araç kaydına yeniden girer. Bu da bir hücrenin yüzlerce dosyaya dağılabileceği veya `task` üzerinden devredebileceği anlamına gelir; modelin her öğe için bir tur harcamasına gerek kalmaz.
-
-:::caution[Köprü, korumalarınızı atlamaz]
-Köprü üzerinden gelen bir çağrı, modelin yaptığı bir çağrıyla **aynı** araç kaydı üzerinden çözümlenir; dolayısıyla `ActionClass` politikası, onay istemleri ve her sarmalayıcı birebir aynı şekilde uygulanır. Kaydın ötesine uzanan bir köprü, tam olarak “tek satırlık bir Python yaz” biçiminde bir açık olurdu.
-:::
-
-Köprü üzerinden gelen bir çağrı, sürdüğü sürece **hücrenin zaman aşımını askıya alır**. Bütçe, duvar saatini değil hareketsizliği ölçer — alt ajanlara dağılan ve dört dakika bekleyen bir hücre takılmış sayılmaz ve onu dağıtımın ortasında öldürmek tüm kernel durumunu kaybettirirdi.
+Bir hücre ajanın araçlarını çağıramaz. Kodda araçlar üzerinde döngü kurmak için ajan bunun yerine bir [`repl`](/tr-TR/kilavuz/kavramlar/kod-modu/) betiği yazar. Bir betik de `eval`'ı çağıramaz: onu ajan doğrudan çağırır.
 
 ## Baştan başlamak
 

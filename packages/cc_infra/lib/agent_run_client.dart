@@ -24,16 +24,36 @@ const String agentRunGatewayEnvKey = 'CC_AGENT_GATEWAY';
 /// Header the gateway authenticates a run by (`AgentRunLease.tokenHeader`).
 const String agentRunTokenHeader = 'X-CC-Agent-Run';
 
+/// Env var naming the harness command this process runs under
+/// (`AgentRunLease.callTokenEnvKey`).
+const String agentRunCallEnvKey = 'CC_AGENT_CALL_TOKEN';
+
+/// Header carrying [agentRunCallEnvKey] to the gateway
+/// (`AgentRunLease.callTokenHeader`). It authenticates nothing; the gateway
+/// uses it only to tell that command's tool call when it asks a person.
+const String agentRunCallHeader = 'X-CC-Agent-Call';
+
+/// What a call token looks like: the gateway mints base64url text. Anything
+/// else is not sent, so a garbled variable can never fail a request.
+final RegExp _callTokenShape = RegExp(r'^[A-Za-z0-9_-]{1,128}$');
+
 /// How long the hook waits for the gateway. Shorter than Claude Code's own
 /// hook timeout, so a hook that gets no answer still blocks instead of timing
 /// out (`AgentRunGateway.hookTransportDeadline`).
 const Duration agentRunHookDeadline = Duration(minutes: 56);
+
+/// How long the `stop` and `pre-compact` verbs wait for the gateway: inside
+/// Claude Code's timeout for those hooks (`AgentRunGateway.turnHookTimeout`),
+/// and longer than the owner's script may run.
+const Duration agentRunTurnHookDeadline = Duration(seconds: 75);
 
 const Duration _connectTimeout = Duration(seconds: 5);
 const Duration _shortDeadline = Duration(seconds: 60);
 const Duration _envDeadline = Duration(hours: 1);
 
 const String _hookPath = '/agent/hooks/pre-tool-use';
+const String _stopPath = '/agent/hooks/stop';
+const String _preCompactPath = '/agent/hooks/pre-compact';
 const String _signPath = '/agent/git-sign';
 const String _tokenPath = '/agent/forge-token';
 const String _envPath = '/agent/env';
@@ -49,6 +69,12 @@ const String _envUnavailable = 'Control Center gateway is unavailable.';
 /// Verbs:
 /// * `hook`: Claude Code's PreToolUse check. Exits 0 only on the gateway's
 ///   explicit `allow`, else 2 with the reason on stderr.
+/// * `stop`: Claude Code's Stop hook. Exits 2 with the owner's text on
+///   stderr when the gateway answers `block`, which keeps the turn going;
+///   every other outcome exits 0 and lets the turn end.
+/// * `pre-compact`: Claude Code's PreCompact hook. Prints the owner's text on
+///   stdout for the compaction's instructions and always exits 0 (exit 2
+///   would block the compaction).
 /// * `git-sign -Y sign … <file>`: git's SSH signer. Writes `<file>.sig`.
 /// * `forge-token [<repo>]`: prints the run's read token for a repository.
 /// * `env <tool> [args…]`: an environment command (`cc-env`, `docker`, …).
@@ -76,8 +102,16 @@ Future<int> runAgentRunClient(
     );
   } on Object {
     // Never the error itself: it could name the gateway's address or worse.
-    code = verb == 'hook' ? 2 : 1;
-    err.writeln(verb == 'hook' ? _hookFailed : _noAnswer);
+    // The turn hooks fail open: a broken client lets the turn end and the
+    // compaction run.
+    code = switch (verb) {
+      'hook' => 2,
+      'stop' || 'pre-compact' => 0,
+      _ => 1,
+    };
+    if (code != 0) {
+      err.writeln(verb == 'hook' ? _hookFailed : _noAnswer);
+    }
   }
   try {
     await out.flush();
@@ -99,6 +133,10 @@ Future<int> _run(
   switch (verb) {
     case 'hook':
       return _hook(env, input, err);
+    case 'stop':
+      return _stop(env, input, err);
+    case 'pre-compact':
+      return _preCompact(env, input, out);
     case 'git-sign':
       return _sign(rest, env, err);
     case 'forge-token':
@@ -107,7 +145,8 @@ Future<int> _run(
       return _env(rest, env, out, err);
   }
   err.writeln(
-    'usage: agent-run hook | git-sign -Y sign … <file> | '
+    'usage: agent-run hook | stop | pre-compact | '
+    'git-sign -Y sign … <file> | '
     'forge-token [<repo>] | env <tool> [args…]',
   );
   return verb == 'hook' ? 2 : 64;
@@ -115,8 +154,9 @@ Future<int> _run(
 
 /// The gateway the run may talk to, or null when the environment names none
 /// or names one that is not plain HTTP on a loopback address. Nothing is
-/// sent anywhere else: the run's token must never leave the host.
-({Uri base, String token})? _gateway(Map<String, String> env) {
+/// sent anywhere else: the run's token must never leave the host. `call` is
+/// the command's call token, when the environment carries a well-formed one.
+({Uri base, String token, String? call})? _gateway(Map<String, String> env) {
   final token = env[agentRunTokenEnvKey] ?? '';
   final base = Uri.tryParse(env[agentRunGatewayEnvKey] ?? '');
   if (token.isEmpty || base == null || base.scheme != 'http') {
@@ -131,7 +171,12 @@ Future<int> _run(
       (base.path.isNotEmpty && base.path != '/')) {
     return null;
   }
-  return (base: base.replace(path: ''), token: token);
+  final call = env[agentRunCallEnvKey] ?? '';
+  return (
+    base: base.replace(path: ''),
+    token: token,
+    call: _callTokenShape.hasMatch(call) ? call : null,
+  );
 }
 
 /// One answer from the gateway: its status, headers and body.
@@ -140,7 +185,7 @@ typedef _Answer = ({int status, HttpHeaders headers, List<int> body});
 /// Sends one request and reads the whole answer, or null when there was no
 /// answer within [deadline] (refused, unreachable, cut off, too slow).
 Future<_Answer?> _send(
-  ({Uri base, String token}) gateway,
+  ({Uri base, String token, String? call}) gateway,
   String method,
   String path, {
   required Duration deadline,
@@ -162,6 +207,9 @@ Future<_Answer?> _send(
       );
       request.followRedirects = false;
       request.headers.set(agentRunTokenHeader, gateway.token);
+      if (gateway.call case final call?) {
+        request.headers.set(agentRunCallHeader, call);
+      }
       headers.forEach(request.headers.set);
       if (body != null) {
         await request.addStream(body);
@@ -218,6 +266,65 @@ Future<int> _hook(
   }
   err.writeln(verdict.isEmpty ? _hookFailed : verdict);
   return 2;
+}
+
+Future<int> _stop(
+  Map<String, String> env,
+  Stream<List<int>> input,
+  IOSink err,
+) async {
+  final gateway = _gateway(env);
+  if (gateway == null) {
+    return 0;
+  }
+  final answer = await _send(
+    gateway,
+    'POST',
+    _stopPath,
+    deadline: agentRunTurnHookDeadline,
+    headers: const {'Content-Type': 'application/json'},
+    body: input,
+  );
+  if (answer == null || !_ok(answer.status)) {
+    return 0;
+  }
+  final verdict = _text(answer.body);
+  const block = 'block\n';
+  if (!verdict.startsWith(block)) {
+    return 0;
+  }
+  final text = verdict.substring(block.length).trim();
+  if (text.isEmpty) {
+    return 0;
+  }
+  err.writeln(text);
+  return 2;
+}
+
+Future<int> _preCompact(
+  Map<String, String> env,
+  Stream<List<int>> input,
+  IOSink out,
+) async {
+  final gateway = _gateway(env);
+  if (gateway == null) {
+    return 0;
+  }
+  final answer = await _send(
+    gateway,
+    'POST',
+    _preCompactPath,
+    deadline: agentRunTurnHookDeadline,
+    headers: const {'Content-Type': 'application/json'},
+    body: input,
+  );
+  if (answer != null && _ok(answer.status)) {
+    final text = _text(answer.body).trim();
+    if (text.isNotEmpty) {
+      out.writeln(text);
+    }
+  }
+  return 0;
 }
 
 Future<int> _sign(

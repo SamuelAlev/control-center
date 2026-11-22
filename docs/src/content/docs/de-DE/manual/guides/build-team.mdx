@@ -2,7 +2,7 @@
 title: Ein Agententeam aufbauen
 description: Fasse Agenten unter einer Leitung zusammen, damit zugewiesene Arbeit über eine Koordination läuft.
 slug: de-DE/handbuch/anleitungen/agententeam-aufbauen
-sourceHash: fc5e2b8c8a49e398ff1b322fcfb25c4aed84bbb4
+sourceHash: 55add2d16bf90650b7d4cbda7aa78f0fdf1b72e2
 ---
 
 Diese Anleitung zeigt dir, wie du ein Team anlegst, ihm eine Leitung gibst und Arbeit dorthin leitest.
@@ -51,7 +51,7 @@ Trägt ein Ticket eine Teamzuweisung:
 
 1. Die Leitung des Teams wird mit dem Ticket, seinen Arbeitsanweisungen und der Besetzung gestartet.
 2. Die Leitung delegiert an die Mitglieder und hält ihre Bewertung mit dem Tool `record_team_activity` fest: `action` (delegiert), `no_action` (nichts mehr zu tun, das stoppt weitere erneute Auslösungen) oder `failed`.
-3. Jeder abgeschlossene Lauf eines Mitglieds weckt die Leitung erneut, begrenzt durch die no-action-Sicherung.
+3. Ein Mitgliedslauf, den die Leitung mit einer Erwähnung (`@mention`) oder einer Nachricht gestartet hat, weckt die Leitung erneut, wenn er endet, in der Unterhaltung, aus der die Leitung ihn geweckt hat, begrenzt durch den Keine-Aktion-Schutz. Arbeit, die die Leitung mit `delegate_task` übergeben hat, weckt sie, wenn das Ticket abgeschlossen ist, und eine Frage, die sie mit `ask_agent` gestellt hat, weckt sie mit der Antwort (siehe [Agenten arbeiten zusammen](/de-DE/handbuch/anleitungen/agenten-zusammenarbeit/)).
 
 Der Pipeline-Knoten **Team dispatch** ist der andere Einstieg. Er nimmt eine Team-ID, einen Prompt und einen Verteilungsmodus:
 

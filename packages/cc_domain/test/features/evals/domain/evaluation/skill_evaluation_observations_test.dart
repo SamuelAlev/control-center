@@ -1,4 +1,5 @@
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_attempt.dart';
+import 'package:cc_domain/features/evals/domain/evaluation/evaluation_outcome.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_plan.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_task.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/paired_evaluation.dart';
@@ -18,7 +19,8 @@ EvaluationAttempt _attempt(String id, {bool loaded = false, String hash = 'candi
   armId: arm, effective: EvaluationEffectiveConfig(adapter: 'builtin',
     providerId: 'provider', modelId: 'model', skillExposure: exposure),
   stratum: CacheStratum.cold, repetition: repetition, seed: 1, startedAtEpochMs: 0,
-  completed: completed, expectedAuthoritativeChecks: 1,
+  end: completed ? EvaluationAttemptEnd.finished : EvaluationAttemptEnd.harnessFault,
+  expectedAuthoritativeChecks: 1,
   verification: checks ?? const [EvaluationVerificationResult(
     verifierId: 'artifact', kind: EvaluationVerifierKind.tests, passed: true)],
   toolEvents: [if (opaqueTool != null) EvaluationToolEvent(name: opaqueTool)],

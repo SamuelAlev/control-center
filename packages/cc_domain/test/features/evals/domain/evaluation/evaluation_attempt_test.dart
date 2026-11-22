@@ -1,5 +1,6 @@
 import 'package:cc_domain/core/domain/value_objects/money.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_attempt.dart';
+import 'package:cc_domain/features/evals/domain/evaluation/evaluation_outcome.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_plan.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_task.dart';
 import 'package:cc_domain/features/observability/domain/run_verification.dart';
@@ -12,7 +13,7 @@ const _effective = EvaluationEffectiveConfig(
 );
 
 EvaluationAttempt attempt({
-  bool completed = true,
+  EvaluationAttemptEnd end = EvaluationAttemptEnd.finished,
   String? error,
   EvaluationTokenBreakdown tokens = const EvaluationTokenBreakdown(),
   EvaluationCostRoles cost = const EvaluationCostRoles(),
@@ -33,7 +34,7 @@ EvaluationAttempt attempt({
   seed: 1,
   startedAtEpochMs: 0,
   executionMode: mode,
-  completed: completed,
+  end: end,
   error: error,
   tokens: tokens,
   cost: cost,
@@ -278,7 +279,7 @@ void main() {
 
     test('a harness fault is unverified, never a pass', () {
       final faulted = attempt(
-        completed: false,
+        end: EvaluationAttemptEnd.harnessFault,
         error: 'boom',
         expectedChecks: 1,
         verification: [passing()],
@@ -317,7 +318,7 @@ void main() {
         servedEffort: 'low',
         observedCliVersion: '2.1.293',
         observedToolSurfaceHash: 'sha256:abc',
-        completed: true,
+        end: EvaluationAttemptEnd.finished,
         tokens: EvaluationTokenBreakdown(
           uncachedInput: 10,
           cacheWrite: 2,
@@ -373,6 +374,71 @@ void main() {
       expect(restored.observedCliVersion, '2.1.293');
     });
   });
+  group('end kind and score', () {
+    EvaluationVerificationResult failing() =>
+        const EvaluationVerificationResult(
+          verifierId: 'v',
+          kind: EvaluationVerifierKind.tests,
+          passed: false,
+        );
+
+    test('an agent that stopped scores 0 on either outcome', () {
+      final stopped = attempt(
+        end: EvaluationAttemptEnd.agentStopped,
+        error: 'loop ended: maxTurns',
+        expectedChecks: 1,
+        verification: [failing()],
+      );
+      expect(stopped.completed, isFalse);
+      expect(stopped.score(EvaluationOutcomeMeasure.verifiedSuccess), 0);
+      expect(stopped.score(EvaluationOutcomeMeasure.falseCompletion), 0);
+    });
+
+    test('a harness fault, a ceiling stop, a contradicted pin or a skipped '
+        'check is missing data', () {
+      for (final missing in [
+        attempt(
+          end: EvaluationAttemptEnd.harnessFault,
+          expectedChecks: 1,
+          verification: [passing()],
+        ),
+        attempt(
+          end: EvaluationAttemptEnd.ceilingStopped,
+          expectedChecks: 1,
+          verification: [passing()],
+        ),
+        attempt(
+          expectedChecks: 1,
+          verification: [passing()],
+          identityMismatches: const ['served model'],
+        ),
+        attempt(expectedChecks: 2, verification: [passing()]),
+      ]) {
+        expect(missing.score(EvaluationOutcomeMeasure.verifiedSuccess), isNull);
+        expect(missing.score(EvaluationOutcomeMeasure.falseCompletion), isNull);
+      }
+    });
+
+    test('a finished attempt scores on its checks', () {
+      final passed = attempt(expectedChecks: 1, verification: [passing()]);
+      expect(passed.score(EvaluationOutcomeMeasure.verifiedSuccess), 1);
+      expect(passed.score(EvaluationOutcomeMeasure.falseCompletion), 0);
+      final failed = attempt(expectedChecks: 1, verification: [failing()]);
+      expect(failed.score(EvaluationOutcomeMeasure.verifiedSuccess), 0);
+      expect(failed.score(EvaluationOutcomeMeasure.falseCompletion), 1);
+    });
+
+    test('the end round-trips and an attempt without one does not parse', () {
+      for (final end in EvaluationAttemptEnd.values) {
+        final json = attempt(end: end).toJson();
+        expect(json['end'], end.wire);
+        expect(EvaluationAttempt.fromJson(json).end, end);
+      }
+      final json = attempt().toJson()..remove('end');
+      expect(() => EvaluationAttempt.fromJson(json), throwsFormatException);
+    });
+  });
+
   test('skill exposure and direct observations survive attempt JSON', () {
     const original = EvaluationAttempt(
       attemptId: 'skill-a',
@@ -389,6 +455,7 @@ void main() {
       repetition: 0,
       seed: 1,
       startedAtEpochMs: 100,
+      end: EvaluationAttemptEnd.agentStopped,
       skillEvents: [
         EvaluationSkillEvent(
           kind: 'available',

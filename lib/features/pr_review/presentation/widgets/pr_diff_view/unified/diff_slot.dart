@@ -60,6 +60,12 @@ class DiffSlot {
   /// For [DiffSlotKind.gap]: the gap row's index into the file's structure.
   final int rawIndex;
 
-  /// For comment/composer slots: the display line the block is anchored below.
+  /// For comment/composer slots: the display line the block is anchored below,
+  /// or [kFileLevelAnchor] for a block on the file as a whole.
   final int anchorDisplayLine;
 }
+
+/// The [DiffSlot.anchorDisplayLine] (and comment-block anchor) of a block on
+/// the file as a whole: stacked at the top of the file's body, above its first
+/// row, or under its preview when the file shows one.
+const int kFileLevelAnchor = -1;

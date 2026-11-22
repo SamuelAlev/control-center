@@ -33,7 +33,6 @@ import 'package:cc_domain/features/memory/domain/repositories/memory_domain_repo
 import 'package:cc_domain/features/memory/domain/repositories/memory_fact_repository.dart';
 import 'package:cc_domain/features/memory/domain/repositories/memory_policy_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
-import 'package:cc_domain/features/messaging/domain/repositories/space_read_repository.dart';
 import 'package:cc_domain/features/newsfeed/domain/repositories/newsfeed_repository.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
 import 'package:cc_domain/features/notifications/domain/repositories/notification_feed_repository.dart';
@@ -540,6 +539,9 @@ void main() {
                   grant: AgentRunGrant(
                     workspaceId: workspaceId,
                     conversationId: conversationId,
+                    mcpEndpoint: true,
+                    claudeHook: true,
+                    readOnly: false,
                     actingUserId: person,
                   ),
                   pushedBranches: const {},
@@ -612,6 +614,33 @@ void main() {
       expect(await spawns('fran', 's-all'), isTrue);
       expect(await spawns(_owner, 's-all'), isTrue);
       expect(terminals.spawned, ['gina', 'fran', _owner]);
+    });
+  });
+
+  group('steering a run that acts for someone else (the write gate)', () {
+    test('needs the write grant on every repository the space exposes; an '
+        'admin holds every grant', () async {
+      await select('s-wv', [_widgets, _vault]);
+      await select('s-w', [_widgets]);
+      await spaceRead.requireWrite('ws1', 'wanda', 's-wv');
+      await expectLater(
+        spaceRead.requireWrite('ws1', 'fran', 's-wv'),
+        throwsA(
+          isA<RepoGrantRequiredException>().having(
+            (e) => e.level,
+            'level',
+            RepoGrantLevel.write,
+          ),
+        ),
+      );
+      await spaceRead.requireWrite('ws1', 'adam', 's-w');
+    });
+
+    test('a space with no repositories passes, as its read gate does',
+        () async {
+      await select('s-none', const [], noRepos: true);
+      await spaceRead.requireWrite('ws1', 'fran', 's-none');
+      await spaceRead.requireWrite('ws1', 'nora', 's-none');
     });
   });
 
@@ -1263,7 +1292,6 @@ RemoteRpcCatalog _catalog({
   agentRepository: _Agents(),
   repoRepository: repos,
   spaceRepoAccess: spaceRead,
-  spaceReadRepository: _SpaceReads(),
   memoryDomainRepository: _MemoryDomains(),
   memoryAccessGrantRepository: _MemoryGrants(),
   agentWorkingMemoryRepository: _WorkingMemory(),
@@ -1414,8 +1442,6 @@ class _TicketWorkflow with _Unused implements TicketWorkflowService {}
 class _Newsfeed with _Unused implements NewsfeedRepository {}
 
 class _Agents with _Unused implements AgentRepository {}
-
-class _SpaceReads with _Unused implements SpaceReadRepository {}
 
 class _MemoryDomains with _Unused implements MemoryDomainRepository {}
 

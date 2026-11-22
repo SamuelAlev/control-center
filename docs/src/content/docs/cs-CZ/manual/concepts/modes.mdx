@@ -2,7 +2,7 @@
 title: Režimy
 description: Proč režim nese prostor a ne agent, co každý ze čtyř režimů zaručuje a kde je ta záruka strukturální, ne jen v promptu.
 slug: cs-CZ/prirucka/koncepty/rezimy
-sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
+sourceHash: 4450ebc86d95efb0366bc3f0ab4ddebc6d3a3adb
 ---
 
 ## Co je režim
@@ -41,7 +41,7 @@ Běh, který skončí bez plánu, se pořád zapíše se stavem `completed` — 
 
 Druhá, oddělená cesta ven je `exit_plan_mode`. Je to tvrdá brána schválení, ne výstupní sloveso — agent, který ho zavolá místo `submit_plan`, nic nedodal. První volání otevře trvalé schválení `plan_exit` a vrátí `pending` a prostor zůstane jen pro čtení; opakovaná volání zůstanou `pending` a druhou bránu neotevřou. Teprve když je schválení udělené, další volání přepne prostor na chat. Zamítnutí nechá agenta otevřít novou žádost o upravený plán.
 
-Sám režim Plan opustíš přepnutím rozbalovací nabídky v composeru (nebo Shift+Tab). O `exit_plan_mode` se rozhoduje nástrojem MCP `decide_approval`. Řádky „schválení agenta“ v Doručené poště jsou něco jiného: potvrzovací výzvy z běžícího agenta, na každý tah zvlášť.
+Sám režim Plan opustíš přepnutím rozbalovací nabídky v composeru (nebo Shift+Tab). O `exit_plan_mode` rozhoduje běh agenta nástrojem MCP `decide_approval`. Řádky „schválení agenta“ v Doručené poště jsou něco jiného: potvrzovací výzvy z běžícího agenta, na každý tah zvlášť.
 
 ### Review — jen pro čtení, bez kontraktu
 
@@ -65,6 +65,8 @@ Z návrhu se nic nespustí, dokud ho neschválíš. Po schválení deterministic
 
 **Režimy jen pro čtení neodpírají síť ani tajemství.** Třídy efektů, které Review, Plan a Orchestrate odmítají, jsou ty, které mění svět: mazání souborů, zápisy mimo worktree, commity, pushe, založení a zveřejnění PR, zápisy synchronizace dodavatele, instalace balíčků, spouštění procesů, mutace pracovního prostoru a řízení enclosure. Odchozí síť a přístup k tajemstvím schválně zůstávají na výchozích hodnotách — výzkum je celý smysl režimu jen pro čtení.
 
+**Režim kódu nikdy nerozšiřuje režim.** Nejprve se použije filtr nástrojů režimu a skript `repl` v [režimu kódu](/cs-CZ/prirucka/koncepty/rezim-kodu/) smí volat jen nástroje, které po něm zbyly, a to stejnou bránou jako přímé volání. Připnutá slovesa režimu (jeho výstupní sloveso, `exit_plan_mode`, `ask_user`) a jeho vlastní smyčka (slovesa uzlů revize v režimu review) se volají vždy přímo, takže běh nikdy nemusí psát skript, aby odevzdal svůj výsledek nebo položil otázku. V [režimu vibe](/cs-CZ/prirucka/navody/rizeni-workeru-na-pozadi/) běh řídící si ponechá jen nástroje pro čtení a žádné nástroje dostupné jen ze skriptů, takže jeho skripty dosáhnou jen na ně.
+
 ## Volba a změna režimu
 
 Rozbalovací nabídka režimu v composeru nabízí **tři** možnosti: Agent (chat), Plan a Orchestrate. `review` **nejde vybrat** — nastaví ho systém, když vznikne prostor kontroly PR, a kroky pipeline.
@@ -87,4 +89,5 @@ Seznamy povolených omezují nástroje od úrovně zápisu výš. Úroveň čten
 - [Model agentů](/cs-CZ/prirucka/koncepty/model-agentu/): které transporty umějí režim vynutit
 - [Guardraily](/cs-CZ/prirucka/koncepty/guardraily/): politika tříd efektů, do které preset režimu ústí
 - [Orchestace](/cs-CZ/prirucka/koncepty/orchestrace/): co udělá schválený návrh Orchestrate
+- [Režim kódu](/cs-CZ/prirucka/koncepty/rezim-kodu/): skripty, které volají nástroje režimu
 - [Používejte režim plánu](/cs-CZ/prirucka/navody/rezim-planu/): praktický postup

@@ -2,7 +2,7 @@
 title: أحداث النطاق
 description: الفهرس الكامل لأحداث النطاق وعددها 54، وحمولاتها، والمشتركون على جانب الخادم الذين يستهلكونها.
 slug: ar-SA/دليل-المستخدم/مرجع/أحداث-النطاق
-sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
+sourceHash: f58123448c0f31c95774bbaebee89f1509940896
 ---
 
 ## ناقل الأحداث
@@ -24,7 +24,10 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 | الحدث | الحمولة | متى يُطلَق |
 | --- | --- | --- |
 | `WorkspaceCreated` | `workspaceId` | تُنشأ مساحة العمل |
-| `AgentRunCompleted` | `agentId`، `runId?`، `workspaceId?`، `conversationId?` | ينهي الوكيل تشغيلًا (نجاحًا أو فشلًا) |
+| `AgentRunCompleted` | `agentId`، `runId?`، `workspaceId?`، `conversationId?` | ينتهي تدفّق عملية الوكيل، قبل كتابة الحالة النهائية. يُبقى عليه لجسر محادثة طلب السحب والتحليلات فقط |
+| `AgentRunSettled` | `agentId`, `workspaceId`, `runId`, `status`, `endReason`, `costMicros`, `wakeIds`, `spaceId?`, `conversationId?`, `limitResetsAt?`, `requestedByUserId?`, `wakeReason?` | تُكتب الحالة النهائية للتشغيل؛ ويُنشر مرة واحدة لكل تشغيل. `endReason` هو `completed` أو `error` أو `stoppedByUser` أو `budget` أو `silence` أو `usageLimit` أو `serverStopped`. لا ينشر تشغيل الوكيل الفرعي أيًّا منها |
+| `GoalSettled` | `goalId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `status`, `hold?`, `summary?`, `requestedByUserId?` | ينتهي الهدف، أو يبدأ انتظار مراجعة شخص له |
+| `WakeRuleEnded` | `ruleId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `reason`, `requestedByUserId?` | تنتهي جدولة أو مراقبة (أُطلقت مرتها الواحدة، أو انتهت صلاحيتها، أو استنفدت تشغيلاتها أو تكلفتها، أو أُلغيت، أو انتهى هدفها، أو غادر الشخص المعني) |
 | `AgentAwaitingInput` | `workspaceId`، `kind`، `summary`، `spaceId?`، `conversationId?`، `agentId?`، `agentName?` | يبدأ وكيل انتظار إنسان: موافقة، أو سؤال `ask_user`، أو تشغيل متوقّف بسبب بيانات اعتماد (قيمة `kind` هي `approval` أو `question` أو `credential`) |
 | `RepoAdded` | `repoId`، `path`، `workspaceId` | يُسجَّل مستودع، ويُطلَق فهرسة الشفرة في الخلفية |
 | `SkillUpdated` | `workspaceId`، `slug`، `origin`، `computedHash`، `scanVerdict?` | تُثبَّت مهارة أو تُحدَّث، حاملة حكم فحص سلسلة التوريد |
@@ -57,6 +60,16 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 | `PrCommentMentioned` | `commentId`، `authorLogin`، `bodyPreview`، `isReviewComment`، `threadId?`، `path?`، `line?` | أشار إليك أحد في تعليق على طلب السحب أو في تعليق مراجعة |
 | `PrThreadReplied` | `commentId`، `authorLogin`، `bodyPreview`، `threadId?`، `path?`، `line?` | رد أحد في خيط مراجعة أنت فيه |
 | `PrThreadResolved` | `threadId`، `commentId?`، `path?`، `line?` | حلّ أحد خيط مراجعة أنت فيه |
+
+### مراقبة طلب السحب
+
+ينشرها مستطلع طلبات السحب المفتوحة لكل طلب سحب يستطلعه، أيًّا كان مؤلفه، من أجل مراقبات الوكلاء `on:pr_*`. وتحمل الأحداث الثلاثة كلها `workspaceId` و`repoOwner` و`repoName` و`prNumber` و`prTitle` و`headRef` و`authorLogin`.
+
+| الحدث | حمولة إضافية | متى يُطلَق |
+| ----------------------- | ----------------------------------------------- | ---------- |
+| `PrWatchChecksSettled` | `passing`, `failedChecks`, `failedCheckUrl?` | انتهت كل فحوصات رأس طلب السحب |
+| `PrWatchReviewActivity` | `decision`, `decisionChanged`, `newComments` | حصل طلب السحب على مراجعة أو تعليقات جديدة |
+| `PrWatchClosed` | `merged` | دُمج طلب السحب أو أُغلق |
 
 ## أحداث المراسلة
 
@@ -167,14 +180,20 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 | تجهيز مساحة الدردشة (مضمّن) | `SpaceCreated` |
 | `PipelineTriggerDispatcher` | كل `DomainEvent`، ويصفّي كل مشغّل مفعّل حسب نوعه |
 | `SubPipelineResumeListener` | `PipelineRunCompleted`، `PipelineRunFailed` |
-| `PipelineCostRollupListener` | `AgentRunCompleted` |
-| `BudgetEvaluationListener` | `AgentRunCompleted` |
+| `PipelineCostRollupListener` | `AgentRunSettled`   |
+| `BudgetEvaluationListener` | `AgentRunSettled`   |
 | `MeetingSummaryReconciler` | `PipelineRunCompleted`، `PipelineRunFailed`، `PipelineRunCancelled` (تشغيلات `meeting_summary` فقط) |
-| `PipelineStepResumeListener` | `AgentRunCompleted` |
-| `AgentRunTaskCompleter` | `AgentRunCompleted` |
-| `GoalSupervisor` | `AgentRunCompleted` |
-| `CheckerDispatchListener` | `AgentRunCompleted` |
-| `TeamRoutingService` | `AgentRunCompleted`، `TicketAssigned` |
+| `PipelineStepResumeListener` | `AgentRunSettled`   |
+| `AgentRunTaskCompleter` | `AgentRunSettled`   |
+| `GoalSupervisor` | `AgentRunSettled` — يقرر الخطوة التالية للهدف |
+| `CheckerDispatchListener` | `AgentRunSettled` — يضع المدقق في طابور الإيقاظ، ويتخطى مقاطع الأهداف والمراجعات |
+| `TeamRoutingService` | `AgentRunSettled`، `TicketAssigned`   |
+| `WakeQueueService` | `AgentRunSettled` — يسلّم الإيقاظات التي انتظرت انتهاء التشغيل |
+| `WakeRuleService` | `AgentRunSettled` (الحلقات ذاتية الإيقاع)، و`GoalSettled` (ينهي جداولات الهدف)، و`PrWatch*`، و`EnvironmentProcessExited`، و`EnvironmentReady`، ونهايات التذاكر وتشغيلات خطوط الأنابيب (للمراقبات)، و`WorkspaceMemberRemoved` (ينهي جداولات ذلك الشخص) |
+| `PeerAskService` | `AgentRunSettled` — يُسوّي الأسئلة التي طرحها الوكلاء على بعضهم، ويوقظ السائل |
+| `LimitParkService` | `AgentRunSettled` مع `usageLimit` — ينتظر إعادة ضبط المزوّد |
+| `ImprovementReviewService` | `GoalSettled` (هدف مُتحقَّق منه) و`AgentRunSettled` — يضع مراجعة التحسين في الطابور ويقرأ نتيجتها |
+| خطوة الهدف في خط الأنابيب (`goal.pursue`) | `GoalSettled`، و`AgentRunSettled`، و`PipelineRunCompleted`، و`PipelineRunFailed`، و`PipelineRunCancelled` — يستأنف الخطوة، ويحمّل التنسيق تكلفتها، ويتابع تشغيل خط الأنابيب |
 | `OrchestrationRunListener` | `PipelineRunCancelled`، `PipelineRunFailed` |
 | `MultiVendorTicketSyncCoordinator` | `TicketCreated`، `TicketAssigned`، `TicketReassigned`، `TicketStatusChanged`، `TicketDetailsUpdated` |
 | `WorktreeGcListener` | `TicketCompleted`، `TicketCancelled`، `SpaceDeleted`، `PrMerged`، `PullRequestStatusChanged` |
@@ -227,6 +246,8 @@ sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 ينشر `AgentAwaitingInputPublisher` الحدث `AgentAwaitingInput`، فهو يراقب سجلَّي الموافقات وحظر بيانات الاعتماد بحثًا عن إدخالات جديدة، ويُبلغه `AgentQuestionService` بكل سؤال `ask_user`. الانتظار الواحد حدث واحد، ولا يُنشَر شيء عند انتهاء الانتظار.
 
 تحمل فئات طلب السحب المؤلَّف الخمس `forUserId`، فتصل إلى المؤلف لا إلى كل من في مساحة العمل.
+
+خمسة أُطر للأعمال طويلة الأمد، يُوجَّه كل منها إلى الشخص المعني (`for_user_id`): `notifications/goal_settled` (من `GoalSettled`)، و`notifications/wake_rule_ended` (من `WakeRuleEnded`)، و`notifications/improvement_proposed`، و`notifications/pipeline_run_held` (تشغيل خط أنابيب محتجز عند سقف تكلفة تنسيقه)، و`notifications/waiting_digest` (مرة في اليوم، بما ينتظر شخصًا). يحمل كل منها `notification_kind`: فـ`notify` يُقابل `agentRunCompleted`، و`question` و`review` يُقابلان `agentAwaitingInput`. وكل إطار يُبلّغ يحمل `notification_kind` الآن، والإطار الذي يحمل `quiet: true` (جدولة انتهت، أو هدف انتهى) يصل إلى مركز الإشعارات دون نافذة منبثقة أو صوت أو دفع عالٍ على الهاتف.
 
 يُمرِّر `RemoteEventForwarder` أيضًا `TicketReassigned` بصورة `notifications/ticket_reassigned`، وكل `TaskLifecycleEvent` بصورة `notifications/task_<phase>`. لا يُقابَل أي منهما بفئة إشعار: يقودان الواجهة الحيّة، لا مركز الإشعارات. لا تُمرَّر أحداث العضوية كإطارات: تُبطل ذاكرة المُمرِّر المؤقتة، وتُسقط مضيفات الجلسة اشتراكات مساحة العمل الخاصة بالعضو المُزال.
 

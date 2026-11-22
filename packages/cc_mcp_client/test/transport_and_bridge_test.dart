@@ -127,6 +127,46 @@ void main() {
       expect(a, matches(RegExp(r'^[a-zA-Z0-9_-]+$')));
     });
 
+    test('an outputSchema round-trips through the remote tool and reaches '
+        'the bridged tool', () {
+      const schema = {
+        'type': 'object',
+        'properties': {
+          'count': {'type': 'integer'},
+        },
+      };
+      final parsed = McpRemoteTool.fromJson({
+        'name': 'count',
+        'description': 'd',
+        'inputSchema': {'type': 'object'},
+        'outputSchema': schema,
+      });
+      expect(parsed.outputSchema, schema);
+      final again = McpRemoteTool.fromJson(
+        jsonDecode(jsonEncode(parsed.toJson())) as Map<String, dynamic>,
+      );
+      expect(again.outputSchema, schema);
+      final bridged = BridgedMcpTool(
+        serverName: 'srv',
+        remoteTool: again,
+        invoker: (server, name, args) async => const {},
+      );
+      expect(bridged.outputSchema, schema);
+    });
+
+    test('a tool without an object outputSchema declares none', () {
+      for (final raw in [null, 'object', 3]) {
+        final parsed = McpRemoteTool.fromJson({
+          'name': 'count',
+          'description': 'd',
+          'inputSchema': {'type': 'object'},
+          'outputSchema': ?raw,
+        });
+        expect(parsed.outputSchema, isNull, reason: '$raw');
+        expect(parsed.toJson().containsKey('outputSchema'), isFalse);
+      }
+    });
+
     test('converts a remote text result into a CallResult', () async {
       final tool = BridgedMcpTool(
         serverName: 'srv',
@@ -165,6 +205,65 @@ void main() {
       final result = await tool.call({});
       expect(result.isError, isTrue);
       expect(result.content.first.text, 'kaboom');
+    });
+
+    test('carries structuredContent, sanitised, beside the text', () async {
+      final tool = BridgedMcpTool(
+        serverName: 'srv',
+        remoteTool: const McpRemoteTool(
+          name: 'x',
+          description: 'd',
+          inputSchema: {'type': 'object'},
+        ),
+        invoker: (_, _, _) async => {
+          'content': [
+            {'type': 'text', 'text': '{"n":1}'},
+          ],
+          'structuredContent': {
+            'n': 1,
+            'items': [
+              {'name': '\x1B[31mred\x1B[0m'},
+            ],
+          },
+        },
+      );
+      final result = await tool.call(const {});
+      expect(result.content.first.text, '{"n":1}');
+      expect(tool.serverName, 'srv');
+      expect(result.structured, {
+        'n': 1,
+        'items': [
+          {'name': 'red'},
+        ],
+      });
+    });
+
+    test('drops structuredContent that is not an object or is too large',
+        () async {
+      Future<Object?> structuredOf(Object? value) async {
+        final tool = BridgedMcpTool(
+          serverName: 'srv',
+          remoteTool: const McpRemoteTool(
+            name: 'x',
+            description: 'd',
+            inputSchema: {'type': 'object'},
+          ),
+          invoker: (_, _, _) async => {
+            'content': [
+              {'type': 'text', 'text': 'ok'},
+            ],
+            'structuredContent': value,
+          },
+        );
+        return (await tool.call(const {})).structured;
+      }
+
+      expect(await structuredOf([1, 2]), isNull);
+      expect(await structuredOf(null), isNull);
+      expect(
+        await structuredOf({'big': 'x' * (BridgedMcpTool.maxResultChars + 1)}),
+        isNull,
+      );
     });
 
     test('external tools default to exec tier (untrusted)', () {

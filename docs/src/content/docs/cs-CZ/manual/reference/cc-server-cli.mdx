@@ -2,7 +2,7 @@
 title: CLI cc_server
 description: Všechny příznaky, proměnné prostředí, podpříkazy a cesty v datovém adresáři headless serveru.
 slug: cs-CZ/prirucka/referencni-prirucka/cc-server-cli
-sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
+sourceHash: ee71514a1721599da299a81b5702bc7cdb372330
 ---
 
 Každý příznak procesu se zadává příznakem CLI nebo proměnnou prostředí. Vyhraje
@@ -10,9 +10,7 @@ příznak, pak prostředí, pak výchozí hodnota. Výjimkou jsou přihlašovac�
 poskytovatelů. Viz [Aplikace poskytovatelů a Connect](#aplikace-poskytovatelů-a-connect).
 
 :::caution[Neznámé příznaky se tiše ignorují]
-Parser argumentů je ruční a přeskočí všechno, co nezná, takže překlep
-(`--tls-key-file`, `--bindany`) nevyvolá chybu. Server prostě naběhne s výchozí
-hodnotou. Když příznak jako by nic nedělal, podívej se na řádky logu při startu.
+Parser argumentů je ruční a přeskočí všechno, co nezná, takže překlep (`--tls-key-file`, `--bindany`) nevyvolá chybu. Server prostě naběhne s výchozí hodnotou. Když příznak jako by nic nedělal, podívej se na řádky logu při startu. [Příznak režimu kódu](#režim-kódu) s hodnotou, kterou nepřijímá, je jiný případ: server odmítne nastartovat.
 :::
 
 ## Jádro
@@ -50,8 +48,10 @@ hodnotou. Když příznak jako by nic nedělal, podívej se na řádky logu při
 | `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | `on` obalí běhy agentů nativním sandboxem OS hostitele a na hostiteli bez něj startují jen běhy vlastníka serveru. `off` spustí agenty všech členů bez omezení na tomto hostiteli. Viz níže |
 | `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Nouzový vypínač indexování grafu kódu na pozadí. `off` naběhne čistě, bez nového sestavení                                  |
 | `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Sekundy, o které se první průchod indexu pozdrží po řádku ready (oříznuto na 0–300)                                         |
-| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Jestli běhy harnessu posílají malou rezidentní sadu nástrojů plus jmenný index a zbytek načtou při prvním použití. Viz níže |
+| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Jestli běhy harnessu posílají malou přímou sadu nástrojů plus jmenný index a zbytek načtou při prvním použití. Viz níže     |
 | `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Sekundy, po které běh zůstane pozastavený a čeká, než člověk opraví přihlašovací údaj, který ho neumí obsloužit (oříznuto na 0–3600). Viz níže |
+| `--code-mode-max-processes` | `CC_SERVER_CODE_MODE_MAX_PROCESSES` | `min(16, 2 × cores)` | Skripty režimu kódu běžící na serveru současně, bez těch, které čekají na člověka, 1–64. Viz níže |
+| `--code-mode-max-heap-mb` | `CC_SERVER_CODE_MODE_MAX_HEAP_MB` | `1024` | Nejvíce paměti, kterou smí použít jeden skript, 16–1024 MiB. Vyšší limit paměti pracovního prostoru se na něj sníží |
 
 ## Aplikace poskytovatelů a Connect
 
@@ -116,17 +116,9 @@ po celou dobu procesu loguje varování, takže stav nezůstane potichu.
 
 ### `--tool-deferral`
 
-Běhy vestavěného harnessu posílají malou rezidentní sadu definic nástrojů plus
-jmenný index zbytku. Schémata se načtou, až se nástroj použije poprvé. Blok
-nástrojů se tím srazí zhruba o 78 % a trvale viditelná sada zůstane v pásmu,
-kde modely nástroje vybírají spolehlivě. Odložené nástroje jdou pořád volat
-jménem a `search_tools` je najde podle záměru. Viz [Kontext nástrojů a cache promptů](/cs-CZ/prirucka/koncepty/kontext-nastroju/).
+Běhy vestavěného harnessu posílají malou přímou sadu definic nástrojů plus jmenný index zbytku, jehož schémata se načtou, až se nástroj použije poprvé, nebo se volají ze skriptu `repl`. Trvale viditelná sada zůstane v pásmu, kde modely nástroje vybírají spolehlivě. Měřeno na registru, který testy sestaví, dosahují standardní chatové nástroje vestavěného agenta 14 definic: zhruba 16,5 KB s `repl` (z toho zhruba 4 KB připadají na `repl`, jehož definice nesmí přesáhnout 4 096 bajtů), zhruba 13 KB na serveru, který skripty spouštět nedokáže. Odložené nástroje jdou pořád volat jménem a `search_tools` je najde podle záměru. Viz [Kontext nástrojů a cache promptů](/cs-CZ/prirucka/koncepty/kontext-nastroju/).
 
-`--tool-deferral off` znovu udělá rezidentním každý připuštěný nástroj a
-vyrobí přesně ty požadavky, které server posílal, než odložení existovalo.
-Je to vypínač pro model, který dvouúrovňovou plochu zvládá špatně. Příznak,
-ne nové sestavení. Týká se jen vestavěného harnessu. `tools/list`, který vidí
-externí klienti MCP, je vždycky celý katalog.
+`--tool-deferral off` pošle definici každého připuštěného nástroje předem, s tím rozdílem, že běh s `repl` pořád volá ze skriptů ty nástroje, které skript volat smí. Je to vypínač pro model, který dvouúrovňovou plochu zvládá špatně. Příznak, ne nové sestavení. Týká se jen vestavěného harnessu. `tools/list`, který vidí externí klienti MCP, je celý katalog, s výjimkou běhu agenta na serveru, který umí spouštět skripty [režimu kódu](/cs-CZ/prirucka/koncepty/rezim-kodu/).
 
 ### `--credential-gate`
 
@@ -143,6 +135,25 @@ běh selže se stejnou zprávou, se kterou by selhal i bez brány.
 
 `--credential-gate=0` je nouzový vypínač: nic se nikdy nepozastaví a špatný
 přihlašovací údaj ukončí tah přesně tak, jako před tou branou.
+
+### Režim kódu
+
+[Režim kódu](/cs-CZ/prirucka/koncepty/rezim-kodu/) umožňuje agentovi spustit JavaScriptový skript, který volá jeho nástroje. Žádný příznak ho nezapíná ani nevypíná: každý běh dostane nástroj `repl`, když server umí spouštět skripty, a veřejný demo server žádné nespouští.
+
+Skripty běží v `cc_codemode`, programu dodávaném se serverem v `bin/codemode/`. Server bez něj nenastartuje: vypíše jeden řádek s názvem chybějící věci a skončí s návratovým kódem `78`. Při startu spustí samotestování uzamčení programu a vypíše jeden řádek (ztlumí ho jen `--log-level error`):
+
+```text
+cc_server: code_mode=available (cc_codemode 0.1.0 quickjs-ng 0.16.2 protocol 2; 16 scripts at once, at most 12 per workspace; up to 64 more runners kept for scripts waiting on a person; heap at most 1024 MiB per script)
+cc_server: code_mode=unavailable (<reason>) — runs on this host get no repl tool; scripts never run without full lockdown
+```
+
+`unavailable` znamená, že program se na tomto hostiteli nemůže uzamknout, například v kontejneru, jehož bezpečnostní profil odmítne jeden z jeho kroků, nebo že nejde o release sestavení. Server běží normálně, žádný běh nedostane `repl` a stránka nastavení režimu kódu pracovního prostoru ukáže důvod.
+
+Server dál kontroluje, zda běží. Když program nenastartuje z důvodu, který není na straně skriptu, server spustí samotestování znovu, nejvýše jednou za minutu. Pokud selže, server vypíše řádek `unavailable` s důvodem a nespouští žádné skripty: běhy, které mezitím začnou, nedostanou `repl`, a běh, který ho už má, volá své nástroje přímo ([Když skripty nemohou běžet](/cs-CZ/prirucka/koncepty/rezim-kodu/#když-skripty-nemohou-běžet)). Kontroluje dál, nejvýše jednou za minutu, a když samotestování znovu projde, vypíše řádek `available` a skripty spouští znovu. Restart je potřeba jen u samotestování, které selhalo při startu. Důvod, který nastavení pracovního prostoru ukazuje, má odstraněné cesty hostitele; řádek v logu ho obsahuje celý.
+
+Dva příznaky režimu kódu omezují, co skripty smí použít. `--code-mode-max-processes` omezuje skripty běžící současně napříč všemi pracovními prostory (výchozí dvojnásobek procesorových jader, nejvýše 16; přijímá hodnoty 1–64). Při limitu 2 nebo více smí jeden pracovní prostor použít nejvýše limit zmenšený o jeho čtvrtinu, takže žádný jednotlivý pracovní prostor nemůže obsadit všechna místa, a čekající skripty se přijímají po řadě napříč pracovními prostory. Skript čekající na schválení nebo odpověď člověka uvolní své místo jinému skriptu a nespustí žádné volání nástroje, dokud na něj nebude odpovězeno; takových čekajících skriptů se zachová nejvýše čtyřnásobek limitu, z nich nejvýše tři čtvrtiny z jednoho pracovního prostoru, a každý může dál počítat v rámci svého vlastního limitu času procesoru. `--code-mode-max-heap-mb` je nejvíce paměti, kterou smí použít jeden skript.
+
+Hodnota, kterou tyto příznaky nepřijímají (číslo mimo rozsah nebo něco, co není číslo), zastaví server při startu (návratový kód `78`) se zprávou, která jmenuje přijímané hodnoty. Nikdy se nebere jako výchozí.
 
 ## Podpříkazy
 
@@ -245,6 +256,7 @@ Server drží datový adresář soukromý pro svůj vlastní účet (`0700`). Od
 | `backups/exports/`                | Exporty jednoho pracovního prostoru, `<workspaceId>-<timestamp>.db`             |
 | `backups/transfer/`               | Odkladiště stahování a nahrávání záloh. Uklidí ho trasa, která ho zapisuje     |
 | `models/`                         | Embeddingové, diarizační a řečové modely na zařízení                            |
+| `codemode/` | Vývojová kopie runneru režimu kódu, nainstalovaná skriptem `scripts/natives/build_codemode.sh`; vydané balíčky ji nesou v `bin/codemode/` |
 | `meetings/<meetingId>/`           | Uchovaný zvuk schůzek                                                          |
 | `rigs/images/`                    | Importované obrazy disků stanic (QEMU v aplikaci pro počítač)                  |
 | `rigs/smolvm/<rigId>/`            | Běhový stav microVM každé stanice (tajemství brokera, `0600`)                  |

@@ -49,6 +49,16 @@ class ProposeOrchestrationTool extends McpTool {
 
   @override
   String get name => 'propose_orchestration';
+
+  /// `agent_id` names the calling agent, never a target: forced from the
+  /// call scope, so a run cannot act as another agent.
+  @override
+  Set<String> get forcedScopeKeys => const {'agent_id'};
+
+  /// Not for scripts: it creates an approval whose acceptance hires agents and
+  /// runs them (see [McpTool.scriptCallable]).
+  @override
+  bool get scriptCallable => false;
   @override
   Set<ActionClass> get actionClasses => const {ActionClass.vendorSyncWrite};
 
@@ -217,7 +227,12 @@ class ProposeOrchestrationTool extends McpTool {
         updatedAt: now,
       );
       isRevision = true;
-      await _orchestrations.update(orchestration);
+      if (!await _orchestrations.update(orchestration, read: existing)) {
+        return CallResult.error(
+          'Orchestration $existingId changed while you revised it (an edit '
+          'or an approval landed first). Read it again before revising.',
+        );
+      }
     } else {
       orchestration = Orchestration(
         id: _uuid.v4(),

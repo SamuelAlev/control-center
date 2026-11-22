@@ -85,7 +85,9 @@ void main() {
       // a failing test rather than a missing page.
       expect(registry.bodies.map((b) => b.navItemId).toSet(), {
         'workspace.agents',
+        'workspace.code_mode',
         'workspace.environments',
+        'workspace.schedules',
         'workspace.meetings',
         'workspace.repositories',
         'you.desktop',

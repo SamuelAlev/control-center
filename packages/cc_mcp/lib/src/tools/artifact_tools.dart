@@ -83,6 +83,11 @@ class PublishArtifactTool extends McpTool {
   @override
   String get name => 'publish_artifact';
 
+  /// `agent_id` names the calling agent, never a target: forced from the
+  /// call scope, so a run cannot act as another agent.
+  @override
+  Set<String> get forcedScopeKeys => const {'agent_id'};
+
   @override
   String get description =>
       'Publish a rich document into this conversation: an ordered list of '
@@ -232,6 +237,11 @@ class ReviseArtifactTool extends McpTool {
 
   @override
   String get name => 'revise_artifact';
+
+  /// `agent_id` names the calling agent, never a target: forced from the
+  /// call scope, so a run cannot act as another agent.
+  @override
+  Set<String> get forcedScopeKeys => const {'agent_id'};
 
   @override
   String get description =>

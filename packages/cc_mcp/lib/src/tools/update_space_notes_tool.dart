@@ -30,6 +30,11 @@ class UpdateSpaceNotesTool extends McpTool {
   @override
   String get name => 'update_space_notes';
 
+  /// `agent_id` names the calling agent, never a target: forced from the
+  /// call scope, so a run cannot act as another agent.
+  @override
+  Set<String> get forcedScopeKeys => const {'agent_id'};
+
   @override
   String get description =>
       'Updates the shared notes/handoff document for a space. '

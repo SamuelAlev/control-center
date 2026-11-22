@@ -2,7 +2,7 @@
 title: Moduri
 description: De ce un spațiu, nu un agent, poartă un mod; ce garantează fiecare dintre cele patru moduri; și unde acea garanție este structurală, nu doar sugerată prin prompt.
 slug: ro-RO/manual/concepte/moduri
-sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
+sourceHash: 4450ebc86d95efb0366bc3f0ab4ddebc6d3a3adb
 ---
 
 ## Ce este un mod
@@ -41,7 +41,7 @@ O rulare care se încheie fără planul ei este totuși înregistrată cu starea
 
 Există o a doua cale de ieșire, separată: `exit_plan_mode`. Este o poartă strictă de aprobare, nu un verb de ieșire — un agent care o apelează în loc de `submit_plan` nu a livrat nimic. Primul apel deschide o aprobare durabilă `plan_exit` și returnează `pending`, iar spațiul rămâne doar pentru citire; apelurile repetate rămân `pending` în loc să deschidă o a doua poartă. Abia după ce aprobarea este acordată, un apel ulterior readuce spațiul pe chat. O respingere îi permite agentului să deschidă o cerere nouă pentru un plan revizuit.
 
-Ca să ieși singur din modul plan, schimbă lista derulantă din zona de compunere (sau Shift+Tab). `exit_plan_mode` se decide cu instrumentul MCP `decide_approval`. Rândurile „aprobare agent" din Inbox sunt altceva: solicitări de confirmare pentru fiecare tur, venite de la un agent care rulează.
+Ca să ieși singur din modul plan, schimbă lista derulantă din zona de compunere (sau Shift+Tab). `exit_plan_mode` este decis de o rulare de agent cu instrumentul MCP `decide_approval`. Rândurile „aprobare agent" din Inbox sunt altceva: solicitări de confirmare pentru fiecare tur, venite de la un agent care rulează.
 
 ### Revizuire — doar pentru citire, fără contract
 
@@ -65,6 +65,8 @@ Nimic din propunere nu se execută până când nu o aprobi. La aprobare, un mat
 
 **Modurile doar pentru citire nu interzic accesul la rețea sau la secrete.** Clasele de efecte pe care le refuză revizuirea, planul și orchestrarea sunt cele care schimbă lumea: ștergerea fișierelor, scrierile în afara worktree-ului, commit-urile, push-urile, crearea și publicarea de PR-uri, scrierile de sincronizare către furnizori, instalarea de pachete, pornirea de procese, modificarea structurii spațiului de lucru și controlul mediilor izolate. Ieșirea în rețea și accesul la secrete rămân intenționat la valorile lor implicite — cercetarea este însuși scopul unui mod doar pentru citire.
 
+**Modul cod nu lărgește niciodată un mod.** Filtrul de instrumente al modului se aplică primul, iar un script `repl` al [modului cod](/ro-RO/manual/concepte/mod-cod/) poate apela doar instrumentele rămase după el, prin aceeași poartă ca un apel direct. Verbele fixate ale modului (verbul său de ieșire, `exit_plan_mode`, `ask_user`) și propria lui buclă (verbele nodului de revizuire din modul revizuire) sunt apelate mereu direct, astfel încât o rulare nu trebuie niciodată să scrie un script ca să-și livreze rezultatul sau să pună o întrebare. În [modul vibe](/ro-RO/manual/ghiduri-practice/dirijeaza-workeri-din-fundal/), rularea care coordonează păstrează doar instrumentele de citire și niciun instrument disponibil doar din script, deci scripturile ei ajung doar la acestea.
+
 ## Alegerea și schimbarea unui mod
 
 Lista derulantă de moduri din zona de compunere oferă **trei** opțiuni: Agent (chat), Plan și Orchestrează. `review` **nu poate fi selectat de utilizator** — este setat de sistem când se creează un spațiu de revizuire PR și de pașii de pipeline.
@@ -87,4 +89,5 @@ Listele de permisiuni restricționează instrumentele de nivel de scriere și pe
 - [Modelul agenților](/ro-RO/manual/concepte/modelul-agentilor/): ce transporturi pot aplica un mod
 - [Guardrail-uri](/ro-RO/manual/concepte/guardrail-uri/): politica claselor de efecte în care se varsă presetarea unui mod
 - [Orchestrare](/ro-RO/manual/concepte/orchestrare/): ce face o propunere de orchestrare aprobată
+- [Mod cod](/ro-RO/manual/concepte/mod-cod/): scripturi care apelează instrumentele modului
 - [Folosește modul plan](/ro-RO/manual/ghiduri-practice/modul-plan/): ghidul practic pas cu pas

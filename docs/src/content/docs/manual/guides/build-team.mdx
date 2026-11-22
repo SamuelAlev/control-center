@@ -49,7 +49,7 @@ When a ticket does carry a team assignment:
 
 1. The team's leader is dispatched with the ticket, its operating instructions and the member roster.
 2. The leader delegates to members and records its evaluation with the `record_team_activity` tool — `action` (delegated), `no_action` (nothing more to do, which stops further re-triggers) or `failed`.
-3. Each member run that completes re-wakes the leader, bounded by the no-action guard.
+3. A member run the leader started with an `@mention` or a message wakes the leader again when it ends, in the conversation the leader woke it from, bounded by the no-action guard. Work the leader handed over with `delegate_task` wakes it when the ticket settles, and a question it asked with `ask_agent` wakes it with the reply (see [Agents working together](/manual/guides/agents-working-together/)).
 
 The pipeline **Team dispatch** node is the other entry point. It takes a team id, a prompt and a dispatch mode:
 

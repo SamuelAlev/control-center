@@ -2,7 +2,7 @@
 title: Sandbox e segurança
 description: O que realmente limita um agente no Control Center atualmente, até onde chega a sandbox do sistema operativo e que fronteiras se mantêm num anfitrião sem backend.
 slug: pt-PT/manual/conceitos/sandbox-e-seguranca
-sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
+sourceHash: 7644c97911f685ef5084875fb16f1006f21ea940
 ---
 
 :::note[Onde a sandbox do sistema operativo chega e onde não chega]
@@ -51,6 +51,8 @@ A mesma regra aplica-se às coisas mais pequenas que arrancam um processo por si
 - **Pequenos auxiliares que correm através de uma CLI ACP**: títulos de conversas, `/btw`, `/handoff` e `/goal`. Quando o servidor põe os agentes em sandbox, correm dentro da sandbox, numa sessão própria. Com `--sandbox off` correm sem confinamento. Sem sandbox disponível correm apenas para pedidos de que o proprietário do servidor é responsável; para os restantes são ignorados, por isso nenhum título é gerado e uma pergunta paralela indica que o sintetizador de conteúdo não tem um executor a funcionar. Os auxiliares que não arrancam nenhuma ferramenta não são afetados.
 - **Os testes dourados de um pull request** na verificação visual do Review Studio seguem a mesma regra.
 - **Processos de ferramentas e o `bash`** numa execução nunca recorrem ao anfitrião. Se o servidor estiver configurado para pôr agentes em sandbox mas não tiver nenhuma sandbox para dar a uma execução, são recusados.
+- **As verificações de um objetivo** correm num sandbox de uso único sobre a worktree da conversa, confinadas como o `bash` do próprio agente. Sem sandbox não correm, e o objetivo para à espera de uma pessoa; com `--sandbox off` correm como o `bash` do agente.
+- **A revisão de um objetivo** corre só de leitura em todos os adaptadores: apenas leituras, worktrees montadas só de leitura, sem `bash`, sem subagentes e sem web. Um adaptador que não consegue manter uma execução só de leitura (um agente ACP) não é usado como revisor.
 
 ## O que realmente limita um agente
 
@@ -289,6 +291,24 @@ transcript e não apenas num registo. A telemetria só existe enquanto uma
 sandbox nativa estiver de facto a envolver o processo — num anfitrião sem backend
 não há nada para observar. Também não tem relação com as barreiras: uma violação vem de uma chamada de sistema negada, nunca de uma consulta de regra.
 
+## Scripts no modo de código
+
+Os scripts de [modo de código](/pt-PT/manual/conceitos/modo-de-codigo/) são um caso à parte, e não dependem de forma alguma da sandbox do agente. Um script nunca corre dentro do servidor nem na sandbox do agente. Corre no seu próprio processo, `cc_codemode`, um programa incluído com o servidor, que se bloqueia a si próprio antes de ler o script e indica até onde chegou o bloqueio. O servidor envia o script apenas quando o bloqueio está completo.
+
+| Anfitrião | O que o executor aplica a si próprio |
+| --- | --- |
+| Linux | Uma lista de permissões de chamadas de sistema (seccomp) que o deixa pouco mais do que ler a sua entrada, escrever a sua saída, gerir a sua própria memória, ler relógios e terminar; sem novos privilégios e sem capacidades; sem core dumps; sem escrita de ficheiros, sem novos processos e no máximo três ficheiros abertos; 3 GiB de espaço de endereçamento; um limite rígido de tempo de processador. O Landlock é acrescentado onde o kernel o tiver. |
+| macOS | Um perfil de sandbox que nega por predefinição e que também recusa informação sobre processos, verificações de existência de ficheiros, informação sobre o sistema e o hardware e as chamadas de kernel relacionadas; sem core dumps, sem escrita de ficheiros e um limite rígido de tempo de processador. |
+| Windows | Um AppContainer novo para cada script, num job object que permite um processo, 3 GiB de memória e nenhuma interface de utilizador, com código dinâmico, processos filhos e chamadas win32k desativados. **Ainda não executado no Windows.** |
+
+O executor arranca sem variáveis de ambiente, sem ficheiros abertos além da sua entrada e saída, e sem credenciais. Tudo o que pode fazer fora da sua própria memória é pedir ao servidor que execute uma ferramenta, e o servidor executa essa chamada pelo mesmo filtro de modo, pelas [barreiras](/pt-PT/manual/conceitos/barreiras/) e pelas aprovações de uma chamada direta.
+
+O servidor verifica tudo isto ao arrancar: executa o autoteste do executor, que aplica o bloqueio, tenta ler e criar ficheiros, abrir uma ligação de rede e arrancar um processo (e mais em cada sistema), e executa scripts reais sob ele. Se alguma coisa não for recusada, o servidor não executa scripts nessa máquina: nenhuma execução recebe `repl`, e o servidor indica o motivo ao arrancar e na página de definições do modo de código. Um executor que não seja uma compilação de lançamento é recusado da mesma forma. Não existe qualquer alternativa mais fraca.
+
+O executor também indica em que ponto do script foi feita cada chamada, para que a conversa possa mostrar a estrutura do script. O servidor verifica essa posição contra o script e usa-a apenas para apresentação: nunca decide se uma chamada é permitida, e não entra na auditoria das barreiras.
+
+O que isto não cobre: um script pode ainda fazer tudo o que as ferramentas da execução permitem, porque as suas chamadas de ferramentas são chamadas reais; no macOS pode ainda descobrir se um identificador de processo existe; e uma falha no motor JavaScript ou no kernel é contida pelo bloqueio, não excluída por ele.
+
 ## As confirmações vêm das barreiras, não da sandbox
 
 A sandbox não tem caminho de aprovação. Lança, executa, emite eventos e desmonta;
@@ -309,6 +329,7 @@ que indica o que pode ser verificado manualmente.
 
 ## Conceitos relacionados
 
+- [Modo de código](/pt-PT/manual/conceitos/modo-de-codigo/): scripts que chamam ferramentas, e o executor que os confina
 - [Rigs e recintos](/pt-PT/manual/conceitos/rigs/): o passo acima da sandbox — quando o trabalho precisa de uma máquina descartável inteira com uma fronteira de kernel, e não de um processo envolvido
 - [Barreiras](/pt-PT/manual/conceitos/barreiras/): a camada de políticas acima do piso do sistema operativo e de onde vêm realmente as aprovações
 - [Ciclo de vida do despacho de agentes](/pt-PT/manual/conceitos/ciclo-de-vida-do-despacho/): onde o isolamento se encaixa no fluxo de despacho

@@ -39,9 +39,13 @@ String liveStatusLabel(
   List<TranscriptSegment> segments,
   AppLocalizations l10n,
 ) {
-  final status = statusLineFor(segments);
+  final status = _liveStatusOf(segments);
   if (status == null) {
     return l10n.transcriptThinking;
+  }
+  if (status.kind == TranscriptStatusKind.runningTool &&
+      isReplTool(status.toolName ?? '')) {
+    return l10n.transcriptStatusRunningScript;
   }
   return switch (status.kind) {
     TranscriptStatusKind.thinking => l10n.transcriptThinking,
@@ -55,4 +59,28 @@ String liveStatusLabel(
       resolveToolDisplayName(status.toolName ?? ''),
     ),
   };
+}
+
+/// The status of a live turn, reading through a running script.
+///
+/// A script's calls follow its own segment, so while it runs the newest
+/// segment is often one of its calls that has already finished. That is not
+/// the turn going idle: the newest call still running reports what the agent
+/// is doing, and between calls the script itself does.
+TranscriptStatus? _liveStatusOf(List<TranscriptSegment> segments) {
+  if (segments.isEmpty) {
+    return null;
+  }
+  final last = segments.last;
+  if (last is ToolSegment &&
+      last.isNested &&
+      last.status != ToolSegmentStatus.running) {
+    for (var i = segments.length - 1; i >= 0; i--) {
+      final seg = segments[i];
+      if (seg is ToolSegment && seg.status == ToolSegmentStatus.running) {
+        return statusLineFor([seg]);
+      }
+    }
+  }
+  return statusLineFor(segments);
 }

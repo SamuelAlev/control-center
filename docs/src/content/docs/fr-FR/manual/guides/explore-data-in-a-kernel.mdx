@@ -1,8 +1,8 @@
 ---
 title: Explorer des données dans un noyau persistant
-description: Donnez à un agent un interpréteur Python ou JavaScript qui conserve ses variables d’un appel à l’autre, dessine des graphiques directement dans le chat et peut appeler vos propres outils depuis une cellule.
+description: Donnez à un agent un interpréteur Python ou JavaScript qui conserve ses variables d’un appel à l’autre et dessine des graphiques directement dans le chat.
 slug: fr-FR/manuel/guides/explorer-donnees-noyau
-sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
+sourceHash: 8fcd77019bfae5088223822a12ef91c8a6879c5d
 ---
 
 Ce guide vous montre comment faire charger une ressource coûteuse une seule fois par un agent, puis lui poser plusieurs questions à son sujet, plutôt que de payer ce chargement à chaque question.
@@ -62,22 +62,9 @@ Ils sont réécrits en code ordinaire plutôt que de provoquer une erreur :
 
 L’éviction du cache de `%pip` est celle qui compte : installer dans un interpréteur actif n’a aucun effet sur un module déjà importé, si bien que sans elle, la version que vous venez d’installer n’est pas celle qui s’exécute.
 
-## Appeler vos propres outils depuis une cellule
+## Appeler des outils depuis du code
 
-```python
-paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
-for path in paths.splitlines()[:100]:
-    contents = tool("read", {"path": path})
-    ...
-```
-
-`tool(name, args)` re-entre dans le registre d’outils de l’agent lui-même. Une cellule peut donc se ramifier sur une centaine de fichiers, ou déléguer via `task`, sans que le modèle dépense un tour par élément.
-
-:::caution[La passerelle ne contourne pas vos garde-fous]
-Un appel via la passerelle se résout contre le **même** registre d’outils qu’un appel émis par le modèle : la politique `ActionClass`, les invites d’approbation et chaque wrapper s’appliquent à l’identique. Une passerelle qui irait au-delà du registre serait un trou exactement de la forme « écrivez un one-liner Python ».
-:::
-
-Un appel via la passerelle **suspend le délai d’expiration de la cellule** tant qu’il est en cours. Le budget mesure l’inactivité, pas le temps d’horloge — une cellule qui se ramifie vers des sous-agents et attend quatre minutes n’est pas bloquée, et la tuer en pleine ramification perdrait tout l’état du noyau.
+Une cellule ne peut pas appeler les outils de l’agent. Pour boucler sur des outils en code, l’agent écrit à la place un script [`repl`](/fr-FR/manuel/concepts/mode-code/). Un script ne peut pas non plus appeler `eval` : l’agent l’appelle directement.
 
 ## Repartir de zéro
 

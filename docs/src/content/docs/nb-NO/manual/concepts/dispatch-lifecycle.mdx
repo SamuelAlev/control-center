@@ -2,23 +2,33 @@
 title: Livssyklus for agentutsending
 description: Hva som skjer fra en melding kommer inn til en kjøringslogg lukkes — sammensetting av prompten, worktrees, identitet, hva som begrenser en kjøring, og hvordan resultatet registreres ærlig.
 slug: nb-NO/handbok/konsepter/livssyklus-agentutsending
-sourceHash: 13e7fe3ed86c8659c5fec818e0b89737241e2b9d
+sourceHash: 07c46e22e30f1a10e64b7fb949c78bdae9747efa
 ---
 
 ## Hva en utsending er
 
 En utsending er én kjøring av én agent, i én samtale, på én adapter. Alt med den skjer på `cc_server`: klienten sender en melding og ser deretter på at hendelser strømmer tilbake. Det finnes ingen utsendingsbane i noen klient.
 
-Agenter vekkes av seks årsaker, som kjøringen bærer med seg som sin **vekkekontekst**, slik at agenten vet _hvorfor_ den er våken:
+Hver kjøring har en **vekkekontekst** som sier _hvorfor_ agenten er våken. En kjøring du starter ved å sende en melding er `userMessage`; hver kjøring serveren starter av seg selv begynner som en varig **vekking** i arbeidsområdets kø og bærer vekkingens årsak (se [Tidsplaner og vekkinger](/nb-NO/handbok/slik-gjor-du/tidsplaner-vekkinger/)):
 
 | Vekkingsårsak    | Utløser                                                      |
-| ---------------- | ------------------------------------------------------------ |
-| `userMessage`    | Noen sendte en melding i et område, eller nevnte agenten     |
+| -------------------- | ------- |
+| `userMessage`    | Noen sendte en melding i et område                           |
 | `assignment`     | En sak ble tildelt agenten                                   |
 | `pipelineStep`   | Et pipeline-steg sendte den ut                               |
-| `childCompleted` | En underordnet sak ble fullført                              |
-| `followUp`       | Et planlagt hjerteslag for oppfølging                        |
-| `recovery`       | Gjenopprettingsbanen sendte ut på nytt etter en feil         |
+| `childCompleted` | En delegert eller underordnet sak ble fullført, eller et teammedlems kjøring ble avsluttet |
+| `schedule` | En tidsplan eller løkke ble utløst |
+| `watch` | Noe en overvåking lytter etter, har skjedd (sjekker på en pull request, en gjennomgang, et miljø, en sak eller en pipeline-kjøring) |
+| `goalContinuation` | Neste segment for et mål |
+| `goalVerification` | Et måls sjekker eller gjennomgang fant at det ikke er ferdig ennå |
+| `goalReview` | Den skrivebeskyttede gjennomgangen av et måls påstand om at det er ferdig |
+| `peerMessage` | En annen agent sendte den en melding eller et spørsmål, eller den ble @-nevnt, eller den er områdets kontrollagent |
+| `peerReply`      | Svaret på et spørsmål den stilte til en annen agent          |
+| `limitReset` | En leverandørs bruksgrense som den stoppet ved, er blitt nullstilt |
+| `improvementReview` | Gjennomgangen etter et verifisert mål, eller `/refine` |
+| `recovery` | Arbeid som en serveromstart eller en feil avbrøt |
+
+En vekking leveres inn i en levende kjøring av agenten i den samtalen når kjøringen tar imot input og handler for samme person; ellers venter den på at den kjøringen avsluttes og starter sin egen. Skråstrekkommandoer leses bare i en melding en person skrev; i en annen kjøring er den samme teksten en vanlig melding.
 
 Vekkekonteksten bærer med seg id-ene som hører til årsaken — sak, område, melding, pipeline-kjøring — og de injiseres i agentens miljø og prompt.
 
@@ -104,17 +114,17 @@ Det finnes bevisst **ingen turgrense noe sted**. Et hardt iterasjonstall dreper 
 - **modellen stopper** av seg selv;
 - **et menneske stopper den**, eller tar over samtalen (som setter det innebygde harnesset på pause ved neste rene turgrense — en Claude Code-kjøring, som ikke har noen trygg grense, stoppes i stedet);
 - **stillhetsvakthunden slår til.** Ingen utdata i terskelperioden, og økten avsluttes med en `silentRun`-feil. Standard er 15 minutter, som synker til 10 i de leseorienterte modusene (gjennomgang og plan); en agent kan overstyre den mellom 1 og 240 minutter. Vakthunden armeres når en underprosess rapporterer PID-en sin, så den dekker Claude Code-CLI-en — **ikke** det innebygde harnesset, som ikke starter noen prosess;
-- **et kostnadstak slår inn** — men bare for autonome kommandoer.
+- **et kostnadstak slår inn** — på målsegmenter og gjennomganger, tidsplan- og overvåkingskjøringer, forbedringsgjennomgangen og pipeline-kjøringer under en orkestrering med tak.
 
 Vakten mot gjentakelsesløkker er ikke en terminator: tre identiske verktøykall på rad, og løkken _styrer_ agenten til å bytte tilnærming.
 
 :::note[En vanlig tur har ingen kostnadsgrense]
-Kostnadsvakten i økten er bare koblet inn for `/goal` og `/loop`; alle andre kjøringer sender ikke inn noe budsjett i det hele tatt. For disse kommandoene kan ett uovervåket segment brenne 500 cent ($5.00) som standard, med en myk styring ved 80 % som ber agenten avslutte ryddig før den harde stoppen, og et varig mål-budsjett på 5000 cent ($50.00) på tvers av segmenter. En eksplisitt `/goal --budget` overskrides aldri med et helt segment.
+En kjøring du starter med en melding har ingen budsjettgrense. Et målsegment kan bruke 5 dollar, eller det som er igjen av målets budsjett (50 dollar som standard) hvis det er mindre; en måls gjennomgang 2 dollar; en kjøring en tidsplan eller overvåking startet 5 dollar; forbedringsgjennomgangen 1 dollar. Ved 90 % styrer det innebygde harnesset og Claude Code agenten til å avslutte pent før den harde stoppen; en ACP-agent avbrytes ved taket. Se [Administrer kostnader](/nb-NO/handbok/slik-gjor-du/administrer-kostnader/#sett-et-tak-på-en-autonom-kjøring).
 :::
 
 Samlet sett har en vanlig interaktiv tur på det innebygde harnesset ingen turgrense, ingen kostnadsgrense og ingen stillhetsvakthund. Den avsluttes når modellen stopper, eller når du stopper den. Det er en bevisst avveining — alternativene dreper alt legitimt langt arbeid — men det betyr at en uovervåket interaktiv kjøring ikke begrenses av annet enn modellens egen dømmekraft.
 
-Midt i en kjøring settes en melding som sendes til en kjørende agent, i kø som **styring** og tømmes ved neste turgrense, så du kan dytte på en kjøring uten å drepe den. Styring, pause, underagenter og fullføringskontrakten er funksjoner i det innebygde harnesset; Claude Code har ingen av dem.
+Midt i en kjøring settes en melding som sendes til en kjørende agent, i kø som **styring** og tømmes ved neste turgrense, så du kan dytte på en kjøring uten å drepe den. En skrivebeskyttet kjøring, som et måls gjennomgang, tar ingen melding mens den kjører, og styring av en kjøring som arbeider for noen andre krever skrivetilgang til områdets repositorier. Styring, pause, underagenter og fullføringskontrakten er funksjoner i det innebygde harnesset; Claude Code har ingen av dem.
 
 ## Hvordan en kjøring registreres
 
@@ -130,11 +140,11 @@ Når en kjøring avsluttes uten leveransen modusen krevde — en plan-modus-kjø
 Dette er bevisst. Å vippe statusen ville flytte saks- og pipeline-tilstandsmaskiner som ikke har noe med den manglende artefakten å gjøre. Det betyr også at «status: completed» alene aldri er nok til å konkludere med at en kjøring lyktes — les sammendraget.
 :::
 
-Å lukke kjøringen publiserer `AgentRunCompleted`, og mye henger på den: oppsamling av pipeline-kostnader, gjenopptakelse av et pipeline-steg som ventet på kjøringen, fullføring av den bakenforliggende saken, kartlegging av en orkestrering til en sluttilstand, målvokterens beslutning om å fortsette eller stoppe, kontrollørrollen og budsjettvurderingen etter kjøringen. Tilstedeværelseslisten følger separat, ved å se på de nyeste kjøringsloggene i stedet for hendelsen. «Agent ferdig»-varselet står ikke på den listen: hendelsen utløses når prosessstrømmen slutter, før svaret er skrevet, så varselet er turens `MessageReceived`, som publiseres når meldingen er lagret.
+Når den endelige tilstanden til kjøringen er skrevet, publiserer serveren `AgentRunSettled` nøyaktig én gang, med årsaken til at kjøringen endte (`completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` eller `serverStopped`), og mye henger på den: oppsamling av pipeline-kostnader, gjenopptakelse av et pipeline-steg som ventet på kjøringen, fullføring av den bakenforliggende saken, kartlegging av en orkestrering til en sluttilstand, målvokterens beslutning om å fortsette eller stoppe, svaret på et spørsmål en annen agent stilte, en selvstyrt løkkes neste kjøring, pausen ved bruksgrensen, kontrollagentrollen og budsjettvurderingen etter kjøringen. En kjøring som en serverstopp avbrøt (`serverStopped`) behandles aldri som en feil; arbeidet fortsetter etter omstarten. `AgentRunCompleted` publiseres fortsatt, tidligere, kun for pull request-broen og analyse. Tilstedeværelseslisten følger separat, ved å se på de nyeste kjøringsloggene i stedet for hendelsen. «Agent ferdig»-varselet står ikke på den listen: hendelsen utløses når prosessstrømmen slutter, før svaret er skrevet, så varselet er turens `MessageReceived`, som publiseres når meldingen er lagret.
 
 ## Budsjetter, i etterkant
 
-Budsjetthåndheving er en _reaksjon_, ikke en port. Når en kjøring fullføres, sammenligner evaluatoren agentens forbruk så langt i måneden med det effektive taket (en koblet budsjettpolicy hvis det finnes en, ellers agentens eget månedstall; null betyr ubegrenset). Å krysse den myke terskelen registrerer en varselhendelse; å bruke opp budsjettet registrerer en hard hendelse og vipper agentens livssyklusstatus til `paused` i organisasjonskartet. Utsending godtar fortsatt arbeid fra den agenten. En `BudgetThresholdCrossed`-pipeline-utløser kan starte oppfølgingsarbeid fra den samme hendelsen.
+Budsjetthåndheving er en _reaksjon_, ikke en port. Når en kjøring fullføres, sammenligner evaluatoren agentens forbruk så langt i måneden med det effektive taket (en koblet budsjettpolicy hvis det finnes en, ellers agentens eget månedstall; null betyr ubegrenset). Å krysse den myke terskelen registrerer en varselhendelse; å bruke opp budsjettet registrerer en hard hendelse og vipper agentens livssyklusstatus til `paused` i organisasjonskartet. Utsending godtar fortsatt arbeid du sender den agenten, men vekkinger for den (tidsplaner, målsegmenter, svar) venter mens den er pauset, i høyst 7 dager. En `BudgetThresholdCrossed`-pipeline-utløser kan starte oppfølgingsarbeid fra den samme hendelsen.
 
 ## Forsøksavstamning
 
@@ -147,4 +157,5 @@ Hver kjøringslogg kan bære forsøksavstamning — en foreldrekjørings-id, en 
 - [Tillatelsesregler](/nb-NO/handbok/konsepter/tillatelsesregler/): effektklassepolicyen hvert bevoktede kall går gjennom
 - [Sandkasse og sikkerhet](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/): hele historien om isolasjon
 - [Flerbruker](/nb-NO/handbok/konsepter/flerbruker/): styring, overtakelse og autonomibryteren
-- [Domenehendelser](/nb-NO/handbok/konsepter/domenehendelser/): hva `AgentRunCompleted` setter i gang
+- [Domenehendelser](/nb-NO/handbok/konsepter/domenehendelser/): hva `AgentRunSettled` setter i gang
+- [Forfølg et mål](/nb-NO/handbok/slik-gjor-du/forfolg-et-mal/) og [Tidsplaner og vekkinger](/nb-NO/handbok/slik-gjor-du/tidsplaner-vekkinger/): kjøringer serveren starter av seg selv

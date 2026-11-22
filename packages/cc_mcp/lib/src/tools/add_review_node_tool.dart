@@ -27,6 +27,11 @@ class AddReviewNodeTool extends McpTool {
   String get name => 'add_review_node';
 
   @override
+  String get resultNote =>
+      '{message_id, space_id, node_type, priority, status: string, '
+      'confidence: number, severity?, category?, effort?: string}.';
+
+  @override
   String get description =>
       'Adds a structured review finding to a review space. The finding '
       'appears as a review node in the space with metadata for file path, '

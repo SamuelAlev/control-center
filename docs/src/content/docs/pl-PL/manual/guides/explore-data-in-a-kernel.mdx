@@ -1,8 +1,8 @@
 ---
 title: Eksploruj dane w trwałym kernelu
-description: Daj agentowi interpreter Pythona lub JavaScriptu, który zachowuje zmienne między wywołaniami, rysuje wykresy w czacie i potrafi wywoływać Twoje własne narzędzia z wnętrza komórki.
+description: Daj agentowi interpreter Pythona lub JavaScriptu, który zachowuje zmienne między wywołaniami i rysuje wykresy w czacie.
 slug: pl-PL/podrecznik/poradniki/eksploracja-danych-w-kernelu
-sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
+sourceHash: 8fcd77019bfae5088223822a12ef91c8a6879c5d
 ---
 
 Ten poradnik pokazuje, jak sprawić, by agent wczytał coś kosztownego raz, a potem zadał temu kilka pytań, zamiast płacić za wczytanie przy każdym pytaniu.
@@ -62,22 +62,9 @@ Są one przepisywane na zwykły kod, zamiast kończyć się błędem:
 
 To właśnie usunięcie z pamięci podręcznej przy `%pip` ma znaczenie: instalacja w działającym interpreterze nic nie daje modułowi, który został już zaimportowany, więc bez tego wersja, którą właśnie zainstalowano, nie jest tą działającą.
 
-## Wywoływanie własnych narzędzi z wnętrza komórki
+## Wywoływanie narzędzi z kodu
 
-```python
-paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
-for path in paths.splitlines()[:100]:
-    contents = tool("read", {"path": path})
-    ...
-```
-
-`tool(name, args)` wchodzi z powrotem do rejestru narzędzi samego agenta. Dzięki temu komórka może rozdzielić pracę na ponad sto plików albo delegować przez `task`, bez wydawania przez model tury na każdy element.
-
-:::caution[Most nie omija Twoich guardraili]
-Wywołanie przez most jest rozstrzygane względem **tego samego** rejestru narzędzi, co wywołanie zlecone przez model, więc polityka `ActionClass`, prośby o zatwierdzenie i każde opakowanie działają identycznie. Most, który sięgnąłby poza rejestr, byłby dziurą w kształcie dokładnie takim jak „napisz jednolinijkowiec w Pythonie”.
-:::
-
-Wywołanie przez most **wstrzymuje limit czasu komórki** na czas swojego trwania. Budżet mierzy bezczynność, a nie czas zegarowy — komórka, która rozdziela pracę na subagentów i czeka cztery minuty, nie zawiesiła się, a zabicie jej w połowie rozdzielania utraciłoby stan całego kernela.
+Komórka nie może wywoływać narzędzi agenta. Aby w kodzie przejść po narzędziach w pętli, agent pisze zamiast tego skrypt [`repl`](/pl-PL/podrecznik/koncepcje/tryb-kodu/). Skrypt też nie może wywołać `eval`: agent wywołuje je bezpośrednio.
 
 ## Zaczynanie od nowa
 

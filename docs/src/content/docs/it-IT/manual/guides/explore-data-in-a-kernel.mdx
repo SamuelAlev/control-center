@@ -1,8 +1,8 @@
 ---
 title: Esplora i dati in un kernel persistente
-description: Assegna a un agente un interprete Python o JavaScript che conserva le sue variabili tra una chiamata e l'altra, disegna grafici nella chat e può chiamare i tuoi strumenti dall'interno di una cella.
+description: Assegna a un agente un interprete Python o JavaScript che conserva le sue variabili tra una chiamata e l'altra e disegna grafici nella chat.
 slug: it-IT/manuale/guide/esplora-dati-in-kernel
-sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
+sourceHash: 8fcd77019bfae5088223822a12ef91c8a6879c5d
 ---
 
 Questa guida mostra come far caricare a un agente qualcosa di costoso una volta sola e poi rivolgergli diverse domande, invece di pagare il caricamento a ogni domanda.
@@ -62,22 +62,9 @@ Vengono riscritti in codice semplice anziché generare un errore:
 
 L'eliminazione della cache di `%pip` è quella che conta: installare in un interprete già avviato non fa nulla per un modulo già importato, quindi senza di essa la versione appena installata non è quella in esecuzione.
 
-## Chiamare i tuoi strumenti dall'interno di una cella
+## Chiamare strumenti dal codice
 
-```python
-paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
-for path in paths.splitlines()[:100]:
-    contents = tool("read", {"path": path})
-    ...
-```
-
-`tool(name, args)` rientra nel registro degli strumenti dell'agente stesso. Questo significa che una cella può diramarsi su un centinaio di file, o delegare tramite `task`, senza che il modello spenda un turno per ogni elemento.
-
-:::caution[Il bridge non aggira i tuoi guardrail]
-Una chiamata via bridge viene risolta rispetto allo **stesso** registro degli strumenti di una chiamata emessa dal modello, quindi la policy di `ActionClass`, i prompt di approvazione e ogni wrapper si applicano allo stesso modo. Un bridge che scavalcase il registro sarebbe un buco della forma esatta di «scrivi un one-liner Python».
-:::
-
-Una chiamata via bridge **sospende il timeout della cella** finché è in corso. Il budget misura l'inattività, non il tempo trascorso — una cella che si dirama verso sottoagenti e attende quattro minuti non è bloccata, e ucciderla a metà diramazione perderebbe l'intero stato del kernel.
+Una cella non può chiamare gli strumenti dell'agente. Per ciclare sugli strumenti dal codice, l'agente scrive invece uno script [`repl`](/it-IT/manuale/concetti/modalita-codice/). Anche `eval` non può essere chiamato da uno script: lo chiama direttamente l'agente.
 
 ## Ricominciare da capo
 

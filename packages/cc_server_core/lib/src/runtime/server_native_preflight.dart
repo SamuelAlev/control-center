@@ -1,6 +1,13 @@
+import 'dart:io';
+
 import 'package:cc_domain/core/domain/ports/media_render_port.dart'
     show MediaRenderException;
-import 'package:cc_infra/cc_infra.dart' show BundledMediaTools;
+import 'package:cc_infra/cc_infra.dart'
+    show
+        BundledCodeRunner,
+        BundledMediaTools,
+        CodeRunnerNotFoundException,
+        createHttpClient;
 import 'package:cc_natives/cc_natives.dart'
     show
         CcSaml,
@@ -18,9 +25,91 @@ import 'package:cc_natives/cc_natives.dart'
         samlLibraryBaseName,
         tryOpenFirst,
         watcherLibraryBaseName,
-        windowLibraryBaseName;
+        windowLibraryBaseName,
+        configureRigNatives,
+        initializeRhttp,
+        nativeLibDirEnvVar,
+        ptyLibraryEnvVar,
+        resolveInferenceLibraryPath,
+        samlLibraryEnvVar,
+        watcherLibraryEnvVar;
 import 'package:cc_server_core/src/native_preflight.dart';
+import 'package:cc_server_core/src/server_boot_refusal.dart';
 import 'package:path/path.dart' as p;
+
+/// Points the native loaders that resolve lazily (terminals, file watching,
+/// SAML, desktop app windows) at [dataDir], beside the bundle and
+/// `CC_NATIVE_LIB_DIR`, the same places the preflight looks.
+void configureServerNativeLoaders(String dataDir) {
+  // libccpty, libcc_watcher and libcc_saml are loose runtime dylibs that no
+  // plugin bundles into this pure-Dart binary; their default resolvers check
+  // only their own variable and the bundle layout, so a dev or headless
+  // deploy that drops them in the data dir would otherwise not find them.
+  Pty.libraryResolver = () => tryOpenFirst(
+    nativeLibraryCandidates(
+      ptyLibraryBaseName,
+      appSupportRoot: dataDir,
+      envVar: ptyLibraryEnvVar,
+    ),
+  );
+  // Required, with no `package:watcher` fallback: its full-tree scan is the
+  // startup freeze this native exists to remove.
+  NativeDirectoryWatcher.libraryResolver = () => tryOpenFirst(
+    nativeLibraryCandidates(
+      watcherLibraryBaseName,
+      appSupportRoot: dataDir,
+      envVar: watcherLibraryEnvVar,
+    ),
+  );
+  // Required with no degraded mode: a hand-rolled Dart XML-DSig is exactly
+  // where signature-wrapping vulnerabilities live.
+  CcSaml.libraryResolver = () => tryOpenFirst(
+    nativeLibraryCandidates(
+      samlLibraryBaseName,
+      appSupportRoot: dataDir,
+      envVar: samlLibraryEnvVar,
+    ),
+  );
+  // Desktop app windows: candidates rather than an opened library, since the
+  // calls block in the OS and each runs on a worker isolate.
+  configureRigNatives(dataDir: dataDir);
+}
+
+/// Refuses the boot ([NativeLibrariesMissing]) when a required native is
+/// missing, before anything opens, creates or migrates a database or writes
+/// in [dataDir]: a broken install never touches the owner's data. The serve
+/// path and every subcommand that opens a database call it first.
+///
+/// It loads the HTTP transport (idempotent), which the grammar check needs;
+/// without that library the grammars cannot be checked and are not listed.
+Future<void> refuseMissingNatives(String dataDir) async {
+  configureServerNativeLoaders(dataDir);
+  final grammarsRoot = p.join(dataDir, 'grammars');
+  final httpReady = resolveRhttpLibraryPath(appSupportRoot: dataDir) != null;
+  if (httpReady) {
+    await initializeRhttp(appSupportRoot: dataDir);
+  }
+  final missing = await missingRequiredNatives(
+    buildNativeRequirements(
+      grammarsRoot: grammarsRoot,
+      dataDir: dataDir,
+      inferenceLibPath: resolveInferenceLibraryPath(appSupportRoot: dataDir),
+      // Looked up without creating the grammars directory.
+      grammarManager: httpReady
+          ? GrammarManager(
+              httpClient: createHttpClient(),
+              grammarsDir: () async => Directory(grammarsRoot),
+            )
+          : null,
+    ),
+  );
+  if (missing.isNotEmpty) {
+    throw NativeLibrariesMissing(
+      missing,
+      searched: ['\$$nativeLibDirEnvVar', dataDir, grammarsRoot],
+    );
+  }
+}
 
 /// Builds the boot-time native-library requirement table.
 ///
@@ -39,7 +128,13 @@ List<NativeRequirement> buildNativeRequirements({
   required String grammarsRoot,
   required String dataDir,
   required String? inferenceLibPath,
-  required GrammarManager grammarManager,
+  // Null when the HTTP transport is missing: the grammars are not checked.
+  required GrammarManager? grammarManager,
+  // Where the code mode runner may be (`CC_CODEMODE_RUNNER`,
+  // `CC_NATIVE_LIB_DIR`) is read from this process's own environment only,
+  // never one merged with `.env` (`BundledCodeRunner.candidates`); a test
+  // gives its own.
+  Map<String, String>? processEnvironment,
 }) {
   bool Function() dylibProbe(String baseName, {String? envVar}) =>
       () =>
@@ -131,11 +226,33 @@ List<NativeRequirement> buildNativeRequirements({
         }
       },
     ),
-    for (final languageId in kLanguageByExtension.values.toSet())
-      nativeRequirement(
-        '${platformLibraryFileName('tree-sitter-$languageId')} '
-        '($languageId code graph grammar)',
-        () async => await grammarManager.resolve(languageId) != null,
-      ),
+    // Code mode's script runner, staged like the media helpers in
+    // `<bundle>/bin/codemode/`. Required even where it cannot confine itself:
+    // that is decided by its self-test after boot and only makes code mode
+    // unavailable, while a missing runner is a broken install. There is no
+    // fallback that runs a script in the server process.
+    nativeRequirement(
+      'codemode/${BundledCodeRunner.executableName} (code mode script runner '
+      'for the repl tool; stage with scripts/build_server.sh — searched '
+      '${BundledCodeRunner.candidates(appSupportRoot: dataDir, processEnvironment: processEnvironment).join(', ')})',
+      () async {
+        try {
+          BundledCodeRunner.locate(
+            appSupportRoot: dataDir,
+            processEnvironment: processEnvironment,
+          );
+          return true;
+        } on CodeRunnerNotFoundException {
+          return false;
+        }
+      },
+    ),
+    if (grammarManager != null)
+      for (final languageId in kLanguageByExtension.values.toSet())
+        nativeRequirement(
+          '${platformLibraryFileName('tree-sitter-$languageId')} '
+          '($languageId code graph grammar)',
+          () async => await grammarManager.resolve(languageId) != null,
+        ),
   ];
 }

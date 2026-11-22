@@ -2,7 +2,7 @@
 title: 流水线步骤
 description: 流水线步骤种类、步骤主体键、它们的配置以及步骤结果的参考。
 slug: zh-CN/手册/参考/流水线步骤
-sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
+sourceHash: 0d2876bc1ac359f4d2cfe94902bd5f924d19d5d5
 ---
 
 一个流水线步骤有两个彼此独立的维度：
@@ -58,6 +58,31 @@ sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
 | `extras.spaceId`           | 要在其中工作的已有对话（默认：一个隐藏的对话）                   |
 | `extras.conversationTitle` | 该空间内的具名流（可选）                                         |
 | `extras.mode`              | 在*打开*房间的节点（`messaging.createSpace`）上读取，而不是在这里。默认 `review`。 |
+
+### `goal.pursue`
+
+启动一个持久目标（见[推进目标](/zh-CN/手册/操作指南/推进目标/)），并挂起直到该目标结束。编辑器中它显示为 **Pursue a goal**。不属于上文的 25 个预置主体之一；与它们并列注册。
+
+| 配置字段 | 说明 |
+| ---------------------- | ----------- |
+| `agentId` | 执行目标的智能体（必填） |
+| `prompt` | 目标陈述；支持 `{{key}}` 替换（必填） |
+| `outputKey` | 结果的状态键（必填） |
+| `extras.spaceId` | 目标所在的空间（必填，与每个智能体步骤一样） |
+| `extras.budgetMicros` | 目标的预算，以微美元计，范围 1 到 1,000,000,000（必填） |
+| `extras.maxRuns` | 段数上限，范围 1 到 1,000（可选） |
+| `extras.deadlineHours` | 从步骤启动目标起计的小时数，范围 1 到 2,160（可选） |
+| `extras.contract` | 完成的标准：标准与检查（可选） |
+
+`outputKey` 下的结果为 `{summary, verdict}`，其中 `verdict` 是评审者的裁定，包括其条目与疑虑；若无则为 null。
+
+| 目标 | 步骤 |
+| -------- | -------- |
+| 已完成 | 完成 |
+| 失败、已取消或预算已用尽 | 失败（`retry` 和 `continueOnFail` 生效）；重试的步骤会启动一个新目标 |
+| 已暂停，包括等待人工评审 | 保持挂起，不受 24 小时存活检查扫描的影响 |
+
+由流水线运行启动的目标，其费用计入该运行的编排，包括其评审。当流水线运行在目标工作期间被取消、失败或完成时，该目标会被取消。
 
 ### `pipeline.condition`
 

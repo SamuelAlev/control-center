@@ -2,7 +2,7 @@
 title: Bangun tim agen
 description: Kelompokkan agen di bawah seorang pemimpin agar pekerjaan yang ditugaskan diteruskan melalui satu koordinator.
 slug: id-ID/panduan-pengguna/panduan-praktis/bangun-tim-agen
-sourceHash: fc5e2b8c8a49e398ff1b322fcfb25c4aed84bbb4
+sourceHash: 55add2d16bf90650b7d4cbda7aa78f0fdf1b72e2
 ---
 
 Panduan ini menunjukkan cara membuat tim, memberinya seorang pemimpin, dan
@@ -84,8 +84,7 @@ Saat sebuah tiket memang membawa penetapan tim:
    `record_team_activity` — `action` (didelegasikan), `no_action` (tidak ada lagi
    yang perlu dilakukan, yang menghentikan pemicuan ulang berikutnya) atau
    `failed`.
-3. Setiap run anggota yang selesai membangunkan kembali pemimpin, dibatasi oleh
-   penjaga tanpa tindakan.
+3. Run anggota yang dimulai pemimpin dengan `@mention` atau pesan akan membangunkan pemimpin lagi saat run itu berakhir, di percakapan tempat pemimpin dibangunkan, dibatasi oleh penjaga tanpa-tindakan. Pekerjaan yang diserahkan pemimpin dengan `delegate_task` membangunkannya saat tiket itu selesai, dan pertanyaan yang diajukannya dengan `ask_agent` membangunkannya dengan balasan (lihat [Agen bekerja bersama](/id-ID/panduan-pengguna/panduan-praktis/agen-bekerja-bersama/)).
 
 Node pipeline **Team dispatch** adalah titik masuk lainnya. Node ini menerima id
 tim, sebuah prompt, dan mode dispatch:

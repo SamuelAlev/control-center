@@ -1,154 +1,190 @@
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
+import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
+import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
-import 'package:cc_host/cc_host.dart' show RepoOp;
+import 'package:cc_domain/features/dispatch/domain/services/run_settlement.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
+import 'package:cc_host/cc_host.dart' show RepoOp, SessionCapability;
+import 'package:cc_infra/cc_infra.dart' show ProcessDetectionService;
 
-import 'package:cc_server_core/src/catalog/catalog_wire.dart';
-
-/// The partial `agent_run_log.*` writes a remote dispatch host makes while a
-/// run is live: cost, descendant cost, runtime classification and the guarded
-/// terminal write.
+/// A person's stop: one run (`agent_run_log.stop`) or every live run of one
+/// agent (`agents.killProcesses`), the one client write on a run log.
 ///
 /// A pack the catalog spreads, so `remote_rpc_catalog.dart` does not grow.
-/// Every handler sources `ctx.workspaceId!` (the bound session) and verifies
-/// the run belongs to it before writing.
+/// The handlers source `ctx.workspaceId!` (the bound session) and verify
+/// the run belongs to it before acting.
+///
+/// A stop follows the run's space ([requireRunLog], the gate of
+/// `agent_run_log.get`): a run in a space the caller may not read answers
+/// exactly like a missing one, and `agents.killProcesses` leaves it running
+/// and out of its count. A stop is recorded as a person's, which moves the
+/// goal, pipeline step or steering queue the run belongs to.
+///
+/// There is no other write here: no row, cost, descendant cost or runtime
+/// classification a client sends. Those are the server's own record, written
+/// where the run runs, because the settlement moves goals, pipeline steps,
+/// team leaders and steering queues. A run ends only where it runs: the
+/// session that ran it, the reaper, or a person's stop ([settleKilledRun]),
+/// whose end reason and cost are the server's, never the caller's.
+///
+/// Both are host work (the process lives in the server's process table),
+/// hence `fullClient`-only, and absent when the host wires no process
+/// detector: a client then cannot offer the action.
 List<RepoOp> buildAgentRunLogWriteOps(
-  AgentRunLogRepository agentRunLogRepository,
-) {
+  AgentRunLogRepository agentRunLogRepository, {
+  required AgentRepository agentRepository,
+  required ProcessDetectionService? processDetection,
+  required DomainEventBus? eventBus,
+  required Future<void> Function(
+    String workspaceId,
+    String userId,
+    AgentRunLog log,
+  )
+  requireRunLog,
+}) {
+  /// Whether [userId] may read [run] (its space, or none).
+  Future<bool> readable(
+    String workspaceId,
+    String userId,
+    AgentRunLog run,
+  ) async {
+    try {
+      await requireRunLog(workspaceId, userId, run);
+      return true;
+    } on AppException {
+      return false;
+    }
+  }
+
   // RepoOpDispatcher verifies registered/non-deleted workspace and member
-  // role before these handlers run. Verify run ownership as well: a run ID is
-  // not by itself an authorization boundary, even for partial writes.
-  Future<AgentRunLog> requireOwnedRun(String workspaceId, String runId) async {
+  // role before these handlers run. Verify run ownership and the run's space
+  // as well: a run ID is not by itself an authorization boundary.
+  Future<AgentRunLog> requireOwnedRun(
+    String workspaceId,
+    String userId,
+    String runId,
+  ) async {
+    const missing = NotFoundException('Agent run log not found');
     final run = await agentRunLogRepository.getById(workspaceId, runId);
     if (run == null) {
-      throw const NotFoundException('Agent run log not found');
+      throw missing;
     }
     if (run.workspaceId != workspaceId) {
       throw const WorkspaceMismatchException(
         'Agent run log belongs to a different workspace',
       );
     }
+    // A run in a space the caller may not read is not theirs to know of.
+    if (!await readable(workspaceId, userId, run)) {
+      throw missing;
+    }
     return run;
   }
 
+  final processes = processDetection;
+  if (processes == null) {
+    return const [];
+  }
   return [
+    // Stops one run's process and settles it as stopped by a person. A run
+    // that is not live, or has no process, answers `not_found`; the
+    // settlement is conditional, so a run that finished meanwhile keeps its
+    // own outcome.
     RepoOp(
-      name: 'agent_run_log.updateCost',
-      kind: RepoOpKind.mutate,
-      requiredArgs: ['run_id', 'cost'],
-      handler: (ctx) async {
-        final workspaceId = ctx.workspaceId!;
-        final runId = ctx.args['run_id'] as String;
-        await requireOwnedRun(workspaceId, runId);
-        final cost = runCostFromWire(
-          (ctx.args['cost'] as Map).cast<String, dynamic>(),
-        );
-        await agentRunLogRepository.updateCost(workspaceId, runId, cost);
-        return {'ok': true};
-      },
-    ),
-    RepoOp(
-      name: 'agent_run_log.addChildCostMicros',
-      kind: RepoOpKind.mutate,
-      requiredArgs: ['run_id', 'amount_micros'],
-      handler: (ctx) async {
-        final workspaceId = ctx.workspaceId!;
-        final runId = ctx.args['run_id'] as String;
-        await requireOwnedRun(workspaceId, runId);
-        final amount = ctx.args['amount_micros'];
-        if (amount is! int || amount < 0) {
-          throw const ValidationException(
-            'Descendant cost increment must be a nonnegative integer',
-          );
-        }
-        await agentRunLogRepository.addChildCostMicros(
-          workspaceId,
-          runId,
-          amount,
-        );
-        return {'ok': true};
-      },
-    ),
-    RepoOp(
-      name: 'agent_run_log.updateRuntime',
+      name: 'agent_run_log.stop',
       kind: RepoOpKind.mutate,
       requiredArgs: ['run_id'],
+      requiredCapability: SessionCapability.fullClient,
       handler: (ctx) async {
         final workspaceId = ctx.workspaceId!;
-        final runId = ctx.args['run_id'] as String;
-        await requireOwnedRun(workspaceId, runId);
-        final markRunning = ctx.args['mark_running'];
-        if (markRunning != null && markRunning is! bool) {
-          throw const ValidationException('mark_running must be a boolean');
+        final run = await requireOwnedRun(
+          workspaceId,
+          ctx.userId,
+          ctx.args['run_id'] as String,
+        );
+        final pid = run.pid;
+        if (!run.isRunning || pid == null) {
+          throw const NotFoundException('No live agent run to stop');
         }
-        final liveness = ctx.args['liveness'];
-        final errorFamily = ctx.args['error_family'];
-        final parsedLiveness = liveness == null
-            ? null
-            : RunLiveness.values.asNameMap()[liveness];
-        final parsedError = errorFamily == null
-            ? null
-            : RunErrorFamily.values.asNameMap()[errorFamily];
-        if ((liveness != null && parsedLiveness == null) ||
-            (errorFamily != null && parsedError == null)) {
-          throw const ValidationException('Invalid run classification');
-        }
-        final rawLastOutput = ctx.args['last_output_at'];
-        final lastOutput = rawLastOutput == null
-            ? null
-            : rawLastOutput is String
-            ? DateTime.tryParse(rawLastOutput)
-            : null;
-        if (rawLastOutput != null && lastOutput == null) {
-          throw const ValidationException('Invalid last_output_at timestamp');
-        }
-        return {
-          'updated': await agentRunLogRepository.updateRuntime(
-            workspaceId,
-            runId,
-            pid: (ctx.args['pid'] as num?)?.toInt(),
-            markRunning: markRunning == true,
-            contextSnapshotJson: ctx.args['context_snapshot_json'] as String?,
-            lastOutputAt: lastOutput,
-            liveness: parsedLiveness,
-            errorFamily: parsedError,
-            summary: ctx.args['summary'] as String?,
-            modelId: ctx.args['model_id'] as String?,
-            effort: ctx.args['effort'] as String?,
-            taskFamily: ctx.args['task_family'] as String?,
-          ),
-        };
+        await processes.stopRun(
+          pid,
+          mayStop: (runWorkspace) async => runWorkspace == workspaceId,
+        );
+        await settleKilledRun(
+          agentRunLogRepository,
+          eventBus,
+          run,
+          DateTime.now(),
+        );
+        return {'stopped': true};
       },
     ),
+    // Stops every OS process of one agent's live runs that the caller may
+    // read and settles them killed. A thin client that killed pids locally
+    // either no-op'd (remote server) or killed an unrelated recycled pid on
+    // its own machine, hence host work.
     RepoOp(
-      name: 'agent_run_log.completeIfActive',
+      name: 'agents.killProcesses',
       kind: RepoOpKind.mutate,
-      requiredArgs: ['log', 'write_cost'],
+      requiredArgs: ['agent_id'],
+      requiredCapability: SessionCapability.fullClient,
       handler: (ctx) async {
         final workspaceId = ctx.workspaceId!;
-        final completed = agentRunLogFromWire(
-          (ctx.args['log'] as Map).cast<String, dynamic>(),
-        );
-        if (completed.workspaceId != workspaceId) {
+        final agentId = ctx.args['agent_id'] as String;
+        final agent = await agentRepository.getById(workspaceId, agentId);
+        if (agent == null) {
+          throw const NotFoundException('Agent not found');
+        }
+        if (agent.workspaceId != workspaceId) {
           throw const WorkspaceMismatchException(
-            'Agent run log belongs to a different workspace',
+            'Agent belongs to a different workspace',
           );
         }
-        await requireOwnedRun(workspaceId, completed.id);
-        if (completed.completedAt == null ||
-            (completed.status != RunStatus.completed &&
-                completed.status != RunStatus.error)) {
-          throw const ValidationException(
-            'Terminal write requires a completed/error status and timestamp',
+        final logs = await agentRunLogRepository
+            .watchByAgent(workspaceId, agentId)
+            .first;
+        final killedPids = <int>{};
+        final now = DateTime.now();
+        for (final log in logs) {
+          final pid = log.pid;
+          if (!log.isRunning ||
+              pid == null ||
+              !await readable(workspaceId, ctx.userId, log)) {
+            continue;
+          }
+          await processes.stopRun(
+            pid,
+            mayStop: (runWorkspace) async => runWorkspace == workspaceId,
           );
+          killedPids.add(pid);
+          await settleKilledRun(agentRunLogRepository, eventBus, log, now);
         }
-        return {
-          'completed': await agentRunLogRepository.completeIfActive(
-            completed,
-            writeCost: ctx.args['write_cost'] as bool,
-          ),
-        };
+        // No second pass by name: detection lists only runs with a recorded
+        // pid, all covered above, and a name match reached other agents'
+        // runs in every workspace.
+        return {'killed': killedPids.length};
       },
     ),
   ];
 }
+
+/// Ends [log], a run a person stopped (`agent_run_log.stop`,
+/// `agents.killProcesses`), through the
+/// conditional terminal write every run end shares: a run that finished
+/// meanwhile keeps its outcome, and the run settles once, with the cost its
+/// row has recorded.
+Future<void> settleKilledRun(
+  AgentRunLogRepository runLogs,
+  DomainEventBus? eventBus,
+  AgentRunLog log,
+  DateTime at,
+) => RunSettlement(runLogs: runLogs, eventBus: eventBus).settle(
+  log.copyWith(
+    status: RunStatus.error,
+    completedAt: at,
+    summary: 'Killed by user',
+  ),
+  endReason: RunEndReason.stoppedByUser,
+  writeCost: false,
+);

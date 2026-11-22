@@ -162,11 +162,11 @@ extension _ScrollingMethods on _SpaceMessageFeedState {
     _newestWasStreaming = streaming;
   }
 
-  /// Stamp the user's read cursor for this space (debounced) — called when
-  /// pinned to the live edge so messages read down to the bottom are marked
-  /// seen. Debounced so a burst of streaming flushes coalesces into one write.
-  /// Carries the conversation, so the host also marks its message
-  /// notifications read.
+  /// Stamp the user's read cursor for this conversation (debounced) — called
+  /// when pinned to the live edge so messages read down to the bottom are
+  /// marked seen. Debounced so a burst of streaming flushes coalesces into one
+  /// write. The host also marks the conversation's message notifications
+  /// read.
   void _stampCursor() {
     final newest = _lastNewest?.id;
     if (newest == null || newest == _lastStampedNewestId) {
@@ -184,18 +184,17 @@ extension _ScrollingMethods on _SpaceMessageFeedState {
       // there is no router above — which is also what made this branch
       // untestable without pumping a full router.
       ref
-          .read(spaceReadRepositoryProvider)
-          .markSpaceRead(
+          .read(conversationReadRepositoryProvider)
+          .markConversationRead(
             ref.requireWorkspaceId(),
-            widget.spaceId,
+            widget.conversationId,
             ref.read(currentUserIdProvider) ?? '',
-            conversationId: widget.conversationId,
           );
     });
   }
 
   /// Advances the divider cutoff to [seenAt] — an arrival the reader witnessed.
-  /// A null frontier stays null: a never-opened space shows no divider at all,
+  /// A null frontier stays null: a never-read conversation shows no divider,
   /// and inventing one here would start drawing it.
   ///
   /// Rebuilds when the cutoff actually moves: the divider is derived from it in

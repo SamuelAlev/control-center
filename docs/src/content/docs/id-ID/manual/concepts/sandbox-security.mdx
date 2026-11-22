@@ -2,7 +2,7 @@
 title: Sandbox dan keamanan
 description: Apa yang sebenarnya membatasi agen di Control Center saat ini, sejauh mana sandbox OS menjangkau, dan batas mana yang tetap berlaku di host tanpa backend.
 slug: id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan
-sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
+sourceHash: 7644c97911f685ef5084875fb16f1006f21ea940
 ---
 
 :::note[Sejauh mana sandbox OS menjangkau dan tidak menjangkau]
@@ -56,6 +56,8 @@ Aturan yang sama berlaku untuk hal-hal kecil yang memulai proses untuk Anda:
 - **Pembantu cepat yang berjalan lewat CLI ACP**: judul percakapan, `/btw`, `/handoff`, dan `/goal`. Saat server men-sandbox agen, mereka berjalan di dalam sandbox, dalam sesinya sendiri. Di bawah `--sandbox off` mereka berjalan tanpa kurungan. Tanpa sandbox yang tersedia, mereka hanya berjalan untuk permintaan yang dipertanggungjawabkan kepada pemilik server; untuk orang lain mereka dilewati, sehingga tidak ada judul yang dibuat dan pertanyaan sampingan melaporkan bahwa Content synthesizer tidak memiliki runner yang berfungsi. Pembantu yang tidak memulai alat tidak terpengaruh.
 - **Golden test** sebuah pull request dalam pemeriksaan visual Review Studio mengikuti aturan yang sama.
 - **Proses alat dan `bash`** dalam sebuah run tidak pernah kembali ke host. Jika server diatur untuk men-sandbox agen tetapi tidak memiliki sandbox untuk diberikan kepada run, run itu ditolak.
+- **Pemeriksaan sebuah tujuan** berjalan dalam sandbox sekali pakai di atas worktree percakapan, dibatasi seperti `bash` milik agen. Tanpa sandbox, pemeriksaan tidak berjalan dan tujuan berhenti menunggu seseorang; di bawah `--sandbox off`, pemeriksaan berjalan seperti `bash` agen.
+- **Tinjauan sebuah tujuan** berjalan hanya-baca pada setiap adapter: hanya membaca, worktree dipasang hanya-baca, tanpa `bash`, tanpa subagen, tanpa web. Adapter yang tidak dapat menjaga run tetap hanya-baca (agen ACP) tidak dipakai sebagai peninjau.
 
 ## Apa yang benar-benar membatasi agen
 
@@ -308,6 +310,24 @@ di transkrip, bukan hanya di log. Telemetri ini hanya ada selama sandbox native
 benar-benar membungkus proses — di host tanpa backend tidak ada apa pun untuk
 diamati. Ini juga tidak berkaitan dengan pagar pengaman: pelanggaran berasal dari panggilan sistem yang ditolak, tidak pernah dari pencarian aturan.
 
+## Skrip dalam mode kode
+
+Skrip [mode kode](/id-ID/panduan-pengguna/konsep/mode-kode/) adalah kasus terpisah, dan sama sekali tidak bergantung pada sandbox agen. Skrip tidak pernah berjalan di dalam server dan tidak pernah berjalan di sandbox agen. Skrip berjalan di prosesnya sendiri, `cc_codemode`, sebuah program yang dikemas bersama server, yang mengunci dirinya sebelum membaca skrip dan melaporkan sejauh mana kuncinya berlaku. Server hanya mengirim skrip ketika kuncinya lengkap.
+
+| Host | Yang diterapkan runner pada dirinya sendiri |
+| --- | --- |
+| Linux | Filter panggilan sistem (seccomp) yang membiarkannya tidak jauh lebih dari membaca input, menulis output, mengelola memorinya sendiri, membaca jam, dan keluar; tanpa hak istimewa baru dan tanpa capabilities; tanpa core dump; tanpa penulisan berkas, tanpa proses baru, dan paling banyak tiga berkas terbuka; ruang alamat 3 GiB; batas waktu prosesor yang keras. Landlock ditambahkan di tempat kernelnya mendukungnya. |
+| macOS | Profil sandbox tolak-secara-default yang juga menolak informasi proses, pemeriksaan keberadaan berkas, informasi sistem dan perangkat keras, serta panggilan kernel terkait; tanpa core dump, tanpa penulisan berkas, dan dengan batas waktu prosesor yang keras. |
+| Windows | AppContainer baru untuk setiap skrip, dalam job yang hanya mengizinkan satu proses, 3 GiB memori, dan tanpa antarmuka pengguna, dengan kode dinamis, proses anak, dan panggilan win32k dinonaktifkan. **Belum diuji di Windows.** |
+
+Runner dimulai tanpa variabel lingkungan, tanpa berkas terbuka selain input dan outputnya, dan tanpa kredensial. Satu-satunya yang dapat dilakukannya di luar memorinya sendiri adalah meminta server menjalankan alat, dan server menjalankan panggilan itu melalui filter mode, [pagar pengaman](/id-ID/panduan-pengguna/konsep/pagar-pengaman/), dan persetujuan yang sama seperti panggilan langsung.
+
+Server memeriksa semua ini saat mulai: ia menjalankan self-test runner, yang menerapkan kunci, mencoba membaca dan membuat berkas, membuka koneksi jaringan, dan memulai proses (serta lebih banyak lagi untuk setiap sistem), lalu menjalankan skrip sungguhan di bawahnya. Jika ada yang tidak ditolak, server tidak menjalankan skrip di mesin itu: tidak ada run yang mendapat `repl`, dan server menyebutkan alasannya saat mulai serta di halaman pengaturan mode kode. Runner yang bukan build rilis ditolak dengan cara yang sama. Tidak ada cadangan yang lebih lemah.
+
+Runner juga melaporkan di mana dalam skrip setiap panggilan dibuat, sehingga percakapan dapat menampilkan struktur skrip. Server memeriksa posisi itu terhadap skrip dan hanya menggunakannya untuk tampilan: ia tidak pernah menentukan apakah sebuah panggilan diizinkan, dan posisi itu tidak tercatat dalam audit pagar pengaman.
+
+Yang tidak tercakup: skrip tetap dapat melakukan apa pun yang diizinkan alat-alat run, karena panggilan alatnya adalah panggilan alat sungguhan; di macOS ia masih dapat mengetahui apakah sebuah id proses ada; dan cacat pada mesin JavaScript atau kernel dibatasi oleh kunci, tetapi tidak dicegah olehnya.
+
 ## Konfirmasi berasal dari pagar pengaman, bukan sandbox
 
 Sandbox tidak punya jalur persetujuan. Ia meluncurkan, mengeksekusi,
@@ -330,6 +350,7 @@ manual.
 
 ## Konsep terkait
 
+- [Mode kode](/id-ID/panduan-pengguna/konsep/mode-kode/): skrip yang memanggil alat, dan runner yang membatasinya
 - [Rigs dan lingkungan terisolasi](/id-ID/panduan-pengguna/konsep/rigs/): langkah di atas sandbox — ketika pekerjaan membutuhkan mesin sekali pakai utuh dengan batas kernel, bukan proses yang dibungkus
 - [Pagar pengaman](/id-ID/panduan-pengguna/konsep/pagar-pengaman/): lapisan kebijakan di atas dasar OS dan tempat persetujuan sebenarnya berasal
 - [Siklus hidup pengiriman agen](/id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman/): tempat isolasi masuk ke dalam alur pengiriman

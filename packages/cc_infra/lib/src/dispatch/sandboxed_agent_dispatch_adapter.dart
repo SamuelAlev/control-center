@@ -17,6 +17,8 @@ import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_handle.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
+import 'package:cc_domain/features/code_mode/domain/ports/code_execution_port.dart';
+import 'package:cc_domain/features/code_mode/domain/value_objects/code_mode_limits.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_dispatch_port.dart';
@@ -26,17 +28,19 @@ import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_id
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
 import 'package:cc_domain/features/model_routing/domain/entities/model_info.dart';
+import 'package:cc_domain/features/sandboxing/domain/host_execution_posture.dart';
 import 'package:cc_domain/features/sandboxing/domain/services/sandbox_exec_grant_service.dart';
 import 'package:cc_domain/features/settings/domain/entities/claude_session_settings.dart';
 import 'package:cc_domain/features/skills/domain/ports/skill_scan_port.dart';
 import 'package:cc_domain/features/subscriptions/subscriptions.dart';
-import 'package:cc_domain/features/todos/domain/repositories/todo_repository.dart';
-import 'package:cc_harness/context.dart' show ToolOutputStore;
+import 'package:cc_harness/context.dart'
+    show InFlightLines, ToolOutputStore;
 import 'package:cc_harness/loop.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_harness/tools.dart' show FileSearchPort;
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/blobs/blob_store.dart';
+import 'package:cc_infra/src/code_mode/run_script_past.dart';
 import 'package:cc_infra/src/dap/debug_session.dart';
 import 'package:cc_infra/src/dispatch/agent_run_gateway.dart';
 import 'package:cc_infra/src/dispatch/backend_registry.dart';
@@ -44,7 +48,9 @@ import 'package:cc_infra/src/dispatch/claude_idle_compactor.dart';
 import 'package:cc_infra/src/dispatch/dispatch_session.dart';
 import 'package:cc_infra/src/dispatch/host_execution_gate.dart';
 import 'package:cc_infra/src/dispatch/one_shot_confinement.dart';
+import 'package:cc_infra/src/dispatch/server_turn_hooks.dart';
 import 'package:cc_infra/src/dispatch/steering_session_view.dart';
+import 'package:cc_infra/src/dispatch/still_in_flight_hooks.dart';
 import 'package:cc_infra/src/eval/eval_kernel.dart';
 import 'package:cc_infra/src/harness/ast_parser_provider.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
@@ -72,7 +78,6 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
     required AgentRepository agentRepository,
     AgentRunLogRepository? runLogRepository,
     LlmCallRecordRepository? llmCallRecordRepository,
-    TodoRepository? todoRepository,
     RunTranscriptRecorder? runTranscriptRecorder,
     DomainEventBus? eventBus,
     Future<String?> Function(
@@ -113,6 +118,7 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
     AstParserProvider? astParsers,
     HarnessTranscriptStore? transcriptStore,
     ToolOutputStore? toolOutputStore,
+    ScriptPastSources? scriptPast,
     ClaudeNativeSessionStore? claudeSessionStore,
     ClaudeMcpDiscoveryCachePolicy claudeMcpDiscoveryCache =
         ClaudeMcpDiscoveryCachePolicy.disabled,
@@ -154,6 +160,8 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
     ProcessControlPort? processControl,
     FileSearchPort? fileSearch,
     bool toolDeferralEnabled = true,
+    CodeExecutionPort? codeExecutions,
+    Future<CodeModeLimits> Function(String workspaceId)? codeModeLimits,
   }) : _sandbox = sandbox,
        _deps = SandboxDispatchDeps(
          sandbox: sandbox,
@@ -161,7 +169,6 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
          agentRepo: agentRepository,
          runLogRepo: runLogRepository,
          llmCallRecordRepo: llmCallRecordRepository,
-         todoRepo: todoRepository,
          runTranscriptRecorder: runTranscriptRecorder,
          eventBus: eventBus,
          mcpConfigPathResolver: mcpConfigPathResolver,
@@ -181,6 +188,7 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
          astParsers: astParsers,
          transcriptStore: transcriptStore,
          toolOutputStore: toolOutputStore,
+         scriptPast: scriptPast,
          claudeSessionStore: claudeSessionStore,
          claudeMcpDiscoveryCache: claudeMcpDiscoveryCache,
          claudeContextWindowOf: claudeContextWindowOf,
@@ -207,6 +215,8 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
          processControl: processControl,
          fileSearch: fileSearch,
          toolDeferralEnabled: toolDeferralEnabled,
+         codeExecutions: codeExecutions,
+         codeModeLimits: codeModeLimits,
        );
 
   final SandboxPort _sandbox;
@@ -214,6 +224,15 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
 
   /// Where an ACP one-shot may run: the confinement this adapter's runs get.
   OneShotConfinement get oneShotConfinement => OneShotConfinement.of(_deps);
+
+  /// Server code asked before the owner's `stop` hook when a main harness
+  /// run would end its turn ([ServerTurnHooks]); the server adds handlers
+  /// once at boot.
+  WouldStopHandlers get wouldStopHandlers => _deps.wouldStopHandlers;
+
+  /// Where runs read the server's "Still in flight" state; the server sets
+  /// its hooks at boot.
+  StillInFlightHooks get stillInFlight => _deps.stillInFlight;
 
   /// The process-wide OS sandbox manager, or null when unavailable.
   final SandboxManager? sandboxManager;
@@ -282,6 +301,8 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
 
   @override
   DispatchHandle start({
+    required bool freshHistory,
+    required bool readOnly,
     required String cliName,
     required String prompt,
     required String workingDirectory,
@@ -297,7 +318,7 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
     String? runLogId,
     String? ticketId,
     String? requestedByUserId,
-    WakeContext? wakeContext,
+    required WakeContext wakeContext,
     Mode? mode,
     int? silenceTimeoutMinutes,
     Map<String, String>? environment,
@@ -365,7 +386,11 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
       ticketId: ticketId,
       requestedByUserId: requestedByUserId,
       wakeContext: wakeContext,
-      mode: mode ?? Mode.chat,
+      // A read-only run gets the review mode's capabilities whatever the
+      // space's mode; the prompt keeps the space's.
+      mode: readOnly ? Mode.review : mode ?? Mode.chat,
+      freshHistory: freshHistory,
+      readOnly: readOnly,
       silenceTimeoutMinutes: silenceTimeoutMinutes,
       effortLevel: effortLevel,
       contextWindowTokens: contextWindowTokens,
@@ -381,6 +406,7 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
       costCapMicros: costCapMicros,
     );
     session.onHarnessStarted = () => onSessionHarnessStarted?.call(session);
+    session.stillInFlightLines = _inFlightLinesOf(session);
     // Registered BEFORE the run starts, and removed only if the entry is still
     // this session: an id is unique, but the guard keeps a late completion
     // from ever evicting a sibling.
@@ -400,6 +426,37 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
       onStop: () => stopDispatch(dispatchId),
     );
   }
+
+  /// The server's lines of the "Still in flight" block for [session]'s
+  /// compactions, or null when the server set no source or the run has no
+  /// conversation to read them for.
+  InFlightLines? _inFlightLinesOf(DispatchSession session) {
+    final ws = session.workspaceId;
+    final agent = session.agentId;
+    final conversation = session.conversationId;
+    if (ws == null || agent == null || conversation == null) {
+      return null;
+    }
+    return () async {
+      final lines = _deps.stillInFlight.lines;
+      if (lines == null) {
+        return const <String>[];
+      }
+      return lines(
+        workspaceId: ws,
+        agentId: agent,
+        conversationId: conversation,
+        scripts: await session.runsScripts,
+      );
+    };
+  }
+
+  // The same test the session repeats before anything of a run starts
+  // (`_admittedOnHost`), asked before the run row exists.
+  @override
+  bool get readOnlyRunsAvailable =>
+      _deps.hostExecution.posture == HostExecutionPosture.sandboxed &&
+      _deps.sandboxManager != null;
 
   @override
   Future<void> stopDispatch(String dispatchId) async {
@@ -440,6 +497,7 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
   Future<bool> steerDispatch(
     String dispatchId,
     String message, {
+    required String? source,
     bool followUp = false,
   }) async {
     final session = _dispatchSessions[dispatchId];
@@ -451,8 +509,21 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
     // caller a message was delivered that no process will ever read.
     return session.steer(
       message,
+      source: source,
       channel: followUp ? SteeringChannel.followUp : SteeringChannel.steering,
     );
+  }
+
+  /// Adds [event] to the live run [dispatchId]'s event stream, as if the run
+  /// had produced it. Ignored when no such run is live (it ended, or the id is
+  /// not one of this adapter's).
+  ///
+  /// How a nested call a code mode script made through the MCP endpoint
+  /// reaches an external adapter's transcript: the MCP dispatcher knows the
+  /// run only by its dispatch id (the run's gateway grant), and an external
+  /// adapter's own stream carries only the calls it made itself.
+  void emitToRun(String dispatchId, AgentProcessEvent event) {
+    _dispatchSessions[dispatchId]?.addEvent(event);
   }
 
   /// Stops every live run: each child is killed, its credentials revoked and
@@ -464,7 +535,10 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
     _dispatchSessions.clear();
     await Future.wait([
       for (final s in sessions)
-        s.stop().catchError((Object e, StackTrace st) {
+        s.stop(summary: kRunStoppedByShutdownSummary).catchError((
+          Object e,
+          StackTrace st,
+        ) {
           CcInfraLog.error(
             'SandboxedAgentDispatchAdapter: stopping ${s.dispatchId} failed',
             e,
@@ -472,6 +546,26 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
           );
         }),
     ]);
+  }
+
+  /// Stops the live run [runLogId] of [workspaceId] on the server's
+  /// authority, for [summary]: it ends `serverStopped` (never a person's
+  /// stop, never a failure), its row settles and `AgentRunSettled` is
+  /// published once. False when none of this adapter's sessions runs it.
+  Future<bool> stopRunAsServer(
+    String workspaceId,
+    String runLogId, {
+    required String summary,
+  }) async {
+    final session = _dispatchSessions.values
+        .where((s) => s.workspaceId == workspaceId && s.runLogId == runLogId)
+        .firstOrNull;
+    if (session == null) {
+      return false;
+    }
+    _dispatchSessions.remove(session.dispatchId);
+    await session.stop(summary: summary);
+    return true;
   }
 
   /// Server shutdown: refuses new dispatches, stops every live run, then

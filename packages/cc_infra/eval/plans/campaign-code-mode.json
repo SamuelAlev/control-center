@@ -1,0 +1,50 @@
+{
+  "id": "campaign-code-mode",
+  "seed": 2004,
+  "arms": [
+    {
+      "id": "repl",
+      "axis": "baseline",
+      "codeMode": "repl",
+      "label": "repl with the eight additions (a server whose runner passed its self-test)"
+    },
+    {
+      "id": "without-repl",
+      "axis": "code_mode",
+      "codeMode": "without_repl",
+      "label": "No repl (a server without a runner)"
+    }
+  ],
+  "strata": [
+    {
+      "stratum": "cold",
+      "repetitions": 1
+    },
+    {
+      "stratum": "warm",
+      "repetitions": 1
+    }
+  ],
+  "randomizedOrder": true,
+  "hypothesis": "superiority",
+  "primaryOutcome": "verified_success",
+  "minTasks": 10,
+  "alpha": 0.05,
+  "maxCostRatio": 1.0,
+  "contextWindowTokens": 16000,
+  "caveats": [
+    {
+      "code": "additions_are_not_a_setting",
+      "message": "The eight code mode additions cannot be switched off: they are part of repl and of runner protocol 2, and this host refuses an older runner. The campaign compares repl, additions included, against no repl, which is the comparison plan section 14 names for the repl description (hybrid against off)."
+    },
+    {
+      "code": "runner_required",
+      "message": "The repl arm needs CC_CODEMODE_RUNNER naming a runner that passes its self-test; without one the builtin backend refuses the arm before anything is spent."
+    }
+  ],
+  "taskTags": [
+    "tool_heavy",
+    "context_pressure"
+  ],
+  "notes": "Plan section 20, campaign 4 (work package 9): code mode with and without repl on tool-heavy and context-pressure tasks; the 16,000-token window makes the long tasks fold, which is where history, outputs and storedKeys matter. Metrics: verified success, cost, tool calls, re-reads, repeated failed calls, compactions. The question is superiority on verified success of the arm without repl against repl: a superior verdict says drop repl, an inferior one says repl earns its keep. The margin and the cost ceiling are the owner's to change. minTasks is 10: with the 3 to 5 tasks its tag selects today the verdict reads \"No decision\" with the reason \"N tasks, 10 needed\", which is the honest state until the task set grows."
+}

@@ -328,6 +328,49 @@ void main() {
       incoming: incoming,
     );
 
+    test('a client save adds no orchestration step, an admin included; the '
+        "server's own steps may stay as generated", () async {
+      for (final body in [
+        BuiltInBodyKeys.orchestrationPersistDeliverable,
+        BuiltInBodyKeys.orchestrationMarkPhase,
+        BuiltInBodyKeys.orchestrationAwaitApproval,
+      ]) {
+        for (final who in [member, admin]) {
+          await expectLater(
+            upsert(who, template('mine', [BuiltInBodyKeys.humanGate, body])),
+            throwsA(isA<ValidationException>()),
+            reason: body,
+          );
+        }
+      }
+      expect(templates.rows.containsKey('mine'), isFalse);
+      // A template the approval generated: a toggle or a rename keeps its
+      // steps, and a new orchestration step is still refused.
+      final generated = template('orchestration_o-1', [
+        BuiltInBodyKeys.promptAgent,
+        BuiltInBodyKeys.orchestrationPersistDeliverable,
+      ]);
+      templates.rows['orchestration_o-1'] = generated;
+      final renamed = await upsert(admin, generated.copyWith(name: 'renamed'));
+      expect(renamed.name, 'renamed');
+      await expectLater(
+        upsert(
+          admin,
+          generated.copyWith(
+            steps: [
+              ...generated.steps,
+              PipelineStepDefinition(
+                id: 'again',
+                kind: StepKind.listen,
+                bodyKey: BuiltInBodyKeys.orchestrationMarkPhase,
+              ),
+            ],
+          ),
+        ),
+        throwsA(isA<ValidationException>()),
+      );
+    });
+
     test('a client cannot mark a template built-in (H6)', () async {
       final out = await upsert(
         member,

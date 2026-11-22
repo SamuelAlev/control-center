@@ -1,0 +1,63 @@
+---
+title: Agenți care lucrează împreună
+description: Cum își pun agenții întrebări unii altora, își predau munca și sunt treziți cu răspunsul, și unde vezi de la ce alt agent așteaptă un agent.
+slug: ro-RO/manual/ghiduri-practice/agenti-impreuna
+sourceHash: 36bb45cd480fb45d0380e8fd651845c59a7debcb
+---
+
+Agenții dintr-un spațiu de lucru își pot pune întrebări unii altora, pot consulta un specialist, pot cere o revizuire, pot trimite un mesaj sau pot delega un tichet. Nimic din toate acestea nu cere ca un agent să stea și să aștepte: un agent care a întrebat poate continua sau își poate încheia tura, iar în propria lui conversație este trezit când sosește răspunsul.
+
+## Să întrebi alt agent
+
+Un agent întreabă cu `ask_agent`, în una din două moduri:
+
+- **Așteaptă** (implicit): agentul se blochează până vine răspunsul, cel mult 600 de secunde implicit și 1.800 cel mult.
+- **În fundal**: apelul revine imediat și agentul continuă să lucreze.
+
+Oricum ar fi, întrebarea este înregistrată înainte de a fi livrată. Când răspunsul nu a revenit în apel, cel care a întrebat este trezit exact o dată, cu răspunsul, când se termină rularea celuilalt agent: cu răspuns, eșuată sau expirată după 24 de ore fără niciunul. Pe drum, poate auzi, de câte o dată fiecare, că celălalt agent a promis un răspuns, că așteaptă după o persoană sau că s-a oprit la o limită de utilizare. Niciunul dintre acestea nu contează drept răspuns.
+
+`consult_agent` (aduce cel mai potrivit specialist), `request_peer_review` (o a doua privire asupra unei constatări de revizuire) și `send_to_agent` (un mesaj într-un singur sens) trec prin aceeași coadă. `send_to_agent` spune dacă celălalt agent a fost trezit, dacă mesajul așteaptă după rularea lui curentă sau de ce a fost refuzat.
+
+Celălalt agent citește întrebarea ca informație de la un alt agent, niciodată ca instrucțiune pe care trebuie să o urmeze, și nu poate rula o comandă slash.
+
+## Predarea muncii
+
+- **Un tichet delegat** (`delegate_task`) trezește agentul care l-a delegat, în conversația din care a delegat, când tichetul se încheie.
+- **Rularea unui membru al echipei**, pornită de lider printr-un `@mention` sau un mesaj, îl trezește pe lider, în conversația din care l-a trezit pe membru, când se termină. (O întrebare primește răspuns prin răspunsul ei, iar un tichet delegat prin tichetul lui.)
+- **Un worker din fundal** în modul director (`/vibe`) își predă rezultatul directorului, care continuă să lucreze.
+- **Un `@mention`** al unui agent și verificatorul spațiului sunt livrate în același fel, ca treziri.
+
+Un agent poate vedea ce face alt agent fără să-l întrebe: `agent_activity` arată starea celuilalt agent, instrumentul lui curent și ultimele lui mesaje și nu trezește pe nimeni.
+
+## Limite
+
+Serverul le aplică, orice ar spune agenții:
+
+| Limită | Valoare |
+| --- | --- |
+| Cât de adânc poate merge un lanț de întrebări și predări | 3 |
+| Cicluri (un agent care întreabă un agent care, prin alții, așteaptă după el) | Refuzat |
+| Întrebări în așteptare per agent care întreabă | 10 |
+| Întrebări în așteptare per agent întrebat | 20 |
+| Aceeași întrebare, din nou, către același agent | Refuzată în 10 minute |
+| Mesaje între o pereche de agenți | 10 pe minut |
+| Lungimea unui mesaj sau a unui răspuns | 16.384 de caractere |
+
+Delegarea respectă și autonomia și bugetul agentului care întreabă: un agent nu poate preda muncă altuia cu mai multă autonomie sau mai mulți bani decât are el. Un mesaj pe care îl trimiți tu nu este limitat deloc în acest fel.
+
+Când agentul întrebat se oprește la limita de utilizare a unui provider, rularea lui așteaptă resetarea dacă resetarea vine înainte ca întrebarea să expire. Altfel, întrebarea eșuează imediat, iar cel care a întrebat află de ce.
+
+## Vezi de ce așteaptă un agent
+
+Într-o conversație, secțiunea **Întrebări** din panoul **General** listează întrebările pe care agenții le-au pus de acolo: către cine, ce fel (**Întrebare**, **Consultare** sau **Revizuire**), când și starea (**În așteptare**, **Cu răspuns**, **Eșuată**, **Expirată** sau **Anulată**), cu **A promis un răspuns** sau **În fundal** acolo unde se aplică. O întrebare eșuată spune de ce, de exemplu **Rularea sa s-a oprit la limita de utilizare a providerului.**
+
+Oricine are acces la spațiu poate **Anulează întrebarea**. Agentul care a întrebat nu este trezit, iar rularea celuilalt agent nu este oprită.
+
+Răspunsurile, mesajele și muncă terminată care așteaptă un agent apar și în banda de deasupra compozitorului, împreună cu ceilalți pe care îi are în așteptare (vezi [Programe și treziri](/ro-RO/manual/ghiduri-practice/programe-si-treziri/#vezi-ce-așteaptă)).
+
+## Vezi și
+
+- [Deleagă munca agenților](/ro-RO/manual/ghiduri-practice/deleaga-tichete/)
+- [Construiește o echipă de agenți](/ro-RO/manual/ghiduri-practice/construieste-echipa/)
+- [Dirijează workerii din fundal](/ro-RO/manual/ghiduri-practice/dirijeaza-workeri-din-fundal/)
+- [Instrumente MCP: mesagerie între agenți și delegare](/ro-RO/manual/referinta/instrumente-mcp/#mesagerie-între-agenți-și-delegare)

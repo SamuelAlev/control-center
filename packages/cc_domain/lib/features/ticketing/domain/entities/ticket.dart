@@ -35,6 +35,7 @@ class Ticket {
     this.createdById,
     this.assignedTeamId,
     this.delegatedByAgentId,
+    this.delegatedFromConversationId,
     this.delegationDepth = 0,
     this.delegationRootTicketId,
     this.spaceId,
@@ -128,6 +129,11 @@ class Ticket {
   /// Agent that delegated this ticket (for the delegation tree).
   final String? delegatedByAgentId;
 
+  /// The conversation the delegating agent delegated from: where the
+  /// completion wake goes when this ticket settles. Null for a ticket nobody
+  /// delegated from a conversation.
+  final String? delegatedFromConversationId;
+
   /// Depth of this ticket in the delegation chain (PRD 22 §3). A root ticket is
   /// `0`; each delegated child is `parent.delegationDepth + 1`. Enforced against
   /// the `DelegationGuards` max-depth cap at the delegation chokepoint.
@@ -200,6 +206,15 @@ class Ticket {
   /// Key to show in the UI — the provider key when synced, else the id.
   String get displayKey => externalKey ?? id;
 
+  /// This ticket as a client sent it, with the fields only the server writes
+  /// taken from [stored]: where the delegation's completion wake goes
+  /// ([delegatedFromConversationId]) is never set by a client update.
+  Ticket keepingServerOwnedFieldsOf(Ticket stored) => copyWith(
+    delegatedFromConversationId: stored.delegatedFromConversationId,
+    removeDelegatedFromConversationId:
+        stored.delegatedFromConversationId == null,
+  );
+
   /// Returns a copy with the given fields replaced. Pass-through for nullable
   /// fields uses the current value when the argument is omitted; to explicitly
   /// clear a nullable field, the repository writes the column directly.
@@ -230,6 +245,8 @@ class Ticket {
     bool removeAssignedTeamId = false,
     String? delegatedByAgentId,
     bool removeDelegatedByAgentId = false,
+    String? delegatedFromConversationId,
+    bool removeDelegatedFromConversationId = false,
     int? delegationDepth,
     String? delegationRootTicketId,
     bool removeDelegationRootTicketId = false,
@@ -284,6 +301,9 @@ class Ticket {
       delegatedByAgentId: removeDelegatedByAgentId
           ? null
           : (delegatedByAgentId ?? this.delegatedByAgentId),
+      delegatedFromConversationId: removeDelegatedFromConversationId
+          ? null
+          : (delegatedFromConversationId ?? this.delegatedFromConversationId),
       delegationDepth: delegationDepth ?? this.delegationDepth,
       delegationRootTicketId: removeDelegationRootTicketId
           ? null

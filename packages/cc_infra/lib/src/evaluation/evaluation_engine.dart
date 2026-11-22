@@ -3,9 +3,12 @@ import 'dart:io';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_attempt.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_backend_port.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_manifest.dart';
+import 'package:cc_domain/features/evals/domain/evaluation/evaluation_outcome.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_plan.dart';
+import 'package:cc_domain/features/evals/domain/evaluation/evaluation_schedule.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_task.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/paired_evaluation.dart';
+import 'package:cc_domain/features/evals/domain/evaluation/task_cluster_verdict.dart';
 import 'package:cc_domain/features/observability/domain/benchmark.dart';
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_infra/src/evaluation/backends/replay_evaluation_backend.dart';
@@ -159,12 +162,16 @@ class EvaluationEngine {
     final plan = config.plan;
     _validate(corpus, plan);
 
+    // The plan's own task set first (its tags), then the operator's
+    // one-task restriction inside it.
     final selectedTasks = [
-      for (final task in corpus.tasks)
+      for (final task in plan.selectTasks(corpus.tasks))
         if (config.onlyTaskId == null || task.id == config.onlyTaskId) task,
     ];
     if (selectedTasks.isEmpty) {
-      throw StateError('no corpus task matches "${config.onlyTaskId}"');
+      throw StateError(
+        'no task of plan "${plan.id}" matches "${config.onlyTaskId}"',
+      );
     }
 
     final replaying = config.backend is ReplayEvaluationBackend;
@@ -210,8 +217,8 @@ class EvaluationEngine {
               'Arms of a pair share one provider prompt cache: within a '
               'stratum the second run of a prompt starts warmer than the '
               'first, so a within-pair cost difference can reflect cache order '
-              'rather than the arm. The trial order is randomized per stratum '
-              'to spread this.',
+              'rather than the arm. Within each task the arm that runs first '
+              'alternates by repetition, to spread this.',
         ),
       if (plan.arms.length > 1)
         const EvaluationCaveat(
@@ -229,37 +236,48 @@ class EvaluationEngine {
     // surface: a later attempt that reports a different one is not comparable
     // with it, which a manifest pin alone cannot detect for a native CLI.
     final observedSurfaces = <String, String>{};
+    var stoppedAtInterim = false;
     if (!config.dryRun) {
-      for (final stratum in CacheStratum.values) {
-        final bucket = [
-          for (final trial in limited)
-            if (trial.stratum == stratum) trial,
-        ];
-        if (bucket.isEmpty) {
-          continue;
+      // The schedule's own order: task blocks (or, for a post-idle plan, the
+      // global stratum order), so a stop lands on a task boundary.
+      final judge = TaskClusterJudge(plan: plan, tasks: selectedTasks);
+      final interimAt = plan.interimAtTasks;
+      var idled = false;
+      var looked = false;
+      for (final trial in limited) {
+        if (config.cancelled?.call() ?? false) {
+          break;
         }
-        final spec = _stratumSpec(plan, stratum);
-        final idle = spec?.idleFor;
-        if (stratum == CacheStratum.postIdle &&
-            idle != null &&
-            idle > Duration.zero) {
-          _progress('idling ${idle.inMinutes} min before post-idle stratum');
-          await Future<void>.delayed(idle);
+        if (!idled && trial.stratum == CacheStratum.postIdle) {
+          idled = true;
+          final idle = _stratumSpec(plan, CacheStratum.postIdle)?.idleFor;
+          if (idle != null && idle > Duration.zero) {
+            _progress('idling ${idle.inMinutes} min before post-idle stratum');
+            await Future<void>.delayed(idle);
+          }
         }
-        for (final trial in bucket) {
-          if (config.cancelled?.call() ?? false) {
+        final attempt = await _runTrial(
+          trial: trial,
+          corpus: corpus,
+          plan: planned,
+          artifacts: artifacts,
+          extraUnknowns: extraUnknowns,
+          observedSurfaces: observedSurfaces,
+        );
+        attempts.add(attempt);
+        await config.onAttempt?.call(attempt);
+        if (!looked &&
+            interimAt != null &&
+            judge.completedTaskBlocks(attempts) >= interimAt) {
+          looked = true;
+          if (judge.interimStop(attempts)) {
+            stoppedAtInterim = true;
+            _progress(
+              'stopped at the interim look after $interimAt task(s): a '
+              'claim cleared p < ${TaskClusterJudge.interimLevel}',
+            );
             break;
           }
-          final attempt = await _runTrial(
-            trial: trial,
-            corpus: corpus,
-            plan: planned,
-            artifacts: artifacts,
-            extraUnknowns: extraUnknowns,
-            observedSurfaces: observedSurfaces,
-          );
-          attempts.add(attempt);
-          await config.onAttempt?.call(attempt);
         }
       }
     } else {
@@ -279,6 +297,7 @@ class EvaluationEngine {
       generatedAtEpochMs:
           (config.now?.call() ?? DateTime.now()).millisecondsSinceEpoch,
       extraUnknowns: extraUnknowns,
+      stoppedAtInterim: stoppedAtInterim,
     );
     await artifacts.writeReport(report);
     _progress(
@@ -429,9 +448,17 @@ class EvaluationEngine {
       throw StateError('evaluation cancelled');
     }
 
+    // A goal attempt's workspace sits where a space's checkout does
+    // (`<space>/repos/<checkout>`), so the product's check runner, change
+    // summary and fingerprint find it as the space's only checkout.
+    final space = effective.goalVerification == null
+        ? null
+        : Directory('${config.outDir}/work/goal-${trial.ordinal}');
     final workspace = await IsolatedTaskWorkspace.create(
       task: task,
-      parentDir: Directory('${config.outDir}/work'),
+      parentDir: space == null
+          ? Directory('${config.outDir}/work')
+          : Directory('${space.path}/repos'),
       fixtureRepoPath: _fixtureFor(task),
       keep: config.keepWorkspaces,
       controlled: config.controlled,
@@ -507,7 +534,7 @@ class EvaluationEngine {
         changed = const [];
         diff = '';
         attempt = attempt.copyWith(
-          completed: false,
+          end: EvaluationAttemptEnd.harnessFault,
           error: 'candidate artifacts failed safety checks',
         );
       }
@@ -570,6 +597,9 @@ class EvaluationEngine {
       return attempt;
     } finally {
       workspace.dispose();
+      if (space != null && !config.keepWorkspaces && space.existsSync()) {
+        space.deleteSync(recursive: true);
+      }
     }
   }
 
@@ -590,9 +620,18 @@ class EvaluationEngine {
         final replayed = backend.asReplay(recording, request);
         return failure == null
             ? replayed
-            : replayed.copyWith(completed: false, error: failure);
+            : replayed.copyWith(
+                end: EvaluationAttemptEnd.harnessFault,
+                error: failure,
+              );
       }
       return await backend.execute(request);
+    } on EvaluationCeilingReached catch (reached) {
+      return _errorAttempt(
+        request,
+        reached.message,
+        end: EvaluationAttemptEnd.ceilingStopped,
+      );
     } on Object catch (exception) {
       return _errorAttempt(request, '$exception');
     }
@@ -600,8 +639,9 @@ class EvaluationEngine {
 
   EvaluationAttempt _errorAttempt(
     EvaluationAttemptRequest request,
-    String message,
-  ) => EvaluationAttempt(
+    String message, {
+    EvaluationAttemptEnd end = EvaluationAttemptEnd.harnessFault,
+  }) => EvaluationAttempt(
     attemptId: request.attemptId,
     taskId: request.task.id,
     taskKind: request.task.kind,
@@ -614,10 +654,12 @@ class EvaluationEngine {
     startedAtEpochMs:
         (config.now?.call() ?? DateTime.now()).millisecondsSinceEpoch,
     executionMode: request.executionMode,
-    completed: false,
+    end: end,
     error: message,
     verification: const [],
-    notes: 'backend fault (${config.backend.id})',
+    notes: end == EvaluationAttemptEnd.ceilingStopped
+        ? 'spend ceiling reached (${config.backend.id})'
+        : 'backend fault (${config.backend.id})',
   );
 
   /// Runs the task's deterministic graders over the attempt's projected
@@ -667,7 +709,7 @@ class EvaluationEngine {
     final experiment = plan.memoryExperiment;
     if (experiment == null ||
         !experiment.enabled ||
-        experiment.mode != effective.memoryPolicy) {
+        !experiment.modes.contains(effective.memoryPolicy)) {
       return declared;
     }
     return [

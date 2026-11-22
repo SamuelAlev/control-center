@@ -34,7 +34,6 @@ import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
-import 'package:cc_domain/features/messaging/domain/repositories/space_read_repository.dart';
 import 'package:cc_domain/features/newsfeed/domain/repositories/newsfeed_repository.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_feed_page.dart';
@@ -210,7 +209,6 @@ void main() {
         forgeRead:
             ({required workspaceId, required userId, required repoId}) async {},
       ),
-      spaceReadRepository: _SpaceReads(),
       memoryDomainRepository: _MemoryDomains(),
       memoryAccessGrantRepository: _MemoryGrants(),
       agentWorkingMemoryRepository: _WorkingMemory(),
@@ -1340,11 +1338,6 @@ class _Repos implements RepoRepository {
           .where((r) => r.id == repoId)
           .firstOrNull;
 
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class _SpaceReads implements SpaceReadRepository {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

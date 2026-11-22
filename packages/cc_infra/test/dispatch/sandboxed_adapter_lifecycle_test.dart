@@ -4,6 +4,7 @@ import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_backend.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_handle.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
+import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
 import 'package:cc_domain/features/sandboxing/domain/host_execution_posture.dart';
 import 'package:cc_infra/src/dispatch/host_execution_gate.dart';
 import 'package:cc_infra/src/dispatch/sandboxed_agent_dispatch_adapter.dart';
@@ -97,6 +98,9 @@ void main() {
     await expectLater(resolve(spec()), throwsStateError);
     expect(
       () => adapter.start(
+        wakeContext: const WakeContext.userMessage(),
+        freshHistory: false,
+        readOnly: false,
         cliName: 'cc-harness',
         prompt: 'p',
         workingDirectory: '/tmp',

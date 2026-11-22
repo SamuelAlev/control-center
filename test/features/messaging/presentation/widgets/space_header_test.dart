@@ -108,11 +108,7 @@ void main() {
               localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
-                body: SpaceHeader(
-                  space: testSpace,
-                  onManage: () {},
-                  onArchive: () {},
-                ),
+                body: SpaceHeader(space: testSpace, onManage: () {}),
               ),
             ),
           ),
@@ -148,11 +144,7 @@ void main() {
               localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
-                body: SpaceHeader(
-                  space: testSpace,
-                  onManage: () {},
-                  onArchive: () {},
-                ),
+                body: SpaceHeader(space: testSpace, onManage: () {}),
               ),
             ),
           ),
@@ -185,11 +177,7 @@ void main() {
               localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
-                body: SpaceHeader(
-                  space: testSpace,
-                  onManage: () {},
-                  onArchive: () {},
-                ),
+                body: SpaceHeader(space: testSpace, onManage: () {}),
               ),
             ),
           ),
@@ -223,11 +211,7 @@ void main() {
               localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
-                body: SpaceHeader(
-                  space: unnamedSpace,
-                  onManage: () {},
-                  onArchive: () {},
-                ),
+                body: SpaceHeader(space: unnamedSpace, onManage: () {}),
               ),
             ),
           ),
@@ -239,7 +223,7 @@ void main() {
       expect(find.text('Space'), findsOneWidget);
     });
 
-    testWidgets('has manage and archive IconButtons', (tester) async {
+    testWidgets('has a manage button and no archive button', (tester) async {
       tester.view.physicalSize = const Size(800, 100);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -261,11 +245,7 @@ void main() {
               localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
-                body: SpaceHeader(
-                  space: testSpace,
-                  onManage: () {},
-                  onArchive: () {},
-                ),
+                body: SpaceHeader(space: testSpace, onManage: () {}),
               ),
             ),
           ),
@@ -274,13 +254,10 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      // The header carries a manage (users) and an archive action, plus
-      // other context actions depending on participants.
+      // The header carries a manage (users) action, plus other context
+      // actions depending on participants. Archiving lives in the sidebar.
       expect(find.widgetWithIcon(CcIconButton, AppIcons.users), findsWidgets);
-      expect(
-        find.widgetWithIcon(CcIconButton, AppIcons.archive),
-        findsOneWidget,
-      );
+      expect(find.widgetWithIcon(CcIconButton, AppIcons.archive), findsNothing);
     });
 
     testWidgets('has manage participants tooltip', (tester) async {
@@ -304,11 +281,7 @@ void main() {
               localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
-                body: SpaceHeader(
-                  space: testSpace,
-                  onManage: () {},
-                  onArchive: () {},
-                ),
+                body: SpaceHeader(space: testSpace, onManage: () {}),
               ),
             ),
           ),
@@ -317,10 +290,10 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      // present-toggle + take-over + search + manage + delete (no undoable
-      // revert in this fixture; the who's-here strip renders nothing with no
-      // active workspace).
-      expect(find.byType(CcIconButton), findsNWidgets(5));
+      // present-toggle + take-over + search + manage (no undoable revert in
+      // this fixture; the who's-here strip renders nothing with no active
+      // workspace).
+      expect(find.byType(CcIconButton), findsNWidgets(4));
     });
   });
 
@@ -361,11 +334,7 @@ void main() {
               localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
-                body: SpaceHeader(
-                  space: longSpace,
-                  onManage: () {},
-                  onArchive: () {},
-                ),
+                body: SpaceHeader(space: longSpace, onManage: () {}),
               ),
             ),
           ),
@@ -423,11 +392,7 @@ void main() {
               localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
-                body: SpaceHeader(
-                  space: testSpace,
-                  onManage: () {},
-                  onArchive: () {},
-                ),
+                body: SpaceHeader(space: testSpace, onManage: () {}),
               ),
             ),
           ),
@@ -500,7 +465,6 @@ void main() {
                   space: space,
                   conversation: conv,
                   onManage: () {},
-                  onArchive: () {},
                 ),
               ),
             ),
@@ -565,7 +529,6 @@ void main() {
                 body: SpaceHeader(
                   space: testSpace,
                   onManage: () => managed = true,
-                  onArchive: () {},
                 ),
               ),
             ),
@@ -579,47 +542,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(managed, isTrue);
     });
-
-    testWidgets('calls onArchive when archive button tapped', (tester) async {
-      tester.view.physicalSize = const Size(800, 100);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
-
-      var archived = false;
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            spaceParticipantsProvider(
-              'ch-1',
-            ).overrideWith((ref) => Stream.value([agentParticipant])),
-            agentDetailProvider('agent-1').overrideWith((ref) async => agent),
-          ],
-          child: CcTheme(
-            data: CcThemeData.light(),
-            child: MaterialApp(
-              localizationsDelegates: appLocalizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(
-                body: SpaceHeader(
-                  space: testSpace,
-                  onManage: () {},
-                  onArchive: () => archived = true,
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
-
-      await tester.tap(find.byIcon(AppIcons.archive));
-      await tester.pumpAndSettle();
-      expect(archived, isTrue);
-    });
   });
 
   group('SpaceHeader narrow pane', () {
@@ -631,7 +553,7 @@ void main() {
     Future<void> pumpAt(
       WidgetTester tester,
       double width, {
-      VoidCallback? onArchive,
+      VoidCallback? onManage,
       List<SpaceParticipant> participants = const [],
     }) async {
       // Tall enough for the More menu to open below the band.
@@ -667,8 +589,7 @@ void main() {
                     createdAt: DateTime(2024),
                     updatedAt: DateTime(2024),
                   ),
-                  onManage: () {},
-                  onArchive: onArchive ?? () {},
+                  onManage: onManage ?? () {},
                 ),
               ),
             ),
@@ -700,31 +621,33 @@ void main() {
       await pumpAt(tester, 800, participants: [agentParticipant]);
 
       expect(button(AppIcons.moreHorizontal), findsNothing);
-      expect(button(AppIcons.archive), findsOneWidget);
+      expect(button(AppIcons.users), findsOneWidget);
     });
 
-    testWidgets('search stays inline and archive folds first', (tester) async {
+    testWidgets('search stays inline and take-over folds first', (
+      tester,
+    ) async {
       await pumpAt(tester, 390, participants: [agentParticipant]);
 
       expect(button(AppIcons.search), findsOne);
-      expect(button(AppIcons.archive), findsNothing);
+      expect(button(AppIcons.userCheck), findsNothing);
     });
 
     testWidgets('a folded action runs from the More menu', (tester) async {
-      var archived = false;
+      var managed = false;
       await pumpAt(
         tester,
-        300,
+        160,
         participants: [agentParticipant],
-        onArchive: () => archived = true,
+        onManage: () => managed = true,
       );
 
       await tester.tap(button(AppIcons.moreHorizontal));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Archive space'));
+      await tester.tap(find.text('Manage participants'));
       await tester.pumpAndSettle();
 
-      expect(archived, isTrue);
+      expect(managed, isTrue);
     });
   });
 

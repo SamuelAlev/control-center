@@ -34,10 +34,10 @@ extension _FeedRowMethods on _SpaceMessageFeedState {
           TurnHeadRowView(row: row, turn: _turns[item.message.id]!),
         );
       case TurnPartRow(:final item):
-        content = _highlightTurnRow(
-          item,
-          TurnPartRowView(row: row, turn: _turns[item.message.id]!),
-        );
+        final part = TurnPartRowView(row: row, turn: _turns[item.message.id]!);
+        content = row.key == _highlightedRowKey
+            ? Highlight(child: part)
+            : _highlightTurnRow(item, part);
       case TurnFootRow(:final item):
         final startThread = widget.onStartThread;
         content = _highlightTurnRow(

@@ -11,6 +11,7 @@ cd "$REPO_ROOT"
 source "$REPO_ROOT/scripts/lib/common.sh"
 source "$REPO_ROOT/scripts/lib/artifact_names.sh"
 source "$REPO_ROOT/scripts/lib/media.sh"
+source "$REPO_ROOT/scripts/lib/codemode.sh"
 load_native_pins
 
 VERSION="${1:-${VERSION:?VERSION is required}}"
@@ -39,6 +40,7 @@ mkdir -p "$BUNDLE/cc_server"
 cp -r "$CC_SERVER_BUNDLE/." "$BUNDLE/cc_server/"
 stage_natives "$NATIVES" "$BUNDLE/cc_server/lib" so
 cc_media_stage "$NATIVES" "$BUNDLE/cc_server/bin/media" linux
+cc_codemode_stage "$NATIVES" "$BUNDLE/cc_server/bin/codemode" linux
 
 # 1c. Verify both native sets before packaging. Every native is required (there
 # is no degraded mode), so a bundle missing one either crashes the desktop's
@@ -49,6 +51,7 @@ cc_media_stage "$NATIVES" "$BUNDLE/cc_server/bin/media" linux
 bash scripts/release/verify_natives.sh "$BUNDLE/lib" linux desktop
 bash scripts/release/verify_natives.sh "$BUNDLE/cc_server/lib" linux server
 cc_media_verify "$BUNDLE/cc_server/bin/media" linux
+cc_codemode_verify "$BUNDLE/cc_server/bin/codemode" linux
 
 # 1d. Legal notices, written into the bundle so BOTH the tarball below and the
 # AppDir copied from it carry them.

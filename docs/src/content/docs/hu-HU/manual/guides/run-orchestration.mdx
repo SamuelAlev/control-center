@@ -2,7 +2,7 @@
 title: Orchestráció futtatása
 description: Kérjen tervet az orchestrátortól, nézze át és szerkessze a Plan Studióban, hagyja jóvá egyszer, és bízza a munkát egy generált pipeline-ra.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/orchestracio-futtatasa
-sourceHash: 086301be6c1957f6336294720967813c3050ed25
+sourceHash: cc4390cbac6c2122dd24c23bcef20693f40121bb
 ---
 
 Ez az útmutató bemutatja, hogyan alakíthat egyetlen nagy célt egy egész csapatot
@@ -66,21 +66,13 @@ A véglegesítés előtt nyomja meg a **Becslés** gombot a jóváhagyási sávo
 költség-, időtartam- és hatósugártartományokért. A teljes szerkesztőt lásd:
 [Munka a Plan Studióban](/hu-HU/kezikonyv/gyakorlati-utmutatok/plan-studio/).
 
-:::note[A költségvetés nem költési korlát]
-A javaslat költségvetését a rendszer a jóváhagyási sávon látható _becsléshez_
-hasonlítja: ha a becslés felső értéke meghaladja, a végösszeg pirosra vált, és
-túlköltség-figyelmeztetés jelenik meg. A terv végrehajtása közben semmi sem
-ellenőrzi a költést, így ez nem állítja le és nem buktatja meg a futtatást.
-Tényleges költéskorláthoz használjon ügynökönkénti költségvetési szabályzatokat —
-lásd: [Költségek kezelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/koltsegek-kezelese/).
+:::note[A költségvetés megtartja a futtatást]
+A javaslat költségvetését a rendszer a jóváhagyási sávon látható _becsléshez_ hasonlítja: ha a becslés felső értéke meghaladja, a végösszeg pirosra vált, és túlköltség-figyelmeztetés jelenik meg. A terv végrehajtása közben a szerver minden új lépés előtt ellenőrzi a költést. A költségvetésnél a futtatás visszatartva lesz, és semmi új nem indul; a már futó lépések befejeződnek. Akit a futtatás kért, értesítést kap, és a folytatáshoz a pipeline-futtatás oldalán megnyomja a **Plafon emelése** gombot. Lásd: [Költségek kezelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/koltsegek-kezelese/).
 :::
 
 ## 3. lépés: Hagyja jóvá
 
-Hagyja jóvá a tervet a beszélgetés kártyájáról vagy a Plan Studio jóváhagyási
-sávjáról. **Ez az egyetlen döntés, amelyet meghoz.** A jóváhagyás kizárólag
-operátori művelet — erre nincs MCP-eszköz, így egy ügynök javasolhat és
-módosíthat, de soha nem hagyhatja jóvá a saját tervét.
+Hagyja jóvá a tervet a beszélgetés kártyájáról vagy a Plan Studio jóváhagyási sávjáról. **Ez az egyetlen döntés, amelyet meghoz.** A jóváhagyás kizárólag operátori művelet — erre nincs MCP-eszköz, így egy ügynök javasolhat és módosíthat, de soha nem hagyhatja jóvá a saját tervét. A jóváhagyáshoz írási hozzáférés kell a tér tárolóihoz, a futtatás pedig ezután a jóváhagyó személy nevében működik.
 
 Innentől egy determinisztikus materializáló (tiszta függvény, LLM nélkül) valódi
 [pipeline-ná](/hu-HU/kezikonyv/fogalmak/pipeline-ok/) alakítja a javaslatot, és
@@ -120,12 +112,7 @@ Nyomja meg az **Orchestráció megszakítása** gombot a beszélgetés kártyáj
 vagy a **Futtatás megszakítása** gombot a Plan Studio jóváhagyási sávján. A
 megszakítás lebontja a folyamatban lévő munkát.
 
-Az orchestráció akkor bukik meg, ha a materializálás sikertelen, vagy ha a
-generált pipeline futtatása bukik meg (kutatás, megbeszélés, összegzés vagy
-persist — ezek a lépések nem folytatódnak hiba esetén). A generált
-**munka**lépések viszont mindig folytatódnak hiba esetén, így egyetlen sikertelen
-aljegy miatt nem bukik meg a futtatás. Nincs költségvetés-túllépési hibaág, és
-nincs „minden aljegy megbukott” küszöb sem.
+Az orchestráció akkor bukik meg, ha a materializálás sikertelen, vagy ha a generált pipeline futtatása bukik meg (kutatás, megbeszélés, összegzés vagy persist — ezek a lépések nem folytatódnak hiba esetén). A generált **munka**lépések viszont mindig folytatódnak hiba esetén, így egyetlen sikertelen aljegy miatt nem bukik meg a futtatás. A költségvetés elérése visszatartja a futtatást ahelyett, hogy megbuktatná, és nincs „minden aljegy megbukott” küszöb sem.
 
 ## Kapcsolódó útmutatók
 

@@ -2,7 +2,7 @@
 title: Plan modunu kullanma
 description: Bir alanı plan moduna geçirin, tipli bir plan alın ve onu çalışan işe onaylayın.
 slug: tr-TR/kilavuz/nasil-yapilir/plan-modu
-sourceHash: 52035bbc9d5b14f913ba5119359b5cc54acc53f4
+sourceHash: accf49606e5e8597d3ea76e3274f08d3854996dc
 ---
 
 Bu kılavuz, bir ajan daha hiç kod yazmadan ondan yapılandırılmış bir plan almayı
@@ -110,10 +110,7 @@ onaylandığında ajanın bir sonraki `exit_plan_mode` çağrısı alanı plan m
 moduna çevirir ve değişiklik yapan araçlarının kilidini açar. Bir ret, revize edilmiş
 bir plan için yeni bir istek açmasına izin verir.
 
-Plan modundan çıkmak için ileti alanındaki açılır menüyü (veya Shift+Tab) değiştirin
-ya da gönderilen planı onaylayın. `exit_plan_mode`, kararı `decide_approval` MCP
-aracıyla verilen kalıcı bir onay açar. Engellenen araç çağrıları için koruma katmanı
-farklı, bellekte tutulan bir kuyruktur ve plan çıkış isteklerini taşımaz.
+Plan modundan çıkmak için ileti alanındaki açılır menüyü (veya Shift+Tab) değiştirin ya da gönderilen planı onaylayın. `exit_plan_mode`, kalıcı bir onay açar; bu onayı bir ajan çalıştırması `decide_approval` MCP aracıyla karara bağlar. Engellenen araç çağrıları için koruma katmanı farklı, bellekte tutulan bir kuyruktur ve plan çıkış isteklerini taşımaz.
 
 ## Bir pipeline adımında plan modu
 

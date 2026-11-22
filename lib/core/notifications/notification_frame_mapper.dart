@@ -9,6 +9,7 @@ library;
 
 import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/notifications/notification_category.dart';
+import 'package:control_center/core/notifications/work_notification_frames.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 
@@ -114,7 +115,7 @@ AppNotification? mapNotificationFrame(
     case 'notifications/agent_action_blocked':
       return _agentActionBlocked(p, l10n);
   }
-  return null;
+  return mapWorkNotificationFrame(method, p, l10n: l10n);
 }
 
 /// Builds a workspace-scoped deep-link route, falling back to the workspace

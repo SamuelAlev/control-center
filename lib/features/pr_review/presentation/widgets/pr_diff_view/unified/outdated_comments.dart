@@ -24,6 +24,7 @@ class PartitionedServerComments {
   const PartitionedServerComments({
     required this.anchored,
     required this.outdated,
+    required this.fileLevel,
   });
 
   /// Comments keyed by `"<side>-<anchorLine>"`, ready to be synthesised into
@@ -35,6 +36,11 @@ class PartitionedServerComments {
   /// left), so they cannot be pinned to a real row. GitHub surfaces these under
   /// a collapsed "outdated" group rather than dropping them.
   final List<PrCodeReviewComment> outdated;
+
+  /// Comments on the file as a whole ([PrCodeReviewComment.isFileLevel]).
+  /// They have no line either, but nothing is gone: the diff shows them at the
+  /// top of the file's body.
+  final List<PrCodeReviewComment> fileLevel;
 }
 
 /// Partitions the server review [comments] for [filename] into anchored and
@@ -54,8 +60,13 @@ PartitionedServerComments partitionServerCommentsForFile(
 ) {
   final anchored = <String, List<PrCodeReviewComment>>{};
   final outdated = <PrCodeReviewComment>[];
+  final fileLevel = <PrCodeReviewComment>[];
   for (final c in comments) {
     if (c.path != filename) {
+      continue;
+    }
+    if (c.isFileLevel) {
+      fileLevel.add(c);
       continue;
     }
     final anchor = c.anchorLine;
@@ -67,7 +78,11 @@ PartitionedServerComments partitionServerCommentsForFile(
         .putIfAbsent('${c.side}-$anchor', () => <PrCodeReviewComment>[])
         .add(c);
   }
-  return PartitionedServerComments(anchored: anchored, outdated: outdated);
+  return PartitionedServerComments(
+    anchored: anchored,
+    outdated: outdated,
+    fileLevel: fileLevel,
+  );
 }
 
 /// A file-header affordance that surfaces a file's *outdated* review comments —

@@ -30,7 +30,8 @@ void main() {
         ]),
       );
       final out = await s.summarize(input());
-      expect(out.text, 'anchored summary');
+      // The model's text, after the pinned evidence the server re-attaches.
+      expect(out.text, endsWith('\n\nanchored summary'));
       expect(out.modelWritten, isTrue);
     });
 
@@ -67,7 +68,102 @@ void main() {
         _FakeProvider([const LlmTextDelta('updated summary')]),
       );
       final out = await s.summarize(input(previousSummary: 'old summary'));
-      expect(out.text, 'updated summary');
+      expect(out.text, endsWith('\n\nupdated summary'));
+    });
+
+    group('pinned evidence (defect 23)', () {
+      test('the original request and the steering are re-attached', () async {
+        final s = LlmHarnessSummarizer(
+          _FakeProvider([const LlmTextDelta('The agent fixed two tests.')]),
+        );
+        final out = await s.summarize(
+          HarnessCompactionInput(
+            messages: [
+              HarnessMessage.user('Fix the flaky login test. Do not touch CI.'),
+              HarnessMessage.assistant('Looking.'),
+              HarnessMessage.system('Stay inside packages/auth.'),
+              HarnessMessage.assistant('Done.'),
+            ],
+          ),
+        );
+        expect(out.modelWritten, isTrue);
+        final pinned = splitPinnedEvidence(out.text);
+        expect(pinned.pinned, contains('# User (original request)'));
+        expect(
+          pinned.pinned,
+          contains('Fix the flaky login test. Do not touch CI.'),
+        );
+        expect(pinned.pinned, contains('Stay inside packages/auth.'));
+        expect(pinned.rest, 'The agent fixed two tests.');
+      });
+
+      test('a later fold carries the earlier pin once, not the model copy',
+          () async {
+        final first = await LlmHarnessSummarizer(
+          _FakeProvider([const LlmTextDelta('first')]),
+        ).summarize(
+          HarnessCompactionInput(
+            messages: [HarnessMessage.user('The original request.')],
+          ),
+        );
+        // The model echoes a pinned block of its own invention.
+        final second = await LlmHarnessSummarizer(
+          _FakeProvider([
+            const LlmTextDelta(
+              '$evidencePinBegin\nmade-up requirements\n$evidencePinEnd\n'
+              'second',
+            ),
+          ]),
+        ).summarize(
+          HarnessCompactionInput(
+            messages: [
+              HarnessMessage.user('$harnessSummaryMarker\n${first.text}'),
+              HarnessMessage.assistant('more work'),
+            ],
+            previousSummary: first.text,
+          ),
+        );
+        expect(
+          evidencePinBegin.allMatches(second.text),
+          hasLength(1),
+        );
+        final pinned = splitPinnedEvidence(second.text);
+        expect(pinned.pinned, contains('The original request.'));
+        expect(second.text, isNot(contains('made-up requirements')));
+        expect(pinned.rest, 'second');
+      });
+    });
+
+    test('the focus reaches the summarizer\'s prompt', () async {
+      final provider = _FakeProvider([const LlmTextDelta('ok')]);
+      await LlmHarnessSummarizer(provider).summarize(
+        HarnessCompactionInput(
+          messages: [HarnessMessage.user('task')],
+          focus: 'the failing test names\nKeep the migration plan.',
+        ),
+      );
+      final prompt = provider.requests.single.single.textContent;
+      expect(
+        prompt,
+        contains(
+          '<focus>\nthe failing test names\nKeep the migration plan.\n'
+          '</focus>',
+        ),
+      );
+      expect(prompt.indexOf('<focus>'), greaterThan(
+        prompt.indexOf('</conversation-history>'),
+      ));
+    });
+
+    test('no focus, no focus block', () async {
+      final provider = _FakeProvider([const LlmTextDelta('ok')]);
+      await LlmHarnessSummarizer(provider).summarize(
+        HarnessCompactionInput(messages: [HarnessMessage.user('task')]),
+      );
+      expect(
+        provider.requests.single.single.textContent,
+        isNot(contains('<focus>')),
+      );
     });
 
     test('a cancelled run abandons the request instead of falling back', () {
@@ -91,6 +187,7 @@ void main() {
 class _FakeProvider extends LlmProviderPort {
   _FakeProvider(this.events);
   final List<LlmEvent> events;
+  final List<List<HarnessMessage>> requests = [];
 
   @override
   String get displayName => 'Fake';
@@ -104,6 +201,7 @@ class _FakeProvider extends LlmProviderPort {
     List<LlmToolSchema>? tools,
     LlmCompleteConfig? config,
   }) {
+    requests.add(messages);
     return Stream<LlmEvent>.fromIterable(events);
   }
 

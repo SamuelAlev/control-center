@@ -2,7 +2,7 @@
 title: Orkestrasyon
 description: Tek bir "büyük istek" nasıl bir kez onayladığınız ekip çapında bir plana, ardından da onu yürüten üretilmiş bir pipeline'a dönüşür.
 slug: tr-TR/kilavuz/kavramlar/orkestrasyon
-sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
+sourceHash: db1bbceaba025b64539588004eebb65d944d5933
 ---
 
 Tek bir ajan tek bir işte iyidir. Bazı istekler bundan daha büyüktür: “X pazarını
@@ -36,13 +36,8 @@ doğrulayıp yürütebileceği tipli bir plan. Bir öneri şunları içerir:
 - **Sentez**: teslimatı üreten son adım.
 - **Bütçe**: beyan edilen maliyet üst sınırı.
 
-:::caution[Bütçe yalnızca tavsiye niteliğindedir]
-Önerinin maliyet üst sınırı, planın tahmini toplamıyla karşılaştırılır ve bütçeyi
-aşan bir planı siz onaylamadan _önce_ onay çubuğunda işaretler. Çalıştırma
-başladıktan sonra bunu hiçbir şey okumaz; dolayısıyla bütçesini aşan bir
-orkestrasyonu durdurmaz veya başarısız kılmaz. Ajan başına ve çalışma alanı
-başına bütçe politikaları ayrı bir mekanizmadır ve harcamayı gerçekte duraklatan
-da bunlardır.
+:::caution[Bütçe çalıştırmayı tutar, onu sonlandırmaz]
+Önerinin maliyet üst sınırı, planın tahmini toplamıyla karşılaştırılır ve bütçeyi aşan bir planı siz onaylamadan _önce_ onay çubuğunda işaretler. Çalıştırma başladıktan sonra sunucu, her yeni adımdan önce ne harcandığını denetler: sınırda pipeline çalıştırması tutulur (`suspended`, neden `orchestration_budget`) ve yeni hiçbir şey başlamaz; zaten çalışan adımlar biter. Çalıştırmayı isteyen kişiye bildirim gider ve pipeline çalıştırmasının sayfasında **Sınırı artır** ile devam ettirir (kimse istemediyse bir çalışma alanı yöneticisi). Artış eski sınırdan ve harcananın üzerinde olmalı, en fazla 1.000 dolar olabilir; bir sınır hiçbir zaman kaldırılamaz. Çalıştırmanın yürüttüğü hedefler bu sınıra dahil edilir; incelemeleri de dahil. Ajan başına ve çalışma alanı başına bütçe politikaları ayrı bir mekanizmadır.
 :::
 
 ## Nerede incelersiniz

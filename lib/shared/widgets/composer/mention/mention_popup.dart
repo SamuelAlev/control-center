@@ -32,6 +32,30 @@ class _Row {
   bool get isHeader => header != null;
 }
 
+/// What an open [MentionPopup] tells its host about the keys it takes, so a
+/// key the popup acted on is not acted on a second time by the field.
+///
+/// The popup hears keys first (a [HardwareKeyboard] handler); the focused
+/// field hears the same event afterwards. A pick closes the popup, so by
+/// then "is the popup open" no longer answers "was this key the popup's".
+class MentionPopupKeys {
+  _MentionPopupState? _popup;
+  KeyEvent? _consumed;
+
+  /// Whether Enter or Tab belongs to the popup right now: it is open and
+  /// shows at least one row.
+  bool get takesEnter => _popup?._flat.isNotEmpty ?? false;
+
+  /// Whether [event] is the one the popup just acted on. True once for it.
+  bool consumed(KeyEvent event) {
+    if (!identical(event, _consumed)) {
+      return false;
+    }
+    _consumed = null;
+    return true;
+  }
+}
+
 /// Floating suggestion list pinned to the composer.
 ///
 /// Keyboard handling lives here: we register a global key handler with
@@ -45,6 +69,7 @@ class MentionPopup extends StatefulWidget {
     super.key,
     required this.query,
     required this.sources,
+    required this.keys,
     required this.onSelect,
     required this.onDismiss,
   });
@@ -54,6 +79,9 @@ class MentionPopup extends StatefulWidget {
 
   /// Mention sources to query for suggestions.
   final List<MentionSource> sources;
+
+  /// Where the popup reports the keys it takes; see [MentionPopupKeys].
+  final MentionPopupKeys keys;
 
   /// Called when the user selects a suggestion.
   final void Function(MentionSuggestion) onSelect;
@@ -106,6 +134,7 @@ class _MentionPopupState extends State<MentionPopup> {
   @override
   void initState() {
     super.initState();
+    widget.keys._popup = this;
     HardwareKeyboard.instance.addHandler(_handleKey);
     _runSources();
   }
@@ -113,6 +142,12 @@ class _MentionPopupState extends State<MentionPopup> {
   @override
   void didUpdateWidget(covariant MentionPopup old) {
     super.didUpdateWidget(old);
+    if (!identical(old.keys, widget.keys)) {
+      if (identical(old.keys._popup, this)) {
+        old.keys._popup = null;
+      }
+      widget.keys._popup = this;
+    }
     final triggerChanged = old.query.trigger != widget.query.trigger;
     final partialChanged = old.query.partial != widget.query.partial;
     final sourcesChanged = !identical(old.sources, widget.sources);
@@ -128,6 +163,9 @@ class _MentionPopupState extends State<MentionPopup> {
 
   @override
   void dispose() {
+    if (identical(widget.keys._popup, this)) {
+      widget.keys._popup = null;
+    }
     HardwareKeyboard.instance.removeHandler(_handleKey);
     _searchingTimer?.cancel();
     for (final s in _subs) {
@@ -258,6 +296,14 @@ class _MentionPopupState extends State<MentionPopup> {
   }
 
   bool _handleKey(KeyEvent event) {
+    final taken = _takeKey(event);
+    if (taken) {
+      widget.keys._consumed = event;
+    }
+    return taken;
+  }
+
+  bool _takeKey(KeyEvent event) {
     if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
       return false;
     }
@@ -285,8 +331,11 @@ class _MentionPopupState extends State<MentionPopup> {
         // Commit only a row whose own source answered the current query — a
         // row from a still-lagging source answers the previous keystroke.
         // Synchronous sources (slash commands) re-deliver within a microtask,
-        // so their rows are never held back.
-        if (_sourceGen[_flatKinds[_selected]] == _generation) {
+        // so their rows are never held back. And only on the press itself: a
+        // pick may open the next step in this same popup, which a held key's
+        // repeats must not pick from as well.
+        if (event is KeyDownEvent &&
+            _sourceGen[_flatKinds[_selected]] == _generation) {
           widget.onSelect(_flat[_selected]);
         }
         return true;

@@ -1,8 +1,8 @@
 ---
 title: Explorează datele într-un kernel persistent
-description: Oferă unui agent un interpretor Python sau JavaScript care își păstrează variabilele între apeluri, desenează grafice în chat și își poate apela propriile instrumente din interiorul unei celule.
+description: Oferă unui agent un interpretor Python sau JavaScript care își păstrează variabilele între apeluri și desenează grafice în chat.
 slug: ro-RO/manual/ghiduri-practice/exploreaza-date-in-kernel
-sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
+sourceHash: 8fcd77019bfae5088223822a12ef91c8a6879c5d
 ---
 
 Acest ghid arată cum să faci un agent să încarce o dată ceva costisitor și apoi să pună mai multe întrebări despre acel lucru, în loc să plătească încărcarea la fiecare întrebare.
@@ -62,22 +62,9 @@ Acestea sunt rescrise în cod simplu, în loc să dea eroare:
 
 Evacuarea cache-ului de la `%pip` este cea care contează: instalarea într-un interpretor activ nu face nimic pentru un modul care a fost deja importat, așa că fără ea versiunea pe care tocmai ai instalat-o nu este cea care rulează.
 
-## Apelarea propriilor instrumente din interiorul unei celule
+## Apelarea instrumentelor din cod
 
-```python
-paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
-for path in paths.splitlines()[:100]:
-    contents = tool("read", {"path": path})
-    ...
-```
-
-`tool(name, args)` reintră în registrul de instrumente propriu al agentului. Asta înseamnă că o celulă se poate ramifica peste o sută de fișiere sau poate delega prin `task`, fără ca modelul să consume un tur pentru fiecare element.
-
-:::caution[Puntea nu ocolește guardrail-urile tale]
-Un apel prin punte se rezolvă împotriva **aceluiași** registru de instrumente ca un apel emis de un model, așa că politica `ActionClass`, solicitările de aprobare și fiecare înveliș se aplică identic. O punte care ar ajunge dincolo de registru ar fi o gaură cu exact forma „scrie un one-liner Python”.
-:::
-
-Un apel prin punte **suspendă timeout-ul celulei** cât timp este în curs. Bugetul măsoară inactivitatea, nu timpul de ceas — o celulă care se ramifică spre subagenți și așteaptă patru minute nu este blocată, iar oprirea ei la mijlocul ramificării ar pierde întreaga stare a kernelului.
+O celulă nu poate apela instrumentele agentului. Pentru a parcurge instrumentele în cod, agentul scrie în schimb un script [`repl`](/ro-RO/manual/concepte/mod-cod/). Niciun script nu poate apela `eval`, iar agentul îl apelează direct.
 
 ## A porni de la zero
 

@@ -6,6 +6,11 @@ import 'package:cc_domain/core/domain/events/ticketing_events.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
+import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
+import 'package:cc_domain/features/dispatch/domain/entities/wake.dart';
+import 'package:cc_domain/features/dispatch/domain/repositories/wake_repository.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/wake_detail.dart';
 import 'package:cc_domain/features/teams/domain/entities/team.dart';
 import 'package:cc_domain/features/teams/domain/entities/team_member.dart';
 import 'package:cc_domain/features/teams/domain/ports/team_leader_dispatch_port.dart';
@@ -18,17 +23,51 @@ import 'package:cc_domain/features/ticketing/domain/repositories/ticket_reposito
 import 'package:flutter_test/flutter_test.dart';
 
 class _DispatchSpy implements TeamLeaderDispatchPort {
-  final List<({String agentId, String prompt, String? ticketId})> calls = [];
+  final List<
+    ({
+      String agentId,
+      String prompt,
+      String? ticketId,
+      String? spaceId,
+      String? startedByRunId,
+    })
+  >
+  calls = [];
+  final List<TeamMemberSettled> woken = [];
   @override
   Future<void> dispatchLeader({
     required String workspaceId,
     required String agentId,
     required String prompt,
+    required WakeReason reason,
+    required String? startedByRunId,
     String? ticketId,
     String? spaceId,
   }) async {
-    calls.add((agentId: agentId, prompt: prompt, ticketId: ticketId));
+    calls.add((
+      agentId: agentId,
+      prompt: prompt,
+      ticketId: ticketId,
+      spaceId: spaceId,
+      startedByRunId: startedByRunId,
+    ));
   }
+
+  @override
+  Future<void> wakeLeader(TeamMemberSettled settled) async =>
+      woken.add(settled);
+}
+
+class _FakeWakes implements WakeRepository {
+  final Map<String, Wake> byId = {};
+  @override
+  Future<Wake?> getById(String workspaceId, String id) async {
+    final wake = byId[id];
+    return wake?.workspaceId == workspaceId ? wake : null;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FakeTeams implements TeamRepository {
@@ -41,6 +80,8 @@ class _FakeTeams implements TeamRepository {
   @override
   Future<List<TeamMember>> membersOf(String workspaceId, String teamId) async =>
       members;
+  @override
+  Future<List<Team>> teamsForWorkspace(String workspaceId) async => [team];
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -101,6 +142,7 @@ void main() {
   late _DispatchSpy dispatch;
   late _FakeActivity activity;
   late TeamRoutingService service;
+  late _FakeWakes wakes;
 
   final ticket = Ticket(
     id: 'TIX-1',
@@ -108,6 +150,7 @@ void main() {
     title: 'Fix the header',
     status: TicketStatus.open,
     assignedTeamId: 'team1',
+    spaceId: 'sp-routed',
     createdAt: DateTime.utc(2026, 1, 1),
     updatedAt: DateTime.utc(2026, 1, 1),
   );
@@ -131,6 +174,7 @@ void main() {
     bus = DomainEventBus();
     dispatch = _DispatchSpy();
     activity = _FakeActivity();
+    wakes = _FakeWakes();
     service = TeamRoutingService(
       eventBus: bus,
       teamRepository: _FakeTeams(team, members),
@@ -144,7 +188,16 @@ void main() {
           status: RunStatus.completed,
           ticketId: 'TIX-1',
         ),
+        'run-lead': AgentRunLog(
+          id: 'run-lead',
+          agentId: 'lead',
+          conversationId: 'c-lead',
+          startedAt: DateTime.utc(2026, 1, 1),
+          status: RunStatus.completed,
+          ticketId: 'TIX-1',
+        ),
       }),
+      wakeRepository: wakes,
       activityRepository: activity,
       leaderDispatch: dispatch,
     )..start();
@@ -160,6 +213,7 @@ void main() {
     () async {
       bus.publish(
         TicketAssigned(
+          assigningRunId: null,
           ticketId: 'TIX-1',
           ticketTitle: 'Fix the header',
           assignedTeamId: 'team1',
@@ -178,47 +232,128 @@ void main() {
     },
   );
 
-  test('a delegated member finishing re-triggers the leader', () async {
-    bus.publish(
-      AgentRunCompleted(
-        agentId: 'alice',
+  /// The wake [from] sent [to] (a mention or a message), with no ask.
+  Wake peerWake(String id, {String from = 'lead', String to = 'alice'}) =>
+      wakes.byId[id] = Wake(
+        id: id,
         workspaceId: 'ws1',
-        conversationId: null,
-        runId: 'run-alice',
+        spaceId: 'sp-dm',
+        conversationId: 'c-dm',
+        agentId: to,
+        reason: WakeReason.peerMessage,
+        payload: 'Take the header.',
+        dedupKey: 'k:$id',
+        notBefore: DateTime.utc(2026, 1, 1),
+        detail: WakeDetail(
+          sourceAgentId: from,
+          sourceRunId: 'run-$from',
+          sourceConversationId: 'c-$from',
+        ),
+        createdAt: DateTime.utc(2026, 1, 1),
+      );
+
+  AgentRunSettled settled({
+    String agentId = 'alice',
+    List<String> wakeIds = const ['wk-1'],
+    RunEndReason endReason = RunEndReason.completed,
+  }) => AgentRunSettled(
+    agentId: agentId,
+    workspaceId: 'ws1',
+    spaceId: 'sp-dm',
+    conversationId: 'c-dm',
+    runId: 'run-$agentId',
+    status: endReason == RunEndReason.completed
+        ? RunStatus.completed
+        : RunStatus.error,
+    endReason: endReason,
+    costMicros: 0,
+    limitResetsAt: null,
+    wakeIds: wakeIds,
+    requestedByUserId: null,
+    wakeReason: WakeReason.peerMessage,
+    occurredAt: DateTime.utc(2026, 1, 1),
+  );
+
+  test('assignment reuses the ticket\'s routed space', () async {
+    bus.publish(
+      TicketAssigned(
+        assigningRunId: null,
+        ticketId: 'TIX-1',
+        ticketTitle: 'Fix the header',
+        assignedTeamId: 'team1',
+        workspaceId: 'ws1',
         occurredAt: DateTime.utc(2026, 1, 1),
       ),
     );
     await settle();
-    expect(dispatch.calls, hasLength(1));
-    expect(dispatch.calls.single.agentId, 'lead');
+    expect(dispatch.calls.single.spaceId, 'sp-routed');
+  });
+
+  test('an agent run\'s assignment routes the leader with that run as its '
+      'starter; a person\'s carries none', () async {
+    for (final run in ['run-assigner', null]) {
+      bus.publish(
+        TicketAssigned(
+          assigningRunId: run,
+          ticketId: 'TIX-1',
+          ticketTitle: 'Fix the header',
+          assignedTeamId: 'team1',
+          workspaceId: 'ws1',
+          occurredAt: DateTime.utc(2026, 1, 1),
+        ),
+      );
+      await settle();
+    }
+    expect(dispatch.calls.map((c) => c.startedByRunId), [
+      'run-assigner',
+      null,
+    ]);
+  });
+
+  test('a member the leader woke finishing wakes the leader once, in its '
+      'own conversation, with no new dispatch', () async {
+    peerWake('wk-1');
+    bus.publish(settled());
+    await settle();
+    expect(dispatch.calls, isEmpty, reason: 'no new space or run prompt');
+    final woken = dispatch.woken.single;
+    expect(woken.leaderAgentId, 'lead');
+    expect(woken.teamId, 'team1');
+    expect(woken.leaderConversationId, 'c-lead');
+    expect(woken.leaderRunId, 'run-lead');
+    expect(woken.memberAgentId, 'alice');
+    expect(woken.memberRunId, 'run-alice');
+    expect(woken.ticketId, 'TIX-1');
+    expect(woken.endReason, 'completed');
+  });
+
+  test('a member run no leader woke wakes nobody', () async {
+    peerWake('wk-1', from: 'stranger');
+    bus.publish(settled());
+    bus.publish(settled(wakeIds: const []));
+    await settle();
+    expect(dispatch.woken, isEmpty);
+  });
+
+  test('a member run the server stop ended wakes no leader', () async {
+    peerWake('wk-1');
+    bus.publish(settled(endReason: RunEndReason.serverStopped));
+    await settle();
+    expect(dispatch.woken, isEmpty);
   });
 
   test('a recorded no_action evaluation suppresses re-triggers', () async {
     activity.noActionExists = true;
-    bus.publish(
-      AgentRunCompleted(
-        agentId: 'alice',
-        workspaceId: 'ws1',
-        conversationId: null,
-        runId: 'run-alice',
-        occurredAt: DateTime.utc(2026, 1, 1),
-      ),
-    );
+    peerWake('wk-1');
+    bus.publish(settled());
     await settle();
-    expect(dispatch.calls, isEmpty);
+    expect(dispatch.woken, isEmpty);
   });
 
   test('the leader finishing does not re-trigger itself', () async {
-    bus.publish(
-      AgentRunCompleted(
-        agentId: 'lead',
-        workspaceId: 'ws1',
-        conversationId: null,
-        runId: 'run-lead',
-        occurredAt: DateTime.utc(2026, 1, 1),
-      ),
-    );
+    peerWake('wk-1', from: 'lead', to: 'lead');
+    bus.publish(settled(agentId: 'lead'));
     await settle();
-    expect(dispatch.calls, isEmpty);
+    expect(dispatch.woken, isEmpty);
   });
 }

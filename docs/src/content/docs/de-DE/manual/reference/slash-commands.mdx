@@ -2,7 +2,7 @@
 title: Slash-Befehle
 description: Alle Befehle, die du im Composer tippen kannst, was sie bewirken und wo sie laufen.
 slug: de-DE/handbuch/referenz/slash-befehle
-sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
+sourceHash: 38430a6315b112c92a7806d1c28dff8a0285e363
 ---
 
 Befehle, die du im Composer eines Bereichs tippst. Sie fallen in drei Gruppen, je nachdem, wo sie wirken, und der Unterschied zählt: Ein **lokaler** Befehl reist nie als Nachricht, erscheint also weder im Transkript noch erreicht er einen Agenten.
@@ -21,23 +21,35 @@ Befehle, die du im Composer eines Bereichs tippst. Sie fallen in drei Gruppen, j
 
 **Lokal → Dispatch.** Schaltet den Plan-Modus an der Unterhaltung ein: ein vollständig lesender Worktree und eine Werkzeugfläche, die bei `read` gedeckelt ist. Das Lieferergebnis des Agenten ist ein Plan, keine Bearbeitung. Ein bloßes `/plan` schaltet nur den Modus und reist nie als Nachricht; mit Prompt startet der Rest der Zeile den Lauf.
 
-### `/goal <objective>`
+### `/goal [flags] <objective>`
 
-**Dispatch.** Startet ein autonomes Ziel, das der Ziel-Supervisor über die Segmente hinweg neu dispatcht und neu startet.
+**Start.** Startet ein dauerhaftes Ziel: Der Agent arbeitet am Ziel in Abschnitten, über Neustarts hinweg, bis der Server verifiziert, dass es fertig ist, eine Person es schließt oder es eine Grenze erreicht. Siehe [Ein Ziel verfolgen](/de-DE/handbuch/anleitungen/ziel-verfolgen/).
 
-`/goal` mit Text öffnet zuerst **Ziel schärfen**: einen kurzen Durchgang, der einen Entwurf ablehnt, bis alle fünf Punkte da sind. Erfolgskriterien, die eine Auswertung ohne eigenes Urteil schließen kann, ein exakter Prüfbefehl, eine Obergrenze für Versuche, Grenzen des Umfangs und Stoppbedingungen. Jeder Schritt bietet *Überspringen und wie geschrieben ausführen*. Der Durchgang ist die Vorgabe, kein Tor.
+`/goal` mit Text öffnet zuerst **Ziel schärfen**: einen kurzen Durchgang, der nach Erfolgskriterien fragt, die eine Auswertung ohne eigenes Urteil entscheiden kann, nach den Prüfungen, die bestehen müssen, nach Grenzen des Umfangs und Stoppbedingungen; danach bietet er einen eigenen Checker, frische Abschnitte und das Beantworten der eigenen Fragen an. Jeder Schritt bietet *Überspringen und wie geschrieben ausführen*. Der Durchgang ist die Vorgabe, kein Tor.
 
-`/goal pause`, `/goal resume` und `/goal drop` sind keine Slash-Befehle. Pausieren, Fortsetzen und Stoppen liegen in der Liste **Ziele** der Unterhaltung in der Seitenleiste. Start-Flags am Ziel selbst sind `--budget <dollars>`, `--max <N>` (Laufbudget) und `--days <N>` (Frist). Ein Ziel, das sein Kostenlimit erreicht hat, läuft nur weiter, wenn du dieses Limit anhebst, über dieselbe Steuerung in der Seitenleiste.
+Flags dürfen überall in der Nachricht stehen: `--budget <dollars>` (das Budget des Ziels, standardmäßig 50), `--max <N>` (eine Obergrenze für Abschnitte), `--days <N>` (eine Frist), `--check "<command>"` (bis zu 5), `--checker <agent>`, `--fresh` und `--unattended wait|assume`. Ein unbekanntes oder wiederholtes Flag wird abgelehnt, und der Entwurf bleibt im Eingabefeld. Eine Zahl am Anfang des Ziels ist Teil des Ziels. Die Abschnitte `## Success criteria`, `## Boundaries`, `## Stop conditions` und `## Checks` werden zum Vertrag des Ziels.
+
+`/goal pause`, `/goal resume` und `/goal drop` sind keine Slash-Befehle. Pausieren, Fortsetzen und Stoppen liegen auf der Zielkarte im Bereich **Allgemein** der Unterhaltung und auf der Seite des Ziels (Seitenleiste → **Ziele**). Fortsetzen und das Erhöhen des Budgets gehören der Person, die das Ziel gestartet hat.
 
 :::note[Warum es überhaupt unterbricht]
 Ein autonomes Ziel ist die eine Stelle, an der ein vages Briefing wirklich teuer ist. Der Lauf arbeitet stundenlang an einem Ziel, dessen „fertig“ niemand festgelegt hat, und meldet dann Erfolg nach seinen eigenen Maßstäben. Fünf Fragen sind billiger als ein Lauf über Nacht, der fertig war, sobald er sich fertig fühlte.
 :::
 
-### `/loop [budget] [task]`
+### `/loop [every <interval>] [flags] <prompt>`
 
-**Dispatch.** Arbeitet iterativ, bis es fertig ist. Nimmt eine Grenze an: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**Start.** Erstellt einen Zeitplan, der den Agenten jetzt mit dem Prompt weckt und dann erneut: in jedem Intervall (mindestens 60 Sekunden) oder, ohne `every`, nach einer Verzögerung, die der Agent jedes Mal selbst wählt (1 bis 60 Minuten). `--max <N>` begrenzt die Läufe, `--days <N>` beendet ihn (standardmäßig 30 Tage), `--budget <dollars>` begrenzt seine Ausgaben. Siehe [Zeitpläne und Weckrufe](/de-DE/handbuch/anleitungen/zeitplaene-weckrufe/).
 
-Ein Token, der *wie* eine Grenze aussieht (beginnt mit einer Ziffer oder einem Vorzeichen) und sich nicht parsen lässt, ist ein harter Fehler. Prosa bleibt Prosa, also bleibt `/loop keep going until the tests pass` eine unbegrenzte Schleife mit Prompt in derselben Zeile.
+`/loop` startet kein Ziel mehr, und eine führende Zahl ist keine Anzahl von Läufen.
+
+### `/schedule <when> [flags] <prompt>`
+
+**Start.** Erstellt einen Zeitplan, der den Agenten später weckt: `in 2h`, `at 09:00` (die nächste solche Zeit in der Zeitzone des Arbeitsbereichs), `at <ISO time>` oder `cron "0 9 * * 1-5"` (die Anführungszeichen sind optional). Nimmt dieselben `--max`, `--days` und `--budget` wie `/loop`. Er wartet auf seinen ersten Zeitpunkt.
+
+### `/refine`
+
+**Start.** Fragt nach einem kurzen, nur lesenden Review der Arbeit der Unterhaltung, das Verbesserungen an Speicher, Richtlinien, Agentennotizen oder Skills vorschlagen kann. Vorschläge warten auf der Seite **Verbesserungen**, bis jemand sie annimmt. Höchstens ein Review pro Unterhaltung alle 20 Minuten.
+
+`/goal`, `/loop`, `/schedule` und `/refine` wirken nur in einer Nachricht, die du selbst tippst; von einem Agenten, einer Pipeline oder einem Weckruf ist derselbe Text eine gewöhnliche Nachricht. Ein `/goal`, `/loop` oder `/schedule`, das sich nicht lesen lässt, behält deinen Entwurf, und eine Zeile über dem Text im Eingabefeld sagt, was nicht stimmt.
 
 ### `/vibe [task]`
 

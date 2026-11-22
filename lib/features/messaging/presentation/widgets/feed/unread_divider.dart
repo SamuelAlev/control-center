@@ -7,9 +7,9 @@ import 'package:flutter/widgets.dart';
 /// turns — "New". Sits just above the first unread agent message so the reader
 /// reads downward into fresh content.
 ///
-/// Computed against a snapshot of the read cursor captured at space open
-/// (not the live cursor), so it does not vanish the instant the cursor is
-/// re-stamped on open/reach-bottom.
+/// Computed against a snapshot of the conversation's read cursor captured
+/// when it opens (not the live cursor), so it does not vanish the instant the
+/// cursor is re-stamped on open/reach-bottom.
 class UnreadDivider extends StatelessWidget {
   /// Creates an [UnreadDivider].
   const UnreadDivider({super.key, this.count});

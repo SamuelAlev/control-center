@@ -1,11 +1,18 @@
 part of 'agent_loop_runner.dart';
 
+/// One call observed in a turn, for the checklist supervisor: a model-issued
+/// call or a call one of them made through its reentry.
+typedef _ObservedCall = ({String name, Map<String, dynamic> args});
+
 /// Executes ONE turn's tool calls and appends their results to the history.
 ///
 /// Parallel-safe calls run as a bounded batch when no hook intercepts tools;
 /// exclusive tools stay sequential. Results append in model call order whatever
 /// the completion order, so timing cannot reorder the next cached request.
 /// Deferred tools load their schema and run in the same step.
+///
+/// Every model-issued call gets a [ToolReentry]; the calls it makes through it
+/// stream their events between its start and result events.
 class _ToolStep {
   _ToolStep(this.s, this.output, {this.rewindRejection});
 
@@ -16,6 +23,10 @@ class _ToolStep {
   /// answered with this error instead of rewinding.
   final String? rewindRejection;
 
+  /// The turn's calls in model order, each followed by the calls it made
+  /// through its reentry: what the checklist supervisor observes.
+  final List<_ObservedCall> observedCalls = <_ObservedCall>[];
+
   AgentLoopConfig get config => s.config;
   List<_PendingTool> get pending => output.pending;
 
@@ -24,8 +35,7 @@ class _ToolStep {
     if (activatedByCall.isNotEmpty) {
       yield LoopToolsActivated(names: activatedByCall, trigger: 'direct_call');
     }
-    final hooks = s.hooks;
-    final batchingAllowed = hooks == null || !hooks.interceptsTools;
+    final batchingAllowed = s.batchingAllowed;
     final resultBlocks = <HarnessToolResultBlock>[];
     // Deferred tools a RESULT asked for (a tool search loading its hits), so
     // the model can call one on its next turn rather than spending a round
@@ -75,6 +85,10 @@ class _ToolStep {
           pi++;
         }
         final results = List<HarnessToolResult?>.filled(batch.length, null);
+        final nested = List<_NestedRecord>.filled(
+          batch.length,
+          _NestedRecord.none,
+        );
         await for (final event in _executeParallelBatch(
           batch,
           byName,
@@ -82,7 +96,13 @@ class _ToolStep {
           limit: parallelLimit,
           timeout: config.tools.toolTimeout,
           completedReads: output.earlyResults,
+          reentryFor: s.reentryFor,
         )) {
+          final nestedEvent = event.nested;
+          if (nestedEvent != null) {
+            yield nestedEvent;
+            continue;
+          }
           final call = batch[event.index];
           final result = event.result;
           if (result == null) {
@@ -93,6 +113,7 @@ class _ToolStep {
             );
           } else {
             results[event.index] = result;
+            nested[event.index] = event.record;
             s.ledger.recordToolResult(call.name, isError: result.isError);
             if (event.started) {
               yield LoopToolCallResult(
@@ -107,8 +128,18 @@ class _ToolStep {
         // model order so timing cannot reorder the next cached request.
         for (var k = 0; k < batch.length; k++) {
           final result = results[k]!;
+          if (result.withdrawsScripts) {
+            s.catalog.withdrawScripts();
+          }
           requestedActivations.addAll(result.activateTools);
-          final (block, notice) = await _observe(batch[k], result);
+          observedCalls
+            ..add((name: batch[k].name, args: batch[k].args))
+            ..addAll(nested[k].calls);
+          final (block, notice) = await _observe(
+            batch[k],
+            result,
+            nested[k].digest,
+          );
           if (notice != null) {
             yield notice;
           }
@@ -119,30 +150,50 @@ class _ToolStep {
       final t = pending[pi];
       pi++;
       yield LoopToolCallStart(toolName: t.name, toolUseId: t.id, args: t.args);
-      final result = await _runSequential(t);
-      if (hooks != null) {
-        // Report-only: the tool has ALREADY run, so a throwing observer must
-        // not turn a completed call into a dead run.
-        final failure = await _guardExtension(
-          'postToolUse hook',
-          () => hooks.postToolUse(
-            t.name,
-            result.content,
-            isError: result.isError,
-          ),
-        );
-        if (failure != null) {
-          yield LoopNotice(failure);
-        }
+      // The calls this one makes through its reentry stream through here
+      // while it runs, so they land between its start and result events. The
+      // channel closes when the gate settles, on every path.
+      final nestedEvents = StreamController<AgentLoopEvent>();
+      final settled = s.gate
+          .run(
+            name: t.name,
+            args: t.args,
+            argsError: t.argsError,
+            toolCallId: t.id,
+            context: s.ctx,
+            timeout: config.tools.toolTimeout,
+            rewindRejection: rewindRejection,
+            emitNested: (event) {
+              if (!nestedEvents.isClosed) {
+                nestedEvents.add(event);
+              }
+            },
+          )
+          // Not chained on close()'s own future: it completes only once a
+          // listener has taken the done event, and the call has settled.
+          .whenComplete(() => unawaited(nestedEvents.close()));
+      // A consumer that stops listening mid-call leaves this future
+      // unawaited; its error must not surface as an unhandled one.
+      unawaited(settled.then<void>((_) {}, onError: (Object _) {}));
+      yield* nestedEvents.stream;
+      final gated = await settled;
+      if (gated.notice case final notice?) {
+        yield LoopNotice(notice);
       }
-      s.ledger.recordToolResult(t.name, isError: result.isError);
+      final result = gated.result;
+      if (result.withdrawsScripts) {
+        s.catalog.withdrawScripts();
+      }
       requestedActivations.addAll(result.activateTools);
       yield LoopToolCallResult(
         toolName: t.name,
         toolUseId: t.id,
         result: result,
       );
-      final (block, notice) = await _observe(t, result);
+      observedCalls
+        ..add((name: t.name, args: t.args))
+        ..addAll(gated.nested.calls);
+      final (block, notice) = await _observe(t, result, gated.nested.digest);
       if (notice != null) {
         yield notice;
       }
@@ -165,82 +216,13 @@ class _ToolStep {
     );
   }
 
-  /// Gates and runs one call outside a parallel batch.
-  Future<HarnessToolResult> _runSequential(_PendingTool t) async {
-    final tool = s.catalog.byName[t.name];
-    final argsError = t.argsError;
-    if (argsError != null) {
-      // Refused before dispatch: running a tool with arguments we know are
-      // wrong produces a failure that blames the tool.
-      return HarnessToolResult.error(argsError);
-    }
-    if (t.name == 'checkpoint') {
-      // Loop-handled: mark the clean boundary at the start of this turn.
-      final label = (t.args['label'] as String?)?.trim();
-      final key = (label == null || label.isEmpty) ? 'default' : label;
-      s.checkpoints[key] = s.preTurnLength;
-      return HarnessToolResult.success('Checkpoint "$key" set.');
-    }
-    if (t.name == 'rewind') {
-      // Reached only when the rewind was refused (an accepted rewind drops
-      // the whole turn before any tool runs).
-      return HarnessToolResult.error(
-        rewindRejection ?? 'rewind is handled by the loop.',
-      );
-    }
-    if (tool == null) {
-      // Deliberately does NOT enumerate a deferred catalogue: that list is
-      // ~130 names, and reprinting it every time the model fat-fingers one is
-      // the context cost deferral was meant to remove.
-      return HarnessToolResult.error(
-        s.catalog.deferredByName.isEmpty
-            ? 'Unknown tool: ${t.name}. '
-                  'Available tools: ${s.catalog.byName.keys.join(', ')}.'
-            : 'Unknown tool: ${t.name}. Call `search_tools` to find the '
-                  'right tool for what you are trying to do, or '
-                  '`list_my_tools` to browse everything available.',
-      );
-    }
-    final hooks = s.hooks;
-    if (hooks != null && !await _preToolUseAllows(hooks, t.name, t.args)) {
-      return HarnessToolResult.error('Denied by policy hook.');
-    }
-    if (_requiresApproval(tool)) {
-      final approve = config.tools.approvalCallback;
-      if (approve != null) {
-        final decision = await approve(tool, t.args);
-        // A denial carries the policy's own reason + remediation so the model
-        // can replan instead of guessing who denied it and why.
-        return decision.allowed
-            ? _run(tool, t)
-            : HarnessToolResult.error(decision.deniedMessage);
-      }
-      if (!config.tools.autoApprove) {
-        // Fail closed: a privileged tool must never run without an approver.
-        return HarnessToolResult.error(
-          'Denied: "${tool.name}" requires approval but no approver is '
-          'configured for this run.',
-        );
-      }
-    }
-    return _run(tool, t);
-  }
-
-  Future<HarnessToolResult> _run(HarnessTool tool, _PendingTool t) =>
-      _safeExecute(
-        tool,
-        t.args,
-        s.ctx,
-        toolCallId: t.id,
-        timeout: config.tools.toolTimeout,
-      );
-
   /// Shapes [result] into its model-facing block (observation ingest, image
-  /// budget, activation references). The notice reports an output the store
-  /// failed to retain.
+  /// budget, activation references, the record of its nested calls). The
+  /// notice reports an output the store failed to retain.
   Future<(HarnessToolResultBlock, LoopNotice?)> _observe(
     _PendingTool call,
     HarnessToolResult result,
+    List<HarnessNestedToolCall> nestedCalls,
   ) async {
     final observation = await s.observationIngest.ingest(
       toolName: call.name,
@@ -258,6 +240,7 @@ class _ToolStep {
         images: _budgetedImages(call.name, result),
         outputReference: observation.reference,
         toolReferences: s.catalog.referencesFor(call, result),
+        nestedCalls: nestedCalls,
       ),
       failure == null
           ? null
@@ -465,14 +448,39 @@ Stream<Object> _overlapReadOnlyTools(
   return events.stream;
 }
 
-Stream<({int index, bool started, HarnessToolResult? result})>
-_executeParallelBatch(
+/// One event of a parallel batch: a call started, a call settled (with the
+/// record of its nested calls), or an event of a nested call made by one.
+class _BatchEvent {
+  const _BatchEvent(
+    this.index, {
+    this.started = false,
+    this.result,
+    this.nested,
+    this.record = _NestedRecord.none,
+  });
+
+  final int index;
+  final bool started;
+  final HarnessToolResult? result;
+  final AgentLoopEvent? nested;
+  final _NestedRecord record;
+}
+
+Stream<_BatchEvent> _executeParallelBatch(
   List<_PendingTool> calls,
   Map<String, HarnessTool> tools,
   HarnessToolContext context, {
   required int limit,
   Duration? timeout,
   Map<String, HarnessToolResult> completedReads = const {},
+  // Builds the reentry for a call (by id), whose nested events go to `emit`.
+  _LoopReentry Function(
+    String parentToolUseId,
+    CancellationToken callToken,
+    _PausableDeadline? deadline,
+    void Function(AgentLoopEvent event) emit,
+  )?
+  reentryFor,
 }) {
   final stopped = CancellationTokenSource();
   final token = CancellationToken.any([
@@ -480,10 +488,7 @@ _executeParallelBatch(
     stopped.token,
   ]);
   final childContext = context.withCancel(token);
-  final events =
-      StreamController<
-        ({int index, bool started, HarnessToolResult? result})
-      >();
+  final events = StreamController<_BatchEvent>();
   var next = 0;
   var active = 0;
   var finished = 0;
@@ -492,19 +497,34 @@ _executeParallelBatch(
 
   Future<void> execute(int index) async {
     final call = calls[index];
-    final result = await _safeExecute(
+    final exec = await _execute(
       tools[call.name]!,
       call.args,
       childContext,
       toolCallId: call.id,
       timeout: timeout,
+      reentryFor: reentryFor == null
+          ? null
+          : (callToken, deadline) =>
+                reentryFor(call.id, callToken, deadline, (event) {
+                  if (!closed) {
+                    events.add(_BatchEvent(index, nested: event));
+                  }
+                }),
     );
     active--;
     finished++;
     if (closed) {
       return;
     }
-    events.add((index: index, started: true, result: result));
+    events.add(
+      _BatchEvent(
+        index,
+        started: true,
+        result: exec.result,
+        record: exec.nested,
+      ),
+    );
     pump();
   }
 
@@ -514,13 +534,14 @@ _executeParallelBatch(
     }
     if (token.isCancelled) {
       while (next < calls.length) {
-        events.add((
-          index: next++,
-          started: false,
-          result: HarnessToolResult.error(
-            'Cancelled before the tool could run.',
+        events.add(
+          _BatchEvent(
+            next++,
+            result: HarnessToolResult.error(
+              'Cancelled before the tool could run.',
+            ).withOutcome(ToolOutcome.cancelled),
           ),
-        ));
+        );
         finished++;
       }
     } else {
@@ -529,11 +550,11 @@ _executeParallelBatch(
         final alreadyCompleted = completedReads[calls[index].id];
         if (alreadyCompleted != null) {
           finished++;
-          events.add((index: index, started: false, result: alreadyCompleted));
+          events.add(_BatchEvent(index, result: alreadyCompleted));
           continue;
         }
         active++;
-        events.add((index: index, started: true, result: null));
+        events.add(_BatchEvent(index, started: true));
         unawaited(execute(index));
       }
     }
@@ -550,6 +571,40 @@ _executeParallelBatch(
   return events.stream;
 }
 
+/// How one execution ended.
+class _Exec {
+  const _Exec(
+    this.result,
+    this.status, [
+    this.nested = _NestedRecord.none,
+    this.stillRunning,
+  ]);
+
+  final HarnessToolResult result;
+  final ToolReentryStatus status;
+  final _NestedRecord nested;
+
+  /// The tool's own execution, when the call settled at its deadline or its
+  /// cancellation while that execution had not returned.
+  final Future<HarnessToolResult>? stillRunning;
+}
+
+/// Runs [tool] and returns only its result: the lanes that never hand a
+/// reentry out (the speculative overlap lane) need nothing else.
+Future<HarnessToolResult> _safeExecute(
+  HarnessTool tool,
+  Map<String, dynamic> args,
+  HarnessToolContext context, {
+  String? toolCallId,
+  Duration? timeout,
+}) async => (await _execute(
+  tool,
+  args,
+  context,
+  toolCallId: toolCallId,
+  timeout: timeout,
+)).result;
+
 /// Runs [tool], racing it against its deadline AND the run's cancellation.
 ///
 /// Each call gets its OWN cancellation token, linked to the run's: when the
@@ -557,68 +612,119 @@ _executeParallelBatch(
 /// watches `context.cancel` — bash, web fetch, subagents) actually stops its
 /// work instead of running on after the loop stopped waiting. A tool that
 /// ignores the token still cannot hold the turn: the kernel stops WAITING.
-Future<HarnessToolResult> _safeExecute(
+///
+/// The deadline is pausable: it stops while [waits] has a person's wait open,
+/// whether the tool reports it through its context's `personWait` or a call
+/// it makes through its reentry is waiting. [reentryFor] builds that
+/// [ToolReentry] from the call's token and deadline. The reentry closes and
+/// any wait still open ends when the call settles, whichever way it settles.
+Future<_Exec> _execute(
   HarnessTool tool,
   Map<String, dynamic> args,
   HarnessToolContext context, {
   String? toolCallId,
   Duration? timeout,
+  _PersonWaits? waits,
+  _LoopReentry Function(
+    CancellationToken callToken,
+    _PausableDeadline? deadline,
+  )?
+  reentryFor,
 }) async {
-  Timer? timer;
+  final personWaits = waits ?? _PersonWaits();
   final callCancel = CancellationTokenSource();
   final runCancel = context.cancel;
   final callToken = runCancel == null
       ? callCancel.token
       : CancellationToken.any([runCancel, callCancel.token]);
-  try {
-    final execution = tool.execute(
-      args,
-      context.withCancel(callToken).withToolCallId(toolCallId),
-    );
-    if (timeout == null && runCancel == null) {
-      return await execution;
-    }
-    final guard = Completer<HarnessToolResult>();
-    unawaited(
-      execution.then(
-        (r) => guard.isCompleted ? null : guard.complete(r),
-        onError: (Object e) => guard.isCompleted
-            ? null
-            : guard.complete(
-                HarnessToolResult.error('Tool "${tool.name}" failed: $e'),
-              ),
-      ),
-    );
-    if (timeout != null) {
-      timer = Timer(timeout, () {
-        if (!guard.isCompleted) {
-          callCancel.cancel('Tool "${tool.name}" exceeded its time limit.');
-          guard.complete(
-            HarnessToolResult.error(
-              'Tool "${tool.name}" exceeded its ${timeout.inSeconds}s '
-              'time limit and was abandoned. Its work was asked to stop but '
-              'may still be running; do not assume it finished.',
-            ),
-          );
-        }
-      });
-    }
-    if (runCancel != null) {
-      unawaited(
-        runCancel.whenCancelled.then((_) {
+  final guard = Completer<_Exec>();
+  // Assigned before the deadline or the cancellation can settle the call.
+  late final Future<HarnessToolResult> execution;
+  final deadline = timeout == null
+      ? null
+      : _PausableDeadline(timeout, () {
           if (!guard.isCompleted) {
+            callCancel.cancel('Tool "${tool.name}" exceeded its time limit.');
             guard.complete(
-              HarnessToolResult.error('Tool "${tool.name}" was cancelled.'),
+              _Exec(
+                HarnessToolResult.error(
+                  'Tool "${tool.name}" exceeded its ${timeout.inSeconds}s '
+                  'time limit and was abandoned. Its work was asked to stop '
+                  'but may still be running; do not assume it finished.',
+                ).withOutcome(ToolOutcome.timedOut),
+                ToolReentryStatus.timedOut,
+                _NestedRecord.none,
+                execution,
+              ),
             );
           }
-        }),
+        });
+  personWaits.attach(deadline);
+  final reentry = reentryFor?.call(callToken, deadline);
+  _Exec settled(HarnessToolResult result) => _Exec(
+    result,
+    result.isError ? ToolReentryStatus.failed : ToolReentryStatus.completed,
+  );
+  try {
+    execution = tool.execute(
+      args,
+      context
+          .withCancel(callToken)
+          .withToolCallId(toolCallId)
+          .withReentry(reentry)
+          .withPersonWait(personWaits.report),
+    );
+    final _Exec exec;
+    if (timeout == null && runCancel == null) {
+      exec = settled(await execution);
+    } else {
+      unawaited(
+        execution.then(
+          (r) => guard.isCompleted ? null : guard.complete(settled(r)),
+          onError: (Object e) => guard.isCompleted
+              ? null
+              : guard.complete(
+                  _Exec(
+                    HarnessToolResult.error('Tool "${tool.name}" failed: $e'),
+                    ToolReentryStatus.failed,
+                  ),
+                ),
+        ),
       );
+      deadline?.start();
+      if (runCancel != null) {
+        unawaited(
+          runCancel.whenCancelled.then((_) {
+            if (!guard.isCompleted) {
+              guard.complete(
+                _Exec(
+                  HarnessToolResult.error(
+                    'Tool "${tool.name}" was cancelled.',
+                  ).withOutcome(ToolOutcome.cancelled),
+                  ToolReentryStatus.cancelled,
+                  _NestedRecord.none,
+                  execution,
+                ),
+              );
+            }
+          }),
+        );
+      }
+      exec = await guard.future;
     }
-    return await guard.future;
+    return reentry == null
+        ? exec
+        : _Exec(exec.result, exec.status, reentry.record, exec.stillRunning);
   } on Object catch (e) {
-    return HarnessToolResult.error('Tool "${tool.name}" failed: $e');
+    return _Exec(
+      HarnessToolResult.error('Tool "${tool.name}" failed: $e'),
+      ToolReentryStatus.failed,
+      reentry?.record ?? _NestedRecord.none,
+    );
   } finally {
-    timer?.cancel();
+    personWaits.settle();
+    deadline?.dispose();
+    reentry?.close();
   }
 }
 

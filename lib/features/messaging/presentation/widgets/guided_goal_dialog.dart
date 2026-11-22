@@ -1,7 +1,11 @@
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/agents/providers/agent_providers.dart';
+import 'package:control_center/features/dispatch/presentation/widgets/goals/goal_launch_options.dart';
+import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Turns a rough `/goal` into an objective an agent can pursue unsupervised.
 ///
@@ -14,9 +18,18 @@ import 'package:flutter/widgets.dart';
 /// It never blocks. Every step offers "skip and run as written", because a
 /// person who knows exactly what they want should not have to argue with an
 /// interviewer to get it. The interview is a default, not a gate.
-class GuidedGoalDialog extends StatefulWidget {
+///
+/// Once the objective is ready, the person may add checks, a separate
+/// checker, and the fresh and unattended options ([GoalLaunchOptions]);
+/// Start returns the body with them in it ([composeGoalBody]).
+class GuidedGoalDialog extends ConsumerStatefulWidget {
   /// Creates a [GuidedGoalDialog].
-  const GuidedGoalDialog({required this.rough, required this.step, super.key});
+  const GuidedGoalDialog({
+    required this.rough,
+    required this.step,
+    this.goalAgentId,
+    super.key,
+  });
 
   /// The objective as the human first typed it.
   final String rough;
@@ -24,17 +37,23 @@ class GuidedGoalDialog extends StatefulWidget {
   /// Runs one interview step against the transcript so far.
   final Future<GuidedGoalStepResult> Function(List<String> transcript) step;
 
+  /// The agent that will pursue the goal, when known: not offered as its
+  /// checker, and the provider the checker recommendation differs from.
+  final String? goalAgentId;
+
   @override
-  State<GuidedGoalDialog> createState() => _GuidedGoalDialogState();
+  ConsumerState<GuidedGoalDialog> createState() => _GuidedGoalDialogState();
 }
 
-class _GuidedGoalDialogState extends State<GuidedGoalDialog> {
+class _GuidedGoalDialogState extends ConsumerState<GuidedGoalDialog> {
   final _controller = TextEditingController();
   final _transcript = <String>[];
   String? _question;
   String? _objective;
   List<String> _missing = const [];
   var _loading = true;
+  var _choice = const GoalLaunchChoice();
+  var _checksValid = true;
 
   @override
   void initState() {
@@ -96,6 +115,10 @@ class _GuidedGoalDialogState extends State<GuidedGoalDialog> {
     final l10n = AppLocalizations.of(context);
     final tokens = context.ds;
     final objective = _objective;
+    final workspaceId = ref.watch(activeWorkspaceIdProvider);
+    final agents = workspaceId == null
+        ? const <Never>[]
+        : ref.watch(workspaceAgentsProvider(workspaceId)).value ?? const [];
 
     return CcDialog(
       title: l10n.guidedGoalTitle,
@@ -126,9 +149,24 @@ class _GuidedGoalDialogState extends State<GuidedGoalDialog> {
                 const SizedBox(height: AppSpacing.sm),
               ],
               ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 320),
+                constraints: const BoxConstraints(maxHeight: 420),
                 child: SingleChildScrollView(
-                  child: Text(objective, style: CcTypography.body),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(objective, style: CcTypography.body),
+                      const SizedBox(height: AppSpacing.lg),
+                      GoalLaunchOptions(
+                        agents: agents,
+                        goalAgentId: widget.goalAgentId,
+                        choice: _choice,
+                        onChanged: (choice, checksValid) => setState(() {
+                          _choice = choice;
+                          _checksValid = checksValid ?? _checksValid;
+                        }),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ] else ...[
@@ -155,7 +193,11 @@ class _GuidedGoalDialogState extends State<GuidedGoalDialog> {
           CcButton(
             onPressed: objective == null
                 ? _answer
-                : () => Navigator.of(context).pop(objective),
+                : _checksValid
+                ? () => Navigator.of(
+                    context,
+                  ).pop(composeGoalBody(objective, _choice))
+                : null,
             child: Text(
               objective == null ? l10n.guidedGoalNext : l10n.guidedGoalStart,
             ),

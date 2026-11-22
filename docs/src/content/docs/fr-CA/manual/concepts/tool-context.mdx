@@ -2,29 +2,45 @@
 title: Contexte des outils et cache de prompts
 description: Pourquoi un agent se voit présenter un petit ensemble d’outils plutôt que la totalité, comment il atteint le reste et les règles qui gardent le cache de prompts du fournisseur au chaud pendant une exécution.
 slug: fr-CA/manuel/concepts/contexte-des-outils
-sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
+sourceHash: 74ad7fcb903772d007ba9bd7ec85153fcf668335
 ---
 
 Deux choses sont vraies de chaque requête que fait le harnais intégré : les définitions d’outils en constituent le plus gros coût fixe, et presque aucune d’elles ne sera utilisée. Cette page explique ce que fait Control Center à ce sujet, et pourquoi la réponse n’est pas simplement « envoyer moins d’outils ».
 
 ## Le problème, c’est l’attention, pas les octets
 
-Control Center enregistre environ 126 outils. Envoyées au complet, leurs définitions coûtent environ **23 000 jetons à chaque requête** — un coût qu’aucun compactage ne peut toucher, parce que les définitions d’outils voyagent dans une partie de la requête distincte de la conversation.
+Control Center possède environ 160 outils qui lui sont propres. Envoyées au complet, leurs définitions s’ajouteraient à **chaque requête** — un coût qu’aucun compactage ne peut toucher, parce que les définitions d’outils voyagent dans une partie de la requête distincte de la conversation.
 
 La facture de jetons est la plainte évidente et, avec le cache de prompts, c’est aussi la plus petite. Le coût réel est la **précision de la sélection**. Les évaluations publiées sur l’appel d’outils s’accordent : les modèles choisissent le bon outil de façon fiable jusqu’à environ 30 à 50 outils en contexte, puis se dégradent progressivement au-delà. La cause nommée n’est pas le nombre de jetons, mais le **chevauchement sémantique** : dès qu’un catalogue contient plusieurs outils dont les descriptions se ressemblent, le modèle choisit entre des quasi-jumeaux au lieu de se rappeler d’une capacité.
 
-Avec 126 outils, un agent dépasse largement cette bande à chaque tour — y compris les nombreux tours où il n’avait qu’à lire un fichier.
+Avec environ 160 outils, un agent dépasse largement cette bande à chaque tour — y compris les nombreux tours où il n’avait qu’à lire un fichier.
 
-## La surface à deux niveaux
+## Un petit ensemble direct
 
 Une exécution se voit donc présenter deux choses :
 
-- un ensemble **résident** — environ deux douzaines d’outils, envoyé avec ses schémas complets à chaque requête ;
+- un ensemble **direct** d’une quinzaine d’outils, envoyé avec ses schémas complets à chaque requête ;
 - un **index de noms** de tout le reste, regroupé sous des rubriques comme « Tickets and projects » ou « Memory and knowledge », pour quelques centaines de jetons au total.
 
-Mesuré sur le catalogue actuel, cela fait passer le bloc d’outils de **~23,1k jetons à ~5,0k, soit environ 78 % de moins**, et place l’ensemble toujours visible à l’intérieur de la bande où la sélection est fiable.
+Mesurés sur le registre que construisent les tests, les outils de chat standard de l’agent intégré représentent 14 définitions d’outils et environ 16,5 Ko avec `repl`, dont `repl` occupe environ 4 Ko (sa définition ne peut pas dépasser 4 096 octets), et 14 définitions et environ 13 Ko sur un serveur qui ne peut pas exécuter de scripts. Il s’agit de la mesure d’une seule surface, non de chaque installation. Chaque autre outil est atteint depuis un script ou se charge à la première utilisation.
 
-L’ensemble résident, ce sont les outils qu’une exécution utilise dans *la plupart* des exécutions : le vocabulaire de fichiers et de shell (`read`, `write`, `edit`, `search`, `bash`, …), les outils de découverte, la liste de tâches, la recherche en mémoire, et le verbe que le [mode](/fr-CA/manuel/concepts/modes) courant doit appeler pour livrer sa sortie. Le verbe de sortie propre à un mode est toujours résident — une exécution ne doit jamais avoir à chercher l’appel unique qui produit son livrable.
+L’ensemble direct regroupe les outils que la plupart des exécutions utilisent dans leurs premiers tours, et ceux qu’une exécution ne doit jamais avoir à chercher : `read`, `write`, `edit`, `search`, `find`, `bash` et `read_output` ; `ask_user` et `task` ; `todo_write`, `search_memory` et `send_message` ; et le verbe que le [mode](/fr-CA/manuel/concepts/modes/) courant doit appeler pour remettre sa sortie. Le verbe de sortie propre à un mode est toujours direct — une exécution ne doit jamais avoir à chercher l’appel unique qui produit son livrable. Un outil mérite sa place parce que la plupart des exécutions l’utilisent, et non parce qu’il est important lorsqu’on l’utilise : chaque nom de l’ensemble est une définition à chaque tour de chaque exécution.
+
+### Les scripts atteignent le reste
+
+Lorsque le serveur peut exécuter des scripts, chaque exécution a aussi [`repl`](/fr-CA/manuel/concepts/mode-code/), en premier dans la liste. La règle pour le reste du catalogue est alors :
+
+- un outil qu’un script peut appeler n’est atteint **que depuis un script** : il figure dans l’index de noms, et un script `repl` l’appelle sous la forme `tools.<name>(args)` après l’avoir cherché avec `searchTools()` ou `describeTool()`, jusqu’à ce que le serveur ne puisse plus exécuter les scripts de l’exécution, et qu’il se charge alors à la première utilisation ([Lorsque les scripts ne peuvent pas s’exécuter](/fr-CA/manuel/concepts/mode-code/#lorsque-les-scripts-ne-peuvent-pas-sexécuter)) ;
+- un outil qu’un script ne peut pas appeler (`eval`, `task`, les approbations, la délégation et quelques autres) est **différé** : il se charge à la première utilisation, comme décrit ci-dessous ;
+- `search_tools` est ajouté dès qu’un outil est différé.
+
+Une exécution sans `repl` reçoit le même ensemble direct, et tout le reste est différé.
+
+L’ensemble direct est le même avec ou sans `repl`, délibérément. L’agent apprend une seule surface, le début de chaque requête contient les mêmes outils dans le même ordre, et l’ajout de `repl` ne change rien sur quoi l’agent s’appuyait déjà.
+
+Ce qu’il permet d’économiser : le schéma d’un outil réservé aux scripts n’est jamais envoyé au fournisseur, de sorte que la centaine d’outils hors de l’ensemble direct ne coûtent que leurs noms. Un script qui en a besoin de dix ne paie aucun de leurs schémas, et ses résultats intermédiaires n’entrent jamais dans le contexte.
+
+Ce qu’il coûte : un outil hors de l’ensemble direct exige un script pour être appelé, et le script doit d’abord chercher les arguments de l’outil. Pour un seul appel rapide, c’est une étape de plus qu’un appel direct n’aurait pas exigée. C’est pourquoi les outils que la plupart des exécutions appellent dans leurs premiers tours restent directs.
 
 ### Différé ne veut pas dire indisponible
 
@@ -32,19 +48,21 @@ Voici la partie qui rend la conception sûre et pas seulement économique. **Un 
 
 L’agent voit le nom dans son prompt. S’il appelle ce nom directement, le harnais charge le schéma et exécute l’outil dans la même étape — sans erreur, sans aller-retour. Le modèle n’a pas besoin de savoir que l’outil a déjà été « déchargé ».
 
-Quand l’agent connaît la tâche mais pas le nom, `search_tools` accepte une description en langage naturel (« assigner un ticket à quelqu’un »), classe toute la surface de l’exécution et renvoie les correspondances *avec leurs schémas déjà chargés*, de sorte que le tour suivant puisse en appeler une. Si une recherche ne trouve rien, elle le dit clairement et propose une formulation différente ou une recherche plus large — délibérément, parce qu’un agent qui interprète une recherche vide comme « cette capacité n’existe pas » inventera un substitut au lieu de chercher de nouveau.
+Quand l’agent connaît la tâche mais pas le nom, `search_tools` accepte une description en langage naturel (« assigner un ticket à quelqu’un »), classe toute la surface de l’exécution et renvoie les correspondances *avec leurs schémas déjà chargés*, de sorte que le tour suivant puisse en appeler une. Une correspondance qui n’est appelable que depuis un script est renvoyée avec la façon de l’appeler depuis un script à la place, sauf si les scripts de l’exécution ne peuvent plus s’exécuter : elle se charge alors comme toute autre correspondance. Si une recherche ne trouve rien, elle le dit clairement et propose une formulation différente ou une recherche plus large — délibérément, parce qu’un agent qui interprète une recherche vide comme « cette capacité n’existe pas » inventera un substitut au lieu de chercher de nouveau.
 
 `search_tools` n’existe que dans le harnais intégré. Les clients MCP externes disposent plutôt de `search_tool_bm25`, qui classe le même index mais ne fait que décrire les correspondances — ces clients ont déjà reçu tous les schémas de `tools/list`, il n’y a donc rien à charger.
 
-### Ce que la mise en différé ne fait jamais
+### Ce que la surface ne fait jamais
 
-La mise en différé s’applique **après** le filtre d’outils du mode, jamais à sa place. Elle cache un schéma ; elle ne peut pas révéler un outil que le mode a refusé. Un outil activé passe toujours par la demande d’approbation et les [garde-fous d’action](/fr-CA/manuel/concepts/garde-fous) exactement comme un outil résident, et un outil ne peut pas charger un nom qui ne figurait pas au départ dans la surface de l’exécution.
+La mise en différé et les scripts s’appliquent **après** le filtre d’outils du mode, jamais à sa place. Elles cachent un schéma ; elles ne peuvent pas révéler un outil que le mode a refusé. Un outil chargé et un appel de script passent toujours par la demande d’approbation et les [garde-fous d’action](/fr-CA/manuel/concepts/garde-fous/) exactement comme un appel direct, et ni l’un ni l’autre ne peut atteindre un nom qui ne figurait pas dès le départ dans la surface de l’exécution.
 
-La surface MCP que voient les clients externes n’est **pas** touchée. `tools/list` renvoie toujours le catalogue complet. Une tentative antérieure de le réduire a cassé les agents d’emblée : les clients MCP valident les noms d’outils contre leur propre liste en cache et refusent tout ce qui n’y figure pas sans jamais interroger le serveur, si bien qu’un outil « caché mais appelable » était tout simplement inatteignable. La mise en différé vit dans le harnais, où charger un outil en cours d’exécution est quelque chose que le harnais peut réellement faire.
+La surface MCP que voient les clients externes n’est **pas** différée. `tools/list` renvoie le catalogue complet, parce que les clients MCP valident les noms d’outils contre leur propre liste en cache et refusent tout ce qui n’y figure pas sans jamais interroger le serveur, si bien qu’un outil « caché mais appelable » serait tout simplement inatteignable. La mise en différé vit dans le harnais, où charger un outil en cours d’exécution est quelque chose que le harnais peut réellement faire.
 
-### La désactiver
+Une exécution d’agent qui atteint Control Center par son point de terminaison MCP, lorsque le serveur peut exécuter des scripts, fait seule exception. Son `tools/list` contient `repl`, les outils directs et chaque outil qu’un script ne peut pas appeler, et elle appelle le reste depuis des scripts. Un appel direct à l’un de ceux-ci reçoit une réponse indiquant comment l’appeler depuis un script.
 
-`--tool-deferral=off` (ou `CC_SERVER_TOOL_DEFERRAL=off`) rend de nouveau résident chaque outil admis, produisant exactement les requêtes que le serveur faisait avant l’existence de la mise en différé. Voir la [référence de la CLI `cc_server`](/fr-CA/manuel/reference/cc-server-cli).
+### Désactiver la mise en différé
+
+`--tool-deferral=off` (ou `CC_SERVER_TOOL_DEFERRAL=off`) désactive la mise en différé : une exécution sans `repl` reçoit chaque outil admis en entier, et une exécution avec `repl` reçoit en entier les outils qu’un script ne peut pas appeler, pendant que le reste reste réservé aux scripts. Voir la [référence de la CLI `cc_server`](/fr-CA/manuel/reference/cc-server-cli/).
 
 ## Le cache de prompts
 
@@ -64,7 +82,7 @@ Un fournisseur autorise un nombre limité de marqueurs de cache, et Control Cent
 
 | Marqueur                     | Couvre                             | Durée de vie |
 | ---------------------------- | ---------------------------------- | -------- |
-| Dernier outil **résident**   | Le bloc d’outils                   | 1 heure  |
+| Dernier outil **direct**     | Le bloc d’outils                   | 1 heure  |
 | Dernier bloc système         | Outils + prompt système            | 1 heure  |
 | Queue du tour précédent      | Historique jusqu’à la dernière requête | 5 min    |
 | Queue du tour courant        | L’historique complet               | 5 min    |
@@ -77,12 +95,12 @@ Le préfixe outils-et-système reçoit la longue durée de vie parce qu’il est
 
 Les sous-agents du même type produisent des préfixes de prompt identiques octet pour octet, ils devraient donc lire une seule entrée de cache plutôt que d’écrire chacun la sienne. Mais une entrée ne devient lisible qu’une fois que la requête qui l’a écrite commence à répondre ; un éventail lancé d’un seul coup fait donc payer à chaque enfant la prime d’un préfixe qu’ils partagent tous.
 
-Le harnais laisse démarrer le premier enfant d’une forme donnée, puis libère ses frères et sœurs dès qu’il commence à diffuser. L’attente est bornée : un premier enfant lent coûte un succès de cache, jamais l’éventail lui-même. Pour la même raison, chaque sous-agent reçoit le même ensemble d’outils résidents, peu importe son profil — le faire varier par profil fragmenterait le préfixe partagé sans gain, puisque le profil a déjà décidé ce que l’enfant peut appeler.
+Le harnais laisse démarrer le premier enfant d’une forme donnée, puis libère ses frères et sœurs dès qu’il commence à diffuser. L’attente est bornée : un premier enfant lent coûte un succès de cache, jamais l’éventail lui-même. Pour la même raison, chaque sous-agent reçoit le même ensemble d’outils directs, peu importe son profil — le faire varier par profil fragmenterait le préfixe partagé sans gain, puisque le profil a déjà décidé ce que l’enfant peut appeler.
 
 ## L’observer à l’œuvre
 
 Les deux moitiés sont observables plutôt que présumées :
 
-- L’**explorateur de contexte** d’une conversation indique les outils résidents, l’index différé et ce que *coûterait* chaque schéma retenu, à partir du même chemin de code qu’utilise une exécution réelle.
+- L’**explorateur de contexte** d’une conversation indique les outils directs, l’index différé et ce que *coûterait* chaque schéma retenu, à partir du même chemin de code qu’utilise une exécution réelle.
 - Chaque exécution consigne les outils différés qu’elle a chargés et ce qui l’a déclenché, de sorte qu’une recherche qui ne trouve rien est visible comme un raté de récupération plutôt que de disparaître dans un agent qui fait discrètement quelque chose de connexe.
 - L’observabilité rapporte le **Taux de cache** comme les lectures de cache sur tous les jetons de prompt traités, écritures de cache comprises — une exécution qui ne cesse de rebâtir son préfixe obtient un score faible, au lieu d’obtenir un score comme celle qui n’a jamais eu besoin d’un cache.

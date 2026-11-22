@@ -1,0 +1,178 @@
+---
+title: Režim kódu
+description: Jak agent píše krátký skript, který volá jeho nástroje, místo volání jednoho po druhém, které nástroje volá přímo a které ze skriptu, limity, pod kterými skript běží, jak se skript čte v konverzaci, a jak je omezen a zaznamenáván.
+slug: cs-CZ/prirucka/koncepty/rezim-kodu
+sourceHash: d41fe2f38c216949847fc7c4768fdf96bed2dc83
+---
+
+Agent obvykle volá své nástroje jeden po druhém. Každé volání je jedno kolo modelu: agent požádá o volání, výsledek se vrátí do jeho kontextu a agent ho přečte, než požádá o další. U práce, která je většinou mechanická, jako čtení dvaceti souborů, aby našel tři podstatné, nebo kontrola každého otevřeného ticketu na jeden štítek, se většina těchto kol a většina toho kontextu spotřebuje na výsledky, které agent zahodí.
+
+Režim kódu je jeden nástroj, `repl`. Pomocí něj agent napíše krátký skript v JavaScriptu, který volá jeho další nástroje, prochází smyčkou, filtruje a spojuje jejich výsledky a vrací jen to, co potřebuje. Jedno volání `repl` může nahradit práci desítek kol nástrojů a do kontextu se dostane jen odpověď skriptu.
+
+Každý běh má `repl`, když server umí spouštět skripty. Není co zapínat: viz [Kdy má běh `repl`](#kdy-má-běh-repl).
+
+## Co skript umí
+
+Skript je prostý JavaScript, napsaný jako tělo asynchronní funkce, takže `await` a `return` fungují na nejvyšší úrovni. Každé volání `repl` spustí nový, prázdný interpret.
+
+- **Volání nástrojů.** `await tools.read({ path: "README.md" })` zavolá nástroj a vrátí jeho výsledek, nebo skončí chybou, pokud volání selže nebo je zamítnuto. Nezávislá volání mohou běžet současně přes `Promise.allSettled`.
+- **Hledání nástrojů.** `ALL_TOOLS` vypisuje všechny nástroje, které skript smí volat. `searchTools(query)` najde nástroje podle toho, co dělají, `describeTool(name)` vrátí popis jednoho nástroje a jeho argumenty a `describeNamespace(name)` vypíše nástroje jedné skupiny. Nástroje připojených serverů MCP jsou dostupné také tímto způsobem.
+- **Vrácení výsledků.** Agentovi se vrátí jen to, co skript vrátí nebo předá funkcím `text()`, `image()` nebo `console.log()`. Modelu se předají nejvýše čtyři obrázky.
+- **Uchovávání hodnot.** `store(key, value)` a `load(key)` uchovávají malé JSON hodnoty mezi skripty stejné konverzace a agenta. Hodnoty se uloží až po dokončení skriptu. Subagenti úložiště nemají.
+- **Zeptat se člověka.** `await tools.ask_user({ question, options })` položí otázku a čeká na odpověď.
+- **Embeddingy na zařízení.** `models.embed`, `models.rank` a `models.classify` používají embeddingový model serveru, pokud je nainstalovaný.
+- **Čekání.** `sleep(ms)` a `setTimeout` v rámci časového limitu skriptu. `limits()` vrací limity, pod kterými skript běží.
+
+Skript nemá přístup k souborovému systému, síti, procesům, modulům ani prostředí: nelze použít `fetch`, `require`, `import` ani `process`. Jediná cesta ven je volání nástroje a každé volání nástroje prochází stejnými kontrolami jako volání, které agent provedl přímo.
+
+Volání nástrojů, která skript už provedl, se nevrátí zpět, ani když skript později selže.
+
+## Které nástroje agent volá přímo
+
+Každý běh vestavěného agenta dostane stejnou malou sadu nástrojů, které volá podle jména:
+
+- `repl`, jako první;
+- nástroje pro soubory a shell `read`, `write`, `edit`, `search`, `find`, `bash` a `read_output`;
+- `ask_user` a `task`;
+- `todo_write`, `search_memory` a `send_message`;
+- slovesa, která [režim](/cs-CZ/prirucka/koncepty/rezimy/) konverzace potřebuje k odevzdání svého výstupu nebo k odchodu z něj, například `submit_plan` v plánovacím režimu;
+- `search_tools`, pokud se nějaký nástroj načítá až při prvním použití (viz níže).
+
+Každý další nástroj, který běh smí použít, se dosáhne jedním ze dvou způsobů:
+
+- **Jen ze skriptu**, pokud ho skript smí volat. Agent ho najde přes `searchTools()` nebo `describeTool()` a volá ho jako `tools.<name>(args)`. Jeho popis se nikdy nedostane k modelu, takže v promptu nic nestojí. Pokud ho agent přesto zavolá přímo, odpověď mu řekne, aby nástroj volal ze skriptu. Pokud server nemůže spouštět skripty běhu, načte se místo toho až při prvním použití ([Když skripty nemohou běžet](#když-skripty-nemohou-běžet)).
+- **Načte se až při prvním použití**, pokud ho skript volat nesmí. Agent vidí jeho jméno; zavolání podle jména nebo nalezení přes `search_tools` ho načte.
+
+Některé nástroje nelze nikdy volat ze skriptu, mezi nimi samotný `repl` (skript nemůže spustit skript), `eval`, `task`, `checkpoint`, `rewind`, slovesa `vibe_*` a nástroje, které spouštějí nebo zprávami ovlivňují běhy jiných agentů, vytvářejí, rozhodují nebo komentují schválení, mění politiku nebo dovednosti, případně opouštějí plánovací režim. Agent je volá přímo.
+
+Běh bez `repl` dostane stejné přímé nástroje a všechno ostatní se načte až při prvním použití. [Kontext nástrojů a cache promptů](/cs-CZ/prirucka/koncepty/kontext-nastroju/) vysvětluje, proč je sada v obou případech stejná.
+
+Režim kódu nikdy nepřidá nástroj, který režim konverzace nepovoluje. Nejprve se použije filtr nástrojů režimu a skript smí volat jen to, co zbude.
+
+## Kdy má běh `repl`
+
+Běh má `repl`, když uzamčení skriptového runneru při startu serveru prošlo kontrolou ([Jak jsou skripty omezeny](#jak-jsou-skripty-omezeny)). Žádné nastavení pracovního prostoru, agenta ani serveru to nemění. Běh bez `repl` nemá, když:
+
+- runner se na počítači serveru nedokáže sám uzamknout; server pak nespouští vůbec žádné skripty;
+- server je veřejná demoverze, která nespouští žádné skripty;
+- běh nepatří do žádného pracovního prostoru;
+- limity pracovního prostoru nelze přečíst, protože běh s výchozími hodnotami by mohl překročit limity, které správce snížil;
+- záznam běhu nelze zapsat, protože každý skript se před startem zaznamenává pod svým během.
+
+Takový běh volá všechny své nástroje přímo.
+
+Režim kódu funguje pro běhy vestavěného agenta i pro agenty, které se k nástrojům Control Center dostávají přes jeho koncový bod MCP, například Claude Code. U agenta MCP seznam nástrojů, který dostane, obsahuje `repl`, přímé nástroje a nástroje, které skript volat nesmí; zbytek volá ze skriptů. Jen běh, který Control Center spustil a vede pro něj záznam, dostane tam `repl`; každý jiný klient dostane všechny nástroje kromě `repl`.
+
+**Nastavení → Pracovní prostor → Režim kódu** ukazuje pod **Stav**, zda tento server spouští skripty (**Dostupné**, nebo **Nedostupné** s důvodem, který server uvede), a která verze **Runner** je nainstalována. **Zobrazit spuštění kódu** otevře seznam skriptů, které proběhly.
+
+Vlastník serveru nemůže skripty vypnout. Může je omezit: kolik jich běží najednou a kolik paměti smí jeden použít (viz [Limity](#limity)).
+
+### Když skripty nemohou běžet
+
+Běh nikdy neztratí nástroj jen proto, že server nemůže spouštět jeho skripty. Když server odmítne skript z důvodu, kterému by neunikl žádný jiný skript (například skripty nejsou dostupné, skript čekal polovinu svého času na volné místo, jeho záznam nelze zapsat, seznam nástrojů běhu je příliš velký na to, aby se předal skriptu, nebo se runner nedokáže spustit ani samouzamknout), běh přestane skripty používat po zbytek svého života:
+
+- běh vestavěného agenta si ponechá `repl` a každý nástroj, ke kterému se dostal jen ze skriptu, se nyní načte až při prvním použití: agent ho zavolá podle jména nebo ho najde přes `search_tools`;
+- běh na endpointu MCP dostane seznam nástrojů se všemi nástroji a bez `repl` a jeho klient je informován, že se seznam změnil. Server si pamatuje posledních 1 024 takových běhů; starší se vrátí ke skriptům.
+
+Ty nástroje procházejí stejným filtrem režimu, guardraily a schváleními jako dřív, takže nic nezpřístupní, co dřív přístupné nebylo. Skript, který selže vlastní vinou, tím, že vyhodí chybu, vyčerpá limit nebo mu bude volání zamítnuto, nic nemění.
+
+Server také průběžně kontroluje, že skripty mohou běžet. Když runner selže při startu z důvodu, který není na straně skriptu, server zopakuje kontrolu uzamčení, nejvýše jednou za minutu. Pokud kontrola selže, server nespouští žádné skripty a zapíše stejný řádek `code_mode=unavailable` jako při startu; běhy, které mezitím začnou, nedostanou `repl`. Kontroluje dál, nejvýše jednou za minutu, a když kontrola projde, spouští skripty znovu a zapíše řádek `code_mode=available`. Restart je potřeba jen u kontroly, která selhala při startu serveru.
+
+## Limity
+
+Každý skript běží pod limity. Správce pracovního prostoru může změnit šest z nich v části **Limity** v **Nastavení → Pracovní prostor → Režim kódu** (**Upravit limity**); agent může pro jeden skript požádat o kratší čas nebo menší výstupní rozpočet, nikdy o větší.
+
+| Limit | Výchozí hodnota | Rozsah | Když dojde |
+| --- | --- | --- | --- |
+| Čas na skript | 5 min | 1 s až 25 min | Skript se zastaví a agent se dozví, že mu došel čas. |
+| Čas procesoru | 30 s | 1 s až 2 min | Skript se zastaví. |
+| Paměť | 256 MiB | 16 MiB až 1 GiB | Skript se zastaví. Vlastník serveru může nastavit nižší strop pro celý server. |
+| Volání nástrojů na skript | 500 | 1 až 5 000 | Další volání jsou odmítnuta a skript se dozví proč. |
+| Volání najednou | 8 | 1 až 32 | Volání jen pro čtení nad tento limit čekají na svou řadu. Volání, která něco mění, vždy běží jedno po druhém. |
+| Výstup, který agent čte | 10 000 tokenů | 100 až 50 000 | Výstup se zkrátí na začátek a konec a zbytek může agent na požádání přečíst. |
+
+Čas, který skript stráví čekáním na člověka, na schválení nebo na otázku, se nepočítá do jeho časového limitu. Dokud čeká, nezačne skript žádné jiné volání nástroje: volání, která udělá mezitím, začnou v pořadí, až na ně bude odpovězeno.
+
+Některé limity jsou pevné: zdrojový kód skriptu má nejvýše 256 KiB, argumenty jednoho volání nástroje 1 MiB a 16 384 hodnot, příkaz, který skript předá vestavěnému nástroji a ten ho spustí, nejvýše 16 KiB (název nástroje se do toho počítá), jeden výsledek předaný skriptu 4 MiB, uložená hodnota 256 KiB a vše, co jedna konverzace a agent uloží dohromady, 1 MiB. Jeden běh spouští najednou jeden skript.
+
+Vyhledávání nástrojů ve skriptech je také omezené: dotaz na `searchTools` nejvýše 1 024 znaků, název nástroje nebo jmenného prostoru nejvýše 256 znaků, nejvýše 50 výsledků a nejvýše 200 vyhledávání, která celkem zaberou 2 sekundy času serveru; po překročení další vyhledávání selžou. Všechny skripty jednoho pracovního prostoru také sdílejí 2 sekundy času na vyhledávání, které se vracejí rychlostí čtvrt sekundy za každou sekundu. Vyhledávací index dá každému nástroji rovný díl zhruba jednoho milionu znaků, nejdřív na názvy jeho argumentů a pak na popis, a název každého nástroje indexuje vždy, takže nástroj se najde podle názvu i ve velmi velkém katalogu.
+
+Vlastník serveru navíc omezuje, kolik skriptů na serveru běží současně (`--code-mode-max-processes`, výchozí hodnota je dvojnásobek počtu procesorových jader, nejvýše 16) a kolik paměti smí použít jeden skript (`--code-mode-max-heap-mb`); skripty čekající na člověka se počítají zvlášť, až do čtyřnásobku tohoto počtu. Je-li tento strop vyšší než jedna, jeden pracovní prostor může využít nejvýše zhruba tři čtvrtiny, aby žádný jednotlivý pracovní prostor nemohl obsadit všechna místa. Běh a jeho subagenti dohromady využijí nejvýše polovinu míst svého pracovního prostoru (alespoň jedno), takže jejich další skripty čekají, zatímco skripty ostatních běhů pracovního prostoru jdou dál. Viz [referenční příručka CLI `cc_server`](/cs-CZ/prirucka/referencni-prirucka/cc-server-cli/#režim-kódu).
+
+## Schválení a otázky
+
+Volání nástroje ze skriptu se kontroluje přesně jako přímé volání: filtr nástrojů režimu, [guardraily akcí](/cs-CZ/prirucka/koncepty/guardraily/), výzva ke schválení a vlastní kontroly nástroje. Skript nemůže udělat nic, co agent nemohl udělat tím, že by nástroj zavolal sám.
+
+Když volání skriptu potřebuje schválení, karta schválení nese text **Z skriptu, který agent spouští** a **Zobrazit skript** otevře skript v konverzaci. Aby vás skript nezahlcoval kartami:
+
+- jeden skript může požádat o schválení nejvýše 10krát a položit nejvýše 10 otázek;
+- jakmile odmítnete jedno z jeho volání, jeho pozdější volání, která potřebují schválení, se zamítnou bez dotazu.
+
+U běhů vestavěného agenta výzvy ke schválení, které vyvolají příkazy spuštěné skriptem, například push do gitu, se počítají do stejného limitu a po odmítnutí se zastaví stejně. Když souběžně běží skript subagenta, taková výzva se počítá do limitu obou skriptů a odmítnutí zastaví oba.
+
+V běhu vestavěného agenta se schválení nástroje externího serveru MCP nepamatuje: každé volání se ptá znovu, ať ho udělá skript, nebo agent sám, pokud autonomie prostoru není nastavena na **Jednat volně**. Každá taková výzva, kterou vyvolá skript, se počítá do jeho limitu 10.
+
+Pokud skript skončí dřív, než odpovíte, karta se stáhne a odpověď dodaná až potom neschvaluje nic.
+
+## V konverzaci
+
+Volání `repl` se v konverzaci zobrazí jako jeden řádek s popisem skriptu. Po rozbalení se ukáže skript a jeho výstup a volání nástrojů, která skript provedl, pod **Volání nástrojů**, s počtem těch, která běží, skončila v pořádku, selhala, byla zamítnuta, zrušena, čekají ve frontě nebo byla přeskočena.
+
+### Jak se skript čte
+
+Volání nástrojů jsou uspořádána podle toho, jak je skript napsán, ne jako jeden dlouhý seznam. Runner hlásí řádek a sloupec, odkud bylo každé volání provedeno, a aplikace ze skriptu zjišťuje jeho smyčky, větvení a funkce:
+
+- **Smyčka** (`for`, `while`) se zobrazí jako skupina **Smyčka** s nadpisem podle jejího prvního řádku a funkce předaná volání, jako je `map` nebo `forEach`, jako skupina **Pro každé**. Tenká čára odděluje jeden průchod smyčkou od dalšího, pokud je aplikace rozezná.
+- **Volání běží současně** pomocí `Promise.all`, `Promise.allSettled` nebo podobné kombinace se zobrazí jako skupina **Paralelně**.
+- **Větev** (`if`/`else`, `switch`, `try`/`catch`) zobrazí pro každou větev jednu skupinu, nadepsanou její podmínkou.
+- **Funkce, kterou skript definuje a volá**, se zobrazí jako skupina **Funkce**.
+
+Skupina uvnitř jiné se odsadí o další stupeň, nejvýše o osm stupňů; hlouběji vnořené skupiny zůstanou na tomto odsazení.
+
+Záhlaví každé skupiny ukazuje, jak její volání zatím skončila. Před spuštěním volání ukáže jeho řádek nástroj a argumenty tak, jak jsou zapsány ve skriptu:
+
+| Řádek | Význam |
+| --- | --- |
+| **Ve frontě** | Skript k tomuto volání ještě nedošel. |
+| Běží | Volání právě běží. |
+| Hotovo | Volání skončilo; řádek ukazuje jeho výsledek a jak dlouho trvalo. |
+| **Přeskočeno** | Skript toto volání přeskočil, například větev `if`, která se neprovedla, nebo skončil, aniž k němu došel. |
+
+Volání zapsané uvnitř argumentů volání stejného nástroje se hlásí ze stejného místa ve skriptu jako to vnější. Když aplikace nepozná, zda vnější volání proběhlo, řádek místo slova **Přeskočeno** neukáže žádný stav.
+
+Když skupina udělala víc než osm volání, její střed se složí: první dvě a poslední tři zůstanou na očích, stejně jako každé volání, které ještě běží, selhalo nebo bylo zamítnuto, spolu s voláním, které začalo její průchod smyčkou. **Zobrazit N dalších volání** otevře při každém stisknutí dalších 100 a jmenuje až čtyři nástroje ze skrytých volání s počtem každého, nejvzácnější první, například **Zobrazit 12 dalších volání** · Bash 1 · Read 11. Název nástroje delší než 24 znaků se tam zkrátí.
+
+Volání, které aplikace nedokáže umístit do skriptu, například to, které provedla funkce předaná do `then`, se uvede za stromem pod **Volání neumístěná ve skriptu**. Když aplikace skript nedokáže přečíst nebo žádné volání neříká, odkud bylo provedeno, volání se zobrazí jako prostý seznam v pořadí, v jakém byla provedena.
+
+Každý řádek volání ukazuje začátek argumentů volání a začátek jeho odpovědi, nejvýše 8 KiB každý; jakmile řádky jednoho skriptu drží dohromady 256 KiB těchto úryvků, jeho pozdější řádky ukazují jen nástroj a výsledek. Jakmile skript doběhne, **Otevřít záznam** otevře jeho úplný záznam; pokud záznam nelze najít, otevře se seznam skriptů z tohoto běhu. Skript, který byl odmítnut ještě před spuštěním (například proto, že jiný skript téhož běhu ještě běžel), nemá záznam ani odkaz.
+
+## Záznam
+
+Každý spuštěný skript se zaznamená ve svém pracovním prostoru ještě před startem a záznam se dokončí při jeho ukončení. **Observabilita → Spuštění kódu** je vypíše od nejnovějšího a lze je filtrovat podle výsledku. Odkazy **Skripty v tomto běhu** a **Skripty tohoto agenta** v záznamu zúží seznam na jeden běh nebo jednoho agenta. Záznam ukazuje:
+
+- skript, jeho výstup a jeho konzoli;
+- kdy začal, jak dlouho trval, čas procesoru a nejvyšší využitou paměť a zda běžel přes vestavěného agenta, nebo přes externího;
+- jak skončil, slovy srozumitelnými člověku (například že mu došel čas nebo že vyhodil chybu, kterou nic nezachytilo);
+- každé volání nástroje v pořadí s výsledkem, zda bylo povoleno, schváleno člověkem nebo zamítnuto, jak dlouho se člověk rozhodoval, jeho argumenty (tajné údaje odstraněny, zkráceny na 8 KiB) a velikost jeho výsledku. Samotný výsledek se neuchovává.
+
+Záznam uchovává, kde ve skriptu bylo každé volání provedeno, takže jeho volání nástrojů jsou uspořádána stejně jako v konverzaci. Volání, které člověk schválil, se tam nikdy neschová.
+
+Skript, který ještě běží, se zobrazuje jako běžící, s dosud dokončenými voláními nástrojů; jeho výstup, doba trvání a využití zdrojů se objeví po ukončení. Pokud se server zastaví během běhu skriptu, záznam se při dalším startu serveru uzavře a tuto skutečnost uvede; dokud se neuzavře, v tomto pracovním prostoru žádný skript neběží.
+
+Záznamy jsou vedeny spolu s během: smazání běhu nebo jeho prostoru smaže i je. Členové vidí záznamy prostorů, které mohou otevřít.
+
+## Jak jsou skripty omezeny
+
+Skripty nikdy neběží uvnitř serveru. Každý skript běží ve vlastním procesu, malém programu dodávaném se serverem, `cc_codemode`, který spouští JavaScript v enginu QuickJS-NG. Dřív než přečte skript, program se uzamkne pomocí vlastních mechanismů operačního systému: na Linuxu filtrem systémových volání a limity zdrojů, na macOS sandboxovým profilem, který je ve výchozím stavu zamítavý, na Windows AppContainerem a job objectem. Poté nemůže otevírat soubory, používat síť, spouštět procesy ani vidět jiné programy. Startuje bez proměnných prostředí a nedrží žádné přihlašovací údaje; jeho jediným kanálem je server, který odpovídá na jeho volání nástrojů.
+
+Server ověří uzamčení při svém startu tím, že spustí samotestování programu. Pokud se uzamčení na daném počítači neuplatní, například uvnitř kontejneru, jehož bezpečnostní profil odmítne jeden z kroků, server tam nespouští žádné skripty: žádný běh nedostane `repl` a stránka nastavení ukáže **Nedostupné** s důvodem. Skript nikdy neběží s menším omezením. Uzamčení pro Windows zatím nebylo ověřeno na Windows.
+
+Místo volání ve skriptu hlásí runner, takže se používá jen k uspořádání konverzace a záznamu. Nikdy nerozhoduje o tom, zda je volání povoleno.
+
+Co uzamčení kryje a co ne, popisuje [Sandbox a zabezpečení](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/#skripty-v-režimu-kódu).
+
+## Viz také
+
+- [Kontext nástrojů a cache promptů](/cs-CZ/prirucka/koncepty/kontext-nastroju/): proč je přímá sada malá a stejná, s `repl` i bez něj.
+- [Vestavěné nástroje agentů](/cs-CZ/prirucka/referencni-prirucka/nastroje-agentu/#repl--spusťte-skript-který-volá-vaše-nástroje): vstup nástroje `repl`.
+- [CLI `cc_server`](/cs-CZ/prirucka/referencni-prirucka/cc-server-cli/#režim-kódu): limity, které nastavuje vlastník serveru.

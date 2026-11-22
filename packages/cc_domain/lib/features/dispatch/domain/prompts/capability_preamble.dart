@@ -13,11 +13,26 @@ import 'package:cc_domain/features/mcp/domain/value_objects/tool_taxonomy.dart';
 /// Never hand-edit the wording of the generated part. Craft belongs in the
 /// hand-authored mode guidance, which is forbidden from naming tools at all
 /// (a parity test enforces that).
+///
+/// When the run has `repl` ([hasRepl]), [scriptToolNames] are the tools
+/// callable only from a `repl` script; the index introduces them as such.
+/// Without `repl`, [scriptToolNames] must be empty (an [ArgumentError]
+/// otherwise: a script-only tool with no `repl` to reach it is a composition
+/// bug).
 String buildCapabilityPreamble(
   ModeCapabilityProfile profile, {
   required List<String> materializedToolNames,
   List<String> deferredToolNames = const [],
+  bool hasRepl = false,
+  List<String> scriptToolNames = const [],
 }) {
+  if (!hasRepl && scriptToolNames.isNotEmpty) {
+    throw ArgumentError.value(
+      scriptToolNames,
+      'scriptToolNames',
+      'must be empty without repl',
+    );
+  }
   final buf = StringBuffer()
     ..writeln('## Mode: ${profile.label}')
     ..writeln()
@@ -29,11 +44,24 @@ String buildCapabilityPreamble(
   if (names.isNotEmpty) {
     buf
       ..writeln(
-        deferredToolNames.isEmpty
+        deferredToolNames.isEmpty && scriptToolNames.isEmpty
             ? 'You have exactly ${names.length} tools. These and nothing else:'
             : 'These ${names.length} tools are loaded and ready to call:',
       )
       ..writeln(names.map((n) => '`$n`').join(', '))
+      ..writeln();
+  }
+
+  // When to write a script, said once where the run sees its loaded tools;
+  // the `repl` description says the same at the point of use.
+  if (hasRepl) {
+    buf
+      ..writeln(
+        'Write a `repl` script for many calls, a loop, a choice on a result or '
+        'a large result you need only part of; call a tool directly for one '
+        'call whose whole result you will read, and never wrap a single direct '
+        'call in a script.',
+      )
       ..writeln();
   }
 
@@ -61,7 +89,37 @@ String buildCapabilityPreamble(
     buf.writeln();
   }
 
-  final allCallable = {...materializedToolNames, ...deferredToolNames};
+  // The index of what only a script can reach. Same shape as the deferred
+  // index, but the instruction differs: these names carry no schema in the
+  // request at all and a direct call to one fails, so the model is told to
+  // call them from `repl` and to look them up inside the script.
+  if (scriptToolNames.isNotEmpty) {
+    buf
+      ..writeln(
+        '${scriptToolNames.length} more tools are callable from `repl`, as '
+        '`await tools.<name>(args)` (or `tools["<name>"](args)`) inside a '
+        'script. They are not loaded as '
+        'tools of their own, so do not call them directly. In a script, '
+        '`await describeTool(name)` returns a tool\'s declaration and '
+        '`await searchTools(query)` finds the right one for a plain-language '
+        'description. Do not tell the user a capability is missing until a '
+        'search has actually come back empty.',
+      )
+      ..writeln();
+    for (final entry in groupToolsByCategory(scriptToolNames).entries) {
+      final grouped = [...entry.value]..sort();
+      buf.writeln(
+        '- ${entry.key.label}: ${grouped.map((n) => '`$n`').join(', ')}',
+      );
+    }
+    buf.writeln();
+  }
+
+  final allCallable = {
+    ...materializedToolNames,
+    ...deferredToolNames,
+    ...scriptToolNames,
+  };
   final forbidden =
       profile.forbiddenVerbs.where((v) => !allCallable.contains(v)).toList()
         ..sort();

@@ -1,10 +1,8 @@
 import 'package:cc_domain/core/domain/entities/message.dart';
-import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
-import 'package:cc_domain/features/messaging/domain/repositories/space_read_repository.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/di/providers.dart'
-    show spaceReadRepositoryProvider;
+    show conversationReadRepositoryProvider;
 import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/feed/feed_helpers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/message_feed.dart';
@@ -18,6 +16,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:super_sliver_list/super_sliver_list.dart';
 
 import '../../../../../helpers/active_workspace.dart';
+import '../../../../../helpers/fake_conversation_read_repository.dart';
 
 /// The window a freshly opened conversation ships: [kSpaceFeedLiveWindow].
 const int _windowSize = kSpaceFeedLiveWindow;
@@ -104,11 +103,10 @@ Future<Set<String>> _openFeed(
         ),
         spaceTurnRelayProvider('ch-1').overrideWith((ref) {}),
         codeFontFamilyProvider.overrideWith((ref) => 'monospace'),
-        spaceUserLastReadAtProvider(
-          'ch-1',
-        ).overrideWith((ref) => Stream.value(null)),
         // Landing on the newest row stamps the read cursor once it settles.
-        spaceReadRepositoryProvider.overrideWithValue(_NoopSpaceReads()),
+        conversationReadRepositoryProvider.overrideWithValue(
+          FakeConversationReadRepository(),
+        ),
         for (var i = 0; i < _windowSize; i++)
           agentDetailProvider('agent-$i').overrideWith((ref) async {
             built.add('agent-$i');
@@ -183,29 +181,4 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pumpAndSettle();
   });
-}
-
-/// Accepts the read-cursor stamp the feed makes on landing; this file only
-/// measures what gets built.
-class _NoopSpaceReads implements SpaceReadRepository {
-  @override
-  Future<void> markSpaceRead(
-    String workspaceId,
-    String spaceId,
-    String userId, {
-    String? conversationId,
-  }) async {}
-
-  @override
-  Stream<FeedPosition?> watchUserLastReadAt(
-    String workspaceId,
-    String spaceId,
-    String userId,
-  ) => Stream.value(null);
-
-  @override
-  Stream<Map<String, FeedPosition>> watchUserSpaceReads(
-    String workspaceId,
-    String userId,
-  ) => Stream.value(const {});
 }

@@ -29,6 +29,7 @@ import 'package:cc_infra/src/network/gitlab/gitlab_api_client.dart';
 import 'package:cc_infra/src/network/gitlab/gitlab_forge_values.dart';
 import 'package:cc_infra/src/network/gitlab/gitlab_pr_mapper.dart';
 import 'package:cc_infra/src/network/gitlab/models/gitlab_award_emoji.dart';
+import 'package:cc_infra/src/network/gitlab/models/gitlab_note.dart';
 import 'package:cc_infra/src/network/gitlab/models/gitlab_project.dart';
 import 'package:cc_infra/src/network/gitlab/models/gitlab_tree_entry.dart';
 import 'package:cc_infra/src/network/gitlab/models/gitlab_user.dart';
@@ -271,7 +272,10 @@ class GitLabForgePrClient
   }
 
   @override
-  Future<String> getPullRequestDiff(int prNumber, {ForgeCancelToken? cancelToken}) async {
+  Future<String> getPullRequestDiff(
+    int prNumber, {
+    ForgeCancelToken? cancelToken,
+  }) async {
     final diffs = await _client.listMergeRequestDiffs(
       _projectId,
       prNumber,
@@ -572,7 +576,9 @@ class GitLabForgePrClient
   /// usually live on the parent group) and Guests are filtered out, since
   /// GitLab refuses to assign them.
   @override
-  Future<List<PrUser>> listAssignableUsers({ForgeCancelToken? cancelToken}) async {
+  Future<List<PrUser>> listAssignableUsers({
+    ForgeCancelToken? cancelToken,
+  }) async {
     final members = await _client.listProjectMembers(
       _projectId,
       cancelToken: _token(cancelToken),
@@ -784,7 +790,9 @@ class GitLabForgePrClient
   /// resolve to "no template" rather than an error: the composer must still
   /// open when a project simply has none.
   @override
-  Future<Map<String, String>> listPrTemplates({ForgeCancelToken? cancelToken}) async {
+  Future<Map<String, String>> listPrTemplates({
+    ForgeCancelToken? cancelToken,
+  }) async {
     final token = _token(cancelToken);
     final entries = await _client.listRepositoryTree(
       _projectId,
@@ -870,6 +878,57 @@ class GitLabForgePrClient
       prNumber,
       body: body,
       position: position,
+      cancelToken: token,
+    );
+    if (discussion == null) {
+      return null;
+    }
+    for (final note in discussion.notes) {
+      final notePosition = note.position;
+      if (notePosition != null) {
+        return prCodeReviewCommentFromGitLab(note, position: notePosition);
+      }
+    }
+    return null;
+  }
+
+  /// Opens a discussion on [path] as a whole (`position_type: file`).
+  ///
+  /// Like [postReviewComment], the position is pinned to the merge request's
+  /// `diff_refs` rather than [commitSha].
+  @override
+  Future<PrCodeReviewComment?> postFileComment({
+    required int prNumber,
+    required String commitSha,
+    required String path,
+    required String body,
+    ForgeCancelToken? cancelToken,
+  }) async {
+    final token = _token(cancelToken);
+    final mr = await _client.getMergeRequest(
+      _projectId,
+      prNumber,
+      cancelToken: token,
+    );
+    final refs = mr?.diffRefs;
+    if (refs == null || !refs.isComplete) {
+      throw StateError(
+        'GitLab merge request !$prNumber in $_repoFullName carries no diff '
+        'refs, so a file comment cannot be anchored.',
+      );
+    }
+    final discussion = await _client.createDiscussion(
+      _projectId,
+      prNumber,
+      body: body,
+      position: GitLabNotePosition(
+        baseSha: refs.baseSha,
+        startSha: refs.startSha,
+        headSha: refs.headSha,
+        oldPath: path,
+        newPath: path,
+        positionType: 'file',
+      ),
       cancelToken: token,
     );
     if (discussion == null) {
@@ -1127,7 +1186,10 @@ class GitLabForgePrClient
   }
 
   @override
-  Future<void> closePullRequest(int prNumber, {ForgeCancelToken? cancelToken}) async {
+  Future<void> closePullRequest(
+    int prNumber, {
+    ForgeCancelToken? cancelToken,
+  }) async {
     await _client.updateMergeRequest(
       _projectId,
       prNumber,

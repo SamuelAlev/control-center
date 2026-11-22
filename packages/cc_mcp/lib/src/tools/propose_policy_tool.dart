@@ -25,6 +25,10 @@ class ProposePolicyTool extends McpTool {
   @override
   String get name => 'propose_policy';
 
+  /// Not for scripts: it proposes policy (see [McpTool.scriptCallable]).
+  @override
+  bool get scriptCallable => false;
+
   @override
   String get description =>
       'Stores a policy (a normative rule) in shared workspace memory. '

@@ -4,8 +4,10 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/features/pr_review/presentation/utils/diff_isolate_worker.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/file_header.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/file_unresolved_badge.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_sliver.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_view.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/comment_composer_widget.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/comment_thread_widget.dart';
 import 'package:control_center/features/pr_review/providers/diff_view_settings_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
@@ -129,6 +131,52 @@ void main() {
       expect(find.text('13'), findsWidgets);
       expect(find.text('19'), findsWidgets);
       expect(find.textContaining('a metadata value'), findsWidgets);
+    });
+
+    testWidgets('the file header counts the open conversations', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1400, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final semantics = tester.ensureSemantics();
+
+      await tester.pumpWidget(
+        _wrap([_comment(body: 'Why public?')], files: [_file, _nextFile]),
+      );
+      await _settle(tester);
+
+      // Only the file the conversation is on carries a badge.
+      final badge = find.byType(FileUnresolvedBadge);
+      expect(badge, findsOneWidget);
+      expect(tester.widget<FileUnresolvedBadge>(badge).count, 1);
+      expect(
+        find.ancestor(
+          of: badge,
+          matching: find.byWidgetPredicate(
+            (w) => w is FastFileHeader && w.file.filename == _file.filename,
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel('1 unresolved conversation'),
+        findsOneWidget,
+      );
+      semantics.dispose();
+    });
+
+    testWidgets('a resolved conversation leaves no badge', (tester) async {
+      tester.view.physicalSize = const Size(1400, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        _wrap([_comment(body: 'Done', isResolved: true)]),
+      );
+      await _settle(tester);
+
+      expect(find.byType(FileUnresolvedBadge), findsNothing);
     });
 
     testWidgets('a resolved conversation arrives collapsed', (tester) async {
@@ -444,6 +492,117 @@ void main() {
       expect(block.thread.line, 13);
       expect(block.thread.lineEnd, 19);
       expect(block.thread.threadId, 'THREAD_1');
+    });
+  });
+
+  group('a file with no rows', () {
+    // A move without changes: GitHub sends no patch, so the body has no rows.
+    final renamed = PrFile(
+      filename: 'src/assistant/markdownToHtml.spec.ts',
+      previousFilename: 'src/helpers/markdownToHtml.spec.ts',
+      status: PrFileStatus.renamed,
+      additions: 0,
+      deletions: 0,
+      patch: '',
+    );
+
+    Finder chevronIn(Finder header) => find.descendant(
+      of: header,
+      matching: find.byWidgetPredicate(
+        (w) =>
+            w is Icon &&
+            (w.icon == AppIcons.chevronUp || w.icon == AppIcons.chevronDown),
+      ),
+    );
+
+    testWidgets('a rename without changes has no collapse toggle', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1400, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(_wrap(const [], files: [renamed, _nextFile]));
+      await _settle(tester);
+
+      final headers = find.byType(FastFileHeader);
+      expect(headers, findsNWidgets(2));
+      expect(chevronIn(headers.at(0)), findsNothing);
+      expect(
+        tester.widget<FastFileHeader>(headers.at(0)).onToggleExpanded,
+        isNull,
+      );
+      // A file with rows keeps it.
+      expect(chevronIn(headers.at(1)), findsOneWidget);
+    });
+
+    testWidgets('commenting on it opens a file comment', (tester) async {
+      tester.view.physicalSize = const Size(1400, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(_wrap(const [], files: [renamed]));
+      await _settle(tester);
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(FastFileHeader),
+          matching: find.byIcon(AppIcons.messageSquarePlus),
+        ),
+      );
+      await _settle(tester);
+
+      final composer = find.byType(PrCommentComposer);
+      expect(composer, findsOneWidget);
+      final widget = tester.widget<PrCommentComposer>(composer);
+      // No lines to suggest a change to, and a review takes line comments
+      // only, so neither is offered.
+      expect(widget.onSuggest, isNull);
+      expect(widget.onSubmitBatched, isNull);
+
+      widget.onSubmit('Why was this moved?');
+      await _settle(tester);
+
+      final block = tester.widget<PrInlineThreadBlock>(
+        find.byType(PrInlineThreadBlock),
+      );
+      expect(block.thread.isFileLevel, isTrue);
+      expect(block.thread.filePath, renamed.filename);
+      expect(find.text('Why was this moved?'), findsOneWidget);
+      // Now there is something under the header to fold.
+      expect(chevronIn(find.byType(FastFileHeader)), findsOneWidget);
+    });
+
+    testWidgets('a forge file comment renders as a thread, not outdated', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1400, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      final comment = PrCodeReviewComment(
+        id: 77,
+        body: 'Keep the old name?',
+        user: const PrUser(login: 'reviewer', avatarUrl: ''),
+        path: renamed.filename,
+        position: null,
+        createdAt: DateTime.utc(2026, 11, 17),
+        isFileLevel: true,
+      );
+      await tester.pumpWidget(_wrap([comment], files: [renamed]));
+      await _settle(tester);
+
+      final block = tester.widget<PrInlineThreadBlock>(
+        find.byType(PrInlineThreadBlock),
+      );
+      expect(block.thread.isFileLevel, isTrue);
+      expect(block.thread.serverId, 77);
+      expect(
+        tester
+            .widget<FastFileHeader>(find.byType(FastFileHeader))
+            .outdatedComments,
+        isEmpty,
+      );
     });
   });
 }

@@ -2,7 +2,7 @@
 title: Slash komutları
 description: Yazı alanına yazabileceğiniz her komut; ne yaptığı ve nerede çalıştığı.
 slug: tr-TR/kilavuz/referans/slash-komutlari
-sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
+sourceHash: 38430a6315b112c92a7806d1c28dff8a0285e363
 ---
 
 Bir alanın yazı alanına yazılan komutlar. Etki ettikleri yere göre üç gruba ayrılırlar ve bu fark önemlidir: **yerel** bir komut hiçbir zaman mesaj olarak iletilmez; bu yüzden ne transkriptte görünür ne de bir ajana ulaşır.
@@ -21,23 +21,35 @@ Bir alanın yazı alanına yazılan komutlar. Etki ettikleri yere göre üç gru
 
 **Yerel → gönderim.** Konuşmada plan modunu devreye alır: tamamen salt okunur bir çalışma ağacı ve `read` ile sınırlanmış bir araç yüzeyi. Ajanın teslimatı bir düzenleme değil, bir plandır. Yalın bir `/plan` yalnızca modu değiştirir ve hiçbir zaman mesaj olarak iletilmez; bir istemle birlikte verildiğinde çalıştırmayı başlatan şey satırın geri kalanıdır.
 
-### `/goal <objective>`
+### `/goal [flags] <objective>`
 
-**Gönderim.** Hedef gözetmeninin segmentler arasında yeniden gönderdiği ve yeniden başlattığı özerk bir hedefi başlatır.
+**Gönderim.** Dayanıklı bir hedef başlatır: ajan amacı bölümler halinde, yeniden başlatmalar boyunca üzerinde çalışır; sunucu tamamlandığını doğrulayana, bir kişi kapatana ya da bir sınıra ulaşana kadar. Bkz. [Bir hedefi yürütme](/tr-TR/kilavuz/nasil-yapilir/hedef-yurutme/).
 
-`/goal` komutunu önce metinle yazmak **Hedefi netleştir** görüşmesini açar — bir taslağı şu beş şeyin tamamı gelmeden kabul etmeyi reddeden kısa bir geçiş: bir değerlendiricinin kendi yargısına başvurmadan karara bağlayabileceği başarı ölçütleri, tam bir doğrulama komutu, bir deneme üst sınırı, kapsam sınırları ve durma koşulları. Her adım *Atla ve yazıldığı gibi çalıştır* seçeneğini sunar: bu görüşme bir varsayılan, kapı değil.
+`/goal` komutunu önce metinle yazmak **Hedefi netleştir** görüşmesini açar — bir değerlendiricinin yargıya başvurmadan karara bağlayabileceği başarı ölçütlerini, geçmesi gereken kontrolleri, kapsam sınırlarını ve durma koşullarını soran kısa bir geçiş; ardından ayrı bir denetleyici, taze bölümler ve kendi sorularını yanıtlama seçeneklerini sunar. Her adım *Atla ve yazıldığı gibi çalıştır* seçeneğini sunar: bu görüşme bir varsayılan, kapı değil.
 
-`/goal pause`, `/goal resume` ve `/goal drop` slash komutları değildir. Duraklatma, devam etme ve durdurma, kenar çubuğundaki konuşmanın hedef listesinde bulunur. Hedefin kendisine verilen başlangıç bayrakları `--budget <dollars>`, `--max <N>` (çalıştırma bütçesi) ve `--days <N>` (son tarih) şeklindedir. Maliyet tavanına takılan bir hedef, yalnızca o tavan yükseltilerek devam eder; bu da aynı kenar çubuğu denetiminden yapılır.
+Bayraklar mesajın herhangi bir yerinde durabilir: `--budget <dollars>` (hedefin bütçesi, varsayılan 50), `--max <N>` (bir bölüm sınırı), `--days <N>` (bir son tarih), `--check "<command>"` (en fazla 5), `--checker <agent>`, `--fresh` ve `--unattended wait|assume`. Bilinmeyen ya da tekrarlanan bir bayrak reddedilir ve taslak yazı alanında kalır. Amacın başındaki bir sayı amacın parçasıdır. `## Success criteria`, `## Boundaries`, `## Stop conditions` ve `## Checks` bölümleri hedefin sözleşmesi olur.
+
+`/goal pause`, `/goal resume` ve `/goal drop` slash komutları değildir. Duraklatma, devam etme ve durdurma, konuşmanın **Genel** panelindeki hedef kartında ve hedefin sayfasında bulunur (kenar çubuğu → **Hedefler**). Devam ettirmek ve bütçeyi artırmak, hedefi başlatan kişiye aittir.
 
 :::note[Neden araya giriyor]
 Özerk bir hedef, belirsiz bir brifingin gerçekten pahalıya mal olduğu tek yerdir. Çalıştırma, “bitti”nin ne demek olduğunu kimsenin tanımlamadığı bir hedef üzerinde saatlerce çalışır ve ardından başarıyı kendi ölçütlerine göre bildirir. Beş soru, kendini ne zaman bitmiş hissettiyse o zaman biten bir gece boyu çalıştırmadan daha ucuzdur.
 :::
 
-### `/loop [budget] [task]`
+### `/loop [every <interval>] [flags] <prompt>`
 
-**Gönderim.** Tamamlanana kadar yinelemeli olarak çalışır. Bir sınır kabul eder: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**Gönderim.** Ajanı istemle şimdi ve ardından yeniden uyandıran bir zamanlama oluşturur: her aralıkta (en az 60 saniye) ya da `every` yoksa ajanın her seferinde seçtiği bir gecikmeden sonra (1 ila 60 dakika). `--max <N>` çalıştırmaları sınırlar, `--days <N>` sonlandırır (varsayılan 30 gün), `--budget <dollars>` harcamasını sınırlar. Bkz. [Zamanlamalar ve uyandırmalar](/tr-TR/kilavuz/nasil-yapilir/zamanlamalar-ve-uyandirmalar/).
 
-Bir sınıra *benziyorsa* (bir rakamla veya bir işaretle başlıyorsa) ve ayrıştırılamıyorsa, o token kesin bir hatadır. Düz metin düz metindir; bu yüzden `/loop keep going until the tests pass` yanlış bir ayrıştırma değil, satır içi istemi olan sınırsız bir döngüdür.
+`/loop` artık bir hedef başlatmaz ve baştaki bir sayı bir çalıştırma sayısı değildir.
+
+### `/schedule <when> [flags] <prompt>`
+
+**Gönderim.** Ajanı daha sonra uyandıran bir zamanlama oluşturur: `in 2h`, `at 09:00` (çalışma alanının saat diliminde bir sonraki böyle zaman), `at <ISO time>` ya da `cron "0 9 * * 1-5"` (tırnaklar isteğe bağlıdır). `/loop` ile aynı `--max`, `--days` ve `--budget` alır. İlk zamanını bekler.
+
+### `/refine`
+
+**Gönderim.** Konuşmanın işi üzerine kısa, salt okunur bir inceleme ister; inceleme bellek, politikalar, ajan notları ya da skill’ler için iyileştirmeler önerebilir. Öneriler, biri kabul edene kadar **İyileştirmeler** sayfasında bekler. Konuşma başına her 20 dakikada en fazla bir inceleme.
+
+`/goal`, `/loop`, `/schedule` ve `/refine` yalnızca kendi yazdığınız bir mesajda etki eder; bir ajandan, bir pipeline’dan ya da bir uyandırmadan gelen aynı metin sıradan bir mesajdır. `/goal`, `/loop` veya `/schedule` olarak okunamayan bir komut taslağınızı tutar; yazı alanındaki metnin üstündeki bir satır neyin yanlış olduğunu söyler.
 
 ### `/vibe [task]`
 

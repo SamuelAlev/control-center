@@ -2,7 +2,7 @@
 title: Instrumente MCP
 description: Catalog complet al instrumentelor MCP pe care le înregistrează cc_server, pe familii.
 slug: ro-RO/manual/referinta/instrumente-mcp
-sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
+sourceHash: 0ef9efd386b57c3a254e7f637b0436d9baff1719
 ---
 
 `cc_server` găzduiește un singur registru de instrumente MCP (JSON-RPC 2.0), servit pe portul principal al serverului (implicit `9030`) la `POST /mcp` și `GET /sse`, versiunea de protocol `2024-11-05`. Fiecare client ajunge la același registru: aplicația desktop, versiunea web, clienții MCP externi și runtime-ul de agenți încorporat. Serverele MCP externe sunt conectate la același registru, fiecare pe propriul strat: unul pentru fiecare spațiu de lucru, pentru serverele configurate de administratorii lui, și unul pentru serverele personale ale proprietarului serverului. Acest endpoint le listează, le apelează și le caută doar pentru o rulare de agent: cele ale propriului spațiu de lucru și, în plus, cele personale când proprietarul serverului răspunde de rulare. Tokenul MCP și dispozitivele asociate nu le văd niciodată (vezi [Serverele MCP folosite de agenții tăi](/ro-RO/manual/ghiduri-practice/server-mcp/#serverele-mcp-folosite-de-agenții-tăi)).
@@ -11,21 +11,22 @@ sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
 
 | Măsură                                                                              | Număr |
 | ----------------------------------------------------------------------------------- | ----- |
-| Instrumente înregistrate de `cc_server`                                             | 110   |
-| Din `packages/cc_mcp`                                                               | 108   |
+| Instrumente înregistrate de `cc_server`                                             | 116   |
+| Din `packages/cc_mcp`                                                               | 114   |
 | Din `packages/cc_mcp_client` (descoperirea instrumentelor)                          | 2     |
-| Înregistrate în registrul de bază (`server_mcp_registry.dart`)                      | 63    |
-| Înregistrate după pornire, pe măsură ce serviciile lor devin disponibile (`cc_server_runtime.dart`) | 47    |
-| Dintre cele 63 ale registrului de bază, condiționate de un repo cu graf de cod        | 5     |
+| Înregistrate în registrul de bază (`server_mcp_registry.dart`)                      | 64    |
+| Înregistrate după pornire, pe măsură ce serviciile lor devin disponibile (`cc_server_runtime.dart`) | 52    |
+| Dintre cele 64 ale registrului de bază, condiționate de un repo cu graf de cod        | 5     |
+| Din cele 64 ale registrului de bază, condiționat de runner-ul modului cod (`repl`) | 1 |
 
-Cele cinci instrumente de graf de cod sunt înregistrate doar când gazda transmite un repo cu graf de cod către `buildServerMcpRegistry`. `cc_server` transmite mereu unul, așa că toate cele 110 sunt active în binarul livrat.
+Cele cinci instrumente de graf de cod sunt înregistrate doar când gazda transmite un repo cu graf de cod către `buildServerMcpRegistry`, iar `repl` doar când transmite runner-ul modului cod. `cc_server` transmite mereu ambele (nu pornește fără runner), așa că toate cele 111 sunt înregistrate în binarul livrat; serverul public demo nu înregistrează `repl`.
 
-Registrul complet este anunțat în `tools/list`, fără restricționare la descoperire. Editările de tichete sunt instrumente tipizate.
+Registrul complet este anunțat în `tools/list`, fără restricționare la descoperire, în afară de o rulare de agent care poate rula scripturi (mai jos). Editările de tichete sunt instrumente tipizate.
 
 :::note[Clienții externi văd mereu catalogul întreg]
-`tools/list` nu este niciodată trunchiat, în afara serverelor MCP personale ale proprietarului serverului, pe care nu le include niciodată. Clienții MCP validează numele instrumentelor față de propria copie din cache a acelei liste și refuză orice nu apare acolo fără să întrebe serverul, așa că un instrument ascuns este inaccesibil, nu doar tăcut.
+`tools/list` nu este niciodată trunchiat, în afara serverelor MCP personale ale proprietarului serverului, pe care nu le include niciodată, și [modul cod](/ro-RO/manual/concepte/mod-cod/): `repl` este listat doar unei rulări de agent pe un server care poate rula scripturi, iar această rulare primește în listă `repl`, instrumentele directe (`read`, `write`, `edit`, `search`, `find`, `bash`, `read_output`, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` și verbele de ieșire proprii modului ei, acolo unde registrul le are) și instrumentele pe care un script nu le poate apela. Agentul apelează restul dintr-un script; un apel direct către unul dintre ele primește ca răspuns cum să fie apelat cu `repl`. Clienții MCP validează numele instrumentelor față de propria copie din cache a acelei liste și refuză orice nu apare acolo fără să întrebe serverul, așa că un instrument ascuns este inaccesibil, nu doar tăcut.
 
-**Harness-ul încorporat** este diferit: încarcă per cerere doar un subset rezident de definiții și aduce restul la prima utilizare, ceea ce este un comportament de partea harness-ului și nu schimbă acest registru. Vezi [Contextul instrumentelor și cache-ul prompturilor](/ro-RO/manual/concepte/contextul-instrumentelor).
+**Harness-ul încorporat** este diferit: încarcă per cerere doar un set direct mic de definiții și ajunge la restul din scripturi sau le încarcă la prima utilizare, ceea ce este un comportament de partea harness-ului și nu schimbă acest registru. Vezi [Contextul instrumentelor și cache-ul prompturilor](/ro-RO/manual/concepte/contextul-instrumentelor/).
 :::
 
 :::note[Fiecare clasă de instrumente este înregistrată]
@@ -51,6 +52,14 @@ Ambele vin din `cc_mcp_client`, nu din `cc_mcp`, și ambele consultă garda de m
 
 Un al treilea instrument de descoperire, **`search_tools`**, există doar în interiorul harness-ului încorporat și nu face parte din acest registru MCP. El clasează suprafața proprie de instrumente a rulării și, spre deosebire de `search_tool_bm25`, **încarcă** schemele a ceea ce găsește, ca agentul să poată apela o potrivire la următorul tur. Agenții de pe harness ar trebui să îl prefere; clienții MCP au `search_tool_bm25`.
 
+## Mod cod
+
+| Instrument | Descriere |
+| ------ | ----------- |
+| `repl` | Rulează un script JavaScript care apelează celelalte instrumente ale rulării ca `tools.<id>(args)` și returnează doar ce are nevoie. Listat doar unei rulări de agent pe un server care poate rula scripturi de [mod cod](/ro-RO/manual/concepte/mod-cod/). Fiecare apel imbricat trece prin aceeași poartă ca un `tools/call`. Primește `code`, `description`, `timeout_ms?`, `max_output_tokens?` |
+
+Un script nu poate apela `repl`, `search_tool_bm25`, `list_my_tools` sau niciun instrument care pornește sau trimite mesaje altei rulări de agent, atribuie sau comentează un tichet, trimite un mesaj, creează, decide sau comentează o aprobare, propune sau modifică politica, instalează sau modifică skill-uri, creează un profil de rulare, trimite un plan, părăsește modul plan, încheie obiectivul conversației sau trimite rezultatul unei rulări de pipeline. Aceste instrumente declară `scriptCallable` fals și sunt apelate mereu direct; în harness-ul integrat, un instrument din afara setului direct se încarcă la prima utilizare. `create_ticket` poate fi apelat dintr-un script doar fără `assignee`.
+
 ## Instrumente pentru agenți
 
 | Instrument    | Descriere                                 |
@@ -59,15 +68,29 @@ Un al treilea instrument de descoperire, **`search_tools`**, există doar în in
 
 ## Mesagerie între agenți și delegare
 
-Agenții vorbesc între ei prin spații (durabile, vizibile în listă). `ask_agent` este cerere/răspuns cu un timeout obligatoriu; `delegate_task` este protejat pe server de un plafon de adâncime, detectarea ciclurilor, o anvelopă bugetară și un plafon de autonomie.
+Agenții vorbesc între ei prin spații (durabile, vizibile în lista de prezență). `ask_agent` fie așteaptă răspunsul (`mode: wait`, implicit 600 de secunde, cel mult 1.800), fie returnează imediat (`mode: background`); în ambele cazuri cel care a întrebat este trezit o dată cu răspunsul, dacă răspunsul nu a revenit direct. `send_to_agent`, `ask_agent`, `consult_agent`, `request_peer_review` și `delegate_task` trec prin aceeași poartă de pe server: adâncime (3), detectarea ciclurilor, plicul de buget, plafonul de autonomie și o limită de rată per pereche de agenți. Identitatea expeditorului vine mereu din rularea care apelează. Vezi [Agenți care lucrează împreună](/ro-RO/manual/ghiduri-practice/agenti-impreuna/).
 
 | Instrument      | Descriere                                                                                      |
 | --------------- | ---------------------------------------------------------------------------------------------- |
-| `send_to_agent` | Trimite un mesaj unidirecțional altui agent, adresat prin `to_agent_id` sau prin `to_agent_name` exact |
-| `ask_agent`     | Pune o întrebare altui agent și așteaptă răspunsul lui sau expiră                               |
+| `send_to_agent` | Trimite un mesaj unidirecțional altui agent, adresat prin `to_agent_id` sau prin `to_agent_name` exact; răspunde cu `delivery_status` `woken`, `queued_behind_run` sau `refused` |
+| `ask_agent`     | Pune o întrebare altui agent; așteaptă răspunsul sau continuă și este trezit când sosește       |
 | `delegate_task` | Deleagă o sarcină altui agent ca tichet copil urmărit                                          |
 | `consult_agent` | Adaugă în spațiu specialistul cel mai potrivit după skill-uri și îl trimite cu un brief concentrat |
 | `todo_read`     | Citește lista de sarcini persistată a acestei conversații                                      |
+| `agent_activity` | Citește ce face acum un alt agent și ce a făcut ultima dată (stare, unealta curentă, ultimele mesaje), fără să-l trezească |
+
+## Instrumente pentru treziri și obiective
+
+Un agent le folosește în loc să doarmă sau să sondeze. Fiecare acționează doar pentru agentul care apelează, în propria lui conversație; agentul nu este niciodată un argument. Vezi [Programe și treziri](/ro-RO/manual/ghiduri-practice/programe-si-treziri/) și [Urmărește un obiectiv](/ro-RO/manual/ghiduri-practice/urmareste-obiectiv/).
+
+| Instrument | Descriere |
+| ------------- | ----------- |
+| `wake_me` | Programează să fie trezit mai târziu: la un moment (`in:20m`, `at:<ISO time>`), la un interval (`every:30m`), după un cron (`cron:0 9 * * 1-5`, cu `tz`), în ritmul propriu dintr-o buclă care își stabilește singură ritmul (`next`, cu `delay` de la 1 la 60 de minute) sau când se întâmplă ceva (`on:pr_checks`, `on:pr_review`, `on:pr_merged`, `on:environment`, `on:ticket:<id>`, `on:pipeline_run:<id>`). Opțional `note`, `max_runs`, `expires_in`, `when_busy` (`skip` sau `queue`) și `deliver` (`run` sau `notify`) |
+| `list_wakes` | Listează ce are agentul în așteptare în această conversație: programe, urmăriri, treziri în așteptare și întrebări fără răspuns |
+| `cancel_wake` | Anulează un program sau o urmărire pe care și le-a setat agentul, după id-ul lui |
+| `goal_status` | Citește obiectivul activ al agentului: contract, segment, cheltuiala și bugetul rămas, avertismentele pentru lipsă de progres, reținerea, ultima verificare și trezirile de obiectiv în așteptare |
+
+`complete_goal` (la [Instrumente pentru planuri, playbook-uri și artefacte](#instrumente-pentru-planuri-playbook-uri-și-artefacte)) este singura cale prin care un agent spune că un obiectiv este terminat, iar este o afirmație, nu o finalizare.
 
 ## Instrumente pentru skill-uri
 
@@ -94,7 +117,7 @@ Fiecare instalare și actualizare trece printr-o poartă de scanare cu eșec în
 | `revise_artifact`  | Înlocuiește conținutul unui artefact publicat                                                                          |
 | `list_artifacts`   | Listează artefactele spațiului de lucru                                                                                |
 | `get_artifact`     | Citește un artefact                                                                                                    |
-| `complete_goal`    | Declară atins obiectivul durabil activ al conversației (pornit cu `/goal` sau `/loop`)                                 |
+| `complete_goal` | Afirmă că obiectivul activ al agentului este atins, cu dovezi pentru fiecare criteriu; serverul rulează apoi verificările și o revizuire |
 
 ## Instrumente pentru spațiile de lucru
 
@@ -162,10 +185,10 @@ Fiecare instalare și actualizare trece printr-o poartă de scanare cu eșec în
 | `create_goal`                | Creează un obiectiv organizațional (la nivel de companie, echipă, agent sau sarcină)                    |
 | `list_goals`                 | Listează obiectivele cu nivel, stare și progres agregat                                                 |
 | `update_goal_progress`       | Setează progresul unui obiectiv                                                                          |
-| `create_approval`            | Deschide o aprobare a consiliului pentru o acțiune guvernată (ieșire din plan, îmbinare, lansare, angajare, personalizată) |
+| `create_approval`            | Deschide o aprobare a consiliului pentru o acțiune guvernată (ieșire din plan, îmbinare, lansare, angajare, personalizată) în numele agentului care apelează. Doar rulări de agent |
 | `list_approvals`             | Listează aprobările, opțional filtrate după stare                                                       |
-| `decide_approval`            | Înregistrează o decizie: aprobă, respinge, cere revizuire sau retrimite                                  |
-| `comment_approval`           | Comentează o aprobare a consiliului                                                                     |
+| `decide_approval`            | Înregistrează decizia agentului care apelează: aprobă, respinge, cere revizuire sau retrimite. Doar rulări de agent |
+| `comment_approval`           | Comentează o aprobare a consiliului ca agentul care apelează. Doar rulări de agent                      |
 | `exit_plan_mode`             | Deschide (și, odată aprobată, consumă) o aprobare `plan_exit`, scotând conversația din modul plan        |
 | `agent_heartbeat`            | Raportează vitalitatea (activ, inactiv, blocat); tăcerea trece starea de funcționare a runtime-ului în pierdut recent, apoi în offline |
 | `list_runtime_health`        | Listează starea de funcționare a runtime-ului fiecărui agent                                            |

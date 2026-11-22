@@ -2,7 +2,7 @@
 title: Guardrail-uri — o politică pentru fiecare acțiune care modifică starea
 description: De ce Control Center trece fiecare efect secundar al agenților printr-un singur motor de tip permite/întreabă/refuză, de ce taxonomia ActionClass rămâne mică în mod deliberat și ce schimbă cu adevărat cadranul de autonomie.
 slug: ro-RO/manual/concepte/guardrail-uri
-sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
+sourceHash: bb98b2ca26ae104ab7701d4d381cd5c41d25d32f
 ---
 
 Agenții din Control Center pot șterge fișiere, pot face push pe ramuri, pot
@@ -34,6 +34,17 @@ dezactivat sandbox-ul pentru toată lumea cu `--sandbox off`. Pentru orice
 rulare care pornește fără sandbox, guardrail-urile sunt stratul de aplicare cel
 mai exterior, nu o politică așezată deasupra unui prag, ceea ce merită știut
 când decizi cât de permisiv să fii.
+
+### Apeluri făcute de un script
+
+Un script din [mod cod](/ro-RO/manual/concepte/mod-cod/) apelează instrumente în cod, mai multe deodată, dar fiecare dintre apelurile lui este un apel de instrument separat către motor. Trece prin aceeași poartă a harness-ului sau a dispatcher-ului MCP ca un apel direct, cu aceleași reguli, aceeași cerere de aprobare și aceeași intrare de audit, iar nimic din ce face nu este aprobat doar pentru că apelul `repl` care l-a pornit a fost aprobat.
+
+Două reguli suplimentare se aplică apelurilor dintr-un script, pentru că un singur script poate face sute de apeluri și poate prinde fiecare refuz:
+
+- cel mult 10 dintre apelurile lui ajung la o persoană pentru aprobare; apelurile ulterioare care ar necesita o persoană sunt refuzate fără card;
+- odată ce o persoană refuză unul dintre apelurile lui, restul apelurilor care cer aprobare sunt refuzate fără să mai întrebe.
+
+Un card deschis de un script o spune și te lasă să deschizi scriptul. Dacă scriptul se încheie cât timp cardul este deschis, cardul este retras, iar un răspuns care sosește după aceea este înregistrat ca refuz și nu aprobă nimic.
 
 ## ActionClass: o taxonomie închisă în mod deliberat
 
@@ -268,5 +279,6 @@ răspunsul pe care îl va primi agentul.
 ## Concepte conexe
 
 - [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/): ce constrânge de fapt o rulare de agent și cât de departe ajunge pragul sistemului de operare de sub acest motor
+- [Mod cod](/ro-RO/manual/concepte/mod-cod/): scripturi ale căror apeluri de instrumente trec toate prin acest motor
 - [Multiplayer — identitate, apartenență și prezență](/ro-RO/manual/concepte/multiplayer/): spații, principalii și unde se află cadranul de autonomie
 - [Configurează guardrail-urile](/ro-RO/manual/ghiduri-practice/configureaza-guardrail-uri/): scrierea și testarea regulilor în practică

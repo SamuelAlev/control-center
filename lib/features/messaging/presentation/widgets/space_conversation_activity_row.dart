@@ -71,17 +71,26 @@ class SpaceConversationActivityRow extends ConsumerWidget {
         conversationId: conversation.id,
       )),
     );
+    final needsInput = ref.watch(
+      conversationNeedsInputProvider((
+        spaceId: spaceId,
+        conversationId: conversation.id,
+      )),
+    );
     final l10n = AppLocalizations.of(context);
     // No selected fill and no overflow: rename and archive live on the tab.
-    // The leading mark is the only status: hollow when idle, spinning while
-    // a run is in progress, filled accent when messages are unseen.
+    // The leading mark is the only status: a spinner while a run is in
+    // progress, the attention dot when messages are unseen or a question
+    // waits on the user, nothing when idle.
     return SpaceRow(
-      indent: kSpaceSidebarMarkSlot + kSpaceSidebarMarkGap,
-      markSlot: kConversationMarkSlot,
-      markGap: kConversationMarkGap,
       labelFontSize: kConversationLabelFontSize,
       extent: kConversationRowExtent,
-      leading: conversationActivityMark(running: running, unread: unread),
+      // A run paused on a question is still in the run set; the question
+      // is what the user has to act on, so the dot wins over the spinner.
+      signal: conversationActivityMark(
+        running: running && !needsInput,
+        attention: unread || needsInput,
+      ),
       label: conversationDisplayName(conversation, l10n),
       labelScrambling: ref.watch(
         conversationTitleGeneratingProvider((
@@ -91,10 +100,6 @@ class SpaceConversationActivityRow extends ConsumerWidget {
       ),
       trailingLabel: formatCompactAge(context, captionAt),
       selected: false,
-      status: running ? SpaceStatus.running : SpaceStatus.idle,
-      // The leading mark is the unread signal, so the trailing dot stays off.
-      unread: false,
-      leadingHandlesRunning: true,
       onPress: () {
         final workspaceId = routeWorkspaceIdOf(context);
         if (workspaceId != null) {

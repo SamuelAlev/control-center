@@ -2,7 +2,7 @@
 title: Pracuj w Plan Studio
 description: Przeglądaj, edytuj, szacuj, porównuj i zatwierdzaj plan w edytorze Plan Studio oraz uruchamiaj sparametryzowane playbooki.
 slug: pl-PL/podrecznik/poradniki/plan-studio
-sourceHash: 04a6e193c6b57af3fce63c90673a0958b37552fb
+sourceHash: 9df96d8f10ca86584f3979b84af5eee250719752
 ---
 
 Ten poradnik pokazuje, jak pracować z planami w Plan Studio. Czym są
@@ -133,8 +133,7 @@ zawsze zatwierdza każdy krok — nie ma sposobu, by najpierw wybrać podzbiór.
 Zatwierdzenie jest blokowane, dopóki propozycja ma błędy walidacji, które są
 pokazywane obok przycisków.
 
-Zatwierdzanie należy wyłącznie do operatora. Nie ma do tego narzędzia MCP, więc
-agent może plan zaproponować i zmienić, ale nigdy go nie zatwierdzi.
+Zatwierdzanie należy wyłącznie do operatora. Nie ma do tego narzędzia MCP, więc agent może plan zaproponować i zmienić, ale nigdy go nie zatwierdzi. Zatwierdzenie planu, zapisanie poprawki, **Zatwierdź wybrane** i **Kontynuuj węzeł** wymagają dostępu do zapisu do repozytoriów przestrzeni.
 
 Gdy orkiestracja się wykonuje, pasek się zmienia:
 
@@ -145,7 +144,9 @@ Gdy orkiestracja się wykonuje, pasek się zmienia:
   można zatwierdzić bez jego zależności). Element sterujący znajduje się na pasku
   wykonującej się orkiestracji w każdym przypadku; nie ma żadnego efektu, gdy
   plan zatwierdzono w całości.
-- Naciśnij **Anuluj uruchomienie**, aby zatrzymać całą orkiestrację.
+- Naciśnij **Anuluj uruchomienie**, aby zatrzymać całą orkiestrację. Może to zrobić każdy z dostępem do przestrzeni.
+
+**Kontynuuj węzeł** i **Zatwierdź wybrane** należą do osoby, w imieniu której działa uruchomienie (a gdy działa ono w imieniu nikogo, do administratora obszaru roboczego).
 
 Kroki poza częściowo zatwierdzonym zbiorem renderują się jako odroczone i nie
 uruchamiają się, dopóki nie rozszerzysz zbioru.

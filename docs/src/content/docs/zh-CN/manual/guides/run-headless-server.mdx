@@ -3,7 +3,7 @@ title: 运行无界面服务器
 description: 运行 cc_server 无界面二进制文件或其 Docker 镜像，将客户端与它配对，并用完整的 CLI 标志与环境变量对其进行配置。
 dateModified: 2026-11-08
 slug: zh-CN/手册/操作指南/运行无界面服务器
-sourceHash: 82ef1bd62ea2f91104b0525e06e3f417783726e8
+sourceHash: 5245c5eca0aea940ac28a862141a3e2be21c8d2c
 ---
 
 在一台常开的机器上运行 `cc_server`，然后从桌面端、浏览器或手机连接它。该服务器是纯 Dart 原生二进制文件——不含 Flutter 引擎——因此可在 macOS、Linux 或 Windows 上无界面运行。它掌控数据库、运行智能体，并发出所有外部 API 调用；客户端只负责渲染。
@@ -237,7 +237,7 @@ node tool/stage_resource_assets.mjs build/web
 
 ## 配置
 
-上面用到的标志是初次配置所需要的。完整的接口——23 对标志与环境变量、四个子命令以及数据目录布局——都在 [`cc_server` CLI 参考](/zh-CN/手册/参考/cc-server-cli/)中。
+上面用到的标志是初次配置所需要的。完整的接口——25 对标志与环境变量、四个子命令以及数据目录布局——都在 [`cc_server` CLI 参考](/zh-CN/手册/参考/cc-server-cli/)中。
 
 :::caution[无法识别的标志会被静默忽略]
 参数解析器是手写的，会跳过它不认识的一切，因此拼写错误（`--tls-key-file`、`--bindany`）不会报错——服务器只是以默认值启动。当某个标志看起来没有生效时，请检查启动日志。

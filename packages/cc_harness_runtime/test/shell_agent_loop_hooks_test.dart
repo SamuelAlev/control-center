@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_harness/loop.dart';
 import 'package:cc_harness_runtime/src/shell_agent_loop_hooks.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -228,6 +230,189 @@ void main() {
       expect(source, isNot(contains('Process.start(')));
       expect(source, isNot(contains('Process.run(')));
       expect(source, isNot(contains('runInShell')));
+    });
+  }, skip: _shScriptsSkip());
+
+  group('ShellAgentLoopHooks — stop', () {
+    const context = WouldStopContext(turn: 3, lastAssistantText: 'All done.');
+
+    test('exit 0 lets the turn end', () async {
+      final hooks = ShellAgentLoopHooks(
+        cwd: dir.path,
+        start: start.call,
+        stopScript: sh('stop_ok', 'echo "fine"; exit 0'),
+      );
+      expect(await hooks.onWouldStop(context), isA<WouldStopEnd>());
+    });
+
+    test(
+      'exit 2 with stdout continues with that text, and reads the event',
+      () async {
+        final hooks = ShellAgentLoopHooks(
+          cwd: dir.path,
+          start: start.call,
+          stopScript: sh(
+            'stop_block',
+            'cat > "\$PWD/event.json"; echo "Run the tests first."; exit 2',
+          ),
+        );
+        final answer = await hooks.onWouldStop(context);
+        expect(answer, isA<WouldStopContinue>());
+        expect((answer as WouldStopContinue).message, 'Run the tests first.');
+        // The owner's own words: untagged steering a compaction keeps.
+        expect(answer.origin, isNull);
+        final event = File(p.join(dir.path, 'event.json')).readAsStringSync();
+        expect(event, contains('"event":"stop"'));
+        expect(event, contains('"turn":3'));
+        expect(event, contains('"last_message":"All done."'));
+      },
+    );
+
+    test('the script reads stop_hook_active and block_count (A7)', () async {
+      final hooks = ShellAgentLoopHooks(
+        cwd: dir.path,
+        start: start.call,
+        stopScript: sh(
+          'stop_state',
+          'cat >> "\$PWD/events.jsonl"; echo >> "\$PWD/events.jsonl"; '
+              'if [ -f "\$PWD/allow" ]; then exit 0; fi; '
+              'echo "Not yet."; exit 2',
+        ),
+      );
+      expect(await hooks.onWouldStop(context), isA<WouldStopContinue>());
+      expect(await hooks.onWouldStop(context), isA<WouldStopContinue>());
+      File(p.join(dir.path, 'allow')).writeAsStringSync('');
+      expect(await hooks.onWouldStop(context), isA<WouldStopEnd>());
+      File(p.join(dir.path, 'allow')).deleteSync();
+      expect(await hooks.onWouldStop(context), isA<WouldStopContinue>());
+      final events = [
+        for (final line in File(
+          p.join(dir.path, 'events.jsonl'),
+        ).readAsLinesSync())
+          if (line.trim().isNotEmpty) jsonDecode(line) as Map<String, Object?>,
+      ];
+      expect(
+        [for (final e in events) (e['stop_hook_active'], e['block_count'])],
+        [(false, 0), (true, 1), (true, 2), (false, 2)],
+      );
+    });
+
+    test('a block without a reason ends the turn with one warning', () async {
+      final warnings = <String>[];
+      final hooks = ShellAgentLoopHooks(
+        cwd: dir.path,
+        start: start.call,
+        stopScript: sh('stop_reasonless', 'exit 2'),
+        onWarning: warnings.add,
+      );
+      expect(await hooks.onWouldStop(context), isA<WouldStopEnd>());
+      expect(warnings, ['stop hook blocked without a reason']);
+      expect(hooks.stopHookActive, isFalse);
+    });
+
+    test('blocks three times in a run, then the turn ends unasked', () async {
+      final hooks = ShellAgentLoopHooks(
+        cwd: dir.path,
+        start: start.call,
+        stopScript: sh('stop_always', 'echo "Not yet."; exit 2'),
+      );
+      for (var i = 0; i < 3; i++) {
+        expect(await hooks.onWouldStop(context), isA<WouldStopContinue>());
+      }
+      expect(hooks.stopBlocks, 3);
+      expect(await hooks.onWouldStop(context), isA<WouldStopEnd>());
+      // The fourth time the script is not run at all.
+      expect(start.starts, hasLength(3));
+    });
+
+    test('the text is cut to 2,000 characters', () async {
+      final hooks = ShellAgentLoopHooks(
+        cwd: dir.path,
+        start: start.call,
+        stopScript: sh(
+          'stop_long',
+          'i=0; while [ \$i -lt 300 ]; do printf "0123456789"; '
+              'i=\$((i+1)); done; exit 2',
+        ),
+      );
+      final answer = await hooks.onWouldStop(context) as WouldStopContinue;
+      expect(answer.message.length, 2000);
+    });
+
+    test('exit 2 with nothing on stdout lets the turn end', () async {
+      final hooks = ShellAgentLoopHooks(
+        cwd: dir.path,
+        start: start.call,
+        stopScript: sh('stop_silent', 'exit 2'),
+      );
+      expect(await hooks.onWouldStop(context), isA<WouldStopEnd>());
+      expect(hooks.stopBlocks, 0);
+    });
+
+    test('another exit code lets the turn end', () async {
+      final hooks = ShellAgentLoopHooks(
+        cwd: dir.path,
+        start: start.call,
+        stopScript: sh('stop_err', 'echo "oops"; exit 1'),
+      );
+      expect(await hooks.onWouldStop(context), isA<WouldStopEnd>());
+    });
+
+    test('a script that cannot start lets the turn end', () async {
+      final hooks = ShellAgentLoopHooks(
+        cwd: dir.path,
+        start: start.call,
+        stopScript: p.join(dir.path, 'missing_stop'),
+      );
+      expect(await hooks.onWouldStop(context), isA<WouldStopEnd>());
+    });
+
+    test('a timeout lets the turn end', () async {
+      final hooks = ShellAgentLoopHooks(
+        cwd: dir.path,
+        start: start.call,
+        stopScript: sh('stop_slow', 'echo "wait"; sleep 10; exit 2'),
+        timeout: const Duration(milliseconds: 300),
+      );
+      final watch = Stopwatch()..start();
+      expect(await hooks.onWouldStop(context), isA<WouldStopEnd>());
+      expect(watch.elapsed, lessThan(const Duration(seconds: 8)));
+    });
+
+    test('no stop script ends the turn without starting anything', () async {
+      final hooks = ShellAgentLoopHooks(cwd: dir.path, start: start.call);
+      expect(await hooks.onWouldStop(context), isA<WouldStopEnd>());
+      expect(start.starts, isEmpty);
+    });
+  }, skip: _shScriptsSkip());
+
+  group('ShellAgentLoopHooks — pre-compact', () {
+    test('stdout on exit 0 is the focus text, cut to 1,000', () async {
+      final hooks = ShellAgentLoopHooks(
+        cwd: dir.path,
+        start: start.call,
+        preCompactScript: sh('pre_compact', 'echo "Keep the plan."'),
+      );
+      expect(await hooks.preCompact(), 'Keep the plan.');
+      final long = ShellAgentLoopHooks(
+        cwd: dir.path,
+        start: start.call,
+        preCompactScript: sh(
+          'pre_compact_long',
+          'i=0; while [ \$i -lt 200 ]; do printf "0123456789"; '
+              'i=\$((i+1)); done',
+        ),
+      );
+      expect(await long.preCompact(), hasLength(1000));
+    });
+
+    test('a failing script adds nothing', () async {
+      final hooks = ShellAgentLoopHooks(
+        cwd: dir.path,
+        start: start.call,
+        preCompactScript: sh('pre_compact_fail', 'echo "half"; exit 1'),
+      );
+      expect(await hooks.preCompact(), isNull);
     });
   }, skip: _shScriptsSkip());
 }

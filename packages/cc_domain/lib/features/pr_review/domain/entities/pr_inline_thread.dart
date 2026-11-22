@@ -123,6 +123,7 @@ class PrInlineThread {
     this.serverId,
     this.threadId,
     this.syncError,
+    this.isFileLevel = false,
   }) : lineEnd = lineEnd ?? line;
 
   /// Identifier.
@@ -178,6 +179,11 @@ class PrInlineThread {
   /// Last sync error message, when [syncState] is `error`.
   final String? syncError;
 
+  /// Whether the thread is on the file as a whole rather than a diff line.
+  /// [line]/[lineEnd] are then 0 and [side] is meaningless; the diff shows the
+  /// thread at the top of the file's body, and it posts as a file comment.
+  final bool isFileLevel;
+
   /// isMultiLine.
   bool get isMultiLine => lineEnd > line;
 
@@ -221,7 +227,8 @@ class PrInlineThread {
           syncState == other.syncState &&
           serverId == other.serverId &&
           threadId == other.threadId &&
-          syncError == other.syncError;
+          syncError == other.syncError &&
+          isFileLevel == other.isFileLevel;
 
   @override
   int get hashCode => Object.hash(
@@ -240,6 +247,7 @@ class PrInlineThread {
     serverId,
     threadId,
     syncError,
+    isFileLevel,
   );
 
   /// copyWith.
@@ -280,6 +288,7 @@ class PrInlineThread {
       serverId: removeServerId ? null : (serverId ?? this.serverId),
       threadId: threadId ?? this.threadId,
       syncError: removeSyncError ? null : (syncError ?? this.syncError),
+      isFileLevel: isFileLevel,
     );
   }
 

@@ -3,8 +3,14 @@ import 'dart:async';
 import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
+import 'package:cc_domain/features/code_mode/domain/services/utf8_bounds.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
+
+/// The most UTF-8 bytes of an action's summary, marker included, that a
+/// blocked-action event and a denial's log line carry: a summary can hold a
+/// whole shell command, which the guard audit keeps.
+const int kMaxShownActionSummaryBytes = 2 * 1024;
 
 /// Publishes [AgentActionBlocked] for every guard verdict that REFUSED an
 /// agent action without asking anyone.
@@ -57,7 +63,10 @@ class AgentActionBlockedPublisher {
           spaceId: (spaceId == null || spaceId.isEmpty) ? null : spaceId,
           agentId: audit.agentId,
           agentName: name,
-          actionSummary: audit.actionSummary,
+          actionSummary: boundUtf8(
+            audit.actionSummary,
+            kMaxShownActionSummaryBytes,
+          ),
           source: audit.source,
           occurredAt: _clock().toUtc(),
         ),

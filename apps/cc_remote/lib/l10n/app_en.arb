@@ -1502,50 +1502,6 @@
   "mobileGoalFailed": "Failed",
   "mobileGoalCancelled": "Cancelled",
   "mobileGoalBudgetExhausted": "Budget reached",
-  "mobileGoalGoal": "Goal",
-  "mobileGoalLoop": "Loop",
-  "mobileGoalKind": "Type: {kind}",
-  "@mobileGoalKind": {
-    "placeholders": {
-      "kind": {
-        "type": "String"
-      }
-    }
-  },
-  "mobileGoalRuns": "{count} runs",
-  "@mobileGoalRuns": {
-    "placeholders": {
-      "count": {
-        "type": "String"
-      }
-    }
-  },
-  "mobileGoalNoRunLimit": "unlimited",
-  "mobileGoalProgress": "Runs: {runs} / {maxRuns} · Spent: {spent} / {cap}",
-  "@mobileGoalProgress": {
-    "placeholders": {
-      "runs": {
-        "type": "String"
-      },
-      "maxRuns": {
-        "type": "String"
-      },
-      "spent": {
-        "type": "String"
-      },
-      "cap": {
-        "type": "String"
-      }
-    }
-  },
-  "mobileGoalDeadline": "Deadline: {date}",
-  "@mobileGoalDeadline": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
-  },
   "mobileGoalFailures": "Consecutive failed runs: {count}",
   "@mobileGoalFailures": {
     "placeholders": {
@@ -1554,9 +1510,7 @@
       }
     }
   },
-  "mobileGoalSummary": "Completion summary",
   "mobileGoalFailedDescription": "The supervisor stopped after repeated failed runs. Review the conversation for details.",
-  "mobileGoalBudgetWall": "The deadline or run limit was reached. This goal cannot resume by raising the cost cap.",
   "mobileGoalPause": "Pause goal",
   "mobileGoalResume": "Resume goal",
   "mobileGoalStop": "Cancel goal",
@@ -2336,5 +2290,1710 @@
   "runSandboxUnavailable": "This server has no sandbox, so only its owner can run agents here. The owner can install the sandbox or turn sandboxing off for everyone.",
   "@runSandboxUnavailable": {
     "description": "Body of that notice. 'Owner' = the person who runs this Control Center server; 'sandbox' = the isolation agents run in"
+  },
+  "scriptToolCalls": "Tool calls",
+  "@scriptToolCalls": {
+    "description": "Section label above the list of tool calls a code mode script made, inside the script's transcript row"
+  },
+  "scriptCallCount": "{count, plural, =1{1 call} other{{count} calls}}",
+  "@scriptCallCount": {
+    "description": "How many tool calls a code mode script made, shown on its collapsed transcript row",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scriptCallsRunning": "{count} running",
+  "@scriptCallsRunning": {
+    "description": "How many of a script's tool calls are still running. Joined with other counts by a middle dot",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scriptCallsOk": "{count} ok",
+  "@scriptCallsOk": {
+    "description": "How many of a script's tool calls completed successfully. Short status word",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scriptCallsFailed": "{count} failed",
+  "@scriptCallsFailed": {
+    "description": "How many of a script's tool calls ran and failed",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scriptCallsDenied": "{count} denied",
+  "@scriptCallsDenied": {
+    "description": "How many of a script's tool calls were refused before running (by a person, a policy or a hook)",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scriptCallsCancelled": "{count} cancelled",
+  "@scriptCallsCancelled": {
+    "description": "How many of a script's tool calls were stopped before they produced a result",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scriptCallsQueued": "{count} queued",
+  "@scriptCallsQueued": {
+    "description": "How many of a script's tool calls have not been reached yet while the script runs. Joined with other counts by a middle dot",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scriptCallsSkipped": "{count} skipped",
+  "@scriptCallsSkipped": {
+    "description": "How many of a script's tool calls were not reached and will not be (another branch was taken, or the script ended). Joined with other counts by a middle dot",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scriptStepQueued": "Queued",
+  "@scriptStepQueued": {
+    "description": "Status word on a tool call a running script has not reached yet, shown where the call's duration would be"
+  },
+  "scriptStepSkipped": "Skipped",
+  "@scriptStepSkipped": {
+    "description": "Status word on a tool call, or a branch of a script, that was not reached and will not be (another branch was taken, or the script ended)"
+  },
+  "scriptGroupLoop": "Loop",
+  "@scriptGroupLoop": {
+    "description": "Header of a group of tool calls a script makes inside a loop (for, while). Followed by the loop's code"
+  },
+  "scriptGroupEach": "For each",
+  "@scriptGroupEach": {
+    "description": "Header of a group of tool calls a script makes once per item of a list (array.map, forEach). Followed by the code that names the list"
+  },
+  "scriptGroupParallel": "In parallel",
+  "@scriptGroupParallel": {
+    "description": "Header of a group of tool calls a script runs at the same time (Promise.all). Followed by the code"
+  },
+  "scriptGroupFunction": "Function",
+  "@scriptGroupFunction": {
+    "description": "Header of a group of tool calls a script makes inside a function it defined. Followed by the function's name"
+  },
+  "scriptCallsHidden": "{count, plural, =1{Show 1 more call} other{Show {count} more calls}}",
+  "@scriptCallsHidden": {
+    "description": "Button inside a long group of a script's tool calls that shows the calls hidden from the middle of the group",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scriptCallsUnplaced": "Calls not placed in the script",
+  "@scriptCallsUnplaced": {
+    "description": "Caption above tool calls a script made that could not be matched to a place in its code, listed after the script's structure"
+  },
+  "scriptToolComputed": "Tool",
+  "@scriptToolComputed": {
+    "description": "Stands in for the tool's name on a not-yet-run call whose tool the script chooses while it runs"
+  },
+  "scriptStepSemantics": "{subject}, {state}",
+  "@scriptStepSemantics": {
+    "description": "Screen reader label of one step of a script: what it is (a tool name, a loop, a branch) and its state (queued, skipped, a count of calls)",
+    "placeholders": {
+      "subject": {
+        "type": "String"
+      },
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "scriptSourceLabel": "Script",
+  "@scriptSourceLabel": {
+    "description": "Label of the collapsible section that shows the source code of a script the agent ran"
+  },
+  "scriptSourceLines": "{count, plural, =1{1 line} other{{count} lines}}",
+  "@scriptSourceLines": {
+    "description": "Length of a script's source code, beside its collapsed section",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scriptStateRunning": "Running",
+  "@scriptStateRunning": {
+    "description": "Status tag: the agent's script is still running"
+  },
+  "scriptStateCompleted": "Completed",
+  "@scriptStateCompleted": {
+    "description": "Status tag: the agent's script ran to the end"
+  },
+  "scriptStateFailed": "Failed",
+  "@scriptStateFailed": {
+    "description": "Status tag: the agent's script threw an error"
+  },
+  "scriptStateTimedOut": "Timed out",
+  "@scriptStateTimedOut": {
+    "description": "Status tag: the agent's script hit its time limit"
+  },
+  "scriptStateCancelled": "Cancelled",
+  "@scriptStateCancelled": {
+    "description": "Status tag: the agent's script was stopped before it finished"
+  },
+  "scriptStateMemoryExceeded": "Out of memory",
+  "@scriptStateMemoryExceeded": {
+    "description": "Status tag: the agent's script hit its memory limit"
+  },
+  "scriptStateOutputExceeded": "Too much output",
+  "@scriptStateOutputExceeded": {
+    "description": "Status tag: the agent's script was stopped because it wrote more output than allowed"
+  },
+  "scriptStateSandboxError": "Sandbox error",
+  "@scriptStateSandboxError": {
+    "description": "Status tag: the isolated environment the script runs in failed. 'Sandbox' = the isolation scripts run in"
+  },
+  "scriptStateRefused": "Refused",
+  "@scriptStateRefused": {
+    "description": "Status tag: the server did not run the agent's script at all"
+  },
+  "scriptOriginLine": "From a script the agent is running",
+  "@scriptOriginLine": {
+    "description": "Quiet line on an approval request or a question: the request came from a tool call inside a script the agent wrote, not from the agent directly"
+  },
+  "codeModeTitle": "Code mode",
+  "@codeModeTitle": {
+    "description": "Section label on the phone's settings: code mode lets an agent write a short script that calls its tools"
+  },
+  "codeModeAvailable": "Available",
+  "@codeModeAvailable": {
+    "description": "Tag: this server can run agents' scripts"
+  },
+  "codeModeUnavailable": "Unavailable",
+  "@codeModeUnavailable": {
+    "description": "Tag: this server cannot run agents' scripts"
+  },
+  "codeModeUnavailableNote": "This server can't run scripts, so agents here call their tools one at a time. The server says: {reason}",
+  "@codeModeUnavailableNote": {
+    "description": "Note when the server cannot run scripts. {reason} is the server's own explanation, in English",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "codeModeNoReason": "no reason was given.",
+  "@codeModeNoReason": {
+    "description": "Stands in for the server's explanation when it gave none; ends the sentence of codeModeUnavailableNote"
+  },
+  "workKindUnknown": "For a reason this version doesn't name:",
+  "@workKindUnknown": {
+    "description": "Lead-in before a raw machine kind in code style, when the phone does not know a reason the server sent"
+  },
+  "workRefusalUnknown": "The server refused this:",
+  "@workRefusalUnknown": {
+    "description": "Lead-in before a raw refusal kind in code style, when the phone does not know why the server refused an action"
+  },
+  "workActionFailed": "That did not work: {error}",
+  "@workActionFailed": {
+    "description": "Shown when an action on a goal, wake or schedule failed for a reason that is not a refusal. {error} is the technical error text, in English",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "wakeKindStopped": "Held because a person stopped the run.",
+  "@wakeKindStopped": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindAttempts": "Delivery failed three times.",
+  "@wakeKindAttempts": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindAgentDeleted": "The agent no longer exists.",
+  "@wakeKindAgentDeleted": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindAgentNotDispatchable": "The agent is retired.",
+  "@wakeKindAgentNotDispatchable": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindAgentPaused": "The agent is paused.",
+  "@wakeKindAgentPaused": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindPersonRemoved": "The person it acts for left the workspace.",
+  "@wakeKindPersonRemoved": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindBudgetBlocked": "A budget blocks a run.",
+  "@wakeKindBudgetBlocked": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindTakeOver": "A person has taken over the worktree.",
+  "@wakeKindTakeOver": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindRateCapConversation": "This conversation started 30 runs from wakes in the last hour.",
+  "@wakeKindRateCapConversation": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindRateCapWorkspace": "This workspace started 300 runs from wakes in the last hour.",
+  "@wakeKindRateCapWorkspace": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindLiveRunNoInput": "The agent's live run here takes no input.",
+  "@wakeKindLiveRunNoInput": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindLiveRunOtherOptions": "The agent's live run here runs differently, so this starts its own run after it.",
+  "@wakeKindLiveRunOtherOptions": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindLiveRunOtherPerson": "The agent's live run here acts for someone else, so this starts its own run after it.",
+  "@wakeKindLiveRunOtherPerson": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindDispatchRefused": "The run could not start.",
+  "@wakeKindDispatchRefused": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindSandboxUnavailable": "No sandbox is available for a read-only run.",
+  "@wakeKindSandboxUnavailable": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindReadOnlyUnavailable": "This agent's backend cannot keep a run read-only.",
+  "@wakeKindReadOnlyUnavailable": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindServerStopped": "A server restart stopped the run.",
+  "@wakeKindServerStopped": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindServerRestarted": "The server restarted during a person's run.",
+  "@wakeKindServerRestarted": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindGuardFailed": "A check before delivery failed.",
+  "@wakeKindGuardFailed": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindLimit": "Waiting for the provider's usage limit to reset.",
+  "@wakeKindLimit": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindLimitRunLive": "Waiting for the run at the usage limit to end.",
+  "@wakeKindLimitRunLive": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindWakeMissed": "Missed while the server was down.",
+  "@wakeKindWakeMissed": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindPipelineRunEnded": "Its pipeline run ended.",
+  "@wakeKindPipelineRunEnded": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindGoalEnded": "Its goal ended.",
+  "@wakeKindGoalEnded": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindGoalBudgetExhausted": "Its goal used its budget.",
+  "@wakeKindGoalBudgetExhausted": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindGoalReviewStale": "The goal changed since this review was asked for.",
+  "@wakeKindGoalReviewStale": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindGoalPaused": "Its goal is paused.",
+  "@wakeKindGoalPaused": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindGoalHeld": "Its goal is on hold.",
+  "@wakeKindGoalHeld": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindGoalStopped": "Its goal was stopped.",
+  "@wakeKindGoalStopped": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindAskSettled": "The question it answers was already settled.",
+  "@wakeKindAskSettled": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeKindRuleEnded": "Its schedule ended.",
+  "@wakeKindRuleEnded": {
+    "description": "Why a wake waits, is held or was not delivered, shown under the wake in a conversation's progress view. A \"wake\" is something that will start or continue an agent's work later"
+  },
+  "wakeRefusalNotYours": "This wake acts for another person. Only they can deliver or resume it.",
+  "@wakeRefusalNotYours": {
+    "description": "Shown when the server refused delivering, resuming or cancelling a wake"
+  },
+  "wakeRefusalSettled": "This wake has already settled.",
+  "@wakeRefusalSettled": {
+    "description": "Shown when the server refused delivering, resuming or cancelling a wake"
+  },
+  "goalRefusalAlreadyActive": "This agent already has an active goal.",
+  "@goalRefusalAlreadyActive": {
+    "description": "Shown when the server refused an action on a goal (a long-running task an agent pursues until it is verified done)"
+  },
+  "goalRefusalNotInReview": "This goal is not waiting for review.",
+  "@goalRefusalNotInReview": {
+    "description": "Shown when the server refused an action on a goal (a long-running task an agent pursues until it is verified done)"
+  },
+  "goalRefusalEvidenceIncomplete": "The goal's evidence is incomplete.",
+  "@goalRefusalEvidenceIncomplete": {
+    "description": "Shown when the server refused an action on a goal (a long-running task an agent pursues until it is verified done)"
+  },
+  "goalRefusalClaimPending": "A claim that it is done is still being checked.",
+  "@goalRefusalClaimPending": {
+    "description": "Shown when the server refused an action on a goal (a long-running task an agent pursues until it is verified done)"
+  },
+  "goalRefusalNotActiveSegment": "This goal has no segment running.",
+  "@goalRefusalNotActiveSegment": {
+    "description": "Shown when the server refused an action on a goal (a long-running task an agent pursues until it is verified done)"
+  },
+  "goalRefusalNotYours": "Only the person who started this goal can do that.",
+  "@goalRefusalNotYours": {
+    "description": "Shown when the server refused an action on a goal (a long-running task an agent pursues until it is verified done)"
+  },
+  "goalRefusalNotPaused": "Pause the goal first.",
+  "@goalRefusalNotPaused": {
+    "description": "Shown when the server refused an action on a goal (a long-running task an agent pursues until it is verified done)"
+  },
+  "goalRefusalContractInvalid": "The goal's contract can't be read.",
+  "@goalRefusalContractInvalid": {
+    "description": "Shown when the server refused an action on a goal (a long-running task an agent pursues until it is verified done)"
+  },
+  "goalRefusalCheckerUnknown": "No agent has that name.",
+  "@goalRefusalCheckerUnknown": {
+    "description": "Shown when the server refused an action on a goal (a long-running task an agent pursues until it is verified done)"
+  },
+  "goalRefusalCheckerAmbiguous": "More than one agent has that name.",
+  "@goalRefusalCheckerAmbiguous": {
+    "description": "Shown when the server refused an action on a goal (a long-running task an agent pursues until it is verified done)"
+  },
+  "goalRefusalCheckerIsGoalAgent": "The checker must be another agent than the one doing the work.",
+  "@goalRefusalCheckerIsGoalAgent": {
+    "description": "Shown when the server refused an action on a goal (a long-running task an agent pursues until it is verified done)"
+  },
+  "goalRefusalCommandInvalid": "This goal can't be read:",
+  "@goalRefusalCommandInvalid": {
+    "description": "Shown when the server refused an action on a goal (a long-running task an agent pursues until it is verified done)"
+  },
+  "wakeRuleRefusalIntervalTooShort": "The interval is too short. Pick at least one minute.",
+  "@wakeRuleRefusalIntervalTooShort": {
+    "description": "Shown when the server refused creating or changing a schedule (a prompt an agent runs again and again)"
+  },
+  "wakeRuleRefusalTooSoon": "That time is too soon. Pick a later one.",
+  "@wakeRuleRefusalTooSoon": {
+    "description": "Shown when the server refused creating or changing a schedule (a prompt an agent runs again and again)"
+  },
+  "wakeRuleRefusalLineageEnded": "This chain of wakes has used its runs or its time.",
+  "@wakeRuleRefusalLineageEnded": {
+    "description": "Shown when the server refused creating or changing a schedule (a prompt an agent runs again and again)"
+  },
+  "wakeRuleRefusalWatchTargetUnreadable": "You can't read what this would watch.",
+  "@wakeRuleRefusalWatchTargetUnreadable": {
+    "description": "Shown when the server refused creating or changing a schedule (a prompt an agent runs again and again)"
+  },
+  "wakeRuleRefusalExpiryRequired": "Give it an end date or a number of runs.",
+  "@wakeRuleRefusalExpiryRequired": {
+    "description": "Shown when the server refused creating or changing a schedule (a prompt an agent runs again and again)"
+  },
+  "wakeRuleRefusalLimitReached": "This conversation or agent already has as many schedules as it may.",
+  "@wakeRuleRefusalLimitReached": {
+    "description": "Shown when the server refused creating or changing a schedule (a prompt an agent runs again and again)"
+  },
+  "wakeRuleRefusalInvalidWhen": "The time can't be read.",
+  "@wakeRuleRefusalInvalidWhen": {
+    "description": "Shown when the server refused creating or changing a schedule (a prompt an agent runs again and again)"
+  },
+  "wakeRuleRefusalNoteTooLong": "The note is too long.",
+  "@wakeRuleRefusalNoteTooLong": {
+    "description": "Shown when the server refused creating or changing a schedule (a prompt an agent runs again and again)"
+  },
+  "wakeRuleRefusalExpiryTooLong": "The end is too far away.",
+  "@wakeRuleRefusalExpiryTooLong": {
+    "description": "Shown when the server refused creating or changing a schedule (a prompt an agent runs again and again)"
+  },
+  "wakeRuleRefusalLimitOutOfRange": "A run, day or budget limit is out of range.",
+  "@wakeRuleRefusalLimitOutOfRange": {
+    "description": "Shown when the server refused creating or changing a schedule (a prompt an agent runs again and again)"
+  },
+  "wakeRuleRefusalNextOutsideLoop": "Only a loop can pick its own next time.",
+  "@wakeRuleRefusalNextOutsideLoop": {
+    "description": "Shown when the server refused creating or changing a schedule (a prompt an agent runs again and again)"
+  },
+  "wakeRuleRefusalWatchRefused": "That can't be watched.",
+  "@wakeRuleRefusalWatchRefused": {
+    "description": "Shown when the server refused creating or changing a schedule (a prompt an agent runs again and again)"
+  },
+  "wakeRuleRefusalRuleEnded": "That schedule has already ended.",
+  "@wakeRuleRefusalRuleEnded": {
+    "description": "Shown when the server refused creating or changing a schedule (a prompt an agent runs again and again)"
+  },
+  "wakeRuleRefusalNotYours": "That schedule belongs to someone else.",
+  "@wakeRuleRefusalNotYours": {
+    "description": "Shown when the server refused creating or changing a schedule (a prompt an agent runs again and again)"
+  },
+  "wakeRuleEndFired": "It ran its one time.",
+  "@wakeRuleEndFired": {
+    "description": "Why a schedule ended, on the schedules list and in a notification"
+  },
+  "wakeRuleEndExpired": "It reached its end date.",
+  "@wakeRuleEndExpired": {
+    "description": "Why a schedule ended, on the schedules list and in a notification"
+  },
+  "wakeRuleEndRunCap": "It used its runs.",
+  "@wakeRuleEndRunCap": {
+    "description": "Why a schedule ended, on the schedules list and in a notification"
+  },
+  "wakeRuleEndCostCap": "It reached its cost cap.",
+  "@wakeRuleEndCostCap": {
+    "description": "Why a schedule ended, on the schedules list and in a notification"
+  },
+  "wakeRuleEndGoalEnded": "Its goal ended.",
+  "@wakeRuleEndGoalEnded": {
+    "description": "Why a schedule ended, on the schedules list and in a notification"
+  },
+  "wakeRuleEndCancelled": "It was cancelled.",
+  "@wakeRuleEndCancelled": {
+    "description": "Why a schedule ended, on the schedules list and in a notification"
+  },
+  "wakeRuleEndMemberRemoved": "Its person left the workspace.",
+  "@wakeRuleEndMemberRemoved": {
+    "description": "Why a schedule ended, on the schedules list and in a notification"
+  },
+  "wakeRuleEndInvalidRow": "Its stored settings could not be read.",
+  "@wakeRuleEndInvalidRow": {
+    "description": "Why a schedule ended, on the schedules list and in a notification"
+  },
+  "goalHoldWorking": "Working on segment {segment}. Nobody needs to act.",
+  "@goalHoldWorking": {
+    "description": "What a running goal is doing. A goal runs in segments (one agent run each). {segment} is the current segment number",
+    "placeholders": {
+      "segment": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "goalHoldWaiting": "Waiting for work it is owed. It continues by itself.",
+  "@goalHoldWaiting": {
+    "description": "A goal waits for a reply, a wake or a watched event, and nobody needs to act"
+  },
+  "goalHoldWaitingUntil": "Waiting for work it is owed. It continues by itself at {time} at the latest.",
+  "@goalHoldWaitingUntil": {
+    "description": "A goal waits, and will continue by itself. {time} is a short date and clock time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "goalHoldVerifying": "It says it is done. The server runs its checks, then a reviewer decides.",
+  "@goalHoldVerifying": {
+    "description": "A goal claimed completion and is being verified; nobody needs to act"
+  },
+  "goalHoldLimit": "Paused at the provider's usage limit. It resumes by itself after the reset.",
+  "@goalHoldLimit": {
+    "description": "A goal waits for an AI provider usage limit to reset"
+  },
+  "goalHoldLimitUntil": "Paused at the provider's usage limit. It resumes by itself at {time}.",
+  "@goalHoldLimitUntil": {
+    "description": "A goal waits for an AI provider usage limit to reset. {time} is a short date and clock time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "goalHoldPerson": "Waiting for a person to answer in the conversation. It continues once someone answers.",
+  "@goalHoldPerson": {
+    "description": "A goal waits for a person to answer a question or an approval in its conversation"
+  },
+  "goalHoldByPerson": "Paused by a person. It stays paused until someone resumes it.",
+  "@goalHoldByPerson": {
+    "description": "A person paused the goal"
+  },
+  "goalHoldNeedsReview": "Waiting for review: it cannot go on by itself. Approve it as done, resume it or cancel it.",
+  "@goalHoldNeedsReview": {
+    "description": "A goal stopped and a person must decide what happens"
+  },
+  "goalHoldBudget": "It used its budget. Raise the budget to let it continue.",
+  "@goalHoldBudget": {
+    "description": "A goal spent its whole cost cap"
+  },
+  "goalHoldLimitParks": "Usage limit pauses: {count} of {max}",
+  "@goalHoldLimitParks": {
+    "description": "How often a goal has paused at a provider usage limit, against the most it may. Both are numbers",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "max": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "goalHoldDetailStalled": "No progress in its last segments.",
+  "@goalHoldDetailStalled": {
+    "description": "Detail under a goal's hold sentence: why the goal is held. Some are followed by a command or a machine kind in code style"
+  },
+  "goalHoldDetailStalledWaiting": "It waited 24 hours on the same work without progress.",
+  "@goalHoldDetailStalledWaiting": {
+    "description": "Detail under a goal's hold sentence: why the goal is held. Some are followed by a command or a machine kind in code style"
+  },
+  "goalHoldDetailVerificationFailed": "The last check failed.",
+  "@goalHoldDetailVerificationFailed": {
+    "description": "Detail under a goal's hold sentence: why the goal is held. Some are followed by a command or a machine kind in code style"
+  },
+  "goalHoldDetailCannotVerify": "The checker couldn't tell whether it is done.",
+  "@goalHoldDetailCannotVerify": {
+    "description": "Detail under a goal's hold sentence: why the goal is held. Some are followed by a command or a machine kind in code style"
+  },
+  "goalHoldDetailSandboxUnavailable": "No sandbox is available to run its checks.",
+  "@goalHoldDetailSandboxUnavailable": {
+    "description": "Detail under a goal's hold sentence: why the goal is held. Some are followed by a command or a machine kind in code style"
+  },
+  "goalHoldDetailCheckerUnavailable": "Its checker agent is unavailable. Pick another checker, then resume.",
+  "@goalHoldDetailCheckerUnavailable": {
+    "description": "Detail under a goal's hold sentence: why the goal is held. Some are followed by a command or a machine kind in code style"
+  },
+  "goalHoldDetailCheckBroken": "This check can't run:",
+  "@goalHoldDetailCheckBroken": {
+    "description": "Detail under a goal's hold sentence: why the goal is held. Some are followed by a command or a machine kind in code style"
+  },
+  "goalHoldDetailWakeSkipped": "Its wake was not delivered.",
+  "@goalHoldDetailWakeSkipped": {
+    "description": "Detail under a goal's hold sentence: why the goal is held. Some are followed by a command or a machine kind in code style"
+  },
+  "goalHoldDetailClaimPending": "Its claim that it is done waits for a check.",
+  "@goalHoldDetailClaimPending": {
+    "description": "Detail under a goal's hold sentence: why the goal is held. Some are followed by a command or a machine kind in code style"
+  },
+  "goalHoldDetailUnanswered": "A question or approval request to a person went unanswered.",
+  "@goalHoldDetailUnanswered": {
+    "description": "Detail under a goal's hold sentence: why the goal is held. Some are followed by a command or a machine kind in code style"
+  },
+  "goalHoldDetailLimitParks": "It hit usage limits too often. Look it over, then resume.",
+  "@goalHoldDetailLimitParks": {
+    "description": "Detail under a goal's hold sentence: why the goal is held. Some are followed by a command or a machine kind in code style"
+  },
+  "goalHoldDetailInput": "Waiting for an answer in the conversation.",
+  "@goalHoldDetailInput": {
+    "description": "Detail under a goal's hold sentence: why the goal is held. Some are followed by a command or a machine kind in code style"
+  },
+  "goalSegments": "Segment {run} of {max}",
+  "@goalSegments": {
+    "description": "How many segments (agent runs) a goal used of its cap",
+    "placeholders": {
+      "run": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "max": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "goalSegmentsNoCap": "Segment {run}, no cap",
+  "@goalSegmentsNoCap": {
+    "description": "How many segments (agent runs) a goal used; it has no cap",
+    "placeholders": {
+      "run": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "goalMoney": "Spent {spent} of {cap}",
+  "@goalMoney": {
+    "description": "Money a goal or schedule spent against its cost cap. Both are formatted amounts",
+    "placeholders": {
+      "spent": {
+        "type": "String"
+      },
+      "cap": {
+        "type": "String"
+      }
+    }
+  },
+  "goalDeadline": "Deadline {time}",
+  "@goalDeadline": {
+    "description": "When a goal must be done by. {time} is a short date and clock time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "goalPipelineStep": "A pipeline step pursues this goal.",
+  "@goalPipelineStep": {
+    "description": "Shown when a pipeline started this goal"
+  },
+  "goalSummaryHeading": "Last summary",
+  "@goalSummaryHeading": {
+    "description": "Heading above the text the goal's agent last wrote about it (shown as plain text)"
+  },
+  "goalDoneMeans": "Done means",
+  "@goalDoneMeans": {
+    "description": "Heading above the list of criteria that make a goal done"
+  },
+  "goalChecks": "Checks",
+  "@goalChecks": {
+    "description": "Heading above the commands the server runs to check whether a goal is done"
+  },
+  "goalBoundaries": "Boundaries",
+  "@goalBoundaries": {
+    "description": "Heading above what the goal's agent must not change"
+  },
+  "goalStopWhen": "Stop and ask when",
+  "@goalStopWhen": {
+    "description": "Heading above the conditions on which the agent stops and asks a person"
+  },
+  "goalNoMachineCheck": "No machine check. A reviewer judges from what it can read.",
+  "@goalNoMachineCheck": {
+    "description": "Shown when a goal has no check commands"
+  },
+  "goalCheckEnvironment": "Environment task",
+  "@goalCheckEnvironment": {
+    "description": "Label before a check that is a named task of the environment rather than a command"
+  },
+  "goalLastCheck": "Last check, round {round}, {time}",
+  "@goalLastCheck": {
+    "description": "Heading above the results of the last verification. {round} is a number, {time} a short date and clock time",
+    "placeholders": {
+      "round": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "goalClaim": "What it claimed",
+  "@goalClaim": {
+    "description": "Heading above the agent's own words about why the goal is done (shown as quoted text)"
+  },
+  "goalCheckPassed": "Passed",
+  "@goalCheckPassed": {
+    "description": "A check command passed"
+  },
+  "goalCheckFailed": "Failed, exit {code}",
+  "@goalCheckFailed": {
+    "description": "A check command failed. {code} is its exit code",
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
+  },
+  "goalCheckTimedOut": "Timed out",
+  "@goalCheckTimedOut": {
+    "description": "A check command ran out of time"
+  },
+  "goalCheckNotRerun": "Not rerun: nothing changed",
+  "@goalCheckNotRerun": {
+    "description": "A check was not run again because nothing changed since it last passed"
+  },
+  "goalCheckBroken": "Cannot run",
+  "@goalCheckBroken": {
+    "description": "A check command cannot run at all"
+  },
+  "goalCriterionMet": "Met",
+  "@goalCriterionMet": {
+    "description": "The reviewer found this criterion met"
+  },
+  "goalCriterionUnmet": "Not met",
+  "@goalCriterionUnmet": {
+    "description": "The reviewer found this criterion not met"
+  },
+  "goalCriterionCannotTell": "Can't tell",
+  "@goalCriterionCannotTell": {
+    "description": "The reviewer could not tell whether this criterion is met"
+  },
+  "goalVerdictPass": "Verdict: done",
+  "@goalVerdictPass": {
+    "description": "The reviewer decided the goal is done"
+  },
+  "goalVerdictFail": "Verdict: not done",
+  "@goalVerdictFail": {
+    "description": "The reviewer decided the goal is not done"
+  },
+  "goalVerdictCannotVerify": "Verdict: couldn't tell",
+  "@goalVerdictCannotVerify": {
+    "description": "The reviewer could not tell whether the goal is done"
+  },
+  "goalConcerns": "Concerns",
+  "@goalConcerns": {
+    "description": "Heading above the reviewer's concerns (shown as quoted text)"
+  },
+  "goalVerifiedBy": "Verified by {agent}",
+  "@goalVerifiedBy": {
+    "description": "Which agent reviewed the claim. {agent} is the agent's name",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "goalVerifiedBySelf": "Verified by itself (no separate checker)",
+  "@goalVerifiedBySelf": {
+    "description": "The goal's own agent reviewed its claim"
+  },
+  "goalClosedByPerson": "Closed by a person without a passing check",
+  "@goalClosedByPerson": {
+    "description": "A person approved completion without a passing verification"
+  },
+  "goalApprove": "Approve completion",
+  "@goalApprove": {
+    "description": "Button: close a goal that waits for review as done"
+  },
+  "goalApproveTitle": "Close this goal as done?",
+  "@goalApproveTitle": {
+    "description": "Title of the confirmation before approving completion"
+  },
+  "goalApproveBody": "No check confirmed it. You close it on your own word, and the goal records that a person closed it unverified.",
+  "@goalApproveBody": {
+    "description": "Body of the confirmation before approving completion"
+  },
+  "goalApproveConfirm": "Close as done",
+  "@goalApproveConfirm": {
+    "description": "Confirm button: approve completion"
+  },
+  "goalResumeNotYours": "Resuming it or raising its budget belongs to whoever started it.",
+  "@goalResumeNotYours": {
+    "description": "Shown instead of the resume button when the viewer did not start the goal"
+  },
+  "goalChooseChecker": "Pick another checker",
+  "@goalChooseChecker": {
+    "description": "Heading above the agents that could review the goal's claim instead of the unavailable one"
+  },
+  "goalCheckerSet": "{agent} checks it now. Resume to verify again.",
+  "@goalCheckerSet": {
+    "description": "Shown after picking a new checker. {agent} is the agent's name",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "goalSchedules": "Schedules",
+  "@goalSchedules": {
+    "description": "Button on the goals screen that opens the list of schedules and watches"
+  },
+  "goalRepeat": "Repeat",
+  "@goalRepeat": {
+    "description": "Button on the goals screen: start a schedule, a prompt an agent runs again and again"
+  },
+  "goalCreateChecks": "Checks (optional)",
+  "@goalCreateChecks": {
+    "description": "Label above the commands that must pass for a new goal to count as done"
+  },
+  "goalCreateCheckHint": "A command that passes when the work is done",
+  "@goalCreateCheckHint": {
+    "description": "Placeholder of a check command field"
+  },
+  "goalCreateAddCheck": "Add check",
+  "@goalCreateAddCheck": {
+    "description": "Button: add another check command field"
+  },
+  "goalCreateRemoveCheck": "Remove check",
+  "@goalCreateRemoveCheck": {
+    "description": "Accessible label of the button that removes a check command field"
+  },
+  "goalCreateSegmentCap": "Segment cap (optional)",
+  "@goalCreateSegmentCap": {
+    "description": "Label of the field for the most segments (agent runs) a new goal may use"
+  },
+  "goalCreateSegmentInvalid": "The segment cap is a whole number, at least 1.",
+  "@goalCreateSegmentInvalid": {
+    "description": "Shown when the segment cap is not a whole number"
+  },
+  "scheduleCreateTitle": "Repeat a prompt",
+  "@scheduleCreateTitle": {
+    "description": "Title of the form that starts a schedule"
+  },
+  "scheduleCadence": "How often",
+  "@scheduleCadence": {
+    "description": "Label above the choices of how often a schedule runs"
+  },
+  "scheduleEveryMinutes": "Every N minutes",
+  "@scheduleEveryMinutes": {
+    "description": "Choice: run every few minutes"
+  },
+  "scheduleEveryHours": "Every N hours",
+  "@scheduleEveryHours": {
+    "description": "Choice: run every few hours"
+  },
+  "scheduleSelfPaced": "Self-paced",
+  "@scheduleSelfPaced": {
+    "description": "Choice: the agent picks the delay before its next run"
+  },
+  "scheduleSelfPacedHint": "The agent picks the delay after each run, between 1 minute and 1 hour.",
+  "@scheduleSelfPacedHint": {
+    "description": "Explains the self-paced choice"
+  },
+  "scheduleInterval": "Interval",
+  "@scheduleInterval": {
+    "description": "Label of the number field for how many minutes or hours between runs"
+  },
+  "scheduleNote": "What should each run do?",
+  "@scheduleNote": {
+    "description": "Placeholder of the field with the prompt each run starts from"
+  },
+  "scheduleCostCap": "Cost cap in USD (optional)",
+  "@scheduleCostCap": {
+    "description": "Label of the field for the most a schedule may spend in all"
+  },
+  "scheduleExpiryDays": "Ends after N days (optional)",
+  "@scheduleExpiryDays": {
+    "description": "Label of the field for how many days a schedule lasts"
+  },
+  "scheduleCreateInvalid": "Choose a space and an agent, write what each run should do, and give whole numbers of at least 1.",
+  "@scheduleCreateInvalid": {
+    "description": "Shown when the schedule form is incomplete"
+  },
+  "scheduleCreateButton": "Start schedule",
+  "@scheduleCreateButton": {
+    "description": "Button: start the schedule"
+  },
+  "scheduleCreateConfirmTitle": "Start this schedule?",
+  "@scheduleCreateConfirmTitle": {
+    "description": "Title of the confirmation before a schedule starts"
+  },
+  "scheduleCreateConfirmEveryMinutes": "{count, plural, =1{It runs every minute, starting now.} other{It runs every {count} minutes, starting now.}}",
+  "@scheduleCreateConfirmEveryMinutes": {
+    "description": "Confirmation body for a schedule that runs every few minutes",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "scheduleCreateConfirmEveryHours": "{count, plural, =1{It runs every hour, starting now.} other{It runs every {count} hours, starting now.}}",
+  "@scheduleCreateConfirmEveryHours": {
+    "description": "Confirmation body for a schedule that runs every few hours",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "scheduleCreateConfirmSelfPaced": "It runs now, then the agent picks when to run again.",
+  "@scheduleCreateConfirmSelfPaced": {
+    "description": "Confirmation body for a self-paced schedule"
+  },
+  "scheduleCreated": "Schedule started. It is listed under Schedules.",
+  "@scheduleCreated": {
+    "description": "Shown after a schedule started"
+  },
+  "schedulesTitle": "Schedules",
+  "@schedulesTitle": {
+    "description": "Title of the list of the workspace's schedules and watches"
+  },
+  "schedulesLoadFailed": "Could not load schedules",
+  "@schedulesLoadFailed": {
+    "description": "Shown when the schedules list failed to load"
+  },
+  "schedulesEmpty": "No schedules or watches",
+  "@schedulesEmpty": {
+    "description": "Empty schedules list"
+  },
+  "schedulesEmptyDescription": "Repeat a prompt from the goals screen, or send /loop or /schedule in a conversation.",
+  "@schedulesEmptyDescription": {
+    "description": "Empty schedules list: how to make one"
+  },
+  "scheduleMissing": "This schedule is no longer available in this workspace.",
+  "@scheduleMissing": {
+    "description": "Shown when a schedule opened by link no longer exists"
+  },
+  "scheduleEvery": "Every {interval}",
+  "@scheduleEvery": {
+    "description": "A schedule that runs at a fixed interval. {interval} is a short duration such as 30m or 2h",
+    "placeholders": {
+      "interval": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleSelfPacedLoop": "Self-paced loop",
+  "@scheduleSelfPacedLoop": {
+    "description": "A schedule whose agent picks its next time"
+  },
+  "scheduleCron": "Cron schedule",
+  "@scheduleCron": {
+    "description": "A schedule with a cron expression; the expression follows in code style"
+  },
+  "scheduleOnce": "Once at {time}",
+  "@scheduleOnce": {
+    "description": "A schedule that runs one time. {time} is a short date and clock time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleWatch": "Watch: {event}",
+  "@scheduleWatch": {
+    "description": "A schedule that waits for an event. {event} is one of the watch event names",
+    "placeholders": {
+      "event": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleWatchPrChecks": "pull request checks",
+  "@scheduleWatchPrChecks": {
+    "description": "Watch event name: the checks on a pull request finished"
+  },
+  "scheduleWatchPrReview": "pull request reviews",
+  "@scheduleWatchPrReview": {
+    "description": "Watch event name: a pull request got a review or comments"
+  },
+  "scheduleWatchPrMerged": "pull request merge",
+  "@scheduleWatchPrMerged": {
+    "description": "Watch event name: a pull request merged"
+  },
+  "scheduleWatchEnvironment": "environment",
+  "@scheduleWatchEnvironment": {
+    "description": "Watch event name: the conversation's environment changed"
+  },
+  "scheduleWatchTicket": "ticket",
+  "@scheduleWatchTicket": {
+    "description": "Watch event name: a ticket settled"
+  },
+  "scheduleWatchPipelineRun": "pipeline run",
+  "@scheduleWatchPipelineRun": {
+    "description": "Watch event name: a pipeline run settled"
+  },
+  "scheduleStatusActive": "Active",
+  "@scheduleStatusActive": {
+    "description": "Status of a schedule that runs"
+  },
+  "scheduleStatusPaused": "Paused",
+  "@scheduleStatusPaused": {
+    "description": "Status of a paused schedule"
+  },
+  "scheduleStatusEnded": "Ended",
+  "@scheduleStatusEnded": {
+    "description": "Status of a schedule that ended for good"
+  },
+  "scheduleWakes": "Wakes {agent}",
+  "@scheduleWakes": {
+    "description": "Which agent a schedule wakes. {agent} is the agent's name",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleNext": "Next run {time}",
+  "@scheduleNext": {
+    "description": "When a schedule runs next. {time} is a short date and clock time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleLast": "Last run {time}",
+  "@scheduleLast": {
+    "description": "When a schedule last ran. {time} is a short date and clock time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleRuns": "{count, plural, =1{1 run} other{{count} runs}}",
+  "@scheduleRuns": {
+    "description": "How many runs a schedule started",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "scheduleRunsOf": "{count} of {max} runs",
+  "@scheduleRunsOf": {
+    "description": "How many runs a schedule started, against its cap",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "max": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "scheduleSkipped": "{count, plural, =1{1 skipped} other{{count} skipped}}",
+  "@scheduleSkipped": {
+    "description": "How many times a schedule skipped a run because the agent was busy or the server was down",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "scheduleEnds": "Ends {time}",
+  "@scheduleEnds": {
+    "description": "When a schedule ends. {time} is a short date and clock time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleChain": "Part of a chain: {count} runs left, ends {time}",
+  "@scheduleChain": {
+    "description": "A schedule set inside a run another schedule started shares that chain's limits. {count} is a number, {time} a short date and clock time",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleNoteAgent": "The agent's own note, in its words:",
+  "@scheduleNoteAgent": {
+    "description": "Heading above a schedule's note the agent wrote for itself (shown as quoted text, not a request)"
+  },
+  "scheduleNotePerson": "A person's note:",
+  "@scheduleNotePerson": {
+    "description": "Heading above a schedule's note a person wrote (shown as quoted text)"
+  },
+  "scheduleActsFor": "Acts for {name}",
+  "@scheduleActsFor": {
+    "description": "Whose sign-in a schedule's runs use. {name} is a person's name",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleActsForBot": "Acts for no person",
+  "@scheduleActsForBot": {
+    "description": "A schedule whose runs act for no person (an agent set it in a run nobody started)"
+  },
+  "scheduleGoalBound": "It ends with its goal.",
+  "@scheduleGoalBound": {
+    "description": "Shown when a schedule belongs to a goal"
+  },
+  "schedulePause": "Pause",
+  "@schedulePause": {
+    "description": "Button: pause a schedule"
+  },
+  "scheduleResume": "Resume",
+  "@scheduleResume": {
+    "description": "Button: resume a paused schedule"
+  },
+  "scheduleDelete": "Delete",
+  "@scheduleDelete": {
+    "description": "Button: end a schedule for good"
+  },
+  "scheduleRemove": "Remove",
+  "@scheduleRemove": {
+    "description": "Button: remove an ended schedule from the list"
+  },
+  "scheduleDeleteTitle": "Delete this schedule?",
+  "@scheduleDeleteTitle": {
+    "description": "Title of the confirmation before ending a schedule"
+  },
+  "scheduleDeleteBody": "It stops for good. Nothing it already did is undone.",
+  "@scheduleDeleteBody": {
+    "description": "Body of the confirmation before ending a schedule"
+  },
+  "scheduleRemoveTitle": "Remove this schedule?",
+  "@scheduleRemoveTitle": {
+    "description": "Title of the confirmation before removing an ended schedule"
+  },
+  "scheduleRemoveBody": "It disappears from the list.",
+  "@scheduleRemoveBody": {
+    "description": "Body of the confirmation before removing an ended schedule"
+  },
+  "scheduleResumeNotYours": "Only the person this schedule acts for can resume it.",
+  "@scheduleResumeNotYours": {
+    "description": "Shown instead of Resume when the viewer may not resume the schedule"
+  },
+  "scheduleResumeAdminOnly": "Only a workspace admin can resume a schedule no person owns.",
+  "@scheduleResumeAdminOnly": {
+    "description": "Shown instead of Resume on a schedule that acts for no person, to a viewer who is not an admin"
+  },
+  "scheduleOpenConversation": "Open conversation",
+  "@scheduleOpenConversation": {
+    "description": "Button: open the conversation a schedule wakes"
+  },
+  "progressWaiting": "Waiting",
+  "@progressWaiting": {
+    "description": "Heading of the section listing what will start or continue an agent's work later in this conversation"
+  },
+  "progressNothingWaiting": "Nothing is waiting.",
+  "@progressNothingWaiting": {
+    "description": "Shown when no wake waits in this conversation"
+  },
+  "wakeOriginGoal": "Goal",
+  "@wakeOriginGoal": {
+    "description": "Label naming what raised a waiting wake"
+  },
+  "wakeOriginGoalCheck": "Goal check",
+  "@wakeOriginGoalCheck": {
+    "description": "Label naming what raised a waiting wake"
+  },
+  "wakeOriginGoalReview": "Goal review",
+  "@wakeOriginGoalReview": {
+    "description": "Label naming what raised a waiting wake"
+  },
+  "wakeOriginSchedule": "Schedule",
+  "@wakeOriginSchedule": {
+    "description": "Label naming what raised a waiting wake"
+  },
+  "wakeOriginWatch": "Watch",
+  "@wakeOriginWatch": {
+    "description": "Label naming what raised a waiting wake"
+  },
+  "wakeOriginReply": "Reply",
+  "@wakeOriginReply": {
+    "description": "Label naming what raised a waiting wake"
+  },
+  "wakeOriginMessage": "Message",
+  "@wakeOriginMessage": {
+    "description": "Label naming what raised a waiting wake"
+  },
+  "wakeOriginWorkFinished": "Finished work",
+  "@wakeOriginWorkFinished": {
+    "description": "Label naming what raised a waiting wake"
+  },
+  "wakeOriginLimitReset": "Limit reset",
+  "@wakeOriginLimitReset": {
+    "description": "Label naming what raised a waiting wake"
+  },
+  "wakeOriginRecovery": "Recovery",
+  "@wakeOriginRecovery": {
+    "description": "Label naming what raised a waiting wake"
+  },
+  "wakeOriginAssignment": "Assignment",
+  "@wakeOriginAssignment": {
+    "description": "Label naming what raised a waiting wake"
+  },
+  "wakeOriginPipelineStep": "Pipeline step",
+  "@wakeOriginPipelineStep": {
+    "description": "Label naming what raised a waiting wake"
+  },
+  "wakeOriginImprovementReview": "Improvement review",
+  "@wakeOriginImprovementReview": {
+    "description": "Label naming what raised a waiting wake"
+  },
+  "wakeOriginReplyFrom": "Reply from {agent}",
+  "@wakeOriginReplyFrom": {
+    "description": "Label: a wake raised by another agent's reply. {agent} is that agent's name",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "wakeOriginMessageFrom": "Message from {agent}",
+  "@wakeOriginMessageFrom": {
+    "description": "Label: a wake raised by another agent's message. {agent} is that agent's name",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "wakeOriginWorkFinishedBy": "Finished work from {agent}",
+  "@wakeOriginWorkFinishedBy": {
+    "description": "Label: a wake raised by another agent finishing work. {agent} is that agent's name",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "wakeFor": "For {agent}",
+  "@wakeFor": {
+    "description": "Which agent a waiting wake will wake. {agent} is the agent's name",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "wakeDue": "Due {time}",
+  "@wakeDue": {
+    "description": "When a wake is due. {time} is a short date and clock time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "wakeDueNow": "Due now",
+  "@wakeDueNow": {
+    "description": "A wake is due now"
+  },
+  "wakeHeld": "Held",
+  "@wakeHeld": {
+    "description": "A wake is held until a person resumes it"
+  },
+  "wakeExpires": "Expires {time}",
+  "@wakeExpires": {
+    "description": "When a wake expires. {time} is a short date and clock time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "wakeAttempt": "Attempt {attempt}",
+  "@wakeAttempt": {
+    "description": "How many times delivering a wake was tried",
+    "placeholders": {
+      "attempt": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "wakeCancel": "Cancel",
+  "@wakeCancel": {
+    "description": "Button: cancel a waiting wake"
+  },
+  "wakeDeliverNow": "Deliver now",
+  "@wakeDeliverNow": {
+    "description": "Button: deliver a waiting wake now instead of at its time"
+  },
+  "wakeResume": "Resume",
+  "@wakeResume": {
+    "description": "Button: resume a held wake"
+  },
+  "wakeDismiss": "Dismiss",
+  "@wakeDismiss": {
+    "description": "Button: drop the recovery wake left after a server restart"
+  },
+  "wakeResumeOnlyTheirs": "Only the person whose run this is can resume it.",
+  "@wakeResumeOnlyTheirs": {
+    "description": "Shown instead of Resume when the viewer may not resume a held wake"
+  },
+  "wakeRecovery": "The server restarted during this run. Resume to continue it, or dismiss.",
+  "@wakeRecovery": {
+    "description": "Card for the wake a server restart left behind"
+  },
+  "limitParkTitle": "Paused at {provider}'s usage limit, which resets at {time}. The run waits for Resume, for up to 7 days after the reset.",
+  "@limitParkTitle": {
+    "description": "Card: an agent run waits for an AI provider's usage limit to reset. {provider} is the provider's name, {time} a clock time",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "limitParkTitleUnnamed": "Paused at the provider's usage limit, which resets at {time}. The run waits for Resume, for up to 7 days after the reset.",
+  "@limitParkTitleUnnamed": {
+    "description": "Card: an agent run waits for an AI provider's usage limit to reset; the provider is unknown. {time} is a clock time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "limitParkResumeNow": "Resume now",
+  "@limitParkResumeNow": {
+    "description": "Button: resume the run without waiting for the reset"
+  },
+  "limitParkCancel": "Cancel",
+  "@limitParkCancel": {
+    "description": "Button: stop waiting for the usage limit"
+  },
+  "limitParkResumed": "Resumed after {provider}'s usage limit.",
+  "@limitParkResumed": {
+    "description": "The run waiting at a usage limit has resumed. {provider} is the provider's name",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "limitParkGone": "No longer waiting at {provider}'s usage limit.",
+  "@limitParkGone": {
+    "description": "The run no longer waits at a usage limit (it was cancelled or resumed). {provider} is the provider's name",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "limitParkProviderUnknown": "the provider",
+  "@limitParkProviderUnknown": {
+    "description": "Stands in for the provider's name in limitParkResumed and limitParkGone when the name is unknown"
+  },
+  "mobileHeldMessages": "Held messages",
+  "@mobileHeldMessages": {
+    "description": "Button above the composer when messages are held because a person stopped the run"
+  },
+  "heldSteeringTitle": "Held because the run ended before it could take them. Send yours now or remove them.",
+  "@heldSteeringTitle": {
+    "description": "Above messages that were held when a person stopped the agent's run"
+  },
+  "heldSteeringRelease": "Send held messages",
+  "@heldSteeringRelease": {
+    "description": "Button: send every held message to the agent"
+  },
+  "notifGoalCompleted": "Goal done",
+  "@notifGoalCompleted": {
+    "description": "Activity title: a goal completed"
+  },
+  "notifGoalFailed": "Goal failed",
+  "@notifGoalFailed": {
+    "description": "Activity title: a goal failed"
+  },
+  "notifGoalCancelled": "Goal cancelled",
+  "@notifGoalCancelled": {
+    "description": "Activity title: a goal was cancelled"
+  },
+  "notifGoalBudgetExhausted": "Goal used its budget",
+  "@notifGoalBudgetExhausted": {
+    "description": "Activity title: a goal spent its whole budget"
+  },
+  "notifGoalNeedsReview": "A goal waits for your review",
+  "@notifGoalNeedsReview": {
+    "description": "Activity title: a goal stopped and a person must decide"
+  },
+  "notifGoalNeedsPerson": "A goal needs you",
+  "@notifGoalNeedsPerson": {
+    "description": "Activity title: a goal waits for a person's answer"
+  },
+  "notifGoalOnHold": "A goal is on hold",
+  "@notifGoalOnHold": {
+    "description": "Activity title: a goal is held for another reason"
+  },
+  "notifWakeRuleEnded": "A schedule ended",
+  "@notifWakeRuleEnded": {
+    "description": "Activity title: a schedule ended for good"
+  },
+  "notifWaitingDigest": "{count, plural, =1{1 thing waits for you} other{{count} things wait for you}}",
+  "@notifWaitingDigest": {
+    "description": "Activity title of the daily digest of what waits for the person",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "notifImprovementProposed": "{count, plural, =1{An improvement was proposed} other{{count} improvements were proposed}}",
+  "@notifImprovementProposed": {
+    "description": "Activity title: agents proposed improvements to review",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "notifPipelineRunHeld": "A pipeline run is held at its budget",
+  "@notifPipelineRunHeld": {
+    "description": "Activity title: a pipeline run stopped at its cost cap"
+  },
+  "notifPipelineRunHeldBody": "Spent {spent} of {cap}",
+  "@notifPipelineRunHeldBody": {
+    "description": "Activity body of a held pipeline run. Both are formatted amounts",
+    "placeholders": {
+      "spent": {
+        "type": "String"
+      },
+      "cap": {
+        "type": "String"
+      }
+    }
+  },
+  "notifNeedsYou": "Needs you",
+  "@notifNeedsYou": {
+    "description": "Tag on an activity entry that asks the person to act"
+  },
+  "notifDigestGoalReview": "Goal waits for review",
+  "@notifDigestGoalReview": {
+    "description": "Label of a digest entry: a goal waits for review"
+  },
+  "notifDigestGoalPerson": "Goal needs a person",
+  "@notifDigestGoalPerson": {
+    "description": "Label of a digest entry: a goal waits for a person"
+  },
+  "notifDigestHeldWake": "Held wake",
+  "@notifDigestHeldWake": {
+    "description": "Label of a digest entry: a wake is held until someone resumes it"
+  },
+  "notifDigestImprovement": "Proposed improvement",
+  "@notifDigestImprovement": {
+    "description": "Label of a digest entry: an improvement waits for review"
+  },
+  "wakeKindRulePaused": "Its schedule was paused.",
+  "@wakeKindRulePaused": {
+    "description": "Why a wake from a schedule did not run: the schedule was paused"
+  },
+  "wakeKindRuleBusy": "The agent was busy, and this schedule skips a time when it is.",
+  "@wakeKindRuleBusy": {
+    "description": "Why a wake from a schedule was skipped: the agent was already running and the schedule is set to skip in that case"
+  },
+  "wakeKindRuleFolded": "A later event of the same watch took its place.",
+  "@wakeKindRuleFolded": {
+    "description": "Why a wake from a watch was cancelled: it was merged into a newer wake for the same watch"
+  },
+  "wakeKindRuleSuperseded": "A later time of its schedule replaced it.",
+  "@wakeKindRuleSuperseded": {
+    "description": "Why a wake from a schedule did not run: a newer scheduled time replaced it"
+  },
+  "wakeKindRuleNotified": "Its schedule only sends a notification, so no run started.",
+  "@wakeKindRuleNotified": {
+    "description": "Why a wake from a schedule started no run: the schedule is set to notify only"
+  },
+  "wakeKindRuleLimitParked": "Its schedule waits for the provider's usage limit to reset.",
+  "@wakeKindRuleLimitParked": {
+    "description": "Why a wake from a schedule is waiting: the provider usage limit was reached"
+  },
+  "improvementRefusalCooldown": "An improvement review ran in this conversation a short while ago. Try again later.",
+  "@improvementRefusalCooldown": {
+    "description": "Why a /refine command was refused: a review of this conversation ran recently"
+  },
+  "improvementRefusalQueued": "An improvement review of this conversation is already waiting to run.",
+  "@improvementRefusalQueued": {
+    "description": "Why a /refine command was refused: a review is already queued"
+  },
+  "improvementRefusalAgentNotFound": "That agent is not an agent of this workspace.",
+  "@improvementRefusalAgentNotFound": {
+    "description": "Why a /refine command was refused: the named agent is not in this workspace"
+  },
+  "steeringRefusalHeldByLimit": "Messages held at a usage limit can't be sent by hand. They wait for the paused run to resume.",
+  "@steeringRefusalHeldByLimit": {
+    "description": "Why sending held messages was refused: they are held by a usage-limit pause, not by a stop"
+  },
+  "limitParkCancelled": "The wait at {provider}'s usage limit was cancelled.",
+  "@limitParkCancelled": {
+    "description": "A finished usage-limit pause that someone cancelled. {provider} is the provider name, or the fallback \"the provider\"",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "limitParkExpired": "The wait at {provider}'s usage limit expired before the run resumed.",
+  "@limitParkExpired": {
+    "description": "A finished usage-limit pause that ran out of time. {provider} is the provider name, or the fallback \"the provider\"",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "limitParkSkipped": "The run did not resume after {provider}'s usage limit.",
+  "@limitParkSkipped": {
+    "description": "A finished usage-limit pause whose resume was skipped; the reason follows. {provider} is the provider name, or the fallback \"the provider\"",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "heldSteeringLimitTitle": "Held while the run waits for the usage limit to reset. They are sent when the person it runs for resumes it.",
+  "@heldSteeringLimitTitle": {
+    "description": "Heading over messages a usage-limit pause holds, when the reset time is unknown"
+  },
+  "heldSteeringLimitAt": "Held until the usage limit resets at {time}. They are sent when the person it runs for resumes it.",
+  "@heldSteeringLimitAt": {
+    "description": "Heading over messages a usage-limit pause holds. {time} is when the provider said the limit resets",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "heldSteeringOtherTitle": "Held by the server. You can remove them.",
+  "@heldSteeringOtherTitle": {
+    "description": "Heading over held messages that neither a stop nor a usage-limit pause holds"
+  },
+  "workRowWoke": "{count, plural, =1{Woke {agent}} other{Woke {agent} for {count} waiting items}}",
+  "@workRowWoke": {
+    "description": "Conversation row: an agent was woken to run. {agent} is the agent name; {count} is how many wakes the run delivered",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "workRowWakeMissed": "A wake for {agent} was missed while the server was down.",
+  "@workRowWakeMissed": {
+    "description": "Conversation row: a scheduled wake was missed while the server was down. {agent} is the agent name",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "workRowWakeSkipped": "A wake for {agent} was not delivered.",
+  "@workRowWakeSkipped": {
+    "description": "Conversation row: a wake was skipped; the reason follows. {agent} is the agent name",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "workRowScheduleCreated": "Schedule set for {agent}.",
+  "@workRowScheduleCreated": {
+    "description": "Conversation row: a schedule was created. {agent} is the agent name",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "workRowScheduleEnded": "{agent}'s schedule ended.",
+  "@workRowScheduleEnded": {
+    "description": "Conversation row: a schedule ended; the reason follows. {agent} is the agent name",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "workRowNoteFromAgent": "Schedule note from {agent}:",
+  "@workRowNoteFromAgent": {
+    "description": "Conversation row heading over the note an agent left on its schedule. {agent} is the agent name",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "workRowNoteFromPerson": "Schedule note from a person:",
+  "@workRowNoteFromPerson": {
+    "description": "Conversation row heading over the note a person left on a schedule"
+  },
+  "workRowCommandRefusedNamed": "The {command} command was refused.",
+  "@workRowCommandRefusedNamed": {
+    "description": "Conversation row: a slash command was refused; the reason follows. {command} is the command, such as /goal",
+    "placeholders": {
+      "command": {
+        "type": "String"
+      }
+    }
+  },
+  "workRowCommandRefused": "A command was refused.",
+  "@workRowCommandRefused": {
+    "description": "Conversation row: a slash command was refused; the reason follows"
+  },
+  "workRowCapRaised": "{person} raised the pipeline's spending cap from {from} to {to}.",
+  "@workRowCapRaised": {
+    "description": "Conversation row: a person raised a pipeline run budget. {person} is their name; {from} and {to} are amounts of money",
+    "placeholders": {
+      "person": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "workRowCapRaisedNoAmounts": "{person} raised the pipeline's spending cap.",
+  "@workRowCapRaisedNoAmounts": {
+    "description": "Conversation row: a person raised a pipeline run budget (amounts unknown). {person} is their name",
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "workRowApplyIncomplete": "An accepted change to this skill could not be finished, because the skill changed in the meantime. The proposal was rolled back.",
+  "@workRowApplyIncomplete": {
+    "description": "Conversation row: an accepted improvement to a skill was undone at startup; the skill name follows"
+  },
+  "workRowOpenSchedule": "Open schedule",
+  "@workRowOpenSchedule": {
+    "description": "Button on a conversation row that opens the schedule it is about"
+  },
+  "heldSteeringOthersTitle": "Held because the run ended before it could take them. Only the person who wrote a message can send it.",
+  "@heldSteeringOthersTitle": {
+    "description": "Heading over held messages when none of them were written by the viewer, so the viewer cannot send them"
+  },
+  "heldSteeringOnlyYours": "Sends only your messages. The others wait for the people who wrote them.",
+  "@heldSteeringOnlyYours": {
+    "description": "Note above the Send held messages button when some held messages were written by other people"
+  },
+  "heldSteeringWrittenBy": "Written by {name}",
+  "@heldSteeringWrittenBy": {
+    "description": "Caption under a held message someone else wrote. {name} is that person's name",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "steeringRefusalNotYours": "Only the person who wrote a held message can send it, and none of these are yours.",
+  "@steeringRefusalNotYours": {
+    "description": "Why sending held messages was refused: every held message belongs to someone else"
+  },
+  "steeringRefusalNeedsWrite": "You need write access to this space's repositories to steer a run that acts for someone else.",
+  "@steeringRefusalNeedsWrite": {
+    "description": "Why queuing or sending a steering message was refused: the viewer lacks write access and the live run acts for another person"
+  },
+  "workRowSchedulePaused": "{name} paused the schedule for {agent}.",
+  "@workRowSchedulePaused": {
+    "description": "Conversation row: a person paused a schedule. {name} is that person; {agent} is the agent the schedule wakes",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "goalVerdictObjective": "The objective as a whole",
+  "@goalVerdictObjective": {
+    "description": "Verification row label when the reviewer judged a goal with no criteria as one item: the objective itself"
+  },
+  "notifDigestRequest": "Waits for your answer",
+  "@notifDigestRequest": {
+    "description": "Label of a digest entry: an agent asked a question or for approval and waits for an answer"
   }
 }

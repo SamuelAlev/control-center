@@ -62,9 +62,6 @@ class _ConversationsSidebarSectionState
 
   @override
   Widget build(BuildContext context) {
-    // Keeps the read-cursor side effect alive while the sidebar is mounted: it
-    // stamps the user's read cursor on selection so the unseen dot clears.
-    ref.watch(selectedSpaceReadCursorEffectProvider);
     final workspaceId = ref.watch(activeWorkspaceIdProvider);
     // Value-stable: re-emits only when a rendered field or the order of the
     // visible spaces changes, not on every message that bumps `updatedAt`.

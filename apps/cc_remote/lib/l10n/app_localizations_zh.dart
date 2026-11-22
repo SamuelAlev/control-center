@@ -1558,52 +1558,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mobileGoalBudgetExhausted => '预算已用尽';
 
   @override
-  String get mobileGoalGoal => '目标';
-
-  @override
-  String get mobileGoalLoop => '循环';
-
-  @override
-  String mobileGoalKind(String kind) {
-    return '类型：$kind';
-  }
-
-  @override
-  String mobileGoalRuns(String count) {
-    return '$count 次运行';
-  }
-
-  @override
-  String get mobileGoalNoRunLimit => '不限次数';
-
-  @override
-  String mobileGoalProgress(
-    String runs,
-    String maxRuns,
-    String spent,
-    String cap,
-  ) {
-    return '运行次数：$runs/$maxRuns · 已花费：$spent/$cap';
-  }
-
-  @override
-  String mobileGoalDeadline(String date) {
-    return '截止时间：$date';
-  }
-
-  @override
   String mobileGoalFailures(String count) {
     return '连续失败次数：$count';
   }
 
   @override
-  String get mobileGoalSummary => '完成摘要';
-
-  @override
   String get mobileGoalFailedDescription => '监督程序在多次运行失败后已停止。请查看对话了解详情。';
-
-  @override
-  String get mobileGoalBudgetWall => '已达到截止时间或运行次数上限。提高费用上限也无法继续此目标。';
 
   @override
   String get mobileGoalPause => '暂停目标';
@@ -2662,6 +2622,1260 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get runSandboxUnavailable =>
       '此服务器没有沙箱，因此只有其所有者可以在此运行智能体。所有者可以安装沙箱，或为所有人关闭沙箱。';
+
+  @override
+  String get scriptToolCalls => '工具调用';
+
+  @override
+  String scriptCallCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 次调用',
+      one: '1 次调用',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scriptCallsRunning(int count) {
+    return '$count 个运行中';
+  }
+
+  @override
+  String scriptCallsOk(int count) {
+    return '$count 成功';
+  }
+
+  @override
+  String scriptCallsFailed(int count) {
+    return '$count 失败';
+  }
+
+  @override
+  String scriptCallsDenied(int count) {
+    return '$count 已拒绝';
+  }
+
+  @override
+  String scriptCallsCancelled(int count) {
+    return '$count 已取消';
+  }
+
+  @override
+  String scriptCallsQueued(int count) {
+    return '$count 排队中';
+  }
+
+  @override
+  String scriptCallsSkipped(int count) {
+    return '$count 已跳过';
+  }
+
+  @override
+  String get scriptStepQueued => '排队中';
+
+  @override
+  String get scriptStepSkipped => '已跳过';
+
+  @override
+  String get scriptGroupLoop => '循环';
+
+  @override
+  String get scriptGroupEach => '每一项';
+
+  @override
+  String get scriptGroupParallel => '并行';
+
+  @override
+  String get scriptGroupFunction => '函数';
+
+  @override
+  String scriptCallsHidden(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '再显示 $count 次调用',
+      one: '再显示 1 次调用',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptCallsUnplaced => '未能放入脚本中的调用';
+
+  @override
+  String get scriptToolComputed => '工具';
+
+  @override
+  String scriptStepSemantics(String subject, String state) {
+    return '$subject，$state';
+  }
+
+  @override
+  String get scriptSourceLabel => '脚本';
+
+  @override
+  String scriptSourceLines(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 行',
+      one: '1 行',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptStateRunning => '运行中';
+
+  @override
+  String get scriptStateCompleted => '已完成';
+
+  @override
+  String get scriptStateFailed => '失败';
+
+  @override
+  String get scriptStateTimedOut => '已超时';
+
+  @override
+  String get scriptStateCancelled => '已取消';
+
+  @override
+  String get scriptStateMemoryExceeded => '内存不足';
+
+  @override
+  String get scriptStateOutputExceeded => '输出过多';
+
+  @override
+  String get scriptStateSandboxError => '沙箱错误';
+
+  @override
+  String get scriptStateRefused => '已拒绝';
+
+  @override
+  String get scriptOriginLine => '来自智能体正在运行的脚本';
+
+  @override
+  String get codeModeTitle => '代码模式';
+
+  @override
+  String get codeModeAvailable => '可用';
+
+  @override
+  String get codeModeUnavailable => '不可用';
+
+  @override
+  String codeModeUnavailableNote(String reason) {
+    return '此服务器无法运行脚本，因此这里的智能体会逐个调用其工具。服务器说明：$reason';
+  }
+
+  @override
+  String get codeModeNoReason => '未提供原因。';
+
+  @override
+  String get workKindUnknown => '出于此版本无法识别的原因：';
+
+  @override
+  String get workRefusalUnknown => '服务器拒绝了此操作：';
+
+  @override
+  String workActionFailed(String error) {
+    return '操作未成功：$error';
+  }
+
+  @override
+  String get wakeKindStopped => '有人停止了这次运行，因此已挂起。';
+
+  @override
+  String get wakeKindAttempts => '投递失败三次。';
+
+  @override
+  String get wakeKindAgentDeleted => '该智能体已不存在。';
+
+  @override
+  String get wakeKindAgentNotDispatchable => '该智能体已退役。';
+
+  @override
+  String get wakeKindAgentPaused => '该智能体已暂停。';
+
+  @override
+  String get wakeKindPersonRemoved => '其所代表的人员已离开工作区。';
+
+  @override
+  String get wakeKindBudgetBlocked => '预算阻止了运行。';
+
+  @override
+  String get wakeKindTakeOver => '有人已接管该工作树。';
+
+  @override
+  String get wakeKindRateCapConversation => '此会话在过去一小时内因唤醒启动了 30 次运行。';
+
+  @override
+  String get wakeKindRateCapWorkspace => '此工作区在过去一小时内因唤醒启动了 300 次运行。';
+
+  @override
+  String get wakeKindLiveRunNoInput => '该智能体在此处的实时运行不接受输入。';
+
+  @override
+  String get wakeKindLiveRunOtherOptions => '该智能体在此处的实时运行方式不同，因此这将在它之后启动自己的运行。';
+
+  @override
+  String get wakeKindLiveRunOtherPerson => '该智能体在此处的实时运行代表他人，因此这将在它之后启动自己的运行。';
+
+  @override
+  String get wakeKindDispatchRefused => '运行无法启动。';
+
+  @override
+  String get wakeKindSandboxUnavailable => '没有可用于只读运行的沙箱。';
+
+  @override
+  String get wakeKindReadOnlyUnavailable => '此智能体的后端无法保持只读运行。';
+
+  @override
+  String get wakeKindServerStopped => '服务器重启停止了该运行。';
+
+  @override
+  String get wakeKindServerRestarted => '人员运行期间服务器已重启。';
+
+  @override
+  String get wakeKindGuardFailed => '投递前的检查失败。';
+
+  @override
+  String get wakeKindLimit => '正在等待提供商的用量限额重置。';
+
+  @override
+  String get wakeKindLimitRunLive => '正在等待达到用量限额的运行结束。';
+
+  @override
+  String get wakeKindWakeMissed => '服务器关闭期间错过。';
+
+  @override
+  String get wakeKindPipelineRunEnded => '其流水线运行已结束。';
+
+  @override
+  String get wakeKindGoalEnded => '其目标已结束。';
+
+  @override
+  String get wakeKindGoalBudgetExhausted => '其目标已用完预算。';
+
+  @override
+  String get wakeKindGoalReviewStale => '自请求此评审以来，目标已发生变更。';
+
+  @override
+  String get wakeKindGoalPaused => '其目标已暂停。';
+
+  @override
+  String get wakeKindGoalHeld => '其目标已搁置。';
+
+  @override
+  String get wakeKindGoalStopped => '其目标已停止。';
+
+  @override
+  String get wakeKindAskSettled => '它所回答的问题已经有了结论。';
+
+  @override
+  String get wakeKindRuleEnded => '其定时已结束。';
+
+  @override
+  String get wakeRefusalNotYours => '此唤醒代表另一人。只有对方可以投递或继续它。';
+
+  @override
+  String get wakeRefusalSettled => '此唤醒已经结束。';
+
+  @override
+  String get goalRefusalAlreadyActive => '此智能体已有一个进行中的目标。';
+
+  @override
+  String get goalRefusalNotInReview => '此目标未在等待评审。';
+
+  @override
+  String get goalRefusalEvidenceIncomplete => '目标的证据不完整。';
+
+  @override
+  String get goalRefusalClaimPending => '关于其已完成的声明仍在检查中。';
+
+  @override
+  String get goalRefusalNotActiveSegment => '此目标没有正在运行的段。';
+
+  @override
+  String get goalRefusalNotYours => '只有发起此目标的人可以执行该操作。';
+
+  @override
+  String get goalRefusalNotPaused => '请先暂停目标。';
+
+  @override
+  String get goalRefusalContractInvalid => '无法读取目标的约定。';
+
+  @override
+  String get goalRefusalCheckerUnknown => '没有名为此的智能体。';
+
+  @override
+  String get goalRefusalCheckerAmbiguous => '有多个智能体使用此名称。';
+
+  @override
+  String get goalRefusalCheckerIsGoalAgent => '检查器必须是执行工作的智能体以外的另一个智能体。';
+
+  @override
+  String get goalRefusalCommandInvalid => '无法读取此目标：';
+
+  @override
+  String get wakeRuleRefusalIntervalTooShort => '间隔太短。请至少选择一分钟。';
+
+  @override
+  String get wakeRuleRefusalTooSoon => '该时间太近。请选择更晚的时间。';
+
+  @override
+  String get wakeRuleRefusalLineageEnded => '这一串唤醒已用完其运行次数或时间。';
+
+  @override
+  String get wakeRuleRefusalWatchTargetUnreadable => '你无法读取此监视的对象。';
+
+  @override
+  String get wakeRuleRefusalExpiryRequired => '请设置结束日期或运行次数。';
+
+  @override
+  String get wakeRuleRefusalLimitReached => '此会话或智能体的定时数量已达上限。';
+
+  @override
+  String get wakeRuleRefusalInvalidWhen => '无法识别该时间。';
+
+  @override
+  String get wakeRuleRefusalNoteTooLong => '便签太长。';
+
+  @override
+  String get wakeRuleRefusalExpiryTooLong => '结束时间太远。';
+
+  @override
+  String get wakeRuleRefusalLimitOutOfRange => '运行次数、天数或预算上限超出范围。';
+
+  @override
+  String get wakeRuleRefusalNextOutsideLoop => '只有循环可以自行选择下一次时间。';
+
+  @override
+  String get wakeRuleRefusalWatchRefused => '无法监视该对象。';
+
+  @override
+  String get wakeRuleRefusalRuleEnded => '该定时已结束。';
+
+  @override
+  String get wakeRuleRefusalNotYours => '该定时属于其他人。';
+
+  @override
+  String get wakeRuleEndFired => '已运行其唯一一次。';
+
+  @override
+  String get wakeRuleEndExpired => '已到达其结束日期。';
+
+  @override
+  String get wakeRuleEndRunCap => '已用完其运行次数。';
+
+  @override
+  String get wakeRuleEndCostCap => '已达到其费用上限。';
+
+  @override
+  String get wakeRuleEndGoalEnded => '其目标已结束。';
+
+  @override
+  String get wakeRuleEndCancelled => '已被取消。';
+
+  @override
+  String get wakeRuleEndMemberRemoved => '其所属人员已离开工作区。';
+
+  @override
+  String get wakeRuleEndInvalidRow => '无法读取其已存储的设置。';
+
+  @override
+  String goalHoldWorking(int segment) {
+    final intl.NumberFormat segmentNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String segmentString = segmentNumberFormat.format(segment);
+
+    return '正在处理第 $segmentString 段。无需任何人操作。';
+  }
+
+  @override
+  String get goalHoldWaiting => '正在等待它应得的工作。它将自行继续。';
+
+  @override
+  String goalHoldWaitingUntil(String time) {
+    return '正在等待它应得的工作。最迟将于 $time 自行继续。';
+  }
+
+  @override
+  String get goalHoldVerifying => '它声称已完成。服务器正在运行其检查，然后由评审者决定。';
+
+  @override
+  String get goalHoldLimit => '已在提供商的用量限额处暂停。重置后将自行继续。';
+
+  @override
+  String goalHoldLimitUntil(String time) {
+    return '已在提供商的用量限额处暂停。将于 $time 自行继续。';
+  }
+
+  @override
+  String get goalHoldPerson => '正在等待有人在会话中回答。有人回答后将继续。';
+
+  @override
+  String get goalHoldByPerson => '已由人工暂停。在有人继续它之前将保持暂停。';
+
+  @override
+  String get goalHoldNeedsReview => '等待评审：它无法自行继续。请将其批准为已完成、继续或取消。';
+
+  @override
+  String get goalHoldBudget => '它已用完预算。请提高预算以让它继续。';
+
+  @override
+  String goalHoldLimitParks(int count, int max) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return '用量限额暂停：$countString / $maxString';
+  }
+
+  @override
+  String get goalHoldDetailStalled => '最近几段没有任何进展。';
+
+  @override
+  String get goalHoldDetailStalledWaiting => '它在同一项工作上等待了 24 小时，没有任何进展。';
+
+  @override
+  String get goalHoldDetailVerificationFailed => '上次检查失败。';
+
+  @override
+  String get goalHoldDetailCannotVerify => '检查器无法判断它是否已完成。';
+
+  @override
+  String get goalHoldDetailSandboxUnavailable => '没有可用于运行其检查的沙箱。';
+
+  @override
+  String get goalHoldDetailCheckerUnavailable => '其检查器智能体不可用。请选择另一个检查器，然后继续。';
+
+  @override
+  String get goalHoldDetailCheckBroken => '此检查无法运行：';
+
+  @override
+  String get goalHoldDetailWakeSkipped => '其唤醒未被投递。';
+
+  @override
+  String get goalHoldDetailClaimPending => '其已完成的声明正在等待检查。';
+
+  @override
+  String get goalHoldDetailUnanswered => '发给某人的问题或批准请求未得到回应。';
+
+  @override
+  String get goalHoldDetailLimitParks => '它过于频繁地触及用量限额。请检查后再继续。';
+
+  @override
+  String get goalHoldDetailInput => '正在等待此会话中的回答。';
+
+  @override
+  String goalSegments(int run, int max) {
+    final intl.NumberFormat runNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String runString = runNumberFormat.format(run);
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return '第 $runString 段，共 $maxString 段';
+  }
+
+  @override
+  String goalSegmentsNoCap(int run) {
+    final intl.NumberFormat runNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String runString = runNumberFormat.format(run);
+
+    return '第 $runString 段，无上限';
+  }
+
+  @override
+  String goalMoney(String spent, String cap) {
+    return '已花费 $spent，上限为 $cap';
+  }
+
+  @override
+  String goalDeadline(String time) {
+    return '截止于 $time';
+  }
+
+  @override
+  String get goalPipelineStep => '一个流水线步骤正在推进此目标。';
+
+  @override
+  String get goalSummaryHeading => '最近的摘要';
+
+  @override
+  String get goalDoneMeans => '完成标准';
+
+  @override
+  String get goalChecks => '检查';
+
+  @override
+  String get goalBoundaries => '边界';
+
+  @override
+  String get goalStopWhen => '以下情况下停止并询问';
+
+  @override
+  String get goalNoMachineCheck => '没有机器检查。评审者将根据其能读取的内容作出判断。';
+
+  @override
+  String get goalCheckEnvironment => '环境任务';
+
+  @override
+  String goalLastCheck(int round, String time) {
+    final intl.NumberFormat roundNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String roundString = roundNumberFormat.format(round);
+
+    return '上次检查，第 $roundString 轮，$time';
+  }
+
+  @override
+  String get goalClaim => '它的声明';
+
+  @override
+  String get goalCheckPassed => '已通过';
+
+  @override
+  String goalCheckFailed(int code) {
+    return '失败，退出码 $code';
+  }
+
+  @override
+  String get goalCheckTimedOut => '已超时';
+
+  @override
+  String get goalCheckNotRerun => '未重新运行：没有任何变化';
+
+  @override
+  String get goalCheckBroken => '无法运行';
+
+  @override
+  String get goalCriterionMet => '已满足';
+
+  @override
+  String get goalCriterionUnmet => '未满足';
+
+  @override
+  String get goalCriterionCannotTell => '无法判断';
+
+  @override
+  String get goalVerdictPass => '结论：已完成';
+
+  @override
+  String get goalVerdictFail => '结论：未完成';
+
+  @override
+  String get goalVerdictCannotVerify => '结论：无法判断';
+
+  @override
+  String get goalConcerns => '顾虑';
+
+  @override
+  String goalVerifiedBy(String agent) {
+    return '由 $agent 验证';
+  }
+
+  @override
+  String get goalVerifiedBySelf => '由其自身验证（没有单独的检查器）';
+
+  @override
+  String get goalClosedByPerson => '由人工在没有通过检查的情况下关闭';
+
+  @override
+  String get goalApprove => '批准完成';
+
+  @override
+  String get goalApproveTitle => '将此目标标记为已完成并关闭？';
+
+  @override
+  String get goalApproveBody => '没有任何检查确认它。你将凭自己的判断关闭它，目标会记录为人工在未验证的情况下关闭。';
+
+  @override
+  String get goalApproveConfirm => '标记为已完成';
+
+  @override
+  String get goalResumeNotYours => '继续它或提高其预算，只能由发起它的人操作。';
+
+  @override
+  String get goalChooseChecker => '选择另一个检查器';
+
+  @override
+  String goalCheckerSet(String agent) {
+    return '现在由 $agent 检查。继续以重新验证。';
+  }
+
+  @override
+  String get goalSchedules => '定时';
+
+  @override
+  String get goalRepeat => '重复';
+
+  @override
+  String get goalCreateChecks => '检查（可选）';
+
+  @override
+  String get goalCreateCheckHint => '工作完成时通过的命令';
+
+  @override
+  String get goalCreateAddCheck => '添加检查';
+
+  @override
+  String get goalCreateRemoveCheck => '删除检查';
+
+  @override
+  String get goalCreateSegmentCap => '段数上限（可选）';
+
+  @override
+  String get goalCreateSegmentInvalid => '段数上限须为至少为 1 的整数。';
+
+  @override
+  String get scheduleCreateTitle => '重复一个提示';
+
+  @override
+  String get scheduleCadence => '频率';
+
+  @override
+  String get scheduleEveryMinutes => '每 N 分钟';
+
+  @override
+  String get scheduleEveryHours => '每 N 小时';
+
+  @override
+  String get scheduleSelfPaced => '由智能体决定';
+
+  @override
+  String get scheduleSelfPacedHint => '每次运行后，由智能体在 1 分钟到 1 小时之间选择延迟时间。';
+
+  @override
+  String get scheduleInterval => '间隔';
+
+  @override
+  String get scheduleNote => '每次运行应该做什么？';
+
+  @override
+  String get scheduleCostCap => '费用上限（美元，可选）';
+
+  @override
+  String get scheduleExpiryDays => '结束于 N 天后（可选）';
+
+  @override
+  String get scheduleCreateInvalid => '请选择空间和智能体，写明每次运行应做什么，并填写至少为 1 的整数。';
+
+  @override
+  String get scheduleCreateButton => '启动定时';
+
+  @override
+  String get scheduleCreateConfirmTitle => '启动此定时？';
+
+  @override
+  String scheduleCreateConfirmEveryMinutes(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '将从现在开始，每 $countString 分钟运行一次。',
+      one: '将从现在开始，每分钟运行一次。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleCreateConfirmEveryHours(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '将从现在开始，每 $countString 小时运行一次。',
+      one: '将从现在开始，每小时运行一次。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scheduleCreateConfirmSelfPaced => '现在运行一次，然后由智能体决定何时再次运行。';
+
+  @override
+  String get scheduleCreated => '定时已启动。它已列在“定时”下。';
+
+  @override
+  String get schedulesTitle => '定时';
+
+  @override
+  String get schedulesLoadFailed => '无法加载定时';
+
+  @override
+  String get schedulesEmpty => '没有定时或监视';
+
+  @override
+  String get schedulesEmptyDescription =>
+      '可以在目标页面重复一个提示，或在会话中发送 /loop 或 /schedule。';
+
+  @override
+  String get scheduleMissing => '此定时在此工作区中已不可用。';
+
+  @override
+  String scheduleEvery(String interval) {
+    return '每 $interval';
+  }
+
+  @override
+  String get scheduleSelfPacedLoop => '由智能体决定的循环';
+
+  @override
+  String get scheduleCron => 'Cron 定时';
+
+  @override
+  String scheduleOnce(String time) {
+    return '$time 运行一次';
+  }
+
+  @override
+  String scheduleWatch(String event) {
+    return '监视：$event';
+  }
+
+  @override
+  String get scheduleWatchPrChecks => 'pull request 的检查';
+
+  @override
+  String get scheduleWatchPrReview => 'pull request 的评审';
+
+  @override
+  String get scheduleWatchPrMerged => 'pull request 合并';
+
+  @override
+  String get scheduleWatchEnvironment => '环境';
+
+  @override
+  String get scheduleWatchTicket => '工单';
+
+  @override
+  String get scheduleWatchPipelineRun => '流水线运行';
+
+  @override
+  String get scheduleStatusActive => '进行中';
+
+  @override
+  String get scheduleStatusPaused => '已暂停';
+
+  @override
+  String get scheduleStatusEnded => '已结束';
+
+  @override
+  String scheduleWakes(String agent) {
+    return '唤醒 $agent';
+  }
+
+  @override
+  String scheduleNext(String time) {
+    return '下次运行 $time';
+  }
+
+  @override
+  String scheduleLast(String time) {
+    return '上次运行 $time';
+  }
+
+  @override
+  String scheduleRuns(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString 次运行',
+      one: '1 次运行',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleRunsOf(int count, int max) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return '$countString / $maxString 次运行';
+  }
+
+  @override
+  String scheduleSkipped(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '跳过 $countString 次',
+      one: '跳过 1 次',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleEnds(String time) {
+    return '结束于 $time';
+  }
+
+  @override
+  String scheduleChain(int count, String time) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return '属于一个链：剩余 $countString 次运行，结束于 $time';
+  }
+
+  @override
+  String get scheduleNoteAgent => '智能体自己的便签，以其自己的话：';
+
+  @override
+  String get scheduleNotePerson => '某人的便签：';
+
+  @override
+  String scheduleActsFor(String name) {
+    return '代表 $name';
+  }
+
+  @override
+  String get scheduleActsForBot => '不代表任何人';
+
+  @override
+  String get scheduleGoalBound => '它将随其目标一同结束。';
+
+  @override
+  String get schedulePause => '暂停';
+
+  @override
+  String get scheduleResume => '继续';
+
+  @override
+  String get scheduleDelete => '删除';
+
+  @override
+  String get scheduleRemove => '移除';
+
+  @override
+  String get scheduleDeleteTitle => '删除此定时？';
+
+  @override
+  String get scheduleDeleteBody => '它将永久停止。已经完成的操作不会撤销。';
+
+  @override
+  String get scheduleRemoveTitle => '移除此定时？';
+
+  @override
+  String get scheduleRemoveBody => '它将从列表中消失。';
+
+  @override
+  String get scheduleResumeNotYours => '只有此定时所代表的人可以继续它。';
+
+  @override
+  String get scheduleResumeAdminOnly => '只有工作区管理员可以继续不属于任何人的定时。';
+
+  @override
+  String get scheduleOpenConversation => '打开会话';
+
+  @override
+  String get progressWaiting => '等待中';
+
+  @override
+  String get progressNothingWaiting => '没有任何等待项。';
+
+  @override
+  String get wakeOriginGoal => '目标';
+
+  @override
+  String get wakeOriginGoalCheck => '目标检查';
+
+  @override
+  String get wakeOriginGoalReview => '目标评审';
+
+  @override
+  String get wakeOriginSchedule => '定时';
+
+  @override
+  String get wakeOriginWatch => '监视';
+
+  @override
+  String get wakeOriginReply => '回复';
+
+  @override
+  String get wakeOriginMessage => '消息';
+
+  @override
+  String get wakeOriginWorkFinished => '已完成的工作';
+
+  @override
+  String get wakeOriginLimitReset => '用量限额重置';
+
+  @override
+  String get wakeOriginRecovery => '恢复';
+
+  @override
+  String get wakeOriginAssignment => '任务分配';
+
+  @override
+  String get wakeOriginPipelineStep => '流水线步骤';
+
+  @override
+  String get wakeOriginImprovementReview => '改进评审';
+
+  @override
+  String wakeOriginReplyFrom(String agent) {
+    return '来自 $agent 的回复';
+  }
+
+  @override
+  String wakeOriginMessageFrom(String agent) {
+    return '来自 $agent 的消息';
+  }
+
+  @override
+  String wakeOriginWorkFinishedBy(String agent) {
+    return '$agent 完成的工作';
+  }
+
+  @override
+  String wakeFor(String agent) {
+    return '唤醒 $agent';
+  }
+
+  @override
+  String wakeDue(String time) {
+    return '$time 到期';
+  }
+
+  @override
+  String get wakeDueNow => '现已到期';
+
+  @override
+  String get wakeHeld => '已挂起';
+
+  @override
+  String wakeExpires(String time) {
+    return '$time 过期';
+  }
+
+  @override
+  String wakeAttempt(int attempt) {
+    final intl.NumberFormat attemptNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String attemptString = attemptNumberFormat.format(attempt);
+
+    return '第 $attemptString 次尝试';
+  }
+
+  @override
+  String get wakeCancel => '取消';
+
+  @override
+  String get wakeDeliverNow => '立即投递';
+
+  @override
+  String get wakeResume => '继续';
+
+  @override
+  String get wakeDismiss => '忽略';
+
+  @override
+  String get wakeResumeOnlyTheirs => '只有该运行的所属人员可以继续它。';
+
+  @override
+  String get wakeRecovery => '服务器在此次运行期间重启。请继续以恢复运行，或忽略。';
+
+  @override
+  String limitParkTitle(String provider, String time) {
+    return '已在 $provider 的用量限制处暂停，该限制将于 $time 重置。运行将等待继续，重置后最多等待 7 天。';
+  }
+
+  @override
+  String limitParkTitleUnnamed(String time) {
+    return '已在提供商的用量限制处暂停，该限制将于 $time 重置。运行将等待继续，重置后最多等待 7 天。';
+  }
+
+  @override
+  String get limitParkResumeNow => '立即继续';
+
+  @override
+  String get limitParkCancel => '取消';
+
+  @override
+  String limitParkResumed(String provider) {
+    return '$provider 用量限额解除后已继续。';
+  }
+
+  @override
+  String limitParkGone(String provider) {
+    return '不再因 $provider 的用量限额而等待。';
+  }
+
+  @override
+  String get limitParkProviderUnknown => '该提供商';
+
+  @override
+  String get mobileHeldMessages => '挂起的消息';
+
+  @override
+  String get heldSteeringTitle => '运行在能接收这些消息之前已结束，因此它们被挂起。现在发送你的消息，或将其移除。';
+
+  @override
+  String get heldSteeringRelease => '发送挂起的消息';
+
+  @override
+  String get notifGoalCompleted => '目标已完成';
+
+  @override
+  String get notifGoalFailed => '目标失败';
+
+  @override
+  String get notifGoalCancelled => '目标已取消';
+
+  @override
+  String get notifGoalBudgetExhausted => '目标已用完预算';
+
+  @override
+  String get notifGoalNeedsReview => '有一个目标等待你评审';
+
+  @override
+  String get notifGoalNeedsPerson => '有一个目标需要你处理';
+
+  @override
+  String get notifGoalOnHold => '有一个目标已搁置';
+
+  @override
+  String get notifWakeRuleEnded => '有一个定时已结束';
+
+  @override
+  String notifWaitingDigest(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '有 $countString 件事等待你处理',
+      one: '有 1 件事等待你处理',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notifImprovementProposed(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '已提出 $countString 项改进',
+      one: '已提出 1 项改进',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notifPipelineRunHeld => '一次流水线运行因预算而暂停';
+
+  @override
+  String notifPipelineRunHeldBody(String spent, String cap) {
+    return '已花费 $spent，上限为 $cap';
+  }
+
+  @override
+  String get notifNeedsYou => '需要你处理';
+
+  @override
+  String get notifDigestGoalReview => '目标等待评审';
+
+  @override
+  String get notifDigestGoalPerson => '目标需要人工处理';
+
+  @override
+  String get notifDigestHeldWake => '已挂起的唤醒';
+
+  @override
+  String get notifDigestImprovement => '已提议的改进';
+
+  @override
+  String get wakeKindRulePaused => '其定时已暂停。';
+
+  @override
+  String get wakeKindRuleBusy => '智能体正忙，而此定时会在这种情况下跳过。';
+
+  @override
+  String get wakeKindRuleFolded => '后续事件已取代它。';
+
+  @override
+  String get wakeKindRuleSuperseded => '其定时的更晚时间取代了它。';
+
+  @override
+  String get wakeKindRuleNotified => '其定时只发送通知，因此没有启动运行。';
+
+  @override
+  String get wakeKindRuleLimitParked => '其定时正在等待提供商的用量限额重置。';
+
+  @override
+  String get improvementRefusalCooldown => '不久前刚在此会话中进行过一次改进评审。请稍后再试。';
+
+  @override
+  String get improvementRefusalQueued => '此会话的评审已在排队等待运行。';
+
+  @override
+  String get improvementRefusalAgentNotFound => '该智能体不属于此工作区。';
+
+  @override
+  String get steeringRefusalHeldByLimit => '在用量限额处挂起的消息无法手动发送。它们将等待暂停的运行继续。';
+
+  @override
+  String limitParkCancelled(String provider) {
+    return '$provider 用量限额处的等待已取消。';
+  }
+
+  @override
+  String limitParkExpired(String provider) {
+    return '$provider 用量限额处的等待已过期，运行尚未继续。';
+  }
+
+  @override
+  String limitParkSkipped(String provider) {
+    return '运行未能在 $provider 用量限额解除后继续。';
+  }
+
+  @override
+  String get heldSteeringLimitTitle =>
+      '运行等待用量限制重置期间，这些消息已挂起。它们会在该运行所服务的人继续运行时发送。';
+
+  @override
+  String heldSteeringLimitAt(String time) {
+    return '在用量限制于 $time 重置前将保持挂起。它们会在该运行所服务的人继续运行时发送。';
+  }
+
+  @override
+  String get heldSteeringOtherTitle => '由服务器挂起。你可以移除它们。';
+
+  @override
+  String workRowWoke(int count, String agent) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '已为 $countString 个等待项唤醒 $agent',
+      one: '已唤醒 $agent',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String workRowWakeMissed(String agent) {
+    return '服务器关闭期间错过了给 $agent 的唤醒。';
+  }
+
+  @override
+  String workRowWakeSkipped(String agent) {
+    return '未投递给 $agent 的唤醒。';
+  }
+
+  @override
+  String workRowScheduleCreated(String agent) {
+    return '已为 $agent 设置定时。';
+  }
+
+  @override
+  String workRowScheduleEnded(String agent) {
+    return '$agent 的定时已结束。';
+  }
+
+  @override
+  String workRowNoteFromAgent(String agent) {
+    return '来自 $agent 的定时便签：';
+  }
+
+  @override
+  String get workRowNoteFromPerson => '来自某人的定时便签：';
+
+  @override
+  String workRowCommandRefusedNamed(String command) {
+    return '$command 命令已被拒绝。';
+  }
+
+  @override
+  String get workRowCommandRefused => '命令已被拒绝。';
+
+  @override
+  String workRowCapRaised(String person, String from, String to) {
+    return '$person 已将流水线的花费上限从 $from 提高到 $to。';
+  }
+
+  @override
+  String workRowCapRaisedNoAmounts(String person) {
+    return '$person 已提高流水线的花费上限。';
+  }
+
+  @override
+  String get workRowApplyIncomplete => '对此技能的已接受变更无法完成，因为该技能在此期间已被更改。此提议已回滚。';
+
+  @override
+  String get workRowOpenSchedule => '打开定时';
+
+  @override
+  String get heldSteeringOthersTitle =>
+      '运行在能接收这些消息之前已结束，因此它们被挂起。只有撰写消息的人可以发送它。';
+
+  @override
+  String get heldSteeringOnlyYours => '只发送你的消息。其他人的消息将等待其撰写者。';
+
+  @override
+  String heldSteeringWrittenBy(String name) {
+    return '由 $name 撰写';
+  }
+
+  @override
+  String get steeringRefusalNotYours => '只有挂起消息的撰写者可以发送它，而这些消息都不是你的。';
+
+  @override
+  String get steeringRefusalNeedsWrite => '你需要此空间仓库的写入权限，才能引导代表他人的运行。';
+
+  @override
+  String workRowSchedulePaused(String name, String agent) {
+    return '$name 暂停了 $agent 的定时。';
+  }
+
+  @override
+  String get goalVerdictObjective => '整个目标描述';
+
+  @override
+  String get notifDigestRequest => '等待你的回答';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -2897,6 +4111,1260 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   @override
   String get runSandboxUnavailable =>
       '此伺服器沒有沙箱，因此只有其擁有者可以在此執行代理。擁有者可以安裝沙箱，或為所有人關閉沙箱功能。';
+
+  @override
+  String get scriptToolCalls => '工具呼叫';
+
+  @override
+  String scriptCallCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 次呼叫',
+      one: '1 次呼叫',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scriptCallsRunning(int count) {
+    return '$count 個執行中';
+  }
+
+  @override
+  String scriptCallsOk(int count) {
+    return '$count 成功';
+  }
+
+  @override
+  String scriptCallsFailed(int count) {
+    return '$count 失敗';
+  }
+
+  @override
+  String scriptCallsDenied(int count) {
+    return '$count 已拒絕';
+  }
+
+  @override
+  String scriptCallsCancelled(int count) {
+    return '$count 已取消';
+  }
+
+  @override
+  String scriptCallsQueued(int count) {
+    return '$count 已排入佇列';
+  }
+
+  @override
+  String scriptCallsSkipped(int count) {
+    return '$count 已跳過';
+  }
+
+  @override
+  String get scriptStepQueued => '已排入佇列';
+
+  @override
+  String get scriptStepSkipped => '已跳過';
+
+  @override
+  String get scriptGroupLoop => '循環';
+
+  @override
+  String get scriptGroupEach => '逐項';
+
+  @override
+  String get scriptGroupParallel => '並行';
+
+  @override
+  String get scriptGroupFunction => '函數';
+
+  @override
+  String scriptCallsHidden(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '再顯示 $count 次呼叫',
+      one: '再顯示 1 次呼叫',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptCallsUnplaced => '指令碼中未能定位的工具呼叫';
+
+  @override
+  String get scriptToolComputed => '工具';
+
+  @override
+  String scriptStepSemantics(String subject, String state) {
+    return '$subject，$state';
+  }
+
+  @override
+  String get scriptSourceLabel => '指令碼';
+
+  @override
+  String scriptSourceLines(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 行',
+      one: '1 行',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptStateRunning => '執行中';
+
+  @override
+  String get scriptStateCompleted => '已完成';
+
+  @override
+  String get scriptStateFailed => '失敗';
+
+  @override
+  String get scriptStateTimedOut => '已逾時';
+
+  @override
+  String get scriptStateCancelled => '已取消';
+
+  @override
+  String get scriptStateMemoryExceeded => '記憶體不足';
+
+  @override
+  String get scriptStateOutputExceeded => '輸出過多';
+
+  @override
+  String get scriptStateSandboxError => '沙箱錯誤';
+
+  @override
+  String get scriptStateRefused => '已拒絕';
+
+  @override
+  String get scriptOriginLine => '來自代理正在執行的指令碼';
+
+  @override
+  String get codeModeTitle => '程式碼模式';
+
+  @override
+  String get codeModeAvailable => '可用';
+
+  @override
+  String get codeModeUnavailable => '無法使用';
+
+  @override
+  String codeModeUnavailableNote(String reason) {
+    return '此伺服器無法執行指令碼，因此這裡的代理會逐一呼叫其工具。伺服器的說明：$reason';
+  }
+
+  @override
+  String get codeModeNoReason => '未提供原因。';
+
+  @override
+  String get workKindUnknown => '此版本未能辨識的原因：';
+
+  @override
+  String get workRefusalUnknown => '伺服器拒絕了此操作：';
+
+  @override
+  String workActionFailed(String error) {
+    return '操作未能完成：$error';
+  }
+
+  @override
+  String get wakeKindStopped => '因有人停止了執行，故已保留。';
+
+  @override
+  String get wakeKindAttempts => '傳遞已失敗三次。';
+
+  @override
+  String get wakeKindAgentDeleted => '代理已不存在。';
+
+  @override
+  String get wakeKindAgentNotDispatchable => '此代理已退役。';
+
+  @override
+  String get wakeKindAgentPaused => '代理已暫停。';
+
+  @override
+  String get wakeKindPersonRemoved => '其代表的人已離開工作區。';
+
+  @override
+  String get wakeKindBudgetBlocked => '預算阻止了執行。';
+
+  @override
+  String get wakeKindTakeOver => '有人已接管此工作樹。';
+
+  @override
+  String get wakeKindRateCapConversation => '此對話在過去一小時內已因喚醒而開始 30 次執行。';
+
+  @override
+  String get wakeKindRateCapWorkspace => '此工作區在過去一小時內已因喚醒而開始 300 次執行。';
+
+  @override
+  String get wakeKindLiveRunNoInput => '代理在此處的進行中執行不接受輸入。';
+
+  @override
+  String get wakeKindLiveRunOtherOptions =>
+      '代理在此處的進行中執行運作方式不同，因此此項會在其之後啟動自己的執行。';
+
+  @override
+  String get wakeKindLiveRunOtherPerson => '代理在此處的進行中執行代表其他人，因此此項會在其之後啟動自己的執行。';
+
+  @override
+  String get wakeKindDispatchRefused => '無法啟動執行。';
+
+  @override
+  String get wakeKindSandboxUnavailable => '沒有可用的沙箱可供唯讀執行。';
+
+  @override
+  String get wakeKindReadOnlyUnavailable => '此代理的後端無法保持唯讀執行。';
+
+  @override
+  String get wakeKindServerStopped => '伺服器重新啟動，停止了執行。';
+
+  @override
+  String get wakeKindServerRestarted => '伺服器在有人執行期間重新啟動。';
+
+  @override
+  String get wakeKindGuardFailed => '傳遞前的檢查失敗。';
+
+  @override
+  String get wakeKindLimit => '正在等待供應商的用量上限重設。';
+
+  @override
+  String get wakeKindLimitRunLive => '正在等待已達用量上限的執行結束。';
+
+  @override
+  String get wakeKindWakeMissed => '伺服器關閉期間已錯過。';
+
+  @override
+  String get wakeKindPipelineRunEnded => '其管線執行已結束。';
+
+  @override
+  String get wakeKindGoalEnded => '其目標已結束。';
+
+  @override
+  String get wakeKindGoalBudgetExhausted => '其目標已用盡預算。';
+
+  @override
+  String get wakeKindGoalReviewStale => '此審核被要求之後，目標已有變更。';
+
+  @override
+  String get wakeKindGoalPaused => '其目標已暫停。';
+
+  @override
+  String get wakeKindGoalHeld => '其目標已保留。';
+
+  @override
+  String get wakeKindGoalStopped => '其目標已停止。';
+
+  @override
+  String get wakeKindAskSettled => '它所回答的問題已經有結論。';
+
+  @override
+  String get wakeKindRuleEnded => '其排程已結束。';
+
+  @override
+  String get wakeRefusalNotYours => '此喚醒代表其他人。只有對方可以傳遞、繼續或取消它。';
+
+  @override
+  String get wakeRefusalSettled => '此喚醒已經完結。';
+
+  @override
+  String get goalRefusalAlreadyActive => '此代理已有進行中的目標。';
+
+  @override
+  String get goalRefusalNotInReview => '此目標並未等待審核。';
+
+  @override
+  String get goalRefusalEvidenceIncomplete => '目標的證據並不完整。';
+
+  @override
+  String get goalRefusalClaimPending => '其已完成的聲明仍在檢查中。';
+
+  @override
+  String get goalRefusalNotActiveSegment => '此目標沒有正在執行的段。';
+
+  @override
+  String get goalRefusalNotYours => '只有開始此目標的人可以執行此操作。';
+
+  @override
+  String get goalRefusalNotPaused => '請先暫停目標。';
+
+  @override
+  String get goalRefusalContractInvalid => '無法讀取目標的約定內容。';
+
+  @override
+  String get goalRefusalCheckerUnknown => '沒有代理使用此名稱。';
+
+  @override
+  String get goalRefusalCheckerAmbiguous => '有多於一個代理使用此名稱。';
+
+  @override
+  String get goalRefusalCheckerIsGoalAgent => '審核代理必須是執行工作的代理以外的另一個代理。';
+
+  @override
+  String get goalRefusalCommandInvalid => '無法讀取此目標：';
+
+  @override
+  String get wakeRuleRefusalIntervalTooShort => '間隔太短。請至少選擇一分鐘。';
+
+  @override
+  String get wakeRuleRefusalTooSoon => '該時間太近。請選擇較後的時間。';
+
+  @override
+  String get wakeRuleRefusalLineageEnded => '此連串喚醒已用完其執行次數或時間。';
+
+  @override
+  String get wakeRuleRefusalWatchTargetUnreadable => '你無法讀取此項將會監看的內容。';
+
+  @override
+  String get wakeRuleRefusalExpiryRequired => '請設定結束日期或執行次數。';
+
+  @override
+  String get wakeRuleRefusalLimitReached => '此對話或此代理的排程數量已達上限。';
+
+  @override
+  String get wakeRuleRefusalInvalidWhen => '無法讀取該時間。';
+
+  @override
+  String get wakeRuleRefusalNoteTooLong => '備註太長。';
+
+  @override
+  String get wakeRuleRefusalExpiryTooLong => '結束時間太遠。';
+
+  @override
+  String get wakeRuleRefusalLimitOutOfRange => '執行次數、天數或預算上限超出範圍。';
+
+  @override
+  String get wakeRuleRefusalNextOutsideLoop => '只有循環可以自行選擇下一次的時間。';
+
+  @override
+  String get wakeRuleRefusalWatchRefused => '此項無法監看。';
+
+  @override
+  String get wakeRuleRefusalRuleEnded => '該排程已經結束。';
+
+  @override
+  String get wakeRuleRefusalNotYours => '該排程屬於其他人。';
+
+  @override
+  String get wakeRuleEndFired => '已執行其一次。';
+
+  @override
+  String get wakeRuleEndExpired => '已到達結束日期。';
+
+  @override
+  String get wakeRuleEndRunCap => '已用完其執行次數。';
+
+  @override
+  String get wakeRuleEndCostCap => '已達到其費用上限。';
+
+  @override
+  String get wakeRuleEndGoalEnded => '其目標已結束。';
+
+  @override
+  String get wakeRuleEndCancelled => '已取消。';
+
+  @override
+  String get wakeRuleEndMemberRemoved => '其所屬人已離開工作區。';
+
+  @override
+  String get wakeRuleEndInvalidRow => '無法讀取其已儲存的設定。';
+
+  @override
+  String goalHoldWorking(int segment) {
+    final intl.NumberFormat segmentNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String segmentString = segmentNumberFormat.format(segment);
+
+    return '正在執行第 $segmentString 段。無需任何人處理。';
+  }
+
+  @override
+  String get goalHoldWaiting => '正在等待應得的工作。它會自行繼續。';
+
+  @override
+  String goalHoldWaitingUntil(String time) {
+    return '正在等待應得的工作。最遲會於 $time 自行繼續。';
+  }
+
+  @override
+  String get goalHoldVerifying => '它表示已完成。伺服器正在執行其檢查，之後由審核者決定。';
+
+  @override
+  String get goalHoldLimit => '已在供應商的用量上限暫停。重設後會自行繼續。';
+
+  @override
+  String goalHoldLimitUntil(String time) {
+    return '已在供應商的用量上限暫停。將於 $time 自行繼續。';
+  }
+
+  @override
+  String get goalHoldPerson => '正在等待有人在對話中回答。有人回答後便會繼續。';
+
+  @override
+  String get goalHoldByPerson => '已由人手暫停。在有人繼續之前，會一直保持暫停。';
+
+  @override
+  String get goalHoldNeedsReview => '等待審核：它無法自行繼續。請將其標示為已完成、繼續或取消。';
+
+  @override
+  String get goalHoldBudget => '已用盡其預算。提高預算即可讓其繼續。';
+
+  @override
+  String goalHoldLimitParks(int count, int max) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return '用量上限暫停：第 $countString 次，上限為 $maxString 次';
+  }
+
+  @override
+  String get goalHoldDetailStalled => '最近幾段沒有進展。';
+
+  @override
+  String get goalHoldDetailStalledWaiting => '它就同一工作等待了 24 小時，但沒有進展。';
+
+  @override
+  String get goalHoldDetailVerificationFailed => '最近一次檢查失敗。';
+
+  @override
+  String get goalHoldDetailCannotVerify => '審核代理無法判斷是否已完成。';
+
+  @override
+  String get goalHoldDetailSandboxUnavailable => '沒有可用的沙箱來執行其檢查。';
+
+  @override
+  String get goalHoldDetailCheckerUnavailable => '其審核代理無法使用。請選擇另一個審核代理，然後繼續。';
+
+  @override
+  String get goalHoldDetailCheckBroken => '此檢查無法執行：';
+
+  @override
+  String get goalHoldDetailWakeSkipped => '其喚醒未有傳遞。';
+
+  @override
+  String get goalHoldDetailClaimPending => '其已完成的聲明正等待檢查。';
+
+  @override
+  String get goalHoldDetailUnanswered => '給人手的一個問題或核准請求未獲回答。';
+
+  @override
+  String get goalHoldDetailLimitParks => '它太常觸及用量上限。請檢視後再繼續。';
+
+  @override
+  String get goalHoldDetailInput => '正在等待對話中的回答。';
+
+  @override
+  String goalSegments(int run, int max) {
+    final intl.NumberFormat runNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String runString = runNumberFormat.format(run);
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return '第 $runString 段，共 $maxString 段';
+  }
+
+  @override
+  String goalSegmentsNoCap(int run) {
+    final intl.NumberFormat runNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String runString = runNumberFormat.format(run);
+
+    return '第 $runString 段，無上限';
+  }
+
+  @override
+  String goalMoney(String spent, String cap) {
+    return '已花費 $spent，上限為 $cap';
+  }
+
+  @override
+  String goalDeadline(String time) {
+    return '期限為 $time';
+  }
+
+  @override
+  String get goalPipelineStep => '一個管線步驟正在推進此目標。';
+
+  @override
+  String get goalSummaryHeading => '最近摘要';
+
+  @override
+  String get goalDoneMeans => '完成的標準';
+
+  @override
+  String get goalChecks => '檢查';
+
+  @override
+  String get goalBoundaries => '界線';
+
+  @override
+  String get goalStopWhen => '在以下情況停下並詢問';
+
+  @override
+  String get goalNoMachineCheck => '沒有機器檢查。審核者會根據其可讀取的內容作出判斷。';
+
+  @override
+  String get goalCheckEnvironment => '環境任務';
+
+  @override
+  String goalLastCheck(int round, String time) {
+    final intl.NumberFormat roundNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String roundString = roundNumberFormat.format(round);
+
+    return '最近一次檢查，第 $roundString 輪，$time';
+  }
+
+  @override
+  String get goalClaim => '它的聲明';
+
+  @override
+  String get goalCheckPassed => '通過';
+
+  @override
+  String goalCheckFailed(int code) {
+    return '失敗，結束代碼 $code';
+  }
+
+  @override
+  String get goalCheckTimedOut => '已逾時';
+
+  @override
+  String get goalCheckNotRerun => '未重新執行：自上次通過後沒有變更';
+
+  @override
+  String get goalCheckBroken => '無法執行';
+
+  @override
+  String get goalCriterionMet => '已達成';
+
+  @override
+  String get goalCriterionUnmet => '未達成';
+
+  @override
+  String get goalCriterionCannotTell => '無法判斷';
+
+  @override
+  String get goalVerdictPass => '結論：已完成';
+
+  @override
+  String get goalVerdictFail => '結論：未完成';
+
+  @override
+  String get goalVerdictCannotVerify => '結論：無法判斷';
+
+  @override
+  String get goalConcerns => '疑慮';
+
+  @override
+  String goalVerifiedBy(String agent) {
+    return '由 $agent 驗證';
+  }
+
+  @override
+  String get goalVerifiedBySelf => '由其自身驗證（沒有另設審核代理）';
+
+  @override
+  String get goalClosedByPerson => '由人手在沒有通過檢查的情況下結束';
+
+  @override
+  String get goalApprove => '核准完成';
+
+  @override
+  String get goalApproveTitle => '要將此目標標示為已完成嗎？';
+
+  @override
+  String get goalApproveBody =>
+      '沒有任何檢查確認此目標。你會依自己的判斷將其結束，而目標會記錄為由人手在未驗證的情況下結束。';
+
+  @override
+  String get goalApproveConfirm => '標示為已完成';
+
+  @override
+  String get goalResumeNotYours => '繼續執行此目標或提高其預算，由開始此目標的人負責。';
+
+  @override
+  String get goalChooseChecker => '選擇另一個審核代理';
+
+  @override
+  String goalCheckerSet(String agent) {
+    return '現由 $agent 進行檢查。請繼續以重新驗證。';
+  }
+
+  @override
+  String get goalSchedules => '排程';
+
+  @override
+  String get goalRepeat => '重複';
+
+  @override
+  String get goalCreateChecks => '檢查（選填）';
+
+  @override
+  String get goalCreateCheckHint => '工作完成時會通過的指令';
+
+  @override
+  String get goalCreateAddCheck => '新增檢查';
+
+  @override
+  String get goalCreateRemoveCheck => '移除檢查';
+
+  @override
+  String get goalCreateSegmentCap => '段數上限（選填）';
+
+  @override
+  String get goalCreateSegmentInvalid => '段數上限必須為至少 1 的整數。';
+
+  @override
+  String get scheduleCreateTitle => '重複一則提示';
+
+  @override
+  String get scheduleCadence => '頻率';
+
+  @override
+  String get scheduleEveryMinutes => '每 N 分鐘';
+
+  @override
+  String get scheduleEveryHours => '每 N 小時';
+
+  @override
+  String get scheduleSelfPaced => '由代理自定節奏';
+
+  @override
+  String get scheduleSelfPacedHint => '代理在每次執行後自行決定延遲時間，介乎 1 分鐘至 1 小時之間。';
+
+  @override
+  String get scheduleInterval => '間隔';
+
+  @override
+  String get scheduleNote => '每次執行應該做什麼？';
+
+  @override
+  String get scheduleCostCap => '費用上限（美元，選填）';
+
+  @override
+  String get scheduleExpiryDays => '於 N 天後結束（選填）';
+
+  @override
+  String get scheduleCreateInvalid => '請選擇空間與代理，填寫每次執行應做的事，並填入至少為 1 的整數。';
+
+  @override
+  String get scheduleCreateButton => '開始排程';
+
+  @override
+  String get scheduleCreateConfirmTitle => '要開始此排程嗎？';
+
+  @override
+  String scheduleCreateConfirmEveryMinutes(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '由現在開始，每 $countString 分鐘執行一次。',
+      one: '由現在開始，每分鐘執行一次。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleCreateConfirmEveryHours(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '由現在開始，每 $countString 小時執行一次。',
+      one: '由現在開始，每小時執行一次。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scheduleCreateConfirmSelfPaced => '會立即執行一次，之後由代理決定何時再次執行。';
+
+  @override
+  String get scheduleCreated => '排程已開始。可於「排程」下查看。';
+
+  @override
+  String get schedulesTitle => '排程';
+
+  @override
+  String get schedulesLoadFailed => '無法載入排程';
+
+  @override
+  String get schedulesEmpty => '沒有排程或監看';
+
+  @override
+  String get schedulesEmptyDescription =>
+      '從目標畫面重複一則提示，或在對話中傳送 /loop 或 /schedule。';
+
+  @override
+  String get scheduleMissing => '此排程在此工作區中已不再可用。';
+
+  @override
+  String scheduleEvery(String interval) {
+    return '每 $interval';
+  }
+
+  @override
+  String get scheduleSelfPacedLoop => '自定節奏的循環';
+
+  @override
+  String get scheduleCron => 'Cron 排程';
+
+  @override
+  String scheduleOnce(String time) {
+    return '於 $time 執行一次';
+  }
+
+  @override
+  String scheduleWatch(String event) {
+    return '監看：$event';
+  }
+
+  @override
+  String get scheduleWatchPrChecks => 'pull request 的檢查';
+
+  @override
+  String get scheduleWatchPrReview => 'pull request 的審核';
+
+  @override
+  String get scheduleWatchPrMerged => 'pull request 合併';
+
+  @override
+  String get scheduleWatchEnvironment => '環境';
+
+  @override
+  String get scheduleWatchTicket => '工單';
+
+  @override
+  String get scheduleWatchPipelineRun => '管線執行';
+
+  @override
+  String get scheduleStatusActive => '進行中';
+
+  @override
+  String get scheduleStatusPaused => '已暫停';
+
+  @override
+  String get scheduleStatusEnded => '已結束';
+
+  @override
+  String scheduleWakes(String agent) {
+    return '喚醒 $agent';
+  }
+
+  @override
+  String scheduleNext(String time) {
+    return '下次執行 $time';
+  }
+
+  @override
+  String scheduleLast(String time) {
+    return '上次執行 $time';
+  }
+
+  @override
+  String scheduleRuns(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString 次執行',
+      one: '1 次執行',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleRunsOf(int count, int max) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return '已執行 $countString／$maxString 次';
+  }
+
+  @override
+  String scheduleSkipped(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '已略過 $countString 次',
+      one: '已略過 1 次',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleEnds(String time) {
+    return '$time 結束';
+  }
+
+  @override
+  String scheduleChain(int count, String time) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return '屬於一個連串：尚餘 $countString 次執行，將於 $time 結束';
+  }
+
+  @override
+  String get scheduleNoteAgent => '代理為自己留下的備註，原文如下：';
+
+  @override
+  String get scheduleNotePerson => '某人的備註：';
+
+  @override
+  String scheduleActsFor(String name) {
+    return '代表 $name';
+  }
+
+  @override
+  String get scheduleActsForBot => '不代表任何人';
+
+  @override
+  String get scheduleGoalBound => '它會隨其目標一同結束。';
+
+  @override
+  String get schedulePause => '暫停';
+
+  @override
+  String get scheduleResume => '繼續';
+
+  @override
+  String get scheduleDelete => '刪除';
+
+  @override
+  String get scheduleRemove => '移除';
+
+  @override
+  String get scheduleDeleteTitle => '要刪除此排程嗎？';
+
+  @override
+  String get scheduleDeleteBody => '它將永久停止。已完成的工作不會撤銷。';
+
+  @override
+  String get scheduleRemoveTitle => '要移除此排程嗎？';
+
+  @override
+  String get scheduleRemoveBody => '它會從清單中消失。';
+
+  @override
+  String get scheduleResumeNotYours => '只有此排程所代表的人可以繼續它。';
+
+  @override
+  String get scheduleResumeAdminOnly => '只有工作區管理員可以繼續沒有任何負責人的排程。';
+
+  @override
+  String get scheduleOpenConversation => '開啟對話';
+
+  @override
+  String get progressWaiting => '等待中';
+
+  @override
+  String get progressNothingWaiting => '沒有任何項目在等待。';
+
+  @override
+  String get wakeOriginGoal => '目標';
+
+  @override
+  String get wakeOriginGoalCheck => '目標檢查';
+
+  @override
+  String get wakeOriginGoalReview => '目標審核';
+
+  @override
+  String get wakeOriginSchedule => '排程';
+
+  @override
+  String get wakeOriginWatch => '監看';
+
+  @override
+  String get wakeOriginReply => '回覆';
+
+  @override
+  String get wakeOriginMessage => '訊息';
+
+  @override
+  String get wakeOriginWorkFinished => '已完成的工作';
+
+  @override
+  String get wakeOriginLimitReset => '用量上限已重設';
+
+  @override
+  String get wakeOriginRecovery => '復原';
+
+  @override
+  String get wakeOriginAssignment => '指派';
+
+  @override
+  String get wakeOriginPipelineStep => '管線步驟';
+
+  @override
+  String get wakeOriginImprovementReview => '改進審核';
+
+  @override
+  String wakeOriginReplyFrom(String agent) {
+    return '來自 $agent 的回覆';
+  }
+
+  @override
+  String wakeOriginMessageFrom(String agent) {
+    return '來自 $agent 的訊息';
+  }
+
+  @override
+  String wakeOriginWorkFinishedBy(String agent) {
+    return '$agent 完成的工作';
+  }
+
+  @override
+  String wakeFor(String agent) {
+    return '為 $agent';
+  }
+
+  @override
+  String wakeDue(String time) {
+    return '$time 到期';
+  }
+
+  @override
+  String get wakeDueNow => '現已到期';
+
+  @override
+  String get wakeHeld => '已保留';
+
+  @override
+  String wakeExpires(String time) {
+    return '$time 過期';
+  }
+
+  @override
+  String wakeAttempt(int attempt) {
+    final intl.NumberFormat attemptNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String attemptString = attemptNumberFormat.format(attempt);
+
+    return '第 $attemptString 次嘗試';
+  }
+
+  @override
+  String get wakeCancel => '取消';
+
+  @override
+  String get wakeDeliverNow => '立即傳遞';
+
+  @override
+  String get wakeResume => '繼續';
+
+  @override
+  String get wakeDismiss => '關閉';
+
+  @override
+  String get wakeResumeOnlyTheirs => '只有此次執行的所屬人可以繼續。';
+
+  @override
+  String get wakeRecovery => '伺服器在此次執行期間重新啟動。請繼續以恢復執行，或將其關閉。';
+
+  @override
+  String limitParkTitle(String provider, String time) {
+    return '已因 $provider 用量上限而暫停，上限將於 $time 重設。執行會等待按下繼續，重設後最多 7 天。';
+  }
+
+  @override
+  String limitParkTitleUnnamed(String time) {
+    return '已因供應商嘅用量上限而暫停，上限將於 $time 重設。執行會等待按下繼續，重設後最多 7 天。';
+  }
+
+  @override
+  String get limitParkResumeNow => '立即繼續';
+
+  @override
+  String get limitParkCancel => '取消';
+
+  @override
+  String limitParkResumed(String provider) {
+    return '$provider 的用量上限過後，已繼續。';
+  }
+
+  @override
+  String limitParkGone(String provider) {
+    return '已不再於 $provider 的用量上限處等待。';
+  }
+
+  @override
+  String get limitParkProviderUnknown => '供應商';
+
+  @override
+  String get mobileHeldMessages => '已保留的訊息';
+
+  @override
+  String get heldSteeringTitle => '執行在能夠接收它們之前已經結束，因此已保留。請立即傳送你的訊息，或將其移除。';
+
+  @override
+  String get heldSteeringRelease => '傳送已保留的訊息';
+
+  @override
+  String get notifGoalCompleted => '目標已完成';
+
+  @override
+  String get notifGoalFailed => '目標失敗';
+
+  @override
+  String get notifGoalCancelled => '目標已取消';
+
+  @override
+  String get notifGoalBudgetExhausted => '目標已用盡預算';
+
+  @override
+  String get notifGoalNeedsReview => '有目標等待你審核';
+
+  @override
+  String get notifGoalNeedsPerson => '有目標需要你處理';
+
+  @override
+  String get notifGoalOnHold => '有目標已保留';
+
+  @override
+  String get notifWakeRuleEnded => '有排程已結束';
+
+  @override
+  String notifWaitingDigest(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString 件事等待你處理',
+      one: '1 件事等待你處理',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notifImprovementProposed(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '已提出 $countString 項改進',
+      one: '已提出 1 項改進',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notifPipelineRunHeld => '管線執行已在其預算處保留';
+
+  @override
+  String notifPipelineRunHeldBody(String spent, String cap) {
+    return '已花費 $spent／$cap';
+  }
+
+  @override
+  String get notifNeedsYou => '需要你處理';
+
+  @override
+  String get notifDigestGoalReview => '目標等待審核';
+
+  @override
+  String get notifDigestGoalPerson => '目標需要人手處理';
+
+  @override
+  String get notifDigestHeldWake => '已保留的喚醒';
+
+  @override
+  String get notifDigestImprovement => '已提出的改進';
+
+  @override
+  String get wakeKindRulePaused => '其排程已暫停。';
+
+  @override
+  String get wakeKindRuleBusy => '代理正忙碌中，而此排程設定為在這種情況下略過。';
+
+  @override
+  String get wakeKindRuleFolded => '同一監看的較後事件已取代了它。';
+
+  @override
+  String get wakeKindRuleSuperseded => '其排程的較後時間已取代了它。';
+
+  @override
+  String get wakeKindRuleNotified => '其排程只會發送通知，因此沒有開始執行。';
+
+  @override
+  String get wakeKindRuleLimitParked => '其排程正等待供應商的用量上限重設。';
+
+  @override
+  String get improvementRefusalCooldown => '此對話不久前才剛進行過改進審核。請稍後再試。';
+
+  @override
+  String get improvementRefusalQueued => '此對話的改進審核已在等待執行。';
+
+  @override
+  String get improvementRefusalAgentNotFound => '該代理不屬於此工作區。';
+
+  @override
+  String get steeringRefusalHeldByLimit => '用量上限處保留的訊息不能手動傳送。它們會等待暫停的執行繼續。';
+
+  @override
+  String limitParkCancelled(String provider) {
+    return '已取消在 $provider 用量上限處的等待。';
+  }
+
+  @override
+  String limitParkExpired(String provider) {
+    return '在執行繼續之前，於 $provider 用量上限處的等待已過期。';
+  }
+
+  @override
+  String limitParkSkipped(String provider) {
+    return '執行未有在 $provider 的用量上限過後繼續。';
+  }
+
+  @override
+  String get heldSteeringLimitTitle => '執行等待用量上限重設期間已保留。執行所服務嗰位人士繼續執行時會送出。';
+
+  @override
+  String heldSteeringLimitAt(String time) {
+    return '已保留至用量上限於 $time 重設為止。執行所服務嗰位人士繼續執行時會送出。';
+  }
+
+  @override
+  String get heldSteeringOtherTitle => '由伺服器保留。你可以將其移除。';
+
+  @override
+  String workRowWoke(int count, String agent) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '已為 $countString 個等待中項目喚醒 $agent',
+      one: '已喚醒 $agent',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String workRowWakeMissed(String agent) {
+    return '伺服器關閉期間錯過了 $agent 的喚醒。';
+  }
+
+  @override
+  String workRowWakeSkipped(String agent) {
+    return '未能傳遞 $agent 的喚醒。';
+  }
+
+  @override
+  String workRowScheduleCreated(String agent) {
+    return '已為 $agent 設定排程。';
+  }
+
+  @override
+  String workRowScheduleEnded(String agent) {
+    return '$agent 的排程已結束。';
+  }
+
+  @override
+  String workRowNoteFromAgent(String agent) {
+    return '$agent 的排程備註：';
+  }
+
+  @override
+  String get workRowNoteFromPerson => '某人的排程備註：';
+
+  @override
+  String workRowCommandRefusedNamed(String command) {
+    return '$command 指令被拒絕。';
+  }
+
+  @override
+  String get workRowCommandRefused => '有指令被拒絕。';
+
+  @override
+  String workRowCapRaised(String person, String from, String to) {
+    return '$person 將管線的消費上限由 $from 提高至 $to。';
+  }
+
+  @override
+  String workRowCapRaisedNoAmounts(String person) {
+    return '$person 提高了管線的消費上限。';
+  }
+
+  @override
+  String get workRowApplyIncomplete => '對此技能所接受的變更無法完成，因為該技能在此期間已有變更。此提案已回復。';
+
+  @override
+  String get workRowOpenSchedule => '開啟排程';
+
+  @override
+  String get heldSteeringOthersTitle => '執行在能夠接收它們之前已經結束，因此已保留。只有撰寫訊息的人可以傳送。';
+
+  @override
+  String get heldSteeringOnlyYours => '只會傳送你的訊息。其他人的訊息會等待其撰寫者。';
+
+  @override
+  String heldSteeringWrittenBy(String name) {
+    return '由 $name 撰寫';
+  }
+
+  @override
+  String get steeringRefusalNotYours => '只有撰寫已保留訊息的人可以傳送，而這些訊息都不是你的。';
+
+  @override
+  String get steeringRefusalNeedsWrite => '你需要此空間儲存庫嘅寫入權限，才可以引導代表其他人執行嘅執行。';
+
+  @override
+  String workRowSchedulePaused(String name, String agent) {
+    return '$name 已暫停 $agent 嘅排程。';
+  }
+
+  @override
+  String get goalVerdictObjective => '整體目標內容';
+
+  @override
+  String get notifDigestRequest => '等待你回覆';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -4455,52 +6923,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get mobileGoalBudgetExhausted => '預算已用盡';
 
   @override
-  String get mobileGoalGoal => '目標';
-
-  @override
-  String get mobileGoalLoop => '迴圈';
-
-  @override
-  String mobileGoalKind(String kind) {
-    return '類型：$kind';
-  }
-
-  @override
-  String mobileGoalRuns(String count) {
-    return '$count 次執行';
-  }
-
-  @override
-  String get mobileGoalNoRunLimit => '不限次數';
-
-  @override
-  String mobileGoalProgress(
-    String runs,
-    String maxRuns,
-    String spent,
-    String cap,
-  ) {
-    return '執行次數：$runs/$maxRuns · 已花費：$spent/$cap';
-  }
-
-  @override
-  String mobileGoalDeadline(String date) {
-    return '截止時間：$date';
-  }
-
-  @override
   String mobileGoalFailures(String count) {
     return '連續失敗次數：$count';
   }
 
   @override
-  String get mobileGoalSummary => '完成摘要';
-
-  @override
   String get mobileGoalFailedDescription => '監督程式在多次執行失敗後已停止。請查看對話瞭解詳情。';
-
-  @override
-  String get mobileGoalBudgetWall => '已達到截止時間或執行次數上限。提高費用上限也無法繼續此目標。';
 
   @override
   String get mobileGoalPause => '暫停目標';
@@ -5558,4 +7986,1257 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String get runSandboxUnavailable =>
       '此伺服器沒有沙箱，因此只有其擁有者可以在此執行代理。擁有者可以安裝沙箱，或為所有人關閉沙箱功能。';
+
+  @override
+  String get scriptToolCalls => '工具呼叫';
+
+  @override
+  String scriptCallCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 次呼叫',
+      one: '1 次呼叫',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scriptCallsRunning(int count) {
+    return '$count 個執行中';
+  }
+
+  @override
+  String scriptCallsOk(int count) {
+    return '$count 成功';
+  }
+
+  @override
+  String scriptCallsFailed(int count) {
+    return '$count 失敗';
+  }
+
+  @override
+  String scriptCallsDenied(int count) {
+    return '$count 已拒絕';
+  }
+
+  @override
+  String scriptCallsCancelled(int count) {
+    return '$count 已取消';
+  }
+
+  @override
+  String scriptCallsQueued(int count) {
+    return '$count 已排入佇列';
+  }
+
+  @override
+  String scriptCallsSkipped(int count) {
+    return '$count 已跳過';
+  }
+
+  @override
+  String get scriptStepQueued => '已排入佇列';
+
+  @override
+  String get scriptStepSkipped => '已跳過';
+
+  @override
+  String get scriptGroupLoop => '迴圈';
+
+  @override
+  String get scriptGroupEach => '逐項';
+
+  @override
+  String get scriptGroupParallel => '平行';
+
+  @override
+  String get scriptGroupFunction => '函式';
+
+  @override
+  String scriptCallsHidden(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '再顯示 $count 次呼叫',
+      one: '再顯示 1 次呼叫',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptCallsUnplaced => '指令碼中未能定位的工具呼叫';
+
+  @override
+  String get scriptToolComputed => '工具';
+
+  @override
+  String scriptStepSemantics(String subject, String state) {
+    return '$subject，$state';
+  }
+
+  @override
+  String get scriptSourceLabel => '指令碼';
+
+  @override
+  String scriptSourceLines(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 行',
+      one: '1 行',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scriptStateRunning => '執行中';
+
+  @override
+  String get scriptStateCompleted => '已完成';
+
+  @override
+  String get scriptStateFailed => '失敗';
+
+  @override
+  String get scriptStateTimedOut => '已逾時';
+
+  @override
+  String get scriptStateCancelled => '已取消';
+
+  @override
+  String get scriptStateMemoryExceeded => '記憶體不足';
+
+  @override
+  String get scriptStateOutputExceeded => '輸出過多';
+
+  @override
+  String get scriptStateSandboxError => '沙箱錯誤';
+
+  @override
+  String get scriptStateRefused => '已拒絕';
+
+  @override
+  String get scriptOriginLine => '來自代理正在執行的指令碼';
+
+  @override
+  String get codeModeTitle => '程式碼模式';
+
+  @override
+  String get codeModeAvailable => '可用';
+
+  @override
+  String get codeModeUnavailable => '無法使用';
+
+  @override
+  String codeModeUnavailableNote(String reason) {
+    return '此伺服器無法執行指令碼，因此這裡的代理會逐一呼叫其工具。伺服器的說明：$reason';
+  }
+
+  @override
+  String get codeModeNoReason => '未提供原因。';
+
+  @override
+  String get workKindUnknown => '此版本未提供名稱的原因：';
+
+  @override
+  String get workRefusalUnknown => '伺服器拒絕了此要求：';
+
+  @override
+  String workActionFailed(String error) {
+    return '操作未成功：$error';
+  }
+
+  @override
+  String get wakeKindStopped => '因為有人停止了執行，所以保留此喚醒。';
+
+  @override
+  String get wakeKindAttempts => '傳送失敗三次。';
+
+  @override
+  String get wakeKindAgentDeleted => '此代理已不存在。';
+
+  @override
+  String get wakeKindAgentNotDispatchable => '此代理已退役。';
+
+  @override
+  String get wakeKindAgentPaused => '此代理已暫停。';
+
+  @override
+  String get wakeKindPersonRemoved => '此喚醒所代表的人員已離開工作區。';
+
+  @override
+  String get wakeKindBudgetBlocked => '預算阻擋了執行。';
+
+  @override
+  String get wakeKindTakeOver => '有人已接手工作樹。';
+
+  @override
+  String get wakeKindRateCapConversation => '此對話在過去一小時內因喚醒而開始了 30 次執行。';
+
+  @override
+  String get wakeKindRateCapWorkspace => '此工作區在過去一小時內因喚醒而開始了 300 次執行。';
+
+  @override
+  String get wakeKindLiveRunNoInput => '代理在此處的即時執行不接受輸入。';
+
+  @override
+  String get wakeKindLiveRunOtherOptions =>
+      '代理在此處的即時執行以不同選項運作，因此這會在其之後啟動自己的執行。';
+
+  @override
+  String get wakeKindLiveRunOtherPerson => '代理在此處的即時執行代表其他人，因此這會在其之後啟動自己的執行。';
+
+  @override
+  String get wakeKindDispatchRefused => '無法啟動執行。';
+
+  @override
+  String get wakeKindSandboxUnavailable => '沒有可用於唯讀執行的沙箱。';
+
+  @override
+  String get wakeKindReadOnlyUnavailable => '此代理的後端無法維持唯讀執行。';
+
+  @override
+  String get wakeKindServerStopped => '伺服器重新啟動時停止了執行。';
+
+  @override
+  String get wakeKindServerRestarted => '人員執行期間伺服器重新啟動。';
+
+  @override
+  String get wakeKindGuardFailed => '傳送前的檢查失敗。';
+
+  @override
+  String get wakeKindLimit => '正在等待供應商的用量上限重設。';
+
+  @override
+  String get wakeKindLimitRunLive => '正在等待用量上限下的執行結束。';
+
+  @override
+  String get wakeKindWakeMissed => '伺服器關閉期間錯過。';
+
+  @override
+  String get wakeKindPipelineRunEnded => '其管線執行已結束。';
+
+  @override
+  String get wakeKindGoalEnded => '其目標已結束。';
+
+  @override
+  String get wakeKindGoalBudgetExhausted => '其目標已用完預算。';
+
+  @override
+  String get wakeKindGoalReviewStale => '自要求此檢閱後，目標已變更。';
+
+  @override
+  String get wakeKindGoalPaused => '其目標已暫停。';
+
+  @override
+  String get wakeKindGoalHeld => '其目標已保留。';
+
+  @override
+  String get wakeKindGoalStopped => '其目標已停止。';
+
+  @override
+  String get wakeKindAskSettled => '它所回答的問題已經定案。';
+
+  @override
+  String get wakeKindRuleEnded => '其排程已結束。';
+
+  @override
+  String get wakeRefusalNotYours => '此喚醒代表另一位人員。只有對方可以傳送或繼續它。';
+
+  @override
+  String get wakeRefusalSettled => '此喚醒已經處理完畢。';
+
+  @override
+  String get goalRefusalAlreadyActive => '此代理已有進行中的目標。';
+
+  @override
+  String get goalRefusalNotInReview => '此目標並未等待檢閱。';
+
+  @override
+  String get goalRefusalEvidenceIncomplete => '目標的佐證資料不完整。';
+
+  @override
+  String get goalRefusalClaimPending => '關於已完成的聲明仍在檢查中。';
+
+  @override
+  String get goalRefusalNotActiveSegment => '此目標沒有正在執行的分段。';
+
+  @override
+  String get goalRefusalNotYours => '只有啟動此目標的人員可以執行此操作。';
+
+  @override
+  String get goalRefusalNotPaused => '請先暫停目標。';
+
+  @override
+  String get goalRefusalContractInvalid => '無法讀取目標的合約。';
+
+  @override
+  String get goalRefusalCheckerUnknown => '沒有名為此名稱的代理。';
+
+  @override
+  String get goalRefusalCheckerAmbiguous => '有多個代理使用此名稱。';
+
+  @override
+  String get goalRefusalCheckerIsGoalAgent => '檢查器必須是執行工作的代理以外的另一個代理。';
+
+  @override
+  String get goalRefusalCommandInvalid => '無法讀取此目標：';
+
+  @override
+  String get wakeRuleRefusalIntervalTooShort => '間隔太短。請至少選擇一分鐘。';
+
+  @override
+  String get wakeRuleRefusalTooSoon => '該時間太近了。請選擇較晚的時間。';
+
+  @override
+  String get wakeRuleRefusalLineageEnded => '這一連串的喚醒已用完其執行次數或時間。';
+
+  @override
+  String get wakeRuleRefusalWatchTargetUnreadable => '你無法讀取此監看將觀察的對象。';
+
+  @override
+  String get wakeRuleRefusalExpiryRequired => '請設定結束日期或執行次數。';
+
+  @override
+  String get wakeRuleRefusalLimitReached => '此對話或代理已達到可建立排程的數量上限。';
+
+  @override
+  String get wakeRuleRefusalInvalidWhen => '無法讀取該時間。';
+
+  @override
+  String get wakeRuleRefusalNoteTooLong => '備註太長。';
+
+  @override
+  String get wakeRuleRefusalExpiryTooLong => '結束時間太遠了。';
+
+  @override
+  String get wakeRuleRefusalLimitOutOfRange => '執行次數、天數或預算上限超出範圍。';
+
+  @override
+  String get wakeRuleRefusalNextOutsideLoop => '只有迴圈可以自行選擇下一次的時間。';
+
+  @override
+  String get wakeRuleRefusalWatchRefused => '無法監看此項目。';
+
+  @override
+  String get wakeRuleRefusalRuleEnded => '該排程已經結束。';
+
+  @override
+  String get wakeRuleRefusalNotYours => '該排程屬於其他人。';
+
+  @override
+  String get wakeRuleEndFired => '它已執行一次。';
+
+  @override
+  String get wakeRuleEndExpired => '已達到結束日期。';
+
+  @override
+  String get wakeRuleEndRunCap => '已用完其執行次數。';
+
+  @override
+  String get wakeRuleEndCostCap => '已達到其成本上限。';
+
+  @override
+  String get wakeRuleEndGoalEnded => '其目標已結束。';
+
+  @override
+  String get wakeRuleEndCancelled => '已取消。';
+
+  @override
+  String get wakeRuleEndMemberRemoved => '其人員已離開工作區。';
+
+  @override
+  String get wakeRuleEndInvalidRow => '無法讀取其已儲存的設定。';
+
+  @override
+  String goalHoldWorking(int segment) {
+    final intl.NumberFormat segmentNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String segmentString = segmentNumberFormat.format(segment);
+
+    return '正在執行第 $segmentString 段。無需任何人處理。';
+  }
+
+  @override
+  String get goalHoldWaiting => '正在等待它應得的工作。它會自行繼續。';
+
+  @override
+  String goalHoldWaitingUntil(String time) {
+    return '正在等待它應得的工作。最遲將於 $time 自行繼續。';
+  }
+
+  @override
+  String get goalHoldVerifying => '它表示已完成。伺服器會執行其驗證，接著由檢閱者決定。';
+
+  @override
+  String get goalHoldLimit => '已在供應商的用量上限處暫停。重設後它會自行繼續。';
+
+  @override
+  String goalHoldLimitUntil(String time) {
+    return '已在供應商的用量上限處暫停。它將於 $time 自行繼續。';
+  }
+
+  @override
+  String get goalHoldPerson => '正在等待人員在對話中回覆。有人回覆後它會繼續。';
+
+  @override
+  String get goalHoldByPerson => '已由人員暫停。在有人繼續它之前，它會保持暫停。';
+
+  @override
+  String get goalHoldNeedsReview => '等待檢閱：它無法自行繼續。請將它標示為已完成、繼續或取消。';
+
+  @override
+  String get goalHoldBudget => '它已用完預算。請提高預算，讓它繼續。';
+
+  @override
+  String goalHoldLimitParks(int count, int max) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return '用量上限暫停次數：$countString / $maxString';
+  }
+
+  @override
+  String get goalHoldDetailStalled => '最近幾個分段沒有任何進展。';
+
+  @override
+  String get goalHoldDetailStalledWaiting => '它已在同一項工作上等待 24 小時，沒有任何進展。';
+
+  @override
+  String get goalHoldDetailVerificationFailed => '上次驗證失敗。';
+
+  @override
+  String get goalHoldDetailCannotVerify => '檢查器無法判斷它是否已完成。';
+
+  @override
+  String get goalHoldDetailSandboxUnavailable => '沒有可用的沙箱來執行其驗證。';
+
+  @override
+  String get goalHoldDetailCheckerUnavailable => '其檢查器代理無法使用。請選擇另一個檢查器，然後繼續。';
+
+  @override
+  String get goalHoldDetailCheckBroken => '此驗證無法執行：';
+
+  @override
+  String get goalHoldDetailWakeSkipped => '其喚醒未被傳送。';
+
+  @override
+  String get goalHoldDetailClaimPending => '其已完成的聲明正等待驗證。';
+
+  @override
+  String get goalHoldDetailUnanswered => '給人員的問題或核准請求未獲回覆。';
+
+  @override
+  String get goalHoldDetailLimitParks => '它太常碰到用量上限。請檢視後再繼續。';
+
+  @override
+  String get goalHoldDetailInput => '正等待對話中的回覆。';
+
+  @override
+  String goalSegments(int run, int max) {
+    final intl.NumberFormat runNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String runString = runNumberFormat.format(run);
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return '第 $runString 段，共 $maxString 段';
+  }
+
+  @override
+  String goalSegmentsNoCap(int run) {
+    final intl.NumberFormat runNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String runString = runNumberFormat.format(run);
+
+    return '第 $runString 段，無上限';
+  }
+
+  @override
+  String goalMoney(String spent, String cap) {
+    return '已用 $spent，上限 $cap';
+  }
+
+  @override
+  String goalDeadline(String time) {
+    return '截止時間 $time';
+  }
+
+  @override
+  String get goalPipelineStep => '管線步驟正在為此目標工作。';
+
+  @override
+  String get goalSummaryHeading => '最近的摘要';
+
+  @override
+  String get goalDoneMeans => '完成的標準';
+
+  @override
+  String get goalChecks => '驗證';
+
+  @override
+  String get goalBoundaries => '界線';
+
+  @override
+  String get goalStopWhen => '何時停止並詢問';
+
+  @override
+  String get goalNoMachineCheck => '沒有機器驗證。檢閱者會依其可讀取的內容判斷。';
+
+  @override
+  String get goalCheckEnvironment => '環境任務';
+
+  @override
+  String goalLastCheck(int round, String time) {
+    final intl.NumberFormat roundNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String roundString = roundNumberFormat.format(round);
+
+    return '最近一次驗證，第 $roundString 輪，$time';
+  }
+
+  @override
+  String get goalClaim => '其聲明內容';
+
+  @override
+  String get goalCheckPassed => '通過';
+
+  @override
+  String goalCheckFailed(int code) {
+    return '失敗，結束代碼 $code';
+  }
+
+  @override
+  String get goalCheckTimedOut => '已逾時';
+
+  @override
+  String get goalCheckNotRerun => '未重新執行：自上次通過後沒有任何變更';
+
+  @override
+  String get goalCheckBroken => '無法執行';
+
+  @override
+  String get goalCriterionMet => '已達成';
+
+  @override
+  String get goalCriterionUnmet => '未達成';
+
+  @override
+  String get goalCriterionCannotTell => '無法判斷';
+
+  @override
+  String get goalVerdictPass => '結論：已完成';
+
+  @override
+  String get goalVerdictFail => '結論：未完成';
+
+  @override
+  String get goalVerdictCannotVerify => '結論：無法判斷';
+
+  @override
+  String get goalConcerns => '疑慮';
+
+  @override
+  String goalVerifiedBy(String agent) {
+    return '由 $agent 驗證';
+  }
+
+  @override
+  String get goalVerifiedBySelf => '由其自身驗證（沒有另外的檢查器）';
+
+  @override
+  String get goalClosedByPerson => '由人員在未通過驗證的情況下結束';
+
+  @override
+  String get goalApprove => '核准完成';
+
+  @override
+  String get goalApproveTitle => '要將此目標標示為已完成嗎？';
+
+  @override
+  String get goalApproveBody => '沒有任何驗證確認它。你將依自己的判斷結束它，而目標會記錄為由人員在未驗證的情況下結束。';
+
+  @override
+  String get goalApproveConfirm => '標示為已完成';
+
+  @override
+  String get goalResumeNotYours => '繼續執行或提高其預算，屬於啟動它的人員。';
+
+  @override
+  String get goalChooseChecker => '選擇另一位檢查器';
+
+  @override
+  String goalCheckerSet(String agent) {
+    return '現在由 $agent 檢查。請繼續以重新驗證。';
+  }
+
+  @override
+  String get goalSchedules => '排程';
+
+  @override
+  String get goalRepeat => '重複執行';
+
+  @override
+  String get goalCreateChecks => '驗證（選填）';
+
+  @override
+  String get goalCreateCheckHint => '工作完成時會通過的指令';
+
+  @override
+  String get goalCreateAddCheck => '新增驗證';
+
+  @override
+  String get goalCreateRemoveCheck => '移除驗證';
+
+  @override
+  String get goalCreateSegmentCap => '分段上限（選填）';
+
+  @override
+  String get goalCreateSegmentInvalid => '分段上限必須是至少為 1 的整數。';
+
+  @override
+  String get scheduleCreateTitle => '重複一則提示';
+
+  @override
+  String get scheduleCadence => '頻率';
+
+  @override
+  String get scheduleEveryMinutes => '每 N 分鐘';
+
+  @override
+  String get scheduleEveryHours => '每 N 小時';
+
+  @override
+  String get scheduleSelfPaced => '由代理決定';
+
+  @override
+  String get scheduleSelfPacedHint => '代理會在每次執行後，自行決定延遲 1 分鐘到 1 小時。';
+
+  @override
+  String get scheduleInterval => '間隔';
+
+  @override
+  String get scheduleNote => '每次執行要做什麼？';
+
+  @override
+  String get scheduleCostCap => '成本上限（美元，選填）';
+
+  @override
+  String get scheduleExpiryDays => '經過 N 天後結束（選填）';
+
+  @override
+  String get scheduleCreateInvalid => '請選擇空間與代理、寫下每次執行要做什麼，並輸入至少為 1 的整數。';
+
+  @override
+  String get scheduleCreateButton => '啟動排程';
+
+  @override
+  String get scheduleCreateConfirmTitle => '要啟動此排程嗎？';
+
+  @override
+  String scheduleCreateConfirmEveryMinutes(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '每 $countString 分鐘執行一次，從現在開始。',
+      one: '每分鐘執行一次，從現在開始。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleCreateConfirmEveryHours(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '每 $countString 小時執行一次，從現在開始。',
+      one: '每小時執行一次，從現在開始。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scheduleCreateConfirmSelfPaced => '現在先執行一次，之後由代理決定何時再次執行。';
+
+  @override
+  String get scheduleCreated => '排程已啟動，會列在排程下方。';
+
+  @override
+  String get schedulesTitle => '排程';
+
+  @override
+  String get schedulesLoadFailed => '無法載入排程';
+
+  @override
+  String get schedulesEmpty => '沒有排程或監看';
+
+  @override
+  String get schedulesEmptyDescription =>
+      '從目標畫面重複一則提示，或在對話中傳送 /loop 或 /schedule。';
+
+  @override
+  String get scheduleMissing => '此排程在此工作區中已無法使用。';
+
+  @override
+  String scheduleEvery(String interval) {
+    return '每 $interval';
+  }
+
+  @override
+  String get scheduleSelfPacedLoop => '由代理決定的迴圈';
+
+  @override
+  String get scheduleCron => 'Cron 排程';
+
+  @override
+  String scheduleOnce(String time) {
+    return '於 $time 執行一次';
+  }
+
+  @override
+  String scheduleWatch(String event) {
+    return '監看：$event';
+  }
+
+  @override
+  String get scheduleWatchPrChecks => 'pull request 檢查';
+
+  @override
+  String get scheduleWatchPrReview => 'pull request 審查';
+
+  @override
+  String get scheduleWatchPrMerged => 'pull request 合併';
+
+  @override
+  String get scheduleWatchEnvironment => '環境';
+
+  @override
+  String get scheduleWatchTicket => '工單';
+
+  @override
+  String get scheduleWatchPipelineRun => '管線執行';
+
+  @override
+  String get scheduleStatusActive => '進行中';
+
+  @override
+  String get scheduleStatusPaused => '已暫停';
+
+  @override
+  String get scheduleStatusEnded => '已結束';
+
+  @override
+  String scheduleWakes(String agent) {
+    return '喚醒 $agent';
+  }
+
+  @override
+  String scheduleNext(String time) {
+    return '下次執行 $time';
+  }
+
+  @override
+  String scheduleLast(String time) {
+    return '上次執行 $time';
+  }
+
+  @override
+  String scheduleRuns(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString 次執行',
+      one: '1 次執行',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleRunsOf(int count, int max) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+    final intl.NumberFormat maxNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String maxString = maxNumberFormat.format(max);
+
+    return '已執行 $countString / $maxString 次';
+  }
+
+  @override
+  String scheduleSkipped(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '已略過 $countString 次',
+      one: '已略過 1 次',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scheduleEnds(String time) {
+    return '$time 結束';
+  }
+
+  @override
+  String scheduleChain(int count, String time) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return '屬於一個連鎖：剩餘 $countString 次執行，於 $time 結束';
+  }
+
+  @override
+  String get scheduleNoteAgent => '代理自己的備註，以其自己的話說：';
+
+  @override
+  String get scheduleNotePerson => '人員的備註：';
+
+  @override
+  String scheduleActsFor(String name) {
+    return '代表 $name';
+  }
+
+  @override
+  String get scheduleActsForBot => '不代表任何人';
+
+  @override
+  String get scheduleGoalBound => '它會隨其目標一併結束。';
+
+  @override
+  String get schedulePause => '暫停';
+
+  @override
+  String get scheduleResume => '繼續';
+
+  @override
+  String get scheduleDelete => '刪除';
+
+  @override
+  String get scheduleRemove => '移除';
+
+  @override
+  String get scheduleDeleteTitle => '要刪除此排程嗎？';
+
+  @override
+  String get scheduleDeleteBody => '它將永久停止。它已完成的操作不會復原。';
+
+  @override
+  String get scheduleRemoveTitle => '要移除此排程嗎？';
+
+  @override
+  String get scheduleRemoveBody => '它會從清單中消失。';
+
+  @override
+  String get scheduleResumeNotYours => '只有此排程所代表的人員可以繼續它。';
+
+  @override
+  String get scheduleResumeAdminOnly => '只有工作區管理員可以繼續不屬於任何人的排程。';
+
+  @override
+  String get scheduleOpenConversation => '開啟對話';
+
+  @override
+  String get progressWaiting => '等待中';
+
+  @override
+  String get progressNothingWaiting => '沒有任何項目在等待。';
+
+  @override
+  String get wakeOriginGoal => '目標';
+
+  @override
+  String get wakeOriginGoalCheck => '目標驗證';
+
+  @override
+  String get wakeOriginGoalReview => '目標檢閱';
+
+  @override
+  String get wakeOriginSchedule => '排程';
+
+  @override
+  String get wakeOriginWatch => '監看';
+
+  @override
+  String get wakeOriginReply => '回覆';
+
+  @override
+  String get wakeOriginMessage => '訊息';
+
+  @override
+  String get wakeOriginWorkFinished => '已完成的工作';
+
+  @override
+  String get wakeOriginLimitReset => '用量上限已重設';
+
+  @override
+  String get wakeOriginRecovery => '復原';
+
+  @override
+  String get wakeOriginAssignment => '指派';
+
+  @override
+  String get wakeOriginPipelineStep => '管線步驟';
+
+  @override
+  String get wakeOriginImprovementReview => '改進檢閱';
+
+  @override
+  String wakeOriginReplyFrom(String agent) {
+    return '來自 $agent 的回覆';
+  }
+
+  @override
+  String wakeOriginMessageFrom(String agent) {
+    return '來自 $agent 的訊息';
+  }
+
+  @override
+  String wakeOriginWorkFinishedBy(String agent) {
+    return '$agent 完成的工作';
+  }
+
+  @override
+  String wakeFor(String agent) {
+    return '給 $agent';
+  }
+
+  @override
+  String wakeDue(String time) {
+    return '預定 $time';
+  }
+
+  @override
+  String get wakeDueNow => '現已到期';
+
+  @override
+  String get wakeHeld => '已保留';
+
+  @override
+  String wakeExpires(String time) {
+    return '$time 過期';
+  }
+
+  @override
+  String wakeAttempt(int attempt) {
+    final intl.NumberFormat attemptNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String attemptString = attemptNumberFormat.format(attempt);
+
+    return '第 $attemptString 次嘗試';
+  }
+
+  @override
+  String get wakeCancel => '取消';
+
+  @override
+  String get wakeDeliverNow => '立即傳送';
+
+  @override
+  String get wakeResume => '繼續';
+
+  @override
+  String get wakeDismiss => '關閉';
+
+  @override
+  String get wakeResumeOnlyTheirs => '只有執行此項的人員可以繼續它。';
+
+  @override
+  String get wakeRecovery => '伺服器在此次執行期間重新啟動。請繼續以接續執行，或關閉此項。';
+
+  @override
+  String limitParkTitle(String provider, String time) {
+    return '已在 $provider 的用量限制下暫停，該限制將於 $time 重設。執行會等待「繼續」，最多至重設後 7 天。';
+  }
+
+  @override
+  String limitParkTitleUnnamed(String time) {
+    return '已在供應商的用量限制下暫停，該限制將於 $time 重設。執行會等待「繼續」，最多至重設後 7 天。';
+  }
+
+  @override
+  String get limitParkResumeNow => '立即繼續';
+
+  @override
+  String get limitParkCancel => '取消';
+
+  @override
+  String limitParkResumed(String provider) {
+    return '$provider 的用量上限過後已繼續。';
+  }
+
+  @override
+  String limitParkGone(String provider) {
+    return '已不再於 $provider 的用量上限處等待。';
+  }
+
+  @override
+  String get limitParkProviderUnknown => '供應商';
+
+  @override
+  String get mobileHeldMessages => '保留的訊息';
+
+  @override
+  String get heldSteeringTitle => '因執行在能接收前就已結束而保留。請現在傳送你的訊息，或將其移除。';
+
+  @override
+  String get heldSteeringRelease => '傳送保留的訊息';
+
+  @override
+  String get notifGoalCompleted => '目標已完成';
+
+  @override
+  String get notifGoalFailed => '目標失敗';
+
+  @override
+  String get notifGoalCancelled => '目標已取消';
+
+  @override
+  String get notifGoalBudgetExhausted => '目標已用完預算';
+
+  @override
+  String get notifGoalNeedsReview => '有一個目標等待你檢閱';
+
+  @override
+  String get notifGoalNeedsPerson => '有一個目標需要你處理';
+
+  @override
+  String get notifGoalOnHold => '有一個目標已保留';
+
+  @override
+  String get notifWakeRuleEnded => '有一個排程已結束';
+
+  @override
+  String notifWaitingDigest(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '有 $countString 件事等待你處理',
+      one: '有 1 件事等待你處理',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notifImprovementProposed(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '已提出 $countString 項改進',
+      one: '已提出 1 項改進',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notifPipelineRunHeld => '管線執行因預算而保留';
+
+  @override
+  String notifPipelineRunHeldBody(String spent, String cap) {
+    return '已用 $spent，上限 $cap';
+  }
+
+  @override
+  String get notifNeedsYou => '需要你處理';
+
+  @override
+  String get notifDigestGoalReview => '目標等待檢閱';
+
+  @override
+  String get notifDigestGoalPerson => '目標需要人員處理';
+
+  @override
+  String get notifDigestHeldWake => '已保留的喚醒';
+
+  @override
+  String get notifDigestImprovement => '已提出的改進';
+
+  @override
+  String get wakeKindRulePaused => '其排程已暫停。';
+
+  @override
+  String get wakeKindRuleBusy => '代理忙碌中，而此排程在這種情況下會略過該時間。';
+
+  @override
+  String get wakeKindRuleFolded => '同一監看的較後事件取代了它。';
+
+  @override
+  String get wakeKindRuleSuperseded => '此排程較晚的時間取代了它。';
+
+  @override
+  String get wakeKindRuleNotified => '此排程只發送通知，因此沒有啟動執行。';
+
+  @override
+  String get wakeKindRuleLimitParked => '此排程正在等待供應商的用量上限重設。';
+
+  @override
+  String get improvementRefusalCooldown => '此對話在不久前才執行過改進檢閱。請稍後再試。';
+
+  @override
+  String get improvementRefusalQueued => '此對話的改進檢閱已在等待執行。';
+
+  @override
+  String get improvementRefusalAgentNotFound => '指定的代理不屬於此工作區。';
+
+  @override
+  String get steeringRefusalHeldByLimit => '用量上限所保留的訊息無法手動傳送。它們會等待暫停的執行繼續。';
+
+  @override
+  String limitParkCancelled(String provider) {
+    return '已取消在 $provider 用量上限處的等待。';
+  }
+
+  @override
+  String limitParkExpired(String provider) {
+    return '在執行繼續之前，$provider 用量上限處的等待已過期。';
+  }
+
+  @override
+  String limitParkSkipped(String provider) {
+    return '執行未在 $provider 的用量上限過後繼續。';
+  }
+
+  @override
+  String get heldSteeringLimitTitle => '執行等待用量限制重設期間保留。這些訊息會在其所代表的人繼續執行時送出。';
+
+  @override
+  String heldSteeringLimitAt(String time) {
+    return '保留至用量限制於 $time 重設。這些訊息會在其所代表的人繼續執行時送出。';
+  }
+
+  @override
+  String get heldSteeringOtherTitle => '由伺服器保留。你可以移除它們。';
+
+  @override
+  String workRowWoke(int count, String agent) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '為 $countString 個等待項目喚醒了 $agent',
+      one: '已喚醒 $agent',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String workRowWakeMissed(String agent) {
+    return '伺服器關閉期間，錯過了給 $agent 的喚醒。';
+  }
+
+  @override
+  String workRowWakeSkipped(String agent) {
+    return '未傳送給 $agent 的喚醒。';
+  }
+
+  @override
+  String workRowScheduleCreated(String agent) {
+    return '已為 $agent 設定排程。';
+  }
+
+  @override
+  String workRowScheduleEnded(String agent) {
+    return '$agent 的排程已結束。';
+  }
+
+  @override
+  String workRowNoteFromAgent(String agent) {
+    return '來自 $agent 的排程備註：';
+  }
+
+  @override
+  String get workRowNoteFromPerson => '來自某人的排程備註：';
+
+  @override
+  String workRowCommandRefusedNamed(String command) {
+    return '$command 指令被拒絕了。';
+  }
+
+  @override
+  String get workRowCommandRefused => '有一則指令被拒絕了。';
+
+  @override
+  String workRowCapRaised(String person, String from, String to) {
+    return '$person 已將管線的花費上限從 $from 提高至 $to。';
+  }
+
+  @override
+  String workRowCapRaisedNoAmounts(String person) {
+    return '$person 已提高管線的花費上限。';
+  }
+
+  @override
+  String get workRowApplyIncomplete => '對此技能已接受的變更無法完成，因為技能在此期間已變更。此提案已回復。';
+
+  @override
+  String get workRowOpenSchedule => '開啟排程';
+
+  @override
+  String get heldSteeringOthersTitle => '因執行在能接收前就已結束而保留。只有撰寫訊息的人員可以傳送。';
+
+  @override
+  String get heldSteeringOnlyYours => '只會傳送你的訊息。其他人的訊息會等待撰寫者處理。';
+
+  @override
+  String heldSteeringWrittenBy(String name) {
+    return '由 $name 撰寫';
+  }
+
+  @override
+  String get steeringRefusalNotYours => '只有撰寫保留訊息的人員可以傳送，而這些訊息都不屬於你。';
+
+  @override
+  String get steeringRefusalNeedsWrite => '你需要此空間儲存庫的寫入權限，才能引導代表其他人的執行。';
+
+  @override
+  String workRowSchedulePaused(String name, String agent) {
+    return '$name 已暫停 $agent 的排程。';
+  }
+
+  @override
+  String get goalVerdictObjective => '目標整體';
+
+  @override
+  String get notifDigestRequest => '等待你的回答';
 }

@@ -111,7 +111,13 @@ class PlanDocumentApprovalService {
       // stuck: its pipeline template (room id baked into every node) could
       // only be retried as-is. Reset to `proposed` and drop the template and
       // run so both are regenerated; the hires, team and project are kept.
-      await _orchestrations.update(_resetForRerun(existing, spaceId));
+      await _orchestrations.change(
+        workspaceId,
+        orchestrationId,
+        (current) => current.status == OrchestrationStatus.failed
+            ? _resetForRerun(current, spaceId)
+            : null,
+      );
     }
     if (existing == null) {
       final now = DateTime.now();

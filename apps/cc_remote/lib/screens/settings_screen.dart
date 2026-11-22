@@ -3,6 +3,7 @@ import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/l10n/remote_locales.dart';
 import 'package:cc_remote/providers.dart';
 import 'package:cc_remote/push/push_settings_section.dart';
+import 'package:cc_remote/widgets/code_mode_status_card.dart';
 import 'package:cc_remote/widgets/disconnect_card.dart';
 import 'package:cc_remote/widgets/operation_links.dart';
 import 'package:cc_remote/widgets/touch_target.dart';
@@ -42,6 +43,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 children: [
                   const OperationLinks(),
                   const SizedBox(height: 16),
+                  const CodeModeStatusCard(),
+                  const SizedBox(height: 18),
                   _sectionLabel(t, l10n.appearance),
                   const SizedBox(height: 8),
                   _card(t, child: _themeRow(t, l10n, theme)),

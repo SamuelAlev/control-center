@@ -2,7 +2,7 @@
 title: Gestionează costurile
 description: Vezi cât cheltuiesc agenții tăi, plafonează o rulare autonomă și reduce consumul de tokeni.
 slug: ro-RO/manual/ghiduri-practice/gestioneaza-costuri
-sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
+sourceHash: 040176a3840653a57c823ce4ff7e3ed9cf071c07
 ---
 
 Acest ghid îți arată cum să vezi cât costă rulările agenților și cum să plafonezi o rulare autonomă.
@@ -40,21 +40,30 @@ Cardul **Utilizare și cost** de pe această pagină arată ultimele șapte zile
 
 ## Plafonează o rulare autonomă
 
-Două comenzi slash, tastate în composerul unui spațiu, sunt singurele rulări cu plafon de cost:
+Aceste rulări au un plafon de cheltuieli. O rulare pe care o pornești trimițând un mesaj nu are.
 
 ```
 /goal ship the auth refactor --budget 20
-/loop keep the flaky tests green
+/loop every 1h --budget 10 keep the flaky tests green
 ```
 
-- Fiecare segment al unei rulări `/goal` sau `/loop` se oprește când cheltuiala lui calculată ajunge la **500 de cenți (5,00 $)**. La 80% din aceasta, bucla direcționează mai întâi modelul să încheie și să lase o predare curată, ca să nu moară la mijlocul sarcinii.
-- Un obiectiv durabil întreg este plafonat la **5000 de cenți (50,00 $)** dacă nu cumva transmiți `--budget <dollars>`. Supraveghetorul propagă bugetul _rămas_ al obiectivului în fiecare segment, așa că un buget explicit nu este niciodată depășit cu un segment întreg.
-- `--days N` adaugă un termen limită în timp real, iar `--max N` un plafon de număr de rulări. Ambele sunt opționale; fără ele, obiectivul este mărginit doar de cost.
-- Un obiectiv care se lovește de zidul lui se oprește la `budgetExhausted` și poate fi reluat doar mărind bugetul.
+| Rulare | Plafon |
+| --- | --- |
+| Un segment al unui obiectiv | 5 dolari sau ce a rămas din bugetul obiectivului, dacă este mai puțin |
+| Un obiectiv | 50 de dolari, dacă nu transmiți `--budget <dollars>` |
+| Revizuirea unui obiectiv | 2 dolari sau ce a rămas, trecut în contul obiectivului |
+| O rulare pornită de un program sau de o urmărire | 5 dolari; programul se oprește la propriul plafon de cost (50 de dolari dacă nu transmiți `--budget`, sau implicitul spațiului de lucru) |
+| Revizuirea de după un obiectiv, sau `/refine` | 1 dolar |
 
-Deoarece plafonul se bazează pe prețuri, un model pe care catalogul nu-l poate prețui nu îl atinge niciodată. O astfel de rulare este mărginită în schimb de gardul împotriva buclei fatale, de renunțarea supraveghetorului după trei eșecuri consecutive și de tine.
+- O rulare cu plafon se oprește când cheltuiala ei calculată ajunge la plafon, pe harness-ul încorporat, pe Claude Code și pe agenții ACP. La 90% din plafon, harness-ul încorporat și Claude Code direcționează mai întâi agentul să încheie și să lase o predare curată, ca să nu moară la mijlocul sarcinii. Un agent ACP este anulat la plafon.
+- Bugetul _rămas_ al obiectivului este transmis în fiecare segment, așa că un buget explicit nu este niciodată depășit cu un segment întreg.
+- `--days N` adaugă un termen limită, iar `--max N` un plafon de segmente. Ambele sunt opționale; fără ele, obiectivul este mărginit de cost și de oprirea pentru lipsă de progres.
+- Un obiectiv care atinge bugetul se oprește la **Buget epuizat** și reia doar cu un buget mai mare, pe care îl poate da doar persoana care l-a pornit.
+- O rulare de pipeline oprită la plafonul orchestrării așteaptă până când solicitantul apasă **Mărește plafonul** pe pagina rulării de pipeline. Noul plafon trebuie să fie peste cel vechi și peste ce s-a cheltuit, cel mult 1.000 de dolari, iar un plafon nu se elimină niciodată.
 
-Un mesaj într-un spațiu, o mențiune cu @ sau un pas de pipeline nu are plafon de cost. Rularea se termină când modelul se oprește, când o oprești tu sau când gardul împotriva buclei fatale o direcționează.
+Deoarece plafonul se bazează pe prețuri, un model pe care catalogul nu-l poate prețui nu îl atinge niciodată. O astfel de rulare este mărginită în schimb de gardul împotriva buclei fatale, de oprirea obiectivului pentru lipsă de progres, de renunțarea lui după trei eșecuri consecutive și de tine.
+
+Un mesaj într-un spațiu, o mențiune cu @ sau un pas de pipeline din afara unei orchestrări cu plafon nu are plafon de cost propriu. Rularea se termină când modelul se oprește, când o oprești tu sau când gardul împotriva buclei fatale o direcționează.
 
 ## Reduce consumul de tokeni
 

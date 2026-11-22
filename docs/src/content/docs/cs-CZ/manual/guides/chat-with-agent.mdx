@@ -2,7 +2,7 @@
 title: Chatujte s agentem
 description: Založ prostor s agentem, pošli mu práci, usměrni ho uprostřed běhu a zastav ho.
 slug: cs-CZ/prirucka/navody/chat-s-agentem
-sourceHash: 0dbc01158345074d818cec6084501abc03323fea
+sourceHash: 3e899c417e120a7cc741e802d577d0182210115b
 ---
 
 Tenhle návod ukáže, jak s agentem pracovat v prostoru.
@@ -40,6 +40,8 @@ Dokud agent pracuje, běžný text konverzace **nezařadí** nový tah. Stane se
 z něj karta usměrnění ve frontě, v pruhu nad composerem, a do živého běhu se
 vloží na nejbližší hranici tahu. Toast se neukáže. Zpětnou vazbou je ta karta.
 
+Abyste usměrnili běh, který pracuje pro někoho jiného, potřebujete právo zápisu do repozitářů prostoru; bez něj se zpráva odmítne a zůstane v editoru. Běh jen pro čtení, například kontrola cíle, během běhu žádnou zprávu nepřijme: když skončí, zpráva se odešle jako obyčejná, a po kontrole cíle počká na další segment cíle.
+
 Chování se změní v těchto případech:
 
 - Zpráva se **zmínkou přes @** se vždy pošle jako zpráva, nikdy jako
@@ -69,8 +71,9 @@ takže agenta odblokuješ, aniž bys prostor hledal. Překryv žádost schová
 v okamžiku, kdy je konverzace toho prostoru na obrazovce, takže stejnou výzvu
 neodpovíš dvakrát.
 
-Časový limit není. Zablokovaný agent čeká, dokud někdo nerozhodne. Stejná
-žádost se ukáže i v pruhu pozornosti v Doručené poště a v telefonním klientovi.
+Běh, který jste spustili, čeká na schválení hodinu; pak se schválení počítá jako zamítnuté. Stejná žádost se ukáže i v pruhu pozornosti v Doručené poště a v telefonním klientovi.
+
+Běh, který spustil server (segment cíle, plán, odpověď od jiného agenta), místo toho čeká ve výchozím nastavení 72 hodin, které nastavuje správce pracovního prostoru; pak se schválení počítá jako zamítnuté a otázka jako nezodpovězená. Viz [Když nikdo neodpoví](/cs-CZ/prirucka/navody/usilujte-o-cil/#když-nikdo-neodpoví).
 
 ## Odpověz na otázku agenta
 
@@ -105,6 +108,8 @@ se stejným ovládáním.
 
 Zastavený běh je označený jako zastavený. Nová zpráva ho odešle znovu.
 
+Zastavení také podrží, co bylo pro tohoto agenta zařazeno do fronty: vaše karty usměrnění (**Odeslat podržené zprávy** je odešle) a jeho čekající probuzení (**Pokračovat** v pruhu nad vstupním polem). Cíl, na kterém agent pracoval, se pozastaví, dokud ho někdo neobnoví.
+
 ## Používej příkazy s lomítkem
 
 Napiš `/` do composeru a uvidíš seznam příkazů. Ty, které mění chování
@@ -113,8 +118,10 @@ konverzace:
 | Příkaz         | Co udělá                                                                                                                                |
 | -------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | `/plan`        | Přepne prostor do režimu Plan. Holé `/plan` režim jen zapne; `/plan <request>` ho zapne a zbytek pošle jako tvou zprávu                |
-| `/goal <text>` | Zapíše pracovní cíl konverzace                                                                                                          |
-| `/loop <text>` | Opakuje úkol, dokud není hotový                                                                                                         |
+| `/goal <text>` | Spustí trvalý cíl, na kterém agent pracuje, dokud není ověřen jako hotový ([Usilujte o cíl](/cs-CZ/prirucka/navody/usilujte-o-cil/)) |
+| `/loop <text>` | Probudí agenta s tímto textem znovu a znovu, v intervalu nebo podle vlastního tempa ([Plány a probuzení](/cs-CZ/prirucka/navody/plany-a-probuzeni/)) |
+| `/schedule <when> <text>` | Probudí agenta později, jednou nebo podle cronu |
+| `/refine`      | Požádá o posouzení práce v konverzaci, které může navrhnout vylepšení                                                                   |
 | `/compact`     | Složí starší historii do ukotveného souhrnu a pokračuje na zkompaktovaném kontextu                                                      |
 | `/todo …`      | Ukáže a upraví uložený seznam úkolů téhle konverzace                                                                                    |
 

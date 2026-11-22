@@ -2,7 +2,7 @@
 title: Skonfiguruj powiadomienia
 description: Włączaj i wyłączaj kategorie, ustaw godziny ciszy i dźwięk oraz wiedz, które powiadomienia docierają do Ciebie i gdzie.
 slug: pl-PL/podrecznik/poradniki/powiadomienia
-sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
+sourceHash: b1e5bb3b8a13bbbbd169916ab8e7cd7bdd403c1a
 ---
 
 Ten poradnik pokazuje, jak skonfigurować powiadomienia i czym naprawdę steruje
@@ -48,6 +48,8 @@ jego historia nadal działają, bo czytają kanał z serwera. Klient mobilny nie
 
 Wszystko poza tą listą nie może być zgłaszane ani filtrowane — nie ma kategorii
 „wszystko inne”.
+
+Długotrwała praca korzysta z dwóch pierwszych kategorii. Cel, który się zakończył, i harmonogram, który się zakończył, liczą się jako **Agent ukończył pracę**; cel czekający na Twoją recenzję, propozycja usprawnienia, uruchomienie potoku wstrzymane na limicie kosztów oraz dzienne podsumowanie tego, co czeka na Ciebie, liczą się jako **Agent czeka na Ciebie**. Każde trafia do osoby, której dotyczy: do tej, która uruchomiła cel, harmonogram lub uruchomienie.
 
 **Agent czeka na Ciebie** jest wyzwalane, gdy zaczyna się oczekiwanie: przy oczekującej zgodzie (także na uprawnienia wykonywania w
 sandboxie i na użycie narzędzi w Claude Code), przy pytaniu `ask_user` albo gdy
@@ -121,6 +123,8 @@ warunków:
 
 Te warunki dotyczą toastów systemowych. Trwały dzwonek i tak zapisuje zdarzenie.
 
+Niektóre powiadomienia są **ciche**: serwer je oznacza, aby trafiały do dzwonka bez toastu, dźwięku i głośnego powiadomienia na telefonie. Harmonogram, który się zakończył, i cel, który się zakończył, są ciche. Cel czekający na Twoją recenzję nie jest.
+
 Dwa kolejne wstrzymania działają wcześniej, na tym, co serwer w ogóle wysyła:
 
 - Wiadomość od innego **człowieka**, w której nie ma wzmianki o Tobie, nigdy nie
@@ -130,10 +134,7 @@ Dwa kolejne wstrzymania działają wcześniej, na tym, co serwer w ogóle wysył
 - Przestrzenie agent–agent są wyciszone na pasku bocznym, więc nigdy nie
   zwiększają plakietki nieprzeczytanych
 
-W obrębie przestrzeni nie ma cichego zakątka: każda rozmowa powiadamia tak samo,
-łącznie z wątkami. Stan przeczytania obowiązuje dla całej przestrzeni, więc
-nieprzeczytane sumują się w obrębie jej rozmów, a nie są śledzone osobno dla
-każdej rozmowy.
+W obrębie przestrzeni nie ma cichego zakątka: każda rozmowa powiadamia tak samo, łącznie z wątkami. Stan przeczytania jest śledzony dla każdej rozmowy, a przestrzeń jest nieprzeczytana, dopóki nieprzeczytana jest choć jedna z jej rozmów.
 
 ## Czytaj i czyść centrum powiadomień
 
@@ -187,6 +188,8 @@ Sprawdź, czy nie byłeś już w przestrzeni, w której to się stało — aktyw
 wstrzymuje własny toast systemowy. We współdzielonej przestrzeni uruchomienie
 rozpoczęte przez kogoś innego powiadamia tę osobę, a nie Ciebie. Tura, która
 zakończyła się bez odpowiedzi i bez błędu, niczego nie wysyła.
+
+Uruchomienie, które rozpoczął harmonogram lub obserwacja i które kończy się bez problemów, nic nie wysyła, chyba że kogoś wspomina. Zakończony cel lub zakończony harmonogram trafia do dzwonka bez toastu.
 
 ## Powiązane poradniki
 

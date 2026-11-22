@@ -5,6 +5,7 @@ import 'package:cc_domain/cc_domain.dart' show ConfirmationRequestDto;
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/ask_user/ask_user_card.dart';
+import 'package:control_center/features/messaging/presentation/widgets/script_origin_line.dart';
 import 'package:control_center/features/messaging/providers/approval_analytics.dart';
 import 'package:control_center/features/messaging/providers/pending_confirmations_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -137,6 +138,14 @@ class _ConversationPermissionPromptState
                 request: request,
                 submitting: _responding.contains(request.id),
                 onSubmit: (answer) => _onAnswer(request, answer),
+                onShowScript: request.origin == null
+                    ? null
+                    : () => showScriptCall(
+                        ref,
+                        spaceId: request.spaceId,
+                        conversationId: request.conversationId,
+                        toolCallId: request.origin!.parentToolCallId,
+                      ),
               ),
             ),
           ],
@@ -152,11 +161,15 @@ class _PermissionCard extends StatelessWidget {
     required this.request,
     required this.submitting,
     required this.onSubmit,
+    this.onShowScript,
   });
 
   final ConfirmationRequestDto request;
   final bool submitting;
   final ValueChanged<AgentQuestionAnswer> onSubmit;
+
+  /// Shows the script that raised the request; null when no script did.
+  final VoidCallback? onShowScript;
 
   @override
   Widget build(BuildContext context) {
@@ -173,6 +186,13 @@ class _PermissionCard extends StatelessWidget {
           : request.title,
       contextText: explanation.isEmpty ? null : explanation,
       caption: l10n.agentApprovalRequired,
+      originLine: request.origin == null
+          ? null
+          : ScriptOriginLine(
+              onShow: onShowScript,
+              origin: request.origin,
+              workspaceId: request.workspaceId,
+            ),
       allowSkip: false,
       allowFreeText: false,
       multiSelect: false,

@@ -5,6 +5,11 @@ import 'package:cc_domain/core/domain/ports/mode_resolver.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
+import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
+import 'package:cc_domain/features/code_mode/domain/ports/code_execution_port.dart';
+import 'package:cc_domain/features/code_mode/domain/value_objects/code_mode.dart';
+import 'package:cc_domain/features/dispatch/domain/entities/wake.dart';
+import 'package:cc_domain/features/dispatch/domain/ports/goal_turn_text_port.dart';
 import 'package:cc_domain/features/dispatch/domain/usecases/build_conversation_context_use_case.dart';
 import 'package:cc_domain/features/dispatch/domain/usecases/build_memory_context_use_case.dart';
 import 'package:cc_domain/features/dispatch/domain/usecases/dispatch_agent_use_case.dart';
@@ -201,6 +206,8 @@ void main() {
         );
 
         final useCase = DispatchAgentUseCase(
+          codeExecutions: null,
+          goalTurnText: null,
           agentRepo: repo,
           memoryContextUseCase: memory,
           conversationContextUseCase: conversation,
@@ -208,6 +215,8 @@ void main() {
         );
 
         final future = useCase.execute(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
           workspaceId: 'ws-1',
           agentId: 'agent-1',
           prompt: 'Fix the bug',
@@ -251,10 +260,14 @@ void main() {
 
         final prepared =
             await DispatchAgentUseCase(
+              codeExecutions: null,
+              goalTurnText: null,
               agentRepo: repo,
               memoryContextUseCase: memory,
               conversationContextUseCase: conversation,
             ).execute(
+              wakeContext: const WakeContext.userMessage(),
+              freshHistory: false,
               workspaceId: 'ws-1',
               agentId: 'agent-1',
               prompt: 'Fix the bug',
@@ -284,10 +297,14 @@ void main() {
         );
 
         await DispatchAgentUseCase(
+          codeExecutions: null,
+          goalTurnText: null,
           agentRepo: repo,
           memoryContextUseCase: memory,
           conversationContextUseCase: conversation,
         ).execute(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: false,
           workspaceId: 'ws-dispatch',
           agentId: 'agent-1',
           prompt: 'Fix the bug',
@@ -316,10 +333,14 @@ void main() {
 
       final prepared =
           await DispatchAgentUseCase(
+            codeExecutions: null,
+            goalTurnText: null,
             agentRepo: repo,
             memoryContextUseCase: memory,
             conversationContextUseCase: conversation,
           ).execute(
+            wakeContext: const WakeContext.userMessage(),
+            freshHistory: false,
             workspaceId: 'ws-other',
             agentId: 'agent-1',
             prompt: 'Fix the bug',
@@ -353,10 +374,14 @@ void main() {
 
         final prepared =
             await DispatchAgentUseCase(
+              codeExecutions: null,
+              goalTurnText: null,
               agentRepo: repo,
               memoryContextUseCase: memory,
               conversationContextUseCase: conversation,
             ).execute(
+              wakeContext: const WakeContext.userMessage(),
+              freshHistory: false,
               workspaceId: 'ws-1',
               agentId: 'agent-1',
               prompt: 'Fix the bug',
@@ -391,9 +416,13 @@ void main() {
 
       final prepared =
           await DispatchAgentUseCase(
+            codeExecutions: null,
+            goalTurnText: null,
             agentRepo: repo,
             modeResolver: modeResolver,
           ).execute(
+            wakeContext: const WakeContext.userMessage(),
+            freshHistory: false,
             workspaceId: 'ws-1',
             agentId: 'agent-1',
             prompt: 'Ship the plan',
@@ -407,4 +436,153 @@ void main() {
       expect(prepared.promptParts.standing, contains('## Mode'));
     });
   });
+
+  test('a fresh run gets no conversation history; memory stays', () async {
+    var conversationReads = 0;
+    final prepared =
+        await DispatchAgentUseCase(
+          codeExecutions: null,
+          goalTurnText: null,
+          agentRepo: _FakeAgentRepo(
+            agents: {'ws-1/agent-1': _agent()},
+            onWatch: (workspaceId) => Stream.value(const []),
+          ),
+          memoryContextUseCase: _StubMemory(
+            (w, a, t) async => '## Agent Memory\n\n- a fact',
+          ),
+          conversationContextUseCase: _StubConversation(
+            onExecute: (w, s, a, b) async {
+              conversationReads++;
+              return '## Recent conversation\n\nan earlier turn';
+            },
+          ),
+        ).execute(
+          wakeContext: const WakeContext.userMessage(),
+          freshHistory: true,
+          workspaceId: 'ws-1',
+          agentId: 'agent-1',
+          prompt: 'Continue the goal',
+          spaceId: 'space-1',
+        );
+    expect(conversationReads, 0);
+    expect(prepared.effectivePrompt, isNot(contains('an earlier turn')));
+    expect(prepared.effectivePrompt, isNot(contains('Recent conversation')));
+    expect(prepared.effectivePrompt, contains('a fact'));
+    expect(prepared.effectivePrompt, contains('Continue the goal'));
+  });
+
+  group('the goal text of a wake-started run', () {
+    Wake wake() => Wake(
+      id: 'wake-1',
+      workspaceId: 'ws-1',
+      spaceId: 'space-1',
+      conversationId: 'conv-1',
+      agentId: 'agent-1',
+      reason: WakeReason.goalContinuation,
+      payload: 'next segment',
+      dedupKey: 'goal:g-1:2',
+      notBefore: DateTime.utc(2026, 11, 19),
+      createdAt: DateTime.utc(2026, 11, 19),
+    );
+
+    Future<(PreparedDispatch, _GoalTexts)> run({
+      required WakeContext wakeContext,
+      String? adapterId,
+      CodeExecutionPort? executions,
+    }) async {
+      final goals = _GoalTexts();
+      final prepared =
+          await DispatchAgentUseCase(
+            codeExecutions: executions,
+            goalTurnText: goals,
+            agentRepo: _FakeAgentRepo(
+              agents: {'ws-1/agent-1': _agent()},
+              onWatch: (workspaceId) => Stream.value(const []),
+            ),
+          ).execute(
+            wakeContext: wakeContext,
+            freshHistory: false,
+            workspaceId: 'ws-1',
+            agentId: 'agent-1',
+            prompt: 'Woke',
+            spaceId: 'space-1',
+            conversationId: 'conv-1',
+            adapterId: adapterId,
+          );
+      return (prepared, goals);
+    }
+
+    test('rides the per-turn context, never the cached prefix; its items '
+        'replace the wake lines', () async {
+      final (prepared, goals) = await run(
+        wakeContext: WakeContext.fromWakes([wake()], nonce: 'nonce1'),
+      );
+      expect(goals.calls, [(workspaceId: 'ws-1', conversationId: 'conv-1')]);
+      expect(prepared.promptParts.turnContext, contains('## Your goal'));
+      expect(prepared.promptParts.standing, isNot(contains('## Your goal')));
+      expect(prepared.promptParts.turnContext, contains('[notice for wake-1]'));
+    });
+
+    test('a run has repl when scripts can run now, on any transport', () async {
+      final ctx = WakeContext.fromWakes([wake()], nonce: 'nonce1');
+      const on = _Executions(CodeRunnerAvailability.available());
+      const off = _Executions(CodeRunnerAvailability.unavailable('no runner'));
+      for (final (adapterId, executions, hasRepl) in [
+        (null, on, true),
+        ('claude-code', on, true),
+        (null, off, false),
+        ('claude-code', off, false),
+        (null, null, false),
+      ]) {
+        final (_, goals) = await run(
+          wakeContext: ctx,
+          adapterId: adapterId,
+          executions: executions,
+        );
+        expect(goals.hasRepl, [hasRepl], reason: '$adapterId $executions');
+      }
+    });
+
+    test('a person\'s message reads no goal text', () async {
+      final (prepared, goals) = await run(
+        wakeContext: const WakeContext.userMessage(),
+      );
+      expect(goals.calls, isEmpty);
+      expect(prepared.effectivePrompt, isNot(contains('## Your goal')));
+    });
+  });
+}
+
+class _GoalTexts implements GoalTurnTextPort {
+  final calls = <({String workspaceId, String? conversationId})>[];
+  final hasRepl = <bool>[];
+
+  @override
+  Future<GoalTurnText?> forRun({
+    required String workspaceId,
+    required String agentId,
+    required String? conversationId,
+    required WakeContext wakeContext,
+    required bool hasRepl,
+  }) async {
+    calls.add((workspaceId: workspaceId, conversationId: conversationId));
+    this.hasRepl.add(hasRepl);
+    return GoalTurnText(
+      section: '## Your goal\n\nShip the parser.',
+      wakeItems: {for (final w in wakeContext.wakes) w.id: '[notice for ${w.id}]'},
+    );
+  }
+}
+
+class _Executions implements CodeExecutionPort {
+  const _Executions(this.availability);
+
+  @override
+  final CodeRunnerAvailability availability;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+
+  @override
+  String toString() => '$availability';
 }

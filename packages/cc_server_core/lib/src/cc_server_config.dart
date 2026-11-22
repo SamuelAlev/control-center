@@ -1,6 +1,9 @@
 import 'dart:io';
 
+import 'package:cc_domain/features/code_mode/domain/value_objects/code_mode_limits.dart'
+    show CodeModeLimits;
 import 'package:cc_server_core/src/dotenv.dart';
+import 'package:cc_server_core/src/server_boot_refusal.dart';
 
 /// Minimum log severity the server emits. Ordered most-to-least chatty so
 /// `a.index >= b.index` means "a is at least as severe as b".
@@ -32,6 +35,7 @@ enum CcServerLogLevel {
 /// * `--code-index` / `CC_SERVER_CODE_INDEX` — `on`(default)/`off`; background code-graph indexing kill switch.
 /// * `--code-index-defer` / `CC_SERVER_CODE_INDEX_DEFER` — seconds to hold first reconcile after ready (default 15, 0..300).
 /// * `--tool-deferral` / `CC_SERVER_TOOL_DEFERRAL` — `on`(default)/`off`; `off` makes every admitted tool resident.
+/// * `--code-mode-max-processes` / `CC_SERVER_CODE_MODE_MAX_PROCESSES` — script runners alive at once on this server (default `min(16, 2 × cores)`, 1..64).
 /// * `--insecure` / `CC_SERVER_INSECURE` — allow non-loopback plaintext; only behind a TLS-terminating proxy (ignored when TLS set).
 ///
 /// Credentials are **environment-only** (`ps` can read argv) and never baked into a build: `KLIPY_APP_KEY` here;
@@ -57,6 +61,8 @@ class CcServerConfig {
     this.codeIndexEnabled = true,
     this.codeIndexDeferSeconds = 15,
     this.toolDeferralEnabled = true,
+    required this.codeModeMaxProcesses,
+    this.codeModeMaxHeapBytes = _defaultMaxHeapBytes,
     this.credentialGateSeconds = 900,
     this.klipyAppKey = '',
     this.serverName = '',
@@ -167,6 +173,41 @@ class CcServerConfig {
   /// on). Off makes every admitted tool resident — the pre-deferral request,
   /// byte for byte.
   final bool toolDeferralEnabled;
+
+  /// Scripts running at once on this server. From
+  /// `--code-mode-max-processes` / `CC_SERVER_CODE_MODE_MAX_PROCESSES`
+  /// (default [CodeModeLimits.defaultServerProcessCap] for this machine's
+  /// cores; a value outside [codeModeMaxProcessesRange] stops the server at
+  /// start). Scripts waiting on a person keep up to four times as many
+  /// runners alive besides; one workspace holds at most all but a quarter of
+  /// the slots. A script waiting for a slot waits on its own deadline. Not
+  /// settable over RPC.
+  final int codeModeMaxProcesses;
+
+  /// The values `--code-mode-max-processes` accepts: at least one runner, or
+  /// no script could ever start; at most 64, because each runner may hold up
+  /// to a gibibyte of heap and a value past that is a typo, not a capacity
+  /// plan.
+  static const ({int min, int max}) codeModeMaxProcessesRange = (
+    min: 1,
+    max: 64,
+  );
+
+  /// The heap ceiling of every script on this server, in bytes. From
+  /// `--code-mode-max-heap-mb` / `CC_SERVER_CODE_MODE_MAX_HEAP_MB`, in MiB
+  /// (default the workspace ceiling, [CodeModeLimits.heap]); it clamps every
+  /// workspace's heap limit, and a value outside [codeModeMaxHeapMbRange]
+  /// stops the server at start. Not settable over RPC.
+  final int codeModeMaxHeapBytes;
+
+  /// The values `--code-mode-max-heap-mb` accepts: the floor and ceiling of
+  /// [CodeModeLimits.heap], in MiB.
+  static const ({int min, int max}) codeModeMaxHeapMbRange = (
+    min: 16,
+    max: 1024,
+  );
+
+  static const int _defaultMaxHeapBytes = 1024 * 1024 * 1024;
 
   /// Seconds a run waits for a fixable credential before failing (`--credential-gate`, default 900, 0..3600).
   /// `0` never parks; the ceiling keeps unattended runs from waiting forever.
@@ -301,6 +342,22 @@ class CcServerConfig {
             .trim()
             .toLowerCase() !=
         'off';
+    final codeModeMaxProcesses =
+        _codeModeNumber(
+          'code-mode-max-processes',
+          'CC_SERVER_CODE_MODE_MAX_PROCESSES',
+          flags,
+          env,
+          codeModeMaxProcessesRange,
+        ) ??
+        CodeModeLimits.defaultServerProcessCap(Platform.numberOfProcessors);
+    final codeModeMaxHeapMb = _codeModeNumber(
+      'code-mode-max-heap-mb',
+      'CC_SERVER_CODE_MODE_MAX_HEAP_MB',
+      flags,
+      env,
+      codeModeMaxHeapMbRange,
+    );
     final credentialGateSeconds =
         (int.tryParse(
                   pick('credential-gate', 'CC_SERVER_CREDENTIAL_GATE') ?? '',
@@ -360,6 +417,10 @@ class CcServerConfig {
       codeIndexEnabled: codeIndexEnabled,
       codeIndexDeferSeconds: codeIndexDeferSeconds,
       toolDeferralEnabled: toolDeferralEnabled,
+      codeModeMaxProcesses: codeModeMaxProcesses,
+      codeModeMaxHeapBytes: codeModeMaxHeapMb == null
+          ? _defaultMaxHeapBytes
+          : codeModeMaxHeapMb * 1024 * 1024,
       credentialGateSeconds: credentialGateSeconds,
       klipyAppKey: klipyAppKey,
       serverName: serverName,
@@ -459,6 +520,32 @@ class CcServerConfig {
     return v == 'true' || v == '1' || v == 'yes' || v == 'on';
   }
 
+  /// A code mode number flag: null when neither the flag nor the variable is
+  /// set (or the variable is empty), the integer when it is inside [range],
+  /// and a [CodeModeFlagInvalid] for anything else.
+  static int? _codeModeNumber(
+    String flag,
+    String envKey,
+    Map<String, String> flags,
+    Map<String, String> env,
+    ({int min, int max}) range,
+  ) {
+    final fromFlag = flags[flag];
+    final raw = fromFlag ?? env[envKey];
+    if (raw == null || (fromFlag == null && raw.trim().isEmpty)) {
+      return null;
+    }
+    final value = int.tryParse(raw.trim());
+    if (value == null || value < range.min || value > range.max) {
+      throw CodeModeFlagInvalid(
+        name: fromFlag != null ? '--$flag' : envKey,
+        value: raw,
+        accepted: 'a whole number from ${range.min} to ${range.max}',
+      );
+    }
+    return value;
+  }
+
   static Map<String, String> _parseFlags(List<String> args) {
     final out = <String, String>{};
     for (var i = 0; i < args.length; i++) {
@@ -478,4 +565,32 @@ class CcServerConfig {
     }
     return out;
   }
+}
+
+/// A code mode flag or environment variable has a value the server does not
+/// accept. The server stops at start rather than guess a capacity the owner
+/// did not ask for.
+final class CodeModeFlagInvalid extends ServerBootRefusal {
+  /// Creates the refusal for [value] of [name], which accepts [accepted].
+  const CodeModeFlagInvalid({
+    required this.name,
+    required this.value,
+    required this.accepted,
+  });
+
+  /// The flag (`--code-mode-max-processes`) or variable
+  /// (`CC_SERVER_CODE_MODE_MAX_PROCESSES`).
+  final String name;
+
+  /// The value given.
+  final String value;
+
+  /// What it accepts, in words.
+  final String accepted;
+
+  @override
+  String get message =>
+      'cc_server: cannot start \u2014 $name is '
+      '"${printableText(value.trim(), max: 80)}", which it does not accept. '
+      'It takes $accepted.';
 }

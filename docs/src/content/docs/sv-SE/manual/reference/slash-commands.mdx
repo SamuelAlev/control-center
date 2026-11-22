@@ -2,7 +2,7 @@
 title: Slash-kommandon
 description: Varje kommando du kan skriva i meddelandefältet, vad det gör och var det körs.
 slug: sv-SE/handbok/referens/slash-kommandon
-sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
+sourceHash: 38430a6315b112c92a7806d1c28dff8a0285e363
 ---
 
 Kommandon som skrivs i en ytas meddelandefält. De delas in i tre grupper efter var de får effekt, och skillnaden spelar roll: ett **lokalt** kommando färdas aldrig som ett meddelande, så det varken syns i transkriptet eller når en agent.
@@ -21,23 +21,35 @@ Kommandon som skrivs i en ytas meddelandefält. De delas in i tre grupper efter 
 
 **Lokalt → dispatch.** Aktiverar planläge på samtalet: en helt skrivskyddad worktree och en verktygsyta som är begränsad till `read`. Agentens leverabel är en plan, inte en redigering. Ett bart `/plan` växlar bara läget och färdas aldrig som ett meddelande; med en prompt är resten av raden det som startar körningen.
 
-### `/goal <objective>`
+### `/goal [flags] <objective>`
 
-**Dispatch.** Startar ett autonomt mål som målövervakaren dispatchar om över segment och omstarter.
+**Dispatch.** Startar ett varaktigt mål: agenten arbetar med målet i segment, över omstarter, tills servern verifierar att det är klart, en person stänger det eller det når en gräns. Se [Arbeta mot ett mål](/sv-SE/handbok/how-to-guider/arbeta-mot-mal/).
 
-Om du skriver `/goal` med text först öppnas **målintervjun** — en kort genomgång som vägrar acceptera ett utkast förrän den har alla fem delarna: framgångskriterier som en utvärderare kan avgöra utan omdöme, ett exakt verifieringskommando, ett tak för antalet försök, gränser för omfånget och stoppvillkor. Varje steg erbjuder *Hoppa över och kör som det är skrivet*: intervjun är en standard, inte en grind.
+Om du skriver `/goal` med text först öppnas **målintervjun** — en kort genomgång som frågar efter framgångskriterier som en utvärderare kan avgöra utan omdöme, de kontroller som måste godkännas, gränser för omfånget och stoppvillkor, och sedan erbjuder en separat granskare, nya segment och att besvara sina egna frågor. Varje steg erbjuder *Hoppa över och kör som det är skrivet*: intervjun är en standard, inte en grind.
 
-`/goal pause`, `/goal resume` och `/goal drop` är inte slash-kommandon. Pausa, återuppta och stoppa finns i samtalets mållista i sidopanelen. Startflaggorna på själva målet är `--budget <dollars>`, `--max <N>` (körningsbudget) och `--days <N>` (tidsfrist). Ett mål som har nått sitt kostnadstak återupptas bara genom att höja taket, från samma kontroll i sidopanelen.
+Flaggorna kan stå var som helst i meddelandet: `--budget <dollars>` (målets budget, 50 som standard), `--max <N>` (ett segmenttak), `--days <N>` (en tidsfrist), `--check "<command>"` (upp till 5), `--checker <agent>`, `--fresh` och `--unattended wait|assume`. En okänd eller upprepad flagga nekas och utkastet ligger kvar i skrivfältet. Ett tal i början av målet är en del av målet. Avsnitten `## Success criteria`, `## Boundaries`, `## Stop conditions` och `## Checks` blir målets kontrakt.
+
+`/goal pause`, `/goal resume` och `/goal drop` är inte slash-kommandon. Pausa, återuppta och stoppa finns på målkortet i samtalets panel **Allmänt** och på målets sida (sidopanelen → **Mål**). Att återuppta och höja budgeten hör till den som startade målet.
 
 :::note[Varför den avbryter över huvud taget]
 Ett autonomt mål är den enda platsen där en vag brief verkligen är dyr. Körningen arbetar i timmar på ett mål vars ”klart” ingen definierade och rapporterar sedan framgång på sina egna villkor. Fem frågor är billigare än en nattlig körning som blev klar när den själv kände sig klar.
 :::
 
-### `/loop [budget] [task]`
+### `/loop [every <interval>] [flags] <prompt>`
 
-**Dispatch.** Arbetar iterativt tills det är klart. Tar emot en gräns: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+**Dispatch.** Skapar ett schema som väcker agenten med prompten nu och sedan igen: med varje intervall (minst 60 sekunder), eller, utan `every`, efter en fördröjning som agenten väljer varje gång (1 till 60 minuter). `--max <N>` begränsar körningarna, `--days <N>` avslutar det (30 dagar som standard), `--budget <dollars>` begränsar dess utgifter. Se [Scheman och väckningar](/sv-SE/handbok/how-to-guider/scheman-vackningar/).
 
-En token som *ser ut* som en gräns (börjar med en siffra eller ett tecken) och inte kan tolkas är ett hårt fel. Prosa är bara prosa, så `/loop keep going until the tests pass` är en obegränsad loop med en prompt i samma rad snarare än en feltolkning.
+`/loop` startar inte längre ett mål, och ett inledande tal är inte ett antal körningar.
+
+### `/schedule <when> [flags] <prompt>`
+
+**Dispatch.** Skapar ett schema som väcker agenten senare: `in 2h`, `at 09:00` (nästa sådan tid i arbetsytans tidszon), `at <ISO time>` eller `cron "0 9 * * 1-5"` (citattecknen är valfria). Tar samma `--max`, `--days` och `--budget` som `/loop`. Det väntar på sin första tid.
+
+### `/refine`
+
+**Dispatch.** Begär en kort skrivskyddad granskning av konversationens arbete, som kan föreslå förbättringar av minne, policyer, agentanteckningar eller skills. Förslagen väntar på sidan **Förbättringar** tills någon godkänner dem. Högst en granskning per konversation var 20:e minut.
+
+`/goal`, `/loop`, `/schedule` och `/refine` agerar bara i ett meddelande som du skriver själv; från en agent, en pipeline eller en väckning är samma text ett vanligt meddelande. Ett `/goal`, `/loop` eller `/schedule` som inte kan läsas behåller ditt utkast, och en rad ovanför texten i skrivfältet säger vad som är fel.
 
 ### `/vibe [task]`
 

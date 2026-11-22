@@ -2,6 +2,7 @@ import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_remote/conversation_drafts.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/providers.dart';
+import 'package:cc_remote/widgets/messaging/held_steering.dart';
 import 'package:cc_remote/widgets/messaging/steering_queue.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
@@ -110,6 +111,8 @@ class _ControlsState extends ConsumerState<ConversationControls> {
       return const SizedBox.shrink();
     }
     final agents = ref.watch(agentsProvider).value ?? const <AgentDto>[];
+    final held = widget.queued.where(isHeldSteering).toList();
+    final queued = widget.queued.where((m) => !isHeldSteering(m)).toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -118,10 +121,17 @@ class _ControlsState extends ConsumerState<ConversationControls> {
           variant: CcButtonVariant.secondary,
           onPressed: () => setState(() => _expanded = !_expanded),
           child: Text(
-            widget.queued.isNotEmpty
+            held.isNotEmpty
+                ? l10n.mobileHeldMessages
+                : queued.isNotEmpty
                 ? l10n.mobileQueuedMessages
                 : l10n.agentWorking,
           ),
+        ),
+        HeldSteering(
+          scope: widget.scope,
+          messages: held,
+          canWrite: widget.canWrite,
         ),
         if (_error != null || widget.runs.hasError)
           CcAlert(
@@ -191,7 +201,7 @@ class _ControlsState extends ConsumerState<ConversationControls> {
                     ),
                   SteeringQueue(
                     scope: widget.scope,
-                    messages: widget.queued,
+                    messages: queued,
                     canWrite: widget.canWrite,
                   ),
                 ],

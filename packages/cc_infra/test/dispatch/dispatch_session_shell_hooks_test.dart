@@ -104,6 +104,7 @@ class _HookDrivingLoop implements AgentLoop {
     required String userMessage,
     required List<HarnessTool> tools,
     List<HarnessTool> deferredTools = const [],
+    List<HarnessTool> scriptTools = const [],
     required LlmProviderPort provider,
     HarnessToolContext? context,
     AgentLoopConfig config = const AgentLoopConfig(),
@@ -150,6 +151,8 @@ void main() {
   ) async {
     final loop = _HookDrivingLoop();
     final session = DispatchSession(
+      freshHistory: false,
+      readOnly: false,
       deps: SandboxDispatchDeps(
         hostExecution: const HostExecutionGate(
           posture: HostExecutionPosture.sandboxed,

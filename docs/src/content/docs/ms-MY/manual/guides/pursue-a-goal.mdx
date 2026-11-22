@@ -1,0 +1,143 @@
+---
+title: Kejar matlamat
+description: Beri ejen satu objektif yang terus diusahakannya merentasi larian dan permulaan semula, takrifkan maksud siap, dan tentukan bila ia selesai.
+slug: ms-MY/manual-pengguna/panduan-cara/kejar-matlamat
+sourceHash: 0ea77964bd9e3044e168624bc67325de0fd1d1e5
+---
+
+Matlamat ialah kerja yang diteruskan oleh ejen sehingga maksud siap dipenuhi. Ejen bekerja dalam **segmen**: larian terhad yang dimulakan oleh pelayan satu demi satu, merentasi permulaan semula, sehingga matlamat disahkan, ditutup oleh seseorang, atau mencapai had. Ejen tidak boleh menutup matlamat dengan hanya berkata ia sudah selesai. Pelayan menjalankan semakan matlamat dan seorang pengulas melihat keputusannya dahulu.
+
+## Mulakan matlamat
+
+Taip `/goal` dan objektifnya dalam kotak tulis perbualan:
+
+```text
+/goal --budget 20 --days 2 --check "make test" make the importer handle files over 2 GB
+```
+
+Menaip `/goal` dengan teks dahulu membuka temu bual objektif. Ia bertanya tentang kriteria kejayaan, semakan yang mesti lulus, sempadan dan syarat henti, serta menawarkan penyemak berasingan, memulakan setiap segmen daripada awal dan menjawab soalannya sendiri. Setiap langkah boleh dilangkau.
+
+| Bendera | Maksud |
+| --- | --- |
+| `--budget <dollars>` | Jumlah yang boleh dibelanjakan oleh keseluruhan matlamat. Lalai ialah 50 dolar |
+| `--max <N>` | Bilangan segmen paling banyak yang boleh diambil matlamat. Tiada had secara lalai |
+| `--days <N>` | Tarikh akhir, dalam bilangan hari dari sekarang |
+| `--check "<command>"` | Arahan yang mesti lulus sebelum matlamat boleh selesai, dijalankan dalam worktree. Ulang untuk lebih banyak, paling banyak 5 |
+| `--checker <agent>` | Ejen lain yang menyemak dakwaan bahawa matlamat telah selesai, mengikut nama atau id |
+| `--fresh` | Mulakan setiap segmen tanpa sejarah perbualan, hanya daripada matlamat dan nota-notanya sahaja |
+| `--unattended wait` atau `--unattended assume` | Apa yang berlaku kepada soalan ejen apabila tiada sesiapa menjawab (lihat [Apabila tiada sesiapa menjawab](#apabila-tiada-sesiapa-menjawab)) |
+
+- Bendera boleh diletakkan di mana-mana dalam mesej. Bendera yang tidak dikenali, bendera berulang, nilai yang tidak sah dan lebih daripada 5 semakan akan ditolak, dan draf anda kekal dalam kotak tulis dengan sebabnya di bawahnya.
+- Nombor pada permulaan objektif ialah sebahagian daripada objektif. Untuk mengehadkan segmen, gunakan `--max`.
+- `/goal` hanya dibaca dalam mesej yang anda taip sendiri. Teks yang sama daripada ejen, pipeline atau panggilan bangun ialah mesej biasa.
+- Sesebuah ejen mengejar satu matlamat pada satu masa dalam sebuah ruang kerja. `/goal` kedua untuk ejen yang sama ditolak selagi yang pertama masih aktif.
+
+### Maksud siap
+
+Objektif boleh mengandungi bahagian yang menjadi kontrak matlamat:
+
+```text
+/goal make the importer handle files over 2 GB
+
+## Success criteria
+- A 3 GB fixture imports without running out of memory
+- The progress bar reaches 100%
+
+## Boundaries
+- Don't change the public API
+
+## Stop conditions
+- A migration would drop data
+
+## Checks
+- `make test` (300 s)
+- environment task `test` (600 s)
+```
+
+- **Kriteria kejayaan**: paling banyak 12, setiap satu paling banyak 300 aksara. Setiap satu ialah perkara yang boleh disahkan oleh pengulas.
+- **Semakan**: paling banyak 5. Semakan dijalankan dalam worktree atau sebagai tugas bernama bagi [persekitaran](/ms-MY/manual-pengguna/panduan-cara/persekitaran/) ruang. Setiap satu mempunyai 300 saat secara lalai dan 1,800 saat paling banyak.
+- Bahagian yang melebihi had akan ditolak, tidak sekali-kali dipotong.
+
+Matlamat tanpa kriteria membiarkan ejen memutuskan bila ia selesai, dan matlamat tanpa semakan bergantung pada kajian sahaja. Halaman matlamat memberitahu perkara ini.
+
+## Cara matlamat diteruskan
+
+Setiap segmen ialah larian yang dihadkan kepada 5 dolar atau baki bajet, mana yang lebih rendah. Selepas setiap segmen, pelayan memutuskan apa yang seterusnya, berdasarkan apa yang segmen itu lakukan:
+
+- **Ia membuat kemajuan.** Segmen seterusnya dimulakan.
+- **Ia sedang menunggu sesuatu yang disediakannya**: jadual, pantauan, soalan kepada ejen lain atau tiket yang diwakilkan. Matlamat menunggunya. Jika tiada apa-apa tiba, pelayan menyemak semula selepas 20 minit, kemudian 40, 80, 160 dan setiap 240 minit. Kad itu memaparkan **Menunggu perkara yang disediakannya · memeriksa semula menjelang** satu masa.
+- **Ia tidak membuat kemajuan.** Kemajuan bermaksud worktree berubah melalui kerja segmen itu sendiri, senarai semak berubah, atau ejen melakukan sesuatu yang baharu. Selepas 3 segmen tanpa kemajuan, matlamat dijeda: **Tiada kemajuan dalam segmen terakhirnya.**
+- **Ia menunggu terlalu lama.** Selepas 24 jam menunggu, atau 6 penantian atas perkara baharu yang disediakannya tanpa kemajuan di antaranya, matlamat dijeda: **Menunggu, selepas segmen tanpa kemajuan.**
+- **Ia gagal.** Pelayan mencuba semula selepas 30 saat, kemudian lebih lama, sehingga 15 minit. Selepas 3 kegagalan berturut-turut, matlamat gagal.
+- **Ia bertanya kepada seseorang.** Matlamat menunggu sehingga seseorang menjawab: **Memerlukan seseorang**.
+
+Matlamat juga berhenti pada bajetnya (**Bajet habis**), had segmennya atau tarikh akhirnya.
+
+## Apabila ejen berkata ia sudah selesai
+
+Ejen mendakwa matlamat selesai dengan bukti bagi setiap kriteria. Kemudian:
+
+1. **Pelayan menjalankan semakan** dalam kotak pasir, tidak sekali-kali terus pada mesin pelayan. Semakan yang keluar dengan kod bukan sifar gagal. Semakan yang langsung tidak dapat dijalankan (arahan tidak ditemui, tidak boleh dilaksanakan, atau tugas persekitaran yang tidak wujud) adalah rosak: matlamat berhenti untuk seseorang dengan **Semakan ini tidak dapat dijalankan:** dan arahannya. Tanpa kotak pasir pada pelayan, matlamat berhenti dengan **Tiada kotak pasir tersedia untuk menjalankan semakannya.** (Pelayan yang pemiliknya mematikan kotak pasir untuk setiap larian ialah pengecualian: semakan dijalankan di sana sama seperti arahan ejen sendiri.) Apabila tiada apa dalam worktree berubah sejak semakan gagal, ia tidak dijalankan semula.
+2. **Pengulas menilai hasilnya**, apabila setiap semakan lulus atau tiada semakan. Pengulas ialah penyemak matlamat, jika tiada, penyemak ruang, jika tiada juga, ejen matlamat itu sendiri. Ia berjalan secara baca-sahaja tanpa sejarah perbualan: ia boleh membaca fail dan output semakan, tetapi tidak boleh mengubah apa-apa, menjalankan arahan atau memanggil ejen lain. Ia juga menerima diff penuh bagi ujian dan skrip semakan yang diubah ejen, dan ia menganggap apa yang ditulis ejen dalam perbualan dan nota sebagai dakwaan, bukan bukti. Bagi matlamat tanpa kriteria, ia menilai objektif secara keseluruhan. Ia menjawab bahawa matlamat selesai, belum selesai, atau tidak dapat memastikan.
+3. **Selesai**: matlamat tamat. **Belum selesai**: ejen menerima dapatan pengulas dan terus bekerja. Selepas 3 pusingan yang belum selesai, atau apabila pengulas tidak dapat memastikan, matlamat menunggu anda: **Menunggu kajian: ia mendakwa telah selesai dan tiada apa yang mengesahkannya**.
+
+Mesej yang anda taip semasa pengulas berjalan tidak diberikan kepada pengulas dan tidak dihantar apabila kajian tamat. Mesej itu kekal beratur untuk segmen ejen yang seterusnya. Apabila tiada segmen menyusul, mesej itu ditahan untuk anda di bawah **Hantar mesej yang ditahan**.
+
+Pengulas yang tidak dapat dijalankan (dipadam, atau pada adapter yang tidak boleh memastikan larian kekal baca-sahaja, seperti ejen ACP) menjeda matlamat: **Ejen penyemaknya tidak tersedia. Pilih penyemak lain, kemudian sambung.** Tiada ejen lain yang akan mengambil alih tanpa anda.
+
+Penyemak daripada penyedia yang berbeza daripada ejen matlamat kurang berkemungkinan berkongsi titik buta yang sama. Tanpa penyemak berasingan, ejen menyemak kerjanya sendiri, dan matlamat merekodkan **Disahkan oleh dirinya sendiri (tiada penyemak berasingan)**.
+
+## Ikuti matlamat
+
+- **Dalam perbualan**: kad matlamat dalam panel **Umum** menunjukkan penahanan, segmen, perbelanjaan berbanding bajet, masa yang tinggal, maksud siap, semakan dan keputusan terakhir.
+- **Halaman Matlamat**: bar sisi → **Matlamat**. Matlamat dikumpulkan sebagai **Menunggu kajian**, **Terbuka** dan **Tamat**.
+- **Halaman matlamat**: buka matlamat untuk melihat **Kini** (segmen, perbelanjaan, tarikh akhir, bilangan tanpa kemajuan dan apa yang berlaku seterusnya), **Maksud siap**, **Pengesahan** (pusingan terakhir: dakwaan, setiap semakan dengan outputnya, dan kajian bagi setiap kriteria) dan **Jadual dan panggilan bangun**. Setiap matlamat mempunyai alamatnya sendiri (`/workspaces/<workspace>/goals/<goal id>`), jadi anda boleh berkongsi pautan.
+
+Pada telefon, skrin matlamat memulakan matlamat dengan semakan dan had segmen, dan memaparkan matlamat serta penahanan yang sama.
+
+## Tukar atau henti matlamat
+
+| Tindakan | Siapa boleh |
+| --- | --- |
+| **Jeda matlamat**, **Henti matlamat** | Sesiapa yang mempunyai akses ke ruang |
+| **Sambung matlamat**, **Naikkan bajet** | Hanya orang yang memulakan matlamat (pentadbir ruang kerja bagi matlamat yang tiada siapa mulakan) |
+| **Sunting** maksud siap, **Tukar penyemak** | Hanya orang yang memulakan matlamat (pentadbir ruang kerja untuk matlamat yang tiada siapa mulakan), dengan akses tulis kepada repositori ruang, ketika matlamat dijeda |
+| **Luluskan penyiapan** | Sesiapa yang mempunyai akses ke ruang, ketika matlamat menunggu kajian. Matlamat yang dimulakan pipeline: hanya orang yang memulakan larian itu (pentadbir ruang kerja apabila tiada sesiapa memulakannya) |
+
+- Menekan **Henti** pada larian ejen menjeda matlamat (**Dijeda oleh seseorang**). Panggilan bangun yang menunggunya tertunggu sehingga anda menyambungkannya semula.
+- **Luluskan penyiapan** menutup matlamat sebagai selesai atas kata anda. Matlamat merekodkan **Ditutup oleh seseorang tanpa semakan yang lulus**.
+- Matlamat yang telah menggunakan bajetnya hanya disambung dengan bajet yang lebih tinggi.
+- Apabila orang yang memulakan matlamat meninggalkan ruang kerja, matlamat itu dijeda untuk kajian serta-merta dan ejen yang sedang berjalan dihentikan. Tiada sesiapa boleh menyambungnya semula; sesiapa yang mempunyai akses ke ruang boleh menghentikannya. Ringkasan harian menyenaraikannya untuk pentadbir ruang kerja.
+
+## Apabila tiada sesiapa menjawab
+
+Apabila segmen bertanya soalan atau meminta kelulusan daripada seseorang dan tiada sesiapa menjawab, permintaan itu menunggu 72 jam secara lalai. Kemudian kelulusan dikira ditolak, soalan dikira tidak dijawab, dan matlamat dijeda: **Soalan atau permintaan kelulusan kepada seseorang tidak dijawab.** Larian yang bertanya itu tidak mendapat jawapan lanjut: apa-apa lagi yang ditanyanya ditolak serta-merta, dan ia menyelesaikan apa yang boleh. Seorang pentadbir ruang kerja menetapkan masa (1 jam hingga 7 hari) di bawah **Tetapan → Ruang kerja → Jadual → Apabila tiada sesiapa menjawab**. Sekali sehari, pada jam yang ditetapkan di sana, anda mendapat satu ringkasan bagi semua yang menunggu anda.
+
+Dengan `--unattended assume`, ejen menyatakan andaiannya dan meneruskan selepas 10 minit tanpa jawapan, apabila syarat hentinya membenarkan. Ini hanya terpakai pada soalan. Kelulusan tidak sekali-kali dianggap, dan kajian tidak pernah menganggap apa-apa.
+
+## Had penggunaan dan permulaan semula
+
+- **Had penggunaan penyedia.** Apabila segmen berhenti pada had penggunaan penyedia dan penyedia menyatakan bila ia ditetapkan semula (dalam tempoh 7 hari), matlamat dijeda tanpa dikira sebagai kegagalan: **Dijeda di had penggunaan · disambung** satu masa. Ia diteruskan 30 saat selepas penetapan semula. Selepas 8 jeda sedemikian, matlamat menunggu anda: **Ia terlalu kerap mencapai had penggunaan. Semak, kemudian sambung.** Sebarang sambungan memulakan kiraan semula. Ejen ACP tidak melaporkan penetapan semula, jadi matlamat mereka tidak menunggu di had.
+- **Permulaan semula pelayan.** Matlamat kekal selepas permulaan semula. Segmen yang terganggu oleh permulaan semula dimulakan semula, dan jadual serta panggilan bangun yang menunggu bagi matlamat itu dikekalkan.
+
+## Penambahbaikan selepas matlamat
+
+Selepas matlamat lulus pengesahan, satu kajian ringkas baca-sahaja (paling banyak 1 dolar) boleh mencadangkan penambahbaikan: fakta memori, dasar, nota tentang ejen, atau perubahan pada kemahiran. Taip `/refine` untuk meminta kajian yang sama bagi kerja perbualan. Paling banyak satu kajian dijalankan setiap perbualan setiap 20 minit.
+
+Cadangan muncul di halaman **Penambahbaikan** (bar sisi → **Penambahbaikan**). Buka satu untuk melihat apa yang diubahnya, buktinya, dan **Terima**, **Tolak** atau **Kembalikan**.
+
+- Cadangan tidak mengubah apa-apa sehingga seseorang menerimanya. Ia luput selepas 30 hari.
+- Perubahan pada kemahiran, atau pada dasar bagi keseluruhan ruang kerja, memerlukan pentadbir ruang kerja (**Pentadbir membuat keputusan**).
+- Perubahan kemahiran disimpan sebagai semakan berasingan. Tekan **Jalankan penilaian** untuk membandingkannya dengan kemahiran semasa; **Terima** hanya boleh dilakukan selepas penilaian lulus. Penilaian lulus apabila ia dijalankan sepenuhnya dan ejen menyelesaikan sekurang-kurangnya bilangan larian yang sama dengan perubahan seperti dengan kemahiran semasa; halaman memaparkan kedua-dua nombor. Jika kemahiran berubah selepas penilaian, jalankan semula.
+- **Kembalikan** memulihkan teks terdahulu, selagi tiada sesiapa mengubahnya sejak itu.
+
+## Dalam pipeline
+
+Pipeline boleh memulakan matlamat dengan langkah **Pursue a goal** (`goal.pursue`). Langkah itu menunggu sehingga matlamat tamat dan menghantar ringkasan serta keputusannya. Lihat [Jenis langkah pipeline](/ms-MY/manual-pengguna/rujukan/langkah-pipeline/).
+
+## Lihat juga
+
+- [Jadual dan panggilan bangun](/ms-MY/manual-pengguna/panduan-cara/jadual-panggilan-bangun/)
+- [Ejen bekerja bersama](/ms-MY/manual-pengguna/panduan-cara/ejen-bekerja-bersama/)
+- [Urus kos](/ms-MY/manual-pengguna/panduan-cara/urus-kos/)
+- [Perintah slash](/ms-MY/manual-pengguna/rujukan/perintah-slash/)

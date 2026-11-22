@@ -2,10 +2,10 @@
 title: Eingebaute Agenten-Tools
 description: Die Tool-Oberfläche, die der eingebaute Harness einem Agenten gibt — Sprachserver, strukturelle Suche, Debugger, Kernel und Worker-Steuerung — mit jeder Operation und ihren Argumenten.
 slug: de-DE/handbuch/referenz/agenten-tools
-sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
+sourceHash: e99183fd4b257a60f94444101e1d39a7d6c77249
 ---
 
-Das sind die **servergebundenen** Tools, die die eingebaute Agentenlaufzeit direkt registriert — Sprachserver, strukturelle Suche, Debugger, Kernel, Fragen und Worker-Steuerung — im Unterschied zu den [MCP-Tools](/de-DE/handbuch/referenz/mcp-tools/), die sie überbrückt, und den generischen Datei-, Such- und Shell-Tools aus der Laufzeit des Harness. Sie stehen nicht in der MCP-Registrierung: Ein externer MCP-Client sieht sie nicht, weil jedes an eine laufende serverseitige Ressource gebunden ist, die zu einem Lauf gehört — einen Sprachserver-Prozess, einen Debug-Adapter, einen Interpreter.
+Das sind die **servergebundenen** Tools, die die eingebaute Agentenlaufzeit direkt registriert — Sprachserver, strukturelle Suche, Debugger, Kernel, Code-Modus-Skripte, Fragen und Worker-Steuerung — im Unterschied zu den [MCP-Tools](/de-DE/handbuch/referenz/mcp-tools/), die sie einbindet, und den generischen Datei-, Such- und Shell-Tools aus der Laufzeit des Harness. Sie stehen nicht in der MCP-Registrierung: Ein externer MCP-Client sieht sie nicht, weil jedes an eine laufende serverseitige Ressource gebunden ist, die zu einem Lauf gehört — einen Sprachserver-Prozess, einen Debug-Adapter, einen Interpreter.
 
 Jedes Tool hier wird nur registriert, wenn die Ressource dahinter für den Lauf angeschlossen ist — ein Supervisor für Sprachserver oder Debugger, ein tree-sitter-Parser, eine Kernel-Fabrik, ein Frage-Port, ein Vibe-Roster. Ob ein Sprachserver oder Debug-Adapter für *diesen Checkout* da ist, ist eine eigene, spätere Prüfung (`status` / `adapters`): Diese Tools bleiben an der Oberfläche, damit der Agent fragen kann, warum nichts brauchbar ist, statt zu raten.
 
@@ -15,9 +15,23 @@ Jedes Tool deklariert eine Stufe, und die Stufe entscheidet, **welche Oberfläch
 
 | Stufe   | Bedeutung                    | Tools hier                                       |
 | ------- | ---------------------------- | ------------------------------------------------ |
-| `read`  | Keine Seiteneffekte          | `lsp`, `ast_grep`, `ask_user`, die fünf `vibe_*` |
+| `read`  | Keine Seiteneffekte          | `lsp`, `ast_grep`, `ask_user`, `repl`, die fünf `vibe_*` |
 | `write` | Ändert Dateien               | `lsp_rename`, `ast_edit`, `resolve`              |
 | `exec`  | Startet oder steuert einen Prozess | `debug`, `eval`                            |
+
+## Direkt, nur aus Skripten oder beim ersten Gebrauch geladen
+
+Wenn der Server Skripte ausführen kann, ruft ein Lauf einige Tools direkt auf und erreicht den Rest aus einem [`repl`](#repl--ein-skript-ausführen-das-deine-tools-aufruft)-Skript; die ganze Regel steht unter [Code-Modus](/de-DE/handbuch/konzepte/code-modus/#welche-tools-der-agent-direkt-aufruft). Für die Tools auf dieser Seite:
+
+| Tool | Mit `repl` | Ohne `repl` |
+| ---- | ----------- | -------------- |
+| `repl` | Direkt | Nicht vorhanden |
+| `ask_user` | Direkt | Direkt |
+| `lsp`, `lsp_rename`, `ast_grep`, `ast_edit`, `resolve`, `debug` | Nur aus einem Skript | Beim ersten Gebrauch geladen |
+| `eval` | Beim ersten Gebrauch geladen (ein Skript kann es nicht aufrufen) | Beim ersten Gebrauch geladen |
+| `vibe_*` | Direkt im Vibe-Modus, nie aus einem Skript | Direkt im Vibe-Modus |
+
+Ein als „Nur aus einem Skript“ markiertes Tool wird beim ersten Gebrauch geladen, sobald der Server die Skripte des Laufs nicht mehr ausführen kann ([Wenn Skripte nicht laufen können](/de-DE/handbuch/konzepte/code-modus/#wenn-skripte-nicht-laufen-können)).
 
 ---
 
@@ -152,9 +166,49 @@ Eine Sitzung pro Unterhaltung, mit einer harten TTL (30 Minuten). Ein zweites `l
 
 ---
 
+## `repl` — ein Skript ausführen, das deine Tools aufruft
+
+Auf jedem Lauf vorhanden, wenn der Server Skripte ausführen kann ([Wann ein Lauf `repl` hat](/de-DE/handbuch/konzepte/code-modus/#wann-ein-lauf-repl-hat)). Das Skript ist einfaches JavaScript, der Rumpf einer async-Funktion, und läuft in einem frischen, abgeschirmten Interpreter in einem eigenen Prozess: ohne Zugriff auf Dateisystem, Netzwerk, Prozesse oder Module. `repl` selbst gehört zur Stufe `read` und sichert sich selbst ab, weil jeder Tool-Aufruf, den das Skript macht, für sich geprüft wird. Auch am MCP-Endpunkt, für Agentenläufe auf einem Server, der Skripte ausführen kann, verfügbar.
+
+| Argument | Bedeutung |
+| ------------------- | --------------------------------------------------------------------------------------------- |
+| `code` | Das Skript, höchstens 256 KiB |
+| `description` | Pflichtangabe. Eine kurze Bezeichnung für die Zeile in der Unterhaltung |
+| `timeout_ms` | Optional. Ein kürzeres Zeitlimit als das des Arbeitsbereichs, nie ein längeres |
+| `max_output_tokens` | Optional. Ein kleineres Ausgabebudget als das des Arbeitsbereichs, nie ein größeres |
+
+```js
+// Read three files together and report only which ones failed.
+const paths = ["lib/a.dart", "lib/b.dart", "lib/c.dart"];
+const results = await Promise.allSettled(paths.map((path) => tools.read({ path })));
+return results
+  .map((r, i) => (r.status === "rejected" ? `${paths[i]}: ${r.reason.message}` : null))
+  .filter(Boolean);
+```
+
+Die Beschreibung von `repl` sagt dem Agenten: „Ein Tool, das keines deiner direkten Tools ist, hat in dieser Anfrage keine Definition. Bevor du es zum ersten Mal aufrufst, schlage es mit `describeTool(name)` oder `searchTools(query)` nach, es sei denn, seine genaue Aufrufform wurde dir in dieser Unterhaltung bereits gezeigt.“
+
+`describeTool(name)` liefert die Beschreibung eines Tools, seine Deklaration, seine Eingabe- und Ausgabeschemas und seine Ergebnisnotiz, falls es eine gibt: was ein Skript von einem abgeschlossenen Aufruf erhält, in den eigenen Worten des Tools. Die Beschreibung von `repl` listet die Notizen der direkten Tools auf, die ein Skript aufrufen darf. Ein Ergebnis, das JSON-Text ist, kommt geparst an, außer es enthält mehr als 131.072 Werte: Dann kommt es als Text an, und das Skript parst es mit `JSON.parse`. Der Text eines Ergebnisses von einem Tool eines externen MCP-Servers wird nach 262.144 Zeichen abgeschnitten, und abgeschnittener Text lässt sich nicht mehr parsen.
+
+- `tools.<name>(args)` ruft ein Tool über denselben Filter, dieselben Schutzregeln und dieselbe Genehmigung wie ein direkter Aufruf auf und wird mit einem Fehler abgelehnt, wenn der Aufruf abgelehnt wird oder fehlschlägt. Lesende Aufrufe können gleichzeitig laufen; Aufrufe, die etwas ändern, laufen nacheinander in der Reihenfolge, in der das Skript sie gemacht hat. Während einer seiner Aufrufe auf eine Person wartet, startet das Skript keinen weiteren Aufruf.
+- `ALL_TOOLS`, `searchTools(query, { limit, namespace })`, `describeTool(name)` und `describeNamespace(name)` finden Tools, auch die verbundener MCP-Server. Ein Tool außerhalb der direkten Menge, das ein Skript aufrufen darf, ist nur aus einem Skript aufrufbar; ein direkter Aufruf liefert den Hinweis, wie man es aus `repl` aufruft. Sobald der Server die Skripte des Laufs nicht mehr ausführen kann, wird ein solches Tool stattdessen beim ersten Gebrauch geladen.
+- Abfragen sind begrenzt: eine Anfrage von höchstens 1.024 Zeichen, ein Name oder Namensraum von höchstens 256 Zeichen, `limit` von 0 bis 50 und pro Skript höchstens 200 Abfragen, die insgesamt 2 Sekunden der Serverzeit beanspruchen; zugleich teilen sich alle Skripte eines Arbeitsbereichs 2 Sekunden Abfragezeit, die mit einer Viertelsekunde pro Sekunde zurückgegeben wird. Ist eines der beiden Limits aufgebraucht, werden weitere Abfragen abgewiesen. In einem sehr großen Katalog teilen sich die Beschreibungen in `ALL_TOOLS` etwa eine Million Zeichen gleichmäßig, und eine gekürzte endet in `…`; `describeTool` liefert immer die vollständige Beschreibung. Ein Typ, der zu groß zum Anzeigen ist, lautet `unknown /* too large to show */`, und ein unbekannter Name wird mit den nächstliegenden Namen beantwortet.
+- Tools sind in Namensräumen gruppiert: `builtin` (die eigenen Tools des Harness), `control-center` (die Tools von Control Center) und einer pro verbundenem MCP-Server, benannt nach dem Server. Ein Server, der `builtin`, `control-center` oder `script` heißt oder dessen Name mit `external-` beginnt, in beliebiger Groß- und Kleinschreibung und mit oder ohne Leerzeichen drumherum, wird als `external-` gefolgt von seinem Namen aufgeführt, und kein Tool liegt jemals in `script`.
+- Nur was das Skript zurückgibt oder an `text()`, `image()` oder `console.*` übergibt, kommt zurück. Ausgabe über dem Budget behält Anfang und Ende, und `read_output` liest den Rest.
+- `store(key, value)` / `load(key)` behalten JSON-Werte für spätere Skripte derselben Unterhaltung und desselben Agenten; gespeichert werden sie erst, wenn das Skript abgeschlossen ist. Die Skripte eines Subagenten haben keinen Speicher.
+- `await tools.ask_user(...)` stellt eine Frage; ihre Antwort wird außerdem dem Ergebnis hinzugefügt. `sleep(ms)`, `setTimeout`, `limits()` sowie `models.embed` / `rank` / `classify` (Einbettungen auf dem Gerät) sind ebenfalls verfügbar.
+- `describeTool(name)` und `searchTools(query)` antworten auch für die eigenen Funktionen des Skripts, die keine Tools sind: `text`, `image`, `store`, `load`, `sleep`, `setTimeout`, `clearTimeout`, `limits`, `exit` und `models.*`, unter dem Namensraum `script`.
+- Aus einem Skript nicht aufrufbar: `repl`, `eval`, `task`, `checkpoint`, `rewind`, `compact`, `search_tools` und die `vibe_*`-Verben.
+- Ein Skript liest die Vergangenheit seines eigenen Laufs: `history({start, role, tool, limit})` blättert im Transkript der Unterhaltung (höchstens 50 Zeilen pro Aufruf; übergib das `next_start` der vorherigen Seite als `start`), `outputs()` listet die Tool-Ausgaben auf, die für diese Unterhaltung und diesen Agenten gespeichert sind, und `loadOutput(handle)` liest 16.384 Zeichen einer davon. `storedKeys()` listet die gespeicherten Schlüssel mit ihrer Größe. `keep(value, label)` speichert einen großen Wert als Ausgabe, die ein späteres Skript oder `read_output` lesen kann; gespeichert wird sie erst, wenn das Skript abgeschlossen ist (1 MiB pro Wert, 64 Werte und 16 MiB pro Lauf). `limits().returnBudgetChars` sagt, wie viel vom Ausgabebudget noch übrig ist. Ein nur lesender Lauf (ein Review eines Ziels) kann lesen, aber weder speichern noch behalten. Bei Claude Code und ACP funktioniert `history()`, während `outputs()`, `loadOutput()` und `keep()` abgelehnt werden, weil Control Center für diese Läufe keine Tool-Ausgaben speichert.
+- Ein Fehler wegen Timeout, Ausgabe-Überlauf oder Aufruflimit sagt, wie man ihn behebt.
+
+Ein Lauf führt immer nur ein Skript gleichzeitig aus. Die Grenzwerte und was bei jedem geschieht, stehen auf der Seite [Code-Modus](/de-DE/handbuch/konzepte/code-modus/#grenzwerte); jedes Skript wird unter **Observability → Code-Ausführungen** aufgezeichnet.
+
+---
+
 ## `eval` — persistente Interpreter
 
-Eine Python- oder JavaScript-Zelle, deren Variablen, Importe und geladene Daten zwischen den Aufrufen erhalten bleiben. Stufe `exec`; nicht parallel-sicher.
+Eine Python- oder JavaScript-Zelle, deren Variablen, Importe und geladene Daten zwischen den Aufrufen erhalten bleiben. Stufe `exec`; nicht parallel-sicher. Nicht aus einem `repl`-Skript aufrufbar, und eine Zelle kann die Tools des Laufs nicht aufrufen: Um Tools aus Code aufzurufen, nutze [`repl`](#repl--ein-skript-ausführen-das-deine-tools-aufruft).
 
 | Argument      | Bedeutung                                        |
 | ------------- | ------------------------------------------------ |
@@ -166,20 +220,34 @@ Eine Python- oder JavaScript-Zelle, deren Variablen, Importe und geladene Daten 
 - Der letzte Ausdruck wird wie in einem Notebook zurückgegeben.
 - `display()` funktioniert, ein pandas-Frame wird als Tabelle dargestellt, und eine matplotlib-Figure kommt als **Bild zurück, das das Transkript anzeigt**.
 - Die IPython-Idiome, die du reflexartig tippst — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — werden in gewöhnlichen Code umgeschrieben. `%pip` leert außerdem `sys.modules`, damit der nächste `import` sieht, was gerade installiert wurde.
-
-### Eigene Tools aus einer Zelle heraus aufrufen
-
-```python
-contents = tool("read", {"path": "lib/auth.dart"})
-```
-
-Die Brücke **steigt wieder in die Tool-Registrierung des Harness ein**, deshalb gelten Schutzregeln, Freigabe und jeder Wrapper genau wie bei einem vom Modell ausgelösten Aufruf. Sie läuft über die eigene Pipe des Kernels statt über einen Loopback-Socket: kein Port, kein Geheimnis, keine Ausgangsregel.
-
-Das Timeout der Zelle ist ein Budget für *Untätigkeit* (Standard 5 Minuten), und es wird **ausgesetzt**, solange ein überbrückter Aufruf aussteht, damit eine Zelle, die sich auf Subagenten auffächert, nicht mitten in der Auffächerung abgebrochen wird.
+- Eine Zelle, die mehr ausgibt als ihr Ausgabebudget, behält das erste Dreiviertel und das letzte Viertel, mit einer Zeile, die sagt, wie viele Zeichen und Bilder verworfen wurden.
+- Ist der Interpreter beendet worden, ohne dass es verlangt wurde, erfährt die nächste Zelle einmal, dass ihre früheren Variablen weg sind.
 
 :::note[Wo der Kernel läuft]
 In der Kapsel der Unterhaltung, wenn sie eine hat, sonst in der OS-Sandbox des Laufs auf dem Host. Ohne Sandbox oder mit einer Sandbox, die nicht verfügbar ist, läuft er unbegrenzt, und `eval` fragt nach der Freigabe für die Ausführung auf dem Host. Er bootet dafür keine Kapsel — dieselbe Regel, die einen Rig-Tab am automatischen Start hindert.
 :::
+
+---
+
+## `bash` im Hintergrund
+
+`bash` mit `run_in_background: true` startet den Befehl und kehrt sofort mit einem Handle (`b1`, `b2`, …) zurück, statt zu warten. Der Agent arbeitet weiter oder beendet seinen Zug und wird geweckt, wenn der Befehl endet.
+
+| Argument | Bedeutung |
+| ------------------- | ------- |
+| `run_in_background` | `true`, um zu starten und sofort zurückzukehren |
+| `timeout_seconds` | Sekunden, bis der Befehl beendet wird: standardmäßig 600, höchstens 3.600 |
+| `notify` | Optional. Ein einfaches Muster; jede passende Ausgabezeile wird während der Befehl läuft an den Agenten gesendet (etwa `listening on\|FAILED`) |
+
+- Höchstens 4 Hintergrundbefehle laufen gleichzeitig in einem Lauf. Jeder wird bei seinem Timeout und am Ende des Laufs beendet, zusammen mit jedem Prozess, den er gestartet hat.
+- Wenn ein Befehl endet, erhält der Agent eine Mitteilung mit dem Exit-Code, den letzten 2.000 Zeichen der Ausgabe und einem `read_output`-Handle für den Rest.
+- Ein Agent, dessen einzige verbleibende Arbeit ein Hintergrundbefehl ist, wartet, ohne das Modell aufzurufen, und der Watchdog für Stille des Laufs pausiert, während er wartet.
+- `bash_output(handle)` liest den Zustand und die letzte Ausgabe eines Befehls; `bash_kill(handle)` stoppt ihn. Beide sagen, wenn das Ergebnis schon zugestellt wurde.
+- Ein Skript kann keinen Hintergrundbefehl starten. Claude Code hat seine eigene Hintergrund-Bash; Control Center hält diesen Lauf höchstens 10 Minuten offen, nachdem der Zug beendet wurde, der eine Aufgabe laufen gelassen hat.
+
+## `compact` — Platz im Kontextfenster freimachen
+
+Verdichtet den älteren Kontext der Unterhaltung vor dem nächsten Modellaufruf und behält, was `focus` nennt (höchstens 1.000 Zeichen). Die neuesten Züge bleiben wörtlich erhalten. Die Budgetzeile des Agenten pro Zug zeigt die Kontextnutzung bei 70, 80 und 90 %, und das Tool lohnt sich ab etwa 70 % vor einer langen neuen Arbeitsphase. Der Hook `preCompact` des Serverinhabers kann den Fokus ergänzen ([Shell-Hooks](/de-DE/handbuch/referenz/agentenkonfiguration/#shell-hooks)). Nach einer Verdichtung fügt der Server einen Block „Still in flight“ hinzu: das Ziel, ausstehende Weckrufe, offene Anfragen, Hintergrundbefehle, die Checkliste und gespeicherte Schlüssel, jeweils mit dem Aufruf, der sie wiederherstellt.
 
 ---
 

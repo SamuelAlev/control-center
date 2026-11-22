@@ -2,7 +2,7 @@
 title: Triagea din inkorg
 description: Arbeta i den enhetliga inkorgen – rensa det som blockerar dig, granska det som väntar på dig och följ dina egna PR:ar.
 slug: sv-SE/handbok/how-to-guider/triagea-inkorg
-sourceHash: 8b1cedaef10bca4c784509cf67c82493c1baab35
+sourceHash: 78a60272d46bc865d25bd7bc98796a89978e3e7c
 ---
 
 Den här guiden visar hur du arbetar i inkorgen: den enda ytan som samlar allt
@@ -74,9 +74,9 @@ Varje kort i raden har en enda nästa åtgärd:
    **Synkhälsa** visar varje anslutnings senaste synk, antal fel i följd och
    senaste utfall. Bara det senaste felet per leverantör visas i inkorgen, så en
    återställd synk rensar kortet.
-3. Korten försvinner av sig själva när det underliggande tillståndet är löst
-   (agenten har fått svar, synken har återställts) – det finns inget att stänga
-   manuellt.
+3. Om ett kort säger **Mål väntar på granskning** eller **Målet behöver dig**, klicka på **Granska** – du hamnar på målets sida, där du godkänner det, återupptar det eller svarar på det det väntar på. Att återuppta ett mål är för den som startade det. Att godkänna ett mål som en pipeline startade är för den som startade den körningen (se [Arbeta mot ett mål](/sv-SE/handbok/how-to-guider/arbeta-mot-mal/)). Bara mål som du får agera på visas: ett mål som väntar på granskning, eller ett du startade som behöver en person.
+4. Om ett kort säger **Förbättring föreslagen**, klicka på **Granska** – du hamnar på förslaget, där du godkänner eller avvisar det.
+3. Korten försvinner av sig själva när det underliggande tillståndet är löst (agenten har fått svar, synken har återställts, målet går vidare, förslaget har avgjorts) – det finns inget att stänga manuellt.
 
 :::note[Det här är bekräftelser per tur, inte styrningsgodkännanden]
 Ett kort för ”agentgodkännande” är en körande agent som pausar för att be om

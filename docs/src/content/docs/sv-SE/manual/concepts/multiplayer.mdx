@@ -2,7 +2,7 @@
 title: Multiplayer – identitet, medlemskap och närvaro
 description: Hur Control Center modellerar människor och agenter som jämbördiga deltagare, vad som egentligen grindar åtkomsten till en arbetsyta och varför aktuell närvaro och delade poster färdas på två olika banor.
 slug: sv-SE/handbok/koncept/multiplayer
-sourceHash: 7b0f95d564d4a619214d7824917a2c394174b472
+sourceHash: ca65ffa83e366c335a94c03f4cc13ac001ffa31e
 ---
 
 Control Center fungerar för en enskild operatör, men modellen under den är
@@ -164,9 +164,7 @@ Närvarobanan är inte bara en närvarolista – den driver samarbetsverben:
   navigerar på egen hand kopplas följningen loss. En banderoll som går att
   stänga meddelar när en annan deltagare spotlightar (presenterar) en yta du
   är i.
-- **Styr.** Ett meddelande till en körande agent köas som styrning; agenten
-  läser om det innan den återupptar sin nästa tur, så du kan knuffa en körning
-  medan den pågår utan att döda den.
+- **Styr.** Ett meddelande till en körande agent köas som styrning; agenten läser om det innan den återupptar sin nästa tur, så du kan knuffa en körning medan den pågår utan att döda den. Styrning av en körning som arbetar för någon annan kräver skrivåtkomst till ytans repositorier.
 - **Ta över.** Att ta kontrollen över ett samtal pausar varje aktiv körning
   vid dess nästa rena turgräns (en Claude Code-körning, som saknar säker
   gräns, stoppas) bakom en git-ögonblicksbild per tur, så att övertagandet går

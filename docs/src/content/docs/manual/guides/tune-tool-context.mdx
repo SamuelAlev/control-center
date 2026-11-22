@@ -11,25 +11,26 @@ Open a conversation and tap the context-usage indicator in the conversation head
 
 Two segments matter here:
 
-- **Tool definitions** and **MCP & dynamic tools** — the resident set, with each tool's real token cost.
+- **Tool definitions** and **MCP & dynamic tools** — the direct set, with each tool's real token cost.
 - **Tools loaded on demand** — the deferred index. Each entry is charged only its name, because a name is all the request carries; opening one still shows the full description and schema, so you can see what it *would* cost if the run pulled it in.
+
+In a run with `repl`, the tools a script reaches are named in the system prompt and appear in neither segment.
 
 If the deferred segment is empty, deferral is off for this server. Check `--tool-deferral` on the [`cc_server` CLI](/manual/reference/cc-server-cli).
 
 ## Change which tools load up front
 
-The resident set is policy, not configuration — it lives in `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) and applies to every run:
+The direct set is policy, not configuration — it lives in `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) and applies to every run:
 
-- `residentBuiltins` — the file and shell vocabulary.
-- `residentDiscovery` — `search_tools` and `list_my_tools`. Do not remove these; they are how an agent reaches everything else.
-- `residentMcpTools` — the handful of Control Center tools worth their schema on every request.
-- A per-mode block, for the tools a given [mode](/manual/concepts/modes) uses on nearly every turn.
+- `directTools` — the twelve tools every run calls directly: `read`, `write`, `edit`, `search`, `find`, `bash` and `read_output`; `ask_user` and `task`; `todo_write`, `search_memory` and `send_message`.
+- `residentDiscovery` — `search_tools` and `list_my_tools`. Do not remove these; they are how an agent reaches everything else. A run with `repl` gets `search_tools` when some tool loads on first use, and no `list_my_tools`.
+- `directNamesFor(mode)` — the tools a given [mode](/manual/concepts/modes) adds for its own loop: the review verbs in review mode, `submit_plan` in plan mode and `propose_orchestration` in orchestrate mode.
 
 Two rules when editing it:
 
-**Add a tool only if most runs use it.** Every name costs its schema on every request of every run, forever. A tool that is important when it is used but rare overall belongs in the deferred half — the agent will still find it.
+**Add a tool only if most runs use it.** Every name costs its schema on every request of every run, forever. A tool that is important when it is used but rare overall belongs outside the direct set — the agent will still reach it, from a script or by loading it on first use.
 
-**Use the tool's real name.** A resident name that matches no tool is inert: no error, no warning, the tool is simply deferred. `test/tooling/resident_tool_names_test.dart` catches this and also holds each mode under 40 resident tools, which is the point of the exercise — past that band, tool selection measurably degrades.
+**Use the tool's real name.** A direct name that matches no tool is inert: no error, no warning, the tool simply stays outside the direct set. `test/tooling/resident_tool_names_test.dart` catches this, holds each mode's direct set to at most 20 tools and holds each mode to at most 40 tools sent up front, which is the point of the exercise — past that band, tool selection measurably degrades.
 
 A mode's required and pinned verbs are added automatically, so you never need to list a mode's own output verb.
 
@@ -71,4 +72,4 @@ Common causes, in order of likelihood:
 - **A model or effort change mid-conversation.** Both change the prefix. Subagents are especially easy to get wrong here: running children at a lower effort to save money can cost more in lost cache sharing than it saves.
 - **Frequent compaction.** Compaction rewrites history by design, so its cost is real; the fix is to compact rarely and deeply rather than often and shallowly.
 
-Turning deferral off with `--tool-deferral=off` is a valid A/B for isolating whether a behaviour change came from the two-tier surface. It reproduces the pre-deferral request exactly, so if the behaviour persists with it off, the surface is not the cause.
+Turning deferral off with `--tool-deferral=off` is a valid A/B for isolating whether a behaviour change came from the two-tier surface. With it off a run sends every admitted tool's definition, except that a run with `repl` still calls from scripts the tools a script may call, so if the behaviour persists with it off, deferral is not the cause.

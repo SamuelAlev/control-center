@@ -925,5 +925,112 @@ void main() {
         );
       },
     );
+
+    test(
+      "heldSteeringMessages lists every conversation's held cards, and a "
+      "pause's card re-held as a Stop's loses its reset",
+      () async {
+        await db.messagingDao.insertSpace(
+          SpacesTableCompanion.insert(
+            id: 'held-space',
+            name: 'Held',
+            workspaceId: 'test-workspace',
+          ),
+        );
+        for (final thread in ['t-1', 't-2']) {
+          await db
+              .into(db.conversationsTable)
+              .insert(
+                ConversationsTableCompanion.insert(
+                  workspaceId: 'test-workspace',
+                  id: thread,
+                  spaceId: 'held-space',
+                ),
+              );
+        }
+        Future<void> card(String id, String thread, Map<String, Object> meta) =>
+            db.messagingDao.insertMessage(
+              ConversationMessagesTableCompanion.insert(
+                id: id,
+                spaceId: 'held-space',
+                conversationId: thread,
+                senderId: 'u1',
+                senderType: 'user',
+                content: id,
+                messageType: const Value('steering'),
+                metadata: Value(jsonEncode(meta)),
+              ),
+            );
+        await card('paused', 't-1', {
+          'steerState': 'held',
+          'steerHeldBy': 'limit:run-a',
+          'steerLimitResetsAt': '2026-11-20T12:00:00.000Z',
+        });
+        await card('stopped', 't-2', {
+          'steerState': 'held',
+          'steerHeldBy': 'stop',
+        });
+        await card('waiting', 't-2', {'steerState': 'queued'});
+
+        final held = await db.messagingDao.heldSteeringMessages();
+        expect(held.map((r) => r.id).toSet(), {'paused', 'stopped'});
+
+        expect(
+          await db.messagingDao.patchSteering(
+            'paused',
+            fromState: 'held',
+            patch: {'steerHeldBy': 'stop', 'steerLimitResetsAt': null},
+          ),
+          isTrue,
+        );
+        final row = (await db.messagingDao.getMessageById('paused'))!;
+        final json = jsonDecode(row.metadata!) as Map<String, dynamic>;
+        expect(row.steerState, 'held');
+        expect(json['steerHeldBy'], 'stop');
+        expect(json['steerLimitResetsAt'], isNull);
+      },
+    );
+
+    test('openLimitParkRows lists only park rows with no outcome yet', () async {
+      await db.messagingDao.insertSpace(
+        SpacesTableCompanion.insert(
+          id: 'park-space',
+          name: 'Park',
+          workspaceId: 'test-workspace',
+        ),
+      );
+      await db
+          .into(db.conversationsTable)
+          .insert(
+            ConversationsTableCompanion.insert(
+              workspaceId: 'test-workspace',
+              id: 'park-thread',
+              spaceId: 'park-space',
+            ),
+          );
+      Future<void> row(String id, Map<String, Object> meta) =>
+          db.messagingDao.insertMessage(
+            ConversationMessagesTableCompanion.insert(
+              id: id,
+              spaceId: 'park-space',
+              conversationId: 'park-thread',
+              senderId: 'system',
+              senderType: 'system',
+              content: id,
+              messageType: const Value('system'),
+              metadata: Value(jsonEncode(meta)),
+            ),
+          );
+      await row('open', {'kind': 'limit_park', 'wakeId': 'w-1'});
+      await row('done', {
+        'kind': 'limit_park',
+        'wakeId': 'w-2',
+        'outcome': 'cancelled',
+      });
+      await row('other', {'kind': 'wake_skipped'});
+
+      final rows = await db.messagingDao.openLimitParkRows();
+      expect(rows.map((r) => r.id), ['open']);
+    });
   });
 }

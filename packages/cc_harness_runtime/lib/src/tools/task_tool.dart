@@ -41,6 +41,12 @@ class TaskTool extends HarnessTool {
   @override
   bool get parallelSafe => true;
 
+  /// A subagent runs a loop of its own, with a reentry of its own: started
+  /// from a script, one `Promise.all` would start a tree of them. Only the
+  /// model starts one, one call at a time it can see.
+  @override
+  bool get scriptCallable => false;
+
   @override
   String get description =>
       'Spawn a disposable subagent to handle a focused sub-task. The subagent '

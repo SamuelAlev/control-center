@@ -2,7 +2,7 @@
 title: Modus
 description: Mengapa ruang, bukan ejen, yang membawa modus; apakah yang dijamin oleh setiap empat modus; dan di mana jaminan itu bersifat struktur dan bukan sekadar gesaan.
 slug: ms-MY/manual-pengguna/konsep/modus
-sourceHash: da67f0deb1f4b1d622cf8aa7e018518031ccbdb3
+sourceHash: 4450ebc86d95efb0366bc3f0ab4ddebc6d3a3adb
 ---
 
 ## Apa itu modus
@@ -41,7 +41,7 @@ Larian yang tamat tanpa pelannya tetap direkodkan dengan status `completed` — 
 
 Terdapat satu lagi jalan keluar yang berasingan: `exit_plan_mode`. Ia pintu kelulusan keras, bukan kata kerja output — ejen yang memanggilnya dan bukan `submit_plan` belum menyampaikan apa-apa. Panggilan pertama membuka kelulusan `plan_exit` yang berkekalan dan memulangkan `pending`, dan ruang itu kekal baca sahaja; panggilan berulang kekal `pending` dan tidak membuka pintu kedua. Hanya selepas kelulusan itu diberikan, panggilan seterusnya menukar ruang itu ke sembang. Penolakan membolehkan ejen membuka permintaan baharu untuk pelan yang disemak semula.
 
-Untuk keluar sendiri daripada modus pelan, tukar menu lungsur komposer (atau Shift+Tab). `exit_plan_mode` diputuskan dengan alat MCP `decide_approval`. Baris "kelulusan ejen" dalam peti masuk ialah perkara lain: gesaan pengesahan bagi setiap giliran daripada ejen yang sedang berjalan.
+Untuk keluar sendiri daripada modus pelan, tukar menu lungsur komposer (atau Shift+Tab). `exit_plan_mode` diputuskan oleh larian ejen dengan alat MCP `decide_approval`. Baris "kelulusan ejen" dalam peti masuk ialah perkara lain: gesaan pengesahan bagi setiap giliran daripada ejen yang sedang berjalan.
 
 ### Semakan — baca sahaja, tiada kontrak
 
@@ -65,6 +65,8 @@ Tiada apa-apa dalam cadangan itu dilaksanakan sehingga anda meluluskannya. Setel
 
 **Modus baca sahaja tidak menolak akses rangkaian atau rahsia.** Kelas kesan yang ditolak oleh semakan, pelan dan orkestrasi ialah kelas yang mengubah dunia: pemadaman fail, penulisan di luar worktree, commit, push, penciptaan dan penerbitan PR, penulisan penyegerakan vendor, pemasangan pakej, pengeluaran proses, mutasi ruang kerja dan kawalan kepungan. Egress rangkaian dan akses rahsia kekal pada nilai lalai dengan sengaja — penyelidikan ialah keseluruhan tujuan modus baca sahaja.
 
+**Mod kod tidak pernah melebarkan modus.** Penapis alat modus digunakan dahulu dan skrip [mod kod](/ms-MY/manual-pengguna/konsep/mod-kod/) `repl` hanya boleh memanggil alat yang tinggal selepasnya, melalui gate yang sama seperti panggilan langsung. Kata kerja tetap modus (kata kerja outputnya, `exit_plan_mode`, `ask_user`) dan gelung sendirinya (kata kerja nod semakan dalam mod semakan) sentiasa dipanggil secara langsung, supaya larian tidak perlu menulis skrip untuk menghantar hasilnya atau bertanya soalan. Dalam [modus vibe](/ms-MY/manual-pengguna/panduan-cara/arahkan-pekerja-latar-belakang/), larian pengarah hanya mengekalkan alat baca dan tiada alat khusus skrip, jadi skripnya hanya boleh mencapai alat-alat itu.
+
 ## Memilih dan menukar modus
 
 Menu lungsur modus dalam komposer menawarkan **tiga** pilihan: Ejen (sembang), Rancang dan Orkestrakan. `review` **tidak boleh dipilih oleh pengguna** — ia ditetapkan oleh sistem apabila ruang semakan PR dicipta dan oleh langkah pipeline.
@@ -87,4 +89,5 @@ Senarai kebenaran mengekang alat peringkat tulis dan ke atas. Peringkat baca har
 - [Model ejen](/ms-MY/manual-pengguna/konsep/model-ejen/): pengangkutan mana yang boleh menguatkuasakan sesuatu modus
 - [Guardrail](/ms-MY/manual-pengguna/konsep/guardrail/): polisi kelas kesan yang menjadi input bagi praset modus
 - [Orkestrasi](/ms-MY/manual-pengguna/konsep/orkestrasi/): apa yang dilakukan oleh cadangan orkestrasi yang diluluskan
+- [Mod kod](/ms-MY/manual-pengguna/konsep/mod-kod/): skrip yang memanggil alat modus
 - [Gunakan modus pelan](/ms-MY/manual-pengguna/panduan-cara/modus-pelan/): panduan amali

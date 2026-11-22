@@ -2,7 +2,7 @@
 title: Kosten beheren
 description: Zie wat je agenten uitgeven, begrens een autonome run en beperk het tokengebruik.
 slug: nl-NL/handleiding/gidsen/kosten-beheren
-sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
+sourceHash: 040176a3840653a57c823ce4ff7e3ed9cf071c07
 ---
 
 Deze gids laat zien hoe je ziet wat agentruns kosten en hoe je een autonome run begrenst.
@@ -40,21 +40,30 @@ De kaart **Gebruik en kosten** op deze pagina toont de in de afgelopen zeven dag
 
 ## Een autonome run begrenzen
 
-Twee slash-commando's, getypt in de composer van een ruimte, zijn de enige runs met een kostenplafond:
+Deze runs hebben een kostenlimiet. Een run die je start door een bericht te sturen heeft die niet.
 
 ```
 /goal ship the auth refactor --budget 20
-/loop keep the flaky tests green
+/loop every 1h --budget 10 keep the flaky tests green
 ```
 
-- Elk segment van een `/goal`- of `/loop`-run stopt wanneer de beprijsde uitgaven **500 cent ($5.00)** bereiken. Op 80% daarvan stuurt de lus het model eerst bij om af te ronden en een schone overdracht achter te laten, zodat hij niet midden in een taak sterft.
-- Een heel duurzaam doel heeft een plafond van **5000 cent ($50.00)**, tenzij je `--budget <dollars>` meegeeft. De supervisor geeft het _resterende_ budget van het doel door aan elk segment, zodat een expliciet budget nooit met een heel segment wordt overschreden.
-- `--days N` voegt een deadline in wandkloktijd toe en `--max N` een plafond op het aantal runs. Beide zijn optioneel; zonder hen wordt het doel alleen door kosten begrensd.
-- Een doel dat tegen zijn grens aanloopt, stopt met `budgetExhausted` en kan alleen worden hervat door het budget te verhogen.
+| Run | Limiet |
+| --- | --- |
+| Een segment van een doel | 5 dollar, of wat er van het budget van het doel over is als dat minder is |
+| Een doel | 50 dollar, tenzij je `--budget <dollars>` meegeeft |
+| De review van een doel | 2 dollar, of wat er over is, aangerekend aan het doel |
+| Een run die een schema of bewaking start | 5 dollar; het schema stopt bij zijn eigen kostenlimiet (50 dollar, tenzij je `--budget` meegeeft, of het standaardbedrag van de werkruimte) |
+| De review na een doel, of `/refine` | 1 dollar |
 
-Omdat het plafond op prijzen is gebaseerd, bereikt een model dat de catalogus niet kan beprijzen het nooit. Zo'n run wordt in plaats daarvan begrensd door de doom-loopherhalingsbeveiliging, het opgeven van de supervisor na drie opeenvolgende fouten en jou.
+- Een run met een limiet stopt wanneer de beprijsde uitgaven de limiet bereiken, bij het ingebouwde harnas, bij Claude Code en bij ACP-agents. Op 90% sturen het ingebouwde harnas en Claude Code de agent eerst bij om af te ronden en een schone overdracht achter te laten, zodat hij niet midden in een taak sterft. Een ACP-agent wordt bij de limiet geannuleerd.
+- Het _resterende_ budget van het doel wordt in elk segment doorgegeven, zodat een expliciet budget nooit met een heel segment wordt overschreden.
+- `--days N` voegt een deadline toe en `--max N` een plafond op het aantal segmenten. Beide zijn optioneel; zonder die wordt het doel begrensd door kosten en door zijn stop bij geen voortgang.
+- Een doel dat zijn budget bereikt, stopt met **Budget uitgeput** en hervat alleen met een hoger budget, dat alleen de persoon die het heeft gestart kan geven.
+- Een pipeline-run die bij de limiet van zijn orkestratie wordt vastgehouden, wacht tot zijn aanvrager op de pagina van de pipeline-run op **Limiet verhogen** drukt. De nieuwe limiet moet boven de oude liggen en boven wat is uitgegeven, maximaal 1.000 dollar, en een limiet wordt nooit verwijderd.
 
-Een bericht in een ruimte, een @-vermelding of een pipelinestap heeft geen kostenplafond. De run eindigt wanneer het model stopt, wanneer jij hem stopt of wanneer de doom-loopbeveiliging hem bijstuurt.
+Omdat het plafond op prijzen is gebaseerd, bereikt een model dat de catalogus niet kan beprijzen het nooit. Zo'n run wordt in plaats daarvan begrensd door de doom-loopherhalingsbeveiliging, de stop van het doel bij geen voortgang en het opgeven na drie opeenvolgende fouten, en jou.
+
+Een bericht in een ruimte, een @-vermelding of een pipelinestap buiten een orkestratie met een limiet heeft geen eigen kostenplafond. De run eindigt wanneer het model stopt, wanneer jij hem stopt of wanneer de doom-loopbeveiliging hem bijstuurt.
 
 ## Tokengebruik beperken
 

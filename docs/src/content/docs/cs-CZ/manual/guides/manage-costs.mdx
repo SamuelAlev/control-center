@@ -2,7 +2,7 @@
 title: Spravujte náklady
 description: Podívej se, kolik tvoji agenti utrácí, zastropuj autonomní běh a omez spotřebu tokenů.
 slug: cs-CZ/prirucka/navody/sprava-nakladu
-sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
+sourceHash: 040176a3840653a57c823ce4ff7e3ed9cf071c07
 ---
 
 Tenhle návod ukazuje, jak zjistit, kolik stojí běhy agentů, a jak autonomní běh zastropovat.
@@ -40,21 +40,30 @@ Karta **Využití a náklady** na téhle stránce ukáže posledních sedm dní 
 
 ## Zastropuj autonomní běh
 
-Jediné běhy se stropem nákladů jsou dva příkazy s lomítkem, které napíšeš do composeru prostoru:
+Tyto běhy mají limit nákladů. Běh, který spustíte odesláním zprávy, ho nemá.
 
 ```
 /goal ship the auth refactor --budget 20
-/loop keep the flaky tests green
+/loop every 1h --budget 10 keep the flaky tests green
 ```
 
-- Každý segment běhu `/goal` nebo `/loop` se zastaví, když oceněná útrata dosáhne **500 centů ($5.00)**. Při 80 % z toho smyčka nejdřív nasměruje model, ať práci uzavře a nechá čisté předání, aby neskončila uprostřed úkolu.
-- Celý trvalý cíl má strop **5000 centů ($50.00)**, pokud nepředáš `--budget <dollars>`. Supervisor do každého segmentu předá _zbývající_ rozpočet cíle, takže výslovný rozpočet celý segment nikdy nepřestřelí.
-- `--days N` přidá lhůtu v reálném čase a `--max N` strop počtu běhů. Obojí je volitelné; bez nich cíl ohraničují jen náklady.
-- Cíl, který narazí na strop, skončí stavem `budgetExhausted` a obnovit ho jde jen zvýšením rozpočtu.
+| Běh | Limit |
+| --- | --- |
+| Segment cíle | 5 dolarů, nebo to, co zbývá z rozpočtu cíle, pokud je to méně |
+| Cíl | 50 dolarů, pokud nepředáte `--budget <dollars>` |
+| Posouzení cíle | 2 dolary, nebo to, co zbývá, účtované cíli |
+| Běh, který spustí plán nebo sledování | 5 dolarů; plán se zastaví na vlastním limitu nákladů (50 dolarů, pokud nepředáte `--budget`, nebo výchozí hodnota pracovního prostoru) |
+| Posouzení po cíli, nebo `/refine` | 1 dolar |
 
-Protože se strop počítá z ceny, model, který katalog neocení, na něj nikdy nedosáhne. Takový běh místo toho ohraničuje ochrana před zacyklením, to, že se supervisor po třech selháních za sebou vzdá, a ty.
+- Běh s limitem se zastaví, když oceněná útrata dosáhne limitu, u vestavěného harnessu, Claude Code i agentů ACP. Při 90 % vestavěný harness a Claude Code nejdřív nasměrují agenta, ať práci uzavře a nechá čisté předání, aby neskončil uprostřed úkolu. Agent ACP se při limitu zruší.
+- Do každého segmentu se předá _zbývající_ rozpočet cíle, takže výslovný rozpočet celý segment nikdy nepřestřelí.
+- `--days N` přidá termín a `--max N` strop segmentů. Obojí je volitelné; bez nich cíl ohraničují náklady a jeho zastavení při nedostatku pokroku.
+- Cíl, který narazí na rozpočet, se zastaví se stavem **Rozpočet vyčerpán** a obnoví se jen s vyšším rozpočtem, který může dát jen osoba, jež cíl spustila.
+- Běh pipeline držený na limitu své orchestrace čeká, dokud jeho žadatel nestiskne na stránce běhu pipeline **Zvýšit limit**. Nový limit musí být nad starým a nad tím, co se utratilo, nejvýše 1 000 dolarů, a limit se nikdy neodstraní.
 
-Zpráva v prostoru, zmínka přes @ ani krok pipeline strop nákladů nemají. Běh skončí, když se model zastaví, když ho zastavíš, nebo když ho ochrana před zacyklením nasměruje.
+Protože se strop počítá z ceny, model, který katalog neocení, na něj nikdy nedosáhne. Takový běh místo toho ohraničuje ochrana před zacyklením, zastavení cíle pro nedostatek pokroku a jeho vzdání se po třech selháních za sebou, a ty.
+
+Zpráva v prostoru, zmínka přes @ ani krok pipeline mimo orchestraci s limitem nemají vlastní strop nákladů. Běh skončí, když se model zastaví, když ho zastavíš, nebo když ho ochrana před zacyklením nasměruje.
 
 ## Omez spotřebu tokenů
 

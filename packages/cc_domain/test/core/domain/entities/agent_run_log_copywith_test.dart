@@ -49,5 +49,18 @@ void main() {
     test('a no-op copyWith is equal to the original', () {
       expect(base.copyWith(), base);
     });
+
+    test('the requester takes part in equality and can be removed', () {
+      final asked = base.copyWith(requestedByUserId: 'user-1');
+      expect(asked.requestedByUserId, 'user-1');
+      expect(asked, isNot(base));
+      expect(asked.hashCode, isNot(base.hashCode));
+      expect(
+        asked.copyWith(status: RunStatus.completed).requestedByUserId,
+        'user-1',
+      );
+      expect(asked.copyWith(removeRequestedByUserId: true), base);
+      expect(() => base.copyWith(requestedByUserId: ''), throwsArgumentError);
+    });
   });
 }

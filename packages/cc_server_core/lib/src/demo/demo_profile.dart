@@ -303,7 +303,7 @@ class DemoProfile {
     'conversation.ensure',
     'conversation.rename',
     'conversation.archive',
-    'space_read.markSpaceRead',
+    'conversation_read.markRead',
     'stack.cut',
     'stack.checkout',
     'notes.update',
@@ -335,6 +335,7 @@ class DemoProfile {
     'steering.reorder',
     'steering.deliver',
     'steering.forceSend',
+    'steering.release',
     'autonomy.setForSpace',
     'checker.setForSpace',
     'takeover.begin',
@@ -375,6 +376,7 @@ class DemoProfile {
     // `caches` table — merge/close/upload/stack are absent on purpose, so a
     // visitor never presses a button whose write-back does not exist.
     'pr_review.postReviewComment',
+    'pr_review.postFileComment',
     'pr_review.replyToReviewComment',
     'pr_review.submitReview',
     'pr_review.upsertDraft',
@@ -398,8 +400,6 @@ class DemoProfile {
     'plan.updateStatus',
     'plan.estimate',
     'plan.delete',
-    'orchestration.insert',
-    'orchestration.update',
     'orchestration.cancel',
     'orchestration.saveRevision',
     'playbook.save',
@@ -501,6 +501,30 @@ class DemoProfile {
   /// process, the host filesystem or server-wide configuration, or they are
   /// internal lanes a visitor has no reason to drive.
   static const Set<String> defaultDeniedMutations = {
+    // A wake starts or feeds an agent run; a demo dispatches nothing, so a
+    // visitor neither cancels, releases nor delivers one. The watch stays
+    // admitted and streams an empty list.
+    'wakes.cancel',
+    'wakes.release',
+    'wakes.deliverNow',
+    // Cancelling an ask settles an agent's wait; a demo has none.
+    'peerAsks.cancel',
+    // Accepting a proposal writes memory, notes or a skill; a campaign
+    // spends money. A demo has no proposals to decide.
+    'improvements.accept',
+    'improvements.reject',
+    'improvements.rollback',
+    'improvements.startCampaign',
+    // Raising an orchestration's cap lets its held run spend again.
+    'orchestration.raiseCap',
+    // A wake rule schedules agent runs; a visitor creates, changes and
+    // removes none, nor the workspace's limits.
+    'wakeRules.create',
+    'wakeRules.update',
+    'wakeRules.pause',
+    'wakeRules.resume',
+    'wakeRules.delete',
+    'wakeRules.setLimits',
     // The install-wide usage-analytics switch is the operator's; a visitor
     // must not opt a public host in or out. The client hides the control.
     'telemetry.setUsageAnalytics',
@@ -538,6 +562,19 @@ class DemoProfile {
     'stack.publish',
     // Process control on the host.
     'agents.killProcesses',
+    // What a durable goal must meet: its checks are commands the server runs
+    // in the goal's worktree, and its checker is another agent run. A demo
+    // dispatches nothing, so the contract stays as it was seeded.
+    'agentGoalRuns.setContract',
+    'agentGoalRuns.setChecker',
+    // Closes a goal as done on a person's word in place of the server's
+    // verification; a demo's seeded goals stay as they were seeded.
+    'agentGoalRuns.approveCompletion',
+    // Code mode runs scripts on the host's runner; a demo never does (its
+    // server switch is off), and turning it on is the workspace setting that
+    // would ask for it. The status and execution reads stay admitted: they
+    // answer "off" and list nothing.
+    'codeMode.setWorkspaceSetting',
     // Pipeline execution. Authoring is allowed above; starting is not. The
     // engine port is null, so these ops are also absent — the names are the
     // belt if that port is wired by mistake. Playbook run and plan/orchestration approve
@@ -700,6 +737,18 @@ class DemoProfile {
     'action_policy.watchForWorkspace',
     'activity.watchForEntity',
     'agentGoalRuns.watchForConversation',
+    // A conversation's waiting wakes: workspace-scoped, database-only, and
+    // empty on a demo (nothing produces wakes there).
+    'wakes.watchForConversation',
+    // The asks an agent waits on in a conversation: workspace-scoped,
+    // database-only, and empty on a demo.
+    'peerAsks.watchForConversation',
+    // Improvement proposals: workspace-scoped, database-only, filtered per
+    // subscriber by the space gate, and empty on a demo.
+    'improvements.watchForWorkspace',
+    // Wake rules: workspace-scoped, database-only, and empty on a demo.
+    'wakeRules.watchForConversation',
+    'wakeRules.watchForWorkspace',
     // Workspace DB stream of durable goals; each emission drops spaces whose
     // repository grants restrict the subscriber before serializing goal text.
     'agentGoalRuns.watchForWorkspace',
@@ -734,6 +783,9 @@ class DemoProfile {
     // In-memory titling flags; a demo never runs the titling pass, so the
     // tabs subscribe to an always-empty set instead of erroring.
     'conversation.watchTitleGenerating',
+    // Workspace DB rows of this subscriber's own conversation cursors only;
+    // no other visitor's read history is returned.
+    'conversation_read.watchUserReads',
     'dictation.watchPartials',
     'goals.watchForWorkspace',
     'invites.watchForWorkspace',
@@ -833,10 +885,6 @@ class DemoProfile {
     'rig.watchSessions',
     'terminal.watchPorts',
     'server_settings.watch',
-    'space_read.watchUserLastReadAt',
-    // Workspace DB join limits cursors to this subscriber's user and spaces
-    // in this workspace; no other visitor's read history is returned.
-    'space_read.watchUserSpaceReads',
     // Install-wide telemetry decision; carries no workspace data and is
     // read-only on this lane.
     // The take-over marker of one owned space (read-only, like

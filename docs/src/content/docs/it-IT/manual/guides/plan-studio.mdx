@@ -2,7 +2,7 @@
 title: Lavora in Plan Studio
 description: Rivedi, modifica, stima, confronta e approva un piano nell'editor Plan Studio ed esegui playbook parametrizzati.
 slug: it-IT/manuale/guide/plan-studio
-sourceHash: 04a6e193c6b57af3fce63c90673a0958b37552fb
+sourceHash: 9df96d8f10ca86584f3979b84af5eee250719752
 ---
 
 Questa guida mostra come lavorare con i piani in Plan Studio. Per sapere cosa
@@ -140,9 +140,7 @@ sempre ogni passaggio — non c'è modo di selezionare prima un sottoinsieme.
 L'approvazione è bloccata finché la proposta ha errori di convalida, mostrati
 accanto ai pulsanti.
 
-L'approvazione è riservata all'operatore. Non esiste uno strumento MCP per
-farlo, quindi un agente può proporre e rivedere un piano ma non può mai
-approvarlo.
+L'approvazione è riservata all'operatore. Non esiste uno strumento MCP per farlo, quindi un agente può proporre e rivedere un piano ma non può mai approvarlo. Approvare un piano, salvare una revisione, **Approva selezionati** e **Continua nodo** richiedono l'accesso in scrittura ai repository dello spazio.
 
 Quando un'orchestrazione è in esecuzione, la barra cambia:
 
@@ -153,7 +151,9 @@ Quando un'orchestrazione è in esecuzione, la barra cambia:
   passaggio non può mai essere approvato senza le sue dipendenze). Il controllo
   è nella barra di esecuzione per ogni orchestrazione; non ha effetto quando il
   piano è stato approvato in blocco.
-- Premi **Annulla esecuzione** per fermare l'intera orchestrazione.
+- Premi **Annulla esecuzione** per fermare l'intera orchestrazione. Chiunque abbia accesso allo spazio può farlo.
+
+**Continua nodo** e **Approva selezionati** appartengono alla persona per cui agisce l'esecuzione (un admin dello spazio di lavoro quando agisce per nessuno).
 
 I passaggi fuori da un insieme approvato parziale vengono mostrati come rinviati
 e non vengono eseguiti finché non ampli l'insieme.

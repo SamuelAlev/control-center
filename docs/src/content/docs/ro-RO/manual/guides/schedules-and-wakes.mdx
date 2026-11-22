@@ -1,0 +1,110 @@
+---
+title: Programe și treziri
+description: Trezește un agent mai târziu, după un program sau când se întâmplă ceva, vezi ce așteaptă și ce se întâmplă la o repornire sau la o limită de utilizare.
+slug: ro-RO/manual/ghiduri-practice/programe-si-treziri
+sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+---
+
+Un agent nu doarme și nu verifică în continuu cât așteaptă. El sau tu setezi o **trezire**: o cerere durabilă de a porni sau continua rularea agentului dintr-o conversație, la un moment dat sau când se întâmplă ceva. Fiecare rulare pe care serverul o pornește fără ca cineva să scrie începe ca o trezire: următorul segment al unui obiectiv, un program, o urmărire, un răspuns de la alt agent, lucrul delegat terminat, sfârșitul unei limite de utilizare, munca rămasă după o repornire. Trezirile sunt păstrate în baza de date a spațiului de lucru, deci supraviețuiesc unei reporniri.
+
+## Programează singur un agent
+
+Scrie una dintre acestea în compozitorul unei conversații:
+
+```text
+/loop every 30m --days 3 check the deploy and fix what broke
+/loop keep the flaky tests green
+/schedule in 2h look at the overnight benchmark
+/schedule at 09:00 summarize what changed overnight
+/schedule cron "0 9 * * 1-5" --max 20 triage new tickets
+```
+
+| Comandă | Ce face |
+| --- | --- |
+| `/loop every <interval> <prompt>` | Trezește agentul cu promptul acum și apoi la fiecare interval (cel puțin 60 de secunde între ele) |
+| `/loop <prompt>` | Buclă cu ritm propriu: trezește agentul acum, iar după fiecare rulare agentul alege următoarea întârziere, de la 1 la 60 de minute (implicit 20) |
+| `/schedule in <duration> <prompt>` | Trezește agentul o singură dată, după întârziere |
+| `/schedule at <HH:MM or ISO time> <prompt>` | Trezește agentul o singură dată. `HH:MM` este următoarea oră de acest fel în fusul orar al spațiului de lucru; o oră ISO fără decalaj este UTC |
+| `/schedule cron "<expression>" <prompt>` | Trezește agentul printr-un cron cu cinci câmpuri, citit în fusul orar al spațiului de lucru. Ghilimelele sunt opționale |
+
+- `--max <N>` limitează rulările, `--days <N>` încheie programul după atâtea zile (implicit 30, cel mult 365), iar `--budget <dollars>` limitează cât poate cheltui programul în total (altfel bugetul implicit al spațiului de lucru, inițial 50 de dolari).
+- `/loop` pornește prima rulare imediat. `/schedule` așteaptă ora lui.
+- Duratele folosesc `s`, `m`, `h` și `d`, de exemplu `90s`, `20m` sau `1h30m`.
+- Aceste comenzi sunt citite doar dintr-un mesaj scris chiar de tine.
+
+Compozitorul te ajută să le scrii. După `/loop` sau `/schedule` și un spațiu, lista de sugestii oferă când se declanșează și se restrânge pe măsură ce scrii; scrie `--` după oră pentru limite. Enter sau Tab alege un rând și nu trimite nimic. O linie deasupra textului tău reia apoi comanda: când se declanșează, când se încheie și ce mai lipsește. Dacă apeși Enter pe o comandă care nu poate fi citită, linia respectivă spune ce nu este în regulă, iar schița ta rămâne.
+
+Poți crea un program și din pagina **Programe**, cu **Program nou**: alegi spațiul, conversația și agentul, când se declanșează, ce pornește fiecare rulare, un final, un plafon de rulări și un plafon de cost. **Dacă agentul este ocupat** alege între a sări peste acea pornire și a aștepta până când agentul devine liber. **Fiecare pornire** alege între a porni o rulare și a te anunța doar, cu nota.
+
+## Ce pregătesc agenții
+
+Agenții folosesc instrumentul `wake_me` pentru aceleași lucruri și pentru urmăriri:
+
+| Urmărire | Se declanșează când |
+| --- | --- |
+| `on:pr_checks` | Se termină verificările pull request-ului spațiului |
+| `on:pr_review` | Pull request-ul spațiului primește o revizuire sau un răspuns |
+| `on:pr_merged` | Pull request-ul spațiului este îmbinat |
+| `on:environment` | O sarcină a mediului spațiului se termină, sau mediul devine gata |
+| `on:ticket:<id>` | Un tichet se încheie |
+| `on:pipeline_run:<id>` | Se încheie o rulare de pipeline |
+
+- O urmărire de pull request ascultă pull request-ul propriu al spațiului sau un pull request numit de ea (`on:pr_checks:acme/shop-ui#12`). O urmărire pe ceva ce persoana ei nu poate citi este refuzată.
+- Acțiunile proprii ale agentului nu declanșează urmăririle lui. Un eveniment care sosește cât timp agentul lucrează nu se pierde: așteaptă până se termină rularea, iar evenimentele ulterioare se adună în aceeași trezire.
+- Un program al unui agent trebuie să aibă un plafon de rulări sau un final. Se încheie implicit după 7 zile și cel mult după 30. O urmărire rulează implicit de 10 ori.
+- Un program pe care îl setează un agent într-o rulare pornită de unul dintre propriile lui programe împarte finalul, plafonul de rulări și plafonul de cost ale primului program, astfel încât un lanț de programe ale unui agent nu poate depăși primul. Ștergerea primului program încheie tot lanțul; punerea lui pe pauză oprește doar acel program. Rulările pe care lanțul le pornește prin alți agenți se numără în același plafon de cost. Un program pe care l-ai creat tu nu pornește niciun lanț: ce setează un agent în rulările sale este limitat ca orice setează el după un mesaj de-al tău.
+- Un agent își vede lista cu ce așteaptă prin `list_wakes` și anulează ce și-a setat singur prin `cancel_wake`. Nu poate anula ce ai setat tu.
+
+## Vezi ce așteaptă
+
+**Deasupra compozitorului.** Când treziri așteaptă un agent din conversație, o bandă le arată: **N de treziri în așteptare**, de unde vine fiecare (**Obiectiv**, **Program**, **Urmărire**, **Răspuns de la** un agent, **Limită resetată**, **Recuperare**, …), când este programată și de ce este reținută.
+
+| Buton | Ce face | Cine poate |
+| --- | --- | --- |
+| **Livrează acum** | Livrează imediat o trezire în așteptare | Doar persoana în numele căreia acționează trezirea |
+| **Reia** | Eliberează o trezire reținută | Doar persoana în numele căreia acționează trezirea |
+| **Anulează trezirea** | O anulează | Oricine are acces la spațiu |
+
+O trezire care nu a fost livrată lasă un rând în conversație care spune de ce, cum ar fi **Agentul este pus pe pauză.** sau **Un buget blochează o rulare.**
+
+**Pagina Programe.** Bara laterală → **Programe** listează fiecare program și fiecare urmărire pe care le poți vedea, grupate după stare; un program cron arată următoarele trei momente în fusul tău orar. Deschide unul ca să vezi nota lui, proprietarul, următoarele declanșări, rulările, săriturile, cheltuiala și finalul, plus **Treziri și rulări recente**. Fiecare program are propria adresă (`/workspaces/<workspace>/schedules/<id>`).
+
+| Acțiune | Cine poate |
+| --- | --- |
+| **Pune pe pauză**, **Șterge** | Oricine are acces la spațiu |
+| **Reia**, **Prelungește** | Doar proprietarul ei (un admin al spațiului de lucru, pentru un program pe care un agent l-a creat fără o persoană) |
+
+Când altcineva decât proprietarul unui program îl pune pe pauză, conversația arată un rând care îi numește.
+
+Pe telefon, **Repetă** de pe ecranul de obiective pornește un prompt care se repetă (la atâtea minute sau ore, sau cu ritm ales de agent) cu un plafon de cost și un final, iar ecranul **Programe** pune pe pauză, reia și șterge programele. Vizualizarea progresului unei conversații arată ce așteaptă, inclusiv pauzele la limita de utilizare (**Reia acum**, **Anulează**) și munca rămasă după o oprire a serverului.
+
+## Cum rulează un program
+
+- Fiecare rulare a unui program sau a unei urmăriri este limitată la 5 dolari, sau la ce i-a mai rămas programului dacă este mai puțin, iar programul se oprește la plafonul lui de cost.
+- O oră de cron care este sărită când ceasurile trec înainte rulează cu o oră mai târziu în ziua respectivă (02:30 rulează la 03:30). O oră care se repetă când ceasurile dau înapoi rulează o singură dată.
+- O rulare a unui program nu se alătură niciodată unei rulări deja pornite. Dacă agentul este ocupat când se declanșează un program cu oră, acea pornire este sărită discret, cu excepția cazului în care programul așteaptă până când agentul devine liber.
+- O rulare pornită de un program sau de o urmărire care se încheie fără probleme nu te anunță, decât dacă menționează pe cineva. Când un program se încheie, clopoțelul spune de ce (**Și-a consumat rulările.**, **A ajuns la data de sfârșit.**, …) fără sunet.
+- Cel mult 30 de rulări pe oră pornesc din treziri într-o conversație și 300 într-un spațiu de lucru.
+- Când persoana în numele căreia acționează un program părăsește spațiul de lucru, programul se încheie. Tot ce acționa pentru ea se oprește și el: trezirile ei în așteptare sunt anulate, mesajele ei în coadă și reținute sunt șterse, iar agenții ei aflați în rulare sunt opriți.
+
+## Oprire, repornire și limite de utilizare
+
+- **Oprire.** Apăsarea lui **Oprește** pe rularea unui agent reține trezirile lui în așteptare (cele care nu aparțin unui obiectiv) și mesajele pe care le-ai pus în coadă pentru el. Acestea așteaptă până când apeși **Reia** sau **Trimite mesajele reținute**. Fiecare persoană își trimite propriile mesaje reținute; nimeni nu trimite mesajele altcuiva.
+- **O repornire a serverului.** Treziri și programe supraviețuiesc. O rulare pornită de o trezire reia după repornire, cu cel mult 3 încercări. O rulare pe care ai pornit-o tu nu se mai rulează singură: lasă o trezire reținută **Recuperare**, iar continuă când apeși **Reia**. Un program cu oră care și-a ratat momentele cât timp serverul a fost oprit se declanșează târziu doar într-un interval scurt de grație (jumătate din intervalul lui, cel mult 10 minute; 24 de ore pentru un program unic), altfel înregistrează o singură săritură: **Ratată cât timp serverul a fost oprit.**
+- **O limită de utilizare a providerului.** Când o rulare se oprește la limita de utilizare a unui provider, iar providerul spune când se resetează (în 7 zile), rularea este pusă pe pauză. O rulare pornită de server, cum este un segment al unui obiectiv sau rularea unui program, reia singură la 30 de secunde după resetare. O rulare pornită de tine așteaptă după tine: conversația arată **Pus pe pauză la** limita de utilizare a providerului. **Limita se resetează la** și ora, cu **Reia** (doar tu) și **Anulează** (oricine din spațiu). După **Reia**, rularea continuă după ce limita s-a resetat. O pauză pe care nu o reiei expiră la 7 zile după resetare. Mesajele pe care le-ai pus în coadă la limită sunt trimise în rularea reluată; dacă rularea nu așteaptă resetarea, sau pauza este anulată ori expiră, ele sunt reținute pentru tine, sub **Trimite mesajele reținute**. Mesajele în coadă ale altora sunt reținute pentru ei imediat. Următoarea declanșare a unui program așteaptă până când rularea pusă pe pauză reia. Agenții ACP nu raportează resetare, deci rularea lor nu așteaptă.
+
+## Limite ale spațiului de lucru
+
+Un admin al spațiului de lucru setează limitele în **Setări → Spațiu de lucru → Programe**:
+
+- **Limite de programe**: câte programe active sau pe pauză poate avea un agent într-o conversație (10), în spațiul de lucru (50) și în întregul spațiu de lucru (500); plafonul implicit de cost al unui program (50 de dolari); și fusul orar folosit de programele cron și de digestul zilnic (UTC inițial).
+- **Când nimeni nu răspunde**: cât așteaptă o rulare pornită de server un răspuns sau o aprobare a unei persoane (72 de ore implicit, între 1 oră și 7 zile), înainte ca o aprobare să fie considerată refuzată și o întrebare fără răspuns (după aceea, orice altceva cere aceeași rulare este refuzat imediat), și ora digestului zilnic cu ce te așteaptă în obiective, programe și alte rulări pornite de server.
+
+Membrii văd pagina doar în citire.
+
+## Vezi și
+
+- [Urmărește un obiectiv](/ro-RO/manual/ghiduri-practice/urmareste-obiectiv/)
+- [Agenți care lucrează împreună](/ro-RO/manual/ghiduri-practice/agenti-impreuna/)
+- [Comenzi slash](/ro-RO/manual/referinta/comenzi-slash/)
+- [Instrumente pentru treziri și obiective](/ro-RO/manual/referinta/instrumente-mcp/#instrumente-pentru-treziri-și-obiective)

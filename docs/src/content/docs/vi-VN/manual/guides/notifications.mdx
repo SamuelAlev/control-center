@@ -2,7 +2,7 @@
 title: Cấu hình thông báo
 description: Bật hoặc tắt các danh mục, đặt giờ yên tĩnh cùng âm thanh và biết thông báo nào đến với bạn ở đâu.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/thong-bao
-sourceHash: 69df3cee1605bb4bd6bde7f481d16ae0a85e7a77
+sourceHash: b1e5bb3b8a13bbbbd169916ab8e7cd7bdd403c1a
 ---
 
 Hướng dẫn này chỉ cho bạn cách cấu hình thông báo và mỗi tùy chọn thực sự kiểm
@@ -48,6 +48,8 @@ thông báo từ máy chủ. Máy khách điện thoại không có bề mặt t
 
 Bất cứ thứ gì nằm ngoài danh sách này đều không thể được thông báo hay lọc —
 không có danh mục "mọi thứ còn lại".
+
+Công việc chạy dài dùng hai nhóm đầu tiên. Một mục tiêu đã kết thúc và một lịch đã kết thúc được tính là **Agent đã hoàn tất**; một mục tiêu đang chờ đánh giá của bạn, một đề xuất cải tiến, một lần chạy pipeline bị giữ ở trần chi phí và bản tóm tắt hằng ngày về những gì đang chờ bạn được tính là **Agent đang chờ bạn**. Mỗi thông báo đến đúng người liên quan: người đã khởi động mục tiêu, lịch hoặc lần chạy đó.
 
 **Agent đang chờ bạn** kích hoạt khi một lần chờ bắt đầu: một yêu cầu phê duyệt
 đang chờ (bao gồm quyền cấp exec sandbox và phê duyệt công cụ của Claude Code),
@@ -120,6 +122,8 @@ Một thông báo bị loại bỏ, trong im lặng, khi bất kỳ điều nào
 Những kiểm tra đó áp dụng cho toast của hệ điều hành. Chiếc chuông bền vững vẫn
 ghi lại sự kiện.
 
+Một số thông báo là **yên lặng**: máy chủ đánh dấu chúng để chúng đến chuông mà không hiện toast, âm thanh hay thông báo đẩy lớn trên điện thoại. Một lịch đã kết thúc và một mục tiêu đã kết thúc đều yên lặng. Một mục tiêu đang chờ đánh giá của bạn thì không.
+
 Hai trường hợp chặn nữa nằm xa hơn về phía thượng nguồn, ở chính những gì máy
 chủ gửi đi:
 
@@ -130,10 +134,7 @@ chủ gửi đi:
 - Các space giữa các agent bị tắt tiếng trên thanh bên, nên chúng không bao giờ
   làm tăng huy hiệu chưa đọc của con người
 
-Trong một space không có góc nào yên tĩnh: mọi cuộc hội thoại đều thông báo như
-nhau, kể cả các luồng. Trạng thái đã đọc được giới hạn theo space, nên số chưa
-đọc tổng hợp trên toàn bộ các cuộc hội thoại của một space thay vì được theo dõi
-riêng theo từng cuộc hội thoại.
+Trong một space không có góc nào yên tĩnh: mọi cuộc hội thoại đều thông báo như nhau, kể cả các luồng. Trạng thái đã đọc được theo dõi cho từng cuộc hội thoại, và một space vẫn chưa đọc khi bất kỳ cuộc hội thoại nào trong đó còn chưa đọc.
 
 ## Đọc và xóa trung tâm thông báo
 
@@ -186,6 +187,8 @@ Hãy kiểm tra xem bạn có đang ở sẵn trong space nơi sự việc xảy
 tuyến đang mở sẽ chặn toast hệ điều hành của chính nó. Trong một space dùng chung,
 lần chạy do người khác khởi động sẽ báo cho họ, không phải bạn. Một lượt hội thoại
 kết thúc mà không có câu trả lời và không có lỗi thì không gửi gì cả.
+
+Một lần chạy do lịch hoặc watch khởi động kết thúc mà không có sự cố thì không gửi gì cả, trừ khi nó nhắc đến ai đó. Một mục tiêu đã hoàn tất hoặc một lịch đã kết thúc được đưa vào chuông mà không hiện toast.
 
 ## Hướng dẫn liên quan
 

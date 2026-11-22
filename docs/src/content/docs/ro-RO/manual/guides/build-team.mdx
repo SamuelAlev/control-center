@@ -2,7 +2,7 @@
 title: Construiește o echipă de agenți
 description: Grupează agenții sub un lider, astfel încât munca asignată să treacă printr-un singur coordonator.
 slug: ro-RO/manual/ghiduri-practice/construieste-echipa
-sourceHash: fc5e2b8c8a49e398ff1b322fcfb25c4aed84bbb4
+sourceHash: 55add2d16bf90650b7d4cbda7aa78f0fdf1b72e2
 ---
 
 Acest ghid arată cum să creezi o echipă, să îi dai un lider și să direcționezi munca spre ea.
@@ -51,7 +51,7 @@ Când un tichet are într-adevăr o asignare de echipă:
 
 1. Liderul echipei este trimis împreună cu tichetul, cu instrucțiunile lui de operare și cu lista de membri.
 2. Liderul deleagă către membri și își înregistrează evaluarea cu instrumentul `record_team_activity` — `action` (a delegat), `no_action` (nu mai este nimic de făcut, ceea ce oprește declanșările ulterioare) sau `failed`.
-3. Fiecare rulare de membru care se încheie trezește din nou liderul, în limita impusă de garda no-action.
+3. O rulare a unui membru pe care liderul a pornit-o cu un `@mention` sau un mesaj îl trezește din nou pe lider când se încheie, în conversația din care liderul a fost trezit, limitată de garda pentru „fără acțiune”. Munca predată de lider cu `delegate_task` îl trezește când tichetul se rezolvă, iar o întrebare pe care a pus-o cu `ask_agent` îl trezește cu răspunsul (vezi [Agenți care lucrează împreună](/ro-RO/manual/ghiduri-practice/agenti-impreuna/)).
 
 Nodul de pipeline **Team dispatch** este celălalt punct de intrare. Primește un ID de echipă, un prompt și un mod de dispatch:
 

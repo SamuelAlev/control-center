@@ -9,6 +9,16 @@ import 'package:cc_domain/features/rigs/domain/value_objects/enclosure_backend.d
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_spec.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_status.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_surface.dart';
+import 'package:cc_harness/context.dart'
+    show serializeHarnessHistory, splitPinnedEvidence;
+import 'package:cc_harness/loop.dart'
+    show
+        SteeringChannel,
+        SteeringMessage,
+        SteeringQueue,
+        laneMessageOrigin;
+import 'package:cc_harness/messages.dart'
+    show HarnessMessage, HarnessMessageOrigin;
 import 'package:cc_server_core/src/notification_wire.dart';
 import 'package:cc_server_core/src/rig_event_listener.dart';
 import 'package:test/test.dart';
@@ -23,7 +33,7 @@ void main() {
     late DomainEventBus bus;
     late _FakeRigRepository rigs;
     late _FakeRunLogRepository runLogs;
-    late List<({String runId, String message})> steers;
+    late List<({String runId, String message, String? source})> steers;
     late RigEventListener listener;
 
     setUp(() {
@@ -35,8 +45,8 @@ void main() {
         eventBus: bus,
         rigs: rigs,
         runLogs: runLogs,
-        steerRun: (runId, message) async {
-          steers.add((runId: runId, message: message));
+        steerRun: (runId, message, {required source}) async {
+          steers.add((runId: runId, message: message, source: source));
           return true;
         },
       )..start();
@@ -77,6 +87,8 @@ void main() {
       expect(steers.single.message, contains('A human took control'));
       expect(steers.single.message, contains('rig-1'));
       expect(steers.single.message, contains('observation'));
+      // The rig's words, not the person's: a compaction drops them.
+      expect(steers.single.source, 'rig:rig-1');
     });
 
     test('releasing control steers the counterpart notice', () async {
@@ -204,6 +216,49 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(steers, isEmpty);
+    });
+
+    test('a rig event\'s steering is dropped, not pinned as the person\'s '
+        'words, at a compaction', () async {
+      seed();
+      await listener.onControlChanged(
+        RigControlChanged(
+          workspaceId: 'ws-1',
+          rigId: 'rig-1',
+          controller: const UserPrincipal('user-9'),
+          occurredAt: DateTime(2026),
+        ),
+      );
+      // What the run's steering lane holds, as the session enqueues it.
+      final lane = SteeringQueue();
+      for (final s in steers) {
+        lane.enqueue(
+          SteeringMessage(
+            content: s.message,
+            channel: SteeringChannel.steering,
+            enqueuedAt: DateTime(2026),
+            source: s.source,
+          ),
+        );
+      }
+      final drained = lane.drainSteering();
+      expect(drained, hasLength(1));
+      expect(
+        laneMessageOrigin(drained.single),
+        isNot(HarnessMessageOrigin.person),
+      );
+      final digest = serializeHarnessHistory([
+        HarnessMessage.user(
+          'Drive the rig.',
+          origin: HarnessMessageOrigin.person,
+        ),
+        for (final m in drained)
+          HarnessMessage.user(m.content, origin: laneMessageOrigin(m)),
+      ]);
+      final pinned = splitPinnedEvidence(digest).pinned;
+      expect(pinned, contains('Drive the rig.'));
+      expect(pinned, isNot(contains('A human took control')));
+      expect(digest, contains('A human took control'), reason: 'summarised');
     });
   });
 

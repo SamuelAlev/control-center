@@ -14,6 +14,7 @@ import 'package:cc_domain/features/pr_review/domain/ports/forge_pr_client.dart'
     show ClosedPrOutcome;
 import 'package:cc_domain/features/pr_review/domain/services/pr_change_signals.dart';
 import 'package:cc_domain/features/pr_review/domain/usecases/detect_pr_notifiable_transitions.dart';
+import 'package:cc_domain/features/pr_review/domain/usecases/detect_pr_watch_events.dart';
 import 'package:cc_domain/features/pr_review/domain/usecases/evaluate_pr_merge_readiness.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/pr_review_cache_kinds.dart';
 import 'package:cc_host/cc_host.dart';
@@ -1233,6 +1234,19 @@ class OpenPrPollingService {
     Map<String, dynamic> newWire,
     _SweepContext ctx,
   ) async {
+    // Wake rule watches hear every polled pull request, with no author gate.
+    final watchFailing = await publishPrWatchEdges(
+      bus: _eventBus,
+      workspaceId: workspaceId,
+      repoOwner: repo.remoteOwner,
+      repoName: repo.remoteName,
+      prNumber: number,
+      before: oldWire,
+      after: newWire,
+      now: _now(),
+      firstFailingCheck: () =>
+          _firstFailingCheck(repo, number, workspaceId: workspaceId),
+    );
     final bus = _eventBus;
     final resolver = _memberLoginsFor;
     if (bus == null || resolver == null) {
@@ -1400,11 +1414,9 @@ class OpenPrPollingService {
             ),
           );
         case PrChecksFailed():
-          final failing = await _firstFailingCheck(
-            repo,
-            number,
-            workspaceId: workspaceId,
-          );
+          final failing =
+              watchFailing ??
+              await _firstFailingCheck(repo, number, workspaceId: workspaceId);
           bus.publish(
             PrChecksStatusChanged(
               workspaceId: workspaceId,
@@ -1637,6 +1649,17 @@ class OpenPrPollingService {
               occurredAt: _now(),
             ),
           );
+          _eventBus?.publish(
+            prWatchClosed(
+              workspaceId: workspaceId,
+              repoOwner: repo.remoteOwner,
+              repoName: repo.remoteName,
+              prNumber: number,
+              last: old,
+              merged: merged,
+              now: _now(),
+            ),
+          );
         }
         _signals.notify(
           workspaceId: workspaceId,
@@ -1724,6 +1747,17 @@ class OpenPrPollingService {
       }
       changed = true;
       confirmed.add((repo: repo, number: number, merged: merged));
+      _eventBus?.publish(
+        prWatchClosed(
+          workspaceId: workspaceId,
+          repoOwner: repo.remoteOwner,
+          repoName: repo.remoteName,
+          prNumber: number,
+          last: pr.cast<String, dynamic>(),
+          merged: merged,
+          now: _now(),
+        ),
+      );
       updated.add({
         ...raw,
         'pull_request': {...pr, 'state': merged ? 'merged' : 'closed'}

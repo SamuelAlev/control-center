@@ -176,7 +176,12 @@ class FakeAgentRunLogRepository implements AgentRunLogRepository {
 
   @override
   Future<void> upsert(AgentRunLog log) async {
-    _logs[log.id] = log;
+    // Like the real store: a write without a requester never clears the
+    // one the row recorded at dispatch.
+    final recorded = _logs[log.id]?.requestedByUserId;
+    _logs[log.id] = log.requestedByUserId == null && recorded != null
+        ? log.copyWith(requestedByUserId: recorded)
+        : log;
   }
 
   @override
@@ -294,6 +299,7 @@ class FakeAgentRunLogRepository implements AgentRunLogRepository {
         latency: completed.latency,
         nativeSessionId: completed.nativeSessionId,
         resumedNativeSession: completed.resumedNativeSession,
+        endReason: completed.endReason ?? current.endReason,
       ),
     );
     return true;

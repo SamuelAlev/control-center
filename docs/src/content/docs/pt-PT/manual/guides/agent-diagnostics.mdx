@@ -2,7 +2,7 @@
 title: Diagnosticar um agente
 description: Percorra o registo de execução, a sondagem de adaptadores, o estado do servidor e os diagnósticos do anfitrião quando um agente deixa de produzir execuções.
 slug: pt-PT/manual/guias/diagnosticar-agente
-sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
+sourceHash: 8cd7078bacfbfcd18d90512974eff3539366883c
 ---
 
 Este guia explica como descobrir porque é que um agente não está a produzir execuções.
@@ -90,7 +90,13 @@ Verifique **Definições → Servidor → Diagnóstico e privacidade → Pesquis
 
 ### O servidor não arranca de todo
 
-As bibliotecas nativas são obrigatórias e não existe modo degradado. Uma dylib em falta faz com que o `cc_server` se recuse a arrancar e indique o responsável no erro. Prepare as bibliotecas nativas com `scripts/natives/build_natives.sh` e recompile o binário do servidor.
+As bibliotecas nativas são obrigatórias e não existe modo degradado. Uma dylib em falta, ou um executor do modo de código em falta (`bin/codemode/cc_codemode`), faz com que o `cc_server` se recuse a arrancar e indique o responsável no erro. Prepare as bibliotecas nativas com `scripts/natives/build_natives.sh` e recompile o binário do servidor com `scripts/build_server.sh`.
+
+### Um script falhou, ou o modo de código não é oferecido
+
+Para ver o que um script do [modo de código](/pt-PT/manual/conceitos/modo-de-codigo/) fez, abra o registo do script a partir de **Abrir registro** na respetiva linha na conversa, ou em **Observabilidade → Execuções de código**. O registo indica, em linguagem simples, como o script terminou (ficou sem tempo, esgotou o tempo de processador, atingiu o limite de memória, lançou um erro), e lista cada chamada de ferramenta que fez, com indicação de se as barreiras a permitiram, se uma pessoa a aprovou ou se foi negada.
+
+Se o agente não tiver nenhuma ferramenta `repl`, abra **Definições → Espaço de trabalho → Modo de código**. Em **Status**, **Neste servidor** indica **Disponível** ou **Indisponível**; **Indisponível** significa que o servidor não consegue bloquear o executor de scripts no seu anfitrião, e a página cita o motivo. O registo de arranque do servidor tem a mesma linha (`code_mode=…`). Uma execução sem espaço de trabalho, cujos limites do espaço de trabalho não puderam ser lidos ou cujo registo de execução não pôde ser escrito, também não recebe `repl` e chama as suas ferramentas diretamente.
 
 ### Uma ação é negada silenciosamente
 

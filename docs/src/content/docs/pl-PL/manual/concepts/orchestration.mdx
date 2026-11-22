@@ -2,7 +2,7 @@
 title: Orkiestracja
 description: Jak jedna „duża prośba” zamienia się w plan całego zespołu, który zatwierdzasz raz, a następnie w wygenerowany potok, który go wykonuje.
 slug: pl-PL/podrecznik/koncepcje/orkiestracja
-sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
+sourceHash: db1bbceaba025b64539588004eebb65d944d5933
 ---
 
 Pojedynczy agent jest dobry w jednej rzeczy. Niektóre prośby są większe:
@@ -36,13 +36,8 @@ a nie swobodny tekst. Propozycja zawiera:
 - **Synteza**: krok końcowy, w którym powstaje rezultat.
 - **Budżet**: zadeklarowany pułap kosztów.
 
-:::caution[Budżet ma charakter informacyjny]
-Pułap kosztów propozycji jest porównywany z szacowanym kosztem całkowitym planu i
-oznacza plan przekraczający budżet na pasku zatwierdzania _zanim_ go zatwierdzisz. Po
-rozpoczęciu uruchomienia nic go już nie odczytuje, więc nie zatrzymuje ani nie
-unieważnia orkiestracji, która przekroczy budżet. Zasady budżetu dla poszczególnych
-agentów i obszarów roboczych to osobny mechanizm i to one faktycznie wstrzymują
-wydatki.
+:::caution[Budżet wstrzymuje uruchomienie, nie zabija go]
+Pułap kosztów propozycji jest porównywany z szacowanym kosztem całkowitym planu i oznacza plan przekraczający budżet na pasku zatwierdzania _zanim_ go zatwierdzisz. Po rozpoczęciu uruchomienia serwer sprawdza, ile wydano, przed każdym nowym krokiem: po osiągnięciu pułapu uruchomienie potoku jest wstrzymywane (`suspended`, powód `orchestration_budget`) i nic nowego nie startuje, a kroki już działające kończą się. Osoba, która zażądała uruchomienia, dostaje powiadomienie i wznawia je przyciskiem **Podnieś limit** na stronie uruchomienia potoku (a administrator obszaru roboczego, gdy nikt go nie zażądał). Podniesienie musi być wyższe od starego pułapu i od wydanej kwoty, co najwyżej 1 000 dolarów, a pułapu nigdy nie usuwa się. Cele, które uruchomienie realizuje, wliczają się do niego, łącznie z ich recenzjami. Zasady budżetu dla poszczególnych agentów i obszarów roboczych to osobny mechanizm.
 :::
 
 ## Gdzie ją przeglądasz

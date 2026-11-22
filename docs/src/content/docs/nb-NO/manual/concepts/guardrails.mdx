@@ -2,7 +2,7 @@
 title: Tillatelsesregler — én policy for hver muterende handling
 description: Hvorfor Control Center fører hver bivirkning fra en agent gjennom én enkelt allow/prompt/deny-motor, hvorfor ActionClass-taksonomien med vilje holdes liten, og hva autonomivriden egentlig endrer.
 slug: nb-NO/handbok/konsepter/tillatelsesregler
-sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
+sourceHash: bb98b2ca26ae104ab7701d4d381cd5c41d25d32f
 ---
 
 Agenter i Control Center kan slette filer, pushe grener, publisere pull
@@ -30,6 +30,17 @@ begrenser hvor den resulterende prosessen kan nå. `cc_server` legger på
 sandkassen der verten tilbyr en backend — men [Windows tilbyr ingen, og Linux
 trenger `bwrap` og `socat`](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/).
 På slike verter starter bare serverens eiers kjøringer, med mindre eieren slo av sandkassen for alle med `--sandbox off`. For enhver kjøring som starter uten sandkasse, er tillatelsesreglene det ytterste håndhevelseslaget i stedet for en policy som ligger oppå et gulv, og det er verdt å vite når du bestemmer hvor romslig du vil være.
+
+### Kall et skript gjør
+
+Et skript i [kodemodus](/nb-NO/handbok/konsepter/kodemodus/) kaller verktøy i kode, mange om gangen, men hvert kall er et eget verktøykall til motoren. Det passerer samme gate i harnessen, eller MCP-dispatcherens gate, som et direkte kall, med samme regler, samme godkjenningsspørsmål og samme revisjonspost. Ingenting det gjør, blir godkjent fordi `repl`-kallet som startet det ble godkjent.
+
+To ekstra regler gjelder for kall fra et skript, fordi ett skript kan gjøre hundrevis av kall og fange opp hvert avslag:
+
+- høyst 10 av kallene når en person for godkjenning; senere kall som ville trengt en person, avvises uten kort;
+- når en person avslår ett av kallene, avvises resten av kallene som trenger godkjenning, uten å spørre.
+
+Et kort som et skript reiser, sier det og lar deg åpne skriptet. Hvis skriptet avslutter mens kortet er åpent, trekkes kortet tilbake, og et svar som kommer etter det, registreres som et avslag og godkjenner ingenting.
 
 ## ActionClass: en med vilje lukket taksonomi
 
@@ -253,5 +264,6 @@ agenten vil få.
 ## Relaterte konsepter
 
 - [Sandkasse og sikkerhet](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/): hva som faktisk begrenser en agentkjøring, og hvor langt OS-gulvet under denne motoren rekker
+- [Kodemodus](/nb-NO/handbok/konsepter/kodemodus/): skript der hvert verktøykall går gjennom denne motoren
 - [Flerbruker — identitet, medlemskap og tilstedeværelse](/nb-NO/handbok/konsepter/flerbruker/): områder, parter og hvor autonomivriden ligger
 - [Konfigurer tillatelsesregler](/nb-NO/handbok/slik-gjor-du/konfigurer-tillatelsesregler/): å skrive og teste regler i praksis

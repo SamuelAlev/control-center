@@ -1,3 +1,5 @@
+import 'package:cc_domain/core/domain/value_objects/script_call_origin.dart';
+
 /// A single selectable option offered by an agent when it asks the user a
 /// question (see [AgentQuestionPort]).
 class AgentQuestionOption {
@@ -51,6 +53,7 @@ class AgentQuestionRequest {
     this.askedByAgentId,
     this.askedByName,
     this.runId,
+    this.origin,
   });
 
   /// Workspace owning [spaceId]. A space id is a uuid, not an access
@@ -89,6 +92,11 @@ class AgentQuestionRequest {
   /// knows it. Lets that run's silence watchdog pause for exactly its own
   /// questions, not a concurrent run's by the same agent.
   final String? runId;
+
+  /// Set when a code mode script asked (`tools.ask_user` inside a `repl`
+  /// call). The form says the question came from a script and links to its
+  /// transcript row. Null for a question the model asked directly.
+  final ScriptCallOrigin? origin;
 }
 
 /// The user's answer to an [AgentQuestionRequest].
@@ -98,7 +106,18 @@ class AgentQuestionAnswer {
     this.selectedLabels = const [],
     this.freeText,
     this.skipped = false,
-  });
+  }) : serverNotice = null,
+       proceed = false;
+
+  /// Nobody answered and the server closed the question: [notice] is what
+  /// the agent reads instead of an answer, never a person's words. With
+  /// [proceed] the agent may go on (an `--unattended assume` goal);
+  /// without it the question counts as unanswered and the turn should end.
+  const AgentQuestionAnswer.unanswered(String notice, {required this.proceed})
+    : selectedLabels = const [],
+      freeText = null,
+      skipped = false,
+      serverNotice = notice;
 
   /// Builds an [AgentQuestionAnswer] from persisted JSON.
   factory AgentQuestionAnswer.fromJson(Map<String, dynamic> json) {
@@ -123,6 +142,14 @@ class AgentQuestionAnswer {
   /// Distinct from [isEmpty]: skip is a deliberate "you pick" and the agent
   /// should proceed on a stated assumption, not treat it as a blank form.
   final bool skipped;
+
+  /// Set when nobody answered and the server closed the question
+  /// ([AgentQuestionAnswer.unanswered]): what the agent reads. Never stored
+  /// as an answer.
+  final String? serverNotice;
+
+  /// With [serverNotice]: whether the agent may proceed on an assumption.
+  final bool proceed;
 
   /// Whether the user supplied nothing.
   bool get isEmpty =>
@@ -276,6 +303,10 @@ class AskUserOutcome {
         'are proceeding under, and continue.',
         isError: true,
       );
+    }
+    final notice = answer.serverNotice;
+    if (notice != null) {
+      return AskUserOutcome(notice, isError: !answer.proceed);
     }
     if (answer.skipped) {
       return const AskUserOutcome(

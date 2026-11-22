@@ -1,38 +1,27 @@
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_goal_status.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/goal_contract.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/goal_hold.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/goal_pipeline_link.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/goal_progress_marks.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/goal_start_refs.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/goal_unattended_policy.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/goal_verification.dart';
 
-/// Which slash command spawned a durable goal ([AgentGoalRun]).
-enum AgentGoalKind {
-  /// `/goal` — pursue one objective until declared complete.
-  goal,
-
-  /// `/loop` — iterate on a task, refining until fully complete.
-  loop,
-}
-
-/// Wire names for [AgentGoalKind] (persisted as TEXT).
-extension AgentGoalKindWire on AgentGoalKind {
-  /// Persisted wire name.
-  String get wire => switch (this) {
-    AgentGoalKind.goal => 'goal',
-    AgentGoalKind.loop => 'loop',
-  };
-
-  /// Parses a wire name; unknown values degrade to [AgentGoalKind.goal].
-  static AgentGoalKind fromWire(String? raw) =>
-      raw == 'loop' ? AgentGoalKind.loop : AgentGoalKind.goal;
-}
-
-/// A durable, supervised objective: a `/goal` or `/loop` that keeps being
-/// dispatched as bounded runs until the agent declares it complete, a human
-/// stops it, or a budget wall (deadline, cost cap, run budget) is hit.
+/// A durable, supervised objective (`/goal`) that one agent pursues in one
+/// conversation across as many runs (segments) as it takes, inside a budget,
+/// until verification passes or a person stops it.
 ///
 /// Unlike the in-session chain (which bridges a single run's turn ceiling),
 /// the state here lives in SQLite, so the objective survives server restarts:
 /// the startup reconciler re-dispatches any goal still [AgentGoalStatus.active].
 ///
-/// Every goal belongs to exactly one workspace and one conversation and at
-/// most one goal per agent is active at a time (enforced by the supervisor),
-/// which lets the `complete_goal` tool resolve "my goal" without an id.
+/// Every goal belongs to exactly one workspace and one conversation, and at
+/// most one goal per agent is active at a time (enforced by a partial unique
+/// index; a second one is refused with `GoalAlreadyActiveException`), which
+/// lets the `complete_goal` tool resolve "my goal" without an id.
+///
+/// [status] says whether the goal is alive; [hold] says what an active or
+/// paused goal is waiting on.
 class AgentGoalRun {
   /// Creates an [AgentGoalRun].
   AgentGoalRun({
@@ -42,9 +31,8 @@ class AgentGoalRun {
     required this.conversationId,
     required this.agentId,
     required this.userText,
-    required this.kind,
     required this.costCapMicros,
-    this.deadlineAt,
+    DateTime? deadlineAt,
     this.maxRuns,
     this.status = AgentGoalStatus.active,
     this.costMicros = 0,
@@ -53,9 +41,28 @@ class AgentGoalRun {
     this.consecutiveFailures = 0,
     this.requestedByUserId,
     this.summary,
-    required this.createdAt,
-    required this.updatedAt,
-  }) {
+    this.contract,
+    this.hold,
+    DateTime? holdUntil,
+    this.holdDetail,
+    this.noProgressStreak = 0,
+    this.verificationRounds = 0,
+    this.lastFingerprint,
+    this.lastActivityDigest,
+    this.startRefs,
+    this.parkCount = 0,
+    this.fresh = false,
+    this.unattended = GoalUnattendedPolicy.wait,
+    this.checkerAgentId,
+    this.verification,
+    this.pipeline,
+    this.progressMarks,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+  }) : deadlineAt = storedInstant(deadlineAt),
+       holdUntil = storedInstant(holdUntil),
+       createdAt = storedInstant(createdAt)!,
+       updatedAt = storedInstant(updatedAt)! {
     if (id.isEmpty) {
       throw ArgumentError('Goal id must not be empty');
     }
@@ -81,7 +88,49 @@ class AgentGoalRun {
     if (consecutiveFailures < 0) {
       throw ArgumentError('consecutiveFailures must not be negative');
     }
+    if (noProgressStreak < 0) {
+      throw ArgumentError('noProgressStreak must not be negative');
+    }
+    if (verificationRounds < 0) {
+      throw ArgumentError('verificationRounds must not be negative');
+    }
+    if (parkCount < 0) {
+      throw ArgumentError('parkCount must not be negative');
+    }
+    final detail = holdDetail;
+    if (detail != null && detail.length > maxHoldDetailLength) {
+      throw ArgumentError(
+        'holdDetail must be at most $maxHoldDetailLength characters',
+      );
+    }
+    if (checkerAgentId != null && checkerAgentId!.isEmpty) {
+      throw ArgumentError('checkerAgentId must not be empty');
+    }
+    final digest = lastActivityDigest;
+    if (digest != null &&
+        (digest.isEmpty || digest.length > maxActivityDigestLength)) {
+      throw ArgumentError(
+        'lastActivityDigest must be 1 to $maxActivityDigestLength characters',
+      );
+    }
   }
+
+  /// The longest [holdDetail], in characters.
+  static const int maxHoldDetailLength = 2000;
+
+  /// [time] as the goal's row stores it: UTC, whole seconds. Every time of a
+  /// goal is normalised so, so that a goal built in memory equals the same
+  /// goal read back (the store's compare-and-set compares whole goals) and
+  /// nothing depends on a precision or a time zone the row does not keep.
+  static DateTime? storedInstant(DateTime? time) => time == null
+      ? null
+      : DateTime.fromMillisecondsSinceEpoch(
+          time.millisecondsSinceEpoch - time.millisecondsSinceEpoch % 1000,
+          isUtc: true,
+        );
+
+  /// The longest [lastActivityDigest], in characters.
+  static const int maxActivityDigestLength = 128;
 
   /// Unique goal identifier.
   final String id;
@@ -100,9 +149,6 @@ class AgentGoalRun {
 
   /// The objective, verbatim (the `/goal` body).
   final String userText;
-
-  /// Which command spawned the goal.
-  final AgentGoalKind kind;
 
   /// Lifecycle status.
   final AgentGoalStatus status;
@@ -128,7 +174,7 @@ class AgentGoalRun {
   final int runCount;
 
   /// Run-log id of the currently in-flight run, when known. Correlates
-  /// `AgentRunCompleted` events to this goal; null between runs.
+  /// `AgentRunSettled` events to this goal; null between runs.
   final String? activeRunId;
 
   /// Consecutive failed runs; reset on any successful run. Drives the
@@ -140,6 +186,67 @@ class AgentGoalRun {
 
   /// The agent's completion summary (set when status becomes completed).
   final String? summary;
+
+  /// What "done" means: criteria, checks, boundaries, stop conditions. Null
+  /// for a goal started without one.
+  final GoalContract? contract;
+
+  /// What the goal is waiting on; null when nothing is held (a segment is
+  /// running or the next one is queued).
+  final GoalHold? hold;
+
+  /// When the hold lifts by itself (a provider limit's reset, the fallback
+  /// wake), when it does.
+  final DateTime? holdUntil;
+
+  /// A short explanation of the hold (`stalled`, `sandbox_unavailable`, the
+  /// limit's provider).
+  final String? holdDetail;
+
+  /// Consecutive segments without observed progress; three pause the goal.
+  final int noProgressStreak;
+
+  /// Verification rounds that failed so far; three pause the goal.
+  final int verificationRounds;
+
+  /// The worktree fingerprint after the previous segment (progress
+  /// detection, and skipping checks on an unchanged worktree).
+  final String? lastFingerprint;
+
+  /// A digest of what the previous segment did (its tool calls and their
+  /// results), so progress detection also sees work that leaves the worktree
+  /// unchanged. Null before the first segment ends.
+  final String? lastActivityDigest;
+
+  /// The commit each checkout of the conversation was at when the goal
+  /// started; null for a goal whose start was not recorded (an upgraded
+  /// install's), which then has no "what changed" summary.
+  final GoalStartRefs? startRefs;
+
+  /// How many times the goal parked on a provider limit; eight send it to
+  /// review.
+  final int parkCount;
+
+  /// Whether every segment starts without the conversation's history.
+  final bool fresh;
+
+  /// What happens when a segment asks a question and nobody answers.
+  final GoalUnattendedPolicy unattended;
+
+  /// The agent that reviews completion claims; null for the space's checker
+  /// or, without one, the goal's own agent.
+  final String? checkerAgentId;
+
+  /// The pipeline step that started the goal (`goal.pursue`); null for a
+  /// goal a person or an agent started. Never changes.
+  final GoalPipelineLink? pipeline;
+
+  /// The progress marks it has had and the wait it is in
+  /// (`progress_marks`); null before its first segment ended.
+  final GoalProgressMarks? progressMarks;
+
+  /// The last verification: claim, check results, verdict, reviewer.
+  final GoalVerification? verification;
 
   /// When the goal was created.
   final DateTime createdAt;
@@ -170,7 +277,6 @@ class AgentGoalRun {
     String? conversationId,
     String? agentId,
     String? userText,
-    AgentGoalKind? kind,
     AgentGoalStatus? status,
     DateTime? deadlineAt,
     bool removeDeadlineAt = false,
@@ -186,6 +292,30 @@ class AgentGoalRun {
     bool removeRequestedByUserId = false,
     String? summary,
     bool removeSummary = false,
+    GoalContract? contract,
+    bool removeContract = false,
+    GoalHold? hold,
+    bool removeHold = false,
+    DateTime? holdUntil,
+    bool removeHoldUntil = false,
+    String? holdDetail,
+    bool removeHoldDetail = false,
+    int? noProgressStreak,
+    int? verificationRounds,
+    String? lastFingerprint,
+    bool removeLastFingerprint = false,
+    String? lastActivityDigest,
+    bool removeLastActivityDigest = false,
+    GoalStartRefs? startRefs,
+    int? parkCount,
+    bool? fresh,
+    GoalUnattendedPolicy? unattended,
+    String? checkerAgentId,
+    bool removeCheckerAgentId = false,
+    GoalVerification? verification,
+    bool removeVerification = false,
+    GoalPipelineLink? pipeline,
+    GoalProgressMarks? progressMarks,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -196,7 +326,6 @@ class AgentGoalRun {
       conversationId: conversationId ?? this.conversationId,
       agentId: agentId ?? this.agentId,
       userText: userText ?? this.userText,
-      kind: kind ?? this.kind,
       status: status ?? this.status,
       deadlineAt: removeDeadlineAt ? null : (deadlineAt ?? this.deadlineAt),
       costCapMicros: costCapMicros ?? this.costCapMicros,
@@ -209,6 +338,30 @@ class AgentGoalRun {
           ? null
           : (requestedByUserId ?? this.requestedByUserId),
       summary: removeSummary ? null : (summary ?? this.summary),
+      contract: removeContract ? null : (contract ?? this.contract),
+      hold: removeHold ? null : (hold ?? this.hold),
+      holdUntil: removeHoldUntil ? null : (holdUntil ?? this.holdUntil),
+      holdDetail: removeHoldDetail ? null : (holdDetail ?? this.holdDetail),
+      noProgressStreak: noProgressStreak ?? this.noProgressStreak,
+      verificationRounds: verificationRounds ?? this.verificationRounds,
+      lastFingerprint: removeLastFingerprint
+          ? null
+          : (lastFingerprint ?? this.lastFingerprint),
+      lastActivityDigest: removeLastActivityDigest
+          ? null
+          : (lastActivityDigest ?? this.lastActivityDigest),
+      startRefs: startRefs ?? this.startRefs,
+      parkCount: parkCount ?? this.parkCount,
+      fresh: fresh ?? this.fresh,
+      unattended: unattended ?? this.unattended,
+      checkerAgentId: removeCheckerAgentId
+          ? null
+          : (checkerAgentId ?? this.checkerAgentId),
+      verification: removeVerification
+          ? null
+          : (verification ?? this.verification),
+      pipeline: pipeline ?? this.pipeline,
+      progressMarks: progressMarks ?? this.progressMarks,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -225,7 +378,6 @@ class AgentGoalRun {
           conversationId == other.conversationId &&
           agentId == other.agentId &&
           userText == other.userText &&
-          kind == other.kind &&
           status == other.status &&
           deadlineAt == other.deadlineAt &&
           costCapMicros == other.costCapMicros &&
@@ -236,18 +388,33 @@ class AgentGoalRun {
           consecutiveFailures == other.consecutiveFailures &&
           requestedByUserId == other.requestedByUserId &&
           summary == other.summary &&
+          contract == other.contract &&
+          hold == other.hold &&
+          holdUntil == other.holdUntil &&
+          holdDetail == other.holdDetail &&
+          noProgressStreak == other.noProgressStreak &&
+          verificationRounds == other.verificationRounds &&
+          lastFingerprint == other.lastFingerprint &&
+          lastActivityDigest == other.lastActivityDigest &&
+          startRefs == other.startRefs &&
+          parkCount == other.parkCount &&
+          fresh == other.fresh &&
+          unattended == other.unattended &&
+          checkerAgentId == other.checkerAgentId &&
+          verification == other.verification &&
+          pipeline == other.pipeline &&
+          progressMarks == other.progressMarks &&
           createdAt == other.createdAt &&
           updatedAt == other.updatedAt;
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     workspaceId,
     spaceId,
     conversationId,
     agentId,
     userText,
-    kind,
     status,
     deadlineAt,
     costCapMicros,
@@ -258,7 +425,23 @@ class AgentGoalRun {
     consecutiveFailures,
     requestedByUserId,
     summary,
+    contract,
+    hold,
+    holdUntil,
+    holdDetail,
+    noProgressStreak,
+    verificationRounds,
+    lastFingerprint,
+    lastActivityDigest,
+    startRefs,
+    parkCount,
+    fresh,
+    unattended,
+    checkerAgentId,
+    verification,
+    pipeline,
+    progressMarks,
     createdAt,
     updatedAt,
-  );
+  ]);
 }

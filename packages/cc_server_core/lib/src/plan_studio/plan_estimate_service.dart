@@ -53,11 +53,14 @@ class PlanEstimateService {
       throw StateError('Orchestration $orchestrationId not found');
     }
     final estimate = await _estimate(workspaceId, o.proposal);
+    // Kept only on the revision it measured: a plan revised meanwhile is
+    // not overwritten with the older proposal.
     await _orchestrations.update(
       o.copyWith(
         proposal: _withEstimates(o.proposal, estimate),
         updatedAt: DateTime.now(),
       ),
+      read: o,
     );
     return _toWire(estimate);
   }

@@ -2,7 +2,7 @@
 title: Barandillas — una política para cada acción mutadora
 description: Por qué Control Center canaliza cada efecto secundario de un agente a través de un único motor de permitir, preguntar o denegar, por qué la taxonomía de ActionClass se mantiene pequeña a propósito y qué cambia de verdad el dial de autonomía.
 slug: es-ES/manual/conceptos/barandillas
-sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
+sourceHash: bb98b2ca26ae104ab7701d4d381cd5c41d25d32f
 ---
 
 Los agentes de Control Center pueden eliminar archivos, enviar ramas, publicar
@@ -32,6 +32,17 @@ ofrece un backend, pero [Windows no ofrece ninguno y Linux
 necesita `bwrap` y `socat`](/es-ES/manual/conceptos/entorno-aislado-y-seguridad/). En esos hosts solo arrancan las ejecuciones del propietario del servidor, salvo que el propietario haya desactivado el sandbox para todos con `--sandbox off`. En cualquier ejecución que arranque sin sandbox, las barandillas son la capa de aplicación más externa en lugar de una política
 sentada sobre un suelo, algo que conviene saber cuando decides cuán permisivo
 ser.
+
+### Llamadas que hace un script
+
+Un script de [modo código](/es-ES/manual/conceptos/modo-codigo/) llama a herramientas en código, muchas a la vez, pero cada una de sus llamadas es una llamada de herramienta separada al motor. Pasa por la misma puerta del arnés o del despachador de MCP que una llamada directa, con las mismas reglas, la misma solicitud de aprobación y la misma entrada de auditoría, y nada de lo que hace queda aprobado porque lo quedara la llamada a `repl` que lo inició.
+
+Dos reglas adicionales se aplican a las llamadas de un script, porque un script puede hacer cientos de llamadas y capturar cada rechazo:
+
+- como máximo 10 de sus llamadas llegan a una persona para aprobación; las siguientes que necesitarían a una persona se rechazan sin mostrar ninguna tarjeta;
+- una vez que una persona rechaza una de sus llamadas, el resto de sus llamadas que necesitan aprobación se rechazan sin preguntar.
+
+Una tarjeta abierta por un script lo indica y permite abrir el script. Si el script termina mientras la tarjeta está abierta, la tarjeta se retira, y una respuesta que llega después se registra como denegación y no aprueba nada.
 
 ## ActionClass: una taxonomía deliberadamente cerrada
 
@@ -269,5 +280,6 @@ respuesta que recibirá el agente.
 ## Conceptos relacionados
 
 - [Entorno aislado y seguridad](/es-ES/manual/conceptos/entorno-aislado-y-seguridad/): qué limita realmente la ejecución de un agente y hasta dónde llega el suelo del sistema operativo bajo este motor
+- [Modo código](/es-ES/manual/conceptos/modo-codigo/): scripts cuyas llamadas a herramientas pasan todas por este motor
 - [Multijugador — identidad, pertenencia y presencia](/es-ES/manual/conceptos/multijugador/): espacios, principales y dónde vive el dial de autonomía
 - [Configurar barandillas](/es-ES/manual/guias/configurar-barandillas/): escribir y probar reglas en la práctica

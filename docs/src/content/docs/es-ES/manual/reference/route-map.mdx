@@ -2,7 +2,7 @@
 title: Mapa de rutas
 description: Todas las rutas que registra Control Center, con su pantalla y sus parámetros de consulta.
 slug: es-ES/manual/referencia/mapa-de-rutas
-sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
+sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
 ---
 
 ## Shell de la aplicación
@@ -40,6 +40,12 @@ Las rutas siguientes omiten el prefijo `/workspaces/:workspaceId`.
 | `/pipelines`                            | —                                         | Lista de ejecuciones de pipeline                                                                                                                                         |
 | `/pipelines/run`                        | `?templateId=<id>`                        | Lanzador de ejecuciones manuales                                                                                                                                         |
 | `/pipelines/:runId`                     | —                                         | Detalle de la ejecución de pipeline (cronología de pasos)                                                                                                                |
+| `/goals` | — | Lista de objetivos, agrupada en esperando revisión, abiertos y terminados |
+| `/goals/:goalId` | `?edit=contract` | Un objetivo: ahora, qué significa terminado, verificación, programaciones y reactivaciones; `edit=contract` abre el editor de contrato en un objetivo en pausa |
+| `/schedules` | — | Programaciones y vigilancias, agrupadas por estado, con **Nueva programación** |
+| `/schedules/:ruleId` | — | Una programación: nota, detalles, reactivaciones y ejecuciones recientes |
+| `/improvements` | — | Propuestas de mejora, agrupadas por estado |
+| `/improvements/:proposalId` | — | Una propuesta: qué cambia, evidencia, evaluación y decisión |
 | `/plans`                                | —                                         | Centro de Plan Studio: planes activos, documentos de plan, playbooks                                                                                                     |
 | `/plans/:kind/:id`                      | —                                         | Plan Studio para un plan; `kind` es `orchestration` o `document`                                                                                                         |
 | `/meetings`                             | —                                         | Lista de reuniones                                                                                                                                                       |
@@ -99,6 +105,7 @@ Las rutas de ajustes se agrupan por **ámbito** — `you/`, `workspace/`, `serve
 | `/settings/workspace/skills`       | Configuración de skills                                                                             |
 | `/settings/memory`                 | Memoria del espacio de trabajo: hechos, políticas, grafo de conocimiento                            |
 | `/settings/workspace/permissions`  | Permisos de agentes: matriz de barandillas y sonda hipotética                                       |
+| `/settings/workspace/schedules` | Límites de programaciones, la zona horaria de las programaciones cron y del resumen, y cuánto esperan las ejecuciones iniciadas por el servidor a que alguien responda (los admins editan; los miembros leen) |
 | `/settings/pipelines`              | Plantillas de pipeline                                                                              |
 | `/settings/pipelines/:templateId`  | Editor de plantillas de pipeline (lienzo de arrastrar y soltar)                                     |
 

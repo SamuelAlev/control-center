@@ -2,7 +2,7 @@
 title: MCP-verktyg
 description: Komplett katalog över de MCP-verktyg som cc_server registrerar, per familj.
 slug: sv-SE/handbok/referens/mcp-verktyg
-sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
+sourceHash: 0ef9efd386b57c3a254e7f637b0436d9baff1719
 ---
 
 `cc_server` har ett enda MCP-register (JSON-RPC 2.0) för verktyg, som betjänas på serverns huvudport (standard `9030`) under `POST /mcp` och `GET /sse`, med protokollversion `2024-11-05`. Varje klient når samma register: skrivbordsappen, webbversionen, externa MCP-klienter och den inbyggda agentköraren. Externa MCP-servrar bryggas in i samma register i egna lager: ett per arbetsyta för de MCP-servrar dess administratörer konfigurerar, och ett för serverägarens personliga MCP-servrar. Den här endpointen listar, anropar och söker i dem bara för en agentkörning: arbetsytans egna MCP-servrar, plus de personliga när serverägaren ansvarar för körningen. MCP-token och parkopplade enheter ser dem aldrig (se [MCP-servrar som agenterna använder](/sv-SE/handbok/how-to-guider/mcp-server/#mcp-servrar-som-agenterna-använder)).
@@ -11,21 +11,22 @@ sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
 
 | Mått                                                                      | Antal |
 | ------------------------------------------------------------------------- | ----- |
-| Verktyg som registreras av `cc_server`                                    | 110   |
-| Från `packages/cc_mcp`                                                    | 108   |
+| Verktyg som registreras av `cc_server`                                    | 116   |
+| Från `packages/cc_mcp`                                                    | 114   |
 | Från `packages/cc_mcp_client` (verktygsupptäckt)                          | 2     |
-| Registrerade i basregistret (`server_mcp_registry.dart`)                  | 63    |
-| Registrerade efter start allteftersom tjänsterna kommer upp (`cc_server_runtime.dart`) | 47 |
-| Av basregistrets 63, villkorade av ett kodgraf-repo                       | 5     |
+| Registrerade i basregistret (`server_mcp_registry.dart`)                  | 64    |
+| Registrerade efter start allteftersom tjänsterna kommer upp (`cc_server_runtime.dart`) | 52 |
+| Av basregistrets 64, villkorade av ett kodgraf-repo                       | 5     |
+| Av basregistrets 64, villkorat av kodlägesköraren (`repl`) | 1 |
 
-De fem kodgrafverktygen registreras bara när värden skickar in ett kodgraf-repo till `buildServerMcpRegistry`. `cc_server` skickar alltid in ett, så alla 110 är aktiva i den levererade binärfilen.
+De fem kodgrafverktygen registreras bara när värden skickar in ett kodgraf-repo till `buildServerMcpRegistry`, och `repl` bara när den skickar in kodlägesköraren. `cc_server` skickar alltid in båda (den startar inte utan köraren), så alla 111 är registrerade i den levererade binärfilen; den offentliga demoservern registrerar ingen `repl`.
 
-Hela registret annonseras i `tools/list` utan någon upptäcktsgrind. Ändringar av ärenden görs med typade verktyg.
+Hela registret annonseras i `tools/list` utan någon upptäcktsgrind, utom för en agentkörning som kan köra skript (nedan). Ändringar av ärenden görs med typade verktyg.
 
 :::note[Externa klienter ser alltid hela katalogen]
-`tools/list` beskärs aldrig, utom för serverägarens personliga MCP-servrar, som den aldrig innehåller. MCP-klienter validerar verktygsnamn mot sin egen cachade kopia av listan och avvisar allt som inte står där utan att fråga servern, så ett verktyg som döljs där går inte att nå – det är inte bara tyst.
+`tools/list` beskärs aldrig, utom för serverägarens personliga MCP-servrar, som den aldrig innehåller, och [Kodläge](/sv-SE/handbok/koncept/kodlage/): `repl` listas bara för en agentkörning på en server som kan köra skript, och den körningen listas med `repl`, de direkta verktygen (`read`, `write`, `edit`, `search`, `find`, `bash`, `read_output`, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` och lägets egna verb där registret har dem) och de verktyg ett skript inte får anropa. Den anropar resten från ett skript; ett direkt anrop till ett av dem besvaras med hur det anropas från `repl`. MCP-klienter validerar verktygsnamn mot sin egen cachade kopia av listan och avvisar allt som inte står där utan att fråga servern, så ett verktyg som döljs där går inte att nå – det är inte bara tyst.
 
-Den **inbyggda harnessen** fungerar annorlunda: den läser bara in en resident delmängd av definitionerna per förfrågan och hämtar resten vid första användning, vilket är ett beteende på harness-sidan och inte ändrar det här registret. Se [Verktygskontext och promptcache](/sv-SE/handbok/koncept/verktygskontext).
+Den **inbyggda harnessen** fungerar annorlunda: den läser bara in en liten direkt uppsättning definitioner per förfrågan och når resten från skript eller läser in dem vid första användning, vilket är ett beteende på harness-sidan och inte ändrar det här registret. Se [Verktygskontext och promptcache](/sv-SE/handbok/koncept/verktygskontext/).
 :::
 
 :::note[Varje verktygsklass registreras]
@@ -51,6 +52,14 @@ Båda kommer från `cc_mcp_client`, inte `cc_mcp`, och båda konsulterar lägesv
 
 Ett tredje upptäcktsverktyg, **`search_tools`**, finns bara inuti den inbyggda harnessen och ingår inte i det här MCP-registret. Det rangordnar körningens egen verktygsyta och **läser in** – till skillnad från `search_tool_bm25` – scheman för det den hittar, så att agenten kan anropa en träff i sin nästa tur. Agenter som kör på harnessen bör föredra det; MCP-klienter har `search_tool_bm25`.
 
+## Kodläge
+
+| Verktyg | Beskrivning |
+| ------ | ----------- |
+| `repl` | Kör ett JavaScript-skript som anropar körningens övriga verktyg som `tools.<id>(args)` och returnerar bara det det behöver. Listas bara för en agentkörning på en server som kan köra [Kodläge](/sv-SE/handbok/koncept/kodlage/)-skript. Varje kapslat anrop passerar samma grind som ett `tools/call`. Tar `code`, `description`, `timeout_ms?`, `max_output_tokens?` |
+
+Ett skript kan inte anropa `repl`, `search_tool_bm25`, `list_my_tools` eller något verktyg som startar eller meddelar en annan agentkörning, tilldelar eller kommenterar ett ärende, skickar ett meddelande, skapar, beslutar eller kommenterar ett godkännande, föreslår eller ändrar policy, installerar eller ändrar färdigheter, skapar en körprofil, skickar in en plan, lämnar planläge, slutför konversationens mål eller skickar in en pipelinekörnings utdata. De verktygen deklarerar `scriptCallable` som false och anropas alltid direkt; i den inbyggda harnessen läses ett sällan använt verktyg utanför den direkta uppsättningen in vid första användning. `create_ticket` kan bara anropas från ett skript utan en `assignee`.
+
 ## Agentverktyg
 
 | Verktyg       | Beskrivning                                      |
@@ -59,15 +68,29 @@ Ett tredje upptäcktsverktyg, **`search_tools`**, finns bara inuti den inbyggda 
 
 ## Meddelanden och delegering mellan agenter
 
-Agenter pratar med varandra över ytor (varaktiga och synliga i agentlistan). `ask_agent` är fråga/svar med en obligatorisk tidsgräns; `delegate_task` skyddas på serversidan av en djupgräns, cykeldetektering, en budgetram och ett autonomitak.
+Agenter pratar med varandra över ytor (varaktigt, synligt i listan). `ask_agent` antingen väntar på svaret (`mode: wait`, 600 sekunder som standard, högst 1 800) eller returnerar direkt (`mode: background`); i båda fallen väcks frågeställaren en gång med svaret när det inte kom tillbaka direkt. `send_to_agent`, `ask_agent`, `consult_agent`, `request_peer_review` och `delegate_task` passerar samma grind på servern: djup (3), cykeldetektering, budgetram, autonomitak och en hastighetsgräns per par av agenter. Avsändarens identitet kommer alltid från den anropande körningen. Se [Agenter som samarbetar](/sv-SE/handbok/how-to-guider/agenter-samarbetar/).
 
 | Verktyg         | Beskrivning                                                                                    |
 | --------------- | ---------------------------------------------------------------------------------------------- |
-| `send_to_agent` | Skicka ett enkelriktat meddelande till en annan agent, adresserat med `to_agent_id` eller exakt `to_agent_name` |
-| `ask_agent`     | Ställ en fråga till en annan agent och vänta på svaret, eller låt tidsgränsen nås              |
+| `send_to_agent` | Skicka ett enkelriktat meddelande till en annan agent, adresserat med `to_agent_id` eller exakt `to_agent_name`; svarar med `delivery_status` `woken`, `queued_behind_run` eller `refused` |
+| `ask_agent`     | Ställ en fråga till en annan agent; vänta på svaret, eller fortsätt och väck när det kommer    |
 | `delegate_task` | Delegera en uppgift till en annan agent som ett spårat underordnat ärende                      |
 | `consult_agent` | Lägg till den specialist som matchar bäst på skills i ytan och skicka ut den med en fokuserad uppdragsbeskrivning |
 | `todo_read`     | Läs det här samtalets sparade uppgiftschecklista                                               |
+| `agent_activity` | Läs vad en annan agent gör nu och gjorde senast (status, aktuellt verktyg, senaste meddelanden), utan att väcka den |
+
+## Verktyg för väckningar och mål
+
+En agent använder dessa i stället för att vila eller fråga på nytt. Var och en agerar bara för den anropande agenten i dess egen konversation; agenten är aldrig ett argument. Se [Scheman och väckningar](/sv-SE/handbok/how-to-guider/scheman-vackningar/) och [Arbeta mot ett mål](/sv-SE/handbok/how-to-guider/arbeta-mot-mal/).
+
+| Verktyg | Beskrivning |
+| ------------- | ----------- |
+| `wake_me` | Be om att bli väckt senare: vid en tidpunkt (`in:20m`, `at:<ISO time>`), med ett intervall (`every:30m`), med en cron (`cron:0 9 * * 1-5`, med `tz`), i egen takt inne i en självstyrd loop (`next`, med `delay` från 1 till 60 minuter), eller när något händer (`on:pr_checks`, `on:pr_review`, `on:pr_merged`, `on:environment`, `on:ticket:<id>`, `on:pipeline_run:<id>`). Valfria `note`, `max_runs`, `expires_in`, `when_busy` (`skip` eller `queue`) och `deliver` (`run` eller `notify`) |
+| `list_wakes` | Listar vad agenten har i väntan i den här konversationen: scheman, bevakningar, väntande väckningar och obesvarade frågor |
+| `cancel_wake` | Avbryt ett schema eller en bevakning som agenten själv satt upp, med dess id |
+| `goal_status` | Läs agentens aktiva mål: kontrakt, segment, utgifter och kvarvarande budget, varningar för inga framsteg, parkering, senaste verifiering och väntande målväckningar |
+
+`complete_goal` (under [Verktyg för planer, playbooks och artefakter](#verktyg-för-planer-playbooks-och-artefakter)) är det enda sättet för en agent att säga att ett mål är klart, och det är ett påstående, inte en slutförning.
 
 ## Skill-verktyg
 
@@ -94,7 +117,7 @@ Varje installation och uppdatering passerar en skanningsgrind som stänger vid f
 | `revise_artifact`  | Ersätt innehållet i en publicerad artefakt                                                                             |
 | `list_artifacts`   | Lista arbetsytans artefakter                                                                                           |
 | `get_artifact`     | Läs en artefakt                                                                                                        |
-| `complete_goal`    | Deklarera att samtalets aktiva varaktiga mål (startat med `/goal` eller `/loop`) är uppnått                           |
+| `complete_goal` | Påstå att agentens aktiva mål är uppnått, med underlag för varje kriterium; servern kör därefter kontrollerna och en granskning |
 
 ## Verktyg för arbetsytor
 
@@ -162,10 +185,10 @@ Varje installation och uppdatering passerar en skanningsgrind som stänger vid f
 | `create_goal`                | Skapa ett organisatoriskt mål (på företags-, team-, agent- eller uppgiftsnivå)                        |
 | `list_goals`                 | Lista mål med nivå, status och aggregerad framdrift                                                   |
 | `update_goal_progress`       | Ange framdriften för ett mål                                                                          |
-| `create_approval`            | Öppna ett styrelsegodkännande för en styrd åtgärd (planavslut, sammanslagning, release, anställning, anpassad) |
+| `create_approval`            | Öppna ett styrelsegodkännande för en styrd åtgärd (planavslut, sammanslagning, release, anställning, anpassad) i det anropande agentens namn. Bara agentkörningar |
 | `list_approvals`             | Lista godkännanden, valfritt filtrerat på status                                                      |
-| `decide_approval`            | Registrera ett beslut: godkänn, avvisa, begär omarbetning eller skicka in på nytt                     |
-| `comment_approval`           | Kommentera ett styrelsegodkännande                                                                    |
+| `decide_approval`            | Registrera det anropande agentens beslut: godkänn, avvisa, begär omarbetning eller skicka in på nytt. Bara agentkörningar |
+| `comment_approval`           | Kommentera ett styrelsegodkännande som den anropande agenten. Bara agentkörningar                     |
 | `exit_plan_mode`             | Öppna (och, när det godkänts, förbruka) ett `plan_exit`-godkännande och växla samtalet ut ur planläget |
 | `agent_heartbeat`            | Rapportera livstecken (vid liv, inaktiv, fastnad); tystnad växlar körningshälsan till nyligen-förlorad och sedan offline |
 | `list_runtime_health`        | Lista varje agents körningshälsa                                                                      |

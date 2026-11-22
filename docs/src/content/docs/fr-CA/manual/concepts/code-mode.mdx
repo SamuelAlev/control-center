@@ -1,0 +1,178 @@
+---
+title: Mode code
+description: Comment un agent écrit un court script qui appelle ses outils au lieu de les appeler un par un, quels outils il appelle directement et lesquels depuis un script, les limites sous lesquelles tourne un script, comment un script se lit dans la conversation, et comment il est confiné et enregistré.
+slug: fr-CA/manuel/concepts/mode-code
+sourceHash: d41fe2f38c216949847fc7c4768fdf96bed2dc83
+---
+
+Un agent appelle normalement ses outils un par un. Chaque appel correspond à un tour du modèle : l’agent demande l’appel, le résultat revient dans son contexte, et l’agent le lit avant de demander le suivant. Pour un travail surtout mécanique, comme lire vingt fichiers pour trouver les trois qui comptent ou vérifier chaque ticket ouvert pour une étiquette, la plupart de ces tours et la plupart de ce contexte sont consommés par des résultats que l’agent jette ensuite.
+
+Le mode code est un seul outil, `repl`. Avec lui, l’agent écrit un court script JavaScript qui appelle ses autres outils, boucle sur leurs résultats, les filtre et les combine, et ne renvoie que ce dont il a besoin. Un seul appel `repl` peut accomplir le travail de dizaines de tours d’outils, et seule la réponse du script entre dans le contexte.
+
+Chaque exécution a `repl` lorsque le serveur peut exécuter des scripts. Il n’y a rien à activer : voir [Quand une exécution a `repl`](#quand-une-exécution-a-repl).
+
+## Ce qu’un script peut faire
+
+Un script est du JavaScript simple, écrit comme le corps d’une fonction asynchrone, de sorte que `await` et `return` fonctionnent au niveau principal. Chaque appel `repl` démarre un nouvel interpréteur vide.
+
+- **Appeler des outils.** `await tools.read({ path: "README.md" })` appelle un outil et se résout avec son résultat, ou est rejeté avec une erreur lorsque l’appel échoue ou est refusé. Les appels indépendants peuvent s’exécuter ensemble avec `Promise.allSettled`.
+- **Trouver des outils.** `ALL_TOOLS` liste chaque outil que le script peut appeler. `searchTools(query)` trouve des outils d’après ce qu’ils font, `describeTool(name)` renvoie la description et les arguments d’un outil, et `describeNamespace(name)` liste les outils d’un groupe. Les outils des serveurs MCP connectés sont accessibles de cette façon aussi.
+- **Renvoyer des résultats.** Seul ce que le script retourne, ou transmet à `text()`, `image()` ou `console.log()`, revient à l’agent. Au plus quatre images atteignent le modèle.
+- **Conserver des valeurs.** `store(key, value)` et `load(key)` conservent de petites valeurs JSON entre les scripts de la même conversation et du même agent. Les valeurs ne sont enregistrées que lorsque le script se termine. Les sous-agents n’ont pas de magasin.
+- **Demander à une personne.** `await tools.ask_user({ question, options })` pose une question et attend la réponse.
+- **Utiliser des plongements locaux.** `models.embed`, `models.rank` et `models.classify` utilisent le modèle de plongement du serveur, lorsqu’il est installé.
+- **Attendre.** `sleep(ms)` et `setTimeout`, dans la limite de temps du script. `limits()` renvoie les limites sous lesquelles tourne le script.
+
+Un script n’a aucun accès au système de fichiers, au réseau, aux processus, aux modules ni à l’environnement : ni `fetch`, ni `require`, ni `import`, ni `process`. La seule sortie est un appel d’outil, et chaque appel d’outil passe par les mêmes vérifications qu’un appel que l’agent fait directement.
+
+Les appels d’outils qu’un script a déjà faits ne sont pas annulés lorsque le script échoue par la suite.
+
+## Les outils que l’agent appelle directement
+
+Chaque exécution de l’agent intégré reçoit le même petit ensemble d’outils qu’il appelle par leur nom :
+
+- `repl`, en premier ;
+- les outils de fichiers et de shell `read`, `write`, `edit`, `search`, `find`, `bash` et `read_output` ;
+- `ask_user` et `task` ;
+- `todo_write`, `search_memory` et `send_message` ;
+- les verbes dont le [mode](/fr-CA/manuel/concepts/modes/) de la conversation a besoin pour remettre son résultat ou le quitter, comme `submit_plan` en mode plan ;
+- `search_tools`, lorsqu’un outil se charge à la première utilisation (voir plus bas).
+
+Chaque autre outil que l’exécution peut utiliser est atteint de l’une de deux façons :
+
+- **Depuis un script seulement**, lorsqu’un script peut l’appeler. L’agent le trouve avec `searchTools()` ou `describeTool()` et l’appelle sous la forme `tools.<name>(args)`. Sa description n’atteint jamais le modèle, donc elle ne coûte rien dans l’invite. Si l’agent en appelle un directement malgré tout, la réponse lui indique d’appeler l’outil depuis un script. Si le serveur ne peut pas exécuter les scripts de l’exécution, l’outil se charge à la première utilisation à la place ([Lorsque les scripts ne peuvent pas s’exécuter](#lorsque-les-scripts-ne-peuvent-pas-sexécuter)).
+- **Chargé à la première utilisation**, lorsqu’un script ne peut pas l’appeler. L’agent voit son nom, et l’appeler par son nom, ou le trouver avec `search_tools`, le charge.
+
+Certains outils ne sont jamais appelables depuis un script, notamment `repl` lui-même (un script ne peut pas en démarrer un), `eval`, `task`, `checkpoint`, `rewind`, les verbes `vibe_*`, et les outils qui démarrent ou envoient des messages à d’autres exécutions d’agent, créent, tranchent ou commentent des approbations, modifient la politique ou les compétences, ou quittent le mode plan. L’agent les appelle directement.
+
+Une exécution sans `repl` reçoit les mêmes outils directs, et tout le reste se charge à la première utilisation. [Contexte des outils et cache de prompts](/fr-CA/manuel/concepts/contexte-des-outils/) explique pourquoi l’ensemble est le même dans les deux cas.
+
+Le mode code n’ajoute jamais un outil que le mode de la conversation n’autorise pas. Le filtre d’outils du mode est appliqué en premier, et un script ne peut appeler que ce qui reste.
+
+## Quand une exécution a `repl`
+
+Une exécution a `repl` lorsque l’exécuteur de scripts du serveur a réussi la vérification de son verrouillage au démarrage ([Comment les scripts sont confinés](#comment-les-scripts-sont-confinés)). Aucun réglage de l’espace de travail, de l’agent ou du serveur ne change cela. Une exécution n’a toujours pas `repl` lorsque :
+
+- l’exécuteur ne peut pas se verrouiller sur la machine du serveur ; le serveur n’exécute alors aucun script ;
+- le serveur est une démonstration publique, qui n’exécute aucun script ;
+- l’exécution n’appartient à aucun espace de travail ;
+- les limites de l’espace de travail ne peuvent pas être lues, car exécuter avec les valeurs par défaut pourrait dépasser des limites qu’un admin a abaissées ;
+- le journal de l’exécution n’a pas pu être écrit, car chaque script est enregistré sous son exécution avant de démarrer.
+
+Une telle exécution appelle tous ses outils directement.
+
+Le mode code fonctionne pour les exécutions de l’agent intégré et pour les agents qui atteignent les outils de Control Center par son point de terminaison MCP, comme Claude Code. Pour un agent MCP, la liste d’outils qu’il reçoit contient `repl`, les outils directs et les outils qu’un script ne peut pas appeler ; il appelle le reste depuis des scripts. Seule une exécution que Control Center a lancée et dont il tient un journal reçoit `repl` ici ; tout autre client reçoit tous les outils sauf `repl`.
+
+**Paramètres → Espace de travail → Mode code** indique sous **Statut** si ce serveur exécute des scripts (**Disponible** ou **Indisponible**, avec la raison donnée par le serveur) et quelle version de l’**Exécuteur** est installée. **Voir les exécutions de code** ouvre la liste des scripts qui ont été exécutés.
+
+Un responsable du serveur ne peut pas désactiver les scripts. Il peut les borner : combien en exécuter à la fois et quelle quantité de mémoire un script peut utiliser (voir [Limites](#limites)).
+
+### Lorsque les scripts ne peuvent pas s’exécuter
+
+Une exécution ne perd jamais un outil parce que le serveur ne peut pas exécuter ses scripts. Lorsque le serveur refuse un script pour une raison qu’aucun autre script n’aurait évitée (par exemple, les scripts sont indisponibles, le script a attendu la moitié de son temps une place libre, son enregistrement ne peut pas être écrit, la liste d’outils de l’exécution est trop grande pour être remise à un script, ou l’exécuteur ne peut pas démarrer ou se verrouiller), l’exécution cesse d’utiliser des scripts pour le reste de sa vie :
+
+- une exécution de l’agent intégré conserve `repl`, et chaque outil qu’elle n’atteignait que depuis un script se charge maintenant à la première utilisation : l’agent l’appelle par son nom ou le trouve avec `search_tools` ;
+- une exécution sur le point de terminaison MCP reçoit une liste d’outils contenant tous les outils et aucun `repl`, et son client est informé que la liste a changé. Le serveur se souvient des 1 024 dernières exécutions de ce type ; une exécution plus ancienne revient aux scripts.
+
+Ces outils passent le même filtre de mode, les mêmes garde-fous et les mêmes approbations qu’auparavant, de sorte que rien ne devient appelable qui ne l’était pas. Un script qui échoue par sa propre faute, en levant une erreur, en atteignant une limite ou en ayant un appel refusé, ne change rien.
+
+Le serveur continue aussi de vérifier que les scripts peuvent s’exécuter. Lorsque l’exécuteur ne démarre pas pour une raison qui n’est pas celle du script, le serveur répète sa vérification de verrouillage, au plus une fois par minute. Si elle échoue, le serveur n’exécute aucun script et écrit la même ligne `code_mode=unavailable` qu’au démarrage ; les exécutions qui démarrent entre-temps ne reçoivent pas `repl`. Il continue de vérifier, au plus une fois par minute, et lorsqu’une vérification réussit, il exécute de nouveau des scripts et écrit la ligne `code_mode=available`. Seule une vérification qui a échoué au démarrage du serveur exige un redémarrage.
+
+## Limites
+
+Chaque script s’exécute sous des limites. Un admin de l’espace de travail peut en modifier six sous **Limites** dans **Paramètres → Espace de travail → Mode code** (**Ajuster les limites**) ; l’agent peut demander moins de temps ou un budget de sortie plus petit pour un script donné, jamais plus.
+
+| Limite | Valeur par défaut | Plage | Quand elle est atteinte |
+| --- | --- | --- | --- |
+| Durée par script | 5 min | 1 s à 25 min | Le script est arrêté et l’agent est informé que le temps est écoulé. |
+| Temps processeur | 30 s | 1 s à 2 min | Le script est arrêté. |
+| Mémoire | 256 Mio | 16 Mio à 1 Gio | Le script est arrêté. Le responsable du serveur peut fixer un plafond plus bas pour tout le serveur. |
+| Appels d'outils par script | 500 | 1 à 5 000 | Les appels suivants sont refusés, et le script en est informé. |
+| Appels simultanés | 8 | 1 à 32 | Les appels en lecture seule au-delà de cette limite attendent leur tour. Les appels qui modifient quelque chose s’exécutent toujours un à la fois. |
+| Sortie lue par l'agent | 10 000 jetons | 100 à 50 000 | La sortie est réduite à son début et à sa fin, et l’agent peut lire le reste sur demande. |
+
+Le temps qu’un script passe à attendre une personne, pour une approbation ou une question, ne compte pas dans sa limite de temps. Pendant cette attente, le script ne démarre aucun autre appel d’outil : les appels qu’il fait entre-temps démarrent, dans l’ordre, une fois que vous avez répondu.
+
+Certaines limites sont fixes : le code source d’un script fait au plus 256 Kio, les arguments d’un appel d’outil 1 Mio et 16 384 valeurs, une commande qu’un script passe à un outil intégré qui l’exécute 16 Kio (le nom de l’outil compte dans cette limite), un résultat remis au script 4 Mio, une valeur stockée 256 Kio, et l’ensemble de ce qu’une conversation et un agent stockent ensemble 1 Mio. Une exécution ne fait tourner qu’un script à la fois.
+
+Les recherches d’outils d’un script sont aussi limitées : une requête `searchTools` d’au plus 1 024 caractères, un nom d’outil ou d’espace de noms d’au plus 256, au plus 50 résultats, et au plus 200 recherches totalisant 2 secondes du temps du serveur ; au-delà, les recherches suivantes échouent. Tous les scripts d’un même espace de travail partagent aussi 2 secondes de temps de recherche, rendues à raison d’un quart de seconde par seconde. L’index de recherche accorde à chaque outil une part égale d’environ un million de caractères, dépensée d’abord sur les noms de ses arguments, puis sur sa description, et indexe toujours le nom de chaque outil ; ainsi, même dans un catalogue très grand, un outil se trouve par son nom.
+
+Le responsable du serveur limite aussi le nombre de scripts exécutés en même temps sur le serveur (`--code-mode-max-processes`, par défaut le double du nombre de cœurs du processeur, au plus 16) et la mémoire qu’un script peut utiliser (`--code-mode-max-heap-mb`) ; les scripts qui attendent une personne sont comptés à part, jusqu’à quatre fois ce nombre. Lorsque ce plafond est supérieur à un, un espace de travail peut utiliser au plus environ les trois quarts de celui-ci, si bien qu’aucun espace de travail ne peut prendre toutes les places. Une exécution et ses sous-agents utilisent ensemble au plus la moitié des places de leur espace de travail (au moins une), de sorte que leurs scripts suivants attendent pendant que les scripts des autres exécutions de l’espace de travail passent d’abord. Voir la [référence de la CLI `cc_server`](/fr-CA/manuel/reference/cc-server-cli/#mode-code).
+
+## Approbations et questions
+
+Un appel d’outil depuis un script est vérifié exactement comme un appel direct : le filtre d’outils du mode, les [garde-fous d’action](/fr-CA/manuel/concepts/garde-fous/), la demande d’approbation et les vérifications propres à l’outil. Un script ne peut rien faire que l’agent ne pourrait pas faire en appelant lui-même l’outil.
+
+Lorsque l’appel d’un script exige une approbation, la carte d’approbation indique **Depuis un script que l'agent exécute**, et **Afficher le script** ouvre le script dans la conversation. Pour éviter qu’un script vous inonde de cartes :
+
+- un script peut demander une approbation au plus 10 fois et poser au plus 10 questions;
+- une fois que vous refusez l’un de ses appels, ses appels ultérieurs qui exigent une approbation sont refusés sans demande.
+
+Pour les exécutions de l’agent intégré, les demandes d’approbation causées par les commandes qu’un script exécute, comme un push, comptent dans la même limite et s’arrêtent après un refus de la même façon. Quand le script d’un sous-agent s’exécute en même temps, une telle demande compte pour les deux scripts, et un refus les arrête tous les deux.
+
+Dans une exécution de l’agent intégré, une approbation pour un outil d’un serveur MCP externe n’est pas mémorisée : chaque appel redemande, qu’il vienne d’un script ou de l’agent lui-même, sauf si l’autonomie de l’espace est réglée sur **Agir librement**. Chaque demande de ce type causée par un script compte dans sa limite d’au plus 10 approbations.
+
+Si le script se termine avant votre réponse, la carte est retirée, et une réponse donnée après cela n’approuve rien.
+
+## Dans la conversation
+
+Un appel `repl` apparaît dans la conversation sous forme d’une seule ligne portant la description du script. L’agrandir affiche le script et sa sortie, ainsi que les appels d’outils effectués par le script sous **Appels d'outils**, avec le nombre d’appels en cours, réussis, échoués, refusés, annulés, en file d’attente ou ignorés.
+
+### Comment un script se lit
+
+Les appels d’outils sont disposés selon la façon dont le script est écrit, et non sous la forme d’une longue liste. L’exécuteur indique la ligne et la colonne d’où chaque appel a été fait, et l’application lit le script pour trouver ses boucles, ses branches et ses fonctions :
+
+- **Une boucle** (`for`, `while`) s’affiche comme un groupe **Boucle** dont l’en-tête est sa première ligne, et une fonction de rappel passée à un appel comme `map` ou `forEach` comme un groupe **Pour chacun**. Un trait fin sépare un passage de la boucle du suivant lorsque l’application peut les distinguer.
+- **Des appels exécutés ensemble** avec `Promise.all`, `Promise.allSettled` ou un combinateur semblable s’affichent comme un groupe **En parallèle**.
+- **Une branche** (`if`/`else`, `switch`, `try`/`catch`) affiche un groupe par bras, dont l’en-tête est sa condition.
+- **Une fonction** que le script définit et appelle s’affiche comme un groupe **Fonction**.
+
+Un groupe à l’intérieur d’un autre est indenté d’un cran de plus, jusqu’à huit crans ; les groupes plus profonds restent à ce retrait.
+
+Chaque en-tête de groupe indique comment se sont terminés jusqu’à présent ses appels. Avant qu’un appel s’exécute, sa ligne affiche l’outil et les arguments tels qu’ils sont écrits dans le script :
+
+| Ligne | Signification |
+| --- | --- |
+| **En file d'attente** | Le script n’a pas encore atteint cet appel. |
+| En cours | L’appel est en cours. |
+| Terminé | L’appel s’est terminé ; la ligne affiche son résultat et sa durée. |
+| **Ignoré** | Le script a passé cet appel, comme la branche d’un `if` non prise, ou s’est terminé sans l’atteindre. |
+
+Un appel écrit dans les arguments d’un appel au même outil est signalé au même endroit du script que cet appel. Lorsque l’application ne peut pas dire si l’appel externe a été fait, sa ligne n’affiche aucun mot d’état au lieu de **Ignoré**.
+
+Lorsqu’un groupe a fait plus de huit appels, son milieu se replie : les deux premiers et les trois derniers restent visibles, ainsi que chaque appel encore en cours, en échec ou refusé, de même que l’appel qui a commencé son passage de boucle. **Afficher N appels de plus** en ouvre 100 de plus à chaque clic, et nomme jusqu’à quatre outils parmi les appels masqués avec leur nombre, les plus rares en premier, par exemple **Afficher 12 appels de plus** · Bash 1 · Read 11. Un nom d’outil de plus de 24 caractères y est tronqué.
+
+Un appel que l’application ne peut pas placer dans le script, par exemple celui fait par une fonction de rappel `then`, est listé sous l’arbre, sous **Appels non placés dans le script**. Lorsque l’application ne peut pas lire le script, ou qu’aucun appel n’indique où il a été fait, les appels s’affichent comme une liste simple, dans l’ordre où ils ont été faits.
+
+Chaque ligne d’appel affiche le début des arguments de l’appel et celui de son résultat, jusqu’à 8 Kio chacun ; une fois que les lignes d’un script contiennent 256 Kio de ces extraits, ses lignes suivantes n’affichent que l’outil et la façon dont l’appel s’est terminé. Une fois le script terminé, **Ouvrir l'enregistrement** ouvre son enregistrement complet ; si l’enregistrement est introuvable, il ouvre la liste des scripts de cette exécution. Un script refusé avant son exécution (par exemple parce qu’un autre script de la même exécution était encore en cours) n’a ni enregistrement ni lien.
+
+## L’enregistrement
+
+Chaque script qui s’exécute est enregistré dans son espace de travail avant de démarrer, et l’enregistrement est complété à la fin. **Observabilité → Exécutions de code** les liste, les plus récents en premier, et permet de les filtrer par résultat. Les liens **Scripts de cette exécution** et **Scripts de cet agent** de l’enregistrement restreignent la liste à une exécution ou à un agent. Un enregistrement affiche :
+
+- le script, sa sortie et sa console;
+- le moment de son démarrage, sa durée, le temps processeur et la mémoire de pointe utilisés, et si elle s’est exécutée par l’agent intégré ou par un agent externe;
+- la façon dont il s’est terminé, en termes simples (par exemple, il a manqué de temps ou a lancé une erreur que rien n’a interceptée);
+- chaque appel d’outil, dans l’ordre, avec son résultat, s’il a été permis, approuvé par une personne ou refusé, le temps qu’une personne a mis pour décider, ses arguments (secrets retirés, tronqués à 8 Kio) et la taille de son résultat. Le résultat lui-même n’est pas conservé.
+
+L’enregistrement conserve à quel endroit du script chaque appel a été fait, de sorte que ses appels d’outils sont présentés de la même façon que dans la conversation. Un appel qu’une personne a approuvé n’est jamais replié à cet endroit.
+
+Un script encore en cours s’affiche comme en cours, avec les appels d’outils déjà terminés ; sa sortie, sa durée et son utilisation des ressources apparaissent à la fin. Si le serveur s’arrête pendant qu’un script tourne, l’enregistrement est fermé au redémarrage du serveur, et le mentionne ; aucun script ne s’exécute dans cet espace de travail tant qu’il n’est pas fermé.
+
+Les enregistrements sont conservés avec leur exécution : supprimer l’exécution ou son espace les supprime. Les membres voient les enregistrements des espaces qu’ils peuvent ouvrir.
+
+## Comment les scripts sont confinés
+
+Les scripts ne s’exécutent jamais à l’intérieur du serveur. Chaque script tourne dans son propre processus, un petit programme fourni avec le serveur, `cc_codemode`, qui exécute du JavaScript dans le moteur QuickJS-NG. Avant de lire le script, le programme se verrouille lui-même avec les contrôles propres au système d’exploitation : sous Linux, un filtre d’appels système et des limites de ressources ; sous macOS, un profil de bac à sable qui refuse par défaut ; sous Windows, un AppContainer et un objet de tâche. Ensuite, il ne peut pas ouvrir de fichiers, utiliser le réseau, démarrer des processus ni voir d’autres programmes. Il démarre sans variables d’environnement et ne détient aucun identifiant ; son seul canal est le serveur, qui répond à ses appels d’outils.
+
+Le serveur vérifie le verrouillage au démarrage, en exécutant l’autotest du programme. Si le verrouillage ne tient pas sur cette machine, par exemple dans un conteneur dont le profil de sécurité refuse l’une des étapes, le serveur n’exécute aucun script là-bas : aucune exécution ne reçoit `repl`, et la page des réglages affiche **Indisponible** avec la raison. Un script ne s’exécute jamais avec moins de confinement. Le verrouillage Windows n’a pas encore été exécuté sous Windows.
+
+L’emplacement d’un appel dans le script est signalé par l’exécuteur ; il ne sert donc qu’à présenter la conversation et l’enregistrement. Il ne décide jamais si un appel est permis.
+
+Voir [Bac à sable et sécurité](/fr-CA/manuel/concepts/bac-a-sable-et-securite/#scripts-en-mode-code) pour ce que couvre le verrouillage et ce qu’il ne couvre pas.
+
+## Voir aussi
+
+- [Contexte des outils et cache de prompts](/fr-CA/manuel/concepts/contexte-des-outils/) : pourquoi l’ensemble direct est petit et le même avec ou sans `repl`.
+- [Outils d’agent intégrés](/fr-CA/manuel/reference/outils-agent/#repl--exécuter-un-script-qui-appelle-vos-outils) : l’entrée de l’outil `repl`.
+- [CLI `cc_server`](/fr-CA/manuel/reference/cc-server-cli/#mode-code) : les limites que fixe le responsable du serveur.

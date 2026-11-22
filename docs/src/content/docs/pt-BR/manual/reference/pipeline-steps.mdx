@@ -2,7 +2,7 @@
 title: Etapas de pipeline
 description: Referência dos tipos de etapa de pipeline, das chaves de corpo das etapas, da configuração e dos resultados das etapas.
 slug: pt-BR/manual/referencia/etapas-de-pipeline
-sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
+sourceHash: 0d2876bc1ac359f4d2cfe94902bd5f924d19d5d5
 ---
 
 Uma etapa de pipeline tem dois eixos independentes:
@@ -58,6 +58,31 @@ Nó genérico de prompt e despacho: renderiza o prompt, despacha o agente para u
 | `extras.spaceId`           | Conversa existente em que trabalhar (padrão: uma oculta)      |
 | `extras.conversationTitle` | Fluxo nomeado dentro desse espaço (opcional)                  |
 | `extras.mode`              | Lida no nó que *abre* a sala (`messaging.createSpace`), não aqui. Padrão `review`. |
+
+### `goal.pursue`
+
+Inicia um objetivo durável (veja [Perseguir um objetivo](/pt-BR/manual/guias/perseguir-objetivo/)) e fica suspensa até o objetivo terminar. O editor a mostra como **Pursue a goal**. Não é um dos 25 corpos pré-carregados acima; é registrada junto com eles.
+
+| Campo de configuração | Descrição |
+| ---------------------- | ----------- |
+| `agentId` | O agente que persegue o objetivo (obrigatório) |
+| `prompt` | O objetivo; aceita substituição de `{{key}}` (obrigatório) |
+| `outputKey` | Chave de estado para o resultado (obrigatório) |
+| `extras.spaceId` | A sala em que o objetivo trabalha (obrigatório, como todo passo de agente) |
+| `extras.budgetMicros` | O orçamento do objetivo em microdólares, de 1 a 1.000.000.000 (obrigatório) |
+| `extras.maxRuns` | Um limite de segmentos, de 1 a 1.000 (opcional) |
+| `extras.deadlineHours` | Horas a partir do momento em que a etapa inicia o objetivo, de 1 a 2.160 (opcional) |
+| `extras.contract` | O que significa concluído: critérios e verificações (opcional) |
+
+O resultado em `outputKey` é `{summary, verdict}`, em que `verdict` é o veredito do revisor com seus itens e preocupações, ou null.
+
+| O objetivo | A etapa |
+| -------- | -------- |
+| concluído | conclui |
+| falhou, foi cancelado ou esgotou o orçamento | falha (`retry` e `continueOnFail` se aplicam); uma etapa repetida inicia um novo objetivo |
+| pausado, inclusive aguardando a revisão de uma pessoa | fica suspensa, isenta da varredura de vivacidade de 24 horas |
+
+Um objetivo iniciado por uma execução de pipeline tem seu custo lançado na orquestração dessa execução, inclusive a revisão dele. Quando a execução do pipeline é cancelada, falha ou termina enquanto o objetivo trabalha, o objetivo é cancelado.
 
 ### `pipeline.condition`
 

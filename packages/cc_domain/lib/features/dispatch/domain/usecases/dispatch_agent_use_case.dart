@@ -5,6 +5,8 @@ import 'package:cc_domain/core/domain/value_objects/app_locale.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
 import 'package:cc_domain/core/logging/cc_domain_log.dart';
+import 'package:cc_domain/features/code_mode/domain/ports/code_execution_port.dart';
+import 'package:cc_domain/features/dispatch/domain/ports/goal_turn_text_port.dart';
 import 'package:cc_domain/features/dispatch/domain/prompts/mode_prompts.dart';
 import 'package:cc_domain/features/dispatch/domain/usecases/build_agent_prompt_use_case.dart';
 import 'package:cc_domain/features/dispatch/domain/usecases/build_conversation_context_use_case.dart';
@@ -37,6 +39,7 @@ class PreparedDispatch {
     required this.mode,
     required this.resolvedAdapterId,
     required this.cliName,
+    required this.transport,
     this.rawUserText = '',
   });
 
@@ -76,6 +79,10 @@ class PreparedDispatch {
 
   /// The CLI name for the backend to use.
   final String cliName;
+
+  /// How the resolved adapter is driven: what a read-only run can be held
+  /// to (`ReadOnlyRunProfile.enforcedOn`).
+  final AdapterTransport transport;
 }
 
 /// Orchestrates the full agent dispatch flow: resolves the agent, builds the
@@ -85,6 +92,8 @@ class DispatchAgentUseCase {
   /// Creates a [DispatchAgentUseCase].
   DispatchAgentUseCase({
     required this._agentRepo,
+    required this._goalTurnText,
+    required this._codeExecutions,
     this._memoryContextUseCase,
     this._conversationContextUseCase,
     this._modeResolver,
@@ -92,6 +101,16 @@ class DispatchAgentUseCase {
   });
 
   final AgentRepository _agentRepo;
+
+  /// The goal text of a wake-started run (a segment's goal block, a
+  /// reviewer's prompt); null where no goals run (a client, a test).
+  final GoalTurnTextPort? _goalTurnText;
+
+  /// The server's script runs, whose availability says whether this run
+  /// gets `repl` (on every transport: Claude Code and ACP runs reach it
+  /// through the MCP endpoint), and so how its prompt names a tool; null
+  /// where no scripts run (a client, a test).
+  final CodeExecutionPort? _codeExecutions;
   final BuildMemoryContextUseCase? _memoryContextUseCase;
   final BuildConversationContextUseCase? _conversationContextUseCase;
   final ModeResolver? _modeResolver;
@@ -105,15 +124,17 @@ class DispatchAgentUseCase {
   ///
   /// [workspaceId] is the workspace the dispatch runs in; it scopes the agent,
   /// mode and conversation-history reads, so an id from another workspace
-  /// resolves to nothing instead of being read.
+  /// resolves to nothing instead of being read. [freshHistory] leaves the
+  /// conversation's history out of the prompt (a run that starts fresh).
   Future<PreparedDispatch> execute({
     required String workspaceId,
     required String agentId,
     required String prompt,
+    required bool freshHistory,
+    required WakeContext wakeContext,
     String? spaceId,
     String? conversationId,
     String? adapterId,
-    WakeContext? wakeContext,
     MentionContext? mentionContext,
   }) async {
     final agent = await _agentRepo.getById(workspaceId, agentId);
@@ -144,17 +165,32 @@ class DispatchAgentUseCase {
     // sum. Each read keeps its own try/catch, so one failing (memory store
     // down, roster lookup error) yields an empty layer and logs, and never
     // aborts the others: the prompt still assembles.
+    // Read once, so the goal text and the turn's texts agree.
+    final hasRepl = _codeExecutions?.availability.isAvailable ?? false;
     final results = await Future.wait<Object?>([
       _resolveMode(workspaceId, spaceId),
       _loadMemoryContext(agent, prompt),
-      _loadConversationContext(agent, workspaceId, spaceId, prompt),
+      // A fresh run starts with no history from before it: no conversation
+      // window. Memory, the checklist and the repository stay.
+      if (freshHistory)
+        Future<ConversationContextParts?>.value()
+      else
+        _loadConversationContext(agent, workspaceId, spaceId, prompt),
       _loadTeammates(agent),
+      _loadGoalText(
+        workspaceId: workspaceId,
+        agentId: agentId,
+        conversationId: conversationId,
+        wakeContext: wakeContext,
+        hasRepl: hasRepl,
+      ),
     ]);
 
     final mode = results[0]! as Mode;
     final memoryContext = results[1] as String?;
     final conversationParts = results[2] as ConversationContextParts?;
     final teammates = results[3]! as List<TeammateBrief>;
+    final goalText = results[4] as GoalTurnText?;
 
     final modeContext = mode == Mode.plan
         ? ModePromptContext(planGoal: prompt)
@@ -168,6 +204,7 @@ class DispatchAgentUseCase {
     final promptParts = _buildPrompt.buildParts(
       prompt: prompt,
       agent: agent,
+      hasRepl: hasRepl,
       memoryContext: memoryContext,
       conversationContext: conversationParts?.text,
       conversationEntries: conversationParts?.entries,
@@ -175,6 +212,7 @@ class DispatchAgentUseCase {
       modeContext: modeContext,
       mentionContext: mentionContext,
       wakeContext: wakeContext,
+      goalText: goalText,
       locale: _locale,
       teammates: teammates,
       transport: resolvedAdapter.transport,
@@ -188,6 +226,7 @@ class DispatchAgentUseCase {
       mode: mode,
       resolvedAdapterId: resolvedAdapterId,
       cliName: cliName,
+      transport: resolvedAdapter.transport,
       rawUserText: prompt,
     );
   }
@@ -278,6 +317,35 @@ class DispatchAgentUseCase {
       return context;
     } catch (e, st) {
       _log('Conversation context: build failed — $e\n$st');
+      return null;
+    }
+  }
+
+  /// The goal text of a run the wake queue started (none for a run with a
+  /// cause of its own, so a person's message costs no read). [hasRepl] is
+  /// whether scripts can run now, on any transport. Best-effort: a failure
+  /// logs and yields null.
+  Future<GoalTurnText?> _loadGoalText({
+    required String workspaceId,
+    required String agentId,
+    required String? conversationId,
+    required WakeContext wakeContext,
+    required bool hasRepl,
+  }) async {
+    final port = _goalTurnText;
+    if (port == null || !wakeContext.hasWakes) {
+      return null;
+    }
+    try {
+      return await port.forRun(
+        workspaceId: workspaceId,
+        agentId: agentId,
+        conversationId: conversationId,
+        wakeContext: wakeContext,
+        hasRepl: hasRepl,
+      );
+    } catch (e, st) {
+      _log('Goal text: build failed — $e\n$st');
       return null;
     }
   }

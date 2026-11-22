@@ -2,7 +2,7 @@
 title: Orkestrering
 description: Hur en "stor förfrågan" blir en plan för hela teamet som du godkänner en gång, och sedan en genererad pipeline som utför den.
 slug: sv-SE/handbok/koncept/orkestrering
-sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
+sourceHash: db1bbceaba025b64539588004eebb65d944d5933
 ---
 
 En enskild agent är bra på en sak. Vissa förfrågningar är större än så:
@@ -38,12 +38,8 @@ stället för fri prosa. Ett förslag innehåller:
 - **Syntes**: det sista steget som producerar leveransen.
 - **Budget**: ett deklarerat kostnadstak.
 
-:::caution[Budgeten är vägledande]
-Förslagets kostnadstak jämförs med planens uppskattade totalsumma och markerar
-en plan över budget i godkännandefältet _innan_ du godkänner. Ingenting läser
-det när körningen väl har startat, så det stoppar inte en orkestrering som går
-över, och får den inte att misslyckas. Budgetpolicyer per agent och per arbetsyta är en
-separat mekanism och är det som faktiskt pausar utgifter.
+:::caution[Budgeten håller körningen, den dödar den inte]
+Förslagets kostnadstak jämförs med planens uppskattade totalsumma och markerar en plan över budget i godkännandefältet _innan_ du godkänner. När körningen har startat kontrollerar servern vad den har spenderat före varje nytt steg: vid taket hålls pipelinekörningen (`suspended`, skäl `orchestration_budget`) och inget nytt startar, medan steg som redan körs slutförs. Den som begärde körningen får ett meddelande och återupptar den med **Höj gräns** på pipelinekörningens sida (en arbetsytsadministratör när ingen begärde den). En höjning måste ligga över det gamla taket och det som har spenderats, högst 1 000 dollar, och ett tak tas aldrig bort. Mål som körningen driver räknas mot den, även deras granskningar. Budgetpolicyer per agent och per arbetsyta är en separat mekanism.
 :::
 
 ## Var du granskar den

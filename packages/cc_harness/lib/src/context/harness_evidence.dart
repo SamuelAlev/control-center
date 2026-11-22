@@ -14,54 +14,21 @@
 /// [ToolOutputReference]) is ever masked; everything else is left verbatim.
 library;
 
+import 'dart:convert';
+
 import 'package:cc_harness/src/context/harness_token_accounting.dart';
+import 'package:cc_harness/src/context/pinned_evidence.dart';
+import 'package:cc_harness/src/context/still_in_flight.dart';
 import 'package:cc_harness/src/context/token_estimator.dart';
 import 'package:cc_harness/src/context/tool_output_reference.dart';
 import 'package:cc_harness/src/context/tool_result_elision.dart';
 import 'package:cc_harness/src/messages.dart';
 
+export 'package:cc_harness/src/context/pinned_evidence.dart';
+
 /// Marks the injected anchored-summary user message so a later compaction pass
 /// recognizes it and re-anchors (updates) rather than re-summarizing.
 const String harnessSummaryMarker = '[conversation-summary]';
-
-/// Opens the authoritative evidence block (original request + system steering).
-///
-/// Section identity is STRUCTURAL, not inferred from Markdown: an ordinary
-/// request (`# Goal … ## Acceptance …`) contains its own headings, and treating
-/// those as section ends would move the requirements into the droppable region.
-/// Parsing the block by these markers keeps the payload verbatim for the model
-/// while making it impossible for ordinary Markdown to unpin it.
-const String evidencePinBegin = '<!--omp:authoritative-->';
-
-/// Closes the authoritative evidence block.
-const String evidencePinEnd = '<!--omp:end-authoritative-->';
-
-/// Prefixes the machine-readable activated-tool list appended to a digest.
-const String evidenceActivationPrefix = '<!--omp:activated-tools--> ';
-
-/// Splits [text] into the pinned authoritative block and the rest.
-///
-/// Returns the inner text without the markers; the caller re-frames it when
-/// emitting. When the opening marker is missing there is nothing pinned. A
-/// missing closing marker (e.g. a truncated carry) pins the remainder — the
-/// safe direction, since pinning too much never drops instructions.
-({String pinned, String rest}) splitPinnedEvidence(String text) {
-  final begin = text.indexOf(evidencePinBegin);
-  if (begin < 0) {
-    return (pinned: '', rest: text.trim());
-  }
-  final bodyStart = begin + evidencePinBegin.length;
-  final end = text.indexOf(evidencePinEnd, bodyStart);
-  final bodyEnd = end < 0 ? text.length : end;
-  final pinned = text.substring(bodyStart, bodyEnd).trim();
-  final rest =
-      (end < 0
-              ? text.substring(0, begin)
-              : '${text.substring(0, begin)}\n'
-                    '${text.substring(end + evidencePinEnd.length)}')
-          .trim();
-  return (pinned: pinned, rest: rest);
-}
 
 /// The activation metadata a fold must carry forward: every name recorded on a
 /// message (the loop tags the tool-result message of an activation turn) plus
@@ -112,6 +79,103 @@ const List<String> _pathArgKeys = [
   'target',
 ];
 
+/// Argument keys, beyond the path keys, that name what a call touched: kept in
+/// a nested call's digest ([identifyingToolArgs]).
+const List<String> _identifyingArgKeys = [
+  'paths',
+  'edits',
+  'command',
+  'url',
+  'query',
+  'pattern',
+  'glob',
+  'cwd',
+  'id',
+  'name',
+];
+
+/// How many characters of one identifying string a digest keeps.
+const int _identifyingValueChars = 256;
+
+/// How many items of one identifying list a digest keeps.
+const int _identifyingListItems = 16;
+
+/// The arguments of a call that identify what it touched (its paths, command,
+/// URL or query), clipped for a [HarnessNestedToolCall] digest.
+///
+/// Payload arguments (file contents, replacement text) are dropped: the digest
+/// exists so evidence can say WHICH files a script edited, and the path keys
+/// are the same ones the evidence reads from a direct call. List items keep
+/// their strings or, for objects such as a batch edit's entries, their path
+/// keys.
+Map<String, Object?> identifyingToolArgs(Map<String, dynamic> args) {
+  Object? clip(Object? value) => switch (value) {
+    final String s when s.length > _identifyingValueChars =>
+      '${s.substring(0, _identifyingValueChars)}…',
+    String() || num() || bool() || null => value,
+    _ => null,
+  };
+  final kept = <String, Object?>{};
+  for (final key in [..._pathArgKeys, ..._identifyingArgKeys]) {
+    final value = args[key];
+    if (value == null) {
+      continue;
+    }
+    if (value is List) {
+      final items = <Object?>[];
+      for (final item in value.take(_identifyingListItems)) {
+        if (item is Map) {
+          final paths = <String, Object?>{
+            for (final pathKey in _pathArgKeys)
+              if (item[pathKey] case final Object v) pathKey: clip(v),
+          }..removeWhere((_, v) => v == null);
+          if (paths.isNotEmpty) {
+            items.add(paths);
+          }
+        } else if (clip(item) case final Object v) {
+          items.add(v);
+        }
+      }
+      if (items.isNotEmpty) {
+        kept[key] = items;
+      }
+      continue;
+    }
+    if (clip(value) case final Object v) {
+      kept[key] = v;
+    }
+  }
+  return kept;
+}
+
+/// The file path a call's arguments name, by the same keys for a direct call
+/// and a nested one.
+String? _pathOf(Map<String, Object?> args) {
+  for (final key in _pathArgKeys) {
+    final raw = args[key];
+    if (raw is String && raw.trim().isNotEmpty) {
+      return raw.trim();
+    }
+  }
+  return null;
+}
+
+/// Whether any nested call recorded on [block] is a state-carrying tool whose
+/// output must survive pruning and masking ([pruneProtectedTools]): a script
+/// that wrote the checklist is as protected as a direct `todo_write`.
+bool nestedCallsProtected(HarnessToolResultBlock block) => block.nestedCalls
+    .any((c) => pruneProtectedTools.contains(normalizeHarnessToolName(c.name)));
+
+/// The file paths the nested calls recorded on [block] named.
+Iterable<String> _nestedPaths(HarnessToolResultBlock block) sync* {
+  for (final call in block.nestedCalls) {
+    final path = _pathOf(call.args);
+    if (path != null) {
+      yield path;
+    }
+  }
+}
+
 /// Bounds for the evidence-bearing history handed to a summarizer.
 ///
 /// Every bound is in characters because the estimator is char-based and the
@@ -134,19 +198,21 @@ class HarnessEvidenceBudget {
   /// Whole rendered evidence budget (the guard that actually binds).
   final int totalChars;
 
-  /// Cap on the authoritative block (the original request + system steering).
-  /// Null derives a scale-free share of [totalChars].
+  /// The pinned block's one budget (the person's requests and steering, and
+  /// the loop's system steering), across carried and new items alike
+  /// ([fitPinnedEvidence]). Null derives a scale-free share of [totalChars].
   ///
-  /// Authoritative evidence is PINNED and never tail-bounded away, but it is
-  /// still bounded: unbounded "must survive" categories are exactly how an
-  /// error-heavy history overflows the summarizer prompt.
+  /// Pinned evidence is never tail-bounded away, but it is still bounded:
+  /// unbounded "must survive" categories are exactly how an error-heavy
+  /// history overflows the summarizer prompt.
   final int? authoritativeChars;
 
   /// Cap on protected observations (diagnostics and active-edit results).
   /// Null derives a scale-free share of [totalChars].
   final int? protectedChars;
 
-  /// Cap on one user turn.
+  /// Cap on one user turn. The original request has none of its own: the
+  /// pinned budget decides how much of it fits.
   final int userChars;
 
   /// Cap on one system-role steering turn.
@@ -161,7 +227,7 @@ class HarnessEvidenceBudget {
   /// Cap on one tool-result excerpt.
   final int toolResultChars;
 
-  /// Share of [totalChars] the authoritative block may occupy.
+  /// Share of [totalChars] the pinned block may occupy.
   int get authoritativeShare => authoritativeChars ?? (totalChars * 2 ~/ 5);
 
   /// Share of [totalChars] protected observations may occupy.
@@ -202,14 +268,10 @@ class _CallInfo {
 class _EvidenceItem {
   _EvidenceItem({
     required this.text,
-    required this.established,
     required this.protected,
     this.handles = const [],
   });
   final String text;
-
-  /// Always kept: the original request and system steering.
-  final bool established;
 
   /// Kept even when trimming: active-edit evidence and diagnostics.
   final bool protected;
@@ -220,18 +282,18 @@ class _EvidenceItem {
 }
 
 /// Truncates [text] to [max] characters, keeping both ends and naming how much
-/// was dropped so a reader can tell an excerpt from the whole.
-String _clip(String text, int max) {
-  final trimmed = text.trim();
-  if (max <= 0 || trimmed.length <= max) {
-    return trimmed;
-  }
-  final head = max * 3 ~/ 4;
-  final tail = max - head;
-  final omitted = trimmed.length - head - tail;
-  return '${trimmed.substring(0, head)}…[truncated $omitted chars]…'
-      '${trimmed.substring(trimmed.length - tail)}';
-}
+/// was dropped so a reader can tell an excerpt from the whole. Never cuts
+/// inside a data envelope ([clipKeepingEnvelopes]).
+String _clip(String text, int max) => clipKeepingEnvelopes(text, max);
+
+/// The heading an observation-like message (one that is data, not
+/// instructions) is shown under, by where it came from.
+String _dataHeading(HarnessMessageOrigin origin) => switch (origin) {
+  HarnessMessageOrigin.notice => '# Notice (server, last observed)',
+  HarnessMessageOrigin.wake => '# Wake (data)',
+  HarnessMessageOrigin.peer => '# Peer message (data)',
+  HarnessMessageOrigin.person => '# User',
+};
 
 /// Indexes the tool calls in [history] by id, capturing the name and the file
 /// path an edit/read call targets.
@@ -242,14 +304,7 @@ Map<String, _CallInfo> _toolCallIndex(List<HarnessMessage> history) {
       if (b is! HarnessToolUseBlock) {
         continue;
       }
-      String? path;
-      for (final key in _pathArgKeys) {
-        final raw = b.input[key];
-        if (raw is String && raw.trim().isNotEmpty) {
-          path = raw.trim();
-          break;
-        }
-      }
+      final path = _pathOf(b.input);
       index.putIfAbsent(
         b.id,
         () => _CallInfo(normalizeHarnessToolName(b.name), path),
@@ -270,21 +325,29 @@ Set<String> collectActiveEditTargets(
 }) {
   final targets = <String>{};
   var seen = 0;
-  for (var i = history.length - 1; i >= 0 && seen < lookback; i--) {
-    for (final b in history[i].content) {
-      if (b is! HarnessToolUseBlock) {
-        continue;
+  // A script's edits are nested calls recorded on its result block; they count
+  // exactly as direct edit calls do.
+  Iterable<(String, Map<String, Object?>)> editsIn(HarnessMessage m) sync* {
+    for (final b in m.content) {
+      if (b is HarnessToolUseBlock) {
+        yield (b.name, b.input);
+      } else if (b is HarnessToolResultBlock) {
+        for (final call in b.nestedCalls) {
+          yield (call.name, call.args);
+        }
       }
-      if (!editToolNames.contains(normalizeHarnessToolName(b.name))) {
+    }
+  }
+
+  for (var i = history.length - 1; i >= 0 && seen < lookback; i--) {
+    for (final (name, args) in editsIn(history[i])) {
+      if (!editToolNames.contains(normalizeHarnessToolName(name))) {
         continue;
       }
       seen++;
-      for (final key in _pathArgKeys) {
-        final raw = b.input[key];
-        if (raw is String && raw.trim().isNotEmpty) {
-          targets.add(raw.trim());
-          break;
-        }
+      final path = _pathOf(args);
+      if (path != null) {
+        targets.add(path);
       }
       if (seen >= lookback) {
         break;
@@ -297,18 +360,29 @@ Set<String> collectActiveEditTargets(
 /// Renders a harness message span into a bounded, evidence-bearing transcript.
 ///
 /// Preserved, in trust order:
-/// - the ORIGINAL request (the first user turn) and every system-role steering
-///   turn, verbatim (bounded per message);
+/// - the PINNED block ([evidencePinBegin] … [evidencePinEnd], one budget,
+///   [fitPinnedEvidence]): the person's original request (the conversation's
+///   first message), every later message of the person (a request after a
+///   summary, steering sent mid-run, a queued follow-up:
+///   [HarnessMessageOrigin.person], and the texts a snapshot page carries in
+///   [HarnessMessage.carriedPersonTexts]) and the loop's own system steering;
 /// - assistant answer text plus each tool call WITH its arguments, so source
 ///   paths, symbols and identifiers survive;
 /// - tool results as OBSERVATIONS labelled with the tool name and outcome, and
-///   carrying the recovery handle of the durable original when one exists.
+///   carrying the recovery handle of the durable original when one exists;
+/// - server notices, wake frames and peers' messages, whatever role carries
+///   them, as data like an observation: never pinned.
 ///
 /// Observations are explicitly distinguished from assistant narration so a
 /// summary cannot turn "the agent thought the tests passed" into "tests
 /// passed". When the span exceeds [HarnessEvidenceBudget.totalChars] the oldest
-/// non-established, non-protected items are dropped (newest evidence first) and
+/// unpinned, non-protected items are dropped (newest evidence first) and
 /// replaced by a single omission line naming the count.
+///
+/// Every message's text has the pin markers neutralised
+/// ([neutraliseEvidenceMarkers]): only this serializer and the compactor
+/// write them, so no tool output, page, file, model text or message can
+/// forge or close the pinned block.
 String serializeHarnessHistory(
   List<HarnessMessage> messages, {
   String selfAgentName = 'assistant',
@@ -319,51 +393,94 @@ String serializeHarnessHistory(
     return '';
   }
   final calls = _toolCallIndex(messages);
+  final pinned = <PinnedEvidenceItem>[];
   final items = <_EvidenceItem>[];
-  var firstUserSeen = false;
+  // The conversation's original request: its first message, unless the span
+  // starts with a summary (which carries the original in its own block).
+  var requestOpen = true;
+  void pinPerson(String text) {
+    final body = neutraliseEvidenceMarkers(text.trim());
+    if (body.isEmpty) {
+      return;
+    }
+    if (requestOpen) {
+      requestOpen = false;
+      // Whole: the pinned budget decides how much of it fits.
+      pinned.add(PinnedEvidenceItem.request(body));
+      return;
+    }
+    pinned.add(PinnedEvidenceItem.person(_clip(body, budget.userChars)));
+  }
 
-  for (final m in messages) {
+  void addData(HarnessMessageOrigin origin, String text) {
+    items.add(
+      _EvidenceItem(
+        text:
+            '${_dataHeading(origin)}\n'
+            '${_clip(neutraliseEvidenceMarkers(text), budget.toolResultChars)}',
+        protected: false,
+      ),
+    );
+  }
+
+  for (var index = 0; index < messages.length; index++) {
+    final m = messages[index];
+    final origin = m.origin;
     switch (m.role) {
       case HarnessRole.user:
+        // A snapshot page's person texts are the person's words: pinned,
+        // whatever the page's own text says.
+        m.carriedPersonTexts.forEach(pinPerson);
         final text = m.textContent.trim();
         if (text.isEmpty) {
           continue;
         }
-        if (text.startsWith(harnessSummaryMarker)) {
+        if (origin == null && text.startsWith(harnessSummaryMarker)) {
           // The original request is already pinned inside this summary. Do not
-          // promote the first subsequent user turn into a second "original":
-          // repeated folds would spend the authoritative budget on that turn
-          // and eventually truncate the actual requirements.
-          firstUserSeen = true;
+          // promote the next untagged user turn into a second "original".
+          requestOpen = false;
           continue;
         }
-        final isOriginal = !firstUserSeen;
-        firstUserSeen = true;
+        if (origin == HarnessMessageOrigin.person ||
+            (origin == null && index == 0)) {
+          pinPerson(text);
+          continue;
+        }
+        requestOpen = false;
+        if (origin != null) {
+          addData(origin, text);
+          continue;
+        }
         items.add(
           _EvidenceItem(
             text:
-                '${isOriginal ? '# User (original request)' : '# User'}\n'
-                '${_clip(text, budget.userChars)}',
-            established: isOriginal,
-            protected: isOriginal,
+                '# User\n'
+                '${_clip(neutraliseEvidenceMarkers(text), budget.userChars)}',
+            protected: false,
           ),
         );
       case HarnessRole.system:
         final text = m.textContent.trim();
-        if (text.isEmpty) {
+        // A "Still in flight" block is last-observed state, rebuilt from
+        // live state after every compaction: pinning it would carry stale
+        // statuses forward as authoritative steering.
+        if (text.isEmpty || isStillInFlightBlock(text)) {
           continue;
         }
-        // Critical instructions live here. Kept verbatim, bounded, and never
-        // trimmed away.
-        items.add(
-          _EvidenceItem(
-            text: '# System steering\n${_clip(text, budget.systemChars)}',
-            established: true,
-            protected: true,
+        // A notice, a wake frame or a peer's message is data: summarised or
+        // dropped like an observation, never pinned.
+        if (origin != null && origin != HarnessMessageOrigin.person) {
+          addData(origin, text);
+          continue;
+        }
+        // The loop's and the owner's steering: kept verbatim, bounded, pinned.
+        pinned.add(
+          PinnedEvidenceItem.steering(
+            _clip(neutraliseEvidenceMarkers(text), budget.systemChars),
           ),
         );
       case HarnessRole.assistant:
-        final text = m.textContent.trim();
+        final text = neutraliseEvidenceMarkers(m.textContent.trim());
         final lines = <String>[];
         var touchesActiveEdit = false;
         for (final b in m.content) {
@@ -376,7 +493,8 @@ String serializeHarnessHistory(
             touchesActiveEdit = true;
           }
           lines.add(
-            '(call: $name ${_clip(b.encodedInput, budget.toolArgsChars)})',
+            '(call: $name '
+            '${_clip(neutraliseEvidenceMarkers(b.encodedInput), budget.toolArgsChars)})',
           );
         }
         final body = [
@@ -389,7 +507,6 @@ String serializeHarnessHistory(
         items.add(
           _EvidenceItem(
             text: '# $selfAgentName\n${body.join('\n')}',
-            established: false,
             protected: touchesActiveEdit,
           ),
         );
@@ -407,7 +524,9 @@ String serializeHarnessHistory(
           final call = calls[b.toolUseId];
           final name = call?.name ?? 'tool';
           final path = call?.path;
-          final isActiveEdit = path != null && activeEditTargets.contains(path);
+          final isActiveEdit =
+              (path != null && activeEditTargets.contains(path)) ||
+              _nestedPaths(b).any(activeEditTargets.contains);
           if (isActiveEdit || b.isError) {
             protectedObservation = true;
           }
@@ -417,10 +536,16 @@ String serializeHarnessHistory(
           final recovery = b.outputReference != null
               ? '\n${maskedObservationMarker(b.outputReference!)}'
               : '';
+          // The calls a script made are evidence of what it touched, as a
+          // direct call's arguments are.
+          final nested = b.nestedCalls.isEmpty
+              ? ''
+              : '\n${_clip(neutraliseEvidenceMarkers([for (final c in b.nestedCalls) '(nested call: ${normalizeHarnessToolName(c.name)} ${jsonEncode(c.args)}${c.isError ? ', error' : ''})'].join('\n')), budget.toolArgsChars * 4)}';
           lines.add(
             '# Observation ($name, ${b.isError ? 'error' : 'ok'})'
             '${isActiveEdit ? ' [active edit]' : ''}\n'
-            '${_clip(b.content, budget.toolResultChars)}$recovery',
+            '${_clip(neutraliseEvidenceMarkers(b.content), budget.toolResultChars)}'
+            '$nested$recovery',
           );
         }
         if (lines.isEmpty) {
@@ -429,7 +554,6 @@ String serializeHarnessHistory(
         items.add(
           _EvidenceItem(
             text: lines.join('\n'),
-            established: false,
             protected: protectedObservation,
             handles: handleList,
           ),
@@ -439,20 +563,18 @@ String serializeHarnessHistory(
 
   // ---- Bounded category allocation ----
   // EVERY category is bounded, including the ones that must not be dropped
-  // silently: an unbounded "authoritative"/"protected" bucket is exactly how an
+  // silently: an unbounded "pinned"/"protected" bucket is exactly how an
   // error-heavy history overflows the summarizer prompt. Dropped items are
   // named, and any real recovery handle they carried is preserved in the loss
   // marker so nothing disappears without a reference.
-  final established = items.where((i) => i.established).toList();
-  final protectedItems = items
-      .where((i) => !i.established && i.protected)
-      .toList();
-  final general = items.where((i) => !i.established && !i.protected).toList();
+  final protectedItems = items.where((i) => i.protected).toList();
+  final general = items.where((i) => !i.protected).toList();
 
-  // Authoritative: head-keep (the original request comes first).
-  final authKept = _fitHead(established, budget.authoritativeShare);
-  final authText = _renderItems(authKept);
-  final authDropped = established.sublist(authKept.length);
+  // Pinned: one budget. The original request whole, then the newest.
+  final authText = fitPinnedEvidence(
+    pinned,
+    budget: budget.authoritativeShare,
+  );
 
   // Protected observations: newest-first, so the latest diagnostics win.
   final protKept = _fitHead(
@@ -480,16 +602,11 @@ String serializeHarnessHistory(
   if (authText.isNotEmpty) {
     // The pin markers make section identity STRUCTURAL: ordinary Markdown
     // headings inside the request (`# Goal`, `## Acceptance`) can no longer
-    // terminate the authoritative section and let the budget drop it.
+    // terminate the pinned section and let the budget drop it.
     buffer
       ..writeln(evidencePinBegin)
       ..writeln(authText)
       ..writeln(evidencePinEnd)
-      ..writeln();
-  }
-  if (authDropped.isNotEmpty) {
-    buffer
-      ..writeln(_lossMarker(authDropped, 'authoritative instruction(s)'))
       ..writeln();
   }
   if (protDropped.isNotEmpty) {
@@ -671,12 +788,13 @@ HarnessMaskResult maskStaleObservations(
       }
       final call = calls[b.toolUseId];
       final name = call?.name ?? '';
-      if (pruneProtectedTools.contains(name)) {
+      if (pruneProtectedTools.contains(name) || nestedCallsProtected(b)) {
         rebuilt.add(b);
         continue;
       }
       final path = call?.path;
-      if (path != null && activeEditTargets.contains(path)) {
+      if ((path != null && activeEditTargets.contains(path)) ||
+          _nestedPaths(b).any(activeEditTargets.contains)) {
         rebuilt.add(b);
         continue;
       }

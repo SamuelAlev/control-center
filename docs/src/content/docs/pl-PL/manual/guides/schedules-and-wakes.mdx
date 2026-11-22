@@ -1,0 +1,110 @@
+---
+title: Harmonogramy i wybudzenia
+description: Wybudź agenta później, według harmonogramu albo gdy coś się wydarzy, zobacz, co czeka, i co dzieje się przy restarcie lub limicie użycia.
+slug: pl-PL/podrecznik/poradniki/harmonogramy-i-wybudzenia
+sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+---
+
+Agent nie śpi ani nie odpytuje w trakcie czekania. Agent albo ty ustawiacie **wybudzenie**: trwałe żądanie rozpoczęcia lub kontynuowania uruchomienia agenta w rozmowie o określonym czasie albo gdy coś się wydarzy. Każde uruchomienie, które serwer rozpoczyna bez wpisywania przez kogoś, zaczyna się jako wybudzenie: następny segment celu, harmonogram, obserwacja, odpowiedź od innego agenta, zakończona praca przekazana dalej, koniec limitu użycia, praca pozostała po restarcie. Wybudzenia są przechowywane w bazie danych obszaru roboczego, więc przetrwają restart.
+
+## Zaplanuj agenta samodzielnie
+
+Wpisz jedno z poniższych w polu wiadomości rozmowy:
+
+```text
+/loop every 30m --days 3 check the deploy and fix what broke
+/loop keep the flaky tests green
+/schedule in 2h look at the overnight benchmark
+/schedule at 09:00 summarize what changed overnight
+/schedule cron "0 9 * * 1-5" --max 20 triage new tickets
+```
+
+| Polecenie | Co robi |
+| --- | --- |
+| `/loop every <interval> <prompt>` | Wybudza agenta z promptem teraz, a potem co każdy interwał (co najmniej 60 sekund od siebie) |
+| `/loop <prompt>` | Pętla sterowana przez agenta: wybudza agenta teraz, a po każdym uruchomieniu agent wybiera kolejne opóźnienie, od 1 do 60 minut (domyślnie 20) |
+| `/schedule in <duration> <prompt>` | Wybudza agenta raz, po opóźnieniu |
+| `/schedule at <HH:MM or ISO time> <prompt>` | Wybudza agenta raz. `HH:MM` to najbliższa taka godzina w strefie czasowej obszaru roboczego; czas ISO bez przesunięcia jest w UTC |
+| `/schedule cron "<expression>" <prompt>` | Wybudza agenta według cron z pięcioma polami, odczytywanego w strefie czasowej obszaru roboczego. Cudzysłowy są opcjonalne |
+
+- `--max <N>` ogranicza liczbę uruchomień, `--days <N>` kończy harmonogram po tylu dniach (domyślnie 30, najwyżej 365), a `--budget <dollars>` ogranicza, ile harmonogram może wydać łącznie (w przeciwnym razie domyślny budżet obszaru roboczego, na początek 50 dolarów).
+- `/loop` uruchamia pierwsze uruchomienie od razu. `/schedule` czeka na swój czas.
+- Czasy trwania używają `s`, `m`, `h` i `d`, na przykład `90s`, `20m` lub `1h30m`.
+- Te polecenia są odczytywane tylko w wiadomości, którą sam wpisujesz.
+
+Kompozytor pomaga w ich pisaniu. Po `/loop` albo `/schedule` i spacji lista podpowiedzi oferuje, kiedy harmonogram się uruchomi, i zawęża się, gdy piszesz; wpisz `--` po godzinie, aby zobaczyć limity. Enter albo Tab wybiera wiersz i nic nie wysyła. Wiersz nad tekstem odczytuje wtedy polecenie: kiedy się uruchomi, kiedy się zakończy i czego jeszcze brakuje. Jeśli naciśniesz Enter na poleceniu, którego nie da się odczytać, ten wiersz mówi, co jest nie tak, a szkic zostaje.
+
+Harmonogram możesz też utworzyć na stronie **Harmonogramy** przyciskiem **Nowy harmonogram**: wybierz przestrzeń, rozmowę i agenta, kiedy ma się uruchamiać, od czego zaczyna się każde uruchomienie, zakończenie, limit uruchomień i limit kosztów. **Gdy agent jest zajęty** wybiera między pominięciem tego uruchomienia a czekaniem, aż agent będzie wolny. **Każde uruchomienie** wybiera między rozpoczęciem uruchomienia a samym powiadomieniem z notatką.
+
+## Co ustawiają agenty
+
+Agenty używają narzędzia `wake_me` do tych samych rzeczy oraz do obserwacji:
+
+| Obserwacja | Uruchamia się, gdy |
+| --- | --- |
+| `on:pr_checks` | Sprawdzenia pull requesta przestrzeni się kończą |
+| `on:pr_review` | Pull request przestrzeni dostaje recenzję albo odpowiedź |
+| `on:pr_merged` | Pull request przestrzeni zostaje scalony |
+| `on:environment` | Zadanie środowiska przestrzeni kończy się albo środowisko staje się gotowe |
+| `on:ticket:<id>` | Zgłoszenie zostaje rozstrzygnięte |
+| `on:pipeline_run:<id>` | Uruchomienie potoku się kończy |
+
+- Obserwacja pull requesta słucha pull requesta przestrzeni albo jednego pull requesta, który nazwie (`on:pr_checks:acme/shop-ui#12`). Obserwacja czegoś, czego jej osoba nie może odczytać, jest odrzucana.
+- Własne działania agenta nie uruchamiają jego obserwacji. Zdarzenie, które nadejdzie, gdy agent pracuje, nie przepada: czeka do końca uruchomienia, a późniejsze zdarzenia są scalane w to samo wybudzenie.
+- Harmonogram agenta musi mieć limit uruchomień albo koniec. Kończy się po 7 dniach domyślnie i najwyżej po 30. Obserwacja uruchamia się domyślnie 10 razy.
+- Harmonogram, który agent ustawia w uruchomieniu wystartowanym przez jeden z jego własnych harmonogramów, dzieli koniec, limit uruchomień i limit kosztów pierwszego harmonogramu, więc łańcuch harmonogramów agenta nie może przeżyć pierwszego. Usunięcie pierwszego harmonogramu kończy cały łańcuch; wstrzymanie go wstrzymuje tylko ten harmonogram. Uruchomienia, które łańcuch rozpoczyna przez inne agenty, liczą się do tego samego limitu kosztów. Harmonogram, który utworzyłeś ty, nie zaczyna łańcucha: to, co agent ustawia w swoich uruchomieniach, jest ograniczone tak samo jak wszystko, co ustawia po twojej wiadomości.
+- Agent sprawdza, co ma w kolejce, poleceniem `list_wakes`, i anuluje to, co sam ustawił, poleceniem `cancel_wake`. Nie może anulować tego, co ustawiłeś ty.
+
+## Zobacz, co czeka
+
+**Nad polem wiadomości.** Gdy w rozmowie czekają wybudzenia dla agenta, pasek je pokazuje: **N wybudzeń czeka**, skąd każde pochodzi (**Cel**, **Harmonogram**, **Obserwacja**, **Odpowiedź od** agenta, **Reset limitu**, **Odzyskanie**, …), kiedy jest zaplanowane i dlaczego jest wstrzymane.
+
+| Przycisk | Co robi | Kto może |
+| --- | --- | --- |
+| **Dostarcz teraz** | Natychmiast dostarcza czekające wybudzenie | Tylko osoba, w czyim imieniu działa wybudzenie |
+| **Wznów** | Zwalnia wstrzymane wybudzenie | Tylko osoba, w czyim imieniu działa wybudzenie |
+| **Anuluj wybudzenie** | Anuluje je | Każdy z dostępem do przestrzeni |
+
+Wybudzenie, które nie zostało dostarczone, zostawia jeden wiersz w rozmowie z powodem, na przykład **Agent jest wstrzymany.** albo **Budżet blokuje uruchomienie.**
+
+**Strona harmonogramów.** Pasek boczny → **Harmonogramy** wyświetla każdy harmonogram i obserwację, które widzisz, pogrupowane według stanu; harmonogram cron pokazuje swoje trzy następne terminy w twojej strefie czasowej. Otwórz jeden, aby zobaczyć jego notatkę, właściciela, następne uruchomienia, uruchomienia, pominięcia, wydatki i koniec oraz **Ostatnie wybudzenia i uruchomienia**. Każdy harmonogram ma własny adres (`/workspaces/<workspace>/schedules/<id>`).
+
+| Działanie | Kto może |
+| --- | --- |
+| **Wstrzymaj**, **Zakończ** | Każdy z dostępem do przestrzeni |
+| **Wznów**, **Przedłuż** | Tylko jej właściciel (administrator obszaru roboczego dla harmonogramu utworzonego przez agenta bez osoby) |
+
+Gdy ktoś inny niż właściciel harmonogramu go wstrzymuje, rozmowa pokazuje wiersz, który ich wymienia.
+
+Na telefonie **Powtarzaj** na ekranie celów uruchamia powtarzający się prompt (co tyle minut lub godzin albo sterowany przez agenta) z limitem kosztów i końcem, a ekran **Harmonogramy** wstrzymuje, wznawia i kończy harmonogramy. Widok postępu rozmowy pokazuje, co czeka, w tym wstrzymania przy limicie użycia (**Wznów teraz**, **Anuluj**) i pracę pozostałą po zatrzymaniu serwera.
+
+## Jak działa harmonogram
+
+- Każde uruchomienie harmonogramu lub obserwacji jest ograniczone do 5 dolarów albo do tego, co zostało harmonogramowi, jeśli to mniej, a harmonogram zatrzymuje się na swoim limicie kosztów.
+- Godzina cron, która w dniu przestawienia zegarów na czas letni jest pomijana, uruchamia się godzinę później tego dnia (02:30 uruchamia się o 03:30). Godzina, która się powtarza, gdy zegary cofają się, uruchamia się raz.
+- Uruchomienie harmonogramu nigdy nie dołącza do uruchomienia, które już trwa. Jeśli agent jest zajęty, gdy harmonogram czasowy się uruchamia, to uruchomienie jest cicho pomijane, chyba że harmonogram czeka, aż agent będzie wolny.
+- Uruchomienie rozpoczęte przez harmonogram lub obserwację, które kończy się bez kłopotów, cię nie powiadamia, chyba że zawiera wzmiankę o kimś. Gdy harmonogram się kończy, dzwonek mówi dlaczego (**Wykorzystał swoje uruchomienia.**, **Osiągnął datę końcową.**, …) bez dźwięku.
+- Najwyżej 30 uruchomień na godzinę zaczyna się od wybudzeń w jednej rozmowie, a 300 w obszarze roboczym.
+- Gdy osoba, w czyim imieniu działa harmonogram, opuszcza obszar roboczy, harmonogram się kończy. Wszystko inne, co działało w jej imieniu, też się zatrzymuje: jej czekające wybudzenia zostają anulowane, jej zakolejkowane i wstrzymane wiadomości zostają usunięte, a jej działający agenci zostają zatrzymani.
+
+## Zatrzymanie, restart i limity użycia
+
+- **Zatrzymanie.** Naciśnięcie **Zatrzymaj** w uruchomieniu agenta wstrzymuje jego oczekujące wybudzenia (te, które nie należą do celu) oraz wiadomości, które dla niego zakolejkowałeś. Czekają na **Wznów** albo **Wyślij wstrzymane wiadomości**. Każda osoba wysyła własne wstrzymane wiadomości; nikt nie wysyła cudzych.
+- **Restart serwera.** Wybudzenia i harmonogramy przetrwają. Uruchomienie, które wystartowało wybudzenie, wznawia się po restarcie, co najwyżej 3 próby. Uruchomienie, które sam rozpocząłeś, nie jest uruchamiane ponownie samo: zostawia wstrzymane wybudzenie **Odzyskanie** i kontynuuje się, gdy naciśniesz **Wznów**. Harmonogram z czasem, który przegapił terminy, gdy serwer był wyłączony, uruchamia się późno tylko w krótkim marginesie (połowa jego interwału, najwyżej 10 minut; 24 godziny dla jednorazowego), w przeciwnym razie zapisuje jedno pominięcie: **Pominięte, gdy serwer był wyłączony.**
+- **Limit użycia dostawcy.** Gdy uruchomienie zatrzymuje się na limicie użycia dostawcy, a dostawca podaje, kiedy limit się resetuje (w ciągu 7 dni), uruchomienie zostaje wstrzymane. Uruchomienie, które rozpoczął serwer, na przykład segment celu albo uruchomienie harmonogramu, wznawia się samo 30 sekund po resecie. Uruchomienie, które rozpocząłeś ty, czeka na ciebie: rozmowa pokazuje **Wstrzymano przy limicie użycia u** dostawcy. **Limit się resetuje o** podanym czasie, z przyciskami **Wznów** (tylko ty) i **Anuluj** (każdy w przestrzeni). Po **Wznów** uruchomienie kontynuuje, gdy limit się zresetuje. Wstrzymanie, którego nie wznowisz, wygasa 7 dni po resecie. Wiadomości, które zakolejkowałeś przy limicie, są wysyłane do wznowionego uruchomienia; jeśli uruchomienie nie czeka na reset albo wstrzymanie zostało anulowane lub wygasło, są wstrzymane dla ciebie pod **Wyślij wstrzymane wiadomości**. Cudze zakolejkowane wiadomości są od razu wstrzymywane dla ich autorów. Następne uruchomienie harmonogramu czeka, aż wstrzymane uruchomienie się wznowi. Agenty ACP nie podają resetu, więc ich uruchomienia nie czekają.
+
+## Limity obszaru roboczego
+
+Administrator obszaru roboczego ustawia limity w **Ustawienia → Obszar roboczy → Harmonogramy**:
+
+- **Limity harmonogramów**: ile aktywnych lub wstrzymanych harmonogramów może mieć jeden agent w jednej rozmowie (10), w obszarze roboczym (50), a łącznie w całym obszarze roboczym (500); domyślny limit kosztów harmonogramu (50 dolarów); oraz strefa czasowa, której używają harmonogramy cron i codzienne podsumowanie (na początku UTC).
+- **Gdy nikt nie odpowiada**: jak długo uruchomienie rozpoczęte przez serwer czeka na odpowiedź albo zatwierdzenie osoby (domyślnie 72 godziny, od 1 godziny do 7 dni), zanim zatwierdzenie zostanie uznane za odrzucone, a pytanie za bez odpowiedzi (potem wszystko inne, o co zapyta to samo uruchomienie, jest od razu odrzucane), oraz godzina codziennego podsumowania tego, co na ciebie czeka w celach, harmonogramach i innych uruchomieniach rozpoczętych przez serwer.
+
+Członkowie widzą stronę tylko do odczytu.
+
+## Zobacz także
+
+- [Realizuj cel](/pl-PL/podrecznik/poradniki/realizuj-cel/)
+- [Agenci współpracują](/pl-PL/podrecznik/poradniki/agenci-wspolpracuja/)
+- [Polecenia slash](/pl-PL/podrecznik/dokumentacja-referencyjna/polecenia-slash/)
+- [Narzędzia wybudzeń i celów](/pl-PL/podrecznik/dokumentacja-referencyjna/narzedzia-mcp/#narzędzia-wybudzeń-i-celów)

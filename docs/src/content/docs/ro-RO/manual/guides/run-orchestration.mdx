@@ -2,7 +2,7 @@
 title: Rulează o orchestrare
 description: Cere-i unui orchestrator un plan, revizuiește-l și editează-l în Plan Studio, aprobă-l o singură dată și lasă un pipeline generat să facă munca.
 slug: ro-RO/manual/ghiduri-practice/ruleaza-orchestrare
-sourceHash: 086301be6c1957f6336294720967813c3050ed25
+sourceHash: cc4390cbac6c2122dd24c23bcef20693f40121bb
 ---
 
 Acest ghid îți arată cum să transformi un singur obiectiv mare într-un plan
@@ -65,21 +65,13 @@ rază de impact înainte să te angajezi. Vezi
 [Lucrează în Plan Studio](/ro-RO/manual/ghiduri-practice/plan-studio/) pentru
 editorul complet.
 
-:::note[Bugetul nu este o limită de cheltuieli]
-Bugetul unei propuneri este comparat cu _estimarea_ din bara de aprobare: când
-capătul superior al estimării îl depășește, totalul devine roșu, cu un
-avertisment de depășire a bugetului. Nimic nu verifică cheltuielile în timp ce
-planul se execută, așa că nu va opri și nu va eșua o rulare. Pentru o oprire
-reală a cheltuielilor, folosește politicile de buget pe agent — vezi
-[Gestionează costurile](/ro-RO/manual/ghiduri-practice/gestioneaza-costuri/).
+:::note[Bugetul reține rularea]
+Bugetul unei propuneri este comparat cu _estimarea_ din bara de aprobare: când capătul superior al estimării îl depășește, totalul devine roșu, cu un avertisment de depășire a bugetului. Cât timp planul se execută, serverul verifică cheltuiala înainte de fiecare pas nou. La buget, rularea este reținută și nimic nou nu pornește; pașii deja în curs se termină. Cel care a cerut rularea primește o notificare și apasă **Mărește plafonul** pe pagina rulării de pipeline ca să continue. Vezi [Gestionează costurile](/ro-RO/manual/ghiduri-practice/gestioneaza-costuri/).
 :::
 
 ## Pasul 3: Aprobă
 
-Aprobă planul, din cardul de chat sau din bara de aprobare a Plan Studio.
-**Aceasta este singura decizie pe care o iei.** Aprobarea este rezervată
-operatorului — nu există niciun instrument MCP pentru ea, așa că un agent poate
-propune și revizui, dar nu își poate aproba niciodată propriul plan.
+Aprobă planul, din cardul de chat sau din bara de aprobare a Plan Studio. **Aceasta este singura decizie pe care o iei.** Aprobarea este rezervată operatorului — nu există niciun instrument MCP pentru ea, așa că un agent poate propune și revizui, dar nu își poate aproba niciodată propriul plan. Aprobarea necesită acces de scriere la depozitele spațiului, iar rularea acționează apoi în numele persoanei care a aprobat-o.
 
 De aici, un materializator determinist (o funcție pură, fără LLM) transformă
 propunerea într-un [pipeline](/ro-RO/manual/concepte/pipeline-uri/) real și
@@ -116,11 +108,7 @@ tichetul părinte este marcat ca finalizat, apoi `completed`.
 Apasă **Anulează orchestrarea** pe cardul din chat sau **Anulează rularea** în
 bara de aprobare a Plan Studio. Anularea desființează munca în curs.
 
-O orchestrare eșuează când eșuează materializarea sau când eșuează rularea de
-pipeline generată (cercetare, discuție, sinteză sau persistare — acei pași nu
-continuă la eșec). Pașii de **lucru** generați continuă întotdeauna la eșec, așa
-că un sub-tichet eșuat nu duce la eșecul rulării. Nu există nicio cale de eșec
-pentru depășirea bugetului și niciun prag de „toate sub-tichetele au eșuat”.
+O orchestrare eșuează când eșuează materializarea sau când eșuează rularea de pipeline generată (cercetare, discuție, sinteză sau persistare — acei pași nu continuă la eșec). Pașii de **lucru** generați continuă întotdeauna la eșec, așa că un sub-tichet eșuat nu duce la eșecul rulării. Atingerea bugetului reține rularea în loc să o facă să eșueze, și nu există niciun prag de „toate sub-tichetele au eșuat”.
 
 ## Ghiduri conexe
 

@@ -2,7 +2,7 @@
 title: Mapa tras
 description: Wszystkie trasy rejestrowane przez Control Center wraz z ich ekranami i parametrami zapytania.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/mapa-tras
-sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
+sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
 ---
 
 ## Powłoka aplikacji
@@ -40,6 +40,12 @@ Poniższe ścieżki pomijają prefiks `/workspaces/:workspaceId`.
 | `/pipelines`                            | —                                         | Lista uruchomień potoków                                                                                                                                                  |
 | `/pipelines/run`                        | `?templateId=<id>`                        | Ekran ręcznego uruchamiania potoku                                                                                                                                        |
 | `/pipelines/:runId`                     | —                                         | Szczegóły uruchomienia potoku (os czasu kroków)                                                                                                                           |
+| `/goals` | — | Lista celów, pogrupowana na czekające na recenzję, otwarte i zakończone |
+| `/goals/:goalId` | `?edit=contract` | Jeden cel: teraz, co znaczy gotowe, weryfikacja, harmonogramy i wybudzenia; `edit=contract` otwiera edytor kontraktu przy wstrzymanym celu |
+| `/schedules` | — | Harmonogramy i obserwacje, pogrupowane według statusu, z **Nowy harmonogram** |
+| `/schedules/:ruleId` | — | Jeden harmonogram: notatka, szczegóły, ostatnie wybudzenia i uruchomienia |
+| `/improvements` | — | Propozycje usprawnień, pogrupowane według statusu |
+| `/improvements/:proposalId` | — | Jedna propozycja: co się zmienia, dowody, ocena i decyzja |
 | `/plans`                                | —                                         | Centrum Plan Studio: aktywne plany, dokumenty planów, playbooki                                                                                                           |
 | `/plans/:kind/:id`                      | —                                         | Plan Studio dla jednego planu; `kind` to `orchestration` albo `document`                                                                                                  |
 | `/meetings`                             | —                                         | Lista spotkań                                                                                                                                                             |
@@ -99,6 +105,7 @@ W pasku bocznym **nie ma pozycji „Plany”**. Plan Studio otwiera się jako ka
 | `/settings/workspace/skills`       | Konfiguracja skilli                                                                                   |
 | `/settings/memory`                 | Pamięć obszaru roboczego: fakty, zasady, graf wiedzy                                                  |
 | `/settings/workspace/permissions`  | Uprawnienia agentów: macierz guardraili i sonda A co jeśli?                                            |
+| `/settings/workspace/schedules` | Limity harmonogramów, strefa czasowa dla harmonogramów cron i podsumowania oraz to, jak długo uruchomienia startowane przez serwer czekają na odpowiedź (administratorzy edytują; członkowie czytają) |
 | `/settings/pipelines`              | Szablony potoków                                                                                      |
 | `/settings/pipelines/:templateId`  | Edytor szablonu potoku (kanwa przeciągnij-i-upuść)                                                     |
 

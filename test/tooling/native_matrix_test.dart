@@ -183,7 +183,10 @@ void main() {
       '$root/docker/cc_server/Dockerfile',
     ).readAsStringSync();
     expect(
-      RegExp(r'^FROM\s+(\S+)', multiLine: true).firstMatch(dockerfile)?.group(1),
+      RegExp(
+        r'^FROM\s+(\S+)',
+        multiLine: true,
+      ).firstMatch(dockerfile)?.group(1),
       declared!.group(1),
       reason:
           'docker/cc_server/Dockerfile runs a different base image than the '
@@ -213,5 +216,237 @@ void main() {
           'cc_server_package.sh reintroduced its own native list; it should '
           'call verify_natives.sh, which reads scripts/lib/natives.sh',
     );
+  });
+
+  group('code mode runner', () {
+    // cc_codemode is an executable, not an FFI library, so it is not a row in
+    // CC_NATIVES (verify_natives.sh matches library file names). It travels
+    // like the media helpers instead: built into <natives>/codemode/, staged
+    // as bin/codemode/ beside the server executable and checked by
+    // scripts/lib/codemode.sh. The server refuses to boot without it, so
+    // every path that ships media must ship the runner too.
+    List<File> filesUnder(String dir, bool Function(String) keep) => [
+      for (final entity in Directory('$root/$dir').listSync(recursive: true))
+        if (entity is File && keep(entity.path)) entity,
+    ];
+    final scripts = filesUnder(
+      'scripts',
+      (path) =>
+          path.endsWith('.sh') &&
+          !path.endsWith('/scripts/lib/media.sh') &&
+          !path.endsWith('/scripts/lib/codemode.sh'),
+    );
+    final workflows = filesUnder(
+      '.github',
+      (path) => path.endsWith('.yml') || path.endsWith('.yaml'),
+    );
+
+    test('every script that stages media stages the runner', () {
+      final missing = <String>[];
+      var mediaStagers = 0;
+      for (final file in [...scripts, ...workflows]) {
+        final source = file.readAsStringSync();
+        final rel = file.path.substring(root.length + 1);
+        if (source.contains('cc_media_stage ')) {
+          mediaStagers++;
+        }
+        if (source.contains('cc_media_stage ') &&
+            !source.contains('cc_codemode_stage ')) {
+          missing.add('$rel stages media but not the code mode runner');
+        }
+        if (source.contains('cc_media_verify ') &&
+            !source.contains('cc_codemode_verify ')) {
+          missing.add('$rel verifies media but not the code mode runner');
+        }
+      }
+      // The seven stagers named below; fewer means the scan went blind.
+      expect(mediaStagers, greaterThanOrEqualTo(7));
+      expect(missing, isEmpty, reason: missing.join('\n'));
+    });
+
+    test('the runner is staged at bin/codemode in every package', () {
+      for (final path in const [
+        'scripts/build_server.sh',
+        'scripts/run_desktop.sh',
+        'scripts/release/macos_package.sh',
+        'scripts/release/linux_package.sh',
+        'scripts/release/windows_package.sh',
+        'scripts/release/cc_server_package.sh',
+        'scripts/release/cc_demo_server_package.sh',
+      ]) {
+        expect(
+          File('$root/$path').readAsStringSync(),
+          matches(
+            RegExp(r'cc_codemode_stage "\$NATIVES" "[^"]*/bin/codemode"'),
+          ),
+          reason: '$path does not stage the runner as bin/codemode/',
+        );
+      }
+      expect(
+        File('$root/docker/cc_server/Dockerfile').readAsStringSync(),
+        contains('test -x /app/bin/codemode/cc_codemode'),
+        reason: 'the container image no longer checks for the runner',
+      );
+    });
+
+    test('every native build produces the runner', () {
+      expect(
+        File('$root/scripts/natives/build_natives.sh').readAsStringSync(),
+        contains(r'bash "$SCRIPT_DIR/build_codemode.sh" "$DEST"'),
+      );
+      // macOS and Linux: remapped build paths, checked on the built file
+      // (with the target directory and cargo home this build used) and
+      // verified again on every installed copy.
+      final unix = File(
+        '$root/scripts/natives/build_codemode.sh',
+      ).readAsStringSync();
+      for (final snippet in const [
+        r'"$CARGO_TARGET_DIR=/build/target"',
+        'CARGO_ENCODED_RUSTFLAGS',
+        r'cc_codemode_check_paths "$BUILT" "$CODEMODE_OS" "$CARGO_TARGET_DIR" "$CODEMODE_CARGO_HOME"',
+        r'cc_codemode_verify "$d" "$CODEMODE_OS"',
+      ]) {
+        expect(
+          unix,
+          contains(snippet),
+          reason: 'build_codemode.sh lost `$snippet`',
+        );
+      }
+      // Windows builds natives in its own script, where the runner's
+      // Windows-only properties are checked rather than trusted.
+      final windows = File(
+        '$root/scripts/release/windows_natives.sh',
+      ).readAsStringSync();
+      for (final snippet in const [
+        // Static CRT and Control Flow Guard (runner/build.rs refuses a
+        // build without them; dumpbin confirms the image).
+        '-Ctarget-feature=+crt-static -Ccontrol-flow-guard',
+        'CF Instrumented',
+        // Imports resolve from System32 only, and only reviewed DLLs.
+        "grep -Ei 'dependent load flag'",
+        "grep -q '800'",
+        '//imports',
+        'kernel32.dll | ntdll.dll | advapi32.dll | bcryptprimitives.dll',
+        // QuickJS-NG's file names trimmed at the target directory, and the
+        // build fails if cl ignored the switch.
+        r'/d1trimfile:$CODEMODE_TARGET_W\\',
+        "if grep -q 'D9002'",
+        // The path check, with the target directory among the prefixes.
+        'cc_codemode_check_paths build/natives/codemode/cc_codemode.exe windows',
+        r'"$CODEMODE_TARGET_W" "$(cygpath -w "$RUNNER_TEMP")"',
+        // The lockdown self-test, on a pipe.
+        'cc_codemode.exe --self-test 2>&1)"',
+      ]) {
+        expect(
+          windows,
+          contains(snippet),
+          reason: 'windows_natives.sh lost `$snippet` from the runner block',
+        );
+      }
+      // Verification, run by every staging step whatever built or cached
+      // the runner: a full lockdown, a release build, no build paths.
+      final lib = File('$root/scripts/lib/codemode.sh').readAsStringSync();
+      final verify = RegExp(
+        r'^cc_codemode_verify\(\) \{.*?^\}$',
+        multiLine: true,
+        dotAll: true,
+      ).firstMatch(lib)?.group(0);
+      expect(verify, isNotNull, reason: 'cc_codemode_verify is gone');
+      for (final snippet in const [
+        r'"$exe" --self-test 2>&1',
+        '''*'"ok":true'*'"level":"full"'*''',
+        '''*'"build":"release"'*)''',
+        r'cc_codemode_check_paths "$exe" "$os"',
+      ]) {
+        expect(
+          verify,
+          contains(snippet),
+          reason: 'cc_codemode_verify lost `$snippet`',
+        );
+      }
+      expect(
+        File('$root/scripts/release/windows_package.sh').readAsStringSync(),
+        contains(r'"$OUT/cc_server/bin/codemode/cc_codemode.exe"'),
+        reason: 'the Authenticode pass no longer signs the runner',
+      );
+    });
+
+    test('the path check refuses a build machine path', () {
+      final dir = Directory.systemTemp.createTempSync('cc_codemode_paths_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      // Run from a copy of the library outside the checkout, with no home
+      // or cargo home, so only the generic markers can refuse.
+      Directory('${dir.path}/lib').createSync();
+      for (final name in const ['common.sh', 'natives.sh', 'codemode.sh']) {
+        File('$root/scripts/lib/$name').copySync('${dir.path}/lib/$name');
+      }
+      const script =
+          'set -euo pipefail; source lib/common.sh; source lib/codemode.sh; '
+          'cc_codemode_check_paths "\$1" "\$2"';
+      ProcessResult check(String contents, String os) {
+        final exe = File('${dir.path}/runner')..writeAsStringSync(contents);
+        return Process.runSync(
+          'bash',
+          ['-c', script, 'check', exe.path, os],
+          workingDirectory: dir.path,
+          environment: {'PATH': Platform.environment['PATH'] ?? ''},
+          includeParentEnvironment: false,
+        );
+      }
+
+      // What a remapped release build contains.
+      const remapped =
+          'x/build/cargo/registry/src/index.crates.io-1949/rquickjs-core/'
+          'src/lib.rs y/build/home/z /build/target/release/out/quickjs.c';
+      expect(check(remapped, 'linux').exitCode, 0);
+      for (final (contents, os) in const [
+        ('at /Users/someone/.cargo/x.rs', 'macos'),
+        ('at /home/someone/src/x.rs', 'linux'),
+        (r'at C:\Users\someone\x.rs', 'windows'),
+        // A cargo home outside every home directory.
+        ('/opt/ci/cargo/registry/src/index.crates.io-1949/x.rs', 'linux'),
+        (r'D:\a\_temp\cargo\registry\src\index.crates.io-1949\x.rs', 'windows'),
+      ]) {
+        final result = check(contents, os);
+        expect(result.exitCode, isNot(0), reason: '$contents passed');
+        expect(
+          '${result.stdout}${result.stderr}',
+          contains("build machine's path"),
+        );
+      }
+    }, skip: Platform.isWindows ? 'needs bash' : null);
+
+    test('a missing runner fails verification naming the path', () {
+      final dir = Directory.systemTemp.createTempSync('cc_codemode_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final os = Platform.isMacOS ? 'macos' : 'linux';
+      const prelude =
+          'set -euo pipefail; source scripts/lib/common.sh; '
+          'source scripts/lib/codemode.sh; ';
+      final result = Process.runSync('bash', [
+        '-c',
+        '${prelude}cc_codemode_verify "\$1" $os',
+        'verify',
+        '${dir.path}/codemode',
+      ], workingDirectory: root);
+      expect(result.exitCode, isNot(0));
+      expect(result.stderr, contains('${dir.path}/codemode'));
+
+      Directory('${dir.path}/codemode').createSync();
+      final empty = Process.runSync('bash', [
+        '-c',
+        '${prelude}cc_codemode_stage "\$1" "\$2" $os',
+        'stage',
+        dir.path,
+        '${dir.path}/bundle/bin/codemode',
+      ], workingDirectory: root);
+      expect(empty.exitCode, isNot(0));
+      expect(empty.stderr, contains('${dir.path}/codemode/cc_codemode'));
+      expect(
+        Directory('${dir.path}/bundle').existsSync(),
+        isFalse,
+        reason: 'staging must fail before it touches the destination',
+      );
+    }, skip: Platform.isWindows ? 'needs bash' : null);
   });
 }

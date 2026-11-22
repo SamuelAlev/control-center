@@ -1,4 +1,5 @@
 import 'package:cc_domain/features/mcp/domain/value_objects/capability_tier.dart';
+import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
 import 'package:cc_harness/tools.dart';
 
 /// Tool def.
@@ -8,6 +9,7 @@ class ToolDef {
     required this.name,
     required this.description,
     required this.inputSchema,
+    this.meta,
   });
 
   /// Unique tool identifier.
@@ -19,11 +21,18 @@ class ToolDef {
   /// JSON Schema describing the tool's expected input parameters.
   final Map<String, dynamic> inputSchema;
 
-  /// To json.
+  /// What the listing tells a client about this entry beyond the tool
+  /// itself (MCP's `_meta`), or null for nothing. Set only by the server's
+  /// own listing, never taken from an external server's definition.
+  final Map<String, Object>? meta;
+
+  /// To json. `_meta` is written only when [meta] has an entry, so an entry
+  /// without one keeps its bytes.
   Map<String, dynamic> toJson() => {
     'name': name,
     'description': description,
     'inputSchema': inputSchema,
+    if (meta case final meta? when meta.isNotEmpty) '_meta': meta,
   };
 }
 
@@ -78,9 +87,11 @@ class CallResultContent {
 
 /// Call result.
 class CallResult {
-  /// Creates a successful result containing the given [text].
-  factory CallResult.success(String text) => CallResult(
+  /// Creates a successful result containing the given [text], and the same
+  /// result as a [structured] value when the tool has one.
+  factory CallResult.success(String text, {Object? structured}) => CallResult(
     content: [CallResultContent(type: 'text', text: text)],
+    structured: structured,
   );
 
   /// Creates a successful result pairing [text] with one or more images
@@ -103,13 +114,27 @@ class CallResult {
   );
 
   /// Creates a new [CallResult].
-  const CallResult({required this.content, this.isError = false});
+  const CallResult({
+    required this.content,
+    this.isError = false,
+    this.structured,
+  });
 
   /// Ordered list of content pieces returned by the tool.
   final List<CallResultContent> content;
 
   /// Whether this result represents an error.
   final bool isError;
+
+  /// The result as a JSON value (MCP's `structuredContent`), when the tool
+  /// produces one alongside its text: an external server's structured
+  /// content, or `ask_user`'s `{selected, text, skipped}`.
+  ///
+  /// What a code mode script's call resolves to, and what the harness bridge
+  /// hands on as its structured result. It is not part of [toJson]: the
+  /// `tools/call` reply an MCP client reads stays the text it always was, and
+  /// the text already carries the same content.
+  final Object? structured;
 
   /// To json.
   Map<String, dynamic> toJson() => {
@@ -246,6 +271,64 @@ abstract class McpTool {
   /// create/publish, ticket sync writes, skill install, file writes) override.
   Set<ActionClass> get actionClasses => const {};
 
+  /// The JSON Schema of [CallResult.structured], when the tool returns one.
+  /// Shown to code mode scripts (`describeTool`) and handed to the harness;
+  /// not advertised in `tools/list`, whose entries are unchanged.
+  Map<String, dynamic>? get outputSchema => null;
+
+  /// What a script receives from a completed call, in one or two sentences a
+  /// script author can code against (see `HarnessTool.resultNote`), or null
+  /// when the tool states none. Shown in `repl`'s description for a direct
+  /// tool and returned by `describeTool`; required for every direct tool a
+  /// script may call by `result_note_pin_test.dart`.
+  String? get resultNote => null;
+
+  /// The external MCP server this tool is bridged from, or null for a
+  /// Control Center tool. A code mode script finds the tool under this
+  /// namespace.
+  String? get serverName => null;
+
+  /// Whether a call blocks on a person for most of its life (a question
+  /// form). A code mode script's deadline is held while such a call runs, as
+  /// it is while an approval card waits, because the time is the person's,
+  /// not the script's.
+  bool get waitsOnPerson => false;
+
+  /// Whether a code mode script may call this tool, on either surface.
+  ///
+  /// True for nearly every tool: a script's call passes the gate a direct
+  /// call passes. False for a tool whose safety rests on the model reading
+  /// its result before it moves on, or that multiplies the run: one that
+  /// starts or messages another agent run, creates or decides an approval,
+  /// proposes or changes policy, installs or updates skills, creates a
+  /// runtime profile or leaves plan mode, and the script tool and catalogue
+  /// searches themselves. A script fanning out such calls in a loop is a
+  /// different thing from the model making one and reading the answer, so
+  /// the model calls them directly.
+  bool get scriptCallable => true;
+
+  /// Why a code mode script may not make this call with [arguments], or null
+  /// when it may.
+  ///
+  /// For a tool a script may call ([scriptCallable]) that takes an argument
+  /// a script may not use: one that assigns work to another agent run,
+  /// starts or messages one (`create_ticket`'s `assignee`). Both surfaces ask
+  /// it for a script's call before the approval step, so a refused call
+  /// raises no card; the refusal is what the script reads, and it says to
+  /// make the call directly instead. Never asked for a direct call.
+  String? scriptArgumentRefusal(Map<String, dynamic> arguments) => null;
+
+  /// What this call runs that the caller handed it, or null when it runs
+  /// nothing of the caller's: an argv, as its JSON list, or a command.
+  ///
+  /// The guard audits the call as `<name>: <content>` and digests the
+  /// content, and refuses a code mode script's call whose summary is over
+  /// the 16 KiB the audit stores whole, before policy or a card. A
+  /// script-callable tool that spawns a process or runs on the host states
+  /// it, or states that it runs nothing it is handed, in
+  /// `script_executed_content_pin_test.dart`.
+  String? executedContent(Map<String, dynamic> arguments) => null;
+
   /// Whether this tool changes state. Remote human sessions use this metadata
   /// for their workspace write-permission gate, independent of whether an
   /// agent would be asked for confirmation or which guardrail class applies.
@@ -273,6 +356,17 @@ abstract class McpTool {
       return CallResult.error('$e');
     }
   }
+
+  /// A call the in-process harness makes for one of its runs, with the run's
+  /// own [scope] (attested: built from the run's context, never written by
+  /// the caller). Most tools need nothing beyond the arguments the scope was
+  /// forced into, so this is [call]. A tool that must know which run is
+  /// calling (`complete_goal`) overrides it to read [scope].
+  Future<CallResult> callForRun(
+    Map<String, dynamic> arguments,
+    McpCallScope scope, {
+    Future<void>? abandoned,
+  }) => call(arguments, abandoned: abandoned);
 
   /// Run.
   Future<CallResult> run(Map<String, dynamic> arguments);

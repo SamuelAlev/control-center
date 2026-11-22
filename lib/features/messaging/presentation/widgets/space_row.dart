@@ -1,14 +1,16 @@
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_row_adornments.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row_layout.dart';
-import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:flutter/widgets.dart';
 
+export 'package:control_center/features/messaging/presentation/widgets/space_row_adornments.dart'
+    show AttentionDot;
 export 'package:control_center/features/messaging/presentation/widgets/space_row_layout.dart'
     show
         kConversationLabelFontSize,
-        kConversationMarkGap,
-        kConversationMarkSlot,
         kConversationRowExtent,
+        kSpaceRowSignalSize,
+        kSpaceSidebarCardInset,
         kSpaceSidebarPad,
         kSpaceSidebarMarkSlot,
         kSpaceSidebarMarkGap;
@@ -21,13 +23,11 @@ class SpaceRow extends StatelessWidget implements CcFluidHoverTarget {
   /// Creates a [SpaceRow].
   const SpaceRow({
     super.key,
-    required this.leading,
+    this.leading,
+    this.signal,
     required this.label,
     this.labelScrambling = false,
     required this.selected,
-    required this.status,
-    required this.unread,
-    required this.leadingHandlesRunning,
     this.markSlot = kSpaceSidebarMarkSlot,
     this.markGap = kSpaceSidebarMarkGap,
     this.labelFontSize = 14,
@@ -45,8 +45,13 @@ class SpaceRow extends StatelessWidget implements CcFluidHoverTarget {
     this.menuRevealed = false,
   });
 
-  /// The leading slot: a status mark, spinner, PR badge or pencil.
-  final Widget leading;
+  /// An icon column before the title (the tray's link rows). Null leaves
+  /// no column, so the title starts at the row's inset.
+  final Widget? leading;
+
+  /// The running spinner or attention dot in front of a space's or
+  /// conversation's title. Null shows nothing and leaves the title in place.
+  final Widget? signal;
 
   /// The space display name.
   final String label;
@@ -58,16 +63,7 @@ class SpaceRow extends StatelessWidget implements CcFluidHoverTarget {
   /// Whether this is the route's selected space.
   final bool selected;
 
-  /// The space's live status (drives the trailing indicator).
-  final SpaceStatus status;
-
-  /// Whether the space has unseen agent messages.
-  final bool unread;
-
-  /// Whether the leading slot already shows the running signal.
-  final bool leadingHandlesRunning;
-
-  /// Width of the leading column. Conversations use a narrower slot.
+  /// Width of the [leading] column.
   final double markSlot;
 
   /// Space between the leading column and the title.
@@ -93,8 +89,9 @@ class SpaceRow extends StatelessWidget implements CcFluidHoverTarget {
   /// of leaving a band of the panel color above and below.
   final EdgeInsets cardInset;
 
-  /// Second line under [label]. A branch name in the global sidebar.
-  final String? subtitle;
+  /// Second line under [label], in the caption style: a space's pull
+  /// requests in the sidebar.
+  final Widget? subtitle;
 
   /// Short trailing caption, such as a relative time on an activity row.
   final String? trailingLabel;
@@ -170,6 +167,7 @@ class SpaceRow extends StatelessWidget implements CcFluidHoverTarget {
           return SpaceRowLayout(
             tokens: t,
             leading: leading,
+            signal: signal,
             label: label,
             labelScrambling: labelScrambling,
             contentColor: animatedFg ?? fg,
@@ -180,14 +178,10 @@ class SpaceRow extends StatelessWidget implements CcFluidHoverTarget {
             transitioning: transitioning,
             hasMenu: hasMenu,
             showMenu: hasMenu && (menuRevealed || _overflowRevealed(states)),
-            status: status,
-            unread: unread,
-            leadingHandlesRunning: leadingHandlesRunning,
             markSlot: markSlot,
             markGap: markGap,
             labelFontSize: labelFontSize,
             extent: extent,
-            muted: muted,
             hoverColor: onPress == null
                 ? t.hover.withValues(alpha: 0)
                 : _hoverFill(
@@ -221,51 +215,18 @@ class SpaceRow extends StatelessWidget implements CcFluidHoverTarget {
   }
 }
 
-/// Leading mark for a conversation row.
-///
-/// A spinner while an agent is working, a filled accent dot when the
-/// conversation has unseen messages, and a hollow dot when it is idle.
-Widget conversationActivityMark({required bool running, required bool unread}) {
+/// Signal for a conversation row: a spinner while an agent is working, the
+/// attention dot when it has unseen messages or a question waiting on the
+/// user, and null (nothing) otherwise.
+Widget? conversationActivityMark({
+  required bool running,
+  required bool attention,
+}) {
   if (running) {
-    return const CcSpinner(size: kConversationMarkSlot, strokeWidth: 1.5);
+    return const CcSpinner(size: kSpaceRowSignalSize, strokeWidth: 1.5);
   }
-  if (unread) {
-    return const ConversationUnreadMark();
+  if (attention) {
+    return const AttentionDot(selected: false);
   }
-  return const SpaceStatusMark();
-}
-
-/// Filled accent dot: this conversation has unseen messages.
-class ConversationUnreadMark extends StatelessWidget {
-  /// Creates a [ConversationUnreadMark].
-  const ConversationUnreadMark({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    return Container(
-      width: 8,
-      height: 8,
-      decoration: BoxDecoration(color: t.accent, shape: BoxShape.circle),
-    );
-  }
-}
-
-/// Hollow mark for a space that has no pull request yet.
-class SpaceStatusMark extends StatelessWidget {
-  /// Creates a [SpaceStatusMark].
-  const SpaceStatusMark({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    return Container(
-      width: 8,
-      height: 8,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: t.textTertiary, width: 1.5),
-      ),
-    );
-  }
+  return null;
 }

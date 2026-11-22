@@ -75,6 +75,8 @@ runs:
         source scripts/lib/common.sh
         source scripts/lib/media.sh
         cc_media_verify build/natives/media "$OS" "$ARCH"
+        source scripts/lib/codemode.sh
+        cc_codemode_verify build/natives/codemode "$OS" "$ARCH"
 
     - name: Stamp build identity
       shell: bash

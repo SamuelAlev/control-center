@@ -1,10 +1,16 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:cc_domain/features/code_mode/domain/ports/code_execution_port.dart';
+import 'package:cc_domain/features/code_mode/domain/value_objects/code_mode_limits.dart';
+import 'package:cc_domain/features/dispatch/domain/modes/read_only_run_profile.dart';
+import 'package:cc_domain/features/evals/domain/evaluation/evaluation_arm_settings.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_attempt.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_backend_port.dart';
+import 'package:cc_domain/features/evals/domain/evaluation/evaluation_outcome.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_plan.dart';
 import 'package:cc_domain/features/evals/domain/value_objects/agent_config_hash.dart';
+import 'package:cc_domain/features/mcp/domain/value_objects/mode_tool_policy.dart';
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/context.dart';
 import 'package:cc_harness/loop.dart';
@@ -14,10 +20,15 @@ import 'package:cc_harness/tools.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/evaluation/controlled_evaluation_process.dart';
 import 'package:cc_infra/src/evaluation/controlled_file_tools.dart';
+import 'package:cc_infra/src/evaluation/goal_verification_session.dart';
 import 'package:cc_infra/src/evaluation/local_evaluation_command_runner.dart';
 import 'package:cc_infra/src/evaluation/provider_call_budget_guard.dart';
 import 'package:cc_infra/src/harness/file_tool_output_store.dart';
 import 'package:cc_infra/src/harness/harness_run_factory.dart';
+import 'package:cc_infra/src/harness/harness_tool_registry_builder.dart'
+    show ReplBinding, ReplSlot, bindReplTool;
+import 'package:cc_infra/src/harness/harness_tool_surface.dart';
+import 'package:cc_infra/src/harness/repl_tool.dart' show ReplRunIdentity;
 import 'package:path/path.dart' as p;
 
 /// Builds the context compactor for a memory policy under test.
@@ -74,6 +85,8 @@ class BuiltinEvaluationBackend implements EvaluationBackendPort {
     this.contextWindowTokens,
     this.maxParallelToolCalls = 4,
     this.onNotice,
+    this.codeExecutions,
+    this.ceilingRemainderMicros,
   });
 
   /// The default system prompt for evaluated runs.
@@ -109,6 +122,13 @@ class BuiltinEvaluationBackend implements EvaluationBackendPort {
   /// Remaining campaign allowance at the start of this attempt. Strict for
   /// reserved calls; a post-call stopping threshold for subscription calls.
   final int? costLimitMicros;
+
+  /// What is left of the campaign's spend ceiling, read as a goal attempt
+  /// starts. A goal attempt runs several loops (segments and reviews), so it
+  /// stops once its known spend reaches that remainder, or at its first
+  /// unpriced call, instead of only after it ends. Null leaves goal attempts
+  /// to [costLimitMicros] alone.
+  final int? Function()? ceilingRemainderMicros;
 
   /// Worst-case reservation per physical call, null in stop-after-call mode.
   final int? maxCallMicros;
@@ -172,6 +192,11 @@ class BuiltinEvaluationBackend implements EvaluationBackendPort {
 
   /// Optional progress sink.
   final void Function(String message)? onNotice;
+
+  /// Runs the attempts' `repl` scripts: a runner that passed its self-test.
+  /// With one, every attempt has `repl` and the surface a dispatched run
+  /// gets; null means no `repl`, as on a server without a runner.
+  final CodeExecutionPort? codeExecutions;
 
   @override
   String get id => 'builtin';
@@ -257,7 +282,62 @@ class BuiltinEvaluationBackend implements EvaluationBackendPort {
       return 'no tool on this surface declares speculativeReadSafe, so the '
           'overlap mode would be a no-op';
     }
+    if (effective.goalVerification != null &&
+        controlledFileToolsFactory != null) {
+      return 'goal arms run ordinary attempts: the checks of a controlled '
+          'attempt would run outside its controlled process';
+    }
+    if (effective.codeMode == CodeModeSurface.repl &&
+        !(codeExecutions?.availability.isAvailable ?? false)) {
+      return 'the repl arm needs a script runner that passed its self-test '
+          '(CC_CODEMODE_RUNNER); without one it would run the no-repl surface';
+    }
     return null;
+  }
+
+  /// The attempt's surface: [built] unchanged without [codeExecutions];
+  /// otherwise the rule a dispatched run gets
+  /// ([materializeHarnessToolSurface]): `repl` first, bound to
+  /// [codeExecutions] for this attempt (its own admission key, no audit
+  /// rows), then the direct tools, and every other tool a script may call
+  /// moved behind it. Nothing is deferred, as without `repl`.
+  ({List<HarnessTool> tools, List<HarnessTool> scriptTools}) _withRepl(
+    List<HarnessTool> built,
+    EvaluationAttemptRequest request,
+  ) {
+    final executions = codeExecutions;
+    if (executions == null ||
+        !executions.availability.isAvailable ||
+        request.effective.codeMode == CodeModeSurface.withoutRepl) {
+      return (tools: built, scriptTools: const []);
+    }
+    final surface = materializeHarnessToolSurface(
+      registry: HarnessToolRegistry()..registerAll([...built, ReplSlot()]),
+      surface: const ToolSurfaceSpec.unrestricted(),
+      residency: const ToolResidencySpec(
+        enabled: false,
+        residentNames: ModeToolPolicy.directTools,
+      ),
+    );
+    return (
+      tools: bindReplTool(
+        resident: surface.resident,
+        scriptOnly: surface.scriptOnly,
+        binding: ReplBinding(
+          executions: executions,
+          run: ReplRunIdentity(
+            workspaceId: 'cc-eval',
+            runId: request.attemptId,
+            readOnly: false,
+            past: null,
+            conversationId: request.attemptId,
+            agentId: 'cc-eval',
+          ),
+          limits: CodeModeLimits.defaults,
+        ),
+      ),
+      scriptTools: surface.scriptOnly,
+    );
   }
 
   bool get _hasOverlapSafeTool => _buildTools(
@@ -291,15 +371,26 @@ class BuiltinEvaluationBackend implements EvaluationBackendPort {
     var snapshotFrames = 0;
     var compactions = 0;
     String? error;
-    var completed = false;
+    LoopDoneReason? doneReason;
+    var loopErrored = false;
+    var budgetRefused = false;
+    var threw = false;
+    var priceBreach = false;
     int? firstModelEventMs;
     int? firstUsefulTextMs;
     var toolCeilingHit = false;
     String? servedDefaultModel;
-    final turns = [request.task.prompt, ...request.task.followUps];
+    final goalMode = request.effective.goalVerification;
+    final turns = <String>[
+      if (goalMode == null) ...[request.task.prompt, ...request.task.followUps],
+    ];
+    EvaluationGoalSession? goal;
+    final ceilingLimit = goalMode == null
+        ? null
+        : ceilingRemainderMicros?.call();
 
     bool budgetExceeded() {
-      if (costLimitMicros == null) {
+      if (costLimitMicros == null && ceilingLimit == null) {
         return false;
       }
       final recorded = ledger.records;
@@ -307,12 +398,23 @@ class BuiltinEvaluationBackend implements EvaluationBackendPort {
         return true;
       }
       final spent = recorded.fold<int>(0, (sum, r) => sum + r.costMicros!);
+      if (ceilingLimit != null && spent >= ceilingLimit) {
+        return true;
+      }
+      if (costLimitMicros == null) {
+        return false;
+      }
       if (stopAfterCall) {
         return spent >= costLimitMicros!;
       }
       final reservation = maxCallMicros;
       return reservation == null || spent + reservation > costLimitMicros!;
     }
+
+    // Known spend so far (an unpriced call counts 0; the attempt's cost then
+    // reads unknown).
+    int spentSoFar() =>
+        ledger.records.fold<int>(0, (sum, r) => sum + (r.costMicros ?? 0));
 
     try {
       final base = factory.create(
@@ -335,7 +437,8 @@ class BuiltinEvaluationBackend implements EvaluationBackendPort {
                 return resolver(record);
               },
       );
-      final LlmProviderPort provider = costLimitMicros == null
+      final LlmProviderPort provider =
+          costLimitMicros == null && ceilingLimit == null
           ? observed
           : ProviderCallBudgetGuard(
               observed,
@@ -348,7 +451,7 @@ class BuiltinEvaluationBackend implements EvaluationBackendPort {
       final store = _toolOutputStore(request);
       final ingest = ToolObservationIngest(store: store);
       final calibration = tokenCalibration ?? TokenCalibration();
-      final tools = _buildTools(
+      final built = _buildTools(
         runner,
         store: store,
         controlledFiles: controlledFileToolsFactory?.call(
@@ -359,8 +462,6 @@ class BuiltinEvaluationBackend implements EvaluationBackendPort {
                 ),
         ),
       );
-      final hasOverlapSafe = tools.any((tool) => tool.speculativeReadSafe);
-
       final transcript = InMemoryHarnessTranscriptStore();
       final transcriptKey = 'cc-eval/${request.attemptId}';
       final context = HarnessToolContext(
@@ -369,10 +470,50 @@ class BuiltinEvaluationBackend implements EvaluationBackendPort {
         conversationId: request.attemptId,
         agentId: 'cc-eval',
       );
+      if (goalMode != null) {
+        goal = await EvaluationGoalSession.open(
+          attemptId: request.attemptId,
+          taskPrompt: request.task.prompt,
+          workspaceRoot: request.workspaceRoot,
+          mode: goalMode,
+          hasRepl:
+              (codeExecutions?.availability.isAvailable ?? false) &&
+              request.effective.codeMode != CodeModeSurface.withoutRepl,
+          reviewer: ({required prompt, required capMicros}) => _runReview(
+            prompt: prompt,
+            capMicros: capMicros,
+            built: built,
+            provider: provider,
+            context: context,
+            request: request,
+            model: parsed.model,
+            spent: spentSoFar,
+            budgetExceeded: budgetExceeded,
+          ),
+        );
+      }
+      final (:tools, :scriptTools) = _withRepl([
+        ...built,
+        ?goal?.completeGoalTool,
+      ], request);
+      final hasOverlapSafe = tools.any((tool) => tool.speculativeReadSafe);
+      if (goal != null) {
+        goal.forms = toolFormsOver(
+          callable: [for (final tool in tools) tool.name],
+          scriptOnly: [for (final tool in scriptTools) tool.name],
+        );
+        turns.add(await goal.firstSegment());
+      }
 
-      for (final turn in turns) {
+      for (var index = 0; index < turns.length; index++) {
+        final turn = turns[index];
+        final segmentStart = spentSoFar();
+        // `history_none` is a dispatch with `freshHistory`: the turn starts
+        // from its own text and the workspace alone.
         final history = <HarnessMessage>[
-          ...?((await transcript.load(transcriptKey))?.messages),
+          if (request.effective.sessionContinuity !=
+              SessionContinuityMode.historyNone)
+            ...?((await transcript.load(transcriptKey))?.messages),
         ];
         final compactor = _compactor(
           policy: request.effective.memoryPolicy,
@@ -441,6 +582,7 @@ class BuiltinEvaluationBackend implements EvaluationBackendPort {
           history: history,
           userMessage: turn,
           tools: tools,
+          scriptTools: scriptTools,
           provider: provider,
           context: context,
           config: config,
@@ -464,13 +606,19 @@ class BuiltinEvaluationBackend implements EvaluationBackendPort {
               :final toolName,
               :final toolUseId,
               :final args,
+              :final parentToolUseId,
             ):
               firstModelEventMs ??= started.elapsedMilliseconds;
               firstUsefulTextMs ??= started.elapsedMilliseconds;
-              openCalls++;
-              if (openCalls >= 2 && !sweptAFullWave) {
-                parallelWaves++;
-                sweptAFullWave = true;
+              // The open-call and wave counters measure what the MODEL
+              // issued; a script's own calls (nested under a `repl` call)
+              // are still tool events below, but never a parallel wave.
+              if (parentToolUseId == null) {
+                openCalls++;
+                if (openCalls >= 2 && !sweptAFullWave) {
+                  parallelWaves++;
+                  sweptAFullWave = true;
+                }
               }
               pendingTargets[toolUseId] = EvaluationToolEvent(
                 name: toolName,
@@ -481,10 +629,13 @@ class BuiltinEvaluationBackend implements EvaluationBackendPort {
               :final toolName,
               :final toolUseId,
               :final result,
+              :final parentToolUseId,
             ):
-              openCalls = openCalls > 0 ? openCalls - 1 : 0;
-              if (openCalls == 0) {
-                sweptAFullWave = false;
+              if (parentToolUseId == null) {
+                openCalls = openCalls > 0 ? openCalls - 1 : 0;
+                if (openCalls == 0) {
+                  sweptAFullWave = false;
+                }
               }
               final opened = pendingTargets.remove(toolUseId);
               toolEvents.add(
@@ -532,13 +683,22 @@ class BuiltinEvaluationBackend implements EvaluationBackendPort {
               onNotice?.call('advisor: $note');
             case LoopError(:final message, :final code):
               error = code == null ? message : '$code: $message';
+              loopErrored = true;
+              budgetRefused = code == 'evaluation_budget_exhausted';
             case LoopTurnComplete():
               // A completed assistant turn is not a terminal state; nothing to
               // do here (the terminal reasons arrive on LoopDone).
               break;
+            case LoopCompacting():
+              // A summary in progress: its result is the LoopCompaction.
+              break;
+            case LoopPark():
+              // Waiting on a background command: no model call, no state to
+              // record; the wait ends in a notice or the next turn.
+              break;
             case LoopDone(:final reason, :final unmetContractId):
-              completed = reason == LoopDoneReason.completed;
-              if (!completed && error == null) {
+              doneReason = reason;
+              if (reason != LoopDoneReason.completed && error == null) {
                 error =
                     'loop ended: ${reason.name}'
                     '${unmetContractId == null ? '' : ' ($unmetContractId)'}';
@@ -547,21 +707,40 @@ class BuiltinEvaluationBackend implements EvaluationBackendPort {
           if (toolEvents.length > maxToolCalls) {
             toolCeilingHit = true;
             error = 'tool-call ceiling exceeded ($maxToolCalls)';
-            completed = false;
             break;
           }
         }
         if (error != null) {
           break;
         }
+        // A goal's segment ended: the arm decides what a claim is worth, and
+        // a failed verification round is the next segment.
+        final next = await goal?.afterSegment(
+          segmentMicros: spentSoFar() - segmentStart,
+        );
+        // The ceiling's remainder ran out inside the attempt (a review cut
+        // short reads cannot_verify): nothing more starts, and the attempt
+        // says why unless a claim was already accepted.
+        if (ceilingLimit != null &&
+            budgetExceeded() &&
+            !(goal?.outcome.accepted ?? false)) {
+          error =
+              'the campaign ceiling was reached inside this goal attempt '
+              '(${ceilingLimit / 1000000} USD were left when it started)';
+          break;
+        }
+        if (next != null) {
+          turns.add(next);
+        }
       }
       // Snapshot pages the compactor rendered are counted by the decorator.
       snapshotFrames = snapshotCounter.value;
     } on Object catch (exception) {
       error = '$exception';
-      completed = false;
+      threw = true;
     }
     started.stop();
+    final goalOutcome = goal?.outcome;
 
     final records = ledger.records;
     final mainCalls = [
@@ -601,7 +780,7 @@ class BuiltinEvaluationBackend implements EvaluationBackendPort {
           (record) =>
               record.costMicros != null && record.costMicros! > maxCallMicros!,
         )) {
-      completed = false;
+      priceBreach = true;
       error = 'provider exceeded the reserved per-call price ceiling';
     }
     final uniformBasis =
@@ -626,6 +805,13 @@ class BuiltinEvaluationBackend implements EvaluationBackendPort {
       parallelWaves: parallelWaves,
     );
 
+    final goalNote = goalOutcome == null
+        ? null
+        : 'goal ${goalMode!.wire}: claims ${goalOutcome.claims}, '
+              '${goalOutcome.accepted ? 'accepted' : 'not accepted'}, '
+              'verification ${goalOutcome.verification.wire}, failed rounds '
+              '${goalOutcome.rounds}, segments ${goalOutcome.segments} '
+              '(review runs are in the cost and round trips)';
     return EvaluationAttempt(
       attemptId: request.attemptId,
       taskId: request.task.id,
@@ -638,7 +824,25 @@ class BuiltinEvaluationBackend implements EvaluationBackendPort {
       ordinal: request.ordinal,
       startedAtEpochMs: startedAtEpochMs,
       executionMode: request.executionMode,
-      completed: completed,
+      end: attemptEnd(
+        doneReason: doneReason,
+        loopErrored: loopErrored,
+        budgetRefused: budgetRefused,
+        threw: threw,
+        toolCeilingHit: toolCeilingHit,
+        // The campaign ceiling ran out inside a goal attempt that had no
+        // accepted claim, whether the guard refused the next call or the
+        // segment check caught it.
+        ceilingStopped:
+            ceilingLimit != null &&
+            !(goalOutcome?.accepted ?? false) &&
+            spentSoFar() >= ceilingLimit,
+        priceBreach: priceBreach,
+        spendUnknown:
+            (costLimitMicros != null || ceilingLimit != null) &&
+            records.any((r) => r.costMicros == null),
+        goalAccepted: goalOutcome?.accepted,
+      ),
       error: error,
       tokens: tokens,
       cost: pricingComplete && uniformBasis
@@ -669,9 +873,14 @@ class BuiltinEvaluationBackend implements EvaluationBackendPort {
       filesTouched: const [],
       servedModel: parsed.model ?? servedDefaultModel,
       servedEffort: request.effective.effortLevel,
+      goal: goalOutcome,
       notes: [
         'builtin harness; system prompt ${systemPrompt.length} chars',
+        ?goalNote,
         'memory policy ${request.effective.memoryPolicy.wire}',
+        if (request.effective.sessionContinuity ==
+            SessionContinuityMode.historyNone)
+          'every turn after the first started with no history',
         'provider calls ${records.length}',
         if (toolCeilingHit) 'tool-call ceiling hit',
         if (!pricingComplete) 'at least one provider call was unpriced',
@@ -679,6 +888,141 @@ class BuiltinEvaluationBackend implements EvaluationBackendPort {
         if (request.effective.toolOverlap == ToolOverlapMode.overlapReadOnly)
           'tool overlap: read-only tools only, barriers preserved',
       ].join('; '),
+    );
+  }
+
+  /// How a built-in attempt ended, from what its loop reported.
+  ///
+  /// - `ceiling_stopped`: the campaign ceiling ran out inside a goal attempt
+  ///   with no accepted claim.
+  /// - `harness_fault`: an exception, the per-call price breach, a call
+  ///   refused because spend could not be priced, any other loop error (a
+  ///   provider error), a loop that never reported its end, or a
+  ///   `cancelled`, `providerOutputLost` or `error` end.
+  /// - `finished`: a goal claim was accepted, or a non-goal loop ended
+  ///   `completed`.
+  /// - `agent_stopped`: the attempt's own budget ran out (`budgetExhausted`,
+  ///   or the guard refused the next call over it), `maxTurns`,
+  ///   `contractUnmet`, the tool-call ceiling, or a goal that ended without
+  ///   an accepted claim.
+  static EvaluationAttemptEnd attemptEnd({
+    required LoopDoneReason? doneReason,
+    required bool loopErrored,
+    required bool budgetRefused,
+    required bool threw,
+    required bool toolCeilingHit,
+    required bool ceilingStopped,
+    required bool priceBreach,
+    required bool spendUnknown,
+    required bool? goalAccepted,
+  }) {
+    if (ceilingStopped) {
+      return EvaluationAttemptEnd.ceilingStopped;
+    }
+    if (threw || priceBreach) {
+      return EvaluationAttemptEnd.harnessFault;
+    }
+    if (goalAccepted ?? false) {
+      return EvaluationAttemptEnd.finished;
+    }
+    final budget =
+        budgetRefused || doneReason == LoopDoneReason.budgetExhausted;
+    if (budget) {
+      return spendUnknown
+          ? EvaluationAttemptEnd.harnessFault
+          : EvaluationAttemptEnd.agentStopped;
+    }
+    if (loopErrored) {
+      return EvaluationAttemptEnd.harnessFault;
+    }
+    if (toolCeilingHit) {
+      return EvaluationAttemptEnd.agentStopped;
+    }
+    final end = switch (doneReason) {
+      null ||
+      LoopDoneReason.cancelled ||
+      LoopDoneReason.providerOutputLost ||
+      LoopDoneReason.error => EvaluationAttemptEnd.harnessFault,
+      LoopDoneReason.completed => EvaluationAttemptEnd.finished,
+      LoopDoneReason.maxTurns ||
+      LoopDoneReason.contractUnmet ||
+      LoopDoneReason.budgetExhausted => EvaluationAttemptEnd.agentStopped,
+    };
+    // A goal attempt is done only when its arm accepted a claim.
+    return goalAccepted == false && end == EvaluationAttemptEnd.finished
+        ? EvaluationAttemptEnd.agentStopped
+        : end;
+  }
+
+  /// A goal's review run: fresh (no history), on the read tools a
+  /// read-only run is admitted ([ReadOnlyRunProfile.admits]) plus
+  /// `submit_output`, on the attempt's provider and ledger, stopped once it
+  /// has spent [capMicros] (the product's review share) or the campaign's
+  /// allowance is gone.
+  Future<EvaluationGoalReview> _runReview({
+    required String prompt,
+    required int capMicros,
+    required List<HarnessTool> built,
+    required LlmProviderPort provider,
+    required HarnessToolContext context,
+    required EvaluationAttemptRequest request,
+    required String? model,
+    required int Function() spent,
+    required bool Function() budgetExceeded,
+  }) async {
+    final submit = EvaluationSubmitOutputTool();
+    final tools = [
+      for (final tool in built)
+        if (ReadOnlyRunProfile.admits(tool.name, tool.actionClasses)) tool,
+      submit,
+    ];
+    final start = spent();
+    var completed = false;
+    String? failure;
+    try {
+      await for (final event in const AgentLoopRunner().run(
+        // Fresh: the review starts from its prompt alone.
+        history: <HarnessMessage>[],
+        userMessage: prompt,
+        tools: tools,
+        provider: provider,
+        context: context,
+        config: AgentLoopConfig(
+          systemPrompt: systemPrompt,
+          model: model,
+          maxTurns: request.task.maxTurns,
+          effort: ReasoningEffort.fromId(request.effective.effortLevel),
+          cacheKey: 'cc-eval:${request.task.id}:review',
+          cacheEnabled: request.effective.cacheEnabled,
+          purpose: LlmCallPurpose.main,
+          tools: LoopToolConfig(
+            autoApprove: true,
+            maxParallelToolCalls: maxParallelToolCalls,
+          ),
+          guards: LoopGuardConfig(
+            externalBudgetExceeded: () =>
+                budgetExceeded() || spent() - start >= capMicros,
+            maxProviderRetries: costLimitMicros == null ? 3 : 0,
+          ),
+        ),
+        cancel: cancel,
+      )) {
+        if (event is LoopError) {
+          failure = event.code == null
+              ? event.message
+              : '${event.code}: ${event.message}';
+        } else if (event is LoopDone) {
+          completed = event.reason == LoopDoneReason.completed;
+        }
+      }
+    } on Object catch (exception) {
+      failure = '$exception';
+    }
+    return EvaluationGoalReview(
+      completed: completed && failure == null,
+      output: submit.output,
+      costMicros: spent() - start,
+      error: failure,
     );
   }
 
@@ -889,6 +1233,7 @@ class _RecordingCompactor implements HarnessCompactor {
     String selfAgentName = 'assistant',
     bool force = false,
     CancellationToken cancel = CancellationToken.none,
+    Future<String?> Function()? focus,
   }) async {
     final imagesBefore = _imageBlocks(history);
     final result = await _inner.maybeCompact(
@@ -899,6 +1244,7 @@ class _RecordingCompactor implements HarnessCompactor {
       selfAgentName: selfAgentName,
       force: force,
       cancel: cancel,
+      focus: focus,
     );
     _countNewImages(history, imagesBefore);
     onResult(result);

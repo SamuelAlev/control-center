@@ -2,7 +2,7 @@
 title: Pipeline çalıştırmalarını izleyin
 description: Çalıştırma kuyruğunda çalışın, bir çalıştırmanın şelalesini ve adım panelini okuyun, başarısız ya da takılı kalan bir adımdan kurtulun.
 slug: tr-TR/kilavuz/nasil-yapilir/pipeline-izleme
-sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
+sourceHash: 48d44ae3ca3e23c1123ef282ccffece35b542b96
 ---
 
 Bu sayfa, bir çalıştırma başladıktan sonraki her şeyi kapsar: onu bulmak, her
@@ -72,6 +72,8 @@ güvencesi, çalıştırmayı sürdürmek yerine tümünü başarısız kılar: 
 süre askıda kalan bir adım (`extras.awaitApproval` — yani
 `orchestration.awaitApproval` gövdesi — muaftır; `human.gate` değildir) ve sunucu
 durduğunda uçuşta olan, idempotent olmayan bir adım.
+
+**Pursue a goal** adımı 24 saatlik güvenlik ağından da muaftır: hedefi çalışırken askıda kalır ve sayfası hedefe bağlanır. Bir pipeline çalıştırmasının tamamı da orkestrasyonu maliyet sınırına ulaştığı için **Askıda** olabilir; çalıştırma sayfası o zaman sınırın ne kadarının harcandığını ve çalıştırmanın isteyenine **Sınırı artır** düğmesini gösterir.
 
 ## Bir adımı inceleyin
 

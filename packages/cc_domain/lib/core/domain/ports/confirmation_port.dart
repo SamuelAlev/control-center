@@ -1,3 +1,5 @@
+import 'package:cc_domain/core/domain/value_objects/script_call_origin.dart';
+
 /// Severity of a confirmation request, used by the UI to colour the modal.
 enum ConfirmationSeverity {
   /// Read-only operation that's still worth flagging (e.g. network egress
@@ -60,7 +62,23 @@ class ConfirmationRequest {
     this.agentId,
     this.constraintJson,
     this.withdrawn,
+    this.origin,
+    this.runId,
+    this.onUnanswered,
   });
+
+  /// Called by the approver, before it resolves the request to `false`, when
+  /// no person answered: the deadline passed, the asker withdrew it, or the
+  /// host shut down. A producer that stores a decision stores none for such
+  /// a `false` (an hour without an answer is not a "no"). An approver that
+  /// never calls it leaves every `false` looking like a person's deny, which
+  /// is the stricter reading.
+  final void Function()? onUnanswered;
+
+  /// The run whose agent asked, when the producer knows it (`agent_run_logs`
+  /// id). A server-started run's unanswered approval expires at the
+  /// workspace's expiry; one whose run is unknown keeps the default timeout.
+  final String? runId;
 
   /// The SPACE the request originated from — the container, not one of its
   /// conversations. Every producer supplies a space id and the phone narrows
@@ -133,6 +151,11 @@ class ConfirmationRequest {
   /// about work that is no longer waiting on it. Null means the asker waits
   /// for as long as the port does.
   final Future<void>? withdrawn;
+
+  /// Set when a code mode script's nested call raised this request. The card
+  /// says the request came from a script and links to its transcript row.
+  /// Null for a call the model made directly.
+  final ScriptCallOrigin? origin;
 }
 
 /// Wire DTO for a pending agent-action confirmation — the
@@ -152,6 +175,7 @@ class ConfirmationRequestDto {
     this.workspaceId,
     this.rememberScope,
     this.actionClasses = const [],
+    this.origin,
   });
 
   /// Factory from the wire map.
@@ -171,6 +195,7 @@ class ConfirmationRequestDto {
           for (final c in (json['action_classes'] as List? ?? const []))
             c.toString(),
         ],
+        origin: ScriptCallOrigin.fromJson(json['origin']),
       );
 
   /// Stable id echoed back in `confirmation.respond`.
@@ -215,6 +240,10 @@ class ConfirmationRequestDto {
 
   /// The effect classes that prompted, for the remember affordance's label.
   final List<String> actionClasses;
+
+  /// The script the request came from (wire key `origin`, the
+  /// [ScriptCallOrigin.toJson] shape), or null for a direct call.
+  final ScriptCallOrigin? origin;
 
   /// Whether the responder may turn this into a standing approval.
   ///

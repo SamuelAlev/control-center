@@ -2,29 +2,45 @@
 title: Eszközkontextus és promptgyorsítótár
 description: Miért csak az eszközök egy kis részét látja egy ügynök a teljes készlet helyett, hogyan érheti el a többit, és mely szabályok tartják melegen a szolgáltató promptgyorsítótárát egy-egy futás során.
 slug: hu-HU/kezikonyv/fogalmak/eszkozkontextus
-sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
+sourceHash: 74ad7fcb903772d007ba9bd7ec85153fcf668335
 ---
 
 A beépített harness minden kérésére két dolog igaz: az eszközdefiníciók a legnagyobb fix költséget jelentik benne, és szinte egyet sem fognak használni belőlük. Ez az oldal elmagyarázza, mit tesz ez ellen a Control Center, és miért nem egyszerűen az a válasz, hogy „küldjünk kevesebb eszközt”.
 
 ## A probléma a figyelem, nem a bájtok
 
-A Control Center körülbelül 126 eszközt regisztrál. Teljes terjedelmükben elküldve a definícióik **minden kérésben nagyjából 23 000 tokent** tesznek ki — olyan költség ez, amelyhez egyetlen tömörítés sem tud hozzányúlni, mert az eszközdefiníciók a kérésnek a beszélgetéstől elkülönülő részében utaznak.
+A Control Center körülbelül 160 saját eszköze van. Teljes terjedelmükben elküldve a definícióik **minden kérésben** utaznának — olyan költség ez, amelyhez egyetlen tömörítés sem tud hozzányúlni, mert az eszközdefiníciók a kérésnek a beszélgetéstől elkülönülő részében utaznak.
 
 A tokentöbblet a kézenfekvő panasz, és a promptgyorsítótárral ez a kisebbik tétel is. A valódi költség a **kiválasztás pontossága**. Az eszközhívásról szóló publikált kiértékelések egyetértenek abban, hogy a modellek megbízhatóan választják ki a megfelelő eszközt egészen addig, amíg körülbelül 30–50 eszköz van a kontextusban, azon túl viszont fokozatosan romlanak. A megnevezett ok nem a tokenek száma, hanem a **szemantikai átfedés**: ha egyszer egy katalógusban több hasonló leírású eszköz szerepel, a modell hasonmások közül választ, ahelyett hogy egy képességre emlékezne.
 
-126 eszköznél egy ügynök minden egyes körben jóval túl van ezen a sávon — még azokban a körökben is, amelyekben csak egy fájlt kellett elolvasnia.
+körülbelül 160 eszköznél egy ügynök minden egyes körben jóval túl van ezen a sávon — még azokban a körökben is, amelyekben csak egy fájlt kellett elolvasnia.
 
-## A kétszintű felület
+## Egy kis közvetlen készlet
 
 Egy futás ezért két dolgot lát:
 
-- egy **rezidens** készletet — nagyjából két tucat eszközt, amelyek minden kérésben a teljes sémájukkal együtt elküldésre kerülnek;
+- egy **közvetlen** készlet, nagyjából tizenöt eszközzel, amelyeket minden kérésben a teljes sémájukkal együtt küldünk el;
 - minden másról egy **névindexet**, „Tickets and projects” vagy „Memory and knowledge” típusú fejlécek alá csoportosítva, amely a teljes katalógusért néhány száz tokenbe kerül.
 
-A jelenlegi katalóguson mérve ez az eszközblokkot **~23,1 ezer tokenről ~5,0 ezerre, mintegy 78%-kal kisebbre** viszi, az állandóan látható készletet pedig abba a sávba teszi, ahol a kiválasztás megbízható.
+A beépített ügynök szokásos csevegőeszközei a tesztek által épített regiszteren mérve 14 eszközdefiníciót tesznek ki és nagyjából 16,5 KB-ot `repl`-lel, ebből a `repl` nagyjából 4 KB-ot (a definíciója legfeljebb 4 096 bájt lehet); olyan szerveren, amely nem tud szkripteket futtatni, 14 definíciót és nagyjából 13 KB-ot. Ez egy felület mérése, nem minden telepítésé. Minden más eszközt szkriptből érünk el, vagy első használatkor töltődik be.
 
-A rezidens készlet azokból az eszközökből áll, amelyeket egy futás a futások *többségében* használ: a fájl- és shell-szókincsből (`read`, `write`, `edit`, `search`, `bash`, …), a felfedezőeszközökből, a feladatlistából, a memóriakeresésből, valamint mindabból, amit az aktuális [mód](/hu-HU/kezikonyv/fogalmak/modok) kimeneti műveletként meg kell hívnia a kimenete előállításához. Egy mód saját kimeneti művelete mindig rezidens — egy futásnak soha nem szabad utánajárnia annak az egyetlen hívásnak, amely a szállítandóját előállítja.
+A közvetlen készlet azokból az eszközökből áll, amelyeket a futások első köreiben a legtöbb futás használ, és amelyeket a futásnak soha nem kell keresnie: `read`, `write`, `edit`, `search`, `find`, `bash` és `read_output`; `ask_user` és `task`; `todo_write`, `search_memory` és `send_message`; valamint az aktuális [mód](/hu-HU/kezikonyv/fogalmak/modok/) azon igéi, amelyekkel átadja a kimenetét. Egy mód saját kimeneti igéje mindig közvetlen — a futásnak soha nem szabad utánajárnia annak az egyetlen hívásnak, amely a kimenetét előállítja. Egy eszköz akkor kerül be, ha a legtöbb futásban használják, nem azért, mert fontos, amikor használják: a készlet minden neve minden futás minden körében egy-egy definíció.
+
+### A többihez a szkriptek férnek hozzá
+
+Ha a szerver tud szkripteket futtatni, minden futtatásnak van [`repl`](/hu-HU/kezikonyv/fogalmak/kodmod/) eszköze, az első helyen a listában. A többi eszköz katalógusára ez a szabály vonatkozik:
+
+- olyan eszközt, amelyet a szkript hívhat, **csak szkriptből** érünk el: szerepel a névindexben, a `repl` szkript pedig `tools.<name>(args)` alakban hívja, miután a `searchTools()` vagy a `describeTool()` segítségével megtalálta, amíg a szerver nem tudja futtatni a futtatás szkriptjeit, utána pedig első használatkor töltődik be ([Amikor a szkriptek nem futtathatók](/hu-HU/kezikonyv/fogalmak/kodmod/#amikor-a-szkriptek-nem-futtathatók));
+- olyan eszközt, amelyet a szkript nem hívhat (`eval`, `task`, jóváhagyások, delegálás és néhány más), **halasztott**: első használatkor töltődik be, az alábbiak szerint;
+- a `search_tools` akkor kerül hozzá, ha bármi halasztott van.
+
+A `repl` nélküli futtatás ugyanazt a közvetlen készletet kapja, minden más pedig halasztott.
+
+A közvetlen készlet szándékosan ugyanaz `repl`-lel és `repl` nélkül is. Az ügynök egyetlen felületet ismer meg, minden kérés eleje ugyanazokat az eszközöket tartalmazza ugyanabban a sorrendben, és a bővítés nem változtat semmin, amire az ügynök már támaszkodott.
+
+Amit spórol: a szkriptből hívható eszköz sémáját soha nem küldjük el a szolgáltatónak, így a közvetlen készleten kívüli, mintegy száz eszköz csak a nevét teszi ki. Egy szkript, amelynek tíz ilyen eszközre van szüksége, egyikük sémájáért sem fizet, és a köztes eredményei soha nem kerülnek a kontextusba.
+
+Amibe kerül: a közvetlen készleten kívüli eszközt szkriptből kell hívni, és a szkriptnek előbb meg kell néznie az eszköz argumentumait. Egyetlen gyors hívásnál ez egy extra lépés, amelyre a közvetlen hívásnak nem lenne szüksége. Ezért maradnak közvetlenek azok az eszközök, amelyeket a legtöbb futás az első köreiben hív.
 
 ### A halasztott nem jelent elérhetetlent
 
@@ -32,19 +48,21 @@ Ez az a rész, amely biztonságossá teszi a konstrukciót, nem csupán olcsóv�
 
 Az ügynök látja a nevet a promptjában. Ha közvetlenül meghívja ezt a nevet, a harness betölti a sémát, és ugyanabban a lépésben lefuttatja az eszközt — hiba és plusz oda-vissza út nélkül. A modellnek nem kell tudnia, hogy az eszköz valaha „nem volt betöltve”.
 
-Ha az ügynök ismeri a feladatot, de nem tudja a nevet, a `search_tools` egy természetes nyelvű leírást fogad („ossz hozzá egy jegyet valakihez”), rangsorolja a futás teljes felületét, és visszaadja a találatokat *a sémáikkal együtt már betöltve*, így a rögtön következő kör már hívhat belőlük egyet. Ha egy keresés semmit nem talál, ezt nyíltan megmondja, és más megfogalmazást vagy szélesebb keresést javasol — szándékosan, mert az az ügynök, amely az üres keresést úgy értelmezi, hogy „ez a képesség nem létezik”, új megoldást talál ki ahelyett, hogy újra keresne.
+Ha az ügynök ismeri a feladatot, de nem tudja a nevet, a `search_tools` egy természetes nyelvű leírást fogad („ossz hozzá egy jegyet valakihez”), rangsorolja a futás teljes felületét, és visszaadja a találatokat *a sémáikkal együtt már betöltve*, így a rögtön következő kör már hívhat belőlük egyet. Ha a találat csak szkriptből hívható eszköz, a válasz megmondja, hogyan hívja meg szkriptből a sémája betöltése helyett, kivéve ha a futtatás szkriptjei már nem futtathatók: akkor úgy töltődik be, mint bármely más találat. Ha egy keresés semmit nem talál, ezt nyíltan megmondja, és más megfogalmazást vagy szélesebb keresést javasol — szándékosan, mert az az ügynök, amely az üres keresést úgy értelmezi, hogy „ez a képesség nem létezik”, új megoldást talál ki ahelyett, hogy újra keresne.
 
 A `search_tools` csak a beépített harnessben létezik. A külső MCP-klienseknek ehelyett `search_tool_bm25` áll rendelkezésre, amely ugyanazt az indexet rangsorolja, de csak leírja a találatokat — ezek a kliensek ugyanis már megkapták az összes sémát a `tools/list` hívástól, így nincs mit betölteni.
 
-### Amit a halasztás soha nem tesz meg
+### Amit a felület soha nem tesz meg
 
-A halasztás a mód eszközszűrője **után** érvényesül, soha nem helyette. Elrejt egy sémát; nem tud felfedni egy olyan eszközt, amelyet a mód megtagadott. Egy aktivált eszköz ugyanúgy átmegy a jóváhagyási kérésen és a [műveleti korlátokon](/hu-HU/kezikonyv/fogalmak/korlatok), ahogy egy rezidens eszköz tenné, és egy eszköz nem tud betölteni olyan nevet, amely eleve nem szerepelt a futás felületén.
+A halasztás és a szkriptek a mód eszközszűrője **után** érvényesülnek, soha nem helyette. Elrejtenek egy sémát; nem tudnak felfedni egy olyan eszközt, amelyet a mód megtagadott. A betöltött eszköz és a szkript hívása ugyanúgy átmegy a jóváhagyási kérésen és a [műveleti korlátokon](/hu-HU/kezikonyv/fogalmak/korlatok/), ahogy egy közvetlen hívás, és egyik sem tud olyan nevet elérni, amely eleve nem szerepelt a futás felületén.
 
-Amit a külső kliensek MCP-felületként látnak, az **nincs** érintve. A `tools/list` továbbra is a teljes katalógust adja vissza. Egy korábbi kísérlet a megkurtítására csúnyán meg is törte az ügynököket: az MCP-kliensek a saját gyorsítótárazott listájukhoz ellenőrzik az eszközneveket, és mindent megtagadnak, ami nem szerepel rajta, anélkül hogy valaha is kérdeznék a szervertől, így egy „rejtett, de hívható” eszköz egyszerűen elérhetetlen volt. A halasztás a harnessben él, ahol egy eszköz futás közbeni betöltése valóban olyasmi, amire a harness képes.
+Amit a külső kliensek MCP-felületként látnak, az **nincs** halasztva. A `tools/list` a teljes katalógust adja vissza, mert az MCP-kliensek a saját gyorsítótárazott listájukhoz ellenőrzik az eszköznevet, és mindent megtagadnak, ami nem szerepel rajta, anélkül hogy valaha is kérdeznék a szervertől, így egy „rejtett, de hívható” eszköz egyszerűen elérhetetlen lenne. A halasztás a harnessben él, ahol egy eszköz futás közbeni betöltése valóban olyasmi, amire a harness képes.
 
-### Kikapcsolása
+Az a futtatás, amely a Control Center eszközeit az MCP-végpontján keresztül éri el, miközben a szerver tud szkripteket futtatni, az egyetlen kivétel. A hozzá tartozó `tools/list` tartalmazza a `repl`-t, a közvetlen eszközöket és minden olyan eszközt, amelyet a szkript nem hívhat, a többit pedig szkriptekből hívja. Egy közvetlen hívásra ezek egyikénél a válasz megmondja, hogyan hívja meg szkriptből.
 
-A `--tool-deferral=off` (vagy a `CC_SERVER_TOOL_DEFERRAL=off`) minden beengedett eszközt újra rezidenssé tesz, pontosan azokat a kéréseket állítva elő, amelyeket a szerver a halasztás megjelenése előtt küldött. Lásd a [`cc_server` CLI-referenciát](/hu-HU/kezikonyv/referencia/cc-server-cli).
+### A halasztás kikapcsolása
+
+A `--tool-deferral=off` (vagy a `CC_SERVER_TOOL_DEFERRAL=off`) kikapcsolja a halasztást: a `repl` nélküli futtatás minden beengedett eszközt teljes egészében megkap, a `repl`-es futtatás pedig teljes egészében azokat az eszközöket, amelyeket a szkript nem hívhat, a többi pedig csak szkriptből hívható marad. Lásd a [`cc_server` CLI-referenciát](/hu-HU/kezikonyv/referencia/cc-server-cli/).
 
 ## Promptgyorsítótár
 
@@ -64,7 +82,7 @@ Egy szolgáltató korlátozott számú gyorsítótár-jelölőt engedélyez, és
 
 | Jelölő                      | Lefedi                                  | Élettartam |
 | --------------------------- | --------------------------------------- | ---------- |
-| Utolsó **rezidens** eszköz  | Az eszközblokk                          | 1 óra      |
+| Utolsó **közvetlen** eszköz | Az eszközblokk                          | 1 óra      |
 | Utolsó rendszerblokk        | Eszközök + rendszerprompt               | 1 óra      |
 | Az előző kör vége           | Az előzmények a legutóbbi kérésig       | 5 perc     |
 | Az aktuális kör vége        | A teljes előzmény                       | 5 perc     |
@@ -77,12 +95,12 @@ Az eszközökből és a rendszerpromptból álló prefixum azért kapja a hossz�
 
 Az azonos típusú alügynökök bájtazonos promptprefixumokat állítanak elő, ezért egyetlen gyorsítótár-bejegyzést kellene olvasniuk ahelyett, hogy mindegyik a sajátját írná. Egy bejegyzés azonban csak akkor válik olvashatóvá, amikor az őt író kérés válaszolni kezd, ezért egy egyszerre elindított fan-outnál minden gyermek megfizeti a felárat egy olyan prefixumért, amelyen mindannyian osztoznak.
 
-A harness hagyja, hogy egy adott alak első gyermeke elinduljon, majd amint az streamelni kezd, elengedi a testvéreit. A várakozás korlátozott: egy lassú első gyermek egy gyorsítótár-találatba kerül, soha nem magába a fan-outba. Ugyanezen okból minden alügynök ugyanazt a rezidens eszközkészletet kapja, függetlenül a profiljától — profilonként változtatni széttagolná a közös prefixumot minden haszon nélkül, hiszen a profil már eldöntötte, mit hívhat a gyermek.
+A harness hagyja, hogy egy adott alak első gyermeke elinduljon, majd amint az streamelni kezd, elengedi a testvéreit. A várakozás korlátozott: egy lassú első gyermek egy gyorsítótár-találatba kerül, soha nem magába a fan-outba. Ugyanezen okból minden alügynök ugyanazt a közvetlen eszközkészletet kapja, függetlenül a profiljától — profilonként változtatni széttagolná a közös prefixumot minden haszon nélkül, hiszen a profil már eldöntötte, mit hívhat a gyermek.
 
 ## Működés közben
 
 Mindkét fél megfigyelhető, nem pusztán feltételezett:
 
-- A beszélgetéshez tartozó **Kontextus** nézet jelentést ad a rezidens eszközökről, a halasztott indexről és arról, hogy az egyes visszatartott sémák mennyibe *kerülnének* — ugyanabból a kódútból felépítve, amelyet egy valódi futás használ.
+- A beszélgetéshez tartozó **Kontextus** nézet jelentést ad a közvetlen eszközökről, a halasztott indexről és arról, hogy az egyes visszatartott sémák mennyibe *kerülnének* — ugyanabból a kódútból felépítve, amelyet egy valódi futás használ.
 - Minden futás rögzíti, mely halasztott eszközöket töltötte be, és mi váltotta ki azt, így egy semmit nem találó keresés visszakeresési kihagyásként látható, ahelyett hogy eltűnne egy csendben valami mellékesbe kezdő ügynökben.
 - A Megfigyelhetőség **Gyorsítótár-arány** néven adja meg a gyorsítótár-olvasások és a feldolgozott összes prompttoken hányadosát, a gyorsítótár-írásokat is beleértve — egy futás, amely folyton újraépíti a prefixumát, alacsony értéket ér el, ahelyett hogy úgy teljesítene, mint amelyiknek soha nem is kellett gyorsítótár.

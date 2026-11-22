@@ -10,6 +10,7 @@ import 'package:cc_persistence/database/daos/budget_dao.dart';
 import 'package:cc_persistence/database/daos/cache_dao.dart';
 import 'package:cc_persistence/database/daos/calendar_dao.dart';
 import 'package:cc_persistence/database/daos/chat_link_dao.dart';
+import 'package:cc_persistence/database/daos/code_mode_dao.dart';
 import 'package:cc_persistence/database/daos/conversation_dao.dart';
 import 'package:cc_persistence/database/daos/conversation_goal_dao.dart';
 import 'package:cc_persistence/database/daos/cron_execution_dao.dart';
@@ -18,6 +19,7 @@ import 'package:cc_persistence/database/daos/episodic_edge_dao.dart';
 import 'package:cc_persistence/database/daos/evals_dao.dart';
 import 'package:cc_persistence/database/daos/goal_dao.dart';
 import 'package:cc_persistence/database/daos/guard_decision_dao.dart';
+import 'package:cc_persistence/database/daos/improvement_proposal_dao.dart';
 import 'package:cc_persistence/database/daos/isolated_repo_dao.dart';
 import 'package:cc_persistence/database/daos/mcp_server_dao.dart';
 import 'package:cc_persistence/database/daos/meeting_dao.dart';
@@ -31,6 +33,7 @@ import 'package:cc_persistence/database/daos/memory_policy_dao.dart';
 import 'package:cc_persistence/database/daos/messaging_dao.dart';
 import 'package:cc_persistence/database/daos/notification_feed_dao.dart';
 import 'package:cc_persistence/database/daos/orchestration_dao.dart';
+import 'package:cc_persistence/database/daos/peer_ask_dao.dart';
 import 'package:cc_persistence/database/daos/pipeline_dao.dart';
 import 'package:cc_persistence/database/daos/pipeline_template_dao.dart';
 import 'package:cc_persistence/database/daos/pipeline_trigger_dao.dart';
@@ -60,6 +63,8 @@ import 'package:cc_persistence/database/daos/ticket_write_ledger_dao.dart';
 import 'package:cc_persistence/database/daos/todo_dao.dart';
 import 'package:cc_persistence/database/daos/user_activity_dao.dart';
 import 'package:cc_persistence/database/daos/voice_profile_dao.dart';
+import 'package:cc_persistence/database/daos/wake_dao.dart';
+import 'package:cc_persistence/database/daos/wake_rule_dao.dart';
 import 'package:cc_persistence/database/daos/webhook_delivery_dao.dart';
 import 'package:cc_persistence/database/daos/work_product_dao.dart';
 import 'package:cc_persistence/database/daos/working_memory_item_dao.dart';
@@ -94,10 +99,12 @@ import 'package:cc_persistence/database/tables/checks/column_checks.dart';
 import 'package:cc_persistence/database/tables/checks/stored_values_agents.dart';
 import 'package:cc_persistence/database/tables/checks/stored_values_platform.dart';
 import 'package:cc_persistence/database/tables/checks/stored_values_spaces.dart';
+import 'package:cc_persistence/database/tables/code_mode_tables.dart';
 import 'package:cc_persistence/database/tables/conversation_activity.dart';
 import 'package:cc_persistence/database/tables/conversation_goals_table.dart';
 import 'package:cc_persistence/database/tables/conversation_message_embeddings_table.dart';
 import 'package:cc_persistence/database/tables/conversation_messages.dart';
+import 'package:cc_persistence/database/tables/conversation_reads.dart';
 import 'package:cc_persistence/database/tables/conversations.dart';
 import 'package:cc_persistence/database/tables/cron_executions_table.dart';
 import 'package:cc_persistence/database/tables/editor_layouts_table.dart';
@@ -108,6 +115,7 @@ import 'package:cc_persistence/database/tables/evals_tables.dart';
 import 'package:cc_persistence/database/tables/goals_table.dart';
 import 'package:cc_persistence/database/tables/guard_decisions_table.dart';
 import 'package:cc_persistence/database/tables/imported_authority_holds_table.dart';
+import 'package:cc_persistence/database/tables/improvement_proposals_table.dart';
 import 'package:cc_persistence/database/tables/isolated_repos.dart';
 import 'package:cc_persistence/database/tables/mcp_servers.dart';
 import 'package:cc_persistence/database/tables/meeting_action_items.dart';
@@ -129,6 +137,7 @@ import 'package:cc_persistence/database/tables/notification_feed_table.dart';
 import 'package:cc_persistence/database/tables/notification_item_states_table.dart';
 import 'package:cc_persistence/database/tables/notification_read_marks_table.dart';
 import 'package:cc_persistence/database/tables/orchestrations_table.dart';
+import 'package:cc_persistence/database/tables/peer_asks_table.dart';
 import 'package:cc_persistence/database/tables/pipeline_run_snapshots_table.dart';
 import 'package:cc_persistence/database/tables/pipeline_runs_table.dart';
 import 'package:cc_persistence/database/tables/pipeline_step_runs_table.dart';
@@ -172,6 +181,7 @@ import 'package:cc_persistence/database/tables/transcript_segments_table.dart';
 import 'package:cc_persistence/database/tables/transcripts_table.dart';
 import 'package:cc_persistence/database/tables/user_activity_table.dart';
 import 'package:cc_persistence/database/tables/voice_profiles.dart';
+import 'package:cc_persistence/database/tables/wake_tables.dart';
 import 'package:cc_persistence/database/tables/webhook_deliveries_table.dart';
 import 'package:cc_persistence/database/tables/work_product_revisions_table.dart';
 import 'package:cc_persistence/database/tables/work_products_table.dart';
@@ -220,6 +230,7 @@ part 'workspace_database.g.dart';
     ConversationMessagesTable,
     ConversationMessageEmbeddingsTable,
     ConversationActivityTable,
+    ConversationReadsTable,
     ReviewSpacesTable,
     ActivityLogTable,
     BudgetPolicyTable,
@@ -329,6 +340,14 @@ part 'workspace_database.g.dart';
     ApprovalEscalationsTable,
     PlanDivergencesTable,
     McpServersTable,
+    CodeExecutionsTable,
+    CodeExecutionPayloadsTable,
+    CodeExecutionCallsTable,
+    CodeModeStoreTable,
+    AgentWakesTable,
+    WakeRulesTable,
+    PeerAsksTable,
+    ImprovementProposalsTable,
   ],
   daos: [
     WorkspaceSettingDao,
@@ -401,6 +420,11 @@ part 'workspace_database.g.dart';
     WorkspaceRoleDao,
     EnvironmentDao,
     McpServerDao,
+    CodeModeDao,
+    WakeDao,
+    WakeRuleDao,
+    PeerAskDao,
+    ImprovementProposalDao,
   ],
 )
 class WorkspaceDatabase extends _$WorkspaceDatabase with ConvergedDatabase {
@@ -483,7 +507,7 @@ class WorkspaceDatabase extends _$WorkspaceDatabase with ConvergedDatabase {
   /// Bump it whenever the declared schema changes (a table class, an index,
   /// a constraint): the version differing is what makes an existing file
   /// converge on its next open. There are no migration steps to write.
-  static const int currentSchemaVersion = 33;
+  static const int currentSchemaVersion = 40;
 
   /// `PRAGMA application_id` of a workspace database: "CCWS".
   static const int fileApplicationId = 0x43435753;
@@ -563,7 +587,10 @@ class WorkspaceDatabase extends _$WorkspaceDatabase with ConvergedDatabase {
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (Migrator m) => createFresh(() => _createDeclaredSchema(m)),
-    onUpgrade: (Migrator m, int from, int to) => upgradeByConverging(from, to),
+    onUpgrade: (Migrator m, int from, int to) async {
+      await upgradeByConverging(from, to);
+      await _dropRetiredSettings(from);
+    },
     beforeOpen: (_) async {
       await applyConnectionPragmas();
       await verifyIdentity();
@@ -603,6 +630,100 @@ class WorkspaceDatabase extends _$WorkspaceDatabase with ConvergedDatabase {
       await optimize(onOpen: true);
     },
   );
+
+  /// Settings keys nothing reads any more, by the schema version that
+  /// retired them.
+  ///
+  /// Converging keeps every row that fits the declared tables, and a dead
+  /// key's row fits: the table holds opaque key/value pairs. So a file from
+  /// before a key's version loses its rows once, on the upgrade, after the
+  /// pre-upgrade copy has kept them. `code_mode` (35): code mode is always
+  /// on, so the workspace's choice of it means nothing.
+  static const Map<String, int> _retiredSettingKeys = {'code_mode': 35};
+
+  /// The summary a `/loop` row gets when the upgrade ends it.
+  static const String loopEndedByUpgradeSummary =
+      'This loop was ended by the upgrade: a loop is now a schedule. '
+      'Recreate it with /loop.';
+
+  /// Settles the goal rows schema 36 no longer has a place for, before the
+  /// converger drops `kind` and builds the one-active-goal-per-agent index.
+  ///
+  /// First, while the `kind` column still exists, every active or paused
+  /// `/loop` row is cancelled with [loopEndedByUpgradeSummary]: a loop is
+  /// rebuilt as a wake rule, and once the column is gone the row would read
+  /// as an ordinary goal. Then every active goal but each agent's newest (by
+  /// `created_at`, then `id`) is cancelled: the converger keeps one row per
+  /// duplicate key by deleting the others, which would throw a goal away;
+  /// cancelling keeps every row and the index builds over one active goal
+  /// per agent. A file with neither is left untouched.
+  @override
+  Future<void> prepareForConverge() async {
+    if (!await _hasSchemaObject('agent_goal_runs')) {
+      return;
+    }
+    final hasKind = (await customSelect(
+      "SELECT 1 FROM pragma_table_info('agent_goal_runs') WHERE name = 'kind'",
+    ).get()).isNotEmpty;
+    if (hasKind) {
+      final loops = await customUpdate(
+        "UPDATE agent_goal_runs SET status = 'cancelled', summary = ?, "
+        "updated_at = CAST(strftime('%s', 'now') AS INTEGER) "
+        "WHERE kind = 'loop' AND status IN ('active', 'paused')",
+        variables: [Variable.withString(loopEndedByUpgradeSummary)],
+        updates: {agentGoalRunsTable},
+        updateKind: UpdateKind.update,
+      );
+      if (loops > 0) {
+        onWarn?.call(
+          'SchemaConverge',
+          '$databaseLabel: cancelled $loops running loops (a loop is now a '
+              'schedule)',
+        );
+      }
+    }
+    final cancelled = await customUpdate(
+      "UPDATE agent_goal_runs SET status = 'cancelled', "
+      "updated_at = CAST(strftime('%s', 'now') AS INTEGER) "
+      "WHERE status = 'active' AND EXISTS ("
+      'SELECT 1 FROM agent_goal_runs newer '
+      'WHERE newer.agent_id = agent_goal_runs.agent_id '
+      "AND newer.status = 'active' "
+      'AND (newer.created_at > agent_goal_runs.created_at '
+      'OR (newer.created_at = agent_goal_runs.created_at '
+      'AND newer.id > agent_goal_runs.id)))',
+      updates: {agentGoalRunsTable},
+      updateKind: UpdateKind.update,
+    );
+    if (cancelled > 0) {
+      onWarn?.call(
+        'SchemaConverge',
+        '$databaseLabel: cancelled $cancelled active goals that were not '
+            "their agent's newest (one active goal per agent)",
+      );
+    }
+  }
+
+  Future<void> _dropRetiredSettings(int from) async {
+    for (final MapEntry(key: key, value: retiredAt)
+        in _retiredSettingKeys.entries) {
+      if (from >= retiredAt) {
+        continue;
+      }
+      final dropped = await customUpdate(
+        'DELETE FROM workspace_settings WHERE key = ?',
+        variables: [Variable.withString(key)],
+        updates: {workspaceSettingsTable},
+        updateKind: UpdateKind.delete,
+      );
+      if (dropped > 0) {
+        onWarn?.call(
+          'SchemaConverge',
+          '$databaseLabel v$from: dropped the retired setting $key',
+        );
+      }
+    }
+  }
 
   /// Runs the corruption check of this open and reports its outcome through
   /// [onIntegrityChecked]. True when SQLite found the file damaged.

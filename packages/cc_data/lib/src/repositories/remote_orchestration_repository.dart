@@ -1,8 +1,9 @@
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 
-/// Reads/mutates orchestrations over the RPC client instead of a local
-/// database.
+/// Reads orchestrations, and raises a cap, over the RPC client instead of a
+/// local database. Orchestration rows are written by the server's use cases
+/// only: no op inserts or rewrites one from a client.
 ///
 /// Backs the web build and the desktop in REMOTE mode. Workspace-scoped calls
 /// take no `workspaceId` argument here because `RemoteRpcClient` injects its
@@ -18,18 +19,16 @@ class RemoteOrchestrationRepository {
 
   final RemoteRpcClient _client;
 
-  /// Inserts a new orchestration (the host owns persistence).
-  Future<void> insert(OrchestrationDto orchestration) => _client.call(
-    'orchestration.insert',
-    {'orchestration': orchestration.toJson()},
-  );
-
-  /// Updates an existing orchestration (scoped to the bound workspace
-  /// server-side).
-  Future<void> update(OrchestrationDto orchestration) => _client.call(
-    'orchestration.update',
-    {'orchestration': orchestration.toJson()},
-  );
+  /// Raises orchestration [id]'s cap to [maxCostMicros]
+  /// (`orchestration.raiseCap`); the reply carries `old_micros` and
+  /// `new_micros`.
+  Future<Map<String, dynamic>> raiseCap(String id, int maxCostMicros) async {
+    final data = await _client.call('orchestration.raiseCap', {
+      'orchestration_id': id,
+      'max_cost_micros': maxCostMicros,
+    });
+    return data;
+  }
 
   /// A single orchestration by id (scoped by the `workspace_id` the request carries),
   /// or null when it does not exist.

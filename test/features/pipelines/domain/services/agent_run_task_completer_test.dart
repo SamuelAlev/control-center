@@ -4,6 +4,7 @@ import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_output_port.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
@@ -156,15 +157,23 @@ void main() {
   tearDown(() => completer.dispose());
 
   Future<void> complete(
-    String? runId, {
+    String runId, {
     String? conversationId = 'chan-1',
   }) async {
     bus.publish(
-      AgentRunCompleted(
+      AgentRunSettled(
         agentId: 'agent-1',
         workspaceId: 'ws-1',
+        spaceId: null,
         conversationId: conversationId,
         runId: runId,
+        status: RunStatus.completed,
+        endReason: RunEndReason.completed,
+        costMicros: 0,
+        limitResetsAt: null,
+        wakeIds: const [],
+        requestedByUserId: null,
+        wakeReason: null,
         occurredAt: DateTime.now(),
       ),
     );
@@ -175,12 +184,6 @@ void main() {
   }
 
   group('early exits', () {
-    test('no runId → ignored', () async {
-      runLogs.seed(_run());
-      await complete(null);
-      expect(runLogs.outputWrites, 0);
-    });
-
     test('no conversationId → ignored', () async {
       runLogs.seed(_run());
       await complete('run-1', conversationId: null);

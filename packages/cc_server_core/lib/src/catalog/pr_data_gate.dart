@@ -39,6 +39,9 @@ abstract interface class SpaceReadGate {
 
   /// The spaces of [workspaceId] [userId] may not read.
   Future<Set<String>> unreadable(String workspaceId, String userId);
+
+  /// The repositories space [spaceId] of [workspaceId] exposes.
+  Future<List<String>> exposedBy(String workspaceId, String? spaceId);
 }
 
 /// What of a workspace's PR-derived data one person may see.
@@ -306,6 +309,13 @@ class PrDataGate {
     final visibility = await _resolve(workspaceId, userId);
     return associations.every((a) => visibility.canSeeFullName(a.repoFullName));
   }
+
+  /// The repositories space [spaceId] of [workspaceId] exposes, for an op
+  /// that needs a grant on each of them (`RepoOp.repoAccessVia`); none
+  /// without a space read gate.
+  Future<List<String>> reposExposedBy(String workspaceId, String spaceId) =>
+      _spaceRead?.exposedBy(workspaceId, spaceId) ??
+      Future.value(const <String>[]);
 
   /// Refuses [userId] reading or acting in space [spaceId] when it is tied
   /// to a pull request they may not see.

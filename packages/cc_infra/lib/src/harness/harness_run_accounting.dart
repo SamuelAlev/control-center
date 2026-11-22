@@ -38,6 +38,7 @@ class HarnessRunAccounting implements ProviderCallObserver {
     _runOffsetMs = this.clockEpoch.difference(runStartedAt).inMilliseconds;
     _hasRunLogPersistence =
         runLogRepository != null || (parent?._hasRunLogPersistence ?? false);
+    parent?._children.add(this);
   }
 
   /// Durable owner of this meter's physical calls.
@@ -73,6 +74,7 @@ class HarnessRunAccounting implements ProviderCallObserver {
   late final bool _hasRunLogPersistence;
   late final int _runOffsetMs;
   Future<void> _writes = Future<void>.value();
+  final List<HarnessRunAccounting> _children = [];
   int _ownCostMicros = 0;
   int _subtreeCostMicros = 0;
   int _subtreeBillableTokens = 0;
@@ -237,7 +239,15 @@ class HarnessRunAccounting implements ProviderCallObserver {
     );
   }
 
-  /// Await before the run's terminal event so all observed calls have reached
-  /// the persistence boundary, including a final failed/cancelled request.
-  Future<void> flush() => _writes;
+  /// Await before the run's terminal write so all observed calls have reached
+  /// the persistence boundary, including a final failed/cancelled request,
+  /// and so has every descendant's: a child's spend reaches this run's row
+  /// through the child's own writes (`addChildCostMicros`), and a run that
+  /// settles before they land announces a cost without them.
+  Future<void> flush() async {
+    await _writes;
+    for (final child in List.of(_children)) {
+      await child.flush();
+    }
+  }
 }

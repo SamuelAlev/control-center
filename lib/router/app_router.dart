@@ -2,6 +2,10 @@ import 'package:control_center/features/auth/presentation/screens/api_keys_scree
 import 'package:control_center/features/auth/presentation/screens/onboarding_screen.dart';
 import 'package:control_center/features/auth/providers/onboarding_providers.dart';
 import 'package:control_center/features/calendar/presentation/screens/calendar_screen.dart';
+import 'package:control_center/features/code_mode/presentation/screens/code_executions_screen.dart';
+import 'package:control_center/features/dispatch/presentation/screens/goals_screen.dart';
+import 'package:control_center/features/dispatch/presentation/screens/improvements_screen.dart';
+import 'package:control_center/features/dispatch/presentation/screens/schedules_screen.dart';
 import 'package:control_center/features/inbox/presentation/inbox_screen.dart';
 import 'package:control_center/features/meetings/presentation/screens/meeting_detail_screen.dart';
 import 'package:control_center/features/meetings/presentation/screens/meeting_record_screen.dart';
@@ -55,6 +59,7 @@ import 'package:control_center/features/settings/presentation/screens/sso_settin
 import 'package:control_center/features/settings/presentation/screens/voice_meetings_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/workspace_general_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/workspace_integrations_settings_screen.dart';
+import 'package:control_center/features/settings/presentation/widgets/settings_body_host.dart';
 import 'package:control_center/features/shell/presentation/layout/control_center_layout.dart';
 import 'package:control_center/features/ticketing/presentation/screens/project_overview_screen.dart';
 import 'package:control_center/features/ticketing/presentation/screens/tickets_screen.dart';
@@ -276,6 +281,88 @@ List<GoRoute> environmentSettingsRoutes() {
     GoRoute(
       path: settingsEnvironmentRoute(workspaceIdParam, ':definitionId'),
       pageBuilder: page,
+    ),
+  ];
+}
+
+/// Observability → Code executions: the list and one record, SIBLINGS sharing
+/// one page key (see [memoryRoutes]), so the list's filters, loaded pages and
+/// scroll position survive opening a record. The record's id is one encoded
+/// path segment, decoded back whole by go_router.
+List<GoRoute> codeExecutionRoutes() {
+  const pageKey = ValueKey('code_executions_screen');
+  return [
+    GoRoute(
+      path: codeExecutionsRoute(workspaceIdParam),
+      pageBuilder: (context, state) => buildPage(
+        state,
+        _absorb(const CodeExecutionsScreen()),
+        key: pageKey,
+      ),
+    ),
+    GoRoute(
+      path: codeExecutionRoute(workspaceIdParam, codeExecutionIdParam),
+      pageBuilder: (context, state) => buildPage(
+        state,
+        _absorb(
+          CodeExecutionsScreen(
+            executionId: state.pathParameters['executionId'],
+          ),
+        ),
+        key: pageKey,
+      ),
+    ),
+  ];
+}
+
+/// Goals, Schedules and Improvements: each a list and one record, SIBLINGS
+/// sharing one page key per family (see [memoryRoutes]), so the list stays
+/// mounted under an open record and Back returns to it as it was.
+List<GoRoute> workRecordRoutes() {
+  GoRoute route(String path, String key, Widget Function(String? id) screen) =>
+      GoRoute(
+        path: path,
+        pageBuilder: (context, state) => buildPage(
+          state,
+          _absorb(screen(state.pathParameters['recordId'])),
+          key: ValueKey(key),
+        ),
+      );
+  GoRoute goal(String path) => GoRoute(
+    path: path,
+    pageBuilder: (context, state) => buildPage(
+      state,
+      _absorb(
+        GoalsScreen(
+          goalId: state.pathParameters['recordId'],
+          openContractEditor: state.uri.query == goalContractEditQuery,
+        ),
+      ),
+      key: const ValueKey('goals_screen'),
+    ),
+  );
+  return [
+    goal(goalsRoute(workspaceIdParam)),
+    goal(goalRoute(workspaceIdParam, ':recordId')),
+    route(
+      schedulesRoute(workspaceIdParam),
+      'schedules_screen',
+      (_) => const SchedulesScreen(),
+    ),
+    route(
+      scheduleRoute(workspaceIdParam, ':recordId'),
+      'schedules_screen',
+      (id) => SchedulesScreen(ruleId: id),
+    ),
+    route(
+      improvementsRoute(workspaceIdParam),
+      'improvements_screen',
+      (_) => const ImprovementsScreen(),
+    ),
+    route(
+      improvementRoute(workspaceIdParam, ':recordId'),
+      'improvements_screen',
+      (id) => ImprovementsScreen(proposalId: id),
     ),
   ];
 }
@@ -616,6 +703,25 @@ final routerProvider = Provider<GoRouter>((ref) {
               _absorb(const AgentPermissionsSettingsScreen()),
             ),
           ),
+          // Route and nav entry only: the page is the `code_mode` feature's,
+          // contributed through the settings registry.
+          GoRoute(
+            path: settingsCodeModeRoute(workspaceIdParam),
+            pageBuilder: (context, state) => buildPage(
+              state,
+              _absorb(
+                const SettingsBodyHost(navItemId: 'workspace.code_mode'),
+              ),
+            ),
+          ),
+          // Route and nav entry only: the page is the `dispatch` feature's.
+          GoRoute(
+            path: settingsSchedulesRoute(workspaceIdParam),
+            pageBuilder: (context, state) => buildPage(
+              state,
+              _absorb(const SettingsBodyHost(navItemId: 'workspace.schedules')),
+            ),
+          ),
           // Server — affects every workspace on this install.
           GoRoute(
             path: settingsServerConnectionRoute(workspaceIdParam),
@@ -684,6 +790,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             pageBuilder: (context, state) =>
                 buildPage(state, _absorb(const ObservabilityScreen())),
           ),
+          ...codeExecutionRoutes(),
+          ...workRecordRoutes(),
           GoRoute(
             path: inboxRoute(workspaceIdParam),
             pageBuilder: (context, state) =>

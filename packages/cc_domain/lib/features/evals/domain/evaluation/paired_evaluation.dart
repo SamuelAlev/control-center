@@ -1,10 +1,11 @@
-import 'dart:math' as math;
-
 import 'package:cc_domain/core/domain/value_objects/money.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_attempt.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_manifest.dart';
+import 'package:cc_domain/features/evals/domain/evaluation/evaluation_outcome.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_plan.dart';
+import 'package:cc_domain/features/evals/domain/evaluation/evaluation_schedule.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_task.dart';
+import 'package:cc_domain/features/evals/domain/evaluation/task_cluster_verdict.dart';
 
 /// Aggregate behaviour of one arm across every task it ran.
 ///
@@ -57,7 +58,8 @@ class EvaluationArmSummary {
     for (final attempt in attempts) {
       if (attempt.completed) {
         completed++;
-      } else {
+      }
+      if (attempt.end == EvaluationAttemptEnd.harnessFault) {
         errors++;
       }
       if (attempt.identityMismatches.isNotEmpty ||
@@ -139,7 +141,8 @@ class EvaluationArmSummary {
   /// Attempts proven successful by an independent behavioral check.
   final int verifiedSuccesses;
 
-  /// Attempts the harness itself faulted on.
+  /// Attempts the harness itself faulted on (`harness_fault`; an agent that
+  /// stopped or a spend-ceiling stop is not a harness error).
   final int harnessErrors;
 
   /// Attempts whose evidence is unusable (identity mismatch or a skipped
@@ -283,7 +286,7 @@ class EvaluationTaskOutcome {
       if (attempt.verifiedSuccess) {
         passed++;
       }
-      if (!attempt.completed) {
+      if (attempt.end == EvaluationAttemptEnd.harnessFault) {
         errors++;
       }
       if (attempt.completed && attempt.identityMismatches.isEmpty) {
@@ -327,7 +330,7 @@ class EvaluationTaskOutcome {
   /// Verified successes.
   final int verifiedSuccesses;
 
-  /// Harness faults.
+  /// Harness faults (`harness_fault` only).
   final int harnessErrors;
 
   /// Whether every attempt on this (task, arm) was priced.
@@ -453,18 +456,19 @@ class TaskRegression {
 
 /// The quality verdict for one treatment arm against the baseline.
 enum QualityVerdict {
-  /// The one-sided bound is entirely above zero: quality improved.
+  /// The one-sided lower bound is above zero: quality improved.
   superior('superior'),
 
-  /// The one-sided bound clears the −margin: a loss as large as the margin is
-  /// excluded at the plan's alpha.
+  /// The one-sided lower bound clears −margin: a loss as large as the margin
+  /// is excluded (non-inferiority plans only).
   nonInferior('non_inferior'),
 
-  /// The upper bound lies below the negative prespecified margin: a regression
-  /// has been demonstrated, not merely a failure to establish non-inferiority.
+  /// The one-sided upper bound is below zero: a loss of any size has been
+  /// demonstrated, and its size is printed.
   inferior('inferior'),
 
-  /// Missing evidence or bounds that do not establish either conclusion.
+  /// Missing evidence, too few or saturated tasks, or bounds that establish
+  /// nothing.
   inconclusive('inconclusive');
 
   const QualityVerdict(this.wire);
@@ -477,20 +481,22 @@ enum QualityVerdict {
     QualityVerdict.superior => 'Superior',
     QualityVerdict.nonInferior => 'Non-inferior',
     QualityVerdict.inferior => 'Inferior',
-    QualityVerdict.inconclusive => 'Inconclusive',
+    QualityVerdict.inconclusive => 'No decision (not enough evidence)',
   };
 }
 
-/// What the campaign recommends doing with the quality default.
+/// What the campaign recommends doing with the default.
 enum AdoptionRecommendation {
-  /// Keep the pinned quality default (the only safe default).
+  /// Keep the default: the evidence is against the treatment (it is
+  /// inferior, or its cost exceeds the plan's ceiling).
   keepQualityDefault('keep_quality_default'),
 
   /// Adopt the treatment where the evidence supports it.
   adoptTreatment('adopt_treatment'),
 
-  /// Not enough evidence either way.
-  inconclusive('inconclusive');
+  /// Not enough evidence either way: never read as a decision against the
+  /// treatment.
+  noDecision('no_decision');
 
   const AdoptionRecommendation(this.wire);
 
@@ -499,41 +505,70 @@ enum AdoptionRecommendation {
 
   /// Sentence-case label.
   String get label => switch (this) {
-    AdoptionRecommendation.keepQualityDefault => 'Keep quality default',
+    AdoptionRecommendation.keepQualityDefault => 'Keep the default',
     AdoptionRecommendation.adoptTreatment => 'Adopt treatment',
-    AdoptionRecommendation.inconclusive => 'Inconclusive',
+    AdoptionRecommendation.noDecision => 'No decision (not enough evidence)',
   };
 }
 
-/// The paired quality + cost verdict for one treatment arm.
+/// A planned task the verdict could not use, and why.
+class DroppedTask {
+  /// Creates a [DroppedTask].
+  const DroppedTask({required this.taskId, required this.reason});
+
+  /// The task.
+  final String taskId;
+
+  /// Why it was dropped (not run, or which arm missed which repetitions).
+  final String reason;
+
+  /// Serializes to JSON.
+  Map<String, dynamic> toJson() => {'taskId': taskId, 'reason': reason};
+}
+
+/// The paired quality and cost verdict for one treatment arm.
 ///
-/// Quality uses one-sided task-cluster bounds on the treatment-minus-baseline
-/// verified-success difference. Repeated pairs on one task do not create new
-/// independent task evidence.
+/// Quality is the task-clustered one-sided paired t-test on per-task mean
+/// differences of the plan's primary outcome, with the exact sign-flip test
+/// beside it: a claim needs both. Repetitions sharpen a task's difference
+/// and never count as more tasks.
 class NonInferiorityVerdict {
   /// Creates a [NonInferiorityVerdict].
   const NonInferiorityVerdict({
     required this.baselineArmId,
     required this.treatmentArmId,
+    required this.hypothesis,
+    required this.primaryOutcome,
     required this.pairs,
     required this.expectedPairs,
+    required this.tasksPlanned,
     required this.effectiveTaskCount,
+    required this.informativeTasks,
+    required this.repetitions,
+    required this.droppedTasks,
     required this.baselineOnlyWins,
     required this.treatmentOnlyWins,
     required this.bothPass,
     required this.bothFail,
     required this.observedDelta,
+    required this.standardDeviation,
     required this.lowerBound,
     required this.upperBound,
+    required this.tStatistic,
+    required this.degreesOfFreedom,
+    required this.pValue,
+    required this.signFlipP,
+    required this.minimumDetectableEffect,
     required this.margin,
     required this.alpha,
     required this.verdict,
     required this.costRatio,
     required this.maxCostRatio,
     required this.recommendation,
-    required this.blockedTaskIds,
     required this.method,
     required this.reason,
+    required this.stoppedAtInterim,
+    required this.expectedChanceLosses,
   });
 
   /// The arm compared against.
@@ -542,88 +577,145 @@ class NonInferiorityVerdict {
   /// The arm under test.
   final String treatmentArmId;
 
-  /// Matched pairs found.
+  /// What the plan asked.
+  final EvaluationHypothesis hypothesis;
+
+  /// What attempts were scored on.
+  final EvaluationOutcomeMeasure primaryOutcome;
+
+  /// Repetition pairs (same task, stratum and repetition, both scored) in
+  /// the used tasks.
   final int pairs;
 
-  /// Matched pairs the plan required.
+  /// Repetition pairs the plan scheduled.
   final int expectedPairs;
 
-  /// Distinct tasks contributing matched pairs to the cluster-level bound.
+  /// Tasks the plan scheduled.
+  final int tasksPlanned;
+
+  /// Tasks used: both arms scored on every planned repetition.
   final int effectiveTaskCount;
 
-  /// Pairs the baseline passed and the treatment failed.
+  /// Used tasks not saturated (not 0 of k or k of k in both arms).
+  final int informativeTasks;
+
+  /// Planned repetitions per arm per task (k).
+  final int repetitions;
+
+  /// Planned tasks left out, with the reason.
+  final List<DroppedTask> droppedTasks;
+
+  /// Repetition pairs only the baseline verified (descriptive).
   final int baselineOnlyWins;
 
-  /// Pairs the treatment passed and the baseline failed.
+  /// Repetition pairs only the treatment verified (descriptive).
   final int treatmentOnlyWins;
 
-  /// Pairs both passed.
+  /// Repetition pairs both verified (descriptive).
   final int bothPass;
 
-  /// Pairs both failed.
+  /// Repetition pairs neither verified (descriptive).
   final int bothFail;
 
-  /// Macro-average of per-task paired success-rate differences.
+  /// d̄: the mean per-task difference, positive meaning the treatment did
+  /// better on the primary outcome.
   final double observedDelta;
 
-  /// One-sided (1 − alpha) lower bound on the task-level mean difference.
+  /// s, the spread of the per-task differences.
+  final double standardDeviation;
+
+  /// One-sided (1 − alpha) lower bound on the task-mean difference.
   final double lowerBound;
 
-  /// One-sided (1 − alpha) upper bound on the task-level mean difference.
+  /// One-sided (1 − alpha) upper bound on the task-mean difference.
   final double upperBound;
 
-  /// The relative non-inferiority margin the plan set.
-  final double margin;
+  /// The t statistic, or null below two tasks or with no spread.
+  final double? tStatistic;
 
-  /// The significance level the plan set.
+  /// N − 1.
+  final int degreesOfFreedom;
+
+  /// The one-sided t p of the claim made, or of the plan's own claim when
+  /// none was made.
+  final double pValue;
+
+  /// The exact sign-flip p of the same claim.
+  final double signFlipP;
+
+  /// The smallest difference this many tasks with this spread would detect
+  /// with 80 % power; null below two tasks.
+  final double? minimumDetectableEffect;
+
+  /// The non-inferiority margin in absolute points, when the plan has one.
+  final double? margin;
+
+  /// The plan's one-sided level per claim.
   final double alpha;
 
   /// The quality verdict.
   final QualityVerdict verdict;
 
-  /// Treatment cost over baseline cost, or null when either arm's cost is
-  /// incomplete or the pair is not comparable.
+  /// Treatment cost over baseline cost on the used tasks, or null when
+  /// either is unpriced or there is none.
   final double? costRatio;
 
-  /// The largest cost ratio the plan would accept for adoption.
+  /// The largest cost ratio the plan accepts for adoption.
   final double maxCostRatio;
 
-  /// What to do with the quality default.
+  /// What to do with the default.
   final AdoptionRecommendation recommendation;
-
-  /// Tasks whose individual outcome blocks adoption regardless of the
-  /// aggregate verdict.
-  final List<String> blockedTaskIds;
 
   /// Which statistical method produced the bound.
   final String method;
 
-  /// Why the verdict came out this way.
+  /// The verdict in one plain sentence.
   final String reason;
+
+  /// Whether the campaign stopped at its interim look.
+  final bool stoppedAtInterim;
+
+  /// How many compared tasks would show a lower treatment rate by chance
+  /// alone if the arms were identical (what the descriptive per-task
+  /// regression list is read against).
+  final double expectedChanceLosses;
 
   /// Serializes to JSON.
   Map<String, dynamic> toJson() => {
     'baselineArmId': baselineArmId,
     'treatmentArmId': treatmentArmId,
+    'hypothesis': hypothesis.wire,
+    'primaryOutcome': primaryOutcome.wire,
     'pairs': pairs,
     'expectedPairs': expectedPairs,
+    'tasksPlanned': tasksPlanned,
     'effectiveTaskCount': effectiveTaskCount,
+    'informativeTasks': informativeTasks,
+    'repetitions': repetitions,
+    'droppedTasks': [for (final d in droppedTasks) d.toJson()],
     'baselineOnlyWins': baselineOnlyWins,
     'treatmentOnlyWins': treatmentOnlyWins,
     'bothPass': bothPass,
     'bothFail': bothFail,
     'observedDelta': observedDelta,
+    'standardDeviation': standardDeviation,
     'lowerBound': lowerBound,
     'upperBound': upperBound,
+    'tStatistic': tStatistic,
+    'degreesOfFreedom': degreesOfFreedom,
+    'pValue': pValue,
+    'signFlipP': signFlipP,
+    'minimumDetectableEffect': minimumDetectableEffect,
     'margin': margin,
     'alpha': alpha,
     'verdict': verdict.wire,
     'costRatio': costRatio,
     'maxCostRatio': maxCostRatio,
     'recommendation': recommendation.wire,
-    'blockedTaskIds': blockedTaskIds,
     'method': method,
     'reason': reason,
+    'stoppedAtInterim': stoppedAtInterim,
+    'expectedChanceLosses': expectedChanceLosses,
   };
 }
 
@@ -648,6 +740,10 @@ class EvaluationReport {
     required this.expectedTrials,
     required this.expectedPairs,
     required this.coverageComplete,
+    required this.hypothesis,
+    required this.primaryOutcome,
+    required this.repetitions,
+    required this.stoppedAtInterim,
     this.routePolicyId,
     this.memoryExperimentId,
   });
@@ -696,7 +792,20 @@ class EvaluationReport {
   final String? memoryExperimentId;
 
   /// Whether each planned task/arm/stratum/repetition produced an attempt.
+  /// The verdict does not need it: it judges the complete task blocks.
   final bool coverageComplete;
+
+  /// What the plan asked.
+  final EvaluationHypothesis hypothesis;
+
+  /// What attempts were scored on.
+  final EvaluationOutcomeMeasure primaryOutcome;
+
+  /// Planned repetitions per arm per task (k).
+  final int repetitions;
+
+  /// Whether the campaign stopped at its interim look.
+  final bool stoppedAtInterim;
 
   /// Every attempt, in execution order.
   final List<EvaluationAttempt> attempts;
@@ -722,25 +831,24 @@ class EvaluationReport {
     return null;
   }
 
-  /// The recommendation this campaign supports for the quality default.
+  /// The recommendation this campaign supports for the default.
   ///
-  /// Any plan violation, incomplete coverage, a per-task quality regression, an
-  /// inconclusive verdict, incomplete cost evidence, or a treatment that is not
-  /// actually cheaper all keep the default.
+  /// Adopt when a treatment's verdict and cost support it; keep the default
+  /// only when every treatment has evidence against it (inferior, or over
+  /// the cost ceiling); otherwise no decision. A plan violation or a
+  /// calibration plan is never a decision.
   AdoptionRecommendation get overallRecommendation {
-    if (planViolations.isNotEmpty || !coverageComplete) {
-      return AdoptionRecommendation.keepQualityDefault;
+    if (planViolations.isNotEmpty || verdicts.isEmpty) {
+      return AdoptionRecommendation.noDecision;
     }
-    final adoptable = [
-      for (final v in verdicts)
-        if (v.recommendation == AdoptionRecommendation.adoptTreatment) v,
-    ];
-    if (adoptable.isEmpty) {
-      return verdicts.isEmpty
-          ? AdoptionRecommendation.inconclusive
-          : AdoptionRecommendation.keepQualityDefault;
+    final recommendations = {for (final v in verdicts) v.recommendation};
+    if (recommendations.contains(AdoptionRecommendation.adoptTreatment)) {
+      return AdoptionRecommendation.adoptTreatment;
     }
-    return AdoptionRecommendation.adoptTreatment;
+    if (recommendations.contains(AdoptionRecommendation.noDecision)) {
+      return AdoptionRecommendation.noDecision;
+    }
+    return AdoptionRecommendation.keepQualityDefault;
   }
 
   /// Serializes to JSON.
@@ -752,6 +860,10 @@ class EvaluationReport {
     'liveModelCalls': liveModelCalls,
     'generatedAtEpochMs': generatedAtEpochMs,
     'coverageComplete': coverageComplete,
+    'hypothesis': hypothesis.wire,
+    'primaryOutcome': primaryOutcome.wire,
+    'repetitions': repetitions,
+    'stoppedAtInterim': stoppedAtInterim,
     'expectedTrials': expectedTrials,
     'expectedPairs': expectedPairs,
     'armSummaries': [for (final s in armSummaries) s.toJson()],
@@ -794,6 +906,7 @@ class EvaluationReportBuilder {
     required int generatedAtEpochMs,
     List<String> extraUnknowns = const [],
     List<EvaluationCaveat> extraCaveats = const [],
+    bool stoppedAtInterim = false,
   }) {
     final byArm = <String, List<EvaluationAttempt>>{};
     for (final attempt in attempts) {
@@ -833,7 +946,8 @@ class EvaluationReportBuilder {
 
     final plannedTrials = plan.schedule(tasks);
     final expectedTrials = plannedTrials.length;
-    final expectedPairs = _expectedPairs(plan, tasks);
+    final judge = TaskClusterJudge(plan: plan, tasks: tasks);
+    final expectedPairs = tasks.length * judge.repetitions;
     final plannedKeys = {
       for (final trial in plannedTrials)
         '${trial.taskId}\u0000${trial.armId}\u0000${trial.stratum.wire}\u0000${trial.repetition}',
@@ -843,14 +957,17 @@ class EvaluationReportBuilder {
         '${attempt.taskId}\u0000${attempt.armId}\u0000${attempt.stratum.wire}\u0000${attempt.repetition}',
     };
     final missingTrials = plannedKeys.difference(observedKeys).length;
-    // Coverage means the PLANNED trials ran — not merely "some attempts
-    // happened". A campaign that skipped a stratum, an arm or a repetition has
-    // unequal arms and cannot support a savings claim.
+    // Coverage means every PLANNED trial ran. The verdict judges complete
+    // task blocks instead; coverage only gates a post-idle plan.
     final coverageComplete = plannedKeys.isNotEmpty && missingTrials == 0;
 
     final baseline = plan.baselineArm;
     final regressions = <TaskRegression>[];
-    final verdicts = <NonInferiorityVerdict>[];
+    final verdicts = judge.judge(
+      attempts: attempts,
+      coverageComplete: coverageComplete,
+      stoppedAtInterim: stoppedAtInterim,
+    );
     if (baseline != null) {
       for (final arm in plan.arms) {
         if (arm.isBaseline) {
@@ -862,18 +979,6 @@ class EvaluationReportBuilder {
             treatment: arm,
             tasks: tasks,
             taskOutcomes: taskOutcomes,
-          ),
-        );
-        verdicts.add(
-          _verdict(
-            plan: plan,
-            baseline: baseline,
-            treatment: arm,
-            summaries: armSummaries,
-            attempts: attempts,
-            regressions: regressions,
-            expectedPairs: expectedPairs,
-            coverageComplete: coverageComplete,
           ),
         );
       }
@@ -893,6 +998,10 @@ class EvaluationReportBuilder {
       verdicts: verdicts,
       caveats: [...plan.caveats, ...extraCaveats],
       coverageComplete: coverageComplete,
+      hypothesis: plan.hypothesis,
+      primaryOutcome: plan.primaryOutcome,
+      repetitions: judge.repetitions,
+      stoppedAtInterim: stoppedAtInterim,
       planViolations: plan.violations(tasks),
       unknowns: [
         ..._unknowns(
@@ -911,15 +1020,6 @@ class EvaluationReportBuilder {
       routePolicyId: plan.routePolicy?.id,
       memoryExperimentId: plan.memoryExperiment?.id,
     );
-  }
-
-  /// Matched pairs the plan requires: one per (task, stratum, repetition).
-  static int _expectedPairs(EvaluationPlan plan, List<EvaluationTask> tasks) {
-    var pairs = 0;
-    for (final spec in plan.strata) {
-      pairs += tasks.length * spec.repetitions;
-    }
-    return pairs;
   }
 
   List<TaskRegression> _regressions({
@@ -1000,193 +1100,6 @@ class EvaluationReportBuilder {
     return regressions;
   }
 
-  NonInferiorityVerdict _verdict({
-    required EvaluationPlan plan,
-    required EvaluationArm baseline,
-    required EvaluationArm treatment,
-    required List<EvaluationArmSummary> summaries,
-    required List<EvaluationAttempt> attempts,
-    required List<TaskRegression> regressions,
-    required int expectedPairs,
-    required bool coverageComplete,
-  }) {
-    final baseByPair = <String, EvaluationAttempt>{};
-    final treatByPair = <String, EvaluationAttempt>{};
-    for (final attempt in attempts) {
-      // An ineligible attempt is NOT evidence: quality is judged only on
-      // attempts whose declared checks all ran and whose pin held.
-      if (!attempt.completed ||
-          !attempt.verificationComplete ||
-          attempt.identityMismatches.isNotEmpty) {
-        continue;
-      }
-      if (attempt.armId == baseline.id) {
-        baseByPair[attempt.pairKey] = attempt;
-      } else if (attempt.armId == treatment.id) {
-        treatByPair[attempt.pairKey] = attempt;
-      }
-    }
-    var pairs = 0;
-    var bothPass = 0;
-    var bothFail = 0;
-    var bOnly = 0;
-    var tOnly = 0;
-    final taskSums = <String, int>{};
-    final taskPairCounts = <String, int>{};
-    for (final entry in baseByPair.entries) {
-      final treatmentAttempt = treatByPair[entry.key];
-      if (treatmentAttempt == null) {
-        continue;
-      }
-      pairs++;
-      final basePassed = entry.value.verifiedSuccess;
-      final treatmentPassed = treatmentAttempt.verifiedSuccess;
-      final difference = (treatmentPassed ? 1 : 0) - (basePassed ? 1 : 0);
-      final taskId = entry.value.taskId;
-      taskSums[taskId] = (taskSums[taskId] ?? 0) + difference;
-      taskPairCounts[taskId] = (taskPairCounts[taskId] ?? 0) + 1;
-      if (basePassed && treatmentPassed) {
-        bothPass++;
-      } else if (!basePassed && !treatmentPassed) {
-        bothFail++;
-      } else if (basePassed) {
-        bOnly++;
-      } else {
-        tOnly++;
-      }
-    }
-    final taskCount = taskSums.length;
-    var delta = 0.0;
-    for (final entry in taskSums.entries) {
-      delta += entry.value / taskPairCounts[entry.key]!;
-    }
-    if (taskCount > 0) {
-      delta /= taskCount;
-    }
-    final bound = _taskClusterBound(
-      delta: delta,
-      tasks: taskCount,
-      alpha: plan.alpha,
-    );
-
-    final baseSummary = _summaryById(summaries, baseline.id);
-    final treatSummary = _summaryById(summaries, treatment.id);
-    // A cost ratio is only meaningful when BOTH arms priced every attempt and
-    // the campaign actually ran to its planned coverage.
-    final costComparable =
-        coverageComplete &&
-        (baseSummary?.costComplete ?? false) &&
-        (treatSummary?.costComplete ?? false) &&
-        (baseSummary?.totalCostMicros ?? 0) > 0;
-    final costRatio = costComparable
-        ? treatSummary!.totalCostMicros! / baseSummary!.totalCostMicros!
-        : null;
-
-    final blocked = <String>{
-      for (final regression in regressions)
-        if (regression.treatmentArmId == treatment.id &&
-            regression.kind == RegressionKind.qualityLoss)
-          regression.taskId,
-    }.toList()..sort();
-
-    final requiredPairs = plan.minPairs > expectedPairs
-        ? plan.minPairs
-        : expectedPairs;
-    QualityVerdict verdict;
-    var reason = '';
-    if (!coverageComplete) {
-      verdict = QualityVerdict.inconclusive;
-      reason =
-          'the campaign is incomplete ($pairs of $expectedPairs planned pairs '
-          'present), so no quality verdict is allowed';
-    } else if (pairs < requiredPairs) {
-      verdict = QualityVerdict.inconclusive;
-      reason =
-          'only $pairs usable matched pair(s); $requiredPairs required before '
-          'a quality verdict is allowed';
-    } else if (taskCount == 0 ||
-        !plan.alpha.isFinite ||
-        plan.alpha <= 0 ||
-        plan.alpha >= 1) {
-      verdict = QualityVerdict.inconclusive;
-      reason = 'no usable task-level quality bound is available';
-    } else if (bound.lower > 0) {
-      verdict = QualityVerdict.superior;
-      reason =
-          'the one-sided ${_pct(1 - plan.alpha)} task-cluster lower bound '
-          '${_pct(bound.lower)} is above zero over $taskCount distinct task(s)';
-    } else if (bound.lower > -plan.nonInferiorityMargin) {
-      verdict = QualityVerdict.nonInferior;
-      reason =
-          'the one-sided ${_pct(1 - plan.alpha)} task-cluster lower bound '
-          '${_pct(bound.lower)} clears the −${_pct(plan.nonInferiorityMargin)} '
-          'margin over $taskCount distinct task(s) ($pairs matched pairs)';
-    } else if (bound.upper < -plan.nonInferiorityMargin) {
-      verdict = QualityVerdict.inferior;
-      reason =
-          'the one-sided ${_pct(1 - plan.alpha)} task-cluster upper bound '
-          '${_pct(bound.upper)} is below the −'
-          '${_pct(plan.nonInferiorityMargin)} margin over $taskCount '
-          'distinct task(s)';
-    } else {
-      verdict = QualityVerdict.inconclusive;
-      reason =
-          'the task-cluster bounds ${_pct(bound.lower)} to '
-          '${_pct(bound.upper)} do not establish non-inferiority or a '
-          'regression against the −${_pct(plan.nonInferiorityMargin)} '
-          'margin over $taskCount distinct task(s)';
-    }
-
-    AdoptionRecommendation recommendation;
-    if (verdict == QualityVerdict.inconclusive) {
-      recommendation = AdoptionRecommendation.inconclusive;
-    } else if (verdict == QualityVerdict.inferior) {
-      recommendation = AdoptionRecommendation.keepQualityDefault;
-    } else if (blocked.isNotEmpty) {
-      recommendation = AdoptionRecommendation.keepQualityDefault;
-      reason =
-          '$reason; blocked by per-task quality regression on '
-          '${blocked.join(', ')}';
-    } else if (costRatio == null) {
-      recommendation = AdoptionRecommendation.keepQualityDefault;
-      reason =
-          '$reason; cost is incomplete or incomparable, so no savings claim '
-          'is possible and the default is retained';
-    } else if (costRatio >= plan.maxCostRatio) {
-      recommendation = AdoptionRecommendation.keepQualityDefault;
-      reason =
-          '$reason; cost ratio ${costRatio.toStringAsFixed(3)} is not below '
-          'the ${plan.maxCostRatio.toStringAsFixed(2)} ceiling, so there is no '
-          'reason to move off the quality default';
-    } else {
-      recommendation = AdoptionRecommendation.adoptTreatment;
-    }
-
-    return NonInferiorityVerdict(
-      baselineArmId: baseline.id,
-      treatmentArmId: treatment.id,
-      pairs: pairs,
-      expectedPairs: expectedPairs,
-      effectiveTaskCount: taskCount,
-      baselineOnlyWins: bOnly,
-      treatmentOnlyWins: tOnly,
-      bothPass: bothPass,
-      bothFail: bothFail,
-      observedDelta: delta,
-      lowerBound: bound.lower,
-      upperBound: bound.upper,
-      margin: plan.nonInferiorityMargin,
-      alpha: plan.alpha,
-      verdict: verdict,
-      costRatio: costRatio,
-      maxCostRatio: plan.maxCostRatio,
-      recommendation: recommendation,
-      blockedTaskIds: blocked,
-      method: bound.method,
-      reason: reason,
-    );
-  }
-
   List<String> _unknowns({
     required EvaluationPlan plan,
     required EvaluationArm? baseline,
@@ -1204,8 +1117,8 @@ class EvaluationReportBuilder {
     } else if (missingTrials > 0) {
       unknowns.add(
         'coverage is incomplete: $missingTrials of $expectedTrials planned '
-        'trial(s) never ran, so the arms are not comparable and no quality or '
-        'savings verdict is allowed',
+        'trial(s) never ran; the verdict uses only the task blocks both arms '
+        'completed',
       );
     }
     final route = plan.routePolicy;
@@ -1219,11 +1132,22 @@ class EvaluationReportBuilder {
     if (memory != null && !memory.enabled) {
       unknowns.add('memory experiment "${memory.id}" was not opted in');
     }
-    final faulted = attempts.where((a) => !a.completed).length;
+    final faulted = attempts
+        .where((a) => a.end == EvaluationAttemptEnd.harnessFault)
+        .length;
     if (faulted > 0) {
       unknowns.add(
-        '$faulted attempt(s) faulted in the harness and are excluded from '
-        'quality evidence',
+        '$faulted attempt(s) faulted in the harness: missing data, and their '
+        'task blocks are dropped from the verdict',
+      );
+    }
+    final ceilingStopped = attempts
+        .where((a) => a.end == EvaluationAttemptEnd.ceilingStopped)
+        .length;
+    if (ceilingStopped > 0) {
+      unknowns.add(
+        '$ceilingStopped attempt(s) were cut by the spend ceiling: missing '
+        'data, and their task blocks are dropped from the verdict',
       );
     }
     final skipped = attempts
@@ -1270,7 +1194,7 @@ class EvaluationReportBuilder {
           'was not exercised and this arm cannot be compared',
         );
       }
-      if (plan.memoryExperiment?.mode == MemoryPolicyMode.snapshotImages &&
+      if (arm.memoryPolicy == MemoryPolicyMode.snapshotImages &&
           !armAttempts.any((a) => a.metrics.renderedSnapshots)) {
         unknowns.add(
           'arm "${arm.id}" requested snapshot compaction but no attempt '
@@ -1325,56 +1249,6 @@ class EvaluationReportBuilder {
     }
     return null;
   }
-
-  static EvaluationArmSummary? _summaryById(
-    List<EvaluationArmSummary> summaries,
-    String armId,
-  ) {
-    for (final summary in summaries) {
-      if (summary.armId == armId) {
-        return summary;
-      }
-    }
-    return null;
-  }
-
-  /// Finite-sample one-sided Hoeffding bounds across distinct tasks.
-  ///
-  /// Each task contributes one mean of its paired differences in [-1, 1].
-  /// Repetitions within the same task affect its estimate but not the sample
-  /// size. The radius sqrt(2 ln(1/alpha) / tasks) is valid without assuming
-  /// within-task independence or a positive empirical variance. It presumes
-  /// the distinct tasks represent independent draws from the target task
-  /// population; otherwise these are descriptive bounds, not population
-  /// guarantees. Clamp to the known possible difference range.
-  static _PairedBound _taskClusterBound({
-    required double delta,
-    required int tasks,
-    required double alpha,
-  }) {
-    const method = 'task-cluster one-sided Hoeffding, differences [-1,1]';
-    if (tasks <= 0 || !alpha.isFinite || alpha <= 0 || alpha >= 1) {
-      return const _PairedBound(lower: -1, upper: 1, method: method);
-    }
-    final radius = math.sqrt(2 * math.log(1 / alpha) / tasks);
-    return _PairedBound(
-      lower: math.max(-1.0, delta - radius),
-      upper: math.min(1.0, delta + radius),
-      method: method,
-    );
-  }
-}
-
-class _PairedBound {
-  const _PairedBound({
-    required this.lower,
-    required this.upper,
-    required this.method,
-  });
-
-  final double lower;
-  final double upper;
-  final String method;
 }
 
 EvaluationAttemptMetrics _addMetrics(
@@ -1419,7 +1293,5 @@ double _percentile(List<int> sorted, double p) {
   final weight = rank - lower;
   return sorted[lower] * (1 - weight) + sorted[upper] * weight;
 }
-
-String _pct(double value) => '${(value * 100).toStringAsFixed(1)}pt';
 
 String _usd(double micros) => '\$${(micros / 1000000).toStringAsFixed(4)}';

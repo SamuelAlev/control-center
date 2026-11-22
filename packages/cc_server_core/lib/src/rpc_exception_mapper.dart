@@ -60,6 +60,52 @@ RpcErrorMapping? mapAppExceptionToRpc(Object error) {
   if (error is ConcurrencyConflictException) {
     return RpcErrorMapping(RpcErrorCodes.conflict, error.message);
   }
+  // A second active goal for one agent: the client localizes the kind.
+  if (error is GoalAlreadyActiveException) {
+    return RpcErrorMapping(RpcErrorCodes.conflict, error.message, const {
+      'kind': GoalAlreadyActiveException.kind,
+    });
+  }
+  // A goal move its state refuses (`goal_not_in_review`, a claim's
+  // refusals): the client localizes the kind.
+  if (error is GoalRefusedException) {
+    return RpcErrorMapping(
+      RpcErrorCodes.conflict,
+      error.message,
+      _kindOf(error),
+    );
+  }
+  // An improvement proposal's state refuses the move: the kind localizes.
+  if (error is ImprovementRefusedException) {
+    return RpcErrorMapping(
+      RpcErrorCodes.conflict,
+      error.message,
+      _kindOf(error),
+    );
+  }
+  // A usage-limit pause's held messages: only its resume sends them; the
+  // reset rides along when a card carries it.
+  if (error is SteeringHeldByLimitException) {
+    return RpcErrorMapping(RpcErrorCodes.conflict, error.message, {
+      'kind': SteeringHeldByLimitException.kind,
+      'resets_at': ?error.resetsAt?.toUtc().toIso8601String(),
+    });
+  }
+  // Held messages written by someone else: only their writer sends them.
+  if (error is SteeringNotYoursException) {
+    return RpcErrorMapping(RpcErrorCodes.conflict, error.message, {
+      'kind': SteeringNotYoursException.kind,
+      'others_held': error.othersHeld,
+    });
+  }
+  // An orchestration cap raise refused: the kind localizes, and the stored
+  // cap rides along so a client that lost a race shows the fresh value.
+  if (error is OrchestrationCapRefusedException) {
+    return RpcErrorMapping(RpcErrorCodes.conflict, error.message, {
+      'kind': error.code,
+      'max_cost_micros': error.currentMicros,
+    });
+  }
   // A person action with no usable sign-in of their own: the client offers
   // that sign-in (`needs_sign_in`) instead of reporting a failure.
   if (error is NeedsSignInException) {

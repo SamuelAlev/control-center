@@ -1,0 +1,178 @@
+---
+title: Chế độ code
+description: Cách một agent viết một tập lệnh ngắn gọi các công cụ của nó thay vì gọi từng cái một, công cụ nào nó gọi trực tiếp và công cụ nào từ một tập lệnh, các giới hạn mà một tập lệnh chạy theo, cách một tập lệnh hiển thị trong cuộc hội thoại, và cách một tập lệnh bị giới hạn quyền truy cập và được ghi lại.
+slug: vi-VN/so-tay/khai-niem/che-do-code
+sourceHash: d41fe2f38c216949847fc7c4768fdf96bed2dc83
+---
+
+Một agent thường gọi các công cụ của mình từng cái một. Mỗi lần gọi là một lượt của mô hình: agent yêu cầu lệnh gọi, kết quả trả về ngữ cảnh của nó, và agent đọc kết quả trước khi yêu cầu lệnh tiếp theo. Với công việc chủ yếu mang tính máy móc, chẳng hạn đọc hai mươi tệp để tìm ba tệp quan trọng hoặc kiểm tra mọi ticket đang mở xem có nhãn nào đó không, phần lớn các lượt đó và phần lớn ngữ cảnh đó được dùng cho những kết quả mà agent sẽ bỏ đi.
+
+Chế độ code chỉ gồm một công cụ, `repl`. Với nó, agent viết một tập lệnh JavaScript ngắn để gọi các công cụ khác, lặp qua, lọc và kết hợp kết quả của chúng, rồi chỉ trả về phần cần thiết. Một lệnh `repl` có thể làm công việc của hàng chục lượt công cụ, và chỉ câu trả lời của tập lệnh đi vào ngữ cảnh.
+
+Mọi lần chạy đều có `repl` khi máy chủ có thể chạy tập lệnh. Không có gì để bật: xem [Khi một lần chạy có `repl`](#khi-một-lần-chạy-có-repl).
+
+## Tập lệnh có thể làm gì
+
+Tập lệnh là JavaScript thuần, được viết như thân của một hàm async, nên `await` và `return` hoạt động ở cấp cao nhất. Mỗi lần gọi `repl` khởi động một trình thông dịch mới, trống.
+
+- **Gọi công cụ.** `await tools.read({ path: "README.md" })` gọi một công cụ và trả về kết quả của nó, hoặc báo lỗi khi lệnh gọi thất bại hoặc bị từ chối. Các lệnh gọi độc lập có thể chạy cùng lúc bằng `Promise.allSettled`.
+- **Tìm công cụ.** `ALL_TOOLS` liệt kê mọi công cụ mà tập lệnh được phép gọi. `searchTools(query)` tìm công cụ theo việc chúng làm, `describeTool(name)` trả về mô tả và đối số của một công cụ, còn `describeNamespace(name)` liệt kê các công cụ của một nhóm. Các công cụ của máy chủ MCP đã kết nối cũng truy cập được theo cách này.
+- **Trả về kết quả.** Chỉ những gì tập lệnh trả về, hoặc truyền cho `text()`, `image()` hoặc `console.log()`, mới quay lại agent. Tối đa bốn ảnh được chuyển đến mô hình.
+- **Lưu giá trị.** `store(key, value)` và `load(key)` giữ các giá trị JSON nhỏ giữa các tập lệnh của cùng một cuộc hội thoại và agent. Giá trị chỉ được lưu khi tập lệnh chạy xong. Các agent con không có kho lưu trữ.
+- **Hỏi người dùng.** `await tools.ask_user({ question, options })` đặt một câu hỏi và chờ câu trả lời.
+- **Dùng embedding trên thiết bị.** `models.embed`, `models.rank` và `models.classify` dùng mô hình embedding của máy chủ, khi nó đã được cài đặt.
+- **Chờ.** `sleep(ms)` và `setTimeout`, trong giới hạn thời gian của tập lệnh. `limits()` trả về các giới hạn mà tập lệnh đang chạy theo.
+
+Một tập lệnh không có quyền truy cập hệ thống tệp, mạng, tiến trình, mô-đun hay môi trường: không có `fetch`, `require`, `import` hay `process`. Lối ra duy nhất là một lệnh gọi công cụ, và mọi lệnh gọi công cụ đều đi qua cùng các kiểm tra như một lệnh gọi do agent thực hiện trực tiếp.
+
+Các lệnh gọi công cụ mà tập lệnh đã thực hiện sẽ không bị hoàn tác khi tập lệnh thất bại sau đó.
+
+## Những công cụ agent gọi trực tiếp
+
+Mỗi lần chạy của agent tích hợp đều có cùng một bộ nhỏ công cụ mà nó gọi bằng tên:
+
+- `repl`, đứng đầu;
+- các công cụ tệp và shell `read`, `write`, `edit`, `search`, `find`, `bash` và `read_output`;
+- `ask_user` và `task`;
+- `todo_write`, `search_memory` và `send_message`;
+- các động từ mà [chế độ](/vi-VN/so-tay/khai-niem/che-do/) của cuộc hội thoại cần để giao đầu ra hoặc rời khỏi chế độ đó, chẳng hạn `submit_plan` trong chế độ kế hoạch;
+- `search_tools`, khi có công cụ nào đó được nạp lúc dùng lần đầu (bên dưới).
+
+Mọi công cụ khác mà lần chạy có thể dùng được truy cập theo một trong hai cách:
+
+- **Chỉ từ tập lệnh**, khi một tập lệnh có thể gọi nó. Agent tìm nó bằng `searchTools()` hoặc `describeTool()` và gọi nó dưới dạng `tools.<name>(args)`. Mô tả của nó không bao giờ đến được mô hình, nên nó không tốn gì trong prompt. Nếu agent vẫn gọi trực tiếp một công cụ như vậy, câu trả lời sẽ bảo nó gọi công cụ đó từ một tập lệnh. Nếu máy chủ không thể chạy tập lệnh của lần chạy, thay vào đó công cụ được nạp ở lần dùng đầu tiên ([Khi không thể chạy tập lệnh](#khi-không-thể-chạy-tập-lệnh)).
+- **Nạp khi dùng lần đầu**, khi một tập lệnh không được gọi nó. Agent thấy tên của nó, và việc gọi nó bằng tên, hoặc tìm nó bằng `search_tools`, sẽ nạp nó.
+
+Một số công cụ không bao giờ gọi được từ một tập lệnh, trong đó có chính `repl` (một tập lệnh không thể khởi động tập lệnh khác), `eval`, `task`, `checkpoint`, `rewind`, các động từ `vibe_*`, và các công cụ khởi động hoặc nhắn tin cho các lần chạy agent khác, tạo, quyết định hoặc bình luận về phê duyệt, thay đổi chính sách hay kỹ năng, hoặc rời khỏi chế độ kế hoạch. Agent gọi những công cụ đó trực tiếp.
+
+Lần chạy không có `repl` nhận cùng các công cụ trực tiếp, còn mọi thứ khác được nạp khi dùng lần đầu. [Ngữ cảnh công cụ và bộ nhớ đệm prompt](/vi-VN/so-tay/khai-niem/ngu-canh-cong-cu/) giải thích vì sao tập công cụ giống nhau trong cả hai trường hợp.
+
+Chế độ code không bao giờ thêm một công cụ mà chế độ của cuộc hội thoại không cho phép. Bộ lọc công cụ của chế độ được áp dụng trước, và tập lệnh chỉ có thể gọi những gì còn lại.
+
+## Khi một lần chạy có `repl`
+
+Một lần chạy có `repl` khi trình chạy tập lệnh của máy chủ vượt qua kiểm tra khóa lúc khởi động ([Tập lệnh bị giam giữ như thế nào](#tập-lệnh-bị-giam-giữ-như-thế-nào)). Không cài đặt nào của không gian làm việc, agent hay máy chủ thay đổi điều đó. Một lần chạy vẫn không có `repl` khi:
+
+- trình chạy không thể tự khóa trên máy của máy chủ; khi đó máy chủ không chạy tập lệnh nào cả;
+- máy chủ là bản demo công khai, nơi không chạy tập lệnh nào;
+- lần chạy không thuộc không gian làm việc nào;
+- không đọc được giới hạn của không gian làm việc, vì chạy theo mặc định có thể vượt quá giới hạn mà quản trị viên đã hạ xuống;
+- không ghi được nhật ký của lần chạy, vì mọi tập lệnh được ghi vào lần chạy của nó trước khi bắt đầu.
+
+Một lần chạy như vậy gọi mọi công cụ của nó trực tiếp.
+
+Chế độ code hoạt động cho các lần chạy của agent tích hợp và cho các agent truy cập công cụ của Control Center qua endpoint MCP của nó, chẳng hạn Claude Code. Với một agent MCP, danh sách công cụ nó nhận gồm `repl`, các công cụ trực tiếp và các công cụ mà tập lệnh không được gọi; phần còn lại nó gọi từ tập lệnh. Chỉ một lần chạy do Control Center khởi động và giữ nhật ký mới nhận `repl` ở đó; mọi máy khách khác nhận mọi công cụ trừ `repl`.
+
+**Cài đặt → Không gian làm việc → Chế độ code** cho biết dưới **Trạng thái** máy chủ này có chạy tập lệnh hay không (**Khả dụng** hoặc **Không khả dụng**, kèm lý do máy chủ đưa ra) và phiên bản **Trình chạy** nào đang được cài đặt. **Xem các lần thực thi code** mở danh sách các tập lệnh đã chạy.
+
+Chủ sở hữu máy chủ không thể tắt tập lệnh. Họ có thể đặt giới hạn trên cho chúng: bao nhiêu tập lệnh chạy cùng lúc và bao nhiêu bộ nhớ một tập lệnh được dùng (xem [Giới hạn](#giới-hạn)).
+
+### Khi không thể chạy tập lệnh
+
+Một lần chạy không bao giờ mất công cụ vì máy chủ không thể chạy tập lệnh của nó. Khi máy chủ từ chối một tập lệnh vì lý do mà bất kỳ tập lệnh nào khác cũng sẽ gặp (ví dụ tập lệnh không khả dụng, tập lệnh đã chờ nửa thời gian cho một chỗ trống, bản ghi của nó không thể được ghi, danh sách công cụ của lần chạy quá lớn để đưa cho một tập lệnh, hoặc trình chạy không thể khởi động hoặc tự khóa), lần chạy đó ngừng dùng tập lệnh cho phần đời còn lại của nó:
+
+- một lần chạy của agent tích hợp giữ `repl`, và mọi công cụ mà nó chỉ gọi được từ tập lệnh giờ được nạp khi dùng lần đầu: agent gọi nó theo tên hoặc tìm nó bằng `search_tools`;
+- một lần chạy trên endpoint MCP nhận một danh sách công cụ có mọi công cụ và không có `repl`, và máy khách của nó được báo rằng danh sách đã thay đổi. Máy chủ ghi nhớ 1.024 lần chạy như vậy gần nhất; một lần chạy cũ hơn quay lại dùng tập lệnh.
+
+Những công cụ đó chịu cùng bộ lọc chế độ, rào chắn và phê duyệt như trước, nên không có gì trở thành gọi được mà trước đó không gọi được. Một tập lệnh thất bại vì chính nó, như ném ra một lỗi, chạm giới hạn hoặc có một lệnh gọi bị từ chối, thì không thay đổi gì.
+
+Máy chủ cũng tiếp tục kiểm tra xem các tập lệnh có chạy được không. Khi trình chạy không khởi động được vì lý do không thuộc về tập lệnh, máy chủ lặp lại kiểm tra khóa, tối đa một lần mỗi phút. Nếu kiểm tra thất bại, máy chủ không chạy tập lệnh nào và ghi cùng dòng nhật ký `code_mode=unavailable` như lúc khởi động; các lần chạy bắt đầu trong lúc đó không nhận `repl`. Nó tiếp tục kiểm tra, tối đa một lần mỗi phút, và khi một kiểm tra đạt, nó lại chạy tập lệnh và ghi dòng nhật ký `code_mode=available`. Chỉ một kiểm tra đã thất bại khi máy chủ khởi động mới cần khởi động lại.
+
+## Giới hạn
+
+Mọi tập lệnh chạy dưới các giới hạn. Quản trị viên không gian làm việc có thể thay đổi sáu trong số đó dưới **Giới hạn** trong **Cài đặt → Không gian làm việc → Chế độ code** (**Điều chỉnh giới hạn**); agent chỉ có thể yêu cầu ít thời gian hơn hoặc ngân sách đầu ra nhỏ hơn cho một tập lệnh, không bao giờ nhiều hơn.
+
+| Giới hạn | Mặc định | Phạm vi | Khi hết |
+| --- | --- | --- | --- |
+| Thời gian mỗi tập lệnh | 5 phút | 1 s đến 25 phút | Tập lệnh bị dừng và agent được báo rằng đã hết thời gian. |
+| Thời gian xử lý | 30 s | 1 s đến 2 phút | Tập lệnh bị dừng. |
+| Bộ nhớ | 256 MiB | 16 MiB đến 1 GiB | Tập lệnh bị dừng. Chủ sở hữu máy chủ có thể đặt mức trần thấp hơn cho toàn máy chủ. |
+| Lệnh gọi công cụ mỗi tập lệnh | 500 | 1 đến 5.000 | Các lệnh gọi tiếp theo bị từ chối, và tập lệnh được cho biết lý do. |
+| Lệnh gọi đồng thời | 8 | 1 đến 32 | Các lệnh gọi chỉ đọc vượt quá mức này phải chờ đến lượt. Các lệnh gọi làm thay đổi thứ gì đó luôn chạy lần lượt từng cái một. |
+| Đầu ra agent đọc | 10.000 token | 100 đến 50.000 | Đầu ra được rút gọn còn phần đầu và phần cuối, và agent có thể đọc phần còn lại khi yêu cầu. |
+
+Thời gian tập lệnh chờ người dùng, cho một phê duyệt hoặc một câu hỏi, không được tính vào giới hạn thời gian của nó. Trong khi chờ, tập lệnh không bắt đầu lệnh gọi công cụ nào khác: các lệnh gọi nó thực hiện trong lúc đó bắt đầu, theo thứ tự, sau khi bạn trả lời.
+
+Một số giới hạn là cố định: mã nguồn của tập lệnh tối đa 256 KiB, đối số của một lệnh gọi công cụ 1 MiB và 16.384 giá trị, một lệnh mà tập lệnh truyền cho một công cụ tích hợp để nó chạy 16 KiB (tên của công cụ được tính vào đó), một kết quả trả cho tập lệnh 4 MiB, một giá trị được lưu 256 KiB, và mọi thứ mà một cuộc hội thoại và agent cùng lưu trữ tối đa 1 MiB. Một lần chạy chỉ chạy một tập lệnh tại một thời điểm.
+
+Tra cứu công cụ của tập lệnh cũng bị giới hạn: một truy vấn `searchTools` tối đa 1.024 ký tự, tên công cụ hoặc không gian tên tối đa 256, tối đa 50 kết quả, và tối đa 200 lần tra cứu tốn tổng cộng 2 giây thời gian của máy chủ; vượt quá, các lần tra cứu tiếp theo thất bại. Mọi tập lệnh của một không gian làm việc cũng dùng chung 2 giây thời gian tra cứu, được hoàn lại 0,25 giây mỗi giây. Chỉ mục tìm kiếm chia đều cho mỗi công cụ khoảng một triệu ký tự, dành trước cho tên các đối số rồi đến mô tả, và luôn lập chỉ mục tên của mọi công cụ, nên ngay cả trong một danh mục rất lớn, một công cụ vẫn được tìm thấy bằng tên.
+
+Chủ sở hữu máy chủ cũng giới hạn số tập lệnh chạy đồng thời trên máy chủ (`--code-mode-max-processes`, mặc định gấp đôi số lõi xử lý, tối đa 16) và bộ nhớ mà mỗi tập lệnh được dùng (`--code-mode-max-heap-mb`); các tập lệnh đang chờ người dùng được đếm riêng, tối đa bốn lần con số đó. Khi mức trần đó lớn hơn một, một không gian làm việc có thể dùng tối đa khoảng ba phần tư của nó, nên không một không gian làm việc nào có thể chiếm mọi chỗ. Một lần chạy và các agent con của nó cùng dùng tối đa một nửa số chỗ của không gian làm việc của nó (ít nhất một), nên các tập lệnh tiếp theo của chúng phải chờ trong khi tập lệnh của các lần chạy khác trong không gian làm việc được đi trước. Xem [CLI `cc_server`](/vi-VN/so-tay/tham-chieu/cli-cc-server/#chế-độ-code).
+
+## Phê duyệt và câu hỏi
+
+Một lệnh gọi công cụ từ tập lệnh được kiểm tra y hệt một lệnh gọi trực tiếp: bộ lọc công cụ của chế độ, [rào chắn hành động](/vi-VN/so-tay/khai-niem/rao-chan/), lời nhắc phê duyệt và các kiểm tra riêng của công cụ. Tập lệnh không thể làm điều gì mà agent không thể làm bằng cách tự gọi công cụ.
+
+Khi lệnh gọi của một tập lệnh cần phê duyệt, thẻ phê duyệt ghi **Từ một tập lệnh mà agent đang chạy**, và **Hiện tập lệnh** mở tập lệnh trong cuộc hội thoại. Để tránh việc tập lệnh làm bạn ngập trong thẻ:
+
+- một tập lệnh có thể yêu cầu phê duyệt tối đa 10 lần và đặt tối đa 10 câu hỏi;
+- khi bạn từ chối một trong các lệnh gọi của nó, các lệnh gọi sau đó cần phê duyệt sẽ bị từ chối mà không hỏi.
+
+Với các lần chạy của agent tích hợp, các lời nhắc phê duyệt do các lệnh mà tập lệnh chạy gây ra, chẳng hạn một lần push, được tính vào cùng giới hạn và dừng lại sau khi bị từ chối theo cùng cách. Khi tập lệnh của một agent con chạy cùng lúc, một lời nhắc như vậy được tính cho cả hai tập lệnh, và việc từ chối dừng cả hai.
+
+Trong một lần chạy của agent tích hợp, một phê duyệt cho một công cụ của máy chủ MCP bên ngoài không được ghi nhớ: mỗi lệnh gọi lại hỏi lần nữa, dù do tập lệnh hay do chính agent thực hiện, trừ khi tự chủ của space được đặt là **Hành động tự do**. Mỗi lời nhắc như vậy do một tập lệnh gây ra được tính vào giới hạn tối đa 10 lần yêu cầu phê duyệt của tập lệnh đó.
+
+Nếu tập lệnh kết thúc trước khi bạn trả lời, thẻ bị thu hồi, và một câu trả lời đưa ra sau đó không phê duyệt được gì.
+
+## Trong cuộc hội thoại
+
+Một lệnh `repl` hiển thị trong cuộc hội thoại như một hàng có nhãn là mô tả của tập lệnh. Mở rộng nó sẽ hiện tập lệnh và đầu ra của nó, còn các lệnh gọi công cụ mà tập lệnh đã thực hiện nằm dưới **Lệnh gọi công cụ**, kèm số lượng lệnh đang chạy, thành công, lỗi, bị từ chối, đã hủy, đang chờ hoặc đã bỏ qua.
+
+### Cách một tập lệnh hiển thị
+
+Các lệnh gọi công cụ được sắp theo cách tập lệnh được viết, không phải thành một danh sách dài. Trình chạy báo dòng và cột mà mỗi lệnh gọi được thực hiện từ đó, còn ứng dụng đọc tập lệnh để tìm các vòng lặp, nhánh và hàm:
+
+- **Một vòng lặp** (`for`, `while`) hiển thị thành một nhóm **Vòng lặp**, có tiêu đề là dòng đầu tiên của nó, còn một hàm callback được truyền cho một lệnh gọi như `map` hoặc `forEach` hiển thị thành nhóm **Với mỗi**. Một đường kẻ mỏng tách mỗi lượt lặp khỏi lượt tiếp theo khi ứng dụng phân biệt được chúng.
+- **Các lệnh gọi chạy cùng nhau** với `Promise.all`, `Promise.allSettled` hoặc một bộ kết hợp tương tự hiển thị thành một nhóm **Song song**.
+- **Một nhánh** (`if`/`else`, `switch`, `try`/`catch`) hiển thị một nhóm cho mỗi nhánh con, có tiêu đề là điều kiện của nó.
+- **Một hàm** mà tập lệnh định nghĩa và gọi hiển thị thành nhóm **Hàm**.
+
+Một nhóm nằm trong nhóm khác được thụt vào thêm một bậc, tối đa tám bậc; các nhóm sâu hơn giữ nguyên mức thụt đó.
+
+Tiêu đề mỗi nhóm cho biết các lệnh gọi của nó đã kết thúc ra sao cho đến lúc đó. Trước khi một lệnh gọi chạy, hàng của nó hiển thị công cụ và các đối số như được viết trong tập lệnh:
+
+| Hàng | Ý nghĩa |
+| --- | --- |
+| **Đang chờ** | Tập lệnh chưa tới lệnh gọi này. |
+| Đang chạy | Lệnh gọi đang chạy. |
+| Đã xong | Lệnh gọi đã kết thúc; hàng hiển thị kết quả và thời gian đã mất của nó. |
+| **Đã bỏ qua** | Tập lệnh bỏ qua lệnh gọi này, chẳng hạn nhánh của `if` không được chọn, hoặc kết thúc mà chưa tới nó. |
+
+Một lệnh gọi được viết bên trong đối số của một lệnh gọi tới cùng công cụ được báo cáo từ cùng vị trí trong tập lệnh với lệnh gọi đó. Khi ứng dụng không thể biết liệu lệnh gọi bên ngoài có được thực hiện hay không, hàng của nó không hiện từ trạng thái nào thay cho **Đã bỏ qua**.
+
+Khi một nhóm đã thực hiện hơn 8 lệnh gọi, phần giữa của nó được gập lại: hai lệnh đầu và ba lệnh cuối vẫn hiện, và cũng hiện mọi lệnh gọi vẫn đang chạy, bị lỗi hoặc bị từ chối, cùng với lệnh gọi mở đầu lượt lặp của nó. **Hiện thêm N lệnh gọi** mở thêm 100 lệnh mỗi lần bạn nhấn, và nêu tối đa bốn công cụ của các lệnh gọi bị ẩn cùng số lượng của từng công cụ, công cụ hiếm nhất trước, chẳng hạn **Hiện thêm 12 lệnh gọi** · Bash 1 · Read 11. Tên công cụ dài hơn 24 ký tự bị cắt ngắn ở đó.
+
+Một lệnh gọi mà ứng dụng không thể xác định vị trí trong tập lệnh, chẳng hạn lệnh do một callback `then` thực hiện, được liệt kê sau cây dưới **Lệnh gọi không nằm trong tập lệnh**. Khi ứng dụng không đọc được tập lệnh, hoặc không lệnh gọi nào cho biết nó được thực hiện từ đâu, các lệnh gọi hiện thành một danh sách phẳng theo thứ tự chúng được thực hiện.
+
+Mỗi hàng lệnh gọi hiển thị phần đầu của đối số và của kết quả của lệnh gọi, tối đa 8 KiB mỗi phần; khi các hàng của một tập lệnh giữ tổng cộng 256 KiB các đoạn như vậy, các hàng sau đó của nó chỉ hiện công cụ và cách lệnh gọi kết thúc. Khi tập lệnh đã xong, **Mở bản ghi** mở toàn bộ bản ghi của nó; nếu không tìm thấy bản ghi, nó mở danh sách các tập lệnh của lần chạy đó. Một tập lệnh bị từ chối trước khi chạy (ví dụ vì một tập lệnh khác của cùng lần chạy vẫn đang chạy) không có bản ghi và không có liên kết.
+
+## Bản ghi
+
+Mọi tập lệnh chạy đều được ghi vào không gian làm việc của nó trước khi bắt đầu, và bản ghi được hoàn tất khi nó kết thúc. **Quan sát → Thực thi code** liệt kê chúng, mới nhất trước, và có thể lọc theo kết quả. Các liên kết **Tập lệnh trong lần chạy này** và **Tập lệnh của agent này** trong một bản ghi thu hẹp danh sách xuống một lần chạy hoặc một agent. Một bản ghi hiển thị:
+
+- tập lệnh, đầu ra và console của nó;
+- lúc nó bắt đầu, mất bao lâu, thời gian xử lý và bộ nhớ đỉnh đã dùng, và nó chạy qua agent tích hợp hay một agent bên ngoài;
+- nó kết thúc ra sao, nói bằng lời thường (ví dụ, hết thời gian hoặc ném ra một lỗi không được bắt);
+- mọi lệnh gọi công cụ, theo thứ tự, kèm kết quả, cho biết nó được phép, được người dùng phê duyệt hay bị từ chối, người dùng mất bao lâu để quyết định, các đối số của nó (đã loại bỏ bí mật, cắt xuống 8 KiB) và kích thước kết quả của nó. Bản thân kết quả không được lưu.
+
+Bản ghi lưu vị trí của mỗi lệnh gọi trong tập lệnh, nên các lệnh gọi công cụ của nó được sắp theo cùng cách như trong cuộc hội thoại. Lệnh gọi mà người dùng đã phê duyệt không bao giờ bị gập lại ở đó.
+
+Một tập lệnh đang chạy hiển thị là đang chạy, cùng các lệnh gọi công cụ đã xong cho đến lúc đó; đầu ra, thời lượng và mức tài nguyên sử dụng xuất hiện khi nó kết thúc. Nếu máy chủ dừng khi một tập lệnh đang chạy, bản ghi được đóng khi máy chủ khởi động lại và ghi rõ điều đó; không tập lệnh nào chạy trong không gian làm việc đó cho đến khi bản ghi được đóng.
+
+Bản ghi được giữ cùng với lần chạy của chúng: xóa lần chạy hoặc không gian làm việc của nó sẽ xóa chúng. Thành viên xem được bản ghi của các không gian mà họ mở được.
+
+## Tập lệnh bị giam giữ như thế nào
+
+Tập lệnh không bao giờ chạy bên trong máy chủ. Mỗi tập lệnh chạy trong tiến trình riêng, một chương trình nhỏ đi kèm máy chủ, `cc_codemode`, chạy JavaScript trên động cơ QuickJS-NG. Trước khi đọc tập lệnh, chương trình tự khóa mình bằng các cơ chế riêng của hệ điều hành: trên Linux là bộ lọc lời gọi hệ thống và giới hạn tài nguyên, trên macOS là một hồ sơ sandbox mặc định từ chối, trên Windows là AppContainer và một job object. Sau đó nó không thể mở tệp, dùng mạng, khởi động tiến trình hay thấy các chương trình khác. Nó khởi động không có biến môi trường nào và không giữ thông tin xác thực; kênh duy nhất của nó là máy chủ, nơi trả lời các lệnh gọi công cụ của nó.
+
+Máy chủ kiểm tra việc khóa khi khởi động, bằng cách chạy tự kiểm tra của chương trình. Nếu cơ chế khóa không đứng vững trên máy đó, ví dụ bên trong một container có hồ sơ bảo mật từ chối một trong các bước, máy chủ sẽ không chạy tập lệnh nào ở đó: không lần chạy nào nhận `repl`, và trang cài đặt hiện **Không khả dụng** cùng lý do. Một tập lệnh không bao giờ chạy với mức giam giữ thấp hơn. Cơ chế khóa trên Windows chưa được chạy thử trên Windows.
+
+Vị trí của mỗi lệnh gọi trong tập lệnh do trình chạy báo cáo, nên nó chỉ được dùng để sắp các hàng trong cuộc hội thoại và bản ghi. Nó không bao giờ quyết định một lệnh gọi có được phép hay không.
+
+Xem [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/#tập-lệnh-trong-chế-độ-code) để biết cơ chế khóa làm gì và không bao phủ những gì.
+
+## Xem thêm
+
+- [Ngữ cảnh công cụ và bộ nhớ đệm prompt](/vi-VN/so-tay/khai-niem/ngu-canh-cong-cu/): vì sao tập công cụ trực tiếp nhỏ và giống nhau dù có hay không có `repl`.
+- [Công cụ agent tích hợp](/vi-VN/so-tay/tham-chieu/cong-cu-agent/#repl--chạy-một-tập-lệnh-gọi-các-công-cụ-của-bạn): đầu vào của công cụ `repl`.
+- [CLI `cc_server`](/vi-VN/so-tay/tham-chieu/cli-cc-server/#chế-độ-code): các giới hạn mà chủ sở hữu máy chủ đặt.

@@ -2,7 +2,7 @@
 title: Pipeline-lépésfajták
 description: Referencia a pipeline-lépések fajtáihoz, a lépéstörzsek kulcsaihoz, azok konfigurációjához és a lépéseredményekhez.
 slug: hu-HU/kezikonyv/referencia/pipeline-lepesek
-sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
+sourceHash: 0d2876bc1ac359f4d2cfe94902bd5f924d19d5d5
 ---
 
 Egy pipeline-lépésnek két egymástól független tengelye van:
@@ -58,6 +58,31 @@ A gazdagép operációsrendszer-homokozójában fut, a cwd a `<cc_root>/pipeline
 | `extras.spaceId`           | Létező beszélgetés, amelyben dolgozni kell (alapértelmezés: egy rejtett) |
 | `extras.conversationTitle` | Nevesített adatfolyam azon a téren belül (nem kötelező)       |
 | `extras.mode`              | Annál a csomópontnál olvasódik, amelyik *megnyitja* a szobát (`messaging.createSpace`), nem itt. Alapértelmezés: `review`. |
+
+### `goal.pursue`
+
+Tartós célt indít (lásd: [Cél követése](/hu-HU/kezikonyv/gyakorlati-utmutatok/cel-kovetese/)), és fel van függesztve, amíg a cél véget nem ér. A szerkesztő **Pursue a goal** néven mutatja. A fenti 25 beépített törzs egyike sem; azok mellett van regisztrálva.
+
+| Konfigurációs mező | Leírás |
+| ---------------------- | ----------- |
+| `agentId` | Az ügynök, amely a célt követi (kötelező) |
+| `prompt` | A célkitűzés; támogatja a `{{key}}` helyettesítést (kötelező) |
+| `outputKey` | Az eredmény állapotkulcsa (kötelező) |
+| `extras.spaceId` | A tér, amelyben a cél dolgozik (kötelező, mint minden ügynöklépésnél) |
+| `extras.budgetMicros` | A cél költségkerete mikrodollárban, 1 és 1 000 000 000 között (kötelező) |
+| `extras.maxRuns` | Egy szakaszkorlát, 1 és 1 000 között (opcionális) |
+| `extras.deadlineHours` | Órák attól kezdve, hogy a lépés elindítja a célt, 1 és 2 160 között (opcionális) |
+| `extras.contract` | Mit jelent a kész: kritériumok és ellenőrzések (opcionális) |
+
+Az eredmény az `outputKey` alatt `{summary, verdict}`, ahol a `verdict` az átnéző ítélete a tételeivel és aggályaival, vagy null.
+
+| A cél | A lépés |
+| -------- | -------- |
+| befejezett | befejeződik |
+| sikertelen, megszakított vagy költségkeret kimerült | sikertelen (a `retry` és a `continueOnFail` érvényesül); az újrapróbált lépés új célt indít |
+| szüneteltetett, beleértve az egy személy átnézésére várást | felfüggesztve marad, és nem esik a 24 órás életjel-ellenőrzés hatálya alá |
+
+Egy pipeline-futtatás által indított célt az a futtatás orchestrációjára terhelik, átnézésével együtt. Ha a pipeline-futtatást megszakítják, sikertelen lesz vagy befejeződik, miközben a cél dolgozik, a cél megszakad.
 
 ### `pipeline.condition`
 

@@ -99,7 +99,11 @@ class SaveOrchestrationRevisionUseCase {
       revision: newRevision,
       updatedAt: DateTime.now(),
     );
-    await _orchestrations.update(updated);
+    if (!await _orchestrations.update(updated, read: o)) {
+      // Another edit, a revision by the agent or the approval landed first.
+      final now = await _orchestrations.getById(workspaceId, orchestrationId);
+      throw StaleRevisionException(baseRevision, now?.revision ?? o.revision);
+    }
     await _revisions.record(
       OrchestrationRevision(
         id: _uuid.v4(),

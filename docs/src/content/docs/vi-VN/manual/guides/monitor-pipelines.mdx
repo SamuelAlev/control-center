@@ -2,7 +2,7 @@
 title: Theo dõi lần chạy quy trình
 description: Xử lý hàng đợi lần chạy, đọc thác thời gian và bảng chi tiết bước của một lần chạy, và khôi phục sau một bước thất bại hoặc bị kẹt.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/theo-doi-quy-trinh
-sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
+sourceHash: 48d44ae3ca3e23c1123ef282ccffece35b542b96
 ---
 
 Đây là trang dành cho mọi thứ diễn ra sau khi một lần chạy đã bắt đầu: tìm nó,
@@ -71,6 +71,8 @@ nó hoàn tất. Hai chốt an toàn của engine đánh dấu thất bại cả
 chạy tiếp: một bước bị tạm dừng lâu hơn 24 giờ (`extras.awaitApproval` — body
 `orchestration.awaitApproval` — được miễn; `human.gate` thì không) và một bước
 không idempotent đang chạy dở khi máy chủ dừng lại.
+
+Một bước **Pursue a goal** cũng được miễn khỏi cơ chế dự phòng 24 giờ: nó vẫn tạm dừng trong khi mục tiêu của nó làm việc, và trang của nó liên kết tới mục tiêu. Cả một lần chạy cũng có thể **Tạm dừng** vì điều phối của nó chạm giới hạn chi phí; khi đó trang lần chạy hiển thị đã chi bao nhiêu so với giới hạn và, với người yêu cầu lần chạy, nút **Tăng giới hạn**.
 
 ## Kiểm tra một bước
 

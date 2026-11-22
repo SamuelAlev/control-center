@@ -2,7 +2,7 @@
 title: Sandkasse og sikkerhet
 description: Hva som faktisk begrenser en agent i Control Center i dag, hvor langt OS-sandkassen rekker, og hvilke grenser som holder på en vert uten backend.
 slug: nb-NO/handbok/konsepter/sandkasse-og-sikkerhet
-sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
+sourceHash: 7644c97911f685ef5084875fb16f1006f21ea940
 ---
 
 :::note[Hvor OS-sandkassen rekker, og hvor den ikke rekker]
@@ -54,6 +54,8 @@ Samme regel dekker de mindre tingene som starter en prosess for deg:
 - **Hurtighjelpere som kjører gjennom en ACP-CLI**: samtaletitler, `/btw`, `/handoff` og `/goal`. Når serveren pakker agenter inn i sandkasse, kjører de inne i sandkassen, i en egen økt. Under `--sandbox off` kjører de uten avgrensning. Uten tilgjengelig sandkasse kjører de bare for forespørsler serverens eier er ansvarlig for; for alle andre hoppes de over, så ingen tittel genereres, og et sidespørsmål melder at Content synthesizer ikke har en fungerende kjører. Hjelpere som ikke starter noe verktøy, berøres ikke.
 - **Golden-tester i den visuelle sjekken for en pull request i Review Studio** følger samme regel.
 - **Verktøyprosesser og `bash`** i en kjøring faller aldri tilbake til verten. Hvis serveren er satt til å pakke agenter inn i sandkasse, men det ikke finnes noen sandkasse å gi en kjøring, avvises de.
+- **Et måls sjekker** kjøres i en engangssandkasse over samtalens worktree, innesluttet på samme måte som agentens egen `bash`. Uten sandkasse kjøres de ikke, og målet stopper for en person; under `--sandbox off` kjøres de slik agentens `bash` gjør.
+- **Et måls gjennomgang** kjøres skrivebeskyttet på hver adapter: bare lesing, worktrees montert skrivebeskyttet, ingen `bash`, ingen underagenter, ingen nett. En adapter som ikke kan holde en kjøring skrivebeskyttet (en ACP-agent), brukes ikke som gjennomgåer.
 
 ## Hva som faktisk begrenser en agent
 
@@ -296,6 +298,24 @@ nektet systemkall dukker opp i transkripsjonen i stedet for bare i en logg.
 Telemetrien finnes bare mens en native sandkasse faktisk pakker inn prosessen —
 på en vert uten backend er det ingenting å observere. Den er også uavhengig av tillatelsesreglene: en overtredelse kommer fra et nektet systemkall, aldri fra et regeloppslag.
 
+## Skript i kodemodus
+
+Skript i [kodemodus](/nb-NO/handbok/konsepter/kodemodus/) er et eget tilfelle, og de er helt uavhengige av agentens sandkasse. Et skript kjører aldri inne i serveren og aldri i agentens sandkasse. Det kjører i sin egen prosess, `cc_codemode`, et program som følger med serveren. Programmet låser seg selv før det leser skriptet, og rapporterer hvor langt låsingen kom. Serveren sender skriptet bare når låsingen er fullstendig.
+
+| Vert | Det kjøreren pålegger seg selv |
+| --- | --- |
+| Linux | En tillatelsesliste for systemkall (seccomp) som lar den lite mer enn lese inndataene, skrive utdataene, styre sitt eget minne, lese klokker og avslutte; ingen nye privilegier og ingen capabilities; ingen kjernedumper; ingen filskriving, ingen nye prosesser og høyst tre åpne filer; 3 GiB adresserom; en hard grense for prosessortid. Landlock legges til der kjernen har det. |
+| macOS | En sandkasseprofil som avviser alt som standard, og som også avviser prosessinformasjon, sjekker om filer finnes, system- og maskinvareinformasjon og de tilhørende kjernekallene; ingen kjernedumper, ingen filskriving og en hard grense for prosessortid. |
+| Windows | En ny AppContainer for hvert skript, i et jobbobjekt som tillater én prosess, 3 GiB minne og ingen brukergrensesnitt, med dynamisk kode, barneprosesser og win32k-kall slått av. **Ennå ikke testet på Windows.** |
+
+Kjøreren starter uten miljøvariabler, uten åpne filer utover inndata og utdata, og uten legitimasjon. Det eneste den kan gjøre utover sitt eget minne, er å be serveren om å kjøre et verktøy, og serveren kjører det kallet gjennom samme modusfilter, [tillatelsesreglene](/nb-NO/handbok/konsepter/tillatelsesregler/) og godkjenninger som et direkte kall.
+
+Serveren sjekker alt dette når den starter: den kjører kjørerens selvtest, som bruker låsingen, prøver å lese og lage filer, åpne en nettverksforbindelse og starte en prosess (og flere på hvert system), og kjører ekte skript under den. Om noe ikke blir avvist, kjører serveren ingen skript på den maskinen: ingen kjøring får `repl`, og serveren sier hvorfor, ved oppstart og på innstillingssiden for kodemodus. En kjører som ikke er et utgivelsesbygg, avvises på samme måte. Det finnes ingen svakere reserveløsning.
+
+Kjøreren rapporterer også hvor i skriptet hvert kall ble gjort, så samtalen kan vise skriptets struktur. Serveren kontrollerer den posisjonen mot skriptet og bruker den bare til visning: den avgjør aldri om et kall er tillatt, og den finnes ikke i tillatelsesreglenes revisjonslogg.
+
+Dette dekker ikke: et skript kan fortsatt gjøre alt kjøringens verktøy tillater, fordi verktøykallene er ekte verktøykall. På macOS kan det fortsatt finne ut om en prosess-ID finnes. En feil i JavaScript-motoren eller kjernen blir innesperret av låsingen, ikke utelukket av den.
+
 ## Bekreftelser kommer fra tillatelsesreglene, ikke fra sandkassen
 
 Sandkassen har ingen godkjenningsvei. Den starter, kjører, sender ut hendelser og
@@ -316,6 +336,7 @@ ene stedet som sier hva som kan sjekkes manuelt.
 
 ## Relaterte konsepter
 
+- [Kodemodus](/nb-NO/handbok/konsepter/kodemodus/): skript som kaller verktøy, og kjøreren som innesperrer dem
 - [Stasjoner og isolerte miljøer](/nb-NO/handbok/konsepter/stasjoner/): trinnet over sandkassen — når arbeidet trenger en hel engangsmaskin med en kjernegrense, ikke en innpakket prosess
 - [Tillatelsesregler](/nb-NO/handbok/konsepter/tillatelsesregler/): policylaget over OS-gulvet og hvor godkjenninger faktisk kommer fra
 - [Livssyklus for agentutsending](/nb-NO/handbok/konsepter/livssyklus-agentutsending/): hvor isolasjonen passer inn i utsendingsflyten

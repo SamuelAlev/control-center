@@ -1,5 +1,16 @@
 part of 'dispatch_session.dart';
 
+/// How long an ACP agent cancelled at its cost cap has to end its turn
+/// before the session tears it down.
+const Duration _acpCancelGrace = Duration(seconds: 30);
+
+/// The text an ACP agent's turn is prompted with: the run's prompt behind the
+/// commit attribution line, so it never opens with a slash an ACP agent would
+/// run as one of its own commands (a run that is not a person's message is
+/// fenced before this as well). ACP has no steering lane.
+String acpTurnPrompt(String prompt) =>
+    '$agentCommitAttributionInstruction\n\n$prompt';
+
 extension _AcpMethods on DispatchSession {
   /// `<cliPath> <acpArgs> <argsOverride>` inside the run's sandbox, speaking
   /// JSON-RPC 2.0 over stdio and translating `session/update` notifications
@@ -78,7 +89,27 @@ extension _AcpMethods on DispatchSession {
     _acpClient = client;
     // Stdout lines reach the client through `_forwardSandboxEvent`.
     eventsSub = deps.sandbox.events(handle).listen(_forwardSandboxEvent);
-    final acpEventsSub = client.events.listen(addEvent);
+    // The run's cost cap: an agent that reports its cost (`usage_update`) is
+    // cancelled when it reaches the cap, and the run settles as `budget`. An
+    // ACP turn takes no input mid-run, so there is no wrap-up note.
+    String? acpSessionId;
+    final acpEventsSub = client.events.listen((event) {
+      addEvent(event);
+      if (event is UsageEvent &&
+          event.scope == UsageScope.runCumulative &&
+          _observeRunCost(event.usage.costMicros)) {
+        final session = acpSessionId;
+        if (session != null) {
+          client.sessionCancel(session);
+        }
+        // An agent that ignores the cancel is torn down like a stopped one.
+        Timer(_acpCancelGrace, () {
+          if (identical(_acpClient, client)) {
+            unawaited(_bestEffort('ACP teardown', _teardownAcp));
+          }
+        });
+      }
+    });
 
     final exited = deps.sandbox.exec(
       handle,
@@ -107,9 +138,10 @@ extension _AcpMethods on DispatchSession {
         model: modelId,
         mcpConfigPath: mcpConfigPath,
       );
+      acpSessionId = sessionId;
       await client.sessionPrompt(
         sessionId: sessionId,
-        prompt: '$agentCommitAttributionInstruction\n\n$prompt',
+        prompt: acpTurnPrompt(prompt),
       );
       exitCode = 0;
       addEvent(DebugEvent(content: '[acp] $cliName turn complete'));
@@ -357,6 +389,7 @@ extension _AcpMethods on DispatchSession {
         detail: detail,
         kind: cardKind,
         withdrawn: _cancelSource.token.whenCancelled,
+        runId: runLogId,
       ),
     );
   }

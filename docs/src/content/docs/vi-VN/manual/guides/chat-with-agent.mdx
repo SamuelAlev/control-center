@@ -2,7 +2,7 @@
 title: Chat với một agent
 description: Tạo một space có agent, giao việc cho nó, điều hướng nó giữa lượt chạy và dừng nó.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/chat-voi-agent
-sourceHash: 0dbc01158345074d818cec6084501abc03323fea
+sourceHash: 3e899c417e120a7cc741e802d577d0182210115b
 ---
 
 Hướng dẫn này chỉ cho bạn cách làm việc với một agent trong một space.
@@ -40,6 +40,8 @@ Nó trở thành một thẻ điều hướng đang chờ trong dải phía trê
 vào lượt chạy trực tiếp tại ranh giới lượt kế tiếp. Không có thông báo nổi — chính thẻ đó là
 phản hồi.
 
+Để điều hướng một lượt chạy làm việc cho người khác, bạn cần quyền ghi vào các kho mã của không gian; nếu không có, tin nhắn bị từ chối và vẫn nằm trong ô soạn. Lượt chạy chỉ đọc, chẳng hạn như đánh giá của một mục tiêu, không nhận tin nhắn nào trong khi nó chạy: khi nó kết thúc, tin nhắn được gửi như một tin nhắn thông thường, và sau đánh giá của một mục tiêu, nó chờ phân đoạn tiếp theo của mục tiêu thay vào đó.
+
 Ba điều thay đổi hành vi đó:
 
 - Tin nhắn chứa **@mention** luôn được gửi dưới dạng tin nhắn, không bao giờ là
@@ -70,8 +72,9 @@ liệt kê những gì đang chờ, để bạn có thể gỡ chặn agent mà 
 space. Bảng nổi này ẩn một yêu cầu ngay khi cuộc hội thoại của space đó hiện
 trên màn hình, nên bạn không bao giờ trả lời cùng một lời nhắc hai lần.
 
-Không có thời gian chờ: một agent bị chặn sẽ đợi cho đến khi có người quyết định. Yêu cầu
-tương tự cũng xuất hiện trong dải cần chú ý của Hộp thư và trên máy khách điện thoại.
+Một lượt chạy do bạn bắt đầu chờ phê duyệt trong một giờ; sau đó phê duyệt được coi là bị từ chối. Yêu cầu tương tự cũng xuất hiện trong dải cần chú ý của Hộp thư và trên máy khách điện thoại.
+
+Một lượt chạy do máy chủ bắt đầu (phân đoạn của một mục tiêu, một lịch, hoặc một phản hồi từ agent khác) thay vào đó chờ mặc định 72 giờ, do quản trị viên không gian làm việc đặt; khi đó một phê duyệt được coi là bị từ chối và một câu hỏi là chưa được trả lời. Xem [Khi không ai trả lời](/vi-VN/so-tay/huong-dan-thuc-hanh/theo-duoi-muc-tieu/#khi-không-ai-trả-lời).
 
 ## Trả lời câu hỏi của agent
 
@@ -104,6 +107,8 @@ nút điều khiển đó.
 
 Một lượt chạy đã dừng được đánh dấu là đã dừng. Hãy gửi một tin nhắn mới để điều phối lại.
 
+Dừng cũng giữ những gì đang được xếp hàng cho agent đó: các thẻ điều hướng của bạn (**Gửi các tin nhắn đang giữ** sẽ gửi chúng) và các lượt đánh thức đang chờ của nó (**Tiếp tục** trong dải phía trên ô soạn). Một mục tiêu mà agent đang làm sẽ tạm dừng cho đến khi có người tiếp tục nó.
+
 ## Dùng lệnh slash
 
 Nhập `/` trong trình soạn để xem danh sách lệnh. Những lệnh thay đổi cách
@@ -112,8 +117,10 @@ cuộc hội thoại hoạt động:
 | Lệnh           | Tác dụng                                                                                                                         |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | `/plan`        | Chuyển space sang chế độ Kế hoạch. Một `/plan` trần chỉ bật chế độ; `/plan <request>` bật chế độ và gửi phần còn lại làm tin nhắn của bạn |
-| `/goal <text>` | Ghi lại mục tiêu làm việc của cuộc hội thoại                                                                                              |
-| `/loop <text>` | Lặp cho đến khi một tác vụ hoàn tất                                                                                              |
+| `/goal <text>` | Bắt đầu một mục tiêu bền vững mà agent tiếp tục làm cho đến khi được xác minh là đã xong ([Theo đuổi một mục tiêu](/vi-VN/so-tay/huong-dan-thuc-hanh/theo-duoi-muc-tieu/)) |
+| `/loop <text>` | Đánh thức agent với nội dung này hết lần này đến lần khác, theo một khoảng thời gian hoặc theo nhịp của chính nó ([Lịch và lượt đánh thức](/vi-VN/so-tay/huong-dan-thuc-hanh/lich-va-danh-thuc/)) |
+| `/schedule <when> <text>` | Đánh thức agent sau, một lần hoặc theo cron |
+| `/refine`      | Yêu cầu một lượt đánh giá công việc của cuộc trò chuyện có thể đề xuất cải tiến                                                           |
 | `/compact`     | Gộp lịch sử cũ hơn vào một bản tóm tắt được neo và tiếp tục trên ngữ cảnh đã nén                                                  |
 | `/todo …`      | Xem và chỉnh sửa danh sách việc cần làm được lưu của cuộc hội thoại này                                                                              |
 

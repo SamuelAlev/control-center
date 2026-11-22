@@ -99,7 +99,6 @@ class RpcMessagingRepository
             PrincipalType.fromWire(d.participantType) ?? PrincipalType.agent,
         role: d.role,
         joinedAt: d.joinedAt ?? DateTime.fromMillisecondsSinceEpoch(0),
-        lastReadAt: d.lastReadAt,
       );
 
   // ---- Watches (served over the catalog `messaging.watch*` queries) ----

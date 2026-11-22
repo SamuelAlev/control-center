@@ -66,7 +66,9 @@ double estimateMessageRowExtent(
   // Structured bubbles are card-shaped: their height comes from their own
   // chrome far more than from `content`, so a per-kind constant beats
   // measuring the text.
-  final card = _cardExtent(message.messageType);
+  final card = message.isSystem
+      ? _systemExtent(message)
+      : _cardExtent(message.messageType);
   if (card != null) {
     return header + card;
   }
@@ -79,6 +81,28 @@ double estimateMessageRowExtent(
     extent += _segmentCount(message) * _segmentExtent;
   }
   return extent;
+}
+
+/// A system row's extent: the long-running-work rows (a limit card, a
+/// note, a row with a reason line) are taller than one centered line.
+double _systemExtent(Message message) {
+  final meta = message.metadata;
+  if (meta?['stillInFlightFor'] is String) {
+    return 32;
+  }
+  return switch (meta?['kind']) {
+    'limit_park' => 60,
+    'wake_rule_note' => 72,
+    'wake_skipped' => 64,
+    'wake' ||
+    'wake_rule_ended' ||
+    'command_refused' ||
+    'improvement_apply_incomplete' => 48,
+    'wake_rule_created' ||
+    'wake_rule_paused' ||
+    'orchestration_cap_raised' => 32,
+    _ => 28,
+  };
 }
 
 /// Fixed extent for the message kinds that render as a card rather than as

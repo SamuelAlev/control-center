@@ -2,7 +2,7 @@
 title: Eine Orchestrierung ausführen
 description: Bitte einen Orchestrator um einen Plan, prüfe und bearbeite ihn in Plan Studio, gib ihn einmal frei und lass eine erzeugte Pipeline die Arbeit erledigen.
 slug: de-DE/handbuch/anleitungen/orchestrierung-ausfuehren
-sourceHash: 086301be6c1957f6336294720967813c3050ed25
+sourceHash: cc4390cbac6c2122dd24c23bcef20693f40121bb
 ---
 
 Diese Anleitung zeigt, wie du aus einem großen Ziel einen Plan für das ganze
@@ -66,22 +66,13 @@ Drücke **Schätzen** in der Freigabeleiste, um vor der Festlegung Bereiche für
 Kosten, Dauer und Wirkungsradius zu sehen. Den ganzen Editor beschreibt
 [In Plan Studio arbeiten](/de-DE/handbuch/anleitungen/plan-studio/).
 
-:::note[Das Budget ist keine Ausgabengrenze]
-Das Budget eines Vorschlags wird mit der _Schätzung_ in der Freigabeleiste
-verglichen: Übersteigt das obere Ende der Schätzung das Budget, wird die Summe
-rot und zeigt die Warnung „über Budget“. Während der Plan läuft, prüft niemand
-die Ausgaben, der Lauf stoppt also nicht und gilt auch nicht als
-fehlgeschlagen. Für einen echten Ausgabenstopp nutzt du Budgetrichtlinien je
-Agent — siehe
-[Kosten verwalten](/de-DE/handbuch/anleitungen/kosten-verwalten/).
+:::note[Das Budget hält den Lauf an]
+Das Budget eines Vorschlags wird mit der _Schätzung_ in der Freigabeleiste verglichen: Übersteigt das obere Ende der Schätzung das Budget, wird die Summe rot und zeigt die Warnung „über Budget“. Während der Plan läuft, prüft der Server vor jedem neuen Schritt die Ausgaben. Beim Budget wird der Lauf angehalten, und nichts Neues startet; bereits laufende Schritte werden fertig. Wer den Lauf angestoßen hat, erhält eine Benachrichtigung und drückt auf der Seite des Pipeline-Laufs auf **Grenze erhöhen**, um fortzufahren. Siehe [Kosten verwalten](/de-DE/handbuch/anleitungen/kosten-verwalten/).
 :::
 
 ## Schritt 3: Freigeben
 
-Gib den Plan frei, von der Karte im Gespräch oder von der Freigabeleiste in
-Plan Studio. **Das ist die einzige Entscheidung, die du triffst.** Die Freigabe
-ist Menschen vorbehalten — ein MCP-Tool dafür gibt es nicht, ein Agent kann
-also vorschlagen und überarbeiten, seinen eigenen Plan aber nie freigeben.
+Gib den Plan frei, von der Karte im Gespräch oder von der Freigabeleiste in Plan Studio. **Das ist die einzige Entscheidung, die du triffst.** Die Freigabe ist Menschen vorbehalten — ein MCP-Tool dafür gibt es nicht, ein Agent kann also vorschlagen und überarbeiten, seinen eigenen Plan aber nie freigeben. Das Freigeben braucht Schreibzugriff auf die Repositories des Bereichs, und der Lauf handelt danach für die Person, die freigegeben hat.
 
 Ab hier wandelt ein deterministischer Materialisierer (eine reine Funktion,
 kein LLM) den Vorschlag in eine echte
@@ -121,13 +112,7 @@ Drücke **Orchestrierung abbrechen** auf der Karte im Gespräch oder **Lauf
 abbrechen** in der Freigabeleiste von Plan Studio. Der Abbruch räumt die noch
 laufende Arbeit ab.
 
-Eine Orchestrierung schlägt fehl, wenn die Materialisierung scheitert oder
-wenn der Lauf der erzeugten Pipeline scheitert (Recherche, Diskussion,
-Synthese oder Persistieren — diese Schritte laufen bei Fehler nicht weiter).
-Erzeugte Schritte vom Typ **Arbeit** laufen bei Fehler immer weiter, ein
-fehlgeschlagenes untergeordnetes Ticket lässt den Lauf also nicht scheitern.
-Es gibt keinen Fehlschlag wegen überschrittenem Budget und keine Schwelle
-„jedes untergeordnete Ticket fehlgeschlagen“.
+Eine Orchestrierung schlägt fehl, wenn die Materialisierung scheitert oder wenn der Lauf der erzeugten Pipeline scheitert (Recherche, Diskussion, Synthese oder Persistieren — diese Schritte laufen bei Fehler nicht weiter). Erzeugte Schritte vom Typ **Arbeit** laufen bei Fehler immer weiter, ein fehlgeschlagenes untergeordnetes Ticket lässt den Lauf also nicht scheitern. Das Erreichen des Budgets hält den Lauf an, statt ihn scheitern zu lassen, und es gibt keine Schwelle „jedes untergeordnete Ticket fehlgeschlagen“.
 
 ## Verwandte Anleitungen
 

@@ -4,8 +4,10 @@ import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
 import 'package:cc_domain/core/domain/value_objects/app_locale.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
+import 'package:cc_domain/features/dispatch/domain/entities/wake.dart';
 import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/mention_context.dart';
+import 'package:cc_harness/context.dart' show plainToolForm;
 import 'package:test/test.dart';
 
 // ── Helpers ──────────────────────────────────────────────────────────────
@@ -196,26 +198,57 @@ void main() {
       expect(result, isEmpty);
     });
 
-    test('wakeContext includes runId, ticketId, wakeReason, spaceId', () {
-      const wc = WakeContext(
-        runId: 'run-123',
-        agentId: 'agent-1',
-        workspaceId: 'ws-1',
-        wakeReason: WakeReason.userMessage,
-        ticketId: 'ticket-42',
-        spaceId: 'ch-general',
+    test('wakeContext renders the wakes of a wake-started run', () {
+      final wc = WakeContext.fromWakes([
+        Wake(
+          id: 'wk-1',
+          workspaceId: 'ws-1',
+          spaceId: 'ch-general',
+          conversationId: 'conv-1',
+          agentId: 'agent-1',
+          reason: WakeReason.goalContinuation,
+          payload: 'keep going',
+          dedupKey: 'goal:wk-1',
+          notBefore: DateTime.utc(2026, 1, 1, 7, 5),
+          createdAt: DateTime.utc(2026, 1, 1, 7, 5),
+        ),
+      ], nonce: 'abcde123');
+
+      final result = PromptBuilder()
+          .wakeContext(wc, forms: plainToolForm)
+          .parts('go')
+          .turnContext;
+
+      expect(result, contains('- [goal] your goal continues · 07:05'));
+      expect(
+        result,
+        contains('<wake-data id="abcde123">keep going</wake-data id="abcde123">'),
       );
+    });
 
-      final result = PromptBuilder().wakeContext(wc).buildPersistentBrief();
-
-      expect(result, contains('run-123'));
-      expect(result, contains('ticket-42'));
-      expect(result, contains('userMessage'));
-      expect(result, contains('ch-general'));
+    test('wakeContext renders nothing without wakes', () {
+      for (final wc in [
+        const WakeContext.userMessage(),
+        const WakeContext(
+          wakeReason: WakeReason.assignment,
+          startedByRunId: null,
+          ticketId: 't-1',
+        ),
+      ]) {
+        expect(
+          PromptBuilder()
+              .wakeContext(wc, forms: plainToolForm)
+              .parts('go')
+              .turnContext,
+          isEmpty,
+        );
+      }
     });
 
     test('wakeContext with null returns this', () {
-      final result = PromptBuilder().wakeContext(null).buildPersistentBrief();
+      final result = PromptBuilder()
+          .wakeContext(null, forms: plainToolForm)
+          .buildPersistentBrief();
 
       expect(result, isEmpty);
     });
@@ -238,7 +271,7 @@ void main() {
       );
 
       final result = PromptBuilder()
-          .mentions(mc, 'test-agent')
+          .mentions(mc, 'test-agent', forms: plainToolForm)
           .buildPersistentBrief();
 
       expect(result, contains('boss-agent'));
@@ -250,7 +283,7 @@ void main() {
 
     test('mentions with null returns this', () {
       final result = PromptBuilder()
-          .mentions(null, 'test-agent')
+          .mentions(null, 'test-agent', forms: plainToolForm)
           .buildPersistentBrief();
 
       expect(result, isEmpty);

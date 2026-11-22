@@ -10,6 +10,7 @@ import 'package:cc_domain/features/pipelines/domain/services/state_reducer.dart'
 import 'package:cc_domain/features/pipelines/domain/services/template_renderer.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart'
     show BuiltInBodyKeys, kPipelineSpaceStateKey;
+import 'package:cc_domain/features/pipelines/domain/templates/goal_pursue_config.dart';
 
 /// Run-context identifiers that `PipelineContext.renderState` injects into
 /// every `{{placeholder}}` render, so they always resolve regardless of
@@ -173,6 +174,17 @@ class PipelineValidator {
           if (s.config.outputKey case final String key) key,
     };
     for (final s in def.steps) {
+      if (s.bodyKey == kGoalPursueBodyKey) {
+        for (final message in GoalPursueConfig.errorsOf(s.config)) {
+          issues.add(
+            PipelineIssue(
+              severity: PipelineIssueSeverity.error,
+              stepId: s.id,
+              message: 'Step "${s.id}": $message.',
+            ),
+          );
+        }
+      }
       if (!_dispatchesAgents(s)) {
         continue;
       }
@@ -566,6 +578,7 @@ bool _dispatchesAgents(PipelineStepDefinition s) => const {
   BuiltInBodyKeys.teamDispatch,
   BuiltInBodyKeys.forEach,
   BuiltInBodyKeys.humanGate,
+  kGoalPursueBodyKey,
 }.contains(s.bodyKey);
 
 /// Whether [s] opens a conversation and publishes its id under its output key.

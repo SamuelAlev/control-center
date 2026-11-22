@@ -18,6 +18,7 @@ on:
       - "scripts/lib/common.sh"
       - "scripts/lib/natives.sh"
       - "scripts/lib/media.sh"
+      - "scripts/lib/codemode.sh"
       - "scripts/natives/**"
       - "scripts/release/windows_natives.sh"
       - "scripts/release/verify_natives.sh"
@@ -34,6 +35,7 @@ on:
       - "scripts/lib/common.sh"
       - "scripts/lib/natives.sh"
       - "scripts/lib/media.sh"
+      - "scripts/lib/codemode.sh"
       - "scripts/natives/**"
       - "scripts/release/windows_natives.sh"
       - "scripts/release/verify_natives.sh"
@@ -163,6 +165,33 @@ jobs:
             bash scripts/natives/build_natives.sh build/natives
           fi
 
+      # Miss only, like the build: the cache key hashes the crate's sources,
+      # so any change to the runner misses and runs this. Windows needs the
+      # MSVC environment (set up above on a miss) and the flags the crate's
+      # build.rs insists on, the ones windows_natives.sh builds with: the
+      # static CRT and Control Flow Guard for the Rust code, /guard:cf /GS
+      # for QuickJS-NG's C code. Elsewhere build.rs requires nothing and no
+      # test depends on build_codemode.sh's C hardening, which that script
+      # checks on the release binary the verify step below self-tests on hit
+      # and miss. Nor does it remap build paths as that script does: these
+      # test binaries are never staged.
+      - name: Test the code mode runner
+        if: steps.natives-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            triple="$(rustc -vV | sed -n 's/^host: //p')"
+            case "$triple" in
+              x86_64-pc-windows-msvc|aarch64-pc-windows-msvc) ;;
+              *) echo "cc_codemode: unexpected Rust host $triple"; exit 1 ;;
+            esac
+            export "CFLAGS_${triple//-/_}=/guard:cf /GS"
+            export RUSTFLAGS="${RUSTFLAGS:-} -Ctarget-feature=+crt-static -Ccontrol-flow-guard"
+          fi
+          CARGO_TARGET_DIR="$RUNNER_TEMP/cc_codemode_test" \
+            cargo test --locked --workspace \
+            --manifest-path packages/cc_natives/native/codemode/Cargo.toml
+
       # Hit and miss. On Windows --arch also checks each DLL's PE machine type.
       - name: Verify the staged set
         shell: bash
@@ -177,3 +206,7 @@ jobs:
           source scripts/lib/common.sh
           source scripts/lib/media.sh
           cc_media_verify build/natives/media "$OS" "$ARCH"
+          # Present, right architecture, pinned engine, and `--self-test`
+          # proves the lockdown on this runner.
+          source scripts/lib/codemode.sh
+          cc_codemode_verify build/natives/codemode "$OS" "$ARCH"

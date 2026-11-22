@@ -2,10 +2,10 @@
 title: Ferramentas de agente integradas
 description: A superfície de ferramentas que o harness integrado dá a um agente — servidor de linguagem, pesquisa estrutural, depurador, kernels e controlo de workers — com cada operação e os respetivos argumentos.
 slug: pt-PT/manual/referencia/ferramentas-de-agente
-sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
+sourceHash: e99183fd4b257a60f94444101e1d39a7d6c77249
 ---
 
-Estas são as ferramentas **ligadas ao servidor** que o runtime de agente integrado regista diretamente — servidor de linguagem, pesquisa estrutural, depurador, kernels, perguntas e controlo de workers — por oposição às [ferramentas MCP](/pt-PT/manual/referencia/ferramentas-mcp/) que interliga e às ferramentas genéricas de ficheiros, pesquisa e shell do runtime do harness. Não estão no registo MCP: um cliente MCP externo não as verá, porque cada uma está ligada a um recurso vivo do lado do servidor — um processo de servidor de linguagem, um adaptador de depuração, um interpretador — que pertence a uma execução.
+Estas são as ferramentas **ligadas ao servidor** que o runtime de agente integrado regista diretamente — servidor de linguagem, pesquisa estrutural, depurador, kernels, scripts do modo de código, perguntas e controlo de workers — por oposição às [ferramentas MCP](/pt-PT/manual/referencia/ferramentas-mcp/) que interliga e às ferramentas genéricas de ficheiros, pesquisa e shell do runtime do harness. Não estão no registo MCP: um cliente MCP externo não as verá, porque cada uma está ligada a um recurso vivo do lado do servidor — um processo de servidor de linguagem, um adaptador de depuração, um interpretador — que pertence a uma execução.
 
 Cada ferramenta aqui só é registada quando o recurso que a sustenta está ligado para a execução — um supervisor de servidor de linguagem ou de depuração, um analisador tree-sitter, uma fábrica de kernels, uma porta de perguntas, um conjunto de workers do vibe. A deteção de um servidor de linguagem ou de um adaptador de depuração para *este checkout* é uma verificação separada e posterior (`status` / `adapters`): essas ferramentas mantêm-se na superfície para que o agente possa perguntar porque é que nada é utilizável, em vez de adivinhar.
 
@@ -15,9 +15,23 @@ Cada ferramenta declara um nível, e o nível decide **que superfícies a veem**
 
 | Nível   | Significado                            | Ferramentas aqui                                   |
 | ------- | -------------------------------------- | -------------------------------------------------- |
-| `read`  | Sem efeitos secundários                | `lsp`, `ast_grep`, `ask_user`, as cinco `vibe_*`   |
+| `read`  | Sem efeitos secundários                | `lsp`, `ast_grep`, `ask_user`, `repl`, as cinco `vibe_*` |
 | `write` | Altera ficheiros                       | `lsp_rename`, `ast_edit`, `resolve`                |
 | `exec`  | Inicia ou controla um processo         | `debug`, `eval`                                    |
+
+## Direta, exclusiva de script ou carregada na primeira utilização
+
+Quando o servidor consegue executar scripts, uma execução chama algumas ferramentas diretamente e alcança o resto a partir de um script [`repl`](#repl--executar-um-script-que-chama-as-suas-ferramentas); veja [Modo de código](/pt-PT/manual/conceitos/modo-de-codigo/#quais-as-ferramentas-que-o-agente-chama-diretamente) para a regra completa. Para as ferramentas desta página:
+
+| Ferramenta | Com `repl` | Sem `repl` |
+| ---- | ----------- | -------------- |
+| `repl` | Direta | Não presente |
+| `ask_user` | Direta | Direta |
+| `lsp`, `lsp_rename`, `ast_grep`, `ast_edit`, `resolve`, `debug` | Só a partir de um script | Carregada na primeira utilização |
+| `eval` | Carregada na primeira utilização (um script não a pode chamar) | Carregada na primeira utilização |
+| `vibe_*` | Direta no modo vibe, nunca a partir de um script | Direta no modo vibe |
+
+Uma ferramenta marcada como «Só a partir de um script» passa a ser carregada na primeira utilização quando o servidor não consegue executar os scripts da execução ([Quando os scripts não podem correr](/pt-PT/manual/conceitos/modo-de-codigo/#quando-os-scripts-não-podem-correr)).
 
 ---
 
@@ -152,9 +166,49 @@ O `debugpy` prefere um `.venv/bin` ou `venv/bin` local do projeto em vez do `$PA
 
 ---
 
+## `repl` — executar um script que chama as suas ferramentas
+
+Presente em todas as execuções quando o servidor consegue executar scripts ([Quando uma execução tem `repl`](/pt-PT/manual/conceitos/modo-de-codigo/#quando-uma-execução-tem-repl)). O script é JavaScript simples, o corpo de uma função assíncrona, e executa-se num interpretador novo e bloqueado, no seu próprio processo: sem acesso ao sistema de ficheiros, à rede, a processos ou a módulos. O próprio `repl` pertence ao nível `read` e protege-se a si mesmo, porque cada chamada de ferramenta que o script faz é verificada separadamente. Também no endpoint MCP, para execuções de agente num servidor que consegue executar scripts.
+
+| Argumento | Significado |
+| ------------------- | --------------------------------------------------------------------------------------------- |
+| `code` | O script. No máximo 256 KiB |
+| `description` | Obrigatório. Uma etiqueta curta para a linha da conversa |
+| `timeout_ms` | Opcional. Um limite de tempo mais curto do que o do espaço de trabalho; nunca mais longo |
+| `max_output_tokens` | Opcional. Um orçamento de saída menor do que o do espaço de trabalho; nunca maior |
+
+```js
+// Read three files together and report only which ones failed.
+const paths = ["lib/a.dart", "lib/b.dart", "lib/c.dart"];
+const results = await Promise.allSettled(paths.map((path) => tools.read({ path })));
+return results
+  .map((r, i) => (r.status === "rejected" ? `${paths[i]}: ${r.reason.message}` : null))
+  .filter(Boolean);
+```
+
+A descrição de `repl` diz ao agente: «Uma ferramenta que não é uma das suas ferramentas diretas não tem definição neste pedido. Antes da primeira chamada a uma delas, procure-a com `describeTool(name)` ou `searchTools(query)`, a menos que a sua forma exata de chamada já lhe tenha sido mostrada nesta conversa.»
+
+`describeTool(name)` devolve a descrição de uma ferramenta, a sua declaração, os seus esquemas de entrada e de saída e a sua nota de resultado, quando tem uma: o que um script recebe de uma chamada concluída, nas palavras da própria ferramenta. A descrição de `repl` lista as notas das ferramentas diretas que um script pode chamar. Um resultado que é texto JSON chega já interpretado, a menos que tenha mais de 131 072 valores: nesse caso chega como texto, e o script interpreta-o com `JSON.parse`. O texto de um resultado de uma ferramenta de um servidor MCP externo é cortado a 262 144 caracteres, e o texto cortado deixa de poder ser interpretado.
+
+- `tools.<name>(args)` chama uma ferramenta através do mesmo filtro, das mesmas barreiras e da mesma aprovação de uma chamada direta, e rejeita com um erro quando é recusada ou falha. As chamadas só de leitura podem correr em conjunto; as que alteram algo correm uma de cada vez, pela ordem em que o script as fez. Enquanto uma das suas chamadas espera por uma pessoa, nenhuma outra chamada do script começa.
+- `ALL_TOOLS`, `searchTools(query, { limit, namespace })`, `describeTool(name)` e `describeNamespace(name)` encontram ferramentas, incluindo as dos servidores MCP ligados. Uma ferramenta fora do conjunto direto que um script pode chamar só é chamável a partir de um script; chamá-la diretamente devolve a forma de a chamar a partir de `repl`. Quando o servidor não consegue executar os scripts da execução, essa ferramenta é carregada na primeira utilização.
+- As consultas têm limites: uma pesquisa com no máximo 1 024 caracteres, um nome ou namespace com no máximo 256, `limit` de 0 a 50, e no máximo 200 consultas que, no total, levem 2 segundos do tempo do servidor por script, enquanto todos os scripts de um espaço de trabalho partilham 2 segundos de tempo de consulta, devolvidos à razão de um quarto de segundo por cada segundo; ao esgotar qualquer um dos dois limites, as consultas seguintes são rejeitadas. Num catálogo muito grande, as descrições em `ALL_TOOLS` partilham de forma igual cerca de um milhão de caracteres, e uma descrição cortada termina em `…`; `describeTool` devolve sempre a descrição completa. Um tipo grande demais para mostrar aparece como `unknown /* too large to show */`, e um nome desconhecido recebe como resposta os nomes mais próximos.
+- As ferramentas são agrupadas em namespaces: `builtin` (as ferramentas do próprio harness), `control-center` (as ferramentas do Control Center) e um por cada servidor MCP ligado, com o nome desse servidor. Um servidor chamado `builtin`, `control-center` ou `script`, ou cujo nome comece por `external-`, em qualquer combinação de maiúsculas e minúsculas e com ou sem espaços à volta, é listado como `external-` seguido do seu nome, e nenhuma ferramenta fica alguma vez em `script`.
+- Só regressa ao agente o que o script devolve ou passa a `text()`, `image()` ou `console.*`. A saída além do orçamento mantém o início e o fim, e `read_output` lê o resto.
+- `store(key, value)` / `load(key)` guardam valores JSON para os scripts seguintes da mesma conversa e do mesmo agente, gravados apenas quando o script termina. Os scripts de um subagente não têm armazenamento.
+- `await tools.ask_user(...)` faz uma pergunta; a resposta é também acrescentada ao resultado. `sleep(ms)`, `setTimeout`, `limits()` e `models.embed` / `rank` / `classify` (embeddings no próprio dispositivo) também estão disponíveis.
+- `describeTool(name)` e `searchTools(query)` também respondem para as funções próprias do script, que não são ferramentas: `text`, `image`, `store`, `load`, `sleep`, `setTimeout`, `clearTimeout`, `limits`, `exit` e `models.*`, sob o espaço de nomes `script`.
+- Não chamáveis a partir de um script: `repl`, `eval`, `task`, `checkpoint`, `rewind`, `compact`, `search_tools` e os verbos `vibe_*`.
+- Um script lê o passado da sua própria execução: `history({start, role, tool, limit})` pagina a transcrição da conversa (no máximo 50 linhas por chamada; passe o `next_start` da página anterior como `start`), `outputs()` lista os resultados de ferramentas guardados para esta conversa e este agente, e `loadOutput(handle)` lê 16 384 caracteres de um deles. `storedKeys()` lista as chaves guardadas com os respetivos tamanhos. `keep(value, label)` guarda um valor grande como resultado que um script posterior ou `read_output` pode ler, gravado apenas quando o script termina (1 MiB por valor, 64 valores e 16 MiB por execução). `limits().returnBudgetChars` indica quanto do orçamento de saída resta. Uma execução só de leitura (uma revisão de objetivo) pode ler, mas não guardar nem usar keep. No Claude Code e no ACP, `history()` funciona, e `outputs()`, `loadOutput()` e `keep()` são recusados, porque o Control Center não guarda resultados de ferramentas dessas execuções.
+- Um erro de timeout, de excesso de saída ou de limite de chamadas indica como o corrigir.
+
+Uma execução corre um script de cada vez. Os limites e o que acontece em cada caso estão na página [Modo de código](/pt-PT/manual/conceitos/modo-de-codigo/#limites); cada script fica registado em **Observabilidade → Execuções de código**.
+
+---
+
 ## `eval` — interpretadores persistentes
 
-Uma célula Python ou JavaScript cujas variáveis, importações e dados carregados sobrevivem entre chamadas. Nível `exec`; não é seguro em paralelo.
+Uma célula Python ou JavaScript cujas variáveis, importações e dados carregados sobrevivem entre chamadas. Nível `exec`; não é seguro em paralelo. Não é chamável a partir de um script `repl`, e uma célula não pode chamar as ferramentas da execução: para chamar ferramentas a partir de código, use [`repl`](#repl--executar-um-script-que-chama-as-suas-ferramentas).
 
 | Argumento     | Significado                                      |
 | ------------- | ------------------------------------------------ |
@@ -166,20 +220,34 @@ Uma célula Python ou JavaScript cujas variáveis, importações e dados carrega
 - A última expressão é ecoada como num notebook.
 - O `display()` funciona, um DataFrame do pandas é representado como uma tabela, e uma figura do matplotlib volta como uma **imagem que a transcrição mostra**.
 - Os idiomas do IPython que as pessoas escrevem por reflexo — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — são reescritos como código simples. O `%pip` também expulsa o `sys.modules`, para que o próximo `import` veja o que acabou de ser instalado.
-
-### Chamar as suas próprias ferramentas a partir de dentro de uma célula
-
-```python
-contents = tool("read", {"path": "lib/auth.dart"})
-```
-
-A ponte **volta a entrar no registo de ferramentas do harness**, pelo que as barreiras, a aprovação e cada wrapper se aplicam exatamente como numa chamada emitida pelo modelo. Segue o próprio pipe do kernel em vez de um socket de loopback: sem porta, sem segredo, sem regra de egresso.
-
-O tempo limite da célula é um orçamento de *inatividade* (predefinição de 5 minutos) e é **suspenso** enquanto há uma chamada através da ponte pendente, para que uma célula que se distribui por subagentes não seja morta a meio da distribuição.
+- Uma célula que imprime mais do que o seu orçamento de saída guarda os primeiros três quartos e o último quarto, com uma linha a dizer quantos caracteres e imagens foram descartados.
+- Quando o interpretador morreu sem que ninguém o pedisse, a célula seguinte é informada uma vez de que as suas variáveis anteriores desapareceram.
 
 :::note[Onde é que o kernel é executado]
 No recinto da conversa quando esta tem um, caso contrário na sandbox do sistema operativo da execução, no anfitrião. Com a sandbox desligada ou indisponível, corre sem confinamento e o `eval` pede aprovação para executar comandos no host. Não arranca um recinto para lá chegar — a mesma regra que impede um separador de rig de arrancar automaticamente.
 :::
+
+---
+
+## `bash` em segundo plano
+
+`bash` com `run_in_background: true` inicia o comando e devolve de imediato um identificador (`b1`, `b2`, …) em vez de esperar. O agente continua a trabalhar, ou termina o seu turno e é acordado quando o comando termina.
+
+| Argumento | Significado |
+| ------------------- | ------- |
+| `run_in_background` | `true` para iniciar e devolver de imediato |
+| `timeout_seconds` | Segundos antes de o comando ser terminado: 600 por predefinição, 3 600 no máximo |
+| `notify` | Opcional. Um padrão simples; cada linha de saída que corresponde é enviada ao agente enquanto o comando corre (como `listening on\|FAILED`) |
+
+- No máximo 4 comandos em segundo plano correm ao mesmo tempo numa execução. Cada um é terminado no seu timeout e quando a execução acaba, juntamente com todos os processos que iniciou.
+- Quando um comando termina, o agente recebe um aviso com o código de saída, os últimos 2 000 caracteres de saída e um identificador de `read_output` para o resto.
+- Um agente cujo único trabalho restante é um comando em segundo plano espera sem chamar o modelo, e o watchdog de silêncio da execução pausa enquanto espera.
+- `bash_output(handle)` lê o estado e a saída recente de um comando; `bash_kill(handle)` para-o. Ambos indicam quando o resultado já foi entregue.
+- Um script não pode iniciar um comando em segundo plano. O Claude Code tem o seu próprio Bash em segundo plano; o Control Center mantém essa execução aberta durante no máximo 10 minutos após o turno que deixou uma tarefa a correr.
+
+## `compact` — libertar espaço na janela de contexto
+
+Compacta o contexto mais antigo da conversa antes da próxima chamada ao modelo, mantendo o que `focus` indica (no máximo 1 000 caracteres). Os turnos mais recentes ficam textualmente. A linha de orçamento por turno do agente mostra o uso do contexto a 70, 80 e 90%, e vale a pena chamar a ferramenta depois de cerca de 70% antes de uma nova fase longa de trabalho. O hook `preCompact` do proprietário do servidor pode acrescentar ao foco ([Hooks de shell](/pt-PT/manual/referencia/configuracao-de-agentes/#hooks-de-shell)). Após uma compactação, o servidor acrescenta um bloco «Still in flight»: o objetivo, os despertares pendentes, as perguntas abertas, os comandos em segundo plano, a lista de verificação e as chaves guardadas, cada um com a chamada que o recupera.
 
 ---
 

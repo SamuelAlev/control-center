@@ -2,12 +2,15 @@ import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/value_objects/app_locale.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
+import 'package:cc_domain/features/dispatch/domain/ports/goal_turn_text_port.dart';
 import 'package:cc_domain/features/dispatch/domain/prompts/mode_prompts.dart';
 import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart';
+import 'package:cc_domain/features/dispatch/domain/services/lane_tool_forms.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/mention_context.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/teammate_brief.dart';
 import 'package:cc_domain/features/settings/domain/entities/adapter.dart'
     show AdapterTransport;
+import 'package:cc_harness/context.dart' show ToolCallForms;
 
 export 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart'
     show AgentPromptParts, PromptPartScope, PromptSection;
@@ -32,13 +35,16 @@ class BuildAgentPromptUseCase {
 
   /// Builds the full agent prompt combining persistent brief and per-turn context.
   ///
-  /// [transport] selects the tool-discovery wording ([PromptBuilder.toolCatalog]).
+  /// [transport] selects the tool-discovery wording ([PromptBuilder.toolCatalog]);
+  /// with [hasRepl] (scripts can run now) it decides how the turn's texts
+  /// name a tool ([laneToolForms]).
   ///
   /// A thin wrapper over [buildParts] so the flattened prompt and its split are
   /// one assembly, not two that can drift.
   String execute({
     required String prompt,
     required Agent? agent,
+    required bool hasRepl,
     String? memoryContext,
     String? conversationContext,
     List<PromptConversationEntry>? conversationEntries,
@@ -46,10 +52,12 @@ class BuildAgentPromptUseCase {
     ModePromptContext? modeContext,
     MentionContext? mentionContext,
     WakeContext? wakeContext,
+    GoalTurnText? goalText,
     AppLocale? locale,
     List<TeammateBrief> teammates = const [],
     AdapterTransport? transport,
   }) => buildParts(
+    hasRepl: hasRepl,
     prompt: prompt,
     agent: agent,
     memoryContext: memoryContext,
@@ -59,6 +67,7 @@ class BuildAgentPromptUseCase {
     modeContext: modeContext,
     mentionContext: mentionContext,
     wakeContext: wakeContext,
+    goalText: goalText,
     locale: locale,
     teammates: teammates,
     transport: transport,
@@ -74,6 +83,7 @@ class BuildAgentPromptUseCase {
   AgentPromptParts buildParts({
     required String prompt,
     required Agent? agent,
+    required bool hasRepl,
     String? memoryContext,
     String? conversationContext,
     List<PromptConversationEntry>? conversationEntries,
@@ -81,6 +91,7 @@ class BuildAgentPromptUseCase {
     ModePromptContext? modeContext,
     MentionContext? mentionContext,
     WakeContext? wakeContext,
+    GoalTurnText? goalText,
     AppLocale? locale,
     List<TeammateBrief> teammates = const [],
     AdapterTransport? transport,
@@ -111,7 +122,13 @@ class BuildAgentPromptUseCase {
       conversationEntries: conversationEntries ?? const [],
       mentionContext: mentionContext,
       wakeContext: wakeContext,
+      goalText: goalText,
       locale: locale,
+      forms: laneToolForms(
+        transport: transport,
+        mode: mode,
+        hasRepl: hasRepl,
+      ),
     ).parts(prompt);
   }
 
@@ -162,10 +179,14 @@ class BuildAgentPromptUseCase {
   }
 
   /// Builds the per-turn prompt (mentions, memory context, conversation context).
-  /// This content changes every turn.
+  /// This content changes every turn. [transport], [mode] and [hasRepl]
+  /// decide how its texts name a tool ([laneToolForms]).
   String buildPerTurnPrompt({
     required String prompt,
     required Agent agent,
+    required AdapterTransport? transport,
+    required Mode mode,
+    required bool hasRepl,
     String? memoryContext,
     String? conversationContext,
     List<PromptConversationEntry>? conversationEntries,
@@ -180,6 +201,11 @@ class BuildAgentPromptUseCase {
       conversationEntries: conversationEntries,
       mentionContext: mentionContext,
       wakeContext: wakeContext,
+      forms: laneToolForms(
+        transport: transport,
+        mode: mode,
+        hasRepl: hasRepl,
+      ),
     );
     return builder.build(prompt);
   }
@@ -203,22 +229,36 @@ class BuildAgentPromptUseCase {
       .skills(agent.skills)
       .executionContract(mode: mode)
       .executionProcedure(mode: mode)
+      .wakes()
       .mode(mode, ctx: modeContext);
 
-  /// The per-turn half: why the run started, who summoned it, what memory
-  /// answered, the injected conversation window and the response language.
+  /// The per-turn half: why the run started, the goal it pursues or
+  /// reviews, who summoned it, what memory answered, the injected
+  /// conversation window and the response language.
   static PromptBuilder _turnTail(
     PromptBuilder builder, {
     required Agent agent,
+    required ToolCallForms forms,
     String? memoryContext,
     String? conversationContext,
     List<PromptConversationEntry>? conversationEntries,
     MentionContext? mentionContext,
     WakeContext? wakeContext,
+    GoalTurnText? goalText,
     AppLocale? locale,
   }) => builder
-      .wakeContext(wakeContext)
-      .mentions(mentionContext, agent.name)
+      .wakeContext(
+        wakeContext,
+        forms: forms,
+        items: goalText?.wakeItems ?? const {},
+      )
+      .goal(goalText?.section)
+      .mentions(
+        mentionContext,
+        agent.name,
+        forms: forms,
+        wakeContext: wakeContext,
+      )
       .memoryContext(memoryContext)
       .conversationContext(conversationContext)
       .conversationEntries(conversationEntries ?? const [])

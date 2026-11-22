@@ -2,7 +2,7 @@
 title: Homokozó és biztonság
 description: Mi korlátozza valójában ma az ügynököt a Control Centerben, milyen messzire ér el az operációs rendszer homokozója, és mely határok tartanak egy olyan hoszton, amelynek nincs háttérrendszere.
 slug: hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag
-sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
+sourceHash: 7644c97911f685ef5084875fb16f1006f21ea940
 ---
 
 :::note[Hová ér el az operációs rendszer homokozója, és hová nem]
@@ -57,6 +57,8 @@ Ugyanez a szabály vonatkozik a kisebb dolgokra is, amelyek az Ön helyett indí
 - **Gyors segédek, amelyek ACP CLI-n át futnak**: beszélgetéscímek, `/btw`, `/handoff` és `/goal`. Ha a szerver homokozza az ügynököket, ezek a homokozón belül, saját munkamenetben futnak. `--sandbox off` mellett homokozó nélkül futnak. Homokozó nélkül csak azoknak a kéréseknek futnak le, amelyekért a szerver tulajdonosa felel; másoknál kimaradnak, így nem készül cím, a mellékkérdés pedig jelenti, hogy a Content synthesizernek nincs működő futtatója. Azokat a segédeket, amelyek nem indítanak eszközt, ez nem érinti.
 - **Egy pull request golden tesztjei** a Review Studio vizuális ellenőrzésében ugyanezt a szabályt követik.
 - **Eszközfolyamatok és a `bash`** egy futtatásban soha nem esnek vissza a gazdagépre. Ha a szerver úgy van beállítva, hogy homokozza az ügynököket, de a futtatásnak nincs homokozója, azok visszautasításra kerülnek.
+- **A cél ellenőrzései** egyszer használatos homokozóban futnak a beszélgetés worktree-ján, ugyanúgy korlátozva, mint az ügynök saját `bash`-e. Homokozó nélkül nem futnak, és a cél egy személyre vár; a `--sandbox off` beállítás mellett úgy futnak, ahogy az ügynök `bash`-e fut.
+- **A cél átnézése** minden adapteren csak olvasásra fut: csak olvas, a worktree-k csak olvasható csatolásban vannak, nincs `bash`, nincs al-ügynök, nincs web. Az az adapter, amely nem tudja csak olvasásra kényszeríteni a futtatást (egy ACP-ügynök), nem használható átnézőként.
 
 ## Mi korlátozza valójában az ügynököt
 
@@ -306,6 +308,24 @@ egy megtagadott rendszerhívás az átiratban is megjelenik, nem csak egy napló
 A telemetria csak addig létezik, amíg egy natív homokozó ténylegesen becsomagolja
 a folyamatot — egy háttérrendszer nélküli hoszton nincs mit megfigyelni. A korlátokhoz sem kapcsolódik: egy sértés megtagadott rendszerhívásból származik, soha nem szabálykeresésből.
 
+## Szkriptek kódmódban
+
+A [kódmód](/hu-HU/kezikonyv/fogalmak/kodmod/) szkriptjei külön esetet képeznek, és egyáltalán nem függnek az ügynök homokozójától. A szkript soha nem a szerveren belül és soha nem az ügynök homokozójában fut. A saját folyamatában fut, a `cc_codemode`-ban, egy a szerverrel együtt szállított programban, amely a szkript beolvasása előtt lezárja magát, és jelenti, mely zárolási lépések léptek életbe. A szerver csak akkor küldi el a szkriptet, ha a zárolás teljes.
+
+| Hoszt | Amit a futtató saját magára alkalmaz |
+| --- | --- |
+| Linux | Rendszerhívás-engedélylista (seccomp), amely alig enged többet annál, mint a bemenete olvasása, a kimenete írása, a saját memóriájának kezelése, az órák olvasása és a kilépés; nincs új jogosultságszerzés és nincs capabilities; nincs core dump; nincs fájlírás, nincs új folyamat, és legfeljebb három nyitott fájl; 3 GiB címtér; kemény processzoridő-korlát. A Landlock hozzáadásra kerül, ahol a kernel támogatja. |
+| macOS | Alapértelmezetten tiltó sandbox-profil, amely a folyamatinformációt, a fájlok létezésének ellenőrzését, a rendszer- és hardverinformációkat és a kapcsolódó kernelhívásokat is megtagadja; nincs core dump, nincs fájlírás, és kemény processzoridő-korlát. |
+| Windows | Minden szkripthez új AppContainer, egy job objectben, amely egy folyamatot, 3 GiB memóriát és felhasználói felület nélkül enged; a dinamikus kód, a gyermekfolyamatok és a win32k-hívások le vannak tiltva. **Windowson még nem futtatták.** |
+
+A futtató környezeti változók nélkül indul, a bemenetén és kimenetén kívül nincs nyitott fájlja, és hitelesítő adatai sincsenek. A saját memóriáján kívül csak azt tudja megtenni, hogy megkéri a szervert egy eszköz futtatására, a szerver pedig ezt a hívást ugyanazon a módszűrőn, [korlátokon](/hu-HU/kezikonyv/fogalmak/korlatok/) és jóváhagyásokon keresztül futtatja, mint a közvetlen hívást.
+
+A szerver ezt mind indításkor ellenőrzi: lefuttatja a futtató önellenőrzését, amely alkalmazza a zárolást, megpróbál fájlokat olvasni és létrehozni, hálózati kapcsolatot nyitni és folyamatot indítani (és ezeken túl rendszerenként még többet), és valódi szkripteket futtat alatta. Ha bármi nincs megtagadva, a szerver azon a gépen nem futtat szkripteket: egyetlen futtatás sem kap `repl`-t, a szerver pedig indításkor és a kódmód beállítási oldalán megmondja az okát. A kiadási buildtől eltérő futtatót ugyanígy elutasítják. Gyengébb tartalék nincs.
+
+A futtató azt is jelzi, hol volt a szkriptben minden hívás, így a beszélgetés megmutathatja a szkript szerkezetét. A szerver ezt a pozíciót a szkripthez képest ellenőrzi, és csak megjelenítéshez használja: soha nem dönti el, hogy egy hívás engedélyezett-e, és a korlátok ellenőrzési naplójában nem szerepel.
+
+Amit ez nem fed le: a szkript továbbra is megtehet mindent, amit a futtatás eszközei engedélyeznek, mert az eszközhívásai valódi eszközhívások; macOS-en továbbra is megtudhatja, létezik-e egy folyamatazonosító; és a JavaScript-motor vagy a kernel egy hibáját a zárolás korlátozza, nem pedig kizárja.
+
 ## A megerősítések a korlátokból jönnek, nem a homokozóból
 
 A homokozónak nincs jóváhagyási útja. Elindul, végrehajt, eseményeket bocsát ki
@@ -326,6 +346,7 @@ az egyetlen hely, amely elmondja, mi ellenőrizhető kézzel.
 
 ## Kapcsolódó fogalmak
 
+- [Kódmód](/hu-HU/kezikonyv/fogalmak/kodmod/): az eszközöket hívó szkriptek és a futtató, amely elszigeteli őket
 - [Állomások és elszigetelt környezetek](/hu-HU/kezikonyv/fogalmak/allomasok/): a homokozó feletti lépés — amikor a munkához egy egész eldobható gép kell kernelhatárral, nem egy becsomagolt folyamat
 - [Korlátok](/hu-HU/kezikonyv/fogalmak/korlatok/): az operációs rendszer alsó korlátja feletti szabályzatréteg, és hogy honnan jönnek valójában a jóváhagyások
 - [Ügynökindítás életciklusa](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/): hová illeszkedik az elkülönítés az indítási folyamatba

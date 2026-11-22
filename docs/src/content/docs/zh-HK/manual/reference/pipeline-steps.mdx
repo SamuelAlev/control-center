@@ -2,7 +2,7 @@
 title: 管線步驟
 description: 管線步驟種類、步驟主體鍵、其設定與步驟結果的參考。
 slug: zh-HK/手冊/參考/管線步驟
-sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
+sourceHash: 0d2876bc1ac359f4d2cfe94902bd5f924d19d5d5
 ---
 
 一個管線步驟有兩條互相獨立的軸線：
@@ -58,6 +58,31 @@ sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
 | `extras.spaceId`           | 要在其中工作的現有對話（預設：一個隱藏對話）                |
 | `extras.conversationTitle` | 該空間內具名的串流（選填）                                  |
 | `extras.mode`              | 在*開啟*該房間的節點（`messaging.createSpace`）上讀取，而不是這裡。預設 `review`。 |
+
+### `goal.pursue`
+
+啟動一個持久的目標（見[追求目標](/zh-HK/手冊/操作指南/追求目標/)），並暫停，直至目標結束。編輯器會將其顯示為 **Pursue a goal**。不屬於上面的 25 個預置主體之一；與它們並列註冊。
+
+| 設定欄位 | 說明 |
+| ---------------------- | ----------- |
+| `agentId` | 負責追求目標的代理（必填） |
+| `prompt` | 目標；支援 `{{key}}` 替換（必填） |
+| `outputKey` | 結果的狀態鍵（必填） |
+| `extras.spaceId` | 目標所在的房間（必填，與每個代理步驟相同） |
+| `extras.budgetMicros` | 目標的預算，以微美元計，1 至 1,000,000,000（必填） |
+| `extras.maxRuns` | 段數上限，1 至 1,000（可選） |
+| `extras.deadlineHours` | 從步驟開始目標起計的小時數，1 至 2,160（可選） |
+| `extras.contract` | 完成的標準：準則與檢查（可選） |
+
+`outputKey` 下的結果為 `{summary, verdict}`，其中 `verdict` 是審核者的裁定，連同其項目與疑慮；若無則為 null。
+
+| 目標 | 步驟 |
+| -------- | -------- |
+| 已完成 | 完成 |
+| 失敗、已取消或預算已用盡 | 失敗（`retry` 與 `continueOnFail` 適用）；重試的步驟會啟動一個新目標 |
+| 已暫停，包括等待人手審核 | 維持已暫停狀態，不受 24 小時存活掃描的影響 |
+
+由管線執行啟動的目標，其成本計入該次執行的編排，包括其審核。當管線執行在目標進行期間被取消、失敗或完成，目標也會被取消。
 
 ### `pipeline.condition`
 

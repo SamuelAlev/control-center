@@ -1,0 +1,63 @@
+---
+title: Ejen bekerja bersama
+description: Cara ejen saling bertanya soalan, menyerahkan kerja dan dibangunkan semula dengan jawapan, serta tempat anda melihat apa yang ditunggu satu ejen daripada ejen lain.
+slug: ms-MY/manual-pengguna/panduan-cara/ejen-bekerja-bersama
+sourceHash: 36bb45cd480fb45d0380e8fd651845c59a7debcb
+---
+
+Ejen dalam ruang kerja boleh saling bertanya soalan, merujuk pakar, meminta kajian, menghantar mesej atau mewakilkan tiket. Tiada satu pun ini memerlukan ejen duduk dan menunggu: ejen yang bertanya boleh terus bekerja, atau menamatkan gilirannya, dan dibangunkan dalam perbualannya sendiri apabila jawapan tiba.
+
+## Bertanya kepada ejen lain
+
+Ejen bertanya dengan `ask_agent`, dengan salah satu daripada dua cara:
+
+- **Tunggu** (lalai): ejen tersekat sehingga jawapan tiba, sehingga 600 saat secara lalai dan 1,800 saat paling banyak.
+- **Di latar belakang**: panggilan kembali serta-merta dan ejen terus bekerja.
+
+Kedua-dua cara, soalan dirakam sebelum dihantar. Apabila jawapan tidak kembali dalam panggilan itu, pemanggil dibangunkan tepat sekali, dengan jawapan, apabila larian ejen lain tamat: dijawab, gagal, atau luput selepas 24 jam tanpa jawapan. Sepanjang itu ia mungkin mendengar, sekali setiap satu, bahawa ejen lain berjanji akan menjawab, bahawa ia menunggu seseorang, atau bahawa ia berhenti pada had penggunaan. Tiada satu pun daripada itu dikira sebagai jawapan.
+
+`consult_agent` (membawa masuk pakar yang paling sepadan), `request_peer_review` (pandangan kedua terhadap dapatan kajian) dan `send_to_agent` (mesej sehala) berfungsi melalui baris gilir yang sama. `send_to_agent` memberitahu sama ada ejen lain telah dibangunkan, sama ada mesej itu menunggu di belakang larian semasanya, atau sebab ia ditolak.
+
+Ejen lain membaca soalan itu sebagai maklumat daripada ejen lain, bukan arahan yang mesti dipatuhinya, dan ia tidak boleh menjalankan perintah slash.
+
+## Menyerahkan kerja
+
+- **Tiket yang diwakilkan** (`delegate_task`) membangunkan ejen yang mewakilkannya, dalam perbualan tempat ia mewakilkan, apabila tiket itu diselesaikan.
+- **Larian ahli pasukan** yang dimulakan oleh ketua dengan `@mention` atau mesej membangunkan ketua, dalam perbualan tempat ia membangunkan ahli itu, apabila larian itu tamat. (Soalan dijawab oleh balasannya, dan tiket yang diwakilkan oleh tiketnya.)
+- **Pekerja latar belakang** dalam mod pengarah (`/vibe`) menyerahkan hasilnya kepada pengarah semasa pengarah terus bekerja.
+- **`@mention`** ke atas ejen, dan penyemak ruang, dihantar dengan cara yang sama, sebagai panggilan bangun.
+
+Ejen boleh melihat apa yang sedang dilakukan ejen lain tanpa bertanyanya: `agent_activity` menunjukkan status ejen lain, alat semasanya dan mesej terakhirnya, dan tidak membangunkan sesiapa.
+
+## Had
+
+Pelayan menguatkuasakan perkara ini, apa pun yang dikatakan ejen:
+
+| Had | Nilai |
+| --- | --- |
+| Sedalam mana rantaian soalan dan penyerahan boleh pergi | 3 |
+| Kitaran (ejen yang bertanya kepada ejen yang, melalui yang lain, sedang menunggunya) | Ditolak |
+| Soalan tertunggak bagi setiap ejen yang bertanya | 10 |
+| Soalan tertunggak bagi setiap ejen yang ditanya | 20 |
+| Soalan yang sama kepada ejen yang sama sekali lagi | Ditolak dalam tempoh 10 minit |
+| Mesej antara sepasang ejen | 10 seminit |
+| Panjang mesej atau jawapan | 16,384 aksara |
+
+Pewakilan juga menghormati autonomi dan bajet ejen yang bertanya: ejen tidak boleh menyerahkan kerja kepada ejen lain yang mempunyai lebih autonomi atau wang daripada yang ia ada. Mesej yang anda hantar sendiri tidak sekali-kali terhad dengan cara ini.
+
+Apabila ejen yang ditanya berhenti pada had penggunaan penyedia, larian itu menunggu penetapan semula jika penetapan semula tiba sebelum soalan luput. Jika tidak, soalan gagal serta-merta, dan pemanggil diberitahu sebabnya.
+
+## Lihat apa yang ditunggu oleh satu ejen
+
+Dalam perbualan, bahagian **Soalan** dalam panel **Umum** menyenaraikan soalan yang ditanya ejen daripadanya: kepada siapa, jenis apa (**Soalan**, **Rundingan** atau **Kajian**), bila, dan statusnya (**Menunggu**, **Dijawab**, **Gagal**, **Luput** atau **Dibatalkan**), dengan **Berjanji akan menjawab** atau **Di latar belakang** di mana berkenaan. Soalan yang gagal menyatakan sebabnya, seperti **Lariannya berhenti di had penggunaan penyedia.**
+
+Sesiapa yang mempunyai akses ke ruang boleh **Batalkan soalan**. Ejen yang bertanya kemudian tidak dibangunkan, dan larian ejen lain tidak dihentikan.
+
+Balasan, mesej dan kerja yang telah siap yang menunggu ejen juga muncul dalam jalur di atas kotak tulis, bersama ejen lain yang ditunggunya (lihat [Jadual dan panggilan bangun](/ms-MY/manual-pengguna/panduan-cara/jadual-panggilan-bangun/#lihat-apa-yang-menunggu)).
+
+## Lihat juga
+
+- [Wakilkan kerja kepada ejen](/ms-MY/manual-pengguna/panduan-cara/wakilkan-tiket/)
+- [Bina pasukan ejen](/ms-MY/manual-pengguna/panduan-cara/bina-pasukan-ejen/)
+- [Arahkan pekerja latar belakang](/ms-MY/manual-pengguna/panduan-cara/arahkan-pekerja-latar-belakang/)
+- [Alat MCP: pemesejan rakan sebaya dan perwakilan ejen](/ms-MY/manual-pengguna/rujukan/alat-mcp/#pemesejan-rakan-sebaya-dan-perwakilan-ejen)

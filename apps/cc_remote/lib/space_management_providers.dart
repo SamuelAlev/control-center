@@ -124,15 +124,19 @@ final remoteSpaceActivityProvider = StreamProvider.autoDispose
           );
     });
 
-/// Missing cursor means the user never opened this space, not an unread space.
-final remoteSpaceReadProvider = StreamProvider.autoDispose
+/// The person's read cursors across the workspace's conversations, keyed by
+/// conversation id. A missing cursor means they never read that
+/// conversation; a space is unread when one of its conversations is.
+final remoteConversationReadsProvider = StreamProvider.autoDispose
     .family<Map<String, FeedPosition>, String>((ref, workspaceId) {
       final client = ref.watch(rpcClientProvider).value;
       if (ref.watch(activeWorkspaceIdProvider).value != workspaceId ||
           client == null) {
         return const Stream.empty();
       }
-      return RemoteSpaceReadRepository(client).watchUserSpaceReads(workspaceId);
+      return RpcConversationReadRepository(
+        client,
+      ).watchUserConversationReads(workspaceId, '');
     });
 
 /// Single run subscription for the list, filtered before any UI receives rows.
@@ -143,14 +147,14 @@ final remoteRunningSpacesProvider = StreamProvider.autoDispose
           client == null) {
         return const Stream.empty();
       }
-      return RemoteAgentRunLogRepository(
-        client,
-      ).watchActiveByWorkspace(workspaceId).map(
-        (runs) => {
-          for (final run in runs)
-            if (run.spaceId != null) run.spaceId!,
-        },
-      );
+      return RemoteAgentRunLogRepository(client)
+          .watchActiveByWorkspace(workspaceId)
+          .map(
+            (runs) => {
+              for (final run in runs)
+                if (run.spaceId != null) run.spaceId!,
+            },
+          );
     });
 
 /// Scoped list of participant identities, watched only while managing a space.

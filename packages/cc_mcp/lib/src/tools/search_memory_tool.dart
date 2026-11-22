@@ -31,6 +31,12 @@ class SearchMemoryTool extends McpTool {
   String get name => 'search_memory';
 
   @override
+  String get resultNote =>
+      '{facts: {id, domain, domain_name, topic, content, repo, '
+      'confidence}[], policies: {id, domain, domain_name, rule, repo}[], '
+      'hint?}: strings, but confidence is a number and repo may be null.';
+
+  @override
   String get description =>
       'Searches workspace memory facts and policies. Supports keyword, '
       'semantic and hybrid (default) modes. Pass `repo` to favour memory about '

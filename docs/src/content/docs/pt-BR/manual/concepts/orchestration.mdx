@@ -2,7 +2,7 @@
 title: Orquestração
 description: Como um "grande pedido" se transforma em um plano de toda a equipe que você aprova uma vez e, depois, em um pipeline gerado que o executa.
 slug: pt-BR/manual/conceitos/orquestracao
-sourceHash: d2751f10f7426e6d319a1afe7bb61a76ddceaf03
+sourceHash: db1bbceaba025b64539588004eebb65d944d5933
 ---
 
 Um único agente é bom em uma coisa. Alguns pedidos são maiores do que isso:
@@ -37,12 +37,8 @@ executar, em vez de prosa livre. Uma proposta tem:
 - **Síntese**: a etapa final que produz o entregável.
 - **Orçamento**: um teto de custo declarado.
 
-:::caution[O orçamento é apenas consultivo]
-O teto de custo da proposta é comparado ao total estimado do plano e sinaliza um
-plano acima do orçamento na barra de aprovação _antes_ de você aprovar. Nada o lê
-depois que a execução começa, então ele não interrompe nem faz falhar uma
-orquestração que ultrapassa o limite. As políticas de orçamento por agente e por
-espaço de trabalho são um mecanismo separado e são o que de fato pausa os gastos.
+:::caution[O orçamento retém a execução, não a interrompe]
+O teto de custo da proposta é comparado ao total estimado do plano e sinaliza um plano acima do orçamento na barra de aprovação _antes_ de você aprovar. Depois que a execução começa, o servidor verifica o que ela gastou antes de cada nova etapa: ao atingir o teto, a execução do pipeline é retida (`suspended`, motivo `orchestration_budget`) e nada novo começa, enquanto as etapas já em andamento terminam. Quem pediu a execução é notificado e a retoma com **Aumentar limite** na página da execução do pipeline (um administrador do espaço de trabalho, quando ninguém a pediu). Um aumento precisa ser maior que o teto anterior e que o valor já gasto, no máximo 1.000 dólares, e um teto nunca é removido. Os objetivos que a execução persegue contam contra ele, inclusive as revisões deles. As políticas de orçamento por agente e por espaço de trabalho são um mecanismo separado.
 :::
 
 ## Onde você a revisa

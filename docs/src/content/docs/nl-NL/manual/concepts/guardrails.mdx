@@ -2,7 +2,7 @@
 title: Beveiligingen — één beleid voor elke actie die iets wijzigt
 description: Waarom Control Center elk neveneffect van een agent door één engine voor toestaan/eerst vragen/weigeren leidt, waarom de ActionClass-taxonomie bewust klein blijft en wat de autonomieschakelaar werkelijk verandert.
 slug: nl-NL/handleiding/concepten/beveiligingen
-sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
+sourceHash: bb98b2ca26ae104ab7701d4d381cd5c41d25d32f
 ---
 
 Agents in Control Center kunnen bestanden verwijderen, branches pushen, pull
@@ -33,6 +33,17 @@ iedereen heeft uitgezet met `--sandbox off`. Voor elke run die zonder sandbox
 start, vormen de beveiligingen de buitenste handhavingslaag in plaats van een
 beleid boven op een ondergrens, wat je moet weten wanneer je bepaalt hoe ruimhartig je
 ze instelt.
+
+### Aanroepen die een script doet
+
+Een [codemodus](/nl-NL/handleiding/concepten/codemodus/)-script roept tools in code aan, meerdere tegelijk, maar elke aanroep ervan is een afzonderlijke toolaanroep naar de engine. Die gaat langs dezelfde harness-poort of MCP-dispatcherpoort als een directe aanroep, met dezelfde regels, dezelfde goedkeuringsvraag en dezelfde auditregel, en niets wat het doet wordt goedgekeurd doordat de `repl`-aanroep die het startte, goedgekeurd was.
+
+Voor aanroepen vanuit een script gelden twee extra regels, omdat één script honderden aanroepen kan doen en elke weigering in code kan opvangen:
+
+- hooguit 10 van zijn aanroepen bereiken een persoon voor goedkeuring; latere die een persoon nodig hebben, worden zonder kaart geweigerd;
+- zodra een persoon een van zijn aanroepen weigert, worden de overige aanroepen die goedkeuring nodig hebben, geweigerd zonder te vragen.
+
+Een kaart die een script opwerpt, zegt dat en laat je het script openen. Als het script eindigt terwijl de kaart open staat, wordt de kaart ingetrokken, en een antwoord dat daarna binnenkomt, wordt vastgelegd als weigering en keurt niets goed.
 
 ## ActionClass: een bewust gesloten taxonomie
 
@@ -270,5 +281,6 @@ test het antwoord dat de agent krijgt.
 ## Gerelateerde concepten
 
 - [Sandbox en beveiliging](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/): wat een agentuitvoering werkelijk begrenst en hoever de OS-ondergrens onder deze engine reikt
+- [Codemodus](/nl-NL/handleiding/concepten/codemodus/): scripts waarvan elke toolaanroep langs deze engine gaat
 - [Multiplayer — identiteit, lidmaatschap en aanwezigheid](/nl-NL/handleiding/concepten/multiplayer/): ruimtes, principalen en waar de autonomieschakelaar zich bevindt
 - [Beveiligingen configureren](/nl-NL/handleiding/gidsen/beveiligingen-configureren/): regels schrijven en testen in de praktijk

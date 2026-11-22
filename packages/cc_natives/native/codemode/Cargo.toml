@@ -1,0 +1,20 @@
+# cc_codemode: runs one model-written JavaScript script in QuickJS-NG inside an
+# OS-level lockdown. Built standalone (scripts/natives/build_codemode.sh,
+# --manifest-path), so this workspace is its own profile root.
+[workspace]
+resolver = "2"
+members = ["lockdown", "runner"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+publish = false
+license = "MIT"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+# A panic must never unwind through QuickJS's C frames. Aborting ends the
+# process, which the host already treats as a failed script.
+panic = "abort"

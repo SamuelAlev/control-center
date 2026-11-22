@@ -2,29 +2,45 @@
 title: Verktøykontekst og promptbuffer
 description: Hvorfor en agent får se et lite sett verktøy i stedet for alle, hvordan den når resten, og reglene som holder leverandørens promptbuffer varm gjennom en kjøring.
 slug: nb-NO/handbok/konsepter/verktoykontekst
-sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
+sourceHash: 74ad7fcb903772d007ba9bd7ec85153fcf668335
 ---
 
 To ting gjelder for hver forespørsel den innebygde harnessen sender: verktøydefinisjonene er den største faste kostnaden i den, og nesten ingen av dem blir brukt. Denne siden forklarer hva Control Center gjør med det, og hvorfor svaret ikke bare er «send færre verktøy».
 
 ## Problemet er oppmerksomhet, ikke byte
 
-Control Center registrerer omtrent 126 verktøy. Sendt i sin helhet koster definisjonene deres grovt regnet **23 000 tokens ved hver forespørsel** — en kostnad ingen kompaktering kan røre ved, fordi verktøydefinisjonene reiser i en annen del av forespørselen enn samtalen.
+Control Center har omtrent 160 verktøy av sitt eget. Sendt i sin helhet ville definisjonene deres følge med på **hver forespørsel** — en kostnad ingen kompaktering kan røre, fordi verktøydefinisjonene reiser i en annen del av forespørselen enn samtalen.
 
 Tokenregningen er den åpenbare klagen, og med promptbufring er den også den minste. Den virkelige kostnaden er **valgnøyaktigheten**. Publiserte evalueringer av verktøykall er enige om at modeller velger riktig verktøy pålitelig opp til et sted rundt 30–50 verktøy i konteksten, og blir gradvis dårligere utover det. Den navngitte årsaken er ikke antallet tokens, men **semantisk overlapp**: når en katalog inneholder flere verktøy med liknende beskrivelser, velger modellen mellom nesten identiske alternativer i stedet for å huske en evne.
 
-Med 126 verktøy er en agent godt forbi det båndet i hver eneste tur — inkludert de mange turene der den bare trengte å lese en fil.
+Med omtrent 160 verktøy er en agent godt forbi det båndet i hver eneste tur — inkludert de mange turene der den bare trengte å lese en fil.
 
-## Flaten med to nivåer
+## Ett lite direkte sett
 
 En kjøring får derfor se to ting:
 
-- et **fast** sett — rundt to dusin verktøy, sendt med fulle skjemaer ved hver forespørsel;
+- et **direkte** sett på rundt femten verktøy, sendt med fulle skjemaer ved hver forespørsel;
 - en **navneindeks** over alt det andre, gruppert under overskrifter som «Tickets and projects» eller «Memory and knowledge», og som koster noen hundre tokens for hele katalogen.
 
-Målt på den gjeldende katalogen tar det verktøyblokken fra **~23,1k tokens til ~5,0k, omtrent 78 % mindre**, og plasserer det alltid synlige settet innenfor båndet der valget er pålitelig.
+Målt på registeret testene bygger, er standardverktøyene i chatten til den innebygde agenten 14 verktøydefinisjoner og omtrent 16,5 KB med `repl`, der `repl` utgjør omtrent 4 KB (definisjonen kan ikke overstige 4 096 byte), og 14 definisjoner og omtrent 13 KB på en server som ikke kan kjøre skript. Det er en måling av én flate, ikke av hver installasjon. Alle andre verktøy nås fra et skript eller lastes ved første bruk.
 
-Det faste settet er verktøyene en kjøring bruker i *de fleste* kjøringer: fil- og shell-vokabularet (`read`, `write`, `edit`, `search`, `bash`, …), oppdagelsesverktøyene, oppgavesjekklisten, minnesøket og hvilket utdataverb den gjeldende [modusen](/nb-NO/handbok/konsepter/moduser) må kalle for å levere resultatet sitt. En modus' eget utdataverb er alltid fast — en kjøring skal aldri måtte lete etter det ene kallet som produserer leveransen.
+Det direkte settet er verktøyene de fleste kjøringer bruker i de første rundene, og dem en kjøring aldri må lete etter: `read`, `write`, `edit`, `search`, `find`, `bash` og `read_output`; `ask_user` og `task`; `todo_write`, `search_memory` og `send_message`; og hvilket utdataverb den gjeldende [modusen](/nb-NO/handbok/konsepter/moduser/) må kalle for å levere resultatet. Et modus' eget utdataverb er alltid direkte: en kjøring skal aldri måtte lete etter det ene kallet som produserer leveransen. Et verktøy får en plass ved å bli brukt i de fleste kjøringer, ikke ved å være viktig når det brukes: hvert navn i settet er en definisjon i hver runde i hver kjøring.
+
+### Skript når resten
+
+Når serveren kan kjøre skript, har hver kjøring også [`repl`](/nb-NO/handbok/konsepter/kodemodus/), først i listen. Regelen for resten av katalogen er da:
+
+- et verktøy et skript kan kalle, nås **bare fra et skript**: det står i navneindeksen, og et `repl`-skript kaller det som `tools.<name>(args)` etter å ha slått det opp med `searchTools()` eller `describeTool()`, inntil serveren ikke kan kjøre kjøringens skript og det i stedet lastes ved første bruk ([Når skript ikke kan kjøres](/nb-NO/handbok/konsepter/kodemodus/#når-skript-ikke-kan-kjøres));
+- et verktøy et skript ikke kan kalle (`eval`, `task`, godkjenninger, delegering og noen få andre) er **utsatt**: det lastes ved første bruk, som beskrevet under;
+- `search_tools` legges til når noe er utsatt.
+
+En kjøring uten `repl` får det samme direkte settet, og alt annet er utsatt.
+
+Det direkte settet er det samme med eller uten `repl`, med vilje. Agenten lærer én flate, begynnelsen av hver forespørsel er de samme verktøyene i samme rekkefølge, og å legge til `repl` endrer ingenting agenten allerede var avhengig av.
+
+Det sparer: et verktøy bare for skript sendes aldri til leverandøren, så de hundre eller så verktøyene utenfor det direkte settet koster bare navnene sine. Et skript som trenger ti av dem, betaler for ingen av skjemaene deres, og mellomresultatene kommer aldri inn i konteksten.
+
+Det koster: et verktøy utenfor det direkte settet krever et skript for å kalles, og skriptet må slå opp verktøyets argumenter først. For ett raskt kall er det et ekstra steg et direkte kall ikke ville trengt. Derfor blir verktøyene de fleste kjøringer kaller i de første rundene, værende direkte.
 
 ### Utsatt betyr ikke utilgjengelig
 
@@ -32,19 +48,21 @@ Det er denne delen som gjør designet trygt og ikke bare billig. **Et utsatt ver
 
 Agenten ser navnet i prompten sin. Hvis den kaller navnet direkte, laster harnessen skjemaet og kjører verktøyet i samme steg — ingen feil, ingen ekstra rundtur. Modellen trenger ikke å vite at verktøyet noen gang var «lastet ut».
 
-Når agenten kjenner oppgaven men ikke navnet, tar `search_tools` imot en beskrivelse i klartekst («tilordne en sak til noen»), rangerer hele flaten til kjøringen og returnerer treffene *med skjemaene sine allerede lastet*, slik at neste tur kan kalle ett av dem. Hvis et søk ikke finner noe, sier det det rett ut og foreslår andre ord eller et bredere søk — med vilje, fordi en agent som tolker et tomt søk som «denne evnen finnes ikke», vil finne opp en erstatning i stedet for å lete igjen.
+Når agenten kjenner oppgaven men ikke navnet, tar `search_tools` imot en beskrivelse i klartekst («tilordne en sak til noen»), rangerer hele flaten til kjøringen og returnerer treffene *med skjemaene sine allerede lastet*, slik at neste tur kan kalle ett av dem. Et treff som bare kan kalles fra et skript, returneres med hvordan det kalles fra et skript i stedet, med mindre kjøringens skript ikke lenger kan kjøres: da lastes det som alle andre treff. Hvis et søk ikke finner noe, sier det det rett ut og foreslår andre ord eller et bredere søk — med vilje, fordi en agent som tolker et tomt søk som «denne evnen finnes ikke», vil finne opp en erstatning i stedet for å lete igjen.
 
 `search_tools` finnes bare i den innebygde harnessen. Eksterne MCP-klienter har `search_tool_bm25` i stedet, som rangerer den samme indeksen, men bare beskriver treffene — de klientene har allerede fått alle skjemaene fra `tools/list`, så det er ingenting å laste.
 
-### Hva utsettelse aldri gjør
+### Hva flaten aldri gjør
 
-Utsettelse brukes **etter** modusens verktøyfilter, aldri i stedet for det. Det skjuler et skjema; det kan ikke avsløre et verktøy som modusen avviste. Et aktivert verktøy passerer fortsatt godkjenningstrinnet og [tillatelsesreglene](/nb-NO/handbok/konsepter/tillatelsesregler) akkurat som et fast verktøy ville gjort, og et verktøy kan ikke laste et navn som ikke var på flaten til kjøringen i utgangspunktet.
+Utsettelse og skript brukes **etter** modusens verktøyfilter, aldri i stedet for det. De skjuler et skjema; de kan ikke avsløre et verktøy modusen nektet. Et lastet verktøy og et skripts kall passerer fortsatt godkjenningstrinnet og [tillatelsesreglene](/nb-NO/handbok/konsepter/tillatelsesregler/) akkurat som et direkte kall ville gjort, og ingen av dem kan nå et navn som ikke var på kjøringens flate fra begynnelsen av.
 
-MCP-flaten som eksterne klienter ser, blir **ikke** påvirket. `tools/list` returnerer fortsatt hele katalogen. Et tidligere forsøk på å skjære den ned ødela agentene fullstendig: MCP-klienter validerer verktøynavn mot sin egen bufrede liste og avviser alt som ikke står der, uten å spørre serveren, så et «skjult, men kallbart» verktøy var rett og slett uoppnåelig. Utsettelsen bor i harnessen, der det å laste et verktøy midt i en kjøring er noe harnessen faktisk kan gjøre.
+MCP-flaten som eksterne klienter ser, er **ikke** utsatt. `tools/list` returnerer hele katalogen, fordi MCP-klienter validerer verktøynavn mot sin egen bufrede liste og avviser alt som ikke står der, uten å spørre serveren, så et «skjult, men kallbart» verktøy ville bare vært uoppnåelig. Utsettelsen bor i harnessen, der det å laste et verktøy midt i en kjøring er noe harnessen faktisk kan gjøre.
 
-### Slå det av
+En agentkjøring som når Control Center gjennom MCP-endepunktet mens serveren kan kjøre skript, er det ene unntaket. Dens `tools/list` inneholder `repl`, de direkte verktøyene og hvert verktøy et skript ikke kan kalle, og den kaller resten fra skript. Et direkte kall til ett av dem besvares med hvordan det kalles fra et skript.
 
-`--tool-deferral=off` (eller `CC_SERVER_TOOL_DEFERRAL=off`) gjør hvert tillatte verktøy fast igjen og gir nøyaktig de samme forespørslene som serveren sendte før utsettelsen fantes. Se [CLI-referansen for `cc_server`](/nb-NO/handbok/referanse/cc-server-cli).
+### Slå av utsettelse
+
+`--tool-deferral=off` (eller `CC_SERVER_TOOL_DEFERRAL=off`) slår av utsettelse: en kjøring uten `repl` får hvert tillatte verktøy fullt ut, og en kjøring med `repl` får verktøyene et skript ikke kan kalle, fullt ut, mens resten forblir bare for skript. Se [CLI-referansen for `cc_server`](/nb-NO/handbok/referanse/cc-server-cli/).
 
 ## Promptbufring
 
@@ -64,7 +82,7 @@ En leverandør tillater et begrenset antall buffermarkører, og Control Center b
 
 | Markør                  | Dekker                                | Levetid |
 | ----------------------- | ------------------------------------- | ------- |
-| Siste **faste** verktøy | Verktøyblokken                         | 1 time  |
+| Siste **direkte** verktøy | Verktøyblokken                         | 1 time  |
 | Siste systemblokk       | Verktøy + systemprompt                 | 1 time  |
 | Halen av forrige tur    | Historikk fram til den siste forespørselen | 5 min   |
 | Halen av gjeldende tur  | Hele historikken                       | 5 min   |
@@ -77,12 +95,12 @@ Prefikset for verktøy og system får den lange levetiden fordi det er konstant 
 
 Underagenter av samme type produserer byte-identiske promptprefikser, så de bør lese én bufferoppføring i stedet for at hver av dem skriver sin egen. Men en oppføring blir først lesbar når forespørselen som skrev den, begynner å svare, så en samtidig utsending av flere underagenter får hvert barn til å betale premien for et prefiks de alle deler.
 
-Harnessen lar det første barnet av en gitt form starte, og slipper deretter søsknene løs så snart det begynner å strømme. Ventetiden er avgrenset: et tregt første barn koster ett buffertreff, aldri selve vifteutsendingen. Av samme grunn får hver underagent det samme faste verktøysettet uansett profil — å variere det per profil ville fragmentere det delte prefikset uten gevinst, siden profilen allerede har bestemt hva barnet får kalle.
+Harnessen lar det første barnet av en gitt form starte, og slipper deretter søsknene løs så snart det begynner å strømme. Ventetiden er avgrenset: et tregt første barn koster ett buffertreff, aldri selve vifteutsendingen. Av samme grunn får hver underagent det samme direkte verktøysettet uansett profil — å variere det per profil ville fragmentere det delte prefikset uten gevinst, siden profilen allerede har bestemt hva barnet får kalle.
 
 ## Slik ser du det i arbeid
 
 Begge halvdeler kan observeres i stedet for å antas:
 
-- **Kontekstutforskeren** på en samtale rapporterer de faste verktøyene, indeksen over utsatte verktøy og hva hvert tilbakeholdte skjema *ville* koste, bygget fra den samme kodeveien som en ekte kjøring bruker.
+- **Kontekstutforskeren** på en samtale rapporterer de direkte verktøyene, indeksen over utsatte verktøy og hva hvert tilbakeholdte skjema *ville* koste, bygget fra den samme kodeveien som en ekte kjøring bruker.
 - Hver kjøring registrerer hvilke utsatte verktøy den lastet, og hva som utløste det, slik at et søk som ikke finner noe, vises som et gjenfinningsbom i stedet for å forsvinne inn i en agent som stille gjør noe nærliggende.
 - Observabilitet rapporterer **Cache-rate** som bufferlesinger delt på alle prompttokens som er behandlet, inkludert bufferskrivinger — en kjøring som stadig bygger opp prefikset sitt på nytt, skårer lavt i stedet for å skåre som en som aldri trengte en buffer.

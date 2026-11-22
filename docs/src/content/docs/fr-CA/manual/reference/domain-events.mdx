@@ -2,7 +2,7 @@
 title: Événements de domaine
 description: Catalogue complet des 54 événements de domaine, de leurs charges utiles et des abonnés côté serveur qui les consomment.
 slug: fr-CA/manuel/reference/evenements-de-domaine
-sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
+sourceHash: f58123448c0f31c95774bbaebee89f1509940896
 ---
 
 ## Bus d’événements
@@ -24,7 +24,10 @@ Chaque événement du catalogue ci-dessous réside dans ce seul répertoire; auc
 | Événement           | Charge utile                                           | Se déclenche quand                                      |
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | `WorkspaceCreated`  | `workspaceId`                                          | L’espace de travail est créé                            |
-| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Un agent termine une exécution (réussie ou échouée)     |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Le flux de processus de l’agent se termine, avant l’écriture de l’état final. Conservé pour le pont des conversations de demande de tirage et les analyses seulement |
+| `AgentRunSettled` | `agentId`, `workspaceId`, `runId`, `status`, `endReason`, `costMicros`, `wakeIds`, `spaceId?`, `conversationId?`, `limitResetsAt?`, `requestedByUserId?`, `wakeReason?` | L’état final d’une exécution est écrit ; publié exactement une fois par exécution. `endReason` est `completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` ou `serverStopped`. L’exécution d’un sous-agent n’en publie aucun |
+| `GoalSettled` | `goalId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `status`, `hold?`, `summary?`, `requestedByUserId?` | Un objectif se termine, ou commence à attendre la révision d’une personne |
+| `WakeRuleEnded` | `ruleId`, `workspaceId`, `spaceId`, `conversationId`, `agentId`, `reason`, `requestedByUserId?` | Une planification ou une surveillance se termine (déclenchée une seule fois, expirée, ses exécutions ou son coût utilisés, annulée, son objectif terminé, sa personne partie) |
 | `AgentAwaitingInput` | `workspaceId`, `kind`, `summary`, `spaceId?`, `conversationId?`, `agentId?`, `agentName?` | Un agent commence à attendre une personne : une approbation, une question `ask_user` ou une exécution bloquée sur des identifiants (`kind` vaut `approval`, `question` ou `credential`) |
 | `RepoAdded`         | `repoId`, `path`, `workspaceId`                        | Un dépôt est enregistré; déclenche l’indexation du code en arrière-plan |
 | `SkillUpdated`      | `workspaceId`, `slug`, `origin`, `computedHash`, `scanVerdict?` | Un skill est installé ou mis à jour, avec le verdict de son analyse de chaîne d’approvisionnement |
@@ -57,6 +60,16 @@ Tous les six portent `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitl
 | `PrCommentMentioned`      | `commentId`, `authorLogin`, `bodyPreview`, `isReviewComment`, `threadId?`, `path?`, `line?` | Quelqu’un vous a mentionné dans un commentaire de PR ou de revue       |
 | `PrThreadReplied`         | `commentId`, `authorLogin`, `bodyPreview`, `threadId?`, `path?`, `line?`             | Quelqu’un a répondu dans un fil de revue auquel vous participez                |
 | `PrThreadResolved`        | `threadId`, `commentId?`, `path?`, `line?`                                           | Quelqu’un a résolu un fil de revue auquel vous participez                      |
+
+### La surveillance des demandes de tirage
+
+Publié par le scrutateur des demandes de tirage ouvertes pour chaque demande de tirage qu’il scrute, quel qu’en soit l’auteur, pour les surveillances `on:pr_*` des agents. Les trois portent `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle`, `headRef` et `authorLogin`.
+
+| Événement | Charge utile supplémentaire | Se déclenche quand |
+| ----------------------- | ----------------------------------------------- | ---------- |
+| `PrWatchChecksSettled` | `passing`, `failedChecks`, `failedCheckUrl?` | Toutes les vérifications de la tête de la demande de tirage sont terminées |
+| `PrWatchReviewActivity` | `decision`, `decisionChanged`, `newComments` | La demande de tirage a reçu une révision ou de nouveaux commentaires |
+| `PrWatchClosed` | `merged` | La demande de tirage a été fusionnée ou fermée |
 
 ## Événements de messagerie
 
@@ -167,14 +180,20 @@ Chaque abonné ci-dessous est construit à l’intérieur de `runCcServer` (ou d
 | Provisionnement de l’espace de clavardage (en ligne) | `SpaceCreated`                                                                       |
 | `PipelineTriggerDispatcher`         | Tout `DomainEvent`; chaque déclencheur activé filtre selon son propre type                           |
 | `SubPipelineResumeListener`         | `PipelineRunCompleted`, `PipelineRunFailed`                                                          |
-| `PipelineCostRollupListener`        | `AgentRunCompleted`                                                                                  |
-| `BudgetEvaluationListener`          | `AgentRunCompleted`                                                                                  |
+| `PipelineCostRollupListener`        | `AgentRunSettled`                                                                                    |
+| `BudgetEvaluationListener`          | `AgentRunSettled`                                                                                    |
 | `MeetingSummaryReconciler`          | `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` (uniquement les exécutions `meeting_summary`) |
-| `PipelineStepResumeListener`        | `AgentRunCompleted`                                                                                  |
-| `AgentRunTaskCompleter`             | `AgentRunCompleted`                                                                                  |
-| `GoalSupervisor`                    | `AgentRunCompleted`                                                                                  |
-| `CheckerDispatchListener`           | `AgentRunCompleted`                                                                                  |
-| `TeamRoutingService`                | `AgentRunCompleted`, `TicketAssigned`                                                                |
+| `PipelineStepResumeListener`        | `AgentRunSettled`                                                                                    |
+| `AgentRunTaskCompleter`             | `AgentRunSettled`                                                                                    |
+| `GoalSupervisor`                    | `AgentRunSettled` — décide de la prochaine étape de l’objectif                                       |
+| `CheckerDispatchListener`           | `AgentRunSettled` — met le vérificateur en file d’attente sous forme de relance ; ignore les segments et les révisions d’objectifs |
+| `TeamRoutingService`                | `AgentRunSettled`, `TicketAssigned`                                                                  |
+| `WakeQueueService` | `AgentRunSettled` — livre les relances qui attendaient la fin de l’exécution |
+| `WakeRuleService` | `AgentRunSettled` (boucles autorégulées), `GoalSettled` (met fin aux planifications d’un objectif), `PrWatch*`, `EnvironmentProcessExited`, `EnvironmentReady`, fins de ticket et d’exécution de pipeline (surveillances), `WorkspaceMemberRemoved` (met fin aux planifications de cette personne) |
+| `PeerAskService` | `AgentRunSettled` — règle les questions que les agents se sont posées entre eux et réveille celui qui a posé la question |
+| `LimitParkService` | `AgentRunSettled` avec `usageLimit` — attend la réinitialisation de la limite du fournisseur |
+| `ImprovementReviewService` | `GoalSettled` (un objectif vérifié) et `AgentRunSettled` — met la révision d’amélioration en file d’attente et lit son résultat |
+| Étape d’objectif de pipeline (`goal.pursue`) | `GoalSettled`, `AgentRunSettled`, `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled` — reprend l’étape, impute les coûts à l’orchestration et suit l’exécution du pipeline |
 | `OrchestrationRunListener`          | `PipelineRunCancelled`, `PipelineRunFailed`                                                          |
 | `MultiVendorTicketSyncCoordinator`  | `TicketCreated`, `TicketAssigned`, `TicketReassigned`, `TicketStatusChanged`, `TicketDetailsUpdated` |
 | `WorktreeGcListener`                | `TicketCompleted`, `TicketCancelled`, `SpaceDeleted`, `PrMerged`, `PullRequestStatusChanged`         |
@@ -235,6 +254,8 @@ identifiants bloqués, et que `AgentQuestionService` prévient de chaque questio
 prend fin.
 
 Les cinq catégories de PR dont vous êtes l’auteur portent `forUserId`, de sorte qu’elles atteignent l’auteur plutôt que tout le monde dans l’espace de travail.
+
+Cinq trames pour le travail de longue durée, chacune adressée à la personne concernée (`for_user_id`) : `notifications/goal_settled` (depuis `GoalSettled`), `notifications/wake_rule_ended` (depuis `WakeRuleEnded`), `notifications/improvement_proposed`, `notifications/pipeline_run_held` (une exécution de pipeline retenue au plafond de coûts de son orchestration) et `notifications/waiting_digest` (une fois par jour, ce qui attend une personne). Chacune porte `notification_kind` : `notify` correspond à `agentRunCompleted`, `question` et `review` à `agentAwaitingInput`. Chaque trame de notification porte désormais `notification_kind`, et une trame avec `quiet: true` (une planification terminée, un objectif terminé) va au centre de notifications sans toast, son ni notification push sonore.
 
 `RemoteEventForwarder` réémet en plus `TicketReassigned` sous `notifications/ticket_reassigned` et chaque `TaskLifecycleEvent` sous `notifications/task_<phase>`. Ni l’un ni l’autre ne correspond à une catégorie de notification — ils pilotent l’interface en direct, pas le centre de notifications. Les événements d’appartenance ne sont pas réémis sous forme de trames : ils invalident le cache du réémetteur, et les hôtes de session abandonnent les abonnements d’espace de travail du membre retiré.
 

@@ -26,6 +26,8 @@ class HarnessRunConfig {
     this.hookSessionStart,
     this.hookPreTool,
     this.hookPostTool,
+    this.hookStop,
+    this.hookPreCompact,
     this.preToolRefused = false,
     this.refusedHooks = const [],
     this.droppedHookBase,
@@ -71,6 +73,14 @@ class HarnessRunConfig {
   /// Real path of the post-tool hook script, if configured.
   final String? hookPostTool;
 
+  /// Real path of the stop hook script, if configured: asked when the model
+  /// would end its turn (exit 2 with text keeps the run going).
+  final String? hookStop;
+
+  /// Real path of the pre-compact hook script, if configured: its output is
+  /// added to a compaction's focus.
+  final String? hookPreCompact;
+
   /// Whether a pre-tool gate was declared but refused (see [refusedHooks]):
   /// the run then denies every tool call rather than run ungated.
   final bool preToolRefused;
@@ -84,6 +94,8 @@ class HarnessRunConfig {
       hookSessionStart != null ||
       hookPreTool != null ||
       hookPostTool != null ||
+      hookStop != null ||
+      hookPreCompact != null ||
       preToolRefused;
 
   /// The base whose `.agents/harness.json` declared hooks, which were dropped:
@@ -106,7 +118,8 @@ class HarnessRunConfig {
   /// by runs, so a `hooks` block in either `harness.json` is dropped and
   /// reported through [droppedHookBase] rather than silently ignored.
   ///
-  /// `hooks.json` maps `sessionStart`, `preTool` and `postTool` to script
+  /// `hooks.json` maps `sessionStart`, `preTool`, `postTool`, `stop` and
+  /// `preCompact` to script
   /// paths RELATIVE to [hookBase]. A path that is absolute, missing, or whose
   /// real path (links resolved) leaves [hookBase] is refused and listed in
   /// [refusedHooks]; a refused or unreadable pre-tool gate sets
@@ -197,6 +210,8 @@ class HarnessRunConfig {
       sessionStart: resolve('sessionStart'),
       preTool: preTool,
       postTool: resolve('postTool'),
+      stop: resolve('stop'),
+      preCompact: resolve('preCompact'),
       preToolRefused: preTool == null && json['preTool'] != null,
       refused: refused,
     );
@@ -227,6 +242,8 @@ class HarnessRunConfig {
     hookSessionStart: hooks.sessionStart,
     hookPreTool: hooks.preTool,
     hookPostTool: hooks.postTool,
+    hookStop: hooks.stop,
+    hookPreCompact: hooks.preCompact,
     preToolRefused: hooks.preToolRefused,
     refusedHooks: hooks.refused,
     droppedHookBase: droppedHookBase,
@@ -301,6 +318,8 @@ final class _Hooks {
     this.sessionStart,
     this.preTool,
     this.postTool,
+    this.stop,
+    this.preCompact,
     this.preToolRefused = false,
     this.refused = const [],
   });
@@ -308,6 +327,8 @@ final class _Hooks {
   final String? sessionStart;
   final String? preTool;
   final String? postTool;
+  final String? stop;
+  final String? preCompact;
   final bool preToolRefused;
   final List<String> refused;
 }

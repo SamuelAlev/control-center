@@ -2,29 +2,45 @@
 title: Contexto de herramientas y caché de prompts
 description: Por qué a un agente se le muestra un conjunto reducido de herramientas en lugar de todas, cómo llega al resto y las reglas que mantienen caliente la caché de prompts del proveedor a lo largo de una ejecución.
 slug: es-MX/manual/conceptos/contexto-de-herramientas
-sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
+sourceHash: 74ad7fcb903772d007ba9bd7ec85153fcf668335
 ---
 
 Dos cosas son ciertas en cada solicitud que hace el arnés integrado: las definiciones de herramientas son el mayor costo fijo de esa solicitud, y casi ninguna de ellas se va a usar. Esta página explica qué hace Control Center al respecto y por qué la respuesta no es simplemente «enviar menos herramientas».
 
 ## El problema es la atención, no los bytes
 
-Control Center registra unas 126 herramientas. Si se enviaran completas, sus definiciones costarían aproximadamente **23,000 tokens en cada solicitud**, un costo que ninguna compactación puede tocar, porque las definiciones de herramientas viajan en una parte de la solicitud distinta de la conversación.
+Control Center tiene unas 160 herramientas propias. Si se enviaran completas, sus definiciones irían en **cada solicitud**, un costo que ninguna compactación puede tocar, porque las definiciones de herramientas viajan en una parte de la solicitud distinta de la conversación.
 
 La factura de tokens es la queja obvia y, con la caché de prompts, también la menor. El costo real es la **precisión de selección**. Las evaluaciones publicadas sobre llamadas a herramientas coinciden en que los modelos eligen la herramienta correcta de forma fiable hasta unas 30–50 herramientas en contexto, y empeoran progresivamente a partir de ahí. La causa señalada no es el recuento de tokens, sino el **solapamiento semántico**: cuando un catálogo contiene varias herramientas cuyas descripciones se leen igual, el modelo elige entre casi idénticas en lugar de recordar una capacidad.
 
-Con 126 herramientas, un agente se queda muy por encima de esa banda en cada turno, incluidos los muchos turnos en los que solo necesitaba leer un archivo.
+Con unas 160 herramientas, un agente se queda muy por encima de esa banda en cada turno, incluidos los muchos turnos en los que solo necesitaba leer un archivo.
 
-## La superficie de dos niveles
+## Un conjunto directo pequeño
 
 Por lo tanto, a cada ejecución se le muestran dos cosas:
 
-- un conjunto **residente**: unas dos docenas de herramientas, que se envían con sus esquemas completos en cada solicitud;
+- un **conjunto directo** de unas quince herramientas, que se envían con sus esquemas completos en cada solicitud;
 - un **índice de nombres** con todo lo demás, agrupado bajo encabezados como «Tickets and projects» o «Memory and knowledge», que cuesta unos cientos de tokens para todo el catálogo.
 
-Medido con el catálogo actual, eso lleva el bloque de herramientas de **~23.1k tokens a ~5.0k, alrededor de un 78% menos**, y deja el conjunto siempre visible dentro de la banda en la que la selección es fiable.
+Medido en el registro que construyen las pruebas, las herramientas de chat estándar del agente integrado suman 14 definiciones de herramientas y unos 16.5 KB con `repl`, de los cuales `repl` ocupa unos 4 KB (su definición no puede superar 4,096 bytes), y 14 definiciones y unos 13 KB en un servidor que no puede ejecutar scripts. Es una medición de una sola superficie, no de cada instalación. Cada otra herramienta se alcanza desde un script o se carga en el primer uso.
 
-El conjunto residente son las herramientas que una ejecución usa en *la mayoría* de las ejecuciones: el vocabulario de archivos y shell (`read`, `write`, `edit`, `search`, `bash`, …), las herramientas de descubrimiento, la lista de tareas, la búsqueda en memoria y el verbo que deba invocar el [modo](/es-MX/manual/conceptos/modos) actual para entregar su salida. El verbo de salida propio de un modo siempre es residente: una ejecución nunca debe tener que ir a buscar la llamada que produce su entregable.
+El conjunto directo son las herramientas que la mayoría de las ejecuciones usan en sus primeros turnos y aquellas que una ejecución nunca debe tener que buscar: `read`, `write`, `edit`, `search`, `find`, `bash` y `read_output`; `ask_user` y `task`; `todo_write`, `search_memory` y `send_message`; y el verbo que el [modo](/es-MX/manual/conceptos/modos/) actual debe llamar para entregar su salida. El verbo de salida propio de un modo siempre es directo: una ejecución nunca debe tener que buscar la llamada que produce su entregable. Una herramienta se gana un lugar por usarse en la mayoría de las ejecuciones, no por ser importante cuando se usa: cada nombre del conjunto es una definición en cada turno de cada ejecución.
+
+### Los scripts alcanzan el resto
+
+Cuando el servidor puede ejecutar scripts, cada ejecución también tiene [`repl`](/es-MX/manual/conceptos/modo-codigo/), primero en la lista. La regla para el resto del catálogo es entonces:
+
+- una herramienta que un script puede llamar se alcanza **solo desde un script**: está en el índice de nombres, y un script `repl` la llama como `tools.<name>(args)` después de buscarla con `searchTools()` o `describeTool()`, hasta que el servidor no pueda ejecutar los scripts de la ejecución y la herramienta se cargue en su primer uso en su lugar ([Cuando los scripts no pueden ejecutarse](/es-MX/manual/conceptos/modo-codigo/#cuando-los-scripts-no-pueden-ejecutarse));
+- una herramienta que un script no puede llamar (`eval`, `task`, aprobaciones, delegación y algunas otras) está **diferida**: se carga en el primer uso, como se describe más abajo;
+- `search_tools` se añade cuando algo está diferido.
+
+Una ejecución sin `repl` recibe el mismo conjunto directo, y todo lo demás se difiere.
+
+El conjunto directo es el mismo con o sin `repl`, a propósito. El agente aprende una sola superficie, el inicio de cada solicitud son las mismas herramientas en el mismo orden, y añadir `repl` no cambia nada de lo que el agente ya daba por hecho.
+
+Lo que ahorra: el esquema de una herramienta exclusiva de scripts nunca se envía al proveedor, así que las cien herramientas aproximadamente que están fuera del conjunto directo cuestan solo sus nombres. Un script que necesita diez de ellas no paga por ninguno de sus esquemas, y sus resultados intermedios nunca entran en el contexto.
+
+Lo que cuesta: una herramienta fuera del conjunto directo requiere un script para llamarla, y el script tiene que consultar primero los argumentos de la herramienta. Para una llamada rápida eso es un paso extra que una llamada directa no necesitaría. Por eso las herramientas que la mayoría de las ejecuciones llaman en sus primeros turnos se quedan directas.
 
 ### Diferido no significa no disponible
 
@@ -32,19 +48,21 @@ Esta es la parte que hace que el diseño sea seguro y no solo barato. **Una herr
 
 El agente ve el nombre en su prompt. Si llama a ese nombre directamente, el arnés carga el esquema y ejecuta la herramienta en el mismo paso: sin error y sin ida y vuelta. El modelo no necesita saber que la herramienta llegó a estar «descargada».
 
-Cuando el agente conoce la tarea pero no el nombre, `search_tools` acepta una descripción en lenguaje natural («asignar un ticket a alguien»), ordena toda la superficie de la ejecución y devuelve las coincidencias *con sus esquemas ya cargados*, de modo que el turno siguiente pueda llamar a una. Si una búsqueda no encuentra nada, lo dice con claridad y sugiere otras palabras o una búsqueda más amplia; y lo hace a propósito, porque un agente que interpreta una búsqueda vacía como «esta capacidad no existe» se inventará un sustituto en lugar de volver a mirar.
+Cuando el agente conoce la tarea pero no el nombre, `search_tools` acepta una descripción en lenguaje natural («asignar un ticket a alguien»), ordena toda la superficie de la ejecución y devuelve las coincidencias *con sus esquemas ya cargados*, de modo que el turno siguiente pueda llamar a una. Una coincidencia que solo se puede llamar desde un script se devuelve con cómo llamarla desde un script, salvo que los scripts de la ejecución ya no puedan ejecutarse: entonces se carga como cualquier otra coincidencia. Si una búsqueda no encuentra nada, lo dice con claridad y sugiere otras palabras o una búsqueda más amplia; y lo hace a propósito, porque un agente que interpreta una búsqueda vacía como «esta capacidad no existe» se inventará un sustituto en lugar de volver a mirar.
 
 `search_tools` solo existe en el arnés integrado. Los clientes MCP externos disponen en su lugar de `search_tool_bm25`, que ordena el mismo índice pero solo describe las coincidencias: esos clientes ya han recibido todos los esquemas de `tools/list`, así que no hay nada que cargar.
 
-### Lo que el diferimiento nunca hace
+### Lo que la superficie nunca hace
 
-El diferimiento se aplica **después** del filtro de herramientas del modo, nunca en su lugar. Oculta un esquema; no puede revelar una herramienta que el modo ha denegado. Una herramienta activada sigue pasando por la solicitud de aprobación y por las [barandillas de acción](/es-MX/manual/conceptos/barandillas) exactamente igual que una residente, y una herramienta no puede cargar un nombre que no estuviera en la superficie de la ejecución de partida.
+El diferimiento y los scripts se aplican **después** del filtro de herramientas del modo, nunca en su lugar. Solo ocultan un esquema; no pueden revelar una herramienta que el modo denegó. Una herramienta cargada y una llamada de script siguen pasando por la solicitud de aprobación y por las [barandillas de acción](/es-MX/manual/conceptos/barandillas/) exactamente igual que una llamada directa, y ninguno de los dos puede alcanzar un nombre que no estaba en la superficie de la ejecución desde el principio.
 
-La superficie MCP que ven los clientes externos **no** se ve afectada. `tools/list` sigue devolviendo el catálogo completo. Un intento anterior de recortarla rompió a los agentes sin más: los clientes MCP validan los nombres de las herramientas contra su propia lista en caché y rechazan todo lo que no figure en ella sin llegar a preguntar al servidor, de modo que una herramienta «oculta pero invocable» era sencillamente inalcanzable. El diferimiento vive en el arnés, donde cargar una herramienta a mitad de ejecución es algo que el arnés sí puede hacer.
+La superficie MCP que ven los clientes externos **no** se difiere. `tools/list` devuelve el catálogo completo, porque los clientes MCP validan los nombres de las herramientas contra su propia lista en caché y rechazan todo lo que no figure en ella sin llegar a preguntar al servidor, de modo que una herramienta «oculta pero invocable» sería sencillamente inalcanzable. El diferimiento vive en el arnés, donde cargar una herramienta a mitad de ejecución es algo que el arnés sí puede hacer.
 
-### Cómo desactivarlo
+Una ejecución de agente que llega a Control Center a través de su endpoint MCP mientras el servidor puede ejecutar scripts es la única excepción. Su `tools/list` incluye `repl`, las herramientas directas y todas las herramientas que un script no puede llamar, y llama al resto desde scripts. Una llamada directa a una de esas se responde con cómo llamarla desde un script.
 
-`--tool-deferral=off` (o `CC_SERVER_TOOL_DEFERRAL=off`) vuelve a hacer residentes todas las herramientas admitidas, lo que produce exactamente las solicitudes que el servidor hacía antes de que existiera el diferimiento. Consulta la [referencia de la CLI de `cc_server`](/es-MX/manual/referencia/cc-server-cli).
+### Cómo desactivar el diferimiento
+
+`--tool-deferral=off` (o `CC_SERVER_TOOL_DEFERRAL=off`) desactiva el diferimiento: una ejecución sin `repl` recibe cada herramienta admitida completa, y una ejecución con `repl` recibe completas las herramientas que un script no puede llamar, mientras el resto sigue siendo exclusivo de scripts. Consulta la [referencia de la CLI de `cc_server`](/es-MX/manual/referencia/cc-server-cli/).
 
 ## Caché de prompts
 
@@ -64,7 +82,7 @@ Un proveedor permite un número limitado de marcadores de caché, y Control Cent
 
 | Marcador                     | Cubre                              | Vigencia |
 | ---------------------------- | ---------------------------------- | -------- |
-| Última herramienta **residente** | El bloque de herramientas      | 1 hora   |
+| Última herramienta **directa**   | El bloque de herramientas      | 1 hora   |
 | Último bloque de sistema     | Herramientas + prompt de sistema   | 1 hora   |
 | La cola del turno anterior   | Historial hasta la última solicitud | 5 min    |
 | La cola del turno actual     | El historial completo              | 5 min    |
@@ -77,12 +95,12 @@ El prefijo de herramientas y sistema recibe la vigencia larga porque es constant
 
 Los subagentes del mismo tipo producen prefijos de prompt idénticos byte a byte, así que deberían leer una única entrada de caché en lugar de escribir cada uno la suya. Pero una entrada solo se vuelve legible cuando la solicitud que la escribió empieza a responder, de modo que un fan-out lanzado de golpe hace que todos los hijos paguen la prima por un prefijo que comparten.
 
-El arnés deja que arranque el primer hijo de una forma dada y luego libera a sus hermanos en cuanto empieza a transmitir. La espera está acotada: un primer hijo lento cuesta un acierto de caché, nunca el fan-out en sí. Por la misma razón, todos los subagentes reciben el mismo conjunto de herramientas residentes independientemente de su perfil; variarlo por perfil fragmentaría el prefijo compartido sin ninguna ganancia, ya que el perfil ya ha decidido a qué puede llamar el hijo.
+El arnés deja que arranque el primer hijo de una forma dada y luego libera a sus hermanos en cuanto empieza a transmitir. La espera está acotada: un primer hijo lento cuesta un acierto de caché, nunca el fan-out en sí. Por la misma razón, todos los subagentes reciben el mismo conjunto de herramientas directas independientemente de su perfil; variarlo por perfil fragmentaría el prefijo compartido sin ninguna ganancia, ya que el perfil ya ha decidido a qué puede llamar el hijo.
 
 ## Cómo verlo funcionar
 
 Ambas mitades son observables en lugar de darse por supuestas:
 
-- El **explorador de contexto** de una conversación informa de las herramientas residentes, del índice diferido y de lo que *costaría* cada esquema retenido, y se construye con el mismo camino de código que usa una ejecución real.
+- El **explorador de contexto** de una conversación informa de las herramientas directas, del índice diferido y de lo que *costaría* cada esquema retenido, y se construye con el mismo camino de código que usa una ejecución real.
 - Cada ejecución registra qué herramientas diferidas cargó y qué lo desencadenó, de modo que una búsqueda que no encuentra nada se ve como un fallo de recuperación en lugar de desaparecer en un agente que, en silencio, hace algo parecido.
 - Observabilidad informa de la **Tasa de caché** como las lecturas de caché sobre todos los tokens de prompt procesados, incluidas las escrituras de caché: una ejecución que no deja de reconstruir su prefijo obtiene una puntuación baja, en lugar de puntuar como una que nunca necesitó caché.

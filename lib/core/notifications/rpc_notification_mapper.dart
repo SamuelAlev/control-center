@@ -13,6 +13,7 @@ import 'package:cc_domain/core/domain/notifications/notification_category.dart';
 import 'package:cc_domain/core/domain/ports/notification_port.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:control_center/core/notifications/notification_frame_mapper.dart';
+import 'package:control_center/core/notifications/work_notification_frames.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 
 /// Subscribes to the connected [RemoteRpcClient]'s push notifications and maps
@@ -78,7 +79,10 @@ class RpcNotificationMapper {
       mutedRepos: _mutedRepos?.call() ?? const {},
       viewerLogins: _viewerLogins?.call() ?? const {},
     );
-    if (notification == null) {
+    // A frame the server marked quiet (a goal finished, a schedule ended) is
+    // recorded by the bell from the server's feed: no sound and no toast
+    // here. Quietness is only the `quiet` field, never `notification_kind`.
+    if (notification == null || isQuietFrame(frame.params)) {
       return;
     }
     _notificationPort.show(notification);

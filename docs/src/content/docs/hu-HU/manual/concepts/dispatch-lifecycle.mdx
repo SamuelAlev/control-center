@@ -2,23 +2,33 @@
 title: Az ügynökindítás életciklusa
 description: Mi történik egy üzenet megérkezésétől egy futtatási napló lezárásáig — a prompt összeállítása, a worktree-k, az identitás, mi korlátoz egy futtatást, és hogyan rögzítjük annak kimenetelét őszintén.
 slug: hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa
-sourceHash: 13e7fe3ed86c8659c5fec818e0b89737241e2b9d
+sourceHash: 07c46e22e30f1a10e64b7fb949c78bdae9747efa
 ---
 
 ## Mi az indítás
 
 Az indítás egy ügynök egyetlen futtatása, egy beszélgetésben, egy adapteren. Minden, ami vele kapcsolatos, a `cc_server`-en történik: a kliens elküld egy üzenetet, majd figyeli, ahogy az események visszaáramlanak. Egyetlen kliensben sincs indítási útvonal.
 
-Az ügynököket hat okból ébresztjük fel; ezeket a futtatás **ébresztési kontextusként** hordozza, hogy az ügynök tudja, _miért_ van ébren:
+Minden futtatás hordoz egy **ébresztési kontextust**, amely megmondja, _miért_ ébredt fel az ügynök. Az Ön üzenetküldésével indított futtatás `userMessage`; minden olyan futtatás, amelyet a szerver magától indít, a munkaterület sorában egy tartós **ébresztőként** kezdődik, és hordozza az ébresztő okát (lásd: [Ütemezések és ébresztők](/hu-HU/kezikonyv/gyakorlati-utmutatok/utemezesek-ebresztok/)):
 
 | Az ébresztés oka  | Kiváltó esemény |
-| ----------------- | ------------------------------------------------------------ |
-| `userMessage`     | Valaki üzenetet küldött egy térben, vagy megemlítette az ügynököt |
+| -------------------- | ------- |
+| `userMessage`     | Valaki üzenetet küldött egy térben                                |
 | `assignment`      | Hozzárendeltek egy jegyet az ügynökhöz |
 | `pipelineStep`    | Egy pipeline-lépés indította el |
-| `childCompleted`  | Egy gyermekjegy elkészült |
-| `followUp`        | Ütemezett utókövetési szívverés |
-| `recovery`        | A helyreállítási útvonal egy hiba után újraindította |
+| `childCompleted`  | Egy delegált vagy gyermekjegy elkészült, vagy egy csapattag futtatása véget ért |
+| `schedule` | Egy ütemezés vagy ciklus lefutott |
+| `watch` | Egy figyelő által figyelt esemény történt (pull request-ellenőrzések, átnézés, környezet, jegy vagy pipeline-futtatás) |
+| `goalContinuation` | A cél következő szakasza |
+| `goalVerification` | Egy cél ellenőrzései vagy átnézése szerint a cél még nincs kész |
+| `goalReview` | A cél kész állítására vonatkozó, csak olvasható átnézés |
+| `peerMessage` | Egy másik ügynök üzenetet vagy kérdést küldött neki, vagy megemlítették, vagy ő a tér ellenőrzője |
+| `peerReply`       | Egy másik ügynöknek feltett kérdésére érkezett válasz |
+| `limitReset` | A szolgáltató olyan használati korlátja visszaállt, amelynél a futtatás megállt |
+| `improvementReview` | Egy ellenőrzött cél utáni átnézés, vagy a `/refine` |
+| `recovery` | Az a munka, amelyet egy szerver-újraindítás vagy egy hiba megszakított |
+
+Az ébresztés egy élő futtatásba kerül az ügynöknek abban a beszélgetésben, ha a futtatás bemenetet fogad, és ugyanazért a személyért cselekszik; egyébként megvárja, amíg az a futtatás véget ér, és elindítja a sajátját. A perjelparancsokat csak a személy által gépelt üzenetben olvassa a rendszer; minden más futtatásban ugyanaz a szöveg közönséges üzenet.
 
 Az ébresztési kontextus hordozza az okhoz tartozó azonosítókat — jegy, tér, üzenet, pipeline-futtatás —, és ezek bekerülnek az ügynök környezetébe és promptjába.
 
@@ -104,17 +114,17 @@ Szándékosan **nincs sehol körplafon**. Egy kemény iterációszám megölne l
 - **a modell magától megáll**;
 - **egy ember leállítja**, vagy átveszi a beszélgetést (ez a beépített harness-t a következő tiszta körhatárán szünetelteti — egy Claude Code futtatás, amelynek nincs biztonságos határa, inkább leállításra kerül);
 - **a csendfigyelő riaszt.** Ha a küszöbértékig nincs kimenet, a munkamenet `silentRun` hibával lezárul. Az alapérték 15 perc, amely a nagyrészt olvasásra épülő módokban (átnézési és tervmód) 10 percre csökken; az ügynök 1 és 240 perc között felülírhatja. A csendfigyelő akkor élesedik, amikor egy gyermekfolyamat jelenti a PID-jét, így lefedi a Claude Code CLI-t — **nem** fedi le viszont a beépített harness-t, amely semmit nem indít;
-- **egy költségkorlát életbe lép** — de csak az autonóm parancsoknál.
+- **egy költségkorlát életbe lép** — a célszakaszokon és -átnézéseken, az ütemezések és figyelők futtatásain, a fejlesztési átnézésen, valamint a korlátos orchestráció alatti pipeline-futtatásokon.
 
 A végzetes hurok elleni őr nem lezáró: három egymás utáni azonos eszközhívás esetén a hurok _más irányba tereli_ az ügynököt, hogy változtasson a megközelítésén.
 
 :::note[Egy normál körnek nincs költségkorlátja]
-A munkameneten belüli költségőr csak a `/goal` és a `/loop` esetében van bekötve; minden más futtatás egyáltalán nem ad át költségkeretet. Ezeknél a parancsoknál egy felügyelet nélküli szegmens alapértelmezés szerint 500 centet (5,00 dollárt) emészthet fel, 80%-nál egy szelíd tereléssel, amely arra kéri az ügynököt, hogy a kemény leállás előtt fejezze be tisztán a munkát, a szegmenseken átnyúló tartós célkeret pedig 5000 cent (50,00 dollár). Egy explicit `/goal --budget` értéket soha nem lépheti túl egy teljes szegmens.
+Az Ön üzenetével indított futtatás nem kap költségkeretet. Egy célszakasz legfeljebb 5 dollárt költhet, vagy a cél költségkeretéből (alapértelmezés szerint 50 dollár) még megmaradt összeget, ha az kevesebb; egy cél átnézése 2 dollárt; egy ütemezés vagy figyelő által indított futtatás 5 dollárt; a fejlesztési átnézés 1 dollárt. A 90%-nál a beépített harness és a Claude Code arra utasítja az ügynököt, hogy a kemény leállás előtt tisztán zárja le a munkát; egy ACP-ügynök a korlátnál megszakad. Lásd: [Költségek kezelése](/hu-HU/kezikonyv/gyakorlati-utmutatok/koltsegek-kezelese/#egy-autonóm-futtatás-korlátozása).
 :::
 
 Összevetve: egy közönséges interaktív kör a beépített harness-en nem rendelkezik körplafonnal, költségkorláttal és csendfigyelővel sem. Akkor ér véget, amikor a modell megáll, vagy amikor te leállítod. Ez szándékos kompromisszum — az alternatívák mind megölnék a legitim, hosszú munkát —, azt viszont jelenti, hogy egy felügyelet nélküli interaktív futtatást semmi más nem korlátoz, csak a modell saját megítélése.
 
-Futtatás közben a futó ügynöknek küldött üzenet **irányításként** sorba áll, és a következő körhatáron ürül ki, így anélkül terelheted a futtatást, hogy megölnéd. Az irányítás, a szüneteltetés, az alügynökök és a befejezési szerződés a beépített harness funkciói; a Claude Code egyikkel sem rendelkezik.
+Futtatás közben a futó ügynöknek küldött üzenet **irányításként** sorba áll, és a következő körhatáron ürül ki, így anélkül terelheted a futtatást, hogy megölnéd. Egy csak olvasható futtatás, például egy cél átnézése, a futása alatt nem fogad üzenetet, egy másik személyért dolgozó futtatás irányításához pedig írási hozzáférés kell a tér tárolóihoz. Az irányítás, a szüneteltetés, az alügynökök és a befejezési szerződés a beépített harness funkciói; a Claude Code egyikkel sem rendelkezik.
 
 ## Hogyan rögzül egy futtatás
 
@@ -130,11 +140,11 @@ Amikor egy futtatás a módja által megkövetelt eredmény nélkül ér véget 
 Ez szándékos. Az állapot átbillentése olyan jegy- és pipeline-állapotgépeket mozgatna meg, amelyeknek semmi közük a hiányzó artefaktumhoz. Az is következik ebből, hogy a „status: completed” önmagában soha nem elég annak megállapításához, hogy egy futtatás sikeres volt — olvasd el az összefoglalót.
 :::
 
-A futtatás lezárása közzéteszi az `AgentRunCompleted` eseményt, amelyre sok minden épül: a pipeline-költségek összesítése, egy futtatásra váró pipeline-lépés folytatása, a mögöttes jegy lezárása, egy orchestráció terminális állapotra képezése, a célfelügyelő folytatás-vagy-leállás döntése, az ellenőrző szerepkör és a futtatás utáni költségkeret-kiértékelés. A jelenléti névsor külön következik, a közelmúltbeli futtatási naplók figyelésével, nem az esemény alapján. Az „ügynök befejezte” értesítés nem szerepel ezen a listán: az esemény akkor sül el, amikor a folyamat adatfolyama véget ér, még a válasz kiírása előtt, ezért az értesítés a kör `MessageReceived` eseménye, amely az üzenet tárolása után jelenik meg.
+Miután a futtatás végső állapota megíródott, a szerver pontosan egyszer közzéteszi az `AgentRunSettled` eseményt, megadva, miért ért véget a futtatás (`completed`, `error`, `stoppedByUser`, `budget`, `silence`, `usageLimit` vagy `serverStopped`), és sok minden ráépül: a pipeline-költségek összesítése, egy futtatásra váró pipeline-lépés folytatása, a mögöttes jegy lezárása, egy orchestráció terminális állapotra képezése, a célfelügyelő folytatás-vagy-leállás döntése, egy másik ügynök kérdésére adott válasz, egy magát ütemező ciklus következő indítása, a használati korlátnál való szünetelés, az ellenőrző szerepkör és a futtatás utáni költségkeret-kiértékelés. A szerver-leállítás által megszakított futtatást (`serverStopped`) soha nem kezeli hibaként; a munka az újraindítás után folytatódik. Az `AgentRunCompleted` továbbra is közzétételre kerül, korábban, kizárólag a pull request-hídhoz és az elemzéshez. A jelenléti névsor külön következik, a közelmúltbeli futtatási naplók figyelésével, nem az esemény alapján. Az „ügynök befejezte” értesítés nem szerepel ezen a listán: az esemény akkor sül el, amikor a folyamat adatfolyama véget ér, még a válasz kiírása előtt, ezért az értesítés a kör `MessageReceived` eseménye, amely az üzenet tárolása után jelenik meg.
 
 ## Költségkeretek, utólag
 
-A költségkeret érvényesítése _reakció_, nem kapu. Amikor egy futtatás befejeződik, a kiértékelő összehasonlítja az ügynök hónap eleje óta tartó költését annak tényleges felső korlátjával (egy csatolt költségkeret-szabályzattal, ha van ilyen, egyébként az ügynök saját havi értékével; a nulla korlátlant jelent). A lágy küszöb átlépése figyelmeztető incidenst rögzít; a költségkeret kimerítése kemény incidenst rögzít, és a szervezeti ábrán az ügynök életciklus-állapotát `paused`-ra billenti. Az indítás továbbra is elfogad munkát attól az ügynöktől. Egy `BudgetThresholdCrossed` pipeline-eseményindító ugyanabból az eseményből utókövetési munkát indíthat.
+A költségkeret érvényesítése _reakció_, nem kapu. Amikor egy futtatás befejeződik, a kiértékelő összehasonlítja az ügynök hónap eleje óta tartó költését annak tényleges felső korlátjával (egy csatolt költségkeret-szabályzattal, ha van ilyen, egyébként az ügynök saját havi értékével; a nulla korlátlant jelent). A lágy küszöb átlépése figyelmeztető incidenst rögzít; a költségkeret kimerítése kemény incidenst rögzít, és a szervezeti ábrán az ügynök életciklus-állapotát `paused`-ra billenti. Az indítás továbbra is elfogadja az Ön által küldött munkát, de az ébresztései (ütemezések, célszakaszok, válaszok) a szüneteltetés ideje alatt, legfeljebb 7 napig várnak. Egy `BudgetThresholdCrossed` pipeline-eseményindító ugyanabból az eseményből utókövetési munkát indíthat.
 
 ## Újrapróbálkozások leszármazási vonala
 
@@ -147,4 +157,5 @@ Minden futtatási napló hordozhat újrapróbálkozási leszármazást — egy s
 - [Korlátok](/hu-HU/kezikonyv/fogalmak/korlatok/): az effektosztály-szabályzat, amelyen minden kapuzott hívás átmegy
 - [Homokozó és biztonság](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/): az elszigetelés teljes története
 - [Többszereplős mód](/hu-HU/kezikonyv/fogalmak/tobbszereplos-mod/): irányítás, átvétel és az autonómiaszabályzó
-- [Domainesemények](/hu-HU/kezikonyv/fogalmak/domainesemenyek/): mit indít el az `AgentRunCompleted`
+- [Domainesemények](/hu-HU/kezikonyv/fogalmak/domainesemenyek/): mit indít el az `AgentRunSettled`
+- [Cél követése](/hu-HU/kezikonyv/gyakorlati-utmutatok/cel-kovetese/) és [Ütemezések és ébresztők](/hu-HU/kezikonyv/gyakorlati-utmutatok/utemezesek-ebresztok/): a szerver magától indított futtatásai

@@ -214,13 +214,15 @@ class BitbucketForgePrClient
   }
 
   @override
-  Future<String> getPullRequestDiff(int prNumber, {ForgeCancelToken? cancelToken}) =>
-      _client.getPullRequestDiff(
-        owner,
-        repo,
-        prNumber,
-        cancelToken: _token(cancelToken),
-      );
+  Future<String> getPullRequestDiff(
+    int prNumber, {
+    ForgeCancelToken? cancelToken,
+  }) => _client.getPullRequestDiff(
+    owner,
+    repo,
+    prNumber,
+    cancelToken: _token(cancelToken),
+  );
 
   /// {@template bitbucket_files}
   /// Bitbucket's diffstat carries per-file counts but no patch text, so this
@@ -266,7 +268,6 @@ class BitbucketForgePrClient
     }
     return PrFileListing(files, truncated: diffstat.truncated);
   }
-
 
   @override
   Future<List<PrCommit>> listCommits(
@@ -514,7 +515,9 @@ class BitbucketForgePrClient
   /// is the pool — which is also why `listAssignableUsers` and
   /// [listRequestableReviewers] resolve to the same people.
   @override
-  Future<List<PrUser>> listAssignableUsers({ForgeCancelToken? cancelToken}) async {
+  Future<List<PrUser>> listAssignableUsers({
+    ForgeCancelToken? cancelToken,
+  }) async {
     final members = await _listMembers(_token(cancelToken));
     return members.map(prUserFromBitbucket).toList(growable: false);
   }
@@ -647,14 +650,17 @@ class BitbucketForgePrClient
   /// Always throws: Bitbucket Cloud has no repository-stored pull request
   /// description templates. Capability: `prTemplates`.
   @override
-  Future<Map<String, String>> listPrTemplates({ForgeCancelToken? cancelToken}) =>
-      throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'prTemplates');
+  Future<Map<String, String>> listPrTemplates({
+    ForgeCancelToken? cancelToken,
+  }) => throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'prTemplates');
 
   /// Always throws: a Bitbucket build status has no steps or logs behind it.
   /// Capability: `ciJobDetail`.
   @override
-  Future<JobRunDetail?> getJobRunDetail(int jobId, {ForgeCancelToken? cancelToken}) =>
-      throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'ciJobDetail');
+  Future<JobRunDetail?> getJobRunDetail(
+    int jobId, {
+    ForgeCancelToken? cancelToken,
+  }) => throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'ciJobDetail');
 
   /// Always throws: Bitbucket publishes no job dependency graph.
   /// Capability: `ciJobDetail`.
@@ -699,6 +705,29 @@ class BitbucketForgePrClient
           'path': path,
           if (onOldSide) 'from': line else 'to': line,
         },
+      },
+      cancelToken: _token(cancelToken),
+    );
+    return comment == null ? null : prCodeReviewCommentFromBitbucket(comment);
+  }
+
+  /// Posts a comment on [path] as a whole: an `inline` anchor with only a
+  /// path, no `from`/`to`.
+  @override
+  Future<PrCodeReviewComment?> postFileComment({
+    required int prNumber,
+    required String commitSha,
+    required String path,
+    required String body,
+    ForgeCancelToken? cancelToken,
+  }) async {
+    final comment = await _client.createPullRequestComment(
+      owner,
+      repo,
+      prNumber,
+      <String, dynamic>{
+        'content': <String, dynamic>{'raw': body},
+        'inline': <String, dynamic>{'path': path},
       },
       cancelToken: _token(cancelToken),
     );
@@ -968,13 +997,15 @@ class BitbucketForgePrClient
   /// Declines a pull request — Bitbucket's spelling of closing without
   /// merging.
   @override
-  Future<void> closePullRequest(int prNumber, {ForgeCancelToken? cancelToken}) =>
-      _client.declinePullRequest(
-        owner,
-        repo,
-        prNumber,
-        cancelToken: _token(cancelToken),
-      );
+  Future<void> closePullRequest(
+    int prNumber, {
+    ForgeCancelToken? cancelToken,
+  }) => _client.declinePullRequest(
+    owner,
+    repo,
+    prNumber,
+    cancelToken: _token(cancelToken),
+  );
 
   /// Not available on Bitbucket Cloud — throws [ForgeUnsupportedError].
   ///
@@ -1192,8 +1223,10 @@ class BitbucketForgePrClient
   /// Always throws: Bitbucket has no stacked-pull-request concept.
   /// Capability: `stacks`.
   @override
-  Future<List<PrStack>> listStacks({int? prNumber, ForgeCancelToken? cancelToken}) =>
-      throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'stacks');
+  Future<List<PrStack>> listStacks({
+    int? prNumber,
+    ForgeCancelToken? cancelToken,
+  }) => throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'stacks');
 
   /// Always throws: see [listStacks]. Capability: `stacks`.
   @override
@@ -1212,8 +1245,10 @@ class BitbucketForgePrClient
 
   /// Always throws: see [listStacks]. Capability: `stacks`.
   @override
-  Future<PrStack?> unstack({required int stackNumber, ForgeCancelToken? cancelToken}) =>
-      throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'stacks');
+  Future<PrStack?> unstack({
+    required int stackNumber,
+    ForgeCancelToken? cancelToken,
+  }) => throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'stacks');
 
   // ── Internals ────────────────────────────────────────────────────────────
 

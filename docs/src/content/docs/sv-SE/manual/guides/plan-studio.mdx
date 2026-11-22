@@ -2,7 +2,7 @@
 title: Arbeta i Plan Studio
 description: Granska, redigera, uppskatta, diffa och godkänn en plan i Plan Studio-redigeraren och kör parameteriserade playbooks.
 slug: sv-SE/handbok/how-to-guider/plan-studio
-sourceHash: 04a6e193c6b57af3fce63c90673a0958b37552fb
+sourceHash: 9df96d8f10ca86584f3979b84af5eee250719752
 ---
 
 Den här guiden visar hur du arbetar med planer i Plan Studio. Vad
@@ -136,8 +136,7 @@ godkänner alltid varje steg – det finns inget sätt att först välja en
 delmängd. Godkännandet blockeras medan förslaget har valideringsfel, som visas
 bredvid knapparna.
 
-Att godkänna är förbehållet en operatör. Det finns inget MCP-verktyg för det,
-så en agent kan föreslå och revidera en plan men aldrig godkänna en.
+Att godkänna är förbehållet en operatör. Det finns inget MCP-verktyg för det, så en agent kan föreslå och revidera en plan men aldrig godkänna en. Att godkänna en plan, spara en revision, **Godkänn valda** och **Fortsätt nod** kräver skrivåtkomst till ytans repositorier.
 
 När en orkestrering körs ändras fältet:
 
@@ -147,7 +146,9 @@ När en orkestrering körs ändras fältet:
   markerade steget plus allt det transitivt beror på (ett steg kan aldrig
   godkännas utan sina beroenden). Kontrollen finns i körningsfältet för varje
   orkestrering; den har ingen verkan när planen godkändes i sin helhet.
-- Tryck på **Avbryt körning** för att stoppa hela orkestreringen.
+- Tryck på **Avbryt körning** för att stoppa hela orkestreringen. Alla med åtkomst till ytan kan det.
+
+**Fortsätt nod** och **Godkänn valda** tillhör den person som körningen agerar för (en administratör för arbetsytan när den agerar för ingen).
 
 Steg utanför en delvis godkänd mängd renderas som uppskjutna och körs inte
 förrän du utökar mängden.

@@ -2,7 +2,7 @@
 title: Typy kroků pipeline
 description: Druhy kroků pipeline, klíče těl, jejich konfigurace a výsledky kroků.
 slug: cs-CZ/prirucka/referencni-prirucka/kroky-pipeline
-sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
+sourceHash: 0d2876bc1ac359f4d2cfe94902bd5f924d19d5d5
 ---
 
 Krok pipeline má dvě na sobě nezávislé osy:
@@ -58,6 +58,31 @@ Obecný uzel pro prompt a odeslání: vykreslí prompt, odešle agenta do konver
 | `extras.spaceId`   | Existující konverzace, ve které se pracuje (výchozí: skrytá)     |
 | `extras.conversationTitle` | Pojmenovaný proud uvnitř toho prostoru (volitelné)             |
 | `extras.mode`      | Čte se na uzlu, který prostor *otevírá* (`messaging.createSpace`), ne tady. Výchozí `review`. |
+
+### `goal.pursue`
+
+Spustí trvalý cíl (viz [Usilujte o cíl](/cs-CZ/prirucka/navody/usilujte-o-cil/)) a pozastaví krok, dokud cíl neskončí. Editor ho zobrazuje jako **Pursue a goal**. Není jedním z 25 výchozích těl uvedených výše; registruje se vedle nich.
+
+| Pole konfigurace | Popis |
+| ---------------------- | ----------- |
+| `agentId` | Agent, který cíl sleduje (povinné) |
+| `prompt` | Cíl; podporuje nahrazení `{{key}}` (povinné) |
+| `outputKey` | Klíč stavu pro výsledek (povinné) |
+| `extras.spaceId` | Místnost, ve které cíl pracuje (povinné, jako každý krok agenta) |
+| `extras.budgetMicros` | Rozpočet cíle v mikrodolarech, 1 až 1 000 000 000 (povinné) |
+| `extras.maxRuns` | Strop segmentů, 1 až 1 000 (volitelné) |
+| `extras.deadlineHours` | Hodiny od chvíle, kdy krok cíl spustí, 1 až 2 160 (volitelné) |
+| `extras.contract` | Co znamená hotovo: kritéria a kontroly (volitelné) |
+
+Výsledek pod `outputKey` je `{summary, verdict}`, kde `verdict` je verdikt kontroly s jejími body a výhradami, nebo null.
+
+| Cíl | Krok |
+| -------- | -------- |
+| dokončeno | dokončí se |
+| selhal, byl zrušen, nebo vyčerpal rozpočet | selže (`retry` a `continueOnFail` platí); opakovaný krok spustí nový cíl |
+| pozastaven, včetně čekání na kontrolu od osoby | zůstane pozastaven a je vyňat z 24hodinové kontroly živosti |
+
+Cíl spuštěný během běhu pipeline se účtuje orchestraci toho běhu, včetně její kontroly. Když běh pipeline je zrušen, selže nebo skončí, zatímco cíl pracuje, cíl se zruší.
 
 ### `pipeline.condition`
 

@@ -1,0 +1,110 @@
+---
+title: Ütemezések és ébresztők
+description: Ébresztsen egy ügynököt később, ütemezés szerint vagy amikor valami történik, nézze meg, mi vár, és mi történik újraindításkor vagy használati korlátnál.
+slug: hu-HU/kezikonyv/gyakorlati-utmutatok/utemezesek-ebresztok
+sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+---
+
+Az ügynök várakozás közben nem alszik és nem kérdezgeti folyamatosan az állapotot. Ő vagy Ön beállít egy **ébresztőt**: tartós kérést arra, hogy elindítsa vagy folytassa az ügynök futtatását egy beszélgetésben egy adott időpontban vagy amikor valami történik. Minden futtatás, amelyet a szerver úgy indít, hogy nem valaki gépel, ébresztőként kezdődik: a cél következő szakasza, egy ütemezés, egy figyelő, egy másik ügynök válasza, befejezett delegált munka, a használati korlát végének vagy egy újraindítás után maradt munka. Az ébresztőket a munkaterület adatbázisa tárolja, így túlélik az újraindítást.
+
+## Ügynök ütemezése kézzel
+
+Írja be ezek egyikét a beszélgetés szerkesztőjébe:
+
+```text
+/loop every 30m --days 3 check the deploy and fix what broke
+/loop keep the flaky tests green
+/schedule in 2h look at the overnight benchmark
+/schedule at 09:00 summarize what changed overnight
+/schedule cron "0 9 * * 1-5" --max 20 triage new tickets
+```
+
+| Parancs | Mit csinál |
+| --- | --- |
+| `/loop every <interval> <prompt>` | Felébreszti az ügynököt a prompttal most, majd bizonyos időközönként, minden intervallumban (legalább 60 másodpercenként) |
+| `/loop <prompt>` | Önütemezett ciklus: felébreszti az ügynököt most, majd minden futtatás után az ügynök választja ki a következő késleltetést, 1 és 60 perc között (alapértelmezés szerint 20) |
+| `/schedule in <duration> <prompt>` | Felébreszti az ügynököt egyszer, a késleltetés után |
+| `/schedule at <HH:MM or ISO time> <prompt>` | Egyszer felébreszti az ügynököt. A `HH:MM` a munkaterület időzónája szerinti következő ilyen időpont; eltolás nélküli ISO-időpont esetén UTC |
+| `/schedule cron "<expression>" <prompt>` | Felébreszti az ügynököt egy öt mezős cron-kifejezés szerint, a munkaterület időzónájában értelmezve. Az idézőjelek elhagyhatók |
+
+- A `--max <N>` korlátozza a futtatásokat, a `--days <N>` ennyi nap után lezárja az ütemezést (alapértelmezés szerint 30, legfeljebb 365), a `--budget <dollars>` pedig korlátozza, mennyit költhet az ütemezés összesen (egyébként a munkaterület alapértelmezése, kezdetben 50 dollár).
+- A `/loop` az első futtatását azonnal elindítja. A `/schedule` megvárja a megadott idejét.
+- Az időtartamokban az `s`, `m`, `h` és `d` jelölések használhatók, például `90s`, `20m` vagy `1h30m`.
+- Ezek a parancsok csak olyan üzenetben olvashatók, amelyet Ön maga gépel be.
+
+A beviteli mező segít megírni őket. A `/loop` vagy a `/schedule` és egy szóköz után a javaslatlista felajánlja, mikor fut le, és gépelés közben szűkül; az idő után írt `--` jellel kapja a korlátokat. Az Enter vagy a Tab kiválaszt egy sort, és nem küld semmit. A szöveg feletti sor ezután visszaolvassa a parancsot: mikor indul, mikor ér véget, és mi hiányzik még. Ha olyan parancson nyomja meg az Entert, amelyet nem lehet beolvasni, az a sor megmondja, mi a baj, a piszkozata pedig megmarad.
+
+Ütemezést a **Ütemezések** oldalon is létrehozhat az **Új ütemezés** gombbal: válassza ki a teret, a beszélgetést és az ügynököt, azt, mikor induljon, hogy mihez kezdjen minden futtatás, a véget, a futtatási korlátot és a költségkorlátot. A **Ha az ügynök elfoglalt** mező dönt arról, hogy kihagyja-e az adott indítást, vagy megvárja, amíg az ügynök szabad lesz. A **Minden indítás** mező dönt arról, hogy elindítson-e egy futtatást, vagy csak értesítést kapjon a megjegyzéssel.
+
+## Amit az ügynökök beállítanak
+
+Az ügynökök ugyanerre a célra a `wake_me` eszközt használják, valamint figyelőkhöz:
+
+| Figyelő | Mikor indul |
+| --- | --- |
+| `on:pr_checks` | A tér pull requestjének ellenőrzései befejeződnek |
+| `on:pr_review` | A tér pull requestje átnézést vagy választ kap |
+| `on:pr_merged` | A tér pull requestje beolvad |
+| `on:environment` | A tér környezetének egyik feladata kilép, vagy a környezet készen áll |
+| `on:ticket:<id>` | Egy jegy lezárul |
+| `on:pipeline_run:<id>` | Egy pipeline-futtatás véget ér |
+
+- A pull request-figyelő a tér saját pull requestjét hallja, vagy egy megnevezett pull requestet (`on:pr_checks:acme/shop-ui#12`). Olyan figyelőt, amelynek tárgyát a személye nem olvashatja, elutasítunk.
+- Az ügynök saját műveletei nem indítják a figyelőit. Az esemény, amely akkor érkezik, amikor az ügynök dolgozik, nem vész el: a futtatás végéig vár, a későbbi események pedig ugyanabba az ébresztőbe kerülnek.
+- Egy ügynök ütemezésének kell futtatási korlát vagy vég. Alapértelmezés szerint 7 nap után ér véget, legfeljebb 30 napig. Egy figyelő alapértelmezés szerint 10-szer fut.
+- Az az ütemezés, amelyet egy ügynök a saját egyik ütemezése által indított futtatásában állít be, osztozik az első ütemezés végén, futtatási korlátján és költségkorlátján, így egy ügynök ütemezéseinek láncolata nem élheti túl az elsőt. Az első ütemezés törlése véget vet az egész láncnak; szüneteltetése csak ezt az ütemezést függeszti fel. A lánc által más ügynökökön keresztül indított futtatások ugyanazt a költségkorlátot terhelik. Az Ön által létrehozott ütemezés nem indít láncot: amit egy ügynök a futtatásaiban állít be, ugyanúgy korlátozott, mint bármi, amit az Ön üzenete után állít be.
+- Az ügynök a `list_wakes` eszközzel listázza, mi vár rá, és a `cancel_wake` eszközzel törli azokat, amiket maga állított be. Az Ön által beállítottakat nem törölheti.
+
+## Nézze meg, mi vár
+
+**A beszélgetésszerkesztő felett.** Ha egy beszélgetésben ébresztők várnak egy ügynökre, egy sáv mutatja őket: **N ébresztő vár**, hogy honnan jönnek (**Cél**, **Ütemezés**, **Figyelő**, **Válasz tőle** egy ügynök, **Korlát visszaállása**, **Helyreállítás**, …), mikor esedékesek, és miért vannak visszatartva.
+
+| Gomb | Mit csinál | Ki teheti |
+| --- | --- | --- |
+| **Kézbesítés most** | Azonnal kézbesít egy függőben lévő ébresztőt | Csak az a személy, akinek nevében az ébresztő fut |
+| **Folytatás** | Felold egy visszatartott ébresztőt | Csak az a személy, akinek nevében az ébresztő fut |
+| **Ébresztő törlése** | Törli | Bárki, akinek hozzáférése van a térhez |
+
+Egy nem kézbesített ébresztő egy sort hagy a beszélgetésben, amely megmondja az okát, például **Az ügynök szüneteltetve van.** vagy **Egy költségkeret blokkolja a futtatást.**
+
+**Az Ütemezések oldal.** Oldalsáv → **Ütemezések**: itt látja az összes ütemezést és figyelőt, amelyet lát, állapot szerint csoportosítva; a cron-ütemezés a következő három idejét mutatja az Ön időzónájában. Nyisson meg egyet, és lássa a megjegyzését, a tulajdonosát, a következő indításait, futtatásait, kihagyásait, költését és végét, valamint a **Legutóbbi ébresztések és futtatások** részt. Minden ütemezésnek saját címe van (`/workspaces/<workspace>/schedules/<id>`).
+
+| Művelet | Ki teheti |
+| --- | --- |
+| **Szünet**, **Törlés** | Bárki, akinek hozzáférése van a térhez |
+| **Folytatás**, **Meghosszabbítás** | Csak a tulajdonosa (olyan ütemezésnél, amelyet ember nélkül egy ügynök hozott létre, munkaterület-adminisztrátor) |
+
+Ha valaki más szünetelteti az ütemezést, mint annak tulajdonosa, a beszélgetésben olyan sor jelenik meg, amely megnevezi őt.
+
+Telefonon a célok képernyőn az **Ismétlés** gomb ismétlődő promptot indít (néhány percenként vagy óránként, vagy önütemezetten) költségkorláttal és véggel, az **Ütemezések** képernyőn pedig szüneteltetni, folytatni és törölni lehet az ütemezéseket. A beszélgetés haladási nézete mutatja, mi vár, beleértve a használati korlátos szüneteket (**Folytatás most**, **Mégse**) és a szerver leállása után maradt munkát.
+
+## Hogyan fut egy ütemezés
+
+- Egy ütemezés vagy figyelő minden futtatása legfeljebb 5 dollárra korlátozott, vagy arra, ami az ütemezésnek még maradt, ha ez kevesebb, az ütemezés pedig a költségkorlátjánál megáll.
+- A cron-időpont, amely az órák előreállításakor kimarad, aznap egy órával később fut (02:30 a 03:30-kor fut). A cron-időpont, amely az órák visszaállításakor kétszer szerepel, egyszer fut.
+- Egy ütemezés futtatása sosem csatlakozik egy már futó futtatáshoz. Ha az ügynök elfoglalt, amikor egy időzített ütemezés indul, azt az indítást csendben kihagyjuk, kivéve ha az ütemezés megvárja, amíg az ügynök szabad lesz.
+- Egy ütemezés vagy figyelő által indított futtatás, amely hiba nélkül ér véget, nem értesít, hacsak nem említ valakit. Amikor egy ütemezés véget ér, a harang megmondja az okát (**Felhasználta a futtatásait.**, **Elérte a befejezési dátumát.**, …), hang nélkül.
+- Egy beszélgetésben az ébresztőkből legfeljebb óránként 30 futtatás indul, a munkaterületen pedig 300.
+- Ha az a személy, akinek nevében az ütemezés fut, elhagyja a munkaterületet, az ütemezés véget ér. Minden más, ami az ő nevében működött, szintén leáll: a függőben lévő ébresztőit visszavonják, a sorban álló és visszatartott üzeneteit törlik, futó ügynökeit pedig leállítják.
+
+## Leállítás, újraindítás és használati korlátok
+
+- **Leállítás.** Ha egy ügynök futtatásán a **Leállítás** gombot nyomja, az visszatartja az ügynök függőben lévő ébresztőit (azokat, amelyek nem tartoznak céllal) és az Ön által az ügynöknek sorba állított üzeneteket. Ezek a **Folytatás** vagy a **Visszatartott üzenetek küldése** gombra várnak. Mindenki a saját visszatartott üzeneteit küldi el; más személy üzeneteit senki sem küldi el.
+- **A szerver újraindítása.** Az ébresztők és az ütemezések túlélik. Az ébresztő által indított futtatás az újraindítás után folytatódik, legfeljebb 3 kísérletig. Az Ön által saját maga indított futtatást magától nem futtatja újra: visszatartott **Helyreállítás** ébresztőt hagy maga után, és a **Folytatás** gomb megnyomására folytatódik. Az az időzített ütemezés, amely a szerver leállása alatt kihagyta az időpontjait, csak rövid türelmi időn belül indul később (az intervallumának fele, legfeljebb 10 perc; egyszeri ütemezésnél 24 óra), különben egy kihagyást rögzít: **A szerver leállása alatt kimaradt.**
+- **Szolgáltatói használati korlát.** Ha egy futtatás a szolgáltató használati korlátjánál áll meg, és a szolgáltató megmondja, mikor áll vissza (7 napon belül), a futtatás szüneteltetve van. A szerver által indított futtatás, például egy cél szakasza vagy egy ütemezés futtatása, a visszaállás után 30 másodperccel magától folytatódik. Az Ön által indított futtatás Önre vár: a beszélgetés **a szolgáltató használati korlátján szüneteltetve** feliratot mutat, **A korlát ekkor áll vissza:** időponttal, a **Folytatás** (csak Ön) és a **Mégse** (a tér bármelyik tagja) gombbal. A **Folytatás** után a futtatás a korlát visszaállása után folytatódik. Az a szüneteltetés, amelyet nem folytat, a visszaállástól számított 7 nap után lejár. A korlátnál sorba állított üzenetei a folytatott futtatásba kerülnek; ha a futtatás nem vár a visszaállásra, vagy a szüneteltetést törlik, illetve lejár, azok helyett az Ön számára a **Visszatartott üzenetek küldése** alatt lesznek visszatartva. Mások sorban álló üzenetei azonnal az ő számukra vannak visszatartva. Egy ütemezés következő indítása addig vár, amíg a szüneteltetett futtatás folytatódik. Az ACP-ügynökök nem jelentenek visszaállást, ezért futtatásaik nem várnak.
+
+## Munkaterületi korlátok
+
+A munkaterület-adminisztrátor a korlátokat itt állítja be: **Beállítások → Munkaterület → Ütemezések**:
+
+- **Ütemezési korlátok**: hány aktív vagy szüneteltetett ütemezést tarthat egy ügynök egy beszélgetésben (10), a munkaterületen (50), illetve az egész munkaterületen (500); egy ütemezés alapértelmezett költségkorlátja (50 dollár); és az az időzóna, amelyet a cron-ütemezések és a napi összesítő használ (kezdetben UTC).
+- **Ha senki nem válaszol**: mennyit vár a szerver által indított futtatás egy személy válaszára vagy jóváhagyására (alapértelmezés szerint 72 óra, 1 órától 7 napig), mielőtt a jóváhagyás elutasítottnak, a kérdés pedig megválaszolatlannak számít (ezután a futtatás többi kérdését azonnal elutasítják), valamint a napi összesítő órája arról, mi vár Önre célokban, ütemezésekben és a szerver által indított más futtatásokban.
+
+A tagok csak olvasható módban látják az oldalt.
+
+## Lásd még
+
+- [Cél követése](/hu-HU/kezikonyv/gyakorlati-utmutatok/cel-kovetese/)
+- [Ügynökök együttműködése](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynokok-egyuttmukodese/)
+- [Slash-parancsok](/hu-HU/kezikonyv/referencia/slash-parancsok/)
+- [Ébresztő- és cél-eszközök](/hu-HU/kezikonyv/referencia/mcp-eszkozok/#ébresztő--és-cél-eszközök)

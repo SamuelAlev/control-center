@@ -1,0 +1,110 @@
+---
+title: Programações e despertares
+description: Desperte um agente mais tarde, numa programação ou quando algo acontece, veja o que está à espera e o que acontece num reinício ou num limite de utilização.
+slug: pt-PT/manual/guias/programacoes-despertares
+sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+---
+
+Um agente não dorme nem consulta repetidamente enquanto espera. Ele, ou você, configura um **despertar**: um pedido durável para iniciar ou continuar a execução do agente numa conversa, a uma hora certa ou quando algo acontece. Toda a execução que o servidor inicia sem que alguém escreva começa como um despertar: o próximo segmento de um objetivo, uma programação, um monitor, uma resposta de outro agente, trabalho delegado concluído, o fim de um limite de utilização, o trabalho que sobra após um reinício. Os despertares ficam guardados na base de dados do espaço de trabalho, por isso sobrevivem a um reinício.
+
+## Programar um agente você mesmo
+
+Escreva um destes comandos no compositor de uma conversa:
+
+```text
+/loop every 30m --days 3 check the deploy and fix what broke
+/loop keep the flaky tests green
+/schedule in 2h look at the overnight benchmark
+/schedule at 09:00 summarize what changed overnight
+/schedule cron "0 9 * * 1-5" --max 20 triage new tickets
+```
+
+| Comando | O que faz |
+| --- | --- |
+| `/loop every <interval> <prompt>` | Desperta o agente com o prompt agora e, depois, a cada intervalo (com pelo menos 60 segundos entre cada disparo) |
+| `/loop <prompt>` | Um ciclo com ritmo próprio: desperta o agente agora e, após cada execução, o próprio agente escolhe o atraso seguinte, de 1 a 60 minutos (20 por predefinição) |
+| `/schedule in <duration> <prompt>` | Desperta o agente uma única vez, após o atraso |
+| `/schedule at <HH:MM or ISO time> <prompt>` | Desperta o agente uma única vez. `HH:MM` é a próxima hora dessas no fuso horário do espaço de trabalho; uma hora ISO sem deslocamento é UTC |
+| `/schedule cron "<expression>" <prompt>` | Desperta o agente segundo um cron de cinco campos, lido no fuso horário do espaço de trabalho. As aspas são opcionais |
+
+- `--max <N>` limita as execuções, `--days <N>` termina a programação ao fim desse número de dias (30 por predefinição, 365 no máximo), e `--budget <dollars>` limita o que a programação pode gastar no total (o predefinido do espaço de trabalho, senão 50 dólares para começar).
+- `/loop` dispara a primeira execução de imediato. `/schedule` espera pela sua hora.
+- As durações usam `s`, `m`, `h` e `d`, como `90s`, `20m` ou `1h30m`.
+- Estes comandos só são lidos numa mensagem escrita por você.
+
+O compositor ajuda-o a escrevê-las. Depois de `/loop` ou `/schedule` e um espaço, a lista de sugestões mostra quando dispara e vai-se estreitando à medida que escreve; escreva `--` depois da hora para os limites. Enter ou Tab escolhe uma linha e não envia nada. Uma linha acima do texto repete então o comando: quando dispara, quando termina e o que ainda falta. Se premir Enter num comando que não se consegue ler, essa linha diz o que está errado e o rascunho mantém-se.
+
+Também pode criar uma programação a partir da página **Programações** com **Nova programação**: escolha o espaço, a conversa e o agente, quando dispara, de onde parte cada execução, um fim, um limite de execuções e um limite de custo. **Se o agente estiver ocupado** escolhe entre saltar esse disparo e esperar até o agente ficar livre. **Cada disparo** escolhe entre iniciar uma execução ou apenas avisá-lo com a nota.
+
+## O que os agentes preparam
+
+Os agentes usam a ferramenta `wake_me` para as mesmas coisas, e para os monitores:
+
+| Monitor | Dispara quando |
+| --- | --- |
+| `on:pr_checks` | As verificações da pull request do espaço terminam |
+| `on:pr_review` | A pull request do espaço recebe uma revisão ou uma resposta |
+| `on:pr_merged` | A pull request do espaço é integrada |
+| `on:environment` | Uma tarefa do ambiente do espaço termina, ou o ambiente fica pronto |
+| `on:ticket:<id>` | Um ticket atinge um estado final |
+| `on:pipeline_run:<id>` | Uma execução de pipeline termina |
+
+- Um monitor de pull request ouve a pull request do próprio espaço, ou uma pull request que ele indique (`on:pr_checks:acme/shop-ui#12`). Um monitor sobre algo que a pessoa por quem age não consegue ler é recusado.
+- As ações do próprio agente não disparam os seus monitores. Um evento que chega enquanto o agente trabalha não se perde: espera até a execução terminar, e os eventos seguintes são fundidos no mesmo despertar.
+- A programação de um agente tem de ter um limite de execuções ou um fim. Termina ao fim de 7 dias por predefinição e 30 no máximo. Um monitor corre 10 vezes por predefinição.
+- Uma programação que um agente define numa execução iniciada por uma das suas próprias programações partilha o fim, o limite de execuções e o limite de custo da primeira, por isso uma cadeia de programações de um agente não pode sobreviver à primeira. Apagar a primeira programação termina a cadeia inteira; pausá-la pausa apenas essa programação. As execuções que a cadeia inicia através de outros agentes contam para o mesmo limite de custo. Uma programação que você criou não inicia nenhuma cadeia: o que um agente define nas suas execuções fica limitado como qualquer coisa que defina depois de uma mensagem sua.
+- Um agente lista o que tem à espera com `list_wakes` e cancela o que ele próprio configurou com `cancel_wake`. Não pode cancelar o que você configurou.
+
+## Ver o que está à espera
+
+**Acima do compositor.** Quando há despertares a aguardar um agente na conversa, uma faixa mostra-os: **N despertares a aguardar**, de onde vem cada um (**Objetivo**, **Programação**, **Monitor**, **Resposta de** um agente, **Limite redefinido**, **Recuperação**, …), quando está previsto e porque está retido.
+
+| Botão | O que faz | Quem pode |
+| --- | --- | --- |
+| **Entregar agora** | Entrega um despertar pendente de imediato | Apenas a pessoa em nome de quem o despertar age |
+| **Retomar** | Liberta um despertar retido | Apenas a pessoa em nome de quem o despertar age |
+| **Cancelar despertar** | Cancela-o | Qualquer pessoa com acesso ao espaço |
+
+Um despertar que não foi entregue deixa uma linha na conversa a dizer porquê, como **O agente está em pausa.** ou **Um orçamento bloqueia a execução.**
+
+**A página Programações.** Barra lateral → **Programações** lista todas as programações e monitores que pode ver, agrupados por estado; uma programação cron mostra as suas próximas três horas no seu fuso horário. Abra uma para ver a sua nota, o dono, os próximos disparos, as execuções, os saltos, o gasto e o fim, e **Despertares e execuções recentes**. Cada programação tem o seu próprio endereço (`/workspaces/<workspace>/schedules/<id>`).
+
+| Ação | Quem pode |
+| --- | --- |
+| **Pausar**, **Eliminar** | Qualquer pessoa com acesso ao espaço |
+| **Retomar**, **Estender** | Apenas o seu dono (um administrador do espaço de trabalho, para uma programação que um agente criou sem uma pessoa) |
+
+Quando alguém que não é o dono de uma programação a pausa, a conversa mostra uma linha com o nome dessa pessoa.
+
+No telemóvel, **Repetir** no ecrã de objetivos inicia um prompt repetido (a cada tantos minutos ou horas, ou com ritmo próprio) com um limite de custo e um fim, e o ecrã **Programações** pausa, retoma e elimina programações. Uma vista de progresso da conversa mostra o que aguarda, incluindo pausas no limite de utilização (**Retomar agora**, **Cancelar**) e o trabalho que sobra após uma paragem do servidor.
+
+## Como uma programação é executada
+
+- Cada execução de uma programação ou de um monitor está limitada a 5 dólares, ou ao que a programação ainda tiver disponível quando for menos, e a programação para no seu limite de custo.
+- Uma hora de cron que é saltada quando os relógios avançam executa-se uma hora mais tarde nesse dia (02:30 executa-se às 03:30). Uma hora que se repete quando os relógios recuam executa-se uma vez.
+- A execução de uma programação nunca se junta a uma execução já em curso. Se o agente estiver ocupado quando uma programação temporizada dispara, esse disparo é saltado em silêncio, a menos que a programação espere até o agente ficar livre.
+- Uma execução que uma programação ou um monitor iniciou e que termina sem problemas não o avisa, a menos que mencione alguém. Quando uma programação termina, o sino diz porquê (**Usou todas as suas execuções.**, **Chegou à data de término.**, …) sem som.
+- No máximo 30 execuções por hora começam a partir de despertares numa conversa, e 300 num espaço de trabalho.
+- Quando a pessoa em nome de quem uma programação age sai do espaço de trabalho, a programação termina. Tudo o resto que agia em nome dela também para: os seus despertares em espera são cancelados, as suas mensagens em fila e retidas são eliminadas, e os seus agentes em execução são parados.
+
+## Paragem, reinício e limites de utilização
+
+- **Parar.** Premir **Parar** na execução de um agente retém os seus despertares pendentes (os que não pertencem a um objetivo) e as mensagens que você pôs em fila para ele. Ficam à espera de **Retomar** ou de **Enviar mensagens retidas**. Cada pessoa envia as suas próprias mensagens retidas; ninguém envia as de outra pessoa.
+- **Um reinício do servidor.** Os despertares e as programações sobrevivem. Uma execução iniciada por um despertar retoma após o reinício, com no máximo 3 tentativas. Uma execução que você iniciou não é executada de novo sozinha: deixa um despertar de **Recuperação** retido, e continua quando premir **Retomar**. Uma programação temporizada que perdeu os seus horários enquanto o servidor esteve em baixo só dispara com atraso dentro de uma tolerância curta (metade do seu intervalo, no máximo 10 minutos; 24 horas para uma programação pontual), caso contrário regista apenas um salto: **Perdido enquanto o servidor estava fora do ar.**
+- **Um limite de utilização do fornecedor.** Quando uma execução para no limite de utilização de um fornecedor e este indica quando é redefinido (dentro de 7 dias), a execução fica em pausa. Uma execução que o servidor iniciou, como um segmento de um objetivo ou a execução de uma programação, retoma por si 30 segundos após a redefinição. Uma execução que você iniciou aguarda por você: a conversa mostra **Em pausa no limite de utilização** do fornecedor. **O limite é redefinido às** e a hora, com **Retomar** (só você) e **Cancelar** (qualquer pessoa no espaço). Depois de **Retomar**, continua quando o limite já tiver sido redefinido. Uma pausa que não retoma expira 7 dias após a redefinição. As mensagens que pôs em fila no limite são enviadas para a execução retomada; se a execução não aguardar pela redefinição, ou se a pausa for cancelada ou expirar, ficam retidas para você em **Enviar mensagens retidas**. As mensagens em fila de outras pessoas ficam retidas para elas de imediato. O próximo disparo de uma programação aguarda até a execução em pausa retomar. Os agentes ACP não indicam redefinição, pelo que as suas execuções não aguardam.
+
+## Limites do espaço de trabalho
+
+Um administrador do espaço de trabalho define os limites em **Definições → Espaço de trabalho → Programações**:
+
+- **Limites de programação**: quantas programações ativas ou em pausa um agente pode ter numa conversa (10), no conjunto do espaço de trabalho (50) e em todo o espaço de trabalho (500); o limite de custo predefinido de uma programação (50 dólares); e o fuso horário usado pelas programações cron e pelo resumo diário (UTC para começar).
+- **Quando ninguém responde**: quanto tempo uma execução iniciada pelo servidor espera pela resposta ou aprovação de uma pessoa (72 horas por predefinição, de 1 hora a 7 dias) antes de uma aprovação contar como recusada e uma pergunta como sem resposta (depois disso, tudo o que a mesma execução pedir é recusado de imediato), e a hora do resumo diário do que aguarda por você em objetivos, programações e outras execuções iniciadas pelo servidor.
+
+Os membros veem a página só de leitura.
+
+## Ver também
+
+- [Perseguir um objetivo](/pt-PT/manual/guias/perseguir-objetivo/)
+- [Agentes a trabalhar em conjunto](/pt-PT/manual/guias/agentes-em-conjunto/)
+- [Comandos slash](/pt-PT/manual/referencia/comandos-slash/)
+- [Ferramentas de despertar e de objetivo](/pt-PT/manual/referencia/ferramentas-mcp/#ferramentas-de-despertar-e-de-objetivo)

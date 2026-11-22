@@ -2,7 +2,7 @@
 title: روٹ میپ
 description: Control Center کی رجسٹر کردہ ہر روٹ، اُس کی اسکرین اور کوئری پیرامز کے ساتھ۔
 slug: ur-PK/ہدایت-نامہ/حوالہ/روٹ-میپ
-sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
+sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
 ---
 
 ## ایپ شیل
@@ -40,6 +40,12 @@ sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 | `/pipelines`                            | —                                         | پائپ لائن رن کی فہرست                                                                                                                                                     |
 | `/pipelines/run`                        | `?templateId=<id>`                        | دستی رن لانچر                                                                                                                                                             |
 | `/pipelines/:runId`                     | —                                         | پائپ لائن رن کی تفصیل (اسٹیپ ٹائم لائن)                                                                                                                                   |
+| `/goals` | — | ہدف کی فہرست، ریویو کا انتظار، کھلے اور ختم شدہ کے گروپس میں |
+| `/goals/:goalId` | `?edit=contract` | ایک ہدف: ابھی، مکمل ہونے کا مطلب، تصدیق، شیڈولز اور بیداریاں؛ `edit=contract` توقف پر موجود ہدف پر کنٹریکٹ ایڈیٹر کھولتا ہے |
+| `/schedules` | — | شیڈولز اور واچز، حیثیت کے لحاظ سے گروپ، **نیا شیڈول** کے ساتھ |
+| `/schedules/:ruleId` | — | ایک شیڈول: نوٹ، تفصیلات، حالیہ بیداریاں اور رنز |
+| `/improvements` | — | بہتری کی تجاویز، حیثیت کے لحاظ سے گروپ |
+| `/improvements/:proposalId` | — | ایک تجویز: کیا بدلتا ہے، ثبوت، جانچ اور فیصلہ |
 | `/plans`                                | —                                         | Plan Studio ہب: فعال پلانز، پلان دستاویزات، پلے بکس                                                                                                                        |
 | `/plans/:kind/:id`                      | —                                         | ایک پلان کے لیے Plan Studio؛ `kind` یا `orchestration` ہوتا ہے یا `document`                                                                                              |
 | `/meetings`                             | —                                         | میٹنگز کی فہرست                                                                                                                                                           |
@@ -99,6 +105,7 @@ sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 | `/settings/workspace/skills`       | مہارت کی کنفیگریشن                                                                                   |
 | `/settings/memory`                 | ورک اسپیس میموری: حقائق، پالیسیاں، نالج گراف                                                          |
 | `/settings/workspace/permissions`  | ایجنٹ اجازتیں: گارڈریل میٹرکس اور what-if پروب                                                       |
+| `/settings/workspace/schedules` | شیڈول کی حدیں، cron شیڈولز اور خلاصے کا ٹائم زون، اور سرور کے شروع کردہ رنز کا جواب کتنی دیر انتظار کرتے ہیں (ایڈمن ترمیم کرتے ہیں؛ ممبر پڑھتے ہیں) |
 | `/settings/pipelines`              | پائپ لائن ٹیمپلیٹس                                                                                    |
 | `/settings/pipelines/:templateId`  | پائپ لائن ٹیمپلیٹ ایڈیٹر (ڈریگ اینڈ ڈراپ کینوس)                                                       |
 

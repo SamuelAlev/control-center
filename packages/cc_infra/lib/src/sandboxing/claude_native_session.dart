@@ -50,9 +50,10 @@ class ClaudeNativeSessionScope {
   final String workdir;
 
   /// Canonical fingerprint of the launch policy: model, effort, permission
-  /// mode, MCP config posture and appended system prompt. A resumed session
-  /// silently inherits the old policy's system prompt and permission surface,
-  /// so any change to it forks rather than resumes.
+  /// mode, MCP config posture, appended system prompt and the run's code mode
+  /// setting (which shapes the MCP tool list). A resumed session silently
+  /// inherits the old policy's system prompt, permission surface and tool
+  /// list, so any change to it forks rather than resumes.
   final String policyFingerprint;
 
   /// The canonical, delimiter-joined scope string the key hashes.

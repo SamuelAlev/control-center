@@ -22,6 +22,7 @@ class OperationLinks extends ConsumerWidget {
           ('/activity', l10n.mobileActivity, CcIcons.bell),
           ('/plans', l10n.mobilePlans, AppIcons.fileText),
           ('/goals', l10n.mobileGoals, AppIcons.bot),
+          ('/schedules', l10n.schedulesTitle, AppIcons.repeat),
           ('/permissions', l10n.mobilePermissions, CcIcons.lock),
           ('/credentials', l10n.mobileCredentials, CcIcons.keyRound),
         ])

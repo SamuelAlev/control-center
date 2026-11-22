@@ -10,6 +10,10 @@ class CheckpointTool extends HarnessTool {
   @override
   String get name => 'checkpoint';
 
+  /// Marks or cuts the model's own history, which a script cannot see.
+  @override
+  bool get scriptCallable => false;
+
   @override
   String get description =>
       'Mark the current conversation state with a label so you can rewind to '
@@ -46,6 +50,10 @@ class RewindTool extends HarnessTool {
   @override
   String get name => 'rewind';
 
+  /// Marks or cuts the model's own history, which a script cannot see.
+  @override
+  bool get scriptCallable => false;
+
   @override
   String get description =>
       'Discard the exploratory turns since a checkpoint (or since the task '
@@ -73,4 +81,50 @@ class RewindTool extends HarnessTool {
     Map<String, dynamic> args,
     HarnessToolContext context,
   ) async => HarnessToolResult.error('rewind is handled by the loop.');
+}
+
+/// Schedules a compaction of the run's own context before the next model
+/// call, with a focus on what must survive. Handled by the loop (it owns the
+/// history); [execute] is never invoked. Not callable from scripts: a script
+/// cannot see the history it would fold.
+class CompactTool extends HarnessTool {
+  /// Creates a [CompactTool].
+  CompactTool();
+
+  @override
+  String get name => 'compact';
+
+  /// Folds the model's own history, which a script cannot see.
+  @override
+  bool get scriptCallable => false;
+
+  @override
+  String get description =>
+      'Compact (summarize) this conversation\'s older context now, to free '
+      'room in the context window, keeping what the focus names. Runs before '
+      'the next model call; the newest turns stay verbatim. Worth it once '
+      'context use passes about 70%, before a long new phase of work.';
+
+  @override
+  ToolApprovalTier get approvalTier => ToolApprovalTier.read;
+
+  @override
+  Map<String, dynamic> get inputSchema => {
+    'type': 'object',
+    'properties': {
+      'focus': {
+        'type': 'string',
+        'maxLength': 1000,
+        'description':
+            'What the summary must keep: the open task, decisions, file '
+            'paths, handles of running work (at most 1,000 characters).',
+      },
+    },
+  };
+
+  @override
+  Future<HarnessToolResult> execute(
+    Map<String, dynamic> args,
+    HarnessToolContext context,
+  ) async => HarnessToolResult.error('compact is handled by the loop.');
 }

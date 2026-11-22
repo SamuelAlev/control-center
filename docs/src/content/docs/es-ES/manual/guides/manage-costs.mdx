@@ -2,7 +2,7 @@
 title: Gestionar costes
 description: Consulta cuánto están gastando tus agentes, pon un tope a una ejecución autónoma y reduce el uso de tokens.
 slug: es-ES/manual/guias/gestionar-costes
-sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
+sourceHash: 040176a3840653a57c823ce4ff7e3ed9cf071c07
 ---
 
 Esta guía muestra cómo ver cuánto cuestan las ejecuciones de un agente y cómo
@@ -72,36 +72,30 @@ coste; para eso, usa la tabla por agente de Observabilidad → Resumen.
 
 ## Poner un tope a una ejecución autónoma
 
-Dos comandos slash, escritos en el compositor de un espacio, son las únicas
-ejecuciones con tope de gasto:
+Estas ejecuciones tienen un tope de gasto. Una ejecución que inicias enviando un mensaje no lo tiene.
 
 ```
 /goal ship the auth refactor --budget 20
-/loop keep the flaky tests green
+/loop every 1h --budget 10 keep the flaky tests green
 ```
 
-- Cada segmento de una ejecución de `/goal` o `/loop` se detiene cuando su gasto
-  valorado alcanza los **500 céntimos ($5.00)**. Al llegar al 80 % de esa cifra,
-  el bucle primero orienta al modelo para que cierre y deje un relevo limpio, de
-  modo que no muera a mitad de tarea.
-- Un objetivo duradero completo tiene un tope de **5000 céntimos ($50.00)** a
-  menos que pases `--budget <dollars>`. El supervisor canaliza el presupuesto
-  _restante_ del objetivo hacia cada segmento, de modo que un presupuesto
-  explícito nunca se supera por un segmento entero.
-- `--days N` añade un plazo en tiempo real y `--max N` un techo de número de
-  ejecuciones. Ambos son opcionales; sin ellos, el objetivo solo está acotado
-  por el coste.
-- Un objetivo que alcanza su plazo se detiene en `budgetExhausted` y solo se
-  puede reanudar aumentando el presupuesto.
+| Ejecución | Tope |
+| --- | --- |
+| Un segmento de un objetivo | 5 dólares, o lo que quede del presupuesto del objetivo si es menos |
+| Un objetivo | 50 dólares, salvo que pases `--budget <dollars>` |
+| La revisión de un objetivo | 2 dólares, o lo que quede, cargados al objetivo |
+| Una ejecución que inicia una programación o una vigilancia | 5 dólares; la programación se detiene en su propio tope de coste (50 dólares, salvo que pases `--budget`, o el valor por defecto del espacio de trabajo) |
+| La revisión tras un objetivo, o `/refine` | 1 dólar |
 
-Como el tope depende del precio, un modelo que el catálogo no puede valorar
-nunca lo alcanza. Esa ejecución queda acotada, en su lugar, por la protección
-contra bucles infinitos por repetición, la rendición del supervisor tras tres
-fallos consecutivos y tú.
+- Una ejecución con tope se detiene cuando su gasto valorado alcanza el tope, en el arnés integrado, en Claude Code y en los agentes ACP. Al llegar al 90 %, el arnés integrado y Claude Code primero orientan al agente para que cierre y deje un relevo limpio, de modo que no muera a mitad de tarea. Un agente ACP se cancela al llegar al tope.
+- El presupuesto _restante_ del objetivo se canaliza hacia cada segmento, de modo que un presupuesto explícito nunca se supera por un segmento entero.
+- `--days N` añade un plazo y `--max N` un techo de segmentos. Ambos son opcionales; sin ellos, el objetivo está acotado por el coste y por su parada por falta de progreso.
+- Un objetivo que alcanza su presupuesto se detiene en **Presupuesto agotado** y solo se reanuda con un presupuesto mayor, que solo puede dar la persona que lo inició.
+- Una ejecución de pipeline retenida en el tope de su orquestación espera hasta que quien la pidió pulse **Subir límite** en la página de la ejecución de pipeline. El nuevo tope debe ser superior al anterior y a lo gastado, como máximo 1.000 dólares, y nunca se elimina un tope.
 
-Un mensaje en un espacio, una @mención o un paso de pipeline no tienen tope de
-gasto. La ejecución termina cuando el modelo se detiene, cuando la detienes tú o
-cuando la protección contra bucles infinitos la reorienta.
+Como el tope depende del precio, un modelo que el catálogo no puede valorar nunca lo alcanza. Esa ejecución queda acotada, en su lugar, por la protección contra bucles infinitos por repetición, la parada de un objetivo por falta de progreso, su rendición tras tres fallos consecutivos y tú.
+
+Un mensaje en un espacio, una @mención o un paso de pipeline fuera de una orquestación con tope no tienen tope de gasto propio. La ejecución termina cuando el modelo se detiene, cuando la detienes tú o cuando la protección contra bucles infinitos la reorienta.
 
 ## Reducir el uso de tokens
 

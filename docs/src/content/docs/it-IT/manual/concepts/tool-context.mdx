@@ -2,29 +2,45 @@
 title: Contesto degli strumenti e cache dei prompt
 description: Perché a un agente viene mostrato un insieme ristretto di strumenti anziché tutti, come raggiunge gli altri e le regole che mantengono calda la cache dei prompt del provider lungo un'esecuzione.
 slug: it-IT/manuale/concetti/contesto-strumenti
-sourceHash: 8dfc816784ab3e98110b63e6322d5df07c2adccd
+sourceHash: 74ad7fcb903772d007ba9bd7ec85153fcf668335
 ---
 
 Due cose valgono per ogni richiesta che l'harness integrato effettua: le definizioni degli strumenti ne sono il costo fisso più grande e quasi nessuna di esse verrà usata. Questa pagina spiega che cosa fa Control Center in proposito e perché la risposta non è semplicemente «inviare meno strumenti».
 
 ## Il problema è l'attenzione, non i byte
 
-Control Center registra circa 126 strumenti. Inviati per intero, le loro definizioni costano all'incirca **23.000 token a ogni richiesta** — un costo che nessuna compattazione può scalfire, perché le definizioni degli strumenti viaggiano in una parte della richiesta separata dalla conversazione.
+Control Center ha circa 160 strumenti propri. Inviati per intero, le loro definizioni viaggerebbero con **ogni richiesta** — un costo che nessuna compattazione può scalfire, perché le definizioni degli strumenti viaggiano in una parte della richiesta separata dalla conversazione.
 
 Il conto dei token è il lamento ovvio e, con la cache dei prompt, è anche il minore. Il costo reale è la **precisione nella selezione**. Le valutazioni pubblicate sulle chiamate agli strumenti concordano sul fatto che i modelli scelgono lo strumento giusto in modo affidabile fino a circa 30–50 strumenti nel contesto, e peggiorano progressivamente oltre quella soglia. La causa indicata non è il numero di token ma la **sovrapposizione semantica**: quando un catalogo contiene diversi strumenti le cui descrizioni si somigliano, il modello sceglie tra quasi identici invece di richiamare alla mente una capacità.
 
-Con 126 strumenti, un agente è ben oltre quella fascia a ogni singolo turno — compresi i molti turni in cui doveva soltanto leggere un file.
+Con circa 160 strumenti, un agente supera ampiamente quella fascia a ogni singolo turno — compresi i molti turni in cui gli serviva soltanto leggere un file.
 
-## La superficie a due livelli
+## Un piccolo insieme diretto
 
 A un'esecuzione vengono quindi mostrate due cose:
 
-- un insieme **residente** — circa due dozzine di strumenti, inviati con gli schemi completi a ogni richiesta;
+- un insieme **diretto** di circa quindici strumenti, inviati con gli schemi completi a ogni richiesta;
 - un **indice dei nomi** di tutto il resto, raggruppato sotto intestazioni come «Tickets and projects» o «Memory and knowledge», che costa qualche centinaio di token per l'intero catalogo.
 
-Misurato sul catalogo attuale, tutto ciò porta il blocco degli strumenti da **~23,1k token a ~5,0k, circa il 78% in meno**, e colloca l'insieme sempre visibile dentro la fascia in cui la selezione è affidabile.
+Misurato sul registro che costruiscono i test, gli strumenti standard della chat dell'agente integrato sono 14 definizioni di strumenti e circa 16,5 KB con `repl`, di cui `repl` occupa circa 4 KB (la sua definizione non può superare 4.096 byte), e 14 definizioni e circa 13 KB su un server che non può eseguire script. Si tratta della misura di una sola superficie, non di ogni installazione. Ogni altro strumento si raggiunge da uno script o viene caricato al primo uso.
 
-L'insieme residente è formato dagli strumenti che un'esecuzione usa nella *maggior parte* delle esecuzioni: il vocabolario di file e shell (`read`, `write`, `edit`, `search`, `bash`, …), gli strumenti di scoperta, la checklist delle attività, la ricerca nella memoria e qualunque verbo debba invocare la [modalità](/it-IT/manuale/concetti/modalita) corrente per produrre il proprio output. Il verbo di output di una modalità è sempre residente: un'esecuzione non deve mai doversi mettere a cercare l'unica chiamata che produce il suo deliverable.
+L'insieme diretto è formato dagli strumenti che la maggior parte delle esecuzioni usa nei primi turni e da quelli che un'esecuzione non deve mai dover cercare: `read`, `write`, `edit`, `search`, `find`, `bash` e `read_output`; `ask_user` e `task`; `todo_write`, `search_memory` e `send_message`; e qualunque verbo debba invocare la [modalità](/it-IT/manuale/concetti/modalita/) corrente per produrre il proprio output. Il verbo di output di una modalità è sempre diretto: un'esecuzione non deve mai doversi mettere a cercare l'unica chiamata che produce il suo deliverable. Uno strumento entra nell'insieme perché viene usato nella maggior parte delle esecuzioni, non perché è importante quando lo si usa: ogni nome nell'insieme è una definizione a ogni turno di ogni esecuzione.
+
+### Gli script raggiungono il resto
+
+Quando il server può eseguire script, ogni esecuzione ha anche [`repl`](/it-IT/manuale/concetti/modalita-codice/), per primo nella lista. La regola per il resto del catalogo è allora:
+
+- uno strumento che uno script può chiamare è raggiungibile **solo da uno script**: è nell'indice dei nomi, e uno script `repl` lo chiama come `tools.<name>(args)` dopo averlo cercato con `searchTools()` o `describeTool()`, finché il server non può eseguire gli script dell'esecuzione e lo strumento viene invece caricato al primo uso ([Quando gli script non possono girare](/it-IT/manuale/concetti/modalita-codice/#quando-gli-script-non-possono-girare));
+- uno strumento che uno script non può chiamare (`eval`, `task`, approvazioni, delega e alcuni altri) è **differito**: viene caricato al primo uso, come descritto sotto;
+- `search_tools` viene aggiunto quando qualcosa è differito.
+
+Un'esecuzione senza `repl` riceve lo stesso insieme diretto, e tutto il resto è differito.
+
+L'insieme diretto è lo stesso con o senza `repl`, di proposito. L'agente impara una sola superficie, l'inizio di ogni richiesta contiene gli stessi strumenti nello stesso ordine, e aggiungere `repl` non cambia nulla su cui l'agente già contava.
+
+Il risparmio: lo schema di uno strumento solo da script non viene mai inviato al provider, quindi il centinaio di strumenti fuori dall'insieme diretto costano solo i loro nomi. Uno script che ne usa dieci non paga nessuno dei loro schemi, e i suoi risultati intermedi non entrano mai nel contesto.
+
+Il costo: uno strumento fuori dall'insieme diretto richiede uno script per essere chiamato, e lo script deve prima cercare gli argomenti dello strumento. Per una chiamata rapida è un passo in più che una chiamata diretta non richiederebbe. Per questo gli strumenti che la maggior parte delle esecuzioni usa nei primi turni restano diretti.
 
 ### Differito non significa non disponibile
 
@@ -32,19 +48,21 @@ Questa è la parte che rende il progetto sicuro e non solo economico. **Uno stru
 
 L'agente vede il nome nel proprio prompt. Se chiama direttamente quel nome, l'harness carica lo schema ed esegue lo strumento nello stesso passo: nessun errore, nessun andata e ritorno. Il modello non ha bisogno di sapere che lo strumento è mai stato «scaricato».
 
-Quando l'agente conosce il compito ma non il nome, `search_tools` accetta una descrizione in linguaggio naturale («assegna un ticket a qualcuno»), classifica l'intera superficie dell'esecuzione e restituisce le corrispondenze *con i loro schemi già caricati*, così che il turno immediatamente successivo possa chiamarne una. Se una ricerca non trova nulla, lo dice chiaramente e suggerisce altre parole o una ricerca più ampia — e lo fa di proposito, perché un agente che interpreta una ricerca vuota come «questa capacità non esiste» inventerà un sostituto invece di guardare di nuovo.
+Quando l'agente conosce il compito ma non il nome, `search_tools` accetta una descrizione in linguaggio naturale («assegna un ticket a qualcuno»), classifica l'intera superficie dell'esecuzione e restituisce le corrispondenze *con i loro schemi già caricati*, così che il turno immediatamente successivo possa chiamarne una. Una corrispondenza chiamabile solo da uno script viene restituita con il modo di chiamarla da uno script, a meno che gli script dell'esecuzione non possano più girare: allora viene caricata come ogni altra corrispondenza. Se una ricerca non trova nulla, lo dice chiaramente e suggerisce altre parole o una ricerca più ampia — e lo fa di proposito, perché un agente che interpreta una ricerca vuota come «questa capacità non esiste» inventerà un sostituto invece di guardare di nuovo.
 
 `search_tools` esiste solo nell'harness integrato. I client MCP esterni hanno invece `search_tool_bm25`, che classifica lo stesso indice ma descrive soltanto le corrispondenze: quei client hanno già ricevuto tutti gli schemi da `tools/list`, quindi non c'è nulla da caricare.
 
-### Che cosa il differimento non fa mai
+### Che cosa la superficie non fa mai
 
-Il differimento viene applicato **dopo** il filtro degli strumenti della modalità, mai al suo posto. Nasconde uno schema; non può rivelare uno strumento che la modalità ha negato. Uno strumento attivato passa comunque dalla richiesta di approvazione e dai [guardrail delle azioni](/it-IT/manuale/concetti/guardrail) esattamente come farebbe uno residente, e uno strumento non può caricare un nome che non fosse già sulla superficie dell'esecuzione in partenza.
+Il differimento e gli script vengono applicati **dopo** il filtro degli strumenti della modalità, mai al suo posto. Nascondono uno schema; non possono rivelare uno strumento che la modalità ha negato. Uno strumento caricato e una chiamata di uno script passano comunque dalla richiesta di approvazione e dai [guardrail delle azioni](/it-IT/manuale/concetti/guardrail/) esattamente come farebbe una chiamata diretta, e nessuno dei due può raggiungere un nome che non era sulla superficie dell'esecuzione in partenza.
 
-La superficie MCP che vedono i client esterni **non** è interessata. `tools/list` continua a restituire il catalogo completo. Un tentativo precedente di ridurlo ha rotto gli agenti di netto: i client MCP convalidano i nomi degli strumenti rispetto alla propria lista in cache e rifiutano qualunque cosa non sia in elenco senza mai chiedere al server, quindi uno strumento «nascosto ma invocabile» era semplicemente irraggiungibile. Il differimento vive nell'harness, dove caricare uno strumento a metà esecuzione è qualcosa che l'harness può effettivamente fare.
+La superficie MCP che vedono i client esterni **non** è differita. `tools/list` restituisce il catalogo completo, perché i client MCP convalidano i nomi degli strumenti rispetto alla propria lista in cache e rifiutano qualunque cosa non sia in elenco senza mai chiedere al server, quindi uno strumento «nascosto ma invocabile» sarebbe semplicemente irraggiungibile. Il differimento vive nell'harness, dove caricare uno strumento a metà esecuzione è qualcosa che l'harness può effettivamente fare.
 
-### Disattivarlo
+Un'esecuzione di agente che raggiunge Control Center tramite il suo endpoint MCP mentre il server può eseguire script è l'unica eccezione. Il suo `tools/list` contiene `repl`, gli strumenti diretti e ogni strumento che uno script non può chiamare, e chiama il resto da script. Una chiamata diretta a uno di questi riceve in risposta come chiamarlo da uno script.
 
-`--tool-deferral=off` (o `CC_SERVER_TOOL_DEFERRAL=off`) rende di nuovo residenti tutti gli strumenti ammessi, producendo esattamente le richieste che il server effettuava prima che il differimento esistesse. Vedi il [riferimento alla CLI di `cc_server`](/it-IT/manuale/riferimento/cc-server-cli).
+### Disattivare il differimento
+
+`--tool-deferral=off` (o `CC_SERVER_TOOL_DEFERRAL=off`) disattiva il differimento: un'esecuzione senza `repl` riceve ogni strumento ammesso per intero, e un'esecuzione con `repl` riceve per intero gli strumenti che uno script non può chiamare, mentre il resto resta solo da script. Vedi il [riferimento alla CLI di `cc_server`](/it-IT/manuale/riferimento/cc-server-cli/).
 
 ## La cache dei prompt
 
@@ -64,7 +82,7 @@ Un provider concede un numero limitato di marcatori di cache, e Control Center l
 
 | Marcatore                      | Copre                                | Durata |
 | ------------------------------ | ------------------------------------ | ------ |
-| Ultimo strumento **residente** | Il blocco degli strumenti            | 1 ora  |
+| Ultimo strumento **diretto**   | Il blocco degli strumenti            | 1 ora  |
 | Ultimo blocco di sistema       | Strumenti + prompt di sistema        | 1 ora  |
 | Coda del turno precedente      | Cronologia fino all'ultima richiesta | 5 min  |
 | Coda del turno attuale         | La cronologia completa               | 5 min  |
@@ -77,12 +95,12 @@ Il prefisso strumenti-e-sistema riceve la durata lunga perché è costante per t
 
 I subagent dello stesso tipo producono prefissi di prompt identici byte per byte, quindi dovrebbero leggere un'unica voce di cache anziché scriverne ciascuno la propria. Ma una voce diventa leggibile solo quando la richiesta che l'ha scritta inizia a rispondere, perciò in un fan-out avviato tutto in una volta ogni figlio paga il sovrapprezzo per un prefisso che condividono tutti.
 
-L'harness lascia partire il primo figlio di una data forma, poi libera i suoi fratelli non appena inizia a fare streaming. L'attesa è limitata: un primo figlio lento costa un successo di cache, mai il fan-out in sé. Per lo stesso motivo, ogni subagent riceve lo stesso insieme di strumenti residenti a prescindere dal proprio profilo: variarlo per profilo frammenterebbe il prefisso condiviso senza alcun vantaggio, dato che il profilo ha già deciso che cosa può chiamare il figlio.
+L'harness lascia partire il primo figlio di una data forma, poi libera i suoi fratelli non appena inizia a fare streaming. L'attesa è limitata: un primo figlio lento costa un successo di cache, mai il fan-out in sé. Per lo stesso motivo, ogni subagent riceve lo stesso insieme di strumenti diretti a prescindere dal proprio profilo: variarlo per profilo frammenterebbe il prefisso condiviso senza alcun vantaggio, dato che il profilo ha già deciso che cosa può chiamare il figlio.
 
 ## Vederlo all'opera
 
 Entrambe le metà sono osservabili anziché date per scontate:
 
-- L'**esploratore del contesto** di una conversazione riporta gli strumenti residenti, l'indice differito e quanto *costerebbe* ogni schema trattenuto, ed è costruito con lo stesso percorso di codice che usa un'esecuzione reale.
+- L'**esploratore del contesto** di una conversazione riporta gli strumenti diretti, l'indice differito e quanto *costerebbe* ogni schema trattenuto, ed è costruito con lo stesso percorso di codice che usa un'esecuzione reale.
 - Ogni esecuzione registra quali strumenti differiti ha caricato e che cosa l'ha innescato, così una ricerca che non trova nulla è visibile come un recupero mancato invece di sparire in un agente che, in silenzio, fa qualcosa di adiacente.
 - Osservabilità riporta il **Tasso di cache** come letture dalla cache su tutti i token di prompt elaborati, scritture incluse: un'esecuzione che continua a ricostruire il proprio prefisso ottiene un punteggio basso, invece di ottenere lo stesso punteggio di una che non ha mai avuto bisogno di una cache.

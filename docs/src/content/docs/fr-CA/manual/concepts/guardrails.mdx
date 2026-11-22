@@ -2,7 +2,7 @@
 title: Garde-fous — une seule politique pour chaque action modificatrice
 description: Pourquoi Control Center fait passer chaque effet secondaire d’un agent par un moteur unique qui autorise, demande ou refuse, pourquoi la taxonomie d’ActionClass reste volontairement réduite et ce que le réglage d’autonomie change réellement.
 slug: fr-CA/manuel/concepts/garde-fous
-sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
+sourceHash: bb98b2ca26ae104ab7701d4d381cd5c41d25d32f
 ---
 
 Les agents de Control Center peuvent supprimer des fichiers, pousser des
@@ -36,6 +36,17 @@ exécution qui démarre sans bac à sable, les garde-fous constituent la couche 
 contrôle la plus externe plutôt qu’une
 politique posée au-dessus d’un socle, ce qu’il vaut la peine de savoir avant de
 décider à quel point être permissif.
+
+### Appels faits par un script
+
+Un script du [mode code](/fr-CA/manuel/concepts/mode-code/) appelle des outils dans du code, plusieurs à la fois, mais chacun de ses appels est un appel d’outil distinct adressé au moteur. Il passe par la même porte du harnais ou du répartiteur MCP qu’un appel direct, avec les mêmes règles, la même demande d’approbation et la même entrée d’audit, et rien de ce qu’il fait n’est approuvé parce que l’appel `repl` qui l’a démarré l’était.
+
+Deux règles supplémentaires s’appliquent aux appels d’un script, car un seul script peut faire des centaines d’appels et intercepter chaque refus :
+
+- au plus 10 de ses appels parviennent à une personne pour approbation; les suivants qui exigeraient une personne sont refusés sans carte;
+- une fois qu’une personne refuse l’un de ses appels, le reste de ses appels qui exigent une approbation est refusé sans demande.
+
+Une carte soulevée par un script l’indique et vous permet d’ouvrir le script. Si le script se termine pendant que la carte est ouverte, la carte est retirée, et une réponse qui arrive après est enregistrée comme un refus et n’approuve rien.
 
 ## ActionClass : une taxonomie volontairement fermée
 
@@ -282,5 +293,6 @@ est celle que l’agent obtiendra.
 ## Concepts connexes
 
 - [Bac à sable et sécurité](/fr-CA/manuel/concepts/bac-a-sable-et-securite/) : ce qui limite réellement l’exécution d’un agent et jusqu’où s’étend le socle du système d’exploitation sous ce moteur
+- [Mode code](/fr-CA/manuel/concepts/mode-code/) : scripts dont chaque appel d’outil passe par ce moteur
 - [Multijoueur — identité, adhésion et présence](/fr-CA/manuel/concepts/multijoueur/) : les espaces, les principaux et l’emplacement du réglage d’autonomie
 - [Configurer les garde-fous](/fr-CA/manuel/guides/configurer-garde-fous/) : écrire et tester des règles en pratique

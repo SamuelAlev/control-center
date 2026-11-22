@@ -11,8 +11,8 @@ import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_run_re
 /// Aggregates agent cost/token usage onto the pipeline run that dispatched the
 /// agent, so a run carries a per-run cost rollup (e.g. for fan-out reviews).
 ///
-/// On [AgentRunCompleted] it reads the completed run log directly by its
-/// `runId` and, when that log belongs to a pipeline run (`pipelineRunId`),
+/// On [AgentRunSettled] (published after the run's terminal write, so the
+/// final cost is on the row) it reads the run log directly by its `runId` and, when that log belongs to a pipeline run (`pipelineRunId`),
 /// adds its cost to that run's total. This is exact: no ticket fan-out, no
 /// "most recent run" heuristic — the event names the precise run.
 class PipelineCostRollupListener {
@@ -23,7 +23,7 @@ class PipelineCostRollupListener {
     required this.runRepository,
   });
 
-  /// Bus carrying [AgentRunCompleted].
+  /// Bus carrying [AgentRunSettled].
   final DomainEventBus eventBus;
 
   /// Source of the agent's cost/token usage (read by the event's `runId`).
@@ -32,24 +32,16 @@ class PipelineCostRollupListener {
   /// Target for the cost increment.
   final PipelineRunRepository runRepository;
 
-  StreamSubscription<DomainEvent>? _sub;
+  StreamSubscription<AgentRunSettled>? _sub;
 
   /// Starts listening.
   void start() {
-    _sub = eventBus.on<DomainEvent>().listen(_onEvent);
+    _sub = eventBus.on<AgentRunSettled>().listen(_onEvent);
   }
 
-  Future<void> _onEvent(DomainEvent event) async {
-    if (event is! AgentRunCompleted) {
-      return;
-    }
+  Future<void> _onEvent(AgentRunSettled event) async {
     final runId = event.runId;
     final workspaceId = event.workspaceId;
-    // The workspace selects the database holding the run log and its pipeline
-    // run; a workspace-less event cannot be rolled up.
-    if (runId == null || workspaceId == null) {
-      return;
-    }
     try {
       final log = await runLogRepository.getById(workspaceId, runId);
       final pipelineRunId = log?.pipelineRunId;

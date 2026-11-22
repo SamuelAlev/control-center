@@ -1,8 +1,8 @@
 ---
 title: Explorar datos en un kernel persistente
-description: Dale a un agente un intérprete de Python o JavaScript que conserva sus variables entre llamadas, dibuja gráficas en el chat y puede llamar a tus propias herramientas desde dentro de una celda.
+description: Dale a un agente un intérprete de Python o JavaScript que conserva sus variables entre llamadas y dibuja gráficas en el chat.
 slug: es-MX/manual/guias/explorar-datos-en-kernel
-sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
+sourceHash: 8fcd77019bfae5088223822a12ef91c8a6879c5d
 ---
 
 Esta guía te muestra cómo hacer que un agente cargue algo costoso una sola vez y luego le haga varias preguntas, en lugar de pagar esa carga en cada pregunta.
@@ -62,22 +62,9 @@ Estas se reescriben como código simple en lugar de dar error:
 
 La expulsión de la caché de `%pip` es la que importa: instalar en un intérprete en vivo no hace nada por un módulo que ya se importó, así que sin ella la versión que acabas de instalar no es la que se está ejecutando.
 
-## Llamar a tus propias herramientas desde dentro de una celda
+## Llamar herramientas desde código
 
-```python
-paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
-for path in paths.splitlines()[:100]:
-    contents = tool("read", {"path": path})
-    ...
-```
-
-`tool(name, args)` vuelve a entrar en el registro de herramientas del propio agente. Eso significa que una celda puede repartirse entre cien archivos, o delegar mediante `task`, sin que el modelo gaste un turno por cada elemento.
-
-:::caution[El puente no se salta tus barandillas]
-Una llamada puente se resuelve contra el **mismo** registro de herramientas que una llamada emitida por el modelo, así que la política de `ActionClass`, las solicitudes de aprobación y todos los envoltorios se aplican de forma idéntica. Un puente que se saltara el registro sería un agujero con la forma exacta de «escribir un one-liner de Python».
-:::
-
-Una llamada puente **suspende el tiempo de espera de la celda** mientras está pendiente. El presupuesto mide inactividad, no tiempo de reloj: una celda que se reparte entre subagentes y espera cuatro minutos no está colgada, y matarla a mitad de la repartición perdería el estado de todo el kernel.
+Una celda no puede llamar a las herramientas del agente. Para recorrer herramientas en código, el agente escribe en su lugar un script de [`repl`](/es-MX/manual/conceptos/modo-codigo/). Un script tampoco puede llamar a `eval`: el agente lo llama directamente.
 
 ## Empezar de nuevo
 

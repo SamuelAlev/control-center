@@ -2,7 +2,7 @@
 title: Glosar
 description: Definiții ale termenilor-cheie folosiți în tot Control Center.
 slug: ro-RO/manual/referinta/glosar
-sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
+sourceHash: ba09880357171a4fcbb82201798578de3856cbe6
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -36,7 +36,13 @@ export const glossaryTerms = [
 ['Stație', 'O mașină de unică folosință pe care un agent o conduce în timp real: un browser sau un desktop Linux închis, un emulator Android ori un simulator iOS administrat de gazdă, sau un terminal închis. Urmărită live prin propria bandă la rezoluție completă, cu preluarea controlului impusă pe server. Limitată la o conversație, așa că fila umană și instrumentul agentului vizează o singură mașină.'],
 ['Mediu izolat', 'Proprietatea de izolare mai puternică, disponibilă stațiilor sprijinite de VM: o graniță de kernel, disc suprapus de unică folosință, poartă de rețea cu refuz implicit și broker de credențiale. Stațiile Android și iOS sunt de unică folosință, dar folosesc rețeaua administrată de gazdă, așa că nu revendică această graniță. Conducerea oricărei stații folosește clasa de guardrail enclosureControl.'],
 ['RunCost', 'Total de tokeni/cost (tokeni de intrare, tokeni de ieșire, cost estimat în microdolari) pentru o singură rulare de agent.'],
-['WakeReason', 'Motivul pentru care a fost trimis un agent. Șase valori: mesaj de la utilizator, atribuire de tichet, retrimitere de recuperare după un eșec, tichet copil finalizat, semnal periodic de continuare programat și pas de pipeline.'],
+['WakeReason', 'Motivul pentru care există o rulare de agent. Mesajul unei persoane, atribuirea unui tichet sau un pas de pipeline; sau, pentru o rulare pornită de server din proprie inițiativă, motivul trezirii ei: un program, o urmărire, un segment, o verificare sau o revizuire a unui obiectiv, mesajul sau răspunsul altui agent, munca copil terminată, o limită de utilizare care s-a resetat, o revizuire de îmbunătățire sau recuperarea după o repornire.'],
+['Trezire', 'O cerere durabilă, păstrată în baza de date a spațiului de lucru, de a porni sau continua rularea unui agent într-o conversație, cu un motiv și persoana în numele căreia acționează. Fiecare rulare pe care o pornește serverul fără ca cineva să scrie începe ca una; treziri supraviețuiesc unei reporniri.'],
+['Obiectiv', 'Muncă de care un agent se ține, în segmente, până când serverul verifică faptul că ce înseamnă terminat este îndeplinit sau o persoană îl închide. Pornit cu /goal; câte unul per agent, pe rând. Agentul afirmă că este terminat; verificările și o revizuire doar în citire decid.'],
+['Program', 'O regulă care trezește un agent la un moment dat, la un interval, după un cron sau în ritmul propriu al agentului, cu un sfârșit, un plafon de rulări și un plafon de cost. Se creează cu /loop, /schedule, pagina Programe sau instrumentul wake_me al agentului.'],
+['Urmărire', 'O regulă care trezește un agent când se întâmplă ceva: se termină verificările unui pull request, primește o revizuire sau este îmbinat, se încheie o sarcină a unui mediu, un tichet se rezolvă sau se încheie o rulare de pipeline.'],
+['Întrebare', 'Întrebarea unui agent către altul, înregistrată înainte de a fi livrată. Cel care a întrebat este trezit o dată, cu răspunsul sau cu motivul pentru care nu există unul.'],
+['Propunere de îmbunătățire', 'O modificare a memoriei, a unei politici, a unei notițe de agent sau a unei abilități, pe care o sugerează o revizuire după un obiectiv verificat sau la /refine. Nu schimbă nimic până când o persoană o acceptă; o modificare de abilitate este evaluată mai întâi.'],
 ['SandboxPort', 'Gestionează ciclul de viață al sandbox-ului (detectare, lansare, evenimente, exec, distrugere).'],
 ['CredentialBrokerPort', 'Emite credențiale limitate pentru lansarea sandbox-ului (un token pentru un singur depozit în mediul unui agent, cu scriere doar pentru calea de push de pe server) și le eliberează la demolarea lui.'],
 ['GitRepoInspectorPort', 'Extrage metadate (proprietar, repo, ramură) dintr-o cale locală de repo Git.'],
@@ -94,6 +100,11 @@ export const glossaryTerms = [
 ['ID de instalare', 'Identitatea unui server față de o adresă Connect, derivată din cheia lui de instalare. Connect permite serverele după ID-ul de instalare; schimbarea cheii îl modifică și deconectează pe toată lumea de pe benzile Connect.'],
 ['Legătură de instalare', 'Evidența Connect (install_binding) a serverului de care este legată o echipă Slack. Instalările GitHub nu au niciuna: orice server pe care se autentifică un membru le poate folosi.'],
 ['Bandă de autentificare', 'Autentificarea în browser la un provider: github, google, linear, linear_app sau slack. Sub propriile aplicații, o bandă rulează pe aplicația proprie (a serverului sau a spațiului de lucru) doar când aceasta este complet configurată, altfel nu este disponibilă; cu un Connect ales, Connect o rulează. Niciuna nu revine la cealaltă.'],
+['Mod cod', 'Instrumentul repl, care rulează un script JavaScript care apelează celelalte instrumente ale rulării. Fiecare rulare îl are când serverul poate rula scripturi; nu există nicio setare.'],
+['Instrument direct', 'Un instrument pe care o rulare îl apelează pe nume, cu schema lui în fiecare cerere, indiferent dacă are sau nu repl: instrumentele de fișiere și de shell, ask_user, task, lista de sarcini, căutarea în memorie, send_message și verbele proprii ale modului.'],
+['Instrument disponibil doar din script', 'Un instrument din afara setului direct pe care o rulare cu repl îl poate apela doar dintr-un script, până când serverul nu poate rula scripturile rulării și atunci se încarcă la prima utilizare în schimb. Până atunci descrierea lui nu ajunge niciodată la model.'],
+['Runner de mod cod', 'cc_codemode, programul livrat împreună cu serverul, care rulează un script în motorul QuickJS-NG după ce se blochează cu controalele sistemului de operare. Serverul nu pornește fără el și nu rulează niciun script decât dacă este un build de lansare și blocarea este completă.'],
+['Execuție de cod', 'Înregistrarea unui singur script: sursa lui, ieșirea, limitele și fiecare apel de instrument pe care l-a făcut, păstrate în spațiul său de lucru și listate la Observabilitate → Execuții de cod.'],
 ];
 
 <StructuredData
@@ -157,7 +168,19 @@ export const glossaryTerms = [
 
 **RunCost**: Total de tokeni/cost (tokeni de intrare, tokeni de ieșire, cost estimat în microdolari) pentru o singură rulare de agent.
 
-**WakeReason**: Motivul pentru care a fost trimis un agent. Șase valori: mesaj de la utilizator, atribuire de tichet, retrimitere de recuperare după un eșec, tichet copil finalizat, semnal periodic de continuare programat și pas de pipeline.
+**WakeReason**: Motivul pentru care există o rulare de agent. Mesajul unei persoane, atribuirea unui tichet sau un pas de pipeline; sau, pentru o rulare pornită de server din proprie inițiativă, motivul trezirii ei: un program, o urmărire, un segment, o verificare sau o revizuire a unui obiectiv, mesajul sau răspunsul altui agent, munca copil terminată, o limită de utilizare care s-a resetat, o revizuire de îmbunătățire sau recuperarea după o repornire.
+
+**Trezire**: O cerere durabilă, păstrată în baza de date a spațiului de lucru, de a porni sau continua rularea unui agent într-o conversație, cu un motiv și persoana în numele căreia acționează. Fiecare rulare pe care o pornește serverul fără ca cineva să scrie începe ca una; treziri supraviețuiesc unei reporniri.
+
+**Obiectiv**: Muncă de care un agent se ține, în segmente, până când serverul verifică faptul că ce înseamnă terminat este îndeplinit sau o persoană îl închide. Pornit cu `/goal`; câte unul per agent, pe rând. Agentul afirmă că este terminat; verificările și o revizuire doar în citire decid.
+
+**Program**: O regulă care trezește un agent la un moment dat, la un interval, după un cron sau în ritmul propriu al agentului, cu un sfârșit, un plafon de rulări și un plafon de cost. Se creează cu `/loop`, `/schedule`, pagina Programe sau instrumentul `wake_me` al agentului.
+
+**Urmărire**: O regulă care trezește un agent când se întâmplă ceva: se termină verificările unui pull request, primește o revizuire sau este îmbinat, se încheie o sarcină a unui mediu, un tichet se rezolvă sau se încheie o rulare de pipeline.
+
+**Întrebare**: Întrebarea unui agent către altul, înregistrată înainte de a fi livrată. Cel care a întrebat este trezit o dată, cu răspunsul sau cu motivul pentru care nu există unul.
+
+**Propunere de îmbunătățire**: O modificare a memoriei, a unei politici, a unei notițe de agent sau a unei abilități, pe care o sugerează o revizuire după un obiectiv verificat sau la `/refine`. Nu schimbă nimic până când o persoană o acceptă; o modificare de abilitate este evaluată mai întâi.
 
 ## Porturi
 
@@ -258,6 +281,20 @@ export const glossaryTerms = [
 **Axă de revizuire**: Una dintre cele cinci benzi de punctaj per revizuire: `correctness`, `security` și `testGap` provin din constatările recenzenților; `visual` și `apiContract` sunt deterministe. Axele cu poartă se includ în verdict și îl pot face doar mai sever — o poartă `partial` sau `unavailable` ține verdictul în loc să îl aprobe.
 
 **Verdict de revizuire**: `ship`, `hold` sau `block`. Orice constatare P0 cu încredere ≥ 0,7 blochează; orice altă P0 sau orice P1 ține; în rest, ship. O axă cu poartă care eșuează forțează block și nu poate fi contrazisă la vot de constatări.
+
+## Mod cod
+
+**Mod cod**: Instrumentul `repl`, care rulează un script JavaScript care apelează celelalte instrumente ale rulării și returnează doar ce are nevoie agentul. Fiecare rulare îl are când serverul poate rula scripturi; nu există nicio setare. **Setări → Spațiu de lucru → Mod cod** arată dacă acest server rulează scripturi și stabilește limitele sub care rulează un script. Vezi [Mod cod](/ro-RO/manual/concepte/mod-cod/).
+
+**Instrument direct**: Un instrument pe care o rulare îl apelează pe nume, cu schema lui în fiecare cerere, indiferent dacă are sau nu `repl`: instrumentele de fișiere și de shell, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` și verbele proprii ale modului.
+
+**Instrument disponibil doar din script**: Un instrument din afara setului direct pe care o rulare cu `repl` îl poate apela doar dintr-un script, până când serverul nu poate rula scripturile rulării și atunci se încarcă la prima utilizare în schimb ([Când scripturile nu pot rula](/ro-RO/manual/concepte/mod-cod/#când-scripturile-nu-pot-rula)). Până atunci descrierea lui nu ajunge niciodată la model, iar un apel direct primește ca răspuns cum să fie apelat dintr-un script. Un instrument pe care un script nu îl poate apela nu este niciodată disponibil doar din script: se încarcă la prima utilizare.
+
+**Apel imbricat**: Un apel de instrument pe care îl face un script. Trece prin același filtru de mod, aceleași guardrail-uri și aceeași aprobare ca un apel direct.
+
+**Runner de mod cod**: `cc_codemode`, programul livrat împreună cu serverul, care rulează un script în motorul QuickJS-NG după ce se blochează singur (**blocarea** sa). Serverul nu pornește fără el și nu rulează niciun script decât dacă este un build de lansare și blocarea este completă.
+
+**Execuție de cod**: Înregistrarea unui singur script: sursa lui, ieșirea, limitele și fiecare apel de instrument pe care l-a făcut, păstrate în spațiul său de lucru și listate la **Observabilitate → Execuții de cod**.
 
 ## Flotă și eval-uri
 

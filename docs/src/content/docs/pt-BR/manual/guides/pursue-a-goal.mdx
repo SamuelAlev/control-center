@@ -1,0 +1,143 @@
+---
+title: Perseguir um objetivo
+description: Dê a um agente um objetivo em que ele continua trabalhando por várias execuções e reinícios, defina o que significa concluído e decida quando ele está finalizado.
+slug: pt-BR/manual/guias/perseguir-objetivo
+sourceHash: 0ea77964bd9e3044e168624bc67325de0fd1d1e5
+---
+
+Um objetivo é um trabalho em que um agente persiste até que o que significa concluído seja atendido. O agente trabalha em **segmentos**: execuções limitadas que o servidor inicia uma após a outra, inclusive através de reinícios, até que o objetivo seja verificado, uma pessoa o encerre ou ele atinja um limite. O agente não consegue encerrar um objetivo dizendo que terminou. O servidor executa as verificações do objetivo, e um revisor analisa o resultado primeiro.
+
+## Iniciar um objetivo
+
+Digite `/goal` e o objetivo no campo de composição de uma conversa:
+
+```text
+/goal --budget 20 --days 2 --check "make test" make the importer handle files over 2 GB
+```
+
+Digitar `/goal` com texto na sequência abre primeiro a entrevista do objetivo. Ela pergunta sobre critérios de sucesso, as verificações que precisam passar, limites e condições de parada, e oferece um verificador separado, iniciar cada segmento do zero e deixar o agente responder às próprias perguntas. Cada etapa pode ser pulada.
+
+| Sinalizador | Significado |
+| --- | --- |
+| `--budget <dollars>` | O total que o objetivo pode gastar. Por padrão, 50 dólares |
+| `--max <N>` | O número máximo de segmentos que o objetivo pode ter. Por padrão, sem limite |
+| `--days <N>` | Um prazo, esse número de dias a partir de agora |
+| `--check "<command>"` | Um comando que precisa passar antes de o objetivo poder terminar, executado na worktree. Repita para mais verificações, no máximo 5 |
+| `--checker <agent>` | Outro agente que revisa a afirmação de que o objetivo está concluído, pelo nome ou pelo id |
+| `--fresh` | Inicia cada segmento sem o histórico da conversa, apenas com o objetivo e as suas notas |
+| `--unattended wait` ou `--unattended assume` | O que acontece com as perguntas do agente quando ninguém responde (veja [Quando ninguém responde](#quando-ninguém-responde)) |
+
+- Os sinalizadores podem aparecer em qualquer ponto da mensagem. Um sinalizador desconhecido, um sinalizador repetido, um valor inválido e mais de 5 verificações são recusados, e o seu rascunho continua no campo de composição, com o motivo abaixo dele.
+- Um número no início do objetivo faz parte do objetivo. Para limitar os segmentos, use `--max`.
+- `/goal` só é lido em uma mensagem que você digita. O mesmo texto vindo de um agente, de um pipeline ou de um despertar é uma mensagem comum.
+- Um agente persegue um objetivo por vez em um espaço de trabalho. Um segundo `/goal` para o mesmo agente é recusado enquanto o primeiro estiver ativo.
+
+### O que significa concluído
+
+O objetivo pode ter seções que se tornam o contrato do objetivo:
+
+```text
+/goal make the importer handle files over 2 GB
+
+## Success criteria
+- A 3 GB fixture imports without running out of memory
+- The progress bar reaches 100%
+
+## Boundaries
+- Don't change the public API
+
+## Stop conditions
+- A migration would drop data
+
+## Checks
+- `make test` (300 s)
+- environment task `test` (600 s)
+```
+
+- **Critérios de sucesso**: no máximo 12, cada um com no máximo 300 caracteres. Cada um é algo que um revisor consegue confirmar.
+- **Verificações**: no máximo 5. Uma verificação é executada na worktree ou como uma tarefa nomeada do [ambiente](/pt-BR/manual/guias/ambientes/) do espaço. Cada uma tem 300 segundos por padrão e no máximo 1.800.
+- Uma seção acima do limite é recusada, nunca cortada.
+
+Um objetivo sem critérios deixa o agente decidir quando ele está concluído, e um objetivo sem verificação depende apenas da revisão. A página do objetivo informa isso.
+
+## Como um objetivo continua
+
+Cada segmento é uma execução limitada a 5 dólares ou ao que restar do orçamento, o que for menor. Depois de cada segmento, o servidor decide o que vem a seguir, com base no que o segmento fez:
+
+- **Houve progresso.** O próximo segmento começa.
+- **Ele está aguardando algo que preparou**: uma programação, um monitor, uma pergunta a outro agente ou um ticket delegado. O objetivo espera por isso. Se nada chegar, o servidor verifica de novo após 20 minutos, depois 40, 80, 160 e a cada 240 minutos. O cartão mostra **Aguardando o que ele preparou · verifica de novo até** um horário.
+- **Não houve progresso.** Progresso significa que a worktree mudou pelo próprio trabalho do segmento, que a lista de itens mudou ou que o agente fez algo novo. Depois de 3 segmentos sem progresso, o objetivo é pausado: **Nenhum progresso nos últimos segmentos.**
+- **Esperou tempo demais.** Depois de 24 horas de espera, ou de 6 esperas por coisas novas que ele preparou sem progresso entre elas, o objetivo é pausado: **Aguardando, após segmentos sem progresso.**
+- **Falhou.** O servidor tenta de novo após 30 segundos, depois mais tempo, até 15 minutos. Após 3 falhas seguidas, o objetivo falha.
+- **Fez uma pergunta a uma pessoa.** O objetivo fica parado até que alguém responda: **Precisa de uma pessoa**.
+
+O objetivo também para ao atingir o orçamento (**Orçamento esgotado**), o limite de segmentos ou o prazo.
+
+## Quando o agente diz que terminou
+
+O agente afirma que o objetivo está concluído, com evidências para cada critério. Então:
+
+1. **O servidor executa as verificações** em um sandbox, nunca diretamente na máquina do servidor. Uma verificação que termina com código diferente de zero falha. Uma verificação que não consegue rodar de jeito nenhum (comando não encontrado, não executável, uma tarefa de ambiente que não existe) está quebrada: o objetivo para e espera uma pessoa, com **Esta verificação não pode ser executada:** e o comando. Sem sandbox no servidor, o objetivo para com **Nenhum sandbox está disponível para executar as verificações.** (Um servidor cujo dono desativou o sandbox para todas as execuções é a exceção: as verificações rodam ali do mesmo modo que os comandos próprios do agente.) Quando nada na worktree mudou desde uma verificação que falhou, ela não é executada de novo.
+2. **Um revisor analisa o resultado**, quando todas as verificações passaram ou não há nenhuma. O revisor é o verificador do objetivo, senão o verificador do espaço, senão o próprio agente do objetivo. Ele roda somente leitura, sem histórico de conversa: pode ler arquivos e a saída das verificações, mas não pode alterar nada, executar comandos nem despertar outros agentes. Ele também recebe o diff completo dos testes e scripts de verificação que o agente alterou, e trata o que o agente escreveu na conversa e nas suas notas como alegações, não como prova. Para um objetivo sem critérios, ele julga o objetivo como um todo. Ele responde que o objetivo está concluído, que não está concluído, ou que não consegue dizer.
+3. **Concluído**: o objetivo é concluído. **Não concluído**: o agente recebe as conclusões do revisor e continua trabalhando. Depois de 3 rodadas não concluídas, ou quando o revisor não consegue dizer, o objetivo aguarda você: **Aguardando revisão: afirma que está concluído, e nada confirmou**.
+
+Uma mensagem que você digita enquanto o revisor roda não é enviada ao revisor nem é enviada quando a revisão termina. Ela permanece enfileirada para o próximo segmento do agente. Quando nenhum segmento vem depois, ela fica retida para você em **Enviar mensagens retidas**.
+
+Um revisor que não consegue rodar (excluído, ou em um adaptador que não consegue manter a execução somente leitura, como um agente ACP) pausa o objetivo: **O agente verificador está indisponível. Escolha outro verificador e retome.** Nenhum outro agente assume sem você.
+
+Um verificador de um provedor diferente do agente do objetivo tem menos chance de compartilhar seus pontos cegos. Sem verificador separado, o agente revisa o próprio trabalho, e o objetivo registra **Verificado pelo próprio agente (sem verificador separado)**.
+
+## Acompanhar um objetivo
+
+- **Na conversa**: o cartão do objetivo no painel **Geral** mostra a retenção, o segmento, o gasto em relação ao orçamento, o tempo restante, o que significa concluído, as verificações e o último veredicto.
+- **A página de Objetivos**: barra lateral → **Objetivos**. Os objetivos são agrupados em **Aguardando revisão**, **Abertos** e **Encerrados**.
+- **A página do objetivo**: abra um objetivo para ver **Agora** (segmentos, gasto, prazo, contagem de segmentos sem progresso e o que acontece em seguida), **O que significa concluído**, **Verificação** (a última rodada: a afirmação, cada verificação com a sua saída, a revisão por critério) e **Programações e despertares**. Cada objetivo tem o próprio endereço (`/workspaces/<workspace>/goals/<goal id>`), então você pode compartilhar um link.
+
+No celular, a tela de objetivos inicia um objetivo com verificações e limite de segmentos, e mostra os mesmos objetivos e retenções.
+
+## Alterar ou parar um objetivo
+
+| Ação | Quem pode |
+| --- | --- |
+| **Pausar meta**, **Parar meta** | Qualquer pessoa com acesso ao espaço |
+| **Retomar meta**, **Aumentar orçamento** | Somente quem iniciou o objetivo (um administrador do espaço de trabalho, para um objetivo que ninguém iniciou) |
+| **Editar** o que significa concluído, **Alterar verificador** | Somente a pessoa que iniciou o objetivo (um administrador do espaço de trabalho, para um objetivo que ninguém iniciou), com acesso de escrita aos repositórios do espaço, enquanto o objetivo estiver pausado |
+| **Aprovar conclusão** | Qualquer pessoa com acesso ao espaço, enquanto o objetivo aguarda revisão. Um objetivo que um pipeline iniciou: somente a pessoa que iniciou essa execução (um administrador do espaço de trabalho, quando ninguém iniciou) |
+
+- Ao pressionar **Parar** na execução do agente, o objetivo é pausado (**Pausado por uma pessoa**). Os despertares pendentes do objetivo aguardam até você retomá-lo.
+- **Aprovar conclusão** encerra o objetivo como concluído pela sua palavra. O objetivo registra **Encerrado por uma pessoa sem verificação aprovada**.
+- Um objetivo que usou o orçamento só é retomado com um orçamento maior.
+- Quando a pessoa que iniciou um objetivo sai do espaço de trabalho, o objetivo pausa para revisão imediatamente e o agente em execução é interrompido. Ninguém pode retomá-lo; qualquer pessoa com acesso ao espaço pode pará-lo. O resumo diário o lista para os administradores do espaço de trabalho.
+
+## Quando ninguém responde
+
+Quando um segmento faz uma pergunta a uma pessoa ou pede uma aprovação e ninguém responde, o pedido espera 72 horas por padrão. Então uma aprovação conta como negada, uma pergunta como sem resposta, e o objetivo é pausado: **Uma pergunta ou pedido de aprovação a uma pessoa ficou sem resposta.** A execução que perguntou não recebe mais respostas: qualquer outra coisa que ela pergunte é recusada na hora, e ela termina o que puder. Um administrador do espaço de trabalho define o tempo (de 1 hora a 7 dias) em **Configurações → Espaço de trabalho → Programações → Quando ninguém responde**. Uma vez por dia, no horário definido ali, você recebe um único resumo diário de tudo o que aguarda você.
+
+Com `--unattended assume`, o agente declara a sua suposição e segue depois de 10 minutos sem resposta, quando as condições de parada permitem. Isso se aplica só a perguntas. Uma aprovação nunca é assumida, e uma revisão nunca assume nada.
+
+## Limites de uso e reinícios
+
+- **Um limite de uso do provedor.** Quando um segmento para no limite de uso de um provedor e o provedor informa quando ele é redefinido (em até 7 dias), o objetivo é pausado sem falha: **Pausado no limite de uso · retoma às** um horário. Ele continua 30 segundos após a redefinição. Depois de 8 pausas desse tipo, o objetivo aguarda você: **Atingiu os limites de uso com muita frequência. Revise e retome.** Qualquer retomada reinicia a contagem. Agentes ACP não informam a redefinição, então os objetivos deles não aguardam em um limite.
+- **Um reinício do servidor.** Um objetivo sobrevive a um reinício. Um segmento interrompido pelo reinício é iniciado de novo, e as programações e os despertares pendentes do objetivo são mantidos.
+
+## Melhorias depois de um objetivo
+
+Depois que um objetivo passa na verificação, uma revisão curta e somente leitura (no máximo 1 dólar) pode propor melhorias: um fato de memória, uma política, uma nota sobre o agente ou uma alteração em uma skill. Digite `/refine` para pedir a mesma revisão do trabalho da conversa. No máximo uma revisão roda por conversa a cada 20 minutos.
+
+As propostas aparecem na página **Melhorias** (barra lateral → **Melhorias**). Abra uma para ver o que ela altera, as evidências, e **Aceitar**, **Rejeitar** ou **Reverter**.
+
+- Uma proposta não muda nada até alguém aceitá-la. Ela expira em 30 dias.
+- Uma alteração em uma skill, ou em uma política do espaço de trabalho inteiro, precisa de um administrador do espaço de trabalho (**Um administrador decide**).
+- Uma alteração de skill é guardada como uma revisão separada. Pressione **Executar avaliação** para compará-la com a skill atual; **Aceitar** só é possível depois de uma avaliação aprovada. Uma avaliação passa quando rodou por completo e o agente resolveu pelo menos tantas execuções com a alteração quanto com a skill atual; a página mostra os dois números. Se a skill mudar depois da avaliação, rode a avaliação de novo.
+- **Reverter** restaura o texto anterior, desde que ninguém o tenha alterado desde então.
+
+## Em um pipeline
+
+Um pipeline pode iniciar um objetivo com a etapa **Pursue a goal** (`goal.pursue`). A etapa espera até o objetivo terminar e repassa o resumo e o veredicto dele. Veja [Etapas de pipeline](/pt-BR/manual/referencia/etapas-de-pipeline/).
+
+## Veja também
+
+- [Programações e despertares](/pt-BR/manual/guias/programacoes-e-despertares/)
+- [Agentes trabalhando juntos](/pt-BR/manual/guias/agentes-juntos/)
+- [Gerenciar custos](/pt-BR/manual/guias/gerenciar-custos/)
+- [Comandos slash](/pt-BR/manual/referencia/comandos-slash/)

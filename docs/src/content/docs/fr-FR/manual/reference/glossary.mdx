@@ -2,7 +2,7 @@
 title: Glossaire
 description: Définitions des termes clés employés dans Control Center.
 slug: fr-FR/manuel/reference/glossaire
-sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
+sourceHash: ba09880357171a4fcbb82201798578de3856cbe6
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -36,7 +36,13 @@ export const glossaryTerms = [
 ['Rig', 'Une machine jetable qu’un agent pilote en temps réel : un navigateur ou un bureau Linux clos, un émulateur Android ou un simulateur iOS géré par l’hôte, ou un terminal clos. Observée en direct par sa propre voie à pleine résolution, avec la prise de contrôle imposée côté serveur. Propre à une conversation, de sorte que l’onglet humain et l’outil d’agent s’adressent à une même machine.'],
 ['Enceinte', 'La propriété d’isolation plus forte offerte aux rigs appuyés par une VM : une frontière de noyau, un disque en couche jetable, une barrière réseau qui refuse par défaut et un courtier d’identifiants. Les rigs Android et iOS sont jetables, mais utilisent la mise en réseau gérée par l’hôte, de sorte qu’ils ne revendiquent pas cette frontière. Piloter un rig passe par la classe de garde-fou enclosureControl.'],
 ['RunCost', 'Décompte des jetons et des coûts (jetons d’entrée, jetons de sortie, coût estimé en micro-dollars) pour une seule exécution d’agent.'],
-['WakeReason', 'Pourquoi un agent a été lancé. Six valeurs : message d’un utilisateur, attribution d’un ticket, relance de récupération après un échec, ticket enfant terminé, battement de relance planifié et étape de pipeline.'],
+['WakeReason', 'Raison pour laquelle une exécution d’agent existe. Un message d’une personne, une affectation de ticket ou une étape de pipeline ; ou, pour une exécution que le serveur lance de lui-même, la raison de sa relance : une planification, une surveillance, un segment d’objectif, une vérification ou une revue d’objectif, un message ou une réponse d’un autre agent, un travail enfant terminé, une limite d’utilisation réinitialisée, une revue d’amélioration, ou la reprise après un redémarrage.'],
+['Relance', 'Demande durable, conservée dans la base de données de l’espace de travail, de lancer ou de poursuivre l’exécution d’un agent dans une conversation, avec une raison et la personne pour laquelle elle agit. Chaque exécution que le serveur lance sans que quelqu’un tape quoi que ce soit commence par une relance ; les relances survivent à un redémarrage.'],
+['Objectif', 'Travail auquel un agent revient, par segments, jusqu’à ce que le serveur vérifie que ce que « terminé » signifie est atteint, ou qu’une personne le clôt. Lancé avec /goal ; un seul par agent à la fois. L’agent affirme qu’il est terminé ; les vérifications et une revue en lecture seule tranchent.'],
+['Planification', 'Règle qui réveille un agent à un moment donné, à intervalle régulier, selon un cron ou à son propre rythme, avec une fin, un plafond d’exécutions et un plafond de coût. Créée avec /loop, /schedule, la page Planifications ou l’outil wake_me de l’agent.'],
+['Surveillance', 'Règle qui réveille un agent quand quelque chose se produit : les vérifications d’une pull request se terminent, elle reçoit une revue ou est fusionnée, une tâche d’environnement se termine, un ticket se règle ou une exécution de pipeline prend fin.'],
+['Demande', 'Question d’un agent à un autre, enregistrée avant d’être remise. Le demandeur est réveillé une fois avec la réponse, ou avec la raison de l’absence de réponse.'],
+['Proposition d’amélioration', 'Modification de la mémoire, d’une politique, d’une note d’agent ou d’une compétence qu’une revue propose après un objectif vérifié ou avec /refine. Elle ne change rien tant qu’une personne ne l’accepte pas ; une modification de compétence est évaluée d’abord.'],
 ['SandboxPort', 'Gère le cycle de vie du bac à sable (probe, launch, events, exec, destroy).'],
 ['CredentialBrokerPort', 'Émet des identifiants à portée limitée pour le lancement du bac à sable (un jeton limité à un dépôt pour l’environnement d’un agent, en écriture uniquement pour le chemin de push côté serveur) et les libère au démontage.'],
 ['GitRepoInspectorPort', 'Extrait les métadonnées (propriétaire, dépôt, branche) d’un chemin de dépôt Git local.'],
@@ -94,6 +100,11 @@ export const glossaryTerms = [
 ['Identifiant d’installation', 'L’identité d’un serveur vis-à-vis d’une adresse Connect donnée, dérivée de sa clé d’installation. Connect autorise les serveurs par identifiant d’installation ; renouveler la clé le change et déconnecte tout le monde des voies Connect.'],
 ['Liaison d’installation', 'L’enregistrement, tenu par Connect (install_binding), du seul serveur auquel une équipe Slack est liée. Les installations GitHub n’en ont aucun : tout serveur sur lequel un membre se connecte peut les utiliser.'],
 ['Voie de connexion', 'La connexion par navigateur d’un fournisseur : github, google, linear, linear_app ou slack. Sous applications propres, une voie s’exécute avec l’application propre lorsqu’elle est entièrement configurée, sinon elle est indisponible ; avec un Connect choisi, c’est Connect qui l’exécute. Aucune des deux ne bascule sur l’autre.'],
+['Mode code', 'L’outil repl, qui exécute un script JavaScript appelant les autres outils de l’exécution. Chaque exécution le possède lorsque le serveur peut exécuter des scripts ; il n’existe aucun réglage.'],
+['Outil direct', 'Un outil qu’une exécution appelle par son nom, avec son schéma dans chaque requête, qu’elle ait ou non repl : les outils de fichiers et de shell, ask_user, task, la liste de tâches, la recherche en mémoire, send_message et les verbes propres au mode.'],
+['Outil réservé aux scripts', 'Un outil hors de l’ensemble direct qu’une exécution avec repl ne peut appeler que depuis un script, jusqu’à ce que le serveur ne puisse plus exécuter les scripts de l’exécution ; il se charge alors à la première utilisation. D’ici là, sa description n’atteint jamais le modèle.'],
+['Exécuteur du mode code', 'cc_codemode, le programme fourni avec le serveur qui exécute un script dans le moteur QuickJS-NG après s’être verrouillé avec les contrôles du système d’exploitation. Le serveur ne démarre pas sans lui et n’exécute aucun script, sauf s’il est un build de publication et que son verrouillage est complet.'],
+['Exécution de code', 'L’enregistrement d’un script : sa source, sa sortie, ses limites et chaque appel d’outil qu’il a effectué, conservé dans son espace de travail et listé sous Observabilité → Exécutions de code.'],
 ];
 
 <StructuredData
@@ -157,7 +168,19 @@ export const glossaryTerms = [
 
 **RunCost** : Décompte des jetons et des coûts (jetons d’entrée, jetons de sortie, coût estimé en micro-dollars) pour une seule exécution d’agent.
 
-**WakeReason** : Pourquoi un agent a été lancé. Six valeurs : message d’un utilisateur, attribution d’un ticket, relance de récupération après un échec, ticket enfant terminé, battement de relance planifié et étape de pipeline.
+**WakeReason** : Raison pour laquelle une exécution d’agent existe. Un message d’une personne, une affectation de ticket ou une étape de pipeline ; ou, pour une exécution que le serveur lance de lui-même, la raison de sa relance : une planification, une surveillance, un segment d’objectif, une vérification ou une revue d’objectif, un message ou une réponse d’un autre agent, un travail enfant terminé, une limite d’utilisation réinitialisée, une revue d’amélioration, ou la reprise après un redémarrage.
+
+**Relance** : Demande durable, conservée dans la base de données de l’espace de travail, de lancer ou de poursuivre l’exécution d’un agent dans une conversation, avec une raison et la personne pour laquelle elle agit. Chaque exécution que le serveur lance sans que quelqu’un tape quoi que ce soit commence par une relance ; les relances survivent à un redémarrage.
+
+**Objectif** : Travail auquel un agent revient, par segments, jusqu’à ce que le serveur vérifie que ce que « terminé » signifie est atteint, ou qu’une personne le clôt. Lancé avec `/goal` ; un seul par agent à la fois. L’agent affirme qu’il est terminé ; les vérifications et une revue en lecture seule tranchent.
+
+**Planification** : Règle qui réveille un agent à un moment donné, à intervalle régulier, selon un cron ou à son propre rythme, avec une fin, un plafond d’exécutions et un plafond de coût. Créée avec `/loop`, `/schedule`, la page Planifications ou l’outil `wake_me` de l’agent.
+
+**Surveillance** : Règle qui réveille un agent quand quelque chose se produit : les vérifications d’une pull request se terminent, elle reçoit une revue ou est fusionnée, une tâche d’environnement se termine, un ticket se règle ou une exécution de pipeline prend fin.
+
+**Demande** : Question d’un agent à un autre, enregistrée avant d’être remise. Le demandeur est réveillé une fois avec la réponse, ou avec la raison de l’absence de réponse.
+
+**Proposition d’amélioration** : Modification de la mémoire, d’une politique, d’une note d’agent ou d’une compétence qu’une revue propose après un objectif vérifié ou avec `/refine`. Elle ne change rien tant qu’une personne ne l’accepte pas ; une modification de compétence est évaluée d’abord.
 
 ## Ports
 
@@ -258,6 +281,20 @@ export const glossaryTerms = [
 **Axe de revue** : Une des cinq voies de notation par revue : `correctness`, `security` et `testGap` tirés des remarques des relecteurs ; `visual` et `apiContract` déterministes. Les axes verrouillés s’intègrent au verdict et ne peuvent que le rendre plus sévère — un verrou `partial` ou `unavailable` retient le verdict au lieu de le laisser passer.
 
 **Verdict de revue** : `ship`, `hold` ou `block`. Toute remarque P0 dont la confiance est ≥ 0,7 donne block ; tout autre P0 ou tout P1 donne hold ; sinon ship. Un axe verrouillé qui échoue force block et ne peut pas être mis en minorité par les remarques.
+
+## Mode code
+
+**Mode code** : l’outil `repl`, qui exécute un script JavaScript appelant les autres outils de l’exécution et ne renvoie que ce dont l’agent a besoin. Chaque exécution le possède lorsque le serveur peut exécuter des scripts ; il n’existe aucun réglage. **Paramètres → Espace de travail → Mode code** indique si ce serveur exécute des scripts et fixe les limites auxquelles un script est soumis. Voir [Mode code](/fr-FR/manuel/concepts/mode-code/).
+
+**Outil direct** : un outil qu’une exécution appelle par son nom, avec son schéma dans chaque requête, qu’elle ait ou non `repl` : les outils de fichiers et de shell, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` et les verbes propres au mode.
+
+**Outil réservé aux scripts** : un outil hors de l’ensemble direct qu’une exécution avec `repl` ne peut appeler que depuis un script, jusqu’à ce que le serveur ne puisse plus exécuter les scripts de l’exécution ; il se charge alors à la première utilisation ([Quand les scripts ne peuvent pas s’exécuter](/fr-FR/manuel/concepts/mode-code/#quand-les-scripts-ne-peuvent-pas-sexécuter)). D’ici là, sa description n’atteint jamais le modèle, et un appel direct reçoit la manière de l’appeler depuis un script. Un outil qu’un script ne peut pas appeler n’est jamais réservé aux scripts : il se charge à la première utilisation.
+
+**Appel imbriqué** : un appel d’outil effectué par un script. Il passe par le même filtre de mode, les mêmes garde-fous et la même approbation qu’un appel direct.
+
+**Exécuteur du mode code** : `cc_codemode`, le programme fourni avec le serveur qui exécute un script dans le moteur QuickJS-NG après s’être verrouillé (son **verrouillage**). Le serveur ne démarre pas sans lui et n’exécute aucun script, sauf s’il est un build de publication et que son verrouillage est complet.
+
+**Exécution de code** : l’enregistrement d’un script, avec sa source, sa sortie, ses limites et chaque appel d’outil effectué, conservé dans son espace de travail et listé sous **Observabilité → Exécutions de code**.
 
 ## Flotte et évaluations
 

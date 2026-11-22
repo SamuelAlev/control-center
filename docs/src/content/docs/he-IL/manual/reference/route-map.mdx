@@ -2,7 +2,7 @@
 title: מפת נתיבים
 description: כל נתיב ש-Control Center רושם, עם המסך ופרמטרי השאילתה שלו.
 slug: he-IL/מדריך-למשתמש/עזר/מפת-נתיבים
-sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
+sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
 ---
 
 ## מסגרת היישום
@@ -40,6 +40,12 @@ sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 | `/pipelines`                              | —                                         | רשימת הרצות פייפליין                                                                                                                                                     |
 | `/pipelines/run`                          | `?templateId=<id>`                        | משגר להפעלה ידנית                                                                                                                                                         |
 | `/pipelines/:runId`                       | —                                         | פרטי הרצת פייפליין (ציר זמן של שלבים)                                                                                                                                     |
+| `/goals` | — | מטרות, מקובצות כממתינות לסקירה, פתוחות והסתיימו |
+| `/goals/:goalId` | `?edit=contract` | מטרה אחת: עכשיו, מה נחשב כהושלם, אימות, לוחות זמנים והשכמות; `edit=contract` פותח את עורך החוזה על מטרה מושהית |
+| `/schedules` | — | לוחות זמנים ומעקבים, מקובצים לפי סטטוס, עם **לוח זמנים חדש** |
+| `/schedules/:ruleId` | — | לוח זמנים אחד: הערה, פרטים, השכמות והרצות אחרונות |
+| `/improvements` | — | הצעות לשיפור, מקובצות לפי סטטוס |
+| `/improvements/:proposalId` | — | הצעה אחת: מה משתנה, ראיות, הערכה והחלטה |
 | `/plans`                                  | —                                         | מרכז Plan Studio: תוכניות פעילות, מסמכי תוכנית ופלייבוקים                                                                                                                  |
 | `/plans/:kind/:id`                        | —                                         | Plan Studio לתוכנית אחת; `kind` הוא `orchestration` או `document`                                                                                                         |
 | `/meetings`                               | —                                         | רשימת פגישות                                                                                                                                                             |
@@ -99,6 +105,7 @@ sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 | `/settings/workspace/skills`       | הגדרת מיומנויות                                                                                     |
 | `/settings/memory`                 | זיכרון סביבת העבודה: עובדות, כללי מדיניות וגרף ידע                                                  |
 | `/settings/workspace/permissions`  | הרשאות סוכנים: מטריצת מעקות בטיחות ובדיקת מה־אם                                                     |
+| `/settings/workspace/schedules` | מגבלות לוחות זמנים, אזור הזמן של לוחות הזמנים מסוג cron ושל התקציר, וכמה זמן הרצות שהשרת התחיל ממתינות לתשובה (מנהלים עורכים; חברים קוראים) |
 | `/settings/pipelines`              | תבניות פייפליין                                                                                     |
 | `/settings/pipelines/:templateId`  | עורך תבניות פייפליין (משטח גרירה ושחרור)                                                            |
 

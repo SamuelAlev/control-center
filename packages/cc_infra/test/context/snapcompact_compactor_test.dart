@@ -1,3 +1,4 @@
+import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/context.dart';
 import 'package:cc_harness/messages.dart';
 import 'package:cc_infra/src/context/snapcompact_compactor.dart';
@@ -222,4 +223,108 @@ void main() {
       },
     );
   });
+
+  group('the compaction focus on both paths', () {
+    test('the snapshot path asks once and keeps the focus as text', () async {
+      final history = _history(30);
+      var asked = 0;
+      final result = await _compactor().maybeCompact(
+        history,
+        contextWindow: 5000,
+        focus: () async {
+          asked++;
+          return 'keep the migration plan';
+        },
+      );
+      expect(result.summarized, isFalse);
+      expect(_hasImage(history), isTrue);
+      expect(asked, 1, reason: 'the preCompact script ran');
+      final page = history.singleWhere((m) => m.isSnapshotCarrier);
+      expect(
+        page.content.whereType<HarnessTextBlock>().last.text,
+        '[Asked to keep in view across this compaction: keep the migration '
+        'plan]',
+      );
+    });
+
+    test('a page with a focus still carries the person\'s words', () async {
+      final history = _history(30);
+      history[9] = HarnessMessage.user(
+        'use approach B',
+        origin: HarnessMessageOrigin.person,
+      );
+      await _compactor().maybeCompact(
+        history,
+        contextWindow: 5000,
+        focus: () async => 'keep the plan',
+      );
+      final page = history.singleWhere((m) => m.isSnapshotCarrier);
+      expect(page.carriedPersonTexts, ['use approach B']);
+      expect(
+        page.content.whereType<HarnessTextBlock>().any(
+          (b) => b.text.contains('use approach B'),
+        ),
+        isTrue,
+      );
+    });
+
+    test('a refused snapshot hands the same answer to the text path, without '
+        'asking again', () async {
+      final fallback = _RecordingFallback();
+      var asked = 0;
+      await SnapcompactCompactor(
+        fallback: fallback,
+        modelId: 'gpt-5',
+        readerHasVision: true,
+        preferSnapshots: true,
+        config: const CompactionConfig(buffer: 100),
+        imageLimit: 0,
+      ).maybeCompact(
+        _history(30),
+        contextWindow: 5000,
+        focus: () async {
+          asked++;
+          return 'keep the migration plan';
+        },
+      );
+      expect(asked, 1);
+      expect(fallback.focus, 'keep the migration plan');
+    });
+
+    test('nothing is asked when no compaction is due', () async {
+      var asked = 0;
+      await _compactor().maybeCompact(
+        _history(2, textChars: 10),
+        contextWindow: 500000,
+        focus: () async {
+          asked++;
+          return 'x';
+        },
+      );
+      expect(asked, 0);
+    });
+  });
+}
+
+/// A text compactor that records the focus it was handed.
+class _RecordingFallback implements HarnessCompactor {
+  String? focus;
+
+  @override
+  Future<HarnessCompactionResult> maybeCompact(
+    List<HarnessMessage> history, {
+    required int? contextWindow,
+    int overheadTokens = 0,
+    int reservedOutputTokens = 0,
+    String selfAgentName = 'assistant',
+    bool force = false,
+    CancellationToken cancel = CancellationToken.none,
+    Future<String?> Function()? focus,
+  }) async {
+    this.focus = await focus?.call();
+    return HarnessCompactionResult.unchanged(estimateHarnessHistory(history));
+  }
+
+  @override
+  int pruneToolResults(List<HarnessMessage> history, {bool force = false}) => 0;
 }

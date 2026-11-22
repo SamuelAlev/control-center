@@ -3,7 +3,9 @@ import 'dart:io';
 
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_attempt.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_manifest.dart';
+import 'package:cc_domain/features/evals/domain/evaluation/evaluation_outcome.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_plan.dart';
+import 'package:cc_domain/features/evals/domain/evaluation/evaluation_schedule.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_task.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/paired_evaluation.dart';
 import 'package:cc_domain/features/observability/domain/benchmark.dart';
@@ -160,12 +162,14 @@ void main() {
       final experiment = plan.memoryExperiment;
       if (experiment != null && experiment.enabled) {
         expect(
-          plan.arms.any((a) => a.memoryPolicy == experiment.mode),
+          experiment.modes.every(
+            (mode) => plan.arms.any((a) => a.memoryPolicy == mode),
+          ),
           isTrue,
           reason:
               '${p.basename(file.path)} enables ${experiment.id} with no arm',
         );
-        if (experiment.mode == MemoryPolicyMode.snapshotImages) {
+        if (experiment.modes.contains(MemoryPolicyMode.snapshotImages)) {
           expect(experiment.fidelityVerifiers, isNotEmpty);
         }
       }
@@ -223,7 +227,7 @@ void main() {
             repetition: i,
             seed: i,
             startedAtEpochMs: 0,
-            completed: true,
+            end: EvaluationAttemptEnd.finished,
             cost: EvaluationCostRoles(
               estimatedApiMicros: arm == 'cheap' ? 20000 : 50000,
             ),
@@ -249,15 +253,18 @@ void main() {
       ),
       plan: const EvaluationPlan(
         id: 'render',
+        hypothesis: EvaluationHypothesis.nonInferiority,
+        primaryOutcome: EvaluationOutcomeMeasure.verifiedSuccess,
+        minTasks: 10,
+        nonInferiorityMargin: 0.1,
         seed: 1,
         arms: [
           EvaluationArm(id: 'baseline', axis: EvaluationAxis.baseline),
           EvaluationArm(id: 'cheap', axis: EvaluationAxis.effortRouting),
         ],
-        // One stratum of nine repetitions, so the campaign is fully covered
-        // (the coverage gate blocks adoption for a partial campaign).
+        // One stratum of nine repetitions on one task: repetitions sharpen
+        // the task's difference but never count as more tasks.
         strata: [StratumSpec(stratum: CacheStratum.cold, repetitions: 9)],
-        minPairs: 4,
       ),
       tasks: [task],
       attempts: attempts,
@@ -267,10 +274,8 @@ void main() {
     expect(File(artifacts.reportMarkdownPath).existsSync(), isTrue);
     expect(report.verdicts.single.effectiveTaskCount, 1);
     expect(report.verdicts.single.verdict, QualityVerdict.inconclusive);
-    expect(
-      report.overallRecommendation,
-      AdoptionRecommendation.keepQualityDefault,
-    );
+    expect(report.verdicts.single.reason, '1 tasks, 10 needed');
+    expect(report.overallRecommendation, AdoptionRecommendation.noDecision);
     final benchmark = const EvaluationBenchmarkBridge().toBenchmarkRun(report);
     expect(benchmark.passCount, attempts.length);
     expect(

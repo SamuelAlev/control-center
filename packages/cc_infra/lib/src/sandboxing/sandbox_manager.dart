@@ -41,8 +41,9 @@ class SandboxManager {
   ///
   /// [hostExecutables] are where the host finds the programs it runs outside
   /// any sandbox; nothing in them may change from inside one. They are found
-  /// once, here, from this process's `PATH` and the install prefixes the
-  /// binary resolver probes, unless given.
+  /// once, here, from this process's `PATH`, the install prefixes the binary
+  /// resolver probes and [extraHostExecutableDirs] (the code mode runner's
+  /// directories), unless given.
   ///
   /// [agentRunClient] are the files the agent run client runs from
   /// ([AgentRunClientLauncher.files] of this process unless given). A
@@ -51,10 +52,15 @@ class SandboxManager {
   SandboxManager({
     required List<String> hiddenPaths,
     HostExecutableDirs? hostExecutables,
+    List<String> extraHostExecutableDirs = const [],
     List<String>? agentRunClient,
   }) : hiddenPaths = List.unmodifiable(hiddenPaths),
        hostExecutables =
-           hostExecutables ?? scanHostExecutables(protectedRoots: hiddenPaths),
+           hostExecutables ??
+           scanHostExecutables(
+             protectedRoots: hiddenPaths,
+             extraDirs: extraHostExecutableDirs,
+           ),
        agentRunClient = List.unmodifiable(
          agentRunClient ?? _currentAgentRunClientFiles(),
        );

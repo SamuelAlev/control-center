@@ -196,6 +196,595 @@ void main() {
     expect(warnings, isEmpty);
   });
 
+  group('from schema 34', () {
+    // `workspace_v34` is the declared schema of the build that introduced
+    // code mode, read from a fresh file of that build: every install reached
+    // 34 by converging to exactly that schema.
+    void seed34(sqlite3.Database db) {
+      db
+        ..execute(
+          'PRAGMA application_id = ${WorkspaceDatabase.fileApplicationId}',
+        )
+        ..execute(
+          'INSERT INTO workspace_meta (id, workspace_id, install_id, '
+          "created_with_schema_version) VALUES (0, 'ws', 'install-1', 34)",
+        )
+        ..execute(
+          'INSERT INTO agents (id, name, title, agent_md_path, workspace_id, '
+          "skills, code_mode) VALUES ('a1', 'Builder', 'Engineer', "
+          "'/agents/builder.md', 'ws', 'dart', 'hybrid')",
+        )
+        ..execute(
+          'INSERT INTO workspace_settings (workspace_id, key, value) VALUES '
+          "('ws', 'code_mode', 'only'), "
+          "('ws', 'code_mode_limits', '{}'), "
+          "('ws', 'branch_template', 'feat/{slug}')",
+        );
+    }
+
+    test('loses the agent override and the code mode setting, and keeps '
+        'everything else', () async {
+      SchemaFixture.load('workspace_v34').writeTo(file.path, seed: seed34);
+
+      final db = open();
+
+      expect(await db.schemaDifferences(), isEmpty);
+      expect(
+        await pragma(db, 'user_version'),
+        WorkspaceDatabase.currentSchemaVersion,
+      );
+      expect(await column(db, 'PRAGMA foreign_key_check'), isEmpty);
+      expect(
+        await column(db, "SELECT name FROM pragma_table_info('agents')"),
+        isNot(contains('code_mode')),
+      );
+      expect(await column(db, 'SELECT name FROM agents'), ['Builder']);
+      expect(
+        await column(db, 'SELECT key FROM workspace_settings ORDER BY key'),
+        ['branch_template', 'code_mode_limits'],
+      );
+      expect(
+        warnings,
+        contains(
+          'SchemaConverge: workspace ws v34: dropped the retired '
+          'setting code_mode',
+        ),
+      );
+      expect(
+        await column(
+          db,
+          "SELECT name FROM pragma_table_info('code_execution_calls') "
+          "WHERE name LIKE 'site_%' ORDER BY cid",
+        ),
+        ['site_line', 'site_column'],
+      );
+    });
+
+    test('the copy taken before the upgrade still holds both', () async {
+      SchemaFixture.load('workspace_v34').writeTo(file.path, seed: seed34);
+      final snapshots = Directory('${tmp.path}/pre_upgrade');
+
+      final db = open(snapshots: snapshots.path);
+      await db.customSelect('SELECT 1').get();
+
+      final copy = snapshots.listSync().whereType<File>().single;
+      final raw = sqlite3.sqlite3.open(copy.path);
+      addTearDown(raw.close);
+      expect(raw.select('SELECT code_mode FROM agents').single.values, [
+        'hybrid',
+      ]);
+      expect(
+        raw
+            .select(
+              "SELECT value FROM workspace_settings WHERE key = 'code_mode'",
+            )
+            .single
+            .values,
+        ['only'],
+      );
+    });
+
+    test('only an upgrade from before 35 drops the setting', () async {
+      final fresh = open();
+      await fresh.customStatement(
+        'INSERT INTO workspace_settings (workspace_id, key, value) '
+        "VALUES ('ws', 'code_mode', 'hybrid')",
+      );
+      await fresh.close();
+
+      final reopened = open();
+      expect(await column(reopened, 'SELECT key FROM workspace_settings'), [
+        'code_mode',
+      ]);
+      expect(reopened.lastConvergeReport, isNull);
+    });
+  });
+
+  group('from schema 35', () {
+    // `workspace_v35` is the declared schema of the build before the long
+    // running work tables, read from a fresh file of that build. Agent a1
+    // holds three active goals (two created in the same second, so the id
+    // breaks the tie), a paused one and a paused loop; agent a2 holds one
+    // active goal; agent a3 one active loop; agent a4 an active goal and a
+    // newer active loop.
+    void seed35(sqlite3.Database db) {
+      db
+        ..execute(
+          'PRAGMA application_id = ${WorkspaceDatabase.fileApplicationId}',
+        )
+        ..execute(
+          'INSERT INTO workspace_meta (id, workspace_id, install_id, '
+          "created_with_schema_version) VALUES (0, 'ws', 'install-1', 35)",
+        )
+        ..execute(
+          'INSERT INTO agents (id, name, title, agent_md_path, workspace_id, '
+          "skills) VALUES ('a1', 'Builder', 'Engineer', '/a1.md', 'ws', ''), "
+          "('a2', 'Checker', 'Reviewer', '/a2.md', 'ws', ''), "
+          "('a3', 'Looper', 'Engineer', '/a3.md', 'ws', ''), "
+          "('a4', 'Mixed', 'Engineer', '/a4.md', 'ws', '')",
+        )
+        ..execute(
+          "INSERT INTO spaces (id, name, workspace_id) VALUES ('s1', 'G', 'ws')",
+        )
+        ..execute(
+          'INSERT INTO conversations (id, workspace_id, space_id) '
+          "VALUES ('c1', 'ws', 's1')",
+        )
+        ..execute(
+          'INSERT INTO agent_goal_runs (id, workspace_id, space_id, '
+          'conversation_id, agent_id, user_text, kind, status, created_at, '
+          'updated_at) VALUES '
+          "('g-old', 'ws', 's1', 'c1', 'a1', 'first', 'goal', 'active', "
+          '1000, 1000), '
+          "('g-tie-b', 'ws', 's1', 'c1', 'a1', 'third', 'goal', 'active', "
+          '2000, 2000), '
+          "('g-tie-a', 'ws', 's1', 'c1', 'a1', 'second', 'goal', 'active', "
+          '2000, 2000), '
+          "('g-paused', 'ws', 's1', 'c1', 'a1', 'paused', 'goal', 'paused', "
+          '3000, 3000), '
+          "('g-solo', 'ws', 's1', 'c1', 'a2', 'solo', 'goal', 'active', "
+          '500, 500), '
+          "('l-paused', 'ws', 's1', 'c1', 'a1', 'tidy', 'loop', 'paused', "
+          '3500, 3500), '
+          "('l-solo', 'ws', 's1', 'c1', 'a3', 'poll', 'loop', 'active', "
+          '600, 600), '
+          "('g-mixed', 'ws', 's1', 'c1', 'a4', 'ship', 'goal', 'active', "
+          '3500, 3500), '
+          "('l-mixed', 'ws', 's1', 'c1', 'a4', 'watch', 'loop', 'active', "
+          '4000, 4000)',
+        )
+        ..execute(
+          'INSERT INTO tickets (id, workspace_id, title, status) '
+          "VALUES ('t1', 'ws', 'Fix it', 'open')",
+        );
+    }
+
+    Future<Map<String, String>> statuses(WorkspaceDatabase db) async => {
+      for (final row
+          in await db
+              .customSelect('SELECT id, status FROM agent_goal_runs')
+              .get())
+        row.read<String>('id'): row.read<String>('status'),
+    };
+
+    test('ends every running loop, then keeps each agent\'s newest active '
+        'goal and cancels the others instead of dropping them', () async {
+      SchemaFixture.load('workspace_v35').writeTo(file.path, seed: seed35);
+
+      final db = open();
+
+      expect(await db.schemaDifferences(), isEmpty);
+      expect(
+        await pragma(db, 'user_version'),
+        WorkspaceDatabase.currentSchemaVersion,
+      );
+      expect(await column(db, 'PRAGMA foreign_key_check'), isEmpty);
+      expect(await statuses(db), {
+        'g-old': 'cancelled',
+        'g-tie-a': 'cancelled',
+        'g-tie-b': 'active',
+        'g-paused': 'paused',
+        'g-solo': 'active',
+        'l-paused': 'cancelled',
+        'l-solo': 'cancelled',
+        // The loop is ended first, so the agent's goal is the one it keeps.
+        'g-mixed': 'active',
+        'l-mixed': 'cancelled',
+      });
+      expect(
+        await column(
+          db,
+          "SELECT DISTINCT summary FROM agent_goal_runs WHERE id LIKE 'l-%'",
+        ),
+        [WorkspaceDatabase.loopEndedByUpgradeSummary],
+      );
+      expect(
+        await column(
+          db,
+          "SELECT summary FROM agent_goal_runs WHERE id = 'g-old'",
+        ),
+        [null],
+      );
+      expect(db.lastConvergeReport!.droppedRows, isEmpty);
+      expect(
+        warnings,
+        allOf(
+          contains(
+            'SchemaConverge: workspace ws: cancelled 3 running loops (a loop '
+            'is now a schedule)',
+          ),
+          contains(
+            'SchemaConverge: workspace ws: cancelled 2 active goals that were '
+            "not their agent's newest (one active goal per agent)",
+          ),
+        ),
+      );
+      expect(
+        await column(
+          db,
+          "SELECT name FROM pragma_table_info('agent_goal_runs')",
+        ),
+        allOf(
+          isNot(contains('kind')),
+          containsAll([
+            'hold',
+            'contract',
+            'last_activity_digest',
+            'start_ref',
+            'pipeline_run_id',
+            'pipeline_step_id',
+            'progress_marks',
+          ]),
+        ),
+      );
+      expect(
+        await column(db, "SELECT name FROM pragma_table_info('wake_rules')"),
+        containsAll(['root_rule_id', 'note_edited_by_user_id']),
+      );
+      expect(
+        await column(
+          db,
+          "SELECT name FROM pragma_index_list('wake_rules') "
+          "WHERE name = 'idx_wake_rules_root_rule'",
+        ),
+        ['idx_wake_rules_root_rule'],
+      );
+      expect(
+        await column(
+          db,
+          "SELECT name FROM pragma_table_info('agent_run_logs')",
+        ),
+        containsAll([
+          'end_reason',
+          'wake_ids',
+          'requested_by_user_id',
+          'wake_reason',
+        ]),
+      );
+      expect(
+        await column(db, "SELECT name FROM pragma_table_info('peer_asks')"),
+        containsAll([
+          'promised_at',
+          'blocked_noticed_at',
+          'stall_noticed_run_id',
+        ]),
+      );
+      // The new columns read their defaults on the old rows.
+      expect(
+        await column(
+          db,
+          "SELECT unattended FROM agent_goal_runs WHERE id = 'g-solo'",
+        ),
+        ['wait'],
+      );
+      expect(
+        await column(
+          db,
+          'SELECT last_activity_digest FROM agent_goal_runs '
+          "WHERE id = 'g-solo'",
+        ),
+        [null],
+      );
+      // A goal started before its start commits were recorded has none.
+      expect(
+        await column(
+          db,
+          "SELECT start_ref FROM agent_goal_runs WHERE id = 'g-solo'",
+        ),
+        [null],
+      );
+      // A goal from before is no pipeline step's and has seen no marks.
+      expect(
+        await column(
+          db,
+          'SELECT coalesce(pipeline_run_id, pipeline_step_id, progress_marks) '
+          'FROM agent_goal_runs '
+          "WHERE id = 'g-solo'",
+        ),
+        [null],
+      );
+      expect(await column(db, 'SELECT wake_ids FROM agent_run_logs'), isEmpty);
+      expect(
+        await column(
+          db,
+          "SELECT delegated_from_conversation_id FROM tickets WHERE id = 't1'",
+        ),
+        [null],
+      );
+      for (final table in [
+        'agent_wakes',
+        'wake_rules',
+        'peer_asks',
+        'improvement_proposals',
+      ]) {
+        expect(await column(db, 'SELECT count(*) FROM $table'), [0]);
+      }
+    });
+
+    test('the index then refuses a second active goal', () async {
+      SchemaFixture.load('workspace_v35').writeTo(file.path, seed: seed35);
+
+      final db = open();
+      await db.customSelect('SELECT 1').get();
+
+      await expectLater(
+        db.customStatement(
+          "UPDATE agent_goal_runs SET status = 'active' WHERE id = 'g-old'",
+        ),
+        throwsA(anything),
+      );
+    });
+
+    test('the copy taken before the upgrade holds every goal as it '
+        'was', () async {
+      SchemaFixture.load('workspace_v35').writeTo(file.path, seed: seed35);
+      final snapshots = Directory('${tmp.path}/pre_upgrade');
+
+      final db = open(snapshots: snapshots.path);
+      await db.customSelect('SELECT 1').get();
+
+      final copy = snapshots.listSync().whereType<File>().single;
+      final raw = sqlite3.sqlite3.open(copy.path);
+      addTearDown(raw.close);
+      expect(
+        raw
+            .select(
+              "SELECT count(*) AS n FROM agent_goal_runs WHERE status = 'active'",
+            )
+            .single['n'],
+        7,
+      );
+      expect(
+        raw
+            .select(
+              "SELECT count(*) AS n FROM agent_goal_runs WHERE kind = 'loop'",
+            )
+            .single['n'],
+        3,
+      );
+    });
+
+    test('a file converged outside an upgrade (import) gets the same '
+        'fix', () async {
+      final db = open();
+      await db.customSelect('SELECT 1').get();
+      await db.customStatement('DROP INDEX uq_agent_goal_runs_active_agent');
+      await db.customStatement(
+        'INSERT INTO agents (id, name, title, agent_md_path, workspace_id, '
+        "skills) VALUES ('a1', 'Builder', 'Engineer', '/a1.md', 'ws', '')",
+      );
+      await db.customStatement(
+        "INSERT INTO spaces (id, name, workspace_id) VALUES ('s1', 'G', 'ws')",
+      );
+      await db.customStatement(
+        'INSERT INTO conversations (id, workspace_id, space_id) '
+        "VALUES ('c1', 'ws', 's1')",
+      );
+      await db.customStatement(
+        'INSERT INTO agent_goal_runs (id, workspace_id, space_id, '
+        'conversation_id, agent_id, user_text, created_at, updated_at) VALUES '
+        "('g1', 'ws', 's1', 'c1', 'a1', 'one', 10, 10), "
+        "('g2', 'ws', 's1', 'c1', 'a1', 'two', 20, 20)",
+      );
+
+      final report = await db.convergeSchema();
+
+      expect(report.droppedRows, isEmpty);
+      expect(await statuses(db), {'g1': 'cancelled', 'g2': 'active'});
+      expect(
+        await column(
+          db,
+          'SELECT name FROM sqlite_master WHERE name = '
+          "'uq_agent_goal_runs_active_agent'",
+        ),
+        ['uq_agent_goal_runs_active_agent'],
+      );
+    });
+
+    test('a file without duplicates is left untouched', () async {
+      final db = open();
+      await db.customSelect('SELECT 1').get();
+      await db.convergeSchema();
+      expect(warnings.where((w) => w.contains('cancelled')), isEmpty);
+    });
+  });
+
+  group('from schema 37', () {
+    // `workspace_v37` is the declared schema of 37, read from a fresh file
+    // of that build: 38 changed only `improvement_proposals.campaign_state`,
+    // whose check gained `staging`.
+    void seed37(sqlite3.Database db) {
+      db
+        ..execute(
+          'PRAGMA application_id = ${WorkspaceDatabase.fileApplicationId}',
+        )
+        ..execute(
+          'INSERT INTO workspace_meta (id, workspace_id, install_id, '
+          "created_with_schema_version) VALUES (0, 'ws', 'install-1', 37)",
+        )
+        ..execute(
+          'INSERT INTO agents (id, name, title, agent_md_path, workspace_id, '
+          "skills) VALUES ('a1', 'Builder', 'Engineer', '/a1.md', 'ws', '')",
+        )
+        ..execute(
+          "INSERT INTO spaces (id, name, workspace_id) VALUES ('s1', 'G', 'ws')",
+        )
+        ..execute(
+          'INSERT INTO conversations (id, workspace_id, space_id) '
+          "VALUES ('c1', 'ws', 's1')",
+        )
+        ..execute(
+          'INSERT INTO improvement_proposals (id, workspace_id, agent_id, '
+          'space_id, conversation_id, kind, scope, scope_ref_id, operation, '
+          'target_ref, change, evidence, expected, status, before_text, '
+          'after_text, applied_ref, candidate_revision_id, campaign_id, '
+          'campaign_state, decided_by_user_id, decided_at, created_at, '
+          'expires_at) VALUES '
+          "('p-run', 'ws', 'a1', 's1', 'c1', 'skill_edit', 'workspace', "
+          "'lint', 'replace', 'Run the linter.', 'Run the linter with "
+          "--fix.', '{\"runs\": [\"r1\"]}', 'Fewer lint loops.', 'proposed', "
+          "NULL, NULL, NULL, 'rev-abc', 'camp-1', 'running', NULL, NULL, "
+          '1000, 2593000), '
+          "('p-done', 'ws', 'a1', 's1', 'c1', 'memory_fact', 'agent', NULL, "
+          "'add', NULL, 'Run make gen first.', '{}', 'Green builds.', "
+          "'accepted', NULL, 'Run make gen first.', 'memory_fact:refine-p', "
+          "NULL, NULL, 'none', 'user-1', 2000, 1500, 2593500)",
+        );
+    }
+
+    List<Map<String, Object?>> rows(String path) {
+      final raw = sqlite3.sqlite3.open(path);
+      try {
+        return [
+          for (final row in raw.select(
+            'SELECT * FROM improvement_proposals ORDER BY id',
+          ))
+            Map.of(row),
+        ];
+      } finally {
+        raw.close();
+      }
+    }
+
+    test('converges to the fresh schema, keeps every proposal as it was, '
+        'and then takes a staging claim', () async {
+      SchemaFixture.load('workspace_v37').writeTo(file.path, seed: seed37);
+      final before = rows(file.path);
+      expect(before, hasLength(2));
+      // The 37 check refuses the new state.
+      final raw = sqlite3.sqlite3.open(file.path);
+      expect(
+        () => raw.execute(
+          "UPDATE improvement_proposals SET campaign_state = 'staging' "
+          "WHERE id = 'p-done'",
+        ),
+        throwsA(isA<sqlite3.SqliteException>()),
+      );
+      raw.close();
+
+      final db = open();
+      expect(await db.schemaDifferences(), isEmpty);
+      expect(
+        await pragma(db, 'user_version'),
+        WorkspaceDatabase.currentSchemaVersion,
+      );
+      expect(await column(db, 'PRAGMA foreign_key_check'), isEmpty);
+      await db.close();
+      expect(rows(file.path), before);
+
+      final again = open();
+      await again.customStatement(
+        "UPDATE improvement_proposals SET campaign_state = 'staging' "
+        "WHERE id = 'p-run'",
+      );
+      expect(
+        await column(
+          again,
+          "SELECT campaign_state FROM improvement_proposals WHERE id = 'p-run'",
+        ),
+        ['staging'],
+      );
+    });
+  });
+
+  group('from schema 39', () {
+    // `workspace_v39` is the declared schema of 39, read from a fresh file
+    // of that build: 40 adds `agent_run_logs.started_by_run_id`.
+    void seed39(sqlite3.Database db) {
+      db
+        ..execute(
+          'PRAGMA application_id = ${WorkspaceDatabase.fileApplicationId}',
+        )
+        ..execute(
+          'INSERT INTO workspace_meta (id, workspace_id, install_id, '
+          "created_with_schema_version) VALUES (0, 'ws', 'install-1', 39)",
+        )
+        ..execute(
+          'INSERT INTO agents (id, name, title, agent_md_path, workspace_id, '
+          "skills) VALUES ('a1', 'Builder', 'Engineer', '/a1.md', 'ws', '')",
+        )
+        ..execute(
+          'INSERT INTO agent_run_logs (id, agent_id, workspace_id, '
+          'started_at, status, wake_ids, wake_reason) VALUES '
+          "('run-1', 'a1', 'ws', 1000, 'completed', '[]', 'assignment'), "
+          "('run-2', 'a1', 'ws', 2000, 'running', '[\"wk-1\"]', 'schedule')",
+        );
+    }
+
+    List<Map<String, Object?>> rows(String path) {
+      final raw = sqlite3.sqlite3.open(path);
+      try {
+        return [
+          for (final row in raw.select(
+            'SELECT * FROM agent_run_logs ORDER BY id',
+          ))
+            Map.of(row),
+        ];
+      } finally {
+        raw.close();
+      }
+    }
+
+    test('converges to the fresh schema, keeps every run as it was with no '
+        'starter, and then records one', () async {
+      SchemaFixture.load('workspace_v39').writeTo(file.path, seed: seed39);
+      final before = rows(file.path);
+      expect(before, hasLength(2));
+      expect(before.first.containsKey('started_by_run_id'), isFalse);
+      final snapshots = Directory('${tmp.path}/pre_upgrade');
+
+      final db = open(snapshots: snapshots.path);
+      expect(await db.schemaDifferences(), isEmpty);
+      expect(
+        await pragma(db, 'user_version'),
+        WorkspaceDatabase.currentSchemaVersion,
+      );
+      expect(await column(db, 'PRAGMA foreign_key_check'), isEmpty);
+      await db.close();
+      final after = rows(file.path);
+      expect([
+        for (final row in after) {...row}..remove('started_by_run_id'),
+      ], before);
+      expect(after.map((row) => row['started_by_run_id']), [null, null]);
+      // The copy taken before the upgrade is the 39 file.
+      final copy = snapshots.listSync().whereType<File>().single;
+      expect(rows(copy.path), before);
+
+      final again = open();
+      await again.customStatement(
+        "UPDATE agent_run_logs SET started_by_run_id = 'run-2' "
+        "WHERE id = 'run-1'",
+      );
+      expect(
+        await column(
+          again,
+          "SELECT started_by_run_id FROM agent_run_logs WHERE id = 'run-1'",
+        ),
+        ['run-2'],
+      );
+    });
+  });
+
   test('a fresh file is at the current version, carries the workspace '
       'application id and matches the declared schema', () async {
     final db = open();

@@ -1,81 +1,102 @@
-import 'dart:async';
 import 'dart:convert';
 
-import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
+import 'package:cc_domain/features/dispatch/domain/services/peer_ask_text.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/peer_ask_values.dart';
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
-import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
+import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/messaging/domain/services/peer_delegation_guards.dart'
     show PairRateLimiter;
+import 'package:cc_domain/features/messaging/domain/services/peer_message_limits.dart';
 import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_service.dart';
 import 'package:cc_harness/tools.dart';
+import 'package:cc_infra/cc_infra.dart'
+    show
+        PeerAskPending,
+        PeerAskRefusal,
+        PeerAskRefused,
+        PeerAskRequest,
+        PeerAskService,
+        PeerAskSettledInline;
+import 'package:cc_mcp/src/mcp_scoped_tool.dart';
+import 'package:cc_mcp/src/tools/hidden_spaces_for_caller.dart';
 import 'package:cc_mcp/src/tools/peer_agent_messaging.dart';
 import 'package:cc_mcp/src/tools/peer_delegation_gate.dart';
-import 'package:cc_mcp/src/tools/pending_delegation_hops.dart';
+import 'package:cc_mcp/src/tools/peer_tool_caller.dart';
 
-/// Asks another agent a question and waits for its reply (PRD 22 §2, §4).
+/// Asks another agent a question (PRD 22 §2, §4; plan section 10).
 ///
-/// Shares recipient resolution, the per-pair rate limit and agent-DM space
-/// reuse with `send_to_agent`, then blocks on the recipient's next message in
-/// the space. The wait ALWAYS has a bounded, mandatory timeout (default 600s,
-/// configurable up to 1800s) — it can never block forever. On a reply it
-/// returns the reply text; on timeout it returns a structured (non-error)
-/// result naming the still-pending space + message so the caller can resume.
-class AskAgentTool extends McpTool {
+/// The ask is durable: a `PeerAsk` row is written before the question is
+/// delivered (as a `peerMessage` wake through the queue, into the pair's DM
+/// space), and the answer reaches the asker exactly once: in this call's
+/// result when it arrives while a `wait` call blocks, otherwise as a
+/// `peerReply` wake in the asker's conversation. A blocking call that times
+/// out becomes a background ask; it never tells the model to poll.
+///
+/// The asker is the caller (`from_agent_id` is forced from the run's scope)
+/// and the conversation the answer wakes it in is the attested one. Every
+/// guard runs before any side effect: the shared [PeerDelegationGate]
+/// (depth, cycle, autonomy, budget; chains read from rows), the ask limits
+/// (`ask_duplicate`, `ask_limit_reached`) and the shared pair rate limit.
+class AskAgentTool extends McpScopedTool {
   /// Creates an [AskAgentTool]. [eventBus] lets a freshly minted DM space
   /// announce itself so the background provisioner runs (see
   /// [PeerAgentMessaging]).
   AskAgentTool({
     required AgentRepository agents,
     required MessagingRepository messaging,
-    required this._messagingPort,
     required this._rateLimiter,
     required TicketWorkflowService service,
-    required this._pendingHops,
+    required this._peerAsks,
     DomainEventBus? eventBus,
   }) : _peers = PeerAgentMessaging(
          agents: agents,
          messaging: messaging,
          eventBus: eventBus,
        ),
-       _gate = PeerDelegationGate(service: service, pendingHops: _pendingHops),
+       _gate = PeerDelegationGate(service: service),
+       _agents = agents,
        _messaging = messaging;
 
   final PeerAgentMessaging _peers;
+  final AgentRepository _agents;
   final MessagingRepository _messaging;
-  final MessagingPort _messagingPort;
   final PairRateLimiter _rateLimiter;
   final PeerDelegationGate _gate;
-  final PendingDelegationHops _pendingHops;
-
-  /// Default reply timeout in seconds (10 minutes) when unspecified.
-  static const int _defaultTimeoutSeconds = 600;
-
-  /// Hard ceiling for a configured reply timeout in seconds (30 minutes). No
-  /// configuration can remove the timeout — the wait always resumes.
-  static const int _maxTimeoutSeconds = 1800;
+  final PeerAskService _peerAsks;
 
   @override
   String get name => 'ask_agent';
+
+  /// Not for scripts: it messages another agent run (see
+  /// [McpTool.scriptCallable]).
+  @override
+  bool get scriptCallable => false;
   @override
   Set<ActionClass> get actionClasses => const {
     ActionClass.workspaceMutation,
     ActionClass.processSpawn,
   };
 
+  /// The in-process harness's call carries its run's attested scope: the
+  /// asking run and its conversation.
+  @override
+  Future<CallResult> callForRun(
+    Map<String, dynamic> arguments,
+    McpCallScope scope, {
+    Future<void>? abandoned,
+  }) =>
+      callScoped(arguments, McpCallContext(scope: scope), abandoned: abandoned);
+
   @override
   String get description =>
-      'Ask another agent a question and wait for its reply. Name the recipient '
-      'by to_agent_id or exact to_agent_name (ambiguous or unknown names are '
-      'rejected with the candidates — no fuzzy matching). The question is '
-      'delivered into a shared agent-to-agent DM space, the recipient is '
-      'woken and this call blocks until it replies or the timeout elapses '
-      '(default 600s, up to 1800s). It ALWAYS resumes on timeout, returning a '
-      'pending status with the space and message id. Note: recipients running '
-      'on an external-CLI adapter reply on their next turn rather than '
-      'instantly, so a timeout does not mean the question was lost.';
+      'Ask another agent a question. Name the recipient by to_agent_id or '
+      'exact to_agent_name (ambiguous or unknown names are rejected with the '
+      'candidates; no fuzzy matching). The question is posted in your DM '
+      'space with that agent and wakes it. $askAgentModeText '
+      '$peerMessageGuidance';
 
   @override
   Map<String, dynamic> get inputSchema => {
@@ -99,11 +120,18 @@ class AskAgentTool extends McpTool {
         'type': 'string',
         'description': 'The question to ask the recipient agent.',
       },
+      'mode': {
+        'type': 'string',
+        'enum': PeerAskModeWire.wireNames,
+        'description':
+            '`wait` (default) blocks up to timeout_seconds; `background` '
+            'returns at once.',
+      },
       'from_agent_id': {
         'type': 'string',
-        'description':
-            'Your own agent id (the asker). Required for cycle and budget guards.',
+        'description': 'Set by Control Center to you (the asker).',
       },
+      McpCallScope.callerConversationKey: callerConversationProperty,
       'parent_ticket_id': {
         'type': 'string',
         'description':
@@ -112,9 +140,8 @@ class AskAgentTool extends McpTool {
       'timeout_seconds': {
         'type': 'integer',
         'description':
-            'How long to wait for a reply before returning a pending '
-            'result. Defaults to 600, capped at 1800. The timeout can never '
-            'be disabled.',
+            'How long `wait` blocks before the ask turns into a background '
+            'one. Defaults to 600, capped at 1800.',
       },
       'context_refs': {
         'type': 'array',
@@ -128,7 +155,11 @@ class AskAgentTool extends McpTool {
   };
 
   @override
-  Future<CallResult> run(Map<String, dynamic> arguments) async {
+  Future<CallResult> runScoped(
+    Map<String, dynamic> arguments,
+    McpCallContext context, {
+    Future<void>? abandoned,
+  }) async {
     final workspaceId = arguments['workspace_id'];
     if (workspaceId is! String || workspaceId.isEmpty) {
       return CallResult.error('Missing or invalid argument: workspace_id');
@@ -139,11 +170,35 @@ class AskAgentTool extends McpTool {
         'Missing or invalid argument: message (expected non-empty string)',
       );
     }
-    final fromAgentId = arguments['from_agent_id'];
-    if (fromAgentId is! String || fromAgentId.isEmpty) {
+    final tooLong = peerMessageSizeRefusal(message, label: 'message');
+    if (tooLong != null) {
+      return CallResult.error(tooLong);
+    }
+    final caller = PeerCaller.of(
+      arguments,
+      context,
+      agentKey: 'from_agent_id',
+    );
+    final fromAgentId = caller.agentId;
+    if (fromAgentId == null) {
       return CallResult.error('Missing or invalid argument: from_agent_id');
     }
+    final rawMode = arguments['mode'];
+    final mode = rawMode == null
+        ? PeerAskMode.wait
+        : PeerAskModeWire.tryParse('$rawMode');
+    if (mode == null) {
+      return CallResult.error('Invalid argument: mode (wait or background)');
+    }
     final timeoutSeconds = _resolveTimeoutSeconds(arguments['timeout_seconds']);
+    final parentTicketId = arguments['parent_ticket_id'];
+    if (parentTicketId != null && parentTicketId is! String) {
+      return CallResult.error('Invalid argument: parent_ticket_id');
+    }
+    final readOnly = caller.readOnlyRefusal(_peerAsks);
+    if (readOnly != null) {
+      return peerRefusalResult(readOnly);
+    }
 
     final resolution = await _peers.resolveRecipient(
       workspaceId: workspaceId,
@@ -155,209 +210,153 @@ class AskAgentTool extends McpTool {
     }
     final recipient = (resolution as ResolvedRecipient).agent;
 
-    final parentTicketId = arguments['parent_ticket_id'];
-    if (parentTicketId != null && parentTicketId is! String) {
-      return CallResult.error('Invalid argument: parent_ticket_id');
-    }
     // Every guard runs BEFORE any side effect: a refused ask mints no DM
-    // space and spends no rate-limit slot. Autonomy resolves in the pair's
-    // existing DM when there is one (a fresh DM can hold no override yet).
+    // space, posts nothing and spends no rate-limit slot. Autonomy resolves
+    // in the pair's existing DM when there is one.
+    final chain = await _peerAsks.chainOf(
+      workspaceId,
+      fromAgentId,
+      runId: caller.runId,
+      conversationId: caller.conversationId,
+    );
     final existingDm = await _peers.findAgentDm(
       workspaceId: workspaceId,
       toAgentId: recipient.id,
       fromAgentId: fromAgentId,
     );
-    final refusal = await _gate.refusal(
-      workspaceId: workspaceId,
-      fromAgentId: fromAgentId,
-      recipientId: recipient.id,
-      parentTicketId: parentTicketId as String?,
-      spaceId: existingDm?.id,
-    );
+    final refusal =
+        await _gate.refusal(
+          workspaceId: workspaceId,
+          fromAgentId: fromAgentId,
+          recipientId: recipient.id,
+          chain: chain,
+          parentTicketId: parentTicketId as String?,
+          spaceId: existingDm?.id,
+        ) ??
+        await _peerAsks.refusalFor(
+          workspaceId: workspaceId,
+          askerAgentId: fromAgentId,
+          askerConversationId: caller.conversationId,
+          recipientAgentId: recipient.id,
+          question: message,
+          chain: chain,
+        );
     if (refusal != null) {
-      return CallResult.error(refusal);
+      return peerRefusalResult(refusal);
     }
     if (!_rateLimiter.tryAcquire(fromAgentId, recipient.id, DateTime.now())) {
-      return CallResult.error(
-        'Rate limited: too many messages from "$fromAgentId" to '
-        '"${recipient.name}" in a short window. Wait before asking again.',
+      return peerRefusalResult(
+        PeerAskRefusal(
+          PeerGateRefusals.rateLimited,
+          'Rate limited: too many messages from "$fromAgentId" to '
+          '"${recipient.name}" in a short window. Wait before asking again.',
+        ),
       );
     }
-    final releaseHop = _pendingHops.enter(
-      workspaceId,
-      fromAgentId,
-      recipient.id,
-    );
-    try {
-      final space =
-          existingDm ??
-          await _peers.resolveOrCreateAgentDm(
-            workspaceId: workspaceId,
-            toAgentId: recipient.id,
-            toAgentName: recipient.name,
-            fromAgentId: fromAgentId,
-          );
-      final askMessageId = await _messaging.sendMessage(
-        workspaceId: workspaceId,
-        spaceId: space.id,
-        content: message,
-        senderId: fromAgentId,
-        senderType: 'agent',
-      );
-      // The reply is read from the conversation the question landed in, not
-      // the whole space history.
-      final conversationId = (await _messaging.getMessageById(
-        workspaceId,
-        askMessageId,
-      ))?.conversationId;
-
-      final runId = await _messagingPort.dispatchAgent(
-        spaceId: space.id,
-        agentId: recipient.id,
-        prompt: message,
-        workspaceId: workspaceId,
-        inReplyToAgentId: fromAgentId,
-        conversationId: conversationId,
-      );
-      if (runId == null) {
-        return CallResult.error(
-          '"${recipient.name}" could not be started to answer. The question '
-          'is in the space (${space.id}); it will see it on its next turn.',
-        );
-      }
-
-      final Message? reply;
-      try {
-        reply = await _awaitReply(
+    final space =
+        existingDm ??
+        await _peers.resolveOrCreateAgentDm(
           workspaceId: workspaceId,
-          spaceId: space.id,
-          conversationId: conversationId,
-          replyId: runId,
-          timeout: Duration(seconds: timeoutSeconds),
+          toAgentId: recipient.id,
+          toAgentName: recipient.name,
+          fromAgentId: fromAgentId,
         );
-      } on Object catch (e) {
-        // A broken stream is not a timeout: say so instead of burning the
-        // whole wait in silence.
-        return CallResult.error(
-          'Lost the reply stream while waiting for "${recipient.name}": $e. '
-          'The question is still pending in space ${space.id} '
-          '(message $askMessageId).',
-        );
-      }
-
-      if (reply == null) {
-        // Mandatory-timeout contract: always resume, never error. The question
-        // stays pending in the space; the reply will land there.
-        return CallResult.success(
-          jsonEncode({
-            'status': 'timeout',
-            'space_id': space.id,
-            'pending_message_id': askMessageId,
-            'recipient_agent_id': recipient.id,
-            'recipient_agent_name': recipient.name,
-            'timeout_seconds': timeoutSeconds,
-            'note':
-                'No reply within ${timeoutSeconds}s. The question is still '
-                'pending in the conversation; poll get_messages to collect the '
-                'reply later. External-CLI recipients reply on their next turn.',
-          }),
-        );
-      }
-
-      return CallResult.success(
-        jsonEncode({
-          'status': 'replied',
-          'space_id': space.id,
-          'reply_message_id': reply.id,
-          'reply': reply.content,
-          'recipient_agent_id': recipient.id,
-          'recipient_agent_name': recipient.name,
-        }),
+    final askMessageId = await _messaging.sendMessage(
+      workspaceId: workspaceId,
+      spaceId: space.id,
+      content: message,
+      senderId: fromAgentId,
+      senderType: 'agent',
+    );
+    final questionConversation = (await _messaging.getMessageById(
+      workspaceId,
+      askMessageId,
+    ))?.conversationId;
+    if (questionConversation == null) {
+      return CallResult.error(
+        'The question was posted in space ${space.id} but its conversation '
+        'could not be read; it was not delivered.',
       );
-    } finally {
-      releaseHop();
     }
+    final asker = await _agents.getById(workspaceId, fromAgentId);
+    final result = await _peerAsks.ask(
+      PeerAskRequest(
+        workspaceId: workspaceId,
+        kind: PeerAskKind.ask,
+        mode: mode,
+        askerAgentId: fromAgentId,
+        askerName: asker?.name ?? fromAgentId,
+        askerRunId: caller.runId,
+        askerConversationId: caller.conversationId!,
+        recipientAgentId: recipient.id,
+        recipientSpaceId: space.id,
+        recipientConversationId: questionConversation,
+        questionMessageId: askMessageId,
+        question: message,
+        chain: chain.extendedBy(fromAgentId),
+        wait: Duration(seconds: timeoutSeconds),
+      ),
+    );
+    final base = <String, Object?>{
+      'space_id': space.id,
+      'question_message_id': askMessageId,
+      'recipient_agent_id': recipient.id,
+      'recipient_agent_name': recipient.name,
+    };
+    if (result case PeerAskRefused(:final refusal)) {
+      return peerRefusalResult(refusal);
+    }
+    final reference = _peerAsks.referenceOnce(caller.runId);
+    final body = switch (result) {
+      PeerAskRefused() => const <String, Object?>{},
+      PeerAskSettledInline(:final ask, :final status, :final reply, :final error) =>
+        {
+          'status': status.wire,
+          'ask_id': ask.id,
+          'reply': ?reply,
+          'error': ?error,
+          'reply_inline': true,
+          ...base,
+        },
+      PeerAskPending(:final ask, :final why, :final requestKind) => {
+        'status': why == 'blocked_on_person' ? why : 'pending',
+        'ask_id': ask.id,
+        'request_kind': ?requestKind,
+        'note': _pendingNote(why, recipient.name, timeoutSeconds),
+        ...base,
+      },
+    };
+    return CallResult.success(
+      jsonEncode({...body, 'reference': ?reference}),
+    );
   }
 
-  /// Clamps the requested timeout to `[1, _maxTimeoutSeconds]`, defaulting to
-  /// [_defaultTimeoutSeconds]. The timeout is never removable.
+  static String _pendingNote(String why, String name, int seconds) =>
+      switch (why) {
+        'timeout' =>
+          'No answer within ${seconds}s. The ask stays open: you are woken '
+              'in this conversation when $name answers (it expires after 24 '
+              'hours). Keep working on what the answer does not block, then '
+              'end your turn.',
+        'blocked_on_person' =>
+          '$name is waiting on a person. The ask stays open: you are woken '
+              'in this conversation when it answers.',
+        'queued_behind_run' =>
+          '$name is busy in that conversation; the question waits for its '
+              'run to end. You are woken here when it answers.',
+        _ =>
+          'Asked. You are woken in this conversation when $name answers. '
+              'Keep working on what the answer does not block, then end your '
+              'turn.',
+      };
+
+  /// Clamps the requested timeout to `[1, PeerAskLimits.maxWaitSeconds]`,
+  /// defaulting to [PeerAskLimits.defaultWaitSeconds].
   int _resolveTimeoutSeconds(Object? raw) {
-    var seconds = _defaultTimeoutSeconds;
-    if (raw is int) {
-      seconds = raw;
-    } else if (raw is num) {
+    var seconds = PeerAskLimits.defaultWaitSeconds;
+    if (raw is num) {
       seconds = raw.toInt();
     }
-    if (seconds < 1) {
-      seconds = 1;
-    }
-    if (seconds > _maxTimeoutSeconds) {
-      seconds = _maxTimeoutSeconds;
-    }
-    return seconds;
-  }
-
-  /// Waits for the reply to THIS ask, or null when [timeout] elapses first.
-  ///
-  /// The reply is correlated by id: the recipient's turn is written as the
-  /// message whose id is the dispatched run's id ([replyId]). Matching "the
-  /// first completed message from the recipient" mis-attributed replies when
-  /// two asks to the same agent were in flight. The wait has a single overall
-  /// deadline, and a stream error surfaces as an error rather than a silent
-  /// timeout.
-  Future<Message?> _awaitReply({
-    required String workspaceId,
-    required String spaceId,
-    required String? conversationId,
-    required String replyId,
-    required Duration timeout,
-  }) async {
-    bool isReply(Message m) {
-      if (m.id != replyId) {
-        return false;
-      }
-      // An agent turn only counts once it has finished streaming.
-      if (m.isAgentTurn) {
-        return m.isStreamingComplete;
-      }
-      return m.content.trim().isNotEmpty;
-    }
-
-    final completer = Completer<Message?>();
-    // The ask's own conversation. A conversation id is never the space id;
-    // only when the ask's row could not be read does this fall back to the
-    // space-wide stream.
-    final stream = conversationId == null
-        ? _messaging.watchSpaceMessages(workspaceId, spaceId)
-        : _messaging.watchMessages(workspaceId, spaceId, conversationId);
-    final subscription = stream.listen(
-      (messages) {
-        if (completer.isCompleted) {
-          return;
-        }
-        for (final m in messages) {
-          if (isReply(m)) {
-            completer.complete(m);
-            return;
-          }
-        }
-      },
-      onError: (Object error, StackTrace stack) {
-        if (!completer.isCompleted) {
-          completer.completeError(error, stack);
-        }
-      },
-    );
-    final timer = Timer(timeout, () {
-      if (!completer.isCompleted) {
-        completer.complete(null);
-      }
-    });
-    try {
-      return await completer.future;
-    } finally {
-      await subscription.cancel();
-      timer.cancel();
-    }
+    return seconds.clamp(1, PeerAskLimits.maxWaitSeconds);
   }
 }

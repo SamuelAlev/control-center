@@ -2,7 +2,7 @@
 title: Công cụ MCP
 description: Danh mục đầy đủ các công cụ MCP mà cc_server đăng ký, theo từng nhóm.
 slug: vi-VN/so-tay/tham-chieu/cong-cu-mcp
-sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
+sourceHash: 0ef9efd386b57c3a254e7f637b0436d9baff1719
 ---
 
 `cc_server` vận hành một sổ đăng ký công cụ MCP (JSON-RPC 2.0), được phục vụ trên cổng chính của máy chủ (mặc định `9030`) tại `POST /mcp` và `GET /sse`, phiên bản giao thức `2024-11-05`. Mọi máy khách đều tiếp cận cùng một sổ đăng ký: ứng dụng desktop, bản web, các máy khách MCP bên ngoài và runtime agent tích hợp. Máy chủ MCP bên ngoài được kết nối vào cùng sổ đăng ký trong các lớp riêng của chúng: mỗi không gian làm việc một lớp cho các máy chủ do quản trị viên của không gian đó cấu hình, và một lớp cho máy chủ cá nhân của chủ sở hữu máy chủ. Endpoint này chỉ liệt kê, gọi và tìm kiếm chúng cho một lượt chạy agent: các máy chủ của chính không gian làm việc đó, cộng với máy chủ cá nhân khi chủ sở hữu máy chủ chịu trách nhiệm cho lượt chạy. Token MCP và thiết bị đã ghép nối không bao giờ thấy chúng (xem [Máy chủ MCP mà các agent của bạn sử dụng](/vi-VN/so-tay/huong-dan-thuc-hanh/may-chu-mcp/#máy-chủ-mcp-mà-các-agent-của-bạn-sử-dụng)).
@@ -11,21 +11,22 @@ sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| Công cụ do `cc_server` đăng ký | 110 |
-| Đến từ `packages/cc_mcp` | 108 |
+| Công cụ do `cc_server` đăng ký | 116 |
+| Đến từ `packages/cc_mcp` | 114 |
 | Đến từ `packages/cc_mcp_client` (khám phá công cụ) | 2 |
-| Được đăng ký trong sổ đăng ký cơ sở (`server_mcp_registry.dart`) | 63 |
-| Được đăng ký sau khi khởi động, khi các dịch vụ của chúng sẵn sàng (`cc_server_runtime.dart`) | 47 |
-| Trong số 63 công cụ của sổ đăng ký cơ sở, phụ thuộc vào một kho mã đồ thị mã | 5 |
+| Được đăng ký trong sổ đăng ký cơ sở (`server_mcp_registry.dart`) | 64 |
+| Được đăng ký sau khi khởi động, khi các dịch vụ của chúng sẵn sàng (`cc_server_runtime.dart`) | 52 |
+| Trong số 64 công cụ của sổ đăng ký cơ sở, phụ thuộc vào một kho mã đồ thị mã | 5 |
+| Trong 64 công cụ của sổ đăng ký cơ sở, tùy thuộc vào trình chạy chế độ code (`repl`) | 1 |
 
-Năm công cụ đồ thị mã chỉ được đăng ký khi máy chủ truyền một kho mã đồ thị mã cho `buildServerMcpRegistry`. `cc_server` luôn truyền một kho như vậy, nên cả 110 công cụ đều hoạt động trong bản nhị phân phát hành.
+Năm công cụ đồ thị mã chỉ được đăng ký khi máy chủ truyền một kho mã đồ thị mã cho `buildServerMcpRegistry`, và `repl` chỉ khi truyền trình chạy chế độ code. `cc_server` luôn truyền cả hai (nó không khởi động nếu thiếu trình chạy), nên cả 111 công cụ đều được đăng ký trong bản nhị phân phát hành; máy chủ demo công khai không đăng ký `repl`.
 
-Toàn bộ sổ đăng ký được quảng bá trong `tools/list` mà không có cổng gác khám phá nào. Các thao tác chỉnh sửa phiếu là công cụ có kiểu.
+Toàn bộ sổ đăng ký được quảng bá trong `tools/list` mà không có cổng gác khám phá nào, ngoài một lần chạy agent có thể chạy tập lệnh (xem bên dưới). Các thao tác chỉnh sửa phiếu là công cụ có kiểu.
 
 :::note[Máy khách bên ngoài luôn thấy toàn bộ danh mục]
-`tools/list` không bao giờ bị cắt gọn, ngoại trừ các máy chủ MCP cá nhân của chủ sở hữu máy chủ, thứ nó không bao giờ mang theo. Các máy khách MCP đối chiếu tên công cụ với bản sao đã lưu trong bộ nhớ đệm của chính chúng và từ chối mọi thứ không có trong danh sách mà không hề hỏi máy chủ, nên một công cụ bị giấu ở đó là không thể tiếp cận chứ không chỉ đơn thuần là im lặng.
+`tools/list` không bao giờ bị cắt gọn, ngoại trừ các máy chủ MCP cá nhân của chủ sở hữu máy chủ, thứ nó không bao giờ mang theo, và [chế độ code](/vi-VN/so-tay/khai-niem/che-do-code/): `repl` chỉ được liệt kê cho một lần chạy agent trên máy chủ có thể chạy tập lệnh, và lần chạy đó được liệt kê `repl`, các công cụ trực tiếp (`read`, `write`, `edit`, `search`, `find`, `bash`, `read_output`, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` và các động từ của chế độ của nó, nếu sổ đăng ký có chúng) và các công cụ mà tập lệnh không được gọi. Nó gọi phần còn lại từ một tập lệnh; một lệnh gọi trực tiếp tới một công cụ như vậy nhận được câu trả lời chỉ cách gọi nó từ `repl`. Các máy khách MCP đối chiếu tên công cụ với bản sao đã lưu trong bộ nhớ đệm của chính chúng và từ chối mọi thứ không có trong danh sách mà không hề hỏi máy chủ, nên một công cụ bị giấu ở đó là không thể tiếp cận chứ không chỉ đơn thuần là im lặng.
 
-**Harness tích hợp** thì khác: nó chỉ nạp một tập định nghĩa thường trú cho mỗi yêu cầu và kéo phần còn lại vào ở lần dùng đầu tiên, đó là hành vi phía harness và không thay đổi sổ đăng ký này. Xem [Ngữ cảnh công cụ và bộ nhớ đệm prompt](/vi-VN/so-tay/khai-niem/ngu-canh-cong-cu).
+**Harness tích hợp** thì khác: nó chỉ nạp một tập định nghĩa trực tiếp nhỏ cho mỗi yêu cầu và tiếp cận phần còn lại từ tập lệnh hoặc nạp chúng ở lần dùng đầu tiên, đó là hành vi phía harness và không thay đổi sổ đăng ký này. Xem [Ngữ cảnh công cụ và bộ nhớ đệm prompt](/vi-VN/so-tay/khai-niem/ngu-canh-cong-cu/).
 :::
 
 :::note[Mọi lớp công cụ đều được đăng ký]
@@ -51,6 +52,14 @@ Cả hai đều đến từ `cc_mcp_client` chứ không phải `cc_mcp`, và c�
 
 Công cụ khám phá thứ ba, **`search_tools`**, chỉ tồn tại bên trong harness tích hợp và không thuộc sổ đăng ký MCP này. Nó xếp hạng chính bề mặt công cụ của lượt chạy và, khác với `search_tool_bm25`, **nạp** lược đồ của những gì nó tìm thấy để agent có thể gọi một kết quả khớp ngay ở lượt kế tiếp. Agent chạy trên harness nên ưu tiên nó; máy khách MCP thì có `search_tool_bm25`.
 
+## Chế độ code
+
+| Công cụ | Mô tả |
+| ------ | ----------- |
+| `repl` | Chạy một tập lệnh JavaScript gọi các công cụ khác của lần chạy dưới dạng `tools.<id>(args)` và chỉ trả về những gì nó cần. Chỉ được liệt kê cho một lần chạy agent trên máy chủ có thể chạy các tập lệnh [chế độ code](/vi-VN/so-tay/khai-niem/che-do-code/). Mỗi lệnh gọi lồng đi qua cùng cổng như một `tools/call`. Nhận `code`, `description`, `timeout_ms?`, `max_output_tokens?` |
+
+Một tập lệnh không thể gọi `repl`, `search_tool_bm25`, `list_my_tools`, hoặc bất kỳ công cụ nào khởi động hoặc nhắn tin cho một lần chạy agent khác, gán hoặc bình luận một ticket, gửi một tin nhắn, tạo, quyết định hoặc bình luận một phê duyệt, đề xuất hoặc thay đổi chính sách, cài đặt hoặc thay đổi kỹ năng, tạo một hồ sơ runtime, nộp một kế hoạch hoặc rời chế độ kế hoạch, hoàn thành mục tiêu của cuộc hội thoại, hoặc nộp đầu ra của một lần chạy pipeline. Những công cụ đó khai báo `scriptCallable` là false và luôn được gọi trực tiếp; trong harness tích hợp, một công cụ nằm ngoài tập công cụ trực tiếp được nạp khi dùng lần đầu. `create_ticket` chỉ gọi được từ một tập lệnh khi không đặt `assignee`.
+
 ## Công cụ agent
 
 | Công cụ | Mô tả |
@@ -59,15 +68,29 @@ Công cụ khám phá thứ ba, **`search_tools`**, chỉ tồn tại bên trong
 
 ## Nhắn tin và ủy thác giữa các agent
 
-Các agent nói chuyện với nhau qua space (bền vững, hiển thị trên danh sách thành viên). `ask_agent` là dạng yêu cầu/trả lời với thời gian chờ bắt buộc; `delegate_task` được gác ở phía máy chủ bằng giới hạn độ sâu, phát hiện chu trình, phong bì ngân sách và mức trần tự chủ.
+Các agent nói chuyện với nhau qua các space (bền vững, hiển thị trong danh sách thành viên). `ask_agent` có thể chờ câu trả lời (`mode: wait`, mặc định 600 giây, tối đa 1.800) hoặc trả về ngay (`mode: background`); dù thế nào, người hỏi cũng được đánh thức một lần với câu trả lời khi nó không về ngay trong lượt. `send_to_agent`, `ask_agent`, `consult_agent`, `request_peer_review` và `delegate_task` đi qua cùng một cổng phía máy chủ: độ sâu (3), phát hiện chu trình, hạn mức ngân sách, trần tự chủ, và giới hạn tốc độ cho mỗi cặp agent. Danh tính người gửi luôn lấy từ lần chạy đang gọi. Xem [Các agent phối hợp](/vi-VN/so-tay/huong-dan-thuc-hanh/agent-phoi-hop/).
 
 | Công cụ | Mô tả |
 | --- | --- |
-| `send_to_agent` | Gửi một tin nhắn một chiều tới agent khác, định địa chỉ bằng `to_agent_id` hoặc `to_agent_name` chính xác |
-| `ask_agent` | Hỏi một agent khác một câu và chờ câu trả lời, hoặc hết thời gian chờ |
+| `send_to_agent` | Gửi một tin nhắn một chiều tới agent khác, định địa chỉ bằng `to_agent_id` hoặc `to_agent_name` chính xác; trả về `delivery_status` là `woken`, `queued_behind_run` hoặc `refused` |
+| `ask_agent` | Hỏi một agent khác một câu; chờ câu trả lời, hoặc tiếp tục và được đánh thức khi nó đến |
 | `delegate_task` | Ủy thác một nhiệm vụ cho agent khác dưới dạng một phiếu con được theo dõi |
 | `consult_agent` | Thêm chuyên gia khớp nhất theo kỹ năng vào space và điều phối nó bằng một bản giao việc tập trung |
 | `todo_read` | Đọc danh sách việc cần làm đã lưu của cuộc hội thoại này |
+| `agent_activity` | Đọc việc một agent khác đang làm lúc này và đã làm gì gần đây (trạng thái, công cụ hiện tại, các tin nhắn gần nhất), mà không đánh thức nó |
+
+## Công cụ đánh thức và mục tiêu
+
+Một agent dùng các công cụ này thay vì ngủ hoặc hỏi lặp lại. Mỗi công cụ chỉ tác động lên agent đang gọi trong cuộc hội thoại của nó; agent không bao giờ là một tham số. Xem [Lịch và lượt đánh thức](/vi-VN/so-tay/huong-dan-thuc-hanh/lich-va-danh-thuc/) và [Theo đuổi một mục tiêu](/vi-VN/so-tay/huong-dan-thuc-hanh/theo-duoi-muc-tieu/).
+
+| Công cụ | Mô tả |
+| ------------- | ----------- |
+| `wake_me` | Hẹn để được đánh thức sau: vào một thời điểm (`in:20m`, `at:<ISO time>`), theo một khoảng (`every:30m`), theo cron (`cron:0 9 * * 1-5`, kèm `tz`), theo nhịp riêng của nó bên trong một vòng lặp tự nhịp (`next`, với `delay` từ 1 đến 60 phút), hoặc khi có điều gì đó xảy ra (`on:pr_checks`, `on:pr_review`, `on:pr_merged`, `on:environment`, `on:ticket:<id>`, `on:pipeline_run:<id>`). Tùy chọn `note`, `max_runs`, `expires_in`, `when_busy` (`skip` hoặc `queue`) và `deliver` (`run` hoặc `notify`) |
+| `list_wakes` | Liệt kê những gì agent đang chờ trong cuộc hội thoại này: lịch, watch, lượt đánh thức đang chờ và các yêu cầu chưa được trả lời |
+| `cancel_wake` | Hủy một lịch hoặc watch mà agent tự đặt, theo id của nó |
+| `goal_status` | Đọc mục tiêu đang hoạt động của agent: hợp đồng, segment, chi tiêu và ngân sách còn lại, số lần không có tiến triển, trạng thái giữ, lần xác minh gần nhất và các lượt đánh thức mục tiêu đang chờ |
+
+`complete_goal` (thuộc [Công cụ kế hoạch, playbook và artifact](#công-cụ-kế-hoạch-playbook-và-artifact)) là cách duy nhất để một agent nói rằng mục tiêu đã xong, và đó là một tuyên bố, không phải một hoàn tất.
 
 ## Công cụ kỹ năng
 
@@ -94,7 +117,7 @@ Mọi lần cài đặt và cập nhật đều đi qua một cổng quét đón
 | `revise_artifact` | Thay thế nội dung của một artifact đã xuất bản |
 | `list_artifacts` | Liệt kê các artifact của không gian làm việc |
 | `get_artifact` | Đọc một artifact |
-| `complete_goal` | Tuyên bố mục tiêu bền vững đang hoạt động của cuộc hội thoại (khởi tạo bằng `/goal` hoặc `/loop`) đã đạt được |
+| `complete_goal` | Tuyên bố mục tiêu đang hoạt động của agent đã đạt, kèm bằng chứng cho mọi tiêu chí; sau đó máy chủ chạy các kiểm chứng và một đánh giá |
 
 ## Công cụ không gian làm việc
 
@@ -162,10 +185,10 @@ Mọi lần cài đặt và cập nhật đều đi qua một cổng quét đón
 | `create_goal` | Tạo một mục tiêu tổ chức (cấp công ty, đội nhóm, agent hoặc tác vụ) |
 | `list_goals` | Liệt kê các mục tiêu kèm cấp, trạng thái và tiến độ tổng hợp |
 | `update_goal_progress` | Đặt tiến độ của một mục tiêu |
-| `create_approval` | Mở một phê duyệt trên bảng phê duyệt cho một hành động được quản trị (thoát chế độ kế hoạch, merge, phát hành, tuyển dụng, tùy chỉnh) |
+| `create_approval` | Mở một phê duyệt trên bảng phê duyệt cho một hành động được quản trị (thoát chế độ kế hoạch, merge, phát hành, tuyển dụng, tùy chỉnh) dưới tên của agent gọi. Chỉ dành cho các lần chạy agent |
 | `list_approvals` | Liệt kê các phê duyệt, tùy chọn lọc theo trạng thái |
-| `decide_approval` | Ghi lại một quyết định: phê duyệt, từ chối, yêu cầu sửa đổi hoặc gửi lại |
-| `comment_approval` | Bình luận trên một phê duyệt trên bảng phê duyệt |
+| `decide_approval` | Ghi lại quyết định của agent gọi: phê duyệt, từ chối, yêu cầu sửa đổi hoặc gửi lại. Chỉ dành cho các lần chạy agent |
+| `comment_approval` | Bình luận trên một phê duyệt trên bảng phê duyệt dưới tên của agent gọi. Chỉ dành cho các lần chạy agent |
 | `exit_plan_mode` | Mở (và, sau khi được phê duyệt, tiêu thụ) một phê duyệt `plan_exit`, đưa cuộc hội thoại ra khỏi chế độ kế hoạch |
 | `agent_heartbeat` | Báo cáo tình trạng sống (đang sống, nhàn rỗi, kẹt); việc im lặng sẽ chuyển sức khỏe runtime sang mới mất liên lạc, rồi ngoại tuyến |
 | `list_runtime_health` | Liệt kê sức khỏe runtime của từng agent |

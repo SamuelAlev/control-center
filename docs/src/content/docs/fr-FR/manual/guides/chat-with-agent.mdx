@@ -2,7 +2,7 @@
 title: Discuter avec un agent
 description: Créez un espace avec un agent, confiez-lui du travail, orientez-le en cours d’exécution et arrêtez-le.
 slug: fr-FR/manuel/guides/discuter-avec-agent
-sourceHash: 0dbc01158345074d818cec6084501abc03323fea
+sourceHash: 3e899c417e120a7cc741e802d577d0182210115b
 ---
 
 Ce guide vous montre comment travailler avec un agent dans un espace.
@@ -31,6 +31,8 @@ Pendant que l’agent travaille, vous voyez son tour se diffuser en direct : se
 
 Pendant qu’un agent travaille, du texte de conversation ordinaire **ne met pas** en file un nouveau tour. Il devient une carte de pilotage mise en file dans la bande au-dessus du compositeur et est injecté dans l’exécution en direct à la frontière de tour suivante. Aucune notification éphémère n’apparaît — la carte fait office de retour d’information.
 
+Pour guider une exécution qui travaille pour quelqu’un d’autre, il faut un accès en écriture aux dépôts de l’espace ; sans lui, le message est refusé et reste dans le compositeur. Une exécution en lecture seule, comme la revue d’un objectif, n’accepte aucun message pendant son déroulement : à sa fin, le message est envoyé comme un message ordinaire, et après la revue d’un objectif il attend plutôt le prochain segment de l’objectif.
+
 Trois choses modifient ce comportement :
 
 - Un message contenant une **@mention** est toujours envoyé comme message, jamais comme pilotage
@@ -48,7 +50,9 @@ Lorsqu’un agent rencontre une action que ses garde-fous filtrent — une comma
 
 Si vous êtes ailleurs dans l’application, un panneau toujours au premier plan dans l’interface liste quand même ce qui est en attente, ce qui vous permet de débloquer l’agent sans avoir à chercher l’espace. La superposition masque une demande dès que la conversation de cet espace est à l’écran, de sorte que vous ne répondez jamais deux fois à la même invite.
 
-Il n’y a pas de délai d’expiration : un agent bloqué attend que quelqu’un décide. La même demande apparaît aussi dans le bandeau d’attention de la boîte de réception et sur le client mobile.
+Une exécution que vous avez lancée attend pendant une heure une approbation ; ensuite, celle-ci compte comme refusée. La même demande apparaît aussi dans le bandeau d’attention de la boîte de réception et sur le client mobile.
+
+Une exécution lancée par le serveur (un segment d’objectif, une planification, une réponse d’un autre agent) attend 72 heures par défaut, réglées par un admin de l’espace de travail ; ensuite, une approbation compte comme refusée et une question comme sans réponse. Voir [Quand personne ne répond](/fr-FR/manuel/guides/poursuivre-objectif/#quand-personne-ne-répond).
 
 ## Répondre à la question d’un agent
 
@@ -66,6 +70,8 @@ Il n’existe aucun contrôle d’arrêt dans l’en-tête de l’espace, ni rac
 
 Une exécution arrêtée est marquée comme arrêtée. Envoyez un nouveau message pour relancer.
 
+L’arrêt retient aussi ce qui a été mis en file d’attente pour cet agent : vos messages d’orientation (**Envoyer les messages retenus** les envoie) et ses relances en attente (**Reprendre** dans la bande au-dessus de la zone de saisie). Un objectif sur lequel travaillait l’agent se met en pause jusqu’à ce que quelqu’un le reprenne.
+
 ## Utiliser les commandes slash
 
 Tapez `/` dans le compositeur pour afficher la liste des commandes. Celles qui modifient le comportement de la conversation :
@@ -73,8 +79,10 @@ Tapez `/` dans le compositeur pour afficher la liste des commandes. Celles qui m
 | Commande | Ce qu’elle fait |
 | --- | --- |
 | `/plan` | Bascule l’espace en mode plan. Un `/plan` seul arme simplement le mode ; `/plan <requête>` l’arme et envoie le reste comme votre message |
-| `/goal <text>` | Enregistre l’objectif de travail de la conversation |
-| `/loop <text>` | Itère sur une tâche jusqu’à ce qu’elle soit terminée |
+| `/goal <text>` | Lance un objectif durable sur lequel l’agent continue de travailler jusqu’à ce qu’il soit vérifié comme terminé ([Poursuivre un objectif](/fr-FR/manuel/guides/poursuivre-objectif/)) |
+| `/loop <text>` | Relance l’agent avec le texte de temps en temps, à intervalle régulier ou à son propre rythme ([Planifications et relances](/fr-FR/manuel/guides/planifications-relances/)) |
+| `/schedule <when> <text>` | Relance l’agent plus tard, une fois ou selon un cron |
+| `/refine`      | Demande une revue du travail de la conversation, qui peut proposer des améliorations |
 | `/compact` | Replie l’historique plus ancien dans un résumé ancré et poursuit sur le contexte compacté |
 | `/todo …` | Affiche et modifie la liste de tâches persistée de cette conversation |
 

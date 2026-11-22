@@ -36,6 +36,7 @@ class PipelineRun {
     this.totalTokens = 0,
     this.dryRun = false,
     this.isProjection = false,
+    this.canRaiseCap,
   }) : _state = state ?? {};
 
   /// Unique run identifier (UUID v4).
@@ -150,6 +151,12 @@ class PipelineRun {
   /// an update cannot flip it.
   final bool isProjection;
 
+  /// Whether the viewer may raise the orchestration cap this run is held at
+  /// (`can_raise_cap`), as the server computed it for that caller. Null when
+  /// the run is not held, or the row did not come from the wire; never
+  /// stored.
+  final bool? canRaiseCap;
+
   /// Whether this run is in a terminal state.
   bool get isTerminal => status.isTerminal;
 
@@ -227,6 +234,7 @@ class PipelineRun {
       totalTokens: totalTokens ?? this.totalTokens,
       dryRun: dryRun,
       isProjection: isProjection,
+      canRaiseCap: canRaiseCap,
     );
   }
 

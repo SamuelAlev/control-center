@@ -98,7 +98,7 @@ void main() {
       op('tickets.list'),
       op('tickets.create', kind: RepoOpKind.mutate),
       op('skills.uninstall', kind: RepoOpKind.destructive),
-      op('space_read.markSpaceRead',
+      op('conversation_read.markRead',
           kind: RepoOpKind.mutate, minRole: WorkspaceRole.guest),
       op('action_policy.list', minRole: WorkspaceRole.member),
       op('members.setRole',

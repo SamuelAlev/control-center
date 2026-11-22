@@ -212,6 +212,84 @@ class FileToolOutputStore implements ToolOutputStore {
   }
 
   @override
+  Future<List<ToolOutputEntry>> list(ToolOutputScope scope) async {
+    if (invalidToolOutputScope(scope) != null) {
+      return const [];
+    }
+    final dir = _scopeDir(scope);
+    if (FileSystemEntity.isLinkSync(_outputsRoot(scope.workspaceId)) ||
+        FileSystemEntity.isLinkSync(dir) ||
+        !_isRealDirectory(dir)) {
+      return const [];
+    }
+    final entries = <ToolOutputEntry>[];
+    try {
+      for (final entity in Directory(dir).listSync(followLinks: false)) {
+        final name = p.basename(entity.path);
+        if (entity is! File || !name.endsWith('.json')) {
+          continue;
+        }
+        final handle = name.substring(0, name.length - '.json'.length);
+        if (!isToolOutputHandle(handle) ||
+            !File(p.join(dir, '$handle.txt')).existsSync()) {
+          continue;
+        }
+        final entry = await _entryOf(entity, handle, scope);
+        if (entry != null) {
+          entries.add(entry);
+        }
+      }
+    } on Object catch (e) {
+      CcInfraLog.warning('tool output scope listing failed: $e');
+    }
+    entries.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return entries;
+  }
+
+  /// The entry [meta] describes, or null when it is not one this store
+  /// wrote for [scope] (unreadable, oversized or recorded to another scope).
+  Future<ToolOutputEntry?> _entryOf(
+    File meta,
+    String handle,
+    ToolOutputScope scope,
+  ) async {
+    try {
+      if (meta.lengthSync() > _maxMetaChars) {
+        return null;
+      }
+      final decoded = jsonDecode(await meta.readAsString());
+      if (decoded is! Map) {
+        return null;
+      }
+      final m = decoded.cast<String, dynamic>();
+      final recorded = ToolOutputScope.fromJson(
+        (m['scope'] as Map?)?.cast<String, dynamic>() ?? const {},
+      );
+      final chars = m['chars'];
+      final bytes = m['bytes'];
+      final createdAt = DateTime.tryParse('${m['createdAt']}');
+      if (recorded != scope ||
+          chars is! int ||
+          bytes is! int ||
+          createdAt == null) {
+        return null;
+      }
+      final label = m['label'];
+      return ToolOutputEntry(
+        handle: handle,
+        toolName: m['tool'] is String ? m['tool'] as String : '',
+        label: label is String ? label : null,
+        chars: chars,
+        bytes: bytes,
+        isError: m['isError'] == true,
+        createdAt: createdAt.toUtc(),
+      );
+    } on Object {
+      return null;
+    }
+  }
+
+  @override
   Future<void> clearScope(ToolOutputScope scope) async {
     if (invalidToolOutputScope(scope) != null) {
       return;
@@ -294,9 +372,23 @@ class FileToolOutputStore implements ToolOutputStore {
       return null;
     }
 
-    final handle = _newHandle();
+    final chosen = write.handle;
+    if (chosen != null && !isToolOutputHandle(chosen)) {
+      CcInfraLog.warning('tool output store refused a malformed handle');
+      return null;
+    }
+    final handle = chosen ?? _newHandle();
     final textPath = p.join(dir, '$handle.txt');
     final metaPath = p.join(dir, '$handle.json');
+    if (chosen != null &&
+        (FileSystemEntity.typeSync(textPath, followLinks: false) !=
+                FileSystemEntityType.notFound ||
+            FileSystemEntity.typeSync(metaPath, followLinks: false) !=
+                FileSystemEntityType.notFound)) {
+      // A chosen handle never replaces what a transcript may point at.
+      CcInfraLog.warning('tool output store refused a handle already taken');
+      return null;
+    }
     final textStage = File('$textPath.stage');
     final metaStage = File('$metaPath.stage');
     // Both payloads land in staging files first, then both are renamed. A
@@ -508,6 +600,7 @@ class FileToolOutputStore implements ToolOutputStore {
     'isError': write.isError,
     'createdAt': DateTime.now().toUtc().toIso8601String(),
     if (write.toolUseId != null) 'toolUseId': write.toolUseId,
+    if (write.label != null) 'label': write.label,
     'scope': write.scope.toJson(),
     'index': {'interval': _indexInterval, 'offsets': offsets, 'chars': chars},
   };

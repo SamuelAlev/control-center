@@ -1,8 +1,8 @@
 ---
 title: Teroka data dalam kernel berterusan
-description: Berikan ejen satu penterjemah Python atau JavaScript yang mengekalkan pemboleh ubahnya antara panggilan, melukis carta ke dalam sembang, dan boleh memanggil alat anda sendiri dari dalam sel.
+description: Berikan ejen penterjemah Python atau JavaScript yang mengekalkan pemboleh ubahnya antara panggilan dan melukis carta ke dalam sembang.
 slug: ms-MY/manual-pengguna/panduan-cara/teroka-data-dalam-kernel
-sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
+sourceHash: 8fcd77019bfae5088223822a12ef91c8a6879c5d
 ---
 
 Panduan ini menunjukkan cara membolehkan ejen memuatkan sesuatu yang mahal sekali sahaja dan kemudian mengajukan beberapa soalan tentangnya, dan bukannya membayar kos muatan itu pada setiap soalan.
@@ -62,22 +62,9 @@ Semua ini ditulis semula menjadi kod biasa dan bukan menghasilkan ralat:
 
 Pengusiran cache `%pip` itulah yang penting: memasang ke dalam penterjemah yang hidup tidak memberi apa-apa kesan kepada modul yang telah pun diimport, jadi tanpa ia, versi yang anda baru pasang bukanlah versi yang sedang berjalan.
 
-## Memanggil alat anda sendiri dari dalam sel
+## Memanggil alat daripada kod
 
-```python
-paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
-for path in paths.splitlines()[:100]:
-    contents = tool("read", {"path": path})
-    ...
-```
-
-`tool(name, args)` masuk semula ke dalam daftar alat ejen itu sendiri. Ini bermakna satu sel boleh menyebar ke lebih seratus fail, atau mewakilkan melalui `task`, tanpa model menghabiskan satu pusingan bagi setiap item.
-
-:::caution[Jambatan tidak memintas guardrail anda]
-Panggilan berjambatan diselesaikan terhadap daftar alat yang **sama** seperti panggilan yang dikeluarkan oleh model, jadi polisi `ActionClass`, gesaan kelulusan dan setiap pembalut terpakai secara serupa. Jambatan yang menembusi melepasi daftar itu akan menjadi lubang yang berbentuk tepat seperti “tulis satu baris Python”.
-:::
-
-Panggilan berjambatan **menggantung timeout sel** selagi ia belum selesai. Belanjawan itu mengukur ketakaktifan, bukan masa berlalu sebenar — sel yang menyebar ke subejen dan menunggu selama empat minit tidak tergantung, dan membunuhnya di pertengahan penyebaran akan menghilangkan seluruh keadaan kernel.
+Sel tidak boleh memanggil alat ejen. Untuk menggelung alat dalam kod, ejen menulis skrip [`repl`](/ms-MY/manual-pengguna/konsep/mod-kod/) sebagai gantinya. Skrip tidak boleh memanggil `eval` juga: ejen memanggilnya secara langsung.
 
 ## Mula semula
 

@@ -14,10 +14,12 @@ import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_update.dart';
 import 'package:cc_domain/core/domain/value_objects/usage_scope.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dart';
 import 'package:cc_domain/features/observability/domain/run_stage.dart';
 import 'package:cc_infra/src/dispatch/agent_dispatch_service.dart';
+import 'package:cc_infra/src/dispatch/goal_activity.dart';
 import 'package:cc_infra/src/messaging/conversation_compaction_service.dart';
 import 'package:cc_infra/src/messaging/json_content_extractor.dart';
 import 'package:cc_infra/src/messaging/transcript_folder.dart';
@@ -104,6 +106,13 @@ class _StreamContext {
   /// the plain `sawDone → completed` mapping.
   TurnOutcome? doneOutcome;
 
+  /// Why the run ended, when the session decided it (carried by the
+  /// DoneEvent): a stop, the cost cap, the watchdog, a usage limit.
+  RunEndReason? doneEndReason;
+
+  /// The provider's reset time for a usage-limit end (from the DoneEvent).
+  DateTime? doneLimitResetsAt;
+
   /// Observed stage boundaries, earliest-per-stage. `submitted` is stamped when
   /// the stream opens; everything else is folded from [StageTimingEvent]s or
   /// from the first event the processor itself can see.
@@ -155,6 +164,7 @@ class AgentStreamProcessor {
     this._compactionService,
     this._snapshotPort,
     this._flushMessage,
+    this._toolActivity,
   });
 
   final AgentDispatchService _agentDispatchService;
@@ -164,6 +174,10 @@ class AgentStreamProcessor {
   final DomainEventBus? _eventBus;
   final ConversationCompactionService? _compactionService;
   final GitSnapshotPort? _snapshotPort;
+
+  /// Where a finished run's tool calls are kept for the goal supervisor's
+  /// progress check, recorded before the run settles.
+  final RunToolActivity? _toolActivity;
 
   /// Writes one flush of the turn: only the transcript segments that changed
   /// since the previous flush (`changedSegments`, by position), the
@@ -323,9 +337,15 @@ class AgentStreamProcessor {
       case DebugEvent():
         // Diagnostics live in the NDJSON run log, never the transcript.
         return;
-      case DoneEvent(outcome: final doneOutcome):
+      case DoneEvent(
+        outcome: final doneOutcome,
+        :final endReason,
+        :final limitResetsAt,
+      ):
         ctx.sawDone = true;
         ctx.doneOutcome = doneOutcome;
+        ctx.doneEndReason = endReason;
+        ctx.doneLimitResetsAt = limitResetsAt;
         return;
       default:
         break;
@@ -490,16 +510,21 @@ class AgentStreamProcessor {
     );
     await ctx.streamRegistry.unregister(ctx.messageId);
 
+    _recordToolActivity(ctx);
     if (failure != null) {
       await ctx.agentDispatchService.failRun(
         runLog,
         failure,
+        endReason: ctx.doneEndReason ?? RunEndReason.error,
+        cost: _effectiveCost(ctx),
         errorCode: ctx.folder.terminalFailureCode(),
+        limitResetsAt: ctx.doneLimitResetsAt,
       );
     } else {
       await ctx.agentDispatchService.completeRun(
         runLog,
         content.isNotEmpty ? content.split('\n').first : null,
+        endReason: ctx.doneEndReason ?? RunEndReason.completed,
         cost: _effectiveCost(ctx),
         latency: ctx.latency,
         nativeSessionId: ctx.nativeSessionId,
@@ -515,6 +540,14 @@ class AgentStreamProcessor {
     await _notifyMessageReceived(
       ctx,
       content: content.isNotEmpty ? content : (failure ?? ''),
+      // A schedule or watch run that finished cleanly stays quiet; one that
+      // failed, stopped or hit a limit tells its person.
+      quiet:
+          ctx.dispatchResult.quiet &&
+          failure == null &&
+          outcome == TurnOutcome.completed &&
+          (ctx.doneEndReason ?? RunEndReason.completed) ==
+              RunEndReason.completed,
     );
     _notifyTurnCompleted(
       ctx,
@@ -570,6 +603,14 @@ class AgentStreamProcessor {
     }
   }
 
+  /// Keeps the run's tool calls for the goal supervisor, before the run's
+  /// settlement announces its end.
+  void _recordToolActivity(_StreamContext ctx) => _toolActivity?.recordSegments(
+    workspaceId: ctx.workspaceId,
+    runId: ctx.dispatchResult.runLog.id,
+    segments: ctx.folder.segments,
+  );
+
   Future<void> _onError(_StreamContext ctx, Object error) async {
     if (ctx.finalized) {
       return;
@@ -612,10 +653,14 @@ class AgentStreamProcessor {
     );
     await ctx.streamRegistry.unregister(ctx.messageId);
 
+    _recordToolActivity(ctx);
     await ctx.agentDispatchService.failRun(
       runLog,
       error.toString(),
+      endReason: ctx.doneEndReason ?? RunEndReason.error,
+      cost: _effectiveCost(ctx),
       errorCode: error is AppException ? error.code : null,
+      limitResetsAt: ctx.doneLimitResetsAt,
     );
     // The turn's message is the only "agent finished" notification, so a
     // crashed turn still sends one — carrying what went wrong.
@@ -804,7 +849,7 @@ class AgentStreamProcessor {
         workspaceId: ctx.workspaceId,
         spaceId: ctx.spaceId,
         contextWindowTokens: windowTokens,
-        selfAgentName: ctx.agentName,
+        self: (id: ctx.agentId, name: ctx.agentName),
       );
     } catch (_) {
       // Compaction is best-effort maintenance; never fail the turn over it.
@@ -823,6 +868,7 @@ class AgentStreamProcessor {
   Future<void> _notifyMessageReceived(
     _StreamContext ctx, {
     required String content,
+    bool quiet = false,
   }) async {
     final bus = ctx.eventBus;
     if (bus == null) {
@@ -869,6 +915,7 @@ class AgentStreamProcessor {
         requestedByUserId: ctx.requestedByUserId,
         conversationId: ctx.conversationId,
         inAgentOnlySpace: kind?.isAgentOnly ?? false,
+        quietRun: quiet,
         occurredAt: DateTime.now(),
       ),
     );

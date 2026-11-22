@@ -60,9 +60,8 @@ void main() {
   });
 
   // [parent] non-null routes the message into a SIDE conversation of the same
-  // space. Read marks are SPACE-scoped, so watchSpaceActivity counts it like
-  // any other — the old "only the main stream bumps the badge" rule is gone
-  // along with the main stream itself.
+  // space. Read cursors are per conversation, so watchSpaceActivity reports
+  // each conversation's newest agent message on its own.
   Future<void> msg(
     String id, {
     String space = 'a',
@@ -111,23 +110,113 @@ void main() {
   }
 
   group('workspace read cursors', () {
-    test('only opened spaces owned by the workspace and user appear', () async {
-      final reads = DaoSpaceReadRepository(dbs);
-      expect(await reads.watchUserSpaceReads('ws-1', 'alice').first, isEmpty);
-      await reads.markSpaceRead('ws-1', 'a', 'alice');
-      await reads.markSpaceRead('ws-1', 'b', 'bob');
-      await reads.markSpaceRead('ws-1', 'mis-stamped', 'alice');
-      await reads.markSpaceRead('ws-2', 'foreign', 'alice');
+    test(
+      'only read conversations of the workspace and person appear',
+      () async {
+        final reads = DaoConversationReadRepository(dbs);
+        expect(
+          await reads.watchUserConversationReads('ws-1', 'alice').first,
+          isEmpty,
+        );
+        await reads.markConversationRead('ws-1', 'a', 'alice');
+        await reads.markConversationRead('ws-1', 'b', 'bob');
+        await reads.markConversationRead('ws-1', 'mis-stamped', 'alice');
+        await reads.markConversationRead('ws-2', 'foreign', 'alice');
 
-      final alice = await reads.watchUserSpaceReads('ws-1', 'alice').first;
-      expect(alice.keys, ['a']);
-      expect(alice['a'], isA<FeedPosition>());
-      expect((await reads.watchUserSpaceReads('ws-2', 'alice').first).keys, [
-        'foreign',
-      ]);
-      expect((await reads.watchUserSpaceReads('ws-1', 'bob').first).keys, [
-        'b',
-      ]);
+        final alice = await reads
+            .watchUserConversationReads('ws-1', 'alice')
+            .first;
+        expect(alice.keys, ['a']);
+        expect(alice['a'], isA<FeedPosition>());
+        expect(
+          (await reads.watchUserConversationReads('ws-2', 'alice').first).keys,
+          ['foreign'],
+        );
+        expect(
+          (await reads.watchUserConversationReads('ws-1', 'bob').first).keys,
+          ['b'],
+        );
+      },
+    );
+
+    test('the cursor is the newest message position, ties included', () async {
+      final reads = DaoConversationReadRepository(dbs);
+      await msg('m-1', sender: 'agent-1', senderType: 'agent', atSecond: 2);
+      await msg('m-2', sender: 'agent-1', senderType: 'agent', atSecond: 2);
+
+      await reads.markConversationRead('ws-1', 'a', 'alice');
+      final cursor = (await reads
+          .watchUserConversationReads('ws-1', 'alice')
+          .first)['a']!;
+      expect(
+        cursor.at.millisecondsSinceEpoch,
+        DateTime.utc(2026, 1, 1, 0, 0, 2).millisecondsSinceEpoch,
+      );
+
+      // A message stamped with the very same second, written after the read,
+      // is still after the cursor: the time alone could not tell them apart.
+      await msg('m-3', sender: 'agent-1', senderType: 'agent', atSecond: 2);
+      var activity = await repo.watchSpaceActivity('ws-1').first;
+      final a = activity.singleWhere((x) => x.spaceId == 'a');
+      expect(a.conversationUnread('a', cursor), isTrue);
+
+      await reads.markConversationRead('ws-1', 'a', 'alice');
+      final caughtUp = await reads
+          .watchUserConversationReads('ws-1', 'alice')
+          .first;
+      activity = await repo.watchSpaceActivity('ws-1').first;
+      expect(
+        activity.singleWhere((x) => x.spaceId == 'a').unreadFor(caughtUp),
+        isFalse,
+      );
+    });
+
+    test('reading one conversation leaves its sibling unread', () async {
+      final reads = DaoConversationReadRepository(dbs);
+      await msg('top', sender: 'agent-1', senderType: 'agent', atSecond: 1);
+      await msg(
+        'side',
+        parent: 'top',
+        sender: 'agent-1',
+        senderType: 'agent',
+        atSecond: 2,
+      );
+
+      await reads.markConversationRead('ws-1', 'a', 'alice');
+      final alice = await reads
+          .watchUserConversationReads('ws-1', 'alice')
+          .first;
+      final a = (await repo.watchSpaceActivity('ws-1').first).singleWhere(
+        (x) => x.spaceId == 'a',
+      );
+      expect(a.conversationUnread('a', alice['a']), isFalse);
+      expect(a.conversationUnread('a-paren', alice['a-paren']), isTrue);
+      expect(a.unreadFor(alice), isTrue);
+    });
+
+    test('a conversation with no messages can be read', () async {
+      final reads = DaoConversationReadRepository(dbs);
+      await reads.markConversationRead('ws-1', 'b', 'alice');
+
+      final cursor = (await reads
+          .watchUserConversationReads('ws-1', 'alice')
+          .first)['b'];
+      // Sequence 0, so every message written later follows it.
+      expect(cursor?.seq, 0);
+    });
+
+    test('a cursor goes with its conversation', () async {
+      final reads = DaoConversationReadRepository(dbs);
+      await reads.markConversationRead('ws-1', 'b', 'alice');
+      final db = dbs.of('ws-1');
+      await (db.delete(
+        db.conversationsTable,
+      )..where((t) => t.id.equals('b'))).go();
+
+      expect(
+        await reads.watchUserConversationReads('ws-1', 'alice').first,
+        isEmpty,
+      );
     });
   });
 
@@ -179,19 +268,15 @@ void main() {
       final a = activity.singleWhere((x) => x.spaceId == 'a');
       expect(a.openQuestionCount, 1);
       expect(a.needsInput, isTrue);
+      // Only the conversation that asked; the side conversation did not.
+      expect(a.conversationsNeedingInput, {'a'});
       // Newest message overall (the agent thread reply at second 5).
       expect(
         a.lastMessageAt!.millisecondsSinceEpoch,
         DateTime.utc(2026, 1, 1, 0, 0, 5).millisecondsSinceEpoch,
       );
-      // EVERY conversation counts: the newest agent message in the space is
-      // the side-conversation reply at second 5, not the top-level question at
-      // second 3. This used to be narrowed with `conversation_id = space_id`,
-      // a predicate that can no longer be true — so the signal was dead.
-      expect(
-        a.lastAgentMessage!.at.millisecondsSinceEpoch,
-        DateTime.utc(2026, 1, 1, 0, 0, 5).millisecondsSinceEpoch,
-      );
+      // EVERY conversation reports its own newest agent message: the
+      // top-level question at second 3 and the side reply at second 5.
       expect(
         a.lastAgentMessageByConversation.map(
           (id, position) => MapEntry(id, position.at.millisecondsSinceEpoch),
@@ -205,7 +290,33 @@ void main() {
       final b = activity.singleWhere((x) => x.spaceId == 'b');
       expect(b.openQuestionCount, 0);
       expect(b.needsInput, isFalse);
-      expect(b.lastAgentMessage, isNull);
+      expect(b.conversationsNeedingInput, isEmpty);
+      expect(b.lastAgentMessageByConversation, isEmpty);
+    });
+
+    test('an archived conversation raises no unread signal', () async {
+      await msg('top', sender: 'agent-1', senderType: 'agent', atSecond: 1);
+      await msg(
+        'side',
+        parent: 'top',
+        sender: 'agent-1',
+        senderType: 'agent',
+        atSecond: 2,
+      );
+      final db = dbs.of('ws-1');
+      await (db.update(db.conversationsTable)
+            ..where((t) => t.id.equals('a-paren')))
+          .write(const ConversationsTableCompanion(status: Value('archived')));
+
+      final a = (await repo.watchSpaceActivity('ws-1').first).singleWhere(
+        (x) => x.spaceId == 'a',
+      );
+      expect(a.lastAgentMessageByConversation.keys, ['a']);
+      // Its messages still count as activity.
+      expect(
+        a.lastMessageAt!.millisecondsSinceEpoch,
+        DateTime.utc(2026, 1, 1, 0, 0, 2).millisecondsSinceEpoch,
+      );
     });
 
     test('an archived space emits no activity until restored', () async {
@@ -298,8 +409,8 @@ void main() {
       final activity = await repo.watchSpaceActivity('ws-1').first;
       final topic = activity.singleWhere((x) => x.spaceId == 'a');
       final peer = activity.singleWhere((x) => x.spaceId == 'b');
-      expect(topic.lastAgentMessage, isNotNull);
-      expect(peer.lastAgentMessage, isNull);
+      expect(topic.lastAgentMessageByConversation, isNotEmpty);
+      expect(peer.lastAgentMessageByConversation, isEmpty);
       expect(peer.lastMessageAt, isNotNull);
     });
 

@@ -3,6 +3,8 @@ import 'package:cc_domain/core/domain/value_objects/agent_role.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/features/dispatch/domain/usecases/build_agent_prompt_use_case.dart';
+import 'package:cc_domain/features/settings/domain/entities/adapter.dart'
+    show AdapterTransport;
 import 'package:test/test.dart';
 
 Agent _testAgent({
@@ -39,7 +41,7 @@ void main() {
       'returns raw prompt when agent is null',
       timeout: const Timeout.factor(2),
       () {
-        final result = useCase.execute(prompt: 'Hello world', agent: null);
+        final result = useCase.execute(hasRepl: false, prompt: 'Hello world', agent: null);
         expect(result, 'Hello world');
       },
     );
@@ -49,7 +51,7 @@ void main() {
       timeout: const Timeout.factor(2),
       () {
         final agent = _testAgent();
-        final result = useCase.execute(prompt: 'Do something', agent: agent);
+        final result = useCase.execute(hasRepl: false, prompt: 'Do something', agent: agent);
         expect(result, isNotEmpty);
         // The prompt should be incorporated into the built result
         expect(result.contains('Do something'), isTrue);
@@ -61,7 +63,7 @@ void main() {
       timeout: const Timeout.factor(2),
       () {
         final agent = _testAgent(name: 'CoderBot');
-        final result = useCase.execute(prompt: 'test', agent: agent);
+        final result = useCase.execute(hasRepl: false, prompt: 'test', agent: agent);
         expect(result.contains('CoderBot'), isTrue);
       },
     );
@@ -71,7 +73,7 @@ void main() {
       timeout: const Timeout.factor(2),
       () {
         final agent = _testAgent(persona: 'You are a senior engineer');
-        final result = useCase.execute(prompt: 'test', agent: agent);
+        final result = useCase.execute(hasRepl: false, prompt: 'test', agent: agent);
         expect(result.contains('senior engineer'), isTrue);
       },
     );
@@ -81,7 +83,7 @@ void main() {
       timeout: const Timeout.factor(2),
       () {
         final agent = _testAgent(systemPrompt: 'Always respond in JSON');
-        final result = useCase.execute(prompt: 'test', agent: agent);
+        final result = useCase.execute(hasRepl: false, prompt: 'test', agent: agent);
         expect(result.contains('Always respond in JSON'), isTrue);
       },
     );
@@ -92,11 +94,13 @@ void main() {
       () {
         final agent = _testAgent();
         final chatResult = useCase.execute(
+          hasRepl: false,
           prompt: 'test',
           agent: agent,
           mode: Mode.chat,
         );
         final planResult = useCase.execute(
+          hasRepl: false,
           prompt: 'test',
           agent: agent,
           mode: Mode.plan,
@@ -115,6 +119,7 @@ void main() {
       () {
         final agent = _testAgent();
         final result = useCase.execute(
+          hasRepl: false,
           prompt: 'test',
           agent: agent,
           memoryContext: 'Previous conversation summary here',
@@ -129,6 +134,7 @@ void main() {
       () {
         final agent = _testAgent();
         final result = useCase.execute(
+          hasRepl: false,
           prompt: 'test',
           agent: agent,
           conversationContext: 'Recent messages context',
@@ -142,7 +148,7 @@ void main() {
       timeout: const Timeout.factor(2),
       () {
         final agent = _testAgent();
-        final result = useCase.execute(prompt: 'What is 2+2?', agent: agent);
+        final result = useCase.execute(hasRepl: false, prompt: 'What is 2+2?', agent: agent);
         expect(result.contains('What is 2+2?'), isTrue);
       },
     );
@@ -204,8 +210,11 @@ void main() {
     test('returns prompt-based result', timeout: const Timeout.factor(2), () {
       final agent = _testAgent();
       final result = useCase.buildPerTurnPrompt(
+        hasRepl: true,
         prompt: 'Fix the bug',
         agent: agent,
+        transport: AdapterTransport.harness,
+        mode: Mode.chat,
       );
       expect(result, isNotEmpty);
     });
@@ -213,9 +222,12 @@ void main() {
     test('includes memory context', timeout: const Timeout.factor(2), () {
       final agent = _testAgent();
       final result = useCase.buildPerTurnPrompt(
+        hasRepl: true,
         prompt: 'Continue',
         agent: agent,
         memoryContext: 'We were discussing authentication',
+        transport: AdapterTransport.harness,
+        mode: Mode.chat,
       );
       expect(result.contains('We were discussing authentication'), isTrue);
     });
@@ -223,16 +235,25 @@ void main() {
     test('includes conversation context', timeout: const Timeout.factor(2), () {
       final agent = _testAgent();
       final result = useCase.buildPerTurnPrompt(
+        hasRepl: true,
         prompt: 'Go ahead',
         agent: agent,
         conversationContext: 'Last message was about testing',
+        transport: AdapterTransport.harness,
+        mode: Mode.chat,
       );
       expect(result.contains('Last message was about testing'), isTrue);
     });
 
     test('works with minimal arguments', timeout: const Timeout.factor(2), () {
       final agent = _testAgent();
-      final result = useCase.buildPerTurnPrompt(prompt: 'Hello', agent: agent);
+      final result = useCase.buildPerTurnPrompt(
+        hasRepl: true,
+        prompt: 'Hello',
+        agent: agent,
+        transport: AdapterTransport.harness,
+        mode: Mode.chat,
+      );
       expect(result, isNotEmpty);
     });
   });
@@ -246,7 +267,7 @@ void main() {
       () {
         final agent = _testAgent();
         const prompt = 'Analyze this codebase for security vulnerabilities';
-        final result = useCase.execute(prompt: prompt, agent: agent);
+        final result = useCase.execute(hasRepl: false, prompt: prompt, agent: agent);
         expect(result.contains(prompt), isTrue);
       },
     );
@@ -258,8 +279,11 @@ void main() {
         final agent = _testAgent();
         final brief = useCase.buildPersistentBrief(agent: agent);
         final perTurn = useCase.buildPerTurnPrompt(
+          hasRepl: true,
           prompt: 'Test prompt',
           agent: agent,
+          transport: AdapterTransport.harness,
+          mode: Mode.chat,
         );
         expect(brief, isNotEmpty);
         expect(perTurn, isNotEmpty);

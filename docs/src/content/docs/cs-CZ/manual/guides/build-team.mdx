@@ -2,7 +2,7 @@
 title: Sestavte tým agentů
 description: Seskup agenty pod vedoucího, aby se přiřazená práce směrovala přes jednoho koordinátora.
 slug: cs-CZ/prirucka/navody/sestaveni-tymu-agentu
-sourceHash: fc5e2b8c8a49e398ff1b322fcfb25c4aed84bbb4
+sourceHash: 55add2d16bf90650b7d4cbda7aa78f0fdf1b72e2
 ---
 
 Založíš tým, dáš mu vedoucího a nasměruješ na něj práci.
@@ -51,7 +51,7 @@ Když ticket nese přiřazení týmu:
 
 1. Vedoucí týmu se odešle s ticketem, provozními pokyny a sestavou členů.
 2. Vedoucí deleguje členům a vyhodnocení zapíše nástrojem `record_team_activity`: `action` (delegováno), `no_action` (nic dalšího k udělání, což zastaví další probouzení) nebo `failed`.
-3. Každý dokončený běh člena vedoucího znovu probudí, v mezích pojistky no_action.
+3. Běh člena týmu, který vedoucí spustil přes `@mention` nebo zprávu, probudí vedoucího znovu, až skončí, v konverzaci, ze které ho vedoucí probudil; omezuje to pojistka pro případ bez akce. Práce, kterou vedoucí předal přes `delegate_task`, ho probudí, až se ticket uzavře, a dotaz, který položil přes `ask_agent`, ho probudí s odpovědí (viz [Agenti spolupracují](/cs-CZ/prirucka/navody/agenti-spolupracuji/)).
 
 Druhý vstup je uzel pipeline **Team dispatch**. Bere id týmu, prompt a režim dispatch:
 

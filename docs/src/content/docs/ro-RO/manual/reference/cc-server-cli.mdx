@@ -2,7 +2,7 @@
 title: CLI cc_server
 description: Toate flag-urile, variabilele de mediu, subcomenzile și căile din directorul de date ale serverului headless.
 slug: ro-RO/manual/referinta/cc-server-cli
-sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
+sourceHash: ee71514a1721599da299a81b5702bc7cdb372330
 ---
 
 Fiecare setare a procesului acceptă un flag de linie de comandă sau o variabilă de
@@ -10,10 +10,7 @@ mediu; flagul are prioritate, apoi mediul, apoi valoarea implicită. Credențial
 providerilor sunt excepția — vezi [Aplicații provider și Connect](#aplicații-provider-și-connect).
 
 :::caution[Flag-urile necunoscute sunt ignorate în tăcere]
-Parserul de argumente este scris manual și sare peste orice nu recunoaște, așa că o
-greșeală de tastare (`--tls-key-file`, `--bindany`) nu produce nicio eroare — serverul
-pornește pur și simplu cu valoarea implicită. Verifică liniile din jurnalul de pornire
-când un flag pare să nu aibă efect.
+Parserul de argumente este scris manual și sare peste orice nu recunoaște, așa că o greșeală de tastare (`--tls-key-file`, `--bindany`) nu produce nicio eroare — serverul pornește pur și simplu cu valoarea implicită. Verifică liniile din jurnalul de pornire când un flag pare să nu aibă efect. Un [flag al modului cod](#modul-cod) cu o valoare pe care nu o acceptă este diferit: serverul refuză să pornească.
 :::
 
 ## Elemente de bază
@@ -51,8 +48,10 @@ când un flag pare să nu aibă efect.
 | `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | `on` înfășoară rulările agenților în sandbox-ul nativ al sistemului de operare al gazdei, iar pe o gazdă fără unul pornesc doar rulările proprietarului serverului. `off` rulează agenții fiecărui membru neizolați pe această gazdă. Vezi mai jos |
 | `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Comutator de oprire forțată, utilizabil în producție, pentru indexarea în fundal a grafului de cod. `off` pornește curat, fără o reconstrucție |
 | `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Secunde cât este amânată prima trecere de indexare după bannerul de disponibilitate (limitat la 0–300)                                        |
-| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Dacă rulările harnessului trimit un set mic de instrumente rezidente plus un index de nume, încărcând restul la prima utilizare. Vezi mai jos |
+| `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Dacă rulările harnessului trimit un set mic de instrumente directe plus un index de nume, încărcând restul la prima utilizare. Vezi mai jos   |
 | `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Secunde cât o rulare rămâne în așteptare până când un om remediază un credențial care nu o poate deservi (limitat la 0–3600). Vezi mai jos   |
+| `--code-mode-max-processes` | `CC_SERVER_CODE_MODE_MAX_PROCESSES` | `min(16, 2 × cores)` | Scripturi de mod cod care rulează simultan pe acest server, fără cele care așteaptă o persoană, 1–64. Vezi mai jos |
+| `--code-mode-max-heap-mb` | `CC_SERVER_CODE_MODE_MAX_HEAP_MB` | `1024` | Cea mai mare memorie pe care o poate folosi un script, 16–1024 MiB. Limita de memorie mai mare a unui spațiu de lucru este coborâtă până la aceasta |
 
 ## Aplicații provider și Connect
 
@@ -121,18 +120,9 @@ toată durata procesului, astfel încât starea nu este niciodată trecută sub 
 
 ### `--tool-deferral`
 
-Rulările harnessului integrat trimit un set rezident mic de definiții de instrumente
-plus un index doar cu numele restului, care își încarcă schemele la prima utilizare.
-Reduce blocul de instrumente cu aproximativ 78% și menține setul mereu vizibil în
-intervalul în care modelele selectează instrumente în mod fiabil. Instrumentele amânate
-rămân apelabile după nume pe tot parcursul, iar `search_tools` le găsește după intenție.
-Vezi [Contextul instrumentelor și cache-ul prompturilor](/ro-RO/manual/concepte/contextul-instrumentelor).
+Rulările harnessului integrat trimit un set direct mic de definiții de instrumente plus un index doar cu numele restului, care își încarcă schemele la prima utilizare sau sunt apelate dintr-un script `repl`. Menține setul mereu vizibil în intervalul în care modelele selectează instrumente în mod fiabil. Măsurat pe registrul pe care îl construiesc testele, instrumentele standard de chat ale agentului integrat ajung la 14 definiții: aproximativ 16,5 KB cu `repl` (dintre care aproximativ 4 KB sunt ale lui `repl`, a cărui definiție nu poate depăși 4.096 de octeți), aproximativ 13 KB pe un server care nu poate rula scripturi. Instrumentele amânate rămân apelabile după nume pe tot parcursul, iar `search_tools` le găsește după intenție. Vezi [Contextul instrumentelor și cache-ul prompturilor](/ro-RO/manual/concepte/contextul-instrumentelor/).
 
-`--tool-deferral off` face din nou rezident fiecare instrument admis, reproducând
-cererile pe care le făcea serverul înainte de a exista amânarea. Este comutatorul de
-oprire forțată pentru un model care se descurcă prost cu suprafața pe două niveluri — un
-flag, în locul unei reconstrucții. Afectează doar harnessul integrat; catalogul pe care
-îl văd clienții MCP externi prin `tools/list` este întotdeauna cel complet.
+`--tool-deferral off` trimite definiția fiecărui instrument admis din față, cu excepția faptului că o rulare cu `repl` apelează în continuare din scripturi instrumentele pe care un script le poate apela. Este comutatorul de oprire forțată pentru un model care se descurcă prost cu suprafața pe două niveluri — un flag, în locul unei reconstrucții. Afectează doar harnessul integrat; catalogul pe care îl văd clienții MCP externi prin `tools/list` este cel complet, cu excepția unei rulări de agent pe un server care poate rula scripturi de [mod cod](/ro-RO/manual/concepte/mod-cod/).
 
 ### `--credential-gate`
 
@@ -150,6 +140,25 @@ mesajul cu care oricum ar fi eșuat.
 
 `--credential-gate=0` este comutatorul de oprire forțată: nimic nu este pus vreodată în
 așteptare, iar un credențial defect încheie turul exact ca înainte de a exista poarta.
+
+### Modul cod
+
+[Mod cod](/ro-RO/manual/concepte/mod-cod/) îi permite unui agent să ruleze un script JavaScript care apelează instrumentele sale. Nu există niciun flag care să-l pornească sau să-l oprească: fiecare rulare primește instrumentul `repl` atunci când serverul poate rula scripturi, iar un server demo public nu rulează niciunul.
+
+Scripturile rulează în `cc_codemode`, un program livrat împreună cu serverul în `bin/codemode/`. Serverul nu pornește fără el: afișează o linie care numește ce lipsește și iese cu codul `78`. La pornire rulează autotestul de blocare al programului și afișează o linie (suprimată doar de `--log-level error`):
+
+```text
+cc_server: code_mode=available (cc_codemode 0.1.0 quickjs-ng 0.16.2 protocol 2; 16 scripts at once, at most 12 per workspace; up to 64 more runners kept for scripts waiting on a person; heap at most 1024 MiB per script)
+cc_server: code_mode=unavailable (<reason>) — runs on this host get no repl tool; scripts never run without full lockdown
+```
+
+`unavailable` înseamnă că programul nu se poate bloca singur pe această gazdă, de exemplu într-un container al cărui profil de securitate refuză unul dintre pași, sau că programul nu este un build de lansare. Serverul rulează normal, nicio rulare nu primește `repl`, iar setările modului cod ale spațiului de lucru arată motivul.
+
+Serverul continuă să verifice cât timp rulează. Când programul nu pornește dintr-un motiv care nu ține de script, serverul rulează din nou autotestul, cel mult o dată pe minut. Dacă acesta eșuează, serverul scrie linia `unavailable` cu motivul său și nu rulează niciun script: rulările care pornesc între timp nu primesc `repl`, iar o rulare care îl are deja își apelează instrumentele direct ([Când scripturile nu pot rula](/ro-RO/manual/concepte/mod-cod/#când-scripturile-nu-pot-rula)). Continuă să verifice, cel mult o dată pe minut, iar când autotestul trece din nou, scrie linia `available` și rulează din nou scripturi. Doar un autotest care a eșuat la pornire cere o repornire. Motivul pe care îl arată setările spațiului de lucru are căile de pe gazdă eliminate; linia din jurnal le are complete.
+
+Cele două flaguri ale modului cod limitează ce pot folosi scripturile. `--code-mode-max-processes` limitează scripturile care rulează simultan în toate spațiile de lucru (implicit de două ori numărul de nuclee de procesor, cel mult 16; acceptat 1–64). Cu o limită de 2 sau mai mult, un spațiu de lucru folosește cel mult limita minus un sfert din ea, ca niciun spațiu de lucru să nu poată lua fiecare loc, iar scripturile în așteptare sunt admise pe rând între spații de lucru. Un script care așteaptă aprobarea sau răspunsul unei persoane își cedează locul altui script și nu pornește niciun apel de instrument până la răspuns; sunt păstrate până la de patru ori limita de scripturi în așteptare de acest fel, cel mult trei sferturi dintre ele dintr-un singur spațiu de lucru, iar fiecare poate continua să calculeze în limita ei de timp de procesor. `--code-mode-max-heap-mb` este cea mai mare memorie pe care o poate folosi un script.
+
+O valoare pe care aceste opțiuni nu o acceptă (un număr în afara intervalului sau care nu este un număr) oprește serverul la pornire (cod de ieșire `78`) cu un mesaj care numește valorile acceptate. Nu este niciodată citită drept valoarea implicită.
 
 ## Subcomenzi
 
@@ -257,6 +266,7 @@ Serverul ține directorul de date privat pentru propriul cont (`0700`). Refuză 
 | `backups/exports/`                | Exporturi ale unui singur spațiu de lucru, `<workspaceId>-<timestamp>.db`       |
 | `backups/transfer/`               | Zonă de tranzit pentru descărcările și încărcările de backup; curățată de ruta care o scrie |
 | `models/`                         | Modele de embedding, diarizare și voce, rulate pe dispozitiv                   |
+| `codemode/` | O copie de dezvoltare a runner-ului modului cod, instalată de `scripts/natives/build_codemode.sh`; pachetele de lansare o conțin în `bin/codemode/` |
 | `meetings/<meetingId>/`           | Audio de întâlnire păstrat                                                      |
 | `rigs/images/`                    | Imagini de disc de stație importate (suprafața de desktop QEMU)                 |
 | `rigs/smolvm/<rigId>/`            | Starea de rulare a microVM-ului per stație (secretul brokerului, `0600`)        |

@@ -248,6 +248,8 @@ DispatchSession _makeSession({
   Mode mode = Mode.chat,
 }) {
   return DispatchSession(
+    freshHistory: false,
+    readOnly: false,
     deps: deps ?? _makeDeps(),
     onResolveHandle:
         ({required sessionId, required spec, required emit}) async =>
@@ -303,14 +305,11 @@ void main() {
   group('DispatchSession constructor', () {
     test('stores all required fields', () {
       final deps = _makeDeps();
-      const wakeCtx = WakeContext(
-        runId: 'run-1',
-        agentId: 'agent-1',
-        workspaceId: 'ws-1',
-        wakeReason: WakeReason.userMessage,
-      );
+      const wakeCtx = WakeContext.userMessage();
 
       final session = DispatchSession(
+        freshHistory: false,
+        readOnly: false,
         deps: deps,
         onResolveHandle:
             ({required sessionId, required spec, required emit}) async =>
@@ -352,6 +351,8 @@ void main() {
 
     test('optional fields default to null', () {
       final session = DispatchSession(
+        freshHistory: false,
+        readOnly: false,
         deps: _makeDeps(),
         onResolveHandle:
             ({required sessionId, required spec, required emit}) async =>
@@ -506,7 +507,7 @@ void main() {
         final session = _makeSession();
         expect(session.controller.isClosed, isFalse);
 
-        await session.stop();
+        await session.stop(summary: kRunStoppedByShutdownSummary);
 
         expect(session.controller.isClosed, isTrue);
       },
@@ -533,7 +534,7 @@ void main() {
       final session = _makeSession();
       expect(session.controller.isClosed, isFalse);
 
-      await session.stop();
+      await session.stop(summary: kRunStoppedByShutdownSummary);
 
       expect(session.controller.isClosed, isTrue);
     });
@@ -546,7 +547,7 @@ void main() {
       );
       expect(session.silenceTimer, isNotNull);
 
-      await session.stop();
+      await session.stop(summary: kRunStoppedByShutdownSummary);
 
       expect(session.silenceTimer, isNull);
     });
@@ -644,8 +645,8 @@ void main() {
     test('multiple stop calls do not throw', () async {
       final session = _makeSession();
 
-      await session.stop();
-      await session.stop();
+      await session.stop(summary: kRunStoppedByShutdownSummary);
+      await session.stop(summary: kRunStoppedByShutdownSummary);
 
       expect(session.controller.isClosed, isTrue);
     });
@@ -653,7 +654,7 @@ void main() {
     test('terminate after stop does not throw', () async {
       final session = _makeSession();
 
-      await session.stop();
+      await session.stop(summary: kRunStoppedByShutdownSummary);
       await session.terminate();
 
       expect(session.controller.isClosed, isTrue);
@@ -663,7 +664,7 @@ void main() {
       final session = _makeSession();
 
       await session.terminate();
-      await session.stop();
+      await session.stop(summary: kRunStoppedByShutdownSummary);
 
       expect(session.controller.isClosed, isTrue);
     });
@@ -692,7 +693,7 @@ void main() {
       session1.controller.stream.listen(events1.add);
       session2.controller.stream.listen(events2.add);
 
-      await session1.stop();
+      await session1.stop(summary: kRunStoppedByShutdownSummary);
 
       session2.addEvent(TextEvent(content: 'session2 only'));
       await Future<void>.delayed(Duration.zero);
@@ -710,6 +711,8 @@ void main() {
     test('is stored and callable', () async {
       var called = false;
       final session = DispatchSession(
+        freshHistory: false,
+        readOnly: false,
         deps: _makeDeps(),
         onResolveHandle:
             ({required sessionId, required spec, required emit}) async {
@@ -751,6 +754,8 @@ void main() {
     test('is stored and callable', () {
       String? cooled;
       final session = DispatchSession(
+        freshHistory: false,
+        readOnly: false,
         deps: _makeDeps(),
         onResolveHandle:
             ({required sessionId, required spec, required emit}) async =>
@@ -789,6 +794,8 @@ void main() {
       () async {
         SandboxSpec? captured;
         final session = DispatchSession(
+          freshHistory: false,
+          readOnly: false,
           deps: _makeDeps(),
           onResolveHandle:
               ({required sessionId, required spec, required emit}) async {
@@ -847,6 +854,8 @@ void main() {
 
           SandboxSpec? captured;
           final session = DispatchSession(
+            freshHistory: false,
+            readOnly: false,
             deps: _makeDeps(),
             onResolveHandle:
                 ({required sessionId, required spec, required emit}) async {
@@ -1029,7 +1038,7 @@ void main() {
       );
       expect(session.silenceTimer, isNotNull);
 
-      await session.stop();
+      await session.stop(summary: kRunStoppedByShutdownSummary);
 
       expect(session.silenceTimer, isNull);
     });
@@ -1085,7 +1094,7 @@ void main() {
       session.eventsSub = sc.stream.listen((_) {});
       expect(session.eventsSub, isNotNull);
 
-      await session.stop();
+      await session.stop(summary: kRunStoppedByShutdownSummary);
 
       // stop() does not cancel eventsSub — only terminate() does.
       expect(session.eventsSub, isNotNull);
@@ -1554,6 +1563,8 @@ void main() {
 
       final events = <AgentProcessEvent>[];
       final session = DispatchSession(
+        freshHistory: false,
+        readOnly: false,
         deps: _makeDeps(runLogRepo: runLogRepo),
         onResolveHandle:
             ({required sessionId, required spec, required emit}) async =>
@@ -1594,6 +1605,8 @@ void main() {
 
     test('terminate no-ops when runLogRepo is null', () async {
       final session = DispatchSession(
+        freshHistory: false,
+        readOnly: false,
         deps: _makeDeps(runLogRepo: null),
         onResolveHandle:
             ({required sessionId, required spec, required emit}) async =>

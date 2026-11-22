@@ -1,3 +1,5 @@
+import 'package:cc_domain/features/evals/domain/evaluation/evaluation_goal_outcome.dart';
+import 'package:cc_domain/features/evals/domain/evaluation/evaluation_outcome.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_plan.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_task.dart';
 import 'package:cc_domain/features/evals/domain/value_objects/eval_outcome.dart';
@@ -903,6 +905,7 @@ class EvaluationAttempt {
     required this.repetition,
     required this.seed,
     required this.startedAtEpochMs,
+    required this.end,
     this.ordinal = 0,
     this.executionMode = EvaluationExecutionMode.live,
     this.resumedSession = false,
@@ -911,7 +914,6 @@ class EvaluationAttempt {
     this.servedEffort,
     this.observedCliVersion,
     this.observedToolSurfaceHash,
-    this.completed = false,
     this.error,
     this.tokens = const EvaluationTokenBreakdown(),
     this.cost = const EvaluationCostRoles(),
@@ -925,112 +927,98 @@ class EvaluationAttempt {
     this.filesTouched = const [],
     this.transcriptRef,
     this.notes = '',
+    this.goal,
   });
 
   /// Parses from JSON.
-  factory EvaluationAttempt.fromJson(
-    Map<String, dynamic> json,
-  ) => EvaluationAttempt(
-    attemptId: json['attemptId'] as String? ?? '',
-    taskId: json['taskId'] as String? ?? '',
-    taskKind: EvaluationTaskKind.fromWire(json['taskKind'] as String?),
-    armId: json['armId'] as String? ?? '',
-    effective: EvaluationEffectiveConfig(
-      adapter: (json['effective'] as Map?)?['adapter'] as String? ?? '',
-      providerId: (json['effective'] as Map?)?['providerId'] as String? ?? '',
-      modelId: (json['effective'] as Map?)?['modelId'] as String? ?? '',
-      effortLevel: (json['effective'] as Map?)?['effortLevel'] as String?,
-      memoryPolicy: MemoryPolicyMode.fromWire(
-        (json['effective'] as Map?)?['memoryPolicy'] as String?,
-      ),
-      sessionContinuity: SessionContinuityMode.fromWire(
-        (json['effective'] as Map?)?['sessionContinuity'] as String?,
-      ),
-      mcpDiscoveryCache: McpDiscoveryCacheMode.fromWire(
-        (json['effective'] as Map?)?['mcpDiscoveryCache'] as String?,
-      ),
-      toolOverlap: ToolOverlapMode.fromWire(
-        (json['effective'] as Map?)?['toolOverlap'] as String?,
-      ),
-      skillExposure: (json['effective'] as Map?)?['skillExposure'] == null
-          ? null
-          : SkillExposure.fromWire(
-              (json['effective'] as Map)['skillExposure'] as String,
-            ),
-    ),
-    stratum: CacheStratum.fromWire(json['stratum'] as String?),
-    repetition: (json['repetition'] as num?)?.toInt() ?? 0,
-    seed: (json['seed'] as num?)?.toInt() ?? 0,
-    startedAtEpochMs: (json['startedAtEpochMs'] as num?)?.toInt() ?? 0,
-    ordinal: (json['ordinal'] as num?)?.toInt() ?? 0,
-    executionMode: EvaluationExecutionMode.fromWire(
-      json['executionMode'] as String?,
-    ),
-    resumedSession: json['resumedSession'] as bool? ?? false,
-    sessionId: json['sessionId'] as String?,
-    servedModel: json['servedModel'] as String?,
-    servedEffort: json['servedEffort'] as String?,
-    observedCliVersion: json['observedCliVersion'] as String?,
-    observedToolSurfaceHash: json['observedToolSurfaceHash'] as String?,
-    completed: json['completed'] as bool? ?? false,
-    error: json['error'] as String?,
-    tokens: json['tokens'] == null
-        ? const EvaluationTokenBreakdown()
-        : EvaluationTokenBreakdown.fromJson(
-            (json['tokens'] as Map).cast<String, dynamic>(),
-          ),
-    cost: json['cost'] == null
-        ? const EvaluationCostRoles()
-        : EvaluationCostRoles.fromJson(
-            (json['cost'] as Map).cast<String, dynamic>(),
-          ),
-    latency: json['latency'] == null
-        ? const EvaluationLatency()
-        : EvaluationLatency.fromJson(
-            (json['latency'] as Map).cast<String, dynamic>(),
-          ),
-    metrics: json['metrics'] == null
-        ? const EvaluationAttemptMetrics()
-        : EvaluationAttemptMetrics.fromJson(
-            (json['metrics'] as Map).cast<String, dynamic>(),
-          ),
-    toolEvents:
-        (json['toolEvents'] as List?)
-            ?.map(
-              (e) => EvaluationToolEvent.fromJson(
-                (e as Map).cast<String, dynamic>(),
+  factory EvaluationAttempt.fromJson(Map<String, dynamic> json) =>
+      EvaluationAttempt(
+        attemptId: json['attemptId'] as String? ?? '',
+        taskId: json['taskId'] as String? ?? '',
+        taskKind: EvaluationTaskKind.fromWire(json['taskKind'] as String?),
+        armId: json['armId'] as String? ?? '',
+        effective: EvaluationEffectiveConfig.fromJson(
+          ((json['effective'] as Map?) ?? const {}).cast<String, dynamic>(),
+        ),
+        stratum: CacheStratum.fromWire(json['stratum'] as String?),
+        repetition: (json['repetition'] as num?)?.toInt() ?? 0,
+        seed: (json['seed'] as num?)?.toInt() ?? 0,
+        startedAtEpochMs: (json['startedAtEpochMs'] as num?)?.toInt() ?? 0,
+        ordinal: (json['ordinal'] as num?)?.toInt() ?? 0,
+        executionMode: EvaluationExecutionMode.fromWire(
+          json['executionMode'] as String?,
+        ),
+        resumedSession: json['resumedSession'] as bool? ?? false,
+        sessionId: json['sessionId'] as String?,
+        servedModel: json['servedModel'] as String?,
+        servedEffort: json['servedEffort'] as String?,
+        observedCliVersion: json['observedCliVersion'] as String?,
+        observedToolSurfaceHash: json['observedToolSurfaceHash'] as String?,
+        end: EvaluationAttemptEnd.fromWire(json['end'] as String?),
+        error: json['error'] as String?,
+        tokens: json['tokens'] == null
+            ? const EvaluationTokenBreakdown()
+            : EvaluationTokenBreakdown.fromJson(
+                (json['tokens'] as Map).cast<String, dynamic>(),
               ),
-            )
-            .toList() ??
-        const [],
-    skillEvents:
-        (json['skillEvents'] as List?)
-            ?.map(
-              (e) => EvaluationSkillEvent.fromJson(
-                (e as Map).cast<String, dynamic>(),
+        cost: json['cost'] == null
+            ? const EvaluationCostRoles()
+            : EvaluationCostRoles.fromJson(
+                (json['cost'] as Map).cast<String, dynamic>(),
               ),
-            )
-            .toList() ??
-        const [],
-    verification:
-        (json['verification'] as List?)
-            ?.map(
-              (e) => EvaluationVerificationResult.fromJson(
-                (e as Map).cast<String, dynamic>(),
+        latency: json['latency'] == null
+            ? const EvaluationLatency()
+            : EvaluationLatency.fromJson(
+                (json['latency'] as Map).cast<String, dynamic>(),
               ),
-            )
-            .toList() ??
-        const [],
-    expectedAuthoritativeChecks: (json['expectedAuthoritativeChecks'] as num?)
-        ?.toInt(),
-    identityMismatches:
-        (json['identityMismatches'] as List?)?.map((e) => '$e').toList() ??
-        const [],
-    filesTouched:
-        (json['filesTouched'] as List?)?.map((e) => '$e').toList() ?? const [],
-    transcriptRef: json['transcriptRef'] as String?,
-    notes: json['notes'] as String? ?? '',
-  );
+        metrics: json['metrics'] == null
+            ? const EvaluationAttemptMetrics()
+            : EvaluationAttemptMetrics.fromJson(
+                (json['metrics'] as Map).cast<String, dynamic>(),
+              ),
+        toolEvents:
+            (json['toolEvents'] as List?)
+                ?.map(
+                  (e) => EvaluationToolEvent.fromJson(
+                    (e as Map).cast<String, dynamic>(),
+                  ),
+                )
+                .toList() ??
+            const [],
+        skillEvents:
+            (json['skillEvents'] as List?)
+                ?.map(
+                  (e) => EvaluationSkillEvent.fromJson(
+                    (e as Map).cast<String, dynamic>(),
+                  ),
+                )
+                .toList() ??
+            const [],
+        verification:
+            (json['verification'] as List?)
+                ?.map(
+                  (e) => EvaluationVerificationResult.fromJson(
+                    (e as Map).cast<String, dynamic>(),
+                  ),
+                )
+                .toList() ??
+            const [],
+        expectedAuthoritativeChecks:
+            (json['expectedAuthoritativeChecks'] as num?)?.toInt(),
+        identityMismatches:
+            (json['identityMismatches'] as List?)?.map((e) => '$e').toList() ??
+            const [],
+        filesTouched:
+            (json['filesTouched'] as List?)?.map((e) => '$e').toList() ??
+            const [],
+        transcriptRef: json['transcriptRef'] as String?,
+        notes: json['notes'] as String? ?? '',
+        goal: json['goal'] == null
+            ? null
+            : EvaluationGoalOutcome.fromJson(
+                (json['goal'] as Map).cast<String, dynamic>(),
+              ),
+      );
 
   /// Unique attempt id (stable across replay: the recorded attempt keeps it).
   final String attemptId;
@@ -1087,10 +1075,16 @@ class EvaluationAttempt {
   /// which is exactly the kind of silent drift a manifest alone cannot catch.
   final String? observedToolSurfaceHash;
 
-  /// Whether the run reached a clean terminal state.
-  final bool completed;
+  /// How the attempt ended: whether it is scored on its checks, scored as a
+  /// failure (the agent gave up), or missing data (the harness or the
+  /// ceiling stopped it).
+  final EvaluationAttemptEnd end;
 
-  /// Harness fault detail when the attempt did not complete.
+  /// Whether the run finished: its loop completed, or its goal arm accepted
+  /// a claim.
+  bool get completed => end == EvaluationAttemptEnd.finished;
+
+  /// What stopped the attempt when it did not finish.
   final String? error;
 
   /// Tokens by cache role.
@@ -1128,6 +1122,9 @@ class EvaluationAttempt {
 
   /// A reference to the stored transcript, when one was kept.
   final String? transcriptRef;
+
+  /// What a goal attempt came to; null when the attempt ran no goal.
+  final EvaluationGoalOutcome? goal;
 
   /// Operator notes.
   final String notes;
@@ -1179,7 +1176,7 @@ class EvaluationAttempt {
   /// Returns a copy with the given fields replaced.
   EvaluationAttempt copyWith({
     List<EvaluationVerificationResult>? verification,
-    bool? completed,
+    EvaluationAttemptEnd? end,
     String? error,
     List<String>? filesTouched,
     List<EvaluationToolEvent>? toolEvents,
@@ -1217,7 +1214,7 @@ class EvaluationAttempt {
     observedCliVersion: observedCliVersion ?? this.observedCliVersion,
     observedToolSurfaceHash:
         observedToolSurfaceHash ?? this.observedToolSurfaceHash,
-    completed: completed ?? this.completed,
+    end: end ?? this.end,
     error: error ?? this.error,
     tokens: tokens,
     cost: cost,
@@ -1232,6 +1229,7 @@ class EvaluationAttempt {
     filesTouched: filesTouched ?? this.filesTouched,
     transcriptRef: transcriptRef ?? this.transcriptRef,
     notes: notes ?? this.notes,
+    goal: goal,
   );
 
   /// Projects this attempt into the existing [EvalOutcome] shape so the
@@ -1337,6 +1335,7 @@ class EvaluationAttempt {
     if (observedCliVersion != null) 'observedCliVersion': observedCliVersion,
     if (observedToolSurfaceHash != null)
       'observedToolSurfaceHash': observedToolSurfaceHash,
+    'end': end.wire,
     'completed': completed,
     if (error != null) 'error': error,
     'tokens': tokens.toJson(),
@@ -1354,6 +1353,7 @@ class EvaluationAttempt {
     if (filesTouched.isNotEmpty) 'filesTouched': filesTouched,
     if (transcriptRef != null) 'transcriptRef': transcriptRef,
     if (notes.isNotEmpty) 'notes': notes,
+    if (goal != null) 'goal': goal!.toJson(),
     'verifiedSuccess': verifiedSuccess,
   };
 
@@ -1378,7 +1378,7 @@ class EvaluationAttempt {
           servedEffort == other.servedEffort &&
           observedCliVersion == other.observedCliVersion &&
           observedToolSurfaceHash == other.observedToolSurfaceHash &&
-          completed == other.completed &&
+          end == other.end &&
           error == other.error &&
           tokens == other.tokens &&
           cost == other.cost &&
@@ -1387,6 +1387,7 @@ class EvaluationAttempt {
           expectedAuthoritativeChecks == other.expectedAuthoritativeChecks &&
           notes == other.notes &&
           transcriptRef == other.transcriptRef &&
+          goal == other.goal &&
           _listEq(toolEvents, other.toolEvents) &&
           _listEq(skillEvents, other.skillEvents) &&
           _listEq(verification, other.verification) &&
@@ -1412,7 +1413,7 @@ class EvaluationAttempt {
     servedEffort,
     observedCliVersion,
     observedToolSurfaceHash,
-    completed,
+    end,
     error,
     tokens,
     cost,
@@ -1421,6 +1422,7 @@ class EvaluationAttempt {
     expectedAuthoritativeChecks,
     notes,
     transcriptRef,
+    goal,
     Object.hashAll(toolEvents),
     Object.hashAll(skillEvents),
     Object.hashAll(verification),

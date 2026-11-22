@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/active_process_info.dart';
 import 'package:cc_domain/core/domain/entities/activity_entry.dart';
-import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/entities/agent_working_memory.dart';
 import 'package:cc_domain/core/domain/entities/directory_listing.dart';
@@ -23,24 +22,16 @@ import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/entities/workspace_invite.dart';
 import 'package:cc_domain/core/domain/entities/workspace_member.dart';
 import 'package:cc_domain/core/domain/ports/database_backup_port.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_lifecycle_status.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_role.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_run_role.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_visibility.dart';
 import 'package:cc_domain/core/domain/value_objects/entity_ref.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/core/domain/value_objects/memory_permission.dart';
 import 'package:cc_domain/core/domain/value_objects/message_attachment.dart';
-import 'package:cc_domain/core/domain/value_objects/output_contract_mode.dart';
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
-import 'package:cc_domain/core/domain/value_objects/retry_meta.dart';
-import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
 import 'package:cc_domain/features/calendar/domain/entities/calendar_event.dart';
-import 'package:cc_domain/features/dispatch/domain/entities/agent_goal_run.dart';
-import 'package:cc_domain/features/dispatch/domain/value_objects/agent_goal_status.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
 import 'package:cc_domain/features/governance/domain/entities/approval.dart';
 import 'package:cc_domain/features/governance/domain/entities/approval_comment.dart';
 import 'package:cc_domain/features/governance/domain/entities/org_goal.dart';
@@ -63,11 +54,8 @@ import 'package:cc_domain/features/newsfeed/domain/entities/rss_feed.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_item_state.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_read_mark.dart';
-import 'package:cc_domain/features/observability/domain/run_stage.dart';
 import 'package:cc_domain/features/observability/domain/run_verification.dart';
 import 'package:cc_domain/features/orchestration/domain/entities/orchestration.dart';
-import 'package:cc_domain/features/orchestration/domain/entities/orchestration_proposal.dart';
-import 'package:cc_domain/features/orchestration/domain/entities/orchestration_status.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_definition.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_input.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_node_config.dart';
@@ -124,12 +112,15 @@ import 'package:cc_persistence/cc_persistence.dart'
     show MessageReactionsTableData, PairedDevicesTableData, SpaceNotesTableData;
 import 'package:path/path.dart' as p;
 
+/// A person's own RPC dispatch (`dispatch.dispatchAgent`): no client names one.
+const WakeContext personDispatchWakeContext = WakeContext.userMessage();
 /// Maps a [Ticket] to the `TicketDto` wire shape (`cc_domain`).
 ///
 /// The shape is LOSSLESS: every persisted field rides the wire so a thin client
 /// can run the domain workflow (read-modify-write with `expectedVersion`)
 /// without dropping anything. Enum fields travel as `.name`; timestamps as
 /// ISO-8601.
+
 Map<String, dynamic> ticketToWire(Ticket t) => {
   'ticket_id': t.id,
   'key': t.externalKey ?? '',
@@ -147,6 +138,7 @@ Map<String, dynamic> ticketToWire(Ticket t) => {
   'project_id': ?t.projectId,
   'assigned_team_id': ?t.assignedTeamId,
   'delegated_by_agent_id': ?t.delegatedByAgentId,
+  'delegated_from_conversation_id': ?t.delegatedFromConversationId,
   'space_id': ?t.spaceId,
   'error_message': ?t.errorMessage,
   'linked_pr_ids': t.linkedPrIds,
@@ -167,6 +159,10 @@ Map<String, dynamic> ticketToWire(Ticket t) => {
 /// fields are decoded from their `.name` (unknown values fall back to a safe
 /// default); a missing required timestamp falls back to the epoch so the entity
 /// stays constructible.
+///
+/// `delegated_from_conversation_id` is read by neither op: it is where the
+/// server sends the delegation's completion wake, so only the delegation
+/// path sets it, and `tickets.update` carries the stored value over.
 Ticket ticketFromWire(Map<String, dynamic> w) {
   DateTime? parse(Object? iso) => iso is String ? DateTime.parse(iso) : null;
   DateTime parseOr(Object? iso) =>
@@ -302,69 +298,6 @@ Stream<Map<String, dynamic>> watchCollaboratorsScoped(
       .map((list) => {'collaborators': list.map(collaboratorToWire).toList()});
 }
 
-/// Maps an [Agent] to the `AgentDto` wire shape (enum fields as `.name`).
-Map<String, dynamic> agentToWire(Agent a) => {
-  'id': a.id,
-  'name': a.name,
-  'title': a.title,
-  'agent_md_path': a.agentMdPath,
-  'workspace_id': a.workspaceId,
-  'skills': a.skills.toList(),
-  'reports_to': ?a.reportsTo,
-  'persona': ?a.persona,
-  'system_prompt': ?a.systemPrompt,
-  'adapter_id': ?a.adapterId,
-  'model_id': ?a.modelId,
-  'strict_mode': a.strictMode,
-  'effort': ?a.effort,
-  'context_size': ?a.contextSize,
-  'role': ?a.role?.name,
-  'monthly_budget_micros': a.monthlyBudgetMicros,
-  'silence_timeout_minutes': ?a.silenceTimeoutMinutes,
-  'max_concurrent_tasks': a.maxConcurrentTasks,
-  'visibility': a.visibility.name,
-  'lifecycle_status': a.lifecycleStatus.name,
-  'budget_policy_id': ?a.budgetPolicyId,
-  'runtime_profile_id': ?a.runtimeProfileId,
-  'created_at': a.createdAt.toIso8601String(),
-};
-
-/// Reconstructs an [Agent] from an `AgentDto` wire map (the inverse of
-/// [agentToWire]), used by the `agents.upsert` op.
-Agent agentFromWire(Map<String, dynamic> w) {
-  return Agent(
-    id: w['id'] as String,
-    name: w['name'] as String? ?? '',
-    title: w['title'] as String? ?? '',
-    agentMdPath: w['agent_md_path'] as String? ?? '',
-    workspaceId: w['workspace_id'] as String? ?? '',
-    skills: AgentSkills(
-      ((w['skills'] as List?) ?? const []).map((s) => s.toString()).toList(),
-    ),
-    reportsTo: w['reports_to'] as String?,
-    persona: w['persona'] as String?,
-    systemPrompt: w['system_prompt'] as String?,
-    adapterId: w['adapter_id'] as String?,
-    modelId: w['model_id'] as String?,
-    strictMode: w['strict_mode'] as bool? ?? false,
-    effort: w['effort'] as String?,
-    contextSize: (w['context_size'] as num?)?.toInt(),
-    role: w['role'] == null ? null : AgentRole.values.asNameMap()[w['role']],
-    monthlyBudgetMicros: (w['monthly_budget_micros'] as num?)?.toInt() ?? 0,
-    silenceTimeoutMinutes: (w['silence_timeout_minutes'] as num?)?.toInt(),
-    maxConcurrentTasks: (w['max_concurrent_tasks'] as num?)?.toInt() ?? 1,
-    visibility: AgentVisibility.fromStorage(w['visibility'] as String?),
-    lifecycleStatus: AgentLifecycleStatus.fromStorage(
-      w['lifecycle_status'] as String?,
-    ),
-    budgetPolicyId: w['budget_policy_id'] as String?,
-    runtimeProfileId: w['runtime_profile_id'] as String?,
-    createdAt: w['created_at'] is String
-        ? DateTime.parse(w['created_at'] as String)
-        : DateTime.fromMillisecondsSinceEpoch(0),
-  );
-}
-
 /// Maps an [OrgGoal] to its wire shape (enum fields as `.name`).
 Map<String, dynamic> orgGoalToWire(OrgGoal g) => {
   'id': g.id,
@@ -434,31 +367,6 @@ Map<String, dynamic> goalToWire(ConversationGoal g) => {
   'conversation_id': g.conversationId,
   'workspace_id': g.workspaceId,
   'title': g.title,
-  'created_at': g.createdAt.toIso8601String(),
-  'updated_at': g.updatedAt.toIso8601String(),
-};
-
-/// Maps an [AgentGoalRun] (a durable supervised `/goal` or `/loop`) to its
-/// wire shape (enum fields as their persisted wire names, timestamps ISO-8601
-/// like [todoItemToWire]).
-Map<String, dynamic> agentGoalRunToWire(AgentGoalRun g) => {
-  'id': g.id,
-  'workspace_id': g.workspaceId,
-  'space_id': g.spaceId,
-  'conversation_id': g.conversationId,
-  'agent_id': g.agentId,
-  'user_text': g.userText,
-  'kind': g.kind.wire,
-  'status': g.status.wire,
-  'deadline_at': ?g.deadlineAt?.toIso8601String(),
-  'cost_cap_micros': g.costCapMicros,
-  'cost_micros': g.costMicros,
-  'max_runs': ?g.maxRuns,
-  'run_count': g.runCount,
-  'consecutive_failures': g.consecutiveFailures,
-  'active_run_id': ?g.activeRunId,
-  'requested_by_user_id': ?g.requestedByUserId,
-  'summary': ?g.summary,
   'created_at': g.createdAt.toIso8601String(),
   'updated_at': g.updatedAt.toIso8601String(),
 };
@@ -611,85 +519,12 @@ Map<String, dynamic> agentRunLogToWire(AgentRunLog l) => {
   // so it travels as an absent key like every other unknown.
   'native_session_id': ?l.nativeSessionId,
   if (l.resumedNativeSession) 'resumed_native_session': true,
+  // Server-owned: sent to clients; no client op writes a run log.
+  'end_reason': ?l.endReason?.wire,
+  if (l.wakeIds.isNotEmpty) 'wake_ids': l.wakeIds,
+  'requested_by_user_id': ?l.requestedByUserId,
+  'wake_reason': ?l.wakeReason?.wire,
 };
-
-/// Parses the own-usage columns shared by a full run log and a partial cost
-/// update. Descendant spend has separate columns and is never accepted here.
-RunCost runCostFromWire(Map<String, dynamic> w) => RunCost(
-  inputTokens: (w['input_tokens'] as num?)?.toInt() ?? 0,
-  outputTokens: (w['output_tokens'] as num?)?.toInt() ?? 0,
-  thoughtTokens: (w['thought_tokens'] as num?)?.toInt() ?? 0,
-  cachedReadTokens: (w['cached_read_tokens'] as num?)?.toInt() ?? 0,
-  cachedWriteTokens: (w['cached_write_tokens'] as num?)?.toInt() ?? 0,
-  costMicros: (w['cost_micros'] as num?)?.toInt() ?? 0,
-  costBasis: CostBasis.fromWire(w['cost_basis'] as String?),
-  durationMs: (w['duration_ms'] as num?)?.toInt(),
-  timeToFirstTokenMs: (w['time_to_first_token_ms'] as num?)?.toInt(),
-);
-
-/// Reconstructs an [AgentRunLog] from an `AgentRunLogDto` wire map (the inverse
-/// of [agentRunLogToWire]), used by the `agent_run_log.upsert` op.
-AgentRunLog agentRunLogFromWire(Map<String, dynamic> w) {
-  final schema = w['expected_output_schema'];
-  final output = w['output_json'];
-  return AgentRunLog(
-    id: w['id'] as String,
-    agentId: w['agent_id'] as String? ?? '',
-    workspaceId: w['workspace_id'] as String?,
-    conversationId: w['conversation_id'] as String?,
-    ticketId: w['ticket_id'] as String?,
-    spaceId: w['space_id'] as String?,
-    startedAt: w['started_at'] is String
-        ? DateTime.parse(w['started_at'] as String)
-        : DateTime.fromMillisecondsSinceEpoch(0),
-    completedAt: w['completed_at'] is String
-        ? DateTime.parse(w['completed_at'] as String)
-        : null,
-    status: RunStatus.values.asNameMap()[w['status']] ?? RunStatus.pending,
-    summary: w['summary'] as String?,
-    adapter: w['adapter'] as String?,
-    modelId: w['model_id'] as String?,
-    pid: (w['pid'] as num?)?.toInt(),
-    // No `log_path`: only the server's own dispatch stamps where a run's log
-    // is, so the run viewer never opens a file a caller named.
-    cost: runCostFromWire(w),
-    liveness: w['liveness'] == null
-        ? null
-        : RunLiveness.values.asNameMap()[w['liveness']],
-    errorFamily: w['error_family'] == null
-        ? null
-        : RunErrorFamily.values.asNameMap()[w['error_family']],
-    lastOutputAt: w['last_output_at'] is String
-        ? DateTime.parse(w['last_output_at'] as String)
-        : null,
-    contextSnapshotJson: w['context_snapshot_json'] as String?,
-    pipelineRunId: w['pipeline_run_id'] as String?,
-    pipelineStepId: w['pipeline_step_id'] as String?,
-    errorCode: w['error_code'] as String?,
-    expectedOutputSchema: schema is Map ? schema.cast<String, dynamic>() : null,
-    outputContractMode: OutputContractMode.fromStorage(
-      w['output_contract_mode'] as String?,
-    ),
-    outputJson: output is Map ? output.cast<String, dynamic>() : null,
-    outputRejections: (w['output_rejections'] as num?)?.toInt() ?? 0,
-    retry: RetryMeta(
-      parentRunId: w['retry_of_run_id'] as String?,
-      attempt: (w['retry_attempt'] as num?)?.toInt() ?? 0,
-    ),
-    role: AgentRunRole.tryParse(w['agent_role'] as String?),
-    childCostMicros: (w['child_cost_micros'] as num?)?.toInt() ?? 0,
-    effort: w['effort'] as String?,
-    taskFamily: w['task_family'] as String?,
-    // Absent means "every stage unknown" / "nothing checked", which is exactly
-    // what the null-aware parsers answer.
-    latency: RunLatencyProfile.fromJson(w['latency']),
-    verification: RunVerification.fromJson(w['verification']),
-    parentRunId: w['parent_run_id'] as String?,
-    spawnToolCallId: w['spawn_tool_call_id'] as String?,
-    nativeSessionId: w['native_session_id'] as String?,
-    resumedNativeSession: (w['resumed_native_session'] as bool?) ?? false,
-  );
-}
 
 /// Maps a [Team] to the `TeamDto` wire shape (timestamp as ISO-8601).
 Map<String, dynamic> teamToWire(Team t) => {
@@ -778,11 +613,6 @@ MemoryAccessGrant memoryAccessGrantFromWire(Map<String, dynamic> w) =>
           MemoryPermission.values.asNameMap()[w['permission']] ??
           MemoryPermission.none,
     );
-
-/// Maps a space read-cursor to the `SpaceReadDto` wire shape: the cursor's
-/// [FeedPosition] (absent when never set) keyed by `space_id`.
-Map<String, dynamic> spaceReadToWire(String spaceId, FeedPosition? lastRead) =>
-    {'space_id': spaceId, 'last_read': ?lastRead?.toJson()};
 
 /// Maps a [Repo] to the `RepoDto` wire shape.
 ///
@@ -1253,7 +1083,6 @@ Map<String, dynamic> spaceParticipantToWire(SpaceParticipant p) => {
   'participant_type': p.participantType.wireName,
   'role': p.role,
   'joined_at': p.joinedAt.toIso8601String(),
-  'last_read_at': ?p.lastReadAt?.toIso8601String(),
 };
 
 /// Decodes the `dispatch.sendAndDispatch` `structured_mentions` arg (a list of
@@ -1312,38 +1141,6 @@ Map<String, dynamic>? userMessageMetadataFromWire(Object? raw) {
   return {
     'attachments': [for (final a in attachments) a.toJson()],
   };
-}
-
-/// Decodes the `dispatch.dispatchAgent` `wake_context` arg into a [WakeContext].
-/// [WakeContext] carries no JSON (de)serializer, so the wire shape is mapped
-/// inline here (and symmetrically on the client). Returns null when absent or
-/// when the required `run_id`/`agent_id`/`workspace_id` fields are missing.
-WakeContext? wakeContextFromWire(Object? raw) {
-  if (raw is! Map) {
-    return null;
-  }
-  final json = raw.cast<String, dynamic>();
-  final runId = json['run_id'];
-  final agentId = json['agent_id'];
-  final workspaceId = json['workspace_id'];
-  if (runId is! String || agentId is! String || workspaceId is! String) {
-    return null;
-  }
-  final reasonName = json['wake_reason'] as String?;
-  final wakeReason = WakeReason.values.firstWhere(
-    (r) => r.name == reasonName,
-    orElse: () => WakeReason.userMessage,
-  );
-  return WakeContext(
-    runId: runId,
-    agentId: agentId,
-    workspaceId: workspaceId,
-    wakeReason: wakeReason,
-    ticketId: json['ticket_id'] as String?,
-    spaceId: json['space_id'] as String?,
-    messageId: json['message_id'] as String?,
-    pipelineRunId: json['pipeline_run_id'] as String?,
-  );
 }
 
 /// Maps a [PrDependencyDiff] to its wire shape.
@@ -2091,44 +1888,6 @@ Map<String, dynamic> orchestrationToWire(Orchestration o) => {
   'completed_at': ?o.completedAt?.toIso8601String(),
 };
 
-/// Reconstructs an [Orchestration] from an `OrchestrationDto` wire map (the
-/// inverse of [orchestrationToWire]), used by the `orchestration.insert` /
-/// `orchestration.update` ops.
-Orchestration orchestrationFromWire(Map<String, dynamic> w) => Orchestration(
-  id: w['id'] as String,
-  workspaceId: w['workspace_id'] as String? ?? '',
-  proposal: OrchestrationProposal.fromJsonString(
-    w['proposal_json'] as String? ?? '{}',
-  ),
-  parentTicketId: w['parent_ticket_id'] as String?,
-  spaceId: w['space_id'] as String?,
-  orchestratorAgentId: w['orchestrator_agent_id'] as String?,
-  status: OrchestrationStatus.fromStorage(w['status'] as String?),
-  revision: (w['revision'] as num?)?.toInt() ?? 1,
-  approvedRevision: (w['approved_revision'] as num?)?.toInt(),
-  pipelineTemplateId: w['pipeline_template_id'] as String?,
-  pipelineRunId: w['pipeline_run_id'] as String?,
-  teamId: w['team_id'] as String?,
-  projectId: w['project_id'] as String?,
-  estimatedCostMicros: (w['estimated_cost_micros'] as num?)?.toInt(),
-  maxCostMicros: (w['max_cost_micros'] as num?)?.toInt(),
-  hiredAgentIds:
-      (w['hired_agent_ids'] as List?)?.whereType<String>().toList() ?? const [],
-  approvedNodeKeys: (w['approved_node_keys'] as List?)
-      ?.whereType<String>()
-      .toList(),
-  errorMessage: w['error_message'] as String?,
-  createdAt: w['created_at'] is String
-      ? DateTime.parse(w['created_at'] as String)
-      : DateTime.fromMillisecondsSinceEpoch(0),
-  updatedAt: w['updated_at'] is String
-      ? DateTime.parse(w['updated_at'] as String)
-      : DateTime.fromMillisecondsSinceEpoch(0),
-  completedAt: w['completed_at'] is String
-      ? DateTime.parse(w['completed_at'] as String)
-      : null,
-);
-
 /// Maps an [OrchestrationRevision] snapshot to its wire shape.
 Map<String, dynamic> orchestrationRevisionToWire(OrchestrationRevision r) => {
   'id': r.id,
@@ -2384,6 +2143,7 @@ Map<String, dynamic> prCodeReviewCommentToWire(
   'original_line': ?c.originalLine,
   'thread_id': ?c.threadId,
   if (c.isResolved) 'is_resolved': true,
+  if (c.isFileLevel) 'file_level': true,
   'reactions': c.reactions.map(reactionGroupToWire).toList(),
 };
 
@@ -3090,6 +2850,7 @@ Map<String, dynamic> guardDecisionToWire(GuardDecision d) => {
   'source_scope': ?d.sourceScope,
   'rule_id': ?d.ruleId,
   'prompted': d.prompted,
+  if (d.unanswered) 'unanswered': true,
   'responder_user_id': ?d.responderUserId,
   'override_reason': ?d.overrideReason,
   'correlation_id': ?d.correlationId,

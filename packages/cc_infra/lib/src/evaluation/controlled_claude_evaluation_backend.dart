@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_attempt.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_backend_port.dart';
+import 'package:cc_domain/features/evals/domain/evaluation/evaluation_outcome.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_plan.dart';
 import 'package:cc_domain/features/evals/domain/value_objects/agent_config_hash.dart';
 import 'package:cc_harness/cancellation.dart';
@@ -242,7 +243,9 @@ class ControlledClaudeEvaluationBackend implements EvaluationBackendPort {
     var costMicros = 0;
     var costUnknown = false;
     var requests = 0;
-    var completed = false;
+    // How the attempt ended: harness fault until a turn proves otherwise.
+    var end = EvaluationAttemptEnd.harnessFault;
+    String? stopSubtype;
     var compactions = 0;
     var retries = 0;
     String? error;
@@ -278,6 +281,11 @@ class ControlledClaudeEvaluationBackend implements EvaluationBackendPort {
             costMicros >= budgetMicros) {
           error =
               'Evaluation cancelled, budget spent or accounting unavailable';
+          // Its own budget spent is the agent running out; a cancellation or
+          // unknown spend is the harness's.
+          end = !cancellation.isCancelled && !costUnknown
+              ? EvaluationAttemptEnd.agentStopped
+              : EvaluationAttemptEnd.harnessFault;
           break;
         }
         // A new native session per turn prevents native history from crossing
@@ -396,6 +404,10 @@ class ControlledClaudeEvaluationBackend implements EvaluationBackendPort {
                   );
               if (usage.subtype != 'success') {
                 error ??= 'Claude result ${usage.subtype}';
+                if (usage.subtype == 'error_max_turns' ||
+                    usage.subtype == 'error_max_budget_usd') {
+                  stopSubtype = usage.subtype;
+                }
               }
             },
             onCompactBoundary: (_) => compactions++,
@@ -432,12 +444,21 @@ class ControlledClaudeEvaluationBackend implements EvaluationBackendPort {
           error ??= unsafeSurface
               ? 'Claude tool surface/model or MCP differs from controlled pin'
               : outcome ?? 'Claude did not provide verifiable final accounting';
+          // The CLI's own turn or budget stop (with known spend and a pinned
+          // surface) is the agent running out; anything else is the harness.
+          end =
+              stopSubtype != null &&
+                  receivedInit &&
+                  !unsafeSurface &&
+                  !costUnknown
+              ? EvaluationAttemptEnd.agentStopped
+              : EvaluationAttemptEnd.harnessFault;
           break;
         }
         history
           ..writeln('user: $turn')
           ..writeln('assistant: ${trace.toString()}');
-        completed = true;
+        end = EvaluationAttemptEnd.finished;
       }
     } on Object catch (exception) {
       error = '$exception';
@@ -465,7 +486,7 @@ class ControlledClaudeEvaluationBackend implements EvaluationBackendPort {
       servedModel: servedModel,
       observedCliVersion: cliVersion,
       observedToolSurfaceHash: toolSurfaceHash,
-      completed: completed && error == null && !cancellation.isCancelled,
+      end: cancellation.isCancelled ? EvaluationAttemptEnd.harnessFault : end,
       error: error,
       tokens: tokens,
       cost: costUnknown

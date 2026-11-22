@@ -10,6 +10,7 @@
 /// their own `skill:` namespace, because they come from providers.
 library;
 
+import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/composer/mention/sources/slash_command_source.dart';
 
 /// The built-in commands, in the order the composer offers them.
@@ -23,6 +24,11 @@ const List<SlashCommand> kMessagingSlashCommands = <SlashCommand>[
     description: 'Work toward a goal until it is done',
   ),
   SlashCommand(name: 'loop', description: 'Iterate on a task until complete'),
+  SlashCommand(name: 'schedule', description: 'Run a task later'),
+  SlashCommand(
+    name: 'refine',
+    description: "Review this conversation's work and propose improvements",
+  ),
   SlashCommand(name: 'tree', description: 'Show the conversation\'s branches'),
   SlashCommand(
     name: 'export',
@@ -88,3 +94,12 @@ const List<SlashCommand> kMessagingSlashCommands = <SlashCommand>[
   ),
   SlashCommand(name: 'todo import', description: 'Import a markdown checklist'),
 ];
+
+/// The localized one-line hints of the long-running-work commands, by name,
+/// which replace the literal descriptions above in the composer's popup.
+Map<String, String> workCommandHints(AppLocalizations l10n) => {
+  'goal': l10n.slashHintGoal,
+  'loop': l10n.slashHintLoop,
+  'schedule': l10n.slashHintSchedule,
+  'refine': l10n.slashHintRefine,
+};

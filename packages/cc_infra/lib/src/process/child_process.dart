@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_domain/features/sandboxing/domain/child_environment.dart';
+import 'package:cc_infra/src/process/process_tree.dart';
 
 /// The only way server code starts a child process (`git` goes through
 /// `IsolatedGit` instead).
@@ -119,6 +120,21 @@ abstract final class ChildProcess {
       return null;
     }
   }
+
+  /// Kills [rootPid] and every process it started (its descendants, the
+  /// process groups and sessions they lead, and every process whose
+  /// environment carries [marker]): TERM, then KILL to whatever is left after
+  /// [grace]. A child started in its own group (see `superviseProcessGroup`)
+  /// takes what it left behind down with it, even re-parented processes.
+  /// Never signals the server or the server's own group, and never the root
+  /// once [exited] says its exit was seen. Windows ends the tree with
+  /// `taskkill /T /F`. See [killProcessTree].
+  static Future<void> killTree(
+    int rootPid, {
+    required bool Function() exited,
+    String? marker,
+    Duration grace = const Duration(seconds: 2),
+  }) => killProcessTree(rootPid, grace: grace, exited: exited, marker: marker);
 
   /// `Process.runSync` with a [ChildEnvironment].
   static ProcessResult runSync(

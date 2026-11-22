@@ -5,6 +5,7 @@ import 'package:cc_domain/features/messaging/domain/services/question_answer_sub
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/providers.dart';
 import 'package:cc_remote/widgets/messaging/ask_user_card.dart';
+import 'package:cc_remote/widgets/messaging/script_origin_line.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -111,6 +112,7 @@ class _UserQuestionTileState extends ConsumerState<UserQuestionTile> {
           allowFreeText: _meta['allowFreeText'] == true,
           multiSelect: _meta['multiSelect'] == true,
           caption: l10n.agentQuestionHeader,
+          extraBody: _meta['origin'] is Map ? const ScriptOriginLine() : null,
           answered: _answered,
           submitting: _submitting,
           onSubmit: _answered == null ? _submit : null,

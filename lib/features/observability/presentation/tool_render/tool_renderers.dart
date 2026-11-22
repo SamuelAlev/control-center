@@ -5,10 +5,10 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/agents/providers/run_activity_providers.dart';
 import 'package:control_center/features/observability/presentation/obs_format.dart';
 import 'package:control_center/features/observability/presentation/tool_render/run_activity_opener_scope.dart';
+import 'package:control_center/features/observability/presentation/tool_render/script_renderer.dart';
 import 'package:control_center/features/observability/presentation/tool_render/tool_render_parts.dart';
 import 'package:control_center/features/observability/presentation/widgets/obs_widgets.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,7 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Renderers turn an opaque [ToolSegment] (tool name + JSON args + raw output)
 /// into a readable, auditable card — a bash command/output split, an edit's
 /// diff, a subagent task's outcome — instead of dumped JSON. Look one up with
-/// [resolveToolRenderer]; render with [ToolCallCard].
+/// [resolveToolRenderer]; render with a `ToolCallCard`.
 abstract class ToolRenderer {
   /// Const base constructor.
   const ToolRenderer();
@@ -28,6 +28,19 @@ abstract class ToolRenderer {
 
   /// The expandable detail body, or null when the summary says it all.
   Widget? body(BuildContext context, ToolSegment s) => null;
+
+  /// The body of a call that ran a script, with [calls] (the calls the
+  /// script made) placed where this kind of call shows them: after its own
+  /// body unless a renderer knows better.
+  Widget bodyWithCalls(BuildContext context, ToolSegment s, Widget calls) {
+    final own = body(context, s);
+    return own == null
+        ? calls
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [own, calls],
+          );
+  }
 }
 
 /// Normalizes a wire tool name for registry lookup: strips a leading
@@ -57,6 +70,7 @@ const _browser = BrowserRenderer();
 const _job = JobRenderer();
 const _todo = TodoRenderer();
 const _generic = GenericToolRenderer();
+const _script = ScriptRenderer();
 
 const Map<String, ToolRenderer> _registry = {
   'bash': _bash,
@@ -116,6 +130,7 @@ const Map<String, ToolRenderer> _registry = {
   'todo_write': _todo,
   'todo_read': _todo,
   'update_plan': _todo,
+  'repl': _script,
 };
 
 /// Resolves the renderer for [toolName] (aliases included), or a generic
@@ -580,137 +595,6 @@ class TodoRenderer extends ToolRenderer {
   @override
   Widget? body(BuildContext context, ToolSegment s) =>
       s.outputs.isEmpty ? null : OutputBlock(text: s.outputs);
-}
-
-/// An expandable card rendering one [ToolSegment] via its resolved renderer:
-/// always-visible status + name + one-line summary, with a tappable body when
-/// the renderer provides detail.
-class ToolCallCard extends StatefulWidget {
-  /// Creates a [ToolCallCard].
-  const ToolCallCard({
-    super.key,
-    required this.segment,
-    this.initiallyExpanded = false,
-  });
-
-  /// The tool call to render.
-  final ToolSegment segment;
-
-  /// Whether the body starts expanded.
-  final bool initiallyExpanded;
-
-  @override
-  State<ToolCallCard> createState() => _ToolCallCardState();
-}
-
-class _ToolCallCardState extends State<ToolCallCard> {
-  late bool _expanded = widget.initiallyExpanded;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    final segment = widget.segment;
-    final renderer = resolveToolRenderer(segment.toolName);
-    final body = renderer.body(context, segment);
-    final hasBody = body != null && !segment.isPruned;
-    final duration = toolDurationLabel(segment.durationMs);
-
-    final header = Row(
-      children: [
-        toolStatusIcon(context, segment.status),
-        const SizedBox(width: AppSpacing.sm),
-        Text(
-          normalizeToolName(segment.toolName),
-          style: CcTypography.label.copyWith(
-            color: t.textPrimary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(child: renderer.summary(context, segment)),
-        if (segment.isPruned) ...[
-          const SizedBox(width: AppSpacing.xs),
-          const ToolChip(label: 'pruned', tone: ObsTone.warning),
-        ],
-        if (duration.isNotEmpty) ...[
-          const SizedBox(width: AppSpacing.sm),
-          Text(
-            duration,
-            style: CcTypography.caption.copyWith(color: t.textQuaternary),
-          ),
-        ],
-        if (hasBody)
-          Icon(
-            _expanded ? AppIcons.chevronDown : AppIcons.chevronRight,
-            size: 14,
-            color: t.fgTertiary,
-          ),
-      ],
-    );
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.xs),
-      decoration: BoxDecoration(
-        color: t.bgSecondary,
-        border: Border.all(color: t.borderPrimary),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (hasBody)
-            GestureDetector(
-              onTap: () => setState(() => _expanded = !_expanded),
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                child: header,
-              ),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              child: header,
-            ),
-          if (hasBody)
-            CcCollapsible(
-              expanded: _expanded,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.sm,
-                  0,
-                  AppSpacing.sm,
-                  AppSpacing.sm,
-                ),
-                child: body,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Renders an ordered list of tool calls as a column of [ToolCallCard]s.
-class TranscriptToolList extends StatelessWidget {
-  /// Creates a [TranscriptToolList].
-  const TranscriptToolList({super.key, required this.segments});
-
-  /// The tool segments, in transcript order.
-  final List<ToolSegment> segments;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    if (segments.isEmpty) {
-      return Text(
-        'No tool calls yet.',
-        style: CcTypography.caption.copyWith(color: t.textTertiary),
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [for (final s in segments) ToolCallCard(segment: s)],
-    );
-  }
 }
 
 /// The `subagent` chip on a `task` cell — a button into the spawned run's own

@@ -1,8 +1,8 @@
 ---
 title: Explorar dados em um kernel persistente
-description: Dê a um agente um interpretador Python ou JavaScript que mantém suas variáveis entre chamadas, desenha gráficos no chat e pode chamar suas próprias ferramentas de dentro de uma célula.
+description: Dê a um agente um interpretador Python ou JavaScript que mantém suas variáveis entre chamadas e desenha gráficos no chat.
 slug: pt-BR/manual/guias/explorar-dados-em-kernel
-sourceHash: 19c98a5cd3f7e364307de94c84ae3736bf550c1b
+sourceHash: 8fcd77019bfae5088223822a12ef91c8a6879c5d
 ---
 
 Este guia mostra como fazer um agente carregar algo caro uma única vez e depois fazer várias perguntas sobre esse algo, em vez de pagar o carregamento a cada pergunta.
@@ -62,22 +62,9 @@ Estas são reescritas como código comum em vez de gerar erro:
 
 A remoção de cache do `%pip` é a que importa: instalar em um interpretador vivo não faz nada por um módulo que já foi importado, então sem ela a versão que você acabou de instalar não é a que está rodando.
 
-## Chamar suas próprias ferramentas de dentro de uma célula
+## Chamar ferramentas a partir de código
 
-```python
-paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
-for path in paths.splitlines()[:100]:
-    contents = tool("read", {"path": path})
-    ...
-```
-
-`tool(name, args)` entra novamente no registro de ferramentas do próprio agente. Isso significa que uma célula pode se distribuir por cem arquivos, ou delegar por meio de `task`, sem que o modelo gaste um turno por item.
-
-:::caution[A ponte não contorna as suas barreiras]
-Uma chamada via ponte é resolvida contra o **mesmo** registro de ferramentas que uma chamada emitida pelo modelo, então a política de `ActionClass`, as solicitações de aprovação e todos os wrappers se aplicam de forma idêntica. Uma ponte que passasse por cima do registro seria um buraco com exatamente o formato de "escreva um one-liner em Python".
-:::
-
-Uma chamada via ponte **suspende o timeout da célula** enquanto está pendente. O orçamento mede a inatividade, não o tempo de relógio — uma célula que se distribui para subagentes e espera quatro minutos não está travada, e matá-la no meio da distribuição perderia todo o estado do kernel.
+Uma célula não pode chamar as ferramentas do agente. Para percorrer ferramentas em código, o agente escreve um script [`repl`](/pt-BR/manual/conceitos/modo-de-codigo/). Um script também não pode chamar `eval`: o agente a chama diretamente.
 
 ## Começar de novo
 

@@ -2,7 +2,7 @@
 title: Gerir custos
 description: Veja quanto os seus agentes estão a gastar, limite uma execução autónoma e reduza o consumo de tokens.
 slug: pt-PT/manual/guias/gerir-custos
-sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
+sourceHash: 040176a3840653a57c823ce4ff7e3ed9cf071c07
 ---
 
 Este guia mostra como ver quanto custam as execuções de agentes e como limitar os gastos de uma execução autónoma.
@@ -40,21 +40,30 @@ O cartão **Uso e custo** nesta página mostra os gastos observados dos últimos
 
 ## Limitar uma execução autónoma
 
-Dois comandos slash, escritos no compositor de um espaço, são as únicas execuções com um limite de gastos:
+Estas execuções têm um limite de gastos. Uma execução que você inicia ao enviar uma mensagem não tem.
 
 ```
 /goal ship the auth refactor --budget 20
-/loop keep the flaky tests green
+/loop every 1h --budget 10 keep the flaky tests green
 ```
 
-- Cada segmento de uma execução `/goal` ou `/loop` para quando o seu gasto cotado atinge **500 cêntimos ($5.00)**. Aos 80% desse valor, o ciclo começa por orientar o modelo a terminar e a deixar uma passagem limpa, para não morrer a meio da tarefa.
-- Um objetivo durável completo está limitado a **5000 cêntimos ($50.00)**, a menos que passe `--budget <dollars>`. O supervisor distribui o orçamento _restante_ do objetivo por cada segmento, pelo que um orçamento explícito nunca é excedido por um segmento inteiro.
-- `--days N` acrescenta um prazo de relógio e `--max N` um teto de número de execuções. Ambos são opcionais; sem eles, o objetivo é limitado apenas pelo custo.
-- Um objetivo que atinge o seu prazo termina em `budgetExhausted` e só pode ser retomado aumentando o orçamento.
+| Execução | Limite |
+| --- | --- |
+| Um segmento de um objetivo | 5 dólares, ou o que resta do orçamento do objetivo se for menos |
+| Um objetivo | 50 dólares, a menos que passe `--budget <dollars>` |
+| A revisão de um objetivo | 2 dólares, ou o que resta, debitados ao objetivo |
+| Uma execução que uma programação ou um monitor inicia | 5 dólares; a programação para no seu próprio limite de custo (50 dólares, a menos que passe `--budget`, ou o predefinido do espaço de trabalho) |
+| A revisão após um objetivo, ou `/refine` | 1 dólar |
 
-Como o limite se baseia em preços, um modelo que o catálogo não consegue cotar nunca o atinge. Uma execução dessas é limitada, em vez disso, pela proteção contra ciclos viciosos por repetição, pela desistência do supervisor ao fim de três falhas consecutivas e por si.
+- Uma execução limitada para quando o seu gasto cotado atinge o limite, no harness integrado, no Claude Code e nos agentes ACP. Aos 90% do limite, o harness integrado e o Claude Code começam por orientar o agente a terminar e a deixar uma passagem limpa, para não morrer a meio da tarefa. Um agente ACP é cancelado ao atingir o limite.
+- O orçamento _restante_ do objetivo é distribuído por cada segmento, pelo que um orçamento explícito nunca é excedido por um segmento inteiro.
+- `--days N` acrescenta um prazo e `--max N` um teto de segmentos. Ambos são opcionais; sem eles, o objetivo é limitado pelo custo e pela sua paragem por falta de progresso.
+- Um objetivo que atinge o seu orçamento para em **Orçamento esgotado** e só retoma com um orçamento mais alto, que só quem o iniciou pode dar.
+- Uma execução de pipeline retida no limite da sua orquestração aguarda até quem a pediu premir **Aumentar limite** na página da execução de pipeline. O novo limite tem de ser superior ao anterior e ao que já foi gasto, no máximo 1 000 dólares, e um limite nunca é removido.
 
-Uma mensagem num espaço, uma menção com @ ou um passo de pipeline não têm limite de gastos. A execução termina quando o modelo para, quando a interrompe ou quando a proteção contra ciclos viciosos a orienta.
+Como o limite se baseia em preços, um modelo que o catálogo não consegue cotar nunca o atinge. Uma execução dessas é limitada, em vez disso, pela proteção contra ciclos viciosos por repetição, pela paragem de um objetivo por falta de progresso e pela sua desistência ao fim de três falhas consecutivas, e por si.
+
+Uma mensagem num espaço, uma menção com @ ou um passo de pipeline fora de uma orquestração com limite não têm limite de gastos próprio. A execução termina quando o modelo para, quando a interrompe ou quando a proteção contra ciclos viciosos a orienta.
 
 ## Reduzir o consumo de tokens
 

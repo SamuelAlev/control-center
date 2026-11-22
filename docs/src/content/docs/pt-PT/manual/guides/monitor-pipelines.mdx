@@ -2,7 +2,7 @@
 title: Monitorizar execuções de pipeline
 description: Percorra a fila de execuções, leia a cascata de tempos e o painel do passo de uma execução e recupere um passo falhado ou bloqueado.
 slug: pt-PT/manual/guias/monitorizar-pipelines
-sourceHash: 97cb7584ed497fdc681954995cbeda1c8694b454
+sourceHash: 48d44ae3ca3e23c1123ef282ccffece35b542b96
 ---
 
 Esta página cobre tudo o que acontece depois de uma execução arrancar:
@@ -74,6 +74,8 @@ falhar a execução inteira em vez de a retomarem: um passo suspenso há mais de
 horas (`extras.awaitApproval` — o corpo `orchestration.awaitApproval` — está
 isento; `human.gate` não está) e um passo não idempotente que estava em curso
 quando o servidor parou.
+
+Um passo **Pursue a goal** também fica isento do mecanismo de segurança das 24 horas: mantém-se suspenso enquanto o seu objetivo trabalha, e a página do passo liga ao objetivo. Uma execução inteira também pode ficar **Suspended** porque a sua orquestração atingiu o limite de custo; a página da execução mostra então quanto foi gasto do limite e, para quem pediu a execução, **Aumentar limite**.
 
 ## Inspecionar um passo
 

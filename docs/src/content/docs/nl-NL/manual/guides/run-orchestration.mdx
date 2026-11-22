@@ -2,7 +2,7 @@
 title: Een orkestratie uitvoeren
 description: Vraag een orchestrator om een plan, beoordeel en bewerk het in Plan Studio, keur het één keer goed en laat een gegenereerde pipeline het werk doen.
 slug: nl-NL/handleiding/gidsen/orkestratie-uitvoeren
-sourceHash: 086301be6c1957f6336294720967813c3050ed25
+sourceHash: cc4390cbac6c2122dd24c23bcef20693f40121bb
 ---
 
 In deze gids zie je hoe je één groot doel omzet in een plan voor het hele team
@@ -63,22 +63,13 @@ Druk op **Schatten** in de goedkeuringsbalk voor bereiken voor kosten, duur en
 impactstraal voordat je je vastlegt. Zie
 [Werken in Plan Studio](/nl-NL/handleiding/gidsen/plan-studio/) voor de volledige editor.
 
-:::note[Het budget is geen uitgavelimiet]
-Het budget van een voorstel wordt vergeleken met de _schatting_ in de
-goedkeuringsbalk: wanneer de bovengrens van de schatting het budget
-overschrijdt, wordt het totaal rood met een waarschuwing dat je over het budget
-gaat. Niets controleert de uitgaven terwijl het plan wordt uitgevoerd, dus het
-stopt een run niet en laat die ook niet mislukken. Gebruik voor een echte
-uitgavestop budgetbeleid per agent — zie
-[Kosten beheren](/nl-NL/handleiding/gidsen/kosten-beheren/).
+:::note[Het budget houdt de run vast]
+Het budget van een voorstel wordt vergeleken met de _schatting_ in de goedkeuringsbalk: wanneer de bovengrens van de schatting het budget overschrijdt, wordt het totaal rood met een waarschuwing dat je over het budget gaat. Terwijl het plan wordt uitgevoerd, controleert de server de uitgaven vóór elke nieuwe stap. Bij het budget wordt de run vastgehouden en start er niets nieuws; stappen die al lopen, maken af. Wie de run heeft aangevraagd, krijgt een melding en drukt op **Limiet verhogen** op de pagina van de pipeline-run om door te gaan. Zie [Kosten beheren](/nl-NL/handleiding/gidsen/kosten-beheren/).
 :::
 
 ## Stap 3: Keur goed
 
-Keur het plan goed, vanaf de kaart in de chat of vanaf de goedkeuringsbalk van
-Plan Studio. **Dit is de enige beslissing die je neemt.** Goedkeuren is alleen
-voor de operator — er is geen MCP-tool voor, dus een agent kan een plan
-voorstellen en herzien, maar nooit zijn eigen plan goedkeuren.
+Keur het plan goed, vanaf de kaart in de chat of vanaf de goedkeuringsbalk van Plan Studio. **Dit is de enige beslissing die je neemt.** Goedkeuren is alleen voor de operator — er is geen MCP-tool voor, dus een agent kan een plan voorstellen en herzien, maar nooit zijn eigen plan goedkeuren. Goedkeuren vraagt schrijfrechten op de repositories van de space, en de run handelt daarna voor de persoon die heeft goedgekeurd.
 
 Vanaf hier zet een deterministische materialisator (een pure functie, geen LLM)
 het voorstel om in een echte [pipeline](/nl-NL/handleiding/concepten/pipelines/) en maakt
@@ -117,12 +108,7 @@ Druk op **Orkestratie annuleren** op de kaart in de chat, of op **Uitvoering
 annuleren** in de goedkeuringsbalk van Plan Studio. Annuleren breekt het werk af
 dat nog loopt.
 
-Een orkestratie mislukt wanneer de materialisatie mislukt, of wanneer de run van
-de gegenereerde pipeline mislukt (onderzoek, discussie, synthese of persist —
-die stappen gaan niet door als ze mislukken). Gegenereerde **werk**stappen gaan
-altijd door als ze mislukken, dus één mislukt subticket laat de run niet
-mislukken. Er is geen faalpad voor budgetoverschrijding en geen drempel waarbij
-"elk subticket is mislukt".
+Een orkestratie mislukt wanneer de materialisatie mislukt, of wanneer de run van de gegenereerde pipeline mislukt (onderzoek, discussie, synthese of persist — die stappen gaan niet door als ze mislukken). Gegenereerde **werk**stappen gaan altijd door als ze mislukken, dus één mislukt subticket laat de run niet mislukken. Het bereiken van het budget houdt de run vast in plaats van hem te laten mislukken, en er is geen drempel waarbij "elk subticket is mislukt".
 
 ## Gerelateerde gidsen
 

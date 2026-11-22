@@ -1,0 +1,143 @@
+---
+title: Ein Ziel verfolgen
+description: Gib einem Agenten ein Ziel, an dem er über mehrere Läufe und Neustarts hinweg weiterarbeitet, lege fest, was fertig heißt, und entscheide, wann es abgeschlossen ist.
+slug: de-DE/handbuch/anleitungen/ziel-verfolgen
+sourceHash: 0ea77964bd9e3044e168624bc67325de0fd1d1e5
+---
+
+Ein Ziel ist Arbeit, an der ein Agent so lange dranbleibt, bis was fertig heißt erfüllt ist. Der Agent arbeitet in **Abschnitten**: begrenzten Läufen, die der Server nacheinander startet, auch über Neustarts hinweg, bis das Ziel geprüft ist, eine Person es abschließt oder es ein Limit erreicht. Der Agent kann ein Ziel nicht abschließen, indem er sagt, es sei fertig. Der Server führt zuerst die Prüfungen des Ziels aus, und ein Reviewer sieht sich das Ergebnis an.
+
+## Ein Ziel starten
+
+Gib `/goal` und das Ziel in das Eingabefeld einer Konversation ein:
+
+```text
+/goal --budget 20 --days 2 --check "make test" make the importer handle files over 2 GB
+```
+
+Beginnst du `/goal` mit Text, öffnet sich das Zielinterview. Es fragt nach Erfolgskriterien, den Prüfungen, die bestehen müssen, Grenzen und Stoppbedingungen, und bietet an, einen eigenen Checker zu verwenden, jeden Abschnitt neu zu starten und seine eigenen Fragen selbst zu beantworten. Jeder Schritt kann übersprungen werden.
+
+| Option | Bedeutung |
+| --- | --- |
+| `--budget <dollars>` | Wie viel das ganze Ziel höchstens ausgeben darf. Standardmäßig 50 Dollar |
+| `--max <N>` | Die höchstmögliche Anzahl an Abschnitten für das Ziel. Standardmäßig keine Obergrenze |
+| `--days <N>` | Eine Frist, so viele Tage ab jetzt |
+| `--check "<command>"` | Ein Befehl, der bestehen muss, bevor das Ziel abgeschlossen werden kann; er läuft im Worktree. Wiederhole die Option für weitere, höchstens 5 |
+| `--checker <agent>` | Ein anderer Agent, der die Behauptung prüft, dass das Ziel fertig ist, angegeben über Name oder ID |
+| `--fresh` | Jeden Abschnitt ohne den Verlauf der Konversation starten, nur aus dem Ziel und seinen Notizen |
+| `--unattended wait` oder `--unattended assume` | Was mit den Fragen des Agenten geschieht, wenn niemand antwortet (siehe [Wenn niemand antwortet](#wenn-niemand-antwortet)) |
+
+- Flags können überall in der Nachricht stehen. Ein unbekanntes Flag, ein wiederholtes Flag, ein ungültiger Wert und mehr als 5 Prüfungen werden abgelehnt, und dein Entwurf bleibt mit dem Grund darunter im Eingabefeld.
+- Eine Zahl am Anfang des Ziels gehört zum Ziel. Um Abschnitte zu begrenzen, verwende `--max`.
+- `/goal` wird nur in einer Nachricht gelesen, die du selbst tippst. Derselbe Text von einem Agenten, einer Pipeline oder einem Weckruf ist eine gewöhnliche Nachricht.
+- Ein Agent verfolgt in einem Arbeitsbereich jeweils ein Ziel. Ein zweites `/goal` für denselben Agenten wird abgelehnt, solange das erste aktiv ist.
+
+### Was fertig heißt
+
+Die Zielbeschreibung kann Abschnitte enthalten, die zum Vertrag des Ziels werden:
+
+```text
+/goal make the importer handle files over 2 GB
+
+## Success criteria
+- A 3 GB fixture imports without running out of memory
+- The progress bar reaches 100%
+
+## Boundaries
+- Don't change the public API
+
+## Stop conditions
+- A migration would drop data
+
+## Checks
+- `make test` (300 s)
+- environment task `test` (600 s)
+```
+
+- **Erfolgskriterien**: höchstens 12, jeweils höchstens 300 Zeichen. Jedes ist etwas, das ein Reviewer bestätigen kann.
+- **Prüfungen**: höchstens 5. Eine Prüfung läuft im Worktree oder als benannte Aufgabe der [Environment](/de-DE/handbuch/anleitungen/environments/) des Bereichs. Jede hat standardmäßig 300 Sekunden und höchstens 1.800.
+- Ein Abschnitt über seinem Limit wird abgelehnt, nie gekürzt.
+
+Ein Ziel ohne Kriterien überlässt es dem Agenten zu entscheiden, wann es fertig ist, und ein Ziel ohne Prüfung verlässt sich nur auf das Review. Die Zielseite weist darauf hin.
+
+## Wie ein Ziel weiterläuft
+
+Jeder Abschnitt ist ein Lauf, begrenzt auf 5 Dollar oder den Rest des Budgets, je nachdem, was niedriger ist. Nach jedem Abschnitt entscheidet der Server anhand dessen, was der Abschnitt getan hat, was als Nächstes kommt:
+
+- **Er hat Fortschritte gemacht.** Der nächste Abschnitt startet.
+- **Er wartet auf etwas, das er selbst eingerichtet hat**: einen Zeitplan, eine Überwachung, eine Frage an einen anderen Agenten oder ein delegiertes Ticket. Das Ziel wartet darauf. Kommt nichts an, schaut der Server nach 20 Minuten erneut nach, dann nach 40, 80, 160 und danach alle 240 Minuten. Die Karte zeigt **Wartet auf das, was es eingerichtet hat · schaut bis** eine Uhrzeit erneut nach.
+- **Er hat keinen Fortschritt gemacht.** Fortschritt heißt, dass sich das Worktree durch die eigene Arbeit des Abschnitts verändert hat, die Checkliste sich verändert hat oder der Agent etwas Neues getan hat. Nach 3 Abschnitten ohne Fortschritt pausiert das Ziel: **Keine Fortschritte in seinen letzten Abschnitten.**
+- **Er hat zu lange gewartet.** Nach 24 Stunden Wartezeit oder nach 6 Wartephasen auf neu eingerichtete Dinge ohne dazwischenliegenden Fortschritt pausiert das Ziel: **Wartet nach Abschnitten ohne Fortschritt.**
+- **Er ist fehlgeschlagen.** Der Server versucht es nach 30 Sekunden erneut, dann mit längeren Abständen, bis zu 15 Minuten. Nach 3 Fehlern hintereinander scheitert das Ziel.
+- **Er hat eine Person gefragt.** Das Ziel hält, bis jemand antwortet: **Braucht eine Person**.
+
+Das Ziel stoppt auch bei seinem Budget (**Budget erschöpft**), seiner Obergrenze für Abschnitte oder seiner Frist.
+
+## Wenn der Agent sagt, er sei fertig
+
+Der Agent behauptet, das Ziel sei erreicht, und belegt jedes Kriterium mit Nachweisen. Dann:
+
+1. **Der Server führt die Prüfungen aus**, in einer Sandbox und nie direkt auf dem Rechner des Servers. Eine Prüfung, die mit einem Code ungleich null endet, schlägt fehl. Eine Prüfung, die gar nicht ausgeführt werden kann (Befehl nicht gefunden, nicht ausführbar, eine Environment-Aufgabe, die es nicht gibt), ist kaputt: Das Ziel hält für eine Person mit **Diese Prüfung kann nicht ausgeführt werden:** und dem Befehl. Ohne Sandbox auf dem Server hält das Ziel mit **Für das Ausführen seiner Prüfungen ist keine Sandbox verfügbar.** (Eine Ausnahme ist ein Server, dessen Besitzer die Sandbox für jeden Lauf abgeschaltet hat: Dort laufen die Prüfungen so, wie die eigenen Befehle des Agenten laufen.) Hat sich im Worktree seit einer fehlgeschlagenen Prüfung nichts geändert, wird sie nicht erneut ausgeführt.
+2. **Ein Reviewer sieht sich das Ergebnis an**, wenn alle Prüfungen bestanden haben oder keine vorhanden sind. Der Reviewer ist der Checker des Ziels, sonst der Checker des Bereichs, sonst der eigene Agent des Ziels. Er läuft nur lesend ohne Konversationsverlauf: Er kann Dateien und die Ausgabe der Prüfungen lesen, aber nichts ändern, keine Befehle ausführen und keine anderen Agenten wecken. Er bekommt außerdem den vollständigen Diff der Tests und Prüfskripte, die der Agent geändert hat, und er behandelt, was der Agent im Gespräch und in seinen Notizen geschrieben hat, als Behauptungen, nicht als Beweis. Bei einem Ziel ohne Kriterien beurteilt er das Ziel als Ganzes. Er antwortet, dass das Ziel erreicht ist, nicht erreicht ist oder dass er es nicht beurteilen kann.
+3. **Erledigt**: Das Ziel wird abgeschlossen. **Nicht erledigt**: Der Agent bekommt die Befunde des Reviewers und arbeitet weiter. Nach 3 Runden, die nicht erledigt sind, oder wenn der Reviewer es nicht beurteilen kann, wartet das Ziel auf dich: **Wartet auf Review: Es sagt, es sei erledigt, und nichts hat das bestätigt**.
+
+Eine Nachricht, die du tippst, während der Reviewer läuft, geht weder an den Reviewer, noch wird sie gesendet, wenn das Review endet. Sie bleibt für den nächsten Abschnitt des Agenten eingereiht. Folgt kein Abschnitt, wird sie für dich unter **Zurückgehaltene Nachrichten senden** zurückgehalten.
+
+Ein Reviewer, der nicht laufen kann (gelöscht oder bei einem Adapter, der einen Lauf nicht nur lesend halten kann, etwa einem ACP-Agenten), pausiert das Ziel: **Sein Checker-Agent ist nicht verfügbar. Wähle einen anderen Checker und setze dann fort.** Kein anderer Agent springt ohne dich ein.
+
+Ein Checker bei einem anderen Anbieter als dem Agenten des Ziels hat mit größerer Wahrscheinlichkeit keine gemeinsamen blinden Flecken. Ohne eigenen Checker prüft der Agent seine eigene Arbeit, und das Ziel vermerkt **Selbst geprüft (kein eigener Checker)**.
+
+## Ein Ziel mitverfolgen
+
+- **In der Konversation**: Die Zielkarte im Bereich **Allgemein** zeigt den Grund, warum es zurückgehalten ist, den Abschnitt, die Ausgaben im Verhältnis zum Budget, die verbleibende Zeit, was fertig heißt, die Prüfungen und das letzte Urteil.
+- **Die Seite Ziele**: Seitenleiste → **Ziele**. Ziele sind gruppiert als **Wartet auf Review**, **Offen** und **Beendet**.
+- **Die Zielseite**: Öffne ein Ziel, um **Jetzt** zu sehen (Abschnitte, Ausgaben, Frist, Anzahl der Abschnitte ohne Fortschritt und was als Nächstes passiert), **Was fertig heißt**, **Prüfung** (die letzte Runde: die Behauptung, jede Prüfung mit ihrer Ausgabe, das Review je Kriterium) und **Zeitpläne und Weckrufe**. Jedes Ziel hat eine eigene Adresse (`/workspaces/<workspace>/goals/<goal id>`), sodass du einen Link teilen kannst.
+
+Auf dem Telefon startet der Zielbildschirm ein Ziel mit Prüfungen und einer Obergrenze für Abschnitte und zeigt dieselben Ziele und warum sie zurückgehalten sind.
+
+## Ein Ziel ändern oder stoppen
+
+| Aktion | Wer kann |
+| --- | --- |
+| **Ziel pausieren**, **Ziel stoppen** | Jeder mit Zugriff auf den Bereich |
+| **Ziel fortsetzen**, **Budget erhöhen** | Nur die Person, die das Ziel gestartet hat (für ein Ziel, das niemand gestartet hat, ein Admin des Arbeitsbereichs) |
+| **Bearbeiten** von was fertig heißt, **Checker ändern** | Nur die Person, die das Ziel gestartet hat (ein Admin des Arbeitsbereichs bei einem Ziel, das niemand gestartet hat), mit Schreibzugriff auf die Repositories des Bereichs, solange das Ziel pausiert ist |
+| **Abschluss genehmigen** | Jeder mit Zugriff auf den Bereich, solange das Ziel auf Review wartet. Ein Ziel, das eine Pipeline gestartet hat: nur die Person, die diesen Lauf gestartet hat (ein Admin des Arbeitsbereichs, wenn niemand ihn gestartet hat) |
+
+- Wenn du beim Lauf des Agenten **Stoppen** drückst, pausiert das Ziel (**Von einer Person pausiert**). Seine ausstehenden Weckrufe warten, bis du es fortsetzt.
+- **Abschluss genehmigen** schließt das Ziel auf dein Wort als erledigt ab. Das Ziel vermerkt **Von einer Person ohne bestandene Prüfung abgeschlossen**.
+- Ein Ziel, das sein Budget aufgebraucht hat, wird nur mit einem höheren Budget fortgesetzt.
+- Verlässt die Person, die ein Ziel gestartet hat, den Arbeitsbereich, pausiert das Ziel sofort und wartet auf Review, und sein laufender Agent wird gestoppt. Niemand kann es fortsetzen; jeder mit Zugriff auf den Bereich kann es stoppen. Die tägliche Übersicht führt es für die Admins des Arbeitsbereichs auf.
+
+## Wenn niemand antwortet
+
+Stellt ein Abschnitt einer Person eine Frage oder bittet um eine Genehmigung und niemand antwortet, wartet die Anfrage standardmäßig 72 Stunden. Dann gilt eine Genehmigung als abgelehnt, eine Frage als unbeantwortet, und das Ziel pausiert: **Eine Frage oder Genehmigungsanfrage an eine Person blieb unbeantwortet.** Der Lauf, der gefragt hat, bekommt keine weiteren Antworten: Alles andere, was er fragt, wird sofort abgelehnt, und er beendet, was er kann. Ein Admin des Arbeitsbereichs legt die Zeit (1 Stunde bis 7 Tage) unter **Einstellungen → Arbeitsbereich → Zeitpläne → Wenn niemand antwortet** fest. Einmal am Tag, zu der dort eingestellten Stunde, bekommst du eine Übersicht über alles, was auf dich wartet.
+
+Mit `--unattended assume` nennt der Agent seine Annahme und macht nach 10 Minuten ohne Antwort weiter, wenn seine Stoppbedingungen es erlauben. Das gilt nur für Fragen. Eine Genehmigung wird nie angenommen, und ein Review nimmt nie etwas an.
+
+## Nutzungslimits und Neustarts
+
+- **Ein Nutzungslimit des Anbieters.** Stoppt ein Abschnitt am Nutzungslimit eines Anbieters und nennt der Anbieter den Zeitpunkt des Zurücksetzens (innerhalb von 7 Tagen), pausiert das Ziel ohne Fehlversuch: **Pausiert am Nutzungslimit · wird um** eine Uhrzeit fortgesetzt. Es läuft 30 Sekunden nach dem Zurücksetzen weiter. Nach 8 solchen Pausen wartet das Ziel auf dich: **Es hat die Nutzungslimits zu oft erreicht. Sieh es dir an und setze dann fort.** Jede Fortsetzung setzt die Zählung neu an. ACP-Agenten melden kein Zurücksetzen, deshalb warten ihre Ziele nicht am Limit.
+- **Ein Neustart des Servers.** Ein Ziel übersteht einen Neustart. Ein Abschnitt, den der Neustart unterbrochen hat, wird erneut gestartet, und die Zeitpläne und ausstehenden Weckrufe des Ziels bleiben erhalten.
+
+## Verbesserungen nach einem Ziel
+
+Nachdem ein Ziel die Prüfung bestanden hat, kann ein kurzes, nur lesendes Review (höchstens 1 Dollar) Verbesserungen vorschlagen: einen Gedächtniseintrag, eine Richtlinie, eine Notiz zum Agenten oder eine Änderung an einem Skill. Tippe `/refine`, um dasselbe Review für die Arbeit der Konversation anzufordern. Pro Konversation läuft höchstens ein Review alle 20 Minuten.
+
+Vorschläge erscheinen auf der Seite **Verbesserungen** (Seitenleiste → **Verbesserungen**). Öffne einen, um zu sehen, was er ändert, die Belege sowie **Akzeptieren**, **Ablehnen** oder **Zurückrollen**.
+
+- Ein Vorschlag ändert nichts, bis ihn jemand akzeptiert. Er läuft nach 30 Tagen ab.
+- Eine Änderung an einem Skill oder an einer Richtlinie für den ganzen Arbeitsbereich braucht einen Admin des Arbeitsbereichs (**Ein Admin entscheidet**).
+- Eine Skill-Änderung wird als eigene Revision gespeichert. Drücke **Auswertung starten**, um sie mit dem aktuellen Skill zu vergleichen; **Akzeptieren** ist erst möglich, wenn eine Auswertung bestanden hat. Eine Auswertung besteht, wenn sie vollständig gelaufen ist und der Agent mit der Änderung mindestens so viele Läufe erfolgreich gelöst hat wie mit dem aktuellen Skill; die Seite zeigt beide Zahlen. Ändert sich der Skill nach der Auswertung, führe sie erneut aus.
+- **Zurückrollen** stellt den früheren Text wieder her, solange ihn seitdem niemand geändert hat.
+
+## In einer Pipeline
+
+Eine Pipeline kann ein Ziel mit dem Schritt **Pursue a goal** (`goal.pursue`) starten. Der Schritt wartet, bis das Ziel endet, und gibt dessen Zusammenfassung und Urteil weiter. Siehe [Pipeline-Schrittarten](/de-DE/handbuch/referenz/pipeline-schritte/).
+
+## Siehe auch
+
+- [Zeitpläne und Weckrufe](/de-DE/handbuch/anleitungen/zeitplaene-weckrufe/)
+- [Agenten arbeiten zusammen](/de-DE/handbuch/anleitungen/agenten-zusammenarbeit/)
+- [Kosten verwalten](/de-DE/handbuch/anleitungen/kosten-verwalten/)
+- [Slash-Befehle](/de-DE/handbuch/referenz/slash-befehle/)

@@ -59,6 +59,7 @@ class AskUserCard extends StatefulWidget {
     this.questionIndex,
     this.questionCount,
     this.caption,
+    this.originLine,
     this.extraBody,
     this.submitting = false,
     this.onSubmit,
@@ -94,6 +95,10 @@ class AskUserCard extends StatefulWidget {
 
   /// Overrides the default "Question for you" / progress caption.
   final String? caption;
+
+  /// A line under the caption saying where the request came from (a script
+  /// the agent is running), or null.
+  final Widget? originLine;
 
   /// Extra content between the question and the options (a command block).
   final Widget? extraBody;

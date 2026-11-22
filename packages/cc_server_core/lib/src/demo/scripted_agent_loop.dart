@@ -131,16 +131,17 @@ class ScriptedAgentLoop implements AgentLoop {
     required String userMessage,
     required List<HarnessTool> tools,
     List<HarnessTool> deferredTools = const [],
+    List<HarnessTool> scriptTools = const [],
     required LlmProviderPort provider,
     HarnessToolContext? context,
     AgentLoopConfig config = const AgentLoopConfig(),
     CancellationToken? cancel,
     List<HarnessImageBlock> userImages = const [],
   }) async* {
-    // `tools` and `deferredTools` are deliberately unused: the whole point of
-    // this loop is that nothing is callable and nothing is dialled. `provider`
-    // only ever receives usage replays, and only when it is the demo's inert
-    // provider (see [_usage]).
+    // `tools`, `deferredTools` and `scriptTools` are deliberately unused: the
+    // whole point of this loop is that nothing is callable and nothing is
+    // dialled. `provider` only ever receives usage replays, and only when it
+    // is the demo's inert provider (see [_usage]).
     history.add(HarnessMessage.user(userMessage));
 
     final script = selectScript(userMessage);
