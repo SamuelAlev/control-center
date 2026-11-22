@@ -175,17 +175,17 @@ void main() {
     };
   }
 
-  test('an answered approval reads as read', () async {
+  test('an ended wait leaves the list', () async {
     expect(
       await readById([
         _wait('open'),
         _wait('answered', resolvedAt: '2026-10-09T10:01:00.000Z'),
       ]),
-      {'open': false, 'answered': true},
+      {'open': false},
     );
   });
 
-  test('an explicit "mark as unread" outranks the resolution', () async {
+  test('an ended wait leaves even when marked unread', () async {
     expect(
       await readById(
         [_wait('answered', resolvedAt: '2026-10-09T10:01:00.000Z')],
@@ -197,7 +197,7 @@ void main() {
           ),
         ],
       ),
-      {'answered': false},
+      isEmpty,
     );
   });
 

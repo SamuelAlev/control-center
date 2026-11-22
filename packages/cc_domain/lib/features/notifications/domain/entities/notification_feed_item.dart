@@ -47,8 +47,8 @@ class NotificationFeedItem {
   final String method;
 
   /// Params key the server stamps (UTC ISO-8601) onto an item whose subject
-  /// is over — an agent wait that was answered. Nobody needs to act on it,
-  /// so it renders read for everyone who has not said otherwise.
+  /// is over — an agent wait that was answered, timed out or abandoned.
+  /// Nobody can act on it any more, so clients drop it from their lists.
   static const String resolvedAtKey = 'resolved_at';
 
   /// The frame's wire params, exactly as the forwarder pushed them, plus

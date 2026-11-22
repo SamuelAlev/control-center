@@ -200,6 +200,12 @@ final notificationCenterProvider = Provider<List<NotificationEntry>>((ref) {
     if (mark != null && mark.hides(item)) {
       continue;
     }
+    // A resolved item is an agent wait that ended (answered, timed out or
+    // abandoned). Every wait is time-bound, so the row would only ask for an
+    // answer nobody can give any more: it leaves the list.
+    if (item.isResolved) {
+      continue;
+    }
     final notification = mapNotificationFrame(
       item.method,
       item.params,
@@ -213,16 +219,12 @@ final notificationCenterProvider = Provider<List<NotificationEntry>>((ref) {
     }
     // A per-item state is an OVERRIDE: where one exists it is the whole
     // answer, so "mark as unread" survives a watermark that would otherwise
-    // cover the row. Where none exists, a resolved item (an agent wait that
-    // was answered) is read — there is nothing left to act on — and otherwise
-    // the watermark decides. While the mark is still loading we cannot tell
-    // "never acknowledged" from "not loaded yet" — rendering read avoids a
-    // spurious badge flash.
+    // cover the row. Where none exists the watermark decides. While the mark
+    // is still loading we cannot tell "never acknowledged" from "not loaded
+    // yet" — rendering read avoids a spurious badge flash.
     final read =
         state?.isRead ??
-        (item.isResolved ||
-            !markAsync.hasValue ||
-            (mark != null && mark.hasSeen(item)));
+        (!markAsync.hasValue || (mark != null && mark.hasSeen(item)));
     final owner = item.params['repo_owner'] as String?;
     final repoName = item.params['repo_name'] as String?;
     entries.add(

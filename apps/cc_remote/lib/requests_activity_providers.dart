@@ -148,8 +148,8 @@ final activityMutedReposProvider = Provider<Set<String>>((ref) {
   }
 });
 
-/// Mirrors desktop precedence: dismissal/clear hide, per-item state overrides
-/// resolution and mark-all, resolved waits otherwise read by default.
+/// Mirrors desktop precedence: ended waits, dismissal and clear hide; a
+/// per-item read state overrides mark-all.
 final activityEntriesProvider = Provider<List<ActivityEntry>>((ref) {
   final feed =
       ref.watch(activityFeedProvider).value ?? const <NotificationFeedItem>[];
@@ -182,7 +182,10 @@ final activityEntriesProvider = Provider<List<ActivityEntry>>((ref) {
       continue;
     }
     final state = states[item.id];
-    if (state?.isDismissed == true ||
+    // A resolved item is an agent wait that ended; waits are time-bound, so
+    // the row leaves rather than asking for an answer nobody can give.
+    if (item.isResolved ||
+        state?.isDismissed == true ||
         (mark.value?.hides(item) ?? false)) {
       continue;
     }
@@ -190,9 +193,7 @@ final activityEntriesProvider = Provider<List<ActivityEntry>>((ref) {
       ActivityEntry(
         item,
         state?.isRead ??
-            (item.isResolved ||
-                !mark.hasValue ||
-                (mark.value?.hasSeen(item) ?? false)),
+            (!mark.hasValue || (mark.value?.hasSeen(item) ?? false)),
       ),
     );
   }

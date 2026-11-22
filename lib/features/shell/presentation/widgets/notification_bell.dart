@@ -367,13 +367,10 @@ class _EntryTileState extends ConsumerState<_EntryTile> {
                               ),
                             ),
                             const SizedBox(width: AppSpacing.xs),
-                            Text(
-                              _relativeTime(entry.receivedAt),
-                              style: TextStyle(
-                                fontSize: 11,
-                                height: 1.3,
-                                color: t.textTertiary,
-                              ),
+                            _SlidingTimestamp(
+                              label: _relativeTime(entry.receivedAt),
+                              tucked: showMenu,
+                              color: t.textTertiary,
                             ),
                           ],
                         ),
@@ -396,14 +393,19 @@ class _EntryTileState extends ConsumerState<_EntryTile> {
                   // butted straight against "1h" the moment the row was hovered.
                   // Widening it moves the button LEFT, away from the scrollbar,
                   // so the right inset below still owns that clearance.
-                  const SizedBox(width: AppSpacing.sm),
+                  const SizedBox(width: _menuGap),
                   // The slot is always laid out; only its contents fade, so
                   // revealing it cannot reflow the text beside it. The hidden
                   // state is pointer-inert too — an invisible button must not
                   // swallow a click meant for the row.
                   AnimatedOpacity(
                     opacity: showMenu ? 1 : 0,
-                    duration: const Duration(milliseconds: 90),
+                    // Paced with the timestamp sliding out of its way.
+                    duration: CcMotion.resolveFade(
+                      context,
+                      showMenu ? CcMotion.moderate : CcMotion.fastExit,
+                    ),
+                    curve: CcMotion.standard,
                     child: IgnorePointer(
                       ignoring: !showMenu,
                       child: CcMenu(
@@ -466,6 +468,55 @@ class _EntryTileState extends ConsumerState<_EntryTile> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// The gap between a row's text column and its overflow button.
+const double _menuGap = AppSpacing.sm;
+
+/// How far the overflow slot reaches past the text column: the gap plus the
+/// small icon button's 32px box.
+const double _menuSlotExtent = _menuGap + 32;
+
+/// A row's "time ago", laid out where it sits beside a revealed overflow
+/// button and slid over that button's slot while the button is hidden, so at
+/// rest it lines up with the row's end edge.
+///
+/// Only paint moves: the title beside it keeps one width in both states, so
+/// revealing the menu never reflows the text. The slide follows reading
+/// direction and drops out under reduced motion, where it snaps.
+class _SlidingTimestamp extends StatelessWidget {
+  const _SlidingTimestamp({
+    required this.label,
+    required this.tucked,
+    required this.color,
+  });
+
+  final String label;
+
+  /// Whether the overflow button is showing, so the timestamp makes room.
+  final bool tucked;
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final endward = Directionality.of(context) == TextDirection.rtl ? -1 : 1;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(end: tucked ? 0 : _menuSlotExtent * endward),
+      duration: CcMotion.resolve(
+        context,
+        tucked ? CcMotion.moderate : CcMotion.moderateExit,
+      ),
+      curve: CcMotion.standard,
+      // Physical offset, signed by direction above.
+      builder: (context, dx, child) =>
+          Transform.translate(offset: Offset(dx, 0), child: child),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 11, height: 1.3, color: color),
       ),
     );
   }

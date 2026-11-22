@@ -233,6 +233,82 @@ void main() {
     expect(fade().opacity, 1);
   });
 
+  group('timestamp slide', () {
+    final trigger = find.byWidgetPredicate(
+      (widget) =>
+          widget is CcIconButton && widget.icon == AppIcons.moreHorizontal,
+    );
+    final timestamp = find.text('5m');
+
+    Future<void> pumpRtlAware(
+      WidgetTester tester,
+      TextDirection direction,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: feedOverrides([_entry(id: 'a', read: false)]),
+          child: testWrap(
+            const Align(child: NotificationBell()),
+            textDirection: direction,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await openPanel(tester);
+    }
+
+    for (final direction in TextDirection.values) {
+      testWidgets('rests flush with the row end and makes room on hover '
+          '(${direction.name})', (tester) async {
+        await pumpRtlAware(tester, direction);
+        final rtl = direction == TextDirection.rtl;
+        double endOf(Rect r) => rtl ? r.left : r.right;
+
+        // At rest the hidden trigger's slot is the timestamp's: both end on
+        // the row's end edge.
+        expect(
+          endOf(tester.getRect(timestamp)),
+          moreOrLessEquals(endOf(tester.getRect(trigger)), epsilon: 0.5),
+        );
+
+        await hoverRow(tester, find.text('Review requested'));
+
+        // Revealed, the timestamp has slid start-ward clear of the button.
+        final stamp = tester.getRect(timestamp);
+        final button = tester.getRect(trigger);
+        if (rtl) {
+          expect(stamp.left, greaterThanOrEqualTo(button.right));
+        } else {
+          expect(stamp.right, lessThanOrEqualTo(button.left));
+        }
+      });
+    }
+
+    testWidgets('snaps instead of sliding under reduced motion', (
+      tester,
+    ) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      await pumpRtlAware(tester, TextDirection.ltr);
+
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: Offset.zero);
+      addTearDown(mouse.removePointer);
+      await mouse.moveTo(tester.getCenter(find.text('Review requested')));
+      // One frame: no travel to wait for.
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        tester.getRect(timestamp).right,
+        lessThanOrEqualTo(tester.getRect(trigger).left),
+      );
+    });
+  });
+
   testWidgets('a row marks itself read from its menu', (tester) async {
     await pumpBell(tester, [_entry(id: 'a', read: false)]);
     await openPanel(tester);
