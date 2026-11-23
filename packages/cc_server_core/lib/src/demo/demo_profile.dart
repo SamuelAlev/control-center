@@ -538,6 +538,7 @@ class DemoProfile {
     'pr_review.updatePullRequest',
     'pr_review.updateIssueComment',
     'pr_review.deleteIssueComment',
+    'pr_review.updateReviewComment',
     'pr_review.deleteReviewComment',
     'pr_review.setPullRequestDraft',
     'pr_review.publishReview',

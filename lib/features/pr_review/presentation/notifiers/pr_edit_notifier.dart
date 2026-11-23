@@ -2,6 +2,7 @@ import 'dart:ui' show PlatformDispatcher;
 
 import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
 import 'package:cc_markdown/cc_markdown.dart';
 import 'package:control_center/core/providers/locale_provider.dart';
@@ -25,6 +26,7 @@ class PrEditState {
     this.savingBody = false,
     this.optimisticBody,
     this.optimisticComments = const {},
+    this.optimisticReviewComments = const {},
     this.savingCommentIds = const {},
     this.pendingAssignees = const {},
     this.pendingReviewers = const {},
@@ -47,6 +49,11 @@ class PrEditState {
 
   /// Per-comment markdown shown while a checkbox toggle is in flight.
   final Map<int, String> optimisticComments;
+
+  /// Per-review-comment markdown shown from an edit until the comment
+  /// streams carry it. Keyed apart from [optimisticComments]: inline review
+  /// comments and conversation comments are numbered independently.
+  final Map<int, String> optimisticReviewComments;
 
   /// Comment ids whose body save is in flight.
   final Set<int> savingCommentIds;
@@ -84,6 +91,7 @@ class PrEditState {
     String? optimisticBody,
     bool clearOptimisticBody = false,
     Map<int, String>? optimisticComments,
+    Map<int, String>? optimisticReviewComments,
     Set<int>? savingCommentIds,
     Set<String>? pendingAssignees,
     Set<String>? pendingReviewers,
@@ -100,6 +108,8 @@ class PrEditState {
           ? null
           : (optimisticBody ?? this.optimisticBody),
       optimisticComments: optimisticComments ?? this.optimisticComments,
+      optimisticReviewComments:
+          optimisticReviewComments ?? this.optimisticReviewComments,
       savingCommentIds: savingCommentIds ?? this.savingCommentIds,
       pendingAssignees: pendingAssignees ?? this.pendingAssignees,
       pendingReviewers: pendingReviewers ?? this.pendingReviewers,
@@ -297,6 +307,98 @@ class PrEditNotifier extends Notifier<PrEditState> {
       state = state.copyWith(
         savingCommentIds: state.savingCommentIds.difference({commentId}),
       );
+    }
+  }
+
+  /// Saves an inline review comment's [body]. Returns null on success, else
+  /// an error message.
+  ///
+  /// The new body shows at once and stays until every comment stream open
+  /// now carries it: the diff reads the full stream and the timeline the
+  /// index, and dropping it at the first one would let the other snap back.
+  Future<String?> saveReviewComment({
+    required int commentId,
+    required String body,
+  }) async {
+    final repo = _repo;
+    if (repo == null) {
+      return null;
+    }
+    final previous = state.optimisticReviewComments[commentId];
+    state = state.copyWith(
+      optimisticReviewComments: {
+        ...state.optimisticReviewComments,
+        commentId: body,
+      },
+    );
+    try {
+      await repo.updateReviewComment(
+        prNumber: prNumber,
+        commentId: commentId,
+        body: body,
+      );
+      _dropReviewBodyWhenShown(commentId, body);
+      return null;
+    } catch (e) {
+      if (state.optimisticReviewComments[commentId] == body) {
+        final remaining = Map<int, String>.of(state.optimisticReviewComments);
+        if (previous == null) {
+          remaining.remove(commentId);
+        } else {
+          remaining[commentId] = previous;
+        }
+        state = state.copyWith(optimisticReviewComments: remaining);
+      }
+      return _fail(e);
+    }
+  }
+
+  /// Refreshes the open review-comment streams and drops the optimistic
+  /// [body] once each of them shows it. Streams nobody has open are not
+  /// started: they fetch the new body when they are.
+  void _dropReviewBodyWhenShown(int commentId, String body) {
+    final sources = [
+      prReviewCommentsProvider(pr),
+      prReviewCommentIndexProvider(pr),
+    ].where(ref.exists).toList();
+    void drop() {
+      if (state.optimisticReviewComments[commentId] != body) {
+        return;
+      }
+      final remaining = Map<int, String>.of(state.optimisticReviewComments)
+        ..remove(commentId);
+      state = state.copyWith(optimisticReviewComments: remaining);
+    }
+
+    if (sources.isEmpty) {
+      drop();
+      return;
+    }
+    var waiting = sources.length;
+    for (final source in sources) {
+      ProviderSubscription<AsyncValue<List<PrCodeReviewComment>>>? sub;
+      sub = ref.listen(source, (_, next) {
+        // A later save took over; its own listeners wait for its body.
+        if (state.optimisticReviewComments[commentId] != body) {
+          sub?.close();
+          return;
+        }
+        final comments = next.asData?.value;
+        if (comments == null) {
+          return;
+        }
+        final match = comments.where((c) => c.id == commentId).firstOrNull;
+        // Gone counts as shown: a delete elsewhere leaves nothing to show.
+        if (match != null && match.body != body) {
+          return;
+        }
+        sub?.close();
+        waiting--;
+        if (waiting == 0) {
+          drop();
+        }
+      });
+      ref.invalidate(source);
     }
   }
 

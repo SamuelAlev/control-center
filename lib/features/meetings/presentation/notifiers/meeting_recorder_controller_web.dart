@@ -7,12 +7,13 @@ import 'package:cc_domain/features/meetings/domain/entities/meeting_decision.dar
 import 'package:cc_domain/features/meetings/domain/repositories/meeting_repository.dart'
     show MeetingRepository;
 import 'package:cc_domain/features/meetings/domain/services/meeting_audio_capture_port.dart';
-import 'package:cc_domain/features/meetings/domain/services/meeting_recording_control_port.dart';
+import 'package:control_center/core/infrastructure/audio/pcm_uplink.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/utils/app_log.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/meetings/presentation/notifiers/meeting_recorder_state.dart';
+import 'package:control_center/features/meetings/providers/meeting_channel_uplink.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -39,13 +40,10 @@ class MeetingRecorderController extends Notifier<MeetingRecorderState> {
   StreamSubscription<Uint8List>? _micSub;
   StreamSubscription<Uint8List>? _systemSub;
 
-  // Per-channel sequence + serial send chain: each ingest awaits the previous
-  // on the same channel so frames reach the host in capture order (the client
-  // applies natural backpressure rather than racing concurrent RPC calls).
-  int _micSeq = 0;
-  int _systemSeq = 0;
-  Future<void> _micChain = Future<void>.value();
-  Future<void> _systemChain = Future<void>.value();
+  // Per-channel uplinks (see [meetingChannelUplink]): batched, in capture
+  // order, resent until they land.
+  PcmUplink? _micUplink;
+  PcmUplink? _systemUplink;
   int _lastLevelPushMs = 0;
 
   @override
@@ -124,16 +122,14 @@ class MeetingRecorderController extends Notifier<MeetingRecorderState> {
     // 3) Stream both channels to the host.
     _capture = capture;
     _meetingId = meetingId;
-    _micSeq = 0;
-    _systemSeq = 0;
-    _micChain = Future<void>.value();
-    _systemChain = Future<void>.value();
+    _micUplink = meetingChannelUplink(control, meetingId, channel: 'me');
+    _systemUplink = meetingChannelUplink(control, meetingId, channel: 'them');
     _lastLevelPushMs = 0;
     _micSub = capture.micStream.listen(
-      (pcm) => _ingest(control, meetingId, isMic: true, pcm: pcm),
+      (pcm) => _ingest(meetingId, isMic: true, pcm: pcm),
     );
     _systemSub = capture.systemStream.listen(
-      (pcm) => _ingest(control, meetingId, isMic: false, pcm: pcm),
+      (pcm) => _ingest(meetingId, isMic: false, pcm: pcm),
     );
     state = MeetingRecorderState.recording(meetingId, DateTime.now());
   }
@@ -165,9 +161,14 @@ class MeetingRecorderController extends Notifier<MeetingRecorderState> {
     _systemSub = null;
     await _capture?.stop();
     _capture = null;
-    // Let any in-flight ingests land before the host drains the transcript.
-    await _micChain.catchError((_) {});
-    await _systemChain.catchError((_) {});
+    // Send the buffered tail and let in-flight batches land (bounded) before
+    // the host drains the transcript.
+    await Future.wait([
+      ?_micUplink?.flush(timeout: meetingStopFlushTimeout),
+      ?_systemUplink?.flush(timeout: meetingStopFlushTimeout),
+    ]);
+    _micUplink = null;
+    _systemUplink = null;
     if (meetingId != null) {
       try {
         await ref
@@ -231,14 +232,17 @@ class MeetingRecorderController extends Notifier<MeetingRecorderState> {
         pausedSince: DateTime.now(),
         inputLevel: 0,
       );
+      // Deliver what was captured before the pause now rather than holding it
+      // until the next batch after resume.
+      unawaited(_micUplink?.flush());
+      unawaited(_systemUplink?.flush());
     }
   }
 
-  /// Sends one captured [pcm] frame to the host on the mic (`me`) or system
-  /// (`them`) channel, serialized per channel. Dropped while paused. Mic frames
-  /// also drive the input-level meter.
+  /// Queues one captured [pcm] frame on the mic (`me`) or system (`them`)
+  /// uplink. Dropped while paused. Mic frames also drive the input-level
+  /// meter.
   void _ingest(
-    MeetingRecordingControlPort control,
     String meetingId, {
     required bool isMic,
     required Uint8List pcm,
@@ -248,33 +252,9 @@ class MeetingRecorderController extends Notifier<MeetingRecorderState> {
     }
     if (isMic) {
       _pushLevel(pcm);
-      final seq = _micSeq++;
-      _micChain = _micChain
-          .then((_) {
-            return control.ingestAudio(
-              meetingId: meetingId,
-              channel: 'me',
-              seq: seq,
-              pcm: pcm,
-            );
-          })
-          .catchError((Object e) {
-            AppLog.w('MeetingRecorder', 'mic ingest failed: $e');
-          });
+      _micUplink?.add(pcm);
     } else {
-      final seq = _systemSeq++;
-      _systemChain = _systemChain
-          .then((_) {
-            return control.ingestAudio(
-              meetingId: meetingId,
-              channel: 'them',
-              seq: seq,
-              pcm: pcm,
-            );
-          })
-          .catchError((Object e) {
-            AppLog.w('MeetingRecorder', 'system ingest failed: $e');
-          });
+      _systemUplink?.add(pcm);
     }
   }
 

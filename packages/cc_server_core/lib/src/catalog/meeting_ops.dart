@@ -408,10 +408,11 @@ List<RepoOp> buildMeetingOps({
     RepoOp(
       name: 'dictation.ingestAudio',
       kind: RepoOpKind.mutate,
-      requiredArgs: ['dictation_id', 'pcm'],
+      requiredArgs: ['dictation_id', 'seq', 'pcm'],
       handler: (ctx) async {
         dictationService.ingest(
           ctx.args['dictation_id'] as String,
+          (ctx.args['seq'] as num).toInt(),
           base64Decode(ctx.args['pcm'] as String),
         );
         return {'ok': true};

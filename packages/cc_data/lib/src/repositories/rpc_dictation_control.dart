@@ -33,10 +33,11 @@ class RpcDictationControl implements DictationControlPort {
     required int seq,
     required Uint8List pcm,
   }) async {
-    // The host op takes only `{dictation_id, pcm}`; [seq] is a client-side gap
-    // diagnostic the server does not read, so it is not sent.
+    // The host ignores a [seq] it already has, which makes resending a batch
+    // whose answer was lost safe.
     await _client.call('dictation.ingestAudio', {
       'dictation_id': dictationId,
+      'seq': seq,
       'pcm': base64Encode(pcm),
     });
   }

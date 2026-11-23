@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
 import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
 import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:control_center/features/auth/providers/oauth_providers.dart'
@@ -50,6 +51,31 @@ class _RecordingRepo extends EmptyPrReviewRepository {
     lastCommentBody = body;
   }
 
+  int? lastReviewCommentId;
+  String? lastReviewCommentBody;
+
+  /// What the forge holds for the review comment, as the streams serve it.
+  String reviewCommentOnForge = 'old';
+
+  @override
+  Future<void> updateReviewComment({
+    required int prNumber,
+    required int commentId,
+    required String body,
+  }) async {
+    final refusal = refuseWith;
+    if (refusal != null) {
+      throw refusal;
+    }
+    lastReviewCommentId = commentId;
+    lastReviewCommentBody = body;
+    final wait = gate;
+    if (wait != null) {
+      await wait.future;
+    }
+    reviewCommentOnForge = body;
+  }
+
   @override
   Future<void> addLabels({
     required int prNumber,
@@ -87,6 +113,12 @@ void main() {
         prIssueCommentsProvider(
           prRef,
         ).overrideWith((ref) => Stream.value(const [])),
+        prReviewCommentsProvider(prRef).overrideWith(
+          (ref) => Stream.value([_reviewComment(repo.reviewCommentOnForge)]),
+        ),
+        prReviewCommentIndexProvider(prRef).overrideWith(
+          (ref) => Stream.value([_reviewComment(repo.reviewCommentOnForge)]),
+        ),
       ],
     );
     // autoDispose: keep the notifier alive across async gaps.
@@ -207,4 +239,76 @@ void main() {
     expect(repo.removedLabels, ['wip']);
     expect(container.read(prEditProvider(prRef)).pendingLabels, isEmpty);
   });
+
+  group('saveReviewComment', () {
+    test('writes the forge and shows the new body until the open streams '
+        'carry it', () async {
+      container
+        ..listen(prReviewCommentsProvider(prRef), (_, _) {})
+        ..listen(prReviewCommentIndexProvider(prRef), (_, _) {});
+      await container.read(prReviewCommentsProvider(prRef).future);
+      await container.read(prReviewCommentIndexProvider(prRef).future);
+      repo.gate = Completer<void>();
+      final notifier = container.read(prEditProvider(prRef).notifier);
+
+      final saving = notifier.saveReviewComment(commentId: 7, body: 'new');
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        container.read(prEditProvider(prRef)).optimisticReviewComments[7],
+        'new',
+      );
+      // Conversation comments are numbered apart: id 7 there is untouched.
+      expect(container.read(prEditProvider(prRef)).optimisticComments, {});
+
+      repo.gate!.complete();
+      expect(await saving, isNull);
+      expect(repo.lastReviewCommentId, 7);
+      expect(repo.lastReviewCommentBody, 'new');
+
+      await container.read(prReviewCommentsProvider(prRef).future);
+      await container.read(prReviewCommentIndexProvider(prRef).future);
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        container.read(prEditProvider(prRef)).optimisticReviewComments,
+        isEmpty,
+      );
+    });
+
+    test('drops the new body at once when no stream is open', () async {
+      final notifier = container.read(prEditProvider(prRef).notifier);
+      expect(
+        await notifier.saveReviewComment(commentId: 7, body: 'new'),
+        isNull,
+      );
+      expect(
+        container.read(prEditProvider(prRef)).optimisticReviewComments,
+        isEmpty,
+      );
+    });
+
+    test('a refusal puts the old body back and reports it', () async {
+      repo.refuseWith = RemoteRpcException(
+        RpcErrorCodes.unauthorized,
+        'Not the author',
+      );
+      final notifier = container.read(prEditProvider(prRef).notifier);
+      expect(
+        await notifier.saveReviewComment(commentId: 7, body: 'new'),
+        isNotNull,
+      );
+      expect(
+        container.read(prEditProvider(prRef)).optimisticReviewComments,
+        isEmpty,
+      );
+    });
+  });
 }
+
+PrCodeReviewComment _reviewComment(String body) => PrCodeReviewComment(
+  id: 7,
+  body: body,
+  user: null,
+  path: 'lib/a.dart',
+  position: 1,
+  createdAt: null,
+);

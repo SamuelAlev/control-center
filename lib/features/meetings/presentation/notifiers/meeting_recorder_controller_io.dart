@@ -11,6 +11,7 @@ import 'package:cc_domain/features/meetings/domain/services/meeting_transcript_f
 import 'package:cc_domain/features/meetings/domain/services/mic_echo_canceller.dart';
 import 'package:cc_natives/cc_natives.dart' show AecEngine, AecProcessor;
 import 'package:control_center/core/infrastructure/audio/audio_input_settings.dart';
+import 'package:control_center/core/infrastructure/audio/pcm_uplink.dart';
 import 'package:control_center/core/infrastructure/power/background_activity_guard.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/utils/app_log.dart';
@@ -18,6 +19,7 @@ import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/meetings/presentation/notifiers/meeting_recorder_state.dart';
 import 'package:control_center/features/meetings/providers/meeting_capture_bindings_io.dart';
+import 'package:control_center/features/meetings/providers/meeting_channel_uplink.dart';
 import 'package:control_center/features/meetings/providers/meeting_template_providers.dart';
 import 'package:control_center/features/pipelines/providers/pipeline_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -73,13 +75,11 @@ class MeetingRecorderController extends Notifier<MeetingRecorderState> {
   StreamSubscription<Uint8List>? _micSub;
   StreamSubscription<Uint8List>? _systemSub;
 
-  // Per-channel sequence + serial send chain: each ingest awaits the previous on
-  // the same channel so frames reach the host in capture order (the client
-  // applies natural backpressure rather than racing concurrent RPC calls).
-  int _micSeq = 0;
-  int _systemSeq = 0;
-  Future<void> _micChain = Future<void>.value();
-  Future<void> _systemChain = Future<void>.value();
+  // Per-channel uplinks (see [meetingChannelUplink]): capture chunks (~10 ms
+  // system tap, ~21 ms mic) go to the host in ~250 ms batches, resent until
+  // they land.
+  PcmUplink? _micUplink;
+  PcmUplink? _systemUplink;
 
   /// Single clock shared by both channels — the only timeline on which a `me`
   /// and a `them` frame are comparable. The signal-level AEC cross-correlates the
@@ -206,10 +206,10 @@ class MeetingRecorderController extends Notifier<MeetingRecorderState> {
       _meetingId = meetingId;
       _mic = mic;
       _system = system;
-      _micSeq = 0;
-      _systemSeq = 0;
-      _micChain = Future<void>.value();
-      _systemChain = Future<void>.value();
+      _micUplink = meetingChannelUplink(control, meetingId, channel: 'me');
+      _systemUplink = captureSystem
+          ? meetingChannelUplink(control, meetingId, channel: 'them')
+          : null;
       _lastLevelPushMs = 0;
       _lastSegmentBumpMs = 0;
       _micHealth.reset();
@@ -256,7 +256,7 @@ class MeetingRecorderController extends Notifier<MeetingRecorderState> {
       final micRaw = _logFrames(await mic.startStream(micConfig), 'mic/me');
       final micClean = _aec?.cleanMic(micRaw) ?? micRaw;
       _micSub = micClean.listen(
-        (pcm) => _ingest(control, meetingId, channel: 'me', pcm: pcm),
+        (pcm) => _ingest(_micUplink, meetingId, pcm),
         onError: (Object e, StackTrace s) =>
             AppLog.w('MeetingRecorder', 'mic stream error: $e'),
       );
@@ -271,7 +271,7 @@ class MeetingRecorderController extends Notifier<MeetingRecorderState> {
         );
         final systemStream = _aec?.referenceTap(systemRaw) ?? systemRaw;
         _systemSub = systemStream.listen(
-          (pcm) => _ingest(control, meetingId, channel: 'them', pcm: pcm),
+          (pcm) => _ingest(_systemUplink, meetingId, pcm),
           onError: (Object e, StackTrace s) =>
               AppLog.w('MeetingRecorder', 'system stream error: $e'),
         );
@@ -281,6 +281,9 @@ class MeetingRecorderController extends Notifier<MeetingRecorderState> {
     } catch (e, s) {
       AppLog.e('MeetingRecorder', 'start failed: $e', e, s);
       await _teardownCaptures();
+      // Nothing buffered is worth sending to a session about to be discarded.
+      _micUplink = null;
+      _systemUplink = null;
       // Discard the half-opened host session + its empty meeting row so a failed
       // start doesn't leave a stranded `recording` meeting. Best-effort.
       final strandedId = _meetingId;
@@ -340,9 +343,9 @@ class MeetingRecorderController extends Notifier<MeetingRecorderState> {
       return;
     }
     await _teardownCaptures();
-    // Let any in-flight ingests land before the host drains the transcript.
-    await _micChain.catchError((Object _) {});
-    await _systemChain.catchError((Object _) {});
+    // Send the buffered tail and let in-flight batches land before the host
+    // drains the transcript.
+    await _flushUplinks();
     if (meetingId != null) {
       try {
         await ref
@@ -412,6 +415,10 @@ class MeetingRecorderController extends Notifier<MeetingRecorderState> {
         pausedSince: DateTime.now(),
         inputLevel: 0,
       );
+      // Deliver what was captured before the pause now rather than holding it
+      // until the next batch after resume.
+      unawaited(_micUplink?.flush());
+      unawaited(_systemUplink?.flush());
     }
   }
 
@@ -661,47 +668,25 @@ class MeetingRecorderController extends Notifier<MeetingRecorderState> {
     return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
 
-  /// Sends one captured [pcm] frame to the host on [channel] (`me` = mic,
-  /// `them` = system), serialized per channel. Dropped while paused or after the
-  /// recording moved on.
-  void _ingest(
-    MeetingRecordingControlPort control,
-    String meetingId, {
-    required String channel,
-    required Uint8List pcm,
-  }) {
-    if (state.paused || state.meetingId != meetingId) {
+  /// Queues one captured [pcm] chunk on [uplink]. Dropped while paused or
+  /// after the recording moved on.
+  void _ingest(PcmUplink? uplink, String meetingId, Uint8List pcm) {
+    if (uplink == null || state.paused || state.meetingId != meetingId) {
       return;
     }
-    if (channel == 'me') {
-      final seq = _micSeq++;
-      _micChain = _micChain
-          .then((_) {
-            return control.ingestAudio(
-              meetingId: meetingId,
-              channel: 'me',
-              seq: seq,
-              pcm: pcm,
-            );
-          })
-          .catchError((Object e) {
-            AppLog.w('MeetingRecorder', 'mic ingest failed: $e');
-          });
-    } else {
-      final seq = _systemSeq++;
-      _systemChain = _systemChain
-          .then((_) {
-            return control.ingestAudio(
-              meetingId: meetingId,
-              channel: 'them',
-              seq: seq,
-              pcm: pcm,
-            );
-          })
-          .catchError((Object e) {
-            AppLog.w('MeetingRecorder', 'system ingest failed: $e');
-          });
-    }
+    uplink.add(pcm);
+  }
+
+  /// Sends both channels' buffered audio and waits for every batch to land, or
+  /// gives up after [meetingStopFlushTimeout] (the host unreachable at stop). Each
+  /// uplink catches its own send failures, so this never throws.
+  Future<void> _flushUplinks() async {
+    await Future.wait([
+      ?_micUplink?.flush(timeout: meetingStopFlushTimeout),
+      ?_systemUplink?.flush(timeout: meetingStopFlushTimeout),
+    ]);
+    _micUplink = null;
+    _systemUplink = null;
   }
 
   /// Diagnostic passthrough: logs frame count + peak per [channel] ~every 2s of

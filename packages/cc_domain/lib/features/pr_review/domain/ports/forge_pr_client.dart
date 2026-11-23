@@ -582,6 +582,16 @@ abstract interface class ForgePrClient {
     ForgeCancelToken? cancelToken,
   });
 
+  /// Replaces the body of one inline review comment. [commentId] is the
+  /// forge's review comment / discussion-note id. The forge refuses a caller
+  /// who may not edit it; that refusal propagates.
+  Future<void> updateReviewComment({
+    required int prNumber,
+    required String commentId,
+    required String body,
+    ForgeCancelToken? cancelToken,
+  });
+
   /// Deletes one inline review comment. [commentId] is the forge's review
   /// comment / discussion-note id.
   Future<void> deleteReviewComment({

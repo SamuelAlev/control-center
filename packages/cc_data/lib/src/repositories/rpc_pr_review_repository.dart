@@ -1007,6 +1007,16 @@ class RpcPrReviewRepository implements PrReviewRepository {
   );
 
   @override
+  Future<void> updateReviewComment({
+    required int prNumber,
+    required int commentId,
+    required String body,
+  }) => _client.call(
+    'pr_review.updateReviewComment',
+    _coords({'pr_number': prNumber, 'comment_id': commentId, 'body': body}),
+  );
+
+  @override
   Future<void> deleteReviewComment({
     required int prNumber,
     required int commentId,

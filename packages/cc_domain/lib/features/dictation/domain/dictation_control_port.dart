@@ -28,7 +28,8 @@ abstract interface class DictationControlPort {
   Future<String> start();
 
   /// Streams one PCM16 (16 kHz mono) [pcm] frame into session [dictationId].
-  /// [seq] is the per-session sequence number (gap diagnostics).
+  /// [seq] is the per-session batch number, from 0; resending a batch under
+  /// the same [seq] is safe, since the host ignores one it already has.
   Future<void> ingestAudio({
     required String dictationId,
     required int seq,

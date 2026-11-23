@@ -1066,6 +1066,22 @@ class GitHubForgePrClient
   }
 
   @override
+  Future<void> updateReviewComment({
+    required int prNumber,
+    required String commentId,
+    required String body,
+    ForgeCancelToken? cancelToken,
+  }) async {
+    await _client.pr.editReviewComment(
+      owner,
+      repo,
+      commentId: _numericId(commentId, 'commentId'),
+      body: body,
+      cancelToken: _token(cancelToken),
+    );
+  }
+
+  @override
   Future<void> deleteReviewComment({
     required int prNumber,
     required String commentId,

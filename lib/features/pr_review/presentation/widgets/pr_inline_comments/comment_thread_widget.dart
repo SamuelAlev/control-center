@@ -189,6 +189,32 @@ class _PrInlineThreadBlockState extends ConsumerState<PrInlineThreadBlock> {
     }
   }
 
+  /// Where an edit of [entry] is written. An unsent comment is rewritten
+  /// here; a posted one on the forge. Null while a post is in flight: that
+  /// request carries the old body, and the comment has no forge id yet.
+  Future<String?> Function(String body)? _saveEntry(
+    PrInlineThread thread,
+    PrInlineEntry entry,
+  ) {
+    if (thread.isUnsent) {
+      return (body) async {
+        widget.controller.updateEntry(
+          threadId: thread.id,
+          entryId: entry.id,
+          newBody: body.trim(),
+        );
+        return null;
+      };
+    }
+    final commentId = entry.serverCommentId;
+    if (commentId == null) {
+      return null;
+    }
+    return (body) => ref
+        .read(prEditProvider(widget.controller.pr).notifier)
+        .saveReviewComment(commentId: commentId, body: body.trim());
+  }
+
   void _setResolved(bool value) {
     final handler = widget.onSetResolved;
     if (handler != null) {
@@ -208,11 +234,19 @@ class _PrInlineThreadBlockState extends ConsumerState<PrInlineThreadBlock> {
         widget.controller.pr,
       ).select((s) => s.hiddenReviewCommentIds),
     );
+    final edited = ref.watch(
+      prEditProvider(
+        widget.controller.pr,
+      ).select((s) => s.optimisticReviewComments),
+    );
     final visible = [
       for (final entry in thread.entries)
         if (entry.serverCommentId == null ||
             !hidden.contains(entry.serverCommentId))
-          entry,
+          switch (edited[entry.serverCommentId]) {
+            final body? => entry.copyWith(body: body),
+            null => entry,
+          },
     ];
     if (thread.entries.isNotEmpty && visible.isEmpty) {
       return const SizedBox.shrink();
@@ -336,21 +370,12 @@ class _PrInlineThreadBlockState extends ConsumerState<PrInlineThreadBlock> {
                 onDeleteLocal: visible[i].serverCommentId == null
                     ? () => widget.controller.dismissThread(thread.id)
                     : null,
-                editDraft: thread.isUnsent
+                editDraft: thread.isUnsent || visible[i].serverCommentId != null
                     ? ref.read(
                         prCommentDraftControllerProvider(_editKey(visible[i])),
                       )
                     : null,
-                onSaveDraft: thread.isUnsent
-                    ? (body) async {
-                        widget.controller.updateEntry(
-                          threadId: thread.id,
-                          entryId: visible[i].id,
-                          newBody: body.trim(),
-                        );
-                        return null;
-                      }
-                    : null,
+                onSaveDraft: _saveEntry(thread, visible[i]),
                 isEditing: _editingEntryId == visible[i].id,
                 onToggleReaction: visible[i].serverCommentId == null
                     ? null
@@ -706,11 +731,13 @@ class _InlineEntryTile extends StatelessWidget {
   final List<CommentExcerpt> thread;
   final VoidCallback? onDeleteLocal;
 
-  /// Holds an in-progress edit of an unsent comment across a scroll.
+  /// Holds an in-progress edit across a scroll.
   final TextEditingController? editDraft;
 
-  /// Rewrites an unsent comment. Null hides Edit: a posted comment here has
-  /// no write path, and one in flight already carries its old body.
+  /// Rewrites the comment: locally while unsent, on the forge once posted.
+  /// Null hides Edit, for a comment whose post is in flight (that request
+  /// already carries its old body). The toolbar still limits a posted
+  /// comment's Edit to its author.
   final Future<String?> Function(String body)? onSaveDraft;
   final bool isEditing;
 

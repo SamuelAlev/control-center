@@ -2505,6 +2505,21 @@ class CachedPrReviewRepository implements PrReviewRepository {
     await _invalidatePrKinds(prNumber, const [_Kind.prIssueComments]);
   }
 
+  /// Replaces one inline review comment's markdown body.
+  @override
+  Future<void> updateReviewComment({
+    required int prNumber,
+    required int commentId,
+    required String body,
+  }) async {
+    await _client.updateReviewComment(
+      prNumber: prNumber,
+      commentId: '$commentId',
+      body: body,
+    );
+    await _invalidatePrKinds(prNumber, const [_Kind.prReviewComments]);
+  }
+
   /// Deletes one inline review comment and drops the cached list.
   @override
   Future<void> deleteReviewComment({

@@ -291,6 +291,16 @@ abstract class PrReviewRepository {
     required int commentId,
   });
 
+  /// Replaces the body of one inline review comment. [commentId] is
+  /// [PrCodeReviewComment.id].
+  ///
+  /// The forge enforces who may edit; a refusal comes back as an error.
+  Future<void> updateReviewComment({
+    required int prNumber,
+    required int commentId,
+    required String body,
+  });
+
   /// Deletes one inline review comment. [commentId] is [PrCodeReviewComment.id].
   Future<void> deleteReviewComment({
     required int prNumber,
@@ -595,6 +605,13 @@ class EmptyPrReviewRepository implements PrReviewRepository {
   Future<void> deleteIssueComment({
     required int prNumber,
     required int commentId,
+  }) async {}
+
+  @override
+  Future<void> updateReviewComment({
+    required int prNumber,
+    required int commentId,
+    required String body,
   }) async {}
 
   @override

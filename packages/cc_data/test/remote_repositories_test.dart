@@ -720,6 +720,7 @@ class _FakeHost {
       case 'pr_review.updatePullRequest':
       case 'pr_review.updateIssueComment':
       case 'pr_review.deleteIssueComment':
+      case 'pr_review.updateReviewComment':
       case 'pr_review.deleteReviewComment':
       case 'pr_review.addAssignees':
       case 'pr_review.removeAssignees':

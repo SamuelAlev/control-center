@@ -74,11 +74,14 @@ void main() {
     final row = tester.getRect(find.byType(SpaceRow));
     expect(row.height, greaterThan(kCcSidebarItemExtent + inset.vertical));
     final dot = tester.getCenter(find.byType(AttentionDot)).dy;
+    final dotLeft = tester.getRect(find.byType(AttentionDot)).left;
     final title = tester.getRect(find.text('test'));
     final subtitle = tester.getRect(find.text('761'));
     expect(dot, closeTo(title.center.dy, 0.5));
-    // The subtitle keeps to the title's edge, not the dot's.
-    expect(subtitle.left, closeTo(title.left, 0.5));
+    // Only the title makes room for the dot; the subtitle keeps the row's
+    // start edge.
+    expect(title.left, greaterThan(subtitle.left));
+    expect(subtitle.left, lessThanOrEqualTo(dotLeft));
     await unmount(tester);
   });
 

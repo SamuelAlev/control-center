@@ -108,6 +108,43 @@ void main() {
       expect(aWav.sublist(44), aBytes);
       expect(bWav.sublist(44), bBytes);
     });
+
+    test('a resent batch is appended once, per channel', () async {
+      const ws = 'ws-1';
+      final id = await service.start(
+        workspaceId: ws,
+        title: 'Resend',
+        mode: 'remote',
+      );
+      final first = Uint8List.fromList(List.filled(3200, 0x11));
+      final second = Uint8List.fromList(List.filled(3200, 0x22));
+      final mic = Uint8List.fromList(List.filled(3200, 0x33));
+
+      Future<void> ingest(String channel, int seq, Uint8List pcm) =>
+          service.ingest(
+            workspaceId: ws,
+            meetingId: id,
+            channel: channel,
+            seq: seq,
+            pcm: pcm,
+          );
+
+      await ingest('them', 0, first);
+      // The client never got the answer to seq 0 and sends it again.
+      await ingest('them', 0, first);
+      await ingest('them', 1, second);
+      // Channels number their batches independently.
+      await ingest('me', 0, mic);
+      await service.stop(workspaceId: ws, meetingId: id);
+
+      final meeting = await repo.getById(ws, id);
+      final them = await File(
+        p.join(meeting!.audioPath!, 'them.wav'),
+      ).readAsBytes();
+      final me = await File(p.join(meeting.audioPath!, 'me.wav')).readAsBytes();
+      expect(them.sublist(44), [...first, ...second]);
+      expect(me.sublist(44), mic);
+    });
   });
 }
 

@@ -70,12 +70,23 @@ class DictationService {
     return id;
   }
 
-  /// Feeds one PCM16 frame into session [dictationId] (no-op if unknown/closed).
-  void ingest(String dictationId, Uint8List pcm) {
+  /// Feeds one PCM16 batch into session [dictationId] (no-op if unknown or
+  /// closed). [seq] is the client's batch number, from 0; the client resends a
+  /// batch whose answer it never got under the same [seq], so a [seq] the
+  /// session already has is ignored rather than transcribed twice.
+  void ingest(String dictationId, int seq, Uint8List pcm) {
     final session = _sessions[dictationId];
-    if (session != null && !session.input.isClosed) {
-      session.input.add(pcm);
+    if (session == null || session.input.isClosed || seq < session.nextSeq) {
+      return;
     }
+    if (seq > session.nextSeq) {
+      CcInfraLog.warning(
+        'dictation $dictationId: batches ${session.nextSeq}–${seq - 1} '
+        'never arrived',
+      );
+    }
+    session.nextSeq = seq + 1;
+    session.input.add(pcm);
   }
 
   /// Stops session [dictationId]: closes the input so the transcriber drains
@@ -108,6 +119,9 @@ class DictationService {
 
 class _DictationSession {
   final StreamController<Uint8List> input = StreamController<Uint8List>();
+
+  /// Next expected client batch number (see [DictationService.ingest]).
+  int nextSeq = 0;
   final StreamController<DictationPartial> output =
       StreamController<DictationPartial>.broadcast();
   StreamSubscription<Object?>? sub;

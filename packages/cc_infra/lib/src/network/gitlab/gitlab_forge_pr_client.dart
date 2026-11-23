@@ -1030,6 +1030,22 @@ class GitLabForgePrClient
   }
 
   @override
+  Future<void> updateReviewComment({
+    required int prNumber,
+    required String commentId,
+    required String body,
+    ForgeCancelToken? cancelToken,
+  }) async {
+    // Inline threads are discussion notes. GitLab edits both with the note id.
+    await updateIssueComment(
+      prNumber: prNumber,
+      commentId: commentId,
+      body: body,
+      cancelToken: cancelToken,
+    );
+  }
+
+  @override
   Future<void> deleteReviewComment({
     required int prNumber,
     required String commentId,

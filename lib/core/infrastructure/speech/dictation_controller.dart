@@ -5,8 +5,10 @@ import 'package:cc_domain/features/dictation/domain/dictation_control_port.dart'
 import 'package:cc_domain/features/telemetry/telemetry.dart';
 import 'package:control_center/core/constants/app_constants.dart';
 import 'package:control_center/core/infrastructure/audio/audio_input_settings.dart';
+import 'package:control_center/core/infrastructure/audio/pcm_uplink.dart';
 import 'package:control_center/core/providers/analytics_providers.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
+import 'package:control_center/core/server/transient_rpc_failure.dart';
 import 'package:control_center/core/utils/app_log.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -117,10 +119,10 @@ class DictationController extends Notifier<DictationState> {
   StreamSubscription<Uint8List>? _micSub;
   StreamSubscription<DictationPartial>? _partialsSub;
 
-  // Serialized per-session ingest chain: each frame awaits the previous so PCM
-  // reaches the host in capture order (natural backpressure, no racing calls).
-  int _seq = 0;
-  Future<void> _chain = Future<void>.value();
+  // Coalesces the mic's ~21 ms chunks into ~250 ms batches sent one at a time
+  // in capture order: one RPC per chunk runs close to the session's request
+  // budget on its own.
+  PcmUplink? _uplink;
 
   // Captured at start so teardown/stop never touch `ref` during disposal.
   DictationControlPort? _control;
@@ -179,8 +181,19 @@ class DictationController extends Notifier<DictationState> {
       _control = control;
       _dictationId = id;
       _mic = mic;
-      _seq = 0;
-      _chain = Future<void>.value();
+      _uplink = PcmUplink(
+        send: (seq, pcm) =>
+            control.ingestAudio(dictationId: id, seq: seq, pcm: pcm),
+        isRetryable: isTransientRpcFailure,
+        onError: (e, {required willRetry}) => AppLog.w(
+          'Dictation',
+          'ingest failed${willRetry ? ', retrying' : ''}: $e',
+        ),
+        onDrop: (bytes) => AppLog.w(
+          'Dictation',
+          '${bytes ~/ 32} ms of audio never reached the host',
+        ),
+      );
       _drained = Completer<void>();
       state = const DictationState(phase: DictationPhase.listening);
       _startedAt = DateTime.now();
@@ -244,8 +257,11 @@ class DictationController extends Notifier<DictationState> {
     }
     await _mic?.dispose();
     _mic = null;
-    // Let any in-flight ingests land before the host drains the transcript.
-    await _chain.catchError((Object _) {});
+    // Send the buffered tail and let in-flight batches land before the host
+    // drains the transcript.
+    // Bounded: the caller is waiting on the text to insert.
+    await _uplink?.flush(timeout: const Duration(seconds: 10));
+    _uplink = null;
     try {
       await _control?.stop(dictationId: id);
     } catch (e) {
@@ -306,16 +322,10 @@ class DictationController extends Notifier<DictationState> {
   }
 
   void _ingest(String id, Uint8List pcm) {
-    final control = _control;
-    if (control == null || _dictationId != id) {
+    if (_dictationId != id) {
       return;
     }
-    final seq = _seq++;
-    _chain = _chain
-        .then((_) => control.ingestAudio(dictationId: id, seq: seq, pcm: pcm))
-        .catchError((Object e) {
-          AppLog.w('Dictation', 'ingest failed: $e');
-        });
+    _uplink?.add(pcm);
   }
 
   void _completeDrain() {
@@ -371,6 +381,8 @@ class DictationController extends Notifier<DictationState> {
     }
     await _mic?.dispose();
     _mic = null;
+    // Cancel and dispose discard the session, so its buffered audio goes too.
+    _uplink = null;
     final id = _dictationId;
     final control = _control;
     if (id != null && control != null) {

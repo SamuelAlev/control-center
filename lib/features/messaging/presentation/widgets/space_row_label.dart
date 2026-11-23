@@ -47,7 +47,8 @@ class SpaceRowLabel extends StatelessWidget {
   final bool transitioning;
 
   /// The spinner or attention dot in front of the title, centred on the
-  /// title line. The title moves over to make room for it.
+  /// title line. The title moves over to make room for it; the subtitle
+  /// does not.
   final Widget? signal;
 
   /// Second line under the title, painted in the caption style and colour.
@@ -116,26 +117,23 @@ class SpaceRowLabel extends StatelessWidget {
       ],
     );
     final signal = this.signal;
-    final content = Column(
+    return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (signal == null)
           titleLine
         else
-          // The signal sits in front of the title line, in the column the
-          // padding below opens; the subtitle stays aligned with the title.
-          Stack(
-            clipBehavior: Clip.none,
+          // Only the title makes room for the signal; the subtitle keeps the
+          // row's start edge.
+          Row(
             children: [
-              titleLine,
-              PositionedDirectional(
-                start: -(kSpaceRowSignalSize + _kSignalGap),
+              SizedBox(
                 width: kSpaceRowSignalSize,
-                top: 0,
-                bottom: 0,
                 child: Center(child: signal),
               ),
+              const SizedBox(width: _kSignalGap),
+              Expanded(child: titleLine),
             ],
           ),
         if (subtitle case final subtitle?)
@@ -146,15 +144,6 @@ class SpaceRowLabel extends StatelessWidget {
             child: subtitle,
           ),
       ],
-    );
-    if (signal == null) {
-      return content;
-    }
-    return Padding(
-      padding: const EdgeInsetsDirectional.only(
-        start: kSpaceRowSignalSize + _kSignalGap,
-      ),
-      child: content,
     );
   }
 }

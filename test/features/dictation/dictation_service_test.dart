@@ -56,7 +56,7 @@ void main() {
       expect(id, contains('ws1'));
 
       final collected = s.watch(id).toList();
-      s.ingest(id, pcm);
+      s.ingest(id, 0, pcm);
       await s.stop(id);
 
       final partials = await collected.timeout(const Duration(seconds: 5));
@@ -105,4 +105,44 @@ void main() {
     final s = service('x');
     expect(s.start('ws1'), isNot(s.start('ws1')));
   });
+
+  test('a resent batch is transcribed once', () async {
+    Future<int> decodedBytes({required bool resend}) async {
+      final windows = <int>[];
+      final s = DictationService(
+        transcriber: _FixedTranscriber('unused'),
+        transcription: MeetingTranscriptionService(
+          _CountingTranscriber(windows),
+          detectorFactory: _AlwaysSpeech.new,
+        ),
+      );
+      final id = s.start('ws1');
+      final collected = s.watch(id).toList();
+      s.ingest(id, 0, pcm);
+      if (resend) {
+        // The client never got the answer to seq 0 and sends it again.
+        s.ingest(id, 0, pcm);
+      }
+      await s.stop(id);
+      await collected.timeout(const Duration(seconds: 5));
+      return windows.fold<int>(0, (sum, bytes) => sum + bytes);
+    }
+
+    expect(
+      await decodedBytes(resend: true),
+      await decodedBytes(resend: false),
+      reason: 'the resend adds no audio to what is transcribed',
+    );
+  });
+}
+
+/// Records the byte length of every window it is asked to decode.
+class _CountingTranscriber extends _FixedTranscriber {
+  _CountingTranscriber(this.windows) : super('x');
+  final List<int> windows;
+  @override
+  Future<String> transcribeChunk(Uint8List pcm16) async {
+    windows.add(pcm16.length);
+    return text;
+  }
 }

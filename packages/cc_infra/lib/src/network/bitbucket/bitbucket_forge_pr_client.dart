@@ -834,6 +834,22 @@ class BitbucketForgePrClient
   }
 
   @override
+  Future<void> updateReviewComment({
+    required int prNumber,
+    required String commentId,
+    required String body,
+    ForgeCancelToken? cancelToken,
+  }) {
+    // Bitbucket stores timeline comments and inline comments on one resource.
+    return updateIssueComment(
+      prNumber: prNumber,
+      commentId: commentId,
+      body: body,
+      cancelToken: cancelToken,
+    );
+  }
+
+  @override
   Future<void> deleteReviewComment({
     required int prNumber,
     required String commentId,

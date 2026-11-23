@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cc_domain/core/domain/entities/workspace.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_inline_thread.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/reaction_group.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
@@ -10,6 +11,8 @@ import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart'
     show viewerLoginsProvider;
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/comment_thread_widget.dart';
+import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart'
+    show currentUserLoginForPrProvider;
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -22,9 +25,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
-Widget _wrap(Widget child, {PrReviewRepository? repository}) {
+Widget _wrap(
+  Widget child, {
+  PrReviewRepository? repository,
+  String viewer = '',
+}) {
   return ProviderScope(
     overrides: [
+      currentUserLoginForPrProvider.overrideWith((ref, pr) => viewer),
       codeFontFamilyProvider.overrideWithValue('Fira Code'),
       // No forge sign-in: keeps the connection lookup (and its retry
       // timer) out of a widget test.
@@ -175,6 +183,20 @@ PrInlineThread _queued({bool isSuggestion = false, String? body}) => _thread(
   ],
 );
 
+/// A comment on the forge, as the diff synthesises it from the stream.
+PrInlineThread _posted({required String author}) => _thread(
+  syncState: PrInlineSyncState.synced,
+  entries: [
+    PrInlineEntry(
+      id: 'server-entry-42',
+      author: author,
+      body: 'Use key',
+      createdAt: DateTime(2024, 6, 15),
+      serverCommentId: 42,
+    ),
+  ],
+);
+
 /// Hosts the first thread of the real controller, as the diff does: the card
 /// is rebuilt from controller state, so a saved edit has to arrive through it.
 Widget _liveThread(
@@ -318,6 +340,70 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
     });
 
+    testWidgets('its author edits a posted comment on the forge', (
+      tester,
+    ) async {
+      final repository = _RecordingPrReviewRepository();
+      final controller = _createController(_prRef);
+      await tester.pumpWidget(
+        _wrap(
+          // The diff watches the comment stream it builds threads from.
+          Consumer(
+            builder: (context, ref, child) {
+              ref.watch(prReviewCommentsProvider(_prRef));
+              return child!;
+            },
+            child: PrInlineThreadBlock(
+              thread: _posted(author: 'samuel'),
+              controller: controller,
+            ),
+          ),
+          repository: repository,
+          viewer: 'Samuel',
+        ),
+      );
+      await tester.pump();
+
+      await _startEdit(tester);
+      expect(find.widgetWithText(CcTextField, 'Use key'), findsOneWidget);
+      await tester.enterText(find.byType(CcTextField), ' Use `key` ');
+      await tester.pump();
+      await tester.tap(find.text('Save'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(repository.edits, [(commentId: 42, body: 'Use `key`')]);
+      expect(find.byType(CcTextField), findsNothing);
+      // Shown at once, before the comment stream catches up.
+      expect(find.textContaining('Use key'), findsNothing);
+      expect(find.textContaining('Use'), findsWidgets);
+
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 200));
+    });
+
+    testWidgets("someone else's posted comment offers no edit", (tester) async {
+      final controller = _createController(_prRef);
+      await tester.pumpWidget(
+        _wrap(
+          PrInlineThreadBlock(
+            thread: _posted(author: 'reviewer'),
+            controller: controller,
+          ),
+          viewer: 'samuel',
+        ),
+      );
+      await tester.pump();
+
+      await _openMenu(tester);
+
+      expect(find.text('Copy thread as Markdown'), findsOneWidget);
+      expect(find.text('Edit comment'), findsNothing);
+
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 200));
+    });
+
     testWidgets('a queued suggestion opens its whole text from the menu', (
       tester,
     ) async {
@@ -348,9 +434,10 @@ void main() {
 
     for (final (name, state) in [
       ('an in-flight', PrInlineSyncState.pending),
-      ('a posted', PrInlineSyncState.synced),
+      // Posted from here, not yet back in the comment stream: no forge id.
+      ('a just-posted', PrInlineSyncState.synced),
     ]) {
-      testWidgets('$name comment offers no local edit', (tester) async {
+      testWidgets('$name comment offers no edit', (tester) async {
         final controller = _createController(_prRef);
         await tester.pumpWidget(
           _wrap(
@@ -1637,5 +1724,24 @@ class _RecordingPrReviewRepository extends EmptyPrReviewRepository {
       content: content,
       add: add,
     ));
+  }
+
+  /// A stream that has not caught up with an edit yet.
+  @override
+  Stream<List<PrCodeReviewComment>> watchReviewComments(
+    int prNumber, {
+    bool includeHunks = true,
+  }) => const Stream.empty();
+
+  /// Review comment edits, in order.
+  final List<({int commentId, String body})> edits = [];
+
+  @override
+  Future<void> updateReviewComment({
+    required int prNumber,
+    required int commentId,
+    required String body,
+  }) async {
+    edits.add((commentId: commentId, body: body));
   }
 }

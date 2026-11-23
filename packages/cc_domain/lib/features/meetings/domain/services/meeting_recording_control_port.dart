@@ -19,9 +19,12 @@ abstract interface class MeetingRecordingControlPort {
   /// subscription). [mode] is a `MeetingMode` name (`remote` / `inPerson`).
   Future<String> startRecording({required String title, required String mode});
 
-  /// Streams one PCM16 (16 kHz mono) [pcm] frame on [channel] (`me` = mic,
+  /// Streams one PCM16 (16 kHz mono) [pcm] batch on [channel] (`me` = mic,
   /// `them` = system/screenshare audio) into the host session for [meetingId].
-  /// [seq] is the per-channel sequence number (gap diagnostics).
+  /// Clients coalesce capture chunks to a few calls a second, since one call per
+  /// chunk overruns the session's request budget. [seq] is the per-channel
+  /// batch number, from 0; resending a batch under the same [seq] is safe, since
+  /// the host ignores one it already has.
   Future<void> ingestAudio({
     required String meetingId,
     required String channel,

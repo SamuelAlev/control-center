@@ -28,15 +28,15 @@ void main() {
       expect(host.lastCall('dictation.start')!.args, isEmpty);
     });
 
-    test('ingestAudio frames PCM as base64 and sends dictation_id', () async {
+    test('ingestAudio frames PCM as base64 with dictation_id and seq', () async {
       final ctrl = RpcDictationControl(client);
       final pcm = Uint8List.fromList([1, 2, 3, 4]);
       await ctrl.ingestAudio(dictationId: 'd-1', seq: 7, pcm: pcm);
       final call = host.lastCall('dictation.ingestAudio')!;
       expect(call.args['dictation_id'], 'd-1');
       expect(call.args['pcm'], base64Encode(pcm));
-      // seq is a client-side diagnostic the host does not read.
-      expect(call.args.containsKey('seq'), isFalse);
+      // The host drops a seq it already has, so a resent batch is not doubled.
+      expect(call.args['seq'], 7);
     });
 
     test('stop forwards the dictation_id', () async {

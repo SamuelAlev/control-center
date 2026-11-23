@@ -419,6 +419,13 @@ void _styleHud(Window window, Size size, Offset Function() resolvePosition) {
   // engine with the main window, the HUD steals keyboard focus on show and text
   // input in the main app dies (macOS beeps, since the HUD has no text field).
   window.isFocusable = false;
+  // Non-focusable is not enough: on macOS a click on ANY of the app's windows
+  // still activates the app, and activation brings the main window forward
+  // over whatever the operator was working in. A non-activating window (an
+  // NSPanel with NSWindowStyleMaskNonactivatingPanel on macOS,
+  // WS_EX_NOACTIVATE on Windows) takes the click and leaves the frontmost app,
+  // and the main window, where they were. Idempotent across re-dresses.
+  window.isNonActivating = true;
   // Position is restored once per window, not on every re-dress — see
   // [_geometryRestoredWindowIds]. Resolving it is deferred behind the latch so
   // a re-dress does not read preferences and enumerate displays for an answer

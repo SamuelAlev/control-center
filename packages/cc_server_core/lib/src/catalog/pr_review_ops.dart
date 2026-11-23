@@ -920,6 +920,26 @@ List<RepoOp> buildPrReviewOps({
     },
   ),
   RepoOp(
+    name: 'pr_review.updateReviewComment',
+    kind: RepoOpKind.mutate,
+    requiredArgs: ['owner', 'repo', 'pr_number', 'comment_id', 'body'],
+    handler: (ctx) async {
+      final c = requireRepoCoords(ctx.args);
+      final repo = await resolvePrReviewRepository(
+        ctx.workspaceId!,
+        c.owner,
+        c.repo,
+        userId: ctx.userId,
+      );
+      await repo.updateReviewComment(
+        prNumber: (ctx.args['pr_number'] as num).toInt(),
+        commentId: (ctx.args['comment_id'] as num).toInt(),
+        body: ctx.args['body'] as String,
+      );
+      return {'ok': true};
+    },
+  ),
+  RepoOp(
     name: 'pr_review.deleteReviewComment',
     kind: RepoOpKind.mutate,
     requiredArgs: ['owner', 'repo', 'pr_number', 'comment_id'],

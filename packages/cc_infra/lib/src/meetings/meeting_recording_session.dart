@@ -171,12 +171,13 @@ class MeetingRecordingService {
     return meetingId;
   }
 
-  /// Feeds one PCM16 (16 kHz mono) [pcm] frame on [channel] into the open
+  /// Feeds one PCM16 (16 kHz mono) [pcm] batch on [channel] into the open
   /// session for [meetingId] in [workspaceId]. [seq] is the client's per-channel
-  /// sequence number (currently used only for gap diagnostics — frames are
-  /// appended in arrival order and the client awaits each call so arrival order
-  /// equals capture order). Throws when no session is open (a foreign or
-  /// already-stopped meeting).
+  /// batch number, from 0: the client awaits each call, so arrival order is
+  /// capture order, and it resends a batch whose answer it never got under the
+  /// same [seq]. A [seq] the session already has is that resend and is ignored,
+  /// so the audio is never appended twice; a jump forward is logged as a gap.
+  /// Throws when no session is open (a foreign or already-stopped meeting).
   Future<void> ingest({
     required String workspaceId,
     required String meetingId,
@@ -327,6 +328,10 @@ class _RecordingSession {
   final Completer<void> _meDone = Completer<void>();
   final Completer<void> _themDone = Completer<void>();
 
+  /// Next expected client batch number per channel (see
+  /// [MeetingRecordingService.ingest]).
+  final Map<RecordingChannel, int> _nextSeq = {};
+
   /// In-flight segment appends, so [drainAndClose] can wait for them before the
   /// transcript is read (the echo filter commits "them" windows fire-and-forget).
   final Set<Future<void>> _inflight = {};
@@ -364,7 +369,22 @@ class _RecordingSession {
   }
 
   void ingest(RecordingChannel channel, int seq, Uint8List pcm) {
-    if (_closed || pcm.isEmpty) {
+    if (_closed) {
+      return;
+    }
+    final expected = _nextSeq[channel] ?? 0;
+    if (seq < expected) {
+      // A resend of a batch that already landed (its answer was lost).
+      return;
+    }
+    if (seq > expected) {
+      CcInfraLog.warning(
+        'MeetingRecordingSession $meetingId: ${channel.name} batches '
+        '$expected–${seq - 1} never arrived',
+      );
+    }
+    _nextSeq[channel] = seq + 1;
+    if (pcm.isEmpty) {
       return;
     }
     if (channel == RecordingChannel.them) {
