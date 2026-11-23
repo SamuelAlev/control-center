@@ -596,7 +596,9 @@ fi
   # which would leave every QuickJS-NG file name untrimmed. The cc crate
   # forwards compiler output as cargo:warning lines into the build script's
   # output file, which cargo keeps even when it does not print them.
-  CODEMODE_CC_OUTPUT="$(cat "$CODEMODE_TARGET"/release/build/rquickjs-sys*/output 2>/dev/null || true)"
+  # Cargo has used both build/rquickjs-sys-<hash>/output and (1.100)
+  # build/rquickjs-sys/<hash>/output.
+  CODEMODE_CC_OUTPUT="$(find "$CODEMODE_TARGET/release/build" -path '*/rquickjs-sys*/output' -type f -exec cat {} + 2>/dev/null || true)"
   [ -n "$CODEMODE_CC_OUTPUT" ] \
     || { echo "no rquickjs-sys build script output under $CODEMODE_TARGET/release/build"; exit 1; }
   if grep -q 'D9002' <<<"$CODEMODE_CC_OUTPUT"; then
