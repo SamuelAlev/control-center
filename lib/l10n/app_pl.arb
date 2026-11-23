@@ -5142,6 +5142,7 @@
   "providerApiKeyStoredHint": "Wklej kolejny klucz API, aby go dodać",
   "providerAddAnotherAccount": "Dodaj kolejne konto",
   "providerActiveBadge": "Aktywny",
+  "providerSignInExpired": "Logowanie wygasło",
   "providerOauthAccountFallback": "Konto OAuth",
   "providerApiKeyFallback": "Klucz API",
   "providerRemoveCredentialConfirmTitle": "Usunąć te dane logowania?",

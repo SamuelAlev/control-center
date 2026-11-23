@@ -145,8 +145,25 @@ void main() {
           _FakeHarnessProviderRepository.kimiCodeSignedIn,
         );
         expect(find.text('Add another account'), findsOneWidget);
+        expect(find.text('Sign-in expired'), findsNothing);
+        expect(find.text('Sign in again'), findsNothing);
       },
     );
+
+    testWidgets('a lapsed sign-in is marked and offers to sign in again', (
+      tester,
+    ) async {
+      await pumpPanel(tester, _FakeHarnessProviderRepository.cursorExpired);
+      expect(find.text('Sign-in expired'), findsOneWidget);
+      // Still the account runs start from — the marker is not a demotion.
+      expect(find.text('Active'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(CcButton, 'Sign in again'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(repository.startedOAuth, ['cursor']);
+    });
   });
 
   group('showHarnessProviderLoginDialog', () {
@@ -239,6 +256,7 @@ class _FakeHarnessProviderRepository implements HarnessProviderRepository {
         method: HarnessAuthMethod.apiKey,
         isActive: true,
         removable: true,
+        expired: false,
         label: 'Personal',
       ),
       HarnessCredentialSummary(
@@ -246,6 +264,7 @@ class _FakeHarnessProviderRepository implements HarnessProviderRepository {
         method: HarnessAuthMethod.apiKey,
         isActive: false,
         removable: true,
+        expired: false,
         hint: '…wxyz',
       ),
     ],
@@ -264,12 +283,33 @@ class _FakeHarnessProviderRepository implements HarnessProviderRepository {
         method: HarnessAuthMethod.oauth,
         isActive: true,
         removable: true,
+        expired: false,
         label: 'dev@example.com',
       ),
     ],
   );
 
+  /// An OAuth plan provider whose only sign-in lapsed and could not renew.
+  static const cursorExpired = HarnessProviderInfo(
+    id: 'cursor',
+    displayName: 'Cursor',
+    authMethods: [HarnessAuthMethod.oauth],
+    enabled: HarnessProviderEnabled.oauth,
+    hasCredential: true,
+    credentials: [
+      HarnessCredentialSummary(
+        credentialId: 'oauth:google-oauth2|user_1',
+        method: HarnessAuthMethod.oauth,
+        isActive: true,
+        removable: true,
+        expired: true,
+        label: 'Cursor',
+      ),
+    ],
+  );
+
   final savedKeys = <String, String>{};
+  final startedOAuth = <String>[];
   final removedCredentialIds = <String>[];
 
   @override
@@ -335,8 +375,11 @@ class _FakeHarnessProviderRepository implements HarnessProviderRepository {
   }) async {}
 
   @override
-  Future<HarnessOAuthStart> startOAuth(String providerId) =>
-      throw UnimplementedError();
+  Future<HarnessOAuthStart> startOAuth(String providerId) async {
+    startedOAuth.add(providerId);
+    // Stop before the panel opens a browser; the recorded call is the point.
+    throw UnimplementedError();
+  }
 
   @override
   Future<HarnessOAuthStatus> oauthStatus(String flowId) =>

@@ -5142,6 +5142,7 @@
   "providerApiKeyStoredHint": "הדביקו מפתח API נוסף כדי להוסיף אותו",
   "providerAddAnotherAccount": "הוספת חשבון נוסף",
   "providerActiveBadge": "פעיל",
+  "providerSignInExpired": "פג תוקף הכניסה",
   "providerOauthAccountFallback": "חשבון OAuth",
   "providerApiKeyFallback": "מפתח API",
   "providerRemoveCredentialConfirmTitle": "להסיר את פרטי הגישה האלה?",

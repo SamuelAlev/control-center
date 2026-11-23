@@ -8941,6 +8941,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get providerActiveBadge => '有効';
 
   @override
+  String get providerSignInExpired => 'サインイン期限切れ';
+
+  @override
   String get providerOauthAccountFallback => 'OAuthアカウント';
 
   @override

@@ -5142,6 +5142,7 @@
   "providerApiKeyStoredHint": "Tampal kunci API lain untuk menambahnya",
   "providerAddAnotherAccount": "Tambah akaun lain",
   "providerActiveBadge": "Aktif",
+  "providerSignInExpired": "Log masuk luput",
   "providerOauthAccountFallback": "Akaun OAuth",
   "providerApiKeyFallback": "Kunci API",
   "providerRemoveCredentialConfirmTitle": "Buang kelayakan ini?",

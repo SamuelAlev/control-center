@@ -9139,6 +9139,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get providerActiveBadge => 'Aktiv';
 
   @override
+  String get providerSignInExpired => 'Inloggningen har gått ut';
+
+  @override
   String get providerOauthAccountFallback => 'OAuth-konto';
 
   @override

@@ -5142,6 +5142,7 @@
   "providerApiKeyStoredHint": "Вставте інший API-ключ, щоб додати його",
   "providerAddAnotherAccount": "Додати інший обліковий запис",
   "providerActiveBadge": "Активний",
+  "providerSignInExpired": "Сеанс входу закінчився",
   "providerOauthAccountFallback": "Обліковий запис OAuth",
   "providerApiKeyFallback": "API-ключ",
   "providerRemoveCredentialConfirmTitle": "Видалити ці облікові дані?",

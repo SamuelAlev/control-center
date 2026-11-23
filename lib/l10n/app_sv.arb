@@ -5142,6 +5142,7 @@
   "providerApiKeyStoredHint": "Klistra in en annan API-nyckel för att lägga till den",
   "providerAddAnotherAccount": "Lägg till ett annat konto",
   "providerActiveBadge": "Aktiv",
+  "providerSignInExpired": "Inloggningen har gått ut",
   "providerOauthAccountFallback": "OAuth-konto",
   "providerApiKeyFallback": "API-nyckel",
   "providerRemoveCredentialConfirmTitle": "Ta bort de här inloggningsuppgifterna?",

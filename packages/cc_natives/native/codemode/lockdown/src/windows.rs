@@ -4,9 +4,10 @@
 //! handles down (and nothing else), waits, and exits with the child's code.
 //!
 //! Every launch takes a new AppContainer name with 128 bits of OS
-//! randomness and derives its SID without registering a profile, so no two
-//! runners share a package SID and nothing persists (no profile folder, no
-//! registry entry, no named-object directory shared across sessions). The
+//! randomness and registers a profile for it (CreateProcessW needs the
+//! profile's registry mapping), so no two runners share a package SID. The
+//! launcher deletes the profile once the child is gone; only a launcher that
+//! is itself killed leaves one behind. The
 //! one thing every child shares is a capability, `RUNNER_CAPABILITY`, whose
 //! only use is the ACE that lets a child read and execute the runner's own
 //! executable; the launcher adds that ACE to its executable when it is
@@ -99,6 +100,10 @@ pub const CONTAINED_FLAG: &str = "--contained-child";
 /// sibling: a second confined child the probing child must not be able to
 /// open.
 pub const SIBLING_FLAG: &str = "--sibling";
+
+/// How long the self-test waits for the terminated sibling to exit before it
+/// deletes the sibling's AppContainer profile.
+const SIBLING_EXIT_WAIT_MS: u32 = 5_000;
 
 /// Only argument of the installer's step: add the capability ACE to this
 /// executable (as the launcher does before every launch), print one line
@@ -202,8 +207,8 @@ struct Sid(PSID);
 impl Drop for Sid {
     fn drop(&mut self) {
         if !self.0.is_null() {
-            // SAFETY: the SID came from CreateAppContainerProfile or
-            // DeriveAppContainerSidFromAppContainerName, which document FreeSid.
+            // SAFETY: the SID came from CreateAppContainerProfile, which
+            // documents FreeSid.
             unsafe { FreeSid(self.0) };
         }
     }
@@ -250,7 +255,9 @@ impl Drop for Local {
 }
 
 type BCryptGenRandomFn = unsafe extern "system" fn(*mut c_void, *mut u8, u32, u32) -> i32;
-type DeriveAppContainerSidFn = unsafe extern "system" fn(PCWSTR, *mut PSID) -> HRESULT;
+type CreateAppContainerProfileFn =
+    unsafe extern "system" fn(PCWSTR, PCWSTR, PCWSTR, *const SID_AND_ATTRIBUTES, u32, *mut PSID) -> HRESULT;
+type DeleteAppContainerProfileFn = unsafe extern "system" fn(PCWSTR) -> HRESULT;
 type DeriveCapabilitySidsFn =
     unsafe extern "system" fn(PCWSTR, *mut *mut PSID, *mut u32, *mut *mut PSID, *mut u32) -> BOOL;
 
@@ -276,20 +283,48 @@ fn container_name() -> Result<String, String> {
     Ok(name)
 }
 
-/// The package SID for `name`, derived without registering a profile.
-fn container_sid(name: &str) -> Result<Sid, String> {
+/// An AppContainer profile registered for one launch, deleted on drop.
+struct Profile {
+    /// The container name, NUL-terminated.
+    name: Vec<u16>,
+}
+
+impl Drop for Profile {
+    fn drop(&mut self) {
+        // Best effort: nothing is left to report to once the child is gone.
+        let Ok(userenv) = load_system_library("userenv.dll") else {
+            return;
+        };
+        // SAFETY: the type matches the documented userenv export.
+        let Ok(delete) = (unsafe { proc_address::<DeleteAppContainerProfileFn>(userenv, b"DeleteAppContainerProfile\0") })
+        else {
+            return;
+        };
+        // SAFETY: name is NUL-terminated.
+        unsafe { delete(self.name.as_ptr()) };
+    }
+}
+
+/// Registers an AppContainer profile for `name` and returns it with its
+/// package SID. CreateProcessW resolves the package SID through the
+/// profile's registry mapping, so a SID that is only derived
+/// (`DeriveAppContainerSidFromAppContainerName`) fails there with
+/// ERROR_FILE_NOT_FOUND. A name that already exists is refused rather than
+/// joined: with 128 random bits it means something else made it.
+fn container_profile(name: &str) -> Result<(Profile, Sid), String> {
     let userenv = load_system_library("userenv.dll")?;
     // SAFETY: the type matches the documented userenv export.
-    let derive: DeriveAppContainerSidFn =
-        unsafe { proc_address(userenv, b"DeriveAppContainerSidFromAppContainerName\0")? };
+    let create: CreateAppContainerProfileFn = unsafe { proc_address(userenv, b"CreateAppContainerProfile\0")? };
     let name = wide(name);
     let mut sid: PSID = null_mut();
-    // SAFETY: name is NUL-terminated; sid is an out-pointer freed by Sid.
-    let hr = unsafe { derive(name.as_ptr(), &mut sid) };
+    // SAFETY: name is NUL-terminated and used for all three strings; no
+    // capabilities are registered with the profile (the child's one
+    // capability is set per process); sid is an out-pointer freed by Sid.
+    let hr = unsafe { create(name.as_ptr(), name.as_ptr(), name.as_ptr(), null(), 0, &mut sid) };
     if hr != 0 || sid.is_null() {
-        return Err(format!("DeriveAppContainerSidFromAppContainerName: HRESULT {hr:#x}"));
+        return Err(format!("CreateAppContainerProfile: HRESULT {hr:#x}"));
     }
-    Ok(Sid(sid))
+    Ok((Profile { name }, Sid(sid)))
 }
 
 /// The SID of [`RUNNER_CAPABILITY`].
@@ -628,11 +663,13 @@ pub fn launch_contained(extra: &[String], on_failure: &dyn Fn(&LockdownReport)) 
 }
 
 /// A confined child that is running. Dropping it closes the job, which
-/// kills the child if it is still running.
+/// kills the child if it is still running, then deletes its AppContainer
+/// profile (fields drop in declaration order).
 struct Contained {
     process: Owned,
     job: Owned,
     pid: u32,
+    profile: Profile,
 }
 
 fn launch(extra: &[String], report: &mut LockdownReport) -> Result<i32, ()> {
@@ -666,8 +703,10 @@ fn start(extra: &[String], report: &mut LockdownReport) -> Result<Contained, ()>
         report.require(name, Err(e));
         Err(())
     };
-    let sid = match container_name().and_then(|name| container_sid(&name)) {
-        Ok(s) => s,
+    // Declared first so it drops last: on every failure below the profile
+    // is deleted after the handles that used it are closed.
+    let (profile, sid) = match container_name().and_then(|name| container_profile(&name)) {
+        Ok(p) => p,
         Err(e) => return fail(report, "appcontainer", e),
     };
     let capability = match runner_capability_sid() {
@@ -833,6 +872,7 @@ fn start(extra: &[String], report: &mut LockdownReport) -> Result<Contained, ()>
         process,
         job,
         pid: pi.dwProcessId,
+        profile,
     })
 }
 
@@ -1428,6 +1468,10 @@ pub fn selftest(_args: &[String], session: &dyn Fn() -> SessionCheck) -> i32 {
     });
     // SAFETY: the sibling is ours; closing its job would kill it as well.
     unsafe { TerminateProcess(sibling.process.0, 0) };
+    // TerminateProcess returns before the process is gone; wait so that the
+    // profile is deleted with no process of its container left.
+    // SAFETY: process is valid until sibling drops.
+    unsafe { WaitForSingleObject(sibling.process.0, SIBLING_EXIT_WAIT_MS) };
     drop(sibling);
     // SAFETY: closing the listener we opened.
     unsafe { (ws.closesocket)(sock) };

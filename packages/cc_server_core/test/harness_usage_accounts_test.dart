@@ -1,3 +1,4 @@
+import 'package:cc_domain/features/subscriptions/subscriptions.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_server_core/src/usage/harness_usage_accounts.dart';
 import 'package:test/test.dart';
@@ -147,6 +148,42 @@ void main() {
       expect(mistral.apiKey, 'mistral-1');
       expect(mistral.accountLabel, 'vibe');
       expect(mistral.baseUrl, 'https://api.mistral.ai/v1');
+    },
+  );
+
+  test(
+    'a sign-in the refresh cannot renew asks for a new sign-in, not a 401',
+    () async {
+      final store = _Store({
+        'cursor': [
+          ProviderCredential(
+            providerId: 'cursor',
+            method: HarnessAuthMethod.oauth,
+            accessToken: 'cursor-dead',
+            refreshToken: 'cursor-dead',
+            accountId: 'google-oauth2|user_1',
+            expiresAt: DateTime.now().toUtc().subtract(const Duration(days: 7)),
+          ),
+          ProviderCredential(
+            providerId: 'cursor',
+            method: HarnessAuthMethod.oauth,
+            accessToken: 'cursor-live',
+            email: 'live@cursor.com',
+            expiresAt: DateTime.now().toUtc().add(const Duration(days: 30)),
+            isActive: false,
+          ),
+        ],
+      });
+
+      final accounts = await collectHarnessUsageAccounts(store: store);
+      expect(accounts, hasLength(2));
+      final lapsed = accounts.first;
+      expect(lapsed.knownStatus, SubscriptionStatus.signInRequired);
+      expect(lapsed.accessToken, isNull, reason: 'no request spends the token');
+      expect(lapsed.accountId, 'oauth:google-oauth2|user_1');
+      final live = accounts.last;
+      expect(live.knownStatus, isNull);
+      expect(live.accessToken, 'cursor-live');
     },
   );
 }

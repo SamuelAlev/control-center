@@ -5142,6 +5142,7 @@
   "providerApiKeyStoredHint": "Tempel kunci API lain untuk menambahkannya",
   "providerAddAnotherAccount": "Tambah akun lain",
   "providerActiveBadge": "Aktif",
+  "providerSignInExpired": "Login kedaluwarsa",
   "providerOauthAccountFallback": "Akun OAuth",
   "providerApiKeyFallback": "Kunci API",
   "providerRemoveCredentialConfirmTitle": "Hapus kredensial ini?",

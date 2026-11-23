@@ -5142,6 +5142,7 @@
   "providerApiKeyStoredHint": "Eklemek için başka bir API anahtarı yapıştır",
   "providerAddAnotherAccount": "Başka bir hesap ekle",
   "providerActiveBadge": "Etkin",
+  "providerSignInExpired": "Oturum süresi doldu",
   "providerOauthAccountFallback": "OAuth hesabı",
   "providerApiKeyFallback": "API anahtarı",
   "providerRemoveCredentialConfirmTitle": "Bu kimlik bilgisi kaldırılsın mı?",

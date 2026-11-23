@@ -5142,6 +5142,7 @@
   "providerApiKeyStoredHint": "Illesszen be egy másik API-kulcsot a hozzáadáshoz",
   "providerAddAnotherAccount": "További fiók hozzáadása",
   "providerActiveBadge": "Aktív",
+  "providerSignInExpired": "A bejelentkezés lejárt",
   "providerOauthAccountFallback": "OAuth-fiók",
   "providerApiKeyFallback": "API-kulcs",
   "providerRemoveCredentialConfirmTitle": "Eltávolítja ezt a hitelesítő adatot?",

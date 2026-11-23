@@ -9230,6 +9230,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get providerActiveBadge => 'Aktivní';
 
   @override
+  String get providerSignInExpired => 'Přihlášení vypršelo';
+
+  @override
   String get providerOauthAccountFallback => 'Účet OAuth';
 
   @override

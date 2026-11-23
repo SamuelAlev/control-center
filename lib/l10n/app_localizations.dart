@@ -15733,6 +15733,12 @@ abstract class AppLocalizations {
   /// **'Active'**
   String get providerActiveBadge;
 
+  /// No description provided for @providerSignInExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in expired'**
+  String get providerSignInExpired;
+
   /// No description provided for @providerOauthAccountFallback.
   ///
   /// In en, this message translates to:

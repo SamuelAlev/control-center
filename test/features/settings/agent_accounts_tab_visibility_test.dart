@@ -55,6 +55,7 @@ HarnessProviderInfo _provider({int keys = 2}) => HarnessProviderInfo(
         method: HarnessAuthMethod.apiKey,
         isActive: i == 0,
         removable: true,
+        expired: false,
       ),
   ],
 );

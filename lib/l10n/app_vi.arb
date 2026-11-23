@@ -5142,6 +5142,7 @@
   "providerApiKeyStoredHint": "Dán khóa API khác để thêm",
   "providerAddAnotherAccount": "Thêm tài khoản khác",
   "providerActiveBadge": "Đang dùng",
+  "providerSignInExpired": "Đăng nhập đã hết hạn",
   "providerOauthAccountFallback": "Tài khoản OAuth",
   "providerApiKeyFallback": "Khóa API",
   "providerRemoveCredentialConfirmTitle": "Xóa thông tin xác thực này?",

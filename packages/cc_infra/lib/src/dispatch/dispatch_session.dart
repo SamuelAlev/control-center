@@ -799,6 +799,7 @@ class DispatchSession implements SteeringSessionView, BackgroundHoldView {
   _OverlayLayout get _layout => _layoutCache ??= _OverlayLayout.resolve(
     cwd: agentDirHostPath,
     configDir: agentConfigDir,
+    spaceId: spaceId,
   );
 
   _OverlayLayout? _layoutCache;
@@ -977,6 +978,7 @@ class DispatchSession implements SteeringSessionView, BackgroundHoldView {
       _layoutCache = _OverlayLayout.resolve(
         cwd: agentDirHostPath,
         configDir: agentConfigDir,
+        spaceId: spaceId,
       );
       final networkEnabled = await _resolveNetworkEnabled();
 
@@ -2194,8 +2196,9 @@ class DispatchSession implements SteeringSessionView, BackgroundHoldView {
 }
 
 /// Where a dispatch's directories are: the per-agent overlay's shared
-/// worktrees and attachments, derived from the directory layout the
-/// provisioner creates — never from a path or symlink the agent could change.
+/// worktrees and the space's attachments, derived from the directory layout
+/// the provisioner creates — never from a path or symlink the agent could
+/// change.
 class _OverlayLayout {
   const _OverlayLayout({
     required this.isOverlay,
@@ -2211,7 +2214,9 @@ class _OverlayLayout {
   /// `<convRoot>/repos`, when the overlay has one.
   final String? reposDir;
 
-  /// `<convRoot>/attachments`, when anything was attached to the space.
+  /// `<spaceRoot>/attachments`, when anything was attached to the space —
+  /// overlay or not. A space with no repository runs in the agent's own
+  /// directory, and its prompt still names files in here.
   final String? attachmentsDir;
 
   static bool _overlay(String cwd, String? configDir) =>
@@ -2223,19 +2228,53 @@ class _OverlayLayout {
   static String _attachments(String cwd) =>
       p.join(p.dirname(p.dirname(cwd)), SpacePromptAttachments.dirName);
 
+  /// `<wsRoot>/spaces/<spaceId>/attachments` for a run in the agent's own
+  /// directory (`<wsRoot>/agents/<slug>`, the same root the skills mount is
+  /// derived from). Null when [configDir] is not laid out that way or
+  /// [spaceId] is not a single path segment: the id is the server's, but it
+  /// is joined onto a path all the same.
+  static String? _fallbackAttachments(String? configDir, String? spaceId) {
+    if (configDir == null || configDir.isEmpty) {
+      return null;
+    }
+    if (spaceId == null ||
+        spaceId.isEmpty ||
+        spaceId == '.' ||
+        spaceId == '..' ||
+        spaceId.contains('/') ||
+        spaceId.contains(r'\')) {
+      return null;
+    }
+    final agentsDir = p.dirname(configDir);
+    if (p.basename(agentsDir) != 'agents') {
+      return null;
+    }
+    return p.join(
+      p.dirname(agentsDir),
+      'spaces',
+      spaceId,
+      SpacePromptAttachments.dirName,
+    );
+  }
+
+  static String? _existing(String? dir) =>
+      dir != null && Directory(dir).existsSync() ? dir : null;
+
   static _OverlayLayout resolve({
     required String cwd,
     required String? configDir,
+    required String? spaceId,
   }) {
     if (!_overlay(cwd, configDir)) {
-      return const _OverlayLayout(isOverlay: false);
+      return _OverlayLayout(
+        isOverlay: false,
+        attachmentsDir: _existing(_fallbackAttachments(configDir, spaceId)),
+      );
     }
-    final repos = _repos(cwd);
-    final attachments = _attachments(cwd);
     return _OverlayLayout(
       isOverlay: true,
-      reposDir: Directory(repos).existsSync() ? repos : null,
-      attachmentsDir: Directory(attachments).existsSync() ? attachments : null,
+      reposDir: _existing(_repos(cwd)),
+      attachmentsDir: _existing(_attachments(cwd)),
     );
   }
 }

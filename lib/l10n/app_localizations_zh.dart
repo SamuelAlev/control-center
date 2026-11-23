@@ -8849,6 +8849,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get providerActiveBadge => '使用中';
 
   @override
+  String get providerSignInExpired => '登录已过期';
+
+  @override
   String get providerOauthAccountFallback => 'OAuth 账号';
 
   @override
@@ -29850,6 +29853,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get providerActiveBadge => '使用中';
+
+  @override
+  String get providerSignInExpired => '登入已過期';
 
   @override
   String get providerOauthAccountFallback => 'OAuth 帳戶';
@@ -50859,6 +50865,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get providerActiveBadge => '使用中';
+
+  @override
+  String get providerSignInExpired => '登入已過期';
 
   @override
   String get providerOauthAccountFallback => 'OAuth 帳戶';

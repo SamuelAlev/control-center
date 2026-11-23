@@ -4319,6 +4319,7 @@
   "providerApiKeyStoredHint": "Plak nog een API-sleutel om die toe te voegen",
   "providerAddAnotherAccount": "Nog een account toevoegen",
   "providerActiveBadge": "Actief",
+  "providerSignInExpired": "Aanmelding verlopen",
   "providerOauthAccountFallback": "OAuth-account",
   "providerApiKeyFallback": "API-sleutel",
   "providerRemoveCredentialConfirmTitle": "Deze inloggegevens verwijderen?",

@@ -9114,6 +9114,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get providerActiveBadge => 'פעיל';
 
   @override
+  String get providerSignInExpired => 'פג תוקף הכניסה';
+
+  @override
   String get providerOauthAccountFallback => 'חשבון OAuth';
 
   @override

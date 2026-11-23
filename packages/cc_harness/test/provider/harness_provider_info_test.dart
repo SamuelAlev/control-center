@@ -73,6 +73,7 @@ void main() {
             method: HarnessAuthMethod.apiKey,
             isActive: true,
             removable: true,
+            expired: false,
             hint: '…wxyz',
           ),
           HarnessCredentialSummary(
@@ -80,6 +81,7 @@ void main() {
             method: HarnessAuthMethod.oauth,
             isActive: false,
             removable: true,
+            expired: true,
             label: 'dev@example.com',
           ),
         ],
@@ -91,6 +93,8 @@ void main() {
       expect(restored.credentials[0].hint, '…wxyz');
       expect(restored.credentials[1].method, HarnessAuthMethod.oauth);
       expect(restored.credentials[1].label, 'dev@example.com');
+      expect(restored.credentials[0].expired, isFalse);
+      expect(restored.credentials[1].expired, isTrue);
     });
 
     test('a payload without credentials parses to an empty list', () {

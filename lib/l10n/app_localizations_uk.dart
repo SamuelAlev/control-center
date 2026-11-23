@@ -9235,6 +9235,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get providerActiveBadge => 'Активний';
 
   @override
+  String get providerSignInExpired => 'Сеанс входу закінчився';
+
+  @override
   String get providerOauthAccountFallback => 'Обліковий запис OAuth';
 
   @override

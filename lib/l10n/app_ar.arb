@@ -5142,6 +5142,7 @@
   "providerApiKeyStoredHint": "الصق مفتاح API آخر لإضافته",
   "providerAddAnotherAccount": "إضافة حساب آخر",
   "providerActiveBadge": "نشط",
+  "providerSignInExpired": "انتهت صلاحية تسجيل الدخول",
   "providerOauthAccountFallback": "حساب OAuth",
   "providerApiKeyFallback": "مفتاح API",
   "providerRemoveCredentialConfirmTitle": "هل تريد إزالة بيانات الاعتماد هذه؟",

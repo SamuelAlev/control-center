@@ -5142,6 +5142,7 @@
   "providerApiKeyStoredHint": "다른 API 키를 붙여넣어 추가하세요",
   "providerAddAnotherAccount": "다른 계정 추가",
   "providerActiveBadge": "사용 중",
+  "providerSignInExpired": "로그인이 만료됨",
   "providerOauthAccountFallback": "OAuth 계정",
   "providerApiKeyFallback": "API 키",
   "providerRemoveCredentialConfirmTitle": "이 자격 증명을 삭제할까요?",

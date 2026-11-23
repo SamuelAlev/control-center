@@ -9128,6 +9128,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get providerActiveBadge => 'Etkin';
 
   @override
+  String get providerSignInExpired => 'Oturum süresi doldu';
+
+  @override
   String get providerOauthAccountFallback => 'OAuth hesabı';
 
   @override

@@ -5142,6 +5142,7 @@
   "providerApiKeyStoredHint": "Lim inn en annen API-nøkkel for å legge den til",
   "providerAddAnotherAccount": "Legg til en annen konto",
   "providerActiveBadge": "Aktiv",
+  "providerSignInExpired": "Innlogging utløpt",
   "providerOauthAccountFallback": "OAuth-konto",
   "providerApiKeyFallback": "API-nøkkel",
   "providerRemoveCredentialConfirmTitle": "Fjerne denne påloggingsinformasjonen?",

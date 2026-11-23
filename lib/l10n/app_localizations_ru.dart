@@ -9235,6 +9235,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get providerActiveBadge => 'Активен';
 
   @override
+  String get providerSignInExpired => 'Срок входа истёк';
+
+  @override
   String get providerOauthAccountFallback => 'Аккаунт OAuth';
 
   @override

@@ -5460,6 +5460,7 @@
   "providerApiKeyStoredHint": "วางคีย์ API อีกอันเพื่อเพิ่ม",
   "providerAddAnotherAccount": "เพิ่มบัญชีอื่น",
   "providerActiveBadge": "ใช้งานอยู่",
+  "providerSignInExpired": "การลงชื่อเข้าใช้หมดอายุ",
   "providerOauthAccountFallback": "บัญชี OAuth",
   "providerApiKeyFallback": "คีย์ API",
   "providerRemoveCredentialConfirmTitle": "ลบข้อมูลรับรองนี้หรือไม่?",

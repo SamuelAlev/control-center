@@ -5142,6 +5142,7 @@
   "providerApiKeyStoredHint": "Lipește altă cheie API ca să o adaugi",
   "providerAddAnotherAccount": "Adaugă alt cont",
   "providerActiveBadge": "Activ",
+  "providerSignInExpired": "Autentificarea a expirat",
   "providerOauthAccountFallback": "Cont OAuth",
   "providerApiKeyFallback": "Cheie API",
   "providerRemoveCredentialConfirmTitle": "Elimini aceste date de autentificare?",

@@ -9229,6 +9229,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get providerActiveBadge => 'Activ';
 
   @override
+  String get providerSignInExpired => 'Autentificarea a expirat';
+
+  @override
   String get providerOauthAccountFallback => 'Cont OAuth';
 
   @override

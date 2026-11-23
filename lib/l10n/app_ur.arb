@@ -5142,6 +5142,7 @@
   "providerApiKeyStoredHint": "شامل کرنے کے لیے دوسری API کلید پیسٹ کریں",
   "providerAddAnotherAccount": "دوسرا اکاؤنٹ شامل کریں",
   "providerActiveBadge": "فعال",
+  "providerSignInExpired": "سائن اِن ختم",
   "providerOauthAccountFallback": "OAuth اکاؤنٹ",
   "providerApiKeyFallback": "API کلید",
   "providerRemoveCredentialConfirmTitle": "یہ کریڈینشل ہٹائیں؟",

@@ -38,13 +38,24 @@ extension _DispatchSessionSandbox on DispatchSession {
   /// links point into **ro**; `<convRoot>/repos` **rw** when present, with
   /// each worktree the run may not change **ro** inside it; space
   /// `attachments/` **ro** when present (harness uses [_workspaceSharedRoots]
-  /// with no RO mode — convention only). Fallback/oneshot: single writable
-  /// cwd. Sibling agent dirs and other spaces are never mounted.
+  /// with no RO mode — convention only). Fallback/oneshot: writable cwd, plus
+  /// the space's `attachments/` **ro** when the run is in a space with
+  /// nothing to check out — its prompt names files there all the same.
+  /// Sibling agent dirs and other spaces are never mounted.
   List<SandboxBindMount> _bindMounts() {
     final cwd = agentDirHostPath;
     final layout = _layout;
     if (!layout.isOverlay) {
-      return [SandboxBindMount(hostPath: cwd, guestPath: cwd)];
+      final attachmentsPath = layout.attachmentsDir;
+      return [
+        SandboxBindMount(hostPath: cwd, guestPath: cwd),
+        if (attachmentsPath != null)
+          SandboxBindMount(
+            hostPath: attachmentsPath,
+            guestPath: attachmentsPath,
+            readOnly: true,
+          ),
+      ];
     }
     final configDir = agentConfigDir!;
     final reposPath = layout.reposDir;
@@ -289,11 +300,8 @@ extension DispatchSessionSandboxForTesting on DispatchSession {
 
   /// The run, agent and conversation an exec-grant card names: a run the
   /// server started waits the workspace's unattended expiry on it.
-  ExecGrantAsker get _execGrantAsker => (
-    runId: runLogId,
-    agentId: agentId,
-    conversationId: conversationId,
-  );
+  ExecGrantAsker get _execGrantAsker =>
+      (runId: runLogId, agentId: agentId, conversationId: conversationId);
 
   /// Resolves the operator-approved exec roots for this session, asking once
   /// per undecided tree. Returns empty when no grant service is wired, which

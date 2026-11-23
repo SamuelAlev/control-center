@@ -5142,6 +5142,7 @@
   "providerApiKeyStoredHint": "Vložte další API klíč a přidejte ho",
   "providerAddAnotherAccount": "Přidat další účet",
   "providerActiveBadge": "Aktivní",
+  "providerSignInExpired": "Přihlášení vypršelo",
   "providerOauthAccountFallback": "Účet OAuth",
   "providerApiKeyFallback": "API klíč",
   "providerRemoveCredentialConfirmTitle": "Odebrat tyto přihlašovací údaje?",

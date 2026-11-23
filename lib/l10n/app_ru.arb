@@ -5142,6 +5142,7 @@
   "providerApiKeyStoredHint": "Вставьте другой API-ключ, чтобы добавить его",
   "providerAddAnotherAccount": "Добавить ещё один аккаунт",
   "providerActiveBadge": "Активен",
+  "providerSignInExpired": "Срок входа истёк",
   "providerOauthAccountFallback": "Аккаунт OAuth",
   "providerApiKeyFallback": "API-ключ",
   "providerRemoveCredentialConfirmTitle": "Удалить эти учётные данные?",

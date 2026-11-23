@@ -9226,6 +9226,9 @@ class AppLocalizationsEl extends AppLocalizations {
   String get providerActiveBadge => 'Ενεργός';
 
   @override
+  String get providerSignInExpired => 'Η σύνδεση έληξε';
+
+  @override
   String get providerOauthAccountFallback => 'Λογαριασμός OAuth';
 
   @override

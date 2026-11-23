@@ -9130,6 +9130,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get providerActiveBadge => 'Aktiv';
 
   @override
+  String get providerSignInExpired => 'Innlogging utløpt';
+
+  @override
   String get providerOauthAccountFallback => 'OAuth-konto';
 
   @override

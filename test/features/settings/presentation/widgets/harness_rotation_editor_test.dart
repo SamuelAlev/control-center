@@ -37,6 +37,7 @@ void main() {
             method: HarnessAuthMethod.oauth,
             isActive: true,
             removable: true,
+            expired: false,
             label: 'work@kimi.com',
           ),
           HarnessCredentialSummary(
@@ -44,6 +45,7 @@ void main() {
             method: HarnessAuthMethod.oauth,
             isActive: false,
             removable: true,
+            expired: false,
             label: 'home@kimi.com',
           ),
         ],

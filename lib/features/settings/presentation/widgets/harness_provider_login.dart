@@ -84,6 +84,16 @@ class _HarnessProviderLoginPanelState
             _CredentialRow(
               cred: cred,
               busy: _busy,
+              // Signing in as the same account replaces the lapsed record
+              // (credentials dedup by account identity), so this renews it in
+              // place rather than adding a second row.
+              onSignInAgain:
+                  cred.expired &&
+                      _oauthFlowId == null &&
+                      info.supportsOAuth &&
+                      cred.method == HarnessAuthMethod.oauth
+                  ? _startOAuth
+                  : null,
               onRemove: cred.removable ? () => _removeCredential(cred) : null,
             ),
           const SizedBox(height: 8),
@@ -424,13 +434,20 @@ class _HarnessProviderLoginPanelState
 
 /// One stored credential in a provider's rotation: an icon for the auth
 /// method, the account label or masked key tail, an "active" marker on the
-/// credential runs start from, and a remove action when the credential is
+/// credential runs start from, an expired marker with a sign-in-again action
+/// on a lapsed OAuth sign-in, and a remove action when the credential is
 /// removable (env-var credentials are read-only).
 class _CredentialRow extends StatelessWidget {
-  const _CredentialRow({required this.cred, required this.busy, this.onRemove});
+  const _CredentialRow({
+    required this.cred,
+    required this.busy,
+    this.onSignInAgain,
+    this.onRemove,
+  });
 
   final HarnessCredentialSummary cred;
   final bool busy;
+  final VoidCallback? onSignInAgain;
   final VoidCallback? onRemove;
 
   @override
@@ -461,8 +478,25 @@ class _CredentialRow extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
+          if (cred.expired) ...[
+            CcBadge(
+              label: l10n.providerSignInExpired,
+              variant: CcBadgeVariant.warning,
+            ),
+            const SizedBox(width: 4),
+          ],
           if (cred.isActive) ...[
             CcChip(label: l10n.providerActiveBadge),
+            const SizedBox(width: 4),
+          ],
+          if (onSignInAgain != null) ...[
+            CcButton(
+              variant: CcButtonVariant.secondary,
+              size: CcButtonSize.sm,
+              icon: AppIcons.externalLink,
+              onPressed: busy ? null : onSignInAgain,
+              child: Text(l10n.signInAgain),
+            ),
             const SizedBox(width: 4),
           ],
           if (onRemove != null)

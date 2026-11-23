@@ -4313,6 +4313,7 @@
   "providerApiKeyStoredHint": "Füge einen weiteren API-Schlüssel ein, um ihn hinzuzufügen",
   "providerAddAnotherAccount": "Weiteres Konto hinzufügen",
   "providerActiveBadge": "Aktiv",
+  "providerSignInExpired": "Anmeldung abgelaufen",
   "providerOauthAccountFallback": "OAuth-Konto",
   "providerApiKeyFallback": "API-Schlüssel",
   "providerRemoveCredentialConfirmTitle": "Diese Zugangsdaten entfernen?",

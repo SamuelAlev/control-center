@@ -5142,6 +5142,7 @@
   "providerApiKeyStoredHint": "Επικολλήστε άλλο κλειδί API για να το προσθέσετε",
   "providerAddAnotherAccount": "Προσθήκη άλλου λογαριασμού",
   "providerActiveBadge": "Ενεργός",
+  "providerSignInExpired": "Η σύνδεση έληξε",
   "providerOauthAccountFallback": "Λογαριασμός OAuth",
   "providerApiKeyFallback": "Κλειδί API",
   "providerRemoveCredentialConfirmTitle": "Αφαίρεση αυτών των διαπιστευτηρίων;",

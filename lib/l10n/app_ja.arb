@@ -5142,6 +5142,7 @@
   "providerApiKeyStoredHint": "別の API キーを貼り付けて追加",
   "providerAddAnotherAccount": "別のアカウントを追加",
   "providerActiveBadge": "有効",
+  "providerSignInExpired": "サインイン期限切れ",
   "providerOauthAccountFallback": "OAuthアカウント",
   "providerApiKeyFallback": "APIキー",
   "providerRemoveCredentialConfirmTitle": "この認証情報を削除しますか？",

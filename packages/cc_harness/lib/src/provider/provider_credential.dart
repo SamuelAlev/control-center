@@ -196,6 +196,17 @@ class ProviderCredential {
   /// Whether this credential defines a user-added custom provider.
   bool get isCustomProvider => dialect != null;
 
+  /// Whether this is an OAuth sign-in whose access token is past
+  /// [expiresAt]. Checked after `ProviderCredentialRefresher.refreshIfNeeded`,
+  /// a true result means the sign-in lapsed and only signing in again renews
+  /// it.
+  bool isTokenExpired([DateTime? now]) {
+    final at = expiresAt;
+    return method == HarnessAuthMethod.oauth &&
+        at != null &&
+        !at.isAfter(now ?? DateTime.now());
+  }
+
   /// A stable identity key for dedup (email → accountId → accountLabel).
   String? get identityKey => email ?? accountId ?? accountLabel;
 

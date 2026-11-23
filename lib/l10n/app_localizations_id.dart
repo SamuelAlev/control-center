@@ -9146,6 +9146,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get providerActiveBadge => 'Aktif';
 
   @override
+  String get providerSignInExpired => 'Login kedaluwarsa';
+
+  @override
   String get providerOauthAccountFallback => 'Akun OAuth';
 
   @override

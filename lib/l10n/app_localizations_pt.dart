@@ -9185,6 +9185,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get providerActiveBadge => 'Ativa';
 
   @override
+  String get providerSignInExpired => 'Sessão expirada';
+
+  @override
   String get providerOauthAccountFallback => 'Conta OAuth';
 
   @override

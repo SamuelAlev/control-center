@@ -671,10 +671,14 @@ None of this has run on Windows yet; it is type-checked for x86_64 and
 aarch64.
 
 - **One AppContainer per launch.** The name is `ControlCenter.CodeMode.`
-  followed by 128 bits from `BCryptGenRandom` (system RNG). The SID comes from
-  `DeriveAppContainerSidFromAppContainerName`; no profile is registered, so
-  there is no profile folder, no registry entry and no named-object directory
-  that outlives the child or that two runners share. Two runners never have
+  followed by 128 bits from `BCryptGenRandom` (system RNG). The launcher
+  registers a profile for that name with `CreateAppContainerProfile`, which
+  returns the SID; CreateProcessW needs the profile's registry mapping and
+  fails with `ERROR_FILE_NOT_FOUND` for a SID that is only derived. A name
+  that already exists is refused, not joined. The launcher deletes the
+  profile (`DeleteAppContainerProfile`) once the child is gone, so no profile
+  folder, registry entry or named-object directory outlives the child unless
+  the launcher itself is killed first. Two runners never have
   the same package SID, so the AppContainer access check stops one from
   opening the other's process (the self-test checks this; see below).
 - **A less-privileged AppContainer.** The launcher opts the child out of ALL

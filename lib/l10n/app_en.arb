@@ -8049,6 +8049,7 @@
   "providerApiKeyStoredHint": "Paste another API key to add it",
   "providerAddAnotherAccount": "Add another account",
   "providerActiveBadge": "Active",
+  "providerSignInExpired": "Sign-in expired",
   "providerOauthAccountFallback": "OAuth account",
   "providerApiKeyFallback": "API key",
   "providerRemoveCredentialConfirmTitle": "Remove this credential?",

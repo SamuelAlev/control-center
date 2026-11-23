@@ -9174,6 +9174,9 @@ class AppLocalizationsHu extends AppLocalizations {
   String get providerActiveBadge => 'Aktív';
 
   @override
+  String get providerSignInExpired => 'A bejelentkezés lejárt';
+
+  @override
   String get providerOauthAccountFallback => 'OAuth-fiók';
 
   @override

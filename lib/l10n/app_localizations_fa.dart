@@ -9099,6 +9099,9 @@ class AppLocalizationsFa extends AppLocalizations {
   String get providerActiveBadge => 'فعال';
 
   @override
+  String get providerSignInExpired => 'ورود منقضی شد';
+
+  @override
   String get providerOauthAccountFallback => 'حساب OAuth';
 
   @override

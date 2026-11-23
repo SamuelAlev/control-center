@@ -11,6 +11,7 @@ class HarnessCredentialSummary {
     required this.method,
     required this.isActive,
     required this.removable,
+    required this.expired,
     this.label,
     this.hint,
   });
@@ -25,6 +26,7 @@ class HarnessCredentialSummary {
         ),
         isActive: json['active'] as bool? ?? false,
         removable: json['removable'] as bool? ?? false,
+        expired: json['expired'] as bool? ?? false,
         label: json['label'] as String?,
         hint: json['hint'] as String?,
       );
@@ -43,6 +45,11 @@ class HarnessCredentialSummary {
   /// read-only — they disappear when the variable is unset, not from the UI).
   final bool removable;
 
+  /// Whether this OAuth sign-in lapsed and could not be renewed: its token is
+  /// past expiry and a refresh did not replace it. Runs and usage reads on it
+  /// fail until the person signs in again.
+  final bool expired;
+
   /// The user/account label: OAuth email, account label or `env:VAR` name.
   final String? label;
 
@@ -55,6 +62,7 @@ class HarnessCredentialSummary {
     'method': method.name,
     'active': isActive,
     'removable': removable,
+    'expired': expired,
     if (label != null) 'label': label,
     if (hint != null) 'hint': hint,
   };

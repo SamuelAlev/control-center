@@ -4313,6 +4313,7 @@
   "providerApiKeyStoredHint": "Collez une autre clé API pour l'ajouter",
   "providerAddAnotherAccount": "Ajouter un autre compte",
   "providerActiveBadge": "Actif",
+  "providerSignInExpired": "Connexion expirée",
   "providerOauthAccountFallback": "Compte OAuth",
   "providerApiKeyFallback": "Clé API",
   "providerRemoveCredentialConfirmTitle": "Supprimer cet identifiant ?",

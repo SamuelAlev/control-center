@@ -9153,6 +9153,9 @@ class AppLocalizationsMs extends AppLocalizations {
   String get providerActiveBadge => 'Aktif';
 
   @override
+  String get providerSignInExpired => 'Log masuk luput';
+
+  @override
   String get providerOauthAccountFallback => 'Akaun OAuth';
 
   @override

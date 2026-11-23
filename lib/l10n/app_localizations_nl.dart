@@ -9173,6 +9173,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get providerActiveBadge => 'Actief';
 
   @override
+  String get providerSignInExpired => 'Aanmelding verlopen';
+
+  @override
   String get providerOauthAccountFallback => 'OAuth-account';
 
   @override

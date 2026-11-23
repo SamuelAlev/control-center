@@ -9231,6 +9231,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get providerActiveBadge => 'نشط';
 
   @override
+  String get providerSignInExpired => 'انتهت صلاحية تسجيل الدخول';
+
+  @override
   String get providerOauthAccountFallback => 'حساب OAuth';
 
   @override

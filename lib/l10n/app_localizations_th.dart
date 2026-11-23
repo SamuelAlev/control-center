@@ -9052,6 +9052,9 @@ class AppLocalizationsTh extends AppLocalizations {
   String get providerActiveBadge => 'ใช้งานอยู่';
 
   @override
+  String get providerSignInExpired => 'การลงชื่อเข้าใช้หมดอายุ';
+
+  @override
   String get providerOauthAccountFallback => 'บัญชี OAuth';
 
   @override

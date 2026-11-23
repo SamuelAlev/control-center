@@ -9124,6 +9124,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get providerActiveBadge => 'Đang dùng';
 
   @override
+  String get providerSignInExpired => 'Đăng nhập đã hết hạn';
+
+  @override
   String get providerOauthAccountFallback => 'Tài khoản OAuth';
 
   @override

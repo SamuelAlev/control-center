@@ -9100,6 +9100,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get providerActiveBadge => 'فعال';
 
   @override
+  String get providerSignInExpired => 'سائن اِن ختم';
+
+  @override
   String get providerOauthAccountFallback => 'OAuth اکاؤنٹ';
 
   @override

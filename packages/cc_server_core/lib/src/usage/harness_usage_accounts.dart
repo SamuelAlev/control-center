@@ -22,6 +22,19 @@ Future<List<SubscriptionUsageAccount>> collectHarnessUsageAccounts({
     return oauthBroker.refreshIfNeeded(cred);
   }
 
+  // A sign-in the refresh could not renew needs the person to sign in again,
+  // as a signed-out Claude Code account does. Reporting that up front spends
+  // no request on learning the provider's 401.
+  SubscriptionUsageAccount lapsed(String providerId, ProviderCredential cred) =>
+      SubscriptionUsageAccount(
+        providerId: providerId,
+        accountId: cred.credentialId,
+        accountLabel: _labelOf(cred),
+        knownStatus: SubscriptionStatus.signInRequired,
+        knownReason:
+            'The sign-in expired. Sign in again in Settings → Adapters.',
+      );
+
   // The quota is the GLM Coding Plan's. Plain `zai` is pay-as-you-go and
   // only a fallback so an install that connected its coding key before the
   // lanes were split keeps showing usage until it reconnects.
@@ -47,6 +60,10 @@ Future<List<SubscriptionUsageAccount>> collectHarnessUsageAccounts({
 
   for (var cred in await store.credentialsFor('kimi-code')) {
     cred = await refresh(cred);
+    if (cred.isTokenExpired()) {
+      out.add(lapsed('kimi-code', cred));
+      continue;
+    }
     final token = cred.accessToken?.trim();
     if (token == null || token.isEmpty) {
       continue;
@@ -65,6 +82,10 @@ Future<List<SubscriptionUsageAccount>> collectHarnessUsageAccounts({
 
   for (var cred in await store.credentialsFor('cursor')) {
     cred = await refresh(cred);
+    if (cred.isTokenExpired()) {
+      out.add(lapsed('cursor', cred));
+      continue;
+    }
     final token = (cred.accessToken ?? cred.apiKey)?.trim();
     if (token == null || token.isEmpty) {
       continue;
@@ -88,6 +109,10 @@ Future<List<SubscriptionUsageAccount>> collectHarnessUsageAccounts({
       continue;
     }
     cred = await refresh(cred);
+    if (cred.isTokenExpired()) {
+      out.add(lapsed('codex', cred));
+      continue;
+    }
     final token = cred.accessToken?.trim();
     if (token == null || token.isEmpty) {
       continue;

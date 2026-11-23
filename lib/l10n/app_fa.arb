@@ -5142,6 +5142,7 @@
   "providerApiKeyStoredHint": "کلید API دیگری جای‌گذاری کنید تا اضافه شود",
   "providerAddAnotherAccount": "افزودن حساب دیگر",
   "providerActiveBadge": "فعال",
+  "providerSignInExpired": "ورود منقضی شد",
   "providerOauthAccountFallback": "حساب OAuth",
   "providerApiKeyFallback": "کلید API",
   "providerRemoveCredentialConfirmTitle": "این اعتبارنامه حذف شود؟",

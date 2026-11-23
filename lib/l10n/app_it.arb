@@ -4316,6 +4316,7 @@
   "providerApiKeyStoredHint": "Incolla un'altra chiave API per aggiungerla",
   "providerAddAnotherAccount": "Aggiungi un altro account",
   "providerActiveBadge": "Attiva",
+  "providerSignInExpired": "Accesso scaduto",
   "providerOauthAccountFallback": "Account OAuth",
   "providerApiKeyFallback": "Chiave API",
   "providerRemoveCredentialConfirmTitle": "Rimuovere questa credenziale?",

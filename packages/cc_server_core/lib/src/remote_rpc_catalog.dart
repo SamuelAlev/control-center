@@ -8203,20 +8203,33 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             // Secret-less placeholders (a generation-defaults row) and env
             // entries are listed so the UI can show provenance; only stored
             // secrets are removable over RPC.
-            final credentials = [
-              for (final c in await harnessCreds.credentialsFor(id))
-                if (c.secret != null)
-                  HarnessCredentialSummary(
-                    credentialId: c.credentialId,
-                    method: c.method,
-                    isActive: c.credentialId == cred?.credentialId,
-                    removable: !(c.accountLabel ?? '').startsWith('env:'),
-                    label: c.method == HarnessAuthMethod.oauth
-                        ? (c.email ?? c.accountLabel)
-                        : c.accountLabel,
-                    hint: c.secretHint,
-                  ),
-            ];
+            //
+            // An expired OAuth sign-in gets one refresh first, so "expired"
+            // means the token could not be renewed, not that it is due.
+            // Refreshing is a no-op on a live token, and a refresh token the
+            // provider already rejected is not re-spent.
+            final credentials = <HarnessCredentialSummary>[];
+            for (var c in await harnessCreds.credentialsFor(id)) {
+              if (c.secret == null) {
+                continue;
+              }
+              if (c.isTokenExpired() && oauthBroker != null) {
+                c = await oauthBroker.refreshIfNeeded(c);
+              }
+              credentials.add(
+                HarnessCredentialSummary(
+                  credentialId: c.credentialId,
+                  method: c.method,
+                  isActive: c.credentialId == cred?.credentialId,
+                  removable: !(c.accountLabel ?? '').startsWith('env:'),
+                  expired: c.isTokenExpired(),
+                  label: c.method == HarnessAuthMethod.oauth
+                      ? (c.email ?? c.accountLabel)
+                      : c.accountLabel,
+                  hint: c.secretHint,
+                ),
+              );
+            }
             providers.add(
               HarnessProviderInfo(
                 id: id,

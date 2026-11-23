@@ -8940,6 +8940,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get providerActiveBadge => '사용 중';
 
   @override
+  String get providerSignInExpired => '로그인이 만료됨';
+
+  @override
   String get providerOauthAccountFallback => 'OAuth 계정';
 
   @override

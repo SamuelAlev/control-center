@@ -5142,6 +5142,7 @@
   "providerApiKeyStoredHint": "粘贴另一个 API 密钥以添加",
   "providerAddAnotherAccount": "添加其他账号",
   "providerActiveBadge": "使用中",
+  "providerSignInExpired": "登录已过期",
   "providerOauthAccountFallback": "OAuth 账号",
   "providerApiKeyFallback": "API 密钥",
   "providerRemoveCredentialConfirmTitle": "移除此凭据？",

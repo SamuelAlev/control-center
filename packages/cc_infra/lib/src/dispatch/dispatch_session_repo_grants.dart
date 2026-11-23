@@ -104,8 +104,9 @@ extension _DispatchSessionRepoGrants on DispatchSession {
   ];
 
   /// Extra workspace roots for the in-process harness file tools: the shared
-  /// conversation worktrees dir (`<convRoot>/repos`) and the conversation's
-  /// materialized attachments, when this session's cwd is a per-agent overlay.
+  /// conversation worktrees dir (`<convRoot>/repos`) when this session's cwd
+  /// is a per-agent overlay, and the space's materialized attachments
+  /// whenever the run is in a space that has any.
   /// Without the first, the tools refuse the worktrees' real paths — the
   /// overlay only reaches them through its `repos` symlink, whose target is
   /// lexically outside the cwd. Without the second, the paths this run's own
