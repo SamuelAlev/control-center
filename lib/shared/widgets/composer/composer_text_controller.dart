@@ -1,14 +1,18 @@
 import 'dart:typed_data';
 
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/theme/diff_colors.dart'
+    show diffBrightnessOf;
+import 'package:control_center/shared/widgets/composer/composer_fence_highlighter.dart';
 import 'package:control_center/shared/widgets/composer/composer_markdown.dart';
 import 'package:control_center/shared/widgets/composer/file_reference.dart';
 import 'package:flutter/widgets.dart';
 
 /// The composer's text controller, which paints `@[file:…]` references as
-/// pills, the draft's Markdown as it will read (see [scanComposerMarkdown])
-/// and, where the host takes slash commands, the leading `/command` in the
-/// accent (see [paintsCommand]).
+/// pills, the draft's Markdown as it will read (see [scanComposerMarkdown]),
+/// a fenced block that names its language in that language's syntax colors
+/// (see [ComposerFenceHighlighter]) and, where the host takes slash commands,
+/// the leading `/command` in the accent (see [paintsCommand]).
 ///
 /// Styling only — the characters are untouched, so the caret, selection, undo
 /// and the platform's input connection all see exactly the text the user typed.
@@ -104,6 +108,32 @@ class ComposerTextController extends TextEditingController {
   String? _scannedText;
   Uint16List _scannedFlags = Uint16List(0);
   List<FileRefMatch> _scannedRefs = const [];
+  List<ComposerCodeFence> _scannedFences = const [];
+
+  // Syntax colors for fenced blocks that name a language. Memoized like the
+  // scan, plus the theme and the highlighter's revision: a background
+  // tokenize landing changes the colors of an unchanged draft.
+  late final ComposerFenceHighlighter _fenceHighlighter =
+      ComposerFenceHighlighter(onColorsReady: _repaint);
+  (String, bool, int)? _coloredKey;
+  List<Color?>? _fenceColors;
+
+  // Asks the field to call [buildTextSpan] again. The value is unchanged, so
+  // listeners see what a caret-only change shows them.
+  void _repaint() {
+    if (!_disposed) {
+      notifyListeners();
+    }
+  }
+
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _fenceHighlighter.dispose();
+    super.dispose();
+  }
 
   @override
   TextSpan buildTextSpan({
@@ -115,6 +145,7 @@ class ComposerTextController extends TextEditingController {
     if (!identical(source, _scannedText) && source != _scannedText) {
       _scannedRefs = findFileRefs(source);
       final command = _paintsCommand ? commandRange(source) : null;
+      final fences = <ComposerCodeFence>[];
       // Opaque to the Markdown pass: a skill name with underscores in it is
       // one token, not emphasis.
       _scannedFlags = scanComposerMarkdown(
@@ -123,7 +154,9 @@ class ComposerTextController extends TextEditingController {
           for (final m in _scannedRefs) (start: m.start, end: m.end),
           ?command,
         ],
+        fences: fences,
       );
+      _scannedFences = fences;
       if (command != null) {
         for (var i = command.start; i < command.end; i++) {
           _scannedFlags[i] |= _commandFlag;
@@ -133,6 +166,15 @@ class ComposerTextController extends TextEditingController {
     }
     final refs = _scannedRefs;
     var flags = _scannedFlags;
+    final dark = diffBrightnessOf(context) == Brightness.dark;
+    final coloredKey = (source, dark, _fenceHighlighter.revision);
+    if (_coloredKey != coloredKey) {
+      _fenceColors = _scannedFences.isEmpty
+          ? null
+          : _fenceHighlighter.colorsFor(source, _scannedFences, dark: dark);
+      _coloredKey = coloredKey;
+    }
+    final colors = _fenceColors;
 
     // An IME marks its in-flight text with an underline computed from
     // `value.composing`. Dropping it mid-word would cost anyone typing
@@ -171,6 +213,7 @@ class ComposerTextController extends TextEditingController {
     var refIndex = 0;
     var runStart = 0;
     int? runKey;
+    Color? runColor;
     TextStyle? runStyle;
 
     void flush(int end) {
@@ -193,13 +236,16 @@ class ComposerTextController extends TextEditingController {
           (ref != null && i == ref.start) ||
           (refIndex > 0 && refs[refIndex - 1].end == i);
       final key = resolved ? _pillKey | (flags[i] & _composingFlag) : flags[i];
+      final color = resolved ? null : colors?[i];
       if (runKey == null) {
         runKey = key;
-        runStyle = _styleFor(key, ds, base, pill);
-      } else if (key != runKey || atRefEdge) {
+        runColor = color;
+        runStyle = _styleFor(key, ds, base, pill, color);
+      } else if (key != runKey || color != runColor || atRefEdge) {
         flush(i);
         runKey = key;
-        runStyle = _styleFor(key, ds, base, pill);
+        runColor = color;
+        runStyle = _styleFor(key, ds, base, pill, color);
       }
     }
     flush(source.length);
@@ -215,6 +261,7 @@ class ComposerTextController extends TextEditingController {
     DesignSystemTokens ds,
     TextStyle base,
     TextStyle pill,
+    Color? syntax,
   ) {
     if (key == 0) {
       return null;
@@ -237,6 +284,10 @@ class ComposerTextController extends TextEditingController {
     }
     if (key & ComposerMarkdownFlag.code != 0) {
       style = style.copyWith(backgroundColor: ds.hoverStrong);
+    }
+    // A fenced block's token color, from the language its fence names.
+    if (syntax != null) {
+      style = style.copyWith(color: syntax);
     }
     if (key & (ComposerMarkdownFlag.bold | ComposerMarkdownFlag.heading) != 0) {
       style = style.copyWith(fontWeight: FontWeight.w600);

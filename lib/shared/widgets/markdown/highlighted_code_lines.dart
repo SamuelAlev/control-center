@@ -24,8 +24,9 @@ const int kCodeHighlightMaxLines = 800;
 ///    block is small enough to cache) and the rebuild picks it up;
 ///  * past the hard caps, or with no language → plain, permanently.
 ///
-/// A surface whose whole point is reading the file (the IDE file viewer)
-/// raises [maxChars] / [maxLines]; everything else keeps the defaults.
+/// A surface whose whole point is reading the file (a read-only file tab)
+/// passes null for [maxChars] / [maxLines] and highlights whatever its size;
+/// everything else keeps the defaults.
 ///
 /// [builder] always receives one entry per line of [code] (an empty inner list
 /// for a blank line), so a caller can lay out a gutter against it without
@@ -53,11 +54,11 @@ class HighlightedCodeLines extends StatefulWidget {
   final Widget Function(BuildContext context, List<List<InlineSpan>> lines)
   builder;
 
-  /// Character cap past which the block renders plain.
-  final int maxChars;
+  /// Character cap past which the block renders plain. Null: no cap.
+  final int? maxChars;
 
-  /// Line cap past which the block renders plain.
-  final int maxLines;
+  /// Line cap past which the block renders plain. Null: no cap.
+  final int? maxLines;
 
   @override
   State<HighlightedCodeLines> createState() => _HighlightedCodeLinesState();
@@ -92,9 +93,11 @@ class _HighlightedCodeLinesState extends State<HighlightedCodeLines> {
     final languageId = widget.languageId;
     final lineCount = 1 + '\n'.allMatches(code).length;
 
+    final maxChars = widget.maxChars;
+    final maxLines = widget.maxLines;
     if (languageId == null ||
-        code.length > widget.maxChars ||
-        lineCount > widget.maxLines) {
+        (maxChars != null && code.length > maxChars) ||
+        (maxLines != null && lineCount > maxLines)) {
       return highlightCodeLines(code: code, languageId: null, dark: dark);
     }
     if (shouldHighlightSynchronously(

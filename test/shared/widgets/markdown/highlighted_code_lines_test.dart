@@ -30,8 +30,8 @@ void main() {
         child: HighlightedCodeLines(
           code: code,
           languageId: 'dart',
-          maxChars: 1024 * 1024,
-          maxLines: 20000,
+          maxChars: null,
+          maxLines: null,
           builder: (context, lines) {
             rendered = lines;
             return const SizedBox();

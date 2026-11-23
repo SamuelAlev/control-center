@@ -157,16 +157,18 @@ List<InlineSpan> highlightCodeSpans({
 ///
 /// This is the per-line rendering path (line-number gutters, diff rows). A
 /// blank line yields an empty inner list. The result is cached in a sibling
-/// LRU keyed identically to [highlightCodeSpans].
+/// LRU keyed identically to [highlightCodeSpans]; pass `cache: false` for a
+/// block that changes on every keystroke (a draft being typed).
 List<List<InlineSpan>> highlightCodeLines({
   required String code,
   required String? languageId,
   required bool dark,
+  bool cache = true,
 }) {
   if (languageId == null || code.isEmpty) {
     return _plainLines(code);
   }
-  final cacheable = code.length <= _maxCacheableItemChars;
+  final cacheable = cache && code.length <= _maxCacheableItemChars;
   final key = (languageId, ccThemeCacheId(dark: dark), code);
   if (cacheable) {
     final hit = _lineCache.get(key);
@@ -255,19 +257,21 @@ Future<List<InlineSpan>> highlightCodeSpansAsync({
 }
 
 /// Tokenizes off the UI thread and fills the per-line LRU, so a later
-/// rebuild's [peekHighlightedLines] (or [highlightCodeLines]) is a cache hit.
+/// rebuild's [peekHighlightedLines] (or [highlightCodeLines]) is a cache hit;
+/// `cache: false` skips the LRU, as for [highlightCodeLines].
 /// Returns plain per-line spans when the language is unavailable or
 /// tokenization fails.
 Future<List<List<InlineSpan>>> highlightCodeLinesAsync({
   required String code,
   required String? languageId,
   required bool dark,
+  bool cache = true,
 }) async {
   if (languageId == null || code.isEmpty) {
     return _plainLines(code);
   }
   final key = (languageId, ccThemeCacheId(dark: dark), code);
-  final cacheable = code.length <= _maxCacheableItemChars;
+  final cacheable = cache && code.length <= _maxCacheableItemChars;
   if (cacheable) {
     final hit = _lineCache.get(key);
     if (hit != null) {

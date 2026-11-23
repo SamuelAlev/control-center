@@ -119,4 +119,49 @@ void main() {
     final flags = scanComposerMarkdown(source, opaque: [ref]);
     expect(flags.sublist(4, 26).every((f) => f == 0), isTrue);
   });
+
+  group('code fences', () {
+    List<ComposerCodeFence> fencesOf(String source) {
+      final fences = <ComposerCodeFence>[];
+      scanComposerMarkdown(source, fences: fences);
+      return fences;
+    }
+
+    String body(String source, ComposerCodeFence f) =>
+        source.substring(f.bodyStart, f.bodyEnd);
+
+    test('report the info string and the body between the fences', () {
+      const source = 'look:\n```tsx\n<h3 id={x}>\n  <Text />\n```\nafter';
+      final fences = fencesOf(source);
+      expect(fences, hasLength(1));
+      expect(fences.single.info, 'tsx');
+      expect(body(source, fences.single), '<h3 id={x}>\n  <Text />');
+    });
+
+    test('keep the whole info string of an attribute-style fence', () {
+      const source = '~~~ js title="x"\nlet a;\n~~~';
+      final fence = fencesOf(source).single;
+      expect(fence.info, 'js title="x"');
+      expect(body(source, fence), 'let a;');
+    });
+
+    test('an unclosed fence runs to the end of the draft', () {
+      const source = '```dart\nvoid main() {\n  print(1);';
+      final fence = fencesOf(source).single;
+      expect(fence.info, 'dart');
+      expect(body(source, fence), 'void main() {\n  print(1);');
+    });
+
+    test('an empty body and a bare fence are reported empty', () {
+      expect(body('```ts\n```', fencesOf('```ts\n```').single), '');
+      expect(body('```', fencesOf('```').single), '');
+    });
+
+    test('several fences come back in order', () {
+      const source = '```py\nx = 1\n```\ntext\n```\nplain\n```';
+      final fences = fencesOf(source);
+      expect(fences.map((f) => f.info), ['py', '']);
+      expect(fences.map((f) => body(source, f)), ['x = 1', 'plain']);
+    });
+  });
 }

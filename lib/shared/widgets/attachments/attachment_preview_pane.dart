@@ -615,13 +615,17 @@ class _TextPreview extends StatelessWidget {
     }
     // The pane IS the file, so it renders flat the way the repo file viewer
     // does — not as a transcript code card with its own frame, copy button
-    // and "Show more" fold nested inside a tab. Same grammars, theme and
-    // tokenize budget as every other code surface via [HighlightedCodeLines].
+    // and "Show more" fold nested inside a tab. Same grammars and theme as
+    // every other code surface via [HighlightedCodeLines], and like the repo
+    // file viewer no size cap: reading the file is the point of the tab
+    // ([kMaxTextPreviewBytes] already bounds what loads at all).
     return SingleChildScrollView(
       padding: const EdgeInsets.all(12),
       child: HighlightedCodeLines(
         code: text,
         languageId: shikiLangForPath(source.path ?? attachment.label),
+        maxChars: null,
+        maxLines: null,
         // One selectable region over the whole file: a per-line selection
         // only ever copies the line the drag started on.
         builder: (context, lines) => CcSelectionRegion(

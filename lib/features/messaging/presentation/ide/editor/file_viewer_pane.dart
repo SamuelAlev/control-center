@@ -9,16 +9,6 @@ import 'package:control_center/shared/widgets/markdown/highlighted_code_lines.da
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Character ceiling for highlighting in the file viewer. Far above the
-/// default code-surface cap: reading the file is the point here, and the
-/// tokenize runs off the UI thread. The ceiling still exists because the
-/// shared shiki worker is single, so a multi-megabyte file would hold every
-/// other async highlight behind it for seconds.
-const int kFileViewerHighlightMaxChars = 1024 * 1024;
-
-/// Line-count sibling of [kFileViewerHighlightMaxChars].
-const int kFileViewerHighlightMaxLines = 20000;
-
 /// Read-only file viewer editor tab. Fetches a single file's content via the
 /// `repos.readFile` op and renders it syntax-highlighted in the app's own shiki
 /// theme, with the language resolved from the file's path.
@@ -29,9 +19,10 @@ const int kFileViewerHighlightMaxLines = 20000;
 /// rewritten.
 ///
 /// A file too long to tokenize inside a frame renders plain first and takes
-/// its colors when the background tokenize lands; only a file past
-/// [kFileViewerHighlightMaxChars] / [kFileViewerHighlightMaxLines] stays
-/// plain. See [HighlightedCodeLines].
+/// its colors when the background tokenize lands. There is no size ceiling:
+/// reading the file is the point of the tab, so even a very large one gets
+/// its colors, at the cost of holding the shared shiki worker while it
+/// tokenizes. See [HighlightedCodeLines].
 class FileViewerPane extends ConsumerWidget {
   /// Creates a [FileViewerPane].
   const FileViewerPane({
@@ -127,8 +118,9 @@ class FileViewerPane extends ConsumerWidget {
                 child: HighlightedCodeLines(
                   code: result.content,
                   languageId: shikiLangForPath(path),
-                  maxChars: kFileViewerHighlightMaxChars,
-                  maxLines: kFileViewerHighlightMaxLines,
+                  // Whatever the size: reading the file is the point here.
+                  maxChars: null,
+                  maxLines: null,
                   // One selectable region over the whole file, not a
                   // widget per line: a per-line selection only ever copies
                   // the line the drag started on.

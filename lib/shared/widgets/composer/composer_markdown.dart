@@ -44,6 +44,13 @@ abstract final class ComposerMarkdownFlag {
 /// A half-open range of the source the scanner must leave untouched.
 typedef ComposerOpaqueRange = ({int start, int end});
 
+/// A fenced code block in a draft: the opening fence's info string (` ```tsx `
+/// gives `tsx`, trimmed, empty when none) and the half-open range of its body,
+/// the lines between the fences. The body stops before the newline that ends
+/// its last line; an unclosed fence (still being typed) runs to the end of the
+/// draft. An empty body has `bodyStart == bodyEnd`.
+typedef ComposerCodeFence = ({String info, int bodyStart, int bodyEnd});
+
 /// Stands in for opaque and already-claimed characters while the inline
 /// passes run: not whitespace and not a delimiter, so emphasis can still wrap
 /// around a code span or a file reference without matching inside it.
@@ -71,9 +78,13 @@ final RegExp _wordChar = RegExp(r'\w');
 /// Inline constructs never span a line break. That is stricter than
 /// CommonMark, deliberately: while someone is typing, an unclosed backtick on
 /// one line must not turn every later line into code.
+///
+/// When [fences] is given, every fenced code block is appended to it in
+/// source order, so a caller can color the bodies by their language.
 Uint16List scanComposerMarkdown(
   String source, {
   Iterable<ComposerOpaqueRange> opaque = const [],
+  List<ComposerCodeFence>? fences,
 }) {
   final flags = Uint16List(source.length);
   if (source.isEmpty) {
@@ -89,6 +100,8 @@ Uint16List scanComposerMarkdown(
 
   String? fenceChar;
   var fenceLength = 0;
+  var fenceInfo = '';
+  var bodyStart = 0;
   var lineStart = 0;
   while (true) {
     var lineEnd = source.indexOf('\n', lineStart);
@@ -102,6 +115,13 @@ Uint16List scanComposerMarkdown(
       if (_closesFence(line, fenceChar, fenceLength)) {
         _fill(flags, lineStart, lineEnd, ComposerMarkdownFlag.marker);
         fenceChar = null;
+        fences?.add((
+          info: fenceInfo,
+          bodyStart: bodyStart,
+          // Before the newline that ends the body's last line; an empty
+          // body (the closing fence right under the opening one) is empty.
+          bodyEnd: lineStart > bodyStart ? lineStart - 1 : bodyStart,
+        ));
       }
     } else {
       final fence = _fenceOpen.firstMatch(line);
@@ -109,6 +129,8 @@ Uint16List scanComposerMarkdown(
         final run = fence.group(1)!;
         fenceChar = run[0];
         fenceLength = run.length;
+        fenceInfo = line.substring(fence.end).trim();
+        bodyStart = lineEnd < source.length ? lineEnd + 1 : lineEnd;
         _fill(
           flags,
           lineStart,
@@ -124,6 +146,13 @@ Uint16List scanComposerMarkdown(
       break;
     }
     lineStart = lineEnd + 1;
+  }
+  if (fenceChar != null) {
+    fences?.add((
+      info: fenceInfo,
+      bodyStart: bodyStart,
+      bodyEnd: source.length,
+    ));
   }
   return flags;
 }

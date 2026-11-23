@@ -1,5 +1,7 @@
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/shared/syntax/shiki_tokenizers.dart';
 import 'package:control_center/shared/widgets/composer/composer_text_controller.dart';
+import 'package:control_center/shared/widgets/markdown/code_highlighter.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -248,6 +250,101 @@ void main() {
         end: 5,
       ));
       expect(ComposerTextController.commandRange('hello'), isNull);
+    });
+  });
+
+  group('fenced code', () {
+    setUp(() => debugDisableShikiAsync = true);
+    tearDown(() => debugDisableShikiAsync = false);
+
+    bool colored(TextSpan span, String text) => span.children!
+        .cast<TextSpan>()
+        .any((c) => c.text == text && c.style?.color != null);
+
+    TextSpan childWith(TextSpan span, String text) =>
+        span.children!.cast<TextSpan>().firstWhere((c) => c.text == text);
+
+    // Past the 16-line synchronous budget of the TypeScript grammar, so the
+    // block always tokenizes in the background, however warm the grammar.
+    String tsFence(String value) => [
+      'look:',
+      '```ts',
+      'const a = "$value";',
+      for (var i = 0; i < 20; i++) 'let v$i = $i;',
+      '```',
+    ].join('\n');
+
+    testWidgets('a fence that names its language paints in syntax colors', (
+      tester,
+    ) async {
+      final ds = DesignSystemTokens.light();
+      controller.text = tsFence('hi');
+      var notified = 0;
+      controller.addListener(() => notified++);
+
+      // Plain for the frame the background tokenize takes, then a repaint.
+      var span = await spanOf(tester);
+      expect(span.toPlainText(), controller.text);
+      expect(colored(span, 'const'), isFalse);
+      await tester.pump();
+      expect(notified, 1);
+
+      span = await spanOf(tester);
+      expect(span.toPlainText(), controller.text);
+      expect(colored(span, 'const'), isTrue);
+      expect(
+        childWith(span, 'const').style!.fontFamily,
+        CcFonts.code().fontFamily,
+      );
+      // The fence lines stay dimmed scaffolding, not code.
+      expect(childWith(span, '```ts').style!.color, ds.textPlaceholder);
+      expect(childWith(span, 'look:\n').style, isNull);
+    });
+
+    testWidgets('typing in a fence keeps the last colors until new ones land', (
+      tester,
+    ) async {
+      controller.text = tsFence('hi');
+      await spanOf(tester);
+      await tester.pump();
+      expect(colored(await spanOf(tester), 'const'), isTrue);
+
+      // A keystroke: no plain flash while the new text tokenizes.
+      controller.text = tsFence('hiya');
+      var span = await spanOf(tester);
+      expect(span.toPlainText(), controller.text);
+      expect(colored(span, 'const'), isTrue);
+      await tester.pump();
+      span = await spanOf(tester);
+      expect(span.toPlainText(), controller.text);
+      expect(colored(span, '"hiya"'), isTrue);
+    });
+
+    testWidgets('typing outside a fence does not tokenize it again', (
+      tester,
+    ) async {
+      controller.text = 'intro\n```dart\nfinal a = 1;\n```';
+      await spanOf(tester);
+      await tester.pump();
+      expect(colored(await spanOf(tester), 'final'), isTrue);
+
+      final before = debugHighlightParseCount;
+      controller.text = 'intro, edited\n```dart\nfinal a = 1;\n```';
+      final span = await spanOf(tester);
+      await tester.pump();
+      expect(colored(span, 'final'), isTrue);
+      expect(debugHighlightParseCount, before);
+    });
+
+    testWidgets('a fence without a language stays one plain run', (
+      tester,
+    ) async {
+      controller.text = '```\nconst a = "hi";\n```';
+      final span = await spanOf(tester);
+      await tester.pump();
+      expect(span.toPlainText(), controller.text);
+      final body = childWith(span, 'const a = "hi";');
+      expect(body.style?.color, isNull);
     });
   });
 }
