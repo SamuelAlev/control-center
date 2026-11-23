@@ -574,8 +574,8 @@ fi
     || { echo "dumpbin failed on cc_codemode.exe"; exit 1; }
   grep -q 'Control Flow Guard' <<<"$CODEMODE_HEADERS" \
     || { echo "cc_codemode.exe is not marked for Control Flow Guard"; exit 1; }
-  grep -q 'CF Instrumented' <<<"$CODEMODE_HEADERS" \
-    || { echo "cc_codemode.exe has no Control Flow Guard instrumentation"; exit 1; }
+  grep -qi 'CF Instrumented' <<<"$CODEMODE_HEADERS" \
+    || { echo "cc_codemode.exe has no Control Flow Guard instrumentation; dumpbin's guard lines:"; grep -i -A6 'guard' <<<"$CODEMODE_HEADERS"; exit 1; }
   grep -Ei 'dependent load flag' <<<"$CODEMODE_HEADERS" | grep -q '800' \
     || { echo "cc_codemode.exe does not restrict its imports to System32 (/DEPENDENTLOADFLAG:0x800):"; grep -Ei 'dependent load' <<<"$CODEMODE_HEADERS"; exit 1; }
   CODEMODE_IMPORTS="$(dumpbin //nologo //imports "$(cygpath -w build/natives/codemode/cc_codemode.exe)")" \

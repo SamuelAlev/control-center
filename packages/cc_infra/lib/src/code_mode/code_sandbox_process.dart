@@ -231,7 +231,9 @@ class CodeSandboxProcess implements CodeSandboxPort {
     workingDirectory: runnerWorkingDirectory(executable),
     inheritBase: false,
     // Windows processes cannot start without SystemRoot; the runner's
-    // launcher passes only that (and SystemDrive, windir) to its child.
+    // launcher passes only that (and SystemDrive, windir, and LOCALAPPDATA
+    // from the user's profile, which Windows needs to place an AppContainer
+    // child's TEMP) to its child.
     inherit: [if (Platform.isWindows) 'SYSTEMROOT'],
     environment: const {'PATH': ''},
   );
@@ -350,7 +352,9 @@ class _RunnerSession implements CodeSandboxSession {
       onDone: _completeStdout,
       cancelOnError: true,
     );
-    unawaited(_process.stderr.forEach(_stderr.add).catchError((Object _) {}));
+    _stderrDone = _process.stderr
+        .forEach(_stderr.add)
+        .catchError((Object _) {});
     unawaited(_process.exitCode.then(_onExit));
   }
 
@@ -370,6 +374,10 @@ class _RunnerSession implements CodeSandboxSession {
   final Completer<CodeSandboxOutcome> _outcome = Completer();
   final Completer<Map<String, dynamic>> _ready = Completer();
   final Completer<void> _stdoutDone = Completer();
+
+  /// Completes when the runner's stderr is read to its end: what it wrote
+  /// just before it exited can still be in the pipe when the exit arrives.
+  late final Future<void> _stderrDone;
 
   CodeRunnerHandshake? _handshake;
   bool _running = false;
@@ -1211,12 +1219,13 @@ class _RunnerSession implements CodeSandboxSession {
   Future<void> _onExit(int code) async {
     _exitCode = code;
     _deadline.stop();
-    // Frames written just before the exit are still in the pipe. Give the
-    // reader a moment to drain it, then stop listening whatever happens.
-    await _stdoutDone.future.timeout(
-      CodeSandboxProcess._drainGrace,
-      onTimeout: () {},
-    );
+    // Frames and stderr written just before the exit are still in their
+    // pipes. Give the readers a moment to drain them, then stop listening
+    // whatever happens.
+    await Future.wait([
+      _stdoutDone.future,
+      _stderrDone,
+    ]).timeout(CodeSandboxProcess._drainGrace, onTimeout: () => const []);
     await _finalize();
   }
 

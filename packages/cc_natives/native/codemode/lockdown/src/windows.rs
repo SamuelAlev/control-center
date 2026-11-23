@@ -669,7 +669,8 @@ struct Contained {
     process: Owned,
     job: Owned,
     pid: u32,
-    profile: Profile,
+    /// Held only to be dropped last.
+    _profile: Profile,
 }
 
 fn launch(extra: &[String], report: &mut LockdownReport) -> Result<i32, ()> {
@@ -750,7 +751,10 @@ fn start(extra: &[String], report: &mut LockdownReport) -> Result<Contained, ()>
     if let Err(e) = ensure_runner_access(&exe_z, capability.0) {
         return fail(report, "runner_access", e);
     }
-    let env = child_environment();
+    let env = match child_environment() {
+        Ok(e) => e,
+        Err(e) => return fail(report, "launch", e),
+    };
 
     let mut capability_attr = SID_AND_ATTRIBUTES {
         Sid: capability.0,
@@ -872,28 +876,40 @@ fn start(extra: &[String], report: &mut LockdownReport) -> Result<Contained, ()>
         process,
         job,
         pid: pi.dwProcessId,
-        profile,
+        _profile: profile,
     })
 }
 
 /// The child's environment: only the variables system DLLs need to find the
-/// Windows directory (Winsock, for one, fails to start without SystemRoot).
-/// Nothing from the host's environment reaches the script.
-fn child_environment() -> Vec<u16> {
-    let mut block: Vec<u16> = Vec::new();
-    for name in ["SystemRoot", "SystemDrive", "windir"] {
+/// Windows directory (Winsock, for one, fails to start without SystemRoot),
+/// and LOCALAPPDATA. CreateProcessW points an AppContainer child's
+/// LOCALAPPDATA, TEMP and TMP at the container's own folder, which it finds
+/// from the LOCALAPPDATA of the block it is given, and fails with
+/// ERROR_ENVVAR_NOT_FOUND (203) when the block has none. The host starts the
+/// runner without it, so it comes from the token's profile directory; Folder
+/// Redirection never moves AppData\Local. Nothing else from the host's
+/// environment reaches the script. The block is sorted by name, ignoring
+/// case, as Windows expects.
+fn child_environment() -> Result<Vec<u16>, String> {
+    use std::ffi::OsString;
+    use std::os::windows::ffi::OsStrExt;
+    let local_app_data = user_profile_dir()?.join("AppData").join("Local");
+    let mut vars: Vec<(&str, OsString)> = vec![("LOCALAPPDATA", local_app_data.into_os_string())];
+    for name in ["SystemDrive", "SystemRoot", "windir"] {
         if let Some(value) = std::env::var_os(name) {
-            if let Some(value) = value.to_str() {
-                block.extend(format!("{name}={value}").encode_utf16());
-                block.push(0);
-            }
+            vars.push((name, value));
         }
     }
-    if block.is_empty() {
+    vars.sort_by_key(|(name, _)| name.to_ascii_uppercase());
+    let mut block: Vec<u16> = Vec::new();
+    for (name, value) in vars {
+        block.extend(name.encode_utf16());
+        block.push(u16::from(b'='));
+        block.extend(value.encode_wide());
         block.push(0);
     }
     block.push(0);
-    block
+    Ok(block)
 }
 
 fn token_check() -> Result<(), String> {

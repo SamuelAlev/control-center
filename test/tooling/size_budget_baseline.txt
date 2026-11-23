@@ -90,6 +90,8 @@
 # previous floor; lowered the four files that are now below theirs.
 # Raised 2026-11-23 by 27 after 71235dea7: comment_thread_widget.dart edits a
 # posted review comment in place through pr_edit_notifier.dart.
+# Raised 2026-11-23 by 34 after 44658ec27: harness_provider_login.dart marks a
+# lapsed OAuth sign-in as expired and offers to sign in again in place.
 lib/features/agents/presentation/screens/agent_registry_screen.dart  628
 lib/features/agents/presentation/widgets/agent_form_dialog.dart  725
 lib/features/agents/presentation/widgets/org_chart_view.dart  509
@@ -215,7 +217,7 @@ lib/features/remote_control/presentation/widgets/server_pairing_panel.dart  393
 lib/features/service_status/presentation/widgets/service_status_indicator.dart  627
 lib/features/settings/presentation/widgets/adapter_enforcement_section.dart  351
 lib/features/settings/presentation/widgets/font_picker.dart  517
-lib/features/settings/presentation/widgets/harness_provider_login.dart  500
+lib/features/settings/presentation/widgets/harness_provider_login.dart  534
 lib/features/settings/presentation/widgets/model_browser_dialog.dart  534
 lib/features/settings/presentation/widgets/providers/add_provider_pane.dart  343
 lib/features/settings/presentation/widgets/providers/model_edit_dialog.dart  341

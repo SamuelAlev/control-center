@@ -198,10 +198,14 @@
 # Raised 2026-11-23 after 71235dea7 (edit a posted review comment in the
 # diff): updateReviewComment on the GitHub and GitLab PR clients (+16 each)
 # and the cached repository's pass-through (+15).
+# Raised 2026-11-23 after 44658ec27: dispatch_session.dart mounts the space's
+# attachments for runs in the agent's own directory (+39), and
+# remote_rpc_catalog.dart refreshes an expired OAuth sign-in once before
+# reporting it expired (+13).
 packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart  2734
 packages/cc_domain/lib/src/dtos/dtos.dart  3330
 packages/cc_infra/lib/src/chat/chat_bridge_service.dart  1550
-packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2241
+packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2280
 packages/cc_infra/lib/src/dispatch/dispatch_session_claude_cli.dart  1618
 packages/cc_infra/lib/src/messaging/messaging_service.dart  1626
 packages/cc_infra/lib/src/network/github/github_forge_pr_client.dart  1736
@@ -219,5 +223,5 @@ packages/cc_server_core/lib/src/cc_server_runtime.dart  8257
 packages/cc_server_core/lib/src/demo/demo_seeder.dart  2865
 packages/cc_server_core/lib/src/local_rpc_server.dart  2503
 packages/cc_server_core/lib/src/pr_review/open_pr_polling_service.dart  1898
-packages/cc_server_core/lib/src/remote_rpc_catalog.dart  14346
+packages/cc_server_core/lib/src/remote_rpc_catalog.dart  14359
 packages/cc_server_core/lib/src/repo_ide_data_service.dart  2365

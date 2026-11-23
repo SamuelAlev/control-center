@@ -29,6 +29,14 @@ require_cmd cargo "Install Rust via https://rustup.rs/ and re-run."
 # excluded from analysis.
 export CARGO_TARGET_DIR="$REPO_ROOT/build/cargo/codemode"
 native_cargo_darwin_strip
+# rustup's standard library carries line tables; LTO folds them into one
+# object under the target directory, and ld64 records that object's absolute
+# path in the debug map (N_OSO stabs), which -x keeps and the path remapping
+# below cannot reach. -S leaves the debug map out at link time, so no
+# post-link strip touches the string table (see native_cargo_darwin_strip).
+if [ "$NATIVE_OS" = "Darwin" ]; then
+  export RUSTFLAGS="${RUSTFLAGS:-} -Clink-arg=-Wl,-S"
+fi
 
 # Reproducible paths: the executable keeps source paths for panic locations
 # and QuickJS-NG's assertions, and without remapping they name the builder's

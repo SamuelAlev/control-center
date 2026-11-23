@@ -36,7 +36,10 @@ as well.
 
 The runner starts with an empty environment and needs nothing from it. On
 Windows the launcher passes only `SystemRoot`, `SystemDrive` and `windir` to
-the child.
+the child, and `LOCALAPPDATA` (the token's profile directory plus
+`AppData\Local`): CreateProcessW places an AppContainer child's
+`LOCALAPPDATA`, `TEMP` and `TMP` in the container's own folder, found from
+that variable, and fails with `ERROR_ENVVAR_NOT_FOUND` (203) without it.
 
 ## Start-up order
 
