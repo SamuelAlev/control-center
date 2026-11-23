@@ -1284,7 +1284,32 @@ struct Winsock {
     last_error: WsaGetLastErrorFn,
 }
 
-fn winsock() -> Result<Winsock, String> {
+/// WSAStartup's WSASYSCALLFAILURE.
+const WSASYSCALLFAILURE: i32 = 10107;
+
+/// Why Winsock is not usable: WSAStartup's own error, or a failure to load
+/// ws2_32 or one of its exports.
+enum WinsockError {
+    Startup(i32),
+    Load(String),
+}
+
+impl From<String> for WinsockError {
+    fn from(s: String) -> WinsockError {
+        WinsockError::Load(s)
+    }
+}
+
+impl std::fmt::Display for WinsockError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            WinsockError::Startup(rc) => write!(f, "WSAStartup: {rc}"),
+            WinsockError::Load(s) => f.write_str(s),
+        }
+    }
+}
+
+fn winsock() -> Result<Winsock, WinsockError> {
     let m = load_system_library("ws2_32.dll")?;
     // SAFETY: each type matches the documented ws2_32 export.
     unsafe {
@@ -1292,7 +1317,7 @@ fn winsock() -> Result<Winsock, String> {
         let mut data: WSADATA = zeroed();
         let rc = startup(0x0202, &mut data);
         if rc != 0 {
-            return Err(format!("WSAStartup: {rc}"));
+            return Err(WinsockError::Startup(rc));
         }
         Ok(Winsock {
             socket: proc_address(m, b"socket\0")?,
@@ -1446,7 +1471,7 @@ pub fn selftest(_args: &[String], session: &dyn Fn() -> SessionCheck) -> i32 {
     }
     let ws = match winsock() {
         Ok(w) => w,
-        Err(e) => return fail(e),
+        Err(e) => return fail(e.to_string()),
     };
     let (sock, port) = match listener(&ws) {
         Ok(v) => v,
@@ -1750,7 +1775,21 @@ fn try_connect(port: u16) -> Result<String, Probe> {
     if port == 0 {
         return Err(Probe::NotAttempted("no listener port".into()));
     }
-    let ws = winsock().map_err(Probe::NotAttempted)?;
+    let ws = match winsock() {
+        Ok(ws) => ws,
+        // The unconfined launcher started Winsock for the listener this
+        // probe targets, so a WSAStartup that fails here fails because of
+        // the confinement: the child cannot start Winsock at all, which is
+        // where its connect would begin. (Observed in the less-privileged
+        // AppContainer on GitHub's Windows runners.) Any other set-up
+        // failure proves nothing.
+        Err(WinsockError::Startup(WSASYSCALLFAILURE)) => {
+            return Err(Probe::Denied(format!(
+                "WSAStartup: error {WSASYSCALLFAILURE} (WSASYSCALLFAILURE): Winsock does not start in the AppContainer"
+            )));
+        }
+        Err(e) => return Err(Probe::NotAttempted(e.to_string())),
+    };
     // SAFETY: plain Winsock calls with a correctly sized address.
     unsafe {
         let s = (ws.socket)(AF_INET as i32, SOCK_STREAM, IPPROTO_TCP);

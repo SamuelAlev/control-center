@@ -580,7 +580,8 @@ fi
     || { echo "cc_codemode.exe does not restrict its imports to System32 (/DEPENDENTLOADFLAG:0x800):"; grep -Ei 'dependent load' <<<"$CODEMODE_HEADERS"; exit 1; }
   CODEMODE_IMPORTS="$(dumpbin //nologo //imports "$(cygpath -w build/natives/codemode/cc_codemode.exe)")" \
     || { echo "dumpbin failed on cc_codemode.exe"; exit 1; }
-  CODEMODE_DLLS="$(grep -Eio '^[[:space:]]*[a-z0-9_.-]+\.dll[[:space:]]*$' <<<"$CODEMODE_IMPORTS" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]' | sort -u)"
+  # One DLL per line: strip blanks and dumpbin's CR, never the newlines.
+  CODEMODE_DLLS="$(grep -Eio '^[[:space:]]*[a-z0-9_.-]+\.dll[[:space:]]*$' <<<"$CODEMODE_IMPORTS" | tr -d ' \t\r' | tr '[:upper:]' '[:lower:]' | sort -u)"
   [ -n "$CODEMODE_DLLS" ] || { echo "dumpbin listed no imports for cc_codemode.exe:"; echo "$CODEMODE_IMPORTS"; exit 1; }
   while IFS= read -r dll; do
     case "$dll" in
