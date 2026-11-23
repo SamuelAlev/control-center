@@ -2,6 +2,10 @@
 // CodeSandboxProcess and CodeExecutionService. Fake runners are /bin/sh
 // scripts that cat pre-generated frames; the tests that need a real script
 // use the real runner (CC_CODEMODE_RUNNER).
+// Fake runners are /bin/sh scripts (FakeRunners), which Windows cannot exec.
+@TestOn('!windows')
+library;
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';

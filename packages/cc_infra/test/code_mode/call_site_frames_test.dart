@@ -2,6 +2,10 @@
 // script's own lines, absent is fine, anything malformed ends the script like
 // every other malformed frame. Fake runners only; the real runner's sites are
 // in call_site_runner_test.dart.
+// Fake runners are /bin/sh scripts (FakeRunners), which Windows cannot exec.
+@TestOn('!windows')
+library;
+
 import 'dart:io';
 
 import 'package:cc_domain/features/code_mode/domain/ports/code_sandbox_port.dart';

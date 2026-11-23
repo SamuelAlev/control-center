@@ -98,7 +98,9 @@ dependencies:
   shiki_flutter: ^1.1.0
   flutter_emoji: ^2.5.1
   # Exact-extent virtualized list (Fenwick-tree extent manager) for the message feed: measured per-row extents keep the scrollbar stable across wildly varying bubble heights, where a plain ListView estimates and the thumb jumps.
-  super_sliver_list: ^0.4.1
+  # Pinned for patches/super_sliver_list@0.4.1.patch: a reverse feed could
+  # settle at offset 0 with its newest rows unbuilt and unreachable.
+  super_sliver_list: 0.4.1
 
   # Routing
   go_router: ^18.0.2

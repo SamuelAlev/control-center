@@ -1,0 +1,80 @@
+name: Code mode runner
+description: >
+  Build cc_codemode (code mode's runner) for the package tests, prove its
+  lockdown on this runner with --self-test, and export CC_CODEMODE_RUNNER.
+  The code mode suites fail, never skip, without it (code_mode_test_support's
+  realRunnerPath), so every job that runs cc_infra or cc_server_core tests
+  needs this step.
+
+# Not the release build: no path remapping and no C hardening flags beyond
+# what runner/build.rs insists on (Windows), so scripts/lib/codemode.sh's
+# cc_codemode_verify would refuse it. Nothing here is staged or shipped; the
+# release runner is built and verified by natives.yml.
+
+runs:
+  using: composite
+  steps:
+    # A runner machine variable, not in the `env` context, so read it here.
+    - name: Identify the runner image
+      id: image
+      shell: bash
+      run: echo "os=${ImageOS:-unknown}" >> "$GITHUB_OUTPUT"
+
+    # The executable only, not the cargo target directory. `v1` is the manual
+    # bust (a toolchain change the key does not hash).
+    - name: Restore the code mode runner
+      id: cache
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: build/codemode-runner
+        key: codemode-runner-v1-${{ runner.os }}-${{ steps.image.outputs.os }}-${{ runner.arch }}-${{ hashFiles('packages/cc_natives/native/codemode/**') }}
+
+    - name: Set up MSVC developer environment
+      if: runner.os == 'Windows' && steps.cache.outputs.cache-hit != 'true'
+      uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
+
+    # Windows: runner/build.rs refuses to build without the static CRT and
+    # Control Flow Guard (the flags natives.yml's runner test builds with).
+    - name: Build the code mode runner
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+        exe=cc_codemode
+        if [ "$RUNNER_OS" = "Windows" ]; then
+          exe=cc_codemode.exe
+          triple="$(rustc -vV | sed -n 's/^host: //p')"
+          case "$triple" in
+            x86_64-pc-windows-msvc | aarch64-pc-windows-msvc) ;;
+            *) echo "cc_codemode: unexpected Rust host $triple"; exit 1 ;;
+          esac
+          export "CFLAGS_${triple//-/_}=/guard:cf /GS"
+          export RUSTFLAGS="${RUSTFLAGS:-} -Ctarget-feature=+crt-static -Ccontrol-flow-guard"
+        fi
+        CARGO_TARGET_DIR="$RUNNER_TEMP/cc_codemode_target" \
+          cargo build --release --locked -p cc_codemode \
+          --manifest-path packages/cc_natives/native/codemode/Cargo.toml
+        mkdir -p build/codemode-runner
+        cp "$RUNNER_TEMP/cc_codemode_target/release/$exe" build/codemode-runner/
+
+    # Hit and miss: the lockdown is a property of this runner's kernel, not
+    # of the binary. The output goes to a pipe (command substitution), never
+    # a file: the lockdown's zero file-size limit kills a runner whose stdout
+    # is a regular file.
+    - name: Self-test the code mode runner
+      shell: bash
+      run: |
+        set -euo pipefail
+        exe="$PWD/build/codemode-runner/cc_codemode"
+        [ "$RUNNER_OS" = "Windows" ] && exe="$exe.exe"
+        if ! out="$("$exe" --self-test 2>&1)"; then
+          printf '%s\n' "$out"
+          echo "::error title=Code mode runner::cc_codemode --self-test failed on this runner; the code mode suites cannot run."
+          exit 1
+        fi
+        printf '%s\n' "$out"
+        # Dart's path package needs a native absolute path on Windows.
+        if [ "$RUNNER_OS" = "Windows" ]; then
+          exe="$(cygpath -w "$exe")"
+        fi
+        echo "CC_CODEMODE_RUNNER=$exe" >> "$GITHUB_ENV"

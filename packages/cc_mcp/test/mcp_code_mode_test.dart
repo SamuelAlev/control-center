@@ -24,6 +24,7 @@ import 'package:cc_domain/features/mcp/domain/services/mode_tool_guard.dart';
 import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/tools.dart' show ActionClass;
+import 'package:cc_mcp/src/mcp_scoped_tool.dart';
 import 'package:cc_mcp/src/mcp_tool_dispatcher.dart';
 import 'package:cc_mcp/src/tools/repl_tool.dart';
 import 'package:test/test.dart';
@@ -586,6 +587,33 @@ void main() {
       expect(result.parentToolCallId, 'toolu_parent');
       expect(result.outputs, 'ok');
       expect(result.outcome, isNull);
+    });
+
+    test('a long tool\'s status lines show on its own row', () async {
+      final events = <(String, AgentProcessEvent)>[];
+      dispatcher = McpToolDispatcher(registry: McpToolRegistry([_Steps()]))
+        ..nestedEvents = (run, e) => events.add((run, e));
+
+      final outcome = await dispatcher.callNested(
+        runScope(),
+        nestedRequest('long_thing'),
+        approvals: ScriptApprovalBudget(),
+      );
+
+      expect(outcome.status, NestedCallStatus.completed);
+      final progress = [
+        for (final (run, e) in events)
+          if (e is ToolProgressEvent) (run, e),
+      ];
+      expect(progress.map((p) => p.$2.message), ['step 1', 'step 2']);
+      for (final (run, event) in progress) {
+        expect(run, 'dispatch-1');
+        expect(event.toolCallId, 'toolu_parent/1');
+        expect(event.parentToolCallId, 'toolu_parent');
+      }
+      // Between the call's row opening and its result.
+      expect(events.first.$2, isA<ToolCallEvent>());
+      expect(events.last.$2, isA<ToolResultEvent>());
     });
 
     test('a tool\'s text shows in its row as the tool wrote it, JSON or '
@@ -1195,6 +1223,35 @@ class _SlowModes implements ModeResolver {
   ) async {
     await Future<void>.delayed(delay);
     return Mode.chat;
+  }
+}
+
+/// A scoped tool that reports two steps while it runs.
+class _Steps extends McpScopedTool {
+  @override
+  String get name => 'long_thing';
+
+  @override
+  String get description => 'Takes a while.';
+
+  @override
+  Map<String, dynamic> get inputSchema => {
+    'type': 'object',
+    'properties': {
+      'workspace_id': {'type': 'string'},
+    },
+    'required': ['workspace_id'],
+  };
+
+  @override
+  Future<CallResult> runScoped(
+    Map<String, dynamic> arguments,
+    McpCallContext context, {
+    Future<void>? abandoned,
+  }) async {
+    context.reportProgress?.call('step 1');
+    context.reportProgress?.call('step 2');
+    return CallResult.success('done');
   }
 }
 

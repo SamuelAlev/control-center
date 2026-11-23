@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:cc_domain/cc_domain.dart' show RepoGrantRequiredException;
 import 'package:cc_domain/core/domain/entities/isolated_repo.dart';
 import 'package:cc_domain/core/domain/entities/repo.dart';
@@ -16,12 +14,14 @@ import 'package:cc_natives/cc_natives.dart' show IsolatedGit, RigWorktreeGuard;
 import 'package:cc_server_core/src/space_stack_push.dart';
 import 'package:uuid/uuid.dart';
 
-/// Runs `git` in a checkout. Tests pass a stand-in; production uses [Process].
+/// Runs `git` in a checkout, with [stdin] as its input when given. Tests
+/// pass a stand-in; production uses [IsolatedGit].
 typedef StackGit =
     Future<({int exitCode, String stdout, String stderr})> Function(
       String workingDirectory,
       List<String> args, {
       Map<String, String>? environment,
+      String? stdin,
     });
 
 /// The base branch pinned on the space for one repo, or null.
@@ -383,6 +383,7 @@ class SpaceStackService implements SpaceStackPort {
     Set<String> approvalOwnerUserIds = const {},
     List<AgentCommitIdentity>? agentRunIdentities,
     bool draft = true,
+    required void Function(String step) onProgress,
   }) async {
     if (workspaceId.isEmpty || spaceId.isEmpty) {
       return const SpaceStackView(ok: false, error: 'missing workspace or space');
@@ -432,6 +433,7 @@ class SpaceStackService implements SpaceStackPort {
         },
         rule: rule,
         draft: draft,
+        onProgress: onProgress,
       );
       if (!outcome.ok) {
         final listed = await list(workspaceId: workspaceId, spaceId: spaceId);
@@ -469,6 +471,7 @@ class SpaceStackService implements SpaceStackPort {
     required Set<String> approvalOwnerUserIds,
     required StackPushRule rule,
     required bool draft,
+    required void Function(String step) onProgress,
   }) async {
     final repo = await _repos.getById(workspaceId, entries.first.repoId);
     if (repo == null || !repo.hasForgeRemote) {
@@ -517,39 +520,65 @@ class SpaceStackService implements SpaceStackPort {
     }
 
     final env = await _authEnv(repo, actingUserId, workspaceId);
-    for (var i = 0; i <= lastNeeded; i++) {
-      final entry = entries[i];
-      // Every commit the push sends is inspected first (StackLayerPusher).
-      final refused = await _pusher.push(
-        root: root,
-        repo: repo,
-        branch: entry.branch,
-        force: entry.rewritten,
-        auth: env,
-        rule: rule,
+    // One read of the remote for every layer; every commit a push sends is
+    // inspected first (StackLayerPusher).
+    onProgress('Reading what ${repo.fullName} already has');
+    final (:session, :error) = await _pusher.open(
+      root: root,
+      repo: repo,
+      auth: env,
+    );
+    if (session == null) {
+      return (
+        ok: false,
+        error: error ?? 'could not read the remote',
+        opened: 0,
+        grouped: false,
+        stackError: null,
       );
-      if (refused != null) {
-        return (
-          ok: false,
-          error: refused,
-          opened: 0,
-          grouped: false,
-          stackError: null,
+    }
+    try {
+      for (var i = 0; i <= lastNeeded; i++) {
+        final entry = entries[i];
+        onProgress('Pushing ${entry.branch} (${i + 1} of ${lastNeeded + 1})');
+        final refused = await session.push(
+          branch: entry.branch,
+          force: entry.rewritten,
+          rule: rule,
         );
+        if (refused != null) {
+          return (
+            ok: false,
+            error: refused,
+            opened: 0,
+            grouped: false,
+            stackError: null,
+          );
+        }
+        if (entry.rewritten) {
+          final cleared = entry.copyWith(rewritten: false);
+          await _stacks.upsert(cleared);
+          entries[i] = cleared;
+        }
       }
-      if (entry.rewritten) {
-        final cleared = entry.copyWith(rewritten: false);
-        await _stacks.upsert(cleared);
-        entries[i] = cleared;
-      }
+    } finally {
+      await session.close();
     }
 
     var opened = 0;
+    final toOpen = [
+      for (var i = 0; i <= lastNeeded; i++)
+        if (entries[i].prNumber == null && (ahead[entries[i].id] ?? 0) > 0) i,
+    ];
     for (var i = 0; i <= lastNeeded; i++) {
       final entry = entries[i];
       if (entry.prNumber != null || (ahead[entry.id] ?? 0) == 0) {
         continue;
       }
+      onProgress(
+        'Opening the pull request for ${entry.branch} '
+        '(${toOpen.indexOf(i) + 1} of ${toOpen.length})',
+      );
       try {
         final pr = await _openPullRequest(
           repo: repo,
@@ -591,6 +620,7 @@ class SpaceStackService implements SpaceStackPort {
     var grouped = false;
     String? stackError;
     if (numbers.length >= 2 && _stacksSupported(repo)) {
+      onProgress('Grouping ${numbers.length} pull requests as a stack');
       try {
         await _groupStack(
           repo: repo,
@@ -873,11 +903,13 @@ class SpaceStackService implements SpaceStackPort {
     String workingDirectory,
     List<String> args, {
     Map<String, String>? environment,
+    String? stdin,
   }) async {
     final result = await IsolatedGit.run(
       RigWorktreeGuard.gitArgs(args, workingDirectory: workingDirectory),
       workingDirectory: workingDirectory,
       environment: environment,
+      stdin: stdin,
     );
     return (
       exitCode: result.exitCode,

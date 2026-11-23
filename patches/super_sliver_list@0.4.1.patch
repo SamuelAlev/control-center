@@ -1,0 +1,23 @@
+diff --git a/lib/src/render_object.dart b/lib/src/render_object.dart
+index 16a38e6ca75262e35faff8b46e866db0bc222787..fe346988c596193e873f07739aad762c5b1b8917 100644
+--- a/lib/src/render_object.dart
++++ b/lib/src/render_object.dart
+@@ -738,8 +738,17 @@ class RenderSuperSliverList extends RenderSliverMultiBoxAdaptor
+     var correctedStartOffset = startOffset + scrollCorrection;
+ 
+     // Adding preceding children.
++    // Control Center patch: with the cache area starting at the list's start,
++    // layout must reach index 0 (see the start offset note below). A preceding
++    // child is placed by its estimated extent, so an estimate larger than the
++    // room before the first child lands it at a negative offset; the loop then
++    // stopped there, the items before it were never built, and the index-0
++    // correction below never ran. At scroll offset 0 they could not be
++    // scrolled to at all (a reverse chat stuck above its newest rows). Keep
++    // adding them until index 0, whose correction realigns the list.
+     while ((indexOf(firstChild!) > 0 &&
+-            childScrollOffset(firstChild!)! > correctedStartOffset) ||
++            (childScrollOffset(firstChild!)! > correctedStartOffset ||
++                correctedStartOffset < precisionErrorTolerance)) ||
+         (_childScrollOffsetEstimation != null &&
+             indexOf(firstChild!) > _childScrollOffsetEstimation!.index)) {
+       final prevOffset = childScrollOffset(firstChild!)!;

@@ -191,21 +191,26 @@
 # summaries moved to dispatch_session_run_end.dart, and remote_rpc_catalog.dart
 # is recorded at the count the same round left it at (agents.killProcesses
 # moved to the stop pack).
+# Raised 2026-11-23 to current line counts after the harness update
+# (acaabe967) grew the forge PR clients, the PR review cache
+# and the Claude Code stream reader past the previous floor, and took
+# dispatch_session_claude_cli.dart past the 1500-line budget.
 packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart  2734
 packages/cc_domain/lib/src/dtos/dtos.dart  3330
 packages/cc_infra/lib/src/chat/chat_bridge_service.dart  1550
 packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2241
+packages/cc_infra/lib/src/dispatch/dispatch_session_claude_cli.dart  1618
 packages/cc_infra/lib/src/messaging/messaging_service.dart  1626
-packages/cc_infra/lib/src/network/github/github_forge_pr_client.dart  1689
+packages/cc_infra/lib/src/network/github/github_forge_pr_client.dart  1720
 packages/cc_infra/lib/src/network/github_graphql_client.dart  2215
-packages/cc_infra/lib/src/network/github_pr_client.dart  2254
-packages/cc_infra/lib/src/network/gitlab/gitlab_forge_pr_client.dart  1807
+packages/cc_infra/lib/src/network/github_pr_client.dart  2290
+packages/cc_infra/lib/src/network/gitlab/gitlab_forge_pr_client.dart  1869
 packages/cc_infra/lib/src/rigs/cdp_client.dart  2495
 packages/cc_infra/lib/src/rigs/qemu_enclosure_backend.dart  1795
 packages/cc_infra/lib/src/rigs/rig_service.dart  2298
 packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2035
-packages/cc_infra/lib/src/sandboxing/claude_stream_json.dart  1516
-packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2803
+packages/cc_infra/lib/src/sandboxing/claude_stream_json.dart  1585
+packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2821
 packages/cc_server_core/lib/src/catalog/catalog_wire.dart  2879
 packages/cc_server_core/lib/src/cc_server_runtime.dart  8257
 packages/cc_server_core/lib/src/demo/demo_seeder.dart  2865

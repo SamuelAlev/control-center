@@ -209,27 +209,73 @@ abstract final class IsolatedGit {
 
   /// Runs git with [arguments]. A local command waits for one of
   /// [localConcurrency] slots first.
+  ///
+  /// [stdin], when given, is written to the command's standard input (UTF-8)
+  /// and the input closed, for commands that read it (`update-ref --stdin`,
+  /// `cat-file --batch-check`).
   static Future<ProcessResult> run(
     List<String> arguments, {
     String? workingDirectory,
     Map<String, String>? environment,
     Encoding? stdoutEncoding = systemEncoding,
     Encoding? stderrEncoding = systemEncoding,
+    String? stdin,
   }) {
-    Future<ProcessResult> spawn() => Process.run(
-      executable,
-      args(arguments),
-      workingDirectory: workingDirectory,
-      environment: environmentFor(environment: environment),
-      includeParentEnvironment: false,
-      stdoutEncoding: stdoutEncoding,
-      stderrEncoding: stderrEncoding,
-    );
+    Future<ProcessResult> spawn() => stdin == null
+        ? Process.run(
+            executable,
+            args(arguments),
+            workingDirectory: workingDirectory,
+            environment: environmentFor(environment: environment),
+            includeParentEnvironment: false,
+            stdoutEncoding: stdoutEncoding,
+            stderrEncoding: stderrEncoding,
+          )
+        : _runWithInput(
+            arguments,
+            stdin,
+            workingDirectory: workingDirectory,
+            environment: environment,
+            stdoutEncoding: stdoutEncoding,
+            stderrEncoding: stderrEncoding,
+          );
     final command = _subcommandIndex(arguments);
     if (command != null && networkSubcommands.contains(arguments[command])) {
       return spawn();
     }
     return _localGate.run(spawn);
+  }
+
+  static Future<ProcessResult> _runWithInput(
+    List<String> arguments,
+    String input, {
+    String? workingDirectory,
+    Map<String, String>? environment,
+    Encoding? stdoutEncoding,
+    Encoding? stderrEncoding,
+  }) async {
+    final process = await Process.start(
+      executable,
+      args(arguments),
+      workingDirectory: workingDirectory,
+      environment: environmentFor(environment: environment),
+      includeParentEnvironment: false,
+    );
+    Future<Object> collect(Stream<List<int>> stream, Encoding? encoding) =>
+        encoding == null
+        ? stream.fold<List<int>>(<int>[], (all, chunk) => all..addAll(chunk))
+        : encoding.decodeStream(stream);
+    final stdout = collect(process.stdout, stdoutEncoding);
+    final stderr = collect(process.stderr, stderrEncoding);
+    try {
+      process.stdin.add(utf8.encode(input));
+      await process.stdin.close();
+    } on Object {
+      // The command exited without reading all of it; its exit code and
+      // stderr say why.
+    }
+    final exitCode = await process.exitCode;
+    return ProcessResult(process.pid, exitCode, await stdout, await stderr);
   }
 
   /// Runs git with [arguments], synchronously.

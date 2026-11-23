@@ -8,6 +8,7 @@ import 'package:cc_domain/features/messaging/domain/entities/space_stack_entry.d
 import 'package:cc_domain/features/messaging/domain/ports/space_stack_port.dart';
 import 'package:cc_domain/features/pr_review/domain/ports/agent_pull_request_port.dart';
 import 'package:cc_harness/tools.dart';
+import 'package:cc_mcp/src/mcp_scoped_tool.dart';
 import 'package:cc_mcp/src/tools/space_stack_tools.dart';
 import 'package:test/test.dart';
 
@@ -96,6 +97,20 @@ void main() {
       expect(stack.lastIdentities, [_Runs.identity]);
     },
   );
+
+  test('stack_publish shows each step on the call\'s row', () async {
+    final steps = <String>[];
+    final tool = StackPublishTool(stack: stack, agentRuns: _Runs('alice'));
+
+    final result = await tool.callScoped({
+      'workspace_id': 'ws',
+      'space_id': 's1',
+      'conversation_id': 'c1',
+    }, McpCallContext(reportProgress: steps.add));
+
+    expect(result.isError, isFalse);
+    expect(steps, ['Pushing feature (1 of 1)']);
+  });
 
   test('an unrequested run publishes as the bot, owned by whoever armed its '
       'trigger', () async {
@@ -264,7 +279,9 @@ class _FakeStack implements SpaceStackPort {
     Set<String> approvalOwnerUserIds = const {},
     List<AgentCommitIdentity>? agentRunIdentities,
     bool draft = true,
+    required void Function(String step) onProgress,
   }) async {
+    onProgress('Pushing feature (1 of 1)');
     if (actingUserId != null &&
         actingUserId.isNotEmpty &&
         writers.isNotEmpty &&

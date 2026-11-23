@@ -71,3 +71,45 @@ class _StatusDot extends StatelessWidget {
     return const SizedBox(width: 12, height: 12);
   }
 }
+
+/// [header], and under it what a long call says it is doing now ("Pushing
+/// feature (2 of 8)") while it runs. The line is server text, in English.
+class _ToolProgressLine extends StatelessWidget {
+  const _ToolProgressLine({
+    required this.segment,
+    required this.tokens,
+    required this.header,
+  });
+
+  final TranscriptSegment segment;
+  final DesignSystemTokens tokens;
+  final Widget header;
+
+  @override
+  Widget build(BuildContext context) {
+    final seg = segment;
+    if (seg is! ToolSegment ||
+        seg.status != ToolSegmentStatus.running ||
+        seg.progress.isEmpty) {
+      return header;
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        header,
+        Semantics(
+          liveRegion: true,
+          child: Padding(
+            padding: const EdgeInsetsDirectional.only(start: 20, bottom: 6),
+            child: Text(
+              seg.progress,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: CcTypography.caption.copyWith(color: tokens.textTertiary),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}

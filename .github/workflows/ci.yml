@@ -229,16 +229,21 @@ jobs:
         uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
         with:
           egress-policy: block
+          # crates.io: the code mode runner's build on a cache miss; Azure
+          # blobs: actions/cache.
           allowed-endpoints: >
             *.archive.ubuntu.com:80
+            *.blob.core.windows.net:443
             archive.ubuntu.com:443
             esm.ubuntu.com:443
             github.com:443
+            index.crates.io:443
             pub.dev:443
             storage.googleapis.com:443
             release-assets.githubusercontent.com:443
             security.ubuntu.com:443
             security.ubuntu.com:80
+            static.crates.io:443
 
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -264,6 +269,12 @@ jobs:
       # failed sysctl shows up as a spawn error, not a skip.
       - name: Allow unprivileged user namespaces (bwrap)
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+
+      # The code mode suites need the real runner (CC_CODEMODE_RUNNER). After
+      # the sysctl: the self-test proves the lockdown on this kernel.
+      - name: Code mode runner
+        if: matrix.pkg.runner == 'dart'
+        uses: $/.github/actions/codemode-runner
 
       - name: Test ${{ matrix.pkg.label }} packages
         shell: bash
@@ -308,6 +319,11 @@ jobs:
         with:
           # Windows tests cannot load with windowing on. See setup-flutter.
           windowing: ${{ runner.os != 'Windows' }}
+
+      # The code mode suites need the real runner (CC_CODEMODE_RUNNER).
+      - name: Code mode runner
+        if: matrix.pkg.runner == 'dart'
+        uses: $/.github/actions/codemode-runner
 
       # Default Windows shell is PowerShell.
       - name: Test ${{ matrix.pkg.label }} packages

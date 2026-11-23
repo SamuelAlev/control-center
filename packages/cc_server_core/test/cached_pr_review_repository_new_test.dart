@@ -602,6 +602,14 @@ class FakePrReviewRepository implements PrReviewRepository {
   }) async => <String, dynamic>{};
 
   @override
+  Future<Map<String, dynamic>> postFileComment({
+    required int prNumber,
+    required String commitSha,
+    required String path,
+    required String body,
+  }) async => <String, dynamic>{};
+
+  @override
   Future<void> replyToReviewComment({
     required int prNumber,
     required int parentCommentId,

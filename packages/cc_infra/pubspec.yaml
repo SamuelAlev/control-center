@@ -45,3 +45,5 @@ dependencies:
 dev_dependencies:
   test: any
   lints: any
+  # test/code_mode/json_heap_probe.dart reads the heap after a collection.
+  vm_service: any

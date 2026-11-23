@@ -1,3 +1,8 @@
+// The runner starts real `/bin/sh -c` processes and probes them with
+// `kill -0`, which Windows has neither of.
+@TestOn('!windows')
+library;
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';

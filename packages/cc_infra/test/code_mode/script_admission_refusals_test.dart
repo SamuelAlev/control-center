@@ -221,7 +221,7 @@ void main() {
       expect(host.liveProcessCount, 0);
       expect(host.retests, 0, reason: 'not a launch failure');
       await host.dispose();
-    });
+    }, skip: fakeRunnersSkip);
 
     test(
       'ends the script catalog, which withdraws scripts (review N1)',

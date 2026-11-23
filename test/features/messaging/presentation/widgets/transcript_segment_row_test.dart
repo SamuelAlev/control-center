@@ -31,6 +31,42 @@ void main() {
       expect(find.textContaining('lib/x.dart'), findsWidgets);
     });
 
+    testWidgets('a running call shows its status line under the summary; '
+        'a finished one does not', (tester) async {
+      ToolSegment publish(ToolSegmentStatus status) => ToolSegment(
+        toolName: 'stack_publish',
+        toolCallId: 'c',
+        inputs: const {'repo_id': 'r1'},
+        status: status,
+        startedAt: ts,
+        durationMs: status == ToolSegmentStatus.running ? null : 900,
+        progress: 'Pushing feature (2 of 8)',
+      );
+      for (final direction in TextDirection.values) {
+        await tester.pumpWidget(
+          testWrap(
+            TranscriptSegmentRow(
+              segment: publish(ToolSegmentStatus.running),
+              codeFont: 'monospace',
+            ),
+            textDirection: direction,
+          ),
+        );
+        expect(find.text('Pushing feature (2 of 8)'), findsOneWidget);
+        expect(find.textContaining('r1'), findsWidgets);
+      }
+
+      await tester.pumpWidget(
+        testWrap(
+          TranscriptSegmentRow(
+            segment: publish(ToolSegmentStatus.ok),
+            codeFont: 'monospace',
+          ),
+        ),
+      );
+      expect(find.text('Pushing feature (2 of 8)'), findsNothing);
+    });
+
     testWidgets('edit tool shows +N −N stats', (tester) async {
       await tester.pumpWidget(
         testWrap(

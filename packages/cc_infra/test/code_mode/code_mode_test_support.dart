@@ -51,6 +51,12 @@ const String fakeReadyFull =
     '{"type":"ready","protocol":$fakeProtocol,"engine":"fake 1","runner":"0",'
     '"lockdown":{"level":"full","os":"test","controls":[],"failed":[]}}';
 
+/// The skip reason for a test that runs [FakeRunners] on Windows, which can
+/// exec neither their `/bin/sh` scripts nor the `/bin` tools they call.
+final String? fakeRunnersSkip = Platform.isWindows
+    ? 'fake runners are /bin/sh scripts'
+    : null;
+
 /// Writes fake runners: `/bin/sh` scripts that speak the protocol badly.
 class FakeRunners {
   FakeRunners(this.dir);

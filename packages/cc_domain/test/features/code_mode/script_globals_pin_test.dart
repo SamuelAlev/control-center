@@ -9,10 +9,11 @@ import 'package:test/test.dart';
 /// prelude lacks, so a global added to (or removed from) the runner fails
 /// here until its row follows.
 void main() {
-  // The test runs from packages/cc_domain.
+  // The test runs from packages/cc_domain. A Windows checkout may have CRLF
+  // line endings; the patterns below match on `\n`.
   final prelude = File(
     '../cc_natives/native/codemode/runner/src/prelude.js',
-  ).readAsStringSync();
+  ).readAsStringSync().replaceAll('\r\n', '\n');
 
   /// `define('<name>', …)`, the `tools` property and the members of each
   /// object a define names (`models.embed`).

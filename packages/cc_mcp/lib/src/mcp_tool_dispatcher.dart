@@ -109,9 +109,10 @@ class McpToolDispatcher implements RpcDispatcher, McpScriptSurface {
   final bool Function(String workspaceId)? isWorkspaceReadOnly;
 
   /// Where a script's nested calls are shown live, under their `repl` call,
-  /// in the run's transcript. Late-bound by the server, which owns the runs;
-  /// null shows nothing live (the execution service still records every
-  /// call).
+  /// in the run's transcript, and where a running call's status line
+  /// ([McpCallContext.reportProgress]) goes. Late-bound by the server, which
+  /// owns the runs; null shows nothing live (the execution service still
+  /// records every call).
   NestedCallEventSink? nestedEvents;
 
   static const _protocolVersion = mcpProtocolVersion;
@@ -385,12 +386,20 @@ class McpToolDispatcher implements RpcDispatcher, McpScriptSurface {
           ? Map<String, dynamic>.from(rawArgs)
           : <String, dynamic>{},
       abandoned: abandoned,
-      context: McpCallContext(
-        scope: scope,
-        toolUseId: toolUseId is String && toolUseId.isNotEmpty
-            ? toolUseId
-            : null,
-      ),
+      context: switch (toolUseId) {
+        final String id when id.isNotEmpty => McpCallContext(
+          scope: scope,
+          toolUseId: id,
+          // The run's transcript knows the call by the adapter's id.
+          reportProgress: scope == null
+              ? null
+              : (message) => _emitToRun(
+                  scope,
+                  ToolProgressEvent(toolCallId: id, message: message),
+                ),
+        ),
+        _ => McpCallContext(scope: scope),
+      },
     );
     final CallResult result;
     switch (gated) {
@@ -986,7 +995,7 @@ class McpToolDispatcher implements RpcDispatcher, McpScriptSurface {
     required ScriptApprovalBudget approvals,
   }) async {
     final started = Stopwatch()..start();
-    _emitNested(
+    _emitToRun(
       scope,
       ToolCallEvent(
         toolName: request.name,
@@ -1008,7 +1017,7 @@ class McpToolDispatcher implements RpcDispatcher, McpScriptSurface {
         durationMs: started.elapsedMilliseconds,
       );
     }
-    _emitNested(
+    _emitToRun(
       scope,
       ToolResultEvent(
         toolCallId: request.toolCallId,
@@ -1133,7 +1142,18 @@ class McpToolDispatcher implements RpcDispatcher, McpScriptSurface {
             scope: scope,
             arguments: Map<String, dynamic>.from(request.arguments),
             abandoned: abandoned.future,
-            context: McpCallContext(scope: scope, origin: request.origin),
+            context: McpCallContext(
+              scope: scope,
+              origin: request.origin,
+              reportProgress: (message) => _emitToRun(
+                scope,
+                ToolProgressEvent(
+                  toolCallId: request.toolCallId,
+                  message: message,
+                  parentToolCallId: request.origin.parentToolCallId,
+                ),
+              ),
+            ),
             nested: _NestedGate(
               clock: clock,
               origin: request.origin,
@@ -1264,7 +1284,7 @@ class McpToolDispatcher implements RpcDispatcher, McpScriptSurface {
               '[${text.length - _maxTranscriptChars} more characters]';
   }
 
-  void _emitNested(McpCallScope scope, AgentProcessEvent event) {
+  void _emitToRun(McpCallScope scope, AgentProcessEvent event) {
     final sink = nestedEvents;
     final runId = scope.runId;
     if (sink == null || runId == null || runId.isEmpty) {

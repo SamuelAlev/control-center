@@ -164,12 +164,23 @@ void main() {
     );
 
     // An unrequested run: the bot opens them, every arming admin owns them.
+    final steps = <String>[];
     final view = await service.publish(
       workspaceId: 'ws',
       spaceId: 'space-1',
       repoId: 'repo-1',
       approvalOwnerUserIds: {'admin', 'other-admin'},
+      onProgress: steps.add,
     );
+    // Each step is reported as it starts; the remote is read once.
+    expect(steps, [
+      'Reading what acme/app already has',
+      'Pushing space/abcd1234 (1 of 2)',
+      'Pushing space/abcd1234--ui (2 of 2)',
+      'Opening the pull request for space/abcd1234 (1 of 2)',
+      'Opening the pull request for space/abcd1234--ui (2 of 2)',
+      'Grouping 2 pull requests as a stack',
+    ]);
     expect(owners, [
       {'admin', 'other-admin'},
       {'admin', 'other-admin'},
@@ -225,6 +236,7 @@ void main() {
       spaceId: 'space-1',
       repoId: 'repo-1',
       actingUserId: 'alice',
+      onProgress: (_) {},
     );
     // The person acting owns what they publish.
     expect(owners, [
@@ -274,6 +286,7 @@ void main() {
         workspaceId: 'ws',
         spaceId: 'space-1',
         actingUserId: 'bob',
+        onProgress: (_) {},
       ),
       throwsA(
         isA<RepoGrantRequiredException>().having(
@@ -317,6 +330,7 @@ void main() {
       workspaceId: 'ws',
       spaceId: 'space-1',
       repoId: 'repo-1',
+      onProgress: (_) {},
     );
 
     expect(view.ok, isFalse);

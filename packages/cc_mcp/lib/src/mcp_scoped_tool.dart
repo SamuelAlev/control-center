@@ -11,7 +11,12 @@ import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart'
 /// script) reads it from here instead.
 class McpCallContext {
   /// Creates a context.
-  const McpCallContext({this.scope, this.toolUseId, this.origin});
+  const McpCallContext({
+    this.scope,
+    this.toolUseId,
+    this.origin,
+    this.reportProgress,
+  });
 
   /// The transport-derived scope: the run's attested grant, or null for a
   /// caller that proved no run.
@@ -26,6 +31,11 @@ class McpCallContext {
   /// Set when a code mode script made this call: the `repl` call and the
   /// execution it belongs to.
   final ScriptCallOrigin? origin;
+
+  /// Shows a status line ("Pushing feature (2 of 8)") on this call's row in
+  /// the run's transcript while it runs. Null when nothing shows it: no run,
+  /// or a direct call whose adapter sent no id for it ([toolUseId]).
+  final void Function(String message)? reportProgress;
 }
 
 /// An [McpTool] that is handed the [McpCallContext] of each call.

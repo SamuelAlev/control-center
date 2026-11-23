@@ -3,6 +3,10 @@
 // and a failed re-test turns scripts off; while they are off, a read of the
 // availability re-runs it, and one that passes turns them back on. A script
 // cannot cause a re-test: only failures before the script is sent count.
+// Fake runners are /bin/sh scripts (FakeRunners), which Windows cannot exec.
+@TestOn('!windows')
+library;
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';

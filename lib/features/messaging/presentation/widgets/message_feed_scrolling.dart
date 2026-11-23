@@ -102,6 +102,22 @@ extension _ScrollingMethods on _SpaceMessageFeedState {
     _scheduleRecenter();
   }
 
+  /// Shows jump-to-latest whenever the viewport sits above the live edge.
+  ///
+  /// The list moves the offset without a scroll event when it measures rows
+  /// below the viewport (a layout correction), and [_onScroll] never sees
+  /// that move: the reader could be left above newer rows with no way back
+  /// but scrolling. Runs from the metrics notification, after the frame.
+  void _syncJumpControl() {
+    if (!_scrollController.hasClients || _programmatic) {
+      return;
+    }
+    final show = _scrollController.position.pixels > _bottomThreshold;
+    if (show != _showJumpControl) {
+      _set(() => _showJumpControl = show);
+    }
+  }
+
   void _jumpToLatest() {
     if (!_scrollController.hasClients) {
       return;

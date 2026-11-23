@@ -25,7 +25,7 @@ Repo _repo(String id) => Repo(
 /// bot bounded by its requester: the run's token only reads.
 void main() {
   late List<AgentRunView> runs;
-  late Map<String, Map<String, String>> spaceBranches;
+  late Map<String, Map<String, Set<String>>> spaceBranches;
   late Map<String, String> spaceHeads;
   late Set<String> members;
   late Set<String> readers;
@@ -135,7 +135,7 @@ void main() {
     forge
       ..headRef = 'space/s1'
       ..headSha = 'cccccccc22222222222222222222222222222222';
-    spaceBranches['w1/s1'] = {'widgets': 'space/s1'};
+    spaceBranches['w1/s1'] = {'widgets': {'space/s1'}};
     // The checkout has moved on (or never had it): not the run's commit.
     spaceHeads['w1/s1/widgets/space/s1'] =
         'dddddddd33333333333333333333333333333333';

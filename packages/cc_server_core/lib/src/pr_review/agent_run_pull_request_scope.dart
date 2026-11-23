@@ -66,10 +66,12 @@ typedef AgentRunsFor = ({List<AgentRunView> runs, String? requester});
 /// for one member (or for nobody), who must still be a member of the
 /// workspace and may read the repository there. The repository must be
 /// linked to the run's workspace. A branch is the run's own when it pushed
-/// it through the gateway, or it is the run's space branch for that
-/// repository. A pull request is the run's own when its head lives in that
-/// repository (never a fork) and sits at a commit the run pushed there
-/// through the gateway, or at its space's checkout of its space branch.
+/// it through the gateway, or it is one of the run's space branches for that
+/// repository: the space's own branch or a layer of its stack (`stack_publish`
+/// pushes those from the server, past the gateway). A pull request is the
+/// run's own when its head lives in that repository (never a fork) and sits
+/// at a commit the run pushed there through the gateway, or at the commit its
+/// space's checkout has on that space branch.
 ///
 /// Every refusal names what was refused through a `doing` phrase ("open a
 /// pull request", "comment on its pull request"), so an agent reads what to
@@ -87,7 +89,12 @@ class AgentRunPullRequestScope {
 
   final AgentRunsLookup _openRuns;
   final Future<List<Repo>> Function(String workspaceId) _linkedRepos;
-  final Future<Map<String, String>> Function(String workspaceId, String spaceId)
+  /// Every branch a space owns, by repository id: its space branch and the
+  /// layers of its stack.
+  final Future<Map<String, Set<String>>> Function(
+    String workspaceId,
+    String spaceId,
+  )
   _spaceBranches;
   final SpaceBranchHead _spaceBranchHead;
   final Future<bool> Function(String workspaceId, String userId) _isMember;
@@ -168,7 +175,7 @@ class AgentRunPullRequestScope {
   }
 
   /// Whether [branch] of [repo] is the runs' own: one of them pushed it
-  /// through the gateway, or it is their space's branch for [repo].
+  /// through the gateway, or it is one of their space's branches for [repo].
   Future<bool> isRunBranch(
     String workspaceId,
     List<AgentRunView> runs,
@@ -180,7 +187,7 @@ class AgentRunPullRequestScope {
     }
     for (final spaceId in _spaces(runs)) {
       final branches = await _spaceBranches(workspaceId, spaceId);
-      if (branches[repo.id] == branch) {
+      if (branches[repo.id]?.contains(branch) ?? false) {
         return true;
       }
     }
@@ -242,7 +249,7 @@ class AgentRunPullRequestScope {
   }
 
   /// Whether [pr]'s head is the run's own: its branch at a commit the run
-  /// pushed, or its space branch at the commit the space's checkout has.
+  /// pushed, or a space branch at the commit the space's checkout has.
   Future<bool> _isRunHead(
     String workspaceId,
     List<AgentRunView> runs,
@@ -261,7 +268,7 @@ class AgentRunPullRequestScope {
     }
     for (final spaceId in _spaces(runs)) {
       final branches = await _spaceBranches(workspaceId, spaceId);
-      if (branches[repo.id] != branch) {
+      if (!(branches[repo.id]?.contains(branch) ?? false)) {
         continue;
       }
       final head = await _spaceBranchHead(workspaceId, spaceId, repo, branch);

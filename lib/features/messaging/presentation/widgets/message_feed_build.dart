@@ -149,6 +149,7 @@ extension _BuildMethods on _SpaceMessageFeedState {
           onNotification: (n) {
             if (n.depth == 0) {
               _armAnchorCapture();
+              _syncJumpControl();
             }
             return false;
           },

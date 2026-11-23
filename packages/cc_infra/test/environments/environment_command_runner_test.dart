@@ -143,11 +143,19 @@ void main() {
 
     test('takes the children down too', () async {
       final marker = '${dir.path}/survived';
-      await runner.run(
-        ShellEnvironmentCommand('(sleep 1; touch "$marker") & wait'),
-        timeout: const Duration(milliseconds: 200),
+      // The deadline must find the child already started: a shell that only
+      // forks it while the deadline is reading the process table (a loaded
+      // CI runner can take 200 ms to start one) leaves a child that was not
+      // there to be signalled, which says nothing about the ladder.
+      final result = await runner.run(
+        ShellEnvironmentCommand(
+          '(sleep 2; touch "$marker") & echo started; wait',
+        ),
+        timeout: const Duration(seconds: 1),
       );
-      await Future<void>.delayed(const Duration(milliseconds: 1200));
+      expect(result.timedOut, isTrue);
+      expect(result.stdout, contains('started'));
+      await Future<void>.delayed(const Duration(milliseconds: 2500));
       expect(File(marker).existsSync(), isFalse);
     });
   }, skip: _posix);

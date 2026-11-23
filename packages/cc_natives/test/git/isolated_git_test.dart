@@ -50,4 +50,29 @@ void main() {
     final ok = await IsolatedGit.run(['--version']);
     expect(ok.exitCode, 0);
   });
+  test('stdin reaches a command that reads it', () async {
+    final repo = Directory.systemTemp.createTempSync('cc_stdin_repo');
+    addTearDown(() => repo.deleteSync(recursive: true));
+    expect((await IsolatedGit.run(['init', '--quiet', repo.path])).exitCode, 0);
+    final blob = await IsolatedGit.run([
+      'hash-object',
+      '-w',
+      '--stdin',
+    ], workingDirectory: repo.path, stdin: 'hello');
+    expect(blob.exitCode, 0, reason: '${blob.stderr}');
+    final oid = '${blob.stdout}'.trim();
+
+    final checked = await IsolatedGit.run(
+      ['cat-file', '--batch-check=%(objectname) %(objecttype)'],
+      workingDirectory: repo.path,
+      stdin: '$oid\n${'0' * 40}\n',
+    );
+
+    expect(checked.exitCode, 0, reason: '${checked.stderr}');
+    expect('${checked.stdout}'.trim().split('\n'), [
+      '$oid blob',
+      '${'0' * 40} missing',
+    ]);
+    expect(IsolatedGit.queuedLocalRuns, 0);
+  });
 }

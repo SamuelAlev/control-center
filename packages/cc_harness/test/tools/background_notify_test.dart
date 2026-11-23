@@ -107,8 +107,8 @@ void main() {
       expect(hit('error', 'ERROR: x'), isFalse);
     });
 
-    test('every accepted pattern matches a 2,000-character line in well '
-        'under a millisecond', () {
+    test('every accepted pattern matches a 2,000-character line in a few '
+        'milliseconds at most', () {
       final lines = [
         'a' * 2000,
         '1' * 2000,
@@ -139,9 +139,11 @@ void main() {
           }
           final perLine = watch.elapsedMicroseconds / 100;
           // Measured on a laptop: at most ~420 µs (a 200-character literal
-          // against 2,000 "a"), most under 50 µs. The bound leaves room for
-          // a loaded CI machine.
-          expect(perLine, lessThan(1000), reason: '$source on ${line.length}');
+          // against 2,000 "a"), most under 50 µs; a shared CI runner took
+          // 1.3 ms for that worst case. Catastrophic backtracking costs
+          // seconds on these lines, so 5 ms still separates the two while
+          // leaving room for a loaded machine.
+          expect(perLine, lessThan(5000), reason: '$source on ${line.length}');
         }
       }
     });

@@ -166,7 +166,7 @@ class _TranscriptSegmentRowState extends ConsumerState<TranscriptSegmentRow> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          header,
+          _ToolProgressLine(segment: seg, tokens: tokens, header: header),
           if (canExpand)
             CcCollapsible(
               expanded: _open,

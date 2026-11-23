@@ -6,6 +6,7 @@ import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 import 'package:cc_domain/features/messaging/domain/ports/space_stack_port.dart';
 import 'package:cc_domain/features/pr_review/domain/ports/agent_pull_request_port.dart';
 import 'package:cc_harness/tools.dart';
+import 'package:cc_mcp/src/mcp_scoped_tool.dart';
 
 /// Reads the branch stack recorded for a space.
 ///
@@ -238,7 +239,11 @@ class StackCheckoutTool extends McpTool {
 /// .requesterOf]; the bot when nobody did). That person cannot approve them;
 /// for a run nobody requested, nobody who armed its trigger can
 /// ([AgentPullRequestPort.approvalOwnersOf]).
-class StackPublishTool extends McpTool {
+///
+/// Publishing a large repository takes a while, so each step (reading the
+/// remote, each push, each pull request) shows on the call's row as it
+/// starts ([McpCallContext.reportProgress]).
+class StackPublishTool extends McpScopedTool {
   /// Creates a [StackPublishTool].
   StackPublishTool({required this._stack, required this._agentRuns});
 
@@ -311,7 +316,11 @@ class StackPublishTool extends McpTool {
   };
 
   @override
-  Future<CallResult> run(Map<String, dynamic> arguments) async {
+  Future<CallResult> runScoped(
+    Map<String, dynamic> arguments,
+    McpCallContext context, {
+    Future<void>? abandoned,
+  }) async {
     final (workspaceId, workspaceErr) = McpTool.requireString(
       arguments,
       'workspace_id',
@@ -363,6 +372,7 @@ class StackPublishTool extends McpTool {
         approvalOwnerUserIds: approvalOwners,
         agentRunIdentities: identities,
         draft: draft is bool ? draft : true,
+        onProgress: context.reportProgress ?? (_) {},
       );
     } on AppException catch (e) {
       // The person this run acts for lacks the write grant on a repository

@@ -78,6 +78,78 @@ void main() {
     });
   });
 
+  group('tool progress', () {
+    test('a running call shows its latest status line; the result clears '
+        'it', () {
+      folder
+        ..add(ToolCallEvent(toolName: 'stack_publish', toolCallId: 'a'))
+        ..add(ToolResultEvent(toolCallId: 'a', outputs: 'pa', isPartial: true))
+        ..add(ToolProgressEvent(toolCallId: 'a', message: 'Pushing x (1 of 2)'))
+        ..add(
+          ToolProgressEvent(toolCallId: 'a', message: 'Pushing y (2 of 2)'),
+        );
+
+      final shown = updates.last.update;
+      expect(shown, isA<SegmentOpened>());
+      final row = (shown as SegmentOpened).segment as ToolSegment;
+      expect(shown.index, 0);
+      expect(row.progress, 'Pushing y (2 of 2)');
+      // The partial output streamed so far rides along with the replacement.
+      expect(row.outputs, 'pa');
+      expect(updates.last.structural, isFalse);
+      expect(row.toJson()['progress'], 'Pushing y (2 of 2)');
+      expect(
+        (TranscriptSegment.fromJson(row.toJson()) as ToolSegment).progress,
+        'Pushing y (2 of 2)',
+      );
+
+      folder.add(ToolResultEvent(toolCallId: 'a', outputs: 'done'));
+      final closed = folder.segments.single as ToolSegment;
+      expect(closed.progress, '');
+      expect(closed.toJson().containsKey('progress'), isFalse);
+    });
+
+    test('a report for a call that is not open is dropped', () {
+      folder
+        ..add(ToolCallEvent(toolName: 'Read', toolCallId: 'a'))
+        ..add(ToolResultEvent(toolCallId: 'a', outputs: 'out'));
+      final before = updates.length;
+
+      folder
+        ..add(ToolProgressEvent(toolCallId: 'a', message: 'late'))
+        ..add(ToolProgressEvent(toolCallId: 'zz', message: 'unknown'));
+
+      expect(updates, hasLength(before));
+      expect((folder.segments.single as ToolSegment).progress, '');
+    });
+
+    test('an interrupted call loses its status line', () {
+      folder
+        ..add(ToolCallEvent(toolName: 'stack_publish', toolCallId: 'a'))
+        ..add(ToolProgressEvent(toolCallId: 'a', message: 'Pushing x'))
+        ..interruptRunningTools(DateTime.now());
+
+      expect((folder.segments.single as ToolSegment).progress, '');
+    });
+
+    test('the event survives the wire and keeps a status line short', () {
+      final event = ToolProgressEvent(
+        toolCallId: 'a/1',
+        message: 'x' * 500,
+        parentToolCallId: 'a',
+      );
+      expect(event.message, hasLength(ToolProgressEvent.maxMessageChars));
+      final decoded = AgentProcessEventCodec.fromWire(
+        AgentProcessEventCodec.toWire(event),
+      );
+      expect(decoded, isA<ToolProgressEvent>());
+      decoded as ToolProgressEvent;
+      expect(decoded.toolCallId, 'a/1');
+      expect(decoded.parentToolCallId, 'a');
+      expect(decoded.message, event.message);
+    });
+  });
+
   group('text accumulation', () {
     test('consecutive deltas grow one segment and report non-structurally', () {
       folder

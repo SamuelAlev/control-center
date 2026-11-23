@@ -84,6 +84,18 @@ abstract final class AgentProcessEventCodec {
           'parentToolCallId': ?parentToolCallId,
           'outcome': ?outcome,
         },
+      ToolProgressEvent(
+        :final toolCallId,
+        :final message,
+        :final parentToolCallId,
+      ) =>
+        <String, dynamic>{
+          'kind': 'toolProgress',
+          'ts': ts,
+          'toolCallId': toolCallId,
+          'message': message,
+          'parentToolCallId': ?parentToolCallId,
+        },
       UsageEvent(
         :final usage,
         :final durationMs,
@@ -235,6 +247,13 @@ abstract final class AgentProcessEventCodec {
           attachments: MessageAttachment.attachmentsFromMetadata(json),
           parentToolCallId: _stringOrNull(json['parentToolCallId']),
           outcome: _stringOrNull(json['outcome']),
+          timestamp: timestamp,
+        );
+      case 'toolProgress':
+        return ToolProgressEvent(
+          toolCallId: _string(json['toolCallId']),
+          message: _string(json['message']),
+          parentToolCallId: _stringOrNull(json['parentToolCallId']),
           timestamp: timestamp,
         );
       case 'usage':

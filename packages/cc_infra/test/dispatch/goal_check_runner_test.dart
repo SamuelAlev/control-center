@@ -17,6 +17,10 @@ import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
+/// The worktree checks run `bash -lc` for real; a Windows runner has no
+/// POSIX bash on its path (`bash` there is the WSL launcher).
+final String? _needsBash = Platform.isWindows ? 'needs a POSIX bash' : null;
+
 void main() {
   late Directory root;
   late String worktree;
@@ -107,7 +111,7 @@ void main() {
     expect(manager.argvs.first, ['bash', '-lc', 'echo one; pwd']);
     expect(manager.configs.first.filesystem.allowWrite, contains(worktree));
     expect(manager.disposed, hasLength(1));
-  });
+  }, skip: _needsBash);
 
   test('exit 126 and 127 are broken; the outcome says so', () async {
     final outcome = await run(runner(), [
@@ -118,7 +122,7 @@ void main() {
     expect(outcome.results.first.broken, isTrue);
     expect(outcome.results.last.broken, isTrue);
     expect(outcome.anyBroken, isTrue);
-  });
+  }, skip: _needsBash);
 
   test('a spawn failure is broken', () async {
     final outcome = await run(
@@ -143,7 +147,7 @@ void main() {
     expect(outcome.results.first.passed, isFalse);
     expect(killed, hasLength(1));
     expect(outcome.results.last.passed, isTrue);
-  });
+  }, skip: _needsBash);
 
   test('only the last 6,000 characters of output are kept', () async {
     final outcome = await run(runner(), [
@@ -152,7 +156,7 @@ void main() {
     final tail = outcome.results.single.outputTail;
     expect(tail.length, 6000);
     expect(tail, endsWith('END'));
-  });
+  }, skip: _needsBash);
 
   test('no sandbox: nothing runs, the kind is sandbox_unavailable', () async {
     for (final r in [
@@ -194,7 +198,7 @@ void main() {
     );
     expect(outcome.results.single.passed, isTrue);
     expect(manager.argvs, isEmpty);
-  });
+  }, skip: _needsBash);
 
   test('no worktree: a worktree check is broken', () async {
     Directory(worktree).deleteSync(recursive: true);
@@ -209,7 +213,7 @@ void main() {
     final outcome = await run(runner(), [GoalCheck(run: 'ls')]);
     expect(outcome.results.single.outputTail, contains('app'));
     expect(outcome.results.single.outputTail, contains('lib2'));
-  });
+  }, skip: _needsBash);
 
   group('environment checks', () {
     test('run as the agent, through the environment task', () async {

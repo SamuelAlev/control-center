@@ -350,13 +350,27 @@ _wireAgentPullRequests({
 }) {
   Future<List<Repo>> linkedRepos(String workspaceId) =>
       workspaceRepository.watchReposForWorkspace(workspaceId).first;
-  Future<Map<String, String>> spaceBranches(
+  final spaceStacks = DaoSpaceStackRepository(workspaceDbs);
+  // The space's own branch per repository, plus every layer of its stack:
+  // `stack_publish` pushes and opens those from the server, so the gateway
+  // never records them as the run's.
+  Future<Map<String, Set<String>>> spaceBranches(
     String workspaceId,
     String spaceId,
-  ) => workspaceDbs
-      .of(workspaceId)
-      .spaceRepoDao
-      .repoBranchesForSpace(workspaceId, spaceId);
+  ) async {
+    final branches = <String, Set<String>>{
+      for (final MapEntry(key: repoId, value: branch) in (await workspaceDbs
+              .of(workspaceId)
+              .spaceRepoDao
+              .repoBranchesForSpace(workspaceId, spaceId))
+          .entries)
+        repoId: {branch},
+    };
+    for (final layer in await spaceStacks.forSpace(workspaceId, spaceId)) {
+      branches.putIfAbsent(layer.repoId, () => {}).add(layer.branch);
+    }
+    return branches;
+  }
   Future<bool> isMember(String workspaceId, String userId) async =>
       await membershipRepository.getMember(workspaceId, userId) != null;
   Future<bool> mayRead(String workspaceId, String userId, Repo repo) =>

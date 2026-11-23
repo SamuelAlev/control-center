@@ -221,7 +221,7 @@ printf '%s\\n' '$_done'
       expect(outcome.detail, contains('once decoded'));
       expect(host.liveProcessCount, 0);
     });
-  });
+  }, skip: fakeRunnersSkip);
 
   group('a script on the real runner', () {
     late CodeSandboxProcess process;

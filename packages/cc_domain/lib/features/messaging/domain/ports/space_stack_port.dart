@@ -125,6 +125,9 @@ abstract class SpaceStackPort {
   /// of their rules, as the push gateway holds the run's own pushes. Without
   /// (a person publishes) their own commits are theirs, and only a commit
   /// authored as the workspace's agent is held to the agent rule.
+  ///
+  /// [onProgress] hears each step as it starts ("Pushing feature (2 of 8)"),
+  /// in English: an agent run's tool shows it on the call's row.
   Future<SpaceStackView> publish({
     required String workspaceId,
     required String spaceId,
@@ -133,5 +136,6 @@ abstract class SpaceStackPort {
     Set<String> approvalOwnerUserIds = const {},
     List<AgentCommitIdentity>? agentRunIdentities,
     bool draft = true,
+    required void Function(String step) onProgress,
   });
 }

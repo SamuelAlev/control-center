@@ -95,6 +95,7 @@ class RunLogWriter {
     SandboxViolationEvent() => (text: event.content, metadata: event.metadata),
     ToolCallEvent() => (text: event.toolName, metadata: event.metadata),
     ToolResultEvent() => (text: event.outputs, metadata: event.metadata),
+    ToolProgressEvent() => (text: event.message, metadata: event.metadata),
     UsageEvent() => (text: '', metadata: event.metadata),
     StageTimingEvent() => (text: '', metadata: event.metadata),
     ContextWindowEvent() => (text: '', metadata: event.metadata),

@@ -128,6 +128,8 @@ class TranscriptFolder {
         _openTool(event);
       case ToolResultEvent():
         _applyToolResult(event);
+      case ToolProgressEvent():
+        _applyToolProgress(event);
       case ErrorEvent():
         _addAtomic(
           ErrorSegment(
@@ -379,6 +381,26 @@ class TranscriptFolder {
     _apply(SegmentOpened(idx, seg), structural: true);
   }
 
+  /// Shows [event]'s status line on its call's row while the call is open.
+  /// A report for a call that is not open (it ended, or its row was never
+  /// opened here) is dropped. The row is re-reported whole through
+  /// [SegmentOpened], which every consumer applies as a replacement; partial
+  /// output buffered so far rides along.
+  void _applyToolProgress(ToolProgressEvent event) {
+    final idx = event.toolCallId.isEmpty
+        ? null
+        : _openToolByCallId[event.toolCallId];
+    if (idx == null) {
+      return;
+    }
+    final stored = _segments[idx];
+    if (stored is! ToolSegment || stored.status != ToolSegmentStatus.running) {
+      return;
+    }
+    _segments[idx] = stored.copyWith(progress: event.message);
+    _apply(SegmentOpened(idx, materialized(idx)), structural: false);
+  }
+
   void _applyToolResult(ToolResultEvent event) {
     final byId = event.toolCallId.isNotEmpty
         ? _openToolByCallId[event.toolCallId]
@@ -440,6 +462,7 @@ class TranscriptFolder {
       images: event.images.isEmpty ? null : event.images,
       attachments: event.attachments.isEmpty ? null : event.attachments,
       outcome: event.outcome,
+      progress: '',
     );
     _segments[target] = closed;
     if (event.toolCallId.isNotEmpty) {
@@ -480,6 +503,7 @@ class TranscriptFolder {
           outputs: buffered?.toString() ?? seg.outputs,
           status: ToolSegmentStatus.interrupted,
           durationMs: now.difference(seg.startedAt).inMilliseconds,
+          progress: '',
         );
       }
     }

@@ -177,6 +177,8 @@ void main() {
       test(
         'a full gate run on the fake backend stays inconclusive',
         timeout: const Timeout(Duration(minutes: 3)),
+        // Task setup commands run under `bash -lc`.
+        skip: Platform.isWindows ? 'needs a POSIX bash' : null,
         () async {
           // Every attempt of the treatment fails its hidden checks and every
           // baseline attempt passes them: the gate must not call it

@@ -592,7 +592,8 @@ void main() {
         filesystem: _Filesystem(root.path),
         todos: null,
         git: (args, {required workingDirectory}) async {
-          seen.add([workingDirectory.split('/').last, ...args]);
+          // Either separator: the lib joins with the host's (`\` on Windows).
+          seen.add([workingDirectory.split(RegExp(r'[/\\]')).last, ...args]);
           return answer?.call(args) ??
               ProcessResult(
                 0,

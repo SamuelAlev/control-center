@@ -25,6 +25,9 @@ enum AgentProcessEventType {
   /// Tool result event.
   toolResult,
 
+  /// A running tool's status line.
+  toolProgress,
+
   /// Usage / token-count event.
   usage,
 
@@ -65,6 +68,8 @@ extension AgentProcessEventTypeExtension on AgentProcessEventType {
         return 'tool_call';
       case AgentProcessEventType.toolResult:
         return 'tool_result';
+      case AgentProcessEventType.toolProgress:
+        return 'tool_progress';
       case AgentProcessEventType.usage:
         return 'usage';
       case AgentProcessEventType.stageTiming:
@@ -96,6 +101,8 @@ extension AgentProcessEventTypeExtension on AgentProcessEventType {
         return AgentProcessEventType.toolCall;
       case 'tool_result':
         return AgentProcessEventType.toolResult;
+      case 'tool_progress':
+        return AgentProcessEventType.toolProgress;
       case 'usage':
         return AgentProcessEventType.usage;
       case 'stage_timing':
@@ -295,6 +302,47 @@ class ToolResultEvent extends AgentProcessEvent {
       ],
     'parentToolCallId': ?parentToolCallId,
     'outcome': ?outcome,
+  };
+}
+
+/// What a running tool call is doing now ("Pushing feature (2 of 8)"): a
+/// status line the server's own tool code reports while the call runs, shown
+/// on the call's row ([ToolSegment.progress]) until its result arrives.
+class ToolProgressEvent extends AgentProcessEvent {
+  /// Creates a progress report for [toolCallId]. [message] is cut to
+  /// [maxMessageChars].
+  ToolProgressEvent({
+    required this.toolCallId,
+    required String message,
+    this.parentToolCallId,
+    super.timestamp,
+  }) : message = message.length <= maxMessageChars
+           ? message
+           : '${message.substring(0, maxMessageChars - 1)}…';
+
+  /// The longest [message] kept.
+  static const int maxMessageChars = 200;
+
+  @override
+  AgentProcessEventType get type => AgentProcessEventType.toolProgress;
+
+  @override
+  String get _payload => '$toolCallId $message';
+
+  /// The call this reports on.
+  final String toolCallId;
+
+  /// The status line.
+  final String message;
+
+  /// The `repl` call whose script made the call, or null for a call the
+  /// model made directly.
+  final String? parentToolCallId;
+
+  /// The report as a metadata map (run logs).
+  Map<String, dynamic> get metadata => {
+    'toolCallId': toolCallId,
+    'parentToolCallId': ?parentToolCallId,
   };
 }
 

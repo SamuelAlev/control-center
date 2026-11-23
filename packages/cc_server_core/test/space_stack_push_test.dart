@@ -32,18 +32,63 @@ void main() {
     updatedAt: DateTime.utc(2026),
   );
 
-  Future<({int exitCode, String stdout, String stderr})> run(
+  /// Every `git fetch` the pusher ran, with how many objects the scratch
+  /// repository held right after it.
+  late List<({List<String> args, int objects})> fetches;
+
+  Future<({int exitCode, String stdout, String stderr})> plain(
     String cwd,
     List<String> args, {
     Map<String, String>? environment,
+    String? stdin,
   }) async {
-    final r = await Process.run(
+    final process = await Process.start(
       'git',
       args,
       workingDirectory: cwd,
       environment: {...env, ...?environment},
     );
-    return (exitCode: r.exitCode, stdout: '${r.stdout}', stderr: '${r.stderr}');
+    final out = process.stdout.transform(systemEncoding.decoder).join();
+    final err = process.stderr.transform(systemEncoding.decoder).join();
+    if (stdin != null) {
+      process.stdin.write(stdin);
+    }
+    await process.stdin.close();
+    return (
+      exitCode: await process.exitCode,
+      stdout: await out,
+      stderr: await err,
+    );
+  }
+
+  /// The pusher's git, as the server runs it: server-run git never lists an
+  /// alternate's refs (`IsolatedGit` empties `core.alternateRefsCommand`).
+  Future<({int exitCode, String stdout, String stderr})> run(
+    String cwd,
+    List<String> args, {
+    Map<String, String>? environment,
+    String? stdin,
+  }) async {
+    final r = await plain(
+      cwd,
+      ['-c', 'core.alternateRefsCommand=', ...args],
+      environment: environment,
+      stdin: stdin,
+    );
+    if (args.first == 'fetch') {
+      final counted = await plain(cwd, ['count-objects', '-v']);
+      var objects = 0;
+      for (final line in counted.stdout.split('\n')) {
+        if (line.split(': ') case [
+          final key,
+          final value,
+        ] when key == 'count' || key == 'in-pack') {
+          objects += int.parse(value);
+        }
+      }
+      fetches.add((args: args, objects: objects));
+    }
+    return r;
   }
 
   Future<String> git(String cwd, List<String> args) async {
@@ -82,18 +127,33 @@ void main() {
     return r.exitCode == 0 ? r.stdout.trim() : null;
   }
 
+  Future<StackPushSession> open() async {
+    final (:session, :error) = await pusher.open(
+      root: work,
+      repo: repo,
+      auth: const {},
+    );
+    expect(error, isNull);
+    return session!;
+  }
+
+  /// Pushes [branch] in a session of its own.
   Future<String?> push({
     StackPushRule? rule,
     String branch = 'feature',
     bool force = false,
-  }) => pusher.push(
-    root: work,
-    repo: repo,
-    branch: branch,
-    force: force,
-    auth: const {},
-    rule: rule ?? AgentRunStackPush([requester]),
-  );
+  }) async {
+    final session = await open();
+    try {
+      return await session.push(
+        branch: branch,
+        force: force,
+        rule: rule ?? AgentRunStackPush([requester]),
+      );
+    } finally {
+      await session.close();
+    }
+  }
 
   const agent = AgentCommitIdentity.controlCenter;
   const human = (name: 'Stack', email: 'stack@example.com');
@@ -101,6 +161,7 @@ void main() {
   final trailer = '\n\n${requester.coAuthorTrailers.single}';
 
   setUp(() async {
+    fetches = [];
     scratch = await Directory.systemTemp.createTemp('cc-stack-push-test-');
     final global = File('${scratch.path}/gitconfig')..writeAsStringSync('');
     env = {'GIT_CONFIG_GLOBAL': global.path, 'GIT_CONFIG_NOSYSTEM': '1'};
@@ -226,5 +287,90 @@ void main() {
     await commit(agent, 'agent signs off\n\nSigned-off-by: Legal <l@corp.com>');
     expect(await push(rule: rule), contains('Signed-off-by'));
     expect(await remoteTip(origin, 'feature'), tip);
+  });
+  test('the fetch tells the remote what the checkout already has, so it '
+      'sends only what is new', () async {
+    for (var i = 0; i < 30; i++) {
+      await commit(human, 'history $i');
+    }
+    await git(work, ['push', '--quiet', 'origin', 'feature:main']);
+    // A colleague's branch the checkout has never seen: one new commit.
+    final colleague = '${scratch.path}/colleague';
+    await git(scratch.path, ['clone', '--quiet', origin, colleague]);
+    File('$colleague/theirs.txt').writeAsStringSync('theirs');
+    await git(colleague, ['add', 'theirs.txt']);
+    final r = await run(
+      colleague,
+      ['commit', '--quiet', '--no-gpg-sign', '-m', 'theirs'],
+      environment: {
+        'GIT_AUTHOR_NAME': cto.name,
+        'GIT_AUTHOR_EMAIL': cto.email,
+        'GIT_COMMITTER_NAME': cto.name,
+        'GIT_COMMITTER_EMAIL': cto.email,
+      },
+    );
+    expect(r.exitCode, 0, reason: r.stderr);
+    await git(colleague, ['push', '--quiet', 'origin', 'HEAD:colleague']);
+    await commit(ada, 'agent work$trailer');
+
+    expect(await push(), isNull);
+
+    // The colleague's commit, its tree and its file; not the 31 commits of
+    // history (93 objects) the checkout already holds.
+    expect(fetches.single.objects, lessThanOrEqualTo(3));
+  });
+
+  test('every layer of a publish shares one read of the remote; a lower '
+      'layer just pushed is not inspected again', () async {
+    final lower = await commit(ada, 'lower$trailer');
+    await git(work, ['switch', '--quiet', '-c', 'upper']);
+    final upper = await commit(ada, 'upper$trailer');
+    final session = await open();
+    try {
+      final rule = AgentRunStackPush([requester]);
+      expect(
+        await session.push(branch: 'feature', force: false, rule: rule),
+        isNull,
+      );
+      expect(
+        await session.push(branch: 'upper', force: false, rule: rule),
+        isNull,
+      );
+    } finally {
+      await session.close();
+    }
+    expect(fetches, hasLength(1));
+    expect(await remoteTip(origin, 'feature'), lower);
+    expect(await remoteTip(origin, 'upper'), upper);
+  });
+
+  test('a checkout ref whose object is missing does not stop the '
+      'push', () async {
+    final tip = await commit(ada, 'agent work$trailer');
+    File('$work/.git/refs/heads/broken').writeAsStringSync('${'0' * 39}1\n');
+
+    expect(await push(), isNull);
+    expect(await remoteTip(origin, 'feature'), tip);
+  });
+
+  test('a stalled transfer is given up on, not waited on forever', () async {
+    final seen = <Map<String, String>?>[];
+    pusher = StackLayerPusher(
+      git: (cwd, args, {environment, stdin}) {
+        if (args.first == 'fetch' || args.first == 'push') {
+          seen.add(environment);
+        }
+        return run(cwd, args, environment: environment, stdin: stdin);
+      },
+      remoteUrl: (_) => origin,
+    );
+    await commit(ada, 'agent work$trailer');
+
+    expect(await push(), isNull);
+    expect(seen, hasLength(2));
+    for (final environment in seen) {
+      expect(environment, containsPair('GIT_HTTP_LOW_SPEED_LIMIT', '1'));
+      expect(environment, containsPair('GIT_HTTP_LOW_SPEED_TIME', '120'));
+    }
   });
 }

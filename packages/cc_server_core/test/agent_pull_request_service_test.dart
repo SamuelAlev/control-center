@@ -55,7 +55,7 @@ void main() {
   late AgentPrRequesters requesters;
   late List<AgentRunView> runs;
   late Map<String, List<Repo>> linked;
-  late Map<String, Map<String, String>> spaceBranches;
+  late Map<String, Map<String, Set<String>>> spaceBranches;
   late Map<String, String> spaceHeads;
   late Set<String> members;
   late Set<String> readers;
@@ -339,7 +339,7 @@ void main() {
       ),
     );
     // The space's own branch for that repo is the run's too.
-    spaceBranches['w1/s1'] = {widgets.id: 'space/abc'};
+    spaceBranches['w1/s1'] = {widgets.id: {'space/abc'}};
     final result = await service().open(draft(head: 'space/abc'));
     expect(result.number, 42);
   });
@@ -559,7 +559,7 @@ void main() {
       forge
         ..headRef = 'space/s1'
         ..headSha = 'cccccccc22222222222222222222222222222222';
-      spaceBranches['w1/s1'] = {widgets.id: 'space/s1'};
+      spaceBranches['w1/s1'] = {widgets.id: {'space/s1'}};
       spaceHeads['w1/s1/widgets/space/s1'] =
           'dddddddd33333333333333333333333333333333';
       await expectLater(
@@ -568,6 +568,27 @@ void main() {
       );
       spaceHeads['w1/s1/widgets/space/s1'] = forge.headSha;
       await service().update(edit(title: 'x'));
+      expect(forge.updates, hasLength(1));
+    });
+
+    test('a layer of the space\'s stack, published from the server, counts '
+        'as the run\'s own at its checkout\'s commit', () async {
+      // `stack_publish` pushed it past the gateway: nothing recorded it.
+      runs = [run(pushed: const [])];
+      forge
+        ..headRef = 'feature--part-two'
+        ..headSha = 'eeeeeeee44444444444444444444444444444444';
+      spaceBranches['w1/s1'] = {
+        widgets.id: {'space/s1', 'feature', 'feature--part-two'},
+      };
+      spaceHeads['w1/s1/widgets/feature--part-two'] =
+          'dddddddd33333333333333333333333333333333';
+      await expectLater(
+        service().update(edit(title: 'x')),
+        throwsA(isA<ValidationException>()),
+      );
+      spaceHeads['w1/s1/widgets/feature--part-two'] = forge.headSha;
+      await service().update(edit(title: 'Part two', body: 'Adds it.'));
       expect(forge.updates, hasLength(1));
     });
 

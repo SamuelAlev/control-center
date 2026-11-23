@@ -130,6 +130,7 @@ sealed class TranscriptSegment {
           parentToolCallId: json['parentToolCallId'] as String?,
           callSite: ScriptCallSite.tryParse(json['callSite']),
           outcome: json['outcome'] as String?,
+          progress: json['progress'] as String? ?? '',
         );
       case 'text':
         return TextSegment(
@@ -260,6 +261,7 @@ class ToolSegment extends TranscriptSegment {
     this.parentToolCallId,
     this.callSite,
     this.outcome,
+    this.progress = '',
   });
 
   /// Name of the tool (e.g. `Read`, `Edit`, `mcp__cc__create_ticket`).
@@ -330,6 +332,11 @@ class ToolSegment extends TranscriptSegment {
   /// parsing [outputs].
   final String? outcome;
 
+  /// What the running call last said it is doing ("Pushing feature (2 of
+  /// 8)"), or `''`. Only a running call has one: the folder clears it when
+  /// the call ends or is interrupted.
+  final String progress;
+
   /// Whether this call was made from a code mode script.
   bool get isNested => parentToolCallId != null;
 
@@ -350,6 +357,7 @@ class ToolSegment extends TranscriptSegment {
     List<ToolImageRef>? images,
     List<MessageAttachment>? attachments,
     String? outcome,
+    String? progress,
   }) => ToolSegment(
     toolName: toolName ?? this.toolName,
     toolCallId: toolCallId,
@@ -364,6 +372,7 @@ class ToolSegment extends TranscriptSegment {
     parentToolCallId: parentToolCallId,
     callSite: callSite,
     outcome: outcome ?? this.outcome,
+    progress: progress ?? this.progress,
   );
 
   @override
@@ -385,6 +394,7 @@ class ToolSegment extends TranscriptSegment {
     'parentToolCallId': ?parentToolCallId,
     'callSite': ?callSite?.toJson(),
     'outcome': ?outcome,
+    if (progress.isNotEmpty) 'progress': progress,
   };
 
   @override
@@ -406,7 +416,8 @@ class ToolSegment extends TranscriptSegment {
           ) &&
           parentToolCallId == other.parentToolCallId &&
           callSite == other.callSite &&
-          outcome == other.outcome;
+          outcome == other.outcome &&
+          progress == other.progress;
 
   @override
   int get hashCode => Object.hash(
@@ -423,6 +434,7 @@ class ToolSegment extends TranscriptSegment {
     parentToolCallId,
     callSite,
     outcome,
+    progress,
   );
 }
 

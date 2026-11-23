@@ -202,58 +202,30 @@ void main() {
   });
 
   group('the weight bounds the decoded heap', () {
-    // Each shape is measured in a fresh process (json_heap_probe.dart): in
-    // this one, memory freed by earlier tests would hide what a decode
-    // takes.
+    // Each shape is measured in a fresh process (json_heap_probe.dart), as
+    // the live heap after a full collection: in this one, objects earlier
+    // tests left would blur what a decode takes. The count is the VM's, so
+    // one reading is the reading (resident memory, measured before, moved
+    // with paging on a loaded machine and read below zero).
     for (final shape in jsonHeapProbeShapes) {
       test(shape, () async {
-        // Resident memory is what the probe reads, and on a loaded machine
-        // the system may page the probe out or in while it measures: the
-        // growth then reads below zero or above the decode, or low. So a
-        // reading counts only when a second one agrees with it (within 15%;
-        // alone, four runs of one shape agreed within 12%) and both are
-        // within the weight. A weight that undercounts the heap fails
-        // every reading, and a low misread would have to repeat itself to
-        // pass.
-        final valid = <int>[];
-        var weight = 0;
-        int? agreed;
-        for (var attempt = 0; attempt < 4 && agreed == null; attempt++) {
-          final probe = await Process.run(Platform.resolvedExecutable, [
-            'test/code_mode/json_heap_probe.dart',
-            shape,
-          ]);
-          expect(probe.exitCode, 0, reason: '${probe.stderr}');
-          final [bytes, heap, w] = (probe.stdout as String)
-              .trim()
-              .split(' ')
-              .map(int.parse)
-              .toList();
-          weight = w;
-          // ignore: avoid_print
-          print(
-            'WEIGHT $shape: $bytes bytes, heap $heap, weight $weight '
-            '(${(heap / weight * 100).toStringAsFixed(0)}%)',
-          );
-          if (heap <= 0 || heap > weight) {
-            continue;
-          }
-          for (final earlier in valid) {
-            final low = earlier < heap ? earlier : heap;
-            final high = earlier < heap ? heap : earlier;
-            if (high - low <= high * 0.15) {
-              agreed = high;
-            }
-          }
-          valid.add(heap);
-        }
-        expect(
-          agreed,
-          isNotNull,
-          reason: 'no two readings within the weight $weight agreed: $valid',
+        final probe = await Process.run(Platform.resolvedExecutable, [
+          'test/code_mode/json_heap_probe.dart',
+          shape,
+        ]);
+        expect(probe.exitCode, 0, reason: '${probe.stderr}');
+        final [bytes, heap, weight] = (probe.stdout as String)
+            .trim()
+            .split(' ')
+            .map(int.parse)
+            .toList();
+        // ignore: avoid_print
+        print(
+          'WEIGHT $shape: $bytes bytes, heap $heap, weight $weight '
+          '(${(heap / weight * 100).toStringAsFixed(0)}%)',
         );
-        expect(agreed, greaterThan(0));
-        expect(agreed, lessThanOrEqualTo(weight));
+        expect(heap, greaterThan(0));
+        expect(heap, lessThanOrEqualTo(weight));
       });
     }
   });

@@ -30,6 +30,8 @@ void main() {
     'claim_only and is caught under checks_review, where the findings go '
     'back and the second claim is verified',
     timeout: const Timeout(Duration(minutes: 3)),
+    // The hidden check and the fixture's scripts run under bash.
+    skip: Platform.isWindows ? 'needs a POSIX bash' : null,
     () async {
       final scripts = <_GoalScript>[];
       final out = Directory.systemTemp.createTempSync('cc_goal_engine');

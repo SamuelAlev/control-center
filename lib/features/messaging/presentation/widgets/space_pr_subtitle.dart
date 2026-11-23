@@ -23,8 +23,7 @@ typedef SpaceRowPr = ({
 class SpaceRowPrGroup {
   /// Creates a [SpaceRowPrGroup]. [prs] is never empty.
   SpaceRowPrGroup(List<SpaceRowPr> prs)
-    : assert(prs.isNotEmpty, 'A group holds at least one pull request'),
-      prs = List.unmodifiable(prs);
+    : prs = prs.isEmpty ? throw ArgumentError('Empty') : List.unmodifiable(prs);
 
   /// Bottom to top. One entry when the pull request is not stacked.
   final List<SpaceRowPr> prs;

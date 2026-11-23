@@ -92,6 +92,8 @@ List<RepoOp> buildSpaceStackOps({
         repoId: ctx.args['repo_id'] as String?,
         actingUserId: ctx.userId,
         draft: ctx.args['draft'] as bool? ?? true,
+        // A person's publish from the app shows no steps.
+        onProgress: (_) {},
       );
       return view.toWire();
     },

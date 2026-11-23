@@ -20,6 +20,12 @@ import 'package:test/test.dart';
 
 import '../helpers/test_database.dart';
 
+/// The fake runners here are `/bin/sh` scripts made executable with
+/// `/bin/chmod`, which Windows has neither of.
+final String? _shRunner = Platform.isWindows
+    ? 'the fake runner is a /bin/sh script'
+    : null;
+
 /// Whether this server runs scripts, the limits a workspace's scripts get,
 /// and the runner host's boot self-test and startup line.
 void main() {
@@ -276,7 +282,7 @@ exit 0
       );
       expect(silent.availability.isAvailable, isFalse);
       expect(silent.publicReason, contains('does not report its protocol'));
-    });
+    }, skip: _shRunner);
 
     test('what a runner prints for its version reaches the startup line as '
         'one short line of printable characters', () async {
@@ -300,7 +306,7 @@ exit 0
         maxHeapBytes: 256 * 1024 * 1024,
       );
       expect(line, contains('code_mode=available ($version;'));
-    });
+    }, skip: _shRunner);
 
     test('the status reason names no known path, even one whose name holds '
         '", " and a quote, and holds no control or secret', () async {
@@ -331,7 +337,7 @@ exit 1
       expect(reason, isNot(contains(', x')));
       expect(reason, isNot(contains('ghp_a1B2')));
       expect(reason, isNot(matches(RegExp(r'[\x00-\x1f\x7f-\x9f]'))));
-    });
+    }, skip: _shRunner);
 
     test('a runner that cannot fully lock down leaves code mode unavailable, '
         'with a reason that names no path', () async {
@@ -380,7 +386,7 @@ exit 1
         ).availability.isAvailable,
         isFalse,
       );
-    });
+    }, skip: _shRunner);
 
     test(
       'the real runner passes its self-test and reports its version',
