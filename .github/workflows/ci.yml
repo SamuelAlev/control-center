@@ -273,6 +273,7 @@ jobs:
       # The code mode suites need the real runner (CC_CODEMODE_RUNNER). After
       # the sysctl: the self-test proves the lockdown on this kernel.
       - name: Code mode runner
+        id: codemode
         if: matrix.pkg.runner == 'dart'
         uses: $/.github/actions/codemode-runner
 
@@ -281,6 +282,8 @@ jobs:
         env:
           PKG_RUNNER: ${{ matrix.pkg.runner }}
           PKG_SHARD: ${{ matrix.pkg.shard }}
+          # Empty when the step above was skipped, which reads as unset.
+          CC_CODEMODE_RUNNER: ${{ steps.codemode.outputs.runner }}
         run: scripts/ci/test_packages.sh "$PKG_RUNNER" "$PKG_SHARD"
 
   # macOS and Windows package tests, push and dispatch only (10x / 2x minutes).
@@ -322,6 +325,7 @@ jobs:
 
       # The code mode suites need the real runner (CC_CODEMODE_RUNNER).
       - name: Code mode runner
+        id: codemode
         if: matrix.pkg.runner == 'dart'
         uses: $/.github/actions/codemode-runner
 
@@ -331,6 +335,8 @@ jobs:
         env:
           PKG_RUNNER: ${{ matrix.pkg.runner }}
           PKG_SHARD: ${{ matrix.pkg.shard }}
+          # Empty when the step above was skipped, which reads as unset.
+          CC_CODEMODE_RUNNER: ${{ steps.codemode.outputs.runner }}
         run: scripts/ci/test_packages.sh "$PKG_RUNNER" "$PKG_SHARD"
 
   # Committed *.g.dart and l10n must match a fresh build_runner + gen-l10n.

@@ -113,13 +113,37 @@ void main() {
     );
   });
 
-  test('nothing attached yet binds nothing extra', () async {
+  test('a space with nothing attached yet still binds its attachments '
+      'read-only, so a file attached while the run is live stays '
+      'readable', () async {
+    Directory(
+      p.join(workspace, 'spaces', 'space-1'),
+    ).createSync(recursive: true);
+    final attachments = attachmentsOf('space-1');
+
+    final spec = await session(
+      cwd: configDir,
+      spaceId: 'space-1',
+    ).sandboxSpecForTesting();
+
+    expect(Directory(attachments).existsSync(), isTrue);
+    final mounts = readOnlyAt(spec, attachments);
+    expect(mounts, hasLength(1));
+    expect(mounts.single.readOnly, isTrue);
+  });
+
+  test('a space whose directory does not exist gets no attachments '
+      'directory and binds nothing extra', () async {
     final spec = await session(
       cwd: configDir,
       spaceId: 'space-1',
     ).sandboxSpecForTesting();
 
     expect(spec.bindMounts.map((m) => m.hostPath), [configDir]);
+    expect(
+      Directory(p.join(workspace, 'spaces', 'space-1')).existsSync(),
+      isFalse,
+    );
   });
 
   test('another space\'s attachments are never bound', () async {
@@ -181,6 +205,76 @@ void main() {
       expect(mounts.single.readOnly, isTrue);
     },
   );
+
+  test('an overlay run in a space with nothing attached yet binds its '
+      'attachments', () async {
+    final attachments = attachmentsOf('space-1');
+    final overlay = p.join(
+      workspace,
+      'spaces',
+      'space-1',
+      'agents',
+      'engineer',
+    );
+    Directory(overlay).createSync(recursive: true);
+
+    final spec = await session(
+      cwd: overlay,
+      spaceId: 'space-1',
+    ).sandboxSpecForTesting();
+
+    expect(Directory(attachments).existsSync(), isTrue);
+    final mounts = readOnlyAt(spec, attachments);
+    expect(mounts, hasLength(1));
+    expect(mounts.single.readOnly, isTrue);
+  });
+
+  test('real Seatbelt: a file attached to the space after the run started '
+      'is readable from inside it', () async {
+    Directory(
+      p.join(workspace, 'spaces', 'space-1'),
+    ).createSync(recursive: true);
+    final spec = await session(
+      cwd: configDir,
+      spaceId: 'space-1',
+    ).sandboxSpecForTesting();
+    final manager = SandboxManager(hiddenPaths: [p.join(root.path, 'data')]);
+    addTearDown(() => manager.disposeSession(spec.sessionId));
+    final runDir = processSandboxRunDir(spec)!;
+    Directory(runDir).createSync(recursive: true);
+    final config = await buildSandboxConfigFromPolicy(
+      const SandboxPolicyResolver().resolve(
+        spec: spec,
+        homeDir: root.path,
+        runDir: runDir,
+      ),
+    );
+
+    // The space's first attachment, materialized after the profile is fixed
+    // (a message steered into the live run).
+    final attached = p.join(
+      attachmentsOf('space-1'),
+      'd583ac35-Catalogs-empty-state.json',
+    );
+    File(attached)
+      ..createSync(recursive: true)
+      ..writeAsStringSync('{"v":"5.7.4"}');
+
+    final wrap = await manager.wrap(
+      config: config,
+      argv: ['/bin/bash', '-c', 'cat "$attached"'],
+      workingDirectory: configDir,
+    );
+    final read = await Process.run(
+      wrap.executable,
+      wrap.argv,
+      workingDirectory: configDir,
+      environment: {...wrap.environment, 'HOME': root.path},
+      includeParentEnvironment: false,
+    );
+    expect(read.exitCode, 0, reason: '${read.stderr}');
+    expect('${read.stdout}', '{"v":"5.7.4"}');
+  }, skip: Platform.isMacOS ? false : 'real Seatbelt proof runs on macOS');
 
   test('real Seatbelt: the run reads the pasted file by the path its prompt '
       'names, cannot change it, and still sees no other space', () async {

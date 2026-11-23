@@ -1,7 +1,8 @@
 name: Code mode runner
 description: >
   Build cc_codemode (code mode's runner) for the package tests, prove its
-  lockdown on this runner with --self-test, and export CC_CODEMODE_RUNNER.
+  lockdown on this runner with --self-test, and return its path as the
+  `runner` output; the job passes it to its test step as CC_CODEMODE_RUNNER.
   The code mode suites fail, never skip, without it (code_mode_test_support's
   realRunnerPath), so every job that runs cc_infra or cc_server_core tests
   needs this step.
@@ -10,6 +11,13 @@ description: >
 # what runner/build.rs insists on (Windows), so scripts/lib/codemode.sh's
 # cc_codemode_verify would refuse it. Nothing here is staged or shipped; the
 # release runner is built and verified by natives.yml.
+
+# An output, not a $GITHUB_ENV write (zizmor's github-env): the job names the
+# variable where it uses it, so no later step's environment changes unseen.
+outputs:
+  runner:
+    description: Native absolute path of the self-tested cc_codemode.
+    value: ${{ steps.selftest.outputs.runner }}
 
 runs:
   using: composite
@@ -72,6 +80,7 @@ runs:
     # a file: the lockdown's zero file-size limit kills a runner whose stdout
     # is a regular file.
     - name: Self-test the code mode runner
+      id: selftest
       shell: bash
       run: |
         set -euo pipefail
@@ -87,4 +96,4 @@ runs:
         if [ "$RUNNER_OS" = "Windows" ]; then
           exe="$(cygpath -w "$exe")"
         fi
-        echo "CC_CODEMODE_RUNNER=$exe" >> "$GITHUB_ENV"
+        echo "runner=$exe" >> "$GITHUB_OUTPUT"
