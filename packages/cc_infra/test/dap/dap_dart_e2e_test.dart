@@ -106,6 +106,7 @@ int compute(int a, int b) {
           args: [],
           rootMarkers: [],
           extensions: ['dart'],
+          resumesEntryPause: true,
         ),
         executable: 'dart',
       );
@@ -116,6 +117,7 @@ int compute(int a, int b) {
           args: [],
           rootMarkers: [],
           extensions: ['go'],
+          resumesEntryPause: false,
         ),
         executable: 'dlv',
       );

@@ -22,6 +22,7 @@ class CcColorTag extends StatelessWidget {
     this.color = '',
     this.tooltip,
     this.compact = false,
+    this.trailing,
   });
 
   /// The tag's text (`bug`, `dependencies`).
@@ -36,6 +37,10 @@ class CcColorTag extends StatelessWidget {
 
   /// Tighter padding and type for dense rows (inbox, activity feed).
   final bool compact;
+
+  /// Optional control drawn inside the tag after the [label] (a remove
+  /// button). Icons inherit the tag's ink through [IconTheme].
+  final Widget? trailing;
 
   /// Parses a 3- or 6-digit hex (optional `#`) into an opaque sRGB color.
   static Color? parseHex(String raw) {
@@ -93,6 +98,16 @@ class CcColorTag extends StatelessWidget {
     final padV = compact ? AppSpacing.xxs : AppSpacing.xs;
     final fontSize = compact ? 11.0 : 12.0;
 
+    final text = CcTruncatedText(
+      label,
+      style: TextStyle(
+        fontSize: fontSize,
+        height: 1.3,
+        fontWeight: CcTypography.regularWeight,
+        color: foreground,
+      ),
+    );
+
     Widget chip = Semantics(
       label: label,
       child: DecoratedBox(
@@ -102,19 +117,25 @@ class CcColorTag extends StatelessWidget {
           border: Border.all(color: border),
         ),
         child: Padding(
-          padding: EdgeInsetsDirectional.symmetric(
-            horizontal: padH,
-            vertical: padV,
+          padding: EdgeInsetsDirectional.fromSTEB(
+            padH,
+            padV,
+            trailing == null ? padH : AppSpacing.xxs,
+            padV,
           ),
-          child: CcTruncatedText(
-            label,
-            style: TextStyle(
-              fontSize: fontSize,
-              height: 1.3,
-              fontWeight: CcTypography.regularWeight,
-              color: foreground,
-            ),
-          ),
+          child: trailing == null
+              ? text
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(child: text),
+                    const SizedBox(width: AppSpacing.xxs),
+                    IconTheme.merge(
+                      data: IconThemeData(color: foreground),
+                      child: trailing!,
+                    ),
+                  ],
+                ),
         ),
       ),
     );

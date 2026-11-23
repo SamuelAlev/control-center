@@ -4,12 +4,13 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('AgentProcessEventType enum', () {
-    test('has all twelve values', () {
+    test('has all thirteen values', () {
       expect(AgentProcessEventType.values, [
         AgentProcessEventType.thinking,
         AgentProcessEventType.text,
         AgentProcessEventType.toolCall,
         AgentProcessEventType.toolResult,
+        AgentProcessEventType.toolProgress,
         AgentProcessEventType.usage,
         AgentProcessEventType.stageTiming,
         AgentProcessEventType.contextWindow,
@@ -28,6 +29,7 @@ void main() {
       expect(AgentProcessEventType.text.name, 'text');
       expect(AgentProcessEventType.toolCall.name, 'tool_call');
       expect(AgentProcessEventType.toolResult.name, 'tool_result');
+      expect(AgentProcessEventType.toolProgress.name, 'tool_progress');
       expect(AgentProcessEventType.usage.name, 'usage');
       expect(AgentProcessEventType.contextWindow.name, 'context_window');
       expect(AgentProcessEventType.error.name, 'error');

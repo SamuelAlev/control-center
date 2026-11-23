@@ -48,9 +48,29 @@ class PcmUplink {
     this._onError,
     this._onBacklog,
     this._onDrop,
-  }) : assert(minBatchBytes > 0 && minBatchBytes.isEven),
-       assert(maxBatchBytes >= minBatchBytes && maxBatchBytes.isEven),
-       assert(backlogReportBytes > 0);
+  }) {
+    if (minBatchBytes <= 0 || minBatchBytes.isOdd) {
+      throw ArgumentError.value(
+        minBatchBytes,
+        'minBatchBytes',
+        'must be a positive even byte count',
+      );
+    }
+    if (maxBatchBytes < minBatchBytes || maxBatchBytes.isOdd) {
+      throw ArgumentError.value(
+        maxBatchBytes,
+        'maxBatchBytes',
+        'must be even and at least minBatchBytes',
+      );
+    }
+    if (backlogReportBytes <= 0) {
+      throw ArgumentError.value(
+        backlogReportBytes,
+        'backlogReportBytes',
+        'must be positive',
+      );
+    }
+  }
 
   /// 250 ms of 16 kHz mono PCM16.
   static const int defaultMinBatchBytes = 16000 * 2 ~/ 4;

@@ -12,6 +12,7 @@ class DapAdapterSpec {
     required this.args,
     required this.rootMarkers,
     required this.extensions,
+    required this.resumesEntryPause,
     this.localBinDirs = const [],
     this.launchDefaults = const {},
   });
@@ -30,6 +31,12 @@ class DapAdapterSpec {
 
   /// Source extensions it can set breakpoints in.
   final List<String> extensions;
+
+  /// Whether the adapter resumes its own `stopped: entry` pause. Dart's does
+  /// (`readyToResume` right after the entry event), so a client `continue` is
+  /// a second resume that can land on the breakpoint the program has just
+  /// reached and run through it.
+  final bool resumesEntryPause;
 
   /// Project-local directories searched before `$PATH`.
   final List<String> localBinDirs;
@@ -51,6 +58,7 @@ const List<DapAdapterSpec> kDapAdapters = [
     args: ['debug_adapter'],
     rootMarkers: ['pubspec.yaml'],
     extensions: ['dart'],
+    resumesEntryPause: true,
     launchDefaults: {'type': 'dart'},
   ),
   DapAdapterSpec(
@@ -59,6 +67,7 @@ const List<DapAdapterSpec> kDapAdapters = [
     args: ['-m', 'debugpy.adapter'],
     rootMarkers: ['pyproject.toml', 'setup.py', 'requirements.txt'],
     extensions: ['py'],
+    resumesEntryPause: false,
     localBinDirs: ['.venv/bin', 'venv/bin'],
     launchDefaults: {'type': 'python'},
   ),
@@ -68,6 +77,7 @@ const List<DapAdapterSpec> kDapAdapters = [
     args: [],
     rootMarkers: ['Cargo.toml', 'CMakeLists.txt'],
     extensions: ['rs', 'c', 'cc', 'cpp', 'h', 'hpp'],
+    resumesEntryPause: false,
     launchDefaults: {'type': 'lldb'},
   ),
   DapAdapterSpec(
@@ -76,6 +86,7 @@ const List<DapAdapterSpec> kDapAdapters = [
     args: ['dap'],
     rootMarkers: ['go.mod'],
     extensions: ['go'],
+    resumesEntryPause: false,
     launchDefaults: {'type': 'go'},
   ),
 ];

@@ -48,6 +48,16 @@ runs:
             x86_64-pc-windows-msvc | aarch64-pc-windows-msvc) ;;
             *) echo "cc_codemode: unexpected Rust host $triple"; exit 1 ;;
           esac
+          # Git Bash puts /usr/bin first, so rustc would link with coreutils'
+          # `link.exe`. MSVC's linker sits next to cl.exe.
+          command -v cl >/dev/null || { echo "cc_codemode: cl.exe (MSVC) is not on PATH"; exit 1; }
+          msvc_bin="$(dirname "$(command -v cl)")"
+          export PATH="$msvc_bin:$PATH"
+          link_dir="$(dirname "$(command -v link)")"
+          if [ "$link_dir" != "$msvc_bin" ]; then
+            echo "cc_codemode: link.exe resolves to $link_dir, not MSVC's $msvc_bin"
+            exit 1
+          fi
           export "CFLAGS_${triple//-/_}=/guard:cf /GS"
           export RUSTFLAGS="${RUSTFLAGS:-} -Ctarget-feature=+crt-static -Ccontrol-flow-guard"
         fi

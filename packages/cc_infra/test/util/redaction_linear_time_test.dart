@@ -113,6 +113,39 @@ const _ceiling = Duration(seconds: 2);
 /// inputs that take a few milliseconds.
 const _slackMs = 40;
 
+/// Series measured before a shape fails. One slow sample on a loaded runner
+/// (a collection, another suite's isolate) breaks a single series; a pattern
+/// that rescans from every start breaks every one.
+const _attempts = 3;
+
+const _sizes = [64 * _kib, 256 * _kib, 1024 * _kib];
+
+/// Milliseconds [redactSecrets] takes on [shape] at each of [_sizes],
+/// stopping at the first size over [_ceiling]: a pattern that rescans from
+/// every start would take minutes on the next one.
+Map<int, int> _measure(String Function(int size) shape) {
+  final times = <int, int>{};
+  for (final size in _sizes) {
+    final input = shape(size);
+    final watch = Stopwatch()..start();
+    redactSecrets(input);
+    watch.stop();
+    times[size] = watch.elapsedMilliseconds;
+    if (watch.elapsed >= _ceiling) {
+      break;
+    }
+  }
+  return times;
+}
+
+/// Whether [times] stays under [_ceiling] and grows about linearly: four
+/// times the input costs at most about six times the time.
+bool _linear(Map<int, int> times) =>
+    times.length == _sizes.length &&
+    times.values.every((ms) => ms < _ceiling.inMilliseconds) &&
+    times[256 * _kib]! <= 6 * times[64 * _kib]! + _slackMs &&
+    times[1024 * _kib]! <= 6 * times[256 * _kib]! + _slackMs;
+
 void main() {
   setUpAll(() {
     // Compiles every pattern before anything is timed.
@@ -124,28 +157,30 @@ void main() {
   for (final MapEntry(key: name, value: shape) in _shapes.entries) {
     test('$name: linear in its input, 1 MiB under '
         '${_ceiling.inSeconds} s', () {
-      final times = <int, int>{};
-      for (final size in [64 * _kib, 256 * _kib, 1024 * _kib]) {
-        final input = shape(size);
-        final watch = Stopwatch()..start();
-        redactSecrets(input);
-        watch.stop();
-        times[size] = watch.elapsedMilliseconds;
-        expect(watch.elapsed, lessThan(_ceiling), reason: '$size: $times');
+      final series = <Map<int, int>>[];
+      do {
+        series.add(_measure(shape));
+      } while (!_linear(series.last) && series.length < _attempts);
+      final times = series.last;
+      for (final size in times.keys) {
+        expect(
+          times[size]!,
+          lessThan(_ceiling.inMilliseconds),
+          reason: '$size: $series',
+        );
       }
-      // Four times the input costs at most about six times the time.
       expect(
         times[256 * _kib]!,
         lessThanOrEqualTo(6 * times[64 * _kib]! + _slackMs),
-        reason: '$times',
+        reason: '$series',
       );
       expect(
         times[1024 * _kib]!,
         lessThanOrEqualTo(6 * times[256 * _kib]! + _slackMs),
-        reason: '$times',
+        reason: '$series',
       );
       // ignore: avoid_print
-      print('TIMING $name $times');
+      print('TIMING $name $series');
     }, timeout: const Timeout(Duration(minutes: 5)));
   }
 }

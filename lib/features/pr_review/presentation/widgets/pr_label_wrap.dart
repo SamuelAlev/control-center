@@ -85,42 +85,32 @@ class _RemovableLabelChipState extends State<_RemovableLabelChip> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final tokens = context.designSystem ?? DesignSystemTokens.light();
     // The remove button stays mounted (transparent at rest) so Tab and screen
     // readers reach it, not only the mouse.
     return HoverFocusReveal(
-      builder: (context, revealed) => Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CcColorTag(
-            label: widget.label.name,
-            color: widget.label.color,
-            tooltip: widget.label.description.isEmpty
-                ? null
-                : widget.label.description,
-            compact: widget.compact,
-          ),
-          const SizedBox(width: 2),
-          SizedBox(
-            width: 16,
-            height: 16,
-            child: widget.pending
-                ? const Center(child: CcSpinner(size: 12))
-                : HoverFocusReveal.fade(
-                    revealed: revealed,
-                    child: CcTappable(
-                      onPressed: widget.onRemove,
-                      semanticLabel: l10n.removeLabel(widget.label.name),
-                      borderRadius: AppRadii.brSm,
-                      builder: (context, states) => Icon(
-                        AppIcons.x,
-                        size: 14,
-                        color: tokens.fgQuaternary,
-                      ),
-                    ),
+      builder: (context, revealed) => CcColorTag(
+        label: widget.label.name,
+        color: widget.label.color,
+        tooltip: widget.label.description.isEmpty
+            ? null
+            : widget.label.description,
+        compact: widget.compact,
+        trailing: SizedBox(
+          width: 14,
+          height: 14,
+          child: widget.pending
+              ? const Center(child: CcSpinner(size: 10))
+              : HoverFocusReveal.fade(
+                  revealed: revealed,
+                  child: CcTappable(
+                    onPressed: widget.onRemove,
+                    semanticLabel: l10n.removeLabel(widget.label.name),
+                    borderRadius: AppRadii.brSm,
+                    builder: (context, states) =>
+                        const Icon(AppIcons.x, size: 12),
                   ),
-          ),
-        ],
+                ),
+        ),
       ),
     );
   }

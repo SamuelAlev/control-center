@@ -92,6 +92,9 @@ class DebugSession {
   var _configured = false;
   int? _pendingEntryThread;
 
+  /// The thread paused at entry until it is released, by us or the adapter.
+  int? _entryThread;
+
   /// Bumped on every REAL stop. A deferred entry-release captures the epoch
   /// when it is scheduled and must not fire if a real stop has landed since —
   /// see [_onEvent].
@@ -225,13 +228,15 @@ class DebugSession {
   }
 
   /// Releases a PauseStart/entry pause exactly once, and never if a real stop
-  /// has already landed.
+  /// has already landed or the adapter has resumed the thread itself.
   ///
-  /// Dart's adapter sends `stopped: entry` and may also auto-resume via
-  /// `readyToResume`. A second `continue` then applies to the breakpoint the
-  /// isolate has just hit — `stack` reports "thread is not paused" and the
-  /// frame the agent asked for is gone. Yielding first lets a breakpoint
-  /// already on the event queue be recorded before we decide to continue.
+  /// Only for adapters that wait on the client: one that resumes its own
+  /// entry pause ([DapAdapterSpec.resumesEntryPause], Dart's) never gets
+  /// here, because a second `continue` can reach it after the isolate paused
+  /// at the breakpoint and before its `stopped` event reaches us; it then
+  /// resumes through the breakpoint, `stack` reports "thread is not paused"
+  /// and the frame the agent asked for is gone. Yielding first lets a
+  /// breakpoint already on the event queue be recorded before we decide.
   Future<void> _releaseEntryPause(int threadId, int epoch) async {
     await Future<void>.delayed(Duration.zero);
     if (_entryReleased ||
@@ -241,6 +246,7 @@ class DebugSession {
       return;
     }
     _entryReleased = true;
+    _entryThread = null;
     await _resume(threadId);
   }
 
@@ -295,9 +301,12 @@ class DebugSession {
         // the breakpoint it actually set.
         if (stop.reason == 'entry') {
           final thread = stop.threadId;
-          if (thread == null) {
+          // An adapter that resumes its own entry pause gets no `continue`
+          // from us: see [_releaseEntryPause].
+          if (thread == null || adapter.spec.resumesEntryPause) {
             break;
           }
+          _entryThread = thread;
           if (_configured) {
             final epoch = _stopEpoch;
             unawaited(
@@ -337,6 +346,16 @@ class DebugSession {
         }
       case 'continued':
         _lastStop = null;
+        // The adapter released the entry pause itself; ours would be a
+        // second resume.
+        final thread = (event.body['threadId'] as num?)?.toInt();
+        if (_entryThread != null &&
+            (thread == _entryThread ||
+                event.body['allThreadsContinued'] == true)) {
+          _entryThread = null;
+          _pendingEntryThread = null;
+          _entryReleased = true;
+        }
       case 'output':
         final text = event.body['output'];
         if (text is String && text.isNotEmpty) {
