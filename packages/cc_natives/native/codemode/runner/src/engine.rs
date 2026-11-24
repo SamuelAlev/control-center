@@ -1516,6 +1516,13 @@ mod tests {
     fn cpu_deadline_stops_as_cpu() {
         let s = shared();
         s.cpu_deadline_ns.store(1, Ordering::Relaxed);
+        // A fresh thread reads zero until its first clock tick: Windows
+        // counts thread time in scheduler ticks (about 15 ms), so burn CPU
+        // until the clock has moved past the deadline.
+        let mut spin = 0u64;
+        while thread_cpu_ns() == 0 {
+            spin = std::hint::black_box(spin.wrapping_add(1));
+        }
         assert!(s.should_stop());
         assert_eq!(s.abort(), Abort::Cpu);
     }

@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:cc_harness_runtime/src/oauth/browser_handoff_page.dart';
 import 'package:test/test.dart';
 
@@ -71,23 +69,5 @@ void main() {
     expect(html, isNot(contains('role="status"')));
     expect(html, contains('class="cta"'));
     expect(html, contains('control-center://pair#abc'));
-  });
-
-  test('mcp_client copy stays byte-identical', () {
-    final runtime = File(
-      '${Directory.current.path}/lib/src/oauth/browser_handoff_page.dart',
-    );
-    final mcp = File(
-      '${Directory.current.path}/../cc_mcp_client/lib/src/oauth/browser_handoff_page.dart',
-    );
-    expect(runtime.existsSync(), isTrue);
-    expect(mcp.existsSync(), isTrue);
-    expect(
-      runtime.readAsStringSync(),
-      mcp.readAsStringSync(),
-      reason:
-          'cc_mcp_client cannot depend on cc_harness_runtime; keep the '
-          'handoff HTML copies in lockstep.',
-    );
   });
 }

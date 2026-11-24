@@ -511,15 +511,20 @@ void main() {
     test(
       'cancellation mid-script settles in-flight calls and records them',
       () async {
+        final source = CancellationTokenSource();
+        var arrived = 0;
         gate.handlers['read'] = (r) async {
+          // Cancelled once both calls are in flight, however long the runner
+          // took to start: a fixed delay loses to a slow machine.
+          if (++arrived == 2) {
+            Timer(const Duration(milliseconds: 50), source.cancel);
+          }
           await r.cancel.whenCancelled;
           return NestedCallOutcome(
             status: NestedCallStatus.cancelled,
             errorMessage: 'The script ended.',
           );
         };
-        final source = CancellationTokenSource();
-        Timer(const Duration(milliseconds: 300), source.cancel);
         final r = await run(
           'await Promise.all([tools.read({}), tools.read({})]);',
           cancel: source.token,

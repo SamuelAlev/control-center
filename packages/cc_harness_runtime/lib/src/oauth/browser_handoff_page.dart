@@ -2,9 +2,6 @@
 ///
 /// These tabs sit outside the Flutter engine, so they cannot use `cc_ui`.
 /// Tokens are inlined from DESIGN.md (light + dark via `prefers-color-scheme`).
-///
-/// Copied between `cc_harness_runtime` and `cc_mcp_client` (mcp_client cannot
-/// depend on harness_runtime). Keep the two paths byte-identical.
 String browserHandoffPage({
   required String title,
   required String body,

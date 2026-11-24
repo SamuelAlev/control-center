@@ -833,36 +833,54 @@ class AgentRunGateway {
       );
     }
 
-    if (commands.refs.isNotEmpty) {
-      final refs = [for (final r in commands.refs) _shortRef(r)];
-      final summary = 'git push to $owner/$name: ${refs.join(', ')}';
-      final pushRequest = ActionRequest(
-        classes: const {ActionClass.gitPush},
-        refs: refs,
-        hosts: [ForgeHost.github.gitHost],
-      );
-      final verdict =
-          await _answeredAtShell(grant, secret, refs, pushRequest, summary)
-          ? const GuardVerdict.allow(prompted: true)
-          : await _pushVerdict(grant, secret, request, pushRequest, summary);
-      if (!verdict.allowed) {
-        // Drain what git is still sending before answering, so it reads the
-        // rejection instead of a reset connection.
-        while (await iterator.moveNext()) {}
-        return _rejectPush(
-          request,
-          commands,
-          'Control Center policy: ${verdict.reason ?? 'push denied'}',
+    // Whatever ends the request from here on, what git is still sending is
+    // read first: answering over unread bytes resets the connection (always
+    // on Windows), and git prints that instead of the answer.
+    Future<void> drain() async {
+      while (await iterator.moveNext()) {}
+    }
+
+    try {
+      if (commands.refs.isNotEmpty) {
+        final refs = [for (final r in commands.refs) _shortRef(r)];
+        final summary = 'git push to $owner/$name: ${refs.join(', ')}';
+        final pushRequest = ActionRequest(
+          classes: const {ActionClass.gitPush},
+          refs: refs,
+          hosts: [ForgeHost.github.gitHost],
         );
+        final verdict =
+            await _answeredAtShell(grant, secret, refs, pushRequest, summary)
+            ? const GuardVerdict.allow(prompted: true)
+            : await _pushVerdict(grant, secret, request, pushRequest, summary);
+        if (!verdict.allowed) {
+          // Drain what git is still sending before answering, so it reads the
+          // rejection instead of a reset connection.
+          await drain();
+          return await _rejectPush(
+            request,
+            commands,
+            'Control Center policy: ${verdict.reason ?? 'push denied'}',
+          );
+        }
       }
+    } on Object {
+      await drain();
+      rethrow;
     }
     // Only a complete, flush-only request is a ref-free probe. Compressed,
     // malformed or incomplete updates must never become an unchecked probe.
 
     const write = ForgeTokenScope.write;
-    final token = await _token(grant, secret, owner, name, write);
+    final String? token;
+    try {
+      token = await _token(grant, secret, owner, name, write);
+    } on Object {
+      await drain();
+      rethrow;
+    }
     if (token == null) {
-      while (await iterator.moveNext()) {}
+      await drain();
       return _rejectPush(
         request,
         commands,
