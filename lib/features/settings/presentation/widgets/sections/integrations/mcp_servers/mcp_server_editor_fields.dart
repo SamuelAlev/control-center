@@ -3,13 +3,15 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
 
-/// The MCP server editor's transport picker: a command, HTTP or SSE.
+/// The MCP server editor's transport picker: a command, HTTP or SSE. The
+/// command is left out where the person may not add one ([allowStdio]).
 class McpServerTransportPicker extends StatelessWidget {
   /// Creates the picker.
   const McpServerTransportPicker({
     super.key,
     required this.value,
     required this.onChanged,
+    this.allowStdio = true,
   });
 
   /// The transport picked.
@@ -17,6 +19,9 @@ class McpServerTransportPicker extends StatelessWidget {
 
   /// Fired with a new pick; null disables the picker.
   final ValueChanged<McpServerTransport>? onChanged;
+
+  /// Whether a server that runs a command is offered.
+  final bool allowStdio;
 
   @override
   Widget build(BuildContext context) {
@@ -36,10 +41,11 @@ class McpServerTransportPicker extends StatelessWidget {
           value: value,
           onChanged: onChanged,
           segments: [
-            CcSegment(
-              value: McpServerTransport.stdio,
-              label: l10n.mcpServerTransportStdio,
-            ),
+            if (allowStdio)
+              CcSegment(
+                value: McpServerTransport.stdio,
+                label: l10n.mcpServerTransportStdio,
+              ),
             CcSegment(
               value: McpServerTransport.http,
               label: l10n.mcpServerTransportHttp,

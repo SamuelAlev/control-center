@@ -2,7 +2,7 @@
 title: MCP sunucusunu kullanma
 description: Harici bir MCP istemcisini Control Center’ın araç sunucusuna yöneltin, bearer token’ını gönderin ve yüzeyin neleri açığa çıkardığını bilin.
 slug: tr-TR/kilavuz/nasil-yapilir/mcp-sunucusu
-sourceHash: 0239917dba7349533ef1ce70536453187e8d3591
+sourceHash: eb032b11d779e012f558c7244ea52d9eafb04a4b
 ---
 
 Bu kılavuz, harici bir MCP istemcisini — Claude Code, bir düzenleyici veya MCP
@@ -140,7 +140,7 @@ bozar.
 
 ## Ajanlarınızın kullandığı MCP sunucuları
 
-Bu kılavuz Control Center’ın kendi uç noktasını anlatır. Diğer yön, Control Center’ın bağlandığı ve çalıştırdığı ajanlara sunduğu MCP sunucularıdır. Bunları **Ayarlar → Sunucu → MCP sunucuları** altında, iki düzeyde ayarlarsınız. Her iki durumda da Control Center sunucunun kendisine bağlanır ve araçlarını çalıştırmaya iletir; böylece yerleşik harness ve Claude Code aynı araçları ve aynı onay istemlerini alır. Bir Claude Code çalıştırması bunları `control-center` sunucusu altında, `mcp__control-center__mcp__<server>__<tool>` biçiminde görür.
+Bu kılavuz Control Center’ın kendi uç noktasını anlatır. Diğer yön, Control Center’ın bağlandığı ve çalıştırdığı ajanlara sunduğu MCP sunucularıdır. Bunları **Ayarlar → Sunucu → MCP sunucuları** altında, iki düzeyde: tüm çalışma alanı için ya da yalnızca kendiniz için ayarlarsınız. Her iki durumda da Control Center sunucunun kendisine bağlanır ve araçlarını çalıştırmaya iletir; böylece yerleşik harness ve Claude Code aynı araçları ve aynı onay istemlerini alır. Bir Claude Code çalıştırması bunları `control-center` sunucusu altında, `mcp__control-center__mcp__<server>__<tool>` biçiminde görür.
 
 ### Çalışma alanı sunucuları
 
@@ -157,17 +157,26 @@ Ortam değişkeni ve üstbilgi değerleri sunucunun gizli dosyasında saklanır 
 
 Komut, sunucu makinesinde sunucunun kendi kullanıcısı olarak çalışır; bu yüzden sunucu sahibi onaylayana kadar başlamaz. O zamana kadar **Onay bekleniyor** görünür. URL sunucusu hemen çalışır, ancak sunucu sahibi onaylayana kadar yalnızca genel adreslere erişebilir; onay ayrıca `localhost` ve özel ağlara izin verir. Sunucu sahibi bir sunucuyu kaydettiğinde bu onay sayılır. Başka biri sunucunun nasıl başladığını ya da nereye bağlandığını değiştirirse yeniden onay gerekir. Sunucuyu açıp kapatmak onayını korur.
 
-### Kişisel sunucular
+### Kendi sunucularınız
 
-Kişisel sunucular sunucu sahibine aittir ve **Harici MCP sunucuları** altında listelenir. Claude, Codex, Cursor, Gemini, VS Code, Windsurf ve OpenCode için sunucu makinesinde ya da bir `.mcp.json` içinde yapılandırılmış sunucular burada otomatik olarak bulunur. Sunucu sahibi aynı formla **Sunucu ekle** seçeneğiyle kendi sunucularını da ekleyebilir. Eklediğiniz bir sunucu, aynı adlı keşfedilmiş sunucunun yerine geçer.
+Her üye, aynı formu kullanarak **Kendi MCP sunucularınız** bölümüne kendi sunucusunu ekler. Bu sunucular bu çalışma alanında yalnızca o kişiye aittir: diğer üyeler bunları görmez ve oturum açtığınız bir sunucu sizin adınıza işlem yapar.
 
-Bunlar sunucu sahibinin kimliği ve kimlik bilgileriyle çalışır:
+- Yalnızca bu çalışma alanında başlattığınız çalıştırmalar bu sunucuların araçlarını alır. Bu, hem yerleşik harness çalıştırmaları hem de Claude Code çalıştırmaları için geçerlidir.
+- Bir üyenin çalıştırması, başlatılmamış otomasyon ve başka çalışma alanlarındaki çalıştırmalarınız bunların hiçbirini almaz. Orada araçlar listelenmez, çağrılamaz ve araç aramasında görünmez.
+- Sunucunuzun adı bir çalışma alanı sunucusuyla aynı olabilir. Çalıştırmalarınızda sizin sunucunuz kullanılır.
+- Kendi sunucunuza URL ile erişilir ve yalnızca herkese açık adreslere ulaşabilir. Komut çalıştıran kendi sunucusunu yalnızca sunucu sahibi ekleyebilir.
 
-- Yalnızca sunucu sahibinin başlattığı ya da sorumlu olduğu çalıştırmalarda kullanılabilirler; buna sahibin sorumlu olduğu bir çalışma alanındaki otomasyon da dahildir. Bu, hem yerleşik harness çalıştırmaları hem de Claude Code çalıştırmaları için geçerlidir.
-- Bir üyenin çalıştırması, bir üyeye bağlı otomasyon ve kaydedilmiş bir sahibi olmayan sunucudaki her çalıştırma bunlardan hiçbirini almaz. Orada araçlar listelenmez, çağrılamaz ve araç aramasında görünmez.
-- Ne kişisel ne de çalışma alanı sunucuları MCP belirtecine ya da eşlenmiş cihazlara sunulur; kaynakları ve istemleri de iletilmez.
+Ne kendi sunucularınız ne de çalışma alanı sunucuları MCP belirtecine ya da eşlenmiş cihazlara sunulur; kaynakları ve istemleri de iletilmez.
 
-OAuth ile bir sunucuya oturum açmak formdan yapılamaz. Üstbilgide belirteç kabul eden bir sunucu kullanın ya da yukarıdaki araçlardan biri için yapılandırın; orada keşfedilir.
+### Sunucuya oturum açma
+
+Oturum açmanızı isteyen bir URL sunucusu **Yetkilendirme gerekli** durumunu gösterir.
+
+1. Sunucuda **Oturum aç**’ı seçin. Tarayıcınız sunucunun kendi oturum açma sayfasını açar.
+2. Bu sayfada isteği onaylayın. Tarayıcı Control Center’a geri döner ve bir kod gösterir.
+3. Kodu uygulamaya yazın. Kontrol: sunucu **Bağlı** durumunu gösterir.
+
+Oturum açma, yapıldığı sunucuyla birlikte saklanır. Bir çalışma alanı sunucusunda oturum açmak için çalışma alanı yöneticisi gerekir ve çalışma alanındaki her çalıştırma, oturum açan hesap adına çalışır. Kendi sunucunuzda oturum açmak yalnızca sizin çalıştırmalarınızı etkiler. Bir sunucuyu kaldırmak oturum açmasını da kaldırır.
 
 ## Sorun giderme
 

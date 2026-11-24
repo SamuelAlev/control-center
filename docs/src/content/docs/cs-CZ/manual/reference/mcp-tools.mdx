@@ -2,10 +2,10 @@
 title: Nástroje MCP
 description: Úplný katalog nástrojů MCP, které cc_server registruje, po rodinách.
 slug: cs-CZ/prirucka/referencni-prirucka/nastroje-mcp
-sourceHash: 0ef9efd386b57c3a254e7f637b0436d9baff1719
+sourceHash: 6fc8551b1a20ec2343a90a911aa9026a989677f6
 ---
 
-`cc_server` hostí jeden registr nástrojů MCP (JSON-RPC 2.0), vystavený na hlavním portu serveru (výchozí `9030`) na `POST /mcp` a `GET /sse`, verze protokolu `2024-11-05`. Ke stejnému registru se dostane každý klient: desktop, webové sestavení, externí klienti MCP i vestavěný runtime agenta. Externí servery MCP se do stejného registru připojují ve vlastních vrstvách: jedna pro každý pracovní prostor pro servery, které nastavují jeho správci, a jedna pro osobní servery vlastníka serveru. Tento endpoint je vypisuje, volá a prohledává jen pro běh agenta: servery vlastního pracovního prostoru a osobní, pokud za běh odpovídá vlastník serveru. Token MCP a spárovaná zařízení je nikdy nevidí (viz [Servery MCP, které používají agenti](/cs-CZ/prirucka/navody/mcp-server/#servery-mcp-které-používají-agenti)).
+`cc_server` hostí jeden registr nástrojů MCP (JSON-RPC 2.0), vystavený na hlavním portu serveru (výchozí `9030`) na `POST /mcp` a `GET /sse`, verze protokolu `2024-11-05`. Ke stejnému registru se dostane každý klient: desktop, webové sestavení, externí klienti MCP i vestavěný runtime agenta. Externí servery MCP se do stejného registru připojují ve vlastních vrstvách: jedna pro každý pracovní prostor pro servery, které nastavují jeho správci, a jedna pro vlastní servery každého člena v něm. Tento endpoint je vypisuje, volá a prohledává jen pro běh agenta: servery vlastního pracovního prostoru a vlastní servery člena, který běh spustil. Token MCP a spárovaná zařízení je nikdy nevidí (viz [Servery MCP, které používají agenti](/cs-CZ/prirucka/navody/mcp-server/#servery-mcp-které-používají-agenti)).
 
 ## Velikost registru
 
@@ -24,7 +24,7 @@ Těch pět nástrojů grafu kódu se registruje jen tehdy, když hostitel před�
 Celý registr se v `tools/list` nabízí bez brány objevování, kromě běhu agenta, který umí spouštět skripty (níže). Úpravy ticketů jsou typované nástroje.
 
 :::note[Externí klienti vždy vidí celý katalog]
-`tools/list` se nikdy neořezává, s výjimkou osobních serverů MCP vlastníka serveru, které nikdy nenese, a [režimu kódu](/cs-CZ/prirucka/koncepty/rezim-kodu/): `repl` se uvádí jen agentovu běhu na serveru, který umí spouštět skripty, a tento běh uvádí `repl`, přímé nástroje (`read`, `write`, `edit`, `search`, `find`, `bash`, `read_output`, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` a slovesa svého režimu, pokud je registr má) a nástroje, které skript volat nesmí. Zbytek volá ze skriptu; přímé volání jednoho z nich dostane odpověď, jak ho volat přes `repl`. Klienti MCP ověřují jména nástrojů proti vlastní kopii toho seznamu v cache a cokoliv, co v něm není, odmítnou, aniž by se serveru zeptali, takže nástroj skrytý tam je nedosažitelný, ne jen tichý.
+`tools/list` se nikdy neořezává, s výjimkou vlastních serverů MCP členů, které nese jen pro běh, který jejich vlastník spustil, a [režimu kódu](/cs-CZ/prirucka/koncepty/rezim-kodu/): `repl` se uvádí jen agentovu běhu na serveru, který umí spouštět skripty, a tento běh uvádí `repl`, přímé nástroje (`read`, `write`, `edit`, `search`, `find`, `bash`, `read_output`, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` a slovesa svého režimu, pokud je registr má) a nástroje, které skript volat nesmí. Zbytek volá ze skriptu; přímé volání jednoho z nich dostane odpověď, jak ho volat přes `repl`. Klienti MCP ověřují jména nástrojů proti vlastní kopii toho seznamu v cache a cokoliv, co v něm není, odmítnou, aniž by se serveru zeptali, takže nástroj skrytý tam je nedosažitelný, ne jen tichý.
 
 **Vestavěný harness** je jiný: na každý požadavek načte jen malou přímou sadu definic a zbytek dosáhne ze skriptů nebo načte při prvním použití. Je to chování na straně harnessu a tenhle registr se tím nemění. Viz [Kontext nástrojů a cache promptů](/cs-CZ/prirucka/koncepty/kontext-nastroju/).
 :::

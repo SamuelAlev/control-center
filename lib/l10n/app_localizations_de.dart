@@ -1711,10 +1711,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get mcpServers => 'MCP-Server';
 
   @override
-  String get mcpServersSettingsDescription =>
-      'Eingebauter MCP-Server und externe MCP-Server.';
-
-  @override
   String get remoteControlAndDevices => 'Fernsteuerung & Geräte';
 
   @override
@@ -8816,13 +8812,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get ideFileBinary => 'Binärdatei';
 
   @override
-  String get mcpExternalServers => 'Externe MCP-Server';
-
-  @override
-  String get mcpExternalServersDescription =>
-      'Verbinde dich mit externen MCP-Servern (GitHub, Sentry, Postgres, Browser-Automatisierung). Server, die du für Claude, Cursor, VS Code und andere Tools konfiguriert hast, werden automatisch erkannt.';
-
-  @override
   String get mcpApprovalMode => 'Tool-Freigabe';
 
   @override
@@ -8839,17 +8828,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get mcpApprovalYolo => 'Alles freigeben';
 
   @override
-  String get mcpNoExternalServers => 'Keine externen MCP-Server gefunden.';
-
-  @override
-  String get mcpAuthorize => 'Autorisieren';
-
-  @override
   String get mcpReconnect => 'Erneut verbinden';
-
-  @override
-  String get mcpExternalConnectionsNote =>
-      'Externe MCP-Server laufen auf dem Agent-Server (von Desktop und Web gemeinsam genutzt). Das Autorisieren von OAuth-Servern ist nur auf dem Desktop verfügbar.';
 
   @override
   String get mcpStatusConnected => 'Verbunden';
@@ -18504,10 +18483,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Bestätige, dass dieser Server sie verwenden darf. Jedes Repository wird mit deinem Zugriff erneut geprüft.';
 
   @override
-  String get mcpExternalServersOwnerRunsOnly =>
-      'Server aus den Tool-Einstellungen dieses Rechners sind nur in Läufen verfügbar, die du startest oder verantwortest. Die Läufe anderer Personen sehen sie nie, und sie werden nicht über den MCP-Endpunkt von Control Center angeboten.';
-
-  @override
   String repoCodeNeedsSignIn(String provider) {
     return 'Melde dich bei $provider an, um den Code dieses Repositorys zu sehen.';
   }
@@ -18898,9 +18873,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get mcpAddServer => 'Server hinzufügen';
 
   @override
-  String get mcpHandAddedSource => 'In Control Center hinzugefügt';
-
-  @override
   String get mcpStatusAwaitingApproval => 'Wartet auf Freigabe';
 
   @override
@@ -18924,6 +18896,71 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get mcpApprovalRemoteMember =>
       'Dieser Server kann nur öffentliche Adressen erreichen, bis der Serverinhaber ihn freigibt.';
+
+  @override
+  String get mcpServersSettingsSubtitle =>
+      'Der integrierte MCP-Server und die MCP-Server, deren Tools Agentenläufe in diesem Workspace erhalten.';
+
+  @override
+  String get mcpPersonalServers => 'Deine MCP-Server';
+
+  @override
+  String get mcpPersonalServersDescription =>
+      'Nur du siehst diese Server, und nur die Agentenläufe, die du in diesem Workspace startest, erhalten ihre Tools.';
+
+  @override
+  String get mcpPersonalServersUnavailable =>
+      'Deine eigenen MCP-Server sind auf dem verbundenen Server nicht verfügbar.';
+
+  @override
+  String get mcpPersonalServersEmpty => 'Noch keine eigenen MCP-Server';
+
+  @override
+  String get mcpPersonalServersEmptyDescription =>
+      'Füge einen Server hinzu, damit die Läufe, die du in diesem Workspace startest, seine Tools erhalten.';
+
+  @override
+  String get mcpServerEditorPersonalOwner =>
+      'Nur die Läufe, die du in diesem Workspace startest, nutzen ihn. Als Serverinhaber gibst du ihn mit dem Speichern frei.';
+
+  @override
+  String get mcpServerEditorPersonalMember =>
+      'Nur die Läufe, die du in diesem Workspace startest, nutzen ihn. Er erreicht nur öffentliche Adressen.';
+
+  @override
+  String get mcpServerSignInNeeded =>
+      'Melde dich an, um die Tools dieses Servers zu nutzen.';
+
+  @override
+  String get mcpServerSignIn => 'Anmelden';
+
+  @override
+  String mcpServerSignInTitle(String name) {
+    return 'Bei $name anmelden';
+  }
+
+  @override
+  String mcpServerSignInWrongCode(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Noch $count Versuche.',
+      one: 'Noch 1 Versuch.',
+    );
+    return 'Das ist nicht der Code, den dein Browser angezeigt hat. $_temp0';
+  }
+
+  @override
+  String get mcpServerSignInEnded =>
+      'Es hat zu lange gedauert, es wurde abgelehnt oder es wurden zu viele falsche Codes eingegeben. Starte die Anmeldung neu, um eine neue Anmeldeseite zu erhalten.';
+
+  @override
+  String get mcpServerSignInStartAgain => 'Neu starten';
+
+  @override
+  String mcpServerSignedIn(String name) {
+    return 'Bei $name angemeldet.';
+  }
 
   @override
   String get mcpRemoveServer => 'Server entfernen';
@@ -19061,10 +19098,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get mcpServerEditorRemoteOwner =>
       'Speichern gibt ihn frei, damit er auch das private Netzwerk des Hosts erreichen kann.';
-
-  @override
-  String get mcpServerEditorPersonal =>
-      'Wird nur in Läufen verwendet, die du startest oder verantwortest.';
 
   @override
   String get mcpServerRefusedInvalid =>

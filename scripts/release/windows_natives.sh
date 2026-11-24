@@ -562,12 +562,19 @@ fi
     "--remap-path-prefix=$CODEMODE_REPO_W=C:\\build\\src"
     "--remap-path-prefix=$CODEMODE_TARGET_W=C:\\build\\target"
   )
+  # -vv makes cargo print what each build script wrote, as
+  # `[rquickjs-sys <version>] cargo:warning=…` lines: the D9002 check below
+  # reads them. They go to a file, shown only when the build fails, because
+  # -vv also prints every rustc command and every dependency's warnings.
+  CODEMODE_BUILD_LOG="$RUNNER_TEMP/cc_codemode_build.log"
   # One argument per field, so a path with spaces stays whole.
   CARGO_ENCODED_RUSTFLAGS="$(IFS=$'\x1f'; printf '%s' "${CODEMODE_RUSTFLAGS[*]}")" \
   RUSTFLAGS= \
   CARGO_TARGET_DIR="$CODEMODE_TARGET" \
-    cargo build --release --locked \
-    --manifest-path packages/cc_natives/native/codemode/Cargo.toml -p cc_codemode
+    cargo build -vv --release --locked \
+    --manifest-path packages/cc_natives/native/codemode/Cargo.toml -p cc_codemode \
+    >"$CODEMODE_BUILD_LOG" 2>&1 \
+    || { cat "$CODEMODE_BUILD_LOG"; echo "cargo build of cc_codemode failed"; exit 1; }
   mkdir -p build/natives/codemode
   cp -f "$RUNNER_TEMP/cc_codemode_target/release/cc_codemode.exe" build/natives/codemode/cc_codemode.exe
   CODEMODE_HEADERS="$(dumpbin //nologo //headers //loadconfig "$(cygpath -w build/natives/codemode/cc_codemode.exe)")" \
@@ -594,13 +601,14 @@ fi
   done <<<"$CODEMODE_DLLS"
   # cl reports an option it does not know as warning D9002 and carries on,
   # which would leave every QuickJS-NG file name untrimmed. The cc crate
-  # forwards compiler output as cargo:warning lines into the build script's
-  # output file, which cargo keeps even when it does not print them.
-  # Cargo has used both build/rquickjs-sys-<hash>/output and (1.100)
-  # build/rquickjs-sys/<hash>/output.
-  CODEMODE_CC_OUTPUT="$(find "$CODEMODE_TARGET/release/build" -path '*/rquickjs-sys*/output' -type f -exec cat {} + 2>/dev/null || true)"
+  # forwards compiler output as cargo:warning lines on the build script's
+  # stdout, which `cargo build -vv` printed into the build log. The log is
+  # read, not the file cargo keeps under the target directory: where that
+  # file is has changed between cargo versions, and it was not found on the
+  # Windows runners at either place this script looked.
+  CODEMODE_CC_OUTPUT="$(grep -F '[rquickjs-sys ' "$CODEMODE_BUILD_LOG" || true)"
   [ -n "$CODEMODE_CC_OUTPUT" ] \
-    || { echo "no rquickjs-sys build script output under $CODEMODE_TARGET/release/build"; exit 1; }
+    || { echo "the build log has no rquickjs-sys build script output; its last lines:"; tail -n 40 "$CODEMODE_BUILD_LOG"; exit 1; }
   if grep -q 'D9002' <<<"$CODEMODE_CC_OUTPUT"; then
     echo "cl ignored an option while compiling QuickJS-NG (D9002); /d1trimfile did not apply:"
     grep 'D9002' <<<"$CODEMODE_CC_OUTPUT"

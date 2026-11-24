@@ -40,6 +40,17 @@ void _confine(
           Future.error(SocketException('refused to connect to ${uri.host}'));
 }
 
+/// A client for requests made on [config]'s behalf beside its transport (its
+/// authorization server), under the same address rule.
+HttpClient confinedMcpHttpClient(
+  McpServerConfig config,
+  McpConnectionFactory? factory,
+) {
+  final client = HttpClient();
+  _confine(client, config, factory);
+  return client;
+}
+
 /// The Streamable HTTP transport (MCP `2025-03-26`+).
 ///
 /// Each client→server message is a `POST` of a JSON-RPC frame. The server may

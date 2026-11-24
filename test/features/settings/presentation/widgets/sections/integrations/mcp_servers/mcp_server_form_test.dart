@@ -22,6 +22,7 @@ void main() {
 
   McpServerDefinition httpServer() => McpServerDefinition(
     id: 'srv-2',
+    workspaceId: 'ws-1',
     name: 'linear',
     transport: McpServerTransport.http,
     url: 'https://mcp.example.com/mcp',

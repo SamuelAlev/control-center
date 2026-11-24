@@ -23,7 +23,7 @@ class AgentRunGrant {
     this.readOnlyWorktrees = const [],
     this.runnerStateDirs = const [],
     this.autonomy,
-    this.personalMcp = false,
+    this.personalMcpUserId,
     this.runLogId,
   });
 
@@ -49,10 +49,10 @@ class AgentRunGrant {
   /// The member the run acts for; bounds the forge credential to their reach.
   final String? actingUserId;
 
-  /// Whether the run may use the server owner's personal MCP servers through
-  /// the Control Center MCP endpoint: decided once, when the run starts, from
-  /// whether the owner is accountable for it (`HostExecutionGate`).
-  final bool personalMcp;
+  /// The member whose own MCP servers the run may use through the Control
+  /// Center MCP endpoint: the person who started it, decided once, when the
+  /// run starts (`HostExecutionGate.startedBy`). Null for none.
+  final String? personalMcpUserId;
 
   /// The dispatch id. It names the run's nested-call events
   /// (`McpCallScope.runId`) and its log lines; it names no row, so the guard

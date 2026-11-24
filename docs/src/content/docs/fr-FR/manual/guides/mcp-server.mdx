@@ -2,7 +2,7 @@
 title: Utiliser le serveur MCP
 description: Pointez un client MCP externe vers le serveur d’outils de Control Center, envoyez son jeton Bearer et sachez ce que la surface expose.
 slug: fr-FR/manuel/guides/serveur-mcp
-sourceHash: 0239917dba7349533ef1ce70536453187e8d3591
+sourceHash: eb032b11d779e012f558c7244ea52d9eafb04a4b
 ---
 
 Ce guide explique comment connecter un client MCP externe — Claude Code, un
@@ -136,7 +136,7 @@ en cache, si bien que masquer des outils les casse plutôt que de les ranger.
 
 ## Serveurs MCP utilisés par vos agents
 
-Ce guide porte sur le point de terminaison propre à Control Center. Dans l’autre sens, les serveurs MCP auxquels Control Center se connecte et qu’il transmet aux agents qu’il exécute se configurent sous **Paramètres → Serveur → Serveurs MCP**, à deux niveaux. Dans les deux cas, Control Center se connecte au serveur lui-même et transmet ses outils à l’exécution. Le harnais intégré et Claude Code reçoivent donc les mêmes outils et les mêmes demandes d’approbation. Une exécution de Claude Code les voit sous le serveur `control-center`, sous la forme `mcp__control-center__mcp__<server>__<tool>`.
+Ce guide porte sur le point de terminaison propre à Control Center. Dans l’autre sens, les serveurs MCP auxquels Control Center se connecte et qu’il transmet aux agents qu’il exécute se configurent sous **Paramètres → Serveur → Serveurs MCP**, à deux niveaux : pour tout l’espace de travail, ou pour soi-même. Dans les deux cas, Control Center se connecte au serveur lui-même et transmet ses outils à l’exécution. Le harnais intégré et Claude Code reçoivent donc les mêmes outils et les mêmes demandes d’approbation. Une exécution de Claude Code les voit sous le serveur `control-center`, sous la forme `mcp__control-center__mcp__<server>__<tool>`.
 
 ### Serveurs d’espace de travail
 
@@ -152,17 +152,26 @@ Les valeurs des variables d’environnement et des en-têtes sont stockées dans
 
 Une commande s’exécute sur la machine du serveur, sous l’utilisateur propre au serveur ; elle ne démarre donc qu’après l’approbation du propriétaire du serveur. D’ici là, elle affiche **En attente d'approbation**. Un serveur par URL fonctionne immédiatement, mais il ne peut atteindre que des adresses publiques tant que le propriétaire du serveur ne l’a pas approuvé, approbation qui autorise aussi `localhost` et les réseaux privés. Lorsque le propriétaire du serveur enregistre un serveur, cela vaut approbation. Si une autre personne modifie la façon dont un serveur démarre ou l’adresse à laquelle il se connecte, une nouvelle approbation est requise. Activer ou désactiver un serveur conserve son approbation.
 
-### Serveurs personnels
+### Vos propres serveurs
 
-Les serveurs personnels appartiennent au propriétaire du serveur et sont listés sous **Serveurs MCP externes**. Les serveurs configurés sur la machine du serveur pour Claude, Codex, Cursor, Gemini, VS Code, Windsurf, OpenCode ou dans un `.mcp.json` y sont trouvés automatiquement. Le propriétaire du serveur peut aussi en ajouter avec **Ajouter un serveur**, à l’aide du même formulaire. Un serveur que vous ajoutez l’emporte sur un serveur découvert portant le même nom.
+Chaque membre ajoute les siens dans **Vos serveurs MCP**, à l’aide du même formulaire. Ils ne sont visibles que de vous dans cet espace de travail : les autres membres ne les voient pas, et un serveur auquel vous vous connectez agit en votre nom.
 
-Ils agissent avec l’identité et les identifiants du propriétaire du serveur :
+- Seules les exécutions que vous lancez dans cet espace de travail reçoivent leurs outils. Cela couvre les exécutions du harnais intégré comme celles de Claude Code.
+- L’exécution d’un autre membre, l’automatisation que personne n’a lancée et vos exécutions dans d’autres espaces de travail n’en reçoivent aucun. Là, les outils ne sont pas listés, ne peuvent pas être appelés et n’apparaissent pas dans la recherche d’outils.
+- Votre serveur peut porter le même nom qu’un serveur d’espace de travail. Dans vos exécutions, c’est le vôtre qui est utilisé.
+- Votre serveur propre est joint par URL et ne peut atteindre que des adresses publiques. Seul le propriétaire du serveur peut en ajouter un qui exécute une commande.
 
-- Ils ne sont disponibles que dans les exécutions que le propriétaire du serveur démarre ou dont il est responsable, y compris l’automatisation d’un espace de travail dont le propriétaire est responsable. Cela couvre les exécutions du harnais intégré comme celles de Claude Code.
-- L’exécution d’un membre, l’automatisation rattachée à un membre et toute exécution sur un serveur sans propriétaire enregistré n’en reçoivent aucun. Là, les outils ne sont pas listés, ne peuvent pas être appelés et n’apparaissent pas dans la recherche d’outils.
-- Ni les serveurs personnels ni ceux de l’espace de travail ne sont servis au jeton MCP ni aux appareils appairés, et leurs ressources et prompts ne sont pas transmis.
+Ni vos serveurs ni ceux de l’espace de travail ne sont servis au jeton MCP ni aux appareils appairés, et leurs ressources et prompts ne sont pas transmis.
 
-La connexion à un serveur avec OAuth n’est pas disponible depuis le formulaire. Utilisez un serveur qui accepte un jeton dans un en-tête, ou configurez-le pour l’un des outils ci-dessus, où il est découvert.
+### Se connecter à un serveur
+
+Un serveur par URL qui demande une connexion affiche **Autorisation requise**.
+
+1. Sélectionnez **Se connecter** sur le serveur. Votre navigateur ouvre la page de connexion du serveur.
+2. Approuvez la demande sur cette page. Le navigateur revient à Control Center et affiche un code.
+3. Saisissez le code dans l’application. Point de contrôle : le serveur affiche **Connecté**.
+
+La connexion est enregistrée avec le serveur pour lequel elle a été faite. Se connecter à un serveur d’espace de travail demande un administrateur de l’espace de travail, et chaque exécution de cet espace agit ensuite en son nom. Se connecter à votre propre serveur ne touche que vos exécutions. Supprimer un serveur supprime sa connexion.
 
 ## Dépannage
 

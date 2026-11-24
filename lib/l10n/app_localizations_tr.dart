@@ -1688,10 +1688,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get mcpServers => 'MCP sunucuları';
 
   @override
-  String get mcpServersSettingsDescription =>
-      'Yerleşik MCP sunucusu ve harici MCP sunucuları.';
-
-  @override
   String get remoteControlAndDevices => 'Uzaktan kontrol ve cihazlar';
 
   @override
@@ -8739,13 +8735,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get ideFileBinary => 'İkili dosya';
 
   @override
-  String get mcpExternalServers => 'Harici MCP sunucuları';
-
-  @override
-  String get mcpExternalServersDescription =>
-      'Harici MCP sunucularına bağlanın (GitHub, Sentry, Postgres, tarayıcı otomasyonu). Claude, Cursor, VS Code ve diğer araçlar için yapılandırdığınız sunucular otomatik keşfedilir.';
-
-  @override
   String get mcpApprovalMode => 'Araç onayı';
 
   @override
@@ -8762,17 +8751,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get mcpApprovalYolo => 'Tümünü otomatik onayla';
 
   @override
-  String get mcpNoExternalServers => 'Harici MCP sunucusu bulunamadı.';
-
-  @override
-  String get mcpAuthorize => 'Yetkilendir';
-
-  @override
   String get mcpReconnect => 'Yeniden bağlan';
-
-  @override
-  String get mcpExternalConnectionsNote =>
-      'Harici MCP sunucuları ajan sunucusunda çalışır (masaüstü ve web tarafından paylaşılır). OAuth sunucularını yetkilendirme yalnızca masaüstünde kullanılabilir.';
 
   @override
   String get mcpStatusConnected => 'Bağlı';
@@ -18376,10 +18355,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Sunucunun bunları kullanmasına izin verdiğinizi onaylayın. Her depo sizin erişiminizle yeniden kontrol edilir.';
 
   @override
-  String get mcpExternalServersOwnerRunsOnly =>
-      'Bu makinenin kendi araç ayarlarında bulunan sunucular yalnızca sizin başlattığınız ya da sorumlu olduğunuz çalıştırmalarda kullanılabilir. Başkalarının çalıştırmaları bunları hiç görmez ve Control Center’ın MCP uç noktası üzerinden sunulmazlar.';
-
-  @override
   String repoCodeNeedsSignIn(String provider) {
     return 'Bu deponun kodunu görmek için $provider hesabına oturum açın.';
   }
@@ -18767,9 +18742,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get mcpAddServer => 'Sunucu ekle';
 
   @override
-  String get mcpHandAddedSource => 'Control Center\'a eklendi';
-
-  @override
   String get mcpStatusAwaitingApproval => 'Onay bekleniyor';
 
   @override
@@ -18793,6 +18765,71 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get mcpApprovalRemoteMember =>
       'Bu sunucu, sunucu sahibi onaylayana kadar yalnızca genel adreslere erişebilir.';
+
+  @override
+  String get mcpServersSettingsSubtitle =>
+      'Yerleşik MCP sunucusu ile bu çalışma alanındaki ajan çalıştırmalarının araçlarını aldığı MCP sunucuları.';
+
+  @override
+  String get mcpPersonalServers => 'Kendi MCP sunucularınız';
+
+  @override
+  String get mcpPersonalServersDescription =>
+      'Bu sunucuları yalnızca siz görürsünüz ve yalnızca bu çalışma alanında başlattığınız ajan çalıştırmaları araçlarını alır.';
+
+  @override
+  String get mcpPersonalServersUnavailable =>
+      'Kendi MCP sunucularınız, bağlı olunan sunucuda kullanılamıyor.';
+
+  @override
+  String get mcpPersonalServersEmpty => 'Henüz kendi MCP sunucunuz yok';
+
+  @override
+  String get mcpPersonalServersEmptyDescription =>
+      'Bu çalışma alanında başlattığınız ajan çalıştırmalarına araçlarını vermek için bir sunucu ekleyin.';
+
+  @override
+  String get mcpServerEditorPersonalOwner =>
+      'Yalnızca bu çalışma alanında başlattığınız çalıştırmalar bunu kullanır. Sunucu sahibi olarak kaydetmek onu onaylar.';
+
+  @override
+  String get mcpServerEditorPersonalMember =>
+      'Yalnızca bu çalışma alanında başlattığınız çalıştırmalar bunu kullanır. Yalnızca genel adreslere erişebilir.';
+
+  @override
+  String get mcpServerSignInNeeded =>
+      'Bu sunucunun araçlarını kullanmak için oturum açın.';
+
+  @override
+  String get mcpServerSignIn => 'Oturum aç';
+
+  @override
+  String mcpServerSignInTitle(String name) {
+    return '$name için oturum aç';
+  }
+
+  @override
+  String mcpServerSignInWrongCode(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count deneme hakkınız kaldı.',
+      one: '1 deneme hakkınız kaldı.',
+    );
+    return 'Tarayıcınızın gösterdiği kod bu değil. $_temp0';
+  }
+
+  @override
+  String get mcpServerSignInEnded =>
+      'Süre doldu, reddedildi veya çok fazla yanlış kod girildi. Yeni bir oturum açma sayfası için yeniden başlatın.';
+
+  @override
+  String get mcpServerSignInStartAgain => 'Yeniden başlat';
+
+  @override
+  String mcpServerSignedIn(String name) {
+    return '$name hesabında oturum açıldı.';
+  }
 
   @override
   String get mcpRemoveServer => 'Sunucuyu kaldır';
@@ -18930,10 +18967,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get mcpServerEditorRemoteOwner =>
       'Kaydetmek, ana makinenin özel ağına da erişmesini onaylar.';
-
-  @override
-  String get mcpServerEditorPersonal =>
-      'Yalnızca sizin başlattığınız veya sorumlu olduğunuz çalıştırmalarda kullanılır.';
 
   @override
   String get mcpServerRefusedInvalid =>

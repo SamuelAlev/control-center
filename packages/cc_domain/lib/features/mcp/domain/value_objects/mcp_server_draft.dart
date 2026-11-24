@@ -79,7 +79,8 @@ class McpServerDraft {
   final Set<String> headerRemove;
 
   /// The definition this draft makes of [previous] (null when adding), with
-  /// [id] and [workspaceId] decided by the caller, never by the draft.
+  /// [id], [workspaceId] and [userId] (whose own server it is; null for the
+  /// workspace's) decided by the caller, never by the draft.
   ///
   /// A name both written and removed is written: removal applies to the
   /// stored value first. Names carried over from [previous] are kept only on
@@ -88,7 +89,8 @@ class McpServerDraft {
   /// [McpServerDefinitionException] for any field that cannot be dialled.
   McpServerDefinition toDefinition({
     required String id,
-    required String? workspaceId,
+    required String workspaceId,
+    required String? userId,
     required McpServerDefinition? previous,
     required String? createdBy,
     required String? hostApprovedBy,
@@ -104,6 +106,7 @@ class McpServerDraft {
     return McpServerDefinition(
       id: id,
       workspaceId: workspaceId,
+      userId: userId,
       name: name,
       transport: transport,
       command: remote ? null : command?.trim(),

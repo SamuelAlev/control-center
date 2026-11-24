@@ -1683,10 +1683,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get mcpServers => 'MCP سرورز';
 
   @override
-  String get mcpServersSettingsDescription =>
-      'بلٹ اِن MCP سرور اور بیرونی MCP سرورز۔';
-
-  @override
   String get remoteControlAndDevices => 'ریموٹ کنٹرول اور ڈیوائسز';
 
   @override
@@ -8715,13 +8711,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get ideFileBinary => 'بائنری فائل';
 
   @override
-  String get mcpExternalServers => 'بیرونی MCP سرورز';
-
-  @override
-  String get mcpExternalServersDescription =>
-      'بیرونی MCP سرورز سے منسلک ہوں (GitHub، Sentry، Postgres، براؤزر آٹومیشن)۔ Claude، Cursor، VS Code اور دیگر ٹولز کے لیے کنفیگر سرورز خود دریافت ہوتے ہیں۔';
-
-  @override
   String get mcpApprovalMode => 'ٹول منظوری';
 
   @override
@@ -8738,17 +8727,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get mcpApprovalYolo => 'سب خود منظور';
 
   @override
-  String get mcpNoExternalServers => 'کوئی بیرونی MCP سرور نہیں ملا۔';
-
-  @override
-  String get mcpAuthorize => 'اجازت دیں';
-
-  @override
   String get mcpReconnect => 'دوبارہ منسلک ہوں';
-
-  @override
-  String get mcpExternalConnectionsNote =>
-      'بیرونی MCP سرورز ایجنٹ سرور پر چلتے ہیں (ڈیسک ٹاپ اور ویب شیئر)۔ OAuth سرورز کی اجازت صرف ڈیسک ٹاپ پر دستیاب ہے۔';
 
   @override
   String get mcpStatusConnected => 'منسلک';
@@ -18326,10 +18305,6 @@ class AppLocalizationsUr extends AppLocalizations {
       'تصدیق کریں کہ یہ سرور انہیں استعمال کر سکتا ہے۔ ہر ریپوزٹری آپ کی رسائی کے ساتھ دوبارہ جانچی جائے گی۔';
 
   @override
-  String get mcpExternalServersOwnerRunsOnly =>
-      'اس مشین کی اپنی ٹول ترتیبات میں ملنے والے سرورز صرف ان رنز میں دستیاب ہیں جو آپ شروع کریں یا جن کے آپ ذمہ دار ہوں۔ دوسروں کے رنز انہیں کبھی نہیں دیکھتے، اور انہیں Control Center کے MCP اینڈ پوائنٹ کے ذریعے پیش نہیں کیا جاتا۔';
-
-  @override
   String repoCodeNeedsSignIn(String provider) {
     return 'اس ریپوزٹری کا کوڈ دیکھنے کے لیے $provider پر سائن ان کریں۔';
   }
@@ -18716,9 +18691,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get mcpAddServer => 'سرور شامل کریں';
 
   @override
-  String get mcpHandAddedSource => 'Control Center میں شامل کیا گیا';
-
-  @override
   String get mcpStatusAwaitingApproval => 'منظوری کا انتظار';
 
   @override
@@ -18742,6 +18714,71 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get mcpApprovalRemoteMember =>
       'سرور کا مالک منظوری نہ دے تو یہ سرور صرف عوامی پتوں تک رسائی رکھ سکتا ہے۔';
+
+  @override
+  String get mcpServersSettingsSubtitle =>
+      'بلٹ اِن MCP سرور، اور وہ MCP سرورز جن کے ٹولز اس ورک اسپیس میں ایجنٹ رنز کو ملتے ہیں۔';
+
+  @override
+  String get mcpPersonalServers => 'آپ کے MCP سرورز';
+
+  @override
+  String get mcpPersonalServersDescription =>
+      'یہ سرورز صرف آپ کو نظر آتے ہیں، اور صرف وہ ایجنٹ رنز جو آپ اس ورک اسپیس میں شروع کرتے ہیں ان کے ٹولز حاصل کرتے ہیں۔';
+
+  @override
+  String get mcpPersonalServersUnavailable =>
+      'آپ کے اپنے MCP سرورز منسلک سرور پر دستیاب نہیں ہیں۔';
+
+  @override
+  String get mcpPersonalServersEmpty => 'ابھی تک آپ کے اپنے MCP سرورز نہیں';
+
+  @override
+  String get mcpPersonalServersEmptyDescription =>
+      'ایک سرور شامل کریں تاکہ اس ورک اسپیس میں آپ کے شروع کردہ ایجنٹ رنز کو اس کے ٹولز ملیں۔';
+
+  @override
+  String get mcpServerEditorPersonalOwner =>
+      'صرف وہ ایجنٹ رنز اسے استعمال کرتے ہیں جو آپ اس ورک اسپیس میں شروع کرتے ہیں۔ بطور سرور کا مالک، محفوظ کرنے سے یہ منظور ہو جاتا ہے۔';
+
+  @override
+  String get mcpServerEditorPersonalMember =>
+      'صرف وہ ایجنٹ رنز اسے استعمال کرتے ہیں جو آپ اس ورک اسپیس میں شروع کرتے ہیں۔ یہ صرف عوامی پتوں تک رسائی رکھ سکتا ہے۔';
+
+  @override
+  String get mcpServerSignInNeeded =>
+      'اس سرور کے ٹولز استعمال کرنے کے لیے سائن اِن کریں۔';
+
+  @override
+  String get mcpServerSignIn => 'سائن اِن کریں';
+
+  @override
+  String mcpServerSignInTitle(String name) {
+    return '$name میں سائن اِن کریں';
+  }
+
+  @override
+  String mcpServerSignInWrongCode(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count کوششیں باقی ہیں۔',
+      one: '1 کوشش باقی ہے۔',
+    );
+    return 'یہ وہ کوڈ نہیں ہے جو آپ کے براؤزر نے دکھایا۔ $_temp0';
+  }
+
+  @override
+  String get mcpServerSignInEnded =>
+      'وقت زیادہ لگ گیا، مسترد ہوا، یا غلط کوڈ بہت زیادہ بار درج ہوئے۔ نیا سائن اِن صفحہ حاصل کرنے کے لیے دوبارہ شروع کریں۔';
+
+  @override
+  String get mcpServerSignInStartAgain => 'دوبارہ شروع کریں';
+
+  @override
+  String mcpServerSignedIn(String name) {
+    return '$name میں سائن اِن ہو گئے۔';
+  }
 
   @override
   String get mcpRemoveServer => 'سرور ہٹائیں';
@@ -18879,10 +18916,6 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get mcpServerEditorRemoteOwner =>
       'محفوظ کرنے سے یہ ہوسٹ کے نجی نیٹ ورک تک بھی رسائی کے لیے منظور ہو جاتا ہے۔';
-
-  @override
-  String get mcpServerEditorPersonal =>
-      'صرف ان رنز میں استعمال ہوتا ہے جو آپ شروع کرتے ہیں یا جن کے آپ ذمہ دار ہیں۔';
 
   @override
   String get mcpServerRefusedInvalid =>

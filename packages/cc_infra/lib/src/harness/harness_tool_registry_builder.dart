@@ -43,10 +43,9 @@ import 'package:cc_natives/cc_natives.dart';
 /// assembly would drift from the surface a run actually gets.
 ///
 /// The run always gets the MCP servers configured for its own [workspaceId]
-/// (the registry's workspace layer). [includePersonalMcp] also hands it the
-/// server owner's personal servers, discovered in or added to their own tool
-/// configs. Only a run the server owner is accountable for may have those;
-/// absent, the run gets none of them, not even their names.
+/// (the registry's workspace layer). [personalMcpUserId] also hands it that
+/// member's own servers in the workspace. Only a run that member started may
+/// have those; absent, the run gets none of them, not even their names.
 ///
 /// The caller adds the `task` tool afterwards when the run may spawn
 /// subagents — nesting depth is a per-run property, so it is deliberately not
@@ -93,7 +92,7 @@ HarnessToolRegistry buildHarnessToolRegistry({
   ActionGuardService? actionGuard,
   required FileSearchPort fileSearch,
   McpToolRegistry? mcpRegistry,
-  bool includePersonalMcp = false,
+  String? personalMcpUserId,
   Future<List<String>> Function()? protectedPaths,
   AgentQuestionPort? agentQuestionPort,
   String? spaceId,
@@ -339,11 +338,11 @@ HarnessToolRegistry buildHarnessToolRegistry({
       if (agentId != null && agentId.isNotEmpty)
         ...McpCallScope.callerIdentityKeys,
     };
-    // The run's own workspace's configured servers, and the owner's personal
-    // ones only when the owner is accountable for it.
+    // The run's own workspace's configured servers, and the own servers of
+    // the member who started it.
     final view = McpToolView(
       workspaceId: workspaceId,
-      includePersonal: includePersonalMcp,
+      personalUserId: personalMcpUserId,
     );
     for (final toolName in mcpRegistry.toolNames(view: view)) {
       if (toolName == ReplToolDescription.toolName) {

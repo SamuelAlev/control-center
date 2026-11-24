@@ -14,15 +14,18 @@ can call them alongside the native tools.
   and SSE, plus reconnect handling.
 - **Connection lifecycle** (`connection_manager.dart`) — connect, reconnect,
   retry and the invoker that `tools/call`s a remote tool.
-- **OAuth** (`src/oauth/`) — auth flow + token storage for servers that require
-  it.
+- **OAuth** (`src/oauth/`) — discovery, dynamic client registration, PKCE,
+  code exchange and silent refresh for servers that require a sign-in. The
+  package opens no browser and listens on no port: `McpOAuthProvider.begin`
+  returns the URL, the host receives the redirect and calls `complete`.
 - **Tool bridging** (`tool_bridge.dart`) — wraps each remote tool as a
   `BridgedMcpTool` namespaced `mcp__<server>__<tool>`, so two servers can't
   collide. Names are capped at 43 characters (a hash keeps long ones distinct)
   so Claude Code's `mcp__control-center__` prefix stays within 64.
 - **Audiences** — an `McpClientService` publishes to an `McpToolSink`; the host
-  runs one for the owner's personal servers and one per workspace for its
-  configured servers, each feeding its own registry layer.
+  runs one per workspace for its configured servers and one per member for
+  their own servers in it, each feeding its own registry layer and keeping
+  its own sign-ins.
 
 ## Invariants (security)
 

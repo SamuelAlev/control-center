@@ -202,6 +202,9 @@
 # attachments for runs in the agent's own directory (+39), and
 # remote_rpc_catalog.dart refreshes an expired OAuth sign-in once before
 # reporting it expired (+13).
+# Raised 2026-11-24 (per-member MCP servers): local_rpc_server.dart takes the
+# MCP browser sign-in it serves at /oauth/mcp/callback (+6: one field); the
+# route itself lives in local_rpc_server_auth.dart.
 packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart  2734
 packages/cc_domain/lib/src/dtos/dtos.dart  3330
 packages/cc_infra/lib/src/chat/chat_bridge_service.dart  1550
@@ -221,7 +224,7 @@ packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2836
 packages/cc_server_core/lib/src/catalog/catalog_wire.dart  2879
 packages/cc_server_core/lib/src/cc_server_runtime.dart  8257
 packages/cc_server_core/lib/src/demo/demo_seeder.dart  2865
-packages/cc_server_core/lib/src/local_rpc_server.dart  2503
+packages/cc_server_core/lib/src/local_rpc_server.dart  2509
 packages/cc_server_core/lib/src/pr_review/open_pr_polling_service.dart  1898
 packages/cc_server_core/lib/src/remote_rpc_catalog.dart  14359
 packages/cc_server_core/lib/src/repo_ide_data_service.dart  2365

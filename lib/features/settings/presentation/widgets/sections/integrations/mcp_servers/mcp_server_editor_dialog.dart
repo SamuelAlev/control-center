@@ -1,4 +1,5 @@
 import 'package:cc_domain/features/mcp/domain/entities/mcp_server_definition.dart';
+import 'package:cc_domain/features/mcp/domain/ports/workspace_mcp_server_control.dart';
 import 'package:cc_domain/features/mcp/domain/value_objects/mcp_server_draft.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
@@ -16,7 +17,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// it; the editor then shows why. Resolves true once saved.
 Future<bool> showMcpServerEditor(
   BuildContext context, {
-  required McpServerEditorScope scope,
+  required McpServerScope scope,
   required Future<void> Function(McpServerDraft draft) onSave,
   McpServerDefinition? existing,
 }) async =>
@@ -33,6 +34,9 @@ Future<bool> showMcpServerEditor(
 /// One editor for workspace and personal MCP servers: name, transport, the
 /// command or URL, write-only environment variables or headers, and whether
 /// it is dialled. Checked with the server's own rules before anything is sent.
+///
+/// A personal server that runs a command is the server owner's alone to add,
+/// so nobody else is offered that transport.
 class McpServerEditorDialog extends ConsumerStatefulWidget {
   /// Creates the editor.
   const McpServerEditorDialog({
@@ -43,7 +47,7 @@ class McpServerEditorDialog extends ConsumerStatefulWidget {
   });
 
   /// Whose server it is.
-  final McpServerEditorScope scope;
+  final McpServerScope scope;
 
   /// The server being changed, or null to add one.
   final McpServerDefinition? existing;
@@ -67,7 +71,10 @@ class _McpServerEditorDialogState extends ConsumerState<McpServerEditorDialog> {
   late final _env = McpSecretEdits(_existing?.envNames ?? const []);
   late final _headers = McpSecretEdits(_existing?.headerNames ?? const []);
   late McpServerTransport _transport =
-      _existing?.transport ?? McpServerTransport.stdio;
+      _existing?.transport ??
+      (_mayAddStdio(ref.read(canUseHostProvider))
+          ? McpServerTransport.stdio
+          : McpServerTransport.http);
   late bool _enabled = _existing?.enabled ?? true;
   McpServerFormErrors _errors = const McpServerFormErrors();
   McpServerRefusalField? _refusedField;
@@ -94,6 +101,10 @@ class _McpServerEditorDialogState extends ConsumerState<McpServerEditorDialog> {
     env: _env,
     headers: _headers,
   );
+
+  /// Whether [owner] may pick a server that runs a command here.
+  bool _mayAddStdio(bool owner) =>
+      widget.scope == McpServerScope.workspace || owner;
 
   bool get _storedCarriesOver {
     final existing = _existing;
@@ -135,6 +146,7 @@ class _McpServerEditorDialogState extends ConsumerState<McpServerEditorDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final existing = _existing;
+    final owner = ref.watch(canUseHostProvider);
     final stdio = _transport == McpServerTransport.stdio;
     final storedNames = stdio ? existing?.envNames : existing?.headerNames;
     final droppingStored =
@@ -172,6 +184,10 @@ class _McpServerEditorDialogState extends ConsumerState<McpServerEditorDialog> {
                 alignment: AlignmentDirectional.centerStart,
                 child: McpServerTransportPicker(
                   value: _transport,
+                  // A stored command server keeps its own segment.
+                  allowStdio:
+                      _mayAddStdio(owner) ||
+                      existing?.transport == McpServerTransport.stdio,
                   onChanged: _busy
                       ? null
                       : (value) => setState(() => _transport = value),
@@ -181,7 +197,7 @@ class _McpServerEditorDialogState extends ConsumerState<McpServerEditorDialog> {
               McpServerEditorNote(
                 scope: widget.scope,
                 transport: _transport,
-                owner: ref.watch(canUseHostProvider),
+                owner: owner,
               ),
               const SizedBox(height: AppSpacing.lg),
               if (stdio) ...[

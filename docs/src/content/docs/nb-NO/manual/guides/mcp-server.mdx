@@ -2,7 +2,7 @@
 title: Bruk MCP-serveren
 description: Pek en ekstern MCP-klient mot verktøyserveren til Control Center, send bearer-tokenet og vit hva flaten eksponerer.
 slug: nb-NO/handbok/slik-gjor-du/mcp-server
-sourceHash: 0239917dba7349533ef1ce70536453187e8d3591
+sourceHash: eb032b11d779e012f558c7244ea52d9eafb04a4b
 ---
 
 Denne guiden viser deg hvordan du kobler en ekstern MCP-klient — Claude Code, en
@@ -131,7 +131,7 @@ listen sin, så å skjule verktøy ødelegger dem i stedet for å rydde i dem.
 
 ## MCP-servere som agentene bruker
 
-Denne guiden handler om Control Centers eget endepunkt. Den andre retningen er MCP-servere som Control Center kobler seg til og gir til agentene det kjører. De settes opp under **Innstillinger → Server → MCP-servere**, på to nivåer. Uansett nivå kobler Control Center seg til selve MCP-serveren og sender verktøyene dens videre til kjøringen, slik at det innebygde harnesset og Claude Code får de samme verktøyene og de samme godkjenningsforespørslene. En Claude Code-kjøring ser dem under MCP-serveren `control-center` som `mcp__control-center__mcp__<server>__<tool>`.
+Denne guiden handler om Control Centers eget endepunkt. Den andre retningen er MCP-servere som Control Center kobler seg til og gir til agentene det kjører. De settes opp under **Innstillinger → Server → MCP-servere**, på to nivåer: for hele arbeidsområdet, eller for deg selv. Uansett nivå kobler Control Center seg til selve MCP-serveren og sender verktøyene dens videre til kjøringen, slik at det innebygde harnesset og Claude Code får de samme verktøyene og de samme godkjenningsforespørslene. En Claude Code-kjøring ser dem under MCP-serveren `control-center` som `mcp__control-center__mcp__<server>__<tool>`.
 
 ### MCP-servere for arbeidsområdet
 
@@ -147,17 +147,26 @@ Verdier for miljøvariabler og headere lagres i hemmelighetsfilen til MCP-server
 
 En kommando kjører på maskinen til MCP-serveren som MCP-serverens egen bruker, så den starter ikke før eieren av serveren godkjenner den. Inntil da står det **Venter på godkjenning**. En URL-server fungerer med én gang, men kan bare nå offentlige adresser til eieren godkjenner den, og da tillates også `localhost` og private nettverk. Når eieren lagrer en MCP-server, regnes det som godkjenning. Hvis noen andre endrer hvordan en MCP-server starter eller hvor den kobler seg til, må den godkjennes på nytt. Å slå en MCP-server av eller på beholder godkjenningen.
 
-### Personlige MCP-servere
+### Egne servere
 
-Personlige MCP-servere tilhører eieren av serveren og listes under **Eksterne MCP-servere**. MCP-servere konfigurert på maskinen til serveren for Claude, Codex, Cursor, Gemini, VS Code, Windsurf, OpenCode eller i en `.mcp.json` finnes der automatisk. Eieren kan også legge til egne MCP-servere med **Legg til server**, ved hjelp av samme skjema. En MCP-server som legges til, går foran en oppdaget MCP-server med samme navn.
+Hvert medlem legger til sine egne i **Dine MCP-servere**, med samme skjema. De er bare dine i dette arbeidsområdet: andre medlemmer ser dem ikke, og en server du logger inn på, bruker din identitet.
 
-De handler med eierens identitet og legitimasjon:
+- Bare kjøringer du starter i dette arbeidsområdet, får verktøyene deres. Det gjelder både innebygde harness-kjøringer og Claude Code-kjøringer.
+- Et annet medlems kjøring, automatisering ingen har startet, og dine kjøringer i andre arbeidsområder får ingen av dem. Der listes ikke verktøyene, de kan ikke kalles og de dukker ikke opp i verktøysøket.
+- Serveren din kan ha samme navn som en server i arbeidsområdet. I kjøringene dine er det din som brukes.
+- Din egen server nås via URL og kan bare nå offentlige adresser. Bare eieren av serveren kan legge til en egen som kjører en kommando.
 
-- De er bare tilgjengelige i kjøringer som eieren starter eller står ansvarlig for, inkludert automatisering i et arbeidsområde eieren står ansvarlig for. Det gjelder både innebygde harness-kjøringer og Claude Code-kjøringer.
-- Et medlems kjøring, automatisering knyttet til et medlem, og hver kjøring på en MCP-server uten registrert eier får ingen av dem. Der listes ikke verktøyene, de kan ikke kalles, og de dukker ikke opp i verktøysøket.
-- Verken personlige MCP-servere eller MCP-servere for arbeidsområdet sendes til MCP-tokenet eller til parede enheter, og ressursene og promptene deres videresendes ikke.
+Verken egne MCP-servere eller MCP-servere for arbeidsområdet sendes til MCP-tokenet eller til parede enheter, og ressursene og promptene deres videresendes ikke.
 
-Innlogging på en MCP-server med OAuth er ikke tilgjengelig fra skjemaet. Bruk en MCP-server som godtar et token i en header, eller konfigurer den for ett av verktøyene over, der den blir oppdaget.
+### Logg inn på en server
+
+En URL-server som ber deg logge inn, viser **Trenger autorisasjon**.
+
+1. Velg **Logg inn** på serveren. Nettleseren åpner serverens egen innloggingsside.
+2. Godkjenn forespørselen der. Nettleseren går tilbake til Control Center og viser en kode.
+3. Skriv inn koden i appen. Kontrollpunkt: serveren viser **Tilkoblet**.
+
+Innloggingen lagres sammen med serveren den ble laget for. Å logge inn på en server i arbeidsområdet krever en arbeidsområdeadministrator, og da handler hver kjøring i arbeidsområdet som kontoen som logget inn. Å logge inn på din egen server påvirker bare kjøringene dine. Å fjerne en server fjerner også innloggingen.
 
 ## Feilsøking
 

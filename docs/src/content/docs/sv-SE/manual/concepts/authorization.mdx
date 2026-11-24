@@ -2,7 +2,7 @@
 title: Auktorisering – vem får göra vad, och hur du bevisar det
 description: Behörighetskatalogen bakom Control Centers roller, revisionsspåret som avslöjar manipulation och som varje auktoriseringsbeslut hamnar i, samt de installationsövergripande reglage en operatör kan låsa fast.
 slug: sv-SE/handbok/koncept/auktorisering
-sourceHash: 9b6ab5ffb27be5a061ebfd9d020992ec83236ad7
+sourceHash: 311689da6bce052ef25bccc1e0f3dedd29f0d102
 ---
 
 Control Center besvarar två auktoriseringsfrågor, och de är verkligen olika.
@@ -143,10 +143,7 @@ serverägaren:
   arkiv (se [Lägg till arkiv](/sv-SE/handbok/how-to-guider/lagg-till-repos/)).
 - Se och stoppa varje körande agentprocess på servern. Alla andra ser och stoppar
   bara levande agentkörningar i arbetsytor de tillhör.
-- Låta agenter använda personliga MCP-servrar: de som är konfigurerade i serverns
-  användares egna verktyg (Claude, Codex, Cursor med flera) och de som ägaren
-  lägger till. Bara körningar som ägaren ansvarar för får dem; se
-  [Personliga MCP-servrar](/sv-SE/handbok/how-to-guider/mcp-server/#personliga-mcp-servrar).
+- Lägga till en egen MCP-server som kör ett kommando på serverns maskin. Andras egna MCP-servrar nås via URL (se [Dina egna MCP-servrar](/sv-SE/handbok/how-to-guider/mcp-server/#dina-egna-mcp-servrar)).
 - Godkänna en MCP-server för arbetsytan som kör ett kommando på serverns maskin
   eller når dess privata nätverk (se [MCP-servrar för arbetsytan](/sv-SE/handbok/how-to-guider/mcp-server/#mcp-servrar-för-arbetsytan)).
 - Bekräfta en persons e-postadress, så att single sign-on kan matcha den (se

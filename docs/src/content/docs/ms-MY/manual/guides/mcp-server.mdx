@@ -2,7 +2,7 @@
 title: Gunakan pelayan MCP
 description: Halakan klien MCP luaran ke pelayan alat Control Center, hantar token pembawanya dan ketahui perkara yang didedahkan oleh permukaan itu.
 slug: ms-MY/manual-pengguna/panduan-cara/pelayan-mcp
-sourceHash: 0239917dba7349533ef1ce70536453187e8d3591
+sourceHash: eb032b11d779e012f558c7244ea52d9eafb04a4b
 ---
 
 Panduan ini menunjukkan cara menyambungkan klien MCP luaran — Claude Code, editor,
@@ -141,7 +141,7 @@ jadi menyembunyikan alat merosakkannya dan bukan mengemaskannya.
 
 ## Pelayan MCP yang digunakan oleh ejen anda
 
-Panduan ini tentang titik akhir Control Center sendiri. Arah yang sebaliknya ialah pelayan MCP yang Control Center sambungkan dan serahkan kepada ejen yang dijalankannya. Anda menyediakannya di bawah **Tetapan → Pelayan → Pelayan MCP**, pada dua peringkat. Sama ada cara, Control Center menyambung ke pelayan itu sendiri dan menghantar alatnya ke larian, jadi harness terbina dan Claude Code mendapat alat dan gesaan kelulusan yang sama. Larian Claude Code melihatnya di bawah pelayan `control-center`, sebagai `mcp__control-center__mcp__<server>__<tool>`.
+Panduan ini tentang titik akhir Control Center sendiri. Arah yang sebaliknya ialah pelayan MCP yang Control Center sambungkan dan serahkan kepada ejen yang dijalankannya. Anda menyediakannya di bawah **Tetapan → Pelayan → Pelayan MCP**, pada dua peringkat: untuk seluruh ruang kerja atau untuk diri anda sendiri. Sama ada cara, Control Center menyambung ke pelayan itu sendiri dan menghantar alatnya ke larian, jadi harness terbina dan Claude Code mendapat alat dan gesaan kelulusan yang sama. Larian Claude Code melihatnya di bawah pelayan `control-center`, sebagai `mcp__control-center__mcp__<server>__<tool>`.
 
 ### Pelayan ruang kerja
 
@@ -157,17 +157,26 @@ Nilai pembolehubah persekitaran dan header disimpan dalam fail rahsia pelayan da
 
 Arahan dijalankan di mesin pelayan sebagai pengguna pelayan itu sendiri, jadi ia tidak bermula sehingga pemilik pelayan meluluskannya. Sehingga itu ia dipaparkan sebagai **Menunggu kelulusan**. Pelayan URL berfungsi serta-merta, tetapi ia hanya boleh mencapai alamat awam sehingga pemilik pelayan meluluskannya, yang turut membenarkan `localhost` dan rangkaian persendirian. Apabila pemilik pelayan menyimpan pelayan, itu dikira sebagai kelulusan. Jika orang lain menukar cara pelayan bermula atau tempat ia menyambung, ia perlu diluluskan semula. Menghidupkan atau mematikan pelayan mengekalkan kelulusannya.
 
-### Pelayan peribadi
+### Pelayan sendiri
 
-Pelayan peribadi dimiliki oleh pemilik pelayan dan disenaraikan di bawah **Pelayan MCP luaran**. Pelayan yang dikonfigurasikan di mesin pelayan untuk Claude, Codex, Cursor, Gemini, VS Code, Windsurf, OpenCode atau dalam `.mcp.json` ditemui di situ secara automatik. Pemiliknya juga boleh menambah pelayan sendiri dengan **Tambah pelayan**, menggunakan borang yang sama. Pelayan yang anda tambah mengatasi pelayan yang ditemui dengan nama yang sama.
+Setiap ahli menambah pelayan sendiri dalam **Pelayan MCP anda**, menggunakan borang yang sama. Dalam ruang kerja ini, pelayan itu milik anda seorang: ahli lain tidak melihatnya, dan pelayan yang anda log masuk bertindak sebagai anda.
 
-Pelayan peribadi bertindak dengan identiti dan kelayakan pemiliknya:
+- Hanya larian yang anda mulakan dalam ruang kerja ini mendapat alatnya. Itu meliputi larian harness terbina dan larian Claude Code.
+- Larian ahli lain, automasi yang tidak dimulakan oleh sesiapa, dan larian anda dalam ruang kerja lain tidak mendapat satu pun daripadanya. Di situ alat tidak disenaraikan, tidak boleh dipanggil dan tidak muncul dalam carian alat.
+- Pelayan anda boleh mempunyai nama yang sama dengan pelayan ruang kerja. Dalam larian anda, pelayan anda yang digunakan.
+- Pelayan sendiri dicapai melalui URL dan hanya boleh mencapai alamat awam. Hanya pemilik pelayan boleh menambah pelayan sendiri yang menjalankan arahan.
 
-- Ia hanya tersedia dalam larian yang dimulakan oleh pemilik pelayan atau yang dia bertanggungjawab ke atasnya, termasuk automasi dalam ruang kerja yang pemilik bertanggungjawab ke atasnya. Ini meliputi larian harness terbina dan larian Claude Code.
-- Larian ahli, automasi yang terikat kepada ahli, dan setiap larian pada pelayan tanpa pemilik yang direkodkan tidak mendapat satu pun daripadanya. Di situ alat tidak disenaraikan, tidak boleh dipanggil dan tidak muncul dalam carian alat.
-- Kedua-dua pelayan peribadi dan pelayan ruang kerja tidak dihidangkan kepada token MCP atau peranti yang dipasangkan, dan sumber serta promptnya tidak diteruskan.
+Kedua-dua pelayan sendiri dan pelayan ruang kerja tidak dihidangkan kepada token MCP atau peranti yang dipasangkan, dan sumber serta promptnya tidak diteruskan.
 
-Log masuk ke pelayan dengan OAuth tidak tersedia daripada borang. Gunakan pelayan yang menerima token dalam header, atau konfigurasikannya untuk salah satu alat di atas, tempat ia ditemui.
+### Log masuk ke pelayan
+
+Pelayan URL yang meminta anda log masuk menunjukkan **Memerlukan kebenaran**.
+
+1. Pilih **Log masuk** pada pelayan. Pelayar anda membuka halaman log masuk pelayan itu sendiri.
+2. Luluskan permintaan di situ. Pelayar kembali ke Control Center dan menunjukkan kod.
+3. Taip kod dalam aplikasi. Titik semak: pelayan menunjukkan **Disambungkan**.
+
+Log masuk disimpan bersama pelayan yang dibuatnya. Log masuk ke pelayan ruang kerja memerlukan pentadbir ruang kerja, dan selepas itu setiap larian dalam ruang kerja bertindak sebagai akaun yang log masuk. Log masuk ke pelayan anda hanya menjejaskan larian anda. Membuang pelayan turut membuang log masuknya.
 
 ## Penyelesaian masalah
 

@@ -532,7 +532,7 @@ class AgentRunGateway {
             conversationId: grant.conversationId,
             spaceId: grant.spaceId,
             attested: true,
-            personalMcp: grant.personalMcp,
+            personalMcpUserId: grant.personalMcpUserId,
             runId: grant.runId,
             runLogId: grant.runLogId,
             readOnly: grant.readOnly,

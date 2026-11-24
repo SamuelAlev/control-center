@@ -1707,10 +1707,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get mcpServers => 'خوادم MCP';
 
   @override
-  String get mcpServersSettingsDescription =>
-      'خادم MCP المضمّن وخوادم MCP الخارجية.';
-
-  @override
   String get remoteControlAndDevices => 'التحكم عن بُعد والأجهزة';
 
   @override
@@ -8848,13 +8844,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get ideFileBinary => 'ملف ثنائي';
 
   @override
-  String get mcpExternalServers => 'خوادم MCP خارجية';
-
-  @override
-  String get mcpExternalServersDescription =>
-      'الاتصال بخوادم MCP خارجية (GitHub وSentry وPostgres وأتمتة المتصفح). تُكتشف تلقائيًا الخوادم التي كوّنتها لأدوات Claude وCursor وVS Code وغيرها.';
-
-  @override
   String get mcpApprovalMode => 'الموافقة على الأدوات';
 
   @override
@@ -8871,17 +8860,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get mcpApprovalYolo => 'الموافقة التلقائية على الكل';
 
   @override
-  String get mcpNoExternalServers => 'لم تُكتشف أي خوادم MCP خارجية.';
-
-  @override
-  String get mcpAuthorize => 'تفويض';
-
-  @override
   String get mcpReconnect => 'إعادة الاتصال';
-
-  @override
-  String get mcpExternalConnectionsNote =>
-      'تعمل خوادم MCP الخارجية على خادم الوكلاء (مشترك بين سطح المكتب والويب). تفويض خوادم OAuth متاح على سطح المكتب فقط.';
 
   @override
   String get mcpStatusConnected => 'متصل';
@@ -18625,10 +18604,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'أكِّد أن هذا الخادم مسموح له باستخدامها. يُعاد التحقق من كل مستودع بصلاحية وصولك.';
 
   @override
-  String get mcpExternalServersOwnerRunsOnly =>
-      'الخوادم الموجودة في إعدادات الأدوات الخاصة بهذا الجهاز متاحة فقط في عمليات التشغيل التي تبدؤها أو تتحمل مسؤوليتها. لا يراها أبدًا تشغيل يخص أشخاصًا آخرين، ولا تُعرض عبر نقطة نهاية MCP الخاصة بـ Control Center.';
-
-  @override
   String repoCodeNeedsSignIn(String provider) {
     return 'سجّل الدخول إلى $provider لرؤية شيفرة هذا المستودع.';
   }
@@ -19022,9 +18997,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get mcpAddServer => 'إضافة خادم';
 
   @override
-  String get mcpHandAddedSource => 'أُضيف في Control Center';
-
-  @override
   String get mcpStatusAwaitingApproval => 'بانتظار الموافقة';
 
   @override
@@ -19048,6 +19020,74 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get mcpApprovalRemoteMember =>
       'يستطيع هذا الخادم الوصول إلى العناوين العامة فقط إلى أن يوافق عليه مالك الخادم.';
+
+  @override
+  String get mcpServersSettingsSubtitle =>
+      'خادم MCP المدمج، وخوادم MCP التي تحصل عمليات تشغيل الوكلاء في هذه المساحة على أدواتها.';
+
+  @override
+  String get mcpPersonalServers => 'خوادم MCP الخاصة بك';
+
+  @override
+  String get mcpPersonalServersDescription =>
+      'لا يراها إلا أنت، ولا تحصل على أدواتها إلا عمليات تشغيل الوكلاء التي تبدؤها في مساحة العمل هذه.';
+
+  @override
+  String get mcpPersonalServersUnavailable =>
+      'خوادم MCP الخاصة بك غير متاحة على الخادم المتصل.';
+
+  @override
+  String get mcpPersonalServersEmpty => 'لا توجد خوادم MCP خاصة بك بعد';
+
+  @override
+  String get mcpPersonalServersEmptyDescription =>
+      'أضف خادماً لتمنح عمليات التشغيل التي تبدؤها في مساحة العمل هذه أدواته.';
+
+  @override
+  String get mcpServerEditorPersonalOwner =>
+      'لا يستخدمه إلا التشغيل الذي تبدؤه في مساحة العمل هذه. بصفتك مالك الخادم، الحفظ يوافق عليه.';
+
+  @override
+  String get mcpServerEditorPersonalMember =>
+      'لا يستخدمه إلا التشغيل الذي تبدؤه في مساحة العمل هذه. يستطيع الوصول إلى العناوين العامة فقط.';
+
+  @override
+  String get mcpServerSignInNeeded => 'سجّل الدخول لاستخدام أدوات هذا الخادم.';
+
+  @override
+  String get mcpServerSignIn => 'تسجيل الدخول';
+
+  @override
+  String mcpServerSignInTitle(String name) {
+    return 'تسجيل الدخول إلى $name';
+  }
+
+  @override
+  String mcpServerSignInWrongCode(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'تبقّت $count محاولة.',
+      many: 'تبقّت $count محاولة.',
+      few: 'تبقّت $count محاولات.',
+      two: 'تبقّت محاولتان.',
+      one: 'تبقّت محاولة واحدة.',
+      zero: 'لم تبقَ أي محاولات.',
+    );
+    return 'هذا ليس الرمز الذي عرضه متصفحك. $_temp0';
+  }
+
+  @override
+  String get mcpServerSignInEnded =>
+      'انتهت المهلة، أو رُفض الطلب، أو أدخلت رموزاً خاطئة أكثر من اللازم. ابدأ من جديد للحصول على صفحة تسجيل دخول جديدة.';
+
+  @override
+  String get mcpServerSignInStartAgain => 'ابدأ من جديد';
+
+  @override
+  String mcpServerSignedIn(String name) {
+    return 'تم تسجيل الدخول إلى $name.';
+  }
 
   @override
   String get mcpRemoveServer => 'إزالة الخادم';
@@ -19184,10 +19224,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get mcpServerEditorRemoteOwner =>
       'الحفظ يوافق على وصوله إلى الشبكة الخاصة للمضيف أيضاً.';
-
-  @override
-  String get mcpServerEditorPersonal =>
-      'تُستخدم فقط في عمليات التشغيل التي تبدؤها أو تكون مسؤولاً عنها.';
 
   @override
   String get mcpServerRefusedInvalid =>

@@ -1,16 +1,20 @@
+import 'dart:convert';
+
 import 'package:cc_domain/core/domain/ports/secret_store_port.dart';
 import 'package:cc_domain/features/mcp/domain/entities/mcp_server_definition.dart';
 import 'package:cc_domain/features/mcp/domain/value_objects/mcp_server_draft.dart';
 import 'package:cc_mcp_client/cc_mcp_client.dart';
 
-/// The environment and header values of configured MCP servers, kept in the
-/// server's owner-only secrets store and never in a database row.
+/// The environment and header values of configured MCP servers, and their
+/// browser sign-ins, kept in the server's owner-only secrets store and never
+/// in a database row.
 ///
-/// Slots are `mcp_server:<scope>:<id>:<env|header>:<name>`, with the scope
-/// `personal` or `ws:<workspaceId>`. `:` appears in no id, environment
-/// variable or header name, so one scope's prefix never matches another's.
-/// Header names are compared without case, so their slot uses the lower-cased
-/// name.
+/// Value slots are `mcp_server:<scope>:<id>:<env|header>:<name>` and sign-in
+/// slots `mcp_oauth:<scope>:<server origin>`, with the scope `ws:<workspaceId>`
+/// for the workspace's servers or `wsu:<workspaceId>:<userId>` for one
+/// member's own. `:` appears in no id, environment variable or header name,
+/// so one scope's prefix never matches another's. Header names are compared
+/// without case, so their slot uses the lower-cased name.
 class McpServerSecrets {
   /// Creates the store over [_secrets].
   McpServerSecrets(this._secrets);
@@ -19,17 +23,33 @@ class McpServerSecrets {
 
   static const _prefix = 'mcp_server:';
 
-  static String _scope(String? workspaceId) =>
-      workspaceId == null ? 'personal' : 'ws:$workspaceId';
+  static const _oauthPrefix = 'mcp_oauth:';
 
-  static String _serverPrefix(String? workspaceId, String id) =>
-      '$_prefix${_scope(workspaceId)}:$id:';
+  static String _scope(String workspaceId, String? userId) =>
+      userId == null ? 'ws:$workspaceId' : 'wsu:$workspaceId:$userId';
 
-  static String _envKey(String? workspaceId, String id, String name) =>
-      '${_serverPrefix(workspaceId, id)}env:$name';
+  static String _serverPrefix(McpServerDefinition d) =>
+      '$_prefix${_scope(d.workspaceId, d.userId)}:${d.id}:';
 
-  static String _headerKey(String? workspaceId, String id, String name) =>
-      '${_serverPrefix(workspaceId, id)}header:${name.toLowerCase()}';
+  static String _envKey(McpServerDefinition d, String name) =>
+      '${_serverPrefix(d)}env:$name';
+
+  static String _headerKey(McpServerDefinition d, String name) =>
+      '${_serverPrefix(d)}header:${name.toLowerCase()}';
+
+  /// The sign-ins of one audience: the workspace's servers ([userId] null)
+  /// or one member's own. Each audience has its own, so a member's sign-in
+  /// is never sent on the workspace's connection to the same origin.
+  McpOAuthTokenStore tokenStore(String workspaceId, String? userId) =>
+      _SecretsOAuthTokenStore(
+        _secrets,
+        '$_oauthPrefix${_scope(workspaceId, userId)}:',
+      );
+
+  /// Deletes what the releases before per-member servers kept: the server
+  /// owner's personal values. Their definitions and sign-ins were files.
+  Future<int> deleteLegacyPersonal() =>
+      _secrets.deleteMatching((key) => key.startsWith('${_prefix}personal:'));
 
   /// Applies [draft]'s values to [saved], the definition as just stored.
   /// [previous] is what it replaced: a change of transport drops every value
@@ -39,29 +59,27 @@ class McpServerSecrets {
     required McpServerDefinition? previous,
     required McpServerDraft draft,
   }) async {
-    final ws = saved.workspaceId;
-    final id = saved.id;
     if (previous != null) {
       final keptEnv = saved.envNames.toSet();
       for (final name in previous.envNames) {
         if (!keptEnv.contains(name)) {
-          await _secrets.delete(_envKey(ws, id, name));
+          await _secrets.delete(_envKey(saved, name));
         }
       }
       final keptHeaders = {for (final h in saved.headerNames) h.toLowerCase()};
       for (final name in previous.headerNames) {
         if (!keptHeaders.contains(name.toLowerCase())) {
-          await _secrets.delete(_headerKey(ws, id, name));
+          await _secrets.delete(_headerKey(saved, name));
         }
       }
     }
     if (saved.transport.isRemote) {
       for (final entry in draft.headerSet.entries) {
-        await _secrets.write(_headerKey(ws, id, entry.key), entry.value);
+        await _secrets.write(_headerKey(saved, entry.key), entry.value);
       }
     } else {
       for (final entry in draft.envSet.entries) {
-        await _secrets.write(_envKey(ws, id, entry.key), entry.value);
+        await _secrets.write(_envKey(saved, entry.key), entry.value);
       }
     }
   }
@@ -71,30 +89,34 @@ class McpServerSecrets {
   Future<({Map<String, String> env, Map<String, String> headers})> resolve(
     McpServerDefinition definition,
   ) async {
-    final ws = definition.workspaceId;
-    final id = definition.id;
     return (
       env: {
         for (final name in definition.envNames)
-          name: await _secrets.read(_envKey(ws, id, name)) ?? '',
+          name: await _secrets.read(_envKey(definition, name)) ?? '',
       },
       headers: {
         for (final name in definition.headerNames)
-          name: await _secrets.read(_headerKey(ws, id, name)) ?? '',
+          name: await _secrets.read(_headerKey(definition, name)) ?? '',
       },
     );
   }
 
-  /// Deletes every value of server [id] in [workspaceId] (null: personal).
-  Future<void> deleteServer(String? workspaceId, String id) {
-    final prefix = _serverPrefix(workspaceId, id);
+  /// Deletes every value of [definition].
+  Future<void> deleteServer(McpServerDefinition definition) {
+    final prefix = _serverPrefix(definition);
     return _secrets.deleteMatching((key) => key.startsWith(prefix));
   }
 
-  /// Deletes every value of every server of [workspaceId].
+  /// Deletes every value and sign-in of every server of [workspaceId], the
+  /// workspace's and its members' own.
   Future<int> deleteWorkspace(String workspaceId) {
-    final prefix = '$_prefix${_scope(workspaceId)}:';
-    return _secrets.deleteMatching((key) => key.startsWith(prefix));
+    final prefixes = [
+      for (final kind in const [_prefix, _oauthPrefix]) ...[
+        '${kind}ws:$workspaceId:',
+        '${kind}wsu:$workspaceId:',
+      ],
+    ];
+    return _secrets.deleteMatching((key) => prefixes.any(key.startsWith));
   }
 
   /// The connection config of [definition] with its stored values.
@@ -130,4 +152,36 @@ class McpServerSecrets {
       ).copyWith(publicOnly: publicOnly),
     };
   }
+}
+
+/// [McpOAuthTokenStore] over the secrets store, under one audience's prefix.
+class _SecretsOAuthTokenStore implements McpOAuthTokenStore {
+  _SecretsOAuthTokenStore(this._secrets, this._prefix);
+
+  final SecretStorePort _secrets;
+  final String _prefix;
+
+  @override
+  Future<McpOAuthToken?> read(String serverKey) async {
+    final raw = await _secrets.read('$_prefix$serverKey');
+    if (raw == null || raw.isEmpty) {
+      return null;
+    }
+    try {
+      final decoded = jsonDecode(raw);
+      return decoded is Map
+          ? McpOAuthToken.fromJson(decoded.cast<String, dynamic>())
+          : null;
+    } on FormatException {
+      return null;
+    }
+  }
+
+  @override
+  Future<void> write(String serverKey, McpOAuthToken token) =>
+      _secrets.write('$_prefix$serverKey', jsonEncode(token.toJson()));
+
+  @override
+  Future<void> delete(String serverKey) =>
+      _secrets.delete('$_prefix$serverKey');
 }

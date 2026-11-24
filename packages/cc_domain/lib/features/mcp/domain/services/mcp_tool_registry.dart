@@ -12,13 +12,13 @@ abstract interface class ToolCatalog {
 /// Which bridged MCP layers one caller may see, beyond the shared tools.
 ///
 /// External servers are not everyone's: a workspace's servers belong to that
-/// workspace's runs, and the server owner's personal servers act with their
-/// own identity. A view is decided by whoever knows the caller (the run's
-/// grant, the harness's own context), never by a request argument.
+/// workspace's runs, and a member's own servers act with that member's
+/// identity. A view is decided by whoever knows the caller (the run's grant,
+/// the harness's own context), never by a request argument.
 final class McpToolView {
   /// Creates a view. [workspaceId] adds that workspace's servers;
-  /// [includePersonal] adds the server owner's own.
-  const McpToolView({this.workspaceId, this.includePersonal = false});
+  /// [personalUserId] adds that member's own servers in it.
+  const McpToolView({this.workspaceId, this.personalUserId});
 
   /// The shared tools only: no external server at all.
   static const McpToolView shared = McpToolView();
@@ -26,38 +26,39 @@ final class McpToolView {
   /// The workspace whose configured servers this caller may use, or null.
   final String? workspaceId;
 
-  /// Whether this caller may use the server owner's personal servers.
-  final bool includePersonal;
+  /// The member whose own servers in [workspaceId] this caller may use (the
+  /// person who started the run), or null for none.
+  final String? personalUserId;
 
   @override
   bool operator ==(Object other) =>
       other is McpToolView &&
       other.workspaceId == workspaceId &&
-      other.includePersonal == includePersonal;
+      other.personalUserId == personalUserId;
 
   @override
-  int get hashCode => Object.hash(workspaceId, includePersonal);
+  int get hashCode => Object.hash(workspaceId, personalUserId);
 
   @override
   String toString() =>
-      'McpToolView(workspace: $workspaceId, personal: $includePersonal)';
+      'McpToolView(workspace: $workspaceId, personal: $personalUserId)';
 }
 
 /// The live set of MCP tools served to agents.
 ///
 /// Layers, in the order a name resolves: **extra** (host singletons via
-/// [register]), **personal** (the server owner's own servers via
+/// [register]), **personal** (one member's own servers in one workspace via
 /// [setPersonalTools]), **workspace** (each workspace's configured servers via
 /// [setWorkspaceTools]) and **base** (native, fixed at construction).
 ///
-/// The personal layer holds the servers discovered in, or added to, the server
-/// OS user's own configuration, which act with that user's identity and
-/// credentials. Only a run the server owner is accountable for may be handed
-/// them. A workspace layer belongs to that workspace's runs alone. Every
-/// run-facing read therefore takes an [McpToolView], and a tool outside it is
-/// absent: not listed, not callable, and never standing in for another tool of
-/// the same name. Personal resolves before workspace, so a workspace server
-/// can never shadow one of the owner's in the owner's own run.
+/// A personal layer holds the servers one member added for themselves in one
+/// workspace, which act with that member's identity and credentials. Only a
+/// run that member started there may be handed them. A workspace layer
+/// belongs to that workspace's runs alone. Every run-facing read therefore
+/// takes an [McpToolView], and a tool outside it is absent: not listed, not
+/// callable, and never standing in for another tool of the same name.
+/// Personal resolves before workspace, so a workspace server can never shadow
+/// one of a member's own in that member's run.
 ///
 /// Every tool a view admits is in `tools/list`, ungated. Gating was
 /// unenforceable: Claude Code validates names against its cached list
@@ -71,7 +72,7 @@ class McpToolRegistry implements ToolCatalog {
     : _base = {for (final t in tools) t.name: t};
 
   final Map<String, McpTool> _base;
-  final Map<String, McpTool> _personal = {};
+  final Map<(String, String), Map<String, McpTool>> _personal = {};
   final Map<String, Map<String, McpTool>> _workspace = {};
   final Map<String, McpTool> _extra = {};
 
@@ -80,13 +81,30 @@ class McpToolRegistry implements ToolCatalog {
   /// server so connected clients receive `notifications/tools/list_changed`.
   void Function()? onToolsChanged;
 
-  /// Replaces the personal (bridged) tool set. Called by the owner's MCP
-  /// connection manager whenever their servers connect, disconnect, or
-  /// hot-reload.
-  void setPersonalTools(List<McpTool> tools) {
-    _personal
-      ..clear()
-      ..addEntries(tools.map((t) => MapEntry(t.name, t)));
+  /// Replaces the bridged tool set of [userId]'s own servers in
+  /// [workspaceId]; an empty list drops the layer.
+  void setPersonalTools(
+    String workspaceId,
+    String userId,
+    List<McpTool> tools,
+  ) {
+    if (workspaceId.isEmpty) {
+      throw ArgumentError.value(workspaceId, 'workspaceId', 'is empty');
+    }
+    if (userId.isEmpty) {
+      throw ArgumentError.value(userId, 'userId', 'is empty');
+    }
+    if (tools.isEmpty) {
+      _personal.remove((workspaceId, userId));
+    } else {
+      _personal[(workspaceId, userId)] = {for (final t in tools) t.name: t};
+    }
+    onToolsChanged?.call();
+  }
+
+  /// Drops every personal layer of [workspaceId] (the workspace is gone).
+  void dropPersonalTools(String workspaceId) {
+    _personal.removeWhere((key, _) => key.$1 == workspaceId);
     onToolsChanged?.call();
   }
 
@@ -114,7 +132,7 @@ class McpToolRegistry implements ToolCatalog {
   /// [view] admits.
   McpTool? lookup(String name, {required McpToolView view}) =>
       _extra[name] ??
-      (view.includePersonal ? _personal[name] : null) ??
+      _personalLayer(view)?[name] ??
       _workspaceLayer(view)?[name] ??
       _base[name];
 
@@ -127,7 +145,7 @@ class McpToolRegistry implements ToolCatalog {
     if (_extra.containsKey(name)) {
       return false;
     }
-    if (view.includePersonal && _personal.containsKey(name)) {
+    if (_personalLayer(view)?.containsKey(name) ?? false) {
       return true;
     }
     return _workspaceLayer(view)?.containsKey(name) ?? false;
@@ -218,7 +236,7 @@ class McpToolRegistry implements ToolCatalog {
   Map<String, McpTool> _allTools() => {
     ..._base,
     for (final layer in _workspace.values) ...layer,
-    ..._personal,
+    for (final layer in _personal.values) ...layer,
     ..._extra,
   };
 
@@ -227,12 +245,23 @@ class McpToolRegistry implements ToolCatalog {
     return id == null || id.isEmpty ? null : _workspace[id];
   }
 
+  Map<String, McpTool>? _personalLayer(McpToolView view) {
+    final workspace = view.workspaceId;
+    final user = view.personalUserId;
+    return workspace == null ||
+            workspace.isEmpty ||
+            user == null ||
+            user.isEmpty
+        ? null
+        : _personal[(workspace, user)];
+  }
+
   /// What [view] admits, keyed by name, in [lookup]'s precedence: a later
   /// spread wins a clash.
   Map<String, McpTool> _visible(McpToolView view) => {
     ..._base,
     ...?_workspaceLayer(view),
-    if (view.includePersonal) ..._personal,
+    ...?_personalLayer(view),
     ..._extra,
   };
 }

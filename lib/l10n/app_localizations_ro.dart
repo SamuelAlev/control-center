@@ -1712,10 +1712,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get mcpServers => 'Servere MCP';
 
   @override
-  String get mcpServersSettingsDescription =>
-      'Server MCP încorporat și servere MCP externe.';
-
-  @override
   String get remoteControlAndDevices => 'Control remote și dispozitive';
 
   @override
@@ -8839,13 +8835,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get ideFileBinary => 'Fișier binar';
 
   @override
-  String get mcpExternalServers => 'Servere MCP externe';
-
-  @override
-  String get mcpExternalServersDescription =>
-      'Conectează-te la servere MCP externe (GitHub, Sentry, Postgres, automatizare browser). Servere pe care le-ai configurat pentru Claude, Cursor, VS Code și alte instrumente sunt descoperite automat.';
-
-  @override
   String get mcpApprovalMode => 'Aprobare instrumente';
 
   @override
@@ -8862,17 +8851,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get mcpApprovalYolo => 'Aprobă tot automat';
 
   @override
-  String get mcpNoExternalServers => 'Niciun server MCP extern descoperit.';
-
-  @override
-  String get mcpAuthorize => 'Autorizează';
-
-  @override
   String get mcpReconnect => 'Reconectează';
-
-  @override
-  String get mcpExternalConnectionsNote =>
-      'Serverele MCP externe rulează pe serverul de agenți (partajat de desktop și web). Autorizarea serverelor OAuth este disponibilă doar pe desktop.';
 
   @override
   String get mcpStatusConnected => 'Conectat';
@@ -18579,10 +18558,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Confirmă că acest server le poate folosi. Fiecare depozit este verificat din nou cu accesul tău.';
 
   @override
-  String get mcpExternalServersOwnerRunsOnly =>
-      'Serverele găsite în setările de unelte ale acestei mașini sunt disponibile doar în rulările pe care le pornești sau pentru care răspunzi. Rulările altora nu le văd niciodată și nu sunt oferite prin endpointul MCP al Control Center.';
-
-  @override
   String repoCodeNeedsSignIn(String provider) {
     return 'Autentifică-te în $provider ca să vezi codul acestui depozit.';
   }
@@ -18976,9 +18951,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get mcpAddServer => 'Adaugă server';
 
   @override
-  String get mcpHandAddedSource => 'Adăugat în Control Center';
-
-  @override
   String get mcpStatusAwaitingApproval => 'Se așteaptă aprobarea';
 
   @override
@@ -19002,6 +18974,72 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get mcpApprovalRemoteMember =>
       'Acest server poate ajunge doar la adrese publice până când îl aprobă proprietarul serverului.';
+
+  @override
+  String get mcpServersSettingsSubtitle =>
+      'Serverul MCP integrat și serverele MCP ale căror unelte le primesc rulările de agent din acest spațiu de lucru.';
+
+  @override
+  String get mcpPersonalServers => 'Serverele tale MCP';
+
+  @override
+  String get mcpPersonalServersDescription =>
+      'Doar tu vezi aceste servere, iar doar rulările de agent pe care le pornești în acest spațiu de lucru le primesc uneltele.';
+
+  @override
+  String get mcpPersonalServersUnavailable =>
+      'Serverele tale MCP nu sunt disponibile pe serverul conectat.';
+
+  @override
+  String get mcpPersonalServersEmpty => 'Încă nu ai servere MCP';
+
+  @override
+  String get mcpPersonalServersEmptyDescription =>
+      'Adaugă un server ca rulările de agent pe care le pornești în acest spațiu de lucru să primească uneltele lui.';
+
+  @override
+  String get mcpServerEditorPersonalOwner =>
+      'Îl folosesc doar rulările pe care le pornești în acest spațiu de lucru. Ca proprietar al serverului, salvarea lui îl aprobă.';
+
+  @override
+  String get mcpServerEditorPersonalMember =>
+      'Îl folosesc doar rulările pe care le pornești în acest spațiu de lucru. Poate ajunge doar la adrese publice.';
+
+  @override
+  String get mcpServerSignInNeeded =>
+      'Autentifică-te ca să folosești uneltele acestui server.';
+
+  @override
+  String get mcpServerSignIn => 'Autentifică-te';
+
+  @override
+  String mcpServerSignInTitle(String name) {
+    return 'Autentificare la $name';
+  }
+
+  @override
+  String mcpServerSignInWrongCode(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Mai ai $count de încercări.',
+      few: 'Mai ai $count încercări.',
+      one: 'Mai ai 1 încercare.',
+    );
+    return 'Nu este codul afișat de browser. $_temp0';
+  }
+
+  @override
+  String get mcpServerSignInEnded =>
+      'A durat prea mult, a fost refuzată sau ai introdus prea multe coduri greșite. Începe din nou ca să primești o pagină nouă de autentificare.';
+
+  @override
+  String get mcpServerSignInStartAgain => 'Începe din nou';
+
+  @override
+  String mcpServerSignedIn(String name) {
+    return 'Te-ai autentificat la $name.';
+  }
 
   @override
   String get mcpRemoveServer => 'Elimină serverul';
@@ -19138,10 +19176,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get mcpServerEditorRemoteOwner =>
       'Salvarea îl aprobă ca să poată ajunge și în rețeaua privată a gazdei.';
-
-  @override
-  String get mcpServerEditorPersonal =>
-      'Folosit doar în rulările pe care le pornești sau pentru care ești responsabil.';
 
   @override
   String get mcpServerRefusedInvalid =>

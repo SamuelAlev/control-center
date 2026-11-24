@@ -90,22 +90,23 @@ abstract final class McpServerNames {
       header.hasMatch(name) && !reservedHeaders.contains(name.toLowerCase());
 }
 
-/// An MCP server someone configured by hand, either for one workspace (its
-/// [workspaceId]) or as one of the server owner's personal servers (no
-/// workspace).
+/// An MCP server someone configured by hand in a workspace: either for
+/// everyone in it ([userId] null), or as one member's own, used only by the
+/// runs that member starts there ([userId] theirs).
 ///
 /// It holds no secret: environment variable and header values live in the
 /// server's secrets store, and the definition keeps only their names
 /// ([envNames], [headerNames]).
 ///
-/// A [McpServerTransport.stdio] server runs on the host, so in a workspace it
-/// is dialled only once the current server owner approved it
-/// ([hostApprovedBy]). A remote one reaches only public addresses until then.
+/// A [McpServerTransport.stdio] server runs on the host, so it is dialled
+/// only once the current server owner approved it ([hostApprovedBy]). A
+/// remote one reaches only public addresses until then.
 class McpServerDefinition {
   /// Creates a definition, refusing any field that cannot be dialled.
   McpServerDefinition({
     required this.id,
-    this.workspaceId,
+    required this.workspaceId,
+    this.userId,
     required this.name,
     required this.transport,
     this.command,
@@ -126,8 +127,11 @@ class McpServerDefinition {
     if (id.trim().isEmpty) {
       throw McpServerDefinitionException.invalid('id');
     }
-    if (workspaceId != null && workspaceId!.trim().isEmpty) {
+    if (workspaceId.trim().isEmpty) {
       throw McpServerDefinitionException.invalid('workspace');
+    }
+    if (userId != null && userId!.trim().isEmpty) {
+      throw McpServerDefinitionException.invalid('user');
     }
     if (!McpServerNames.server.hasMatch(name)) {
       throw McpServerDefinitionException.invalid('name');
@@ -169,7 +173,8 @@ class McpServerDefinition {
   factory McpServerDefinition.fromJson(Map<String, dynamic> json) =>
       McpServerDefinition(
         id: json['id'] as String? ?? '',
-        workspaceId: json['workspace_id'] as String?,
+        workspaceId: json['workspace_id'] as String? ?? '',
+        userId: json['user_id'] as String?,
         name: json['name'] as String? ?? '',
         transport: McpServerTransport.fromWire(json['transport']),
         command: json['command'] as String?,
@@ -187,8 +192,15 @@ class McpServerDefinition {
   /// Stable id.
   final String id;
 
-  /// The workspace it belongs to, or null for a personal server.
-  final String? workspaceId;
+  /// The workspace it belongs to.
+  final String workspaceId;
+
+  /// The member whose own server it is, or null when it is the workspace's:
+  /// a personal server reaches only the runs that member starts.
+  final String? userId;
+
+  /// Whether it is one member's own rather than the workspace's.
+  bool get isPersonal => userId != null;
 
   /// Unique within its scope; namespaces its tools (`mcp__<name>__<tool>`).
   final String name;
@@ -262,6 +274,7 @@ class McpServerDefinition {
   }) => McpServerDefinition(
     id: id,
     workspaceId: workspaceId,
+    userId: userId,
     name: name,
     transport: transport,
     command: command,
@@ -281,7 +294,8 @@ class McpServerDefinition {
   /// The snake_case wire shape. Carries no secret value.
   Map<String, dynamic> toJson() => {
     'id': id,
-    if (workspaceId != null) 'workspace_id': workspaceId,
+    'workspace_id': workspaceId,
+    if (userId != null) 'user_id': userId,
     'name': name,
     'transport': transport.wire,
     if (command != null) 'command': command,
@@ -301,6 +315,7 @@ class McpServerDefinition {
       other is McpServerDefinition &&
       other.id == id &&
       other.workspaceId == workspaceId &&
+      other.userId == userId &&
       other.name == name &&
       other.transport == transport &&
       other.command == command &&
@@ -318,6 +333,7 @@ class McpServerDefinition {
   int get hashCode => Object.hash(
     id,
     workspaceId,
+    userId,
     name,
     transport,
     command,
@@ -335,7 +351,7 @@ class McpServerDefinition {
   @override
   String toString() =>
       'McpServerDefinition($id, $name, ${transport.wire}, '
-      'workspace: $workspaceId)';
+      'workspace: $workspaceId, user: $userId)';
 
   /// UTC whole seconds: what the database keeps, so a definition equals the
   /// copy read back from storage or the wire.
@@ -354,9 +370,8 @@ class McpServerDefinition {
   static List<String> _sortedUnique(List<String> values) =>
       values.toSet().toList()..sort();
 
-  static List<String> _strings(Object? raw) => raw is List
-      ? [for (final value in raw) '$value']
-      : const <String>[];
+  static List<String> _strings(Object? raw) =>
+      raw is List ? [for (final value in raw) '$value'] : const <String>[];
 
   static bool _listEq(List<String> a, List<String> b) {
     if (a.length != b.length) {

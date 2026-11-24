@@ -2,7 +2,7 @@
 title: Autorizace — kdo smí co dělat a jak to doložíš
 description: Katalog oprávnění za rolemi Control Center, auditní stopa odolná proti manipulaci, kam padá každé autorizační rozhodnutí, a nastavení celé instalace, která operátor umí ukotvit.
 slug: cs-CZ/prirucka/koncepty/autorizace
-sourceHash: 9b6ab5ffb27be5a061ebfd9d020992ec83236ad7
+sourceHash: 311689da6bce052ef25bccc1e0f3dedd29f0d102
 ---
 
 Control Center odpovídá na dvě autorizační otázky a každá je jiná.
@@ -124,7 +124,7 @@ prostor lze přidělit komukoli, ale stroj serveru má jednoho vlastníka.
 - Spouštět agenty na serveru, jehož stroj nemá sandbox. Běhy všech ostatních se tam odmítnou, pokud vlastník serveru nespustil s `--sandbox off`, což spustí agenty všech členů bez omezení (viz [Agenti na hostiteli bez sandboxu](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/#agenti-na-hostiteli-bez-sandboxu)).
 - Propojit checkout repozitáře, který leží mimo vlastní úložiště pracovního prostoru, potvrdit ten, který je už propojený před tímto pravidlem, a při přidávání repozitáře procházet složky serveru (viz [Přidejte repozitáře do pracovního prostoru](/cs-CZ/prirucka/navody/pridani-repozitaru/)).
 - Vidět a zastavit každý běžící proces agenta na serveru. Ostatní vidí a zastavují jen živé běhy agentů v pracovních prostorech, do kterých patří.
-- Nechat agenty používat osobní servery MCP: ty nastavené v nástrojích uživatele serveru (Claude, Codex, Cursor a další) i ty, které přidá vlastník. Dostanou je jen běhy, za které vlastník odpovídá; viz [Osobní servery](/cs-CZ/prirucka/navody/mcp-server/#osobní-servery).
+- Přidání vlastního serveru MCP, který spouští příkaz na stroji serveru. Servery ostatních se připojují přes URL (viz [Vlastní servery](/cs-CZ/prirucka/navody/mcp-server/#vlastní-servery)).
 - Schválit server MCP pracovního prostoru, který spouští příkaz na stroji serveru nebo se připojuje k jeho privátní síti (viz [Servery pracovního prostoru](/cs-CZ/prirucka/navody/mcp-server/#servery-pracovního-prostoru)).
 - Potvrdit e-mailovou adresu člověka, aby ji jednotné přihlášení mohlo spárovat (viz [Připojte poskytovatele OpenID Connect](/cs-CZ/prirucka/navody/sso-oidc/#jak-se-přihlášení-páruje-s-existujícími-účty)).
 - Měnit nastavení celé instalace: SSO, přihlašovací údaje poskytovatelů, koncový bod MCP a jeho token, správu modelů, Connect a zálohy celé instalace. Tyto operace deklarují **autoritu serveru** a všem ostatním se odmítnou.

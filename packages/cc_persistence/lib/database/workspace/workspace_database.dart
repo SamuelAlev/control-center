@@ -507,7 +507,7 @@ class WorkspaceDatabase extends _$WorkspaceDatabase with ConvergedDatabase {
   /// Bump it whenever the declared schema changes (a table class, an index,
   /// a constraint): the version differing is what makes an existing file
   /// converge on its next open. There are no migration steps to write.
-  static const int currentSchemaVersion = 40;
+  static const int currentSchemaVersion = 41;
 
   /// `PRAGMA application_id` of a workspace database: "CCWS".
   static const int fileApplicationId = 0x43435753;

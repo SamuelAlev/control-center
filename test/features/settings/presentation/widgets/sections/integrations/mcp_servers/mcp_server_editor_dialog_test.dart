@@ -1,11 +1,11 @@
 import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
 import 'package:cc_domain/features/mcp/domain/entities/mcp_server_definition.dart';
+import 'package:cc_domain/features/mcp/domain/ports/workspace_mcp_server_control.dart';
 import 'package:cc_domain/features/mcp/domain/value_objects/mcp_server_draft.dart';
 import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/integrations/mcp_servers/mcp_server_editor_dialog.dart';
-import 'package:control_center/features/settings/presentation/widgets/sections/integrations/mcp_servers/mcp_server_form.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/widgets.dart';
@@ -26,7 +26,7 @@ void main() {
     WidgetTester tester, {
     McpServerDefinition? existing,
     bool owner = false,
-    McpServerEditorScope scope = McpServerEditorScope.workspace,
+    McpServerScope scope = McpServerScope.workspace,
     Object? refuseWith,
     TextDirection? textDirection,
   }) async {
@@ -147,11 +147,11 @@ void main() {
     final drafts = await open(
       tester,
       owner: true,
-      scope: McpServerEditorScope.personal,
+      scope: McpServerScope.personal,
     );
 
     expect(find.text(l10n.mcpServerEditorAddTitle), findsOneWidget);
-    expect(find.text(l10n.mcpServerEditorPersonal), findsOneWidget);
+    expect(find.text(l10n.mcpServerEditorPersonalOwner), findsOneWidget);
     await tester.enterText(field(l10n.nameLabel), 'linear');
     await tester.tap(find.text(l10n.mcpServerTransportHttp));
     await tester.pumpAndSettle();
@@ -175,6 +175,28 @@ void main() {
     expect(draft.headerSet, {'Authorization': 'Bearer t'});
     expect(draft.headerRemove, isEmpty);
     expect(draft.envSet, isEmpty);
+  });
+
+  testWidgets('only the server owner is offered a personal command server', (
+    tester,
+  ) async {
+    final drafts = await open(tester, scope: McpServerScope.personal);
+
+    expect(find.text(l10n.mcpServerTransportStdio), findsNothing);
+    expect(find.text(l10n.mcpServerTransportHttp), findsOneWidget);
+    expect(find.text(l10n.mcpServerEditorPersonalMember), findsOneWidget);
+    // It starts on a transport the member may add: no command field.
+    expect(find.text(l10n.mcpServerCommandLabel), findsNothing);
+
+    await tester.enterText(field(l10n.nameLabel), 'linear');
+    await tester.enterText(
+      field(l10n.mcpServerUrlLabel),
+      'https://mcp.example.com/mcp',
+    );
+    await save(tester);
+
+    expect(drafts.single.transport, McpServerTransport.http);
+    expect(drafts.single.url, 'https://mcp.example.com/mcp');
   });
 
   testWidgets('nothing is sent while a field is invalid', (tester) async {

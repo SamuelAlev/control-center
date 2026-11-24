@@ -8,33 +8,43 @@ import 'package:control_center/features/settings/presentation/widgets/kit/settin
 import 'package:control_center/features/settings/presentation/widgets/sections/integrations/mcp_servers/mcp_server_actions.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/integrations/mcp_servers/mcp_server_editor_dialog.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/integrations/mcp_servers/mcp_server_form.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/integrations/mcp_servers/mcp_server_row_notice.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/integrations/mcp_servers/mcp_server_sign_in.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/integrations/mcp_servers/mcp_server_words.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// One MCP server of a workspace, for one of its admins: its state, how it
-/// is reached, the on/off switch, and — held back until hovered — reconnect
-/// and remove. The row opens the editor. A server the current server owner
-/// has not approved carries a line saying what approval would allow; the
-/// owner gets **Approve** on it.
-class WorkspaceMcpServerRow extends ConsumerWidget {
-  /// Creates the row for [entry] of [workspaceId].
-  const WorkspaceMcpServerRow({
+/// One MCP server of a workspace, the workspace's or the reader's own: its
+/// state, how it is reached, the on/off switch, and — held back until
+/// hovered — reconnect and remove. The row opens the editor.
+///
+/// Under it, what stands between the server and its tools: a workspace
+/// server the current server owner has not approved says what approval would
+/// allow (the owner gets **Approve**), and a remote server waiting for a
+/// browser sign-in gets **Sign in**.
+class McpServerRow extends ConsumerWidget {
+  /// Creates the row for [entry] of [scope] in [workspaceId].
+  const McpServerRow({
     super.key,
     required this.workspaceId,
+    required this.scope,
     required this.entry,
   });
 
   /// The workspace it belongs to.
   final String workspaceId;
 
+  /// Whose server it is.
+  final McpServerScope scope;
+
   /// The server and its live state.
   final WorkspaceMcpServerEntry entry;
 
-  void _refresh(WidgetRef ref) =>
-      ref.invalidate(workspaceMcpServersProvider(workspaceId));
+  void _refresh(WidgetRef ref) => ref.invalidate(
+    workspaceMcpServersProvider((workspaceId: workspaceId, scope: scope)),
+  );
 
   Future<void> _act(
     BuildContext context,
@@ -50,9 +60,9 @@ class WorkspaceMcpServerRow extends ConsumerWidget {
     final control = ref.read(workspaceMcpServerControlProvider);
     final saved = await showMcpServerEditor(
       context,
-      scope: McpServerEditorScope.workspace,
+      scope: scope,
       existing: entry.definition,
-      onSave: (draft) => control.save(workspaceId, draft),
+      onSave: (draft) => control.save(workspaceId, scope, draft),
     );
     if (saved) {
       _refresh(ref);
@@ -65,7 +75,7 @@ class WorkspaceMcpServerRow extends ConsumerWidget {
       await _act(
         context,
         ref,
-        (c) => c.delete(workspaceId, entry.definition.id),
+        (c) => c.delete(workspaceId, scope, entry.definition.id),
       );
     }
   }
@@ -78,6 +88,11 @@ class WorkspaceMcpServerRow extends ConsumerWidget {
     final state = mcpLifecycleState(l10n, entry.lifecycle);
     final lastError = entry.lastError;
     final failed = mcpLifecycleCanReconnect(entry.lifecycle);
+    final signIn =
+        entry.needsAuth && definition.transport.isRemote && definition.enabled;
+    // Nobody approves a member's own server; theirs only stays public.
+    final awaitsApproval =
+        scope == McpServerScope.workspace && !entry.hostApproved;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
@@ -133,7 +148,7 @@ class WorkspaceMcpServerRow extends ConsumerWidget {
                     _act(
                       context,
                       ref,
-                      (c) => c.reconnect(workspaceId, entry.definition.id),
+                      (c) => c.reconnect(workspaceId, scope, definition.id),
                     ),
                   ),
                 ),
@@ -155,6 +170,7 @@ class WorkspaceMcpServerRow extends ConsumerWidget {
                 ref,
                 (c) => c.save(
                   workspaceId,
+                  scope,
                   mcpServerEnabledDraft(definition, enabled: enabled),
                 ),
               ),
@@ -162,93 +178,30 @@ class WorkspaceMcpServerRow extends ConsumerWidget {
           ),
           onPressed: () => unawaited(_edit(context, ref)),
         ),
-        if (!entry.hostApproved)
-          _ApprovalLine(
+        if (awaitsApproval)
+          McpServerApprovalNotice(
             entry: entry,
             owner: ref.watch(canUseHostProvider),
             onApprove: () => _act(
               context,
               ref,
-              (c) => c.approve(workspaceId, entry.definition.id),
+              (c) => c.approve(workspaceId, definition.id),
+            ),
+          ),
+        // Last: the step the reader can always take themselves.
+        if (signIn)
+          McpServerRowNotice(
+            text: l10n.mcpServerSignInNeeded,
+            actionLabel: l10n.mcpServerSignIn,
+            onAction: () => signInToMcpServer(
+              context,
+              ref,
+              workspaceId: workspaceId,
+              scope: scope,
+              definition: definition,
             ),
           ),
       ],
-    );
-  }
-}
-
-/// What approval would allow, under an unapproved server. Lined up with the
-/// row's title; the owner gets the button that grants it.
-class _ApprovalLine extends StatefulWidget {
-  const _ApprovalLine({
-    required this.entry,
-    required this.owner,
-    required this.onApprove,
-  });
-
-  final WorkspaceMcpServerEntry entry;
-  final bool owner;
-  final Future<void> Function() onApprove;
-
-  @override
-  State<_ApprovalLine> createState() => _ApprovalLineState();
-}
-
-class _ApprovalLineState extends State<_ApprovalLine> {
-  bool _busy = false;
-
-  Future<void> _approve() async {
-    setState(() => _busy = true);
-    await widget.onApprove();
-    if (mounted) {
-      setState(() => _busy = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    final stdio = widget.entry.definition.runsOnHost;
-    final text = switch ((stdio, widget.owner)) {
-      (true, true) => l10n.mcpApprovalStdioOwner,
-      (true, false) => l10n.mcpApprovalStdioMember,
-      (false, true) => l10n.mcpApprovalRemoteOwner,
-      (false, false) => l10n.mcpApprovalRemoteMember,
-    };
-    return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(
-        AppSpacing.lg + 28 + AppSpacing.md,
-        0,
-        AppSpacing.lg,
-        AppSpacing.md,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsetsDirectional.only(top: 1),
-            child: Icon(AppIcons.info, size: 14, color: t.fgWarningPrimary),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Text(
-              text,
-              style: CcTypography.caption.copyWith(color: t.textSecondary),
-            ),
-          ),
-          if (widget.owner) ...[
-            const SizedBox(width: AppSpacing.md),
-            CcButton(
-              size: CcButtonSize.sm,
-              variant: CcButtonVariant.secondary,
-              loading: _busy,
-              onPressed: _busy ? null : () => unawaited(_approve()),
-              child: Text(l10n.mcpApproveServer),
-            ),
-          ],
-        ],
-      ),
     );
   }
 }

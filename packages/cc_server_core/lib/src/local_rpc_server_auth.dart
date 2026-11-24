@@ -365,6 +365,13 @@ extension _AuthMethods on LocalRpcServer {
     final res = request.response;
     final oauth = providerOAuth;
     final segments = request.uri.pathSegments;
+    if (segments.length == 3 &&
+        segments.first == 'oauth' &&
+        segments[1] == McpServerAuthorizations.lane &&
+        segments.last == 'callback') {
+      await _serveMcpOAuthCallback(request);
+      return;
+    }
     if (oauth == null ||
         segments.length != 3 ||
         segments.first != 'oauth' ||
@@ -387,6 +394,47 @@ extension _AuthMethods on LocalRpcServer {
         ..write(_confirmCodePage(page.confirmCode, page.link));
     } on AuthException catch (e) {
       // The service already logged why; its messages are fixed strings.
+      res
+        ..statusCode = HttpStatus.forbidden
+        ..headers.contentType = ContentType.html
+        ..write(
+          _providerOAuthPage(title: 'Sign-in failed', body: e.message, ok: false),
+        );
+    }
+    await res.close();
+  }
+
+  /// The redirect of a browser sign-in to an MCP server: stores nothing and
+  /// shows the confirmation code the person who began it types in the app.
+  Future<void> _serveMcpOAuthCallback(HttpRequest request) async {
+    final res = request.response;
+    final mcp = mcpOAuth;
+    if (mcp == null) {
+      res.statusCode = HttpStatus.notFound;
+      await res.close();
+      return;
+    }
+    if (request.method != 'GET') {
+      res.statusCode = HttpStatus.methodNotAllowed;
+      await res.close();
+      return;
+    }
+    _setBrowserPageHeaders(res);
+    try {
+      final code = mcp.handleCallback(request.uri);
+      res
+        ..statusCode = HttpStatus.ok
+        ..headers.contentType = ContentType.html
+        ..write(
+          _providerOAuthPage(
+            title: 'Finish signing in',
+            body:
+                'Type this code in Control Center to finish: '
+                '${code.substring(0, 4)}-${code.substring(4)}',
+          ),
+        );
+    } on AuthException catch (e) {
+      // Fixed strings written by the service, never the request.
       res
         ..statusCode = HttpStatus.forbidden
         ..headers.contentType = ContentType.html

@@ -85434,6 +85434,16 @@ class $McpServersTableTable extends McpServersTable
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
@@ -85576,6 +85586,7 @@ class $McpServersTableTable extends McpServersTable
   @override
   List<GeneratedColumn> get $columns => [
     id,
+    userId,
     name,
     transport,
     command,
@@ -85605,6 +85616,12 @@ class $McpServersTableTable extends McpServersTable
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     } else if (isInserting) {
       context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
     }
     if (data.containsKey('name')) {
       context.handle(
@@ -85702,7 +85719,7 @@ class $McpServersTableTable extends McpServersTable
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
   List<Set<GeneratedColumn>> get uniqueKeys => [
-    {name},
+    {userId, name},
   ];
   @override
   McpServersTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
@@ -85711,6 +85728,10 @@ class $McpServersTableTable extends McpServersTable
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
       )!,
       name: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -85774,7 +85795,12 @@ class McpServersTableData extends DataClass
   /// Server id.
   final String id;
 
-  /// Unique within the workspace; namespaces the server's tools
+  /// The member whose own server it is, or empty for the workspace's. Empty
+  /// rather than null so the unique key holds for the workspace's servers
+  /// too. No foreign key: users live in the global database.
+  final String userId;
+
+  /// Unique within its owner; namespaces the server's tools
   /// (`mcp__<name>__<tool>`).
   final String name;
 
@@ -85816,6 +85842,7 @@ class McpServersTableData extends DataClass
   final DateTime updatedAt;
   const McpServersTableData({
     required this.id,
+    required this.userId,
     required this.name,
     required this.transport,
     this.command,
@@ -85833,6 +85860,7 @@ class McpServersTableData extends DataClass
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
     map['name'] = Variable<String>(name);
     map['transport'] = Variable<String>(transport);
     if (!nullToAbsent || command != null) {
@@ -85859,6 +85887,7 @@ class McpServersTableData extends DataClass
   McpServersTableCompanion toCompanion(bool nullToAbsent) {
     return McpServersTableCompanion(
       id: Value(id),
+      userId: Value(userId),
       name: Value(name),
       transport: Value(transport),
       command: command == null && nullToAbsent
@@ -85887,6 +85916,7 @@ class McpServersTableData extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return McpServersTableData(
       id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
       name: serializer.fromJson<String>(json['name']),
       transport: serializer.fromJson<String>(json['transport']),
       command: serializer.fromJson<String?>(json['command']),
@@ -85906,6 +85936,7 @@ class McpServersTableData extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
       'name': serializer.toJson<String>(name),
       'transport': serializer.toJson<String>(transport),
       'command': serializer.toJson<String?>(command),
@@ -85923,6 +85954,7 @@ class McpServersTableData extends DataClass
 
   McpServersTableData copyWith({
     String? id,
+    String? userId,
     String? name,
     String? transport,
     Value<String?> command = const Value.absent(),
@@ -85937,6 +85969,7 @@ class McpServersTableData extends DataClass
     DateTime? updatedAt,
   }) => McpServersTableData(
     id: id ?? this.id,
+    userId: userId ?? this.userId,
     name: name ?? this.name,
     transport: transport ?? this.transport,
     command: command.present ? command.value : this.command,
@@ -85955,6 +85988,7 @@ class McpServersTableData extends DataClass
   McpServersTableData copyWithCompanion(McpServersTableCompanion data) {
     return McpServersTableData(
       id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
       name: data.name.present ? data.name.value : this.name,
       transport: data.transport.present ? data.transport.value : this.transport,
       command: data.command.present ? data.command.value : this.command,
@@ -85980,6 +86014,7 @@ class McpServersTableData extends DataClass
   String toString() {
     return (StringBuffer('McpServersTableData(')
           ..write('id: $id, ')
+          ..write('userId: $userId, ')
           ..write('name: $name, ')
           ..write('transport: $transport, ')
           ..write('command: $command, ')
@@ -85999,6 +86034,7 @@ class McpServersTableData extends DataClass
   @override
   int get hashCode => Object.hash(
     id,
+    userId,
     name,
     transport,
     command,
@@ -86017,6 +86053,7 @@ class McpServersTableData extends DataClass
       identical(this, other) ||
       (other is McpServersTableData &&
           other.id == this.id &&
+          other.userId == this.userId &&
           other.name == this.name &&
           other.transport == this.transport &&
           other.command == this.command &&
@@ -86033,6 +86070,7 @@ class McpServersTableData extends DataClass
 
 class McpServersTableCompanion extends UpdateCompanion<McpServersTableData> {
   final Value<String> id;
+  final Value<String> userId;
   final Value<String> name;
   final Value<String> transport;
   final Value<String?> command;
@@ -86048,6 +86086,7 @@ class McpServersTableCompanion extends UpdateCompanion<McpServersTableData> {
   final Value<int> rowid;
   const McpServersTableCompanion({
     this.id = const Value.absent(),
+    this.userId = const Value.absent(),
     this.name = const Value.absent(),
     this.transport = const Value.absent(),
     this.command = const Value.absent(),
@@ -86064,6 +86103,7 @@ class McpServersTableCompanion extends UpdateCompanion<McpServersTableData> {
   });
   McpServersTableCompanion.insert({
     required String id,
+    this.userId = const Value.absent(),
     required String name,
     required String transport,
     this.command = const Value.absent(),
@@ -86084,6 +86124,7 @@ class McpServersTableCompanion extends UpdateCompanion<McpServersTableData> {
        updatedAt = Value(updatedAt);
   static Insertable<McpServersTableData> custom({
     Expression<String>? id,
+    Expression<String>? userId,
     Expression<String>? name,
     Expression<String>? transport,
     Expression<String>? command,
@@ -86100,6 +86141,7 @@ class McpServersTableCompanion extends UpdateCompanion<McpServersTableData> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
       if (name != null) 'name': name,
       if (transport != null) 'transport': transport,
       if (command != null) 'command': command,
@@ -86118,6 +86160,7 @@ class McpServersTableCompanion extends UpdateCompanion<McpServersTableData> {
 
   McpServersTableCompanion copyWith({
     Value<String>? id,
+    Value<String>? userId,
     Value<String>? name,
     Value<String>? transport,
     Value<String?>? command,
@@ -86134,6 +86177,7 @@ class McpServersTableCompanion extends UpdateCompanion<McpServersTableData> {
   }) {
     return McpServersTableCompanion(
       id: id ?? this.id,
+      userId: userId ?? this.userId,
       name: name ?? this.name,
       transport: transport ?? this.transport,
       command: command ?? this.command,
@@ -86155,6 +86199,9 @@ class McpServersTableCompanion extends UpdateCompanion<McpServersTableData> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
@@ -86202,6 +86249,7 @@ class McpServersTableCompanion extends UpdateCompanion<McpServersTableData> {
   String toString() {
     return (StringBuffer('McpServersTableCompanion(')
           ..write('id: $id, ')
+          ..write('userId: $userId, ')
           ..write('name: $name, ')
           ..write('transport: $transport, ')
           ..write('command: $command, ')
@@ -167805,6 +167853,7 @@ typedef $$PlanDivergencesTableTableProcessedTableManager =
 typedef $$McpServersTableTableCreateCompanionBuilder =
     McpServersTableCompanion Function({
       required String id,
+      Value<String> userId,
       required String name,
       required String transport,
       Value<String?> command,
@@ -167822,6 +167871,7 @@ typedef $$McpServersTableTableCreateCompanionBuilder =
 typedef $$McpServersTableTableUpdateCompanionBuilder =
     McpServersTableCompanion Function({
       Value<String> id,
+      Value<String> userId,
       Value<String> name,
       Value<String> transport,
       Value<String?> command,
@@ -167848,6 +167898,11 @@ class $$McpServersTableTableFilterComposer
   });
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -167926,6 +167981,11 @@ class $$McpServersTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get name => $composableBuilder(
     column: $table.name,
     builder: (column) => ColumnOrderings(column),
@@ -167998,6 +168058,9 @@ class $$McpServersTableTableAnnotationComposer
   });
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
@@ -168080,6 +168143,7 @@ class $$McpServersTableTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String> transport = const Value.absent(),
                 Value<String?> command = const Value.absent(),
@@ -168095,6 +168159,7 @@ class $$McpServersTableTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => McpServersTableCompanion(
                 id: id,
+                userId: userId,
                 name: name,
                 transport: transport,
                 command: command,
@@ -168112,6 +168177,7 @@ class $$McpServersTableTableTableManager
           createCompanionCallback:
               ({
                 required String id,
+                Value<String> userId = const Value.absent(),
                 required String name,
                 required String transport,
                 Value<String?> command = const Value.absent(),
@@ -168127,6 +168193,7 @@ class $$McpServersTableTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => McpServersTableCompanion.insert(
                 id: id,
+                userId: userId,
                 name: name,
                 transport: transport,
                 command: command,

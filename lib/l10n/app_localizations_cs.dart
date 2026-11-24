@@ -1713,10 +1713,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get mcpServers => 'Servery MCP';
 
   @override
-  String get mcpServersSettingsDescription =>
-      'Vestavěný server MCP a externí servery MCP.';
-
-  @override
   String get remoteControlAndDevices => 'Vzdálené ovládání a zařízení';
 
   @override
@@ -8845,13 +8841,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get ideFileBinary => 'Binární soubor';
 
   @override
-  String get mcpExternalServers => 'Externí servery MCP';
-
-  @override
-  String get mcpExternalServersDescription =>
-      'Připojte se k externím serverům MCP (GitHub, Sentry, Postgres, automatizace prohlížeče). Servery nastavené pro Claude, Cursor, VS Code a další nástroje se zjistí automaticky.';
-
-  @override
   String get mcpApprovalMode => 'Schvalování nástrojů';
 
   @override
@@ -8868,18 +8857,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get mcpApprovalYolo => 'Automaticky schvalovat vše';
 
   @override
-  String get mcpNoExternalServers =>
-      'Nebyly zjištěny žádné externí servery MCP.';
-
-  @override
-  String get mcpAuthorize => 'Autorizovat';
-
-  @override
   String get mcpReconnect => 'Znovu připojit';
-
-  @override
-  String get mcpExternalConnectionsNote =>
-      'Externí servery MCP běží na serveru agenta (sdílené desktopem i webem). Autorizace OAuth serverů je jen na desktopu.';
 
   @override
   String get mcpStatusConnected => 'Připojeno';
@@ -18589,10 +18567,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Potvrďte, že tento server je smí používat. Každý repozitář se znovu kontroluje s vaším přístupem.';
 
   @override
-  String get mcpExternalServersOwnerRunsOnly =>
-      'Servery nalezené v nastavení nástrojů tohoto počítače jsou dostupné jen v bězích, které spouštíte nebo za které odpovídáte. Běhy ostatních je nikdy nevidí a nenabízejí se přes koncový bod MCP Control Center.';
-
-  @override
   String repoCodeNeedsSignIn(String provider) {
     return 'Pro zobrazení kódu tohoto repozitáře se přihlaste k $provider.';
   }
@@ -18990,9 +18964,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get mcpAddServer => 'Přidat server';
 
   @override
-  String get mcpHandAddedSource => 'Přidáno v Control Center';
-
-  @override
   String get mcpStatusAwaitingApproval => 'Čeká na schválení';
 
   @override
@@ -19016,6 +18987,74 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get mcpApprovalRemoteMember =>
       'Tento server může dosáhnout jen na veřejné adresy, dokud jej neschválí vlastník serveru.';
+
+  @override
+  String get mcpServersSettingsSubtitle =>
+      'Vestavěný server MCP a servery MCP, jejichž nástroje dostávají běhy agentů v tomto pracovním prostoru.';
+
+  @override
+  String get mcpPersonalServers => 'Vaše servery MCP';
+
+  @override
+  String get mcpPersonalServersDescription =>
+      'Vidíte je jen vy a nástroje z nich dostanou jen běhy agentů, které v tomto pracovním prostoru spustíte.';
+
+  @override
+  String get mcpPersonalServersUnavailable =>
+      'Vaše vlastní servery MCP nejsou na připojeném serveru k dispozici.';
+
+  @override
+  String get mcpPersonalServersEmpty =>
+      'Zatím nemáte žádné vlastní servery MCP';
+
+  @override
+  String get mcpPersonalServersEmptyDescription =>
+      'Přidejte server, aby běhy, které v tomto pracovním prostoru spustíte, získaly jeho nástroje.';
+
+  @override
+  String get mcpServerEditorPersonalOwner =>
+      'Použijí ho jen běhy, které v tomto pracovním prostoru spustíte. Jako vlastník serveru ho uložením schválíte.';
+
+  @override
+  String get mcpServerEditorPersonalMember =>
+      'Použijí ho jen běhy, které v tomto pracovním prostoru spustíte. Dosáhne jen na veřejné adresy.';
+
+  @override
+  String get mcpServerSignInNeeded =>
+      'Pro používání nástrojů tohoto serveru se přihlaste.';
+
+  @override
+  String get mcpServerSignIn => 'Přihlásit se';
+
+  @override
+  String mcpServerSignInTitle(String name) {
+    return 'Přihlásit se k $name';
+  }
+
+  @override
+  String mcpServerSignInWrongCode(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Zbývá $count pokusů.',
+      many: 'Zbývá $count pokusu.',
+      few: 'Zbývají $count pokusy.',
+      one: 'Zbývá 1 pokus.',
+    );
+    return 'To není kód, který prohlížeč zobrazil. $_temp0';
+  }
+
+  @override
+  String get mcpServerSignInEnded =>
+      'Vypršel čas, přihlášení bylo zamítnuto nebo jste zadali příliš mnoho špatných kódů. Spusťte přihlášení znovu a získáte novou přihlašovací stránku.';
+
+  @override
+  String get mcpServerSignInStartAgain => 'Spustit znovu';
+
+  @override
+  String mcpServerSignedIn(String name) {
+    return 'Přihlášeno k $name.';
+  }
 
   @override
   String get mcpRemoveServer => 'Odebrat server';
@@ -19152,10 +19191,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get mcpServerEditorRemoteOwner =>
       'Uložením jej schválíte i pro přístup do privátní sítě hostitele.';
-
-  @override
-  String get mcpServerEditorPersonal =>
-      'Používá se jen v bězích, které spouštíte nebo za které odpovídáte.';
 
   @override
   String get mcpServerRefusedInvalid =>

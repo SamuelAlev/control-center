@@ -1682,10 +1682,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String get mcpServers => 'سرورهای MCP';
 
   @override
-  String get mcpServersSettingsDescription =>
-      'سرور MCP داخلی و سرورهای MCP خارجی.';
-
-  @override
   String get remoteControlAndDevices => 'کنترل از راه دور و دستگاه‌ها';
 
   @override
@@ -8713,13 +8709,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String get ideFileBinary => 'فایل باینری';
 
   @override
-  String get mcpExternalServers => 'سرورهای MCP خارجی';
-
-  @override
-  String get mcpExternalServersDescription =>
-      'به سرورهای MCP خارجی وصل شوید (GitHub، Sentry، Postgres، خودکارسازی مرورگر). سرورهایی که برای Claude، Cursor، VS Code و ابزارهای دیگر پیکربندی کرده‌اید خودکار کشف می‌شوند.';
-
-  @override
   String get mcpApprovalMode => 'تأیید ابزار';
 
   @override
@@ -8736,17 +8725,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get mcpApprovalYolo => 'تأیید خودکار همه';
 
   @override
-  String get mcpNoExternalServers => 'سرور MCP خارجی کشف نشد.';
-
-  @override
-  String get mcpAuthorize => 'مجوز دادن';
-
-  @override
   String get mcpReconnect => 'اتصال دوباره';
-
-  @override
-  String get mcpExternalConnectionsNote =>
-      'سرورهای MCP خارجی روی سرور عامل اجرا می‌شوند (مشترک دسکتاپ و وب). مجوز OAuth فقط روی دسکتاپ در دسترس است.';
 
   @override
   String get mcpStatusConnected => 'متصل';
@@ -18321,10 +18300,6 @@ class AppLocalizationsFa extends AppLocalizations {
       'تأیید کنید که این سرور اجازهٔ استفاده از آن‌ها را دارد. هر مخزن با دسترسی شما دوباره بررسی می‌شود.';
 
   @override
-  String get mcpExternalServersOwnerRunsOnly =>
-      'سرورهایی که در تنظیمات ابزار خود این دستگاه پیدا شده‌اند فقط در اجراهایی در دسترس‌اند که خودتان شروع می‌کنید یا مسئولیتشان با شماست. اجراهای دیگران هرگز آن‌ها را نمی‌بینند و از طریق نقطهٔ پایانی MCP متعلق به Control Center پیشنهاد نمی‌شوند.';
-
-  @override
   String repoCodeNeedsSignIn(String provider) {
     return 'برای دیدن کد این مخزن به $provider وارد شوید.';
   }
@@ -18711,9 +18686,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String get mcpAddServer => 'افزودن سرور';
 
   @override
-  String get mcpHandAddedSource => 'در Control Center اضافه شد';
-
-  @override
   String get mcpStatusAwaitingApproval => 'در انتظار تأیید';
 
   @override
@@ -18737,6 +18709,70 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get mcpApprovalRemoteMember =>
       'این سرور تا وقتی مالک سرور تأیید نکند فقط به نشانی‌های عمومی دسترسی دارد.';
+
+  @override
+  String get mcpServersSettingsSubtitle =>
+      'سرور MCP داخلی و سرورهای MCP که ابزارهایشان را اجراهای عامل این فضای کاری دریافت می‌کنند.';
+
+  @override
+  String get mcpPersonalServers => 'سرورهای MCP شما';
+
+  @override
+  String get mcpPersonalServersDescription =>
+      'فقط شما این سرورها را می‌بینید و فقط اجراهای عاملی که در این فضای کاری شروع می‌کنید ابزارهایشان را دریافت می‌کنند.';
+
+  @override
+  String get mcpPersonalServersUnavailable =>
+      'سرورهای MCP شما روی سرور متصل در دسترس نیستند.';
+
+  @override
+  String get mcpPersonalServersEmpty => 'هنوز سرور MCP شخصی وجود ندارد';
+
+  @override
+  String get mcpPersonalServersEmptyDescription =>
+      'یک سرور اضافه کنید تا اجراهایی که در این فضای کاری شروع می‌کنید ابزارهایش را داشته باشند.';
+
+  @override
+  String get mcpServerEditorPersonalOwner =>
+      'فقط اجراهایی که در این فضای کاری شروع می‌کنید از آن استفاده می‌کنند. به‌عنوان مالک سرور، ذخیره‌کردن آن را تأیید می‌کند.';
+
+  @override
+  String get mcpServerEditorPersonalMember =>
+      'فقط اجراهایی که در این فضای کاری شروع می‌کنید از آن استفاده می‌کنند. فقط به نشانی‌های عمومی دسترسی دارد.';
+
+  @override
+  String get mcpServerSignInNeeded =>
+      'برای استفاده از ابزارهای این سرور وارد شوید.';
+
+  @override
+  String get mcpServerSignIn => 'ورود';
+
+  @override
+  String mcpServerSignInTitle(String name) {
+    return 'ورود به $name';
+  }
+
+  @override
+  String mcpServerSignInWrongCode(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count تلاش باقی‌مانده.',
+    );
+    return 'این کدی نیست که مرورگرتان نشان داد. $_temp0';
+  }
+
+  @override
+  String get mcpServerSignInEnded =>
+      'زمان تمام شد، ورود رد شد، یا کدهای اشتباه زیادی وارد کردید. برای دریافت صفحه ورود جدید، دوباره شروع کنید.';
+
+  @override
+  String get mcpServerSignInStartAgain => 'شروع دوباره';
+
+  @override
+  String mcpServerSignedIn(String name) {
+    return 'به $name وارد شدید.';
+  }
 
   @override
   String get mcpRemoveServer => 'حذف سرور';
@@ -18874,10 +18910,6 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get mcpServerEditorRemoteOwner =>
       'ذخیره کردن، دسترسی آن به شبکه خصوصی میزبان را هم تأیید می‌کند.';
-
-  @override
-  String get mcpServerEditorPersonal =>
-      'فقط در اجراهایی استفاده می‌شود که خودتان شروع می‌کنید یا مسئولشان هستید.';
 
   @override
   String get mcpServerRefusedInvalid =>

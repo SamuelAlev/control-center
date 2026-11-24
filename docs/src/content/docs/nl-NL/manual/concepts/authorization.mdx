@@ -2,7 +2,7 @@
 title: Autorisatie — wie wat mag doen, en hoe je dat aantoont
 description: De permissiecatalogus achter de rollen van Control Center, het manipulatiedetecterende auditlogboek waarin elke autorisatiebeslissing terechtkomt, en de installatiebrede instellingen die een operator kan vastzetten.
 slug: nl-NL/handleiding/concepten/autorisatie
-sourceHash: 9b6ab5ffb27be5a061ebfd9d020992ec83236ad7
+sourceHash: 311689da6bce052ef25bccc1e0f3dedd29f0d102
 ---
 
 Control Center beantwoordt twee autorisatievragen, en die zijn wezenlijk
@@ -149,10 +149,7 @@ Concreet kan alleen de serverbeheerder:
   [Repository's toevoegen](/nl-NL/handleiding/gidsen/repos-toevoegen/)).
 - Elk draaiend agentproces op de server zien en stoppen. Iedereen anders ziet en
   stopt alleen live agentruns in werkruimtes waar hij lid van is.
-- Agents persoonlijke MCP-servers laten gebruiken: de MCP-servers die zijn ingesteld
-  in de eigen tools van de servergebruiker (Claude, Codex, Cursor en de rest) en
-  de servers die de eigenaar toevoegt. Alleen runs waarvoor de eigenaar
-  verantwoordelijk is, krijgen ze; zie [Persoonlijke servers](/nl-NL/handleiding/gidsen/mcp-server/#persoonlijke-servers).
+- Een eigen MCP-server toevoegen die een opdracht uitvoert op de machine van de server. Eigen servers van alle anderen worden via een URL bereikt (zie [Eigen servers](/nl-NL/handleiding/gidsen/mcp-server/#eigen-servers)).
 - Een MCP-server van de werkruimte goedkeuren die een opdracht op de machine van
   de MCP-server uitvoert of het privénetwerk ervan bereikt (zie
   [Servers van de werkruimte](/nl-NL/handleiding/gidsen/mcp-server/#servers-van-de-werkruimte)).

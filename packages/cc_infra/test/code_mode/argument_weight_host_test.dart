@@ -21,6 +21,7 @@ import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import 'code_mode_test_support.dart';
+import 'live_heap.dart';
 
 const _done =
     '{"type":"done","ok":true,"stats":{"cpu_ms":0,"peak_heap_bytes":0,'
@@ -435,7 +436,10 @@ text(JSON.stringify(seen));
       final service = build();
       final release = Completer<void>();
       var reached = 0;
-      final base = ProcessInfo.currentRss;
+      // The live heap, not resident memory: see live_heap.dart.
+      final heap = await LiveHeap.connect();
+      addTearDown(heap.close);
+      final base = await heap.bytes();
       final result = service.execute(
         request('''
 const pad = Array.from({ length: 16000 }, () => ({}));
@@ -457,7 +461,7 @@ return 'done';
         await Future<void>.delayed(const Duration(milliseconds: 100));
       }
       await Future<void>.delayed(const Duration(seconds: 4));
-      final growth = ProcessInfo.currentRss - base;
+      final growth = await heap.bytes() - base;
       // ignore: avoid_print
       print('HELD growth ${growth ~/ (1024 * 1024)} MiB, reached $reached');
       release.complete();

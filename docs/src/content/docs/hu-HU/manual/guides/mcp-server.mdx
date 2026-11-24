@@ -2,7 +2,7 @@
 title: Az MCP-szerver használata
 description: Irányítson egy külső MCP-klienst a Control Center eszközszerverére, küldje el a bearer tokenjét, és ismerje, mit tesz elérhetővé a felület.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/mcp-szerver
-sourceHash: 0239917dba7349533ef1ce70536453187e8d3591
+sourceHash: eb032b11d779e012f558c7244ea52d9eafb04a4b
 ---
 
 Ez az útmutató megmutatja, hogyan csatlakoztasson egy külső MCP-klienst — a
@@ -150,7 +150,7 @@ mintsem rendbe tenné.
 
 ## Az ügynökök által használt MCP-szerverek
 
-Ez az útmutató a Control Center saját végpontjáról szól. A másik irány azok az MCP-szerverek, amelyekhez a Control Center csatlakozik, és amelyeket átad az általa futtatott ügynököknek. Ezeket két szinten állíthatja be a **Beállítások → Szerver → MCP-szerverek** menüpontban. Mindkét esetben a Control Center magához a szerverhez csatlakozik, és eszközeit átadja a futtatásnak, így a beépített harness és a Claude Code ugyanazokat az eszközöket és ugyanazokat a jóváhagyási kéréseket kapja. A Claude Code-futtatás a `control-center` szerver alatt látja őket, `mcp__control-center__mcp__<server>__<tool>` alakban.
+Ez az útmutató a Control Center saját végpontjáról szól. A másik irány azok az MCP-szerverek, amelyekhez a Control Center csatlakozik, és amelyeket átad az általa futtatott ügynököknek. Ezeket két szinten állíthatja be a **Beállítások → Szerver → MCP-szerverek** menüpontban: az egész munkaterületre, vagy saját magának. Mindkét esetben a Control Center magához a szerverhez csatlakozik, és eszközeit átadja a futtatásnak, így a beépített harness és a Claude Code ugyanazokat az eszközöket és ugyanazokat a jóváhagyási kéréseket kapja. A Claude Code-futtatás a `control-center` szerver alatt látja őket, `mcp__control-center__mcp__<server>__<tool>` alakban.
 
 ### Munkaterületi szerverek
 
@@ -167,17 +167,26 @@ A környezeti változók és a fejlécek értékei a szerver titkos fájljában 
 
 A parancs a szerver gépén, a szerver saját felhasználójaként fut, ezért nem indul el, amíg a szerver tulajdonosa jóvá nem hagyja. Addig **Jóváhagyásra vár** állapotot mutat. Az URL-szerver azonnal működik, de a tulajdonos jóváhagyásáig csak nyilvános címeket érhet el; a jóváhagyás a `localhost` címet és a privát hálózatokat is engedélyezi. Ha a szerver tulajdonosa menti a szervert, az jóváhagyásnak számít. Ha valaki más megváltoztatja, hogyan indul a szerver, vagy hová csatlakozik, újra jóváhagyás szükséges. A szerver be- vagy kikapcsolása megtartja a jóváhagyást.
 
-### Személyes szerverek
+### Saját szerverek
 
-A személyes szerverek a szerver tulajdonosáé, és a **Külső MCP-szerverek** alatt listázódnak. A Claude, Codex, Cursor, Gemini, VS Code, Windsurf és OpenCode számára a szerver gépén vagy egy `.mcp.json` fájlban beállított szerverek automatikusan ide kerülnek. A szerver tulajdonosa ugyanezzel az űrlappal, a **Szerver hozzáadása** gombbal saját szervereket is felvehet. Az Ön által hozzáadott szerver felülírja a felfedezett, azonos nevű szervert.
+Minden tag a sajátját a **Saját MCP-szerverei** alatt adja hozzá, ugyanazzal az űrlappal. Ezek csak Önnek szólnak ebben a munkaterületen: más tagok nem látják őket, és az a szerver, amelyhez bejelentkezik, az Ön nevében működik.
 
-Ezek a szerver tulajdonosának identitásával és hitelesítő adataival működnek:
+- Csak az Ön által ebben a munkaterületen indított futtatások kapják meg az eszközeiket. Ez egyaránt vonatkozik a beépített harness-futtatásokra és a Claude Code-futtatásokra.
+- Egy másik tag futtatása, az olyan automatizálás, amelyet senki nem indított, és az Ön futtatásai más munkaterületeken egyiket sem kapják meg. Ott az eszközök nem jelennek meg, nem hívhatók, és nem bukkannak fel az eszközkeresésben.
+- Az Ön szervere ugyanazt a nevet viselheti, mint egy munkaterületi szerver. Az Ön futtatásaiban az Ön szervere kerül használatra.
+- Az Ön saját szervere URL-en keresztül érhető el, és csak nyilvános címeket érhet el. Csak a szerver tulajdonosa adhat hozzá olyan saját szervert, amely parancsot futtat.
 
-- Csak olyan futtatásokban érhetők el, amelyeket a szerver tulajdonosa indít, vagy amelyekért felel, beleértve a tulajdonos által felelős munkaterületen futó automatizálást is. Ez egyaránt vonatkozik a beépített harness-futtatásokra és a Claude Code-futtatásokra.
-- Egy tag futtatása, egy taghoz kötött automatizálás és minden olyan futtatás, amely olyan szerveren fut, amelynek nincs rögzített tulajdonosa, egyiket sem kapja meg. Ott az eszközök nem jelennek meg, nem hívhatók, és nem bukkannak fel az eszközkeresésben.
-- Sem a személyes, sem a munkaterületi szerverek nem jutnak el az MCP-tokenhez vagy a párosított eszközökhöz, és erőforrásaik és promptjaik sem adódnak tovább.
+Sem a saját, sem a munkaterületi szerverek nem jutnak el az MCP-tokenhez vagy a párosított eszközökhöz, és erőforrásaik és promptjaik sem adódnak tovább.
 
-Az OAuth-os bejelentkezés az űrlapból nem érhető el. Használjon olyan szervert, amely fejlécben elfogad tokent, vagy állítsa be a fent említett eszközök egyikéhez, ahol felfedezésre kerül.
+### Bejelentkezés egy szerverbe
+
+URL-lel elérhető szerver, amely bejelentkezést kér, a **Felhatalmazás szükséges** állapotot mutatja.
+
+1. Válassza a **Bejelentkezés** gombot a szerveren. A böngésző megnyitja a szerver saját bejelentkezési oldalát.
+2. Hagyja jóvá a kérést ott. A böngésző visszatér a Control Centerbe, és megjelenít egy kódot.
+3. Írja be a kódot az alkalmazásba. Ellenőrzőpont: a szerver a **Csatlakoztatva** állapotot mutatja.
+
+A bejelentkezés azzal a szerverrel együtt tárolódik, amelyhez készült. Munkaterületi szerverbe való bejelentkezéshez munkaterület-adminisztrátor szükséges, és a munkaterület minden futtatása ezután a bejelentkezett fiók nevében működik. Saját szerverbe való bejelentkezés csak az Ön futtatásait érinti. A szerver eltávolítása eltávolítja a bejelentkezését is.
 
 ## Hibaelhárítás
 

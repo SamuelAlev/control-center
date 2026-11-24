@@ -33,8 +33,6 @@
       }
     }
   },
-  "mcpAuthorize": "Authorise",
-  "mcpExternalConnectionsNote": "External MCP servers run on the agent server (shared by desktop and web). Authorising OAuth servers is only available on the desktop.",
   "mcpStatusNeedsAuth": "Needs authorisation",
   "editorThemeDescription": "Import a VS Code colour theme so the embedded diff and editor match your IDE.",
   "editorThemePasteHint": "Paste the contents of a VS Code colour-theme JSON file",

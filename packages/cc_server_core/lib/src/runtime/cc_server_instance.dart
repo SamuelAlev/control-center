@@ -213,7 +213,6 @@ class CcServer {
   /// The MCP client (connections to external MCP servers). Bridged tools are
   /// pushed into the shared registry; all connections (and their stdio child
   /// process trees) are torn down on [shutdown].
-  McpClientService? _mcpClientService;
 
   /// Every workspace's configured MCP servers; their connections (stdio
   /// children included) are torn down on [shutdown].
@@ -453,7 +452,6 @@ class CcServer {
     });
     await step('deviceRelay', () async => _relayHost?.stop());
     await step('chat', () async => _chatConnector?.stop());
-    await step('mcpConnections', () async => _mcpClientService?.shutdown());
     await step(
       'workspaceMcpConnections',
       () async => _workspaceMcpServers?.shutdown(),

@@ -173,7 +173,7 @@ class _RecordingLoop implements AgentLoop {
 }
 
 McpToolRegistry _registry() => McpToolRegistry([_Tool(_sharedTool)])
-  ..setPersonalTools([_Tool(_personalTool)])
+  ..setPersonalTools('ws-owner', _member, [_Tool(_personalTool)])
   ..setWorkspaceTools('ws-owner', [_Tool(_workspaceTool)]);
 
 /// The server's gate, owned by [serverOwner], answering membership the way the
@@ -258,73 +258,88 @@ void main() {
     return loop.handed;
   }
 
-  group('personal MCP servers reach the harness', () {
-    test('in a run the server owner started', () async {
+  // `_member` has one server of their own, in `ws-owner`.
+  group('a member\'s own MCP servers reach the harness', () {
+    test('in a run that member started in that workspace', () async {
       final tools = await handedToHarness(
         gate: _gate(serverOwner: _owner),
-        workspaceId: 'ws-member',
-        requestedBy: _owner,
+        workspaceId: 'ws-owner',
+        requestedBy: _member,
       );
       expect(tools, contains(_personalTool));
     });
 
-    test('in automation the server owner is accountable for', () async {
+    test('whether or not a server owner is recorded', () async {
       final tools = await handedToHarness(
-        gate: _gate(serverOwner: _owner),
+        gate: _gate(serverOwner: null),
         workspaceId: 'ws-owner',
-        requestedBy: null,
+        requestedBy: _member,
       );
       expect(tools, contains(_personalTool));
     });
   });
 
-  group('personal MCP servers never reach the harness', () {
-    test('in a member\'s run, even in the owner\'s workspace', () async {
+  group('a member\'s own MCP servers never reach the harness', () {
+    test('in another member\'s run, the server owner\'s included', () async {
       final tools = await handedToHarness(
         gate: _gate(serverOwner: _owner),
+        workspaceId: 'ws-owner',
+        requestedBy: _owner,
+      );
+      expect(tools, isNot(contains(_personalTool)));
+    });
+
+    test('in that member\'s run in another workspace', () async {
+      final tools = await handedToHarness(
+        gate: _gate(serverOwner: _owner),
+        workspaceId: 'ws-member',
+        requestedBy: _member,
+      );
+      expect(tools, isNot(contains(_personalTool)));
+    });
+
+    test('in automation nobody started', () async {
+      final tools = await handedToHarness(
+        gate: _gate(serverOwner: _owner),
+        workspaceId: 'ws-owner',
+        requestedBy: null,
+      );
+      expect(tools, isNot(contains(_personalTool)));
+    });
+
+    test('once that member has left the workspace', () async {
+      final tools = await handedToHarness(
+        gate: hostExecutionGate(
+          posture: HostExecutionPosture.offByOwner,
+          serverOwnerUserId: _owner,
+          // Nobody is a member any more: the workspace owner answers.
+          accountableHuman: (workspaceId, {actingUserId}) async =>
+              _workspaceOwners[workspaceId],
+        ),
         workspaceId: 'ws-owner',
         requestedBy: _member,
       );
       expect(tools, isNot(contains(_personalTool)));
     });
 
-    test('in automation bounded by a member who owns the workspace', () async {
-      final tools = await handedToHarness(
-        gate: _gate(serverOwner: _owner),
-        workspaceId: 'ws-member',
-        requestedBy: null,
-      );
-      expect(tools, isNot(contains(_personalTool)));
-    });
-
-    test('when no server owner is recorded', () async {
-      final tools = await handedToHarness(
-        gate: _gate(serverOwner: null),
-        workspaceId: 'ws-owner',
-        requestedBy: _owner,
-      );
-      expect(tools, isNot(contains(_personalTool)));
-    });
-
-    test('when the gate carries no owner fact', () async {
+    test('when the gate cannot say who started the run', () async {
       final tools = await handedToHarness(
         gate: const HostExecutionGate(posture: HostExecutionPosture.offByOwner),
         workspaceId: 'ws-owner',
-        requestedBy: _owner,
+        requestedBy: _member,
       );
       expect(tools, isNot(contains(_personalTool)));
     });
 
-    test('when the owner fact fails', () async {
+    test('when the membership check fails', () async {
       final tools = await handedToHarness(
         gate: HostExecutionGate(
           posture: HostExecutionPosture.offByOwner,
-          ownerAccountable:
-              ({required workspaceId, required requestedByUserId}) =>
-                  Future.error(StateError('membership lookup failed')),
+          startedBy: ({required workspaceId, required requestedByUserId}) =>
+              Future.error(StateError('membership lookup failed')),
         ),
         workspaceId: 'ws-owner',
-        requestedBy: _owner,
+        requestedBy: _member,
       );
       expect(tools, isNot(contains(_personalTool)));
     });
@@ -376,7 +391,7 @@ void main() {
       final tools = await handedToHarness(
         gate: _gate(serverOwner: _owner),
         workspaceId: 'ws-owner',
-        requestedBy: _member,
+        requestedBy: _owner,
       );
       expect(tools, contains(_workspaceTool));
       expect(tools, isNot(contains(_personalTool)));
@@ -402,17 +417,15 @@ void main() {
       return {for (final t in tools) (t as Map<String, dynamic>)['name']};
     }
 
-    Future<Map<String, dynamic>> called(
-      String tool,
-      McpCallScope? scope,
-    ) => McpToolDispatcher(registry: _registry()).handleScopedRequest(
-      JsonRpcRequest(
-        method: 'tools/call',
-        params: {'name': tool, 'arguments': <String, dynamic>{}},
-        id: 2,
-      ),
-      scope: scope,
-    );
+    Future<Map<String, dynamic>> called(String tool, McpCallScope? scope) =>
+        McpToolDispatcher(registry: _registry()).handleScopedRequest(
+          JsonRpcRequest(
+            method: 'tools/call',
+            params: {'name': tool, 'arguments': <String, dynamic>{}},
+            id: 2,
+          ),
+          scope: scope,
+        );
 
     const ownerRun = McpCallScope(
       workspaceId: 'ws-owner',
@@ -448,34 +461,46 @@ void main() {
       expect('$response', isNot(contains('ran $_workspaceTool')));
     });
 
-    test('personal servers reach a Claude Code run only when its grant '
-        'says the owner is accountable', () async {
+    test('a member\'s own servers reach a Claude Code run only when its '
+        'grant names that member', () async {
       expect(await listed(ownerRun), isNot(contains(_personalTool)));
-      const accountable = McpCallScope(
+      const another = McpCallScope(
         workspaceId: 'ws-owner',
         attested: true,
-        personalMcp: true,
+        personalMcpUserId: _owner,
       );
-      expect(await listed(accountable), contains(_personalTool));
-      final response = await called(_personalTool, accountable);
+      expect(await listed(another), isNot(contains(_personalTool)));
+      const elsewhere = McpCallScope(
+        workspaceId: 'ws-member',
+        attested: true,
+        personalMcpUserId: _member,
+      );
+      expect(await listed(elsewhere), isNot(contains(_personalTool)));
+      const mine = McpCallScope(
+        workspaceId: 'ws-owner',
+        attested: true,
+        personalMcpUserId: _member,
+      );
+      expect(await listed(mine), contains(_personalTool));
+      final response = await called(_personalTool, mine);
       expect('$response', contains('ran $_personalTool'));
     });
 
-    test('a workspace server never shadows a personal one of the same name '
-        'in the owner\'s run', () async {
+    test('a workspace server never shadows a member\'s own of the same name '
+        'in that member\'s run', () async {
+      final own = _Tool('mcp__x__t');
       final registry = McpToolRegistry(const [])
-        ..setPersonalTools([_Tool('mcp__x__t')])
+        ..setPersonalTools('ws-owner', _member, [own])
         ..setWorkspaceTools('ws-owner', [_Tool('mcp__x__t')]);
-      const view = McpToolView(workspaceId: 'ws-owner', includePersonal: true);
-      final personal = registry.lookup('mcp__x__t', view: view);
       expect(
-        personal,
-        same(
-          registry.lookup(
-            'mcp__x__t',
-            view: const McpToolView(includePersonal: true),
+        registry.lookup(
+          'mcp__x__t',
+          view: const McpToolView(
+            workspaceId: 'ws-owner',
+            personalUserId: _member,
           ),
         ),
+        same(own),
       );
     });
   });

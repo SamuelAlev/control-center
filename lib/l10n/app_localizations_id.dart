@@ -1689,10 +1689,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get mcpServers => 'Server MCP';
 
   @override
-  String get mcpServersSettingsDescription =>
-      'Server MCP bawaan dan server MCP eksternal.';
-
-  @override
   String get remoteControlAndDevices => 'Kontrol jarak jauh & perangkat';
 
   @override
@@ -8758,13 +8754,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get ideFileBinary => 'File biner';
 
   @override
-  String get mcpExternalServers => 'Server MCP eksternal';
-
-  @override
-  String get mcpExternalServersDescription =>
-      'Hubungkan ke server MCP eksternal (GitHub, Sentry, Postgres, otomasi browser). Server yang Anda konfigurasikan untuk Claude, Cursor, VS Code, dan alat lain ditemukan secara otomatis.';
-
-  @override
   String get mcpApprovalMode => 'Persetujuan alat';
 
   @override
@@ -8781,18 +8770,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get mcpApprovalYolo => 'Setujui semua otomatis';
 
   @override
-  String get mcpNoExternalServers =>
-      'Tidak ada server MCP eksternal yang ditemukan.';
-
-  @override
-  String get mcpAuthorize => 'Otorisasi';
-
-  @override
   String get mcpReconnect => 'Hubungkan kembali';
-
-  @override
-  String get mcpExternalConnectionsNote =>
-      'Server MCP eksternal berjalan di server agen (dibagikan oleh desktop dan web). Otorisasi server OAuth hanya tersedia di desktop.';
 
   @override
   String get mcpStatusConnected => 'Terhubung';
@@ -18394,10 +18372,6 @@ class AppLocalizationsId extends AppLocalizations {
       'Konfirmasi bahwa server ini boleh menggunakannya. Setiap repositori diperiksa ulang dengan akses Anda.';
 
   @override
-  String get mcpExternalServersOwnerRunsOnly =>
-      'Server yang ditemukan di setelan alat milik mesin ini hanya tersedia di run yang Anda mulai atau yang menjadi tanggung jawab Anda. Run milik orang lain tidak pernah melihatnya, dan server tersebut tidak ditawarkan melalui endpoint MCP Control Center.';
-
-  @override
   String repoCodeNeedsSignIn(String provider) {
     return 'Masuk ke $provider untuk melihat kode repositori ini.';
   }
@@ -18785,9 +18759,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get mcpAddServer => 'Tambah server';
 
   @override
-  String get mcpHandAddedSource => 'Ditambahkan di Control Center';
-
-  @override
   String get mcpStatusAwaitingApproval => 'Menunggu persetujuan';
 
   @override
@@ -18811,6 +18782,70 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get mcpApprovalRemoteMember =>
       'Server ini hanya dapat menjangkau alamat publik sampai pemilik server menyetujuinya.';
+
+  @override
+  String get mcpServersSettingsSubtitle =>
+      'Server MCP bawaan, dan server MCP yang alat-alatnya didapat proses agen di ruang kerja ini.';
+
+  @override
+  String get mcpPersonalServers => 'Server MCP Anda';
+
+  @override
+  String get mcpPersonalServersDescription =>
+      'Hanya Anda yang melihat server ini, dan hanya proses agen yang Anda mulai di ruang kerja ini yang mendapat alatnya.';
+
+  @override
+  String get mcpPersonalServersUnavailable =>
+      'Server MCP milik Anda tidak tersedia di server yang terhubung.';
+
+  @override
+  String get mcpPersonalServersEmpty => 'Belum ada server MCP milik Anda';
+
+  @override
+  String get mcpPersonalServersEmptyDescription =>
+      'Tambahkan server untuk memberi proses agen yang Anda mulai di ruang kerja ini alatnya.';
+
+  @override
+  String get mcpServerEditorPersonalOwner =>
+      'Hanya proses agen yang Anda mulai di ruang kerja ini yang menggunakannya. Sebagai pemilik server, menyimpannya berarti menyetujuinya.';
+
+  @override
+  String get mcpServerEditorPersonalMember =>
+      'Hanya proses agen yang Anda mulai di ruang kerja ini yang menggunakannya. Server ini hanya dapat menjangkau alamat publik.';
+
+  @override
+  String get mcpServerSignInNeeded =>
+      'Masuk untuk menggunakan alat server ini.';
+
+  @override
+  String get mcpServerSignIn => 'Masuk';
+
+  @override
+  String mcpServerSignInTitle(String name) {
+    return 'Masuk ke $name';
+  }
+
+  @override
+  String mcpServerSignInWrongCode(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Sisa $count percobaan.',
+    );
+    return 'Itu bukan kode yang ditampilkan browser Anda. $_temp0';
+  }
+
+  @override
+  String get mcpServerSignInEnded =>
+      'Waktunya habis, proses ditolak, atau terlalu banyak kode yang salah. Mulai lagi untuk mendapatkan halaman masuk baru.';
+
+  @override
+  String get mcpServerSignInStartAgain => 'Mulai lagi';
+
+  @override
+  String mcpServerSignedIn(String name) {
+    return 'Masuk ke $name.';
+  }
 
   @override
   String get mcpRemoveServer => 'Hapus server';
@@ -18949,10 +18984,6 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get mcpServerEditorRemoteOwner =>
       'Menyimpan akan menyetujui server agar juga dapat menjangkau jaringan privat host.';
-
-  @override
-  String get mcpServerEditorPersonal =>
-      'Hanya digunakan dalam proses yang Anda mulai atau yang menjadi tanggung jawab Anda.';
 
   @override
   String get mcpServerRefusedInvalid =>

@@ -51,7 +51,7 @@ extension _DispatchSessionHarness on DispatchSession {
   /// `task` tool is NOT added here — the top-level run adds it explicitly and
   /// subagents deliberately omit it so nesting is capped at one level.
   ///
-  /// [personalMcp] is [_personalMcpAllowed], asked by the caller right before.
+  /// [personalMcpUserId] is [_personalMcpUser], asked by the caller right before.
   ///
   /// [scriptOrigins] are the origins of the loop the registry is for (the
   /// session's own for the top-level run, the child's for a subagent): where
@@ -63,7 +63,7 @@ extension _DispatchSessionHarness on DispatchSession {
   HarnessToolRegistry _buildHarnessRegistry({
     required Mode mode,
     required Map<String, String> env,
-    required bool personalMcp,
+    required String? personalMcpUserId,
     required RunScriptOrigins scriptOrigins,
     bool replSlot = false,
   }) {
@@ -90,7 +90,7 @@ extension _DispatchSessionHarness on DispatchSession {
       actionGuard: deps.actionGuard,
       fileSearch: deps.fileSearch,
       mcpRegistry: deps.mcpRegistry,
-      includePersonalMcp: personalMcp,
+      personalMcpUserId: personalMcpUserId,
       protectedPaths: _protectedPaths,
       // `ask_user` renders in this run's conversation within its space.
       // Both scopes must reach the tool so the answer returns to this run.
@@ -576,7 +576,7 @@ extension _DispatchSessionHarness on DispatchSession {
     final registry = _buildHarnessRegistry(
       mode: effectiveMode,
       env: harnessToolEnv,
-      personalMcp: await _personalMcpAllowed(),
+      personalMcpUserId: await _personalMcpUser(),
       scriptOrigins: scriptOrigins,
       replSlot: scriptExecutions != null,
     );

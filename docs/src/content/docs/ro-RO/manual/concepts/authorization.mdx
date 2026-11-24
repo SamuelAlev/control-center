@@ -2,7 +2,7 @@
 title: Autorizare — cine poate face ce și cum o dovedești
 description: Catalogul de permisiuni din spatele rolurilor din Control Center, jurnalul de audit cu detectarea modificărilor în care ajunge fiecare decizie de autorizare și controalele la nivel de instalare pe care le poate fixa un operator.
 slug: ro-RO/manual/concepte/autorizare
-sourceHash: 9b6ab5ffb27be5a061ebfd9d020992ec83236ad7
+sourceHash: 311689da6bce052ef25bccc1e0f3dedd29f0d102
 ---
 
 Control Center răspunde la două întrebări de autorizare, iar ele sunt cu adevărat
@@ -108,7 +108,7 @@ Persoana care a configurat serverul este **proprietarul** lui. Serverul o înreg
 - Să ruleze agenți pe un server a cărui mașină nu are sandbox. Rulările celorlalți sunt refuzate acolo, dacă proprietarul nu a pornit serverul cu `--sandbox off`, caz în care agenții fiecărui membru rulează fără izolare (vezi [Agenții pe o gazdă fără sandbox](/ro-RO/manual/concepte/sandbox-si-securitate/#agenți-pe-o-gazdă-fără-sandbox)).
 - Să lege un checkout de repository care se află în afara spațiului de stocare al spațiului de lucru, să confirme unul legat înainte de această regulă și să răsfoiască folderele serverului când adaugă un repository (vezi [Adaugă repository-uri](/ro-RO/manual/ghiduri-practice/adauga-repo-uri/)).
 - Să vadă și să oprească fiecare proces de agent aflat în rulare pe server. Ceilalți văd și opresc doar rulările live ale agenților din spațiile de lucru din care fac parte.
-- Să faci agenții să folosească serverele MCP personale: cele configurate în uneltele proprii ale utilizatorului serverului (Claude, Codex, Cursor și celelalte) și cele adăugate de proprietar. Le primesc doar rulările pentru care răspunde proprietarul; vezi [Servere personale](/ro-RO/manual/ghiduri-practice/server-mcp/#servere-personale).
+- Adaugă un server MCP propriu care rulează o comandă pe mașina serverului. Serverele proprii ale celorlalți membri se conectează prin URL (vezi [Serverele tale proprii](/ro-RO/manual/ghiduri-practice/server-mcp/#serverele-tale-proprii)).
 - Aprobă un server MCP al spațiului de lucru care rulează o comandă pe mașina serverului sau ajunge la rețeaua lui privată (vezi [Servere din spațiul de lucru](/ro-RO/manual/ghiduri-practice/server-mcp/#servere-din-spațiul-de-lucru)).
 - Să confirme adresa de e-mail a unei persoane, ca autentificarea unică să o poată potrivi (vezi [Conectează un furnizor OpenID Connect](/ro-RO/manual/ghiduri-practice/sso-oidc/#cum-se-potrivesc-autentificările-cu-conturile-existente)).
 - Să schimbe setările la nivel de instalare: SSO, credențialele providerilor, endpoint-ul MCP și tokenul lui, gestionarea modelelor, Connect și backupurile întregii instalări. Aceste operațiuni declară **autoritate de server** și sunt refuzate pentru toți ceilalți.

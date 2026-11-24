@@ -2,7 +2,7 @@
 title: Usar o servidor MCP
 description: Aponte um cliente MCP externo ao servidor de ferramentas do Control Center, envie o seu token bearer e saiba o que a superfície expõe.
 slug: pt-PT/manual/guias/servidor-mcp
-sourceHash: 0239917dba7349533ef1ce70536453187e8d3591
+sourceHash: eb032b11d779e012f558c7244ea52d9eafb04a4b
 ---
 
 Este guia mostra-lhe como ligar um cliente MCP externo — o Claude Code, um
@@ -135,7 +135,7 @@ cache, pelo que esconder ferramentas quebra-as em vez de as arrumar.
 
 ## Servidores MCP usados pelos seus agentes
 
-Este guia trata do endpoint próprio do Control Center. No sentido inverso estão os servidores MCP que o Control Center liga e entrega aos agentes que executa. Configura-os em **Definições → Servidor → Servidores MCP**, em dois níveis. Em qualquer dos casos, o Control Center liga-se ao próprio servidor e passa as respetivas ferramentas à execução; assim, o harness incorporado e o Claude Code recebem as mesmas ferramentas e os mesmos pedidos de aprovação. Uma execução do Claude Code vê-as sob o servidor `control-center`, como `mcp__control-center__mcp__<server>__<tool>`.
+Este guia trata do endpoint próprio do Control Center. No sentido inverso estão os servidores MCP que o Control Center liga e entrega aos agentes que executa. Configura-os em **Definições → Servidor → Servidores MCP**, em dois níveis: para todo o espaço de trabalho ou para si próprio. Em qualquer dos casos, o Control Center liga-se ao próprio servidor e passa as respetivas ferramentas à execução; assim, o harness incorporado e o Claude Code recebem as mesmas ferramentas e os mesmos pedidos de aprovação. Uma execução do Claude Code vê-as sob o servidor `control-center`, como `mcp__control-center__mcp__<server>__<tool>`.
 
 ### Servidores do espaço de trabalho
 
@@ -151,17 +151,26 @@ Os valores das variáveis de ambiente e dos cabeçalhos ficam guardados no fiche
 
 Um comando é executado na máquina do servidor, com o utilizador do próprio servidor, por isso não arranca até o proprietário do servidor o aprovar. Até lá, mostra **Aguardando aprovação**. Um servidor por URL funciona logo, mas só consegue alcançar endereços públicos até o proprietário do servidor o aprovar, aprovação que também permite `localhost` e redes privadas. Quando o proprietário do servidor guarda um servidor, isso conta como aprovação. Se outra pessoa alterar a forma como um servidor arranca ou onde se liga, é preciso nova aprovação. Ligar ou desligar um servidor mantém a aprovação.
 
-### Servidores pessoais
+### Os seus servidores próprios
 
-Os servidores pessoais pertencem ao proprietário do servidor e estão listados em **Servidores MCP externos**. Os servidores configurados na máquina do servidor para Claude, Codex, Cursor, Gemini, VS Code, Windsurf, OpenCode ou num `.mcp.json` são aí encontrados automaticamente. O proprietário do servidor pode também adicionar os seus com **Adicionar servidor**, usando o mesmo formulário. Um servidor que adicione tem prioridade sobre um servidor descoberto com o mesmo nome.
+Cada membro adiciona os seus em **Seus servidores MCP**, com o mesmo formulário. Neste espaço de trabalho são só seus: os outros membros não os veem, e um servidor em que inicie sessão atua com a sua identidade.
 
-Atuam com a identidade e as credenciais do proprietário do servidor:
+- Só as execuções que inicia neste espaço de trabalho recebem as suas ferramentas. Isto abrange as execuções do harness incorporado e as do Claude Code.
+- A execução de outro membro, a automatização que ninguém iniciou e as suas execuções noutros espaços de trabalho não recebem nenhum deles. Aí as ferramentas não são listadas, não podem ser chamadas e não aparecem na pesquisa de ferramentas.
+- O seu servidor pode ter o mesmo nome que um servidor do espaço de trabalho. Nas suas execuções, é o seu que é usado.
+- O seu servidor próprio é ligado por URL e só consegue alcançar endereços públicos. Só o proprietário do servidor pode adicionar um servidor próprio que execute um comando.
 
-- Só estão disponíveis nas execuções que o proprietário do servidor inicia ou pelas quais é responsável, incluindo a automatização num espaço de trabalho pelo qual o proprietário é responsável. Isto abrange as execuções do harness incorporado e as do Claude Code.
-- A execução de um membro, a automatização ligada a um membro e toda a execução num servidor sem proprietário registado não recebem nenhuma. Aí as ferramentas não são listadas, não podem ser chamadas e não aparecem na pesquisa de ferramentas.
-- Nem os servidores pessoais nem os do espaço de trabalho são servidos ao token MCP ou aos dispositivos emparelhados, e os respetivos recursos e prompts não são transmitidos.
+Nem os servidores próprios nem os do espaço de trabalho são servidos ao token MCP ou aos dispositivos emparelhados, e os respetivos recursos e prompts não são transmitidos.
 
-Iniciar sessão num servidor com OAuth não está disponível no formulário. Use um servidor que aceite um token num cabeçalho ou configure-o para uma das ferramentas acima, onde é descoberto.
+### Iniciar sessão num servidor
+
+Um servidor por URL que peça autenticação mostra **Requer autorização**.
+
+1. Selecione **Entrar** no servidor. O seu navegador abre a página de início de sessão do próprio servidor.
+2. Aprove o pedido nessa página. O navegador volta ao Control Center e mostra um código.
+3. Escreva o código na aplicação. Ponto de controlo: o servidor mostra **Ligado**.
+
+O início de sessão fica guardado com o servidor para o qual foi feito. Iniciar sessão num servidor do espaço de trabalho exige um administrador do espaço de trabalho, e cada execução do espaço de trabalho passa então a atuar como a conta que iniciou sessão. Iniciar sessão no seu servidor próprio afeta apenas as suas execuções. Remover um servidor remove também o seu início de sessão.
 
 ## Resolução de problemas
 

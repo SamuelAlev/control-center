@@ -909,7 +909,6 @@
   "advanced": "Advanced",
   "accounts": "Accounts",
   "mcpServers": "MCP servers",
-  "mcpServersSettingsDescription": "Built-in MCP server and external MCP servers.",
   "remoteControlAndDevices": "Remote control & devices",
   "remoteControlAndDevicesSettingsDescription": "Pair phones and configure the remote-control server.",
   "voiceAndMeetingsSettingsDescription": "The speech and diarization models this server hosts.",
@@ -7746,18 +7745,13 @@
   },
   "ideFileLoading": "Loading…",
   "ideFileBinary": "Binary file",
-  "mcpExternalServers": "External MCP servers",
-  "mcpExternalServersDescription": "Connect to external MCP servers (GitHub, Sentry, Postgres, browser automation). Servers you configured for Claude, Cursor, VS Code and other tools are auto-discovered.",
   "mcpApprovalMode": "Tool approval",
   "mcpApprovalModeDescription": "Which actions of Control Center's own tools, called through its MCP endpoint or by its agents, run without asking. Reads are always allowed; higher tiers prompt. Servers inside a run follow that run's action policy.",
   "@mcpApprovalModeDescription": {"description": "Under 'Tool approval' in the External MCP servers section. It governs Control Center's own tools by capability tier (reads, writes, everything), not the personal MCP servers listed in that section, which a run's action policy and confirmations govern"},
   "mcpApprovalAlwaysAsk": "Always ask",
   "mcpApprovalWrite": "Auto-approve writes",
   "mcpApprovalYolo": "Auto-approve all",
-  "mcpNoExternalServers": "No external MCP servers discovered.",
-  "mcpAuthorize": "Authorize",
   "mcpReconnect": "Reconnect",
-  "mcpExternalConnectionsNote": "External MCP servers run on the agent server (shared by desktop and web). Authorizing OAuth servers is only available on the desktop.",
   "@mcpToolsSummary": {
     "placeholders": {
       "count": {
@@ -17164,10 +17158,6 @@
   "@repoPathConfirmAllBody": {
     "description": "Body of that notice"
   },
-  "mcpExternalServersOwnerRunsOnly": "Servers found in this machine's own tool settings are available only in runs you start or are accountable for. Other people's runs never see them, and they aren't offered through Control Center's MCP endpoint.",
-  "@mcpExternalServersOwnerRunsOnly": {
-    "description": "Second line under the External MCP servers title in Settings → Server → MCP (seen by the server owner). 'This machine's own tool settings' = the MCP configs of Claude, Cursor, VS Code etc. on the server's own OS account; 'MCP endpoint' = the MCP server Control Center itself exposes"
-  },
   "repoCodeNeedsSignIn": "Sign in to {provider} to see this repository's code.",
   "@repoCodeNeedsSignIn": {
     "description": "Code views (the Explorer's file tree and searches, a file, a diff) when the server refused because the person has no sign-in of their own for the repository's forge. Shown with a 'Sign in' action",
@@ -17666,10 +17656,6 @@
   "@mcpAddServer": {
     "description": "Button that opens the editor to add an MCP server (workspace or personal)"
   },
-  "mcpHandAddedSource": "Added in Control Center",
-  "@mcpHandAddedSource": {
-    "description": "Identity line of a personal MCP server the owner added by hand, in place of the tool it was discovered from (Claude, Cursor, …)"
-  },
   "mcpStatusAwaitingApproval": "Awaiting approval",
   "@mcpStatusAwaitingApproval": {
     "description": "Status tag of a workspace MCP server that runs a command on the server host and waits for the server owner's approval before it starts"
@@ -17697,6 +17683,84 @@
   "mcpApprovalRemoteMember": "This server can reach only public addresses until the server owner approves it.",
   "@mcpApprovalRemoteMember": {
     "description": "Note under an unapproved remote (HTTP/SSE) workspace MCP server, shown to a workspace admin who is not the server owner"
+  },
+  "mcpServersSettingsSubtitle": "The built-in MCP server, and the MCP servers whose tools agent runs in this workspace get.",
+  "@mcpServersSettingsSubtitle": {
+    "description": "Subtitle of the Settings → MCP servers page: Control Center's own MCP server, plus the external MCP servers (your own and the workspace's) bridged into agent runs"
+  },
+  "mcpPersonalServers": "Your MCP servers",
+  "@mcpPersonalServers": {
+    "description": "Title of the section listing the reader's own MCP servers in the current workspace (Settings → MCP servers). Only runs they start in this workspace use them."
+  },
+  "mcpPersonalServersDescription": "Only you see these servers, and only the agent runs you start in this workspace get their tools.",
+  "@mcpPersonalServersDescription": {
+    "description": "Description under the 'Your MCP servers' section title"
+  },
+  "mcpPersonalServersUnavailable": "Your own MCP servers aren't available on the connected server.",
+  "@mcpPersonalServersUnavailable": {
+    "description": "Shown in the 'Your MCP servers' section when the connected server is too old to offer MCP servers"
+  },
+  "mcpPersonalServersEmpty": "No MCP servers of your own yet",
+  "@mcpPersonalServersEmpty": {
+    "description": "Empty state title of the reader's own MCP server list"
+  },
+  "mcpPersonalServersEmptyDescription": "Add a server to give the runs you start in this workspace its tools.",
+  "@mcpPersonalServersEmptyDescription": {
+    "description": "Empty state description of the reader's own MCP server list"
+  },
+  "mcpServerEditorPersonalOwner": "Only the runs you start in this workspace use it. As the server owner, saving it approves it.",
+  "@mcpServerEditorPersonalOwner": {
+    "description": "Note under the transport picker in the editor for the reader's own MCP server, shown to the server owner (whose save approves the server's host access)"
+  },
+  "mcpServerEditorPersonalMember": "Only the runs you start in this workspace use it. It can reach only public addresses.",
+  "@mcpServerEditorPersonalMember": {
+    "description": "Note under the transport picker in the editor for the reader's own MCP server, shown to a member who is not the server owner (their server may reach only public internet addresses, not the host's private network)"
+  },
+  "mcpServerSignInNeeded": "Sign in to use this server's tools.",
+  "@mcpServerSignInNeeded": {
+    "description": "Note under an MCP server row whose server waits for a browser sign-in before its tools can be used; next to the 'Sign in' button"
+  },
+  "mcpServerSignIn": "Sign in",
+  "@mcpServerSignIn": {
+    "description": "Button under an MCP server row that starts the browser sign-in to that server"
+  },
+  "mcpServerSignInTitle": "Sign in to {name}",
+  "@mcpServerSignInTitle": {
+    "description": "Title of the dialog that takes the confirmation code after the browser sign-in to an MCP server",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "linear"
+      }
+    }
+  },
+  "mcpServerSignInWrongCode": "That isn't the code your browser showed. {count, plural, =1{1 try left.} other{{count} tries left.}}",
+  "@mcpServerSignInWrongCode": {
+    "description": "Error under the confirmation code field when the typed code does not match; says how many more codes the attempt accepts",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "mcpServerSignInEnded": "It took too long, was refused, or got too many wrong codes. Start again to get a new sign-in page.",
+  "@mcpServerSignInEnded": {
+    "description": "Body of the alert in the MCP server sign-in dialog when the attempt is over and must be started again; shown under the existing 'Sign-in didn't finish' title"
+  },
+  "mcpServerSignInStartAgain": "Start again",
+  "@mcpServerSignInStartAgain": {
+    "description": "Button in the MCP server sign-in dialog that begins a new sign-in after the last one ended"
+  },
+  "mcpServerSignedIn": "Signed in to {name}.",
+  "@mcpServerSignedIn": {
+    "description": "Toast after a browser sign-in to an MCP server succeeded",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "linear"
+      }
+    }
   },
   "mcpRemoveServer": "Remove server",
   "@mcpRemoveServer": {
@@ -17879,10 +17943,6 @@
   "mcpServerEditorRemoteOwner": "Saving approves it to reach the host's private network too.",
   "@mcpServerEditorRemoteOwner": {
     "description": "Note in the workspace MCP server editor (HTTP/SSE transport) for the server owner"
-  },
-  "mcpServerEditorPersonal": "Used only in runs you start or are accountable for.",
-  "@mcpServerEditorPersonal": {
-    "description": "Note in the personal MCP server editor (the server owner's own servers)"
   },
   "mcpServerRefusedInvalid": "Control Center couldn't save this server. Check its settings and try again.",
   "@mcpServerRefusedInvalid": {

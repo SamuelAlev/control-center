@@ -1,5 +1,5 @@
 /// MCP client: connect to external MCP servers (stdio / HTTP / SSE), bridge
-/// tools into `McpToolRegistry`, plus OAuth, config discovery, BM25 tool
+/// tools into `McpToolRegistry`, plus OAuth, BM25 tool
 /// search, capability-tier approval, and process lifecycle. Pure Dart
 /// (no Flutter) for desktop and `cc_server`.
 library;
@@ -7,7 +7,6 @@ library;
 export 'src/config/mcp_client_models.dart';
 export 'src/config/mcp_server_config.dart';
 export 'src/connection_manager.dart';
-export 'src/discovery/config_discovery.dart';
 export 'src/list_my_tools_tool.dart';
 export 'src/mcp_client.dart';
 export 'src/mcp_client_service.dart';

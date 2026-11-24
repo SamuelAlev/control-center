@@ -30,8 +30,9 @@ class McpServerDao extends DatabaseAccessor<WorkspaceDatabase>
   )..where((t) => t.id.equals(id))).getSingleOrNull();
 
   /// Inserts a server, or updates the one with its id. Returns false, writing
-  /// nothing, when another server already holds its name: the unique key
-  /// refuses it, and it is never resolved by replacing that server.
+  /// nothing, when another server of the same owner already holds its name:
+  /// the unique key refuses it, and it is never resolved by replacing that
+  /// server.
   Future<bool> upsert(McpServersTableCompanion entry) async {
     try {
       return await transaction(() async {
@@ -41,6 +42,7 @@ class McpServerDao extends DatabaseAccessor<WorkspaceDatabase>
                   ..addColumns([table.id])
                   ..where(
                     table.name.equals(entry.name.value) &
+                        table.userId.equals(entry.userId.value) &
                         table.id.equals(entry.id.value).not(),
                   )
                   ..limit(1))

@@ -1100,25 +1100,24 @@ class DispatchSession implements SteeringSessionView, BackgroundHoldView {
     return '$workspace/$conversation#$agentId';
   }
 
-  /// Whether this run may be handed the MCP servers discovered in the server
-  /// OS user's own tool configs: only when the server owner is accountable
-  /// for it (`HostExecutionGate.ownerAccountable`). No answer, or a failed
-  /// one, is no.
-  Future<bool> _personalMcpAllowed() async {
-    final ownerAccountable = deps.hostExecution.ownerAccountable;
-    if (ownerAccountable == null) {
-      return false;
+  /// The member whose own MCP servers this run is handed: the person who
+  /// started it, while still a member of its workspace
+  /// (`HostExecutionGate.startedBy`). No answer, or a failed one, is nobody.
+  Future<String?> _personalMcpUser() async {
+    final startedBy = deps.hostExecution.startedBy;
+    if (startedBy == null) {
+      return null;
     }
     try {
-      return await ownerAccountable(
+      return await startedBy(
         workspaceId: workspaceId,
         requestedByUserId: requestedByUserId,
       );
     } on Object catch (e) {
       CcInfraLog.warning(
-        'dispatch $dispatchId: owner check failed, no personal MCP: $e',
+        'dispatch $dispatchId: member check failed, no personal MCP: $e',
       );
-      return false;
+      return null;
     }
   }
 

@@ -5,23 +5,18 @@ import 'package:cc_mcp_client/src/transports/http_transport.dart';
 import 'package:cc_mcp_client/src/transports/mcp_transport.dart';
 import 'package:cc_mcp_client/src/transports/stdio_transport.dart';
 
-/// Builds the right [McpTransport] for an [McpServerConfig], wiring OAuth auth
-/// headers for `http`/`sse` servers configured with [McpAuthKind.oauth].
+/// Builds the right [McpTransport] for an [McpServerConfig], wiring the stored
+/// OAuth sign-in of an `http`/`sse` server into its requests.
 ///
 /// Injected into the `ConnectionManager` so it stays transport-agnostic. The
 /// default factory covers all three transports; tests can substitute a fake.
 class DefaultMcpTransportFactory {
   /// Creates a [DefaultMcpTransportFactory].
   ///
-  /// [tokenStore] and [launchBrowser] are required only to *refresh* tokens for
-  /// OAuth servers at connect time; the interactive `authorize` flow is driven
-  /// separately by the host (it needs a UI gesture). When absent, OAuth servers
-  /// fall back to whatever static headers the config carries.
-  DefaultMcpTransportFactory({
-    this.tokenStore,
-    this.launchBrowser,
-    this.publicOnlyConnection,
-  });
+  /// [tokenStore] holds the sign-ins of this factory's audience; the browser
+  /// sign-in itself is driven by the host ([oauthProviderFor]). Without a
+  /// store, a server gets only the static headers its config carries.
+  DefaultMcpTransportFactory({this.tokenStore, this.publicOnlyConnection});
 
   /// How an http/sse server marked [McpServerConfig.publicOnly] is dialled:
   /// resolved once, refused unless every address is public, and connected to
@@ -30,10 +25,6 @@ class DefaultMcpTransportFactory {
 
   /// Token store used to read/refresh OAuth tokens for the auth header.
   final McpOAuthTokenStore? tokenStore;
-
-  /// Browser launcher passed through to the OAuth provider (for refresh that
-  /// needs re-auth — rare). May be null in headless contexts.
-  final BrowserLauncher? launchBrowser;
 
   /// Builds a transport for [config], starting it is the caller's job.
   Future<McpTransport> create(McpServerConfig config) async {
@@ -55,21 +46,32 @@ class DefaultMcpTransportFactory {
     }
   }
 
-  AuthHeaderProvider? _authProviderFor(McpServerConfig config) {
-    if (config.auth != McpAuthKind.oauth) {
-      return null;
-    }
+  /// The OAuth provider of [config], reaching the authorization server
+  /// under the same address rule as the server itself; null for a server
+  /// with no URL or a factory with no token store.
+  McpOAuthProvider? oauthProviderFor(McpServerConfig config) {
     final store = tokenStore;
-    final launcher = launchBrowser;
-    if (store == null || launcher == null) {
+    final url = config.url;
+    if (store == null ||
+        url == null ||
+        config.transport == McpTransportKind.stdio) {
       return null;
     }
-    final provider = McpOAuthProvider(
-      serverUrl: config.url!,
+    return McpOAuthProvider(
+      serverUrl: url,
       tokenStore: store,
-      launchBrowser: launcher,
       scopes: config.oauthScopes,
+      httpClient: confinedMcpHttpClient(config, publicOnlyConnection),
     );
-    return provider.authHeaders;
+  }
+
+  /// A stored sign-in is offered to every remote server that sets no
+  /// `Authorization` header of its own; with none stored it adds nothing.
+  AuthHeaderProvider? _authProviderFor(McpServerConfig config) {
+    if (config.headers.keys.any((h) => h.toLowerCase() == 'authorization')) {
+      return null;
+    }
+    final provider = oauthProviderFor(config);
+    return provider?.authHeaders;
   }
 }

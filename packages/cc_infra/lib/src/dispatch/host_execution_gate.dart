@@ -10,6 +10,15 @@ typedef OwnerAccountable =
       required String? requestedByUserId,
     });
 
+/// The member who started a run in [workspaceId]: [requestedByUserId] while
+/// they are still a member of it, else null. A run nobody started
+/// (automation) has none.
+typedef RunStartedBy =
+    Future<String?> Function({
+      required String? workspaceId,
+      required String? requestedByUserId,
+    });
+
 /// Admits or refuses a dispatch under the server's [HostExecutionPosture].
 ///
 /// Asked once per run, before anything starts. The owner fact comes from the
@@ -17,7 +26,11 @@ typedef OwnerAccountable =
 /// infers it.
 class HostExecutionGate {
   /// Creates a [HostExecutionGate].
-  const HostExecutionGate({required this.posture, this.ownerAccountable});
+  const HostExecutionGate({
+    required this.posture,
+    this.ownerAccountable,
+    this.startedBy,
+  });
 
   /// The posture decided at boot.
   final HostExecutionPosture posture;
@@ -25,6 +38,10 @@ class HostExecutionGate {
   /// Answers the owner fact. Null admits nobody under
   /// [HostExecutionPosture.unavailable].
   final OwnerAccountable? ownerAccountable;
+
+  /// Answers who started a run, which decides whose own MCP servers it is
+  /// handed. Null hands out nobody's.
+  final RunStartedBy? startedBy;
 
   /// Throws [HostSandboxUnavailableException] when the run may not start.
   Future<void> admit({

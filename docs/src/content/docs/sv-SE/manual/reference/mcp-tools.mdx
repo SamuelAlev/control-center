@@ -2,10 +2,10 @@
 title: MCP-verktyg
 description: Komplett katalog över de MCP-verktyg som cc_server registrerar, per familj.
 slug: sv-SE/handbok/referens/mcp-verktyg
-sourceHash: 0ef9efd386b57c3a254e7f637b0436d9baff1719
+sourceHash: 6fc8551b1a20ec2343a90a911aa9026a989677f6
 ---
 
-`cc_server` har ett enda MCP-register (JSON-RPC 2.0) för verktyg, som betjänas på serverns huvudport (standard `9030`) under `POST /mcp` och `GET /sse`, med protokollversion `2024-11-05`. Varje klient når samma register: skrivbordsappen, webbversionen, externa MCP-klienter och den inbyggda agentköraren. Externa MCP-servrar bryggas in i samma register i egna lager: ett per arbetsyta för de MCP-servrar dess administratörer konfigurerar, och ett för serverägarens personliga MCP-servrar. Den här endpointen listar, anropar och söker i dem bara för en agentkörning: arbetsytans egna MCP-servrar, plus de personliga när serverägaren ansvarar för körningen. MCP-token och parkopplade enheter ser dem aldrig (se [MCP-servrar som agenterna använder](/sv-SE/handbok/how-to-guider/mcp-server/#mcp-servrar-som-agenterna-använder)).
+`cc_server` har ett enda MCP-register (JSON-RPC 2.0) för verktyg, som betjänas på serverns huvudport (standard `9030`) under `POST /mcp` och `GET /sse`, med protokollversion `2024-11-05`. Varje klient når samma register: skrivbordsappen, webbversionen, externa MCP-klienter och den inbyggda agentköraren. Externa MCP-servrar bryggas in i samma register i egna lager: ett per arbetsyta för de MCP-servrar dess administratörer konfigurerar, och ett för varje medlems egna MCP-servrar i arbetsytan. Den här endpointen listar, anropar och söker i dem bara för en agentkörning: arbetsytans egna MCP-servrar, plus de egna MCP-servrarna för medlemmen som startade körningen. MCP-token och parkopplade enheter ser dem aldrig (se [MCP-servrar som agenterna använder](/sv-SE/handbok/how-to-guider/mcp-server/#mcp-servrar-som-agenterna-använder)).
 
 ## Registrets storlek
 
@@ -24,7 +24,7 @@ De fem kodgrafverktygen registreras bara när värden skickar in ett kodgraf-rep
 Hela registret annonseras i `tools/list` utan någon upptäcktsgrind, utom för en agentkörning som kan köra skript (nedan). Ändringar av ärenden görs med typade verktyg.
 
 :::note[Externa klienter ser alltid hela katalogen]
-`tools/list` beskärs aldrig, utom för serverägarens personliga MCP-servrar, som den aldrig innehåller, och [Kodläge](/sv-SE/handbok/koncept/kodlage/): `repl` listas bara för en agentkörning på en server som kan köra skript, och den körningen listas med `repl`, de direkta verktygen (`read`, `write`, `edit`, `search`, `find`, `bash`, `read_output`, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` och lägets egna verb där registret har dem) och de verktyg ett skript inte får anropa. Den anropar resten från ett skript; ett direkt anrop till ett av dem besvaras med hur det anropas från `repl`. MCP-klienter validerar verktygsnamn mot sin egen cachade kopia av listan och avvisar allt som inte står där utan att fråga servern, så ett verktyg som döljs där går inte att nå – det är inte bara tyst.
+`tools/list` beskärs aldrig, utom för medlemmars egna MCP-servrar, som den bara innehåller för en körning som deras ägare startade, och [Kodläge](/sv-SE/handbok/koncept/kodlage/): `repl` listas bara för en agentkörning på en server som kan köra skript, och den körningen listas med `repl`, de direkta verktygen (`read`, `write`, `edit`, `search`, `find`, `bash`, `read_output`, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` och lägets egna verb där registret har dem) och de verktyg ett skript inte får anropa. Den anropar resten från ett skript; ett direkt anrop till ett av dem besvaras med hur det anropas från `repl`. MCP-klienter validerar verktygsnamn mot sin egen cachade kopia av listan och avvisar allt som inte står där utan att fråga servern, så ett verktyg som döljs där går inte att nå – det är inte bara tyst.
 
 Den **inbyggda harnessen** fungerar annorlunda: den läser bara in en liten direkt uppsättning definitioner per förfrågan och når resten från skript eller läser in dem vid första användning, vilket är ett beteende på harness-sidan och inte ändrar det här registret. Se [Verktygskontext och promptcache](/sv-SE/handbok/koncept/verktygskontext/).
 :::

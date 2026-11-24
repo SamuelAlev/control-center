@@ -16,6 +16,7 @@ import 'package:control_center/shared/widgets/composer/attachments/attachment_st
 import 'package:control_center/shared/widgets/composer/attachments/composer_drop_target.dart';
 import 'package:control_center/shared/widgets/composer/composer_draft.dart';
 import 'package:control_center/shared/widgets/composer/composer_history.dart';
+import 'package:control_center/shared/widgets/composer/composer_line_actions.dart';
 import 'package:control_center/shared/widgets/composer/composer_models.dart';
 import 'package:control_center/shared/widgets/composer/composer_text_controller.dart';
 import 'package:control_center/shared/widgets/composer/composer_toolbar.dart';
@@ -278,6 +279,11 @@ class _ComposerState extends ConsumerState<Composer> {
   // Terminal-style prompt recall (see [Composer.history]); the browsing
   // state machine lives in [ComposerHistory], fed at keypress time.
   final ComposerHistory _history = ComposerHistory();
+
+  // Stable across builds (a fresh map would notify the field's actions every
+  // frame); reads the controller live since a host may swap it.
+  late final Map<Type, Action<Intent>> _lineActions =
+      composerLogicalLineActions(() => _controller);
 
   // Voice-dictation pending span (PRD 25 §2). While a session is live, the
   // dictated text occupies a tracked range [_dictationBase, _dictationBase +
@@ -1641,20 +1647,25 @@ class _ComposerState extends ConsumerState<Composer> {
       // it would compete with the field's own tap-to-place-caret recognizer.
       child: Listener(
         onPointerUp: _onPointerUp,
-        child: CcTextField(
-          controller: _controller,
-          focusNode: _focus,
-          // Unbounded lines: the box below caps the HEIGHT, so the field
-          // grows line by line to a share of the pane and scrolls past it.
-          maxLines: null,
-          minLines: fill ? null : widget.minLines,
-          expands: fill,
-          textInputAction: TextInputAction.send,
-          textStyle: CcTypography.body.copyWith(color: ds.textPrimary),
-          inputFormatters: [_longPaste],
-          onSubmitted: (_) => _onFieldSubmitted(),
-          hintText: widget.hint,
-          chromeless: true,
+        // ⌘←/⌘→ (Home/End elsewhere) stop at the typed line's ends, not at
+        // a soft wrap — the same "line" ↑ recall uses.
+        child: Actions(
+          actions: _lineActions,
+          child: CcTextField(
+            controller: _controller,
+            focusNode: _focus,
+            // Unbounded lines: the box below caps the HEIGHT, so the field
+            // grows line by line to a share of the pane and scrolls past it.
+            maxLines: null,
+            minLines: fill ? null : widget.minLines,
+            expands: fill,
+            textInputAction: TextInputAction.send,
+            textStyle: CcTypography.body.copyWith(color: ds.textPrimary),
+            inputFormatters: [_longPaste],
+            onSubmitted: (_) => _onFieldSubmitted(),
+            hintText: widget.hint,
+            chromeless: true,
+          ),
         ),
       ),
     );

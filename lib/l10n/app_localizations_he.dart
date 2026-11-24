@@ -1685,10 +1685,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get mcpServers => 'שרתי MCP';
 
   @override
-  String get mcpServersSettingsDescription =>
-      'שרת ה-MCP המובנה ושרתי MCP חיצוניים.';
-
-  @override
   String get remoteControlAndDevices => 'שליטה מרחוק ומכשירים';
 
   @override
@@ -8735,13 +8731,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get ideFileBinary => 'קובץ בינארי';
 
   @override
-  String get mcpExternalServers => 'שרתי MCP חיצוניים';
-
-  @override
-  String get mcpExternalServersDescription =>
-      'התחברות לשרתי MCP חיצוניים (GitHub, Sentry, Postgres, אוטומציית דפדפן). שרתים שהגדרתם עבור Claude, Cursor, VS Code וכלים אחרים מתגלים אוטומטית.';
-
-  @override
   String get mcpApprovalMode => 'אישור כלים';
 
   @override
@@ -8758,17 +8747,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get mcpApprovalYolo => 'אישור אוטומטי להכול';
 
   @override
-  String get mcpNoExternalServers => 'לא התגלו שרתי MCP חיצוניים.';
-
-  @override
-  String get mcpAuthorize => 'מתן הרשאה';
-
-  @override
   String get mcpReconnect => 'התחברות מחדש';
-
-  @override
-  String get mcpExternalConnectionsNote =>
-      'שרתי MCP חיצוניים רצים על שרת הסוכנים (משותף לגרסת שולחן העבודה ולגרסת האינטרנט). מתן הרשאה לשרתי OAuth זמין רק בשולחן העבודה.';
 
   @override
   String get mcpStatusConnected => 'מחובר';
@@ -18370,10 +18349,6 @@ class AppLocalizationsHe extends AppLocalizations {
       'אשרו שהשרת רשאי להשתמש בהן. כל מאגר נבדק שוב לפי הגישה שלכם.';
 
   @override
-  String get mcpExternalServersOwnerRunsOnly =>
-      'שרתים שנמצאו בהגדרות הכלים של המחשב הזה זמינים רק בריצות שאתם מתחילים או נושאים באחריותכם. ריצות של אחרים לעולם לא רואות אותם, והם לא מוצעים דרך נקודת הקצה MCP של Control Center.';
-
-  @override
   String repoCodeNeedsSignIn(String provider) {
     return 'היכנסו ל־$provider כדי לראות את הקוד של המאגר הזה.';
   }
@@ -18756,9 +18731,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get mcpAddServer => 'הוספת שרת';
 
   @override
-  String get mcpHandAddedSource => 'נוסף ב-Control Center';
-
-  @override
   String get mcpStatusAwaitingApproval => 'ממתין לאישור';
 
   @override
@@ -18782,6 +18754,70 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get mcpApprovalRemoteMember =>
       'השרת הזה יכול להגיע רק לכתובות ציבוריות עד שבעל השרת יאשר אותו.';
+
+  @override
+  String get mcpServersSettingsSubtitle =>
+      'שרת ה-MCP המובנה, ושרתי ה-MCP שהכלים שלהם מגיעים להרצות הסוכן בסביבת העבודה הזו.';
+
+  @override
+  String get mcpPersonalServers => 'שרתי ה-MCP שלכם';
+
+  @override
+  String get mcpPersonalServersDescription =>
+      'רק אתם רואים את השרתים האלה, ורק הרצות הסוכן שאתם מפעילים בסביבת העבודה הזו מקבלות את הכלים שלהם.';
+
+  @override
+  String get mcpPersonalServersUnavailable =>
+      'שרתי ה-MCP שלכם אינם זמינים בשרת המחובר.';
+
+  @override
+  String get mcpPersonalServersEmpty => 'עדיין אין לכם שרתי MCP';
+
+  @override
+  String get mcpPersonalServersEmptyDescription =>
+      'הוסיפו שרת כדי לתת את הכלים שלו להרצות הסוכן שאתם מפעילים בסביבת העבודה הזו.';
+
+  @override
+  String get mcpServerEditorPersonalOwner =>
+      'רק הרצות הסוכן שאתם מפעילים בסביבת העבודה הזו משתמשות בו. בתור בעל השרת, שמירה מאשרת אותו.';
+
+  @override
+  String get mcpServerEditorPersonalMember =>
+      'רק הרצות הסוכן שאתם מפעילים בסביבת העבודה הזו משתמשות בו. הוא יכול להגיע רק לכתובות ציבוריות.';
+
+  @override
+  String get mcpServerSignInNeeded => 'היכנסו כדי להשתמש בכלים של השרת הזה.';
+
+  @override
+  String get mcpServerSignIn => 'כניסה';
+
+  @override
+  String mcpServerSignInTitle(String name) {
+    return 'כניסה ל-$name';
+  }
+
+  @override
+  String mcpServerSignInWrongCode(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'נותרו $count ניסיונות.',
+      one: 'נותר ניסיון אחד.',
+    );
+    return 'זה לא הקוד שהדפדפן הציג. $_temp0';
+  }
+
+  @override
+  String get mcpServerSignInEnded =>
+      'הכניסה נמשכה זמן רב מדי, נדחתה, או שהוזנו יותר מדי קודים שגויים. התחילו מחדש כדי לקבל דף כניסה חדש.';
+
+  @override
+  String get mcpServerSignInStartAgain => 'התחלה מחדש';
+
+  @override
+  String mcpServerSignedIn(String name) {
+    return 'נכנסתם ל-$name.';
+  }
 
   @override
   String get mcpRemoveServer => 'הסרת שרת';
@@ -18918,10 +18954,6 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get mcpServerEditorRemoteOwner =>
       'שמירה מאשרת את הגישה שלו גם לרשת הפרטית של המארח.';
-
-  @override
-  String get mcpServerEditorPersonal =>
-      'משמש רק בהרצות שאתם מתחילים או אחראים להן.';
 
   @override
   String get mcpServerRefusedInvalid =>

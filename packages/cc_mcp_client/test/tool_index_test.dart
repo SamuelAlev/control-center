@@ -38,9 +38,7 @@ void main() {
     final tools = [
       _def('list_pull_requests', 'List GitHub pull requests for a repo'),
       _def('search_memory', 'Semantic search over stored memory facts'),
-      _def('send_message', 'Send a message to a chat channel', [
-        'body',
-      ]),
+      _def('send_message', 'Send a message to a chat channel', ['body']),
       _def('create_workspace', 'Create a new workspace'),
     ];
 
@@ -92,15 +90,16 @@ void main() {
 
     test('dynamic bridged tools are personal: listed and resolvable only '
         'when asked for', () {
+      const mine = McpToolView(workspaceId: 'ws', personalUserId: 'u1');
       final registry = McpToolRegistry([_TestTool('native')]);
-      registry.setPersonalTools([_TestTool('mcp__srv__x')]);
+      registry.setPersonalTools('ws', 'u1', [_TestTool('mcp__srv__x')]);
       expect(
-        registry.toolNames(view: const McpToolView(includePersonal: true)),
+        registry.toolNames(view: mine),
         containsAll(['native', 'mcp__srv__x']),
       );
-      expect(registry.lookup('mcp__srv__x', view: const McpToolView(includePersonal: true)), isNotNull);
+      expect(registry.lookup('mcp__srv__x', view: mine), isNotNull);
       expect(
-        registry.listDefinitions(view: const McpToolView(includePersonal: true)).map((d) => d.name),
+        registry.listDefinitions(view: mine).map((d) => d.name),
         containsAll(['native', 'mcp__srv__x']),
       );
       expect(registry.toolNames(view: McpToolView.shared), ['native']);
@@ -109,17 +108,68 @@ void main() {
       expect(registry.allToolDefinitions().map((d) => d.name), ['native']);
     });
 
+    test('a member\'s own tools reach neither another member nor the same '
+        'member in another workspace', () {
+      final registry = McpToolRegistry([_TestTool('native')]);
+      registry.setPersonalTools('ws', 'u1', [_TestTool('mcp__srv__x')]);
+      for (final view in const [
+        McpToolView(workspaceId: 'ws', personalUserId: 'u2'),
+        McpToolView(workspaceId: 'other', personalUserId: 'u1'),
+        McpToolView(workspaceId: 'ws'),
+        McpToolView(personalUserId: 'u1'),
+      ]) {
+        expect(
+          registry.lookup('mcp__srv__x', view: view),
+          isNull,
+          reason: '$view',
+        );
+        expect(registry.isExternal('mcp__srv__x', view: view), isFalse);
+        expect(registry.toolNames(view: view), ['native']);
+      }
+    });
+
+    test('a member\'s own tool resolves before the workspace\'s of the same '
+        'name, and only for that member', () {
+      final own = _TestTool('mcp__srv__x');
+      final shared = _TestTool('mcp__srv__x');
+      final registry = McpToolRegistry([])
+        ..setWorkspaceTools('ws', [shared])
+        ..setPersonalTools('ws', 'u1', [own]);
+      expect(
+        registry.lookup(
+          'mcp__srv__x',
+          view: const McpToolView(workspaceId: 'ws', personalUserId: 'u1'),
+        ),
+        same(own),
+      );
+      expect(
+        registry.lookup(
+          'mcp__srv__x',
+          view: const McpToolView(workspaceId: 'ws', personalUserId: 'u2'),
+        ),
+        same(shared),
+      );
+      registry.dropPersonalTools('ws');
+      expect(
+        registry.lookup(
+          'mcp__srv__x',
+          view: const McpToolView(workspaceId: 'ws', personalUserId: 'u1'),
+        ),
+        same(shared),
+      );
+    });
+
     test('a personal tool never stands in for a shared one', () {
       final shared = _TestTool('same');
       final registry = McpToolRegistry([shared]);
-      registry.setPersonalTools([_TestTool('same')]);
+      registry.setPersonalTools('ws', 'u1', [_TestTool('same')]);
       expect(registry.lookup('same', view: McpToolView.shared), same(shared));
     });
 
     test('personal tools do not change the shared revision', () {
       final registry = McpToolRegistry([_TestTool('native')]);
       final before = registry.toolsetRevision;
-      registry.setPersonalTools([_TestTool('mcp__srv__x')]);
+      registry.setPersonalTools('ws', 'u1', [_TestTool('mcp__srv__x')]);
       expect(registry.toolsetRevision, before);
     });
 
@@ -129,7 +179,7 @@ void main() {
       registry.onToolsChanged = () => fired++;
       registry.register(_TestTool('extra'));
       expect(fired, 1);
-      registry.setPersonalTools([_TestTool('bridged')]);
+      registry.setPersonalTools('ws', 'u1', [_TestTool('bridged')]);
       expect(fired, 2);
     });
 

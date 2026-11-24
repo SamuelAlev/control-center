@@ -1697,10 +1697,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get mcpServers => 'Pelayan MCP';
 
   @override
-  String get mcpServersSettingsDescription =>
-      'Pelayan MCP terbina dan pelayan MCP luaran.';
-
-  @override
   String get remoteControlAndDevices => 'Kawalan jauh & peranti';
 
   @override
@@ -8763,13 +8759,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get ideFileBinary => 'Fail binari';
 
   @override
-  String get mcpExternalServers => 'Pelayan MCP luaran';
-
-  @override
-  String get mcpExternalServersDescription =>
-      'Sambung ke pelayan MCP luaran (GitHub, Sentry, Postgres, automasi penyemak imbas). Pelayan yang anda konfigurasikan untuk Claude, Cursor, VS Code dan alat lain dikesan secara automatik.';
-
-  @override
   String get mcpApprovalMode => 'Kelulusan alat';
 
   @override
@@ -8786,17 +8775,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get mcpApprovalYolo => 'Luluskan semua secara automatik';
 
   @override
-  String get mcpNoExternalServers => 'Tiada pelayan MCP luaran dikesan.';
-
-  @override
-  String get mcpAuthorize => 'Berikan kebenaran';
-
-  @override
   String get mcpReconnect => 'Sambung semula';
-
-  @override
-  String get mcpExternalConnectionsNote =>
-      'Pelayan MCP luaran berjalan pada pelayan ejen (dikongsi oleh desktop dan web). Memberi kebenaran pelayan OAuth hanya tersedia pada desktop.';
 
   @override
   String get mcpStatusConnected => 'Disambungkan';
@@ -18404,10 +18383,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Sahkan bahawa pelayan ini dibenarkan menggunakannya. Setiap repositori disemak semula dengan akses anda.';
 
   @override
-  String get mcpExternalServersOwnerRunsOnly =>
-      'Pelayan yang ditemui dalam tetapan alat mesin ini hanya tersedia dalam larian yang anda mulakan atau bertanggungjawab untuknya. Larian orang lain tidak pernah melihatnya, dan ia tidak ditawarkan melalui titik akhir MCP Control Center.';
-
-  @override
   String repoCodeNeedsSignIn(String provider) {
     return 'Log masuk ke $provider untuk melihat kod repositori ini.';
   }
@@ -18795,9 +18770,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get mcpAddServer => 'Tambah pelayan';
 
   @override
-  String get mcpHandAddedSource => 'Ditambah dalam Control Center';
-
-  @override
   String get mcpStatusAwaitingApproval => 'Menunggu kelulusan';
 
   @override
@@ -18821,6 +18793,70 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get mcpApprovalRemoteMember =>
       'Pelayan ini hanya boleh mencapai alamat awam sehingga pemilik pelayan meluluskannya.';
+
+  @override
+  String get mcpServersSettingsSubtitle =>
+      'Pelayan MCP terbina dalam, dan pelayan MCP yang alatannya diterima oleh larian ejen dalam ruang kerja ini.';
+
+  @override
+  String get mcpPersonalServers => 'Pelayan MCP anda';
+
+  @override
+  String get mcpPersonalServersDescription =>
+      'Hanya anda yang melihat pelayan ini, dan hanya larian ejen yang anda mulakan dalam ruang kerja ini mendapat alatannya.';
+
+  @override
+  String get mcpPersonalServersUnavailable =>
+      'Pelayan MCP anda tidak tersedia pada pelayan yang disambungkan.';
+
+  @override
+  String get mcpPersonalServersEmpty => 'Belum ada pelayan MCP milik anda';
+
+  @override
+  String get mcpPersonalServersEmptyDescription =>
+      'Tambah pelayan untuk memberi larian yang anda mulakan dalam ruang kerja ini alatannya.';
+
+  @override
+  String get mcpServerEditorPersonalOwner =>
+      'Hanya larian yang anda mulakan dalam ruang kerja ini menggunakannya. Sebagai pemilik pelayan, menyimpannya akan meluluskannya.';
+
+  @override
+  String get mcpServerEditorPersonalMember =>
+      'Hanya larian yang anda mulakan dalam ruang kerja ini menggunakannya. Ia hanya boleh mencapai alamat awam.';
+
+  @override
+  String get mcpServerSignInNeeded =>
+      'Log masuk untuk menggunakan alatan pelayan ini.';
+
+  @override
+  String get mcpServerSignIn => 'Log masuk';
+
+  @override
+  String mcpServerSignInTitle(String name) {
+    return 'Log masuk ke $name';
+  }
+
+  @override
+  String mcpServerSignInWrongCode(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count cubaan lagi.',
+    );
+    return 'Itu bukan kod yang dipaparkan pelayar anda. $_temp0';
+  }
+
+  @override
+  String get mcpServerSignInEnded =>
+      'Ia mengambil masa terlalu lama, ditolak, atau terlalu banyak kod salah. Mulakan semula untuk mendapatkan halaman log masuk baharu.';
+
+  @override
+  String get mcpServerSignInStartAgain => 'Mula semula';
+
+  @override
+  String mcpServerSignedIn(String name) {
+    return 'Berjaya log masuk ke $name.';
+  }
 
   @override
   String get mcpRemoveServer => 'Buang pelayan';
@@ -18958,10 +18994,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get mcpServerEditorRemoteOwner =>
       'Menyimpan akan meluluskannya untuk mencapai rangkaian persendirian hos juga.';
-
-  @override
-  String get mcpServerEditorPersonal =>
-      'Digunakan hanya dalam larian yang anda mulakan atau yang anda bertanggungjawab untuknya.';
 
   @override
   String get mcpServerRefusedInvalid =>

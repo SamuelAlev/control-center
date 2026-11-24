@@ -51,7 +51,7 @@ extension _DispatchSessionGateway on DispatchSession {
         readOnlyWorktrees: _readOnlyWorktrees,
         runnerStateDirs: _runnerStateDirs,
         autonomy: _resolveAutonomy,
-        personalMcp: await _personalMcpAllowed(),
+        personalMcpUserId: await _personalMcpUser(),
         runLogId: hasRunLogRow ? runLogId : null,
       ),
     );

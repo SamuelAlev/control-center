@@ -31,16 +31,8 @@ class DaoWorkspaceMcpServerRepository
 
   @override
   Future<void> save(McpServerDefinition definition) async {
-    final workspaceId = definition.workspaceId;
-    if (workspaceId == null) {
-      throw ArgumentError.value(
-        definition,
-        'definition',
-        'a workspace MCP server needs its workspace',
-      );
-    }
     final saved = await _dbs
-        .of(workspaceId)
+        .of(definition.workspaceId)
         .mcpServerDao
         .upsert(_mapper.toCompanion(definition));
     if (!saved) {

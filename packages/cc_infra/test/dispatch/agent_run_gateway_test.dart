@@ -484,9 +484,9 @@ void main() {
     });
 
     test(
-      'the owner\'s personal MCP servers come only from the grant',
+      'a member\'s own MCP servers come only from the grant',
       () async {
-        expect(gateway.mcpScopeFor(lease.secret)?.personalMcp, isFalse);
+        expect(gateway.mcpScopeFor(lease.secret)?.personalMcpUserId, isNull);
         final accountable = (await gateway.open(
           const AgentRunGrant(
             workspaceId: 'ws',
@@ -494,13 +494,13 @@ void main() {
             mcpEndpoint: true,
             claudeHook: true,
             readOnly: false,
-            personalMcp: true,
+            personalMcpUserId: 'user-1',
           ),
         ))!;
         addTearDown(() => gateway.close(accountable));
         final scope = gateway.mcpScopeFor(accountable.secret)!;
-        expect(scope.personalMcp, isTrue);
-        expect(scope.toolView.includePersonal, isTrue);
+        expect(scope.personalMcpUserId, 'user-1');
+        expect(scope.toolView.personalUserId, 'user-1');
         expect(scope.toolView.workspaceId, 'ws');
       },
     );

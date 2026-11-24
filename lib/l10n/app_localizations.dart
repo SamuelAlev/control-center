@@ -3083,12 +3083,6 @@ abstract class AppLocalizations {
   /// **'MCP servers'**
   String get mcpServers;
 
-  /// No description provided for @mcpServersSettingsDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Built-in MCP server and external MCP servers.'**
-  String get mcpServersSettingsDescription;
-
   /// No description provided for @remoteControlAndDevices.
   ///
   /// In en, this message translates to:
@@ -15043,18 +15037,6 @@ abstract class AppLocalizations {
   /// **'Binary file'**
   String get ideFileBinary;
 
-  /// No description provided for @mcpExternalServers.
-  ///
-  /// In en, this message translates to:
-  /// **'External MCP servers'**
-  String get mcpExternalServers;
-
-  /// No description provided for @mcpExternalServersDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Connect to external MCP servers (GitHub, Sentry, Postgres, browser automation). Servers you configured for Claude, Cursor, VS Code and other tools are auto-discovered.'**
-  String get mcpExternalServersDescription;
-
   /// No description provided for @mcpApprovalMode.
   ///
   /// In en, this message translates to:
@@ -15085,29 +15067,11 @@ abstract class AppLocalizations {
   /// **'Auto-approve all'**
   String get mcpApprovalYolo;
 
-  /// No description provided for @mcpNoExternalServers.
-  ///
-  /// In en, this message translates to:
-  /// **'No external MCP servers discovered.'**
-  String get mcpNoExternalServers;
-
-  /// No description provided for @mcpAuthorize.
-  ///
-  /// In en, this message translates to:
-  /// **'Authorize'**
-  String get mcpAuthorize;
-
   /// No description provided for @mcpReconnect.
   ///
   /// In en, this message translates to:
   /// **'Reconnect'**
   String get mcpReconnect;
-
-  /// No description provided for @mcpExternalConnectionsNote.
-  ///
-  /// In en, this message translates to:
-  /// **'External MCP servers run on the agent server (shared by desktop and web). Authorizing OAuth servers is only available on the desktop.'**
-  String get mcpExternalConnectionsNote;
 
   /// No description provided for @mcpStatusConnected.
   ///
@@ -30628,12 +30592,6 @@ abstract class AppLocalizations {
   /// **'Confirm that this server may use them. Each repository is checked again with your access.'**
   String get repoPathConfirmAllBody;
 
-  /// Second line under the External MCP servers title in Settings → Server → MCP (seen by the server owner). 'This machine's own tool settings' = the MCP configs of Claude, Cursor, VS Code etc. on the server's own OS account; 'MCP endpoint' = the MCP server Control Center itself exposes
-  ///
-  /// In en, this message translates to:
-  /// **'Servers found in this machine\'s own tool settings are available only in runs you start or are accountable for. Other people\'s runs never see them, and they aren\'t offered through Control Center\'s MCP endpoint.'**
-  String get mcpExternalServersOwnerRunsOnly;
-
   /// Code views (the Explorer's file tree and searches, a file, a diff) when the server refused because the person has no sign-in of their own for the repository's forge. Shown with a 'Sign in' action
   ///
   /// In en, this message translates to:
@@ -31198,12 +31156,6 @@ abstract class AppLocalizations {
   /// **'Add server'**
   String get mcpAddServer;
 
-  /// Identity line of a personal MCP server the owner added by hand, in place of the tool it was discovered from (Claude, Cursor, …)
-  ///
-  /// In en, this message translates to:
-  /// **'Added in Control Center'**
-  String get mcpHandAddedSource;
-
   /// Status tag of a workspace MCP server that runs a command on the server host and waits for the server owner's approval before it starts
   ///
   /// In en, this message translates to:
@@ -31245,6 +31197,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This server can reach only public addresses until the server owner approves it.'**
   String get mcpApprovalRemoteMember;
+
+  /// Subtitle of the Settings → MCP servers page: Control Center's own MCP server, plus the external MCP servers (your own and the workspace's) bridged into agent runs
+  ///
+  /// In en, this message translates to:
+  /// **'The built-in MCP server, and the MCP servers whose tools agent runs in this workspace get.'**
+  String get mcpServersSettingsSubtitle;
+
+  /// Title of the section listing the reader's own MCP servers in the current workspace (Settings → MCP servers). Only runs they start in this workspace use them.
+  ///
+  /// In en, this message translates to:
+  /// **'Your MCP servers'**
+  String get mcpPersonalServers;
+
+  /// Description under the 'Your MCP servers' section title
+  ///
+  /// In en, this message translates to:
+  /// **'Only you see these servers, and only the agent runs you start in this workspace get their tools.'**
+  String get mcpPersonalServersDescription;
+
+  /// Shown in the 'Your MCP servers' section when the connected server is too old to offer MCP servers
+  ///
+  /// In en, this message translates to:
+  /// **'Your own MCP servers aren\'t available on the connected server.'**
+  String get mcpPersonalServersUnavailable;
+
+  /// Empty state title of the reader's own MCP server list
+  ///
+  /// In en, this message translates to:
+  /// **'No MCP servers of your own yet'**
+  String get mcpPersonalServersEmpty;
+
+  /// Empty state description of the reader's own MCP server list
+  ///
+  /// In en, this message translates to:
+  /// **'Add a server to give the runs you start in this workspace its tools.'**
+  String get mcpPersonalServersEmptyDescription;
+
+  /// Note under the transport picker in the editor for the reader's own MCP server, shown to the server owner (whose save approves the server's host access)
+  ///
+  /// In en, this message translates to:
+  /// **'Only the runs you start in this workspace use it. As the server owner, saving it approves it.'**
+  String get mcpServerEditorPersonalOwner;
+
+  /// Note under the transport picker in the editor for the reader's own MCP server, shown to a member who is not the server owner (their server may reach only public internet addresses, not the host's private network)
+  ///
+  /// In en, this message translates to:
+  /// **'Only the runs you start in this workspace use it. It can reach only public addresses.'**
+  String get mcpServerEditorPersonalMember;
+
+  /// Note under an MCP server row whose server waits for a browser sign-in before its tools can be used; next to the 'Sign in' button
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to use this server\'s tools.'**
+  String get mcpServerSignInNeeded;
+
+  /// Button under an MCP server row that starts the browser sign-in to that server
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get mcpServerSignIn;
+
+  /// Title of the dialog that takes the confirmation code after the browser sign-in to an MCP server
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to {name}'**
+  String mcpServerSignInTitle(String name);
+
+  /// Error under the confirmation code field when the typed code does not match; says how many more codes the attempt accepts
+  ///
+  /// In en, this message translates to:
+  /// **'That isn\'t the code your browser showed. {count, plural, =1{1 try left.} other{{count} tries left.}}'**
+  String mcpServerSignInWrongCode(int count);
+
+  /// Body of the alert in the MCP server sign-in dialog when the attempt is over and must be started again; shown under the existing 'Sign-in didn't finish' title
+  ///
+  /// In en, this message translates to:
+  /// **'It took too long, was refused, or got too many wrong codes. Start again to get a new sign-in page.'**
+  String get mcpServerSignInEnded;
+
+  /// Button in the MCP server sign-in dialog that begins a new sign-in after the last one ended
+  ///
+  /// In en, this message translates to:
+  /// **'Start again'**
+  String get mcpServerSignInStartAgain;
+
+  /// Toast after a browser sign-in to an MCP server succeeded
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in to {name}.'**
+  String mcpServerSignedIn(String name);
 
   /// Tooltip of the remove action on an MCP server row, and the confirm button of the remove dialog
   ///
@@ -31473,12 +31515,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Saving approves it to reach the host\'s private network too.'**
   String get mcpServerEditorRemoteOwner;
-
-  /// Note in the personal MCP server editor (the server owner's own servers)
-  ///
-  /// In en, this message translates to:
-  /// **'Used only in runs you start or are accountable for.'**
-  String get mcpServerEditorPersonal;
 
   /// Shown when the server refuses an MCP server configuration for a field the editor has no message for
   ///

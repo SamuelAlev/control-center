@@ -137,7 +137,8 @@ hiding tools breaks them rather than tidying them.
 
 This guide is about Control Center's own endpoint. The other direction is MCP
 servers that Control Center connects to and hands to the agents it runs. You
-set those up under **Settings → Server → MCP servers**, at two levels. Either
+set those up under **Settings → Server → MCP servers**, at two levels: for the
+whole workspace, or for yourself. Either
 way Control Center connects to the server itself and passes its tools to the
 run, so the built-in harness and Claude Code get the same tools and the same
 approval prompts. A Claude Code run sees them under the `control-center`
@@ -169,29 +170,39 @@ and private networks. When the server owner saves a server, that counts as
 approval. If anyone else changes how a server starts or where it connects,
 it needs approval again. Turning a server on or off keeps its approval.
 
-### Personal servers
+### Your own servers
 
-Personal servers belong to the server owner and are listed under **External
-MCP servers**. Servers configured on the server's machine for Claude, Codex,
-Cursor, Gemini, VS Code, Windsurf, OpenCode or in a `.mcp.json` are found
-there automatically. The server owner can also add their own with **Add
-server**, using the same form. A server you add wins over a discovered one
-with the same name.
+Every member adds their own in **Your MCP servers**, using the same form.
+They are yours alone in this workspace: other members don't see them, and a
+server you sign in to acts as you.
 
-They act with the server owner's identity and credentials:
+- Only runs you start in this workspace get their tools. That covers built-in
+  harness runs and Claude Code runs alike.
+- Another member's run, automation nobody started, and your runs in other
+  workspaces get none of them. There the tools are not listed, cannot be
+  called and do not show up in tool search.
+- Your server can have the same name as a workspace server. In your runs,
+  yours is the one used.
+- Your own server is reached by URL and can reach only public addresses. Only
+  the server owner can add one of their own that runs a command.
 
-- They are available only in runs the server owner starts or is accountable
-  for, including automation in a workspace the owner is accountable for. That
-  covers built-in harness runs and Claude Code runs alike.
-- A member's run, automation bound to a member, and every run on a server with
-  no recorded owner get none of them. There the tools are not listed, cannot
-  be called and do not show up in tool search.
-- Neither personal nor workspace servers are served to the MCP token or to
-  paired devices, and their resources and prompts are not passed on.
+Neither your own nor workspace servers are served to the MCP token or to
+paired devices, and their resources and prompts are not passed on.
 
-Signing in to a server with OAuth isn't available from the form. Use a server
-that accepts a token in a header, or configure it for one of the tools above,
-where it's discovered.
+### Sign in to a server
+
+A URL server that asks you to sign in shows **Needs authorization**.
+
+1. Select **Sign in** on the server. Your browser opens the server's own
+   sign-in page.
+2. Approve the request there. The browser comes back to Control Center and
+   shows a code.
+3. Type the code in the app. Checkpoint: the server shows **Connected**.
+
+The sign-in is stored with the server it was made for. Signing in to a
+workspace server takes a workspace admin, and every run in the workspace then
+acts as the account that signed in. Signing in to your own server affects only
+your runs. Removing a server removes its sign-in.
 
 ## Troubleshooting
 

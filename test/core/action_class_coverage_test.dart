@@ -421,7 +421,6 @@ void main() {
     // evaluation runs and model calls as `evals.startSkillCampaign`.
     'improvements.startCampaign': {'networkEgress', 'processSpawn'},
     'mcpServers.approve': {'processSpawn'},
-    'mcp.client.saveServer': {'processSpawn'},
     'environments.testDefinition': {
       'enclosureControl',
       'hostExecution',

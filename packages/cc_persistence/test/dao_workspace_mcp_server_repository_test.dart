@@ -37,13 +37,15 @@ void main() {
 
   McpServerDefinition stdio({
     String id = 'mcp-1',
-    String? workspaceId = 'ws-a',
+    String workspaceId = 'ws-a',
+    String? userId,
     String name = 'files',
     bool enabled = true,
     String? hostApprovedBy,
   }) => McpServerDefinition(
     id: id,
     workspaceId: workspaceId,
+    userId: userId,
     name: name,
     transport: McpServerTransport.stdio,
     command: 'npx',
@@ -257,10 +259,30 @@ void main() {
       expect(await dbs.of('ws-b').mcpServerDao.all(), hasLength(1));
     });
 
-    test('save refuses a definition without a workspace', () async {
+    test('a member\'s own server keeps its owner and may share a name with '
+        'the workspace\'s and another member\'s', () async {
+      await repository.save(stdio());
+      final mine = stdio(id: 'mine', userId: 'user-1');
+      await repository.save(mine);
+      await repository.save(stdio(id: 'theirs', userId: 'user-2'));
+
+      expect(await repository.get('ws-a', 'mine'), mine);
+      expect((await repository.get('ws-a', 'mcp-1'))!.userId, isNull);
+      expect(await repository.list('ws-a'), hasLength(3));
+    });
+
+    test('a member cannot have two servers of one name', () async {
+      await repository.save(stdio(id: 'mine', userId: 'user-1'));
+
       await expectLater(
-        repository.save(stdio(workspaceId: null)),
-        throwsArgumentError,
+        repository.save(stdio(id: 'again', userId: 'user-1')),
+        throwsA(
+          isA<McpServerDefinitionException>().having(
+            (e) => e.code,
+            'code',
+            'mcp_server.name_taken',
+          ),
+        ),
       );
     });
 

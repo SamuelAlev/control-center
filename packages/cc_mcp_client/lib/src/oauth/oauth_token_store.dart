@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'dart:io';
-
 /// A persisted OAuth token bundle for one MCP server, plus the material needed
 /// to refresh it without re-running the whole flow.
 class McpOAuthToken {
@@ -14,7 +11,9 @@ class McpOAuthToken {
     this.tokenUrl,
     this.clientId,
     this.clientSecret,
+    this.clientBasicAuth = false,
     this.authorizationServer,
+    this.redirectUri,
   });
 
   /// Reconstructs from a JSON map.
@@ -31,7 +30,9 @@ class McpOAuthToken {
     tokenUrl: json['token_url'] as String?,
     clientId: json['client_id'] as String?,
     clientSecret: json['client_secret'] as String?,
+    clientBasicAuth: json['client_basic_auth'] as bool? ?? false,
     authorizationServer: json['authorization_server'] as String?,
+    redirectUri: json['redirect_uri'] as String?,
   );
 
   /// The bearer access token.
@@ -58,9 +59,16 @@ class McpOAuthToken {
   /// The client secret, when the server issued a confidential client.
   final String? clientSecret;
 
+  /// Whether [clientSecret] is sent as HTTP Basic rather than in the form.
+  final bool clientBasicAuth;
+
   /// The authorization server origin, persisted for same-origin resource
   /// filtering on refresh.
   final String? authorizationServer;
+
+  /// The redirect URI [clientId] was registered with: the registration is
+  /// reused only for the same one.
+  final String? redirectUri;
 
   /// True when [expiresAt] is within [buffer] of now (or already past). A null
   /// expiry is treated as non-expiring.
@@ -85,8 +93,10 @@ class McpOAuthToken {
     if (tokenUrl != null) 'token_url': tokenUrl,
     if (clientId != null) 'client_id': clientId,
     if (clientSecret != null) 'client_secret': clientSecret,
+    if (clientBasicAuth) 'client_basic_auth': true,
     if (authorizationServer != null)
       'authorization_server': authorizationServer,
+    if (redirectUri != null) 'redirect_uri': redirectUri,
   };
 
   /// Returns a copy with the access/refresh material replaced (used after a
@@ -105,15 +115,18 @@ class McpOAuthToken {
     tokenUrl: tokenUrl,
     clientId: clientId,
     clientSecret: clientSecret,
+    clientBasicAuth: clientBasicAuth,
     authorizationServer: authorizationServer,
+    redirectUri: redirectUri,
   );
 }
 
 /// Persists OAuth tokens per MCP server, keyed by the server origin/url.
 ///
-/// The desktop wires a `flutter_secure_storage`-backed implementation (tokens
-/// are secrets); the headless server can use a file/in-memory one. This package
-/// only ships [InMemoryOAuthTokenStore] for tests and headless defaults.
+/// Tokens are secrets: the host backs this with its secrets store, one store
+/// per audience (a workspace's servers, one member's own), so a sign-in never
+/// reaches another audience's connection to the same origin. This package only
+/// ships [InMemoryOAuthTokenStore] for tests.
 abstract interface class McpOAuthTokenStore {
   /// Reads the token for [serverKey], or null if none is stored.
   Future<McpOAuthToken?> read(String serverKey);
@@ -125,7 +138,7 @@ abstract interface class McpOAuthTokenStore {
   Future<void> delete(String serverKey);
 }
 
-/// A non-persistent token store (tests, headless defaults).
+/// A non-persistent token store (tests).
 class InMemoryOAuthTokenStore implements McpOAuthTokenStore {
   final _tokens = <String, McpOAuthToken>{};
 
@@ -140,56 +153,5 @@ class InMemoryOAuthTokenStore implements McpOAuthTokenStore {
   @override
   Future<void> delete(String serverKey) async {
     _tokens.remove(serverKey);
-  }
-}
-
-/// A JSON-file-backed token store for the Flutter-free headless server, which
-/// has no keychain (`flutter_secure_storage` needs a Flutter engine). The file
-/// holds all servers' tokens keyed by origin; reads/writes are whole-file.
-class FileOAuthTokenStore implements McpOAuthTokenStore {
-  /// Creates a [FileOAuthTokenStore] writing to [filePath].
-  FileOAuthTokenStore(this.filePath);
-
-  /// Path to the JSON file backing the store.
-  final String filePath;
-
-  Future<Map<String, dynamic>> _readAll() async {
-    try {
-      final raw = await File(filePath).readAsString();
-      final decoded = jsonDecode(raw);
-      return decoded is Map<String, dynamic> ? decoded : <String, dynamic>{};
-    } on Object {
-      return <String, dynamic>{};
-    }
-  }
-
-  Future<void> _writeAll(Map<String, dynamic> all) async {
-    final file = File(filePath);
-    await file.parent.create(recursive: true);
-    await file.writeAsString(jsonEncode(all));
-  }
-
-  @override
-  Future<McpOAuthToken?> read(String serverKey) async {
-    final all = await _readAll();
-    final entry = all[serverKey];
-    if (entry is! Map) {
-      return null;
-    }
-    return McpOAuthToken.fromJson(entry.cast<String, dynamic>());
-  }
-
-  @override
-  Future<void> write(String serverKey, McpOAuthToken token) async {
-    final all = await _readAll()
-      ..[serverKey] = token.toJson();
-    await _writeAll(all);
-  }
-
-  @override
-  Future<void> delete(String serverKey) async {
-    final all = await _readAll()
-      ..remove(serverKey);
-    await _writeAll(all);
   }
 }

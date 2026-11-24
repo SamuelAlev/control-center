@@ -19,6 +19,7 @@ class McpServerMapper {
       McpServerDefinition(
         id: row.id,
         workspaceId: workspaceId,
+        userId: row.userId.isEmpty ? null : row.userId,
         name: row.name,
         transport: McpServerTransport.fromWire(row.transport),
         command: row.command,
@@ -37,6 +38,7 @@ class McpServerMapper {
   McpServersTableCompanion toCompanion(McpServerDefinition definition) =>
       McpServersTableCompanion(
         id: Value(definition.id),
+        userId: Value(definition.userId ?? ''),
         name: Value(definition.name),
         transport: Value(definition.transport.wire),
         command: Value(definition.command),

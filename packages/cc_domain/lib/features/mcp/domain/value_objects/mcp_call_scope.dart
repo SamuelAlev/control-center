@@ -18,13 +18,13 @@ class McpCallScope {
     this.conversationId,
     this.spaceId,
     this.attested = false,
-    this.personalMcp = false,
+    this.personalMcpUserId,
     this.runId,
     this.runLogId,
     this.readOnly = false,
   }) : assert(
-         !personalMcp || attested,
-         'only a run grant can hand out the owner\'s personal MCP servers',
+         personalMcpUserId == null || attested,
+         'only a run grant can hand out a member\'s own MCP servers',
        ),
        assert(!readOnly || attested, 'only a run grant names a read-only run');
 
@@ -39,10 +39,10 @@ class McpCallScope {
   /// values it likes. A per-run secret can only name its own run.
   final bool attested;
 
-  /// Whether the run this scope proves may use the server owner's personal
-  /// MCP servers: decided once per run, from whether the owner is accountable
-  /// for it. Only an [attested] scope can say so.
-  final bool personalMcp;
+  /// The member whose own MCP servers the run this scope proves may use: the
+  /// person who started it, decided once per run. Null for none. Only an
+  /// [attested] scope can name one.
+  final String? personalMcpUserId;
 
   /// The run this scope proves (its dispatch id), or null for a caller that
   /// is not an attested run. Only the agent run gateway sets it, from the
@@ -60,10 +60,10 @@ class McpCallScope {
   final String? runLogId;
 
   /// The external MCP layers this caller may see: an attested run gets its
-  /// own workspace's servers, and the owner's when [personalMcp]; any other
+  /// own workspace's servers, and [personalMcpUserId]'s own; any other
   /// caller (the owner's token, a paired device) gets none.
   McpToolView get toolView => attested
-      ? McpToolView(workspaceId: workspaceId, includePersonal: personalMcp)
+      ? McpToolView(workspaceId: workspaceId, personalUserId: personalMcpUserId)
       : McpToolView.shared;
 
   /// The workspace the calling agent runs in. When set, tools that declare a
@@ -219,7 +219,7 @@ class McpCallScope {
           conversationId == other.conversationId &&
           spaceId == other.spaceId &&
           attested == other.attested &&
-          personalMcp == other.personalMcp &&
+          personalMcpUserId == other.personalMcpUserId &&
           runId == other.runId &&
           runLogId == other.runLogId;
 
@@ -230,7 +230,7 @@ class McpCallScope {
     conversationId,
     spaceId,
     attested,
-    personalMcp,
+    personalMcpUserId,
     runId,
     runLogId,
   );

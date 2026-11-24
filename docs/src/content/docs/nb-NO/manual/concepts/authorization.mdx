@@ -2,7 +2,7 @@
 title: Autorisasjon — hvem får gjøre hva, og hvordan du beviser det
 description: Tillatelseskatalogen bak rollene i Control Center, det manipulasjonssikre revisjonssporet hver autorisasjonsbeslutning havner i, og de installasjonsomfattende kontrollene en operatør kan feste.
 slug: nb-NO/handbok/konsepter/autorisasjon
-sourceHash: 9b6ab5ffb27be5a061ebfd9d020992ec83236ad7
+sourceHash: 311689da6bce052ef25bccc1e0f3dedd29f0d102
 ---
 
 Control Center svarer på to autorisasjonsspørsmål, og de er genuint
@@ -110,9 +110,7 @@ Personen som satte opp serveren, er dens **eier**. Serveren registrerer dem én 
 - Kjøre agenter på en server der maskinen ikke har sandkasse. Alle andres kjøringer avvises der, med mindre eieren startet serveren med `--sandbox off`, som kjører alles agenter uten begrensninger (se [Agenter på en vert uten sandkasse](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/#agenter-på-en-vert-uten-sandkasse)).
 - Koble til en repo-checkout som ligger utenfor arbeidsområdets egen lagring, bekrefte en som er koblet før den regelen, og bla i serverens mapper når et repo legges til (se [Legg til repoer](/nb-NO/handbok/slik-gjor-du/legg-til-repoer/)).
 - Se og stoppe alle kjørende agentprosesser på serveren. Alle andre ser og stopper bare levende agentkjøringer i arbeidsområder de tilhører.
-- La agenter bruke personlige MCP-servere: de som er konfigurert i serverbrukerens
-  egne verktøy (Claude, Codex, Cursor og resten) og de eieren legger til. Bare
-  kjøringer eieren står ansvarlig for, får dem; se [Personlige MCP-servere](/nb-NO/handbok/slik-gjor-du/mcp-server/#personlige-mcp-servere).
+- Legge til en egen MCP-server som kjører en kommando på serverens maskin. Andres egne servere nås via URL (se [Egne servere](/nb-NO/handbok/slik-gjor-du/mcp-server/#egne-servere)).
 - Godkjenne en MCP-server for arbeidsområdet som kjører en kommando på maskinen til
   serveren eller når det private nettverket dens (se
   [MCP-servere for arbeidsområdet](/nb-NO/handbok/slik-gjor-du/mcp-server/#mcp-servere-for-arbeidsområdet)).

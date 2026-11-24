@@ -4922,31 +4922,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     ),
     ...buildSpaceStackOps(stack: spaceStack, requireSpace: requireSpaceArg),
 
-    // The external MCP servers the host connects to (and the standing approval
-    // posture that gates their tools) are a process-wide concern, NOT workspace
-    // data, so these ops are `workspaceScoped: false`. They exist only when the
-    // host wired an [McpClientControl] (the guard promotes `mcpClient` non-null
-    // into the closures). A host without the client subsystem leaves them absent
-    // and the web section shows "external MCP not available on this server".
-    // `mcp.client.authorize` runs an INTERACTIVE OAuth flow — it succeeds only on
-    // a host that can reach the user's browser + a local loopback callback (the
-    // desktop in-process host); a remote headless server rejects it and the
-    // client relays the message.
+    // The standing approval posture that gates tools bridged from external
+    // MCP servers is a process-wide concern, NOT workspace data, so these ops
+    // are `workspaceScoped: false`. They exist only when the host wired an
+    // [McpClientControl]. The servers themselves are `mcpServers.*`.
     if (mcpClient != null) ...[
-      // Operator-only: the roster is the server OS user's own MCP servers,
-      // bridged only into runs the server owner is accountable for.
-      RepoOp(
-        name: 'mcp.client.servers',
-        serverAuthority: ServerAuthority.serverOwner,
-        kind: RepoOpKind.read,
-        workspaceScoped: false,
-        handler: (ctx) async {
-          final servers = await mcpClient.servers();
-          return {
-            'servers': [for (final s in servers) s.toJson()],
-          };
-        },
-      ),
       RepoOp(
         name: 'mcp.client.approvalMode',
         serverAuthority: ServerAuthority.serverOwner,
@@ -4967,28 +4947,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             ApprovalMode.fromWire(ctx.args['mode'] as String?),
           );
           return {'mode': (await mcpClient.approvalMode()).wire};
-        },
-      ),
-      RepoOp(
-        name: 'mcp.client.authorize',
-        serverAuthority: ServerAuthority.serverOwner,
-        kind: RepoOpKind.mutate,
-        workspaceScoped: false,
-        requiredArgs: ['name'],
-        handler: (ctx) async {
-          await mcpClient.authorize(ctx.args['name'] as String);
-          return {'ok': true};
-        },
-      ),
-      RepoOp(
-        name: 'mcp.client.reconnect',
-        serverAuthority: ServerAuthority.serverOwner,
-        kind: RepoOpKind.mutate,
-        workspaceScoped: false,
-        requiredArgs: ['name'],
-        handler: (ctx) async {
-          await mcpClient.reconnect(ctx.args['name'] as String);
-          return {'ok': true};
         },
       ),
     ],

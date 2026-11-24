@@ -264,7 +264,6 @@ import 'package:cc_server_core/src/identity/workspace_github_app_settings.dart';
 import 'package:cc_server_core/src/identity/workspace_invite_service.dart';
 import 'package:cc_server_core/src/identity/workspace_provider_app_settings.dart';
 import 'package:cc_server_core/src/local_rpc_server.dart';
-import 'package:cc_server_core/src/mcp_servers/file_personal_mcp_server_repository.dart';
 import 'package:cc_server_core/src/mcp_servers/mcp_server_secrets.dart';
 import 'package:cc_server_core/src/mcp_servers/workspace_mcp_servers.dart';
 import 'package:cc_server_core/src/media_proxy_guard.dart'
@@ -1620,24 +1619,6 @@ Future<CcServer> runCcServer({
     ),
     codeGraphRepos: codeGraphRepos,
   );
-  // MCP CLIENT (PRD 01): connect to EXTERNAL MCP servers and bridge their
-  // tools into the registry's dynamic layer. Headless, so OAuth tokens persist
-  // to a file (no keychain) and there is no interactive browser launcher —
-  // stdio, static-header HTTP/SSE and already-authorized OAuth servers all
-  // work; first-time interactive OAuth is desktop-driven. Discovery + connect
-  // runs fire-and-forget after boot (see below).
-  final mcpClientService = McpClientService(
-    publishTools: mcpRegistry.setPersonalTools,
-    tokenStore: FileOAuthTokenStore('${config.dataDir}/mcp_oauth_tokens.json'),
-    // Remembering each server's tool list means a run that starts while a slow
-    // server is still dialling still sees that server's tools; the first CALL
-    // waits for the connection instead. Server-wide (not workspace-scoped) —
-    // an MCP server is a host-level process, and the file holds tool names and
-    // schemas only, never a credential.
-    toolCachePath: '${config.dataDir}/mcp_tool_cache.json',
-    log: (level, message, {Object? error}) =>
-        CcHostLog.info('mcp-client[$level]: $message'),
-  );
   // Human-in-the-loop approvals for privileged agent actions. Server has no
   // GUI: requests go to clients via `confirmation.watchPending` /
   // `confirmation.respond`. Same instance backs MCP, harness/dispatch and RPC
@@ -1786,7 +1767,7 @@ Future<CcServer> runCcServer({
     dataDir: config.dataDir,
   );
   // Make the advertised `tools.listChanged: true` capability real: every
-  // registry mutation (external MCP servers bridged in via setPersonalTools,
+  // registry mutation (external MCP servers bridged in by WorkspaceMcpServers,
   // post-boot register() calls like the skill tools below) fans
   // `notifications/tools/list_changed` out to connected SSE clients so they
   // re-list instead of serving a stale cache forever.
@@ -1794,26 +1775,21 @@ Future<CcServer> runCcServer({
   // Scripts turning off or back on changes what the MCP endpoint lists.
   codeMode.relistOnChange(() => mcpRegistry.onToolsChanged?.call());
 
-  // PRD 01: the host-side control for the EXTERNAL MCP client subsystem — backs
-  // the `mcp.client.*` ops so a connected web/thin client can list the
-  // discovered servers + steer the standing approval posture (which re-points
-  // this dispatcher's tier gate). Persisted approval posture is loaded at boot
-  // (below). This is a HEADLESS host: it has no browser launcher, so
-  // `mcp.client.authorize` rejects — interactive OAuth is desktop-driven.
+  // The standing approval posture for tools bridged from external MCP
+  // servers (`mcp.client.approvalMode`), which re-points this dispatcher's
+  // tier gate. Persisted; loaded at boot (below).
   final mcpServerSecrets = McpServerSecrets(secrets);
   final mcpClientControl = ServerMcpClientControl(
-    service: mcpClientService,
     dispatcher: mcpDispatcher,
     dataDir: config.dataDir,
-    repository: FilePersonalMcpServerRepository(dataDir: config.dataDir),
-    secrets: mcpServerSecrets,
-    homeDir:
-        Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'],
   );
 
-  // The MCP servers each workspace configured, bridged into that workspace's
-  // registry layer so every run there gets them (harness directly, Claude Code
-  // through this server's MCP endpoint). A stdio server needs the current
+  // The MCP servers configured in each workspace: the workspace's own,
+  // bridged into its registry layer so every run there gets them, and each
+  // member's own, bridged into that member's layer so only the runs they
+  // start there do (harness directly, Claude Code through this server's MCP
+  // endpoint). Each audience keeps its own browser sign-ins in the secrets
+  // store. A stdio server needs the current
   // server owner's approval to start; until then a remote one connects only
   // to public addresses (`pinnedPermittedConnection`, the same rule as every
   // other server-side fetch of a URL someone else chose).
@@ -1822,12 +1798,16 @@ Future<CcServer> runCcServer({
     secrets: mcpServerSecrets,
     registry: mcpRegistry,
     serverOwnerUserId: ownerUserId,
-    clientFactory: (workspaceId, publishTools) => McpClientService(
-      publishTools: publishTools,
-      publicOnlyConnection: pinnedPermittedConnection,
-      log: (level, message, {Object? error}) =>
-          CcHostLog.info('mcp-client[$workspaceId][$level]: $message'),
-    ),
+    clientFactory: (workspaceId, userId, publishTools, tokenStore) =>
+        McpClientService(
+          publishTools: publishTools,
+          tokenStore: tokenStore,
+          publicOnlyConnection: pinnedPermittedConnection,
+          log: (level, message, {Object? error}) => CcHostLog.info(
+            'mcp-client[$workspaceId${userId == null ? '' : '/$userId'}]'
+            '[$level]: $message',
+          ),
+        ),
   );
   // Gone with its workspace: connections, tools and stored values.
   workspaceGitHub.addDeletionListener(workspaceMcpServers.forgetWorkspace);
@@ -7030,6 +7010,7 @@ Future<CcServer> runCcServer({
     // demo: no SSO on a public demo.
     oidc: demo != null ? null : oidcService,
     providerOAuth: demo != null ? null : providerSignIn,
+    mcpOAuth: demo != null ? null : workspaceMcpServers.authorizations,
     // demo: no GitHub App to create, no Connect to host.
     githubManifest: demo != null ? null : githubManifest,
     connectHost: demo != null ? null : embeddedConnect,
@@ -7839,6 +7820,10 @@ Future<CcServer> runCcServer({
   // dispatcher's tier gate before the first tool call.
   try {
     await mcpClientControl.init();
+    // The server owner's personal servers of earlier releases are gone, and
+    // so is what they kept.
+    await mcpClientControl.deleteLegacyPersonalFiles();
+    await mcpServerSecrets.deleteLegacyPersonal();
   } catch (e) {
     CcHostLog.warning(
       'cc_server: external MCP approval posture load failed: $e',
@@ -7867,7 +7852,6 @@ Future<CcServer> runCcServer({
     .._agentAwaitingInput = agentAwaitingInput
     .._codeGraphWatch = codeGraphWatch
     .._lspSupervisor = lspSupervisor
-    .._mcpClientService = mcpClientService
     .._workspaceMcpServers = workspaceMcpServers
     .._codeServer = codeServerSessions
     .._rigs = rigService
@@ -7927,14 +7911,11 @@ Future<CcServer> runCcServer({
       ).runWhenInstalled(embeddingModelControl.watch());
     });
   }
-  // Connect the owner's personal MCP servers and every workspace's
-  // configured ones; never blocks boot. demo: none. The personal ones are the
-  // host OS user's own tool configs, started as that user, and a demo has no
-  // owner to be accountable for them (nor ops to configure either kind).
+  // Connect every workspace's configured MCP servers; never blocks boot.
+  // demo: none (it has no ops to configure them).
   if (demo == null) {
     unawaited(
       _connectMcpServers(
-        personal: mcpClientControl,
         workspaces: workspaceMcpServers,
         workspaceRepository: workspaceRepository,
       ),

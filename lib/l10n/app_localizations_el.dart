@@ -1712,10 +1712,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get mcpServers => 'Διακομιστές MCP';
 
   @override
-  String get mcpServersSettingsDescription =>
-      'Ενσωματωμένος διακομιστής MCP και εξωτερικοί διακομιστές MCP.';
-
-  @override
   String get remoteControlAndDevices => 'Απομακρυσμένος έλεγχος και συσκευές';
 
   @override
@@ -8835,13 +8831,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get ideFileBinary => 'Δυαδικό αρχείο';
 
   @override
-  String get mcpExternalServers => 'Εξωτερικοί διακομιστές MCP';
-
-  @override
-  String get mcpExternalServersDescription =>
-      'Συνδεθείτε σε εξωτερικούς διακομιστές MCP (GitHub, Sentry, Postgres, αυτοματοποίηση περιηγητή). Οι διακομιστές που ρυθμίσατε για Claude, Cursor, VS Code και άλλα εργαλεία ανακαλύπτονται αυτόματα.';
-
-  @override
   String get mcpApprovalMode => 'Έγκριση εργαλείων';
 
   @override
@@ -8858,18 +8847,7 @@ class AppLocalizationsEl extends AppLocalizations {
   String get mcpApprovalYolo => 'Αυτόματη έγκριση όλων';
 
   @override
-  String get mcpNoExternalServers =>
-      'Δεν ανακαλύφθηκαν εξωτερικοί διακομιστές MCP.';
-
-  @override
-  String get mcpAuthorize => 'Εξουσιοδότηση';
-
-  @override
   String get mcpReconnect => 'Επανασύνδεση';
-
-  @override
-  String get mcpExternalConnectionsNote =>
-      'Οι εξωτερικοί διακομιστές MCP εκτελούνται στον διακομιστή πρακτόρων (κοινόχρηστοι από επιφάνεια εργασίας και ιστό). Η εξουσιοδότηση διακομιστών OAuth είναι διαθέσιμη μόνο στην επιφάνεια εργασίας.';
 
   @override
   String get mcpStatusConnected => 'Συνδεδεμένο';
@@ -18568,10 +18546,6 @@ class AppLocalizationsEl extends AppLocalizations {
       'Επιβεβαιώστε ότι αυτός ο διακομιστής επιτρέπεται να τους χρησιμοποιεί. Κάθε αποθετήριο ελέγχεται ξανά με τη δική σας πρόσβαση.';
 
   @override
-  String get mcpExternalServersOwnerRunsOnly =>
-      'Οι διακομιστές που βρέθηκαν στις ρυθμίσεις εργαλείων αυτού του μηχανήματος είναι διαθέσιμοι μόνο σε εκτελέσεις που ξεκινάτε ή για τις οποίες ευθύνεστε. Οι εκτελέσεις άλλων ατόμων δεν τους βλέπουν ποτέ, και δεν προσφέρονται μέσω του τελικού σημείου MCP του Control Center.';
-
-  @override
   String repoCodeNeedsSignIn(String provider) {
     return 'Συνδεθείτε στο $provider για να δείτε τον κώδικα αυτού του αποθετηρίου.';
   }
@@ -18961,9 +18935,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get mcpAddServer => 'Προσθήκη διακομιστή';
 
   @override
-  String get mcpHandAddedSource => 'Προστέθηκε στο Control Center';
-
-  @override
   String get mcpStatusAwaitingApproval => 'Αναμονή έγκρισης';
 
   @override
@@ -18987,6 +18958,72 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get mcpApprovalRemoteMember =>
       'Αυτός ο διακομιστής μπορεί να φτάνει μόνο σε δημόσιες διευθύνσεις μέχρι να τον εγκρίνει ο κάτοχος του διακομιστή.';
+
+  @override
+  String get mcpServersSettingsSubtitle =>
+      'Ο ενσωματωμένος διακομιστής MCP και οι διακομιστές MCP των οποίων τα εργαλεία λαμβάνουν οι εκτελέσεις πρακτόρων σε αυτόν τον χώρο εργασίας.';
+
+  @override
+  String get mcpPersonalServers => 'Οι διακομιστές MCP σας';
+
+  @override
+  String get mcpPersonalServersDescription =>
+      'Μόνο εσείς βλέπετε αυτούς τους διακομιστές, και μόνο οι εκτελέσεις πρακτόρων που ξεκινάτε σε αυτόν τον χώρο εργασίας λαμβάνουν τα εργαλεία τους.';
+
+  @override
+  String get mcpPersonalServersUnavailable =>
+      'Οι δικοί σας διακομιστές MCP δεν είναι διαθέσιμοι στον συνδεδεμένο διακομιστή.';
+
+  @override
+  String get mcpPersonalServersEmpty =>
+      'Δεν υπάρχουν ακόμη δικοί σας διακομιστές MCP';
+
+  @override
+  String get mcpPersonalServersEmptyDescription =>
+      'Προσθέστε έναν διακομιστή για να δώσετε στις εκτελέσεις που ξεκινάτε σε αυτόν τον χώρο εργασίας τα εργαλεία του.';
+
+  @override
+  String get mcpServerEditorPersonalOwner =>
+      'Χρησιμοποιείται μόνο από τις εκτελέσεις που ξεκινάτε σε αυτόν τον χώρο εργασίας. Ως κάτοχος του διακομιστή, η αποθήκευση τον εγκρίνει.';
+
+  @override
+  String get mcpServerEditorPersonalMember =>
+      'Χρησιμοποιείται μόνο από τις εκτελέσεις που ξεκινάτε σε αυτόν τον χώρο εργασίας. Μπορεί να φτάνει μόνο σε δημόσιες διευθύνσεις.';
+
+  @override
+  String get mcpServerSignInNeeded =>
+      'Συνδεθείτε για να χρησιμοποιήσετε τα εργαλεία αυτού του διακομιστή.';
+
+  @override
+  String get mcpServerSignIn => 'Σύνδεση';
+
+  @override
+  String mcpServerSignInTitle(String name) {
+    return 'Σύνδεση στο $name';
+  }
+
+  @override
+  String mcpServerSignInWrongCode(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Απομένουν $count προσπάθειες.',
+      one: 'Απομένει 1 προσπάθεια.',
+    );
+    return 'Αυτός δεν είναι ο κωδικός που εμφάνισε το πρόγραμμα περιήγησης. $_temp0';
+  }
+
+  @override
+  String get mcpServerSignInEnded =>
+      'Έληξε ο χρόνος, η σύνδεση απορρίφθηκε ή εισαγάγατε πολλούς λανθασμένους κωδικούς. Ξεκινήστε ξανά για να λάβετε νέα σελίδα σύνδεσης.';
+
+  @override
+  String get mcpServerSignInStartAgain => 'Ξεκινήστε ξανά';
+
+  @override
+  String mcpServerSignedIn(String name) {
+    return 'Συνδεθήκατε στο $name.';
+  }
 
   @override
   String get mcpRemoveServer => 'Κατάργηση διακομιστή';
@@ -19125,10 +19162,6 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get mcpServerEditorRemoteOwner =>
       'Η αποθήκευση τον εγκρίνει ώστε να φτάνει και στο ιδιωτικό δίκτυο του υπολογιστή.';
-
-  @override
-  String get mcpServerEditorPersonal =>
-      'Χρησιμοποιείται μόνο σε εκτελέσεις που ξεκινάτε ή για τις οποίες είστε υπεύθυνοι.';
 
   @override
   String get mcpServerRefusedInvalid =>

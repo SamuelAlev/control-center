@@ -3,15 +3,6 @@ import 'package:cc_domain/features/mcp/domain/value_objects/mcp_server_draft.dar
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_key_value_pair.dart';
 import 'package:flutter/foundation.dart';
 
-/// Whose MCP server the editor changes.
-enum McpServerEditorScope {
-  /// A workspace's, used by every agent run in it.
-  workspace,
-
-  /// The server owner's own, used only in runs they are accountable for.
-  personal,
-}
-
 /// The write-only values of one kind (environment variables or headers) as
 /// the editor holds them: the names already stored, which of those are being
 /// replaced or removed, and new name/value pairs.

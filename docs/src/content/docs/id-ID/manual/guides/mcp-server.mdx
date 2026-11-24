@@ -2,7 +2,7 @@
 title: Gunakan server MCP
 description: Arahkan klien MCP eksternal ke server alat Control Center, kirimkan token bearer-nya, dan ketahui apa yang diekspos permukaannya.
 slug: id-ID/panduan-pengguna/panduan-praktis/server-mcp
-sourceHash: 0239917dba7349533ef1ce70536453187e8d3591
+sourceHash: eb032b11d779e012f558c7244ea52d9eafb04a4b
 ---
 
 Panduan ini menunjukkan cara menghubungkan klien MCP eksternal — Claude Code,
@@ -133,7 +133,7 @@ menyembunyikan alat justru merusaknya alih-alih merapikannya.
 
 ## Server MCP yang digunakan agen Anda
 
-Panduan ini membahas endpoint milik Control Center sendiri. Arah sebaliknya adalah Server MCP yang dihubungkan Control Center dan diserahkan kepada agen yang dijalankannya. Anda mengaturnya di **Pengaturan → Server → Server MCP**, pada dua tingkat. Dalam kedua kasus, Control Center terhubung ke servernya sendiri dan meneruskan alatnya ke run, sehingga harness bawaan dan Claude Code mendapatkan alat serta permintaan persetujuan yang sama. Run Claude Code melihatnya di bawah `control-center`, sebagai `mcp__control-center__mcp__<server>__<tool>`.
+Panduan ini membahas endpoint milik Control Center sendiri. Arah sebaliknya adalah Server MCP yang dihubungkan Control Center dan diserahkan kepada agen yang dijalankannya. Anda mengaturnya di **Pengaturan → Server → Server MCP**, pada dua tingkat: untuk seluruh ruang kerja, atau untuk diri Anda sendiri. Dalam kedua kasus, Control Center terhubung ke servernya sendiri dan meneruskan alatnya ke run, sehingga harness bawaan dan Claude Code mendapatkan alat serta permintaan persetujuan yang sama. Run Claude Code melihatnya di bawah `control-center`, sebagai `mcp__control-center__mcp__<server>__<tool>`.
 
 ### Server ruang kerja
 
@@ -149,17 +149,26 @@ Nilai variabel lingkungan dan header disimpan di berkas rahasia Server dan tidak
 
 Perintah dijalankan di mesin pemilik Server sebagai pengguna Server itu sendiri, jadi perintah tidak mulai sebelum pemiliknya menyetujuinya. Sampai saat itu statusnya **Menunggu persetujuan**. Server URL langsung berfungsi, tetapi hanya dapat menjangkau alamat publik sampai pemiliknya menyetujuinya, yang juga mengizinkan `localhost` dan jaringan privat. Ketika pemiliknya menyimpan Server, itu dihitung sebagai persetujuan. Jika pihak lain mengubah cara Server dijalankan atau tempat ia terhubung, Server perlu disetujui lagi. Mengaktifkan atau menonaktifkan Server tidak menghapus persetujuannya.
 
-### Server pribadi
+### Server milik Anda sendiri
 
-Server pribadi adalah milik pemiliknya dan tercantum di bawah **Server MCP eksternal**. Server yang dikonfigurasi di mesin Server untuk Claude, Codex, Cursor, Gemini, VS Code, Windsurf, OpenCode, atau dalam `.mcp.json` ditemukan di sana secara otomatis. Pemilik juga dapat menambahkan Server sendiri dengan **Tambah server**, memakai formulir yang sama. Server yang Anda tambahkan mengalahkan Server yang ditemukan dengan nama yang sama.
+Setiap anggota menambahkan Server miliknya sendiri di **Server MCP Anda**, memakai formulir yang sama. Server tersebut hanya milik Anda di ruang kerja ini: anggota lain tidak melihatnya, dan Server yang Anda masuki bertindak atas nama Anda.
 
-Server pribadi bertindak dengan identitas dan kredensial pemiliknya:
+- Hanya run yang Anda mulai di ruang kerja ini yang mendapatkan alatnya. Itu mencakup run harness bawaan dan run Claude Code.
+- Run anggota lain, otomatisasi yang tidak dimulai siapa pun, dan run Anda di ruang kerja lain tidak mendapatkan satu pun darinya. Di sana alat-alatnya tidak didaftarkan, tidak dapat dipanggil, dan tidak muncul dalam pencarian alat.
+- Server Anda dapat memakai nama yang sama dengan Server ruang kerja. Dalam run Anda, yang dipakai adalah Server Anda.
+- Server milik Anda dijangkau melalui URL dan hanya dapat menjangkau alamat publik. Hanya pemilik server yang dapat menambahkan Server miliknya sendiri yang menjalankan perintah.
 
-- Server pribadi hanya tersedia dalam run yang dimulai pemiliknya atau yang dipertanggungjawabkan kepadanya, termasuk otomatisasi di ruang kerja yang dipertanggungjawabkan pemilik. Itu mencakup run harness bawaan dan run Claude Code.
-- Run anggota, otomatisasi yang terikat pada anggota, dan setiap run yang berjalan tanpa pemilik tercatat tidak mendapatkan satu pun darinya. Di sana alat-alatnya tidak didaftarkan, tidak dapat dipanggil, dan tidak muncul dalam pencarian alat.
-- Baik Server pribadi maupun Server ruang kerja tidak disajikan ke token MCP atau ke perangkat yang dipasangkan, dan sumber daya serta prompt-nya tidak diteruskan.
+Baik Server milik Anda maupun Server ruang kerja tidak disajikan ke token MCP atau ke perangkat yang dipasangkan, dan sumber daya serta prompt-nya tidak diteruskan.
 
-Masuk ke Server dengan OAuth tidak tersedia dari formulir. Gunakan Server yang menerima token di header, atau konfigurasikan untuk salah satu alat di atas agar ditemukan secara otomatis.
+### Masuk ke Server
+
+Server berbasis URL yang meminta Anda masuk menampilkan **Perlu otorisasi**.
+
+1. Pilih **Masuk** pada Server. Browser Anda akan membuka halaman masuk Server itu sendiri.
+2. Setujui permintaan di sana. Browser kembali ke Control Center dan menampilkan kode.
+3. Ketik kode di aplikasi. Pemeriksaan: Server menampilkan **Terhubung**.
+
+Masuk disimpan bersama Server yang dibuatkannya. Masuk ke Server ruang kerja memerlukan admin ruang kerja, dan setiap run di ruang kerja kemudian bertindak sebagai akun yang masuk. Masuk ke Server milik Anda hanya memengaruhi run Anda. Menghapus Server juga menghapus masuknya.
 
 ## Pemecahan masalah
 

@@ -1,6 +1,6 @@
 import 'package:cc_domain/features/mcp/domain/entities/mcp_server_definition.dart';
+import 'package:cc_domain/features/mcp/domain/ports/workspace_mcp_server_control.dart';
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/features/settings/presentation/widgets/sections/integrations/mcp_servers/mcp_server_form.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
@@ -10,7 +10,8 @@ import 'package:flutter/widgets.dart';
 /// A workspace server that runs a command waits on the server owner; a remote
 /// one reaches only public addresses until then. The owner's own save
 /// approves it, so they are told that instead. A personal server is used only
-/// in the owner's own runs.
+/// in the runs its member starts in this workspace; nobody approves another
+/// member's, so theirs reaches only public addresses.
 class McpServerEditorNote extends StatelessWidget {
   /// Creates the note.
   const McpServerEditorNote({
@@ -21,7 +22,7 @@ class McpServerEditorNote extends StatelessWidget {
   });
 
   /// Whose server is being edited.
-  final McpServerEditorScope scope;
+  final McpServerScope scope;
 
   /// The transport picked.
   final McpServerTransport transport;
@@ -34,19 +35,19 @@ class McpServerEditorNote extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final stdio = transport == McpServerTransport.stdio;
     final text = switch ((scope, owner, stdio)) {
-      (McpServerEditorScope.personal, _, _) => l10n.mcpServerEditorPersonal,
-      (McpServerEditorScope.workspace, true, true) =>
-        l10n.mcpServerEditorStdioOwner,
-      (McpServerEditorScope.workspace, true, false) =>
+      (McpServerScope.personal, true, _) => l10n.mcpServerEditorPersonalOwner,
+      (McpServerScope.personal, false, _) => l10n.mcpServerEditorPersonalMember,
+      (McpServerScope.workspace, true, true) => l10n.mcpServerEditorStdioOwner,
+      (McpServerScope.workspace, true, false) =>
         l10n.mcpServerEditorRemoteOwner,
-      (McpServerEditorScope.workspace, false, true) =>
+      (McpServerScope.workspace, false, true) =>
         l10n.mcpServerEditorStdioMember,
-      (McpServerEditorScope.workspace, false, false) =>
+      (McpServerScope.workspace, false, false) =>
         l10n.mcpServerEditorRemoteMember,
     };
     return McpServerNoteLine(
       text: text,
-      caution: scope == McpServerEditorScope.workspace && !owner,
+      caution: scope == McpServerScope.workspace && !owner,
     );
   }
 }

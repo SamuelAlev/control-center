@@ -193,8 +193,8 @@ class McpToolDispatcher implements RpcDispatcher, McpScriptSurface {
     McpCallScope? scope,
   ) async {
     // External servers only for an attested run, and only its own: its
-    // workspace's configured servers, plus the owner's personal ones when its
-    // grant says the owner is accountable for it. The owner's token and paired
+    // workspace's configured servers, plus the own servers of the member its
+    // grant says started it. The owner's token and paired
     // devices see the shared tools alone (`McpCallScope.toolView`).
     final definitions = await _surface.listed(scope, _viewOf(scope));
     return {

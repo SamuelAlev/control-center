@@ -1702,10 +1702,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get mcpServers => 'Servidores MCP';
 
   @override
-  String get mcpServersSettingsDescription =>
-      'Servidor MCP integrado e servidores MCP externos.';
-
-  @override
   String get remoteControlAndDevices => 'Controle remoto e dispositivos';
 
   @override
@@ -8794,13 +8790,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get ideFileBinary => 'Arquivo binário';
 
   @override
-  String get mcpExternalServers => 'Servidores MCP externos';
-
-  @override
-  String get mcpExternalServersDescription =>
-      'Conecte-se a servidores MCP externos (GitHub, Sentry, Postgres, automação de navegador). Os servidores configurados para Claude, Cursor, VS Code e outras ferramentas são detectados automaticamente.';
-
-  @override
   String get mcpApprovalMode => 'Aprovação de ferramentas';
 
   @override
@@ -8817,17 +8806,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get mcpApprovalYolo => 'Aprovar tudo';
 
   @override
-  String get mcpNoExternalServers => 'Nenhum servidor MCP externo detectado.';
-
-  @override
-  String get mcpAuthorize => 'Autorizar';
-
-  @override
   String get mcpReconnect => 'Reconectar';
-
-  @override
-  String get mcpExternalConnectionsNote =>
-      'Os servidores MCP externos são executados no servidor de agentes (compartilhado por desktop e web). Autorizar servidores OAuth só está disponível no desktop.';
 
   @override
   String get mcpStatusConnected => 'Conectado';
@@ -18480,10 +18459,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Confirme que este servidor pode usá-las. Cada repositório é verificado novamente com o seu acesso.';
 
   @override
-  String get mcpExternalServersOwnerRunsOnly =>
-      'Servidores encontrados nas configurações de ferramentas desta máquina ficam disponíveis apenas em execuções que você inicia ou pelas quais é responsável. As execuções de outras pessoas nunca os veem, e eles não são oferecidos pelo endpoint MCP do Control Center.';
-
-  @override
   String repoCodeNeedsSignIn(String provider) {
     return 'Entre em $provider para ver o código deste repositório.';
   }
@@ -18874,9 +18849,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get mcpAddServer => 'Adicionar servidor';
 
   @override
-  String get mcpHandAddedSource => 'Adicionado no Control Center';
-
-  @override
   String get mcpStatusAwaitingApproval => 'Aguardando aprovação';
 
   @override
@@ -18900,6 +18872,71 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get mcpApprovalRemoteMember =>
       'Este servidor só pode acessar endereços públicos até que o proprietário do servidor o aprove.';
+
+  @override
+  String get mcpServersSettingsSubtitle =>
+      'O servidor MCP integrado e os servidores MCP cujas ferramentas as execuções de agentes neste espaço de trabalho recebem.';
+
+  @override
+  String get mcpPersonalServers => 'Seus servidores MCP';
+
+  @override
+  String get mcpPersonalServersDescription =>
+      'Só você vê estes servidores, e só as execuções de agentes que você inicia neste espaço de trabalho recebem as ferramentas deles.';
+
+  @override
+  String get mcpPersonalServersUnavailable =>
+      'Seus servidores MCP não estão disponíveis no servidor conectado.';
+
+  @override
+  String get mcpPersonalServersEmpty => 'Você ainda não tem servidores MCP';
+
+  @override
+  String get mcpPersonalServersEmptyDescription =>
+      'Adicione um servidor para que as execuções que você inicia neste espaço de trabalho recebam as ferramentas dele.';
+
+  @override
+  String get mcpServerEditorPersonalOwner =>
+      'Só as execuções que você inicia neste espaço de trabalho usam este servidor. Como proprietário do servidor, salvá-lo o aprova.';
+
+  @override
+  String get mcpServerEditorPersonalMember =>
+      'Só as execuções que você inicia neste espaço de trabalho usam este servidor. Ele pode acessar somente endereços públicos.';
+
+  @override
+  String get mcpServerSignInNeeded =>
+      'Entre para usar as ferramentas deste servidor.';
+
+  @override
+  String get mcpServerSignIn => 'Entrar';
+
+  @override
+  String mcpServerSignInTitle(String name) {
+    return 'Entrar em $name';
+  }
+
+  @override
+  String mcpServerSignInWrongCode(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Restam $count tentativas.',
+      one: 'Resta 1 tentativa.',
+    );
+    return 'Esse não é o código que o seu navegador mostrou. $_temp0';
+  }
+
+  @override
+  String get mcpServerSignInEnded =>
+      'Demorou demais, foi recusado ou houve códigos errados demais. Comece de novo para receber uma nova página de login.';
+
+  @override
+  String get mcpServerSignInStartAgain => 'Começar de novo';
+
+  @override
+  String mcpServerSignedIn(String name) {
+    return 'Login feito em $name.';
+  }
 
   @override
   String get mcpRemoveServer => 'Remover servidor';
@@ -19037,10 +19074,6 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get mcpServerEditorRemoteOwner =>
       'Ao salvar, ele é aprovado para acessar também a rede privada do host.';
-
-  @override
-  String get mcpServerEditorPersonal =>
-      'Usado somente em execuções que você inicia ou pelas quais é responsável.';
 
   @override
   String get mcpServerRefusedInvalid =>
@@ -23032,19 +23065,11 @@ class AppLocalizationsPtPt extends AppLocalizationsPt {
   String get ideFileBinary => 'Ficheiro binário';
 
   @override
-  String get mcpExternalServersDescription =>
-      'Ligue-se a servidores MCP externos (GitHub, Sentry, Postgres, automação de navegador). Os servidores configurados para Claude, Cursor, VS Code e outras ferramentas são detectados automaticamente.';
-
-  @override
   String get mcpApprovalModeDescription =>
       'Quais ações das próprias ferramentas do Control Center, chamadas pelo endpoint MCP ou pelos seus agentes, correm sem perguntar. Leituras são sempre permitidas; níveis superiores pedem confirmação. Servidores dentro de uma execução seguem a política de ações dessa execução.';
 
   @override
   String get mcpReconnect => 'Voltar a ligar';
-
-  @override
-  String get mcpExternalConnectionsNote =>
-      'Os servidores MCP externos são executados no servidor de agentes (partilhado por desktop e web). Autorizar servidores OAuth só está disponível no desktop.';
 
   @override
   String get mcpStatusConnected => 'Ligado';
@@ -24857,10 +24882,6 @@ class AppLocalizationsPtPt extends AppLocalizationsPt {
   @override
   String get repoPathConfirmAllBody =>
       'Confirme que este servidor pode utilizá-las. Cada repositório é verificado novamente com o seu acesso.';
-
-  @override
-  String get mcpExternalServersOwnerRunsOnly =>
-      'Servidores encontrados nas definições de ferramentas desta máquina ficam disponíveis apenas em execuções que inicia ou pelas quais é responsável. As execuções de outras pessoas nunca os veem, e não são oferecidos pelo endpoint MCP do Control Center.';
 
   @override
   String repoCodeNeedsSignIn(String provider) {

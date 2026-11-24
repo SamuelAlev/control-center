@@ -2,11 +2,13 @@ import 'package:cc_persistence/database/tables/checks/column_checks.dart';
 import 'package:cc_persistence/database/tables/checks/stored_values_platform.dart';
 import 'package:drift/drift.dart';
 
-/// Drift table of the MCP servers configured by hand for a workspace.
+/// Drift table of the MCP servers configured by hand in a workspace: the
+/// workspace's own and each member's personal ones.
 ///
 /// **Workspace-scoped**, with no `workspace_id` column for the same reason as
-/// `repos`: the database file is the scope, so a name is unique within the
-/// workspace by being unique within the table.
+/// `repos`: the database file is the scope. A name is unique within its
+/// owner ([userId]): the workspace's servers among themselves, and each
+/// member's among their own.
 ///
 /// It holds no secret. Environment variable and header values live in the
 /// server's secrets store; a row keeps only their names ([envNamesJson],
@@ -15,7 +17,12 @@ class McpServersTable extends Table {
   /// Server id.
   TextColumn get id => text()();
 
-  /// Unique within the workspace; namespaces the server's tools
+  /// The member whose own server it is, or empty for the workspace's. Empty
+  /// rather than null so the unique key holds for the workspace's servers
+  /// too. No foreign key: users live in the global database.
+  TextColumn get userId => text().withDefault(const Constant(''))();
+
+  /// Unique within its owner; namespaces the server's tools
   /// (`mcp__<name>__<tool>`).
   TextColumn get name => text()();
 
@@ -76,6 +83,6 @@ class McpServersTable extends Table {
 
   @override
   List<Set<Column>> get uniqueKeys => [
-    {name},
+    {userId, name},
   ];
 }

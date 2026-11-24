@@ -405,23 +405,13 @@ Future<void> Function(String lane) _accountPoolCredentialsSweep({
   );
 };
 
-/// Connects the server owner's personal MCP servers (discovered in their own
-/// tool configs, plus the ones they added) and every workspace's configured
-/// servers. The personal ones act as the server OS user, so only runs the
-/// owner is accountable for are handed them. Run fire-and-forget after boot so
-/// a slow or dead server never blocks startup; best-effort, a failure is
-/// logged and never fatal.
+/// Connects every workspace's configured MCP servers, the workspace's and
+/// its members' own. Run fire-and-forget after boot so a slow or dead server
+/// never blocks startup; best-effort, a failure is logged and never fatal.
 Future<void> _connectMcpServers({
-  required ServerMcpClientControl personal,
   required WorkspaceMcpServers workspaces,
   required DaoWorkspaceRepository workspaceRepository,
 }) async {
-  try {
-    final count = await personal.refresh();
-    CcHostLog.info('cc_server: connecting $count personal MCP server(s)');
-  } on Object catch (e) {
-    CcHostLog.warning('cc_server: personal MCP servers failed: $e');
-  }
   try {
     final ids = [
       for (final w in await workspaceRepository.getAll())

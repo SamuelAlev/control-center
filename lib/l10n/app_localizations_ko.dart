@@ -1655,9 +1655,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get mcpServers => 'MCP 서버';
 
   @override
-  String get mcpServersSettingsDescription => '기본 제공 MCP 서버와 외부 MCP 서버.';
-
-  @override
   String get remoteControlAndDevices => '원격 제어 및 기기';
 
   @override
@@ -8564,13 +8561,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get ideFileBinary => '바이너리 파일';
 
   @override
-  String get mcpExternalServers => '외부 MCP 서버';
-
-  @override
-  String get mcpExternalServersDescription =>
-      '외부 MCP 서버(GitHub, Sentry, Postgres, 브라우저 자동화)에 연결합니다. Claude, Cursor, VS Code 및 기타 도구에 구성한 서버는 자동으로 검색됩니다.';
-
-  @override
   String get mcpApprovalMode => '도구 승인';
 
   @override
@@ -8587,17 +8577,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get mcpApprovalYolo => '모두 자동 승인';
 
   @override
-  String get mcpNoExternalServers => '검색된 외부 MCP 서버가 없습니다.';
-
-  @override
-  String get mcpAuthorize => '승인';
-
-  @override
   String get mcpReconnect => '다시 연결';
-
-  @override
-  String get mcpExternalConnectionsNote =>
-      '외부 MCP 서버는 에이전트 서버에서 실행되며 데스크톱과 웹에서 공유됩니다. OAuth 서버 승인은 데스크톱에서만 사용할 수 있습니다.';
 
   @override
   String get mcpStatusConnected => '연결됨';
@@ -17954,10 +17934,6 @@ class AppLocalizationsKo extends AppLocalizations {
       '이 서버가 이 폴더들을 사용해도 되는지 확인하세요. 각 리포지토리는 내 접근 권한으로 다시 검사됩니다.';
 
   @override
-  String get mcpExternalServersOwnerRunsOnly =>
-      '이 머신의 도구 설정에서 찾은 서버는 내가 시작했거나 책임지는 실행에서만 사용할 수 있습니다. 다른 사람의 실행에는 보이지 않으며, Control Center의 MCP 엔드포인트를 통해서도 제공되지 않습니다.';
-
-  @override
   String repoCodeNeedsSignIn(String provider) {
     return '이 리포지토리의 코드를 보려면 $provider에 로그인하세요.';
   }
@@ -18334,9 +18310,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get mcpAddServer => '서버 추가';
 
   @override
-  String get mcpHandAddedSource => 'Control Center에서 추가됨';
-
-  @override
   String get mcpStatusAwaitingApproval => '승인 대기 중';
 
   @override
@@ -18360,6 +18333,68 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get mcpApprovalRemoteMember =>
       '서버 소유자가 승인하기 전까지 이 서버는 공용 주소에만 접근할 수 있습니다.';
+
+  @override
+  String get mcpServersSettingsSubtitle =>
+      'Control Center의 내장 MCP 서버와, 이 워크스페이스의 에이전트 실행이 도구를 가져오는 MCP 서버입니다.';
+
+  @override
+  String get mcpPersonalServers => '내 MCP 서버';
+
+  @override
+  String get mcpPersonalServersDescription =>
+      '이 서버는 나만 볼 수 있으며, 이 워크스페이스에서 시작한 에이전트 실행만 도구를 사용합니다.';
+
+  @override
+  String get mcpPersonalServersUnavailable => '연결된 서버에서는 내 MCP 서버를 사용할 수 없습니다.';
+
+  @override
+  String get mcpPersonalServersEmpty => '아직 내 MCP 서버가 없습니다';
+
+  @override
+  String get mcpPersonalServersEmptyDescription =>
+      '서버를 추가하면 이 워크스페이스에서 시작한 에이전트 실행에 해당 도구가 제공됩니다.';
+
+  @override
+  String get mcpServerEditorPersonalOwner =>
+      '이 워크스페이스에서 시작한 실행만 사용합니다. 서버 소유자로서 저장하면 이 서버가 승인됩니다.';
+
+  @override
+  String get mcpServerEditorPersonalMember =>
+      '이 워크스페이스에서 시작한 실행만 사용합니다. 공용 주소에만 접근할 수 있습니다.';
+
+  @override
+  String get mcpServerSignInNeeded => '이 서버의 도구를 사용하려면 로그인하세요.';
+
+  @override
+  String get mcpServerSignIn => '로그인';
+
+  @override
+  String mcpServerSignInTitle(String name) {
+    return '$name에 로그인';
+  }
+
+  @override
+  String mcpServerSignInWrongCode(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '시도 $count회 남았습니다.',
+    );
+    return '브라우저에 표시된 코드가 아닙니다. $_temp0';
+  }
+
+  @override
+  String get mcpServerSignInEnded =>
+      '시간이 너무 오래 걸렸거나, 거부되었거나, 잘못된 코드를 너무 많이 입력했습니다. 다시 시작해서 새 로그인 페이지를 받으세요.';
+
+  @override
+  String get mcpServerSignInStartAgain => '다시 시작';
+
+  @override
+  String mcpServerSignedIn(String name) {
+    return '$name에 로그인했습니다.';
+  }
 
   @override
   String get mcpRemoveServer => '서버 제거';
@@ -18492,9 +18527,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get mcpServerEditorRemoteOwner => '저장하면 호스트의 사설 네트워크에 접근하는 것도 승인됩니다.';
-
-  @override
-  String get mcpServerEditorPersonal => '직접 시작했거나 책임지는 실행에서만 사용됩니다.';
 
   @override
   String get mcpServerRefusedInvalid =>

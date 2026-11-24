@@ -1696,10 +1696,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get mcpServers => 'MCP-servrar';
 
   @override
-  String get mcpServersSettingsDescription =>
-      'Inbyggd MCP-server och externa MCP-servrar.';
-
-  @override
   String get remoteControlAndDevices => 'Fjärrstyrning och enheter';
 
   @override
@@ -8751,13 +8747,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get ideFileBinary => 'Binärfil';
 
   @override
-  String get mcpExternalServers => 'Externa MCP-servrar';
-
-  @override
-  String get mcpExternalServersDescription =>
-      'Anslut till externa MCP-servrar (GitHub, Sentry, Postgres, webbläsarautomatisering). Servrar du konfigurerat för Claude, Cursor, VS Code och andra verktyg upptäcks automatiskt.';
-
-  @override
   String get mcpApprovalMode => 'Verktygsgodkännande';
 
   @override
@@ -8774,17 +8763,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get mcpApprovalYolo => 'Godkänn allt automatiskt';
 
   @override
-  String get mcpNoExternalServers => 'Inga externa MCP-servrar hittades.';
-
-  @override
-  String get mcpAuthorize => 'Auktorisera';
-
-  @override
   String get mcpReconnect => 'Återanslut';
-
-  @override
-  String get mcpExternalConnectionsNote =>
-      'Externa MCP-servrar körs på agentservern (delad av skrivbord och webb). Att auktorisera OAuth-servrar finns bara på skrivbordet.';
 
   @override
   String get mcpStatusConnected => 'Ansluten';
@@ -18397,10 +18376,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Bekräfta att den här servern får använda dem. Varje arkiv kontrolleras igen med din åtkomst.';
 
   @override
-  String get mcpExternalServersOwnerRunsOnly =>
-      'Servrar som finns i den här maskinens egna verktygsinställningar är bara tillgängliga i körningar du startar eller ansvarar för. Andras körningar ser dem aldrig, och de erbjuds inte via Control Centers MCP-slutpunkt.';
-
-  @override
   String repoCodeNeedsSignIn(String provider) {
     return 'Logga in på $provider för att se det här arkivets kod.';
   }
@@ -18789,9 +18764,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get mcpAddServer => 'Lägg till server';
 
   @override
-  String get mcpHandAddedSource => 'Tillagd i Control Center';
-
-  @override
   String get mcpStatusAwaitingApproval => 'Väntar på godkännande';
 
   @override
@@ -18815,6 +18787,71 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get mcpApprovalRemoteMember =>
       'Den här servern kan bara nå publika adresser tills serverägaren godkänner den.';
+
+  @override
+  String get mcpServersSettingsSubtitle =>
+      'Den inbyggda MCP-servern och de MCP-servrar vars verktyg agentkörningar i den här arbetsytan får.';
+
+  @override
+  String get mcpPersonalServers => 'Dina MCP-servrar';
+
+  @override
+  String get mcpPersonalServersDescription =>
+      'Bara du ser de här servrarna, och bara agentkörningar du startar i den här arbetsytan får deras verktyg.';
+
+  @override
+  String get mcpPersonalServersUnavailable =>
+      'Dina egna MCP-servrar finns inte på den anslutna servern.';
+
+  @override
+  String get mcpPersonalServersEmpty => 'Inga egna MCP-servrar än';
+
+  @override
+  String get mcpPersonalServersEmptyDescription =>
+      'Lägg till en server så att agentkörningar du startar i den här arbetsytan får dess verktyg.';
+
+  @override
+  String get mcpServerEditorPersonalOwner =>
+      'Bara agentkörningar du startar i den här arbetsytan använder den. Som serverägare godkänns den när du sparar.';
+
+  @override
+  String get mcpServerEditorPersonalMember =>
+      'Bara agentkörningar du startar i den här arbetsytan använder den. Den når bara publika adresser.';
+
+  @override
+  String get mcpServerSignInNeeded =>
+      'Logga in för att använda den här serverns verktyg.';
+
+  @override
+  String get mcpServerSignIn => 'Logga in';
+
+  @override
+  String mcpServerSignInTitle(String name) {
+    return 'Logga in på $name';
+  }
+
+  @override
+  String mcpServerSignInWrongCode(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count försök kvar.',
+      one: '1 försök kvar.',
+    );
+    return 'Det är inte koden webbläsaren visade. $_temp0';
+  }
+
+  @override
+  String get mcpServerSignInEnded =>
+      'Det tog för lång tid, nekades eller så angavs för många felaktiga koder. Börja om för att få en ny inloggningssida.';
+
+  @override
+  String get mcpServerSignInStartAgain => 'Börja om';
+
+  @override
+  String mcpServerSignedIn(String name) {
+    return 'Inloggad på $name.';
+  }
 
   @override
   String get mcpRemoveServer => 'Ta bort server';
@@ -18952,10 +18989,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get mcpServerEditorRemoteOwner =>
       'Att spara godkänner att den också når värdens privata nätverk.';
-
-  @override
-  String get mcpServerEditorPersonal =>
-      'Används bara i körningar som du startar eller ansvarar för.';
 
   @override
   String get mcpServerRefusedInvalid =>

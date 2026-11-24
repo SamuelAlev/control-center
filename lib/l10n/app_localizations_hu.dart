@@ -1701,10 +1701,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get mcpServers => 'MCP-szerverek';
 
   @override
-  String get mcpServersSettingsDescription =>
-      'Beépített MCP-szerver és külső MCP-szerverek.';
-
-  @override
   String get remoteControlAndDevices => 'Távirányítás és eszközök';
 
   @override
@@ -8785,13 +8781,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get ideFileBinary => 'Bináris fájl';
 
   @override
-  String get mcpExternalServers => 'Külső MCP-szerverek';
-
-  @override
-  String get mcpExternalServersDescription =>
-      'Csatlakozzon külső MCP-szerverekhez (GitHub, Sentry, Postgres, böngészőautomatizálás). A Claude, Cursor, VS Code és más eszközökhöz beállított szerverek automatikusan felismerésre kerülnek.';
-
-  @override
   String get mcpApprovalMode => 'Eszközjóváhagyás';
 
   @override
@@ -8808,17 +8797,7 @@ class AppLocalizationsHu extends AppLocalizations {
   String get mcpApprovalYolo => 'Minden automatikus jóváhagyása';
 
   @override
-  String get mcpNoExternalServers => 'Nem találhatók külső MCP-szerverek.';
-
-  @override
-  String get mcpAuthorize => 'Felhatalmazás';
-
-  @override
   String get mcpReconnect => 'Újracsatlakozás';
-
-  @override
-  String get mcpExternalConnectionsNote =>
-      'A külső MCP-szerverek az ügynökszerveren futnak (asztali és web megosztja). Az OAuth-szerverek felhatalmazása csak asztalon érhető el.';
 
   @override
   String get mcpStatusConnected => 'Csatlakoztatva';
@@ -18458,10 +18437,6 @@ class AppLocalizationsHu extends AppLocalizations {
       'Erősítse meg, hogy ez a szerver használhatja-e őket. Minden tárolót újra ellenőriz az Ön hozzáférésével.';
 
   @override
-  String get mcpExternalServersOwnerRunsOnly =>
-      'A gép saját eszközbeállításaiban talált szerverek csak olyan futtatásokban érhetők el, amelyeket Ön indít, vagy amelyekért Ön felel. Mások futtatásai sosem látják őket, és a Control Center MCP-végpontján keresztül sem kínálják fel őket.';
-
-  @override
   String repoCodeNeedsSignIn(String provider) {
     return 'Jelentkezzen be a(z) $provider szolgáltatásba a tároló kódjának megtekintéséhez.';
   }
@@ -18850,9 +18825,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get mcpAddServer => 'Szerver hozzáadása';
 
   @override
-  String get mcpHandAddedSource => 'Hozzáadva a Control Centerben';
-
-  @override
   String get mcpStatusAwaitingApproval => 'Jóváhagyásra vár';
 
   @override
@@ -18876,6 +18848,71 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get mcpApprovalRemoteMember =>
       'Ez a szerver csak nyilvános címeket érhet el, amíg a szerver tulajdonosa jóvá nem hagyja.';
+
+  @override
+  String get mcpServersSettingsSubtitle =>
+      'A beépített MCP-szerver, valamint azok az MCP-szerverek, amelyek eszközeit a munkaterület ügynökfutásai megkapják.';
+
+  @override
+  String get mcpPersonalServers => 'Saját MCP-szerverei';
+
+  @override
+  String get mcpPersonalServersDescription =>
+      'Csak Ön látja ezeket a szervereket, és csak az Ön által ebben a munkaterületen indított ügynökfutások kapják meg az eszközeiket.';
+
+  @override
+  String get mcpPersonalServersUnavailable =>
+      'Saját MCP-szerverei nem érhetők el a csatlakoztatott szerveren.';
+
+  @override
+  String get mcpPersonalServersEmpty => 'Még nincs saját MCP-szervere';
+
+  @override
+  String get mcpPersonalServersEmptyDescription =>
+      'Adjon hozzá egy szervert, hogy az Ön által ebben a munkaterületen indított ügynökfutások megkapják az eszközeit.';
+
+  @override
+  String get mcpServerEditorPersonalOwner =>
+      'Csak az Ön ebben a munkaterületen indított ügynökfutásai használják. Szerver-tulajdonosként a mentés jóváhagyja.';
+
+  @override
+  String get mcpServerEditorPersonalMember =>
+      'Csak az Ön ebben a munkaterületen indított ügynökfutásai használják. Csak nyilvános címeket érhet el.';
+
+  @override
+  String get mcpServerSignInNeeded =>
+      'Jelentkezzen be, hogy használhassa ennek a szervernek az eszközeit.';
+
+  @override
+  String get mcpServerSignIn => 'Bejelentkezés';
+
+  @override
+  String mcpServerSignInTitle(String name) {
+    return 'Bejelentkezés: $name';
+  }
+
+  @override
+  String mcpServerSignInWrongCode(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count próbálkozás maradt.',
+      one: '1 próbálkozás maradt.',
+    );
+    return 'Ez nem a böngészőben megjelenített kód. $_temp0';
+  }
+
+  @override
+  String get mcpServerSignInEnded =>
+      'Túl sokáig tartott, a bejelentkezést elutasították, vagy túl sok hibás kódot adtak meg. Indítsa újra, hogy új bejelentkezési oldalt kapjon.';
+
+  @override
+  String get mcpServerSignInStartAgain => 'Újraindítás';
+
+  @override
+  String mcpServerSignedIn(String name) {
+    return 'Bejelentkezve: $name.';
+  }
 
   @override
   String get mcpRemoveServer => 'Szerver eltávolítása';
@@ -19012,10 +19049,6 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get mcpServerEditorRemoteOwner =>
       'A mentés jóváhagyja, hogy a gép privát hálózatát is elérhesse.';
-
-  @override
-  String get mcpServerEditorPersonal =>
-      'Csak az Ön által indított vagy érte felelős futtatásokban használatos.';
 
   @override
   String get mcpServerRefusedInvalid =>

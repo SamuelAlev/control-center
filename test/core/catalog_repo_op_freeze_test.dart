@@ -22,7 +22,10 @@ void main() {
     // Lowered 2026-11-20: agents.killProcesses moved to the stop pack
     // (catalog/agent_run_log_write_ops.dart), behind the run's space; the
     // floor also takes the steering and goal ops removed the same day.
-    const freeze = 370;
+    // Lowered 2026-11-24: mcp.client.servers/authorize/reconnect were deleted
+    // with the server-wide personal MCP lane (servers are per workspace or per
+    // member now, in catalog/workspace_mcp_server_ops.dart).
+    const freeze = 367;
     final root = _repoRoot();
     final file = File(
       '$root/packages/cc_server_core/lib/src/remote_rpc_catalog.dart',

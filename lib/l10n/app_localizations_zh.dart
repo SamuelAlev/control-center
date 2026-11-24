@@ -1625,9 +1625,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mcpServers => 'MCP 服务器';
 
   @override
-  String get mcpServersSettingsDescription => '内置 MCP 服务器与外部 MCP 服务器。';
-
-  @override
   String get remoteControlAndDevices => '远程控制与设备';
 
   @override
@@ -8476,13 +8473,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get ideFileBinary => '二进制文件';
 
   @override
-  String get mcpExternalServers => '外部 MCP 服务器';
-
-  @override
-  String get mcpExternalServersDescription =>
-      '连接到外部 MCP 服务器（GitHub、Sentry、Postgres、浏览器自动化）。已为 Claude、Cursor、VS Code 及其他工具配置的服务器会自动发现。';
-
-  @override
   String get mcpApprovalMode => '工具批准';
 
   @override
@@ -8499,17 +8489,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mcpApprovalYolo => '全部自动批准';
 
   @override
-  String get mcpNoExternalServers => '未发现外部 MCP 服务器。';
-
-  @override
-  String get mcpAuthorize => '授权';
-
-  @override
   String get mcpReconnect => '重新连接';
-
-  @override
-  String get mcpExternalConnectionsNote =>
-      '外部 MCP 服务器运行在智能体服务器上（桌面端与网页端共用）。授权 OAuth 服务器仅在桌面端可用。';
 
   @override
   String get mcpStatusConnected => '已连接';
@@ -17723,10 +17703,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get repoPathConfirmAllBody => '请确认此服务器可以使用它们。每个仓库都会以你的访问权限重新检查。';
 
   @override
-  String get mcpExternalServersOwnerRunsOnly =>
-      '在此机器自身工具设置中找到的服务器，仅可用于你发起或负有责任的运行。其他人的运行不会看到它们，它们也不会通过 Control Center 的 MCP 端点提供。';
-
-  @override
   String repoCodeNeedsSignIn(String provider) {
     return '登录 $provider 以查看此仓库的代码。';
   }
@@ -18079,9 +18055,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mcpAddServer => '添加服务器';
 
   @override
-  String get mcpHandAddedSource => '在 Control Center 中添加';
-
-  @override
   String get mcpStatusAwaitingApproval => '等待批准';
 
   @override
@@ -18102,6 +18075,66 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get mcpApprovalRemoteMember => '在服务器所有者批准之前，此服务器只能访问公共地址。';
+
+  @override
+  String get mcpServersSettingsSubtitle =>
+      '内置 MCP 服务器，以及此工作区中智能体运行可获得其工具的 MCP 服务器。';
+
+  @override
+  String get mcpPersonalServers => '你的 MCP 服务器';
+
+  @override
+  String get mcpPersonalServersDescription =>
+      '只有你能看到这些服务器，且只有你在此工作区中发起的智能体运行才会获得它们的工具。';
+
+  @override
+  String get mcpPersonalServersUnavailable => '连接的服务器不支持你自己的 MCP 服务器。';
+
+  @override
+  String get mcpPersonalServersEmpty => '还没有你自己的 MCP 服务器';
+
+  @override
+  String get mcpPersonalServersEmptyDescription =>
+      '添加服务器，让你在此工作区中发起的智能体运行都能使用其工具。';
+
+  @override
+  String get mcpServerEditorPersonalOwner =>
+      '只有你在此工作区中发起的运行会使用它。作为服务器所有者，保存即表示批准它。';
+
+  @override
+  String get mcpServerEditorPersonalMember => '只有你在此工作区中发起的运行会使用它。它只能访问公共地址。';
+
+  @override
+  String get mcpServerSignInNeeded => '登录后才能使用此服务器的工具。';
+
+  @override
+  String get mcpServerSignIn => '登录';
+
+  @override
+  String mcpServerSignInTitle(String name) {
+    return '登录 $name';
+  }
+
+  @override
+  String mcpServerSignInWrongCode(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '还剩 $count 次尝试机会。',
+    );
+    return '这不是浏览器显示的代码。$_temp0';
+  }
+
+  @override
+  String get mcpServerSignInEnded => '超时、被拒绝，或错误代码输入次数过多。请重新开始以获取新的登录页面。';
+
+  @override
+  String get mcpServerSignInStartAgain => '重新开始';
+
+  @override
+  String mcpServerSignedIn(String name) {
+    return '已登录 $name。';
+  }
 
   @override
   String get mcpRemoveServer => '移除服务器';
@@ -18229,9 +18262,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get mcpServerEditorRemoteOwner => '保存即表示批准它访问主机的私有网络。';
-
-  @override
-  String get mcpServerEditorPersonal => '仅用于您发起或负责的运行。';
 
   @override
   String get mcpServerRefusedInvalid => 'Control Center 无法保存此服务器。请检查其设置后重试。';
@@ -22629,9 +22659,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get mcpServers => 'MCP 伺服器';
-
-  @override
-  String get mcpServersSettingsDescription => '內建 MCP 伺服器與外部 MCP 伺服器。';
 
   @override
   String get remoteControlAndDevices => '遠端控制與裝置';
@@ -29481,13 +29508,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get ideFileBinary => '二進位檔案';
 
   @override
-  String get mcpExternalServers => '外部 MCP 伺服器';
-
-  @override
-  String get mcpExternalServersDescription =>
-      '連接外部 MCP 伺服器（GitHub、Sentry、Postgres、瀏覽器自動化）。你為 Claude、Cursor、VS Code 等工具設定的伺服器會被自動探索。';
-
-  @override
   String get mcpApprovalMode => '工具核准';
 
   @override
@@ -29504,17 +29524,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get mcpApprovalYolo => '全部自動核准';
 
   @override
-  String get mcpNoExternalServers => '未探索到任何外部 MCP 伺服器。';
-
-  @override
-  String get mcpAuthorize => '授權';
-
-  @override
   String get mcpReconnect => '重新連接';
-
-  @override
-  String get mcpExternalConnectionsNote =>
-      '外部 MCP 伺服器執行於代理伺服器上（桌面版與網頁版共用）。授權 OAuth 伺服器僅能在桌面版進行。';
 
   @override
   String get mcpStatusConnected => '已連接';
@@ -38733,10 +38743,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get repoPathConfirmAllBody => '確認此伺服器可以使用它們。每個存放庫都會以你的存取權限重新檢查。';
 
   @override
-  String get mcpExternalServersOwnerRunsOnly =>
-      '在此機器自身工具設定中找到的伺服器，只會用於你啟動或負責的執行。其他人的執行永遠看不到它們，也不會透過 Control Center 的 MCP 端點提供。';
-
-  @override
   String repoCodeNeedsSignIn(String provider) {
     return '登入 $provider 以查看此存放庫的程式碼。';
   }
@@ -39089,9 +39095,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get mcpAddServer => '新增伺服器';
 
   @override
-  String get mcpHandAddedSource => '喺 Control Center 入面新增';
-
-  @override
   String get mcpStatusAwaitingApproval => '等待核准';
 
   @override
@@ -39112,6 +39115,67 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get mcpApprovalRemoteMember => '喺伺服器擁有者核准之前，呢個伺服器只可以連到公開地址。';
+
+  @override
+  String get mcpServersSettingsSubtitle =>
+      '內建的 MCP 伺服器，以及此工作區的代理執行可取得其工具的 MCP 伺服器。';
+
+  @override
+  String get mcpPersonalServers => '你的 MCP 伺服器';
+
+  @override
+  String get mcpPersonalServersDescription =>
+      '只有你看得到這些伺服器，而且只有你在此工作區啟動的代理執行會取得其工具。';
+
+  @override
+  String get mcpPersonalServersUnavailable => '已連線的伺服器不支援你自己的 MCP 伺服器。';
+
+  @override
+  String get mcpPersonalServersEmpty => '暫時未有你自己的 MCP 伺服器';
+
+  @override
+  String get mcpPersonalServersEmptyDescription =>
+      '新增伺服器，讓你在此工作區啟動的代理執行可以使用其工具。';
+
+  @override
+  String get mcpServerEditorPersonalOwner =>
+      '只有你在此工作區啟動的代理執行會使用它。作為伺服器擁有者，儲存即代表核准它。';
+
+  @override
+  String get mcpServerEditorPersonalMember => '只有你在此工作區啟動的代理執行會使用它。它只可以連到公開地址。';
+
+  @override
+  String get mcpServerSignInNeeded => '請登入，以使用此伺服器的工具。';
+
+  @override
+  String get mcpServerSignIn => '登入';
+
+  @override
+  String mcpServerSignInTitle(String name) {
+    return '登入 $name';
+  }
+
+  @override
+  String mcpServerSignInWrongCode(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '仲剩 $count 次嘗試機會。',
+      one: '仲剩 1 次嘗試機會。',
+    );
+    return '這不是瀏覽器顯示的代碼。$_temp0';
+  }
+
+  @override
+  String get mcpServerSignInEnded => '等待時間過長、被拒絕，或輸入錯誤代碼的次數太多。請重新開始，以獲取新的登入頁面。';
+
+  @override
+  String get mcpServerSignInStartAgain => '重新開始';
+
+  @override
+  String mcpServerSignedIn(String name) {
+    return '已登入 $name。';
+  }
 
   @override
   String get mcpRemoveServer => '移除伺服器';
@@ -39239,9 +39303,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get mcpServerEditorRemoteOwner => '儲存即代表核准佢連到主機嘅私人網絡。';
-
-  @override
-  String get mcpServerEditorPersonal => '只用於你發起或負責嘅代理執行。';
 
   @override
   String get mcpServerRefusedInvalid => 'Control Center 無法儲存呢個伺服器。請檢查其設定後再試。';
@@ -43641,9 +43702,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get mcpServers => 'MCP 伺服器';
-
-  @override
-  String get mcpServersSettingsDescription => '內建 MCP 伺服器與外部 MCP 伺服器。';
 
   @override
   String get remoteControlAndDevices => '遠端控制與裝置';
@@ -50493,13 +50551,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get ideFileBinary => '二進位檔案';
 
   @override
-  String get mcpExternalServers => '外部 MCP 伺服器';
-
-  @override
-  String get mcpExternalServersDescription =>
-      '連接外部 MCP 伺服器（GitHub、Sentry、Postgres、瀏覽器自動化）。你為 Claude、Cursor、VS Code 等工具設定的伺服器會被自動探索。';
-
-  @override
   String get mcpApprovalMode => '工具核准';
 
   @override
@@ -50516,17 +50567,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get mcpApprovalYolo => '全部自動核准';
 
   @override
-  String get mcpNoExternalServers => '未探索到任何外部 MCP 伺服器。';
-
-  @override
-  String get mcpAuthorize => '授權';
-
-  @override
   String get mcpReconnect => '重新連線';
-
-  @override
-  String get mcpExternalConnectionsNote =>
-      '外部 MCP 伺服器執行於代理伺服器上（桌面版與網頁版共用）。授權 OAuth 伺服器僅能在桌面版進行。';
 
   @override
   String get mcpStatusConnected => '已連線';
@@ -59747,10 +59788,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get repoPathConfirmAllBody => '確認此伺服器可以使用它們。每個存放庫都會以你的存取權限重新檢查。';
 
   @override
-  String get mcpExternalServersOwnerRunsOnly =>
-      '在此機器自身工具設定中找到的伺服器，只會用於你啟動或負責的執行。其他人的執行永遠看不到它們，也不會透過 Control Center 的 MCP 端點提供。';
-
-  @override
   String repoCodeNeedsSignIn(String provider) {
     return '登入 $provider 以查看此存放庫的程式碼。';
   }
@@ -60103,9 +60140,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get mcpAddServer => '新增伺服器';
 
   @override
-  String get mcpHandAddedSource => '在 Control Center 中新增';
-
-  @override
   String get mcpStatusAwaitingApproval => '等待核准';
 
   @override
@@ -60126,6 +60160,67 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get mcpApprovalRemoteMember => '在伺服器擁有者核准前，此伺服器只能連到公開位址。';
+
+  @override
+  String get mcpServersSettingsSubtitle =>
+      '內建的 MCP 伺服器，以及此工作區的代理執行可取得其工具的 MCP 伺服器。';
+
+  @override
+  String get mcpPersonalServers => '你的 MCP 伺服器';
+
+  @override
+  String get mcpPersonalServersDescription =>
+      '只有你看得到這些伺服器，且只有你在此工作區啟動的代理執行會取得其工具。';
+
+  @override
+  String get mcpPersonalServersUnavailable => '已連線的伺服器不支援你自己的 MCP 伺服器。';
+
+  @override
+  String get mcpPersonalServersEmpty => '尚無你自己的 MCP 伺服器';
+
+  @override
+  String get mcpPersonalServersEmptyDescription =>
+      '新增伺服器，讓你在此工作區啟動的代理執行能使用其工具。';
+
+  @override
+  String get mcpServerEditorPersonalOwner =>
+      '只有你在此工作區啟動的代理執行會使用它。身為伺服器擁有者，儲存即代表核准它。';
+
+  @override
+  String get mcpServerEditorPersonalMember => '只有你在此工作區啟動的代理執行會使用它。它只能連到公開位址。';
+
+  @override
+  String get mcpServerSignInNeeded => '請登入以使用此伺服器的工具。';
+
+  @override
+  String get mcpServerSignIn => '登入';
+
+  @override
+  String mcpServerSignInTitle(String name) {
+    return '登入 $name';
+  }
+
+  @override
+  String mcpServerSignInWrongCode(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '還剩 $count 次嘗試機會。',
+      one: '還剩 1 次嘗試機會。',
+    );
+    return '這不是瀏覽器顯示的代碼。$_temp0';
+  }
+
+  @override
+  String get mcpServerSignInEnded => '等待時間過長、遭拒絕，或輸入錯誤代碼的次數過多。請重新開始，以取得新的登入頁面。';
+
+  @override
+  String get mcpServerSignInStartAgain => '重新開始';
+
+  @override
+  String mcpServerSignedIn(String name) {
+    return '已登入 $name。';
+  }
 
   @override
   String get mcpRemoveServer => '移除伺服器';
@@ -60253,9 +60348,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get mcpServerEditorRemoteOwner => '儲存即代表核准它連到主機私人網路。';
-
-  @override
-  String get mcpServerEditorPersonal => '僅用於您發起或負責的代理執行。';
 
   @override
   String get mcpServerRefusedInvalid => 'Control Center 無法儲存此伺服器。請檢查其設定後再試一次。';

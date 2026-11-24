@@ -1690,10 +1690,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get mcpServers => 'Máy chủ MCP';
 
   @override
-  String get mcpServersSettingsDescription =>
-      'Máy chủ MCP tích hợp và máy chủ MCP bên ngoài.';
-
-  @override
   String get remoteControlAndDevices => 'Điều khiển từ xa & thiết bị';
 
   @override
@@ -8739,13 +8735,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get ideFileBinary => 'Tệp nhị phân';
 
   @override
-  String get mcpExternalServers => 'Máy chủ MCP bên ngoài';
-
-  @override
-  String get mcpExternalServersDescription =>
-      'Kết nối máy chủ MCP bên ngoài (GitHub, Sentry, Postgres, tự động hóa trình duyệt). Máy chủ bạn đã cấu hình cho Claude, Cursor, VS Code và các công cụ khác được tự động phát hiện.';
-
-  @override
   String get mcpApprovalMode => 'Phê duyệt công cụ';
 
   @override
@@ -8762,17 +8751,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get mcpApprovalYolo => 'Tự phê duyệt tất cả';
 
   @override
-  String get mcpNoExternalServers => 'Không phát hiện máy chủ MCP bên ngoài.';
-
-  @override
-  String get mcpAuthorize => 'Ủy quyền';
-
-  @override
   String get mcpReconnect => 'Kết nối lại';
-
-  @override
-  String get mcpExternalConnectionsNote =>
-      'Máy chủ MCP bên ngoài chạy trên máy chủ agent (dùng chung cho desktop và web). Ủy quyền máy chủ OAuth chỉ khả dụng trên desktop.';
 
   @override
   String get mcpStatusConnected => 'Đã kết nối';
@@ -18363,10 +18342,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Xác nhận rằng máy chủ này được phép sử dụng chúng. Mỗi kho lưu trữ sẽ được kiểm tra lại với quyền truy cập của bạn.';
 
   @override
-  String get mcpExternalServersOwnerRunsOnly =>
-      'Các máy chủ tìm thấy trong cài đặt công cụ riêng của máy này chỉ khả dụng trong các lần chạy bạn khởi chạy hoặc chịu trách nhiệm. Lần chạy của người khác không bao giờ thấy chúng, và chúng không được cung cấp qua endpoint MCP của Control Center.';
-
-  @override
   String repoCodeNeedsSignIn(String provider) {
     return 'Đăng nhập vào $provider để xem mã của kho lưu trữ này.';
   }
@@ -18756,9 +18731,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get mcpAddServer => 'Thêm máy chủ';
 
   @override
-  String get mcpHandAddedSource => 'Đã thêm trong Control Center';
-
-  @override
   String get mcpStatusAwaitingApproval => 'Đang chờ phê duyệt';
 
   @override
@@ -18782,6 +18754,70 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get mcpApprovalRemoteMember =>
       'Máy chủ này chỉ có thể truy cập địa chỉ công khai cho đến khi chủ sở hữu máy chủ phê duyệt.';
+
+  @override
+  String get mcpServersSettingsSubtitle =>
+      'Máy chủ MCP tích hợp sẵn, và các máy chủ MCP mà công cụ của chúng được các lượt chạy tác tử trong không gian làm việc này sử dụng.';
+
+  @override
+  String get mcpPersonalServers => 'Máy chủ MCP của bạn';
+
+  @override
+  String get mcpPersonalServersDescription =>
+      'Chỉ bạn thấy các máy chủ này, và chỉ các lượt chạy tác tử bạn khởi chạy trong không gian làm việc này mới nhận công cụ của chúng.';
+
+  @override
+  String get mcpPersonalServersUnavailable =>
+      'Máy chủ MCP riêng của bạn không khả dụng trên máy chủ đang kết nối.';
+
+  @override
+  String get mcpPersonalServersEmpty => 'Chưa có máy chủ MCP riêng nào';
+
+  @override
+  String get mcpPersonalServersEmptyDescription =>
+      'Thêm máy chủ để các lượt chạy bạn khởi chạy trong không gian làm việc này có công cụ của nó.';
+
+  @override
+  String get mcpServerEditorPersonalOwner =>
+      'Chỉ các lượt chạy bạn khởi chạy trong không gian làm việc này mới dùng máy chủ này. Với tư cách chủ sở hữu máy chủ, lưu sẽ phê duyệt nó.';
+
+  @override
+  String get mcpServerEditorPersonalMember =>
+      'Chỉ các lượt chạy bạn khởi chạy trong không gian làm việc này mới dùng máy chủ này. Máy chủ chỉ truy cập được địa chỉ công khai.';
+
+  @override
+  String get mcpServerSignInNeeded =>
+      'Đăng nhập để dùng công cụ của máy chủ này.';
+
+  @override
+  String get mcpServerSignIn => 'Đăng nhập';
+
+  @override
+  String mcpServerSignInTitle(String name) {
+    return 'Đăng nhập vào $name';
+  }
+
+  @override
+  String mcpServerSignInWrongCode(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Còn $count lần thử.',
+    );
+    return 'Mã đó không phải mã trình duyệt đã hiển thị. $_temp0';
+  }
+
+  @override
+  String get mcpServerSignInEnded =>
+      'Quá thời gian, bị từ chối, hoặc nhập sai mã quá nhiều lần. Bắt đầu lại để nhận trang đăng nhập mới.';
+
+  @override
+  String get mcpServerSignInStartAgain => 'Bắt đầu lại';
+
+  @override
+  String mcpServerSignedIn(String name) {
+    return 'Đã đăng nhập vào $name.';
+  }
 
   @override
   String get mcpRemoveServer => 'Xóa máy chủ';
@@ -18918,10 +18954,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get mcpServerEditorRemoteOwner =>
       'Lưu sẽ phê duyệt để máy chủ truy cập cả mạng riêng của host.';
-
-  @override
-  String get mcpServerEditorPersonal =>
-      'Chỉ dùng trong các lượt chạy do bạn khởi động hoặc bạn chịu trách nhiệm.';
 
   @override
   String get mcpServerRefusedInvalid =>

@@ -1,12 +1,12 @@
 import 'dart:async';
 
+import 'package:cc_domain/features/mcp/domain/ports/workspace_mcp_server_control.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/mcp/providers/workspace_mcp_servers_provider.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/integrations/mcp_servers/mcp_server_editor_dialog.dart';
-import 'package:control_center/features/settings/presentation/widgets/sections/integrations/mcp_servers/mcp_server_form.dart';
-import 'package:control_center/features/settings/presentation/widgets/sections/integrations/mcp_servers/workspace_mcp_server_row.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/integrations/mcp_servers/mcp_server_row.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -16,26 +16,30 @@ import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Settings → MCP servers: the MCP servers configured for the current
-/// workspace, which every agent run in it gets (Claude Code and the built-in
-/// harness alike, bridged through Control Center).
+/// Settings → MCP servers: the MCP servers of one [scope] in the current
+/// workspace, bridged by Control Center into Claude Code and the built-in
+/// harness alike.
 ///
-/// Workspace admins add, change and remove them over the `mcpServers.*` ops.
-/// A server that runs a command on the host does not start until the server
-/// owner approves it, and a remote one reaches only public addresses until
-/// then; the owner approves from the row. Anyone else is told the list is the
-/// admins', rather than shown a refusal.
-class WorkspaceMcpServersSection extends ConsumerWidget {
-  /// Creates a [WorkspaceMcpServersSection].
-  const WorkspaceMcpServersSection({super.key});
+/// [McpServerScope.workspace]: the workspace's, which every run in it gets.
+/// Admins add, change and remove them; anyone else is told the list is the
+/// admins', rather than shown a refusal. [McpServerScope.personal]: the
+/// reader's own, which only the runs they start in this workspace get; every
+/// member manages theirs.
+class McpServersSection extends ConsumerWidget {
+  /// Creates the section for [scope].
+  const McpServersSection({super.key, required this.scope});
+
+  /// Whose servers it lists.
+  final McpServerScope scope;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final words = _McpServersWords.of(l10n, scope);
     // The demo has no `mcpServers.*` ops: listing could only fail.
     if (ref.watch(isDemoServerProvider)) {
       return SectionCard(
-        label: l10n.mcpWorkspaceServers,
+        label: words.title,
         child: const Padding(
           padding: EdgeInsets.symmetric(vertical: AppSpacing.xs),
           child: DemoUnavailable(capability: DemoCapability.mcp, compact: true),
@@ -46,26 +50,27 @@ class WorkspaceMcpServersSection extends ConsumerWidget {
     if (workspaceId == null) {
       return const SizedBox.shrink();
     }
-    final admin = ref.watch(myWorkspaceRoleProvider(workspaceId))?.isAdmin;
-    final description = Text(l10n.mcpWorkspaceServersDescription);
-    if (admin != true) {
+    final description = Text(words.description);
+    if (scope == McpServerScope.workspace &&
+        ref.watch(myWorkspaceRoleProvider(workspaceId))?.isAdmin != true) {
       return SectionCard(
-        label: l10n.mcpWorkspaceServers,
+        label: words.title,
         subtitle: description,
         child: _Note(text: l10n.mcpWorkspaceServersAdminsOnly),
       );
     }
-    final serversAsync = ref.watch(workspaceMcpServersProvider(workspaceId));
+    final key = (workspaceId: workspaceId, scope: scope);
+    final serversAsync = ref.watch(workspaceMcpServersProvider(key));
     final available = serversAsync.value != null;
     return SectionCard(
-      label: l10n.mcpWorkspaceServers,
+      label: words.title,
       subtitle: description,
       trailing: available
           ? CcButton(
               variant: CcButtonVariant.secondary,
               size: CcButtonSize.sm,
               icon: AppIcons.plus,
-              onPressed: () => unawaited(_add(context, ref, workspaceId)),
+              onPressed: () => unawaited(_add(context, ref, key)),
               child: Text(l10n.mcpAddServer),
             )
           : null,
@@ -85,10 +90,7 @@ class WorkspaceMcpServersSection extends ConsumerWidget {
         ),
         data: (servers) {
           if (servers == null) {
-            return _Note(
-              text: l10n.mcpWorkspaceServersUnavailable,
-              inset: true,
-            );
+            return _Note(text: words.unavailable, inset: true);
           }
           if (servers.isEmpty) {
             return Padding(
@@ -100,8 +102,8 @@ class WorkspaceMcpServersSection extends ConsumerWidget {
               ),
               child: CcEmptyState(
                 icon: AppIcons.puzzle,
-                message: l10n.mcpWorkspaceServersEmpty,
-                description: l10n.mcpWorkspaceServersEmptyDescription,
+                message: words.empty,
+                description: words.emptyDescription,
               ),
             );
           }
@@ -110,9 +112,10 @@ class WorkspaceMcpServersSection extends ConsumerWidget {
             children: [
               for (final entry in servers) ...[
                 const CcDivider(),
-                WorkspaceMcpServerRow(
+                McpServerRow(
                   key: ValueKey(entry.definition.id),
                   workspaceId: workspaceId,
+                  scope: scope,
                   entry: entry,
                 ),
               ],
@@ -126,18 +129,53 @@ class WorkspaceMcpServersSection extends ConsumerWidget {
   Future<void> _add(
     BuildContext context,
     WidgetRef ref,
-    String workspaceId,
+    McpServersKey key,
   ) async {
     final control = ref.read(workspaceMcpServerControlProvider);
     final saved = await showMcpServerEditor(
       context,
-      scope: McpServerEditorScope.workspace,
-      onSave: (draft) => control.save(workspaceId, draft),
+      scope: key.scope,
+      onSave: (draft) => control.save(key.workspaceId, key.scope, draft),
     );
     if (saved) {
-      ref.invalidate(workspaceMcpServersProvider(workspaceId));
+      ref.invalidate(workspaceMcpServersProvider(key));
     }
   }
+}
+
+/// The section's copy for one scope.
+class _McpServersWords {
+  const _McpServersWords({
+    required this.title,
+    required this.description,
+    required this.unavailable,
+    required this.empty,
+    required this.emptyDescription,
+  });
+
+  factory _McpServersWords.of(AppLocalizations l10n, McpServerScope scope) =>
+      switch (scope) {
+        McpServerScope.workspace => _McpServersWords(
+          title: l10n.mcpWorkspaceServers,
+          description: l10n.mcpWorkspaceServersDescription,
+          unavailable: l10n.mcpWorkspaceServersUnavailable,
+          empty: l10n.mcpWorkspaceServersEmpty,
+          emptyDescription: l10n.mcpWorkspaceServersEmptyDescription,
+        ),
+        McpServerScope.personal => _McpServersWords(
+          title: l10n.mcpPersonalServers,
+          description: l10n.mcpPersonalServersDescription,
+          unavailable: l10n.mcpPersonalServersUnavailable,
+          empty: l10n.mcpPersonalServersEmpty,
+          emptyDescription: l10n.mcpPersonalServersEmptyDescription,
+        ),
+      };
+
+  final String title;
+  final String description;
+  final String unavailable;
+  final String empty;
+  final String emptyDescription;
 }
 
 class _Note extends StatelessWidget {

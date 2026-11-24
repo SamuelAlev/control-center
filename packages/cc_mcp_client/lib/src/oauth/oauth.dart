@@ -1,9 +1,8 @@
-/// The MCP OAuth 2.1 subsystem (PRD 01 phase 1.2): PKCE, dynamic client
-/// registration, metadata discovery, a loopback callback server and per-server
-/// token persistence + silent refresh.
+/// The MCP OAuth 2.1 subsystem: PKCE, dynamic client registration, metadata
+/// discovery and per-server token persistence + silent refresh. The browser
+/// redirect is received by the host, not here.
 library;
 
-export 'oauth_callback_server.dart';
 export 'oauth_provider.dart';
 export 'oauth_token_store.dart';
 export 'pkce.dart';

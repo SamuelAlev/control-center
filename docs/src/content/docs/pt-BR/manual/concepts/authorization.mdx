@@ -2,7 +2,7 @@
 title: Autorização — quem pode fazer o quê, e como você comprova isso
 description: O catálogo de permissões por trás dos papéis do Control Center, o registro de auditoria à prova de adulteração em que toda decisão de autorização cai, e os controles de toda a instalação que um operador pode fixar.
 slug: pt-BR/manual/conceitos/autorizacao
-sourceHash: 9b6ab5ffb27be5a061ebfd9d020992ec83236ad7
+sourceHash: 311689da6bce052ef25bccc1e0f3dedd29f0d102
 ---
 
 O Control Center responde a duas perguntas de autorização, e elas são
@@ -152,7 +152,7 @@ Concretamente, só o proprietário do servidor pode:
 - Ver e encerrar todo processo de agente em execução no servidor. Todos os demais
   veem e encerram somente execuções ao vivo de agentes nos espaços de trabalho de
   que participam.
-- Fazer os agentes usarem servidores MCP pessoais: os configurados nas ferramentas do próprio usuário do servidor (Claude, Codex, Cursor e os demais) e os que o proprietário adiciona. Só as execuções pelas quais o proprietário é responsável os recebem; veja [Servidores pessoais](/pt-BR/manual/guias/servidor-mcp/#servidores-pessoais).
+- Adicionar um servidor MCP próprio que execute um comando na máquina do servidor. Os servidores próprios dos demais membros são acessados por URL (veja [Seus próprios servidores](/pt-BR/manual/guias/servidor-mcp/#seus-próprios-servidores)).
 - Aprovar um servidor MCP do espaço de trabalho que executa um comando na máquina do servidor ou que alcança a rede privada dele (veja [Servidores do espaço de trabalho](/pt-BR/manual/guias/servidor-mcp/#servidores-do-espaço-de-trabalho)).
 - Confirmar o endereço de e-mail de uma pessoa, para que o single sign-on consiga
   correspondê-lo (veja

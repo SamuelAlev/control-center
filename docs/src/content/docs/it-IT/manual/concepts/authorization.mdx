@@ -2,7 +2,7 @@
 title: Autorizzazione — chi può fare cosa e come lo dimostri
 description: Il catalogo dei permessi alla base dei ruoli di Control Center, il registro di controllo a prova di manomissione in cui finisce ogni decisione di autorizzazione e i controlli a livello di installazione che un operatore può fissare.
 slug: it-IT/manuale/concetti/autorizzazione
-sourceHash: 9b6ab5ffb27be5a061ebfd9d020992ec83236ad7
+sourceHash: 311689da6bce052ef25bccc1e0f3dedd29f0d102
 ---
 
 Control Center risponde a due domande di autorizzazione, e sono davvero
@@ -145,7 +145,7 @@ proprietario del server può:
   server quando si aggiunge un repository (vedi [Aggiungi repository](/it-IT/manuale/guide/aggiungi-repo/)).
 - Vedere e terminare ogni processo di agente in esecuzione sul server. Tutti gli altri vedono e
   terminano solo le esecuzioni dal vivo degli agenti negli spazi di lavoro di cui fanno parte.
-- Fai usare agli agenti i server MCP personali: quelli configurati negli strumenti propri dell'utente del server (Claude, Codex, Cursor e gli altri) e quelli che aggiunge il proprietario. Ne beneficiano solo le esecuzioni di cui il proprietario è responsabile; vedi [Server personali](/it-IT/manuale/guide/server-mcp/#server-personali).
+- Aggiungere un proprio server MCP che esegue un comando sulla macchina del server. I server propri di tutti gli altri vengono raggiunti tramite URL (vedi [Server propri](/it-IT/manuale/guide/server-mcp/#server-propri)).
 - Approva un server MCP dello spazio di lavoro che esegue un comando sulla macchina del server o che raggiunge la sua rete privata (vedi [Server dello spazio di lavoro](/it-IT/manuale/guide/server-mcp/#server-dello-spazio-di-lavoro)).
 - Confermare l'indirizzo e-mail di una persona, perché il single sign-on possa associarlo (vedi
   [Collega un provider OpenID Connect](/it-IT/manuale/guide/sso-oidc/#come-gli-accessi-associano-gli-account-esistenti)).

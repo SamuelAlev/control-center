@@ -153,7 +153,7 @@ extension _DispatchSessionSubagent on DispatchSession {
           ? Mode.chat
           : Mode.plan,
       env: env,
-      personalMcp: await _personalMcpAllowed(),
+      personalMcpUserId: await _personalMcpUser(),
       scriptOrigins: childOrigins,
       replSlot: scriptExecutions != null,
     );

@@ -417,6 +417,9 @@ Future<int> _stripAuthority(
       'UPDATE mcp_servers SET host_approved_by = NULL '
       'WHERE host_approved_by IS NOT NULL',
     );
+    // A member's own server acts with that member's sign-in, which did not
+    // travel with the file; whoever they are here adds it again.
+    await db.customStatement("DELETE FROM mcp_servers WHERE user_id <> ''");
     // A deny only ever narrows what runs, so it stays. Everything else is
     // a rule somebody could have added to let something through.
     for (final row in await rows(

@@ -114,6 +114,7 @@ void main() {
     McpServerDefinition apply(McpServerDraft draft) => draft.toDefinition(
       id: 'id-1',
       workspaceId: 'ws-1',
+      userId: null,
       previous: previous,
       createdBy: 'u',
       hostApprovedBy: null,

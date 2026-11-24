@@ -1700,10 +1700,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get mcpServers => 'MCP-servers';
 
   @override
-  String get mcpServersSettingsDescription =>
-      'Ingebouwde MCP-server en externe MCP-servers.';
-
-  @override
   String get remoteControlAndDevices => 'Afstandsbediening en apparaten';
 
   @override
@@ -8785,13 +8781,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get ideFileBinary => 'Binair bestand';
 
   @override
-  String get mcpExternalServers => 'Externe MCP-servers';
-
-  @override
-  String get mcpExternalServersDescription =>
-      'Verbind met externe MCP-servers (GitHub, Sentry, Postgres, browserautomatisering). Servers die je voor Claude, Cursor, VS Code en andere tools hebt geconfigureerd, worden automatisch gedetecteerd.';
-
-  @override
   String get mcpApprovalMode => 'Toolgoedkeuring';
 
   @override
@@ -8808,17 +8797,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get mcpApprovalYolo => 'Alles goedkeuren';
 
   @override
-  String get mcpNoExternalServers => 'Geen externe MCP-servers gevonden.';
-
-  @override
-  String get mcpAuthorize => 'Autoriseren';
-
-  @override
   String get mcpReconnect => 'Opnieuw verbinden';
-
-  @override
-  String get mcpExternalConnectionsNote =>
-      'Externe MCP-servers draaien op de agentserver (gedeeld door desktop en web). OAuth-servers autoriseren kan alleen op de desktop.';
 
   @override
   String get mcpStatusConnected => 'Verbonden';
@@ -18451,10 +18430,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Bevestig dat deze server ze mag gebruiken. Elke repository wordt opnieuw gecontroleerd met jouw toegang.';
 
   @override
-  String get mcpExternalServersOwnerRunsOnly =>
-      'Servers die in de tool-instellingen van deze machine staan, zijn alleen beschikbaar in runs die je start of waarvoor je verantwoordelijk bent. Runs van anderen zien ze nooit, en ze worden niet aangeboden via het MCP-eindpunt van Control Center.';
-
-  @override
   String repoCodeNeedsSignIn(String provider) {
     return 'Log in bij $provider om de code van deze repository te zien.';
   }
@@ -18844,9 +18819,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get mcpAddServer => 'Server toevoegen';
 
   @override
-  String get mcpHandAddedSource => 'Toegevoegd in Control Center';
-
-  @override
   String get mcpStatusAwaitingApproval => 'Wacht op goedkeuring';
 
   @override
@@ -18870,6 +18842,71 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get mcpApprovalRemoteMember =>
       'Deze server kan alleen publieke adressen bereiken totdat de serverbeheerder hem goedkeurt.';
+
+  @override
+  String get mcpServersSettingsSubtitle =>
+      'De ingebouwde MCP-server en de MCP-servers waarvan de tools agentruns in deze workspace krijgen.';
+
+  @override
+  String get mcpPersonalServers => 'Jouw MCP-servers';
+
+  @override
+  String get mcpPersonalServersDescription =>
+      'Alleen jij ziet deze servers, en alleen de agentruns die je in deze workspace start krijgen hun tools.';
+
+  @override
+  String get mcpPersonalServersUnavailable =>
+      'Jouw eigen MCP-servers zijn niet beschikbaar op de verbonden server.';
+
+  @override
+  String get mcpPersonalServersEmpty => 'Nog geen eigen MCP-servers';
+
+  @override
+  String get mcpPersonalServersEmptyDescription =>
+      'Voeg een server toe zodat de runs die je in deze workspace start zijn tools krijgen.';
+
+  @override
+  String get mcpServerEditorPersonalOwner =>
+      'Alleen de runs die je in deze workspace start gebruiken hem. Als serverbeheerder keur je hem goed door hem op te slaan.';
+
+  @override
+  String get mcpServerEditorPersonalMember =>
+      'Alleen de runs die je in deze workspace start gebruiken hem. Hij bereikt alleen publieke adressen.';
+
+  @override
+  String get mcpServerSignInNeeded =>
+      'Log in om de tools van deze server te gebruiken.';
+
+  @override
+  String get mcpServerSignIn => 'Inloggen';
+
+  @override
+  String mcpServerSignInTitle(String name) {
+    return 'Inloggen bij $name';
+  }
+
+  @override
+  String mcpServerSignInWrongCode(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Nog $count pogingen.',
+      one: 'Nog 1 poging.',
+    );
+    return 'Dat is niet de code die je browser toonde. $_temp0';
+  }
+
+  @override
+  String get mcpServerSignInEnded =>
+      'Het duurde te lang, het is geweigerd, of er zijn te veel verkeerde codes ingevoerd. Begin opnieuw om een nieuwe inlogpagina te krijgen.';
+
+  @override
+  String get mcpServerSignInStartAgain => 'Opnieuw beginnen';
+
+  @override
+  String mcpServerSignedIn(String name) {
+    return 'Ingelogd bij $name.';
+  }
 
   @override
   String get mcpRemoveServer => 'Server verwijderen';
@@ -19007,10 +19044,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get mcpServerEditorRemoteOwner =>
       'Opslaan keurt hem goed om ook het privénetwerk van de host te bereiken.';
-
-  @override
-  String get mcpServerEditorPersonal =>
-      'Alleen gebruikt in runs die je zelf start of waarvoor je verantwoordelijk bent.';
 
   @override
   String get mcpServerRefusedInvalid =>

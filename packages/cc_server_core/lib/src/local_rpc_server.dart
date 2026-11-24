@@ -40,6 +40,7 @@ import 'package:cc_server_core/src/identity/scim_service.dart';
 import 'package:cc_server_core/src/identity/server_identity_store.dart';
 import 'package:cc_server_core/src/identity/sso_settings_service.dart';
 import 'package:cc_server_core/src/image_resize.dart';
+import 'package:cc_server_core/src/mcp_servers/mcp_server_authorizations.dart';
 import 'package:cc_server_core/src/media_cache.dart';
 import 'package:cc_server_core/src/media_proxy_guard.dart';
 import 'package:cc_server_core/src/paired_device_secrets_port.dart';
@@ -322,6 +323,7 @@ class LocalRpcServer implements McpHostServer {
     this.mediaConnectionFactory = pinnedPermittedConnection,
     this.oidc,
     this.providerOAuth,
+    this.mcpOAuth,
     this.githubManifest,
     this.connectHost,
     this.saml,
@@ -574,6 +576,10 @@ class LocalRpcServer implements McpHostServer {
   /// browser round-trip that comes back to this server when a lane runs on
   /// the operator's own app. Null leaves the route absent.
   final ProviderSignInService? providerOAuth;
+
+  /// Optional browser sign-in to configured MCP servers
+  /// (`GET /oauth/mcp/callback`). Null leaves the route absent.
+  final McpServerAuthorizations? mcpOAuth;
 
   /// Optional one-click own GitHub App registration
   /// (`/oauth/github/manifest/*`). Null leaves the routes absent.

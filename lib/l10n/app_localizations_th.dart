@@ -1677,10 +1677,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get mcpServers => 'เซิร์ฟเวอร์ MCP';
 
   @override
-  String get mcpServersSettingsDescription =>
-      'เซิร์ฟเวอร์ MCP ในตัวและเซิร์ฟเวอร์ MCP ภายนอก';
-
-  @override
   String get remoteControlAndDevices => 'รีโมตคอนโทรลและอุปกรณ์';
 
   @override
@@ -8671,13 +8667,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get ideFileBinary => 'ไฟล์ไบนารี';
 
   @override
-  String get mcpExternalServers => 'เซิร์ฟเวอร์ MCP ภายนอก';
-
-  @override
-  String get mcpExternalServersDescription =>
-      'เชื่อมต่อเซิร์ฟเวอร์ MCP ภายนอก (GitHub, Sentry, Postgres, อัตโนมัติเบราว์เซอร์) เซิร์ฟเวอร์ที่คุณตั้งค่าสำหรับ Claude, Cursor, VS Code และเครื่องมืออื่นจะถูกค้นพบอัตโนมัติ';
-
-  @override
   String get mcpApprovalMode => 'การอนุมัติเครื่องมือ';
 
   @override
@@ -8694,17 +8683,7 @@ class AppLocalizationsTh extends AppLocalizations {
   String get mcpApprovalYolo => 'อนุมัติทั้งหมดอัตโนมัติ';
 
   @override
-  String get mcpNoExternalServers => 'ไม่พบเซิร์ฟเวอร์ MCP ภายนอก';
-
-  @override
-  String get mcpAuthorize => 'อนุญาต';
-
-  @override
   String get mcpReconnect => 'เชื่อมต่ออีกครั้ง';
-
-  @override
-  String get mcpExternalConnectionsNote =>
-      'เซิร์ฟเวอร์ MCP ภายนอกรันบนเซิร์ฟเวอร์เอเจนต์ (แชร์โดยเดสก์ท็อปและเว็บ) การอนุญาตเซิร์ฟเวอร์ OAuth มีเฉพาะบนเดสก์ท็อป';
 
   @override
   String get mcpStatusConnected => 'เชื่อมต่อแล้ว';
@@ -18221,10 +18200,6 @@ class AppLocalizationsTh extends AppLocalizations {
       'ยืนยันว่าเซิร์ฟเวอร์นี้อนุญาตให้ใช้โฟลเดอร์เหล่านี้ แต่ละรีโพสิทอรีจะถูกตรวจสอบอีกครั้งด้วยสิทธิ์ของคุณ';
 
   @override
-  String get mcpExternalServersOwnerRunsOnly =>
-      'เซิร์ฟเวอร์ที่พบในการตั้งค่าเครื่องมือของเครื่องนี้ใช้ได้เฉพาะในการรันที่คุณเริ่มหรือรับผิดชอบ การรันของผู้อื่นจะไม่เห็นเซิร์ฟเวอร์เหล่านี้ และจะไม่ถูกเสนอผ่านเอ็นด์พอยต์ MCP ของ Control Center';
-
-  @override
   String repoCodeNeedsSignIn(String provider) {
     return 'ลงชื่อเข้าใช้ $provider เพื่อดูโค้ดของรีโพสิทอรีนี้';
   }
@@ -18612,9 +18587,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get mcpAddServer => 'เพิ่มเซิร์ฟเวอร์';
 
   @override
-  String get mcpHandAddedSource => 'เพิ่มใน Control Center';
-
-  @override
   String get mcpStatusAwaitingApproval => 'รอการอนุมัติ';
 
   @override
@@ -18638,6 +18610,70 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get mcpApprovalRemoteMember =>
       'เซิร์ฟเวอร์นี้จะเข้าถึงได้เฉพาะที่อยู่สาธารณะจนกว่าเจ้าของเซิร์ฟเวอร์จะอนุมัติ';
+
+  @override
+  String get mcpServersSettingsSubtitle =>
+      'เซิร์ฟเวอร์ MCP ในตัว และเซิร์ฟเวอร์ MCP ที่เครื่องมือของมันจะถูกส่งให้การรันเอเจนต์ในเวิร์กสเปซนี้';
+
+  @override
+  String get mcpPersonalServers => 'เซิร์ฟเวอร์ MCP ของคุณ';
+
+  @override
+  String get mcpPersonalServersDescription =>
+      'มีเพียงคุณที่เห็นเซิร์ฟเวอร์เหล่านี้ และมีเพียงการรันเอเจนต์ที่คุณเริ่มในเวิร์กสเปซนี้เท่านั้นที่จะได้รับเครื่องมือของเซิร์ฟเวอร์เหล่านี้';
+
+  @override
+  String get mcpPersonalServersUnavailable =>
+      'เซิร์ฟเวอร์ MCP ของคุณเองไม่พร้อมใช้งานบนเซิร์ฟเวอร์ที่เชื่อมต่ออยู่';
+
+  @override
+  String get mcpPersonalServersEmpty => 'ยังไม่มีเซิร์ฟเวอร์ MCP ของคุณเอง';
+
+  @override
+  String get mcpPersonalServersEmptyDescription =>
+      'เพิ่มเซิร์ฟเวอร์เพื่อให้การรันเอเจนต์ที่คุณเริ่มในเวิร์กสเปซนี้ได้เครื่องมือของเซิร์ฟเวอร์นั้น';
+
+  @override
+  String get mcpServerEditorPersonalOwner =>
+      'มีเพียงการรันเอเจนต์ที่คุณเริ่มในเวิร์กสเปซนี้เท่านั้นที่จะใช้เซิร์ฟเวอร์นี้ ในฐานะเจ้าของเซิร์ฟเวอร์ การบันทึกจะอนุมัติเซิร์ฟเวอร์นี้';
+
+  @override
+  String get mcpServerEditorPersonalMember =>
+      'มีเพียงการรันเอเจนต์ที่คุณเริ่มในเวิร์กสเปซนี้เท่านั้นที่จะใช้เซิร์ฟเวอร์นี้ และเซิร์ฟเวอร์นี้เข้าถึงได้เฉพาะที่อยู่สาธารณะ';
+
+  @override
+  String get mcpServerSignInNeeded =>
+      'ลงชื่อเข้าใช้เพื่อใช้เครื่องมือของเซิร์ฟเวอร์นี้';
+
+  @override
+  String get mcpServerSignIn => 'ลงชื่อเข้าใช้';
+
+  @override
+  String mcpServerSignInTitle(String name) {
+    return 'ลงชื่อเข้าใช้ $name';
+  }
+
+  @override
+  String mcpServerSignInWrongCode(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'เหลืออีก $count ครั้ง',
+    );
+    return 'นั่นไม่ใช่รหัสที่เบราว์เซอร์แสดง $_temp0';
+  }
+
+  @override
+  String get mcpServerSignInEnded =>
+      'ใช้เวลานานเกินไป ถูกปฏิเสธ หรือกรอกรหัสผิดเกินกำหนด เริ่มใหม่เพื่อรับหน้าลงชื่อเข้าใช้ใหม่';
+
+  @override
+  String get mcpServerSignInStartAgain => 'เริ่มใหม่';
+
+  @override
+  String mcpServerSignedIn(String name) {
+    return 'ลงชื่อเข้าใช้ $name แล้ว';
+  }
 
   @override
   String get mcpRemoveServer => 'ลบเซิร์ฟเวอร์';
@@ -18774,10 +18810,6 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get mcpServerEditorRemoteOwner =>
       'การบันทึกจะอนุมัติให้เซิร์ฟเวอร์เข้าถึงเครือข่ายส่วนตัวของโฮสต์ได้ด้วย';
-
-  @override
-  String get mcpServerEditorPersonal =>
-      'ใช้เฉพาะในการรันที่คุณเริ่มเองหรือรับผิดชอบอยู่';
 
   @override
   String get mcpServerRefusedInvalid =>

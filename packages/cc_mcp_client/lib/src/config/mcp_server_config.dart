@@ -73,10 +73,9 @@ enum McpAuthKind {
 
 /// The single canonical configuration for an external MCP server.
 ///
-/// Every multi-format discovery source (Claude, Codex, Cursor, Gemini, VS Code,
-/// Windsurf, OpenCode, a standalone `.mcp.json`) normalises down to this one
-/// shape. It is workspace-agnostic on its own — the `ConnectionManager` is
-/// always handed a workspace-scoped set, never a global one.
+/// The host builds one from each server someone configured. It is
+/// workspace-agnostic on its own — the `ConnectionManager` is always handed
+/// one audience's set, never a global one.
 class McpServerConfig {
   /// Creates an [McpServerConfig].
   const McpServerConfig({
@@ -162,36 +161,6 @@ class McpServerConfig {
     source: source,
   );
 
-  /// Reconstructs a config from a canonical JSON map (the shape [toJson]
-  /// produces and the discovery normalisers emit).
-  factory McpServerConfig.fromJson(String name, Map<String, dynamic> json) {
-    final transport = McpTransportKind.fromWire(json['type'] as String?);
-    final timeoutMs = (json['timeout'] as num?)?.toInt();
-    return McpServerConfig(
-      name: name,
-      transport: transport,
-      command: json['command'] as String?,
-      args:
-          (json['args'] as List?)?.map((e) => e.toString()).toList() ??
-          const [],
-      env: _stringMap(json['env']),
-      cwd: json['cwd'] as String?,
-      url: json['url'] as String?,
-      headers: _stringMap(json['headers']),
-      enabled: json['enabled'] as bool? ?? true,
-      timeout: timeoutMs != null && timeoutMs > 0
-          ? Duration(milliseconds: timeoutMs)
-          : const Duration(seconds: 30),
-      auth: McpAuthKind.fromWire(
-        (json['auth'] as Map?)?['type'] as String? ?? json['auth'] as String?,
-      ),
-      oauthScopes:
-          (json['scopes'] as List?)?.map((e) => e.toString()).toList() ??
-          const [],
-      source: json['source'] as String?,
-    );
-  }
-
   /// Stable, user-facing server name. Tools are namespaced under it.
   final String name;
 
@@ -231,9 +200,8 @@ class McpServerConfig {
   /// OAuth scopes requested during authorization (oauth only).
   final List<String> oauthScopes;
 
-  /// Where this config was discovered (e.g. `claude:~/.claude.json`,
-  /// `workspace:.mcp.json`). Null for hand-built configs. Surfaced in the UI
-  /// so the user can tell why a server appeared.
+  /// Whose server this is, as the host labels it (`workspace`, `personal`).
+  /// Null when the host says nothing.
   final String? source;
 
   /// Whether an http/sse server may be reached at public addresses only:
@@ -318,15 +286,6 @@ class McpServerConfig {
     if (oauthScopes.isNotEmpty) 'scopes': oauthScopes,
     if (source != null) 'source': source,
   };
-
-  static Map<String, String> _stringMap(Object? raw) {
-    if (raw is! Map) {
-      return const {};
-    }
-    return {
-      for (final entry in raw.entries) entry.key.toString(): '${entry.value}',
-    };
-  }
 
   @override
   bool operator ==(Object other) =>

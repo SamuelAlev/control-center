@@ -1,23 +1,14 @@
 import 'dart:io';
 
 import 'package:cc_domain/core/domain/ports/secret_store_port.dart';
-import 'package:cc_domain/features/mcp/domain/entities/mcp_server_definition.dart';
-import 'package:cc_domain/features/mcp/domain/ports/mcp_client_control.dart';
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
 import 'package:cc_domain/features/mcp/domain/value_objects/capability_tier.dart';
-import 'package:cc_domain/features/mcp/domain/value_objects/mcp_server_draft.dart';
 import 'package:cc_mcp/cc_mcp.dart';
-import 'package:cc_mcp_client/cc_mcp_client.dart';
-// Import the control directly rather than via the cc_server_core barrel: the
-// barrel also exports `server_mcp_registry.dart`, which an UNRELATED in-flight
-// refactor (ProposeFactTool → RecordMemoryFactUseCase) currently leaves stale
-// and non-compiling. This control does not depend on that file.
-// ignore: implementation_imports
-import 'package:cc_server_core/src/mcp_servers/file_personal_mcp_server_repository.dart';
 // ignore: implementation_imports
 import 'package:cc_server_core/src/mcp_servers/mcp_server_secrets.dart';
 // ignore: implementation_imports
 import 'package:cc_server_core/src/server_mcp_client_control.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 void main() {
@@ -29,28 +20,18 @@ void main() {
     });
     tearDown(() => tmp.deleteSync(recursive: true));
 
-    late InMemorySecretStore secrets;
-
     ({ServerMcpClientControl control, McpToolDispatcher dispatcher}) build() {
-      secrets = InMemorySecretStore();
-      final registry = McpToolRegistry(const []);
-      final service = McpClientService(publishTools: registry.setPersonalTools);
-      final dispatcher = McpToolDispatcher(registry: registry);
+      final dispatcher = McpToolDispatcher(registry: McpToolRegistry(const []));
       final control = ServerMcpClientControl(
-        service: service,
         dispatcher: dispatcher,
         dataDir: tmp.path,
-        repository: FilePersonalMcpServerRepository(dataDir: tmp.path),
-        secrets: McpServerSecrets(secrets),
-        homeDir: null,
       );
       return (control: control, dispatcher: dispatcher);
     }
 
-    test('defaults to always-ask and reports no servers', () async {
+    test('defaults to always-ask', () async {
       final b = build();
       expect(await b.control.approvalMode(), ApprovalMode.alwaysAsk);
-      expect(await b.control.servers(), isEmpty);
       expect(b.dispatcher.approvalMode, ApprovalMode.alwaysAsk);
     });
 
@@ -68,89 +49,32 @@ void main() {
       expect(b2.dispatcher.approvalMode, ApprovalMode.yolo);
     });
 
-    test('authorize throws for an unknown server', () {
+    test('what the owner\'s personal servers of earlier releases kept is '
+        'deleted, and the approval posture stays', () async {
       final b = build();
-      expect(() => b.control.authorize('ghost'), throwsA(isA<StateError>()));
-    });
+      await b.control.setApprovalMode(ApprovalMode.write);
+      for (final name in ServerMcpClientControl.legacyPersonalFiles) {
+        File(p.join(tmp.path, name)).writeAsStringSync('{}');
+      }
+      final secrets = InMemorySecretStore()
+        ..values['mcp_server:personal:srv-1:env:TOKEN'] = 'old'
+        ..values['mcp_server:ws:ws-1:srv-2:env:TOKEN'] = 'kept'
+        ..values['mcp_oauth:wsu:ws-1:user-1:https://mcp.example.com'] = '{}';
 
-    test('a hand-added server is listed with its definition, values kept '
-        'out of it, and goes with its values', () async {
-      final b = build();
-      final saved = await b.control.saveServer(
-        McpServerDraft(
-          name: 'linear',
-          transport: McpServerTransport.http,
-          url: 'https://mcp.example.com/mcp',
-          enabled: false,
-          headerSet: const {'Authorization': 'Bearer secret'},
-        ),
-      );
-      expect(saved.headerNames, ['Authorization']);
-      expect(saved.toJson().toString(), isNot(contains('secret')));
-      expect(secrets.values.values, contains('Bearer secret'));
+      await b.control.deleteLegacyPersonalFiles();
+      await McpServerSecrets(secrets).deleteLegacyPersonal();
+      // A second boot finds nothing to delete.
+      await b.control.deleteLegacyPersonalFiles();
 
-      final listed = await b.control.servers();
-      expect(listed, hasLength(1));
-      expect(listed.single.source, McpExternalServerInfo.handAddedSource);
-      expect(listed.single.definition, saved);
-      expect(listed.single.lifecycle, 'disabled');
-
-      // An edit that names no header keeps the stored value.
-      final renamed = await b.control.saveServer(
-        McpServerDraft(
-          id: saved.id,
-          name: 'linear2',
-          transport: McpServerTransport.http,
-          url: 'https://mcp.example.com/mcp',
-          enabled: false,
-        ),
+      expect(
+        [for (final f in tmp.listSync()) p.basename(f.path)],
+        ['mcp_client_config.json'],
       );
-      expect(renamed.headerNames, ['Authorization']);
-      expect(secrets.values.values, contains('Bearer secret'));
-
-      await b.control.deleteServer(saved.id);
-      expect(await b.control.servers(), isEmpty);
-      expect(secrets.values, isEmpty);
-    });
-
-    test('a name clash among hand-added servers is refused', () async {
-      final b = build();
-      McpServerDraft draft() => McpServerDraft(
-        name: 'dup',
-        transport: McpServerTransport.stdio,
-        command: 'true',
-        enabled: false,
-      );
-      await b.control.saveServer(draft());
-      await expectLater(
-        b.control.saveServer(draft()),
-        throwsA(
-          isA<McpServerDefinitionException>().having(
-            (e) => e.code,
-            'code',
-            'mcp_server.name_taken',
-          ),
-        ),
-      );
-    });
-
-    test('editing or deleting an unknown server is not found', () async {
-      final b = build();
-      await expectLater(
-        b.control.deleteServer('ghost'),
-        throwsA(isA<McpServerNotFoundException>()),
-      );
-      await expectLater(
-        b.control.saveServer(
-          McpServerDraft(
-            id: 'ghost',
-            name: 'x',
-            transport: McpServerTransport.stdio,
-            command: 'true',
-          ),
-        ),
-        throwsA(isA<McpServerNotFoundException>()),
-      );
+      expect(secrets.values.keys, {
+        'mcp_server:ws:ws-1:srv-2:env:TOKEN',
+        'mcp_oauth:wsu:ws-1:user-1:https://mcp.example.com',
+      });
+      expect(await build().control.approvalMode(), ApprovalMode.write);
     });
   });
 }

@@ -2,7 +2,7 @@
 title: MCP-verktøy
 description: Fullstendig katalog over MCP-verktøyene cc_server registrerer, gruppert etter familie.
 slug: nb-NO/handbok/referanse/mcp-verktoy
-sourceHash: 0ef9efd386b57c3a254e7f637b0436d9baff1719
+sourceHash: 6fc8551b1a20ec2343a90a911aa9026a989677f6
 ---
 
 `cc_server` er vert for ett MCP-verktøyregister (JSON-RPC 2.0), betjent på
@@ -10,7 +10,7 @@ serverens hovedport (standard `9030`) på `POST /mcp` og `GET /sse`, med
 protokollversjon `2024-11-05`. Alle klienter når det samme registeret:
 skrivebordsappen, nettappen, eksterne MCP-klienter og den innebygde
 agentkjøretiden. Eksterne MCP-servere kan broes inn i det samme registeret som
-Eksterne MCP-servere kobles inn i samme register i egne lag: ett per arbeidsområde for MCP-serverne arbeidsområdets administratorer konfigurerer, og ett for eierens personlige MCP-servere. Dette endepunktet lister, kaller og søker i dem bare for en agentkjøring: MCP-serverne i eget arbeidsområde, pluss de personlige når eieren av serveren står ansvarlig for kjøringen. MCP-tokenet og parede enheter ser dem aldri (se [MCP-servere som agentene bruker](/nb-NO/handbok/slik-gjor-du/mcp-server/#mcp-servere-som-agentene-bruker)).
+Eksterne MCP-servere kobles inn i samme register i egne lag: ett per arbeidsområde for MCP-serverne arbeidsområdets administratorer konfigurerer, og ett for hvert medlems egne MCP-servere i det. Dette endepunktet lister, kaller og søker i dem bare for en agentkjøring: MCP-serverne i eget arbeidsområde, pluss de egne MCP-serverne til medlemmet som startet kjøringen. MCP-tokenet og parede enheter ser dem aldri (se [MCP-servere som agentene bruker](/nb-NO/handbok/slik-gjor-du/mcp-server/#mcp-servere-som-agentene-bruker)).
 
 ## Registerets størrelse
 
@@ -29,7 +29,7 @@ De fem kodegraf-verktøyene registreres bare når verten sender et kodegraf-repo
 Hele registeret annonseres i `tools/list` uten begrensning ved oppdagelse, bortsett fra en agentkjøring som kan kjøre skript (se under). Redigering av saker skjer gjennom typede verktøy.
 
 :::note[Eksterne klienter ser alltid hele katalogen]
-`tools/list` kuttes aldri ned, bortsett fra serverens eiers personlige MCP-servere, som den aldri inneholder, og [kodemodus](/nb-NO/handbok/konsepter/kodemodus/): `repl` listes bare til en agentkjøring på en server som kan kjøre skript, og den kjøringen listes med `repl`, de direkte verktøyene (`read`, `write`, `edit`, `search`, `find`, `bash`, `read_output`, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` og modusens egne verb, der registeret har dem) og verktøyene et skript ikke kan kalle. Den kaller resten fra et skript; et direkte kall til et av dem besvares med hvordan det kalles fra `repl`. MCP-klienter validerer verktøynavn mot sin egen bufrede kopi av listen og avviser alt som ikke står der, uten å spørre serveren, så et verktøy som skjules der, er uoppnåelig og ikke bare stille.
+`tools/list` kuttes aldri ned, bortsett fra medlemmenes egne MCP-servere, som den bare tar med for en kjøring som eieren av dem startet, og [kodemodus](/nb-NO/handbok/konsepter/kodemodus/): `repl` listes bare til en agentkjøring på en server som kan kjøre skript, og den kjøringen listes med `repl`, de direkte verktøyene (`read`, `write`, `edit`, `search`, `find`, `bash`, `read_output`, `ask_user`, `task`, `todo_write`, `search_memory`, `send_message` og modusens egne verb, der registeret har dem) og verktøyene et skript ikke kan kalle. Den kaller resten fra et skript; et direkte kall til et av dem besvares med hvordan det kalles fra `repl`. MCP-klienter validerer verktøynavn mot sin egen bufrede kopi av listen og avviser alt som ikke står der, uten å spørre serveren, så et verktøy som skjules der, er uoppnåelig og ikke bare stille.
 
 Den **innebygde harnessen** er annerledes: den laster bare et lite direkte sett med definisjoner per forespørsel og når resten fra skript eller laster dem ved første bruk. Det er en oppførsel på harness-siden og endrer ikke dette registeret. Se [Verktøykontekst og promptbuffer](/nb-NO/handbok/konsepter/verktoykontekst/).
 :::

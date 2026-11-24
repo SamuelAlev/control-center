@@ -1707,10 +1707,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mcpServers => 'Serveurs MCP';
 
   @override
-  String get mcpServersSettingsDescription =>
-      'Serveur MCP intégré et serveurs MCP externes.';
-
-  @override
   String get remoteControlAndDevices => 'Contrôle à distance & appareils';
 
   @override
@@ -8821,13 +8817,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ideFileBinary => 'Fichier binaire';
 
   @override
-  String get mcpExternalServers => 'Serveurs MCP externes';
-
-  @override
-  String get mcpExternalServersDescription =>
-      'Connectez-vous à des serveurs MCP externes (GitHub, Sentry, Postgres, automatisation du navigateur). Les serveurs configurés pour Claude, Cursor, VS Code et d\'autres outils sont détectés automatiquement.';
-
-  @override
   String get mcpApprovalMode => 'Approbation des outils';
 
   @override
@@ -8844,17 +8833,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mcpApprovalYolo => 'Tout approuver';
 
   @override
-  String get mcpNoExternalServers => 'Aucun serveur MCP externe détecté.';
-
-  @override
-  String get mcpAuthorize => 'Autoriser';
-
-  @override
   String get mcpReconnect => 'Reconnecter';
-
-  @override
-  String get mcpExternalConnectionsNote =>
-      'Les serveurs MCP externes s\'exécutent sur le serveur d\'agents (partagé entre le bureau et le web). L\'autorisation des serveurs OAuth n\'est disponible que sur le bureau.';
 
   @override
   String get mcpStatusConnected => 'Connecté';
@@ -18547,10 +18526,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Confirmez que ce serveur peut les utiliser. Chaque dépôt est de nouveau vérifié avec votre accès.';
 
   @override
-  String get mcpExternalServersOwnerRunsOnly =>
-      'Les serveurs trouvés dans les réglages d’outils propres à cette machine ne sont disponibles que dans les exécutions que vous lancez ou dont vous êtes responsable. Les exécutions des autres ne les voient jamais, et ils ne sont pas proposés par le point de terminaison MCP de Control Center.';
-
-  @override
   String repoCodeNeedsSignIn(String provider) {
     return 'Connectez-vous à $provider pour voir le code de ce dépôt.';
   }
@@ -18941,9 +18916,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mcpAddServer => 'Ajouter un serveur';
 
   @override
-  String get mcpHandAddedSource => 'Ajouté dans Control Center';
-
-  @override
   String get mcpStatusAwaitingApproval => 'En attente d\'approbation';
 
   @override
@@ -18967,6 +18939,72 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get mcpApprovalRemoteMember =>
       'Ce serveur ne peut atteindre que des adresses publiques tant que le propriétaire du serveur ne l\'a pas approuvé.';
+
+  @override
+  String get mcpServersSettingsSubtitle =>
+      'Le serveur MCP intégré, et les serveurs MCP dont les outils sont transmis aux exécutions d\'agent de cet espace de travail.';
+
+  @override
+  String get mcpPersonalServers => 'Vos serveurs MCP';
+
+  @override
+  String get mcpPersonalServersDescription =>
+      'Vous seul voyez ces serveurs, et seules les exécutions d\'agent que vous lancez dans cet espace de travail reçoivent leurs outils.';
+
+  @override
+  String get mcpPersonalServersUnavailable =>
+      'Vos serveurs MCP ne sont pas disponibles sur le serveur connecté.';
+
+  @override
+  String get mcpPersonalServersEmpty =>
+      'Aucun serveur MCP personnel pour le moment';
+
+  @override
+  String get mcpPersonalServersEmptyDescription =>
+      'Ajoutez un serveur pour donner ses outils aux exécutions d\'agent que vous lancez dans cet espace de travail.';
+
+  @override
+  String get mcpServerEditorPersonalOwner =>
+      'Seules les exécutions que vous lancez dans cet espace de travail l\'utilisent. En tant que propriétaire du serveur, l\'enregistrer l\'approuve.';
+
+  @override
+  String get mcpServerEditorPersonalMember =>
+      'Seules les exécutions que vous lancez dans cet espace de travail l\'utilisent. Il n\'atteint que des adresses publiques.';
+
+  @override
+  String get mcpServerSignInNeeded =>
+      'Connectez-vous pour utiliser les outils de ce serveur.';
+
+  @override
+  String get mcpServerSignIn => 'Se connecter';
+
+  @override
+  String mcpServerSignInTitle(String name) {
+    return 'Connexion à $name';
+  }
+
+  @override
+  String mcpServerSignInWrongCode(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count essais restants.',
+      one: '1 essai restant.',
+    );
+    return 'Ce n\'est pas le code affiché par votre navigateur. $_temp0';
+  }
+
+  @override
+  String get mcpServerSignInEnded =>
+      'Le délai est dépassé, la connexion a été refusée ou trop de codes erronés ont été saisis. Relancez-la pour obtenir une nouvelle page de connexion.';
+
+  @override
+  String get mcpServerSignInStartAgain => 'Recommencer';
+
+  @override
+  String mcpServerSignedIn(String name) {
+    return 'Connecté à $name.';
+  }
 
   @override
   String get mcpRemoveServer => 'Supprimer le serveur';
@@ -19103,10 +19141,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get mcpServerEditorRemoteOwner =>
       'L\'enregistrement l\'approuve pour qu\'il puisse aussi atteindre le réseau privé de l\'hôte.';
-
-  @override
-  String get mcpServerEditorPersonal =>
-      'Utilisé uniquement dans les exécutions que vous lancez ou dont vous êtes responsable.';
 
   @override
   String get mcpServerRefusedInvalid =>
@@ -22268,10 +22302,6 @@ class AppLocalizationsFrCa extends AppLocalizationsFr {
 
   @override
   String get serverPeopleConfirmEmail => 'Confirmer le courriel';
-
-  @override
-  String get mcpExternalServersOwnerRunsOnly =>
-      'Les serveurs trouvés dans les paramètres d’outils propres à cette machine ne sont disponibles que dans les exécutions que vous lancez ou dont vous êtes responsable. Les exécutions des autres ne les voient jamais, et ils ne sont pas proposés par le point de terminaison MCP de Control Center.';
 
   @override
   String importHoldRepoReview(String person, String repo) {

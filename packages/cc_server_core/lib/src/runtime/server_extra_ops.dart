@@ -355,7 +355,7 @@ ExtraOpsResult buildServerExtraOps({
     ...buildMcpServerOps(mcp: mcpServer),
     ...buildConfiguredMcpServerOps(
       workspaceServers: workspaceMcpServers,
-      personal: mcpClientControl,
+      pairingServerUrl: pairingServerUrl,
     ),
     ...wakeOps.ops,
     ...wakeRuleOps.ops,

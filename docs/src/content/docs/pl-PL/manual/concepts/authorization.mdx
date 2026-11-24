@@ -2,7 +2,7 @@
 title: Autoryzacja — kto może co robić i jak to udowodnisz
 description: Katalog uprawnień stojący za rolami w Control Center, odporny na manipulację dziennik audytu, do którego trafia każda decyzja autoryzacyjna, oraz mechanizmy obejmujące całą instalację, które operator może ustalić.
 slug: pl-PL/podrecznik/koncepcje/autoryzacja
-sourceHash: 9b6ab5ffb27be5a061ebfd9d020992ec83236ad7
+sourceHash: 311689da6bce052ef25bccc1e0f3dedd29f0d102
 ---
 
 Control Center odpowiada na dwa pytania autoryzacyjne i są to pytania
@@ -145,7 +145,7 @@ albo zatwierdził taki rodzaj wykonania na hoście.** Konkretnie tylko właścic
   [Dodaj repozytoria](/pl-PL/podrecznik/poradniki/dodawanie-repozytoriow/)).
 - Zobaczyć i zatrzymać każdy działający proces agenta na serwerze. Wszyscy inni widzą i
   zatrzymują tylko działające uruchomienia agentów w obszarach roboczych, do których należą.
-- Sprawić, by agenci używali osobistych serwerów MCP: tych skonfigurowanych w narzędziach użytkownika serwera (Claude, Codex, Cursor i innych) oraz tych, które dodał właściciel. Dostają je tylko uruchomienia, za które odpowiada właściciel; zobacz [Serwery osobiste](/pl-PL/podrecznik/poradniki/serwer-mcp/#serwery-osobiste).
+- Dodać własny serwer MCP, który uruchamia polecenie na maszynie serwera. Własne serwery pozostałych członków są osiągane przez URL (zobacz [Własne serwery](/pl-PL/podrecznik/poradniki/serwer-mcp/#własne-serwery)).
 - Zatwierdzić serwer MCP obszaru roboczego, który uruchamia polecenie na maszynie serwera albo łączy się z jego siecią prywatną (zobacz [Serwery obszaru roboczego](/pl-PL/podrecznik/poradniki/serwer-mcp/#serwery-obszaru-roboczego)).
 - Potwierdzić adres e-mail osoby, aby logowanie jednokrotne mogło go dopasować (zobacz
   [Połącz dostawcę OpenID Connect](/pl-PL/podrecznik/poradniki/sso-oidc/#jak-logowania-dopasowują-istniejące-konta)).

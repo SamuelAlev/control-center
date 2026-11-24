@@ -2,7 +2,7 @@
 title: Autorisierung — wer was darf und wie du es nachweist
 description: Der Berechtigungskatalog hinter den Rollen von Control Center, das manipulationserkennbare Audit-Protokoll, in dem jede Autorisierungsentscheidung landet, und die installationsweiten Vorgaben, die ein Betreiber festlegen kann.
 slug: de-DE/handbuch/konzepte/autorisierung
-sourceHash: 9b6ab5ffb27be5a061ebfd9d020992ec83236ad7
+sourceHash: 311689da6bce052ef25bccc1e0f3dedd29f0d102
 ---
 
 Control Center beantwortet zwei Autorisierungsfragen, und die beiden meinen
@@ -112,10 +112,7 @@ Die Person, die den Server eingerichtet hat, ist sein **Inhaber**. Der Server h�
 - Agenten auf einem Server ausführen, dessen Maschine keine Sandbox hat. Alle anderen Läufe werden dort abgewiesen, außer der Inhaber hat den Server mit `--sandbox off` gestartet; dann laufen die Agenten jedes Mitglieds ohne Einschränkung (siehe [Agenten auf einem Host ohne Sandbox](/de-DE/handbuch/konzepte/sandbox-und-sicherheit/#agenten-auf-einem-host-ohne-sandbox)).
 - Einen Repository-Checkout verknüpfen, der außerhalb des eigenen Speichers des Arbeitsbereichs liegt, einen schon verknüpften vor dieser Regel bestätigen und beim Hinzufügen eines Repositorys die Ordner des Servers durchsuchen (siehe [Repositorys hinzufügen](/de-DE/handbuch/anleitungen/repos-hinzufuegen/)).
 - Jeden laufenden Agentenprozess auf dem Server sehen und stoppen. Alle anderen sehen und stoppen nur laufende Agentenläufe in Arbeitsbereichen, denen sie angehören.
-- Agenten persönliche MCP-Server nutzen lassen: die in den eigenen Werkzeugen
-  des Serverbenutzers eingerichteten (Claude, Codex, Cursor und die übrigen)
-  und die, die der Inhaber hinzufügt. Nur Läufe, für die der Inhaber einsteht,
-  bekommen sie; siehe [Persönliche Server](/de-DE/handbuch/anleitungen/mcp-server/#persönliche-server).
+- Einen eigenen MCP-Server hinzufügen, der einen Befehl auf der Maschine des Servers ausführt. Die Server der anderen Mitglieder werden über eine URL angesprochen (siehe [Deine eigenen Server](/de-DE/handbuch/anleitungen/mcp-server/#deine-eigenen-server)).
 - Einen Arbeitsbereich-MCP-Server freigeben, der einen Befehl auf der Maschine
   des Servers ausführt oder dessen privates Netzwerk erreicht (siehe
   [Arbeitsbereich-Server](/de-DE/handbuch/anleitungen/mcp-server/#arbeitsbereich-server)).
