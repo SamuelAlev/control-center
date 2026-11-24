@@ -42,6 +42,7 @@ export 'package:cc_ui/src/components/cc_image_fade.dart';
 export 'package:cc_ui/src/components/cc_image_viewer.dart';
 export 'package:cc_ui/src/components/cc_kbd.dart';
 export 'package:cc_ui/src/components/cc_link_text.dart';
+export 'package:cc_ui/src/components/cc_marquee_text.dart';
 export 'package:cc_ui/src/components/cc_menu.dart';
 export 'package:cc_ui/src/components/cc_multi_select.dart';
 export 'package:cc_ui/src/components/cc_popover.dart';

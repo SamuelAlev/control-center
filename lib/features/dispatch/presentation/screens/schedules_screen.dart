@@ -26,6 +26,7 @@ class SchedulesScreen extends StatelessWidget {
     return PageWrapper(
       title: l10n.schedulesTitle,
       subtitle: l10n.schedulesSubtitle,
+      actions: [if (id == null) NewScheduleButton(workspaceId: workspaceId)],
       child: IndexedStack(
         index: id == null ? 0 : 1,
         sizing: StackFit.expand,

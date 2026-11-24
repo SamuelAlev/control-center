@@ -107,6 +107,10 @@ class _MentionPopupState extends State<MentionPopup> {
   List<MentionSuggestion> _flat = const [];
   int _selected = 0;
 
+  /// Whether the pointer chose the active row, rather than the keyboard or
+  /// the list itself. Such a row never grows: see [_SuggestionRow.roomy].
+  bool _pointerSelected = false;
+
   /// One key per position in [_flat], so the active row can be measured.
   /// Positional because sources do not promise unique suggestion ids, and a
   /// shared GlobalKey is a build failure.
@@ -194,6 +198,7 @@ class _MentionPopupState extends State<MentionPopup> {
         _rows = const [];
       }
       _selected = 0;
+      _pointerSelected = false;
     });
 
     final relevant = widget.sources
@@ -351,6 +356,7 @@ class _MentionPopupState extends State<MentionPopup> {
       return;
     }
     setState(() {
+      _pointerSelected = false;
       _selected = (_selected + delta) % _flat.length;
       if (_selected < 0) {
         _selected += _flat.length;
@@ -466,6 +472,7 @@ class _MentionPopupState extends State<MentionPopup> {
       key: _rowKeys[row.index!],
       suggestion: s,
       selected: selected,
+      roomy: selected && !_pointerSelected,
       onTap: () {
         // Same per-source guard as Enter/Tab: a not-yet-refreshed row answers
         // an older keystroke.
@@ -475,7 +482,10 @@ class _MentionPopupState extends State<MentionPopup> {
       },
       onHover: () {
         if (_selected != row.index) {
-          setState(() => _selected = row.index!);
+          setState(() {
+            _selected = row.index!;
+            _pointerSelected = true;
+          });
         }
       },
     );
@@ -487,12 +497,18 @@ class _SuggestionRow extends StatelessWidget {
     super.key,
     required this.suggestion,
     required this.selected,
+    required this.roomy,
     required this.onTap,
     required this.onHover,
   });
 
   final MentionSuggestion suggestion;
   final bool selected;
+
+  /// Whether the name and description may wrap when motion is reduced, in place of the
+  /// marquee. Only for a row the keyboard is on: one that grew under a moving
+  /// pointer would push the rows below it out from under that pointer.
+  final bool roomy;
   final VoidCallback onTap;
   final VoidCallback onHover;
 
@@ -531,24 +547,27 @@ class _SuggestionRow extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
+                      // The active row shows its whole name and description:
+                      // one pass, then the ellipsis again; wrapped instead
+                      // when motion is reduced.
+                      CcMarqueeText(
                         suggestion.label,
+                        active: selected,
+                        reducedMotionLines: roomy ? 3 : 1,
                         style: CcTypography.body.copyWith(
                           color: ds.textPrimary,
                           fontWeight: FontWeight.w500,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
                       if (suggestion.description != null &&
                           suggestion.description!.isNotEmpty)
-                        Text(
+                        CcMarqueeText(
                           suggestion.description!,
+                          active: selected,
+                          reducedMotionLines: roomy ? 3 : 1,
                           style: CcTypography.caption.copyWith(
                             color: ds.textTertiary,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                     ],
                   ),

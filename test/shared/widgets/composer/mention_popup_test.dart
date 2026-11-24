@@ -83,6 +83,31 @@ class _SectionSource extends SyncMentionSource {
   ];
 }
 
+/// Rows whose descriptions are whatever the test says.
+class _LongSource extends SyncMentionSource {
+  _LongSource(this.described);
+
+  final Map<String, String> described;
+
+  @override
+  String get kind => 'command';
+
+  @override
+  Set<MentionTrigger> get triggers => {MentionTrigger.slash};
+
+  @override
+  List<MentionSuggestion> suggestSync(MentionQuery query) => [
+    for (final e in described.entries)
+      MentionSuggestion(
+        id: 'cmd:${e.key}',
+        kind: kind,
+        label: e.key,
+        description: e.value,
+        replacement: '/${e.key}',
+      ),
+  ];
+}
+
 Widget _popup(
   MentionQuery query,
   List<MentionSource> sources, {
@@ -541,6 +566,54 @@ void main() {
           reason: 'row wash must stay the hover color while its alpha fades',
         );
       }
+
+      await gesture.removePointer();
+    });
+  });
+
+  group('long descriptions under reduced motion', () {
+    const long =
+        'Work toward a goal until it is done, with checks that must pass, a '
+        'review of the result and a cap on what the run may spend';
+
+    testWidgets('the keyboard row wraps its description, a hovered row keeps '
+        'its height', (tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      await tester.pumpWidget(
+        _popup(_query(''), [
+          _LongSource(const {'plan': long, 'goal': long, 'loop': long}),
+        ]),
+      );
+      await tester.pump();
+
+      double height(String label) => tester
+          .getSize(
+            find.ancestor(
+              of: find.text(label),
+              matching: find.byType(CcTappable),
+            ),
+          )
+          .height;
+
+      // The list's own first selection counts as the keyboard's.
+      final oneLine = height('loop');
+      expect(height('plan'), greaterThan(oneLine));
+
+      await _press(tester, LogicalKeyboardKey.arrowDown);
+      expect(height('plan'), oneLine);
+      expect(height('goal'), greaterThan(oneLine));
+
+      // A row that grew under a moving pointer would shift its neighbours.
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer(location: tester.getCenter(find.text('loop')));
+      await gesture.moveBy(const Offset(1, 0));
+      await tester.pump();
+      expect(height('goal'), oneLine);
+      expect(height('loop'), oneLine);
 
       await gesture.removePointer();
     });

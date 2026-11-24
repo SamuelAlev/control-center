@@ -48,7 +48,13 @@ void main() {
   Future<void> pumpList(WidgetTester tester, {TextDirection? dir}) =>
       pumpLongWork(
         tester,
-        const SchedulesList(workspaceId: kTestWorkspaceId),
+        // The screen puts the button in its header, above the list.
+        const Column(
+          children: [
+            NewScheduleButton(workspaceId: kTestWorkspaceId),
+            Expanded(child: SchedulesList(workspaceId: kTestWorkspaceId)),
+          ],
+        ),
         overrides: [
           ...longWorkOverrides(rules: repo),
           ...spaceOverrides,

@@ -18,8 +18,25 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+/// The page-header action that creates a person's schedule.
+class NewScheduleButton extends StatelessWidget {
+  /// Creates the button.
+  const NewScheduleButton({super.key, required this.workspaceId});
+
+  /// The workspace.
+  final String workspaceId;
+
+  @override
+  Widget build(BuildContext context) => CcButton(
+    size: CcButtonSize.sm,
+    icon: AppIcons.plus,
+    onPressed: () => showScheduleCreateDialog(context, workspaceId),
+    child: Text(AppLocalizations.of(context).scheduleNew),
+  );
+}
+
 /// Every schedule and watch of the workspace the viewer may read, grouped
-/// active, paused, ended; with the action that creates a person's schedule.
+/// active, paused, ended. The page header carries [NewScheduleButton].
 class SchedulesList extends ConsumerWidget {
   /// Creates the list.
   const SchedulesList({super.key, required this.workspaceId});
@@ -30,53 +47,29 @@ class SchedulesList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final create = CcButton(
-      size: CcButtonSize.sm,
-      icon: AppIcons.plus,
-      onPressed: () => showScheduleCreateDialog(context, workspaceId),
-      child: Text(l10n.scheduleNew),
-    );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsetsDirectional.only(
-            start: AppSpacing.xl,
-            end: AppSpacing.xl,
-            top: AppSpacing.sm,
-          ),
-          child: Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: create,
-          ),
+    return WorkListStates<WakeRuleView>(
+      value: ref.watch(workspaceWakeRulesProvider(workspaceId)),
+      emptyIcon: AppIcons.calendarClock,
+      empty: l10n.schedulesEmpty,
+      emptyDescription: l10n.schedulesEmptyHint,
+      builder: (rules) => ListView(
+        padding: const EdgeInsetsDirectional.symmetric(
+          horizontal: AppSpacing.xl,
+          vertical: AppSpacing.sm,
         ),
-        Expanded(
-          child: WorkListStates<WakeRuleView>(
-            value: ref.watch(workspaceWakeRulesProvider(workspaceId)),
-            emptyIcon: AppIcons.calendarClock,
-            empty: l10n.schedulesEmpty,
-            emptyDescription: l10n.schedulesEmptyHint,
-            builder: (rules) => ListView(
-              padding: const EdgeInsetsDirectional.symmetric(
-                horizontal: AppSpacing.xl,
-                vertical: AppSpacing.sm,
+        children: [
+          for (final status in WakeRuleStatus.values)
+            if (rules.where((r) => r.status == status).toList() case final group
+                when group.isNotEmpty) ...[
+              WorkListGroupHeading(
+                label: scheduleStatusLabel(l10n, status),
+                count: group.length,
               ),
-              children: [
-                for (final status in WakeRuleStatus.values)
-                  if (rules.where((r) => r.status == status).toList()
-                      case final group when group.isNotEmpty) ...[
-                    WorkListGroupHeading(
-                      label: scheduleStatusLabel(l10n, status),
-                      count: group.length,
-                    ),
-                    for (var i = 0; i < group.length; i++)
-                      ScheduleRow(rule: group[i], first: i == 0),
-                  ],
-              ],
-            ),
-          ),
-        ),
-      ],
+              for (var i = 0; i < group.length; i++)
+                ScheduleRow(rule: group[i], first: i == 0),
+            ],
+        ],
+      ),
     );
   }
 }

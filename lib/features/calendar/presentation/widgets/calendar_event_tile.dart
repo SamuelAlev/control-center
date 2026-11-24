@@ -2,6 +2,7 @@ import 'package:cc_domain/features/calendar/domain/entities/calendar_event.dart'
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/calendar/presentation/providers/calendar_ui_providers.dart'
     show calendarKey;
+import 'package:control_center/features/calendar/presentation/widgets/calendar_tile_body.dart';
 import 'package:control_center/features/calendar/presentation/widgets/calendar_tile_parts.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart' hide TextDirection;
@@ -129,7 +130,7 @@ class CalendarEventTile extends StatelessWidget {
 
     final title = Text(
       domain?.title ?? '',
-      maxLines: dense ? 1 : 3,
+      maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: TextStyle(
         fontSize: 11,
@@ -167,35 +168,40 @@ class CalendarEventTile extends StatelessWidget {
         : '$startLabel–${DateFormat.Hm().format(domain!.endTime.toLocal())}';
 
     final Widget content = dense
-        ? Row(
-            children: [
-              if (startLabel != null) ...[
-                Text(
-                  startLabel,
-                  style: TextStyle(fontSize: 11, color: dim(t.textTertiary)),
+        // Short events give the tile less height than its content needs;
+        // OverflowBox lets the content lay out at its natural size (no
+        // RenderFlex overflow) while the parent Container clips the excess.
+        ? ClipRect(
+            child: OverflowBox(
+              alignment: AlignmentDirectional.topStart,
+              minHeight: 0,
+              maxHeight: double.infinity,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                child: Row(
+                  children: [
+                    if (startLabel != null) ...[
+                      Text(
+                        startLabel,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: dim(t.textTertiary),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                    ],
+                    Expanded(child: title),
+                  ],
                 ),
-                const SizedBox(width: 4),
-              ],
-              Expanded(child: title),
-            ],
+              ),
+            ),
           )
-        : Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              title,
-              if (rangeLabel != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 1),
-                  child: Text(
-                    rangeLabel,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: dim(cancelled ? t.textTertiary : t.textSecondary),
-                    ),
-                  ),
-                ),
-            ],
+        : CalendarTimedTileBody(
+            title: domain?.title ?? '',
+            timeLabel: rangeLabel,
+            titleColor: titleColor,
+            timeColor: dim(cancelled ? t.textTertiary : t.textSecondary),
+            strikethrough: cancelled,
           );
 
     Widget box = CalendarHoverFillBox(
@@ -206,25 +212,7 @@ class CalendarEventTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(width: 2.5, color: accentBar),
-          Expanded(
-            // Short events give the tile less height than its content needs;
-            // OverflowBox lets the content lay out at its natural size (no
-            // RenderFlex overflow) while the parent Container clips the excess.
-            child: ClipRect(
-              child: OverflowBox(
-                alignment: AlignmentDirectional.topStart,
-                minHeight: 0,
-                maxHeight: double.infinity,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 5,
-                    vertical: dense ? 1 : 3,
-                  ),
-                  child: content,
-                ),
-              ),
-            ),
-          ),
+          Expanded(child: content),
         ],
       ),
     );
