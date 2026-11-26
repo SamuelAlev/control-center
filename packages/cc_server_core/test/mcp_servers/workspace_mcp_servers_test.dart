@@ -524,7 +524,20 @@ void main() {
         ),
         actorUserId: actor,
       );
-      expect(saved.needsAuth, isTrue, reason: saved.lifecycle);
+      // `save` returns once the connect settles or the client's startup gate
+      // closes; on a slow machine the first dial is still in flight then.
+      var entry = saved;
+      final deadline = DateTime.now().add(const Duration(seconds: 10));
+      while (entry.lifecycle == McpServerLifecycle.connecting.wire &&
+          DateTime.now().isBefore(deadline)) {
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        entry = (await servers.list(
+          _ws,
+          scope,
+          actorUserId: actor,
+        )).firstWhere((e) => e.definition.id == saved.definition.id);
+      }
+      expect(entry.needsAuth, isTrue, reason: entry.lifecycle);
       return saved.definition.id;
     }
 

@@ -1058,6 +1058,9 @@ class RigDomainRouter {
   bool hasRoute(String domain) => _routes.containsKey(domain.toLowerCase());
 
   Future<void> _route(Socket client, {String? scope}) async {
+    // Observed before any write, as in [spliceSockets]: a client that hangs
+    // up mid-reply reports the failed write here.
+    unawaited(client.done.catchError((_) {}));
     // Peek the request head. 16 KB is far above any dev request line +
     // headers; a head that will not finish inside it is not HTTP.
     final head = <int>[];
