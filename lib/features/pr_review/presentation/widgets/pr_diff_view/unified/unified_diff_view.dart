@@ -3578,13 +3578,22 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
       return false;
     }
     var lastLine = line;
-    await _scrollSettled(() {
-      lastLine = anchorLine() ?? lastLine;
-      // A file-level thread sits right under the header.
-      return lastLine == kFileLevelAnchor
-          ? _sliver?.revealOffsetForFile(fileIndex)
-          : _sliver?.revealOffsetForLine(fileIndex, lastLine);
-    });
+    var scrolled = false;
+    for (var frame = 0; frame < 10 && !scrolled; frame++) {
+      if (frame > 0) {
+        await WidgetsBinding.instance.endOfFrame;
+        if (!mounted) {
+          return false;
+        }
+      }
+      scrolled = await _scrollSettled(() {
+        lastLine = anchorLine() ?? lastLine;
+        // A file-level thread sits right under the header.
+        return lastLine == kFileLevelAnchor
+            ? _sliver?.revealOffsetForFile(fileIndex)
+            : _sliver?.revealOffsetForLine(fileIndex, lastLine);
+      });
+    }
     if (!mounted) {
       return true;
     }

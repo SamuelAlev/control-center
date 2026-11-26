@@ -68,6 +68,7 @@ import 'package:control_center/shared/editor/host/editor_layout_codec.dart';
 import 'package:control_center/shared/editor/host/editor_layout_persistence.dart';
 import 'package:control_center/shared/editor/host/editor_tab_url_sync.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/mouse_navigation_handler.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
 import 'package:control_center/shared/widgets/scoped_shortcuts.dart';
 import 'package:flutter/foundation.dart';
@@ -77,6 +78,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 part 'pull_request_detail_default_tabs.dart';
+part 'pull_request_detail_url_sync.dart';
 
 /// Pull request detail screen.
 class PullRequestDetailScreen extends ConsumerStatefulWidget {
@@ -231,12 +233,22 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
   final ValueNotifier<int?> _pendingFileJump = ValueNotifier<int?>(null);
 
   /// A comment the Diff tab should reveal (select its file, expand its thread,
-  /// scroll it into view). Seeded from the URL's `?comment=` and cleared by the
-  /// tab once applied, so it is a one-shot: a rebuild must not re-scroll a
-  /// reader who has since scrolled away.
+  /// scroll it into view). Seeded from the URL's `?comment=` when not targeting
+  /// Overview and cleared by the tab once applied.
   late final ValueNotifier<int?> _pendingCommentId = ValueNotifier<int?>(
-    widget.pendingCommentId,
+    widget.focusedTabKey == PrTabKinds.overview
+        ? null
+        : widget.pendingCommentId,
   );
+
+  /// A comment the Overview timeline should reveal (an issue comment, or a
+  /// review thread that fell back from the diff).
+  late final ValueNotifier<int?> _pendingOverviewCommentId =
+      ValueNotifier<int?>(
+        widget.focusedTabKey == PrTabKinds.overview
+            ? widget.pendingCommentId
+            : null,
+      );
 
   /// Shared keep-alive / lazy-build / TickerMode / webview-LRU host — the same
   /// machinery the messaging IDE uses, so a hidden terminal/code-server tab
@@ -330,11 +342,30 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
   /// memo, so the post-frame restore has nothing left to read.
   bool _restoredFromMemo = false;
 
+  /// True once the initial layout restore has settled; before then URL updates
+  /// replace the transient entry in place instead of pushing to history.
+  bool _restoredLayout = false;
+
+  RouteInformation? _lastRouteInformation;
+
+  /// True while [_applyCommits] is copying the URL into the provider, so that
+  /// write does not publish the URL it just came from.
+  bool _applyingCommits = false;
+
+  /// The commit set from the latest route update, applied after the frame.
+  Set<String>? _pendingCommitApply;
+
+  /// One pending URL write, so tab and commit-scope updates within one frame
+  /// publish together.
+  bool _urlSyncScheduled = false;
+  bool _replaceNextUrlSync = false;
+
   @override
   void initState() {
     super.initState();
     _persistence = prDetailLayoutPersistence(ref);
-    _workspaceId = ref.read(activeWorkspaceIdProvider);
+    _workspaceId =
+        ref.read(activeWorkspaceIdProvider) ?? widget.prRef.workspaceId;
     // A revisited PR's layout is already in the memo (this page wrote it on
     // dispose). Restoring it HERE builds the first frame on it; restoring it
     // a frame later swapped in new tab instances and remounted every body —
@@ -368,148 +399,24 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _lastRouteInformation ??= GoRouter.maybeOf(
+      context,
+    )?.routeInformationProvider.value;
+  }
+
+  @override
   void didUpdateWidget(covariant _PrDetailBody oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // A second notification for a different comment on the SAME pull request
-    // re-arms the reveal; the tab is already mounted, so nothing else would.
-    if (oldWidget.pendingCommentId != widget.pendingCommentId &&
-        widget.pendingCommentId != null) {
-      _pendingCommentId.value = widget.pendingCommentId;
-    }
-    if (oldWidget.focusedTabKey != widget.focusedTabKey) {
-      // Back/forward or a deep-link changed `?tab=`: apply it a frame later —
-      // focusing mutates the layout, which must not happen mid-build.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _tabUrl.apply(_layout, widget.focusedTabKey);
-        }
-      });
-    }
-    if (!setEquals(oldWidget.scopedCommits, widget.scopedCommits)) {
-      // Back/forward changed `?commits=`. Applying it now would write the
-      // provider while this element is still updating — the failure that
-      // paints the error widget over the workbench.
-      _scheduleApplyCommits(widget.scopedCommits);
-    }
+    _didUpdateRoute(oldWidget);
   }
 
   /// Two-way sync between the focused workbench tab and the URL's `?tab=`
-  /// param: a tab switch publishes lightweight browser history, while
-  /// back/forward or a deep link re-focuses the named tab. The state machine
-  /// lives in [EditorTabUrlTracker]; only the focus/write actions are PR-specific.
+  /// param: a tab switch updates the route URL, while back/forward or a deep
+  /// link re-focuses the named tab. The state machine lives in
+  /// [EditorTabUrlTracker]; only the focus/write actions are PR-specific.
   late final EditorTabUrlTracker _tabUrl;
-
-  /// Mirrors focus into browser history without routing the active page again.
-  ///
-  /// A tab press is local editor state. Sending it through `context.go` rebuilt
-  /// the whole PR route and every visited workbench body, including the diff.
-  /// The commit scope is folded in from the provider so a tab write cannot
-  /// drop a `?commits=` the router has not echoed yet.
-  void _writeTabKey(String? key) {
-    _publishScopeAndTab(tabKey: key);
-  }
-
-  /// True while [_applyCommits] is copying the URL into the provider, so that
-  /// write does not publish the URL it just came from.
-  bool _applyingCommits = false;
-
-  /// Copies [shas] into the diff scope when it differs from what is showing.
-  void _applyCommits(Set<String> shas) {
-    if (setEquals(ref.read(prDiffScopeProvider).selectedShas, shas)) {
-      return;
-    }
-    _applyingCommits = true;
-    try {
-      ref.read(prDiffScopeProvider.notifier).updateSelection(shas);
-    } finally {
-      _applyingCommits = false;
-    }
-  }
-
-  /// The commit set from the latest route update, applied after the frame.
-  ///
-  /// A burst of route updates keeps only the newest set. A non-empty set also
-  /// focuses Diff: a permalink names a commit so the reader can see it, and a
-  /// cleared set leaves whichever tab is already showing.
-  Set<String>? _pendingCommitApply;
-
-  void _scheduleApplyCommits(Set<String> shas) {
-    final first = _pendingCommitApply == null;
-    _pendingCommitApply = Set<String>.of(shas);
-    if (!first) {
-      return;
-    }
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final pending = _pendingCommitApply;
-      _pendingCommitApply = null;
-      if (!mounted || pending == null) {
-        return;
-      }
-      if (!setEquals(widget.scopedCommits, pending)) {
-        return;
-      }
-      _applyCommits(pending);
-      final tab = widget.focusedTabKey;
-      if (pending.isNotEmpty && (tab == null || tab == PrTabKinds.diff)) {
-        _focusKind(PrTabKinds.diff);
-      }
-    });
-  }
-
-  /// Last location written to the platform route channel.
-  String? _publishedLocation;
-
-  /// One pending URL write, so a burst of selector toggles publishes the
-  /// selection that is current when the frame ends.
-  bool _commitUrlScheduled = false;
-
-  void _scheduleCommitUrl() {
-    if (_commitUrlScheduled) {
-      return;
-    }
-    _commitUrlScheduled = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _commitUrlScheduled = false;
-      if (!mounted) {
-        return;
-      }
-      _publishScopeAndTab();
-    });
-  }
-
-  /// Publishes the commit scope and the focused tab on the platform channel.
-  ///
-  /// This must not call [GoRouter.go]. A router navigation rebuilds the PR
-  /// page, so the timeline's "open this commit" press landed back on Overview
-  /// and pushed a history entry. Back then changed `?commits=` during
-  /// [didUpdateWidget] and wrote the provider mid-build.
-  void _publishScopeAndTab({String? tabKey}) {
-    if (!mounted) {
-      return;
-    }
-    final withCommits = Uri.parse(
-      locationWithPrCommits(
-        GoRouterState.of(context).uri,
-        ref.read(prDiffScopeProvider).selectedShas,
-      ),
-    );
-    final location = locationWithEditorTab(
-      withCommits,
-      tabKey ?? activeEditorTabKey(_layout),
-    );
-    if (location == _publishedLocation) {
-      return;
-    }
-    final current = GoRouterState.of(context).uri;
-    final next = Uri.parse(location);
-    if (current.path == next.path &&
-        mapEquals(current.queryParameters, next.queryParameters)) {
-      _publishedLocation = location;
-      return;
-    }
-    _publishedLocation = location;
-    unawaited(SystemNavigator.routeInformationUpdated(uri: next));
-  }
 
   /// Focuses the tab of [key] wherever it lives in the split tree. A key that
   /// names one of the fixed single-instance PR tabs is opened when closed
@@ -530,6 +437,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
     _layout.dispose();
     _pendingFileJump.dispose();
     _pendingCommentId.dispose();
+    _pendingOverviewCommentId.dispose();
     super.dispose();
   }
 
@@ -608,10 +516,8 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
   Future<void> _restorePersisted() async {
     final persistence = _persistence;
     final workspaceId = _workspaceId;
-    if (persistence == null || workspaceId == null) {
-      return;
-    }
-    final restored = _restoredFromMemo
+    final restored =
+        (persistence == null || workspaceId == null || _restoredFromMemo)
         ? null
         : await persistence.restore(
             workspaceId: workspaceId,
@@ -634,6 +540,8 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
         (tab == null || tab == PrTabKinds.diff)) {
       _focusKind(PrTabKinds.diff);
     }
+    _restoredLayout = true;
+    _syncRestoredTabUrl();
   }
 
   /// Swaps in a layout that arrived after the first frame, without remounting
@@ -722,18 +630,6 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
     _focusKind(PrTabKinds.diff);
   }
 
-  /// The activity timeline asked to open a review conversation: focus the Diff
-  /// tab and hand it the comment to reveal, the same path a permalink takes.
-  void _openCommentInDiff(int commentId) {
-    // Assigning the same id does not notify. Clear first so opening the same
-    // conversation twice still scrolls back to it.
-    if (_pendingCommentId.value == commentId) {
-      _pendingCommentId.value = null;
-    }
-    _pendingCommentId.value = commentId;
-    _focusKind(PrTabKinds.diff);
-  }
-
   /// The activity timeline asked to open one commit: scope the diff to that
   /// commit's files and focus the Diff tab at the top of them.
   void _openCommitInDiff(String sha) {
@@ -745,20 +641,6 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
     }
     _pendingFileJump.value = 0;
     _focusKind(PrTabKinds.diff);
-  }
-
-  /// Fallback for a permalinked comment the diff cannot anchor: an outdated
-  /// thread (its line is gone) or a file outside the diff's scope.
-  ///
-  /// The Overview timeline renders those conversations in full, so the reader
-  /// still gets to the comment. Doing nothing would be worse than landing on
-  /// the wrong tab — a notification whose link visibly does nothing reads as a
-  /// broken app.
-  void _revealCommentOnOverview(int commentId) {
-    if (!mounted) {
-      return;
-    }
-    _focusKind(PrTabKinds.overview);
   }
 
   /// Whether this person may open the code-server editor, which runs on the
@@ -1076,6 +958,8 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
         return PrOverviewTab(
           pr: widget.pr,
           prRef: widget.prRef,
+          pendingCommentAnchor: _pendingOverviewCommentId,
+          isVisible: isVisible,
           onOpenFileInDiff: _openFileInDiff,
           onOpenCommentInDiff: _openCommentInDiff,
           onOpenCommit: _openCommitInDiff,
@@ -1238,12 +1122,13 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
           setEquals(previous.selectedShas, next.selectedShas)) {
         return;
       }
-      _scheduleCommitUrl();
+      _scheduleUrlSync();
     });
     // The layout cache is a stable workspace-scoped provider; build the
     // persistence helper once, keyed per PR under the PR layout cache kind.
     _persistence ??= prDetailLayoutPersistence(ref);
-    _workspaceId = ref.watch(activeWorkspaceIdProvider);
+    _workspaceId =
+        ref.watch(activeWorkspaceIdProvider) ?? widget.prRef.workspaceId;
     _prRepoId = prRepoIdFor(ref, widget.pr);
     // Kept warm so the "+" menu's VM-terminal entry has an answer by the time
     // it opens — the menu builds outside this build pass and can only read.

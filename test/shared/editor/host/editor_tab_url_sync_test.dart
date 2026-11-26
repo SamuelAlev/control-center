@@ -138,6 +138,28 @@ void main() {
     });
   });
 
+  group('uriWithoutQueryParam', () {
+    test('removes the target param and preserves the rest', () {
+      expect(
+        uriWithoutQueryParam(
+          Uri.parse('/workspaces/w1/spaces/c1?m=m9&tab=terminal'),
+          'm',
+        ).toString(),
+        '/workspaces/w1/spaces/c1?tab=terminal',
+      );
+    });
+
+    test('clears a sole param without leaving a trailing ?', () {
+      expect(
+        uriWithoutQueryParam(
+          Uri.parse('/workspaces/w1/spaces/c1?m=m9'),
+          'm',
+        ).toString(),
+        '/workspaces/w1/spaces/c1',
+      );
+    });
+  });
+
   testWidgets(
     'focused-tab URL writes use platform history instead of app navigation',
     (tester) async {

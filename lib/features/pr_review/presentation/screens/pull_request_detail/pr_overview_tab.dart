@@ -13,6 +13,8 @@ import 'package:control_center/shared/widgets/confined_directional_focus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+part 'pr_overview_header.dart';
+
 /// The PR-detail Overview tab: the PR title + actions, the description,
 /// and the activity timeline (main column) beside a space-style collapsible
 /// sidebar (status, reviewers, assignees, checks, files). The title + actions
@@ -26,6 +28,8 @@ class PrOverviewTab extends ConsumerStatefulWidget {
     super.key,
     required this.pr,
     required this.prRef,
+    this.pendingCommentAnchor,
+    this.isVisible = true,
     required this.onOpenFileInDiff,
     required this.onOpenCommentInDiff,
     required this.onOpenCommit,
@@ -38,6 +42,12 @@ class PrOverviewTab extends ConsumerStatefulWidget {
 
   /// The PR's identity key (repo coords + number) for PR-keyed providers.
   final PrRef prRef;
+
+  /// A comment (REST id) a permalink asked to reveal in the timeline.
+  final ValueNotifier<int?>? pendingCommentAnchor;
+
+  /// Whether this tab is currently the active visible pane.
+  final bool isVisible;
 
   /// Called with a changed file's tree-order index when its sidebar row is
   /// tapped, so the detail screen can focus the Diff tab and jump to it.
@@ -76,6 +86,13 @@ class _PrOverviewTabState extends ConsumerState<PrOverviewTab> {
   final GlobalKey _timelineKey = GlobalKey(debugLabel: 'pr-overview-timeline');
   final GlobalKey _composerKey = GlobalKey(debugLabel: 'pr-overview-composer');
   final GlobalKey _sidebarKey = GlobalKey(debugLabel: 'pr-overview-sidebar');
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -114,6 +131,9 @@ class _PrOverviewTabState extends ConsumerState<PrOverviewTab> {
       key: _timelineKey,
       pr: pr,
       prRef: prRef,
+      pendingCommentAnchor: widget.pendingCommentAnchor,
+      scrollController: _scrollController,
+      isVisible: widget.isVisible,
       onOpenCommentInDiff: widget.onOpenCommentInDiff,
       onOpenCommit: widget.onOpenCommit,
     );
@@ -142,6 +162,7 @@ class _PrOverviewTabState extends ConsumerState<PrOverviewTab> {
           final wide = constraints.maxWidth >= _wideBreakpoint;
           if (!wide) {
             return CustomScrollView(
+              controller: _scrollController,
               slivers: [
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
@@ -176,6 +197,7 @@ class _PrOverviewTabState extends ConsumerState<PrOverviewTab> {
                 // them by row, and arrow keys stay inside the pane.
                 builder: (context) => ConfinedDirectionalFocus(
                   child: CustomScrollView(
+                    controller: _scrollController,
                     slivers: [
                       SliverPadding(
                         padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
@@ -221,59 +243,6 @@ class _PrOverviewTabState extends ConsumerState<PrOverviewTab> {
           );
         },
       ),
-    );
-  }
-}
-
-/// The Overview tab's top row: the (editable) PR title on the left and the
-/// PR-level actions on the right. Wraps to two lines on narrow widths.
-class _OverviewHeader extends StatelessWidget {
-  const _OverviewHeader({
-    required this.pr,
-    required this.prRef,
-    required this.canEdit,
-    required this.onOpenReview,
-  });
-
-  final PullRequest pr;
-  final PrRef prRef;
-  final bool canEdit;
-  final VoidCallback onOpenReview;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final title = EditablePrTitle(pr: pr, prRef: prRef, canEdit: canEdit);
-        final actions = PrDetailActions(
-          pr: pr,
-          prRef: prRef,
-          onOpenReview: onOpenReview,
-        );
-        // Below ~560px the title + action cluster can't share a row without
-        // squeezing; stack them instead.
-        if (constraints.maxWidth < 560) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              title,
-              const SizedBox(height: 12),
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: actions,
-              ),
-            ],
-          );
-        }
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(child: title),
-            const SizedBox(width: 16),
-            actions,
-          ],
-        );
-      },
     );
   }
 }

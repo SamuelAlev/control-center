@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:cc_domain/core/domain/entities/github_user.dart';
@@ -43,6 +44,7 @@ import 'package:go_router/go_router.dart';
 import 'package:super_sliver_list/super_sliver_list.dart';
 
 part 'pr_activity_timeline_commits.dart';
+part 'pr_activity_timeline_comment_reveal.dart';
 part 'pr_activity_timeline_feed.dart';
 
 /// The Overview tab's conversation feed, rendered under the PR description:
@@ -64,6 +66,9 @@ class PrActivityTimeline extends ConsumerStatefulWidget {
     super.key,
     required this.pr,
     required this.prRef,
+    this.pendingCommentAnchor,
+    this.scrollController,
+    this.isVisible = true,
     this.onOpenCommentInDiff,
     this.onOpenCommit,
   });
@@ -73,6 +78,15 @@ class PrActivityTimeline extends ConsumerStatefulWidget {
 
   /// The PR number (data lookups).
   final PrRef prRef;
+
+  /// A comment (REST id) a permalink asked to reveal in the timeline.
+  final ValueNotifier<int?>? pendingCommentAnchor;
+
+  /// Outer scroll controller driving the Overview custom scroll view.
+  final ScrollController? scrollController;
+
+  /// Whether this timeline's tab is currently visible.
+  final bool isVisible;
 
   /// Called with a conversation's root comment id when its "view in diff"
   /// action is pressed, so the detail screen can focus the Diff tab with that
@@ -109,19 +123,46 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline>
   /// lands on it after the scroll.
   String? _focusedThreadId;
 
+  /// Top-level issue comment just jumped to from a permalink.
+  int? _focusedCommentId;
+
+  Timer? _focusFade;
+  final ListController _listController = ListController();
+
+  @override
+  void initState() {
+    super.initState();
+    widget.pendingCommentAnchor?.addListener(_maybeRevealPendingComment);
+    _maybeRevealPendingComment();
+  }
+
+  @override
+  void didUpdateWidget(covariant PrActivityTimeline oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.pendingCommentAnchor != widget.pendingCommentAnchor) {
+      oldWidget.pendingCommentAnchor?.removeListener(_maybeRevealPendingComment);
+      widget.pendingCommentAnchor?.addListener(_maybeRevealPendingComment);
+      _maybeRevealPendingComment();
+    } else if (!oldWidget.isVisible && widget.isVisible) {
+      _maybeRevealPendingComment();
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.pendingCommentAnchor?.removeListener(_maybeRevealPendingComment);
+    _focusFade?.cancel();
+    _listController.dispose();
+    super.dispose();
+  }
+
   GlobalKey _keyFor(String threadId) =>
       _threadKeys.putIfAbsent(threadId, GlobalKey.new);
 
+  void _updateState(VoidCallback fn) => setState(fn);
+
   bool _isResolved(ServerReviewThread t) =>
       _resolvedOverride[t.id] ?? t.isResolved;
-
-  /// Open unless the conversation is resolved — same default as the Diff.
-  /// Whether [t] has no line left in the diff: the forge says so (no anchor
-  /// line), or its file is not among the PR's changed files any more — the
-  /// change was reverted, or the file was dropped from the branch. The forge
-  /// keeps the line number in that second case, so it is not enough on its
-  /// own. [diffPaths] is null until the file index loads; until then the
-  /// forge's word stands.
   bool _isOutdated(ServerReviewThread t, Set<String>? diffPaths) =>
       t.isOutdated || (diffPaths != null && !diffPaths.contains(t.path));
 
@@ -130,34 +171,6 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline>
   /// Measures every row's real height so the Overview thumb does not resize
   /// as SuperSliverList trades estimates for laid-out cards.
   final _precalcPolicy = _AlwaysPrecalculateExtents();
-
-  /// Reveals the conversation a reply answers: expands it if it was collapsed
-  /// (a resolved one arrives collapsed) and scrolls it into view.
-  Future<void> _revealThread(String threadId) async {
-    setState(() {
-      _open[threadId] = true;
-      _focusedThreadId = threadId;
-    });
-    // Expanding changes the card's height, so the scroll has to wait for the
-    // layout it is scrolling to.
-    await WidgetsBinding.instance.endOfFrame;
-    if (!mounted) {
-      return;
-    }
-    final target = _threadKeys[threadId]?.currentContext;
-    // The card's own context, not this State's: it may have been rebuilt (or
-    // never mounted, if the conversation scrolled out of a lazy list) while the
-    // frame settled.
-    if (target == null || !target.mounted) {
-      return;
-    }
-    await Scrollable.ensureVisible(
-      target,
-      duration: const Duration(milliseconds: 260),
-      curve: Curves.easeOutCubic,
-      alignment: 0.15,
-    );
-  }
 
   Future<void> _setResolved(ServerReviewThread thread, bool resolved) async {
     final forgeThreadId = thread.threadId;
@@ -244,6 +257,7 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline>
     // extent table is the scrollbar's source of truth. A SliverMainAxisGroup
     // plus a lazy list let the heading sliver and the list disagree.
     return SuperSliverList.builder(
+      listController: _listController,
       extentPrecalculationPolicy: _precalcPolicy,
       itemCount: rows.length + 1,
       extentEstimation: (index, crossAxis) {
@@ -325,6 +339,7 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline>
                 entry: entry,
                 pr: pr,
                 prRef: prRef,
+                focused: _focusedCommentId == entry.comment.id,
               ),
             },
             _RepliesRow(:final replies) => _ReviewReplyRefs(
@@ -1392,103 +1407,6 @@ class _ReviewCard extends ConsumerWidget {
   }
 }
 
-/// A top-level conversation comment. Reactions that already exist stay under
-/// the body; adding one, resolving (never, this is not a thread), copying,
-/// sending to an agent, editing and deleting live on the hover toolbar.
-class _CommentCard extends ConsumerWidget {
-  const _CommentCard({
-    required this.entry,
-    required this.pr,
-    required this.prRef,
-  });
-
-  final PrCommentEntry entry;
-  final PullRequest pr;
-  final PrRef prRef;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final comment = entry.comment;
-    final edit = ref.watch(prEditProvider(prRef));
-    final displayBody = edit.optimisticComments[comment.id] ?? comment.body;
-    final login = ref.watch(currentUserLoginForPrProvider(prRef)).toLowerCase();
-    final isAuthor =
-        login.isNotEmpty && comment.user?.login.toLowerCase() == login;
-    // Checking a task box is a write the author and anyone with push access
-    // can persist. Rewriting the comment itself stays with the author; the
-    // toolbar enforces that separately.
-    final canToggleTasks =
-        isAuthor || ref.watch(prRepoWriteAccessProvider(prRef));
-    final parts = pr.repoFullName.split('/');
-    final reactions = comment.reactions;
-    return EditableCommentSlot(
-      initialBody: displayBody,
-      owner: parts.isNotEmpty ? parts.first : '',
-      repo: parts.length > 1 ? parts[1] : '',
-      onSave: (body) => ref
-          .read(prEditProvider(prRef).notifier)
-          .saveIssueComment(commentId: comment.id, body: body),
-      builder: (context, editor, startEdit) => PrCommentActions(
-        prRef: prRef,
-        body: displayBody,
-        authorLogin: comment.user?.login ?? '',
-        commentId: comment.id,
-        onEdit: startEdit,
-        onToggleReaction: (content, {required add}) => toggleReaction(
-          ref,
-          ReactionTarget.issueComment,
-          commentId: comment.id,
-          pr: prRef,
-          content: content,
-          add: add,
-        ),
-        child: _ActivityCard(
-          author: comment.user,
-          createdAt: comment.createdAt,
-          body: displayBody,
-          repoFullName: pr.repoFullName,
-          bodyEditor: editor,
-          onTaskCheckboxChanged: canToggleTasks
-              ? (index, _) {
-                  final l10n = AppLocalizations.of(context);
-                  final toaster = CcToastScope.of(context);
-                  ref
-                      .read(prEditProvider(prRef).notifier)
-                      .toggleCommentTaskListItem(
-                        commentId: comment.id,
-                        currentBody: displayBody,
-                        index: index,
-                      )
-                      .then((error) {
-                        if (error != null && context.mounted) {
-                          toaster.show(
-                            l10n.saveFailed,
-                            variant: CcToastVariant.danger,
-                          );
-                        }
-                      });
-                }
-              : null,
-          footer: reactions.isEmpty
-              ? null
-              : ReactionBar(
-                  reactions: reactions,
-                  showAdder: false,
-                  onToggle: (content, {required add}) => toggleReaction(
-                    ref,
-                    ReactionTarget.issueComment,
-                    commentId: comment.id,
-                    pr: prRef,
-                    content: content,
-                    add: add,
-                  ),
-                ),
-        ),
-      ),
-    );
-  }
-}
-
 /// The shared comment-card chrome: a header row (author, optional bot badge,
 /// relative time, optional verdict chip) over a markdown body.
 class _ActivityCard extends ConsumerWidget {
@@ -1501,6 +1419,7 @@ class _ActivityCard extends ConsumerWidget {
     this.footer,
     this.bodyEditor,
     this.onTaskCheckboxChanged,
+    this.focused = false,
   });
 
   final PrUser? author;
@@ -1513,6 +1432,7 @@ class _ActivityCard extends ConsumerWidget {
   /// Replaces the markdown body while the comment is being edited.
   final Widget? bodyEditor;
   final void Function(int index, bool checked)? onTaskCheckboxChanged;
+  final bool focused;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1528,7 +1448,7 @@ class _ActivityCard extends ConsumerWidget {
       decoration: BoxDecoration(
         color: t.bgPrimary,
         borderRadius: BorderRadius.circular(2),
-        border: Border.all(color: t.borderSecondary),
+        border: Border.all(color: focused ? t.accent : t.borderSecondary),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

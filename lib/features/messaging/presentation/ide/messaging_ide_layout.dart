@@ -484,14 +484,38 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
   /// [EditorTabUrlTracker]; only the focus/write actions are messaging-specific.
   late final EditorTabUrlTracker _tabUrl;
 
-  /// Mirrors focus into browser history without routing the active page again.
+  /// Mirrors focus into the URL and browser/in-app navigation history.
   ///
-  /// A tab press is local editor state. Sending it through `context.go` rebuilt
-  /// the whole messaging route and every visited tab body before the selected
-  /// tab could paint.
+  /// Uses [GoRouter.go] so tab clicks push onto the in-app history stack and
+  /// leaving + stepping Back restores the latest visited tab. While the initial
+  /// open/restore is still settling, replaces in place so Back skips the
+  /// transient entry.
   void _writeTabKey(String? key) {
+    if (!mounted) {
+      return;
+    }
+    final router = GoRouter.maybeOf(context);
+    if (router == null) {
+      return;
+    }
     final uri = GoRouterState.of(context).uri;
-    unawaited(updateEditorTabRoute(uri, key));
+    if (widget.selectedSpaceId != null &&
+        spaceIdFromLocation(uri.path, _workspaceId) !=
+            widget.selectedSpaceId) {
+      return;
+    }
+    final base = uriWithoutQueryParam(uri, 'm');
+    final location = locationWithEditorTab(base, key);
+    if (location == uri.toString()) {
+      return;
+    }
+    if (_conversationTabsSyncedFor != widget.selectedSpaceId) {
+      if (!ref.read(navigationHistoryProvider.notifier).replace(location)) {
+        Router.neglect(context, () => router.go(location));
+      }
+      return;
+    }
+    router.go(location);
   }
 
   /// Replaces a space-entry URL with its resolved tab, including in GoRouter's

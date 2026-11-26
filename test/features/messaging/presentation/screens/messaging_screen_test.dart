@@ -1583,6 +1583,61 @@ void main() {
       await tester.pumpAndSettle();
       expect(router.state.uri.toString(), '/workspaces/ws-1/newsfeed');
 
+      // Clicking tabs inside a space adds them to the history stack and
+      // going back to a space restores its latest visited tab.
+      nav().goForward();
+      await settle();
+      expect(router.state.uri.path, '/workspaces/ws-1/spaces/ch-1');
+      expect(router.state.uri.queryParameters['tab'], 'chat');
+
+      await tester.tap(
+        find
+            .descendant(
+              of: find.byType(EditorWorkspace),
+              matching: find.text('Terminal'),
+            )
+            .hitTestable()
+            .first,
+      );
+      await settle();
+      expect(router.state.uri.queryParameters['tab'], 'terminal');
+
+      // Back steps from Terminal to Chat; Forward returns to Terminal.
+      nav().goBack();
+      await settle();
+      expect(router.state.uri.queryParameters['tab'], 'chat');
+      expect(
+        activeEditorTabKey(
+          tester.widget<EditorWorkspace>(find.byType(EditorWorkspace)).layout,
+        ),
+        'chat',
+      );
+
+      nav().goForward();
+      await settle();
+      expect(router.state.uri.queryParameters['tab'], 'terminal');
+      expect(
+        activeEditorTabKey(
+          tester.widget<EditorWorkspace>(find.byType(EditorWorkspace)).layout,
+        ),
+        'terminal',
+      );
+
+      // Leaving to another route and pressing Back lands on the latest
+      // visited tab (Terminal), not the entry tab (Chat).
+      router.go('/workspaces/ws-1/newsfeed');
+      await tester.pumpAndSettle();
+      nav().goBack();
+      await settle();
+      expect(router.state.uri.path, '/workspaces/ws-1/spaces/ch-1');
+      expect(router.state.uri.queryParameters['tab'], 'terminal');
+      expect(
+        activeEditorTabKey(
+          tester.widget<EditorWorkspace>(find.byType(EditorWorkspace)).layout,
+        ),
+        'terminal',
+      );
+
       await tester.pumpWidget(const SizedBox());
       await tester.pumpAndSettle();
     },

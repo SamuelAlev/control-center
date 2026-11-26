@@ -3,8 +3,11 @@ import 'dart:async';
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/repositories/cache_repository.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/issue_comment.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submission.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/sources/pr_diff_source.dart';
@@ -25,9 +28,11 @@ import 'package:control_center/features/rigs/providers/rig_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/l10n/localizations_loader.dart';
+import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/editor/editor_tab_bar.dart';
 import 'package:control_center/shared/editor/host/editor_layout_persistence.dart'
     show EditorLayoutPersistence;
+import 'package:control_center/shared/widgets/mouse_navigation_handler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -459,7 +464,8 @@ void main() {
           tester.element(find.byType(PullRequestDetailScreen)),
         ).state.uri;
         expect(after.path, before.path);
-        expect(after.queryParameters, before.queryParameters);
+        expect(after.queryParameters['tab'], 'pr.diff');
+        expect(after.queryParameters['commits'], sha);
 
         hostKey.currentState!.setCommits({sha});
         await tester.pump();
@@ -703,8 +709,470 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
       },
     );
+
+    testWidgets(
+      'clicking PR detail tabs adds to history and Back returns to latest visited tab',
+      (tester) async {
+        tester.view.physicalSize = const Size(1600, 1200);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final router = GoRouter(
+          initialLocation: '/workspaces/ws/pull-requests',
+          routes: [
+            ShellRoute(
+              builder: (context, state, child) => Consumer(
+                builder: (context, ref, _) => MouseNavigationHandler(
+                  historyController: ref.read(
+                    navigationHistoryProvider.notifier,
+                  ),
+                  child: child,
+                ),
+              ),
+              routes: [
+                GoRoute(
+                  path: '/workspaces/:workspaceId/pull-requests',
+                  builder: (_, _) => const SizedBox(key: Key('pr-list-stub')),
+                ),
+                GoRoute(
+                  path: '/workspaces/:workspaceId/pull-requests/:owner/:repo/:prNumber',
+                  builder: (_, state) => CcTheme(
+                    data: CcThemeData.light(),
+                    child: PullRequestDetailScreen(
+                      workspaceId: state.pathParameters['workspaceId']!,
+                      owner: state.pathParameters['owner']!,
+                      repo: state.pathParameters['repo']!,
+                      prNumber: int.parse(state.pathParameters['prNumber']!),
+                      focusedTabKey: state.uri.queryParameters['tab'],
+                      pendingCommentId: int.tryParse(
+                        state.uri.queryParameters['comment'] ?? '',
+                      ),
+                      scopedCommits: prCommitsFromQuery(
+                        state.uri.queryParameters,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+        addTearDown(router.dispose);
+
+        final container = ProviderContainer(
+          overrides: [
+            ...baseOverrides(),
+            rpcClientProvider.overrideWithValue(
+              (FakeRpcHost()..onCall = (op, args) => const {}).client(),
+            ),
+            prDetailProvider(
+              _prRefOf(42),
+            ).overrideWith((ref) => Stream.value(_samplePr())),
+            githubUserProvider.overrideWith((ref) async => null),
+            forgeConnectionsProvider.overrideWith((ref) async => []),
+            rigCapabilitiesProvider.overrideWith((ref) async => []),
+            reposForWorkspaceProvider.overrideWith(
+              (ref, workspaceId) => Stream.value([_sampleRepo()]),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        NavigationHistoryController nav() =>
+            container.read(navigationHistoryProvider.notifier);
+
+        Future<void> settle() async {
+          for (var i = 0; i < 6; i++) {
+            await tester.pump(const Duration(milliseconds: 50));
+          }
+        }
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(
+              localizationsDelegates: [
+                ...appLocalizationsDelegates,
+                ...GlobalMaterialLocalizations.delegates,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              locale: const Locale('en'),
+              routerConfig: router,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        router.go('/workspaces/ws/pull-requests/owner/repo/42');
+        await settle();
+        expect(router.state.uri.queryParameters['tab'], 'pr.overview');
+
+        // Click the Diff tab: adds a history entry.
+        tester.widget<EditorTabBar>(find.byType(EditorTabBar)).onTabSelected(1);
+        await settle();
+        expect(router.state.uri.queryParameters['tab'], 'pr.diff');
+
+        // Back returns to Overview; Forward returns to Diff.
+        nav().goBack();
+        await settle();
+        expect(router.state.uri.queryParameters['tab'], 'pr.overview');
+        expect(
+          tester.widget<EditorTabBar>(find.byType(EditorTabBar)).selectedIndex,
+          0,
+        );
+
+        nav().goForward();
+        await settle();
+        expect(router.state.uri.queryParameters['tab'], 'pr.diff');
+        expect(
+          tester.widget<EditorTabBar>(find.byType(EditorTabBar)).selectedIndex,
+          1,
+        );
+
+        // Leave PR detail and step Back: returns to Diff (latest visited tab).
+        router.go('/workspaces/ws/pull-requests');
+        await tester.pumpAndSettle();
+        nav().goBack();
+        await settle();
+        expect(router.state.uri.queryParameters['tab'], 'pr.diff');
+        expect(
+          tester.widget<EditorTabBar>(find.byType(EditorTabBar)).selectedIndex,
+          1,
+        );
+
+        await tester.pumpWidget(Container());
+        await tester.pump(const Duration(milliseconds: 100));
+      },
+    );
+
+    testWidgets(
+      'comment notification scrolls to Diff thread from offstage and stale cache',
+      (tester) async {
+        tester.view.physicalSize = const Size(1400, 600);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final files = [
+          for (var i = 0; i < 25; i++)
+            PrFile(
+              filename: i == 24 ? 'z_target.dart' : 'file_$i.dart',
+              status: PrFileStatus.modified,
+              additions: 2,
+              deletions: 0,
+              patch:
+                  '@@ -1,3 +1,5 @@\n line1\n+addedA_$i\n+addedB_$i\n line4\n line5',
+            ),
+        ];
+        final reviewComment = PrCodeReviewComment(
+          id: 901,
+          body: 'Target diff review comment',
+          user: const PrUser(login: 'reviewer', avatarUrl: ''),
+          path: 'z_target.dart',
+          position: 2,
+          line: 2,
+          side: 'RIGHT',
+          createdAt: DateTime.utc(2026, 9, 2),
+          threadId: 'THREAD_901',
+        );
+        var commentSubCount = 0;
+
+        final router = GoRouter(
+          initialLocation: '/workspaces/ws/pull-requests/owner/repo/42',
+          routes: [
+            ShellRoute(
+              builder: (context, state, child) => Consumer(
+                builder: (context, ref, _) => MouseNavigationHandler(
+                  historyController: ref.read(
+                    navigationHistoryProvider.notifier,
+                  ),
+                  child: child,
+                ),
+              ),
+              routes: [
+                GoRoute(
+                  path: '/workspaces/:workspaceId/pull-requests/:owner/:repo/:prNumber',
+                  builder: (_, state) => CcTheme(
+                    data: CcThemeData.light(),
+                    child: PullRequestDetailScreen(
+                      workspaceId: state.pathParameters['workspaceId']!,
+                      owner: state.pathParameters['owner']!,
+                      repo: state.pathParameters['repo']!,
+                      prNumber: int.parse(state.pathParameters['prNumber']!),
+                      focusedTabKey: state.uri.queryParameters['tab'],
+                      pendingCommentId: int.tryParse(
+                        state.uri.queryParameters['comment'] ?? '',
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+        addTearDown(router.dispose);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              ...baseOverrides(),
+              rpcClientProvider.overrideWithValue(
+                (FakeRpcHost()..onCall = (op, args) => const {}).client(),
+              ),
+              prDetailProvider(
+                _prRefOf(42),
+              ).overrideWith((ref) => Stream.value(_samplePr())),
+              githubUserProvider.overrideWith((ref) async => null),
+              forgeConnectionsProvider.overrideWith((ref) async => []),
+              rigCapabilitiesProvider.overrideWith((ref) async => []),
+              reposForWorkspaceProvider.overrideWith(
+                (ref, workspaceId) => Stream.value([_sampleRepo()]),
+              ),
+              prFileIndexProvider(
+                _prRefOf(42),
+              ).overrideWith((ref) => Stream.value(files)),
+              prFilesLoadProvider(_prRefOf(42)).overrideWith(
+                (ref) => Stream.value(PrFilesLoad(files: files, isComplete: true)),
+              ),
+              prReviewCommentsProvider(_prRefOf(42)).overrideWith((ref) {
+                commentSubCount++;
+                // First subscription returns stale empty list; invalidation
+                // yields the fresh list containing comment 901.
+                return Stream.value(
+                  commentSubCount == 1 ? const [] : [reviewComment],
+                );
+              }),
+            ],
+            child: MaterialApp.router(
+              localizationsDelegates: [
+                ...appLocalizationsDelegates,
+                ...GlobalMaterialLocalizations.delegates,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              locale: const Locale('en'),
+              routerConfig: router,
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        // Visit Diff once so PrDiffTab stays mounted offstage, then return to Overview.
+        tester.widget<EditorTabBar>(find.byType(EditorTabBar)).onTabSelected(1);
+        await tester.pump();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+        tester.widget<EditorTabBar>(find.byType(EditorTabBar)).onTabSelected(0);
+        await tester.pump();
+        await tester.pump();
+        expect(
+          tester.widget<EditorTabBar>(find.byType(EditorTabBar)).selectedIndex,
+          0,
+        );
+
+        // Notification deep-links to comment 901 in Diff.
+        router.go(
+          '/workspaces/ws/pull-requests/owner/repo/42?tab=pr.diff&comment=901',
+        );
+        for (var i = 0; i < 20; i++) {
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+
+        expect(
+          tester.widget<EditorTabBar>(find.byType(EditorTabBar)).selectedIndex,
+          1,
+        );
+        expect(commentSubCount, greaterThanOrEqualTo(2));
+        expect(find.text('Target diff review comment'), findsOneWidget);
+
+        await tester.pumpWidget(Container());
+        await tester.pump(const Duration(milliseconds: 100));
+      },
+    );
+
+    testWidgets(
+      'comment notification scrolls to Overview issue comment and outdated review thread',
+      (tester) async {
+        tester.view.physicalSize = const Size(1400, 600);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final issueComments = [
+          for (var i = 1; i <= 15; i++)
+            IssueComment(
+              id: 500 + i,
+              body: i == 15
+                  ? 'Target overview issue comment'
+                  : 'Filler issue comment #$i with several words of context.',
+              user: const PrUser(login: 'commenter', avatarUrl: ''),
+              createdAt: DateTime.utc(2026, 9, 2, 0, i),
+            ),
+        ];
+        final outdatedReview = PrReviewSubmission(
+          id: 800,
+          state: PrReviewSubmissionState.commented,
+          author: const PrUser(login: 'reviewer', avatarUrl: ''),
+          body: 'Review summary',
+          submittedAt: DateTime.utc(2026, 9, 2, 1),
+        );
+        final outdatedComment = PrCodeReviewComment(
+          id: 702,
+          reviewId: 800,
+          body: 'Outdated thread target comment',
+          user: const PrUser(login: 'reviewer', avatarUrl: ''),
+          path: 'old.dart',
+          position: null,
+          line: null,
+          isOutdated: true,
+          isResolved: true,
+          createdAt: DateTime.utc(2026, 9, 2, 1),
+          threadId: 'THREAD_702',
+        );
+
+        final router = GoRouter(
+          initialLocation: '/workspaces/ws/pull-requests/owner/repo/42',
+          routes: [
+            ShellRoute(
+              builder: (context, state, child) => Consumer(
+                builder: (context, ref, _) => MouseNavigationHandler(
+                  historyController: ref.read(
+                    navigationHistoryProvider.notifier,
+                  ),
+                  child: child,
+                ),
+              ),
+              routes: [
+                GoRoute(
+                  path: '/workspaces/:workspaceId/pull-requests/:owner/:repo/:prNumber',
+                  builder: (_, state) => CcTheme(
+                    data: CcThemeData.light(),
+                    child: PullRequestDetailScreen(
+                      workspaceId: state.pathParameters['workspaceId']!,
+                      owner: state.pathParameters['owner']!,
+                      repo: state.pathParameters['repo']!,
+                      prNumber: int.parse(state.pathParameters['prNumber']!),
+                      focusedTabKey: state.uri.queryParameters['tab'],
+                      pendingCommentId: int.tryParse(
+                        state.uri.queryParameters['comment'] ?? '',
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+        addTearDown(router.dispose);
+
+        final container = ProviderContainer(
+          overrides: [
+            ...baseOverrides(),
+            rpcClientProvider.overrideWithValue(
+              (FakeRpcHost()..onCall = (op, args) => const {}).client(),
+            ),
+            prDetailProvider(
+              _prRefOf(42),
+            ).overrideWith((ref) => Stream.value(_samplePr())),
+            githubUserProvider.overrideWith((ref) async => null),
+            forgeConnectionsProvider.overrideWith((ref) async => []),
+            rigCapabilitiesProvider.overrideWith((ref) async => []),
+            reposForWorkspaceProvider.overrideWith(
+              (ref, workspaceId) => Stream.value([_sampleRepo()]),
+            ),
+            prIssueCommentsProvider(
+              _prRefOf(42),
+            ).overrideWith((ref) => Stream.value(issueComments)),
+            prReviewsProvider(
+              _prRefOf(42),
+            ).overrideWith((ref) => Stream.value([outdatedReview])),
+            prReviewCommentIndexProvider(
+              _prRefOf(42),
+            ).overrideWith((ref) => Stream.value([outdatedComment])),
+            prReviewCommentsProvider(
+              _prRefOf(42),
+            ).overrideWith((ref) => Stream.value([outdatedComment])),
+            prFilesLoadProvider(_prRefOf(42)).overrideWith(
+              (ref) => Stream.value(
+                const PrFilesLoad(files: [], isComplete: true),
+              ),
+            ),
+            prFileIndexProvider(
+              _prRefOf(42),
+            ).overrideWith((ref) => Stream.value(const [])),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(
+              localizationsDelegates: [
+                ...appLocalizationsDelegates,
+                ...GlobalMaterialLocalizations.delegates,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              locale: const Locale('en'),
+              routerConfig: router,
+            ),
+          ),
+        );
+        for (var i = 0; i < 8; i++) {
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+
+        // Issue comment deep link scrolls Overview timeline to comment 515.
+        router.go(
+          '/workspaces/ws/pull-requests/owner/repo/42?tab=pr.overview&comment=515',
+        );
+        for (var i = 0; i < 16; i++) {
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+        expect(find.text('Target overview issue comment'), findsOneWidget);
+
+        // Outdated review comment routed to Diff falls back to Overview and
+        // expands + scrolls to the thread.
+        router.go(
+          '/workspaces/ws/pull-requests/owner/repo/42?tab=pr.diff&comment=702',
+        );
+        for (var i = 0; i < 20; i++) {
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+        expect(
+          tester.widget<EditorTabBar>(find.byType(EditorTabBar)).selectedIndex,
+          0,
+        );
+        expect(find.text('Outdated thread target comment'), findsOneWidget);
+        expect(router.state.uri.queryParameters['tab'], 'pr.overview');
+        expect(router.state.uri.queryParameters['comment'], '702');
+
+        // Back skips the transient Diff entry and lands cleanly on the prior
+        // Overview entry instead of looping back into fallback.
+        container.read(navigationHistoryProvider.notifier).goBack();
+        for (var i = 0; i < 10; i++) {
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+        expect(router.state.uri.queryParameters['tab'], 'pr.overview');
+        expect(router.state.uri.queryParameters['comment'], '515');
+
+        await tester.pumpWidget(Container());
+        await tester.pump(const Duration(milliseconds: 100));
+      },
+    );
   });
 }
+
+Repo _sampleRepo() => Repo(
+  id: 'repo-1',
+  name: 'repo',
+  path: '/tmp/repo',
+  remoteOwner: 'owner',
+  remoteName: 'repo',
+  createdAt: DateTime.utc(2026),
+  updatedAt: DateTime.utc(2026),
+);
 
 class _CommitScopeHost extends StatefulWidget {
   const _CommitScopeHost({super.key});

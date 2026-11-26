@@ -64,6 +64,21 @@ String locationWithEditorTab(Uri current, String? key) {
   return current.replace(queryParameters: params).toString();
 }
 
+/// [current] with [param] removed (and no dangling `?`), preserving every
+/// other query param.
+Uri uriWithoutQueryParam(Uri current, String param) {
+  if (!current.queryParameters.containsKey(param)) {
+    return current;
+  }
+  final params = Map<String, String>.of(current.queryParameters)..remove(param);
+  if (params.isEmpty) {
+    final raw = current.toString();
+    final q = raw.indexOf('?');
+    return Uri.parse(q < 0 ? raw : raw.substring(0, q));
+  }
+  return current.replace(queryParameters: params);
+}
+
 /// Publishes a focused-tab URL directly to the platform route-information
 /// channel.
 ///

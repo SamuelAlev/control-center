@@ -199,6 +199,7 @@ class _PrDiffTabState extends ConsumerState<PrDiffTab> {
     super.didUpdateWidget(oldWidget);
     if (!oldWidget.isVisible && widget.isVisible) {
       _scheduleAutoRefreshIfStale();
+      _maybeRevealPendingComment();
     }
   }
 
@@ -258,15 +259,11 @@ class _PrDiffTabState extends ConsumerState<PrDiffTab> {
   }
 
   /// Consumes a pending comment permalink: resolve the comment to its thread,
-  /// open that thread's file and scroll the thread into view.
-  ///
-  /// Retries across frames like [_maybeJumpToPendingFile], because three
-  /// things arrive asynchronously and none is guaranteed on the frame the URL
-  /// is applied: the comment list and the diff's patches (RPC streams, waited
-  /// for up to [_revealLoadTimeout]) and the mounted diff state.
+  /// open that thread's file and scroll the thread into view. Retries across
+  /// frames because the comment list, diff patches, and diff state load async.
   void _maybeRevealPendingComment() {
     final commentId = widget.pendingCommentAnchor?.value;
-    if (commentId == null || !mounted) {
+    if (commentId == null || !mounted || !widget.isVisible) {
       return;
     }
     _scheduleReveal(

@@ -7,9 +7,13 @@ extension _PrDiffTabCommentReveal on _PrDiffTabState {
     int commentId, {
     required int attempts,
     required DateTime loadDeadline,
+    bool refreshedComments = false,
+    int missingRetries = 3,
   }) {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted || widget.pendingCommentAnchor?.value != commentId) {
+      if (!mounted ||
+          !widget.isVisible ||
+          widget.pendingCommentAnchor?.value != commentId) {
         return;
       }
       // Until the patch stream lands the diff shows the patch-free file index,
@@ -24,13 +28,16 @@ extension _PrDiffTabCommentReveal on _PrDiffTabState {
         _abandonReveal(commentId);
         return;
       }
-      final comments = ref.read(prReviewCommentsProvider(widget.prRef)).value;
+      final commentsAsync = ref.read(prReviewCommentsProvider(widget.prRef));
+      final comments = commentsAsync.value;
       if (comments == null || !patches.hasValue) {
         if (DateTime.now().isBefore(loadDeadline)) {
           _scheduleReveal(
             commentId,
             attempts: attempts,
             loadDeadline: loadDeadline,
+            refreshedComments: refreshedComments,
+            missingRetries: missingRetries,
           );
         } else {
           _abandonReveal(commentId);
@@ -44,6 +51,8 @@ extension _PrDiffTabCommentReveal on _PrDiffTabState {
             commentId,
             attempts: attempts - 1,
             loadDeadline: loadDeadline,
+            refreshedComments: refreshedComments,
+            missingRetries: missingRetries,
           );
         } else {
           _abandonReveal(commentId);
@@ -59,11 +68,54 @@ extension _PrDiffTabCommentReveal on _PrDiffTabState {
           break;
         }
       }
-      // Unknown comment (deleted, or an issue comment that never lived in the
-      // diff), or an outdated thread whose anchor line is gone from the
-      // current diff: there is no row to scroll to, so hand it back rather
-      // than scrolling nowhere.
-      if (thread == null || thread.isOutdated) {
+      if (thread == null) {
+        final isIssueComment =
+            ref
+                .read(prIssueCommentsProvider(widget.prRef))
+                .value
+                ?.any((c) => c.id == commentId) ==
+            true;
+        if (isIssueComment) {
+          _abandonReveal(commentId);
+          return;
+        }
+        if (commentsAsync.isLoading && DateTime.now().isBefore(loadDeadline)) {
+          _scheduleReveal(
+            commentId,
+            attempts: attempts,
+            loadDeadline: loadDeadline,
+            refreshedComments: refreshedComments,
+            missingRetries: missingRetries,
+          );
+          return;
+        }
+        if (!refreshedComments) {
+          ref.invalidate(prReviewCommentsProvider(widget.prRef));
+          _scheduleReveal(
+            commentId,
+            attempts: attempts,
+            loadDeadline: loadDeadline,
+            refreshedComments: true,
+            missingRetries: 3,
+          );
+          return;
+        }
+        if (missingRetries > 0) {
+          _scheduleReveal(
+            commentId,
+            attempts: attempts,
+            loadDeadline: loadDeadline,
+            refreshedComments: true,
+            missingRetries: missingRetries - 1,
+          );
+          return;
+        }
+        _abandonReveal(commentId);
+        return;
+      }
+      // Outdated thread whose anchor line is gone from the current diff: hand
+      // it back to Overview rather than scrolling nowhere.
+      if (thread.isOutdated) {
         _abandonReveal(commentId);
         return;
       }
@@ -77,6 +129,8 @@ extension _PrDiffTabCommentReveal on _PrDiffTabState {
             commentId,
             attempts: attempts - 1,
             loadDeadline: loadDeadline,
+            refreshedComments: refreshedComments,
+            missingRetries: missingRetries,
           );
         } else {
           _abandonReveal(commentId);
