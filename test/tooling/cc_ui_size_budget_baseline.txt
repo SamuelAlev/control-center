@@ -1,2 +1,4 @@
 # cc_ui components over 1000 lines — shrinking allowlist.
-packages/cc_ui/lib/src/components/cc_menu.dart 1287
+# Raised 2026-11-26 by 15 after 6428533f8: cc_menu.dart took section
+# headings, typeahead and the optional trigger wash.
+packages/cc_ui/lib/src/components/cc_menu.dart 1302

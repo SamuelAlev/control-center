@@ -13,6 +13,8 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.text('Notifications'), findsOneWidget);
+    // The page title, and the label of the master switch's card (labels are
+    // painted as written, so it reads the same as the title).
+    expect(find.text('Notifications'), findsNWidgets(2));
   });
 }

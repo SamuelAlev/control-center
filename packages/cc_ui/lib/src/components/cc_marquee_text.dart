@@ -173,7 +173,7 @@ class _CcMarqueeTextState extends State<CcMarqueeText>
   Widget build(BuildContext context) {
     final Widget visual;
     if (_travelling) {
-      final rtl = Directionality.of(context) == TextDirection.rtl;
+      final direction = Directionality.of(context);
       visual = LayoutBuilder(
         key: const ValueKey('travel'),
         builder: (context, constraints) => AnimatedBuilder(
@@ -190,8 +190,8 @@ class _CcMarqueeTextState extends State<CcMarqueeText>
             return ShaderMask(
               blendMode: BlendMode.dstIn,
               shaderCallback: (rect) => LinearGradient(
-                begin: rtl ? Alignment.centerRight : Alignment.centerLeft,
-                end: rtl ? Alignment.centerLeft : Alignment.centerRight,
+                begin: AlignmentDirectional.centerStart,
+                end: AlignmentDirectional.centerEnd,
                 colors: const [
                   Color(0x00000000),
                   Color(0xFF000000),
@@ -199,7 +199,7 @@ class _CcMarqueeTextState extends State<CcMarqueeText>
                   Color(0x00000000),
                 ],
                 stops: [0, lead, 1 - trail, 1],
-              ).createShader(rect),
+              ).createShader(rect, textDirection: direction),
               child: child,
             );
           },

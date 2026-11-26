@@ -208,14 +208,21 @@
 # Lowered 2026-11-24: dispatch_session.dart's _OverlayLayout moved to
 # dispatch_session_overlay_layout.dart; cc_server_runtime.dart and
 # remote_rpc_catalog.dart shrank with d49615abb (per-member MCP servers).
-packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart  2734
-packages/cc_domain/lib/src/dtos/dtos.dart  3330
+# Raised 2026-11-26 to current line counts after 6428533f8 and 77a3db96d:
+# github_graphql_client.dart (+507) and open_pr_polling_service.dart (+528)
+# page and split their GraphQL batches adaptively on a 5xx or timeout and
+# chunk the profile search; cc_server_runtime.dart
+# (+139), remote_rpc_catalog.dart (+72), cached_pr_review_repository.dart (+23),
+# builtin_template_seeds.dart (+9), catalog_wire.dart (+8) and dtos.dart (+6)
+# grew with them.
+packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart  2743
+packages/cc_domain/lib/src/dtos/dtos.dart  3336
 packages/cc_infra/lib/src/chat/chat_bridge_service.dart  1550
 packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2196
 packages/cc_infra/lib/src/dispatch/dispatch_session_claude_cli.dart  1618
 packages/cc_infra/lib/src/messaging/messaging_service.dart  1626
 packages/cc_infra/lib/src/network/github/github_forge_pr_client.dart  1736
-packages/cc_infra/lib/src/network/github_graphql_client.dart  2215
+packages/cc_infra/lib/src/network/github_graphql_client.dart  2722
 packages/cc_infra/lib/src/network/github_pr_client.dart  2290
 packages/cc_infra/lib/src/network/gitlab/gitlab_forge_pr_client.dart  1885
 packages/cc_infra/lib/src/rigs/cdp_client.dart  2495
@@ -223,11 +230,11 @@ packages/cc_infra/lib/src/rigs/qemu_enclosure_backend.dart  1795
 packages/cc_infra/lib/src/rigs/rig_service.dart  2298
 packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2035
 packages/cc_infra/lib/src/sandboxing/claude_stream_json.dart  1585
-packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2808
-packages/cc_server_core/lib/src/catalog/catalog_wire.dart  2879
-packages/cc_server_core/lib/src/cc_server_runtime.dart  8238
+packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2831
+packages/cc_server_core/lib/src/catalog/catalog_wire.dart  2887
+packages/cc_server_core/lib/src/cc_server_runtime.dart  8377
 packages/cc_server_core/lib/src/demo/demo_seeder.dart  2865
 packages/cc_server_core/lib/src/local_rpc_server.dart  2509
-packages/cc_server_core/lib/src/pr_review/open_pr_polling_service.dart  1898
-packages/cc_server_core/lib/src/remote_rpc_catalog.dart  14317
+packages/cc_server_core/lib/src/pr_review/open_pr_polling_service.dart  2426
+packages/cc_server_core/lib/src/remote_rpc_catalog.dart  14389
 packages/cc_server_core/lib/src/repo_ide_data_service.dart  2365

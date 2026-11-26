@@ -7,7 +7,6 @@
 // 95 MiB above for the same held objects.
 import 'dart:developer';
 import 'dart:isolate';
-import 'dart:math' as math;
 
 import 'package:vm_service/vm_service.dart' show VmService;
 import 'package:vm_service/vm_service_io.dart';
@@ -19,8 +18,12 @@ class LiveHeap {
   final VmService _service;
   final String _isolateId;
 
-  /// How many collections one reading takes.
-  static const int _collections = 3;
+  /// How many collections in a row must fail to lower the reading before it
+  /// is taken as settled.
+  static const int _settled = 3;
+
+  /// The most collections one reading takes.
+  static const int _maxCollections = 20;
 
   /// Between collections, for the sweeper to finish.
   static const Duration _settle = Duration(milliseconds: 50);
@@ -43,19 +46,28 @@ class LiveHeap {
   /// Live bytes after a full collection: what the isolate holds, whatever
   /// the allocator has kept or given back.
   ///
-  /// The least of [_collections] readings. What is reachable does not change
-  /// between them, so a higher reading counted garbage a collection had not
+  /// The least reading, taken until [_settled] collections in a row no longer
+  /// lower it (at most [_maxCollections]). What is reachable does not change
+  /// between readings, so a higher one counted garbage a collection had not
   /// yet swept: one reading on Windows counted a second copy of every decoded
-  /// string.
+  /// string, and on a loaded Windows runner three readings 50 ms apart still
+  /// counted two (a 256 KiB ASCII string read as 859 KiB), so a fixed number
+  /// of readings is not enough.
   Future<int> bytes() async {
     int? least;
-    for (var i = 0; i < _collections; i++) {
+    var unchanged = 0;
+    for (var i = 0; i < _maxCollections && unchanged < _settled; i++) {
       if (i > 0) {
         await Future<void>.delayed(_settle);
       }
       final profile = await _service.getAllocationProfile(_isolateId, gc: true);
       final usage = profile.memoryUsage!.heapUsage!;
-      least = least == null ? usage : math.min(least, usage);
+      if (least == null || usage < least) {
+        least = usage;
+        unchanged = 0;
+      } else {
+        unchanged++;
+      }
     }
     return least!;
   }

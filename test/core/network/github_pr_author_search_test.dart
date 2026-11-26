@@ -27,7 +27,7 @@ void main() {
     });
 
     test(
-      'sums issueCounts across repo chunks (>5 repos => 2 requests)',
+      'sums issueCounts across repo chunks (>10 repos => 2 requests)',
       () async {
         var call = 0;
         final fake = TestHttpClient(
@@ -43,7 +43,7 @@ void main() {
             });
           },
         );
-        final repos = [for (var n = 0; n < 6; n++) (owner: 'o', name: 'r$n')];
+        final repos = [for (var n = 0; n < 11; n++) (owner: 'o', name: 'r$n')];
 
         final counts = await GitHubGraphQLClient(
           fake,
@@ -52,7 +52,7 @@ void main() {
         expect(
           fake.requests,
           hasLength(2),
-          reason: 'chunk size 5 over 6 repos => 2 calls',
+          reason: 'chunk size 10 over 11 repos => 2 calls',
         );
         expect(counts, (open: 15, draft: 0, merged: 42, closed: 2));
       },

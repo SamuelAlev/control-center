@@ -35,6 +35,7 @@ import 'package:cc_gallery/stories/cc_image_viewer.stories.dart' as _cc_gallery_
 import 'package:cc_gallery/stories/cc_kbd.stories.dart' as _cc_gallery_stories_cc_kbd_stories;
 import 'package:cc_gallery/stories/cc_link_text.stories.dart' as _cc_gallery_stories_cc_link_text_stories;
 import 'package:cc_gallery/stories/cc_markdown.stories.dart' as _cc_gallery_stories_cc_markdown_stories;
+import 'package:cc_gallery/stories/cc_marquee_text.stories.dart' as _cc_gallery_stories_cc_marquee_text_stories;
 import 'package:cc_gallery/stories/cc_menu.stories.dart' as _cc_gallery_stories_cc_menu_stories;
 import 'package:cc_gallery/stories/cc_mermaid_view.stories.dart' as _cc_gallery_stories_cc_mermaid_view_stories;
 import 'package:cc_gallery/stories/cc_multi_select.stories.dart' as _cc_gallery_stories_cc_multi_select_stories;
@@ -114,6 +115,7 @@ final components = <_widgetbook.Component>[
   _cc_gallery_stories_cc_kbd_stories.ShowcaseComponent,
   _cc_gallery_stories_cc_link_text_stories.ShowcaseComponent,
   _cc_gallery_stories_cc_markdown_stories.ShowcaseComponent,
+  _cc_gallery_stories_cc_marquee_text_stories.ShowcaseComponent,
   _cc_gallery_stories_cc_menu_stories.ShowcaseComponent,
   _cc_gallery_stories_cc_mermaid_view_stories.ShowcaseComponent,
   _cc_gallery_stories_cc_multi_select_stories.ShowcaseComponent,

@@ -104,10 +104,13 @@ final Map<String, String Function(int size)> _shapes = {
 
 const _kib = 1024;
 
-/// What 1 MiB of any shape may take. Every shape measured well under it
-/// (see the fifth-pass report); a pattern that rescans from every start
-/// takes minutes at this size.
-const _ceiling = Duration(seconds: 2);
+/// What 1 MiB of any shape may take. A pattern that rescans from every start
+/// takes minutes at this size, and the scaling check below is what holds a
+/// pattern linear; this only bounds the constant. The slowest shape
+/// (`glpat- glued, repeated`) takes about 0.75 s on a developer machine and
+/// took 2.1 to 2.6 s on a hosted macOS runner, a third of its speed, so the
+/// ceiling leaves that runner room.
+const _ceiling = Duration(seconds: 5);
 
 /// Fixed slack in the scaling check, for timer and collector noise on
 /// inputs that take a few milliseconds.

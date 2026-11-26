@@ -9,6 +9,12 @@ const TextStyle _code = TextStyle(fontSize: 12, height: 1.5);
 /// Line height of [_code] (12 × 1.5).
 const double _codeLine = 18;
 
+/// Milliseconds a measurement of any input may take. The measurer lays out at
+/// most [kFeedMeasureCharBudget] characters, which takes a few milliseconds
+/// on a developer machine and took 50 on a loaded CI runner; laying out the
+/// megabytes the test hands it would take seconds.
+const int _fast = 250;
+
 FeedTextMeasurer _measurer({TextScaler textScaler = TextScaler.noScaling}) =>
     FeedTextMeasurer(
       textScaler: textScaler,
@@ -206,7 +212,7 @@ void main() {
     final stopwatch = Stopwatch()..start();
     final height = m.proseHeight(big, 500);
     stopwatch.stop();
-    expect(stopwatch.elapsedMilliseconds, lessThan(50));
+    expect(stopwatch.elapsedMilliseconds, lessThan(_fast));
 
     final bigger = _transcript(2000000);
     final ratio = m.proseHeight(bigger, 500) / height;
@@ -222,7 +228,7 @@ void main() {
     final line = 'word ' * 200000;
     final lineWatch = Stopwatch()..start();
     expect(m.proseHeight(line, 500), greaterThan(0));
-    expect(lineWatch.elapsedMilliseconds, lessThan(50));
+    expect(lineWatch.elapsedMilliseconds, lessThan(_fast));
   });
 
   testWidgets('of(context) resolves the chat styles', (tester) async {

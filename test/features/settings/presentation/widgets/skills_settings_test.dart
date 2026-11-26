@@ -409,7 +409,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      expect(find.text('Skills'), findsOneWidget);
+      // The page title, and the label of the list card (labels are painted as
+      // written, so it reads the same as the title).
+      expect(find.text('Skills'), findsNWidgets(2));
     });
 
     testWidgets('renders page title', (tester) async {

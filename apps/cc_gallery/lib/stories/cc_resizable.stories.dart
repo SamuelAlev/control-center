@@ -11,6 +11,10 @@ part 'cc_resizable.stories.g.dart';
 /// The builders return the component directly — the gallery's theme addon
 /// supplies the [CcTheme] + canvas. Drag the hairline between regions to
 /// resize.
+///
+/// [CcResizableDivider] is the seam itself. [CcResizable] places one between
+/// each pair of regions; a layout that computes its own geometry (the editor's
+/// split panes) places it directly, as the "Standalone divider" story does.
 
 const _path = '[Components]/Layout';
 
@@ -56,6 +60,11 @@ final $ThreeRegions = _Story(
 final $VerticalSplit = _Story(
   name: 'Vertical split',
   args: _Args.fixed(preview: ccResizableVerticalStory),
+);
+
+final $StandaloneDivider = _Story(
+  name: 'Standalone divider',
+  args: _Args.fixed(preview: ccResizableStandaloneDividerStory),
 );
 
 /// The controls of the interactive story, as constructor parameters
@@ -210,4 +219,82 @@ Widget ccResizablePlaygroundStory(
       ),
     ),
   );
+}
+
+/// [CcResizableDivider] on its own, in a layout that owns its geometry: the
+/// story keeps the split position and places the divider over the seam, the
+/// way the editor's split panes do.
+Widget ccResizableStandaloneDividerStory(BuildContext context) =>
+    const Padding(padding: EdgeInsets.all(24), child: _StandaloneDivider());
+
+class _StandaloneDivider extends StatefulWidget {
+  const _StandaloneDivider();
+
+  @override
+  State<_StandaloneDivider> createState() => _StandaloneDividerState();
+}
+
+class _StandaloneDividerState extends State<_StandaloneDivider> {
+  static const double _width = 520;
+  static const double _hitSize = 8;
+  static const double _minPane = 120;
+
+  double _split = 200;
+
+  double _clamp(double split) => split.clamp(_minPane, _width - _minPane);
+
+  String _percent(double split) => '${(_clamp(split) / _width * 100).round()}%';
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.designSystem!;
+    // The drag delta is physical; in a mirrored layout a rightward drag
+    // shrinks the leading pane.
+    final sign = Directionality.of(context) == TextDirection.rtl ? -1 : 1;
+    return SizedBox(
+      width: _width,
+      height: 320,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          PositionedDirectional(
+            start: 0,
+            top: 0,
+            bottom: 0,
+            width: _split,
+            child: _pane(context, 'Editor', t.surface),
+          ),
+          PositionedDirectional(
+            start: _split,
+            end: 0,
+            top: 0,
+            bottom: 0,
+            child: _pane(context, 'Preview', t.bgSecondary),
+          ),
+          PositionedDirectional(
+            start: _split - _hitSize / 2,
+            top: 0,
+            bottom: 0,
+            width: _hitSize,
+            child: CcResizableDivider(
+              axis: Axis.horizontal,
+              thickness: 1,
+              hitSize: _hitSize,
+              color: t.lineStrong,
+              activeColor: t.fgBrandPrimary,
+              semanticValue: _percent(_split),
+              semanticIncreasedValue: _percent(
+                _split + CcResizableDivider.keyboardStep,
+              ),
+              semanticDecreasedValue: _percent(
+                _split - CcResizableDivider.keyboardStep,
+              ),
+              onDrag: (delta) =>
+                  setState(() => _split = _clamp(_split + sign * delta)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

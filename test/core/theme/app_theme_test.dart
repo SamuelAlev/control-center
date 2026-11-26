@@ -88,16 +88,20 @@ void main() {
         );
       });
 
-      test('selected families resolve the optically adjusted real cut', () {
+      // One family name carries every weight: the registry registers each cut
+      // under it, so the engine picks the cut from the style's weight.
+      test('selected families resolve to one family name at every weight', () {
         final theme = AppTheme.light(appFontFamily: 'CustomUi');
 
+        expect(theme.textTheme.bodyMedium?.fontFamily, 'CustomUi');
         expect(
-          theme.textTheme.bodyMedium?.fontFamily,
-          'CustomUi ${CcTypography.regularWeight.value}',
+          theme.textTheme.bodyMedium?.fontWeight,
+          CcTypography.regularWeight,
         );
+        expect(theme.textTheme.labelLarge?.fontFamily, 'CustomUi');
         expect(
-          theme.textTheme.labelLarge?.fontFamily,
-          'CustomUi ${CcTypography.mediumWeight.value}',
+          theme.textTheme.labelLarge?.fontWeight,
+          CcTypography.mediumWeight,
         );
       });
     });

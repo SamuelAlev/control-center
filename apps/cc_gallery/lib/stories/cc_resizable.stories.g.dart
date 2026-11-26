@@ -38,6 +38,7 @@ every stories file targets [Showcase] and names its navigation entry with a
     $HorizontalSplit..$generatedName = 'HorizontalSplit',
     $ThreeRegions..$generatedName = 'ThreeRegions',
     $VerticalSplit..$generatedName = 'VerticalSplit',
+    $StandaloneDivider..$generatedName = 'StandaloneDivider',
   ],
 );
 typedef ShowcaseScenario = Scenario<Showcase, ShowcaseArgs>;

@@ -124,7 +124,9 @@ void main() {
             matching: find.byType(AnimatedContainer),
           ),
         );
-        return box.decoration! as BoxDecoration;
+        // The wash paints over the target, so a target with its own fill
+        // still shows it.
+        return box.foregroundDecoration! as BoxDecoration;
       }
 
       final rest = DesignSystemTokens.light().hover.withValues(alpha: 0);
