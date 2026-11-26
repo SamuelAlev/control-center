@@ -10453,12 +10453,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get timestampRawLabel => '时间戳';
 
   @override
-  String get copyTimestamp => '复制时间戳';
-
-  @override
-  String get copiedTimestamp => '已复制时间戳';
-
-  @override
   String get previewDeployment => '预览部署';
 
   @override
@@ -31493,12 +31487,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get timestampRawLabel => '時間戳記';
-
-  @override
-  String get copyTimestamp => '複製時間戳記';
-
-  @override
-  String get copiedTimestamp => '已複製時間戳記';
 
   @override
   String get previewDeployment => '預覽部署';
@@ -52541,12 +52529,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get timestampRawLabel => '時間戳記';
-
-  @override
-  String get copyTimestamp => '複製時間戳記';
-
-  @override
-  String get copiedTimestamp => '已複製時間戳記';
 
   @override
   String get previewDeployment => '預覽部署';

@@ -6187,8 +6187,6 @@
   "prWorktreeUnavailableHint": "Příprava souborů pull requestu selhala. Otevřete pull request znovu a zkuste to.",
   "timestampRelativeLabel": "Relativní",
   "timestampRawLabel": "Časová značka",
-  "copyTimestamp": "Kopírovat časovou značku",
-  "copiedTimestamp": "Časová značka zkopírována",
   "previewDeployment": "Náhled nasazení",
   "previewDeploymentTab": "Náhled: {site}",
   "@previewDeploymentTab": {

@@ -5363,8 +5363,6 @@
   },
   "timestampRelativeLabel": "Relativo",
   "timestampRawLabel": "Timestamp",
-  "copyTimestamp": "Copia timestamp",
-  "copiedTimestamp": "Timestamp copiato",
   "previewDeployment": "Deploy di anteprima",
   "previewDeploymentTab": "Anteprima: {site}",
   "askForReview": "Richiedi una revisione…",

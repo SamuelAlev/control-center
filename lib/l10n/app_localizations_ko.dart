@@ -10551,12 +10551,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get timestampRawLabel => '타임스탬프';
 
   @override
-  String get copyTimestamp => '타임스탬프 복사';
-
-  @override
-  String get copiedTimestamp => '타임스탬프를 복사했습니다';
-
-  @override
   String get previewDeployment => '미리보기 배포';
 
   @override

@@ -10784,12 +10784,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get timestampRawLabel => 'Cap masa';
 
   @override
-  String get copyTimestamp => 'Salin cap masa';
-
-  @override
-  String get copiedTimestamp => 'Cap masa disalin';
-
-  @override
   String get previewDeployment => 'Pratonton penempatan';
 
   @override

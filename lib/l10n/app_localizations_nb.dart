@@ -10763,12 +10763,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get timestampRawLabel => 'Tidsstempel';
 
   @override
-  String get copyTimestamp => 'Kopier tidsstempel';
-
-  @override
-  String get copiedTimestamp => 'Kopierte tidsstempel';
-
-  @override
   String get previewDeployment => 'Forhåndsvisning av utplassering';
 
   @override

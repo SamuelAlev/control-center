@@ -53,7 +53,7 @@ String workTimeLabel(BuildContext context, DateTime at) {
 /// A short duration label: `45m`, `3h`, `2d`.
 String workDurationLabel(Duration d) => formatCoarseDuration(d);
 
-/// [text] (built from [at]) with the timestamp's hover card and copy.
+/// [text] (built from [at]) with the timestamp's hover card.
 class WorkTime extends StatelessWidget {
   /// Creates the label.
   const WorkTime({super.key, required this.at, required this.text, this.style});

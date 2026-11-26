@@ -10773,12 +10773,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get timestampRawLabel => 'Tidsstämpel';
 
   @override
-  String get copyTimestamp => 'Kopiera tidsstämpel';
-
-  @override
-  String get copiedTimestamp => 'Tidsstämpel kopierad';
-
-  @override
   String get previewDeployment => 'Förhandsgranska driftsättning';
 
   @override

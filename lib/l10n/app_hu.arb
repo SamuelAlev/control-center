@@ -6187,8 +6187,6 @@
   "prWorktreeUnavailableHint": "A pull request fájljainak előkészítése sikertelen. Nyissa újra a pull requestet az újrapróbáláshoz.",
   "timestampRelativeLabel": "Relatív",
   "timestampRawLabel": "Időbélyeg",
-  "copyTimestamp": "Időbélyeg másolása",
-  "copiedTimestamp": "Időbélyeg másolva",
   "previewDeployment": "Előnézeti telepítés",
   "previewDeploymentTab": "Előnézet: {site}",
   "@previewDeploymentTab": {

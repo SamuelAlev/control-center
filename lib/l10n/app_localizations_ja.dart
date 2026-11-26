@@ -10551,12 +10551,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get timestampRawLabel => 'タイムスタンプ';
 
   @override
-  String get copyTimestamp => 'タイムスタンプをコピー';
-
-  @override
-  String get copiedTimestamp => 'タイムスタンプをコピーしました';
-
-  @override
   String get previewDeployment => 'プレビューデプロイ';
 
   @override

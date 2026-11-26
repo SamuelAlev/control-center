@@ -6187,8 +6187,6 @@
   "prWorktreeUnavailableHint": "Chuẩn bị tệp của pull request thất bại. Mở lại pull request để thử lại.",
   "timestampRelativeLabel": "Tương đối",
   "timestampRawLabel": "Dấu thời gian",
-  "copyTimestamp": "Sao chép dấu thời gian",
-  "copiedTimestamp": "Đã sao chép dấu thời gian",
   "previewDeployment": "Xem trước triển khai",
   "previewDeploymentTab": "Xem trước: {site}",
   "@previewDeploymentTab": {

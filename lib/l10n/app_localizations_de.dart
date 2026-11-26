@@ -10842,12 +10842,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get timestampRawLabel => 'Zeitstempel';
 
   @override
-  String get copyTimestamp => 'Zeitstempel kopieren';
-
-  @override
-  String get copiedTimestamp => 'Zeitstempel kopiert';
-
-  @override
   String get previewDeployment => 'Vorschau-Deployment';
 
   @override

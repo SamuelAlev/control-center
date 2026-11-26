@@ -10874,12 +10874,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get timestampRawLabel => 'Timestamp';
 
   @override
-  String get copyTimestamp => 'Copiază timestamp-ul';
-
-  @override
-  String get copiedTimestamp => 'Timestamp copiat';
-
-  @override
   String get previewDeployment => 'Previzualizare deployment';
 
   @override

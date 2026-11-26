@@ -10808,12 +10808,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get timestampRawLabel => 'Időbélyeg';
 
   @override
-  String get copyTimestamp => 'Időbélyeg másolása';
-
-  @override
-  String get copiedTimestamp => 'Időbélyeg másolva';
-
-  @override
   String get previewDeployment => 'Előnézeti telepítés';
 
   @override

@@ -5366,8 +5366,6 @@
   },
   "timestampRelativeLabel": "Relatief",
   "timestampRawLabel": "Tijdstempel",
-  "copyTimestamp": "Tijdstempel kopiëren",
-  "copiedTimestamp": "Tijdstempel gekopieerd",
   "previewDeployment": "Preview-implementatie",
   "previewDeploymentTab": "Preview: {site}",
   "askForReview": "Review vragen…",

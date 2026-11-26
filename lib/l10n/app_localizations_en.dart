@@ -10735,12 +10735,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get timestampRawLabel => 'Timestamp';
 
   @override
-  String get copyTimestamp => 'Copy timestamp';
-
-  @override
-  String get copiedTimestamp => 'Copied timestamp';
-
-  @override
   String get previewDeployment => 'Preview deployment';
 
   @override

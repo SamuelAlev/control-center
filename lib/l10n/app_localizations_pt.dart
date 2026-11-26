@@ -10820,12 +10820,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get timestampRawLabel => 'Carimbo de data/hora';
 
   @override
-  String get copyTimestamp => 'Copiar carimbo de data/hora';
-
-  @override
-  String get copiedTimestamp => 'Carimbo de data/hora copiado';
-
-  @override
   String get previewDeployment => 'Implantação de pré-visualização';
 
   @override

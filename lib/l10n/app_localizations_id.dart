@@ -10776,12 +10776,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get timestampRawLabel => 'Stempel waktu';
 
   @override
-  String get copyTimestamp => 'Salin stempel waktu';
-
-  @override
-  String get copiedTimestamp => 'Stempel waktu disalin';
-
-  @override
   String get previewDeployment => 'Pratinjau deployment';
 
   @override

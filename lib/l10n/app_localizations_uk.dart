@@ -10884,12 +10884,6 @@ class AppLocalizationsUk extends AppLocalizations {
   String get timestampRawLabel => 'Мітка часу';
 
   @override
-  String get copyTimestamp => 'Копіювати мітку часу';
-
-  @override
-  String get copiedTimestamp => 'Мітку часу скопійовано';
-
-  @override
   String get previewDeployment => 'Попередній перегляд розгортання';
 
   @override

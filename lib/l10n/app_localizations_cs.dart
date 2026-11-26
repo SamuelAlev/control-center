@@ -10876,12 +10876,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get timestampRawLabel => 'Časová značka';
 
   @override
-  String get copyTimestamp => 'Kopírovat časovou značku';
-
-  @override
-  String get copiedTimestamp => 'Časová značka zkopírována';
-
-  @override
   String get previewDeployment => 'Náhled nasazení';
 
   @override

@@ -6187,8 +6187,6 @@
   "prWorktreeUnavailableHint": "Pull request dosyaları hazırlanamadı. Yeniden denemek için pull request’i yeniden aç.",
   "timestampRelativeLabel": "Göreli",
   "timestampRawLabel": "Zaman damgası",
-  "copyTimestamp": "Zaman damgasını kopyala",
-  "copiedTimestamp": "Zaman damgası kopyalandı",
   "previewDeployment": "Önizleme dağıtımı",
   "previewDeploymentTab": "Önizleme: {site}",
   "@previewDeploymentTab": {

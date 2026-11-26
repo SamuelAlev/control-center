@@ -6187,8 +6187,6 @@
   "prWorktreeUnavailableHint": "풀 리퀘스트 파일 준비에 실패했습니다. 풀 리퀘스트를 다시 열어 재시도하세요.",
   "timestampRelativeLabel": "상대",
   "timestampRawLabel": "타임스탬프",
-  "copyTimestamp": "타임스탬프 복사",
-  "copiedTimestamp": "타임스탬프를 복사했습니다",
   "previewDeployment": "미리보기 배포",
   "previewDeploymentTab": "미리보기: {site}",
   "@previewDeploymentTab": {

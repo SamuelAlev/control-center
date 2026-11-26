@@ -18505,18 +18505,6 @@ abstract class AppLocalizations {
   /// **'Timestamp'**
   String get timestampRawLabel;
 
-  /// No description provided for @copyTimestamp.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy timestamp'**
-  String get copyTimestamp;
-
-  /// No description provided for @copiedTimestamp.
-  ///
-  /// In en, this message translates to:
-  /// **'Copied timestamp'**
-  String get copiedTimestamp;
-
   /// Generic label for the auto-detected deployment-preview tab on a pull request when the site name is unknown
   ///
   /// In en, this message translates to:

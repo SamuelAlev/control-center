@@ -6187,8 +6187,6 @@
   "prWorktreeUnavailableHint": "آماده‌سازی فایل‌های pull request ناموفق بود. pull request را دوباره باز کنید.",
   "timestampRelativeLabel": "نسبی",
   "timestampRawLabel": "برچسب زمانی",
-  "copyTimestamp": "کپی برچسب زمانی",
-  "copiedTimestamp": "برچسب زمانی کپی شد",
   "previewDeployment": "پیش‌نمایش استقرار",
   "previewDeploymentTab": "پیش‌نمایش: ⁨{site}⁩",
   "@previewDeploymentTab": {

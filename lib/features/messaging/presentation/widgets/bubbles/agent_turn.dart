@@ -390,8 +390,8 @@ class _TurnBody extends ConsumerWidget {
 ///
 /// Only the time run is an [AppTimestamp] target. The line is one visual
 /// unit, but wrapping the whole composed string would make the duration, cost,
-/// and token counts show a click cursor, pop the timestamp hover card and copy
-/// an ISO instant on tap — none of which they describe. The metadata run is
+/// and token counts pop the timestamp hover card, which describes none of
+/// them. The metadata run is
 /// inert text carrying its own leading separator, so the line still reads
 /// unbroken with identical metrics (same style, so the default
 /// [CrossAxisAlignment.center] lands both runs on the same baseline).

@@ -91,8 +91,8 @@ class _RefreshControlState extends State<RefreshControl> {
         return const SizedBox.shrink();
       }
       final tokens = context.designSystem ?? DesignSystemTokens.light();
-      // Freshness-only indicator: the shared timestamp hover card (and its
-      // click-to-copy) on a quiet clock glyph.
+      // Freshness-only indicator: the shared timestamp hover card on a quiet
+      // clock glyph.
       return AppTimestamp(
         dateTime: lastChecked,
         child: Icon(AppIcons.clock, size: 16, color: tokens.textTertiary),

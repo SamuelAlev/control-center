@@ -6187,8 +6187,6 @@
   "prWorktreeUnavailableHint": "فشل تجهيز ملفات طلب السحب. أعد فتح طلب السحب للمحاولة مجددًا.",
   "timestampRelativeLabel": "نسبي",
   "timestampRawLabel": "الطابع الزمني",
-  "copyTimestamp": "نسخ الطابع الزمني",
-  "copiedTimestamp": "تم نسخ الطابع الزمني",
   "previewDeployment": "معاينة النشر",
   "previewDeploymentTab": "معاينة: ⁨{site}⁩",
   "@previewDeploymentTab": {

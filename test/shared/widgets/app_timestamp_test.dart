@@ -61,34 +61,7 @@ void main() {
       expect(find.textContaining(dt.toUtc().toIso8601String()), findsOneWidget);
     });
 
-    testWidgets('copies the ISO timestamp when the display is tapped', (
-      tester,
-    ) async {
-      final dt = DateTime(2026, 7, 17, 19, 40, 5);
-      final copied = <String>[];
-      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-        SystemChannels.platform,
-        (call) async {
-          if (call.method == 'Clipboard.setData') {
-            copied.add((call.arguments as Map)['text'] as String);
-          }
-          return null;
-        },
-      );
-
-      await tester.pumpWidget(
-        testWrap(AppTimestamp(dateTime: dt, child: const Text('1m ago'))),
-      );
-
-      // Copy is now a tap on the timestamp itself (the tooltip is descriptive
-      // and non-interactive), no hover required.
-      await tester.tap(find.text('1m ago'));
-      await tester.pump();
-
-      expect(copied, [dt.toUtc().toIso8601String()]);
-    });
-
-    testWidgets('is a button, but not a Tab stop', (tester) async {
+    testWidgets('is neither a button nor a Tab stop', (tester) async {
       final dt = DateTime(2026, 7, 17, 19, 40, 5);
       final handle = tester.ensureSemantics();
 
@@ -97,7 +70,7 @@ void main() {
       );
 
       final node = tester.getSemantics(find.text('1m ago'));
-      expect(node.flagsCollection.isButton, isTrue);
+      expect(node.flagsCollection.isButton, isFalse);
 
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pump();

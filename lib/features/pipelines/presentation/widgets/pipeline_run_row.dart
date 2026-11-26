@@ -32,9 +32,8 @@ abstract final class PipelineRunRowMetrics {
 /// One pipeline run as a table row: trigger glyph, pipeline name, then aligned
 /// status / duration / started columns. Clicking the row opens the run's page.
 ///
-/// The relative time carries no `AppTimestamp`: the whole row is one tap target,
-/// and a nested copy-the-timestamp gesture would swallow that tap. The run's
-/// exact start instant lives on the run page.
+/// The relative time carries no `AppTimestamp`: the run's exact start instant
+/// lives on the run page.
 class PipelineRunRow extends StatelessWidget {
   /// Creates a [PipelineRunRow].
   const PipelineRunRow({

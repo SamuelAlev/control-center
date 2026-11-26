@@ -6187,8 +6187,6 @@
   "prWorktreeUnavailableHint": "准备 pull request 文件失败。请重新打开该 pull request 重试。",
   "timestampRelativeLabel": "相对时间",
   "timestampRawLabel": "时间戳",
-  "copyTimestamp": "复制时间戳",
-  "copiedTimestamp": "已复制时间戳",
   "previewDeployment": "预览部署",
   "previewDeploymentTab": "预览：{site}",
   "@previewDeploymentTab": {

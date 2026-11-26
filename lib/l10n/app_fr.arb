@@ -5360,8 +5360,6 @@
   },
   "timestampRelativeLabel": "Relatif",
   "timestampRawLabel": "Horodatage",
-  "copyTimestamp": "Copier l'horodatage",
-  "copiedTimestamp": "Horodatage copié",
   "previewDeployment": "Déploiement de prévisualisation",
   "previewDeploymentTab": "Aperçu : {site}",
   "askForReview": "Demander une revue…",

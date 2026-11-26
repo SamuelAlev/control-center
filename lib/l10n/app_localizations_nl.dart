@@ -10808,12 +10808,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get timestampRawLabel => 'Tijdstempel';
 
   @override
-  String get copyTimestamp => 'Tijdstempel kopiëren';
-
-  @override
-  String get copiedTimestamp => 'Tijdstempel gekopieerd';
-
-  @override
   String get previewDeployment => 'Preview-implementatie';
 
   @override

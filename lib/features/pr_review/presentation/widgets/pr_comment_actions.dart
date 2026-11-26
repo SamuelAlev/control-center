@@ -43,6 +43,7 @@ class PrCommentActions extends ConsumerStatefulWidget {
     this.onDeleteLocal,
     this.onToggleReaction,
     this.toolbarTop = 4,
+    this.toolbarEnd = 4,
   });
 
   /// The comment chrome this toolbar floats over.
@@ -104,6 +105,10 @@ class PrCommentActions extends ConsumerStatefulWidget {
 
   /// Distance from the top of the comment. Review cards clear their verdict chip.
   final double toolbarTop;
+
+  /// Distance from the end edge of the comment, for a [child] that carries
+  /// its own padding.
+  final double toolbarEnd;
 
   @override
   ConsumerState<PrCommentActions> createState() => _PrCommentActionsState();
@@ -269,6 +274,7 @@ class _PrCommentActionsState extends ConsumerState<PrCommentActions> {
 
     return CommentActionsHost(
       toolbarTop: widget.toolbarTop,
+      toolbarEnd: widget.toolbarEnd,
       actions: (onPinned) => CommentActionCluster(
         onPinnedChanged: onPinned,
         onToggleReaction: widget.onToggleReaction,

@@ -10755,12 +10755,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get timestampRawLabel => 'Dấu thời gian';
 
   @override
-  String get copyTimestamp => 'Sao chép dấu thời gian';
-
-  @override
-  String get copiedTimestamp => 'Đã sao chép dấu thời gian';
-
-  @override
   String get previewDeployment => 'Xem trước triển khai';
 
   @override

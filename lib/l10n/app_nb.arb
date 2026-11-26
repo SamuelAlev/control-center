@@ -6187,8 +6187,6 @@
   "prWorktreeUnavailableHint": "Forberedelse av pull requestens filer mislyktes. Åpne pull requesten på nytt for å prøve igjen.",
   "timestampRelativeLabel": "Relativ",
   "timestampRawLabel": "Tidsstempel",
-  "copyTimestamp": "Kopier tidsstempel",
-  "copiedTimestamp": "Kopierte tidsstempel",
   "previewDeployment": "Forhåndsvisning av utplassering",
   "previewDeploymentTab": "Forhåndsvisning: {site}",
   "@previewDeploymentTab": {

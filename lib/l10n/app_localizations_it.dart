@@ -10843,12 +10843,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get timestampRawLabel => 'Timestamp';
 
   @override
-  String get copyTimestamp => 'Copia timestamp';
-
-  @override
-  String get copiedTimestamp => 'Timestamp copiato';
-
-  @override
   String get previewDeployment => 'Deploy di anteprima';
 
   @override

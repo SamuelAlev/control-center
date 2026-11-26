@@ -10724,12 +10724,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get timestampRawLabel => 'ٹائم سٹیمپ';
 
   @override
-  String get copyTimestamp => 'ٹائم سٹیمپ کاپی کریں';
-
-  @override
-  String get copiedTimestamp => 'ٹائم سٹیمپ کاپی ہو گیا';
-
-  @override
   String get previewDeployment => 'پریویو ڈیپلائمنٹ';
 
   @override

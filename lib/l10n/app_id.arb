@@ -6187,8 +6187,6 @@
   "prWorktreeUnavailableHint": "Gagal menyiapkan file pull request. Buka ulang pull request untuk mencoba lagi.",
   "timestampRelativeLabel": "Relatif",
   "timestampRawLabel": "Stempel waktu",
-  "copyTimestamp": "Salin stempel waktu",
-  "copiedTimestamp": "Stempel waktu disalin",
   "previewDeployment": "Pratinjau deployment",
   "previewDeploymentTab": "Pratinjau: {site}",
   "@previewDeploymentTab": {

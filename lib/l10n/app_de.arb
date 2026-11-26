@@ -5358,8 +5358,6 @@
   },
   "timestampRelativeLabel": "Relativ",
   "timestampRawLabel": "Zeitstempel",
-  "copyTimestamp": "Zeitstempel kopieren",
-  "copiedTimestamp": "Zeitstempel kopiert",
   "previewDeployment": "Vorschau-Deployment",
   "previewDeploymentTab": "Vorschau: {site}",
   "askForReview": "Review anfragen…",

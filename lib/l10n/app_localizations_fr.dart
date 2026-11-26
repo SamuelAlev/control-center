@@ -10858,12 +10858,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get timestampRawLabel => 'Horodatage';
 
   @override
-  String get copyTimestamp => 'Copier l\'horodatage';
-
-  @override
-  String get copiedTimestamp => 'Horodatage copié';
-
-  @override
   String get previewDeployment => 'Déploiement de prévisualisation';
 
   @override

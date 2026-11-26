@@ -10834,12 +10834,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get timestampRawLabel => 'Marca de tiempo';
 
   @override
-  String get copyTimestamp => 'Copiar marca de tiempo';
-
-  @override
-  String get copiedTimestamp => 'Marca de tiempo copiada';
-
-  @override
   String get previewDeployment => 'Despliegue de vista previa';
 
   @override

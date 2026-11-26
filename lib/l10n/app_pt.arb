@@ -5363,8 +5363,6 @@
   },
   "timestampRelativeLabel": "Relativo",
   "timestampRawLabel": "Carimbo de data/hora",
-  "copyTimestamp": "Copiar carimbo de data/hora",
-  "copiedTimestamp": "Carimbo de data/hora copiado",
   "previewDeployment": "Implantação de pré-visualização",
   "previewDeploymentTab": "Pré-visualização: {site}",
   "askForReview": "Pedir revisão…",

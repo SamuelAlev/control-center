@@ -9448,8 +9448,6 @@
   "prWorktreeUnavailableHint": "Preparing the pull request's files failed. Reopen the pull request to try again.",
   "timestampRelativeLabel": "Relative",
   "timestampRawLabel": "Timestamp",
-  "copyTimestamp": "Copy timestamp",
-  "copiedTimestamp": "Copied timestamp",
   "previewDeployment": "Preview deployment",
   "@previewDeployment": {
     "description": "Generic label for the auto-detected deployment-preview tab on a pull request when the site name is unknown"

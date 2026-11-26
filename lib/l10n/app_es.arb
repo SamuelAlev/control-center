@@ -5360,8 +5360,6 @@
   },
   "timestampRelativeLabel": "Relativo",
   "timestampRawLabel": "Marca de tiempo",
-  "copyTimestamp": "Copiar marca de tiempo",
-  "copiedTimestamp": "Marca de tiempo copiada",
   "previewDeployment": "Despliegue de vista previa",
   "previewDeploymentTab": "Vista previa: {site}",
   "askForReview": "Pedir revisión…",

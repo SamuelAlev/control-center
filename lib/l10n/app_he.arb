@@ -6187,8 +6187,6 @@
   "prWorktreeUnavailableHint": "הכנת הקבצים של בקשת המשיכה נכשלה. פתחו מחדש את בקשת המשיכה כדי לנסות שוב.",
   "timestampRelativeLabel": "יחסי",
   "timestampRawLabel": "חותמת זמן",
-  "copyTimestamp": "העתקת חותמת זמן",
-  "copiedTimestamp": "חותמת הזמן הועתקה",
   "previewDeployment": "תצוגה מקדימה של פריסה",
   "previewDeploymentTab": "תצוגה מקדימה: ⁨{site}⁩",
   "@previewDeploymentTab": {

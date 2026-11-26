@@ -262,6 +262,7 @@ class CommentActionsHost extends StatefulWidget {
     required this.actions,
     required this.child,
     this.toolbarTop = 4,
+    this.toolbarEnd = 4,
   });
 
   /// The toolbar. The callback stays true while a menu or the reaction
@@ -274,6 +275,11 @@ class CommentActionsHost extends StatefulWidget {
   /// Distance from the top of [child]. Review cards pass a larger value so
   /// the toolbar clears the verdict chip in the header.
   final double toolbarTop;
+
+  /// Distance from the end edge of [child]. A child that carries its own
+  /// padding passes that padding plus the usual inset, so the toolbar stays
+  /// inside the hover area instead of hanging past it.
+  final double toolbarEnd;
 
   @override
   State<CommentActionsHost> createState() => _CommentActionsHostState();
@@ -389,7 +395,7 @@ class _CommentActionsHostState extends State<CommentActionsHost> {
           // timeline is not a run of invisible stops.
           PositionedDirectional(
             top: widget.toolbarTop,
-            end: 4,
+            end: widget.toolbarEnd,
             child: Focus(
               focusNode: _entry,
               onKeyEvent: _onEntryKey,
@@ -403,7 +409,7 @@ class _CommentActionsHostState extends State<CommentActionsHost> {
           ),
           PositionedDirectional(
             top: widget.toolbarTop,
-            end: 4,
+            end: widget.toolbarEnd,
             child: IgnorePointer(
               ignoring: !show,
               child: AnimatedOpacity(

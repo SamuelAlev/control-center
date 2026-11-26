@@ -10865,12 +10865,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get timestampRawLabel => 'Χρονική σήμανση';
 
   @override
-  String get copyTimestamp => 'Αντιγραφή χρονικής σήμανσης';
-
-  @override
-  String get copiedTimestamp => 'Η χρονική σήμανση αντιγράφηκε';
-
-  @override
   String get previewDeployment => 'Προεπισκόπηση ανάπτυξης';
 
   @override

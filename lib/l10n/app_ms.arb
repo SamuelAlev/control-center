@@ -6187,8 +6187,6 @@
   "prWorktreeUnavailableHint": "Menyediakan fail pull request gagal. Buka semula pull request untuk cuba lagi.",
   "timestampRelativeLabel": "Relatif",
   "timestampRawLabel": "Cap masa",
-  "copyTimestamp": "Salin cap masa",
-  "copiedTimestamp": "Cap masa disalin",
   "previewDeployment": "Pratonton penempatan",
   "previewDeploymentTab": "Pratonton: {site}",
   "@previewDeploymentTab": {

@@ -313,16 +313,11 @@ class _PrInlineThreadBlockState extends ConsumerState<PrInlineThreadBlock>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (var i = 0; i < visible.length; i++) ...[
-          Padding(
-            // Every comment's text starts on the card's own left edge, the
-            // one the caret and the reply row sit on.
-            padding: EdgeInsets.fromLTRB(14, i == 0 ? 8 : 10, 14, 12),
-            child: _entryTile(
-              thread,
-              visible,
-              i,
-              suggestionEditable: firstIsSuggestion && i == 0,
-            ),
+          _entryTile(
+            thread,
+            visible,
+            i,
+            suggestionEditable: firstIsSuggestion && i == 0,
           ),
           if (i != visible.length - 1) const CcDivider(),
         ],
@@ -939,7 +934,17 @@ class _InlineEntryTile extends StatelessWidget {
               },
         onDeleteLocal: onDeleteLocal,
         onToggleReaction: onToggleReaction,
-        child: _entryContent(context, tokens, editor),
+        // The padding sits inside the hover area so the toolbar has the whole
+        // row to fit in. Over the text alone, a one-line opening comment is
+        // shorter than the toolbar, which then hung across the divider below.
+        toolbarTop: showAuthor ? 14 : 6,
+        toolbarEnd: 18,
+        child: Padding(
+          // Every comment's text starts on the card's own left edge, the
+          // one the caret and the reply row sit on.
+          padding: EdgeInsets.fromLTRB(14, showAuthor ? 10 : 8, 14, 12),
+          child: _entryContent(context, tokens, editor),
+        ),
       ),
     );
   }

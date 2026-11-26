@@ -6187,8 +6187,6 @@
   "prWorktreeUnavailableHint": "プルリクエストのファイルの準備に失敗しました。プルリクエストを開き直して再試行してください。",
   "timestampRelativeLabel": "相対表示",
   "timestampRawLabel": "タイムスタンプ",
-  "copyTimestamp": "タイムスタンプをコピー",
-  "copiedTimestamp": "タイムスタンプをコピーしました",
   "previewDeployment": "プレビューデプロイ",
   "previewDeploymentTab": "プレビュー: {site}",
   "@previewDeploymentTab": {

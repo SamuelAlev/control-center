@@ -322,7 +322,7 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor
 
   /// Bumped (post-frame) after every paint (scroll / selection / layout /
   /// colour fade) so a host overlay listening to it can reposition the toolbar,
-  /// gutter pill and commenter avatars against fresh, settled geometry.
+  /// gutter pill against fresh, settled geometry.
   final ValueNotifier<int> geometryListenable = ValueNotifier<int>(0);
   bool _geometryTickScheduled = false;
 

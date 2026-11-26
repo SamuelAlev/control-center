@@ -53,7 +53,6 @@ import 'package:control_center/features/pr_review/providers/send_comment_to_agen
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/popup_route_tracker.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:control_center/shared/widgets/github_user_avatar.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -289,7 +288,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
   String? _focusedThreadId;
 
   /// Root-overlay entry hosting the review affordances (floating selection
-  /// toolbar, gutter "+" pill, commenter avatars). Positioned in screen space
+  /// toolbar, gutter "+" pill). Positioned in screen space
   /// from the sliver's geometry; rebuilt on the sliver's geometry notifier.
   OverlayEntry? _reviewOverlay;
 
@@ -321,7 +320,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
   }
 
   /// Code row `(file, displayLine)` the mouse is over, for the gutter "+" pill.
-  /// A notifier so hover changes rebuild only the pill/avatar layer (via a
+  /// A notifier so hover changes rebuild only the pill layer (via a
   /// `ValueListenableBuilder`) and never the hover `MouseRegion` itself —
   /// rebuilding the region would re-fire enter/exit and make the pill flicker.
   final ValueNotifier<(int, int)?> _hoverRow = ValueNotifier(null);
@@ -1736,7 +1735,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
   void _openFileComment(int fileIndex) {
     final file = _document.files[fileIndex];
     _store.ensureStructure(fileIndex);
-    final d = file.isImage ? null : _firstCodeDisplayLine(fileIndex);
+    final d = file.isImage ? null : _firstDiffDisplayLine(fileIndex);
     if (d == null) {
       _openFileLevelComposer(fileIndex);
       return;
@@ -1787,14 +1786,19 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
     });
   }
 
-  int? _firstCodeDisplayLine(int file) {
+  /// The first code row of [file] that the diff itself carries. Context
+  /// revealed by an expand is skipped: the forge anchors a comment only to a
+  /// line of the diff, so one on a revealed row is refused.
+  int? _firstDiffDisplayLine(int file) {
     final raw = _document.structureOf(file);
     if (raw == null) {
       return null;
     }
     final count = _document.lineCountOf(file);
     for (var d = 0; d < count; d++) {
-      if (_isCodeRow(raw, _document.rawIndexOf(file, d))) {
+      final rawIndex = _document.rawIndexOf(file, d);
+      if (_isCodeRow(raw, rawIndex) &&
+          !_store.isExpandedContext(file, rawIndex)) {
         return d;
       }
     }
@@ -2211,7 +2215,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
     }
     _hoveredCommentGroup = group;
     _sliver?.hoveredCommentGroup = group;
-    // The pill/avatar layer reads it for the click cursor.
+    // The pill layer reads it for the click cursor.
     _markReviewOverlayDirty();
   }
 
@@ -2564,8 +2568,8 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
     setState(() => _focusedThreadId = _focusedThreadId == id ? null : id);
   }
 
-  /// Opens [id]'s card and focuses it. Used by the gutter avatar and by a click
-  /// on the comment highlight — the two ways back into a collapsed thread.
+  /// Opens [id]'s card and focuses it. Used by a click on the comment
+  /// highlight, the way back into a collapsed thread from the code.
   void _openThread(String id) {
     setState(() {
       _threadOpen[id] = true;
@@ -2676,7 +2680,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
   /// which is exactly the signal to mirror.
   ///
   /// The same root overlay also sits above every DIALOG, so this is false
-  /// while one is open too ([_popups]) — otherwise the "+" pill, the avatars
+  /// while one is open too ([_popups]) — otherwise the "+" pill
   /// and the hover tracking paint through the ⌘P picker or a confirm prompt.
   bool _tabVisible = true;
 
@@ -2847,8 +2851,8 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
       math.max(0, vpSize.height - topInset),
     );
     // When a file header is docked at the top, its rows scroll up behind it —
-    // but this overlay is a ROOT overlay painted above the sliver, so an avatar
-    // or pill anchored on one of those hidden rows would paint over the pinned
+    // but this overlay is a ROOT overlay painted above the sliver, so a pill
+    // anchored on one of those hidden rows would paint over the pinned
     // header. Cull anything above the pinned header's bottom edge.
     final double affordanceTop = ro.stickyHeaderPinned
         ? rect.top + _document.headerHeight
@@ -2929,52 +2933,12 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
     }
 
     final children = <Widget>[
-      // Avatars + gutter pill: rebuilt only when the hovered row changes.
+      // Gutter pill: rebuilt only when the hovered row changes.
       Positioned.fill(
         child: ValueListenableBuilder<(int, int)?>(
           valueListenable: _hoverRow,
           builder: (_, hover, _) {
             final items = <Widget>[];
-            // Commenter avatars down the left rail (the hovered row shows the
-            // pill instead).
-            for (final slot in _slots) {
-              if (slot.kind != DiffSlotKind.comment) {
-                continue;
-              }
-              final thread = _threadBySlotKey[slot.key];
-              final anchorLine = slot.anchorDisplayLine;
-              // A file-level thread hangs off no row.
-              if (thread == null || anchorLine == kFileLevelAnchor) {
-                continue;
-              }
-              if (hover?.$1 == slot.fileIndex && hover?.$2 == anchorLine) {
-                continue;
-              }
-              final y = screenYOfLine(slot.fileIndex, anchorLine);
-              if (!visible(y)) {
-                continue;
-              }
-              final author = thread.entries.isNotEmpty
-                  ? thread.entries.first
-                  : null;
-              items.add(
-                Positioned(
-                  left: rect.left + 3,
-                  top: y + (kDiffLineHeight - 18) / 2,
-                  width: 18,
-                  height: 18,
-                  child: GestureDetector(
-                    onTap: () => _toggleThreadOpen(thread),
-                    child: GitHubUserAvatar(
-                      login: author?.author ?? '?',
-                      avatarUrl: author?.authorAvatarUrl,
-                      size: 18,
-                      showHoverCard: false,
-                    ),
-                  ),
-                ),
-              );
-            }
             // Gutter "+" pill. It sits at the hovered row and while dragging
             // it tracks the moving end of the range so it follows the cursor.
             final pillDrag = _pillDrag;
@@ -3044,8 +3008,8 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
               }
             }
             // Clip to the diff's visible area: this layer paints in the ROOT
-            // overlay where no sliver clip reaches, so without it an avatar
-            // or pill on a partially scrolled-out row would bleed past the
+            // overlay where no sliver clip reaches, so without it a pill
+            // on a partially scrolled-out row would bleed past the
             // edge that already cuts the row's text (pinned header/viewport).
             return ClipRect(
               clipper: FixedRectClipper(

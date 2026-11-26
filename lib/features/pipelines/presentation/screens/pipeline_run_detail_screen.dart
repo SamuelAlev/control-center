@@ -249,9 +249,8 @@ class _RunMetaStrip extends StatelessWidget {
         .length;
 
     // "12 min ago" answers "is this recent?" without arithmetic; the exact
-    // instant stays one hover (or tap-to-copy) away via AppTimestamp. This is
-    // the run's one authoritative timestamp — the rows in the queue deliberately
-    // carry no copy gesture, since their tap opens the run.
+    // instant stays one hover away via AppTimestamp. This is the run's one
+    // authoritative timestamp.
     //
     // It names the CURRENT attempt: after a rerun (a retry, or a crash-resume
     // that re-fired the run's steps) the original instant answers a question

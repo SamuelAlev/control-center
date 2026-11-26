@@ -6187,8 +6187,6 @@
   "prWorktreeUnavailableHint": "pull request کی فائلیں تیار نہیں ہو سکیں۔ دوبارہ کوشش کے لیے pull request دوبارہ کھولیں۔",
   "timestampRelativeLabel": "نسبتی",
   "timestampRawLabel": "ٹائم سٹیمپ",
-  "copyTimestamp": "ٹائم سٹیمپ کاپی کریں",
-  "copiedTimestamp": "ٹائم سٹیمپ کاپی ہو گیا",
   "previewDeployment": "پریویو ڈیپلائمنٹ",
   "previewDeploymentTab": "پریویو: ⁨{site}⁩",
   "@previewDeploymentTab": {

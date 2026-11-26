@@ -10722,12 +10722,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String get timestampRawLabel => 'برچسب زمانی';
 
   @override
-  String get copyTimestamp => 'کپی برچسب زمانی';
-
-  @override
-  String get copiedTimestamp => 'برچسب زمانی کپی شد';
-
-  @override
   String get previewDeployment => 'پیش‌نمایش استقرار';
 
   @override

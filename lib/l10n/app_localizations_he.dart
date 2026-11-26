@@ -10751,12 +10751,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get timestampRawLabel => 'חותמת זמן';
 
   @override
-  String get copyTimestamp => 'העתקת חותמת זמן';
-
-  @override
-  String get copiedTimestamp => 'חותמת הזמן הועתקה';
-
-  @override
   String get previewDeployment => 'תצוגה מקדימה של פריסה';
 
   @override

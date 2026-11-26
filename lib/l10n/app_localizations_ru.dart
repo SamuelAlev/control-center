@@ -10888,12 +10888,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get timestampRawLabel => 'Метка времени';
 
   @override
-  String get copyTimestamp => 'Копировать метку времени';
-
-  @override
-  String get copiedTimestamp => 'Метка времени скопирована';
-
-  @override
   String get previewDeployment => 'Предпросмотр развёртывания';
 
   @override

@@ -6187,8 +6187,6 @@
   "prWorktreeUnavailableHint": "Не удалось подготовить файлы pull request. Откройте pull request снова, чтобы повторить попытку.",
   "timestampRelativeLabel": "Относительное",
   "timestampRawLabel": "Метка времени",
-  "copyTimestamp": "Копировать метку времени",
-  "copiedTimestamp": "Метка времени скопирована",
   "previewDeployment": "Предпросмотр развёртывания",
   "previewDeploymentTab": "Предпросмотр: {site}",
   "@previewDeploymentTab": {

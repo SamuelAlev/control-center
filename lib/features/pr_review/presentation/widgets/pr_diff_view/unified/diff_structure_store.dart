@@ -271,6 +271,17 @@ class DiffStructureStore {
     _tokenRequestRevision++;
   }
 
+  /// Whether row [rawIndex] of file [i] is context a gap expand revealed,
+  /// rather than a line of the diff.
+  bool isExpandedContext(int i, int rawIndex) {
+    for (final span in _spans[i] ?? const <_ExpandedSpan>[]) {
+      if (rawIndex >= span.start && rawIndex < span.start + span.lines.length) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /// Shifts file [i]'s cached tokens to account for a gap expand that replaced
   /// the single gap row at [gapRawIndex] with [insertedLines], then highlights
   /// those rows.

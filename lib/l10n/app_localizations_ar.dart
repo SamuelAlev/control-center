@@ -10890,12 +10890,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get timestampRawLabel => 'الطابع الزمني';
 
   @override
-  String get copyTimestamp => 'نسخ الطابع الزمني';
-
-  @override
-  String get copiedTimestamp => 'تم نسخ الطابع الزمني';
-
-  @override
   String get previewDeployment => 'معاينة النشر';
 
   @override

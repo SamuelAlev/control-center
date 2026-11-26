@@ -6187,8 +6187,6 @@
   "prWorktreeUnavailableHint": "Przygotowanie plików pull requesta nie powiodło się. Otwórz pull request ponownie, aby spróbować jeszcze raz.",
   "timestampRelativeLabel": "Względny",
   "timestampRawLabel": "Znacznik czasu",
-  "copyTimestamp": "Skopiuj znacznik czasu",
-  "copiedTimestamp": "Skopiowano znacznik czasu",
   "previewDeployment": "Wdrożenie podglądowe",
   "previewDeploymentTab": "Podgląd: {site}",
   "@previewDeploymentTab": {

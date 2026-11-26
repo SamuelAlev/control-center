@@ -6187,8 +6187,6 @@
   "prWorktreeUnavailableHint": "Pregătirea fișierelor pull request-ului a eșuat. Redeschide pull request-ul ca să încerci din nou.",
   "timestampRelativeLabel": "Relativ",
   "timestampRawLabel": "Timestamp",
-  "copyTimestamp": "Copiază timestamp-ul",
-  "copiedTimestamp": "Timestamp copiat",
   "previewDeployment": "Previzualizare deployment",
   "previewDeploymentTab": "Previzualizare: {site}",
   "@previewDeploymentTab": {

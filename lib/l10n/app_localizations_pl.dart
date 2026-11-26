@@ -10917,12 +10917,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get timestampRawLabel => 'Znacznik czasu';
 
   @override
-  String get copyTimestamp => 'Skopiuj znacznik czasu';
-
-  @override
-  String get copiedTimestamp => 'Skopiowano znacznik czasu';
-
-  @override
   String get previewDeployment => 'Wdrożenie podglądowe';
 
   @override

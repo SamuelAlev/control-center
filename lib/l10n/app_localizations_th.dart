@@ -10669,12 +10669,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get timestampRawLabel => 'เวลา';
 
   @override
-  String get copyTimestamp => 'คัดลอกเวลา';
-
-  @override
-  String get copiedTimestamp => 'คัดลอกเวลาแล้ว';
-
-  @override
   String get previewDeployment => 'การปรับใช้ตัวอย่าง';
 
   @override

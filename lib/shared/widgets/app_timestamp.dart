@@ -1,7 +1,6 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/utils/relative_time.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 
@@ -37,25 +36,11 @@ class AppTimestamp extends StatelessWidget {
   final TextStyle? _style;
   final bool _relative;
 
-  void _copy(BuildContext context) {
-    final iso = dateTime.toUtc().toIso8601String();
-    Clipboard.setData(ClipboardData(text: iso));
-    CcToastScope.maybeOf(context)?.show(
-      AppLocalizations.of(context).copiedTimestamp,
-      variant: CcToastVariant.success,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
     final display = _relative
         ? Text(formatRelativeTime(context, dateTime), style: _style)
         : child!;
-
-    // Announce the absolute, unambiguous time (plus the copy affordance) to
-    // assistive tech regardless of hover — the relative label alone is not.
-    final semanticLabel = '${_absoluteLabel(dateTime)}. ${l10n.copyTimestamp}';
 
     return CcTooltip(
       // A longer dwell than the default so casually sweeping the cursor across a
@@ -64,15 +49,10 @@ class AppTimestamp extends StatelessWidget {
       showDelay: const Duration(seconds: 1),
       maxWidth: 360,
       tip: AppTimestampDetails(dateTime: dateTime),
-      child: CcTappable(
-        onPressed: () => _copy(context),
-        semanticLabel: semanticLabel,
-        // Not a Tab stop: a list shows one per row, and the absolute time
-        // already reaches a screen reader through the label. Copying the
-        // raw value stays a pointer shortcut.
-        canRequestFocus: false,
-        builder: (context, _) => display,
-      ),
+      // Announce the absolute, unambiguous time to assistive tech regardless
+      // of hover — the relative label alone is not. Not a Tab stop: a list
+      // shows one per row, and the label already carries the instant.
+      child: Semantics(label: _absoluteLabel(dateTime), child: display),
     );
   }
 }
@@ -100,7 +80,7 @@ String _gmtLabel(DateTime local) {
 ///
 /// Public so other freshness surfaces can reuse the exact same card inside
 /// their own [CcTooltip] `tip` (e.g. `RefreshControl`'s refresh-button hover);
-/// use [AppTimestamp] itself whenever the trigger has no competing tap action.
+/// use [AppTimestamp] itself whenever the trigger is only a date display.
 class AppTimestampDetails extends StatelessWidget {
   /// Creates the detail rows for [dateTime].
   const AppTimestampDetails({super.key, required this.dateTime});

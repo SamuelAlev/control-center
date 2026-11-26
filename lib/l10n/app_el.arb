@@ -6187,8 +6187,6 @@
   "prWorktreeUnavailableHint": "Η προετοιμασία των αρχείων του pull request απέτυχε. Ανοίξτε ξανά το pull request για να δοκιμάσετε πάλι.",
   "timestampRelativeLabel": "Σχετικός",
   "timestampRawLabel": "Χρονική σήμανση",
-  "copyTimestamp": "Αντιγραφή χρονικής σήμανσης",
-  "copiedTimestamp": "Η χρονική σήμανση αντιγράφηκε",
   "previewDeployment": "Προεπισκόπηση ανάπτυξης",
   "previewDeploymentTab": "Προεπισκόπηση: {site}",
   "@previewDeploymentTab": {

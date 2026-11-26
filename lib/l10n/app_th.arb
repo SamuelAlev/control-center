@@ -6554,8 +6554,6 @@
   "prWorktreeUnavailableHint": "เตรียมไฟล์ของ pull request ไม่สำเร็จ เปิด pull request ใหม่เพื่อลองอีกครั้ง",
   "timestampRelativeLabel": "สัมพัทธ์",
   "timestampRawLabel": "เวลา",
-  "copyTimestamp": "คัดลอกเวลา",
-  "copiedTimestamp": "คัดลอกเวลาแล้ว",
   "previewDeployment": "การปรับใช้ตัวอย่าง",
   "previewDeploymentTab": "ตัวอย่าง: {site}",
   "@previewDeploymentTab": {

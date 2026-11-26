@@ -430,11 +430,19 @@ class PrInlineCommentsController extends Notifier<PrInlineCommentsState> {
               startSide: thread.isMultiLine ? thread.side : null,
               body: body,
             );
+      final serverId = result['id'] as int?;
       _patchThread(
         thread.id,
         (t) => t.copyWith(
-          serverId: result['id'] as int?,
+          serverId: serverId,
           syncState: PrInlineSyncState.synced,
+          // The opening entry is now that forge comment. Without its id the
+          // toolbar had nothing to edit, react to or link until the comment
+          // stream replaced this local thread.
+          entries: [
+            for (final (i, e) in t.entries.indexed)
+              i == 0 ? e.copyWith(serverCommentId: serverId) : e,
+          ],
         ),
       );
     } catch (e) {

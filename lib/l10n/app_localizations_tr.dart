@@ -10757,12 +10757,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get timestampRawLabel => 'Zaman damgası';
 
   @override
-  String get copyTimestamp => 'Zaman damgasını kopyala';
-
-  @override
-  String get copiedTimestamp => 'Zaman damgası kopyalandı';
-
-  @override
   String get previewDeployment => 'Önizleme dağıtımı';
 
   @override
