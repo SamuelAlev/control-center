@@ -13693,6 +13693,14 @@ class AppLocalizationsId extends AppLocalizations {
   String get subscriptionUsageCredits => 'Kredit';
 
   @override
+  String get subscriptionUsageBalance => 'Saldo';
+
+  @override
+  String subscriptionUsageBalanceLeft(String amount) {
+    return 'Sisa $amount';
+  }
+
+  @override
   String get reviewHubStaticRule => 'Aturan statis';
 
   @override

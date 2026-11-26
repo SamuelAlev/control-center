@@ -13806,6 +13806,14 @@ class AppLocalizationsEl extends AppLocalizations {
   String get subscriptionUsageCredits => 'Πιστώσεις';
 
   @override
+  String get subscriptionUsageBalance => 'Υπόλοιπο λογαριασμού';
+
+  @override
+  String subscriptionUsageBalanceLeft(String amount) {
+    return 'Απομένουν $amount';
+  }
+
+  @override
   String get reviewHubStaticRule => 'Στατικός κανόνας';
 
   @override

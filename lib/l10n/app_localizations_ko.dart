@@ -13386,6 +13386,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get subscriptionUsageCredits => '크레딧';
 
   @override
+  String get subscriptionUsageBalance => '잔액';
+
+  @override
+  String subscriptionUsageBalanceLeft(String amount) {
+    return '$amount 남음';
+  }
+
+  @override
   String get reviewHubStaticRule => '정적 규칙';
 
   @override

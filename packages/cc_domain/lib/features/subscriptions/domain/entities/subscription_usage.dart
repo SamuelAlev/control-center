@@ -230,6 +230,72 @@ class SubscriptionSpend {
   int get hashCode => Object.hash(usedMinor, limitMinor, currency, exponent);
 }
 
+/// Prepaid money left on an account that is topped up rather than capped.
+///
+/// The opposite reading from [SubscriptionSpend]: there is no limit to measure
+/// against and nothing resets, so there is no fraction to draw — only what is
+/// left to spend. One per currency, because a provider that bills in two
+/// (DeepSeek: CNY and USD) reports them as separate balances.
+class SubscriptionBalance {
+  /// Creates a [SubscriptionBalance].
+  const SubscriptionBalance({
+    required this.amountMinor,
+    required this.currency,
+    this.exponent = 2,
+  });
+
+  /// Reads the wire shape produced by [toJson], or null when it carries no
+  /// amount.
+  static SubscriptionBalance? fromJson(Map<String, dynamic>? json) {
+    final amount = (json?['amount_minor'] as num?)?.toInt();
+    if (json == null || amount == null) {
+      return null;
+    }
+    return SubscriptionBalance(
+      amountMinor: amount,
+      currency: json['currency'] as String? ?? 'USD',
+      exponent: (json['exponent'] as num?)?.toInt() ?? 2,
+    );
+  }
+
+  /// What is left, in the currency's minor unit (cents). Negative when the
+  /// account is overdrawn.
+  final int amountMinor;
+
+  /// ISO currency code, e.g. `USD`.
+  final String currency;
+
+  /// Digits after the decimal point for [currency].
+  final int exponent;
+
+  /// What is left in major units (dollars).
+  double get amount {
+    var scale = 1.0;
+    for (var i = 0; i < exponent; i++) {
+      scale *= 10;
+    }
+    return amountMinor / scale;
+  }
+
+  /// The wire shape.
+  Map<String, dynamic> toJson() => {
+    'amount_minor': amountMinor,
+    'currency': currency,
+    'exponent': exponent,
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SubscriptionBalance &&
+          amountMinor == other.amountMinor &&
+          currency == other.currency &&
+          exponent == other.exponent;
+
+  @override
+  int get hashCode => Object.hash(amountMinor, currency, exponent);
+}
+
 /// A live subscription-usage snapshot for one AI coding provider — the
 /// "X% used, resets in Y" data behind the title-bar usage pill.
 ///
@@ -251,6 +317,7 @@ class SubscriptionUsage {
     this.accountId,
     this.accountLabel,
     this.spend,
+    this.balances = const [],
   });
 
   /// Parses a [SubscriptionUsage] from its wire shape.
@@ -273,12 +340,18 @@ class SubscriptionUsage {
         spend: SubscriptionSpend.fromWire(
           (json['spend'] as Map?)?.cast<String, dynamic>(),
         ),
+        balances: [
+          for (final b in (json['balances'] as List? ?? const []))
+            ?SubscriptionBalance.fromJson((b as Map).cast<String, dynamic>()),
+        ],
       );
 
-  /// Provider id (`claude`, `codex`, `cursor`, `zai`, `kimi-code`).
+  /// Provider id (`claude`, `codex`, `cursor`, `zai`, `kimi-code`, `mistral`,
+  /// `deepseek`).
   final String providerId;
 
-  /// Human display name (`Claude`, `Codex`, `Cursor`, `z.ai`, `Kimi Code`).
+  /// Human display name (`Claude`, `Codex`, `Cursor`, `z.ai`, `Kimi Code`,
+  /// `Mistral`, `DeepSeek`).
   final String displayName;
 
   /// Whether usage could be read.
@@ -304,6 +377,10 @@ class SubscriptionUsage {
   /// Money spent against a credit cap, for an account billed per token rather
   /// than on a plan. Null for a plan account, which reports windows instead.
   final SubscriptionSpend? spend;
+
+  /// Prepaid money left, one entry per currency, for an account that is topped
+  /// up rather than on a plan. Empty for every other kind of account.
+  final List<SubscriptionBalance> balances;
 
   /// How to name that account in one line — its address, plan and org.
   ///
@@ -336,10 +413,13 @@ class SubscriptionUsage {
     accountId: accountId ?? this.accountId,
     accountLabel: accountLabel ?? this.accountLabel,
     spend: spend,
+    balances: balances,
   );
 
-  /// Whether this snapshot has anything to show — windows, or a spend balance.
-  bool get hasReading => windows.isNotEmpty || spend != null;
+  /// Whether this snapshot has anything to show — windows, a spend against a
+  /// cap, or a prepaid balance.
+  bool get hasReading =>
+      windows.isNotEmpty || spend != null || balances.isNotEmpty;
 
   /// The earliest reset across all windows, if any.
   DateTime? get earliestReset {
@@ -364,6 +444,7 @@ class SubscriptionUsage {
     if (accountId != null) 'account_id': accountId,
     if (accountLabel != null) 'account_label': accountLabel,
     if (spend != null) 'spend': spend!.toJson(),
+    if (balances.isNotEmpty) 'balances': [for (final b in balances) b.toJson()],
   };
 
   @override
@@ -378,6 +459,10 @@ class SubscriptionUsage {
           accountId == other.accountId &&
           accountLabel == other.accountLabel &&
           spend == other.spend &&
+          const ListEquality<SubscriptionBalance>().equals(
+            balances,
+            other.balances,
+          ) &&
           const ListEquality<SubscriptionWindow>().equals(
             windows,
             other.windows,
@@ -393,6 +478,7 @@ class SubscriptionUsage {
     accountId,
     accountLabel,
     spend,
+    const ListEquality<SubscriptionBalance>().hash(balances),
     const ListEquality<SubscriptionWindow>().hash(windows),
   );
 }

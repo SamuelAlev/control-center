@@ -246,6 +246,14 @@ final _gemini = SubscriptionUsage(
   windows: [_window('Monthly', 0.3)],
 );
 
+/// Prepaid: money left, no window.
+const _deepseek = SubscriptionUsage(
+  providerId: 'deepseek',
+  displayName: 'DeepSeek',
+  status: SubscriptionStatus.ok,
+  balances: [SubscriptionBalance(amountMinor: 1250, currency: 'USD')],
+);
+
 Future<_Actions> _pump(
   WidgetTester tester, {
   TrayConnection connection = TrayConnection.online,
@@ -352,6 +360,19 @@ void main() {
       // The window names move into tooltips.
       expect(find.text('\u20685-hour\u2069'), findsNothing);
       expect(find.text('\u2068Monthly\u2069'), findsNothing);
+    });
+
+    testWidgets('a prepaid provider shows the balance left, full and '
+        'compact', (tester) async {
+      await _pump(tester, usage: [_claude, _deepseek]);
+      expect(find.text(_l10n.subscriptionUsageBalance), findsOne);
+      expect(find.text(r'$12.50'), findsOne);
+      expect(find.text(_l10n.subscriptionUsageNoneReported), findsNothing);
+
+      await _pump(tester, usage: [_claude, _codex, _deepseek]);
+      expect(find.text('DeepSeek'), findsOne);
+      expect(find.text(r'$12.50'), findsOne);
+      expect(find.text(_l10n.subscriptionUsageNoneReported), findsNothing);
     });
 
     testWidgets('a provider with several accounts pages through them, and '

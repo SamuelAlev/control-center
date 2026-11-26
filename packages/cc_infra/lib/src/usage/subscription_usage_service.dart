@@ -3,6 +3,7 @@ import 'package:cc_infra/src/usage/claude_cli_usage_probe.dart';
 import 'package:cc_infra/src/usage/claude_usage_strategy.dart';
 import 'package:cc_infra/src/usage/codex_usage_strategy.dart';
 import 'package:cc_infra/src/usage/cursor_usage_strategy.dart';
+import 'package:cc_infra/src/usage/deepseek_usage_strategy.dart';
 import 'package:cc_infra/src/usage/kimi_usage_strategy.dart';
 import 'package:cc_infra/src/usage/mistral_usage_strategy.dart';
 import 'package:cc_infra/src/usage/subscription_usage_strategy.dart';
@@ -19,6 +20,7 @@ const List<({String id, String name})> kSubscriptionUsageProviders = [
   (id: 'kimi-code', name: 'Kimi Code'),
   (id: 'cursor', name: 'Cursor'),
   (id: 'mistral', name: 'Mistral'),
+  (id: 'deepseek', name: 'DeepSeek'),
 ];
 
 /// Providers whose credential is a plain API key that MAY carry a plan.
@@ -32,7 +34,7 @@ const Set<String> _planOptionalProviders = {'mistral'};
 
 /// Fetches live subscription-usage quotas for the AI coding plans — Claude
 /// Code, OpenAI Codex, Cursor, the z.ai (Zhipu) GLM Coding Plan, Kimi Code and
-/// the Mistral Vibe plan —
+/// the Mistral Vibe plan — and the prepaid balance of a DeepSeek key:
 /// the data behind the title-bar usage pill ("X% used, resets in Y").
 ///
 /// Runs **server-side**. Each provider is its own [SubscriptionUsageStrategy]
@@ -131,6 +133,7 @@ class SubscriptionUsageService {
       'kimi-code': KimiUsageStrategy(httpClient: _httpClient),
       'cursor': CursorUsageStrategy(httpClient: _httpClient),
       'mistral': MistralUsageStrategy(httpClient: _httpClient),
+      'deepseek': DeepSeekUsageStrategy(httpClient: _httpClient),
     };
 
     final futures = <Future<List<SubscriptionUsage>>>[];

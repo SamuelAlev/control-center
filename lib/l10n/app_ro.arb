@@ -7895,6 +7895,8 @@
   },
   "subscriptionUsageNoneReported": "Nicio utilizare raportată pentru acest cont.",
   "subscriptionUsageCredits": "Credite",
+  "subscriptionUsageBalance": "Sold",
+  "subscriptionUsageBalanceLeft": "{amount} rămași",
   "reviewHubStaticRule": "Regulă statică",
   "reviewHubStarted": "Revizuirea a pornit",
   "reviewHubStaticRuleTooltip": "Găsit de o regulă deterministă ({rule}) pe o linie pe care o adaugă acest pull request — nu de un agent recenzent.",

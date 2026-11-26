@@ -7895,6 +7895,8 @@
   },
   "subscriptionUsageNoneReported": "Chưa có mức dùng được báo cho tài khoản này.",
   "subscriptionUsageCredits": "Tín dụng",
+  "subscriptionUsageBalance": "Số dư",
+  "subscriptionUsageBalanceLeft": "Còn {amount}",
   "reviewHubStaticRule": "Quy tắc tĩnh",
   "reviewHubStarted": "Đã bắt đầu review",
   "reviewHubStaticRuleTooltip": "Phát hiện bởi quy tắc xác định ({rule}) trên một dòng mà pull request này thêm — không phải bởi agent reviewer.",

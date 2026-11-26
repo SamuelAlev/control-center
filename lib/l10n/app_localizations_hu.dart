@@ -13733,6 +13733,14 @@ class AppLocalizationsHu extends AppLocalizations {
   String get subscriptionUsageCredits => 'Kreditek';
 
   @override
+  String get subscriptionUsageBalance => 'Egyenleg';
+
+  @override
+  String subscriptionUsageBalanceLeft(String amount) {
+    return '$amount maradt';
+  }
+
+  @override
   String get reviewHubStaticRule => 'Statikus szabály';
 
   @override

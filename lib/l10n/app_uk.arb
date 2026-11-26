@@ -7895,6 +7895,8 @@
   },
   "subscriptionUsageNoneReported": "Для цього облікового запису немає даних про використання.",
   "subscriptionUsageCredits": "Кредити",
+  "subscriptionUsageBalance": "Баланс",
+  "subscriptionUsageBalanceLeft": "Залишилось {amount}",
   "reviewHubStaticRule": "Статичне правило",
   "reviewHubStarted": "Рев'ю розпочато",
   "reviewHubStaticRuleTooltip": "Знайдено детермінованим правилом ({rule}) у рядку, який додає цей pull request, — не агентом-рев'юером.",

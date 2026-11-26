@@ -13887,6 +13887,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get subscriptionUsageCredits => 'الأرصدة';
 
   @override
+  String get subscriptionUsageBalance => 'رصيد الحساب';
+
+  @override
+  String subscriptionUsageBalanceLeft(String amount) {
+    return 'متبقٍ $amount';
+  }
+
+  @override
   String get reviewHubStaticRule => 'قاعدة ثابتة';
 
   @override

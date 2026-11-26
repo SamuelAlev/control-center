@@ -80,6 +80,47 @@ class SubscriptionWindowRow extends StatelessWidget {
   }
 }
 
+/// A prepaid balance: its name and what is left on it.
+///
+/// No meter. A balance is topped up, not capped, so there is no share of
+/// anything to draw; the amount is the whole reading.
+class SubscriptionBalanceRow extends StatelessWidget {
+  /// Creates a [SubscriptionBalanceRow].
+  const SubscriptionBalanceRow({required this.balance, super.key});
+
+  /// The balance to render.
+  final SubscriptionBalance balance;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final t = context.designSystem ?? DesignSystemTokens.light();
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            l10n.subscriptionUsageBalance,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: t.textPrimary,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Text(
+          formatSubscriptionMoney(balance.amount, balance.currency),
+          style: CcFonts.numeric(
+            textStyle: CcTypography.numeric,
+          ).copyWith(color: t.textPrimary),
+        ),
+      ],
+    );
+  }
+}
+
 /// A quota meter reads as calm when there's headroom and escalates as it fills:
 /// success (under 75% used), warning (75–90%), danger (90%+). Never the only
 /// signal — the percentage and labels are always shown alongside.
@@ -109,10 +150,10 @@ String formatSubscriptionReset(DateTime when) {
   return '${d.inDays}d';
 }
 
-/// `$1.41` / `€12.00` / `12.00 CHF`: a spend amount, minor units already
-/// folded in by the entity.
+/// `$1.41` / `€12.00` / `12.00 CHF`: a spend or balance amount, minor units
+/// already folded in by the entity.
 String formatSubscriptionMoney(double amount, String currency) {
-  const symbols = {'USD': r'$', 'EUR': '€', 'GBP': '£'};
+  const symbols = {'USD': r'$', 'EUR': '€', 'GBP': '£', 'CNY': '¥'};
   final symbol = symbols[currency];
   final text = amount.toStringAsFixed(2);
   return symbol != null ? '$symbol$text' : '$text $currency';

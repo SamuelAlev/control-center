@@ -13860,6 +13860,14 @@ class AppLocalizationsRu extends AppLocalizations {
   String get subscriptionUsageCredits => 'Кредиты';
 
   @override
+  String get subscriptionUsageBalance => 'Баланс';
+
+  @override
+  String subscriptionUsageBalanceLeft(String amount) {
+    return 'Осталось $amount';
+  }
+
+  @override
   String get reviewHubStaticRule => 'Статическое правило';
 
   @override

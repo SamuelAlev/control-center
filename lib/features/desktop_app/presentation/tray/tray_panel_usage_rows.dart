@@ -100,6 +100,63 @@ class TrayUsageNote extends StatelessWidget {
   }
 }
 
+/// What is left on a prepaid account, at the line's end.
+class TrayBalanceAmount extends StatelessWidget {
+  /// Creates a [TrayBalanceAmount].
+  const TrayBalanceAmount({required this.balance, super.key});
+
+  /// The balance to show.
+  final SubscriptionBalance balance;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.designSystem ?? DesignSystemTokens.light();
+    return Text(
+      formatSubscriptionMoney(balance.amount, balance.currency),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      textAlign: TextAlign.end,
+      style: CcFonts.numeric(
+        textStyle: CcTypography.numeric,
+      ).copyWith(color: t.textPrimary),
+    );
+  }
+}
+
+/// A prepaid balance on one line: its name, then the amount where a window
+/// has its share used. No meter, because nothing caps it.
+class TrayBalanceLine extends StatelessWidget {
+  /// Creates a [TrayBalanceLine].
+  const TrayBalanceLine({required this.balance, super.key});
+
+  /// The balance to show.
+  final SubscriptionBalance balance;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.designSystem ?? DesignSystemTokens.light();
+    final l10n = AppLocalizations.of(context);
+    return SizedBox(
+      height: trayUsageLineHeight,
+      child: Row(
+        children: [
+          SizedBox(
+            width: trayUsageLabelWidth,
+            child: Text(
+              l10n.subscriptionUsageBalance,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: t.textSecondary, fontSize: 12),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(child: TrayBalanceAmount(balance: balance)),
+        ],
+      ),
+    );
+  }
+}
+
 /// One reading on one line: its name (or [leading], the provider, on a
 /// compact line), a meter, then the share used and the time to its reset,
 /// or the amount spent across both.

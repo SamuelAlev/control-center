@@ -2,7 +2,7 @@
 title: Kalendarz i planowanie
 description: Jak Control Center synchronizuje Kalendarz Google na serwerze, jak logowanie w przeglądarce dociera do serwera headless i co może zmienić w Google.
 slug: pl-PL/podrecznik/koncepcje/kalendarz
-sourceHash: 60f0b846930013e86aa69f61261b0b496b4fb4f6
+sourceHash: d1dbb2bce46b34ac5bdf24cf5b27807f41e61617
 ---
 
 Control Center łączy się z Kalendarzem Google, aby Twój plan dnia był widoczny obok
@@ -114,14 +114,7 @@ klienta, więc nie przenosi się na inne urządzenie.
 
 ## Alerty o spotkaniach
 
-Uruchamiany co minutę harmonogram skanuje wydarzenia rozpoczynające się w
-konfigurowalnym oknie wyprzedzenia i wywołuje powiadomienie **„Spotkanie wkrótce się
-rozpocznie”** (`MeetingStartingSoon` — [zdarzenie
-domenowe](/pl-PL/podrecznik/koncepcje/zdarzenia-domenowe/)). Powiadomienie zawiera adres URL do
-dołączenia, gdy jest dostępny, a kliknięcie go otwiera szczegóły wydarzenia. Alerty są
-deduplikowane na podstawie `alertedAt` wydarzenia, więc to samo spotkanie nigdy nie
-wywołuje alertu dwa razy, nawet po restarcie, a wydarzenie, którego początek minął,
-gdy aplikacja była zamknięta, nie zostaje odtworzone.
+Uruchamiany co minutę harmonogram skanuje wydarzenia rozpoczynające się w konfigurowalnym oknie wyprzedzenia i wywołuje powiadomienie **„Spotkanie wkrótce się rozpocznie”** (`MeetingStartingSoon` — [zdarzenie domenowe](/pl-PL/podrecznik/koncepcje/zdarzenia-domenowe/)). Powiadomienie zawiera adres URL do dołączenia, gdy jest dostępny, a kliknięcie go otwiera szczegóły wydarzenia. Jego przyciski **Dołącz do spotkania** i **Dołącz i nagraj**, zarówno w banerze w aplikacji, jak i w powiadomieniu systemowym, otwierają połączenie bez wcześniejszego otwierania wydarzenia; wydarzenie bez linku do połączenia zamiast tego oferuje **Nagraj spotkanie**. Alerty są deduplikowane na podstawie `alertedAt` wydarzenia, więc to samo spotkanie nigdy nie wywołuje alertu dwa razy, nawet po restarcie, a wydarzenie, którego początek minął, gdy aplikacja była zamknięta, nie zostaje odtworzone.
 
 Dwa ograniczenia łatwo przeoczyć. Harmonogram działa **po stronie klienta na
 komputerze** i tylko dla obszaru roboczego, który masz aktualnie otwarty — obszar
@@ -136,7 +129,7 @@ Control Center przechowuje powiązanie jeden do jednego między nagraniem a wyda
 dzięki czemu notatki ze spotkania i wpis w kalendarzu pozostają połączone, a żadna z
 tych funkcji nie zależy od drugiej.
 
-**Rozpocznij nagrywanie i powiąż** jest dostępne tylko na komputerze. W kliencie
+**Dołącz i nagraj** jest dostępne tylko na komputerze. W kliencie
 webowym ta akcja zgłasza, że nagrywanie jest niedostępne — mimo że własny przepływ
 nagrywania na ekranie spotkań działa w przeglądarce.
 

@@ -7072,6 +7072,8 @@
   "inReplyTo": "Als antwoord op {path}",
   "subscriptionUsageNoneReported": "Voor dit account wordt geen gebruik gerapporteerd.",
   "subscriptionUsageCredits": "Tegoed",
+  "subscriptionUsageBalance": "Saldo",
+  "subscriptionUsageBalanceLeft": "{amount} over",
   "reviewHubStaticRule": "Statische regel",
   "@reviewHubStaticRule": {
     "description": "Badge on a deterministic (non-agent) finding"

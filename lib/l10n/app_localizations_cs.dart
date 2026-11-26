@@ -13844,6 +13844,14 @@ class AppLocalizationsCs extends AppLocalizations {
   String get subscriptionUsageCredits => 'Kredity';
 
   @override
+  String get subscriptionUsageBalance => 'Zůstatek na účtu';
+
+  @override
+  String subscriptionUsageBalanceLeft(String amount) {
+    return '$amount zbývá';
+  }
+
+  @override
   String get reviewHubStaticRule => 'Statické pravidlo';
 
   @override

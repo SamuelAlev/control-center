@@ -3797,6 +3797,8 @@
   "inReplyTo": "回覆 {path}",
   "subscriptionUsageNoneReported": "此帳戶沒有回報用量。",
   "subscriptionUsageCredits": "點數",
+  "subscriptionUsageBalance": "結餘",
+  "subscriptionUsageBalanceLeft": "剩餘 {amount}",
   "reviewHubStaticRule": "靜態規則",
   "reviewHubStarted": "檢閱已開始",
   "reviewHubStaticRuleTooltip": "由確定性規則（{rule}）在此 pull request 新增的某一行上發現——而非由檢閱代理發現。",

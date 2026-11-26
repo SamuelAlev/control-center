@@ -7895,6 +7895,8 @@
   },
   "subscriptionUsageNoneReported": "To konto nie zgłasza użycia.",
   "subscriptionUsageCredits": "Kredyty",
+  "subscriptionUsageBalance": "Saldo",
+  "subscriptionUsageBalanceLeft": "Zostało {amount}",
   "reviewHubStaticRule": "Reguła statyczna",
   "reviewHubStarted": "Recenzja rozpoczęta",
   "reviewHubStaticRuleTooltip": "Znalezione przez deterministyczną regułę ({rule}) w wierszu, który dodaje ten pull request — nie przez agenta recenzenta.",

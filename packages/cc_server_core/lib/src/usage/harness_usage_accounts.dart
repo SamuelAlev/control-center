@@ -4,7 +4,7 @@ import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 
 /// Builds one [SubscriptionUsageAccount] per connected plan login.
 ///
-/// Codex / Cursor / Kimi Code / z.ai / Mistral all support more than one stored
+/// Codex / Cursor / Kimi Code / z.ai / Mistral / DeepSeek all support more than one stored
 /// credential, and the same pinned / round-robin / serial pool Claude Code
 /// uses orders those credentials at dispatch. Usage has to fan out the same
 /// way or the rotation editor would show remaining quota for only the active
@@ -140,6 +140,23 @@ Future<List<SubscriptionUsageAccount>> collectHarnessUsageAccounts({
     out.add(
       SubscriptionUsageAccount(
         providerId: 'mistral',
+        accountId: cred.credentialId,
+        accountLabel: _labelOf(cred),
+        apiKey: key,
+        baseUrl: cred.baseUrl,
+      ),
+    );
+  }
+
+  // A DeepSeek key is prepaid: what it reports is the balance left on it.
+  for (final cred in await store.credentialsFor('deepseek')) {
+    final key = cred.apiKey?.trim();
+    if (key == null || key.isEmpty) {
+      continue;
+    }
+    out.add(
+      SubscriptionUsageAccount(
+        providerId: 'deepseek',
         accountId: cred.credentialId,
         accountLabel: _labelOf(cred),
         apiKey: key,

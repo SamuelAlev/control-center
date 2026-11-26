@@ -8,12 +8,13 @@ import 'package:control_center/features/subscriptions/providers/subscription_usa
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/refresh_control.dart';
+import 'package:control_center/shared/widgets/subscription_window_row.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Title-bar pill showing live AI subscription usage (Claude Code, Codex,
-/// Cursor, z.ai, Kimi Code): each configured provider's logo beside its
-/// most-constrained reading, expanding to a per-provider breakdown with
+/// Cursor, z.ai, Kimi Code, Mistral, DeepSeek): each configured provider's
+/// logo beside its most-constrained reading, expanding to a per-provider breakdown with
 /// progress bars and reset countdowns.
 ///
 /// One reading per provider rather than one for all of them: a single
@@ -90,8 +91,23 @@ class _SubscriptionUsagePillState extends ConsumerState<SubscriptionUsagePill> {
     // whose usage endpoint is rate-limited too (Claude does this), but "often"
     // is not "100%": it marks the provider as needing a look instead. The
     // flyout is where either gets said.
+    //
+    // A prepaid provider has no fraction; its reading is the money left, and
+    // its most-constrained account is the one with the least of it.
     final readings = <String, ProviderUsageReading>{};
+    final lowest = <String, SubscriptionBalance>{};
     for (final p in configured) {
+      if (p.status == SubscriptionStatus.ok && p.balances.isNotEmpty) {
+        final balance = p.balances.first;
+        final held = lowest[p.providerId];
+        // Only amounts in one currency compare; the first seen sets it.
+        if (held == null ||
+            (held.currency == balance.currency &&
+                balance.amount < held.amount)) {
+          lowest[p.providerId] = balance;
+        }
+      }
+      final least = lowest[p.providerId];
       final f = p.status == SubscriptionStatus.exhausted
           ? 1.0
           : p.peakUsedFraction;
@@ -106,6 +122,9 @@ class _SubscriptionUsagePillState extends ConsumerState<SubscriptionUsagePill> {
         displayName: p.displayName,
         fraction: worst,
         failed: (prev?.failed ?? false) || p.status == SubscriptionStatus.error,
+        balance: least == null
+            ? null
+            : formatSubscriptionMoney(least.amount, least.currency),
       );
     }
 

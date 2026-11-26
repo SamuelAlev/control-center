@@ -2,7 +2,7 @@
 title: Calendar și programare
 description: Cum sincronizează Control Center Google Calendar pe server, cum ajunge autentificarea în browser la un server headless și ce poate modifica pe Google.
 slug: ro-RO/manual/concepte/calendar
-sourceHash: 60f0b846930013e86aa69f61261b0b496b4fb4f6
+sourceHash: d1dbb2bce46b34ac5bdf24cf5b27807f41e61617
 ---
 
 Control Center se conectează la Google Calendar, astfel încât ziua ta stă
@@ -118,15 +118,7 @@ dispozitiv.
 
 ## Alerte de întâlnire
 
-Un planificator care rulează în fiecare minut caută evenimente ce încep în
-intervalul de preaviz configurabil și declanșează o notificare
-**„Întâlnirea începe curând"** (un
-[eveniment de domeniu](/ro-RO/manual/concepte/evenimente-de-domeniu/)
-`MeetingStartingSoon`). Notificarea include URL-ul de conectare când există unul,
-iar clic pe ea deschide detaliile evenimentului. Alertele sunt deduplicate pe
-baza lui `alertedAt` al evenimentului, astfel încât aceeași întâlnire nu
-alertează niciodată de două ori, nici măcar după reporniri, iar un eveniment a
-cărui oră de începere a trecut cât aplicația era închisă nu se reia niciodată.
+Un planificator care rulează în fiecare minut caută evenimente ce încep în intervalul de preaviz configurabil și declanșează o notificare **„Întâlnirea începe curând"** (un [eveniment de domeniu](/ro-RO/manual/concepte/evenimente-de-domeniu/) `MeetingStartingSoon`). Notificarea include URL-ul de conectare când există unul, iar clic pe ea deschide detaliile evenimentului. Acțiunile **Intră în întâlnire** și **Intră și înregistrează** ale notificării, atât din bannerul din aplicație, cât și din notificarea de sistem, deschid apelul fără să deschidă mai întâi evenimentul; un eveniment fără link de apel oferă în schimb **Înregistrează întâlnirea**. Alertele sunt deduplicate pe baza lui `alertedAt` al evenimentului, astfel încât aceeași întâlnire nu alertează niciodată de două ori, nici măcar după reporniri, iar un eveniment a cărui oră de începere a trecut cât aplicația era închisă nu se reia niciodată.
 
 Două limite sunt ușor de încălcat. Planificatorul rulează **pe client, pe
 desktop**, și doar pentru spațiul de lucru pe care îl ai deschis — un spațiu de
@@ -142,7 +134,7 @@ evenimentului. Control Center stochează o legătură unu-la-unu între înregis
 și eveniment, astfel încât notele întâlnirii și intrarea din calendar rămân
 conectate fără ca vreuna dintre funcții să depindă de cealaltă.
 
-**Pornește înregistrarea și leagă** este doar pentru desktop. În clientul web,
+**Intră și înregistrează** este doar pentru desktop. În clientul web,
 acțiunea raportează că înregistrarea nu este disponibilă — chiar dacă fluxul
 propriu de înregistrare al ecranului de întâlniri funcționează în browser.
 

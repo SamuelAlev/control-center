@@ -2,7 +2,7 @@
 title: Takvim ve zamanlama
 description: Control Center’ın Google Calendar’ı sunucuda nasıl eşitlediği, tarayıcıdaki oturum açmanın headless sunucuya nasıl ulaştığı ve Google’da neleri değiştirebileceği.
 slug: tr-TR/kilavuz/kavramlar/takvim
-sourceHash: 60f0b846930013e86aa69f61261b0b496b4fb4f6
+sourceHash: d1dbb2bce46b34ac5bdf24cf5b27807f41e61617
 ---
 
 Control Center, günün filonun yanında yer alsın diye Google Calendar’a bağlanır.
@@ -107,14 +107,7 @@ tercihlerinde saklanır, dolayısıyla başka bir cihazda peşinden gelmez.
 
 ## Toplantı uyarıları
 
-Dakikada bir çalışan bir zamanlayıcı, yapılandırılabilir bir önceden uyarı
-penceresi içinde başlayan etkinlikleri tarar ve bir **"Toplantı yakında
-başlıyor"** bildirimi gönderir (bir `MeetingStartingSoon`
-[alan olayı](/tr-TR/kilavuz/kavramlar/alan-olaylari/)). Bildirim, varsa katılım
-URL’sini taşır ve tıklandığında etkinlik ayrıntısını açar. Uyarılar etkinliğin
-`alertedAt` değerine göre yinelenmez, böylece aynı toplantı asla iki kez uyarı
-vermez; yeniden başlatmalar arasında da, uygulama kapalıyken başlama anı geçmiş
-bir etkinlik de asla yeniden oynatılmaz.
+Dakikada bir çalışan bir zamanlayıcı, yapılandırılabilir bir önceden uyarı penceresi içinde başlayan etkinlikleri tarar ve bir **"Toplantı yakında başlıyor"** bildirimi gönderir (bir `MeetingStartingSoon` [alan olayı](/tr-TR/kilavuz/kavramlar/alan-olaylari/)). Bildirim, varsa katılım URL’sini taşır ve tıklandığında etkinlik ayrıntısını açar. Bildirimin **Toplantıya katıl** ve **Katıl ve kaydet** eylemleri, hem uygulama içi afişte hem işletim sistemi bildiriminde, etkinliği önce açmadan toplantıyı açar; katılım bağlantısı olmayan bir etkinlikte bunun yerine **Toplantı kaydet** sunulur. Uyarılar etkinliğin `alertedAt` değerine göre yinelenmez, böylece aynı toplantı asla iki kez uyarı vermez; yeniden başlatmalar arasında da, uygulama kapalıyken başlama anı geçmiş bir etkinlik de asla yeniden oynatılmaz.
 
 Kolayca takılabileceğin iki sınır var. Zamanlayıcı **masaüstünde, istemci
 tarafında** ve yalnızca o an açık olan çalışma alanı için çalışır — içinde
@@ -129,7 +122,7 @@ Center, kayıt ile etkinlik arasında bire bir bir bağ saklar, böylece toplant
 notları ile takvim kaydı, iki özellikten hiçbiri diğerine bağımlı olmadan
 bağlantılı kalır.
 
-**Kaydı başlat ve bağla** yalnızca masaüstünde bulunur. Web istemcisinde bu
+**Katıl ve kaydet** yalnızca masaüstünde bulunur. Web istemcisinde bu
 eylem, kaydın kullanılamadığını bildirir — oysa toplantılar ekranının kendi
 kayıt akışı tarayıcıda çalışır.
 

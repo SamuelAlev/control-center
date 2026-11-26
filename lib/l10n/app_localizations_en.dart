@@ -13642,6 +13642,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subscriptionUsageCredits => 'Credits';
 
   @override
+  String get subscriptionUsageBalance => 'Balance';
+
+  @override
+  String subscriptionUsageBalanceLeft(String amount) {
+    return '$amount left';
+  }
+
+  @override
   String get reviewHubStaticRule => 'Static rule';
 
   @override

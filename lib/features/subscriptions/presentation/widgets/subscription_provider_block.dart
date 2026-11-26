@@ -34,9 +34,10 @@ class _SubscriptionProviderBlockState extends State<SubscriptionProviderBlock> {
         : _index.clamp(0, widget.accounts.length - 1);
     final usage = widget.accounts[index];
     final multiple = widget.accounts.length > 1;
-    // "Has something to show" is windows OR a spend balance — an account
-    // billed per token has no windows at all and would otherwise read as
-    // unconfigured while money was actively being spent on it.
+    // "Has something to show" is windows, a spend against a cap OR a prepaid
+    // balance — an account billed per token has no windows at all and would
+    // otherwise read as unconfigured while money was actively being spent on
+    // it.
     final ok = usage.status == SubscriptionStatus.ok && usage.hasReading;
     final exhausted = usage.status == SubscriptionStatus.exhausted;
     // The two states that ask the operator for something, and so earn a tint
@@ -213,6 +214,11 @@ class _SubscriptionProviderBlockState extends State<SubscriptionProviderBlock> {
                             )
                           : formatSubscriptionMoney(spend.used, spend.currency),
                     ),
+                  ],
+                  for (var i = 0; i < usage.balances.length; i++) ...[
+                    if (i > 0 || usage.windows.isNotEmpty || spend != null)
+                      const SizedBox(height: AppSpacing.sm),
+                    SubscriptionBalanceRow(balance: usage.balances[i]),
                   ],
                 ],
               ],

@@ -2,7 +2,7 @@
 title: Zamanlamalar ve uyandırmalar
 description: Bir ajanı ileride bir zamanlamayla ya da bir şey olduğunda uyandırın, neyin beklediğini görün ve bir yeniden başlatmada ya da kullanım sınırında ne olduğunu öğrenin.
 slug: tr-TR/kilavuz/nasil-yapilir/zamanlamalar-ve-uyandirmalar
-sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+sourceHash: 2fdcfd1fe753e4a994491dd6748f64d413dd0e84
 ---
 
 Bir ajan beklerken uyumaz ve yoklamaz. Ajan ya da siz bir **uyandırma** kurarsınız: bir konuşmadaki ajanın çalıştırmasını belirli bir zamanda ya da bir şey olduğunda başlatmak ya da sürdürmek için kalıcı bir istek. Kimse yazmadan sunucunun başlattığı her çalıştırma bir uyandırma olarak başlar: bir hedefin sonraki bölümü, bir zamanlama, bir izleme, başka bir ajandan gelen bir yanıt, tamamlanan devredilmiş iş, bir kullanım sınırının sonu ya da bir yeniden başlatmadan sonra kalan iş. Uyandırmalar çalışma alanının veritabanında tutulur, bu yüzden yeniden başlatmadan sağ çıkar.
@@ -34,7 +34,7 @@ Bir konuşmanın yazma alanına bunlardan birini yazın:
 
 Yazı alanı bunları yazmanıza yardımcı olur. `/loop` ya da `/schedule` yazıp bir boşluk bıraktıktan sonra, öneri listesi ne zaman tetikleneceğini sunar ve yazdıkça daraltır; sınırlar için saatin ardından `--` yazın. Enter ya da Tab bir satırı seçer ve hiçbir şey göndermez. Metninizin üstündeki bir satır o zaman komutu geri okur: ne zaman tetikleneceğini, ne zaman biteceğini ve neyin hâlâ eksik olduğunu. Okunamayan bir komutta Enter’a basarsanız, o satır neyin yanlış olduğunu söyler ve taslağınız kalır.
 
-Ayrıca **Zamanlamalar** sayfasından **Yeni zamanlama** ile bir zamanlama oluşturabilirsiniz: alanı, konuşmayı ve ajanı, ne zaman tetikleneceğini, her çalıştırmanın neyle başlayacağını, bir bitişi, bir çalıştırma sınırını ve bir maliyet sınırını seçin. **Ajan meşgulse** o tetiklemeyi atlamak ile ajan boşalana kadar beklemek arasında seçim yapar. **Her tetikleme** bir çalıştırma başlatmak ile yalnızca notla sizi bilgilendirmek arasında seçim yapar.
+Ayrıca **Ayarlar → Çalışma alanı → Zamanlamalar** altında **Yeni zamanlama** ile bir zamanlama oluşturabilirsiniz: alanı, konuşmayı ve ajanı, ne zaman tetikleneceğini, her çalıştırmanın neyle başlayacağını, bir bitişi, bir çalıştırma sınırını ve bir maliyet sınırını seçin. **Ajan meşgulse** o tetiklemeyi atlamak ile ajan boşalana kadar beklemek arasında seçim yapar. **Her tetikleme** bir çalıştırma başlatmak ile yalnızca notla sizi bilgilendirmek arasında seçim yapar.
 
 ## Ajanların kurduğu işler
 
@@ -67,7 +67,7 @@ Ajanlar aynı işler ve izlemeler için `wake_me` aracını kullanır:
 
 Teslim edilmeyen bir uyandırma, neden olduğunu gösteren tek bir satır olarak konuşmada kalır, örneğin **Ajan duraklatıldı.** ya da **Bir bütçe çalıştırmayı engelliyor.**
 
-**Zamanlamalar sayfası.** Kenar çubuğu → **Zamanlamalar**, göreceğiniz her zamanlamayı ve izlemeyi duruma göre gruplanmış olarak listeler; bir cron zamanlaması kendi saat dilimizdeki sonraki üç zamanını gösterir. Birini açarak notunu, sahibini, sonraki tetiklemelerini, çalıştırmalarını, atlamalarını, harcamasını ve bitişini ve **Son uyandırmalar ve çalıştırmalar** bölümünü görün. Her zamanlamanın kendi adresi vardır (`/workspaces/<workspace>/schedules/<id>`).
+**Zamanlamalar sayfası.** **Ayarlar → Çalışma alanı → Zamanlamalar**, göreceğiniz her zamanlamayı ve izlemeyi duruma göre gruplanmış olarak listeler; bir cron zamanlaması kendi saat dilimizdeki sonraki üç zamanını gösterir. Birini açarak notunu, sahibini, sonraki tetiklemelerini, çalıştırmalarını, atlamalarını, harcamasını ve bitişini ve **Son uyandırmalar ve çalıştırmalar** bölümünü görün. Her zamanlamanın kendi adresi vardır (`/workspaces/<workspace>/settings/workspace/schedules/<id>`).
 
 | Eylem | Kimler yapabilir |
 | --- | --- |
@@ -95,7 +95,7 @@ Telefonda hedefler ekranındaki **Tekrarla** bir tekrarlanan istem başlatır (h
 
 ## Çalışma alanı sınırları
 
-Bir çalışma alanı yöneticisi sınırları **Ayarlar → Çalışma alanı → Zamanlamalar** altında belirler:
+Bir çalışma alanı yöneticisi sınırları bu sayfada, zamanlama listesinin altında belirler:
 
 - **Zamanlama sınırları**: bir ajanın bir konuşmada tutabileceği etkin ya da duraklatılmış zamanlama sayısı (10), çalışma alanı genelinde (50) ve tüm çalışma alanında (500); bir zamanlamanın varsayılan maliyet sınırı (50 dolar); ve cron zamanlamalarının ve günlük özetin kullandığı saat dilimi (başlangıçta UTC).
 - **Kimse yanıtlamadığında**: sunucunun başlattığı bir çalıştırmanın bir kişinin yanıtını ya da onayını ne kadar süre bekleyeceği (varsayılan 72 saat, 1 saat ile 7 gün arası); bundan sonra bir onay reddedilmiş, bir soru yanıtsız sayılır (bundan sonra aynı çalıştırmanın sorduğu başka her şey hemen reddedilir); ve sizin için, hedeflerde, zamanlamalarda ve sunucunun başlattığı diğer çalıştırmalarda sizi bekleyenlerin günlük özetinin saati.

@@ -2,7 +2,7 @@
 title: Ütemezések és ébresztők
 description: Ébresztsen egy ügynököt később, ütemezés szerint vagy amikor valami történik, nézze meg, mi vár, és mi történik újraindításkor vagy használati korlátnál.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/utemezesek-ebresztok
-sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+sourceHash: 2fdcfd1fe753e4a994491dd6748f64d413dd0e84
 ---
 
 Az ügynök várakozás közben nem alszik és nem kérdezgeti folyamatosan az állapotot. Ő vagy Ön beállít egy **ébresztőt**: tartós kérést arra, hogy elindítsa vagy folytassa az ügynök futtatását egy beszélgetésben egy adott időpontban vagy amikor valami történik. Minden futtatás, amelyet a szerver úgy indít, hogy nem valaki gépel, ébresztőként kezdődik: a cél következő szakasza, egy ütemezés, egy figyelő, egy másik ügynök válasza, befejezett delegált munka, a használati korlát végének vagy egy újraindítás után maradt munka. Az ébresztőket a munkaterület adatbázisa tárolja, így túlélik az újraindítást.
@@ -34,7 +34,7 @@ Az ügynök várakozás közben nem alszik és nem kérdezgeti folyamatosan az �
 
 A beviteli mező segít megírni őket. A `/loop` vagy a `/schedule` és egy szóköz után a javaslatlista felajánlja, mikor fut le, és gépelés közben szűkül; az idő után írt `--` jellel kapja a korlátokat. Az Enter vagy a Tab kiválaszt egy sort, és nem küld semmit. A szöveg feletti sor ezután visszaolvassa a parancsot: mikor indul, mikor ér véget, és mi hiányzik még. Ha olyan parancson nyomja meg az Entert, amelyet nem lehet beolvasni, az a sor megmondja, mi a baj, a piszkozata pedig megmarad.
 
-Ütemezést a **Ütemezések** oldalon is létrehozhat az **Új ütemezés** gombbal: válassza ki a teret, a beszélgetést és az ügynököt, azt, mikor induljon, hogy mihez kezdjen minden futtatás, a véget, a futtatási korlátot és a költségkorlátot. A **Ha az ügynök elfoglalt** mező dönt arról, hogy kihagyja-e az adott indítást, vagy megvárja, amíg az ügynök szabad lesz. A **Minden indítás** mező dönt arról, hogy elindítson-e egy futtatást, vagy csak értesítést kapjon a megjegyzéssel.
+Ütemezést a **Beállítások → Munkaterület → Ütemezések** alatt is létrehozhat az **Új ütemezés** gombbal: válassza ki a teret, a beszélgetést és az ügynököt, azt, mikor induljon, hogy mihez kezdjen minden futtatás, a véget, a futtatási korlátot és a költségkorlátot. A **Ha az ügynök elfoglalt** mező dönt arról, hogy kihagyja-e az adott indítást, vagy megvárja, amíg az ügynök szabad lesz. A **Minden indítás** mező dönt arról, hogy elindítson-e egy futtatást, vagy csak értesítést kapjon a megjegyzéssel.
 
 ## Amit az ügynökök beállítanak
 
@@ -67,7 +67,7 @@ Az ügynökök ugyanerre a célra a `wake_me` eszközt használják, valamint fi
 
 Egy nem kézbesített ébresztő egy sort hagy a beszélgetésben, amely megmondja az okát, például **Az ügynök szüneteltetve van.** vagy **Egy költségkeret blokkolja a futtatást.**
 
-**Az Ütemezések oldal.** Oldalsáv → **Ütemezések**: itt látja az összes ütemezést és figyelőt, amelyet lát, állapot szerint csoportosítva; a cron-ütemezés a következő három idejét mutatja az Ön időzónájában. Nyisson meg egyet, és lássa a megjegyzését, a tulajdonosát, a következő indításait, futtatásait, kihagyásait, költését és végét, valamint a **Legutóbbi ébresztések és futtatások** részt. Minden ütemezésnek saját címe van (`/workspaces/<workspace>/schedules/<id>`).
+**Az Ütemezések oldal.** **Beállítások → Munkaterület → Ütemezések**: itt látja az összes ütemezést és figyelőt, amelyet lát, állapot szerint csoportosítva; a cron-ütemezés a következő három idejét mutatja az Ön időzónájában. Nyisson meg egyet, és lássa a megjegyzését, a tulajdonosát, a következő indításait, futtatásait, kihagyásait, költését és végét, valamint a **Legutóbbi ébresztések és futtatások** részt. Minden ütemezésnek saját címe van (`/workspaces/<workspace>/settings/workspace/schedules/<id>`).
 
 | Művelet | Ki teheti |
 | --- | --- |
@@ -95,7 +95,7 @@ Telefonon a célok képernyőn az **Ismétlés** gomb ismétlődő promptot ind�
 
 ## Munkaterületi korlátok
 
-A munkaterület-adminisztrátor a korlátokat itt állítja be: **Beállítások → Munkaterület → Ütemezések**:
+A munkaterület-adminisztrátor a korlátokat ezen az oldalon, a lista alatt állítja be:
 
 - **Ütemezési korlátok**: hány aktív vagy szüneteltetett ütemezést tarthat egy ügynök egy beszélgetésben (10), a munkaterületen (50), illetve az egész munkaterületen (500); egy ütemezés alapértelmezett költségkorlátja (50 dollár); és az az időzóna, amelyet a cron-ütemezések és a napi összesítő használ (kezdetben UTC).
 - **Ha senki nem válaszol**: mennyit vár a szerver által indított futtatás egy személy válaszára vagy jóváhagyására (alapértelmezés szerint 72 óra, 1 órától 7 napig), mielőtt a jóváhagyás elutasítottnak, a kérdés pedig megválaszolatlannak számít (ezután a futtatás többi kérdését azonnal elutasítják), valamint a napi összesítő órája arról, mi vár Önre célokban, ütemezésekben és a szerver által indított más futtatásokban.

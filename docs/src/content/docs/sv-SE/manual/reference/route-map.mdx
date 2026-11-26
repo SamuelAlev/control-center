@@ -2,7 +2,7 @@
 title: Routkarta
 description: Varje rutt som Control Center registrerar, med sin skärm och sina query-parametrar.
 slug: sv-SE/handbok/referens/routkarta
-sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
+sourceHash: 34a70ebded7d59308c54ae125e1032f320898fd9
 ---
 
 ## Appskalet
@@ -40,12 +40,6 @@ Sökvägarna nedan utelämnar prefixet `/workspaces/:workspaceId`.
 | `/pipelines`                            | —                                         | Lista över pipelinekörningar                                                                                                                                                            |
 | `/pipelines/run`                        | `?templateId=<id>`                        | Startare för manuell körning                                                                                                                                                             |
 | `/pipelines/:runId`                     | —                                         | Pipelinedetaljer för en körning (stegtidslinje)                                                                                                                                          |
-| `/goals` | — | Lista över mål, grupperad som väntar på granskning, öppna och avslutade |
-| `/goals/:goalId` | `?edit=contract` | Ett mål: nu, vad klart innebär, verifiering, scheman och väckningar; `edit=contract` öppnar kontraktsredigeraren för ett pausat mål |
-| `/schedules` | — | Scheman och bevakningar, grupperade efter status, med **Nytt schema** |
-| `/schedules/:ruleId` | — | Ett schema: anteckning, detaljer, senaste väckningar och körningar |
-| `/improvements` | — | Förbättringsförslag, grupperade efter status |
-| `/improvements/:proposalId` | — | Ett förslag: vad som ändras, underlag, utvärdering och beslut |
 | `/plans`                                | —                                         | Navet för Plan Studio: aktiva planer, plandokument, playbooks                                                                                                                            |
 | `/plans/:kind/:id`                      | —                                         | Plan Studio för en enskild plan; `kind` är `orchestration` eller `document`                                                                                                               |
 | `/meetings`                             | —                                         | Lista över möten                                                                                                                                                                        |
@@ -65,7 +59,7 @@ Samtal och trådar har **ingen egen rutt** — en tråd är ett samtal inuti `/s
 
 Det finns **ingen `/dashboard`-rutt** och ingen instrumentpanelsvy. Analysytan är `/observability`, som nås från sidofältets fot.
 
-Det finns **ingen sidofältspost med namnet ”Planer”**. Plan Studio öppnas som en redigerarflik från planens rad i samtalet som skapade den; `/plans` och `/plans/:kind/:id` är djuplänkar.
+Det finns **ingen sidofältspost med namnet ”Planer”**. Plan Studio öppnas som en redigerarflik från planens rad i samtalet som skapade den; `/plans` och `/plans/:kind/:id` är djuplänkar. Det finns inte heller någon målsida: ett mål öppnas som en flik i ytan som äger det.
 
 `/observability` och `/pull-requests/compose` finns inte med i registren för ruttnamn eller brödsmulor, så båda visar bara appnamnet i fönsterrubriken och ingen brödsmulsnavigering.
 
@@ -103,9 +97,11 @@ Inställningssökvägarna är namnrymdsindelade efter **omfång** — `you/`, `w
 | `/settings/workspace/environments` | Miljödefinitioner: vad ytor kan starta och vilka uppgifter deras worktrees kör |
 | `/settings/workspace/agents`       | Registrerade agentidentiteter                                                                       |
 | `/settings/workspace/skills`       | Konfiguration av skills                                                                             |
-| `/settings/memory`                 | Arbetsytans minne: fakta, policyer, kunskapsgraf                                                     |
+| `/settings/memory`                 | Arbetsytans minne: fakta, policyer, förbättringsförslag (`?tab=improvements`) och kunskapsgrafen |
+| `/settings/memory/improvements/:proposalId` | Ett förslag: vad som ändras, underlag, utvärdering och beslut |
 | `/settings/workspace/permissions`  | Agentbehörigheter: räcksmatris och Tänk om-probe                                                    |
-| `/settings/workspace/schedules` | Gränser för scheman, tidszonen för cron-scheman och sammanfattningen, och hur länge serverstartade körningar väntar på ett svar (administratörer redigerar; medlemmar läser) |
+| `/settings/workspace/schedules` | Scheman och bevakningar, grupperade efter status, med **Nytt schema**; sedan gränser för scheman, tidszonen för cron-scheman och sammanfattningen, och hur länge serverstartade körningar väntar på ett svar (administratörer redigerar; medlemmar läser) |
+| `/settings/workspace/schedules/:ruleId` | Ett schema: anteckning, detaljer, senaste väckningar och körningar |
 | `/settings/pipelines`              | Pipelinemallar                                                                                      |
 | `/settings/pipelines/:templateId`  | Redigerare för pipelinemallar (dra-och-släpp-duk)                                                   |
 

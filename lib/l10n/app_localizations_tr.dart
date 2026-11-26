@@ -13675,6 +13675,14 @@ class AppLocalizationsTr extends AppLocalizations {
   String get subscriptionUsageCredits => 'Krediler';
 
   @override
+  String get subscriptionUsageBalance => 'Bakiye';
+
+  @override
+  String subscriptionUsageBalanceLeft(String amount) {
+    return '$amount kaldı';
+  }
+
+  @override
   String get reviewHubStaticRule => 'Statik kural';
 
   @override

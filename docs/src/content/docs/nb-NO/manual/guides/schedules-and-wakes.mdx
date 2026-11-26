@@ -2,7 +2,7 @@
 title: Tidsplaner og vekkinger
 description: Vekk en agent senere, etter en tidsplan eller når noe skjer, se hva som venter, og hva som skjer ved en omstart eller en bruksgrense.
 slug: nb-NO/handbok/slik-gjor-du/tidsplaner-vekkinger
-sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+sourceHash: 2fdcfd1fe753e4a994491dd6748f64d413dd0e84
 ---
 
 Mens den venter, sover ikke en agent og spør ikke stadig etter status. Den, eller du, setter opp en **vekking**: en varig forespørsel om å starte eller fortsette agentens kjøring i en samtale på et tidspunkt eller når noe skjer. Hver kjøring serveren starter uten at noen skriver, begynner som en vekking: et målets neste segment, en tidsplan, en overvåking, et svar fra en annen agent, ferdig delegert arbeid, slutten på en bruksgrense, arbeidet som er igjen etter en omstart. Vekkinger lagres i arbeidsområdets database, så de overlever en omstart.
@@ -34,7 +34,7 @@ Skriv en av disse i en samtales skrivefelt:
 
 Skrivefeltet hjelper deg å skrive dem. Etter `/loop` eller `/schedule` og et mellomrom viser forslagslisten når den utløses, og den snevres inn etter hvert som du skriver; skriv `--` etter tidspunktet for grensene. Enter eller Tab velger en rad og sender ingenting. En linje over teksten din leser deretter kommandoen tilbake: når den utløses, når den avsluttes, og hva som fortsatt mangler. Hvis du trykker Enter på en kommando som ikke kan leses, sier den linjen hva som er galt, og utkastet ditt blir stående.
 
-Du kan også lage en tidsplan på siden **Tidsplaner** med **Ny tidsplan**: velg området, samtalen og agenten, når den utløses, hva hver kjøring starter fra, en slutt, en grense for kjøringer og en kostnadsgrense. **Hvis agenten er opptatt** velger mellom å hoppe over den utløsningen og å vente til agenten er ledig. **Hver kjøring** velger mellom å starte en kjøring og bare å varsle deg med notatet.
+Du kan også lage en tidsplan under **Innstillinger → Arbeidsområde → Tidsplaner** med **Ny tidsplan**: velg området, samtalen og agenten, når den utløses, hva hver kjøring starter fra, en slutt, en grense for kjøringer og en kostnadsgrense. **Hvis agenten er opptatt** velger mellom å hoppe over den utløsningen og å vente til agenten er ledig. **Hver kjøring** velger mellom å starte en kjøring og bare å varsle deg med notatet.
 
 ## Hva agenter setter opp
 
@@ -67,7 +67,7 @@ Agenter bruker verktøyet `wake_me` til de samme tingene, og til overvåkinger:
 
 En vekking som ikke ble levert, etterlater én rad i samtalen som sier hvorfor, for eksempel **Agenten er pauset.** eller **Et budsjett blokkerer en kjøring.**
 
-**Siden for tidsplaner.** Sidemenyen → **Tidsplaner** lister alle tidsplaner og overvåkinger du kan se, gruppert etter status; en cron-tidsplan viser sine neste tre tidspunkter i din tidssone. Åpne en for å se notatet, eieren, neste utløsninger, kjøringer, hoppede over, forbruk og slutt, og **Nylige vekkinger og kjøringer**. Hver tidsplan har sin egen adresse (`/workspaces/<workspace>/schedules/<id>`).
+**Siden for tidsplaner.** **Innstillinger → Arbeidsområde → Tidsplaner** lister alle tidsplaner og overvåkinger du kan se, gruppert etter status; en cron-tidsplan viser sine neste tre tidspunkter i din tidssone. Åpne en for å se notatet, eieren, neste utløsninger, kjøringer, hoppede over, forbruk og slutt, og **Nylige vekkinger og kjøringer**. Hver tidsplan har sin egen adresse (`/workspaces/<workspace>/settings/workspace/schedules/<id>`).
 
 | Handling | Hvem kan |
 | --- | --- |
@@ -95,7 +95,7 @@ På telefonen starter **Gjenta** på målskjermen en gjentagende ledetekst (hver
 
 ## Grenser for arbeidsområdet
 
-En arbeidsområdeadministrator setter grensene under **Innstillinger → Arbeidsområde → Tidsplaner**:
+En arbeidsområdeadministrator setter grensene på samme side, under listen:
 
 - **Grenser for tidsplaner**: hvor mange aktive eller pauset tidsplaner én agent kan ha i én samtale (10), på tvers av arbeidsområdet (50) og i hele arbeidsområdet (500); standard kostnadsgrense for en tidsplan (50 dollar); og tidssonen cron-tidsplaner og det daglige sammendraget bruker (UTC til å begynne med).
 - **Når ingen svarer**: hvor lenge en kjøring serveren startet venter på en persons svar eller godkjenning (72 timer som standard, 1 time til 7 dager) før en godkjenning regnes som avslått og et spørsmål som ubesvart (etter det avvises alt annet den samme kjøringen spør om med en gang), og klokkeslettet for det daglige sammendraget av det som venter på deg i mål, tidsplaner og andre kjøringer serveren startet.

@@ -7895,6 +7895,8 @@
   },
   "subscriptionUsageNoneReported": "Ingen användning rapporterad för det här kontot.",
   "subscriptionUsageCredits": "Krediter",
+  "subscriptionUsageBalance": "Saldo",
+  "subscriptionUsageBalanceLeft": "{amount} kvar",
   "reviewHubStaticRule": "Statisk regel",
   "reviewHubStarted": "Granskning startad",
   "reviewHubStaticRuleTooltip": "Hittad av en deterministisk regel ({rule}) på en rad den här pull requesten lägger till – inte av en granskaragent.",

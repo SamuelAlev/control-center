@@ -8,6 +8,7 @@ import 'package:control_center/features/settings/presentation/widgets/sections/c
 import 'package:control_center/features/settings/providers/account_pool_providers.dart';
 import 'package:control_center/features/subscriptions/providers/subscription_usage_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/widgets/subscription_window_row.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -26,6 +27,9 @@ List<AccountPoolCandidate> harnessRotationCandidates({
       () {
         final snap = _usageFor(usage, usageId, cred);
         final peak = snap?.peakWindow;
+        final balances = snap?.status == SubscriptionStatus.ok
+            ? snap!.balances
+            : const <SubscriptionBalance>[];
         return AccountPoolCandidate(
           id: cred.credentialId,
           // A key has no name, only a masked tail — which is still the only
@@ -35,6 +39,13 @@ List<AccountPoolCandidate> harnessRotationCandidates({
               : cred.hint ?? cred.credentialId,
           detail: peak != null
               ? claudeWindowFact(l10n, peak)
+              : balances.isNotEmpty
+              ? l10n.subscriptionUsageBalanceLeft(
+                  [
+                    for (final b in balances)
+                      formatSubscriptionMoney(b.amount, b.currency),
+                  ].join(' · '),
+                )
               : cred.method == HarnessAuthMethod.oauth
               ? l10n.providerSignedInAccount
               : cred.hint,

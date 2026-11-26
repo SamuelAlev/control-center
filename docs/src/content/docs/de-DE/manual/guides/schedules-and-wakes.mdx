@@ -2,7 +2,7 @@
 title: Zeitpläne und Weckrufe
 description: Wecke einen Agenten später, nach Zeitplan oder wenn etwas passiert, sieh, was wartet, und was bei einem Neustart oder einem Nutzungslimit geschieht.
 slug: de-DE/handbuch/anleitungen/zeitplaene-weckrufe
-sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+sourceHash: 2fdcfd1fe753e4a994491dd6748f64d413dd0e84
 ---
 
 Ein Agent schläft nicht und fragt auch nicht ständig nach, während er wartet. Er oder du richtet einen **Weckruf** ein: eine dauerhafte Anfrage, den Lauf des Agenten in einer Konversation zu einem Zeitpunkt oder bei einem Ereignis zu starten oder fortzusetzen. Jeder Lauf, den der Server ohne Eingabe einer Person startet, beginnt als Weckruf: der nächste Abschnitt eines Ziels, ein Zeitplan, eine Überwachung, eine Antwort eines anderen Agenten, fertige delegierte Arbeit, das Ende eines Nutzungslimits oder die Arbeit, die nach einem Neustart übrig ist. Weckrufe werden in der Datenbank des Arbeitsbereichs gespeichert und überstehen daher einen Neustart.
@@ -34,7 +34,7 @@ Tippe einen davon in das Eingabefeld einer Konversation:
 
 Der Composer hilft dir beim Schreiben. Nach `/loop` oder `/schedule` und einem Leerzeichen bietet die Vorschlagsliste an, wann er auslöst, und sie wird enger, während du tippst; tippe `--` nach der Uhrzeit für die Grenzen. Enter oder Tab übernimmt eine Zeile und sendet nichts. Eine Zeile über deinem Text liest den Befehl dann zurück: wann er auslöst, wann er endet und was noch fehlt. Drückst du Enter bei einem Befehl, der sich nicht lesen lässt, sagt diese Zeile, was nicht stimmt, und dein Entwurf bleibt erhalten.
 
-Du kannst einen Zeitplan auch auf der Seite **Zeitpläne** mit **Neuer Zeitplan** anlegen: Wähle Bereich, Konversation und Agent, wann er auslöst, womit jeder Lauf beginnt, ein Ende, eine Obergrenze für Läufe und eine Kostengrenze. **Wenn der Agent beschäftigt ist** legt fest, ob diese Auslösung übersprungen wird oder ob gewartet wird, bis der Agent frei ist. **Bei jedem Auslösen** legt fest, ob ein Lauf startet oder du nur mit der Notiz benachrichtigt wirst.
+Du kannst einen Zeitplan auch unter **Einstellungen → Arbeitsbereich → Zeitpläne** mit **Neuer Zeitplan** anlegen: Wähle Bereich, Konversation und Agent, wann er auslöst, womit jeder Lauf beginnt, ein Ende, eine Obergrenze für Läufe und eine Kostengrenze. **Wenn der Agent beschäftigt ist** legt fest, ob diese Auslösung übersprungen wird oder ob gewartet wird, bis der Agent frei ist. **Bei jedem Auslösen** legt fest, ob ein Lauf startet oder du nur mit der Notiz benachrichtigt wirst.
 
 ## Was Agenten einrichten
 
@@ -67,7 +67,7 @@ Agenten verwenden das Tool `wake_me` für dieselben Dinge und für Überwachunge
 
 Ein Weckruf, der nicht zugestellt wurde, hinterlässt eine Zeile in der Konversation, die sagt, warum, etwa **Der Agent ist pausiert.** oder **Ein Budget blockiert einen Lauf.**
 
-**Die Seite Zeitpläne.** Seitenleiste → **Zeitpläne** listet jeden Zeitplan und jede Überwachung, die du sehen kannst, nach Status gruppiert; ein Cron-Zeitplan zeigt seine nächsten drei Zeiten in deiner Zeitzone. Öffne einen, um seine Notiz, Eigentümer, nächste Auslösungen, Läufe, übersprungene Läufe, Ausgaben und Ende sowie **Letzte Weckrufe und Läufe** zu sehen. Jeder Zeitplan hat eine eigene Adresse (`/workspaces/<workspace>/schedules/<id>`).
+**Die Seite Zeitpläne.** **Einstellungen → Arbeitsbereich → Zeitpläne** listet jeden Zeitplan und jede Überwachung, die du sehen kannst, nach Status gruppiert; ein Cron-Zeitplan zeigt seine nächsten drei Zeiten in deiner Zeitzone. Öffne einen, um seine Notiz, Eigentümer, nächste Auslösungen, Läufe, übersprungene Läufe, Ausgaben und Ende sowie **Letzte Weckrufe und Läufe** zu sehen. Jeder Zeitplan hat eine eigene Adresse (`/workspaces/<workspace>/settings/workspace/schedules/<id>`).
 
 | Aktion | Wer kann |
 | --- | --- |
@@ -95,7 +95,7 @@ Auf dem Telefon startet **Wiederholen** auf dem Zielbildschirm einen sich wieder
 
 ## Grenzen des Arbeitsbereichs
 
-Ein Admin des Arbeitsbereichs legt die Grenzen unter **Einstellungen → Arbeitsbereich → Zeitpläne** fest:
+Ein Admin des Arbeitsbereichs legt die Grenzen auf derselben Seite unter der Liste fest:
 
 - **Grenzen für Zeitpläne**: wie viele aktive oder pausierte Zeitpläne ein Agent in einer Konversation (10), im Arbeitsbereich (50) und im gesamten Arbeitsbereich (500) haben darf; die Standard-Kostengrenze eines Zeitplans (50 Dollar); und die Zeitzone, die Cron-Zeitpläne und die tägliche Übersicht verwenden (zu Beginn UTC).
 - **Wenn niemand antwortet**: wie lange ein Lauf, den der Server gestartet hat, auf die Antwort oder Genehmigung einer Person wartet (standardmäßig 72 Stunden, 1 Stunde bis 7 Tage), bevor eine Genehmigung als abgelehnt und eine Frage als unbeantwortet gilt (danach wird alles andere, was derselbe Lauf fragt, sofort abgelehnt), und die Stunde der täglichen Übersicht darüber, was auf dich wartet, bei Zielen, Zeitplänen und anderen Läufen, die der Server gestartet hat.

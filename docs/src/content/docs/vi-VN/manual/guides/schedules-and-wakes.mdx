@@ -2,7 +2,7 @@
 title: Lịch và lượt đánh thức
 description: Đánh thức một agent sau, theo lịch hoặc khi có điều gì đó xảy ra, xem những gì đang chờ, và điều gì xảy ra khi máy chủ khởi động lại hoặc khi chạm giới hạn sử dụng.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/lich-va-danh-thuc
-sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+sourceHash: 2fdcfd1fe753e4a994491dd6748f64d413dd0e84
 ---
 
 Agent không ngủ hay liên tục hỏi lại trong lúc chờ. Agent, hoặc bạn, thiết lập một **lượt đánh thức**: một yêu cầu bền vững để bắt đầu hoặc tiếp tục lần chạy của agent trong một cuộc trò chuyện vào một thời điểm hoặc khi có điều gì xảy ra. Mọi lần chạy mà máy chủ bắt đầu khi không có ai gõ đều bắt đầu từ một lượt đánh thức: phân đoạn tiếp theo của một mục tiêu, một lịch, một theo dõi, một phản hồi từ agent khác, công việc đã ủy thác đã xong, lúc giới hạn sử dụng được đặt lại, hoặc công việc còn lại sau khi khởi động lại. Lượt đánh thức được giữ trong cơ sở dữ liệu của không gian làm việc, nên chúng vẫn còn sau khi khởi động lại.
@@ -34,7 +34,7 @@ Gõ một trong các lệnh sau trong ô soạn của cuộc trò chuyện:
 
 Ô soạn giúp bạn viết chúng. Sau `/loop` hoặc `/schedule` và một khoảng trắng, danh sách gợi ý đưa ra thời điểm kích hoạt và thu hẹp khi bạn gõ; gõ `--` sau thời điểm để xem các giới hạn. Enter hoặc Tab chọn một dòng và không gửi gì. Một dòng phía trên văn bản của bạn khi đó đọc lại lệnh: khi nào nó kích hoạt, khi nào nó kết thúc, và còn thiếu gì. Nếu bạn nhấn Enter với một lệnh không đọc được, dòng đó cho biết điều gì sai và bản nháp của bạn vẫn còn.
 
-Bạn cũng có thể tạo lịch từ trang **Lịch** bằng **Lịch mới**: chọn không gian, cuộc trò chuyện và agent, khi nào kích hoạt, mỗi lần chạy bắt đầu từ đâu, thời điểm kết thúc, giới hạn số lần chạy và giới hạn chi phí. **Nếu agent đang bận** chọn giữa việc bỏ qua lần kích hoạt đó và chờ đến khi agent rảnh. **Mỗi lần kích hoạt** chọn giữa việc bắt đầu một lần chạy và chỉ thông báo cho bạn kèm ghi chú.
+Bạn cũng có thể tạo lịch trong **Cài đặt → Không gian làm việc → Lịch** bằng **Lịch mới**: chọn không gian, cuộc trò chuyện và agent, khi nào kích hoạt, mỗi lần chạy bắt đầu từ đâu, thời điểm kết thúc, giới hạn số lần chạy và giới hạn chi phí. **Nếu agent đang bận** chọn giữa việc bỏ qua lần kích hoạt đó và chờ đến khi agent rảnh. **Mỗi lần kích hoạt** chọn giữa việc bắt đầu một lần chạy và chỉ thông báo cho bạn kèm ghi chú.
 
 ## Những gì agent thiết lập
 
@@ -67,7 +67,7 @@ Agent dùng công cụ `wake_me` cho những việc tương tự, và cho các t
 
 Một lượt đánh thức không được gửi sẽ để lại một dòng trong cuộc trò chuyện nói rõ lý do, chẳng hạn **Agent đang tạm dừng.** hoặc **Ngân sách đang chặn lần chạy.**
 
-**Trang Lịch.** Thanh bên → **Lịch** liệt kê mọi lịch và theo dõi bạn có thể xem, nhóm theo trạng thái; một lịch cron hiển thị ba thời điểm kế tiếp theo múi giờ của bạn. Mở một lịch để xem ghi chú, chủ sở hữu, các lần kích hoạt tiếp theo, lần chạy, lần bỏ qua, chi tiêu và thời điểm kết thúc, và **Lượt đánh thức và lần chạy gần đây**. Mỗi lịch có địa chỉ riêng (`/workspaces/<workspace>/schedules/<id>`).
+**Trang Lịch.** **Cài đặt → Không gian làm việc → Lịch** liệt kê mọi lịch và theo dõi bạn có thể xem, nhóm theo trạng thái; một lịch cron hiển thị ba thời điểm kế tiếp theo múi giờ của bạn. Mở một lịch để xem ghi chú, chủ sở hữu, các lần kích hoạt tiếp theo, lần chạy, lần bỏ qua, chi tiêu và thời điểm kết thúc, và **Lượt đánh thức và lần chạy gần đây**. Mỗi lịch có địa chỉ riêng (`/workspaces/<workspace>/settings/workspace/schedules/<id>`).
 
 | Hành động | Ai có thể |
 | --- | --- |
@@ -95,7 +95,7 @@ Trên điện thoại, **Lặp lại** ở màn hình mục tiêu bắt đầu m
 
 ## Giới hạn của không gian làm việc
 
-Quản trị viên không gian làm việc đặt các giới hạn tại **Cài đặt → Không gian làm việc → Lịch**:
+Quản trị viên không gian làm việc đặt các giới hạn ngay trên trang này, bên dưới danh sách lịch:
 
 - **Giới hạn lịch**: số lịch đang hoạt động hoặc đang tạm dừng mà một agent được giữ trong một cuộc trò chuyện (10), trên khắp không gian làm việc (50), và trong toàn bộ không gian làm việc (500); giới hạn chi phí mặc định của một lịch (50 đô la); và múi giờ mà lịch cron và tóm tắt hằng ngày dùng (ban đầu là UTC).
 - **Khi không ai trả lời**: một lần chạy do máy chủ bắt đầu chờ câu trả lời hoặc phê duyệt của một người bao lâu (mặc định 72 giờ, từ 1 giờ đến 7 ngày) trước khi một phê duyệt được coi là bị từ chối và một câu hỏi là chưa được trả lời (sau đó, mọi điều khác mà cùng lần chạy hỏi đều bị từ chối ngay), và giờ của bản tóm tắt hằng ngày về những gì đang chờ bạn trong các mục tiêu, lịch và các lần chạy khác do máy chủ bắt đầu.

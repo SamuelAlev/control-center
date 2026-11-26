@@ -13833,6 +13833,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get subscriptionUsageCredits => 'Credite';
 
   @override
+  String get subscriptionUsageBalance => 'Sold';
+
+  @override
+  String subscriptionUsageBalanceLeft(String amount) {
+    return '$amount rămași';
+  }
+
+  @override
   String get reviewHubStaticRule => 'Regulă statică';
 
   @override

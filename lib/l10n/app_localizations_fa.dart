@@ -13628,6 +13628,14 @@ class AppLocalizationsFa extends AppLocalizations {
   String get subscriptionUsageCredits => 'اعتبار';
 
   @override
+  String get subscriptionUsageBalance => 'موجودی حساب';
+
+  @override
+  String subscriptionUsageBalanceLeft(String amount) {
+    return '$amount باقی‌مانده';
+  }
+
+  @override
   String get reviewHubStaticRule => 'قاعدهٔ ایستا';
 
   @override

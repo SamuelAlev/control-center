@@ -2,7 +2,7 @@
 title: Pianificazioni e risvegli
 description: Risveglia un agente più tardi, su una pianificazione o quando succede qualcosa, vedi cosa è in attesa e cosa succede al riavvio o al limite di utilizzo.
 slug: it-IT/manuale/guide/pianificazioni-risvegli
-sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+sourceHash: 2fdcfd1fe753e4a994491dd6748f64d413dd0e84
 ---
 
 Un agente non dorme né controlla in continuo mentre attende. L'agente, o tu, imposta un **risveglio**: una richiesta durevole di avviare o proseguire l'esecuzione dell'agente in una conversazione, a un orario o quando succede qualcosa. Ogni esecuzione che il server avvia senza che qualcuno scriva inizia come un risveglio: il prossimo segmento di un obiettivo, una pianificazione, un monitoraggio, una risposta di un altro agente, un lavoro delegato concluso, la fine di un limite di utilizzo, il lavoro rimasto dopo un riavvio. I risvegli sono conservati nel database dello spazio di lavoro, quindi sopravvivono a un riavvio.
@@ -34,7 +34,7 @@ Scrivi uno di questi comandi nel compositore di una conversazione:
 
 Il compositore ti aiuta a scriverli. Dopo `/loop` o `/schedule` e uno spazio, l'elenco dei suggerimenti propone quando si attiva e si restringe man mano che digiti; digita `--` dopo l'orario per i limiti. Invio o Tab sceglie una riga e non invia nulla. Una riga sopra il testo riporta poi il comando: quando si attiva, quando termina e cosa manca ancora. Se premi Invio su un comando che non può essere letto, quella riga dice cosa non va e la tua bozza resta.
 
-Puoi anche creare una pianificazione dalla pagina **Pianificazioni** con **Nuova pianificazione**: scegli lo spazio, la conversazione e l'agente, quando si attiva, da cosa parte ogni esecuzione, una fine, un limite di esecuzioni e un limite di spesa. **Se l'agente è occupato** sceglie tra saltare quell'attivazione e attendere che l'agente sia libero. **Ad ogni attivazione** sceglie tra avviare un'esecuzione e limitarsi a notificarti con la nota.
+Puoi anche creare una pianificazione in **Impostazioni → Spazio di lavoro → Pianificazioni** con **Nuova pianificazione**: scegli lo spazio, la conversazione e l'agente, quando si attiva, da cosa parte ogni esecuzione, una fine, un limite di esecuzioni e un limite di spesa. **Se l'agente è occupato** sceglie tra saltare quell'attivazione e attendere che l'agente sia libero. **Ad ogni attivazione** sceglie tra avviare un'esecuzione e limitarsi a notificarti con la nota.
 
 ## Cosa pianificano gli agenti
 
@@ -67,7 +67,7 @@ Gli agenti usano lo strumento `wake_me` per le stesse cose, e per i monitoraggi:
 
 Un risveglio non consegnato lascia una riga nella conversazione che dice perché, come **L'agente è in pausa.** o **Un budget blocca un'esecuzione.**
 
-**La pagina Pianificazioni.** Barra laterale → **Pianificazioni** elenca ogni pianificazione e monitoraggio che puoi vedere, raggruppati per stato; una pianificazione cron mostra le sue prossime tre volte nel tuo fuso orario. Aprine una per vedere la sua nota, il proprietario, le prossime attivazioni, le esecuzioni, i salti, la spesa e la fine, e **Risvegli ed esecuzioni recenti**. Ogni pianificazione ha un proprio indirizzo (`/workspaces/<workspace>/schedules/<id>`).
+**La pagina Pianificazioni.** **Impostazioni → Spazio di lavoro → Pianificazioni** elenca ogni pianificazione e monitoraggio che puoi vedere, raggruppati per stato; una pianificazione cron mostra le sue prossime tre volte nel tuo fuso orario. Aprine una per vedere la sua nota, il proprietario, le prossime attivazioni, le esecuzioni, i salti, la spesa e la fine, e **Risvegli ed esecuzioni recenti**. Ogni pianificazione ha un proprio indirizzo (`/workspaces/<workspace>/settings/workspace/schedules/<id>`).
 
 | Azione | Chi può |
 | --- | --- |
@@ -95,7 +95,7 @@ Sul telefono, **Ripeti** nella schermata degli obiettivi avvia un prompt ripetut
 
 ## Limiti dello spazio di lavoro
 
-Un admin dello spazio di lavoro imposta i limiti in **Impostazioni → Spazio di lavoro → Pianificazioni**:
+Un admin dello spazio di lavoro imposta i limiti nella stessa pagina, sotto l'elenco:
 
 - **Limiti delle pianificazioni**: quante pianificazioni attive o in pausa un agente può avere in una conversazione (10), nello spazio di lavoro (50) e in tutto lo spazio di lavoro (500); il limite di spesa predefinito di una pianificazione (50 dollari); e il fuso orario usato dalle pianificazioni cron e dal riepilogo giornaliero (UTC inizialmente).
 - **Quando nessuno risponde**: quanto attende un'esecuzione avviata dal server la risposta o l'approvazione di una persona (72 ore per impostazione predefinita, da 1 ora a 7 giorni) prima che un'approvazione conti come negata e una domanda come senza risposta (dopo, qualsiasi altra cosa la stessa esecuzione chieda viene subito rifiutata), e l'ora del riepilogo giornaliero di ciò che ti attende tra obiettivi, pianificazioni e altre esecuzioni avviate dal server.

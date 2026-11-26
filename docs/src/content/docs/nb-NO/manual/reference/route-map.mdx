@@ -2,7 +2,7 @@
 title: Rutekart
 description: Alle ruter Control Center registrerer, med tilhørende skjermbilde og spørringsparametere.
 slug: nb-NO/handbok/referanse/rutekart
-sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
+sourceHash: 34a70ebded7d59308c54ae125e1032f320898fd9
 ---
 
 ## Appskallet
@@ -40,12 +40,6 @@ Stiene nedenfor utelater prefikset `/workspaces/:workspaceId`.
 | `/pipelines`                            | —                                         | Liste over pipeline-kjøringer                                                                                                                                            |
 | `/pipelines/run`                        | `?templateId=<id>`                        | Oppstarter for manuell kjøring                                                                                                                                           |
 | `/pipelines/:runId`                     | —                                         | Detaljer for pipeline-kjøring (tidslinje for steg)                                                                                                                        |
-| `/goals` | — | Liste over mål, gruppert som venter på gjennomgang, åpne og avsluttede |
-| `/goals/:goalId` | `?edit=contract` | Ett mål: nå, hva ferdig betyr, verifisering, tidsplaner og vekkinger; `edit=contract` åpner kontraktredigeringen for et pauset mål |
-| `/schedules` | — | Tidsplaner og overvåkinger, gruppert etter status, med **Ny tidsplan** |
-| `/schedules/:ruleId` | — | Én tidsplan: notat, detaljer, nylige vekkinger og kjøringer |
-| `/improvements` | — | Forbedringsforslag, gruppert etter status |
-| `/improvements/:proposalId` | — | Ett forslag: hva som endres, belegg, evaluering og beslutning |
 | `/plans`                                | —                                         | Plan Studio-samlingsside: aktive planer, plandokumenter, playbooks                                                                                                        |
 | `/plans/:kind/:id`                      | —                                         | Plan Studio for én plan; `kind` er `orchestration` eller `document`                                                                                                       |
 | `/meetings`                             | —                                         | Møteliste                                                                                                                                                                |
@@ -65,7 +59,7 @@ Samtaler og tråder har **ingen egen rute** — en tråd er en samtale inne i `/
 
 Det finnes **ingen `/dashboard`-rute** og ingen dashboardskjerm. Analyseflaten er `/observability`, som nås fra sidefeltets bunntekst.
 
-Det finnes **ingen «Planer»-oppføring i sidefeltet**. Plan Studio åpnes som en editorfane fra planens rad i samtalen som produserte den; `/plans` og `/plans/:kind/:id` er dypelenker.
+Det finnes **ingen «Planer»-oppføring i sidefeltet**. Plan Studio åpnes som en editorfane fra planens rad i samtalen som produserte den; `/plans` og `/plans/:kind/:id` er dypelenker. Det finnes heller ingen «Mål»-side; et mål åpnes som en fane i området som eier det.
 
 `/observability` og `/pull-requests/compose` har ingen oppføring i registrene for rutetitler eller brødsmulesti, så begge viser det bare appnavnet i vinduets tittel og ingen brødsmulesti.
 
@@ -103,9 +97,11 @@ Innstillingsstiene er inndelt i navnerom etter **omfang** — `you/`, `workspace
 | `/settings/workspace/environments` | Miljødefinisjoner: hva områder kan starte og hvilke oppgaver worktreene deres kjører |
 | `/settings/workspace/agents`       | Registrerte agentidentiteter                                                                 |
 | `/settings/workspace/skills`       | Konfigurasjon av skills                                                                      |
-| `/settings/memory`                 | Arbeidsområdets minne: fakta, policyer, kunnskapsgraf                                        |
+| `/settings/memory`                 | Arbeidsområdets minne: fakta, policyer, forbedringsforslag (`?tab=improvements`) og kunnskapsgraf |
+| `/settings/memory/improvements/:proposalId` | Ett forslag: hva som endres, belegg, evaluering og beslutning |
 | `/settings/workspace/permissions`  | Agenttillatelser: regelmatrise og «Hva om?»-probe                                            |
-| `/settings/workspace/schedules` | Grenser for tidsplaner, tidssonen for cron-tidsplaner og sammendraget, og hvor lenge serverstartede kjøringer venter på et svar (administratorer redigerer; medlemmer leser) |
+| `/settings/workspace/schedules` | Tidsplaner og overvåkinger, gruppert etter status, med **Ny tidsplan**; deretter grenser for tidsplaner, tidssonen for cron-tidsplaner og sammendraget, og hvor lenge serverstartede kjøringer venter på et svar (administratorer redigerer; medlemmer leser) |
+| `/settings/workspace/schedules/:ruleId` | Én tidsplan: notat, detaljer, nylige vekkinger og kjøringer |
 | `/settings/pipelines`              | Pipeline-maler                                                                               |
 | `/settings/pipelines/:templateId`  | Editor for pipeline-maler (lerret med dra og slipp)                                          |
 

@@ -2,7 +2,7 @@
 title: Útvonaltérkép
 description: Minden útvonal, amelyet a Control Center regisztrál, a hozzá tartozó képernyővel és lekérdezési paramétereivel.
 slug: hu-HU/kezikonyv/referencia/utvonalterkep
-sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
+sourceHash: 34a70ebded7d59308c54ae125e1032f320898fd9
 ---
 
 ## Alkalmazáshéj
@@ -40,12 +40,6 @@ Az alábbi útvonalak elhagyják a `/workspaces/:workspaceId` előtagot.
 | `/pipelines`                            | —                                         | Pipeline-futtatások listája                                                                                                                                                |
 | `/pipelines/run`                        | `?templateId=<id>`                        | Kézi futtatás indítója                                                                                                                                                    |
 | `/pipelines/:runId`                     | —                                         | Pipeline-futtatás részletei (lépések idővonala)                                                                                                                           |
-| `/goals` | — | Célok listája, átnézésre váró, nyitott és befejezett csoportosításban |
-| `/goals/:goalId` | `?edit=contract` | Egy cél: most, mit jelent a kész, ellenőrzés, ütemezések és ébresztők; az `edit=contract` a szüneteltetett célon megnyitja a szerződésszerkesztőt |
-| `/schedules` | — | Ütemezések és figyelők állapot szerint csoportosítva, az **Új ütemezés** gombbal |
-| `/schedules/:ruleId` | — | Egy ütemezés: megjegyzés, részletek, legutóbbi ébresztések és futtatások |
-| `/improvements` | — | Fejlesztési javaslatok, állapot szerint csoportosítva |
-| `/improvements/:proposalId` | — | Egy javaslat: mi változik, bizonyíték, értékelés és döntés |
 | `/plans`                                | —                                         | Plan Studio központ: aktív tervek, tervdokumentumok, playbookok                                                                                                           |
 | `/plans/:kind/:id`                      | —                                         | Plan Studio egy tervhez; a `kind` értéke `orchestration` vagy `document`                                                                                                  |
 | `/meetings`                             | —                                         | Megbeszélések listája                                                                                                                                                     |
@@ -65,7 +59,7 @@ A beszélgetéseknek és a szálaknak **nincs saját útvonaluk** — egy szál 
 
 **Nincs `/dashboard` útvonal** és nincs irányítópult-képernyő sem. Az elemzőfelület a `/observability`, amely az oldalsáv láblécéből érhető el.
 
-**Nincs „Tervek” bejegyzés az oldalsávban.** A Plan Studio szerkesztőfülként nyílik meg abból a beszélgetésből, amely létrehozta a tervet, annak sorából; a `/plans` és a `/plans/:kind/:id` mélyhivatkozás.
+**Nincs „Tervek” bejegyzés az oldalsávban.** A Plan Studio szerkesztőfülként nyílik meg abból a beszélgetésből, amely létrehozta a tervet, annak sorából; a `/plans` és a `/plans/:kind/:id` mélyhivatkozás. Célok oldal sincs: egy cél fülként nyílik meg abban a térben, amelyhez tartozik.
 
 A `/observability` és a `/pull-requests/compose` nem szerepel az útvonalcím- vagy morzsamenü-nyilvántartásban, ezért mindkettő a puszta alkalmazásnevet mutatja az ablak címében, és nincs morzsamenü-nyomvonaluk sem.
 
@@ -103,9 +97,11 @@ A beállítások útvonalai **hatókör** szerint kapnak névteret — `you/`, `
 | `/settings/workspace/environments` | Környezetdefiníciók: mit indíthatnak a terek, és milyen feladatokat futtatnak a worktree-jeik |
 | `/settings/workspace/agents`       | Regisztrált ügynökidentitások                                                                         |
 | `/settings/workspace/skills`       | Készségkonfiguráció                                                                                   |
-| `/settings/memory`                 | Munkaterület-memória: tények, szabályzatok, tudásgráf                                                 |
+| `/settings/memory`                 | Munkaterület-memória: tények, szabályzatok, fejlesztési javaslatok (`?tab=improvements`) és tudásgráf |
+| `/settings/memory/improvements/:proposalId` | Egy javaslat: mi változik, bizonyíték, értékelés és döntés |
 | `/settings/workspace/permissions`  | Ügynökjogosultságok: korlátmátrix és mi-lenne-ha próba                                                |
-| `/settings/workspace/schedules` | Ütemezési korlátok, a cron-ütemezések és az összesítő időzónája, valamint mennyi ideig várnak a szerver által indított futtatások válaszra (az adminok szerkesztik; a tagok olvassák) |
+| `/settings/workspace/schedules` | Ütemezések és figyelők állapot szerint csoportosítva, az **Új ütemezés** gombbal; majd ütemezési korlátok, a cron-ütemezések és az összesítő időzónája, valamint mennyi ideig várnak a szerver által indított futtatások válaszra (az adminok szerkesztik; a tagok olvassák) |
+| `/settings/workspace/schedules/:ruleId` | Egy ütemezés: megjegyzés, részletek, legutóbbi ébresztések és futtatások |
 | `/settings/pipelines`              | Pipeline-sablonok                                                                                     |
 | `/settings/pipelines/:templateId`  | Pipeline-sablon szerkesztője (húzd és ejtsd vászon)                                                   |
 

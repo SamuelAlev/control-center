@@ -12326,6 +12326,19 @@
   },
   "subscriptionUsageNoneReported": "No usage reported for this account.",
   "subscriptionUsageCredits": "Credits",
+  "subscriptionUsageBalance": "Balance",
+  "@subscriptionUsageBalance": {
+    "description": "Label of the prepaid money left on an AI provider account"
+  },
+  "subscriptionUsageBalanceLeft": "{amount} left",
+  "@subscriptionUsageBalanceLeft": {
+    "description": "Prepaid money left on an AI provider account, e.g. '$12.50 left'",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "reviewHubStaticRule": "Static rule",
   "@reviewHubStaticRule": {
     "description": "Badge on a deterministic (non-agent) finding"

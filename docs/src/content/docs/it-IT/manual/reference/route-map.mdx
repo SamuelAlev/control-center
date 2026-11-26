@@ -2,7 +2,7 @@
 title: Mappa delle route
 description: Ogni route registrata da Control Center, con la sua schermata e i suoi parametri di query.
 slug: it-IT/manuale/riferimento/mappa-delle-route
-sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
+sourceHash: 34a70ebded7d59308c54ae125e1032f320898fd9
 ---
 
 ## Shell dell'app
@@ -40,12 +40,6 @@ I percorsi seguenti omettono il prefisso `/workspaces/:workspaceId`.
 | `/pipelines`                            | —                                         | Elenco delle esecuzioni delle pipeline                                                                                                                                     |
 | `/pipelines/run`                        | `?templateId=<id>`                        | Avvio manuale delle esecuzioni                                                                                                                                             |
 | `/pipelines/:runId`                     | —                                         | Dettaglio dell'esecuzione di una pipeline (sequenza dei passaggi)                                                                                                           |
-| `/goals` | — | Elenco degli obiettivi, raggruppati in attesa di revisione, aperti e terminati |
-| `/goals/:goalId` | `?edit=contract` | Un obiettivo: adesso, cosa significa completato, verifica, pianificazioni e risvegli; `edit=contract` apre l'editor del contratto su un obiettivo in pausa |
-| `/schedules` | — | Pianificazioni e monitoraggi, raggruppati per stato, con **Nuova pianificazione** |
-| `/schedules/:ruleId` | — | Una pianificazione: nota, dettagli, risvegli ed esecuzioni recenti |
-| `/improvements` | — | Proposte di miglioramento, raggruppate per stato |
-| `/improvements/:proposalId` | — | Una proposta: cosa cambia, prove, valutazione e decisione |
 | `/plans`                                | —                                         | Hub di Plan Studio: piani attivi, documenti di piano, playbook                                                                                                             |
 | `/plans/:kind/:id`                      | —                                         | Plan Studio per un piano; `kind` è `orchestration` o `document`                                                                                                            |
 | `/meetings`                             | —                                         | Elenco delle riunioni                                                                                                                                                      |
@@ -65,7 +59,7 @@ Le conversazioni e i thread **non hanno una route propria** — un thread è una
 
 **Non esiste alcuna route `/dashboard`** né alcuna schermata dashboard. La superficie di analisi è `/observability`, raggiunta dal piè di pagina della barra laterale.
 
-**Non esiste alcuna voce «Piani» nella barra laterale.** Plan Studio si apre come scheda dell'editor dalla riga del piano nella conversazione che l'ha generato; `/plans` e `/plans/:kind/:id` sono link diretti.
+**Non esiste alcuna voce «Piani» nella barra laterale.** Plan Studio si apre come scheda dell'editor dalla riga del piano nella conversazione che l'ha generato; `/plans` e `/plans/:kind/:id` sono link diretti. Non esiste neanche una pagina «Obiettivi»: un obiettivo si apre come scheda nello spazio che lo possiede.
 
 `/observability` e `/pull-requests/compose` non hanno alcuna voce nei registri dei titoli di route o dei breadcrumb, quindi entrambe mostrano solo il nome dell'app nel titolo della finestra e nessun percorso di breadcrumb.
 
@@ -103,9 +97,11 @@ I percorsi delle impostazioni sono suddivisi per **ambito** — `you/`, `workspa
 | `/settings/workspace/environments` | Definizioni di ambiente: cosa possono avviare gli spazi e quali task eseguono i loro worktree |
 | `/settings/workspace/agents`       | Identità degli agenti registrate                                                                                    |
 | `/settings/workspace/skills`       | Configurazione delle skill                                                                                          |
-| `/settings/memory`                 | Memoria dello spazio di lavoro: fatti, policy, grafo della conoscenza                                              |
+| `/settings/memory`                 | Memoria dello spazio di lavoro: fatti, policy, proposte di miglioramento (`?tab=improvements`) e grafo della conoscenza |
+| `/settings/memory/improvements/:proposalId` | Una proposta: cosa cambia, prove, valutazione e decisione |
 | `/settings/workspace/permissions`  | Permessi degli agenti: matrice dei guardrail e sonda what-if                                                        |
-| `/settings/workspace/schedules` | Limiti delle pianificazioni, il fuso orario per le pianificazioni cron e il riepilogo, e per quanto tempo le esecuzioni avviate dal server attendono una risposta (gli admin modificano; i membri leggono) |
+| `/settings/workspace/schedules` | Pianificazioni e monitoraggi, raggruppati per stato, con **Nuova pianificazione**; poi limiti delle pianificazioni, il fuso orario per le pianificazioni cron e il riepilogo, e per quanto tempo le esecuzioni avviate dal server attendono una risposta (gli admin modificano; i membri leggono) |
+| `/settings/workspace/schedules/:ruleId` | Una pianificazione: nota, dettagli, risvegli ed esecuzioni recenti |
 | `/settings/pipelines`              | Modelli di pipeline                                                                                                 |
 | `/settings/pipelines/:templateId`  | Editor dei modelli di pipeline (canvas drag-and-drop)                                                               |
 

@@ -23196,6 +23196,18 @@ abstract class AppLocalizations {
   /// **'Credits'**
   String get subscriptionUsageCredits;
 
+  /// Label of the prepaid money left on an AI provider account
+  ///
+  /// In en, this message translates to:
+  /// **'Balance'**
+  String get subscriptionUsageBalance;
+
+  /// Prepaid money left on an AI provider account, e.g. '$12.50 left'
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} left'**
+  String subscriptionUsageBalanceLeft(String amount);
+
   /// Badge on a deterministic (non-agent) finding
   ///
   /// In en, this message translates to:

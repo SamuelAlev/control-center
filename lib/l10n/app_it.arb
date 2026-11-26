@@ -7069,6 +7069,8 @@
   "inReplyTo": "In risposta a {path}",
   "subscriptionUsageNoneReported": "Nessun utilizzo segnalato per questo account.",
   "subscriptionUsageCredits": "Crediti",
+  "subscriptionUsageBalance": "Saldo",
+  "subscriptionUsageBalanceLeft": "{amount} rimanenti",
   "reviewHubStaticRule": "Regola statica",
   "@reviewHubStaticRule": {
     "description": "Badge on a deterministic (non-agent) finding"

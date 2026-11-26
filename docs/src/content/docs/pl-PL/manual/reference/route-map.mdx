@@ -2,7 +2,7 @@
 title: Mapa tras
 description: Wszystkie trasy rejestrowane przez Control Center wraz z ich ekranami i parametrami zapytania.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/mapa-tras
-sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
+sourceHash: 34a70ebded7d59308c54ae125e1032f320898fd9
 ---
 
 ## Powłoka aplikacji
@@ -40,12 +40,6 @@ Poniższe ścieżki pomijają prefiks `/workspaces/:workspaceId`.
 | `/pipelines`                            | —                                         | Lista uruchomień potoków                                                                                                                                                  |
 | `/pipelines/run`                        | `?templateId=<id>`                        | Ekran ręcznego uruchamiania potoku                                                                                                                                        |
 | `/pipelines/:runId`                     | —                                         | Szczegóły uruchomienia potoku (os czasu kroków)                                                                                                                           |
-| `/goals` | — | Lista celów, pogrupowana na czekające na recenzję, otwarte i zakończone |
-| `/goals/:goalId` | `?edit=contract` | Jeden cel: teraz, co znaczy gotowe, weryfikacja, harmonogramy i wybudzenia; `edit=contract` otwiera edytor kontraktu przy wstrzymanym celu |
-| `/schedules` | — | Harmonogramy i obserwacje, pogrupowane według statusu, z **Nowy harmonogram** |
-| `/schedules/:ruleId` | — | Jeden harmonogram: notatka, szczegóły, ostatnie wybudzenia i uruchomienia |
-| `/improvements` | — | Propozycje usprawnień, pogrupowane według statusu |
-| `/improvements/:proposalId` | — | Jedna propozycja: co się zmienia, dowody, ocena i decyzja |
 | `/plans`                                | —                                         | Centrum Plan Studio: aktywne plany, dokumenty planów, playbooki                                                                                                           |
 | `/plans/:kind/:id`                      | —                                         | Plan Studio dla jednego planu; `kind` to `orchestration` albo `document`                                                                                                  |
 | `/meetings`                             | —                                         | Lista spotkań                                                                                                                                                             |
@@ -65,7 +59,7 @@ Rozmowy i wątki **nie mają własnej trasy** — wątek to rozmowa wewnątrz `/
 
 **Nie istnieje trasa `/dashboard`** ani ekran pulpitu. Powierzchnią analityczną jest `/observability`, dostępna ze stopki paska bocznego.
 
-W pasku bocznym **nie ma pozycji „Plany”**. Plan Studio otwiera się jako karta edytora z wiersza planu w rozmowie, która go utworzyła; `/plans` i `/plans/:kind/:id` to linki bezpośrednie.
+W pasku bocznym **nie ma pozycji „Plany”**. Plan Studio otwiera się jako karta edytora z wiersza planu w rozmowie, która go utworzyła; `/plans` i `/plans/:kind/:id` to linki bezpośrednie. Nie ma też strony „Cele”: cel otwiera się jako karta w przestrzeni, do której należy.
 
 `/observability` i `/pull-requests/compose` nie mają wpisu w rejestrach tytułów tras ani ścieżek nawigacyjnych, więc oba pokazują w tytule okna samą nazwę aplikacji i żadnej ścieżki nawigacyjnej.
 
@@ -103,9 +97,11 @@ W pasku bocznym **nie ma pozycji „Plany”**. Plan Studio otwiera się jako ka
 | `/settings/workspace/environments` | Definicje środowisk: co mogą uruchamiać przestrzenie i jakie zadania wykonują ich worktree |
 | `/settings/workspace/agents`       | Zarejestrowane tożsamości agentów                                                                     |
 | `/settings/workspace/skills`       | Konfiguracja skilli                                                                                   |
-| `/settings/memory`                 | Pamięć obszaru roboczego: fakty, zasady, graf wiedzy                                                  |
+| `/settings/memory`                 | Pamięć obszaru roboczego: fakty, zasady, propozycje usprawnień (`?tab=improvements`) i graf wiedzy |
+| `/settings/memory/improvements/:proposalId` | Jedna propozycja: co się zmienia, dowody, ocena i decyzja |
 | `/settings/workspace/permissions`  | Uprawnienia agentów: macierz guardraili i sonda A co jeśli?                                            |
-| `/settings/workspace/schedules` | Limity harmonogramów, strefa czasowa dla harmonogramów cron i podsumowania oraz to, jak długo uruchomienia startowane przez serwer czekają na odpowiedź (administratorzy edytują; członkowie czytają) |
+| `/settings/workspace/schedules` | Harmonogramy i obserwacje, pogrupowane według statusu, z **Nowy harmonogram**; następnie limity harmonogramów, strefa czasowa dla harmonogramów cron i podsumowania oraz to, jak długo uruchomienia startowane przez serwer czekają na odpowiedź (administratorzy edytują; członkowie czytają) |
+| `/settings/workspace/schedules/:ruleId` | Jeden harmonogram: notatka, szczegóły, ostatnie wybudzenia i uruchomienia |
 | `/settings/pipelines`              | Szablony potoków                                                                                      |
 | `/settings/pipelines/:templateId`  | Edytor szablonu potoku (kanwa przeciągnij-i-upuść)                                                     |
 

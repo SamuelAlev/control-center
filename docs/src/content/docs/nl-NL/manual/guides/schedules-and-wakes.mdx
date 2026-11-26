@@ -2,7 +2,7 @@
 title: Schema's en wekbeurten
 description: Wek een agent later op, volgens een schema of wanneer er iets gebeurt, bekijk wat er wacht, en wat er gebeurt bij een herstart of een gebruikslimiet.
 slug: nl-NL/handleiding/gidsen/schemas-en-wekbeurten
-sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+sourceHash: 2fdcfd1fe753e4a994491dd6748f64d413dd0e84
 ---
 
 Een agent slaapt niet en blijft ook niet herhaaldelijk controleren terwijl hij wacht. De agent of jij zet een **wekbeurt** klaar: een duurzaam verzoek om de run van de agent in een gesprek op een tijdstip of wanneer er iets gebeurt te starten of voort te zetten. Elke run die de server start zonder dat iemand typt, begint als een wekbeurt: het volgende segment van een doel, een schema, een bewaking, een antwoord van een andere agent, afgerond gedelegeerd werk, het einde van een gebruikslimiet, het werk dat na een herstart is overgebleven. Wekbeurten worden bewaard in de database van de werkruimte, dus ze overleven een herstart.
@@ -34,7 +34,7 @@ Typ een van deze in het invoerveld van een gesprek:
 
 De composer helpt je ze te schrijven. Na `/loop` of `/schedule` en een spatie toont de suggestielijst wanneer het wordt aangeroepen en wordt die smaller naarmate je typt; typ `--` na het tijdstip voor de limieten. Enter of Tab kiest een rij en verstuurt niets. Een regel boven je tekst leest het commando dan terug: wanneer het wordt aangeroepen, wanneer het eindigt, en wat er nog ontbreekt. Als je op Enter drukt bij een commando dat niet gelezen kan worden, zegt die regel wat er mis is en blijft je concept staan.
 
-Je kunt ook een schema maken op de pagina **Schema's** met **Nieuw schema**: kies de space, het gesprek en de agent, wanneer het afgaat, waarmee elke run begint, een einde, een limiet voor runs en een kostenlimiet. **Als de agent bezig is** kiest tussen die aanroep overslaan en wachten tot de agent vrij is. **Bij elke aanroep** kiest tussen een run starten en je alleen melden met de notitie.
+Je kunt ook een schema maken onder **Instellingen → Werkruimte → Schema's** met **Nieuw schema**: kies de space, het gesprek en de agent, wanneer het afgaat, waarmee elke run begint, een einde, een limiet voor runs en een kostenlimiet. **Als de agent bezig is** kiest tussen die aanroep overslaan en wachten tot de agent vrij is. **Bij elke aanroep** kiest tussen een run starten en je alleen melden met de notitie.
 
 ## Wat agents inplannen
 
@@ -67,7 +67,7 @@ Agents gebruiken de tool `wake_me` voor dezelfde dingen, en voor bewakingen:
 
 Een wekbeurt die niet is afgeleverd, laat één rij in het gesprek achter die zegt waarom, zoals **De agent is gepauzeerd.** of **Een budget blokkeert een run.**
 
-**De pagina Schema's.** Zijbalk → **Schema's** toont elk schema en elke bewaking die je kunt zien, gegroepeerd op status; een cron-schema toont zijn volgende drie tijdstippen in jouw tijdzone. Open er een om de notitie, eigenaar, volgende aanroepen, runs, overgeslagen aanroepen, uitgaven en einde te zien, en **Recente wekbeurten en runs**. Elk schema heeft een eigen adres (`/workspaces/<workspace>/schedules/<id>`).
+**De pagina Schema's.** **Instellingen → Werkruimte → Schema's** toont elk schema en elke bewaking die je kunt zien, gegroepeerd op status; een cron-schema toont zijn volgende drie tijdstippen in jouw tijdzone. Open er een om de notitie, eigenaar, volgende aanroepen, runs, overgeslagen aanroepen, uitgaven en einde te zien, en **Recente wekbeurten en runs**. Elk schema heeft een eigen adres (`/workspaces/<workspace>/settings/workspace/schedules/<id>`).
 
 | Actie | Wie kan |
 | --- | --- |
@@ -95,7 +95,7 @@ Op de telefoon start **Herhalen** op het doelenscherm een herhalende prompt (elk
 
 ## Limieten van de werkruimte
 
-Een beheerder van de werkruimte stelt de limieten in onder **Instellingen → Werkruimte → Schema's**:
+Een beheerder van de werkruimte stelt de limieten op dezelfde pagina in, onder de lijst:
 
 - **Limieten voor schema's**: hoeveel actieve of gepauzeerde schema's één agent in één gesprek mag houden (10), over de werkruimte heen (50), en in de hele werkruimte (500); de standaard kostenlimiet van een schema (50 dollar); en de tijdzone die cron-schema's en het dagelijkse overzicht gebruiken (in het begin UTC).
 - **Als niemand antwoordt**: hoe lang een run die de server startte wacht op het antwoord of de goedkeuring van een persoon (standaard 72 uur, 1 uur tot 7 dagen) voordat een goedkeuring als geweigerd telt en een vraag als onbeantwoord (daarna wordt alles wat dezelfde run nog vraagt meteen geweigerd), en het uur van het dagelijkse overzicht van wat op jou wacht in doelen, schema's en andere runs die de server startte.

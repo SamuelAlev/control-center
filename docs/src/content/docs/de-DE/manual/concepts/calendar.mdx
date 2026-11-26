@@ -2,7 +2,7 @@
 title: Kalender und Terminplanung
 description: Wie Control Center Google Calendar auf dem Server synchronisiert, wie die Anmeldung im Browser einen Headless-Server erreicht und was sie bei Google ändern darf.
 slug: de-DE/handbuch/konzepte/kalender
-sourceHash: 60f0b846930013e86aa69f61261b0b496b4fb4f6
+sourceHash: d1dbb2bce46b34ac5bdf24cf5b27807f41e61617
 ---
 
 Control Center verbindet sich mit Google Calendar, damit dein Tag neben deiner
@@ -121,14 +121,7 @@ anderes Gerät.
 
 ## Hinweise vor Besprechungen
 
-Ein Scheduler prüft minütlich, ob Termine innerhalb eines einstellbaren
-Vorlaufs beginnen, und löst die Benachrichtigung **„Meeting beginnt bald“**
-aus (ein `MeetingStartingSoon`-[Domain-Ereignis](/de-DE/handbuch/konzepte/domain-ereignisse/)).
-Liegt eine Beitritts-URL vor, hängt sie an der Benachrichtigung, und ein Klick
-öffnet die Termindetails. Hinweise werden anhand von `alertedAt` des Termins
-nur einmal zugestellt. Dieselbe Besprechung warnt damit nie zweimal, auch nicht
-über Neustarts hinweg, und ein Termin, dessen Beginn verstrich, während die App
-geschlossen war, wird nicht nachgeholt.
+Ein Scheduler prüft minütlich, ob Termine innerhalb eines einstellbaren Vorlaufs beginnen, und löst die Benachrichtigung **„Meeting beginnt bald“** aus (ein `MeetingStartingSoon`-[Domain-Ereignis](/de-DE/handbuch/konzepte/domain-ereignisse/)). Liegt eine Beitritts-URL vor, hängt sie an der Benachrichtigung, und ein Klick öffnet die Termindetails. Ihre Aktionen **Meeting beitreten** und **Beitreten und aufnehmen** öffnen auf dem Hinweis in der App und auf der Betriebssystem-Benachrichtigung gleichermaßen die Besprechung, ohne zuerst den Termin zu öffnen; ein Termin ohne Beitrittslink bietet stattdessen **Besprechung aufnehmen** an. Hinweise werden anhand von `alertedAt` des Termins nur einmal zugestellt. Dieselbe Besprechung warnt damit nie zweimal, auch nicht über Neustarts hinweg, und ein Termin, dessen Beginn verstrich, während die App geschlossen war, wird nicht nachgeholt.
 
 Zwei Grenzen sind leicht zu übersehen. Der Scheduler läuft **clientseitig auf
 dem Desktop** und nur für den Arbeitsbereich, den du gerade geöffnet hast. Ein
@@ -145,7 +138,7 @@ Eins-zu-eins-Verknüpfung zwischen Aufnahme und Termin. Die Notizen der
 Besprechung und der Kalendereintrag bleiben so verbunden, ohne dass eine der
 beiden Funktionen die andere voraussetzt.
 
-**Aufnehmen und verknüpfen** gibt es nur auf dem Desktop. Im Web-Client meldet
+**Beitreten und aufnehmen** gibt es nur auf dem Desktop. Im Web-Client meldet
 die Aktion, dass die Aufnahme nicht verfügbar ist, obwohl der Aufnahmeablauf
 des Besprechungsbildschirms selbst im Browser funktioniert.
 

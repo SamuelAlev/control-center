@@ -30,6 +30,27 @@ void main() {
       expect(restored.windows.first.resetsAt, DateTime.utc(2030, 1, 1, 12));
     });
 
+    test('a prepaid balance round-trips and counts as a reading', () {
+      final usage = SubscriptionUsage(
+        providerId: 'deepseek',
+        displayName: 'DeepSeek',
+        status: SubscriptionStatus.ok,
+        balances: const [
+          SubscriptionBalance(amountMinor: 11005, currency: 'CNY'),
+          SubscriptionBalance(amountMinor: -50, currency: 'USD'),
+        ],
+        fetchedAt: DateTime.utc(2030),
+      );
+
+      final restored = SubscriptionUsage.fromJson(usage.toJson());
+
+      expect(restored, usage);
+      expect(restored.hasReading, isTrue);
+      expect(restored.peakUsedFraction, isNull);
+      expect(restored.balances.first.amount, closeTo(110.05, 1e-9));
+      expect(restored.balances.last.amount, closeTo(-0.5, 1e-9));
+    });
+
     test('clamps used fraction into [0, 1] on parse', () {
       final w = SubscriptionWindow.fromJson(const {
         'id': '5h',

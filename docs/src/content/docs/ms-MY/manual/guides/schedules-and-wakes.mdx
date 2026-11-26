@@ -2,7 +2,7 @@
 title: Jadual dan panggilan bangun
 description: Bangunkan ejen kemudian, mengikut jadual atau apabila sesuatu berlaku, lihat apa yang menunggu, dan apa yang berlaku semasa permulaan semula atau had penggunaan.
 slug: ms-MY/manual-pengguna/panduan-cara/jadual-panggilan-bangun
-sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+sourceHash: 2fdcfd1fe753e4a994491dd6748f64d413dd0e84
 ---
 
 Ejen tidak tidur atau memeriksa berulang kali semasa menunggu. Ejen itu, atau anda, menyediakan **panggilan bangun**: permintaan tahan lama untuk memulakan atau meneruskan larian ejen dalam perbualan pada masa tertentu atau apabila sesuatu berlaku. Setiap larian yang dimulakan pelayan tanpa seseorang menaip bermula sebagai panggilan bangun: segmen seterusnya bagi matlamat, jadual, pantauan, balasan daripada ejen lain, kerja delegasi yang siap, penghujung had penggunaan, atau kerja yang tertinggal selepas permulaan semula. Panggilan bangun disimpan dalam pangkalan data ruang kerja, jadi ia kekal selepas permulaan semula.
@@ -34,7 +34,7 @@ Taip salah satu daripada ini dalam kotak tulis perbualan:
 
 Penggubah mesej membantu anda menulisnya. Selepas `/loop` atau `/schedule` dan ruang, senarai cadangan menawarkan bila ia dicetuskan dan menyempit apabila anda menaip; taipkan `--` selepas masa untuk had. Enter atau Tab memilih satu baris dan tidak menghantar apa-apa. Satu baris di atas teks anda kemudian mengulang arahan itu: bila ia dicetuskan, bila ia tamat, dan apa yang masih tiada. Jika anda menekan Enter pada arahan yang tidak dapat dibaca, baris itu menyatakan apa yang salah dan draf anda kekal.
 
-Anda juga boleh mencipta jadual daripada halaman **Jadual** dengan **Jadual baharu**: pilih ruang, perbualan dan ejen, bila ia dicetuskan, titik mula setiap larian, penamat, had larian dan had kos. **Jika ejen sibuk** memilih antara melangkau cetusan itu dan menunggu sehingga ejen bebas. **Setiap cetusan** memilih antara memulakan larian atau hanya memberitahu anda dengan nota itu.
+Anda juga boleh mencipta jadual di bawah **Tetapan → Ruang kerja → Jadual** dengan **Jadual baharu**: pilih ruang, perbualan dan ejen, bila ia dicetuskan, titik mula setiap larian, penamat, had larian dan had kos. **Jika ejen sibuk** memilih antara melangkau cetusan itu dan menunggu sehingga ejen bebas. **Setiap cetusan** memilih antara memulakan larian atau hanya memberitahu anda dengan nota itu.
 
 ## Apa yang ejen jadualkan
 
@@ -67,7 +67,7 @@ Ejen menggunakan alat `wake_me` untuk perkara yang sama, dan untuk pantauan:
 
 Panggilan bangun yang tidak dihantar meninggalkan satu baris dalam perbualan yang menjelaskan sebabnya, seperti **Ejen itu dijeda.** atau **Bajet menyekat larian.**
 
-**Halaman Jadual.** Bar sisi → **Jadual** menyenaraikan setiap jadual dan pantauan yang boleh anda lihat, dikumpulkan mengikut status; jadual cron menunjukkan tiga masa seterusnya dalam zon waktu anda. Buka satu untuk melihat nota, pemilik, cetusan seterusnya, larian, lompatan, perbelanjaan dan tamatnya, serta **Panggilan bangun dan larian terkini**. Setiap jadual mempunyai alamatnya sendiri (`/workspaces/<workspace>/schedules/<id>`).
+**Halaman Jadual.** **Tetapan → Ruang kerja → Jadual** menyenaraikan setiap jadual dan pantauan yang boleh anda lihat, dikumpulkan mengikut status; jadual cron menunjukkan tiga masa seterusnya dalam zon waktu anda. Buka satu untuk melihat nota, pemilik, cetusan seterusnya, larian, lompatan, perbelanjaan dan tamatnya, serta **Panggilan bangun dan larian terkini**. Setiap jadual mempunyai alamatnya sendiri (`/workspaces/<workspace>/settings/workspace/schedules/<id>`).
 
 | Tindakan | Siapa boleh |
 | --- | --- |
@@ -95,7 +95,7 @@ Pada telefon, **Ulang** pada skrin matlamat memulakan prompt berulang (setiap se
 
 ## Had ruang kerja
 
-Pentadbir ruang kerja menetapkan had di bawah **Tetapan → Ruang kerja → Jadual**:
+Pentadbir ruang kerja menetapkan had pada halaman yang sama, di bawah senarai jadual:
 
 - **Had jadual**: berapa banyak jadual aktif atau dijeda yang boleh dimiliki seorang ejen dalam satu perbualan (10), merentasi ruang kerja (50), dan dalam keseluruhan ruang kerja (500); had kos lalai bagi satu jadual (50 dolar); dan zon waktu yang digunakan oleh jadual cron dan ringkasan harian (UTC sebagai permulaan).
 - **Apabila tiada sesiapa menjawab**: berapa lama larian yang dimulakan pelayan menunggu jawapan atau kelulusan seseorang (72 jam secara lalai, 1 jam hingga 7 hari) sebelum kelulusan dikira ditolak dan soalan dikira tidak dijawab (selepas itu, apa-apa lagi yang diminta larian yang sama ditolak serta-merta), serta jam bagi ringkasan harian apa yang menunggu anda dalam matlamat, jadual dan larian lain yang dimulakan pelayan.

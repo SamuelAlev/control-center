@@ -7064,6 +7064,8 @@
   "inReplyTo": "Als Antwort auf {path}",
   "subscriptionUsageNoneReported": "Für dieses Konto wird keine Nutzung gemeldet.",
   "subscriptionUsageCredits": "Guthaben",
+  "subscriptionUsageBalance": "Kontostand",
+  "subscriptionUsageBalanceLeft": "{amount} übrig",
   "reviewHubStaticRule": "Statische Regel",
   "@reviewHubStaticRule": {
     "description": "Badge on a deterministic (non-agent) finding"

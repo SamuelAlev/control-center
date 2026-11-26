@@ -2,7 +2,7 @@
 title: Carte des routes
 description: Chaque route que Control Center enregistre, avec son écran et ses paramètres de requête.
 slug: fr-CA/manuel/reference/carte-des-routes
-sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
+sourceHash: 34a70ebded7d59308c54ae125e1032f320898fd9
 ---
 
 ## Coquille de l’application
@@ -54,12 +54,6 @@ Les chemins ci-dessous omettent le préfixe `/workspaces/:workspaceId`.
 | `/pipelines`                            | —                                          | Liste des exécutions de pipeline                                                                                                                                               |
 | `/pipelines/run`                        | `?templateId=<id>`                         | Lanceur d’exécution manuelle                                                                                                                                                   |
 | `/pipelines/:runId`                     | —                                          | Détail d’une exécution de pipeline (chronologie des étapes)                                                                                                                    |
-| `/goals` | — | Liste des objectifs, regroupés en attente de révision, ouverts et terminés |
-| `/goals/:goalId` | `?edit=contract` | Un objectif : maintenant, critères d’achèvement, vérification, planifications et relances ; `edit=contract` ouvre l’éditeur de contrat sur un objectif en pause |
-| `/schedules` | — | Planifications et surveillances, regroupées par statut, avec **Nouvelle planification** |
-| `/schedules/:ruleId` | — | Une planification : note, détails, relances et exécutions récentes |
-| `/improvements` | — | Propositions d’amélioration, regroupées par statut |
-| `/improvements/:proposalId` | — | Une proposition : ce qui change, les preuves, l’évaluation et la décision |
 | `/plans`                                | —                                          | Carrefour de Plan Studio : plans actifs, documents de plan, playbooks                                                                                                          |
 | `/plans/:kind/:id`                      | —                                          | Plan Studio pour un plan ; `kind` vaut `orchestration` ou `document`                                                                                                           |
 | `/meetings`                             | —                                          | Liste des réunions                                                                                                                                                             |
@@ -82,9 +76,7 @@ qu’adressée par URL.
 Il n’existe **aucune route `/dashboard`** ni aucun écran de tableau de bord. La surface
 d’analyse est `/observability`, accessible depuis le pied de la barre latérale.
 
-Il n’existe **aucun élément « Plans » dans la barre latérale**. Plan Studio s’ouvre comme
-onglet d’éditeur depuis la ligne du plan, dans la conversation qui l’a produit ; `/plans`
-et `/plans/:kind/:id` sont des liens directs.
+Il n’existe **aucun élément « Plans » dans la barre latérale**. Plan Studio s’ouvre comme onglet d’éditeur depuis la ligne du plan, dans la conversation qui l’a produit ; `/plans` et `/plans/:kind/:id` sont des liens directs. Il n’existe pas non plus de page « Objectifs » : un objectif s’ouvre comme onglet dans l’espace qui le possède.
 
 `/observability` et `/pull-requests/compose` n’ont aucune entrée dans les registres des
 titres de route ni des fils d’Ariane ; les deux affichent donc le simple nom de
@@ -128,9 +120,11 @@ sont antérieurs à cette organisation et ne portent aucune portée dans l’URL
 | `/settings/workspace/environments` | Définitions d’environnement : ce que les espaces peuvent démarrer et les tâches de leurs arbres de travail |
 | `/settings/workspace/agents`       | Identités d’agents enregistrées                                                                           |
 | `/settings/workspace/skills`       | Configuration des compétences                                                                             |
-| `/settings/memory`                 | Mémoire de l’espace de travail : faits, politiques, graphe de connaissances                               |
+| `/settings/memory`                 | Mémoire de l’espace de travail : faits, politiques, propositions d’amélioration (`?tab=improvements`) et graphe de connaissances |
+| `/settings/memory/improvements/:proposalId` | Une proposition : ce qui change, les preuves, l’évaluation et la décision |
 | `/settings/workspace/permissions`  | Autorisations des agents : matrice de garde-fous et sonde « Et si ? »                                     |
-| `/settings/workspace/schedules` | Limites des planifications, fuseau horaire des planifications cron et du récapitulatif, et délai d’attente d’une réponse pour les exécutions démarrées par le serveur (les admins modifient ; les membres lisent) |
+| `/settings/workspace/schedules` | Planifications et surveillances, regroupées par statut, avec **Nouvelle planification** ; puis limites des planifications, fuseau horaire des planifications cron et du récapitulatif, et délai d’attente d’une réponse pour les exécutions démarrées par le serveur (les admins modifient ; les membres lisent) |
+| `/settings/workspace/schedules/:ruleId` | Une planification : note, détails, relances et exécutions récentes |
 | `/settings/pipelines`              | Modèles de pipeline                                                                                       |
 | `/settings/pipelines/:templateId`  | Éditeur de modèles de pipeline (canevas glisser-déposer)                                                  |
 

@@ -13628,6 +13628,14 @@ class AppLocalizationsUr extends AppLocalizations {
   String get subscriptionUsageCredits => 'کریڈٹس';
 
   @override
+  String get subscriptionUsageBalance => 'اکاؤنٹ بیلنس';
+
+  @override
+  String subscriptionUsageBalanceLeft(String amount) {
+    return '$amount باقی';
+  }
+
+  @override
   String get reviewHubStaticRule => 'جامد قاعدہ';
 
   @override

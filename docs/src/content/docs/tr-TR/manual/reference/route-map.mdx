@@ -2,7 +2,7 @@
 title: Rota haritası
 description: Control Center'ın kaydettiği her rota, ekranı ve sorgu parametreleriyle birlikte.
 slug: tr-TR/kilavuz/referans/rota-haritasi
-sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
+sourceHash: 34a70ebded7d59308c54ae125e1032f320898fd9
 ---
 
 ## Uygulama kabuğu
@@ -40,12 +40,6 @@ Aşağıdaki yollar `/workspaces/:workspaceId` önekini içermez.
 | `/pipelines`                            | —                             | Pipeline çalıştırma listesi                                                                                                                                                                               |
 | `/pipelines/run`                        | `?templateId=<id>`            | Elle çalıştırma başlatıcısı                                                                                                                                                                               |
 | `/pipelines/:runId`                     | —                             | Pipeline çalıştırma ayrıntısı (adım zaman çizelgesi)                                                                                                                                                      |
-| `/goals` | — | Hedef listesi; incelemeyi bekleyen, açık ve sona eren olarak gruplanmış |
-| `/goals/:goalId` | `?edit=contract` | Tek bir hedef: şimdi, tamamlanmanın ne anlama geldiği, doğrulama, zamanlamalar ve uyandırmalar; `edit=contract`, duraklatılmış bir hedefte sözleşme düzenleyicisini açar |
-| `/schedules` | — | Zamanlamalar ve izlemeler, duruma göre gruplanmış; **Yeni zamanlama** ile |
-| `/schedules/:ruleId` | — | Tek bir zamanlama: not, ayrıntılar, son uyandırmalar ve çalıştırmalar |
-| `/improvements` | — | İyileştirme önerileri, duruma göre gruplanmış |
-| `/improvements/:proposalId` | — | Tek bir öneri: neyin değiştiği, kanıt, değerlendirme ve karar |
 | `/plans`                                | —                             | Plan Studio merkezi: aktif planlar, plan belgeleri ve playbook'lar                                                                                                                                         |
 | `/plans/:kind/:id`                      | —                             | Tek bir plan için Plan Studio; `kind` değeri `orchestration` ya da `document` olur                                                                                                                         |
 | `/meetings`                             | —                             | Toplantı listesi                                                                                                                                                                                          |
@@ -65,7 +59,7 @@ Sohbetlerin ve ileti dizilerinin **kendi rotası yoktur** — bir ileti dizisi `
 
 **`/dashboard` rotası** ve gösterge paneli ekranı yoktur. Analitik yüzeyi, kenar çubuğunun altbilgisinden ulaşılan `/observability` adresidir.
 
-**Kenar çubuğunda “Planlar” öğesi yoktur.** Plan Studio, planı üreten konuşmadaki plan satırından bir düzenleyici sekmesi olarak açılır; `/plans` ve `/plans/:kind/:id` derin bağlantılardır.
+**Kenar çubuğunda “Planlar” öğesi yoktur.** Plan Studio, planı üreten konuşmadaki plan satırından bir düzenleyici sekmesi olarak açılır; `/plans` ve `/plans/:kind/:id` derin bağlantılardır. Hedeflerin de ayrı bir sayfası yoktur: bir hedef, ona sahip olan alanda bir sekme olarak açılır.
 
 `/observability` ve `/pull-requests/compose`, rota başlığı veya gezinti izi kayıtlarında yer almaz; bu yüzden ikisi de pencere başlığında yalın uygulama adını gösterir ve hiçbir gezinti izi sunmaz.
 
@@ -103,9 +97,11 @@ Ayarlar yolları **kapsama** göre ad alanına ayrılır — `you/`, `workspace/
 | `/settings/workspace/environments` | Ortam tanımları: alanların neleri başlatabileceği ve worktree'lerinin hangi görevleri çalıştırdığı |
 | `/settings/workspace/agents`       | Kayıtlı ajan kimlikleri                                                                                          |
 | `/settings/workspace/skills`       | Beceri yapılandırması                                                                                            |
-| `/settings/memory`                 | Çalışma alanı belleği: olgular, politikalar, bilgi grafiği                                                        |
+| `/settings/memory`                 | Çalışma alanı belleği: olgular, politikalar, iyileştirme önerileri (`?tab=improvements`) ve bilgi grafiği |
+| `/settings/memory/improvements/:proposalId` | Tek bir öneri: neyin değiştiği, kanıt, değerlendirme ve karar |
 | `/settings/workspace/permissions`  | Ajan izinleri: koruma matrisi ve “Ne olur?” sondası                                                               |
-| `/settings/workspace/schedules` | Zamanlama sınırları, cron zamanlamaları ve özet için saat dilimi ve sunucu tarafından başlatılan çalıştırmaların bir yanıt için ne kadar bekleyeceği (yöneticiler düzenler; üyeler okur) |
+| `/settings/workspace/schedules` | Zamanlamalar ve izlemeler, duruma göre gruplanmış; **Yeni zamanlama** ile; ardından zamanlama sınırları, cron zamanlamaları ve özet için saat dilimi ve sunucu tarafından başlatılan çalıştırmaların bir yanıt için ne kadar bekleyeceği (yöneticiler düzenler; üyeler okur) |
+| `/settings/workspace/schedules/:ruleId` | Tek bir zamanlama: not, ayrıntılar, son uyandırmalar ve çalıştırmalar |
 | `/settings/pipelines`              | Pipeline şablonları                                                                                              |
 | `/settings/pipelines/:templateId`  | Pipeline şablonu düzenleyicisi (sürükle-bırak tuvali)                                                             |
 

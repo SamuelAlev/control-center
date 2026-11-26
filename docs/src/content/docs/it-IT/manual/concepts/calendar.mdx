@@ -2,7 +2,7 @@
 title: Calendario e pianificazione
 description: Come Control Center sincronizza Google Calendar sul server, come l'accesso dal browser raggiunge un server headless e cosa può modificare su Google.
 slug: it-IT/manuale/concetti/calendario
-sourceHash: 60f0b846930013e86aa69f61261b0b496b4fb4f6
+sourceHash: d1dbb2bce46b34ac5bdf24cf5b27807f41e61617
 ---
 
 Control Center si collega a Google Calendar per tenere la tua giornata accanto
@@ -114,14 +114,7 @@ preferenze di quel client, quindi non ti segue su un altro dispositivo.
 
 ## Avvisi delle riunioni
 
-Un pianificatore al minuto cerca gli eventi che iniziano entro una finestra di
-preavviso configurabile e invia una notifica **"Riunione in arrivo"** (un
-[evento di dominio](/it-IT/manuale/concetti/eventi-di-dominio/)
-`MeetingStartingSoon`). La notifica contiene l'URL di partecipazione, quando
-presente, e facendo clic si apre il dettaglio dell'evento. Gli avvisi sono
-deduplicati rispetto a `alertedAt` dell'evento, quindi la stessa riunione non
-avvisa mai due volte, nemmeno tra riavvii, e un evento la cui ora di inizio è
-passata mentre l'app era chiusa non viene mai riproposto.
+Un pianificatore al minuto cerca gli eventi che iniziano entro una finestra di preavviso configurabile e invia una notifica **"Riunione in arrivo"** (un [evento di dominio](/it-IT/manuale/concetti/eventi-di-dominio/) `MeetingStartingSoon`). La notifica contiene l'URL di partecipazione, quando presente, e facendo clic si apre il dettaglio dell'evento. Le sue azioni **Partecipa alla riunione** e **Partecipa e registra**, sia nel banner in-app sia nella notifica del sistema operativo, aprono la chiamata senza aprire prima l'evento; un evento senza link alla chiamata offre invece **Registra riunione**. Gli avvisi sono deduplicati rispetto a `alertedAt` dell'evento, quindi la stessa riunione non avvisa mai due volte, nemmeno tra riavvii, e un evento la cui ora di inizio è passata mentre l'app era chiusa non viene mai riproposto.
 
 Due limiti sono facili da incontrare. Il pianificatore gira
 **lato client sul desktop** e solo per lo spazio di lavoro che hai aperto in quel
@@ -137,7 +130,7 @@ il titolo dell'evento. Control Center memorizza un collegamento uno-a-uno tra la
 registrazione e l'evento, così le note della riunione e la voce di calendario
 restano collegate senza che l'una dipenda dall'altra.
 
-**Registra e collega** è disponibile solo su desktop. Nel client web l'azione
+**Partecipa e registra** è disponibile solo su desktop. Nel client web l'azione
 segnala che la registrazione non è disponibile — anche se il flusso di
 registrazione della schermata Riunioni funziona nel browser.
 

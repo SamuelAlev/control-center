@@ -121,6 +121,30 @@ void main() {
       expect(find.byType(CcProgressBar), findsOneWidget);
     });
 
+    testWidgets('a prepaid key shows the balance left, with no meter', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        providerId: 'deepseek',
+        usage: [
+          SubscriptionUsage(
+            providerId: 'deepseek',
+            displayName: 'DeepSeek',
+            status: SubscriptionStatus.ok,
+            balances: const [
+              SubscriptionBalance(amountMinor: 1250, currency: 'USD'),
+            ],
+            fetchedAt: DateTime.utc(2030),
+          ),
+        ],
+      );
+
+      expect(find.text('Balance'), findsOneWidget);
+      expect(find.text(r'$12.50'), findsOneWidget);
+      expect(find.byType(CcProgressBar), findsNothing);
+    });
+
     testWidgets('a provider that reported nothing says so', (tester) async {
       // An empty meter with no explanation reads as "zero used".
       await _pump(

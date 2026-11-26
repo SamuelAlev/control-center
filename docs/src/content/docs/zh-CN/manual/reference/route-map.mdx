@@ -2,7 +2,7 @@
 title: 路由图
 description: Control Center 注册的每一条路由，及其界面与查询参数。
 slug: zh-CN/手册/参考/路由图
-sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
+sourceHash: 34a70ebded7d59308c54ae125e1032f320898fd9
 ---
 
 ## 应用外壳
@@ -40,12 +40,6 @@ sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
 | `/pipelines`                            | —                                         | 流水线运行列表                                                                                                                                                           |
 | `/pipelines/run`                        | `?templateId=<id>`                        | 手动运行启动器                                                                                                                                                           |
 | `/pipelines/:runId`                     | —                                         | 流水线运行详情（步骤时间线）                                                                                                                                             |
-| `/goals` | — | 目标列表，按等待评审、进行中和已结束分组 |
-| `/goals/:goalId` | `?edit=contract` | 单个目标：当前状态、完成的标准、验证、定时与唤醒；`edit=contract` 会在已暂停的目标上打开契约编辑器 |
-| `/schedules` | — | 定时与监视，按状态分组，并提供 **新建定时** |
-| `/schedules/:ruleId` | — | 单个定时：备注、详情、近期的唤醒与运行 |
-| `/improvements` | — | 改进提议，按状态分组 |
-| `/improvements/:proposalId` | — | 单个提议：会改变什么、证据、评估与决定 |
 | `/plans`                                | —                                         | Plan Studio 中心：活动计划、计划文档、剧本                                                                                                                               |
 | `/plans/:kind/:id`                      | —                                         | 单个计划的 Plan Studio；`kind` 为 `orchestration` 或 `document`                                                                                                          |
 | `/meetings`                             | —                                         | 会议列表                                                                                                                                                                 |
@@ -65,7 +59,7 @@ sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
 
 **不存在 `/dashboard` 路由**，也没有仪表盘界面。分析界面是 `/observability`，从侧边栏页脚进入。
 
-**侧边栏中没有“计划”条目**。Plan Studio 会在产出该计划的对话中、从该计划所在的行以编辑器标签页打开；`/plans` 与 `/plans/:kind/:id` 是深层链接。
+**侧边栏中没有“计划”条目**。Plan Studio 会在产出该计划的对话中、从该计划所在的行以编辑器标签页打开；`/plans` 与 `/plans/:kind/:id` 是深层链接。同样没有目标页面：目标会以标签页的形式，在拥有它的空间中打开。
 
 `/observability` 和 `/pull-requests/compose` 在路由标题注册表和面包屑注册表中都没有条目，因此两者在窗口标题里只显示应用名，也没有面包屑路径。
 
@@ -103,9 +97,11 @@ sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
 | `/settings/workspace/environments` | 环境定义：空间可以启动什么，以及工作树运行哪些任务 |
 | `/settings/workspace/agents`       | 已注册的智能体身份                                                                                  |
 | `/settings/workspace/skills`       | 技能配置                                                                                            |
-| `/settings/memory`                 | 工作区记忆：事实、策略、知识图谱                                                                    |
+| `/settings/memory`                 | 工作区记忆：事实、策略、改进提议（`?tab=improvements`）和知识图谱 |
+| `/settings/memory/improvements/:proposalId` | 单个提议：会改变什么、证据、评估与决定 |
 | `/settings/workspace/permissions`  | 智能体权限：护栏矩阵和假设推演                                                                      |
-| `/settings/workspace/schedules` | 定时限制、cron 定时与摘要所用的时区，以及服务器启动的运行等待回答的时长（管理员可编辑；成员可阅读） |
+| `/settings/workspace/schedules` | 定时与监视，按状态分组，并提供 **新建定时**；然后是定时限制、cron 定时与摘要所用的时区，以及服务器启动的运行等待回答的时长（管理员可编辑；成员可阅读） |
+| `/settings/workspace/schedules/:ruleId` | 单个定时：备注、详情、近期的唤醒与运行 |
 | `/settings/pipelines`              | 流水线模板                                                                                          |
 | `/settings/pipelines/:templateId`  | 流水线模板编辑器（拖放式画布）                                                                      |
 

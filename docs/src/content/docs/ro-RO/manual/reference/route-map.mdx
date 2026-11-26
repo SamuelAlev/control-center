@@ -2,7 +2,7 @@
 title: Hartă de rute
 description: Fiecare rută pe care o înregistrează Control Center, cu ecranul și parametrii ei de interogare.
 slug: ro-RO/manual/referinta/harta-de-rute
-sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
+sourceHash: 34a70ebded7d59308c54ae125e1032f320898fd9
 ---
 
 ## Shell-ul aplicației
@@ -40,12 +40,6 @@ Căile de mai jos omit prefixul `/workspaces/:workspaceId`.
 | `/pipelines`                            | —                                         | Lista rulărilor de pipeline                                                                                                                                              |
 | `/pipelines/run`                        | `?templateId=<id>`                        | Lansator de rulări manuale                                                                                                                                               |
 | `/pipelines/:runId`                     | —                                         | Detaliul rulării de pipeline (cronologia pașilor)                                                                                                                        |
-| `/goals` | — | Lista obiectivelor, grupată în așteaptă revizuire, deschise și încheiate |
-| `/goals/:goalId` | `?edit=contract` | Un obiectiv: acum, ce înseamnă terminat, verificare, programe și treziri; `edit=contract` deschide editorul de contract pe un obiectiv pus pe pauză |
-| `/schedules` | — | Programe și urmăriri, grupate după stare, cu **Program nou** |
-| `/schedules/:ruleId` | — | Un program: notă, detalii, treziri și rulări recente |
-| `/improvements` | — | Propuneri de îmbunătățire, grupate după stare |
-| `/improvements/:proposalId` | — | O propunere: ce se schimbă, dovezi, evaluare și decizie |
 | `/plans`                                | —                                         | Hub-ul Plan Studio: planuri active, documente de plan, playbook-uri                                                                                                      |
 | `/plans/:kind/:id`                      | —                                         | Plan Studio pentru un singur plan; `kind` este `orchestration` sau `document`                                                                                            |
 | `/meetings`                             | —                                         | Lista întâlnirilor                                                                                                                                                       |
@@ -65,7 +59,7 @@ Conversațiile și firele nu au **o rută proprie** — un fir este o conversaț
 
 Nu există **nicio rută `/dashboard`** și niciun ecran de dashboard. Suprafața de analiză este `/observability`, accesată din subsolul barei laterale.
 
-Nu există **niciun element „Planuri” în bara laterală**. Plan Studio se deschide ca filă de editor din rândul planului, în conversația care l-a produs; `/plans` și `/plans/:kind/:id` sunt linkuri directe.
+Nu există **niciun element „Planuri” în bara laterală**. Plan Studio se deschide ca filă de editor din rândul planului, în conversația care l-a produs; `/plans` și `/plans/:kind/:id` sunt linkuri directe. Nu există nici o pagină „Obiective”: un obiectiv se deschide ca filă în spațiul care îl deține.
 
 `/observability` și `/pull-requests/compose` nu au nicio intrare în registrele de titluri de rută sau de breadcrumb, așa că ambele afișează numele simplu al aplicației în titlul ferestrei și nicio urmă de breadcrumb.
 
@@ -103,9 +97,11 @@ Căile de setări sunt grupate pe **domenii de aplicare** — `you/`, `workspace
 | `/settings/workspace/environments` | Definiții de mediu: ce pot porni spațiile și ce sarcini rulează worktree-urile lor |
 | `/settings/workspace/agents`       | Identitățile de agent înregistrate                                                                  |
 | `/settings/workspace/skills`       | Configurarea skill-urilor                                                                           |
-| `/settings/memory`                 | Memoria spațiului de lucru: fapte, politici, graf de cunoștințe                                     |
+| `/settings/memory`                 | Memoria spațiului de lucru: fapte, politici, propuneri de îmbunătățire (`?tab=improvements`) și graful de cunoștințe |
+| `/settings/memory/improvements/:proposalId` | O propunere: ce se schimbă, dovezi, evaluare și decizie |
 | `/settings/workspace/permissions`  | Permisiunile agenților: matricea de guardrail-uri și sonda „ce-ar fi dacă”                           |
-| `/settings/workspace/schedules` | Limitele programelor, fusul orar pentru programele cron și digest și cât timp așteaptă rulările pornite de server un răspuns (administratorii editează; membrii citesc) |
+| `/settings/workspace/schedules` | Programe și urmăriri, grupate după stare, cu **Program nou**; apoi limitele programelor, fusul orar pentru programele cron și digest și cât timp așteaptă rulările pornite de server un răspuns (administratorii editează; membrii citesc) |
+| `/settings/workspace/schedules/:ruleId` | Un program: notă, detalii, treziri și rulări recente |
 | `/settings/pipelines`              | Șabloane de pipeline                                                                                |
 | `/settings/pipelines/:templateId`  | Editorul de șabloane de pipeline (pânză cu tragere și plasare)                                      |
 

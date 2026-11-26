@@ -8,8 +8,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Harness provider id → the id its plan usage is reported under.
 ///
-/// Only plan-based providers appear: a metered API key has no quota to show, so
-/// its tile stays a key field and nothing more. Claude usage is still absent —
+/// Only providers with something to read appear: a plan's quota, or the
+/// balance of a prepaid key. A metered API key has neither, so its tile stays
+/// a key field and nothing more. Claude usage is still absent —
 /// that snapshot comes from the CLI's own login, a different account from
 /// anything connected here.
 const Map<String, String> harnessPlanUsageIds = {
@@ -24,6 +25,8 @@ const Map<String, String> harnessPlanUsageIds = {
   // A Mistral key bills pay-as-you-go unless its organization holds a Vibe
   // plan; see [watchShowsPlanPanel].
   'mistral': 'mistral',
+  // Prepaid: the reading is the balance left on the key.
+  'deepseek': 'deepseek',
 };
 
 /// Plan providers whose key may carry no plan at all. The server drops such
@@ -107,9 +110,9 @@ class ProviderPlanPanel extends ConsumerWidget {
       }
     }
     final usage = labeled ?? first;
-    final windows = usage?.status == SubscriptionStatus.ok
-        ? usage!.windows
-        : const <SubscriptionWindow>[];
+    final ok = usage?.status == SubscriptionStatus.ok;
+    final windows = ok ? usage!.windows : const <SubscriptionWindow>[];
+    final balances = ok ? usage!.balances : const <SubscriptionBalance>[];
 
     final label = accountLabel;
     return Column(
@@ -121,11 +124,15 @@ class ProviderPlanPanel extends ConsumerWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(fontSize: 13, color: t?.textPrimary),
           ),
-        if (windows.isNotEmpty) ...[
+        if (windows.isNotEmpty || balances.isNotEmpty) ...[
           const SizedBox(height: 10),
           for (var i = 0; i < windows.length; i++) ...[
             if (i > 0) const SizedBox(height: 8),
             SubscriptionWindowRow(window: windows[i]),
+          ],
+          for (var i = 0; i < balances.length; i++) ...[
+            if (i > 0 || windows.isNotEmpty) const SizedBox(height: 8),
+            SubscriptionBalanceRow(balance: balances[i]),
           ],
         ] else if (usageId != null) ...[
           const SizedBox(height: 6),

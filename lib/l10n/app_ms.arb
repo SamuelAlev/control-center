@@ -7895,6 +7895,8 @@
   },
   "subscriptionUsageNoneReported": "Tiada penggunaan dilaporkan untuk akaun ini.",
   "subscriptionUsageCredits": "Kredit",
+  "subscriptionUsageBalance": "Baki akaun",
+  "subscriptionUsageBalanceLeft": "Tinggal {amount}",
   "reviewHubStaticRule": "Peraturan statik",
   "reviewHubStarted": "Semakan dimulakan",
   "reviewHubStaticRuleTooltip": "Dijumpai oleh peraturan deterministik ({rule}) pada baris yang pull request ini tambah — bukan oleh ejen penyemak.",

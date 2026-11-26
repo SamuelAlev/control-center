@@ -65,14 +65,14 @@ void main() {
       'returns an unconfigured snapshot per provider with no credentials',
       () async {
         // No Claude Code, no Codex auth dir, no z.ai key, no Kimi Code token,
-        // no Cursor token, no Mistral key.
+        // no Cursor token, no Mistral key, no DeepSeek key.
         final (service, _) = build(
           (request) => httpTextResponse(request, const {}),
         );
 
         final results = await service.fetchAll();
 
-        expect(results, hasLength(6));
+        expect(results, hasLength(7));
         for (final usage in results) {
           expect(usage.status, SubscriptionStatus.unconfigured);
         }
@@ -83,6 +83,7 @@ void main() {
           'kimi-code',
           'cursor',
           'mistral',
+          'deepseek',
         });
         // Every unconfigured provider explains how to connect it, so the usage
         // card is never a bare blank. The wording is per provider (some name the
@@ -95,6 +96,7 @@ void main() {
           'kimi-code',
           'cursor',
           'mistral',
+          'deepseek',
         ]) {
           expect(
             results.firstWhere((u) => u.providerId == id).error,
@@ -1178,6 +1180,142 @@ void main() {
       ).single;
       expect(client.requests, isEmpty);
       expect(mistral.status, SubscriptionStatus.unconfigured);
+    });
+  });
+
+  group('DeepSeek', () {
+    SubscriptionUsageAccount key(String id, {String? baseUrl}) =>
+        SubscriptionUsageAccount(
+          providerId: 'deepseek',
+          accountId: id,
+          apiKey: 'key-$id',
+          baseUrl: baseUrl,
+        );
+
+    List<SubscriptionUsage> deepseekOf(List<SubscriptionUsage> all) => [
+      for (final u in all)
+        if (u.providerId == 'deepseek') u,
+    ];
+
+    test(
+      'reads the balance left in every currency with a bearer key',
+      () async {
+        final (service, client) = build((request) {
+          expect(header(request, 'authorization'), 'Bearer key-a');
+          return httpTextResponse(request, {
+            'is_available': true,
+            'balance_infos': [
+              {
+                'currency': 'CNY',
+                'total_balance': '110.05',
+                'granted_balance': '10.00',
+                'topped_up_balance': '100.05',
+              },
+              {'currency': 'USD', 'total_balance': '4.20'},
+            ],
+          });
+        });
+
+        final deepseek = deepseekOf(
+          await service.fetchAll(
+            accounts: [key('a', baseUrl: 'https://api.deepseek.com/v1')],
+          ),
+        ).single;
+
+        expect(
+          client.requests.single.url,
+          'https://api.deepseek.com/user/balance',
+        );
+        expect(deepseek.status, SubscriptionStatus.ok);
+        expect(deepseek.accountId, 'a');
+        expect(deepseek.windows, isEmpty);
+        expect(deepseek.hasReading, isTrue);
+        expect(deepseek.balances, const [
+          SubscriptionBalance(amountMinor: 11005, currency: 'CNY'),
+          SubscriptionBalance(amountMinor: 420, currency: 'USD'),
+        ]);
+      },
+    );
+
+    test('a balance too low to pay for a call is a spent account', () async {
+      final (service, _) = build(
+        (request) => httpTextResponse(request, {
+          'is_available': false,
+          'balance_infos': [
+            {'currency': 'USD', 'total_balance': '0.00'},
+          ],
+        }),
+      );
+      final deepseek = deepseekOf(
+        await service.fetchAll(accounts: [key('a')]),
+      ).single;
+      expect(deepseek.status, SubscriptionStatus.exhausted);
+      expect(deepseek.balances, isEmpty);
+    });
+
+    test('every key reports its own balance', () async {
+      final (service, _) = build(
+        (request) => httpTextResponse(request, {
+          'is_available': true,
+          'balance_infos': [
+            {
+              'currency': 'USD',
+              'total_balance':
+                  header(request, 'authorization') == 'Bearer key-a'
+                  ? '1.00'
+                  : '2.00',
+            },
+          ],
+        }),
+      );
+      final deepseek = deepseekOf(
+        await service.fetchAll(accounts: [key('a'), key('b')]),
+      );
+      expect(deepseek.map((u) => u.accountId), ['a', 'b']);
+      expect(deepseek.map((u) => u.balances.single.amountMinor), [100, 200]);
+    });
+
+    test(
+      'a rejected key is an error, and an answer with no balance too',
+      () async {
+        final (rejected, _) = build(
+          (request) => httpTextResponse(request, const {}, statusCode: 401),
+        );
+        final refused = deepseekOf(
+          await rejected.fetchAll(accounts: [key('a')]),
+        ).single;
+        expect(refused.status, SubscriptionStatus.error);
+        expect(refused.error, 'HTTP 401');
+
+        final (empty, _) = build(
+          (request) => httpTextResponse(request, const {'is_available': true}),
+        );
+        expect(
+          deepseekOf(await empty.fetchAll(accounts: [key('a')])).single.status,
+          SubscriptionStatus.error,
+        );
+      },
+    );
+
+    test('the key is never sent to a non-DeepSeek host', () async {
+      final (service, client) = build(
+        (request) => fail('unexpected request to ${request.url}'),
+      );
+      for (final baseUrl in [
+        'https://proxy.example.com/v1',
+        'https://api.deepseek.com.example.com/v1',
+        'http://api.deepseek.com/v1',
+      ]) {
+        final deepseek = deepseekOf(
+          await service.fetchAll(accounts: [key('a', baseUrl: baseUrl)]),
+        ).single;
+        expect(
+          deepseek.status,
+          SubscriptionStatus.unconfigured,
+          reason: baseUrl,
+        );
+      }
+      expect(client.requests, isEmpty);
     });
   });
 }

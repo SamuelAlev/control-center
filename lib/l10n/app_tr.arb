@@ -7895,6 +7895,8 @@
   },
   "subscriptionUsageNoneReported": "Bu hesap için kullanım bildirilmedi.",
   "subscriptionUsageCredits": "Krediler",
+  "subscriptionUsageBalance": "Bakiye",
+  "subscriptionUsageBalanceLeft": "{amount} kaldı",
   "reviewHubStaticRule": "Statik kural",
   "reviewHubStarted": "İnceleme başladı",
   "reviewHubStaticRuleTooltip": "Bu pull request'in eklediği bir satırda belirleyici bir kural ({rule}) tarafından bulundu — bir inceleme ajanı tarafından değil.",

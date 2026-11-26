@@ -2,7 +2,7 @@
 title: Agenda en planning
 description: Hoe Control Center Google Calendar op de server synchroniseert, hoe de aanmelding in de browser een headless server bereikt en wat je in Google mag wijzigen.
 slug: nl-NL/handleiding/concepten/agenda
-sourceHash: 60f0b846930013e86aa69f61261b0b496b4fb4f6
+sourceHash: d1dbb2bce46b34ac5bdf24cf5b27807f41e61617
 ---
 
 Control Center maakt verbinding met Google Calendar, zodat je dag naast je fleet
@@ -116,15 +116,7 @@ apparaat.
 
 ## Meldingen voor vergaderingen
 
-Een planner die elke minuut draait, zoekt naar afspraken die binnen een
-instelbaar voorloopvenster beginnen en stuurt dan een melding **"Vergadering
-begint zo"** (een `MeetingStartingSoon`
-[domeingebeurtenis](/nl-NL/handleiding/concepten/domeingebeurtenissen/)). De
-melding bevat de deelname-URL als die er is, en als je erop klikt, opent de
-detailweergave van de afspraak. Meldingen worden ontdubbeld aan de hand van
-`alertedAt` van de afspraak, zodat dezelfde vergadering nooit twee keer meldt;
-ook een afspraak waarvan het begintijdstip voorbijging terwijl de app dicht was,
-wordt nooit opnieuw afgespeeld.
+Een planner die elke minuut draait, zoekt naar afspraken die binnen een instelbaar voorloopvenster beginnen en stuurt dan een melding **"Vergadering begint zo"** (een `MeetingStartingSoon` [domeingebeurtenis](/nl-NL/handleiding/concepten/domeingebeurtenissen/)). De melding bevat de deelname-URL als die er is, en als je erop klikt, opent de detailweergave van de afspraak. De acties **Deelnemen aan vergadering** en **Deelnemen en opnemen** in de melding in de app en in de melding van het besturingssysteem openen de vergadering zonder eerst de afspraak te openen; een afspraak zonder vergaderlink biedt in plaats daarvan **Vergadering opnemen**. Meldingen worden ontdubbeld aan de hand van `alertedAt` van de afspraak, zodat dezelfde vergadering nooit twee keer meldt; ook een afspraak waarvan het begintijdstip voorbijging terwijl de app dicht was, wordt nooit opnieuw afgespeeld.
 
 Twee beperkingen waar je snel over struikelt. De planner draait **aan de
 clientkant op de desktop** en alleen voor de werkruimte die je op dat moment open
@@ -140,7 +132,7 @@ een-op-eenkoppeling tussen de opname en de afspraak, zodat de notities van de
 vergadering en de agenda-afspraak met elkaar verbonden blijven zonder dat het ene
 onderdeel van het andere afhankelijk is.
 
-**Opnemen en koppelen** is alleen op de desktop beschikbaar. In de webclient
+**Deelnemen en opnemen** is alleen op de desktop beschikbaar. In de webclient
 meldt de actie dat opnemen niet beschikbaar is — ook al werkt de opnameflow op
 het vergaderingscherm zelf wél in de browser.
 

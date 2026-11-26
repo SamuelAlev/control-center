@@ -7895,6 +7895,8 @@
   },
   "subscriptionUsageNoneReported": "مصرفی برای این حساب گزارش نشده.",
   "subscriptionUsageCredits": "اعتبار",
+  "subscriptionUsageBalance": "موجودی حساب",
+  "subscriptionUsageBalanceLeft": "{amount} باقی‌مانده",
   "reviewHubStaticRule": "قاعدهٔ ایستا",
   "reviewHubStarted": "بازبینی شروع شد",
   "reviewHubStaticRuleTooltip": "یافتهٔ قاعدهٔ قطعی (⁨{rule}⁩) روی خطی که این pull request می‌افزاید — نه از عامل بازبین.",

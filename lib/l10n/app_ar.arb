@@ -7895,6 +7895,8 @@
   },
   "subscriptionUsageNoneReported": "لم يُبلَّغ عن أي استخدام لهذا الحساب.",
   "subscriptionUsageCredits": "الأرصدة",
+  "subscriptionUsageBalance": "رصيد الحساب",
+  "subscriptionUsageBalanceLeft": "متبقٍ {amount}",
   "reviewHubStaticRule": "قاعدة ثابتة",
   "reviewHubStarted": "بدأت المراجعة",
   "reviewHubStaticRuleTooltip": "عُثر عليها بقاعدة حتمية (⁨{rule}⁩) على سطر يضيفه طلب السحب هذا — وليس بوكيل مراجع.",

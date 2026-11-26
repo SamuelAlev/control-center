@@ -7895,6 +7895,8 @@
   },
   "subscriptionUsageNoneReported": "Δεν αναφέρθηκε χρήση για αυτόν τον λογαριασμό.",
   "subscriptionUsageCredits": "Πιστώσεις",
+  "subscriptionUsageBalance": "Υπόλοιπο λογαριασμού",
+  "subscriptionUsageBalanceLeft": "Απομένουν {amount}",
   "reviewHubStaticRule": "Στατικός κανόνας",
   "reviewHubStarted": "Η ανασκόπηση ξεκίνησε",
   "reviewHubStaticRuleTooltip": "Βρέθηκε από ντετερμινιστικό κανόνα (⁨{rule}⁩) σε γραμμή που προσθέτει αυτό το pull request — όχι από πράκτορα αναθεωρητή.",

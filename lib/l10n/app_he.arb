@@ -7895,6 +7895,8 @@
   },
   "subscriptionUsageNoneReported": "לא דווח שימוש עבור החשבון הזה.",
   "subscriptionUsageCredits": "קרדיטים",
+  "subscriptionUsageBalance": "יתרה בחשבון",
+  "subscriptionUsageBalanceLeft": "נותרו {amount}",
   "reviewHubStaticRule": "כלל סטטי",
   "reviewHubStarted": "הסקירה החלה",
   "reviewHubStaticRuleTooltip": "נמצא על ידי כלל דטרמיניסטי (⁨{rule}⁩) על שורה שבקשת המשיכה הזו מוסיפה — לא על ידי סוכן סוקר.",

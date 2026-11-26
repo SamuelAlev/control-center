@@ -2,7 +2,7 @@
 title: Routenkarte
 description: Jede Route, die Control Center registriert, mit Bildschirm und Query-Parametern.
 slug: de-DE/handbuch/referenz/routenkarte
-sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
+sourceHash: 34a70ebded7d59308c54ae125e1032f320898fd9
 ---
 
 ## App-Shell
@@ -40,12 +40,6 @@ Die Pfade unten lassen das Präfix `/workspaces/:workspaceId` weg.
 | `/pipelines`                            | —                                         | Liste der Pipeline-Läufe                                                                                                                                                        |
 | `/pipelines/run`                        | `?templateId=<id>`                        | Start eines manuellen Laufs                                                                                                                                                      |
 | `/pipelines/:runId`                     | —                                         | Detail eines Pipeline-Laufs (Schritt-Zeitleiste)                                                                                                                                      |
-| `/goals` | — | Liste der Ziele, gruppiert als Wartet auf Review, Offen und Beendet |
-| `/goals/:goalId` | `?edit=contract` | Ein Ziel: Jetzt, Was fertig heißt, Prüfung, Zeitpläne und Weckrufe; `edit=contract` öffnet den Vertragseditor bei einem pausierten Ziel |
-| `/schedules` | — | Zeitpläne und Überwachungen, gruppiert nach Status, mit **Neuer Zeitplan** |
-| `/schedules/:ruleId` | — | Ein Zeitplan: Notiz, Details, letzte Weckrufe und Läufe |
-| `/improvements` | — | Verbesserungsvorschläge, gruppiert nach Status |
-| `/improvements/:proposalId` | — | Ein Vorschlag: was sich ändert, Belege, Auswertung und Entscheidung |
 | `/plans`                                | —                                         | Plan-Studio-Hub: aktive Pläne, Plandokumente, Playbooks                                                                                                                 |
 | `/plans/:kind/:id`                      | —                                         | Plan Studio für einen Plan; `kind` ist `orchestration` oder `document`                                                                                                        |
 | `/meetings`                             | —                                         | Liste der Besprechungen                                                                                                                                                            |
@@ -65,7 +59,7 @@ Unterhaltungen und Threads haben **keine eigene Route** — ein Thread ist eine 
 
 Es gibt **keine Route `/dashboard`** und keinen Dashboard-Bildschirm. Die Analysefläche ist `/observability`, erreichbar aus der Fußzeile der Seitenleiste.
 
-Es gibt **keinen Seitenleisteneintrag „Pläne“**. Plan Studio öffnet sich als Editor-Tab aus der Planzeile der Unterhaltung, die ihn erzeugt hat; `/plans` und `/plans/:kind/:id` sind Direktlinks.
+Es gibt **keinen Seitenleisteneintrag „Pläne“**. Plan Studio öffnet sich als Editor-Tab aus der Planzeile der Unterhaltung, die ihn erzeugt hat; `/plans` und `/plans/:kind/:id` sind Direktlinks. Auch eine Seite für Ziele gibt es nicht: Ein Ziel öffnet sich als Tab in dem Bereich, dem es gehört.
 
 `/observability` und `/pull-requests/compose` stehen weder in der Registry der Routentitel noch in der der Breadcrumbs, deshalb zeigen beide nur den App-Namen im Fenstertitel und keine Breadcrumb-Spur.
 
@@ -103,9 +97,11 @@ Einstellungspfade sind nach **Geltungsbereich** benannt — `you/`, `workspace/`
 | `/settings/workspace/environments` | Environment-Definitionen: was Bereiche starten können und welche Tasks ihre Worktrees ausführen |
 | `/settings/workspace/agents`       | Registrierte Agentenidentitäten                                                                         |
 | `/settings/workspace/skills`       | Konfiguration der Fähigkeiten                                                                                 |
-| `/settings/memory`                 | Arbeitsbereichs-Gedächtnis: Fakten, Richtlinien, Wissensgraph                                                  |
+| `/settings/memory`                 | Arbeitsbereichs-Gedächtnis: Fakten, Richtlinien, Verbesserungsvorschläge (`?tab=improvements`) und Wissensgraph |
+| `/settings/memory/improvements/:proposalId` | Ein Vorschlag: was sich ändert, Belege, Auswertung und Entscheidung |
 | `/settings/workspace/permissions`  | Agent-Berechtigungen: Schutzregel-Matrix und Prüfung „Was wäre wenn?“                                               |
-| `/settings/workspace/schedules` | Grenzen für Zeitpläne, die Zeitzone für Cron-Zeitpläne und die Übersicht sowie wie lange vom Server gestartete Läufe auf eine Antwort warten (Admins bearbeiten; Mitglieder lesen) |
+| `/settings/workspace/schedules` | Zeitpläne und Überwachungen, gruppiert nach Status, mit **Neuer Zeitplan**; dann Grenzen für Zeitpläne, die Zeitzone für Cron-Zeitpläne und die Übersicht sowie wie lange vom Server gestartete Läufe auf eine Antwort warten (Admins bearbeiten; Mitglieder lesen) |
+| `/settings/workspace/schedules/:ruleId` | Ein Zeitplan: Notiz, Details, letzte Weckrufe und Läufe |
 | `/settings/pipelines`              | Pipeline-Vorlagen                                                                                  |
 | `/settings/pipelines/:templateId`  | Editor für Pipeline-Vorlagen (Drag-and-Drop-Leinwand)                                                     |
 

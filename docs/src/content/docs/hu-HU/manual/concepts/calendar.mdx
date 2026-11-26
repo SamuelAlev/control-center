@@ -2,7 +2,7 @@
 title: Naptár és ütemezés
 description: Hogyan szinkronizálja a Control Center a Google Calendar szolgáltatást a szerveren, hogyan éri el a böngészős bejelentkezés a headless szervert, és mit módosíthat a Google-on.
 slug: hu-HU/kezikonyv/fogalmak/naptar
-sourceHash: 60f0b846930013e86aa69f61261b0b496b4fb4f6
+sourceHash: d1dbb2bce46b34ac5bdf24cf5b27807f41e61617
 ---
 
 A Control Center csatlakozik a Google Calendar szolgáltatáshoz, hogy a napod a
@@ -121,15 +121,7 @@ eszközre.
 
 ## Megbeszélés-figyelmeztetések
 
-Egy percenként futó ütemező azokat az eseményeket keresi, amelyek egy
-konfigurálható előzetes ablakon belül kezdődnek, és egy **„Hamarosan kezdődő
-megbeszélés”** értesítést vált ki (egy `MeetingStartingSoon`
-[domaineseményt](/hu-HU/kezikonyv/fogalmak/domainesemenyek/)). Az értesítés
-tartalmazza a csatlakozási URL-t, ha van ilyen, és rákattintva megnyílik az
-esemény részletei. A figyelmeztetéseket az esemény `alertedAt` mezője alapján
-deduplikáljuk, így ugyanaz a megbeszélés soha nem figyelmeztet kétszer, még
-újraindításokon át sem, és egy olyan esemény, amelynek kezdete az alkalmazás
-zárva tartása alatt múlt el, soha nem játszódik le újra.
+Egy percenként futó ütemező azokat az eseményeket keresi, amelyek egy konfigurálható előzetes ablakon belül kezdődnek, és egy **„Hamarosan kezdődő megbeszélés”** értesítést vált ki (egy `MeetingStartingSoon` [domaineseményt](/hu-HU/kezikonyv/fogalmak/domainesemenyek/)). Az értesítés tartalmazza a csatlakozási URL-t, ha van ilyen, és rákattintva megnyílik az esemény részletei. Az értesítés **Csatlakozás a megbeszéléshez** és **Csatlakozás és felvétel** műveletei mind az alkalmazáson belüli bannerről, mind az operációs rendszer értesítéséből megnyitják a hívást anélkül, hogy előbb meg kellene nyitni az eseményt; hívási link nélküli esemény esetén helyette a **Megbeszélés felvétele** műveletet kínálja. A figyelmeztetéseket az esemény `alertedAt` mezője alapján deduplikáljuk, így ugyanaz a megbeszélés soha nem figyelmeztet kétszer, még újraindításokon át sem, és egy olyan esemény, amelynek kezdete az alkalmazás zárva tartása alatt múlt el, soha nem játszódik le újra.
 
 Két korlátba könnyű belebonyolódni. Az ütemező **kliensoldalon, az asztali
 alkalmazásban** fut, és csak ahhoz a munkaterülethez, amelyet éppen megnyitva
@@ -146,7 +138,7 @@ kapcsolatot tárol a felvétel és az esemény között, így a megbeszélés je
 és a naptárbejegyzés összekapcsolva maradnak anélkül, hogy bármelyik funkció a
 másiktól függene.
 
-A **Felvétel indítása és összekapcsolás** csak asztali gépen érhető el. A webes
+A **Csatlakozás és felvétel** csak asztali gépen érhető el. A webes
 kliensen a művelet azt jelzi, hogy a felvétel nem érhető el — pedig a
 megbeszélések képernyő saját rögzítési folyamata működik a böngészőben.
 

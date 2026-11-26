@@ -13,6 +13,7 @@ class ProviderUsageReading {
     required this.displayName,
     required this.fraction,
     required this.failed,
+    this.balance,
   });
 
   /// The provider's id, which also picks its logo.
@@ -28,6 +29,10 @@ class ProviderUsageReading {
 
   /// Whether any account's usage fetch failed outright.
   final bool failed;
+
+  /// The money left on a prepaid provider, already formatted. Shown when
+  /// there is no [fraction]: a balance has no share used to report.
+  final String? balance;
 }
 
 /// The title-bar chip: each provider's logo beside its reading, in one
@@ -55,8 +60,17 @@ class SubscriptionUsageChip extends StatelessWidget {
       return f == null ? null : '${(f * 100).round()}%';
     }
 
+    String? left(ProviderUsageReading r) {
+      final balance = r.balance;
+      return balance == null
+          ? null
+          : l10n.subscriptionUsageBalanceLeft(balance);
+    }
+
     String? spoken(ProviderUsageReading r) =>
-        percent(r) ?? (r.failed ? l10n.subscriptionUsageUnavailable : null);
+        percent(r) ??
+        left(r) ??
+        (r.failed ? l10n.subscriptionUsageUnavailable : null);
 
     // The logos are pictures, so a screen reader gets the provider names and
     // readings spelled out instead.
@@ -103,7 +117,7 @@ class SubscriptionUsageChip extends StatelessWidget {
                     if (i > 0) const SizedBox(width: AppSpacing.sm),
                     _ReadingChip(
                       reading: readings[i],
-                      label: percent(readings[i]),
+                      label: percent(readings[i]) ?? readings[i].balance,
                     ),
                   ],
                 ],
@@ -121,7 +135,8 @@ class _ReadingChip extends StatelessWidget {
 
   final ProviderUsageReading reading;
 
-  /// The rendered percentage, or null when the provider has no reading.
+  /// The rendered percentage or balance, or null when the provider has no
+  /// reading.
   final String? label;
 
   @override
@@ -135,7 +150,7 @@ class _ReadingChip extends StatelessWidget {
         AiBrandLogo(
           brand: AiBrand.forProvider(reading.providerId),
           // No reading: the mark alone, receded. The flyout says why.
-          color: f == null && !reading.failed
+          color: text == null && !reading.failed
               ? t.textQuaternary
               : t.textSecondary,
           size: 12,
@@ -151,7 +166,9 @@ class _ReadingChip extends StatelessWidget {
             style: AppFonts.numericStyle(
               // The number is the status (colour only reinforces it), and the
               // text tokens are the ones that clear contrast at 11px.
-              color: f! >= 0.9
+              color: f == null
+                  ? t.textSecondary
+                  : f >= 0.9
                   ? t.textErrorPrimary
                   : f >= 0.75
                   ? t.textWarningPrimary

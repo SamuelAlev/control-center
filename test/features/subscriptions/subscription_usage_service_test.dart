@@ -183,6 +183,7 @@ void main() {
       'kimi-code',
       'cursor',
       'mistral',
+      'deepseek',
     });
   });
 }

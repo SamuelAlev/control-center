@@ -77,6 +77,14 @@ void main() {
                     fraction: 0.4,
                     failed: false,
                   ),
+                  // Prepaid: money left stands where the share used would.
+                  ProviderUsageReading(
+                    providerId: 'deepseek',
+                    displayName: 'DeepSeek',
+                    fraction: null,
+                    failed: false,
+                    balance: r'$12.50',
+                  ),
                 ],
                 onTap: () => opened++,
               ),
@@ -96,7 +104,7 @@ void main() {
     expect(
       tester.getSemantics(chip),
       matchesSemantics(
-        label: 'Subscription usage: Claude 40%',
+        label: r'Subscription usage: Claude 40%, DeepSeek $12.50 left',
         isButton: true,
         isEnabled: true,
         hasEnabledState: true,

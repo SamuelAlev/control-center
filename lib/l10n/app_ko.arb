@@ -7895,6 +7895,8 @@
   },
   "subscriptionUsageNoneReported": "이 계정의 사용량이 보고되지 않았습니다.",
   "subscriptionUsageCredits": "크레딧",
+  "subscriptionUsageBalance": "잔액",
+  "subscriptionUsageBalanceLeft": "{amount} 남음",
   "reviewHubStaticRule": "정적 규칙",
   "reviewHubStarted": "리뷰가 시작됨",
   "reviewHubStaticRuleTooltip": "리뷰어 에이전트가 아니라, 이 풀 리퀘스트가 추가하는 줄에서 결정론적 규칙({rule})이 찾은 항목입니다.",

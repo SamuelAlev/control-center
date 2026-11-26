@@ -13701,6 +13701,14 @@ class AppLocalizationsMs extends AppLocalizations {
   String get subscriptionUsageCredits => 'Kredit';
 
   @override
+  String get subscriptionUsageBalance => 'Baki akaun';
+
+  @override
+  String subscriptionUsageBalanceLeft(String amount) {
+    return 'Tinggal $amount';
+  }
+
+  @override
   String get reviewHubStaticRule => 'Peraturan statik';
 
   @override

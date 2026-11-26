@@ -2,7 +2,7 @@
 title: Lịch và lên lịch
 description: Cách Control Center đồng bộ Google Calendar trên máy chủ, cách đăng nhập qua trình duyệt đến được máy chủ headless và những gì nó có thể thay đổi trên Google.
 slug: vi-VN/so-tay/khai-niem/lich
-sourceHash: 60f0b846930013e86aa69f61261b0b496b4fb4f6
+sourceHash: d1dbb2bce46b34ac5bdf24cf5b27807f41e61617
 ---
 
 Control Center kết nối với Google Calendar để ngày làm việc của bạn nằm cạnh
@@ -103,14 +103,7 @@ khách đó, nên nó không đi theo bạn sang thiết bị khác.
 
 ## Cảnh báo cuộc họp
 
-Một bộ lập lịch chạy mỗi phút quét các sự kiện bắt đầu trong khoảng báo trước
-có thể cấu hình và phát thông báo **"cuộc họp sắp bắt đầu"** (một
-[sự kiện miền](/vi-VN/so-tay/khai-niem/su-kien-mien/) `MeetingStartingSoon`).
-Thông báo mang theo URL tham gia khi có, và nhấp vào nó sẽ mở trang chi tiết sự
-kiện. Cảnh báo được chống trùng lặp dựa trên `alertedAt` của sự kiện, nên cùng
-một cuộc họp không bao giờ cảnh báo hai lần, kể cả qua các lần khởi động lại,
-và một sự kiện có giờ bắt đầu trôi qua khi ứng dụng đang đóng cũng không bao giờ
-phát lại.
+Một bộ lập lịch chạy mỗi phút quét các sự kiện bắt đầu trong khoảng báo trước có thể cấu hình và phát thông báo **"cuộc họp sắp bắt đầu"** (một [sự kiện miền](/vi-VN/so-tay/khai-niem/su-kien-mien/) `MeetingStartingSoon`). Thông báo mang theo URL tham gia khi có, và nhấp vào nó sẽ mở trang chi tiết sự kiện. Các hành động **Tham gia cuộc họp** và **Tham gia và ghi** của thông báo, trên banner trong ứng dụng cũng như trên thông báo hệ điều hành, đều mở cuộc gọi mà không cần mở sự kiện trước; sự kiện không có liên kết cuộc gọi thì thay vào đó hiện **Ghi cuộc họp**. Cảnh báo được chống trùng lặp dựa trên `alertedAt` của sự kiện, nên cùng một cuộc họp không bao giờ cảnh báo hai lần, kể cả qua các lần khởi động lại, và một sự kiện có giờ bắt đầu trôi qua khi ứng dụng đang đóng cũng không bao giờ phát lại.
 
 Có hai giới hạn dễ bị bỏ qua. Bộ lập lịch chạy **ở phía máy khách trên máy tính
 để bàn** và chỉ cho không gian làm việc bạn đang mở — một không gian bạn không ở
@@ -125,7 +118,7 @@ của sự kiện. Control Center lưu một liên kết một-một giữa bả
 nên ghi chú của cuộc họp và mục lịch vẫn gắn với nhau mà không tính năng nào
 phụ thuộc vào tính năng kia.
 
-**Bắt đầu ghi & liên kết** chỉ có trên máy tính để bàn. Trên máy khách web, hành
+**Tham gia và ghi** chỉ có trên máy tính để bàn. Trên máy khách web, hành
 động này báo rằng không thể ghi — dù luồng ghi của chính màn hình cuộc họp vẫn
 hoạt động trong trình duyệt.
 

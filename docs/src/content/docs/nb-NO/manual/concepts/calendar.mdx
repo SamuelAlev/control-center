@@ -2,7 +2,7 @@
 title: Kalender og planlegging
 description: Hvordan Control Center synkroniserer Google Calendar på serveren, hvordan påloggingen i nettleseren når fram til en headless server, og hva den kan endre hos Google.
 slug: nb-NO/handbok/konsepter/kalender
-sourceHash: 60f0b846930013e86aa69f61261b0b496b4fb4f6
+sourceHash: d1dbb2bce46b34ac5bdf24cf5b27807f41e61617
 ---
 
 Control Center kobler til Google Calendar, slik at dagen din ligger side om side
@@ -110,14 +110,7 @@ innstillinger, og følger deg derfor ikke til en annen enhet.
 
 ## Møtevarsler
 
-En planlegger som kjører hvert minutt, ser etter hendelser som starter innenfor
-et konfigurerbart forhåndsvindu, og utløser et **«møte starter snart»**-varsel
-(en `MeetingStartingSoon`-[domenehendelse](/nb-NO/handbok/konsepter/domenehendelser/)).
-Varselet inneholder deltakelses-URL-en når det finnes en, og klikker du på det,
-åpnes hendelsesdetaljene. Varsler fjernes for duplikater mot hendelsens
-`alertedAt`, slik at det samme møtet aldri varsles to ganger, selv på tvers av
-omstart — og en hendelse hvis starttid passerte mens appen var lukket, spilles
-aldri av på nytt.
+En planlegger som kjører hvert minutt, ser etter hendelser som starter innenfor et konfigurerbart forhåndsvindu, og utløser et **«møte starter snart»**-varsel (en `MeetingStartingSoon`-[domenehendelse](/nb-NO/handbok/konsepter/domenehendelser/)). Varselet inneholder deltakelses-URL-en når det finnes en, og klikker du på det, åpnes hendelsesdetaljene. Knappene **Bli med i møte** og **Bli med og ta opp** på varselet, både i banneret i appen og i varselet fra operativsystemet, åpner samtalen uten å åpne hendelsen først; en hendelse uten lenke til samtalen tilbyr **Ta opp møte** i stedet. Varsler fjernes for duplikater mot hendelsens `alertedAt`, slik at det samme møtet aldri varsles to ganger, selv på tvers av omstart — og en hendelse hvis starttid passerte mens appen var lukket, spilles aldri av på nytt.
 
 To begrensninger er lette å snuble i. Planleggeren kjører **klientsiden på
 skrivebordet** og bare for arbeidsområdet du har åpent for øyeblikket — et
@@ -132,7 +125,7 @@ utgangspunkt. Control Center lagrer en en-til-en-kobling mellom opptaket og
 hendelsen, slik at møtenotatene og kalenderoppføringen holder sammen uten at
 noen av funksjonene er avhengige av den andre.
 
-**Start opptak og knytt** finnes bare på skrivebordet. I nettklienten melder
+**Bli med og ta opp** finnes bare på skrivebordet. I nettklienten melder
 handlingen at opptak ikke er tilgjengelig — selv om møteskjermens egen
 opptaksflyt faktisk fungerer i nettleseren.
 

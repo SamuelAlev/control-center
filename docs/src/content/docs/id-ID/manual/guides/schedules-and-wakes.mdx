@@ -2,7 +2,7 @@
 title: Jadwal dan pengingat
 description: Bangunkan agen nanti, sesuai jadwal atau saat sesuatu terjadi, lihat apa yang menunggu, dan apa yang terjadi saat restart atau batas penggunaan.
 slug: id-ID/panduan-pengguna/panduan-praktis/jadwal-dan-pengingat
-sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+sourceHash: 2fdcfd1fe753e4a994491dd6748f64d413dd0e84
 ---
 
 Agen tidak tidur atau memeriksa berulang kali saat menunggu. Agen itu, atau Anda, memasang **pengingat**: permintaan tahan lama untuk memulai atau melanjutkan run agen dalam sebuah percakapan pada suatu waktu atau saat sesuatu terjadi. Setiap run yang dimulai server tanpa ada yang mengetik dimulai sebagai pengingat: segmen berikutnya dari tujuan, jadwal, pantauan, balasan dari agen lain, pekerjaan delegasi yang selesai, akhir batas penggunaan, atau pekerjaan yang tersisa setelah restart. Pengingat disimpan di basis data ruang kerja, sehingga tetap ada setelah restart.
@@ -34,7 +34,7 @@ Ketik salah satu perintah ini di kolom penulisan percakapan:
 
 Composer membantu Anda menulisnya. Setelah `/loop` atau `/schedule` dan spasi, daftar saran menawarkan kapan ia dipicu dan menyempit saat Anda mengetik; ketik `--` setelah waktunya untuk batasnya. Enter atau Tab memilih sebuah baris dan tidak mengirim apa pun. Sebuah baris di atas teks Anda kemudian menampilkan kembali perintahnya: kapan ia dipicu, kapan berakhir, dan apa yang masih kurang. Jika Anda menekan Enter pada perintah yang tidak dapat dibaca, baris itu menjelaskan apa yang salah dan draf Anda tetap ada.
 
-Anda juga bisa membuat jadwal dari halaman **Jadwal** dengan **Jadwal baru**: pilih space, percakapan dan agen, kapan jadwal aktif, apa yang dimulai setiap run, akhir, batas run, dan batas biaya. **Jika agen sibuk** memilih antara melewati pemicuan itu atau menunggu sampai agen bebas. **Setiap pemicuan** memilih antara memulai run atau hanya memberi tahu Anda dengan catatannya.
+Anda juga bisa membuat jadwal di **Pengaturan → Ruang kerja → Jadwal** dengan **Jadwal baru**: pilih space, percakapan dan agen, kapan jadwal aktif, apa yang dimulai setiap run, akhir, batas run, dan batas biaya. **Jika agen sibuk** memilih antara melewati pemicuan itu atau menunggu sampai agen bebas. **Setiap pemicuan** memilih antara memulai run atau hanya memberi tahu Anda dengan catatannya.
 
 ## Yang disiapkan agen
 
@@ -67,7 +67,7 @@ Agen memakai alat `wake_me` untuk hal yang sama, dan untuk pantauan:
 
 Pengingat yang tidak terkirim meninggalkan satu baris di percakapan yang menjelaskan alasannya, misalnya **Agen itu sedang dijeda.** atau **Anggaran memblokir run.**
 
-**Halaman Jadwal.** Bilah sisi → **Jadwal** menampilkan setiap jadwal dan pantauan yang bisa Anda lihat, dikelompokkan menurut status; jadwal cron menampilkan tiga waktu berikutnya dalam zona waktu Anda. Buka satu untuk melihat catatannya, pemiliknya, pemicuan berikutnya, run, lewatan, biaya dan akhirnya, serta **Pengingat dan run terbaru**. Setiap jadwal punya alamatnya sendiri (`/workspaces/<workspace>/schedules/<id>`).
+**Halaman Jadwal.** **Pengaturan → Ruang kerja → Jadwal** menampilkan setiap jadwal dan pantauan yang bisa Anda lihat, dikelompokkan menurut status; jadwal cron menampilkan tiga waktu berikutnya dalam zona waktu Anda. Buka satu untuk melihat catatannya, pemiliknya, pemicuan berikutnya, run, lewatan, biaya dan akhirnya, serta **Pengingat dan run terbaru**. Setiap jadwal punya alamatnya sendiri (`/workspaces/<workspace>/settings/workspace/schedules/<id>`).
 
 | Tindakan | Siapa yang bisa |
 | --- | --- |
@@ -95,7 +95,7 @@ Di ponsel, **Ulangi** pada layar tujuan memulai prompt yang berulang (setiap sek
 
 ## Batas ruang kerja
 
-Admin ruang kerja mengatur batasnya di **Pengaturan → Ruang kerja → Jadwal**:
+Admin ruang kerja mengatur batasnya di halaman yang sama, di bawah daftar:
 
 - **Batas jadwal**: berapa banyak jadwal aktif atau dijeda yang boleh dimiliki satu agen dalam satu percakapan (10), dalam satu ruang kerja (50), dan di seluruh ruang kerja (500); batas biaya bawaan sebuah jadwal (50 dolar); dan zona waktu yang dipakai jadwal cron dan ringkasan harian (UTC secara awal).
 - **Saat tidak ada yang menjawab**: berapa lama run yang dimulai server menunggu jawaban atau persetujuan seseorang (72 jam secara bawaan, 1 jam sampai 7 hari) sebelum persetujuan dihitung sebagai ditolak dan pertanyaan sebagai belum dijawab (setelah itu, apa pun yang diminta run yang sama langsung ditolak), serta jam ringkasan harian tentang apa yang menunggu Anda dalam tujuan, jadwal, dan run lain yang dimulai server.

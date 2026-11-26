@@ -13388,6 +13388,14 @@ class AppLocalizationsJa extends AppLocalizations {
   String get subscriptionUsageCredits => 'クレジット';
 
   @override
+  String get subscriptionUsageBalance => '残高';
+
+  @override
+  String subscriptionUsageBalanceLeft(String amount) {
+    return '残り$amount';
+  }
+
+  @override
   String get reviewHubStaticRule => '静的ルール';
 
   @override

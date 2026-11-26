@@ -2,7 +2,7 @@
 title: Calendário e agendamento
 description: Como o Control Center sincroniza o Google Calendar no servidor, como o início de sessão no navegador chega a um servidor headless e o que pode alterar na Google.
 slug: pt-PT/manual/conceitos/calendario
-sourceHash: 60f0b846930013e86aa69f61261b0b496b4fb4f6
+sourceHash: d1dbb2bce46b34ac5bdf24cf5b27807f41e61617
 ---
 
 O Control Center liga-se ao Google Calendar para que o seu dia fique ao lado da
@@ -121,14 +121,7 @@ próprio cliente, pelo que não o acompanha para outro dispositivo.
 
 ## Alertas de reuniões
 
-Um agendador a cada minuto procura eventos que comecem dentro de uma janela de
-antecedência configurável e emite uma notificação **"Reunião prestes a
-começar"** (um `MeetingStartingSoon`
-[evento de domínio](/pt-PT/manual/conceitos/eventos-de-dominio/)). A notificação
-inclui o URL de entrada na reunião quando existe e clicar nele abre o detalhe do
-evento. Os alertas são desduplicados com base no `alertedAt` do evento, pelo que
-a mesma reunião nunca gera dois alertas, mesmo entre reinícios, e um evento cujo
-início passou com a aplicação fechada nunca é repetido.
+Um agendador a cada minuto procura eventos que comecem dentro de uma janela de antecedência configurável e emite uma notificação **"Reunião prestes a começar"** (um `MeetingStartingSoon` [evento de domínio](/pt-PT/manual/conceitos/eventos-de-dominio/)). A notificação inclui o URL de entrada na reunião quando existe e clicar nele abre o detalhe do evento. As ações **Entrar na reunião** e **Entrar e gravar** da notificação, tanto no banner da aplicação como na notificação do sistema operativo, abrem a chamada sem abrir primeiro o evento; um evento sem ligação de chamada oferece **Gravar reunião** em vez disso. Os alertas são desduplicados com base no `alertedAt` do evento, pelo que a mesma reunião nunca gera dois alertas, mesmo entre reinícios, e um evento cujo início passou com a aplicação fechada nunca é repetido.
 
 Há dois limites em que é fácil tropeçar. O agendador é executado **no cliente,
 no computador** e apenas para o espaço de trabalho que tem aberto no momento —
@@ -144,7 +137,7 @@ título do evento. O Control Center guarda uma associação um para um entre a
 gravação e o evento, para que as notas da reunião e a entrada do calendário se
 mantenham ligadas sem que nenhuma das funcionalidades dependa da outra.
 
-**Gravar e vincular** só existe no computador. No cliente web, a ação indica que
+**Entrar e gravar** só existe no computador. No cliente web, a ação indica que
 a gravação não está disponível — mesmo que o próprio fluxo de gravação do ecrã
 de reuniões funcione no navegador.
 

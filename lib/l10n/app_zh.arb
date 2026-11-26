@@ -7895,6 +7895,8 @@
   },
   "subscriptionUsageNoneReported": "此账户没有报告用量。",
   "subscriptionUsageCredits": "额度",
+  "subscriptionUsageBalance": "余额",
+  "subscriptionUsageBalanceLeft": "剩余 {amount}",
   "reviewHubStaticRule": "静态规则",
   "reviewHubStarted": "审查已开始",
   "reviewHubStaticRuleTooltip": "由确定性规则（{rule}）在此 pull request 新增的某一行上发现——并非由审阅智能体发现。",

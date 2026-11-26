@@ -7895,6 +7895,8 @@
   },
   "subscriptionUsageNoneReported": "Tidak ada pemakaian yang dilaporkan untuk akun ini.",
   "subscriptionUsageCredits": "Kredit",
+  "subscriptionUsageBalance": "Saldo",
+  "subscriptionUsageBalanceLeft": "Sisa {amount}",
   "reviewHubStaticRule": "Aturan statis",
   "reviewHubStarted": "Review dimulai",
   "reviewHubStaticRuleTooltip": "Ditemukan oleh aturan deterministik ({rule}) pada baris yang ditambahkan pull request ini — bukan oleh agen reviewer.",

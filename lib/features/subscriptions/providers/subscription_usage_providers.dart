@@ -17,7 +17,7 @@ final subscriptionsRepositoryProvider = Provider<RpcSubscriptionsRepository>(
 const Duration _refreshInterval = Duration(minutes: 10);
 
 /// Polls live subscription usage (Claude Code, Codex, Cursor, z.ai, Kimi,
-/// Mistral Vibe) and exposes the latest per-provider snapshots for the
+/// Mistral Vibe, the DeepSeek balance) and exposes the latest per-provider snapshots for the
 /// title-bar usage pill.
 ///
 /// Fetched SERVER-SIDE over the `subscriptions.usage` op: the host reads each
@@ -83,7 +83,8 @@ class SubscriptionUsageNotifier extends AsyncNotifier<List<SubscriptionUsage>> {
                       i.id == 'zai' ||
                       i.id == 'kimi-code' ||
                       i.id == 'cursor' ||
-                      i.id == 'mistral') &&
+                      i.id == 'mistral' ||
+                      i.id == 'deepseek') &&
                   i.connected,
             ) ??
             false,

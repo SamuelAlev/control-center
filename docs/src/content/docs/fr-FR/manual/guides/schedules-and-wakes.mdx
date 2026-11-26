@@ -2,7 +2,7 @@
 title: Planifications et relances
 description: Relancer un agent plus tard, selon une planification ou quand quelque chose se produit, voir ce qui attend, et ce qui se passe au redémarrage ou à une limite d’utilisation.
 slug: fr-FR/manuel/guides/planifications-relances
-sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+sourceHash: 2fdcfd1fe753e4a994491dd6748f64d413dd0e84
 ---
 
 Un agent ne dort pas et n’interroge pas en boucle pendant qu’il attend. Lui, ou vous, met en place une **relance** : une demande durable de démarrer ou de poursuivre l’exécution de l’agent dans une conversation, à un moment donné ou lorsqu’un événement survient. Toute exécution que le serveur démarre sans qu’une personne tape quoi que ce soit commence comme une relance : le segment suivant d’un objectif, une planification, une surveillance, une réponse d’un autre agent, un travail délégué terminé, la fin d’une limite d’utilisation, le travail restant après un redémarrage. Les relances sont conservées dans la base de données de l’espace de travail, elles survivent donc à un redémarrage.
@@ -34,7 +34,7 @@ Tapez l’une de ces commandes dans la zone de saisie d’une conversation :
 
 Le compositeur vous aide à les écrire. Après `/loop` ou `/schedule` et un espace, la liste de suggestions propose quand la relance se déclenche et se resserre à mesure que vous tapez ; tapez `--` après l’heure pour les limites. Entrée ou Tab choisit une ligne et n’envoie rien. Une ligne au-dessus de votre texte relit alors la commande : quand elle se déclenche, quand elle se termine, et ce qui manque encore. Si vous appuyez sur Entrée sur une commande illisible, cette ligne indique ce qui ne va pas et votre brouillon reste.
 
-Vous pouvez aussi créer une planification depuis la page **Planifications** avec **Nouvelle planification** : choisissez l’espace, la conversation et l’agent, quand elle se déclenche, le point de départ de chaque exécution, une fin, un plafond d’exécutions et un plafond de coût. **Si l'agent est occupé** choisit entre ignorer ce déclenchement et attendre que l’agent soit libre. **À chaque déclenchement** choisit entre démarrer une exécution et seulement vous avertir avec la note.
+Vous pouvez aussi créer une planification dans **Paramètres → Espace de travail → Planifications** avec **Nouvelle planification** : choisissez l’espace, la conversation et l’agent, quand elle se déclenche, le point de départ de chaque exécution, une fin, un plafond d’exécutions et un plafond de coût. **Si l'agent est occupé** choisit entre ignorer ce déclenchement et attendre que l’agent soit libre. **À chaque déclenchement** choisit entre démarrer une exécution et seulement vous avertir avec la note.
 
 ## Ce que les agents planifient
 
@@ -67,7 +67,7 @@ Les agents utilisent l’outil `wake_me` pour les mêmes usages, ainsi que pour 
 
 Une relance non livrée laisse une ligne dans la conversation qui indique pourquoi, par exemple **L'agent est en pause.** ou **Un budget bloque une exécution.**
 
-**La page Planifications.** Barre latérale → **Planifications** liste chaque planification et surveillance que vous voyez, regroupées par statut ; une planification cron affiche ses trois prochaines occurrences dans votre fuseau horaire. Ouvrez-en une pour voir sa note, son propriétaire, les prochains déclenchements, les exécutions, les déclenchements ignorés, la dépense et la fin, ainsi que **Relances et exécutions récentes**. Chaque planification a sa propre adresse (`/workspaces/<workspace>/schedules/<id>`).
+**La page Planifications.** **Paramètres → Espace de travail → Planifications** liste chaque planification et surveillance que vous voyez, regroupées par statut ; une planification cron affiche ses trois prochaines occurrences dans votre fuseau horaire. Ouvrez-en une pour voir sa note, son propriétaire, les prochains déclenchements, les exécutions, les déclenchements ignorés, la dépense et la fin, ainsi que **Relances et exécutions récentes**. Chaque planification a sa propre adresse (`/workspaces/<workspace>/settings/workspace/schedules/<id>`).
 
 | Action | Qui peut |
 | --- | --- |
@@ -95,7 +95,7 @@ Sur téléphone, **Répéter** sur l’écran des objectifs lance une invite ré
 
 ## Limites de l’espace de travail
 
-Un admin de l’espace de travail règle les limites dans **Paramètres → Espace de travail → Planifications** :
+Un admin de l’espace de travail règle les limites sur cette même page, sous la liste :
 
 - **Limites des planifications** : combien de planifications actives ou en pause un agent peut détenir dans une conversation (10), dans tout l’espace de travail (50), et au total dans l’espace de travail (500) ; le plafond de coût par défaut d’une planification (50 dollars) ; et le fuseau horaire qu’utilisent les planifications cron et le récapitulatif quotidien (UTC au départ).
 - **Quand personne ne répond** : combien de temps une exécution que le serveur a lancée attend la réponse ou l’approbation d’une personne (72 heures par défaut, de 1 heure à 7 jours) avant qu’une approbation soit comptée comme refusée et une question comme sans réponse (après cela, toute autre demande de la même exécution est refusée immédiatement), et l’heure du récapitulatif quotidien de ce qui vous attend dans les objectifs, les planifications et les autres exécutions lancées par le serveur.

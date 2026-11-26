@@ -7895,6 +7895,8 @@
   },
   "subscriptionUsageNoneReported": "このアカウントの使用量は報告されていません。",
   "subscriptionUsageCredits": "クレジット",
+  "subscriptionUsageBalance": "残高",
+  "subscriptionUsageBalanceLeft": "残り{amount}",
   "reviewHubStaticRule": "静的ルール",
   "reviewHubStarted": "レビューを開始しました",
   "reviewHubStaticRuleTooltip": "このプルリクエストが追加する行で、決定論的ルール（{rule}）によって検出されました — レビュアーエージェントによるものではありません。",

@@ -13559,6 +13559,14 @@ class AppLocalizationsTh extends AppLocalizations {
   String get subscriptionUsageCredits => 'เครดิต';
 
   @override
+  String get subscriptionUsageBalance => 'ยอดคงเหลือ';
+
+  @override
+  String subscriptionUsageBalanceLeft(String amount) {
+    return 'เหลือ $amount';
+  }
+
+  @override
   String get reviewHubStaticRule => 'กฎคงที่';
 
   @override

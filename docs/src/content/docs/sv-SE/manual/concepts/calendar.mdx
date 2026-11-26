@@ -2,7 +2,7 @@
 title: Kalender och schemaläggning
 description: Hur Control Center synkar Google Calendar på servern, hur inloggningen i webbläsaren når fram till en headless server och vad den får ändra i Google.
 slug: sv-SE/handbok/koncept/kalender
-sourceHash: 60f0b846930013e86aa69f61261b0b496b4fb4f6
+sourceHash: d1dbb2bce46b34ac5bdf24cf5b27807f41e61617
 ---
 
 Control Center ansluter till Google Calendar så att din dag finns sida vid sida
@@ -114,14 +114,7 @@ inställningar, så den följer inte med till en annan enhet.
 
 ## Mötesaviseringar
 
-En schemaläggare som körs en gång i minuten letar efter händelser som börjar inom
-ett konfigurerbart tidsfönster före start och skickar en
-**"Mötet börjar snart"**-avisering (en `MeetingStartingSoon`
-[domänhändelse](/sv-SE/handbok/koncept/domanhandelser/)). Aviseringen innehåller
-anslutnings-URL:en när en sådan finns, och ett klick på den öppnar händelsens
-detaljer. Aviseringar avdubbletteras mot händelsens `alertedAt`, så samma möte
-aviseras aldrig två gånger, ens över omstarter, och en händelse vars start
-passerade medan appen var stängd spelas aldrig upp igen.
+En schemaläggare som körs en gång i minuten letar efter händelser som börjar inom ett konfigurerbart tidsfönster före start och skickar en **"Mötet börjar snart"**-avisering (en `MeetingStartingSoon` [domänhändelse](/sv-SE/handbok/koncept/domanhandelser/)). Aviseringen innehåller anslutnings-URL:en när en sådan finns, och ett klick på den öppnar händelsens detaljer. Dess åtgärder **Anslut till mötet** och **Anslut och spela in** fungerar likadant både i bannern i appen och i operativsystemets avisering: de öppnar samtalet utan att först öppna händelsen. En händelse utan samtalslänk erbjuder i stället **Spela in möte**. Aviseringar avdubbletteras mot händelsens `alertedAt`, så samma möte aviseras aldrig två gånger, ens över omstarter, och en händelse vars start passerade medan appen var stängd spelas aldrig upp igen.
 
 Det är lätt att snubbla på två begränsningar. Schemaläggaren körs **klientsidigt
 på skrivbordet** och bara för arbetsytan du just nu har öppen — en arbetsyta du
@@ -136,7 +129,7 @@ utgångspunkt. Control Center lagrar en en-till-en-koppling mellan inspelningen
 och händelsen, så mötets anteckningar och kalenderposten förblir kopplade utan
 att någon av funktionerna är beroende av den andra.
 
-**Starta inspelning och länka** finns bara på skrivbordet. I webbklienten
+**Anslut och spela in** finns bara på skrivbordet. I webbklienten
 meddelar åtgärden att inspelning inte är tillgänglig — även om mötesskärmens
 eget inspelningsflöde faktiskt fungerar i webbläsaren.
 

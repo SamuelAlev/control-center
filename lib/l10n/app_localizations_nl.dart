@@ -13729,6 +13729,14 @@ class AppLocalizationsNl extends AppLocalizations {
   String get subscriptionUsageCredits => 'Tegoed';
 
   @override
+  String get subscriptionUsageBalance => 'Saldo';
+
+  @override
+  String subscriptionUsageBalanceLeft(String amount) {
+    return '$amount over';
+  }
+
+  @override
   String get reviewHubStaticRule => 'Statische regel';
 
   @override

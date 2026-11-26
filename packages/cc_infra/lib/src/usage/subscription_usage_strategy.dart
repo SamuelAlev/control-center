@@ -7,7 +7,8 @@ import 'package:rhttp/rhttp.dart';
 
 /// Fetches live subscription usage for ONE AI coding plan.
 ///
-/// Shared interface for Claude, Codex, Cursor, z.ai, Kimi Code and Mistral. Each
+/// Shared interface for Claude, Codex, Cursor, z.ai, Kimi Code, Mistral and
+/// DeepSeek. Each
 /// provider is its own class in its own file; the only thing they share is
 /// this contract plus [SubscriptionUsageAccount], so multi-account rotation
 /// (pinned / round-robin / serial) can page the same snapshots the title-bar
@@ -24,11 +25,11 @@ abstract class SubscriptionUsageStrategy {
   });
 
   /// Stable provider id (`claude`, `codex`, `cursor`, `zai`, `kimi-code`,
-  /// `mistral`).
+  /// `mistral`, `deepseek`).
   final String providerId;
 
   /// Human display name (`Claude`, `Codex`, `Cursor`, `z.ai`, `Kimi Code`,
-  /// `Mistral`).
+  /// `Mistral`, `DeepSeek`).
   final String displayName;
 
   /// Bound on every outbound usage request.
@@ -97,12 +98,14 @@ abstract class SubscriptionUsageStrategy {
   SubscriptionUsage ok(
     List<SubscriptionWindow> windows, {
     SubscriptionSpend? spend,
+    List<SubscriptionBalance> balances = const [],
   }) => SubscriptionUsage(
     providerId: providerId,
     displayName: displayName,
     status: SubscriptionStatus.ok,
     windows: windows,
     spend: spend,
+    balances: balances,
     fetchedAt: DateTime.now().toUtc(),
   );
 

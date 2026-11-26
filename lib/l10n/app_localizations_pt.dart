@@ -13751,6 +13751,14 @@ class AppLocalizationsPt extends AppLocalizations {
   String get subscriptionUsageCredits => 'Créditos';
 
   @override
+  String get subscriptionUsageBalance => 'Saldo';
+
+  @override
+  String subscriptionUsageBalanceLeft(String amount) {
+    return 'Restam $amount';
+  }
+
+  @override
   String get reviewHubStaticRule => 'Regra estática';
 
   @override

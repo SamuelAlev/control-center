@@ -7895,6 +7895,8 @@
   },
   "subscriptionUsageNoneReported": "Ehhez a fiókhoz nincs jelentett használat.",
   "subscriptionUsageCredits": "Kreditek",
+  "subscriptionUsageBalance": "Egyenleg",
+  "subscriptionUsageBalanceLeft": "{amount} maradt",
   "reviewHubStaticRule": "Statikus szabály",
   "reviewHubStarted": "Átnézés elindítva",
   "reviewHubStaticRuleTooltip": "Determinisztikus szabály ({rule}) találta egy ezen a pull requesten hozzáadott soron — nem átnéző ügynök.",

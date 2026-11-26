@@ -2,7 +2,7 @@
 title: Route map
 description: Every route Control Center registers, with its screen and query parameters.
 slug: en-GB/manual/reference/route-map
-sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
+sourceHash: 34a70ebded7d59308c54ae125e1032f320898fd9
 ---
 
 ## App shell
@@ -40,12 +40,6 @@ Paths below omit the `/workspaces/:workspaceId` prefix.
 | `/pipelines`                            | —                                         | Pipeline run list                                                                                                                                                        |
 | `/pipelines/run`                        | `?templateId=<id>`                        | Manual run launcher                                                                                                                                                      |
 | `/pipelines/:runId`                     | —                                         | Pipeline run detail (step timeline)                                                                                                                                      |
-| `/goals` | — | Goals list, grouped as waiting for review, open and ended |
-| `/goals/:goalId` | `?edit=contract` | One goal: now, what done means, verification, schedules and wakes; `edit=contract` opens the contract editor on a paused goal |
-| `/schedules` | — | Schedules and watches, grouped by status, with **New schedule** |
-| `/schedules/:ruleId` | — | One schedule: note, details, recent wakes and runs |
-| `/improvements` | — | Improvement proposals, grouped by status |
-| `/improvements/:proposalId` | — | One proposal: what changes, evidence, evaluation and decision |
 | `/plans`                                | —                                         | Plan Studio hub: active plans, plan documents, playbooks                                                                                                                 |
 | `/plans/:kind/:id`                      | —                                         | Plan Studio for one plan; `kind` is `orchestration` or `document`                                                                                                        |
 | `/meetings`                             | —                                         | Meetings list                                                                                                                                                            |
@@ -65,7 +59,7 @@ Conversations and threads have **no route of their own** — a thread is a conve
 
 There is **no `/dashboard` route** and no dashboard screen. The analytics surface is `/observability`, reached from the sidebar footer.
 
-There is **no "Plans" sidebar item**. Plan Studio opens as an editor tab from the plan's row in the conversation that produced it; `/plans` and `/plans/:kind/:id` are deep links.
+There is **no "Plans" sidebar item**. Plan Studio opens as an editor tab from the plan's row in the conversation that produced it; `/plans` and `/plans/:kind/:id` are deep links. There is no Goals page either: a goal opens as a tab in the space that owns it.
 
 `/observability` and `/pull-requests/compose` have no entry in the route-title or breadcrumb registries, so both show the bare app name in the window title and no breadcrumb trail.
 
@@ -103,9 +97,11 @@ Settings paths are namespaced by **scope** — `you/`, `workspace/`, `server/` �
 | `/settings/workspace/environments` | Environment definitions: what spaces can start and the tasks their worktrees run |
 | `/settings/workspace/agents`       | Registered agent identities                                                                         |
 | `/settings/workspace/skills`       | Skill configuration                                                                                 |
-| `/settings/memory`                 | Workspace memory: facts, policies, knowledge graph                                                  |
+| `/settings/memory`                 | Workspace memory: facts, policies, improvement proposals (`?tab=improvements`) and the knowledge graph |
+| `/settings/memory/improvements/:proposalId` | One proposal: what changes, evidence, evaluation and decision |
 | `/settings/workspace/permissions`  | Agent permissions: guardrail matrix and what-if probe                                               |
-| `/settings/workspace/schedules` | Schedule limits, the time zone for cron schedules and the digest, and how long server-started runs wait for an answer (admins edit; members read) |
+| `/settings/workspace/schedules` | Schedules and watches, grouped by status, with **New schedule**; then schedule limits, the time zone for cron schedules and the digest, and how long server-started runs wait for an answer (admins edit; members read) |
+| `/settings/workspace/schedules/:ruleId` | One schedule: note, details, recent wakes and runs |
 | `/settings/pipelines`              | Pipeline templates                                                                                  |
 | `/settings/pipelines/:templateId`  | Pipeline template editor (drag-and-drop canvas)                                                     |
 

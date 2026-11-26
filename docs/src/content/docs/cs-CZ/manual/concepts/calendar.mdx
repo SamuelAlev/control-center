@@ -2,7 +2,7 @@
 title: Kalendář a plánování
 description: Jak Control Center na serveru synchronizuje Google Calendar, jak přihlášení v prohlížeči dosáhne na headless server a co smí změnit u Google.
 slug: cs-CZ/prirucka/koncepty/kalendar
-sourceHash: 60f0b846930013e86aa69f61261b0b496b4fb4f6
+sourceHash: d1dbb2bce46b34ac5bdf24cf5b27807f41e61617
 ---
 
 Control Center se připojuje ke Google Calendar, takže máš den vedle flotily.
@@ -100,13 +100,7 @@ takže na jiné zařízení se nepřenese.
 
 ## Upozornění na schůzky
 
-Plánovač jednou za minutu hledá události, které začínají v nastavitelném
-předstihu, a pošle oznámení **"Schůzka brzy začíná"** (`MeetingStartingSoon`,
-[doménová událost](/cs-CZ/prirucka/koncepty/domenove-udalosti/)). Oznámení nese
-adresu pro připojení, pokud nějaká je, a kliknutí otevře detail události.
-Upozornění se proti `alertedAt` události neopakují, takže stejná schůzka
-neupozorní dvakrát, a to ani po restartu, a událost, jejíž začátek uplynul,
-když byla aplikace zavřená, se znovu nepošle.
+Plánovač jednou za minutu hledá události, které začínají v nastavitelném předstihu, a pošle oznámení **"Schůzka brzy začíná"** (`MeetingStartingSoon`, [doménová událost](/cs-CZ/prirucka/koncepty/domenove-udalosti/)). Oznámení nese adresu pro připojení, pokud nějaká je, a kliknutí otevře detail události. Jeho akce **Připojit se ke schůzce** a **Připojit a nahrát** v upozornění v aplikaci i v systémovém oznámení otevřou hovor, aniž by se nejdříve otevřela událost; událost bez odkazu na hovor místo toho nabízí **Nahrát schůzku**. Upozornění se proti `alertedAt` události neopakují, takže stejná schůzka neupozorní dvakrát, a to ani po restartu, a událost, jejíž začátek uplynul, když byla aplikace zavřená, se znovu nepošle.
 
 Na dva limity se snadno narazí. Plánovač běží **na klientovi na počítači**
 a jen pro pracovní prostor, který máš právě otevřený — prostor, ve kterém
@@ -120,7 +114,7 @@ které převezme název události. Control Center uloží mezi nahrávkou a udá
 vazbu jedna ku jedné, takže poznámky schůzky a položka kalendáře zůstanou
 spojené a ani jedna funkce na té druhé nezávisí.
 
-**Spustit nahrávání a propojit** je jen na počítači. Na webovém klientovi
+**Připojit a nahrát** je jen na počítači. Na webovém klientovi
 akce hlásí, že nahrávání není dostupné — přestože vlastní postup nahrávání
 na obrazovce schůzek v prohlížeči funguje.
 

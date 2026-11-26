@@ -2,7 +2,7 @@
 title: Harmonogramy i wybudzenia
 description: Wybudź agenta później, według harmonogramu albo gdy coś się wydarzy, zobacz, co czeka, i co dzieje się przy restarcie lub limicie użycia.
 slug: pl-PL/podrecznik/poradniki/harmonogramy-i-wybudzenia
-sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+sourceHash: 2fdcfd1fe753e4a994491dd6748f64d413dd0e84
 ---
 
 Agent nie śpi ani nie odpytuje w trakcie czekania. Agent albo ty ustawiacie **wybudzenie**: trwałe żądanie rozpoczęcia lub kontynuowania uruchomienia agenta w rozmowie o określonym czasie albo gdy coś się wydarzy. Każde uruchomienie, które serwer rozpoczyna bez wpisywania przez kogoś, zaczyna się jako wybudzenie: następny segment celu, harmonogram, obserwacja, odpowiedź od innego agenta, zakończona praca przekazana dalej, koniec limitu użycia, praca pozostała po restarcie. Wybudzenia są przechowywane w bazie danych obszaru roboczego, więc przetrwają restart.
@@ -34,7 +34,7 @@ Wpisz jedno z poniższych w polu wiadomości rozmowy:
 
 Kompozytor pomaga w ich pisaniu. Po `/loop` albo `/schedule` i spacji lista podpowiedzi oferuje, kiedy harmonogram się uruchomi, i zawęża się, gdy piszesz; wpisz `--` po godzinie, aby zobaczyć limity. Enter albo Tab wybiera wiersz i nic nie wysyła. Wiersz nad tekstem odczytuje wtedy polecenie: kiedy się uruchomi, kiedy się zakończy i czego jeszcze brakuje. Jeśli naciśniesz Enter na poleceniu, którego nie da się odczytać, ten wiersz mówi, co jest nie tak, a szkic zostaje.
 
-Harmonogram możesz też utworzyć na stronie **Harmonogramy** przyciskiem **Nowy harmonogram**: wybierz przestrzeń, rozmowę i agenta, kiedy ma się uruchamiać, od czego zaczyna się każde uruchomienie, zakończenie, limit uruchomień i limit kosztów. **Gdy agent jest zajęty** wybiera między pominięciem tego uruchomienia a czekaniem, aż agent będzie wolny. **Każde uruchomienie** wybiera między rozpoczęciem uruchomienia a samym powiadomieniem z notatką.
+Harmonogram możesz też utworzyć w **Ustawienia → Obszar roboczy → Harmonogramy** przyciskiem **Nowy harmonogram**: wybierz przestrzeń, rozmowę i agenta, kiedy ma się uruchamiać, od czego zaczyna się każde uruchomienie, zakończenie, limit uruchomień i limit kosztów. **Gdy agent jest zajęty** wybiera między pominięciem tego uruchomienia a czekaniem, aż agent będzie wolny. **Każde uruchomienie** wybiera między rozpoczęciem uruchomienia a samym powiadomieniem z notatką.
 
 ## Co ustawiają agenty
 
@@ -67,7 +67,7 @@ Agenty używają narzędzia `wake_me` do tych samych rzeczy oraz do obserwacji:
 
 Wybudzenie, które nie zostało dostarczone, zostawia jeden wiersz w rozmowie z powodem, na przykład **Agent jest wstrzymany.** albo **Budżet blokuje uruchomienie.**
 
-**Strona harmonogramów.** Pasek boczny → **Harmonogramy** wyświetla każdy harmonogram i obserwację, które widzisz, pogrupowane według stanu; harmonogram cron pokazuje swoje trzy następne terminy w twojej strefie czasowej. Otwórz jeden, aby zobaczyć jego notatkę, właściciela, następne uruchomienia, uruchomienia, pominięcia, wydatki i koniec oraz **Ostatnie wybudzenia i uruchomienia**. Każdy harmonogram ma własny adres (`/workspaces/<workspace>/schedules/<id>`).
+**Strona harmonogramów.** **Ustawienia → Obszar roboczy → Harmonogramy** wyświetla każdy harmonogram i obserwację, które widzisz, pogrupowane według stanu; harmonogram cron pokazuje swoje trzy następne terminy w twojej strefie czasowej. Otwórz jeden, aby zobaczyć jego notatkę, właściciela, następne uruchomienia, uruchomienia, pominięcia, wydatki i koniec oraz **Ostatnie wybudzenia i uruchomienia**. Każdy harmonogram ma własny adres (`/workspaces/<workspace>/settings/workspace/schedules/<id>`).
 
 | Działanie | Kto może |
 | --- | --- |
@@ -95,7 +95,7 @@ Na telefonie **Powtarzaj** na ekranie celów uruchamia powtarzający się prompt
 
 ## Limity obszaru roboczego
 
-Administrator obszaru roboczego ustawia limity w **Ustawienia → Obszar roboczy → Harmonogramy**:
+Administrator obszaru roboczego ustawia limity na tej samej stronie, pod listą harmonogramów:
 
 - **Limity harmonogramów**: ile aktywnych lub wstrzymanych harmonogramów może mieć jeden agent w jednej rozmowie (10), w obszarze roboczym (50), a łącznie w całym obszarze roboczym (500); domyślny limit kosztów harmonogramu (50 dolarów); oraz strefa czasowa, której używają harmonogramy cron i codzienne podsumowanie (na początku UTC).
 - **Gdy nikt nie odpowiada**: jak długo uruchomienie rozpoczęte przez serwer czeka na odpowiedź albo zatwierdzenie osoby (domyślnie 72 godziny, od 1 godziny do 7 dni), zanim zatwierdzenie zostanie uznane za odrzucone, a pytanie za bez odpowiedzi (potem wszystko inne, o co zapyta to samo uruchomienie, jest od razu odrzucane), oraz godzina codziennego podsumowania tego, co na ciebie czeka w celach, harmonogramach i innych uruchomieniach rozpoczętych przez serwer.

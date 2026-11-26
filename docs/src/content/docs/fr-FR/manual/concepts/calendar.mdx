@@ -2,7 +2,7 @@
 title: Calendrier et planification
 description: Comment Control Center synchronise Google Calendar sur le serveur, comment la connexion par navigateur atteint un serveur sans interface et ce qu’elle peut modifier chez Google.
 slug: fr-FR/manuel/concepts/calendrier
-sourceHash: 60f0b846930013e86aa69f61261b0b496b4fb4f6
+sourceHash: d1dbb2bce46b34ac5bdf24cf5b27807f41e61617
 ---
 
 Control Center se connecte à Google Calendar pour que votre journée côtoie votre
@@ -122,16 +122,7 @@ propres à ce client ; elle ne vous suit donc pas sur un autre appareil.
 
 ## Alertes de réunion
 
-Un planificateur s’exécute chaque minute, repère les événements qui commencent à
-l’intérieur d’une fenêtre de préavis configurable et déclenche une notification
-**« Réunion imminente »** (un
-[événement de domaine](/fr-FR/manuel/concepts/evenements-de-domaine/)
-`MeetingStartingSoon`). La notification contient l’URL de participation
-lorsqu’une telle URL est présente, et un clic dessus ouvre le détail de
-l’événement. Les alertes sont dédupliquées selon le champ `alertedAt` de
-l’événement : une même réunion n’alerte donc jamais deux fois, même après un
-redémarrage, et un événement dont l’heure de début est passée pendant que
-l’application était fermée n’est jamais rejoué.
+Un planificateur s’exécute chaque minute, repère les événements qui commencent à l’intérieur d’une fenêtre de préavis configurable et déclenche une notification **« Réunion imminente »** (un [événement de domaine](/fr-FR/manuel/concepts/evenements-de-domaine/) `MeetingStartingSoon`). La notification contient l’URL de participation lorsqu’une telle URL est présente, et un clic dessus ouvre le détail de l’événement. Ses actions **Rejoindre la réunion** et **Rejoindre et enregistrer**, sur la bannière de l’application comme sur la notification du système d’exploitation, ouvrent l’appel sans ouvrir l’événement au préalable ; un événement sans lien d’appel propose **Enregistrer la réunion** à la place. Les alertes sont dédupliquées selon le champ `alertedAt` de l’événement : une même réunion n’alerte donc jamais deux fois, même après un redémarrage, et un événement dont l’heure de début est passée pendant que l’application était fermée n’est jamais rejoué.
 
 Deux limites sont faciles à négliger. Le planificateur s’exécute **côté client,
 sur l’ordinateur**, et uniquement pour l’espace de travail que vous avez
@@ -148,7 +139,7 @@ l’enregistrement et l’événement, de sorte que les notes de la réunion et 
 du calendrier restent liées sans que l’une des fonctionnalités dépende de
 l’autre.
 
-**Enregistrer et lier** n’existe que sur l’ordinateur. Dans le client web,
+**Rejoindre et enregistrer** n’existe que sur l’ordinateur. Dans le client web,
 l’action indique que l’enregistrement n’est pas disponible, même si le flux
 d’enregistrement propre à l’écran des réunions fonctionne, lui, dans le
 navigateur.

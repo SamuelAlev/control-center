@@ -7895,6 +7895,8 @@
   },
   "subscriptionUsageNoneReported": "Pro tento účet není nahlášeno žádné využití.",
   "subscriptionUsageCredits": "Kredity",
+  "subscriptionUsageBalance": "Zůstatek na účtu",
+  "subscriptionUsageBalanceLeft": "{amount} zbývá",
   "reviewHubStaticRule": "Statické pravidlo",
   "reviewHubStarted": "Kontrola spuštěna",
   "reviewHubStaticRuleTooltip": "Nalezeno deterministickým pravidlem ({rule}) na řádku, který tento pull request přidává — ne recenzentem-agentem.",

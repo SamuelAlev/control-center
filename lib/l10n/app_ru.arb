@@ -7895,6 +7895,8 @@
   },
   "subscriptionUsageNoneReported": "Для этой учётной записи нет данных об использовании.",
   "subscriptionUsageCredits": "Кредиты",
+  "subscriptionUsageBalance": "Баланс",
+  "subscriptionUsageBalanceLeft": "Осталось {amount}",
   "reviewHubStaticRule": "Статическое правило",
   "reviewHubStarted": "Ревью начато",
   "reviewHubStaticRuleTooltip": "Найдено детерминированным правилом ({rule}) в строке, которую добавляет этот pull request, — не агентом-ревьюером.",

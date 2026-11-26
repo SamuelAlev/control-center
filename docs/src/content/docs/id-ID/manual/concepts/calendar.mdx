@@ -2,7 +2,7 @@
 title: Kalender dan penjadwalan
 description: Cara Control Center menyinkronkan Google Calendar di server, cara proses masuk peramban menjangkau server headless dan apa yang boleh diubahnya di Google.
 slug: id-ID/panduan-pengguna/konsep/kalender
-sourceHash: 60f0b846930013e86aa69f61261b0b496b4fb4f6
+sourceHash: d1dbb2bce46b34ac5bdf24cf5b27807f41e61617
 ---
 
 Control Center terhubung ke Google Calendar agar hari Anda berdampingan dengan
@@ -110,14 +110,7 @@ sendiri, jadi ia tidak mengikuti Anda ke perangkat lain.
 
 ## Peringatan rapat
 
-Penjadwal per menit memindai acara yang mulai dalam jendela pendahulu yang dapat
-dikonfigurasi dan memicu notifikasi **"rapat segera dimulai"** (sebuah
-[peristiwa domain](/id-ID/panduan-pengguna/konsep/peristiwa-domain/)
-`MeetingStartingSoon`). Notifikasi membawa URL bergabung bila ada dan
-mengkliknya akan membuka detail acara. Peringatan dideduplikasi terhadap
-`alertedAt` milik acara, sehingga rapat yang sama tidak pernah memberi peringatan
-dua kali, bahkan setelah mulai ulang, dan acara yang waktu mulainya sudah lewat
-saat aplikasi ditutup tidak pernah diputar ulang.
+Penjadwal per menit memindai acara yang mulai dalam jendela pendahulu yang dapat dikonfigurasi dan memicu notifikasi **"rapat segera dimulai"** (sebuah [peristiwa domain](/id-ID/panduan-pengguna/konsep/peristiwa-domain/) `MeetingStartingSoon`). Notifikasi membawa URL bergabung bila ada dan mengkliknya akan membuka detail acara. Tindakan **Gabung rapat** dan **Gabung dan rekam** pada banner dalam aplikasi maupun notifikasi OS membuka panggilan tanpa membuka acara terlebih dahulu; acara tanpa tautan panggilan menampilkan **Rekam rapat** sebagai gantinya. Peringatan dideduplikasi terhadap `alertedAt` milik acara, sehingga rapat yang sama tidak pernah memberi peringatan dua kali, bahkan setelah mulai ulang, dan acara yang waktu mulainya sudah lewat saat aplikasi ditutup tidak pernah diputar ulang.
 
 Ada dua batas yang mudah membuat Anda keliru. Penjadwal berjalan **di sisi klien
 pada desktop** dan hanya untuk ruang kerja yang sedang Anda buka — ruang kerja
@@ -133,7 +126,7 @@ acara. Control Center menyimpan tautan satu-ke-satu antara rekaman dan acara,
 sehingga catatan rapat dan entri kalender tetap terhubung tanpa salah satu
 fitur bergantung pada yang lain.
 
-**Mulai rekaman & tautkan** hanya tersedia di desktop. Pada klien web, tindakan
+**Gabung dan rekam** hanya tersedia di desktop. Pada klien web, tindakan
 itu melaporkan bahwa perekaman tidak tersedia — padahal alur perekaman di layar
 rapat sendiri memang berfungsi di peramban.
 

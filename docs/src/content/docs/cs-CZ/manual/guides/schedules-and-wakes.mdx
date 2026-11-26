@@ -2,7 +2,7 @@
 title: Plány a probuzení
 description: Probuďte agenta později, podle plánu nebo ve chvíli, kdy se něco stane, sledujte, co čeká, a zjistěte, co se stane při restartu nebo na limitu využití.
 slug: cs-CZ/prirucka/navody/plany-a-probuzeni
-sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+sourceHash: 2fdcfd1fe753e4a994491dd6748f64d413dd0e84
 ---
 
 Agent během čekání nespí ani se neptá dokola. Agent nebo vy nastavíte **probuzení**: trvalý požadavek na spuštění nebo pokračování běhu agenta v konverzaci v daný čas nebo ve chvíli, kdy se něco stane. Každý běh, který server spustí bez toho, aby někdo něco psal, začíná jako probuzení: další segment cíle, plán, sledování, odpověď od jiného agenta, dokončená delegovaná práce, konec limitu využití, práce zbylá po restartu. Probuzení se uchovávají v databázi pracovního prostoru, takže restart přežijí.
@@ -34,7 +34,7 @@ V poli pro psaní zprávy v konverzaci napište jeden z těchto příkazů:
 
 Editor vám s nimi pomůže. Po `/loop` nebo `/schedule` a mezeře nabídne seznam návrhů, kdy se spustí, a při psaní se zúží; za časem napište `--` pro limity. Enter nebo Tab vybere řádek a nic neodešle. Řádek nad textem pak přečte příkaz zpět: kdy se spustí, kdy skončí a co ještě chybí. Když stisknete Enter u příkazu, který nelze přečíst, ten řádek řekne, co je špatně, a váš návrh zůstane.
 
-Plán můžete vytvořit také na stránce **Plány** tlačítkem **Nový plán**: vyberete prostor, konverzaci a agenta, kdy se spustí, z čeho každý běh začíná, konec, limit běhů a limit nákladů. **Pokud je agent zaneprázdněn** určuje, zda se dané spuštění přeskočí, nebo se čeká, až bude agent volný. **Každé spuštění** určuje, zda se spustí běh, nebo vám jen přijde oznámení s poznámkou.
+Plán můžete vytvořit také v **Nastavení → Pracovní prostor → Plány** tlačítkem **Nový plán**: vyberete prostor, konverzaci a agenta, kdy se spustí, z čeho každý běh začíná, konec, limit běhů a limit nákladů. **Pokud je agent zaneprázdněn** určuje, zda se dané spuštění přeskočí, nebo se čeká, až bude agent volný. **Každé spuštění** určuje, zda se spustí běh, nebo vám jen přijde oznámení s poznámkou.
 
 ## Co nastavují agenti
 
@@ -67,7 +67,7 @@ Agenti používají nástroj `wake_me` pro tytéž věci a pro sledování:
 
 Probuzení, které nebylo doručeno, zanechá v konverzaci jeden řádek s důvodem, například **Agent je pozastaven.** nebo **Rozpočet blokuje běh.**
 
-**Stránka Plány.** Postranní panel → **Plány** vypíše každý plán a sledování, které vidíte, seskupené podle stavu; plán s cronem ukazuje svá další tři spuštění ve vašem časovém pásmu. Otevřete jeden a uvidíte jeho poznámku, vlastníka, další spuštění, běhy, přeskočení, výdaje a konec, a **Nedávná probuzení a běhy**. Každý plán má vlastní adresu (`/workspaces/<workspace>/schedules/<id>`).
+**Stránka Plány.** **Nastavení → Pracovní prostor → Plány** vypíše každý plán a sledování, které vidíte, seskupené podle stavu; plán s cronem ukazuje svá další tři spuštění ve vašem časovém pásmu. Otevřete jeden a uvidíte jeho poznámku, vlastníka, další spuštění, běhy, přeskočení, výdaje a konec, a **Nedávná probuzení a běhy**. Každý plán má vlastní adresu (`/workspaces/<workspace>/settings/workspace/schedules/<id>`).
 
 | Akce | Kdo může |
 | --- | --- |
@@ -95,7 +95,7 @@ V telefonu **Opakovat** na obrazovce cílů spustí opakovaný prompt (každých
 
 ## Limity pracovního prostoru
 
-Správce pracovního prostoru nastaví limity v **Nastavení → Pracovní prostor → Plány**:
+Správce pracovního prostoru nastaví limity na téže stránce pod seznamem plánů:
 
 - **Limity plánů**: kolik aktivních nebo pozastavených plánů smí jeden agent držet v jedné konverzaci (10), napříč pracovním prostorem (50) a v celém pracovním prostoru (500); výchozí limit nákladů plánu (50 dolarů); a časové pásmo, které používají plány s cronem a denní přehled (zpočátku UTC).
 - **Když nikdo neodpoví**: jak dlouho čeká běh, který spustil server, na odpověď nebo schválení osoby (ve výchozím nastavení 72 hodin, 1 hodina až 7 dní), než se schválení počítá jako zamítnuté a otázka jako nezodpovězená (poté se každá další otázka nebo žádost stejného běhu hned odmítne), a hodina denního přehledu toho, co na vás čeká v cílech, plánech a dalších bězích, které spustil server.

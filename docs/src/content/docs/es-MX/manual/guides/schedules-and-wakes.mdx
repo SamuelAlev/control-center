@@ -2,7 +2,7 @@
 title: Programaciones y reactivaciones
 description: Reactiva un agente más tarde, según una programación o cuando pase algo, mira qué está esperando y qué pasa en un reinicio o en un límite de uso.
 slug: es-MX/manual/guias/programaciones-reactivaciones
-sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+sourceHash: 2fdcfd1fe753e4a994491dd6748f64d413dd0e84
 ---
 
 Un agente no duerme ni consulta periódicamente mientras espera. El agente, o tú, configura una **reactivación**: una solicitud duradera para iniciar o continuar la ejecución del agente en una conversación, a una hora determinada o cuando algo sucede. Toda ejecución que el servidor inicia sin que alguien escriba empieza como una reactivación: el siguiente segmento de un objetivo, una programación, una vigilancia, una respuesta de otro agente, un trabajo delegado que terminó, el fin de un límite de uso o el trabajo pendiente tras un reinicio. Las reactivaciones se guardan en la base de datos del espacio de trabajo, así que sobreviven a un reinicio.
@@ -34,7 +34,7 @@ Escribe uno de estos comandos en el redactor de una conversación:
 
 El compositor te ayuda a escribirlos. Tras `/loop` o `/schedule` y un espacio, la lista de sugerencias ofrece cuándo se activa y se reduce a medida que escribes; escribe `--` después de la hora para los límites. Enter o Tab elige una fila y no envía nada. Una línea encima de tu texto entonces repite el comando: cuándo se activa, cuándo termina y qué falta. Si presionas Enter en un comando que no se puede leer, esa línea indica qué está mal y tu borrador se conserva.
 
-También puedes crear una programación desde la página **Programaciones** con **Nueva programación**: elige el espacio, la conversación y el agente, cuándo se activa, desde qué empieza cada ejecución, un fin, un límite de ejecuciones y un límite de costo. **Si el agente está ocupado** elige entre omitir esa activación o esperar hasta que el agente quede libre. **En cada activación** elige entre iniciar una ejecución o solo avisarte con la nota.
+También puedes crear una programación en **Ajustes → Espacio de trabajo → Programaciones** con **Nueva programación**: elige el espacio, la conversación y el agente, cuándo se activa, desde qué empieza cada ejecución, un fin, un límite de ejecuciones y un límite de costo. **Si el agente está ocupado** elige entre omitir esa activación o esperar hasta que el agente quede libre. **En cada activación** elige entre iniciar una ejecución o solo avisarte con la nota.
 
 ## Lo que configuran los agentes
 
@@ -67,7 +67,7 @@ Los agentes usan la herramienta `wake_me` para lo mismo, y para las vigilancias:
 
 Una reactivación que no se entregó deja una fila en la conversación que dice por qué, como **El agente está en pausa.** o **Un presupuesto bloquea una ejecución.**
 
-**La página de Programaciones.** Barra lateral → **Programaciones** enumera cada programación y vigilancia que puedes ver, agrupadas por estado; una programación cron muestra sus próximas tres horas en tu zona horaria. Abre una para ver su nota, su dueño, las próximas activaciones, ejecuciones, omisiones, gasto y fin, y **Reactivaciones y ejecuciones recientes**. Cada programación tiene su propia dirección (`/workspaces/<workspace>/schedules/<id>`).
+**La página de Programaciones.** **Ajustes → Espacio de trabajo → Programaciones** enumera cada programación y vigilancia que puedes ver, agrupadas por estado; una programación cron muestra sus próximas tres horas en tu zona horaria. Abre una para ver su nota, su dueño, las próximas activaciones, ejecuciones, omisiones, gasto y fin, y **Reactivaciones y ejecuciones recientes**. Cada programación tiene su propia dirección (`/workspaces/<workspace>/settings/workspace/schedules/<id>`).
 
 | Acción | Quién puede |
 | --- | --- |
@@ -95,7 +95,7 @@ En el teléfono, **Repetir** en la pantalla de objetivos inicia un prompt que se
 
 ## Límites del espacio de trabajo
 
-Un admin del espacio de trabajo define los límites en **Ajustes → Espacio de trabajo → Programaciones**:
+Un admin del espacio de trabajo define los límites en la misma página, debajo de la lista:
 
 - **Límites de programaciones**: cuántas programaciones activas o pausadas puede tener un agente en una conversación (10), para un agente en el espacio de trabajo (50) y en todo el espacio de trabajo (500); el límite de costo por defecto de una programación (50 dólares); y la zona horaria que usan las programaciones cron y el resumen diario (UTC para empezar).
 - **Cuando nadie responde**: cuánto tiempo espera una ejecución que inició el servidor la respuesta o la aprobación de una persona (72 horas por defecto, de 1 hora a 7 días) antes de que una aprobación cuente como denegada y una pregunta como sin respuesta (después de eso, cualquier otra cosa que la misma ejecución pregunte se rechaza de inmediato), y la hora del resumen diario de lo que espera por ti en objetivos, programaciones y otras ejecuciones que inició el servidor.

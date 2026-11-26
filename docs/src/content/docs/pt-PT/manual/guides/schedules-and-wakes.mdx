@@ -2,7 +2,7 @@
 title: Programações e despertares
 description: Desperte um agente mais tarde, numa programação ou quando algo acontece, veja o que está à espera e o que acontece num reinício ou num limite de utilização.
 slug: pt-PT/manual/guias/programacoes-despertares
-sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+sourceHash: 2fdcfd1fe753e4a994491dd6748f64d413dd0e84
 ---
 
 Um agente não dorme nem consulta repetidamente enquanto espera. Ele, ou você, configura um **despertar**: um pedido durável para iniciar ou continuar a execução do agente numa conversa, a uma hora certa ou quando algo acontece. Toda a execução que o servidor inicia sem que alguém escreva começa como um despertar: o próximo segmento de um objetivo, uma programação, um monitor, uma resposta de outro agente, trabalho delegado concluído, o fim de um limite de utilização, o trabalho que sobra após um reinício. Os despertares ficam guardados na base de dados do espaço de trabalho, por isso sobrevivem a um reinício.
@@ -34,7 +34,7 @@ Escreva um destes comandos no compositor de uma conversa:
 
 O compositor ajuda-o a escrevê-las. Depois de `/loop` ou `/schedule` e um espaço, a lista de sugestões mostra quando dispara e vai-se estreitando à medida que escreve; escreva `--` depois da hora para os limites. Enter ou Tab escolhe uma linha e não envia nada. Uma linha acima do texto repete então o comando: quando dispara, quando termina e o que ainda falta. Se premir Enter num comando que não se consegue ler, essa linha diz o que está errado e o rascunho mantém-se.
 
-Também pode criar uma programação a partir da página **Programações** com **Nova programação**: escolha o espaço, a conversa e o agente, quando dispara, de onde parte cada execução, um fim, um limite de execuções e um limite de custo. **Se o agente estiver ocupado** escolhe entre saltar esse disparo e esperar até o agente ficar livre. **Cada disparo** escolhe entre iniciar uma execução ou apenas avisá-lo com a nota.
+Também pode criar uma programação em **Definições → Espaço de trabalho → Programações** com **Nova programação**: escolha o espaço, a conversa e o agente, quando dispara, de onde parte cada execução, um fim, um limite de execuções e um limite de custo. **Se o agente estiver ocupado** escolhe entre saltar esse disparo e esperar até o agente ficar livre. **Cada disparo** escolhe entre iniciar uma execução ou apenas avisá-lo com a nota.
 
 ## O que os agentes preparam
 
@@ -67,7 +67,7 @@ Os agentes usam a ferramenta `wake_me` para as mesmas coisas, e para os monitore
 
 Um despertar que não foi entregue deixa uma linha na conversa a dizer porquê, como **O agente está em pausa.** ou **Um orçamento bloqueia a execução.**
 
-**A página Programações.** Barra lateral → **Programações** lista todas as programações e monitores que pode ver, agrupados por estado; uma programação cron mostra as suas próximas três horas no seu fuso horário. Abra uma para ver a sua nota, o dono, os próximos disparos, as execuções, os saltos, o gasto e o fim, e **Despertares e execuções recentes**. Cada programação tem o seu próprio endereço (`/workspaces/<workspace>/schedules/<id>`).
+**A página Programações.** **Definições → Espaço de trabalho → Programações** lista todas as programações e monitores que pode ver, agrupados por estado; uma programação cron mostra as suas próximas três horas no seu fuso horário. Abra uma para ver a sua nota, o dono, os próximos disparos, as execuções, os saltos, o gasto e o fim, e **Despertares e execuções recentes**. Cada programação tem o seu próprio endereço (`/workspaces/<workspace>/settings/workspace/schedules/<id>`).
 
 | Ação | Quem pode |
 | --- | --- |
@@ -95,7 +95,7 @@ No telemóvel, **Repetir** no ecrã de objetivos inicia um prompt repetido (a ca
 
 ## Limites do espaço de trabalho
 
-Um administrador do espaço de trabalho define os limites em **Definições → Espaço de trabalho → Programações**:
+Um administrador do espaço de trabalho define os limites nesta mesma página, por baixo da lista de programações:
 
 - **Limites de programação**: quantas programações ativas ou em pausa um agente pode ter numa conversa (10), no conjunto do espaço de trabalho (50) e em todo o espaço de trabalho (500); o limite de custo predefinido de uma programação (50 dólares); e o fuso horário usado pelas programações cron e pelo resumo diário (UTC para começar).
 - **Quando ninguém responde**: quanto tempo uma execução iniciada pelo servidor espera pela resposta ou aprovação de uma pessoa (72 horas por predefinição, de 1 hora a 7 dias) antes de uma aprovação contar como recusada e uma pergunta como sem resposta (depois disso, tudo o que a mesma execução pedir é recusado de imediato), e a hora do resumo diário do que aguarda por você em objetivos, programações e outras execuções iniciadas pelo servidor.

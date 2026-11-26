@@ -13664,6 +13664,14 @@ class AppLocalizationsVi extends AppLocalizations {
   String get subscriptionUsageCredits => 'Tín dụng';
 
   @override
+  String get subscriptionUsageBalance => 'Số dư';
+
+  @override
+  String subscriptionUsageBalanceLeft(String amount) {
+    return 'Còn $amount';
+  }
+
+  @override
   String get reviewHubStaticRule => 'Quy tắc tĩnh';
 
   @override

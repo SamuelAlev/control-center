@@ -2,7 +2,7 @@
 title: Peta laluan
 description: Setiap laluan yang didaftarkan Control Center, berserta skrin dan parameter pertanyaannya.
 slug: ms-MY/manual-pengguna/rujukan/peta-laluan
-sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
+sourceHash: 34a70ebded7d59308c54ae125e1032f320898fd9
 ---
 
 ## Cangkerang aplikasi
@@ -40,12 +40,6 @@ Laluan di bawah menggugurkan awalan `/workspaces/:workspaceId`.
 | `/pipelines`                            | —                                         | Senarai larian pipeline                                                                                                                                                  |
 | `/pipelines/run`                        | `?templateId=<id>`                        | Pelancar larian manual                                                                                                                                                   |
 | `/pipelines/:runId`                     | —                                         | Butiran larian pipeline (garis masa langkah)                                                                                                                             |
-| `/goals` | — | Senarai matlamat, dikumpulkan sebagai menunggu kajian, terbuka dan tamat |
-| `/goals/:goalId` | `?edit=contract` | Satu matlamat: kini, maksud siap, pengesahan, jadual dan panggilan bangun; `edit=contract` membuka penyunting kontrak pada matlamat yang dijeda |
-| `/schedules` | — | Jadual dan pantauan, dikumpulkan mengikut status, dengan **Jadual baharu** |
-| `/schedules/:ruleId` | — | Satu jadual: nota, butiran, panggilan bangun dan larian terkini |
-| `/improvements` | — | Cadangan penambahbaikan, dikumpulkan mengikut status |
-| `/improvements/:proposalId` | — | Satu cadangan: apa yang berubah, bukti, penilaian dan keputusan |
 | `/plans`                                | —                                         | Hab Plan Studio: rancangan aktif, dokumen rancangan, buku panduan                                                                                                         |
 | `/plans/:kind/:id`                      | —                                         | Plan Studio untuk satu rancangan; `kind` ialah `orchestration` atau `document`                                                                                            |
 | `/meetings`                             | —                                         | Senarai mesyuarat                                                                                                                                                        |
@@ -65,7 +59,7 @@ Perbualan dan benang **tiada laluan sendiri** — benang ialah perbualan di dala
 
 Tiada **laluan `/dashboard`** dan tiada skrin papan pemuka. Permukaan analitik ialah `/observability`, dicapai daripada pengaki bar sisi.
 
-Tiada **item "Plans" dalam bar sisi**. Plan Studio terbuka sebagai tab editor daripada baris rancangan itu dalam perbualan yang menghasilkannya; `/plans` dan `/plans/:kind/:id` ialah pautan dalam.
+Tiada **item "Plans" dalam bar sisi**. Plan Studio terbuka sebagai tab editor daripada baris rancangan itu dalam perbualan yang menghasilkannya; `/plans` dan `/plans/:kind/:id` ialah pautan dalam. Tiada juga halaman Matlamat: matlamat dibuka sebagai tab dalam ruang yang memilikinya.
 
 `/observability` dan `/pull-requests/compose` tiada entri dalam daftar tajuk laluan atau remah roti, jadi kedua-duanya memaparkan nama apl kosong dalam tajuk tetingkap dan tiada jejak remah roti.
 
@@ -103,9 +97,11 @@ Laluan tetapan menggunakan ruang nama mengikut **skop** — `you/`, `workspace/`
 | `/settings/workspace/environments` | Definisi persekitaran: apa yang boleh dimulakan ruang dan tugasan yang dijalankan worktree mereka |
 | `/settings/workspace/agents`       | Identiti ejen yang didaftarkan                                                                       |
 | `/settings/workspace/skills`       | Konfigurasi kemahiran                                                                                |
-| `/settings/memory`                 | Memori ruang kerja: fakta, polisi, graf pengetahuan                                                  |
+| `/settings/memory`                 | Memori ruang kerja: fakta, polisi, cadangan penambahbaikan (`?tab=improvements`) dan graf pengetahuan |
+| `/settings/memory/improvements/:proposalId` | Satu cadangan: apa yang berubah, bukti, penilaian dan keputusan |
 | `/settings/workspace/permissions`  | Kebenaran ejen: matriks guardrail dan prob Bagaimana jika?                                           |
-| `/settings/workspace/schedules` | Had jadual, zon masa untuk jadual cron dan ringkasan, dan berapa lama larian yang dimulakan pelayan menunggu jawapan (pentadbir menyunting; ahli membaca) |
+| `/settings/workspace/schedules` | Jadual dan pantauan, dikumpulkan mengikut status, dengan **Jadual baharu**; kemudian had jadual, zon masa untuk jadual cron dan ringkasan, dan berapa lama larian yang dimulakan pelayan menunggu jawapan (pentadbir menyunting; ahli membaca) |
+| `/settings/workspace/schedules/:ruleId` | Satu jadual: nota, butiran, panggilan bangun dan larian terkini |
 | `/settings/pipelines`              | Templat pipeline                                                                                     |
 | `/settings/pipelines/:templateId`  | Editor templat pipeline (kanvas seret dan lepas)                                                     |
 

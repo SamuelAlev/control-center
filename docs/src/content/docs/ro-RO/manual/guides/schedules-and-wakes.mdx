@@ -2,7 +2,7 @@
 title: Programe și treziri
 description: Trezește un agent mai târziu, după un program sau când se întâmplă ceva, vezi ce așteaptă și ce se întâmplă la o repornire sau la o limită de utilizare.
 slug: ro-RO/manual/ghiduri-practice/programe-si-treziri
-sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+sourceHash: 2fdcfd1fe753e4a994491dd6748f64d413dd0e84
 ---
 
 Un agent nu doarme și nu verifică în continuu cât așteaptă. El sau tu setezi o **trezire**: o cerere durabilă de a porni sau continua rularea agentului dintr-o conversație, la un moment dat sau când se întâmplă ceva. Fiecare rulare pe care serverul o pornește fără ca cineva să scrie începe ca o trezire: următorul segment al unui obiectiv, un program, o urmărire, un răspuns de la alt agent, lucrul delegat terminat, sfârșitul unei limite de utilizare, munca rămasă după o repornire. Trezirile sunt păstrate în baza de date a spațiului de lucru, deci supraviețuiesc unei reporniri.
@@ -34,7 +34,7 @@ Scrie una dintre acestea în compozitorul unei conversații:
 
 Compozitorul te ajută să le scrii. După `/loop` sau `/schedule` și un spațiu, lista de sugestii oferă când se declanșează și se restrânge pe măsură ce scrii; scrie `--` după oră pentru limite. Enter sau Tab alege un rând și nu trimite nimic. O linie deasupra textului tău reia apoi comanda: când se declanșează, când se încheie și ce mai lipsește. Dacă apeși Enter pe o comandă care nu poate fi citită, linia respectivă spune ce nu este în regulă, iar schița ta rămâne.
 
-Poți crea un program și din pagina **Programe**, cu **Program nou**: alegi spațiul, conversația și agentul, când se declanșează, ce pornește fiecare rulare, un final, un plafon de rulări și un plafon de cost. **Dacă agentul este ocupat** alege între a sări peste acea pornire și a aștepta până când agentul devine liber. **Fiecare pornire** alege între a porni o rulare și a te anunța doar, cu nota.
+Poți crea un program și sub **Setări → Spațiu de lucru → Programe**, cu **Program nou**: alegi spațiul, conversația și agentul, când se declanșează, ce pornește fiecare rulare, un final, un plafon de rulări și un plafon de cost. **Dacă agentul este ocupat** alege între a sări peste acea pornire și a aștepta până când agentul devine liber. **Fiecare pornire** alege între a porni o rulare și a te anunța doar, cu nota.
 
 ## Ce pregătesc agenții
 
@@ -67,7 +67,7 @@ Agenții folosesc instrumentul `wake_me` pentru aceleași lucruri și pentru urm
 
 O trezire care nu a fost livrată lasă un rând în conversație care spune de ce, cum ar fi **Agentul este pus pe pauză.** sau **Un buget blochează o rulare.**
 
-**Pagina Programe.** Bara laterală → **Programe** listează fiecare program și fiecare urmărire pe care le poți vedea, grupate după stare; un program cron arată următoarele trei momente în fusul tău orar. Deschide unul ca să vezi nota lui, proprietarul, următoarele declanșări, rulările, săriturile, cheltuiala și finalul, plus **Treziri și rulări recente**. Fiecare program are propria adresă (`/workspaces/<workspace>/schedules/<id>`).
+**Pagina Programe.** **Setări → Spațiu de lucru → Programe** listează fiecare program și fiecare urmărire pe care le poți vedea, grupate după stare; un program cron arată următoarele trei momente în fusul tău orar. Deschide unul ca să vezi nota lui, proprietarul, următoarele declanșări, rulările, săriturile, cheltuiala și finalul, plus **Treziri și rulări recente**. Fiecare program are propria adresă (`/workspaces/<workspace>/settings/workspace/schedules/<id>`).
 
 | Acțiune | Cine poate |
 | --- | --- |
@@ -95,7 +95,7 @@ Pe telefon, **Repetă** de pe ecranul de obiective pornește un prompt care se r
 
 ## Limite ale spațiului de lucru
 
-Un admin al spațiului de lucru setează limitele în **Setări → Spațiu de lucru → Programe**:
+Un admin al spațiului de lucru setează limitele pe aceeași pagină, sub listă:
 
 - **Limite de programe**: câte programe active sau pe pauză poate avea un agent într-o conversație (10), în spațiul de lucru (50) și în întregul spațiu de lucru (500); plafonul implicit de cost al unui program (50 de dolari); și fusul orar folosit de programele cron și de digestul zilnic (UTC inițial).
 - **Când nimeni nu răspunde**: cât așteaptă o rulare pornită de server un răspuns sau o aprobare a unei persoane (72 de ore implicit, între 1 oră și 7 zile), înainte ca o aprobare să fie considerată refuzată și o întrebare fără răspuns (după aceea, orice altceva cere aceeași rulare este refuzat imediat), și ora digestului zilnic cu ce te așteaptă în obiective, programe și alte rulări pornite de server.

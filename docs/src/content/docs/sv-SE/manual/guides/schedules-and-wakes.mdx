@@ -2,7 +2,7 @@
 title: Scheman och väckningar
 description: Väck en agent senare, enligt ett schema eller när något händer, se vad som väntar och vad som händer vid en omstart eller en användningsgräns.
 slug: sv-SE/handbok/how-to-guider/scheman-vackningar
-sourceHash: 4f582a5287658e2bb849fafc980c2731467ea1a6
+sourceHash: 2fdcfd1fe753e4a994491dd6748f64d413dd0e84
 ---
 
 En agent sover inte och kollar inte om hela tiden medan den väntar. Den, eller du, ställer in en **väckning**: en varaktig begäran om att starta eller fortsätta agentens körning i en konversation vid en tid eller när något händer. Varje körning som servern startar utan att någon skriver börjar som en väckning: nästa segment i ett mål, ett schema, en bevakning, ett svar från en annan agent, färdigt delegerat arbete, slutet på en användningsgräns, arbetet som blir kvar efter en omstart. Väckningar sparas i arbetsytans databas, så de överlever en omstart.
@@ -34,7 +34,7 @@ Skriv ett av dessa i en konversations skrivfält:
 
 Skrivfältet hjälper dig att skriva dem. Efter `/loop` eller `/schedule` och ett mellanslag visar förslagslistan när de körs och smalnar av när du skriver; skriv `--` efter tiden för gränserna. Enter eller Tab väljer en rad och skickar inget. En rad ovanför din text läser sedan upp kommandot: när det körs, när det slutar och vad som ännu saknas. Om du trycker på Enter på ett kommando som inte kan läsas säger den raden vad som är fel, och ditt utkast finns kvar.
 
-Du kan också skapa ett schema från sidan **Scheman** med **Nytt schema**: välj ytan, konversationen och agenten, när det ska köras, vad varje körning startar från, ett slut, en gräns för körningar och en kostnadsgräns. **Om agenten är upptagen** väljer mellan att hoppa över den körningen och att vänta tills agenten är ledig. **Vid varje körning** väljer mellan att starta en körning och att bara meddela dig med noteringen.
+Du kan också skapa ett schema under **Inställningar → Arbetsyta → Scheman** med **Nytt schema**: välj ytan, konversationen och agenten, när det ska köras, vad varje körning startar från, ett slut, en gräns för körningar och en kostnadsgräns. **Om agenten är upptagen** väljer mellan att hoppa över den körningen och att vänta tills agenten är ledig. **Vid varje körning** väljer mellan att starta en körning och att bara meddela dig med noteringen.
 
 ## Vad agenter ställer in
 
@@ -67,7 +67,7 @@ Agenter använder verktyget `wake_me` för samma saker, och för bevakningar:
 
 En väckning som inte levererades lämnar en rad i konversationen som säger varför, till exempel **Agenten är pausad.** eller **En budget blockerar en körning.**
 
-**Schemasidan.** Sidomenyn → **Scheman** listar varje schema och varje bevakning du kan se, grupperade efter status; ett cron-schema visar sina tre nästa tider i din tidszon. Öppna ett för att se dess notering, ägare, nästa körningar, körningar, överhoppningar, kostnad och slut, och **Senaste väckningar och körningar**. Varje schema har en egen adress (`/workspaces/<workspace>/schedules/<id>`).
+**Schemasidan.** **Inställningar → Arbetsyta → Scheman** listar varje schema och varje bevakning du kan se, grupperade efter status; ett cron-schema visar sina tre nästa tider i din tidszon. Öppna ett för att se dess notering, ägare, nästa körningar, körningar, överhoppningar, kostnad och slut, och **Senaste väckningar och körningar**. Varje schema har en egen adress (`/workspaces/<workspace>/settings/workspace/schedules/<id>`).
 
 | Åtgärd | Vem som kan |
 | --- | --- |
@@ -95,7 +95,7 @@ På telefonen startar **Upprepa** på målvyn en upprepad prompt (var så många
 
 ## Gränser för arbetsytan
 
-En arbetsytans administratör anger gränserna under **Inställningar → Arbetsyta → Scheman**:
+En arbetsytans administratör anger gränserna på samma sida, under listan:
 
 - **Gränser för scheman**: hur många aktiva eller pausade scheman en agent får ha i en konversation (10), över arbetsytan (50) och i hela arbetsytan (500); schemats standardkostnadsgräns (50 dollar); och tidszonen som cron-scheman och den dagliga sammanfattningen använder (UTC till att börja med).
 - **När ingen svarar**: hur länge en körning som servern startade väntar på en persons svar eller godkännande (72 timmar som standard, 1 timme till 7 dagar) innan ett godkännande räknas som nekat och en fråga som obesvarad (därefter avvisas allt annat som samma körning frågar om direkt), och timmen för den dagliga sammanfattningen av vad som väntar på dig i mål, scheman och andra körningar som servern startade.

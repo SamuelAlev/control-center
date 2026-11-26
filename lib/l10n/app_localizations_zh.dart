@@ -13246,6 +13246,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get subscriptionUsageCredits => '额度';
 
   @override
+  String get subscriptionUsageBalance => '余额';
+
+  @override
+  String subscriptionUsageBalanceLeft(String amount) {
+    return '剩余 $amount';
+  }
+
+  @override
   String get reviewHubStaticRule => '静态规则';
 
   @override
@@ -34280,6 +34288,14 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get subscriptionUsageCredits => '點數';
+
+  @override
+  String get subscriptionUsageBalance => '結餘';
+
+  @override
+  String subscriptionUsageBalanceLeft(String amount) {
+    return '剩餘 $amount';
+  }
 
   @override
   String get reviewHubStaticRule => '靜態規則';
@@ -55320,6 +55336,14 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get subscriptionUsageCredits => '點數';
+
+  @override
+  String get subscriptionUsageBalance => '餘額';
+
+  @override
+  String subscriptionUsageBalanceLeft(String amount) {
+    return '剩餘 $amount';
+  }
 
   @override
   String get reviewHubStaticRule => '靜態規則';

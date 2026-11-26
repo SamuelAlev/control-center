@@ -7895,6 +7895,8 @@
   },
   "subscriptionUsageNoneReported": "اس اکاؤنٹ کا کوئی استعمال رپورٹ نہیں۔",
   "subscriptionUsageCredits": "کریڈٹس",
+  "subscriptionUsageBalance": "اکاؤنٹ بیلنس",
+  "subscriptionUsageBalanceLeft": "{amount} باقی",
   "reviewHubStaticRule": "جامد قاعدہ",
   "reviewHubStarted": "ریویو شروع ہوا",
   "reviewHubStaticRuleTooltip": "اس pull request کی شامل لائن پر تعیناتی قاعدے (⁨{rule}⁩) سے ملا — ریویوور ایجنٹ سے نہیں۔",

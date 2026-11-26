@@ -2,7 +2,7 @@
 title: Bản đồ tuyến
 description: Mọi tuyến mà Control Center đăng ký, kèm màn hình và tham số truy vấn của nó.
 slug: vi-VN/so-tay/tham-chieu/ban-do-tuyen
-sourceHash: 65b8fc0dcc11a2ac05ef38fd14999264c5d98ee8
+sourceHash: 34a70ebded7d59308c54ae125e1032f320898fd9
 ---
 
 ## Khung ứng dụng
@@ -40,12 +40,6 @@ Các đường dẫn bên dưới lược bỏ tiền tố `/workspaces/:workspa
 | `/pipelines`                           | —                                         | Danh sách lần chạy quy trình                                                                                                                                             |
 | `/pipelines/run`                       | `?templateId=<id>`                        | Trình khởi chạy thủ công                                                                                                                                                 |
 | `/pipelines/:runId`                    | —                                         | Chi tiết lần chạy quy trình (dòng thời gian các bước)                                                                                                                     |
-| `/goals` | — | Danh sách mục tiêu, nhóm theo: đang chờ đánh giá, đang mở và đã kết thúc |
-| `/goals/:goalId` | `?edit=contract` | Một mục tiêu: hiện tại, hoàn thành khi, xác minh, lịch và lượt đánh thức; `edit=contract` mở trình sửa hợp đồng trên một mục tiêu đang tạm dừng |
-| `/schedules` | — | Lịch và watch, nhóm theo trạng thái, với **Lịch mới** |
-| `/schedules/:ruleId` | — | Một lịch: ghi chú, chi tiết, các lượt đánh thức và lần chạy gần đây |
-| `/improvements` | — | Các đề xuất cải tiến, nhóm theo trạng thái |
-| `/improvements/:proposalId` | — | Một đề xuất: thay đổi gì, bằng chứng, đánh giá và quyết định |
 | `/plans`                               | —                                         | Trung tâm Studio kế hoạch: kế hoạch đang hoạt động, tài liệu kế hoạch, playbook                                                                                           |
 | `/plans/:kind/:id`                     | —                                         | Studio kế hoạch cho một kế hoạch; `kind` là `orchestration` hoặc `document`                                                                                                |
 | `/meetings`                            | —                                         | Danh sách cuộc họp                                                                                                                                                       |
@@ -65,7 +59,7 @@ Hội thoại và luồng **không có tuyến riêng** — một luồng là m�
 
 Không có **tuyến `/dashboard`** và cũng không có màn hình bảng điều khiển. Bề mặt phân tích là `/observability`, truy cập từ chân thanh bên.
 
-Không có **mục "Kế hoạch" nào trên thanh bên**. Studio kế hoạch mở dưới dạng thẻ trình soạn thảo từ hàng của kế hoạch trong hội thoại đã tạo ra nó; `/plans` và `/plans/:kind/:id` là những liên kết sâu.
+Không có **mục "Kế hoạch" nào trên thanh bên**. Studio kế hoạch mở dưới dạng thẻ trình soạn thảo từ hàng của kế hoạch trong hội thoại đã tạo ra nó; `/plans` và `/plans/:kind/:id` là những liên kết sâu. Cũng không có trang Mục tiêu nào: một mục tiêu mở dưới dạng thẻ trong không gian sở hữu nó.
 
 `/observability` và `/pull-requests/compose` không có mục nào trong sổ đăng ký tiêu đề tuyến hay đường dẫn điều hướng, nên cả hai đều hiển thị tên ứng dụng trần trong tiêu đề cửa sổ và không có vệt đường dẫn điều hướng.
 
@@ -103,9 +97,11 @@ Các đường dẫn cài đặt được đặt trong không gian tên theo **p
 | `/settings/workspace/environments` | Định nghĩa môi trường: những gì space có thể khởi động và các tác vụ worktree chạy |
 | `/settings/workspace/agents`       | Danh tính agent đã đăng ký                                                                          |
 | `/settings/workspace/skills`       | Cấu hình kỹ năng                                                                                    |
-| `/settings/memory`                 | Bộ nhớ không gian làm việc: dữ kiện, chính sách, đồ thị tri thức                                     |
+| `/settings/memory`                 | Bộ nhớ không gian làm việc: dữ kiện, chính sách, đề xuất cải tiến (`?tab=improvements`) và đồ thị tri thức |
+| `/settings/memory/improvements/:proposalId` | Một đề xuất: thay đổi gì, bằng chứng, đánh giá và quyết định |
 | `/settings/workspace/permissions`  | Quyền của agent: ma trận rào chắn và phép thử giả định                                              |
-| `/settings/workspace/schedules` | Giới hạn lịch, múi giờ cho lịch cron và bản tóm tắt, và thời gian các lần chạy do máy chủ khởi động chờ một câu trả lời (quản trị viên chỉnh sửa; thành viên chỉ đọc) |
+| `/settings/workspace/schedules` | Lịch và watch, nhóm theo trạng thái, với **Lịch mới**; sau đó giới hạn lịch, múi giờ cho lịch cron và bản tóm tắt, và thời gian các lần chạy do máy chủ khởi động chờ một câu trả lời (quản trị viên chỉnh sửa; thành viên chỉ đọc) |
+| `/settings/workspace/schedules/:ruleId` | Một lịch: ghi chú, chi tiết, các lượt đánh thức và lần chạy gần đây |
 | `/settings/pipelines`              | Mẫu quy trình                                                                                       |
 | `/settings/pipelines/:templateId`  | Trình soạn mẫu quy trình (canvas kéo thả)                                                           |
 

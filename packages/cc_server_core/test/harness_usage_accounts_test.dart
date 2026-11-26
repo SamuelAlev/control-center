@@ -109,6 +109,14 @@ void main() {
             apiKey: '  ',
           ),
         ],
+        'deepseek': [
+          const ProviderCredential(
+            providerId: 'deepseek',
+            method: HarnessAuthMethod.apiKey,
+            apiKey: 'deepseek-1',
+            accountLabel: 'prepaid',
+          ),
+        ],
       });
 
       final accounts = await collectHarnessUsageAccounts(store: store);
@@ -121,6 +129,7 @@ void main() {
         'cursor',
         'codex',
         'mistral',
+        'deepseek',
       ]);
       expect(
         accounts
@@ -148,6 +157,10 @@ void main() {
       expect(mistral.apiKey, 'mistral-1');
       expect(mistral.accountLabel, 'vibe');
       expect(mistral.baseUrl, 'https://api.mistral.ai/v1');
+      // A DeepSeek key is prepaid: every key reports its own balance.
+      final deepseek = accounts.singleWhere((a) => a.providerId == 'deepseek');
+      expect(deepseek.apiKey, 'deepseek-1');
+      expect(deepseek.accountLabel, 'prepaid');
     },
   );
 

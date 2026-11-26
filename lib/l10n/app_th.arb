@@ -8307,6 +8307,8 @@
   },
   "subscriptionUsageNoneReported": "ไม่มีการใช้งานที่รายงานสำหรับบัญชีนี้",
   "subscriptionUsageCredits": "เครดิต",
+  "subscriptionUsageBalance": "ยอดคงเหลือ",
+  "subscriptionUsageBalanceLeft": "เหลือ {amount}",
   "reviewHubStaticRule": "กฎคงที่",
   "reviewHubStarted": "เริ่มรีวิวแล้ว",
   "reviewHubStaticRuleTooltip": "พบโดยกฎเชิงกำหนด ({rule}) บนบรรทัดที่ pull request นี้เพิ่ม — ไม่ใช่โดยเอเจนต์ผู้รีวิว",

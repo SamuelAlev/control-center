@@ -119,7 +119,13 @@ class _ProviderUsage extends ConsumerWidget implements CcFluidHoverTarget {
     final usage = accounts[index < 0 ? 0 : index];
     final multiple = accounts.length > 1;
     final readings = _readings(usage, l10n);
-    final note = readings.isEmpty ? _note(usage, l10n) : null;
+    // A prepaid account reads in money left, which has no meter to draw.
+    final balances = usage.status == SubscriptionStatus.ok
+        ? usage.balances
+        : const <SubscriptionBalance>[];
+    final note = readings.isEmpty && balances.isEmpty
+        ? _note(usage, l10n)
+        : null;
     final noteTint = switch (usage.status) {
       SubscriptionStatus.exhausted => t.textErrorPrimary,
       SubscriptionStatus.signInRequired => t.textWarningPrimary,
@@ -167,7 +173,12 @@ class _ProviderUsage extends ConsumerWidget implements CcFluidHoverTarget {
           ? TrayUsageLine(
               leading: provider,
               leadingWidth: leadingWidth,
-              child: TrayUsageNote(text: note!, tint: noteTint),
+              child: note != null
+                  ? TrayUsageNote(text: note, tint: noteTint)
+                  : CcTooltip(
+                      message: l10n.subscriptionUsageBalance,
+                      child: TrayBalanceAmount(balance: balances.first),
+                    ),
             )
           : TrayWindowMeter(
               reading: readings.reduce(
@@ -200,6 +211,7 @@ class _ProviderUsage extends ConsumerWidget implements CcFluidHoverTarget {
           else ...[
             const SizedBox(height: AppSpacing.xs),
             for (final reading in readings) TrayWindowMeter(reading: reading),
+            for (final balance in balances) TrayBalanceLine(balance: balance),
           ],
         ],
       );
