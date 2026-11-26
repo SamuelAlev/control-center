@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:cc_ui/src/components/cc_sidebar.dart';
 import 'package:cc_ui/src/components/cc_tooltip.dart';
+import 'package:cc_ui/src/components/cc_truncated_text.dart';
 import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
 import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
@@ -182,10 +183,11 @@ class CcSidebarItem extends StatelessWidget implements CcFluidHoverTarget {
                                 ],
                               ),
                             )
-                          : Text(
+                          // An ellipsized label shows its full text on
+                          // hover/focus.
+                          : CcTruncatedText(
                               label,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              tooltipPlacement: CcTooltipPlacement.end,
                               style: TextStyle(
                                 fontSize: _labelSize,
                                 height: _labelHeight,

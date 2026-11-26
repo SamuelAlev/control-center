@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cc_domain/core/domain/entities/agent_shell_process.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/hover_focus_reveal.dart';
 import 'package:control_center/features/sandboxing/providers/agent_shell_providers.dart';
 import 'package:control_center/features/sandboxing/providers/terminal_sessions_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -133,37 +134,42 @@ class _TerminalRow extends StatelessWidget {
         : (mirror.session.agentId.isEmpty
               ? l10n.terminal
               : mirror.session.agentId);
-    return CcTappable(
-      onPressed: onTap,
-      semanticLabel: l10n.focusTerminal,
-      builder: (context, states) {
-        final hovered = states.contains(WidgetState.hovered);
-        return _RowShell(
-          hovered: hovered,
-          child: Row(
-            children: [
-              const CcStatusDot(tone: CcStatusTone.positive),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 13, color: t.textSecondary),
+    return HoverFocusReveal(
+      builder: (context, revealed) => CcTappable(
+        onPressed: onTap,
+        semanticLabel: l10n.focusTerminal,
+        builder: (context, states) {
+          final hovered = states.contains(WidgetState.hovered);
+          return _RowShell(
+            hovered: hovered,
+            child: Row(
+              children: [
+                const CcStatusDot(tone: CcStatusTone.positive),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 13, color: t.textSecondary),
+                  ),
                 ),
-              ),
-              // Hover only, like the BROWSERS rows' ×: the list reads clean at
-              // rest, and ending the shell is the one action a row carries.
-              if (hovered)
-                _RowAction(
-                  icon: AppIcons.trash2,
-                  label: l10n.killTerminal,
-                  onPressed: onKill,
+                // On hover or focus, like the BROWSERS rows' ×: the list reads
+                // clean at rest, and ending the shell is the one action a row
+                // carries. Always mounted, so Tab from the row reaches it.
+                HoverFocusReveal.fade(
+                  revealed: revealed,
+                  child: _RowAction(
+                    icon: AppIcons.trash2,
+                    label: l10n.killTerminal,
+                    onPressed: onKill,
+                  ),
                 ),
-            ],
-          ),
-        );
-      },
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }
@@ -220,60 +226,67 @@ class _AgentCommandRowState extends ConsumerState<_AgentCommandRow> {
     final firstLine = p.command.split('\n').first;
     final elapsed = _compactElapsed(context, p.startedAt);
     final status = _stopping ? l10n.agentCommandStopping : elapsed;
-    return CcTappable(
-      onPressed: widget.onOpen,
-      semanticLabel:
-          '${l10n.viewLogs}: ${l10n.agentCommandSemantics(firstLine, elapsed)}',
-      builder: (context, states) {
-        final hovered = states.contains(WidgetState.hovered);
-        return _RowShell(
-          hovered: hovered,
-          child: Row(
-            children: [
-              CcStatusDot(
-                tone: _stopping ? CcStatusTone.neutral : CcStatusTone.positive,
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Icon(AppIcons.bot, size: 14, color: t.textSecondary),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: CcTooltip(
-                  message: p.command,
-                  // RTL carve-out: a shell command reads left to right.
-                  child: Text(
-                    firstLine,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textDirection: TextDirection.ltr,
-                    style: CcFonts.code(
-                      textStyle: TextStyle(
-                        fontSize: 12,
-                        color: t.textSecondary,
+    return HoverFocusReveal(
+      builder: (context, revealed) => CcTappable(
+        onPressed: widget.onOpen,
+        semanticLabel:
+            '${l10n.viewLogs}: ${l10n.agentCommandSemantics(firstLine, elapsed)}',
+        builder: (context, states) {
+          final hovered = states.contains(WidgetState.hovered);
+          return _RowShell(
+            hovered: hovered,
+            child: Row(
+              children: [
+                CcStatusDot(
+                  tone: _stopping
+                      ? CcStatusTone.neutral
+                      : CcStatusTone.positive,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Icon(AppIcons.bot, size: 14, color: t.textSecondary),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: CcTooltip(
+                    message: p.command,
+                    // RTL carve-out: a shell command reads left to right.
+                    child: Text(
+                      firstLine,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textDirection: TextDirection.ltr,
+                      style: CcFonts.code(
+                        textStyle: TextStyle(
+                          fontSize: 12,
+                          color: t.textSecondary,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: AppSpacing.xs),
-              Text(
-                status,
-                maxLines: 1,
-                style: CcFonts.numeric(
-                  textStyle: TextStyle(fontSize: 11, color: t.textQuaternary),
-                ),
-              ),
-              if (hovered && !_stopping) ...[
                 const SizedBox(width: AppSpacing.xs),
-                _RowAction(
-                  icon: AppIcons.circleStop,
-                  label: l10n.stopAgentCommand,
-                  onPressed: () => unawaited(_stop()),
+                Text(
+                  status,
+                  maxLines: 1,
+                  style: CcFonts.numeric(
+                    textStyle: TextStyle(fontSize: 11, color: t.textQuaternary),
+                  ),
                 ),
+                if (!_stopping) ...[
+                  const SizedBox(width: AppSpacing.xs),
+                  HoverFocusReveal.fade(
+                    revealed: revealed,
+                    child: _RowAction(
+                      icon: AppIcons.circleStop,
+                      label: l10n.stopAgentCommand,
+                      onPressed: () => unawaited(_stop()),
+                    ),
+                  ),
+                ],
               ],
-            ],
-          ),
-        );
-      },
+            ),
+          );
+        },
+      ),
     );
   }
 }
@@ -311,32 +324,29 @@ class _RowAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
-    return Semantics(
-      button: true,
-      label: label,
-      child: CcTooltip(
-        message: label,
-        child: CcTappable(
-          onPressed: onPressed,
-          borderRadius: AppRadii.brSm,
-          builder: (context, states) {
-            final over = states.contains(WidgetState.hovered);
-            return Container(
-              width: _kRowActionExtent,
-              height: _kRowActionExtent,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: over ? t.hoverStrong : const Color(0x00000000),
-                borderRadius: AppRadii.brSm,
-              ),
-              child: Icon(
-                icon,
-                size: 14,
-                color: over ? t.textPrimary : t.textSecondary,
-              ),
-            );
-          },
-        ),
+    return CcTooltip(
+      message: label,
+      child: CcTappable(
+        onPressed: onPressed,
+        semanticLabel: label,
+        borderRadius: AppRadii.brSm,
+        builder: (context, states) {
+          final over = states.contains(WidgetState.hovered);
+          return Container(
+            width: _kRowActionExtent,
+            height: _kRowActionExtent,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: over ? t.hoverStrong : const Color(0x00000000),
+              borderRadius: AppRadii.brSm,
+            ),
+            child: Icon(
+              icon,
+              size: 14,
+              color: over ? t.textPrimary : t.textSecondary,
+            ),
+          );
+        },
       ),
     );
   }

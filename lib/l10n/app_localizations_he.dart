@@ -7590,6 +7590,67 @@ class AppLocalizationsHe extends AppLocalizations {
       'Tab מזיז פנימה כאן. לחצו על Esc ואז על Tab כדי לעבור לרכיב הבקרה הבא.';
 
   @override
+  String get messageAuthorYou => 'אתה';
+
+  @override
+  String systemMessageLabel(String content) {
+    return 'מערכת: $content';
+  }
+
+  @override
+  String retryUploadNamed(String name) {
+    return 'נסה שוב להעלות את $name';
+  }
+
+  @override
+  String selectItemNamed(String name) {
+    return 'בחר $name';
+  }
+
+  @override
+  String get linkPullRequest => 'קישור בקשת המשיכה';
+
+  @override
+  String get addRelation => 'הוספת קשר';
+
+  @override
+  String get playbackPosition => 'מיקום בהשמעה';
+
+  @override
+  String get prNewChangesRefreshDiff => 'שינויים חדשים — רענן את ההשוואה';
+
+  @override
+  String get notificationsDeliverySchedule => 'לוח זמנים למסירה';
+
+  @override
+  String get notificationsDeliveryScheduleSubtitle =>
+      'אופן קיבוץ ומסירה של התראות שאינן דחופות.';
+
+  @override
+  String get notificationsDeliveryRealtime => 'בזמן אמת';
+
+  @override
+  String get notificationsDeliveryEvery2Hours => 'כל שעתיים';
+
+  @override
+  String get notificationsDeliveryDailyDigest => 'סיכום יומי';
+
+  @override
+  String get notificationsQuietHours => 'שעות שקטות';
+
+  @override
+  String notificationsQuietHoursOn(String start, String end) {
+    return 'התראות שאינן דחופות מושתקות $start–$end.';
+  }
+
+  @override
+  String get notificationsQuietHoursOff =>
+      'התראות שאינן דחופות נמסרות בכל שעה.';
+
+  @override
+  String get toolCalls => 'קריאות לכלים';
+
+  @override
   String get markdownSupported => 'יש תמיכה ב-Markdown';
 
   @override

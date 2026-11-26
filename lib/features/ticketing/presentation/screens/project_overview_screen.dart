@@ -252,6 +252,7 @@ class _ProjectMenuState extends ConsumerState<_ProjectMenu> {
       toggleOnTargetTap: false,
       target: CcTappable(
         onPressed: _controller.toggle,
+        semanticLabel: l10n.actions,
         builder: (context, states) => Padding(
           padding: const EdgeInsets.all(8),
           child: CcIcon(AppIcons.ellipsis, size: 18, color: t.fgTertiary),

@@ -16,6 +16,7 @@ import 'package:control_center/shared/utils/failure_message.dart'
     show refusalKindOf;
 import 'package:control_center/shared/widgets/composer/composer.dart'
     show composerHorizontalMargin;
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -101,20 +102,25 @@ class _SteeringQueueListState extends ConsumerState<SteeringQueueList> {
           itemCount: cards.length,
           itemBuilder: (context, index) {
             final card = cards[index];
-            return SteeringQueueCard(
+            return Focus(
               key: ValueKey(card.id),
-              card: card,
-              steerable: steerable,
-              dragHandle: _dragHandle(context, index),
-              // Only a card's writer edits it; the server refuses anyone else.
-              onEdit: mine(card)
-                  ? (content) => _onEdit(key, card.id, content)
-                  : null,
-              onDelete: () => _onDelete(key, card.id),
-              onDeliver: steerable || mine(card)
-                  ? () => _onDeliver(key, card.id, force: !steerable)
-                  : null,
-              author: author(card),
+              canRequestFocus: false,
+              skipTraversal: true,
+              onKeyEvent: (_, event) => _onCardKey(key, cards, index, event),
+              child: SteeringQueueCard(
+                card: card,
+                steerable: steerable,
+                dragHandle: _dragHandle(context, index),
+                // Only a card's writer edits it; the server refuses anyone else.
+                onEdit: mine(card)
+                    ? (content) => _onEdit(key, card.id, content)
+                    : null,
+                onDelete: () => _onDelete(key, card.id),
+                onDeliver: steerable || mine(card)
+                    ? () => _onDeliver(key, card.id, force: !steerable)
+                    : null,
+                author: author(card),
+              ),
             );
           },
         ),
@@ -143,6 +149,31 @@ class _SteeringQueueListState extends ConsumerState<SteeringQueueList> {
         ),
       ),
     );
+  }
+
+  /// Alt+↑/↓ with focus in a card moves it one place, the keyboard's drag.
+  /// The card keeps its key, so focus moves with it. Left alone while its
+  /// editor has focus, where Alt+arrows move the caret.
+  KeyEventResult _onCardKey(
+    ConversationRef key,
+    List<Message> cards,
+    int index,
+    KeyEvent event,
+  ) {
+    final up = event.logicalKey == LogicalKeyboardKey.arrowUp;
+    if (event is KeyUpEvent ||
+        !HardwareKeyboard.instance.isAltPressed ||
+        (!up && event.logicalKey != LogicalKeyboardKey.arrowDown) ||
+        FocusManager.instance.primaryFocus?.context
+                ?.findAncestorWidgetOfExactType<EditableText>() !=
+            null) {
+      return KeyEventResult.ignored;
+    }
+    final to = index + (up ? -1 : 1);
+    if (to >= 0 && to < cards.length) {
+      _onReorder(key, cards, index, to);
+    }
+    return KeyEventResult.handled;
   }
 
   void _onReorder(

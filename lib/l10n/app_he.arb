@@ -10534,5 +10534,22 @@
   "ccUnverifiedLabel": "{label} (לא אומת)",
   "prRowSelect": "בחר {title}",
   "prTableSelectAll": "בחר את כל בקשות המשיכה",
-  "planVersionRewind": "חזרה לגרסה {version}"
+  "planVersionRewind": "חזרה לגרסה {version}",
+  "messageAuthorYou": "אתה",
+  "systemMessageLabel": "מערכת: {content}",
+  "retryUploadNamed": "נסה שוב להעלות את {name}",
+  "selectItemNamed": "בחר {name}",
+  "linkPullRequest": "קישור בקשת המשיכה",
+  "addRelation": "הוספת קשר",
+  "playbackPosition": "מיקום בהשמעה",
+  "prNewChangesRefreshDiff": "שינויים חדשים — רענן את ההשוואה",
+  "notificationsDeliverySchedule": "לוח זמנים למסירה",
+  "notificationsDeliveryScheduleSubtitle": "אופן קיבוץ ומסירה של התראות שאינן דחופות.",
+  "notificationsDeliveryRealtime": "בזמן אמת",
+  "notificationsDeliveryEvery2Hours": "כל שעתיים",
+  "notificationsDeliveryDailyDigest": "סיכום יומי",
+  "notificationsQuietHours": "שעות שקטות",
+  "notificationsQuietHoursOn": "התראות שאינן דחופות מושתקות {start}–{end}.",
+  "notificationsQuietHoursOff": "התראות שאינן דחופות נמסרות בכל שעה.",
+  "toolCalls": "קריאות לכלים"
 }

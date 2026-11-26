@@ -1,5 +1,8 @@
 import 'package:cc_domain/cc_domain.dart' show ConfirmationRequestDto;
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/constants/app_constants.dart';
+import 'package:control_center/core/providers/storage_providers.dart';
+import 'package:control_center/features/messaging/presentation/widgets/agent_approval_card.dart';
 import 'package:control_center/features/messaging/presentation/widgets/agent_approval_overlay.dart';
 import 'package:control_center/features/messaging/providers/pending_confirmations_provider.dart';
 import 'package:control_center/features/messaging/providers/visible_conversation_spaces.dart';
@@ -168,6 +171,162 @@ void main() {
     expect(approve.hitTestable(), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('the card offers the way to its conversation', (tester) async {
+    await _pumpOverlay(tester, [_req(0, conversationId: 'conv-1')]);
+    expect(find.text('Open conversation'), findsOneWidget);
+  });
+
+  testWidgets('a request that names no space offers no conversation', (
+    tester,
+  ) async {
+    await _pumpOverlay(tester, [_req(0, spaceId: '')]);
+    expect(find.text('Approve'), findsOneWidget);
+    expect(find.text('Open conversation'), findsNothing);
+  });
+
+  testWidgets('a request the server will not remember has one approve', (
+    tester,
+  ) async {
+    await _pumpOverlay(tester, [_req(0)]);
+    expect(find.byType(CcSplitButton), findsNothing);
+    expect(find.text('Approve for 8 hours'), findsNothing);
+  });
+
+  group('a rememberable request', () {
+    const request = ConfirmationRequestDto(
+      id: 'req-r',
+      spaceId: 'space-1',
+      title: 'Push',
+      detail: 'd',
+      severity: 'warning',
+      createdAt: '2026-01-01T00:00:00Z',
+      rememberScope: 'space',
+      actionClasses: ['git_push'],
+    );
+
+    Future<List<String>> pumpCard(WidgetTester tester) async {
+      final calls = <String>[];
+      var leads = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: appLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: CcTheme(
+              data: CcThemeData.light(),
+              child: StatefulBuilder(
+                builder: (context, setState) => ApprovalCard(
+                  request: request,
+                  busy: false,
+                  onApprove: () => calls.add('once'),
+                  onApproveAndRemember: () => calls.add('remember'),
+                  onDeny: () => calls.add('deny'),
+                  rememberLeads: leads,
+                  onRememberLeadsChanged: (v) => setState(() => leads = v),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      return calls;
+    }
+
+    Future<void> openMenu(WidgetTester tester) async {
+      await tester.tap(find.bySemanticsLabel('More actions'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('leads with the one-time approve, the other behind the caret', (
+      tester,
+    ) async {
+      final calls = await pumpCard(tester);
+      expect(find.text('Approve'), findsOneWidget);
+      expect(find.text('Approve for 8 hours'), findsNothing);
+
+      await tester.tap(find.text('Approve'));
+      expect(calls, ['once']);
+    });
+
+    testWidgets('the choice taken from the caret leads from then on', (
+      tester,
+    ) async {
+      final calls = await pumpCard(tester);
+
+      await openMenu(tester);
+      await tester.tap(find.text('Approve for 8 hours'));
+      await tester.pumpAndSettle();
+      expect(calls, ['remember']);
+
+      // Traded places: the standing approval is the button now.
+      expect(find.text('Approve for 8 hours'), findsOneWidget);
+      expect(find.text('Approve'), findsNothing);
+      await tester.tap(find.text('Approve for 8 hours'));
+      expect(calls, ['remember', 'remember']);
+
+      // And the one-time approve is what the caret holds, and switches back.
+      await openMenu(tester);
+      await tester.tap(find.text('Approve'));
+      await tester.pumpAndSettle();
+      expect(calls, ['remember', 'remember', 'once']);
+      expect(find.text('Approve'), findsOneWidget);
+      expect(find.text('Approve for 8 hours'), findsNothing);
+    });
+  });
+
+  test('which approve leads is kept on the device', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    expect(container.read(approvalPrefersRememberProvider), isFalse);
+    container
+        .read(approvalPrefersRememberProvider.notifier)
+        .set(remember: true);
+    expect(
+      container
+          .read(appPreferencesProvider)
+          .getBool(approvalPrefersRememberKey),
+      isTrue,
+    );
+    container.invalidate(approvalPrefersRememberProvider);
+    expect(container.read(approvalPrefersRememberProvider), isTrue);
+  });
+
+  test(
+    'the conversation route follows the request, not the viewed workspace',
+    () {
+      ConfirmationRequestDto req({
+        String? workspaceId,
+        String? conversationId,
+      }) => ConfirmationRequestDto(
+        id: 'r',
+        spaceId: 'space-1',
+        conversationId: conversationId,
+        workspaceId: workspaceId,
+        title: 't',
+        detail: 'd',
+        severity: 'warning',
+        createdAt: '2026-01-01T00:00:00Z',
+      );
+
+      expect(
+        confirmationConversationRoute(
+          req(workspaceId: 'ws-own', conversationId: 'conv-1'),
+          activeWorkspaceId: 'ws-viewed',
+        ),
+        '/workspaces/ws-own/spaces/space-1?tab=chat%3Aconv-1',
+      );
+      expect(
+        confirmationConversationRoute(req(), activeWorkspaceId: 'ws-viewed'),
+        '/workspaces/ws-viewed/spaces/space-1',
+      );
+      expect(
+        confirmationConversationRoute(req(), activeWorkspaceId: null),
+        null,
+      );
+    },
+  );
 
   testWidgets(
     'a request for a conversation already on screen stays out of the overlay',

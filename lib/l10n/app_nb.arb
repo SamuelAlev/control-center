@@ -10534,5 +10534,22 @@
   "ccUnverifiedLabel": "{label} (ikke verifisert)",
   "prRowSelect": "Velg {title}",
   "prTableSelectAll": "Velg alle pull requests",
-  "planVersionRewind": "Gå tilbake til versjon {version}"
+  "planVersionRewind": "Gå tilbake til versjon {version}",
+  "messageAuthorYou": "Deg",
+  "systemMessageLabel": "System: {content}",
+  "retryUploadNamed": "Prøv opplasting av {name} på nytt",
+  "selectItemNamed": "Velg {name}",
+  "linkPullRequest": "Koble pull request",
+  "addRelation": "Legg til relasjon",
+  "playbackPosition": "Avspillingsposisjon",
+  "prNewChangesRefreshDiff": "Nye endringer – Oppdater diff",
+  "notificationsDeliverySchedule": "Leveringsplan",
+  "notificationsDeliveryScheduleSubtitle": "Hvordan varslinger som ikke haster, samles og leveres.",
+  "notificationsDeliveryRealtime": "Sanntid",
+  "notificationsDeliveryEvery2Hours": "Hver 2. time",
+  "notificationsDeliveryDailyDigest": "Daglig oppsummering",
+  "notificationsQuietHours": "Stille timer",
+  "notificationsQuietHoursOn": "Varslinger som ikke haster, holdes tilbake {start}–{end}.",
+  "notificationsQuietHoursOff": "Varslinger som ikke haster, leveres når som helst.",
+  "toolCalls": "Verktøykall"
 }

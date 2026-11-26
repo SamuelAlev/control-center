@@ -595,7 +595,13 @@ class _CommandRow extends StatelessWidget {
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         onEnter: (_) => onHover(),
-        child: GestureDetector(
+        // Focus stays in the search field, so the row carries the roles a
+        // focused option would: a button, and which one is highlighted.
+        child: Semantics(
+          container: true,
+          button: true,
+          selected: selected,
+          child: GestureDetector(
           onTap: onTap,
           child: AnimatedContainer(
             duration: CcMotion.resolveFade(context, CcMotion.fast),
@@ -666,6 +672,7 @@ class _CommandRow extends StatelessWidget {
                 ),
               ],
             ),
+          ),
           ),
         ),
       ),

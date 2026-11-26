@@ -7683,6 +7683,67 @@ class AppLocalizationsCs extends AppLocalizations {
       'Klávesa Tab zde odsazuje. Stiskněte Esc a poté Tab pro přechod na další ovládací prvek.';
 
   @override
+  String get messageAuthorYou => 'Vy';
+
+  @override
+  String systemMessageLabel(String content) {
+    return 'Systém: $content';
+  }
+
+  @override
+  String retryUploadNamed(String name) {
+    return 'Zopakovat nahrání souboru $name';
+  }
+
+  @override
+  String selectItemNamed(String name) {
+    return 'Vybrat $name';
+  }
+
+  @override
+  String get linkPullRequest => 'Propojit pull request';
+
+  @override
+  String get addRelation => 'Přidat vazbu';
+
+  @override
+  String get playbackPosition => 'Pozice přehrávání';
+
+  @override
+  String get prNewChangesRefreshDiff => 'Nové změny — Obnovit diff';
+
+  @override
+  String get notificationsDeliverySchedule => 'Plán doručování';
+
+  @override
+  String get notificationsDeliveryScheduleSubtitle =>
+      'Jak se méně naléhavá oznámení seskupují a doručují.';
+
+  @override
+  String get notificationsDeliveryRealtime => 'V reálném čase';
+
+  @override
+  String get notificationsDeliveryEvery2Hours => 'Každé 2 hodiny';
+
+  @override
+  String get notificationsDeliveryDailyDigest => 'Denní souhrn';
+
+  @override
+  String get notificationsQuietHours => 'Tiché hodiny';
+
+  @override
+  String notificationsQuietHoursOn(String start, String end) {
+    return 'Méně naléhavá oznámení potlačena $start–$end.';
+  }
+
+  @override
+  String get notificationsQuietHoursOff =>
+      'Méně naléhavá oznámení se doručují kdykoli.';
+
+  @override
+  String get toolCalls => 'Volání nástrojů';
+
+  @override
   String get markdownSupported => 'Markdown je podporován';
 
   @override

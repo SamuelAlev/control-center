@@ -7591,6 +7591,67 @@ class AppLocalizationsVi extends AppLocalizations {
       'Tab thụt lề tại đây. Nhấn Esc, rồi nhấn Tab để chuyển đến điều khiển tiếp theo.';
 
   @override
+  String get messageAuthorYou => 'Bạn';
+
+  @override
+  String systemMessageLabel(String content) {
+    return 'Hệ thống: $content';
+  }
+
+  @override
+  String retryUploadNamed(String name) {
+    return 'Thử lại tải lên $name';
+  }
+
+  @override
+  String selectItemNamed(String name) {
+    return 'Chọn $name';
+  }
+
+  @override
+  String get linkPullRequest => 'Liên kết pull request';
+
+  @override
+  String get addRelation => 'Thêm quan hệ';
+
+  @override
+  String get playbackPosition => 'Vị trí phát';
+
+  @override
+  String get prNewChangesRefreshDiff => 'Có thay đổi mới — Làm mới diff';
+
+  @override
+  String get notificationsDeliverySchedule => 'Lịch gửi';
+
+  @override
+  String get notificationsDeliveryScheduleSubtitle =>
+      'Cách gom và gửi các thông báo không khẩn cấp.';
+
+  @override
+  String get notificationsDeliveryRealtime => 'Thời gian thực';
+
+  @override
+  String get notificationsDeliveryEvery2Hours => 'Mỗi 2 giờ';
+
+  @override
+  String get notificationsDeliveryDailyDigest => 'Tóm tắt hằng ngày';
+
+  @override
+  String get notificationsQuietHours => 'Giờ yên tĩnh';
+
+  @override
+  String notificationsQuietHoursOn(String start, String end) {
+    return 'Thông báo không khẩn cấp bị tạm ẩn $start–$end.';
+  }
+
+  @override
+  String get notificationsQuietHoursOff =>
+      'Thông báo không khẩn cấp được gửi bất cứ lúc nào.';
+
+  @override
+  String get toolCalls => 'Lệnh gọi công cụ';
+
+  @override
   String get markdownSupported => 'Hỗ trợ Markdown';
 
   @override

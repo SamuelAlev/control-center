@@ -7532,6 +7532,67 @@ class AppLocalizationsTh extends AppLocalizations {
       'ที่นี่ Tab ใช้สำหรับเยื้องข้อความ กด Esc แล้วกด Tab เพื่อไปยังตัวควบคุมถัดไป';
 
   @override
+  String get messageAuthorYou => 'คุณ';
+
+  @override
+  String systemMessageLabel(String content) {
+    return 'ระบบ: $content';
+  }
+
+  @override
+  String retryUploadNamed(String name) {
+    return 'ลองอัปโหลด $name อีกครั้ง';
+  }
+
+  @override
+  String selectItemNamed(String name) {
+    return 'เลือก $name';
+  }
+
+  @override
+  String get linkPullRequest => 'เชื่อม pull request';
+
+  @override
+  String get addRelation => 'เพิ่มความสัมพันธ์';
+
+  @override
+  String get playbackPosition => 'ตำแหน่งการเล่น';
+
+  @override
+  String get prNewChangesRefreshDiff => 'มีการเปลี่ยนแปลงใหม่ — รีเฟรช diff';
+
+  @override
+  String get notificationsDeliverySchedule => 'กำหนดการส่ง';
+
+  @override
+  String get notificationsDeliveryScheduleSubtitle =>
+      'การแจ้งเตือนที่ไม่เร่งด่วนจะถูกรวมและส่งอย่างไร';
+
+  @override
+  String get notificationsDeliveryRealtime => 'เรียลไทม์';
+
+  @override
+  String get notificationsDeliveryEvery2Hours => 'ทุก 2 ชั่วโมง';
+
+  @override
+  String get notificationsDeliveryDailyDigest => 'สรุปรายวัน';
+
+  @override
+  String get notificationsQuietHours => 'ชั่วโมงเงียบ';
+
+  @override
+  String notificationsQuietHoursOn(String start, String end) {
+    return 'ระงับการแจ้งเตือนที่ไม่เร่งด่วนระหว่าง $start–$end';
+  }
+
+  @override
+  String get notificationsQuietHoursOff =>
+      'การแจ้งเตือนที่ไม่เร่งด่วนจะส่งได้ตลอดเวลา';
+
+  @override
+  String get toolCalls => 'การเรียกใช้เครื่องมือ';
+
+  @override
   String get markdownSupported => 'รองรับ Markdown';
 
   @override

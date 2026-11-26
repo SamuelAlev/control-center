@@ -43,23 +43,30 @@ class GutterAddPill extends StatelessWidget {
     // invisible — 1.0:1). `bgBrandSolid` carries white in both themes (>=5:1)
     // and reads as an on-brand "add comment" affordance against either gutter.
     final primary = tokens.bgBrandSolid;
-    return MouseRegion(
-      cursor: dragging ? SystemMouseCursors.grabbing : SystemMouseCursors.grab,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        onVerticalDragStart: (_) => onDragStart(),
-        onVerticalDragUpdate: (d) => onDragUpdate(d.globalPosition.dy),
-        onVerticalDragEnd: (_) => onDragEnd(),
-        child: Container(
-          width: kGutterAddPillSize,
-          height: kGutterAddPillSize,
-          decoration: BoxDecoration(
-            color: primary,
-            borderRadius: BorderRadius.circular(6),
-            boxShadow: AppShadows.soft,
+    // Pointer-only: each diff line's semantics node already carries a
+    // "comment" custom action (unified_diff_sliver_semantics.dart), so a node
+    // here would be a second, hover-only target for the same thing.
+    return ExcludeSemantics(
+      child: MouseRegion(
+        cursor: dragging
+            ? SystemMouseCursors.grabbing
+            : SystemMouseCursors.grab,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          onVerticalDragStart: (_) => onDragStart(),
+          onVerticalDragUpdate: (d) => onDragUpdate(d.globalPosition.dy),
+          onVerticalDragEnd: (_) => onDragEnd(),
+          child: Container(
+            width: kGutterAddPillSize,
+            height: kGutterAddPillSize,
+            decoration: BoxDecoration(
+              color: primary,
+              borderRadius: BorderRadius.circular(6),
+              boxShadow: AppShadows.soft,
+            ),
+            child: Icon(AppIcons.plus, size: 14, color: tokens.textWhite),
           ),
-          child: Icon(AppIcons.plus, size: 14, color: tokens.textWhite),
         ),
       ),
     );

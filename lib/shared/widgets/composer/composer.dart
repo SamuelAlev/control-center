@@ -260,6 +260,11 @@ class _ComposerState extends ConsumerState<Composer> {
   LogicalKeyboardKey? _heldPickKey;
   bool _sending = false;
   bool _composerFocused = false;
+
+  /// Escape left focus on the field's wrapper (see [_onFieldKey]). The box
+  /// keeps its focused border meanwhile, so the keyboard's position stays
+  /// visible until Tab moves on.
+  bool _parked = false;
   bool _isEmpty = true;
   bool _isLong = false;
   late final MarkdownIndentKeyHandler _indentKeys = MarkdownIndentKeyHandler(
@@ -805,7 +810,12 @@ class _ComposerState extends ConsumerState<Composer> {
 
   void _onFocusChanged() {
     if (_composerFocused != _focus.hasFocus) {
-      setState(() => _composerFocused = _focus.hasFocus);
+      setState(() {
+        _composerFocused = _focus.hasFocus;
+        if (_composerFocused) {
+          _parked = false;
+        }
+      });
     }
   }
 
@@ -1389,6 +1399,7 @@ class _ComposerState extends ConsumerState<Composer> {
       // (see the top of this handler) instead of restarting at the first
       // control of the window.
       node.requestFocus();
+      setState(() => _parked = true);
       return KeyEventResult.handled;
     }
     final kb = HardwareKeyboard.instance;
@@ -1690,6 +1701,11 @@ class _ComposerState extends ConsumerState<Composer> {
     final field = Focus(
       // Never a Tab stop of its own; Escape parks focus here on purpose.
       skipTraversal: true,
+      onFocusChange: (focused) {
+        if (!focused && _parked) {
+          setState(() => _parked = false);
+        }
+      },
       onKeyEvent: _onFieldKey,
       // Notes that the next caret move came from a POINTER, which is what
       // separates clicking a reference from arrowing over it. Listener, not
@@ -1737,7 +1753,9 @@ class _ComposerState extends ConsumerState<Composer> {
           // The accent is the focus color everywhere else (it is what
           // `CcInputTokens.borderFocused` resolves to), so the composer, the
           // most-focused surface in the app, uses it too.
-          color: _composerFocused ? ds.accent : ds.borderSecondary,
+          color: _composerFocused || _parked
+              ? ds.accent
+              : ds.borderSecondary,
           width: 1,
         ),
         boxShadow: [

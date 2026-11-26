@@ -245,6 +245,92 @@ void main() {
     expect(got?.selectedLabels, ['Engineer']);
   });
 
+  testWidgets('a digit typed into the answer field is text, not a pick', (
+    tester,
+  ) async {
+    AgentQuestionAnswer? got;
+    await tester.pumpWidget(
+      testWrap(
+        AskUserCard(
+          question: 'How many replicas?',
+          options: const [
+            AgentQuestionOption(label: 'One'),
+            AgentQuestionOption(label: 'Three'),
+          ],
+          allowFreeText: true,
+          onSubmit: (a) => got = a,
+        ),
+      ),
+    );
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const ValueKey('ask-user-free-text')),
+        matching: find.byType(EditableText),
+      ),
+    );
+    await tester.pump();
+
+    final handled = await tester.sendKeyEvent(LogicalKeyboardKey.digit2);
+    await tester.pump();
+
+    expect(got, isNull);
+    expect(handled, isFalse, reason: 'the key must reach the field');
+  });
+
+  testWidgets('the Continue chord still works from the answer field', (
+    tester,
+  ) async {
+    AgentQuestionAnswer? got;
+    await tester.pumpWidget(
+      testWrap(
+        AskUserCard(
+          question: 'What should we call your workspace?',
+          allowFreeText: true,
+          onSubmit: (a) => got = a,
+        ),
+      ),
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('ask-user-free-text')),
+      'Acme 2',
+    );
+    await tester.pump();
+
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+    await tester.pump();
+
+    expect(got?.freeText, 'Acme 2');
+  });
+
+  testWidgets('the card itself is not a Tab stop', (tester) async {
+    await tester.pumpWidget(
+      testWrap(
+        AskUserCard(
+          question: 'How will you use this?',
+          options: const [AgentQuestionOption(label: 'Designer')],
+          onSubmit: (_) {},
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final card = FocusManager.instance.primaryFocus!;
+    expect(card.skipTraversal, isTrue);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    final next = FocusManager.instance.primaryFocus!;
+    expect(next, isNot(card));
+    expect(
+      find.ancestor(
+        of: find.byElementPredicate((e) => e == next.context),
+        matching: find.byKey(const ValueKey('ask-user-option-0')),
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('hovering a choice keeps every row the same height', (
     tester,
   ) async {

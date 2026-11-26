@@ -10534,5 +10534,22 @@
   "ccUnverifiedLabel": "{label} (neverificat)",
   "prRowSelect": "Selectează {title}",
   "prTableSelectAll": "Selectează toate pull request-urile",
-  "planVersionRewind": "Revino la versiunea {version}"
+  "planVersionRewind": "Revino la versiunea {version}",
+  "messageAuthorYou": "Tu",
+  "systemMessageLabel": "Sistem: {content}",
+  "retryUploadNamed": "Reîncearcă încărcarea pentru {name}",
+  "selectItemNamed": "Selectează {name}",
+  "linkPullRequest": "Leagă pull request",
+  "addRelation": "Adaugă relație",
+  "playbackPosition": "Poziția de redare",
+  "prNewChangesRefreshDiff": "Modificări noi — Reîmprospătează diferențele",
+  "notificationsDeliverySchedule": "Program de livrare",
+  "notificationsDeliveryScheduleSubtitle": "Cum sunt grupate și livrate notificările care nu sunt urgente.",
+  "notificationsDeliveryRealtime": "În timp real",
+  "notificationsDeliveryEvery2Hours": "La fiecare 2 ore",
+  "notificationsDeliveryDailyDigest": "Rezumat zilnic",
+  "notificationsQuietHours": "Ore de liniște",
+  "notificationsQuietHoursOn": "Notificările care nu sunt urgente sunt suprimate {start}–{end}.",
+  "notificationsQuietHoursOff": "Notificările care nu sunt urgente sunt livrate oricând.",
+  "toolCalls": "Apeluri de unelte"
 }

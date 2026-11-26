@@ -169,7 +169,27 @@ class _SkeletonBarState extends State<SkeletonBar>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
-    )..repeat(reverse: true);
+    );
+  }
+
+  bool _animating = false;
+
+  // A pulse that never ends is exactly what reduced motion asks to drop, so
+  // the bar holds still at its resting opacity instead.
+  void _syncMotion({required bool reduceMotion}) {
+    if (reduceMotion) {
+      if (_animating) {
+        _controller
+          ..stop()
+          ..value = 0;
+        _animating = false;
+      }
+      return;
+    }
+    if (!_animating) {
+      _controller.repeat(reverse: true);
+      _animating = true;
+    }
   }
 
   @override
@@ -180,6 +200,7 @@ class _SkeletonBarState extends State<SkeletonBar>
 
   @override
   Widget build(BuildContext context) {
+    _syncMotion(reduceMotion: CcMotion.reduced(context));
     final tokens = context.designSystem;
     final base = tokens?.textTertiary ?? Colors.grey;
     return AnimatedBuilder(

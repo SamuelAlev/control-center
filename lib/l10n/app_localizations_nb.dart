@@ -7593,6 +7593,67 @@ class AppLocalizationsNb extends AppLocalizations {
       'Tab setter inn innrykk her. Trykk Esc, og deretter Tab for å gå til neste kontroll.';
 
   @override
+  String get messageAuthorYou => 'Deg';
+
+  @override
+  String systemMessageLabel(String content) {
+    return 'System: $content';
+  }
+
+  @override
+  String retryUploadNamed(String name) {
+    return 'Prøv opplasting av $name på nytt';
+  }
+
+  @override
+  String selectItemNamed(String name) {
+    return 'Velg $name';
+  }
+
+  @override
+  String get linkPullRequest => 'Koble pull request';
+
+  @override
+  String get addRelation => 'Legg til relasjon';
+
+  @override
+  String get playbackPosition => 'Avspillingsposisjon';
+
+  @override
+  String get prNewChangesRefreshDiff => 'Nye endringer – Oppdater diff';
+
+  @override
+  String get notificationsDeliverySchedule => 'Leveringsplan';
+
+  @override
+  String get notificationsDeliveryScheduleSubtitle =>
+      'Hvordan varslinger som ikke haster, samles og leveres.';
+
+  @override
+  String get notificationsDeliveryRealtime => 'Sanntid';
+
+  @override
+  String get notificationsDeliveryEvery2Hours => 'Hver 2. time';
+
+  @override
+  String get notificationsDeliveryDailyDigest => 'Daglig oppsummering';
+
+  @override
+  String get notificationsQuietHours => 'Stille timer';
+
+  @override
+  String notificationsQuietHoursOn(String start, String end) {
+    return 'Varslinger som ikke haster, holdes tilbake $start–$end.';
+  }
+
+  @override
+  String get notificationsQuietHoursOff =>
+      'Varslinger som ikke haster, leveres når som helst.';
+
+  @override
+  String get toolCalls => 'Verktøykall';
+
+  @override
   String get markdownSupported => 'Markdown støttes';
 
   @override

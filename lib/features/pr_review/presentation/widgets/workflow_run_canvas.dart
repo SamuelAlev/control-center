@@ -362,14 +362,18 @@ class _WorkflowRunCanvasState extends ConsumerState<WorkflowRunCanvas> {
       width: WorkflowRunCanvas.nodeWidth,
       height: WorkflowRunCanvas.nodeHeight,
       child: RepaintBoundary(
-        child: Semantics(
-          button: true,
-          selected: selected,
-          label: title,
-          value: statusWord,
-          child: CcTappable(
-            onPressed: () => widget.onSelect(node.id),
-            builder: (context, states) => GraphNodeCard(
+        child: CcTappable(
+          onPressed: () => widget.onSelect(node.id),
+          semanticLabel: title,
+          // What the card paints besides its title, in one place.
+          semanticValue: [
+            statusWord,
+            ?subtitle,
+            if (duration != null) trailing,
+          ].join(', '),
+          semanticSelected: selected,
+          builder: (context, states) => ExcludeSemantics(
+            child: GraphNodeCard(
               glyph: _statusGlyph(status, sc.dot),
               title: title,
               subtitle: subtitle,

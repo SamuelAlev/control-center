@@ -10534,5 +10534,22 @@
   "ccUnverifiedLabel": "{label} (غیر تصدیق شدہ)",
   "prRowSelect": "{title} منتخب کریں",
   "prTableSelectAll": "تمام pull requests منتخب کریں",
-  "planVersionRewind": "ورژن {version} پر واپس جائیں"
+  "planVersionRewind": "ورژن {version} پر واپس جائیں",
+  "messageAuthorYou": "آپ",
+  "systemMessageLabel": "سسٹم: {content}",
+  "retryUploadNamed": "{name} کا اپ لوڈ دوبارہ کوشش کریں",
+  "selectItemNamed": "{name} منتخب کریں",
+  "linkPullRequest": "pull request لنک کریں",
+  "addRelation": "تعلق شامل کریں",
+  "playbackPosition": "پلے بیک پوزیشن",
+  "prNewChangesRefreshDiff": "نئی تبدیلیاں — diff تازہ کریں",
+  "notificationsDeliverySchedule": "ترسیل کا شیڈول",
+  "notificationsDeliveryScheduleSubtitle": "غیر فوری اطلاعات کس طرح اکٹھی کر کے بھیجی جاتی ہیں۔",
+  "notificationsDeliveryRealtime": "حقیقی وقت",
+  "notificationsDeliveryEvery2Hours": "ہر 2 گھنٹے بعد",
+  "notificationsDeliveryDailyDigest": "روزانہ کا خلاصہ",
+  "notificationsQuietHours": "خاموش اوقات",
+  "notificationsQuietHoursOn": "غیر فوری اطلاعات {start}–{end} کے درمیان روکی جائیں گی۔",
+  "notificationsQuietHoursOff": "غیر فوری اطلاعات کسی بھی وقت بھیجی جائیں گی۔",
+  "toolCalls": "ٹول کالز"
 }

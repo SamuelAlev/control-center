@@ -20,7 +20,10 @@ class _BellButton extends StatelessWidget {
       children: [
         SidebarHeaderIconButton(
           icon: AppIcons.bell,
-          tooltip: l10n.notificationsTooltip,
+          // The count is part of the name; the badge below is its picture.
+          tooltip: unread > 0
+              ? '${l10n.notificationsTooltip}, ${l10n.notificationsUnreadCount(unread)}'
+              : l10n.notificationsTooltip,
           active: open,
           onPressed: onTap,
         ),
@@ -30,6 +33,7 @@ class _BellButton extends StatelessWidget {
             end: 2,
             // Never absorb the tap; the button underneath owns it.
             child: IgnorePointer(
+              child: ExcludeSemantics(
               child: Container(
                 constraints: const BoxConstraints(minWidth: 15),
                 height: 15,
@@ -52,6 +56,7 @@ class _BellButton extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
+              ),
               ),
             ),
           ),

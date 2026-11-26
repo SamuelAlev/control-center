@@ -7,7 +7,11 @@ extension _AskUserCardPresentation on _AskUserCardState {
     }
     final n = widget.options.length + (_freeTextAsOption ? 1 : 0);
     final map = <ShortcutActivator, VoidCallback>{};
-    for (var i = 0; i < n && i < _digits.length; i++) {
+    // A bound digit is swallowed before it reaches the text field, so typing
+    // "2" in the answer would pick option 2 instead. While the field has focus
+    // only the Continue chord stays live.
+    final typing = _textFocus.hasFocus;
+    for (var i = 0; !typing && i < n && i < _digits.length; i++) {
       final oneBased = i + 1;
       map[SingleActivator(_digits[i])] = () => _activateIndex(oneBased);
       map[SingleActivator(_numpads[i])] = () => _activateIndex(oneBased);
@@ -38,6 +42,9 @@ extension _AskUserCardPresentation on _AskUserCardState {
         child: Focus(
           focusNode: _cardFocus,
           autofocus: _interactive,
+          // Only a key host for the digit shortcuts: Tab goes straight to the
+          // options rather than stopping on an outline-less card.
+          skipTraversal: true,
           child: DecoratedBox(
             decoration: BoxDecoration(
               color: t.bgPrimary,

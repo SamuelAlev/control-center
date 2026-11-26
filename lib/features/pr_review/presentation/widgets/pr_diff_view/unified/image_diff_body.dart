@@ -9,6 +9,7 @@ import 'package:control_center/core/theme/diff_colors.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/image_viewer_labels.dart';
 import 'package:control_center/shared/widgets/media_proxy_scope.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
@@ -840,6 +841,36 @@ class _SwipeStage extends StatefulWidget {
 
 class _SwipeStageState extends State<_SwipeStage> {
   double _t = 0.5;
+  final FocusNode _focus = FocusNode(debugLabel: 'image-diff-swipe');
+
+  @override
+  void dispose() {
+    _focus.dispose();
+    super.dispose();
+  }
+
+  void _setT(double t) => setState(() => _t = t.clamp(0.02, 0.98));
+
+  /// ←/→ step the divider as a drag would (mirrored under RTL), Home/End send
+  /// it to either end.
+  KeyEventResult _onKey(FocusNode node, KeyEvent event, {required bool rtl}) {
+    if (event is KeyUpEvent) {
+      return KeyEventResult.ignored;
+    }
+    final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.arrowLeft) {
+      _setT(_t + (rtl ? 0.05 : -0.05));
+    } else if (key == LogicalKeyboardKey.arrowRight) {
+      _setT(_t + (rtl ? -0.05 : 0.05));
+    } else if (key == LogicalKeyboardKey.home) {
+      _setT(0);
+    } else if (key == LogicalKeyboardKey.end) {
+      _setT(1);
+    } else {
+      return KeyEventResult.ignored;
+    }
+    return KeyEventResult.handled;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -853,13 +884,11 @@ class _SwipeStageState extends State<_SwipeStage> {
     final chromeWidth = widget.layoutWidth.isFinite
         ? widget.layoutWidth
         : canvasW;
-    return GestureDetector(
+    final stage = GestureDetector(
       behavior: HitTestBehavior.opaque,
       onHorizontalDragUpdate: (details) {
         final dx = rtl ? -details.delta.dx : details.delta.dx;
-        setState(() {
-          _t = (_t + dx / canvasW).clamp(0.02, 0.98);
-        });
+        _setT(_t + dx / canvasW);
       },
       child: SizedBox(
         width: chromeWidth,
@@ -885,29 +914,32 @@ class _SwipeStageState extends State<_SwipeStage> {
             ),
             const SizedBox(height: AppSpacing.sm),
             Center(
-              child: SizedBox(
-                width: canvasW,
-                height: widget.canvas.height,
-                child: Stack(
-                  children: [
-                    Positioned.fill(child: Center(child: widget.after)),
-                    // RTL carve-out: the overlay clip is physical left-to-right
-                    // so the pictures stay LTR in every locale.
-                    ClipRect(
-                      clipper: _LeadingClipper(split),
-                      child: Center(child: widget.before),
-                    ),
-                    Positioned(
-                      left: split - 1,
-                      top: 0,
-                      bottom: 0,
-                      child: ColoredBox(
-                        key: const Key('image-diff-swipe-divider'),
-                        color: tokens.accent,
-                        child: const SizedBox(width: 2),
+              child: FocusRing(
+                focusNode: _focus,
+                child: SizedBox(
+                  width: canvasW,
+                  height: widget.canvas.height,
+                  child: Stack(
+                    children: [
+                      Positioned.fill(child: Center(child: widget.after)),
+                      // RTL carve-out: the overlay clip is physical left-to-right
+                      // so the pictures stay LTR in every locale.
+                      ClipRect(
+                        clipper: _LeadingClipper(split),
+                        child: Center(child: widget.before),
                       ),
-                    ),
-                  ],
+                      Positioned(
+                        left: split - 1,
+                        top: 0,
+                        bottom: 0,
+                        child: ColoredBox(
+                          key: const Key('image-diff-swipe-divider'),
+                          color: tokens.accent,
+                          child: const SizedBox(width: 2),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -935,6 +967,11 @@ class _SwipeStageState extends State<_SwipeStage> {
           ],
         ),
       ),
+    );
+    return Focus(
+      focusNode: _focus,
+      onKeyEvent: (node, event) => _onKey(node, event, rtl: rtl),
+      child: stage,
     );
   }
 }

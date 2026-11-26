@@ -296,16 +296,20 @@ class _PipelineCanvasState extends ConsumerState<PipelineCanvas> {
       width: width,
       height: _nodeHeight,
       child: RepaintBoundary(
-        child: Semantics(
-          button: widget.runId != null,
-          selected: selected,
-          label: label,
-          value: status != null ? _statusLabel(status, l10n) : null,
-          child: CcTappable(
-            onPressed: widget.runId == null
-                ? null
-                : () => setState(() => _selectedStepId = step.id),
-            builder: (context, states) => GraphNodeCard(
+        child: CcTappable(
+          onPressed: widget.runId == null
+              ? null
+              : () => setState(() => _selectedStepId = step.id),
+          semanticLabel: label,
+          semanticButton: widget.runId != null,
+          // What the card paints besides its name, in one place.
+          semanticValue: [
+            if (status != null) _statusLabel(status, l10n),
+            if (duration != null) formatPipelineDuration(duration),
+          ].join(', '),
+          semanticSelected: selected,
+          builder: (context, states) => ExcludeSemantics(
+            child: GraphNodeCard(
               glyph: _statusGlyph(status, isTrigger, dot),
               title: label,
               // The status in words under the name (not glyph/color alone);

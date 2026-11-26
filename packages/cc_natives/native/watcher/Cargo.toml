@@ -11,7 +11,7 @@ name = "cc_watcher"
 crate-type = ["cdylib"]
 
 [dependencies]
-notify = "8"
+notify = "9"
 
 # This crate is built standalone (--manifest-path), so it is its own profile
 # root despite living inside the repo.

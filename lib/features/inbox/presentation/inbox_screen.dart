@@ -59,6 +59,14 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
   late final ScrollController _scrollController;
   late final InboxScrollOffsets _scrollOffsets;
   late final String? _workspaceId;
+
+  /// The remembered offset this visit still owes the list. The controller's
+  /// initial offset alone is not enough: the inbox is progressive, so the
+  /// first laid-out list can be shorter than the one that was left (the open
+  /// snapshot renders before the merged and reviewed overlays land) and the
+  /// viewport clamps the offset to that shorter list for good. Held until the
+  /// list is long enough to reach it, or the operator scrolls somewhere else.
+  double? _pendingRestore;
   final Map<PrInboxSection, GlobalKey> _sectionKeys = {
     for (final s in PrInboxSection.values) s: GlobalKey(),
   };
@@ -115,30 +123,55 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
     super.initState();
     _workspaceId = ref.read(activeWorkspaceIdProvider);
     _scrollOffsets = ref.read(inboxScrollOffsetsProvider);
-    _scrollController = ScrollController(
-      initialScrollOffset: _scrollOffsets.of(_workspaceId),
-    );
+    final remembered = _scrollOffsets.of(_workspaceId);
+    _pendingRestore = remembered > 0 ? remembered : null;
+    _scrollController = ScrollController(initialScrollOffset: remembered);
     // The rail highlight tracks scroll position (scrollspy). A post-frame
     // sync sets the initial highlight once the list is laid out.
-    _scrollController.addListener(_syncRailToScroll);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _syncRailToScroll());
+    _scrollController.addListener(_onScroll);
+    _scheduleAfterLayout();
   }
 
-  /// Saves the offset here rather than in [dispose]: children unmount first,
-  /// so by then the scroll view has detached its position from the
-  /// controller and there is no offset left to read.
-  @override
-  void deactivate() {
+  /// Remembers the offset as it changes rather than on the way out: by
+  /// [dispose] the scroll view has already detached its position, and a
+  /// teardown that drops the list first leaves nothing to read.
+  void _onScroll() {
     final workspaceId = _workspaceId;
-    if (workspaceId != null && _scrollController.hasClients) {
+    // While a restore is still owed, the offset is the viewport's clamp to a
+    // list that has not finished arriving, not where the operator was.
+    if (workspaceId != null && _pendingRestore == null) {
       _scrollOffsets.remember(workspaceId, _scrollController.offset);
     }
-    super.deactivate();
+    _syncRailToScroll();
+  }
+
+  /// Runs the layout-dependent syncs once the current frame has laid out.
+  void _scheduleAfterLayout() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _applyPendingRestore();
+      _syncRailToScroll();
+    });
+  }
+
+  /// Moves to the offset this visit still owes, once the list can reach it.
+  void _applyPendingRestore() {
+    final target = _pendingRestore;
+    if (target == null || !mounted || !_scrollController.hasClients) {
+      return;
+    }
+    final position = _scrollController.position;
+    if (position.maxScrollExtent < target) {
+      return;
+    }
+    _pendingRestore = null;
+    if (position.pixels != target) {
+      position.jumpTo(target);
+    }
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_syncRailToScroll);
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _filterMenuController.dispose();
     super.dispose();
@@ -203,6 +236,7 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
   }
 
   void _jumpTo(PrInboxSection section) {
+    _pendingRestore = null;
     setState(() => _railSelection = section);
     final ctx = _sectionKeys[section]?.currentContext;
     if (ctx == null) {
@@ -241,9 +275,7 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
     // geometry shifts as sections appear or disappear.
     ref.listen(inboxDataProvider, (_, next) {
       if (next.hasValue) {
-        WidgetsBinding.instance.addPostFrameCallback(
-          (_) => _syncRailToScroll(),
-        );
+        _scheduleAfterLayout();
       }
     });
     final lastChecked = ref.watch(
@@ -434,88 +466,100 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                             // to avoid.
                             child: CcScrollArea(
                               fadeStart: false,
-                              child: CustomScrollView(
-                                // Exact scroll restoration (PRD 19 §8) comes
-                                // from the controller's initial offset (see
-                                // [inboxScrollOffsetsProvider]); this key only
-                                // covers rebuilds within one inbox route.
-                                key: const PageStorageKey('inbox-sections'),
-                                controller: _scrollController,
-                                // Every section is a pinned header plus an atomic
-                                // body sliver, so each sliver always reports its
-                                // real extent. The old single SliverList
-                                // estimated the total from the average height of
-                                // its VISIBLE children — with 12px spacers, 42px
-                                // headers and 1000px cards in one list, that
-                                // estimate swung as they scrolled through the
-                                // window and the desktop scrollbar's thumb
-                                // visibly grew and shrank.
-                                slivers: [
-                                  SliverPadding(
-                                    // The trailing inset keeps the cards (and
-                                    // their age column) clear of the overlaying
-                                    // scrollbar, which follows the ambient
-                                    // directionality.
-                                    padding: const EdgeInsetsDirectional.only(
-                                      end: AppSpacing.md,
-                                    ),
-                                    sliver: SliverMainAxisGroup(
-                                      slivers: [
-                                        if (attention.isNotEmpty)
-                                          // The attention strip is PINNED
-                                          // (PRD 19 §7): it never scrolls away;
-                                          // section headers pin beneath it. The
-                                          // 12px gap under the card is part of
-                                          // the pinned block and painted with
-                                          // the page canvas, so rows sliding
-                                          // underneath are covered instead of
-                                          // peeking through above the next
-                                          // pinned header.
-                                          PinnedHeaderSliver(
-                                            // Guarded like the section headers:
-                                            // it too pins over scrolling rows, so
-                                            // it too can leave a partial device
-                                            // pixel uncovered at its top edge.
-                                            child: PinnedHeaderBleedGuard(
-                                              child: Container(
-                                                key: _attentionStripKey,
-                                                color: tokens.canvas,
-                                                padding: const EdgeInsets.only(
-                                                  bottom: AppSpacing.md,
-                                                ),
-                                                child: InboxAttentionCard(
-                                                  items: attention,
+                              child: _RestoreWatch(
+                                // The list changed size (rows arrived, a
+                                // section opened): the owed offset may be
+                                // reachable now.
+                                onMetricsChanged: _scheduleAfterLayout,
+                                // The operator moved the list themselves, so
+                                // the old position is no longer owed.
+                                onUserScroll: () => _pendingRestore = null,
+                                child: CustomScrollView(
+                                  // Exact scroll restoration (PRD 19 §8) comes
+                                  // from the controller's initial offset (see
+                                  // [inboxScrollOffsetsProvider]); this key only
+                                  // covers rebuilds within one inbox route.
+                                  key: const PageStorageKey('inbox-sections'),
+                                  controller: _scrollController,
+                                  // Every section is a pinned header plus an atomic
+                                  // body sliver, so each sliver always reports its
+                                  // real extent. The old single SliverList
+                                  // estimated the total from the average height of
+                                  // its VISIBLE children — with 12px spacers, 42px
+                                  // headers and 1000px cards in one list, that
+                                  // estimate swung as they scrolled through the
+                                  // window and the desktop scrollbar's thumb
+                                  // visibly grew and shrank.
+                                  slivers: [
+                                    SliverPadding(
+                                      // The trailing inset keeps the cards (and
+                                      // their age column) clear of the overlaying
+                                      // scrollbar, which follows the ambient
+                                      // directionality.
+                                      padding: const EdgeInsetsDirectional.only(
+                                        end: AppSpacing.md,
+                                      ),
+                                      sliver: SliverMainAxisGroup(
+                                        slivers: [
+                                          if (attention.isNotEmpty)
+                                            // The attention strip is PINNED
+                                            // (PRD 19 §7): it never scrolls away;
+                                            // section headers pin beneath it. The
+                                            // 12px gap under the card is part of
+                                            // the pinned block and painted with
+                                            // the page canvas, so rows sliding
+                                            // underneath are covered instead of
+                                            // peeking through above the next
+                                            // pinned header.
+                                            PinnedHeaderSliver(
+                                              // Guarded like the section headers:
+                                              // it too pins over scrolling rows, so
+                                              // it too can leave a partial device
+                                              // pixel uncovered at its top edge.
+                                              child: PinnedHeaderBleedGuard(
+                                                child: Container(
+                                                  key: _attentionStripKey,
+                                                  color: tokens.canvas,
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                        bottom: AppSpacing.md,
+                                                      ),
+                                                  child: InboxAttentionCard(
+                                                    items: attention,
+                                                  ),
                                                 ),
                                               ),
                                             ),
-                                          ),
-                                        // Empty sections render no card at all —
-                                        // the rail is the always-complete map;
-                                        // the list shows only work. Spacers sit
-                                        // BETWEEN cards only, so the viewport
-                                        // ends at the last card's bottom edge.
-                                        for (
-                                          var i = 0;
-                                          i < presentSections.length;
-                                          i++
-                                        ) ...[
-                                          InboxSectionCard(
-                                            section: presentSections[i],
-                                            items: data.of(presentSections[i]),
-                                            headerKey:
-                                                _sectionKeys[presentSections[i]],
-                                          ),
-                                          if (i < presentSections.length - 1)
-                                            const SliverToBoxAdapter(
-                                              child: SizedBox(
-                                                height: AppSpacing.md,
+                                          // Empty sections render no card at all —
+                                          // the rail is the always-complete map;
+                                          // the list shows only work. Spacers sit
+                                          // BETWEEN cards only, so the viewport
+                                          // ends at the last card's bottom edge.
+                                          for (
+                                            var i = 0;
+                                            i < presentSections.length;
+                                            i++
+                                          ) ...[
+                                            InboxSectionCard(
+                                              section: presentSections[i],
+                                              items: data.of(
+                                                presentSections[i],
                                               ),
+                                              headerKey:
+                                                  _sectionKeys[presentSections[i]],
                                             ),
+                                            if (i < presentSections.length - 1)
+                                              const SliverToBoxAdapter(
+                                                child: SizedBox(
+                                                  height: AppSpacing.md,
+                                                ),
+                                              ),
+                                          ],
                                         ],
-                                      ],
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ),
@@ -525,6 +569,44 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                   ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Reports the two events that settle an owed scroll restore: the list
+/// changing size, and the operator scrolling it themselves (drag, wheel or
+/// trackpad). Neither notification is consumed, so the scroll area above
+/// still sees them.
+class _RestoreWatch extends StatelessWidget {
+  const _RestoreWatch({
+    required this.onMetricsChanged,
+    required this.onUserScroll,
+    required this.child,
+  });
+
+  final VoidCallback onMetricsChanged;
+  final VoidCallback onUserScroll;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return NotificationListener<ScrollMetricsNotification>(
+      onNotification: (notification) {
+        if (notification.depth == 0) {
+          onMetricsChanged();
+        }
+        return false;
+      },
+      child: NotificationListener<UserScrollNotification>(
+        onNotification: (notification) {
+          if (notification.depth == 0 &&
+              notification.direction != ScrollDirection.idle) {
+            onUserScroll();
+          }
+          return false;
+        },
+        child: child,
       ),
     );
   }

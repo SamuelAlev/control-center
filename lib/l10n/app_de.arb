@@ -9605,5 +9605,22 @@
   "ccUnverifiedLabel": "{label} (nicht verifiziert)",
   "prRowSelect": "{title} auswählen",
   "prTableSelectAll": "Alle Pull Requests auswählen",
-  "planVersionRewind": "Auf Version {version} zurücksetzen"
+  "planVersionRewind": "Auf Version {version} zurücksetzen",
+  "messageAuthorYou": "Du",
+  "systemMessageLabel": "System: {content}",
+  "retryUploadNamed": "Upload von {name} erneut versuchen",
+  "selectItemNamed": "{name} auswählen",
+  "linkPullRequest": "Pull Request verknüpfen",
+  "addRelation": "Beziehung hinzufügen",
+  "playbackPosition": "Wiedergabeposition",
+  "prNewChangesRefreshDiff": "Neue Änderungen — Diff aktualisieren",
+  "notificationsDeliverySchedule": "Zustellungsplan",
+  "notificationsDeliveryScheduleSubtitle": "Wie nicht dringende Benachrichtigungen gebündelt und zugestellt werden.",
+  "notificationsDeliveryRealtime": "Echtzeit",
+  "notificationsDeliveryEvery2Hours": "Alle 2 Stunden",
+  "notificationsDeliveryDailyDigest": "Tägliche Zusammenfassung",
+  "notificationsQuietHours": "Ruhezeiten",
+  "notificationsQuietHoursOn": "Nicht dringende Benachrichtigungen werden {start}–{end} unterdrückt.",
+  "notificationsQuietHoursOff": "Nicht dringende Benachrichtigungen werden jederzeit zugestellt.",
+  "toolCalls": "Tool-Aufrufe"
 }

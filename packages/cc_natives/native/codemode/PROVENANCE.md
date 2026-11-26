@@ -18,7 +18,7 @@ come from crates.io. The licences below were read from each crate's
 | allocator-api2 | 0.2.21 | MIT OR Apache-2.0 | https://github.com/zakarumych/allocator-api2 | hashbrown dependency |
 | equivalent | 1.0.3 | Apache-2.0 OR MIT | https://github.com/indexmap-rs/equivalent | hashbrown dependency |
 | foldhash | 0.2.0 | Zlib | https://github.com/orlp/foldhash | hashbrown dependency |
-| serde_json | 1.0.149 | MIT OR Apache-2.0 | https://github.com/serde-rs/json | wire protocol (no default features; `std`, `float_roundtrip`: exact number parsing, no extra crate) |
+| serde_json | 1.0.154 | MIT OR Apache-2.0 | https://github.com/serde-rs/json | wire protocol (no default features; `std`, `float_roundtrip`: exact number parsing, no extra crate) |
 | serde_core | 1.0.229 | MIT OR Apache-2.0 | https://github.com/serde-rs/serde | serde_json dependency |
 | itoa | 1.0.19 | MIT OR Apache-2.0 | https://github.com/dtolnay/itoa | serde_json dependency |
 | zmij | 1.0.23 | MIT | https://github.com/dtolnay/zmij | serde_json float formatting |

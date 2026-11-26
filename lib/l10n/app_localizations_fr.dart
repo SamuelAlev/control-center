@@ -7658,6 +7658,68 @@ class AppLocalizationsFr extends AppLocalizations {
       'Tab insère un retrait ici. Appuyez sur Esc, puis sur Tab pour passer au contrôle suivant.';
 
   @override
+  String get messageAuthorYou => 'Vous';
+
+  @override
+  String systemMessageLabel(String content) {
+    return 'Système : $content';
+  }
+
+  @override
+  String retryUploadNamed(String name) {
+    return 'Réessayer l’envoi de $name';
+  }
+
+  @override
+  String selectItemNamed(String name) {
+    return 'Sélectionner $name';
+  }
+
+  @override
+  String get linkPullRequest => 'Lier une pull request';
+
+  @override
+  String get addRelation => 'Ajouter une relation';
+
+  @override
+  String get playbackPosition => 'Position de lecture';
+
+  @override
+  String get prNewChangesRefreshDiff =>
+      'Nouvelles modifications — Actualiser le diff';
+
+  @override
+  String get notificationsDeliverySchedule => 'Calendrier de livraison';
+
+  @override
+  String get notificationsDeliveryScheduleSubtitle =>
+      'Mode de regroupement et de livraison des notifications non urgentes.';
+
+  @override
+  String get notificationsDeliveryRealtime => 'En temps réel';
+
+  @override
+  String get notificationsDeliveryEvery2Hours => 'Toutes les 2 heures';
+
+  @override
+  String get notificationsDeliveryDailyDigest => 'Récapitulatif quotidien';
+
+  @override
+  String get notificationsQuietHours => 'Heures calmes';
+
+  @override
+  String notificationsQuietHoursOn(String start, String end) {
+    return 'Notifications non urgentes suspendues $start–$end.';
+  }
+
+  @override
+  String get notificationsQuietHoursOff =>
+      'Les notifications non urgentes sont livrées à tout moment.';
+
+  @override
+  String get toolCalls => 'Appels d’outils';
+
+  @override
   String get markdownSupported => 'Markdown est pris en charge';
 
   @override

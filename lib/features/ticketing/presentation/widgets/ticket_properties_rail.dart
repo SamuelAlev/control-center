@@ -379,6 +379,7 @@ class TicketPropertiesRail extends ConsumerWidget {
           trailing: TicketPropertyPicker(
             trigger: (context, toggle) => CcTappable(
               onPressed: toggle,
+              semanticLabel: l10n.addCollaborator,
               builder: (context, states) => Padding(
                 padding: const EdgeInsets.all(2),
                 child: Icon(AppIcons.userPlus, size: 16, color: t.fgTertiary),

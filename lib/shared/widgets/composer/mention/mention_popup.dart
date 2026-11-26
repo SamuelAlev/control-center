@@ -5,6 +5,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/composer/composer_models.dart';
 import 'package:control_center/shared/widgets/composer/mention/mention_source.dart';
 import 'package:flutter/rendering.dart' show RenderAbstractViewport;
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -363,6 +364,13 @@ class _MentionPopupState extends State<MentionPopup> {
       }
     });
     _scrollSelectedIntoView();
+    // Focus stays in the field, so the highlighted row is never focused:
+    // say which one the arrow keys landed on.
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      _flat[_selected].label,
+      Directionality.of(context),
+    );
   }
 
   /// Scrolls the least distance that shows the whole active row.
@@ -527,6 +535,7 @@ class _SuggestionRow extends StatelessWidget {
       ),
       child: CcTappable(
         onPressed: onTap,
+        semanticSelected: selected,
         mouseCursor: SystemMouseCursors.click,
         builder: (context, states) => MouseRegion(
           // Not onEnter: that also fires when keyboard scrolling carries a row

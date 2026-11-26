@@ -135,7 +135,7 @@ class CcBadge extends StatelessWidget {
       case CcBadgeVariant.info:
         return _BadgeColors(
           bg: t.accentSoft,
-          fg: t.accent,
+          fg: t.accentText,
           border: t.accent.withValues(alpha: 0.28),
         );
       case CcBadgeVariant.merged:

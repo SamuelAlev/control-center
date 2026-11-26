@@ -97,6 +97,7 @@ final class DesignSystemTokens {
     required this.borderSecondaryAlt,
     required this.borderTertiary,
     required this.borderDisabled,
+    required this.borderControl,
     required this.borderBrand,
     required this.borderBrandAlt,
     required this.borderBrandSolid,
@@ -122,6 +123,7 @@ final class DesignSystemTokens {
     required this.hoverStrong,
     required this.accent,
     required this.accentOn,
+    required this.accentText,
     required this.accentHover,
     required this.accentActive,
     required this.accentSoft,
@@ -210,7 +212,7 @@ final class DesignSystemTokens {
     textErrorPrimary: DesignSystemPalette.red700,
     textErrorPrimaryHover: DesignSystemPalette.red700,
     textWarningPrimary: DesignSystemPalette.yellow800,
-    textSuccessPrimary: DesignSystemPalette.green700,
+    textSuccessPrimary: DesignSystemPalette.green750,
     textMergedPrimary: DesignSystemPalette.purple700,
     fgPrimary: DesignSystemPalette.gray900,
     fgSecondary: DesignSystemPalette.gray700,
@@ -236,8 +238,10 @@ final class DesignSystemTokens {
     // (bright yellow is ~1.9:1 — near-invisible on near-white).
     fgWarningPrimary: DesignSystemPalette.yellow650,
     fgWarningSecondary: DesignSystemPalette.yellow650,
-    fgSuccessPrimary: DesignSystemPalette.green600,
-    fgSuccessSecondary: DesignSystemPalette.green500,
+    // a11y: success glyphs clear 3:1 on the surface (green600 is 2.9:1,
+    // green500 2.4:1).
+    fgSuccessPrimary: DesignSystemPalette.green650,
+    fgSuccessSecondary: DesignSystemPalette.green550,
     // Merged PR status — purple (GitHub's "merged" semantics).
     fgMergedPrimary: DesignSystemPalette.purple600,
     borderPrimary: DesignSystemPalette.gray300,
@@ -245,6 +249,9 @@ final class DesignSystemTokens {
     borderSecondaryAlt: Color(0x1A1F1F1F), // fg @ 10% (warm, never pure black)
     borderTertiary: DesignSystemPalette.gray100,
     borderDisabled: DesignSystemPalette.gray200,
+    // a11y: unchecked checkbox/radio/switch outlines clear the 3:1 non-text
+    // floor against the control fill and the page (gray300 is 1.3:1).
+    borderControl: DesignSystemPalette.gray500,
     // a11y: brand borders + focus ring are the accessible burnt
     // accent so state boundaries clear the 3:1 non-text floor with margin
     // (bright brand500/600 are 2.9–3.3:1 on canvas).
@@ -277,10 +284,11 @@ final class DesignSystemTokens {
     // golden-hour horizon), where it is large/decorative.
     accent: DesignSystemPalette.brand850,
     accentOn: DesignSystemPalette.white,
+    accentText: DesignSystemPalette.brand850,
     accentHover: DesignSystemPalette.brand800,
     accentActive: DesignSystemPalette.brand900,
     accentSoft: Color(0x1FB0370C),
-    success: DesignSystemPalette.green600,
+    success: DesignSystemPalette.green650,
     successSoft: Color(0x2417A34A),
     // a11y: warn is the gold650 so the status dot/icon clears the 3:1
     // non-text floor on the near-white canvas (bright yellow is 1.9:1).
@@ -401,6 +409,8 @@ final class DesignSystemTokens {
     borderSecondaryAlt: DesignSystemPalette.gray800,
     borderTertiary: DesignSystemPalette.gray800,
     borderDisabled: DesignSystemPalette.gray700,
+    // a11y: gray700 is 1.1:1 against the control fill; gray500 is 4.2:1.
+    borderControl: DesignSystemPalette.gray500,
     borderBrand: DesignSystemPalette.brand400,
     borderBrandAlt: DesignSystemPalette.gray700,
     borderBrandSolid: DesignSystemPalette.brand600,
@@ -425,6 +435,8 @@ final class DesignSystemTokens {
     hoverStrong: Color(0x14FCFBF9),
     accent: DesignSystemPalette.brand500,
     accentOn: DesignSystemPalette.white,
+    // a11y: brand500 text on its soft tint over the surface is 4.3:1.
+    accentText: DesignSystemPalette.brand450,
     accentHover: DesignSystemPalette.brand400,
     accentActive: DesignSystemPalette.brand600,
     accentSoft: Color(0x1FFB6224),
@@ -692,6 +704,10 @@ final class DesignSystemTokens {
   /// borderDisabled — border color.
   final Color borderDisabled;
 
+  /// borderControl — the resting outline of an unchecked checkbox, radio or
+  /// switch (a control boundary, so it holds 3:1).
+  final Color borderControl;
+
   /// borderBrand — border color.
   final Color borderBrand;
 
@@ -761,6 +777,10 @@ final class DesignSystemTokens {
 
   /// accentOn — text/icon on accent.
   final Color accentOn;
+
+  /// accentText — the accent as colored text (info tags/badges), which needs
+  /// 4.5:1 where [accent] as a glyph needs only 3:1.
+  final Color accentText;
 
   /// accentHover — accent hover warm-up (Flame).
   final Color accentHover;
@@ -905,6 +925,7 @@ final class DesignSystemTokens {
     Color? borderSecondaryAlt,
     Color? borderTertiary,
     Color? borderDisabled,
+    Color? borderControl,
     Color? borderBrand,
     Color? borderBrandAlt,
     Color? borderBrandSolid,
@@ -928,6 +949,7 @@ final class DesignSystemTokens {
     Color? hoverStrong,
     Color? accent,
     Color? accentOn,
+    Color? accentText,
     Color? accentHover,
     Color? accentActive,
     Color? accentSoft,
@@ -1031,6 +1053,7 @@ final class DesignSystemTokens {
       borderSecondaryAlt: borderSecondaryAlt ?? this.borderSecondaryAlt,
       borderTertiary: borderTertiary ?? this.borderTertiary,
       borderDisabled: borderDisabled ?? this.borderDisabled,
+      borderControl: borderControl ?? this.borderControl,
       borderBrand: borderBrand ?? this.borderBrand,
       borderBrandAlt: borderBrandAlt ?? this.borderBrandAlt,
       borderBrandSolid: borderBrandSolid ?? this.borderBrandSolid,
@@ -1055,6 +1078,7 @@ final class DesignSystemTokens {
       hoverStrong: hoverStrong ?? this.hoverStrong,
       accent: accent ?? this.accent,
       accentOn: accentOn ?? this.accentOn,
+      accentText: accentText ?? this.accentText,
       accentHover: accentHover ?? this.accentHover,
       accentActive: accentActive ?? this.accentActive,
       accentSoft: accentSoft ?? this.accentSoft,
@@ -1163,6 +1187,7 @@ final class DesignSystemTokens {
     borderSecondaryAlt,
     borderTertiary,
     borderDisabled,
+    borderControl,
     borderBrand,
     borderBrandAlt,
     borderBrandSolid,
@@ -1186,6 +1211,7 @@ final class DesignSystemTokens {
     hoverStrong,
     accent,
     accentOn,
+    accentText,
     accentHover,
     accentActive,
     accentSoft,
@@ -1348,6 +1374,7 @@ final class DesignSystemTokens {
       borderSecondaryAlt: l(borderSecondaryAlt, other.borderSecondaryAlt),
       borderTertiary: l(borderTertiary, other.borderTertiary),
       borderDisabled: l(borderDisabled, other.borderDisabled),
+      borderControl: l(borderControl, other.borderControl),
       borderBrand: l(borderBrand, other.borderBrand),
       borderBrandAlt: l(borderBrandAlt, other.borderBrandAlt),
       borderBrandSolid: l(borderBrandSolid, other.borderBrandSolid),
@@ -1374,6 +1401,7 @@ final class DesignSystemTokens {
       hoverStrong: l(hoverStrong, other.hoverStrong),
       accent: l(accent, other.accent),
       accentOn: l(accentOn, other.accentOn),
+      accentText: l(accentText, other.accentText),
       accentHover: l(accentHover, other.accentHover),
       accentActive: l(accentActive, other.accentActive),
       accentSoft: l(accentSoft, other.accentSoft),

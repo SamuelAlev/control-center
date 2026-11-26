@@ -1,4 +1,5 @@
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/hover_focus_reveal.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_editor.dart';
@@ -12,7 +13,7 @@ import 'package:flutter/widgets.dart';
 ///
 /// Read mode renders the markdown with the same [StyledMarkdownBody] look used
 /// across PR descriptions and chat (so headings, code chips and task lists
-/// match), with a hover-revealed edit pencil. Edit mode shows the markdown
+/// match), with an edit pencil revealed on hover or keyboard focus. Edit mode shows the markdown
 /// toolbar + a live Preview tab and commits via [onSave] on Save (or
 /// Cmd/Ctrl+Enter); Esc cancels (confirming first if there are unsaved edits).
 ///
@@ -45,7 +46,6 @@ class _MarkdownEditableFieldState extends State<MarkdownEditableField> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   bool _editing = false;
-  bool _hovered = false;
 
   @override
   void dispose() {
@@ -145,41 +145,47 @@ class _MarkdownEditableFieldState extends State<MarkdownEditableField> {
 
   Widget _buildRead(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
+    final l10n = AppLocalizations.of(context);
     return MouseRegion(
       cursor: SystemMouseCursors.text,
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsetsDirectional.only(end: 28),
-            child: StyledMarkdownBody(data: widget.text),
-          ),
-          if (_hovered)
+      // The pencil stays mounted (only faded) so Tab reaches it: the read
+      // body itself is not tappable, so it is the keyboard's only way in.
+      child: HoverFocusReveal(
+        builder: (context, revealed) => Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: 28),
+              child: StyledMarkdownBody(data: widget.text),
+            ),
             PositionedDirectional(
               top: 0,
               end: 0,
-              child: CcTooltip(
-                message: AppLocalizations.of(context).editDescription,
-                child: CcTappable(
-                  onPressed: _startEdit,
-                  builder: (context, states) => Container(
-                    decoration: BoxDecoration(
-                      color: t.bgPrimary,
-                      borderRadius: BorderRadius.circular(2),
-                      border: Border.all(color: t.borderSecondary),
-                    ),
-                    padding: const EdgeInsets.all(5),
-                    child: Icon(
-                      AppIcons.pencil,
-                      size: 14,
-                      color: t.fgQuaternary,
+              child: HoverFocusReveal.fade(
+                revealed: revealed,
+                child: CcTooltip(
+                  message: l10n.editDescription,
+                  child: CcTappable(
+                    onPressed: _startEdit,
+                    semanticLabel: l10n.editDescription,
+                    builder: (context, states) => Container(
+                      decoration: BoxDecoration(
+                        color: t.bgPrimary,
+                        borderRadius: BorderRadius.circular(2),
+                        border: Border.all(color: t.borderSecondary),
+                      ),
+                      padding: const EdgeInsets.all(5),
+                      child: Icon(
+                        AppIcons.pencil,
+                        size: 14,
+                        color: t.fgQuaternary,
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }

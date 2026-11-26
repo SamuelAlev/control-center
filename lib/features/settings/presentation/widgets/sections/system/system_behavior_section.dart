@@ -32,6 +32,7 @@ class SystemBehaviorSection extends ConsumerWidget {
                 : l10n.keepAwakeOffSubtitle,
             trailing: CcSwitch(
               value: keepAwake,
+              semanticLabel: l10n.keepAwakeTitle,
               onChanged: (v) => ref
                   .read(keepComputerAwakeProvider.notifier)
                   .setEnabled(value: v),

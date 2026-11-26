@@ -163,7 +163,7 @@ class _ColumnHeaderRow extends StatelessWidget {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
     final style = CcTypography.caption.copyWith(
-      color: tokens.idle,
+      color: tokens.textQuaternary,
       fontWeight: FontWeight.w500,
     );
 

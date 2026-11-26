@@ -13053,6 +13053,108 @@ abstract class AppLocalizations {
   /// **'Tab indents here. Press Esc, then Tab to move to the next control.'**
   String get markdownTabIndentHint;
 
+  /// Screen reader name for the author of the person's own chat message
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get messageAuthorYou;
+
+  /// Screen reader label for a system notice in the message feed
+  ///
+  /// In en, this message translates to:
+  /// **'System: {content}'**
+  String systemMessageLabel(String content);
+
+  /// Screen reader label for the retry button on a failed attachment
+  ///
+  /// In en, this message translates to:
+  /// **'Retry upload of {name}'**
+  String retryUploadNamed(String name);
+
+  /// Screen reader label for a row's selection checkbox; name is the row's title
+  ///
+  /// In en, this message translates to:
+  /// **'Select {name}'**
+  String selectItemNamed(String name);
+
+  /// Accessible name of the icon button that links a pull request to a ticket
+  ///
+  /// In en, this message translates to:
+  /// **'Link pull request'**
+  String get linkPullRequest;
+
+  /// Accessible name of the icon button that adds a relation between tickets
+  ///
+  /// In en, this message translates to:
+  /// **'Add relation'**
+  String get addRelation;
+
+  /// Screen reader label for the audio seek bar of a meeting recording
+  ///
+  /// In en, this message translates to:
+  /// **'Playback position'**
+  String get playbackPosition;
+
+  /// Chip in the pull request diff toolbar shown when the diff is out of date; pressing it reloads the diff
+  ///
+  /// In en, this message translates to:
+  /// **'New changes — Refresh diff'**
+  String get prNewChangesRefreshDiff;
+
+  /// Settings row title: how notifications are batched
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery schedule'**
+  String get notificationsDeliverySchedule;
+
+  /// Settings row subtitle under Delivery schedule
+  ///
+  /// In en, this message translates to:
+  /// **'How non-urgent notifications are batched and delivered.'**
+  String get notificationsDeliveryScheduleSubtitle;
+
+  /// Delivery schedule option: send each notification immediately
+  ///
+  /// In en, this message translates to:
+  /// **'Real-time'**
+  String get notificationsDeliveryRealtime;
+
+  /// Delivery schedule option: a digest every two hours
+  ///
+  /// In en, this message translates to:
+  /// **'Every 2 hours'**
+  String get notificationsDeliveryEvery2Hours;
+
+  /// Delivery schedule option: one digest per day
+  ///
+  /// In en, this message translates to:
+  /// **'Daily digest'**
+  String get notificationsDeliveryDailyDigest;
+
+  /// Settings row title for the hours when non-urgent notifications are held back
+  ///
+  /// In en, this message translates to:
+  /// **'Quiet hours'**
+  String get notificationsQuietHours;
+
+  /// Quiet hours subtitle while enabled; start and end are clock times such as 22:00
+  ///
+  /// In en, this message translates to:
+  /// **'Non-urgent notifications suppressed {start}–{end}.'**
+  String notificationsQuietHoursOn(String start, String end);
+
+  /// Quiet hours subtitle while disabled
+  ///
+  /// In en, this message translates to:
+  /// **'Non-urgent notifications deliver at any time.'**
+  String get notificationsQuietHoursOff;
+
+  /// Caption above the list of tools an agent called, in the agent transcript drawer
+  ///
+  /// In en, this message translates to:
+  /// **'Tool calls'**
+  String get toolCalls;
+
   /// Footer hint in the markdown editor box
   ///
   /// In en, this message translates to:

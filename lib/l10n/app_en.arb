@@ -6988,6 +6988,54 @@
   "@markdownTabIndentHint": {
     "description": "Shown once and read to screen readers the first time Tab indents a code block or list in a text field instead of moving focus; explains how to leave the field by keyboard"
   },
+  "messageAuthorYou": "You",
+  "@messageAuthorYou": {
+    "description": "Screen reader name for the author of the person's own chat message"
+  },
+  "systemMessageLabel": "System: {content}",
+  "@systemMessageLabel": {
+    "description": "Screen reader label for a system notice in the message feed",
+    "placeholders": {"content": {"type": "String"}}
+  },
+  "retryUploadNamed": "Retry upload of {name}",
+  "@retryUploadNamed": {
+    "description": "Screen reader label for the retry button on a failed attachment",
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "selectItemNamed": "Select {name}",
+  "@selectItemNamed": {
+    "description": "Screen reader label for a row's selection checkbox; name is the row's title",
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "linkPullRequest": "Link pull request",
+  "@linkPullRequest": {"description": "Accessible name of the icon button that links a pull request to a ticket"},
+  "addRelation": "Add relation",
+  "@addRelation": {"description": "Accessible name of the icon button that adds a relation between tickets"},
+  "playbackPosition": "Playback position",
+  "@playbackPosition": {"description": "Screen reader label for the audio seek bar of a meeting recording"},
+  "prNewChangesRefreshDiff": "New changes — Refresh diff",
+  "@prNewChangesRefreshDiff": {"description": "Chip in the pull request diff toolbar shown when the diff is out of date; pressing it reloads the diff"},
+  "notificationsDeliverySchedule": "Delivery schedule",
+  "@notificationsDeliverySchedule": {"description": "Settings row title: how notifications are batched"},
+  "notificationsDeliveryScheduleSubtitle": "How non-urgent notifications are batched and delivered.",
+  "@notificationsDeliveryScheduleSubtitle": {"description": "Settings row subtitle under Delivery schedule"},
+  "notificationsDeliveryRealtime": "Real-time",
+  "@notificationsDeliveryRealtime": {"description": "Delivery schedule option: send each notification immediately"},
+  "notificationsDeliveryEvery2Hours": "Every 2 hours",
+  "@notificationsDeliveryEvery2Hours": {"description": "Delivery schedule option: a digest every two hours"},
+  "notificationsDeliveryDailyDigest": "Daily digest",
+  "@notificationsDeliveryDailyDigest": {"description": "Delivery schedule option: one digest per day"},
+  "notificationsQuietHours": "Quiet hours",
+  "@notificationsQuietHours": {"description": "Settings row title for the hours when non-urgent notifications are held back"},
+  "notificationsQuietHoursOn": "Non-urgent notifications suppressed {start}–{end}.",
+  "@notificationsQuietHoursOn": {
+    "description": "Quiet hours subtitle while enabled; start and end are clock times such as 22:00",
+    "placeholders": {"start": {"type": "String"}, "end": {"type": "String"}}
+  },
+  "notificationsQuietHoursOff": "Non-urgent notifications deliver at any time.",
+  "@notificationsQuietHoursOff": {"description": "Quiet hours subtitle while disabled"},
+  "toolCalls": "Tool calls",
+  "@toolCalls": {"description": "Caption above the list of tools an agent called, in the agent transcript drawer"},
   "markdownSupported": "Markdown is supported",
   "@markdownSupported": {
     "description": "Footer hint in the markdown editor box"

@@ -92,7 +92,7 @@ class CcRadio<T> extends StatelessWidget {
           borderColor = enabled ? t.accent : t.borderDisabled;
           fillColor = t.surface;
         } else {
-          borderColor = enabled ? t.borderPrimary : t.borderDisabled;
+          borderColor = enabled ? t.borderControl : t.borderDisabled;
           final wash = pressed
               ? t.hoverStrong
               : hovered

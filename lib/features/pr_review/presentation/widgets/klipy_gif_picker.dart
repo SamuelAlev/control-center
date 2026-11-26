@@ -291,6 +291,10 @@ class _GifPickerBodyState extends State<_GifPickerBody> {
         final gif = _gifs[index];
         return CcTappable(
           onPressed: () => widget.onSelected(gif),
+          // The tile is all picture; an untitled one still needs a name.
+          semanticLabel: gif.title.trim().isEmpty
+              ? AppLocalizations.of(context).addGif
+              : gif.title,
           borderRadius: BorderRadius.circular(8),
           builder: (context, states) => ClipRRect(
             borderRadius: BorderRadius.circular(8),

@@ -7604,6 +7604,67 @@ class AppLocalizationsMs extends AppLocalizations {
       'Tab menjorokkan di sini. Tekan Esc, kemudian Tab untuk beralih ke kawalan seterusnya.';
 
   @override
+  String get messageAuthorYou => 'Anda';
+
+  @override
+  String systemMessageLabel(String content) {
+    return 'Sistem: $content';
+  }
+
+  @override
+  String retryUploadNamed(String name) {
+    return 'Cuba semula muat naik $name';
+  }
+
+  @override
+  String selectItemNamed(String name) {
+    return 'Pilih $name';
+  }
+
+  @override
+  String get linkPullRequest => 'Pautkan pull request';
+
+  @override
+  String get addRelation => 'Tambah hubungan';
+
+  @override
+  String get playbackPosition => 'Kedudukan main balik';
+
+  @override
+  String get prNewChangesRefreshDiff => 'Perubahan baharu — Muat semula diff';
+
+  @override
+  String get notificationsDeliverySchedule => 'Jadual penghantaran';
+
+  @override
+  String get notificationsDeliveryScheduleSubtitle =>
+      'Cara pemberitahuan tidak mendesak dikelompokkan dan dihantar.';
+
+  @override
+  String get notificationsDeliveryRealtime => 'Masa nyata';
+
+  @override
+  String get notificationsDeliveryEvery2Hours => 'Setiap 2 jam';
+
+  @override
+  String get notificationsDeliveryDailyDigest => 'Ringkasan harian';
+
+  @override
+  String get notificationsQuietHours => 'Waktu senyap';
+
+  @override
+  String notificationsQuietHoursOn(String start, String end) {
+    return 'Pemberitahuan tidak mendesak disekat $start–$end.';
+  }
+
+  @override
+  String get notificationsQuietHoursOff =>
+      'Pemberitahuan tidak mendesak dihantar pada bila-bila masa.';
+
+  @override
+  String get toolCalls => 'Panggilan alat';
+
+  @override
   String get markdownSupported => 'Markdown disokong';
 
   @override

@@ -1,8 +1,8 @@
 diff --git a/cxx_impl/src/platform/windows/window_manager_windows.cpp b/cxx_impl/src/platform/windows/window_manager_windows.cpp
-index 25ab6a68d47990e4d9648b9675fd6b538de2521c..dd4fdd67ebb5e3a4843b51eb055668abe1ce015e 100644
+index 290b452f44896c180dd0d74fa77fe6d4e872792d..926e014beb65dd71c4500ad3cebee79e749b2d97 100644
 --- a/cxx_impl/src/platform/windows/window_manager_windows.cpp
 +++ b/cxx_impl/src/platform/windows/window_manager_windows.cpp
-@@ -256,6 +256,14 @@ using PFN_ShowWindowAsync = BOOL(WINAPI*)(HWND, int);
+@@ -322,6 +322,14 @@ using PFN_ShowWindowAsync = BOOL(WINAPI*)(HWND, int);
  static PFN_ShowWindow g_original_show_window = nullptr;
  static PFN_ShowWindowAsync g_original_show_window_async = nullptr;
  static bool g_hooks_installed = false;
@@ -17,7 +17,7 @@ index 25ab6a68d47990e4d9648b9675fd6b538de2521c..dd4fdd67ebb5e3a4843b51eb055668ab
  
  static bool IsShowCommand(int cmd) {
    switch (cmd) {
-@@ -274,6 +282,13 @@ static bool IsShowCommand(int cmd) {
+@@ -340,6 +348,13 @@ static bool IsShowCommand(int cmd) {
  // Intercept show/hide commands and invoke hooks if registered
  // Returns true if hook handled the operation (skip original implementation)
  static bool TryHandleWithHook(HWND hwnd, int cmd) {
@@ -31,7 +31,7 @@ index 25ab6a68d47990e4d9648b9675fd6b538de2521c..dd4fdd67ebb5e3a4843b51eb055668ab
    WindowId window_id = GetWindowIdFromHwnd(hwnd);
    if (window_id == IdAllocator::kInvalidId) {
      return false;
-@@ -484,6 +499,7 @@ static void InstallHooks() {
+@@ -550,6 +565,7 @@ static void InstallHooks() {
      }
    });
  

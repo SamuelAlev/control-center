@@ -7,9 +7,10 @@ import 'package:flutter/widgets.dart';
 /// panel anchored under the section header (via [link]), a title, a search
 /// field and a scrollable [list] area. There is no save button — closing the
 /// flyout (barrier tap or Esc) calls [onClose], where the caller applies the
-/// diff. Closing hands keyboard focus back to whatever held it when the flyout
-/// opened (the `+` trigger), instead of dropping it with the search field.
-class PickerFlyoutPanel extends StatefulWidget {
+/// diff. The panel is a [CcFocusTrap]: Tab stays inside it rather than walking
+/// out behind the barrier, and closing hands keyboard focus back to whatever
+/// held it when the flyout opened (the `+` trigger).
+class PickerFlyoutPanel extends StatelessWidget {
   /// Creates a [PickerFlyoutPanel].
   const PickerFlyoutPanel({
     super.key,
@@ -48,49 +49,8 @@ class PickerFlyoutPanel extends StatefulWidget {
   final Widget list;
 
   @override
-  State<PickerFlyoutPanel> createState() => _PickerFlyoutPanelState();
-}
-
-class _PickerFlyoutPanelState extends State<PickerFlyoutPanel> {
-  /// Focus when the flyout opened — the trigger, for a keyboard user. The
-  /// search field only takes focus a frame later.
-  FocusNode? _returnFocus;
-
-  @override
-  void initState() {
-    super.initState();
-    _returnFocus = FocusManager.instance.primaryFocus;
-  }
-
-  @override
-  void dispose() {
-    final target = _returnFocus;
-    // The search field unmounts with the panel; once that settles, put focus
-    // back where it was unless the close itself moved it somewhere real.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final current = FocusManager.instance.primaryFocus;
-      final lost =
-          current == null ||
-          current is FocusScopeNode ||
-          current == widget.searchFocus;
-      if (lost && target != null && target.context != null) {
-        target.requestFocus();
-      }
-    });
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
-    final link = widget.link;
-    final title = widget.title;
-    final searchController = widget.searchController;
-    final searchFocus = widget.searchFocus;
-    final hintText = widget.hintText;
-    final onQueryChanged = widget.onQueryChanged;
-    final onClose = widget.onClose;
-    final list = widget.list;
     return Stack(
       children: [
         Positioned.fill(
@@ -110,65 +70,73 @@ class _PickerFlyoutPanelState extends State<PickerFlyoutPanel> {
           offset: const Offset(0, 6),
           child: Align(
             alignment: AlignmentDirectional.topEnd,
+            // Above the trap, so Escape still bubbles here while its scope
+            // holds focus with nothing inside focused.
             child: CallbackShortcuts(
               bindings: {
                 const SingleActivator(LogicalKeyboardKey.escape): onClose,
               },
-              child: Container(
-                width: 300,
-                constraints: const BoxConstraints(maxHeight: 400),
-                decoration: BoxDecoration(
-                  color: t.bgPrimary,
-                  border: Border.all(color: t.borderSecondary),
-                  boxShadow: AppShadows.golden,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-                      child: Semantics(
-                        header: true,
-                        child: Text(
-                          title,
-                          style: CcTypography.bodySm.copyWith(
-                            fontWeight: CcTypography.semiboldWeight,
-                            color: t.textPrimary,
+              child: CcFocusTrap(
+                debugLabel: title,
+                child: Container(
+                  width: 300,
+                  constraints: const BoxConstraints(maxHeight: 400),
+                  decoration: BoxDecoration(
+                    color: t.bgPrimary,
+                    border: Border.all(color: t.borderSecondary),
+                    boxShadow: AppShadows.golden,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+                        child: Semantics(
+                          header: true,
+                          child: Text(
+                            title,
+                            style: CcTypography.bodySm.copyWith(
+                              fontWeight: CcTypography.semiboldWeight,
+                              color: t.textPrimary,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                      child: Row(
-                        children: [
-                          Icon(
-                            AppIcons.search,
-                            size: 14,
-                            color: t.fgQuaternary,
-                          ),
-                          AppSpacing.hGapSm,
-                          Expanded(
-                            child: CcTextField(
-                              controller: searchController,
-                              focusNode: searchFocus,
-                              textStyle: CcTypography.bodySm.copyWith(
-                                color: t.textPrimary,
-                              ),
-                              onChanged: onQueryChanged,
-                              hintText: hintText,
-                              chromeless: true,
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                        child: Row(
+                          children: [
+                            Icon(
+                              AppIcons.search,
+                              size: 14,
+                              color: t.fgQuaternary,
                             ),
-                          ),
-                        ],
+                            AppSpacing.hGapSm,
+                            Expanded(
+                              child: CcTextField(
+                                controller: searchController,
+                                focusNode: searchFocus,
+                                textStyle: CcTypography.bodySm.copyWith(
+                                  color: t.textPrimary,
+                                ),
+                                onChanged: onQueryChanged,
+                                hintText: hintText,
+                                chromeless: true,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    Container(height: 1, color: t.borderSecondary),
-                    Flexible(
-                      child: CcScrollArea(fadeColor: t.bgPrimary, child: list),
-                    ),
-                  ],
+                      Container(height: 1, color: t.borderSecondary),
+                      Flexible(
+                        child: CcScrollArea(
+                          fadeColor: t.bgPrimary,
+                          child: list,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

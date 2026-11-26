@@ -83,10 +83,9 @@ const double _railItemExtent = 22;
 /// Gap between the message and the rail beneath it.
 const double _railTopGap = AppSpacing.xs;
 
-class _FocusableBubbleState extends ConsumerState<FocusableBubble> {
+class _FocusableBubbleState extends ConsumerState<FocusableBubble>
+    with _RailReveal {
   final FocusNode _focusNode = FocusNode();
-
-  bool _hoverBubble = false;
 
   /// Whether the reaction palette is open. Opening it moves the pointer into an
   /// overlay — outside this widget's [MouseRegion] — so hover alone would hide
@@ -101,8 +100,12 @@ class _FocusableBubbleState extends ConsumerState<FocusableBubble> {
   /// cursor passed over while scrolling — the feed's scroll jank.
   final ValueNotifier<bool> _revealed = ValueNotifier<bool>(false);
 
+  @override
   void _sync() => _revealed.value =
-      _hoverBubble || _popoverOpen || (widget.groupHover?.value ?? false);
+      _hoverBubble ||
+      _focusWithin ||
+      _popoverOpen ||
+      (widget.groupHover?.value ?? false);
 
   @override
   void initState() {
@@ -118,14 +121,6 @@ class _FocusableBubbleState extends ConsumerState<FocusableBubble> {
       widget.groupHover?.addListener(_sync);
       _sync();
     }
-  }
-
-  void _setHoverBubble(bool value) {
-    if (_hoverBubble == value) {
-      return;
-    }
-    _hoverBubble = value;
-    _sync();
   }
 
   /// Builds a permalink to this message (`/workspaces/<ws>/spaces/<c>?m=<id>`)
@@ -273,6 +268,7 @@ class _FocusableBubbleState extends ConsumerState<FocusableBubble> {
       onExit: (_) => _setHoverBubble(false),
       child: Focus(
         focusNode: _focusNode,
+        onFocusChange: _onFocusChange,
         child: Column(
           crossAxisAlignment: widget.alignRight
               ? CrossAxisAlignment.end

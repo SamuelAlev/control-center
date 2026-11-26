@@ -1,5 +1,39 @@
 part of 'focusable_bubble.dart';
 
+/// The two reasons the rail shows that come from the message itself: the
+/// pointer over it, or keyboard focus on it or one of its actions. The message
+/// is a Tab stop, so the rail has to show for focus as well as hover, or the
+/// next Tab could never reach it (a hidden rail is out of traversal).
+mixin _RailReveal on ConsumerState<FocusableBubble> {
+  bool _hoverBubble = false;
+
+  /// Sampled when focus arrives, like [FocusRing]: a clicked rail action takes
+  /// focus too, and must not pin the rail open once the pointer leaves.
+  bool _focusWithin = false;
+
+  /// Recomputes whether the rail shows.
+  void _sync();
+
+  void _setHoverBubble(bool value) {
+    if (_hoverBubble == value) {
+      return;
+    }
+    _hoverBubble = value;
+    _sync();
+  }
+
+  // Focus reports descendants too, so Tab from the message into the rail keeps
+  // it shown.
+  void _onFocusChange(bool focused) {
+    final value = focused && FocusModality.instance.isKeyboard;
+    if (_focusWithin == value) {
+      return;
+    }
+    _focusWithin = value;
+    _sync();
+  }
+}
+
 /// The action rail: one row of icons directly under the message.
 ///
 /// Its height is reserved unconditionally — the strip occupies the same

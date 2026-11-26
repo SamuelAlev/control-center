@@ -529,7 +529,9 @@ class _CcTextFieldState extends State<CcTextField>
                 Expanded(
                   child: Text(
                     widget.errorText!,
-                    style: CcTypography.caption.copyWith(color: t.danger),
+                    style: CcTypography.caption.copyWith(
+                      color: t.textErrorPrimary,
+                    ),
                   ),
                 ),
               ],
@@ -545,7 +547,9 @@ class _CcTextFieldState extends State<CcTextField>
               Expanded(
                 child: Text(
                   widget.warnText!,
-                  style: CcTypography.caption.copyWith(color: t.warn),
+                  style: CcTypography.caption.copyWith(
+                    color: t.textWarningPrimary,
+                  ),
                 ),
               ),
             ],

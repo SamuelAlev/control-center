@@ -16,9 +16,11 @@ pub struct WatchContext {
     /// The root exactly as the caller supplied it — every emitted path is
     /// rewritten back under this prefix.
     pub given_root: PathBuf,
-    /// `canonicalize(given_root)`: FSEvents realpaths everything, so a
-    /// checkout under `/var/...` reports `/private/var/...`. Without the
-    /// rewrite the Dart consumer sees paths outside the root it asked for.
+    /// `canonicalize(given_root)`: FSEvents itself reports realpaths (a
+    /// checkout under `/var/...` as `/private/var/...`). notify 9 maps event
+    /// paths back to the registered spelling on every backend; this spelling
+    /// is still accepted so a realpath that slips through is rewritten under
+    /// the root the Dart consumer asked for instead of dropped.
     pub canonical_root: PathBuf,
     pub ignore: IgnoreSet,
     pub queue: Arc<Queue>,

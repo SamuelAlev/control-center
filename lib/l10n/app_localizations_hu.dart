@@ -7627,6 +7627,67 @@ class AppLocalizationsHu extends AppLocalizations {
       'A Tab itt behúzást végez. Nyomja meg az Esc billentyűt, majd a Tab billentyűt a következő vezérlőelemre lépéshez.';
 
   @override
+  String get messageAuthorYou => 'Ön';
+
+  @override
+  String systemMessageLabel(String content) {
+    return 'Rendszer: $content';
+  }
+
+  @override
+  String retryUploadNamed(String name) {
+    return '$name feltöltésének újrapróbálása';
+  }
+
+  @override
+  String selectItemNamed(String name) {
+    return '$name kijelölése';
+  }
+
+  @override
+  String get linkPullRequest => 'Pull request összekapcsolása';
+
+  @override
+  String get addRelation => 'Kapcsolat hozzáadása';
+
+  @override
+  String get playbackPosition => 'Lejátszási pozíció';
+
+  @override
+  String get prNewChangesRefreshDiff => 'Új módosítások — Diff frissítése';
+
+  @override
+  String get notificationsDeliverySchedule => 'Kézbesítési ütemezés';
+
+  @override
+  String get notificationsDeliveryScheduleSubtitle =>
+      'Hogyan csoportosítjuk és kézbesítjük a nem sürgős értesítéseket.';
+
+  @override
+  String get notificationsDeliveryRealtime => 'Valós idejű';
+
+  @override
+  String get notificationsDeliveryEvery2Hours => '2 óránként';
+
+  @override
+  String get notificationsDeliveryDailyDigest => 'Napi összesítő';
+
+  @override
+  String get notificationsQuietHours => 'Csendes órák';
+
+  @override
+  String notificationsQuietHoursOn(String start, String end) {
+    return 'A nem sürgős értesítések szüneteltetve $start–$end között.';
+  }
+
+  @override
+  String get notificationsQuietHoursOff =>
+      'A nem sürgős értesítések bármikor kézbesítésre kerülnek.';
+
+  @override
+  String get toolCalls => 'Eszközhívások';
+
+  @override
   String get markdownSupported => 'A Markdown támogatott';
 
   @override

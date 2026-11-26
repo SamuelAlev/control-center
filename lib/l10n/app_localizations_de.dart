@@ -7655,6 +7655,67 @@ class AppLocalizationsDe extends AppLocalizations {
       'Tab rückt hier ein. Drücken Sie Esc und dann Tab, um zum nächsten Steuerelement zu gelangen.';
 
   @override
+  String get messageAuthorYou => 'Du';
+
+  @override
+  String systemMessageLabel(String content) {
+    return 'System: $content';
+  }
+
+  @override
+  String retryUploadNamed(String name) {
+    return 'Upload von $name erneut versuchen';
+  }
+
+  @override
+  String selectItemNamed(String name) {
+    return '$name auswählen';
+  }
+
+  @override
+  String get linkPullRequest => 'Pull Request verknüpfen';
+
+  @override
+  String get addRelation => 'Beziehung hinzufügen';
+
+  @override
+  String get playbackPosition => 'Wiedergabeposition';
+
+  @override
+  String get prNewChangesRefreshDiff => 'Neue Änderungen — Diff aktualisieren';
+
+  @override
+  String get notificationsDeliverySchedule => 'Zustellungsplan';
+
+  @override
+  String get notificationsDeliveryScheduleSubtitle =>
+      'Wie nicht dringende Benachrichtigungen gebündelt und zugestellt werden.';
+
+  @override
+  String get notificationsDeliveryRealtime => 'Echtzeit';
+
+  @override
+  String get notificationsDeliveryEvery2Hours => 'Alle 2 Stunden';
+
+  @override
+  String get notificationsDeliveryDailyDigest => 'Tägliche Zusammenfassung';
+
+  @override
+  String get notificationsQuietHours => 'Ruhezeiten';
+
+  @override
+  String notificationsQuietHoursOn(String start, String end) {
+    return 'Nicht dringende Benachrichtigungen werden $start–$end unterdrückt.';
+  }
+
+  @override
+  String get notificationsQuietHoursOff =>
+      'Nicht dringende Benachrichtigungen werden jederzeit zugestellt.';
+
+  @override
+  String get toolCalls => 'Tool-Aufrufe';
+
+  @override
   String get markdownSupported => 'Markdown wird unterstützt';
 
   @override

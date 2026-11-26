@@ -35,26 +35,22 @@ class SaveToggleButton extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final label = saved ? l10n.removeFromSaved : l10n.saveArticle;
 
-    return Semantics(
-      button: true,
-      toggled: saved,
-      label: label,
-      child: CcTooltip(
-        message: label,
-        child: CcTappable(
-          onPressed: onToggle,
-          semanticButton: false,
-          builder: (context, states) => Padding(
-            padding: const EdgeInsets.all(AppSpacing.xs),
-            child: Icon(
-              saved ? AppIcons.bookmarkCheck : AppIcons.bookmark,
-              size: size,
-              color: saved
-                  ? tokens.fgBrandPrimary
-                  : (states.contains(WidgetState.hovered)
-                        ? tokens.textSecondary
-                        : tokens.textTertiary),
-            ),
+    return CcTooltip(
+      message: label,
+      child: CcTappable(
+        onPressed: onToggle,
+        semanticLabel: label,
+        semanticToggled: saved,
+        builder: (context, states) => Padding(
+          padding: const EdgeInsets.all(AppSpacing.xs),
+          child: Icon(
+            saved ? AppIcons.bookmarkCheck : AppIcons.bookmark,
+            size: size,
+            color: saved
+                ? tokens.fgBrandPrimary
+                : (states.contains(WidgetState.hovered)
+                      ? tokens.textSecondary
+                      : tokens.textTertiary),
           ),
         ),
       ),

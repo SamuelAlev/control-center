@@ -596,5 +596,56 @@ void main() {
       await tester.pump();
       expect(tabNode(tester, 'B').hasPrimaryFocus, isTrue);
     });
+
+    testWidgets('Alt+Shift+arrows move the focused tab and keep focus on it', (
+      tester,
+    ) async {
+      var tabs = List<EditorTab>.of(_tabs);
+      var selected = 0;
+      final drops = <int>[];
+      await tester.pumpWidget(
+        StatefulBuilder(
+          builder: (context, setState) => _harness(
+            tabs: tabs,
+            selectedIndex: selected,
+            onTabSelected: (_) {},
+            // The owner's reorder, as EditorTabController.reorder does it.
+            onReorderDrop: (data, insertAt) => setState(() {
+              drops.add(insertAt);
+              final from = tabs.indexOf(data.tab);
+              final moved = tabs.removeAt(from);
+              final to = insertAt > from ? insertAt - 1 : insertAt;
+              tabs = [...tabs]..insert(to, moved);
+              selected = to;
+            }),
+          ),
+        ),
+      );
+      tabNode(tester, 'A').requestFocus();
+      await tester.pump();
+
+      Future<void> chord(LogicalKeyboardKey arrow) async {
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+        await tester.sendKeyEvent(arrow);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
+        await tester.pump();
+        await tester.pump();
+      }
+
+      await chord(LogicalKeyboardKey.arrowRight);
+      expect([for (final t in tabs) t.label], ['B', 'A', 'C']);
+      expect(drops.last, 2, reason: 'inserted past B');
+      expect(tabNode(tester, 'A').hasPrimaryFocus, isTrue);
+
+      await chord(LogicalKeyboardKey.arrowLeft);
+      expect([for (final t in tabs) t.label], ['A', 'B', 'C']);
+      expect(tabNode(tester, 'A').hasPrimaryFocus, isTrue);
+
+      // Already first: nothing to move past.
+      await chord(LogicalKeyboardKey.arrowLeft);
+      expect(drops, hasLength(2));
+    });
   });
 }

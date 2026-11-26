@@ -1160,9 +1160,15 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
     // see the first key of the session (see _setFileExpanded).
     // ignore: unnecessary_statements
     FocusModality.instance;
-    HardwareKeyboard.instance.addHandler(_keyboard.handleGlobalKey);
+    HardwareKeyboard.instance.addHandler(_handleDiffKey);
     HardwareKeyboard.instance.addHandler(_handleGotoModifierKey);
   }
+
+  /// The diff's bare-key shortcuts (j/k/v/c/t, ⌘F). The handler is global and
+  /// hidden editor tabs stay mounted, so without this gate typing `v` in
+  /// another tab, or behind a dialog, would mark a file viewed on the server.
+  bool _handleDiffKey(KeyEvent event) =>
+      mounted && _tabVisible && _keyboard.handleGlobalKey(event);
 
   ScrollPosition? _activeScrollPosition() {
     final ctl = PrimaryScrollController.maybeOf(context);
@@ -1458,7 +1464,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
     _composerFocusHandoff.dispose();
     _threadHighlightFade?.cancel();
     _gotoLandingFade?.cancel();
-    HardwareKeyboard.instance.removeHandler(_keyboard.handleGlobalKey);
+    HardwareKeyboard.instance.removeHandler(_handleDiffKey);
     HardwareKeyboard.instance.removeHandler(_handleGotoModifierKey);
     _geometry?.removeListener(_onGeometryTick);
     _reviewOverlay?.remove();
@@ -3247,7 +3253,15 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
       children.add(
         CustomSingleChildLayout(
           delegate: GotoPopoverLayout(anchor: anchor),
-          child: GestureDetector(onTap: () {}, child: _gotoPopoverPanel(open)),
+          // Moves focus onto the candidate rows (the popover lives in the
+          // root overlay, out of Tab's reach) and hands it back on close.
+          child: GestureDetector(
+            onTap: () {},
+            child: CcFocusTrap(
+              debugLabel: 'Go to definition',
+              child: _gotoPopoverPanel(open),
+            ),
+          ),
         ),
       );
     }

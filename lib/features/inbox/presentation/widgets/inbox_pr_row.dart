@@ -446,15 +446,21 @@ class _ChangesCell extends StatelessWidget {
       return Text(
         '—',
         textAlign: TextAlign.end,
-        style: base.copyWith(color: tokens.idle),
+        style: base.copyWith(color: tokens.textQuaternary),
       );
     }
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('+$additions', style: base.copyWith(color: tokens.success)),
+        Text(
+          '+$additions',
+          style: base.copyWith(color: tokens.textSuccessPrimary),
+        ),
         const SizedBox(width: 4),
-        Text('−$deletions', style: base.copyWith(color: tokens.danger)),
+        Text(
+          '−$deletions',
+          style: base.copyWith(color: tokens.textErrorPrimary),
+        ),
       ],
     );
   }
@@ -520,28 +526,33 @@ class _InboxSelectCheckbox extends StatelessWidget {
     final accent = tokens.accent;
     return IgnorePointer(
       ignoring: !visible,
-      child: CcTappable(
-        onPressed: onTap,
-        borderRadius: AppRadii.brSm,
-        semanticLabel: AppLocalizations.of(context).prRowSelect(title),
-        semanticChecked: selected,
-        // Keyboard focus reveals it too, so its Tab stop is never invisible.
-        builder: (context, states) => AnimatedOpacity(
-          opacity: visible || states.contains(WidgetState.focused) ? 1 : 0,
-          duration: const Duration(milliseconds: 120),
-          // Faded out it is still a working control, so it stays announced.
-          alwaysIncludeSemantics: true,
-          child: Container(
-            width: InboxRowMetrics.select,
-            height: InboxRowMetrics.select,
-            decoration: BoxDecoration(
-              color: selected ? accent : tokens.panel,
-              borderRadius: AppRadii.brSm,
-              border: Border.all(color: selected ? accent : tokens.lineStrong),
+      // The box is 16px; the press area around it is 24.
+      child: CcHitTarget(
+        child: CcTappable(
+          onPressed: onTap,
+          borderRadius: AppRadii.brSm,
+          semanticLabel: AppLocalizations.of(context).prRowSelect(title),
+          semanticChecked: selected,
+          // Keyboard focus reveals it too, so its Tab stop is never invisible.
+          builder: (context, states) => AnimatedOpacity(
+            opacity: visible || states.contains(WidgetState.focused) ? 1 : 0,
+            duration: const Duration(milliseconds: 120),
+            // Faded out it is still a working control, so it stays announced.
+            alwaysIncludeSemantics: true,
+            child: Container(
+              width: InboxRowMetrics.select,
+              height: InboxRowMetrics.select,
+              decoration: BoxDecoration(
+                color: selected ? accent : tokens.panel,
+                borderRadius: AppRadii.brSm,
+                border: Border.all(
+                  color: selected ? accent : tokens.borderControl,
+                ),
+              ),
+              child: selected
+                  ? Icon(AppIcons.check, size: 11, color: tokens.accentOn)
+                  : null,
             ),
-            child: selected
-                ? Icon(AppIcons.check, size: 11, color: tokens.accentOn)
-                : null,
           ),
         ),
       ),

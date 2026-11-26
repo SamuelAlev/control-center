@@ -10534,5 +10534,22 @@
   "ccUnverifiedLabel": "{label} (تأیید‌نشده)",
   "prRowSelect": "انتخاب {title}",
   "prTableSelectAll": "انتخاب همه pull requestها",
-  "planVersionRewind": "بازگشت به نسخه {version}"
+  "planVersionRewind": "بازگشت به نسخه {version}",
+  "messageAuthorYou": "شما",
+  "systemMessageLabel": "سیستم: {content}",
+  "retryUploadNamed": "تلاش مجدد برای بارگذاری {name}",
+  "selectItemNamed": "انتخاب {name}",
+  "linkPullRequest": "پیوند دادن pull request",
+  "addRelation": "افزودن رابطه",
+  "playbackPosition": "موقعیت پخش",
+  "prNewChangesRefreshDiff": "تغییرات جدید — تازه‌سازی diff",
+  "notificationsDeliverySchedule": "برنامه ارسال",
+  "notificationsDeliveryScheduleSubtitle": "نحوه گروه‌بندی و ارسال اعلان‌های غیرفوری.",
+  "notificationsDeliveryRealtime": "لحظه‌ای",
+  "notificationsDeliveryEvery2Hours": "هر ۲ ساعت",
+  "notificationsDeliveryDailyDigest": "خلاصه روزانه",
+  "notificationsQuietHours": "ساعات سکوت",
+  "notificationsQuietHoursOn": "اعلان‌های غیرفوری از {start}–{end} متوقف می‌شوند.",
+  "notificationsQuietHoursOff": "اعلان‌های غیرفوری در هر زمانی ارسال می‌شوند.",
+  "toolCalls": "فراخوانی‌های ابزار"
 }

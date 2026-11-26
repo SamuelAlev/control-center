@@ -7625,6 +7625,67 @@ class AppLocalizationsNl extends AppLocalizations {
       'Tab laat hier inspringen. Druk op Esc en daarna op Tab om naar het volgende besturingselement te gaan.';
 
   @override
+  String get messageAuthorYou => 'Jij';
+
+  @override
+  String systemMessageLabel(String content) {
+    return 'Systeem: $content';
+  }
+
+  @override
+  String retryUploadNamed(String name) {
+    return 'Upload van $name opnieuw proberen';
+  }
+
+  @override
+  String selectItemNamed(String name) {
+    return '$name selecteren';
+  }
+
+  @override
+  String get linkPullRequest => 'Pull request koppelen';
+
+  @override
+  String get addRelation => 'Relatie toevoegen';
+
+  @override
+  String get playbackPosition => 'Afspeelpositie';
+
+  @override
+  String get prNewChangesRefreshDiff => 'Nieuwe wijzigingen — Diff vernieuwen';
+
+  @override
+  String get notificationsDeliverySchedule => 'Bezorgschema';
+
+  @override
+  String get notificationsDeliveryScheduleSubtitle =>
+      'Hoe niet-urgente meldingen worden gebundeld en bezorgd.';
+
+  @override
+  String get notificationsDeliveryRealtime => 'Realtime';
+
+  @override
+  String get notificationsDeliveryEvery2Hours => 'Elke 2 uur';
+
+  @override
+  String get notificationsDeliveryDailyDigest => 'Dagelijks overzicht';
+
+  @override
+  String get notificationsQuietHours => 'Stille uren';
+
+  @override
+  String notificationsQuietHoursOn(String start, String end) {
+    return 'Niet-urgente meldingen onderdrukt van $start–$end.';
+  }
+
+  @override
+  String get notificationsQuietHoursOff =>
+      'Niet-urgente meldingen worden op elk moment bezorgd.';
+
+  @override
+  String get toolCalls => 'Toolaanroepen';
+
+  @override
   String get markdownSupported => 'Markdown wordt ondersteund';
 
   @override

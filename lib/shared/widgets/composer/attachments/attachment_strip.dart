@@ -240,15 +240,20 @@ class _AttachmentCardState extends State<_AttachmentCard> {
                             const SizedBox(width: AppSpacing.xs),
                           ],
                           Flexible(
-                            child: Text(
-                              statusLabel,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: CcTypography.caption.copyWith(
-                                color: status == AttachmentUploadState.failed
-                                    ? t.fgErrorPrimary
-                                    : t.textSecondary,
-                                decoration: TextDecoration.none,
+                            // Uploading, ready and failed are read out as
+                            // they happen; a failed upload is not silent.
+                            child: Semantics(
+                              liveRegion: true,
+                              child: Text(
+                                statusLabel,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: CcTypography.caption.copyWith(
+                                  color: status == AttachmentUploadState.failed
+                                      ? t.fgErrorPrimary
+                                      : t.textSecondary,
+                                  decoration: TextDecoration.none,
+                                ),
                               ),
                             ),
                           ),
@@ -264,12 +269,15 @@ class _AttachmentCardState extends State<_AttachmentCard> {
                   icon: AppIcons.refreshCw,
                   size: CcButtonSize.sm,
                   tooltip: l10n.retry,
+                  // Several cards each have one: name the file it acts on.
+                  semanticLabel: l10n.retryUploadNamed(label),
                   onPressed: widget.onRetry,
                 ),
               CcIconButton(
                 icon: AppIcons.x,
                 size: CcButtonSize.sm,
                 tooltip: l10n.remove,
+                semanticLabel: l10n.removeLabel(label),
                 onPressed: widget.onRemove,
               ),
             ],

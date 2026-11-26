@@ -73,7 +73,9 @@ class CcSwitch extends StatelessWidget {
           borderColor = trackColor;
         } else {
           trackColor = t.bgTertiary;
-          borderColor = t.borderPrimary;
+          // The fill barely differs from the page, so the outline carries
+          // the track's shape.
+          borderColor = t.borderControl;
         }
         if (!enabled) {
           trackColor = t.bgDisabled;

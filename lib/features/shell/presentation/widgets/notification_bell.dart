@@ -287,7 +287,10 @@ class _EntryTileState extends ConsumerState<_EntryTile> {
           }
           widget.onNavigate(n.route);
         },
-        semanticLabel: '${n.title}. ${n.body}',
+        // Unread is otherwise only a heavier weight and a wash.
+        semanticLabel: unread
+            ? '${l10n.filterUnread}. ${n.title}. ${n.body}'
+            : '${n.title}. ${n.body}',
         builder: (context, states) {
           // Hover reveals it; the row's FOCUS reveals it too, because the hidden
           // state is pointer-inert and a keyboard user would otherwise have no

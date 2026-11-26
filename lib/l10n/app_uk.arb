@@ -10534,5 +10534,22 @@
   "ccUnverifiedLabel": "{label} (не перевірено)",
   "prRowSelect": "Вибрати {title}",
   "prTableSelectAll": "Вибрати всі pull requests",
-  "planVersionRewind": "Повернути до версії {version}"
+  "planVersionRewind": "Повернути до версії {version}",
+  "messageAuthorYou": "Ви",
+  "systemMessageLabel": "Системне повідомлення: {content}",
+  "retryUploadNamed": "Повторити завантаження {name}",
+  "selectItemNamed": "Вибрати {name}",
+  "linkPullRequest": "Пов'язати pull request",
+  "addRelation": "Додати зв'язок",
+  "playbackPosition": "Позиція відтворення",
+  "prNewChangesRefreshDiff": "Нові зміни — оновити diff",
+  "notificationsDeliverySchedule": "Графік доставки",
+  "notificationsDeliveryScheduleSubtitle": "Як групуються й доставляються нетермінові сповіщення.",
+  "notificationsDeliveryRealtime": "У реальному часі",
+  "notificationsDeliveryEvery2Hours": "Кожні 2 години",
+  "notificationsDeliveryDailyDigest": "Щоденний дайджест",
+  "notificationsQuietHours": "Тихі години",
+  "notificationsQuietHoursOn": "Нетермінові сповіщення призупинено {start}–{end}.",
+  "notificationsQuietHoursOff": "Нетермінові сповіщення доставляються в будь-який час.",
+  "toolCalls": "Виклики інструментів"
 }

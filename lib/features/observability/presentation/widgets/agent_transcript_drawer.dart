@@ -6,6 +6,7 @@ import 'package:control_center/features/agents/providers/run_activity_providers.
 import 'package:control_center/features/code_mode/presentation/widgets/code_execution_record_link.dart';
 import 'package:control_center/features/observability/presentation/tool_render/tool_call_card.dart';
 import 'package:control_center/features/observability/presentation/widgets/run_activity_stats.dart';
+import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/transcript/widgets/script_record_link.dart';
 import 'package:flutter/widgets.dart';
@@ -43,6 +44,7 @@ class AgentTranscriptDrawer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.designSystem ?? DesignSystemTokens.light();
+    final l10n = AppLocalizations.of(context);
     final cost = latestRun?.cost;
     // The run's OWN recorded activity, read run-scoped.
     //
@@ -107,13 +109,13 @@ class AgentTranscriptDrawer extends ConsumerWidget {
                   CcIconButton(
                     icon: AppIcons.circleStop,
                     onPressed: onKill,
-                    tooltip: 'Kill agent',
+                    tooltip: l10n.stopAgent,
                   ),
                 if (onClose != null)
                   CcIconButton(
                     icon: AppIcons.x,
                     onPressed: onClose,
-                    tooltip: 'Close',
+                    tooltip: l10n.close,
                   ),
               ],
             ),
@@ -138,7 +140,7 @@ class AgentTranscriptDrawer extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Tool calls',
+                    l10n.toolCalls,
                     style: CcTypography.caption.copyWith(color: t.textTertiary),
                   ),
                   const SizedBox(height: AppSpacing.sm),

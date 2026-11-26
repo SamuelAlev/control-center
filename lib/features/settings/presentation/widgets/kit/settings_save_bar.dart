@@ -104,10 +104,16 @@ class SettingsSaveBar extends StatelessWidget {
         runSpacing: AppSpacing.sm,
         children: [
           if (error != null)
-            _StatusLine(
-              text: error!,
-              color: tokens.textErrorPrimary,
-              iconColor: tokens.textErrorPrimary,
+            // A failed save or a validation error lands here with no focus
+            // change, so a screen reader would not hear it otherwise.
+            Semantics(
+              liveRegion: true,
+              container: true,
+              child: _StatusLine(
+                text: error!,
+                color: tokens.textErrorPrimary,
+                iconColor: tokens.textErrorPrimary,
+              ),
             )
           else if (dirty)
             _StatusLine(

@@ -141,12 +141,15 @@ class PageHeaderText extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          title,
-          style: CcTypography.display.copyWith(
-            fontWeight: FontWeight.w700,
-            color: tokens.textPrimary,
-            height: 1.25,
+        Semantics(
+          header: true,
+          child: Text(
+            title,
+            style: CcTypography.display.copyWith(
+              fontWeight: FontWeight.w700,
+              color: tokens.textPrimary,
+              height: 1.25,
+            ),
           ),
         ),
         if (subtitle != null) ...[

@@ -151,7 +151,13 @@ class _ViewModeOption extends StatelessWidget {
     return CcTooltip(
       message: tooltip,
       child: CcTappable(
-        onPressed: active ? null : onTap,
+        // The chosen mode stays enabled (a null callback reads as "dimmed")
+        // and reports itself selected; pressing it again is a no-op, with
+        // the plain cursor it showed before.
+        onPressed: active ? () {} : onTap,
+        mouseCursor: active ? SystemMouseCursors.basic : null,
+        semanticSelected: active,
+        semanticInMutuallyExclusiveGroup: true,
         builder: (context, states) => Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(

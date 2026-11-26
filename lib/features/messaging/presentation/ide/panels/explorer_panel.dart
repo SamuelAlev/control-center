@@ -21,6 +21,7 @@ import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -1232,7 +1233,8 @@ class _TreeRowTile extends StatelessWidget {
         : AppIcons.fileCode;
 
     // Files support the read-only Quick view via long-press (touch) / secondary
-    // click (desktop right-click); the editor stays the primary tap.
+    // click (desktop right-click) / Shift+F10 or the context-menu key; the
+    // editor stays the primary tap.
     final canQuickView = onQuickViewFile != null && !node.isDirectory;
 
     Widget tile = CcTappable(
@@ -1244,6 +1246,7 @@ class _TreeRowTile extends StatelessWidget {
         }
       },
       onLongPress: canQuickView ? () => onQuickViewFile!(node) : null,
+      shortcuts: canQuickView ? _quickViewShortcuts : null,
       borderRadius: BorderRadius.zero,
       builder: (context, states) {
         final hovered = states.contains(WidgetState.hovered);
@@ -1288,9 +1291,12 @@ class _TreeRowTile extends StatelessWidget {
     );
 
     if (canQuickView) {
-      tile = GestureDetector(
-        onSecondaryTap: () => onQuickViewFile!(node),
-        child: tile,
+      tile = _quickViewActions(
+        () => onQuickViewFile!(node),
+        GestureDetector(
+          onSecondaryTap: () => onQuickViewFile!(node),
+          child: tile,
+        ),
       );
     }
     return tile;
@@ -1322,8 +1328,10 @@ class _FilterHitTile extends StatelessWidget {
 
     Widget tile = CcTappable(
       onPressed: onOpenFile,
-      // Long-press (touch) opens the read-only Quick view.
+      // Long-press (touch) or Shift+F10 / the context-menu key opens the
+      // read-only Quick view.
       onLongPress: onQuickViewFile,
+      shortcuts: onQuickViewFile == null ? null : _quickViewShortcuts,
       borderRadius: BorderRadius.zero,
       builder: (context, states) {
         final hovered = states.contains(WidgetState.hovered);
@@ -1375,12 +1383,37 @@ class _FilterHitTile extends StatelessWidget {
     );
 
     // Secondary click (desktop right-click) opens the read-only Quick view.
-    if (onQuickViewFile != null) {
-      tile = GestureDetector(onSecondaryTap: onQuickViewFile, child: tile);
+    final quickView = onQuickViewFile;
+    if (quickView != null) {
+      tile = _quickViewActions(
+        quickView,
+        GestureDetector(onSecondaryTap: quickView, child: tile),
+      );
     }
     return tile;
   }
 }
+
+/// Opens a file row's read-only Quick view from the keyboard.
+class _QuickViewIntent extends Intent {
+  const _QuickViewIntent();
+}
+
+/// The keyboard's context-menu gesture, where a pointer has right-click.
+const Map<ShortcutActivator, Intent> _quickViewShortcuts = {
+  SingleActivator(LogicalKeyboardKey.f10, shift: true): _QuickViewIntent(),
+  SingleActivator(LogicalKeyboardKey.contextMenu): _QuickViewIntent(),
+};
+
+/// Answers [_quickViewShortcuts] on the row's tappable below [child].
+Widget _quickViewActions(VoidCallback onQuickView, Widget child) => Actions(
+  actions: {
+    _QuickViewIntent: CallbackAction<_QuickViewIntent>(
+      onInvoke: (_) => onQuickView(),
+    ),
+  },
+  child: child,
+);
 
 /// One flattened row in the content-results list: a file header or a match line.
 class _ContentRow {

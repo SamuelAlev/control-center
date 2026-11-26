@@ -7572,6 +7572,67 @@ class AppLocalizationsEn extends AppLocalizations {
       'Tab indents here. Press Esc, then Tab to move to the next control.';
 
   @override
+  String get messageAuthorYou => 'You';
+
+  @override
+  String systemMessageLabel(String content) {
+    return 'System: $content';
+  }
+
+  @override
+  String retryUploadNamed(String name) {
+    return 'Retry upload of $name';
+  }
+
+  @override
+  String selectItemNamed(String name) {
+    return 'Select $name';
+  }
+
+  @override
+  String get linkPullRequest => 'Link pull request';
+
+  @override
+  String get addRelation => 'Add relation';
+
+  @override
+  String get playbackPosition => 'Playback position';
+
+  @override
+  String get prNewChangesRefreshDiff => 'New changes — Refresh diff';
+
+  @override
+  String get notificationsDeliverySchedule => 'Delivery schedule';
+
+  @override
+  String get notificationsDeliveryScheduleSubtitle =>
+      'How non-urgent notifications are batched and delivered.';
+
+  @override
+  String get notificationsDeliveryRealtime => 'Real-time';
+
+  @override
+  String get notificationsDeliveryEvery2Hours => 'Every 2 hours';
+
+  @override
+  String get notificationsDeliveryDailyDigest => 'Daily digest';
+
+  @override
+  String get notificationsQuietHours => 'Quiet hours';
+
+  @override
+  String notificationsQuietHoursOn(String start, String end) {
+    return 'Non-urgent notifications suppressed $start–$end.';
+  }
+
+  @override
+  String get notificationsQuietHoursOff =>
+      'Non-urgent notifications deliver at any time.';
+
+  @override
+  String get toolCalls => 'Tool calls';
+
+  @override
   String get markdownSupported => 'Markdown is supported';
 
   @override

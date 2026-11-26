@@ -94,10 +94,13 @@ class CcDialog extends StatelessWidget {
                         children: [
                           if (title != null)
                             Expanded(
-                              child: Text(
-                                title,
-                                style: CcTypography.title.copyWith(
-                                  color: t.textPrimary,
+                              child: Semantics(
+                                header: true,
+                                child: Text(
+                                  title,
+                                  style: CcTypography.title.copyWith(
+                                    color: t.textPrimary,
+                                  ),
                                 ),
                               ),
                             ),

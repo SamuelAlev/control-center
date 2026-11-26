@@ -135,18 +135,30 @@ class _PipelineEditorNodeTileState extends State<PipelineEditorNodeTile> {
               top: 0,
               width: kPipelineEditorNodeWidth,
               height: kPipelineEditorNodeHeight,
-              child: IgnorePointer(
-                child: GraphNodeCard(
-                  glyph: Icon(visual.icon, size: 14, color: glyphColor),
-                  title: title,
-                  titleChild: titleChild,
-                  subtitle: subtitle,
-                  selected: widget.selected,
-                  hovered: _hovered || widget.dropTarget,
-                  fill: isTrigger ? tokens.bgBrandPrimary : null,
-                  border: widget.connectSource
-                      ? tokens.accent
-                      : (isTrigger ? tokens.borderBrand : null),
+              // The pointer selects through the overlay below; a screen
+              // reader selects through this node, which names the card.
+              child: Semantics(
+                container: true,
+                button: true,
+                selected: widget.selected,
+                label: title,
+                value: subtitle,
+                onTap: widget.onSelect,
+                child: ExcludeSemantics(
+                  child: IgnorePointer(
+                    child: GraphNodeCard(
+                      glyph: Icon(visual.icon, size: 14, color: glyphColor),
+                      title: title,
+                      titleChild: titleChild,
+                      subtitle: subtitle,
+                      selected: widget.selected,
+                      hovered: _hovered || widget.dropTarget,
+                      fill: isTrigger ? tokens.bgBrandPrimary : null,
+                      border: widget.connectSource
+                          ? tokens.accent
+                          : (isTrigger ? tokens.borderBrand : null),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -155,18 +167,22 @@ class _PipelineEditorNodeTileState extends State<PipelineEditorNodeTile> {
               top: 0,
               width: kPipelineEditorNodeWidth - 20,
               height: kPipelineEditorNodeHeight,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                supportedDevices: const {
-                  PointerDeviceKind.mouse,
-                  PointerDeviceKind.touch,
-                  PointerDeviceKind.stylus,
-                  PointerDeviceKind.invertedStylus,
-                  PointerDeviceKind.unknown,
-                },
-                onTap: widget.onSelect,
-                onPanUpdate: (d) => widget.onMoveUpdate(d.delta),
-                onPanEnd: (_) => widget.onMoveEnd(),
+              // Pointer-only: the card's Semantics node above is the
+              // screen-reader target for the same select.
+              child: ExcludeSemantics(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  supportedDevices: const {
+                    PointerDeviceKind.mouse,
+                    PointerDeviceKind.touch,
+                    PointerDeviceKind.stylus,
+                    PointerDeviceKind.invertedStylus,
+                    PointerDeviceKind.unknown,
+                  },
+                  onTap: widget.onSelect,
+                  onPanUpdate: (d) => widget.onMoveUpdate(d.delta),
+                  onPanEnd: (_) => widget.onMoveEnd(),
+                ),
               ),
             ),
             if (widget.connectSource)
@@ -335,25 +351,39 @@ class _PipelineEditorTriggerTileState extends State<PipelineEditorTriggerTile> {
               top: 0,
               width: kPipelineEditorNodeWidth,
               height: kPipelineEditorNodeHeight,
-              child: IgnorePointer(
-                child: Opacity(
-                  opacity: enabled ? 1 : 0.55,
-                  child: GraphNodeCard(
-                    glyph: Icon(
-                      iconForTriggerEventType(widget.trigger.eventType),
-                      size: 14,
-                      color: glyphColor,
+              // The pointer selects through the overlay below; a screen
+              // reader selects through this node, which names the card.
+              child: Semantics(
+                container: true,
+                button: true,
+                selected: widget.selected,
+                label: title,
+                value: subtitle,
+                onTap: widget.onSelect,
+                child: ExcludeSemantics(
+                  child: IgnorePointer(
+                    child: Opacity(
+                      opacity: enabled ? 1 : 0.55,
+                      child: GraphNodeCard(
+                        glyph: Icon(
+                          iconForTriggerEventType(widget.trigger.eventType),
+                          size: 14,
+                          color: glyphColor,
+                        ),
+                        title: title,
+                        subtitle: subtitle,
+                        selected: widget.selected,
+                        hovered: _hovered,
+                        fill: enabled
+                            ? tokens.bgBrandPrimary
+                            : tokens.bgSecondary,
+                        border: widget.connectSource
+                            ? tokens.accent
+                            : (enabled
+                                  ? tokens.borderBrand
+                                  : tokens.borderSecondary),
+                      ),
                     ),
-                    title: title,
-                    subtitle: subtitle,
-                    selected: widget.selected,
-                    hovered: _hovered,
-                    fill: enabled ? tokens.bgBrandPrimary : tokens.bgSecondary,
-                    border: widget.connectSource
-                        ? tokens.accent
-                        : (enabled
-                              ? tokens.borderBrand
-                              : tokens.borderSecondary),
                   ),
                 ),
               ),
@@ -363,18 +393,22 @@ class _PipelineEditorTriggerTileState extends State<PipelineEditorTriggerTile> {
               top: 0,
               width: kPipelineEditorNodeWidth - 20,
               height: kPipelineEditorNodeHeight,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                supportedDevices: const {
-                  PointerDeviceKind.mouse,
-                  PointerDeviceKind.touch,
-                  PointerDeviceKind.stylus,
-                  PointerDeviceKind.invertedStylus,
-                  PointerDeviceKind.unknown,
-                },
-                onTap: widget.onSelect,
-                onPanUpdate: (d) => widget.onMoveUpdate(d.delta),
-                onPanEnd: (_) => widget.onMoveEnd(),
+              // Pointer-only: the card's Semantics node above is the
+              // screen-reader target for the same select.
+              child: ExcludeSemantics(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  supportedDevices: const {
+                    PointerDeviceKind.mouse,
+                    PointerDeviceKind.touch,
+                    PointerDeviceKind.stylus,
+                    PointerDeviceKind.invertedStylus,
+                    PointerDeviceKind.unknown,
+                  },
+                  onTap: widget.onSelect,
+                  onPanUpdate: (d) => widget.onMoveUpdate(d.delta),
+                  onPanEnd: (_) => widget.onMoveEnd(),
+                ),
               ),
             ),
             if (!enabled)

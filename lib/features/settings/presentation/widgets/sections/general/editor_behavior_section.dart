@@ -27,6 +27,7 @@ class EditorBehaviorSection extends ConsumerWidget {
         trailing: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 200),
           child: CcSelect<EditorAutoSaveMode>(
+            semanticLabel: l10n.editorAutoSave,
             options: [
               CcSelectOption(
                 value: EditorAutoSaveMode.off,

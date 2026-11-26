@@ -713,6 +713,8 @@ class _ResultHeader extends StatelessWidget {
           children: [
             CcTappable(
               onPressed: onToggle,
+              semanticLabel: group.relativePath,
+              semanticExpanded: !collapsed,
               borderRadius: BorderRadius.circular(3),
               builder: (context, states) => Padding(
                 padding: const EdgeInsets.all(_kChevronButtonPad),

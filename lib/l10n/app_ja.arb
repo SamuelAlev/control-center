@@ -10534,5 +10534,22 @@
   "ccUnverifiedLabel": "{label}（未検証）",
   "prRowSelect": "{title} を選択",
   "prTableSelectAll": "すべてのプルリクエストを選択",
-  "planVersionRewind": "バージョン {version} に戻す"
+  "planVersionRewind": "バージョン {version} に戻す",
+  "messageAuthorYou": "自分",
+  "systemMessageLabel": "システム: {content}",
+  "retryUploadNamed": "{name} のアップロードを再試行",
+  "selectItemNamed": "{name} を選択",
+  "linkPullRequest": "プルリクエストをリンク",
+  "addRelation": "関連を追加",
+  "playbackPosition": "再生位置",
+  "prNewChangesRefreshDiff": "新しい変更 — 差分を更新",
+  "notificationsDeliverySchedule": "配信スケジュール",
+  "notificationsDeliveryScheduleSubtitle": "緊急でない通知をまとめて配信する方法です。",
+  "notificationsDeliveryRealtime": "リアルタイム",
+  "notificationsDeliveryEvery2Hours": "2時間ごと",
+  "notificationsDeliveryDailyDigest": "毎日のダイジェスト",
+  "notificationsQuietHours": "通知を控える時間",
+  "notificationsQuietHoursOn": "{start}–{end} は緊急でない通知を抑制します。",
+  "notificationsQuietHoursOff": "緊急でない通知はいつでも配信されます。",
+  "toolCalls": "ツール呼び出し"
 }

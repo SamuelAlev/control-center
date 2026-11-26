@@ -359,7 +359,11 @@ class _TicketListView extends StatelessWidget {
           _BoardRow(:final ticket) => _TicketListRow(
             key: ValueKey(ticket.id),
             ticket: ticket,
-            assigneeName: _assigneeName(ticket, agentNames),
+            assigneeName: _assigneeName(
+              AppLocalizations.of(context),
+              ticket,
+              agentNames,
+            ),
             isOpen: ticket.id == selectedTicketId,
             workspaceId: workspaceId,
           ),
@@ -368,13 +372,17 @@ class _TicketListView extends StatelessWidget {
     );
   }
 
-  String? _assigneeName(Ticket ticket, Map<String, String> agentNames) {
+  String? _assigneeName(
+    AppLocalizations l10n,
+    Ticket ticket,
+    Map<String, String> agentNames,
+  ) {
     final id = ticket.assignedAgentId;
     if (id == null) {
       return null;
     }
     if (ticket.isAssignedToUser) {
-      return 'You';
+      return l10n.messageAuthorYou;
     }
     return agentNames[id] ?? id;
   }
@@ -510,6 +518,7 @@ class _TicketListRowState extends ConsumerState<_TicketListRow> {
                       ? Center(
                           child: _RowCheckbox(
                             checked: selected,
+                            title: ticket.title,
                             onTap: () => ref
                                 .read(ticketSelectionProvider.notifier)
                                 .toggle(ticket.id),
@@ -562,9 +571,16 @@ class _TicketListRowState extends ConsumerState<_TicketListRow> {
 /// A small square checkbox used at the left of a list row. Toggling it selects
 /// the ticket for a bulk action without navigating to the ticket.
 class _RowCheckbox extends StatelessWidget {
-  const _RowCheckbox({required this.checked, required this.onTap});
+  const _RowCheckbox({
+    required this.checked,
+    required this.title,
+    required this.onTap,
+  });
 
   final bool checked;
+
+  /// The ticket's title, which names the box for a screen reader.
+  final String title;
   final VoidCallback onTap;
 
   @override
@@ -572,6 +588,8 @@ class _RowCheckbox extends StatelessWidget {
     final t = context.designSystem ?? DesignSystemTokens.light();
     return CcTappable(
       onPressed: onTap,
+      semanticLabel: AppLocalizations.of(context).selectItemNamed(title),
+      semanticChecked: checked,
       builder: (context, states) => Container(
         width: 18,
         height: 18,
@@ -585,7 +603,7 @@ class _RowCheckbox extends StatelessWidget {
           ),
         ),
         child: checked
-            ? const Icon(AppIcons.check, size: 12, color: Colors.white)
+            ? Icon(AppIcons.check, size: 12, color: t.fgWhite)
             : null,
       ),
     );
@@ -750,8 +768,11 @@ class _BulkActionBar extends ConsumerWidget {
                     },
                   ),
                   CcTile(
-                    leading: const TicketAssigneeAvatar(name: 'You', size: 18),
-                    title: 'You',
+                    leading: TicketAssigneeAvatar(
+                      name: l10n.messageAuthorYou,
+                      size: 18,
+                    ),
+                    title: l10n.messageAuthorYou,
                     onTap: () {
                       final me = ref.read(currentUserIdProvider);
                       if (me == null) {
@@ -877,6 +898,7 @@ class _BulkActionBar extends ConsumerWidget {
             child: CcTappable(
               onPressed: () =>
                   ref.read(ticketSelectionProvider.notifier).clear(),
+              semanticLabel: l10n.clearSelection,
               builder: (context, states) => Padding(
                 padding: const EdgeInsets.all(6),
                 child: Icon(AppIcons.x, size: 16, color: t.fgTertiary),
@@ -1122,7 +1144,11 @@ class _TicketCard extends ConsumerWidget {
                 TicketPriorityIndicator(priority: ticket.priority),
                 const Spacer(),
                 if (assigneeName != null || isUser)
-                  TicketAssigneeAvatar(name: isUser ? 'You' : assigneeName),
+                  TicketAssigneeAvatar(
+                    name: isUser
+                        ? AppLocalizations.of(context).messageAuthorYou
+                        : assigneeName,
+                  ),
               ],
             ),
           ],

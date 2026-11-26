@@ -901,9 +901,8 @@ class _Row extends StatelessWidget {
     vertical: 1,
   );
 
-  /// Height of a row's content, set by the tallest thing a row can carry (the
-  /// unresolved badge). Every row takes it, so the list's prototype row is
-  /// right whichever row it happens to be.
+  /// Row content height at 1x text, set by the unresolved badge (the tallest
+  /// thing a row carries); every row takes it, scaled, so the prototype fits.
   static const double _contentHeight = 18;
 
   /// Narrowest row content that still shows the line stat. Below it the name
@@ -918,6 +917,7 @@ class _Row extends StatelessWidget {
             ? DesignSystemTokens.dark()
             : DesignSystemTokens.light());
     final l10n = AppLocalizations.of(context);
+    final scaledHeight = MediaQuery.textScalerOf(context).scale(_contentHeight);
 
     // Tree guide-line color — subtle, just enough to read the structure
     // without competing with file names. Sits behind the hover/selected fill.
@@ -992,7 +992,7 @@ class _Row extends StatelessWidget {
                         ),
                         child: LayoutBuilder(
                           builder: (context, constraints) => SizedBox(
-                            height: _contentHeight,
+                            height: scaledHeight,
                             child: Row(
                               children: [
                                 SizedBox(
@@ -1174,7 +1174,7 @@ class _UnresolvedPill extends StatelessWidget {
     return CcTooltip(
       message: l10n.diffFileUnresolvedConversations(count),
       child: Container(
-        height: _Row._contentHeight,
+        height: MediaQuery.textScalerOf(context).scale(_Row._contentHeight),
         padding: const EdgeInsets.symmetric(horizontal: 5),
         decoration: BoxDecoration(
           color: t.bgBrandPrimary,

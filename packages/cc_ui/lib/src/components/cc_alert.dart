@@ -211,7 +211,12 @@ class CcAlert extends StatelessWidget {
           fg: t.success,
         );
       case CcAlertVariant.warning:
-        return _AlertColors(bg: t.warnSoft, border: t.warn, fg: t.warn);
+        // The warn hue is under 3:1 on its own tint; the text grade holds it.
+        return _AlertColors(
+          bg: t.warnSoft,
+          border: t.warn,
+          fg: t.textWarningPrimary,
+        );
       case CcAlertVariant.danger:
         return _AlertColors(
           bg: t.dangerSoft,

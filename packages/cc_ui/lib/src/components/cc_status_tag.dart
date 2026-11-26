@@ -78,7 +78,7 @@ Color _textColor(DesignSystemTokens t, CcStatusTone tone) => switch (tone) {
   CcStatusTone.negative => t.textErrorPrimary,
   CcStatusTone.caution => t.textWarningPrimary,
   CcStatusTone.neutral => t.textSecondary,
-  CcStatusTone.info => t.accent,
+  CcStatusTone.info => t.accentText,
 };
 
 /// Resolves the hairline border color for a [CcStatusTone].

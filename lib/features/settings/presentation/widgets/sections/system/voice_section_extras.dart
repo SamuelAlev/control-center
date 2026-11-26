@@ -103,6 +103,7 @@ class _VoiceModelPickerState extends ConsumerState<VoiceModelPicker> {
       trailing: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 320),
         child: CcSelect<String>(
+          semanticLabel: l10n.speechModel,
           options: options,
           value: _pending ?? catalog?.selectedId,
           enabled: widget.enabled && _pending == null && options.isNotEmpty,

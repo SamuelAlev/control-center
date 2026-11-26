@@ -129,6 +129,15 @@ void main() {
     return (focused: focused, killed: killed, opened: opened, port: port);
   }
 
+  // Row actions stay mounted (Tab must reach them) and are faded at rest.
+  double opacityOf(WidgetTester tester, IconData icon) => tester
+      .widget<Opacity>(
+        find
+            .ancestor(of: find.byIcon(icon), matching: find.byType(Opacity))
+            .first,
+      )
+      .opacity;
+
   Future<void> hover(WidgetTester tester, Finder target) async {
     final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
     await gesture.addPointer();
@@ -154,10 +163,10 @@ void main() {
       ],
     );
 
-    // At rest the row reads clean; the trash is a hover affordance.
-    expect(find.byIcon(AppIcons.trash2), findsNothing);
+    // At rest the row reads clean; the trash shows on hover.
+    expect(opacityOf(tester, AppIcons.trash2), 0);
     await hover(tester, find.text('pnpm dev'));
-    expect(find.byIcon(AppIcons.trash2), findsOneWidget);
+    expect(opacityOf(tester, AppIcons.trash2), 1);
 
     await tester.tap(find.byIcon(AppIcons.trash2));
     await tester.pumpAndSettle();
@@ -178,7 +187,7 @@ void main() {
     expect(find.text('4m'), findsOneWidget);
     expect(find.text('1'), findsOneWidget, reason: 'section count');
 
-    expect(find.byIcon(AppIcons.circleStop), findsNothing);
+    expect(opacityOf(tester, AppIcons.circleStop), 0);
     await hover(tester, find.text('pnpm vitest run --shard=2/10'));
     await tester.tap(find.byIcon(AppIcons.circleStop));
     await tester.pumpAndSettle();
@@ -215,6 +224,38 @@ void main() {
     expect(r.opened, [command, command]);
     expect(r.port.killed, isEmpty);
     expect(r.port.read, isEmpty);
+  });
+
+  testWidgets('keyboard focus on a row reveals its stop, and Tab reaches it', (
+    tester,
+  ) async {
+    final r = await pump(tester, commands: [_command(9, 'pnpm dev')]);
+    final row = find
+        .ancestor(of: find.text('pnpm dev'), matching: find.byType(CcTappable))
+        .first;
+    final rowFocus = find
+        .descendant(
+          of: row,
+          matching: find.byWidgetPredicate(
+            (widget) => widget is Focus && widget.canRequestFocus,
+          ),
+        )
+        .first;
+    tester.widget<Focus>(rowFocus).focusNode!.requestFocus();
+    await tester.pump();
+    await tester.pump();
+    expect(opacityOf(tester, AppIcons.circleStop), 1);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    await tester.pump();
+    final stop = Focus.of(tester.element(find.byIcon(AppIcons.circleStop)));
+    expect(stop.hasPrimaryFocus, isTrue);
+    expect(opacityOf(tester, AppIcons.circleStop), 1);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(r.port.killed, [('ws-1', 's-1', 9)]);
+    expect(r.opened, isEmpty);
   });
 
   testWidgets('a multi-line command shows its first line', (tester) async {

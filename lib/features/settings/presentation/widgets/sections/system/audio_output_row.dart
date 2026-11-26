@@ -117,9 +117,10 @@ class _AudioOutputRowState extends ConsumerState<AudioOutputRow> {
       subtitle = selectable.firstWhere((d) => d.name == selected).description;
     }
 
+    final title = widget.title ?? l10n.audioOutputDeviceTitle;
     return SettingsRow(
       icon: AppIcons.volume2,
-      title: widget.title ?? l10n.audioOutputDeviceTitle,
+      title: title,
       subtitle: subtitle,
       trailing: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 380),
@@ -128,6 +129,7 @@ class _AudioOutputRowState extends ConsumerState<AudioOutputRow> {
           children: [
             Flexible(
               child: CcSelect<String>(
+                semanticLabel: title,
                 value: selectedKnown && selected != null
                     ? selected
                     : _systemDefaultId,

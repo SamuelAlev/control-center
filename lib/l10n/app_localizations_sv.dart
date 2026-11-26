@@ -7599,6 +7599,67 @@ class AppLocalizationsSv extends AppLocalizations {
       'Tab gör indrag här. Tryck på Esc och sedan Tab för att flytta till nästa kontroll.';
 
   @override
+  String get messageAuthorYou => 'Du';
+
+  @override
+  String systemMessageLabel(String content) {
+    return 'System: $content';
+  }
+
+  @override
+  String retryUploadNamed(String name) {
+    return 'Försök igen med uppladdningen av $name';
+  }
+
+  @override
+  String selectItemNamed(String name) {
+    return 'Välj $name';
+  }
+
+  @override
+  String get linkPullRequest => 'Länka pull request';
+
+  @override
+  String get addRelation => 'Lägg till relation';
+
+  @override
+  String get playbackPosition => 'Uppspelningsposition';
+
+  @override
+  String get prNewChangesRefreshDiff => 'Nya ändringar — Uppdatera diff';
+
+  @override
+  String get notificationsDeliverySchedule => 'Leveransschema';
+
+  @override
+  String get notificationsDeliveryScheduleSubtitle =>
+      'Hur icke-brådskande aviseringar samlas och levereras.';
+
+  @override
+  String get notificationsDeliveryRealtime => 'I realtid';
+
+  @override
+  String get notificationsDeliveryEvery2Hours => 'Var 2:e timme';
+
+  @override
+  String get notificationsDeliveryDailyDigest => 'Daglig sammanfattning';
+
+  @override
+  String get notificationsQuietHours => 'Tysta timmar';
+
+  @override
+  String notificationsQuietHoursOn(String start, String end) {
+    return 'Icke-brådskande aviseringar undertrycks $start–$end.';
+  }
+
+  @override
+  String get notificationsQuietHoursOff =>
+      'Icke-brådskande aviseringar levereras när som helst.';
+
+  @override
+  String get toolCalls => 'Verktygsanrop';
+
+  @override
   String get markdownSupported => 'Markdown stöds';
 
   @override

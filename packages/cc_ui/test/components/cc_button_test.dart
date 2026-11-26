@@ -391,4 +391,68 @@ void main() {
     expect(button.bottom, greaterThanOrEqualTo(label.bottom));
     expect(tester.takeException(), isNull);
   });
+
+  group('CcSplitButton', () {
+    Widget split({
+      required VoidCallback? onPressed,
+      required VoidCallback onOther,
+      bool loading = false,
+    }) => ccTestApp(
+      Center(
+        child: CcSplitButton(
+          onPressed: onPressed,
+          loading: loading,
+          menuSemanticLabel: 'More',
+          items: [CcMenuItem(label: 'Other', onSelected: onOther)],
+          child: const Text('Main'),
+        ),
+      ),
+    );
+
+    testWidgets('the button runs the main action without opening the menu', (
+      tester,
+    ) async {
+      var main = 0;
+      await tester.pumpWidget(split(onPressed: () => main++, onOther: () {}));
+
+      await tester.tap(find.text('Main'));
+      await tester.pumpAndSettle();
+
+      expect(main, 1);
+      expect(find.text('Other'), findsNothing);
+    });
+
+    testWidgets('the caret opens the alternatives', (tester) async {
+      var main = 0;
+      var other = 0;
+      await tester.pumpWidget(
+        split(onPressed: () => main++, onOther: () => other++),
+      );
+
+      await tester.tap(find.bySemanticsLabel('More'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Other'));
+      await tester.pumpAndSettle();
+
+      expect(other, 1);
+      expect(main, 0);
+      expect(find.text('Other'), findsNothing);
+    });
+
+    testWidgets('a busy or disabled action disables the caret too', (
+      tester,
+    ) async {
+      await tester.pumpWidget(split(onPressed: null, onOther: () {}));
+      await tester.tap(find.bySemanticsLabel('More'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(find.text('Other'), findsNothing);
+
+      await tester.pumpWidget(
+        split(onPressed: () {}, onOther: () {}, loading: true),
+      );
+      await tester.tap(find.bySemanticsLabel('More'), warnIfMissed: false);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Other'), findsNothing);
+    });
+  });
 }

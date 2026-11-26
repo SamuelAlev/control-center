@@ -90,9 +90,12 @@ class CalendarAllDayGutter extends StatelessWidget {
               : hovered
               ? tokens.bgHover
               : tokens.bg;
+          // The margin lies inside the tappable, so the 22×18 box takes
+          // presses in a 24×24 target; the 24px row centres it unmoved.
           return Container(
             width: 22,
             height: 18,
+            margin: const EdgeInsets.symmetric(horizontal: 1, vertical: 3),
             alignment: Alignment.center,
             decoration: BoxDecoration(color: bg, borderRadius: AppRadii.brSm),
             child: Icon(

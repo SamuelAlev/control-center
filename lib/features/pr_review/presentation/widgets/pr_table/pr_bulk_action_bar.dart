@@ -48,7 +48,7 @@ class PrBulkActionBar extends ConsumerWidget {
 
     return AnimatedSlide(
       offset: visible ? Offset.zero : const Offset(0, 1.4),
-      duration: const Duration(milliseconds: 200),
+      duration: CcMotion.resolve(context, const Duration(milliseconds: 200)),
       curve: Curves.easeOutCubic,
       child: AnimatedOpacity(
         opacity: visible ? 1 : 0,
@@ -125,6 +125,7 @@ class PrBulkActionBar extends ConsumerWidget {
                 const SizedBox(width: AppSpacing.xs),
                 _DarkBarButton(
                   icon: AppIcons.x,
+                  label: l10n.clearSelection,
                   onTap: () =>
                       ref.read(prTableSelectionProvider.notifier).clear(),
                 ),
@@ -392,19 +393,30 @@ class PrBulkActionBar extends ConsumerWidget {
 }
 
 class _DarkBarButton extends StatelessWidget {
-  const _DarkBarButton({required this.icon, required this.onTap});
+  const _DarkBarButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   final IconData icon;
+
+  /// Names the icon-only button, for the tooltip and a screen reader alike.
+  final String label;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
-    return CcTappable(
-      onPressed: onTap,
-      builder: (context, states) => Padding(
-        padding: const EdgeInsets.all(8),
-        child: Icon(icon, size: 16, color: tokens.fgWhite),
+    return CcTooltip(
+      message: label,
+      child: CcTappable(
+        onPressed: onTap,
+        semanticLabel: label,
+        builder: (context, states) => Padding(
+          padding: const EdgeInsets.all(8),
+          child: Icon(icon, size: 16, color: tokens.fgWhite),
+        ),
       ),
     );
   }
@@ -483,6 +495,7 @@ class _BulkUserPickerDialogState extends ConsumerState<_BulkUserPickerDialog> {
                               _selected.remove(m.login);
                             }
                           }),
+                          semanticChecked: checked,
                           builder: (context, states) {
                             final hovered = states.contains(
                               WidgetState.hovered,

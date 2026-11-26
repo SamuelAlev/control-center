@@ -52,6 +52,7 @@ class _MeetingTemplatesSectionState
             trailing: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 260),
               child: CcSelect<String>(
+                semanticLabel: l10n.meetingTemplateActive,
                 value: activeId,
                 enabled: isAdmin,
                 options: [

@@ -57,6 +57,7 @@ class PrivacySection extends ConsumerWidget {
                 : l10n.diffSharingOffSubtitle,
             trailing: CcSwitch(
               value: diffSharingEnabled,
+              semanticLabel: l10n.sendDiffContentTitle,
               onChanged: (v) =>
                   ref.read(_llmDiffSharingProvider.notifier).toggle(value: v),
             ),
@@ -69,6 +70,7 @@ class PrivacySection extends ConsumerWidget {
                 : l10n.errorReportingOffSubtitle,
             trailing: CcSwitch(
               value: errorReportingEnabled,
+              semanticLabel: l10n.errorReportingTitle,
               onChanged: (v) => ref
                   .read(errorReportingEnabledProvider.notifier)
                   .setEnabled(value: v),
@@ -88,6 +90,7 @@ class PrivacySection extends ConsumerWidget {
             },
             trailing: CcSwitch(
               value: usageAnalytics ?? false,
+              semanticLabel: l10n.usageAnalyticsTitle,
               onChanged: usageAnalytics == null || !canManageUsageAnalytics
                   ? null
                   : (v) => ref

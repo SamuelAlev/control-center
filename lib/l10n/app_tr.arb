@@ -10534,5 +10534,22 @@
   "ccUnverifiedLabel": "{label} (doğrulanmadı)",
   "prRowSelect": "{title} seç",
   "prTableSelectAll": "Tüm pull request'leri seç",
-  "planVersionRewind": "{version} sürümüne geri dön"
+  "planVersionRewind": "{version} sürümüne geri dön",
+  "messageAuthorYou": "Siz",
+  "systemMessageLabel": "Sistem: {content}",
+  "retryUploadNamed": "{name} yüklemesini yeniden dene",
+  "selectItemNamed": "{name} seç",
+  "linkPullRequest": "Pull request'i bağla",
+  "addRelation": "İlişki ekle",
+  "playbackPosition": "Oynatma konumu",
+  "prNewChangesRefreshDiff": "Yeni değişiklikler — Diff'i yenile",
+  "notificationsDeliverySchedule": "Teslim programı",
+  "notificationsDeliveryScheduleSubtitle": "Acil olmayan bildirimlerin nasıl toplanıp teslim edileceği.",
+  "notificationsDeliveryRealtime": "Gerçek zamanlı",
+  "notificationsDeliveryEvery2Hours": "Her 2 saatte bir",
+  "notificationsDeliveryDailyDigest": "Günlük özet",
+  "notificationsQuietHours": "Sessiz saatler",
+  "notificationsQuietHoursOn": "Acil olmayan bildirimler {start}–{end} arasında bekletilir.",
+  "notificationsQuietHoursOff": "Acil olmayan bildirimler her zaman teslim edilir.",
+  "toolCalls": "Araç çağrıları"
 }

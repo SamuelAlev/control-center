@@ -10534,5 +10534,22 @@
   "ccUnverifiedLabel": "{label} (tidak disahkan)",
   "prRowSelect": "Pilih {title}",
   "prTableSelectAll": "Pilih semua pull request",
-  "planVersionRewind": "Kembali ke versi {version}"
+  "planVersionRewind": "Kembali ke versi {version}",
+  "messageAuthorYou": "Anda",
+  "systemMessageLabel": "Sistem: {content}",
+  "retryUploadNamed": "Cuba semula muat naik {name}",
+  "selectItemNamed": "Pilih {name}",
+  "linkPullRequest": "Pautkan pull request",
+  "addRelation": "Tambah hubungan",
+  "playbackPosition": "Kedudukan main balik",
+  "prNewChangesRefreshDiff": "Perubahan baharu — Muat semula diff",
+  "notificationsDeliverySchedule": "Jadual penghantaran",
+  "notificationsDeliveryScheduleSubtitle": "Cara pemberitahuan tidak mendesak dikelompokkan dan dihantar.",
+  "notificationsDeliveryRealtime": "Masa nyata",
+  "notificationsDeliveryEvery2Hours": "Setiap 2 jam",
+  "notificationsDeliveryDailyDigest": "Ringkasan harian",
+  "notificationsQuietHours": "Waktu senyap",
+  "notificationsQuietHoursOn": "Pemberitahuan tidak mendesak disekat {start}–{end}.",
+  "notificationsQuietHoursOff": "Pemberitahuan tidak mendesak dihantar pada bila-bila masa.",
+  "toolCalls": "Panggilan alat"
 }

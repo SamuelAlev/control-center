@@ -100,39 +100,32 @@ class _ConnectionErrorAlertState extends State<ConnectionErrorAlert> {
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
-          Semantics(
-            button: true,
-            expanded: _expanded,
-            label: l10n.serverSetupErrorDetails,
-            child: CcTappable(
-              onPressed: () => setState(() => _expanded = !_expanded),
-              semanticButton: false,
-              borderRadius: AppRadii.brSm,
-              builder: (context, states) {
-                final hovered = states.contains(WidgetState.hovered);
-                return Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      _expanded ? AppIcons.chevronDown : AppIcons.chevronRight,
-                      size: 12,
-                      color: t.textErrorPrimary.withValues(
-                        alpha: hovered ? 1 : 0.7,
-                      ),
+          CcTappable(
+            onPressed: () => setState(() => _expanded = !_expanded),
+            semanticLabel: l10n.serverSetupErrorDetails,
+            semanticExpanded: _expanded,
+            borderRadius: AppRadii.brSm,
+            // Full-strength red: faded, it fell under 4.5:1 on the alert.
+            // The painted text is the label above, so it is not read twice.
+            builder: (context, states) => ExcludeSemantics(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _expanded ? AppIcons.chevronDown : AppIcons.chevronRight,
+                    size: 12,
+                    color: t.textErrorPrimary,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    l10n.serverSetupErrorDetails,
+                    style: CcTypography.caption.copyWith(
+                      color: t.textErrorPrimary,
+                      decoration: TextDecoration.none,
                     ),
-                    const SizedBox(width: AppSpacing.xs),
-                    Text(
-                      l10n.serverSetupErrorDetails,
-                      style: CcTypography.caption.copyWith(
-                        color: t.textErrorPrimary.withValues(
-                          alpha: hovered ? 1 : 0.7,
-                        ),
-                        decoration: TextDecoration.none,
-                      ),
-                    ),
-                  ],
-                );
-              },
+                  ),
+                ],
+              ),
             ),
           ),
           CcCollapsible(
@@ -149,7 +142,7 @@ class _ConnectionErrorAlertState extends State<ConnectionErrorAlert> {
                         textStyle: CcTypography.caption,
                         family: context.ccTheme?.monoFontFamily,
                       ).copyWith(
-                        color: t.textErrorPrimary.withValues(alpha: 0.8),
+                        color: t.textErrorPrimary,
                         decoration: TextDecoration.none,
                       ),
                 ),

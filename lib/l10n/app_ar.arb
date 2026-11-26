@@ -10534,5 +10534,22 @@
   "ccUnverifiedLabel": "{label} (غير متحقق منه)",
   "prRowSelect": "تحديد {title}",
   "prTableSelectAll": "تحديد كل طلبات السحب",
-  "planVersionRewind": "الرجوع إلى الإصدار {version}"
+  "planVersionRewind": "الرجوع إلى الإصدار {version}",
+  "messageAuthorYou": "أنت",
+  "systemMessageLabel": "النظام: {content}",
+  "retryUploadNamed": "إعادة محاولة رفع {name}",
+  "selectItemNamed": "تحديد {name}",
+  "linkPullRequest": "ربط طلب السحب",
+  "addRelation": "إضافة علاقة",
+  "playbackPosition": "موضع التشغيل",
+  "prNewChangesRefreshDiff": "تغييرات جديدة — تحديث الفرق",
+  "notificationsDeliverySchedule": "جدول التسليم",
+  "notificationsDeliveryScheduleSubtitle": "كيفية تجميع الإشعارات غير العاجلة وتسليمها.",
+  "notificationsDeliveryRealtime": "فوري",
+  "notificationsDeliveryEvery2Hours": "كل ساعتين",
+  "notificationsDeliveryDailyDigest": "ملخص يومي",
+  "notificationsQuietHours": "ساعات الهدوء",
+  "notificationsQuietHoursOn": "يتم كتم الإشعارات غير العاجلة {start}–{end}.",
+  "notificationsQuietHoursOff": "تُسلَّم الإشعارات غير العاجلة في أي وقت.",
+  "toolCalls": "استدعاءات الأدوات"
 }

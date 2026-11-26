@@ -7566,6 +7566,67 @@ class AppLocalizationsUr extends AppLocalizations {
       'یہاں Tab سے indent ہوتا ہے۔ Esc دبائیں، پھر Tab دبا کر اگلے کنٹرول پر جائیں۔';
 
   @override
+  String get messageAuthorYou => 'آپ';
+
+  @override
+  String systemMessageLabel(String content) {
+    return 'سسٹم: $content';
+  }
+
+  @override
+  String retryUploadNamed(String name) {
+    return '$name کا اپ لوڈ دوبارہ کوشش کریں';
+  }
+
+  @override
+  String selectItemNamed(String name) {
+    return '$name منتخب کریں';
+  }
+
+  @override
+  String get linkPullRequest => 'pull request لنک کریں';
+
+  @override
+  String get addRelation => 'تعلق شامل کریں';
+
+  @override
+  String get playbackPosition => 'پلے بیک پوزیشن';
+
+  @override
+  String get prNewChangesRefreshDiff => 'نئی تبدیلیاں — diff تازہ کریں';
+
+  @override
+  String get notificationsDeliverySchedule => 'ترسیل کا شیڈول';
+
+  @override
+  String get notificationsDeliveryScheduleSubtitle =>
+      'غیر فوری اطلاعات کس طرح اکٹھی کر کے بھیجی جاتی ہیں۔';
+
+  @override
+  String get notificationsDeliveryRealtime => 'حقیقی وقت';
+
+  @override
+  String get notificationsDeliveryEvery2Hours => 'ہر 2 گھنٹے بعد';
+
+  @override
+  String get notificationsDeliveryDailyDigest => 'روزانہ کا خلاصہ';
+
+  @override
+  String get notificationsQuietHours => 'خاموش اوقات';
+
+  @override
+  String notificationsQuietHoursOn(String start, String end) {
+    return 'غیر فوری اطلاعات $start–$end کے درمیان روکی جائیں گی۔';
+  }
+
+  @override
+  String get notificationsQuietHoursOff =>
+      'غیر فوری اطلاعات کسی بھی وقت بھیجی جائیں گی۔';
+
+  @override
+  String get toolCalls => 'ٹول کالز';
+
+  @override
   String get markdownSupported => 'Markdown معاون ہے';
 
   @override

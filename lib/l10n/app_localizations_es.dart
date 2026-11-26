@@ -7647,6 +7647,67 @@ class AppLocalizationsEs extends AppLocalizations {
       'Tab sangra aquí. Pulsa Esc y luego Tab para pasar al siguiente control.';
 
   @override
+  String get messageAuthorYou => 'Tú';
+
+  @override
+  String systemMessageLabel(String content) {
+    return 'Sistema: $content';
+  }
+
+  @override
+  String retryUploadNamed(String name) {
+    return 'Reintentar subida de $name';
+  }
+
+  @override
+  String selectItemNamed(String name) {
+    return 'Seleccionar $name';
+  }
+
+  @override
+  String get linkPullRequest => 'Vincular pull request';
+
+  @override
+  String get addRelation => 'Añadir relación';
+
+  @override
+  String get playbackPosition => 'Posición de reproducción';
+
+  @override
+  String get prNewChangesRefreshDiff => 'Cambios nuevos — Actualizar diff';
+
+  @override
+  String get notificationsDeliverySchedule => 'Programación de entrega';
+
+  @override
+  String get notificationsDeliveryScheduleSubtitle =>
+      'Cómo se agrupan y entregan las notificaciones no urgentes.';
+
+  @override
+  String get notificationsDeliveryRealtime => 'En tiempo real';
+
+  @override
+  String get notificationsDeliveryEvery2Hours => 'Cada 2 horas';
+
+  @override
+  String get notificationsDeliveryDailyDigest => 'Resumen diario';
+
+  @override
+  String get notificationsQuietHours => 'Horas de silencio';
+
+  @override
+  String notificationsQuietHoursOn(String start, String end) {
+    return 'Notificaciones no urgentes suprimidas de $start–$end.';
+  }
+
+  @override
+  String get notificationsQuietHoursOff =>
+      'Las notificaciones no urgentes se entregan en cualquier momento.';
+
+  @override
+  String get toolCalls => 'Llamadas a herramientas';
+
+  @override
   String get markdownSupported => 'Markdown es compatible';
 
   @override

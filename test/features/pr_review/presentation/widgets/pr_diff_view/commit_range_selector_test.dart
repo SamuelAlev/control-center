@@ -1,4 +1,5 @@
 import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/commit_range_selector.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -84,5 +85,42 @@ void main() {
     await tester.pump();
     // A non-contiguous pair still spans from the earliest version to the tip.
     expect(find.text('v1–v3'), findsOneWidget);
+  });
+
+  testWidgets('a commit row is one checkbox node carrying its state', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      testWrap(
+        CommitRangeSelector(
+          commits: commits,
+          selectedShas: const {'ccccccc3'},
+          onSelectionChanged: (_) {},
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('v3').first);
+    await tester.pumpAndSettle();
+
+    // The trigger names the selected commit too; the menu row is the last.
+    final latestText = find.text('latest').last;
+    final latestRow = tester.getSemantics(latestText);
+    expect(latestRow, isSemantics(hasCheckedState: true, isChecked: true));
+    expect(
+      tester.getSemantics(find.text('oldest')),
+      isSemantics(hasCheckedState: true, isChecked: false),
+    );
+    // The painted box has no node of its own: it resolves to the row's.
+    final box = find.descendant(
+      of: find
+          .ancestor(of: latestText, matching: find.byType(CcTappable))
+          .first,
+      matching: find.byType(CcCheckbox),
+    );
+    expect(tester.getSemantics(box).id, latestRow.id);
+    handle.dispose();
   });
 }

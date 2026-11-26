@@ -7,7 +7,8 @@ import 'package:flutter/widgets.dart';
 /// map 1:1 to fields on this class. Use `DesignSystemTokens` (in
 /// `design_system_tokens.dart`) for the semantic tokens that compose these.
 ///
-/// A few half-step shades (`brand850`, `gray450`, `gray550`, `yellow650`) are
+/// A few half-step shades (`brand450`, `brand850`, `gray450`, `gray550`,
+/// `green550`, `green650`, `green750`, `yellow650`) are
 /// accessibility-tuned interstitials added on top of the base scale so the
 /// semantic tokens can hit the WCAG contrast floor without changing hue; each
 /// documents the pairing it rescues.
@@ -32,6 +33,10 @@ abstract final class DesignSystemPalette {
 
   /// Brand 400 — light flame.
   static const Color brand400 = Color(0xFFFD885C);
+
+  /// Brand 450 — a11y Flame text: the dark accent as colored text clears
+  /// 4.5:1 on its own soft tint over the dark surface (brand500 is 4.3:1).
+  static const Color brand450 = Color(0xFFFB6B30);
 
   /// Brand 500 — Flame (hover warm-up).
   static const Color brand500 = Color(0xFFFB6224);
@@ -164,11 +169,23 @@ abstract final class DesignSystemPalette {
   /// Green 500 from the design system palette.
   static const Color green500 = Color(0xFF17B26A);
 
+  /// Green 550 — a11y secondary success glyph: clears 3:1 on the light
+  /// surface (green500 is 2.4:1).
+  static const Color green550 = Color(0xFF149E5E);
+
   /// Green 600 — design-system success (#17a34a).
   static const Color green600 = Color(0xFF17A34A);
 
+  /// Green 650 — a11y success glyph: clears 3:1 on the light surface and on
+  /// its own soft tint there (green600 is 2.9:1).
+  static const Color green650 = Color(0xFF159343);
+
   /// Green 700 from the design system palette.
   static const Color green700 = Color(0xFF067647);
+
+  /// Green 750 — a11y success text: clears 4.5:1 on the soft success tint
+  /// over the light surface (green700 is 4.3:1).
+  static const Color green750 = Color(0xFF067245);
 
   /// Green 800 from the design system palette.
   static const Color green800 = Color(0xFF085D3A);

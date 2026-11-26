@@ -35,6 +35,7 @@ export 'package:cc_ui/src/components/cc_fade_edges.dart';
 export 'package:cc_ui/src/components/cc_filter_menu.dart';
 export 'package:cc_ui/src/components/cc_gauge.dart';
 export 'package:cc_ui/src/components/cc_goal_card.dart';
+export 'package:cc_ui/src/components/cc_hit_target.dart';
 export 'package:cc_ui/src/components/cc_icon.dart';
 export 'package:cc_ui/src/components/cc_icon_button.dart';
 export 'package:cc_ui/src/components/cc_icons.dart';

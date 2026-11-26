@@ -130,10 +130,13 @@ class UserBubble extends ConsumerWidget {
 
     return Padding(
       padding: EdgeInsets.only(top: topPad),
+      // Names the author only: the bubble's own text is the content, and a
+      // label that repeated it was read twice.
       child: Semantics(
+        container: true,
         label: deleted
             ? l10n.messageDeleted
-            : '${authorName ?? 'You'}: ${message.content}',
+            : authorName ?? l10n.messageAuthorYou,
         child: LayoutBuilder(
           builder: (context, constraints) {
             // Cap the bubble at ~75% of the (already-centered, ≤760px) column

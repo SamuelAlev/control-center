@@ -20,6 +20,7 @@ import 'package:control_center/shared/utils/open_url.dart';
 import 'package:control_center/shared/utils/relative_time.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:control_center/shared/widgets/github_markdown_body.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -904,8 +905,9 @@ class _JobTileState extends ConsumerState<_JobTile> {
 
 /// Bottom grip that grows the workflow graph canvas vertically. Dragging
 /// extends the height (clamped to 200-1200); a double-tap restores the
-/// content-aware resting height.
-class _GraphResizeGrip extends StatelessWidget {
+/// content-aware resting height. It is also a keyboard stop: ↑/↓ resize by the
+/// shared divider step (Shift: the large one), Home or Enter reset.
+class _GraphResizeGrip extends StatefulWidget {
   /// _GraphResizeGrip({.
   const _GraphResizeGrip({required this.onDrag, required this.onReset});
 
@@ -916,24 +918,66 @@ class _GraphResizeGrip extends StatelessWidget {
   final VoidCallback onReset;
 
   @override
+  State<_GraphResizeGrip> createState() => _GraphResizeGripState();
+}
+
+class _GraphResizeGripState extends State<_GraphResizeGrip> {
+  final FocusNode _focus = FocusNode(debugLabel: 'graph-resize-grip');
+
+  @override
+  void dispose() {
+    _focus.dispose();
+    super.dispose();
+  }
+
+  KeyEventResult _onKey(FocusNode node, KeyEvent event) {
+    if (event is KeyUpEvent) {
+      return KeyEventResult.ignored;
+    }
+    final step = HardwareKeyboard.instance.isShiftPressed
+        ? CcResizableDivider.keyboardLargeStep
+        : CcResizableDivider.keyboardStep;
+    final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.arrowUp) {
+      widget.onDrag(-step);
+    } else if (key == LogicalKeyboardKey.arrowDown) {
+      widget.onDrag(step);
+    } else if (event is KeyDownEvent &&
+        (key == LogicalKeyboardKey.home || key == LogicalKeyboardKey.enter)) {
+      widget.onReset();
+    } else {
+      return KeyEventResult.ignored;
+    }
+    return KeyEventResult.handled;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
     return Semantics(
       label: l10n.resizeGraph,
-      child: MouseRegion(
-        cursor: SystemMouseCursors.resizeUpDown,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onVerticalDragUpdate: (d) => onDrag(d.delta.dy),
-          onDoubleTap: onReset,
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 5),
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(color: tokens.borderSecondary),
+      child: Focus(
+        focusNode: _focus,
+        onKeyEvent: _onKey,
+        child: MouseRegion(
+          cursor: SystemMouseCursors.resizeUpDown,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onVerticalDragUpdate: (d) => widget.onDrag(d.delta.dy),
+            onDoubleTap: widget.onReset,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 5),
+                child: FocusRing(
+                  focusNode: _focus,
+                  offset: 2,
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(color: tokens.borderSecondary),
+                  ),
+                ),
               ),
             ),
           ),

@@ -7712,6 +7712,67 @@ class AppLocalizationsPl extends AppLocalizations {
       'Tab wcina tekst w tym miejscu. Naciśnij Esc, a następnie Tab, aby przejść do następnego elementu sterującego.';
 
   @override
+  String get messageAuthorYou => 'Ty';
+
+  @override
+  String systemMessageLabel(String content) {
+    return 'System: $content';
+  }
+
+  @override
+  String retryUploadNamed(String name) {
+    return 'Ponów przesyłanie $name';
+  }
+
+  @override
+  String selectItemNamed(String name) {
+    return 'Wybierz $name';
+  }
+
+  @override
+  String get linkPullRequest => 'Połącz pull request';
+
+  @override
+  String get addRelation => 'Dodaj relację';
+
+  @override
+  String get playbackPosition => 'Pozycja odtwarzania';
+
+  @override
+  String get prNewChangesRefreshDiff => 'Nowe zmiany — odśwież diff';
+
+  @override
+  String get notificationsDeliverySchedule => 'Harmonogram dostarczania';
+
+  @override
+  String get notificationsDeliveryScheduleSubtitle =>
+      'Sposób grupowania i dostarczania powiadomień niepilnych.';
+
+  @override
+  String get notificationsDeliveryRealtime => 'W czasie rzeczywistym';
+
+  @override
+  String get notificationsDeliveryEvery2Hours => 'Co 2 godziny';
+
+  @override
+  String get notificationsDeliveryDailyDigest => 'Dzienne podsumowanie';
+
+  @override
+  String get notificationsQuietHours => 'Godziny ciszy';
+
+  @override
+  String notificationsQuietHoursOn(String start, String end) {
+    return 'Powiadomienia niepilne wstrzymane $start–$end.';
+  }
+
+  @override
+  String get notificationsQuietHoursOff =>
+      'Powiadomienia niepilne są dostarczane o każdej porze.';
+
+  @override
+  String get toolCalls => 'Wywołania narzędzi';
+
+  @override
   String get markdownSupported => 'Markdown jest obsługiwany';
 
   @override

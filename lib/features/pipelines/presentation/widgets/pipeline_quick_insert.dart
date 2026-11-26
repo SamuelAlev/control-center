@@ -44,6 +44,8 @@ class _PipelineQuickInsertState extends State<PipelineQuickInsert> {
     // wins the arena over a child tap, so the pointer toggles on pointer-down.
     // IgnorePointer keeps the button from toggling twice on one click; it
     // does not block focus, so Enter on the button is the keyboard path.
+    // IgnorePointer also blocks semantics actions, so the screen-reader
+    // button is the Semantics node around it, with the same toggle.
     return CcPopover(
       controller: _overlay,
       toggleOnTargetTap: false,
@@ -52,16 +54,24 @@ class _PipelineQuickInsertState extends State<PipelineQuickInsert> {
       offset: const Offset(8, 0),
       target: CcTooltip(
         message: l10n.pipelineAddStep,
-        child: Listener(
-          behavior: HitTestBehavior.opaque,
-          onPointerDown: (_) => _overlay.toggle(),
-          child: IgnorePointer(
-            // No tooltip of its own: the one above already shows on focus.
-            child: CcIconButton(
-              icon: AppIcons.plus,
-              size: CcButtonSize.sm,
-              semanticLabel: l10n.pipelineAddStep,
-              onPressed: _overlay.toggle,
+        child: Semantics(
+          container: true,
+          button: true,
+          label: l10n.pipelineAddStep,
+          onTap: _overlay.toggle,
+          child: Listener(
+            behavior: HitTestBehavior.opaque,
+            onPointerDown: (_) => _overlay.toggle(),
+            child: ExcludeSemantics(
+              child: IgnorePointer(
+                // No tooltip of its own: the one above already shows on focus.
+                child: CcIconButton(
+                  icon: AppIcons.plus,
+                  size: CcButtonSize.sm,
+                  semanticLabel: l10n.pipelineAddStep,
+                  onPressed: _overlay.toggle,
+                ),
+              ),
             ),
           ),
         ),
@@ -356,14 +366,23 @@ class _PipelineTriggerGhostPickerState extends State<PipelineTriggerGhostPicker>
       followerAnchor: Alignment.centerLeft,
       offset: const Offset(8, 0),
       // Toggled on pointer-down for the reason [PipelineQuickInsert] gives;
-      // the tappable under IgnorePointer is the keyboard path.
-      target: Listener(
-        behavior: HitTestBehavior.opaque,
-        onPointerDown: (_) => _overlay.toggle(),
-        child: IgnorePointer(
-          child: CcTappable(
-            onPressed: _overlay.toggle,
-            builder: (context, _) => widget.child,
+      // the tappable under IgnorePointer is the keyboard path, and the
+      // Semantics node the screen-reader one.
+      target: Semantics(
+        container: true,
+        button: true,
+        label: AppLocalizations.of(context).pipelineAddTrigger,
+        onTap: _overlay.toggle,
+        child: Listener(
+          behavior: HitTestBehavior.opaque,
+          onPointerDown: (_) => _overlay.toggle(),
+          child: ExcludeSemantics(
+            child: IgnorePointer(
+              child: CcTappable(
+                onPressed: _overlay.toggle,
+                builder: (context, _) => widget.child,
+              ),
+            ),
           ),
         ),
       ),

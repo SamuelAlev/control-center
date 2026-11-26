@@ -7688,6 +7688,67 @@ class AppLocalizationsAr extends AppLocalizations {
       'يُدرج Tab هنا مسافة بادئة. اضغط Esc، ثم Tab للانتقال إلى عنصر التحكم التالي.';
 
   @override
+  String get messageAuthorYou => 'أنت';
+
+  @override
+  String systemMessageLabel(String content) {
+    return 'النظام: $content';
+  }
+
+  @override
+  String retryUploadNamed(String name) {
+    return 'إعادة محاولة رفع $name';
+  }
+
+  @override
+  String selectItemNamed(String name) {
+    return 'تحديد $name';
+  }
+
+  @override
+  String get linkPullRequest => 'ربط طلب السحب';
+
+  @override
+  String get addRelation => 'إضافة علاقة';
+
+  @override
+  String get playbackPosition => 'موضع التشغيل';
+
+  @override
+  String get prNewChangesRefreshDiff => 'تغييرات جديدة — تحديث الفرق';
+
+  @override
+  String get notificationsDeliverySchedule => 'جدول التسليم';
+
+  @override
+  String get notificationsDeliveryScheduleSubtitle =>
+      'كيفية تجميع الإشعارات غير العاجلة وتسليمها.';
+
+  @override
+  String get notificationsDeliveryRealtime => 'فوري';
+
+  @override
+  String get notificationsDeliveryEvery2Hours => 'كل ساعتين';
+
+  @override
+  String get notificationsDeliveryDailyDigest => 'ملخص يومي';
+
+  @override
+  String get notificationsQuietHours => 'ساعات الهدوء';
+
+  @override
+  String notificationsQuietHoursOn(String start, String end) {
+    return 'يتم كتم الإشعارات غير العاجلة $start–$end.';
+  }
+
+  @override
+  String get notificationsQuietHoursOff =>
+      'تُسلَّم الإشعارات غير العاجلة في أي وقت.';
+
+  @override
+  String get toolCalls => 'استدعاءات الأدوات';
+
+  @override
   String get markdownSupported => 'Markdown مدعوم';
 
   @override

@@ -1,6 +1,7 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row_adornments.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row_layout.dart';
+import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
 
 export 'package:control_center/features/messaging/presentation/widgets/space_row_adornments.dart'
@@ -140,14 +141,27 @@ class SpaceRow extends StatelessWidget implements CcFluidHoverTarget {
     return t.hover.withValues(alpha: 0);
   }
 
+  /// What [signal] says, carried by the row's own node: the spinner and dot
+  /// are hidden from semantics where they are painted (SpaceRowLabel), so
+  /// the spinner's generic "loading" and live region never reach the row.
+  String? _signalValue(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return switch (signal) {
+      CcSpinner() || SpaceLeadingIcon(running: true) => l10n.agentResponding,
+      AttentionDot() || SpaceLeadingIcon() => l10n.inboxNeedsYourAttention,
+      _ => null,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final fg = _filled
         ? t.accentOn
         : (muted ? t.textTertiary : t.textSecondary);
+    // At 0.72 the caption fell to 3.9:1 on the brand fill.
     final caption = _filled
-        ? t.accentOn.withValues(alpha: 0.72)
+        ? t.accentOn.withValues(alpha: 0.9)
         : t.textTertiary;
     final transitioning = CcSidebarScope.transitioningOf(context) ?? false;
     final hasMenu =
@@ -176,6 +190,7 @@ class SpaceRow extends StatelessWidget implements CcFluidHoverTarget {
             indent: indent,
             cardInset: cardInset,
             transitioning: transitioning,
+            titleNamesRow: onPress != null,
             hasMenu: hasMenu,
             showMenu: hasMenu && (menuRevealed || _overflowRevealed(states)),
             markSlot: markSlot,
@@ -201,14 +216,21 @@ class SpaceRow extends StatelessWidget implements CcFluidHoverTarget {
       );
     }
 
+    final signalValue = _signalValue(context);
     final press = onPress;
     if (press == null) {
-      return painted(const {});
+      // The surface that owns the press takes the label; the signal's state
+      // merges up into it the same way.
+      return signalValue == null
+          ? painted(const {})
+          : Semantics(value: signalValue, child: painted(const {}));
     }
     return CcTappable(
       onPressed: press,
       borderRadius: AppRadii.brSm,
       semanticLabel: label,
+      semanticValue: signalValue,
+      semanticSelected: selected ? true : null,
       focusRingColor: _filled ? t.accentOn : null,
       builder: (context, states) => painted(states),
     );

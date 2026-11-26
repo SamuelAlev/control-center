@@ -1,3 +1,4 @@
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/auth/presentation/screens/onboarding_chrome.dart';
 import 'package:control_center/shared/widgets/server_activity_overlay.dart';
 import 'package:flutter/widgets.dart';
@@ -52,7 +53,10 @@ class OnboardingFlowView extends StatelessWidget {
             const SizedBox(height: 32),
             Flexible(
               child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 280),
+                duration: CcMotion.resolve(
+                  context,
+                  const Duration(milliseconds: 280),
+                ),
                 switchInCurve: Curves.easeOutCubic,
                 switchOutCurve: Curves.easeInCubic,
                 transitionBuilder: (child, animation) {

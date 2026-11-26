@@ -187,8 +187,8 @@ List<_MenuEntry> _buildEntries({
       },
     ),
     _MenuAction(
-      leading: const TicketAssigneeAvatar(name: 'You', size: 18),
-      label: 'You',
+      leading: TicketAssigneeAvatar(name: l10n.messageAuthorYou, size: 18),
+      label: l10n.messageAuthorYou,
       selected: ticket.isAssignedToUser,
       onTap: () {
         final me = ref.read(currentUserIdProvider);

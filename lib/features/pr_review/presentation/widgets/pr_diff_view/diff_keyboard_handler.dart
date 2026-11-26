@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -239,11 +240,7 @@ class PrDiffKeyboardHandler {
     final targetPath = files[focusedFileIndex].filename;
     final targetKey = fileStateKeys[targetPath];
     final target = revealOffsetGetter(focusedFileIndex);
-    await position.animateTo(
-      target.clamp(position.minScrollExtent, position.maxScrollExtent),
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOut,
-    );
+    await _scrollTo(position, target, const Duration(milliseconds: 180));
     final stepped = focusedFileIndex;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final ctx = targetKey?.currentContext;
@@ -251,11 +248,20 @@ class PrDiffKeyboardHandler {
         Scrollable.ensureVisible(
           ctx,
           alignment: 0.0,
-          duration: const Duration(milliseconds: 150),
+          duration: CcMotion.resolve(ctx, const Duration(milliseconds: 150)),
         );
       }
       onSteppedToFile?.call(stepped);
     });
+  }
+
+  // Snaps under reduced motion (a zero-duration animateTo would assert).
+  Future<void> _scrollTo(ScrollPosition p, double to, Duration d) async {
+    final target = to.clamp(p.minScrollExtent, p.maxScrollExtent);
+    if (CcMotion.reduced(p.context.storageContext)) {
+      return p.jumpTo(target);
+    }
+    await p.animateTo(target, duration: d, curve: Curves.easeOut);
   }
 
   int _findFileAtOffset(double offset) {
@@ -281,24 +287,18 @@ class PrDiffKeyboardHandler {
     }
 
     focusedFileIndex = index.clamp(0, files.length - 1);
-    final target = revealOffsetGetter(
-      focusedFileIndex,
-    ).clamp(position.minScrollExtent, position.maxScrollExtent);
+    final target = revealOffsetGetter(focusedFileIndex);
     onFullRefresh();
     final targetPath = files[focusedFileIndex].filename;
     final targetKey = fileStateKeys[targetPath];
-    await position.animateTo(
-      target,
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeOut,
-    );
+    await _scrollTo(position, target, const Duration(milliseconds: 200));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final ctx = targetKey?.currentContext;
       if (ctx != null) {
         Scrollable.ensureVisible(
           ctx,
           alignment: 0.0,
-          duration: const Duration(milliseconds: 150),
+          duration: CcMotion.resolve(ctx, const Duration(milliseconds: 150)),
         );
       }
     });

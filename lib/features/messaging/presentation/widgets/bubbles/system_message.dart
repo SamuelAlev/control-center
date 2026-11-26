@@ -1,5 +1,6 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/bubble_shared.dart';
+import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
 
 /// Renders a centered system message with divider lines.
@@ -16,8 +17,10 @@ class SystemMessage extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Semantics(
-        label: 'System: $content',
-        child: Row(
+        container: true,
+        label: AppLocalizations.of(context).systemMessageLabel(content),
+        child: ExcludeSemantics(
+          child: Row(
           children: [
             Expanded(child: CcDivider(color: tokens.borderSecondary)),
             const SizedBox(width: 12),
@@ -28,6 +31,7 @@ class SystemMessage extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(child: CcDivider(color: tokens.borderSecondary)),
           ],
+        ),
         ),
       ),
     );

@@ -25,7 +25,7 @@
 # ---- Build stage: compile native AOT executables ----------------------------
 # Pinned by digest. Keep the tag in sync with the `environment:` of
 # apps/cc_connect/pubspec.yaml.
-FROM dart:3.14-sdk@sha256:36176bf7b6400bdc4aa77ba07b733b2eabf22640f71afd1b83eba679a26d5698 AS builder
+FROM dart:3.14-sdk@sha256:95cfdb6a4b37150917161d2d097e4e74b706ede349423140b2a82c9ac4ee9f93 AS builder
 
 WORKDIR /build
 COPY --from=core lib ./packages/cc_connect_core/lib
@@ -70,7 +70,7 @@ RUN printf '%s\n' \
 # the SDK image's Debian (13, trixie). Connect makes outbound TLS calls (GitHub,
 # Google, Slack, Klipy, Cloud KMS, Firestore, Redis), so it needs the system
 # trust store: `ca-certificates` is the only package added.
-FROM debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2 AS runtime
+FROM debian:trixie-slim@sha256:8aa5a7bf5a1955bddbe7d74fcdd0b91ab30e74362a8b73af672b0481b35b44a0 AS runtime
 
 LABEL org.opencontainers.image.title="Control Center Connect" \
       org.opencontainers.image.description="OAuth broker for Control Center servers: provider sign-in, install-bound credential seals, one-repository GitHub tokens, Slack event references and a Klipy proxy" \

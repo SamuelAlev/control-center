@@ -220,6 +220,9 @@ class PrDiffSearchController {
     });
   }
 
+  /// What held focus before the search opened; it gets focus back on close.
+  FocusNode? _returnFocus;
+
   /// Opens the search overlay and requests focus.
   void openSearch() {
     if (searchOpen) {
@@ -231,6 +234,7 @@ class PrDiffSearchController {
       return;
     }
     searchOpen = true;
+    _returnFocus = FocusManager.instance.primaryFocus;
     onChanged();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       searchFocus.requestFocus();
@@ -244,6 +248,19 @@ class PrDiffSearchController {
     }
 
     searchDebounce?.cancel();
+    // The field unmounts with the overlay and would drop focus to the root.
+    // Only a close from the field hands it back; otherwise focus already
+    // moved somewhere the person chose. A parent is liveness (see
+    // CcFocusTrap): a detached node keeps its context.
+    final restore = _returnFocus;
+    _returnFocus = null;
+    if (searchFocus.hasFocus &&
+        restore != null &&
+        restore != searchFocus &&
+        restore.parent != null &&
+        restore.canRequestFocus) {
+      restore.requestFocus();
+    }
     // Drop the entry here. Dispose also removes whatever is still inserted,
     // and OverlayEntry.remove asserts if it runs twice. Nulling also lets the
     // next open insert a fresh entry — the view only inserts when this is null.

@@ -63,6 +63,7 @@ class TicketingConnectionCard extends ConsumerWidget {
             trailing: SizedBox(
               width: 200,
               child: CcSelect<TicketProvider>(
+                semanticLabel: l10n.ticketingProvider,
                 value: provider,
                 enabled: isAdmin,
                 options: [

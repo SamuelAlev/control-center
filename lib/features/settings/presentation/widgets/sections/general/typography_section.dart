@@ -78,6 +78,7 @@ class TypographySection extends ConsumerWidget {
             trailing: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 200),
               child: CcSelect<DiffOverflowMode>(
+                semanticLabel: l10n.diffLineDisplay,
                 options: [
                   CcSelectOption(
                     value: DiffOverflowMode.wrap,

@@ -20,16 +20,16 @@ const String _lightShaderAsset = 'assets/shaders/login_background_light.frag';
 /// `Theme.of` brightness — light theme gets the morning-mist cloudscape, dark
 /// theme gets the ember cloudscape.
 ///
-/// When [animate] is false the shader is rendered once at `u_time = 0` and no
-/// ticker runs — a frozen "speed 0" frame for `prefers-reduced-motion` that
-/// keeps the shapes but stops the motion.
+/// When [animate] resolves to false the shader is rendered once at
+/// `u_time = 0` and no ticker runs — a frozen "speed 0" frame for
+/// `prefers-reduced-motion` that keeps the shapes but stops the motion.
 class ShaderBackground extends StatefulWidget {
   /// Creates a [ShaderBackground].
   const ShaderBackground({
     super.key,
     this.shaderAsset,
     this.child,
-    this.animate = true,
+    this.animate,
   });
 
   /// Asset path to the fragment shader. When null, the asset is selected from
@@ -40,8 +40,9 @@ class ShaderBackground extends StatefulWidget {
   final Widget? child;
 
   /// Whether to animate. When false the shader holds at `u_time = 0` with no
-  /// ticker — the frozen "speed 0" path for `prefers-reduced-motion`.
-  final bool animate;
+  /// ticker — the frozen "speed 0" path for `prefers-reduced-motion`. When
+  /// null it follows the ambient reduced-motion setting ([CcMotion.reduced]).
+  final bool? animate;
 
   @override
   State<ShaderBackground> createState() => _ShaderBackgroundState();
@@ -64,6 +65,7 @@ class _ShaderBackgroundState extends State<ShaderBackground>
   final ValueNotifier<double> _time = ValueNotifier<double>(0);
   bool _loaded = false;
   String? _loadedAsset;
+  bool _animate = false;
 
   @override
   void initState() {
@@ -74,6 +76,7 @@ class _ShaderBackgroundState extends State<ShaderBackground>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _setAnimate(widget.animate ?? !CcMotion.reduced(context));
     final desired = _resolveAsset(context);
     if (desired != _loadedAsset) {
       _loadShader(desired);
@@ -87,14 +90,20 @@ class _ShaderBackgroundState extends State<ShaderBackground>
     if (desired != _loadedAsset) {
       _loadShader(desired);
     }
-    if (widget.animate != oldWidget.animate) {
-      if (widget.animate) {
-        if (_loaded) {
-          _startTicker();
-        }
-      } else {
-        _ticker?.stop();
+    _setAnimate(widget.animate ?? !CcMotion.reduced(context));
+  }
+
+  void _setAnimate(bool animate) {
+    if (animate == _animate) {
+      return;
+    }
+    _animate = animate;
+    if (animate) {
+      if (_loaded) {
+        _startTicker();
       }
+    } else {
+      _ticker?.stop();
     }
   }
 
@@ -129,7 +138,7 @@ class _ShaderBackgroundState extends State<ShaderBackground>
         _loaded = true;
       });
       oldShader?.dispose();
-      if (widget.animate) {
+      if (_animate) {
         _startTicker();
       }
     } catch (e) {
@@ -209,7 +218,7 @@ class _ShaderBackgroundState extends State<ShaderBackground>
       case AppLifecycleState.hidden:
         _ticker?.stop();
       case AppLifecycleState.resumed:
-        if (_loaded && widget.animate) {
+        if (_loaded && _animate) {
           _startTicker();
         }
       case AppLifecycleState.detached:

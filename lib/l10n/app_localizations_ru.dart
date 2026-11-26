@@ -7684,6 +7684,67 @@ class AppLocalizationsRu extends AppLocalizations {
       'Здесь Tab выполняет отступ. Нажмите Esc, затем Tab, чтобы перейти к следующему элементу управления.';
 
   @override
+  String get messageAuthorYou => 'Вы';
+
+  @override
+  String systemMessageLabel(String content) {
+    return 'Система: $content';
+  }
+
+  @override
+  String retryUploadNamed(String name) {
+    return 'Повторить загрузку $name';
+  }
+
+  @override
+  String selectItemNamed(String name) {
+    return 'Выбрать $name';
+  }
+
+  @override
+  String get linkPullRequest => 'Связать pull request';
+
+  @override
+  String get addRelation => 'Добавить связь';
+
+  @override
+  String get playbackPosition => 'Позиция воспроизведения';
+
+  @override
+  String get prNewChangesRefreshDiff => 'Новые изменения — обновить diff';
+
+  @override
+  String get notificationsDeliverySchedule => 'Расписание доставки';
+
+  @override
+  String get notificationsDeliveryScheduleSubtitle =>
+      'Как группируются и доставляются несрочные уведомления.';
+
+  @override
+  String get notificationsDeliveryRealtime => 'В реальном времени';
+
+  @override
+  String get notificationsDeliveryEvery2Hours => 'Каждые 2 часа';
+
+  @override
+  String get notificationsDeliveryDailyDigest => 'Ежедневная сводка';
+
+  @override
+  String get notificationsQuietHours => 'Тихие часы';
+
+  @override
+  String notificationsQuietHoursOn(String start, String end) {
+    return 'Несрочные уведомления приостановлены $start–$end.';
+  }
+
+  @override
+  String get notificationsQuietHoursOff =>
+      'Несрочные уведомления доставляются в любое время.';
+
+  @override
+  String get toolCalls => 'Вызовы инструментов';
+
+  @override
   String get markdownSupported => 'Поддерживается Markdown';
 
   @override

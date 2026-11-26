@@ -10534,5 +10534,22 @@
   "ccUnverifiedLabel": "{label} (nem ellenőrzött)",
   "prRowSelect": "{title} kijelölése",
   "prTableSelectAll": "Összes pull request kijelölése",
-  "planVersionRewind": "Visszaállítás erre a verzióra: {version}"
+  "planVersionRewind": "Visszaállítás erre a verzióra: {version}",
+  "messageAuthorYou": "Ön",
+  "systemMessageLabel": "Rendszer: {content}",
+  "retryUploadNamed": "{name} feltöltésének újrapróbálása",
+  "selectItemNamed": "{name} kijelölése",
+  "linkPullRequest": "Pull request összekapcsolása",
+  "addRelation": "Kapcsolat hozzáadása",
+  "playbackPosition": "Lejátszási pozíció",
+  "prNewChangesRefreshDiff": "Új módosítások — Diff frissítése",
+  "notificationsDeliverySchedule": "Kézbesítési ütemezés",
+  "notificationsDeliveryScheduleSubtitle": "Hogyan csoportosítjuk és kézbesítjük a nem sürgős értesítéseket.",
+  "notificationsDeliveryRealtime": "Valós idejű",
+  "notificationsDeliveryEvery2Hours": "2 óránként",
+  "notificationsDeliveryDailyDigest": "Napi összesítő",
+  "notificationsQuietHours": "Csendes órák",
+  "notificationsQuietHoursOn": "A nem sürgős értesítések szüneteltetve {start}–{end} között.",
+  "notificationsQuietHoursOff": "A nem sürgős értesítések bármikor kézbesítésre kerülnek.",
+  "toolCalls": "Eszközhívások"
 }

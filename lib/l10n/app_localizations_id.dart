@@ -7603,6 +7603,67 @@ class AppLocalizationsId extends AppLocalizations {
       'Tab membuat indentasi di sini. Tekan Esc, lalu Tab untuk pindah ke kontrol berikutnya.';
 
   @override
+  String get messageAuthorYou => 'Anda';
+
+  @override
+  String systemMessageLabel(String content) {
+    return 'Sistem: $content';
+  }
+
+  @override
+  String retryUploadNamed(String name) {
+    return 'Coba lagi unggahan $name';
+  }
+
+  @override
+  String selectItemNamed(String name) {
+    return 'Pilih $name';
+  }
+
+  @override
+  String get linkPullRequest => 'Tautkan pull request';
+
+  @override
+  String get addRelation => 'Tambah relasi';
+
+  @override
+  String get playbackPosition => 'Posisi pemutaran';
+
+  @override
+  String get prNewChangesRefreshDiff => 'Perubahan baru — Segarkan diff';
+
+  @override
+  String get notificationsDeliverySchedule => 'Jadwal pengiriman';
+
+  @override
+  String get notificationsDeliveryScheduleSubtitle =>
+      'Cara notifikasi yang tidak mendesak dikelompokkan dan dikirim.';
+
+  @override
+  String get notificationsDeliveryRealtime => 'Real-time';
+
+  @override
+  String get notificationsDeliveryEvery2Hours => 'Setiap 2 jam';
+
+  @override
+  String get notificationsDeliveryDailyDigest => 'Ringkasan harian';
+
+  @override
+  String get notificationsQuietHours => 'Jam tenang';
+
+  @override
+  String notificationsQuietHoursOn(String start, String end) {
+    return 'Notifikasi tidak mendesak ditahan $start–$end.';
+  }
+
+  @override
+  String get notificationsQuietHoursOff =>
+      'Notifikasi tidak mendesak dikirim kapan saja.';
+
+  @override
+  String get toolCalls => 'Panggilan alat';
+
+  @override
   String get markdownSupported => 'Markdown didukung';
 
   @override

@@ -1,5 +1,6 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -169,5 +170,75 @@ void main() {
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(milliseconds: 100));
+  });
+
+  group('semantics', () {
+    Future<SemanticsNode> rowNode(
+      WidgetTester tester, {
+      required bool running,
+      required bool attention,
+    }) async {
+      await tester.pumpWidget(
+        testWrap(
+          Align(
+            alignment: Alignment.topCenter,
+            child: SpaceRow(
+              signal: conversationActivityMark(
+                running: running,
+                attention: attention,
+              ),
+              label: 'test',
+              selected: true,
+              onPress: () {},
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      return tester.getSemantics(find.byType(SpaceRow));
+    }
+
+    testWidgets('a running row says so in its own node, not a live spinner', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      final node = await rowNode(tester, running: true, attention: false);
+
+      expect(
+        node,
+        isSemantics(
+          label: 'test',
+          value: 'Agent responding',
+          isButton: true,
+          hasSelectedState: true,
+          isSelected: true,
+          isLiveRegion: false,
+        ),
+      );
+      // The spinner is painted, but its "Loading" label (merged or its own
+      // node) is nowhere in the tree.
+      expect(find.byType(CcSpinner), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('Loading')), findsNothing);
+      await unmount(tester);
+      handle.dispose();
+    });
+
+    testWidgets('the attention dot becomes the row value', (tester) async {
+      final handle = tester.ensureSemantics();
+      final node = await rowNode(tester, running: false, attention: true);
+
+      expect(node, isSemantics(label: 'test', value: 'Needs your attention'));
+      await unmount(tester);
+      handle.dispose();
+    });
+
+    testWidgets('a quiet row carries no value', (tester) async {
+      final handle = tester.ensureSemantics();
+      final node = await rowNode(tester, running: false, attention: false);
+
+      expect(node, isSemantics(label: 'test', value: ''));
+      await unmount(tester);
+      handle.dispose();
+    });
   });
 }

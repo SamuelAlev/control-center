@@ -14,6 +14,7 @@ import 'package:control_center/features/pr_review/providers/pr_merge_conflicts_p
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/pr_review/providers/review_studio_providers.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
@@ -253,6 +254,47 @@ void main() {
     await tester.pump();
     await _settleTimers(tester);
     expect(find.text('Squash and merge'), findsNothing);
+  });
+
+  testWidgets('the flyout holds Tab and hands focus back on Escape', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(
+        MergeFlyoutButton(
+          pr: _pr(),
+          owner: 'owner',
+          prRef: _prRef,
+          repo: 'repo',
+          checks: const [],
+          reviews: const [],
+        ),
+      ),
+    );
+    final trigger = Focus.of(tester.element(find.text('Merge')));
+    await _openFlyout(tester);
+
+    bool inFlyout() {
+      final node = FocusManager.instance.primaryFocus;
+      return node != null &&
+          (node.debugLabel == 'merge-flyout' ||
+              node.ancestors.any((a) => a.debugLabel == 'merge-flyout'));
+    }
+
+    expect(inFlyout(), isTrue, reason: 'opening moves focus into the form');
+    // More presses than the form has controls: Tab wraps inside it instead of
+    // walking out to the page behind the barrier.
+    for (var i = 0; i < 12; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(inFlyout(), isTrue, reason: 'Tab press ${i + 1}');
+    }
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pump();
+    await _settleTimers(tester);
+    expect(find.text('Squash and merge'), findsNothing);
+    expect(FocusManager.instance.primaryFocus, trigger);
   });
 
   // ── Merge method ───────────────────────────────────────────────────────

@@ -159,7 +159,7 @@ extension _ScrollingMethods on _SpaceMessageFeedState {
       SemanticsService.sendAnnouncement(
         View.of(context),
         AppLocalizations.of(context).agentResponding,
-        TextDirection.ltr,
+        Directionality.of(context),
       );
     } else if (!streaming &&
         _newestWasStreaming &&
@@ -172,7 +172,7 @@ extension _ScrollingMethods on _SpaceMessageFeedState {
       SemanticsService.sendAnnouncement(
         View.of(context),
         preview,
-        TextDirection.ltr,
+        Directionality.of(context),
       );
     }
     _newestWasStreaming = streaming;

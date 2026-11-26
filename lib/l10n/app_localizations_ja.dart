@@ -7444,6 +7444,65 @@ class AppLocalizationsJa extends AppLocalizations {
       'ここでは Tab でインデントされます。Esc を押してから Tab を押すと、次のコントロールに移動します。';
 
   @override
+  String get messageAuthorYou => '自分';
+
+  @override
+  String systemMessageLabel(String content) {
+    return 'システム: $content';
+  }
+
+  @override
+  String retryUploadNamed(String name) {
+    return '$name のアップロードを再試行';
+  }
+
+  @override
+  String selectItemNamed(String name) {
+    return '$name を選択';
+  }
+
+  @override
+  String get linkPullRequest => 'プルリクエストをリンク';
+
+  @override
+  String get addRelation => '関連を追加';
+
+  @override
+  String get playbackPosition => '再生位置';
+
+  @override
+  String get prNewChangesRefreshDiff => '新しい変更 — 差分を更新';
+
+  @override
+  String get notificationsDeliverySchedule => '配信スケジュール';
+
+  @override
+  String get notificationsDeliveryScheduleSubtitle => '緊急でない通知をまとめて配信する方法です。';
+
+  @override
+  String get notificationsDeliveryRealtime => 'リアルタイム';
+
+  @override
+  String get notificationsDeliveryEvery2Hours => '2時間ごと';
+
+  @override
+  String get notificationsDeliveryDailyDigest => '毎日のダイジェスト';
+
+  @override
+  String get notificationsQuietHours => '通知を控える時間';
+
+  @override
+  String notificationsQuietHoursOn(String start, String end) {
+    return '$start–$end は緊急でない通知を抑制します。';
+  }
+
+  @override
+  String get notificationsQuietHoursOff => '緊急でない通知はいつでも配信されます。';
+
+  @override
+  String get toolCalls => 'ツール呼び出し';
+
+  @override
   String get markdownSupported => 'Markdown に対応しています';
 
   @override

@@ -382,4 +382,24 @@ void main() {
       expect(find.text('Enable notifications'), findsOneWidget);
     });
   });
+
+  group('Semantics', () {
+    testWidgets('a row switch is named by the row title', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(_buildSection());
+      await tester.pump();
+
+      // The master switch is the first one; its row title sits beside it in a
+      // separate node, so the name has to be on the switch itself.
+      expect(
+        tester.getSemantics(find.byType(CcSwitch).first),
+        isSemantics(
+          label: 'Enable notifications',
+          hasToggledState: true,
+          isToggled: true,
+        ),
+      );
+      handle.dispose();
+    });
+  });
 }

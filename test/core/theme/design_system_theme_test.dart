@@ -39,7 +39,7 @@ void main() {
       expect(light.panel, DesignSystemPalette.white);
       expect(light.fg, DesignSystemPalette.gray900);
       expect(light.accent, DesignSystemPalette.brand850);
-      expect(light.success, DesignSystemPalette.green600);
+      expect(light.success, DesignSystemPalette.green650);
       expect(light.warn, DesignSystemPalette.yellow650);
       expect(light.danger, DesignSystemPalette.red600);
       expect(light.sunshine900, DesignSystemPalette.sunshine900);

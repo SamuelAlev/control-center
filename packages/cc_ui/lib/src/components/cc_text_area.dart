@@ -361,7 +361,9 @@ class _CcTextAreaState extends State<CcTextArea>
                 Expanded(
                   child: Text(
                     widget.errorText!,
-                    style: CcTypography.caption.copyWith(color: t.danger),
+                    style: CcTypography.caption.copyWith(
+                      color: t.textErrorPrimary,
+                    ),
                   ),
                 ),
               ],
@@ -377,7 +379,9 @@ class _CcTextAreaState extends State<CcTextArea>
               Expanded(
                 child: Text(
                   widget.warnText!,
-                  style: CcTypography.caption.copyWith(color: t.warn),
+                  style: CcTypography.caption.copyWith(
+                    color: t.textWarningPrimary,
+                  ),
                 ),
               ),
             ],

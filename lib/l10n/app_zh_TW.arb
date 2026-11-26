@@ -10534,5 +10534,22 @@
   "ccUnverifiedLabel": "{label}（未驗證）",
   "prRowSelect": "選擇 {title}",
   "prTableSelectAll": "選擇所有 Pull requests",
-  "planVersionRewind": "回復到版本 {version}"
+  "planVersionRewind": "回復到版本 {version}",
+  "messageAuthorYou": "你",
+  "systemMessageLabel": "系統：{content}",
+  "retryUploadNamed": "重試上傳 {name}",
+  "selectItemNamed": "選擇 {name}",
+  "linkPullRequest": "連結 pull request",
+  "addRelation": "新增關聯",
+  "playbackPosition": "播放位置",
+  "prNewChangesRefreshDiff": "有新變更 — 重新整理差異",
+  "notificationsDeliverySchedule": "傳送排程",
+  "notificationsDeliveryScheduleSubtitle": "非緊急通知的批次整理與傳送方式。",
+  "notificationsDeliveryRealtime": "即時",
+  "notificationsDeliveryEvery2Hours": "每 2 小時",
+  "notificationsDeliveryDailyDigest": "每日摘要",
+  "notificationsQuietHours": "勿擾時段",
+  "notificationsQuietHoursOn": "非緊急通知將於 {start}–{end} 暫停。",
+  "notificationsQuietHoursOff": "非緊急通知隨時傳送。",
+  "toolCalls": "工具呼叫"
 }

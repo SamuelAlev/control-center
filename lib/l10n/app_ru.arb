@@ -10534,5 +10534,22 @@
   "ccUnverifiedLabel": "{label} (не проверено)",
   "prRowSelect": "Выбрать {title}",
   "prTableSelectAll": "Выбрать все pull requests",
-  "planVersionRewind": "Откатить к версии {version}"
+  "planVersionRewind": "Откатить к версии {version}",
+  "messageAuthorYou": "Вы",
+  "systemMessageLabel": "Система: {content}",
+  "retryUploadNamed": "Повторить загрузку {name}",
+  "selectItemNamed": "Выбрать {name}",
+  "linkPullRequest": "Связать pull request",
+  "addRelation": "Добавить связь",
+  "playbackPosition": "Позиция воспроизведения",
+  "prNewChangesRefreshDiff": "Новые изменения — обновить diff",
+  "notificationsDeliverySchedule": "Расписание доставки",
+  "notificationsDeliveryScheduleSubtitle": "Как группируются и доставляются несрочные уведомления.",
+  "notificationsDeliveryRealtime": "В реальном времени",
+  "notificationsDeliveryEvery2Hours": "Каждые 2 часа",
+  "notificationsDeliveryDailyDigest": "Ежедневная сводка",
+  "notificationsQuietHours": "Тихие часы",
+  "notificationsQuietHoursOn": "Несрочные уведомления приостановлены {start}–{end}.",
+  "notificationsQuietHoursOff": "Несрочные уведомления доставляются в любое время.",
+  "toolCalls": "Вызовы инструментов"
 }

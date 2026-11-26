@@ -10534,5 +10534,22 @@
   "ccUnverifiedLabel": "{label} (neověřeno)",
   "prRowSelect": "Vybrat {title}",
   "prTableSelectAll": "Vybrat všechny pull requesty",
-  "planVersionRewind": "Vrátit na verzi {version}"
+  "planVersionRewind": "Vrátit na verzi {version}",
+  "messageAuthorYou": "Vy",
+  "systemMessageLabel": "Systém: {content}",
+  "retryUploadNamed": "Zopakovat nahrání souboru {name}",
+  "selectItemNamed": "Vybrat {name}",
+  "linkPullRequest": "Propojit pull request",
+  "addRelation": "Přidat vazbu",
+  "playbackPosition": "Pozice přehrávání",
+  "prNewChangesRefreshDiff": "Nové změny — Obnovit diff",
+  "notificationsDeliverySchedule": "Plán doručování",
+  "notificationsDeliveryScheduleSubtitle": "Jak se méně naléhavá oznámení seskupují a doručují.",
+  "notificationsDeliveryRealtime": "V reálném čase",
+  "notificationsDeliveryEvery2Hours": "Každé 2 hodiny",
+  "notificationsDeliveryDailyDigest": "Denní souhrn",
+  "notificationsQuietHours": "Tiché hodiny",
+  "notificationsQuietHoursOn": "Méně naléhavá oznámení potlačena {start}–{end}.",
+  "notificationsQuietHoursOff": "Méně naléhavá oznámení se doručují kdykoli.",
+  "toolCalls": "Volání nástrojů"
 }

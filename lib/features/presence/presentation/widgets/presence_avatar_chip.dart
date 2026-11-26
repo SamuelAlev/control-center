@@ -40,13 +40,15 @@ class PresenceAvatarChip extends ConsumerWidget {
         ref.watch(followedPrincipalProvider) == participant.principal;
 
     final isTyping = spaceId != null && participant.typingInSpaceId == spaceId;
+    final isIdle =
+        !isTyping && participant.availability == PresenceAvailability.idle;
 
     final String statusLabel;
     final Color dotColor;
     if (isTyping) {
       statusLabel = l10n.presenceTyping;
       dotColor = t.fgBrandPrimary;
-    } else if (participant.availability == PresenceAvailability.idle) {
+    } else if (isIdle) {
       statusLabel = l10n.presenceIdle;
       dotColor = t.fgQuaternary;
     } else {
@@ -90,14 +92,24 @@ class PresenceAvatarChip extends ConsumerWidget {
                 PositionedDirectional(
                   end: -1,
                   bottom: -1,
+                  // Idle is a hollow ring rather than a second solid hue, so
+                  // the states differ by shape as well as color.
                   child: Container(
                     width: 8,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: dotColor,
+                      color: isIdle ? t.bgPrimary : dotColor,
                       shape: BoxShape.circle,
                       border: Border.all(color: t.bgPrimary, width: 1.5),
                     ),
+                    child: isIdle
+                        ? DecoratedBox(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: dotColor, width: 1.5),
+                            ),
+                          )
+                        : null,
                   ),
                 ),
               ],

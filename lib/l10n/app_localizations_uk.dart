@@ -7686,6 +7686,67 @@ class AppLocalizationsUk extends AppLocalizations {
       'Тут Tab виконує відступ. Натисніть Esc, а потім Tab, щоб перейти до наступного елемента керування.';
 
   @override
+  String get messageAuthorYou => 'Ви';
+
+  @override
+  String systemMessageLabel(String content) {
+    return 'Системне повідомлення: $content';
+  }
+
+  @override
+  String retryUploadNamed(String name) {
+    return 'Повторити завантаження $name';
+  }
+
+  @override
+  String selectItemNamed(String name) {
+    return 'Вибрати $name';
+  }
+
+  @override
+  String get linkPullRequest => 'Пов\'язати pull request';
+
+  @override
+  String get addRelation => 'Додати зв\'язок';
+
+  @override
+  String get playbackPosition => 'Позиція відтворення';
+
+  @override
+  String get prNewChangesRefreshDiff => 'Нові зміни — оновити diff';
+
+  @override
+  String get notificationsDeliverySchedule => 'Графік доставки';
+
+  @override
+  String get notificationsDeliveryScheduleSubtitle =>
+      'Як групуються й доставляються нетермінові сповіщення.';
+
+  @override
+  String get notificationsDeliveryRealtime => 'У реальному часі';
+
+  @override
+  String get notificationsDeliveryEvery2Hours => 'Кожні 2 години';
+
+  @override
+  String get notificationsDeliveryDailyDigest => 'Щоденний дайджест';
+
+  @override
+  String get notificationsQuietHours => 'Тихі години';
+
+  @override
+  String notificationsQuietHoursOn(String start, String end) {
+    return 'Нетермінові сповіщення призупинено $start–$end.';
+  }
+
+  @override
+  String get notificationsQuietHoursOff =>
+      'Нетермінові сповіщення доставляються в будь-який час.';
+
+  @override
+  String get toolCalls => 'Виклики інструментів';
+
+  @override
   String get markdownSupported => 'Підтримується Markdown';
 
   @override

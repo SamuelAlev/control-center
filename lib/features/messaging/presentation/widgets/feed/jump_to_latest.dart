@@ -39,6 +39,8 @@ class JumpToLatest extends StatelessWidget {
             onPressed: onTap,
             semanticLabel: l10n.jumpToLatest,
             borderRadius: const BorderRadius.all(Radius.circular(999)),
+            // The ring is the brand fill's own color, so it sits clear of it.
+            focusRingOffset: 2,
             builder: (context, _) => Container(
               constraints: const BoxConstraints(minHeight: 44),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

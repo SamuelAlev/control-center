@@ -58,6 +58,9 @@ const String prTreeWidthKey = 'pr_tree_width';
 /// Storage key for the PR file-tree panel visibility preference.
 const String prTreeVisibleKey = 'pr_tree_visible';
 
+/// Storage key for whether the approval card leads with "approve for a while".
+const String approvalPrefersRememberKey = 'approval_prefers_remember';
+
 /// Storage key for the PR diff split (side-by-side) view preference.
 const String prDiffSplitViewKey = 'pr_diff_split_view';
 

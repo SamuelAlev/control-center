@@ -271,6 +271,33 @@ void main() {
       expect(selected, 'work');
     });
 
+    testWidgets('a node is one named button a screen reader can select', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      String? selected;
+      await pumpEditor(
+        tester,
+        definition: _graph(),
+        onSelect: (id) => selected = id,
+      );
+
+      expect(
+        tester.getSemantics(find.text('Review')),
+        isSemantics(
+          label: 'Review',
+          isButton: true,
+          hasSelectedState: true,
+          isSelected: false,
+          hasTapAction: true,
+        ),
+      );
+      tester.semantics.tap(find.semantics.byLabel('Review'));
+      await tester.pump();
+      expect(selected, 'work');
+      handle.dispose();
+    });
+
     testWidgets('templated labels draw the variable as a badge', (
       tester,
     ) async {
@@ -489,6 +516,51 @@ void main() {
       await tester.tap(find.text(l10n.triggerEventManual));
       await tester.pump();
       expect(added, PipelineTrigger.manualEventType);
+    });
+
+    testWidgets('a screen reader opens the ghost tile picker', (tester) async {
+      final handle = tester.ensureSemantics();
+      String? added;
+      await pumpEditor(
+        tester,
+        definition: _graph(),
+        onAddTrigger: (type, [_]) => added = type,
+      );
+
+      // The tappable sits under IgnorePointer, which blocks semantics
+      // actions; the named node around it carries the tap instead.
+      tester.semantics.tap(find.semantics.byLabel(l10n.pipelineAddTrigger));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.text(l10n.triggerEventManual));
+      await tester.pump();
+      expect(added, PipelineTrigger.manualEventType);
+      handle.dispose();
+    });
+
+    testWidgets('a screen reader opens the quick-insert picker', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        testWrap(
+          Center(
+            child: PipelineQuickInsert(library: library, onInsert: (_) {}),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        tester.getSemantics(find.bySemanticsLabel(l10n.pipelineAddStep)),
+        isSemantics(label: l10n.pipelineAddStep, isButton: true),
+      );
+      tester.semantics.tap(find.semantics.byLabel(l10n.pipelineAddStep));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(PipelineNodeTypePicker), findsOneWidget);
+      handle.dispose();
     });
 
     testWidgets('sidebar drag of a trigger entry fires onAddTrigger', (

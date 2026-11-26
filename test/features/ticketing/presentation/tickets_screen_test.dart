@@ -235,4 +235,61 @@ void main() {
     expect(find.text('Assignee'), findsOneWidget);
     expect(find.text('Labels'), findsOneWidget);
   });
+
+  testWidgets('row checkboxes are named checkboxes with their state', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final handle = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appPreferencesProvider.overrideWithValue(prefs),
+          activeWorkspaceIdProvider.overrideWith(_FixedWorkspaceId.new),
+          ticketSelectionProvider.overrideWith(_PresetSelection.new),
+          workspaceAgentsProvider.overrideWith(
+            (ref, workspaceId) => Stream.value(const <Agent>[]),
+          ),
+          workspaceTicketsProvider.overrideWith(
+            (ref, workspaceId) => Stream.value([
+              _ticket('1', 'Wire up the dashboard', TicketStatus.open),
+              _ticket('2', 'Fix the crash on launch', TicketStatus.inProgress),
+            ]),
+          ),
+        ],
+        child: CcTheme(
+          data: CcThemeData.light(),
+          child: MaterialApp(
+            builder: (context, child) =>
+                CcTheme(data: CcThemeData.light(), child: child!),
+            localizationsDelegates: appLocalizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const Scaffold(body: TicketsScreen()),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    // A selection is live, so every row shows its box.
+    expect(
+      tester.getSemantics(
+        find.bySemanticsLabel('Select Wire up the dashboard'),
+      ),
+      isSemantics(isButton: true, hasCheckedState: true, isChecked: true),
+    );
+    expect(
+      tester.getSemantics(
+        find.bySemanticsLabel('Select Fix the crash on launch'),
+      ),
+      isSemantics(hasCheckedState: true, isChecked: false),
+    );
+    expect(find.bySemanticsLabel('Clear selection'), findsOneWidget);
+    handle.dispose();
+  });
 }

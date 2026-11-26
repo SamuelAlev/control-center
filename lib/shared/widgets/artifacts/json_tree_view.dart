@@ -95,13 +95,14 @@ class _NodeState extends State<_Node> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Semantics(
-          button: true,
-          expanded: open,
-          label: '${widget.label ?? (isList ? 'array' : 'object')} $summary',
-          child: CcTappable(
-            onPressed: () => setState(() => _expanded = !_expanded),
-            builder: (context, states) => Row(
+        CcTappable(
+          onPressed: () => setState(() => _expanded = !_expanded),
+          semanticLabel:
+              '${widget.label ?? (isList ? 'array' : 'object')} $summary',
+          semanticExpanded: open,
+          // The label above already says what the row paints.
+          builder: (context, states) => ExcludeSemantics(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 AnimatedRotation(

@@ -12,7 +12,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// against filter openness. The puck follows the pointer immediately while
 /// the provider debounces the server push; the audio glides over ~1.5 s, so
 /// dragging feels live but never clicks. Double-tap resets to the neutral
-/// center. Keyboard-first: focus the pad and nudge with the arrow keys.
+/// center. Keyboard-first: focus the pad and nudge with the arrow keys; Home
+/// is the double-tap's reset.
 // RTL carve-out: the tune pad is a spatial X/Y control. Pointer math, arrow-key
 // nudges, the puck's FractionalOffset and the edge labels all address physical
 // screen coordinates (X = mellow→energetic left-to-right by definition), so
@@ -78,6 +79,8 @@ class _SoundscapeTunePadState extends ConsumerState<SoundscapeTunePad> {
           energy: state.tuneEnergy,
           brightness: state.tuneBrightness - _keyStep,
         );
+      case LogicalKeyboardKey.home:
+        controller.setTune(energy: 0.5, brightness: 0.5);
       default:
         return KeyEventResult.ignored;
     }

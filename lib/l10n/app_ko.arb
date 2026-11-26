@@ -10534,5 +10534,22 @@
   "ccUnverifiedLabel": "{label} (확인되지 않음)",
   "prRowSelect": "{title} 선택",
   "prTableSelectAll": "모든 풀 리퀘스트 선택",
-  "planVersionRewind": "{version} 버전으로 되돌리기"
+  "planVersionRewind": "{version} 버전으로 되돌리기",
+  "messageAuthorYou": "나",
+  "systemMessageLabel": "시스템: {content}",
+  "retryUploadNamed": "{name} 업로드 재시도",
+  "selectItemNamed": "{name} 선택",
+  "linkPullRequest": "풀 리퀘스트 연결",
+  "addRelation": "관계 추가",
+  "playbackPosition": "재생 위치",
+  "prNewChangesRefreshDiff": "새 변경 사항 — diff 새로 고침",
+  "notificationsDeliverySchedule": "전달 일정",
+  "notificationsDeliveryScheduleSubtitle": "긴급하지 않은 알림을 묶어서 전달하는 방식입니다.",
+  "notificationsDeliveryRealtime": "실시간",
+  "notificationsDeliveryEvery2Hours": "2시간마다",
+  "notificationsDeliveryDailyDigest": "일일 요약",
+  "notificationsQuietHours": "방해 금지 시간",
+  "notificationsQuietHoursOn": "긴급하지 않은 알림을 {start}–{end} 동안 보류합니다.",
+  "notificationsQuietHoursOff": "긴급하지 않은 알림을 언제든 받습니다.",
+  "toolCalls": "도구 호출"
 }

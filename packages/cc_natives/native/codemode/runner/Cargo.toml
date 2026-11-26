@@ -23,7 +23,7 @@ rquickjs = { version = "=0.14.0", default-features = false, features = ["std", "
 # proc-macro crates in the tree. `float_roundtrip` parses every number to the
 # double it names; without it a long mantissa can land one unit off, and a
 # script's numbers would reach tools and the store changed.
-serde_json = { version = "=1.0.149", default-features = false, features = ["std", "float_roundtrip"] }
+serde_json = { version = "=1.0.154", default-features = false, features = ["std", "float_roundtrip"] }
 libc = "=0.2.191"
 
 [target.'cfg(windows)'.dependencies]

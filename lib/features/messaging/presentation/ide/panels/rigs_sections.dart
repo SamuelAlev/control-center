@@ -6,6 +6,7 @@ import 'package:cc_domain/features/rigs/domain/value_objects/rig_status.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/forge/presentation/repo_code_refusal.dart';
 import 'package:control_center/features/messaging/providers/space_browser_tabs_provider.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/hover_focus_reveal.dart';
 import 'package:control_center/features/rigs/presentation/browser_engine_logo.dart';
 import 'package:control_center/features/rigs/presentation/rig_labels.dart';
 import 'package:control_center/features/rigs/presentation/rig_tab_surfaces.dart';
@@ -367,42 +368,48 @@ class _HostBrowserRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
-    return CcTappable(
-      onPressed: onTap,
-      semanticLabel: l10n.focusBrowser,
-      // A flat hover wash instead of an ink ripple — the design system reports
-      // state through color, not motion.
-      builder: (context, states) {
-        final hovered = states.contains(WidgetState.hovered);
-        return ColoredBox(
-          color: hovered ? t.bgSecondaryHover : const Color(0x00000000),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm,
-              vertical: 5,
-            ),
-            child: Row(
-              children: [
-                const CcStatusDot(tone: CcStatusTone.positive),
-                const SizedBox(width: AppSpacing.sm),
-                Icon(AppIcons.globe, size: 14, color: t.textSecondary),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Text(
-                    mirror.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 13, color: t.textSecondary),
+    return HoverFocusReveal(
+      builder: (context, revealed) => CcTappable(
+        onPressed: onTap,
+        semanticLabel: l10n.focusBrowser,
+        // A flat hover wash instead of an ink ripple — the design system
+        // reports state through color, not motion.
+        builder: (context, states) {
+          final hovered = states.contains(WidgetState.hovered);
+          return ColoredBox(
+            color: hovered ? t.bgSecondaryHover : const Color(0x00000000),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: 5,
+              ),
+              child: Row(
+                children: [
+                  const CcStatusDot(tone: CcStatusTone.positive),
+                  const SizedBox(width: AppSpacing.sm),
+                  Icon(AppIcons.globe, size: 14, color: t.textSecondary),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      mirror.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 13, color: t.textSecondary),
+                    ),
                   ),
-                ),
-                // Hover only: the row reads clean at rest, and closing the tab
-                // is the one action a host browser row carries.
-                if (hovered) _HostBrowserCloseButton(onClose: onClose),
-              ],
+                  // Shown on hover or focus: the row reads clean at rest, and
+                  // closing the tab is the one action a host browser row
+                  // carries. Always mounted, so Tab from the row reaches it.
+                  HoverFocusReveal.fade(
+                    revealed: revealed,
+                    child: _HostBrowserCloseButton(onClose: onClose),
+                  ),
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
@@ -419,23 +426,20 @@ class _HostBrowserCloseButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
-    return Semantics(
-      button: true,
-      label: l10n.close,
-      child: CcTooltip(
-        message: l10n.close,
-        child: CcTappable(
-          onPressed: onClose,
-          borderRadius: AppRadii.brSm,
-          builder: (context, states) => Padding(
-            padding: const EdgeInsets.all(2),
-            child: Icon(
-              AppIcons.x,
-              size: 14,
-              color: states.contains(WidgetState.hovered)
-                  ? t.textPrimary
-                  : t.textSecondary,
-            ),
+    return CcTooltip(
+      message: l10n.close,
+      child: CcTappable(
+        onPressed: onClose,
+        semanticLabel: l10n.close,
+        borderRadius: AppRadii.brSm,
+        builder: (context, states) => Padding(
+          padding: const EdgeInsets.all(2),
+          child: Icon(
+            AppIcons.x,
+            size: 14,
+            color: states.contains(WidgetState.hovered)
+                ? t.textPrimary
+                : t.textSecondary,
           ),
         ),
       ),
@@ -458,23 +462,20 @@ class _RigStopButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
-    return Semantics(
-      button: true,
-      label: l10n.rigStopMachine,
-      child: CcTooltip(
-        message: l10n.rigStopMachine,
-        child: CcTappable(
-          onPressed: () => unawaited(_stop(ref)),
-          borderRadius: AppRadii.brSm,
-          builder: (context, states) => Padding(
-            padding: const EdgeInsets.all(2),
-            child: Icon(
-              AppIcons.power,
-              size: 14,
-              color: states.contains(WidgetState.hovered)
-                  ? t.textPrimary
-                  : t.textSecondary,
-            ),
+    return CcTooltip(
+      message: l10n.rigStopMachine,
+      child: CcTappable(
+        onPressed: () => unawaited(_stop(ref)),
+        semanticLabel: l10n.rigStopMachine,
+        borderRadius: AppRadii.brSm,
+        builder: (context, states) => Padding(
+          padding: const EdgeInsets.all(2),
+          child: Icon(
+            AppIcons.power,
+            size: 14,
+            color: states.contains(WidgetState.hovered)
+                ? t.textPrimary
+                : t.textSecondary,
           ),
         ),
       ),

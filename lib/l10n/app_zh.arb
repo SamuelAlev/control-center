@@ -10534,5 +10534,22 @@
   "ccUnverifiedLabel": "{label}（未验证）",
   "prRowSelect": "选择{title}",
   "prTableSelectAll": "选择所有 Pull requests",
-  "planVersionRewind": "回滚到版本 {version}"
+  "planVersionRewind": "回滚到版本 {version}",
+  "messageAuthorYou": "你",
+  "systemMessageLabel": "系统：{content}",
+  "retryUploadNamed": "重试上传 {name}",
+  "selectItemNamed": "选择{name}",
+  "linkPullRequest": "关联 pull request",
+  "addRelation": "添加关系",
+  "playbackPosition": "播放位置",
+  "prNewChangesRefreshDiff": "有新更改 — 刷新差异",
+  "notificationsDeliverySchedule": "发送计划",
+  "notificationsDeliveryScheduleSubtitle": "非紧急通知的合并与发送方式。",
+  "notificationsDeliveryRealtime": "实时",
+  "notificationsDeliveryEvery2Hours": "每 2 小时",
+  "notificationsDeliveryDailyDigest": "每日摘要",
+  "notificationsQuietHours": "免打扰时段",
+  "notificationsQuietHoursOn": "非紧急通知在 {start}–{end} 期间暂停。",
+  "notificationsQuietHoursOff": "非紧急通知可随时送达。",
+  "toolCalls": "工具调用"
 }

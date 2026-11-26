@@ -384,6 +384,7 @@ class ChatStepRow extends StatelessWidget {
         CcIconButton(
           size: CcButtonSize.sm,
           icon: AppIcons.externalLink,
+          tooltip: l10n.openInBrowser,
           onPressed: () => openExternalUrl(step.url),
         ),
       ],

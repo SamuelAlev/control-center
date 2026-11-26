@@ -315,6 +315,7 @@ class _DeviceSelect extends StatelessWidget {
         : _systemDefaultId;
 
     return CcSelect<String>(
+      semanticLabel: AppLocalizations.of(context).audioInput,
       options: options,
       value: current,
       onChanged: (v) {

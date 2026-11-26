@@ -7364,6 +7364,65 @@ class AppLocalizationsZh extends AppLocalizations {
       '在此处，Tab 键用于缩进。按 Esc 键，然后按 Tab 键即可移到下一个控件。';
 
   @override
+  String get messageAuthorYou => '你';
+
+  @override
+  String systemMessageLabel(String content) {
+    return '系统：$content';
+  }
+
+  @override
+  String retryUploadNamed(String name) {
+    return '重试上传 $name';
+  }
+
+  @override
+  String selectItemNamed(String name) {
+    return '选择$name';
+  }
+
+  @override
+  String get linkPullRequest => '关联 pull request';
+
+  @override
+  String get addRelation => '添加关系';
+
+  @override
+  String get playbackPosition => '播放位置';
+
+  @override
+  String get prNewChangesRefreshDiff => '有新更改 — 刷新差异';
+
+  @override
+  String get notificationsDeliverySchedule => '发送计划';
+
+  @override
+  String get notificationsDeliveryScheduleSubtitle => '非紧急通知的合并与发送方式。';
+
+  @override
+  String get notificationsDeliveryRealtime => '实时';
+
+  @override
+  String get notificationsDeliveryEvery2Hours => '每 2 小时';
+
+  @override
+  String get notificationsDeliveryDailyDigest => '每日摘要';
+
+  @override
+  String get notificationsQuietHours => '免打扰时段';
+
+  @override
+  String notificationsQuietHoursOn(String start, String end) {
+    return '非紧急通知在 $start–$end 期间暂停。';
+  }
+
+  @override
+  String get notificationsQuietHoursOff => '非紧急通知可随时送达。';
+
+  @override
+  String get toolCalls => '工具调用';
+
+  @override
   String get markdownSupported => '支持 Markdown';
 
   @override
@@ -28422,6 +28481,65 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   @override
   String get markdownTabIndentHint =>
       '在這裡，Tab 鍵用於縮排。按 Esc 鍵，然後按 Tab 鍵即可移至下一個控制項。';
+
+  @override
+  String get messageAuthorYou => '你';
+
+  @override
+  String systemMessageLabel(String content) {
+    return '系統：$content';
+  }
+
+  @override
+  String retryUploadNamed(String name) {
+    return '重試上傳 $name';
+  }
+
+  @override
+  String selectItemNamed(String name) {
+    return '選擇 $name';
+  }
+
+  @override
+  String get linkPullRequest => '連結 pull request';
+
+  @override
+  String get addRelation => '新增關聯';
+
+  @override
+  String get playbackPosition => '播放位置';
+
+  @override
+  String get prNewChangesRefreshDiff => '有新變更 — 重新整理差異';
+
+  @override
+  String get notificationsDeliverySchedule => '傳送時間表';
+
+  @override
+  String get notificationsDeliveryScheduleSubtitle => '非緊急通知的合併及傳送方式。';
+
+  @override
+  String get notificationsDeliveryRealtime => '即時';
+
+  @override
+  String get notificationsDeliveryEvery2Hours => '每 2 小時';
+
+  @override
+  String get notificationsDeliveryDailyDigest => '每日摘要';
+
+  @override
+  String get notificationsQuietHours => '靜音時段';
+
+  @override
+  String notificationsQuietHoursOn(String start, String end) {
+    return '非緊急通知會於 $start–$end 暫停。';
+  }
+
+  @override
+  String get notificationsQuietHoursOff => '非緊急通知會隨時送達。';
+
+  @override
+  String get toolCalls => '工具呼叫';
 
   @override
   String get markdownSupported => '支援 Markdown';
@@ -49490,6 +49608,65 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String get markdownTabIndentHint =>
       '在這裡，Tab 鍵用於縮排。按 Esc 鍵，然後按 Tab 鍵即可移至下一個控制項。';
+
+  @override
+  String get messageAuthorYou => '你';
+
+  @override
+  String systemMessageLabel(String content) {
+    return '系統：$content';
+  }
+
+  @override
+  String retryUploadNamed(String name) {
+    return '重試上傳 $name';
+  }
+
+  @override
+  String selectItemNamed(String name) {
+    return '選擇 $name';
+  }
+
+  @override
+  String get linkPullRequest => '連結 pull request';
+
+  @override
+  String get addRelation => '新增關聯';
+
+  @override
+  String get playbackPosition => '播放位置';
+
+  @override
+  String get prNewChangesRefreshDiff => '有新變更 — 重新整理差異';
+
+  @override
+  String get notificationsDeliverySchedule => '傳送排程';
+
+  @override
+  String get notificationsDeliveryScheduleSubtitle => '非緊急通知的批次整理與傳送方式。';
+
+  @override
+  String get notificationsDeliveryRealtime => '即時';
+
+  @override
+  String get notificationsDeliveryEvery2Hours => '每 2 小時';
+
+  @override
+  String get notificationsDeliveryDailyDigest => '每日摘要';
+
+  @override
+  String get notificationsQuietHours => '勿擾時段';
+
+  @override
+  String notificationsQuietHoursOn(String start, String end) {
+    return '非緊急通知將於 $start–$end 暫停。';
+  }
+
+  @override
+  String get notificationsQuietHoursOff => '非緊急通知隨時傳送。';
+
+  @override
+  String get toolCalls => '工具呼叫';
 
   @override
   String get markdownSupported => '支援 Markdown';

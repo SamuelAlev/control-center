@@ -120,6 +120,11 @@ class _AgentAvatarState extends State<AgentAvatar> {
           left: offset.dx,
           top: offset.dy,
           width: _overlayWidth,
+          // The overlay sits outside the page's focus scope, where Tab from
+          // the avatar never reaches it: the trap moves focus in, holds Tab
+          // inside and hands focus back to the avatar on close. The Escape
+          // host sits above the trap so its scope, which holds focus when
+          // nothing inside does, still bubbles the key here.
           child: Focus(
             canRequestFocus: false,
             onKeyEvent: (_, event) {
@@ -130,7 +135,10 @@ class _AgentAvatarState extends State<AgentAvatar> {
               }
               return KeyEventResult.ignored;
             },
-            child: widget.hoverCardBuilder!(context, widget.agentId),
+            child: CcFocusTrap(
+              debugLabel: 'AgentAvatar hover card',
+              child: widget.hoverCardBuilder!(context, widget.agentId),
+            ),
           ),
         ),
       ],

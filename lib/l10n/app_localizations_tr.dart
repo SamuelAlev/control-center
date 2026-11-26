@@ -7588,6 +7588,67 @@ class AppLocalizationsTr extends AppLocalizations {
       'Burada Tab girinti ekler. Sonraki denetime geçmek için Esc tuşuna, ardından Tab tuşuna basın.';
 
   @override
+  String get messageAuthorYou => 'Siz';
+
+  @override
+  String systemMessageLabel(String content) {
+    return 'Sistem: $content';
+  }
+
+  @override
+  String retryUploadNamed(String name) {
+    return '$name yüklemesini yeniden dene';
+  }
+
+  @override
+  String selectItemNamed(String name) {
+    return '$name seç';
+  }
+
+  @override
+  String get linkPullRequest => 'Pull request\'i bağla';
+
+  @override
+  String get addRelation => 'İlişki ekle';
+
+  @override
+  String get playbackPosition => 'Oynatma konumu';
+
+  @override
+  String get prNewChangesRefreshDiff => 'Yeni değişiklikler — Diff\'i yenile';
+
+  @override
+  String get notificationsDeliverySchedule => 'Teslim programı';
+
+  @override
+  String get notificationsDeliveryScheduleSubtitle =>
+      'Acil olmayan bildirimlerin nasıl toplanıp teslim edileceği.';
+
+  @override
+  String get notificationsDeliveryRealtime => 'Gerçek zamanlı';
+
+  @override
+  String get notificationsDeliveryEvery2Hours => 'Her 2 saatte bir';
+
+  @override
+  String get notificationsDeliveryDailyDigest => 'Günlük özet';
+
+  @override
+  String get notificationsQuietHours => 'Sessiz saatler';
+
+  @override
+  String notificationsQuietHoursOn(String start, String end) {
+    return 'Acil olmayan bildirimler $start–$end arasında bekletilir.';
+  }
+
+  @override
+  String get notificationsQuietHoursOff =>
+      'Acil olmayan bildirimler her zaman teslim edilir.';
+
+  @override
+  String get toolCalls => 'Araç çağrıları';
+
+  @override
   String get markdownSupported => 'Markdown desteklenir';
 
   @override

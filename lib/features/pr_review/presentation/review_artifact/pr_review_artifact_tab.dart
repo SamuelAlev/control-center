@@ -285,7 +285,7 @@ class _PublishedReviewState extends ConsumerState<_PublishedReview> {
       unawaited(
         Scrollable.ensureVisible(
           ctx,
-          duration: const Duration(milliseconds: 180),
+          duration: CcMotion.resolve(ctx, const Duration(milliseconds: 180)),
           curve: Curves.easeOutCubic,
           alignment: 0.1,
         ),
@@ -308,7 +308,10 @@ class _PublishedReviewState extends ConsumerState<_PublishedReview> {
         unawaited(
           Scrollable.ensureVisible(
             settled,
-            duration: const Duration(milliseconds: 180),
+            duration: CcMotion.resolve(
+              settled,
+              const Duration(milliseconds: 180),
+            ),
             curve: Curves.easeOutCubic,
             alignment: 0.1,
           ),
@@ -421,13 +424,17 @@ class _PublishedReviewState extends ConsumerState<_PublishedReview> {
                         if (id == null) {
                           setState(() => _focusedId = null);
                           if (_scroll.hasClients) {
-                            unawaited(
-                              _scroll.animateTo(
-                                0,
-                                duration: const Duration(milliseconds: 220),
-                                curve: Curves.easeOutCubic,
-                              ),
-                            );
+                            if (CcMotion.reduced(context)) {
+                              _scroll.jumpTo(0);
+                            } else {
+                              unawaited(
+                                _scroll.animateTo(
+                                  0,
+                                  duration: const Duration(milliseconds: 220),
+                                  curve: Curves.easeOutCubic,
+                                ),
+                              );
+                            }
                           }
                           return;
                         }

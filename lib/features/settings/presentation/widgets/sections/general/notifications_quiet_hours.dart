@@ -18,13 +18,14 @@ class _QuietHoursRow extends ConsumerWidget {
       ref.invalidate(_quietHoursProvider);
     }
 
+    final l10n = AppLocalizations.of(context);
+    final title = l10n.notificationsQuietHours;
     return SettingsRow(
       icon: AppIcons.moonStar,
-      title: 'Quiet hours',
+      title: title,
       subtitle: config.enabled
-          ? 'Non-urgent notifications suppressed '
-                '${_fmt(config.start)}–${_fmt(config.end)}.'
-          : 'Non-urgent notifications deliver at any time.',
+          ? l10n.notificationsQuietHoursOn(_fmt(config.start), _fmt(config.end))
+          : l10n.notificationsQuietHoursOff,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -57,6 +58,7 @@ class _QuietHoursRow extends ConsumerWidget {
           ],
           CcSwitch(
             value: config.enabled,
+            semanticLabel: title,
             onChanged: (v) => update(
               QuietHoursConfig(
                 enabled: v,

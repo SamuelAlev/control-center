@@ -142,14 +142,9 @@ class _AgentTurnState extends ConsumerState<AgentTurn> {
   /// force the semantics tree to re-diff a multi-KB string per update. While
   /// live, just the name — the feed already paces live announcements.
   String _semanticsLabel(String agentName) {
-    if (_live.isLive) {
-      return agentName;
-    }
-    final content = _shown.content;
-    final capped = content.length > 200
-        ? '${content.substring(0, 200)}…'
-        : content;
-    return '$agentName: $capped';
+    // The name only: the transcript below is the content, and repeating its
+    // first lines here made every answer start twice.
+    return agentName;
   }
 
   /// The transcript slot. While the turn is live the list projection catches
@@ -209,6 +204,7 @@ class _AgentTurnState extends ConsumerState<AgentTurn> {
     return Padding(
       padding: EdgeInsets.only(top: topPad),
       child: Semantics(
+        container: true,
         label: _semanticsLabel(agentTurnName(ref, message)),
         child: FocusableBubble(
           messageId: message.id,

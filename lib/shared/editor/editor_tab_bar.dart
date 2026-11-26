@@ -304,6 +304,7 @@ class _EditorTabBarState extends State<EditorTabBar> {
   /// Arrow keys move focus along the strip (wrapping), Home/End jump to its
   /// ends, Enter/Space select. Moving focus does not select: opening a tab can
   /// boot a rig or spawn a shell, so that waits for an explicit activation.
+  /// Alt+Shift+←/→ moves the tab itself one place, the keyboard's drag.
   KeyEventResult _onTabKey(int index, KeyEvent event) {
     if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
       return KeyEventResult.ignored;
@@ -338,6 +339,15 @@ class _EditorTabBarState extends State<EditorTabBar> {
       unawaited(_openContextMenu(index, anchor));
       return KeyEventResult.handled;
     }
+    final keyboard = HardwareKeyboard.instance;
+    if (keyboard.isAltPressed &&
+        keyboard.isShiftPressed &&
+        (key == LogicalKeyboardKey.arrowRight ||
+            key == LogicalKeyboardKey.arrowLeft)) {
+      final forward = (key == LogicalKeyboardKey.arrowRight) != rtl;
+      _moveTabByKey(index, forward: forward);
+      return KeyEventResult.handled;
+    }
     int? target;
     if (key == LogicalKeyboardKey.arrowRight) {
       target = rtl ? index - 1 : index + 1;
@@ -355,6 +365,32 @@ class _EditorTabBarState extends State<EditorTabBar> {
     _tabFocus[next].requestFocus();
     _revealTab(widget.tabs[next]);
     return KeyEventResult.handled;
+  }
+
+  /// Moves tab [index] one place along the strip through the drop path a drag
+  /// takes, then keeps focus on it: focus nodes belong to positions, so the
+  /// moved tab's node is the one at its new index once the owner rebuilds.
+  void _moveTabByKey(int index, {required bool forward}) {
+    final count = widget.tabs.length;
+    if (forward ? index >= count - 1 : index <= 0) {
+      return;
+    }
+    final tab = widget.tabs[index];
+    widget.onReorderDrop(
+      TabDragData(sourceLeafId: widget.leafId, tabIndex: index, tab: tab),
+      // An insertion boundary: past the next tab, or before the previous one.
+      forward ? index + 2 : index - 1,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final at = widget.tabs.indexWhere((t) => identical(t, tab));
+      if (at >= 0 && at < _tabFocus.length) {
+        _tabFocus[at].requestFocus();
+        _revealTab(tab);
+      }
+    });
   }
 
   /// While a tab is being dragged, drop a transparent [PointerInterceptor] over

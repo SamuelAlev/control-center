@@ -51,7 +51,7 @@ CC_THIRD_PARTY=(
   "allocator-api2 (Rust crate)|0.2.21|MIT OR Apache-2.0|https://github.com/zakarumych/allocator-api2|allocator-api2-MIT.txt|static|server"
   "equivalent (Rust crate)|1.0.3|Apache-2.0 OR MIT|https://github.com/indexmap-rs/equivalent|equivalent-MIT.txt|static|server"
   "foldhash (Rust crate)|0.2.0|Zlib|https://github.com/orlp/foldhash|foldhash-Zlib.txt|static|server"
-  "serde_json (Rust crate)|1.0.149|MIT OR Apache-2.0|https://github.com/serde-rs/json|serde_json-MIT.txt|static|server"
+  "serde_json (Rust crate)|1.0.154|MIT OR Apache-2.0|https://github.com/serde-rs/json|serde_json-MIT.txt|static|server"
   "serde_core (Rust crate)|1.0.229|MIT OR Apache-2.0|https://github.com/serde-rs/serde|serde_core-MIT.txt|static|server"
   "itoa (Rust crate)|1.0.19|MIT OR Apache-2.0|https://github.com/dtolnay/itoa|itoa-MIT.txt|static|server"
   "zmij (Rust crate)|1.0.23|MIT|https://github.com/dtolnay/zmij|zmij-MIT.txt|static|server"

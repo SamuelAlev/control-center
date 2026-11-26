@@ -9613,5 +9613,22 @@
   "ccUnverifiedLabel": "{label} (niet geverifieerd)",
   "prRowSelect": "{title} selecteren",
   "prTableSelectAll": "Alle pull requests selecteren",
-  "planVersionRewind": "Terugzetten naar versie {version}"
+  "planVersionRewind": "Terugzetten naar versie {version}",
+  "messageAuthorYou": "Jij",
+  "systemMessageLabel": "Systeem: {content}",
+  "retryUploadNamed": "Upload van {name} opnieuw proberen",
+  "selectItemNamed": "{name} selecteren",
+  "linkPullRequest": "Pull request koppelen",
+  "addRelation": "Relatie toevoegen",
+  "playbackPosition": "Afspeelpositie",
+  "prNewChangesRefreshDiff": "Nieuwe wijzigingen — Diff vernieuwen",
+  "notificationsDeliverySchedule": "Bezorgschema",
+  "notificationsDeliveryScheduleSubtitle": "Hoe niet-urgente meldingen worden gebundeld en bezorgd.",
+  "notificationsDeliveryRealtime": "Realtime",
+  "notificationsDeliveryEvery2Hours": "Elke 2 uur",
+  "notificationsDeliveryDailyDigest": "Dagelijks overzicht",
+  "notificationsQuietHours": "Stille uren",
+  "notificationsQuietHoursOn": "Niet-urgente meldingen onderdrukt van {start}–{end}.",
+  "notificationsQuietHoursOff": "Niet-urgente meldingen worden op elk moment bezorgd.",
+  "toolCalls": "Toolaanroepen"
 }

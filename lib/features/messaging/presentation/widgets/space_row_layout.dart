@@ -52,6 +52,7 @@ class SpaceRowLayout extends StatelessWidget {
     required this.indent,
     this.cardInset = EdgeInsets.zero,
     required this.transitioning,
+    this.titleNamesRow = false,
     required this.hasMenu,
     required this.showMenu,
     required this.hoverColor,
@@ -99,6 +100,10 @@ class SpaceRowLayout extends StatelessWidget {
 
   /// Sidebar width is animating, so trailing chrome is hidden.
   final bool transitioning;
+
+  /// Whether the row's node is already named by [label] (see
+  /// [SpaceRowLabel.titleNamesRow]).
+  final bool titleNamesRow;
 
   /// Whether a slot is reserved for the overflow trigger.
   final bool hasMenu;
@@ -224,6 +229,7 @@ class SpaceRowLayout extends StatelessWidget {
                           caption: caption,
                           filled: filled,
                           transitioning: transitioning,
+                          titleNamesRow: titleNamesRow,
                           signal: signal,
                           subtitle: subtitle,
                           trailingLabel: trailingLabel,

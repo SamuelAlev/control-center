@@ -65,15 +65,6 @@ class _MergeFlyoutButtonState extends ConsumerState<MergeFlyoutButton> {
   final TextEditingController _descCtrl = TextEditingController();
   final _buttonKey = GlobalKey();
 
-  /// The Merge button, which gets focus back when the flyout closes.
-  final FocusNode _buttonFocus = FocusNode(debugLabel: 'merge-button');
-
-  /// Wraps the flyout; has focus whenever a control inside it does.
-  final FocusNode _flyoutFocus = FocusNode(
-    debugLabel: 'merge-flyout',
-    canRequestFocus: false,
-    skipTraversal: true,
-  );
   bool _merging = false;
   Offset? _overlayOffset;
   PrMergeMethod _method = PrMergeMethod.squash;
@@ -135,8 +126,6 @@ class _MergeFlyoutButtonState extends ConsumerState<MergeFlyoutButton> {
     }
     _titleCtrl.dispose();
     _descCtrl.dispose();
-    _buttonFocus.dispose();
-    _flyoutFocus.dispose();
     super.dispose();
   }
 
@@ -247,32 +236,9 @@ class _MergeFlyoutButtonState extends ConsumerState<MergeFlyoutButton> {
     _computeOverlayOffset();
     _popupCtrl.show();
     setState(() {});
-    // Move keyboard focus into the flyout so Tab walks its form and Escape
-    // (handled inside it) closes it.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_popupCtrl.isShowing) {
-        return;
-      }
-      final controls = _flyoutFocus.traversalDescendants;
-      if (controls.isNotEmpty) {
-        controls.first.requestFocus();
-      }
-    });
   }
 
-  void _close() {
-    final focusInside = _flyoutFocus.hasFocus;
-    _popupCtrl.hide();
-    if (focusInside) {
-      // Back to the trigger, not to the top of the page with the unmounted
-      // form.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _buttonFocus.requestFocus();
-        }
-      });
-    }
-  }
+  void _close() => _popupCtrl.hide();
 
   void _computeOverlayOffset() {
     final ctx = _buttonKey.currentContext;
@@ -375,7 +341,6 @@ class _MergeFlyoutButtonState extends ConsumerState<MergeFlyoutButton> {
       overlayChildBuilder: _buildOverlay,
       child: CcButton(
         key: _buttonKey,
-        focusNode: _buttonFocus,
         onPressed: _toggle,
         size: CcButtonSize.sm,
         variant: variant,
@@ -426,8 +391,11 @@ class _MergeFlyoutButtonState extends ConsumerState<MergeFlyoutButton> {
           left: offset.dx,
           top: offset.dy,
           width: _overlayWidth,
+          // The trap moves focus into the form, holds Tab there instead of
+          // letting it walk the page behind the barrier, and hands focus back
+          // to the Merge button on close. Escape is caught above it.
           child: Focus(
-            focusNode: _flyoutFocus,
+            canRequestFocus: false,
             onKeyEvent: (_, event) {
               if (event is KeyDownEvent &&
                   event.logicalKey == LogicalKeyboardKey.escape) {
@@ -436,41 +404,44 @@ class _MergeFlyoutButtonState extends ConsumerState<MergeFlyoutButton> {
               }
               return KeyEventResult.ignored;
             },
-            child: RepaintBoundary(
-              child: Material(
-                elevation: 0,
-                borderRadius: BorderRadius.circular(4),
-                color: tokens.bgPrimary,
-                child: Container(
-                  width: _overlayWidth,
-                  decoration: BoxDecoration(
-                    color: tokens.bgPrimary,
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: tokens.borderSecondary),
-                    boxShadow: AppShadows.golden,
+            child: CcFocusTrap(
+              debugLabel: 'merge-flyout',
+              child: RepaintBoundary(
+                child: Material(
+                  elevation: 0,
+                  borderRadius: BorderRadius.circular(4),
+                  color: tokens.bgPrimary,
+                  child: Container(
+                    width: _overlayWidth,
+                    decoration: BoxDecoration(
+                      color: tokens.bgPrimary,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: tokens.borderSecondary),
+                      boxShadow: AppShadows.golden,
+                    ),
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                    child: _showConflictFix
+                        ? MergeConflictsPanel(
+                            pr: widget.pr,
+                            prRef: widget.prRef,
+                            onFixStarted: _close,
+                          )
+                        : MergeCommitForm(
+                            method: _method,
+                            onMethodChanged: (method) {
+                              setState(() {
+                                _method = method;
+                                _prefillFields();
+                              });
+                            },
+                            titleController: _titleCtrl,
+                            descriptionController: _descCtrl,
+                            warnings: warnings,
+                            merging: _merging,
+                            overrideMerge: _isOverrideMerge,
+                            onMerge: _merge,
+                          ),
                   ),
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                  child: _showConflictFix
-                      ? MergeConflictsPanel(
-                          pr: widget.pr,
-                          prRef: widget.prRef,
-                          onFixStarted: _close,
-                        )
-                      : MergeCommitForm(
-                          method: _method,
-                          onMethodChanged: (method) {
-                            setState(() {
-                              _method = method;
-                              _prefillFields();
-                            });
-                          },
-                          titleController: _titleCtrl,
-                          descriptionController: _descCtrl,
-                          warnings: warnings,
-                          merging: _merging,
-                          overrideMerge: _isOverrideMerge,
-                          onMerge: _merge,
-                        ),
                 ),
               ),
             ),

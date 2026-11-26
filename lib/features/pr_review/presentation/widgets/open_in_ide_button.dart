@@ -52,15 +52,6 @@ class _OpenInIdeButtonState extends ConsumerState<OpenInIdeButton> {
   final OverlayPortalController _menuCtrl = OverlayPortalController();
   final GlobalKey _anchorKey = GlobalKey();
 
-  /// The chevron that opens the editor menu; focus returns here on close.
-  final FocusNode _menuTriggerFocus = FocusNode(debugLabel: 'ide-menu-trigger');
-
-  /// Wraps the open menu; has focus whenever one of its rows does.
-  final FocusNode _menuFocus = FocusNode(
-    debugLabel: 'ide-menu',
-    canRequestFocus: false,
-    skipTraversal: true,
-  );
   Offset? _menuOffset;
 
   /// True while the PR branch is being checked out into its worktree (a fetch
@@ -90,8 +81,6 @@ class _OpenInIdeButtonState extends ConsumerState<OpenInIdeButton> {
     if (_menuCtrl.isShowing) {
       _menuCtrl.hide();
     }
-    _menuTriggerFocus.dispose();
-    _menuFocus.dispose();
     super.dispose();
   }
 
@@ -121,32 +110,13 @@ class _OpenInIdeButtonState extends ConsumerState<OpenInIdeButton> {
     _computeMenuOffset();
     _menuCtrl.show();
     setState(() {});
-    // Keyboard focus moves onto the first editor row, so the menu is usable
-    // without a pointer; Escape inside it closes it.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_menuCtrl.isShowing) {
-        return;
-      }
-      final rows = _menuFocus.traversalDescendants;
-      if (rows.isNotEmpty) {
-        rows.first.requestFocus();
-      }
-    });
   }
 
   void _closeMenu() {
     if (!_menuCtrl.isShowing) {
       return;
     }
-    final focusInside = _menuFocus.hasFocus;
     _menuCtrl.hide();
-    if (focusInside) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _menuTriggerFocus.requestFocus();
-        }
-      });
-    }
   }
 
   void _computeMenuOffset() {
@@ -284,7 +254,6 @@ class _OpenInIdeButtonState extends ConsumerState<OpenInIdeButton> {
             ),
             _HoverSegment(
               onTap: _toggleMenu,
-              focusNode: _menuTriggerFocus,
               semanticLabel: l10n.openInEditorPrompt,
               borderRadius: const BorderRadius.only(
                 topRight: Radius.circular(1),
@@ -339,8 +308,11 @@ class _OpenInIdeButtonState extends ConsumerState<OpenInIdeButton> {
           left: offset.dx,
           top: offset.dy,
           width: _menuWidth,
+          // The trap holds Tab inside the menu instead of letting it walk the
+          // page behind the barrier, and hands focus back to the chevron on
+          // close; the first editor row autofocuses. Escape is caught above it.
           child: Focus(
-            focusNode: _menuFocus,
+            canRequestFocus: false,
             onKeyEvent: (_, event) {
               if (event is KeyDownEvent &&
                   event.logicalKey == LogicalKeyboardKey.escape) {
@@ -349,68 +321,77 @@ class _OpenInIdeButtonState extends ConsumerState<OpenInIdeButton> {
               }
               return KeyEventResult.ignored;
             },
-            child: RepaintBoundary(
-              child: Material(
-                color: tokens.bgPrimary,
-                elevation: 0,
-                borderRadius: BorderRadius.circular(4),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: tokens.bgPrimary,
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: tokens.borderSecondary),
-                    boxShadow: AppShadows.golden,
-                  ),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 440),
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _header(
-                            l10n.openInEditorPrompt,
-                            tokens,
-                            theme,
-                            muted: false,
-                          ),
-                          for (final e in installed)
-                            _menuRow(
-                              e,
-                              enabled: true,
-                              selected: e.id == selectedId,
-                              tokens: tokens,
-                              theme: theme,
-                              bundledLogos: bundledLogos,
-                            ),
-                          if (notInstalled.isNotEmpty) ...[
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
-                              child: SizedBox(
-                                height: 1,
-                                child: ColoredBox(
-                                  color: tokens.borderSecondary,
-                                ),
-                              ),
-                            ),
+            child: CcFocusTrap(
+              debugLabel: 'ide-menu',
+              child: RepaintBoundary(
+                child: Material(
+                  color: tokens.bgPrimary,
+                  elevation: 0,
+                  borderRadius: BorderRadius.circular(4),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: tokens.bgPrimary,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: tokens.borderSecondary),
+                      boxShadow: AppShadows.golden,
+                    ),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 440),
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
                             _header(
-                              l10n.ideNotInstalled,
+                              l10n.openInEditorPrompt,
                               tokens,
                               theme,
-                              muted: true,
+                              muted: false,
                             ),
-                            for (final e in notInstalled)
+                            for (final e in installed)
                               _menuRow(
                                 e,
-                                enabled: false,
-                                selected: false,
+                                enabled: true,
+                                autofocus: e == installed.first,
+                                selected: e.id == selectedId,
                                 tokens: tokens,
                                 theme: theme,
                                 bundledLogos: bundledLogos,
                               ),
+                            if (notInstalled.isNotEmpty) ...[
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  12,
+                                  8,
+                                  12,
+                                  6,
+                                ),
+                                child: SizedBox(
+                                  height: 1,
+                                  child: ColoredBox(
+                                    color: tokens.borderSecondary,
+                                  ),
+                                ),
+                              ),
+                              _header(
+                                l10n.ideNotInstalled,
+                                tokens,
+                                theme,
+                                muted: true,
+                              ),
+                              for (final e in notInstalled)
+                                _menuRow(
+                                  e,
+                                  enabled: false,
+                                  selected: false,
+                                  tokens: tokens,
+                                  theme: theme,
+                                  bundledLogos: bundledLogos,
+                                ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -449,6 +430,7 @@ class _OpenInIdeButtonState extends ConsumerState<OpenInIdeButton> {
     required DesignSystemTokens tokens,
     required ThemeData theme,
     required Set<String> bundledLogos,
+    bool autofocus = false,
   }) {
     final row = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
@@ -486,6 +468,7 @@ class _OpenInIdeButtonState extends ConsumerState<OpenInIdeButton> {
     return _MenuItem(
       onTap: () => unawaited(_selectAndOpen(e)),
       selected: selected,
+      autofocus: autofocus,
       child: row,
     );
   }
@@ -501,7 +484,6 @@ class _HoverSegment extends StatelessWidget {
     required this.child,
     required this.semanticLabel,
     this.tooltip,
-    this.focusNode,
   });
 
   final VoidCallback onTap;
@@ -509,14 +491,12 @@ class _HoverSegment extends StatelessWidget {
   final Widget child;
   final String semanticLabel;
   final String? tooltip;
-  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designSystem!;
     Widget content = CcTappable(
       onPressed: onTap,
-      focusNode: focusNode,
       semanticLabel: semanticLabel,
       borderRadius: borderRadius,
       builder: (context, states) => DecoratedBox(
@@ -543,10 +523,14 @@ class _MenuItem extends StatelessWidget {
     required this.onTap,
     required this.child,
     this.selected = false,
+    this.autofocus = false,
   });
 
   final VoidCallback onTap;
   final Widget child;
+
+  /// Whether the row takes focus as the menu opens, so it is usable at once.
+  final bool autofocus;
 
   /// The current default editor — exposed as the row's selected state, not
   /// only as the trailing checkmark.
@@ -560,6 +544,7 @@ class _MenuItem extends StatelessWidget {
         selected: selected,
         child: CcTappable(
           onPressed: onTap,
+          autofocus: autofocus,
           builder: (context, states) => ColoredBox(
             color:
                 states.contains(WidgetState.hovered) ||

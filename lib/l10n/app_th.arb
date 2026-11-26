@@ -10946,5 +10946,22 @@
   "ccUnverifiedLabel": "{label} (ยังไม่ได้ตรวจสอบ)",
   "prRowSelect": "เลือก {title}",
   "prTableSelectAll": "เลือก Pull request ทั้งหมด",
-  "planVersionRewind": "ย้อนกลับไปยังเวอร์ชัน {version}"
+  "planVersionRewind": "ย้อนกลับไปยังเวอร์ชัน {version}",
+  "messageAuthorYou": "คุณ",
+  "systemMessageLabel": "ระบบ: {content}",
+  "retryUploadNamed": "ลองอัปโหลด {name} อีกครั้ง",
+  "selectItemNamed": "เลือก {name}",
+  "linkPullRequest": "เชื่อม pull request",
+  "addRelation": "เพิ่มความสัมพันธ์",
+  "playbackPosition": "ตำแหน่งการเล่น",
+  "prNewChangesRefreshDiff": "มีการเปลี่ยนแปลงใหม่ — รีเฟรช diff",
+  "notificationsDeliverySchedule": "กำหนดการส่ง",
+  "notificationsDeliveryScheduleSubtitle": "การแจ้งเตือนที่ไม่เร่งด่วนจะถูกรวมและส่งอย่างไร",
+  "notificationsDeliveryRealtime": "เรียลไทม์",
+  "notificationsDeliveryEvery2Hours": "ทุก 2 ชั่วโมง",
+  "notificationsDeliveryDailyDigest": "สรุปรายวัน",
+  "notificationsQuietHours": "ชั่วโมงเงียบ",
+  "notificationsQuietHoursOn": "ระงับการแจ้งเตือนที่ไม่เร่งด่วนระหว่าง {start}–{end}",
+  "notificationsQuietHoursOff": "การแจ้งเตือนที่ไม่เร่งด่วนจะส่งได้ตลอดเวลา",
+  "toolCalls": "การเรียกใช้เครื่องมือ"
 }

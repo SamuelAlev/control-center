@@ -91,7 +91,9 @@ class GeneralPanel extends ConsumerWidget {
         ? ref.watch(standingConversationIdProvider(spaceId)).asData?.value
         : goalId != null
         ? ref
-              .watch(goalRunViewProvider((workspaceId: workspaceId, id: goalId)))
+              .watch(
+                goalRunViewProvider((workspaceId: workspaceId, id: goalId)),
+              )
               .asData
               ?.value
               ?.goal
@@ -284,9 +286,8 @@ class _TodosSection extends ConsumerWidget {
       await ref.read(planStudioRepositoryProvider).cancel(orchestrationId);
     } on Object catch (e) {
       if (context.mounted) {
-        CcToastScope.maybeOf(
-          context,
-        )?.show('$e', variant: CcToastVariant.danger);
+        CcToastScope.maybeOf(context)
+            ?.show('$e', variant: CcToastVariant.danger);
       }
     }
   }
@@ -396,18 +397,20 @@ class _GoalAccordionState extends State<_GoalAccordion> {
                     const SizedBox(width: AppSpacing.xs),
                     CcTooltip(
                       message: l10n.planCancel,
-                      child: CcTappable(
-                        onPressed: widget.onCancelRun,
-                        semanticLabel: l10n.planCancel,
-                        builder: (context, states) => SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: Icon(
-                            AppIcons.circleStop,
-                            size: 14,
-                            color: states.contains(WidgetState.hovered)
-                                ? t.textPrimary
-                                : t.textTertiary,
+                      child: CcHitTarget(
+                        child: CcTappable(
+                          onPressed: widget.onCancelRun,
+                          semanticLabel: l10n.planCancel,
+                          builder: (context, states) => SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: Icon(
+                              AppIcons.circleStop,
+                              size: 14,
+                              color: states.contains(WidgetState.hovered)
+                                  ? t.textPrimary
+                                  : t.textTertiary,
+                            ),
                           ),
                         ),
                       ),
@@ -415,18 +418,20 @@ class _GoalAccordionState extends State<_GoalAccordion> {
                   ],
                   CcTooltip(
                     message: l10n.goalClear,
-                    child: CcTappable(
-                      onPressed: widget.onClear,
-                      semanticLabel: l10n.goalClear,
-                      builder: (context, states) => SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: Icon(
-                          AppIcons.x,
-                          size: 14,
-                          color: states.contains(WidgetState.hovered)
-                              ? t.textPrimary
-                              : t.textTertiary,
+                    child: CcHitTarget(
+                      child: CcTappable(
+                        onPressed: widget.onClear,
+                        semanticLabel: l10n.goalClear,
+                        builder: (context, states) => SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: Icon(
+                            AppIcons.x,
+                            size: 14,
+                            color: states.contains(WidgetState.hovered)
+                                ? t.textPrimary
+                                : t.textTertiary,
+                          ),
                         ),
                       ),
                     ),

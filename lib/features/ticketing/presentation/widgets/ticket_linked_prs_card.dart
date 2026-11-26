@@ -263,6 +263,7 @@ class _AddLinkedPrButtonState extends ConsumerState<_AddLinkedPrButton> {
       toggleOnTargetTap: false,
       target: CcTappable(
         onPressed: _controller.toggle,
+        semanticLabel: l10n.linkPullRequest,
         builder: (context, states) => Padding(
           padding: const EdgeInsets.all(2),
           child: Icon(AppIcons.plus, size: 16, color: t.fgTertiary),

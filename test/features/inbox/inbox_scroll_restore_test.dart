@@ -69,6 +69,17 @@ Future<void> _settle(WidgetTester tester) async {
   }
 }
 
+/// Whether the inbox currently holds only its first, short snapshot.
+class _Partial extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  // ignore: use_setters_to_change_properties
+  void set(bool value) => state = value;
+}
+
+final _partialProvider = NotifierProvider<_Partial, bool>(_Partial.new);
+
 const _inbox = '/inbox';
 const _detail = '/detail';
 
@@ -142,6 +153,96 @@ void main() {
     await _settle(tester);
     expect(find.byType(InboxScreen), findsNothing);
 
+    router.go(_inbox);
+    await _settle(tester);
+    expect(position().pixels, 600);
+  });
+
+  testWidgets('the offset comes back when the list arrives in two steps', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1400, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    PrInboxData dataOf(int count) => PrInboxData(
+      sections: {
+        for (final s in PrInboxSection.values) s: const <PrInboxItem>[],
+        PrInboxSection.needsYourReview: [
+          for (var i = 1; i <= count; i++) _item(i),
+        ],
+      },
+    );
+    final router = GoRouter(
+      initialLocation: _inbox,
+      routes: [
+        GoRoute(
+          path: _inbox,
+          pageBuilder: (context, state) =>
+              NoTransitionPage(key: state.pageKey, child: const InboxScreen()),
+        ),
+        GoRoute(
+          path: _detail,
+          pageBuilder: (context, state) =>
+              NoTransitionPage(key: state.pageKey, child: const SizedBox()),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    final container = ProviderContainer(
+      overrides: [
+        activeWorkspaceIdOverride(),
+        // The progressive inbox: a revisit first lays out a short list (the
+        // open snapshot before its overlays), then the full one.
+        inboxDataProvider.overrideWith(
+          (ref) => AsyncData(dataOf(ref.watch(_partialProvider) ? 3 : 40)),
+        ),
+        prsByRepoProvider.overrideWith(_StubPrsByRepo.new),
+        recentlyMergedPrsProvider.overrideWith(_StubMerged.new),
+        reviewedByMePrKeysProvider.overrideWith(_StubReviewed.new),
+        reposForWorkspaceProvider(
+          kTestWorkspaceId,
+        ).overrideWith((ref) => Stream.value([_repo()])),
+        inboxAttentionSourcesProvider.overrideWithValue(const []),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: testRouterWrap(router),
+      ),
+    );
+    await _settle(tester);
+
+    ScrollPosition position() => tester
+        .state<ScrollableState>(
+          find.descendant(
+            of: find.byKey(const PageStorageKey('inbox-sections')),
+            matching: find.byType(Scrollable),
+          ),
+        )
+        .position;
+
+    position().jumpTo(600);
+    await tester.pump();
+
+    router.go(_detail);
+    await _settle(tester);
+    container.read(_partialProvider.notifier).set(true);
+
+    router.go(_inbox);
+    await _settle(tester);
+    expect(position().maxScrollExtent, lessThan(600));
+
+    container.read(_partialProvider.notifier).set(false);
+    await _settle(tester);
+    expect(position().pixels, 600);
+
+    // Leaving again from the restored position keeps it.
+    router.go(_detail);
+    await _settle(tester);
     router.go(_inbox);
     await _settle(tester);
     expect(position().pixels, 600);

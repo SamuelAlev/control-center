@@ -57,15 +57,6 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
   final FocusNode _commentFocus = FocusNode();
   final _buttonKey = GlobalKey();
 
-  /// The Review button, which gets focus back when the panel closes.
-  final FocusNode _buttonFocus = FocusNode(debugLabel: 'review-button');
-
-  /// Wraps the panel; has focus whenever a control inside it does.
-  final FocusNode _panelFocus = FocusNode(
-    debugLabel: 'review-panel',
-    canRequestFocus: false,
-    skipTraversal: true,
-  );
   Timer? _draftTimer;
   int _draftRevision = 0;
   bool _canRestoreDraft = false;
@@ -125,8 +116,6 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
     }
     _commentCtrl.removeListener(_onCommentChanged);
     _commentFocus.dispose();
-    _buttonFocus.dispose();
-    _panelFocus.dispose();
     super.dispose();
   }
 
@@ -245,17 +234,7 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
     if (saveDraft) {
       _saveDraftFor(_draftRepo, widget.prRef, _commentCtrl.text);
     }
-    final focusInside = _panelFocus.hasFocus;
     _popupCtrl.hide();
-    if (focusInside) {
-      // Back to the Review button rather than to the top of the page with
-      // the unmounted composer.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _buttonFocus.requestFocus();
-        }
-      });
-    }
   }
 
   /// Wide enough for the three verdicts to sit on ONE row without any of them
@@ -515,7 +494,6 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
       overlayChildBuilder: _buildOverlay,
       child: CcButton(
         key: _buttonKey,
-        focusNode: _buttonFocus,
         onPressed: _toggle,
         size: CcButtonSize.sm,
         variant: isChangesRequested
@@ -548,8 +526,11 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
           left: offset.dx,
           top: offset.dy,
           width: _overlayWidth,
+          // The trap holds Tab inside the panel instead of letting it walk the
+          // page behind the barrier, and hands focus back to the Review button
+          // on close. Escape is caught above it.
           child: Focus(
-            focusNode: _panelFocus,
+            canRequestFocus: false,
             onKeyEvent: (_, event) {
               if (event is KeyDownEvent &&
                   event.logicalKey == LogicalKeyboardKey.escape) {
@@ -558,124 +539,127 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
               }
               return KeyEventResult.ignored;
             },
-            child: RepaintBoundary(
-              child: Material(
-                elevation: 8,
-                borderRadius: AppRadii.brLg,
-                color: tokens.bgPrimary,
-                child: Container(
-                  width: _overlayWidth,
-                  decoration: BoxDecoration(
-                    borderRadius: AppRadii.brLg,
-                    border: Border.all(color: tokens.borderSecondary),
-                  ),
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Semantics(
-                        header: true,
-                        child: Text(
-                          l10n.finishYourReview,
-                          style: CcTypography.body.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: tokens.textPrimary,
+            child: CcFocusTrap(
+              debugLabel: 'review-panel',
+              child: RepaintBoundary(
+                child: Material(
+                  elevation: 8,
+                  borderRadius: AppRadii.brLg,
+                  color: tokens.bgPrimary,
+                  child: Container(
+                    width: _overlayWidth,
+                    decoration: BoxDecoration(
+                      borderRadius: AppRadii.brLg,
+                      border: Border.all(color: tokens.borderSecondary),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Semantics(
+                          header: true,
+                          child: Text(
+                            l10n.finishYourReview,
+                            style: CcTypography.body.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: tokens.textPrimary,
+                            ),
                           ),
                         ),
-                      ),
-                      // The queued comments are the review. Naming them here —
-                      // with the file:line of each — is what turns "submit"
-                      // from a leap of faith into a read-back of what goes out.
-                      if (pending.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        _PendingCommentsSummary(
-                          threads: pending,
-                          onDiscard: () {
-                            _inlineComments.discardPendingReview();
-                            setState(() {});
-                          },
-                        ),
-                      ],
-                      const SizedBox(height: 10),
-                      // The same rich field the diff composer and thread
-                      // replies use. Emoji, GIFs, image upload, formatting and
-                      // the preview used to live here and only here, inlined —
-                      // which is why a comment written on the diff had none of
-                      // them. Image upload stays host-supplied: it needs repo
-                      // write access, which only this surface has.
-                      PrCommentField(
-                        controller: _commentCtrl,
-                        focusNode: _commentFocus,
-                        hintText: l10n.reviewCommentHint,
-                        owner: widget.owner,
-                        repo: widget.repo,
-                        minLines: 5,
-                        maxLines: 10,
-                        onAttachImage: _attachFile,
-                      ),
-                      const SizedBox(height: 12),
-                      // One row, read left to right in ascending commitment:
-                      // the negative verdict, the no-verdict option, then the
-                      // one that ships it. Approve sits last because that is
-                      // where a confirming action lives in every other dialog
-                      // in the app, and carries the PRIMARY variant rather than
-                      // green: green would sign it as a status, and this is a
-                      // button, not a badge. Request-changes keeps the solid
-                      // red — nothing is destroyed here, but the design
-                      // system's destructive variant is the red a negative
-                      // verdict needs. "Comment" stays neutral on purpose: it
-                      // is the no-verdict option, so tinting it would imply a
-                      // third position.
-                      // `Expanded` and not `fullWidth`: the three share the
-                      // width equally, and full-width flushes a label left,
-                      // which reads as three ragged buttons in a row of equals.
-                      Row(
-                        children: [
-                          Expanded(
-                            child: CcButton(
-                              onPressed: _requestChanges,
-                              variant: CcButtonVariant.destructive,
-                              child: Text(
-                                // Ellipsize rather than overflow: this label is
-                                // one of the longest strings in the app once
-                                // translated.
-                                l10n.requestChanges,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: CcButton(
-                              onPressed: _comment,
-                              variant: CcButtonVariant.secondary,
-                              child: Text(
-                                l10n.commentVerdict,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: CcButton(
-                              onPressed: _approve,
-                              variant: CcButtonVariant.primary,
-                              child: Text(
-                                l10n.approve,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
+                        // The queued comments are the review. Naming them here —
+                        // with the file:line of each — is what turns "submit"
+                        // from a leap of faith into a read-back of what goes out.
+                        if (pending.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          _PendingCommentsSummary(
+                            threads: pending,
+                            onDiscard: () {
+                              _inlineComments.discardPendingReview();
+                              setState(() {});
+                            },
                           ),
                         ],
-                      ),
-                    ],
+                        const SizedBox(height: 10),
+                        // The same rich field the diff composer and thread
+                        // replies use. Emoji, GIFs, image upload, formatting and
+                        // the preview used to live here and only here, inlined —
+                        // which is why a comment written on the diff had none of
+                        // them. Image upload stays host-supplied: it needs repo
+                        // write access, which only this surface has.
+                        PrCommentField(
+                          controller: _commentCtrl,
+                          focusNode: _commentFocus,
+                          hintText: l10n.reviewCommentHint,
+                          owner: widget.owner,
+                          repo: widget.repo,
+                          minLines: 5,
+                          maxLines: 10,
+                          onAttachImage: _attachFile,
+                        ),
+                        const SizedBox(height: 12),
+                        // One row, read left to right in ascending commitment:
+                        // the negative verdict, the no-verdict option, then the
+                        // one that ships it. Approve sits last because that is
+                        // where a confirming action lives in every other dialog
+                        // in the app, and carries the PRIMARY variant rather than
+                        // green: green would sign it as a status, and this is a
+                        // button, not a badge. Request-changes keeps the solid
+                        // red — nothing is destroyed here, but the design
+                        // system's destructive variant is the red a negative
+                        // verdict needs. "Comment" stays neutral on purpose: it
+                        // is the no-verdict option, so tinting it would imply a
+                        // third position.
+                        // `Expanded` and not `fullWidth`: the three share the
+                        // width equally, and full-width flushes a label left,
+                        // which reads as three ragged buttons in a row of equals.
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CcButton(
+                                onPressed: _requestChanges,
+                                variant: CcButtonVariant.destructive,
+                                child: Text(
+                                  // Ellipsize rather than overflow: this label is
+                                  // one of the longest strings in the app once
+                                  // translated.
+                                  l10n.requestChanges,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: CcButton(
+                                onPressed: _comment,
+                                variant: CcButtonVariant.secondary,
+                                child: Text(
+                                  l10n.commentVerdict,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: CcButton(
+                                onPressed: _approve,
+                                variant: CcButtonVariant.primary,
+                                child: Text(
+                                  l10n.approve,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

@@ -7567,6 +7567,67 @@ class AppLocalizationsFa extends AppLocalizations {
       'کلید Tab اینجا تورفتگی ایجاد می‌کند. کلید Esc را فشار دهید، سپس Tab را بزنید تا به کنترل بعدی بروید.';
 
   @override
+  String get messageAuthorYou => 'شما';
+
+  @override
+  String systemMessageLabel(String content) {
+    return 'سیستم: $content';
+  }
+
+  @override
+  String retryUploadNamed(String name) {
+    return 'تلاش مجدد برای بارگذاری $name';
+  }
+
+  @override
+  String selectItemNamed(String name) {
+    return 'انتخاب $name';
+  }
+
+  @override
+  String get linkPullRequest => 'پیوند دادن pull request';
+
+  @override
+  String get addRelation => 'افزودن رابطه';
+
+  @override
+  String get playbackPosition => 'موقعیت پخش';
+
+  @override
+  String get prNewChangesRefreshDiff => 'تغییرات جدید — تازه‌سازی diff';
+
+  @override
+  String get notificationsDeliverySchedule => 'برنامه ارسال';
+
+  @override
+  String get notificationsDeliveryScheduleSubtitle =>
+      'نحوه گروه‌بندی و ارسال اعلان‌های غیرفوری.';
+
+  @override
+  String get notificationsDeliveryRealtime => 'لحظه‌ای';
+
+  @override
+  String get notificationsDeliveryEvery2Hours => 'هر ۲ ساعت';
+
+  @override
+  String get notificationsDeliveryDailyDigest => 'خلاصه روزانه';
+
+  @override
+  String get notificationsQuietHours => 'ساعات سکوت';
+
+  @override
+  String notificationsQuietHoursOn(String start, String end) {
+    return 'اعلان‌های غیرفوری از $start–$end متوقف می‌شوند.';
+  }
+
+  @override
+  String get notificationsQuietHoursOff =>
+      'اعلان‌های غیرفوری در هر زمانی ارسال می‌شوند.';
+
+  @override
+  String get toolCalls => 'فراخوانی‌های ابزار';
+
+  @override
   String get markdownSupported => 'Markdown پشتیبانی می‌شود';
 
   @override

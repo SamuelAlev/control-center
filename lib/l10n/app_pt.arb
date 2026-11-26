@@ -9610,5 +9610,22 @@
   "ccUnverifiedLabel": "{label} (não verificado)",
   "prRowSelect": "Selecionar {title}",
   "prTableSelectAll": "Selecionar todos os pull requests",
-  "planVersionRewind": "Restaurar para a versão {version}"
+  "planVersionRewind": "Restaurar para a versão {version}",
+  "messageAuthorYou": "Você",
+  "systemMessageLabel": "Sistema: {content}",
+  "retryUploadNamed": "Tentar o upload de {name} novamente",
+  "selectItemNamed": "Selecionar {name}",
+  "linkPullRequest": "Vincular pull request",
+  "addRelation": "Adicionar relação",
+  "playbackPosition": "Posição da reprodução",
+  "prNewChangesRefreshDiff": "Novas alterações — Atualizar diff",
+  "notificationsDeliverySchedule": "Programação de entrega",
+  "notificationsDeliveryScheduleSubtitle": "Como as notificações não urgentes são agrupadas e entregues.",
+  "notificationsDeliveryRealtime": "Em tempo real",
+  "notificationsDeliveryEvery2Hours": "A cada 2 horas",
+  "notificationsDeliveryDailyDigest": "Resumo diário",
+  "notificationsQuietHours": "Horário silencioso",
+  "notificationsQuietHoursOn": "Notificações não urgentes suprimidas {start}–{end}.",
+  "notificationsQuietHoursOff": "Notificações não urgentes são entregues a qualquer hora.",
+  "toolCalls": "Chamadas de ferramentas"
 }

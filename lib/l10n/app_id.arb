@@ -10534,5 +10534,22 @@
   "ccUnverifiedLabel": "{label} (belum diverifikasi)",
   "prRowSelect": "Pilih {title}",
   "prTableSelectAll": "Pilih semua pull request",
-  "planVersionRewind": "Kembalikan ke versi {version}"
+  "planVersionRewind": "Kembalikan ke versi {version}",
+  "messageAuthorYou": "Anda",
+  "systemMessageLabel": "Sistem: {content}",
+  "retryUploadNamed": "Coba lagi unggahan {name}",
+  "selectItemNamed": "Pilih {name}",
+  "linkPullRequest": "Tautkan pull request",
+  "addRelation": "Tambah relasi",
+  "playbackPosition": "Posisi pemutaran",
+  "prNewChangesRefreshDiff": "Perubahan baru — Segarkan diff",
+  "notificationsDeliverySchedule": "Jadwal pengiriman",
+  "notificationsDeliveryScheduleSubtitle": "Cara notifikasi yang tidak mendesak dikelompokkan dan dikirim.",
+  "notificationsDeliveryRealtime": "Real-time",
+  "notificationsDeliveryEvery2Hours": "Setiap 2 jam",
+  "notificationsDeliveryDailyDigest": "Ringkasan harian",
+  "notificationsQuietHours": "Jam tenang",
+  "notificationsQuietHoursOn": "Notifikasi tidak mendesak ditahan {start}–{end}.",
+  "notificationsQuietHoursOff": "Notifikasi tidak mendesak dikirim kapan saja.",
+  "toolCalls": "Panggilan alat"
 }

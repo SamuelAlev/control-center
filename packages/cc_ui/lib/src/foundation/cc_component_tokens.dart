@@ -120,7 +120,7 @@ class CcButtonTokens {
         bg: t.dangerSoft.withValues(alpha: 0),
         bgHover: t.dangerSoft,
         bgPressed: t.danger.withValues(alpha: 0.2),
-        fg: t.fgErrorPrimary,
+        fg: t.textErrorPrimary,
         border: _transparent,
         borderHover: _transparent,
       );

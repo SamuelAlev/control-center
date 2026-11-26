@@ -10534,5 +10534,22 @@
   "ccUnverifiedLabel": "{label} (μη επαληθευμένο)",
   "prRowSelect": "Επιλογή {title}",
   "prTableSelectAll": "Επιλογή όλων των pull requests",
-  "planVersionRewind": "Επαναφορά στην έκδοση {version}"
+  "planVersionRewind": "Επαναφορά στην έκδοση {version}",
+  "messageAuthorYou": "Εσείς",
+  "systemMessageLabel": "Σύστημα: {content}",
+  "retryUploadNamed": "Επανάληψη μεταφόρτωσης του {name}",
+  "selectItemNamed": "Επιλογή {name}",
+  "linkPullRequest": "Σύνδεση pull request",
+  "addRelation": "Προσθήκη σχέσης",
+  "playbackPosition": "Θέση αναπαραγωγής",
+  "prNewChangesRefreshDiff": "Νέες αλλαγές — Ανανέωση diff",
+  "notificationsDeliverySchedule": "Πρόγραμμα παράδοσης",
+  "notificationsDeliveryScheduleSubtitle": "Πώς ομαδοποιούνται και παραδίδονται οι μη επείγουσες ειδοποιήσεις.",
+  "notificationsDeliveryRealtime": "Σε πραγματικό χρόνο",
+  "notificationsDeliveryEvery2Hours": "Κάθε 2 ώρες",
+  "notificationsDeliveryDailyDigest": "Ημερήσια σύνοψη",
+  "notificationsQuietHours": "Ώρες σιγής",
+  "notificationsQuietHoursOn": "Οι μη επείγουσες ειδοποιήσεις αναστέλλονται {start}–{end}.",
+  "notificationsQuietHoursOff": "Οι μη επείγουσες ειδοποιήσεις παραδίδονται ανά πάσα στιγμή.",
+  "toolCalls": "Κλήσεις εργαλείων"
 }

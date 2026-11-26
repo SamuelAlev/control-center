@@ -97,7 +97,7 @@ class FieldPlaceholder extends StatelessWidget {
                 // guidance the reader needs in order to act ("select an
                 // adapter first"), so it holds the AA floor rather than taking
                 // the contrast exemption an inert control would be allowed.
-                color: isError ? t.danger : input.placeholder,
+                color: isError ? t.textErrorPrimary : input.placeholder,
               ),
             ),
           ),

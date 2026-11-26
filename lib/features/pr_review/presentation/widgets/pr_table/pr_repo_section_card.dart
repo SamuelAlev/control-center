@@ -186,28 +186,31 @@ class _SelectAllBox extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
     final accent = tokens.accent;
-    return CcTappable(
-      onPressed: enabled ? onTap : null,
-      borderRadius: AppRadii.brSm,
-      semanticLabel: AppLocalizations.of(context).prTableSelectAll,
-      semanticChecked: selected,
-      builder: (context, _) => Container(
-        width: InboxRowMetrics.select,
-        height: InboxRowMetrics.select,
-        decoration: BoxDecoration(
-          color: selected ? accent : tokens.panel,
-          borderRadius: AppRadii.brSm,
-          border: Border.all(
-            color: selected
-                ? accent
-                : enabled
-                ? tokens.lineStrong
-                : tokens.borderSecondary,
+    // The box is 16px; the press area around it is 24.
+    return CcHitTarget(
+      child: CcTappable(
+        onPressed: enabled ? onTap : null,
+        borderRadius: AppRadii.brSm,
+        semanticLabel: AppLocalizations.of(context).prTableSelectAll,
+        semanticChecked: selected,
+        builder: (context, _) => Container(
+          width: InboxRowMetrics.select,
+          height: InboxRowMetrics.select,
+          decoration: BoxDecoration(
+            color: selected ? accent : tokens.panel,
+            borderRadius: AppRadii.brSm,
+            border: Border.all(
+              color: selected
+                  ? accent
+                  : enabled
+                  ? tokens.borderControl
+                  : tokens.borderSecondary,
+            ),
           ),
+          child: selected
+              ? Icon(AppIcons.check, size: 11, color: tokens.accentOn)
+              : null,
         ),
-        child: selected
-            ? Icon(AppIcons.check, size: 11, color: tokens.accentOn)
-            : null,
       ),
     );
   }
@@ -230,7 +233,7 @@ class _EmptyRow extends StatelessWidget {
       ),
       child: Text(
         l10n.noOpenPullRequests,
-        style: CcTypography.caption.copyWith(color: tokens.idle),
+        style: CcTypography.caption.copyWith(color: tokens.textQuaternary),
       ),
     );
   }
@@ -405,7 +408,7 @@ class _SortHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
     final active = sort.column == column;
-    final color = active ? tokens.textSecondary : tokens.idle;
+    final color = active ? tokens.textSecondary : tokens.textQuaternary;
 
     return CcTappable(
       onPressed: onTap,

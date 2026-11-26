@@ -72,6 +72,7 @@ class NotificationsSection extends ConsumerWidget {
             subtitle: l10n.showNativeNotifications,
             trailing: CcSwitch(
               value: isOn,
+              semanticLabel: l10n.enableNotifications,
               onChanged: (v) async {
                 final prefs = ref.read(notificationPreferencesProvider);
                 await prefs.setGlobalEnabled(enabled: v);
@@ -200,6 +201,8 @@ class _MutedReposRowState extends ConsumerState<_MutedReposRow> {
           subtitle: l10n.notificationsMutedReposCount(muted.length),
           trailing: CcButton(
             variant: CcButtonVariant.ghost,
+            // Icon-only: the chevron needs the row's name.
+            semanticLabel: l10n.notificationsMutedRepos,
             onPressed: forgeRepos.isEmpty
                 ? null
                 : () => setState(() => _expanded = !_expanded),
@@ -246,6 +249,7 @@ class _MutedRepoToggle extends ConsumerWidget {
         subtitle: '',
         trailing: CcSwitch(
           value: muted,
+          semanticLabel: repoFullName,
           onChanged: (v) async {
             await ref
                 .read(notificationPreferencesProvider)
@@ -268,12 +272,15 @@ class _CategoryRow extends ConsumerWidget {
     final enabled = ref.watch(_categoryEnabledFutureProvider(category));
     final isOn = enabled.asData?.value ?? true;
 
+    final title = _title(context);
+
     return SettingsRow(
       icon: _icon,
-      title: _title(context),
+      title: title,
       subtitle: _subtitle(context),
       trailing: CcSwitch(
         value: isOn,
+        semanticLabel: title,
         onChanged: (v) async {
           final prefs = ref.read(notificationPreferencesProvider);
           await prefs.setCategoryEnabled(category, enabled: v);
@@ -370,26 +377,28 @@ class _BatchPolicyRow extends ConsumerWidget {
     final policy =
         ref.watch(_batchPolicyProvider).asData?.value ??
         BatchDeliveryPolicy.digest2h;
+    final l10n = AppLocalizations.of(context);
 
     return SettingsRow(
       icon: AppIcons.clock,
-      title: 'Delivery schedule',
-      subtitle: 'How non-urgent notifications are batched and delivered.',
+      title: l10n.notificationsDeliverySchedule,
+      subtitle: l10n.notificationsDeliveryScheduleSubtitle,
       trailing: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 200),
         child: CcSelect<BatchDeliveryPolicy>(
-          options: const [
+          semanticLabel: l10n.notificationsDeliverySchedule,
+          options: [
             CcSelectOption(
               value: BatchDeliveryPolicy.realtime,
-              label: 'Real-time',
+              label: l10n.notificationsDeliveryRealtime,
             ),
             CcSelectOption(
               value: BatchDeliveryPolicy.digest2h,
-              label: 'Every 2 hours',
+              label: l10n.notificationsDeliveryEvery2Hours,
             ),
             CcSelectOption(
               value: BatchDeliveryPolicy.digestDaily,
-              label: 'Daily digest',
+              label: l10n.notificationsDeliveryDailyDigest,
             ),
           ],
           value: policy,
@@ -428,6 +437,7 @@ class _SoundRow extends ConsumerWidget {
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 180),
                 child: CcSelect<NotificationSound>(
+                  semanticLabel: l10n.notificationSound,
                   // Flattened from the grouped sound list — the group
                   // section headers are dropped; options keep their original
                   // group order.
@@ -526,6 +536,7 @@ class _CalendarAlertLeadRow extends ConsumerWidget {
       trailing: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 160),
         child: CcSelect<int>(
+          semanticLabel: l10n.calendarAlertLeadTime,
           options: [
             for (final m in _options)
               CcSelectOption(

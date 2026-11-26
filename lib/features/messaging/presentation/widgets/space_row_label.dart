@@ -19,6 +19,7 @@ class SpaceRowLabel extends StatelessWidget {
     required this.caption,
     required this.filled,
     required this.transitioning,
+    this.titleNamesRow = false,
     this.signal,
     this.subtitle,
     this.trailingLabel,
@@ -45,6 +46,10 @@ class SpaceRowLabel extends StatelessWidget {
 
   /// Sidebar width is animating, so trailing chrome is hidden.
   final bool transitioning;
+
+  /// The row's own node already carries [label] as its name, so the painted
+  /// title (and its tooltip) stay out of semantics instead of reading twice.
+  final bool titleNamesRow;
 
   /// The spinner or attention dot in front of the title, centred on the
   /// title line. The title moves over to make room for it; the subtitle
@@ -88,15 +93,18 @@ class SpaceRowLabel extends StatelessWidget {
           child: Row(
             children: [
               Flexible(
-                child: CcTooltip(
-                  message: label,
-                  showDelay: const Duration(milliseconds: 700),
-                  placement: CcTooltipPlacement.end,
-                  maxWidth: 480,
-                  child: CcScrambleText(
-                    label,
-                    scrambling: labelScrambling,
-                    style: _labelStyle,
+                child: ExcludeSemantics(
+                  excluding: titleNamesRow,
+                  child: CcTooltip(
+                    message: label,
+                    showDelay: const Duration(milliseconds: 700),
+                    placement: CcTooltipPlacement.end,
+                    maxWidth: 480,
+                    child: CcScrambleText(
+                      label,
+                      scrambling: labelScrambling,
+                      style: _labelStyle,
+                    ),
                   ),
                 ),
               ),
@@ -128,9 +136,12 @@ class SpaceRowLabel extends StatelessWidget {
           // row's start edge.
           Row(
             children: [
-              SizedBox(
-                width: kSpaceRowSignalSize,
-                child: Center(child: signal),
+              // Painted only: [SpaceRow] reads the signal out as its value.
+              ExcludeSemantics(
+                child: SizedBox(
+                  width: kSpaceRowSignalSize,
+                  child: Center(child: signal),
+                ),
               ),
               const SizedBox(width: _kSignalGap),
               Expanded(child: titleLine),

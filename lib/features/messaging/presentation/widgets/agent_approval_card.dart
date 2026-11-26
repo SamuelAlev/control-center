@@ -27,7 +27,7 @@ class ApprovalDeckLayer extends StatelessWidget {
 }
 
 /// The answerable card at the front of the approval deck: what the agent is
-/// about to do, and the three ways to answer it.
+/// about to do, and the ways to answer it.
 class ApprovalCard extends StatelessWidget {
   /// Creates an [ApprovalCard].
   const ApprovalCard({
@@ -38,6 +38,9 @@ class ApprovalCard extends StatelessWidget {
     required this.onApproveAndRemember,
     required this.onDeny,
     this.onShowScript,
+    this.onOpenConversation,
+    this.rememberLeads = false,
+    this.onRememberLeadsChanged,
   });
 
   /// The request this card answers.
@@ -59,7 +62,61 @@ class ApprovalCard extends StatelessWidget {
   /// when no script did, or there is nowhere to show it.
   final VoidCallback? onShowScript;
 
+  /// Opens the conversation whose run is waiting on this request; null when
+  /// the request names none, or there is nowhere to show it.
+  final VoidCallback? onOpenConversation;
+
+  /// Whether "approve for a while" is the button and the one-time approve
+  /// sits behind its caret, instead of the other way round. Only a
+  /// rememberable request has both.
+  final bool rememberLeads;
+
+  /// Told which choice the person took from behind the caret, so it leads
+  /// the next card.
+  final ValueChanged<bool>? onRememberLeadsChanged;
+
   bool get _destructive => request.severity == 'destructive';
+
+  /// The approve control. A request the server will remember carries both
+  /// ways to approve in one split button: one leads, the other waits behind
+  /// the caret, and taking that one makes it lead from then on. The standing
+  /// approval is narrow and expires on its own, which the tooltip says.
+  Widget _approve(AppLocalizations l10n) {
+    final variant = _destructive
+        ? CcButtonVariant.destructive
+        : CcButtonVariant.primary;
+    if (!request.isRememberable) {
+      return CcButton(
+        variant: variant,
+        size: CcButtonSize.sm,
+        loading: busy,
+        onPressed: busy ? null : onApprove,
+        child: Text(l10n.approve),
+      );
+    }
+    final split = CcSplitButton(
+      variant: variant,
+      size: CcButtonSize.sm,
+      loading: busy,
+      onPressed: busy
+          ? null
+          : (rememberLeads ? onApproveAndRemember : onApprove),
+      menuSemanticLabel: l10n.prMoreActions,
+      items: [
+        CcMenuItem(
+          label: rememberLeads ? l10n.approve : l10n.approveAndRemember,
+          onSelected: () {
+            onRememberLeadsChanged?.call(!rememberLeads);
+            (rememberLeads ? onApprove : onApproveAndRemember)();
+          },
+        ),
+      ],
+      child: Text(rememberLeads ? l10n.approveAndRemember : l10n.approve),
+    );
+    return rememberLeads
+        ? CcTooltip(message: l10n.approveAndRememberTooltip, child: split)
+        : split;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -178,35 +235,22 @@ class ApprovalCard extends StatelessWidget {
                 spacing: AppSpacing.sm,
                 runSpacing: AppSpacing.sm,
                 children: [
+                  // The card floats over some other screen: the way to the
+                  // run that is asking, where the request also sits inline.
+                  if (onOpenConversation case final open?)
+                    CcButton(
+                      variant: CcButtonVariant.ghost,
+                      size: CcButtonSize.sm,
+                      onPressed: open,
+                      child: Text(l10n.codeExecutionOpenConversation),
+                    ),
                   CcButton(
                     variant: CcButtonVariant.secondary,
                     size: CcButtonSize.sm,
                     onPressed: busy ? null : onDeny,
                     child: Text(l10n.deny),
                   ),
-                  // Offered only when the server says this request is
-                  // rememberable: it has something narrow to remember, and
-                  // the standing approval expires on its own.
-                  if (request.isRememberable) ...[
-                    CcTooltip(
-                      message: l10n.approveAndRememberTooltip,
-                      child: CcButton(
-                        variant: CcButtonVariant.secondary,
-                        size: CcButtonSize.sm,
-                        onPressed: busy ? null : onApproveAndRemember,
-                        child: Text(l10n.approveAndRemember),
-                      ),
-                    ),
-                  ],
-                  CcButton(
-                    variant: _destructive
-                        ? CcButtonVariant.destructive
-                        : CcButtonVariant.primary,
-                    size: CcButtonSize.sm,
-                    loading: busy,
-                    onPressed: busy ? null : onApprove,
-                    child: Text(l10n.approve),
-                  ),
+                  _approve(l10n),
                 ],
               ),
             ],

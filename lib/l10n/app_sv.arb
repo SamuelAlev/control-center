@@ -10534,5 +10534,22 @@
   "ccUnverifiedLabel": "{label} (overifierad)",
   "prRowSelect": "Välj {title}",
   "prTableSelectAll": "Välj alla pull requests",
-  "planVersionRewind": "Återställ till version {version}"
+  "planVersionRewind": "Återställ till version {version}",
+  "messageAuthorYou": "Du",
+  "systemMessageLabel": "System: {content}",
+  "retryUploadNamed": "Försök igen med uppladdningen av {name}",
+  "selectItemNamed": "Välj {name}",
+  "linkPullRequest": "Länka pull request",
+  "addRelation": "Lägg till relation",
+  "playbackPosition": "Uppspelningsposition",
+  "prNewChangesRefreshDiff": "Nya ändringar — Uppdatera diff",
+  "notificationsDeliverySchedule": "Leveransschema",
+  "notificationsDeliveryScheduleSubtitle": "Hur icke-brådskande aviseringar samlas och levereras.",
+  "notificationsDeliveryRealtime": "I realtid",
+  "notificationsDeliveryEvery2Hours": "Var 2:e timme",
+  "notificationsDeliveryDailyDigest": "Daglig sammanfattning",
+  "notificationsQuietHours": "Tysta timmar",
+  "notificationsQuietHoursOn": "Icke-brådskande aviseringar undertrycks {start}–{end}.",
+  "notificationsQuietHoursOff": "Icke-brådskande aviseringar levereras när som helst.",
+  "toolCalls": "Verktygsanrop"
 }

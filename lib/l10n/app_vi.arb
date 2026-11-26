@@ -10534,5 +10534,22 @@
   "ccUnverifiedLabel": "{label} (chưa xác minh)",
   "prRowSelect": "Chọn {title}",
   "prTableSelectAll": "Chọn tất cả pull request",
-  "planVersionRewind": "Khôi phục về phiên bản {version}"
+  "planVersionRewind": "Khôi phục về phiên bản {version}",
+  "messageAuthorYou": "Bạn",
+  "systemMessageLabel": "Hệ thống: {content}",
+  "retryUploadNamed": "Thử lại tải lên {name}",
+  "selectItemNamed": "Chọn {name}",
+  "linkPullRequest": "Liên kết pull request",
+  "addRelation": "Thêm quan hệ",
+  "playbackPosition": "Vị trí phát",
+  "prNewChangesRefreshDiff": "Có thay đổi mới — Làm mới diff",
+  "notificationsDeliverySchedule": "Lịch gửi",
+  "notificationsDeliveryScheduleSubtitle": "Cách gom và gửi các thông báo không khẩn cấp.",
+  "notificationsDeliveryRealtime": "Thời gian thực",
+  "notificationsDeliveryEvery2Hours": "Mỗi 2 giờ",
+  "notificationsDeliveryDailyDigest": "Tóm tắt hằng ngày",
+  "notificationsQuietHours": "Giờ yên tĩnh",
+  "notificationsQuietHoursOn": "Thông báo không khẩn cấp bị tạm ẩn {start}–{end}.",
+  "notificationsQuietHoursOff": "Thông báo không khẩn cấp được gửi bất cứ lúc nào.",
+  "toolCalls": "Lệnh gọi công cụ"
 }

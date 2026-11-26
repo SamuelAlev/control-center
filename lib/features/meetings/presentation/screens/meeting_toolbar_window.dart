@@ -14,6 +14,7 @@ import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/live_dot.dart';
 import 'package:control_center/shared/widgets/window_drag_area.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/src/widgets/_window.dart' show Window, WindowController;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
@@ -117,6 +118,13 @@ class _ToolbarViewState extends ConsumerState<_ToolbarView>
   /// exactly one stop and ignore further presses while tearing down.
   bool _stopping = false;
 
+  /// The hold-to-stop body as a keyboard stop: Space/Enter held charges it
+  /// like a press.
+  final FocusNode _stopFocus = FocusNode(debugLabel: 'meeting-hold-to-stop');
+
+  /// Whether Space/Enter is holding the charge (the key twin of [_holdAnchor]).
+  bool _keyHolding = false;
+
   @override
   void initState() {
     super.initState();
@@ -143,6 +151,7 @@ class _ToolbarViewState extends ConsumerState<_ToolbarView>
   void dispose() {
     _ticker?.cancel();
     _hold.dispose();
+    _stopFocus.dispose();
     super.dispose();
   }
 
@@ -177,12 +186,49 @@ class _ToolbarViewState extends ConsumerState<_ToolbarView>
     }
   }
 
+  /// Space/Enter down starts the hold exactly like a press and up releases it
+  /// (repeats ignored); Escape backs a charging hold off.
+  KeyEventResult _onKey(FocusNode node, KeyEvent event) {
+    final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.escape) {
+      if (event is! KeyDownEvent || (!_keyHolding && _holdAnchor == null)) {
+        return KeyEventResult.ignored;
+      }
+      _cancelHold();
+      return KeyEventResult.handled;
+    }
+    if (key != LogicalKeyboardKey.space &&
+        key != LogicalKeyboardKey.enter &&
+        key != LogicalKeyboardKey.numpadEnter) {
+      return KeyEventResult.ignored;
+    }
+    if (event is KeyDownEvent && !_stopping && !_keyHolding) {
+      _keyHolding = true;
+      _hold.forward();
+    } else if (event is KeyUpEvent && _keyHolding) {
+      _keyHolding = false;
+      if (_hold.status != AnimationStatus.completed) {
+        _hold.reverse();
+      }
+    }
+    return KeyEventResult.handled;
+  }
+
+  void _cancelHold() {
+    _keyHolding = false;
+    _holdAnchor = null;
+    if (!_stopping) {
+      _hold.reverse();
+    }
+  }
+
   void _confirmStop() {
     if (_stopping) {
       return;
     }
     _stopping = true;
     _holdAnchor = null;
+    _keyHolding = false;
     ref.read(meetingToolbarControllerProvider.notifier).requestStop();
   }
 
@@ -229,58 +275,72 @@ class _ToolbarViewState extends ConsumerState<_ToolbarView>
                         // Assistive activation stops immediately — no sighted
                         // hold required.
                         onTap: _confirmStop,
-                        child: MouseRegion(
-                          cursor: SystemMouseCursors.click,
-                          child: Listener(
-                            behavior: HitTestBehavior.opaque,
-                            onPointerDown: _onPointerDown,
-                            onPointerMove: _onPointerMove,
-                            onPointerUp: (_) => _onPointerUp(),
-                            onPointerCancel: (_) => _onPointerUp(),
-                            child: Padding(
-                              padding: const EdgeInsetsDirectional.only(
-                                start: 16,
-                              ),
-                              child: Row(
-                                children: [
-                                  paused
-                                      ? Container(
-                                          width: 9,
-                                          height: 9,
-                                          decoration: BoxDecoration(
-                                            color: _t.muted,
-                                            shape: BoxShape.circle,
-                                          ),
-                                        )
-                                      : LiveDot(color: _t.danger, size: 9),
-                                  const SizedBox(width: 11),
-                                  Text(
-                                    _formatClock(elapsed),
-                                    style: TextStyle(
-                                      color: paused ? _t.muted : _t.fg,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      letterSpacing: 0.5,
-                                    ),
+                        child: Focus(
+                          focusNode: _stopFocus,
+                          onKeyEvent: _onKey,
+                          // The key-up that would release the hold goes to
+                          // whatever takes focus instead.
+                          onFocusChange: (focused) {
+                            if (!focused && _keyHolding) {
+                              _cancelHold();
+                            }
+                          },
+                          child: FocusRing(
+                            focusNode: _stopFocus,
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: Listener(
+                                behavior: HitTestBehavior.opaque,
+                                onPointerDown: _onPointerDown,
+                                onPointerMove: _onPointerMove,
+                                onPointerUp: (_) => _onPointerUp(),
+                                onPointerCancel: (_) => _onPointerUp(),
+                                child: Padding(
+                                  padding: const EdgeInsetsDirectional.only(
+                                    start: 16,
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      label,
-                                      style: TextStyle(
-                                        color: Color.lerp(
-                                          _t.textSecondary,
-                                          _t.fg,
-                                          charge,
+                                  child: Row(
+                                    children: [
+                                      paused
+                                          ? Container(
+                                              width: 9,
+                                              height: 9,
+                                              decoration: BoxDecoration(
+                                                color: _t.muted,
+                                                shape: BoxShape.circle,
+                                              ),
+                                            )
+                                          : LiveDot(color: _t.danger, size: 9),
+                                      const SizedBox(width: 11),
+                                      Text(
+                                        _formatClock(elapsed),
+                                        style: TextStyle(
+                                          color: paused ? _t.muted : _t.fg,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          letterSpacing: 0.5,
                                         ),
-                                        fontSize: 12.5,
-                                        fontWeight: FontWeight.w500,
-                                        letterSpacing: -0.1,
                                       ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          label,
+                                          style: TextStyle(
+                                            color: Color.lerp(
+                                              _t.textSecondary,
+                                              _t.fg,
+                                              charge,
+                                            ),
+                                            fontSize: 12.5,
+                                            fontWeight: FontWeight.w500,
+                                            letterSpacing: -0.1,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
+                                ),
                               ),
                             ),
                           ),

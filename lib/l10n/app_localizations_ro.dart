@@ -7676,6 +7676,68 @@ class AppLocalizationsRo extends AppLocalizations {
       'Tab indentează aici. Apăsați Esc, apoi Tab pentru a trece la următorul control.';
 
   @override
+  String get messageAuthorYou => 'Tu';
+
+  @override
+  String systemMessageLabel(String content) {
+    return 'Sistem: $content';
+  }
+
+  @override
+  String retryUploadNamed(String name) {
+    return 'Reîncearcă încărcarea pentru $name';
+  }
+
+  @override
+  String selectItemNamed(String name) {
+    return 'Selectează $name';
+  }
+
+  @override
+  String get linkPullRequest => 'Leagă pull request';
+
+  @override
+  String get addRelation => 'Adaugă relație';
+
+  @override
+  String get playbackPosition => 'Poziția de redare';
+
+  @override
+  String get prNewChangesRefreshDiff =>
+      'Modificări noi — Reîmprospătează diferențele';
+
+  @override
+  String get notificationsDeliverySchedule => 'Program de livrare';
+
+  @override
+  String get notificationsDeliveryScheduleSubtitle =>
+      'Cum sunt grupate și livrate notificările care nu sunt urgente.';
+
+  @override
+  String get notificationsDeliveryRealtime => 'În timp real';
+
+  @override
+  String get notificationsDeliveryEvery2Hours => 'La fiecare 2 ore';
+
+  @override
+  String get notificationsDeliveryDailyDigest => 'Rezumat zilnic';
+
+  @override
+  String get notificationsQuietHours => 'Ore de liniște';
+
+  @override
+  String notificationsQuietHoursOn(String start, String end) {
+    return 'Notificările care nu sunt urgente sunt suprimate $start–$end.';
+  }
+
+  @override
+  String get notificationsQuietHoursOff =>
+      'Notificările care nu sunt urgente sunt livrate oricând.';
+
+  @override
+  String get toolCalls => 'Apeluri de unelte';
+
+  @override
   String get markdownSupported => 'Markdown este acceptat';
 
   @override

@@ -155,10 +155,10 @@ class UnifiedRowPainter {
     _hoverBgPaint = _fill(
       dark ? const Color(0xFF1C2128) : const Color(0xFFF6F8FA),
     );
-    _hunkHeaderColor = dark ? const Color(0xFF8B949E) : const Color(0xFF6E7781);
+    _hunkHeaderColor = dark ? const Color(0xFF8B949E) : const Color(0xFF68707A);
     final gutterColor = dark
-        ? const Color(0xFF6E7681)
-        : const Color(0xFF8C959F);
+        ? const Color(0xFF848C96)
+        : const Color(0xFF67707B);
     _gutterStyle = baseStyle.copyWith(
       color: gutterColor,
       fontSize: (baseStyle.fontSize ?? 13) - 0.5,

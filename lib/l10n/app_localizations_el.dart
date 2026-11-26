@@ -7669,6 +7669,67 @@ class AppLocalizationsEl extends AppLocalizations {
       'Το Tab εισάγει εσοχή εδώ. Πατήστε Esc και μετά Tab για μετάβαση στο επόμενο στοιχείο ελέγχου.';
 
   @override
+  String get messageAuthorYou => 'Εσείς';
+
+  @override
+  String systemMessageLabel(String content) {
+    return 'Σύστημα: $content';
+  }
+
+  @override
+  String retryUploadNamed(String name) {
+    return 'Επανάληψη μεταφόρτωσης του $name';
+  }
+
+  @override
+  String selectItemNamed(String name) {
+    return 'Επιλογή $name';
+  }
+
+  @override
+  String get linkPullRequest => 'Σύνδεση pull request';
+
+  @override
+  String get addRelation => 'Προσθήκη σχέσης';
+
+  @override
+  String get playbackPosition => 'Θέση αναπαραγωγής';
+
+  @override
+  String get prNewChangesRefreshDiff => 'Νέες αλλαγές — Ανανέωση diff';
+
+  @override
+  String get notificationsDeliverySchedule => 'Πρόγραμμα παράδοσης';
+
+  @override
+  String get notificationsDeliveryScheduleSubtitle =>
+      'Πώς ομαδοποιούνται και παραδίδονται οι μη επείγουσες ειδοποιήσεις.';
+
+  @override
+  String get notificationsDeliveryRealtime => 'Σε πραγματικό χρόνο';
+
+  @override
+  String get notificationsDeliveryEvery2Hours => 'Κάθε 2 ώρες';
+
+  @override
+  String get notificationsDeliveryDailyDigest => 'Ημερήσια σύνοψη';
+
+  @override
+  String get notificationsQuietHours => 'Ώρες σιγής';
+
+  @override
+  String notificationsQuietHoursOn(String start, String end) {
+    return 'Οι μη επείγουσες ειδοποιήσεις αναστέλλονται $start–$end.';
+  }
+
+  @override
+  String get notificationsQuietHoursOff =>
+      'Οι μη επείγουσες ειδοποιήσεις παραδίδονται ανά πάσα στιγμή.';
+
+  @override
+  String get toolCalls => 'Κλήσεις εργαλείων';
+
+  @override
   String get markdownSupported => 'Υποστηρίζεται Markdown';
 
   @override

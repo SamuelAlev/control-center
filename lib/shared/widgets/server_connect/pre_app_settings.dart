@@ -74,6 +74,8 @@ class PreAppSettingsPage extends StatelessWidget {
         bindings: {const SingleActivator(LogicalKeyboardKey.escape): close},
         child: Focus(
           autofocus: true,
+          // Only the Escape host: an invisible Tab stop would swallow a press.
+          skipTraversal: true,
           child: ColoredBox(
             color: t.bgPrimary,
             child: SafeArea(

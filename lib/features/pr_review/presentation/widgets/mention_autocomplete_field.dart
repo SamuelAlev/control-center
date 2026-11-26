@@ -482,7 +482,7 @@ class _MentionRow extends StatelessWidget {
                   '#',
                   textAlign: TextAlign.center,
                   style: CcTypography.caption.copyWith(
-                    color: tokens.fgQuaternary,
+                    color: tokens.textQuaternary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),

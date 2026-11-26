@@ -533,6 +533,9 @@ class _DetailTitle extends StatelessWidget {
         Flexible(
           child: GestureDetector(
             onTap: onEditTitle,
+            // The pencil beside it is the named edit action; the title stays
+            // read as text, not as a second, unnamed button.
+            excludeFromSemantics: true,
             child: PageHeaderText(title: meeting.title),
           ),
         ),

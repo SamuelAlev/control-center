@@ -237,7 +237,10 @@ class _SidebarSectionState extends State<_SidebarSection> {
                                 onPressed: _toggle,
                                 borderRadius: AppRadii.brSm,
                                 semanticLabel: widget.label,
-                                builder: (context, states) => labelText,
+                                semanticExpanded: expanded,
+                                // Already the button's name.
+                                builder: (context, states) =>
+                                    ExcludeSemantics(child: labelText),
                               )
                             : labelText,
                       ),
@@ -297,7 +300,10 @@ class _SectionChevron extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
+    // A second pointer target for the toggle the label already offers to the
+    // keyboard and to assistive technology.
+    return ExcludeSemantics(
+      child: MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -314,6 +320,7 @@ class _SectionChevron extends StatelessWidget {
             ),
           ),
         ),
+      ),
       ),
     );
   }

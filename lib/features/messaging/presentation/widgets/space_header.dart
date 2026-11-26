@@ -177,11 +177,14 @@ class SpaceHeader extends ConsumerWidget {
                     // the bottom edge (a 2px RenderFlex overflow). Truncate
                     // and disclose the full name on hover instead of stealing
                     // a second line.
-                    CcScrambleText(
-                      title,
-                      scrambling: titleGenerating,
-                      style: titleStyle,
-                      child: CcTruncatedText(title, style: titleStyle),
+                    Semantics(
+                      header: true,
+                      child: CcScrambleText(
+                        title,
+                        scrambling: titleGenerating,
+                        style: titleStyle,
+                        child: CcTruncatedText(title, style: titleStyle),
+                      ),
                     ),
                     Text(
                       subtitle,

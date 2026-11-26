@@ -99,7 +99,7 @@ class CcCheckbox extends StatelessWidget {
           fillColor = wash == null
               ? t.surface
               : Color.alphaBlend(wash, t.surface);
-          borderColor = enabled ? t.borderPrimary : t.borderDisabled;
+          borderColor = enabled ? t.borderControl : t.borderDisabled;
         }
 
         final glyphColor = enabled ? t.fgWhite : t.fgDisabled;

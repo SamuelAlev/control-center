@@ -62,7 +62,11 @@ class QuickOpenRow extends StatelessWidget {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => onHover(),
-      child: GestureDetector(
+      child: Semantics(
+        container: true,
+        button: true,
+        selected: selected,
+        child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onOpen,
         child: Container(
@@ -143,6 +147,7 @@ class QuickOpenRow extends StatelessWidget {
               ],
             ],
           ),
+        ),
         ),
       ),
     );

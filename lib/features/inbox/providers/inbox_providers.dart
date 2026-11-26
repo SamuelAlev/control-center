@@ -69,22 +69,16 @@ class _AgentApprovalsSource implements InboxAttentionSource {
           title: c.title,
           subtitle: c.detail.isEmpty ? null : c.detail,
           icon: AppIcons.bot,
-          actionLabel: l10n.inboxReview,
+          // Says where it goes: the request is answered in its conversation.
+          actionLabel: l10n.codeExecutionOpenConversation,
           waitingSince: DateTime.tryParse(c.createdAt),
           onAction: () {
-            if (workspaceId != null && c.spaceId.isNotEmpty) {
-              // The inline prompt lives in the blocked conversation's own
-              // tab, not whichever one of the space is standing.
-              final conversationId = c.conversationId;
-              router.go(
-                spaceRoute(
-                  workspaceId,
-                  c.spaceId,
-                  tab: conversationId == null || conversationId.isEmpty
-                      ? null
-                      : conversationTabKey(conversationId),
-                ),
-              );
+            final route = confirmationConversationRoute(
+              c,
+              activeWorkspaceId: workspaceId,
+            );
+            if (route != null) {
+              router.go(route);
             }
           },
         ),

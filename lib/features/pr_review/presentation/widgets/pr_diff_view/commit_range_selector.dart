@@ -339,6 +339,7 @@ class _CommitMenuRow extends StatelessWidget {
     final t = context.designSystem ?? DesignSystemTokens.light();
     return CcTappable(
       onPressed: onTap,
+      semanticChecked: checked,
       builder: (context, states) => Container(
         color: states.contains(WidgetState.hovered)
             ? t.bgSecondary.withValues(alpha: 0.6)
@@ -349,8 +350,15 @@ class _CommitMenuRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            IgnorePointer(
-              child: CcCheckbox(value: checked, onChanged: (_) {}),
+            // Drawn only: the row owns the tap and the checked state, so the
+            // box stays out of focus and semantics rather than being a
+            // second, unreachable checkbox.
+            ExcludeFocus(
+              child: ExcludeSemantics(
+                child: IgnorePointer(
+                  child: CcCheckbox(value: checked, onChanged: (_) {}),
+                ),
+              ),
             ),
             const SizedBox(width: 10),
             _VersionBadge(label: versionLabel, checked: checked),

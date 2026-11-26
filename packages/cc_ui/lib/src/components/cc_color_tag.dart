@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:cc_ui/src/components/cc_hit_target.dart';
 import 'package:cc_ui/src/components/cc_icons.dart';
 import 'package:cc_ui/src/components/cc_spinner.dart';
 import 'package:cc_ui/src/components/cc_tooltip.dart';
@@ -242,49 +243,60 @@ class _TagRemoveButton extends StatelessWidget {
     final iconSize = compact ? 10.0 : 12.0;
     final spinnerSize = compact ? 9.0 : 10.0;
 
-    return CcTappable(
-      onPressed: removing ? null : onPressed,
-      focusableWhenDisabled: removing,
-      borderRadius: AppRadii.brSm,
-      semanticLabel: semanticLabel,
-      builder: (context, states) {
-        final hovered = states.contains(WidgetState.hovered);
-        final pressed = states.contains(WidgetState.pressed);
-        final focused = states.contains(WidgetState.focused);
+    // The glyph box is 16/20px; the target reaches 24px into the tag's
+    // padding without moving the layout.
+    return CcHitTarget(
+      child: CcTappable(
+        onPressed: removing ? null : onPressed,
+        focusableWhenDisabled: removing,
+        borderRadius: AppRadii.brSm,
+        semanticLabel: semanticLabel,
+        builder: (context, states) {
+          final hovered = states.contains(WidgetState.hovered);
+          final pressed = states.contains(WidgetState.pressed);
+          final focused = states.contains(WidgetState.focused);
 
-        final Color bg;
-        if (removing) {
-          bg = ghostHover.withValues(alpha: 0);
-        } else if (pressed) {
-          bg = ghostPressed;
-        } else if (hovered) {
-          bg = ghostHover;
-        } else {
-          bg = ghostHover.withValues(alpha: 0);
-        }
-        final iconColor = hovered || pressed || focused
-            ? foreground
-            : foreground.withValues(alpha: 0.85);
+          final Color bg;
+          if (removing) {
+            bg = ghostHover.withValues(alpha: 0);
+          } else if (pressed) {
+            bg = ghostPressed;
+          } else if (hovered) {
+            bg = ghostHover;
+          } else {
+            bg = ghostHover.withValues(alpha: 0);
+          }
+          final iconColor = hovered || pressed || focused
+              ? foreground
+              : foreground.withValues(alpha: 0.85);
 
-        Widget child = AnimatedContainer(
-          duration: CcMotion.resolveFade(context, CcMotion.fast),
-          curve: CcMotion.standard,
-          width: boxSize,
-          height: boxSize,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(color: bg, borderRadius: AppRadii.brSm),
-          child: removing
-              ? CcSpinner(size: spinnerSize, strokeWidth: 1.5, color: foreground)
-              : ExcludeSemantics(
-                  child: Icon(CcIcons.x, size: iconSize, color: iconColor),
-                ),
-        );
+          Widget child = AnimatedContainer(
+            duration: CcMotion.resolveFade(context, CcMotion.fast),
+            curve: CcMotion.standard,
+            width: boxSize,
+            height: boxSize,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: bg, borderRadius: AppRadii.brSm),
+            child: removing
+                ? CcSpinner(
+                    size: spinnerSize,
+                    strokeWidth: 1.5,
+                    color: foreground,
+                  )
+                : ExcludeSemantics(
+                    child: Icon(CcIcons.x, size: iconSize, color: iconColor),
+                  ),
+          );
 
-        if (pressed && !removing) {
-          child = Transform.translate(offset: const Offset(0, 1), child: child);
-        }
-        return child;
-      },
+          if (pressed && !removing) {
+            child = Transform.translate(
+              offset: const Offset(0, 1),
+              child: child,
+            );
+          }
+          return child;
+        },
+      ),
     );
   }
 }

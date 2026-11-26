@@ -7444,6 +7444,66 @@ class AppLocalizationsKo extends AppLocalizations {
       '여기서는 Tab이 들여쓰기를 합니다. Esc를 누른 다음 Tab을 누르면 다음 컨트롤로 이동합니다.';
 
   @override
+  String get messageAuthorYou => '나';
+
+  @override
+  String systemMessageLabel(String content) {
+    return '시스템: $content';
+  }
+
+  @override
+  String retryUploadNamed(String name) {
+    return '$name 업로드 재시도';
+  }
+
+  @override
+  String selectItemNamed(String name) {
+    return '$name 선택';
+  }
+
+  @override
+  String get linkPullRequest => '풀 리퀘스트 연결';
+
+  @override
+  String get addRelation => '관계 추가';
+
+  @override
+  String get playbackPosition => '재생 위치';
+
+  @override
+  String get prNewChangesRefreshDiff => '새 변경 사항 — diff 새로 고침';
+
+  @override
+  String get notificationsDeliverySchedule => '전달 일정';
+
+  @override
+  String get notificationsDeliveryScheduleSubtitle =>
+      '긴급하지 않은 알림을 묶어서 전달하는 방식입니다.';
+
+  @override
+  String get notificationsDeliveryRealtime => '실시간';
+
+  @override
+  String get notificationsDeliveryEvery2Hours => '2시간마다';
+
+  @override
+  String get notificationsDeliveryDailyDigest => '일일 요약';
+
+  @override
+  String get notificationsQuietHours => '방해 금지 시간';
+
+  @override
+  String notificationsQuietHoursOn(String start, String end) {
+    return '긴급하지 않은 알림을 $start–$end 동안 보류합니다.';
+  }
+
+  @override
+  String get notificationsQuietHoursOff => '긴급하지 않은 알림을 언제든 받습니다.';
+
+  @override
+  String get toolCalls => '도구 호출';
+
+  @override
   String get markdownSupported => 'Markdown을 지원합니다';
 
   @override

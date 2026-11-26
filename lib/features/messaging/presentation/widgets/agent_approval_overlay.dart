@@ -7,7 +7,9 @@ import 'package:control_center/features/messaging/presentation/widgets/script_or
 import 'package:control_center/features/messaging/providers/approval_analytics.dart';
 import 'package:control_center/features/messaging/providers/pending_confirmations_provider.dart';
 import 'package:control_center/features/messaging/providers/visible_conversation_spaces.dart';
+import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/router/app_router.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -74,6 +76,18 @@ class _AgentApprovalOverlayState extends ConsumerState<AgentApprovalOverlay> {
     }
   }
 
+  /// Opens the conversation whose run is waiting on [request]. Once it is on
+  /// screen the request renders inline there and leaves this deck.
+  void _openConversation(ConfirmationRequestDto request) {
+    final route = confirmationConversationRoute(
+      request,
+      activeWorkspaceId: ref.read(activeWorkspaceIdProvider),
+    );
+    if (route != null) {
+      ref.read(routerProvider).go(route);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final spaces = ref.watch(visibleConversationSpacesProvider);
@@ -106,7 +120,7 @@ class _AgentApprovalOverlayState extends ConsumerState<AgentApprovalOverlay> {
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420, maxHeight: 520),
+          constraints: const BoxConstraints(maxWidth: 460, maxHeight: 520),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -146,24 +160,40 @@ class _AgentApprovalOverlayState extends ConsumerState<AgentApprovalOverlay> {
                             key: ValueKey('approvalDeckLayer$depth'),
                           ),
                         ),
-                      ApprovalCard(
+                      // A live region named for what it is, so the card is
+                      // read out when an agent starts waiting on the person.
+                      Semantics(
                         key: ValueKey(front.id),
-                        request: front,
-                        busy: _responding.contains(front.id),
-                        onApprove: () => _respond(front, approved: true),
-                        onApproveAndRemember: () =>
-                            _respond(front, approved: true, remember: true),
-                        onDeny: () => _respond(front, approved: false),
-                        onShowScript: front.origin == null
-                            ? null
-                            : () => showScriptCall(
-                                ref,
-                                spaceId: front.spaceId,
-                                conversationId: front.conversationId,
-                                toolCallId: front.origin!.parentToolCallId,
-                                workspaceId: front.workspaceId,
-                                navigate: true,
-                              ),
+                        container: true,
+                        liveRegion: true,
+                        label: l10n.agentApprovalRequired,
+                        child: ApprovalCard(
+                          request: front,
+                          busy: _responding.contains(front.id),
+                          onApprove: () => _respond(front, approved: true),
+                          onApproveAndRemember: () =>
+                              _respond(front, approved: true, remember: true),
+                          onDeny: () => _respond(front, approved: false),
+                          onOpenConversation: front.spaceId.isEmpty
+                              ? null
+                              : () => _openConversation(front),
+                          rememberLeads: ref.watch(
+                            approvalPrefersRememberProvider,
+                          ),
+                          onRememberLeadsChanged: (remember) => ref
+                              .read(approvalPrefersRememberProvider.notifier)
+                              .set(remember: remember),
+                          onShowScript: front.origin == null
+                              ? null
+                              : () => showScriptCall(
+                                  ref,
+                                  spaceId: front.spaceId,
+                                  conversationId: front.conversationId,
+                                  toolCallId: front.origin!.parentToolCallId,
+                                  workspaceId: front.workspaceId,
+                                  navigate: true,
+                                ),
+                        ),
                       ),
                     ],
                   ),

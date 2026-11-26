@@ -18,6 +18,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -184,6 +185,15 @@ class _ReorderableRepoListState extends ConsumerState<_ReorderableRepoList> {
     );
   }
 
+  /// Alt+↑/↓ on a focused row: the keyboard's drag, one place at a time. The
+  /// row keeps its key, so focus moves with it.
+  void _move(int index, int delta) {
+    final to = index + delta;
+    if (to >= 0 && to < _repos.length) {
+      _onReorder(index, to);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ReorderableListView.builder(
@@ -197,10 +207,24 @@ class _ReorderableRepoListState extends ConsumerState<_ReorderableRepoList> {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (i > 0) const CcDivider(),
-          RepoSettingsRow(
-            repo: _repos[i],
-            workspaceId: widget.workspaceId,
-            dragIndex: i,
+          CallbackShortcuts(
+            bindings: {
+              const SingleActivator(
+                LogicalKeyboardKey.arrowUp,
+                alt: true,
+              ): () =>
+                  _move(i, -1),
+              const SingleActivator(
+                LogicalKeyboardKey.arrowDown,
+                alt: true,
+              ): () =>
+                  _move(i, 1),
+            },
+            child: RepoSettingsRow(
+              repo: _repos[i],
+              workspaceId: widget.workspaceId,
+              dragIndex: i,
+            ),
           ),
           RepoPathIssueNotice(repo: _repos[i], workspaceId: widget.workspaceId),
         ],

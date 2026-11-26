@@ -1,8 +1,11 @@
 import 'dart:math' as math;
 
 import 'package:cc_ui/src/components/cc_icon.dart';
+import 'package:cc_ui/src/components/cc_icons.dart';
+import 'package:cc_ui/src/components/cc_menu.dart';
 import 'package:cc_ui/src/foundation/cc_component_tokens.dart';
 import 'package:cc_ui/src/foundation/cc_motion.dart';
+import 'package:cc_ui/src/foundation/cc_overlay_anchor.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
 import 'package:cc_ui/src/foundation/cc_typography.dart';
 import 'package:cc_ui/src/theme/cc_theme.dart';
@@ -81,7 +84,23 @@ class CcButton extends StatelessWidget {
     this.autofocus = false,
     this.fullWidth = false,
     this.semanticLabel,
-  });
+  }) : _caret = false;
+
+  /// The caret half of a [CcSplitButton]: the same fill and states as the
+  /// action it is attached to, padded for a lone glyph.
+  const CcButton._caret({
+    required this.child,
+    required this.onPressed,
+    required this.variant,
+    required this.size,
+    required this.semanticLabel,
+  }) : icon = null,
+       trailing = null,
+       loading = false,
+       focusNode = null,
+       autofocus = false,
+       fullWidth = false,
+       _caret = true;
 
   /// The button label — usually a [Text]. The caller localizes it.
   final Widget child;
@@ -116,6 +135,8 @@ class CcButton extends StatelessWidget {
 
   /// Accessibility label (defaults to the child's own semantics).
   final String? semanticLabel;
+
+  final bool _caret;
 
   /// Resolves the color set for [variant] from [t].
   CcButtonTokens _tokens(DesignSystemTokens t) {
@@ -156,7 +177,9 @@ class CcButton extends StatelessWidget {
     final scaledLine =
         MediaQuery.textScalerOf(context).scale(label.fontSize!) * label.height!;
     final height = math.max(baseHeight, baseHeight - line + scaledLine);
-    final horizontal = size == CcButtonSize.sm ? 12.0 : 16.0;
+    final horizontal = _caret
+        ? AppSpacing.sm
+        : (size == CcButtonSize.sm ? 12.0 : 16.0);
     final disabled = onPressed == null || loading;
 
     return CcTappable(
@@ -280,6 +303,103 @@ class CcButton extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: children,
       ),
+    );
+  }
+}
+
+/// An action with its alternatives attached: [child] runs [onPressed], and a
+/// caret joined to its end opens a menu of [items].
+///
+/// Use it where one choice is the usual one and the others are variations of
+/// the same act (approve / approve for a while), so the row carries one button
+/// instead of one per variation. The two halves share [variant] and are set a
+/// hairline apart, so they read as one control with two targets.
+///
+/// A null [onPressed] or [loading] disables both halves: the alternatives are
+/// the same act, and are no more available than it is.
+class CcSplitButton extends StatefulWidget {
+  /// Creates a [CcSplitButton].
+  const CcSplitButton({
+    super.key,
+    required this.child,
+    required this.onPressed,
+    required this.items,
+    required this.menuSemanticLabel,
+    this.variant = CcButtonVariant.primary,
+    this.size = CcButtonSize.md,
+    this.loading = false,
+  });
+
+  /// The main action's label, usually a localized [Text].
+  final Widget child;
+
+  /// Runs the main action. Null disables the whole control.
+  final VoidCallback? onPressed;
+
+  /// The alternatives the caret offers.
+  final List<CcMenuItem> items;
+
+  /// Names the caret for assistive technology ("More approval options").
+  final String menuSemanticLabel;
+
+  /// The color treatment of both halves.
+  final CcButtonVariant variant;
+
+  /// The height/padding scale of both halves.
+  final CcButtonSize size;
+
+  /// Shows the main action busy and disables both halves.
+  final bool loading;
+
+  @override
+  State<CcSplitButton> createState() => _CcSplitButtonState();
+}
+
+class _CcSplitButtonState extends State<CcSplitButton> {
+  final CcOverlayController _menu = CcOverlayController();
+
+  @override
+  void dispose() {
+    _menu.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = widget.onPressed != null && !widget.loading;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
+          child: CcButton(
+            variant: widget.variant,
+            size: widget.size,
+            loading: widget.loading,
+            onPressed: widget.onPressed,
+            child: widget.child,
+          ),
+        ),
+        // The seam: the surface behind shows through, so the halves stay
+        // distinct in every variant without a border colour of their own.
+        const SizedBox(width: 1),
+        CcMenu(
+          controller: _menu,
+          // The caret is a button of its own: it toggles the menu itself, or
+          // the menu's tap handler and the button's would both fire.
+          toggleOnTargetTap: false,
+          semanticLabel: widget.menuSemanticLabel,
+          targetAnchor: AlignmentDirectional.bottomEnd,
+          followerAnchor: AlignmentDirectional.topEnd,
+          items: widget.items,
+          target: CcButton._caret(
+            variant: widget.variant,
+            size: widget.size,
+            semanticLabel: widget.menuSemanticLabel,
+            onPressed: enabled ? _menu.toggle : null,
+            child: const CcIcon(CcIcons.chevronDown, size: 14),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -97,6 +97,7 @@ class _Header extends StatelessWidget {
             message: l10n.close,
             child: CcTappable(
               onPressed: onClose,
+              semanticLabel: l10n.close,
               builder: (context, states) => Padding(
                 padding: const EdgeInsets.all(6),
                 child: Icon(AppIcons.x, size: 16, color: t.fgTertiary),

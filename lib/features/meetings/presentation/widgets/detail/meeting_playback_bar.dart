@@ -9,6 +9,7 @@ import 'package:control_center/features/meetings/providers/meeting_providers.dar
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/media_proxy_scope.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
@@ -115,6 +116,7 @@ class _PlayerState extends ConsumerState<_Player> {
 
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
+  final FocusNode _seekFocus = FocusNode(debugLabel: 'meeting-seek-bar');
   bool _playing = false;
   bool _ready = false;
 
@@ -215,6 +217,7 @@ class _PlayerState extends ConsumerState<_Player> {
   @override
   void dispose() {
     _disposed = true;
+    _seekFocus.dispose();
     // Reset the shared store + drop the seek handler. Passing the SAME captured
     // tear-off makes the controller's `identical` handoff guard match.
     _playback.detach(_seekHandler);
@@ -269,6 +272,45 @@ class _PlayerState extends ConsumerState<_Player> {
     await _player.seek(target);
   }
 
+  Duration _shifted(Duration delta) {
+    final ms = (_position + delta).inMilliseconds;
+    return Duration(milliseconds: ms.clamp(0, _duration.inMilliseconds));
+  }
+
+  void _seekBy(Duration delta) {
+    if (_duration != Duration.zero) {
+      unawaited(
+        _seekToFraction(
+          _shifted(delta).inMilliseconds / _duration.inMilliseconds,
+        ),
+      );
+    }
+  }
+
+  /// ←/→ seek 5 s (Shift: 15 s), Home/End jump to either end. The waveform is
+  /// drawn left to right in every locale, so the arrows stay physical.
+  KeyEventResult _onSeekKey(FocusNode node, KeyEvent event) {
+    if (event is KeyUpEvent) {
+      return KeyEventResult.ignored;
+    }
+    final step = Duration(
+      seconds: HardwareKeyboard.instance.isShiftPressed ? 15 : 5,
+    );
+    switch (event.logicalKey) {
+      case LogicalKeyboardKey.arrowLeft:
+        _seekBy(-step);
+      case LogicalKeyboardKey.arrowRight:
+        _seekBy(step);
+      case LogicalKeyboardKey.home:
+        unawaited(_seekToFraction(0));
+      case LogicalKeyboardKey.end:
+        unawaited(_seekToFraction(1));
+      default:
+        return KeyEventResult.ignored;
+    }
+    return KeyEventResult.handled;
+  }
+
   @override
   Widget build(BuildContext context) {
     final ds = context.ds;
@@ -290,7 +332,9 @@ class _PlayerState extends ConsumerState<_Player> {
               height: 40,
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  return GestureDetector(
+                  const nudge = Duration(seconds: 5);
+                  final seekable = _ready && _duration != Duration.zero;
+                  final bar = GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTapDown: (d) => _seekToFraction(
                       d.localPosition.dx / constraints.maxWidth,
@@ -305,6 +349,30 @@ class _PlayerState extends ConsumerState<_Player> {
                         progress: progress,
                         playedColor: ds.accent,
                         remainingColor: ds.muted.withValues(alpha: 0.35),
+                      ),
+                    ),
+                  );
+                  // Flutter asserts an increase/decrease action carries both
+                  // the value and the matching increased/decreased reading.
+                  return Semantics(
+                    slider: true,
+                    label: l10n.playbackPosition,
+                    value: MeetingFormat.clock(_position),
+                    increasedValue: seekable
+                        ? MeetingFormat.clock(_shifted(nudge))
+                        : null,
+                    decreasedValue: seekable
+                        ? MeetingFormat.clock(_shifted(-nudge))
+                        : null,
+                    onIncrease: seekable ? () => _seekBy(nudge) : null,
+                    onDecrease: seekable ? () => _seekBy(-nudge) : null,
+                    child: Focus(
+                      focusNode: _seekFocus,
+                      onKeyEvent: _onSeekKey,
+                      child: FocusRing(
+                        focusNode: _seekFocus,
+                        borderRadius: AppRadii.brSm,
+                        child: bar,
                       ),
                     ),
                   );

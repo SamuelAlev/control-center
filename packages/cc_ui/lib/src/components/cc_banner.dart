@@ -286,7 +286,12 @@ class _CcBannerState extends State<CcBanner>
           fg: t.success,
         );
       case CcBannerVariant.warning:
-        return _BannerColors(bg: t.warnSoft, border: t.warn, fg: t.warn);
+        // The warn hue is under 3:1 on its own tint; the text grade holds it.
+        return _BannerColors(
+          bg: t.warnSoft,
+          border: t.warn,
+          fg: t.textWarningPrimary,
+        );
       case CcBannerVariant.danger:
         return _BannerColors(
           bg: t.dangerSoft,

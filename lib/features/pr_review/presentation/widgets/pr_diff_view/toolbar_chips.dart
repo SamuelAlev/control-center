@@ -134,10 +134,11 @@ class DiffUpdateChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return CcTooltip(
-      message: AppLocalizations.of(context).newCommitsPushed,
+      message: l10n.newCommitsPushed,
       child: CcChip(
-        label: 'New changes — Refresh diff',
+        label: l10n.prNewChangesRefreshDiff,
         leadingIcon: AppIcons.refreshCw,
         selected: true,
         onPressed: onRefresh,
