@@ -7129,18 +7129,48 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String prTimelineCodeComments(int count) {
+  String prTimelineApprovedWithComments(String author, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count تعليق على الكود',
-      many: '$count تعليقًا على الكود',
-      few: '$count تعليقات على الكود',
-      two: 'تعليقان على الكود',
-      one: 'تعليق واحد على الكود',
-      zero: 'لا تعليقات على الكود',
+      other: '$count تعليقًا',
+      many: '$count تعليقًا',
+      few: '$count تعليقات',
+      two: 'تعليقين',
+      one: 'تعليقًا واحدًا',
+      zero: 'لا تعليقات',
     );
-    return '$_temp0';
+    return 'وافق ⁨$author⁩ على هذه التغييرات وترك $_temp0';
+  }
+
+  @override
+  String prTimelineChangesRequestedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count تعليقًا',
+      many: '$count تعليقًا',
+      few: '$count تعليقات',
+      two: 'تعليقين',
+      one: 'تعليقًا واحدًا',
+      zero: 'لا تعليقات',
+    );
+    return 'طلب ⁨$author⁩ تغييرات وترك $_temp0';
+  }
+
+  @override
+  String prTimelineReviewedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count تعليقًا',
+      many: '$count تعليقًا',
+      few: '$count تعليقات',
+      two: 'تعليقين',
+      one: 'تعليقًا واحدًا',
+      zero: 'لا تعليقات',
+    );
+    return 'راجع ⁨$author⁩ وترك $_temp0';
   }
 
   @override
@@ -7652,6 +7682,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get markdownQuote => 'اقتباس';
+
+  @override
+  String get markdownTabIndentHint =>
+      'يُدرج Tab هنا مسافة بادئة. اضغط Esc، ثم Tab للانتقال إلى عنصر التحكم التالي.';
 
   @override
   String get markdownSupported => 'Markdown مدعوم';

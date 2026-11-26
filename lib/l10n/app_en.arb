@@ -6435,10 +6435,37 @@
       }
     }
   },
-  "prTimelineCodeComments": "{count, plural, =1{1 code comment} other{{count} code comments}}",
-  "@prTimelineCodeComments": {
-    "description": "Activity feed: jump-to-diff button under a review row",
+  "prTimelineApprovedWithComments": "{author} approved these changes and left {count, plural, =1{1 comment} other{{count} comments}}",
+  "@prTimelineApprovedWithComments": {
+    "description": "Activity feed: review approved without summary that started one or more code conversations, listed under it",
     "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineChangesRequestedWithComments": "{author} requested changes and left {count, plural, =1{1 comment} other{{count} comments}}",
+  "@prTimelineChangesRequestedWithComments": {
+    "description": "Activity feed: review requested changes without summary and started one or more code conversations, listed under it",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineReviewedWithComments": "{author} reviewed and left {count, plural, =1{1 comment} other{{count} comments}}",
+  "@prTimelineReviewedWithComments": {
+    "description": "Activity feed: review submitted without verdict or summary that started one or more code conversations, listed under it",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
       "count": {
         "type": "int"
       }
@@ -6956,6 +6983,10 @@
   "markdownQuote": "Quote",
   "@markdownQuote": {
     "description": "Markdown toolbar button: quote"
+  },
+  "markdownTabIndentHint": "Tab indents here. Press Esc, then Tab to move to the next control.",
+  "@markdownTabIndentHint": {
+    "description": "Shown once and read to screen readers the first time Tab indents a code block or list in a text field instead of moving focus; explains how to leave the field by keyboard"
   },
   "markdownSupported": "Markdown is supported",
   "@markdownSupported": {

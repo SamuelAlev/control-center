@@ -7134,14 +7134,36 @@ class AppLocalizationsEl extends AppLocalizations {
   }
 
   @override
-  String prTimelineCodeComments(int count) {
+  String prTimelineApprovedWithComments(String author, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count σχόλια κώδικα',
-      one: '1 σχόλιο κώδικα',
+      other: '$count σχόλια',
+      one: '1 σχόλιο',
     );
-    return '$_temp0';
+    return 'Ο/Η $author ενέκρινε αυτές τις αλλαγές και άφησε $_temp0';
+  }
+
+  @override
+  String prTimelineChangesRequestedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count σχόλια',
+      one: '1 σχόλιο',
+    );
+    return 'Ο/Η $author ζήτησε αλλαγές και άφησε $_temp0';
+  }
+
+  @override
+  String prTimelineReviewedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count σχόλια',
+      one: '1 σχόλιο',
+    );
+    return 'Ο/Η $author ανασκόπησε και άφησε $_temp0';
   }
 
   @override
@@ -7641,6 +7663,10 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get markdownQuote => 'Παράθεση';
+
+  @override
+  String get markdownTabIndentHint =>
+      'Το Tab εισάγει εσοχή εδώ. Πατήστε Esc και μετά Tab για μετάβαση στο επόμενο στοιχείο ελέγχου.';
 
   @override
   String get markdownSupported => 'Υποστηρίζεται Markdown';

@@ -140,7 +140,9 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline>
   void didUpdateWidget(covariant PrActivityTimeline oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.pendingCommentAnchor != widget.pendingCommentAnchor) {
-      oldWidget.pendingCommentAnchor?.removeListener(_maybeRevealPendingComment);
+      oldWidget.pendingCommentAnchor?.removeListener(
+        _maybeRevealPendingComment,
+      );
       widget.pendingCommentAnchor?.addListener(_maybeRevealPendingComment);
       _maybeRevealPendingComment();
     } else if (!oldWidget.isVisible && widget.isVisible) {
@@ -305,10 +307,19 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline>
           );
         }
         final row = rows[i - 1];
+        // A bodiless review's sentence is the heading of the replies and
+        // threads listed under it, so it sits close to them.
+        final headsOwnRows =
+            row is _EntryRow &&
+            row.entry is PrReviewEntry &&
+            (row.entry as PrReviewEntry).review.body.trim().isEmpty &&
+            i < rows.length &&
+            rows[i] is! _EntryRow;
         return _TimelineTile(
           key: ValueKey<String>(_activityRowKey(row)),
           isLast: i == rows.length,
           hasLeading: row is _EntryRow,
+          bottomGap: headsOwnRows ? 8 : 16,
           leading: switch (row) {
             _EntryRow(:final entry) => _leadingFor(entry),
             // Width-only spacer: conversation rows keep the gutter column
@@ -316,7 +327,7 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline>
             _ => const SizedBox(width: _kGutterSize),
           },
           child: switch (row) {
-            _EntryRow(:final entry) => switch (entry) {
+            _EntryRow(:final entry, :final startedThreads) => switch (entry) {
               PrOpenedEntry() => _OpenedRow(entry: entry),
               PrReviewRequestEntry() => _ReviewRequestRow(entry: entry),
               PrLabelChangeEntry() => _LabelChangeRow(entry: entry),
@@ -329,7 +340,7 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline>
                 onOpen: widget.onOpenCommit,
               ),
               PrReviewEntry() when entry.review.body.trim().isEmpty =>
-                _ReviewVerdictRow(entry: entry),
+                _ReviewVerdictRow(entry: entry, comments: startedThreads),
               PrReviewEntry() => _ReviewCard(
                 prRef: prRef,
                 entry: entry,
@@ -349,16 +360,6 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline>
               onFollow: (reply) => _revealThread(reply.thread.id),
               onSetResolved: _setResolved,
               isResolved: _isResolved,
-            ),
-            _ThreadsIntroRow(:final count) => Padding(
-              padding: const EdgeInsetsDirectional.only(bottom: 6, start: 2),
-              child: Text(
-                l10n.prTimelineCodeComments(count),
-                style: CcTypography.caption.copyWith(
-                  color: t.textTertiary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
             ),
             _ThreadRow(:final thread) => _TimelineThreadCard(
               key: _keyFor(thread.id),
@@ -456,9 +457,11 @@ class _TimelineTile extends StatelessWidget {
     required this.hasLeading,
     required this.leading,
     required this.child,
+    this.bottomGap = 16,
   });
 
   final bool isLast;
+  final double bottomGap; // 16px separates entries on the connector.
 
   /// Whether [leading] is a real bubble. Conversation / reply rows keep the
   /// gutter width for alignment but have no bubble, so the rail has to run
@@ -496,9 +499,8 @@ class _TimelineTile extends StatelessWidget {
             Expanded(
               child: Padding(
                 // 3px optically centers a single bodySmall line (~18px)
-                // against the 24px bubble; 16px separates entries on the
-                // connector.
-                padding: const EdgeInsets.only(top: 3, bottom: 16),
+                // against the 24px bubble.
+                padding: EdgeInsets.only(top: 3, bottom: bottomGap),
                 child: child,
               ),
             ),
@@ -1012,21 +1014,33 @@ class _CommitGroupRowState extends ConsumerState<_CommitGroupRow> {
 }
 
 /// A submitted review with no summary text: one verdict sentence, colored by
-/// state and paired with a shape (the gutter icon) per the status rule.
+/// state and paired with a shape (the gutter icon) per the status rule. The
+/// sentence also counts the conversations the review started, whose cards
+/// follow it.
 class _ReviewVerdictRow extends StatelessWidget {
-  const _ReviewVerdictRow({required this.entry});
+  const _ReviewVerdictRow({required this.entry, required this.comments});
 
   final PrReviewEntry entry;
+
+  /// Conversations this review started.
+  final int comments;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final author = _displayLogin(entry.review.author, l10n);
-    final sentence = switch (entry.review.state) {
-      PrReviewSubmissionState.approved => l10n.prTimelineApproved(author),
-      PrReviewSubmissionState.changesRequested =>
+    final sentence = switch ((entry.review.state, comments > 0)) {
+      (PrReviewSubmissionState.approved, false) => l10n.prTimelineApproved(
+        author,
+      ),
+      (PrReviewSubmissionState.approved, true) =>
+        l10n.prTimelineApprovedWithComments(author, comments),
+      (PrReviewSubmissionState.changesRequested, false) =>
         l10n.prTimelineChangesRequested(author),
-      _ => l10n.prTimelineReviewed(author),
+      (PrReviewSubmissionState.changesRequested, true) =>
+        l10n.prTimelineChangesRequestedWithComments(author, comments),
+      (_, false) => l10n.prTimelineReviewed(author),
+      (_, true) => l10n.prTimelineReviewedWithComments(author, comments),
     };
     final mentions = [_NamedMention.maybeUser(entry.review.author, author)];
     return _EventSentence(
@@ -1064,110 +1078,98 @@ class _ReviewReplyRefs extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (final reply in replies)
-            Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              decoration: BoxDecoration(
-                color: t.bgPrimary,
-                border: Border.all(color: t.borderSecondary),
-                borderRadius: AppRadii.brMd,
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CcTappable(
-                    onPressed: () => onFollow(reply),
-                    semanticLabel: l10n.inReplyTo(reply.thread.path),
-                    // The label already says it; the visible copy would read
-                    // the same words twice.
-                    builder: (context, states) => ExcludeSemantics(
-                      child: Container(
-                        padding: const EdgeInsets.fromLTRB(10, 7, 10, 7),
-                        color: states.contains(WidgetState.hovered)
-                            ? t.bgPrimaryHover
-                            : t.bgSecondary,
-                        child: Row(
-                          children: [
-                            Icon(
-                              AppIcons.reply,
-                              size: 13,
-                              color: t.textTertiary,
-                            ),
-                            const SizedBox(width: 6),
-                            Flexible(
-                              child: Text(
-                                l10n.inReplyTo(reply.thread.path),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: CcTypography.caption.copyWith(
-                                  color: t.textSecondary,
-                                ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final reply in replies)
+          Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            decoration: BoxDecoration(
+              color: t.bgPrimary,
+              border: Border.all(color: t.borderSecondary),
+              borderRadius: AppRadii.brMd,
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CcTappable(
+                  onPressed: () => onFollow(reply),
+                  semanticLabel: l10n.inReplyTo(reply.thread.path),
+                  // The label already says it; the visible copy would read
+                  // the same words twice.
+                  builder: (context, states) => ExcludeSemantics(
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(10, 7, 10, 7),
+                      color: states.contains(WidgetState.hovered)
+                          ? t.bgPrimaryHover
+                          : t.bgSecondary,
+                      child: Row(
+                        children: [
+                          Icon(AppIcons.reply, size: 13, color: t.textTertiary),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              l10n.inReplyTo(reply.thread.path),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: CcTypography.caption.copyWith(
+                                color: t.textSecondary,
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Icon(
-                              AppIcons.arrowUp,
-                              size: 12,
-                              color: t.textTertiary,
-                            ),
-                          ],
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            AppIcons.arrowUp,
+                            size: 12,
+                            color: t.textTertiary,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+                  child: PrCommentActions(
+                    prRef: prRef,
+                    body: reply.comment.body,
+                    authorLogin: reply.comment.user?.login ?? '',
+                    commentId: reply.comment.id,
+                    reviewComment: true,
+                    path: reply.thread.path,
+                    startLine: reply.thread.startLine,
+                    endLine: reply.thread.endLine,
+                    thread: [
+                      for (final comment in reply.thread.comments)
+                        (author: comment.user?.login ?? '', body: comment.body),
+                    ],
+                    canResolve: reply.thread.threadId != null,
+                    resolved: isResolved(reply.thread),
+                    onResolve: () =>
+                        onSetResolved(reply.thread, !isResolved(reply.thread)),
+                    onToggleReaction: (content, {required add}) =>
+                        toggleReaction(
+                          ref,
+                          ReactionTarget.reviewComment,
+                          commentId: reply.comment.id,
+                          pr: prRef,
+                          content: content,
+                          add: add,
                         ),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-                    child: PrCommentActions(
-                      prRef: prRef,
+                    child: PrBodyMarkdown(
                       body: reply.comment.body,
-                      authorLogin: reply.comment.user?.login ?? '',
-                      commentId: reply.comment.id,
-                      reviewComment: true,
-                      path: reply.thread.path,
-                      startLine: reply.thread.startLine,
-                      endLine: reply.thread.endLine,
-                      thread: [
-                        for (final comment in reply.thread.comments)
-                          (
-                            author: comment.user?.login ?? '',
-                            body: comment.body,
-                          ),
-                      ],
-                      canResolve: reply.thread.threadId != null,
-                      resolved: isResolved(reply.thread),
-                      onResolve: () => onSetResolved(
-                        reply.thread,
-                        !isResolved(reply.thread),
-                      ),
-                      onToggleReaction: (content, {required add}) =>
-                          toggleReaction(
-                            ref,
-                            ReactionTarget.reviewComment,
-                            commentId: reply.comment.id,
-                            pr: prRef,
-                            content: content,
-                            add: add,
-                          ),
-                      child: PrBodyMarkdown(
-                        body: reply.comment.body,
-                        repoFullName: repoFullName,
-                        deferParse: false,
-                      ),
+                      repoFullName: repoFullName,
+                      deferParse: false,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 }
@@ -1338,7 +1340,7 @@ class _ThreadFileHeader extends StatelessWidget {
 }
 
 /// A submitted review with a summary: a comment card carrying the verdict
-/// chip in its header, with the code-comments jump row underneath.
+/// chip in its header; the conversations it started follow it in the feed.
 class _ReviewCard extends ConsumerWidget {
   const _ReviewCard({
     required this.entry,
@@ -1662,7 +1664,6 @@ String _activityRowKey(_FeedRow row) {
       PrCommentEntry(:final comment) => 'ic-${comment.id}',
     },
     _RepliesRow(:final replies) => 'replies-${replies.first.comment.id}',
-    _ThreadsIntroRow(:final reviewId) => 'intro-$reviewId',
     _ThreadRow(:final thread) => thread.id,
   };
 }
@@ -1684,7 +1685,6 @@ double _estimateActivityRow(
       PrCommentEntry() => _estimateMarkdownCard(entry.comment.body, width),
     },
     _RepliesRow(:final replies) => replies.length * 88.0 + _kTileChrome,
-    _ThreadsIntroRow() => 28,
     _ThreadRow(:final thread) =>
       isOpen(thread)
           ? _estimateOpenThread(thread, width)

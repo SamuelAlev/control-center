@@ -4045,10 +4045,37 @@
       }
     }
   },
-  "prTimelineCodeComments": "{count, plural, one{1 comentariu de cod} few{# comentarii de cod} other{# de comentarii de cod}}",
-  "@prTimelineCodeComments": {
-    "description": "Activity feed: jump-to-diff button under a review row",
+  "prTimelineApprovedWithComments": "{author} a aprobat aceste modificări și a lăsat {count, plural, one{1 comentariu} few{{count} comentarii} other{{count} de comentarii}}",
+  "@prTimelineApprovedWithComments": {
+    "description": "Activity feed: review approved without summary that started one or more code conversations, listed under it",
     "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineChangesRequestedWithComments": "{author} a cerut modificări și a lăsat {count, plural, one{1 comentariu} few{{count} comentarii} other{{count} de comentarii}}",
+  "@prTimelineChangesRequestedWithComments": {
+    "description": "Activity feed: review requested changes without summary and started one or more code conversations, listed under it",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineReviewedWithComments": "{author} a revizuit și a lăsat {count, plural, one{1 comentariu} few{{count} comentarii} other{{count} de comentarii}}",
+  "@prTimelineReviewedWithComments": {
+    "description": "Activity feed: review submitted without verdict or summary that started one or more code conversations, listed under it",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
       "count": {
         "type": "int"
       }
@@ -4286,6 +4313,7 @@
   "markdownCode": "Cod",
   "markdownLink": "Link",
   "markdownQuote": "Citat",
+  "markdownTabIndentHint": "Tab indentează aici. Apăsați Esc, apoi Tab pentru a trece la următorul control.",
   "markdownSupported": "Markdown este acceptat",
   "markdownAttachImages": "Apasă ca să adaugi imagini",
   "failedToUpdateTitle": "Nu s-a putut actualiza titlul: {error}",

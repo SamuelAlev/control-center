@@ -4045,10 +4045,37 @@
       }
     }
   },
-  "prTimelineCodeComments": "{count, plural, =1{코드 댓글 1개} other{코드 댓글 {count}개}}",
-  "@prTimelineCodeComments": {
-    "description": "Activity feed: jump-to-diff button under a review row",
+  "prTimelineApprovedWithComments": "{author} 님이 이 변경을 승인하고 {count, plural, =1{댓글 1개} other{댓글 {count}개}}를 남겼습니다",
+  "@prTimelineApprovedWithComments": {
+    "description": "Activity feed: review approved without summary that started one or more code conversations, listed under it",
     "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineChangesRequestedWithComments": "{author} 님이 변경을 요청하고 {count, plural, =1{댓글 1개} other{댓글 {count}개}}를 남겼습니다",
+  "@prTimelineChangesRequestedWithComments": {
+    "description": "Activity feed: review requested changes without summary and started one or more code conversations, listed under it",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineReviewedWithComments": "{author} 님이 리뷰하고 {count, plural, =1{댓글 1개} other{댓글 {count}개}}를 남겼습니다",
+  "@prTimelineReviewedWithComments": {
+    "description": "Activity feed: review submitted without verdict or summary that started one or more code conversations, listed under it",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
       "count": {
         "type": "int"
       }
@@ -4286,6 +4313,7 @@
   "markdownCode": "코드",
   "markdownLink": "링크",
   "markdownQuote": "인용",
+  "markdownTabIndentHint": "여기서는 Tab이 들여쓰기를 합니다. Esc를 누른 다음 Tab을 누르면 다음 컨트롤로 이동합니다.",
   "markdownSupported": "Markdown을 지원합니다",
   "markdownAttachImages": "클릭하여 이미지를 추가하세요",
   "failedToUpdateTitle": "제목을 업데이트하지 못했습니다: {error}",

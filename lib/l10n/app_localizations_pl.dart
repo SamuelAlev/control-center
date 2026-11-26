@@ -7164,16 +7164,42 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
-  String prTimelineCodeComments(int count) {
+  String prTimelineApprovedWithComments(String author, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count komentarzy do kodu',
-      many: '$count komentarzy do kodu',
-      few: '$count komentarze do kodu',
-      one: '$count komentarz do kodu',
+      other: '$count komentarzy',
+      many: '$count komentarzy',
+      few: '$count komentarze',
+      one: '$count komentarz',
     );
-    return '$_temp0';
+    return '$author zatwierdził te zmiany i zostawił $_temp0';
+  }
+
+  @override
+  String prTimelineChangesRequestedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count komentarzy',
+      many: '$count komentarzy',
+      few: '$count komentarze',
+      one: '$count komentarz',
+    );
+    return '$author poprosił o zmiany i zostawił $_temp0';
+  }
+
+  @override
+  String prTimelineReviewedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count komentarzy',
+      many: '$count komentarzy',
+      few: '$count komentarze',
+      one: '$count komentarz',
+    );
+    return '$author zrecenzował i zostawił $_temp0';
   }
 
   @override
@@ -7680,6 +7706,10 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get markdownQuote => 'Cytat';
+
+  @override
+  String get markdownTabIndentHint =>
+      'Tab wcina tekst w tym miejscu. Naciśnij Esc, a następnie Tab, aby przejść do następnego elementu sterującego.';
 
   @override
   String get markdownSupported => 'Markdown jest obsługiwany';

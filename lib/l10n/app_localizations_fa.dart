@@ -7036,14 +7036,36 @@ class AppLocalizationsFa extends AppLocalizations {
   }
 
   @override
-  String prTimelineCodeComments(int count) {
+  String prTimelineApprovedWithComments(String author, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count نظر کد',
-      one: '1 نظر کد',
+      other: '$count نظر',
+      one: '1 نظر',
     );
-    return '$_temp0';
+    return '⁨$author⁩ این تغییرات را تأیید کرد و $_temp0 گذاشت';
+  }
+
+  @override
+  String prTimelineChangesRequestedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count نظر',
+      one: '1 نظر',
+    );
+    return '⁨$author⁩ درخواست تغییر داد و $_temp0 گذاشت';
+  }
+
+  @override
+  String prTimelineReviewedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count نظر',
+      one: '1 نظر',
+    );
+    return '⁨$author⁩ بازبینی کرد و $_temp0 گذاشت';
   }
 
   @override
@@ -7539,6 +7561,10 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get markdownQuote => 'نقل‌قول';
+
+  @override
+  String get markdownTabIndentHint =>
+      'کلید Tab اینجا تورفتگی ایجاد می‌کند. کلید Esc را فشار دهید، سپس Tab را بزنید تا به کنترل بعدی بروید.';
 
   @override
   String get markdownSupported => 'Markdown پشتیبانی می‌شود';

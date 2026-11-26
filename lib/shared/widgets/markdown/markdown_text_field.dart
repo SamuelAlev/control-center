@@ -1,5 +1,7 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/shared/widgets/markdown/auto_wrap_selection_formatter.dart';
+import 'package:control_center/shared/widgets/markdown/markdown_indentation.dart';
+import 'package:control_center/shared/widgets/markdown/paste_link_formatter.dart';
 import 'package:flutter/widgets.dart';
 
 /// A plain multiline markdown text field with the editor's panel styling.
@@ -51,7 +53,10 @@ class MarkdownTextField extends StatelessWidget {
       minLines: minLines,
       maxLines: maxLines,
       textStyle: CcTypography.body.copyWith(color: t.textPrimary, height: 1.5),
-      inputFormatters: const [AutoWrapSelectionFormatter()],
+      inputFormatters: const [
+        PasteLinkFormatter(),
+        AutoWrapSelectionFormatter(),
+      ],
       hintText: hintText,
       chromeless: true,
     );
@@ -61,16 +66,20 @@ class MarkdownTextField extends StatelessWidget {
         child: field,
       );
     }
-    return FocusRing(
-      focusNode: focusNode,
-      child: Container(
-        decoration: BoxDecoration(
-          color: t.panel,
-          borderRadius: BorderRadius.circular(2),
-          border: Border.all(color: t.borderSecondary),
+    // Standalone: no `MarkdownEditor` above to route Tab to indentation.
+    return MarkdownIndentKeys(
+      controller: controller,
+      child: FocusRing(
+        focusNode: focusNode,
+        child: Container(
+          decoration: BoxDecoration(
+            color: t.panel,
+            borderRadius: BorderRadius.circular(2),
+            border: Border.all(color: t.borderSecondary),
+          ),
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+          child: field,
         ),
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-        child: field,
       ),
     );
   }

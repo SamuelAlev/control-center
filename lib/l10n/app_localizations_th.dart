@@ -7003,14 +7003,36 @@ class AppLocalizationsTh extends AppLocalizations {
   }
 
   @override
-  String prTimelineCodeComments(int count) {
+  String prTimelineApprovedWithComments(String author, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count ความคิดเห็นในโค้ด',
-      one: '1 ความคิดเห็นในโค้ด',
+      other: '$count ความคิดเห็น',
+      one: '1 ความคิดเห็น',
     );
-    return '$_temp0';
+    return '$author อนุมัติการเปลี่ยนแปลงเหล่านี้ พร้อม $_temp0';
+  }
+
+  @override
+  String prTimelineChangesRequestedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ความคิดเห็น',
+      one: '1 ความคิดเห็น',
+    );
+    return '$author ขอให้แก้ไข พร้อม $_temp0';
+  }
+
+  @override
+  String prTimelineReviewedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ความคิดเห็น',
+      one: '1 ความคิดเห็น',
+    );
+    return '$author รีวิวแล้ว พร้อม $_temp0';
   }
 
   @override
@@ -7504,6 +7526,10 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get markdownQuote => 'คำพูด';
+
+  @override
+  String get markdownTabIndentHint =>
+      'ที่นี่ Tab ใช้สำหรับเยื้องข้อความ กด Esc แล้วกด Tab เพื่อไปยังตัวควบคุมถัดไป';
 
   @override
   String get markdownSupported => 'รองรับ Markdown';

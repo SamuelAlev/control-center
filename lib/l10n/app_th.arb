@@ -4204,10 +4204,37 @@
       }
     }
   },
-  "prTimelineCodeComments": "{count, plural, =1{1 ความคิดเห็นในโค้ด} other{{count} ความคิดเห็นในโค้ด}}",
-  "@prTimelineCodeComments": {
-    "description": "Activity feed: jump-to-diff button under a review row",
+  "prTimelineApprovedWithComments": "{author} อนุมัติการเปลี่ยนแปลงเหล่านี้ พร้อม {count, plural, =1{1 ความคิดเห็น} other{{count} ความคิดเห็น}}",
+  "@prTimelineApprovedWithComments": {
+    "description": "Activity feed: review approved without summary that started one or more code conversations, listed under it",
     "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineChangesRequestedWithComments": "{author} ขอให้แก้ไข พร้อม {count, plural, =1{1 ความคิดเห็น} other{{count} ความคิดเห็น}}",
+  "@prTimelineChangesRequestedWithComments": {
+    "description": "Activity feed: review requested changes without summary and started one or more code conversations, listed under it",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineReviewedWithComments": "{author} รีวิวแล้ว พร้อม {count, plural, =1{1 ความคิดเห็น} other{{count} ความคิดเห็น}}",
+  "@prTimelineReviewedWithComments": {
+    "description": "Activity feed: review submitted without verdict or summary that started one or more code conversations, listed under it",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
       "count": {
         "type": "int"
       }
@@ -4503,6 +4530,7 @@
   "markdownCode": "โค้ด",
   "markdownLink": "ลิงก์",
   "markdownQuote": "คำพูด",
+  "markdownTabIndentHint": "ที่นี่ Tab ใช้สำหรับเยื้องข้อความ กด Esc แล้วกด Tab เพื่อไปยังตัวควบคุมถัดไป",
   "markdownSupported": "รองรับ Markdown",
   "markdownAttachImages": "คลิกเพื่อเพิ่มรูป",
   "failedToUpdateTitle": "อัปเดตชื่อไม่ได้: {error}",

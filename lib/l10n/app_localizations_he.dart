@@ -7044,16 +7044,42 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String prTimelineCodeComments(int count) {
+  String prTimelineApprovedWithComments(String author, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count הערות קוד',
-      many: '$count הערות קוד',
-      two: 'שתי הערות קוד',
-      one: 'הערת קוד אחת',
+      other: '$count הערות',
+      many: '$count הערות',
+      two: 'שתי הערות',
+      one: 'הערה אחת',
     );
-    return '$_temp0';
+    return '⁨$author⁩ אישר את השינויים האלה והשאיר $_temp0';
+  }
+
+  @override
+  String prTimelineChangesRequestedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count הערות',
+      many: '$count הערות',
+      two: 'שתי הערות',
+      one: 'הערה אחת',
+    );
+    return '⁨$author⁩ ביקש שינויים והשאיר $_temp0';
+  }
+
+  @override
+  String prTimelineReviewedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count הערות',
+      many: '$count הערות',
+      two: 'שתי הערות',
+      one: 'הערה אחת',
+    );
+    return '⁨$author⁩ סקר והשאיר $_temp0';
   }
 
   @override
@@ -7558,6 +7584,10 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get markdownQuote => 'ציטוט';
+
+  @override
+  String get markdownTabIndentHint =>
+      'Tab מזיז פנימה כאן. לחצו על Esc ואז על Tab כדי לעבור לרכיב הבקרה הבא.';
 
   @override
   String get markdownSupported => 'יש תמיכה ב-Markdown';

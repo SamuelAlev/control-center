@@ -6916,14 +6916,36 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String prTimelineCodeComments(int count) {
+  String prTimelineApprovedWithComments(String author, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'コードコメント $count 件',
-      one: 'コードコメント 1 件',
+      other: 'コメント $count 件',
+      one: 'コメント 1 件',
     );
-    return '$_temp0';
+    return '$author が変更を承認し、$_temp0を残しました';
+  }
+
+  @override
+  String prTimelineChangesRequestedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'コメント $count 件',
+      one: 'コメント 1 件',
+    );
+    return '$author が変更を要求し、$_temp0を残しました';
+  }
+
+  @override
+  String prTimelineReviewedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'コメント $count 件',
+      one: 'コメント 1 件',
+    );
+    return '$author がレビューし、$_temp0を残しました';
   }
 
   @override
@@ -7416,6 +7438,10 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get markdownQuote => '引用';
+
+  @override
+  String get markdownTabIndentHint =>
+      'ここでは Tab でインデントされます。Esc を押してから Tab を押すと、次のコントロールに移動します。';
 
   @override
   String get markdownSupported => 'Markdown に対応しています';

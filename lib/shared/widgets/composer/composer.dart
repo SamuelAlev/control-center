@@ -27,6 +27,8 @@ import 'package:control_center/shared/widgets/composer/mention/mention_popup.dar
 import 'package:control_center/shared/widgets/composer/mention/mention_source.dart';
 import 'package:control_center/shared/widgets/composer/mention/mention_trigger.dart';
 import 'package:control_center/shared/widgets/markdown/auto_wrap_selection_formatter.dart';
+import 'package:control_center/shared/widgets/markdown/markdown_indentation.dart';
+import 'package:control_center/shared/widgets/markdown/paste_link_formatter.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
@@ -260,6 +262,14 @@ class _ComposerState extends ConsumerState<Composer> {
   bool _composerFocused = false;
   bool _isEmpty = true;
   bool _isLong = false;
+  late final MarkdownIndentKeyHandler _indentKeys = MarkdownIndentKeyHandler(
+    onFirstCapture: () {
+      if (mounted) {
+        announceMarkdownIndentKeys(context);
+      }
+    },
+  );
+
   late final LongPasteFormatter _longPaste = LongPasteFormatter(
     onLongPaste: _divertLongPaste,
   );
@@ -1308,9 +1318,42 @@ class _ComposerState extends ConsumerState<Composer> {
   }
 
   KeyEventResult _onFieldKey(FocusNode node, KeyEvent event) {
+    // Escape parked focus on this wrapper. No key is the field's now; Tab and
+    // Shift+Tab leave in either direction from where the field sits. This is
+    // also the keyboard way past the Tab and Shift+Tab the field keeps for
+    // itself (indentation, the plan toggle).
+    if (node.hasPrimaryFocus) {
+      final kb = HardwareKeyboard.instance;
+      if (event is KeyUpEvent ||
+          event.logicalKey != LogicalKeyboardKey.tab ||
+          kb.isControlPressed ||
+          kb.isMetaPressed ||
+          kb.isAltPressed) {
+        return KeyEventResult.ignored;
+      }
+      if (kb.isShiftPressed) {
+        node.previousFocus();
+      } else {
+        // Traversal starts from the scope's focused child. From this wrapper
+        // the next stop would be the field inside it, so start from the
+        // field; only the last request of the frame takes focus.
+        _focus
+          ..requestFocus()
+          ..nextFocus();
+      }
+      return KeyEventResult.handled;
+    }
     final popupKey = _onPopupKey(event);
     if (popupKey != null) {
       return popupKey;
+    }
+    // Tab / Shift+Tab indent where indentation means something (a code
+    // fence, a list item, a multi-line selection), repeats included. Anywhere
+    // else the key stays ignored here: plan toggle and focus traversal below.
+    if (!_popupCtrl.isShowing &&
+        _indentKeys.handle(_controller, event) == KeyEventResult.handled) {
+      _revealCaret(_controller.selection.extentOffset);
+      return KeyEventResult.handled;
     }
     if (event is! KeyDownEvent) {
       return KeyEventResult.ignored;
@@ -1341,7 +1384,11 @@ class _ComposerState extends ConsumerState<Composer> {
         _showHistoryEntry(draft);
         return KeyEventResult.handled;
       }
-      node.unfocus();
+      // Blurs the field but parks focus on its wrapper rather than dropping it
+      // to the scope: the Tab that follows then continues from the composer
+      // (see the top of this handler) instead of restarting at the first
+      // control of the window.
+      node.requestFocus();
       return KeyEventResult.handled;
     }
     final kb = HardwareKeyboard.instance;
@@ -1373,8 +1420,8 @@ class _ComposerState extends ConsumerState<Composer> {
       unawaited(_tryPasteAttachments());
       return KeyEventResult.ignored;
     }
-    // Shift+Tab toggles plan mode (PRD 17 §8) on opted-in composers. Handled
-    // before traversal so focus stays put. The draft is left alone — the
+    // Shift+Tab toggles plan mode (PRD 17 §8) on opted-in composers, unless
+    // it just outdented above. Handled before traversal so focus stays put. The draft is left alone — the
     // callback flips the conversation's mode.
     final planToggle = widget.onPlanToggle;
     if (planToggle != null &&
@@ -1641,6 +1688,8 @@ class _ComposerState extends ConsumerState<Composer> {
     required String? blockedMessage,
   }) {
     final field = Focus(
+      // Never a Tab stop of its own; Escape parks focus here on purpose.
+      skipTraversal: true,
       onKeyEvent: _onFieldKey,
       // Notes that the next caret move came from a POINTER, which is what
       // separates clicking a reference from arrowing over it. Listener, not
@@ -1662,7 +1711,11 @@ class _ComposerState extends ConsumerState<Composer> {
             expands: fill,
             textInputAction: TextInputAction.send,
             textStyle: CcTypography.body.copyWith(color: ds.textPrimary),
-            inputFormatters: [_longPaste, const AutoWrapSelectionFormatter()],
+            inputFormatters: [
+              _longPaste,
+              const PasteLinkFormatter(),
+              const AutoWrapSelectionFormatter(),
+            ],
             onSubmitted: (_) => _onFieldSubmitted(),
             hintText: widget.hint,
             chromeless: true,

@@ -7134,16 +7134,42 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String prTimelineCodeComments(int count) {
+  String prTimelineApprovedWithComments(String author, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count komentářů ke kódu',
-      many: '$count komentářů ke kódu',
-      few: '$count komentáře ke kódu',
-      one: '1 komentář ke kódu',
+      other: '$count komentářů',
+      many: '$count komentářů',
+      few: '$count komentáře',
+      one: '1 komentář',
     );
-    return '$_temp0';
+    return '$author schválil tyto změny a zanechal $_temp0';
+  }
+
+  @override
+  String prTimelineChangesRequestedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count komentářů',
+      many: '$count komentářů',
+      few: '$count komentáře',
+      one: '1 komentář',
+    );
+    return '$author vyžádal změny a zanechal $_temp0';
+  }
+
+  @override
+  String prTimelineReviewedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count komentářů',
+      many: '$count komentářů',
+      few: '$count komentáře',
+      one: '1 komentář',
+    );
+    return '$author zkontroloval a zanechal $_temp0';
   }
 
   @override
@@ -7651,6 +7677,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get markdownQuote => 'Citace';
+
+  @override
+  String get markdownTabIndentHint =>
+      'Klávesa Tab zde odsazuje. Stiskněte Esc a poté Tab pro přechod na další ovládací prvek.';
 
   @override
   String get markdownSupported => 'Markdown je podporován';

@@ -4,6 +4,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
 import 'package:control_center/shared/widgets/markdown/auto_wrap_selection_formatter.dart';
+import 'package:control_center/shared/widgets/markdown/paste_link_formatter.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
@@ -276,7 +277,10 @@ class _MentionAutocompleteFieldState
               color: t.textPrimary,
               height: 1.5,
             ),
-            inputFormatters: const [AutoWrapSelectionFormatter()],
+            inputFormatters: const [
+              PasteLinkFormatter(),
+              AutoWrapSelectionFormatter(),
+            ],
             hintText: widget.hintText,
             chromeless: true,
           ),

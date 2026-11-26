@@ -4045,10 +4045,37 @@
       }
     }
   },
-  "prTimelineCodeComments": "{count, plural, =1{1 نظر کد} other{{count} نظر کد}}",
-  "@prTimelineCodeComments": {
-    "description": "Activity feed: jump-to-diff button under a review row",
+  "prTimelineApprovedWithComments": "⁨{author}⁩ این تغییرات را تأیید کرد و {count, plural, =1{1 نظر} other{{count} نظر}} گذاشت",
+  "@prTimelineApprovedWithComments": {
+    "description": "Activity feed: review approved without summary that started one or more code conversations, listed under it",
     "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineChangesRequestedWithComments": "⁨{author}⁩ درخواست تغییر داد و {count, plural, =1{1 نظر} other{{count} نظر}} گذاشت",
+  "@prTimelineChangesRequestedWithComments": {
+    "description": "Activity feed: review requested changes without summary and started one or more code conversations, listed under it",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineReviewedWithComments": "⁨{author}⁩ بازبینی کرد و {count, plural, =1{1 نظر} other{{count} نظر}} گذاشت",
+  "@prTimelineReviewedWithComments": {
+    "description": "Activity feed: review submitted without verdict or summary that started one or more code conversations, listed under it",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
       "count": {
         "type": "int"
       }
@@ -4286,6 +4313,7 @@
   "markdownCode": "کد",
   "markdownLink": "پیوند",
   "markdownQuote": "نقل‌قول",
+  "markdownTabIndentHint": "کلید Tab اینجا تورفتگی ایجاد می‌کند. کلید Esc را فشار دهید، سپس Tab را بزنید تا به کنترل بعدی بروید.",
   "markdownSupported": "Markdown پشتیبانی می‌شود",
   "markdownAttachImages": "برای افزودن تصویر کلیک کنید",
   "failedToUpdateTitle": "به‌روزرسانی عنوان ممکن نشد: ⁨{error}⁩",

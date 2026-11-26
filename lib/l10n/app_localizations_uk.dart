@@ -7138,16 +7138,42 @@ class AppLocalizationsUk extends AppLocalizations {
   }
 
   @override
-  String prTimelineCodeComments(int count) {
+  String prTimelineApprovedWithComments(String author, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count коментарів до коду',
-      many: '$count коментарів до коду',
-      few: '$count коментарі до коду',
-      one: '$count коментар до коду',
+      other: '$count коментарів',
+      many: '$count коментарів',
+      few: '$count коментарі',
+      one: '$count коментар',
     );
-    return '$_temp0';
+    return '$author схвалив ці зміни і залишив $_temp0';
+  }
+
+  @override
+  String prTimelineChangesRequestedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count коментарів',
+      many: '$count коментарів',
+      few: '$count коментарі',
+      one: '$count коментар',
+    );
+    return '$author запросив зміни і залишив $_temp0';
+  }
+
+  @override
+  String prTimelineReviewedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count коментарів',
+      many: '$count коментарів',
+      few: '$count коментарі',
+      one: '$count коментар',
+    );
+    return '$author переглянув і залишив $_temp0';
   }
 
   @override
@@ -7654,6 +7680,10 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get markdownQuote => 'Цитата';
+
+  @override
+  String get markdownTabIndentHint =>
+      'Тут Tab виконує відступ. Натисніть Esc, а потім Tab, щоб перейти до наступного елемента керування.';
 
   @override
   String get markdownSupported => 'Підтримується Markdown';

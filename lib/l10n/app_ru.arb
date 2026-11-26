@@ -4045,10 +4045,37 @@
       }
     }
   },
-  "prTimelineCodeComments": "{count, plural, one{{count} комментарий к коду} few{{count} комментария к коду} many{{count} комментариев к коду} other{{count} комментария к коду}}",
-  "@prTimelineCodeComments": {
-    "description": "Activity feed: jump-to-diff button under a review row",
+  "prTimelineApprovedWithComments": "{author} одобрил эти изменения и оставил {count, plural, one{{count} комментарий} few{{count} комментария} many{{count} комментариев} other{{count} комментария}}",
+  "@prTimelineApprovedWithComments": {
+    "description": "Activity feed: review approved without summary that started one or more code conversations, listed under it",
     "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineChangesRequestedWithComments": "{author} запросил изменения и оставил {count, plural, one{{count} комментарий} few{{count} комментария} many{{count} комментариев} other{{count} комментария}}",
+  "@prTimelineChangesRequestedWithComments": {
+    "description": "Activity feed: review requested changes without summary and started one or more code conversations, listed under it",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineReviewedWithComments": "{author} проверил и оставил {count, plural, one{{count} комментарий} few{{count} комментария} many{{count} комментариев} other{{count} комментария}}",
+  "@prTimelineReviewedWithComments": {
+    "description": "Activity feed: review submitted without verdict or summary that started one or more code conversations, listed under it",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
       "count": {
         "type": "int"
       }
@@ -4286,6 +4313,7 @@
   "markdownCode": "Код",
   "markdownLink": "Ссылка",
   "markdownQuote": "Цитата",
+  "markdownTabIndentHint": "Здесь Tab выполняет отступ. Нажмите Esc, затем Tab, чтобы перейти к следующему элементу управления.",
   "markdownSupported": "Поддерживается Markdown",
   "markdownAttachImages": "Нажмите, чтобы добавить изображения",
   "failedToUpdateTitle": "Не удалось обновить название: {error}",

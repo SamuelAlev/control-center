@@ -4045,10 +4045,37 @@
       }
     }
   },
-  "prTimelineCodeComments": "{count, plural, zero{لا تعليقات على الكود} one{تعليق واحد على الكود} two{تعليقان على الكود} few{{count} تعليقات على الكود} many{{count} تعليقًا على الكود} other{{count} تعليق على الكود}}",
-  "@prTimelineCodeComments": {
-    "description": "Activity feed: jump-to-diff button under a review row",
+  "prTimelineApprovedWithComments": "وافق ⁨{author}⁩ على هذه التغييرات وترك {count, plural, zero{لا تعليقات} one{تعليقًا واحدًا} two{تعليقين} few{{count} تعليقات} many{{count} تعليقًا} other{{count} تعليقًا}}",
+  "@prTimelineApprovedWithComments": {
+    "description": "Activity feed: review approved without summary that started one or more code conversations, listed under it",
     "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineChangesRequestedWithComments": "طلب ⁨{author}⁩ تغييرات وترك {count, plural, zero{لا تعليقات} one{تعليقًا واحدًا} two{تعليقين} few{{count} تعليقات} many{{count} تعليقًا} other{{count} تعليقًا}}",
+  "@prTimelineChangesRequestedWithComments": {
+    "description": "Activity feed: review requested changes without summary and started one or more code conversations, listed under it",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineReviewedWithComments": "راجع ⁨{author}⁩ وترك {count, plural, zero{لا تعليقات} one{تعليقًا واحدًا} two{تعليقين} few{{count} تعليقات} many{{count} تعليقًا} other{{count} تعليقًا}}",
+  "@prTimelineReviewedWithComments": {
+    "description": "Activity feed: review submitted without verdict or summary that started one or more code conversations, listed under it",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
       "count": {
         "type": "int"
       }
@@ -4286,6 +4313,7 @@
   "markdownCode": "كود",
   "markdownLink": "رابط",
   "markdownQuote": "اقتباس",
+  "markdownTabIndentHint": "يُدرج Tab هنا مسافة بادئة. اضغط Esc، ثم Tab للانتقال إلى عنصر التحكم التالي.",
   "markdownSupported": "Markdown مدعوم",
   "markdownAttachImages": "انقر لإضافة صور",
   "failedToUpdateTitle": "تعذر تحديث العنوان: ⁨{error}⁩",

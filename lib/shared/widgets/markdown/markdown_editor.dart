@@ -1,6 +1,7 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/markdown/markdown_indentation.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_syntax_actions.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_toolbar.dart';
 import 'package:flutter/rendering.dart';
@@ -154,7 +155,12 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
                   if (!_showPreview)
                     _SizeReportingWidget(
                       onSizeChange: _storeWriteBodyHeight,
-                      child: widget.fieldBuilder(context),
+                      // Tab / Shift+Tab indent code, list items and
+                      // multi-line selections; elsewhere Tab moves focus.
+                      child: MarkdownIndentKeys(
+                        controller: widget.controller,
+                        child: widget.fieldBuilder(context),
+                      ),
                     )
                   else
                     ConstrainedBox(

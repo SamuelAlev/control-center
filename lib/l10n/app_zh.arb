@@ -4045,10 +4045,37 @@
       }
     }
   },
-  "prTimelineCodeComments": "{count, plural, =1{1 条代码评论} other{{count} 条代码评论}}",
-  "@prTimelineCodeComments": {
-    "description": "Activity feed: jump-to-diff button under a review row",
+  "prTimelineApprovedWithComments": "{author} 批准了这些更改，并留下了 {count, plural, =1{1 条评论} other{{count} 条评论}}",
+  "@prTimelineApprovedWithComments": {
+    "description": "Activity feed: review approved without summary that started one or more code conversations, listed under it",
     "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineChangesRequestedWithComments": "{author} 请求更改，并留下了 {count, plural, =1{1 条评论} other{{count} 条评论}}",
+  "@prTimelineChangesRequestedWithComments": {
+    "description": "Activity feed: review requested changes without summary and started one or more code conversations, listed under it",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineReviewedWithComments": "{author} 进行了审阅，并留下了 {count, plural, =1{1 条评论} other{{count} 条评论}}",
+  "@prTimelineReviewedWithComments": {
+    "description": "Activity feed: review submitted without verdict or summary that started one or more code conversations, listed under it",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
       "count": {
         "type": "int"
       }
@@ -4286,6 +4313,7 @@
   "markdownCode": "代码",
   "markdownLink": "链接",
   "markdownQuote": "引用",
+  "markdownTabIndentHint": "在此处，Tab 键用于缩进。按 Esc 键，然后按 Tab 键即可移到下一个控件。",
   "markdownSupported": "支持 Markdown",
   "markdownAttachImages": "点击添加图片",
   "failedToUpdateTitle": "无法更新标题：{error}",

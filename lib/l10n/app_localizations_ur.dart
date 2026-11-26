@@ -7035,14 +7035,36 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String prTimelineCodeComments(int count) {
+  String prTimelineApprovedWithComments(String author, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count کوڈ تبصرے',
-      one: '1 کوڈ تبصرہ',
+      other: '$count تبصرے چھوڑے',
+      one: '1 تبصرہ چھوڑا',
     );
-    return '$_temp0';
+    return '⁨$author⁩ نے یہ تبدیلیاں منظور کیں اور $_temp0';
+  }
+
+  @override
+  String prTimelineChangesRequestedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count تبصرے چھوڑے',
+      one: '1 تبصرہ چھوڑا',
+    );
+    return '⁨$author⁩ نے تبدیلیاں مانگیں اور $_temp0';
+  }
+
+  @override
+  String prTimelineReviewedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count تبصرے چھوڑے',
+      one: '1 تبصرہ چھوڑا',
+    );
+    return '⁨$author⁩ نے ریویو کیا اور $_temp0';
   }
 
   @override
@@ -7538,6 +7560,10 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get markdownQuote => 'اقتباس';
+
+  @override
+  String get markdownTabIndentHint =>
+      'یہاں Tab سے indent ہوتا ہے۔ Esc دبائیں، پھر Tab دبا کر اگلے کنٹرول پر جائیں۔';
 
   @override
   String get markdownSupported => 'Markdown معاون ہے';

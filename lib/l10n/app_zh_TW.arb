@@ -4045,10 +4045,37 @@
       }
     }
   },
-  "prTimelineCodeComments": "{count, plural, =1{1 則程式碼評論} other{{count} 則程式碼評論}}",
-  "@prTimelineCodeComments": {
-    "description": "Activity feed: jump-to-diff button under a review row",
+  "prTimelineApprovedWithComments": "{author} 核准了這些變更，並留下了 {count, plural, =1{1 則評論} other{{count} 則評論}}",
+  "@prTimelineApprovedWithComments": {
+    "description": "Activity feed: review approved without summary that started one or more code conversations, listed under it",
     "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineChangesRequestedWithComments": "{author} 要求修改，並留下了 {count, plural, =1{1 則評論} other{{count} 則評論}}",
+  "@prTimelineChangesRequestedWithComments": {
+    "description": "Activity feed: review requested changes without summary and started one or more code conversations, listed under it",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineReviewedWithComments": "{author} 已審查，並留下了 {count, plural, =1{1 則評論} other{{count} 則評論}}",
+  "@prTimelineReviewedWithComments": {
+    "description": "Activity feed: review submitted without verdict or summary that started one or more code conversations, listed under it",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
       "count": {
         "type": "int"
       }
@@ -4286,6 +4313,7 @@
   "markdownCode": "程式碼",
   "markdownLink": "連結",
   "markdownQuote": "引用",
+  "markdownTabIndentHint": "在這裡，Tab 鍵用於縮排。按 Esc 鍵，然後按 Tab 鍵即可移至下一個控制項。",
   "markdownSupported": "支援 Markdown",
   "markdownAttachImages": "點擊以新增圖片",
   "failedToUpdateTitle": "無法更新標題：{error}",

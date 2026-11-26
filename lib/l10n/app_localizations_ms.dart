@@ -7072,14 +7072,36 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String prTimelineCodeComments(int count) {
+  String prTimelineApprovedWithComments(String author, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count komen kod',
-      one: '1 komen kod',
+      other: '$count komen',
+      one: '1 komen',
     );
-    return '$_temp0';
+    return '$author meluluskan perubahan ini dan meninggalkan $_temp0';
+  }
+
+  @override
+  String prTimelineChangesRequestedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count komen',
+      one: '1 komen',
+    );
+    return '$author meminta perubahan dan meninggalkan $_temp0';
+  }
+
+  @override
+  String prTimelineReviewedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count komen',
+      one: '1 komen',
+    );
+    return '$author menyemak dan meninggalkan $_temp0';
   }
 
   @override
@@ -7576,6 +7598,10 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get markdownQuote => 'Petikan';
+
+  @override
+  String get markdownTabIndentHint =>
+      'Tab menjorokkan di sini. Tekan Esc, kemudian Tab untuk beralih ke kawalan seterusnya.';
 
   @override
   String get markdownSupported => 'Markdown disokong';

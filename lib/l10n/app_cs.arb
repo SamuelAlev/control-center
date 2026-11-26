@@ -4045,10 +4045,37 @@
       }
     }
   },
-  "prTimelineCodeComments": "{count, plural, one{1 komentář ke kódu} few{{count} komentáře ke kódu} many{{count} komentářů ke kódu} other{{count} komentářů ke kódu}}",
-  "@prTimelineCodeComments": {
-    "description": "Activity feed: jump-to-diff button under a review row",
+  "prTimelineApprovedWithComments": "{author} schválil tyto změny a zanechal {count, plural, one{1 komentář} few{{count} komentáře} many{{count} komentářů} other{{count} komentářů}}",
+  "@prTimelineApprovedWithComments": {
+    "description": "Activity feed: review approved without summary that started one or more code conversations, listed under it",
     "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineChangesRequestedWithComments": "{author} vyžádal změny a zanechal {count, plural, one{1 komentář} few{{count} komentáře} many{{count} komentářů} other{{count} komentářů}}",
+  "@prTimelineChangesRequestedWithComments": {
+    "description": "Activity feed: review requested changes without summary and started one or more code conversations, listed under it",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineReviewedWithComments": "{author} zkontroloval a zanechal {count, plural, one{1 komentář} few{{count} komentáře} many{{count} komentářů} other{{count} komentářů}}",
+  "@prTimelineReviewedWithComments": {
+    "description": "Activity feed: review submitted without verdict or summary that started one or more code conversations, listed under it",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
       "count": {
         "type": "int"
       }
@@ -4286,6 +4313,7 @@
   "markdownCode": "Kód",
   "markdownLink": "Odkaz",
   "markdownQuote": "Citace",
+  "markdownTabIndentHint": "Klávesa Tab zde odsazuje. Stiskněte Esc a poté Tab pro přechod na další ovládací prvek.",
   "markdownSupported": "Markdown je podporován",
   "markdownAttachImages": "Klikněte pro přidání obrázků",
   "failedToUpdateTitle": "Název se nepodařilo aktualizovat: {error}",

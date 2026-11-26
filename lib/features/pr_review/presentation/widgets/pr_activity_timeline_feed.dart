@@ -108,15 +108,12 @@ mixin _FeedRowsMemo {
       if (entry is PrReviewEntry) {
         final threads = threadsByReview[entry.review.id] ?? const [];
         final replies = repliesByReview[entry.review.id] ?? const [];
-        rows.add(_EntryRow(entry));
+        rows.add(_EntryRow(entry, startedThreads: threads.length));
         if (replies.isNotEmpty) {
           rows.add(_RepliesRow(replies));
         }
-        if (threads.isNotEmpty) {
-          rows.add(_ThreadsIntroRow(entry.review.id, threads.length));
-          for (final thread in threads) {
-            rows.add(_ThreadRow(thread));
-          }
+        for (final thread in threads) {
+          rows.add(_ThreadRow(thread));
         }
       } else {
         rows.add(_EntryRow(entry));
@@ -133,19 +130,16 @@ sealed class _FeedRow {
 }
 
 class _EntryRow extends _FeedRow {
-  const _EntryRow(this.entry);
+  const _EntryRow(this.entry, {this.startedThreads = 0});
   final PrActivityEntry entry;
+
+  /// Conversations a review entry started; their cards follow it in the feed.
+  final int startedThreads;
 }
 
 class _RepliesRow extends _FeedRow {
   const _RepliesRow(this.replies);
   final List<ServerReviewReply> replies;
-}
-
-class _ThreadsIntroRow extends _FeedRow {
-  const _ThreadsIntroRow(this.reviewId, this.count);
-  final int reviewId;
-  final int count;
 }
 
 class _ThreadRow extends _FeedRow {

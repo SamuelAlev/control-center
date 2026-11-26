@@ -4045,10 +4045,37 @@
       }
     }
   },
-  "prTimelineCodeComments": "{count, plural, one{1 σχόλιο κώδικα} other{{count} σχόλια κώδικα}}",
-  "@prTimelineCodeComments": {
-    "description": "Activity feed: jump-to-diff button under a review row",
+  "prTimelineApprovedWithComments": "Ο/Η {author} ενέκρινε αυτές τις αλλαγές και άφησε {count, plural, one{1 σχόλιο} other{{count} σχόλια}}",
+  "@prTimelineApprovedWithComments": {
+    "description": "Activity feed: review approved without summary that started one or more code conversations, listed under it",
     "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineChangesRequestedWithComments": "Ο/Η {author} ζήτησε αλλαγές και άφησε {count, plural, one{1 σχόλιο} other{{count} σχόλια}}",
+  "@prTimelineChangesRequestedWithComments": {
+    "description": "Activity feed: review requested changes without summary and started one or more code conversations, listed under it",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineReviewedWithComments": "Ο/Η {author} ανασκόπησε και άφησε {count, plural, one{1 σχόλιο} other{{count} σχόλια}}",
+  "@prTimelineReviewedWithComments": {
+    "description": "Activity feed: review submitted without verdict or summary that started one or more code conversations, listed under it",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
       "count": {
         "type": "int"
       }
@@ -4286,6 +4313,7 @@
   "markdownCode": "Κώδικας",
   "markdownLink": "Σύνδεσμος",
   "markdownQuote": "Παράθεση",
+  "markdownTabIndentHint": "Το Tab εισάγει εσοχή εδώ. Πατήστε Esc και μετά Tab για μετάβαση στο επόμενο στοιχείο ελέγχου.",
   "markdownSupported": "Υποστηρίζεται Markdown",
   "markdownAttachImages": "Κάντε κλικ για προσθήκη εικόνων",
   "failedToUpdateTitle": "Δεν ήταν δυνατή η ενημέρωση του τίτλου: ⁨{error}⁩",

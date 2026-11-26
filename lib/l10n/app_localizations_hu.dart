@@ -7094,14 +7094,36 @@ class AppLocalizationsHu extends AppLocalizations {
   }
 
   @override
-  String prTimelineCodeComments(int count) {
+  String prTimelineApprovedWithComments(String author, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '# kódmegjegyzés',
-      one: '# kódmegjegyzés',
+      other: '$count megjegyzést',
+      one: '1 megjegyzést',
     );
-    return '$_temp0';
+    return '$author jóváhagyta ezeket a módosításokat, és $_temp0 hagyott';
+  }
+
+  @override
+  String prTimelineChangesRequestedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count megjegyzést',
+      one: '1 megjegyzést',
+    );
+    return '$author módosítást kért, és $_temp0 hagyott';
+  }
+
+  @override
+  String prTimelineReviewedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count megjegyzést',
+      one: '1 megjegyzést',
+    );
+    return '$author átnézte, és $_temp0 hagyott';
   }
 
   @override
@@ -7599,6 +7621,10 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get markdownQuote => 'Idézet';
+
+  @override
+  String get markdownTabIndentHint =>
+      'A Tab itt behúzást végez. Nyomja meg az Esc billentyűt, majd a Tab billentyűt a következő vezérlőelemre lépéshez.';
 
   @override
   String get markdownSupported => 'A Markdown támogatott';

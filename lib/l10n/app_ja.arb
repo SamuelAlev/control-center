@@ -4045,10 +4045,37 @@
       }
     }
   },
-  "prTimelineCodeComments": "{count, plural, =1{コードコメント 1 件} other{コードコメント {count} 件}}",
-  "@prTimelineCodeComments": {
-    "description": "Activity feed: jump-to-diff button under a review row",
+  "prTimelineApprovedWithComments": "{author} が変更を承認し、{count, plural, =1{コメント 1 件} other{コメント {count} 件}}を残しました",
+  "@prTimelineApprovedWithComments": {
+    "description": "Activity feed: review approved without summary that started one or more code conversations, listed under it",
     "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineChangesRequestedWithComments": "{author} が変更を要求し、{count, plural, =1{コメント 1 件} other{コメント {count} 件}}を残しました",
+  "@prTimelineChangesRequestedWithComments": {
+    "description": "Activity feed: review requested changes without summary and started one or more code conversations, listed under it",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineReviewedWithComments": "{author} がレビューし、{count, plural, =1{コメント 1 件} other{コメント {count} 件}}を残しました",
+  "@prTimelineReviewedWithComments": {
+    "description": "Activity feed: review submitted without verdict or summary that started one or more code conversations, listed under it",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
       "count": {
         "type": "int"
       }
@@ -4286,6 +4313,7 @@
   "markdownCode": "コード",
   "markdownLink": "リンク",
   "markdownQuote": "引用",
+  "markdownTabIndentHint": "ここでは Tab でインデントされます。Esc を押してから Tab を押すと、次のコントロールに移動します。",
   "markdownSupported": "Markdown に対応しています",
   "markdownAttachImages": "クリックして画像を追加",
   "failedToUpdateTitle": "タイトルを更新できませんでした: {error}",

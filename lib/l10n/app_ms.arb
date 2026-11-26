@@ -4045,10 +4045,37 @@
       }
     }
   },
-  "prTimelineCodeComments": "{count, plural, =1{1 komen kod} other{{count} komen kod}}",
-  "@prTimelineCodeComments": {
-    "description": "Activity feed: jump-to-diff button under a review row",
+  "prTimelineApprovedWithComments": "{author} meluluskan perubahan ini dan meninggalkan {count, plural, =1{1 komen} other{{count} komen}}",
+  "@prTimelineApprovedWithComments": {
+    "description": "Activity feed: review approved without summary that started one or more code conversations, listed under it",
     "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineChangesRequestedWithComments": "{author} meminta perubahan dan meninggalkan {count, plural, =1{1 komen} other{{count} komen}}",
+  "@prTimelineChangesRequestedWithComments": {
+    "description": "Activity feed: review requested changes without summary and started one or more code conversations, listed under it",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineReviewedWithComments": "{author} menyemak dan meninggalkan {count, plural, =1{1 komen} other{{count} komen}}",
+  "@prTimelineReviewedWithComments": {
+    "description": "Activity feed: review submitted without verdict or summary that started one or more code conversations, listed under it",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
       "count": {
         "type": "int"
       }
@@ -4286,6 +4313,7 @@
   "markdownCode": "Kod",
   "markdownLink": "Pautan",
   "markdownQuote": "Petikan",
+  "markdownTabIndentHint": "Tab menjorokkan di sini. Tekan Esc, kemudian Tab untuk beralih ke kawalan seterusnya.",
   "markdownSupported": "Markdown disokong",
   "markdownAttachImages": "Klik untuk menambah imej",
   "failedToUpdateTitle": "Tidak dapat mengemas kini tajuk: {error}",

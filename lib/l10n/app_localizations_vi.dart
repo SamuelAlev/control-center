@@ -7059,14 +7059,36 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String prTimelineCodeComments(int count) {
+  String prTimelineApprovedWithComments(String author, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count nhận xét mã',
-      one: '1 nhận xét mã',
+      other: '$count nhận xét',
+      one: '1 nhận xét',
     );
-    return '$_temp0';
+    return '$author đã phê duyệt các thay đổi này và để lại $_temp0';
+  }
+
+  @override
+  String prTimelineChangesRequestedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count nhận xét',
+      one: '1 nhận xét',
+    );
+    return '$author đã yêu cầu thay đổi và để lại $_temp0';
+  }
+
+  @override
+  String prTimelineReviewedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count nhận xét',
+      one: '1 nhận xét',
+    );
+    return '$author đã xem xét và để lại $_temp0';
   }
 
   @override
@@ -7563,6 +7585,10 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get markdownQuote => 'Trích dẫn';
+
+  @override
+  String get markdownTabIndentHint =>
+      'Tab thụt lề tại đây. Nhấn Esc, rồi nhấn Tab để chuyển đến điều khiển tiếp theo.';
 
   @override
   String get markdownSupported => 'Hỗ trợ Markdown';

@@ -7122,14 +7122,36 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String prTimelineCodeComments(int count) {
+  String prTimelineApprovedWithComments(String author, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count commenti al codice',
-      one: '1 commento al codice',
+      other: '$count commenti',
+      one: '1 commento',
     );
-    return '$_temp0';
+    return '$author ha approvato queste modifiche e ha lasciato $_temp0';
+  }
+
+  @override
+  String prTimelineChangesRequestedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count commenti',
+      one: '1 commento',
+    );
+    return '$author ha richiesto modifiche e ha lasciato $_temp0';
+  }
+
+  @override
+  String prTimelineReviewedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count commenti',
+      one: '1 commento',
+    );
+    return '$author ha lasciato una revisione con $_temp0';
   }
 
   @override
@@ -7627,6 +7649,10 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get markdownQuote => 'Citazione';
+
+  @override
+  String get markdownTabIndentHint =>
+      'Tab qui rientra il testo. Premi Esc, poi Tab per passare al controllo successivo.';
 
   @override
   String get markdownSupported => 'Markdown è supportato';

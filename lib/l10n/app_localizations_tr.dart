@@ -7057,14 +7057,36 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String prTimelineCodeComments(int count) {
+  String prTimelineApprovedWithComments(String author, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count kod yorumu',
-      one: '1 kod yorumu',
+      other: '$count yorum',
+      one: '1 yorum',
     );
-    return '$_temp0';
+    return '$author bu değişiklikleri onayladı ve $_temp0 bıraktı';
+  }
+
+  @override
+  String prTimelineChangesRequestedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count yorum',
+      one: '1 yorum',
+    );
+    return '$author değişiklik istedi ve $_temp0 bıraktı';
+  }
+
+  @override
+  String prTimelineReviewedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count yorum',
+      one: '1 yorum',
+    );
+    return '$author inceledi ve $_temp0 bıraktı';
   }
 
   @override
@@ -7560,6 +7582,10 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get markdownQuote => 'Alıntı';
+
+  @override
+  String get markdownTabIndentHint =>
+      'Burada Tab girinti ekler. Sonraki denetime geçmek için Esc tuşuna, ardından Tab tuşuna basın.';
 
   @override
   String get markdownSupported => 'Markdown desteklenir';

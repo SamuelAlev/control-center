@@ -7135,15 +7135,39 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String prTimelineCodeComments(int count) {
+  String prTimelineApprovedWithComments(String author, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '# de comentarii de cod',
-      few: '# comentarii de cod',
-      one: '1 comentariu de cod',
+      other: '$count de comentarii',
+      few: '$count comentarii',
+      one: '1 comentariu',
     );
-    return '$_temp0';
+    return '$author a aprobat aceste modificări și a lăsat $_temp0';
+  }
+
+  @override
+  String prTimelineChangesRequestedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de comentarii',
+      few: '$count comentarii',
+      one: '1 comentariu',
+    );
+    return '$author a cerut modificări și a lăsat $_temp0';
+  }
+
+  @override
+  String prTimelineReviewedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de comentarii',
+      few: '$count comentarii',
+      one: '1 comentariu',
+    );
+    return '$author a revizuit și a lăsat $_temp0';
   }
 
   @override
@@ -7646,6 +7670,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get markdownQuote => 'Citat';
+
+  @override
+  String get markdownTabIndentHint =>
+      'Tab indentează aici. Apăsați Esc, apoi Tab pentru a trece la următorul control.';
 
   @override
   String get markdownSupported => 'Markdown este acceptat';

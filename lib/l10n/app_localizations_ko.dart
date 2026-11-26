@@ -6915,14 +6915,36 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String prTimelineCodeComments(int count) {
+  String prTimelineApprovedWithComments(String author, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '코드 댓글 $count개',
-      one: '코드 댓글 1개',
+      other: '댓글 $count개',
+      one: '댓글 1개',
     );
-    return '$_temp0';
+    return '$author 님이 이 변경을 승인하고 $_temp0를 남겼습니다';
+  }
+
+  @override
+  String prTimelineChangesRequestedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '댓글 $count개',
+      one: '댓글 1개',
+    );
+    return '$author 님이 변경을 요청하고 $_temp0를 남겼습니다';
+  }
+
+  @override
+  String prTimelineReviewedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '댓글 $count개',
+      one: '댓글 1개',
+    );
+    return '$author 님이 리뷰하고 $_temp0를 남겼습니다';
   }
 
   @override
@@ -7416,6 +7438,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get markdownQuote => '인용';
+
+  @override
+  String get markdownTabIndentHint =>
+      '여기서는 Tab이 들여쓰기를 합니다. Esc를 누른 다음 Tab을 누르면 다음 컨트롤로 이동합니다.';
 
   @override
   String get markdownSupported => 'Markdown을 지원합니다';

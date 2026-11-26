@@ -386,7 +386,8 @@ void main() {
         expect(find.text('2'), findsOneWidget);
         // Unresolved conversations start open so the text and replies are
         // readable without a click.
-        expect(find.text('3 code comments'), findsOneWidget);
+        // A review with a summary has no count line above its conversations.
+        expect(find.textContaining('code comment'), findsNothing);
         expect(find.text('lib/b.dart'), findsOneWidget);
         expect(find.text('inline note'), findsWidgets);
         expect(find.text('krishna'), findsWidgets);
@@ -539,6 +540,55 @@ void main() {
       expect(opened, ['845facb1234', 'e07bcc41234']);
     });
 
+    testWidgets('a bodiless review counts its one comment in its sentence', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 2000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        _wrap(
+          CustomScrollView(
+            slivers: [PrActivityTimeline(pr: _pr(), prRef: _prRef)],
+          ),
+          comments: [
+            PrCodeReviewComment(
+              id: 300,
+              body: 'rename this',
+              user: const PrUser(login: 'krishna', avatarUrl: ''),
+              path: 'lib/a.dart',
+              position: 1,
+              line: 1,
+              createdAt: _t0,
+              reviewId: 1,
+            ),
+          ],
+          reviews: [
+            PrReviewSubmission(
+              id: 1,
+              state: PrReviewSubmissionState.changesRequested,
+              author: const PrUser(login: 'krishna', avatarUrl: ''),
+              body: '',
+              submittedAt: _t0,
+            ),
+          ],
+          issueComments: const [],
+          commits: const [],
+          events: const [],
+        ),
+      );
+      await tester.pumpAndSettle(const Duration(seconds: 5));
+
+      expect(
+        _richTextContaining('requested changes and left 1 comment'),
+        findsOneWidget,
+      );
+      expect(_richTextContaining('left 1 comments'), findsNothing);
+      expect(find.textContaining('code comment'), findsNothing);
+    });
+
     testWidgets('timeline rail is continuous through conversation cards', (
       tester,
     ) async {
@@ -617,6 +667,11 @@ void main() {
         await tester.pumpAndSettle(const Duration(seconds: 5));
 
         expect(_richTextContaining('thread-body-0'), findsOneWidget);
+        // The review's sentence counts the conversations it started.
+        expect(
+          _richTextContaining('reviewed and left 20 comments'),
+          findsOneWidget,
+        );
         // Precalculation may have measured later threads; the invariant is
         // that scrolling them into view does not resize the thumb.
 

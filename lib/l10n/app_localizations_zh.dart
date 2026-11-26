@@ -6839,14 +6839,36 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String prTimelineCodeComments(int count) {
+  String prTimelineApprovedWithComments(String author, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count 条代码评论',
-      one: '1 条代码评论',
+      other: '$count 条评论',
+      one: '1 条评论',
     );
-    return '$_temp0';
+    return '$author 批准了这些更改，并留下了 $_temp0';
+  }
+
+  @override
+  String prTimelineChangesRequestedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 条评论',
+      one: '1 条评论',
+    );
+    return '$author 请求更改，并留下了 $_temp0';
+  }
+
+  @override
+  String prTimelineReviewedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 条评论',
+      one: '1 条评论',
+    );
+    return '$author 进行了审阅，并留下了 $_temp0';
   }
 
   @override
@@ -7336,6 +7358,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get markdownQuote => '引用';
+
+  @override
+  String get markdownTabIndentHint =>
+      '在此处，Tab 键用于缩进。按 Esc 键，然后按 Tab 键即可移到下一个控件。';
 
   @override
   String get markdownSupported => '支持 Markdown';
@@ -27873,14 +27899,36 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String prTimelineCodeComments(int count) {
+  String prTimelineApprovedWithComments(String author, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count 則程式碼評論',
-      one: '1 則程式碼評論',
+      other: '$count 則評論',
+      one: '1 則評論',
     );
-    return '$_temp0';
+    return '$author 核准了這些變更，並留下了 $_temp0';
+  }
+
+  @override
+  String prTimelineChangesRequestedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 則評論',
+      one: '1 則評論',
+    );
+    return '$author 要求修改，並留下了 $_temp0';
+  }
+
+  @override
+  String prTimelineReviewedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 則評論',
+      one: '1 則評論',
+    );
+    return '$author 已審查，並留下了 $_temp0';
   }
 
   @override
@@ -28370,6 +28418,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get markdownQuote => '引用';
+
+  @override
+  String get markdownTabIndentHint =>
+      '在這裡，Tab 鍵用於縮排。按 Esc 鍵，然後按 Tab 鍵即可移至下一個控制項。';
 
   @override
   String get markdownSupported => '支援 Markdown';
@@ -48915,14 +48967,36 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String prTimelineCodeComments(int count) {
+  String prTimelineApprovedWithComments(String author, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count 則程式碼評論',
-      one: '1 則程式碼評論',
+      other: '$count 則評論',
+      one: '1 則評論',
     );
-    return '$_temp0';
+    return '$author 核准了這些變更，並留下了 $_temp0';
+  }
+
+  @override
+  String prTimelineChangesRequestedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 則評論',
+      one: '1 則評論',
+    );
+    return '$author 要求修改，並留下了 $_temp0';
+  }
+
+  @override
+  String prTimelineReviewedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 則評論',
+      one: '1 則評論',
+    );
+    return '$author 已審查，並留下了 $_temp0';
   }
 
   @override
@@ -49412,6 +49486,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get markdownQuote => '引用';
+
+  @override
+  String get markdownTabIndentHint =>
+      '在這裡，Tab 鍵用於縮排。按 Esc 鍵，然後按 Tab 鍵即可移至下一個控制項。';
 
   @override
   String get markdownSupported => '支援 Markdown';

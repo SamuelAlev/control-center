@@ -7067,14 +7067,36 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String prTimelineCodeComments(int count) {
+  String prTimelineApprovedWithComments(String author, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count kodkommentarer',
-      one: '1 kodkommentar',
+      other: '$count kommentarer',
+      one: '1 kommentar',
     );
-    return '$_temp0';
+    return '$author godkände de här ändringarna och lämnade $_temp0';
+  }
+
+  @override
+  String prTimelineChangesRequestedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count kommentarer',
+      one: '1 kommentar',
+    );
+    return '$author begärde ändringar och lämnade $_temp0';
+  }
+
+  @override
+  String prTimelineReviewedWithComments(String author, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count kommentarer',
+      one: '1 kommentar',
+    );
+    return '$author granskade och lämnade $_temp0';
   }
 
   @override
@@ -7571,6 +7593,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get markdownQuote => 'Citat';
+
+  @override
+  String get markdownTabIndentHint =>
+      'Tab gör indrag här. Tryck på Esc och sedan Tab för att flytta till nästa kontroll.';
 
   @override
   String get markdownSupported => 'Markdown stöds';

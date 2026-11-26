@@ -12183,11 +12183,23 @@ abstract class AppLocalizations {
   /// **'{author} requested changes'**
   String prTimelineChangesRequested(String author);
 
-  /// Activity feed: jump-to-diff button under a review row
+  /// Activity feed: review approved without summary that started one or more code conversations, listed under it
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 code comment} other{{count} code comments}}'**
-  String prTimelineCodeComments(int count);
+  /// **'{author} approved these changes and left {count, plural, =1{1 comment} other{{count} comments}}'**
+  String prTimelineApprovedWithComments(String author, int count);
+
+  /// Activity feed: review requested changes without summary and started one or more code conversations, listed under it
+  ///
+  /// In en, this message translates to:
+  /// **'{author} requested changes and left {count, plural, =1{1 comment} other{{count} comments}}'**
+  String prTimelineChangesRequestedWithComments(String author, int count);
+
+  /// Activity feed: review submitted without verdict or summary that started one or more code conversations, listed under it
+  ///
+  /// In en, this message translates to:
+  /// **'{author} reviewed and left {count, plural, =1{1 comment} other{{count} comments}}'**
+  String prTimelineReviewedWithComments(String author, int count);
 
   /// Activity feed: review submitted without verdict or summary
   ///
@@ -13034,6 +13046,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Quote'**
   String get markdownQuote;
+
+  /// Shown once and read to screen readers the first time Tab indents a code block or list in a text field instead of moving focus; explains how to leave the field by keyboard
+  ///
+  /// In en, this message translates to:
+  /// **'Tab indents here. Press Esc, then Tab to move to the next control.'**
+  String get markdownTabIndentHint;
 
   /// Footer hint in the markdown editor box
   ///

@@ -4045,10 +4045,37 @@
       }
     }
   },
-  "prTimelineCodeComments": "{count, plural, one{1 kodkommentar} other{{count} kodkommentarer}}",
-  "@prTimelineCodeComments": {
-    "description": "Activity feed: jump-to-diff button under a review row",
+  "prTimelineApprovedWithComments": "{author} godkände de här ändringarna och lämnade {count, plural, one{1 kommentar} other{{count} kommentarer}}",
+  "@prTimelineApprovedWithComments": {
+    "description": "Activity feed: review approved without summary that started one or more code conversations, listed under it",
     "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineChangesRequestedWithComments": "{author} begärde ändringar och lämnade {count, plural, one{1 kommentar} other{{count} kommentarer}}",
+  "@prTimelineChangesRequestedWithComments": {
+    "description": "Activity feed: review requested changes without summary and started one or more code conversations, listed under it",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineReviewedWithComments": "{author} granskade och lämnade {count, plural, one{1 kommentar} other{{count} kommentarer}}",
+  "@prTimelineReviewedWithComments": {
+    "description": "Activity feed: review submitted without verdict or summary that started one or more code conversations, listed under it",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
       "count": {
         "type": "int"
       }
@@ -4286,6 +4313,7 @@
   "markdownCode": "Kod",
   "markdownLink": "Länk",
   "markdownQuote": "Citat",
+  "markdownTabIndentHint": "Tab gör indrag här. Tryck på Esc och sedan Tab för att flytta till nästa kontroll.",
   "markdownSupported": "Markdown stöds",
   "markdownAttachImages": "Klicka för att lägga till bilder",
   "failedToUpdateTitle": "Kunde inte uppdatera titel: {error}",
